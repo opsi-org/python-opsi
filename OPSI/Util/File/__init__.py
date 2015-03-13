@@ -96,12 +96,12 @@ class File(object):
 			os.unlink(self._filename)
 
 	def chown(self, user, group):
-		if (os.name == 'nt'):
+		if os.name == 'nt':
 			logger.warning(u"Not implemented on windows")
 			return
 		uid = -1
 		if type(user) is int:
-			if (user > -1):
+			if user > -1:
 				uid = user
 		elif user is not None:
 			try:
@@ -111,7 +111,7 @@ class File(object):
 
 		gid = -1
 		if type(group) is int:
-			if (group > -1):
+			if group > -1:
 				gid = group
 		elif group is not None:
 			try:
@@ -186,10 +186,10 @@ class LockableFile(File):
 	def open(self, mode='r', encoding=None, errors='replace'):
 		truncate = False
 		if mode in ('w', 'wb') and os.path.exists(self._filename):
-			if (mode == 'w'):
+			if mode == 'w':
 				mode = 'r+'
 				truncate = True
-			elif (mode == 'wb'):
+			elif mode == 'wb':
 				mode = 'rb+'
 				truncate = True
 		if encoding:
@@ -210,18 +210,18 @@ class LockableFile(File):
 
 	def _lockFile(self, mode='r'):
 		timeout = 0
-		while (timeout < self._lockFailTimeout):
+		while timeout < self._lockFailTimeout:
 			# While not timed out and not locked
 			logger.debug("Trying to lock file '%s' (%s/%s)" % (self._filename, timeout, self._lockFailTimeout))
 			try:
-				if (os.name == 'posix'):
+				if os.name == 'posix':
 					# Flags for exclusive, non-blocking lock
 					flags = fcntl.LOCK_EX | fcntl.LOCK_NB
 					if mode in ('r', 'rb'):
 						# Flags for shared, non-blocking lock
 						flags = fcntl.LOCK_SH | fcntl.LOCK_NB
 					fcntl.flock(self._fileHandle.fileno(), flags)
-				elif (os.name == 'nt'):
+				elif os.name == 'nt':
 					flags = win32con.LOCKFILE_EXCLUSIVE_LOCK | win32con.LOCKFILE_FAIL_IMMEDIATELY
 					if mode in ('r', 'rb'):
 						flags = win32con.LOCKFILE_FAIL_IMMEDIATELY
@@ -243,9 +243,9 @@ class LockableFile(File):
 	def _unlockFile(self):
 		if not self._fileHandle:
 			return
-		if (os.name == 'posix'):
+		if os.name == 'posix':
 			fcntl.flock(self._fileHandle.fileno(), fcntl.LOCK_UN)
-		elif (os.name == 'nt'):
+		elif os.name == 'nt':
 			hfile = win32file._get_osfhandle(self._fileHandle.fileno())
 			win32file.UnlockFileEx(hfile, 0, 0x7fff0000, pywintypes.OVERLAPPED())
 
@@ -347,20 +347,20 @@ class ChangelogFile(TextFile):
 					continue
 
 				if line.startswith(' --'):
-					if (line.find('  ') == -1):
+					if line.find('  ') == -1:
 						raise Exception(u"maintainer must be separated from date using two spaces")
 					if not currentEntry or currentEntry['date']:
 						raise Exception(u"found trailer out of release")
 
 					(maintainer, date) = line[3:].strip().split(u'  ', 1)
 					email = u''
-					if (maintainer.find('<') != -1):
+					if maintainer.find('<') != -1:
 						(maintainer, email) = maintainer.split(u'<', 1)
 						maintainer = maintainer.strip()
 						email = email.strip().replace(u'<', u'').replace(u'>', u'')
 					currentEntry['maintainerName'] = maintainer
 					currentEntry['maintainerEmail'] = email
-					if (date.find(u'+') != -1):
+					if date.find(u'+') != -1:
 						date = date.split(u'+')[0]
 					currentEntry['date'] = time.strptime(date.strip(), "%a, %d %b %Y %H:%M:%S")
 					changelog = []
@@ -480,18 +480,18 @@ class ConfigFile(TextFile):
 				for i in range(len(parts)):
 					quote += parts[i].count("'")
 					doublequote += parts[i].count('"')
-					if (len(parts[i]) > 0) and (parts[i][-1] == '\\'):
+					if len(parts[i]) > 0 and parts[i][-1] == '\\':
 						# escaped comment
 						continue
 
-					if (i == len(parts) - 1):
+					if i == len(parts) - 1:
 						break
 
-					if not (quote % 2) and not (doublequote % 2):
+					if not quote % 2 and not doublequote % 2:
 						cut = i
 						break
 
-				if (cut > -1):
+				if cut > -1:
 					line = cc.join(parts[:cut+1])
 
 			if not line:
@@ -560,15 +560,15 @@ class IniFile(ConfigFile):
 				for i in range(len(parts)):
 					quote += parts[i].count("'")
 					doublequote += parts[i].count('"')
-					if (len(parts[i]) > 0) and (parts[i][-1] == '\\'):
+					if len(parts[i]) > 0 and parts[i][-1] == '\\':
 						# escaped comment
 						continue
-					if (i == len(parts)-1):
+					if i == len(parts) - 1:
 						break
-					if not (quote % 2) and not (doublequote % 2):
+					if not quote % 2 and not doublequote % 2:
 						cut = i
 						break
-				if (cut > -1):
+				if cut > -1:
 					line = cc.join(parts[:cut + 1])
 					if returnComments:
 						comment = cc + cc.join(parts[cut + 1:])
@@ -621,7 +621,7 @@ class IniFile(ConfigFile):
 				if line.startswith('['):
 					section = line.split('[', 1)[1].split(']', 1)[0].strip()
 					sectionSequence.append(section)
-				elif (line.find('=') != -1):
+				elif line.find('=') != -1:
 					option = line.split('=')[0].strip()
 					if not optionSequence.has_key(sectionSequence[-1]):
 						optionSequence[sectionSequence[-1]] = []
@@ -736,11 +736,11 @@ class InfFile(ConfigFile):
 		for line in lines:
 			match = re.search(self.sectionRegex, line)
 			if match:
-				if (section.lower() == u'strings'):
+				if section.lower() == u'strings':
 					break
 				section = match.group(1)
 			else:
-				if (section.lower() == u'strings'):
+				if section.lower() == u'strings':
 					try:
 						(var, string) = line.split(u'=', 1)
 						string = string.strip()
@@ -777,11 +777,11 @@ class InfFile(ConfigFile):
 		for line in lines:
 			match = re.search(self.sectionRegex, line)
 			if match:
-				if (section.lower() == u'manufacturer'):
+				if section.lower() == u'manufacturer':
 					break
 				section = match.group(1)
 			else:
-				if (section.lower() == u'version'):
+				if section.lower() == u'version':
 					if line.lower().startswith(u'class'):
 						if re.search(self.classRegex, line.lower()):
 							deviceClass = line.split('=')[1].strip().lower()
@@ -791,8 +791,8 @@ class InfFile(ConfigFile):
 								if strings.has_key(var):
 									deviceClass = deviceClass.replace(u'%'+var+u'%', strings[var])
 
-				elif (section.lower() == u'manufacturer'):
-					if line and (line.find(u'=') != -1):
+				elif section.lower() == u'manufacturer':
+					if line and u'=' in line:
 						for d in line.split(u'=')[1].split(u','):
 							deviceSections.append(d.strip())
 
@@ -848,7 +848,7 @@ class InfFile(ConfigFile):
 											type = u'ACPI'
 							if match:
 								logger.debug2(u"         - Device type is %s" % type)
-								if (type == u'ACPI'):
+								if type == u'ACPI':
 									vendor = match.group(1)
 									device = match.group(2)
 								else:
@@ -1041,10 +1041,10 @@ class TxtSetupOemFile(ConfigFile):
 		device = self.getDevice(vendorId=vendorId, deviceId=deviceId, deviceType=deviceType, architecture=architecture)
 
 		for componentOptions in self._componentOptions:
-			if (componentOptions['componentName'] == device['componentName']) and (componentOptions["componentId"] == device['componentId']):
+			if componentOptions['componentName'] == device['componentName'] and componentOptions["componentId"] == device['componentId']:
 				return componentOptions
 		for componentOptions in self._componentOptions:
-			if (componentOptions['componentName'].lower() == device['componentName'].lower()) and (componentOptions["componentId"].lower() == device['componentId'].lower()):
+			if componentOptions['componentName'].lower() == device['componentName'].lower() and componentOptions["componentId"].lower() == device['componentId'].lower():
 				return componentOptions
 		raise Exception(u"Component options for device %s not found in txtsetup.oem file '%s'" % (device, self._filename))
 
@@ -1061,7 +1061,7 @@ class TxtSetupOemFile(ConfigFile):
 			)
 		files = []
 		for f in self._files:
-			if (f['fileType'] == 'dll'):
+			if f['fileType'] == 'dll':
 				# dll entries will cause problems in windows textmode setup
 				continue
 			files.append(f)
@@ -1130,8 +1130,9 @@ class TxtSetupOemFile(ConfigFile):
 		# Search for default component ids
 		logger.info(u"Searching for default component ids")
 		for (section, lines) in sections.items():
-			if (section.lower() != 'defaults'):
+			if section.lower() != 'defaults':
 				continue
+
 			for line in lines:
 				(componentName, componentId) = line.split('=', 1)
 				self._defaultComponentIds.append(
@@ -1198,8 +1199,9 @@ class TxtSetupOemFile(ConfigFile):
 		# Search for disks
 		logger.info(u"Searching for disks")
 		for (section, lines) in sections.items():
-			if (section.lower() != 'disks'):
+			if section.lower() != 'disks':
 				continue
+
 			for line in lines:
 				if (line.find(u'=') == -1):
 					continue
@@ -1241,8 +1243,9 @@ class TxtSetupOemFile(ConfigFile):
 				diskName = parts[0].strip()
 				filename = parts[1].strip()
 				optionName = None
-				if (len(parts) > 2):
+				if len(parts) > 2:
 					optionName = parts[2].strip()
+
 				self._files.append(
 					{
 						'fileType': fileType,
@@ -1296,7 +1299,7 @@ class TxtSetupOemFile(ConfigFile):
 			lines.append(u'\r\n')
 			lines.append(u'[%s]\r\n' % name)
 			for options in self._componentOptions:
-				if (options["componentName"] != name):
+				if options["componentName"] != name:
 					continue
 				line = u'%s = "%s"' % (options["componentId"], options["description"])
 				if options["optionName"]:
@@ -1305,12 +1308,12 @@ class TxtSetupOemFile(ConfigFile):
 
 		for name in self._componentNames:
 			for options in self._componentOptions:
-				if (options["componentName"] != name):
+				if options["componentName"] != name:
 					continue
 				lines.append(u'\r\n')
 				lines.append(u'[Files.%s.%s]\r\n' % (name, options["componentId"]))
 				for f in self._files:
-					if (f['componentName'] != name) or (f['componentId'] != options["componentId"]):
+					if f['componentName'] != name or f['componentId'] != options["componentId"]:
 						continue
 					line = u'%s = %s, %s' % (f['fileType'], f['diskName'], f['filename'])
 					if f["optionName"]:
@@ -1319,12 +1322,12 @@ class TxtSetupOemFile(ConfigFile):
 
 		for name in self._componentNames:
 			for options in self._componentOptions:
-				if (options["componentName"] != name):
+				if options["componentName"] != name:
 					continue
 				lines.append(u'\r\n')
 				lines.append(u'[HardwareIds.%s.%s]\r\n' % (name, options["componentId"]))
 				for dev in self._devices:
-					if (dev['componentName'] != name) or (dev['componentId'] != options["componentId"]):
+					if dev['componentName'] != name or dev['componentId'] != options["componentId"]:
 						continue
 
 					line = u'id = "%s\\VEN_%s' % (dev['type'], dev['vendor'])
