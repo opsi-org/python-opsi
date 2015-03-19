@@ -112,8 +112,8 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 					username=self._depotId,
 					password=self._opsiHostKey
 				)
-			except Exception as e:
-				raise Exception(u"Failed to connect to depot '%s': %s" % (depotId, e))
+			except Exception as error:
+				raise Exception(u"Failed to connect to depot '%s': %s" % (depotId, error))
 
 		return self._depotConnections[depotId]
 
@@ -181,8 +181,8 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 								logger.info(u"Sending command '%s'" % self._command)
 								result = sc.sendCommand(self._command)
 								logger.info(u"Got result '%s'" % result)
-							except Exception as e:
-								logger.critical(u"Failed to update PXE boot configuration for client '%s': %s" % (self._clientId, e))
+							except Exception as error:
+								logger.critical(u"Failed to update PXE boot configuration for client '%s': %s" % (self._clientId, error))
 
 							del self._opsiPXEConfdBackend._updateThreads[self._clientId]
 
@@ -227,8 +227,8 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 		for productOnClient in productOnClients:
 			try:
 				self._updateByProductOnClient(productOnClient)
-			except Exception as e:
-				errors.append(forceUnicode(e))
+			except Exception as error:
+				errors.append(forceUnicode(error))
 
 		if errors:
 			raise Exception(u', '.join(errors))
@@ -253,8 +253,8 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 
 			try:
 				self.opsipxeconfd_updatePXEBootConfiguration(configState.objectId)
-			except Exception as e:
-				errors.append(forceUnicode(e))
+			except Exception as error:
+				errors.append(forceUnicode(error))
 
 		if errors:
 			raise Exception(u', '.join(errors))
