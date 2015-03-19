@@ -311,14 +311,14 @@ class DHCPDBackend(ConfigDataBackend):
 			return
 
 		[self.host_updateObject(host) for host in
-		 self._context.host_getObjects(id=configState.objectId)]
+		self._context.host_getObjects(id=configState.objectId)]
 
 	def configState_updateObject(self, configState):
 		if configState.configId != 'clientconfig.depot.id':
 			return
 
 		[self.host_updateObject(host) for host in
-		 self._context.host_getObjects(id=configState.objectId)]
+		self._context.host_getObjects(id=configState.objectId)]
 
 	def configState_deleteObjects(self, configStates):
 		for configState in configStates:
@@ -326,4 +326,4 @@ class DHCPDBackend(ConfigDataBackend):
 				continue
 
 			[self.host_updateObject(host) for host in
-			 self._context.host_getObjects(id=configState.objectId)]
+			self._context.host_getObjects(id=configState.objectId)]
