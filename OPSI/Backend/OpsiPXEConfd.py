@@ -31,7 +31,7 @@ import threading
 import time
 
 from OPSI.Logger import Logger
-from OPSI.Objects import OpsiClient
+from OPSI.Object import OpsiClient
 from OPSI.Types import forceInt, forceUnicode, forceHostId
 from OPSI.Types import BackendMissingDataError
 from OPSI.Backend.Backend import OPSI_GLOBAL_CONF, ConfigDataBackend
