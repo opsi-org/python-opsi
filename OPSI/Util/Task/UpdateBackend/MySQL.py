@@ -367,8 +367,8 @@ def updateMySQLBackend(backendConfigFile=u'/etc/opsi/backends/mysql.conf',
 			if not res2:
 				continue
 			res2 = res2[0]
-			mysql.execute(u"insert into AUDIT_SOFTWARE_TO_LICENSE_POOL (`licensePoolId`, `name`, `version`, `subVersion`, `language`, `architecture`) VALUES ('%s', '%s', '%s', '%s', '%s', '%s');" \
-					% (res['licensePoolId'], res2['name'].replace("'", "\\'"), res2['version'].replace("'", "\\'"), res2['subVersion'].replace("'", "\\'"), res2['language'], res2['architecture']) )
+			mysql.execute(u"insert into AUDIT_SOFTWARE_TO_LICENSE_POOL (`licensePoolId`, `name`, `version`, `subVersion`, `language`, `architecture`) VALUES ('%s', '%s', '%s', '%s', '%s', '%s');"
+				% (res['licensePoolId'], res2['name'].replace("'", "\\'"), res2['version'].replace("'", "\\'"), res2['subVersion'].replace("'", "\\'"), res2['language'], res2['architecture']))
 
 		mysql.execute(u"drop table WINDOWS_SOFTWARE_ID_TO_LICENSE_POOL;")
 
