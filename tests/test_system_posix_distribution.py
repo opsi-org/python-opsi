@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2014 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2015 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -34,13 +34,15 @@ from OPSI.System.Posix import Distribution
 class DistributionTestCase(unittest.TestCase):
     DIST_INFO = None
 
-    def setUp(self):
+    @classmethod
+    def setUpClass(self):
         if self.DIST_INFO is not None:
             self.dist = Distribution(distribution_information=self.DIST_INFO)
         else:
             self.dist = Distribution()
 
-    def tearDown(self):
+    @classmethod
+    def tearDownClass(self):
         self.dist
 
     def testReadingVersionDoesNotFailAndIsNotEmpty(self):
