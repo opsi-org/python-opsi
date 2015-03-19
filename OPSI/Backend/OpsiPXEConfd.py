@@ -33,11 +33,11 @@ import time
 from OPSI.Logger import Logger
 from OPSI.Types import forceInt, forceUnicode, forceHostId
 from OPSI.Object import *
-from OPSI.Backend.Backend import *
+from OPSI.Backend.Backend import ConfigDataBackend, JSONRPCBackend
 from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Util import getfqdn
 
-__version__ = '4.0.6.1'
+__version__ = '4.0.6.3'
 
 logger = Logger()
 
