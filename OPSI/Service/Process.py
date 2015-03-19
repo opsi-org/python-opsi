@@ -39,7 +39,7 @@ from twisted.internet.protocol import ProcessProtocol
 from twisted.python import reflect
 
 from OPSI.Util.AMP import OpsiProcessConnector
-from OPSI.Logger import Logger
+from OPSI.Logger import Logger, LOG_WARNING
 
 logger = Logger()
 
