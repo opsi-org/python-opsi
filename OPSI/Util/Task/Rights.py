@@ -127,8 +127,8 @@ def setRights(path=u'/'):
 	for dirname in removeDuplicatesFromDirectories(dirnames):
 		if not dirname.startswith(basedir) and not basedir.startswith(dirname):
 			continue
-		uid  = opsiconfdUid
-		gid  = fileAdminGroupGid
+		uid = opsiconfdUid
+		gid = fileAdminGroupGid
 		fmod = 0660
 		dmod = 0770
 		correctLinks = False
@@ -147,6 +147,7 @@ def setRights(path=u'/'):
 		elif dirname in (u'/home/opsiproducts', '/var/lib/opsi/workbench'):
 			uid = -1
 			dmod = 02770
+
 		if dirname == depotDir:
 			dmod = 02770
 
