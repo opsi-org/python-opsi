@@ -38,10 +38,7 @@ if os.name == 'posix':
 elif os.name == 'nt':
 	from Windows import *
 
-from OPSI.Types import (forceArchitecture, forceBool, forceDict, forceDomain,
-	forceFilename, forceFloat, forceFqdn, forceHostname, forceInt,
-	forceIPAddress, forceList, forceNetmask, forceOct, forceTime, forceUnicode,
-	forceUrl)
+from OPSI.Types import forceFilename
 
 __version__ = '4.0.6.3'
 
