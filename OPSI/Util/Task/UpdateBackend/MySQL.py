@@ -256,7 +256,7 @@ def updateMySQLBackend(backendConfigFile=u'/etc/opsi/backends/mysql.conf',
 				mysql.execute(u"DELETE FROM `SOFTWARE` where `softwareId` = '%s'" % res['softwareId'].replace("'", "\\'"))
 				continue
 
-			update =  u"update SOFTWARE set"
+			update = u"update SOFTWARE set"
 			update += u"  `type`='AuditSoftware'"
 			update += u", `windowsSoftwareId`='%s'"     % res['softwareId'].replace("'", "\\'")
 			if res['displayName'] is not None:
