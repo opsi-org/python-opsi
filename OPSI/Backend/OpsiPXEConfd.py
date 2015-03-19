@@ -198,8 +198,8 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 	def backend_exit(self):
 		for connection in self._depotConnections.values():
 			try:
-				self._depotConnections.backend_exit()
-			except:
+				connection.backend_exit()
+			except Exception:
 				pass
 
 		with self._updateThreadsLock:
