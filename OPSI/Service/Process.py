@@ -89,7 +89,7 @@ class SupervisionProtocol(ProcessProtocol):
 
 	def kill(self):
 		if self.transport.pid:
-			logger.warning("Process %s did not stop cleanly, killing it." %self.transport.pid )
+			logger.warning("Process %s did not stop cleanly, killing it." % self.transport.pid)
 			self.transport.signalProcess(signal.SIGKILL)
 
 	def errReceived(self, data):
