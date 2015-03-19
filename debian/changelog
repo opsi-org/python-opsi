@@ -8,8 +8,9 @@ python-opsi (4.0.6.3-1) UNRELEASED; urgency=low
   * OPSI.Util.Task.Sudoers: Add single entry if missing.
   * Small changes in OPSI.Util.File.
   * Less wildcard imports.
+  * Refactoring in OPSI.Util.Task.Rights
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 19 Mar 2015 12:02:20 +0100
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 19 Mar 2015 16:29:15 +0100
 
 python-opsi (4.0.6.2-1) experimental; urgency=low
 
