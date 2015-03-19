@@ -374,7 +374,7 @@ def updateMySQLBackend(backendConfigFile=u'/etc/opsi/backends/mysql.conf',
 
 
 	for res in mysql.getSet(u"SELECT * FROM `LICENSE_CONTRACT`"):
-		if (res['licenseContractId'] != forceLicenseContractId(res['licenseContractId'])):
+		if res['licenseContractId'] != forceLicenseContractId(res['licenseContractId']):
 			deleteLicenseContractId = res['licenseContractId']
 			res['licenseContractId'] = forceLicenseContractId(res['licenseContractId'])
 			logger.warning(u"Changing license contract id '%s' to '%s'" % (deleteLicenseContractId, res['licenseContractId']))
