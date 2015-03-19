@@ -43,7 +43,7 @@ import subprocess
 import threading
 import time
 import copy as pycopy
-from signal import *
+from signal import SIGKILL
 from platform import linux_distribution
 
 from OPSI.Logger import Logger, LOG_NONE
@@ -55,7 +55,7 @@ from OPSI.Types import OpsiVersionError
 from OPSI.Object import *
 from OPSI.Util import objectToBeautifiedText, removeUnit
 
-__version__ = '4.0.6.1'
+__version__ = '4.0.6.3'
 
 logger = Logger()
 
