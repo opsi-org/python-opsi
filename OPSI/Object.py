@@ -48,7 +48,7 @@ from OPSI.Types import (forceActionProgress, forceActionRequest,
 	forceUnicodeList, forceUnicodeLower, forceUnsignedInt, forceUrl)
 from OPSI.Util import fromJson, toJson, generateOpsiHostKey, timestamp
 
-__version__ = '4.0.6.1'
+__version__ = '4.0.6.3'
 
 logger = Logger()
 
@@ -853,7 +853,19 @@ class Config(Entity):
 		return fromJson(jsonString, 'Config')
 
 	def __unicode__(self):
-		return u"<%s id '%s'>" % (self.getType(), self.id)
+		return (
+			u"<{klass} id={id}, description={description}, "
+			u"possibleValues={possibleValues}, defaultValues={defaults}, "
+			u"editable={editable}, multiValue={multiValue}>".format(
+				klass=self.getType(),
+				id=self.id,
+				description=self.description,
+				possibleValues=self.possibleValues,
+				defaults=self.defaultValues,
+				editable=self.editable,
+				multiValue=self.multiValue
+			)
+		)
 
 Entity.subClasses['Config'] = Config
 
@@ -934,6 +946,17 @@ class BoolConfig(Config):
 	@staticmethod
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'BoolConfig')
+
+	def __unicode__(self):
+		return (
+			u"<{klass} id={id}, description={description}, "
+			u"defaultValues={defaults}>".format(
+				klass=self.getType(),
+				id=self.id,
+				description=self.description,
+				defaults=self.defaultValues,
+			)
+		)
 
 Config.subClasses['BoolConfig'] = BoolConfig
 
