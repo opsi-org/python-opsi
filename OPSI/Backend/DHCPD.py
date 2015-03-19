@@ -41,7 +41,7 @@ from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Util.File import DHCPDConfFile
 from OPSI.Util import getfqdn
 
-__version__ = '4.0.6.2'
+__version__ = '4.0.6.3'
 
 logger = Logger()
 
