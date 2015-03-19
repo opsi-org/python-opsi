@@ -36,7 +36,7 @@ from OPSI.Logger import Logger
 from OPSI.Types import forceBool, forceHostId, forceObjectClass, forceUnicode
 from OPSI.Object import *
 from OPSI import System
-from OPSI.Backend.Backend import *
+from OPSI.Backend.Backend import ConfigDataBackend
 from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Util.File import DHCPDConfFile
 from OPSI.Util import getfqdn
