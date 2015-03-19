@@ -58,7 +58,7 @@ try:
 except Exception:
 	_FILE_ADMIN_GROUP = u'pcpatch'
 
-SPECIAL_FILES = set([
+KNOWN_EXECUTABLES = set([
 	u'setup.py', u'show_drivers.py', u'create_driver_links.py',
 	u'opsi-deploy-client-agent', u'opsi-deploy-client-agent-old', u'winexe'
 ])
@@ -177,7 +177,7 @@ def setRights(path=u'/'):
 			elif os.path.isfile(filepath):
 				logger.debug(u"Setting rights on file '%s'" % filepath)
 				if isProduct:
-					if os.path.basename(filepath) in SPECIAL_FILES:
+					if os.path.basename(filepath) in KNOWN_EXECUTABLES:
 						logger.debug(u"Setting rights on special file '{0}'".format(filepath))
 						os.chmod(filepath, 0770)
 					else:
