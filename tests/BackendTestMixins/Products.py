@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014 uib GmbH <info@uib.de>
+# Copyright (C) 2014-2015 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -411,6 +411,59 @@ class ProductPropertyStateTestsMixin(ProductPropertyStatesMixin):
 
 
 class ProductPropertiesTestMixin(ProductPropertiesMixin):
+
+    def testProductAndPropertyWithSameName(self):
+        """
+        Product and property may have the same name.
+        """
+        product1 = LocalbootProduct(
+            id='cbk',
+            name=u'Comeback Kid',
+            productVersion='1.0',
+            packageVersion="2",
+        )
+
+        productProperty1 = BoolProductProperty(
+            productId='cbk',
+            productVersion=product1.productVersion,
+            packageVersion=product1.packageVersion,
+            propertyId="dep",
+            defaultValues=True,
+        )
+
+        self.backend.product_createObjects([product1])
+        self.backend.productProperty_createObjects([productProperty1])
+
+        product2 = LocalbootProduct(
+            id='dec',
+            name=u'The Dillinger Escape Plan',
+            productVersion='11.1',
+            packageVersion=2,
+        )
+
+        productProperty2 = BoolProductProperty(
+            productId=product2.id,
+            productVersion=product2.productVersion,
+            packageVersion=product2.packageVersion,
+            propertyId="cbk",
+            defaultValues=True,
+        )
+
+        self.backend.product_createObjects([product2])
+        self.backend.productProperty_createObjects([productProperty2])
+
+        properties = self.backend.productProperty_getObjects(productId='cbk')
+
+        print("Used backend: {0}".format(self.backend))
+        self.assertEqual(1, len(properties))
+        prop = properties[0]
+
+        self.assertEqual("dep", prop.propertyId)
+        self.assertEqual("cbk", prop.productId)
+        self.assertEqual("1.0", prop.productVersion)
+        self.assertEqual("2", prop.packageVersion)
+        self.assertEqual([True], prop.defaultValues)
+
     def testProductPropertyMethods(self):
         self.setUpProductProperties()
 
