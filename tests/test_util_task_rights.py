@@ -28,12 +28,13 @@ from __future__ import absolute_import
 import os
 import unittest
 
-from OPSI.Util.Task.Rights import getDirectoriesToProcess, removeDuplicatesFromDirectories
+from OPSI.Util.Task.Rights import (getDirectoriesManagedByOpsi, getDirectoriesForProcessing,
+    removeDuplicatesFromDirectories)
 
 
 class SetRightsTestCase(unittest.TestCase):
     def testGetDirectoriesToProcess(self):
-        directories = getDirectoriesToProcess()
+        directories = getDirectoriesManagedByOpsi()
 
         self.assertTrue(u'/var/log/opsi' in directories)
         self.assertTrue(u'/etc/opsi' in directories)
@@ -75,6 +76,20 @@ class SetRightsTestCase(unittest.TestCase):
             set(['/a/bc/de', '/ab/c', '/bc/de']),
             removeDuplicatesFromDirectories(['/a/bc/de', '/ab/c', '/bc/de'])
         )
+
+
+class GetDirectoriesForProcessingTestCase(unittest.TestCase):
+    def testGettingDirectories(self):
+        directories, _ = getDirectoriesForProcessing('/tmp')
+
+        self.assertTrue(len(directories) > 2)
+
+    def testOptPcbinGetRelevantIfInParameter(self):
+        directories, _ = getDirectoriesForProcessing('/opt/pcbin/install/foo')
+        self.assertTrue('/opt/pcbin/install' in directories)
+
+        directories, _ = getDirectoriesForProcessing('/tmp')
+        self.assertTrue('/opt/pcbin/install' not in directories)
 
 
 if __name__ == '__main__':

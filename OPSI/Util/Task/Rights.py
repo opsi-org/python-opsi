@@ -78,46 +78,12 @@ def getLocalFQDN():
 
 def setRights(path=u'/'):
 	logger.notice(u"Setting rights on '{0}'".format(path))
-	basedir = path
+
+	(directories, depotDir) = getDirectoriesForProcessing(path)
+
+	basedir = os.path.abspath(path)
 	if not os.path.isdir(basedir):
 		basedir = os.path.dirname(basedir)
-
-	depotDir = ''
-	dirnames = getDirectoriesToProcess()
-	if not path.startswith('/etc') and not path.startswith('/tftpboot'):
-		try:
-			from OPSI.Backend.BackendManager import BackendManager
-			backend = BackendManager(
-				dispatchConfigFile=u'/etc/opsi/backendManager/dispatch.conf',
-				backendConfigDir=u'/etc/opsi/backends',
-				extensionConfigDir=u'/etc/opsi/backendManager/extend.d'
-			)
-			depot = backend.host_getObjects(type='OpsiDepotserver', id=getLocalFQDN())
-			backend.backend_exit()
-			if depot:
-				depot = depot[0]
-				depotUrl = depot.getDepotLocalUrl()
-				if not depotUrl.startswith('file:///'):
-					raise Exception(u"Bad repository local url '%s'" % depotUrl)
-				depotDir = depotUrl[7:]
-				if os.path.exists(depotDir):
-					logger.info(u"Local depot directory '%s' found" % depotDir)
-					dirnames.append(depotDir)
-		except Exception as e:
-			logger.error(e)
-
-	if basedir.startswith('/opt/pcbin/install'):
-		found = False
-		for dirname in dirnames:
-			if dirname.startswith('/opt/pcbin/install'):
-				found = True
-				break
-		if not found:
-			dirnames.append('/opt/pcbin/install')
-
-	# TODO: split into paths here:
-	# First we want a part that just gives (yield?) us the directories to travel through.
-	# Then we want a part that processes that directory and sets the rights
 
 	clientUserUid = pwd.getpwnam(_CLIENT_USER)[2]
 	opsiconfdUid = pwd.getpwnam(_OPSICONFD_USER)[2]
@@ -194,7 +160,50 @@ def setRights(path=u'/'):
 			setRightsOnSSHDirectory(clientUserUid, fileAdminGroupGid)
 
 
-def getDirectoriesToProcess():
+def getDirectoriesForProcessing(path):
+	basedir = os.path.abspath(path)
+	if not os.path.isdir(basedir):
+		basedir = os.path.dirname(basedir)
+
+	depotDir = ''
+	dirnames = getDirectoriesManagedByOpsi()
+	if not basedir.startswith(('/etc', '/tftpboot')):
+		try:
+			from OPSI.Backend.BackendManager import BackendManager
+			backend = BackendManager(
+				dispatchConfigFile=u'/etc/opsi/backendManager/dispatch.conf',
+				backendConfigDir=u'/etc/opsi/backends',
+				extensionConfigDir=u'/etc/opsi/backendManager/extend.d'
+			)
+			depot = backend.host_getObjects(type='OpsiDepotserver', id=getLocalFQDN())
+			backend.backend_exit()
+			if depot:
+				depot = depot[0]
+				depotUrl = depot.getDepotLocalUrl()
+				if not depotUrl.startswith('file:///'):
+					raise Exception(u"Bad repository local url '%s'" % depotUrl)
+
+				depotDir = depotUrl[7:]
+				if os.path.exists(depotDir):
+					logger.info(u"Local depot directory '%s' found" % depotDir)
+					dirnames.append(depotDir)
+		except Exception as e:
+			logger.error(e)
+
+	if basedir.startswith('/opt/pcbin/install'):
+		found = False
+		for dirname in dirnames:
+			if dirname.startswith('/opt/pcbin/install'):
+				found = True
+				break
+
+		if not found:
+			dirnames.append('/opt/pcbin/install')
+
+	return (dirnames, depotDir)
+
+
+def getDirectoriesManagedByOpsi():
 	if _isSLES():
 		return [u'/var/lib/tftpboot/opsi', u'/var/log/opsi', u'/etc/opsi',
 				u'/var/lib/opsi', u'/var/lib/opsi/workbench']
