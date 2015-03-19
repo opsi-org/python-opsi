@@ -46,7 +46,7 @@ logger = Logger()
 
 class SupervisionProtocol(ProcessProtocol):
 
-	def __init__(self, daemon, deferred = Deferred()):
+	def __init__(self, daemon, deferred=Deferred()):
 		self.daemon = daemon
 		self.deferred = deferred
 		self.pid = None
@@ -58,13 +58,13 @@ class SupervisionProtocol(ProcessProtocol):
 		d, self.deferred = self.deferred, Deferred()
 		d.callback(self.daemon)
 
-
 	def stop(self):
 		if self.transport.pid:
 			self.defer = Deferred()
 			self.transport.signalProcess(signal.SIGTERM)
 			reactor.callLater(30, self.kill)
 			return self.defer
+
 		return succeed(None)
 
 	def kill(self):
@@ -91,6 +91,7 @@ class SupervisionProtocol(ProcessProtocol):
 		elif self.defer is not None:
 			self.defer.callback(None)
 
+
 class OpsiDaemon(object):
 
 	script = None
@@ -98,8 +99,7 @@ class OpsiDaemon(object):
 	allowRestart = True
 	connector = OpsiProcessConnector
 
-	def __init__(self, args = [], reactor=reactor):
-
+	def __init__(self, args=[], reactor=reactor):
 		self._reactor = reactor
 		self._connector = self.connector(self.getSocket())
 
@@ -123,26 +123,25 @@ class OpsiDaemon(object):
 			self._uid, self._gid = None, None
 
 	def start(self):
-
 		d = Deferred()
 		self._process = SupervisionProtocol(self, d)
 		script = self.findScript()
 
 		args = [script]
-
 		args.extend([str(arg) for arg in self._args])
 
-		self._reactor.spawnProcess(self._process, script, args=args,
-					env=self._env, uid=self._uid, gid=self._gid,
-					childFDs=self._childFDs)
-		return d
-	def stop(self):
-		if not self._process:
-			d =  succeed(None)
-		else:
-			d = self._process.stop()
+		self._reactor.spawnProcess(self._process, script,
+			args=args, env=self._env, uid=self._uid, gid=self._gid,
+			childFDs=self._childFDs
+		)
 
 		return d
+
+	def stop(self):
+		if not self._process:
+			return succeed(None)
+		else:
+			return self._process.stop()
 
 	def findScript(self):
 		if self.script is None:
@@ -179,6 +178,7 @@ class OpsiDaemon(object):
 	def sendSignal(self, sig):
 		def _sendSignal(s):
 			self._process.transport.signalProcess(s)
+
 		d = self.isRunning()
 		d.addCallback(lambda x, s=sig: _sendSignal(s))
 
@@ -223,14 +223,11 @@ runOpsiService(sys.argv[-1],sys.argv[-2], sys.argv[-3])
 
 	script = sys.executable
 
-	def __init__(self, socket, args = [], reactor=reactor):
-
+	def __init__(self, socket, args=[], reactor=reactor):
 		args.extend([reactor.__module__, reflect.qual(self.configurationClass), reflect.qual(self.serviceClass)])
 		self.socket = socket
 
-		OpsiDaemon.__init__(	self,
-					args=["-c", self.MAIN] + args,
-					reactor=reactor)
+		OpsiDaemon.__init__(self, args=["-c", self.MAIN] + args, reactor=reactor)
 
 	def findScript(self):
 		return sys.executable
