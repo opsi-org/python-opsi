@@ -7,8 +7,9 @@ python-opsi (4.0.6.3-1) UNRELEASED; urgency=low
   * OPSI.Util.Task.Sudoers: Retrieve path to 'service' from the OS.
   * OPSI.Util.Task.Sudoers: Add single entry if missing.
   * Small changes in OPSI.Util.File.
+  * Less wildcard imports.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 13 Mar 2015 12:42:13 +0100
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 19 Mar 2015 12:02:20 +0100
 
 python-opsi (4.0.6.2-1) experimental; urgency=low
 
