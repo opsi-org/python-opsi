@@ -44,6 +44,24 @@ from OPSI.Logger import Logger, LOG_WARNING
 logger = Logger()
 
 
+def runOpsiService(serviceClass, configurationClass, reactorModule):
+	logger = Logger()
+	logger.setConsoleLevel(LOG_WARNING)
+	logger.setFileLevel(LOG_WARNING)
+	logger.setLogFormat('[%l] %M (%F|%N)')
+
+	from twisted.application.service import Application
+	from twisted.application.app import startApplication
+
+	config = reflect.namedAny(configurationClass)(sys.argv[1:-3])
+	service = reflect.namedAny(serviceClass)(config)
+	application = Application(service.__class__)
+	service.setServiceParent(application)
+	startApplication(application, False)
+
+	reactor.run()
+
+
 class SupervisionProtocol(ProcessProtocol):
 
 	def __init__(self, daemon, deferred=Deferred()):
@@ -185,24 +203,6 @@ class OpsiDaemon(object):
 
 	def getSocket(self):
 		return self.__class__.socket
-
-def runOpsiService(serviceClass, configurationClass, reactorModule):
-
-	logger = Logger()
-	logger.setConsoleLevel(LOG_WARNING)
-	logger.setFileLevel(LOG_WARNING)
-	logger.setLogFormat('[%l] %M (%F|%N)')
-
-	from twisted.application.service import Application
-	from twisted.application.app import startApplication
-
-	config = reflect.namedAny(configurationClass)(sys.argv[1:-3])
-	service = reflect.namedAny(serviceClass)(config)
-	application = Application(service.__class__)
-	service.setServiceParent(application)
-	startApplication(application, False)
-
-	reactor.run()
 
 
 class OpsiPyDaemon(OpsiDaemon):
