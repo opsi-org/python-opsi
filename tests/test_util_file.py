@@ -58,14 +58,16 @@ key = \;\;\;\;\;\;\;\;\;\;\;\;
 
 
 class ParseInfFileTestCase(unittest.TestCase):
-    def setUp(self):
+    @classmethod
+    def setUpClass(self):
         pathToConfig = os.path.join(os.path.dirname(__file__), 'testdata',
                                     'util', 'file', 'inf_testdata_8.inf')
         infFile = InfFile(pathToConfig)
         infFile.parse()
         self.devices = infFile.getDevices()
 
-    def tearDown(self):
+    @classmethod
+    def tearDownClass(self):
         del self.devices
 
     def testDevicesAreRead(self):
@@ -89,7 +91,8 @@ class CopySetupOemFileTestsMixin(object):
     )
     ORIGINAL_SETUP_FILE = None
 
-    def setUp(self):
+    @classmethod
+    def setUpClass(self):
         oemSetupFile = copyTestfileToTemporaryFolder(
             os.path.join(self.TEST_DATA_FOLDER, self.ORIGINAL_SETUP_FILE)
         )
@@ -97,7 +100,8 @@ class CopySetupOemFileTestsMixin(object):
         self.txtSetupOemFile = TxtSetupOemFile(oemSetupFile)
         self.txtSetupOemFile.parse()
 
-    def tearDown(self):
+    @classmethod
+    def tearDownClass(self):
         testDirectory = os.path.dirname(self.txtSetupOemFile.getFilename())
         if (os.path.exists(testDirectory)
             and (os.path.normpath(self.TEST_DATA_FOLDER) !=
