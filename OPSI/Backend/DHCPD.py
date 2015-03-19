@@ -30,14 +30,14 @@ the daemon afterwards.
 
 import socket
 import threading
-import os
 
 import OPSI.System as System
 from OPSI.Backend.Backend import OPSI_GLOBAL_CONF, ConfigDataBackend
 from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Logger import Logger
-from OPSI.Object import OpsiClient
+from OPSI.Object import OpsiClient, Host
 from OPSI.Types import forceBool, forceHostId, forceObjectClass, forceUnicode
+from OPSI.Types import BackendIOError
 from OPSI.Util.File import DHCPDConfFile
 from OPSI.Util import getfqdn
 
