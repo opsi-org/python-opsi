@@ -32,7 +32,7 @@ import time
 
 from OPSI.Logger import Logger
 from OPSI.Types import forceInt, forceUnicode, forceHostId
-from OPSI.Object import *
+from OPSI.Types import BackendMissingDataError
 from OPSI.Backend.Backend import ConfigDataBackend, JSONRPCBackend
 from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Util import getfqdn
