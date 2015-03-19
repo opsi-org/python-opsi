@@ -1,16 +1,48 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 
+# This module is part of the desktop management solution opsi
+# (open pc server integration) http://www.opsi.org
 
-import pwd, signal, re
+# Copyright (C) 2011-2015 uib GmbH
+
+# http://www.uib.de/
+
+# All rights reserved.
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""
+:copyright: uib GmbH <info@uib.de>
+:author: Christian Kampka
+:author: Jan Schneider <j.schneider@uib.de>
+:license: GNU Affero General Public License version 3
+"""
+
+import pwd
+import re
+import signal
+
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred, succeed
 from twisted.internet.protocol import ProcessProtocol
 from twisted.python import reflect
 
-
 from OPSI.Util.AMP import OpsiProcessConnector
+from OPSI.Logger import Logger
 
-from OPSI.Logger import *
 logger = Logger()
+
 
 class SupervisionProtocol(ProcessProtocol):
 
@@ -205,10 +237,3 @@ runOpsiService(sys.argv[-1],sys.argv[-2], sys.argv[-3])
 
 	def getSocket(self):
 		return self.socket
-
-
-
-
-
-
-
