@@ -101,8 +101,8 @@ class SupervisionProtocol(ProcessProtocol):
 				logMessage = match.group(2)
 				logger.log(logLevel, '[worker %s] %s' % (self.pid, logMessage))
 				return
-			except Exception as e:
-				logger.error(e)
+			except Exception as error:
+				logger.error(error)
 		logger.warning(data)
 
 	def processEnded(self, reason):
