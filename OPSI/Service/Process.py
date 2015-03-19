@@ -29,9 +29,11 @@
 :license: GNU Affero General Public License version 3
 """
 
+import os
 import pwd
 import re
 import signal
+import sys
 
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred, succeed
