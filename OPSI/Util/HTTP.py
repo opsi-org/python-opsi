@@ -47,6 +47,7 @@ import ssl as ssl_module
 from OpenSSL import crypto
 
 from OPSI.Types import forceBool, forceFilename, forceInt, forceUnicode, forceUnicodeLower
+from OPSI.Types import OpsiTimeoutError, OpsiServiceVerificationError
 from OPSI.Logger import LOG_DEBUG, LOG_INFO, Logger
 from OPSI.Util import encryptWithPublicKeyFromX509CertificatePEMFile, randomString
 logger = Logger()

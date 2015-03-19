@@ -38,6 +38,7 @@ import time
 import types
 import threading
 import zlib
+from hashlib import md5
 from Queue import Queue, Empty
 from twisted.conch.ssh import keys
 from sys import version_info

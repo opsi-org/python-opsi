@@ -57,7 +57,7 @@ elif os.name == 'nt':
 
 import OPSI.System
 from OPSI.Logger import Logger
-from OPSI.Object import *
+from OPSI.Object import BoolProductProperty, LocalbootProduct, NetbootProduct, Product, ProductDependency, ProductProperty, UnicodeProductProperty
 from OPSI.Types import (BackendBadValueError, OpsiBackupBackendNotFound,
 	OpsiBackupFileError, OpsiBackupFileNotFound, forceActionRequest, forceBool,
 	forceDictList, forceFilename, forceHostId, forceInstallationStatus,
@@ -69,7 +69,7 @@ from OPSI.Types import (BackendBadValueError, OpsiBackupBackendNotFound,
 from OPSI.Util.File import ConfigFile, IniFile, TextFile, requiresParsing
 from OPSI.Util import md5sum, toJson, fromJson
 
-__version__ = '4.0.6.1'
+__version__ = '4.0.6.3'
 
 logger = Logger()
 
