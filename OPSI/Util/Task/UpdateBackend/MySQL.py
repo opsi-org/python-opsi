@@ -178,25 +178,28 @@ def updateMySQLBackend(backendConfigFile=u'/etc/opsi/backends/mysql.conf',
 				if res.get('vendorId'):
 					try:
 						forceHardwareVendorId(res['vendorId'])
-					except:
+					except Exception:
 						logger.warning(u"Dropping bad vendorId '%s'" % res['vendorId'])
 						mysql.execute(u"update %s set `vendorId`=NULL where `vendorId`='%s';" % (key, res['vendorId']))
+
 				if res.get('subsystemVendorId'):
 					try:
 						forceHardwareVendorId(res['subsystemVendorId'])
-					except:
+					except Exception:
 						logger.warning(u"Dropping bad subsystemVendorId id '%s'" % res['subsystemVendorId'])
 						mysql.execute(u"update %s set `subsystemVendorId`=NULL where `subsystemVendorId`='%s';" % (key, res['subsystemVendorId']))
+
 				if res.get('deviceId'):
 					try:
 						forceHardwareDeviceId(res['deviceId'])
-					except:
+					except Exception:
 						logger.warning(u"Dropping bad deviceId '%s'" % res['deviceId'])
 						mysql.execute(u"update %s set `deviceId`=NULL where `deviceId`='%s';" % (key, res['deviceId']))
+
 				if res.get('subsystemDeviceId'):
 					try:
 						forceHardwareDeviceId(res['subsystemDeviceId'])
-					except:
+					except Exception:
 						logger.warning(u"Dropping bad subsystemDeviceId '%s'" % res['subsystemDeviceId'])
 						mysql.execute(u"update %s set `subsystemDeviceId`=NULL where `subsystemDeviceId`='%s';" % (key, res['subsystemDeviceId']))
 
