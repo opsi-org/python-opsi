@@ -37,7 +37,7 @@ from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Logger import Logger
 from OPSI.Object import OpsiClient, Host
 from OPSI.Types import forceBool, forceDict, forceHostId, forceObjectClass, forceUnicode
-from OPSI.Types import BackendIOError
+from OPSI.Types import BackendIOError, BackendBadValueError, BackendMissingDataError
 from OPSI.Util.File import DHCPDConfFile
 from OPSI.Util import getfqdn
 
