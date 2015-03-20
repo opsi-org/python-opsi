@@ -132,7 +132,7 @@ def setRights(path=u'/'):
 			startPath = basedir
 
 		logger.notice(u"Setting rights on directory '%s'" % startPath)
-		logger.debug2(u"Current setting: startPath={0}, uid={1}, gid={1}".format(startPath, uid, gid))
+		logger.debug2(u"Current setting: startPath={path}, uid={uid}, gid={gid}".format(path=startPath, uid=uid, gid=gid))
 		os.chown(startPath, uid, gid)
 		os.chmod(startPath, dmod)
 		for filepath in findFiles(startPath, prefix=startPath, returnLinks=correctLinks, excludeFile=re.compile("(.swp|~)$")):
