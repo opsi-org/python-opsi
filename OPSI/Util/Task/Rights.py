@@ -79,11 +79,11 @@ def getLocalFQDN():
 def setRights(path=u'/'):
 	logger.notice(u"Setting rights on '{0}'".format(path))
 
-	(directories, depotDir) = getDirectoriesForProcessing(path)
-
 	basedir = os.path.abspath(path)
 	if not os.path.isdir(basedir):
 		basedir = os.path.dirname(basedir)
+
+	(directories, depotDir) = getDirectoriesForProcessing(path)
 
 	clientUserUid = pwd.getpwnam(_CLIENT_USER)[2]
 	opsiconfdUid = pwd.getpwnam(_OPSICONFD_USER)[2]
