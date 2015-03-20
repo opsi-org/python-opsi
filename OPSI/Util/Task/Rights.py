@@ -90,7 +90,7 @@ def setRights(path=u'/'):
 	adminGroupGid = grp.getgrnam(_ADMIN_GROUP)[2]
 	fileAdminGroupGid = grp.getgrnam(_FILE_ADMIN_GROUP)[2]
 
-	for dirname in removeDuplicatesFromDirectories(dirnames):
+	for dirname in removeDuplicatesFromDirectories(directories):
 		if not dirname.startswith(basedir) and not basedir.startswith(dirname):
 			continue
 		uid = opsiconfdUid
