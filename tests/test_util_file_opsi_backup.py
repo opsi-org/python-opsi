@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014 uib GmbH <info@uib.de>
+# Copyright (C) 2014-2015 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -41,7 +41,7 @@ from OPSI.Util import randomString
 
 class BackendArchiveTestCase(unittest.TestCase):
     def setUp(self):
-        self._tempDir = tempfile.gettempdir()
+        self._tempDir = tempfile.mkdtemp()
 
     def tearDown(self):
         try:
@@ -49,6 +49,9 @@ class BackendArchiveTestCase(unittest.TestCase):
                 os.remove(self.archive.name)
         except AttributeError:
             pass
+
+        if os.path.exists(self._tempDir):
+            shutil.rmtree(self._tempDir)
 
     def createArchive(self, **kwargs):
         """
