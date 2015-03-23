@@ -116,7 +116,16 @@ def setRights(path=u'/'):
 
 		if os.path.isfile(path):
 			logger.debug(u"Setting ownership to {user}:{group} on file '{file}'".format(file=path, user=uid, group=gid))
-			os.chown(path, uid, gid)
+			try:
+				os.chown(path, uid, gid)
+			except OSError as fist:
+				if os.getuid() == 0:
+					# We are root so something must be really wrong!
+					raise fist
+
+				logger.warning(u"Failed to set ownership on '{file}': {error}".format(file=path, error=fist))
+				logger.notice(u"Please try setting the rights as root.")
+
 			logger.debug(u"Setting rights on file '%s'" % path)
 			if isProduct:
 				os.chmod(path, (os.stat(path)[0] | 0660) & 0770)
