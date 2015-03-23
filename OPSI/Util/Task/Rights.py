@@ -116,15 +116,7 @@ def setRights(path=u'/'):
 
 		if os.path.isfile(path):
 			logger.debug(u"Setting ownership to {user}:{group} on file '{file}'".format(file=path, user=uid, group=gid))
-			try:
-				os.chown(path, uid, gid)
-			except OSError as fist:
-				if os.getuid() == 0:
-					# We are root so something must be really wrong!
-					raise fist
-
-				logger.warning(u"Failed to set ownership on '{file}': {error}".format(file=path, error=fist))
-				logger.notice(u"Please try setting the rights as root.")
+			chown(path, uid, gid)
 
 			logger.debug(u"Setting rights on file '%s'" % path)
 			if isProduct:
@@ -142,11 +134,11 @@ def setRights(path=u'/'):
 
 		logger.notice(u"Setting rights on directory '%s'" % startPath)
 		logger.debug2(u"Current setting: startPath={path}, uid={uid}, gid={gid}".format(path=startPath, uid=uid, gid=gid))
-		os.chown(startPath, uid, gid)
+		chown(startPath, uid, gid)
 		os.chmod(startPath, dmod)
 		for filepath in findFiles(startPath, prefix=startPath, returnLinks=correctLinks, excludeFile=re.compile("(.swp|~)$")):
 			logger.debug(u"Setting ownership to {user}:{group} on '{file}'".format(file=filepath, user=uid, group=gid))
-			os.chown(filepath, uid, gid)
+			chown(filepath, uid, gid)
 			if os.path.isdir(filepath):
 				logger.debug(u"Setting rights on directory '%s'" % filepath)
 				os.chmod(filepath, dmod)
@@ -271,6 +263,28 @@ def removeDuplicatesFromDirectories(directories):
 
 	logger.debug("Final folder collection: {0}".format(folders))
 	return folders
+
+
+def chown(path, uid, gid):
+	"""
+	Set the ownership of a file or folder.
+
+	If changing the owner fails an Exception will only be risen if the
+	current uid is 0 - we are root.
+	In all other cases only a warning is shown.
+	"""
+	try:
+		os.chown(path, uid, gid)
+	except OSError as fist:
+		if os.getuid() == 0:
+			# We are root so something must be really wrong!
+			raise fist
+
+		logger.warning(u"Failed to set ownership on '{file}': {error}".format(
+			file=path,
+			error=fist
+		))
+		logger.notice(u"Please try setting the rights as root.")
 
 
 def setRightsOnSSHDirectory(userId, groupId, path=u'/var/lib/opsi/.ssh'):
