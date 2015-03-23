@@ -52,7 +52,7 @@ from OPSI.Util.File.Opsi import OpsiConfFile
 
 __version__ = '4.0.6.3'
 
-logger = Logger()
+LOGGER = Logger()
 
 _OPSICONFD_USER = u'opsiconfd'
 _ADMIN_GROUP = u'opsiadmin'
@@ -82,7 +82,7 @@ def getLocalFQDN():
 
 
 def setRights(path=u'/'):
-	logger.notice(u"Setting rights on '{0}'".format(path))
+	LOGGER.notice(u"Setting rights on '{0}'".format(path))
 
 	basedir = os.path.abspath(path)
 	if not os.path.isdir(basedir):
@@ -108,7 +108,7 @@ def setRights(path=u'/'):
 			u'/var/lib/tftpboot/opsi', u'/tftpboot/linux', u'/var/log/opsi',
 			u'/etc/opsi', u'/var/lib/opsi', u'/var/lib/opsi/workbench'
 		)
-		logger.debug("Assuming product folder? {0}".format(isProduct))
+		LOGGER.debug("Assuming product folder? {0}".format(isProduct))
 
 		if dirname in (u'/var/lib/tftpboot/opsi', u'/tftpboot/linux'):
 			fmod = 0664
@@ -121,10 +121,10 @@ def setRights(path=u'/'):
 			dmod = 02770
 
 		if os.path.isfile(path):
-			logger.debug(u"Setting ownership to {user}:{group} on file '{file}'".format(file=path, user=uid, group=gid))
+			LOGGER.debug(u"Setting ownership to {user}:{group} on file '{file}'".format(file=path, user=uid, group=gid))
 			chown(path, uid, gid)
 
-			logger.debug(u"Setting rights on file '%s'" % path)
+			LOGGER.debug(u"Setting rights on file '%s'" % path)
 			if isProduct:
 				os.chmod(path, (os.stat(path)[0] | 0660) & 0770)
 			else:
@@ -138,27 +138,27 @@ def setRights(path=u'/'):
 		if dirname == depotDir:
 			dmod = 02770
 
-		logger.notice(u"Setting rights on directory '%s'" % startPath)
-		logger.debug2(u"Current setting: startPath={path}, uid={uid}, gid={gid}".format(path=startPath, uid=uid, gid=gid))
+		LOGGER.notice(u"Setting rights on directory '%s'" % startPath)
+		LOGGER.debug2(u"Current setting: startPath={path}, uid={uid}, gid={gid}".format(path=startPath, uid=uid, gid=gid))
 		chown(startPath, uid, gid)
 		os.chmod(startPath, dmod)
 		for filepath in findFiles(startPath, prefix=startPath, returnLinks=correctLinks, excludeFile=re.compile("(.swp|~)$")):
-			logger.debug(u"Setting ownership to {user}:{group} on '{file}'".format(file=filepath, user=uid, group=gid))
+			LOGGER.debug(u"Setting ownership to {user}:{group} on '{file}'".format(file=filepath, user=uid, group=gid))
 			chown(filepath, uid, gid)
 			if os.path.isdir(filepath):
-				logger.debug(u"Setting rights on directory '%s'" % filepath)
+				LOGGER.debug(u"Setting rights on directory '%s'" % filepath)
 				os.chmod(filepath, dmod)
 			elif os.path.isfile(filepath):
-				logger.debug(u"Setting rights on file '%s'" % filepath)
+				LOGGER.debug(u"Setting rights on file '%s'" % filepath)
 				if isProduct:
 					if os.path.basename(filepath) in KNOWN_EXECUTABLES:
-						logger.debug(u"Setting rights on special file '{0}'".format(filepath))
+						LOGGER.debug(u"Setting rights on special file '{0}'".format(filepath))
 						os.chmod(filepath, 0770)
 					else:
-						logger.debug(u"Setting rights on file '{0}'".format(filepath))
+						LOGGER.debug(u"Setting rights on file '{0}'".format(filepath))
 						os.chmod(filepath, (os.stat(filepath)[0] | 0660) & 0770)
 				else:
-					logger.debug(u"Setting rights {rights} on file '{file}'".format(file=filepath, rights=fmod))
+					LOGGER.debug(u"Setting rights {rights} on file '{file}'".format(file=filepath, rights=fmod))
 					os.chmod(filepath, fmod)
 
 		if startPath.startswith(u'/var/lib/opsi'):
@@ -192,10 +192,10 @@ def getDirectoriesForProcessing(path):
 
 				depotDir = depotUrl[7:]
 				if os.path.exists(depotDir):
-					logger.info(u"Local depot directory '%s' found" % depotDir)
+					LOGGER.info(u"Local depot directory '%s' found" % depotDir)
 					dirnames.append(depotDir)
 		except Exception as e:
-			logger.error(e)
+			LOGGER.error(e)
 
 	if basedir.startswith('/opt/pcbin/install'):
 		found = False
@@ -248,26 +248,26 @@ def removeDuplicatesFromDirectories(directories):
 		folder = os.path.realpath(folder)
 
 		if not folders:
-			logger.debug("Initial fill for folders with: {0}".format(folder))
+			LOGGER.debug("Initial fill for folders with: {0}".format(folder))
 			folders.add(folder)
 			continue
 
 		for alreadyAddedFolder in folders.copy():
 			if folder == alreadyAddedFolder:
-				logger.debug("Already existing folder: {0}".format(folder))
+				LOGGER.debug("Already existing folder: {0}".format(folder))
 				continue
 			elif alreadyAddedFolder.startswith(folder):
-				logger.debug("{0} in {1}. Removing {1}, adding {0}".format(folder, alreadyAddedFolder))
+				LOGGER.debug("{0} in {1}. Removing {1}, adding {0}".format(folder, alreadyAddedFolder))
 				folders.remove(alreadyAddedFolder)
 				folders.add(folder)
 			elif folder.startswith(alreadyAddedFolder):
-				logger.debug("{1} in {0}. Ignoring.".format(folder, alreadyAddedFolder))
+				LOGGER.debug("{1} in {0}. Ignoring.".format(folder, alreadyAddedFolder))
 				continue
 			else:
-				logger.debug("New folder: {0}".format(folder))
+				LOGGER.debug("New folder: {0}".format(folder))
 				folders.add(folder)
 
-	logger.debug("Final folder collection: {0}".format(folders))
+	LOGGER.debug("Final folder collection: {0}".format(folders))
 	return folders
 
 
@@ -286,11 +286,11 @@ def chown(path, uid, gid):
 			# We are root so something must be really wrong!
 			raise fist
 
-		logger.warning(u"Failed to set ownership on '{file}': {error}".format(
+		LOGGER.warning(u"Failed to set ownership on '{file}': {error}".format(
 			file=path,
 			error=fist
 		))
-		logger.notice(u"Please try setting the rights as root.")
+		LOGGER.notice(u"Please try setting the rights as root.")
 
 
 def setRightsOnSSHDirectory(userId, groupId, path=u'/var/lib/opsi/.ssh'):
