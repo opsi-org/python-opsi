@@ -9,6 +9,8 @@ python-opsi (4.0.6.3-1) UNRELEASED; urgency=low
   * Small changes in OPSI.Util.File.
   * Less wildcard imports.
   * Refactoring in OPSI.Util.Task.Rights
+  * OPSI.Util.Task.Rights will fail without raising an error if chown
+    is not possible.
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 19 Mar 2015 16:29:15 +0100
 
