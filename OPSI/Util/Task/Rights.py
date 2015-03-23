@@ -145,7 +145,7 @@ def setRights(path=u'/'):
 		os.chown(startPath, uid, gid)
 		os.chmod(startPath, dmod)
 		for filepath in findFiles(startPath, prefix=startPath, returnLinks=correctLinks, excludeFile=re.compile("(.swp|~)$")):
-			logger.debug(u"Setting ownership to {user}:{group} on file '{file}'".format(file=filepath, user=uid, group=gid))
+			logger.debug(u"Setting ownership to {user}:{group} on '{file}'".format(file=filepath, user=uid, group=gid))
 			os.chown(filepath, uid, gid)
 			if os.path.isdir(filepath):
 				logger.debug(u"Setting rights on directory '%s'" % filepath)
