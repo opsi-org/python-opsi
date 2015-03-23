@@ -29,6 +29,11 @@ provides helpers for this task.
 .. versionadded:: 4.0.6.1
 
 
+.. versionchanged:: 4.0.6.3
+
+	Added function :py:func:`chown`.
+
+
 :copyright:  uib GmbH <info@uib.de>
 :author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
