@@ -114,9 +114,6 @@ def setRights(path=u'/'):
 			uid = -1
 			dmod = 02770
 
-		if dirname == depotDir:
-			dmod = 02770
-
 		if os.path.isfile(path):
 			logger.debug(u"Setting ownership to {user}:{group} on file '{file}'".format(file=path, user=uid, group=gid))
 			os.chown(path, uid, gid)
@@ -130,6 +127,9 @@ def setRights(path=u'/'):
 		startPath = dirname
 		if basedir.startswith(dirname):
 			startPath = basedir
+
+		if dirname == depotDir:
+			dmod = 02770
 
 		logger.notice(u"Setting rights on directory '%s'" % startPath)
 		logger.debug2(u"Current setting: startPath={path}, uid={uid}, gid={gid}".format(path=startPath, uid=uid, gid=gid))
