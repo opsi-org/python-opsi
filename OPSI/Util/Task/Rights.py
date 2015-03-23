@@ -103,6 +103,7 @@ def setRights(path=u'/'):
 			u'/var/lib/tftpboot/opsi', u'/tftpboot/linux', u'/var/log/opsi',
 			u'/etc/opsi', u'/var/lib/opsi', u'/var/lib/opsi/workbench'
 		)
+		logger.debug("Assuming product folder? {0}".format(isProduct))
 
 		if dirname in (u'/var/lib/tftpboot/opsi', u'/tftpboot/linux'):
 			fmod = 0664
