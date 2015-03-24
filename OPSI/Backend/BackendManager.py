@@ -519,7 +519,7 @@ class BackendAccessControl(object):
 		self._acl = None
 		self._aclFile = None
 		self._pamService = 'common-auth'
-		self._userGroups = []
+		self._userGroups = set()
 		self._forceGroups = None
 		self._host = None
 		self._authenticated = False
@@ -686,7 +686,7 @@ class BackendAccessControl(object):
 		try:
 			win32security.LogonUser(self._username, 'None', self._password, win32security.LOGON32_LOGON_NETWORK, win32security.LOGON32_PROVIDER_DEFAULT)
 			if self._forceGroups is not None:
-				self._userGroups = self._forceGroups
+				self._userGroups = set(self._forceGroups)
 				logger.info(u"Forced groups for user '%s': %s" % (self._username, self._userGroups))
 			else:
 				gresume = 0
@@ -700,7 +700,7 @@ class BackendAccessControl(object):
 							for sid in (u['sid'] for u in users):
 								(username, domain, type) = win32security.LookupAccountSid(None, sid)
 								if (username.lower() == self._username.lower()):
-									self._userGroups.append(groupname)
+									self._userGroups.add(groupname)
 									logger.debug(u"User '%s' is member of group '%s'" % (self._username, groupname))
 							if (uresume == 0):
 								break
@@ -758,18 +758,15 @@ class BackendAccessControl(object):
 			auth.acct_mgmt()
 
 			if self._forceGroups is not None:
-				self._userGroups = self._forceGroups
+				self._userGroups = set(self._forceGroups)
 				logger.info(u"Forced groups for user '%s': %s" % (self._username, self._userGroups))
 			else:
-				self._userGroups = [forceUnicode(grp.getgrgid(pwd.getpwnam(self._username)[3])[0])]
-				logger.debug(u"Primary group of user '%s' is '%s'" % (self._username, self._userGroups[0]))
-				groups = grp.getgrall()
-				for group in groups:
-					if self._username in group[3]:
-						gn = forceUnicode(group[0])
-						if gn not in self._userGroups:
-							self._userGroups.append(gn)
-							logger.debug(u"User '%s' is member of group '%s'" % (self._username, gn))
+				primaryGroup = forceUnicode(grp.getgrgid(pwd.getpwnam(self._username)[3])[0])
+				logger.debug(u"Primary group of user '{0}' is '{1}'".format(self._username, primaryGroup))
+
+				self._userGroups = set(forceUnicode(group[0]) for group in grp.getgrall() if self._username in group[3])
+				self._userGroups.add(primaryGroup)
+				logger.debug(u"User '{0}' is member of groups: {1}".format(self._username, self._userGroups))
 		except Exception as e:
 			raise BackendAuthenticationError(u"PAM authentication failed for user '%s': %s" % (self._username, e))
 
