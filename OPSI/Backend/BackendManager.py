@@ -668,14 +668,11 @@ class BackendAccessControl(object):
 
 		:raises BackendAuthenticationError: If authentication fails.
 		'''
-		if (os.name == 'posix'):
-			# Posix os => authenticate by PAM
+		if os.name == 'posix':
 			self._pamAuthenticateUser()
-		elif (os.name == 'nt'):
-			# NT os => authenticate by windows-login
+		elif os.name == 'nt':
 			self._winAuthenticateUser()
 		else:
-			# Other os, not implemented yet
 			raise NotImplementedError("Sorry, operating system '%s' not supported yet!" % os.name)
 
 	def _winAuthenticateUser(self):
@@ -710,7 +707,6 @@ class BackendAccessControl(object):
 						if (gresume == 0):
 							break
 		except Exception as e:
-			# Something failed => raise authentication error
 			raise BackendAuthenticationError(u"Win32security authentication failed for user '%s': %s" % (self._username, e))
 
 	def _pamAuthenticateUser(self):
