@@ -1417,7 +1417,8 @@ class DHCPDConf_Component(object):
 		return self.getShifting()
 
 	def __unicode__(self):
-		return u'<%s line %d-%d>' % (self.__class__.__name__, self.startLine, self.endLine)
+		return u'<{0}({1:d}, {2})>'.format(
+			self.__class__.__name__, self.startLine, self.endLine)
 
 	def __str__(self):
 		return self.__unicode__().encode("ascii", "replace")

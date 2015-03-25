@@ -203,7 +203,9 @@ class OrderRequirement(object):
 		self.fulfilled = forceBool(fulfilled)
 
 	def __unicode__(self):
-		return u"<OrderRequirement prior '%s', posterior '%s', fulfilled '%s'>" % (self.prior, self.posterior, self.fulfilled)
+		return (u"<OrderRequirement(prior='{prio}', posterior='{post}', "
+				u"fulfilled='{ful}'>".format(
+					prio=self.prior, post=self.posterior, ful=self.fulfilled))
 
 	def __str__(self):
 		return self.__unicode__().encode("ascii", "replace")

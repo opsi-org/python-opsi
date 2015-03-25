@@ -599,7 +599,7 @@ class RemoteService(Service, JSONRPCBackend):
 		return self.licensePools
 
 	def __unicode__(self):
-		return u"<RemoteService {0}>".format(self.url)
+		return u"<RemoteService({0})>".format(self.url)
 
 	def __str__(self):
 		return self.__unicode__().encode("ascii", "replace")

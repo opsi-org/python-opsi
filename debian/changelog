@@ -13,8 +13,9 @@ python-opsi (4.0.6.3-1) UNRELEASED; urgency=low
     is not possible.
   * OPSI.Backend.BackendManager: refactored reading groups of user to be
     faster for large environments.
+  * Many objects now have proper representations.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 24 Mar 2015 12:31:47 +0100
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 25 Mar 2015 16:58:32 +0100
 
 python-opsi (4.0.6.2-1) experimental; urgency=low
 
