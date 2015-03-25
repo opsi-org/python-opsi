@@ -590,12 +590,10 @@ class BackendAccessControl(object):
 				if not self._host.opsiHostKey:
 					raise Exception(u"OpsiHostKey not found for host '%s'" % self._username)
 
-				logger.confidential(u"Client '%s', key sent '%s', key stored '%s'" \
-						% (self._username, self._password, self._host.opsiHostKey))
+				logger.confidential(u"Client '%s', key sent '%s', key stored '%s'" % (self._username, self._password, self._host.opsiHostKey))
 
-				if (self._password != self._host.opsiHostKey):
-					raise BackendAuthenticationError(u"OpsiHostKey authentication failed for host '%s': wrong key" \
-										% self._host.id)
+				if self._password != self._host.opsiHostKey:
+					raise BackendAuthenticationError(u"OpsiHostKey authentication failed for host '%s': wrong key" % self._host.id)
 
 				logger.info(u"OpsiHostKey authentication successful for host '%s'" % self._host.id)
 			else:
@@ -603,8 +601,7 @@ class BackendAccessControl(object):
 				logger.debug(u"Trying to authenticate by operating system...")
 				self._authenticateUser()
 				# Authentication did not throw exception => authentication successful
-				logger.info(u"Operating system authentication successful for user '%s', groups '%s'" \
-									% (self._username, ','.join(self._userGroups)))
+				logger.info(u"Operating system authentication successful for user '%s', groups '%s'" % (self._username, ','.join(self._userGroups)))
 		except Exception as e:
 			raise BackendAuthenticationError(u"%s" % e)
 
@@ -699,12 +696,12 @@ class BackendAccessControl(object):
 							(users, total, uresume) = win32net.NetLocalGroupGetMembers(None, groupname, 0, uresume)
 							for sid in (u['sid'] for u in users):
 								(username, domain, type) = win32security.LookupAccountSid(None, sid)
-								if (username.lower() == self._username.lower()):
+								if username.lower() == self._username.lower():
 									self._userGroups.add(groupname)
 									logger.debug(u"User '%s' is member of group '%s'" % (self._username, groupname))
-							if (uresume == 0):
+							if uresume == 0:
 								break
-						if (gresume == 0):
+						if gresume == 0:
 							break
 		except Exception as e:
 			raise BackendAuthenticationError(u"Win32security authentication failed for user '%s': %s" % (self._username, e))
@@ -828,17 +825,17 @@ class BackendAccessControl(object):
 				aclType = entry.get('type')
 				ids = entry.get('ids', [])
 				newGranted = False
-				if (aclType == 'all'):
+				if aclType == 'all':
 					newGranted = True
-				elif (aclType == 'opsi_depotserver'):
+				elif aclType == 'opsi_depotserver':
 					newGranted = self._isOpsiDepotserver(ids)
-				elif (aclType == 'opsi_client'):
+				elif aclType == 'opsi_client':
 					newGranted = self._isOpsiClient(ids)
-				elif (aclType == 'sys_group'):
+				elif aclType == 'sys_group':
 					newGranted = self._isMemberOfGroup(ids)
-				elif (aclType == 'sys_user'):
+				elif aclType == 'sys_user':
 					newGranted = self._isUser(ids)
-				elif (aclType == 'self'):
+				elif aclType == 'self':
 					newGranted = 'partial_object'
 				else:
 					logger.error(u"Unhandled acl entry type: %s" % aclType)
@@ -847,19 +844,19 @@ class BackendAccessControl(object):
 				if newGranted is False:
 					continue
 
-				if (entry.get('denyAttributes') or entry.get('allowAttributes')):
+				if entry.get('denyAttributes') or entry.get('allowAttributes'):
 					newGranted = 'partial_attributes'
 
 				if newGranted:
 					acls.append(entry)
 					granted = newGranted
+
 				if granted is True:
 					break
-			# if granted:
 			break
 
 		logger.info("Method: %s, using acls: %s" % (methodName, acls))
-		if   granted is True:
+		if granted is True:
 			logger.debug(u"Full access to method '%s' granted to user '%s' by acl %s" % (methodName, self._username, acls[0]))
 			newKwargs = kwargs
 		elif granted is False:
@@ -892,14 +889,14 @@ class BackendAccessControl(object):
 		for (key, value) in params.items():
 			isList = type(value) is list
 			valueList = forceList(value)
-			if (len(valueList) == 0):
+			if len(valueList) == 0:
 				continue
 			if issubclass(valueList[0].__class__, BaseObject) or type(valueList[0]) is types.DictType:
 				valueList = self._filterObjects(valueList, acls, exceptionOnTruncate=False)
 				if isList:
 					params[key] = valueList
 				else:
-					if (len(valueList) > 0):
+					if len(valueList) > 0:
 						params[key] = valueList[0]
 					else:
 						del params[key]
@@ -914,7 +911,7 @@ class BackendAccessControl(object):
 				if isList:
 					return resultList
 				else:
-					if (len(resultList) > 0):
+					if len(resultList) > 0:
 						return resultList[0]
 					else:
 						return None
@@ -939,7 +936,7 @@ class BackendAccessControl(object):
 							objectId = objHash[identifier]
 							break
 
-					if not objectId or (objectId != self._username):
+					if not objectId or objectId != self._username:
 						continue
 
 				if acl.get('allowAttributes'):
@@ -982,7 +979,7 @@ class BackendAccessControl(object):
 def backendManagerFactory(user, password, dispatchConfigFile, backendConfigDir,
 				extensionConfigDir, aclFile, depotId, postpath, context, **kwargs):
 	backendManager = None
-	if (len(postpath) == 2) and (postpath[0] == 'backend'):
+	if len(postpath) == 2 and postpath[0] == 'backend':
 		backendManager = BackendManager(
 			backend=postpath[1],
 			accessControlContext=context,
@@ -992,7 +989,7 @@ def backendManagerFactory(user, password, dispatchConfigFile, backendConfigDir,
 			password=password,
 			**kwargs
 		)
-	elif (len(postpath) == 2) and (postpath[0] == 'extend'):
+	elif len(postpath) == 2 and postpath[0] == 'extend':
 		extendPath = postpath[1]
 		if not re.search('^[a-zA-Z0-9\_\-]+$', extendPath):
 			raise ValueError(u"Extension config path '%s' refused" % extendPath)
