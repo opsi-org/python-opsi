@@ -71,22 +71,22 @@ def mandatoryConstructorArgs(Class):
 		return mandatory
 
 
-def getIdentAttributes(Class):
-	return tuple(mandatoryConstructorArgs(Class))
+def getIdentAttributes(klass):
+	return tuple(mandatoryConstructorArgs(klass))
 
 
-def getForeignIdAttributes(Class):
-	return Class.foreignIdAttributes
+def getForeignIdAttributes(klass):
+	return klass.foreignIdAttributes
 
 
-def getPossibleClassAttributes(Class):
+def getPossibleClassAttributes(klass):
 	"""
 	Returns the possible attributes of a class.
 
 	:returntype: set of strings
 	"""
-	attributes = inspect.getargspec(Class.__init__)[0]
-	for subClass in Class.subClasses.values():
+	attributes = inspect.getargspec(klass.__init__)[0]
+	for subClass in klass.subClasses.values():
 		attributes.extend(inspect.getargspec(subClass.__init__)[0])
 
 	attributes = set(attributes)
@@ -100,24 +100,24 @@ def getPossibleClassAttributes(Class):
 	return attributes
 
 
-def getBackendMethodPrefix(Class):
-	return Class.backendMethodPrefix
+def getBackendMethodPrefix(klass):
+	return klass.backendMethodPrefix
 
 
-def decodeIdent(Class, hash):
+def decodeIdent(klass, hash):
 	try:
 		if hash['ident']:
 			if isinstance(hash['ident'], dict):
 				ident = hash['ident']
 			else:
 				if isinstance(hash['ident'], (str, unicode)):
-					identValues = hash['ident'].split(Class.identSeparator)
+					identValues = hash['ident'].split(klass.identSeparator)
 				elif isinstance(hash['ident'], (tuple, list)):
 					identValues = hash['ident']
 				else:
 					identValues = []
 
-				args = mandatoryConstructorArgs(Class)
+				args = mandatoryConstructorArgs(klass)
 				if len(identValues) == len(args):
 					ident = dict(zip(args, identValues))
 
