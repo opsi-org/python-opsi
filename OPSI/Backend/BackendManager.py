@@ -665,7 +665,8 @@ class BackendAccessControl(object):
 	def _authenticateUser(self):
 		'''
 		Authenticate a user by the underlying operating system.
-		Throws BackendAuthenticationError on failure.
+
+		:raises BackendAuthenticationError: If authentication fails.
 		'''
 		if (os.name == 'posix'):
 			# Posix os => authenticate by PAM
@@ -680,6 +681,8 @@ class BackendAccessControl(object):
 	def _winAuthenticateUser(self):
 		'''
 		Authenticate a user by Windows-Login on current machine
+
+		:raises BackendAuthenticationError: If authentication fails.
 		'''
 		logger.confidential(u"Trying to authenticate user '%s' with password '%s' by win32security" % (self._username, self._password))
 
@@ -715,6 +718,8 @@ class BackendAccessControl(object):
 		Authenticate a user by PAM (Pluggable Authentication Modules).
 		Important: the uid running this code needs access to /etc/shadow
 		if os uses traditional unix authentication mechanisms.
+
+		:raises BackendAuthenticationError: If authentication fails.
 		'''
 		logger.confidential(u"Trying to authenticate user '%s' with password '%s' by PAM" % (self._username, self._password))
 
