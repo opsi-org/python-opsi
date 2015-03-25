@@ -51,13 +51,13 @@ from OPSI.Util import fromJson, toJson, generateOpsiHostKey, timestamp
 __version__ = '4.0.6.3'
 
 logger = Logger()
+_MANDATORY_CONSTRUCTOR_ARGS_CACHE = {}
 
 
-mandatoryConstructorArgsCache = {}
 def mandatoryConstructorArgs(Class):
 	cacheKey = Class.__name__
 	try:
-		return mandatoryConstructorArgsCache[cacheKey]
+		return _MANDATORY_CONSTRUCTOR_ARGS_CACHE[cacheKey]
 	except KeyError:
 		(args, varargs, varkwargs, defaults) = inspect.getargspec(Class.__init__)
 		if not defaults:
@@ -67,7 +67,7 @@ def mandatoryConstructorArgs(Class):
 			last = len(args)
 		mandatory = args[1:][:last]
 		logger.debug2(u"mandatoryConstructorArgs for %s: %s" % (Class.__class__, mandatory))
-		mandatoryConstructorArgsCache[cacheKey] = mandatory
+		_MANDATORY_CONSTRUCTOR_ARGS_CACHE[cacheKey] = mandatory
 		return mandatory
 
 
