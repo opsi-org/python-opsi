@@ -3456,6 +3456,6 @@ class BootConfiguration(Relationship):
 	def __unicode__(self):
 		return u"<{klass}(name='{name}', clientId='{cid}', priority={prio:d}>".format(
 			klass=self.getType(), name=self.name,
-			cid=self.clientId, prio=self.priority))
+			cid=self.clientId, prio=self.priority)
 
 Relationship.subClasses['BootConfiguration'] = BootConfiguration
