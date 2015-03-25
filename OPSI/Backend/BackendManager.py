@@ -455,7 +455,7 @@ class BackendExtender(ExtendedBackend):
 			if not isinstance(backend, BackendAccessControl) or (not isinstance(backend._backend, ExtendedBackend) and not isinstance(backend._backend, BackendDispatcher)):
 				raise Exception("BackendExtender needs instance of ExtendedBackend or BackendDispatcher as backend, got %s" % backend.__class__.__name__)
 
-		ExtendedBackend.__init__(self, backend, overwrite = kwargs.get('overwrite', True))
+		ExtendedBackend.__init__(self, backend, overwrite=kwargs.get('overwrite', True))
 
 		self._extensionConfigDir = None
 		self._extensionClass = None
@@ -476,9 +476,9 @@ class BackendExtender(ExtendedBackend):
 				if methodName.startswith('_'):
 					continue
 				logger.debug2(u"Extending %s with instancemethod: '%s'" % (self._backend.__class__.__name__, methodName))
-				new_function = new.function( member[1].func_code, member[1].func_globals, member[1].func_code.co_name )
-				new_method = new.instancemethod( new_function, self, self.__class__ )
-				setattr( self, methodName, new_method )
+				new_function = new.function(member[1].func_code, member[1].func_globals, member[1].func_code.co_name)
+				new_method = new.instancemethod(new_function, self, self.__class__)
+				setattr(self, methodName, new_method)
 
 		if self._extensionConfigDir:
 			if not os.path.exists(self._extensionConfigDir):
@@ -582,7 +582,7 @@ class BackendAccessControl(object):
 				if not hasattr(self._context, 'host_getObjects'):
 					raise Exception(u"Passed backend has no method 'host_getObjects', cannot authenticate host '%s'" % self._username)
 
-				host = self._context.host_getObjects(id = self._username)
+				host = self._context.host_getObjects(id=self._username)
 				if not host:
 					raise Exception(u"Host '%s' not found in backend %s" % (self._username, self._context))
 				self._host = host[0]
@@ -895,7 +895,7 @@ class BackendAccessControl(object):
 			if (len(valueList) == 0):
 				continue
 			if issubclass(valueList[0].__class__, BaseObject) or type(valueList[0]) is types.DictType:
-				valueList = self._filterObjects(valueList, acls, exceptionOnTruncate = False)
+				valueList = self._filterObjects(valueList, acls, exceptionOnTruncate=False)
 				if isList:
 					params[key] = valueList
 				else:
@@ -910,7 +910,7 @@ class BackendAccessControl(object):
 			isList = type(result) is list
 			resultList = forceList(result)
 			if issubclass(resultList[0].__class__, BaseObject) or type(resultList[0]) is types.DictType:
-				resultList = self._filterObjects(result, acls, exceptionOnTruncate = False, exceptionIfAllRemoved = False)
+				resultList = self._filterObjects(result, acls, exceptionOnTruncate=False, exceptionIfAllRemoved=False)
 				if isList:
 					return resultList
 				else:

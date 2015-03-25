@@ -300,36 +300,36 @@ class HostControlBackend(ExtendedBackend):
 	def hostControl_shutdown(self, hostIds=[]):
 		if not hostIds:
 			raise BackendMissingDataError(u"No host ids given")
-		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
-		return self._opsiclientdRpc(hostIds = hostIds, method = 'shutdown', params = [])
+		hostIds = self._context.host_getIdents(id=hostIds, returnType='unicode')
+		return self._opsiclientdRpc(hostIds=hostIds, method='shutdown', params=[])
 
 	def hostControl_reboot(self, hostIds=[]):
 		if not hostIds:
 			raise BackendMissingDataError(u"No host ids given")
-		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
-		return self._opsiclientdRpc(hostIds = hostIds, method = 'reboot', params = [])
+		hostIds = self._context.host_getIdents(id=hostIds, returnType='unicode')
+		return self._opsiclientdRpc(hostIds=hostIds, method='reboot', params=[])
 
 	def hostControl_fireEvent(self, event, hostIds=[]):
 		event = forceUnicode(event)
-		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
-		return self._opsiclientdRpc(hostIds = hostIds, method = 'fireEvent', params = [ event ])
+		hostIds = self._context.host_getIdents(id=hostIds, returnType='unicode')
+		return self._opsiclientdRpc(hostIds=hostIds, method='fireEvent', params=[event])
 
 	def hostControl_showPopup(self, message, hostIds=[]):
 		message = forceUnicode(message)
-		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
-		return self._opsiclientdRpc(hostIds = hostIds, method = 'showPopup', params = [ message ])
+		hostIds = self._context.host_getIdents(id=hostIds, returnType='unicode')
+		return self._opsiclientdRpc(hostIds=hostIds, method='showPopup', params=[message])
 
 	def hostControl_uptime(self, hostIds=[]):
-		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
-		return self._opsiclientdRpc(hostIds = hostIds, method = 'uptime', params = [])
+		hostIds = self._context.host_getIdents(id=hostIds, returnType='unicode')
+		return self._opsiclientdRpc(hostIds=hostIds, method='uptime', params=[])
 
 	def hostControl_getActiveSessions(self, hostIds=[]):
-		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
-		return self._opsiclientdRpc(hostIds = hostIds, method = 'getActiveSessions', params = [])
+		hostIds = self._context.host_getIdents(id=hostIds, returnType='unicode')
+		return self._opsiclientdRpc(hostIds=hostIds, method='getActiveSessions', params=[])
 
 	def hostControl_opsiclientdRpc(self, method, params=[], hostIds=[], timeout=None):
-		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
-		return self._opsiclientdRpc(hostIds = hostIds, method = method, params = params, timeout = timeout)
+		hostIds = self._context.host_getIdents(id=hostIds, returnType='unicode')
+		return self._opsiclientdRpc(hostIds=hostIds, method=method, params=params, timeout=timeout)
 
 	def hostControl_reachable(self, hostIds=[], timeout=None):
 		hostIds = self._context.host_getIdents(id=hostIds, returnType='unicode')

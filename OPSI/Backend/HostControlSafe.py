@@ -197,51 +197,51 @@ class HostControlSafeBackend(ExtendedBackend):
 	def hostControlSafe_shutdown(self, hostIds=[]):
 		if not hostIds:
 			raise BackendMissingDataError(u"No matching host ids found")
-		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
-		return self._opsiclientdRpc(hostIds = hostIds, method = 'shutdown', params = [])
+		hostIds = self._context.host_getIdents(id=hostIds, returnType='unicode')
+		return self._opsiclientdRpc(hostIds=hostIds, method='shutdown', params=[])
 
 	def hostControlSafe_reboot(self, hostIds=[]):
 		if not hostIds:
 			raise BackendMissingDataError(u"No matching host ids found")
-		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
-		return self._opsiclientdRpc(hostIds = hostIds, method = 'reboot', params = [])
+		hostIds = self._context.host_getIdents(id=hostIds, returnType='unicode')
+		return self._opsiclientdRpc(hostIds=hostIds, method='reboot', params=[])
 
 	def hostControlSafe_fireEvent(self, event, hostIds=[]):
 		if not hostIds:
 			raise BackendMissingDataError(u"No matching host ids found")
 		event = forceUnicode(event)
-		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
-		return self._opsiclientdRpc(hostIds = hostIds, method = 'fireEvent', params = [ event ])
+		hostIds = self._context.host_getIdents(id=hostIds, returnType='unicode')
+		return self._opsiclientdRpc(hostIds=hostIds, method='fireEvent', params=[event])
 
 	def hostControlSafe_showPopup(self, message, hostIds=[]):
 		if not hostIds:
 			raise BackendMissingDataError(u"No matching host ids found")
 		message = forceUnicode(message)
-		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
-		return self._opsiclientdRpc(hostIds = hostIds, method = 'showPopup', params = [ message ])
+		hostIds = self._context.host_getIdents(id=hostIds, returnType='unicode')
+		return self._opsiclientdRpc(hostIds=hostIds, method='showPopup', params=[message])
 
 	def hostControlSafe_uptime(self, hostIds=[]):
 		if not hostIds:
 			raise BackendMissingDataError(u"No matching host ids found")
-		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
-		return self._opsiclientdRpc(hostIds = hostIds, method = 'uptime', params = [])
+		hostIds = self._context.host_getIdents(id=hostIds, returnType='unicode')
+		return self._opsiclientdRpc(hostIds=hostIds, method='uptime', params=[])
 
 	def hostControlSafe_getActiveSessions(self, hostIds=[]):
 		if not hostIds:
 			raise BackendMissingDataError(u"No matching host ids found")
-		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
-		return self._opsiclientdRpc(hostIds = hostIds, method = 'getActiveSessions', params = [])
+		hostIds = self._context.host_getIdents(id=hostIds, returnType='unicode')
+		return self._opsiclientdRpc(hostIds=hostIds, method='getActiveSessions', params=[])
 
 	def hostControlSafe_opsiclientdRpc(self, method, params=[], hostIds=[], timeout=None):
 		if not hostIds:
 			raise BackendMissingDataError(u"No matching host ids found")
-		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
-		return self._opsiclientdRpc(hostIds = hostIds, method = method, params = params, timeout = timeout)
+		hostIds = self._context.host_getIdents(id=hostIds, returnType='unicode')
+		return self._opsiclientdRpc(hostIds=hostIds, method=method, params=params, timeout=timeout)
 
 	def hostControlSafe_reachable(self, hostIds=[], timeout=None):
 		if not hostIds:
 			raise BackendMissingDataError(u"No matching host ids found")
-		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
+		hostIds = self._context.host_getIdents(id=hostIds, returnType='unicode')
 		hostIds = forceHostIdList(hostIds)
 		if not timeout:
 			timeout = self._hostReachableTimeout
@@ -249,14 +249,14 @@ class HostControlSafeBackend(ExtendedBackend):
 
 		result = {}
 		threads = []
-		for host in self._context.host_getObjects(id = hostIds):
+		for host in self._context.host_getObjects(id=hostIds):
 			try:
 				address = self._getHostAddress(host)
 				threads.append(
 					ConnectionThread(
-						hostControlBackend = self,
-						hostId             = host.id,
-						address            = address))
+						hostControlBackend=self,
+						hostId=host.id,
+						address=address))
 			except Exception as e:
 				logger.debug("Problem found: '%s'" % e)
 				result[host.id] = False
@@ -296,5 +296,5 @@ class HostControlSafeBackend(ExtendedBackend):
 		if not hostIds:
 			raise BackendMissingDataError(u"No matching host ids found")
 		command = forceUnicode(command)
-		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
-		return self._opsiclientdRpc(hostIds = hostIds, method = 'execute', params = [command,waitForEnding,captureStderr,encoding,timeout])
+		hostIds = self._context.host_getIdents(id=hostIds, returnType='unicode')
+		return self._opsiclientdRpc(hostIds=hostIds, method='execute', params=[command,waitForEnding,captureStderr,encoding,timeout])
