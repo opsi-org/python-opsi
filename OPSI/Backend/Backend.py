@@ -1569,8 +1569,6 @@ depot where the method is.
 class ExtendedConfigDataBackend(ExtendedBackend):
 
 	def __init__(self, configDataBackend, overwrite=True):
-		# if not isinstance(configDataBackend, ConfigDataBackend):
-		# 	raise Exception(u"ExtendedConfigDataBackend needs instance of ConfigDataBackend as backend, got %s" % configDataBackend.__class__.__name__)
 		ExtendedBackend.__init__(self, configDataBackend, overwrite=overwrite)
 		self._options = {
 			# 'processProductPriorities':            False,
