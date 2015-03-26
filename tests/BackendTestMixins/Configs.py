@@ -92,8 +92,6 @@ class ConfigsMixin(ClientsMixin, HostsMixin):
 class ConfigTestsMixin(ConfigsMixin):
     def configureBackendOptions(self):
         self.backend.backend_setOptions({
-            'processProductPriorities': False,
-            'processProductDependencies': False,
             'addProductOnClientDefaults': False,
             'addProductPropertyStateDefaults': False,
             'addConfigStateDefaults': False,
@@ -248,8 +246,6 @@ class ConfigStatesMixin(ConfigsMixin):
 class ConfigStateTestsMixin(ConfigStatesMixin):
     def configureBackendOptions(self):
         self.backend.backend_setOptions({
-            'processProductPriorities': False,
-            'processProductDependencies': False,
             'addProductOnClientDefaults': False,
             'addProductPropertyStateDefaults': False,
             'addConfigStateDefaults': False,

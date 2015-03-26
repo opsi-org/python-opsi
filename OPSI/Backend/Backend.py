@@ -1571,13 +1571,10 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 	def __init__(self, configDataBackend, overwrite=True):
 		ExtendedBackend.__init__(self, configDataBackend, overwrite=overwrite)
 		self._options = {
-			# 'processProductPriorities':            False,
-			# 'processProductDependencies':          False,
 			'addProductOnClientDefaults': False,
 			'addProductPropertyStateDefaults': False,
 			'addConfigStateDefaults': False,
 			'deleteConfigStateIfDefault': False,
-			# 'deleteProductPropertyStateIfDefault': False,
 			'returnObjectsOnUpdateAndCreate': False,
 			'addDependentProductOnClients': False,
 			'processProductOnClientSequence': False

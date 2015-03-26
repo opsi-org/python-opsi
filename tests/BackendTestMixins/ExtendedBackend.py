@@ -27,8 +27,6 @@ Mixin for testing an extended backend.
 class ExtendedBackendTestsMixin(object):
     def testExtendedBackend(self):
         self.backend.backend_setOptions({
-            'processProductPriorities':            True,
-            'processProductDependencies':          True,
             'addProductOnClientDefaults':          True,
             'addProductPropertyStateDefaults':     True,
             'addConfigStateDefaults':              True,
