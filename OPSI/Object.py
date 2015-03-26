@@ -700,8 +700,13 @@ class OpsiDepotserver(Host):
 		return fromJson(jsonString, 'OpsiDepotserver')
 
 	def __unicode__(self):
-		#TODO: extend this
-		return u"<{0}(id='{1}')>".format(self.getType(), self.id)
+		additionalInfos = ["id='{0}'".format(self.id)]
+		if self.isMasterDepot:
+			additionalInfos.append('isMasterDepot={0}'.format(self.isMasterDepot))
+		if self.masterDepotId:
+			additionalInfos.append("masterDepotId='{0}'".format(self.masterDepotId))
+
+		return u"<{0}({1})>".format(self.getType(), ', '.join(additionalInfos))
 
 Host.subClasses['OpsiDepotserver'] = OpsiDepotserver
 
@@ -2214,8 +2219,20 @@ class LicenseContract(Entity):
 		return fromJson(jsonString, 'LicenseContract')
 
 	def __unicode__(self):
-		return u"<{klass}(id='{lid}', description='{desc}'>".format(
-			klass=self.getType(), lid=self.id, desc=self.description)
+		infos = ["id='{0}'".format(self.id)]
+
+		if self.description:
+			infos.append("description='{0}'".format(self.description))
+		if self.partner:
+			infos.append("partner='{0}'".format(self.partner))
+		if self.conclusionDate:
+			infos.append("conclusionDate='{0}'".format(self.conclusionDate))
+		if self.notificationDate:
+			infos.append("notificationDate='{0}'".format(self.notificationDate))
+		if self.expirationDate:
+			infos.append("expirationDate='{0}'".format(self.expirationDate))
+
+		return u"<{0}({1})>".format(self.getType(), ', '.join(infos))
 
 Entity.subClasses['LicenseContract'] = LicenseContract
 
@@ -2291,8 +2308,18 @@ class SoftwareLicense(Entity):
 		return fromJson(jsonString, 'SoftwareLicense')
 
 	def __unicode__(self):
-		return u"<{klass}(id='{sid}', licenseContractId='{lid}')>".format(
-			klass=self.getType(), sid=self.id, lid=self.licenseContractId)
+		infos = [
+			"id='{0}'".format(self.id),
+			"licenseContractId='{0}'".format(self.licenseContractId)
+		]
+		if self.maxInstallations:
+			infos.append('maxInstallations={0}'.format(self.maxInstallations))
+		if self.boundToHost:
+			infos.append("boundToHost='{0}'".format(self.boundToHost))
+		if self.expirationDate:
+			infos.append("expirationDate='{0}'".format(self.expirationDate))
+
+		return u"<{0}({1})>".format(self.getType(), ', '.join(infos))
 
 Entity.subClasses['LicenseContract'] = LicenseContract
 
@@ -2474,8 +2501,14 @@ class LicensePool(Entity):
 		return fromJson(jsonString, 'LicensePool')
 
 	def __unicode__(self):
-		return u"<{klass}(id='{lpid}', description='{desc}'>".format(
-			klass=self.getType(), lpid=self.id, desc=self.description)
+		infos = ["id='{0}'".format(self.id)]
+
+		if self.description:
+			infos.append("description='{0}'".format(self.description))
+		if self.productIds:
+			infos.append("productIds={0}".format(self.productIds))
+
+		return u"<{0}({1})>".format(self.getType(), ', '.join(infos))
 
 Entity.subClasses['LicensePool'] = LicensePool
 
@@ -2555,8 +2588,21 @@ class AuditSoftwareToLicensePool(Relationship):
 		return fromJson(jsonString, 'AuditSoftwareToLicensePool')
 
 	def __unicode__(self):
-		return u"<{klass}(licensePoolId='{lid}', name='{name}')>".format(
-			klass=self.getType(), lid=self.licensePoolId, name=self.name)
+		infos = ["name='{0}'".format(self.name)]
+
+		if self.version:
+			infos.append("version='{0}'".format(self.version))
+		if self.subVersion:
+			infos.append("subVersion='{0}'".format(self.subVersion))
+		if self.language:
+			infos.append("language='{0}'".format(self.language))
+		if self.architecture:
+			infos.append("architecture='{0}'".format(self.architecture))
+		if self.licensePoolId:
+			infos.append("licensePoolId='{0}'".format(self.licensePoolId))
+
+		return u"<{0}({1})>".format(self.getType(), ', '.join(infos))
+
 
 Relationship.subClasses['AuditSoftwareToLicensePool'] = AuditSoftwareToLicensePool
 
@@ -3099,10 +3145,34 @@ class AuditHardware(Entity):
 		infos = [self.getType()]
 		hardwareClass = self.getHardwareClass()
 		if hardwareClass:
-			infos.append(u"hardwareClass '{0}'".format(hardwareClass))
+			infos.append(u"hardwareClass='{0}'".format(hardwareClass))
 
 		try:
-			infos.append(u"name '{0}'".format(self.name))
+			infos.append(u"name='{0}'".format(self.name))
+		except AttributeError:
+			pass
+
+		try:
+			if self.vendorId:
+				infos.append(u"vendorId='{0}'".format(self.vendorId))
+		except AttributeError:
+			pass
+
+		try:
+			if self.subsystemVendorId:
+				infos.append(u"subsystemVendorId='{0}'".format(self.subsystemVendorId))
+		except AttributeError:
+			pass
+
+		try:
+			if self.deviceId:
+				infos.append(u"deviceId='{0}'".format(self.deviceId))
+		except AttributeError:
+			pass
+
+		try:
+			if self.subsystemDeviceId:
+				infos.append(u"subsystemDeviceId='{0}'".format(self.subsystemDeviceId))
 		except AttributeError:
 			pass
 
@@ -3290,7 +3360,7 @@ class AuditHardwareOnHost(Relationship):
 		except AttributeError:
 			pass
 
-		return u"<{type} {additional}>".format(
+		return u"<{type}({additional})>".format(
 			type=self.getType(),
 			additional=u', '.join(additional)
 		)
