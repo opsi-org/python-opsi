@@ -64,7 +64,7 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 	    Adding WAN extension configurations if missing.
 	"""
 	def runningOnUCS():
-		return 'univention' in Posix.Distribution().distributor.lower()
+		return u'univention' in Posix.Distribution().distributor.lower()
 
 	backendProvided = True
 
@@ -83,7 +83,7 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 
 	if runningOnUCS():
 		# We have a domain present and people might want to change this.
-		if 'clientconfig.depot.user' not in configIdents:
+		if u'clientconfig.depot.user' not in configIdents:
 			depotuser = u'pcpatch'
 			depotdomain = readWindowsDomainFromSambaConfig(pathToSMBConf)
 			if depotdomain:
@@ -100,7 +100,7 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 				)
 			)
 
-	if configServer and 'clientconfig.configserver.url' not in configIdents:
+	if configServer and u'clientconfig.configserver.url' not in configIdents:
 		LOGGER.debug("Missing clientconfig.configserver.url - adding it.")
 		configs.append(
 			oobject.UnicodeConfig(
@@ -112,8 +112,8 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 				multiValue=True
 			)
 		)
-	if configServer and 'clientconfig.depot.id' not in configIdents:
-		LOGGER.debug("Missing clientconfig.depot.id - adding it.")
+	if configServer and u'clientconfig.depot.id' not in configIdents:
+		LOGGER.debug(u"Missing clientconfig.depot.id - adding it.")
 		configs.append(
 			oobject.UnicodeConfig(
 				id=u'clientconfig.depot.id',
@@ -124,8 +124,8 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 				multiValue=False
 			)
 		)
-	if 'clientconfig.depot.dynamic' not in configIdents:
-		LOGGER.debug("Missing clientconfig.depot.dynamic - adding it.")
+	if u'clientconfig.depot.dynamic' not in configIdents:
+		LOGGER.debug(u"Missing clientconfig.depot.dynamic - adding it.")
 		configs.append(
 			oobject.BoolConfig(
 				id=u'clientconfig.depot.dynamic',
@@ -133,8 +133,8 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 				defaultValues=[False]
 			)
 		)
-	if 'clientconfig.depot.drive' not in configIdents:
-		LOGGER.debug("Missing clientconfig.depot.drive - adding it.")
+	if u'clientconfig.depot.drive' not in configIdents:
+		LOGGER.debug(u"Missing clientconfig.depot.drive - adding it.")
 		configs.append(
 			oobject.UnicodeConfig(
 				id=u'clientconfig.depot.drive',
@@ -151,8 +151,8 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 			)
 		)
 
-	if 'clientconfig.depot.protocol' not in configIdents:
-		LOGGER.debug("Missing clientconfig.depot.protocol - adding it.")
+	if u'clientconfig.depot.protocol' not in configIdents:
+		LOGGER.debug(u"Missing clientconfig.depot.protocol - adding it.")
 		configs.append(
 			oobject.UnicodeConfig(
 				id=u'clientconfig.depot.protocol',
@@ -163,8 +163,8 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 				multiValue=False
 			)
 		)
-	if 'clientconfig.windows.domain' not in configIdents:
-		LOGGER.debug("Missing clientconfig.windows.domain - adding it.")
+	if u'clientconfig.windows.domain' not in configIdents:
+		LOGGER.debug(u"Missing clientconfig.windows.domain - adding it.")
 		configs.append(
 			oobject.UnicodeConfig(
 				id=u'clientconfig.windows.domain',
@@ -175,8 +175,8 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 				multiValue=False
 			)
 		)
-	if 'opsi-linux-bootimage.append' not in configIdents:
-		LOGGER.debug("Missing opsi-linux-bootimage.append - adding it.")
+	if u'opsi-linux-bootimage.append' not in configIdents:
+		LOGGER.debug(u"Missing opsi-linux-bootimage.append - adding it.")
 		configs.append(
 			oobject.UnicodeConfig(
 				id=u'opsi-linux-bootimage.append',
@@ -190,8 +190,8 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 				multiValue=True
 			)
 		)
-	if 'license-management.use' not in configIdents:
-		LOGGER.debug("Missing license-management.use - adding it.")
+	if u'license-management.use' not in configIdents:
+		LOGGER.debug(u"Missing license-management.use - adding it.")
 		configs.append(
 			oobject.BoolConfig(
 				id=u'license-management.use',
@@ -199,8 +199,8 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 				defaultValues=[False]
 			)
 		)
-	if 'software-on-demand.active' not in configIdents:
-		LOGGER.debug("Missing software-on-demand.active - adding it.")
+	if u'software-on-demand.active' not in configIdents:
+		LOGGER.debug(u"Missing software-on-demand.active - adding it.")
 		configs.append(
 			oobject.BoolConfig(
 				id=u'software-on-demand.active',
@@ -208,8 +208,8 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 				defaultValues=[False]
 			)
 		)
-	if 'software-on-demand.show-details' not in configIdents:
-		LOGGER.debug("Missing software-on-demand.show-details - adding it.")
+	if u'software-on-demand.show-details' not in configIdents:
+		LOGGER.debug(u"Missing software-on-demand.show-details - adding it.")
 		configs.append(
 			oobject.BoolConfig(
 				id=u'software-on-demand.show-details',
@@ -217,8 +217,8 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 				defaultValues=[False]
 			)
 		)
-	if 'software-on-demand.product-group-ids' not in configIdents:
-		LOGGER.debug("Missing software-on-demand.product-group-ids - adding it.")
+	if u'software-on-demand.product-group-ids' not in configIdents:
+		LOGGER.debug(u"Missing software-on-demand.product-group-ids - adding it.")
 		configs.append(
 			oobject.UnicodeConfig(
 				id=u'software-on-demand.product-group-ids',
@@ -232,8 +232,8 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 				multiValue=True
 			)
 		)
-	if 'product_sort_algorithm' not in configIdents:
-		LOGGER.debug("Missing product_sort_algorithm - adding it.")
+	if u'product_sort_algorithm' not in configIdents:
+		LOGGER.debug(u"Missing product_sort_algorithm - adding it.")
 		configs.append(
 			oobject.UnicodeConfig(
 				id=u'product_sort_algorithm',
@@ -245,8 +245,8 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 			)
 		)
 
-	if 'clientconfig.dhcpd.filename' not in configIdents:
-		LOGGER.debug("Missing clientconfig.dhcpd.filename - adding it.")
+	if u'clientconfig.dhcpd.filename' not in configIdents:
+		LOGGER.debug(u"Missing clientconfig.dhcpd.filename - adding it.")
 		configs.append(
 			oobject.UnicodeConfig(
 				id=u'clientconfig.dhcpd.filename',
@@ -263,9 +263,9 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 		)
 
 	if configs:
-		LOGGER.notice('Setting up default values.')
+		LOGGER.notice(u'Setting up default values.')
 		backend.config_createObjects(configs)
-		LOGGER.notice('Finished setting up default values.')
+		LOGGER.notice(u'Finished setting up default values.')
 
 	addDynamicDepotDriveSelection(backend)
 	createWANconfigs(backend)
@@ -329,18 +329,18 @@ def createWANconfigs(backend):
 	SimpleConfig = namedtuple('SimpleConfig', ['id', 'description', 'value'])
 
 	configs = [
-		SimpleConfig("opsiclientd.event_gui_startup.active",
-			"gui_startup active", True),
-		SimpleConfig("opsiclientd.event_gui_startup{user_logged_in}.active",
-			"gui_startup{user_logged_in} active", True),
-		SimpleConfig("opsiclientd.event_net_connection.active",
-			"event_net_connection active", False),
-		SimpleConfig("opsiclientd.event_timer.active",
-			"event_timer active", False)
+		SimpleConfig(u"opsiclientd.event_gui_startup.active",
+			u"gui_startup active", True),
+		SimpleConfig(u"opsiclientd.event_gui_startup{user_logged_in}.active",
+			u"gui_startup{user_logged_in} active", True),
+		SimpleConfig(u"opsiclientd.event_net_connection.active",
+			u"event_net_connection active", False),
+		SimpleConfig(u"opsiclientd.event_timer.active",
+			u"event_timer active", False)
 	]
 
 	availableConfigs = set(backend.config_getIdents())
 	for config in configs:
 		if config.id not in availableConfigs:
-			LOGGER.debug("Adding missing config '{0}'".format(config.id))
+			LOGGER.debug(u"Adding missing config '{0}'".format(config.id))
 			backend.config_createBool(config.id, config.description, config.value)
