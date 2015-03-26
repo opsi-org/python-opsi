@@ -79,7 +79,7 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 		backend.backend_createBase()
 
 	configs = []
-	configIdents = backend.config_getIdents(returnType='unicode')
+	configIdents = set(backend.config_getIdents(returnType='unicode'))
 
 	if runningOnUCS():
 		# We have a domain present and people might want to change this.
