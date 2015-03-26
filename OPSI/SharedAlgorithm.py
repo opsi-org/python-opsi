@@ -195,7 +195,10 @@ def addDependentProductOnClients(productOnClients, availableProducts, productDep
 
 
 class OrderRequirement(object):
-	# Represents a request for ordering of two elements with a notice if it is fulfilled
+	"""
+	Represents a request for ordering of two elements with a notice
+	if it is fulfilled.
+	"""
 
 	def __init__(self, prior, posterior, fulfilled=False):
 		self.prior = forceInt(prior)
