@@ -694,7 +694,7 @@ the opsi host key.
 		lineRegex = re.compile('^\s*([^:]+)\s*:\s*(\S+)\s*$')
 		for line in cf.parse():
 			match = lineRegex.search(line)
-			if not match:
+			if match is None:
 				continue
 
 			if match.group(1) == username:
