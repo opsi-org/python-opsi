@@ -1466,10 +1466,8 @@ class DHCPDConf_Option(DHCPDConf_Component):
 			self.value = [self.value]
 
 	def asText(self):
-		# TODO: nicer string building!
-		text = u"%soption %s " % (self.getShifting(), self.key)
-		for i in range(len(self.value)):
-			value = self.value[i]
+		text = []
+		for value in self.value:
 			if (re.match('.*[\'/\\\].*', value) or
 				re.match('^\w+\.\w+$', value) or
 				self.key.endswith(u'-name') or
@@ -1492,12 +1490,11 @@ class DHCPDConf_Option(DHCPDConf_Component):
 				self.key.endswith(u'fqdn.fqdn') or
 				self.key.endswith(u'ddns-rev-domainname')):
 
-				value = u'"%s"' % value
+				text.append(u'"%s"' % value)
+			else:
+				text.append(value)
 
-			if i + 1 < len(self.value):
-				value += u', '
-			text += value
-		return text + u';'
+		return "{0}option {key} {values};".format(self.getShifting(), key=self.key, values=u', '.join(text))
 
 	def asHash(self):
 		return {self.key: self.value}
@@ -1509,7 +1506,7 @@ class DHCPDConf_Comment(DHCPDConf_Component):
 		self._data = data
 
 	def asText(self):
-		return self.getShifting() + u'#%s' % self._data
+		return u'{0}#{1}%s'.format(self.getShifting(), self._data)
 
 
 class DHCPDConf_EmptyLine(DHCPDConf_Component):
@@ -1945,35 +1942,35 @@ class DHCPDConfFile(TextFile):
 			value = value[1:-1]
 		values = []
 		quote = u''
-		current = u''
+		current = []
 		for l in value:
 			if l == u'"':
 				if quote == u'"':
 					quote = u''
 				elif quote == u"'":
-					current += l
+					current.append(l)
 				else:
 					quote = u'"'
 			elif l == u"'":
 				if quote == u"'":
 					quote = u''
 				elif quote == u'"':
-					current += l
+					current.append(l)
 				else:
 					quote = u"'"
 			elif re.search('\s', l):
-				current += l
+				current.apend(l)
 			elif l == u',':
 				if quote:
-					current += l
+					current.append(l)
 				else:
-					values.append(current.strip())
-					current = u''
+					values.append(u''.join(current).strip())
+					current = []
 			else:
-				current += l
+				current.append(l)
 
 		if current:
-			values.append(current.strip())
+			values.append(u''.join(current).strip())
 
 		self._currentBlock.addComponent(
 			DHCPDConf_Option(
