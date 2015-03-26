@@ -1919,7 +1919,7 @@ class DHCPDConfFile(TextFile):
 	def _parse_semicolon(self):
 		logger.debug(u"_parse_semicolon")
 		data = self._data[:self._currentIndex]
-		self._data = self._data[self._currentIndex+1:]
+		self._data = self._data[self._currentIndex + 1:]
 
 		key = data.split()[0]
 		if key != 'option':
