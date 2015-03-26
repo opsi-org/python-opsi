@@ -1597,6 +1597,9 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 						'Scope': value["Scope"]
 					}
 
+	def __repr__(self):
+		return "<ExtendedConfigDataBackend(configDataBackend={0})>".format(self._backend)
+
 	def backend_searchIdents(self, filter):
 		logger.info(u"=== Starting search, filter: %s" % filter)
 		try:
