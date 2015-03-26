@@ -45,7 +45,6 @@ class SimpleWanConfigTestCase(unittest.TestCase, ExtendedFileBackendMixin):
     """
     def setUp(self):
         self.setUpBackend()
-
         createWANconfigs(self.backend)
 
     def tearDown(self):
@@ -57,6 +56,9 @@ class SimpleWanConfigTestCase(unittest.TestCase, ExtendedFileBackendMixin):
 
         self.backend.changeWANConfig(True, clientId)
         self.assertTrue(self.clientHasWANEnabled(clientId))
+
+        self.backend.changeWANConfig(False, clientId)
+        self.assertFalse(self.clientHasWANEnabled(clientId))
 
     def clientHasWANEnabled(self, clientId):
         configsToCheck = set([
