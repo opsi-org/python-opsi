@@ -169,6 +169,20 @@ class ConfigureBackendTestCase(unittest.TestCase, FileBackendMixin):
         config = self.backend.config_getObjects(id=u'clientconfig.depot.drive')[0]
         self.assertTrue(u'dynamic' in config.possibleValues)
 
+    def testAddingWANConfigs(self):
+        requiredConfigIdents = [
+            "opsiclientd.event_gui_startup.active",
+            "opsiclientd.event_gui_startup{user_logged_in}.active",
+            "opsiclientd.event_net_connection.active",
+            "opsiclientd.event_timer.active",
+        ]
+
+        confData.createWANconfigs(self.backend)
+        identsInBackend = set(self.backend.config_getIdents())
+
+        for ident in requiredConfigIdents:
+            self.assertTrue(ident in identsInBackend, "Missing config id {0}".format(ident))
+
 
 if __name__ == '__main__':
     unittest.main()

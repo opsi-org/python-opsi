@@ -14,8 +14,10 @@ python-opsi (4.0.6.3-1) UNRELEASED; urgency=low
   * OPSI.Backend.BackendManager: refactored reading groups of user to be
     faster for large environments.
   * Many objects now have proper representations.
+  * OPSI.Util.Task.ConfigureBackend.ConfigurationData: Adding WAN
+    configuration defaults if they are missing.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 25 Mar 2015 16:58:32 +0100
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 26 Mar 2015 14:01:54 +0100
 
 python-opsi (4.0.6.2-1) experimental; urgency=low
 

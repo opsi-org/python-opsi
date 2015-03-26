@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014 uib GmbH <info@uib.de>
+# Copyright (C) 2014-2015 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -28,6 +28,7 @@ Configuration data for the backend.
 import codecs
 import os
 import re
+from collections import namedtuple
 
 import OPSI.Backend.BackendManager as bm
 import OPSI.Object as oobject
@@ -56,6 +57,11 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 	.. versionchanged:: 4.0.6.1
 
 		Adding ``dynamic`` as value for ``clientconfig.depot.drive`` if missing.
+
+
+	.. versionchanged:: 4.0.6.3
+
+	    Adding WAN extension configurations if missing.
 	"""
 	def runningOnUCS():
 		return 'univention' in Posix.Distribution().distributor.lower()
@@ -262,6 +268,7 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 		LOGGER.notice('Finished setting up default values.')
 
 	addDynamicDepotDriveSelection(backend)
+	createWANconfigs(backend)
 
 	if not backendProvided:
 		backend.backend_exit()
@@ -314,3 +321,26 @@ def addDynamicDepotDriveSelection(backend):
 				multiValue=False
 			)
 		)
+
+
+def createWANconfigs(backend):
+	"Create the configurations that are used by the WAN extension if missing."
+
+	SimpleConfig = namedtuple('SimpleConfig', ['id', 'description', 'value'])
+
+	configs = [
+		SimpleConfig("opsiclientd.event_gui_startup.active",
+			"gui_startup active", True),
+		SimpleConfig("opsiclientd.event_gui_startup{user_logged_in}.active",
+			"gui_startup{user_logged_in} active", True),
+		SimpleConfig("opsiclientd.event_net_connection.active",
+			"event_net_connection active", False),
+		SimpleConfig("opsiclientd.event_timer.active",
+			"event_timer active", False)
+	]
+
+	availableConfigs = set(backend.config_getIdents())
+	for config in configs:
+		if config.id not in availableConfigs:
+			LOGGER.debug("Adding missing config '{0}'".format(config.id))
+			backend.config_createBool(config.id, config.description, config.value)
