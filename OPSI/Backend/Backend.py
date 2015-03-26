@@ -706,10 +706,10 @@ the opsi host key.
 
 		depot = self.host_getObjects(id=self._depotId)
 		if not depot:
-			raise Exception(u"Depot '%s' not found in backend" % self._depotId)
+			raise BackendMissingDataError(u"Depot '%s' not found in backend" % self._depotId)
 		depot = depot[0]
 		if not depot.opsiHostKey:
-			raise Exception(u"Host key for depot '%s' not found" % self._depotId)
+			raise BackendMissingDataError(u"Host key for depot '%s' not found" % self._depotId)
 
 		result['password'] = blowfishDecrypt(depot.opsiHostKey, result['password'])
 
@@ -725,7 +725,7 @@ the opsi host key.
 		if hostId:
 			host = self._context.host_getObjects(id=hostId)
 			if not host:
-				raise Exception(u"Host '%s' not found in backend" % hostId)
+				raise BackendMissingDataError(u"Host '%s' not found in backend" % hostId)
 			host = host[0]
 			result['password'] = blowfishEncrypt(host.opsiHostKey, result['password'])
 			if result['rsaPrivateKey']:
