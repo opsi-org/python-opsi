@@ -765,7 +765,7 @@ class FileBackend(ConfigDataBackend):
 		mappings = {}
 		for mapping in self._mappings[objType]:
 			if (not attributes or mapping['attribute'] in attributes) or mapping['attribute'] in filter.keys():
-				if not mappings.has_key(mapping['fileType']):
+				if mapping['fileType'] not in mappings:
 					mappings[mapping['fileType']] = []
 
 				mappings[mapping['fileType']].append(mapping)
@@ -907,7 +907,7 @@ class FileBackend(ConfigDataBackend):
 			if self.__serverId != obj.getId():
 				raise Exception(u"Filebackend can only handle this config server '%s', not '%s'" % (self.__serverId, obj.getId()))
 
-		if not self._mappings.has_key(objType):
+		if objType not in self._mappings:
 			raise Exception(u"Mapping not found for object type '%s'" % objType)
 
 		mappings = {}
@@ -1673,7 +1673,7 @@ class FileBackend(ConfigDataBackend):
 			for (key, value) in objHash.items():
 				try:
 					value = self.__unescape(ini.get(section, key.lower()))
-					if fastFilter and value and fastFilter.has_key(key) and (fastFilter[key] != value):
+					if fastFilter and value and key in fastFilter and (fastFilter[key] != value):
 						fastFiltered = True
 						break
 					objHash[key] = value
@@ -1708,7 +1708,7 @@ class FileBackend(ConfigDataBackend):
 						found = False
 						break
 
-				if found and not section in removeSections:
+				if found and section not in removeSections:
 					removeSections.append(section)
 
 		if removeSections:
@@ -1867,7 +1867,7 @@ class FileBackend(ConfigDataBackend):
 						if self.__unescape(ini.get(section, key.lower())) != value:
 							found = False
 							break
-					if found and not section in removeSections:
+					if found and section not in removeSections:
 						removeSections.append(section)
 
 			if removeSections:
