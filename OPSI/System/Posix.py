@@ -1051,12 +1051,11 @@ def mount(dev, mountpoint, **options):
 	try:
 		result = execute(u"%s %s %s %s %s" % (which('mount'), fs, optString, dev, mountpoint))
 	except Exception as e:
-		for f in credentialsFiles:
-			os.remove(f)
 		logger.error(u"Failed to mount '%s': %s" % (dev, e))
 		raise Exception(u"Failed to mount '%s': %s" % (dev, e))
-	for f in credentialsFiles:
-		os.remove(f)
+	finally:
+		for f in credentialsFiles:
+			os.remove(f)
 
 
 def umount(devOrMountpoint):
