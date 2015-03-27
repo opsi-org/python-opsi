@@ -1128,7 +1128,7 @@ class FileBackend(ConfigDataBackend):
 		elif objType in ('Product', 'LocalbootProduct', 'NetbootProduct'):
 			for obj in objList:
 				filename = self._getConfigFile(
-					obj.getType(), obj.getIdent(returnType='dict'), 'pro' )
+					obj.getType(), obj.getIdent(returnType='dict'), 'pro')
 				logger.debug(u"Deleting %s: '%s'" % (obj.getType(), obj.getIdent()))
 				if os.path.isfile(filename):
 					os.unlink(filename)
