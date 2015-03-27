@@ -1986,7 +1986,7 @@ class Harddisk:
 			posix.lseek(hd, 0x1c, 0)
 			start = posix.read(hd, 4)
 			logger.debug(
-				u"NTFS Boot Record now using %s %s %s %s as partition "
+				u"NTFS Boot Record now using {0} {1} {2} {3} as partition "
 				u"start sector".format(
 					hex(ord(start[0])), hex(ord(start[1])),
 					hex(ord(start[2])), hex(ord(start[3])))
