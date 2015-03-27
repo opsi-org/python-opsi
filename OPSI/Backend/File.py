@@ -436,13 +436,11 @@ class FileBackend(ConfigDataBackend):
 
 					for section in cp.sections():
 						if section.endswith('-state'):
-							objIdents.append(
-								{
+							objIdents.append({
 								'productId': section[:-6],
 								'productType': cp.get(section, 'productType'),
 								'clientId': hostId
-								}
-							)
+							})
 				else:
 					objIdents.append({'id': hostId})
 
@@ -478,15 +476,13 @@ class FileBackend(ConfigDataBackend):
 
 					for section in cp.sections():
 						if section.endswith('-state'):
-							objIdents.append(
-								{
+							objIdents.append({
 								'productId': section[:-6],
 								'productType': cp.get(section, 'producttype'),
 								'productVersion': cp.get(section, 'productversion'),
 								'packageVersion': cp.get(section, 'packageversion'),
 								'depotId': hostId
-								}
-							)
+							})
 				else:
 					objIdents.append({'id': hostId})
 
@@ -559,12 +555,10 @@ class FileBackend(ConfigDataBackend):
 
 					if objType == 'ConfigState' and cp.has_section('generalconfig'):
 						for option in cp.options('generalconfig'):
-							objIdents.append(
-								{
+							objIdents.append({
 								'configId': option,
 								'objectId': objectId
-								}
-							)
+							})
 					elif objType == 'ProductPropertyState':
 						for section in cp.sections():
 							if not section.endswith('-install'):
@@ -1704,8 +1698,10 @@ class FileBackend(ConfigDataBackend):
 			return
 		iniFile = IniFile(filename=filename)
 		ini = iniFile.parse()
-		idents = [auditSoftware.getIdent(returnType='dict') for auditSoftware
-				  in forceObjectClassList(auditSoftwares, AuditSoftware)]
+		idents = [
+			auditSoftware.getIdent(returnType='dict') for auditSoftware
+			in forceObjectClassList(auditSoftwares, AuditSoftware)
+		]
 
 		removeSections = []
 		for section in ini.sections():
