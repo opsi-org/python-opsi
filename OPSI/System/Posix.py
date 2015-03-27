@@ -371,7 +371,7 @@ def getEthernetDevices():
 	"""
 	devices = []
 	with open("/proc/net/dev") as f:
-		for line in f.readlines():
+		for line in f:
 			line = line.strip()
 			if not line or ':' not in line:
 				continue
