@@ -942,9 +942,6 @@ def mount(dev, mountpoint, **options):
 
 	fs = u''
 
-	# if not options.has_key("domain"):
-	# 	options['domain'] = None
-
 	credentialsFiles = []
 	if dev.lower().startswith('smb://') or dev.lower().startswith('cifs://'):
 		match = re.search('^(smb|cifs)://([^/]+\/.+)$', dev, re.IGNORECASE)
