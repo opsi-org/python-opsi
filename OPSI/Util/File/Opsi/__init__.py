@@ -619,7 +619,7 @@ class PackageControlFile(TextFile):
 					match = re.search('^\s*([^\(]+)\s*\(*\s*([^\)]*)\s*\)*', dep)
 					if not match.group(1):
 						raise Exception(u"Bad package dependency '%s' in control file" % dep)
-						continue
+
 					package = match.group(1).strip()
 					version = match.group(2)
 					condition = None
