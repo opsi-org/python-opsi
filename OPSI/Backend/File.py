@@ -828,7 +828,7 @@ class FileBackend(ConfigDataBackend):
 						match = self._placeholderRegex.search(section)
 						if match:
 							section = u'%s%s%s' % (match.group(1), objHash[match.group(2)], match.group(3))
-							if objType == 'ProductOnClient': #<productType>_product_states
+							if objType == 'ProductOnClient':  # <productType>_product_states
 								section = section.replace('LocalbootProduct', 'localboot').replace('NetbootProduct', 'netboot')
 
 						match = self._placeholderRegex.search(option)
