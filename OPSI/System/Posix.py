@@ -1948,8 +1948,13 @@ class Harddisk:
 					logger.error(err)
 					raise Exception(err)
 
-			logger.info(u"Setting Partition start sector to %s in NTFS boot record " % sector \
-					+ u"on partition '%s'" % self.getPartition(partition)['device'] )
+			logger.info(
+				u"Setting Partition start sector to {0} in NTFS boot record "
+				u"on partition '{1}'".format(
+					sector,
+					self.getPartition(partition)['device']
+				)
+			)
 
 			x = [0, 0, 0, 0]
 			x[0] = int ( (sector & 0x000000FFL) )
