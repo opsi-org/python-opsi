@@ -359,7 +359,7 @@ class BackendReplicator(object):
 			wb.backend_setOptions({'additionalReferentialIntegrityChecks': aric})
 
 	@classmethod
-	def _getNumberOfObjectClassesToProcess(self, audit=True, license=True):
+	def _getNumberOfObjectClassesToProcess(cls, audit=True, license=True):
 		auditClasses = set([
 			'AuditHardware', 'AuditSoftware', 'AuditHardwareOnHost',
 			'AuditSoftwareOnClient'
@@ -370,7 +370,7 @@ class BackendReplicator(object):
 			'AuditSoftwareToLicensePool'
 		])
 
-		classesToProgress = set(self.OBJECT_CLASSES)
+		classesToProgress = set(cls.OBJECT_CLASSES)
 		if not audit:
 			classesToProgress = classesToProgress - auditClasses
 		if not license:
