@@ -730,7 +730,7 @@ will be redirected to *stdout*.
 	:param timeout: The time in seconds after that the execution will \
 be aborted.
 	:type timeout: int
-	:return: If the command finishes and we wait for it to finish the
+	:return: If the command finishes and we wait for it to finish the \
 output will be returned.
 	:returntype: list
 	"""
@@ -3627,7 +3627,7 @@ Used for testing.
 	:type _serviceStatusOutput: [str, ]
 	:returntype: set
 
-    .. versionadded:: 4.0.5.11
+	.. versionadded:: 4.0.5.11
 
 
 	.. note:
@@ -3676,6 +3676,7 @@ def getActiveSessionIds(winApiBugCommand=None, data=None):
 	:param data: Prefetched data to read information from.
 	:type data: [str, ]
 	:returntype: [int, ]
+
 	"""
 	if data is None:
 		data = execute(u"who -p -u")
@@ -3699,6 +3700,7 @@ def getActiveSessionId():
 
 	.. versionadded:: 4.0.5
 	:returntype: int
+
 	"""
 	ownPid = os.getpid()
 	return os.getsid(ownPid)
