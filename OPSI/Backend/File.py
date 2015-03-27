@@ -1213,7 +1213,7 @@ class FileBackend(ConfigDataBackend):
 				for obj in objList:
 					section = None
 					if obj.getType() == 'ObjectToGroup':
-						if not obj.groupType in ('HostGroup', 'ProductGroup'):
+						if obj.groupType not in ('HostGroup', 'ProductGroup'):
 							raise BackendBadValueError(u"Unhandled group type '%s'" % obj.groupType)
 						if not groupType == obj.groupType:
 							continue
