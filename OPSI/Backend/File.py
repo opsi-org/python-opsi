@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2006-2014 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2015 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -44,7 +44,7 @@ from OPSI.Util.File import IniFile, LockableFile
 from OPSI.Util.File.Opsi import OpsiConfFile, HostKeyFile, PackageControlFile
 from OPSI.Object import *  # needed for calls to "eval"
 
-__version__ = '4.0.6.1'
+__version__ = '4.0.6.3'
 
 logger = Logger()
 
@@ -264,24 +264,24 @@ class FileBackend(ConfigDataBackend):
 			os.unlink(self.__productGroupsFile)
 
 	def _setRights(self, path):
-		logger.debug(u"Setting rights for path '%s'" % (path))
+		logger.debug(u"Setting rights for path '{0}'".format(path))
 		try:
 			if os.path.isfile(path):
-				logger.debug(u"Setting rights on file '%s'" % (path))
+				logger.debug(u"Setting rights on file '{0}'".format(path))
 				os.chmod(path, self.__fileMode)
 				if os.geteuid() == 0:
 					os.chown(path, self.__fileUid, self.__fileGid)
 				else:
 					os.chown(path, -1, self.__fileGid)
 			elif os.path.isdir(path):
-				logger.debug(u"Setting rights on directory '%s'" % (path))
+				logger.debug(u"Setting rights on directory '{0}'".format(path))
 				os.chmod(path, self.__dirMode)
 				if os.geteuid() == 0:
 					os.chown(path, self.__dirUid, self.__dirGid)
 				else:
 					os.chown(path, -1, self.__dirGid)
-		except Exception as e:
-			logger.warning(u"Failed to set rights for path '%s': %s" % (path, e))
+		except Exception as error:
+			logger.warning(u"Failed to set rights for path '{0}': {1}".format(path, error))
 
 	def _mkdir(self, path):
 		logger.debug(u"Creating path: '%s'" % (path))
