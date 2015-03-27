@@ -89,7 +89,7 @@ class RpcThread(KillableThread):
 			connection.putheader('content-type', 'application/json-rpc')
 			connection.putheader('content-length', str(len(query)))
 			auth = u'{0}:{1}'.format(self.username, self.password)
-			connection.putheader('Authorization', 'Basic '+ base64.encodestring(auth.encode('latin-1')).strip())
+			connection.putheader('Authorization', 'Basic ' + base64.encodestring(auth.encode('latin-1')).strip())
 			connection.endheaders()
 			connection.send(query)
 
@@ -208,7 +208,7 @@ class HostControlBackend(ExtendedBackend):
 
 		result = {}
 		rpcts = []
-		for host in self._context.host_getObjects(id = hostIds):
+		for host in self._context.host_getObjects(id=hostIds):
 			try:
 				address = self._getHostAddress(host)
 				rpcts.append(
@@ -282,7 +282,7 @@ class HostControlBackend(ExtendedBackend):
 				for i in range(0, len(data), 2):
 					send_data = ''.join([
 						send_data,
-						struct.pack('B', int(data[i: i + 2], 16)) ])
+						struct.pack('B', int(data[i: i + 2], 16))])
 
 				for broadcastAddress in self._broadcastAddresses:
 					logger.debug(u"Sending data to network broadcast %s [%s]" % (broadcastAddress, data))
@@ -392,6 +392,7 @@ class HostControlBackend(ExtendedBackend):
 	def hostControl_execute(self, command, hostIds=[], waitForEnding=True, captureStderr=True, encoding=None, timeout=300):
 		command = forceUnicode(command)
 		hostIds = self._context.host_getIdents(id=hostIds, returnType='unicode')
-		return self._opsiclientdRpc(hostIds=hostIds, method='execute',
+		return self._opsiclientdRpc(
+			hostIds=hostIds, method='execute',
 			params=[command, waitForEnding, captureStderr, encoding, timeout]
 		)
