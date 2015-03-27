@@ -28,6 +28,7 @@ Various unittests to test functionality of python-opsi.
 import mock
 import os
 import unittest
+from contextlib import contextmanager
 
 import OPSI.System.Posix as Posix
 
@@ -712,6 +713,30 @@ class GetNetworkDeviceConfigTestCase(unittest.TestCase):
 					expectedConfig[key], config[key], key=key
 				)
 			)
+
+
+class GetEthernetDevicesTestCase(unittest.TestCase):
+	def testReadingOnDebianWheezy(self):
+		@contextmanager
+		def fakeReader(*args):
+			def output():
+				yield "Inter-|   Receive                                                |  Transmit"
+				yield " face |bytes    packets errs drop fifo frame compressed multicast|bytes    packets errs drop fifo colls carrier compressed"
+				yield " vnet0: 135768236 1266823    0    0    0     0          0         0 2756215935 3204376    0    0    0     0       0          0"
+				yield "    lo: 201420303 1045113    0    0    0     0          0         0 201420303 1045113    0    0    0     0       0          0"
+				yield "   br0: 1603065924 7426776    0    2    0     0          0         0 10073037907 6616183    0    0    0     0       0          0"
+				yield " vnet3: 122147784 1153388    0    0    0     0          0         0 2420527905 1758588    0    0    0     0       0          0"
+				yield " vnet2: 124533117 1167654    0    0    0     0          0         0 2481424486 1796157    0    0    0     0       0          0"
+				yield "  eth0: 4729787536 7116606    0    0    0     0          0         0 264028375 1534628    0    0    0     0       0          0"
+				yield " vnet1: 125965483 1179479    0    0    0     0          0         0 2461937669 1800948    0    0    0     0       0          0"
+
+			yield output()
+
+		with mock.patch('__builtin__.open', fakeReader):
+			devices = Posix.getEthernetDevices()
+			self.assertTrue(2, len(devices))
+			self.assertTrue('br0' in devices)
+			self.assertTrue('eth0' in devices)
 
 
 if __name__ == '__main__':
