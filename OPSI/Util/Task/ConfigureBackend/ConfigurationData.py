@@ -79,7 +79,7 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 		backend.backend_createBase()
 
 	configs = []
-	configIdents = set(backend.config_getIdents(returnType='unicode'))
+	configIdents = set(backend.config_getIdents(returnType='unicode'))  # pylint: disable=maybe-no-member
 
 	if runningOnUCS():
 		# We have a domain present and people might want to change this.
@@ -264,7 +264,7 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 
 	if configs:
 		LOGGER.notice(u'Setting up default values.')
-		backend.config_createObjects(configs)
+		backend.config_createObjects(configs)  # pylint: disable=maybe-no-member
 		LOGGER.notice(u'Finished setting up default values.')
 
 	addDynamicDepotDriveSelection(backend)

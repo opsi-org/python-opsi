@@ -106,7 +106,7 @@ class HostControlSafeBackend(ExtendedBackend):
 
 		result = {}
 		rpcts = []
-		for host in self._context.host_getObjects(id = hostIds):
+		for host in self._context.host_getObjects(id=hostIds):  # pylint: disable=maybe-no-member
 			try:
 				address = self._getHostAddress(host)
 				rpcts.append(
@@ -162,7 +162,7 @@ class HostControlSafeBackend(ExtendedBackend):
 		''' Switches on remote computers using WOL. '''
 		if not hostIds:
 			raise BackendMissingDataError(u"No matching host ids found")
-		hosts = self._context.host_getObjects(attributes = ['hardwareAddress'], id = hostIds)
+		hosts = self._context.host_getObjects(attributes=['hardwareAddress'], id=hostIds)  # pylint: disable=maybe-no-member
 		result = {}
 		for host in hosts:
 			try:
@@ -197,51 +197,51 @@ class HostControlSafeBackend(ExtendedBackend):
 	def hostControlSafe_shutdown(self, hostIds=[]):
 		if not hostIds:
 			raise BackendMissingDataError(u"No matching host ids found")
-		hostIds = self._context.host_getIdents(id=hostIds, returnType='unicode')
+		hostIds = self._context.host_getIdents(id=hostIds, returnType='unicode')  # pylint: disable=maybe-no-member
 		return self._opsiclientdRpc(hostIds=hostIds, method='shutdown', params=[])
 
 	def hostControlSafe_reboot(self, hostIds=[]):
 		if not hostIds:
 			raise BackendMissingDataError(u"No matching host ids found")
-		hostIds = self._context.host_getIdents(id=hostIds, returnType='unicode')
+		hostIds = self._context.host_getIdents(id=hostIds, returnType='unicode')  # pylint: disable=maybe-no-member
 		return self._opsiclientdRpc(hostIds=hostIds, method='reboot', params=[])
 
 	def hostControlSafe_fireEvent(self, event, hostIds=[]):
 		if not hostIds:
 			raise BackendMissingDataError(u"No matching host ids found")
 		event = forceUnicode(event)
-		hostIds = self._context.host_getIdents(id=hostIds, returnType='unicode')
+		hostIds = self._context.host_getIdents(id=hostIds, returnType='unicode')  # pylint: disable=maybe-no-member
 		return self._opsiclientdRpc(hostIds=hostIds, method='fireEvent', params=[event])
 
 	def hostControlSafe_showPopup(self, message, hostIds=[]):
 		if not hostIds:
 			raise BackendMissingDataError(u"No matching host ids found")
 		message = forceUnicode(message)
-		hostIds = self._context.host_getIdents(id=hostIds, returnType='unicode')
+		hostIds = self._context.host_getIdents(id=hostIds, returnType='unicode')  # pylint: disable=maybe-no-member
 		return self._opsiclientdRpc(hostIds=hostIds, method='showPopup', params=[message])
 
 	def hostControlSafe_uptime(self, hostIds=[]):
 		if not hostIds:
 			raise BackendMissingDataError(u"No matching host ids found")
-		hostIds = self._context.host_getIdents(id=hostIds, returnType='unicode')
+		hostIds = self._context.host_getIdents(id=hostIds, returnType='unicode')  # pylint: disable=maybe-no-member
 		return self._opsiclientdRpc(hostIds=hostIds, method='uptime', params=[])
 
 	def hostControlSafe_getActiveSessions(self, hostIds=[]):
 		if not hostIds:
 			raise BackendMissingDataError(u"No matching host ids found")
-		hostIds = self._context.host_getIdents(id=hostIds, returnType='unicode')
+		hostIds = self._context.host_getIdents(id=hostIds, returnType='unicode')  # pylint: disable=maybe-no-member
 		return self._opsiclientdRpc(hostIds=hostIds, method='getActiveSessions', params=[])
 
 	def hostControlSafe_opsiclientdRpc(self, method, params=[], hostIds=[], timeout=None):
 		if not hostIds:
 			raise BackendMissingDataError(u"No matching host ids found")
-		hostIds = self._context.host_getIdents(id=hostIds, returnType='unicode')
+		hostIds = self._context.host_getIdents(id=hostIds, returnType='unicode')  # pylint: disable=maybe-no-member
 		return self._opsiclientdRpc(hostIds=hostIds, method=method, params=params, timeout=timeout)
 
 	def hostControlSafe_reachable(self, hostIds=[], timeout=None):
 		if not hostIds:
 			raise BackendMissingDataError(u"No matching host ids found")
-		hostIds = self._context.host_getIdents(id=hostIds, returnType='unicode')
+		hostIds = self._context.host_getIdents(id=hostIds, returnType='unicode')  # pylint: disable=maybe-no-member
 		hostIds = forceHostIdList(hostIds)
 		if not timeout:
 			timeout = self._hostReachableTimeout
@@ -249,7 +249,7 @@ class HostControlSafeBackend(ExtendedBackend):
 
 		result = {}
 		threads = []
-		for host in self._context.host_getObjects(id=hostIds):
+		for host in self._context.host_getObjects(id=hostIds):  # pylint: disable=maybe-no-member
 			try:
 				address = self._getHostAddress(host)
 				threads.append(
@@ -296,5 +296,5 @@ class HostControlSafeBackend(ExtendedBackend):
 		if not hostIds:
 			raise BackendMissingDataError(u"No matching host ids found")
 		command = forceUnicode(command)
-		hostIds = self._context.host_getIdents(id=hostIds, returnType='unicode')
+		hostIds = self._context.host_getIdents(id=hostIds, returnType='unicode')  # pylint: disable=maybe-no-member
 		return self._opsiclientdRpc(hostIds=hostIds, method='execute', params=[command,waitForEnding,captureStderr,encoding,timeout])

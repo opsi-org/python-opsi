@@ -55,7 +55,7 @@ class DepotserverBackend(ExtendedBackend):
 		self._sshRSAPublicKeyFile = u'/etc/ssh/ssh_host_rsa_key.pub'
 
 		self._depotId = forceHostId(getfqdn(conf=OPSI_GLOBAL_CONF))
-		if not self._context.host_getIdents(id=self._depotId):
+		if not self._context.host_getIdents(id=self._depotId):  # pylint: disable=maybe-no-member
 			raise BackendMissingDataError(u"Depot '%s' not found in backend" % self._depotId)
 		self._packageManager = DepotserverPackageManager(self)
 

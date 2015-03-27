@@ -434,7 +434,7 @@ class MultiplexBackend(object):
 			dispatcher = self._getDispatcher(config.values)
 			for d in dispatcher:
 				if "OpsiClient.%s" % config.objectId in self._buffer:
-					dispatcher.host_createObject(self._buffer["OpsiClient.%s" % config.objectId])
+					dispatcher.host_createObject(self._buffer["OpsiClient.%s" % config.objectId])  # pylint: disable=maybe-no-member
 					del(self._buffer["OpsiClient.%s" % config.objectId])
 				self.dispatch("configState_updateObjects", configs)
 

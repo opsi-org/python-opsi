@@ -101,7 +101,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 
 		if depotId not in self._depotConnections:
 			if not self._opsiHostKey:
-				depots = self._context.host_getObjects(id=self._depotId)
+				depots = self._context.host_getObjects(id=self._depotId)  # pylint: disable=maybe-no-member
 				if not depots or not depots[0].getOpsiHostKey():
 					raise BackendMissingDataError(u"Failed to get opsi host key for depot '%s'" % self._depotId)
 				self._opsiHostKey = depots[0].getOpsiHostKey()
@@ -118,11 +118,11 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 		return self._depotConnections[depotId]
 
 	def _getResponsibleDepotId(self, clientId):
-		configStates = self._context.configState_getObjects(configId=u'clientconfig.depot.id', objectId=clientId)
+		configStates = self._context.configState_getObjects(configId=u'clientconfig.depot.id', objectId=clientId)  # pylint: disable=maybe-no-member
 		if configStates and configStates[0].values:
 			depotId = configStates[0].values[0]
 		else:
-			configs = self._context.config_getObjects(id=u'clientconfig.depot.id')
+			configs = self._context.config_getObjects(id=u'clientconfig.depot.id')  # pylint: disable=maybe-no-member
 			if not configs or not configs[0].defaultValues:
 				raise Exception(u"Failed to get depotserver for client '%s', config 'clientconfig.depot.id' not set and no defaults found" % clientId)
 			depotId = configs[0].defaultValues[0]

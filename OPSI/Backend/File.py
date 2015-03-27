@@ -827,13 +827,13 @@ class FileBackend(ConfigDataBackend):
 
 						match = self._placeholderRegex.search(section)
 						if match:
-							section = u'%s%s%s' % (match.group(1), objHash[match.group(2)], match.group(3))
+							section = u'%s%s%s' % (match.group(1), objHash[match.group(2)], match.group(3))  # pylint: disable=maybe-no-member
 							if objType == 'ProductOnClient':  # <productType>_product_states
 								section = section.replace('LocalbootProduct', 'localboot').replace('NetbootProduct', 'netboot')
 
 						match = self._placeholderRegex.search(option)
 						if match:
-							option = u'%s%s%s' % (match.group(1), objHash[match.group(2)], match.group(3))
+							option = u'%s%s%s' % (match.group(1), objHash[match.group(2)], match.group(3))  # pylint: disable=maybe-no-member
 
 						if cp.has_option(section, option):
 							value = cp.get(section, option)
@@ -844,7 +844,7 @@ class FileBackend(ConfigDataBackend):
 
 							# invalid values will throw exceptions later
 							if objType == 'ProductOnClient' and section.endswith('_product_states'):
-								index = value.find(':')
+								index = value.find(':')  # pylint: disable=maybe-no-member
 								if index == -1:
 									raise Exception(u"No ':' found in section '%s' in option '%s' in '%s'" % (section, option, filename))
 
@@ -1245,14 +1245,14 @@ class FileBackend(ConfigDataBackend):
 		host = forceObjectClass(host, Host)
 		ConfigDataBackend.host_insertObject(self, host)
 
-		logger.debug(u"Inserting host: '%s'" % host.getIdent())
+		logger.debug(u"Inserting host: '%s'" % host.getIdent())  # pylint: disable=maybe-no-member
 		self._write(host, mode='create')
 
 	def host_updateObject(self, host):
 		host = forceObjectClass(host, Host)
 		ConfigDataBackend.host_updateObject(self, host)
 
-		logger.debug(u"Updating host: '%s'" % host.getIdent())
+		logger.debug(u"Updating host: '%s'" % host.getIdent())  # pylint: disable=maybe-no-member
 		self._write(host, mode='update')
 
 	def host_getObjects(self, attributes=[], **filter):
@@ -1287,14 +1287,14 @@ class FileBackend(ConfigDataBackend):
 		config = forceObjectClass(config, Config)
 		ConfigDataBackend.config_insertObject(self, config)
 
-		logger.debug(u"Inserting config: '%s'" % config.getIdent())
+		logger.debug(u"Inserting config: '%s'" % config.getIdent())  # pylint: disable=maybe-no-member
 		self._write(config, mode='create')
 
 	def config_updateObject(self, config):
 		config = forceObjectClass(config, Config)
 		ConfigDataBackend.config_updateObject(self, config)
 
-		logger.debug(u"Updating config: '%s'" % config.getIdent())
+		logger.debug(u"Updating config: '%s'" % config.getIdent())  # pylint: disable=maybe-no-member
 		self._write(config, mode='update')
 
 	def config_getObjects(self, attributes=[], **filter):
@@ -1314,14 +1314,14 @@ class FileBackend(ConfigDataBackend):
 		configState = forceObjectClass(configState, ConfigState)
 		ConfigDataBackend.configState_insertObject(self, configState)
 
-		logger.debug(u"Inserting configState: '%s'" % configState.getIdent())
+		logger.debug(u"Inserting configState: '%s'" % configState.getIdent())  # pylint: disable=maybe-no-member
 		self._write(configState, mode='create')
 
 	def configState_updateObject(self, configState):
 		configState = forceObjectClass(configState, ConfigState)
 		ConfigDataBackend.configState_updateObject(self, configState)
 
-		logger.debug(u"Updating configState: '%s'" % configState.getIdent())
+		logger.debug(u"Updating configState: '%s'" % configState.getIdent())  # pylint: disable=maybe-no-member
 		self._write(configState, mode='update')
 
 	def configState_getObjects(self, attributes=[], **filter):
@@ -1341,14 +1341,14 @@ class FileBackend(ConfigDataBackend):
 		product = forceObjectClass(product, Product)
 		ConfigDataBackend.product_insertObject(self, product)
 
-		logger.debug(u"Inserting product: '%s'" % product.getIdent())
+		logger.debug(u"Inserting product: '%s'" % product.getIdent())  # pylint: disable=maybe-no-member
 		self._write(product, mode='create')
 
 	def product_updateObject(self, product):
 		product = forceObjectClass(product, Product)
 		ConfigDataBackend.product_updateObject(self, product)
 
-		logger.debug(u"Updating product: '%s'" % product.getIdent())
+		logger.debug(u"Updating product: '%s'" % product.getIdent())  # pylint: disable=maybe-no-member
 		self._write(product, mode='update')
 
 	def product_getObjects(self, attributes=[], **filter):
@@ -1371,14 +1371,14 @@ class FileBackend(ConfigDataBackend):
 		productProperty = forceObjectClass(productProperty, ProductProperty)
 		ConfigDataBackend.productProperty_insertObject(self, productProperty)
 
-		logger.debug(u"Inserting productProperty: '%s'" % productProperty.getIdent())
+		logger.debug(u"Inserting productProperty: '%s'" % productProperty.getIdent())  # pylint: disable=maybe-no-member
 		self._write(productProperty, mode='create')
 
 	def productProperty_updateObject(self, productProperty):
 		productProperty = forceObjectClass(productProperty, ProductProperty)
 		ConfigDataBackend.productProperty_updateObject(self, productProperty)
 
-		logger.debug(u"Updating productProperty: '%s'" % productProperty.getIdent())
+		logger.debug(u"Updating productProperty: '%s'" % productProperty.getIdent())  # pylint: disable=maybe-no-member
 		self._write(productProperty, mode='update')
 
 	def productProperty_getObjects(self, attributes=[], **filter):
@@ -1398,14 +1398,14 @@ class FileBackend(ConfigDataBackend):
 		productDependency = forceObjectClass(productDependency, ProductDependency)
 		ConfigDataBackend.productDependency_insertObject(self, productDependency)
 
-		logger.debug(u"Inserting productDependency: '%s'" % productDependency.getIdent())
+		logger.debug(u"Inserting productDependency: '%s'" % productDependency.getIdent())  # pylint: disable=maybe-no-member
 		self._write(productDependency, mode='create')
 
 	def productDependency_updateObject(self, productDependency):
 		productDependency = forceObjectClass(productDependency, ProductDependency)
 		ConfigDataBackend.productDependency_updateObject(self, productDependency)
 
-		logger.debug(u"Updating productDependency: '%s'" % productDependency.getIdent())
+		logger.debug(u"Updating productDependency: '%s'" % productDependency.getIdent())  # pylint: disable=maybe-no-member
 		self._write(productDependency, mode='update')
 
 	def productDependency_getObjects(self, attributes=[], **filter):
@@ -1425,14 +1425,14 @@ class FileBackend(ConfigDataBackend):
 		productOnDepot = forceObjectClass(productOnDepot, ProductOnDepot)
 		ConfigDataBackend.productOnDepot_insertObject(self, productOnDepot)
 
-		logger.debug(u"Inserting productOnDepot: '%s'" % productOnDepot.getIdent())
+		logger.debug(u"Inserting productOnDepot: '%s'" % productOnDepot.getIdent())  # pylint: disable=maybe-no-member
 		self._write(productOnDepot, mode='create')
 
 	def productOnDepot_updateObject(self, productOnDepot):
 		productOnDepot = forceObjectClass(productOnDepot, ProductOnDepot)
 		ConfigDataBackend.productOnDepot_updateObject(self, productOnDepot)
 
-		logger.debug(u"Updating productOnDepot: '%s'" % productOnDepot.getIdent())
+		logger.debug(u"Updating productOnDepot: '%s'" % productOnDepot.getIdent())  # pylint: disable=maybe-no-member
 		self._write(productOnDepot, mode='update')
 
 	def productOnDepot_getObjects(self, attributes=[], **filter):
@@ -1452,14 +1452,14 @@ class FileBackend(ConfigDataBackend):
 		productOnClient = forceObjectClass(productOnClient, ProductOnClient)
 		ConfigDataBackend.productOnClient_insertObject(self, productOnClient)
 
-		logger.debug(u"Inserting productOnClient: '%s'" % productOnClient.getIdent())
+		logger.debug(u"Inserting productOnClient: '%s'" % productOnClient.getIdent())  # pylint: disable=maybe-no-member
 		self._write(productOnClient, mode='create')
 
 	def productOnClient_updateObject(self, productOnClient):
 		productOnClient = forceObjectClass(productOnClient, ProductOnClient)
 		ConfigDataBackend.productOnClient_updateObject(self, productOnClient)
 
-		logger.debug(u"Updating productOnClient: '%s'" % productOnClient.getIdent())
+		logger.debug(u"Updating productOnClient: '%s'" % productOnClient.getIdent())  # pylint: disable=maybe-no-member
 		self._write(productOnClient, mode='update')
 
 	def productOnClient_getObjects(self, attributes=[], **filter):
@@ -1479,14 +1479,14 @@ class FileBackend(ConfigDataBackend):
 		productPropertyState = forceObjectClass(productPropertyState, ProductPropertyState)
 		ConfigDataBackend.productPropertyState_insertObject(self, productPropertyState)
 
-		logger.debug(u"Inserting productPropertyState: '%s'" % productPropertyState.getIdent())
+		logger.debug(u"Inserting productPropertyState: '%s'" % productPropertyState.getIdent())  # pylint: disable=maybe-no-member
 		self._write(productPropertyState, mode='create')
 
 	def productPropertyState_updateObject(self, productPropertyState):
 		productPropertyState = forceObjectClass(productPropertyState, ProductPropertyState)
 		ConfigDataBackend.productPropertyState_updateObject(self, productPropertyState)
 
-		logger.debug(u"Updating productPropertyState: '%s'" % productPropertyState.getIdent())
+		logger.debug(u"Updating productPropertyState: '%s'" % productPropertyState.getIdent())  # pylint: disable=maybe-no-member
 		self._write(productPropertyState, mode='update')
 
 	def productPropertyState_getObjects(self, attributes=[], **filter):
@@ -1506,14 +1506,14 @@ class FileBackend(ConfigDataBackend):
 		group = forceObjectClass(group, Group)
 		ConfigDataBackend.group_insertObject(self, group)
 
-		logger.debug(u"Inserting group: '%s'" % group.getIdent())
+		logger.debug(u"Inserting group: '%s'" % group.getIdent())  # pylint: disable=maybe-no-member
 		self._write(group, mode='create')
 
 	def group_updateObject(self, group):
 		group = forceObjectClass(group, Group)
 		ConfigDataBackend.group_updateObject(self, group)
 
-		logger.debug(u"Updating group: '%s'" % group.getIdent())
+		logger.debug(u"Updating group: '%s'" % group.getIdent())  # pylint: disable=maybe-no-member
 		self._write(group, mode='update')
 
 	def group_getObjects(self, attributes=[], **filter):
@@ -1533,14 +1533,14 @@ class FileBackend(ConfigDataBackend):
 		objectToGroup = forceObjectClass(objectToGroup, ObjectToGroup)
 		ConfigDataBackend.objectToGroup_insertObject(self, objectToGroup)
 
-		logger.debug(u"Inserting objectToGroup: '%s'" % objectToGroup.getIdent())
+		logger.debug(u"Inserting objectToGroup: '%s'" % objectToGroup.getIdent())  # pylint: disable=maybe-no-member
 		self._write(objectToGroup, mode='create')
 
 	def objectToGroup_updateObject(self, objectToGroup):
 		objectToGroup = forceObjectClass(objectToGroup, ObjectToGroup)
 		ConfigDataBackend.objectToGroup_updateObject(self, objectToGroup)
 
-		logger.debug(u"Updating objectToGroup: '%s'" % objectToGroup.getIdent())
+		logger.debug(u"Updating objectToGroup: '%s'" % objectToGroup.getIdent())  # pylint: disable=maybe-no-member
 		self._write(objectToGroup, mode='update')
 
 	def objectToGroup_getObjects(self, attributes=[], **filter):
@@ -1560,7 +1560,7 @@ class FileBackend(ConfigDataBackend):
 		auditSoftware = forceObjectClass(auditSoftware, AuditSoftware)
 		ConfigDataBackend.auditSoftware_insertObject(self, auditSoftware)
 
-		logger.debug(u"Inserting auditSoftware: '%s'" % auditSoftware.getIdent())
+		logger.debug(u"Inserting auditSoftware: '%s'" % auditSoftware.getIdent())  # pylint: disable=maybe-no-member
 		filename = self._getConfigFile('AuditSoftware', {}, 'sw')
 
 		if not os.path.exists(filename):
@@ -1569,7 +1569,7 @@ class FileBackend(ConfigDataBackend):
 		iniFile = IniFile(filename=filename)
 		ini = iniFile.parse()
 
-		auditSoftware = auditSoftware.toHash()
+		auditSoftware = auditSoftware.toHash()  # pylint: disable=maybe-no-member
 		for attribute in auditSoftware.keys():
 			if (auditSoftware[attribute] is None) or (attribute == 'type'):
 				continue
@@ -1615,11 +1615,11 @@ class FileBackend(ConfigDataBackend):
 		auditSoftware = forceObjectClass(auditSoftware, AuditSoftware)
 		ConfigDataBackend.auditSoftware_updateObject(self, auditSoftware)
 
-		logger.debug(u"Updating auditSoftware: '%s'" % auditSoftware.getIdent())
+		logger.debug(u"Updating auditSoftware: '%s'" % auditSoftware.getIdent())  # pylint: disable=maybe-no-member
 		filename = self._getConfigFile('AuditSoftware', {}, 'sw')
 		iniFile = IniFile(filename=filename)
 		ini = iniFile.parse()
-		ident = auditSoftware.getIdent(returnType='dict')
+		ident = auditSoftware.getIdent(returnType='dict')  # pylint: disable=maybe-no-member
 
 		for section in ini.sections():
 			found = True
@@ -1629,7 +1629,7 @@ class FileBackend(ConfigDataBackend):
 					break
 
 			if found:
-				for (key, value) in auditSoftware.toHash().items():
+				for (key, value) in auditSoftware.toHash().items():  # pylint: disable=maybe-no-member
 					if value is None:
 						continue
 					ini.set(section, key, self.__escape(value))
@@ -1721,8 +1721,8 @@ class FileBackend(ConfigDataBackend):
 		auditSoftwareOnClient = forceObjectClass(auditSoftwareOnClient, AuditSoftwareOnClient)
 		ConfigDataBackend.auditSoftwareOnClient_insertObject(self, auditSoftwareOnClient)
 
-		logger.debug(u"Inserting auditSoftwareOnClient: '%s'" % auditSoftwareOnClient.getIdent())
-		filename = self._getConfigFile('AuditSoftwareOnClient', {"clientId": auditSoftwareOnClient.clientId}, 'sw')
+		logger.debug(u"Inserting auditSoftwareOnClient: '%s'" % auditSoftwareOnClient.getIdent())  # pylint: disable=maybe-no-member
+		filename = self._getConfigFile('AuditSoftwareOnClient', {"clientId": auditSoftwareOnClient.clientId}, 'sw')  # pylint: disable=maybe-no-member
 
 		if not os.path.exists(filename):
 			self._touch(filename)
@@ -1730,7 +1730,7 @@ class FileBackend(ConfigDataBackend):
 		iniFile = IniFile(filename=filename)
 		ini = iniFile.parse()
 
-		auditSoftwareOnClient = auditSoftwareOnClient.toHash()
+		auditSoftwareOnClient = auditSoftwareOnClient.toHash()  # pylint: disable=maybe-no-member
 		for attribute in auditSoftwareOnClient.keys():
 			if auditSoftwareOnClient[attribute] is None:
 				continue
@@ -1775,11 +1775,11 @@ class FileBackend(ConfigDataBackend):
 		auditSoftwareOnClient = forceObjectClass(auditSoftwareOnClient, AuditSoftwareOnClient)
 		ConfigDataBackend.auditSoftwareOnClient_updateObject(self, auditSoftwareOnClient)
 
-		logger.debug(u"Updating auditSoftwareOnClient: '%s'" % auditSoftwareOnClient.getIdent())
-		filename = self._getConfigFile('AuditSoftwareOnClient', {"clientId": auditSoftwareOnClient.clientId}, 'sw')
+		logger.debug(u"Updating auditSoftwareOnClient: '%s'" % auditSoftwareOnClient.getIdent())  # pylint: disable=maybe-no-member
+		filename = self._getConfigFile('AuditSoftwareOnClient', {"clientId": auditSoftwareOnClient.clientId}, 'sw')  # pylint: disable=maybe-no-member
 		iniFile = IniFile(filename=filename)
 		ini = iniFile.parse()
-		ident = auditSoftwareOnClient.getIdent(returnType='dict')
+		ident = auditSoftwareOnClient.getIdent(returnType='dict')  # pylint: disable=maybe-no-member
 
 		for section in ini.sections():
 			found = True
@@ -1789,7 +1789,7 @@ class FileBackend(ConfigDataBackend):
 					break
 
 			if found:
-				for (key, value) in auditSoftwareOnClient.toHash().items():
+				for (key, value) in auditSoftwareOnClient.toHash().items():  # pylint: disable=maybe-no-member
 					if value is None:
 						continue
 					ini.set(section, key, self.__escape(value))
@@ -1880,14 +1880,14 @@ class FileBackend(ConfigDataBackend):
 		auditHardware = forceObjectClass(auditHardware, AuditHardware)
 		ConfigDataBackend.auditHardware_insertObject(self, auditHardware)
 
-		logger.debug(u"Inserting auditHardware: '%s'" % auditHardware.getIdent())
+		logger.debug(u"Inserting auditHardware: '%s'" % auditHardware.getIdent())  # pylint: disable=maybe-no-member
 		self.__doAuditHardwareObj(auditHardware, mode='insert')
 
 	def auditHardware_updateObject(self, auditHardware):
 		auditHardware = forceObjectClass(auditHardware, AuditHardware)
 		ConfigDataBackend.auditHardware_updateObject(self, auditHardware)
 
-		logger.debug(u"Updating auditHardware: '%s'" % auditHardware.getIdent())
+		logger.debug(u"Updating auditHardware: '%s'" % auditHardware.getIdent())  # pylint: disable=maybe-no-member
 		self.__doAuditHardwareObj(auditHardware, mode='update')
 
 	def auditHardware_getObjects(self, attributes=[], **filter):

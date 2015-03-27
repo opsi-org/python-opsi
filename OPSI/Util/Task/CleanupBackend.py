@@ -96,12 +96,12 @@ BackendManager from default paths.
 	cleanUpProducts(backend)
 
 	LOGGER.debug('Getting current depots...')
-	depotIds = [depot.id for depot in backend.host_getObjects(type=["OpsiConfigserver", "OpsiDepotserver"])]
+	depotIds = [depot.id for depot in backend.host_getObjects(type=["OpsiConfigserver", "OpsiDepotserver"])]  # pylint: disable=maybe-no-member
 	LOGGER.debug('Depots are: {0}'.format(depotIds))
 
 	LOGGER.debug('Getting current products...')
 	productIdents = []
-	for product in backend.product_getObjects():
+	for product in backend.product_getObjects():  # pylint: disable=maybe-no-member
 		if not product.getIdent(returnType='unicode') in productIdents:
 			productIdents.append(product.getIdent(returnType='unicode'))
 	LOGGER.debug('Product idents are: {0}'.format(productIdents))
@@ -116,7 +116,7 @@ BackendManager from default paths.
 	productPropertyIdents = []
 	deleteProductProperties = []
 	productPropertiesToCleanup = {}
-	for productProperty in backend.productProperty_getObjects():
+	for productProperty in backend.productProperty_getObjects():  # pylint: disable=maybe-no-member
 		productIdent = u"%s;%s;%s" % (productProperty.productId, productProperty.productVersion, productProperty.packageVersion)
 		if not productProperty.editable and productProperty.possibleValues:
 			productPropertyIdent = u"%s;%s" % (productIdent, productProperty.propertyId)
@@ -129,32 +129,32 @@ BackendManager from default paths.
 			if not productPropertyIdent in productPropertyIdents:
 				productPropertyIdents.append(productPropertyIdent)
 	if deleteProductProperties:
-		backend.productProperty_deleteObjects(deleteProductProperties)
+		backend.productProperty_deleteObjects(deleteProductProperties)  # pylint: disable=maybe-no-member
 
 	LOGGER.notice(u"Cleaning up product property states")
 	deleteProductPropertyStates = []
-	for productPropertyState in backend.productPropertyState_getObjects():
+	for productPropertyState in backend.productPropertyState_getObjects():  # pylint: disable=maybe-no-member
 		productPropertyIdent = u'%s;%s' % (productPropertyState.productId, productPropertyState.propertyId)
 		if not productPropertyIdent in productPropertyIdents:
 			LOGGER.info(u"Marking productPropertyState %s of non existent productProperty '%s' for deletion" % (productPropertyState, productPropertyIdent))
 			deleteProductPropertyStates.append(productPropertyState)
 	if deleteProductPropertyStates:
-		backend.productPropertyState_deleteObjects(deleteProductPropertyStates)
+		backend.productPropertyState_deleteObjects(deleteProductPropertyStates)  # pylint: disable=maybe-no-member
 
-	for depot in backend.host_getObjects(type='OpsiDepotserver'):
+	for depot in backend.host_getObjects(type='OpsiDepotserver'):  # pylint: disable=maybe-no-member
 		objectIds = [depot.id]
-		for clientToDepot in backend.configState_getClientToDepotserver(depotIds=depot.id):
+		for clientToDepot in backend.configState_getClientToDepotserver(depotIds=depot.id):  # pylint: disable=maybe-no-member
 			if not clientToDepot['clientId'] in objectIds:
 				objectIds.append(clientToDepot['clientId'])
 		productOnDepotIdents = {}
-		for productOnDepot in backend.productOnDepot_getObjects(depotId=depot.id):
+		for productOnDepot in backend.productOnDepot_getObjects(depotId=depot.id):  # pylint: disable=maybe-no-member
 			productIdent = u"%s;%s;%s" % (productOnDepot.productId, productOnDepot.productVersion, productOnDepot.packageVersion)
 			productOnDepotIdents[productOnDepot.productId] = productIdent
 		if not productOnDepotIdents:
 			continue
 		deleteProductPropertyStates = []
 		updateProductPropertyStates = []
-		for productPropertyState in backend.productPropertyState_getObjects(
+		for productPropertyState in backend.productPropertyState_getObjects(  # pylint: disable=maybe-no-member
 				objectId=objectIds,
 				productId=productOnDepotIdents.keys(),
 				propertyId=[]):
@@ -200,9 +200,9 @@ BackendManager from default paths.
 					LOGGER.info(u"Marking productPropertyState %s for update: values not in possible values: %s, values corrected: %s" % (productPropertyState, removeValues, changedValues))
 					updateProductPropertyStates.append(productPropertyState)
 		if deleteProductPropertyStates:
-			backend.productPropertyState_deleteObjects(deleteProductPropertyStates)
+			backend.productPropertyState_deleteObjects(deleteProductPropertyStates)  # pylint: disable=maybe-no-member
 		if updateProductPropertyStates:
-			backend.productPropertyState_updateObjects(updateProductPropertyStates)
+			backend.productPropertyState_updateObjects(updateProductPropertyStates)  # pylint: disable=maybe-no-member
 
 	LOGGER.notice(u"Cleaning up config states")
 	cleanUpConfigStates(backend)

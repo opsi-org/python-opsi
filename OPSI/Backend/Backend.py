@@ -235,8 +235,8 @@ This defaults to ``self``.
 							v = forceUnicode(filterValue)
 							match = re.search('^\s*([>=<]+)\s*([\d\.]+)', filterValue)
 							if match:
-								operator = match.group(1)
-								v = match.group(2)
+								operator = match.group(1)  # pylint: disable=maybe-no-member
+								v = match.group(2)  # pylint: disable=maybe-no-member
 								if operator == '=':
 									operator = '=='
 
@@ -723,7 +723,7 @@ the opsi host key.
 				logger.debug(e)
 
 		if hostId:
-			host = self._context.host_getObjects(id=hostId)
+			host = self._context.host_getObjects(id=hostId)  # pylint: disable=maybe-no-member
 			if not host:
 				raise BackendMissingDataError(u"Host '%s' not found in backend" % hostId)
 			host = host[0]
@@ -743,7 +743,7 @@ depot where the method is.
 		username = forceUnicodeLower(username)
 		password = forceUnicode(password)
 
-		depot = self._context.host_getObjects(id=self._depotId)
+		depot = self._context.host_getObjects(id=self._depotId)  # pylint: disable=maybe-no-member
 		if not depot:
 			raise Exception(u"Depot '%s' not found in backend %s" % (self._depotId, self._context))
 		depot = depot[0]
@@ -768,7 +768,7 @@ depot where the method is.
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def host_insertObject(self, host):
 		host = forceObjectClass(host, Host)
-		host.setDefaults()
+		host.setDefaults()  # pylint: disable=maybe-no-member
 
 	def host_updateObject(self, host):
 		host = forceObjectClass(host, Host)
@@ -783,8 +783,8 @@ depot where the method is.
 	def host_deleteObjects(self, hosts):
 		for host in forceObjectClassList(hosts, Host):
 			# Remove from groups
-			self._context.objectToGroup_deleteObjects(
-				self._context.objectToGroup_getObjects(
+			self._context.objectToGroup_deleteObjects(  # pylint: disable=maybe-no-member
+				self._context.objectToGroup_getObjects(  # pylint: disable=maybe-no-member
 					groupType='HostGroup',
 					objectId=host.id
 				)
@@ -792,61 +792,61 @@ depot where the method is.
 
 			if isinstance(host, OpsiClient):
 				# Remove product states
-				self._context.productOnClient_deleteObjects(
-					self._context.productOnClient_getObjects(clientId=host.id)
+				self._context.productOnClient_deleteObjects(  # pylint: disable=maybe-no-member
+					self._context.productOnClient_getObjects(clientId=host.id)  # pylint: disable=maybe-no-member
 				)
 			elif isinstance(host, OpsiDepotserver):
 				# This is also true for OpsiConfigservers
 				# Remove products
-				self._context.productOnDepot_deleteObjects(
-					self._context.productOnDepot_getObjects(depotId=host.id)
+				self._context.productOnDepot_deleteObjects(  # pylint: disable=maybe-no-member
+					self._context.productOnDepot_getObjects(depotId=host.id)  # pylint: disable=maybe-no-member
 				)
 			# Remove product property states
-			self._context.productPropertyState_deleteObjects(
-				self._context.productPropertyState_getObjects(objectId=host.id)
+			self._context.productPropertyState_deleteObjects(  # pylint: disable=maybe-no-member
+				self._context.productPropertyState_getObjects(objectId=host.id)  # pylint: disable=maybe-no-member
 			)
 			# Remove config states
-			self._context.configState_deleteObjects(
-				self._context.configState_getObjects(objectId=host.id)
+			self._context.configState_deleteObjects(  # pylint: disable=maybe-no-member
+				self._context.configState_getObjects(objectId=host.id)  # pylint: disable=maybe-no-member
 			)
 
 			if isinstance(host, OpsiClient):
 				# Remove boot configurations
-				self._context.bootConfiguration_deleteObjects(
-					self._context.bootConfiguration_getObjects(
+				self._context.bootConfiguration_deleteObjects(  # pylint: disable=maybe-no-member
+					self._context.bootConfiguration_getObjects(  # pylint: disable=maybe-no-member
 						name=[],
 						clientId=host.id
 					)
 				)
 
 				# Remove audit softwares
-				self._context.auditSoftwareOnClient_deleteObjects(
-					self._context.auditSoftwareOnClient_getObjects(
+				self._context.auditSoftwareOnClient_deleteObjects(  # pylint: disable=maybe-no-member
+					self._context.auditSoftwareOnClient_getObjects(  # pylint: disable=maybe-no-member
 						clientId=host.id
 					)
 				)
 
 			# Remove audit hardwares
-			self._context.auditHardwareOnHost_deleteObjects(
-				self._context.auditHardwareOnHost_getObjects(hostId=host.id)
+			self._context.auditHardwareOnHost_deleteObjects(  # pylint: disable=maybe-no-member
+				self._context.auditHardwareOnHost_getObjects(hostId=host.id)  # pylint: disable=maybe-no-member
 			)
 
 			if isinstance(host, OpsiClient):
 				# Free software licenses
-				self._context.licenseOnClient_deleteObjects(
-					self._context.licenseOnClient_getObjects(clientId=host.id)
+				self._context.licenseOnClient_deleteObjects(  # pylint: disable=maybe-no-member
+					self._context.licenseOnClient_getObjects(clientId=host.id)  # pylint: disable=maybe-no-member
 				)
 
-				for softwareLicense in self._context.softwareLicense_getObjects(boundToHost=host.id):
+				for softwareLicense in self._context.softwareLicense_getObjects(boundToHost=host.id):  # pylint: disable=maybe-no-member
 					softwareLicense.boundToHost = None
-					self._context.softwareLicense_insertObject(softwareLicense)
+					self._context.softwareLicense_insertObject(softwareLicense)  # pylint: disable=maybe-no-member
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Configs                                                                                   -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def config_insertObject(self, config):
 		config = forceObjectClass(config, Config)
-		config.setDefaults()
+		config.setDefaults()  # pylint: disable=maybe-no-member
 
 	def config_updateObject(self, config):
 		config = forceObjectClass(config, Config)
@@ -862,8 +862,8 @@ depot where the method is.
 		ids = [config.id for config in forceObjectClassList(configs, Config)]
 
 		if ids:
-			self._context.configState_deleteObjects(
-				self._context.configState_getObjects(
+			self._context.configState_deleteObjects(  # pylint: disable=maybe-no-member
+				self._context.configState_getObjects(  # pylint: disable=maybe-no-member
 					configId=ids,
 					objectId=[]
 				)
@@ -874,13 +874,13 @@ depot where the method is.
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def configState_insertObject(self, configState):
 		configState = forceObjectClass(configState, ConfigState)
-		configState.setDefaults()
+		configState.setDefaults()  # pylint: disable=maybe-no-member
 
 		if self._options['additionalReferentialIntegrityChecks']:
-			configIds = [config.id for config in self._context.config_getObjects(attributes=['id'])]
+			configIds = [config.id for config in self._context.config_getObjects(attributes=['id'])]  # pylint: disable=maybe-no-member
 
-			if configState.configId not in configIds:
-				raise BackendReferentialIntegrityError(u"Config with id '%s' not found" % configState.configId)
+			if configState.configId not in configIds:  # pylint: disable=maybe-no-member
+				raise BackendReferentialIntegrityError(u"Config with id '%s' not found" % configState.configId)  # pylint: disable=maybe-no-member
 
 	def configState_updateObject(self, configState):
 		configState = forceObjectClass(configState, ConfigState)
@@ -900,7 +900,7 @@ depot where the method is.
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def product_insertObject(self, product):
 		product = forceObjectClass(product, Product)
-		product.setDefaults()
+		product.setDefaults()  # pylint: disable=maybe-no-member
 
 	def product_updateObject(self, product):
 		product = forceObjectClass(product, Product)
@@ -917,22 +917,22 @@ depot where the method is.
 		for product in forceObjectClassList(products, Product):
 			productByIdAndVersion[product.id][product.productVersion].append(product.packageVersion)
 
-			self._context.productProperty_deleteObjects(
-				self._context.productProperty_getObjects(
+			self._context.productProperty_deleteObjects(  # pylint: disable=maybe-no-member
+				self._context.productProperty_getObjects(  # pylint: disable=maybe-no-member
 					productId=product.id,
 					productVersion=product.productVersion,
 					packageVersion=product.packageVersion
 				)
 			)
-			self._context.productDependency_deleteObjects(
-				self._context.productDependency_getObjects(
+			self._context.productDependency_deleteObjects(  # pylint: disable=maybe-no-member
+				self._context.productDependency_getObjects(  # pylint: disable=maybe-no-member
 					productId=product.id,
 					productVersion=product.productVersion,
 					packageVersion=product.packageVersion
 				)
 			)
-			self._context.productOnDepot_deleteObjects(
-				self._context.productOnDepot_getObjects(
+			self._context.productOnDepot_deleteObjects(  # pylint: disable=maybe-no-member
+				self._context.productOnDepot_getObjects(  # pylint: disable=maybe-no-member
 					productId=product.id,
 					productVersion=product.productVersion,
 					packageVersion=product.packageVersion
@@ -941,7 +941,7 @@ depot where the method is.
 
 		for (productId, versions) in productByIdAndVersion.items():
 			allProductVersionsWillBeDeleted = True
-			for product in self._context.product_getObjects(attributes=['id', 'productVersion', 'packageVersion'], id=productId):
+			for product in self._context.product_getObjects(attributes=['id', 'productVersion', 'packageVersion'], id=productId):  # pylint: disable=maybe-no-member
 				if not product.packageVersion in versions.get(product.productVersion, []):
 					allProductVersionsWillBeDeleted = False
 					break
@@ -949,17 +949,17 @@ depot where the method is.
 				continue
 
 			# Remove from groups, when allProductVerionsWillBeDelted
-			self._context.objectToGroup_deleteObjects(
-				self._context.objectToGroup_getObjects(
+			self._context.objectToGroup_deleteObjects(  # pylint: disable=maybe-no-member
+				self._context.objectToGroup_getObjects(  # pylint: disable=maybe-no-member
 					groupType='ProductGroup',
 					objectId=productId
 				)
 			)
-			self._context.productOnClient_deleteObjects(
-				self._context.productOnClient_getObjects(productId=productId)
+			self._context.productOnClient_deleteObjects(  # pylint: disable=maybe-no-member
+				self._context.productOnClient_getObjects(productId=productId)  # pylint: disable=maybe-no-member
 			)
-			self._context.productPropertyState_deleteObjects(
-				self._context.productPropertyState_getObjects(productId=productId)
+			self._context.productPropertyState_deleteObjects(  # pylint: disable=maybe-no-member
+				self._context.productPropertyState_getObjects(productId=productId)  # pylint: disable=maybe-no-member
 			)
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -967,21 +967,21 @@ depot where the method is.
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productProperty_insertObject(self, productProperty):
 		productProperty = forceObjectClass(productProperty, ProductProperty)
-		productProperty.setDefaults()
+		productProperty.setDefaults()  # pylint: disable=maybe-no-member
 
 		if self._options['additionalReferentialIntegrityChecks']:
-			if not self._context.product_getObjects(
+			if not self._context.product_getObjects(  # pylint: disable=maybe-no-member
 					attributes=['id', 'productVersion', 'packageVersion'],
-					id=productProperty.productId,
-					productVersion=productProperty.productVersion,
-					packageVersion=productProperty.packageVersion):
+					id=productProperty.productId,  # pylint: disable=maybe-no-member
+					productVersion=productProperty.productVersion,  # pylint: disable=maybe-no-member
+					packageVersion=productProperty.packageVersion):  # pylint: disable=maybe-no-member
 
 				raise BackendReferentialIntegrityError(
 					u"Product with id '{0}', productVersion '{1}', "
 					u"packageVersion '{2}' not found".format(
-						productProperty.productId,
-						productProperty.productVersion,
-						productProperty.packageVersion
+						productProperty.productId,  # pylint: disable=maybe-no-member
+						productProperty.productVersion,  # pylint: disable=maybe-no-member
+						productProperty.packageVersion  # pylint: disable=maybe-no-member
 					)
 				)
 
@@ -1003,22 +1003,22 @@ depot where the method is.
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productDependency_insertObject(self, productDependency):
 		productDependency = forceObjectClass(productDependency, ProductDependency)
-		productDependency.setDefaults()
-		if not productDependency.getRequiredAction() and not productDependency.getRequiredInstallationStatus():
+		productDependency.setDefaults()  # pylint: disable=maybe-no-member
+		if not productDependency.getRequiredAction() and not productDependency.getRequiredInstallationStatus():  # pylint: disable=maybe-no-member
 			raise BackendBadValueError(u"Either a required action or a required installation status must be given")
 		if self._options['additionalReferentialIntegrityChecks']:
-			if not self._context.product_getObjects(
+			if not self._context.product_getObjects(  # pylint: disable=maybe-no-member
 					attributes=['id', 'productVersion', 'packageVersion'],
-					id=productDependency.productId,
-					productVersion=productDependency.productVersion,
-					packageVersion=productDependency.packageVersion):
+					id=productDependency.productId,  # pylint: disable=maybe-no-member
+					productVersion=productDependency.productVersion,  # pylint: disable=maybe-no-member
+					packageVersion=productDependency.packageVersion):  # pylint: disable=maybe-no-member
 
 				raise BackendReferentialIntegrityError(
 					u"Product with id '{0}', productVersion '{1}', "
 					u"packageVersion '{2}' not found".format(
-						productDependency.productId,
-						productDependency.productVersion,
-						productDependency.packageVersion
+						productDependency.productId,  # pylint: disable=maybe-no-member
+						productDependency.productVersion,  # pylint: disable=maybe-no-member
+						productDependency.packageVersion  # pylint: disable=maybe-no-member
 					)
 				)
 
@@ -1040,21 +1040,21 @@ depot where the method is.
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productOnDepot_insertObject(self, productOnDepot):
 		productOnDepot = forceObjectClass(productOnDepot, ProductOnDepot)
-		productOnDepot.setDefaults()
+		productOnDepot.setDefaults()  # pylint: disable=maybe-no-member
 
 		if self._options['additionalReferentialIntegrityChecks']:
-			if not self._context.product_getObjects(
+			if not self._context.product_getObjects(  # pylint: disable=maybe-no-member
 				attributes=['id', 'productVersion', 'packageVersion'],
-				id=productOnDepot.productId,
-				productVersion=productOnDepot.productVersion,
-				packageVersion=productOnDepot.packageVersion):
+				id=productOnDepot.productId,  # pylint: disable=maybe-no-member
+				productVersion=productOnDepot.productVersion,  # pylint: disable=maybe-no-member
+				packageVersion=productOnDepot.packageVersion):  # pylint: disable=maybe-no-member
 
 				raise BackendReferentialIntegrityError(
 					u"Product with id '{0}', productVersion '{1}', "
 					u"packageVersion '{2}' not found".format(
-						productOnDepot.productId,
-						productOnDepot.productVersion,
-						productOnDepot.packageVersion
+						productOnDepot.productId,  # pylint: disable=maybe-no-member
+						productOnDepot.productVersion,  # pylint: disable=maybe-no-member
+						productOnDepot.packageVersion  # pylint: disable=maybe-no-member
 					)
 				)
 
@@ -1062,18 +1062,18 @@ depot where the method is.
 		productOnDepot = forceObjectClass(productOnDepot, ProductOnDepot)
 
 		if self._options['additionalReferentialIntegrityChecks']:
-			if not self._context.product_getObjects(
+			if not self._context.product_getObjects(  # pylint: disable=maybe-no-member
 				attributes=['id', 'productVersion', 'packageVersion'],
-				id=productOnDepot.productId,
-				productVersion=productOnDepot.productVersion,
-				packageVersion=productOnDepot.packageVersion):
+				id=productOnDepot.productId,  # pylint: disable=maybe-no-member
+				productVersion=productOnDepot.productVersion,  # pylint: disable=maybe-no-member
+				packageVersion=productOnDepot.packageVersion):  # pylint: disable=maybe-no-member
 
 				raise BackendReferentialIntegrityError(
 					u"Product with id '{0}', productVersion '{1}', "
 					u"packageVersion '{2}' not found".format(
-						productOnDepot.productId,
-						productOnDepot.productVersion,
-						productOnDepot.packageVersion
+						productOnDepot.productId,  # pylint: disable=maybe-no-member
+						productOnDepot.productVersion,  # pylint: disable=maybe-no-member
+						productOnDepot.packageVersion  # pylint: disable=maybe-no-member
 					)
 				)
 
@@ -1092,13 +1092,13 @@ depot where the method is.
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productOnClient_insertObject(self, productOnClient):
 		productOnClient = forceObjectClass(productOnClient, ProductOnClient)
-		productOnClient.setDefaults()
+		productOnClient.setDefaults()  # pylint: disable=maybe-no-member
 
-		if (productOnClient.installationStatus == 'installed') and (not (productOnClient.productVersion) or not (productOnClient.packageVersion)):
+		if (productOnClient.installationStatus == 'installed') and (not (productOnClient.productVersion) or not (productOnClient.packageVersion)):  # pylint: disable=maybe-no-member
 			raise BackendReferentialIntegrityError(u"Cannot set installationStatus for product '%s', client '%s' to 'installed' without productVersion and packageVersion" \
-				% (productOnClient.productId, productOnClient.clientId))
+				% (productOnClient.productId, productOnClient.clientId))  # pylint: disable=maybe-no-member
 
-		if productOnClient.installationStatus != 'installed':
+		if productOnClient.installationStatus != 'installed':  # pylint: disable=maybe-no-member
 			productOnClient.productVersion = None
 			productOnClient.packageVersion = None
 
@@ -1120,16 +1120,16 @@ depot where the method is.
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productPropertyState_insertObject(self, productPropertyState):
 		productPropertyState = forceObjectClass(productPropertyState, ProductPropertyState)
-		productPropertyState.setDefaults()
+		productPropertyState.setDefaults()  # pylint: disable=maybe-no-member
 
 		if self._options['additionalReferentialIntegrityChecks']:
-			if not self._context.productProperty_getObjects(
+			if not self._context.productProperty_getObjects(  # pylint: disable=maybe-no-member
 				attributes=['productId', 'propertyId'],
-				productId=productPropertyState.productId,
-				propertyId=productPropertyState.propertyId):
+				productId=productPropertyState.productId,  # pylint: disable=maybe-no-member
+				propertyId=productPropertyState.propertyId):  # pylint: disable=maybe-no-member
 
 				raise BackendReferentialIntegrityError(u"ProductProperty with id '%s' for product '%s' not found"
-					% (productPropertyState.propertyId, productPropertyState.productId))
+					% (productPropertyState.propertyId, productPropertyState.productId))  # pylint: disable=maybe-no-member
 
 	def productPropertyState_updateObject(self, productPropertyState):
 		productPropertyState = forceObjectClass(productPropertyState, ProductPropertyState)
@@ -1149,11 +1149,11 @@ depot where the method is.
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def group_insertObject(self, group):
 		group = forceObjectClass(group, Group)
-		group.setDefaults()
+		group.setDefaults()  # pylint: disable=maybe-no-member
 
 		if self._options['additionalReferentialIntegrityChecks']:
-			if group.parentGroupId and not self._context.group_getObjects(attributes=['id'], id=group.parentGroupId):
-				raise BackendReferentialIntegrityError(u"Parent group '%s' of group '%s' not found" % (group.parentGroupId, group.id))
+			if group.parentGroupId and not self._context.group_getObjects(attributes=['id'], id=group.parentGroupId):  # pylint: disable=maybe-no-member
+				raise BackendReferentialIntegrityError(u"Parent group '%s' of group '%s' not found" % (group.parentGroupId, group.id))  # pylint: disable=maybe-no-member
 
 	def group_updateObject(self, group):
 		group = forceObjectClass(group, Group)
@@ -1166,8 +1166,8 @@ depot where the method is.
 		return []
 
 	def group_deleteObjects(self, groups):
-		[self._context.objectToGroup_deleteObjects(
-			self._context.objectToGroup_getObjects(
+		[self._context.objectToGroup_deleteObjects(  # pylint: disable=maybe-no-member
+			self._context.objectToGroup_getObjects(  # pylint: disable=maybe-no-member
 				groupType=group.getType(),
 				groupId=group.id
 			)
@@ -1179,7 +1179,7 @@ depot where the method is.
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def objectToGroup_insertObject(self, objectToGroup):
 		objectToGroup = forceObjectClass(objectToGroup, ObjectToGroup)
-		objectToGroup.setDefaults()
+		objectToGroup.setDefaults()  # pylint: disable=maybe-no-member
 
 	def objectToGroup_updateObject(self, objectToGroup):
 		objectToGroup = forceObjectClass(objectToGroup, ObjectToGroup)
@@ -1199,7 +1199,7 @@ depot where the method is.
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def licenseContract_insertObject(self, licenseContract):
 		licenseContract = forceObjectClass(licenseContract, LicenseContract)
-		licenseContract.setDefaults()
+		licenseContract.setDefaults()  # pylint: disable=maybe-no-member
 
 	def licenseContract_updateObject(self, licenseContract):
 		licenseContract = forceObjectClass(licenseContract, LicenseContract)
@@ -1219,13 +1219,13 @@ depot where the method is.
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def softwareLicense_insertObject(self, softwareLicense):
 		softwareLicense = forceObjectClass(softwareLicense, SoftwareLicense)
-		softwareLicense.setDefaults()
-		if not softwareLicense.licenseContractId:
+		softwareLicense.setDefaults()  # pylint: disable=maybe-no-member
+		if not softwareLicense.licenseContractId:  # pylint: disable=maybe-no-member
 			raise BackendBadValueError(u"License contract missing")
 
 		if self._options['additionalReferentialIntegrityChecks']:
-			if not self._context.licenseContract_getObjects(attributes=['id'], id=softwareLicense.licenseContractId):
-				raise BackendReferentialIntegrityError(u"License contract with id '%s' not found" % softwareLicense.licenseContractId)
+			if not self._context.licenseContract_getObjects(attributes=['id'], id=softwareLicense.licenseContractId):  # pylint: disable=maybe-no-member
+				raise BackendReferentialIntegrityError(u"License contract with id '%s' not found" % softwareLicense.licenseContractId)  # pylint: disable=maybe-no-member
 
 	def softwareLicense_updateObject(self, softwareLicense):
 		softwareLicense = forceObjectClass(softwareLicense, SoftwareLicense)
@@ -1240,8 +1240,8 @@ depot where the method is.
 	def softwareLicense_deleteObjects(self, softwareLicenses):
 		softwareLicenseIds = [softwareLicense.id for softwareLicense in forceObjectClassList(softwareLicenses, SoftwareLicense)]
 
-		self._context.softwareLicenseToLicensePool_deleteObjects(
-			self._context.softwareLicenseToLicensePool_getObjects(
+		self._context.softwareLicenseToLicensePool_deleteObjects(  # pylint: disable=maybe-no-member
+			self._context.softwareLicenseToLicensePool_getObjects(  # pylint: disable=maybe-no-member
 				softwareLicenseId=softwareLicenseIds
 			)
 		)
@@ -1251,7 +1251,7 @@ depot where the method is.
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def licensePool_insertObject(self, licensePool):
 		licensePool = forceObjectClass(licensePool, LicensePool)
-		licensePool.setDefaults()
+		licensePool.setDefaults()  # pylint: disable=maybe-no-member
 
 	def licensePool_updateObject(self, licensePool):
 		licensePool = forceObjectClass(licensePool, LicensePool)
@@ -1267,13 +1267,13 @@ depot where the method is.
 		licensePoolIds = [licensePool.id for licensePool in forceObjectClassList(licensePools, LicensePool)]
 
 		if licensePoolIds:
-			softwareLicenseToLicensePools = self._context.softwareLicenseToLicensePool_getObjects(licensePoolId=licensePoolIds)
+			softwareLicenseToLicensePools = self._context.softwareLicenseToLicensePool_getObjects(licensePoolId=licensePoolIds)  # pylint: disable=maybe-no-member
 			if softwareLicenseToLicensePools:
 				raise BackendReferentialIntegrityError(u"Refusing to delete license pool(s) %s, one ore more licenses/keys refer to pool: %s" % \
 					(licensePoolIds, softwareLicenseToLicensePools))
 
-			self._context.auditSoftwareToLicensePool_deleteObjects(
-				self._context.auditSoftwareToLicensePool_getObjects(
+			self._context.auditSoftwareToLicensePool_deleteObjects(  # pylint: disable=maybe-no-member
+				self._context.auditSoftwareToLicensePool_getObjects(  # pylint: disable=maybe-no-member
 					name=[],
 					version=[],
 					subVersion=[],
@@ -1288,13 +1288,13 @@ depot where the method is.
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def softwareLicenseToLicensePool_insertObject(self, softwareLicenseToLicensePool):
 		softwareLicenseToLicensePool = forceObjectClass(softwareLicenseToLicensePool, SoftwareLicenseToLicensePool)
-		softwareLicenseToLicensePool.setDefaults()
+		softwareLicenseToLicensePool.setDefaults()  # pylint: disable=maybe-no-member
 
 		if self._options['additionalReferentialIntegrityChecks']:
-			if not self._context.softwareLicense_getObjects(attributes=['id'], id=softwareLicenseToLicensePool.softwareLicenseId):
-				raise BackendReferentialIntegrityError(u"Software license with id '%s' not found" % softwareLicenseToLicensePool.softwareLicenseId)
-			if not self._context.licensePool_getObjects(attributes=['id'], id=softwareLicenseToLicensePool.licensePoolId):
-				raise BackendReferentialIntegrityError(u"License with id '%s' not found" % softwareLicenseToLicensePool.licensePoolId)
+			if not self._context.softwareLicense_getObjects(attributes=['id'], id=softwareLicenseToLicensePool.softwareLicenseId):  # pylint: disable=maybe-no-member
+				raise BackendReferentialIntegrityError(u"Software license with id '%s' not found" % softwareLicenseToLicensePool.softwareLicenseId)  # pylint: disable=maybe-no-member
+			if not self._context.licensePool_getObjects(attributes=['id'], id=softwareLicenseToLicensePool.licensePoolId):  # pylint: disable=maybe-no-member
+				raise BackendReferentialIntegrityError(u"License with id '%s' not found" % softwareLicenseToLicensePool.licensePoolId)  # pylint: disable=maybe-no-member
 
 	def softwareLicenseToLicensePool_updateObject(self, softwareLicenseToLicensePool):
 		softwareLicenseToLicensePool = forceObjectClass(softwareLicenseToLicensePool, SoftwareLicenseToLicensePool)
@@ -1310,7 +1310,7 @@ depot where the method is.
 		softwareLicenseIds = [softwareLicenseToLicensePool.softwareLicenseId for softwareLicenseToLicensePool in forceObjectClassList(softwareLicenseToLicensePools, SoftwareLicenseToLicensePool)]
 
 		if softwareLicenseIds:
-			licenseOnClients = self._context.licenseOnClient_getObjects(softwareLicenseId=softwareLicenseIds)
+			licenseOnClients = self._context.licenseOnClient_getObjects(softwareLicenseId=softwareLicenseIds)  # pylint: disable=maybe-no-member
 			if licenseOnClients:
 				raise BackendReferentialIntegrityError(u"Refusing to delete softwareLicenseToLicensePool(s), one ore more licenses in use: %s"\
 					% licenseOnClients)
@@ -1320,7 +1320,7 @@ depot where the method is.
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def licenseOnClient_insertObject(self, licenseOnClient):
 		licenseOnClient = forceObjectClass(licenseOnClient, LicenseOnClient)
-		licenseOnClient.setDefaults()
+		licenseOnClient.setDefaults()  # pylint: disable=maybe-no-member
 
 	def licenseOnClient_updateObject(self, licenseOnClient):
 		licenseOnClient = forceObjectClass(licenseOnClient, LicenseOnClient)
@@ -1340,7 +1340,7 @@ depot where the method is.
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def auditSoftware_insertObject(self, auditSoftware):
 		auditSoftware = forceObjectClass(auditSoftware, AuditSoftware)
-		auditSoftware.setDefaults()
+		auditSoftware.setDefaults()  # pylint: disable=maybe-no-member
 
 	def auditSoftware_updateObject(self, auditSoftware):
 		auditSoftware = forceObjectClass(auditSoftware, AuditSoftware)
@@ -1360,7 +1360,7 @@ depot where the method is.
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def auditSoftwareToLicensePool_insertObject(self, auditSoftwareToLicensePool):
 		auditSoftwareToLicensePool = forceObjectClass(auditSoftwareToLicensePool, AuditSoftwareToLicensePool)
-		auditSoftwareToLicensePool.setDefaults()
+		auditSoftwareToLicensePool.setDefaults()  # pylint: disable=maybe-no-member
 
 	def auditSoftwareToLicensePool_updateObject(self, auditSoftwareToLicensePool):
 		auditSoftwareToLicensePool = forceObjectClass(auditSoftwareToLicensePool, AuditSoftwareToLicensePool)
@@ -1380,7 +1380,7 @@ depot where the method is.
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def auditSoftwareOnClient_insertObject(self, auditSoftwareOnClient):
 		auditSoftwareOnClient = forceObjectClass(auditSoftwareOnClient, AuditSoftwareOnClient)
-		auditSoftwareOnClient.setDefaults()
+		auditSoftwareOnClient.setDefaults()  # pylint: disable=maybe-no-member
 
 	def auditSoftwareOnClient_updateObject(self, auditSoftwareOnClient):
 		auditSoftwareOnClient = forceObjectClass(auditSoftwareOnClient, AuditSoftwareOnClient)
@@ -1400,7 +1400,7 @@ depot where the method is.
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def auditHardware_insertObject(self, auditHardware):
 		auditHardware = forceObjectClass(auditHardware, AuditHardware)
-		auditHardware.setDefaults()
+		auditHardware.setDefaults()  # pylint: disable=maybe-no-member
 
 	def auditHardware_updateObject(self, auditHardware):
 		auditHardware = forceObjectClass(auditHardware, AuditHardware)
@@ -1522,8 +1522,8 @@ depot where the method is.
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def auditHardwareOnHost_insertObject(self, auditHardwareOnHost):
 		auditHardwareOnHost = forceObjectClass(auditHardwareOnHost, AuditHardwareOnHost)
-		auditHardwareOnHost.setDefaults()
-		self._context.auditHardware_insertObject( AuditHardware.fromHash(auditHardwareOnHost.toHash()) )
+		auditHardwareOnHost.setDefaults()  # pylint: disable=maybe-no-member
+		self._context.auditHardware_insertObject(AuditHardware.fromHash(auditHardwareOnHost.toHash()))  # pylint: disable=maybe-no-member
 
 	def auditHardwareOnHost_updateObject(self, auditHardwareOnHost):
 		auditHardwareOnHost = forceObjectClass(auditHardwareOnHost, AuditHardwareOnHost)
@@ -1542,7 +1542,7 @@ depot where the method is.
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def bootConfiguration_insertObject(self, bootConfiguration):
 		bootConfiguration = forceObjectClass(bootConfiguration, BootConfiguration)
-		bootConfiguration.setDefaults()
+		bootConfiguration.setDefaults()  # pylint: disable=maybe-no-member
 
 	def bootConfiguration_updateObject(self, bootConfiguration):
 		bootConfiguration = forceObjectClass(bootConfiguration, BootConfiguration)
@@ -2977,7 +2977,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		return productOnClients
 
 	def productOnClient_generateSequence(self, productOnClients):
-		configs = self._context.config_getObjects(id="product_sort_algorithm")
+		configs = self._context.config_getObjects(id="product_sort_algorithm")  # pylint: disable=maybe-no-member
 		if configs and ("product_on_client" in configs[0].getDefaultValues() or "algorithm1" in configs[0].getDefaultValues()):
 			generateProductOnClientSequence = OPSI.SharedAlgorithm.generateProductOnClientSequence_algorithm1
 		else:

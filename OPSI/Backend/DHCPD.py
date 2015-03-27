@@ -131,7 +131,7 @@ class DHCPDBackend(ConfigDataBackend):
 
 		if not self._depotConnections.get(depotId):
 			if not self._opsiHostKey:
-				depots = self._context.host_getObjects(id=self._depotId)
+				depots = self._context.host_getObjects(id=self._depotId)  # pylint: disable=maybe-no-member
 				if not depots or not depots[0].getOpsiHostKey():
 					raise BackendMissingDataError(u"Failed to get opsi host key for depot '{0}'".format(self._depotId))
 				self._opsiHostKey = depots[0].getOpsiHostKey()
@@ -148,11 +148,11 @@ class DHCPDBackend(ConfigDataBackend):
 		return self._depotConnections[depotId]
 
 	def _getResponsibleDepotId(self, clientId):
-		configStates = self._context.configState_getObjects(configId=u'clientconfig.depot.id', objectId=clientId)
+		configStates = self._context.configState_getObjects(configId=u'clientconfig.depot.id', objectId=clientId)  # pylint: disable=maybe-no-member
 		if configStates and configStates[0].values:
 			depotId = configStates[0].values[0]
 		else:
-			configs = self._context.config_getObjects(id=u'clientconfig.depot.id')
+			configs = self._context.config_getObjects(id=u'clientconfig.depot.id')  # pylint: disable=maybe-no-member
 			if not configs or not configs[0].defaultValues:
 				raise Exception(u"Failed to get depotserver for client '%s', config 'clientconfig.depot.id' not set and no defaults found" % clientId)
 			depotId = configs[0].defaultValues[0]
@@ -166,26 +166,26 @@ class DHCPDBackend(ConfigDataBackend):
 		host = forceObjectClass(host, Host)
 
 		if self._dhcpdOnDepot:
-			depotId = self._getResponsibleDepotId(host.id)
+			depotId = self._getResponsibleDepotId(host.id)  # pylint: disable=maybe-no-member
 			if depotId != self._depotId:
-				logger.info(u"Not responsible for client '%s', forwarding request to depot '%s'" % (host.id, depotId))
-				return self._getDepotConnection(depotId).dhcpd_updateHost(host.id)
+				logger.info(u"Not responsible for client '%s', forwarding request to depot '%s'" % (host.id, depotId))  # pylint: disable=maybe-no-member
+				return self._getDepotConnection(depotId).dhcpd_updateHost(host.id)  # pylint: disable=maybe-no-member
 		self.dhcpd_updateHost(host)
 
 	def dhcpd_updateHost(self, host):
 		host = forceObjectClass(host, Host)
 
-		if not host.hardwareAddress:
+		if not host.hardwareAddress:  # pylint: disable=maybe-no-member
 			logger.warning(u"Cannot update dhcpd configuration for client %s: hardware address unknown" % host)
 			return
 
-		hostname = host.id.split('.')[0]
+		hostname = host.id.split('.')[0]  # pylint: disable=maybe-no-member
 
-		ipAddress = host.ipAddress
+		ipAddress = host.ipAddress  # pylint: disable=maybe-no-member
 		if not ipAddress:
 			try:
 				logger.info(u"Ip addess of client %s unknown, trying to get host by name" % host)
-				ipAddress = socket.gethostbyname(host.id)
+				ipAddress = socket.gethostbyname(host.id)  # pylint: disable=maybe-no-member
 				logger.info(u"Client fqdn resolved to '%s'" % ipAddress)
 			except Exception as error:
 				logger.debug(u"Failed to get IP by hostname: {0}".format(error))
@@ -202,18 +202,18 @@ class DHCPDBackend(ConfigDataBackend):
 					if currentHostParams.get('fixed-address'):
 						ipAddress = currentHostParams['fixed-address']
 					else:
-						raise BackendIOError(u"Cannot update dhcpd configuration for client {0}: ip address unknown and failed to get ip address from DHCP configuration file.".format(host.id))
+						raise BackendIOError(u"Cannot update dhcpd configuration for client {0}: ip address unknown and failed to get ip address from DHCP configuration file.".format(host.id))  # pylint: disable=maybe-no-member
 				else:
-					raise BackendIOError(u"Cannot update dhcpd configuration for client {0}: ip address unknown and failed to get host by name".format(host.id))
+					raise BackendIOError(u"Cannot update dhcpd configuration for client {0}: ip address unknown and failed to get host by name".format(host.id))  # pylint: disable=maybe-no-member
 
 		fixedAddress = ipAddress
 		if self._fixedAddressFormat == 'FQDN':
-			fixedAddress = host.id
+			fixedAddress = host.id  # pylint: disable=maybe-no-member
 
 		parameters = forceDict(self._defaultClientParameters)
 		if not self._dhcpdOnDepot:
 			try:
-				depot = self._context.host_getObjects(id=self._getResponsibleDepotId(host.id))[0]
+				depot = self._context.host_getObjects(id=self._getResponsibleDepotId(host.id))[0]  # pylint: disable=maybe-no-member
 				if depot.ipAddress:
 					parameters['next-server'] = depot.ipAddress
 			except Exception as error:
@@ -233,7 +233,7 @@ class DHCPDBackend(ConfigDataBackend):
 
 			self._dhcpdConfFile.addHost(
 				hostname=hostname,
-				hardwareAddress=host.hardwareAddress,
+				hardwareAddress=host.hardwareAddress,  # pylint: disable=maybe-no-member
 				ipAddress=ipAddress,
 				fixedAddress=fixedAddress,
 				parameters=parameters
@@ -247,9 +247,9 @@ class DHCPDBackend(ConfigDataBackend):
 	def _dhcpd_deleteHost(self, host):
 		host = forceObjectClass(host, Host)
 		if self._dhcpdOnDepot:
-			for depot in self._context.host_getObjects(id=self._depotId):
+			for depot in self._context.host_getObjects(id=self._depotId):  # pylint: disable=maybe-no-member
 				if depot.id != self._depotId:
-					self._getDepotConnection(depot.id).dhcpd_deleteHost(host.id)
+					self._getDepotConnection(depot.id).dhcpd_deleteHost(host.id)  # pylint: disable=maybe-no-member
 		self.dhcpd_deleteHost(host)
 
 	def dhcpd_deleteHost(self, host):
@@ -258,10 +258,10 @@ class DHCPDBackend(ConfigDataBackend):
 		self._reloadLock.acquire()
 		try:
 			self._dhcpdConfFile.parse()
-			if not self._dhcpdConfFile.getHost(host.id.split('.')[0]):
+			if not self._dhcpdConfFile.getHost(host.id.split('.')[0]):  # pylint: disable=maybe-no-member
 				self._reloadLock.release()
 				return
-			self._dhcpdConfFile.deleteHost(host.id.split('.')[0])
+			self._dhcpdConfFile.deleteHost(host.id.split('.')[0])  # pylint: disable=maybe-no-member
 			self._dhcpdConfFile.generate()
 		except Exception as error:
 			logger.error(error)
@@ -311,14 +311,14 @@ class DHCPDBackend(ConfigDataBackend):
 			return
 
 		[self.host_updateObject(host) for host in
-		self._context.host_getObjects(id=configState.objectId)]
+		self._context.host_getObjects(id=configState.objectId)]  # pylint: disable=maybe-no-member
 
 	def configState_updateObject(self, configState):
 		if configState.configId != 'clientconfig.depot.id':
 			return
 
 		[self.host_updateObject(host) for host in
-		self._context.host_getObjects(id=configState.objectId)]
+		self._context.host_getObjects(id=configState.objectId)]  # pylint: disable=maybe-no-member
 
 	def configState_deleteObjects(self, configStates):
 		for configState in configStates:
@@ -326,4 +326,4 @@ class DHCPDBackend(ConfigDataBackend):
 				continue
 
 			[self.host_updateObject(host) for host in
-			self._context.host_getObjects(id=configState.objectId)]
+			self._context.host_getObjects(id=configState.objectId)]  # pylint: disable=maybe-no-member
