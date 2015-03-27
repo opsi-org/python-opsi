@@ -607,8 +607,7 @@ class FileBackend(ConfigDataBackend):
 							try:
 								value = cp.get(section, option)
 								if not forceBool(value):
-									logger.debug(u"Skipping '%s' in section '%s' with False-value '%s'" \
-										% (option, section, value))
+									logger.debug(u"Skipping '%s' in section '%s' with False-value '%s'" % (option, section, value))
 									continue
 								if groupType == 'HostGroup':
 									option = forceHostId(option)
@@ -623,8 +622,7 @@ class FileBackend(ConfigDataBackend):
 									}
 								)
 							except Exception as e:
-								logger.error(u"Found invalid option '%s' in section '%s' in file '%s': %s" \
-									% (option, section, p['filename'], e))
+								logger.error(u"Found invalid option '%s' in section '%s' in file '%s': %s" % (option, section, p['filename'], e))
 					else:
 						objIdents.append({'id': section, 'type': groupType})
 
@@ -907,8 +905,7 @@ class FileBackend(ConfigDataBackend):
 
 		if objType == 'OpsiConfigserver':
 			if self.__serverId != obj.getId():
-				raise Exception(u"Filebackend can only handle this config server '%s', not '%s'" \
-					% (self.__serverId, obj.getId()))
+				raise Exception(u"Filebackend can only handle this config server '%s', not '%s'" % (self.__serverId, obj.getId()))
 
 		if not self._mappings.has_key(objType):
 			raise Exception(u"Mapping not found for object type '%s'" % objType)
@@ -1230,8 +1227,7 @@ class FileBackend(ConfigDataBackend):
 					if obj.getType() == 'ObjectToGroup':
 						if cp.has_option(section, obj.getObjectId()):
 							cp.remove_option(section, obj.getObjectId())
-							logger.debug2(u"Removed option '%s' in section '%s'" \
-								% (obj.getObjectId(), section))
+							logger.debug2(u"Removed option '%s' in section '%s'" % (obj.getObjectId(), section))
 					else:
 						if cp.has_section(section):
 							cp.remove_section(section)
