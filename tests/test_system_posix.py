@@ -738,6 +738,30 @@ class GetEthernetDevicesTestCase(unittest.TestCase):
 			self.assertTrue('br0' in devices)
 			self.assertTrue('eth0' in devices)
 
+	def testReadingUnpredictableNetworkInterfaceNames(self):
+		"""
+		We should be able to run on whatever distro that uses \
+		Predictable Network Interface Names.
+
+			What's this? What's this?
+			There's something very wrong
+			What's this?
+			There's people singing songs
+		"""
+		@contextmanager
+		def fakeReader(*args):
+			def output():
+				yield "Inter-|   Receive                                                |  Transmit"
+				yield " face |bytes    packets errs drop fifo frame compressed multicast|bytes    packets errs drop fifo colls carrier compressed"
+				yield " ens18:  130499    1836    0    0    0     0          0         0    34158     164    0    0    0     0       0          0"
+				yield "    lo:       0       0    0    0    0     0          0         0        0       0    0    0    0     0       0          0"
+
+			yield output()
+
+		with mock.patch('__builtin__.open', fakeReader):
+			devices = Posix.getEthernetDevices()
+			self.assertTrue(1, len(devices))
+			self.assertTrue('ens18' in devices)
 
 if __name__ == '__main__':
 	unittest.main()

@@ -4,7 +4,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 #
-# Copyright (C) 2006-2010, 2013-2014 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2010, 2013-2015 uib GmbH <info@uib.de>
 # All rights reserved.
 #
 # This program is free software: you can redistribute it and/or modify
@@ -375,9 +375,10 @@ def getEthernetDevices():
 			line = line.strip()
 			if not line or ':' not in line:
 				continue
+
 			device = line.split(':')[0].strip()
-			if device.startswith(('eth', 'tr', 'br')):
-				logger.info(u"Found ethernet device: '%s'" % device)
+			if device.startswith(('eth', 'ens', 'tr', 'br')):
+				logger.info(u"Found ethernet device: '{0}'".format(device))
 				devices.append(device)
 
 	return devices
