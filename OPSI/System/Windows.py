@@ -1909,7 +1909,6 @@ class Impersonate:
 		s.lpDesktop = self.winsta + u'\\' + self.desktop
 
 		logger.notice(u"Running command '%s' as user '%s' on desktop '%s'" % (command, self.username, self.desktop))
-		self.userEnvironment
 		(hProcess, hThread, dwProcessId, dwThreadId) = win32process.CreateProcessAsUser(
 					self.userToken, None, command, None, None, 0, dwCreationFlags, self.userEnvironment, None, s)
 		logger.info(u"Process startet, pid: %d" % dwProcessId)
