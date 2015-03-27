@@ -1037,16 +1037,19 @@ def mount(dev, mountpoint, **options):
 	else:
 		raise Exception(u"Cannot mount unknown fs type '%s'" % dev)
 
-	optString = u''
+	mountOptions = []
 	for (key, value) in options.items():
-		key   = forceUnicode(key)
+		key = forceUnicode(key)
 		value = forceUnicode(value)
 		if value:
-			optString += u',%s=%s' % (key, value)
+			mountOptions.append("{0}={1}".format(key, value))
 		else:
-			optString += u',%s' % key
-	if optString:
-		optString = u'-o "%s"' % optString[1:].replace('"', '\\"')
+			mountOptions.append("{0}".format(key))
+
+	if mountOptions:
+		optString = u'-o "{0}"'.format((u','.join(mountOptions)).replace('"', '\\"'))
+	else:
+		optString = u''
 
 	try:
 		result = execute(u"%s %s %s %s %s" % (which('mount'), fs, optString, dev, mountpoint))
