@@ -962,13 +962,13 @@ def mount(dev, mountpoint, **options):
 			credentialsFile = u"/tmp/.cifs-credentials.%s" % parts[0]
 			if os.path.exists(credentialsFile):
 				os.remove(credentialsFile)
-			f = open(credentialsFile, "w")
-			f.close()
+			with open(credentialsFile, "w") as f:
+				pass
+
 			os.chmod(credentialsFile, 0600)
-			f = codecs.open(credentialsFile, "w", "iso-8859-15")
-			f.write(u"username=%s\n" % options['username'])
-			f.write(u"password=%s\n" % options['password'])
-			f.close()
+			with codecs.open(credentialsFile, "w", "iso-8859-15") as f:
+				f.write(u"username=%s\n" % options['username'])
+				f.write(u"password=%s\n" % options['password'])
 			options['credentials'] = credentialsFile
 			credentialsFiles.append(credentialsFile)
 
@@ -1001,34 +1001,31 @@ def mount(dev, mountpoint, **options):
 			options['servercert'] = u''
 
 		if options['servercert']:
-			f = open(u"/etc/davfs2/certs/trusted.pem", "w")
-			f.write(options['servercert'])
-			f.close()
+			with open(u"/etc/davfs2/certs/trusted.pem", "w") as f:
+				f.write(options['servercert'])
 			os.chmod(u"/etc/davfs2/certs/trusted.pem", 0644)
 
-		f = codecs.open(u"/etc/davfs2/secrets", "r", "utf8")
-		lines = f.readlines()
-		f.close()
-		f = codecs.open(u"/etc/davfs2/secrets", "w", "utf8")
-		for line in lines:
-			if re.search("^%s\s+" % dev, line):
-				f.write(u"#")
-			f.write(line)
-		f.write(u'%s "%s" "%s"\n' % (dev, options['username'], options['password']))
-		f.close()
+		with codecs.open(u"/etc/davfs2/secrets", "r", "utf8") as f:
+			lines = f.readlines()
+
+		with codecs.open(u"/etc/davfs2/secrets", "w", "utf8") as f:
+			for line in lines:
+				if re.search("^%s\s+" % dev, line):
+					f.write(u"#")
+				f.write(line)
+			f.write(u'%s "%s" "%s"\n' % (dev, options['username'], options['password']))
 		os.chmod(u"/etc/davfs2/secrets", 0600)
 
 		if options['servercert']:
-			f = open(u"/etc/davfs2/davfs2.conf", "r")
-			lines = f.readlines()
-			f.close()
-			f = open(u"/etc/davfs2/davfs2.conf", "w")
-			for line in lines:
-				if re.search("^servercert\s+", line):
-					f.write("#")
-				f.write(line)
-			f.write(u"servercert /etc/davfs2/certs/trusted.pem\n")
-			f.close()
+			with open(u"/etc/davfs2/davfs2.conf", "r") as f:
+				lines = f.readlines()
+
+			with open(u"/etc/davfs2/davfs2.conf", "w") as f:
+				for line in lines:
+					if re.search("^servercert\s+", line):
+						f.write("#")
+					f.write(line)
+				f.write(u"servercert /etc/davfs2/certs/trusted.pem\n")
 
 		del options['username']
 		del options['password']
