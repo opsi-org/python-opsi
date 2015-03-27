@@ -1960,9 +1960,12 @@ class Harddisk:
 			hd = posix.open(self.getPartition(partition)['device'], posix.O_RDONLY)
 			posix.lseek(hd, 0x1c, 0)
 			start = posix.read(hd, 4)
-			logger.debug(u"NTFS Boot Record currently using %s %s %s %s as partition start sector" \
-						% ( hex(ord(start[0])), hex(ord(start[1])),
-						    hex(ord(start[2])), hex(ord(start[3])) ) )
+			logger.debug(
+				u"NTFS Boot Record currently using {0} {1} {2} {3} "
+				u"as partition start sector".format(
+					hex(ord(start[0])), hex(ord(start[1])),
+					hex(ord(start[2])), hex(ord(start[3])))
+			)
 			posix.close(hd)
 
 			logger.debug(u"Manipulating NTFS Boot Record!")
@@ -1976,9 +1979,12 @@ class Harddisk:
 			hd = posix.open(self.getPartition(partition)['device'], posix.O_RDONLY)
 			posix.lseek(hd, 0x1c, 0)
 			start = posix.read(hd, 4)
-			logger.debug(u"NTFS Boot Record now using %s %s %s %s as partition start sector" \
-						% ( hex(ord(start[0])), hex(ord(start[1])),
-						    hex(ord(start[2])), hex(ord(start[3])) ) )
+			logger.debug(
+				u"NTFS Boot Record now using %s %s %s %s as partition "
+				u"start sector".format(
+					hex(ord(start[0])), hex(ord(start[1])),
+					hex(ord(start[2])), hex(ord(start[3])))
+			)
 			posix.close(hd)
 		except Exception as e:
 			for hook in hooks:
