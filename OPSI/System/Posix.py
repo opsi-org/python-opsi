@@ -1938,6 +1938,7 @@ class Harddisk:
 	def setNTFSPartitionStartSector(self, partition, sector=0):
 		for hook in hooks:
 			(partition, sector) = hook.pre_Harddisk_setNTFSPartitionStartSector(self, partition, sector)
+
 		try:
 			partition = forceInt(partition)
 			sector = forceInt(sector)
@@ -1957,10 +1958,10 @@ class Harddisk:
 			)
 
 			x = [0, 0, 0, 0]
-			x[0] = int ( (sector & 0x000000FFL) )
-			x[1] = int ( (sector & 0x0000FF00L) >> 8 )
-			x[2] = int ( (sector & 0x00FF0000L) >> 16 )
-			x[3] = int ( (sector & 0xFFFFFFFFL) >> 24 )
+			x[0] = int((sector & 0x000000FFL))
+			x[1] = int((sector & 0x0000FF00L) >> 8)
+			x[2] = int((sector & 0x00FF0000L) >> 16)
+			x[3] = int((sector & 0xFFFFFFFFL) >> 24)
 
 			hd = posix.open(self.getPartition(partition)['device'], posix.O_RDONLY)
 			posix.lseek(hd, 0x1c, 0)
@@ -1978,7 +1979,7 @@ class Harddisk:
 			logger.info(u"Writing new value %s %s %s %s at 0x1c" % ( hex(x[0]), hex(x[1]), hex(x[2]), hex(x[3])))
 			posix.lseek(hd, 0x1c, 0)
 			for i in x:
-				posix.write( hd, chr(i) )
+				posix.write(hd, chr(i))
 			posix.close(hd)
 
 			hd = posix.open(self.getPartition(partition)['device'], posix.O_RDONLY)
