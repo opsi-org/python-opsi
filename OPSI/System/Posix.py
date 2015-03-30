@@ -993,10 +993,13 @@ def mount(dev, mountpoint, **options):
 		else:
 			raise Exception(u"Bad smb/cifs uri '%s'" % dev)
 
-	elif dev.lower().startswith('webdav://') or dev.lower().startswith('webdavs://') or \
-	     dev.lower().startswith('http://') or dev.lower().startswith('https://'):
-	     	# We need enough free space in /var/cache/davfs2
-	     	# Maximum transfer file size <= free space in /var/cache/davfs2
+	elif (dev.lower().startswith('webdav://')
+		or dev.lower().startswith('webdavs://')
+		or dev.lower().startswith('http://')
+		or dev.lower().startswith('https://')):
+
+		# We need enough free space in /var/cache/davfs2
+		# Maximum transfer file size <= free space in /var/cache/davfs2
 		match = re.search('^(http|webdav)(s*)(://[^/]+\/.+)$', dev, re.IGNORECASE)
 		if match:
 			fs  = u'-t davfs'
@@ -3317,10 +3320,9 @@ def hardwareInventory(config, progressSubject=None):
 							for element in elements:
 								for child in element.childNodes:
 									try:
-										if (child.nodeName == part):
+										if child.nodeName == part:
 											nextElements.append(child)
-										elif child.hasAttributes() and \
-										     ((child.getAttribute('class') == part) or (child.getAttribute('id').split(':')[0] == part)):
+										elif child.hasAttributes() and (child.getAttribute('class') == part or child.getAttribute('id').split(':')[0] == part):
 											nextElements.append(child)
 									except:
 										pass
