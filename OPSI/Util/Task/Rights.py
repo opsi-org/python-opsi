@@ -64,8 +64,8 @@ except Exception:
 	_FILE_ADMIN_GROUP = u'pcpatch'
 
 KNOWN_EXECUTABLES = set([
-	u'setup.py', u'show_drivers.py', u'create_driver_links.py',
-	u'opsi-deploy-client-agent', u'opsi-deploy-client-agent-old', u'winexe'
+	u'create_driver_links.py', u'opsi-deploy-client-agent', u'setup.py',
+	u'show_drivers.py', u'opsi-deploy-client-agent-old', u'winexe'
 ])
 
 
