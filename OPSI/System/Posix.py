@@ -657,9 +657,6 @@ def reboot(wait=10):
 			execute(u'%s %d; %s -r now' % (which('sleep'), wait, which('shutdown')), nowait=True)
 		else:
 			execute(u'%s -r now' % which('shutdown'), nowait=True)
-		# execute(u'%s %d; %s -r now' % (which('sleep'), int(wait), which('shutdown')), nowait = True)
-		# execute(u'(%s %d; %s s > /proc/sysrq-trigger; %s u > /proc/sysrq-trigger; %s b > /proc/sysrq-trigger) >/dev/null 2>/dev/null </dev/null &' \
-		# 	% (which('sleep'), int(wait), which('echo'), which('echo'), which('echo')), nowait = True)
 	except Exception as e:
 		for hook in hooks:
 			hook.error_reboot(wait, e)
@@ -679,8 +676,6 @@ def halt(wait=10):
 			execute(u'%s %d; %s -h now' % (which('sleep'), wait, which('shutdown')), nowait=True)
 		else:
 			execute(u'%s -h now' % which('shutdown'), nowait=True)
-		# execute(u'(%s %d; %s s > /proc/sysrq-trigger; %s u > /proc/sysrq-trigger; %s o > /proc/sysrq-trigger) >/dev/null 2>/dev/null </dev/null &' \
-		# 	% (which('sleep'), int(wait), which('echo'), which('echo'), which('echo')), nowait = True)
 	except Exception as e:
 		for hook in hooks:
 			hook.error_halt(wait, e)
@@ -1650,7 +1645,6 @@ class Harddisk:
 		if self.ldPreload:
 			os.putenv("LD_PRELOAD", self.ldPreload)
 		logger.info(u"Forcing kernel to reread partition table of '%s'." % self.device)
-		#execute(u'%s --re-read %s' % (which('sfdisk'), self.device))
 		try:
 			execute(u'%s %s' % (which('partprobe'), self.device), captureStderr=False)
 		except:
