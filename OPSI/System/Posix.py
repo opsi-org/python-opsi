@@ -647,7 +647,7 @@ def ifconfig(device, address, netmask=None):
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # -                                   SESSION / DESKTOP HANDLING                                      -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-def reboot(wait = 10):
+def reboot(wait=10):
 	for hook in hooks:
 		wait = hook.pre_reboot(wait)
 
@@ -1002,7 +1002,7 @@ def mount(dev, mountpoint, **options):
 		# Maximum transfer file size <= free space in /var/cache/davfs2
 		match = re.search('^(http|webdav)(s*)(://[^/]+\/.+)$', dev, re.IGNORECASE)
 		if match:
-			fs  = u'-t davfs'
+			fs = u'-t davfs'
 			dev = u'http' + match.group(2) + match.group(3)
 		else:
 			raise Exception(u"Bad webdav url '%s'" % dev)
@@ -1236,7 +1236,7 @@ class Harddisk:
 		self.heads = 0
 		self.sectors = 0
 		self.bytesPerSector = 512
-		self.label  = None
+		self.label = None
 		self.size = -1
 		self.partitions = []
 		self.ldPreload = None
@@ -1316,7 +1316,7 @@ class Harddisk:
 		posix.close(hd)
 
 		logger.debug(u"Read signature from device '%s': %s,%s,%s,%s" \
-				% (self.device, ord(x[0]), ord(x[1]), ord(x[2]), ord(x[3])) )
+				% (self.device, ord(x[0]), ord(x[1]), ord(x[2]), ord(x[3])))
 
 		self.signature = 0
 		self.signature += ord(x[3]) << 24
@@ -1353,7 +1353,7 @@ class Harddisk:
 				else:
 					raise Exception(u"Partition type '%s' not supported!" % id)
 			id = eval('0x' + id)
-			offset = 0x1be + (partition-1)*16 + 4
+			offset = 0x1be + (partition-1) * 16 + 4
 			f = open(self.device, 'rb+')
 			f.seek(offset)
 			f.write(chr(id))
@@ -1596,22 +1596,22 @@ class Harddisk:
 					part = self.getPartition(p + 1)
 					if self.blockAlignment:
 						logger.debug(u"   number: %s, start: %s MB (%s sec), end: %s MB (%s sec), size: %s MB (%s sec), " \
-								% (	part['number'],
+								% (part['number'],
 									(part['start']/(1000*1000)), part['secStart'],
 									(part['end']/(1000*1000)), part['secEnd'],
-									(part['size']/(1000*1000)), part['secSize'] ) \
+									(part['size']/(1000*1000)), part['secSize']) \
 								+ "type: %s, fs: %s, boot: %s" \
-								% (part['type'], part['fs'], part['boot']) )
+								% (part['type'], part['fs'], part['boot']))
 
 						cmd += u'%s,%s,%s' % (part['secStart'], part['secSize'], part['type'])
 					else:
 						logger.debug(u"   number: %s, start: %s MB (%s cyl), end: %s MB (%s cyl), size: %s MB (%s cyl), " \
-									% (	part['number'],
+									% (part['number'],
 										(part['start']/(1000*1000)), part['cylStart'],
 										(part['end']/(1000*1000)), part['cylEnd'],
-										(part['size']/(1000*1000)), part['cylSize'] ) \
+										(part['size']/(1000*1000)), part['cylSize']) \
 									+ "type: %s, fs: %s, boot: %s" \
-									% (part['type'], part['fs'], part['boot']) )
+									% (part['type'], part['fs'], part['boot']))
 
 						cmd += u'%s,%s,%s' % (part['cylStart'], part['cylSize'], part['type'])
 					if part['boot']:
@@ -1625,9 +1625,9 @@ class Harddisk:
 			if self.dosCompatibility:
 				dosCompat = u'-D '
 			if self.blockAlignment:
-				cmd +=  u'" | %s -L --no-reread -uS -f %s' % (which('sfdisk'), self.device)
+				cmd += u'" | %s -L --no-reread -uS -f %s' % (which('sfdisk'), self.device)
 			else:
-				cmd +=  u'" | %s -L --no-reread -uC %s%s' % (which('sfdisk'), dosCompat, self.device)
+				cmd += u'" | %s -L --no-reread -uC %s%s' % (which('sfdisk'), dosCompat, self.device)
 
 			if self.ldPreload:
 				os.putenv("LD_PRELOAD", self.ldPreload)
@@ -1690,7 +1690,7 @@ class Harddisk:
 			(partition, iterations, progressSubject) = hook.pre_Harddisk_shred(self, partition, iterations, progressSubject)
 
 		try:
-			partition  = forceInt(partition)
+			partition = forceInt(partition)
 			iterations = forceInt(iterations)
 
 			dev = self.device
@@ -1715,7 +1715,7 @@ class Harddisk:
 				match = re.search(lineRegex, line)
 				if match:
 					iteration = forceInt(match.group(1))
-					dataType  = match.group(3)
+					dataType = match.group(3)
 					logger.debug(u"Iteration: %d, data-type: %s" % (iteration, dataType))
 					match = re.search(posRegex, match.group(4))
 					if match:
@@ -1731,7 +1731,6 @@ class Harddisk:
 
 			ret = handle.close()
 			logger.debug(u"Exit code: %s" % ret)
-
 
 			if ret:
 				raise Exception(u"Command '%s' failed: %s" % (cmd, error))
@@ -1764,16 +1763,16 @@ class Harddisk:
 			dev = self.device
 			if (partition != 0):
 				dev = self.getPartition(partition)['device']
-				xfermax = int( round(float(self.getPartition(partition)['size'])/1024) )
+				xfermax = int(round(float(self.getPartition(partition)['size']) / 1024))
 			else:
-				xfermax = int( round(float(self.size)/1024) )
+				xfermax = int(round(float(self.size) / 1024))
 
 			if progressSubject:
 				progressSubject.setEnd(100)
 
 			cmd = u"%s -m %sk %s %s 2>&1" % (which('dd_rescue'), xfermax, infile, dev)
 
-			handle = execute(cmd, getHandle = True)
+			handle = execute(cmd, getHandle=True)
 			done = False
 
 			skip = 0
@@ -1811,11 +1810,11 @@ class Harddisk:
 					match = re.search('ipos:\s+(\d+)\.\d+k', inp)
 					if match:
 						position = forceInt(match.group(1))
-						percent  = (position*100)/xfermax
+						percent = (position * 100) / xfermax
 						logger.debug(u"Position: %s, xfermax: %s, percent: %s" % (position, xfermax, percent))
 						if (percent != progressSubject.getState()):
 							progressSubject.setState(percent)
-							progressSubject.setMessage(u"Pos: %s MB, average transfer rate: %s kB/s" % (round((position)/1024), rate))
+							progressSubject.setMessage(u"Pos: %s MB, average transfer rate: %s kB/s" % (round((position) / 1024), rate))
 
 			if progressSubject:
 				progressSubject.setState(100)
@@ -1866,7 +1865,7 @@ class Harddisk:
 
 			mbrType = u'-w'
 
-			if   system in (u'win2000', u'winxp', u'win2003', u'nt5'):
+			if system in (u'win2000', u'winxp', u'win2003', u'nt5'):
 				mbrType = u'--mbr'
 			elif system in (u'vista', u'win7', u'nt6'):
 				if not ms_sys_version == "2.1.3":
@@ -1921,6 +1920,7 @@ class Harddisk:
 	def writePartitionBootRecord(self, partition=1, fsType=u'auto'):
 		for hook in hooks:
 			(partition, fsType) = hook.pre_Harddisk_writePartitionBootRecord(self, partition, fsType)
+
 		try:
 			partition = forceInt(partition)
 			fsType = forceUnicodeLower(fsType)
