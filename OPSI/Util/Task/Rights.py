@@ -255,14 +255,13 @@ def removeDuplicatesFromDirectories(directories):
 		for alreadyAddedFolder in folders.copy():
 			if folder == alreadyAddedFolder:
 				LOGGER.debug("Already existing folder: {0}".format(folder))
-				continue
+				break
 			elif alreadyAddedFolder.startswith(folder):
 				LOGGER.debug("{0} in {1}. Removing {1}, adding {0}".format(folder, alreadyAddedFolder))
 				folders.remove(alreadyAddedFolder)
 				folders.add(folder)
 			elif folder.startswith(alreadyAddedFolder):
 				LOGGER.debug("{1} in {0}. Ignoring.".format(folder, alreadyAddedFolder))
-				continue
 			else:
 				LOGGER.debug("New folder: {0}".format(folder))
 				folders.add(folder)
