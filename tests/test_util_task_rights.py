@@ -25,6 +25,7 @@ Testing the setting of rights.
 
 from __future__ import absolute_import
 
+import mock
 import os
 import unittest
 
@@ -34,17 +35,24 @@ from OPSI.Util.Task.Rights import (getDirectoriesManagedByOpsi, getDirectoriesFo
 
 class SetRightsTestCase(unittest.TestCase):
     def testGetDirectoriesToProcess(self):
-        directories = getDirectoriesManagedByOpsi()
+        with mock.patch('OPSI.Util.Task.Rights._isSLES', mock.Mock(return_value=False)):
+            directories = getDirectoriesManagedByOpsi()
+
+        self.assertTrue(u'/home/opsiproducts' in directories)
+        self.assertTrue(u'/etc/opsi' in directories)
+        self.assertTrue(u'/tftpboot/linux' in directories)
+        self.assertTrue(u'/var/lib/opsi' in directories)
+        self.assertTrue(u'/var/log/opsi' in directories)
+
+    def testGetDirectoriesToProcessOnSLES(self):
+        with mock.patch('OPSI.Util.Task.Rights._isSLES', mock.Mock(return_value=True)):
+            directories = getDirectoriesManagedByOpsi()
 
         self.assertTrue(u'/var/log/opsi' in directories)
         self.assertTrue(u'/etc/opsi' in directories)
         self.assertTrue(u'/var/lib/opsi' in directories)
-
-        # TODO: make a test for that patches reading the distribution and pretend to be SLES
-        # if 'suse linux enterprise server' in distribution.lower():
-        #     return [u'/var/lib/tftpboot/opsi', u'/var/lib/opsi/workbench']
-        # else:
-        #     return [u'/tftpboot/linux', u'/home/opsiproducts', ]
+        self.assertTrue(u'/var/lib/tftpboot/opsi' in directories)
+        self.assertTrue(u'/var/lib/opsi/workbench' in directories)
 
     def testCleaningDirectoryList(self):
         self.assertEquals(
