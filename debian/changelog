@@ -1,4 +1,4 @@
-python-opsi (4.0.6.3-1) UNRELEASED; urgency=low
+python-opsi (4.0.6.3-1) experimental; urgency=low
 
   * OPSI.Util.Task.Rights: avoid duplicate path processing.
   * OPSI.Backend.MySQL.ConnectionPool: lower log-level for messages.
