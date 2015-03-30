@@ -1262,6 +1262,7 @@ class Harddisk:
 		except Exception as e:
 			logger.error(e)
 			return
+
 		# geo_override.so will affect all devices !
 		if not x86_64:
 			logger.info(u"Using geo_override.so for all disks.")
@@ -2439,7 +2440,7 @@ class Harddisk:
 			if progressSubject:
 				progressSubject.setEnd(100)
 
-			handle = execute(cmd, getHandle = True)
+			handle = execute(cmd, getHandle=True)
 			done = False
 
 			timeout = 0
@@ -2612,7 +2613,7 @@ class Harddisk:
 					progressSubject.setEnd(100)
 					progressSubject.setMessage(u"Scanning image")
 
-				handle = execute(cmd, getHandle = True)
+				handle = execute(cmd, getHandle=True)
 				done = False
 
 				timeout = 0
@@ -2689,7 +2690,7 @@ class Harddisk:
 					progressSubject.setEnd(100)
 					progressSubject.setMessage(u"Restoring image")
 
-				handle = execute(cmd, getHandle = True)
+				handle = execute(cmd, getHandle=True)
 				done = False
 
 				timeout = 0
