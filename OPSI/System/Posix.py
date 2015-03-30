@@ -2999,7 +2999,7 @@ def hardwareInventory(config, progressSubject=None):
 		return elements
 
 	# Read output from lshw
-	xmlOut = u'\n'.join(execute(u"%s -xml 2>/dev/null" % which("lshw"), captureStderr = False, encoding = None))
+	xmlOut = u'\n'.join(execute(u"%s -xml 2>/dev/null" % which("lshw"), captureStderr=False))
 	xmlOut = re.sub('[%c%c%c%c%c%c%c%c%c%c%c%c%c]' % (0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0xbd, 0xbf, 0xef, 0xdd), u'.', xmlOut)
 	dom = xml.dom.minidom.parseString( xmlOut.encode('utf-8') )
 
@@ -3008,7 +3008,7 @@ def hardwareInventory(config, progressSubject=None):
 	busId = None
 	devRegex = re.compile('([\d\.:a-f]+)\s+([\da-f]+):\s+([\da-f]+):([\da-f]+)\s*(\(rev ([^\)]+)\)|)')
 	subRegex = re.compile('\s*Subsystem:\s+([\da-f]+):([\da-f]+)\s*')
-	for line in execute(u"%s -vn" % which("lspci"), encoding = None):
+	for line in execute(u"%s -vn" % which("lspci")):
 		if not line.strip():
 			continue
 		match = re.search(devRegex, line)
