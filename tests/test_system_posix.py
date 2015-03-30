@@ -763,5 +763,31 @@ class GetEthernetDevicesTestCase(unittest.TestCase):
 			self.assertTrue(1, len(devices))
 			self.assertTrue('ens18' in devices)
 
+
+class ExecuteSignatureTestCase(unittest.TestCase):
+	"""
+	Testing the method signature of execute.
+
+	This tests are here to make sure that the same keyword arguments are
+	accepted on Linux as they are on Windows.
+	Unfortunately this is currently needed for the opsiclientd on Linux.
+	"""
+
+	def testExecutingWithWaitForEndingWorks(self):
+		"""
+		waitForEnding must be an accepted keyword.
+
+		This is to have the same keywords and behaviours on Windows and
+		Linux.
+		"""
+		Posix.execute('echo bla', waitForEnding=True)
+
+	def testExecutingWithShellWorks(self):
+		"""
+		'shell' must be an accepted keyword.
+		"""
+		Posix.execute('echo bla', shell=True)
+
+
 if __name__ == '__main__':
 	unittest.main()

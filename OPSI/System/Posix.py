@@ -706,7 +706,7 @@ def which(cmd):
 	return WHICH_CACHE[cmd]
 
 
-def execute(cmd, nowait=False, getHandle=False, ignoreExitCode=[], exitOnStderr=False, captureStderr=True, encoding=None, timeout=0):
+def execute(cmd, nowait=False, getHandle=False, ignoreExitCode=[], exitOnStderr=False, captureStderr=True, encoding=None, timeout=0, shell=None, waitForEnding=None):
 	"""
 	Executes a command.
 
@@ -731,6 +731,12 @@ will be redirected to *stdout*.
 	:param timeout: The time in seconds after that the execution will \
 be aborted.
 	:type timeout: int
+	:param shell: Currently ignored. This is introduced to have the \
+same keyword arguments as on Windows.
+	:param waitForEnding: If this is set it will overwrite the setting \
+for *nowait*. This is introduced to have the same keyword arguments as \
+on Windows.
+	:type waitForEnding: bool
 	:return: If the command finishes and we wait for it to finish the \
 output will be returned.
 	:returntype: list
@@ -740,6 +746,13 @@ output will be returned.
 	exitOnStderr = forceBool(exitOnStderr)
 	captureStderr = forceBool(captureStderr)
 	timeout = forceInt(timeout)
+
+	if shell is not None:
+		logger.warning("Argument 'shell' is unsupported on Linux.")
+
+	if waitForEnding is not None:
+		logger.debug("Detected kwarg 'waitForEnding'. Overwriting nowait.")
+		nowait = not forceBool(waitForEnding)
 
 	exitCode = 0
 	result = []

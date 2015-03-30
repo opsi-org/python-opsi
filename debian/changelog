@@ -1,3 +1,10 @@
+python-opsi (4.0.6.4-1) UNRELEASED; urgency=low
+
+  * OPSI.System.Posix.execute now accepts keyword arguments 'shell' and
+    'waitForEnding' to have the same keyword arguments as on Windows.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 30 Mar 2015 15:38:39 +0200
+
 python-opsi (4.0.6.3-1) experimental; urgency=low
 
   * OPSI.Util.Task.Rights: avoid duplicate path processing.
