@@ -1787,7 +1787,7 @@ class Harddisk:
 				if inp:
 					timeout = 0
 					skip += 1
-					if (inp.find(u'Summary') != -1):
+					if u'Summary' in inp:
 						done = True
 
 				elif timeout >= 10:
@@ -1939,9 +1939,8 @@ class Harddisk:
 				result = execute(cmd)
 				if self.ldPreload:
 					os.unsetenv("LD_PRELOAD")
-				if (result[0].find(u'successfully') == -1):
+				if u'successfully' not in result[0]:
 					raise Exception(result)
-
 			except Exception as e:
 				logger.error(u"Cannot write partition boot record: %s" % e)
 				raise Exception(u"Cannot write partition boot record: %s" % e)
