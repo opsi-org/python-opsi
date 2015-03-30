@@ -83,6 +83,7 @@ def getLocalFQDN():
 
 def setRights(path=u'/'):
 	LOGGER.notice(u"Setting rights on '{0}'".format(path))
+	LOGGER.debug("euid is {0}".format(os.geteuid()))
 
 	basedir = os.path.abspath(path)
 	if not os.path.isdir(basedir):
@@ -121,7 +122,6 @@ def setRights(path=u'/'):
 			dmod = 02770
 
 		if os.path.isfile(path):
-			LOGGER.debug(u"Setting ownership to {user}:{group} on file '{file}'".format(file=path, user=uid, group=gid))
 			chown(path, uid, gid)
 
 			LOGGER.debug(u"Setting rights on file '%s'" % path)
@@ -143,7 +143,6 @@ def setRights(path=u'/'):
 		chown(startPath, uid, gid)
 		os.chmod(startPath, dmod)
 		for filepath in findFiles(startPath, prefix=startPath, returnLinks=correctLinks, excludeFile=re.compile("(.swp|~)$")):
-			LOGGER.debug(u"Setting ownership to {user}:{group} on '{file}'".format(file=filepath, user=uid, group=gid))
 			chown(filepath, uid, gid)
 			if os.path.isdir(filepath):
 				LOGGER.debug(u"Setting rights on directory '%s'" % filepath)
@@ -161,7 +160,7 @@ def setRights(path=u'/'):
 					LOGGER.debug(u"Setting rights {rights} on file '{file}'".format(file=filepath, rights=fmod))
 					os.chmod(filepath, fmod)
 
-		if startPath.startswith(u'/var/lib/opsi'):
+		if startPath.startswith(u'/var/lib/opsi') and os.geteuid() == 0:
 			os.chmod(u'/var/lib/opsi', 0750)
 			chown(u'/var/lib/opsi', clientUserUid, fileAdminGroupGid)
 			setRightsOnSSHDirectory(clientUserUid, fileAdminGroupGid)
@@ -274,14 +273,21 @@ def chown(path, uid, gid):
 	"""
 	Set the ownership of a file or folder.
 
+	The uid will only be set if the efficte uid is 0 - i.e. running with sudo.
+
 	If changing the owner fails an Exception will only be risen if the
 	current uid is 0 - we are root.
 	In all other cases only a warning is shown.
 	"""
 	try:
-		os.chown(path, uid, gid)
+		if os.geteuid() == 0:
+			LOGGER.debug(u"Setting ownership to {user}:{group} on '{path}'".format(path=path, user=uid, group=gid))
+			os.chown(path, uid, gid)
+		else:
+			LOGGER.debug(u"Setting ownership to -1:{group} on '{path}'".format(path=path, group=gid))
+			os.chown(path, -1, gid)
 	except OSError as fist:
-		if os.getuid() == 0:
+		if os.geteuid() == 0:
 			# We are root so something must be really wrong!
 			raise fist
 

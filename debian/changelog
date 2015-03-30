@@ -19,8 +19,10 @@ python-opsi (4.0.6.3-1) UNRELEASED; urgency=low
   * New extension 70_wan.conf for easy disabling/enabling of WAN configuration
   * 70_dynamic_depot.conf: getDepotSelectionAlgorithmByNetworkAddress
     makes use of OPSI.Util.ipAddressInNetwork instead of copying code.
+  * OPSI.Util.Task.Rights: chown will only supply an uid if euid is 0 to
+    avoid failures.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 27 Mar 2015 12:32:37 +0100
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 30 Mar 2015 11:44:00 +0200
 
 python-opsi (4.0.6.2-1) experimental; urgency=low
 
