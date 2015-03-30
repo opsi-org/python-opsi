@@ -212,11 +212,11 @@ def getDirectoriesForProcessing(path):
 
 def getDirectoriesManagedByOpsi():
 	if _isSLES():
-		return [u'/var/lib/tftpboot/opsi', u'/var/log/opsi', u'/etc/opsi',
-				u'/var/lib/opsi', u'/var/lib/opsi/workbench']
+		return [u'/etc/opsi',  u'/var/lib/opsi', u'/var/lib/opsi/workbench',
+				u'/var/lib/tftpboot/opsi', u'/var/log/opsi']
 	else:
-		return [u'/tftpboot/linux', u'/home/opsiproducts', u'/var/log/opsi',
-				u'/etc/opsi', u'/var/lib/opsi']
+		return [u'/etc/opsi', u'/home/opsiproducts', u'/tftpboot/linux',
+				u'/var/lib/opsi', u'/var/log/opsi']
 
 
 def _isSLES():
