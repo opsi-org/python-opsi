@@ -820,7 +820,7 @@ output will be returned.
 								raise Exception(u"Command '%s' failed: %s" % (cmd, chunk))
 							data += chunk
 					except IOError as e:
-						if (e.errno != 11):
+						if e.errno != 11:
 							raise
 
 				if timeout > 0 and (time.time() - startTime >= timeout):
@@ -1344,11 +1344,11 @@ class Harddisk:
 			if not re.search('^[a-f0-9]{2}$', id):
 				if id in (u'linux', u'ext2', u'ext3', u'ext4', u'xfs', u'reiserfs', u'reiser4'):
 					id = u'83'
-				elif (id == u'linux-swap'):
+				elif id == u'linux-swap':
 					id = u'82'
-				elif (id == u'fat32'):
+				elif id == u'fat32':
 					id = u'0c'
-				elif (id == u'ntfs'):
+				elif id == u'ntfs':
 					id = u'07'
 				else:
 					raise Exception(u"Partition type '%s' not supported!" % id)
@@ -1472,7 +1472,7 @@ class Harddisk:
 
 				if match.group(5):
 					boot = False
-					if (match.group(3) == u'*'):
+					if match.group(3) == u'*':
 						boot = True
 
 					fs = u'unknown'
@@ -1694,7 +1694,7 @@ class Harddisk:
 			iterations = forceInt(iterations)
 
 			dev = self.device
-			if (partition != 0):
+			if partition != 0:
 				dev = self.getPartition(partition)['device']
 
 			cmd = u"%s -v -n %d %s 2>&1" % (which('shred'), iterations, dev)
@@ -1761,7 +1761,7 @@ class Harddisk:
 
 			xfermax = 0
 			dev = self.device
-			if (partition != 0):
+			if partition != 0:
 				dev = self.getPartition(partition)['device']
 				xfermax = int(round(float(self.getPartition(partition)['size']) / 1024))
 			else:
@@ -1790,14 +1790,14 @@ class Harddisk:
 					if (inp.find(u'Summary') != -1):
 						done = True
 
-				elif (timeout >= 10):
+				elif timeout >= 10:
 					raise Exception(u"Failed (timed out)")
 
 				else:
 					timeout += 1
 					continue
 
-				if (skip < 10):
+				if skip < 10:
 					time.sleep(0.1)
 					continue
 				else:
@@ -1812,7 +1812,7 @@ class Harddisk:
 						position = forceInt(match.group(1))
 						percent = (position * 100) / xfermax
 						logger.debug(u"Position: %s, xfermax: %s, percent: %s" % (position, xfermax, percent))
-						if (percent != progressSubject.getState()):
+						if percent != progressSubject.getState():
 							progressSubject.setState(percent)
 							progressSubject.setMessage(u"Pos: %s MB, average transfer rate: %s kB/s" % (round((position) / 1024), rate))
 
@@ -1927,7 +1927,7 @@ class Harddisk:
 
 			logger.info(u"Writing partition boot record on '%s' (fs-type: %s)" % (self.getPartition(partition)['device'], fsType))
 
-			if (fsType == u'auto'):
+			if fsType == u'auto':
 				fsType = u'-w'
 			else:
 				fsType = u'--%s' % fsType
