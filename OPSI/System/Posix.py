@@ -3097,7 +3097,8 @@ def hardwareInventory(config, progressSubject=None):
 				currentKey = None
 				status = False
 				logger.debug(u"Device: %s:%s" % (busId, devId))
-				lsusb[ busId + ":" + devId] = {
+				# TODO: better key building.
+				lsusb[busId + ":" + devId] = {
 					'device': {},
 					'configuration': {},
 					'interface': {},
@@ -3141,7 +3142,7 @@ def hardwareInventory(config, progressSubject=None):
 				logger.error(u"No descriptor")
 				continue
 
-			if not lsusb[busId + ":" + devId].has_key(descriptor):
+			if descriptor not in lsusb[busId + ":" + devId]:
 				logger.error(u"Unknown descriptor '%s'" % descriptor)
 				continue
 
@@ -3167,13 +3168,12 @@ def hardwareInventory(config, progressSubject=None):
 
 			currentKey = key
 			if type(lsusb[busId + ":" + devId][descriptor]) is list:
-				if not lsusb[busId + ":" + devId][descriptor][-1].has_key(key):
-					lsusb[busId + ":" + devId][descriptor][-1][key] = [ ]
+				if key not in lsusb[busId + ":" + devId][descriptor][-1]:
+					lsusb[busId + ":" + devId][descriptor][-1][key] = []
 				lsusb[busId + ":" + devId][descriptor][-1][key].append(value)
-
 			else:
-				if not lsusb[busId + ":" + devId][descriptor].has_key(key):
-					lsusb[busId + ":" + devId][descriptor][key] = [ ]
+				if key not in lsusb[busId + ":" + devId][descriptor]:
+					lsusb[busId + ":" + devId][descriptor][key] = []
 				lsusb[busId + ":" + devId][descriptor][key].append(value)
 
 		logger.debug2(u"Parsed lsusb info:")
@@ -3202,7 +3202,7 @@ def hardwareInventory(config, progressSubject=None):
 				dmiType = line.strip()
 				if dmiType.lower() == u'end of table':
 					break
-				if not dmidecode.has_key(dmiType):
+				if dmiType not in dmidecode:
 					dmidecode[dmiType] = []
 				dmidecode[dmiType].append({})
 			else:
@@ -3294,8 +3294,7 @@ def hardwareInventory(config, progressSubject=None):
 
 			# Process matching xml nodes
 			for i in range(len(devices)):
-
-				if not opsiValues.has_key(opsiClass):
+				if opsiClass not in opsiValues:
 					opsiValues[opsiClass] = []
 				opsiValues[opsiClass].append({})
 
