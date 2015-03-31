@@ -26,7 +26,6 @@ Testing the setting of rights.
 from __future__ import absolute_import
 
 import mock
-import os
 import unittest
 
 from OPSI.Util.Task.Rights import (getDirectoriesManagedByOpsi, getDirectoriesForProcessing,
