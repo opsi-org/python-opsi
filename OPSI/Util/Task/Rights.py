@@ -34,6 +34,11 @@ provides helpers for this task.
 	Added function :py:func:`chown`.
 
 
+.. versionchanged:: 4.0.6.4
+
+	Improved :py:func:`removeDuplicatesFromDirectories`.
+
+
 :copyright:  uib GmbH <info@uib.de>
 :author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
@@ -50,7 +55,7 @@ from OPSI.Types import forceHostId
 from OPSI.Util import findFiles, getfqdn
 from OPSI.Util.File.Opsi import OpsiConfFile
 
-__version__ = '4.0.6.3'
+__version__ = '4.0.6.4'
 
 LOGGER = Logger()
 
@@ -251,19 +256,24 @@ def removeDuplicatesFromDirectories(directories):
 			folders.add(folder)
 			continue
 
+		if folder in folders:
+			LOGGER.debug("Already added folder: {0}".format(folder))
+			continue
+
+		shouldAdd = True
 		for alreadyAddedFolder in folders.copy():
-			if folder == alreadyAddedFolder:
-				LOGGER.debug("Already existing folder: {0}".format(folder))
-				break
-			elif alreadyAddedFolder.startswith(folder):
+			if alreadyAddedFolder.startswith(folder):
 				LOGGER.debug("{0} in {1}. Removing {1}, adding {0}".format(folder, alreadyAddedFolder))
 				folders.remove(alreadyAddedFolder)
 				folders.add(folder)
+				shouldAdd = False
 			elif folder.startswith(alreadyAddedFolder):
 				LOGGER.debug("{1} in {0}. Ignoring.".format(folder, alreadyAddedFolder))
-			else:
-				LOGGER.debug("New folder: {0}".format(folder))
-				folders.add(folder)
+				shouldAdd = False
+
+		if shouldAdd:
+			LOGGER.debug("Adding new folder: {0}".format(folder))
+			folders.add(folder)
 
 	LOGGER.debug("Final folder collection: {0}".format(folders))
 	return folders

@@ -1,3 +1,9 @@
+python-opsi (4.0.6.6-1) UNRELEASED; urgency=low
+
+  * OPSI.Util.Task.Rights: better ignoring of subfolders.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 31 Mar 2015 14:56:34 +0200
+
 python-opsi (4.0.6.5-1) experimental; urgency=low
 
   * Fix problem when working mit DHCP files.

@@ -85,6 +85,23 @@ class SetRightsTestCase(unittest.TestCase):
             removeDuplicatesFromDirectories(['/a/bc/de', '/ab/c', '/bc/de'])
         )
 
+    def testIgnoringSubfolders(self):
+        """
+        Subfolder should be ignored - real world testcase.
+
+        Running this on old opsi servers might cause problems if
+        they link /opt/pcbin/install to /var/lib/opsi/depot.
+        That's the reason for the patch.
+        """
+        def fakeRealpath(path):
+            return path
+
+        with mock.patch('OPSI.Util.Task.Rights.os.path.realpath', fakeRealpath):
+            self.assertEquals(
+                set([u'/var/log/opsi', u'/tftpboot/linux', u'/home/opsiproducts', u'/etc/opsi', u'/var/lib/opsi']),
+                removeDuplicatesFromDirectories([u'/var/log/opsi', u'/var/lib/opsi/depot', u'/tftpboot/linux', u'/var/lib/opsi/depot', u'/home/opsiproducts', u'/etc/opsi', u'/var/lib/opsi'])
+            )
+
 
 class GetDirectoriesForProcessingTestCase(unittest.TestCase):
     def testGettingDirectories(self):
