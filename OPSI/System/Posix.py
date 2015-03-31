@@ -3001,11 +3001,7 @@ def hardwareInventory(config, progressSubject=None):
 			return u""
 
 	def getElementsByAttributeValue(dom, tagName, attributeName, attributeValue):
-		elements = []
-		for element in dom.getElementsByTagName(tagName):
-			if re.search(attributeValue , element.getAttribute(attributeName)):
-				elements.append(element)
-		return elements
+		return [element for element in dom.getElementsByTagName(tagName) if re.search(attributeValue, element.getAttribute(attributeName))]
 
 	# Read output from lshw
 	xmlOut = u'\n'.join(execute(u"%s -xml 2>/dev/null" % which("lshw"), captureStderr=False))
