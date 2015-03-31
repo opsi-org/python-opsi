@@ -2051,7 +2051,7 @@ class Harddisk:
 			if type != u'primary':
 				raise Exception("Type '%s' not supported!" % type)
 
-			unit  = 'cyl'
+			unit = 'cyl'
 			if self.blockAlignment:
 				unit = 'sec'
 			start = start.replace(u' ', u'')
@@ -2084,7 +2084,7 @@ class Harddisk:
 				# Cylinder!
 				start = int(start)
 				if self.blockAlignment:
-					start = int(round( ((float(start) * self.bytesPerCylinder) / self.bytesPerSector) ))
+					start = int(round(((float(start) * self.bytesPerCylinder) / self.bytesPerSector)))
 			else:
 				# Cylinder!
 				start = int(start)
@@ -2471,7 +2471,7 @@ class Harddisk:
 						if u'Partclone successfully' in buf[i]:
 							done = True
 						if u'Total Time' in buf[i]:
-							match =  re.search('Total\sTime:\s(\d+:\d+:\d+),\sAve.\sRate:\s*(\d*.\d*)([GgMm]B/min)', buf[i])
+							match = re.search('Total\sTime:\s(\d+:\d+:\d+),\sAve.\sRate:\s*(\d*.\d*)([GgMm]B/min)', buf[i])
 							if match:
 								rate = match.group(2)
 								unit = match.group(3)
@@ -2750,7 +2750,7 @@ class Harddisk:
 				self.setNTFSPartitionStartSector(partition)
 				if progressSubject:
 					progressSubject.setMessage(u"Resizing filesystem to partition size")
-				self.resizeFilesystem(partition, fs = u'ntfs')
+				self.resizeFilesystem(partition, fs=u'ntfs')
 
 			if self.ldPreload:
 				os.unsetenv("LD_PRELOAD")
