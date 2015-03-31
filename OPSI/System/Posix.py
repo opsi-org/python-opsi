@@ -2466,11 +2466,11 @@ class Harddisk:
 							logger.debug(u" -->>> %s" % buf[i])
 						except:
 							pass
-						if ( buf[i].find(u'Partclone fail') != -1 ):
+						if u'Partclone fail' in buf[i]:
 							raise Exception(u"Failed: %s" % '\n'.join(buf))
-						if ( buf[i].find(u'Partclone successfully') != -1 ):
+						if u'Partclone successfully' in buf[i]:
 							done = True
-						if ( buf[i].find(u'Total Time') != -1 ):
+						if u'Total Time' in buf[i]:
 							match =  re.search('Total\sTime:\s(\d+:\d+:\d+),\sAve.\sRate:\s*(\d*.\d*)([GgMm]B/min)', buf[i])
 							if match:
 								rate = match.group(2)
@@ -2485,11 +2485,11 @@ class Harddisk:
 								}
 
 						if not started:
-							if ( buf[i].find(u'Calculating bitmap') != -1 ):
+							if u'Calculating bitmap' in buf[i]:
 								logger.info(u"Save image: Scanning filesystem")
 								if progressSubject:
 									progressSubject.setMessage(u"Scanning filesystem")
-							elif ( buf[i].count(':') == 1 ) and (buf[i].find('http:') == -1):
+							elif buf[i].count(':') == 1 and 'http:' not in buf[i]:
 								(k, v) = buf[i].split(':')
 								k = k.strip()
 								v = v.strip()
@@ -2590,10 +2590,10 @@ class Harddisk:
 					logger.debug(u"Read 128 Bytes from file '%s': %s" % (imageFile, head.decode('ascii', 'replace')))
 					image.close()
 
-				if   (head.find('ntfsclone-image') != -1):
+				if 'ntfsclone-image' in head:
 					logger.notice(u"Image type is ntfsclone")
 					imageType = u'ntfsclone'
-				elif (head.find('partclone-image') != -1):
+				elif 'partclone-image' in head:
 					logger.notice(u"Image type is partclone")
 					imageType = u'partclone'
 
@@ -2645,21 +2645,22 @@ class Harddisk:
 								logger.debug(u" -->>> %s" % buf[i])
 							except:
 								pass
-							if ( buf[i].find(u'Partclone fail') != -1 ):
+
+							if u'Partclone fail' in buf[i]:
 								raise Exception(u"Failed: %s" % '\n'.join(buf))
-							if ( buf[i].find(u'Partclone successfully') != -1 ):
+							if u'Partclone successfully' in buf[i]:
 								done = True
 							if not started:
-								if ( buf[i].count(':') == 1 ) and (buf[i].find('http:') == -1):
+								if buf[i].count(':') == 1 and 'http:' in buf[i]:
 									(k, v) = buf[i].split(':')
 									k = k.strip()
 									v = v.strip()
 									logger.info(u"Save image: %s: %s" % (k, v))
 									if progressSubject:
 										progressSubject.setMessage(u"%s: %s" % (k, v))
-									if   (k.lower().find('file system') != -1):
+									if 'file system' in k.lower():
 										fs = v.lower()
-									elif (k.lower().find('used') != -1):
+									elif 'used' in k.lower():
 										if progressSubject:
 											progressSubject.setMessage(u"Restoring image")
 										started = True
@@ -2716,8 +2717,9 @@ class Harddisk:
 
 						buf = [buf[-1] + b[0]] + b[1:]
 
-						for i in range( len(buf)-1 ):
-							if ( buf[i].find('Syncing') != -1 ):
+						# TODO: remove range(len(..) possible?
+						for i in range(len(buf) - 1):
+							if 'Syncing' in buf[i]:
 								logger.info(u"Restore image: Syncing")
 								if progressSubject:
 									progressSubject.setMessage(u"Syncing")
@@ -3242,9 +3244,9 @@ def hardwareInventory(config, progressSubject=None):
 			for hwclass in linuxClass[6:].split('|'):
 				hwid = ''
 				filter = None
-				if (hwclass.find(':') != -1):
+				if ':' in hwclass:
 					(hwclass, hwid) = hwclass.split(':', 1)
-					if (hwid.find(':') != -1):
+					if ':' in hwid:
 						(hwid, filter) = hwid.split(':', 1)
 
 				logger.debug(u"Class is '%s', id is '%s', filter is: %s" % (hwClass, hwid, filter))
@@ -3316,7 +3318,7 @@ def hardwareInventory(config, progressSubject=None):
 						method = None
 						data = None
 						for part in attr.split('/'):
-							if (part.find('.') != -1):
+							if '.' in part:
 								(part, method) = part.split('.', 1)
 							nextElements = []
 							for element in elements:
@@ -3362,9 +3364,9 @@ def hardwareInventory(config, progressSubject=None):
 			opsiValues[opsiClass] = []
 			for hwclass in linuxClass[11:].split('|'):
 				(filterAttr, filterExp) = (None, None)
-				if (hwclass.find(':') != -1):
+				if ':' in hwclass:
 					(hwclass, filter) = hwclass.split(':', 1)
-					if (filter.find('.') != -1):
+					if '.' in filter:
 						(filterAttr, filterExp) = filter.split('.', 1)
 
 				for dev in dmidecode.get(hwclass, []):
@@ -3378,7 +3380,7 @@ def hardwareInventory(config, progressSubject=None):
 						for aname in attribute['Linux'].split('||'):
 							aname = aname.strip()
 							method = None
-							if (aname.find('.') != -1):
+							if '.' in aname:
 								(aname, method) = aname.split('.', 1)
 							if method:
 								try:
@@ -3422,7 +3424,7 @@ def hardwareInventory(config, progressSubject=None):
 						value = pycopy.deepcopy(dev)
 						for key in attribute['Linux'].split('/'):
 							method = None
-							if (key.find('.') != -1):
+							if '.' in key:
 								(key, method) = key.split('.', 1)
 							if not type(value) is dict or not value.has_key(key):
 								logger.error(u"Key '%s' not found" % key)
