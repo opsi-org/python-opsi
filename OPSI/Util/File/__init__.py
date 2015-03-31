@@ -1959,7 +1959,7 @@ class DHCPDConfFile(TextFile):
 				else:
 					quote = u"'"
 			elif re.search('\s', l):
-				current.apend(l)
+				current.append(l)
 			elif l == u',':
 				if quote:
 					current.append(l)
