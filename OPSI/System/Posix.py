@@ -2596,8 +2596,7 @@ class Harddisk:
 				elif 'partclone-image' in head:
 					logger.notice(u"Image type is partclone")
 					imageType = u'partclone'
-
-			except:
+			except Exception:
 				if image:
 					image.close()
 				raise
@@ -2643,7 +2642,7 @@ class Harddisk:
 						for i in range(len(buf) - 1):
 							try:
 								logger.debug(u" -->>> %s" % buf[i])
-							except:
+							except Exception:
 								pass
 
 							if u'Partclone fail' in buf[i]:
@@ -3290,7 +3289,7 @@ def hardwareInventory(config, progressSubject=None):
 												if eval("child.getAttribute(attr).%s" % method):
 													filtered.append(dev)
 													break
-										except:
+										except Exception:
 											pass
 					devs = filtered
 
@@ -3328,7 +3327,7 @@ def hardwareInventory(config, progressSubject=None):
 											nextElements.append(child)
 										elif child.hasAttributes() and (child.getAttribute('class') == part or child.getAttribute('id').split(':')[0] == part):
 											nextElements.append(child)
-									except:
+									except Exception:
 										pass
 							if not nextElements:
 								logger.warning(u"Attribute part '%s' not found" % part)
