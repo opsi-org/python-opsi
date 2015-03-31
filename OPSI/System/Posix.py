@@ -1530,7 +1530,7 @@ class Harddisk:
 					if partitionData['device']:
 						logger.debug(u"Waiting for device '%s' to appear" % partitionData['device'])
 						timeout = 15
-						while (timeout > 0):
+						while timeout > 0:
 							if os.path.exists(partitionData['device']):
 								break
 							time.sleep(1)
@@ -2018,7 +2018,7 @@ class Harddisk:
 	def getPartition(self, number):
 		number = forceInt(number)
 		for part in self.partitions:
-			if (part['number'] == number):
+			if part['number'] == number:
 				return part
 		raise Exception(u'Partition %s does not exist' % number)
 
@@ -2039,16 +2039,16 @@ class Harddisk:
 			else:
 				if fs in (u'ext2', u'ext3', u'ext4', u'xfs', u'reiserfs', u'reiser4', u'linux'):
 					partId = u'83'
-				elif (fs == u'linux-swap'):
+				elif fs == u'linux-swap':
 					partId = u'82'
-				elif (fs == u'fat32'):
+				elif fs == u'fat32':
 					partId = u'c'
-				elif (fs == u'ntfs'):
+				elif fs == u'ntfs':
 					partId = u'7'
 				else:
 					raise Exception("Filesystem '%s' not supported!" % fs)
 
-			if (type != u'primary'):
+			if type != u'primary':
 				raise Exception("Type '%s' not supported!" % type)
 
 			unit  = 'cyl'
@@ -2125,11 +2125,11 @@ class Harddisk:
 				if self.blockAlignment:
 					end = int(round( ((float(end) * self.bytesPerCylinder) / self.bytesPerSector) ))
 
-			if (unit == 'cyl'):
-				if (start < 0):
+			if unit == 'cyl':
+				if start < 0:
 					# Lowest possible cylinder is 0
 					start = 0
-				if (end >= self.totalCylinders):
+				if end >= self.totalCylinders:
 					# Highest possible cylinder is total cylinders - 1
 					end = self.totalCylinders-1
 
@@ -2141,10 +2141,10 @@ class Harddisk:
 				modulo = end % 2048
 				end = end + 2048 - (end % 2048) - 1
 
-				if (start < 2048):
+				if start < 2048:
 					start = 2048
 
-				if (end >= self.totalSectors):
+				if end >= self.totalSectors:
 					# Highest possible sectors is total sectors - 1
 					end = self.totalSectors-1
 
@@ -2153,23 +2153,23 @@ class Harddisk:
 				number = len(self.partitions) + 1
 
 			for part in self.partitions:
-				if (unit == 'sec'):
+				if unit == 'sec':
 					partitionStart = part['secStart']
 				else:
 					partitionStart = part['cylStart']
-				if (end <= partitionStart):
-					if (part['number']-1 <= number):
+				if end <= partitionStart:
+					if part['number'] - 1 <= number:
 						# Insert before
 						number = part['number']-1
 
 			try:
-				prev = self.getPartition(number-1)
-				if (unit == 'sec'):
-					if (start <= prev['secEnd']):
+				prev = self.getPartition(number - 1)
+				if unit == 'sec':
+					if start <= prev['secEnd']:
 						# Partitions overlap
 						start = prev['secEnd']+1
 				else:
-					if (start <= prev['cylEnd']):
+					if start <= prev['cylEnd']:
 						# Partitions overlap
 						start = prev['cylEnd']+1
 			except:
@@ -2178,20 +2178,20 @@ class Harddisk:
 			try:
 				next = self.getPartition(number+1)
 				nextstart = next['cylStart']
-				if (unit == 'sec'):
+				if unit == 'sec':
 					nextstart = next['secStart']
 
-				if (end >= nextstart):
+				if end >= nextstart:
 					# Partitions overlap
 					end = nextstart-1
 			except Exception:
 				pass
 
-			if (unit == 'sec'):
+			if unit == 'sec':
 				logger.info(u"Creating partition on '%s': number: %s, type '%s', filesystem '%s', start: %s sec, end: %s sec." \
 							% (self.device, number, type, fs, start, end))
 
-				if (number < 1) or (number > 4):
+				if number < 1 or number > 4:
 					raise Exception(u'Cannot create partition %s' % number)
 
 				self.partitions.append(
@@ -2213,7 +2213,7 @@ class Harddisk:
 				logger.info(u"Creating partition on '%s': number: %s, type '%s', filesystem '%s', start: %s cyl, end: %s cyl." \
 							% (self.device, number, type, fs, start, end))
 
-				if (number < 1) or (number > 4):
+				if number < 1 or number > 4:
 					raise Exception(u'Cannot create partition %s' % number)
 
 				self.partitions.append(
@@ -2254,7 +2254,7 @@ class Harddisk:
 			exists = False
 			deleteDev = None
 			for part in self.partitions:
-				if (part.get('number') == partition):
+				if part.get('number') == partition:
 					exists = True
 					deleteDev = part.get('device')
 				else:
@@ -2271,7 +2271,7 @@ class Harddisk:
 			if deleteDev:
 				logger.debug(u"Waiting for device '%s' to disappear" % deleteDev)
 				timeout = 5
-				while (timeout > 0):
+				while timeout > 0:
 					if not os.path.exists(deleteDev):
 						break
 					time.sleep(1)
@@ -2338,15 +2338,15 @@ class Harddisk:
 					self._forceReReadPartionTable()
 				time.sleep(2)
 
-			if   (fs == u'fat32'):
+			if fs == u'fat32':
 				cmd = u"mkfs.vfat -F 32 %s" % self.getPartition(partition)['device']
-			elif (fs == u'linux-swap'):
+			elif fs == u'linux-swap':
 				cmd = u"mkswap %s" % self.getPartition(partition)['device']
 			else:
 				options = u''
 				if fs in (u'ext2', u'ext3', u'ext4', u'ntfs'):
 					options = u'-F'
-					if (fs == u'ntfs'):
+					if fs == u'ntfs':
 						# quick format
 						options += u' -Q'
 				elif fs in (u'xfs', u'reiserfs', u'reiser4'):
@@ -2380,19 +2380,19 @@ class Harddisk:
 			if not fs in (u'ntfs',):
 				raise Exception(u"Resizing of filesystem '%s' not supported!" % fs)
 
-			if (size <= 0):
+			if size <= 0:
 				if bytesPerSector > 0 and self.blockAlignment:
 					size = self.getPartition(partition)['secSize'] * bytesPerSector
 				else:
 					size = self.getPartition(partition)['size'] - 10*1024*1024
 
-			if (size <= 0):
+			if size <= 0:
 				raise Exception(u"New filesystem size of %0.2f MB is not possible!" % (float(size)/(1024*1024)))
 
 			if self.ldPreload:
 				os.putenv("LD_PRELOAD", self.ldPreload)
 
-			if (fs.lower() == 'ntfs'):
+			if fs.lower() == 'ntfs':
 				cmd = u"echo 'y' | %s --force --size %s %s" % (which('ntfsresize'), size, self.getPartition(partition)['device'])
 				execute(cmd)
 
@@ -2490,7 +2490,7 @@ class Harddisk:
 								logger.info(u"Save image: %s: %s" % (k, v))
 								if progressSubject:
 									progressSubject.setMessage(u"%s: %s" % (k, v))
-								if (k.lower().find('used') != -1):
+								if 'used' in k.lower():
 									if progressSubject:
 										progressSubject.setMessage(u"Creating image")
 									started = True
@@ -2499,13 +2499,12 @@ class Harddisk:
 							match = re.search('Completed:\s*([\d\.]+)%', buf[i])
 							if match:
 								percent = int("%0.f" % float(match.group(1)))
-								if progressSubject and (percent != progressSubject.getState()):
+								if progressSubject and percent != progressSubject.getState():
 									logger.debug(u" -->>> %s" % buf[i])
 									progressSubject.setState(percent)
 
 					lastMsg = buf[-2]
 					buf[:-1] = []
-
 				elif timeout >= 100:
 					raise Exception(u"Failed: %s" % lastMsg)
 				else:
@@ -2562,7 +2561,7 @@ class Harddisk:
 					proc.stdout.close()
 					proc.stdin.close()
 
-					while( proc.poll() == None ):
+					while proc.poll() == None:
 						pids = os.listdir("/proc")
 						for p in pids:
 							if not os.path.exists( os.path.join("/proc", p, "status") ):
@@ -2571,7 +2570,7 @@ class Harddisk:
 							for line in f.readlines():
 								if line.startswith("PPid:"):
 									ppid = line.split()[1].strip()
-									if (ppid == str(pid)):
+									if ppid == str(pid):
 										logger.info(u"Killing process %s" % p)
 										os.kill(int(p), SIGKILL)
 
@@ -2602,7 +2601,7 @@ class Harddisk:
 			if self.ldPreload:
 				os.putenv("LD_PRELOAD", self.ldPreload)
 
-			if (imageType == u'partclone'):
+			if imageType == u'partclone':
 				logger.info(u"Restoring partclone image '%s' to '%s'" % \
 								(imageFile, self.getPartition(partition)['device']) )
 
@@ -2661,14 +2660,14 @@ class Harddisk:
 								match = re.search('Completed:\s*([\d\.]+)%', buf[i])
 								if match:
 									percent = int("%0.f" % float(match.group(1)))
-									if progressSubject and (percent != progressSubject.getState()):
+									if progressSubject and percent != progressSubject.getState():
 										logger.debug(u" -->>> %s" % buf[i])
 										progressSubject.setState(percent)
 
 						lastMsg = buf[-2]
 						buf[:-1] = []
 
-					elif (timeout >= 100):
+					elif timeout >= 100:
 						if progressSubject:
 							progressSubject.setMessage(u"Failed: %s" % lastMsg)
 						raise Exception(u"Failed: %s" % lastMsg)
@@ -2718,7 +2717,7 @@ class Harddisk:
 							match = re.search('\s(\d+)[\.\,]\d\d\spercent', buf[i])
 							if match:
 								percent = int(match.group(1))
-								if progressSubject and (percent != progressSubject.getState()):
+								if progressSubject and percent != progressSubject.getState():
 									logger.debug(u" -->>> %s" % buf[i])
 									progressSubject.setState(percent)
 							else:
@@ -2726,8 +2725,7 @@ class Harddisk:
 
 						lastMsg = buf[-2]
 						buf[:-1] = []
-
-					elif (timeout >= 100):
+					elif timeout >= 100:
 						if progressSubject:
 							progressSubject.setMessage(u"Failed: %s" % lastMsg)
 						raise Exception(u"Failed: %s" % lastMsg)
@@ -2738,7 +2736,7 @@ class Harddisk:
 				time.sleep(3)
 				if handle: handle.close()
 
-			if (fs == 'ntfs'):
+			if fs == 'ntfs':
 				self.setNTFSPartitionStartSector(partition)
 				if progressSubject:
 					progressSubject.setMessage(u"Resizing filesystem to partition size")
@@ -2846,7 +2844,7 @@ class SysInfo(object):
 		for device in getEthernetDevices():
 			devconf = getNetworkDeviceConfig(device)
 			if devconf['ipAddress'] and not devconf['ipAddress'].startswith(('127', '169')):
-				if (self.ipAddress == devconf['ipAddress']):
+				if self.ipAddress == devconf['ipAddress']:
 					return forceHardwareAddress(devconf['hardwareAddress'])
 		return None
 
@@ -2855,7 +2853,7 @@ class SysInfo(object):
 		for device in getEthernetDevices():
 			devconf = getNetworkDeviceConfig(device)
 			if devconf['ipAddress'] and not devconf['ipAddress'].startswith(('127', '169')):
-				if (self.ipAddress == devconf['ipAddress']):
+				if self.ipAddress == devconf['ipAddress']:
 					return forceNetmask(devconf['netmask'])
 		return u'255.255.255.0'
 
@@ -2894,7 +2892,7 @@ def auditHardware(config, hostId, progressSubject=None):
 		info = hardwareInventory(config)
 		info = hardwareExtendedInventory(config, info)
 		for (hardwareClass, devices) in info.items():
-			if (hardwareClass == 'SCANPROPERTIES'):
+			if hardwareClass == 'SCANPROPERTIES':
 				continue
 			for device in devices:
 				data = { 'hardwareClass': hardwareClass }
@@ -3147,7 +3145,7 @@ def hardwareInventory(config, progressSubject=None):
 			else:
 				match = re.search(keyValueRegex, line)
 				if match:
-					if (indent >= 0) and (len(match.group(1)) > indent):
+					if indent >= 0 and len(match.group(1)) > indent:
 						key = currentKey
 						value = match.group(0).strip()
 					else:
@@ -3194,7 +3192,7 @@ def hardwareInventory(config, progressSubject=None):
 				continue
 			if not dmiType:
 				dmiType = line.strip()
-				if (dmiType.lower() == u'end of table'):
+				if dmiType.lower() == u'end of table':
 					break
 				if not dmidecode.has_key(dmiType):
 					dmidecode[dmiType] = []
@@ -3245,7 +3243,7 @@ def hardwareInventory(config, progressSubject=None):
 				for dev in devs:
 					if dev.hasChildNodes():
 						for child in dev.childNodes:
-							if (child.nodeName == "businfo"):
+							if child.nodeName == "businfo":
 								busInfo = child.firstChild.data.strip()
 								if busInfo.startswith('pci@'):
 									logger.debug(u"Getting pci bus info for '%s'" % busInfo)
@@ -3412,7 +3410,7 @@ def hardwareInventory(config, progressSubject=None):
 
 					try:
 						value = pycopy.deepcopy(dev)
-						for key in (attribute['Linux'].split('/')):
+						for key in attribute['Linux'].split('/'):
 							method = None
 							if (key.find('.') != -1):
 								(key, method) = key.split('.', 1)
@@ -3445,7 +3443,7 @@ def daemonize():
 	# Fork to allow the shell to return and to call setsid
 	try:
 		pid = os.fork()
-		if (pid > 0):
+		if pid > 0:
 			# Parent exits
 			sys.exit(0)
 	except OSError as e:
@@ -3459,7 +3457,7 @@ def daemonize():
 	# Fork a second time to not remain session leader
 	try:
 		pid = os.fork()
-		if (pid > 0):
+		if pid > 0:
 			sys.exit(0)
 	except OSError as e:
 		raise Exception(u"Second fork failed: %e" % e)
@@ -3472,7 +3470,7 @@ def daemonize():
 	os.close(2)
 
 	# Open standard input (0)
-	if (hasattr(os, "devnull")):
+	if hasattr(os, "devnull"):
 		os.open(os.devnull, os.O_RDWR)
 	else:
 		os.open("/dev/null", os.O_RDWR)
