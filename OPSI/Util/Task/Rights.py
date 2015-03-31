@@ -256,10 +256,6 @@ def removeDuplicatesFromDirectories(directories):
 			folders.add(folder)
 			continue
 
-		if folder in folders:
-			LOGGER.debug("Already added folder: {0}".format(folder))
-			continue
-
 		shouldAdd = True
 		for alreadyAddedFolder in folders.copy():
 			if alreadyAddedFolder.startswith(folder):
