@@ -1988,7 +1988,7 @@ class Harddisk:
 
 			logger.debug(u"Manipulating NTFS Boot Record!")
 			hd = posix.open(self.getPartition(partition)['device'], posix.O_WRONLY)
-			logger.info(u"Writing new value %s %s %s %s at 0x1c" % ( hex(x[0]), hex(x[1]), hex(x[2]), hex(x[3])))
+			logger.info(u"Writing new value %s %s %s %s at 0x1c" % (hex(x[0]), hex(x[1]), hex(x[2]), hex(x[3])))
 			posix.lseek(hd, 0x1c, 0)
 			for i in x:
 				posix.write(hd, chr(i))
@@ -2053,33 +2053,33 @@ class Harddisk:
 
 			unit  = 'cyl'
 			if self.blockAlignment:
-				unit  = 'sec'
+				unit = 'sec'
 			start = start.replace(u' ', u'')
-			end   = end.replace(u' ', u'')
+			end = end.replace(u' ', u'')
 
 			if start.endswith(u'm') or start.endswith(u'mb'):
 				match = re.search('^(\d+)\D', start)
 				if self.blockAlignment:
-					start = int(round( (int(match.group(1))*1024*1024) / self.bytesPerSector ))
+					start = int(round((int(match.group(1)) * 1024 * 1024) / self.bytesPerSector))
 				else:
-					start = int(round( (int(match.group(1))*1024*1024) / self.bytesPerCylinder ))
+					start = int(round((int(match.group(1)) * 1024 * 1024) / self.bytesPerCylinder))
 			elif start.endswith(u'g') or start.endswith(u'gb'):
 				match = re.search('^(\d+)\D', start)
 				if self.blockAlignment:
-					start = int(round( (int(match.group(1))*1024*1024*1024) / self.bytesPerSector ))
+					start = int(round((int(match.group(1)) * 1024 * 1024 * 1024) / self.bytesPerSector))
 				else:
-					start = int(round( (int(match.group(1))*1024*1024*1024) / self.bytesPerCylinder ))
+					start = int(round((int(match.group(1)) * 1024 * 1024 * 1024) / self.bytesPerCylinder))
 			elif start.lower().endswith(u'%'):
 				match = re.search('^(\d+)\D', start)
 				if self.blockAlignment:
-					start = int(round( (float(match.group(1))/100) * self.totalSectors ))
+					start = int(round((float(match.group(1)) / 100) * self.totalSectors))
 				else:
-					start = int(round( (float(match.group(1))/100) * self.totalCylinders ))
+					start = int(round((float(match.group(1)) / 100) * self.totalCylinders))
 			elif start.lower().endswith(u's'):
 				match = re.search('^(\d+)\D', start)
 				start = int(match.group(1))
 				if not self.blockAlignment:
-					start = int(round( ((float(start) * self.bytesPerSector) / self.bytesPerCylinder) ))
+					start = int(round(((float(start) * self.bytesPerSector) / self.bytesPerCylinder)))
 			elif start.lower().endswith(u'c'):
 				# Cylinder!
 				start = int(start)
@@ -2089,41 +2089,41 @@ class Harddisk:
 				# Cylinder!
 				start = int(start)
 				if self.blockAlignment:
-					start = int(round( ((float(start) * self.bytesPerCylinder) / self.bytesPerSector) ))
+					start = int(round(((float(start) * self.bytesPerCylinder) / self.bytesPerSector)))
 
 			if end.endswith(u'm') or end.endswith(u'mb'):
 				match = re.search('^(\d+)\D', end)
 				if self.blockAlignment:
-					end = int(round( (int(match.group(1))*1024*1024) / self.bytesPerSector ))
+					end = int(round((int(match.group(1)) * 1024 * 1024) / self.bytesPerSector))
 				else:
-					end = int(round( (int(match.group(1))*1024*1024) / self.bytesPerCylinder ))
+					end = int(round((int(match.group(1)) * 1024 * 1024) / self.bytesPerCylinder))
 			elif end.endswith(u'g') or end.endswith(u'gb'):
 				match = re.search('^(\d+)\D', end)
 				if self.blockAlignment:
-					end = int(round( (int(match.group(1))*1024*1024*1024) / self.bytesPerSector ))
+					end = int(round((int(match.group(1)) * 1024 * 1024 * 1024) / self.bytesPerSector))
 				else:
-					end = int(round( (int(match.group(1))*1024*1024*1024) / self.bytesPerCylinder ))
+					end = int(round((int(match.group(1)) * 1024 * 1024 * 1024) / self.bytesPerCylinder))
 			elif end.lower().endswith(u'%'):
 				match = re.search('^(\d+)\D', end)
 				if self.blockAlignment:
-					end = int(round( (float(match.group(1))/100) * self.totalSectors ))
+					end = int(round((float(match.group(1)) / 100) * self.totalSectors))
 				else:
-					end = int(round( (float(match.group(1))/100) * self.totalCylinders ))
+					end = int(round((float(match.group(1)) / 100) * self.totalCylinders))
 			elif end.lower().endswith(u's'):
 				match = re.search('^(\d+)\D', end)
 				end = int(match.group(1))
 				if not self.blockAlignment:
-					end = int(round( ((float(end) * self.bytesPerSector) / self.bytesPerCylinder) ))
+					end = int(round(((float(end) * self.bytesPerSector) / self.bytesPerCylinder)))
 			elif end.lower().endswith(u'c'):
 				# Cylinder!
 				end = int(end)
 				if self.blockAlignment:
-					end = int(round( ((float(end) * self.bytesPerCylinder) / self.bytesPerSector) ))
+					end = int(round(((float(end) * self.bytesPerCylinder) / self.bytesPerSector)))
 			else:
 				# Cylinder!
 				end = int(end)
 				if self.blockAlignment:
-					end = int(round( ((float(end) * self.bytesPerCylinder) / self.bytesPerSector) ))
+					end = int(round(((float(end) * self.bytesPerCylinder) / self.bytesPerSector)))
 
 			if unit == 'cyl':
 				if start < 0:
@@ -2131,8 +2131,7 @@ class Harddisk:
 					start = 0
 				if end >= self.totalCylinders:
 					# Highest possible cylinder is total cylinders - 1
-					end = self.totalCylinders-1
-
+					end = self.totalCylinders - 1
 			else:
 				modulo = start % 2048
 				if modulo:
@@ -2160,30 +2159,30 @@ class Harddisk:
 				if end <= partitionStart:
 					if part['number'] - 1 <= number:
 						# Insert before
-						number = part['number']-1
+						number = part['number'] - 1
 
 			try:
 				prev = self.getPartition(number - 1)
 				if unit == 'sec':
 					if start <= prev['secEnd']:
 						# Partitions overlap
-						start = prev['secEnd']+1
+						start = prev['secEnd'] + 1
 				else:
 					if start <= prev['cylEnd']:
 						# Partitions overlap
-						start = prev['cylEnd']+1
-			except:
+						start = prev['cylEnd'] + 1
+			except Exception:
 				pass
 
 			try:
-				next = self.getPartition(number+1)
+				next = self.getPartition(number + 1)
 				nextstart = next['cylStart']
 				if unit == 'sec':
 					nextstart = next['secStart']
 
 				if end >= nextstart:
 					# Partitions overlap
-					end = nextstart-1
+					end = nextstart - 1
 			except Exception:
 				pass
 
@@ -2199,10 +2198,10 @@ class Harddisk:
 						'number': number,
 						'secStart': start,
 						'secEnd': end,
-						'secSize': end-start+1,
+						'secSize': end - start + 1,
 						'start': start * self.bytesPerSector,
 						'end': end * self.bytesPerSector,
-						'size': (end-start+1) * self.bytesPerSector,
+						'size': (end - start + 1) * self.bytesPerSector,
 						'type': partId,
 						'fs': fs,
 						'boot': boot,
@@ -2221,10 +2220,10 @@ class Harddisk:
 						'number': number,
 						'cylStart': start,
 						'cylEnd': end,
-						'cylSize': end-start+1,
+						'cylSize': end - start + 1,
 						'start': start * self.bytesPerCylinder,
 						'end': end * self.bytesPerCylinder,
-						'size': (end-start+1) * self.bytesPerCylinder,
+						'size': (end - start + 1) * self.bytesPerCylinder,
 						'type': partId,
 						'fs': fs,
 						'boot': boot,
@@ -2431,7 +2430,7 @@ class Harddisk:
 				pipe = imageFile
 				imageFile = u'-'
 
-			logger.info( u"Saving partition '%s' to partclone image '%s'" % (part['device'], imageFile) )
+			logger.info(u"Saving partition '%s' to partclone image '%s'" % (part['device'], imageFile))
 
 			# "-f" will write images of "dirty" volumes too
 			# Better run chkdsk under windows before saving image!
@@ -2458,9 +2457,11 @@ class Harddisk:
 					if inp.endswith(u'\n') or inp.endswith(u'\r'):
 						b.append(u'')
 
-					buf = [ buf[-1] + b[0] ] + b[1:]
+					buf = [buf[-1] + b[0]] + b[1:]
 
-					for i in range( len(buf)-1 ):
+					# TODO: is the range(len(..)) really needed?
+					# Maybe we could iterate directly.
+					for i in range(len(buf) - 1):
 						try:
 							logger.debug(u" -->>> %s" % buf[i])
 						except:
@@ -2477,7 +2478,12 @@ class Harddisk:
 								if unit.startswith("G") or unit.startswith("g"):
 									rate = float(rate) * 1024
 									unit = 'MB/min'
-								saveImageResult = { 'TotalTime': match.group(1),'AveRate': str(rate), 'AveUnit': unit, }
+								saveImageResult = {
+									'TotalTime': match.group(1),
+									'AveRate': str(rate),
+									'AveUnit': unit
+								}
+
 						if not started:
 							if ( buf[i].find(u'Calculating bitmap') != -1 ):
 								logger.info(u"Save image: Scanning filesystem")
@@ -2512,7 +2518,8 @@ class Harddisk:
 					continue
 
 			time.sleep(3)
-			if handle: handle.close()
+			if handle:
+				handle.close()
 
 			if self.ldPreload:
 				os.unsetenv("LD_PRELOAD")
@@ -2548,10 +2555,10 @@ class Harddisk:
 				if pipe:
 					proc = subprocess.Popen(
 						pipe[:-1] + u" 2>/dev/null",
-						shell	= True,
-						stdin	= subprocess.PIPE,
-						stdout	= subprocess.PIPE,
-						stderr	= None,
+						shell=True,
+						stdin=subprocess.PIPE,
+						stdout=subprocess.PIPE,
+						stderr=None,
 					)
 					pid = proc.pid
 
@@ -2564,9 +2571,9 @@ class Harddisk:
 					while proc.poll() == None:
 						pids = os.listdir("/proc")
 						for p in pids:
-							if not os.path.exists( os.path.join("/proc", p, "status") ):
+							if not os.path.exists(os.path.join("/proc", p, "status")):
 								continue
-							f = open( os.path.join("/proc", p, "status") )
+							f = open(os.path.join("/proc", p, "status"))
 							for line in f.readlines():
 								if line.startswith("PPid:"):
 									ppid = line.split()[1].strip()
@@ -2603,7 +2610,7 @@ class Harddisk:
 
 			if imageType == u'partclone':
 				logger.info(u"Restoring partclone image '%s' to '%s'" % \
-								(imageFile, self.getPartition(partition)['device']) )
+							(imageFile, self.getPartition(partition)['device']))
 
 				cmd = u'%s %s --source %s --overwrite %s' % \
 								(pipe, which('partclone.restore'), imageFile, self.getPartition(partition)['device'])
@@ -2630,9 +2637,10 @@ class Harddisk:
 						if inp.endswith(u'\n') or inp.endswith(u'\r'):
 							b.append(u'')
 
-						buf = [ buf[-1] + b[0] ] + b[1:]
+						buf = [buf[-1] + b[0]] + b[1:]
 
-						for i in range( len(buf)-1 ):
+						# TODO: range(len) really needed?
+						for i in range(len(buf) - 1):
 							try:
 								logger.debug(u" -->>> %s" % buf[i])
 							except:
@@ -2680,7 +2688,7 @@ class Harddisk:
 			else:
 				fs = 'ntfs'
 				logger.info(u"Restoring ntfsclone-image '%s' to '%s'" % \
-							(imageFile, self.getPartition(partition)['device']) )
+							(imageFile, self.getPartition(partition)['device']))
 
 				cmd = u'%s %s --restore-image --overwrite %s %s' % \
 								(pipe, which('ntfsclone'), self.getPartition(partition)['device'], imageFile)
@@ -2706,7 +2714,7 @@ class Harddisk:
 						if inp.endswith(u'\n') or inp.endswith(u'\r'):
 							b.append(u'')
 
-						buf = [ buf[-1] + b[0] ] + b[1:]
+						buf = [buf[-1] + b[0]] + b[1:]
 
 						for i in range( len(buf)-1 ):
 							if ( buf[i].find('Syncing') != -1 ):
@@ -2734,7 +2742,8 @@ class Harddisk:
 						continue
 
 				time.sleep(3)
-				if handle: handle.close()
+				if handle:
+					handle.close()
 
 			if fs == 'ntfs':
 				self.setNTFSPartitionStartSector(partition)
@@ -2895,11 +2904,11 @@ def auditHardware(config, hostId, progressSubject=None):
 			if hardwareClass == 'SCANPROPERTIES':
 				continue
 			for device in devices:
-				data = { 'hardwareClass': hardwareClass }
+				data = {'hardwareClass': hardwareClass}
 				for (attribute, value) in device.items():
 					data[str(attribute)] = value
 				data['hostId'] = hostId
-				auditHardwareOnHosts.append( AuditHardwareOnHost.fromHash(data) )
+				auditHardwareOnHosts.append(AuditHardwareOnHost.fromHash(data))
 	except Exception as e:
 		for hook in hooks:
 			hook.error_auditHardware(config, hostId, progressSubject, e)
@@ -3000,7 +3009,7 @@ def hardwareInventory(config, progressSubject=None):
 	# Read output from lshw
 	xmlOut = u'\n'.join(execute(u"%s -xml 2>/dev/null" % which("lshw"), captureStderr=False))
 	xmlOut = re.sub('[%c%c%c%c%c%c%c%c%c%c%c%c%c]' % (0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0xbd, 0xbf, 0xef, 0xdd), u'.', xmlOut)
-	dom = xml.dom.minidom.parseString( xmlOut.encode('utf-8') )
+	dom = xml.dom.minidom.parseString(xmlOut.encode('utf-8'))
 
 	# Read output from lspci
 	lspci = {}
@@ -3013,11 +3022,13 @@ def hardwareInventory(config, progressSubject=None):
 		match = re.search(devRegex, line)
 		if match:
 			busId = match.group(1)
-			lspci[busId] = { 	'vendorId':		forceHardwareVendorId(match.group(3)),
-						'deviceId':		forceHardwareDeviceId(match.group(4)),
-						'subsystemVendorId':	'',
-						'subsystemDeviceId':	'',
-						'revision':		match.group(6) or '' }
+			lspci[busId] = {
+				'vendorId': forceHardwareVendorId(match.group(3)),
+				'deviceId': forceHardwareDeviceId(match.group(4)),
+				'subsystemVendorId': '',
+				'subsystemDeviceId': '',
+				'revision': match.group(6) or ''
+			}
 			continue
 		match = re.search(subRegex, line)
 		if match:
@@ -3108,7 +3119,7 @@ def hardwareInventory(config, progressSubject=None):
 			match = re.search(deviceStatusRegex, line)
 			if match:
 				status = True
-				lsusb[busId + ":" + devId]['status'] = [ match.group(2) ]
+				lsusb[busId + ":" + devId]['status'] = [match.group(2)]
 				continue
 
 			match = re.search(deviceQualifierRegex, line)
@@ -3206,7 +3217,7 @@ def hardwareInventory(config, progressSubject=None):
 				elif option:
 					if not type(dmidecode[dmiType][-1][option]) is list:
 						if dmidecode[dmiType][-1][option]:
-							dmidecode[dmiType][-1][option] = [ dmidecode[dmiType][-1][option] ]
+							dmidecode[dmiType][-1][option] = [dmidecode[dmiType][-1][option]]
 						else:
 							dmidecode[dmiType][-1][option] = []
 					dmidecode[dmiType][-1][option].append(removeUnit(line.strip()))
@@ -3217,7 +3228,6 @@ def hardwareInventory(config, progressSubject=None):
 
 	# Build hw info structure
 	for hwClass in config:
-
 		if not hwClass.get('Class') or not hwClass['Class'].get('Opsi') or not hwClass['Class'].get('Linux'):
 			continue
 
@@ -3253,8 +3263,8 @@ def hardwareInventory(config, progressSubject=None):
 									pciInfo = lspci.get(pciBusId, {})
 									for (key, value) in pciInfo.items():
 										elem = dom.createElement(key)
-										elem.childNodes.append( dom.createTextNode(value) )
-										dev.childNodes.append( elem )
+										elem.childNodes.append(dom.createTextNode(value))
+										dev.childNodes.append(elem)
 								break
 				if hwid:
 					filtered = []
@@ -3282,7 +3292,7 @@ def hardwareInventory(config, progressSubject=None):
 											pass
 					devs = filtered
 
-				logger.debug2( "Found matching devices: %s" % devs)
+				logger.debug2("Found matching devices: %s" % devs)
 				devices.extend(devs)
 
 			# Process matching xml nodes
@@ -3296,11 +3306,11 @@ def hardwareInventory(config, progressSubject=None):
 					break
 
 				for attribute in hwClass['Values']:
-					elements = [ devices[i] ]
+					elements = [devices[i]]
 					if not attribute.get('Opsi') or not attribute.get('Linux'):
 						continue
 
-					logger.debug2(u"Processing attribute '%s' : '%s'" % (attribute['Linux'], attribute['Opsi']) )
+					logger.debug2(u"Processing attribute '%s' : '%s'" % (attribute['Linux'], attribute['Opsi']))
 					for attr in attribute['Linux'].split('||'):
 						attr = attr.strip()
 						method = None
@@ -3430,12 +3440,8 @@ def hardwareInventory(config, progressSubject=None):
 						device[attribute['Opsi']] = u''
 				opsiValues[opsiClass].append(device)
 
-
-
-	opsiValues['SCANPROPERTIES'] = [ { "scantime": time.strftime("%Y-%m-%d %H:%M:%S") } ]
-
+	opsiValues['SCANPROPERTIES'] = [{"scantime": time.strftime("%Y-%m-%d %H:%M:%S")}]
 	logger.debug(u"Result of hardware inventory:\n" + objectToBeautifiedText(opsiValues))
-
 	return opsiValues
 
 
