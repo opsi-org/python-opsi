@@ -40,7 +40,7 @@ try:
 except ImportError:
 	syslog = None
 
-__version__ = '4.0.6.2'
+__version__ = '4.0.6.6'
 
 # Loglevels
 LOG_CONFIDENTIAL = 9
@@ -507,11 +507,7 @@ class LoggerImplementation:
 				else:
 					message = unicode(message, 'utf-8', 'replace')
 
-			levelname = u''
 			componentname = self.__componentName
-			color = COLOR_NORMAL
-			filename = u''
-			linenumber = u''
 			datetime = unicode(time.strftime(u"%b %d %H:%M:%S", time.localtime()), 'utf-8', 'replace')
 			threadId = unicode(thread.get_ident())
 			specialConfig = None
@@ -543,6 +539,9 @@ class LoggerImplementation:
 			elif level == LOG_ESSENTIAL:
 				levelname = u'essential'
 				color = COMMENT_COLOR
+			else:
+				levelname = u''
+				color = COLOR_NORMAL
 
 			try:
 				filename = unicode(os.path.basename(sys._getframe(2).f_code.co_filename))
@@ -562,7 +561,8 @@ class LoggerImplementation:
 						f = f.f_back
 			except Exception:
 				# call stack not deep enough?
-				pass
+				filename = u''
+				linenumber = u''
 
 			if specialConfig:
 				componentname = specialConfig.get('componentName', componentname)
@@ -604,15 +604,16 @@ class LoggerImplementation:
 					for string in self.__confidentialStrings:
 						m = m.replace(string, u'*** confidential ***')
 
-				fh = sys.stderr
 				if self.__consoleStdout:
 					fh = sys.stdout
+				else:
+					fh = sys.stderr
 
-				fhEncoding = None
 				try:
 					fhEncoding = fh.encoding
-				except:
-					pass
+				except Exception:
+					fhEncoding = None
+
 				if fhEncoding is None:
 					fhEncoding = locale.getpreferredencoding()
 
@@ -644,12 +645,10 @@ class LoggerImplementation:
 						for string in self.__confidentialStrings:
 							m = m.replace(string, u'*** confidential ***')
 
-					# Open the file
-					lf = None
 					try:
 						lf = codecs.open(logFile, 'a+', 'utf-8', 'replace')
 					except Exception as err:
-						pass
+						lf = None
 
 					if lf:
 						timeout = 0
