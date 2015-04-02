@@ -682,7 +682,7 @@ class LoggerImplementation:
 							lf.write(m)
 							lf.close()
 
-			if level <= self.__syslogLevel:
+			if syslog is not None and level <= self.__syslogLevel:
 				# Log to syslog
 				m = self.__syslogFormat
 				if specialConfig:
@@ -700,25 +700,25 @@ class LoggerImplementation:
 					for string in self.__confidentialStrings:
 						m = m.replace(string, u'*** confidential ***')
 
-				if syslog is not None:
-					if level == LOG_CONFIDENTIAL:
-						syslog.syslog(syslog.LOG_DEBUG, m)
-					elif level == LOG_DEBUG2:
-						syslog.syslog(syslog.LOG_DEBUG, m)
-					elif level == LOG_DEBUG:
-						syslog.syslog(syslog.LOG_DEBUG, m)
-					elif level == LOG_INFO:
-						syslog.syslog(syslog.LOG_INFO, m)
-					elif level == LOG_NOTICE:
-						syslog.syslog(syslog.LOG_NOTICE, m)
-					elif level == LOG_WARNING:
-						syslog.syslog(syslog.LOG_WARNING, m)
-					elif level == LOG_ERROR:
-						syslog.syslog(syslog.LOG_ERR, m)
-					elif level == LOG_CRITICAL:
-						syslog.syslog(syslog.LOG_CRIT, m)
-					elif level == LOG_COMMENT:
-						syslog.syslog(syslog.LOG_CRIT, m)
+				# TODO: put the mapping into a dict!
+				if level == LOG_CONFIDENTIAL:
+					syslog.syslog(syslog.LOG_DEBUG, m)
+				elif level == LOG_DEBUG2:
+					syslog.syslog(syslog.LOG_DEBUG, m)
+				elif level == LOG_DEBUG:
+					syslog.syslog(syslog.LOG_DEBUG, m)
+				elif level == LOG_INFO:
+					syslog.syslog(syslog.LOG_INFO, m)
+				elif level == LOG_NOTICE:
+					syslog.syslog(syslog.LOG_NOTICE, m)
+				elif level == LOG_WARNING:
+					syslog.syslog(syslog.LOG_WARNING, m)
+				elif level == LOG_ERROR:
+					syslog.syslog(syslog.LOG_ERR, m)
+				elif level == LOG_CRITICAL:
+					syslog.syslog(syslog.LOG_CRIT, m)
+				elif level == LOG_COMMENT:
+					syslog.syslog(syslog.LOG_CRIT, m)
 
 			if self.univentionLogger_priv:
 				# univention log
