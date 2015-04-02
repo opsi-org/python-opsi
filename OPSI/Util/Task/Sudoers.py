@@ -29,6 +29,11 @@ Functionality to patch a sudoers file on a Linux system.
 	The path to service is received directly from the OS.
 
 
+.. versionchanged:: 4.0.6.6
+
+	Avoid duplicating settings.
+
+
 :author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
 """
@@ -39,7 +44,7 @@ import time
 from OPSI.Logger import Logger
 from OPSI.System.Posix import Distribution, which
 
-__version__ = '4.0.6.3'
+__version__ = '4.0.6.6'
 
 LOGGER = Logger()
 
@@ -128,7 +133,7 @@ def _patchSudoersFileWithEntries(sudoersFile, entries):
 		LOGGER.notice(u"   Adding sudoers entries for opsi")
 
 	if entriesToAdd:
-		for entry in entries:
+		for entry in entriesToAdd:
 			lines.append("{0}\n".format(entry))
 
 	if ttyPatchRequired:

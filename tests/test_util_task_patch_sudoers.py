@@ -37,7 +37,7 @@ from . import helpers
 
 from OPSI.System import which
 from OPSI.Util.Task.Sudoers import (_NO_TTY_FOR_SERVICE_REQUIRED,
-    _NO_TTY_REQUIRED_DEFAULT, patchSudoersFileForOpsi,
+    _NO_TTY_REQUIRED_DEFAULT, FILE_ADMIN_GROUP, patchSudoersFileForOpsi,
     distributionRequiresNoTtyPatch, patchSudoersFileToAllowRestartingDHCPD)
 
 
@@ -175,6 +175,26 @@ class PatchSudoersFileForOpsiTestCase(unittest.TestCase):
                     entryFound = True
 
         self.assertTrue(entryFound)
+
+    def testDoNotAddDuplicates(self):
+        adminGroup = '%{0}'.format(FILE_ADMIN_GROUP)
+
+        patchSudoersFileForOpsi(sudoersFile=self.fileName)
+        with open(self.fileName) as before:
+            lines = before.readlines()
+
+        lines = [line for line in lines if not line.startswith('opsiconfd')]
+        self.assertEquals(len([line for line in lines if line.startswith(adminGroup)]), 1)
+
+        with open(self.fileName, 'w') as before:
+            before.writelines(lines)
+
+        patchSudoersFileForOpsi(sudoersFile=self.fileName)
+        with open(self.fileName) as after:
+            afterLines = after.readlines()
+
+        self.assertEquals(len([line for line in afterLines if line.startswith(adminGroup)]), 1)
+
 
 if __name__ == '__main__':
     unittest.main()
