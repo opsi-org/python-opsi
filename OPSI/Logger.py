@@ -570,8 +570,15 @@ False suppresses exceptions.
 						f = f.f_back
 			except Exception:
 				# call stack not deep enough?
-				filename = u''
-				linenumber = u''
+				try:
+					filename
+				except NameError:
+					filename = u''
+
+				try:
+					linenumber
+				except NameError:
+					linenumber = u''
 
 			if specialConfig:
 				componentname = specialConfig.get('componentName', componentname)
