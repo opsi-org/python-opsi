@@ -1,0 +1,92 @@
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
+
+# This file is part of python-opsi.
+# Copyright (C) 2015 uib GmbH <info@uib.de>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""
+Testing our logger.
+
+:author: Niko Wenselowski <n.wenselowski@uib.de>
+:license: GNU Affero General Public License version 3
+"""
+
+import mock
+import unittest
+import warnings
+
+import OPSI.Logger
+from OPSI.Types import forceUnicode
+
+try:
+	from io import BytesIO as StringIO
+except ImportError:
+	from StringIO import StringIO
+
+
+class LoggerTestCase(unittest.TestCase):
+	def setUp(self):
+		self.logger = OPSI.Logger.LoggerImplementation()
+
+	def tearDown(self):
+		self.logger.setConsoleLevel(OPSI.Logger.LOG_NONE)
+		self.logger.setFileLevel(OPSI.Logger.LOG_NONE)
+
+	def testChangingConsoleLogLevel(self):
+		logLevel = (OPSI.Logger.LOG_CONFIDENTIAL,
+					OPSI.Logger.LOG_DEBUG2,
+					OPSI.Logger.LOG_DEBUG,
+					OPSI.Logger.LOG_INFO,
+					OPSI.Logger.LOG_NOTICE,
+					OPSI.Logger.LOG_WARNING,
+					OPSI.Logger.LOG_ERROR,
+					OPSI.Logger.LOG_CRITICAL,
+					OPSI.Logger.LOG_ESSENTIAL,
+					OPSI.Logger.LOG_COMMENT,
+					OPSI.Logger.LOG_NONE)
+
+		for level in logLevel:
+			self.logger.setConsoleLevel(level)
+			self.assertEquals(level, self.logger.getConsoleLevel())
+
+		for level in reversed(logLevel):
+			self.logger.setConsoleLevel(level)
+			self.assertEquals(level, self.logger.getConsoleLevel())
+
+	def testLoggingMessage(self):
+		level = OPSI.Logger.LOG_CONFIDENTIAL
+		self.logger.setConsoleLevel(level)
+
+		messageBuffer = StringIO()
+		with mock.patch('OPSI.Logger.sys.stdin', messageBuffer):
+			with mock.patch('OPSI.Logger.sys.stderr', messageBuffer):
+				self.logger.log(level, "This is not a test!",
+								raiseException=True)
+
+		self.assertTrue("This is not a test!" in messageBuffer.getvalue())
+
+	def testLoggingUnicode(self):
+		level = OPSI.Logger.LOG_CONFIDENTIAL
+		self.logger.setConsoleLevel(level)
+
+		messageBuffer = StringIO()
+		with mock.patch('OPSI.Logger.sys.stdin', messageBuffer):
+			with mock.patch('OPSI.Logger.sys.stderr', messageBuffer):
+				self.logger.log(level, u"Heävy Metäl Ümläüts! Öy!",
+								raiseException=True)
+
+		# Currently this has to be suffice
+		# TODO: better check for logged string.
+		self.assertTrue(messageBuffer.getvalue())
