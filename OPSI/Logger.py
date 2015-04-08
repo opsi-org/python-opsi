@@ -491,7 +491,16 @@ class LoggerImplementation:
 		return self.__objectConfig[objectId].get(key)
 
 	def log(self, level, message, raiseException=False):
-		''' Log a message '''
+		'''
+		Log a message with the given level.
+
+		:param level: The log level of this message.
+		:param message: The message to log.
+		:param raiseException: True raises an exception if any error occurs. \
+False suppresses exceptions.
+		:type raiseException: bool
+		'''
+
 		try:
 			if (level > self.__messageSubjectLevel and
 				level > self.__consoleLevel and
