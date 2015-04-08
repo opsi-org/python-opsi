@@ -24,11 +24,15 @@ Testing our logger.
 """
 
 import mock
-import unittest
 import warnings
 
 import OPSI.Logger
 from OPSI.Types import forceUnicode
+
+try:
+    import unittest2 as unittest
+except ImportError:
+    import unittest
 
 try:
 	from io import BytesIO as StringIO
@@ -90,3 +94,34 @@ class LoggerTestCase(unittest.TestCase):
 		# Currently this has to be suffice
 		# TODO: better check for logged string.
 		self.assertTrue(messageBuffer.getvalue())
+
+	def test_logTwisted(self):
+		try:
+			from twisted.python import log
+		except ImportError:
+			self.skipTest("Could not import twisted log module.")
+
+		err = StringIO()
+
+		with mock.patch('OPSI.Logger.sys.stdin', err):
+			with mock.patch('OPSI.Logger.sys.stderr', err):
+				self.logger.setConsoleLevel(OPSI.Logger.LOG_DEBUG)
+				self.logger.setLogFormat('[%l] %M')
+				self.logger.startTwistedLogging()
+
+				value = err.getvalue()
+				self.assertNotEquals("", value)
+				self.assertEquals("[%d] [twisted] Log opened.\n" % OPSI.Logger.LOG_DEBUG, value)
+				err.seek(0)
+				err.truncate(0)
+
+				log.msg("message")
+				value = err.getvalue()
+				self.assertNotEquals("", value)
+				self.assertEquals("[%d] [twisted] message\n" % OPSI.Logger.LOG_DEBUG, value)
+				err.seek(0)
+				err.truncate(0)
+
+				log.err("message")
+				value = err.getvalue()
+				self.assertEquals("[%d] [twisted] 'message'\n" % OPSI.Logger.LOG_ERROR, value)
