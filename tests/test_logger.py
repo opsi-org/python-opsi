@@ -24,6 +24,7 @@ Testing our logger.
 """
 
 import mock
+import sys
 import warnings
 
 import OPSI.Logger
@@ -47,6 +48,10 @@ class LoggerTestCase(unittest.TestCase):
 	def tearDown(self):
 		self.logger.setConsoleLevel(OPSI.Logger.LOG_NONE)
 		self.logger.setFileLevel(OPSI.Logger.LOG_NONE)
+
+		# Making sure that a possible switched function is resetted to
+		# it's default.
+		warnings.showwarning = OPSI.Logger._showwarning
 
 	def testChangingConsoleLogLevel(self):
 		logLevel = (OPSI.Logger.LOG_CONFIDENTIAL,
@@ -126,3 +131,37 @@ class LoggerTestCase(unittest.TestCase):
 				log.err("message")
 				value = err.getvalue()
 				self.assertEquals("[{0:d}] [twisted] 'message'\n".format(OPSI.Logger.LOG_ERROR), value)
+
+	def testPatchingShowwarnings(self):
+		originalWarningFunction = warnings.showwarning
+		self.assertTrue(originalWarningFunction is warnings.showwarning)
+
+		self.logger.logWarnings()
+		self.assertFalse(originalWarningFunction is warnings.showwarning)
+
+		warnings.showwarning = originalWarningFunction
+
+	def testLoggingFromWarningsModule(self):
+		self.logger.setConsoleLevel(OPSI.Logger.LOG_WARNING)
+		self.logger.setLogFormat('[%l] %M')
+
+		messageBuffer = StringIO()
+
+		with mock.patch('OPSI.Logger.sys.stdin', messageBuffer):
+			with mock.patch('OPSI.Logger.sys.stderr', messageBuffer):
+				self.logger.logWarnings()
+
+				warnings.warn("usermessage")
+				warnings.warn("another message", DeprecationWarning)
+				warnings.warn("message", DeprecationWarning, stacklevel=2)
+
+		value = messageBuffer.getvalue()
+
+		self.assertTrue(value.startswith("[{0:d}]".format(OPSI.Logger.LOG_WARNING)))
+		self.assertTrue("UserWarning: usermessage" in value)
+
+		if sys.version_info < (2, 7):
+			# Changed in version 2.7: DeprecationWarning is ignored by default.
+			# Source: https://docs.python.org/2.7/library/warnings.html#warning-categories
+			self.assertTrue("DeprecationWarning: message" in value)
+			self.assertTrue("DeprecationWarning: another message" in value)
