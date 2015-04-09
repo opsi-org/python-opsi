@@ -3,8 +3,9 @@ python-opsi (4.0.6.6-1) UNRELEASED; urgency=low
   * OPSI.Util.Task.Rights: better ignoring of subfolders.
   * OPSI.Logger: some small refactorings.
   * OPSI.Util.Task.Sudoers: Do not duplicate existing entries.
+  * OPSI.Logger.logWarnings: only log to the opsi-Logger.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 02 Apr 2015 15:55:43 +0200
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 09 Apr 2015 12:24:28 +0200
 
 python-opsi (4.0.6.5-1) experimental; urgency=low
 

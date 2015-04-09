@@ -806,11 +806,8 @@ False suppresses exceptions.
 		the opsi logger.
 		"""
 		def _logWarning(message, category, filename, lineno, file=None, line=None):
-			if file is not None:
-				_showwarning(message, category, filename, lineno, file, line)
-			else:
-				msg = warnings.formatwarning(message, category, filename, lineno)
-				self.warning(msg)
+			formattedMessage = warnings.formatwarning(message, category, filename, lineno, line)
+			self.warning(formattedMessage)
 
 		warnings.showwarning = _logWarning
 
