@@ -101,27 +101,28 @@ class LoggerTestCase(unittest.TestCase):
 		except ImportError:
 			self.skipTest("Could not import twisted log module.")
 
+		self.logger.setConsoleLevel(OPSI.Logger.LOG_DEBUG)
+		self.logger.setLogFormat('[%l] %M')
+
 		err = StringIO()
 
 		with mock.patch('OPSI.Logger.sys.stdin', err):
 			with mock.patch('OPSI.Logger.sys.stderr', err):
-				self.logger.setConsoleLevel(OPSI.Logger.LOG_DEBUG)
-				self.logger.setLogFormat('[%l] %M')
 				self.logger.startTwistedLogging()
 
 				value = err.getvalue()
 				self.assertNotEquals("", value)
-				self.assertEquals("[%d] [twisted] Log opened.\n" % OPSI.Logger.LOG_DEBUG, value)
+				self.assertEquals("[{0:d}] [twisted] Log opened.\n".format(OPSI.Logger.LOG_DEBUG), value)
 				err.seek(0)
 				err.truncate(0)
 
 				log.msg("message")
 				value = err.getvalue()
 				self.assertNotEquals("", value)
-				self.assertEquals("[%d] [twisted] message\n" % OPSI.Logger.LOG_DEBUG, value)
+				self.assertEquals("[{0:d}] [twisted] message\n".format(OPSI.Logger.LOG_DEBUG), value)
 				err.seek(0)
 				err.truncate(0)
 
 				log.err("message")
 				value = err.getvalue()
-				self.assertEquals("[%d] [twisted] 'message'\n" % OPSI.Logger.LOG_ERROR, value)
+				self.assertEquals("[{0:d}] [twisted] 'message'\n".format(OPSI.Logger.LOG_ERROR), value)
