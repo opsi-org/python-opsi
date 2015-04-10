@@ -204,8 +204,9 @@ class TwistedLogObserver(object):
 			if eventDict.get('failure'):
 				self._logger.logTraceback(eventDict['failure'].getTracebackObject())
 				self._logger.critical(u"     ==>>> %s" % eventDict['failure'].getErrorMessage())
+
 			for line in eventDict.get('message', ()):
-				if line.find("Can't find property") != -1:
+				if "Can't find property" in line:
 					# Dav property errors
 					self._logger.debug(u"[twisted] %s" % line)
 				else:
