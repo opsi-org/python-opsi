@@ -165,3 +165,90 @@ class LoggerTestCase(unittest.TestCase):
 			# Source: https://docs.python.org/2.7/library/warnings.html#warning-categories
 			self.assertTrue("DeprecationWarning: message" in value)
 			self.assertTrue("DeprecationWarning: another message" in value)
+
+	def testLoggingLevels(self):
+		def resetBuffer():
+			messageBuffer.seek(0)
+			messageBuffer.truncate(0)
+
+		self.logger.setConsoleLevel(OPSI.Logger.LOG_CONFIDENTIAL)
+		self.logger.setLogFormat('[%l] %M')
+
+		messageBuffer = StringIO()
+
+		with mock.patch('OPSI.Logger.sys.stdin', messageBuffer):
+			with mock.patch('OPSI.Logger.sys.stderr', messageBuffer):
+				self.logger.essential("never miss")
+				value = messageBuffer.getvalue()
+				self.assertTrue(value.startswith("[{0:d}]".format(OPSI.Logger.LOG_ESSENTIAL)))
+				self.assertTrue("never miss" in value)
+
+				resetBuffer()
+				self.logger.comment("my words blabla")
+				value = messageBuffer.getvalue()
+				self.assertTrue(value.startswith("[{0:d}]".format(OPSI.Logger.LOG_COMMENT)))
+				self.assertTrue("my words blabla" in value)
+
+				resetBuffer()
+				self.logger.critical("over 9000")
+				value = messageBuffer.getvalue()
+				self.assertTrue(value.startswith("[{0:d}]".format(OPSI.Logger.LOG_CRITICAL)))
+				self.assertTrue("over 9000" in value)
+
+				resetBuffer()
+				self.logger.error("under 9000")
+				value = messageBuffer.getvalue()
+				self.assertTrue(value.startswith("[{0:d}]".format(OPSI.Logger.LOG_ERROR)))
+				self.assertTrue("under 9000" in value)
+
+				resetBuffer()
+				self.logger.warning("Loki lifes!")
+				value = messageBuffer.getvalue()
+				self.assertTrue(value.startswith("[{0:d}]".format(OPSI.Logger.LOG_WARNING)))
+				self.assertTrue("Loki lifes!" in value)
+
+				resetBuffer()
+				self.logger.notice("Hulk not angry")
+				value = messageBuffer.getvalue()
+				self.assertTrue(value.startswith("[{0:d}]".format(OPSI.Logger.LOG_NOTICE)))
+				self.assertTrue("Hulk not angry" in value)
+
+				resetBuffer()
+				self.logger.info("The Stark Tower")
+				value = messageBuffer.getvalue()
+				self.assertTrue(value.startswith("[{0:d}]".format(OPSI.Logger.LOG_INFO)))
+				self.assertTrue("The Stark Tower" in value)
+
+				resetBuffer()
+				self.logger.debug("Beep, beep.")
+				value = messageBuffer.getvalue()
+				self.assertTrue(value.startswith("[{0:d}]".format(OPSI.Logger.LOG_DEBUG)))
+				self.assertTrue("Beep, beep." in value)
+
+				resetBuffer()
+				self.logger.debug2("beepbeepbeepbeeeeeeeeeep")
+				value = messageBuffer.getvalue()
+				self.assertTrue(value.startswith("[{0:d}]".format(OPSI.Logger.LOG_DEBUG2)))
+				self.assertTrue("beepbeepbeepbeeeeeeeeeep" in value)
+
+				resetBuffer()
+				self.logger.confidential("my password")
+				value = messageBuffer.getvalue()
+				self.assertTrue(value.startswith("[{0:d}]".format(OPSI.Logger.LOG_CONFIDENTIAL)))
+				self.assertTrue("my password" in value)
+
+	def testConfidentialStringsAreNotLogged(self):
+		secretWord = 'mySecr3tP4ssw0rd!'
+
+		self.logger.addConfidentialString(secretWord)
+		self.logger.setConsoleLevel(OPSI.Logger.LOG_DEBUG2)
+
+		messageBuffer = StringIO()
+		with mock.patch('OPSI.Logger.sys.stdin', messageBuffer):
+			with mock.patch('OPSI.Logger.sys.stderr', messageBuffer):
+				self.logger.notice("Psst... {0}".format(secretWord))
+
+				value = messageBuffer.getvalue()
+				self.assertFalse(secretWord in value)
+				self.assertTrue("Psst... " in value)
+				self.assertTrue("*** confidential ***" in value)
