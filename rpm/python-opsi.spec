@@ -20,12 +20,16 @@ Requires:       pwdutils
 %endif
 %if 0%{?rhel_version} || 0%{?centos_version} || 0%{?fedora_version}
 Requires:       m2crypto python-ctypes pyOpenSSL newt-python python-twisted >= 8.2 PyPAM MySQL-python
+%if 0%{?rhel_version} >= 700 || 0%{?centos_version} >= 700
+	# To have ifconfig available
+	Requires:	net-tools
+%endif
 %else
 Requires:       python-m2crypto python-openssl lsb-release python-newt python-pam python-mysql
 %endif
 %if 0%{?sles_version}
 # Needed for working python-magic
-Requires:       libmagic1 python-pycrypto 
+Requires:       libmagic1 python-pycrypto
 %else
 Requires:	python-crypto
 %endif
