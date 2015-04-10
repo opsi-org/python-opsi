@@ -512,16 +512,16 @@ False suppresses exceptions.
 		:type raiseException: bool
 		'''
 		def formatMessage(unformattedMessage):
-			temp_message = unicode(unformattedMessage)
-			temp_message = temp_message.replace(u'%D', datetime)
-			temp_message = temp_message.replace(u'%T', threadId)
-			temp_message = temp_message.replace(u'%l', unicode(level))
-			temp_message = temp_message.replace(u'%L', levelname)
-			temp_message = temp_message.replace(u'%C', componentname)
-			temp_message = temp_message.replace(u'%M', message)
-			temp_message = temp_message.replace(u'%F', filename)
-			temp_message = temp_message.replace(u'%N', linenumber)
-			return temp_message
+			tempMessage = unicode(unformattedMessage)
+			tempMessage = tempMessage.replace(u'%D', datetime)
+			tempMessage = tempMessage.replace(u'%T', threadId)
+			tempMessage = tempMessage.replace(u'%l', unicode(level))
+			tempMessage = tempMessage.replace(u'%L', levelname)
+			tempMessage = tempMessage.replace(u'%C', componentname)
+			tempMessage = tempMessage.replace(u'%M', message)
+			tempMessage = tempMessage.replace(u'%F', filename)
+			tempMessage = tempMessage.replace(u'%N', linenumber)
+			return tempMessage
 
 		try:
 			if (level > self.__messageSubjectLevel and
