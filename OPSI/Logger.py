@@ -499,6 +499,17 @@ class LoggerImplementation:
 False suppresses exceptions.
 		:type raiseException: bool
 		'''
+		def formatMessage(unformattedMessage):
+			temp_message = unicode(unformattedMessage)
+			temp_message = temp_message.replace(u'%D', datetime)
+			temp_message = temp_message.replace(u'%T', threadId)
+			temp_message = temp_message.replace(u'%l', unicode(level))
+			temp_message = temp_message.replace(u'%L', levelname)
+			temp_message = temp_message.replace(u'%C', componentname)
+			temp_message = temp_message.replace(u'%M', message)
+			temp_message = temp_message.replace(u'%F', filename)
+			temp_message = temp_message.replace(u'%N', linenumber)
+			return temp_message
 
 		try:
 			if (level > self.__messageSubjectLevel and
@@ -586,15 +597,7 @@ False suppresses exceptions.
 				m = self.__messageSubjectFormat
 				if specialConfig:
 					m = specialConfig.get('messageSubjectFormat', m)
-				m = unicode(m)
-				m = m.replace(u'%D', datetime)
-				m = m.replace(u'%T', threadId)
-				m = m.replace(u'%l', unicode(level))
-				m = m.replace(u'%L', levelname)
-				m = m.replace(u'%C', componentname)
-				m = m.replace(u'%M', message)
-				m = m.replace(u'%F', filename)
-				m = m.replace(u'%N', linenumber)
+				m = formatMessage(m)
 				if (self.__messageSubjectLevel < LOG_CONFIDENTIAL):
 					for string in self.__confidentialStrings:
 						m = m.replace(string, u'*** confidential ***')
@@ -606,15 +609,7 @@ False suppresses exceptions.
 				m = self.__consoleFormat
 				if specialConfig:
 					m = specialConfig.get('consoleFormat', m)
-				m = unicode(m)
-				m = m.replace(u'%D', datetime)
-				m = m.replace(u'%T', threadId)
-				m = m.replace(u'%l', unicode(level))
-				m = m.replace(u'%L', levelname)
-				m = m.replace(u'%C', componentname)
-				m = m.replace(u'%M', message)
-				m = m.replace(u'%F', filename)
-				m = m.replace(u'%N', linenumber)
+				m = formatMessage(m)
 				if (self.__consoleLevel < LOG_CONFIDENTIAL):
 					for string in self.__confidentialStrings:
 						m = m.replace(string, u'*** confidential ***')
@@ -647,15 +642,7 @@ False suppresses exceptions.
 					m = self.__fileFormat
 					if specialConfig:
 						m = specialConfig.get('fileFormat', m)
-					m = unicode(m)
-					m = m.replace(u'%D', datetime)
-					m = m.replace(u'%T', threadId)
-					m = m.replace(u'%l', unicode(level))
-					m = m.replace(u'%L', levelname)
-					m = m.replace(u'%C', componentname)
-					m = m.replace(u'%M', message)
-					m = m.replace(u'%F', filename)
-					m = m.replace(u'%N', linenumber)
+					m = formatMessage(m)
 					if (self.__fileLevel < LOG_CONFIDENTIAL):
 						for string in self.__confidentialStrings:
 							m = m.replace(string, u'*** confidential ***')
@@ -702,15 +689,7 @@ False suppresses exceptions.
 				m = self.__syslogFormat
 				if specialConfig:
 					m = specialConfig.get('syslogFormat', m)
-				m = unicode(m)
-				m = m.replace(u'%D', datetime)
-				m = m.replace(u'%T', threadId)
-				m = m.replace(u'%l', unicode(level))
-				m = m.replace(u'%L', levelname)
-				m = m.replace(u'%C', componentname)
-				m = m.replace(u'%M', message)
-				m = m.replace(u'%F', filename)
-				m = m.replace(u'%N', linenumber)
+				m = formatMessage(m)
 				if self.__syslogLevel < LOG_CONFIDENTIAL:
 					for string in self.__confidentialStrings:
 						m = m.replace(string, u'*** confidential ***')
@@ -740,15 +719,7 @@ False suppresses exceptions.
 				m = self.__univentionFormat
 				if specialConfig:
 					m = specialConfig.get('univentionFormat', m)
-				m = unicode(m)
-				m = m.replace(u'%D', datetime)
-				m = m.replace(u'%T', threadId)
-				m = m.replace(u'%l', unicode(level))
-				m = m.replace(u'%L', levelname)
-				m = m.replace(u'%C', componentname)
-				m = m.replace(u'%M', message)
-				m = m.replace(u'%F', filename)
-				m = m.replace(u'%N', linenumber)
+				m = formatMessage(m)
 				for string in self.__confidentialStrings:
 					m = m.replace(string, u'*** confidential ***')
 
