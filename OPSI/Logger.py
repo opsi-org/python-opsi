@@ -35,6 +35,15 @@ import time
 import types
 import warnings
 
+if os.name == 'nt':
+	# Windows imports for file locking
+	import win32con
+	import win32file
+	import pywintypes
+elif os.name == 'posix':
+	# Posix imports for file locking
+	import fcntl
+
 try:
 	import syslog
 except ImportError:
@@ -55,36 +64,7 @@ LOG_ESSENTIAL = 1
 LOG_COMMENT = LOG_ESSENTIAL
 LOG_NONE = 0
 
-if os.name == 'nt':
-	# Windows imports for file locking
-	import win32con
-	import win32file
-	import pywintypes
-
-	# Colors
-	COLOR_NORMAL = ''
-	COLOR_BLACK = ''
-	COLOR_RED = ''
-	COLOR_GREEN = ''
-	COLOR_YELLOW = ''
-	COLOR_BLUE = ''
-	COLOR_MAGENTA = ''
-	COLOR_CYAN = ''
-	COLOR_WHITE = ''
-	COLOR_LIGHT_BLACK = ''
-	COLOR_LIGHT_RED = ''
-	COLOR_LIGHT_GREEN = ''
-	COLOR_LIGHT_YELLOW = ''
-	COLOR_LIGHT_BLUE = ''
-	COLOR_LIGHT_MAGENTA = ''
-	COLOR_LIGHT_CYAN = ''
-	COLOR_LIGHT_WHITE = ''
-
-elif (os.name == 'posix'):
-	# Posix imports for file locking
-	import fcntl
-
-	# Colors
+if os.name == 'posix':
 	COLOR_NORMAL = '\033[0;0;0m'
 	COLOR_BLACK = '\033[0;30;40m'
 	COLOR_RED = '\033[0;31;40m'
@@ -102,6 +82,24 @@ elif (os.name == 'posix'):
 	COLOR_LIGHT_MAGENTA = '\033[1;35;40m'
 	COLOR_LIGHT_CYAN = '\033[1;36;40m'
 	COLOR_LIGHT_WHITE = '\033[1;37;40m'
+else:
+	COLOR_NORMAL = ''
+	COLOR_BLACK = ''
+	COLOR_RED = ''
+	COLOR_GREEN = ''
+	COLOR_YELLOW = ''
+	COLOR_BLUE = ''
+	COLOR_MAGENTA = ''
+	COLOR_CYAN = ''
+	COLOR_WHITE = ''
+	COLOR_LIGHT_BLACK = ''
+	COLOR_LIGHT_RED = ''
+	COLOR_LIGHT_GREEN = ''
+	COLOR_LIGHT_YELLOW = ''
+	COLOR_LIGHT_BLUE = ''
+	COLOR_LIGHT_MAGENTA = ''
+	COLOR_LIGHT_CYAN = ''
+	COLOR_LIGHT_WHITE = ''
 
 COLORS_AVAILABLE = [
 	COLOR_NORMAL, COLOR_BLACK, COLOR_RED, COLOR_GREEN, COLOR_YELLOW,
