@@ -3725,6 +3725,20 @@ def getActiveSessionId():
 	return os.getsid(ownPid)
 
 
+def getActiveConsoleSessionId():
+	"""
+	Get the currently used console session id.
+
+	.. warning::
+
+	   This is currently only faked to have the function available for
+	   the opsi-linux-client-agent!
+
+	"""
+	# TODO: real implementation possible?
+	return 0
+
+
 def runCommandInSession(command, sessionId=None, desktop=None, duplicateFrom=None, waitForProcessEnding=True, timeoutSeconds=0):
 	"""
 	Run an command.

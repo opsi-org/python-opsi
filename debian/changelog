@@ -5,6 +5,7 @@ python-opsi (4.0.6.6-1) UNRELEASED; urgency=low
   * OPSI.Util.Task.Sudoers: Do not duplicate existing entries.
   * OPSI.Logger.logWarnings: only log to the opsi-Logger.
   * CentOS / RHEL 7: depend on net-tools for ifconfig.
+  * Added OPSI.System.Posix.getActiveConsoleSessionId
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 10 Apr 2015 10:31:29 +0200
 
