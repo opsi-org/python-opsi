@@ -118,6 +118,18 @@ CONFIDENTIAL_COLOR = COLOR_LIGHT_YELLOW
 ESSENTIAL_COLOR = COLOR_LIGHT_CYAN
 COMMENT_COLOR = ESSENTIAL_COLOR
 
+_SYSLOG_LEVEL_MAPPING = {
+	LOG_CONFIDENTIAL: syslog.LOG_DEBUG,
+	LOG_DEBUG2: syslog.LOG_DEBUG,
+	LOG_DEBUG: syslog.LOG_DEBUG,
+	LOG_INFO: syslog.LOG_INFO,
+	LOG_NOTICE: syslog.LOG_NOTICE,
+	LOG_WARNING: syslog.LOG_WARNING,
+	LOG_ERROR: syslog.LOG_ERR,
+	LOG_CRITICAL: syslog.LOG_CRIT,
+	LOG_COMMENT: syslog.LOG_CRIT
+}
+
 encoding = sys.getfilesystemencoding()
 _showwarning = warnings.showwarning
 
@@ -694,25 +706,11 @@ False suppresses exceptions.
 					for string in self.__confidentialStrings:
 						m = m.replace(string, u'*** confidential ***')
 
-				# TODO: put the mapping into a dict!
-				if level == LOG_CONFIDENTIAL:
-					syslog.syslog(syslog.LOG_DEBUG, m)
-				elif level == LOG_DEBUG2:
-					syslog.syslog(syslog.LOG_DEBUG, m)
-				elif level == LOG_DEBUG:
-					syslog.syslog(syslog.LOG_DEBUG, m)
-				elif level == LOG_INFO:
-					syslog.syslog(syslog.LOG_INFO, m)
-				elif level == LOG_NOTICE:
-					syslog.syslog(syslog.LOG_NOTICE, m)
-				elif level == LOG_WARNING:
-					syslog.syslog(syslog.LOG_WARNING, m)
-				elif level == LOG_ERROR:
-					syslog.syslog(syslog.LOG_ERR, m)
-				elif level == LOG_CRITICAL:
-					syslog.syslog(syslog.LOG_CRIT, m)
-				elif level == LOG_COMMENT:
-					syslog.syslog(syslog.LOG_CRIT, m)
+				try:
+					syslog.syslog(_SYSLOG_LEVEL_MAPPING[level], m)
+				except KeyError:
+					# No known log level - ignoring.
+					pass
 
 			if self.univentionLogger_priv:
 				# univention log
