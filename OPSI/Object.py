@@ -48,7 +48,7 @@ from OPSI.Types import (forceActionProgress, forceActionRequest,
 	forceUnicodeList, forceUnicodeLower, forceUnsignedInt, forceUrl)
 from OPSI.Util import fromJson, toJson, generateOpsiHostKey, timestamp
 
-__version__ = '4.0.6.3'
+__version__ = '4.0.6.7'
 
 logger = Logger()
 _MANDATORY_CONSTRUCTOR_ARGS_CACHE = {}
@@ -700,13 +700,13 @@ class OpsiDepotserver(Host):
 		return fromJson(jsonString, 'OpsiDepotserver')
 
 	def __unicode__(self):
-		additionalInfos = ["id='{0}'".format(self.id)]
+		additionalInfos = [u"id='{0}'".format(self.id)]
 		if self.isMasterDepot:
-			additionalInfos.append('isMasterDepot={0}'.format(self.isMasterDepot))
+			additionalInfos.append(u'isMasterDepot={0}'.format(self.isMasterDepot))
 		if self.masterDepotId:
-			additionalInfos.append("masterDepotId='{0}'".format(self.masterDepotId))
+			additionalInfos.append(u"masterDepotId='{0}'".format(self.masterDepotId))
 
-		return u"<{0}({1})>".format(self.getType(), ', '.join(additionalInfos))
+		return u"<{0}({1})>".format(self.getType(), u', '.join(additionalInfos))
 
 Host.subClasses['OpsiDepotserver'] = OpsiDepotserver
 
@@ -2219,20 +2219,20 @@ class LicenseContract(Entity):
 		return fromJson(jsonString, 'LicenseContract')
 
 	def __unicode__(self):
-		infos = ["id='{0}'".format(self.id)]
+		infos = [u"id='{0}'".format(self.id)]
 
 		if self.description:
-			infos.append("description='{0}'".format(self.description))
+			infos.append(u"description='{0}'".format(self.description))
 		if self.partner:
-			infos.append("partner='{0}'".format(self.partner))
+			infos.append(u"partner='{0}'".format(self.partner))
 		if self.conclusionDate:
-			infos.append("conclusionDate='{0}'".format(self.conclusionDate))
+			infos.append(u"conclusionDate='{0}'".format(self.conclusionDate))
 		if self.notificationDate:
-			infos.append("notificationDate='{0}'".format(self.notificationDate))
+			infos.append(u"notificationDate='{0}'".format(self.notificationDate))
 		if self.expirationDate:
-			infos.append("expirationDate='{0}'".format(self.expirationDate))
+			infos.append(u"expirationDate='{0}'".format(self.expirationDate))
 
-		return u"<{0}({1})>".format(self.getType(), ', '.join(infos))
+		return u"<{0}({1})>".format(self.getType(), u', '.join(infos))
 
 Entity.subClasses['LicenseContract'] = LicenseContract
 
@@ -2309,17 +2309,17 @@ class SoftwareLicense(Entity):
 
 	def __unicode__(self):
 		infos = [
-			"id='{0}'".format(self.id),
-			"licenseContractId='{0}'".format(self.licenseContractId)
+			u"id='{0}'".format(self.id),
+			u"licenseContractId='{0}'".format(self.licenseContractId)
 		]
 		if self.maxInstallations:
-			infos.append('maxInstallations={0}'.format(self.maxInstallations))
+			infos.append(u'maxInstallations={0}'.format(self.maxInstallations))
 		if self.boundToHost:
-			infos.append("boundToHost='{0}'".format(self.boundToHost))
+			infos.append(u"boundToHost='{0}'".format(self.boundToHost))
 		if self.expirationDate:
-			infos.append("expirationDate='{0}'".format(self.expirationDate))
+			infos.append(u"expirationDate='{0}'".format(self.expirationDate))
 
-		return u"<{0}({1})>".format(self.getType(), ', '.join(infos))
+		return u"<{0}({1})>".format(self.getType(), u', '.join(infos))
 
 Entity.subClasses['LicenseContract'] = LicenseContract
 
@@ -2372,7 +2372,7 @@ class OEMSoftwareLicense(SoftwareLicense):
 	def setBoundToHost(self, boundToHost):
 		self.boundToHost = forceHostId(boundToHost)
 		if not self.boundToHost:
-			raise BackendBadValueError("OEM software license requires boundToHost value")
+			raise BackendBadValueError(u"OEM software license requires boundToHost value")
 
 	@staticmethod
 	def fromHash(hash):
@@ -2501,14 +2501,14 @@ class LicensePool(Entity):
 		return fromJson(jsonString, 'LicensePool')
 
 	def __unicode__(self):
-		infos = ["id='{0}'".format(self.id)]
+		infos = [u"id='{0}'".format(self.id)]
 
 		if self.description:
-			infos.append("description='{0}'".format(self.description))
+			infos.append(u"description='{0}'".format(self.description))
 		if self.productIds:
-			infos.append("productIds={0}".format(self.productIds))
+			infos.append(u"productIds={0}".format(self.productIds))
 
-		return u"<{0}({1})>".format(self.getType(), ', '.join(infos))
+		return u"<{0}({1})>".format(self.getType(), u', '.join(infos))
 
 Entity.subClasses['LicensePool'] = LicensePool
 
@@ -2588,20 +2588,20 @@ class AuditSoftwareToLicensePool(Relationship):
 		return fromJson(jsonString, 'AuditSoftwareToLicensePool')
 
 	def __unicode__(self):
-		infos = ["name='{0}'".format(self.name)]
+		infos = [u"name='{0}'".format(self.name)]
 
 		if self.version:
-			infos.append("version='{0}'".format(self.version))
+			infos.append(u"version='{0}'".format(self.version))
 		if self.subVersion:
-			infos.append("subVersion='{0}'".format(self.subVersion))
+			infos.append(u"subVersion='{0}'".format(self.subVersion))
 		if self.language:
-			infos.append("language='{0}'".format(self.language))
+			infos.append(u"language='{0}'".format(self.language))
 		if self.architecture:
-			infos.append("architecture='{0}'".format(self.architecture))
+			infos.append(u"architecture='{0}'".format(self.architecture))
 		if self.licensePoolId:
-			infos.append("licensePoolId='{0}'".format(self.licensePoolId))
+			infos.append(u"licensePoolId='{0}'".format(self.licensePoolId))
 
-		return u"<{0}({1})>".format(self.getType(), ', '.join(infos))
+		return u"<{0}({1})>".format(self.getType(), u', '.join(infos))
 
 
 Relationship.subClasses['AuditSoftwareToLicensePool'] = AuditSoftwareToLicensePool
@@ -3176,7 +3176,7 @@ class AuditHardware(Entity):
 		except AttributeError:
 			pass
 
-		return u"<{0}>".format(', '.join(infos))
+		return u"<{0}>".format(u', '.join(infos))
 
 Entity.subClasses['AuditHardware'] = AuditHardware
 
