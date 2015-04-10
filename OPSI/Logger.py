@@ -598,7 +598,7 @@ False suppresses exceptions.
 				if specialConfig:
 					m = specialConfig.get('messageSubjectFormat', m)
 				m = formatMessage(m)
-				if (self.__messageSubjectLevel < LOG_CONFIDENTIAL):
+				if self.__messageSubjectLevel < LOG_CONFIDENTIAL:
 					for string in self.__confidentialStrings:
 						m = m.replace(string, u'*** confidential ***')
 
@@ -610,7 +610,7 @@ False suppresses exceptions.
 				if specialConfig:
 					m = specialConfig.get('consoleFormat', m)
 				m = formatMessage(m)
-				if (self.__consoleLevel < LOG_CONFIDENTIAL):
+				if self.__consoleLevel < LOG_CONFIDENTIAL:
 					for string in self.__confidentialStrings:
 						m = m.replace(string, u'*** confidential ***')
 
@@ -643,7 +643,7 @@ False suppresses exceptions.
 					if specialConfig:
 						m = specialConfig.get('fileFormat', m)
 					m = formatMessage(m)
-					if (self.__fileLevel < LOG_CONFIDENTIAL):
+					if self.__fileLevel < LOG_CONFIDENTIAL:
 						for string in self.__confidentialStrings:
 							m = m.replace(string, u'*** confidential ***')
 
