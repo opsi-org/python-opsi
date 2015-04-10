@@ -248,7 +248,19 @@ class LoggerTestCase(unittest.TestCase):
 			with mock.patch('OPSI.Logger.sys.stderr', messageBuffer):
 				self.logger.notice("Psst... {0}".format(secretWord))
 
-				value = messageBuffer.getvalue()
-				self.assertFalse(secretWord in value)
-				self.assertTrue("Psst... " in value)
-				self.assertTrue("*** confidential ***" in value)
+		value = messageBuffer.getvalue()
+		self.assertFalse(secretWord in value)
+		self.assertTrue("Psst... " in value)
+		self.assertTrue("*** confidential ***" in value)
+
+	def testLogFormatting(self):
+		self.logger.setConsoleLevel(OPSI.Logger.LOG_CONFIDENTIAL)
+		self.logger.setLogFormat('[%l - %L] %F %M')
+
+		messageBuffer = StringIO()
+		with mock.patch('OPSI.Logger.sys.stdin', messageBuffer):
+			with mock.patch('OPSI.Logger.sys.stderr', messageBuffer):
+				self.logger.debug("Chocolate Starfish")
+
+		value = messageBuffer.getvalue()
+		self.assertEquals('[7 - debug] test_logger.py Chocolate Starfish', value.strip())
