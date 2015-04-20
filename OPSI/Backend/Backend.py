@@ -1594,7 +1594,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 					}
 
 	def __repr__(self):
-		return "<ExtendedConfigDataBackend(configDataBackend={0})>".format(self._backend)
+		return u"<ExtendedConfigDataBackend(configDataBackend={0})>".format(repr(self._backend))
 
 	def backend_searchIdents(self, filter):
 		logger.info(u"=== Starting search, filter: %s" % filter)
