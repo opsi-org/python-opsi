@@ -269,6 +269,7 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 
 	addDynamicDepotDriveSelection(backend)
 	createWANconfigs(backend)
+	createInstallByShutdownConfig(backend)
 
 	if not backendProvided:
 		backend.backend_exit()
@@ -337,6 +338,22 @@ def createWANconfigs(backend):
 			u"event_net_connection active", False),
 		SimpleConfig(u"opsiclientd.event_timer.active",
 			u"event_timer active", False)
+	]
+
+	availableConfigs = set(backend.config_getIdents())
+	for config in configs:
+		if config.id not in availableConfigs:
+			LOGGER.debug(u"Adding missing config '{0}'".format(config.id))
+			backend.config_createBool(config.id, config.description, config.value)
+
+def createInstallByShutdownConfig(backend):
+	"Create the configurations that are used by the InstallByShutdown extension if missing."
+
+	SimpleConfig = namedtuple('SimpleConfig', ['id', 'description', 'value'])
+
+	configs = [
+		SimpleConfig(u"opsiclientd.event_install_by_shutdown.active",
+			u"install_by_shutdown active", False)
 	]
 
 	availableConfigs = set(backend.config_getIdents())

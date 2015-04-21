@@ -183,6 +183,16 @@ class ConfigureBackendTestCase(unittest.TestCase, FileBackendMixin):
         for ident in requiredConfigIdents:
             self.assertTrue(ident in identsInBackend, "Missing config id {0}".format(ident))
 
+    def testAddingInstallByShutdownConfig(self):
+        requiredConfigIdents = [
+            "opsiclientd.event_install_by_shutdown.active",
+        ]
+
+        confData.createInstallByShutdownConfig(self.backend)
+        identsInBackend = set(self.backend.config_getIdents())
+
+        for ident in requiredConfigIdents:
+            self.assertTrue(ident in identsInBackend, "Missing config id {0}".format(ident))
 
 if __name__ == '__main__':
     unittest.main()
