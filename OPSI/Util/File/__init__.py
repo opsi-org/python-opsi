@@ -1506,7 +1506,7 @@ class DHCPDConf_Comment(DHCPDConf_Component):
 		self._data = data
 
 	def asText(self):
-		return u'{0}#{1}%s'.format(self.getShifting(), self._data)
+		return u'{0}#{1}'.format(self.getShifting(), self._data)
 
 
 class DHCPDConf_EmptyLine(DHCPDConf_Component):

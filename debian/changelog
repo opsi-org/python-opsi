@@ -2,8 +2,9 @@ python-opsi (4.0.6.8-1) UNRELEASED; urgency=low
 
   * 20_legacy.conf: createLicenseContract now returns the complete
     license contract id instead of just the first character.
+  * OPSI.Util.File: Avoid bloating dhcpd.conf with '%s'
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 20 Apr 2015 09:50:18 +0200
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 21 Apr 2015 10:40:08 +0200
 
 python-opsi (4.0.6.7-2) experimental; urgency=low
 
