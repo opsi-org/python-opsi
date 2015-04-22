@@ -185,7 +185,7 @@ class ConfigureBackendTestCase(unittest.TestCase, FileBackendMixin):
 
     def testAddingInstallByShutdownConfig(self):
         requiredConfigIdents = [
-            "opsiclientd.event_install_by_shutdown.active",
+            "clientconfig.install_by_shutdown.active",
         ]
 
         confData.createInstallByShutdownConfig(self.backend)

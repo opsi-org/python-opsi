@@ -352,7 +352,7 @@ def createInstallByShutdownConfig(backend):
 	SimpleConfig = namedtuple('SimpleConfig', ['id', 'description', 'value'])
 
 	configs = [
-		SimpleConfig(u"opsiclientd.event_install_by_shutdown.active",
+		SimpleConfig(u"clientconfig.install_by_shutdown.active",
 			u"install_by_shutdown active", False)
 	]
 
