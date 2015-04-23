@@ -13,6 +13,7 @@ Contents:
 
    OPSI
    tests
+   building_on_obs
 
 
 Indices and tables
