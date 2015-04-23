@@ -134,7 +134,7 @@ except ImportError:
 setup(
 	name='python-opsi',
 	version=VERSION,
-	license='GPL-2',
+	license='AGPL-3',
 	url="http://www.opsi.org",
 	description='The opsi python library',
 	packages=find_packages(exclude=["*.tests", "*.tests.*", "tests.*", "tests"]),
