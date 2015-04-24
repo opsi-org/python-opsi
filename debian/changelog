@@ -4,8 +4,10 @@ python-opsi (4.0.6.8-1) UNRELEASED; urgency=low
     license contract id instead of just the first character.
   * OPSI.Util.File: Avoid bloating dhcpd.conf with '%s'
   * OPSI.Util.Task.Rights: added 'service_setup.sh' to KNOWN_EXECUTABLES
+  * OPSI.Util.Task.Rights: Fix setting rights on KNOWN_EXECUTABLES in
+    the depot folder.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 23 Apr 2015 14:45:25 +0200
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 24 Apr 2015 14:58:59 +0200
 
 python-opsi (4.0.6.7-2) experimental; urgency=low
 

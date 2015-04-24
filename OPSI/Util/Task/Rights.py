@@ -111,12 +111,6 @@ def setRights(path=u'/'):
 		dmod = 0770
 		correctLinks = False
 
-		isProduct = dirname not in (
-			u'/var/lib/tftpboot/opsi', u'/tftpboot/linux', u'/var/log/opsi',
-			u'/etc/opsi', u'/var/lib/opsi', u'/var/lib/opsi/workbench'
-		)
-		LOGGER.debug("Assuming product folder? {0}".format(isProduct))
-
 		if dirname in (u'/var/lib/tftpboot/opsi', u'/tftpboot/linux'):
 			fmod = 0664
 			dmod = 0775
@@ -131,9 +125,11 @@ def setRights(path=u'/'):
 			chown(path, uid, gid)
 
 			LOGGER.debug(u"Setting rights on file '%s'" % path)
-			if isProduct:
+			if path.startswith(u'/var/lib/opsi/depot/'):
+				logger.debug("Assuming file in product folder...")
 				os.chmod(path, (os.stat(path)[0] | 0660) & 0770)
 			else:
+				logger.debug("Assuming general file...")
 				os.chmod(path, fmod)
 			continue
 
@@ -155,7 +151,7 @@ def setRights(path=u'/'):
 				os.chmod(filepath, dmod)
 			elif os.path.isfile(filepath):
 				LOGGER.debug(u"Setting rights on file '%s'" % filepath)
-				if isProduct:
+				if filepath.startswith(u'/var/lib/opsi/depot/'):
 					if os.path.basename(filepath) in KNOWN_EXECUTABLES:
 						LOGGER.debug(u"Setting rights on special file '{0}'".format(filepath))
 						os.chmod(filepath, 0770)
