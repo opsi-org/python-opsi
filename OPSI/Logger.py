@@ -722,24 +722,19 @@ False suppresses exceptions.
 				for string in self.__confidentialStrings:
 					m = m.replace(string, u'*** confidential ***')
 
-				if level == LOG_CONFIDENTIAL:
-					pass
-				elif level == LOG_DEBUG2:
-					self.univentionLogger_priv.debug(self.__univentionClass, self.univentionLogger_priv.ALL, m)
-				elif level == LOG_DEBUG:
-					self.univentionLogger_priv.debug(self.__univentionClass, self.univentionLogger_priv.ALL, m)
-				elif level == LOG_INFO:
-					self.univentionLogger_priv.debug(self.__univentionClass, self.univentionLogger_priv.ALL, m)
+				if level in (LOG_DEBUG2, LOG_DEBUG, LOG_INFO):
+					univentionLevel = self.univentionLogger_priv.ALL
 				elif level == LOG_NOTICE:
-					self.univentionLogger_priv.debug(self.__univentionClass, self.univentionLogger_priv.INFO, m)
+					univentionLevel = self.univentionLogger_priv.INFO
 				elif level == LOG_WARNING:
-					self.univentionLogger_priv.debug(self.__univentionClass, self.univentionLogger_priv.WARN, m)
-				elif level == LOG_ERROR:
-					self.univentionLogger_priv.debug(self.__univentionClass, self.univentionLogger_priv.ERROR, m)
-				elif level == LOG_CRITICAL:
-					self.univentionLogger_priv.debug(self.__univentionClass, self.univentionLogger_priv.ERROR, m)
-				elif level == LOG_COMMENT:
-					self.univentionLogger_priv.debug(self.__univentionClass, self.univentionLogger_priv.ERROR, m)
+					univentionLevel = self.univentionLogger_priv.WARN
+				elif level in (LOG_ERROR, LOG_CRITICAL, LOG_COMMENT):
+					univentionLevel = self.univentionLogger_priv.ERROR
+				else:
+					univentionLevel = None
+
+				if univentionLevel:
+					self.univentionLogger_priv.debug(self.__univentionClass, univentionLevel, m)
 		except Exception as err:
 			if raiseException:
 				raise err
