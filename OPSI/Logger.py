@@ -668,7 +668,7 @@ False suppresses exceptions.
 					if lf:
 						timeout = 0
 						locked = False
-						while (not locked and timeout < 2000):
+						while not locked and timeout < 2000:
 							# While not timed out and not locked
 							try:
 								# Try to lock file
