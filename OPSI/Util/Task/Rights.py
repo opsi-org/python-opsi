@@ -68,11 +68,11 @@ try:
 except Exception:
 	_FILE_ADMIN_GROUP = u'pcpatch'
 
-KNOWN_EXECUTABLES = set([
+KNOWN_EXECUTABLES = frozenset((
 	u'create_driver_links.py', u'opsi-deploy-client-agent',
 	u'opsi-deploy-client-agent-old', u'service_setup.sh', u'setup.py',
 	u'show_drivers.py', u'winexe'
-])
+))
 
 
 # TODO: use OPSI.System.Posix.Sysconfig for a more standardized approach
