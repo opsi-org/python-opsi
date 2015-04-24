@@ -46,18 +46,6 @@ elif os.name == 'posix':
 
 try:
 	import syslog
-
-	_SYSLOG_LEVEL_MAPPING = {
-		LOG_CONFIDENTIAL: syslog.LOG_DEBUG,
-		LOG_DEBUG2: syslog.LOG_DEBUG,
-		LOG_DEBUG: syslog.LOG_DEBUG,
-		LOG_INFO: syslog.LOG_INFO,
-		LOG_NOTICE: syslog.LOG_NOTICE,
-		LOG_WARNING: syslog.LOG_WARNING,
-		LOG_ERROR: syslog.LOG_ERR,
-		LOG_CRITICAL: syslog.LOG_CRIT,
-		LOG_COMMENT: syslog.LOG_CRIT
-	}
 except ImportError:
 	syslog = None
 
@@ -129,6 +117,19 @@ CRITICAL_COLOR = COLOR_LIGHT_RED
 CONFIDENTIAL_COLOR = COLOR_LIGHT_YELLOW
 ESSENTIAL_COLOR = COLOR_LIGHT_CYAN
 COMMENT_COLOR = ESSENTIAL_COLOR
+
+if syslog is not None:
+	_SYSLOG_LEVEL_MAPPING = {
+		LOG_CONFIDENTIAL: syslog.LOG_DEBUG,
+		LOG_DEBUG2: syslog.LOG_DEBUG,
+		LOG_DEBUG: syslog.LOG_DEBUG,
+		LOG_INFO: syslog.LOG_INFO,
+		LOG_NOTICE: syslog.LOG_NOTICE,
+		LOG_WARNING: syslog.LOG_WARNING,
+		LOG_ERROR: syslog.LOG_ERR,
+		LOG_CRITICAL: syslog.LOG_CRIT,
+		LOG_COMMENT: syslog.LOG_CRIT
+	}
 
 encoding = sys.getfilesystemencoding()
 _showwarning = warnings.showwarning
