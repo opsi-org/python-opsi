@@ -523,7 +523,6 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 		if not self._callInterface:
 			raise Exception(u"Call interface not defined in %s" % self)
 
-		rpcs = []
 		try:
 			rpcs = fromJson(self.query, preventObjectCreation=True)
 			if not rpcs:
