@@ -329,7 +329,7 @@ class WorkerOpsi(object):
 
 				logger.confidential(u"Auth encoded: %s" % encoded)
 				parts = unicode(base64.decodestring(encoded), 'latin-1').split(':')
-				if (len(parts) > 6):
+				if len(parts) > 6:
 					user = u':'.join(parts[:6])
 					password = u':'.join(parts[6:])
 				else:
@@ -362,14 +362,14 @@ class WorkerOpsi(object):
 		sessionId = u''
 		try:
 			for (k, v) in self.request.headers.getAllRawHeaders():
-				if (k.lower() == 'cookie'):
+				if k.lower() == 'cookie':
 					for cookie in v:
 						for c in cookie.split(';'):
-							if (c.find('=') == -1):
+							if '=' not in c:
 								continue
 
 							(name, value) = c.split('=', 1)
-							if (name.strip() == self._getSessionHandler().sessionName):
+							if name.strip() == self._getSessionHandler().sessionName:
 								sessionId = forceUnicode(value.strip())
 								break
 
@@ -395,7 +395,7 @@ class WorkerOpsi(object):
 
 		# Get Session object
 		self.session = sessionHandler.getSession(sessionId, self.request.remoteAddr.host)
-		if (sessionId == self.session.uid):
+		if sessionId == self.session.uid:
 			logger.info(u"Reusing session for client '%s', application '%s'" % (self.request.remoteAddr.host, userAgent))
 		elif sessionId:
 			logger.notice(u"Application '%s' on client '%s' supplied non existing session id: %s" % (userAgent, self.request.remoteAddr.host, sessionId))
@@ -453,9 +453,9 @@ class WorkerOpsi(object):
 
 	def _getQuery(self, result):
 		self.query = ''
-		if   (self.request.method == 'GET'):
-			self.query = urllib.unquote( self.request.querystring )
-		elif (self.request.method == 'POST'):
+		if self.request.method == 'GET':
+			self.query = urllib.unquote(self.request.querystring)
+		elif self.request.method == 'POST':
 			# Returning deferred needed for chaining
 			d = stream.readStream(self.request.stream, self._handlePostData)
 			return d
@@ -469,7 +469,7 @@ class WorkerOpsi(object):
 
 	def _decodeQuery(self, result):
 		try:
-			if (self.request.method == 'POST'):
+			if self.request.method == 'POST':
 				contentType = self.request.headers.getHeader('content-type')
 				contentEncoding = None
 				try:
@@ -478,7 +478,7 @@ class WorkerOpsi(object):
 					pass
 
 				logger.debug(u"Content-Type: %s, Content-Encoding: %s" % (contentType, contentEncoding))
-				if (contentEncoding == 'gzip') or (contentType and contentType.mediaType.startswith('gzip')):
+				if contentEncoding == 'gzip' or contentType and contentType.mediaType.startswith('gzip'):
 					logger.debug(u"Expecting compressed data from client")
 					self.query = zlib.decompress(self.query)
 					self.gzip = True
@@ -571,9 +571,9 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 
 		encoding = None
 		try:
-			if ('deflate' in self.request.headers.getHeader('Accept-Encoding')):
+			if 'deflate' in self.request.headers.getHeader('Accept-Encoding'):
 				encoding = 'deflate'
-			if ('gzip' in self.request.headers.getHeader('Accept-Encoding')):
+			if 'gzip' in self.request.headers.getHeader('Accept-Encoding'):
 				encoding = 'gzip'
 		except Exception as error:
 			logger.debug("Failed to get Accept-Encoding from request header: {0}".format(error))
@@ -632,7 +632,7 @@ class MultiprocessWorkerOpsiJsonRpc(WorkerOpsiJsonRpc):
 		logger.debug(u"Using multiprocessing to handle rpc.")
 
 		def cleanup(rpc):
-			if (rpc.getMethodName() == 'backend_exit'):
+			if rpc.getMethodName() == 'backend_exit':
 				logger.notice(u"User '%s' asked to close the session" % self.session.user)
 				self._freeSession(result)
 				self.service._getSessionHandler().deleteSession(self.session.uid)
