@@ -588,11 +588,9 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 		else:
 			result.headers.setHeader('content-type', http_headers.MimeType("application", "json", {"charset": "utf-8"}))
 
-		response = []
+		response = [serialize(rpc.getResponse()) for rpc in self._rpcs]
 
-		for rpc in self._rpcs:
-			response.append(serialize(rpc.getResponse()))
-		if (len(response) == 1):
+		if len(response) == 1:
 			response = response[0]
 		if not response:
 			response = None
