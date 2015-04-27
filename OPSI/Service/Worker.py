@@ -233,16 +233,16 @@ interfacePage = u'''<?xml version="1.0" encoding="UTF-8"?>
 
 class WorkerOpsi(object):
 	def __init__(self, service, request, resource):
-		self.service   = service
+		self.service = service
 		if request.headers.hasHeader("x-forwarded-for"):
 			# overloading request because proxy detected
 			request.remoteAddr.host = request.headers.getRawHeaders("x-forwarded-for")[0]
-		self.request   = request
-		self.query     = u''
-		self.gzip      = False
-		self.path      = u''
-		self.resource  = resource
-		self.session   = None
+		self.request = request
+		self.query = u''
+		self.gzip = False
+		self.path = u''
+		self.resource = resource
+		self.session = None
 		self.authRealm = 'OPSI Service'
 
 	def process(self):
@@ -262,6 +262,7 @@ class WorkerOpsi(object):
 	def _getSessionHandler(self):
 		if hasattr(self.service, '_getSessionHandler'):
 			return self.service._getSessionHandler()
+
 		return None
 
 	def _delayResult(self, seconds, result):
@@ -273,6 +274,7 @@ class WorkerOpsi(object):
 
 			def returnResult(self):
 				self.deferred.callback(self.result)
+
 		return DelayResult(seconds, result).deferred
 
 	def _errback(self, failure):
@@ -347,8 +349,10 @@ class WorkerOpsi(object):
 			userAgent = self.request.headers.getHeader('user-agent')
 		except Exception:
 			logger.info(u"Client '%s' did not supply user-agent" % self.request.remoteAddr.host)
+
 		if not userAgent:
 			userAgent = 'unknown'
+
 		return userAgent
 
 	def _getSessionId(self):
@@ -361,10 +365,12 @@ class WorkerOpsi(object):
 						for c in cookie.split(';'):
 							if (c.find('=') == -1):
 								continue
+
 							(name, value) = c.split('=', 1)
 							if (name.strip() == self._getSessionHandler().sessionName):
 								sessionId = forceUnicode(value.strip())
 								break
+
 					break
 		except Exception as e:
 			logger.error(u"Failed to get cookie from header: %s" % e)
@@ -451,6 +457,7 @@ class WorkerOpsi(object):
 			return d
 		else:
 			raise ValueError(u"Unhandled method '%s'" % self.request.method)
+
 		return result
 
 	def _handlePostData(self, chunk):
@@ -465,14 +472,17 @@ class WorkerOpsi(object):
 					contentEncoding = self.request.headers.getHeader('content-encoding')[0].lower()
 				except:
 					pass
+
 				logger.debug(u"Content-Type: %s, Content-Encoding: %s" % (contentType, contentEncoding))
 				if (contentEncoding == 'gzip') or (contentType and contentType.mediaType.startswith('gzip')):
 					logger.debug(u"Expecting compressed data from client")
 					self.query = zlib.decompress(self.query)
 					self.gzip = True
+
 			self.query = unicode(self.query, 'utf-8')
 		except (UnicodeError, UnicodeEncodeError):
 			self.query = unicode(self.query, 'utf-8', 'replace')
+
 		logger.debug2(u"query: %s" % self.query)
 		return result
 
@@ -483,6 +493,7 @@ class WorkerOpsi(object):
 	def _generateResponse(self, result):
 		if not isinstance(result, http.Response):
 			result = http.Response()
+
 		result.code = responsecode.OK
 		result.headers.setHeader('content-type', http_headers.MimeType("text", "html", {"charset": "utf-8"}))
 		result.stream = stream.IByteStream("")
@@ -515,14 +526,14 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 
 		rpcs = []
 		try:
-			rpcs = fromJson(self.query, preventObjectCreation = True)
+			rpcs = fromJson(self.query, preventObjectCreation=True)
 			if not rpcs:
 				raise Exception(u"Got no rpcs")
 		except Exception as e:
 			raise OpsiBadRpcError(u"Failed to decode rpc: %s" % e)
 
 		for rpc in forceList(rpcs):
-			rpc = JsonRpc(instance = self._callInstance, interface = self._callInterface, rpc = rpc)
+			rpc = JsonRpc(instance=self._callInstance, interface=self._callInterface, rpc=rpc)
 			self._rpcs.append(rpc)
 
 		return result
@@ -594,6 +605,7 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 			result.stream = stream.IByteStream(zlib.compress(toJson(response).encode('utf-8'), level))
 		else:
 			result.stream = stream.IByteStream(toJson(response).encode('utf-8'))
+
 		return result
 
 	def _renderError(self, failure):
@@ -612,10 +624,7 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 class MultiprocessWorkerOpsiJsonRpc(WorkerOpsiJsonRpc):
 
 	def _processQuery(self, result):
-
 		logger.debug(u"Using multiprocessing to handle rpc.")
-
-
 
 		def cleanup(rpc):
 			if (rpc.getMethodName() == 'backend_exit'):
@@ -630,6 +639,7 @@ class MultiprocessWorkerOpsiJsonRpc(WorkerOpsiJsonRpc):
 				cleanup(rpc)
 				self._addRpcToStatistics(None, rpc)
 				self.session.setLastRpcMethod(rpc.getMethodName())
+
 			return rpcs
 
 		def makeInstanceCall():
@@ -657,7 +667,7 @@ class WorkerOpsiJsonInterface(WorkerOpsiJsonRpc):
 	def _generateResponse(self, result):
 		logger.info(u"Creating interface page")
 
-		javascript  = u"var currentParams = new Array();\n"
+		javascript = u"var currentParams = new Array();\n"
 		javascript += u"var currentMethod = null;\n"
 		currentMethod = u''
 		if self._rpcs:
@@ -696,12 +706,12 @@ class WorkerOpsiJsonInterface(WorkerOpsiJsonRpc):
 		resultDiv += u'</div>'
 
 		html = interfacePage % {
-			'path':          self.path,
-			'title':         u'opsi interface page',
-			'javascript':    javascript,
-			'select_path':   u'<option selected="selected">%s</option>' % self.path,
+			'path': self.path,
+			'title': u'opsi interface page',
+			'javascript': javascript,
+			'select_path': u'<option selected="selected">%s</option>' % self.path,
 			'select_method': selectMethod,
-			'result':        resultDiv
+			'result': resultDiv
 		}
 
 		if not isinstance(result, http.Response):
@@ -737,8 +747,6 @@ class WorkerOpsiDAV(WorkerOpsi):
 		logger.debug(u"Client requests DAV operation: %s" % self.request)
 		if not self.resource._authRequired and self.request.method not in ('GET', 'PROPFIND', 'OPTIONS', 'USERINFO', 'HEAD'):
 			logger.critical(u"Method '%s' not allowed (read only)" % self.request.method)
-			return http.Response(
-				code	= responsecode.FORBIDDEN,
-				stream	= "Readonly!" )
+			return http.Response(code=responsecode.FORBIDDEN, stream="Readonly!")
 
 		return self.resource.renderHTTP_super(self.request, self)
