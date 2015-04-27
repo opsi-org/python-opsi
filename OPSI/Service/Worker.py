@@ -397,7 +397,7 @@ class WorkerOpsi(object):
 
 		if sessionHandler and self.session.ip and (self.session.ip != self.request.remoteAddr.host):
 			logger.critical(u"Client ip '%s' does not match session ip '%s', deleting old session and creating a new one" \
-				% (self.request.remoteAddr.host, self.session.ip) )
+				% (self.request.remoteAddr.host, self.session.ip))
 			sessionHandler.deleteSession(self.session.uid)
 			self.session = sessionHandler.getSession()
 
@@ -425,7 +425,7 @@ class WorkerOpsi(object):
 		cookie = http_headers.Cookie(self.session.name.encode('ascii', 'replace'), self.session.uid.encode('ascii', 'replace'), path='/')
 		if not isinstance(result, http.Response):
 			result = http.Response()
-		result.headers.setHeader('set-cookie', [ cookie ] )
+		result.headers.setHeader('set-cookie', [cookie])
 		return result
 
 	def _authenticate(self, result):
@@ -680,7 +680,7 @@ class WorkerOpsiJsonInterface(WorkerOpsiJsonRpc):
 			for param in range(len(method['params'])):
 				javascript += u"parameters['%s'][%s]='%s';\n" % (method['name'], param, method['params'][param])
 			selected = u''
-			if (method['name'] == currentMethod):
+			if method['name'] == currentMethod:
 				selected = u' selected="selected"'
 			selectMethod += u'<option%s>%s</option>' % (selected, method['name'])
 
