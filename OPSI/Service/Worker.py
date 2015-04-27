@@ -474,7 +474,7 @@ class WorkerOpsi(object):
 				contentEncoding = None
 				try:
 					contentEncoding = self.request.headers.getHeader('content-encoding')[0].lower()
-				except:
+				except Exception:
 					pass
 
 				logger.debug(u"Content-Type: %s, Content-Encoding: %s" % (contentType, contentEncoding))
@@ -652,7 +652,7 @@ class MultiprocessWorkerOpsiJsonRpc(WorkerOpsiJsonRpc):
 			contentEncoding = None
 			try:
 				contentEncoding = self.request.headers.getHeader('content-encoding')[0].lower()
-			except:
+			except Exception:
 				pass
 			d = self._callInstance.processQuery(self.query,
 				(contentEncoding == 'gzip') or (contentType and contentType.mediaType.startswith('gzip')))
