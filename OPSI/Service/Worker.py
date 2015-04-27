@@ -285,18 +285,20 @@ class WorkerOpsi(object):
 		result = self._renderError(failure)
 		result = self._setCookie(result)
 		result.code = responsecode.INTERNAL_SERVER_ERROR
+
 		try:
 			failure.raiseException()
-		except OpsiAuthenticationError as e:
-			logger.logException(e)
+		except OpsiAuthenticationError as error:
+			logger.logException(error)
 			result.code = responsecode.UNAUTHORIZED
-			result.headers.setHeader('www-authenticate', [('basic', { 'realm': self.authRealm } )])
-		except OpsiBadRpcError as e:
-			logger.logException(e)
+			result.headers.setHeader('www-authenticate', [('basic', {'realm': self.authRealm})])
+		except OpsiBadRpcError as error:
+			logger.logException(error)
 			result.code = responsecode.BAD_REQUEST
-		except Exception as e:
-			logger.logException(e, LOG_ERROR)
+		except Exception as error:
+			logger.logException(error, LOG_ERROR)
 			logger.error(failure)
+
 		return result
 
 	def _renderError(self, failure):
@@ -305,8 +307,8 @@ class WorkerOpsi(object):
 		error = u'Unknown error'
 		try:
 			failure.raiseException()
-		except Exception as e:
-			error = forceUnicode(e)
+		except Exception as error:
+			error = forceUnicode(error)
 		result.stream = stream.IByteStream(stream.IByteStream(error.encode('utf-8')))
 		return result
 
@@ -335,8 +337,8 @@ class WorkerOpsi(object):
 					password = u':'.join(parts[1:])
 				user = user.strip()
 				logger.confidential(u"Client supplied username '%s' and password '%s'" % (user, password))
-			except Exception as e:
-				logger.error(u"Bad Authorization header from '%s': %s" % (self.request.remoteAddr.host, e))
+			except Exception as error:
+				logger.error(u"Bad Authorization header from '%s': %s" % (self.request.remoteAddr.host, error))
 		return (user, password)
 
 	def _getCredentials(self):
@@ -372,8 +374,9 @@ class WorkerOpsi(object):
 								break
 
 					break
-		except Exception as e:
-			logger.error(u"Failed to get cookie from header: %s" % e)
+		except Exception as error:
+			logger.error(u"Failed to get cookie from header: %s" % error)
+
 		return sessionId
 
 	def _getSession(self, result):
@@ -440,11 +443,12 @@ class WorkerOpsi(object):
 			# Get authorization
 			(self.session.user, self.session.password) = self._getCredentials()
 			self.session.authenticated = True
-		except Exception as e:
-			logger.logException(e, LOG_INFO)
+		except Exception as error:
+			logger.logException(error, LOG_INFO)
 			self._freeSession(result)
 			self._getSessionHandler().deleteSession(self.session.uid)
-			raise OpsiAuthenticationError(u"Forbidden: %s" % e)
+			raise OpsiAuthenticationError(u"Forbidden: %s" % error)
+
 		return result
 
 	def _getQuery(self, result):
@@ -571,8 +575,9 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 				encoding = 'deflate'
 			if ('gzip' in self.request.headers.getHeader('Accept-Encoding')):
 				encoding = 'gzip'
-		except Exception as e:
-			pass
+		except Exception as error:
+			logger.debug("Failed to get Accept-Encoding from request header: {0}".format(error))
+
 		if not encoding:
 			try:
 				if self.request.headers.getHeader('Accept'):
@@ -580,8 +585,8 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 						if accept.mediaType.startswith('gzip'):
 							encoding = 'gzip'
 							break
-			except Exception as e:
-				logger.error(u"Failed to get accepted mime types from header: %s" % e)
+			except Exception as error:
+				logger.error(u"Failed to get accepted mime types from header: %s" % error)
 
 		if encoding:
 			result.headers.setHeader('content-type', http_headers.MimeType("gzip-application", "json", {"charset": "utf-8"}))
@@ -614,8 +619,8 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 		error = u'Unknown error'
 		try:
 			failure.raiseException()
-		except Exception as e:
-			error = {'class': e.__class__.__name__, 'message': unicode(e)}
+		except Exception as err:
+			error = {'class': err.__class__.__name__, 'message': unicode(err)}
 			error = toJson({"id": None, "result": None, "error": error})
 		result.stream = stream.IByteStream(error.encode('utf-8'))
 		return result
@@ -692,8 +697,8 @@ class WorkerOpsiJsonInterface(WorkerOpsiJsonRpc):
 			error = u'Unknown error'
 			try:
 				result.raiseException()
-			except Exception as e:
-				error = {'class': e.__class__.__name__, 'message': unicode(e)}
+			except Exception as err:
+				error = {'class': err.__class__.__name__, 'message': unicode(err)}
 				error = toJson({"id": None, "result": None, "error": error})
 			resultDiv += u'<div class="json">'
 			resultDiv += objectToHtml(error)
