@@ -645,8 +645,9 @@ class MultiprocessWorkerOpsiJsonRpc(WorkerOpsiJsonRpc):
 				contentEncoding = self.request.headers.getHeader('content-encoding')[0].lower()
 			except Exception:
 				pass
-			d = self._callInstance.processQuery(self.query,
-				(contentEncoding == 'gzip') or (contentType and contentType.mediaType.startswith('gzip')))
+
+			gzipEnabled = (contentEncoding == 'gzip') or (contentType and contentType.mediaType.startswith('gzip'))
+			d = self._callInstance.processQuery(self.query, gzipEnabled)
 			d.addCallback(processResult)
 			return d
 
