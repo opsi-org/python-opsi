@@ -345,7 +345,6 @@ class WorkerOpsi(object):
 		return self._getAuthorization()
 
 	def _getUserAgent(self):
-		# Get user agent
 		userAgent = None
 		try:
 			userAgent = self.request.headers.getHeader('user-agent')
@@ -358,7 +357,7 @@ class WorkerOpsi(object):
 		return userAgent
 
 	def _getSessionId(self):
-		# Get session id from cookie request header
+		"Get session id from cookie request header"
 		sessionId = u''
 		try:
 			for (k, v) in self.request.headers.getAllRawHeaders():
@@ -386,11 +385,7 @@ class WorkerOpsi(object):
 		logger.confidential(u"Request headers: %s " % self.request.headers)
 
 		userAgent = self._getUserAgent()
-
-		# Get session handler
 		sessionHandler = self._getSessionHandler()
-
-		# Get session id from cookie request header
 		sessionId = self._getSessionId()
 
 		# Get Session object
@@ -604,8 +599,7 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 			response = None
 
 		if encoding:
-			# level 1 (fastest) to 9 (most compression)
-			level = 1
+			level = 1  # level 1 (fastest) to 9 (most compression)
 			logger.debug(u"Sending compressed (level: %d) data" % level)
 			result.stream = stream.IByteStream(zlib.compress(toJson(response).encode('utf-8'), level))
 		else:
