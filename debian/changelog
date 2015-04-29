@@ -6,7 +6,7 @@ python-opsi (4.0.6.8-1) UNRELEASED; urgency=low
   * OPSI.Util.Task.Rights: added 'service_setup.sh' to KNOWN_EXECUTABLES
   * OPSI.Util.Task.Rights: Fix setting rights on KNOWN_EXECUTABLES in
     the depot folder.
-  * Refactored worker for the opsiconfd interface page.
+  * Refactored worker for the interface page.
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 29 Apr 2015 10:23:08 +0200
 
