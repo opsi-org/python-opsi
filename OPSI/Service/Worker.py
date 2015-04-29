@@ -667,27 +667,33 @@ class WorkerOpsiJsonInterface(WorkerOpsiJsonRpc):
 	def _generateResponse(self, result):
 		logger.info(u"Creating interface page")
 
-		javascript = u"var currentParams = new Array();\n"
-		javascript += u"var currentMethod = null;\n"
+		javascript = [
+			u"var currentParams = new Array();",
+			u"var currentMethod = null;"
+		]
 		currentMethod = u''
 		if self._rpcs:
 			currentMethod = self._rpcs[0].getMethodName()
-			javascript += u"currentMethod = '%s';\n" % currentMethod
-			for i in range(len(self._rpcs[0].params)):
-				param = self._rpcs[0].params[i]
-				javascript += u"currentParams[%d] = '%s';\n" % (i, toJson(param))
+			javascript.append(u"currentMethod = '%s';" % currentMethod)
+			for (index, param) in enumerate(self._rpcs[0].params):
+				javascript.append(u"currentParams[%d] = '%s';" % (index, toJson(param)))
 
-		selectMethod = u''
+		selectMethod = []
 		for method in self._callInterface:
-			javascript += u"parameters['%s'] = new Array();\n" % (method['name'])
-			for param in range(len(method['params'])):
-				javascript += u"parameters['%s'][%s]='%s';\n" % (method['name'], param, method['params'][param])
+			methodName = method['name']
+			javascript.append(u"parameters['%s'] = new Array();" % methodName)
+			for (index, param) in enumerate(method['params']):
+				javascript.append(u"parameters['%s'][%s]='%s';" % (methodName, index, param))
+
 			selected = u''
 			if method['name'] == currentMethod:
 				selected = u' selected="selected"'
-			selectMethod += u'<option%s>%s</option>' % (selected, method['name'])
+			selectMethod.append(u'<option%s>%s</option>' % (selected, method['name']))
 
-		resultDiv = u'<div id="result">'
+		def wrapInDiv(obj):
+			return u'<div class="json">{0}</div>'.format(obj)
+
+		results = [u'<div id="result">']
 		if isinstance(result, failure.Failure):
 			error = u'Unknown error'
 			try:
@@ -695,23 +701,19 @@ class WorkerOpsiJsonInterface(WorkerOpsiJsonRpc):
 			except Exception as err:
 				error = {'class': err.__class__.__name__, 'message': unicode(err)}
 				error = toJson({"id": None, "result": None, "error": error})
-			resultDiv += u'<div class="json">'
-			resultDiv += objectToHtml(error)
-			resultDiv += u'</div>'
+			results.append(wrapInDiv(objectToHtml(error)))
 		else:
 			for rpc in self._rpcs:
-				resultDiv += u'<div class="json">'
-				resultDiv += objectToHtml(serialize(rpc.getResponse()))
-				resultDiv += u'</div>'
-		resultDiv += u'</div>'
+				results.append(wrapInDiv(objectToHtml(serialize(rpc.getResponse()))))
+		results.append(u'</div>')
 
 		html = interfacePage % {
 			'path': self.path,
 			'title': u'opsi interface page',
-			'javascript': javascript,
+			'javascript': '\n'.join(javascript),
 			'select_path': u'<option selected="selected">%s</option>' % self.path,
-			'select_method': selectMethod,
-			'result': resultDiv
+			'select_method': u''.join(selectMethod),
+			'result': u''.join(results),
 		}
 
 		if not isinstance(result, http.Response):
