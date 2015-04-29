@@ -658,6 +658,9 @@ class MultiprocessWorkerOpsiJsonRpc(WorkerOpsiJsonRpc):
 
 
 class WorkerOpsiJsonInterface(WorkerOpsiJsonRpc):
+	"""
+	Worker responsible for creating the human-usable interface page.
+	"""
 	def __init__(self, service, request, resource):
 		WorkerOpsiJsonRpc.__init__(self, service, request, resource)
 
