@@ -294,7 +294,7 @@ class FileBackend(ConfigDataBackend):
 			f = LockableFile(filename)
 			f.create()
 		else:
-			logger.debug(u"Cannot create existing file, setting rights ..." % ())
+			logger.debug(u"Cannot create existing file, only setting rights.")
 		self._setRights(filename)
 
 	@staticmethod
