@@ -125,6 +125,68 @@ class GroupActionsTestCase(unittest.TestCase, ExtendedFileBackendMixin):
             self.assertEquals(poc.productId, product2.getId())
             self.assertTrue(poc.clientId in (client1.id, client2.id))
 
+class GroupRenamingTestCase(unittest.TestCase, ExtendedFileBackendMixin):
+    """
+    Testing the group actions.
+    """
+    def setUp(self):
+        self.setUpBackend()
+        self.testGroup = HostGroup(
+            id='host_group_1',
+            description='Group 1',
+            notes='First group',
+            parentGroupId=None
+        )
+        self.testGroup2 = HostGroup(
+            id='new_group_1',
+            description='Group 1',
+            notes='First group',
+            parentGroupId=None
+        )
+
+        client1 = OpsiClient(
+            id='client1.uib.local',
+        )
+
+        client2 = OpsiClient(
+            id='client2.uib.local',
+        )
+
+        client1ToGroup = ObjectToGroup(self.testGroup.getType(),self.testGroup.id, client1.id)
+        client2ToGroup = ObjectToGroup(self.testGroup.getType(),self.testGroup.id, client2.id)
+
+        self.backend.host_insertObject(client1)
+        self.backend.host_insertObject(client2)
+        self.backend.group_insertObject(self.testGroup)
+        self.backend.objectToGroup_createObjects([client1ToGroup, client2ToGroup])
+        
+
+    def tearDown(self):
+        self.tearDownBackend()
+
+    def testIsExistingGroupname(self):
+        self.assertTrue(self.backend.isExistingGroupname(self.testGroup.id))
+        self.assertFalse(self.backend.isExistingGroupname(u'testgruppe'))
+
+    def testAlreadyExistingGroup(self):
+        self.assertRaises(Exception, self.backend.updateGroupname, self.testGroup.id, self.testGroup.id)
+        self.assertRaises(Exception, self.backend.updateGroupname, u'notExisting', self.testGroup.id)
+
+    def testCreateNewDeleteOldGroup(self):
+        self.backend.updateGroupname(self.testGroup.id, self.testGroup2.id)
+
+        group = self.backend.group_getObjects(id=self.testGroup2.id) [0]
+        self.assertEquals(group.description, self.testGroup.description)
+        self.assertEquals(group.notes, self.testGroup.notes)
+        self.assertEquals(group.parentGroupId, self.testGroup.parentGroupId)
+
+        self.assertFalse(self.backend.isExistingGroupname(self.testGroup.id))
+
+    def testObjectToGroupsHaveNewGroupIds(self):
+        self.backend.updateGroupname(self.testGroup.id, self.testGroup2.id)
+        objToGr = self.backend.objectToGroup_getObjects()
+        for object in objToGr:
+            self.assertEquals(object.groupId, self.testGroup2.id)
 
 if __name__ == '__main__':
     unittest.main()
