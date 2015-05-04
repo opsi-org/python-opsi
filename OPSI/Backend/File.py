@@ -281,7 +281,7 @@ class FileBackend(ConfigDataBackend):
 				else:
 					os.chown(path, -1, self.__dirGid)
 		except Exception as error:
-			logger.warning(u"Failed to set rights for path '{0}': {1}".format(path, error))
+			logger.warning(u"Failed to set rights for path '{0}': {1}".format(path, forceUnicode(error)))
 
 	def _mkdir(self, path):
 		logger.debug(u"Creating path: '%s'" % (path))
@@ -544,7 +544,7 @@ class FileBackend(ConfigDataBackend):
 					try:
 						objectId = forceHostId(entry[:-4])
 					except Exception as e:
-						logger.warning(u"Ignoring invalid file '%s': %s" % filename, e)
+						logger.warning(u"Ignoring invalid file '%s': %s" % filename, forceUnicode(e))
 						continue
 
 					if not self._objectHashMatches({'objectId': objectId}, **filter):
@@ -622,7 +622,7 @@ class FileBackend(ConfigDataBackend):
 									}
 								)
 							except Exception as e:
-								logger.error(u"Found invalid option '%s' in section '%s' in file '%s': %s" % (option, section, p['filename'], e))
+								logger.error(u"Found invalid option '%s' in section '%s' in file '%s': %s" % (option, section, p['filename'], forceUnicode(e)))
 					else:
 						objIdents.append({'id': section, 'type': groupType})
 
