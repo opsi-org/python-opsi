@@ -7,7 +7,7 @@
 	This module is part of the desktop management solution opsi
 	(open pc server integration) http://www.opsi.org
 
-	Copyright (C) 2006-2014 uib GmbH <info@uib.de>
+	Copyright (C) 2006-2015 uib GmbH <info@uib.de>
 	All rights reserved.
 
 	This program is free software: you can redistribute it and/or modify
@@ -50,7 +50,7 @@ from OPSI.Util.File.Opsi import PackageContentFile
 from OPSI.Util.HTTP import getSharedConnectionPool, urlsplit, HTTPResponse
 from OPSI.System import *
 
-__version__ = '4.0.5.16'
+__version__ = '4.0.6.8'
 
 logger = Logger()
 
@@ -154,7 +154,7 @@ class Repository:
 		self.setBandwidth(dynamicBandwidth=self._dynamicBandwidth, maxBandwidth=maxBandwidth)
 
 	def __unicode__(self):
-		return u"<{0}('{1}')>".format(self.__class__.__name__, self._url)
+		return u"<{0}({1!r})>".format(self.__class__.__name__, self._url)
 
 	def __str__(self):
 		return self.__unicode__().encode("ascii", "replace")

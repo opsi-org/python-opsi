@@ -55,7 +55,7 @@ from OPSI.Types import OpsiVersionError
 from OPSI.Object import *
 from OPSI.Util import objectToBeautifiedText, removeUnit
 
-__version__ = '4.0.6.4'
+__version__ = '4.0.6.8'
 
 logger = Logger()
 
@@ -2807,8 +2807,8 @@ class Distribution(object):
 		return unicode(self.__str__())
 
 	def __repr__(self):
-		return (u"Distribution(distribution_information=('{distro}', "
-				"'{version}', '{id}'))".format(
+		return (u"Distribution(distribution_information=({distro!r}, "
+				"{version!r}, {id!r}))".format(
 					distro=self.distribution,
 					version=self._version,
 					id=self.id

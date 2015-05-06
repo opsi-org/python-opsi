@@ -48,7 +48,7 @@ from OPSI.Types import (forceActionProgress, forceActionRequest,
 	forceUnicodeList, forceUnicodeLower, forceUnsignedInt, forceUrl)
 from OPSI.Util import fromJson, toJson, generateOpsiHostKey, timestamp
 
-__version__ = '4.0.6.7'
+__version__ = '4.0.6.8'
 
 logger = Logger()
 _MANDATORY_CONSTRUCTOR_ARGS_CACHE = {}
@@ -429,7 +429,7 @@ class Object(Entity):
 		return fromJson(jsonString, 'Object')
 
 	def __unicode__(self):
-		return u"<{0}(id='{1}')>".format(self.getType(), self.id)
+		return u"<{0}(id={1!r})>".format(self.getType(), self.id)
 
 Entity.subClasses['Object'] = Object
 
@@ -494,7 +494,7 @@ class Host(Object):
 		return fromJson(jsonString, 'Host')
 
 	def __unicode__(self):
-		return u"<{0}(id='{1}')>".format(self.getType(), self.id)
+		return u"<{0}(id={1!r})>".format(self.getType(), self.id)
 
 Object.subClasses['Host'] = Host
 
@@ -570,7 +570,7 @@ class OpsiClient(Host):
 		return fromJson(jsonString, 'OpsiClient')
 
 	def __unicode__(self):
-		return u"<{0}(id='{1}')>".format(self.getType(), self.id)
+		return u"<{0}(id={1!r})>".format(self.getType(), self.id)
 
 Host.subClasses['OpsiClient'] = OpsiClient
 
@@ -700,11 +700,11 @@ class OpsiDepotserver(Host):
 		return fromJson(jsonString, 'OpsiDepotserver')
 
 	def __unicode__(self):
-		additionalInfos = [u"id='{0}'".format(self.id)]
+		additionalInfos = [u"id={0!r}".format(self.id)]
 		if self.isMasterDepot:
-			additionalInfos.append(u'isMasterDepot={0}'.format(self.isMasterDepot))
+			additionalInfos.append(u'isMasterDepot={0!r}'.format(self.isMasterDepot))
 		if self.masterDepotId:
-			additionalInfos.append(u"masterDepotId='{0}'".format(self.masterDepotId))
+			additionalInfos.append(u"masterDepotId={0!r}".format(self.masterDepotId))
 
 		return u"<{0}({1})>".format(self.getType(), u', '.join(additionalInfos))
 
@@ -860,9 +860,9 @@ class Config(Entity):
 
 	def __unicode__(self):
 		return (
-			u"<{klass}(id={id}, description={description}, "
-			u"possibleValues={possibleValues}, defaultValues={defaults}, "
-			u"editable={editable}, multiValue={multiValue})>".format(
+			u"<{klass}(id={id!r}, description={description!r}, "
+			u"possibleValues={possibleValues!r}, defaultValues={defaults!r}, "
+			u"editable={editable!r}, multiValue={multiValue!r})>".format(
 				klass=self.getType(),
 				id=self.id,
 				description=self.description,
@@ -955,8 +955,8 @@ class BoolConfig(Config):
 
 	def __unicode__(self):
 		return (
-			u"<{klass}(id={id}, description={description}, "
-			u"defaultValues={defaults})>".format(
+			u"<{klass}(id={id!r}, description={description!r}, "
+			u"defaultValues={defaults!r})>".format(
 				klass=self.getType(),
 				id=self.id,
 				description=self.description,
@@ -1017,7 +1017,7 @@ class ConfigState(Relationship):
 		return fromJson(jsonString, 'ConfigState')
 
 	def __unicode__(self):
-		return u"<{0}(configId='{1}', objectId='{2}')>".format(self.getType(), self.configId, self.objectId)
+		return u"<{0}(configId={1!r}, objectId={2!r})>".format(self.getType(), self.configId, self.objectId)
 
 Relationship.subClasses['ConfigState'] = ConfigState
 
@@ -1240,7 +1240,7 @@ class Product(Entity):
 		return fromJson(jsonString, 'Product')
 
 	def __unicode__(self):
-		return u"<{0}(id='{1}', name='{2}'>".format(self.getType(), self.id, self.name)
+		return u"<{0}(id={1!r}, name={2!r}>".format(self.getType(), self.id, self.name)
 
 Entity.subClasses['Product'] = Product
 
@@ -1454,8 +1454,8 @@ class ProductProperty(Entity):
 		return fromJson(jsonString, 'ProductProperty')
 
 	def __unicode__(self):
-		return (u"<{klass}(productId='{prodId}', productVersion='{prodVer}', "
-				u"packageVersion='{packVer}', propertyId='{propId}')>".format(
+		return (u"<{klass}(productId={prodId!r}, productVersion={prodVer!r}, "
+				u"packageVersion={packVer!r}, propertyId={propId!r})>".format(
 					klass=self.getType(), prodId=self.productId,
 					prodVer=self.productVersion, packVer=self.packageVersion,
 					propId=self.propertyId))
@@ -1663,9 +1663,9 @@ class ProductDependency(Relationship):
 		return fromJson(jsonString, 'ProductDependency')
 
 	def __unicode__(self):
-		return (u"<{klass}(productId='{prodId}', productVersion='{prodVer}', "
-				u"packageVersion='{packVer}', productAction='{prodAct}', "
-				u"requiredProductId='{reqProdId}'>".format(
+		return (u"<{klass}(productId={prodId!r}, productVersion={prodVer!r}, "
+				u"packageVersion={packVer!r}, productAction={prodAct!r}, "
+				u"requiredProductId={reqProdId!r}>".format(
 					klass=self.getType(), prodId=self.productId,
 					prodVer=self.productVersion, packVer=self.packageVersion,
 					prodAct=self.productAction,
@@ -1744,7 +1744,7 @@ class ProductOnDepot(Relationship):
 		return fromJson(jsonString, 'ProductOnDepot')
 
 	def __unicode__(self):
-		return u"<{klass}(productId='{prodId}', depotId='{depotId}')>".format(
+		return u"<{klass}(productId={prodId!r}, depotId={depotId!r})>".format(
 			klass=self.getType(), prodId=self.productId, depotId=self.depotId)
 
 Relationship.subClasses['ProductOnDepot'] = ProductOnDepot
@@ -1895,8 +1895,8 @@ class ProductOnClient(Relationship):
 		return fromJson(jsonString, 'ProductOnClient')
 
 	def __unicode__(self):
-		return (u"<{klass}(clientId='{clientId}', productId='{prodId}', "
-				u"installationStatus='{status}', actionRequest='{actReq}')>".format(
+		return (u"<{klass}(clientId={clientId!r}, productId={prodId!r}, "
+				u"installationStatus={status!r}, actionRequest={actReq!r})>".format(
 					klass=self.getType(), clientId=self.clientId,
 					prodId=self.productId, status=self.installationStatus,
 					actReq=self.actionRequest))
@@ -1961,8 +1961,8 @@ class ProductPropertyState(Relationship):
 		return fromJson(jsonString, 'ProductPropertyState')
 
 	def __unicode__(self):
-		return (u"<{klass}(productId='{prodId}', propertyId='{propId}', "
-				u"objectId='{objId}'>".format(
+		return (u"<{klass}(productId={prodId!r}, propertyId={propId!r}, "
+				u"objectId={objId!r}>".format(
 					klass=self.getType(), prodId=self.productId,
 					propId=self.propertyId, objId=self.objectId))
 
@@ -2011,7 +2011,7 @@ class Group(Object):
 		return fromJson(jsonString, 'Group')
 
 	def __unicode__(self):
-		return (u"<{klass}(id='{id}', parentGroupId '{parentId}'>".format(
+		return (u"<{klass}(id={id!r} parentGroupId={parentId!r}>".format(
 				klass=self.getType(), id=self.id, parentId=self.parentGroupId))
 
 Object.subClasses['Group'] = Group
@@ -2111,8 +2111,8 @@ class ObjectToGroup(Relationship):
 		return fromJson(jsonString, 'ObjectToGroup')
 
 	def __unicode__(self):
-		return (u"<{klass}(groupType='{type}', groupId='{grId}', "
-				u"objectId='{oid}')>".format(
+		return (u"<{klass}(groupType={type!r}, groupId={grId!r}, "
+				u"objectId={oid!r})>".format(
 					klass=self.getType(), type=self.groupType,
 					grId=self.groupId, oid=self.objectId))
 
@@ -2219,18 +2219,18 @@ class LicenseContract(Entity):
 		return fromJson(jsonString, 'LicenseContract')
 
 	def __unicode__(self):
-		infos = [u"id='{0}'".format(self.id)]
+		infos = [u"id={0!r}".format(self.id)]
 
 		if self.description:
-			infos.append(u"description='{0}'".format(self.description))
+			infos.append(u"description={0!r}".format(self.description))
 		if self.partner:
-			infos.append(u"partner='{0}'".format(self.partner))
+			infos.append(u"partner={0!r}".format(self.partner))
 		if self.conclusionDate:
-			infos.append(u"conclusionDate='{0}'".format(self.conclusionDate))
+			infos.append(u"conclusionDate={0!r}".format(self.conclusionDate))
 		if self.notificationDate:
-			infos.append(u"notificationDate='{0}'".format(self.notificationDate))
+			infos.append(u"notificationDate={0!r}".format(self.notificationDate))
 		if self.expirationDate:
-			infos.append(u"expirationDate='{0}'".format(self.expirationDate))
+			infos.append(u"expirationDate={0!r}".format(self.expirationDate))
 
 		return u"<{0}({1})>".format(self.getType(), u', '.join(infos))
 
@@ -2315,9 +2315,9 @@ class SoftwareLicense(Entity):
 		if self.maxInstallations:
 			infos.append(u'maxInstallations={0}'.format(self.maxInstallations))
 		if self.boundToHost:
-			infos.append(u"boundToHost='{0}'".format(self.boundToHost))
+			infos.append(u"boundToHost={0!r}".format(self.boundToHost))
 		if self.expirationDate:
-			infos.append(u"expirationDate='{0}'".format(self.expirationDate))
+			infos.append(u"expirationDate={0!r}".format(self.expirationDate))
 
 		return u"<{0}({1})>".format(self.getType(), u', '.join(infos))
 
@@ -2501,12 +2501,12 @@ class LicensePool(Entity):
 		return fromJson(jsonString, 'LicensePool')
 
 	def __unicode__(self):
-		infos = [u"id='{0}'".format(self.id)]
+		infos = [u"id={0!r}".format(self.id)]
 
 		if self.description:
-			infos.append(u"description='{0}'".format(self.description))
+			infos.append(u"description={0!r}".format(self.description))
 		if self.productIds:
-			infos.append(u"productIds={0}".format(self.productIds))
+			infos.append(u"productIds={0!r}".format(self.productIds))
 
 		return u"<{0}({1})>".format(self.getType(), u', '.join(infos))
 
@@ -2588,18 +2588,18 @@ class AuditSoftwareToLicensePool(Relationship):
 		return fromJson(jsonString, 'AuditSoftwareToLicensePool')
 
 	def __unicode__(self):
-		infos = [u"name='{0}'".format(self.name)]
+		infos = [u"name={0}".format(self.name)]
 
 		if self.version:
-			infos.append(u"version='{0}'".format(self.version))
+			infos.append(u"version={0!r}".format(self.version))
 		if self.subVersion:
-			infos.append(u"subVersion='{0}'".format(self.subVersion))
+			infos.append(u"subVersion={0!r}".format(self.subVersion))
 		if self.language:
-			infos.append(u"language='{0}'".format(self.language))
+			infos.append(u"language={0!r}".format(self.language))
 		if self.architecture:
-			infos.append(u"architecture='{0}'".format(self.architecture))
+			infos.append(u"architecture={0!r}".format(self.architecture))
 		if self.licensePoolId:
-			infos.append(u"licensePoolId='{0}'".format(self.licensePoolId))
+			infos.append(u"licensePoolId={0!r}".format(self.licensePoolId))
 
 		return u"<{0}({1})>".format(self.getType(), u', '.join(infos))
 
@@ -2657,7 +2657,7 @@ class SoftwareLicenseToLicensePool(Relationship):
 		return fromJson(jsonString, 'SoftwareLicenseToLicensePool')
 
 	def __unicode__(self):
-		return u"<{klass}(softwareLicenseId='{slid}', licensePoolId='{lpid}')>".format(
+		return u"<{klass}(softwareLicenseId={slid!r}, licensePoolId={lpid!r})>".format(
 			klass=self.getType(),
 			slid=self.softwareLicenseId,
 			lpid=self.licensePoolId
@@ -2735,8 +2735,8 @@ class LicenseOnClient(Relationship):
 		return fromJson(jsonString, 'LicenseOnClient')
 
 	def __unicode__(self):
-		return (u"<{klass}(softwareLicenseId='{slid}', licensePoolId='{lpid}', "
-				u"clientId='{cid}'>".format(
+		return (u"<{klass}(softwareLicenseId={slid!r}, licensePoolId={lpid!r}, "
+				u"clientId={cid!r}>".format(
 					klass=self.getType(), slid=self.softwareLicenseId,
 					lpid=self.licensePoolId, cid=self.clientId))
 
@@ -2849,9 +2849,9 @@ class AuditSoftware(Entity):
 		return fromJson(jsonString, 'AuditSoftware')
 
 	def __unicode__(self):
-		return (u"<{klass}(name='{name}', version='{version}', "
-				u"subVersion='{subversion}', language='{lang}', "
-				u"architecture='{arch}')>".format(
+		return (u"<{klass}(name={name!r}, version={version!r}, "
+				u"subVersion={subversion!r}, language={lang!r}, "
+				u"architecture={arch!r})>".format(
 					klass=self.getType(), name=self.name, version=self.version,
 					subversion=self.subVersion, lang=self.language,
 					arch=self.architecture))
@@ -3021,9 +3021,9 @@ class AuditSoftwareOnClient(Relationship):
 		return fromJson(jsonString, 'AuditSoftwareOnClient')
 
 	def __unicode__(self):
-		return (u"<{klass}(name='{name}', version='{version}', "
-				u"subVersion='{subversion}', language='{lang}', "
-				u"architecture='{arch}', clientId='{cid}'>".format(
+		return (u"<{klass}(name={name!r}, version={version!r}, "
+				u"subVersion={subversion!r}, language={lang!r}, "
+				u"architecture={arch!r}, clientId={cid!r}>".format(
 					klass=self.getType(), name=self.name, version=self.version,
 					subversion=self.subVersion, lang=self.language,
 					arch=self.architecture, cid=self.clientId))
@@ -3145,34 +3145,34 @@ class AuditHardware(Entity):
 		infos = [self.getType()]
 		hardwareClass = self.getHardwareClass()
 		if hardwareClass:
-			infos.append(u"hardwareClass='{0}'".format(hardwareClass))
+			infos.append(u"hardwareClass={0!r}".format(hardwareClass))
 
 		try:
-			infos.append(u"name='{0}'".format(self.name))
+			infos.append(u"name={0!r}".format(self.name))
 		except AttributeError:
 			pass
 
 		try:
 			if self.vendorId:
-				infos.append(u"vendorId='{0}'".format(self.vendorId))
+				infos.append(u"vendorId={0!r}".format(self.vendorId))
 		except AttributeError:
 			pass
 
 		try:
 			if self.subsystemVendorId:
-				infos.append(u"subsystemVendorId='{0}'".format(self.subsystemVendorId))
+				infos.append(u"subsystemVendorId={0!r}".format(self.subsystemVendorId))
 		except AttributeError:
 			pass
 
 		try:
 			if self.deviceId:
-				infos.append(u"deviceId='{0}'".format(self.deviceId))
+				infos.append(u"deviceId={0!r}".format(self.deviceId))
 		except AttributeError:
 			pass
 
 		try:
 			if self.subsystemDeviceId:
-				infos.append(u"subsystemDeviceId='{0}'".format(self.subsystemDeviceId))
+				infos.append(u"subsystemDeviceId={0!r}".format(self.subsystemDeviceId))
 		except AttributeError:
 			pass
 
@@ -3350,13 +3350,13 @@ class AuditHardwareOnHost(Relationship):
 		return fromJson(jsonString, 'AuditHardwareOnHost')
 
 	def __unicode__(self):
-		additional = [u"hostId='{0}'".format(self.hostId)]
+		additional = [u"hostId={0!r}".format(self.hostId)]
 		hardwareClass = self.getHardwareClass()
 		if hardwareClass:
-			additional.append(u"hardwareClass='{0}'".format(hardwareClass))
+			additional.append(u"hardwareClass={0!r}".format(hardwareClass))
 
 		try:
-			additional.append(u"name='{0}'".format(forceUnicode(self.name)))
+			additional.append(u"name={0!r}".format(forceUnicode(self.name)))
 		except AttributeError:
 			pass
 
@@ -3524,7 +3524,7 @@ class BootConfiguration(Relationship):
 		return fromJson(jsonString, 'BootConfiguration')
 
 	def __unicode__(self):
-		return u"<{klass}(name='{name}', clientId='{cid}', priority={prio:d}>".format(
+		return u"<{klass}(name={name!r}, clientId={cid!r}, priority={prio:d}>".format(
 			klass=self.getType(), name=self.name,
 			cid=self.clientId, prio=self.priority)
 
