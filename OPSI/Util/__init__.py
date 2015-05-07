@@ -721,16 +721,18 @@ def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeD
 				files.append(pp)
 			files.extend(
 				findFiles(
-					directory   = dp,
-					prefix      = pp,
-					excludeDir  = excludeDir,
-					excludeFile = excludeFile,
-					includeDir  = includeDir,
-					includeFile = includeFile,
-					returnDirs  = returnDirs,
-					returnLinks = returnLinks,
-					followLinks = followLinks,
-					repository  = repository) )
+					directory=dp,
+					prefix=pp,
+					excludeDir=excludeDir,
+					excludeFile=excludeFile,
+					includeDir=includeDir,
+					includeFile=includeFile,
+					returnDirs=returnDirs,
+					returnLinks=returnLinks,
+					followLinks=followLinks,
+					repository=repository
+				)
+			)
 			continue
 
 		if excludeFile and re.search(excludeFile, entry):
