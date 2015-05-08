@@ -417,7 +417,7 @@ class JSONRPCBackend(Backend):
 			mysqlBackend = False
 			try:
 				self._interface = self._jsonRPC(u'backend_getInterface')
-				if (self._application.find('opsiclientd') != -1):
+				if 'opsiclientd' in self._application:
 					try:
 						modules = self._jsonRPC(u'backend_info').get('modules', None)
 						realmodules = self._jsonRPC(u'backend_info').get('realmodules', None)
