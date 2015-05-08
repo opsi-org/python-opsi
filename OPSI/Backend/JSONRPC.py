@@ -472,7 +472,7 @@ class JSONRPCBackend(Backend):
 		self._host = host
 		if port:
 			self._port = port
-		elif (self._protocol == 'https'):
+		elif self._protocol == 'https':
 			self._port = self._defaultHttpsPort
 		else:
 			self._port = self._defaultHttpPort
@@ -555,8 +555,10 @@ class JSONRPCBackend(Backend):
 							modules[module] = True
 					else:
 						val = modules[module]
-						if (val == False): val = 'no'
-						if (val == True):  val = 'yes'
+						if val == False:
+							val = 'no'
+						if val == True:
+							val = 'yes'
 					data += u'%s = %s\r\n' % (module.lower().strip(), val)
 				if not bool(publicKey.verify(md5(data).digest(), [ long(modules['signature']) ])):
 					logger.error(u"Disabling mysql backend and license management module: modules file invalid")
@@ -660,7 +662,7 @@ class JSONRPCBackend(Backend):
 			data = zlib.compress(data, level)
 			# Fix for python 2.7
 			# http://bugs.python.org/issue12398
-			if (version_info >= (2,7)):
+			if version_info >= (2,7):
 				data = bytearray(data)
 		else:
 			headers['content-type'] = 'application/json-rpc'
@@ -680,7 +682,7 @@ class JSONRPCBackend(Backend):
 		if cookie:
 			# Store sessionId cookie
 			sessionId = cookie.split(';')[0].strip()
-			if (sessionId != self._sessionId):
+			if sessionId != self._sessionId:
 				self._sessionId = sessionId
 
 		contentType = response.getheader('content-type', '')
@@ -688,7 +690,7 @@ class JSONRPCBackend(Backend):
 		logger.debug(u"Content-Type: %s, Content-Encoding: %s" % (contentType, contentEncoding))
 
 		response = response.data
-		if (contentEncoding == 'gzip') or contentType.lower().startswith('gzip'):
+		if contentEncoding == 'gzip' or contentType.lower().startswith('gzip'):
 			logger.debug(u"Expecting compressed data from server")
 			response = zlib.decompress(response)
 		logger.debug2(response)
