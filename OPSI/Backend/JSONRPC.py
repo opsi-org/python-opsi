@@ -426,7 +426,7 @@ class JSONRPCBackend(Backend):
 						else:
 							modules = {'customer': None}
 						for m in self._interface:
-							if (m.get('name') == 'dispatcher_getConfig'):
+							if m.get('name') == 'dispatcher_getConfig':
 								for entry in self._jsonRPC(u'dispatcher_getConfig'):
 									for bn in entry[1]:
 										if (bn.lower().find("sql") != -1) and (len(entry[0]) <= 4) and (entry[0].find('*') != -1):
