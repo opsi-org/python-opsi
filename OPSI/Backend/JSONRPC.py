@@ -499,7 +499,7 @@ class JSONRPCBackend(Backend):
 		for method in self._interface:
 			# Create instance method
 			params = ['self']
-			params.extend( method.get('params', []) )
+			params.extend(method.get('params', []))
 			paramsWithDefaults = list(params)
 			for i in range(len(params)):
 				if params[i].startswith('*'):
@@ -510,12 +510,12 @@ class JSONRPCBackend(Backend):
 
 			if len(params) == 2:
 				logger.debug2('def %s(%s):\n  if type(%s) == list: %s = [ %s ]\n  return self._jsonRPC(method = "%s", params = [%s])'\
-					% (method['name'], ', '.join(paramsWithDefaults), params[1], params[1], params[1], method['name'], ', '.join(params[1:])) )
+					% (method['name'], ', '.join(paramsWithDefaults), params[1], params[1], params[1], method['name'], ', '.join(params[1:])))
 				exec 'def %s(%s):\n  if type(%s) == list: %s = [ %s ]\n  return self._jsonRPC(method = "%s", params = [%s])'\
 					% (method['name'], ', '.join(paramsWithDefaults), params[1], params[1], params[1], method['name'], ', '.join(params[1:]))
 			else:
 				logger.debug2('def %s(%s): return self._jsonRPC(method = "%s", params = [%s])'\
-					% (method['name'], ', '.join(paramsWithDefaults), method['name'], ', '.join(params[1:])) )
+					% (method['name'], ', '.join(paramsWithDefaults), method['name'], ', '.join(params[1:])))
 				exec 'def %s(%s): return self._jsonRPC(method = "%s", params = [%s])'\
 					% (method['name'], ', '.join(paramsWithDefaults), method['name'], ', '.join(params[1:]))
 
@@ -541,7 +541,7 @@ class JSONRPCBackend(Backend):
 					raise Exception(u"MySQL backend in use but not licensed")
 			else:
 				logger.info(u"Verifying modules file signature")
-				publicKey = keys.Key.fromString(data = base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
+				publicKey = keys.Key.fromString(data=base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
 				data = u''
 				mks = modules.keys()
 				mks.sort()
@@ -560,7 +560,7 @@ class JSONRPCBackend(Backend):
 						if val == True:
 							val = 'yes'
 					data += u'%s = %s\r\n' % (module.lower().strip(), val)
-				if not bool(publicKey.verify(md5(data).digest(), [ long(modules['signature']) ])):
+				if not bool(publicKey.verify(md5(data).digest(), [long(modules['signature'])])):
 					logger.error(u"Disabling mysql backend and license management module: modules file invalid")
 					if mysqlBackend:
 						raise Exception(u"MySQL backend in use but not licensed")
