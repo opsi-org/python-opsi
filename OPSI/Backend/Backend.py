@@ -429,7 +429,7 @@ class ExtendedBackend(Backend):
 		"""
 		Backend.__init__(self)
 		self._backend = backend
-		if (self._context is self):
+		if self._context is self:
 			logger.info(u"Setting context to backend %s" % self._context)
 			self._context = self._backend
 		self._overwrite = forceBool(overwrite)
@@ -1094,7 +1094,7 @@ depot where the method is.
 		productOnClient = forceObjectClass(productOnClient, ProductOnClient)
 		productOnClient.setDefaults()  # pylint: disable=maybe-no-member
 
-		if (productOnClient.installationStatus == 'installed') and (not (productOnClient.productVersion) or not (productOnClient.packageVersion)):  # pylint: disable=maybe-no-member
+		if (productOnClient.installationStatus == 'installed') and (not productOnClient.productVersion or not productOnClient.packageVersion):  # pylint: disable=maybe-no-member
 			raise BackendReferentialIntegrityError(u"Cannot set installationStatus for product '%s', client '%s' to 'installed' without productVersion and packageVersion" \
 				% (productOnClient.productId, productOnClient.clientId))  # pylint: disable=maybe-no-member
 
@@ -3821,7 +3821,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 					break
 				installations = len(self.licenseOnClient_getIdents(softwareLicenseId=softwareLicense.getId()))
 				logger.debug(u"Installations registered: %d" % installations)
-				if (installations < softwareLicense.getMaxInstallations()):
+				if installations < softwareLicense.getMaxInstallations():
 					softwareLicenseId = softwareLicense.getId()
 					break
 
@@ -3834,7 +3834,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		licenseKeys = []
 		for softwareLicenseToLicensePool in softwareLicenseToLicensePools:
 			if softwareLicenseToLicensePool.getLicenseKey():
-				if (softwareLicenseToLicensePool.getSoftwareLicenseId() == softwareLicenseId):
+				if softwareLicenseToLicensePool.getSoftwareLicenseId() == softwareLicenseId:
 					licenseKey = softwareLicenseToLicensePool.getLicenseKey()
 					break
 				logger.debug(u"Found license key: %s" % licenseKey)
