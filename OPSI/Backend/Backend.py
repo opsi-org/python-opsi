@@ -38,6 +38,7 @@ import inspect
 import json
 import new
 import os
+import random
 import threading
 import types
 import warnings
@@ -3845,7 +3846,6 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 				licenseKeys.append(softwareLicenseToLicensePool.getLicenseKey())
 
 		if not licenseKey and licenseKeys:
-			import random
 			licenseKey = random.choice(licenseKeys)
 			logger.info(u"Randomly choosing license key")
 
