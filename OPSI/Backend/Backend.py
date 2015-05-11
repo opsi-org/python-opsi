@@ -1721,11 +1721,11 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 
 			elif isinstance(f, pureldap.LDAPFilter_greaterOrEqual):
 				logger.debug(u"Handle greaterOrEqual attribute '%s', value '%s'" % (f.attributeDesc.value, f.assertionValue.value))
-				objectFilter = { f.attributeDesc.value: u'>=%s' % f.assertionValue.value }
+				objectFilter = {f.attributeDesc.value: u'>=%s' % f.assertionValue.value}
 
 			elif isinstance(f, pureldap.LDAPFilter_lessOrEqual):
 				logger.debug(u"Handle lessOrEqual attribute '%s', value '%s'" % (f.attributeDesc.value, f.assertionValue.value))
-				objectFilter = { f.attributeDesc.value: u'<=%s' % f.assertionValue.value }
+				objectFilter = {f.attributeDesc.value: u'<=%s' % f.assertionValue.value}
 
 			elif isinstance(f, pureldap.LDAPFilter_substrings):
 				logger.debug(u"Handle substrings type %s: %s" % (f.type, repr(f.substrings)))
@@ -2053,10 +2053,10 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			softwareLicenses.append(softwareLicense)
 
 		logger.info(u"Deleting client '%s'" % client)
-		self._backend.host_deleteObjects([ client ])
+		self._backend.host_deleteObjects([client])
 
 		client.setId(newId)
-		self.host_createObjects([ client ])
+		self.host_createObjects([client])
 
 		if objectToGroups:
 			self.objectToGroup_createObjects(objectToGroups)
@@ -2242,7 +2242,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 
 			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
-					self._backend.config_getObjects(id = config.id)
+					self._backend.config_getObjects(id=config.id)
 				)
 		return result
 
@@ -3064,12 +3064,12 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		# Create missing product states if addProductOnClientDefaults is set
 		if self._options['addProductOnClientDefaults']:
 			# Get all client ids which match the filter
-			clientIds = self.host_getIdents(id = pocFilter.get('clientId'), returnType = 'unicode')
+			clientIds = self.host_getIdents(id=pocFilter.get('clientId'), returnType='unicode')
 			logger.debug(u"   * got clientIds")
 
 			# Get depot to client assignment
 			depotToClients = {}
-			for clientToDepot in self.configState_getClientToDepotserver(clientIds = clientIds):
+			for clientToDepot in self.configState_getClientToDepotserver(clientIds=clientIds):
 				if not depotToClients.has_key(clientToDepot['depotId']):
 					depotToClients[clientToDepot['depotId']] = []
 				depotToClients[clientToDepot['depotId']].append(clientToDepot['clientId'])
@@ -3268,7 +3268,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 
 		# Get depot to client assignment
 		depotToClients = collections.defaultdict(list)
-		for clientToDepot in self.configState_getClientToDepotserver(clientIds = filter.get('objectId', [])):
+		for clientToDepot in self.configState_getClientToDepotserver(clientIds=filter.get('objectId', [])):
 			depotToClients[clientToDepot['depotId']].append(clientToDepot['clientId'])
 
 		# Create data structure for product property states to find missing ones
@@ -3368,9 +3368,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			logger.info(u"Creating group '%s'" % group)
 			self._backend.group_insertObject(group)
 			if self._options['returnObjectsOnUpdateAndCreate']:
-				result.extend(
-					self._backend.group_getObjects(id = group.id)
-				)
+				result.extend(self._backend.group_getObjects(id=group.id))
 		return result
 
 	def group_updateObjects(self, groups):
@@ -3384,9 +3382,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 				self._backend.group_insertObject(group)
 
 			if self._options['returnObjectsOnUpdateAndCreate']:
-				result.extend(
-					self._backend.group_getObjects(id = group.id)
-				)
+				result.extend(self._backend.group_getObjects(id=group.id))
 		return result
 
 	def group_createHostGroup(self, id, description=None, notes=None, parentGroupId=None):
@@ -3460,6 +3456,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			groupId = []
 		if not objectId:
 			objectId = []
+
 		return self._backend.objectToGroup_deleteObjects(
 			self._backend.objectToGroup_getObjects(
 				groupType=groupType,
@@ -3479,7 +3476,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			self._backend.licenseContract_insertObject(licenseContract)
 			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
-					self._backend.licenseContract_getObjects(id = licenseContract.id)
+					self._backend.licenseContract_getObjects(id=licenseContract.id)
 				)
 		return result
 
@@ -3488,14 +3485,14 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		licenseContracts = forceObjectClassList(licenseContracts, LicenseContract)
 		for licenseContract in licenseContracts:
 			logger.info(u"Updating licenseContract '%s'" % licenseContract)
-			if self.licenseContract_getIdents(id = licenseContract.id):
+			if self.licenseContract_getIdents(id=licenseContract.id):
 				self._backend.licenseContract_updateObject(licenseContract)
 			else:
 				logger.info(u"LicenseContract %s does not exist, creating" % licenseContract)
 				self._backend.licenseContract_insertObject(licenseContract)
 			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
-					self._backend.licenseContract_getObjects(id = licenseContract.id)
+					self._backend.licenseContract_getObjects(id=licenseContract.id)
 				)
 		return result
 
@@ -3509,9 +3506,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			id = []
 
 		return self._backend.licenseContract_deleteObjects(
-			self._backend.licenseContract_getObjects(
-				id=id
-			)
+			self._backend.licenseContract_getObjects(id=id)
 		)
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -3524,7 +3519,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			self._backend.softwareLicense_insertObject(softwareLicense)
 			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
-					self._backend.softwareLicense_getObjects(id = softwareLicense.id)
+					self._backend.softwareLicense_getObjects(id=softwareLicense.id)
 				)
 		return result
 
@@ -3533,14 +3528,14 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		softwareLicenses = forceObjectClassList(softwareLicenses, SoftwareLicense)
 		for softwareLicense in softwareLicenses:
 			logger.info(u"Updating softwareLicense '%s'" % softwareLicense)
-			if self.softwareLicense_getIdents(id = softwareLicense.id):
+			if self.softwareLicense_getIdents(id=softwareLicense.id):
 				self._backend.softwareLicense_updateObject(softwareLicense)
 			else:
 				logger.info(u"ProducSoftwareLicenset %s does not exist, creating" % softwareLicense)
 				self._backend.softwareLicense_insertObject(softwareLicense)
 			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
-					self._backend.softwareLicense_getObjects(id = softwareLicense.id)
+					self._backend.softwareLicense_getObjects(id=softwareLicense.id)
 				)
 		return result
 
@@ -3582,7 +3577,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			self._backend.licensePool_insertObject(licensePool)
 			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
-					self._backend.licensePool_getObjects(id = licensePool.id)
+					self._backend.licensePool_getObjects(id=licensePool.id)
 				)
 		return result
 
@@ -3591,7 +3586,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		licensePools = forceObjectClassList(licensePools, LicensePool)
 		for licensePool in licensePools:
 			logger.info(u"Updating licensePool '%s'" % licensePool)
-			if self.licensePool_getIdents(id = licensePool.id):
+			if self.licensePool_getIdents(id=licensePool.id):
 				self._backend.licensePool_updateObject(licensePool)
 			else:
 				logger.info(u"LicensePool %s does not exist, creating" % licensePool)
@@ -3660,7 +3655,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 
 	def softwareLicenseToLicensePool_delete(self, softwareLicenseId, licensePoolId):
 		if not softwareLicenseId:
-			softwareLicenseId  = []
+			softwareLicenseId = []
 		if not licensePoolId:
 			licensePoolId = []
 
@@ -3719,7 +3714,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 
 	def licenseOnClient_delete(self, softwareLicenseId, licensePoolId, clientId):
 		if softwareLicenseId is None:
-			softwareLicenseId  = []
+			softwareLicenseId = []
 		if licensePoolId is None:
 			licensePoolId = []
 		if clientId is None:
@@ -3798,12 +3793,12 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		softwareLicenseId = u''
 		licenseKey = u''
 
-		licenseOnClients = self._backend.licenseOnClient_getObjects(licensePoolId = licensePoolId, clientId = clientId)
+		licenseOnClients = self._backend.licenseOnClient_getObjects(licensePoolId=licensePoolId, clientId=clientId)
 		if licenseOnClients:
 			# Already registered
 			return (licenseOnClients[0].getSoftwareLicenseId(), licenseOnClients[0].getLicenseKey())
 
-		softwareLicenseToLicensePools = self._backend.softwareLicenseToLicensePool_getObjects(licensePoolId = licensePoolId)
+		softwareLicenseToLicensePools = self._backend.softwareLicenseToLicensePool_getObjects(licensePoolId=licensePoolId)
 		if not softwareLicenseToLicensePools:
 			raise LicenseMissingError(u"No licenses in pool '%s'" % licensePoolId)
 
@@ -3811,20 +3806,20 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 								for softwareLicenseToLicensePool
 								in softwareLicenseToLicensePools]
 
-		softwareLicensesBoundToHost = self._backend.softwareLicense_getObjects(id = softwareLicenseIds, boundToHost = clientId)
+		softwareLicensesBoundToHost = self._backend.softwareLicense_getObjects(id=softwareLicenseIds, boundToHost=clientId)
 		if softwareLicensesBoundToHost:
 			logger.info(u"Using license bound to host: %s" % softwareLicensesBoundToHost[0])
 			softwareLicenseId = softwareLicensesBoundToHost[0].getId()
 		else:
 			# Search an available license
-			for softwareLicense in self._backend.softwareLicense_getObjects(id = softwareLicenseIds, boundToHost = [ None, '' ]):
+			for softwareLicense in self._backend.softwareLicense_getObjects(id=softwareLicenseIds, boundToHost=[None, '']):
 				logger.debug(u"Checking license '%s', maxInstallations %d" \
 					% (softwareLicense.getId(), softwareLicense.getMaxInstallations()))
 				if softwareLicense.getMaxInstallations() == 0:
 					# 0 = infinite
 					softwareLicenseId = softwareLicense.getId()
 					break
-				installations = len(self.licenseOnClient_getIdents(softwareLicenseId = softwareLicense.getId()))
+				installations = len(self.licenseOnClient_getIdents(softwareLicenseId=softwareLicense.getId()))
 				logger.debug(u"Installations registered: %d" % installations)
 				if (installations < softwareLicense.getMaxInstallations()):
 					softwareLicenseId = softwareLicense.getId()
@@ -3993,7 +3988,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		if architecture is None:
 			architecture = []
 		if licensePoolId is None:
-			licensePoolId  = []
+			licensePoolId = []
 
 		return self._backend.auditSoftwareToLicensePool_deleteObjects(
 			self._backend.auditSoftwareToLicensePool_getObjects(
