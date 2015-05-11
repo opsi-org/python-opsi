@@ -2165,7 +2165,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			if config.defaultValues:
 				changed = False
 				for i in range(len(config.defaultValues)):
-					if (config.defaultValues[i].find(id) != -1):
+					if id in config.defaultValues[i]:
 						config.defaultValues[i] = config.defaultValues[i].replace(id, newId)
 						changed = True
 				if changed:
@@ -2178,7 +2178,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			if configState.values:
 				changed = False
 				for i in range(len(configState.values)):
-					if (configState.values[i].find(id) != -1):
+					if id in configState.values[i]:
 						configState.values[i] = configState.values[i].replace(id, newId)
 						changed = True
 				if changed:
