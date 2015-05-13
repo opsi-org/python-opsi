@@ -126,10 +126,10 @@ def setRights(path=u'/'):
 
 			LOGGER.debug(u"Setting rights on file '%s'" % path)
 			if path.startswith(u'/var/lib/opsi/depot/'):
-				logger.debug("Assuming file in product folder...")
+				LOGGER.debug("Assuming file in product folder...")
 				os.chmod(path, (os.stat(path)[0] | 0660) & 0770)
 			else:
-				logger.debug("Assuming general file...")
+				LOGGER.debug("Assuming general file...")
 				os.chmod(path, fmod)
 			continue
 
