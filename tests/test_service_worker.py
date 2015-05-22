@@ -26,7 +26,6 @@ Testing the workers.
 import unittest
 
 from OPSI.Service.Worker import WorkerOpsiJsonRpc
-from twisted.web.server import Request
 
 
 class FakeHeader(object):
@@ -36,10 +35,13 @@ class FakeHeader(object):
 	def hasHeader(self, header):
 		return header in self.headers
 
+	def getHeader(self, header):
+		return self.headers[header]
+
 
 class FakeRequest(object):
-	def __init__(self):
-		self.headers = FakeHeader()
+	def __init__(self, headers=None):
+		self.headers = headers or FakeHeader()
 
 
 class WorkerOpsiJsonRpcTestCase(unittest.TestCase):
