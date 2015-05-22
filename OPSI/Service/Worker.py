@@ -231,7 +231,7 @@ interfacePage = u'''<?xml version="1.0" encoding="UTF-8"?>
 '''
 
 
-class WorkerOpsi(object):
+class WorkerOpsi:
 	def __init__(self, service, request, resource):
 		self.service = service
 		if request.headers.hasHeader("x-forwarded-for"):
