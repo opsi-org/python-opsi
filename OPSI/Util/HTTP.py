@@ -220,7 +220,7 @@ class HTTPResponse(object):
 					v = int(v)
 					if v < 0:
 						v = 0
-				except:
+				except Exception:
 					return
 			self.headers[k] = v
 
@@ -317,7 +317,7 @@ class HTTPConnectionPool(object):
 							if conn.sock:
 								conn.sock.close()
 							conn.close()
-						except:
+						except Exception:
 							pass
 					time.sleep(0.001)
 				except Empty:
@@ -512,18 +512,18 @@ class HTTPConnectionPool(object):
 					if conn.sock:
 						conn.sock.close()
 					conn.close()
-				except:
+				except Exception:
 					pass
 
 		except (SocketTimeout, Empty, HTTPException, SocketError) as e:
 			try:
 				logger.debug(u"Request to host '%s' failed, retry: %s, firstTryTime: %s, now: %s, retryTime: %s, connectTimeout: %s, socketTimeout: %s (%s)" \
 					% (self.host, retry, firstTryTime, now, self.retryTime, self.connectTimeout, self.socketTimeout, forceUnicode(e)))
-			except:
+			except Exception:
 				try:
 					logger.debug(u"Request to host '%s' failed, retry: %s, firstTryTime: %s, now: %s, retryTime: %s, connectTimeout: %s, socketTimeout: %s" \
 						% (self.host, retry, firstTryTime, now, self.retryTime, self.connectTimeout, self.socketTimeout))
-				except:
+				except Exception:
 					pass
 
 			self._put_conn(None)
@@ -532,7 +532,7 @@ class HTTPConnectionPool(object):
 					if conn.sock:
 						conn.sock.close()
 					conn.close()
-			except:
+			except Exception:
 				pass
 			if retry and (now - firstTryTime < self.retryTime):
 				logger.debug(u"Request to '%s' failed: %s, retrying" % (self.host, forceUnicode(e)))
@@ -547,7 +547,7 @@ class HTTPConnectionPool(object):
 					if conn.sock:
 						conn.sock.close()
 					conn.close()
-			except:
+			except Exception:
 				pass
 			raise
 
@@ -561,7 +561,7 @@ class HTTPConnectionPool(object):
 					if conn.sock:
 						conn.sock.close()
 					conn.close()
-			except:
+			except Exception:
 				pass
 			return self.urlopen(method, url, body, headers, retry, redirect, assert_same_host, firstTryTime)
 
