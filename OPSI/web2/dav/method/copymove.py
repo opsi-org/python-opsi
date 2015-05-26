@@ -36,8 +36,6 @@ from OPSI.web2.filter.location import addLocation
 from OPSI.web2.dav.idav import IDAVResource
 from OPSI.web2.dav.fileop import copy, move
 
-# FIXME: This is circular
-import OPSI.web2.dav.static
 
 def http_COPY(self, request):
     """
@@ -146,6 +144,7 @@ def _prepareForCopy(destination, destination_uri, request, depth):
     # We may need some more API in IDAVResource.
     # So far, we need: .exists(), .fp.parent()
     #
+    import OPSI.web2.dav.static  # Lazy import to avoid circular dependency
 
     if not isinstance(destination, OPSI.web2.dav.static.DAVFile):
         log.err("DAV copy between non-DAVFile DAV resources isn't implemented")
