@@ -375,7 +375,7 @@ class JSONRPCBackend(Backend):
 					res = self._jsonRPC('exit', retry=False)
 				else:
 					res = self._jsonRPC('backend_exit', retry=False)
-			except:
+			except Exception:
 				pass
 		if self._rpcQueue:
 			self._rpcQueue.stop()
