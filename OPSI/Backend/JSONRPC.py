@@ -103,9 +103,9 @@ class JSONRPC(DeferredCall):
 					raise exception
 				raise Exception(u'%s (error on server)' % error)
 			self.result = deserialize(result.get('result'), preventObjectCreation=self.method.endswith('_getHashes'))
-		except Exception as e:
-			logger.logException(e)
-			self.error = e
+		except Exception as error:
+			logger.logException(error)
+			self.error = error
 		self._gotResult()
 
 	def process(self):
@@ -116,10 +116,10 @@ class JSONRPC(DeferredCall):
 			logger.debug2(u"jsonrpc: %s" % rpc)
 			response = self.jsonrpcBackend._request(baseUrl=self.baseUrl, data=rpc, retry=self.retry)
 			self.processResult(json.loads(response))
-		except Exception as e:
+		except Exception as error:
 			if not self.method in ('backend_exit', 'exit'):
-				logger.logException("Failed to process method '%s': %s" % (self.method, forceUnicode(e)), LOG_INFO)
-				self.error = e
+				logger.logException("Failed to process method '%s': %s" % (self.method, forceUnicode(error)), LOG_INFO)
+				self.error = error
 			self._gotResult()
 
 
@@ -219,28 +219,30 @@ class RpcQueue(threading.Thread):
 			logger.debug(u"Got response from host %s" % self.jsonrpcBackend._host)
 			try:
 				response = forceList(json.loads(response))
-			except Exception as e:
-				raise Exception(u"Failed to json decode response %s: %s" % (response, e))
+			except Exception as error:
+				raise Exception(u"Failed to json decode response %s: %s" % (response, error))
 
 			for resp in response:
 				try:
 					id = resp['id']
-				except Exception as e:
-					raise Exception(u"Failed to get id from: %s (%s): %s" % (resp, response, e))
+				except Exception as error:
+					raise Exception(u"Failed to get id from: %s (%s): %s" % (resp, response, error))
 				try:
 					jsonrpc = self.jsonrpcs[id]
-				except Exception as e:
-					raise Exception(u"Failed to get jsonrpc with id %s: %s" % (id, e))
+				except Exception as error:
+					raise Exception(u"Failed to get jsonrpc with id %s: %s" % (id, error))
 				try:
 					jsonrpc.processResult(resp)
-				except Exception as e:
-					raise Exception(u"Failed to process response %s with jsonrpc %s: %s" % (resp, jsonrpc, e))
-		except Exception as e:
+				except Exception as error:
+					raise Exception(u"Failed to process response %s with jsonrpc %s: %s" % (resp, jsonrpc, error))
+		except Exception as error:
 			if not isExit:
-				logger.logException(e)
+				logger.logException(error)
+
 			for jsonrpc in self.jsonrpcs.values():
-				jsonrpc.error = e
+				jsonrpc.error = error
 				jsonrpc._gotResult()
+
 		self.jsonrpcs = {}
 		self.idle.set()
 
@@ -432,21 +434,23 @@ class JSONRPCBackend(Backend):
 										if (bn.lower().find("sql") != -1) and (len(entry[0]) <= 4) and (entry[0].find('*') != -1):
 											mysqlBackend = True
 								break
-					except Exception as e:
-						logger.info(forceUnicode(e))
+					except Exception as error:
+						logger.info(forceUnicode(error))
 			except (OpsiAuthenticationError, OpsiTimeoutError, OpsiServiceVerificationError, socket.error):
 				raise
-			except Exception as e:
-				logger.debug(u"backend_getInterface failed: %s, trying getPossibleMethods_listOfHashes" % forceUnicode(e))
+			except Exception as error:
+				logger.debug(u"backend_getInterface failed: %s, trying getPossibleMethods_listOfHashes" % forceUnicode(error))
 				self._interface = self._jsonRPC(u'getPossibleMethods_listOfHashes')
 				logger.info(u"Legacy opsi")
 				self._legacyOpsi = True
 				self._deflate = False
 				self._jsonRPC(u'authenticated', retry=False)
+
 			if self._legacyOpsi:
 				self._createInstanceMethods34()
 			else:
 				self._createInstanceMethods(modules, realmodules, mysqlBackend)
+
 			self._connected = True
 			logger.info(u"%s: Connected to service" % self)
 		finally:
@@ -628,8 +632,8 @@ class JSONRPCBackend(Backend):
 				else:
 					exec(u'def %s(self, %s): return self._jsonRPC("%s", [%s])' % (methodName, argString, methodName, callString))
 				setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
-			except Exception as e:
-				logger.critical(u"Failed to create instance method '%s': %s" % (method, e))
+			except Exception as error:
+				logger.critical(u"Failed to create instance method '%s': %s" % (method, error))
 
 	def _jsonRPC(self, method, params=[], retry=True):
 		if self._async:
