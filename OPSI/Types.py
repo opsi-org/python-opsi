@@ -365,10 +365,10 @@ def forcePackageCustomName(var):
 
 
 def forceProductType(var):
-	v = forceUnicodeLower(var)
-	if v in ('localboot', 'localbootproduct'):
+	lowercaseVar = forceUnicodeLower(var)
+	if lowercaseVar in ('localboot', 'localbootproduct'):
 		return u'LocalbootProduct'
-	elif v in ('netboot', 'netbootproduct'):
+	elif lowercaseVar in ('netboot', 'netbootproduct'):
 		return u'NetbootProduct'
 	else:
 		raise ValueError(u"Unknown product type: '%s'" % var)
@@ -478,9 +478,9 @@ def forceObjectClass(var, objectClass):
 
 		try:
 			var = fromJson(var)
-		except Exception as e:
-			exception = e
-			logger.debug(u"Failed to get object from json '%s': %s" % (var, e))
+		except Exception as error:
+			exception = error
+			logger.debug(u"Failed to get object from json '%s': %s" % (var, error))
 
 	if isinstance(var, types.DictType):
 		if 'type' not in var:
@@ -491,9 +491,9 @@ def forceObjectClass(var, objectClass):
 			c = eval('OPSI.Object.%s' % var['type'])
 			if issubclass(c, objectClass):
 				var = c.fromHash(var)
-		except Exception as e:
-			exception = e
-			logger.debug(u"Failed to get object from dict '%s': %s" % (var, e))
+		except Exception as error:
+			exception = error
+			logger.debug(u"Failed to get object from dict '%s': %s" % (var, error))
 
 	if not isinstance(var, objectClass):
 		if exception:
