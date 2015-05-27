@@ -601,13 +601,14 @@ class JSONRPCBackend(Backend):
 					argString += args[i]
 					callString += args[i]
 					if type(defaults) in (tuple, list) and (len(defaults) + i >= len(args)):
-						default = defaults[len(defaults)-len(args)+i]
+						default = defaults[len(defaults) - len(args) + i]
 						# TODO: watch out for Python 3
 						if type(default) is str:
 							default = u"'%s'" % default
 						elif type(default) is unicode:
 							default = u"u'%s'" % default
 						argString += u'=%s' % unicode(default)
+
 				if varargs:
 					for vararg in varargs:
 						if argString:
