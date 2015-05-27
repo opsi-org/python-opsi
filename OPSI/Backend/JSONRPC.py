@@ -560,9 +560,9 @@ class JSONRPCBackend(Backend):
 							modules[module] = True
 					else:
 						val = modules[module]
-						if val == False:
+						if val is False:
 							val = 'no'
-						if val == True:
+						if val is True:
 							val = 'yes'
 					data += u'%s = %s\r\n' % (module.lower().strip(), val)
 				if not bool(publicKey.verify(md5(data).digest(), [long(modules['signature'])])):
