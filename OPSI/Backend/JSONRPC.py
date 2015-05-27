@@ -52,7 +52,7 @@ from OPSI.Backend.Backend import Backend, DeferredCall
 from OPSI.Util import serialize, deserialize
 from OPSI.Util.HTTP import urlsplit, getSharedConnectionPool
 
-__version__ = '4.0.6.3'
+__version__ = '4.0.6.8'
 
 logger = Logger()
 
@@ -117,7 +117,7 @@ class JSONRPC(DeferredCall):
 			response = self.jsonrpcBackend._request(baseUrl=self.baseUrl, data=rpc, retry=self.retry)
 			self.processResult(json.loads(response))
 		except Exception as error:
-			if not self.method in ('backend_exit', 'exit'):
+			if self.method not in ('backend_exit', 'exit'):
 				logger.logException("Failed to process method '%s': %s" % (self.method, forceUnicode(error)), LOG_INFO)
 				self.error = error
 			self._gotResult()
@@ -470,7 +470,7 @@ class JSONRPCBackend(Backend):
 		self._protocol = 'https'
 		(scheme, host, port, baseurl, username, password) = urlsplit(address)
 		if scheme:
-			if not scheme in ('http', 'https'):
+			if scheme not in ('http', 'https'):
 				raise Exception(u"Protocol %s not supported" % scheme)
 			self._protocol = scheme
 		self._host = host
