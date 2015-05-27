@@ -668,7 +668,7 @@ class JSONRPCBackend(Backend):
 			data = zlib.compress(data, level)
 			# Fix for python 2.7
 			# http://bugs.python.org/issue12398
-			if version_info >= (2,7):
+			if version_info >= (2, 7):
 				data = bytearray(data)
 		else:
 			headers['content-type'] = 'application/json-rpc'
