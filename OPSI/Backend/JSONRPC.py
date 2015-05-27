@@ -514,15 +514,15 @@ class JSONRPCBackend(Backend):
 			logger.debug2("Creating instance method '%s'" % method['name'])
 
 			if len(params) == 2:
-				logger.debug2('def %s(%s):\n  if type(%s) == list: %s = [ %s ]\n  return self._jsonRPC(method = "%s", params = [%s])'\
+				methodCode = ('def %s(%s):\n  if type(%s) == list: %s = [ %s ]\n  return self._jsonRPC(method = "%s", params = [%s])'
 					% (method['name'], ', '.join(paramsWithDefaults), params[1], params[1], params[1], method['name'], ', '.join(params[1:])))
-				exec 'def %s(%s):\n  if type(%s) == list: %s = [ %s ]\n  return self._jsonRPC(method = "%s", params = [%s])'\
-					% (method['name'], ', '.join(paramsWithDefaults), params[1], params[1], params[1], method['name'], ', '.join(params[1:]))
+				logger.debug2(methodCode)
+				exec methodCode
 			else:
-				logger.debug2('def %s(%s): return self._jsonRPC(method = "%s", params = [%s])'\
+				methodCode = ('def %s(%s): return self._jsonRPC(method = "%s", params = [%s])'
 					% (method['name'], ', '.join(paramsWithDefaults), method['name'], ', '.join(params[1:])))
-				exec 'def %s(%s): return self._jsonRPC(method = "%s", params = [%s])'\
-					% (method['name'], ', '.join(paramsWithDefaults), method['name'], ', '.join(params[1:]))
+				logger.debug2(methodCode)
+				exec methodCode
 
 			setattr(self.__class__, method['name'], new.instancemethod(eval(method['name']), None, self.__class__))
 
