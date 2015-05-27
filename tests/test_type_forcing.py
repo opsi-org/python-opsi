@@ -36,7 +36,7 @@ from OPSI.Types import (forceObjectClass, forceUnicode, forceUnicodeList,
 	forceActionRequest, forceActionProgress,forceLanguageCode, forceIntList,
 	forceArchitecture, forceEmailAddress, forceUnicodeLowerList,
 	forceProductType, forceDict, forceUniqueList, args, forceFqdn,
-	forceGroupType)
+	forceGroupType, forceFloat)
 
 
 class ForceObjectClassJSONTestCase(unittest.TestCase):
@@ -257,6 +257,9 @@ class ForceHardwareAddressTestCase(unittest.TestCase):
 		self.assertRaises(ValueError, forceHardwareAddress, None)
 		self.assertRaises(ValueError, forceHardwareAddress, True)
 
+	def testForcingEmptyStringReturnsEmptyString(self):
+		self.assertEquals("", forceHardwareAddress(""))
+
 
 class ForceIPAdressTestCase(unittest.TestCase):
 	def testForcing(self):
@@ -406,6 +409,9 @@ class ForceActionRequestTestCase(unittest.TestCase):
 		self.assertEquals(forceActionRequest('none'), str('none').lower())
 		self.assertEquals(forceActionRequest(None), str(None).lower())
 
+	def testForcingUndefinedReturnsNone(self):
+		self.assertEquals(None, forceActionRequest("undefined"))
+
 
 class ForceActionProgressTestCase(unittest.TestCase):
 	def testForcingReturnsUnicode(self):
@@ -477,8 +483,8 @@ class ForceDictTestCase(unittest.TestCase):
 		self.assertTrue(data is expected)
 
 	def testForcingImpossibleThrowsError(self):
-		self.assertRaises(ValueError, forceDict('asdg'))
-		self.assertRaises(ValueError, forceDict(['asdg', 'asg']))
+		self.assertRaises(ValueError, forceDict, 'asdg')
+		self.assertRaises(ValueError, forceDict, ['asdg', 'asg'])
 
 
 class ForceUniqueListTestCase(unittest.TestCase):
@@ -551,6 +557,22 @@ class ForceGroupTypeTestCase(unittest.TestCase):
 	def testKnownValuesAreReturnedWithStandardisedCase(self):
 		self.assertEquals('HostGroup', forceGroupType('hostGROUP'))
 		self.assertEquals('ProductGroup', forceGroupType('PrOdUcTgRoUp'))
+
+
+class ForceFloatTypeTestCase(unittest.TestCase):
+	def testForcingNumber(self):
+		self.assertEquals(1.0, forceFloat(1))
+		self.assertEquals(1.3, forceFloat(1.3))
+
+	def testForcingFromString(self):
+		self.assertEquals(1.0, forceFloat("1"))
+		self.assertEquals(1.3, forceFloat("1.3"))
+		self.assertEquals(1.4, forceFloat("  1.4  "))
+
+	def testForcingCanFail(self):
+		self.assertRaises(ValueError, forceFloat, {"abc": 123})
+		self.assertRaises(ValueError, forceFloat, ['a', 'b'])
+		self.assertRaises(ValueError, forceFloat, "No float")
 
 
 if __name__ == '__main__':
