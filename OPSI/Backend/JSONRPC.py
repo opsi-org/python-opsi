@@ -128,7 +128,8 @@ class JSONRPCThread(JSONRPC, threading.Thread):
 		if params is None:
 			params = []
 		threading.Thread.__init__(self)
-		JSONRPC.__init__(self,
+		JSONRPC.__init__(
+			self,
 			jsonrpcBackend=jsonrpcBackend,
 			baseUrl=baseUrl,
 			method=method,
