@@ -191,7 +191,7 @@ class LoggerSubject:
 		return self._severity
 
 	def attachObserver(self, observer):
-		if not observer in self._observers:
+		if observer not in self._observers:
 			self._observers.append(observer)
 
 	def detachObserver(self, observer):
