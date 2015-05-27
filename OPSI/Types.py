@@ -39,7 +39,7 @@ import types
 
 from OPSI.Logger import Logger
 
-__version__ = '4.0.6.1'
+__version__ = '4.0.6.8'
 
 encoding = sys.getfilesystemencoding()
 logger = Logger()
@@ -80,11 +80,11 @@ def forceList(var):
 
 
 def forceUnicode(var):
-	if type(var) is types.UnicodeType:
+	if isinstance(var, types.UnicodeType):
 		return var
-	elif type(var) is types.StringType:
+	elif isinstance(var, types.StringType):
 		return unicode(var, 'utf-8', 'replace')
-	elif (os.name == 'nt') and type(var) is WindowsError:
+	elif (os.name == 'nt') and isinstance(var, WindowsError):
 		return u"[Error %s] %s" % (var.args[0], var.args[1].decode(encoding))
 
 	if hasattr(var, '__unicode__'):
@@ -100,7 +100,7 @@ def forceUnicode(var):
 
 	if hasattr(var, '__repr__'):
 		var = var.__repr__()
-		if type(var) is types.UnicodeType:
+		if isinstance(var, types.UnicodeType):
 			return var
 		return unicode(var, 'utf-8', 'replace')
 
@@ -128,10 +128,10 @@ def forceUnicodeLowerList(var):
 
 
 def forceBool(var):
-	if type(var) is types.BooleanType:
+	if isinstance(var, types.BooleanType):
 		return var
 
-	if type(var) in (types.UnicodeType, types.StringType):
+	if isinstance(var, (types.UnicodeType, types.StringType)):
 		if var.lower() in ('true', 'yes', 'on', '1'):
 			return True
 		elif var.lower() in ('false', 'no', 'off', '0'):
@@ -145,7 +145,7 @@ def forceBoolList(var):
 
 
 def forceInt(var):
-	if type(var) is types.IntType:
+	if isinstance(var, types.IntType):
 		return var
 	try:
 		return int(var)
@@ -165,7 +165,7 @@ def forceUnsignedInt(var):
 
 
 def forceOct(var):
-	if type(var) is types.IntType:
+	if isinstance(var, types.IntType):
 		return var
 
 	try:
@@ -185,8 +185,9 @@ def forceOct(var):
 
 
 def forceFloat(var):
-	if type(var) is types.FloatType:
+	if isinstance(var, types.FloatType):
 		return var
+
 	try:
 		return float(var)
 	except Exception as e:
@@ -196,17 +197,18 @@ def forceFloat(var):
 def forceDict(var):
 	if var is None:
 		return {}
-	elif type(var) is types.DictType:
+	elif isinstance(var, types.DictType):
 		return var
 
 	raise ValueError(u"Not a dict '%s'" % var)
 
 
 def forceTime(var):
-	if type(var) is time.struct_time:
+	if isinstance(var, time.struct_time):
 		return var
-	if type(var) in (types.IntType, types.FloatType):
+	if isinstance(var, (types.IntType, types.FloatType)):
 		return time.localtime(var)
+
 	raise ValueError(u"Not a time '%s'" % var)
 
 
@@ -471,7 +473,7 @@ def forceRequirementType(var):
 
 def forceObjectClass(var, objectClass):
 	exception = None
-	if type(var) in (types.UnicodeType, types.StringType) and var.lstrip() and var.lstrip().startswith('{'):
+	if isinstance(var, (types.UnicodeType, types.StringType)) and var.lstrip() and var.lstrip().startswith('{'):
 		from OPSI.Util import fromJson
 
 		try:
@@ -480,7 +482,7 @@ def forceObjectClass(var, objectClass):
 			exception = e
 			logger.debug(u"Failed to get object from json '%s': %s" % (var, e))
 
-	if type(var) is types.DictType:
+	if isinstance(var, types.DictType):
 		if 'type' not in var:
 			raise ValueError(u"Key 'type' missing in hash '%s'" % var)
 
