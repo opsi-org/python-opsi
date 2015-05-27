@@ -652,7 +652,7 @@ class JSONRPCBackend(Backend):
 			'user-agent': self._application,
 			'Accept': 'application/json-rpc, text/plain'
 		}
-		if type(data) is types.StringType:
+		if isinstance(data, types.StringType):
 			data = unicode(data, 'utf-8')
 		data = data.encode('utf-8')
 
