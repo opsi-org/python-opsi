@@ -136,11 +136,11 @@ _showwarning = warnings.showwarning
 
 
 def forceUnicode(var):
-	if type(var) is types.UnicodeType:
+	if isinstance(var, types.UnicodeType):
 		return var
-	elif type(var) is types.StringType:
+	elif isinstance(var, types.StringType):
 		return unicode(var, 'utf-8', 'replace')
-	elif os.name == 'nt' and type(var) is WindowsError:
+	elif os.name == 'nt' and isinstance(var, WindowsError):
 		return u"[Error %s] %s" % (var.args[0], var.args[1].decode(encoding))
 
 	if hasattr(var, '__unicode__'):
@@ -156,7 +156,7 @@ def forceUnicode(var):
 
 	if hasattr(var, '__repr__'):
 		var = var.__repr__()
-		if type(var) is types.UnicodeType:
+		if isinstance(var, types.UnicodeType):
 			return var
 		return unicode(var, 'utf-8', 'replace')
 
