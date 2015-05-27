@@ -53,6 +53,14 @@ totalRequests = 0
 # This could be an import - but support for pycurl is currently not fully implrement
 pycurl = None
 
+if hasattr(ssl_module, '_create_unverified_context'):
+	# We are running a new version of Python that implements PEP 476:
+	# https://www.python.org/dev/peps/pep-0476/
+	# To not break our expected behaviour we patch the default context
+	# until we have a correct certificate check implementation.
+	# TODO: remove this workaround when support for TLS1.1+ is implemented
+	ssl_module._create_default_https_context = ssl_module._create_unverified_context
+
 
 def hybi10Encode(data):
 	# Code stolen from http://lemmingzshadow.net/files/2011/09/Connection.php.txt

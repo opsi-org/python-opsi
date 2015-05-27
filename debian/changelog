@@ -16,8 +16,9 @@ python-opsi (4.0.6.8-1) UNRELEASED; urgency=low
   * OPSI.Types: checking for classes is now implemented via isinstance and
     therefore also subclasses will be accepted.
   * OPSI.Util.Task.Certificate: Fix certificate creation on Debian 8.
+  * OPSI.Util.HTTP: Workarround for Python versions that implement PEP0476
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 27 May 2015 10:01:12 +0200
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 27 May 2015 10:22:02 +0200
 
 python-opsi (4.0.6.7-2) experimental; urgency=low
 
