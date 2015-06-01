@@ -24,6 +24,7 @@ Testing the workers.
 """
 
 import unittest
+import zlib
 
 from OPSI.Service.Worker import WorkerOpsiJsonRpc
 
@@ -121,6 +122,21 @@ class WorkerOpsiJsonRpcTestCase(unittest.TestCase):
 		self.assertFalse(result.headers.hasHeader('content-encoding'))
 		self.assertEquals(['application/json;charset=utf-8'], result.headers.getRawHeaders('content-type'))
 		self.assertEquals('["Eins", "Zwei", "Drei"]', str(result.stream.read()))
+
+	def testCompressingResponseDataWithGzip(self):
+		testHeader = FakeHeader({"Accept-Encoding": "gzip"})
+		request = FakeRequest(testHeader)
+		self.worker = WorkerOpsiJsonRpc(service=None, request=request, resource=None)
+
+		result = self.worker._generateResponse(None)
+		self.assertTrue(200, result.code)
+		self.assertTrue(result.headers.hasHeader('content-type'))
+		self.assertEquals(['gzip'], result.headers.getRawHeaders('content-encoding'))
+		self.assertEquals(['application/json;charset=utf-8'], result.headers.getRawHeaders('content-type'))
+
+		sdata = result.stream.read()
+		data = zlib.decompress(sdata)
+		self.assertEquals('null', data)
 
 
 if __name__ == '__main__':
