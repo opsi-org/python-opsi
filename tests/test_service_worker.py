@@ -72,8 +72,8 @@ class WorkerOpsiJsonRpcTestCase(unittest.TestCase):
 		result = self.worker._generateResponse(None)
 		self.assertTrue(200, result.code)
 		self.assertTrue(result.headers.hasHeader('content-type'))
-		self.assertFalse(result.headers.hasHeader('content-encoding'))
 		self.assertEquals(['application/json;charset=utf-8'], result.headers.getRawHeaders('content-type'))
+		self.assertFalse(result.headers.hasHeader('content-encoding'))
 		self.assertEquals('null', str(result.stream.read()))
 
 	def testHandlingMultipleRPCs(self):
@@ -95,8 +95,8 @@ class WorkerOpsiJsonRpcTestCase(unittest.TestCase):
 		result = self.worker._generateResponse(None)
 		self.assertTrue(200, result.code)
 		self.assertTrue(result.headers.hasHeader('content-type'))
-		self.assertFalse(result.headers.hasHeader('content-encoding'))
 		self.assertEquals(['application/json;charset=utf-8'], result.headers.getRawHeaders('content-type'))
+		self.assertFalse(result.headers.hasHeader('content-encoding'))
 		self.assertEquals('[null, 1, "F\xc3\x84KE!", {"Narziss": "Morgen Nicht Geboren"}]', str(result.stream.read()))
 
 	def testHandlingSingleResult(self):
@@ -107,8 +107,8 @@ class WorkerOpsiJsonRpcTestCase(unittest.TestCase):
 		result = self.worker._generateResponse(None)
 		self.assertTrue(200, result.code)
 		self.assertTrue(result.headers.hasHeader('content-type'))
-		self.assertFalse(result.headers.hasHeader('content-encoding'))
 		self.assertEquals(['application/json;charset=utf-8'], result.headers.getRawHeaders('content-type'))
+		self.assertFalse(result.headers.hasHeader('content-encoding'))
 		self.assertEquals('"Hallo Welt"', str(result.stream.read()))
 
 	def testHandlingSingleResultConsistingOfList(self):
@@ -119,8 +119,8 @@ class WorkerOpsiJsonRpcTestCase(unittest.TestCase):
 		result = self.worker._generateResponse(None)
 		self.assertTrue(200, result.code)
 		self.assertTrue(result.headers.hasHeader('content-type'))
-		self.assertFalse(result.headers.hasHeader('content-encoding'))
 		self.assertEquals(['application/json;charset=utf-8'], result.headers.getRawHeaders('content-type'))
+		self.assertFalse(result.headers.hasHeader('content-encoding'))
 		self.assertEquals('["Eins", "Zwei", "Drei"]', str(result.stream.read()))
 
 	def testCompressingResponseDataWithGzip(self):
@@ -138,8 +138,8 @@ class WorkerOpsiJsonRpcTestCase(unittest.TestCase):
 		result = self.worker._generateResponse(None)
 		self.assertTrue(200, result.code)
 		self.assertTrue(result.headers.hasHeader('content-type'))
-		self.assertEquals(['gzip'], result.headers.getRawHeaders('content-encoding'))
 		self.assertEquals(['gzip-application/json;charset=utf-8'], result.headers.getRawHeaders('content-type'))
+		self.assertEquals(['gzip'], result.headers.getRawHeaders('content-encoding'))
 
 		sdata = result.stream.read()
 		data = zlib.decompress(sdata)
