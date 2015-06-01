@@ -125,7 +125,7 @@ class WorkerOpsiJsonRpcTestCase(unittest.TestCase):
 
 	def testCompressingResponseDataWithGzip(self):
 		"""
-		Testing compressed data.
+		Responding with data compressed by gzip.
 
 		Problem here is that even though the accepted encoding is stated
 		as "gzip" the returned result is compressed via zlib as it is
@@ -147,7 +147,7 @@ class WorkerOpsiJsonRpcTestCase(unittest.TestCase):
 
 	def testCompressingResponseDataWithDeflate(self):
 		"""
-		Testing compressed data.
+		Responding with data compressed by deflate.
 
 		The returned "content-type" is invalid and makes no sense.
 		Correct would be "application/json".
