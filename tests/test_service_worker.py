@@ -159,7 +159,42 @@ class WorkerOpsiJsonRpcTestCase(unittest.TestCase):
 		result = self.worker._generateResponse(None)
 		self.assertTrue(200, result.code)
 		self.assertTrue(result.headers.hasHeader('content-type'))
+		self.assertEquals(['gzip-application/json;charset=utf-8'], result.headers.getRawHeaders('content-type'))
 		self.assertEquals(['deflate'], result.headers.getRawHeaders('content-encoding'))
+
+		sdata = result.stream.read()
+		data = zlib.decompress(sdata)
+		self.assertEquals('null', data)
+
+	def testCompressingResponseIfInvalidMimetype(self):
+		"""
+		Old clients connect to the server and send an "Accept" with
+		the invalid mimetype "gzip-application/json-rpc".
+		We must respond to these clients because not doing so could
+		result in rendering an opsi landscape unresponding.
+
+		The returned "content-type" is invalid and makes no sense.
+		Correct would be "application/json".
+		"""
+		class FakeDictHeader(FakeHeader):
+			def getHeader(self, header):
+				class ReturnWithMediaType:
+					def __init__(self, key):
+						self.mediaType = key
+
+				return dict((ReturnWithMediaType(self.headers[key]), self.headers[key]) for key in self.headers if key.startswith(header))
+
+
+		testHeader = FakeDictHeader(
+			{"Accept": "gzip-application/json-rpc",
+			 "invalid": "ignoreme"})
+		request = FakeRequest(testHeader)
+		self.worker = WorkerOpsiJsonRpc(service=None, request=request, resource=None)
+
+		result = self.worker._generateResponse(None)
+		self.assertTrue(200, result.code)
+		self.assertTrue(result.headers.hasHeader('content-type'))
+		self.assertEquals(['gzip'], result.headers.getRawHeaders('content-encoding'))
 		self.assertEquals(['gzip-application/json;charset=utf-8'], result.headers.getRawHeaders('content-type'))
 
 		sdata = result.stream.read()
