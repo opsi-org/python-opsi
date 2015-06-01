@@ -124,6 +124,13 @@ class WorkerOpsiJsonRpcTestCase(unittest.TestCase):
 		self.assertEquals('["Eins", "Zwei", "Drei"]', str(result.stream.read()))
 
 	def testCompressingResponseDataWithGzip(self):
+		"""
+		Testing compressed data.
+
+		Problem here is that even though the accepted encoding is stated
+		as "gzip" the returned result is compressed via zlib as it is
+		expected when specifying "deflate".
+		"""
 		testHeader = FakeHeader({"Accept-Encoding": "gzip"})
 		request = FakeRequest(testHeader)
 		self.worker = WorkerOpsiJsonRpc(service=None, request=request, resource=None)
@@ -132,7 +139,28 @@ class WorkerOpsiJsonRpcTestCase(unittest.TestCase):
 		self.assertTrue(200, result.code)
 		self.assertTrue(result.headers.hasHeader('content-type'))
 		self.assertEquals(['gzip'], result.headers.getRawHeaders('content-encoding'))
-		self.assertEquals(['application/json;charset=utf-8'], result.headers.getRawHeaders('content-type'))
+		self.assertEquals(['gzip-application/json;charset=utf-8'], result.headers.getRawHeaders('content-type'))
+
+		sdata = result.stream.read()
+		data = zlib.decompress(sdata)
+		self.assertEquals('null', data)
+
+	def testCompressingResponseDataWithDeflate(self):
+		"""
+		Testing compressed data.
+
+		The returned "content-type" is invalid and makes no sense.
+		Correct would be "application/json".
+		"""
+		testHeader = FakeHeader({"Accept-Encoding": "deflate"})
+		request = FakeRequest(testHeader)
+		self.worker = WorkerOpsiJsonRpc(service=None, request=request, resource=None)
+
+		result = self.worker._generateResponse(None)
+		self.assertTrue(200, result.code)
+		self.assertTrue(result.headers.hasHeader('content-type'))
+		self.assertEquals(['deflate'], result.headers.getRawHeaders('content-encoding'))
+		self.assertEquals(['gzip-application/json;charset=utf-8'], result.headers.getRawHeaders('content-type'))
 
 		sdata = result.stream.read()
 		data = zlib.decompress(sdata)
