@@ -53,10 +53,18 @@ class WorkerOpsiJsonRpcTestCase(unittest.TestCase):
 	def tearDown(self):
 		del self.worker
 
-	def testReturningCorrectEncoding(self):
-		# TODO: this is work in progress
+	def testReturningEmptyResponse(self):
+		"""
+		Making sure that an empty response is returned.
+
+		We check the headers of the request and also make sure that
+		the content is "null".
+		"""
 		result = self.worker._generateResponse(None)
 		self.assertTrue(200, result.code)
+		self.assertTrue(result.headers.hasHeader('content-type'))
+		self.assertEquals(['application/json;charset=utf-8'], result.headers.getRawHeaders('content-type'))
+		self.assertEquals('null', str(result.stream.read()))
 
 
 if __name__ == '__main__':
