@@ -55,7 +55,7 @@ class WorkerOpsiJsonRpcTestCase(unittest.TestCase):
 
 	def testReturningEmptyResponse(self):
 		"""
-		Making sure that an empty response is returned.
+		Making sure that an empty uncompressed response is returned.
 
 		We check the headers of the request and also make sure that
 		the content is "null".
@@ -63,6 +63,7 @@ class WorkerOpsiJsonRpcTestCase(unittest.TestCase):
 		result = self.worker._generateResponse(None)
 		self.assertTrue(200, result.code)
 		self.assertTrue(result.headers.hasHeader('content-type'))
+		self.assertFalse(result.headers.hasHeader('content-encoding'))
 		self.assertEquals(['application/json;charset=utf-8'], result.headers.getRawHeaders('content-type'))
 		self.assertEquals('null', str(result.stream.read()))
 
