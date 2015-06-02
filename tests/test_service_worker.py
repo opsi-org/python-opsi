@@ -55,13 +55,6 @@ class FakeRPC(object):
 
 class WorkerOpsiJsonRpcTestCase(unittest.TestCase):
 
-	def setUp(self):
-		r = FakeRequest()
-		self.worker = WorkerOpsiJsonRpc(service=None, request=r, resource=None)
-
-	def tearDown(self):
-		del self.worker
-
 	def testReturningEmptyResponse(self):
 		"""
 		Making sure that an empty uncompressed response is returned.
@@ -69,7 +62,9 @@ class WorkerOpsiJsonRpcTestCase(unittest.TestCase):
 		We check the headers of the request and also make sure that
 		the content is "null".
 		"""
-		result = self.worker._generateResponse(None)
+		worker = WorkerOpsiJsonRpc(service=None, request=FakeRequest(), resource=None)
+
+		result = worker._generateResponse(None)
 		self.assertTrue(200, result.code)
 		self.assertTrue(result.headers.hasHeader('content-type'))
 		self.assertEquals(['application/json;charset=utf-8'], result.headers.getRawHeaders('content-type'))
@@ -89,10 +84,11 @@ class WorkerOpsiJsonRpcTestCase(unittest.TestCase):
 			def getResponse(self):
 				return self.result
 
-		self.worker._rpcs = [FakeRPC(), FakeRPC(1), FakeRPC(u"FÄKE!"),
-							FakeRPC({"Narziss": "Morgen Nicht Geboren"})]
+		worker = WorkerOpsiJsonRpc(service=None, request=FakeRequest(), resource=None)
+		worker._rpcs = [FakeRPC(), FakeRPC(1), FakeRPC(u"FÄKE!"),
+						FakeRPC({"Narziss": "Morgen Nicht Geboren"})]
 
-		result = self.worker._generateResponse(None)
+		result = worker._generateResponse(None)
 		self.assertTrue(200, result.code)
 		self.assertTrue(result.headers.hasHeader('content-type'))
 		self.assertEquals(['application/json;charset=utf-8'], result.headers.getRawHeaders('content-type'))
@@ -103,8 +99,10 @@ class WorkerOpsiJsonRpcTestCase(unittest.TestCase):
 		"""
 		A single RPC result must not be returned in a list.
 		"""
-		self.worker._rpcs = [FakeRPC("Hallo Welt")]
-		result = self.worker._generateResponse(None)
+		worker = WorkerOpsiJsonRpc(service=None, request=FakeRequest(), resource=None)
+		worker._rpcs = [FakeRPC("Hallo Welt")]
+
+		result = worker._generateResponse(None)
 		self.assertTrue(200, result.code)
 		self.assertTrue(result.headers.hasHeader('content-type'))
 		self.assertEquals(['application/json;charset=utf-8'], result.headers.getRawHeaders('content-type'))
@@ -115,14 +113,18 @@ class WorkerOpsiJsonRpcTestCase(unittest.TestCase):
 		"""
 		If a single result is made the result is a list this list must not be unpacked.
 		"""
-		self.worker._rpcs = [FakeRPC(["Eins", "Zwei", "Drei"])]
-		result = self.worker._generateResponse(None)
+		worker = WorkerOpsiJsonRpc(service=None, request=FakeRequest(), resource=None)
+		worker._rpcs = [FakeRPC(["Eins", "Zwei", "Drei"])]
+
+		result = worker._generateResponse(None)
 		self.assertTrue(200, result.code)
 		self.assertTrue(result.headers.hasHeader('content-type'))
 		self.assertEquals(['application/json;charset=utf-8'], result.headers.getRawHeaders('content-type'))
 		self.assertFalse(result.headers.hasHeader('content-encoding'))
 		self.assertEquals('["Eins", "Zwei", "Drei"]', str(result.stream.read()))
 
+
+class CompressedResultsWithWorkerOpsiJsonRpcTestCase(unittest.TestCase):
 	def testCompressingResponseDataWithGzip(self):
 		"""
 		Responding with data compressed by gzip.
@@ -133,9 +135,9 @@ class WorkerOpsiJsonRpcTestCase(unittest.TestCase):
 		"""
 		testHeader = FakeHeader({"Accept-Encoding": "gzip"})
 		request = FakeRequest(testHeader)
-		self.worker = WorkerOpsiJsonRpc(service=None, request=request, resource=None)
+		worker = WorkerOpsiJsonRpc(service=None, request=request, resource=None)
 
-		result = self.worker._generateResponse(None)
+		result = worker._generateResponse(None)
 		self.assertTrue(200, result.code)
 		self.assertTrue(result.headers.hasHeader('content-type'))
 		self.assertEquals(['gzip-application/json;charset=utf-8'], result.headers.getRawHeaders('content-type'))
@@ -154,9 +156,9 @@ class WorkerOpsiJsonRpcTestCase(unittest.TestCase):
 		"""
 		testHeader = FakeHeader({"Accept-Encoding": "deflate"})
 		request = FakeRequest(testHeader)
-		self.worker = WorkerOpsiJsonRpc(service=None, request=request, resource=None)
+		worker = WorkerOpsiJsonRpc(service=None, request=request, resource=None)
 
-		result = self.worker._generateResponse(None)
+		result = worker._generateResponse(None)
 		self.assertTrue(200, result.code)
 		self.assertTrue(result.headers.hasHeader('content-type'))
 		self.assertEquals(['gzip-application/json;charset=utf-8'], result.headers.getRawHeaders('content-type'))
@@ -166,6 +168,8 @@ class WorkerOpsiJsonRpcTestCase(unittest.TestCase):
 		data = zlib.decompress(sdata)
 		self.assertEquals('null', data)
 
+
+class BackwardsCompatibilityWorkerJSONRPCTestCase(unittest.TestCase):
 	def testCompressingResponseIfInvalidMimetype(self):
 		"""
 		Old clients connect to the server and send an "Accept" with
@@ -189,9 +193,9 @@ class WorkerOpsiJsonRpcTestCase(unittest.TestCase):
 			{"Accept": "gzip-application/json-rpc",
 			 "invalid": "ignoreme"})
 		request = FakeRequest(testHeader)
-		self.worker = WorkerOpsiJsonRpc(service=None, request=request, resource=None)
+		worker = WorkerOpsiJsonRpc(service=None, request=request, resource=None)
 
-		result = self.worker._generateResponse(None)
+		result = worker._generateResponse(None)
 		self.assertTrue(200, result.code)
 		self.assertTrue(result.headers.hasHeader('content-type'))
 		self.assertEquals(['gzip'], result.headers.getRawHeaders('content-encoding'))
