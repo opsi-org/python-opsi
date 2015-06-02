@@ -640,6 +640,7 @@ def urlsplit(url):
 		scheme = scheme.lower()
 	parts = url.split('/', 1)
 	host = parts[0]
+
 	if len(parts) > 1:
 		baseurl += parts[1]
 
@@ -683,6 +684,7 @@ def getSharedConnectionPool(scheme, host, port, **kw):
 		if kw['preferCurl'] and pycurl is not None:
 			curl = True
 		del kw['preferCurl']
+
 	global connectionPools
 	if curl:
 		poolKey = u'curl:%s:%d' % (host, port)
@@ -705,6 +707,7 @@ def getSharedConnectionPool(scheme, host, port, **kw):
 		maxsize = kw.get('maxsize', 0)
 		if maxsize > connectionPools[poolKey].maxsize:
 			connectionPools[poolKey].adjustSize(maxsize)
+
 	return connectionPools[poolKey]
 
 
