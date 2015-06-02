@@ -136,14 +136,14 @@ def non_blocking_connect_http(self, connectTimeout=0):
 				raise OpsiTimeoutError(u"Timed out after {0:d} seconds (last error: {1})".format(connectTimeout, forceUnicode(lastError)))
 			sock.connect((self.host, self.port))
 			break
-		except socket.error as e:
-			logger.logException(e, LOG_DEBUG)
-			logger.debug(e)
-			if e[0] in (106, 10056):
+		except socket.error as error:
+			logger.logException(error, LOG_DEBUG)
+			logger.debug(error)
+			if error[0] in (106, 10056):
 				# Transport endpoint is already connected
 				break
-			if e[0] not in (114, ) or not lastError:
-				lastError = e
+			if error[0] not in (114, ) or not lastError:
+				lastError = error
 			time.sleep(0.5)
 	sock.settimeout(None)
 	self.sock = sock
@@ -167,8 +167,8 @@ def getPeerCertificate(httpsConnectionOrSSLSocket, asPEM=True):
 		if not asPEM:
 			return cert
 		return crypto.dump_certificate(crypto.FILETYPE_PEM, cert)
-	except Exception as e:
-		logger.debug(u"Failed to get peer cert: %s" % e)
+	except Exception as error:
+		logger.debug(u"Failed to get peer cert: %s" % error)
 		return None
 
 
@@ -219,17 +219,17 @@ class HTTPResponse(object):
 			except Exception:
 				pass
 		elif header.count(':') > 0:
-			(k, v) = header.split(':', 1)
-			k = k.lower().strip()
-			v = v.strip()
-			if k == 'content-length':
+			(key, value) = header.split(':', 1)
+			key = key.lower().strip()
+			value = value.strip()
+			if key == 'content-length':
 				try:
-					v = int(v)
-					if v < 0:
-						v = 0
+					value = int(value)
+					if value < 0:
+						value = 0
 				except Exception:
 					return
-			self.headers[k] = v
+			self.headers[key] = value
 
 	@staticmethod
 	def from_httplib(r):
@@ -464,16 +464,16 @@ class HTTPConnectionPool(object):
 					randomKey = randomString(32).encode('latin-1')
 					encryptedKey = encryptWithPublicKeyFromX509CertificatePEMFile(randomKey, self.serverCertFile)
 					headers['X-opsi-service-verification-key'] = base64.encodestring(encryptedKey)
-					for (key, value) in headers.items():
-						if (key.lower() == 'authorization'):
+					for key, value in headers.items():
+						if key.lower() == 'authorization':
 							if value.lower().startswith('basic'):
 								value = value[5:].strip()
 							value = base64.decodestring(value).strip()
 							encodedAuth = encryptWithPublicKeyFromX509CertificatePEMFile(value, self.serverCertFile)
 							headers[key] = 'Opsi ' + base64.encodestring(encodedAuth).strip()
-				except Exception as e:
-					logger.logException(e, LOG_INFO)
-					logger.critical(u"Cannot verify server based on certificate file '%s': %s" % (self.serverCertFile, e))
+				except Exception as error:
+					logger.logException(error, LOG_INFO)
+					logger.critical(u"Cannot verify server based on certificate file '%s': %s" % (self.serverCertFile, error))
 					randomKey = None
 
 			conn.request(method, url, body=body, headers=headers)
@@ -498,9 +498,9 @@ class HTTPConnectionPool(object):
 						raise Exception(u"opsi-service-verification-key '%s' != '%s'" % (key, randomKey))
 					self.serverVerified = True
 					logger.notice(u"Service verified by opsi-service-verification-key")
-				except Exception as e:
-					logger.error(u"Service verification failed: %s" % e)
-					raise OpsiServiceVerificationError(u"Service verification failed: %s" % e)
+				except Exception as error:
+					logger.error(u"Service verification failed: %s" % error)
+					raise OpsiServiceVerificationError(u"Service verification failed: %s" % error)
 
 			if self.serverCertFile and self.peerCertificate:
 				try:
@@ -509,8 +509,8 @@ class HTTPConnectionPool(object):
 						os.makedirs(certDir)
 					with open(self.serverCertFile, 'w') as f:
 						f.write(self.peerCertificate)
-				except Exception as e:
-					logger.error(u"Failed to create server cert file '%s': %s" % (self.serverCertFile, e))
+				except Exception as error:
+					logger.error(u"Failed to create server cert file '%s': %s" % (self.serverCertFile, error))
 
 			# Put the connection back to be reused
 			if self.reuseConnection:
@@ -525,10 +525,10 @@ class HTTPConnectionPool(object):
 				except Exception:
 					pass
 
-		except (SocketTimeout, Empty, HTTPException, SocketError) as e:
+		except (SocketTimeout, Empty, HTTPException, SocketError) as error:
 			try:
 				logger.debug(u"Request to host '%s' failed, retry: %s, firstTryTime: %s, now: %s, retryTime: %s, connectTimeout: %s, socketTimeout: %s (%s)" \
-					% (self.host, retry, firstTryTime, now, self.retryTime, self.connectTimeout, self.socketTimeout, forceUnicode(e)))
+					% (self.host, retry, firstTryTime, now, self.retryTime, self.connectTimeout, self.socketTimeout, forceUnicode(error)))
 			except Exception:
 				try:
 					logger.debug(u"Request to host '%s' failed, retry: %s, firstTryTime: %s, now: %s, retryTime: %s, connectTimeout: %s, socketTimeout: %s" \
@@ -545,7 +545,7 @@ class HTTPConnectionPool(object):
 			except Exception:
 				pass
 			if retry and (now - firstTryTime < self.retryTime):
-				logger.debug(u"Request to '%s' failed: %s, retrying" % (self.host, forceUnicode(e)))
+				logger.debug(u"Request to '%s' failed: %s, retrying" % (self.host, forceUnicode(error)))
 				time.sleep(0.1)
 				return self.urlopen(method, url, body, headers, retry, redirect, assert_same_host, firstTryTime)
 			else:
@@ -596,10 +596,10 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 				non_blocking_connect_https(conn, self.connectTimeout, self.caCertFile)
 				if not self.verifyServerCertByCa:
 					self.serverVerified = True
-			except Exception as e:
-				logger.debug(e)
-				if (e.__class__.__name__ != 'SSLError') or self.verifyServerCertByCa:
-					raise OpsiServiceVerificationError(u"Failed to verify server cert by CA: %s" % e)
+			except Exception as error:
+				logger.debug(error)
+				if error.__class__.__name__ != 'SSLError' or self.verifyServerCertByCa:
+					raise OpsiServiceVerificationError(u"Failed to verify server cert by CA: %s" % error)
 				non_blocking_connect_https(conn, self.connectTimeout)
 
 		logger.debug(u"Connection established to: %s" % self.host)
@@ -707,9 +707,9 @@ def getSharedConnectionPool(scheme, host, port, **kw):
 
 def destroyPool(pool):
 	global connectionPools
-	for (k, p) in connectionPools.items():
-		if (p == pool):
-			del connectionPools[k]
+	for key, poolinstance in connectionPools.items():
+		if poolinstance == pool:
+			del connectionPools[key]
 			break
 
 
