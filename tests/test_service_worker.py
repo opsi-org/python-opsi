@@ -23,8 +23,13 @@ Testing the workers.
 :license: GNU Affero General Public License version 3
 """
 
+import gzip
 import unittest
 import zlib
+try:
+	from cStringIO import StringIO
+except ImportError:
+	from io import StringIO
 
 from OPSI.Service.Worker import WorkerOpsiJsonRpc
 
@@ -128,10 +133,6 @@ class CompressedResultsWithWorkerOpsiJsonRpcTestCase(unittest.TestCase):
 	def testCompressingResponseDataWithGzip(self):
 		"""
 		Responding with data compressed by gzip.
-
-		Problem here is that even though the accepted encoding is stated
-		as "gzip" the returned result is compressed via zlib as it is
-		expected when specifying "deflate".
 		"""
 		testHeader = FakeHeader({"Accept-Encoding": "gzip"})
 		request = FakeRequest(testHeader)
@@ -140,19 +141,19 @@ class CompressedResultsWithWorkerOpsiJsonRpcTestCase(unittest.TestCase):
 		result = worker._generateResponse(None)
 		self.assertTrue(200, result.code)
 		self.assertTrue(result.headers.hasHeader('content-type'))
-		self.assertEquals(['gzip-application/json;charset=utf-8'], result.headers.getRawHeaders('content-type'))
+		self.assertEquals(['application/json;charset=utf-8'], result.headers.getRawHeaders('content-type'))
 		self.assertEquals(['gzip'], result.headers.getRawHeaders('content-encoding'))
 
 		sdata = result.stream.read()
-		data = zlib.decompress(sdata)
+
+		with gzip.GzipFile(fileobj=StringIO(sdata), mode="r") as gzipfile:
+			data = gzipfile.read()
+
 		self.assertEquals('null', data)
 
 	def testCompressingResponseDataWithDeflate(self):
 		"""
 		Responding with data compressed by deflate.
-
-		The returned "content-type" is invalid and makes no sense.
-		Correct would be "application/json".
 		"""
 		testHeader = FakeHeader({"Accept-Encoding": "deflate"})
 		request = FakeRequest(testHeader)
@@ -161,7 +162,7 @@ class CompressedResultsWithWorkerOpsiJsonRpcTestCase(unittest.TestCase):
 		result = worker._generateResponse(None)
 		self.assertTrue(200, result.code)
 		self.assertTrue(result.headers.hasHeader('content-type'))
-		self.assertEquals(['gzip-application/json;charset=utf-8'], result.headers.getRawHeaders('content-type'))
+		self.assertEquals(['application/json;charset=utf-8'], result.headers.getRawHeaders('content-type'))
 		self.assertEquals(['deflate'], result.headers.getRawHeaders('content-encoding'))
 
 		sdata = result.stream.read()
@@ -172,6 +173,8 @@ class CompressedResultsWithWorkerOpsiJsonRpcTestCase(unittest.TestCase):
 class BackwardsCompatibilityWorkerJSONRPCTestCase(unittest.TestCase):
 	def testCompressingResponseIfInvalidMimetype(self):
 		"""
+		Staying backwards compatible.
+
 		Old clients connect to the server and send an "Accept" with
 		the invalid mimetype "gzip-application/json-rpc".
 		We must respond to these clients because not doing so could
@@ -179,6 +182,8 @@ class BackwardsCompatibilityWorkerJSONRPCTestCase(unittest.TestCase):
 
 		The returned "content-type" is invalid and makes no sense.
 		Correct would be "application/json".
+		The returned content-encoding is "gzip" but the content
+		is acutally compressed with deflate.
 		"""
 		class FakeDictHeader(FakeHeader):
 			def getHeader(self, header):

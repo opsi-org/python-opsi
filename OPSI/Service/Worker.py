@@ -32,8 +32,11 @@ Worker for the various interfaces.
 """
 
 import base64
+import gzip
 import urllib
 import zlib
+from io import BytesIO
+
 from twisted.internet import defer, reactor, threads
 from twisted.python import failure
 
@@ -559,10 +562,7 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 		return deferred
 
 	def _generateResponse(self, result):
-		if not isinstance(result, http.Response):
-			result = http.Response()
-		result.code = responsecode.OK
-
+		invalidMime = False  # For handling the invalid MIME type "gzip-application/json-rpc"
 		encoding = None
 		try:
 			if 'deflate' in self.request.headers.getHeader('Accept-Encoding'):
@@ -577,16 +577,10 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 				if self.request.headers.getHeader('Accept'):
 					for accept in self.request.headers.getHeader('Accept').keys():
 						if accept.mediaType.startswith('gzip'):
-							encoding = 'gzip'
+							invalidMime = True
 							break
 			except Exception as error:
 				logger.error(u"Failed to get accepted mime types from header: %s" % error)
-
-		if encoding:
-			result.headers.setHeader('content-type', http_headers.MimeType("gzip-application", "json", {"charset": "utf-8"}))
-			result.headers.setHeader('content-encoding', [encoding])
-		else:
-			result.headers.setHeader('content-type', http_headers.MimeType("application", "json", {"charset": "utf-8"}))
 
 		response = [serialize(rpc.getResponse()) for rpc in self._rpcs]
 
@@ -595,10 +589,33 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 		if not response:
 			response = None
 
-		if encoding:
-			level = 1  # level 1 (fastest) to 9 (most compression)
-			logger.debug(u"Sending compressed (level: %d) data" % level)
-			result.stream = stream.IByteStream(zlib.compress(toJson(response).encode('utf-8'), level))
+		if not isinstance(result, http.Response):
+			result = http.Response()
+		result.code = responsecode.OK
+
+		result.headers.setHeader('content-type', http_headers.MimeType("application", "json", {"charset": "utf-8"}))
+
+		if invalidMime:
+			# The invalid requests expect want the encoding set to
+			# gzip but the content is deflated.
+			result.headers.setHeader('content-encoding', ["gzip"])
+			result.headers.setHeader('content-type', http_headers.MimeType("gzip-application", "json", {"charset": "utf-8"}))
+			logger.debug(u"Sending zlib compressed data (backwards compatible)")
+			result.stream = stream.IByteStream(zlib.compress(toJson(response).encode('utf-8'), 1))
+		elif encoding == "deflate":
+			result.headers.setHeader('content-encoding', [encoding])
+
+			logger.debug(u"Sending zlib compressed data")
+			result.stream = stream.IByteStream(zlib.compress(toJson(response).encode('utf-8'), 1))
+		elif encoding == "gzip":
+			result.headers.setHeader('content-encoding', [encoding])
+
+			inmemoryFile = BytesIO()
+			with gzip.GzipFile(fileobj=inmemoryFile, mode="w", compresslevel=1) as gzipfile:
+				gzipfile.write(toJson(response).encode('utf-8'))
+
+			logger.debug(u"Sending gzip compressed data")
+			result.stream = stream.IByteStream(inmemoryFile.getvalue())
 		else:
 			result.stream = stream.IByteStream(toJson(response).encode('utf-8'))
 
