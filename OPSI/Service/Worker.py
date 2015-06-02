@@ -35,6 +35,7 @@ import base64
 import gzip
 import urllib
 import zlib
+from contextlib import closing  # Needed for Python 2.6
 from io import BytesIO
 
 from twisted.internet import defer, reactor, threads
@@ -611,7 +612,7 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 			result.headers.setHeader('content-encoding', [encoding])
 
 			inmemoryFile = BytesIO()
-			with gzip.GzipFile(fileobj=inmemoryFile, mode="w", compresslevel=1) as gzipfile:
+			with closing(gzip.GzipFile(fileobj=inmemoryFile, mode="w", compresslevel=1)) as gzipfile:
 				gzipfile.write(toJson(response).encode('utf-8'))
 
 			logger.debug(u"Sending gzip compressed data")

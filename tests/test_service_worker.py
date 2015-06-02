@@ -26,6 +26,7 @@ Testing the workers.
 import gzip
 import unittest
 import zlib
+from contextlib import closing  # Needed for Python 2.6
 try:
 	from cStringIO import StringIO
 except ImportError:
@@ -146,7 +147,7 @@ class CompressedResultsWithWorkerOpsiJsonRpcTestCase(unittest.TestCase):
 
 		sdata = result.stream.read()
 
-		with gzip.GzipFile(fileobj=StringIO(sdata), mode="r") as gzipfile:
+		with closing(gzip.GzipFile(fileobj=StringIO(sdata), mode="r")) as gzipfile:
 			data = gzipfile.read()
 
 		self.assertEquals('null', data)
