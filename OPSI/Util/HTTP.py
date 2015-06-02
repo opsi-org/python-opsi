@@ -642,12 +642,14 @@ def urlsplit(url):
 	host = parts[0]
 	if len(parts) > 1:
 		baseurl += parts[1]
-	if host.find('@') != -1:
-		(username, host) = host.split('@', 1)
-		if (username.find(':') != -1):
-			(username, password) = username.split(':', 1)
-	if host.find(':') != -1:
-		(host, port) = host.split(':', 1)
+
+	if '@' in host:
+		username, host = host.split('@', 1)
+		if ':' in username:
+			username, password = username.split(':', 1)
+
+	if ':' in host:
+		host, port = host.split(':', 1)
 		port = int(port)
 	return (scheme, host, port, baseurl, username, password)
 
@@ -686,7 +688,8 @@ def getSharedConnectionPool(scheme, host, port, **kw):
 		poolKey = u'curl:%s:%d' % (host, port)
 	else:
 		poolKey = u'httplib:%s:%d' % (host, port)
-	if not connectionPools.has_key(poolKey):
+
+	if poolKey not in connectionPools:
 		if scheme in ('https', 'webdavs'):
 			if curl:
 				connectionPools[poolKey] = CurlHTTPSConnectionPool(host, port=port, **kw)
