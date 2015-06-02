@@ -494,7 +494,7 @@ class HTTPConnectionPool(object):
 					key = response.getheader('x-opsi-service-verification-key', None)
 					if not key:
 						raise Exception(u"HTTP header 'X-opsi-service-verification-key' missing")
-					if (key.strip() != randomKey.strip()):
+					if key.strip() != randomKey.strip():
 						raise Exception(u"opsi-service-verification-key '%s' != '%s'" % (key, randomKey))
 					self.serverVerified = True
 					logger.notice(u"Service verified by opsi-service-verification-key")
@@ -713,7 +713,7 @@ def destroyPool(pool):
 			break
 
 
-if (__name__ == '__main__'):
+if __name__ == '__main__':
 	pass
 
 	#pool = HTTPSConnectionPool(host = 'download.uib.de', port = 443, connectTimeout=5, caCertFile = '/tmp/xxx', verifyServerCertByCa=True)
