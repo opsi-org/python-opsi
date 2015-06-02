@@ -46,7 +46,6 @@ from OPSI.Util import encryptWithPublicKeyFromX509CertificatePEMFile, randomStri
 
 logger = Logger()
 
-
 connectionPools = {}
 totalRequests = 0
 
@@ -114,7 +113,7 @@ def hybi10Decode(data):
 			mask = data[2:6]
 			codedData = data[6:]
 		for i in range(len(codedData)):
-			decodedData += chr( ord(codedData[i]) ^ ord(mask[i % 4]) )
+			decodedData += chr(ord(codedData[i]) ^ ord(mask[i % 4]))
 	else:
 		if dataLength == 126:
 			decodedData = data[4:]
@@ -195,12 +194,12 @@ class HTTPResponse(object):
 	Similar to httplib's HTTPResponse but the data is pre-loaded.
 	"""
 	def __init__(self, data='', headers={}, status=0, version=0, reason=None, strict=0):
-		self.data    = data
+		self.data = data
 		self.headers = headers
-		self.status  = status
+		self.status = status
 		self.version = version
-		self.reason  = reason
-		self.strict  = strict
+		self.reason = reason
+		self.strict = strict
 
 	def addData(self, data):
 		self.data += data
@@ -257,29 +256,33 @@ class HTTPResponse(object):
 	def getheader(self, name, default=None):
 		return self.headers.get(name, default)
 
+
 class HTTPConnectionPool(object):
 
 	scheme = 'http'
 
-	def __init__(self, host, port, socketTimeout=None, connectTimeout=None, retryTime=0, maxsize=1, block=False, reuseConnection=False, verifyServerCert=False, serverCertFile=None, caCertFile=None, verifyServerCertByCa=False):
+	def __init__(self, host, port, socketTimeout=None, connectTimeout=None,
+				retryTime=0, maxsize=1, block=False, reuseConnection=False,
+				verifyServerCert=False, serverCertFile=None, caCertFile=None,
+				verifyServerCertByCa=False):
 
-		self.host                 = forceUnicode(host)
-		self.port                 = forceInt(port)
-		self.socketTimeout        = forceInt(socketTimeout or 0)
-		self.connectTimeout       = forceInt(connectTimeout or 0)
-		self.retryTime            = forceInt(retryTime)
-		self.block                = forceBool(block)
-		self.reuseConnection      = forceBool(reuseConnection)
-		self.pool                 = None
-		self.usageCount           = 1
-		self.num_connections      = 0
-		self.num_requests         = 0
-		self.httplibDebugLevel    = 0
-		self.peerCertificate      = None
-		self.serverVerified       = False
-		self.verifyServerCert     = False
-		self.serverCertFile       = None
-		self.caCertFile           = None
+		self.host = forceUnicode(host)
+		self.port = forceInt(port)
+		self.socketTimeout = forceInt(socketTimeout or 0)
+		self.connectTimeout = forceInt(connectTimeout or 0)
+		self.retryTime = forceInt(retryTime)
+		self.block = forceBool(block)
+		self.reuseConnection = forceBool(reuseConnection)
+		self.pool = None
+		self.usageCount = 1
+		self.num_connections = 0
+		self.num_requests = 0
+		self.httplibDebugLevel = 0
+		self.peerCertificate = None
+		self.serverVerified = False
+		self.verifyServerCert = False
+		self.serverCertFile = None
+		self.caCertFile = None
 		self.verifyServerCertByCa = False
 
 		if isinstance(self, HTTPSConnectionPool):
@@ -588,7 +591,7 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 		Return a fresh HTTPSConnection.
 		"""
 		logger.debug(u"Starting new HTTPS connection (%d) to %s:%d" % (self.num_connections, self.host, self.port))
-		conn = HTTPSConnection(host = self.host, port = self.port)
+		conn = HTTPSConnection(host=self.host, port=self.port)
 		if self.verifyServerCert or self.verifyServerCertByCa:
 			try:
 				non_blocking_connect_https(conn, self.connectTimeout, self.caCertFile)
@@ -666,6 +669,7 @@ def getSharedConnectionPoolFromUrl(url, **kw):
 			port = 443
 		else:
 			port = 80
+
 	return getSharedConnectionPool(scheme, host, port, **kw)
 
 
