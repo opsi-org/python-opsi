@@ -47,6 +47,7 @@ from OPSI.Logger import Logger, LOG_ERROR, LOG_INFO
 from OPSI.Types import (forceUnicode, forceList, OpsiBadRpcError,
 						OpsiAuthenticationError)
 from OPSI.Util import objectToHtml, toJson, fromJson, serialize
+from OPSI.Util.HTTP import deflateEncode, deflateDecode, gzipEncode, gzipDecode
 from OPSI.Service.JsonRpc import JsonRpc
 
 logger = Logger()
@@ -477,9 +478,16 @@ class WorkerOpsi:
 					pass
 
 				logger.debug(u"Content-Type: %s, Content-Encoding: %s" % (contentType, contentEncoding))
-				if contentEncoding == 'gzip' or contentType and contentType.mediaType.startswith('gzip'):
-					logger.debug(u"Expecting compressed data from client")
-					self.query = zlib.decompress(self.query)
+				if contentType and contentType.mediaType.startswith('gzip'):
+					# Invalid MIME type.
+					# Probably it is gzip-application/json-rpc and therefore
+					# we need to behave like we did before.
+					logger.debug(u"Expecting compressed data from client (backwards compatible)")
+					self.query = deflateDecode(self.query)
+					self.gzip = True
+				elif contentEncoding == 'gzip':
+					logger.debug(u"Expecting gzip compressed data from client")
+					self.query = gzipDecode(self.query)
 					self.gzip = True
 
 			self.query = unicode(self.query, 'utf-8')
