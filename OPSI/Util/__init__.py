@@ -624,8 +624,8 @@ def blowfishDecrypt(key, crypt):
 
 def encryptWithPublicKeyFromX509CertificatePEMFile(data, filename):
 	import M2Crypto
-	f = open(filename, 'r')
-	try:
+
+	with open(filename, 'r') as f:
 		cert = M2Crypto.X509.load_cert_string(f.read())
 		rsa = cert.get_pubkey().get_rsa()
 		enc = ''
@@ -637,8 +637,6 @@ def encryptWithPublicKeyFromX509CertificatePEMFile(data, filename):
 		for chunk in chunks:
 			enc += rsa.public_encrypt(data=chunk, padding=M2Crypto.RSA.pkcs1_oaep_padding)
 		return enc
-	finally:
-		f.close()
 
 
 def decryptWithPrivateKeyFromPEMFile(data, filename):
