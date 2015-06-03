@@ -580,13 +580,14 @@ class JSONRPCBackend(Backend):
 		for method in self._interface:
 			try:
 				methodName = method['name']
+
+				if methodName in ('backend_exit', 'backend_getInterface'):
+					continue
+
 				args = method['args']
 				varargs = method['varargs']
 				keywords = method['keywords']
 				defaults = method['defaults']
-
-				if methodName in ('backend_exit', 'backend_getInterface'):
-					continue
 
 				argString = u''
 				callString = u''
