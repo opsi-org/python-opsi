@@ -505,10 +505,11 @@ class JSONRPCBackend(Backend):
 			params = ['self']
 			params.extend(method.get('params', []))
 			paramsWithDefaults = list(params)
-			for i in range(len(params)):
-				if params[i].startswith('*'):
-					params[i] = params[i][1:]
-					paramsWithDefaults[i] = params[i] + '="__UNDEF__"'
+			for index, param in enumerate(params):
+				if param.startswith('*'):
+					newParameter = param[1:]
+					params[index] = newParameter
+					paramsWithDefaults[index] = '{0}="__UNDEF__"'.format(newParameter)
 
 			logger.debug2("Creating instance method '%s'" % method['name'])
 
