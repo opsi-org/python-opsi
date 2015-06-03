@@ -650,7 +650,8 @@ def decryptWithPrivateKeyFromPEMFile(data, filename):
 	res = ''
 	for chunk in chunks:
 		res += privateKey.private_decrypt(data=chunk, padding=M2Crypto.RSA.pkcs1_oaep_padding)
-	if res.find('\0') != -1:
+
+	if '\0' in res:
 		res = res[:res.find('\0')]
 	return res
 
