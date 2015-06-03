@@ -569,10 +569,10 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 		invalidMime = False  # For handling the invalid MIME type "gzip-application/json-rpc"
 		encoding = None
 		try:
-			if 'deflate' in self.request.headers.getHeader('Accept-Encoding'):
-				encoding = 'deflate'
 			if 'gzip' in self.request.headers.getHeader('Accept-Encoding'):
 				encoding = 'gzip'
+			if 'deflate' in self.request.headers.getHeader('Accept-Encoding'):
+				encoding = 'deflate'
 		except Exception as error:
 			logger.debug("Failed to get Accept-Encoding from request header: {0}".format(error))
 
