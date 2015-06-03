@@ -436,7 +436,6 @@ class HTTPConnectionPool(object):
 			firstTryTime = now
 
 		conn = None
-		# Check host
 		if assert_same_host and not self.is_same_host(url):
 			host = "%s://%s" % (self.scheme, self.host)
 			if self.port:
@@ -444,18 +443,15 @@ class HTTPConnectionPool(object):
 			raise HostChangedError(u"Connection pool with host '%s' tried to open a foreign host: %s" % (host, url))
 
 		try:
-			# Request a connection from the queue
 			conn = self._get_conn()
 
 			if self.httplibDebugLevel:
 				conn.set_debuglevel(self.httplibDebugLevel)
 
-			# Make the request
 			self.num_requests += 1
 
 			global totalRequests
 			totalRequests += 1
-			#logger.essential("totalRequests: %d" % totalRequests)
 
 			randomKey = None
 			if isinstance(self, HTTPSConnectionPool) and self.verifyServerCert and not self.serverVerified:
@@ -482,7 +478,6 @@ class HTTPConnectionPool(object):
 			else:
 				conn.sock.settimeout(None)
 			httplib_response = conn.getresponse()
-			#logger.debug(u"\"%s %s %s\" %s %s" % (method, url, conn._http_vsn_str, httplib_response.status, httplib_response.length))
 
 			# from_httplib will perform httplib_response.read() which will have
 			# the side effect of letting us use this connection for another
@@ -562,7 +557,7 @@ class HTTPConnectionPool(object):
 			raise
 
 		# Handle redirection
-		if redirect and response.status in (301, 302, 303, 307) and 'location' in response.headers: # Redirect, retry
+		if redirect and response.status in (301, 302, 303, 307) and 'location' in response.headers:
 			logger.info(u"Redirecting %s -> %s" % (url, response.headers.get('location')))
 			time.sleep(0.1)
 			self._put_conn(None)
