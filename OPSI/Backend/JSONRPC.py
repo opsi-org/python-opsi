@@ -50,7 +50,7 @@ from OPSI.Types import (OpsiAuthenticationError, OpsiServiceVerificationError,
 						OpsiTimeoutError)
 from OPSI.Backend.Backend import Backend, DeferredCall
 from OPSI.Util import serialize, deserialize
-from OPSI.Util.HTTP import urlsplit, getSharedConnectionPool
+from OPSI.Util.HTTP import urlsplit, getSharedConnectionPool, deflateEncode, deflateDecode, gzipDecode
 
 __version__ = '4.0.6.8'
 
@@ -650,7 +650,9 @@ class JSONRPCBackend(Backend):
 	def _request(self, baseUrl, data, retry=True):
 		headers = {
 			'user-agent': self._application,
-			'Accept': 'application/json-rpc, text/plain'
+			'Accept': 'application/json, text/plain',
+			'Accept-Encoding': 'deflate, gzip'
+			'content-type': 'application/json',
 		}
 		if isinstance(data, types.StringType):
 			data = unicode(data, 'utf-8')
@@ -660,18 +662,13 @@ class JSONRPCBackend(Backend):
 
 		if self._deflate:
 			logger.debug2(u"Compressing data")
-			headers['Accept'] += ', gzip-application/json-rpc'
-			headers['content-type'] = 'gzip-application/json-rpc'
-			headers['Accept-Encoding'] = 'gzip'
-			headers['Content-Encoding'] = 'gzip'
-			level = 1
-			data = zlib.compress(data, level)
+			headers['Content-Encoding'] = 'deflate'
+
+			data = deflateEncode(data)
 			# Fix for python 2.7
 			# http://bugs.python.org/issue12398
 			if version_info >= (2, 7):
 				data = bytearray(data)
-		else:
-			headers['content-type'] = 'application/json-rpc'
 
 		headers['content-length'] = len(data)
 
