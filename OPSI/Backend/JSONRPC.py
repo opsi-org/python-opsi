@@ -37,7 +37,6 @@ import socket
 import time
 import types
 import threading
-import zlib
 from hashlib import md5
 from Queue import Queue, Empty
 from twisted.conch.ssh import keys
@@ -651,7 +650,7 @@ class JSONRPCBackend(Backend):
 		headers = {
 			'user-agent': self._application,
 			'Accept': 'application/json, text/plain',
-			'Accept-Encoding': 'deflate, gzip'
+			'Accept-Encoding': 'deflate, gzip',
 			'content-type': 'application/json',
 		}
 		if isinstance(data, types.StringType):
@@ -696,9 +695,20 @@ class JSONRPCBackend(Backend):
 		logger.debug(u"Content-Type: %s, Content-Encoding: %s" % (contentType, contentEncoding))
 
 		response = response.data
-		if contentEncoding == 'gzip' or contentType.lower().startswith('gzip'):
-			logger.debug(u"Expecting compressed data from server")
-			response = zlib.decompress(response)
+		if contentType.lower().startswith('gzip'):
+			# To stay compatible with old versions of the opsiconfd
+			# we try to decompress the response with deflate even
+			# though gzip was stated.
+			# Content-type was usually gzip-application/json
+			logger.debug(u"Expecting deflated data from server (backwards compatible)")
+			response = deflateDecode(response)
+		elif contentEncoding == 'gzip':
+			logger.debug(u"Expecting gzip'ed data from server")
+			response = gzipDecode(response)
+		elif contentEncoding == "deflate":
+			logger.debug(u"Expecting deflated data from server")
+			response = deflateDecode(response)
+
 		logger.debug2(response)
 		return response
 
