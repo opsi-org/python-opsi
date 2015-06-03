@@ -717,25 +717,3 @@ def destroyPool(pool):
 		if poolinstance == pool:
 			del connectionPools[key]
 			break
-
-
-if __name__ == '__main__':
-	pass
-
-	#pool = HTTPSConnectionPool(host = 'download.uib.de', port = 443, connectTimeout=5, caCertFile = '/tmp/xxx', verifyServerCertByCa=True)
-	#resp = pool.urlopen('GET', url = '/index.html', body=None, headers={"accept": "text/html", "user-agent": "test"})
-	#print resp.data
-	#time.sleep(5)
-	#pool = CurlHTTPSConnectionPool(host = 'download.uib.de', port = 443, connectTimeout=5)
-	#resp = pool.urlopen('GET', url = '/index.html', body=None, headers={"accept": "text/html", "user-agent": "test"})
-	#print resp.data
-	#pool = CurlHTTPConnectionPool(host = 'www.uib.de', port = 80, socketTimeout=None, connectTimeout=5, reuseConnection=True)
-	#resp = pool.urlopen('GET', url = '/www/home/index.html', body=None, headers={"accept": "text/html", "user-agent": "test"})
-	#print resp.headers
-	#resp = pool.urlopen('GET', url = '/www/home/index.html', body=None, headers={"accept": "text/html", "user-agent": "test"})
-	#print resp.data
-	#print resp.headers
-	#print resp.status
-	#print resp.version
-	#print resp.reason
-	#print resp.strict
