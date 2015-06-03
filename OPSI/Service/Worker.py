@@ -32,11 +32,7 @@ Worker for the various interfaces.
 """
 
 import base64
-import gzip
 import urllib
-import zlib
-from contextlib import closing  # Needed for Python 2.6
-from io import BytesIO
 
 from twisted.internet import defer, reactor, threads
 from twisted.python import failure
@@ -608,22 +604,18 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 			# gzip but the content is deflated.
 			result.headers.setHeader('content-encoding', ["gzip"])
 			result.headers.setHeader('content-type', http_headers.MimeType("gzip-application", "json", {"charset": "utf-8"}))
-			logger.debug(u"Sending zlib compressed data (backwards compatible)")
-			result.stream = stream.IByteStream(zlib.compress(toJson(response).encode('utf-8'), 1))
+			logger.debug(u"Sending deflated data (backwards compatible - with content-encoding 'gzip')")
+			result.stream = stream.IByteStream(deflateEncode(toJson(response).encode('utf-8')))
 		elif encoding == "deflate":
 			result.headers.setHeader('content-encoding', [encoding])
 
-			logger.debug(u"Sending zlib compressed data")
-			result.stream = stream.IByteStream(zlib.compress(toJson(response).encode('utf-8'), 1))
+			logger.debug(u"Sending deflated data")
+			result.stream = stream.IByteStream(deflateEncode(toJson(response).encode('utf-8')))
 		elif encoding == "gzip":
 			result.headers.setHeader('content-encoding', [encoding])
 
-			inmemoryFile = BytesIO()
-			with closing(gzip.GzipFile(fileobj=inmemoryFile, mode="w", compresslevel=1)) as gzipfile:
-				gzipfile.write(toJson(response).encode('utf-8'))
-
 			logger.debug(u"Sending gzip compressed data")
-			result.stream = stream.IByteStream(inmemoryFile.getvalue())
+			result.stream = stream.IByteStream(gzipEncode(toJson(response).encode('utf-8')))
 		else:
 			result.stream = stream.IByteStream(toJson(response).encode('utf-8'))
 
