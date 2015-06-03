@@ -21,8 +21,10 @@ python-opsi (4.0.6.8-1) UNRELEASED; urgency=low
     header field "content-type" if the content is compressed via deflate or
     gzip. To stay backwards compatible we return in the old style if the
     header field "Accept" of the request starts with "gzip-application".
+  * OPSI.Util.HTTP: new functions deflateEncode, deflateDecode, gzipEncode
+    and gzipDecode
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 02 Jun 2015 10:36:34 +0200
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 03 Jun 2015 11:59:05 +0200
 
 python-opsi (4.0.6.7-2) experimental; urgency=low
 

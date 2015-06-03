@@ -22,17 +22,34 @@
 """
 opsi python library - HTTP
 
+
+.. versionadded:: 4.0.6.8
+
+  Added functions :py:func:`deflateEncode`, :py:func:`deflateDecode`,
+  :py:func:`gzipEncode` and :py:func:`gzipDecode`.
+
+
 :author: Jan Schneider <j.schneider@uib.de>
 :author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
 """
 
 import base64
+import gzip
 import os
 import random
 import re
 import socket
 import time
+import zlib
+from contextlib import closing  # Needed for Python 2.6
+from io import BytesIO
+
+try:
+	from cStringIO import StringIO
+except ImportError:
+	from io import StringIO
+
 from Queue import Queue, Empty, Full
 from httplib import HTTPConnection, HTTPSConnection, HTTPException
 from socket import error as SocketError, timeout as SocketTimeout
@@ -712,3 +729,26 @@ def destroyPool(pool):
 		if poolinstance == pool:
 			del connectionPools[key]
 			break
+
+
+def deflateEncode(data, level=1):
+	return zlib.compress(data, level)
+
+
+def deflateDecode(data):
+	return zlib.decompress(data)
+
+
+def gzipEncode(data, level=1):
+	inmemoryFile = BytesIO()
+	with closing(gzip.GzipFile(fileobj=inmemoryFile, mode="w", compresslevel=level)) as gzipfile:
+		gzipfile.write(data)
+
+	return inmemoryFile.getvalue()
+
+
+def gzipDecode(data):
+	with closing(gzip.GzipFile(fileobj=StringIO(data), mode="r")) as gzipfile:
+		uncompressedData = gzipfile.read()
+
+	return uncompressedData
