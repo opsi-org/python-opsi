@@ -683,6 +683,9 @@ class JSONRPCBackend(Backend):
 
 		response = self._connectionPool.urlopen(method='POST', url=baseUrl, body=data, headers=headers, retry=retry)
 
+		return self._processResponse(response)
+
+	def _processResponse(self, response):
 		# Get cookie from header
 		cookie = response.getheader('set-cookie', None)
 		if cookie:

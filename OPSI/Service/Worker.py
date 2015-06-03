@@ -573,15 +573,14 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 		except Exception as error:
 			logger.debug("Failed to get Accept-Encoding from request header: {0}".format(error))
 
-		if not encoding:
-			try:
-				if self.request.headers.getHeader('Accept'):
-					for accept in self.request.headers.getHeader('Accept').keys():
-						if accept.mediaType.startswith('gzip'):
-							invalidMime = True
-							break
-			except Exception as error:
-				logger.error(u"Failed to get accepted mime types from header: %s" % error)
+		try:
+			if self.request.headers.getHeader('Accept'):
+				for accept in self.request.headers.getHeader('Accept').keys():
+					if accept.mediaType.startswith('gzip'):
+						invalidMime = True
+						break
+		except Exception as error:
+			logger.error(u"Failed to get accepted mime types from header: %s" % error)
 
 		response = [serialize(rpc.getResponse()) for rpc in self._rpcs]
 
