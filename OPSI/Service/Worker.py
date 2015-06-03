@@ -467,11 +467,10 @@ class WorkerOpsi:
 		try:
 			if self.request.method == 'POST':
 				contentType = self.request.headers.getHeader('content-type')
-				contentEncoding = None
 				try:
 					contentEncoding = self.request.headers.getHeader('content-encoding')[0].lower()
 				except Exception:
-					pass
+					contentEncoding = None
 
 				logger.debug(u"Content-Type: %s, Content-Encoding: %s" % (contentType, contentEncoding))
 				if contentType and contentType.mediaType.startswith('gzip'):
