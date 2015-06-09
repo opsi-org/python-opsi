@@ -25,6 +25,16 @@ Testing the JSON-RPC backend.
 import unittest
 
 from OPSI.Backend.JSONRPC import JSONRPCBackend
+from OPSI.Util.HTTP import deflateEncode, gzipEncode
+
+
+class FakeResponse:
+    def __init__(self, header=None, data=None):
+        self._header = header or {}
+        self.data = data
+
+    def getheader(self, field, default=None):
+        return self._header.get(field, default)
 
 
 class JSONRPCBackendTestCase(unittest.TestCase):
@@ -37,22 +47,34 @@ class JSONRPCBackendTestCase(unittest.TestCase):
         """
         backend = JSONRPCBackend("localhost", connectoninit=False)
 
-    def testProcessingResponse(self):
-        class FakeResponse:
-            def __init__(self, header=None, data=None):
-                self._header = header or {}
-                self.data = data
-
-            def getheader(self, field, default=None):
-                return self._header.get(field, default)
-
+    def testProcessingEmptyResponse(self):
+        """
+        Test processing an empty response
+        """
         backend = JSONRPCBackend("localhost", connectoninit=False)
         result = backend._processResponse(FakeResponse())
 
-        print(result)
-        print(dir(result))
+        self.assertEquals(None, result)
 
-        self.assertFalse(result)
+    def testProcessingGzippedResponse(self):
+        backend = JSONRPCBackend("localhost", connectoninit=False)
+
+        response = FakeResponse(
+            data=gzipEncode("This is a test"),
+            header={'content-encoding': 'gzip'}
+        )
+
+        self.assertEquals("This is a test", backend._processResponse(response))
+
+    def testProcessingDeflatedResponse(self):
+        backend = JSONRPCBackend("localhost", connectoninit=False)
+
+        response = FakeResponse(
+            data=deflateEncode("This is a test"),
+            header={'content-encoding': 'deflate'}
+        )
+
+        self.assertEquals("This is a test", backend._processResponse(response))
 
 
 if __name__ == '__main__':
