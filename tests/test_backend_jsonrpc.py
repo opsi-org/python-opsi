@@ -60,21 +60,31 @@ class JSONRPCBackendTestCase(unittest.TestCase):
         backend = JSONRPCBackend("localhost", connectoninit=False)
 
         response = FakeResponse(
-            data=gzipEncode("This is a test"),
+            data=gzipEncode("This is gzipped"),
             header={'content-encoding': 'gzip'}
         )
 
-        self.assertEquals("This is a test", backend._processResponse(response))
+        self.assertEquals("This is gzipped", backend._processResponse(response))
 
     def testProcessingDeflatedResponse(self):
         backend = JSONRPCBackend("localhost", connectoninit=False)
 
         response = FakeResponse(
-            data=deflateEncode("This is a test"),
+            data=deflateEncode("This is deflated"),
             header={'content-encoding': 'deflate'}
         )
 
-        self.assertEquals("This is a test", backend._processResponse(response))
+        self.assertEquals("This is deflated", backend._processResponse(response))
+
+    def testProcessingResponseBackwardsCompatible(self):
+        backend = JSONRPCBackend("localhost", connectoninit=False)
+
+        response = FakeResponse(
+            data=deflateEncode("This is deflated"),
+            header={'content-type': 'gzip-application/json'}
+        )
+
+        self.assertEquals("This is deflated", backend._processResponse(response))
 
 
 if __name__ == '__main__':
