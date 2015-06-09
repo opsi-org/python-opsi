@@ -37,6 +37,23 @@ class JSONRPCBackendTestCase(unittest.TestCase):
         """
         backend = JSONRPCBackend("localhost", connectoninit=False)
 
+    def testProcessingResponse(self):
+        class FakeResponse:
+            def __init__(self, header=None, data=None):
+                self._header = header or {}
+                self.data = data
+
+            def getheader(self, field, default=None):
+                return self._header.get(field, default)
+
+        backend = JSONRPCBackend("localhost", connectoninit=False)
+        result = backend._processResponse(FakeResponse())
+
+        print(result)
+        print(dir(result))
+
+        self.assertFalse(result)
+
 
 if __name__ == '__main__':
     unittest.main()
