@@ -41,6 +41,13 @@ class DeflateCompressionTestCase(unittest.TestCase):
 
         self.assertEquals(text, newText)
 
+    def testHandingOverDifferentCompressionLevel(self):
+        text = "Das ist ein Test und so."
+
+        for level in range(1, 10):
+            deflated = deflateEncode(text, level)
+            self.assertEquals(text, deflateDecode(deflated))
+
 
 class GzipCompressionTestCase(unittest.TestCase):
     def testEncodedObjectIsNotCleartext(self):
@@ -53,6 +60,13 @@ class GzipCompressionTestCase(unittest.TestCase):
         newText = gzipDecode(gzipped)
 
         self.assertEquals(text, newText)
+
+    def testWorkingWithDifferentCompressionLevel(self):
+        text = "Das ist ein Test und so."
+
+        for level in range(1, 10):
+            gzipped = deflateEncode(text, level)
+            self.assertEquals(text, deflateDecode(gzipped))
 
 
 if __name__ == '__main__':
