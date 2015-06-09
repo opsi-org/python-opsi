@@ -195,8 +195,8 @@ def getDirectoriesForProcessing(path):
 				if os.path.exists(depotDir):
 					LOGGER.info(u"Local depot directory '%s' found" % depotDir)
 					dirnames.append(depotDir)
-		except Exception as e:
-			LOGGER.error(e)
+		except Exception as error:
+			LOGGER.error(error)
 
 	if basedir.startswith('/opt/pcbin/install'):
 		found = False
