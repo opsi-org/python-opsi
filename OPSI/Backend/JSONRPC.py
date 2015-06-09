@@ -590,41 +590,33 @@ class JSONRPCBackend(Backend):
 				keywords = method['keywords']
 				defaults = method['defaults']
 
-				argString = u''
-				callString = u''
-				for i in range(len(args)):
-					if args[i] == 'self':
+				argString = []
+				callString = []
+				for i, argument in enumerate(args):
+					if argument == 'self':
 						continue
-					if argString:
-						argString += u', '
-					if callString:
-						callString += u', '
-					argString += args[i]
-					callString += args[i]
+
 					if type(defaults) in (tuple, list) and (len(defaults) + i >= len(args)):
 						default = defaults[len(defaults) - len(args) + i]
 						# TODO: watch out for Python 3
-						if type(default) is str:
-							default = u"'%s'" % default
-						elif type(default) is unicode:
-							default = u"u'%s'" % default
-						argString += u'=%s' % unicode(default)
+						if isinstance(default, (str, unicode)):
+							default = u"{0!r}".format(default).replace('"', "'")
+						argString.append(u'{0}={1}'.format(argument, unicode(default)))
+					else:
+						argString.append(argument)
+					callString.append(argument)
 
 				if varargs:
 					for vararg in varargs:
-						if argString:
-							argString += u', '
-						if callString:
-							callString += u', '
-						argString += u'*%s' % vararg
-						callString += vararg
+						argString.append(u'*{0}'.format(vararg))
+						callString.append(vararg)
+
 				if keywords:
-					if argString:
-						argString += u', '
-					if callString:
-						callString += u', '
-					argString += u'**%s' % keywords
-					callString += keywords
+					argString.append(u'**{0}'.format(keywords))
+					callString.append(keywords)
+
+				argString = u', '.join(argString)
+				callString = u', '.join(callString)
 
 				logger.debug2(u"Arg string is: %s" % argString)
 				logger.debug2(u"Call string is: %s" % callString)
