@@ -23,8 +23,12 @@ python-opsi (4.0.6.8-1) UNRELEASED; urgency=low
     header field "Accept" of the request starts with "gzip-application".
   * OPSI.Util.HTTP: new functions deflateEncode, deflateDecode, gzipEncode
     and gzipDecode
+  * OPSI.Backend.JSONRPC: various refactorings
+  * OPSI.Backend.JSONRPC.JSONRPCBackend: correctly handle responses that are
+    compressed via deflate or gzip. To stay backwards compatible it deflates
+    the data if the HTTP header field "content-type" starts with "gzip".
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 03 Jun 2015 11:59:05 +0200
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 09 Jun 2015 14:37:27 +0200
 
 python-opsi (4.0.6.7-2) experimental; urgency=low
 
