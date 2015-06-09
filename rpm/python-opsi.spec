@@ -108,8 +108,12 @@ fi
 if [ $fileadmingroup != pcpatch -a -z "$(getent group $fileadmingroup)" ]; then
 	groupmod -n $fileadmingroup pcpatch
 else
-	if [ -z "$(getent group $fileadmingroup)"  ]; then
-		groupadd -g 992 $fileadmingroup
+	if [ -z "$(getent group $fileadmingroup)" ]; then
+		if [ -z "$(getent group 992)" ]; then
+			groupadd -g 992 $fileadmingroup
+		else
+			groupadd $fileadmingroup
+		fi
 	fi
 fi
 
