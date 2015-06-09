@@ -32,8 +32,9 @@ python-opsi (4.0.6.8-1) UNRELEASED; urgency=low
     to the wrong group if a group with gid 992 already exists.
   * RPM: if a group with gid 992 is already existing add the file admin group
     without giving a specific gid.
+  * OPSI.Util.Task.Rights: reuse an existing depot URL if we found one before.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 09 Jun 2015 15:51:50 +0200
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 09 Jun 2015 16:34:33 +0200
 
 python-opsi (4.0.6.7-2) experimental; urgency=low
 

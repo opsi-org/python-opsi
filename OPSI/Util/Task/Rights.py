@@ -59,6 +59,7 @@ __version__ = '4.0.6.8'
 
 LOGGER = Logger()
 
+_DEPOT_DIRECTORY = None
 _OPSICONFD_USER = u'opsiconfd'
 _ADMIN_GROUP = u'opsiadmin'
 _CLIENT_USER = u'pcpatch'
@@ -176,27 +177,20 @@ def getDirectoriesForProcessing(path):
 	depotDir = ''
 	dirnames = getDirectoriesManagedByOpsi()
 	if not basedir.startswith(('/etc', '/tftpboot')):
-		try:
-			from OPSI.Backend.BackendManager import BackendManager
-			backend = BackendManager(
-				dispatchConfigFile=u'/etc/opsi/backendManager/dispatch.conf',
-				backendConfigDir=u'/etc/opsi/backends',
-				extensionConfigDir=u'/etc/opsi/backendManager/extend.d'
-			)
-			depot = backend.host_getObjects(type='OpsiDepotserver', id=getLocalFQDN())
-			backend.backend_exit()
-			if depot:
-				depot = depot[0]
-				depotUrl = depot.getDepotLocalUrl()
-				if not depotUrl.startswith('file:///'):
-					raise Exception(u"Bad repository local url '%s'" % depotUrl)
-
+		global _DEPOT_DIRECTORY
+		if _DEPOT_DIRECTORY is not None:
+			depotDir = _DEPOT_DIRECTORY
+		else:
+			try:
+				depotUrl = getDepotUrl()
 				depotDir = depotUrl[7:]
-				if os.path.exists(depotDir):
-					LOGGER.info(u"Local depot directory '%s' found" % depotDir)
-					dirnames.append(depotDir)
-		except Exception as error:
-			LOGGER.error(error)
+				_DEPOT_DIRECTORY = depotDir
+			except Exception as error:
+				LOGGER.error(error)
+
+		if os.path.exists(depotDir):
+			LOGGER.info(u"Local depot directory '%s' found" % depotDir)
+			dirnames.append(depotDir)
 
 	if basedir.startswith('/opt/pcbin/install'):
 		found = False
@@ -218,6 +212,27 @@ def getDirectoriesManagedByOpsi():
 	else:
 		return [u'/etc/opsi', u'/home/opsiproducts', u'/tftpboot/linux',
 				u'/var/lib/opsi', u'/var/log/opsi']
+
+
+def getDepotUrl():
+	from OPSI.Backend.BackendManager import BackendManager
+	backend = BackendManager(
+		dispatchConfigFile=u'/etc/opsi/backendManager/dispatch.conf',
+		backendConfigDir=u'/etc/opsi/backends',
+		extensionConfigDir=u'/etc/opsi/backendManager/extend.d'
+	)
+	depot = backend.host_getObjects(type='OpsiDepotserver', id=getLocalFQDN())
+	backend.backend_exit()
+
+	if depot:
+		depot = depot[0]
+		depotUrl = depot.getDepotLocalUrl()
+		if not depotUrl.startswith('file:///'):
+			raise Exception(u"Bad repository local url '%s'" % depotUrl)
+
+		return depotUrl
+
+	raise Exception("Could not get depot URL.")
 
 
 def _isSLES():
