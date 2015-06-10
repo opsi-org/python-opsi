@@ -415,6 +415,9 @@ This defaults to ``self``.
 	def backend_exit(self):
 		pass
 
+	def __repr__(self):
+		return u'<{0}(name={1!r})>'.format(self.__class__.__name__, self._name)
+
 
 class ExtendedBackend(Backend):
 	"""

@@ -711,3 +711,6 @@ class JSONRPCBackend(Backend):
 
 	def backend_getInterface(self):
 		return self._interface
+
+	def __repr__(self):
+		return u'<{0}(address={1!r}, host={2!r})>'.format(self.__class__.__name__, self._name, self._host)

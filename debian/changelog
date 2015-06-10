@@ -1,3 +1,9 @@
+python-opsi (4.0.6.10-1) UNRELEASED; urgency=medium
+
+  * Added __repr__ for Backend and JSONRPCBackend.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 10 Jun 2015 14:30:20 +0200
+
 python-opsi (4.0.6.9-1) experimental; urgency=medium
 
   * OPSI.Util.Task.Rights: reuse an existing depot URL if we found one before.
