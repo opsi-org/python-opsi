@@ -793,11 +793,10 @@ class InfFile(ConfigFile):
 						for d in line.split(u'=')[1].split(u','):
 							deviceSections.append(d.strip())
 
-		devSections = []
+		devSections = set()
 		for deviceSection in deviceSections:
 			for i in deviceSection.split('.'):
-				if i not in devSections:
-					devSections.append(i)
+				devSections.add(i)
 		deviceSections = devSections
 		logger.debug2(u"      - Device sections: %s" % ', '.join(deviceSections))
 
@@ -809,7 +808,7 @@ class InfFile(ConfigFile):
 					return False
 			return True
 
-		found = []
+		found = set()
 		section = ''
 		sectionsParsed = []
 		for line in lines:
@@ -854,7 +853,7 @@ class InfFile(ConfigFile):
 									device = forceHardwareDeviceId(match.group(2))
 								if u"%s:%s" % (vendor, device) not in found:
 									logger.debug2(u"         - Found %s device: %s:%s" % (type, vendor, device))
-									found.append(u"%s:%s:%s" % (type, vendor, device))
+									found.add(u"%s:%s:%s" % (type, vendor, device))
 									self._devices.append(
 										{
 											'path': path,
