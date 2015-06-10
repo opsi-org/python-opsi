@@ -320,10 +320,11 @@ class BackendReplicator(object):
 						self.__currentProgressSubject.addToState(1)
 					else:
 						self.__currentProgressSubject.setEnd(len(objs))
+						meth = '%s_insertObject' % Class.backendMethodPrefix
+						meth = getattr(wb, meth)
+
 						for obj in objs:
 							try:
-								meth = '%s_insertObject' % Class.backendMethodPrefix
-								meth = getattr(wb, meth)
 								meth(obj)
 							except Exception as e:
 								logger.logException(e, LOG_DEBUG)
