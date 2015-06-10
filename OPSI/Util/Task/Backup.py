@@ -291,13 +291,6 @@ class OpsiBackup(object):
 							if not archive.hasDHCPBackend() and not force and not auto:
 								raise OpsiBackupFileError(u"Backup file does not contain DHCP backup data.")
 							functions.append(archive.restoreDHCPBackend)
-						#TODO: implement ldap/univention backup
-						#if backend in ("ldap", "all"):
-						#	logger.debug(u"Backing up ldap backend.")
-						#	archive.backupLdapBackend()
-						#if backend in ("ldap", "all"):
-						#	logger.debug(u"Backing up univention backend.")
-						#	archive.backupUniventionBackend()
 
 				try:
 					for restoreFunction in functions:
