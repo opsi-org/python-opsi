@@ -1893,7 +1893,7 @@ class DHCPDConfFile(TextFile):
 		return True
 
 	def _parse_emptyline(self):
-		logger.debug(u"_parse_emptyline")
+		logger.debug2(u"_parse_emptyline")
 		self._currentBlock.addComponent(
 			DHCPDConf_EmptyLine(
 				startLine=self._currentLine,
@@ -1903,7 +1903,7 @@ class DHCPDConfFile(TextFile):
 		self._data = self._data[:self._currentIndex]
 
 	def _parse_comment(self):
-		logger.debug(u"_parse_comment")
+		logger.debug2(u"_parse_comment")
 		self._currentBlock.addComponent(
 			DHCPDConf_Comment(
 				startLine=self._currentLine,
@@ -1914,7 +1914,7 @@ class DHCPDConfFile(TextFile):
 		self._data = self._data[:self._currentIndex]
 
 	def _parse_semicolon(self):
-		logger.debug(u"_parse_semicolon")
+		logger.debug2(u"_parse_semicolon")
 		data = self._data[:self._currentIndex]
 		self._data = self._data[self._currentIndex + 1:]
 
@@ -1982,7 +1982,7 @@ class DHCPDConfFile(TextFile):
 		)
 
 	def _parse_lbracket(self):
-		logger.debug(u"_parse_lbracket")
+		logger.debug2(u"_parse_lbracket")
 		# Start of a block
 		data = self._data[:self._currentIndex]
 		self._data = self._data[self._currentIndex+1:]
@@ -1999,7 +1999,7 @@ class DHCPDConfFile(TextFile):
 		self._currentBlock = block
 
 	def _parse_rbracket(self):
-		logger.debug(u"_parse_rbracket")
+		logger.debug2(u"_parse_rbracket")
 		# End of a block
 		data = self._data[:self._currentIndex]
 		self._data = self._data[self._currentIndex+1:]
