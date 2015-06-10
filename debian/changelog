@@ -1,4 +1,10 @@
-python-opsi (4.0.6.8-1) UNRELEASED; urgency=low
+python-opsi (4.0.6.9-1) experimental; urgency=medium
+
+  * OPSI.Util.Task.Rights: reuse an existing depot URL if we found one before.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 10 Jun 2015 10:20:56 +0200
+
+python-opsi (4.0.6.8-1) experimental; urgency=low
 
   * 20_legacy.conf: createLicenseContract now returns the complete
     license contract id instead of just the first character.
@@ -32,7 +38,6 @@ python-opsi (4.0.6.8-1) UNRELEASED; urgency=low
     to the wrong group if a group with gid 992 already exists.
   * RPM: if a group with gid 992 is already existing add the file admin group
     without giving a specific gid.
-  * OPSI.Util.Task.Rights: reuse an existing depot URL if we found one before.
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 09 Jun 2015 16:34:33 +0200
 

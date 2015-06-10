@@ -55,7 +55,7 @@ from OPSI.Types import forceHostId
 from OPSI.Util import findFiles, getfqdn
 from OPSI.Util.File.Opsi import OpsiConfFile
 
-__version__ = '4.0.6.8'
+__version__ = '4.0.6.9'
 
 LOGGER = Logger()
 
