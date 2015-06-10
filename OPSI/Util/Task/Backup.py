@@ -163,6 +163,12 @@ class OpsiBackup(object):
 			raise error
 
 	def _verify(self, file, **kwargs):
+		"""
+		Verify a backup.
+
+		:return: 0 if everything is okay, 1 if there was a failure.
+		:returntype: int
+		"""
 		files = forceList(file)
 
 		result = 0
