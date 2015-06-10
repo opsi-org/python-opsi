@@ -23,6 +23,8 @@ Testing the opsi SQLite backend.
 :license: GNU Affero General Public License version 3
 """
 
+import os.path
+
 try:
     import unittest2 as unittest
 except ImportError:
@@ -35,10 +37,10 @@ except ImportError:
 	apsw = None
 
 
-# from Backends.SQLite import SQLiteBackendMixin
-# from BackendTestMixins import (ConfigStateTestsMixin, LicensesTestMixin,
-#     AuditTestsMixin, ConfigTestsMixin, ProductsTestMixin,
-#     ExtendedBackendTestsMixin, BackendTestsMixin)
+from Backends.SQLite import SQLiteBackendMixin
+from BackendTestMixins import (ConfigStateTestsMixin, LicensesTestMixin,
+    AuditTestsMixin, ConfigTestsMixin, ProductsTestMixin,
+    ExtendedBackendTestsMixin, BackendTestsMixin)
 
 
 @unittest.skipIf(not apsw, 'SQLite tests skipped: Missing the module "apsw".')
@@ -48,24 +50,24 @@ class BackendSQLiteTestCase(unittest.TestCase):
         backend.backend_createBase()
 
 
-# # This is currently disabled because the tests require a valid modules file.
-# class SQLiteBackendTestCase(unittest.TestCase, SQLiteBackendMixin,
-#     BackendTestsMixin, ProductsTestMixin, AuditTestsMixin, LicensesTestMixin,
-#     ExtendedBackendTestsMixin, ConfigTestsMixin, ConfigStateTestsMixin):
-#     """Testing the SQLite backend.
+@unittest.skipIf(not os.path.exists('/etc/opsi/modules'), 'SQLite tests skipped: Missing modules file.')
+class SQLiteBackendTestCase(unittest.TestCase, SQLiteBackendMixin,
+    BackendTestsMixin, ProductsTestMixin, AuditTestsMixin, LicensesTestMixin,
+    ExtendedBackendTestsMixin, ConfigTestsMixin, ConfigStateTestsMixin):
+    """Testing the SQLite backend.
 
-#     This currently requires a valid modules file."""
+    This currently requires a valid modules file with enabled MySQL backend."""
 
-#     def setUp(self):
-#         self.backend = None
-#         self.setUpBackend()
+    def setUp(self):
+        self.backend = None
+        self.setUpBackend()
 
-#     def tearDown(self):
-#         self.tearDownBackend()
-#         del self.backend
+    def tearDown(self):
+        self.tearDownBackend()
+        del self.backend
 
-#     def testWeHaveABackend(self):
-#         self.assertNotEqual(None, self.backend)
+    def testWeHaveABackend(self):
+        self.assertNotEqual(None, self.backend)
 
 
 if __name__ == '__main__':
