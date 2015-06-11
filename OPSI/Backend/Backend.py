@@ -4,7 +4,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2013-2014 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2015 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -1976,15 +1976,15 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 	# -   Hosts                                                                                     -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def host_createObjects(self, hosts):
-		result = []
-		for host in forceObjectClassList(hosts, Host):
+		forcedHosts = forceObjectClassList(hosts, Host)
+		for host in forcedHosts:
 			logger.info(u"Creating host '%s'" % host)
 			self._backend.host_insertObject(host)
-			if self._options['returnObjectsOnUpdateAndCreate']:
-				result.extend(
-					self._backend.host_getObjects(id=host.id)
-				)
-		return result
+
+		if self._options['returnObjectsOnUpdateAndCreate']:
+			return self._backend.host_getObjects(id=[host.id for host in forcedHosts])
+		else:
+			return []
 
 	def host_updateObjects(self, hosts):
 		def updateOrInsert(host):
@@ -2223,19 +2223,19 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 	# -   Configs                                                                                   -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def config_createObjects(self, configs):
-		result = []
-		for config in forceObjectClassList(configs, Config):
+		forcedConfigs = forceObjectClassList(configs, Config)
+		for config in forcedConfigs:
 			logger.info(u"Creating config '%s'" % config)
 			self._backend.config_insertObject(config)
-			if self._options['returnObjectsOnUpdateAndCreate']:
-				result.extend(
-					self._backend.config_getObjects(id=config.id)
-				)
-		return result
+
+		if self._options['returnObjectsOnUpdateAndCreate']:
+			return self._backend.config_getObjects(id=[config.id for config in forcedConfigs])
+		else:
+			return []
 
 	def config_updateObjects(self, configs):
-		result = []
-		for config in forceObjectClassList(configs, Config):
+		forcedConfigs = forceObjectClassList(configs, Config)
+		for config in forcedConfigs:
 			logger.info(u"Updating config %s" % config)
 			if self.config_getIdents(id=config.id):
 				self._backend.config_updateObject(config)
@@ -2243,11 +2243,10 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 				logger.info(u"Config %s does not exist, creating" % config)
 				self._backend.config_insertObject(config)
 
-			if self._options['returnObjectsOnUpdateAndCreate']:
-				result.extend(
-					self._backend.config_getObjects(id=config.id)
-				)
-		return result
+		if self._options['returnObjectsOnUpdateAndCreate']:
+			return self._backend.config_getObjects(id=[config.id for config in forcedConfigs])
+		else:
+			return []
 
 	def config_create(self, id, description=None, possibleValues=None, defaultValues=None, editable=None, multiValue=None):
 		hash = locals()
@@ -2349,20 +2348,25 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		self._backend.configState_updateObject(configState)
 
 	def configState_createObjects(self, configStates):
+		returnObjects = self._options['returnObjectsOnUpdateAndCreate']
+
 		result = []
 		for configState in forceObjectClassList(configStates, ConfigState):
 			logger.info(u"Creating configState '%s'" % configState)
 			self.configState_insertObject(configState)
-			if self._options['returnObjectsOnUpdateAndCreate']:
+			if returnObjects:
 				result.extend(
 					self._backend.configState_getObjects(
 						configId=configState.configId,
 						objectId=configState.objectId
 					)
 				)
+
 		return result
 
 	def configState_updateObjects(self, configStates):
+		returnObjects = self._options['returnObjectsOnUpdateAndCreate']
+
 		result = []
 		for configState in forceObjectClassList(configStates, ConfigState):
 			logger.info(u"Updating configState %s" % configState)
@@ -2374,13 +2378,14 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 				logger.info(u"ConfigState %s does not exist, creating" % configState)
 				self.configState_insertObject(configState)
 
-			if self._options['returnObjectsOnUpdateAndCreate']:
+			if returnObjects:
 				result.extend(
 					self._backend.configState_getObjects(
 						configId=configState.configId,
 						objectId=configState.objectId
 					)
 				)
+
 		return result
 
 	def configState_create(self, configId, objectId, values=None):
@@ -2475,11 +2480,13 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 	# -   Products                                                                                  -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def product_createObjects(self, products):
+		returnObjects = self._options['returnObjectsOnUpdateAndCreate']
+
 		result = []
 		for product in forceObjectClassList(products, Product):
 			logger.info(u"Creating product %s" % product)
 			self._backend.product_insertObject(product)
-			if self._options['returnObjectsOnUpdateAndCreate']:
+			if returnObjects:
 				result.extend(
 					self._backend.product_getObjects(
 						id=product.id,
@@ -2487,9 +2494,12 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 						packageVersion=product.packageVersion
 					)
 				)
+
 		return result
 
 	def product_updateObjects(self, products):
+		returnObjects = self._options['returnObjectsOnUpdateAndCreate']
+
 		result = []
 		for product in forceObjectClassList(products, Product):
 			logger.info(u"Updating product %s" % product)
@@ -2501,7 +2511,8 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			else:
 				logger.info(u"Product %s does not exist, creating" % product)
 				self._backend.product_insertObject(product)
-			if self._options['returnObjectsOnUpdateAndCreate']:
+
+			if returnObjects:
 				result.extend(
 					self._backend.product_getObjects(
 						id=product.id,
@@ -2509,6 +2520,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 						packageVersion=product.packageVersion
 					)
 				)
+
 		return result
 
 	def product_createLocalboot(self, id, productVersion, packageVersion, name=None, licenseRequired=None,
@@ -2628,13 +2640,14 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			self.productPropertyState_updateObjects(updateProductPropertyStates)
 
 	def productProperty_createObjects(self, productProperties):
+		returnObjects = self._options['returnObjectsOnUpdateAndCreate']
+
 		result = []
 		for productProperty in forceObjectClassList(productProperties, ProductProperty):
 			logger.info(u"Creating productProperty %s" % productProperty)
 			self._backend.productProperty_insertObject(productProperty)
-			# self._adjustProductPropertyStates(productProperty)
 
-			if self._options['returnObjectsOnUpdateAndCreate']:
+			if returnObjects:
 				result.extend(
 					self._backend.productProperty_getObjects(
 						productId=productProperty.productId,
@@ -2643,9 +2656,12 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 						propertyId=productProperty.propertyId
 					)
 				)
+
 		return result
 
 	def productProperty_updateObjects(self, productProperties):
+		returnObjects = self._options['returnObjectsOnUpdateAndCreate']
+
 		result = []
 		for productProperty in forceObjectClassList(productProperties, ProductProperty):
 			logger.info(u"Creating productProperty %s" % productProperty)
@@ -2658,7 +2674,8 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			else:
 				logger.info(u"ProductProperty %s does not exist, creating" % productProperty)
 				self._backend.productProperty_insertObject(productProperty)
-			if self._options['returnObjectsOnUpdateAndCreate']:
+
+			if returnObjects:
 				result.extend(
 					self._backend.productProperty_getObjects(
 						productId=productProperty.productId,
@@ -2667,6 +2684,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 						propertyId=productProperty.propertyId
 					)
 				)
+
 		return result
 
 	def productProperty_create(self, productId, productVersion, packageVersion, propertyId, description=None, possibleValues=None, defaultValues=None, editable=None, multiValue=None):
@@ -2707,11 +2725,14 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 	# -   ProductDependencies                                                                       -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productDependency_createObjects(self, productDependencies):
+		returnObjects = self._options['returnObjectsOnUpdateAndCreate']
+
 		result = []
 		for productDependency in forceObjectClassList(productDependencies, ProductDependency):
 			logger.info(u"Creating productDependency %s" % productDependency)
 			self._backend.productDependency_insertObject(productDependency)
-			if self._options['returnObjectsOnUpdateAndCreate']:
+
+			if returnObjects:
 				result.extend(
 					self._backend.productDependency_getObjects(
 						productId=productDependency.productId,
@@ -2725,6 +2746,8 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		return result
 
 	def productDependency_updateObjects(self, productDependencies):
+		returnObjects = self._options['returnObjectsOnUpdateAndCreate']
+
 		result = []
 		for productDependency in forceObjectClassList(productDependencies, ProductDependency):
 			logger.info(u"Updating productDependency %s" % productDependency)
@@ -2739,7 +2762,8 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			else:
 				logger.info(u"ProductDependency %s does not exist, creating" % productDependency)
 				self._backend.productDependency_insertObject(productDependency)
-			if self._options['returnObjectsOnUpdateAndCreate']:
+
+			if returnObjects:
 				result.extend(
 					self._backend.productDependency_getObjects(
 						productId=productDependency.productId,
@@ -2749,6 +2773,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 						requiredProductId=productDependency.requiredProductId
 					)
 				)
+
 		return result
 
 	def productDependency_create(self, productId, productVersion, packageVersion, productAction, requiredProductId, requiredProductVersion=None, requiredPackageVersion=None, requiredAction=None, requiredInstallationStatus=None, requirementType=None):
@@ -2800,20 +2825,26 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			self._backend.productOnDepot_insertObject(productOnDepot)
 
 	def productOnDepot_createObjects(self, productOnDepots):
+		returnObjects = self._options['returnObjectsOnUpdateAndCreate']
+
 		result = []
 		for productOnDepot in forceObjectClassList(productOnDepots, ProductOnDepot):
 			logger.info(u"Creating productOnDepot %s" % productOnDepot.toHash())
 			self.productOnDepot_insertObject(productOnDepot)
-			if self._options['returnObjectsOnUpdateAndCreate']:
+
+			if returnObjects:
 				result.extend(
 					self._backend.productOnDepot_getObjects(
 						productId=productOnDepot.productId,
 						depotId=productOnDepot.depotId
 					)
 				)
+
 		return result
 
 	def productOnDepot_updateObjects(self, productOnDepots):
+		returnObjects = self._options['returnObjectsOnUpdateAndCreate']
+
 		result = []
 		productOnDepots = forceObjectClassList(productOnDepots, ProductOnDepot)
 		for productOnDepot in productOnDepots:
@@ -2828,13 +2859,15 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			else:
 				logger.info(u"ProductOnDepot %s does not exist, creating" % productOnDepot)
 				self.productOnDepot_insertObject(productOnDepot)
-			if self._options['returnObjectsOnUpdateAndCreate']:
+
+			if returnObjects:
 				result.extend(
 					self._backend.productOnDepot_getObjects(
 						productId=productOnDepot.productId,
 						depotId=productOnDepot.depotId
 					)
 				)
+
 		return result
 
 	def productOnDepot_create(self, productId, productType, productVersion, packageVersion, depotId, locked=None):
@@ -3189,6 +3222,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		return self._productOnClientUpdateOrCreate(productOnClient, update=True)
 
 	def productOnClient_createObjects(self, productOnClients):
+		returnObjects = self._options['returnObjectsOnUpdateAndCreate']
 		result = []
 
 		productOnClients = forceObjectClassList(productOnClients, ProductOnClient)
@@ -3198,16 +3232,19 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		for productOnClient in productOnClients:
 			logger.info(u"Creating productOnClient %s" % productOnClient)
 			self.productOnClient_insertObject(productOnClient)
-			if self._options['returnObjectsOnUpdateAndCreate']:
+
+			if returnObjects:
 				result.extend(
 					self._backend.productOnClient_getObjects(
 						productId=productOnClient.productId,
 						clientId=productOnClient.clientId
 					)
 				)
+
 		return result
 
 	def productOnClient_updateObjects(self, productOnClients):
+		returnObjects = self._options['returnObjectsOnUpdateAndCreate']
 		result = []
 
 		productOnClients = forceObjectClassList(productOnClients, ProductOnClient)
@@ -3226,7 +3263,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 				logger.info(u"ProductOnClient %s does not exist, creating" % productOnClient)
 				self.productOnClient_insertObject(productOnClient)
 
-			if self._options['returnObjectsOnUpdateAndCreate']:
+			if returnObjects:
 				result.extend(
 					self._backend.productOnClient_getObjects(
 						productId=productOnClient.productId,
@@ -3302,11 +3339,13 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		return productPropertyStates
 
 	def productPropertyState_createObjects(self, productPropertyStates):
+		returnObjects = self._options['returnObjectsOnUpdateAndCreate']
 		result = []
 		for productPropertyState in forceObjectClassList(productPropertyStates, ProductPropertyState):
 			logger.info(u"Updating productPropertyState %s" % productPropertyState)
 			self._backend.productPropertyState_insertObject(productPropertyState)
-			if self._options['returnObjectsOnUpdateAndCreate']:
+
+			if returnObjects:
 				result.extend(
 					self._backend.productPropertyState_getObjects(
 						productId=productPropertyState.productId,
@@ -3314,9 +3353,11 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 						propertyId=productPropertyState.propertyId
 					)
 				)
+
 		return result
 
 	def productPropertyState_updateObjects(self, productPropertyStates):
+		returnObjects = self._options['returnObjectsOnUpdateAndCreate']
 		result = []
 		productPropertyStates = forceObjectClassList(productPropertyStates, ProductPropertyState)
 		for productPropertyState in productPropertyStates:
@@ -3331,7 +3372,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 				logger.info(u"ProductPropertyState %s does not exist, creating" % productPropertyState)
 				self._backend.productPropertyState_insertObject(productPropertyState)
 
-			if self._options['returnObjectsOnUpdateAndCreate']:
+			if returnObjects:
 				result.extend(
 					self._backend.productPropertyState_getObjects(
 						productId=productPropertyState.productId,
@@ -3339,6 +3380,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 						propertyId=productPropertyState.propertyId
 					)
 				)
+
 		return result
 
 	def productPropertyState_create(self, productId, propertyId, objectId, values=None):
@@ -3366,17 +3408,19 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 	# -   Groups                                                                                    -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def group_createObjects(self, groups):
-		result = []
-		for group in forceObjectClassList(groups, Group):
+		groups = forceObjectClassList(groups, Group)
+		for group in groups:
 			logger.info(u"Creating group '%s'" % group)
 			self._backend.group_insertObject(group)
-			if self._options['returnObjectsOnUpdateAndCreate']:
-				result.extend(self._backend.group_getObjects(id=group.id))
-		return result
+
+		if self._options['returnObjectsOnUpdateAndCreate']:
+			return self._backend.group_getObjects(id=[group.id for group in groups])
+		else:
+			return []
 
 	def group_updateObjects(self, groups):
-		result = []
-		for group in forceObjectClassList(groups, Group):
+		groups = forceObjectClassList(groups, Group)
+		for group in groups:
 			logger.info(u"Updating group '%s'" % group)
 			if self.group_getIdents(id=group.id):
 				self._backend.group_updateObject(group)
@@ -3384,9 +3428,10 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 				logger.info(u"Group %s does not exist, creating" % group)
 				self._backend.group_insertObject(group)
 
-			if self._options['returnObjectsOnUpdateAndCreate']:
-				result.extend(self._backend.group_getObjects(id=group.id))
-		return result
+		if self._options['returnObjectsOnUpdateAndCreate']:
+			return self._backend.group_getObjects(id=[group.id for group in groups])
+		else:
+			return []
 
 	def group_createHostGroup(self, id, description=None, notes=None, parentGroupId=None):
 		hash = locals()
@@ -3410,11 +3455,14 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 	# -   ObjectToGroups                                                                            -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def objectToGroup_createObjects(self, objectToGroups):
+		returnObjects = self._options['returnObjectsOnUpdateAndCreate']
+
 		result = []
 		for objectToGroup in forceObjectClassList(objectToGroups, ObjectToGroup):
 			logger.info(u"Creating objectToGroup %s" % objectToGroup)
 			self._backend.objectToGroup_insertObject(objectToGroup)
-			if self._options['returnObjectsOnUpdateAndCreate']:
+
+			if returnObjects:
 				result.extend(
 					self._backend.objectToGroup_getObjects(
 						groupType=objectToGroup.groupType,
@@ -3425,6 +3473,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		return result
 
 	def objectToGroup_updateObjects(self, objectToGroups):
+		returnObjects = self._options['returnObjectsOnUpdateAndCreate']
 		result = []
 		objectToGroups = forceObjectClassList(objectToGroups, ObjectToGroup)
 		for objectToGroup in objectToGroups:
@@ -3437,7 +3486,8 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			else:
 				logger.info(u"ObjectToGroup %s does not exist, creating" % objectToGroup)
 				self._backend.objectToGroup_insertObject(objectToGroup)
-			if self._options['returnObjectsOnUpdateAndCreate']:
+
+			if returnObjects:
 				result.extend(
 					self._backend.objectToGroup_getObjects(
 						groupType=objectToGroup.groupType,
@@ -3445,6 +3495,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 						objectId=objectToGroup.objectId
 					)
 				)
+
 		return result
 
 	def objectToGroup_create(self, groupType, groupId, objectId):
@@ -3473,18 +3524,17 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 	# -   LicenseContracts                                                                          -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def licenseContract_createObjects(self, licenseContracts):
-		result = []
-		for licenseContract in forceObjectClassList(licenseContracts, LicenseContract):
+		licenseContracts = forceObjectClassList(licenseContracts, LicenseContract)
+		for licenseContract in licenseContracts:
 			logger.info(u"Creating licenseContract %s" % licenseContract)
 			self._backend.licenseContract_insertObject(licenseContract)
-			if self._options['returnObjectsOnUpdateAndCreate']:
-				result.extend(
-					self._backend.licenseContract_getObjects(id=licenseContract.id)
-				)
-		return result
+
+		if self._options['returnObjectsOnUpdateAndCreate']:
+			return self._backend.licenseContract_getObjects(id=[licenseContract.id for licenseContract in licenseContracts])
+		else:
+			return []
 
 	def licenseContract_updateObjects(self, licenseContracts):
-		result = []
 		licenseContracts = forceObjectClassList(licenseContracts, LicenseContract)
 		for licenseContract in licenseContracts:
 			logger.info(u"Updating licenseContract '%s'" % licenseContract)
@@ -3493,11 +3543,11 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			else:
 				logger.info(u"LicenseContract %s does not exist, creating" % licenseContract)
 				self._backend.licenseContract_insertObject(licenseContract)
-			if self._options['returnObjectsOnUpdateAndCreate']:
-				result.extend(
-					self._backend.licenseContract_getObjects(id=licenseContract.id)
-				)
-		return result
+
+		if self._options['returnObjectsOnUpdateAndCreate']:
+			return self._backend.licenseContract_getObjects(id=[licenseContract.id for licenseContract in licenseContracts])
+		else:
+			return []
 
 	def licenseContract_create(self, id, description=None, notes=None, partner=None, conclusionDate=None, notificationDate=None, expirationDate=None):
 		hash = locals()
@@ -3516,18 +3566,17 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 	# -   SoftwareLicenses                                                                          -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def softwareLicense_createObjects(self, softwareLicenses):
-		result = []
-		for softwareLicense in forceObjectClassList(softwareLicenses, SoftwareLicense):
+		softwareLicenses = forceObjectClassList(softwareLicenses, SoftwareLicense)
+		for softwareLicense in softwareLicenses:
 			logger.info(u"Creating softwareLicense '%s'" % softwareLicense)
 			self._backend.softwareLicense_insertObject(softwareLicense)
-			if self._options['returnObjectsOnUpdateAndCreate']:
-				result.extend(
-					self._backend.softwareLicense_getObjects(id=softwareLicense.id)
-				)
-		return result
+
+		if self._options['returnObjectsOnUpdateAndCreate']:
+			return self._backend.softwareLicense_getObjects(id=[softwareLicense.id for softwareLicense in softwareLicenses])
+		else:
+			return []
 
 	def softwareLicense_updateObjects(self, softwareLicenses):
-		result = []
 		softwareLicenses = forceObjectClassList(softwareLicenses, SoftwareLicense)
 		for softwareLicense in softwareLicenses:
 			logger.info(u"Updating softwareLicense '%s'" % softwareLicense)
@@ -3536,11 +3585,11 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			else:
 				logger.info(u"ProducSoftwareLicenset %s does not exist, creating" % softwareLicense)
 				self._backend.softwareLicense_insertObject(softwareLicense)
-			if self._options['returnObjectsOnUpdateAndCreate']:
-				result.extend(
-					self._backend.softwareLicense_getObjects(id=softwareLicense.id)
-				)
-		return result
+
+		if self._options['returnObjectsOnUpdateAndCreate']:
+			return self._backend.softwareLicense_getObjects(id=[softwareLicense.id for softwareLicense in softwareLicenses])
+		else:
+			return []
 
 	def softwareLicense_createRetail(self, id, licenseContractId, maxInstallations=None, boundToHost=None, expirationDate=None):
 		hash = locals()
@@ -3574,18 +3623,17 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 	# -   LicensePool                                                                               -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def licensePool_createObjects(self, licensePools):
-		result = []
-		for licensePool in forceObjectClassList(licensePools, LicensePool):
+		licensePools = forceObjectClassList(licensePools, LicensePool)
+		for licensePool in licensePools:
 			logger.info(u"Creating licensePool '%s'" % licensePool)
 			self._backend.licensePool_insertObject(licensePool)
-			if self._options['returnObjectsOnUpdateAndCreate']:
-				result.extend(
-					self._backend.licensePool_getObjects(id=licensePool.id)
-				)
-		return result
+
+		if self._options['returnObjectsOnUpdateAndCreate']:
+			return self._backend.licensePool_getObjects(id=[licensePool.id for licensePool in licensePools])
+		else:
+			return []
 
 	def licensePool_updateObjects(self, licensePools):
-		result = []
 		licensePools = forceObjectClassList(licensePools, LicensePool)
 		for licensePool in licensePools:
 			logger.info(u"Updating licensePool '%s'" % licensePool)
@@ -3594,11 +3642,11 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			else:
 				logger.info(u"LicensePool %s does not exist, creating" % licensePool)
 				self._backend.licensePool_insertObject(licensePool)
-			if self._options['returnObjectsOnUpdateAndCreate']:
-				result.extend(
-					self._backend.licensePool_getObjects(id=licensePool.id)
-				)
-		return result
+
+		if self._options['returnObjectsOnUpdateAndCreate']:
+			return self._backend.licensePool_getObjects(id=[licensePool.id for licensePool in licensePools])
+		else:
+			return []
 
 	def licensePool_create(self, id, description=None, productIds=None):
 		hash = locals()
@@ -3617,20 +3665,26 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 	# -   SoftwareLicenseToLicensePools                                                             -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def softwareLicenseToLicensePool_createObjects(self, softwareLicenseToLicensePools):
+		returnObjects = self._options['returnObjectsOnUpdateAndCreate']
+
 		result = []
 		for softwareLicenseToLicensePool in forceObjectClassList(softwareLicenseToLicensePools, SoftwareLicenseToLicensePool):
 			logger.info(u"Creating softwareLicenseToLicensePool %s" % softwareLicenseToLicensePool)
 			self._backend.softwareLicenseToLicensePool_insertObject(softwareLicenseToLicensePool)
-			if self._options['returnObjectsOnUpdateAndCreate']:
+
+			if returnObjects:
 				result.extend(
 					self._backend.softwareLicenseToLicensePool_getObjects(
 						softwareLicenseId=softwareLicenseToLicensePool.softwareLicenseId,
 						licensePoolId=softwareLicenseToLicensePool.licensePoolId
 					)
 				)
+
 		return result
 
 	def softwareLicenseToLicensePool_updateObjects(self, softwareLicenseToLicensePools):
+		returnObjects = self._options['returnObjectsOnUpdateAndCreate']
+
 		result = []
 		softwareLicenseToLicensePools = forceObjectClassList(softwareLicenseToLicensePools, SoftwareLicenseToLicensePool)
 		for softwareLicenseToLicensePool in softwareLicenseToLicensePools:
@@ -3642,13 +3696,15 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			else:
 				logger.info(u"SoftwareLicenseToLicensePool %s does not exist, creating" % softwareLicenseToLicensePool)
 				self._backend.softwareLicenseToLicensePool_insertObject(softwareLicenseToLicensePool)
-			if self._options['returnObjectsOnUpdateAndCreate']:
+
+			if returnObjects:
 				result.extend(
 					self._backend.softwareLicenseToLicensePool_getObjects(
 						softwareLicenseId=softwareLicenseToLicensePool.softwareLicenseId,
 						licensePoolId=softwareLicenseToLicensePool.licensePoolId
 					)
 				)
+
 		return result
 
 	def softwareLicenseToLicensePool_create(self, softwareLicenseId, licensePoolId, licenseKey=None):
@@ -3673,11 +3729,14 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 	# -   LicenseOnClients                                                                          -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def licenseOnClient_createObjects(self, licenseOnClients):
+		returnObjects = self._options['returnObjectsOnUpdateAndCreate']
+
 		result = []
 		for licenseOnClient in forceObjectClassList(licenseOnClients, LicenseOnClient):
 			logger.info(u"Creating licenseOnClient %s" % licenseOnClient)
 			self._backend.licenseOnClient_insertObject(licenseOnClient)
-			if self._options['returnObjectsOnUpdateAndCreate']:
+
+			if returnObjects:
 				result.extend(
 					self._backend.licenseOnClient_getObjects(
 						softwareLicenseId=licenseOnClient.softwareLicenseId,
@@ -3685,9 +3744,12 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 						clientId=licenseOnClient.clientId
 					)
 				)
+
 		return result
 
 	def licenseOnClient_updateObjects(self, licenseOnClients):
+		returnObjects = self._options['returnObjectsOnUpdateAndCreate']
+
 		result = []
 		licenseOnClients = forceObjectClassList(licenseOnClients, LicenseOnClient)
 		for licenseOnClient in licenseOnClients:
@@ -3700,7 +3762,8 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			else:
 				logger.info(u"LicenseOnClient %s does not exist, creating" % licenseOnClient)
 				self._backend.licenseOnClient_insertObject(licenseOnClient)
-			if self._options['returnObjectsOnUpdateAndCreate']:
+
+			if returnObjects:
 				result.extend(
 					self._backend.licenseOnClient_getObjects(
 						softwareLicenseId=licenseOnClient.softwareLicenseId,
@@ -3708,6 +3771,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 						clientId=licenseOnClient.clientId
 					)
 				)
+
 		return result
 
 	def licenseOnClient_create(self, softwareLicenseId, licensePoolId, clientId, licenseKey=None, notes=None):
@@ -3854,11 +3918,14 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 	# -   AuditSoftwares                                                                            -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def auditSoftware_createObjects(self, auditSoftwares):
+		returnObjects = self._options['returnObjectsOnUpdateAndCreate']
+
 		result = []
 		for auditSoftware in forceObjectClassList(auditSoftwares, AuditSoftware):
 			logger.info(u"Creating auditSoftware %s" % auditSoftware)
 			self._backend.auditSoftware_insertObject(auditSoftware)
-			if self._options['returnObjectsOnUpdateAndCreate']:
+
+			if returnObjects:
 				result.extend(
 					self._backend.auditSoftware_getObjects(
 						name=auditSoftware.name,
@@ -3868,9 +3935,12 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 						architecture=auditSoftware.architecture
 					)
 				)
+
 		return result
 
 	def auditSoftware_updateObjects(self, auditSoftwares):
+		returnObjects = self._options['returnObjectsOnUpdateAndCreate']
+
 		result = []
 		auditSoftwares = forceObjectClassList(auditSoftwares, AuditSoftware)
 		for auditSoftware in auditSoftwares:
@@ -3886,7 +3956,8 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			else:
 				logger.info(u"AuditSoftware %s does not exist, creating" % auditSoftware)
 				self._backend.auditSoftware_insertObject(auditSoftware)
-			if self._options['returnObjectsOnUpdateAndCreate']:
+
+			if returnObjects:
 				result.extend(
 					self._backend.auditSoftware_getObjects(
 						name=auditSoftware.name,
@@ -3896,6 +3967,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 						architecture=auditSoftware.architecture
 					)
 				)
+
 		return result
 
 
@@ -3930,11 +4002,14 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 	# -   AuditSoftwareToLicensePools                                                               -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def auditSoftwareToLicensePool_createObjects(self, auditSoftwareToLicensePools):
+		returnObjects = self._options['returnObjectsOnUpdateAndCreate']
+
 		result = []
 		for auditSoftwareToLicensePool in forceObjectClassList(auditSoftwareToLicensePools, AuditSoftwareToLicensePool):
 			logger.info(u"Creating %s" % auditSoftwareToLicensePool)
 			self._backend.auditSoftwareToLicensePool_insertObject(auditSoftwareToLicensePool)
-			if self._options['returnObjectsOnUpdateAndCreate']:
+
+			if returnObjects:
 				result.extend(
 					self._backend.auditSoftwareToLicensePool_getObjects(
 						name=auditSoftwareToLicensePool.name,
@@ -3944,9 +4019,12 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 						architecture=auditSoftwareToLicensePool.architecture
 					)
 				)
+
 		return result
 
 	def auditSoftwareToLicensePool_updateObjects(self, auditSoftwareToLicensePools):
+		returnObjects = self._options['returnObjectsOnUpdateAndCreate']
+
 		result = []
 		auditSoftwareToLicensePools = forceObjectClassList(auditSoftwareToLicensePools, AuditSoftwareToLicensePool)
 		for auditSoftwareToLicensePool in auditSoftwareToLicensePools:
@@ -3962,7 +4040,8 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			else:
 				logger.info(u"AuditSoftwareToLicensePool %s does not exist, creating" % auditSoftwareToLicensePool)
 				self._backend.auditSoftwareToLicensePool_insertObject(auditSoftwareToLicensePool)
-			if self._options['returnObjectsOnUpdateAndCreate']:
+
+			if returnObjects:
 				result.extend(
 					self._backend.auditSoftwareToLicensePool_getObjects(
 						name=auditSoftwareToLicensePool.name,
@@ -3972,6 +4051,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 						architecture=auditSoftwareToLicensePool.architecture
 					)
 				)
+
 		return result
 
 	def auditSoftwareToLicensePool_create(self, name, version, subVersion, language, architecture, licensePoolId):
@@ -4009,11 +4089,14 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 	# -   AuditSoftwareOnClients                                                                    -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def auditSoftwareOnClient_createObjects(self, auditSoftwareOnClients):
+		returnObjects = self._options['returnObjectsOnUpdateAndCreate']
+
 		result = []
 		for auditSoftwareOnClient in forceObjectClassList(auditSoftwareOnClients, AuditSoftwareOnClient):
 			logger.info(u"Creating auditSoftwareOnClient %s" % auditSoftwareOnClient)
 			self._backend.auditSoftwareOnClient_insertObject(auditSoftwareOnClient)
-			if self._options['returnObjectsOnUpdateAndCreate']:
+
+			if returnObjects:
 				result.extend(
 					self._backend.auditSoftwareOnClient_getObjects(
 						name=auditSoftwareOnClient.name,
@@ -4024,9 +4107,12 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 						clientId=auditSoftwareOnClient.clientId
 					)
 				)
+
 		return result
 
 	def auditSoftwareOnClient_updateObjects(self, auditSoftwareOnClients):
+		returnObjects = self._options['returnObjectsOnUpdateAndCreate']
+
 		result = []
 		auditSoftwareOnClients = forceObjectClassList(auditSoftwareOnClients, AuditSoftwareOnClient)
 		for auditSoftwareOnClient in auditSoftwareOnClients:
@@ -4042,7 +4128,8 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			else:
 				logger.info(u"AuditSoftwareOnClient %s does not exist, creating" % auditSoftwareOnClient)
 				self._backend.auditSoftwareOnClient_insertObject(auditSoftwareOnClient)
-			if self._options['returnObjectsOnUpdateAndCreate']:
+
+			if returnObjects:
 				result.extend(
 					self._backend.auditSoftwareOnClient_getObjects(
 						name=auditSoftwareOnClient.name,
@@ -4053,8 +4140,8 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 						clientId=auditSoftwareOnClient.clientId
 					)
 				)
-		return result
 
+		return result
 
 	def auditSoftwareOnClient_create(self, name, version, subVersion, language, architecture, clientId, uninstallString=None, binaryName=None, firstseen=None, lastseen=None, state=None, usageFrequency=None, lastUsed=None, licenseKey=None):
 		hash = locals()
@@ -4214,20 +4301,26 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 	# -   BootConfigurations                                                                        -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def bootConfiguration_createObjects(self, bootConfigurations):
+		returnObjects = self._options['returnObjectsOnUpdateAndCreate']
+
 		result = []
 		for bootConfiguration in forceObjectClassList(bootConfigurations, BootConfiguration):
 			logger.info(u"Creating bootConfiguration %s" % bootConfiguration)
 			self._backend.bootConfiguration_insertObject(bootConfiguration)
-			if self._options['returnObjectsOnUpdateAndCreate']:
+
+			if returnObjects:
 				result.extend(
 					self._backend.bootConfiguration_getObjects(
 						name=bootConfiguration.name,
 						clientId=bootConfiguration.clientId
 					)
 				)
+
 		return result
 
 	def bootConfiguration_updateObjects(self, bootConfigurations):
+		returnObjects = self._options['returnObjectsOnUpdateAndCreate']
+
 		result = []
 		bootConfigurations = forceObjectClassList(bootConfigurations, BootConfiguration)
 		for bootConfiguration in bootConfigurations:
@@ -4237,13 +4330,15 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			else:
 				logger.info(u"BootConfiguration %s does not exist, creating" % bootConfiguration)
 				self._backend.bootConfiguration_insertObject(bootConfiguration)
-			if self._options['returnObjectsOnUpdateAndCreate']:
+
+			if returnObjects:
 				result.extend(
 					self._backend.bootConfiguration_getObjects(
 						name=bootConfiguration.name,
 						clientId=bootConfiguration.clientId
 					)
 				)
+
 		return result
 
 	def bootConfiguration_create(self, name, clientId, priority=None, description=None, netbootProductId=None, pxeTemplate=None, options=None, disk=None, partition=None, active=None, deleteAfter=None, deactivateAfter=None, accessCount=None, osName=None):
