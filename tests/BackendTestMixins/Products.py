@@ -527,18 +527,13 @@ class ProductPropertiesTestMixin(ProductPropertiesMixin):
         self.createProductsOnBackend()
         self.createProductPropertiesOnBackend()
 
-        excepted = False
-        try:
-            pps0 = ProductPropertyState(
-                productId=self.productProperty1.getProductId(),
-                propertyId=self.productProperty1.getPropertyId(),
-                objectId='kaputtesdepot.dom.local'
-            )
-            self.backend.productPropertyState_insertObject(pps0)
-        except:
-            excepted = True
+        pps0 = ProductPropertyState(
+            productId=self.productProperty1.getProductId(),
+            propertyId=self.productProperty1.getPropertyId(),
+            objectId='kaputtesdepot.dom.local'
+        )
 
-        assert excepted, u"faulty objectId accepted!"
+        self.assertRaises(Exception, self.backend.productPropertyState_insertObject, pps0)
 
 
 class ProductDependenciesMixin(ProductsMixin):
