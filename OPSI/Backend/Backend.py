@@ -64,7 +64,7 @@ from OPSI.Util import (timestamp, compareVersions, blowfishDecrypt,
 from OPSI.Util.File import ConfigFile
 import OPSI.SharedAlgorithm
 
-__version__ = '4.0.6.8'
+__version__ = '4.0.6.10'
 
 logger = Logger()
 OPSI_VERSION_FILE = u'/etc/opsi/version'
