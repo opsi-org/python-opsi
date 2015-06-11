@@ -28,6 +28,8 @@ from __future__ import absolute_import
 from OPSI.Object import (NetbootProduct, LocalbootProduct,
     UnicodeProductProperty, BoolProductProperty, ProductDependency,
     ProductOnDepot, ProductOnClient, ProductPropertyState)
+from OPSI.Types import forceHostId
+from OPSI.Util import getfqdn
 
 from .Hosts import HostsMixin
 from .Clients import ClientsMixin
@@ -534,6 +536,94 @@ class ProductPropertiesTestMixin(ProductPropertiesMixin):
         )
 
         self.assertRaises(Exception, self.backend.productPropertyState_insertObject, pps0)
+
+    def testFixing1554(self):
+        """
+        The backend must not ignore product property states of a product when
+        the name of the product equals the name of a product property.
+
+        The setup here is that there is a product with properties.
+        One of these properties has the same ID as the name of a different
+        product. For this product all properties must be shown.
+        """
+        serverFqdn = forceHostId(getfqdn())  # using local FQDN
+        depotserver1 = {
+            "isMasterDepot" : True,
+            "type" : "OpsiConfigserver",
+            "id" : serverFqdn,
+        }
+
+        product1 = {
+            "name" : "Windows Customizing",
+            "packageVersion" : "1",
+            "productVersion" : "4.0.1",
+            "type" : "LocalbootProduct",
+            "id" : "config-win-base",
+        }
+
+        product2 = {
+            "name" : "Software fuer Windows-Clients",
+            "packageVersion" : "3",
+            "productVersion" : "2.0",
+            "type" : "LocalbootProduct",
+            "id" : "clientprodukte",
+        }
+
+        productProperty1 = {
+            "description" : "Masterflag: Do Explorer Settings",
+            "possibleValues" : ["0", "1"],
+            "defaultValues" : ["1"],
+            "productVersion" : "4.0.1",
+            "packageVersion" : "1",
+            "type" : "UnicodeProductProperty",
+            "propertyId" : "flag_explorer",
+            "productId" : "config-win-base"
+        }
+
+        productProperty2 = {
+            "description" : "config-win-base installieren (empfohlen)",
+            "possibleValues" : ["ja", "nein"],
+            "defaultValues" : ["ja"],
+            "productVersion" : "2.0",
+            "packageVersion" : "3",
+            "type" : "UnicodeProductProperty",
+            "propertyId" : "config-win-base",
+            "productId" : "clientprodukte"
+        }
+
+        pps1 = {
+            "objectId" : serverFqdn,
+            "values" : ["1"],
+            "type" : "ProductPropertyState",
+            "propertyId" : "flag_explorer",
+            "productId" : "config-win-base"
+        }
+
+        pps2 = {
+            "objectId" : serverFqdn,
+            "values" : ["ja"],
+            "type" : "ProductPropertyState",
+            "propertyId" : "config-win-base",
+            "productId" : "clientprodukte"
+        }
+
+        self.backend.product_createObjects([product1, product2])
+        self.backend.productProperty_createObjects([productProperty1, productProperty2])
+        self.backend.host_createObjects(depotserver1)
+        self.backend.productPropertyState_createObjects([pps1, pps2])
+
+        product1Properties = self.backend.productProperty_getObjects(productId=product1['id'])
+        self.assertTrue(product1Properties)
+        product2Properties = self.backend.productProperty_getObjects(productId=product2['id'])
+        self.assertTrue(product2Properties)
+        property1States = self.backend.productPropertyState_getObjects(productId=product1['id'])
+        self.assertTrue(property1States)
+        property2States = self.backend.productPropertyState_getObjects(productId=product2['id'])
+        self.assertTrue(property2States)
+        propertyStatesForServer = self.backend.productPropertyState_getObjects(objectId=depotserver1['id'], productId=product1['id'])
+        self.assertTrue(propertyStatesForServer)
+        propertyStatesForServer = self.backend.productPropertyState_getObjects(objectId=depotserver1['id'], productId=product2['id'])
+        self.assertTrue(propertyStatesForServer)
 
 
 class ProductDependenciesMixin(ProductsMixin):
