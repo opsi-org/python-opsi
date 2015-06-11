@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2014 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2015 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -51,6 +51,7 @@ class BackendSQLiteTestCase(unittest.TestCase):
 
 
 @unittest.skipIf(not os.path.exists('/etc/opsi/modules'), 'SQLite tests skipped: Missing modules file.')
+@unittest.skipIf(not apsw, 'SQLite tests skipped: Missing the module "apsw".')
 class SQLiteBackendTestCase(unittest.TestCase, SQLiteBackendMixin,
     BackendTestsMixin, ProductsTestMixin, AuditTestsMixin, LicensesTestMixin,
     ExtendedBackendTestsMixin, ConfigTestsMixin, ConfigStateTestsMixin):
