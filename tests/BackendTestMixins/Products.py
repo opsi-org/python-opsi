@@ -640,6 +640,7 @@ class ProductDependenciesTestMixin(ProductDependenciesMixin):
         assert len(productDependencies) == len(self.productDependencies), u"got: '%s', expected: '%s'" % (
             productDependencies, len(self.productDependencies))
 
+
 class ProductsOnDepotMixin(ProductsMixin, HostsMixin):
     def setUpProductOnDepots(self):
         self.setUpProducts()
@@ -847,7 +848,6 @@ class ProductsOnClientsMixin(ClientsMixin, ProductsMixin):
         ]
 
 
-
 class ProductsOnClientTestsMixin(ProductsOnClientsMixin, ProductPropertiesMixin):
     def testProductOnClientMethods(self):
         self.configureBackendOptions()
@@ -1015,7 +1015,6 @@ class ProductsOnClientTestsMixin(ProductsOnClientsMixin, ProductPropertiesMixin)
             print(u"Got productOnClient: %s" % productOnClient)
             assert productOnClient.productId in ('product6', 'product7'), u"'%s' not in '%s'" % (
                 productOnClient.productId, ('product6', 'product7'))
-#           , u"Product id filter failed, got product id: %s" % productOnClient.productId
 
         productOnClients = self.backend.productOnClient_getObjects(
             clientId='client1.uib.local', productId=['*6*'])
@@ -1023,7 +1022,6 @@ class ProductsOnClientTestsMixin(ProductsOnClientsMixin, ProductPropertiesMixin)
             print(u"Got productOnClient: %s" % productOnClient)
             assert productOnClient.productId in ('product6'), u"'%s' not in '%s'" % (
                 productOnClient.productId, ('product6'))
-#           , u"Product id filter failed, got product id: %s" % productOnClient.productId
 
         self.backend.productOnClient_create(
             productId='product6',
