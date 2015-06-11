@@ -435,7 +435,7 @@ class ProductPropertiesTestMixin(ProductPropertiesMixin):
         self.backend.productProperty_createObjects([productProperty1])
 
         product2 = LocalbootProduct(
-            id='dec',
+            id='dep',
             name=u'The Dillinger Escape Plan',
             productVersion='11.1',
             packageVersion=2,
