@@ -35,7 +35,7 @@ from OPSI.Types import forceBool, forceHostId, forceList
 from OPSI.Util.Message import ProgressSubject
 
 
-__version__ = '4.0.6.3'
+__version__ = '4.0.6.10'
 
 logger = Logger()
 
