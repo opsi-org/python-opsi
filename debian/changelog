@@ -6,8 +6,9 @@ python-opsi (4.0.6.10-1) UNRELEASED; urgency=medium
     per method execution.
   * objectToBash, objectToHtml and objectToBeautifiedText now also correctly
     format subclasses of the lists / dicts.
+  * 20_legacy.conf: Speed up _getProductStates_hash
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 12 Jun 2015 10:43:48 +0200
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 12 Jun 2015 10:48:24 +0200
 
 python-opsi (4.0.6.9-1) experimental; urgency=medium
 
