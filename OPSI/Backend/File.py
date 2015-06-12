@@ -708,13 +708,8 @@ class FileBackend(ConfigDataBackend):
 			logger.debug2(u"Returning idents without filter." % ())
 			return objIdents
 
-		filteredObjIdents = []
-		for ident in objIdents:
-			if self._objectHashMatches(ident, **filter):
-				filteredObjIdents.append(ident)
-
-		logger.debug2(u"Returning filtered idents." % ())
-		return filteredObjIdents
+		return [ident for ident in objIdents
+				if self._objectHashMatches(ident, **filter)]
 
 	@staticmethod
 	def _adaptObjectHashAttributes(objHash, ident, attributes):
