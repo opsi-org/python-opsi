@@ -47,7 +47,7 @@ from OPSI.Backend.Backend import ConfigDataBackend
 from OPSI.Backend.SQL import (onlyAllowSelect, SQL, SQLBackend,
 	SQLBackendObjectModificationTracker)
 
-__version__ = '4.0.6.3'
+__version__ = '4.0.6.10'
 
 logger = Logger()
 
@@ -230,7 +230,7 @@ class MySQL(SQL):
 	def getSet(self, query):
 		logger.debug2(u"getSet: %s" % query)
 		(conn, cursor) = self.connect()
-		valueSet = []
+
 		try:
 			try:
 				self.execute(query, conn, cursor)
@@ -239,16 +239,16 @@ class MySQL(SQL):
 				if e[0] != 2006:
 					# 2006: MySQL server has gone away
 					raise
+
 				self._createConnectionPool()
 				(conn, cursor) = self.connect()
 				self.execute(query, conn, cursor)
+
 			valueSet = cursor.fetchall()
-			if not valueSet:
-				logger.debug(u"No result for query '%s'" % query)
-				valueSet = []
 		finally:
 			self.close(conn, cursor)
-		return valueSet
+
+		return valueSet or []
 
 	def getRows(self, query):
 		logger.debug2(u"getRows: %s" % query)
