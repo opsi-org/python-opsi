@@ -2169,12 +2169,14 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		for config in self._backend.config_getObjects(id=['clientconfig.configserver.url', 'clientconfig.depot.id']):
 			if config.defaultValues:
 				changed = False
-				for i in range(len(config.defaultValues)):
-					if id in config.defaultValues[i]:
-						config.defaultValues[i] = config.defaultValues[i].replace(id, newId)
+				for i, value in enumerate(config.defaultValues):
+					if id in value:
+						config.defaultValues[i] = value.replace(id, newId)
 						changed = True
+
 				if changed:
 					updateConfigs.append(config)
+
 		if updateConfigs:
 			self.config_updateObjects(updateConfigs)
 
@@ -2182,12 +2184,14 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		for configState in self._backend.configState_getObjects(configId=['clientconfig.configserver.url', 'clientconfig.depot.id']):
 			if configState.values:
 				changed = False
-				for i in range(len(configState.values)):
-					if id in configState.values[i]:
-						configState.values[i] = configState.values[i].replace(id, newId)
+				for i, value in enumerate(configState.values):
+					if id in value:
+						configState.values[i] = value.replace(id, newId)
 						changed = True
+
 				if changed:
 					updateConfigStates.append(configState)
+
 		if updateConfigStates:
 			self.configState_updateObjects(updateConfigStates)
 
@@ -2196,6 +2200,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			if depot.masterDepotId and (depot.masterDepotId == id):
 				depot.masterDepotId = newId
 				modifiedDepots.append(depot)
+
 		if modifiedDepots:
 			self.host_updateObjects(modifiedDepots)
 
