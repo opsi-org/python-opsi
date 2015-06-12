@@ -398,12 +398,13 @@ class MySQL(SQL):
 		return result
 
 	def delete(self, table, where, conn=None, cursor=None):
-		closeConnection = True
 		if conn and cursor:
 			logger.debug(u"TRANSACTION: conn and cursor given, so we should not close the connection.")
 			closeConnection = False
 		else:
+			closeConnection = True
 			(conn, cursor) = self.connect()
+
 		result = 0
 		try:
 			query = u"DELETE FROM `%s` WHERE %s;" % (table, where)
