@@ -8,8 +8,9 @@ python-opsi (4.0.6.10-1) UNRELEASED; urgency=medium
     format subclasses of the lists / dicts.
   * 20_legacy.conf: Speed up _getProductStates_hash
   * FileBackend: Do not double the mapping list of LocalbootProduct and NetbootProduct.
+  * FileBackend: allow products having ProductPropertyStates that are the same as the id of a product.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 12 Jun 2015 15:13:10 +0200
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 12 Jun 2015 15:14:55 +0200
 
 python-opsi (4.0.6.9-1) experimental; urgency=medium
 

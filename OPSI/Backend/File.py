@@ -946,8 +946,6 @@ class FileBackend(ConfigDataBackend):
 							removeOptions[obj.getId()].append(m['option'])
 					elif objType in ('ProductOnDepot', 'ProductOnClient'):
 						removeSections = [obj.getProductId() + u'-state']
-					elif objType == 'ProductPropertyState':
-						removeSections = [obj.getPropertyId() + u'-install']
 
 					for section in removeSections:
 						if cp.has_section(section):
