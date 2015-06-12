@@ -27,6 +27,7 @@ import random
 import re
 import os
 import unittest
+from collections import defaultdict
 
 from OPSI.Util import (compareVersions, flattenSequence, formatFileSize,
     generateOpsiHostKey, getGlobalConfig, ipAddressInNetwork,
@@ -216,6 +217,18 @@ class ObjectToBeautifiedTextTestCase(unittest.TestCase):
     }\
 """
         self.assertEquals(expected, objectToBeautifiedText({}, level=1))
+
+    def testFormattingDefaultDict(self):
+        normalDict = {u'lastStateChange': u'', u'actionRequest': u'none', u'productVersion': u'', u'productActionProgress': u'', u'packageVersion': u'', u'installationStatus': u'not_installed', u'productId': u'thunderbird'}
+        defaultDict = defaultdict(lambda x: u'')
+
+        for key, value in normalDict.items():
+            defaultDict[key] = value
+
+        normal = objectToBeautifiedText(normalDict)
+        default = objectToBeautifiedText(defaultDict)
+
+        self.assertEquals(normal, default)
 
 
 class UtilTestCase(unittest.TestCase):

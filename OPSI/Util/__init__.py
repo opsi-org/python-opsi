@@ -284,7 +284,7 @@ def objectToBeautifiedText(obj, level=0):
 	text = []
 	append = text.append
 
-	if type(obj) is types.ListType:
+	if isinstance(obj, types.ListType):
 		append(indent)
 		append(u'[\n')
 
@@ -300,7 +300,7 @@ def objectToBeautifiedText(obj, level=0):
 
 		append(indent)
 		append(u']')
-	elif type(obj) is types.DictType:
+	elif isinstance(obj, types.DictType):
 		append(indent)
 		append(u'{\n')
 
@@ -318,7 +318,7 @@ def objectToBeautifiedText(obj, level=0):
 
 		append(indent)
 		append(u'}')
-	elif type(obj) is str:
+	elif isinstance(obj, str):  # TODO: watch out for Python 3
 		append(toJson(forceUnicode(obj)))
 	else:
 		append(toJson(obj))
@@ -346,10 +346,10 @@ def objectToBash(obj, bashVars=None, level=0):
 	if hasattr(obj, 'serialize'):
 		obj = obj.serialize()
 
-	if type(obj) is types.ListType:
+	if isinstance(obj, types.ListType):
 		bashVars[varName] += u'(\n'
 		for i in range( len(obj) ):
-			if type(obj[i]) in (types.DictType, types.ListType):
+			if isinstance(obj[i], (types.DictType, types.ListType)):
 				hashFound = True
 				level += 1
 				objectToBash(obj[i], bashVars, level)
@@ -358,11 +358,11 @@ def objectToBash(obj, bashVars=None, level=0):
 				objectToBash(obj[i], bashVars, level)
 			bashVars[varName] += u'\n'
 		bashVars[varName] = bashVars[varName][:-1] + u'\n)'
-	elif type(obj) is types.DictType:
+	elif isinstance(obj, types.DictType):
 		bashVars[varName] += u'(\n'
 		for (key, value) in obj.items():
 			bashVars[varName] += '%s=' % key
-			if type(value) in (types.DictType, types.ListType):
+			if isinstance(value, (types.DictType, types.ListType)):
 				level += 1
 				v = objectToBash(value, bashVars, level)
 				bashVars[varName] += u'${RESULT%d[*]}' % level
@@ -387,7 +387,7 @@ def objectToHtml(obj, level=0):
 	html = []
 	append = html.append
 
-	if type(obj) is types.ListType:
+	if isinstance(obj, types.ListType):
 		append(u'[')
 		if len(obj) > 0:
 			append(u'<div style="padding-left: 3em;">')
@@ -397,7 +397,7 @@ def objectToHtml(obj, level=0):
 					append(u',<br />\n')
 			append(u'</div>')
 		append(u']')
-	elif type(obj) is types.DictType:
+	elif isinstance(obj, types.DictType):
 		append(u'{')
 		if len(obj) > 0:
 			append(u'<div style="padding-left: 3em;">')
@@ -412,12 +412,12 @@ def objectToHtml(obj, level=0):
 				i += 1
 			append(u'</div>')
 		append(u'}')
-	elif type(obj) is types.BooleanType:
+	elif isinstance(obj, types.BooleanType):
 		append(str(obj).lower())
-	elif type(obj) is types.NoneType:
+	elif isinstance(obj, types.NoneType):
 		append('null')
 	else:
-		if type(obj) in (str, unicode):
+		if isinstance(obj, (str, unicode)):  # TODO: watch out for Python 3
 			append(replaceSpecialHTMLCharacters(obj).join((u'"', u'"')))
 		else:
 			append(replaceSpecialHTMLCharacters(obj))
