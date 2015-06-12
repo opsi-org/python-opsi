@@ -539,8 +539,8 @@ class ProductPropertiesTestMixin(ProductPropertiesMixin):
 
     def testFixing1554(self):
         """
-        The backend must not ignore product property states of a product when
-        the name of the product equals the name of a product property.
+        The backend must not ignore product property states of a product when \
+the name of the product equals the name of a product property.
 
         The setup here is that there is a product with properties.
         One of these properties has the same ID as the name of a different
@@ -610,20 +610,36 @@ class ProductPropertiesTestMixin(ProductPropertiesMixin):
         self.backend.product_createObjects([product1, product2])
         self.backend.productProperty_createObjects([productProperty1, productProperty2])
         self.backend.host_createObjects(depotserver1)
-        self.backend.productPropertyState_createObjects([pps1, pps2])
+        self.backend.productPropertyState_createObjects([pps1])
 
         product1Properties = self.backend.productProperty_getObjects(productId=product1['id'])
         self.assertTrue(product1Properties)
         product2Properties = self.backend.productProperty_getObjects(productId=product2['id'])
         self.assertTrue(product2Properties)
+
+        # Only one productPropertyState
         property1States = self.backend.productPropertyState_getObjects(productId=product1['id'])
         self.assertTrue(property1States)
+
+        # Upping the game by inserting another productPropertyState
+        self.backend.productPropertyState_createObjects([pps2])
+
+        property1States = self.backend.productPropertyState_getObjects(productId=product1['id'])
+        self.assertTrue(property1States)
+        self.assertEquals(len(property1States), 1)
         property2States = self.backend.productPropertyState_getObjects(productId=product2['id'])
         self.assertTrue(property2States)
+        self.assertEquals(len(property2States), 1)
         propertyStatesForServer = self.backend.productPropertyState_getObjects(objectId=depotserver1['id'], productId=product1['id'])
         self.assertTrue(propertyStatesForServer)
+        self.assertEquals(len(property2States), 1)
         propertyStatesForServer = self.backend.productPropertyState_getObjects(objectId=depotserver1['id'], productId=product2['id'])
         self.assertTrue(propertyStatesForServer)
+        self.assertEquals(len(property2States), 1)
+        propertyStatesForServer = self.backend.productPropertyState_getObjects(objectId=depotserver1['id'])
+        self.assertTrue(propertyStatesForServer)
+        self.assertEquals(len(propertyStatesForServer), 2)
+
 
 
 class ProductDependenciesMixin(ProductsMixin):
