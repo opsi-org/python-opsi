@@ -426,12 +426,13 @@ class MySQL(SQL):
 		return result
 
 	def execute(self, query, conn=None, cursor=None):
-		res = None
-		needClose = False
-		if not conn or not cursor:
+		if not (conn and cursor):
 			(conn, cursor) = self.connect()
 			needClose = True
+		else:
+			needClose = False
 
+		res = None
 		try:
 			query = forceUnicode(query)
 			logger.debug2(u"SQL query: %s" % query)
