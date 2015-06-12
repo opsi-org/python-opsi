@@ -205,8 +205,8 @@ This defaults to ``self``.
 			matched = False
 			try:
 				logger.debug(
-					u"Testing match of filter '{0}' of attribute '{1}' with"
-					u"value '{2}'".format(filter[attribute], attribute, value)
+					u"Testing match of filter {0!r} of attribute {1!r} with "
+					u"value {2!r}".format(filter[attribute], attribute, value)
 				)
 				filterValues = forceUnicodeList(filter[attribute])
 				if forceUnicodeList(value) == filterValues or forceUnicode(value) in filterValues:
@@ -220,6 +220,7 @@ This defaults to ``self``.
 								if subClass == value:
 									matched = True
 									break
+
 							continue
 
 						if isinstance(value, list):
@@ -263,11 +264,12 @@ This defaults to ``self``.
 					break
 			except Exception as err:
 				raise Exception(
-					u"Testing match of filter '{0}' of attribute '{1}' with "
-					u"value '{2}' failed: {error}".format(
+					u"Testing match of filter {0!r} of attribute {1!r} with "
+					u"value {2!r} failed: {error}".format(
 						filter[attribute], attribute, value, error=err
 					)
 				)
+
 		return matchedAll
 
 	def backend_setOptions(self, options):
