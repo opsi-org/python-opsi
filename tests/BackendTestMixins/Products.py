@@ -391,15 +391,15 @@ class ProductPropertyStateTestsMixin(ProductPropertyStatesMixin):
         self.createProductsOnBackend()
         self.createProductPropertiesOnBackend()
 
-        self.backend.productPropertyState_createObjects(
-            self.productPropertyStates)
+        self.backend.productPropertyState_createObjects(self.productPropertyStates)
 
         productPropertyStates = self.backend.productPropertyState_getObjects()
-        assert len(productPropertyStates) == len(self.productPropertyStates), u"got: '%s', expected: '%s'" % (
-            productPropertyStates, len(self.productPropertyStates))
+        self.assertEquals(len(productPropertyStates), len(self.productPropertyStates),
+            u"Expected {0} objects in the backend but got {1} instead.".format(len(self.productPropertyStates), len(productPropertyStates))
+        )
 
-        self.backend.productPropertyState_deleteObjects(
-            self.productPropertyState2)
+        self.backend.productPropertyState_deleteObjects(self.productPropertyState2)
+
         productPropertyStates = self.backend.productPropertyState_getObjects()
         assert len(productPropertyStates) == len(self.productPropertyStates) - \
             1, u"got: '%s', expected: '%s'" % (
