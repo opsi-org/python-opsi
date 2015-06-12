@@ -44,7 +44,7 @@ from OPSI.Util.File import IniFile, LockableFile
 from OPSI.Util.File.Opsi import OpsiConfFile, HostKeyFile, PackageControlFile
 from OPSI.Object import *  # needed for calls to "eval"
 
-__version__ = '4.0.6.3'
+__version__ = '4.0.6.10'
 
 logger = Logger()
 
@@ -540,7 +540,6 @@ class FileBackend(ConfigDataBackend):
 						logger.debug2(u"Ignoring invalid file '%s'" % (filename))
 						continue
 
-					objectId = None
 					try:
 						objectId = forceHostId(entry[:-4])
 					except Exception as e:
