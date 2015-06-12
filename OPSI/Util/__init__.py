@@ -55,7 +55,7 @@ from OPSI.Logger import Logger
 from OPSI.Types import (forceBool, forceFilename, forceFqdn, forceInt,
 						forceIPAddress, forceNetworkAddress, forceUnicode)
 
-__version__ = '4.0.6.2'
+__version__ = '4.0.6.10'
 
 logger = Logger()
 
@@ -290,7 +290,7 @@ def objectToBeautifiedText(obj, level=0):
 
 		if obj:
 			for element in obj:
-				if not type(element) in (types.DictType, types.ListType):
+				if not isinstance(element, (types.DictType, types.ListType)):
 					append(indent)
 				append(objectToBeautifiedText(element, level + 1))
 				append(u',')
@@ -308,7 +308,7 @@ def objectToBeautifiedText(obj, level=0):
 			for (key, value) in obj.iteritems():
 				append(indent)
 				append(key.join((u'"', u'" : ')))
-				if type(value) in (types.DictType, types.ListType):
+				if isinstance(value, (types.DictType, types.ListType)):
 					append(u'\n')
 				append(objectToBeautifiedText(value, level + 1))
 				append(u',')
