@@ -60,6 +60,12 @@ BuildRequires:  gettext-runtime
 %description
 This package contains the opsi python library.
 
+# ===[ debug_package ]==============================
+%debug_package
+
+# ===[ prep ]=======================================
+%prep
+
 # ===[ setup ]======================================
 %setup -n %{name}-%{version}
 
