@@ -1,7 +1,7 @@
 #
 # spec file for package python-opsi
 #
-# Copyright (c) 2013-2014 uib GmbH.
+# Copyright (c) 2013-2015 uib GmbH.
 # This file and all modifications and additions to the pristine
 # package are under the same license as the package itself.
 #
@@ -59,12 +59,6 @@ BuildRequires:  gettext-runtime
 # ===[ description ]================================
 %description
 This package contains the opsi python library.
-
-# ===[ debug_package ]==============================
-%debug_package
-
-# ===[ prep ]=======================================
-%prep
 
 # ===[ setup ]======================================
 %setup -n %{name}-%{version}
@@ -149,22 +143,11 @@ chmod 660 /etc/opsi/passwd
 [ -e "/etc/opsi/backendManager/acl.conf" ]      || ln -s /etc/opsi/backendManager/acl.conf.default      /etc/opsi/backendManager/acl.conf
 [ -e "/etc/opsi/backendManager/dispatch.conf" ] || ln -s /etc/opsi/backendManager/dispatch.conf.default /etc/opsi/backendManager/dispatch.conf
 
-## ===[ postun ]=====================================
-#%postun
-#if [ $1 -eq 0 ]; then
-#	[ -z "`getent passwd pcpatch`" ] || userdel pcpatch
-#	[ -z "`getent group pcpatch`" ] || groupdel pcpatch
-#	[ -z "`getent group opsiadmin`" ] || groupdel opsiadmin
-#	#[ -e /etc/opsi/pckeys ] && rm -f /etc/opsi/pckeys
-#fi
-
 # ===[ files ]======================================
 %files -f INSTALLED_FILES
+
 # default attributes
 %defattr(-,root,root)
-
-# documentation
-#%doc LICENSE README RELNOTES doc
 
 # configfiles
 %config(noreplace) /etc/opsi/backends/dhcpd.conf
@@ -183,15 +166,6 @@ chmod 660 /etc/opsi/passwd
 %config /etc/opsi/hwaudit/opsihwaudit.conf
 %config /etc/opsi/hwaudit/locales/de_DE
 %config /etc/opsi/hwaudit/locales/en_US
-
-# other files
-#/usr/share/locale/de/LC_MESSAGES/opsi_system.mo
-#/usr/share/locale/de/LC_MESSAGES/opsi_ui.mo
-#/usr/share/locale/fr/LC_MESSAGES/opsi_system.mo
-#/usr/share/locale/fr/LC_MESSAGES/opsi_ui.mo
-#/usr/share/opsi/init-opsi-mysql-db.py
-#/usr/share/opsi/register-depot.py
-#/usr/share/opsi/opsi-fire-event.py
 
 # directories
 #%dir /var/lib/opsi
