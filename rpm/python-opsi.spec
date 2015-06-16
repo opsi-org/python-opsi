@@ -179,6 +179,7 @@ chmod 660 /etc/opsi/passwd
 #%dir /etc/opsi/backendManager/extend.d/configed
 #%dir /etc/opsi/backends
 #%dir /etc/opsi/hwaudit/locales
+%dir /etc/opsi/systemdTemplates
 
 %if 0%{?rhel_version} || 0%{?centos_version} || 0%{?fedora_version}
 %define python_sitearch %(%{__python} -c 'from distutils import sysconfig; print sysconfig.get_python_lib()')
