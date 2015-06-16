@@ -1,4 +1,4 @@
-python-opsi (4.0.6.10-1) UNRELEASED; urgency=medium
+python-opsi (4.0.6.10-1) experimental; urgency=medium
 
   * Added __repr__ for Backend and JSONRPCBackend.
   * OPSI.Backend.Replicator: Inserting objects should be a little faster.
@@ -12,7 +12,7 @@ python-opsi (4.0.6.10-1) UNRELEASED; urgency=medium
   * Some small refactorings to OPSI.Backend.SQL and OPSI.Backend.MySQL.
   * Supply new folder /etc/opsi/systemdTemplates
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 15 Jun 2015 15:57:17 +0200
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 16 Jun 2015 10:45:21 +0200
 
 python-opsi (4.0.6.9-1) experimental; urgency=medium
 
