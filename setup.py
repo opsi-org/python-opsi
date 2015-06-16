@@ -123,14 +123,6 @@ for language in LANGUAGES:
 		print('Generating locale for "{0}" failed. Is gettext installed?'.format(language))
 
 
-cmdclass = {}
-
-try:
-	from opsidistutils.commands.osc_cmd import osc_publish as osc
-	cmdclass['osc'] = osc
-except ImportError:
-	print("osc integration is not available on this machine. please install opsi-distutils.")
-
 setup(
 	name='python-opsi',
 	version=VERSION,
@@ -139,5 +131,4 @@ setup(
 	description='The opsi python library',
 	packages=find_packages(exclude=["*.tests", "*.tests.*", "tests.*", "tests"]),
 	data_files=data_files,
-	cmdclass=cmdclass
 )
