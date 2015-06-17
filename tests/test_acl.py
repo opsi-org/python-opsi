@@ -30,6 +30,7 @@ import unittest
 
 import OPSI.Types
 import OPSI.Object
+from OPSI.Util import getfqdn
 from OPSI.Util.File.Opsi import BackendACLFile
 from OPSI.Backend.BackendManager import BackendAccessControl
 
@@ -161,6 +162,73 @@ class ACLEnforcingTestCase(unittest.TestCase, FileBackendMixin,
     #     self.assertFalse(backendAccessControl.host_getObjects(id=self.client3.id))
     #     client3FromBackend = backendAccessControl.host_getObjects(id=self.client3.id)[0]
     #     self.assertEquals(client3FromBackend.notes, newClient3.notes)
+
+    def testDenyingAccessToOtherObjects(self):
+        """
+        It must be possible to deny access to foreign objects.
+
+        In this test we first make sure that the access to productOnClient_create
+        is possible for the object accessing the backend.
+        After that we test the same referencing another object which we
+        want to fail.
+        """
+        serverFqdn = OPSI.Types.forceHostId(getfqdn())  # using local FQDN
+        depotserver1 = {
+            "isMasterDepot" : True,
+            "type" : "OpsiConfigserver",
+            "id" : serverFqdn,
+        }
+
+        self.backend.host_createObjects(depotserver1)
+
+        self.setUpClients()
+        self.setUpProducts()
+
+        self.createHostsOnBackend()
+        self.createProductsOnBackend()
+
+        self.backend.config_createObjects([{
+            "id": u'clientconfig.depot.id',
+            "type": "UnicodeConfig",
+        }])
+        self.backend.configState_create(u'clientconfig.depot.id', self.client1.getId(), values=[depotserver1['id']])
+
+        productOnDepot1 = OPSI.Object.ProductOnDepot(
+            productId=self.product1.getId(),
+            productType=self.product1.getType(),
+            productVersion=self.product1.getProductVersion(),
+            packageVersion=self.product1.getPackageVersion(),
+            depotId=depotserver1['id'],
+            locked=False
+        )
+
+        self.backend.productOnDepot_createObjects([productOnDepot1])
+
+
+        backendAccessControl = BackendAccessControl(
+            username=self.client1.id,
+            password=self.client1.opsiHostKey,
+            backend=self.backend,
+            acl=[
+                ['productOnClient_create', [{'type': u'self', 'ids': [], 'denyAttributes': [], 'allowAttributes': []}]],
+            ]
+        )
+
+        backendAccessControl.productOnClient_create(
+            productId=self.product1.id,
+            productType=self.product1.getType(),
+            clientId=self.client1.id,
+            installationStatus='installed'
+        )
+
+        self.assertRaises(
+            Exception,
+            backendAccessControl.productOnClient_create,
+            productId=self.product1.id,
+            productType=self.product1.getType(),
+            clientId=self.client2.id,  # here is the difference
+            installationStatus='installed'
+        )
 
 
 if __name__ == '__main__':
