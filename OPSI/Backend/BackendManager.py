@@ -524,7 +524,10 @@ class BackendAccessControl(object):
 		self._host = None
 		self._authenticated = False
 
-		if 'suse' in DISTRIBUTOR.lower():
+		if os.path.exists("/etc/pam.d/opsi-auth"):
+			# Prefering our own - if present.
+			self._pamService = 'opsi-auth'
+		elif 'suse' in DISTRIBUTOR.lower():
 			self._pamService = 'sshd'
 		elif 'centos' in DISTRIBUTOR.lower() or 'scientific' in DISTRIBUTOR.lower():
 			self._pamService = 'system-auth'
@@ -532,10 +535,6 @@ class BackendAccessControl(object):
 			self._pamService = 'system-auth'
 			if DISTRELEASE.startswith('6.'):
 				self._pamService = 'password-auth'
-
-		if os.path.exists("/etc/pam.d/opsi-auth"):
-			# Prefering our own - if present.
-			self._pamService = 'opsi-auth'
 
 		for (option, value) in kwargs.items():
 			option = option.lower()
