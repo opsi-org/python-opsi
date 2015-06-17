@@ -23,10 +23,14 @@ Testing the task to backup opsi.
 :license: GNU Affero General Public License version 3
 """
 
+from __future__ import absolute_import
+
 import os
 import mock
 import sys
 import unittest
+
+from .helpers import workInTemporaryDirectory
 
 from OPSI.Util.Task.Backup import OpsiBackup
 
@@ -73,14 +77,20 @@ class BackupTestCase(unittest.TestCase):
                 archive = backup._getArchive('r')
 
     def testCreatingArchive(self):
-        fakeBackendDir = os.path.join(os.path.dirname(__file__), '..', 'data', 'backends')
-        fakeBackendDir = os.path.normpath(fakeBackendDir)
+        with workInTemporaryDirectory() as tempDir:
+            self.assertEquals(len(os.listdir(tempDir)), 0, "Directory not empty")
 
-        with mock.patch('OPSI.System.Posix.SysInfo.opsiVersion'):
-            with mock.patch('OPSI.Util.Task.Backup.OpsiBackupArchive.CONF_DIR', os.path.dirname(__file__)):
-                with mock.patch('OPSI.Util.Task.Backup.OpsiBackupArchive.BACKEND_CONF_DIR', fakeBackendDir):
-                    backup = OpsiBackup()
-                    backup._create()
+            fakeBackendDir = os.path.join(os.path.dirname(__file__), '..', 'data', 'backends')
+            fakeBackendDir = os.path.normpath(fakeBackendDir)
+
+            with mock.patch('OPSI.System.Posix.SysInfo.opsiVersion'):
+                with mock.patch('OPSI.Util.Task.Backup.OpsiBackupArchive.CONF_DIR', os.path.dirname(__file__)):
+                    with mock.patch('OPSI.Util.Task.Backup.OpsiBackupArchive.BACKEND_CONF_DIR', fakeBackendDir):
+                        backup = OpsiBackup()
+                        backup._create()
+
+                        self.assertEquals(len(os.listdir(tempDir)), 1)
+
 
 if __name__ == '__main__':
     unittest.main()
