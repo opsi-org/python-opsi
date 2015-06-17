@@ -25,17 +25,14 @@ Testing BackendDispatcher.
 
 from __future__ import absolute_import
 
-import grp
 import os
-import pwd
-import shutil
-import tempfile
 import unittest
 
 from OPSI.Backend.BackendManager import BackendDispatcher
 from OPSI.Types import BackendConfigurationError
 
 from .Backends.File import FileBackendMixin
+from .helpers import workInTemporaryDirectory
 
 
 class BackendDispatcherTestCase(unittest.TestCase):
@@ -57,29 +54,24 @@ class BackendDispatcherWithFilesTestCase(unittest.TestCase):
     This will create files that look like an actual backend to simulate
     correct loading of backend information.
     """
-    def setUp(self):
-        self.testDir = tempfile.mkdtemp()
-        self.backendDir = os.path.join(self.testDir, 'backends')
-
-    def tearDown(self):
-        if os.path.exists(self.testDir):
-            shutil.rmtree(self.testDir)
-
     def testLoadingDispatchConfigFailsIfBackendConfigMissing(self):
-        self.assertRaises(
-            BackendConfigurationError,
-            BackendDispatcher,
-            dispatchConfig=[[u'.*', [u'file']]],
-            backendConfigDir=self.backendDir
-        )
+        with workInTemporaryDirectory() as testDir:
+            backendDir = os.path.join(testDir, 'backends')
 
-        os.mkdir(self.backendDir)
-        self.assertRaises(
-            BackendConfigurationError,
-            BackendDispatcher,
-            dispatchConfig=[[u'.*', [u'file']]],
-            backendConfigDir=self.backendDir
-        )
+            self.assertRaises(
+                BackendConfigurationError,
+                BackendDispatcher,
+                dispatchConfig=[[u'.*', [u'file']]],
+                backendConfigDir=backendDir
+            )
+
+            os.mkdir(backendDir)
+            self.assertRaises(
+                BackendConfigurationError,
+                BackendDispatcher,
+                dispatchConfig=[[u'.*', [u'file']]],
+                backendConfigDir=backendDir
+            )
 
 
 class BackendDispatcherWithBackendTestCase(unittest.TestCase, FileBackendMixin):

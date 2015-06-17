@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2014 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2015 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -20,109 +20,81 @@
 Testing WindowsDrivers.
 
 :author: Erol Ueluekmen <e.ueluekmen@uib.de>
+:author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
 """
 
+from __future__ import absolute_import
+
 import os
-import shutil
-import tempfile
 import unittest
 
 from OPSI.Util.WindowsDrivers import integrateAdditionalWindowsDrivers
-from OPSI.Object import AuditHardwareOnHost 
+from OPSI.Object import AuditHardwareOnHost
+
+from .helpers import workInTemporaryDirectory
+
 
 class WindowsDriversTestCase(unittest.TestCase):
-	
+
 	def _generateAuditHardwareOnHost(self, hardwareClass, hostId, vendor, model):
-		auditHardwareOnHost = AuditHardwareOnHost(
-			hardwareClass, hostId)
+		auditHardwareOnHost = AuditHardwareOnHost(hardwareClass, hostId)
 		auditHardwareOnHost.vendor = vendor
 		auditHardwareOnHost.model = model
-		
+
 		return auditHardwareOnHost
-		
-	def _generateDirectories(self, vendor, model):
-		rulesDir = os.path.join(self.temporary_folder, "byAudit")
+
+	def _generateDirectories(self, folder, vendor, model):
+		rulesDir = os.path.join(folder, "byAudit")
 		if not os.path.exists(rulesDir):
 			os.mkdir(rulesDir)
 		vendorDir = os.path.join(rulesDir, vendor)
 		modelDir = os.path.join(vendorDir, model)
-		
+
 		os.mkdir(vendorDir)
 		os.mkdir(modelDir)
-	
-	def _generateTestFiles(self, vendor, model, filename):
-		dstFilename = os.path.join(self.temporary_folder, "byAudit", vendor, model, filename)
+
+	def _generateTestFiles(self, folder, vendor, model, filename):
+		dstFilename = os.path.join(folder, "byAudit", vendor, model, filename)
 		with open(dstFilename, "w"):
 			pass
-			
-		
-		
-	def setUp(self):
-		self.temporary_folder = tempfile.mkdtemp()
-		self.destinationDir = os.path.join(self.temporary_folder, "destination")
-		
-	def tearDown(self):
-		if os.path.exists(self.temporary_folder):
-			pass
-			#shutil.rmtree(self.temporary_folder)
-		
+
 	def testByAudit(self):
-		
-		hardwareClass, hostId, vendor, model = ("COMPUTER_SYSTEM", "test.domain.local", "Dell Inc.", "Venue 11 Pro 7130 MS")
+		with workInTemporaryDirectory() as temporary_folder:
+			destinationDir = os.path.join(temporary_folder, "destination")
 
-		testData1 = self._generateAuditHardwareOnHost(hardwareClass, hostId, vendor, model)
-		self._generateDirectories(vendor, model)
-		self._generateTestFiles(vendor, model, "test.inf")
-				
-		result = integrateAdditionalWindowsDrivers(self.temporary_folder, self.destinationDir, [], auditHardwareOnHosts = [ testData1 ])
-		
-		expectedResult = [
-				{'devices': [],
-				'directory': u'%s/1' % self.destinationDir,
-				'driverNumber': 1,
-				'infFile': u'%s/1/test.inf' % self.destinationDir}]
-				
-		self.assertEquals(expectedResult, result)
-		
-		
+			hardwareClass, hostId, vendor, model = ("COMPUTER_SYSTEM", "test.domain.local", "Dell Inc.", "Venue 11 Pro 7130 MS")
+
+			testData1 = self._generateAuditHardwareOnHost(hardwareClass, hostId, vendor, model)
+			self._generateDirectories(temporary_folder, vendor, model)
+			self._generateTestFiles(temporary_folder, vendor, model, "test.inf")
+
+			result = integrateAdditionalWindowsDrivers(temporary_folder, destinationDir, [], auditHardwareOnHosts = [ testData1 ])
+
+			expectedResult = [
+					{'devices': [],
+					'directory': u'%s/1' % destinationDir,
+					'driverNumber': 1,
+					'infFile': u'%s/1/test.inf' % destinationDir}]
+
+			self.assertEquals(expectedResult, result)
+
 	def testByAuditWithUnderscoreAtTheEnd(self):
-		hardwareClass, hostId, vendor, model = ("COMPUTER_SYSTEM", "test.domain.local", "Dell Inc_", "Venue 11 Pro 7130 MS")
+		with workInTemporaryDirectory() as temporary_folder:
+			destinationDir = os.path.join(temporary_folder, "destination")
 
-		testData1 = self._generateAuditHardwareOnHost(hardwareClass, hostId, "Dell Inc.", model)
-		self._generateDirectories(vendor, model)
-		self._generateTestFiles(vendor, model, "test.inf")
-				
-		result = integrateAdditionalWindowsDrivers(self.temporary_folder, self.destinationDir, [], auditHardwareOnHosts = [ testData1 ])
-		
-		expectedResult = [
-				{'devices': [],
-				'directory': u'%s/1' % self.destinationDir,
-				'driverNumber': 1,
-				'infFile': u'%s/1/test.inf' % self.destinationDir}]
-				
-		self.assertEquals(expectedResult, result)
-		
-		
-		
-		
-		
-		
-	
-	
-	
-		
-		
-		
-		
-		
-		
-"""
-auditHardwareOnHosts
+			hardwareClass, hostId, vendor, model = ("COMPUTER_SYSTEM", "test.domain.local", "Dell Inc_", "Venue 11 Pro 7130 MS")
 
+			testData1 = self._generateAuditHardwareOnHost(hardwareClass, hostId, "Dell Inc.", model)
+			self._generateDirectories(temporary_folder, vendor, model)
+			self._generateTestFiles(temporary_folder, vendor, model, "test.inf")
 
-byAudit OK
-Additional
-byAuditFallback - Mainboard
-Statt Dell Inc. -> Dell Inc_
-"""
+			result = integrateAdditionalWindowsDrivers(temporary_folder, destinationDir, [], auditHardwareOnHosts = [ testData1 ])
+
+			expectedResult = [
+					{'devices': [],
+					'directory': u'%s/1' % destinationDir,
+					'driverNumber': 1,
+					'infFile': u'%s/1/test.inf' % destinationDir}]
+
+			self.assertEquals(expectedResult, result)

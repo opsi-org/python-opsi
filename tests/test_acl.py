@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014 uib GmbH <info@uib.de>
+# Copyright (C) 2014-2015 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -23,9 +23,9 @@ Testing ACL on the backend.
 :license: GNU Affero General Public License version 3
 """
 
+from __future__ import absolute_import
+
 import os
-import shutil
-import tempfile
 import unittest
 
 import OPSI.Types
@@ -34,39 +34,34 @@ from OPSI.Util import getfqdn
 from OPSI.Util.File.Opsi import BackendACLFile
 from OPSI.Backend.BackendManager import BackendAccessControl
 
-from BackendTestMixins.Products import ProductsOnClientsMixin, ProductPropertyStatesMixin
-from Backends.File import FileBackendMixin
-from BackendTestMixins.Hosts import HostsMixin
+from .BackendTestMixins.Products import ProductsOnClientsMixin, ProductPropertyStatesMixin
+from .Backends.File import FileBackendMixin
+from .BackendTestMixins.Hosts import HostsMixin
+from .helpers import workInTemporaryDirectory
 
 
 class BackendACLFileTestCase(unittest.TestCase):
-    def setUp(self):
-        self._temp_config_dir = tempfile.mkdtemp()
-
-    def tearDown(self):
-        if os.path.exists(self._temp_config_dir):
-            shutil.rmtree(self._temp_config_dir)
-
     def testParsingFile(self):
-        aclFile = os.path.join(self._temp_config_dir, 'acl.conf')
-        with open(aclFile, 'w') as exampleConfig:
-            exampleConfig.write(
-'''
-host_.*: opsi_depotserver(depot1.uib.local, depot2.uib.local); opsi_client(self,  attributes (attr1, attr2)); sys_user(some user, some other user); sys_group(a_group, group2)
-'''
-        )
+        with workInTemporaryDirectory() as tempDir:
+            aclFile = os.path.join(tempDir, 'acl.conf')
+            with open(aclFile, 'w') as exampleConfig:
+                exampleConfig.write(
+    '''
+    host_.*: opsi_depotserver(depot1.uib.local, depot2.uib.local); opsi_client(self,  attributes (attr1, attr2)); sys_user(some user, some other user); sys_group(a_group, group2)
+    '''
+            )
 
-        expectedACL = [
-            [u'host_.*', [
-                {'denyAttributes': [], 'type': u'opsi_depotserver', 'ids': [u'depot1.uib.local', u'depot2.uib.local'], 'allowAttributes': []},
-                {'denyAttributes': [], 'type': u'opsi_client', 'ids': [u'self'], 'allowAttributes': [u'attr1', u'attr2']},
-                {'denyAttributes': [], 'type': u'sys_user', 'ids': [u'some user', u'some other user'], 'allowAttributes': []},
-                {'denyAttributes': [], 'type': u'sys_group', 'ids': [u'a_group', u'group2'], 'allowAttributes': []}
+            expectedACL = [
+                [u'host_.*', [
+                    {'denyAttributes': [], 'type': u'opsi_depotserver', 'ids': [u'depot1.uib.local', u'depot2.uib.local'], 'allowAttributes': []},
+                    {'denyAttributes': [], 'type': u'opsi_client', 'ids': [u'self'], 'allowAttributes': [u'attr1', u'attr2']},
+                    {'denyAttributes': [], 'type': u'sys_user', 'ids': [u'some user', u'some other user'], 'allowAttributes': []},
+                    {'denyAttributes': [], 'type': u'sys_group', 'ids': [u'a_group', u'group2'], 'allowAttributes': []}
+                    ]
                 ]
             ]
-        ]
 
-        self.assertEquals(expectedACL, BackendACLFile(aclFile).parse())
+            self.assertEquals(expectedACL, BackendACLFile(aclFile).parse())
 
 
 class ACLEnforcingTestCase(unittest.TestCase, FileBackendMixin,
