@@ -88,11 +88,13 @@ def checkAsynchronosProcessing():
 	[t.start() for t in threads]
 	[t.join() for t in threads]
 
-	while True:  # TODO: neverending loops are baaad
+	runs = 0
+	while runs < 10:
 		print be.authenticated()
 		print be.group_getIdents()
 		print be.host_getIdents()
 		time.sleep(2)
+		runs += 1
 
 	be.setAsync(True)
 
