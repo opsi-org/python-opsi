@@ -2,6 +2,7 @@ python-opsi (4.0.6.11-1) UNRELEASED; urgency=medium
 
   * Debian: Moving lintian-overrides into debian/source
   * 20_legacy.conf: Small refactoring of getClients_listOfHashes
+  * 20_legacy.conf: Refactored getLicenseStatistics_hash
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 17 Jun 2015 12:24:56 +0200
 
