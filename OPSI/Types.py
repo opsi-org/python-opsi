@@ -508,7 +508,7 @@ def forceObjectClass(var, objectClass):
 			logger.debug(u"Failed to get object from dict '%s': %s" % (var, error))
 
 	if not isinstance(var, objectClass):
-		if exception:
+		if exception is not None:
 			raise ValueError(u"Not a %s: '%s': %s" % (objectClass, var, exception))
 		else:
 			raise ValueError(u"Not a %s: '%s'" % (objectClass, var))
