@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2014 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2015 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -26,18 +26,16 @@ Testing BackendManager.
 from __future__ import absolute_import
 
 import os
-import shutil
 import unittest
 
 from OPSI.Backend.Backend import ExtendedConfigDataBackend
 from OPSI.Backend.BackendManager import BackendManager, ConfigDataBackend
-from OPSI.Util import objectToBeautifiedText
 
 from .Backends.File import FileBackendMixin
 from .BackendTestMixins.Backend import BackendTestsMixin
-from .BackendTestMixins.Configs import ConfigTestsMixin, ConfigStateTestsMixin
-from .BackendTestMixins.Groups import GroupTestsMixin
-from .BackendTestMixins.Products import ProductsTestMixin, ProductsOnDepotMixin
+from .BackendTestMixins.Configs import ConfigStatesMixin
+from .BackendTestMixins.Groups import GroupsMixin
+from .BackendTestMixins.Products import ProductsOnDepotMixin
 
 from .helpers import getLocalFQDN
 
@@ -65,22 +63,23 @@ class BackendExtensionTestCase(unittest.TestCase):
 
 
 class ExtendedBackendManagerTestCase(unittest.TestCase, FileBackendMixin,
-        BackendTestsMixin, ProductsTestMixin, ProductsOnDepotMixin, ConfigTestsMixin,
-        ConfigStateTestsMixin, GroupTestsMixin):
+        BackendTestsMixin, ProductsOnDepotMixin, ConfigStatesMixin, GroupsMixin):
+    """
+    This tests an extended BackendManager that makes use of the extensions.
+    """
 
     def setUp(self):
         self.setUpBackend()
+        self.backend = BackendManager(
+            backend=self.backend,
+            extensionconfigdir=os.path.join(self._fileTempDir, self.BACKEND_SUBFOLDER, 'backendManager', 'extend.d')
+        )
 
     def tearDown(self):
         self.tearDownBackend()
 
     def testBackendManager(self):
-        bm = BackendManager(
-            backend=self.backend,
-            extensionconfigdir=os.path.join(self._fileTempDir, self.BACKEND_SUBFOLDER, 'backendManager', 'extend.d')
-        )
-
-        self.testObjectMethods()
+        bm = self.backend
 
         if False:
 
@@ -105,172 +104,156 @@ class ExtendedBackendManagerTestCase(unittest.TestCase, FileBackendMixin,
         #     password           = self.configserver1.getOpsiHostKey(),
         #     aclFile            = aclFile)
 
+        self.testObjectMethods()
+
         hostIds = bm.host_getIdents()
-        print(hostIds)
         for host in self.hosts:
-            assert host.id in hostIds
+            self.assertTrue(host.id in hostIds)
 
-        generalConfig = bm.getGeneralConfig_hash()
-        print(generalConfig)
-
-        generalConfig = bm.getGeneralConfig_hash(objectId = self.client1.id)
-        print(generalConfig)
+        # No configs set - should be equal now
+        self.assertEquals(bm.getGeneralConfig_hash(), bm.getGeneralConfig_hash(objectId=self.client1.id))
 
         self.setUpConfigs()
         self.createConfigOnBackend()
-        value = bm.getGeneralConfigValue(key = self.config1.id, objectId = None)
-        print(value)
-        assert value == self.config1.defaultValues[0]
 
-        generalConfig = {'test-key-1': 'test-value-1', 'test-key-2': 'test-value-2', 'opsiclientd.depot_server.depot_id': self.depotserver1.id}
-        bm.setGeneralConfig(config = generalConfig, objectId = None)
+        self.assertEquals(self.config1.defaultValues[0], bm.getGeneralConfigValue(key=self.config1.id, objectId=None))
 
-        value = bm.getGeneralConfigValue(key = generalConfig.keys()[0], objectId = self.client1.id)
-        print(value)
-        assert value == generalConfig[generalConfig.keys()[0]]
+        generalConfig = {
+            'test-key-1': 'test-value-1',
+            'test-key-2': 'test-value-2',
+            'opsiclientd.depot_server.depot_id': self.depotserver1.id
+        }
+        bm.setGeneralConfig(config=generalConfig, objectId=None)
 
-        bm.setGeneralConfigValue(generalConfig.keys()[1], self.client1.id, objectId = self.client1.id)
-        bm.setGeneralConfigValue(generalConfig.keys()[1], 'changed', objectId = None)
-        value = bm.getGeneralConfigValue(key = generalConfig.keys()[1], objectId = None)
-        print(value)
-        assert value == 'changed'
-        value = bm.getGeneralConfigValue(key = generalConfig.keys()[1], objectId = self.client1.id)
-        print(value)
-        assert value == self.client1.id
+        key = generalConfig.keys()[0]
+        value = bm.getGeneralConfigValue(key=key, objectId=self.client1.id)
+        self.assertEquals(value, generalConfig[key])
+
+        anotherKey = generalConfig.keys()[1]
+        bm.setGeneralConfigValue(anotherKey, self.client1.id, objectId=self.client1.id)
+        bm.setGeneralConfigValue(anotherKey, 'changed', objectId=None)
+        self.assertEquals('changed', bm.getGeneralConfigValue(key=anotherKey, objectId=None))
+
+        value = bm.getGeneralConfigValue(key=anotherKey, objectId=self.client1.id)
+        self.assertEquals(value, self.client1.id)
 
         bm.deleteGeneralConfig(self.client1.id)
-        value = bm.getGeneralConfigValue(key = generalConfig.keys()[1], objectId = self.client1.id)
-        print(value)
-        assert value == 'changed'
+        self.assertEquals('changed', bm.getGeneralConfigValue(key=anotherKey, objectId=self.client1.id))
 
         self.setUpGroups()
         self.createGroupsOnBackend()
 
         groupIds = bm.getGroupIds_list()
-        print(groupIds)
         for group in self.groups:
-            assert group.id in groupIds
+            self.assertTrue(group.id in groupIds)
 
+        clients = [self.client1.id, self.client2.id]
         groupId = 'a test group'
-        bm.createGroup(groupId, members = [ self.client1.id, self.client2.id ], description = "A test group", parentGroupId="")
-        groups = bm.group_getObjects(id = groupId)
-        print(groups)
-        assert len(groups) == 1
+        bm.createGroup(
+            groupId,
+            members=clients,
+            description="A test group",
+            parentGroupId=""
+        )
 
-        objectToGroups = bm.objectToGroup_getObjects(groupId = groupId)
-        print(objectToGroups)
-        assert len(objectToGroups) == 2
+        self.assertEquals(1, len(bm.group_getObjects(id=groupId)))
+
+        objectToGroups = bm.objectToGroup_getObjects(groupId=groupId)
+        self.assertEquals(2, len(objectToGroups))
         for objectToGroup in objectToGroups:
-            assert objectToGroup.objectId in [ self.client1.id, self.client2.id ]
+            self.assertTrue(objectToGroup.objectId in clients)
 
-        bm.deleteGroup(groupId = groupId)
-        groups = bm.group_getObjects(id = groupId)
-        assert len(groups) == 0
+        bm.deleteGroup(groupId=groupId)
+        self.assertEquals(0, len(bm.group_getObjects(id=groupId)))
 
-        ipAddress = bm.getIpAddress(hostId = self.client1.id)
-        print(ipAddress)
-        assert ipAddress == self.client1.ipAddress
+        ipAddress = bm.getIpAddress(hostId=self.client1.id)
+        self.assertEquals(ipAddress, self.client1.ipAddress)
 
         serverName, domain = getLocalFQDN().split('.', 1)
-        serverId = bm.createServer(serverName = serverName, domain = domain, description = 'Some description', notes=None)
-        print(serverId)
-        assert serverId == serverName + '.' + domain
+        serverId = bm.createServer(
+            serverName=serverName,
+            domain=domain,
+            description='Some description',
+            notes=None
+        )
+        self.assertEquals(serverId, serverName + '.' + domain)
 
-        serverIds = bm.host_getIdents(type = 'OpsiConfigserver')
-        print(serverIds)
-        assert serverId in serverIds
+        serverIds = bm.host_getIdents(type='OpsiConfigserver')
+        self.assertTrue(serverId in serverIds)
 
         clientName = 'test-client'
-        clientId = bm.createClient(clientName = clientName, domain = domain, description = 'a description', notes = 'notes...', ipAddress = '192.168.1.91', hardwareAddress = '00:01:02:03:01:aa')
-        print(clientId)
-        assert clientId == clientName + '.' + domain
+        clientId = bm.createClient(
+            clientName=clientName,
+            domain=domain,
+            description='a description',
+            notes='notes...',
+            ipAddress='192.168.1.91',
+            hardwareAddress='00:01:02:03:01:aa'
+        )
+        self.assertEquals(clientId, clientName + '.' + domain)
 
-        clientIds = bm.host_getIdents(type = 'OpsiClient')
-        print(clientIds)
-        assert clientId in clientIds
+        clientIds = bm.host_getIdents(type='OpsiClient')
+        self.assertTrue(clientId, clientIds)
 
         # TODO: check what is wrong here
+        # print(serverId)
         # bm.deleteServer(serverId)
         # serverIds = bm.host_getIdents(type = 'OpsiConfigserver')
         # print(serverIds)
         # assert serverId not in serverIds
 
         bm.deleteClient(clientId)
-        clientIds = bm.host_getIdents(type = 'OpsiClient')
-        print(clientIds)
-        assert clientId not in clientIds
+        self.assertTrue(clientId not in bm.host_getIdents(type='OpsiClient'))
 
         lastSeen = '2009-01-01 00:00:00'
         description = 'Updated description'
         notes = 'Updated notes'
         opsiHostKey = '00000000001111111111222222222233'
         mac = '00:01:02:03:40:12'
-        bm.setHostLastSeen(hostId = self.client1.id, timestamp = lastSeen)
-        bm.setHostDescription(hostId = self.client1.id, description = description)
-        bm.setHostNotes(hostId = self.client1.id, notes = notes)
-        bm.setOpsiHostKey(hostId = self.client1.id, opsiHostKey = opsiHostKey)
-        bm.setMacAddress(hostId = self.client1.id, mac = mac)
+        bm.setHostLastSeen(hostId=self.client1.id, timestamp=lastSeen)
+        bm.setHostDescription(hostId=self.client1.id, description=description)
+        bm.setHostNotes(hostId=self.client1.id, notes=notes)
+        bm.setOpsiHostKey(hostId=self.client1.id, opsiHostKey=opsiHostKey)
+        bm.setMacAddress(hostId=self.client1.id, mac=mac)
 
-        host = bm.host_getObjects(id = self.client1.id)[0]
-        print(host.lastSeen)
-        print(host.description)
-        print(host.notes)
-        print(host.opsiHostKey)
-        print(host.hardwareAddress)
+        host = bm.host_getObjects(id=self.client1.id)[0]
 
-        assert lastSeen == host.lastSeen
-        assert description == host.description
-        assert notes == host.notes
-        assert opsiHostKey == host.opsiHostKey
-        assert mac == host.hardwareAddress
+        self.assertEquals(lastSeen, host.lastSeen)
+        self.assertEquals(description, host.description)
+        self.assertEquals(notes, host.notes)
+        self.assertEquals(opsiHostKey, host.opsiHostKey)
+        self.assertEquals(mac, host.hardwareAddress)
 
-        res = bm.getOpsiHostKey(hostId = self.client1.id)
-        print(res)
-        assert opsiHostKey == res
+        self.assertEquals(opsiHostKey, bm.getOpsiHostKey(hostId=self.client1.id))
+        self.assertEquals(mac, bm.getMacAddress(hostId=self.client1.id))
 
-        res = bm.getMacAddress(hostId = self.client1.id)
-        print(res)
-        assert mac == res
-
-        host = bm.getHost_hash(hostId = self.client1.id)
-        print(host)
-
+        host = bm.getHost_hash(hostId=self.client1.id)
         serverIds = bm.getServerIds_list()
-        print(serverIds)
+        serverId = bm.getServerId(clientId=self.client1.id)
 
-        serverId = bm.getServerId(clientId = self.client1.id)
-        print(serverId)
-
-        depotName = 'test-depot'
         depotName = self.depotserver1.id.split('.', 1)[0]
-
         depotRemoteUrl = 'smb://{0}/xyz'.format(depotName)
         depotId = bm.createDepot(
-            depotName = depotName,
-            domain = domain,
-            depotLocalUrl = 'file:///xyz',
-            depotRemoteUrl = depotRemoteUrl,
-            repositoryLocalUrl = 'file:///abc',
-            repositoryRemoteUrl = 'webdavs://{0}:4447/products'.format(depotName),
-            network = '0.0.0.0/0',
-            description = 'Some description',
-            notes = 'Some notes',
-            maxBandwidth = 100000
+            depotName=depotName,
+            domain=domain,
+            depotLocalUrl='file:///xyz',
+            depotRemoteUrl=depotRemoteUrl,
+            repositoryLocalUrl='file:///abc',
+            repositoryRemoteUrl='webdavs://{0}:4447/products'.format(depotName),
+            network='0.0.0.0/0',
+            description='Some description',
+            notes='Some notes',
+            maxBandwidth=100000
         )
-        print(depotId)
-        assert depotId == depotName + '.' + domain
+        self.assertEquals(depotId, depotName + '.' + domain)
 
         depotIds = bm.getDepotIds_list()
-        print(depotIds)
-
         depot = bm.getDepot_hash(depotId)
-        print(depot)
-        assert depot['depotRemoteUrl'] == depotRemoteUrl
+        self.assertEquals(depot['depotRemoteUrl'], depotRemoteUrl)
 
         bm.deleteDepot(depotId)
         depotIds = bm.getDepotIds_list()
-        print(depotIds)
-        assert not depotId in depotIds
+        self.assertTrue(depotId not in depotIds)
 
         self.setUpProducts()
         self.createProductsOnBackend()
@@ -285,112 +268,108 @@ class ExtendedBackendManagerTestCase(unittest.TestCase, FileBackendMixin,
         self.setUpProductOnDepots()
         self.backend.productOnDepot_createObjects(self.productOnDepots)
 
-        bm.lockProduct(productId = self.product1.id, depotIds = [ self.depotserver1.id ])
-        productLocks = bm.getProductLocks_hash(depotIds = [])
-        print(productLocks)
+        bm.lockProduct(productId=self.product1.id, depotIds=[self.depotserver1.id])
+        productLocks = bm.getProductLocks_hash(depotIds=[])
         for (prductId, depotIds) in productLocks.items():
-            assert prductId == self.product1.id
-            assert len(depotIds) == 1
-            assert depotIds[0] == self.depotserver1.id
+            self.assertEquals(prductId, self.product1.id)
+            self.assertEquals(1, len(depotIds))
+            self.assertEquals(depotIds[0], self.depotserver1.id)
 
-        bm.unlockProduct(productId = self.product1.id, depotIds = [])
-        productLocks = bm.getProductLocks_hash(depotIds = [])
-        print(productLocks)
-        assert not productLocks
+        bm.unlockProduct(productId=self.product1.id, depotIds=[])
+        self.assertFalse(bm.getProductLocks_hash(depotIds=[]))
 
         productId1 = 'test-localboot-1'
-        bm.createLocalBootProduct(productId = productId1, name = 'Some localboot product', productVersion = '1.0', packageVersion = '1', licenseRequired=0,
-               setupScript="", uninstallScript="", updateScript="", alwaysScript="", onceScript="",
-               priority=0, description="", advice="", windowsSoftwareIds=[], depotIds=[])
+        bm.createLocalBootProduct(
+            productId=productId1,
+            name='Some localboot product',
+            productVersion='1.0',
+            packageVersion='1',
+            licenseRequired=0,
+            setupScript="",
+            uninstallScript="",
+            updateScript="",
+            alwaysScript="",
+            onceScript="",
+            priority=0,
+            description="",
+            advice="",
+            windowsSoftwareIds=[],
+            depotIds=[]
+        )
 
         productId2 = 'test-netboot-1'
-        bm.createNetBootProduct(productId = productId2, name = 'Some localboot product', productVersion = '1.0', packageVersion = '1', licenseRequired=0,
-               setupScript="", uninstallScript="", updateScript="", alwaysScript="", onceScript="",
-               priority=0, description="", advice="", pxeConfigTemplate = 'some_template', windowsSoftwareIds=[], depotIds=[])
+        bm.createNetBootProduct(
+            productId=productId2,
+            name='Some localboot product',
+            productVersion='1.0',
+            packageVersion='1',
+            licenseRequired=0,
+            setupScript="",
+            uninstallScript="",
+            updateScript="",
+            alwaysScript="",
+            onceScript="",
+            priority=0,
+            description="",
+            advice="",
+            pxeConfigTemplate='some_template',
+            windowsSoftwareIds=[],
+            depotIds=[]
+        )
 
-        productIdents = bm.product_getIdents(returnType = 'tuple')
-        print(productIdents)
-        assert (productId1,'1.0','1') in productIdents
-        assert (productId2,'1.0','1') in productIdents
+        productIdents = bm.product_getIdents(returnType='tuple')
+        self.assertTrue((productId1, '1.0', '1') in productIdents)
+        self.assertTrue((productId2, '1.0', '1') in productIdents)
 
-        product = bm.getProduct_hash(productId = productId1, depotId = self.depotserver1.id)
-        print(product)
-
+        product = bm.getProduct_hash(productId=productId1, depotId=self.depotserver1.id)
         products = bm.getProducts_hash()
-        print(objectToBeautifiedText(products))
-
         products = bm.getProducts_listOfHashes()
-        print(objectToBeautifiedText(products))
-
-        products = bm.getProducts_listOfHashes(depotId = self.depotserver1.id)
-        print(objectToBeautifiedText(products))
+        products = bm.getProducts_listOfHashes(depotId=self.depotserver1.id)
 
         for client in self.clients:
-            productIds = bm.getInstalledProductIds_list(objectId = client.id)
-            print(productIds)
+            allProductIds = bm.getInstalledProductIds_list(objectId = client.id)
 
-            productIds = bm.getInstalledLocalBootProductIds_list(objectId = client.id)
-            print(productIds)
+            productIds = bm.getInstalledLocalBootProductIds_list(objectId=client.id)
+            for product in productIds:
+                self.assertTrue(product in allProductIds)
 
-            productIds = bm.getInstalledNetBootProductIds_list(objectId = client.id)
-            print(productIds)
+            productIds = bm.getInstalledNetBootProductIds_list(objectId=client.id)
+            for product in productIds:
+                self.assertTrue(product in allProductIds)
 
-        productIds = bm.getProvidedLocalBootProductIds_list(depotId = self.depotserver1.id)
-        print(productIds)
-
-        productIds = bm.getProvidedNetBootProductIds_list(depotId = self.depotserver1.id)
-        print(productIds)
+        productIds = bm.getProvidedLocalBootProductIds_list(depotId=self.depotserver1.id)
+        productIds = bm.getProvidedNetBootProductIds_list(depotId=self.depotserver1.id)
 
         for client in self.clients:
-            status = bm.getProductInstallationStatus_hash(productId = self.product1.id, objectId = client.id)
-            print(status)
+            status = bm.getProductInstallationStatus_hash(productId=self.product1.id, objectId=client.id)
 
         self.backend.config_createObjects([{
             "id": u'clientconfig.depot.id',
             "type": "UnicodeConfig",
         }])
         self.backend.configState_create(u'clientconfig.depot.id', client.id, values=[depotId])
-        print("asdasda {0}".format(self.backend.configState_getObjects()))
 
-        bm.setProductState(productId = self.product1.id, objectId = client.id, installationStatus = "not_installed", actionRequest = "setup")
-        bm.setProductInstallationStatus(productId = self.product1.id, objectId = client.id, installationStatus = "installed")
-        bm.setProductActionProgress(productId = self.product1.id, hostId = client.id, productActionProgress = "something 90%")
-        bm.setProductActionRequest(productId = self.product1.id, clientId = client.id, actionRequest = 'uninstall')
-
-        print("asdasda {0}".format(self.backend.configState_getObjects()))
+        bm.setProductState(productId=self.product1.id, objectId=client.id, installationStatus="not_installed", actionRequest="setup")
+        bm.setProductInstallationStatus(productId=self.product1.id, objectId=client.id, installationStatus="installed")
+        bm.setProductActionProgress(productId=self.product1.id, hostId=client.id, productActionProgress="something 90%")
+        bm.setProductActionRequest(productId=self.product1.id, clientId=client.id, actionRequest='uninstall')
 
         for product in self.products:
-            actions = bm.getPossibleProductActions_list(productId = product.id)
-            print(actions)
+            actions = bm.getPossibleProductActions_list(productId=product.id)
 
         actions = bm.getPossibleProductActions_hash()
-        print(actions)
+        depotId = bm.getDepotId(clientId=client.id)
+        self.assertEquals(depotId, self.depotserver1.id)
 
-        depotId = bm.getDepotId(clientId = client.id)
-        print(depotId)
-        assert depotId == self.depotserver1.id
+        clientId = bm.getClientIdByMac(mac=self.client2.hardwareAddress)
+        self.assertEquals(clientId, self.client2.id)
 
-        clientId = bm.getClientIdByMac(mac = self.client2.hardwareAddress)
-        print(self.client2.id)
-        assert clientId == self.client2.id
-
-        productIds = bm.getInstallableProductIds_list(clientId = client.id)
-        print(productIds)
-
-        productIds = bm.getInstallableLocalBootProductIds_list(clientId = client.id)
-        print(productIds)
-
-        productIds = bm.getInstallableNetBootProductIds_list(clientId = client.id)
-        print(productIds)
-
-        status = bm.getProductInstallationStatus_listOfHashes(objectId = client.id)
-        print(status)
-
-        actions = bm.getProductActionRequests_listOfHashes(clientId = client.id)
-        print(actions)
-
+        productIds = bm.getInstallableProductIds_list(clientId=client.id)
+        productIds = bm.getInstallableLocalBootProductIds_list(clientId=client.id)
+        productIds = bm.getInstallableNetBootProductIds_list(clientId=client.id)
+        status = bm.getProductInstallationStatus_listOfHashes(objectId=client.id)
+        actions = bm.getProductActionRequests_listOfHashes(clientId=client.id)
         states = bm.getLocalBootProductStates_hash()
-        print(objectToBeautifiedText(states))
 
 
 if __name__ == '__main__':
