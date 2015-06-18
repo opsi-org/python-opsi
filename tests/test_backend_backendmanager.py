@@ -172,12 +172,12 @@ class ExtendedBackendManagerTestCase(unittest.TestCase, FileBackendMixin,
         clientIds = bm.host_getIdents(type='OpsiClient')
         self.assertTrue(clientId, clientIds)
 
-        # TODO: check what is wrong here
-        # print(serverId)
+        # This will not work with the file backend because it will not
+        # delete any host with the id == local FQDN.
+        # TODO: if running with different backend, please enable
         # bm.deleteServer(serverId)
-        # serverIds = bm.host_getIdents(type = 'OpsiConfigserver')
-        # print(serverIds)
-        # assert serverId not in serverIds
+        # serverIds = bm.host_getIdents(type='OpsiConfigserver')
+        # self.assertTrue(serverId not in serverIds)
 
         bm.deleteClient(clientId)
         self.assertTrue(clientId not in bm.host_getIdents(type='OpsiClient'))
