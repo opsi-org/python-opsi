@@ -7,8 +7,9 @@ python-opsi (4.0.6.11-1) UNRELEASED; urgency=medium
     argument that is missing for the constructor
   * OPSI.Types: better error message if forceObjectClass fails because of an
     invalid type
+  * 20_legacy.conf: some small bugfixes.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 18 Jun 2015 11:32:31 +0200
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 18 Jun 2015 15:19:43 +0200
 
 python-opsi (4.0.6.10-3) experimental; urgency=medium
 
