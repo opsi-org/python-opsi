@@ -503,6 +503,12 @@ def forceObjectClass(var, objectClass):
 
 			exception = error
 			logger.debug(u"Failed to get object from dict '%s': %s" % (var, error))
+		except AttributeError as error:
+			if "'module' object has no attribute " in str(error):
+				error = ValueError("Invalild object type: {0}".format(var['type']))
+
+			exception = error
+			logger.debug(u"Failed to get object from dict '%s': %s" % (var, error))
 		except Exception as error:
 			exception = error
 			logger.debug(u"Failed to get object from dict '%s': %s" % (var, error))
