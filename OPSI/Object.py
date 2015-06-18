@@ -48,7 +48,7 @@ from OPSI.Types import (forceActionProgress, forceActionRequest,
 	forceUnicodeList, forceUnicodeLower, forceUnsignedInt, forceUrl)
 from OPSI.Util import fromJson, toJson, generateOpsiHostKey, timestamp
 
-__version__ = '4.0.6.8'
+__version__ = '4.0.6.11'
 
 logger = Logger()
 _MANDATORY_CONSTRUCTOR_ARGS_CACHE = {}
@@ -1017,7 +1017,7 @@ class ConfigState(Relationship):
 		return fromJson(jsonString, 'ConfigState')
 
 	def __unicode__(self):
-		return u"<{0}(configId={1!r}, objectId={2!r})>".format(self.getType(), self.configId, self.objectId)
+		return u"<{0}(configId={1!r}, objectId={2!r}, values={3!r})>".format(self.getType(), self.configId, self.objectId, self.values)
 
 Relationship.subClasses['ConfigState'] = ConfigState
 
