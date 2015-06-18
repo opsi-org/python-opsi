@@ -498,7 +498,7 @@ def forceObjectClass(var, objectClass):
 					missingArgs = [arg for arg in args if arg not in var]
 					if missingArgs:
 						error = TypeError("Missing required arguments: {0}".format(', '.join(repr(a) for a in missingArgs)))
-				except Exception:
+				except NameError:
 					pass
 
 			exception = error
