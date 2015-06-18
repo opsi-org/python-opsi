@@ -28,6 +28,9 @@ import shutil
 import tempfile
 from contextlib import contextmanager
 
+from OPSI.Types import forceHostId
+from OPSI.Util import getfqdn
+
 
 @contextmanager
 def workInTemporaryDirectory():
@@ -57,3 +60,7 @@ def copyTestfileToTemporaryFolder(filename):
     (_, new_filename) = os.path.split(filename)
 
     return os.path.join(temporary_folder, new_filename)
+
+
+def getLocalFQDN():
+    return forceHostId(getfqdn())
