@@ -28,6 +28,11 @@ from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Util.HTTP import deflateEncode, gzipEncode
 
 
+# TODO: What we are currently missing is the connection of an
+# JSONRPC-Backend to a local instance and then run the backend test
+# (i.e. as in BackendTestMixins.Backends) on that backend.
+
+
 class FakeResponse:
     def __init__(self, header=None, data=None):
         self._header = header or {}
