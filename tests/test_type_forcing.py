@@ -27,7 +27,7 @@ import datetime
 import time
 import unittest
 
-from OPSI.Object import OpsiClient, Host
+from OPSI.Object import OpsiClient, Host, ProductOnClient
 from OPSI.Types import (forceObjectClass, forceUnicode, forceUnicodeList,
 	forceList, forceBool, forceBoolList, forceInt, forceOct, forceIPAddress,
 	forceOpsiTimestamp, forceHardwareAddress, forceHostId, forceNetworkAddress,
@@ -62,6 +62,33 @@ class ForceObjectClassJSONTestCase(unittest.TestCase):
 
 	def testForceObjectClassToOpsiClientFromJSON(self):
 		self.assertTrue(isinstance(forceObjectClass(self.json, OpsiClient), OpsiClient))
+
+	def testForcingObjectClassFromJSON(self):
+		json = {
+			"clientId": "dolly.janus.vatur",
+			"actionRequest": "setup",
+			"productType": "LocalbootProduct",
+			"type": "ProductOnClient",
+			"productId": "hoer_auf_deinen_vater"
+		}
+
+		poc = forceObjectClass(json, ProductOnClient)
+
+		self.assertTrue(isinstance(poc, ProductOnClient))
+
+	def testForcingObjectClassFromJSONHasGoodErrorDescription(self):
+		incompleteJson = {
+			"clientId": "Nellie*",
+			"actionRequest": "setup",
+			"productType": "LocalbootProduct",
+			"type": "ProductOnClient"
+		}
+
+		try:
+			forceObjectClass(incompleteJson, ProductOnClient)
+			self.fail("No error from incomplete json.")
+		except ValueError as error:
+			self.assertTrue("Missing required arguments: 'productId'" in str(error))
 
 
 class ForceObjectClassHashTestCase(unittest.TestCase):

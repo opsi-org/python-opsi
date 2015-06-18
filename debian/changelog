@@ -3,8 +3,10 @@ python-opsi (4.0.6.11-1) UNRELEASED; urgency=medium
   * Debian: Moving lintian-overrides into debian/source
   * 20_legacy.conf: Small refactoring of getClients_listOfHashes
   * 20_legacy.conf: Refactored getLicenseStatistics_hash
+  * OPSI.Types: better error message if forceObjectClass fails because of a
+    argument that is missing for the constructor
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 17 Jun 2015 12:24:56 +0200
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 18 Jun 2015 10:33:35 +0200
 
 python-opsi (4.0.6.10-3) experimental; urgency=medium
 
