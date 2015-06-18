@@ -81,29 +81,6 @@ class ExtendedBackendManagerTestCase(unittest.TestCase, FileBackendMixin,
     def testBackendManager(self):
         bm = self.backend
 
-        if False:
-
-            with open(aclFile, 'w') as f:
-                f.write('''
-        .*: opsi_depotserver
-''')
-
-            bm = BackendManager(
-                dispatchConfigFile = dispatchConfigFile,
-                backendConfigDir   = backendConfigDir,
-                username           = self.configserver1.getId(),
-                password           = self.configserver1.getOpsiHostKey(),
-                aclFile            = aclFile)
-
-        # def testComposition():
-        # bm = BackendManager(
-        #     dispatchConfigFile = dispatchConfigFile,
-        #     backendConfigDir   = backendConfigDir,
-        #     extensionconfigdir = extensionConfigDir,
-        #     username           = self.configserver1.getId(),
-        #     password           = self.configserver1.getOpsiHostKey(),
-        #     aclFile            = aclFile)
-
         self.testObjectMethods()
 
         hostIds = bm.host_getIdents()
