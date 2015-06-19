@@ -33,10 +33,14 @@ from OPSI.Util import getfqdn
 
 import mock
 
-try:
-    import unittest2 as unittest
-except ImportError:
-    import unittest
+import unittest
+if 'SkipTest' not in dir(unittest):
+    try:
+        import unittest2 as unittest
+    except ImportError:
+        print("Your are missing a recent enough version of unittest. "
+              "Please install the unittest2 package.")
+        raise ImportError("Your unittest module is too old.")
 
 
 @contextmanager
