@@ -27,20 +27,14 @@ Based on work of Christian Kampka.
 
 from __future__ import absolute_import
 
-import os
 import time
 import unittest
 from contextlib import contextmanager
 
 from OPSI.Backend.Backend import ModificationTrackingBackend
-from OPSI.Backend.SQLite import SQLiteBackend, SQLiteObjectBackendModificationTracker
 from OPSI.Object import OpsiClient
 
 from .Backends.SQLite import getSQLiteBackend, getSQLiteModificationTracker
-from .BackendTestMixins.Backend import BackendTestsMixin
-from .BackendTestMixins.Configs import ConfigStatesMixin
-from .BackendTestMixins.Groups import GroupsMixin
-from .BackendTestMixins.Products import ProductsOnDepotMixin
 
 from .helpers import patchAddress
 
