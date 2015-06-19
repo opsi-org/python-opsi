@@ -30,11 +30,22 @@ from __future__ import absolute_import
 
 import os
 import sys
-import unittest
+
+try:
+    import unittest2 as unittest
+except ImportError:
+    import unittest
 
 from OPSI.Application import Application, ProfileRunner, CProfileRunner
 
 from .helpers import workInTemporaryDirectory
+
+try:
+	import pstats
+except ImportError:
+	# Probably on Debian 6.
+	print("Could not import 'pstats'. Please run: apt-get install python-profiler")
+	pstats = None
 
 
 class MockApp(object):
@@ -81,6 +92,7 @@ class ApplicationTests(unittest.TestCase):
 
 		self.assertEquals(["setup", "run", "shutdown"], a.steps)
 
+	@unittest.skipIf(pstats is None, "Missing pstats module")
 	def testProfiler(self):
 		with workInTemporaryDirectory() as tempDir:
 			path = os.path.join(tempDir, "profile")
@@ -100,6 +112,7 @@ class ApplicationTests(unittest.TestCase):
 		self.assertIn("MockApp.run", data)
 		self.assertIn("function calls", data)
 
+	@unittest.skipIf(pstats is None, "Missing pstats module")
 	def testCProfiler(self):
 		with workInTemporaryDirectory() as tempDir:
 			path = os.path.join(tempDir, "profile")
