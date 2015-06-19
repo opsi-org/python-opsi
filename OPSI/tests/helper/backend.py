@@ -1392,22 +1392,7 @@ class SQLiteBackendFixture(_BackendFixture):
 		self.backend = SQLiteBackend(database=self.database, audithardwareconfigfile=hw.path)
 		self.extend()
 
-class SQLiteModificationTrackerFixture(Fixture):
 
-	def __init__(self, database=":memory:"):
-		super(SQLiteModificationTrackerFixture, self).setUp()
-
-		self.database = database
-		self.tracker = None
-
-	def setUp(self):
-		super(SQLiteModificationTrackerFixture, self).setUp()
-		if not self.database:
-			bd = self.useFixture(TempDir())
-			self.baseDir = bd.path
-			self.database = os.path.join(self.baseDir, "tracker.sqlite")
-
-		self.tracker = SQLiteObjectBackendModificationTracker(database = self.database)
 
 
 

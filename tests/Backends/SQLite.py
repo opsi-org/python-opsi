@@ -1,6 +1,7 @@
-#-*- coding: utf-8 -*-
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
 #
-# Copyright (C) 2013 uib GmbH
+# Copyright (C) 2013-2015 uib GmbH
 #
 # http://www.uib.de/
 #
@@ -21,9 +22,12 @@
 
 from __future__ import absolute_import
 
-from OPSI.Backend.SQLite import SQLiteBackend
+from contextlib import contextmanager
+
+from OPSI.Backend.SQLite import SQLiteBackend, SQLiteObjectBackendModificationTracker
 from OPSI.Backend.Backend import ExtendedConfigDataBackend
 from . import BackendMixin
+from ..helpers import workInTemporaryDirectory
 
 try:
     from .config import SQLiteconfiguration
@@ -41,3 +45,36 @@ class SQLiteBackendMixin(BackendMixin):
 
     def tearDownBackend(self):
         self.backend.backend_deleteBase()
+
+
+@contextmanager
+def getSQLiteBackend(configuration=None):
+	# Defaults and settings from the old fixture.
+	# defaultOptions = {
+	# 	'processProductPriorities':            True,
+	# 	'processProductDependencies':          True,
+	# 	'addProductOnClientDefaults':          True,
+	# 	'addProductPropertyStateDefaults':     True,
+	# 	'addConfigStateDefaults':              True,
+	# 	'deleteConfigStateIfDefault':          True,
+	# 	'returnObjectsOnUpdateAndCreate':      False
+	# }
+	# licenseManagement = True
+
+	if configuration is None:
+		configuration = SQLiteconfiguration
+
+	backend = SQLiteBackend(**SQLiteconfiguration)
+	backend.backend_createBase()
+	yield backend
+	backend.backend_deleteBase()
+
+
+@contextmanager
+def getSQLiteModificationTracker(database=":memory:"):
+	if not database:
+		with workInTemporaryDirectory() as tempDir:
+			database = os.path.join(tempDir, "tracker.sqlite")
+			yield SQLiteObjectBackendModificationTracker(database=database)
+	else:
+		yield SQLiteObjectBackendModificationTracker(database=database)
