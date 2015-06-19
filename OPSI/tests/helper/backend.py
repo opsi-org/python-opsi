@@ -1454,38 +1454,6 @@ class MySQLBackendFixture(_BackendFixture):
 		del self.mb._sql._pool
 
 
-class LDAPBackendFixture(_BackendFixture):
-
-	baseDn = u'dc=uib,dc=local'
-
-	def __init__(self, username="admin", password="linux123", address="stb-40-srv-050", opsiBaseDn="opsi-test", hostsContainerDN="hosts"):
-
-		super(LDAPBackendFixture, self).__init__()
-
-		self.username = u"cn=%s,%s" % (username, self.baseDn)
-		self.password = password
-		self.address = address
-
-		self.opsiBaseDn = u"cn=%s,%s" % (opsiBaseDn,self.baseDn)
-		self.hostsContainerDn = u"cn=%s,%s" % (hostsContainerDN, self.opsiBaseDn)
-
-	def setupBackend(self):
-
-		hw = HwAuditConfigFixture()
-		self.useFixture(hw)
-
-		self.backend = LDAPBackend(
-					username         = self.username,
-					password         = self.password,
-					address          = self.address,
-					opsiBaseDn       = self.opsiBaseDn,
-					hostsContainerDn = self.hostsContainerDn,
-					audithardwareconfigfile=hw.path
-					)
-		self.addCleanup(self.backend.backend_deleteBase)
-
-		self.extend()
-
 class BackendTestCase(TestCase):
 
 	inventoryHistory = False
