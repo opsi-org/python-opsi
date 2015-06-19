@@ -31,6 +31,8 @@ from contextlib import contextmanager
 from OPSI.Types import forceHostId
 from OPSI.Util import getfqdn
 
+import mock
+
 
 @contextmanager
 def workInTemporaryDirectory():
@@ -64,3 +66,27 @@ def copyTestfileToTemporaryFolder(filename):
 
 def getLocalFQDN():
     return forceHostId(getfqdn())
+
+
+@contextmanager
+def patchAddress(fqdn="opsi.test.invalid", address="172.16.0.1"):
+    """
+    Modify the results of socket so that expected addresses are returned.
+
+    :param fqdn: The FQDN to use. Everything before the first '.' will server\
+as hostname.
+    :param address: The IP address to use.
+    """
+    fqdn = fqdn
+    hostname = fqdn.split(".")[0]
+    address = address
+
+    def getfqdn(*_):
+        return fqdn
+
+    def gethostbyaddr(*_):
+        return (fqdn, [hostname], [address])
+
+    with mock.patch('socket.getfqdn', getfqdn):
+        with mock.patch('socket.gethostbyaddr', gethostbyaddr):
+            yield
