@@ -27,7 +27,7 @@ from contextlib import contextmanager
 from OPSI.Backend.SQLite import SQLiteBackend, SQLiteObjectBackendModificationTracker
 from OPSI.Backend.Backend import ExtendedConfigDataBackend
 from . import BackendMixin
-from ..helpers import workInTemporaryDirectory
+from ..helpers import workInTemporaryDirectory, requireModulesFile
 
 try:
     from .config import SQLiteconfiguration
@@ -48,6 +48,7 @@ class SQLiteBackendMixin(BackendMixin):
 
 
 @contextmanager
+@requireModulesFile
 def getSQLiteBackend(configuration=None):
 	# Defaults and settings from the old fixture.
 	# defaultOptions = {

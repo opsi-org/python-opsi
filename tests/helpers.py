@@ -33,6 +33,11 @@ from OPSI.Util import getfqdn
 
 import mock
 
+try:
+    import unittest2 as unittest
+except ImportError:
+    import unittest
+
 
 @contextmanager
 def workInTemporaryDirectory():
@@ -90,3 +95,15 @@ as hostname.
     with mock.patch('socket.getfqdn', getfqdn):
         with mock.patch('socket.gethostbyaddr', gethostbyaddr):
             yield
+
+
+def requireModulesFile(function):
+    """
+    This decorator will skip tests if no modules file is found.
+    """
+    if not os.path.exists('/etc/opsi/modules'):
+        raise unittest.SkipTest("This test requires a modules file!")
+
+    # TODO: make it possible to require specific parts of the modules file to be enabled
+
+    return function
