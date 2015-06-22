@@ -108,7 +108,7 @@ def requiresModulesFile(function):
     """
     @wraps(function)
     def wrapped_function(*args, **kwargs):
-        if not os.path.exists('/etc/opsi/modules'):
+        if not os.path.exists(os.path.join('/etc', 'opsi', 'modules')):
             raise unittest.SkipTest("This test requires a modules file!")
 
         return function(*args, **kwargs)
