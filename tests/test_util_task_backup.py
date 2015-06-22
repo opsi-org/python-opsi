@@ -76,6 +76,9 @@ class BackupTestCase(unittest.TestCase):
                 backup = OpsiBackup()
                 archive = backup._getArchive('r')
 
+                self.assertTrue(os.path.exists(archive.name), "No archive created.")
+                os.remove(archive.name)
+
     def testCreatingArchive(self):
         with workInTemporaryDirectory() as tempDir:
             self.assertEquals(len(os.listdir(tempDir)), 0, "Directory not empty")
