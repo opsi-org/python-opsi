@@ -39,7 +39,7 @@ from .BackendTestMixins.Products import ProductsOnClientsMixin, ProductPropertyS
 from .Backends.File import FileBackendMixin
 from .Backends.SQLite import getSQLiteBackend
 from .BackendTestMixins.Hosts import HostsMixin
-from .helpers import patchAddress, workInTemporaryDirectory
+from .helpers import patchAddress, workInTemporaryDirectory, requiresModulesFile
 
 
 class BackendACLFileTestCase(unittest.TestCase):
@@ -390,8 +390,7 @@ class ACLTestCase(unittest.TestCase, HostsMixin, ProductsOnClientsMixin):
                                 u"Expected attribute '%s' to be None, but got '%s' from backend" % (attribute, value)
                             )
 
-    unittest.skipIf(not os.path.exists('/etc/opsi/modules'),
-        "Test requires valid modules file")
+    @requiresModulesFile  # Until this is implemented without SQL
     def test_access_self_productOnClients(self):
         with getSQLiteBackend() as backend:
             self.backend = ExtendedConfigDataBackend(backend)
