@@ -40,7 +40,7 @@ class MySQLBackendMixin(BackendMixin):
 
     CREATES_INVENTORY_HISTORY = True
 
-    @unittest.skipIf(not MySQLback.MySQLconfiguration,
+    @unittest.skipIf(not MySQLconfiguration,
                     'no MySQL backend configuration given.')
     def setUpBackend(self):
         self.backend = ExtendedConfigDataBackend(MySQLBackend(**MySQLconfiguration))
