@@ -23,35 +23,26 @@ Testing the opsi SQLite backend.
 :license: GNU Affero General Public License version 3
 """
 
+from __future__ import absolute_import
+
 import os.path
 
-try:
-    import unittest2 as unittest
-except ImportError:
-    import unittest
-
-try:
-	import apsw
-	from OPSI.Backend.SQLite import SQLiteBackend
-except ImportError:
-	apsw = None
-
-
-from Backends.SQLite import SQLiteBackendMixin
-from BackendTestMixins import (ConfigStateTestsMixin, LicensesTestMixin,
+from .Backends.SQLite import SQLiteBackendMixin, requiresApsw
+from .BackendTestMixins import (ConfigStateTestsMixin, LicensesTestMixin,
     AuditTestsMixin, ConfigTestsMixin, ProductsTestMixin,
     ExtendedBackendTestsMixin, BackendTestsMixin)
+from .helpers import unittest
 
 
-@unittest.skipIf(not apsw, 'SQLite tests skipped: Missing the module "apsw".')
+@requiresApsw
 class BackendSQLiteTestCase(unittest.TestCase):
     def testInitialisationDoesNotFail(self):
         backend = SQLiteBackend()
         backend.backend_createBase()
 
 
-@unittest.skipIf(not os.path.exists('/etc/opsi/modules'), 'SQLite tests skipped: Missing modules file.')
-@unittest.skipIf(not apsw, 'SQLite tests skipped: Missing the module "apsw".')
+# @unittest.skipIf(not os.path.exists('/etc/opsi/modules'), 'SQLite tests skipped: Missing modules file.')
+@requiresApsw
 class SQLiteBackendTestCase(unittest.TestCase, SQLiteBackendMixin,
     BackendTestsMixin, ProductsTestMixin, AuditTestsMixin, LicensesTestMixin,
     ExtendedBackendTestsMixin, ConfigTestsMixin, ConfigStateTestsMixin):

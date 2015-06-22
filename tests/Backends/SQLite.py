@@ -24,10 +24,15 @@ from __future__ import absolute_import
 
 from contextlib import contextmanager
 
-from OPSI.Backend.SQLite import SQLiteBackend, SQLiteObjectBackendModificationTracker
 from OPSI.Backend.Backend import ExtendedConfigDataBackend
 from . import BackendMixin
-from ..helpers import workInTemporaryDirectory, requireModulesFile
+from ..helpers import workInTemporaryDirectory, requiresModulesFile, unittest
+
+try:
+	import apsw
+	from OPSI.Backend.SQLite import SQLiteBackend, SQLiteObjectBackendModificationTracker
+except ImportError:
+	apsw = None
 
 try:
     from .config import SQLiteconfiguration
@@ -35,6 +40,14 @@ except ImportError:
     SQLiteconfiguration = {}
 
 
+def requiresApsw(func):
+	if apsw is None:
+		raise unittest.SkipTest('SQLite tests skipped: Missing the module "apsw".')
+
+	return func
+
+
+@requiresApsw
 class SQLiteBackendMixin(BackendMixin):
 
     CREATES_INVENTORY_HISTORY = True
@@ -48,7 +61,8 @@ class SQLiteBackendMixin(BackendMixin):
 
 
 @contextmanager
-@requireModulesFile
+@requiresApsw
+@requiresModulesFile
 def getSQLiteBackend(configuration=None):
 	# Defaults and settings from the old fixture.
 	# defaultOptions = {
@@ -61,7 +75,6 @@ def getSQLiteBackend(configuration=None):
 	# 	'returnObjectsOnUpdateAndCreate':      False
 	# }
 	# licenseManagement = True
-
 	if configuration is None:
 		configuration = SQLiteconfiguration
 
@@ -72,6 +85,7 @@ def getSQLiteBackend(configuration=None):
 
 
 @contextmanager
+@requiresApsw
 def getSQLiteModificationTracker(database=":memory:"):
 	if not database:
 		with workInTemporaryDirectory() as tempDir:

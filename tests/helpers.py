@@ -101,7 +101,7 @@ as hostname.
             yield
 
 
-def requireModulesFile(function):
+def requiresModulesFile(function):
     """
     This decorator will skip tests if no modules file is found.
     """
