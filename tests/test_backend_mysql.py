@@ -50,9 +50,7 @@ class MySQLBackendTestCase(unittest.TestCase, MySQLback.MySQLBackendMixin, Backe
         self.assertNotEqual(None, self.backend)
 
 
-@unittest.skipIf(not MySQLBackend.MySQLconfiguration,
-    'no MySQL backend configuration given.')
-class MySQLBackendMultiThreadTestCase(unittest.TestCase, MySQLBackend.MySQLBackendMixin, MultiThreadingTestMixin):
+class MySQLBackendMultiThreadTestCase(unittest.TestCase, MySQLback.MySQLBackendMixin, MultiThreadingTestMixin):
     def setUp(self):
         self.backend = None
         self.setUpBackend()
