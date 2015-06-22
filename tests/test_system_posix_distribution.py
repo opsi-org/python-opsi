@@ -23,10 +23,7 @@ Testing Distribution functionality from OPSI.System.Posix
 :license: GNU Affero General Public License version 3
 """
 
-try:
-    import unittest2 as unittest
-except ImportError:
-    import unittest
+import unittest
 
 from OPSI.System.Posix import Distribution
 

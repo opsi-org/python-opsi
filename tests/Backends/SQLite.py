@@ -24,15 +24,15 @@ from __future__ import absolute_import
 
 from contextlib import contextmanager
 
-from OPSI.Backend.Backend import ExtendedConfigDataBackend
-from . import BackendMixin
-from ..helpers import workInTemporaryDirectory, requiresModulesFile, unittest
-
 try:
 	import apsw
-	from OPSI.Backend.SQLite import SQLiteBackend, SQLiteObjectBackendModificationTracker
 except ImportError:
 	apsw = None
+
+from OPSI.Backend.Backend import ExtendedConfigDataBackend
+from OPSI.Backend.SQLite import SQLiteBackend, SQLiteObjectBackendModificationTracker
+from . import BackendMixin
+from ..helpers import workInTemporaryDirectory, requiresModulesFile, unittest
 
 try:
     from .config import SQLiteconfiguration

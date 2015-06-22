@@ -35,7 +35,7 @@ import unittest
 import OPSI.Util.Product as Product
 import OPSI.Util.File.Archive as Archive
 
-from .helpers import cd
+from .helpers import cd, workInTemporaryDirectory
 
 
 class DirectoryExclusionRegexTestCase(unittest.TestCase):
@@ -55,17 +55,6 @@ class DirectoryExclusionRegexTestCase(unittest.TestCase):
 
 
 class ProductPackageFileTestCase(unittest.TestCase):
-	def setUp(self):
-		self.tempPackageFilename = tempfile.NamedTemporaryFile(suffix='.opsi')
-		self.tempDepotDir = tempfile.mkdtemp()
-
-	def tearDown(self):
-		packageFile = self.tempPackageFilename.name
-		if os.path.exists(packageFile):
-			os.remove(packageFile)
-
-		if os.path.exists(self.tempDepotDir):
-			shutil.rmtree(self.tempDepotDir)
 
 	def testRemovingFolderWithUnicodeFilenamesInsideFails(self):
 		"""
@@ -77,28 +66,31 @@ class ProductPackageFileTestCase(unittest.TestCase):
 		We need to make shure that removing such fails does not fail and
 		that we are able to remove them.
 		"""
-		ppf = Product.ProductPackageFile(self.tempPackageFilename.name)
-		ppf.setClientDataDir(self.tempDepotDir)
+		with workInTemporaryDirectory() as tempDir:
+			tempPackageFilename = tempfile.NamedTemporaryFile(suffix='.opsi')
 
-		fakeProduct = mock.Mock()
-		fakeProduct.getId.return_value = 'umlauts'
-		fakePackageControlFile = mock.Mock()
-		fakePackageControlFile.getProduct.return_value = fakeProduct
+			ppf = Product.ProductPackageFile(tempPackageFilename.name)
+			ppf.setClientDataDir(tempDir)
 
-		# Setting up evil file
-		targetDir = os.path.join(self.tempDepotDir, 'umlauts')
-		os.makedirs(targetDir)
+			fakeProduct = mock.Mock()
+			fakeProduct.getId.return_value = 'umlauts'
+			fakePackageControlFile = mock.Mock()
+			fakePackageControlFile.getProduct.return_value = fakeProduct
 
-		with cd(targetDir):
-			os.system(r"touch -- $(echo -e '--\0250--')")
+			# Setting up evil file
+			targetDir = os.path.join(tempDir, 'umlauts')
+			os.makedirs(targetDir)
 
-		with mock.patch.object(ppf, 'packageControlFile', fakePackageControlFile):
-			ppf.deleteProductClientDataDir()
+			with cd(targetDir):
+				os.system(r"touch -- $(echo -e '--\0250--')")
 
-		self.assertFalse(
-			os.path.exists(targetDir),
-			"Product directory in depot should be deleted."
-		)
+			with mock.patch.object(ppf, 'packageControlFile', fakePackageControlFile):
+				ppf.deleteProductClientDataDir()
+
+			self.assertFalse(
+				os.path.exists(targetDir),
+				"Product directory in depot should be deleted."
+			)
 
 	def testSettigUpWithNonExistingFileFails(self):
 		self.assertRaises(Exception, Product.ProductPackageFile, 'nonexisting.opsi')

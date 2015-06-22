@@ -28,12 +28,7 @@ from __future__ import absolute_import, unicode_literals
 import os
 import shutil
 
-try:
-    import unittest2 as unittest
-except ImportError:
-    import unittest
-
-from . import helpers
+from .helpers import unittest, copyTestfileToTemporaryFolder
 
 from OPSI.System import which
 from OPSI.Util.Task.Sudoers import (_NO_TTY_FOR_SERVICE_REQUIRED,
@@ -48,7 +43,7 @@ class PatchSudoersFileForOpsiTestCase(unittest.TestCase):
             'testdata', 'util', 'task', 'sudoers', 'sudoers_without_entries'
         )
 
-        self.fileName = helpers.copyTestfileToTemporaryFolder(emptyExampleFile)
+        self.fileName = copyTestfileToTemporaryFolder(emptyExampleFile)
 
     def tearDown(self):
         tempDirectory = os.path.dirname(self.fileName)

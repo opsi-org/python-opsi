@@ -23,6 +23,8 @@ Testing our logger.
 :license: GNU Affero General Public License version 3
 """
 
+from __future__ import absolute_import
+
 import mock
 import sys
 import warnings
@@ -30,10 +32,7 @@ import warnings
 import OPSI.Logger
 from OPSI.Types import forceUnicode
 
-try:
-    import unittest2 as unittest
-except ImportError:
-    import unittest
+from .helpers import unittest
 
 try:
 	from io import BytesIO as StringIO

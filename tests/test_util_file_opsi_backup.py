@@ -29,12 +29,8 @@ import os
 import shutil
 import tempfile
 
-try:
-    import unittest2 as unittest
-except ImportError:
-    import unittest
-
 import mock
+from .helpers import unittest
 
 from OPSI.Util.File.Opsi import OpsiBackupFileError, OpsiBackupArchive
 from OPSI.Util import randomString

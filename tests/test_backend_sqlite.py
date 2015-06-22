@@ -27,6 +27,8 @@ from __future__ import absolute_import
 
 import os.path
 
+from OPSI.Backend.SQLite import SQLiteBackend
+
 from .Backends.SQLite import SQLiteBackendMixin, requiresApsw
 from .BackendTestMixins import (ConfigStateTestsMixin, LicensesTestMixin,
     AuditTestsMixin, ConfigTestsMixin, ProductsTestMixin,

@@ -31,14 +31,9 @@ from __future__ import absolute_import
 import os
 import sys
 
-try:
-    import unittest2 as unittest
-except ImportError:
-    import unittest
-
 from OPSI.Application import Application, ProfileRunner, CProfileRunner
 
-from .helpers import workInTemporaryDirectory
+from .helpers import unittest, workInTemporaryDirectory
 
 try:
 	import pstats
