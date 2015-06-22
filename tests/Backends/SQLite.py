@@ -52,11 +52,11 @@ def requiresApsw(function):
 	return wrapped_func
 
 
-@requiresApsw
 class SQLiteBackendMixin(BackendMixin):
 
     CREATES_INVENTORY_HISTORY = True
 
+    @requiresApsw
     def setUpBackend(self):
         self.backend = ExtendedConfigDataBackend(SQLiteBackend(**SQLiteconfiguration))
         self.backend.backend_createBase()
