@@ -23,6 +23,7 @@
 from __future__ import absolute_import
 
 from contextlib import contextmanager
+from functools import wraps
 
 try:
 	import apsw
@@ -40,11 +41,15 @@ except ImportError:
     SQLiteconfiguration = {}
 
 
-def requiresApsw(func):
-	if apsw is None:
-		raise unittest.SkipTest('SQLite tests skipped: Missing the module "apsw".')
+def requiresApsw(function):
+	@wraps(function)
+	def wrapped_func(*args, **kwargs):
+		if apsw is None:
+			raise unittest.SkipTest('SQLite tests skipped: Missing the module "apsw".')
 
-	return func
+		return function(*args, **kwargs)
+
+	return wrapped_func
 
 
 @requiresApsw

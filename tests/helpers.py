@@ -27,6 +27,7 @@ import os
 import shutil
 import tempfile
 from contextlib import contextmanager
+from functools import wraps
 
 from OPSI.Types import forceHostId
 from OPSI.Util import getfqdn
@@ -105,9 +106,13 @@ def requiresModulesFile(function):
     """
     This decorator will skip tests if no modules file is found.
     """
-    if not os.path.exists('/etc/opsi/modules'):
-        raise unittest.SkipTest("This test requires a modules file!")
+    @wraps(function)
+    def wrapped_function(*args, **kwargs):
+        if not os.path.exists('/etc/opsi/modules'):
+            raise unittest.SkipTest("This test requires a modules file!")
+
+        return function(*args, **kwargs)
 
     # TODO: make it possible to require specific parts of the modules file to be enabled
 
-    return function
+    return wrapped_function
