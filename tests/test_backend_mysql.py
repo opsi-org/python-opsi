@@ -23,17 +23,15 @@ Testing opsi MySQL backend.
 :license: GNU Affero General Public License version 3
 """
 
-try:
-    import unittest2 as unittest
-except ImportError:
-    import unittest
+from __future__ import absolute_import
 
-import Backends.MySQL as MySQLBackend
-from BackendTestMixins import BackendTestMixin
-from BackendTestMixins.Backend import MultiThreadingTestMixin
+from .Backends import MySQL as MySQLback
+from .BackendTestMixins import BackendTestMixin
+from .BackendTestMixins.Backend import MultiThreadingTestMixin
+from .helpers import unittest, requiresModulesFile
 
 
-class MySQLBackendTestCase(unittest.TestCase, MySQLBackend.MySQLBackendMixin, BackendTestMixin):
+class MySQLBackendTestCase(unittest.TestCase, MySQLback.MySQLBackendMixin, BackendTestMixin):
     """
     Testing the MySQL backend.
 
