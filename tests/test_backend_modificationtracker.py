@@ -42,13 +42,13 @@ from .helpers import patchAddress
 @contextmanager
 def prepareBackendAndTracker():
     with patchAddress():
-            with getSQLiteBackend() as basebackend:
-                backend = ModificationTrackingBackend(basebackend)
+        with getSQLiteBackend() as basebackend:
+            backend = ModificationTrackingBackend(basebackend)
 
-                with getSQLiteModificationTracker() as tracker:
-                    backend.addBackendChangeListener(tracker)
+            with getSQLiteModificationTracker() as tracker:
+                backend.addBackendChangeListener(tracker)
 
-                    yield backend, tracker
+                yield backend, tracker
 
 
 
