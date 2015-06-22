@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2014 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2015 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -33,8 +33,6 @@ from BackendTestMixins import BackendTestMixin
 from BackendTestMixins.Backend import MultiThreadingTestMixin
 
 
-@unittest.skipIf(not MySQLBackend.MySQLconfiguration,
-    'no MySQL backend configuration given.')
 class MySQLBackendTestCase(unittest.TestCase, MySQLBackend.MySQLBackendMixin, BackendTestMixin):
     """
     Testing the MySQL backend.
@@ -42,6 +40,8 @@ class MySQLBackendTestCase(unittest.TestCase, MySQLBackend.MySQLBackendMixin, Ba
     Please make sure to have a valid configuration given in Backends/config.
     You also need to have a valid modules file with enabled MySQL backend.
     """
+    @unittest.skipIf(not MySQLBackend.MySQLconfiguration,
+    'no MySQL backend configuration given.')
     def setUp(self):
         self.backend = None
         self.setUpBackend()
