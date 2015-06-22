@@ -41,7 +41,6 @@ class BackendSQLiteTestCase(unittest.TestCase):
         backend.backend_createBase()
 
 
-# @unittest.skipIf(not os.path.exists('/etc/opsi/modules'), 'SQLite tests skipped: Missing modules file.')
 @requiresApsw
 class SQLiteBackendTestCase(unittest.TestCase, SQLiteBackendMixin,
     BackendTestsMixin, ProductsTestMixin, AuditTestsMixin, LicensesTestMixin,
