@@ -33,7 +33,7 @@ except ImportError:
 from OPSI.Backend.Backend import ExtendedConfigDataBackend
 from OPSI.Backend.SQLite import SQLiteBackend, SQLiteObjectBackendModificationTracker
 from . import BackendMixin
-from ..helpers import workInTemporaryDirectory, requiresModulesFile, unittest
+from ..helpers import workInTemporaryDirectory, unittest
 
 try:
     from .config import SQLiteconfiguration
@@ -67,7 +67,6 @@ class SQLiteBackendMixin(BackendMixin):
 
 @contextmanager
 @requiresApsw
-@requiresModulesFile
 def getSQLiteBackend(configuration=None):
 	# Defaults and settings from the old fixture.
 	# defaultOptions = {
