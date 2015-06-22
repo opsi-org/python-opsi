@@ -40,8 +40,6 @@ class MySQLBackendTestCase(unittest.TestCase, MySQLBackend.MySQLBackendMixin, Ba
     Please make sure to have a valid configuration given in Backends/config.
     You also need to have a valid modules file with enabled MySQL backend.
     """
-    @unittest.skipIf(not MySQLBackend.MySQLconfiguration,
-    'no MySQL backend configuration given.')
     def setUp(self):
         self.backend = None
         self.setUpBackend()
