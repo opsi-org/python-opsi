@@ -71,7 +71,7 @@ class BackupTestCase(unittest.TestCase):
         fakeBackendDir = os.path.join(os.path.dirname(__file__), '..', 'data', 'backends')
         fakeBackendDir = os.path.normpath(fakeBackendDir)
 
-        with mock.patch('OPSI.System.Posix.SysInfo.opsiVersion'):
+        with mock.patch('OPSI.System.Posix.SysInfo.opsiVersion', '1.2.3'):
             with mock.patch('OPSI.Util.Task.Backup.OpsiBackupArchive.BACKEND_CONF_DIR', fakeBackendDir):
                 backup = OpsiBackup()
                 archive = backup._getArchive('r')
