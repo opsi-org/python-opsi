@@ -36,8 +36,8 @@ from .BackendTestMixins import (ConfigStateTestsMixin, LicensesTestMixin,
 from .helpers import unittest
 
 
-@requiresApsw
 class BackendSQLiteTestCase(unittest.TestCase):
+    @requiresApsw
     def testInitialisationDoesNotFail(self):
         backend = SQLiteBackend()
         backend.backend_createBase()
