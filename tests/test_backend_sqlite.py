@@ -33,7 +33,7 @@ from .Backends.SQLite import SQLiteBackendMixin, requiresApsw
 from .BackendTestMixins import (ConfigStateTestsMixin, LicensesTestMixin,
     AuditTestsMixin, ConfigTestsMixin, ProductsTestMixin,
     ExtendedBackendTestsMixin, BackendTestsMixin)
-from .helpers import unittest
+from .helpers import unittest, requiresModulesFile
 
 
 class BackendSQLiteTestCase(unittest.TestCase):
@@ -43,7 +43,6 @@ class BackendSQLiteTestCase(unittest.TestCase):
         backend.backend_createBase()
 
 
-@requiresApsw
 class SQLiteBackendTestCase(unittest.TestCase, SQLiteBackendMixin,
     BackendTestsMixin, ProductsTestMixin, AuditTestsMixin, LicensesTestMixin,
     ExtendedBackendTestsMixin, ConfigTestsMixin, ConfigStateTestsMixin):
@@ -51,6 +50,8 @@ class SQLiteBackendTestCase(unittest.TestCase, SQLiteBackendMixin,
 
     This currently requires a valid modules file with enabled MySQL backend."""
 
+    @requiresModulesFile
+    @requiresApsw
     def setUp(self):
         self.backend = None
         self.setUpBackend()
