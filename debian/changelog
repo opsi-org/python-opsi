@@ -11,8 +11,10 @@ python-opsi (4.0.6.11-1) UNRELEASED; urgency=medium
   * OPSI.Object: repr for ConfigState now includes values.
   * Moving getProductOrdering from 30_configed.conf to 10_opsi.conf.
   * Removing 30_configed.conf.
+  * Removing the link from etc/opsi/backendManager/extend.d/20_legacy.conf to
+    etc/opsi/backendManager/extend.d/configed/20_legacy.conf.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 22 Jun 2015 10:19:00 +0200
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 24 Jun 2015 13:07:30 +0200
 
 python-opsi (4.0.6.10-3) experimental; urgency=medium
 
