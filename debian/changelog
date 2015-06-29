@@ -1,4 +1,4 @@
-python-opsi (4.0.6.11-1) UNRELEASED; urgency=medium
+python-opsi (4.0.6.11-1) experimental; urgency=medium
 
   * Debian: Moving lintian-overrides into debian/source
   * 20_legacy.conf: Small refactoring of getClients_listOfHashes
@@ -14,7 +14,7 @@ python-opsi (4.0.6.11-1) UNRELEASED; urgency=medium
   * Removing the link from etc/opsi/backendManager/extend.d/20_legacy.conf to
     etc/opsi/backendManager/extend.d/configed/20_legacy.conf.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 24 Jun 2015 13:07:30 +0200
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 29 Jun 2015 15:58:47 +0200
 
 python-opsi (4.0.6.10-3) experimental; urgency=medium
 
