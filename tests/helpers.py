@@ -105,6 +105,8 @@ as hostname.
             yield
 
 
+# TODO: make it possible to require specific parts of the modules file to be enabled
+# TODO: changing this into taking parameters requires a class :<
 def requiresModulesFile(function):
     """
     This decorator will skip tests if no modules file is found.
@@ -117,7 +119,5 @@ def requiresModulesFile(function):
             raise unittest.SkipTest("This test requires a modules file!")
 
         return function(*args, **kwargs)
-
-    # TODO: make it possible to require specific parts of the modules file to be enabled
 
     return wrapped_function
