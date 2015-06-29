@@ -84,7 +84,6 @@ python setup.py install --prefix=%{_prefix} --root=$RPM_BUILD_ROOT --record-rpm=
 %else
 python setup.py install --prefix=%{_prefix} --root=$RPM_BUILD_ROOT --record=INSTALLED_FILES
 %endif
-ln -sf /etc/opsi/backendManager/extend.d/20_legacy.conf $RPM_BUILD_ROOT/etc/opsi/backendManager/extend.d/configed/20_legacy.conf
 
 %if 0%{?rhel_version} || 0%{?centos_version}
 sed -i 's#/etc/dhcp3/dhcpd.conf#/etc/dhcp/dhcpd.conf#' $RPM_BUILD_ROOT/etc/opsi/backends/dhcpd.conf
