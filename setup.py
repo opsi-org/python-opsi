@@ -61,10 +61,6 @@ data_files = [
 		]
 	),
 	(
-		'/etc/opsi/backendManager/extend.d/configed',
-		['data/backendManager/extend.d/configed/30_configed.conf']
-	),
-	(
 		'/etc/opsi/backends/',
 		[
 			'data/backends/dhcpd.conf',

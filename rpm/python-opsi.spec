@@ -169,8 +169,6 @@ chmod 660 /etc/opsi/passwd
 %config(noreplace) /etc/opsi/backendManager/dispatch.conf.default
 %config /etc/opsi/backendManager/extend.d/10_opsi.conf
 %config /etc/opsi/backendManager/extend.d/20_legacy.conf
-%config /etc/opsi/backendManager/extend.d/configed/30_configed.conf
-%config /etc/opsi/backendManager/extend.d/configed/20_legacy.conf
 %config /etc/opsi/hwaudit/opsihwaudit.conf
 %config /etc/opsi/hwaudit/locales/de_DE
 %config /etc/opsi/hwaudit/locales/en_US

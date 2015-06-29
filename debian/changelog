@@ -1,3 +1,9 @@
+python-opsi (4.0.6.11-2) experimental; urgency=medium
+
+  * Removing remaining occurances of 30_configed.conf.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 29 Jun 2015 16:06:51 +0200
+
 python-opsi (4.0.6.11-1) experimental; urgency=medium
 
   * Debian: Moving lintian-overrides into debian/source
