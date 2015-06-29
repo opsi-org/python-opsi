@@ -109,9 +109,11 @@ def requiresModulesFile(function):
     """
     This decorator will skip tests if no modules file is found.
     """
+    modulesFile = os.path.join('/etc', 'opsi', 'modules')
+
     @wraps(function)
     def wrapped_function(*args, **kwargs):
-        if not os.path.exists(os.path.join('/etc', 'opsi', 'modules')):
+        if not os.path.exists(modulesFile):
             raise unittest.SkipTest("This test requires a modules file!")
 
         return function(*args, **kwargs)
