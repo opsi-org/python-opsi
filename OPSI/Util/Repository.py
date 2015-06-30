@@ -1654,6 +1654,3 @@ if __name__ == "__main__":
 	#	print rep.fileInfo('src' + '/' + f)
 
 	#ui.exit()
-	#rep = FileRepository(url = u'file:///tmp')
-	#for c in rep.content('', recursive=True):
-	#	print c
