@@ -70,6 +70,27 @@ class SessionTestCase(unittest.TestCase):
 			session.decreaseUsageCount()
 			self.assertEquals(0, session.usageCount)
 
+	def testMarkingForDeletion(self):
+		with getTestSession() as session:
+			self.assertFalse(session.getMarkedForDeletion(),
+				"New session should not be marked for deletion."
+			)
+
+			self.assertFalse(session.getMarkedForDeletion())
+
+			session.setMarkedForDeletion()
+
+			self.assertTrue(session.getMarkedForDeletion())
+
+	def testValidity(self):
+		with getTestSession() as session:
+			self.assertTrue(session.getValidity())
+
+	def testDeletedSessionsAreInvalid(self):
+		with getTestSession() as session:
+			session.delete()
+			self.assertFalse(session.getValidity())
+
 
 if __name__ == '__main__':
 	unittest.main()
