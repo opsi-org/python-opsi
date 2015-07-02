@@ -108,6 +108,7 @@ class SessionHandlerTestCase(unittest.TestCase):
 
 		session = handler.createSession()
 		self.assertEquals(1, len(handler.sessions))
+		self.assertEquals(handler, session.sessionHandler)
 
 		session.expire()
 		self.assertEquals(0, len(handler.sessions))
