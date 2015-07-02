@@ -26,7 +26,7 @@ Testing session and sessionhandler.
 import unittest
 from contextlib import contextmanager
 
-from OPSI.Service.Session import Session
+from OPSI.Service.Session import Session, SessionHandler
 
 
 @contextmanager
@@ -90,6 +90,39 @@ class SessionTestCase(unittest.TestCase):
 		with getTestSession() as session:
 			session.delete()
 			self.assertFalse(session.getValidity())
+
+
+class SessionHandlerTestCase(unittest.TestCase):
+	def testInitialisation(self):
+		handler = SessionHandler("testapp", 10, maxSessionsPerIp=4, sessionDeletionTimeout=23)
+		self.assertEquals("testapp", handler.sessionName)
+		self.assertEquals(10, handler.sessionMaxInactiveInterval)
+		self.assertEquals(4, handler.maxSessionsPerIp)
+		self.assertEquals(23, handler.sessionDeletionTimeout)
+
+		self.assertFalse(handler.sessions)
+
+	def testSessionCreationAndExpiration(self):
+		handler = SessionHandler()
+		self.assertFalse(handler.sessions)
+
+		session = handler.createSession()
+		self.assertEquals(1, len(handler.sessions))
+
+		session.expire()
+		self.assertEquals(0, len(handler.sessions))
+
+	def testDeletingAllSessions(self):
+		handler = SessionHandler()
+		self.assertEquals(0, len(handler.sessions))
+
+		for _ in range(10):
+			handler.createSession()
+
+		self.assertEquals(10, len(handler.sessions))
+
+		handler.deleteAllSessions()
+		self.assertEquals(0, len(handler.sessions))
 
 
 if __name__ == '__main__':
