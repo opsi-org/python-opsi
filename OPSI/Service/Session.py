@@ -173,8 +173,10 @@ class SessionHandler(object):
 		return session
 
 	def sessionExpired(self, session):
-		logger.notice(u"Session '%s' from ip '%s', application '%s' expired after %d seconds" \
-				% (session.uid, session.ip, session.userAgent, (time.time() - session.lastModified)))
+		logger.notice(
+			u"Session '%s' from ip '%s', application '%s' expired after %d seconds" %
+			(session.uid, session.ip, session.userAgent, (time.time() - session.lastModified))
+		)
 
 		if session.usageCount > 0:
 			logger.notice(u"Session currently in use, waiting before deletion")
