@@ -174,7 +174,7 @@ class SessionHandler(object):
 
 	def sessionExpired(self, session):
 		logger.notice(u"Session '%s' from ip '%s', application '%s' expired after %d seconds" \
-				% (session.uid, session.ip, session.userAgent, (time.time()-session.lastModified)))
+				% (session.uid, session.ip, session.userAgent, (time.time() - session.lastModified)))
 
 		if session.usageCount > 0:
 			logger.notice(u"Session currently in use, waiting before deletion")
@@ -214,6 +214,7 @@ class SessionHandler(object):
 
 	def deleteAllSessions(self):
 		logger.notice(u"Deleting all sessions")
+
 		class SessionDeletionThread(threading.Thread):
 			def __init__(self, sessionHandler, uid):
 				threading.Thread.__init__(self)
