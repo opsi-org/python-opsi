@@ -114,7 +114,7 @@ class Session(object):
 				except Exception:
 					pass
 				logger.info(u"Session timer %s canceled" % self.sessionTimer)
-			except Exception, e:
+			except Exception as e:
 				logger.error(u"Failed to cancel session timer: %s" % e)
 
 
