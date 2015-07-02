@@ -125,6 +125,19 @@ class SessionHandlerTestCase(unittest.TestCase):
 		handler.deleteAllSessions()
 		self.assertEquals(0, len(handler.sessions))
 
+	def testDeletingSessionInUse(self):
+		handler = SessionHandler(sessionDeletionTimeout=2)
+		self.assertEquals(0, len(handler.sessions))
+
+		session = handler.createSession()
+		self.assertEquals(1, len(handler.sessions))
+
+		session.increaseUsageCount()
+		session.increaseUsageCount()
+		session.expire()
+
+		self.assertEquals(0, len(handler.sessions))
+
 
 if __name__ == '__main__':
 	unittest.main()
