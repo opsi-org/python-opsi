@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2014 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2015 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -23,10 +23,12 @@ Testing the Host Control backend.
 :license: GNU Affero General Public License version 3
 """
 
+from __future__ import absolute_import
+
 import unittest
 
-from Backends.HostControl import HostControlBackendMixin
-from BackendTestMixins.Clients import ClientsMixin
+from .Backends.HostControl import HostControlBackendMixin
+from .BackendTestMixins.Clients import ClientsMixin
 
 
 class HostControlBackendTestCase(unittest.TestCase, HostControlBackendMixin, ClientsMixin):
