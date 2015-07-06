@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2014 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2015 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -27,10 +27,14 @@ Various unittests to test functionality of python-opsi.
 
 import mock
 import os
+import sys
 import unittest
 from contextlib import contextmanager
 
 import OPSI.System.Posix as Posix
+
+if sys.version_info > (3, ):
+    long = int
 
 
 class PosixMethodsTestCase(unittest.TestCase):
@@ -258,9 +262,9 @@ class HPProliantDisksTestCase(unittest.TestCase):
 			'secStart': 2048,
 			'secSize': 135112704,
 			'device': u'/fakedev/cciss/c0d0p1',
-			'size': 69177999360L,
+			'size': long(69177999360),
 			'cylStart': 0,
-			'end': 69182177280L,
+			'end': long(69182177280),
 			'secEnd': 135114751,
 			'boot': False,
 			'start': 0,
@@ -276,12 +280,12 @@ class HPProliantDisksTestCase(unittest.TestCase):
 			'secStart': 135114752,
 			'secSize': 8191168,
 			'device': u'/fakedev/cciss/c0d0p2',
-			'size': 4194631680L,
+			'size': long(4194631680),
 			'cylStart': 16558,
-			'end': 73372631040L,
+			'end': long(73372631040),
 			'secEnd': 143305919,
 			'boot': True,
-			'start': 69177999360L,
+			'start': long(69177999360),
 			'cylEnd': 17561,
 			'type': u'c'
 		}
@@ -349,9 +353,9 @@ class DiskTestCase(unittest.TestCase):
 			'secStart': 2048,
 			'secSize': 67923968,
 			'device': u'/fakedev/sdb1',
-			'size': 34784709120L,
+			'size': long(34784709120),
 			'cylStart': 0,
-			'end': 34784709120L,
+			'end': long(34784709120),
 			'secEnd': 67926015,
 			'boot': True,
 			'start': 0,
@@ -367,12 +371,12 @@ class DiskTestCase(unittest.TestCase):
 			'secStart': 69971968,
 			'secSize': 8193392,
 			'device': u'/fakedev/sdb2',
-			'size': 4203118080L,
+			'size': long(4203118080),
 			'cylStart': 4355,
-			'end': 40024212480L,
+			'end': long(40024212480),
 			'secEnd': 78165359,
 			'boot': False,
-			'start': 35821094400L,
+			'start': long(35821094400),
 			'cylEnd': 4865,
 			'type': u'c'
 		}
