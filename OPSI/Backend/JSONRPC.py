@@ -51,7 +51,7 @@ from OPSI.Backend.Backend import Backend, DeferredCall
 from OPSI.Util import serialize, deserialize
 from OPSI.Util.HTTP import urlsplit, getSharedConnectionPool, deflateEncode, deflateDecode, gzipDecode
 
-__version__ = '4.0.6.10'
+__version__ = '4.0.6.12'
 
 logger = Logger()
 
@@ -517,12 +517,12 @@ class JSONRPCBackend(Backend):
 				methodCode = ('def %s(%s):\n  if type(%s) == list: %s = [ %s ]\n  return self._jsonRPC(method = "%s", params = [%s])'
 					% (method['name'], ', '.join(paramsWithDefaults), params[1], params[1], params[1], method['name'], ', '.join(params[1:])))
 				logger.debug2(methodCode)
-				exec methodCode
+				exec(methodCode)
 			else:
 				methodCode = ('def %s(%s): return self._jsonRPC(method = "%s", params = [%s])'
 					% (method['name'], ', '.join(paramsWithDefaults), method['name'], ', '.join(params[1:])))
 				logger.debug2(methodCode)
-				exec methodCode
+				exec(methodCode)
 
 			setattr(self.__class__, method['name'], new.instancemethod(eval(method['name']), None, self.__class__))
 
