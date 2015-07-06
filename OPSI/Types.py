@@ -74,8 +74,8 @@ _ARCHITECTURE_REGEX = re.compile('^(x86|x64)$')
 if sys.version_info > (3, ):
 	# Python 3
 	unicode = str
-	_UNICODE_TYPE = types.StringType
-	_STRING_TYPES = types.StringType
+	_UNICODE_TYPE = str
+	_STRING_TYPES = (str, )
 else:
 	# Python 2
 	_STRING_TYPES = (types.StringType, types.UnicodeType)
