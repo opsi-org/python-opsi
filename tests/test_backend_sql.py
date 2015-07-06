@@ -85,7 +85,7 @@ class FilterToSQLTestCase(SQLBackendWithoutConnectionTestCase):
     def testNumberRepresentation(self):
         self.assertEquals(u'(`a` = 1)', self.backend._filterToSql({'a': 1}))
         self.assertEquals(u'(`b` = 2.3)', self.backend._filterToSql({'b': 2.3}))
-        self.assertEquals(u'(`c` = 4)', self.backend._filterToSql({'c': 4L}))
+        self.assertEquals(u'(`c` = 4)', self.backend._filterToSql({'c': long(4)}))
 
     def testCreatingFilterForStringValue(self):
         self.assertEquals(u"(`a` = 'b')", self.backend._filterToSql({'a': "b"}))
@@ -212,7 +212,7 @@ class UniqueConditionTestCase(SQLBackendWithoutConnectionTestCase):
 
         self.assertEquals('`param` = 1', self.backend._uniqueCondition(FooParam(1)))
         self.assertEquals('`param` = 2.3', self.backend._uniqueCondition(FooParam(2.3)))
-        self.assertEquals('`param` = 4', self.backend._uniqueCondition(FooParam(long(4)))
+        self.assertEquals('`param` = 4', self.backend._uniqueCondition(FooParam(long(4))))
 
 
 class UniqueAuditHardwareConditionTestCase(SQLBackendWithoutConnectionTestCase):
@@ -250,7 +250,7 @@ class UniqueAuditHardwareConditionTestCase(SQLBackendWithoutConnectionTestCase):
         testDict = {
             "int": 1,
             "float": 2.3,
-            "long": 4L,
+            "long": long(4),
             "bool_true": True,
             "bool_false": False,
             "string": "caramba",
