@@ -55,7 +55,7 @@ from OPSI.Logger import Logger
 from OPSI.Types import (forceBool, forceFilename, forceFqdn, forceInt,
 						forceIPAddress, forceNetworkAddress, forceUnicode)
 
-__version__ = '4.0.6.10'
+__version__ = '4.0.6.12'
 
 logger = Logger()
 
@@ -797,7 +797,7 @@ def ipAddressInNetwork(ipAddress, networkAddress):
 	network = createBytemaskFromAddress(network)
 	netmask = createBytemaskFromAddress(netmask)
 
-	wildcard = netmask ^ 0xFFFFFFFFL
+	wildcard = netmask ^ 0xFFFFFFFF
 	if (wildcard | ip == wildcard | network):
 		return True
 

@@ -1,3 +1,9 @@
+python-opsi (4.0.6.12-1) UNRELEASED; urgency=medium
+
+  * Improving Python 3 compatibility.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 06 Jul 2015 14:09:53 +0200
+
 python-opsi (4.0.6.11-4) experimental; urgency=medium
 
   * Packaging fixes for Debian 8.
