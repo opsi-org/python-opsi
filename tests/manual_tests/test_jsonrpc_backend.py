@@ -40,7 +40,7 @@ def checkIfMultipleCallsSucceed():
 	)
 	print be.backend_info()
 	print be.backend_info()
-	print be.backend_info()
+	print(be.backend_info())
 
 
 def checkIfConnectionWithCertWorks():
@@ -59,10 +59,10 @@ def checkAsynchronosProcessing():
 		username = 'someone',
 		password = '123'
 	)
-	print be.authenticated()
+	print(be.authenticated())
 
 	def callback(jsonrpc):
-		print jsonrpc.result
+		print(jsonrpc.result)
 
 	class Thread(threading.Thread):
 		def __init__(self, be):
@@ -90,9 +90,9 @@ def checkAsynchronosProcessing():
 
 	runs = 0
 	while runs < 10:
-		print be.authenticated()
-		print be.group_getIdents()
-		print be.host_getIdents()
+		print(be.authenticated())
+		print(be.group_getIdents())
+		print(be.host_getIdents())
 		time.sleep(2)
 		runs += 1
 
@@ -110,7 +110,7 @@ def checkAsynchronosProcessing():
 	be.host_getIdents().setCallback(callback)
 
 	be.setAsync(False)
-	print "===", be.host_getIdents()
+	print("===", be.host_getIdents())
 
 	be.backend_exit()
 

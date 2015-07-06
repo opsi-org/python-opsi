@@ -129,9 +129,9 @@ def main():
 
 	check('mysqlBackend', 'fileBackend')
 
-	print "-------------------------------------"
-	print "- seem to work ... all tests passed -"
-	print "-------------------------------------"
+	print("-------------------------------------")
+	print("- seem to work ... all tests passed -")
+	print("-------------------------------------")
 
 
 if __name__ == '__main__':
