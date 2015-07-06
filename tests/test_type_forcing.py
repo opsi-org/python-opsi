@@ -510,11 +510,7 @@ class ForceDictTestCase(unittest.TestCase):
 		self.assertEquals({}, forceDict(None))
 
 	def testForcingDictToDictReturnsDict(self):
-		data = {'a': 1}
-		expected = {'a': 1}
-		self.assertEquals(expected, forceDict(data))
-
-		self.assertTrue(data is expected)
+		self.assertEquals({'a': 1}, forceDict({'a': 1}))
 
 	def testForcingImpossibleThrowsError(self):
 		self.assertRaises(ValueError, forceDict, 'asdg')
