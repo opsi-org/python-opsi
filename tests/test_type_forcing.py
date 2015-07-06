@@ -493,21 +493,21 @@ class ForceEmailAddressTestCase(unittest.TestCase):
 
 
 class ForceProductTypeTestCase(unittest.TestCase):
-    def testRaisingExceptionOnUnknownType(self):
-        self.assertRaises(ValueError, forceProductType, 'TrolololoProduct')
+	def testRaisingExceptionOnUnknownType(self):
+		self.assertRaises(ValueError, forceProductType, 'TrolololoProduct')
 
-    def testForcingToLocalbootProduct(self):
-    	self.assertEquals(forceProductType('LocalBootProduct'), 'LocalbootProduct')
-    	self.assertEquals(forceProductType('LOCALBOOT'), 'LocalbootProduct')
+	def testForcingToLocalbootProduct(self):
+		self.assertEquals(forceProductType('LocalBootProduct'), 'LocalbootProduct')
+		self.assertEquals(forceProductType('LOCALBOOT'), 'LocalbootProduct')
 
-    def testForcingToNetbootProduct(self):
-    	self.assertEquals(forceProductType('NetbOOtProduct'), 'NetbootProduct')
-    	self.assertEquals(forceProductType('nETbOOT'), 'NetbootProduct')
+	def testForcingToNetbootProduct(self):
+		self.assertEquals(forceProductType('NetbOOtProduct'), 'NetbootProduct')
+		self.assertEquals(forceProductType('nETbOOT'), 'NetbootProduct')
 
 
 class ForceDictTestCase(unittest.TestCase):
-    def testForcingNoneTypeToDictReturnsEmptyDict(self):
-        self.assertEquals({}, forceDict(None))
+	def testForcingNoneTypeToDictReturnsEmptyDict(self):
+		self.assertEquals({}, forceDict(None))
 
 	def testForcingDictToDictReturnsDict(self):
 		data = {'a': 1}
@@ -610,4 +610,4 @@ class ForceFloatTypeTestCase(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+	unittest.main()
