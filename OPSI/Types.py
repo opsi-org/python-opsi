@@ -39,7 +39,7 @@ import types
 
 from OPSI.Logger import Logger
 
-__version__ = '4.0.6.11'
+__version__ = '4.0.6.12'
 
 encoding = sys.getfilesystemencoding()
 logger = Logger()
@@ -71,6 +71,16 @@ _LICENSE_POOL_ID_REGEX = re.compile('^[a-z0-9][a-z0-9-_\. :]*$')
 _LANGUAGE_CODE_REGEX = re.compile('^([a-z]{2,3})[-_]?([a-z]{4})?[-_]?([a-z]{2})?$')
 _ARCHITECTURE_REGEX = re.compile('^(x86|x64)$')
 
+if sys.version_info > (3, ):
+	# Python 3
+	unicode = str
+	_UNICODE_TYPE = types.StringType
+	_STRING_TYPES = types.StringType
+else:
+	# Python 2
+	_STRING_TYPES = (types.StringType, types.UnicodeType)
+	_UNICODE_TYPE = types.UnicodeType
+
 
 def forceList(var):
 	if not isinstance(var, (set, list, tuple, types.GeneratorType)):
@@ -80,7 +90,7 @@ def forceList(var):
 
 
 def forceUnicode(var):
-	if isinstance(var, types.UnicodeType):
+	if isinstance(var, _UNICODE_TYPE):
 		return var
 	elif isinstance(var, types.StringType):
 		return unicode(var, 'utf-8', 'replace')
@@ -98,11 +108,13 @@ def forceUnicode(var):
 	except Exception:
 		pass
 
-	if hasattr(var, '__repr__'):
+	try:
 		var = var.__repr__()
-		if isinstance(var, types.UnicodeType):
+		if isinstance(var, _UNICODE_TYPE):
 			return var
 		return unicode(var, 'utf-8', 'replace')
+	except Exception:
+		pass
 
 	return unicode(var)
 
@@ -131,7 +143,7 @@ def forceBool(var):
 	if isinstance(var, types.BooleanType):
 		return var
 
-	if isinstance(var, (types.UnicodeType, types.StringType)):
+	if isinstance(var, _STRING_TYPES):
 		if var.lower() in ('true', 'yes', 'on', '1'):
 			return True
 		elif var.lower() in ('false', 'no', 'off', '0'):
@@ -473,7 +485,7 @@ def forceRequirementType(var):
 
 def forceObjectClass(var, objectClass):
 	exception = None
-	if isinstance(var, (types.UnicodeType, types.StringType)) and var.lstrip() and var.lstrip().startswith('{'):
+	if isinstance(var, _STRING_TYPES) and var.lstrip() and var.lstrip().startswith('{'):
 		from OPSI.Util import fromJson
 
 		try:
