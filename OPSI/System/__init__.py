@@ -40,7 +40,7 @@ elif os.name == 'nt':
 
 from OPSI.Types import forceFilename
 
-__version__ = '4.0.6.3'
+__version__ = '4.0.6.12'
 
 
 class SystemHook(SystemSpecificHook):
@@ -200,7 +200,7 @@ def getCountAndSize(path):
 	return (count, size)
 
 
-def mkdir(newDir, mode=0750):
+def mkdir(newDir, mode=0o750):
 	"""
 	Create a new directory.
 

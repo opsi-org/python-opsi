@@ -64,7 +64,7 @@ from OPSI.Util import (timestamp, compareVersions, blowfishDecrypt,
 from OPSI.Util.File import ConfigFile
 import OPSI.SharedAlgorithm
 
-__version__ = '4.0.6.10'
+__version__ = '4.0.6.12'
 
 logger = Logger()
 OPSI_VERSION_FILE = u'/etc/opsi/version'
@@ -601,7 +601,7 @@ overwrite the log.
 			objectId = forceObjectId(objectId)
 
 		if not os.path.exists(os.path.join(LOG_DIR, logType)):
-			os.mkdir(os.path.join(LOG_DIR, logType), 02770)
+			os.mkdir(os.path.join(LOG_DIR, logType), 0o2770)
 
 		logFile = os.path.join(LOG_DIR, logType, '{0}.log'.format(objectId))
 		if not os.path.exists(logFile):
@@ -628,7 +628,7 @@ overwrite the log.
 		with codecs.open(logFile, logWriteMode or "w", 'utf-8', 'replace') as log:
 			log.write(data)
 
-		os.chmod(logFile, 0640)
+		os.chmod(logFile, 0o640)
 
 	@staticmethod
 	def _truncateLogData(data, maxSize):
