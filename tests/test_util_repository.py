@@ -55,7 +55,7 @@ class FileRepositoryTestCase(unittest.TestCase):
 
             self.assertEquals(1, len(repo.content('', recursive=True)))
             for content in repo.content('', recursive=True):
-                self.assertEquals({'path': u'foobar', 'type': 'dir', 'name': u'foobar', 'size': 0L}, content)
+                self.assertEquals({'path': u'foobar', 'type': 'dir', 'name': u'foobar', 'size': 0}, content)
 
             with open(os.path.join(tempDir, "bar"), "w"):
                 pass
