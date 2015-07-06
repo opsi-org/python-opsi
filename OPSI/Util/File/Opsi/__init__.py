@@ -6,7 +6,7 @@ opsi python library - File.Opsi
 This module is part of the desktop management solution opsi
 (open pc server integration) http://www.opsi.org
 
-Copyright (C) 2006-2014 uib GmbH
+Copyright (C) 2006-2015 uib GmbH
 
 http://www.uib.de/
 
@@ -69,7 +69,7 @@ from OPSI.Types import (BackendBadValueError, OpsiBackupBackendNotFound,
 from OPSI.Util.File import ConfigFile, IniFile, TextFile, requiresParsing
 from OPSI.Util import md5sum, toJson, fromJson
 
-__version__ = '4.0.6.3'
+__version__ = '4.0.6.12'
 
 logger = Logger()
 
@@ -1441,7 +1441,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 		for backend in self._getBackends("mysql"):
 			if not auto or backend["dispatch"]:
 				fd, name = tempfile.mkstemp(dir=self.tempdir)
-				os.chmod(name, 0770)
+				os.chmod(name, 0o770)
 
 				try:
 					for member in self.getmembers():

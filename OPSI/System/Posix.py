@@ -55,7 +55,7 @@ from OPSI.Types import OpsiVersionError
 from OPSI.Object import *
 from OPSI.Util import objectToBeautifiedText, removeUnit
 
-__version__ = '4.0.6.8'
+__version__ = '4.0.6.12'
 
 logger = Logger()
 
@@ -971,7 +971,7 @@ def mount(dev, mountpoint, **options):
 			with open(credentialsFile, "w") as f:
 				pass
 
-			os.chmod(credentialsFile, 0600)
+			os.chmod(credentialsFile, 0o600)
 			with codecs.open(credentialsFile, "w", "iso-8859-15") as f:
 				f.write(u"username=%s\n" % options['username'])
 				f.write(u"password=%s\n" % options['password'])
@@ -1012,7 +1012,7 @@ def mount(dev, mountpoint, **options):
 		if options['servercert']:
 			with open(u"/etc/davfs2/certs/trusted.pem", "w") as f:
 				f.write(options['servercert'])
-			os.chmod(u"/etc/davfs2/certs/trusted.pem", 0644)
+			os.chmod(u"/etc/davfs2/certs/trusted.pem", 0o644)
 
 		with codecs.open(u"/etc/davfs2/secrets", "r", "utf8") as f:
 			lines = f.readlines()
@@ -1023,7 +1023,7 @@ def mount(dev, mountpoint, **options):
 					f.write(u"#")
 				f.write(line)
 			f.write(u'%s "%s" "%s"\n' % (dev, options['username'], options['password']))
-		os.chmod(u"/etc/davfs2/secrets", 0600)
+		os.chmod(u"/etc/davfs2/secrets", 0o600)
 
 		if options['servercert']:
 			with open(u"/etc/davfs2/davfs2.conf", "r") as f:

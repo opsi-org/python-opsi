@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2006-2014 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2015 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -41,7 +41,7 @@ from OPSI.System import execute
 from OPSI.Types import (forceBool, forceFilename, forcePackageCustomName,
 	forceUnicode)
 
-__version__ = '4.0.6.1'
+__version__ = '4.0.6.12'
 
 try:
 	from OPSI.Util.File.Opsi import OpsiConfFile
@@ -194,7 +194,7 @@ class ProductPackageFile(object):
 		try:
 			if not os.path.exists(self.tmpUnpackDir):
 				os.mkdir(self.tmpUnpackDir)
-				os.chmod(self.tmpUnpackDir, 0700)
+				os.chmod(self.tmpUnpackDir, 0o700)
 
 			metaDataTmpDir = os.path.join(self.tmpUnpackDir, u'OPSI')
 			archive = Archive(self.packageFile)
@@ -289,7 +289,7 @@ class ProductPackageFile(object):
 			productClientDataDir = self.getProductClientDataDir()
 			if not os.path.exists(productClientDataDir):
 				os.mkdir(productClientDataDir)
-				os.chmod(productClientDataDir, 02770)
+				os.chmod(productClientDataDir, 0o2770)
 
 			for clientDataArchive in clientDataArchives:
 				archiveFile = os.path.join(self.tmpUnpackDir, clientDataArchive)
@@ -329,7 +329,7 @@ class ProductPackageFile(object):
 			gid = grp.getgrnam(DEFAULT_CLIENT_DATA_GROUP)[2]
 
 			os.chown(productClientDataDir, uid, gid)
-			os.chmod(productClientDataDir, 02770)
+			os.chmod(productClientDataDir, 0o2770)
 
 			for filename in self.getClientDataFiles():
 				path = os.path.join(productClientDataDir, filename)
@@ -348,10 +348,10 @@ class ProductPackageFile(object):
 						continue
 					elif os.path.isdir(path):
 						logger.debug(u"Setting rights on directory '%s'" % path)
-						mode = 02770
+						mode = 0o2770
 					elif os.path.isfile(path):
 						logger.debug(u"Setting rights on file '%s'" % path)
-						mode = (os.stat(path)[0] | 0660) & 0770
+						mode = (os.stat(path)[0] | 0o660) & 0o770
 
 					if mode is not None:
 						os.chmod(path, mode)
@@ -407,7 +407,7 @@ class ProductPackageFile(object):
 				logger.warning(u"Package script '%s' not found" % scriptName)
 				return []
 
-			os.chmod(script, 0700)
+			os.chmod(script, 0o700)
 
 			os.putenv('PRODUCT_ID', self.packageControlFile.getProduct().getId())
 			os.putenv('PRODUCT_TYPE', self.packageControlFile.getProduct().getType())

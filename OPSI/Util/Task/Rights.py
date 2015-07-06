@@ -55,7 +55,7 @@ from OPSI.Types import forceHostId
 from OPSI.Util import findFiles, getfqdn
 from OPSI.Util.File.Opsi import OpsiConfFile
 
-__version__ = '4.0.6.9'
+__version__ = '4.0.6.12'
 
 LOGGER = Logger()
 
@@ -108,19 +108,19 @@ def setRights(path=u'/'):
 			continue
 		uid = opsiconfdUid
 		gid = fileAdminGroupGid
-		fmod = 0660
-		dmod = 0770
+		fmod = 0o660
+		dmod = 0o770
 		correctLinks = False
 
 		if dirname in (u'/var/lib/tftpboot/opsi', u'/tftpboot/linux'):
-			fmod = 0664
-			dmod = 0775
+			fmod = 0o664
+			dmod = 0o775
 		elif dirname in (u'/var/log/opsi', u'/etc/opsi'):
 			gid = adminGroupGid
 			correctLinks = True
 		elif dirname in (u'/home/opsiproducts', '/var/lib/opsi/workbench'):
 			uid = -1
-			dmod = 02770
+			dmod = 0o2770
 
 		if os.path.isfile(path):
 			chown(path, uid, gid)
@@ -128,7 +128,7 @@ def setRights(path=u'/'):
 			LOGGER.debug(u"Setting rights on file '%s'" % path)
 			if path.startswith(u'/var/lib/opsi/depot/'):
 				LOGGER.debug("Assuming file in product folder...")
-				os.chmod(path, (os.stat(path)[0] | 0660) & 0770)
+				os.chmod(path, (os.stat(path)[0] | 0o660) & 0o770)
 			else:
 				LOGGER.debug("Assuming general file...")
 				os.chmod(path, fmod)
@@ -139,7 +139,7 @@ def setRights(path=u'/'):
 			startPath = basedir
 
 		if dirname == depotDir:
-			dmod = 02770
+			dmod = 0o2770
 
 		LOGGER.notice(u"Setting rights on directory '%s'" % startPath)
 		LOGGER.debug2(u"Current setting: startPath={path}, uid={uid}, gid={gid}".format(path=startPath, uid=uid, gid=gid))
@@ -155,16 +155,16 @@ def setRights(path=u'/'):
 				if filepath.startswith(u'/var/lib/opsi/depot/'):
 					if os.path.basename(filepath) in KNOWN_EXECUTABLES:
 						LOGGER.debug(u"Setting rights on special file '{0}'".format(filepath))
-						os.chmod(filepath, 0770)
+						os.chmod(filepath, 0o770)
 					else:
 						LOGGER.debug(u"Setting rights on file '{0}'".format(filepath))
-						os.chmod(filepath, (os.stat(filepath)[0] | 0660) & 0770)
+						os.chmod(filepath, (os.stat(filepath)[0] | 0o660) & 0o770)
 				else:
 					LOGGER.debug(u"Setting rights {rights} on file '{file}'".format(file=filepath, rights=fmod))
 					os.chmod(filepath, fmod)
 
 		if startPath.startswith(u'/var/lib/opsi') and os.geteuid() == 0:
-			os.chmod(u'/var/lib/opsi', 0750)
+			os.chmod(u'/var/lib/opsi', 0o750)
 			chown(u'/var/lib/opsi', clientUserUid, fileAdminGroupGid)
 			setRightsOnSSHDirectory(clientUserUid, fileAdminGroupGid)
 
@@ -319,19 +319,19 @@ def chown(path, uid, gid):
 def setRightsOnSSHDirectory(userId, groupId, path=u'/var/lib/opsi/.ssh'):
 	if os.path.exists(path):
 		os.chown(path, userId, groupId)
-		os.chmod(path, 0750)
+		os.chmod(path, 0o750)
 
 		idRsa = os.path.join(path, u'id_rsa')
 		if os.path.exists(idRsa):
-			os.chmod(idRsa, 0640)
+			os.chmod(idRsa, 0o640)
 			os.chown(idRsa, userId, groupId)
 
 		idRsaPub = os.path.join(path, u'id_rsa.pub')
 		if os.path.exists(idRsaPub):
-			os.chmod(idRsaPub, 0644)
+			os.chmod(idRsaPub, 0o644)
 			os.chown(idRsaPub, userId, groupId)
 
 		authorizedKeys = os.path.join(path, u'authorized_keys')
 		if os.path.exists(authorizedKeys):
-			os.chmod(authorizedKeys, 0600)
+			os.chmod(authorizedKeys, 0o600)
 			os.chown(authorizedKeys, userId, groupId)

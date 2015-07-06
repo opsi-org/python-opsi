@@ -44,7 +44,7 @@ from OPSI.Util.File import IniFile, LockableFile
 from OPSI.Util.File.Opsi import OpsiConfFile, HostKeyFile, PackageControlFile
 from OPSI.Object import *  # needed for calls to "eval"
 
-__version__ = '4.0.6.10'
+__version__ = '4.0.6.12'
 
 logger = Logger()
 
@@ -63,10 +63,10 @@ class FileBackend(ConfigDataBackend):
 
 		self.__fileUser = u'opsiconfd'
 		self.__fileGroup = u'pcpatch'
-		self.__fileMode = 0660
+		self.__fileMode = 0o660
 		self.__dirGroup = u'pcpatch'
 		self.__dirUser = u'opsiconfd'
-		self.__dirMode = 0770
+		self.__dirMode = 0o770
 
 		try:
 			self.__fileGroup = OpsiConfFile().getOpsiFileAdminGroup()
