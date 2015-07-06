@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2014 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2015 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -231,13 +231,13 @@ class ForceIntListTestCase(unittest.TestCase):
 
 class ForceOctTestCase(unittest.TestCase):
 	def testForcingDoesNotChangeValue(self):
-		self.assertEquals(forceOct(0666), 0666)
+		self.assertEquals(forceOct(0o666), 0o666)
 
 	def testForcingString(self):
-		self.assertEquals(forceOct('666'), 0666)
+		self.assertEquals(forceOct('666'), 0o666)
 
 	def testForcingStringWithLeadingZero(self):
-		self.assertEquals(forceOct('0666'), 0666)
+		self.assertEquals(forceOct('0666'), 0o666)
 
 	def testRaisingErrors(self):
 		self.assertRaises(ValueError, forceOct, 'abc')
