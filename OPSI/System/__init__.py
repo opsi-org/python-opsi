@@ -30,13 +30,15 @@ should end up with runnable commands.
 :license: GNU Affero General Public License version 3
 """
 
+from __future__ import absolute_import
+
 import os
 import shutil
 
 if os.name == 'posix':
-	from Posix import *
+	from .Posix import *
 elif os.name == 'nt':
-	from Windows import *
+	from .Windows import *
 
 from OPSI.Types import forceFilename
 
