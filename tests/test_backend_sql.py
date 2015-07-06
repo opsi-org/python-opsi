@@ -23,10 +23,14 @@ Testing opsi SQL backend.
 :license: GNU Affero General Public License version 3
 """
 
+import sys
 import unittest
 
 import OPSI.Backend.SQL as sql
 import OPSI.Object as ob
+
+if sys.version_info > (3, ):
+    long = int
 
 
 class SQLBackendWithoutConnectionTestCase(unittest.TestCase):
@@ -208,7 +212,7 @@ class UniqueConditionTestCase(SQLBackendWithoutConnectionTestCase):
 
         self.assertEquals('`param` = 1', self.backend._uniqueCondition(FooParam(1)))
         self.assertEquals('`param` = 2.3', self.backend._uniqueCondition(FooParam(2.3)))
-        self.assertEquals('`param` = 4', self.backend._uniqueCondition(FooParam(4L)))
+        self.assertEquals('`param` = 4', self.backend._uniqueCondition(FooParam(long(4)))
 
 
 class UniqueAuditHardwareConditionTestCase(SQLBackendWithoutConnectionTestCase):
