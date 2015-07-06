@@ -54,7 +54,19 @@ try:
 except ImportError:
 	syslog = None
 
-__version__ = '4.0.6.8'
+__version__ = '4.0.6.12'
+
+if sys.version_info > (3, ):
+	# Python 3
+	unicode = str
+	_STRING_TYPE = str
+	_UNICODE_TYPE = str
+	_STRING_TYPES = (str, )
+else:
+	# Python 2
+	_STRING_TYPE = types.StringType
+	_UNICODE_TYPE = types.UnicodeType
+	_STRING_TYPES = (types.StringType, types.UnicodeType)
 
 # Loglevels
 LOG_CONFIDENTIAL = 9
@@ -141,29 +153,30 @@ _showwarning = warnings.showwarning
 
 
 def forceUnicode(var):
-	if isinstance(var, types.UnicodeType):
+	if isinstance(var, _UNICODE_TYPE):
 		return var
-	elif isinstance(var, types.StringType):
+	elif isinstance(var, _STRING_TYPE):
 		return unicode(var, 'utf-8', 'replace')
 	elif os.name == 'nt' and isinstance(var, WindowsError):
 		return u"[Error %s] %s" % (var.args[0], var.args[1].decode(encoding))
 
-	if hasattr(var, '__unicode__'):
-		try:
-			return var.__unicode__()
-		except:
-			pass
+	try:
+		return var.__unicode__()
+	except Exception:
+		pass
 
 	try:
 		return unicode(var)
 	except Exception:
 		pass
 
-	if hasattr(var, '__repr__'):
+	try:
 		var = var.__repr__()
-		if isinstance(var, types.UnicodeType):
+		if isinstance(var, _UNICODE_TYPE):
 			return var
 		return unicode(var, 'utf-8', 'replace')
+	except Exception:
+		pass
 
 	return unicode(var)
 

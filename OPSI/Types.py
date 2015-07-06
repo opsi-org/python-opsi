@@ -74,12 +74,14 @@ _ARCHITECTURE_REGEX = re.compile('^(x86|x64)$')
 if sys.version_info > (3, ):
 	# Python 3
 	unicode = str
+	_STRING_TYPE = str
 	_UNICODE_TYPE = str
 	_STRING_TYPES = (str, )
 else:
 	# Python 2
-	_STRING_TYPES = (types.StringType, types.UnicodeType)
+	_STRING_TYPE = types.StringType
 	_UNICODE_TYPE = types.UnicodeType
+	_STRING_TYPES = (types.StringType, types.UnicodeType)
 
 
 def forceList(var):
@@ -92,7 +94,7 @@ def forceList(var):
 def forceUnicode(var):
 	if isinstance(var, _UNICODE_TYPE):
 		return var
-	elif isinstance(var, types.StringType):
+	elif isinstance(var, _STRING_TYPE):
 		return unicode(var, 'utf-8', 'replace')
 	elif (os.name == 'nt') and isinstance(var, WindowsError):
 		return u"[Error %s] %s" % (var.args[0], var.args[1].decode(encoding))
