@@ -38,8 +38,8 @@ def checkIfMultipleCallsSucceed():
 		username='exp-40-wks-001.uib.local',
 		password='352360038fb824baf836a6b448845745'
 	)
-	print be.backend_info()
-	print be.backend_info()
+	print(be.backend_info())
+	print(be.backend_info())
 	print(be.backend_info())
 
 
