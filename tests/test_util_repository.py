@@ -64,6 +64,9 @@ class FileRepositoryTestCase(unittest.TestCase):
             self.assertEquals(2, len(repo.listdir()))
             self.assertTrue("bar" in repo.listdir())
 
+    def testFailWithWrongURL(self):
+        self.assertRaises(RepositoryError, FileRepository, u'nofile://nada')
+
 
 if __name__ == '__main__':
     unittest.main()
