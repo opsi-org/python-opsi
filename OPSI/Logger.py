@@ -29,11 +29,16 @@ import codecs
 import locale
 import os
 import sys
-import thread
 import threading
 import time
 import types
 import warnings
+
+try:
+	import thread
+except ImportError:
+	# Python 3
+	import _thread as thread
 
 if os.name == 'nt':
 	# Windows imports for file locking
