@@ -1970,10 +1970,10 @@ class Harddisk:
 			)
 
 			x = [0, 0, 0, 0]
-			x[0] = int((sector & 0x000000FFL))
-			x[1] = int((sector & 0x0000FF00L) >> 8)
-			x[2] = int((sector & 0x00FF0000L) >> 16)
-			x[3] = int((sector & 0xFFFFFFFFL) >> 24)
+			x[0] = int((sector & 0x000000FF))
+			x[1] = int((sector & 0x0000FF00) >> 8)
+			x[2] = int((sector & 0x00FF0000) >> 16)
+			x[3] = int((sector & 0xFFFFFFFF) >> 24)
 
 			hd = posix.open(self.getPartition(partition)['device'], posix.O_RDONLY)
 			posix.lseek(hd, 0x1c, 0)
