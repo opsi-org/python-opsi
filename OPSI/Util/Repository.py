@@ -50,7 +50,7 @@ from OPSI.Util.File.Opsi import PackageContentFile
 from OPSI.Util.HTTP import getSharedConnectionPool, urlsplit, HTTPResponse
 from OPSI.System import *
 
-__version__ = '4.0.6.8'
+__version__ = '4.0.6.12'
 
 logger = Logger()
 
@@ -62,12 +62,13 @@ def _(string):
 def getRepository(url, **kwargs):
 	if re.search('^file://', url, re.IGNORECASE):
 		return FileRepository(url, **kwargs)
-	if re.search('^https?://', url, re.IGNORECASE):
+	elif re.search('^https?://', url, re.IGNORECASE):
 		return HTTPRepository(url, **kwargs)
-	if re.search('^webdavs?://', url, re.IGNORECASE):
+	elif re.search('^webdavs?://', url, re.IGNORECASE):
 		return WebDAVRepository(url, **kwargs)
-	if re.search('^(smb|cifs)://', url, re.IGNORECASE):
+	elif re.search('^(smb|cifs)://', url, re.IGNORECASE):
 		return CIFSRepository(url, **kwargs)
+
 	raise RepositoryError(u"Repository url '%s' not supported" % url)
 
 
