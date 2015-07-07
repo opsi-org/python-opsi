@@ -48,6 +48,16 @@ class OpsiErrorTestCase(unittest.TestCase):
 
         self.assertRaises(OpsiError, raiseError)
 
+    def test__repr__(self):
+        r = repr(self.error)
+
+        self.assertTrue(r.startswith('<'))
+        self.assertTrue(r.endswith('>'))
+
+        if not self.ERROR_ARGUMENT:
+            print(r)
+            self.assertTrue('()' in r)
+
 
 class OpsiErrorWithIntTestCase(OpsiErrorTestCase):
     ERROR_ARGUMENT = 1

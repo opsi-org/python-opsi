@@ -749,7 +749,15 @@ class OpsiError(Exception):
 			return u"%s" % self.ExceptionShortDescription
 
 	def __repr__(self):
-		return unicode(self).encode("utf-8")
+		if self._message and self._message != u'None':
+			text = u"<{0}({1!r})>".format(self.__class__.__name__, self._message)
+		else:
+			text = u"<{0}()>".format(self.__class__.__name__)
+
+		if sys.version_info > (3, ):
+			return text
+		else:
+			return text.encode('utf-8')
 
 	__str__ = __repr__
 	complete_message = __unicode__
