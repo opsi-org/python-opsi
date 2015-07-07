@@ -61,12 +61,10 @@ if sys.version_info > (3, ):
 	unicode = str
 	_STRING_TYPE = str
 	_UNICODE_TYPE = str
-	_STRING_TYPES = (str, )
 else:
 	# Python 2
 	_STRING_TYPE = types.StringType
 	_UNICODE_TYPE = types.UnicodeType
-	_STRING_TYPES = (types.StringType, types.UnicodeType)
 
 # Loglevels
 LOG_CONFIDENTIAL = 9
