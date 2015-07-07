@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2010 uib GmbH <info@uib.de>
+# Copyright (C) 2010-2015 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -29,10 +29,15 @@ This backend can be used to control hosts.
 """
 
 import base64
-import httplib
 import socket
 import struct
 import time
+
+try:
+	from httplib import HTTPSConnection
+except ImportError:
+	# Python 3 compatibility
+	from http.client import HTTPSConnection
 
 from OPSI.Logger import Logger, LOG_DEBUG
 from OPSI.Types import BackendMissingDataError
@@ -44,7 +49,7 @@ from OPSI.Util import fromJson, toJson
 from OPSI.Util.Thread import KillableThread
 from OPSI.Util.HTTP import non_blocking_connect_https
 
-__version__ = '4.0.6.3'
+__version__ = '4.0.6.12'
 
 logger = Logger()
 
@@ -79,7 +84,7 @@ class RpcThread(KillableThread):
 				}
 			).encode('utf-8')
 
-			connection = httplib.HTTPSConnection(
+			connection = HTTPSConnection(
 				host=self.address,
 				port=self.hostControlBackend._opsiclientdPort,
 				timeout=timeout
@@ -125,7 +130,7 @@ class ConnectionThread(KillableThread):
 
 		try:
 			logger.info(u"Trying connection to '%s:%d'" % (self.address, self.hostControlBackend._opsiclientdPort))
-			conn = httplib.HTTPSConnection(
+			conn = HTTPSConnection(
 				host=self.address,
 				port=self.hostControlBackend._opsiclientdPort,
 				timeout=timeout
