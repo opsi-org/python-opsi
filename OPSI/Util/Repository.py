@@ -1486,7 +1486,6 @@ class DepotToLocalDirectorySychronizer(object):
 
 if __name__ == "__main__":
 	# TODO: this must be a test!
-	import sys
 	from OPSI.Logger import LOG_DEBUG, LOG_DEBUG2
 
 	logger.setConsoleLevel(LOG_DEBUG)
@@ -1527,7 +1526,6 @@ if __name__ == "__main__":
 	#rep = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/repository', username = u'stb-40-wks-101.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3', dynamicBandwidth = True, maxBandwidth = 100000)
 	#rep.download(u'ooffice3_3.3-2.opsi', '/tmp/ooffice3_3.3-2.opsi', progressSubject=None)
 
-	#sys.exit(0)
 	#sourceDepot = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/depot', username = u'stb-40-wks-101.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3')
 	#dtlds = DepotToLocalDirectorySychronizer(sourceDepot, destinationDirectory = tempDir, productIds=['opsi-client-agent', 'opsi-winst', 'thunderbird'], maxBandwidth=0, dynamicBandwidth=False)
 	#dtlds.synchronize()
@@ -1551,7 +1549,6 @@ if __name__ == "__main__":
 	#print rep.listdir()
 	#print rep.isdir('javavm')
 	#
-	#sys.exit(0)
 	#tempFile = '/tmp/testfile.bin'
 	#tempDir = '/tmp/testdir'
 	#tempDir2 = '/tmp/testdir2'
