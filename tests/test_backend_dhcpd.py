@@ -84,28 +84,28 @@ class DHCPBackendTestCase(unittest.TestCase, DHCPDConfMixin):
     def testAddingHostsToBackend(self):
         self.backend.host_insertObject(
             OpsiClient(
-                id='client1.uib.local',
+                id='client1.test.invalid',
                 hardwareAddress='00:01:02:03:04:05',
                 ipAddress='192.168.1.101',
             )
         )
         self.backend.host_insertObject(
             OpsiClient(
-                id='client2.uib.local',
+                id='client2.test.invalid',
                 hardwareAddress='00:01:02:03:11:22',
                 ipAddress='192.168.1.102',
             )
         )
         self.backend.host_insertObject(
             OpsiClient(
-                id='client3.uib.local',
+                id='client3.test.invalid',
                 hardwareAddress='1101:02:03-83:22',
                 ipAddress='192.168.1.103',
             )
         )
         self.backend.host_insertObject(
             OpsiClient(
-                id='client4.uib.local',
+                id='client4.test.invalid',
                 hardwareAddress='00:99:88:77:77:11',
                 ipAddress='192.168.1.104',
             )

@@ -51,7 +51,7 @@ class SimpleWanConfigTestCase(unittest.TestCase, ExtendedFileBackendMixin):
         self.tearDownBackend()
 
     def testEnablingSettingForOneHost(self):
-        clientId = 'testclient.opsi.invalid'
+        clientId = 'testclient.test.invalid'
         self.backend.host_createObjects(OpsiClient(id=clientId))
 
         self.backend.changeWANConfig(True, clientId)
@@ -93,7 +93,7 @@ class SimpleWanConfigTestCase(unittest.TestCase, ExtendedFileBackendMixin):
         return True
 
     def testEnablingSettingForMultipleHosts(self):
-        clientIds = ['testclient{0}.opsi.invalid'.format(num) for num in range(10)]
+        clientIds = ['testclient{0}.test.invalid'.format(num) for num in range(10)]
         self.backend.host_createObjects([OpsiClient(id=clientId) for clientId in clientIds])
 
         self.backend.changeWANConfig(True, clientIds)
@@ -105,8 +105,8 @@ class SimpleWanConfigTestCase(unittest.TestCase, ExtendedFileBackendMixin):
         self.backend.changeWANConfig(True, [])
 
     def testNotChangingUnreferencedClient(self):
-        clientIds = ['testclient{0}.opsi.invalid'.format(num) for num in range(10)]
-        singleClient = 'testclient99.opsi.invalid'
+        clientIds = ['testclient{0}.test.invalid'.format(num) for num in range(10)]
+        singleClient = 'testclient99.test.invalid'
         self.backend.host_createObjects([OpsiClient(id=clientId) for clientId in clientIds])
         self.backend.host_createObjects([OpsiClient(id=singleClient)])
 

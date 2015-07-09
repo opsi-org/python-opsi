@@ -30,7 +30,7 @@ class ClientsMixin(object):
     def setUpClients(self):
         # TODO: turn this into tests?
         self.client1 = OpsiClient(
-            id='client1.uib.local',
+            id='client1.test.invalid',
             description='Test client 1',
             notes='Notes ...',
             hardwareAddress='00:01:02:03:04:05',
@@ -42,7 +42,7 @@ class ClientsMixin(object):
 
         # TODO: turn this into tests?
         self.client2 = OpsiClient(
-            id='client2.uib.local',
+            id='client2.test.invalid',
             description='Test client 2',
             notes=';;;;;;;;;;;;;;',
             hardwareAddress='00-ff0aa3:0b-B5',
@@ -53,30 +53,30 @@ class ClientsMixin(object):
 
         # TODO: turn this into tests?
         self.client3 = OpsiClient(
-            id='client3.uib.local',
+            id='client3.test.invalid',
             description='Test client 3',
             notes='#############',
             inventoryNumber='XYZABC_1200292'
         )
 
         self.client4 = OpsiClient(
-            id='client4.uib.local',
+            id='client4.test.invalid',
             description='Test client 4',
         )
 
         self.client5 = OpsiClient(
-            id='client5.uib.local',
+            id='client5.test.invalid',
             description='Test client 5',
             oneTimePassword='abe8327kjdsfda'
         )
 
         self.client6 = OpsiClient(
-            id='client6.uib.local',
+            id='client6.test.invalid',
             description='Test client 6',
         )
 
         self.client7 = OpsiClient(
-            id='client7.uib.local',
+            id='client7.test.invalid',
             description='Test client 7',
         )
 

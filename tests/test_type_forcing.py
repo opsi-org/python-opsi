@@ -42,7 +42,7 @@ from OPSI.Types import (forceObjectClass, forceUnicode, forceUnicodeList,
 class ForceObjectClassJSONTestCase(unittest.TestCase):
 	def setUp(self):
 		self.object = OpsiClient(
-			id='test1.uib.local',
+			id='test1.test.invalid',
 			description='Test client 1',
 			notes='Notes ...',
 			hardwareAddress='00:01:02:03:04:05',
@@ -101,7 +101,7 @@ class ForceObjectClassJSONTestCase(unittest.TestCase):
 class ForceObjectClassHashTestCase(unittest.TestCase):
 	def setUp(self):
 		self.object = OpsiClient(
-			id='test1.uib.local',
+			id='test1.test.invalid',
 			description='Test client 1',
 			notes='Notes ...',
 			hardwareAddress='00:01:02:03:04:05',
@@ -262,13 +262,13 @@ class ForceOpsiTimeStampTestCase(unittest.TestCase):
 
 class ForceHostIdTestCase(unittest.TestCase):
 	def testForcingWithValidId(self):
-		self.assertEquals(forceHostId(u'client.uib.local'), u'client.uib.local')
-		self.assertTrue(forceHostId(u'client.uib.local'), u'client.uib.local')
+		self.assertEquals(forceHostId(u'client.test.invalid'), u'client.test.invalid')
+		self.assertTrue(forceHostId(u'client.test.invalid'), u'client.test.invalid')
 
 	def testInvalidHOstIdsRaiseExceptions(self):
 		self.assertRaises(ValueError, forceHostId, 'abc')
 		self.assertRaises(ValueError, forceHostId, 'abc.def')
-		self.assertRaises(ValueError, forceHostId, '.uib.local')
+		self.assertRaises(ValueError, forceHostId, '.test.invalid')
 		self.assertRaises(ValueError, forceHostId, 'abc.uib.x')
 
 

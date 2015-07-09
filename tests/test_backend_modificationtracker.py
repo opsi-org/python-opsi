@@ -59,7 +59,7 @@ class ModificationTrackerTestCase(unittest.TestCase):
     def testInsertObject(self):
         with prepareBackendAndTracker() as (backend, tracker):
             host = OpsiClient(
-                id='client1.uib.local',
+                id='client1.test.invalid',
                 description='Test client 1',
                 notes='Notes ...',
                 hardwareAddress='00:01:02:03:04:05',
@@ -80,7 +80,7 @@ class ModificationTrackerTestCase(unittest.TestCase):
     def testUpdatingObject(self):
         with prepareBackendAndTracker() as (backend, tracker):
             host = OpsiClient(
-                id='client1.uib.local',
+                id='client1.test.invalid',
                 description='Test client 1',
                 notes='Notes ...',
                 hardwareAddress='00:01:02:03:04:05',
@@ -104,7 +104,7 @@ class ModificationTrackerTestCase(unittest.TestCase):
     def testDeletingObject(self):
         with prepareBackendAndTracker() as (backend, tracker):
             host = OpsiClient(
-                id='client1.uib.local',
+                id='client1.test.invalid',
                 description='Test client 1',
                 notes='Notes ...',
                 hardwareAddress='00:01:02:03:04:05',

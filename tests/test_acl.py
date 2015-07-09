@@ -49,13 +49,13 @@ class BackendACLFileTestCase(unittest.TestCase):
             with open(aclFile, 'w') as exampleConfig:
                 exampleConfig.write(
     '''
-    host_.*: opsi_depotserver(depot1.uib.local, depot2.uib.local); opsi_client(self,  attributes (attr1, attr2)); sys_user(some user, some other user); sys_group(a_group, group2)
+    host_.*: opsi_depotserver(depot1.test.invalid, depot2.test.invalid); opsi_client(self,  attributes (attr1, attr2)); sys_user(some user, some other user); sys_group(a_group, group2)
     '''
             )
 
             expectedACL = [
                 [u'host_.*', [
-                    {'denyAttributes': [], 'type': u'opsi_depotserver', 'ids': [u'depot1.uib.local', u'depot2.uib.local'], 'allowAttributes': []},
+                    {'denyAttributes': [], 'type': u'opsi_depotserver', 'ids': [u'depot1.test.invalid', u'depot2.test.invalid'], 'allowAttributes': []},
                     {'denyAttributes': [], 'type': u'opsi_client', 'ids': [u'self'], 'allowAttributes': [u'attr1', u'attr2']},
                     {'denyAttributes': [], 'type': u'sys_user', 'ids': [u'some user', u'some other user'], 'allowAttributes': []},
                     {'denyAttributes': [], 'type': u'sys_group', 'ids': [u'a_group', u'group2'], 'allowAttributes': []}

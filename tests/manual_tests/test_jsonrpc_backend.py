@@ -35,7 +35,7 @@ logger = Logger()
 def checkIfMultipleCallsSucceed():
 	be = JSONRPCBackend(
 		address='192.168.105.1',
-		username='exp-40-wks-001.uib.local',
+		username='exp-40-wks-001.test.invalid',
 		password='352360038fb824baf836a6b448845745'
 	)
 	print(be.backend_info())
@@ -46,7 +46,7 @@ def checkIfMultipleCallsSucceed():
 def checkIfConnectionWithCertWorks():
 	be = JSONRPCBackend(
 		address='192.168.1.14',
-		username='stb-40-wks-120.uib.local',
+		username='stb-40-wks-120.test.invalid',
 		password='8ca221eee05e574c58fcc1d3d99de17c',
 		serverCertFile='/tmp/server-cert.pem',
 		verifyServerCert=True
@@ -76,7 +76,7 @@ def checkAsynchronosProcessing():
 
 	be = JSONRPCBackend(
 		address='192.168.1.14',
-		username='stb-40-wks-120.uib.local',
+		username='stb-40-wks-120.test.invalid',
 		password='8ca221eee05e574c58fcc1d3d99de17c',
 		deflate=True,
 		connectionPoolSize=30

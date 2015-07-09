@@ -59,9 +59,9 @@ class HostsMixin(object):
             id='depotserver1.uib.local',
             opsiHostKey='19012334567845645678901232789012',
             depotLocalUrl='file:///opt/pcbin/install',
-            depotRemoteUrl='smb://depotserver1.uib.local/opt_pcbin/install',
+            depotRemoteUrl='smb://depotserver1.test.invalid/opt_pcbin/install',
             repositoryLocalUrl='file:///var/lib/opsi/repository',
-            repositoryRemoteUrl='webdavs://depotserver1.uib.local:4447/repository',
+            repositoryRemoteUrl='webdavs://depotserver1.test.invalid:4447/repository',
             description='A depot',
             notes='D€pot 1',
             hardwareAddress=None,
@@ -72,12 +72,12 @@ class HostsMixin(object):
         )
 
         self.depotserver2 = OpsiDepotserver(
-            id='depotserver2.uib.local',
+            id='depotserver2.test.invalid',
             opsiHostKey='93aa22f38a678c64ef678a012d2e82f2',
             depotLocalUrl='file:///opt/pcbin/install',
-            depotRemoteUrl='smb://depotserver2.uib.local/opt_pcbin',
+            depotRemoteUrl='smb://depotserver2.test.invalid/opt_pcbin',
             repositoryLocalUrl='file:///var/lib/opsi/repository',
-            repositoryRemoteUrl='webdavs://depotserver2.uib.local:4447/repository',
+            repositoryRemoteUrl='webdavs://depotserver2.test.invalid:4447/repository',
             description='Second depot',
             notes='no notes here',
             hardwareAddress='00:01:09:07:11:aa',

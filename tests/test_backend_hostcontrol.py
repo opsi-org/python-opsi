@@ -48,8 +48,8 @@ class HostControlBackendTestCase(unittest.TestCase, HostControlBackendMixin, Cli
         self.setUpClients()
         self.createHostsOnBackend()
 
-        self.backend.hostControl_start([u'client1.uib.local'])
-        self.backend.hostControl_shutdown([u'client1.uib.local'])
+        self.backend.hostControl_start([u'client1.test.invalid'])
+        self.backend.hostControl_shutdown([u'client1.test.invalid'])
 
 
 if __name__ == '__main__':

@@ -179,12 +179,12 @@ class BackendTestsMixin(ClientsMixin, HostsMixin):
     def testNonObjectMethods(self):
         # Hosts
         self.backend.host_createOpsiDepotserver(
-            id='depot100.uib.local',
+            id='depot100.test.invalid',
             opsiHostKey='123456789012345678901234567890aa',
             depotLocalUrl='file:///opt/pcbin/install',
-            depotRemoteUrl='smb://depot3.uib.local/opt_pcbin/install',
+            depotRemoteUrl='smb://depot3.test.invalid/opt_pcbin/install',
             repositoryLocalUrl='file:///var/lib/opsi/products',
-            repositoryRemoteUrl='webdavs://depot3.uib.local:4447/products',
+            repositoryRemoteUrl='webdavs://depot3.test.invalid:4447/products',
             description='A depot',
             notes='Depot 100',
             hardwareAddress=None,
@@ -192,7 +192,7 @@ class BackendTestsMixin(ClientsMixin, HostsMixin):
             networkAddress='192.168.100.0/24',
             maxBandwidth=0)
 
-        hosts = self.backend.host_getObjects(id='depot100.uib.local')
+        hosts = self.backend.host_getObjects(id='depot100.test.invalid')
         assert len(hosts) == 1, u"got: '%s', expected: '%s'" % (hosts, 1)
 
         self.setUpProducts()
@@ -203,12 +203,12 @@ class BackendTestsMixin(ClientsMixin, HostsMixin):
             productType=self.product4.getType(),
             productVersion=self.product4.getProductVersion(),
             packageVersion=self.product4.getPackageVersion(),
-            depotId='depot100.uib.local',
+            depotId='depot100.test.invalid',
             locked=False
         )
 
         self.backend.host_createOpsiClient(
-            id='client100.uib.local',
+            id='client100.test.invalid',
             opsiHostKey=None,
             description='Client 100',
             notes='No notes',
@@ -217,7 +217,7 @@ class BackendTestsMixin(ClientsMixin, HostsMixin):
             created=None,
             lastSeen=None)
 
-        hosts = self.backend.host_getObjects(id='client100.uib.local')
+        hosts = self.backend.host_getObjects(id='client100.test.invalid')
         assert len(hosts) == 1, u"got: '%s', expected: '%s'" % (hosts, 1)
 
         self.setUpHosts()
@@ -227,8 +227,8 @@ class BackendTestsMixin(ClientsMixin, HostsMixin):
         for host in self.hosts:
             selfIdents.append(host.getIdent(returnType='dict'))
 
-        selfIdents.append({'id': 'depot100.uib.local'})
-        selfIdents.append({'id': 'client100.uib.local'})
+        selfIdents.append({'id': 'depot100.test.invalid'})
+        selfIdents.append({'id': 'client100.test.invalid'})
 
         self.createHostsOnBackend()
         ids = self.backend.host_getIdents()
@@ -425,7 +425,7 @@ class BackendPerformanceTestMixin(object):
             while (ip > 255):
                 ip -= 255
             self.backend.host_createOpsiClient(
-                id='client%d.uib.local' % i,
+                id='client%d.test.invalid' % i,
                 opsiHostKey='01234567890123456789012345678912',
                 description='Client %d' % i,
                 notes='No notes',

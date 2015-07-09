@@ -56,11 +56,11 @@ class GroupActionsTestCase(unittest.TestCase, ExtendedFileBackendMixin):
         )
 
         client1 = OpsiClient(
-            id='client1.uib.local',
+            id='client1.test.invalid',
         )
 
         client2 = OpsiClient(
-            id='client2.uib.local',
+            id='client2.test.invalid',
         )
 
         product2 = LocalbootProduct(
@@ -75,12 +75,12 @@ class GroupActionsTestCase(unittest.TestCase, ExtendedFileBackendMixin):
         client2ToGroup = ObjectToGroup(testGroup.getType(), testGroup.id, client2.id)
 
         depot = OpsiDepotserver(
-            id='depotserver1.uib.local',
+            id='depotserver1.test.invalid',
             opsiHostKey='19012334567845645678901232789012',
             depotLocalUrl='file:///opt/pcbin/install',
-            depotRemoteUrl='smb://depotserver1.uib.local/opt_pcbin/install',
+            depotRemoteUrl='smb://depotserver1.test.invalid/opt_pcbin/install',
             repositoryLocalUrl='file:///var/lib/opsi/repository',
-            repositoryRemoteUrl='webdavs://depotserver1.uib.local:4447/repository',
+            repositoryRemoteUrl='webdavs://depotserver1.test.invalid:4447/repository',
             description='A depot',
             notes='D€pot 1',
             hardwareAddress=None,
@@ -145,11 +145,11 @@ class GroupRenamingTestCase(unittest.TestCase, ExtendedFileBackendMixin):
         )
 
         client1 = OpsiClient(
-            id='client1.uib.local',
+            id='client1.test.invalid',
         )
 
         client2 = OpsiClient(
-            id='client2.uib.local',
+            id='client2.test.invalid',
         )
 
         client1ToGroup = ObjectToGroup(self.testGroup.getType(),self.testGroup.id, client1.id)

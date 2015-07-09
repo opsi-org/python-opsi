@@ -2,8 +2,9 @@ python-opsi (4.0.6.12-1) UNRELEASED; urgency=medium
 
   * Improving Python 3 compatibility.
   * hwaudit: Added translations for COMPUTER_SYSTEM.sku
+  * tests: rename the domain of test objects from uib.local to test.invalid
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 06 Jul 2015 15:30:12 +0200
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 09 Jul 2015 16:51:48 +0200
 
 python-opsi (4.0.6.11-4) experimental; urgency=medium
 

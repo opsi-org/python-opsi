@@ -234,7 +234,7 @@ class TestFrame(unittest.TestCase):
 	productOnClient1 = ProductOnClient(
 		productId=flashplayer.getId(),
 		productType=flashplayer.getType(),
-		clientId='client1.uib.local',
+		clientId='client1.test.invalid',
 		installationStatus='installed',
 		actionRequest='setup',
 		actionProgress='',
@@ -245,7 +245,7 @@ class TestFrame(unittest.TestCase):
 	productOnClient2 = ProductOnClient(
 		productId=opsiAgent.getId(),
 		productType=opsiAgent.getType(),
-		clientId='client1.uib.local',
+		clientId='client1.test.invalid',
 		installationStatus='not_installed',
 		actionRequest='setup',
 		actionProgress='',
@@ -256,7 +256,7 @@ class TestFrame(unittest.TestCase):
 	productOnClient3 = ProductOnClient(
 		productId=jedit.getId(),
 		productType=jedit.getType(),
-		clientId='client1.uib.local',
+		clientId='client1.test.invalid',
 		installationStatus='not_installed',
 		actionRequest='setup',
 		actionProgress='',
@@ -267,7 +267,7 @@ class TestFrame(unittest.TestCase):
 	productOnClient4 = ProductOnClient(
 		productId=ultravnc.getId(),
 		productType=ultravnc.getType(),
-		clientId='client1.uib.local',
+		clientId='client1.test.invalid',
 		installationStatus='not_installed',
 		actionRequest='setup',
 		actionProgress='',
@@ -279,7 +279,7 @@ class TestFrame(unittest.TestCase):
 	productOnClient5 = ProductOnClient(
 		productId=sysessential.getId(),
 		productType=sysessential .getType(),
-		clientId='client1.uib.local',
+		clientId='client1.test.invalid',
 		installationStatus='not_installed',
 		actionRequest='setup',
 		actionProgress='',
@@ -291,7 +291,7 @@ class TestFrame(unittest.TestCase):
 	productOnClient6 = ProductOnClient(
 		productId=jedit.getId(),
 		productType=javavm .getType(),
-		clientId='client2.uib.local',
+		clientId='client2.test.invalid',
 		installationStatus='not_installed',
 		actionRequest='setup',
 		actionProgress='',

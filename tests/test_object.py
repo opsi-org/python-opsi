@@ -50,7 +50,7 @@ class GetPossibleClassAttributesTestCase(unittest.TestCase):
 class OpsiConfigServerComparisonTestCase(unittest.TestCase):
     def setUp(self):
         self.reference = OpsiConfigserver(
-            id='configserver1.uib.local',
+            id='configserver1.test.invalid',
             opsiHostKey='71234545689056789012123678901234',
             depotLocalUrl='file:///opt/pcbin/install',
             depotRemoteUrl=u'smb://configserver1/opt_pcbin/install',
@@ -74,7 +74,7 @@ class OpsiConfigServerComparisonTestCase(unittest.TestCase):
 
     def testComparingToOtherObjectWithSameSettings(self):
         obj2 = OpsiConfigserver(
-            id='configserver1.uib.local',
+            id='configserver1.test.invalid',
             opsiHostKey='71234545689056789012123678901234',
             depotLocalUrl='file:///opt/pcbin/install',
             depotRemoteUrl=u'smb://configserver1/opt_pcbin/install',
@@ -93,12 +93,12 @@ class OpsiConfigServerComparisonTestCase(unittest.TestCase):
 
     def testComparingToDepotserverFails(self):
         obj2 = OpsiDepotserver(
-            id='depotserver1.uib.local',
+            id='depotserver1.test.invalid',
             opsiHostKey='19012334567845645678901232789012',
             depotLocalUrl='file:///opt/pcbin/install',
-            depotRemoteUrl='smb://depotserver1.uib.local/opt_pcbin/install',
+            depotRemoteUrl='smb://depotserver1.test.invalid/opt_pcbin/install',
             repositoryLocalUrl='file:///var/lib/opsi/repository',
-            repositoryRemoteUrl='webdavs://depotserver1.uib.local:4447/repository',
+            repositoryRemoteUrl='webdavs://depotserver1.test.invalid:4447/repository',
             description='A depot',
             notes='D€pot 1',
             hardwareAddress=None,

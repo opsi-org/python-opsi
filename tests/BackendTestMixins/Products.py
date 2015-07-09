@@ -1092,20 +1092,20 @@ class ProductsOnClientTestsMixin(ProductsOnClientsMixin, ProductPropertiesMixin)
         self.backend.productOnClient_create(
             productId='product6',
             productType='LocalbootProduct',
-            clientId='client1.uib.local',
+            clientId='client1.test.invalid',
             installationStatus='not_installed',
             actionRequest='setup')
 
         self.backend.productOnClient_delete(
             productId='product7',
-            clientId='client1.uib.local')
+            clientId='client1.test.invalid')
 
         self.backend.productOnClient_delete(
             productId='product9',
-            clientId='client1.uib.local')
+            clientId='client1.test.invalid')
 
         productOnClients = self.backend.productOnClient_getObjects(
-            clientId='client1.uib.local')
+            clientId='client1.test.invalid')
         setup = []
         for productOnClient in productOnClients:
             print(u"Got productOnClient: %s" % productOnClient)
@@ -1116,14 +1116,14 @@ class ProductsOnClientTestsMixin(ProductsOnClientsMixin, ProductPropertiesMixin)
         #assert 'product9' in setup, u"'%s' not in '%s'" % ('product9', setup)
 
         productOnClients = self.backend.productOnClient_getObjects(
-            clientId='client1.uib.local', productId=['product6', 'product7'])
+            clientId='client1.test.invalid', productId=['product6', 'product7'])
         for productOnClient in productOnClients:
             print(u"Got productOnClient: %s" % productOnClient)
             assert productOnClient.productId in ('product6', 'product7'), u"'%s' not in '%s'" % (
                 productOnClient.productId, ('product6', 'product7'))
 
         productOnClients = self.backend.productOnClient_getObjects(
-            clientId='client1.uib.local', productId=['*6*'])
+            clientId='client1.test.invalid', productId=['*6*'])
         for productOnClient in productOnClients:
             print(u"Got productOnClient: %s" % productOnClient)
             assert productOnClient.productId in ('product6'), u"'%s' not in '%s'" % (
@@ -1132,20 +1132,20 @@ class ProductsOnClientTestsMixin(ProductsOnClientsMixin, ProductPropertiesMixin)
         self.backend.productOnClient_create(
             productId='product6',
             productType='LocalbootProduct',
-            clientId='client5.uib.local',
+            clientId='client5.test.invalid',
             installationStatus='not_installed',
             actionRequest='setup')
 
         self.backend.productOnClient_delete(
             productId='product7',
-            clientId='client5.uib.local')
+            clientId='client5.test.invalid')
 
         self.backend.productOnClient_delete(
             productId='product9',
-            clientId='client5.uib.local')
+            clientId='client5.test.invalid')
 
         productOnClients = self.backend.productOnClient_getObjects(
-            clientId='client5.uib.local')
+            clientId='client5.test.invalid')
         setup = []
         for productOnClient in productOnClients:
             print(u"Got productOnClient: %s" % productOnClient)

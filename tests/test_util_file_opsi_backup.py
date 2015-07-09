@@ -63,9 +63,9 @@ class BackendArchiveTestCase(unittest.TestCase):
                 exampleSysConfig = {
                     'hostname': u'debian6',
                     'sysVersion': (6, 0, 9),
-                    'domainname': u'uib.local',
+                    'domainname': u'test.invalid',
                     'distributionId': '',
-                    'fqdn': u'debian6.uib.local',
+                    'fqdn': u'debian6.test.invalid',
                     'opsiVersion': '4.0.4.5',
                     'distribution': 'debian'
                 }
