@@ -1,7 +1,13 @@
+import codecs
+
+import OPSI.System.Posix as Posix
+
 logger = Logger()
 
 logger.setConsoleLevel(LOG_NOTICE)
 logger.setConsoleColor(True)
+
+SMB_CONF = u'/etc/samba/smb.conf'
 
 def isSamba4():
 	samba4 = False
