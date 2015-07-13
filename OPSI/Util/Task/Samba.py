@@ -4,12 +4,12 @@
 
 import codecs
 import os
-import sys
 import shutil
 import time
 
 import OPSI.System.Posix as Posix
-from OPSI.Logger import LOG_DEBUG, LOG_NONE, LOG_INFO, LOG_NOTICE, Logger
+from OPSI.Logger import LOG_NOTICE, Logger
+from OPSI.System import *
 
 logger = Logger()
 
