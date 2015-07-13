@@ -1,3 +1,7 @@
+#! /usr/bin/env python
+# Copyright (C) 2015 uib GmbH - http://www.uib.de
+# All rights reserved.
+
 import codecs
 import os
 import sys
