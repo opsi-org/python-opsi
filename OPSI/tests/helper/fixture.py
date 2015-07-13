@@ -91,46 +91,6 @@ class ConfigFixture(Fixture):
 			f.close()
 
 
-class DispatchConfigFixture(ConfigFixture):
-
-	template = """
-	backend_.*         : #backend#, opsipxeconfd, #dhcp#
-	host_.*            : #backend#, opsipxeconfd, #dhcp#
-	productOnClient_.* : #backend#, opsipxeconfd
-	configState_.*     : #backend#, opsipxeconfd
-	.*                 : #backend#
-	"""
-
-	name = "dispatch.conf"
-
-	def __init__(self, prefix="backendManager", dir=None):
-		super(DispatchConfigFixture, self).__init__(prefix=prefix, dir=dir)
-
-
-	def _generateDispatchConf(self, data):
-		self._write(data)
-		self.config = BackendDispatchConfigFile(self.path)
-
-	def setupFile(self):
-		conf = self.template.replace("#backend#", "file")
-		self._generateDispatchConf(conf)
-
-	def setupMySQL(self):
-		conf = self.template.replace("#backend#", "mysql")
-		self._generateDispatchConf(conf)
-
-	def setupLDAP(self):
-		conf = self.template.replace("#backend#", "ldap")
-		self._generateDispatchConf(conf)
-
-	def setupDHCP(self):
-		if self.data is not None:
-			conf = self.data.replace("#dhcp#", "dhcpd")
-		else:
-			conf = self.template.replace("#dhcp#", "dhcpd")
-		self._generateDispatchConf(conf)
-
-
 class HwAuditConfigFixture(ConfigFixture):
 
 	template = """
