@@ -23,17 +23,23 @@ Testing functionality of OPSI.Util
 :license: GNU Affero General Public License version 3
 """
 
+from __future__ import absolute_import
+
 import random
 import re
 import os
+import os.path
 import unittest
 from collections import defaultdict
 
 from OPSI.Util import (compareVersions, flattenSequence, formatFileSize,
-    generateOpsiHostKey, getGlobalConfig, ipAddressInNetwork,
+    generateOpsiHostKey, getfqdn, getGlobalConfig, ipAddressInNetwork,
     isRegularExpressionPattern, md5sum, objectToBeautifiedText, objectToHtml,
     randomString, removeUnit)
 from OPSI.Object import LocalbootProduct
+
+from .helpers import (patchAddress, patchEnvironmentVariables, patchGlobalConf,
+    workInTemporaryDirectory)
 
 
 class IPAddressInNetwork(unittest.TestCase):
@@ -348,6 +354,55 @@ class RemoveUnitTestCase(unittest.TestCase):
 
     def testRemovingMegabyte(self):
         self.assertEquals(2048 * 1024, removeUnit('2MB'))
+
+
+class GetFQDNTestCase(unittest.TestCase):
+
+    def testGettingFQDN(self):
+        fqdn = "opsi.fqdntestcase.invalid"
+
+        with patchAddress(fqdn=fqdn):
+            self.assertEqual(fqdn, getfqdn())
+
+    def testGettingFQDNFromGlobalConfig(self):
+        with patchAddress(fqdn="nomatch.opsi.invalid"):
+            fqdn = "opsi.test.invalid"
+            with patchGlobalConf(fqdn=fqdn) as configPath:
+                self.assertEqual(fqdn, getfqdn(conf=configPath))
+
+    def testGettingFQDNIfConfigMissing(self):
+        fqdn = "opsi.fqdntestcase.invalid"
+
+        configFilePath = randomString(32)
+        while os.path.exists(configFilePath):
+            configFilePath = randomString(32)
+
+        with patchAddress(fqdn=fqdn):
+            self.assertEqual(fqdn, getfqdn(conf=configFilePath))
+
+    def testGettingFQDNIfConfigEmpty(self):
+        with workInTemporaryDirectory() as tempDir:
+            fqdn = "opsi.fqdntestcase.invalid"
+            with patchAddress(fqdn=fqdn):
+                confPath = os.path.join(tempDir, randomString(8))
+                with open(confPath, 'w') as conf:
+                    conf.write('')
+
+                self.assertEqual(fqdn, getfqdn(conf=confPath))
+
+    def testGettingFQDNFromEnvironment(self):
+        fqdn = "opsi.fqdntestcase.invalid"
+        with patchAddress(fqdn="nomatch.uib.local"):
+            with patchEnvironmentVariables(OPSI_HOSTNAME=fqdn):
+                self.assertEqual(fqdn, getfqdn())
+
+    def testGetFQDNByIPAddress(self):
+        fqdn = "opsi.fqdntestcase.invalid"
+        address = '127.0.0.1'
+
+        with patchAddress(fqdn=fqdn, address=address):
+            self.assertEqual(fqdn, getfqdn(name=address))
+
 
 if __name__ == '__main__':
     unittest.main()

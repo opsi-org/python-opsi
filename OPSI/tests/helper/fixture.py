@@ -91,24 +91,6 @@ class ConfigFixture(Fixture):
 			f.close()
 
 
-class GlobalConfFixture(ConfigFixture):
-
-	template = """[global]
-hostname = #hostname#
-"""
-	name = "global.conf"
-
-	def __init__(self, fqdn="opsi.uib.local", prefix=None, dir=None):
-		super(GlobalConfFixture, self).__init__(prefix=prefix, dir=dir)
-		self.fqdn = fqdn
-
-	def setUp(self):
-		super(GlobalConfFixture, self).setUp()
-
-		s = self.template.replace("#hostname#", self.fqdn)
-		self._write(s)
-
-
 class DispatchConfigFixture(ConfigFixture):
 
 	template = """

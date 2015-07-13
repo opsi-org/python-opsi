@@ -105,6 +105,31 @@ as hostname.
             yield
 
 
+@contextmanager
+def patchEnvironmentVariables(**environmentVariables):
+    """
+    Patches to environment variables to be empty during the context.
+    Anything supplied as keyword argument will be added to the environment.
+    """
+    originalEnv = os.environ
+    os.environ = environmentVariables
+    yield
+    os.environ = originalEnv
+
+
+@contextmanager
+def patchGlobalConf(fqdn="opsi.test.invalid", dir=None):
+    with workInTemporaryDirectory(dir) as tempDir:
+        configPath = os.path.join(tempDir, 'global.conf')
+
+        with open(configPath, "w") as conf:
+            conf.write("""[global]
+hostname = {0}
+""".format(fqdn))
+
+        yield configPath
+
+
 # TODO: make it possible to require specific parts of the modules file to be enabled
 # TODO: changing this into taking parameters requires a class :<
 def requiresModulesFile(function):
