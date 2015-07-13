@@ -1,3 +1,20 @@
+logger = Logger()
+
+logger.setConsoleLevel(LOG_NOTICE)
+logger.setConsoleColor(True)
+
+def isSamba4():
+	samba4 = False
+	try:
+		smbd = which('smbd')
+		result = execute('%s -V 2>/dev/null' % smbd)
+		for line in result:
+				if line.lower().startswith("version"):
+						samba4 = line.split()[1].startswith('4')
+	except Exception:
+		pass
+	return samba4
+
 def configureSamba():
 	logger.notice(u"Configuring samba")
 
