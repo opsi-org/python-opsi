@@ -1,6 +1,8 @@
 import codecs
 import os
 import sys
+import shutil
+import time
 
 import OPSI.System.Posix as Posix
 from OPSI.Logger import LOG_DEBUG, LOG_NONE, LOG_INFO, LOG_NOTICE, Logger
@@ -19,8 +21,8 @@ def isSamba4():
 		smbd = which('smbd')
 		result = execute('%s -V 2>/dev/null' % smbd)
 		for line in result:
-				if line.lower().startswith("version"):
-						samba4 = line.split()[1].startswith('4')
+			if line.lower().startswith("version"):
+				samba4 = line.split()[1].startswith('4')
 	except Exception:
 		pass
 	return samba4
