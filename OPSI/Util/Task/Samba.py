@@ -204,4 +204,3 @@ def configureSamba():
 			execute(u'%s reload' % smb_init_command)
 		except Exception as e:
 			logger.warning(e)
-
