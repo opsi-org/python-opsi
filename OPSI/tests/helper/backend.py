@@ -1359,42 +1359,6 @@ class FileBackendFixture(_BackendFixture):
 		self.options.update(options)
 		self.backend.backend_setOptions(self.options)
 
-class SQLiteBackendFixture(_BackendFixture):
-
-	defaultOptions = {
-			'processProductPriorities':            True,
-			'processProductDependencies':          True,
-			'addProductOnClientDefaults':          True,
-			'addProductPropertyStateDefaults':     True,
-			'addConfigStateDefaults':              True,
-			'deleteConfigStateIfDefault':          True,
-			'returnObjectsOnUpdateAndCreate':      False
-	}
-	licenseManagement = True
-
-	def __init__(self, database=":memory:"):
-		super(SQLiteBackendFixture, self).__init__()
-
-		self.database = database
-		self.backend = None
-
-	def setupBackend(self):
-
-		hw = HwAuditConfigFixture()
-
-		self.useFixture(hw)
-
-		if not self.database:
-			bd = self.useFixture(TempDir())
-			self.baseDir = bd.path
-			self.database = os.path.join(self.baseDir, "opsi.sqlite")
-
-		self.backend = SQLiteBackend(database=self.database, audithardwareconfigfile=hw.path)
-		self.extend()
-
-
-
-
 
 class MySQLBackendFixture(_BackendFixture):
 

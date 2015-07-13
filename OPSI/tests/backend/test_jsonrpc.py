@@ -7,7 +7,7 @@ from OPSI.Backend.JSONRPC import JSONRPCBackend, json
 from OPSI.Backend.Backend import ExtendedConfigDataBackend
 
 from OPSI.tests.helper.fixture import FQDNFixture
-from OPSI.tests.helper.backend import FileBackendFixture, SQLiteBackendFixture, BackendContentFixture, BackendTestCase
+from OPSI.tests.helper.backend import FileBackendFixture, BackendContentFixture, BackendTestCase
 from OPSI.tests.helper.testcase import TestCase
 
 import OPSI
