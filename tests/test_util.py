@@ -38,7 +38,7 @@ from OPSI.Util import (compareVersions, flattenSequence, formatFileSize,
     randomString, removeUnit)
 from OPSI.Object import LocalbootProduct
 
-from .helpers import (patchAddress, patchEnvironmentVariables, patchGlobalConf,
+from .helpers import (fakeGlobalConf, patchAddress, patchEnvironmentVariables,
     workInTemporaryDirectory)
 
 
@@ -367,7 +367,7 @@ class GetFQDNTestCase(unittest.TestCase):
     def testGettingFQDNFromGlobalConfig(self):
         with patchAddress(fqdn="nomatch.opsi.invalid"):
             fqdn = "opsi.test.invalid"
-            with patchGlobalConf(fqdn=fqdn) as configPath:
+            with fakeGlobalConf(fqdn=fqdn) as configPath:
                 self.assertEqual(fqdn, getfqdn(conf=configPath))
 
     def testGettingFQDNIfConfigMissing(self):

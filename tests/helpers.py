@@ -118,7 +118,9 @@ def patchEnvironmentVariables(**environmentVariables):
 
 
 @contextmanager
-def patchGlobalConf(fqdn="opsi.test.invalid", dir=None):
+def fakeGlobalConf(fqdn="opsi.test.invalid", dir=None):
+    "Fake a global.conf and return the path to the file."
+
     with workInTemporaryDirectory(dir) as tempDir:
         configPath = os.path.join(tempDir, 'global.conf')
 
