@@ -511,7 +511,7 @@ def forceObjectClass(var, objectClass):
 					args = OPSI.Object.mandatoryConstructorArgs(c)
 					missingArgs = [arg for arg in args if arg not in var]
 					if missingArgs:
-						error = TypeError("Missing required arguments: {0}".format(', '.join(repr(a) for a in missingArgs)))
+						error = TypeError("Missing required argument(s): {0}".format(', '.join(repr(a) for a in missingArgs)))
 				except NameError:
 					pass
 

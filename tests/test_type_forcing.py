@@ -88,7 +88,7 @@ class ForceObjectClassJSONTestCase(unittest.TestCase):
 			forceObjectClass(incompleteJson, ProductOnClient)
 			self.fail("No error from incomplete json.")
 		except ValueError as error:
-			self.assertTrue("Missing required arguments: 'productId'" in str(error))
+			self.assertTrue("Missing required argument(s): 'productId'" in str(error))
 
 		incompleteJson['type'] = "NotValid"
 		try:
