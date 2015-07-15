@@ -26,6 +26,7 @@ Testing functionality of OPSI.Util.Task.Samba
 import random
 import re
 import os
+import mock
 import unittest
 import OPSI.Util.Task.Samba as Samba
 from collections import defaultdict
@@ -34,7 +35,15 @@ class SambaTest(unittest.TestCase):
 	
 	def test_foo(self):
 		pass
-	
+
+	def test_Samba4(self):
+
+		with mock.patch('OPSI.Util.Task.Samba.isSamba4', mock.Mock(result_value=set("Version 4.1.6"))):
+			self.assertTrue(Samba.isSamba4())
+
+		with mock.patch('OPSI.Util.Task.Samba.isSamba4', mock.Mock(result_value=set("Version 3.0.8"))):
+			self.assertFalse(Samba.isSamba4())
+
 
 def main():
 	unittest.main()
