@@ -37,6 +37,7 @@ def configureSamba():
 
 	smb_init_command = u'service {name}'.format(name=Posix.getSambaServiceName(default="smbd"))
 
+
 	f = codecs.open(SMB_CONF, 'r', 'utf-8')
 	lines = f.readlines()
 	f.close()

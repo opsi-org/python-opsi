@@ -64,6 +64,15 @@ class SambaTest(unittest.TestCase):
 			with mock.patch('OPSI.Util.Task.Samba.which', fakeWhich):
 				self.assertFalse(Samba.isSamba4())
 
+	def testSambaConfigure(self):
+
+		def fakeSambaServiceName(command):
+			return None
+
+		with mock.patch('OPSI.Util.Task.Samba.Posix.getSambaServiceName', fakeSambaServiceName):
+			self.assertFalse(Samba.configureSamba())
+
+
 def main():
 	unittest.main()
 
