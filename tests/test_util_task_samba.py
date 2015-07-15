@@ -32,6 +32,12 @@ from collections import defaultdict
 
 class SambaTest(unittest.TestCase):
 	
-	def testfoo(self):
+	def test_foo(self):
 		pass
+	
 
+def main():
+	unittest.main()
+
+if __name__ == '__main__':
+	main()
