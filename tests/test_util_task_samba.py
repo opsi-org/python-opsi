@@ -32,11 +32,20 @@ import OPSI.Util.Task.Samba as Samba
 from collections import defaultdict
 
 class SambaTest(unittest.TestCase):
-	
-	def test_foo(self):
-		pass
 
-	def test_Samba4(self):
+	def testNoSmbd(self):
+
+		def fakeWhich(command):
+			return None
+
+		def fakeExecute(command):
+			return None
+
+		with mock.patch('OPSI.Util.Task.Samba.execute', fakeExecute):
+			with mock.patch('OPSI.Util.Task.Samba.which', fakeWhich):
+				self.assertFalse(Samba.isSamba4())
+
+	def testIsSamba4(self):
 
 		def fakeExecute(command):
 			return ['version 4.0.3']
@@ -49,12 +58,11 @@ class SambaTest(unittest.TestCase):
 				self.assertTrue(Samba.isSamba4())
 
 		def fakeExecute(command):
-			return ['version 3.0.4']
+			return ['version ']
 
 		with mock.patch('OPSI.Util.Task.Samba.execute', fakeExecute):
 			with mock.patch('OPSI.Util.Task.Samba.which', fakeWhich):
 				self.assertFalse(Samba.isSamba4())
-
 
 def main():
 	unittest.main()
