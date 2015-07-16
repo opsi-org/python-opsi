@@ -164,26 +164,26 @@ class GroupRenamingTestCase(unittest.TestCase, ExtendedFileBackendMixin):
     def tearDown(self):
         self.tearDownBackend()
 
-    def testIsExistingGroupname(self):
-        self.assertTrue(self.backend.isExistingGroupname(self.testGroup.id))
-        self.assertFalse(self.backend.isExistingGroupname(u'testgruppe'))
+    def testGroupname_exists(self):
+        self.assertTrue(self.backend.groupname_exists(self.testGroup.id))
+        self.assertFalse(self.backend.groupname_exists(u'testgruppe'))
 
     def testAlreadyExistingGroup(self):
-        self.assertRaises(Exception, self.backend.updateGroupname, self.testGroup.id, self.testGroup.id)
-        self.assertRaises(Exception, self.backend.updateGroupname, u'notExisting', self.testGroup.id)
+        self.assertRaises(Exception, self.backend.group_rename, self.testGroup.id, self.testGroup.id)
+        self.assertRaises(Exception, self.backend.group_rename, u'notExisting', self.testGroup.id)
 
     def testCreateNewDeleteOldGroup(self):
-        self.backend.updateGroupname(self.testGroup.id, self.testGroup2.id)
+        self.backend.group_rename(self.testGroup.id, self.testGroup2.id)
 
         group = self.backend.group_getObjects(id=self.testGroup2.id) [0]
         self.assertEquals(group.description, self.testGroup.description)
         self.assertEquals(group.notes, self.testGroup.notes)
         self.assertEquals(group.parentGroupId, self.testGroup.parentGroupId)
 
-        self.assertFalse(self.backend.isExistingGroupname(self.testGroup.id))
+        self.assertFalse(self.backend.groupname_exists(self.testGroup.id))
 
     def testObjectToGroupsHaveNewGroupIds(self):
-        self.backend.updateGroupname(self.testGroup.id, self.testGroup2.id)
+        self.backend.group_rename(self.testGroup.id, self.testGroup2.id)
         objToGr = self.backend.objectToGroup_getObjects()
         for object in objToGr:
             self.assertEquals(object.groupId, self.testGroup2.id)
