@@ -81,7 +81,9 @@ class SambaTest(unittest.TestCase):
 					with mock.patch('OPSI.Util.Task.Samba.getDistribution', fakeDistribution):
 
 				#isSamba4 mocken (true/false)
-				# getDistribution mocken (verschiedene Distributionen
+				# getDistribution mocken (verschiedene Distributionen)
+				# Testteile
+				# Shares editieren
 						Samba.configureSamba(PathToSmbConf)
 
 			filled=False
