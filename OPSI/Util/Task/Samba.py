@@ -16,8 +16,18 @@ logger = Logger()
 logger.setConsoleLevel(LOG_NOTICE)
 logger.setConsoleColor(True)
 
-SMB_CONF = u'/etc/samba/smb.conf'
+SMB_CONF= u'/etc/samba/smb.conf'
 FILE_ADMIN_GROUP = u'pcpatch'
+
+def getDistribution():
+	distribution = ''
+	try:
+		f = os.popen('lsb_release -d 2>/dev/null')
+		distribution = f.read().split(':')[1].strip()
+		f.close()
+	except:
+		pass
+	return distribution
 
 def isSamba4():
 	samba4 = False
@@ -32,13 +42,14 @@ def isSamba4():
 		pass
 	return samba4
 
-def configureSamba():
+def configureSamba(config=SMB_CONF):
+
 	logger.notice(u"Configuring samba")
 
 	smb_init_command = u'service {name}'.format(name=Posix.getSambaServiceName(default="smbd"))
 
 
-	f = codecs.open(SMB_CONF, 'r', 'utf-8')
+	f = codecs.open(config, 'r', 'utf-8')
 	lines = f.readlines()
 	f.close()
 	newlines = []
@@ -49,6 +60,7 @@ def configureSamba():
 	workbenchShareFound = False
 	opsiImagesFound = False
 	confChanged = False
+
 	samba4 = isSamba4()
 
 	for i in range(len(lines)):
@@ -70,8 +82,10 @@ def configureSamba():
 			workbenchShareFound = True
 		newlines.append(lines[i])
 
+	print 'test'
+
 	if optPcbinShareFound:
-		logger.warning(u"Share opt_pcbin configuration found in '%s'. You should use opsi_depot_rw instead, if you need a writeable depot-Share." % SMB_CONF)
+		logger.warning(u"Share opt_pcbin configuration found in '%s'. You should use opsi_depot_rw instead, if you need a writeable depot-Share." % config)
 
 	if not depotShareFound:
 		logger.notice(u"   Adding share [opsi_depot]")
@@ -127,7 +141,7 @@ def configureSamba():
 			logger.notice(u"   Section found but don't inherits samba4 fix, trying to set the fix.")
 			fixedLines = lines
 			fixedLines.insert(endpos, u"   admin users = @%s\n" % FILE_ADMIN_GROUP)
-			with codecs.open(SMB_CONF, 'w', 'utf-8') as f:
+			with codecs.open(config, 'w', 'utf-8') as f:
 				f.writelines(fixedLines)
 			logger.notice(u"   Reloading samba")
 			try:
@@ -182,7 +196,7 @@ def configureSamba():
 		newlines.append(u"[opsi_workbench]\n")
 		newlines.append(u"   available = yes\n")
 		newlines.append(u"   comment = opsi workbench\n")
-		if (getSysConfig()['distribution'].lower().find('suse linux enterprise server') != -1):
+		if (getDistribution().lower().find('suse linux enterprise server') != -1):
 			newlines.append(u"   path = /var/lib/opsi/workbench\n")
 		else:
 			newlines.append(u"   path = /home/opsiproducts\n")
@@ -193,11 +207,11 @@ def configureSamba():
 		newlines.append(u"\n")
 
 	if confChanged:
-		logger.notice(u"   Creating backup of %s" % SMB_CONF)
-		shutil.copy(SMB_CONF, SMB_CONF + u'.' + time.strftime("%Y-%m-%d_%H:%M"))
+		logger.notice(u"   Creating backup of %s" % config)
+		shutil.copy(config, config + u'.' + time.strftime("%Y-%m-%d_%H:%M"))
 
 		logger.notice(u"   Writing new smb.conf")
-		f = codecs.open(SMB_CONF, 'w', 'utf-8')
+		f = codecs.open(config, 'w', 'utf-8')
 		lines = f.writelines(newlines)
 		f.close()
 

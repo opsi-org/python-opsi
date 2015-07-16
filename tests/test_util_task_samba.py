@@ -22,14 +22,16 @@ Testing functionality of OPSI.Util.Task.Samba
 :author: Mathias Radtke <m.radtke@uib.de>
 :license: GNU Affero General Public License version 3
 """
-
+from __future__ import absolute_import
 import random
 import re
 import os
+import os.path
 import mock
 import unittest
 import OPSI.Util.Task.Samba as Samba
 from collections import defaultdict
+from .helpers import workInTemporaryDirectory
 
 class SambaTest(unittest.TestCase):
 
@@ -66,11 +68,29 @@ class SambaTest(unittest.TestCase):
 
 	def testSambaConfigure(self):
 
-		def fakeSambaServiceName(command):
-			return None
+		def fakeDistribution():
+			return 'suse linux enterprise server'
 
-		with mock.patch('OPSI.Util.Task.Samba.Posix.getSambaServiceName', fakeSambaServiceName):
-			self.assertFalse(Samba.configureSamba())
+		with workInTemporaryDirectory() as tempDir:
+			PathToSmbConf = os.path.join(tempDir, 'SMB_CONF')
+			with open(PathToSmbConf, 'w') as fakeSambaConfig:
+				pass
+
+			with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda:True):
+				with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
+					with mock.patch('OPSI.Util.Task.Samba.getDistribution', fakeDistribution):
+
+				#isSamba4 mocken (true/false)
+				# getDistribution mocken (verschiedene Distributionen
+						Samba.configureSamba(PathToSmbConf)
+
+			filled=False
+			with open(PathToSmbConf, 'r') as fakeSambaConfig:
+				for line in fakeSambaConfig:
+					if line.strip():
+						filled = True
+						break
+			self.assertTrue(filled)
 
 
 def main():
