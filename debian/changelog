@@ -3,8 +3,13 @@ python-opsi (4.0.6.12-1) UNRELEASED; urgency=medium
   * Improving Python 3 compatibility.
   * hwaudit: Added translations for COMPUTER_SYSTEM.sku
   * tests: rename the domain of test objects from uib.local to test.invalid
+  * OPSI.Service.Worker.WorkerOpsiJsonRpc: The header handling introduced
+    with 4.0.6.8-1 must now be explicitely enabled by creating the file:
+    /etc/opsi/opsi.header.fix.enable
+    This makes sure that components get the same behaviour as before unless
+    an change is done by an administrator.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 09 Jul 2015 16:51:48 +0200
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 21 Jul 2015 15:34:18 +0200
 
 python-opsi (4.0.6.11-4) experimental; urgency=medium
 

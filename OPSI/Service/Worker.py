@@ -31,6 +31,7 @@ Worker for the various interfaces.
 :license: GNU Affero General Public License version 3
 """
 
+import os.path
 import base64
 import urllib
 
@@ -510,6 +511,9 @@ class WorkerOpsi:
 
 
 class WorkerOpsiJsonRpc(WorkerOpsi):
+
+	RFC_CONFORM_HEADERS = os.path.exists('/etc/opsi/opsi.header.fix.enable')
+
 	def __init__(self, service, request, resource):
 		WorkerOpsi.__init__(self, service, request, resource)
 
@@ -598,7 +602,7 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 
 		result.headers.setHeader('content-type', http_headers.MimeType("application", "json", {"charset": "utf-8"}))
 
-		if invalidMime:
+		if not self.RFC_CONFORM_HEADERS or invalidMime:
 			# The invalid requests expect want the encoding set to
 			# gzip but the content is deflated.
 			result.headers.setHeader('content-encoding', ["gzip"])
