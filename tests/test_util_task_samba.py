@@ -76,6 +76,34 @@ class SambaTest(unittest.TestCase):
 			with open(PathToSmbConf, 'w') as fakeSambaConfig:
 				pass
 
+			with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda:False):
+				with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
+					with mock.patch('OPSI.Util.Task.Samba.getDistribution', fakeDistribution):
+
+				#isSamba4 mocken (true/false)
+				# getDistribution mocken (verschiedene Distributionen)
+				# Testteile
+				# Shares editieren
+						Samba.configureSamba(PathToSmbConf)
+
+			filled=False
+			with open(PathToSmbConf, 'r') as fakeSambaConfig:
+				for line in fakeSambaConfig:
+					if line.strip():
+						filled = True
+						break
+			self.assertTrue(filled)
+
+	def testSamba4ConfigureSuse(self):
+
+		def fakeDistribution():
+			return 'suse linux enterprise server'
+
+		with workInTemporaryDirectory() as tempDir:
+			PathToSmbConf = os.path.join(tempDir, 'SMB_CONF')
+			with open(PathToSmbConf, 'w') as fakeSambaConfig:
+				pass
+
 			with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda:True):
 				with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
 					with mock.patch('OPSI.Util.Task.Samba.getDistribution', fakeDistribution):
@@ -95,6 +123,28 @@ class SambaTest(unittest.TestCase):
 			self.assertTrue(filled)
 
 	def testSambaConfigureUbuntu(self):
+		def fakeDistribution():
+			return 'Ubuntu 14.04.2 LTS'
+
+		with workInTemporaryDirectory() as tempDir:
+			PathToSmbConf = os.path.join(tempDir, 'SMB_CONF')
+			with open(PathToSmbConf, 'w') as fakeSambaConfig:
+				pass
+
+			with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda:False):
+				with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
+					with mock.patch('OPSI.Util.Task.Samba.getDistribution', fakeDistribution):
+						Samba.configureSamba(PathToSmbConf)
+
+			filled=False
+			with open(PathToSmbConf, 'r') as fakeSambaConfig:
+				for line in fakeSambaConfig:
+					if line.strip():
+						filled = True
+						break
+			self.assertTrue(filled)
+
+	def testSamba4ConfigureUbuntu(self):
 		def fakeDistribution():
 			return 'Ubuntu 14.04.2 LTS'
 
