@@ -13,9 +13,6 @@ from OPSI.System import *
 
 logger = Logger()
 
-logger.setConsoleLevel(LOG_NOTICE)
-logger.setConsoleColor(True)
-
 SMB_CONF= u'/etc/samba/smb.conf'
 FILE_ADMIN_GROUP = u'pcpatch'
 

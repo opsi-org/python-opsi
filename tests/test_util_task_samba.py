@@ -150,7 +150,7 @@ class SambaTest(unittest.TestCase):
 			PathToSmbConf = os.path.join(tempDir, 'SMB_CONF')
 			with open(PathToSmbConf, 'w') as fakeSambaConfig:
 				pass
-			
+
 			with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda:True):
 				with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
 					with mock.patch('OPSI.Util.Task.Samba.getDistribution', fakeDistribution):
