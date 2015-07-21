@@ -541,15 +541,15 @@ False suppresses exceptions.
 			tempMessage = tempMessage.replace(u'%N', linenumber)
 			return tempMessage
 
+		if (level > self.__messageSubjectLevel and
+			level > self.__consoleLevel and
+			level > self.__fileLevel and
+			level > self.__syslogLevel and
+			not self.univentionLogger_priv):
+
+			return
+
 		try:
-			if (level > self.__messageSubjectLevel and
-				level > self.__consoleLevel and
-				level > self.__fileLevel and
-				level > self.__syslogLevel and
-				not self.univentionLogger_priv):
-
-				return
-
 			if not isinstance(message, unicode):
 				if not isinstance(message, str):
 					message = unicode(message)
