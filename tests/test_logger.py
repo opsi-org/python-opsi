@@ -25,14 +25,13 @@ Testing our logger.
 
 from __future__ import absolute_import
 
-import mock
 import sys
 import warnings
 
 import OPSI.Logger
 from OPSI.Types import forceUnicode
 
-from .helpers import unittest
+from .helpers import unittest, mock
 
 try:
 	from io import BytesIO as StringIO
