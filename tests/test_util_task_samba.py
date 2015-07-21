@@ -94,24 +94,9 @@ class SambaTest(unittest.TestCase):
 						break
 			self.assertTrue(filled)
 
-	def testSamba4ConfigureSuse(self):
-
-		def fakeDistribution():
-			return 'suse linux enterprise server'
-
-		with workInTemporaryDirectory() as tempDir:
-			PathToSmbConf = os.path.join(tempDir, 'SMB_CONF')
-			with open(PathToSmbConf, 'w') as fakeSambaConfig:
-				pass
-
 			with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda:True):
 				with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
 					with mock.patch('OPSI.Util.Task.Samba.getDistribution', fakeDistribution):
-
-				#isSamba4 mocken (true/false)
-				# getDistribution mocken (verschiedene Distributionen)
-				# Testteile
-				# Shares editieren
 						Samba.configureSamba(PathToSmbConf)
 
 			filled=False
@@ -121,6 +106,7 @@ class SambaTest(unittest.TestCase):
 						filled = True
 						break
 			self.assertTrue(filled)
+
 
 	def testSambaConfigureUbuntu(self):
 		def fakeDistribution():
@@ -144,15 +130,6 @@ class SambaTest(unittest.TestCase):
 						break
 			self.assertTrue(filled)
 
-	def testSamba4ConfigureUbuntu(self):
-		def fakeDistribution():
-			return 'Ubuntu 14.04.2 LTS'
-
-		with workInTemporaryDirectory() as tempDir:
-			PathToSmbConf = os.path.join(tempDir, 'SMB_CONF')
-			with open(PathToSmbConf, 'w') as fakeSambaConfig:
-				pass
-
 			with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda:True):
 				with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
 					with mock.patch('OPSI.Util.Task.Samba.getDistribution', fakeDistribution):
@@ -165,8 +142,6 @@ class SambaTest(unittest.TestCase):
 						filled = True
 						break
 			self.assertTrue(filled)
-
-
 
 def main():
 	unittest.main()
