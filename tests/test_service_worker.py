@@ -23,14 +23,18 @@ Testing the workers.
 :license: GNU Affero General Public License version 3
 """
 
+from __future__ import absolute_import
+
 import gzip
-import unittest
 import zlib
 from contextlib import closing  # Needed for Python 2.6
+
 try:
 	from cStringIO import StringIO
 except ImportError:
 	from io import StringIO
+
+from .helpers import unittest, mock
 
 from OPSI.Service.Worker import WorkerOpsiJsonRpc
 
@@ -60,6 +64,12 @@ class FakeRPC(object):
 
 
 class WorkerOpsiJsonRpcTestCase(unittest.TestCase):
+	def setUp(self):
+		self.patch = mock.patch.object(WorkerOpsiJsonRpc, 'RFC_CONFORM_HEADERS', True)
+		self.patch.start()
+
+	def tearDown(self):
+		self.patch.stop()
 
 	def testReturningEmptyResponse(self):
 		"""
@@ -131,6 +141,13 @@ class WorkerOpsiJsonRpcTestCase(unittest.TestCase):
 
 
 class CompressedResultsWithWorkerOpsiJsonRpcTestCase(unittest.TestCase):
+	def setUp(self):
+		self.patch = mock.patch.object(WorkerOpsiJsonRpc, 'RFC_CONFORM_HEADERS', True)
+		self.patch.start()
+
+	def tearDown(self):
+		self.patch.stop()
+
 	def testCompressingResponseDataWithGzip(self):
 		"""
 		Responding with data compressed by gzip.
@@ -172,6 +189,13 @@ class CompressedResultsWithWorkerOpsiJsonRpcTestCase(unittest.TestCase):
 
 
 class BackwardsCompatibilityWorkerJSONRPCTestCase(unittest.TestCase):
+	def setUp(self):
+		self.patch = mock.patch.object(WorkerOpsiJsonRpc, 'RFC_CONFORM_HEADERS', True)
+		self.patch.start()
+
+	def tearDown(self):
+		self.patch.stop()
+
 	def testCompressingResponseIfInvalidMimetype(self):
 		"""
 		Staying backwards compatible.
