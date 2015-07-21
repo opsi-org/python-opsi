@@ -252,6 +252,9 @@ class LoggerTestCase(unittest.TestCase):
 		self.assertTrue("Psst... " in value)
 		self.assertTrue("*** confidential ***" in value)
 
+	def testConfidentialStringsCanNotBeEmpty(self):
+		self.assertRaises(ValueError, self.logger.addConfidentialString, '')
+
 	def testLogFormatting(self):
 		self.logger.setConsoleLevel(OPSI.Logger.LOG_CONFIDENTIAL)
 		self.logger.setLogFormat('[%l - %L] %F %M')
@@ -263,3 +266,22 @@ class LoggerTestCase(unittest.TestCase):
 
 		value = messageBuffer.getvalue()
 		self.assertEquals('[7 - debug] test_logger.py Chocolate Starfish', value.strip())
+
+	def testSettingConfidentialStrings(self):
+		confidential = ["Momente", "Wahnsinn"]
+		self.logger.setConfidentialStrings(confidential)
+
+		self.logger.setConsoleLevel(OPSI.Logger.LOG_DEBUG2)
+
+		messageBuffer = StringIO()
+		with mock.patch('OPSI.Logger.sys.stdin', messageBuffer):
+			with mock.patch('OPSI.Logger.sys.stderr', messageBuffer):
+				self.logger.notice("Die Momente, die es wert sind, ziehen so schnell vorbei")
+				self.logger.notice("So schnell, so weit")
+				self.logger.notice("Der Wahnsinn folgt jetzt nicht mehr dem Asphalt")
+				self.logger.notice("Du lässt ihn zurück")
+
+		value = messageBuffer.getvalue()
+		for word in confidential:
+			self.assertFalse(word in value)
+		self.assertTrue("So schnell, so weit" in value)
