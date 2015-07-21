@@ -32,7 +32,10 @@ from functools import wraps
 from OPSI.Types import forceHostId
 from OPSI.Util import getfqdn
 
-import mock
+try:
+    import unittest.mock as mock
+except ImportError:
+    import mock
 
 import unittest
 if 'SkipTest' not in dir(unittest):
