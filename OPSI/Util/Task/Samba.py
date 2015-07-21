@@ -45,7 +45,6 @@ def configureSamba(config=SMB_CONF):
 
 	smb_init_command = u'service {name}'.format(name=Posix.getSambaServiceName(default="smbd"))
 
-
 	f = codecs.open(config, 'r', 'utf-8')
 	lines = f.readlines()
 	f.close()
@@ -66,20 +65,22 @@ def configureSamba(config=SMB_CONF):
 			confChanged = True
 			continue
 		if (lines[i].lower().strip() == '[opt_pcbin]'):
+			#raise Exception()
 			optPcbinShareFound = True
 		elif (lines[i].lower().strip() == '[opsi_depot]'):
 			depotShareFound = True
 		elif (lines[i].lower().strip() == '[opsi_depot_rw]'):
+			#raise Exception()
 			depotShareRWFound = True
 		elif (lines[i].lower().strip() == '[opsi_images]'):
 			opsiImagesFound = True
 		elif (lines[i].lower().strip() == '[opsi_config]'):
 			configShareFound = True
 		elif (lines[i].lower().strip() == '[opsi_workbench]'):
+			#raise Exception()
 			workbenchShareFound = True
 		newlines.append(lines[i])
 
-	print 'test'
 
 	if optPcbinShareFound:
 		logger.warning(u"Share opt_pcbin configuration found in '%s'. You should use opsi_depot_rw instead, if you need a writeable depot-Share." % config)
