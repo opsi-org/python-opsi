@@ -264,7 +264,7 @@ class LoggerImplementation:
 		self.univentionLogger_priv = None
 		self.__univentionClass = None
 		self.__univentionFormat = u'opsi: %M'
-		self.__confidentialStrings = []
+		self.__confidentialStrings = set()
 		self.__componentName = u''
 		self.__threadConfig = {}
 		self.__objectConfig = {}
@@ -283,7 +283,7 @@ class LoggerImplementation:
 		if not isinstance(strings, (list, tuple)):
 			strings = [strings]
 
-		self.__confidentialStrings = []
+		self.__confidentialStrings = set()
 		for string in strings:
 			self.addConfidentialString(string)
 
@@ -291,9 +291,7 @@ class LoggerImplementation:
 		string = forceUnicode(string)
 		if not string:
 			raise ValueError(u"Cannot use empty string as confidential string")
-		if string in self.__confidentialStrings:
-			return
-		self.__confidentialStrings.append(string)
+		self.__confidentialStrings.add(string)
 
 	def setLogFormat(self, format, currentThread=False, object=None):
 		self.setConsoleFormat(format, currentThread, object)
