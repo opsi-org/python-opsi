@@ -280,8 +280,9 @@ class LoggerImplementation:
 		return self.__stdout
 
 	def setConfidentialStrings(self, strings):
-		if not type(strings) in (list, tuple):
+		if not isinstance(strings, (list, tuple)):
 			strings = [strings]
+
 		self.__confidentialStrings = []
 		for string in strings:
 			self.addConfidentialString(string)
@@ -549,8 +550,8 @@ False suppresses exceptions.
 
 				return
 
-			if not type(message) is unicode:
-				if not type(message) is str:
+			if not isinstance(message, unicode):
+				if not isinstance(message, str):
 					message = unicode(message)
 				else:
 					message = unicode(message, 'utf-8', 'replace')
