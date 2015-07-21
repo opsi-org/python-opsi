@@ -21,7 +21,14 @@ Testing functionality of OPSI.Util.Task.Samba
 
 :author: Mathias Radtke <m.radtke@uib.de>
 :license: GNU Affero General Public License version 3
+
+
 """
+
+				#isSamba4 mocken (true/false) check
+				# getDistribution mocken (verschiedene Distributionen) check
+				# Testteile
+				# Shares editieren
 from __future__ import absolute_import
 import random
 import re
@@ -79,11 +86,6 @@ class SambaTest(unittest.TestCase):
 			with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda:False):
 				with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
 					with mock.patch('OPSI.Util.Task.Samba.getDistribution', fakeDistribution):
-
-				#isSamba4 mocken (true/false)
-				# getDistribution mocken (verschiedene Distributionen)
-				# Testteile
-				# Shares editieren
 						Samba.configureSamba(PathToSmbConf)
 
 			filled=False
@@ -107,8 +109,6 @@ class SambaTest(unittest.TestCase):
 						break
 			self.assertTrue(filled)
 
-
-	def testSambaConfigureUbuntu(self):
 		def fakeDistribution():
 			return 'Ubuntu 14.04.2 LTS'
 
