@@ -40,7 +40,7 @@ import OPSI.Util.Task.Samba as Samba
 from collections import defaultdict
 from .helpers import workInTemporaryDirectory
 
-class SambaTest(unittest.TestCase):
+class Samba4Test(unittest.TestCase):
 
 	def testNoSmbd(self):
 
@@ -72,6 +72,8 @@ class SambaTest(unittest.TestCase):
 		with mock.patch('OPSI.Util.Task.Samba.execute', fakeExecute):
 			with mock.patch('OPSI.Util.Task.Samba.which', fakeWhich):
 				self.assertFalse(Samba.isSamba4())
+
+class SambaConfigureTest(unittest.TestCase):
 
 	def testSambaConfigureSuseSamba4(self):
 
