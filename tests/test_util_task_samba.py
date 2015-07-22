@@ -258,6 +258,10 @@ class SambaConfigureTest(unittest.TestCase):
 						break
 			self.assertTrue(filled)
 
+class DistributionTest(unittest.TestCase):
+	def test(self):
+		pass
+
 
 def main():
 	unittest.main()
