@@ -258,9 +258,38 @@ class SambaConfigureTest(unittest.TestCase):
 						break
 			self.assertTrue(filled)
 
-class DistributionTest(unittest.TestCase):
-	def test(self):
-		pass
+	def testOpsiDepotShareSamba4(self):
+		with workInTemporaryDirectory() as tempDir:
+			PathToSmbConf = os.path.join(tempDir, 'SMB_CONF')
+			with open(PathToSmbConf, 'w') as fakeSambaConfig:
+				fakeSambaConfig.write(u"[opsi_depot]\n")
+				fakeSambaConfig.write(u"   available = yes\n")
+				fakeSambaConfig.write(u"   comment = opsi depot share (ro)\n")
+				fakeSambaConfig.write(u"   path = /var/lib/opsi/depot\n")
+				fakeSambaConfig.write(u"   oplocks = no\n")
+				fakeSambaConfig.write(u"   follow symlinks = yes\n")
+				fakeSambaConfig.write(u"   level2 oplocks = no\n")
+				fakeSambaConfig.write(u"   writeable = no\n")
+				fakeSambaConfig.write(u"   invalid users = root\n")
+
+			with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda:True):
+				with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
+					Samba.configureSamba(PathToSmbConf)
+
+			with open(PathToSmbConf, 'r') as fakeSambaConfig:
+				found = False
+				for line in fakeSambaConfig:
+					print line
+					if line.strip():
+						if 'admin users' in line:
+							found = True
+							break
+
+			self.assertTrue(found, 'Missing Admin Users in Share opsi_depot')
+			
+
+
+
 
 
 def main():

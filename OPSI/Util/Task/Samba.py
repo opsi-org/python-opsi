@@ -39,15 +39,13 @@ def isSamba4():
 		pass
 	return samba4
 
-def configureSamba(config=SMB_CONF):
-
-	logger.notice(u"Configuring samba")
-
-	smb_init_command = u'service {name}'.format(name=Posix.getSambaServiceName(default="smbd"))
-
+def _readConfig(config):
 	f = codecs.open(config, 'r', 'utf-8')
 	lines = f.readlines()
 	f.close()
+	return lines
+
+def _processConfig(lines, config):
 	newlines = []
 	optPcbinShareFound = False
 	depotShareFound = False
@@ -110,17 +108,17 @@ def configureSamba(config=SMB_CONF):
 			except Exception as e:
 				logger.warning(u"Failed to create depot directory '%s': %s" % (depotDir, e))
 	elif samba4:
+		#raise Exception()
 		logger.notice(u"   Share opsi_depot found and samba 4 is detected. Trying to detect the executablefix for opsi_depot-Share")
 		startpos = 0
 		endpos = 0
 		found = False
-		fixedLines = []
 		sectionFound = False
-		for i in range(len(lines)):
-			if lines[i].lower().strip() == '[opsi_depot]':
+		for i in range(len(newlines)):
+			if newlines[i].lower().strip() == '[opsi_depot]':
 				startpos = endpos = i + 1
 				sectionFound = True
-				slicedList = lines[startpos:]
+				slicedList = newlines[startpos:]
 				for z in range(len(slicedList)):
 					line = slicedList[z].lower().strip()
 					if line == "admin users = @%s" % FILE_ADMIN_GROUP:
@@ -136,14 +134,14 @@ def configureSamba(config=SMB_CONF):
 				break
 
 		if not found:
+#			raise Exception()
 			logger.notice(u"   Section found but don't inherits samba4 fix, trying to set the fix.")
-			fixedLines = lines
-			fixedLines.insert(endpos, u"   admin users = @%s\n" % FILE_ADMIN_GROUP)
-			with codecs.open(config, 'w', 'utf-8') as f:
-				f.writelines(fixedLines)
+			newlines.insert(endpos, u"   admin users = @%s\n" % FILE_ADMIN_GROUP)
+#			with codecs.open(config, 'w', 'utf-8') as f:
+#				f.writelines(fixedLines)
 			logger.notice(u"   Reloading samba")
 			try:
-				execute(u'%s reload' % smb_init_command)
+				execute(u'%s reload' % u'service {name}'.format(name=Posix.getSambaServiceName(default="smbd")))
 			except Exception as e:
 				logger.warning(e)
 
@@ -204,17 +202,32 @@ def configureSamba(config=SMB_CONF):
 		newlines.append(u"   directory mask = 0770\n")
 		newlines.append(u"\n")
 
-	if confChanged:
-		logger.notice(u"   Creating backup of %s" % config)
-		shutil.copy(config, config + u'.' + time.strftime("%Y-%m-%d_%H:%M"))
+	return newlines
 
-		logger.notice(u"   Writing new smb.conf")
-		f = codecs.open(config, 'w', 'utf-8')
-		lines = f.writelines(newlines)
-		f.close()
+def _writeConfig(newlines, config):
+	logger.notice(u"   Creating backup of %s" % config)
+	shutil.copy(config, config + u'.' + time.strftime("%Y-%m-%d_%H:%M"))
 
-		logger.notice(u"   Reloading samba")
-		try:
-			execute(u'%s reload' % smb_init_command)
-		except Exception as e:
-			logger.warning(e)
+	logger.notice(u"   Writing new smb.conf")
+	f = codecs.open(config, 'w', 'utf-8')
+	lines = f.writelines(newlines)
+	f.close()
+
+	logger.notice(u"   Reloading samba")
+	try:
+		execute(u'%s reload' % u'service {name}'.format(name=Posix.getSambaServiceName(default="smbd")))
+	except Exception as e:
+		logger.warning(e)
+
+def configureSamba(config=SMB_CONF):
+
+	logger.notice(u"Configuring samba")
+
+	#smb_init_command = u'service {name}'.format(name=Posix.getSambaServiceName(default="smbd"))
+
+	lines = _readConfig(config)
+
+	newlines = _processConfig(lines, config)
+
+	if lines != newlines:
+		_writeConfig(newlines, config)
