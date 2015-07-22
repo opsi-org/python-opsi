@@ -259,33 +259,31 @@ class SambaConfigureTest(unittest.TestCase):
 			self.assertTrue(filled)
 
 	def testOpsiDepotShareSamba4(self):
-		with workInTemporaryDirectory() as tempDir:
-			PathToSmbConf = os.path.join(tempDir, 'SMB_CONF')
-			with open(PathToSmbConf, 'w') as fakeSambaConfig:
-				fakeSambaConfig.write(u"[opsi_depot]\n")
-				fakeSambaConfig.write(u"   available = yes\n")
-				fakeSambaConfig.write(u"   comment = opsi depot share (ro)\n")
-				fakeSambaConfig.write(u"   path = /var/lib/opsi/depot\n")
-				fakeSambaConfig.write(u"   oplocks = no\n")
-				fakeSambaConfig.write(u"   follow symlinks = yes\n")
-				fakeSambaConfig.write(u"   level2 oplocks = no\n")
-				fakeSambaConfig.write(u"   writeable = no\n")
-				fakeSambaConfig.write(u"   invalid users = root\n")
 
-			with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda:True):
-				with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
-					Samba.configureSamba(PathToSmbConf)
+		config = []
+		config.append(u"[opsi_depot]\n")
+		config.append(u"   available = yes\n")
+		config.append(u"   comment = opsi depot share (ro)\n")
+		config.append(u"   path = /var/lib/opsi/depot\n")
+		config.append(u"   oplocks = no\n")
+		config.append(u"   follow symlinks = yes\n")
+		config.append(u"   level2 oplocks = no\n")
+		config.append(u"   writeable = no\n")
+		config.append(u"   invalid users = root\n")
 
-			with open(PathToSmbConf, 'r') as fakeSambaConfig:
-				found = False
-				for line in fakeSambaConfig:
-					print line
-					if line.strip():
-						if 'admin users' in line:
-							found = True
-							break
+		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda:True):
+			with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
+				result = Samba._processConfig(config)
 
-			self.assertTrue(found, 'Missing Admin Users in Share opsi_depot')
+		found = False
+		for line in result:
+			print line
+			if line.strip():
+				if 'admin users' in line:
+					found = True
+					break
+
+		self.assertTrue(found, 'Missing Admin Users in Share opsi_depot')
 
 	def testCorrectOpsiDepotShareSamba4(self):
 		with workInTemporaryDirectory() as tempDir:

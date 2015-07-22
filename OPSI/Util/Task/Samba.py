@@ -45,7 +45,7 @@ def _readConfig(config):
 	f.close()
 	return lines
 
-def _processConfig(lines, config):
+def _processConfig(lines):
 	newlines = []
 	optPcbinShareFound = False
 	depotShareFound = False
@@ -81,7 +81,7 @@ def _processConfig(lines, config):
 
 
 	if optPcbinShareFound:
-		logger.warning(u"Share opt_pcbin configuration found in '%s'. You should use opsi_depot_rw instead, if you need a writeable depot-Share." % config)
+		logger.warning(u"Share opt_pcbin configuration found. You should use opsi_depot_rw instead, if you need a writeable depot-Share.")
 
 	if not depotShareFound:
 		logger.notice(u"   Adding share [opsi_depot]")
@@ -227,7 +227,7 @@ def configureSamba(config=SMB_CONF):
 
 	lines = _readConfig(config)
 
-	newlines = _processConfig(lines, config)
+	newlines = _processConfig(lines)
 
 	if lines != newlines:
 		_writeConfig(newlines, config)
