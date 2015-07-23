@@ -41,6 +41,15 @@ class DeflateCompressionTestCase(unittest.TestCase):
 
         self.assertEquals(text, newText)
 
+    def testDeflatingUnicode(self):
+        text = u"Mötörheäd!"
+
+        deflated = deflateEncode(text)
+        self.assertNotEquals(text, deflated)
+
+        newText = deflateDecode(deflated)
+        self.assertEquals(text, newText)
+
     def testHandingOverDifferentCompressionLevel(self):
         text = "Das ist ein Test und so."
 
@@ -60,6 +69,16 @@ class GzipCompressionTestCase(unittest.TestCase):
         newText = gzipDecode(gzipped)
 
         self.assertEquals(text, newText)
+
+    def testDecodingUnicode(self):
+        text = u"Mötörheäd!"
+
+        gzipped = gzipEncode(text)
+        self.assertNotEquals(text, gzipped)
+
+        newText = gzipDecode(gzipped)
+        self.assertEquals(text, newText)
+
 
     def testWorkingWithDifferentCompressionLevel(self):
         text = "Das ist ein Test und so."
