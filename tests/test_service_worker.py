@@ -244,12 +244,7 @@ class BackwardsCompatibilityWorkerJSONRPCTestCase(unittest.TestCase):
 
 
 class WorkerOpsiTestCase(unittest.TestCase):
-	def testDecodingQuery(self):
-		class FakeMediaType:
-			def __init__(self, type):
-				self.mediaType = type
-
-
+	def testDecodingOldCallQuery(self):
 		r = FakeRequest(headers=FakeHeader(
 			{
 				"content-encoding": "gzip",
