@@ -252,8 +252,6 @@ class WorkerOpsiTestCase(unittest.TestCase):
 			}
 		))
 		worker = WorkerOpsi(service=None, request=r, resource=None)
-
-		import zlib
 		worker.query = zlib.compress("Test 1234")
 		worker._decodeQuery(None)
 		self.assertEquals('Test 1234', worker.query)
