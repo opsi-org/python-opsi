@@ -674,20 +674,25 @@ Currently supported: *bootimage*, *clientconnect*, *instlog* or *opsiconfd*.
 		with codecs.open(logFile, 'r', 'utf-8', 'replace') as log:
 			data = log.read()
 
-		if maxSize and len(data) < maxSize:
-			files = set(glob("{0}*".format(logFile))) - set([logFile])
-			if files:
-				files = sorted(files)
-				while files and len(data) < maxSize:
-					filename = files.pop(0)
+		files = set(glob("{0}*".format(logFile))) - set([logFile])
+		if files:
+			files = sorted(files)
 
-					if filename.endswith('.gz'):
-						with open(filename, 'rb') as inputFile:
-							with closing(gzip.GzipFile(fileobj=inputFile, mode="r")) as gzipfile:
-								data = forceUnicode(gzipfile.read()) + data
-					else:
-						with codecs.open(filename, 'r', 'utf-8', 'replace') as log:
-							data = log.read() + data
+			if maxSize:
+				condition = lambda: bool(files and len(data) < maxSize)
+			else:
+				condition = lambda: bool(files)
+
+			while condition():
+				filename = files.pop(0)
+
+				if filename.endswith('.gz'):
+					with open(filename, 'rb') as inputFile:
+						with closing(gzip.GzipFile(fileobj=inputFile, mode="r")) as gzipfile:
+							data = forceUnicode(gzipfile.read()) + data
+				else:
+					with codecs.open(filename, 'r', 'utf-8', 'replace') as log:
+						data = log.read() + data
 
 		if maxSize:
 			return self._truncateLogData(data, maxSize)

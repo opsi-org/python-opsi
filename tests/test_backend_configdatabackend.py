@@ -153,6 +153,7 @@ Wo dann?
 """
 
 		self.assertEquals(expectedResult, cdb.log_read('opsiconfd', clientName))
+		self.assertEquals(expectedResult, cdb.log_read('opsiconfd', clientName, maxSize=False))
 
 	def testAppendingGzippedRotatedLogs(self):
 		cdb = OPSI.Backend.Backend.ConfigDataBackend()
@@ -178,6 +179,7 @@ Wo dann?
 """
 
 		self.assertEquals(expectedResult, cdb.log_read('opsiconfd', clientName))
+		self.assertEquals(expectedResult, cdb.log_read('opsiconfd', clientName, maxSize=False))
 
 
 if __name__ == '__main__':
