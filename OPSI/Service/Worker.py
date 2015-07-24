@@ -485,10 +485,21 @@ class WorkerOpsi:
 					logger.debug(u"Expecting gzip compressed data from client")
 					self.query = gzipDecode(self.query)
 					self.gzip = True
+				elif contentEncoding == 'deflate':
+					logger.debug(u"Expecting deflate compressed data from client")
+					self.query = deflateDecode(self.query)
+					self.gzip = True
 
-			self.query = unicode(self.query, 'utf-8')
-		except (UnicodeError, UnicodeEncodeError):
-			self.query = unicode(self.query, 'utf-8', 'replace')
+			if not isinstance(self.query, unicode):
+				self.query = unicode(self.query, 'utf-8')
+		except (UnicodeError, UnicodeEncodeError) as error:
+			logger.logException(error)
+			if not isinstance(self.query, unicode):
+				self.query = unicode(self.query, 'utf-8', 'replace')
+		except Exception as error:
+			logger.logException(error)
+			logger.warning("Unexpected error during decoding of query: {0}".format(error))
+			raise error
 
 		logger.debug2(u"query: %s" % self.query)
 		return result

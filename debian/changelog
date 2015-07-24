@@ -11,8 +11,10 @@ python-opsi (4.0.6.12-1) UNRELEASED; urgency=medium
   * 10_opsi.conf: Reintroduce setRights from the now remove 30_configed.conf
   * OPSI.Util.HTTP: the functions to decode/encode gzip/deflate now work
     better with unicode input and always return unicode.
+  * OPSI.Service.Worker.WorkerOpsi: properly decode requests that have their
+    content-encoding header set to "deflate".
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 23 Jul 2015 16:26:50 +0200
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 24 Jul 2015 11:14:26 +0200
 
 python-opsi (4.0.6.11-4) experimental; urgency=medium
 
