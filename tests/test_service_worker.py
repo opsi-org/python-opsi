@@ -36,7 +36,8 @@ except ImportError:
 
 from .helpers import unittest, mock
 
-from OPSI.Service.Worker import WorkerOpsiJsonRpc
+from OPSI.Service.Worker import WorkerOpsi, WorkerOpsiJsonRpc
+from OPSI.Util.HTTP import deflateEncode
 
 
 class FakeHeader(object):
@@ -53,6 +54,7 @@ class FakeHeader(object):
 class FakeRequest(object):
 	def __init__(self, headers=None):
 		self.headers = headers or FakeHeader()
+		self.method = 'POST'
 
 
 class FakeRPC(object):
@@ -234,6 +236,27 @@ class BackwardsCompatibilityWorkerJSONRPCTestCase(unittest.TestCase):
 		sdata = result.stream.read()
 		data = zlib.decompress(sdata)
 		self.assertEquals('null', data)
+
+
+class WorkerOpsiTestCase(unittest.TestCase):
+	def testDecodingQuery(self):
+		class FakeMediaType:
+			def __init__(self, type):
+				self.mediaType = type
+
+
+		r = FakeRequest(headers=FakeHeader(
+			{
+				"content-encoding": "gzip",
+				"content-type": FakeMediaType("gzip-application/json-rpc"),
+			}
+		))
+		worker = WorkerOpsi(service=None, request=r, resource=None)
+
+		import zlib
+		worker.query = zlib.compress("Test 1234")
+		worker._decodeQuery(None)
+		self.assertEquals('Test 1234', worker.query)
 
 
 if __name__ == '__main__':
