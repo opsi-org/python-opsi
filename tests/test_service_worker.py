@@ -58,11 +58,11 @@ class FakeRequest(object):
 
 
 class FakeRPC(object):
-			def __init__(self, result=None):
-				self.result = result or None
+	def __init__(self, result=None):
+		self.result = result or None
 
-			def getResponse(self):
-				return self.result
+	def getResponse(self):
+		return self.result
 
 
 class WorkerOpsiJsonRpcTestCase(unittest.TestCase):
