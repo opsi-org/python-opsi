@@ -51,6 +51,11 @@ class FakeHeader(object):
 		return self.headers[header]
 
 
+class FakeMediaType:
+	def __init__(self, type):
+		self.mediaType = type
+
+
 class FakeRequest(object):
 	def __init__(self, headers=None):
 		self.headers = headers or FakeHeader()
