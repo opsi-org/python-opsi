@@ -23,14 +23,19 @@ Testing ConfigDataBackend.
 :license: GNU Affero General Public License version 3
 """
 
-import mock
+from __future__ import absolute_import
+
+import codecs
+import gzip
 import os
 import shutil
 import tempfile
-import unittest
+from contextlib import closing  # Needed for Python 2.6
 
 import OPSI.Backend.Backend
 from OPSI.Types import BackendBadValueError
+
+from .helpers import mock, unittest
 
 
 class ConfigDataBackendTestCase(unittest.TestCase):
@@ -125,6 +130,55 @@ class ConfigDataBackendTestCase(unittest.TestCase):
 		cdb.log_write('opsiconfd', longData, objectId='foo.bar.baz')
 
 		self.assertEquals(longData, cdb.log_read('opsiconfd', 'foo.bar.baz', maxSize=0))
+
+	def testAppendingRotatedLogs(self):
+		cdb = OPSI.Backend.Backend.ConfigDataBackend()
+
+		clientName = 'foo.bar.baz'
+		logDir = os.path.join(self.logDirectory, "opsiconfd")
+		os.mkdir(logDir)
+		logPath = os.path.join(logDir, "{0}.log".format(clientName))
+		with codecs.open(logPath, "w", 'utf-8') as f:
+			f.write(u"Wo dann?\n")
+
+		with codecs.open("{0}.1".format(logPath), "w", 'utf-8') as f:
+			f.write(u"Hier nicht!\n")
+
+		with codecs.open("{0}.2".format(logPath), "w", 'utf-8') as f:
+			f.write(u"Wo ist der Mülleimer?\n")
+
+		expectedResult = u"""Wo ist der Mülleimer?
+Hier nicht!
+Wo dann?
+"""
+
+		self.assertEquals(expectedResult, cdb.log_read('opsiconfd', clientName))
+
+	def testAppendingGzippedRotatedLogs(self):
+		cdb = OPSI.Backend.Backend.ConfigDataBackend()
+
+		clientName = 'foo.bar.baz'
+		logDir = os.path.join(self.logDirectory, "opsiconfd")
+		os.mkdir(logDir)
+		logPath = os.path.join(logDir, "{0}.log".format(clientName))
+		with codecs.open(logPath, "w", 'utf-8') as f:
+			f.write(u"Wo dann?\n")
+
+		with open("{0}.1.gz".format(logPath), "wb") as f:
+			with closing(gzip.GzipFile(fileobj=f, mode="w")) as gzipfile:
+				gzipfile.write(u"Hier nicht!\n".encode('utf-8'))
+
+		with open("{0}.2.gz".format(logPath), "wb") as f:
+			with closing(gzip.GzipFile(fileobj=f, mode="w")) as gzipfile:
+				gzipfile.write(u"Wo ist der Mülleimer?\n".encode('utf-8'))
+
+		expectedResult = u"""Wo ist der Mülleimer?
+Hier nicht!
+Wo dann?
+"""
+
+		self.assertEquals(expectedResult, cdb.log_read('opsiconfd', clientName))
+
 
 if __name__ == '__main__':
 	unittest.main()

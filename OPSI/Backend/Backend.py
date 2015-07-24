@@ -34,6 +34,7 @@ import base64
 import codecs
 import collections
 import copy as pycopy
+import gzip
 import inspect
 import json
 import new
@@ -42,6 +43,8 @@ import random
 import threading
 import types
 import warnings
+from contextlib import closing  # Needed for Python 2.6
+from glob import glob
 from hashlib import md5
 from twisted.conch.ssh import keys
 
@@ -632,6 +635,7 @@ overwrite the log.
 
 	@staticmethod
 	def _truncateLogData(data, maxSize):
+		maxSize = forceInt(maxSize)
 		if len(data) > maxSize:
 			start = data.find('\n', len(data) - maxSize)
 			if start == -1:
@@ -653,25 +657,40 @@ Currently supported: *bootimage*, *clientconnect*, *instlog* or *opsiconfd*.
 		logType = forceUnicode(logType)
 
 		if logType not in ('bootimage', 'clientconnect', 'instlog', 'userlogin', 'opsiconfd'):
-			raise BackendBadValueError(u'Unknown log type %s' % logType)
+			raise BackendBadValueError(u'Unknown log type {0!r}'.format(logType))
 
 		if objectId:
 			objectId = forceObjectId(objectId)
 			logFile = os.path.join(LOG_DIR, logType, '{0}.log'.format(objectId))
 		else:
 			if logType in ('bootimage', 'clientconnect', 'userlogin', 'instlog'):
-				raise BackendBadValueError(u"Log type '%s' requires objectId" % logType)
+				raise BackendBadValueError(u"Log type {0!r} requires objectId".format(logType))
 
 			logFile = os.path.join(LOG_DIR, logType, 'opsiconfd.log')
 
 		if not os.path.exists(logFile):
 			return u''
 
-		with codecs.open(logFile, 'r', 'utf-8', 'replace') as logFile:
-			data = logFile.read()
+		with codecs.open(logFile, 'r', 'utf-8', 'replace') as log:
+			data = log.read()
+
+		if maxSize and len(data) < maxSize:
+			files = set(glob("{0}*".format(logFile))) - set([logFile])
+			if files:
+				files = sorted(files)
+				while files and len(data) < maxSize:
+					filename = files.pop(0)
+
+					if filename.endswith('.gz'):
+						with open(filename, 'rb') as inputFile:
+							with closing(gzip.GzipFile(fileobj=inputFile, mode="r")) as gzipfile:
+								data = forceUnicode(gzipfile.read()) + data
+					else:
+						with codecs.open(filename, 'r', 'utf-8', 'replace') as log:
+							data = log.read() + data
 
 		if maxSize:
-			return self._truncateLogData(data, forceInt(maxSize))
+			return self._truncateLogData(data, maxSize)
 
 		return data
 
