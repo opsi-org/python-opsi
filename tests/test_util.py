@@ -34,8 +34,8 @@ from collections import defaultdict
 
 from OPSI.Util import (compareVersions, flattenSequence, formatFileSize,
     generateOpsiHostKey, getfqdn, getGlobalConfig, ipAddressInNetwork,
-    isRegularExpressionPattern, librsyncSignature, md5sum, objectToBeautifiedText, objectToHtml,
-    randomString, removeUnit)
+    isRegularExpressionPattern, librsyncDeltaFile, librsyncSignature,
+    md5sum, objectToBeautifiedText, objectToHtml, randomString, removeUnit)
 from OPSI.Object import LocalbootProduct
 
 from .helpers import (fakeGlobalConf, patchAddress, patchEnvironmentVariables,
@@ -269,12 +269,25 @@ class UtilTestCase(unittest.TestCase):
         )
         self.assertEqual('cnMBNgAACAAAAAAI/6410IBmvH1GKbBN\n', librsyncSignature(testFile))
 
-    # def testLibrsyncDeltaFile(self):
-    #      testFile = os.path.join( 
-    #         os.path.dirname(__file__), 
-    #         'testdata', 'util', 'syncFiles', 'librsyncSignature.txt'
-    #     )
-    #     self.assertEqual('dies sollte in der deltafile stehen', testLibrsyncDeltaFile(testFile), testLibrsyncSignature(testFile))
+    def testLibrsyncDeltaFile(self):
+        testFile = os.path.join(
+            os.path.dirname(__file__),
+            'testdata', 'util', 'syncFiles', 'librsyncSignature.txt'
+        )
+
+        signature = librsyncSignature(testFile, base64Encoded=False)
+
+        with workInTemporaryDirectory() as tempDir:
+
+            deltafile = os.path.join(tempDir, 'delta')
+
+            librsyncDeltaFile(testFile, signature.strip(), deltafile)
+
+            self.assertTrue(os.path.exists(deltafile), "No delta file was created")
+
+            expectedDelta = 'rs\x026F\x00\x04\x8a\x00'
+            with open(deltafile, "r") as f:
+                self.assertTrue(expectedDelta, f.readlines())
 
     def testmd5sum(self):
         testFile = os.path.join(
