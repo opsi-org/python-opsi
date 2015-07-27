@@ -210,7 +210,7 @@ def _writeConfig(newlines, config):
 
 	logger.notice(u"   Writing new smb.conf")
 	f = codecs.open(config, 'w', 'utf-8')
-	lines = f.writelines(newlines)
+	f.writelines(newlines)
 	f.close()
 
 	logger.notice(u"   Reloading samba")
@@ -218,6 +218,7 @@ def _writeConfig(newlines, config):
 		execute(u'%s reload' % u'service {name}'.format(name=Posix.getSambaServiceName(default="smbd")))
 	except Exception as e:
 		logger.warning(e)
+
 
 def configureSamba(config=SMB_CONF):
 

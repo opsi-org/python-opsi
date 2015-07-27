@@ -158,7 +158,6 @@ class SambaProcessConfigTest(unittest.TestCase):
 
 		config = []
 
-
 		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda:False):
 			with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
 				with mock.patch('OPSI.Util.Task.Samba.getDistribution', fakeDistribution):
@@ -348,8 +347,38 @@ class SambaProcessConfigTest(unittest.TestCase):
 				self.fail('Did not find "admin users" in opsi_depot share')
 
 class SambaWriteConfig(unittest.TestCase):
-	def testpass(self):
-		pass
+
+	def testEmptyConfig(self):
+
+		config = []
+		with workInTemporaryDirectory() as tempDir:
+			PathToSmbConf = os.path.join(tempDir, 'SMB_CONF')
+			with open(PathToSmbConf, 'w') as fakeSambaConfig:
+				for line in config:
+					fakeSambaConfig.write(line)
+			result = Samba._readConfig(PathToSmbConf)
+
+		self.assertEqual(config, result)
+
+	def testTrueConfig(self):
+
+		config = []
+		config.append(u"[[opt_pcbin]\n")
+		config.append(u"[opsi_depot]\n")
+		config.append(u"[opsi_depot_rw]\n")
+		config.append(u"[opsi_images]\n")
+		config.append(u"[opsi_config]\n")
+		config.append(u"[opsi_workbench]\n")
+
+		with workInTemporaryDirectory() as tempDir:
+			PathToSmbConf = os.path.join(tempDir, 'SMB_CONF')
+			with open(PathToSmbConf, 'w') as fakeSambaConfig:
+				for line in config:
+					fakeSambaConfig.write(line)
+			result = Samba._readConfig(PathToSmbConf)
+
+		self.assertEqual(config, result)
+
 
 def main():
 	unittest.main()
