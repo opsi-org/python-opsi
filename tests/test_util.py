@@ -34,7 +34,7 @@ from collections import defaultdict
 
 from OPSI.Util import (compareVersions, flattenSequence, formatFileSize,
     generateOpsiHostKey, getfqdn, getGlobalConfig, ipAddressInNetwork,
-    isRegularExpressionPattern, md5sum, objectToBeautifiedText, objectToHtml,
+    isRegularExpressionPattern, librsyncSignature, md5sum, objectToBeautifiedText, objectToHtml,
     randomString, removeUnit)
 from OPSI.Object import LocalbootProduct
 
@@ -262,12 +262,25 @@ class UtilTestCase(unittest.TestCase):
         self.assertEqual(32, len(generateOpsiHostKey()))
         self.assertEqual(32, len(generateOpsiHostKey(forcePython=True)))
 
+    def testLibrsyncSignature(self):
+        testFile = os.path.join( 
+            os.path.dirname(__file__), 
+            'testdata', 'util', 'syncFiles', 'librsyncSignature.txt'
+        )
+        self.assertEqual('cnMBNgAACAAAAAAI/6410IBmvH1GKbBN\n', librsyncSignature(testFile))
+
+    # def testLibrsyncDeltaFile(self):
+    #      testFile = os.path.join( 
+    #         os.path.dirname(__file__), 
+    #         'testdata', 'util', 'syncFiles', 'librsyncSignature.txt'
+    #     )
+    #     self.assertEqual('dies sollte in der deltafile stehen', testLibrsyncDeltaFile(testFile), testLibrsyncSignature(testFile))
+
     def testmd5sum(self):
         testFile = os.path.join(
             os.path.dirname(__file__),
             'testdata', 'util', 'dhcpd', 'dhcpd_1.conf'
         )
-
         self.assertEqual('5f345ca76574c528903c1022b05acb4c', md5sum(testFile))
 
 

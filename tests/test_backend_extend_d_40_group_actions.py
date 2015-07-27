@@ -164,7 +164,7 @@ class GroupRenamingTestCase(unittest.TestCase, ExtendedFileBackendMixin):
     def tearDown(self):
         self.tearDownBackend()
 
-    def testGroupname_exists(self):
+    def testGroupnameExists(self):
         self.assertTrue(self.backend.groupname_exists(self.testGroup.id))
         self.assertFalse(self.backend.groupname_exists(u'testgruppe'))
 
@@ -187,6 +187,7 @@ class GroupRenamingTestCase(unittest.TestCase, ExtendedFileBackendMixin):
         objToGr = self.backend.objectToGroup_getObjects()
         for object in objToGr:
             self.assertEquals(object.groupId, self.testGroup2.id)
+            self.assertFalse(object.groupId, self.testGroup.id)
 
 if __name__ == '__main__':
     unittest.main()
