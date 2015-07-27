@@ -148,7 +148,7 @@ class ChownTestCase(unittest.TestCase):
             self.skipTest("Could not find another group.")
 
         if isRoot:
-            for uid in range(1000, 60000):
+            for uid in range(2, 60000):
                 try:
                     pwd.getpwuid(uid)
                     changedUid = uid
