@@ -78,7 +78,41 @@ class Samba4Test(unittest.TestCase):
 			with mock.patch('OPSI.Util.Task.Samba.which', fakeWhich):
 				self.assertFalse(Samba.isSamba4())
 
-class SambaConfigureTest(unittest.TestCase):
+class SambaReadConfigTest(unittest.TestCase):
+
+	def testEmptyConfig(self):
+
+		config = []
+		with workInTemporaryDirectory() as tempDir:
+			PathToSmbConf = os.path.join(tempDir, 'SMB_CONF')
+			with open(PathToSmbConf, 'w') as fakeSambaConfig:
+				for line in config:
+					fakeSambaConfig.write(line)
+				result = Samba._readConfig(PathToSmbConf)
+
+		self.assertEqual(config, result)
+
+	def testTrueConfig(self):
+
+		config = []
+		config.append(u"[[opt_pcbin]\n")
+		config.append(u"[opsi_depot]\n")
+		config.append(u"[opsi_depot_rw]\n")
+		config.append(u"[opsi_images]\n")
+		config.append(u"[opsi_config]\n")
+		config.append(u"[opsi_workbench]\n")
+
+		with workInTemporaryDirectory() as tempDir:
+			PathToSmbConf = os.path.join(tempDir, 'SMB_CONF')
+			with open(PathToSmbConf, 'w') as fakeSambaConfig:
+				for line in config:
+					fakeSambaConfig.write(line)
+			result = Samba._readConfig(PathToSmbConf)
+
+		self.assertEqual(config, result)
+
+
+class SambaProcessConfigTest(unittest.TestCase):
 
 	def testSambaConfigureSuseSamba4(self):
 
