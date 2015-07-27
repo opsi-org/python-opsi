@@ -300,10 +300,16 @@ def chown(path, uid, gid):
 	try:
 		if os.geteuid() == 0:
 			LOGGER.debug(u"Setting ownership to {user}:{group} on '{path}'".format(path=path, user=uid, group=gid))
-			os.chown(path, uid, gid)
+			if os.path.islink(path):
+				os.lchown(path, uid, gid)
+			else:
+				os.chown(path, uid, gid)
 		else:
 			LOGGER.debug(u"Setting ownership to -1:{group} on '{path}'".format(path=path, group=gid))
-			os.chown(path, -1, gid)
+			if os.path.islink(path):
+				os.lchown(path, -1, gid)
+			else:
+				os.chown(path, -1, gid)
 	except OSError as fist:
 		if os.geteuid() == 0:
 			# We are root so something must be really wrong!

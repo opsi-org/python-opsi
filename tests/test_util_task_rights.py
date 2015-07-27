@@ -23,11 +23,17 @@ Testing the setting of rights.
 :license: GNU Affero General Public License version 3
 """
 
-import mock
-import unittest
+from __future__ import absolute_import
+
+import grp
+import os
+import os.path
+import pwd
 
 from OPSI.Util.Task.Rights import (getDirectoriesManagedByOpsi, getDirectoriesForProcessing,
-    removeDuplicatesFromDirectories)
+    removeDuplicatesFromDirectories, chown)
+
+from .helpers import mock, unittest, workInTemporaryDirectory
 
 
 class SetRightsTestCase(unittest.TestCase):
@@ -112,6 +118,87 @@ class GetDirectoriesForProcessingTestCase(unittest.TestCase):
 
         directories, _ = getDirectoriesForProcessing('/tmp')
         self.assertTrue('/opt/pcbin/install' not in directories)
+
+
+class ChownTestCase(unittest.TestCase):
+
+    def testChangingOwnership(self):
+        try:
+            groupId = os.getgid()
+            userId = os.getuid()
+        except Exception as exc:
+            print("Could not get uid/guid: {0}".format(exc))
+            self.skipTest("Could not get uid/guid: {0}".format(exc))
+
+        print("Current group ID: {0}".format(groupId))
+        print("Current user ID: {0}".format(userId))
+        isRoot = os.geteuid() == 0
+
+        for gid in range(2, 60000):
+            try:
+                grp.getgrgid(gid)
+                changedGid = gid
+                break
+            except KeyError:
+                pass
+        else:
+            self.skipTest("No group for test found. Aborting.")
+
+        if groupId == changedGid:
+            self.skipTest("Could not find another group.")
+
+        if isRoot:
+            for uid in range(1000, 60000):
+                try:
+                    pwd.getpwuid(uid)
+                    changedUid = uid
+                    break
+                except KeyError:
+                    pass
+            else:
+                self.skipTest("No userId for test found. Aborting.")
+
+            if userId == changedUid:
+                self.skipTest("Could not find another user.")
+        else:
+            changedUid = -1
+
+        with workInTemporaryDirectory() as tempDir:
+            original = os.path.join(tempDir, 'original')
+            with open(original, 'w'):
+                pass
+
+            linkfile = os.path.join(tempDir, 'linkfile')
+            os.symlink(original, linkfile)
+            self.assertTrue(os.path.islink(linkfile))
+
+            # Changing the uid/gid to something different
+            os.chown(original, changedUid, changedGid)
+            os.lchown(linkfile, changedUid, changedGid)
+
+            for filename in (original, linkfile):
+                if os.path.islink(filename):
+                    stat = os.lstat(filename)
+                else:
+                    stat = os.stat(linkfile)
+
+                self.assertEquals(changedGid, stat.st_gid)
+                if not isRoot:
+                    self.assertEquals(changedUid, stat.st_uid)
+
+            # Correcting the uid/gid
+            chown(linkfile, userId, groupId)
+            chown(original, userId, groupId)
+
+            for filename in (original, linkfile):
+                if os.path.islink(filename):
+                    stat = os.lstat(filename)
+                else:
+                    stat = os.stat(linkfile)
+
+                self.assertEquals(groupId, stat.st_gid)
+                if not isRoot:
+                    self.assertEquals(userId, stat.st_uid)
 
 
 if __name__ == '__main__':
