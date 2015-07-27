@@ -70,7 +70,7 @@ class Samba4Test(unittest.TestCase):
 	def testIsNotSamba4(self):
 
 		def fakeExecute(command):
-			return ['version ']
+			return ['version 3.1']
 
 		def fakeWhich(command):
 			return command
@@ -81,19 +81,18 @@ class Samba4Test(unittest.TestCase):
 
 class SambaReadConfigTest(unittest.TestCase):
 
-	def testEmptyConfig(self):
+	def testEmptyConfigRead(self):
 
 		config = []
 		with workInTemporaryDirectory() as tempDir:
 			PathToSmbConf = os.path.join(tempDir, 'SMB_CONF')
 			with open(PathToSmbConf, 'w') as fakeSambaConfig:
-				for line in config:
-					fakeSambaConfig.write(line)
+				pass
 			result = Samba._readConfig(PathToSmbConf)
 
-		self.assertEqual(config, result)
+		self.assertEqual([], result)
 
-	def testTrueConfig(self):
+	def testTrueConfigRead(self):
 
 		config = []
 		config.append(u"[[opt_pcbin]\n")
