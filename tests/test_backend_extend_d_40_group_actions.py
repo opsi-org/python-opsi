@@ -144,19 +144,19 @@ class GroupRenamingTestCase(unittest.TestCase, ExtendedFileBackendMixin):
             parentGroupId=None
         )
 
-        client1 = OpsiClient(
+        self.client1 = OpsiClient(
             id='client1.test.invalid',
         )
 
-        client2 = OpsiClient(
+        self.client2 = OpsiClient(
             id='client2.test.invalid',
         )
 
-        client1ToGroup = ObjectToGroup(self.testGroup.getType(),self.testGroup.id, client1.id)
-        client2ToGroup = ObjectToGroup(self.testGroup.getType(),self.testGroup.id, client2.id)
+        client1ToGroup = ObjectToGroup(self.testGroup.getType(),self.testGroup.id, self.client1.id)
+        client2ToGroup = ObjectToGroup(self.testGroup.getType(),self.testGroup.id, self.client2.id)
 
-        self.backend.host_insertObject(client1)
-        self.backend.host_insertObject(client2)
+        self.backend.host_insertObject(self.client1)
+        self.backend.host_insertObject(self.client2)
         self.backend.group_insertObject(self.testGroup)
         self.backend.objectToGroup_createObjects([client1ToGroup, client2ToGroup])
         
@@ -184,10 +184,19 @@ class GroupRenamingTestCase(unittest.TestCase, ExtendedFileBackendMixin):
 
     def testObjectToGroupsHaveNewGroupIds(self):
         self.backend.group_rename(self.testGroup.id, self.testGroup2.id)
-        objToGr = self.backend.objectToGroup_getObjects()
-        for object in objToGr:
-            self.assertEquals(object.groupId, self.testGroup2.id)
-            self.assertFalse(object.groupId, self.testGroup.id)
+
+        objTpGrp_client1 = self.backend.objectToGroup_getObjects(objectId=self.client1.id) [0]
+        self.assertTrue(objTpGrp_client1.groupId, self.testGroup2.id )
+
+        objTpGrp_client2 = self.backend.objectToGroup_getObjects(objectId=self.client2.id) [0]
+        self.assertTrue(objTpGrp_client2.groupId, self.testGroup2.id )
+
+    def testObjectToGroupsHaveNotOldGroupIds(self):
+        self.backend.group_rename(self.testGroup.id, self.testGroup2.id)
+
+        objsToGrp = self.backend.objectToGroup_getObjects()
+        for obj in objsToGrp:
+            self.assertNotEqual(obj.groupId, self.testGroup.id)
 
 if __name__ == '__main__':
     unittest.main()
