@@ -36,6 +36,7 @@ import os
 import os.path
 import mock
 import unittest
+import codecs
 import OPSI.Util.Task.Samba as Samba
 from collections import defaultdict
 from .helpers import workInTemporaryDirectory
@@ -348,19 +349,20 @@ class SambaProcessConfigTest(unittest.TestCase):
 
 class SambaWriteConfig(unittest.TestCase):
 
-	def testEmptyConfig(self):
+	def testEmptyConfigWrite(self):
 
 		config = []
 		with workInTemporaryDirectory() as tempDir:
 			PathToSmbConf = os.path.join(tempDir, 'SMB_CONF')
 			with open(PathToSmbConf, 'w') as fakeSambaConfig:
-				for line in config:
-					fakeSambaConfig.write(line)
-			result = Samba._readConfig(PathToSmbConf)
+				Samba._writeConfig(config, PathToSmbConf)
+				f = codecs.open(PathToSmbConf, 'r', 'utf-8')
+				result = f.readlines()
+				f.close
 
 		self.assertEqual(config, result)
 
-	def testTrueConfig(self):
+	def testTrueConfigWrite(self):
 
 		config = []
 		config.append(u"[[opt_pcbin]\n")
@@ -373,9 +375,10 @@ class SambaWriteConfig(unittest.TestCase):
 		with workInTemporaryDirectory() as tempDir:
 			PathToSmbConf = os.path.join(tempDir, 'SMB_CONF')
 			with open(PathToSmbConf, 'w') as fakeSambaConfig:
-				for line in config:
-					fakeSambaConfig.write(line)
-			result = Samba._readConfig(PathToSmbConf)
+				Samba._writeConfig(config, PathToSmbConf)
+				f = codecs.open(PathToSmbConf, 'r', 'utf-8')
+				result = f.readlines()
+				f.close
 
 		self.assertEqual(config, result)
 
