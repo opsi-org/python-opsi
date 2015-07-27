@@ -88,7 +88,7 @@ class SambaReadConfigTest(unittest.TestCase):
 			with open(PathToSmbConf, 'w') as fakeSambaConfig:
 				for line in config:
 					fakeSambaConfig.write(line)
-				result = Samba._readConfig(PathToSmbConf)
+			result = Samba._readConfig(PathToSmbConf)
 
 		self.assertEqual(config, result)
 
@@ -110,7 +110,6 @@ class SambaReadConfigTest(unittest.TestCase):
 			result = Samba._readConfig(PathToSmbConf)
 
 		self.assertEqual(config, result)
-
 
 class SambaProcessConfigTest(unittest.TestCase):
 
@@ -347,6 +346,10 @@ class SambaProcessConfigTest(unittest.TestCase):
 					break
 			else:
 				self.fail('Did not find "admin users" in opsi_depot share')
+
+class SambaWriteConfig(unittest.TestCase):
+	def testpass(self):
+		pass
 
 def main():
 	unittest.main()
