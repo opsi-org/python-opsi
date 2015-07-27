@@ -263,8 +263,8 @@ class UtilTestCase(unittest.TestCase):
         self.assertEqual(32, len(generateOpsiHostKey(forcePython=True)))
 
     def testLibrsyncSignature(self):
-        testFile = os.path.join( 
-            os.path.dirname(__file__), 
+        testFile = os.path.join(
+            os.path.dirname(__file__),
             'testdata', 'util', 'syncFiles', 'librsyncSignature.txt'
         )
         self.assertEqual('cnMBNgAACAAAAAAI/6410IBmvH1GKbBN\n', librsyncSignature(testFile))
@@ -278,7 +278,6 @@ class UtilTestCase(unittest.TestCase):
         signature = librsyncSignature(testFile, base64Encoded=False)
 
         with workInTemporaryDirectory() as tempDir:
-
             deltafile = os.path.join(tempDir, 'delta')
 
             librsyncDeltaFile(testFile, signature.strip(), deltafile)
@@ -287,7 +286,7 @@ class UtilTestCase(unittest.TestCase):
 
             expectedDelta = 'rs\x026F\x00\x04\x8a\x00'
             with open(deltafile, "r") as f:
-                self.assertTrue(expectedDelta, f.readlines())
+                self.assertTrue(expectedDelta, f.read())
 
     def testmd5sum(self):
         testFile = os.path.join(
