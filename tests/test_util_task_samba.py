@@ -78,7 +78,6 @@ class SambaReadConfigTest(unittest.TestCase):
 
 	def testEmptyConfigRead(self):
 
-		config = []
 		with workInTemporaryDirectory() as tempDir:
 			PathToSmbConf = os.path.join(tempDir, 'SMB_CONF')
 			with open(PathToSmbConf, 'w') as fakeSambaConfig:
@@ -90,7 +89,7 @@ class SambaReadConfigTest(unittest.TestCase):
 	def testTrueConfigRead(self):
 
 		config = []
-		config.append(u"[[opt_pcbin]\n")
+		config.append(u"[opt_pcbin]\n")
 		config.append(u"[opsi_depot]\n")
 		config.append(u"[opsi_depot_rw]\n")
 		config.append(u"[opsi_images]\n")
