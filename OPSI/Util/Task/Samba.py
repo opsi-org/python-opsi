@@ -42,7 +42,6 @@ def isSamba4():
 def _readConfig(config):
 	with codecs.open(config, 'r', 'utf-8') as f:
 		lines = f.readlines()
-		f.close()
 	return lines
 
 def _processConfig(lines):
@@ -207,7 +206,6 @@ def _writeConfig(newlines, config):
 	logger.notice(u"   Writing new smb.conf")
 	with codecs.open(config, 'w', 'utf-8') as f:
 		f.writelines(newlines)
-		f.close()
 
 	logger.notice(u"   Reloading samba")
 	try:
