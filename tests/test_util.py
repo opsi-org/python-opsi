@@ -34,7 +34,7 @@ from collections import defaultdict
 
 from OPSI.Util import (compareVersions, flattenSequence, formatFileSize,
     generateOpsiHostKey, getfqdn, getGlobalConfig, ipAddressInNetwork,
-    isRegularExpressionPattern, librsyncDeltaFile, librsyncSignature,
+    isRegularExpressionPattern, librsyncDeltaFile, librsyncSignature,librsyncPatchFile,
     md5sum, objectToBeautifiedText, objectToHtml, randomString, removeUnit)
 from OPSI.Object import LocalbootProduct
 
@@ -287,6 +287,32 @@ class UtilTestCase(unittest.TestCase):
             expectedDelta = 'rs\x026F\x00\x04\x8a\x00'
             with open(deltafile, "r") as f:
                 self.assertTrue(expectedDelta, f.read())
+
+    def testLibrsyncPatchFile(self):
+        testFile_old = os.path.join(
+            os.path.dirname(__file__),
+            'testdata', 'util', 'syncFiles', 'librsyncSignature.txt'
+        )
+        deltaFile = os.path.join(
+            os.path.dirname(__file__),
+            'testdata', 'util', 'syncFiles', 'librsync.delta'
+        )
+        testFile_new = os.path.join(
+            os.path.dirname(__file__),
+            'testdata', 'util', 'syncFiles', 'librsyncPatchFile_new.txt'
+        )
+        signature = librsyncSignature(testFile_old, False)
+
+        librsyncDeltaFile(testFile_old, signature, deltaFile)
+        expectedDelta = "rs^B6F^@^D<8a>^@"
+        with open(deltaFile, "r") as f:
+                 self.assertTrue(expectedDelta, f.readlines())
+        
+        librsyncPatchFile(testFile_old, deltaFile, testFile_new)
+        with open(testFile_new, "r") as n:
+            with open(testFile_old, "r") as o:
+                 self.assertTrue(o.readlines(), n.readlines())
+
 
     def testmd5sum(self):
         testFile = os.path.join(
