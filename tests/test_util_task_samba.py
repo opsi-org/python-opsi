@@ -112,12 +112,10 @@ class SambaProcessConfigTest(unittest.TestCase):
 		def fakeDistribution():
 			return 'suse linux enterprise server'
 
-		config = []
-
 		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda:True):
 			with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
 				with mock.patch('OPSI.Util.Task.Samba.getDistribution', fakeDistribution):
-					newlines = Samba._processConfig(config)
+					newlines = Samba._processConfig([])
 
 		suse = False
 		for line in newlines:
