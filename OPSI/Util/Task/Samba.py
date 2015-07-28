@@ -212,7 +212,7 @@ def configureSamba(config=SMB_CONF):
 
 	logger.notice(u"Configuring samba")
 
-	smb_init_command = u'service {name}'.format(name=Posix.getSambaServiceName(default="smbd"))
+	"""smb_init_command = u'service {name}'.format(name=Posix.getSambaServiceName(default="smbd"))"""
 
 	lines = _readConfig(config)
 
