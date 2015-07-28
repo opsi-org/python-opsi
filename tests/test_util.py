@@ -25,10 +25,12 @@ Testing functionality of OPSI.Util
 
 from __future__ import absolute_import
 
+import codecs
 import random
 import re
 import os
 import os.path
+import shutil
 import unittest
 from collections import defaultdict
 
@@ -262,12 +264,20 @@ class UtilTestCase(unittest.TestCase):
         self.assertEqual(32, len(generateOpsiHostKey()))
         self.assertEqual(32, len(generateOpsiHostKey(forcePython=True)))
 
-    def testLibrsyncSignature(self):
+    def testLibrsyncSignatureBase64Encoded(self):
         testFile = os.path.join(
             os.path.dirname(__file__),
             'testdata', 'util', 'syncFiles', 'librsyncSignature.txt'
         )
         self.assertEqual('cnMBNgAACAAAAAAI/6410IBmvH1GKbBN\n', librsyncSignature(testFile))
+
+    def testLibrsyncSignature(self):
+        testFile = os.path.join(
+            os.path.dirname(__file__),
+            'testdata', 'util', 'syncFiles', 'librsyncSignature.txt'
+        )
+        signature = librsyncSignature(testFile, base64Encoded=False)
+        self.assertEqual('rs\x016\x00\x00\x08\x00\x00\x00\x00\x08\xff\xae5\xd0\x80f\xbc}F)\xb0M', signature)
 
     def testLibrsyncDeltaFile(self):
         testFile = os.path.join(
@@ -281,68 +291,96 @@ class UtilTestCase(unittest.TestCase):
             deltafile = os.path.join(tempDir, 'delta')
 
             librsyncDeltaFile(testFile, signature.strip(), deltafile)
-
             self.assertTrue(os.path.exists(deltafile), "No delta file was created")
 
             expectedDelta = 'rs\x026F\x00\x04\x8a\x00'
             with open(deltafile, "r") as f:
-                self.assertTrue(expectedDelta, f.read())
+                self.assertEqual(expectedDelta, f.read())
 
-    
     def testLibrsyncPatchFile(self):
-
         baseFile = os.path.join(
             os.path.dirname(__file__),
             'testdata', 'util', 'syncFiles', 'librsyncSignature.txt'
         )
+
+        signature = librsyncSignature(baseFile, False)
+
         with workInTemporaryDirectory() as tempDir:
             deltaFile = os.path.join(tempDir, 'base.delta')
-            newFile = os.path.join(tempDir, 'newFile.txt')
-            
-            signature = librsyncSignature(baseFile, False)
-
             librsyncDeltaFile(baseFile, signature, deltaFile)
+
             self.assertTrue(os.path.exists(deltaFile))
-            expectedDelta = ["rs\x026F\x00\x04\x8a\x00"]
+            expectedDelta = "rs\x026F\x00\x04\x8a\x00"
             with open(deltaFile, "rb") as f:
-                     self.assertEqual(expectedDelta, f.readlines())
-        
+                self.assertEqual(expectedDelta, f.read())
+
+            newFile = os.path.join(tempDir, 'newFile.txt')
             librsyncPatchFile(baseFile, deltaFile, newFile)
             self.assertTrue(os.path.exists(newFile))
+
             with open(newFile, "r") as newF:
                 with open(baseFile, "r") as baseF:
-                     self.assertTrue(baseF.readlines(), newF.readlines())
+                    self.assertEqual(baseF.readlines(), newF.readlines())
 
-    def testLibrsyncPatchFile2(self):
-
+    def testLibrsyncPatchFileCreatesNewFileBasedOnDelta(self):
         baseFile = os.path.join(
             os.path.dirname(__file__),
             'testdata', 'util', 'syncFiles', 'librsyncSignature.txt'
         )
+
+        signature = librsyncSignature(baseFile, False)
+
         with workInTemporaryDirectory() as tempDir:
-            deltaFile_baseF = os.path.join(tempDir,'baseDelta.delta')
-            deltaFile_newF = os.path.join(tempDir,'newDelta.delta')
+            newFile = os.path.join(tempDir, 'oldnew.txt')
+            shutil.copy(baseFile, newFile)
 
-            newFile = os.path.join(tempDir,'oldnew.txt')
-            newFile2 = os.path.join(tempDir,'newnew.txt')
-        
-            signature = librsyncSignature(baseFile, False)
-            self.assertEqual('rs\x016\x00\x00\x08\x00\x00\x00\x00\x08\xff\xae5\xd0\x80f\xbc}F)\xb0M', signature)
-            
-            librsyncDeltaFile(baseFile, signature, deltaFile_baseF)
-            expectedDelta = ["rs\x026F\x00\x04\x8a\x00"]
-            with open(deltaFile_baseF, "rb") as f:
-                    self.assertEqual(expectedDelta, f.readlines())
-        
-            librsyncPatchFile(baseFile, deltaFile_baseF, newFile)
+            additionalText = u"Und diese Zeile hier macht den Unterschied."
 
+            with codecs.open(newFile, 'a', 'utf-8') as nf:
+                nf.write("\n\n{0}\n".format(additionalText))
 
-            librsyncDeltaFile(newFile, signature, deltaFile_newF)
-            librsyncPatchFile(baseFile, deltaFile_newF, newFile2)
+            deltaFileForNewFile = os.path.join(tempDir, 'newDelta.delta')
+            librsyncDeltaFile(newFile, signature, deltaFileForNewFile)
+            expectedDelta = (
+                'rs\x026B\x04\xb8Die NASA konnte wieder ein Funksignal der '
+                'Sonde New Horizons empfangen. Damit scheint sicher, dass '
+                'das Man\xc3\xb6ver ein Erfolg war und nun jede Menge Daten '
+                'zu erwarten sind. Bis die alle auf der Erde sind, wird es '
+                'aber dauern.\n\nDie NASA feiert eine "historische Nacht": '
+                'Die Sonde New Horizons ist am Zwergplaneten Pluto '
+                'vorbeigeflogen und hat kurz vor drei Uhr MESZ wieder Kontakt '
+                'mit der Erde aufgenommen. Jubel, rotwei\xc3\x9fblaue '
+                'F\xc3\xa4hnchen und stehende Ovationen pr\xc3\xa4gten die '
+                'Stimmung im John Hopkins Labor in Maryland. Digital stellten '
+                'sich prominente Gratulanten ein, von Stephen Hawking mit '
+                'einer Videobotschaft bis zu US-Pr\xc3\xa4sident Barack Obama '
+                'per Twitter.\n\n"Hallo Welt"\n\nDas erste Funksignal New '
+                'Horizons nach dem Vorbeiflug am Pluto brachte noch keine '
+                'wissenschaftlichen Ergebnisse oder neue Fotos, sondern '
+                'Telemetriedaten der Sonde selbst. Das war so geplant. '
+                'Aus diesen Informationen geht hervor, dass es New Horizons '
+                'gut geht, dass sie ihren Kurs h\xc3\xa4lt und die '
+                'vorausberechnete Menge an Speichersektoren belegt ist. '
+                'Daraus schlie\xc3\x9fen die Verantwortlichen der NASA, dass '
+                'auch tats\xc3\xa4chlich wissenschaftliche Informationen im '
+                'geplanten Ausma\xc3\x9f gesammelt wurden.\n\nUnd diese Zeile '
+                'hier macht den Unterschied.\n\x00')
+
+            with open(deltaFileForNewFile, "rb") as f:
+                self.assertEqual(expectedDelta, f.read())
+
+            fileBasedOnDelta = os.path.join(tempDir, 'newnew.txt')
+            librsyncPatchFile(baseFile, deltaFileForNewFile, fileBasedOnDelta)
             with open(newFile, "r") as newF:
-                with open(newFile2, "r") as newF2:
-                     self.assertTrue(newF.readlines(), newF2.readlines())
+                with open(fileBasedOnDelta, "r") as newF2:
+                    self.assertEqual(newF.readlines(), newF2.readlines())
 
+            with codecs.open(fileBasedOnDelta, "r", 'utf-8') as newF2:
+                for line in newF2:
+                    if additionalText in line:
+                        break
+                else:
+                    self.fail("Missing additional text in new file.")
 
     def testmd5sum(self):
         testFile = os.path.join(
