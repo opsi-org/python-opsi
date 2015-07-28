@@ -41,10 +41,12 @@ def isSamba4():
 		pass
 	return samba4
 
+
 def _readConfig(config):
 	with codecs.open(config, 'r', 'utf-8') as f:
 		lines = f.readlines()
 	return lines
+
 
 def _processConfig(lines):
 	newlines = []
@@ -54,14 +56,12 @@ def _processConfig(lines):
 	configShareFound = False
 	workbenchShareFound = False
 	opsiImagesFound = False
-	confChanged = False
 
 	samba4 = isSamba4()
 
 	for i in range(len(lines)):
 		if (lines[i].lower().strip() == '; load opsi shares') and ((i+1) < len(lines)) and (lines[i+1].lower().strip() == 'include = /etc/samba/share.conf'):
 			i += 1
-			confChanged = True
 			continue
 		if (lines[i].lower().strip() == '[opt_pcbin]'):
 			optPcbinShareFound = True
@@ -77,13 +77,11 @@ def _processConfig(lines):
 			workbenchShareFound = True
 		newlines.append(lines[i])
 
-
 	if optPcbinShareFound:
 		logger.warning(u"Share opt_pcbin configuration found. You should use opsi_depot_rw instead, if you need a writeable depot-Share.")
 
 	if not depotShareFound:
 		logger.notice(u"   Adding share [opsi_depot]")
-		confChanged = True
 		newlines.append(u"[opsi_depot]\n")
 		newlines.append(u"   available = yes\n")
 		newlines.append(u"   comment = opsi depot share (ro)\n")
@@ -133,8 +131,6 @@ def _processConfig(lines):
 		if not found:
 			logger.notice(u"   Section found but don't inherits samba4 fix, trying to set the fix.")
 			newlines.insert(endpos, u"   admin users = @%s\n" % FILE_ADMIN_GROUP)
-#			with codecs.open(config, 'w', 'utf-8') as f:
-#				f.writelines(fixedLines)
 			logger.notice(u"   Reloading samba")
 			try:
 				execute(u'%s reload' % u'service {name}'.format(name=Posix.getSambaServiceName(default="smbd")))
@@ -143,7 +139,6 @@ def _processConfig(lines):
 
 	if not depotShareRWFound:
 		logger.notice(u"   Adding share [opsi_depot_rw]")
-		confChanged = True
 		newlines.append(u"[opsi_depot_rw]\n")
 		newlines.append(u"   available = yes\n")
 		newlines.append(u"   comment = opsi depot share (rw)\n")
@@ -157,7 +152,6 @@ def _processConfig(lines):
 
 	if not opsiImagesFound:
 		logger.notice(u"   Adding share [opsi_images]")
-		confChanged = True
 		newlines.append(u"[opsi_images]\n")
 		newlines.append(u"   available = yes\n")
 		newlines.append(u"   comment = opsi ntfs images share (rw)\n")
@@ -173,7 +167,6 @@ def _processConfig(lines):
 
 	if not configShareFound:
 		logger.notice(u"   Adding share [opsi_config]")
-		confChanged = True
 		newlines.append(u"[opsi_config]\n")
 		newlines.append(u"   available = yes\n")
 		newlines.append(u"   comment = opsi config share\n")
@@ -184,7 +177,6 @@ def _processConfig(lines):
 
 	if not workbenchShareFound:
 		logger.notice(u"   Adding share [opsi_workbench]")
-		confChanged = True
 		newlines.append(u"[opsi_workbench]\n")
 		newlines.append(u"   available = yes\n")
 		newlines.append(u"   comment = opsi workbench\n")
