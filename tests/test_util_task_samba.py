@@ -343,10 +343,10 @@ class SambaProcessConfigTest(unittest.TestCase):
 			self.fail('Did not find "admin users" in opsi_depot share')
 
 	def testCorrectOpsiDepotShareWithSamba4Fix(self):
+
 		config = []
 		config.append(u"[opt_pcbin]\n")
 		config.append(u"[opsi_depot]\n")
-		config.append(u"   admin users = @%s\n" % Samba.FILE_ADMIN_GROUP)
 		config.append(u"   available = yes\n")
 		config.append(u"   comment = opsi depot share (ro)\n")
 		config.append(u"   path = /var/lib/opsi/depot\n")
@@ -355,10 +355,11 @@ class SambaProcessConfigTest(unittest.TestCase):
 		config.append(u"   level2 oplocks = no\n")
 		config.append(u"   writeable = no\n")
 		config.append(u"   invalid users = root\n")
-		config.append(u"[opsi_depot_rw]")
-		config.append(u"[opsi_images]")
-		config.append(u"[opsi_config]")
-		config.append(u"[opsi_workbench]")
+		config.append(u"   admin users = @%s\n" % Samba.FILE_ADMIN_GROUP)
+		config.append(u"[opsi_depot_rw]\n")
+		config.append(u"[opsi_images]\n")
+		config.append(u"[opsi_config]\n")
+		config.append(u"[opsi_workbench]\n")
 
 
 		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda:True):
@@ -366,6 +367,33 @@ class SambaProcessConfigTest(unittest.TestCase):
 				result = Samba._processConfig(config)
 
 		self.assertEqual(config, result)
+
+	def test_processConfigRemoveComment(self):
+
+		config = []
+		config.append(u"; load opsi shares\n")
+		config.append(u"include = /etc/samba/share.conf\n")
+		config.append(u"[opt_pcbin]\n")
+		config.append(u"[opsi_depot]\n")
+		config.append(u"[opsi_depot_rw]\n")
+		config.append(u"[opsi_images]\n")
+		config.append(u"[opsi_config]\n")
+		config.append(u"[opsi_workbench]\n")
+
+
+		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda:True):
+			with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
+				result = Samba._processConfig(config)
+
+		deleted = True
+		for line in result:
+			if line.strip():
+				if '; load opsi shares' in line:
+					deleted = False
+					break
+
+		else:
+			self.assertTrue(deleted)
 
 class SambaWriteConfig(unittest.TestCase):
 
@@ -400,7 +428,6 @@ class SambaWriteConfig(unittest.TestCase):
 				result = readConfig.readlines()
 
 		self.assertEqual(config, result)
-
 
 def main():
 	unittest.main()
