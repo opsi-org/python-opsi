@@ -287,9 +287,10 @@ class UtilTestCase(unittest.TestCase):
             expectedDelta = 'rs\x026F\x00\x04\x8a\x00'
             with open(deltafile, "r") as f:
                 self.assertTrue(expectedDelta, f.read())
-
+    
     def testLibrsyncPatchFile(self):
-        testFile_old = os.path.join(
+
+        baseFile = os.path.join(
             os.path.dirname(__file__),
             'testdata', 'util', 'syncFiles', 'librsyncSignature.txt'
         )
@@ -297,21 +298,32 @@ class UtilTestCase(unittest.TestCase):
             os.path.dirname(__file__),
             'testdata', 'util', 'syncFiles', 'librsync.delta'
         )
-        testFile_new = os.path.join(
+        newFile = os.path.join(
             os.path.dirname(__file__),
             'testdata', 'util', 'syncFiles', 'librsyncPatchFile_new.txt'
         )
-        signature = librsyncSignature(testFile_old, False)
-
-        librsyncDeltaFile(testFile_old, signature, deltaFile)
-        expectedDelta = "rs^B6F^@^D<8a>^@"
-        with open(deltaFile, "r") as f:
-                 self.assertTrue(expectedDelta, f.readlines())
+        if os.path.exists(deltaFile): os.remove(deltaFile)
+        self.assertFalse(os.path.exists(deltaFile))
         
-        librsyncPatchFile(testFile_old, deltaFile, testFile_new)
-        with open(testFile_new, "r") as n:
-            with open(testFile_old, "r") as o:
-                 self.assertTrue(o.readlines(), n.readlines())
+        if os.path.exists(newFile): os.remove(newFile)
+        self.assertFalse(os.path.exists(newFile))
+
+        # Signatur von alter Datei erstellen
+        signature = librsyncSignature(baseFile, False)
+
+        # mit alter Datei und Signatur dessen eine Delta-Datei erstellen
+        librsyncDeltaFile(baseFile, signature, deltaFile)
+        self.assertTrue(os.path.exists(deltaFile))
+        expectedDelta = ["rs\x026F\x00\x04\x8a\x00"]
+        with open(deltaFile, "rb") as f:
+                 self.assertEqual(expectedDelta, f.readlines())
+        
+        # mit alter Datei und dessen Delta-Datei neue Datei erstellen
+        librsyncPatchFile(baseFile, deltaFile, newFile)
+        self.assertTrue(os.path.exists(newFile))
+        with open(newFile, "r") as newF:
+            with open(baseFile, "r") as baseF:
+                 self.assertTrue(baseF.readlines(), newF.readlines())
 
 
     def testmd5sum(self):
