@@ -24,11 +24,6 @@ Testing functionality of OPSI.Util.Task.Samba
 
 
 """
-
-				#isSamba4 mocken (true/false) check
-				# getDistribution mocken (verschiedene Distributionen) check
-				# Testteile
-				# Shares editieren (wenn da, wie wird damit umgegangen?)
 from __future__ import absolute_import
 import random
 import re
@@ -125,12 +120,12 @@ class SambaProcessConfigTest(unittest.TestCase):
 				with mock.patch('OPSI.Util.Task.Samba.getDistribution', fakeDistribution):
 					newlines = Samba._processConfig(config)
 
-		filled=False
+		suse = False
 		for line in newlines:
-			if line.strip():
-				filled = True
-				break
-		self.assertTrue(filled)
+			if 'path = /var/lib/opsi/workbench' in line:
+					suse = True
+					break
+		self.assertTrue(suse)
 
 	def testSambaConfigureSuseNoSamba4(self):
 
@@ -144,12 +139,12 @@ class SambaProcessConfigTest(unittest.TestCase):
 				with mock.patch('OPSI.Util.Task.Samba.getDistribution', fakeDistribution):
 					newlines = Samba._processConfig(config)
 
-		filled=False
+		suse = False
 		for line in newlines:
-			if line.strip():
-				filled = True
-				break
-		self.assertTrue(filled)
+			if 'path = /var/lib/opsi/workbench' in line:
+					suse = True
+					break
+		self.assertTrue(suse)
 
 	def testSambaConfigureUbuntuSamba4(self):
 
@@ -161,14 +156,18 @@ class SambaProcessConfigTest(unittest.TestCase):
 		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda:False):
 			with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
 				with mock.patch('OPSI.Util.Task.Samba.getDistribution', fakeDistribution):
-					newlines = 	Samba._processConfig(config)
+					result = Samba._processConfig(config)
 
-		filled=False
-		for line in newlines:
+		filled = False
+		nonSuse = False
+		for line in result:
 			if line.strip():
 				filled = True
-				break
-		self.assertTrue(filled)
+				if '/home/opsiproducts' in line:
+					nonSuse = True
+					break
+
+		self.assertEqual(filled, nonSuse)
 
 	def testSambaConfigureUbuntuNoSamba4(self):
 
@@ -180,14 +179,17 @@ class SambaProcessConfigTest(unittest.TestCase):
 		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda:True):
 			with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
 				with mock.patch('OPSI.Util.Task.Samba.getDistribution', fakeDistribution):
-					newlines = Samba._processConfig(config)
+					result = Samba._processConfig(config)
 
-		filled=False
-		for line in newlines:
+		filled = False
+		nonSuse = False
+		for line in result:
 			if line.strip():
 				filled = True
-				break
-		self.assertTrue(filled)
+				if '/home/opsiproducts' in line:
+					nonSuse = True
+					break
+		self.assertEqual(filled, nonSuse)
 
 	def testSambaConfigureSamba4Share(self):
 
@@ -308,7 +310,6 @@ class SambaProcessConfigTest(unittest.TestCase):
 
 		found = False
 		for line in result:
-			print line
 			if line.strip():
 				if 'admin users' in line:
 					found = True

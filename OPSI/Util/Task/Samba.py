@@ -63,19 +63,16 @@ def _processConfig(lines):
 			confChanged = True
 			continue
 		if (lines[i].lower().strip() == '[opt_pcbin]'):
-			#raise Exception()
 			optPcbinShareFound = True
 		elif (lines[i].lower().strip() == '[opsi_depot]'):
 			depotShareFound = True
 		elif (lines[i].lower().strip() == '[opsi_depot_rw]'):
-			#raise Exception()
 			depotShareRWFound = True
 		elif (lines[i].lower().strip() == '[opsi_images]'):
 			opsiImagesFound = True
 		elif (lines[i].lower().strip() == '[opsi_config]'):
 			configShareFound = True
 		elif (lines[i].lower().strip() == '[opsi_workbench]'):
-			#raise Exception()
 			workbenchShareFound = True
 		newlines.append(lines[i])
 
@@ -134,7 +131,6 @@ def _processConfig(lines):
 				break
 
 		if not found:
-#			raise Exception()
 			logger.notice(u"   Section found but don't inherits samba4 fix, trying to set the fix.")
 			newlines.insert(endpos, u"   admin users = @%s\n" % FILE_ADMIN_GROUP)
 #			with codecs.open(config, 'w', 'utf-8') as f:
@@ -196,6 +192,8 @@ def _processConfig(lines):
 			newlines.append(u"   path = /var/lib/opsi/workbench\n")
 		else:
 			newlines.append(u"   path = /home/opsiproducts\n")
+			#raise Exception()
+
 		newlines.append(u"   writeable = yes\n")
 		newlines.append(u"   invalid users = root\n")
 		newlines.append(u"   create mask = 0660\n")
