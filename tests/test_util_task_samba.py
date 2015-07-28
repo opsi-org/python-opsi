@@ -346,7 +346,7 @@ class SambaProcessConfigTest(unittest.TestCase):
 		config = []
 		config.append(u"[opt_pcbin]\n")
 		config.append(u"[opsi_depot]\n")
-		config.append(u"   admin users = @pcpatch\n")
+		config.append(u"   admin users = @%s\n" % Samba.FILE_ADMIN_GROUP)
 		config.append(u"   available = yes\n")
 		config.append(u"   comment = opsi depot share (ro)\n")
 		config.append(u"   path = /var/lib/opsi/depot\n")
