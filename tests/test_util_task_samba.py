@@ -348,10 +348,11 @@ class SambaWriteConfig(unittest.TestCase):
 
 		with workInTemporaryDirectory() as tempDir:
 			PathToSmbConf = os.path.join(tempDir, 'SMB_CONF')
-			with open(PathToSmbConf, 'w') as fakeSambaConfig:
-				Samba._writeConfig([], PathToSmbConf)
-				with open(PathToSmbConf, 'r') as readConfig:
-					result = readConfig.readlines()
+			with open(PathToSmbConf, 'w'):
+				pass
+			Samba._writeConfig([], PathToSmbConf)
+			with open(PathToSmbConf, 'r') as readConfig:
+				result = readConfig.readlines()
 
 		self.assertEqual([], result)
 
@@ -367,10 +368,11 @@ class SambaWriteConfig(unittest.TestCase):
 
 		with workInTemporaryDirectory() as tempDir:
 			PathToSmbConf = os.path.join(tempDir, 'SMB_CONF')
-			with open(PathToSmbConf, 'w') as fakeSambaConfig:
-				Samba._writeConfig(config, PathToSmbConf)
-				with open(PathToSmbConf, 'r') as readConfig:
-					result = readConfig.readlines()
+			with open(PathToSmbConf, 'w'):
+				pass
+			Samba._writeConfig(config, PathToSmbConf)
+			with open(PathToSmbConf, 'r') as readConfig:
+				result = readConfig.readlines()
 
 		self.assertEqual(config, result)
 
