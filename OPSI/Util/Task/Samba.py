@@ -13,8 +13,9 @@ from OPSI.System import *
 
 logger = Logger()
 
-SMB_CONF= u'/etc/samba/smb.conf'
+SMB_CONF= (u'/etc/samba/smb.conf')
 FILE_ADMIN_GROUP = u'pcpatch'
+
 
 def getDistribution():
 	distribution = ''
@@ -25,6 +26,7 @@ def getDistribution():
 	except:
 		pass
 	return distribution
+
 
 def isSamba4():
 	samba4 = False
