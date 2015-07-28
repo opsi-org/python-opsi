@@ -167,6 +167,7 @@ class SambaProcessConfigTest(unittest.TestCase):
 					nonSuse = True
 					break
 
+
 		self.assertEqual(filled, nonSuse)
 
 	def testSambaConfigureUbuntuNoSamba4(self):
@@ -189,6 +190,7 @@ class SambaProcessConfigTest(unittest.TestCase):
 				if '/home/opsiproducts' in line:
 					nonSuse = True
 					break
+
 		self.assertEqual(filled, nonSuse)
 
 	def testSambaConfigureSamba4Share(self):
@@ -197,7 +199,7 @@ class SambaProcessConfigTest(unittest.TestCase):
 			return ''
 
 		config = []
-		config.append(u"[[opt_pcbin]\n")
+		config.append(u"[opt_pcbin]\n")
 		config.append(u"[opsi_depot]\n")
 		config.append(u"[opsi_depot_rw]\n")
 		config.append(u"[opsi_images]\n")
@@ -222,7 +224,7 @@ class SambaProcessConfigTest(unittest.TestCase):
 			return ''
 
 		config = []
-		config.append(u"[[opt_pcbin]\n")
+		config.append(u"[opt_pcbin]\n")
 		config.append(u"[opsi_depot]\n")
 		config.append(u"[opsi_depot_rw]\n")
 		config.append(u"[opsi_images]\n")
@@ -247,7 +249,7 @@ class SambaProcessConfigTest(unittest.TestCase):
 			return 'suse linux enterprise server'
 
 		config = []
-		config.append(u"[[opt_pcbin]\n")
+		config.append(u"[opt_pcbin]\n")
 		config.append(u"[opsi_depot]\n")
 		config.append(u"[opsi_depot_rw]\n")
 		config.append(u"[opsi_images]\n")
@@ -272,7 +274,7 @@ class SambaProcessConfigTest(unittest.TestCase):
 			return 'suse linux enterprise server'
 
 		config = []
-		config.append(u"[[opt_pcbin]\n")
+		config.append(u"[opt_pcbin]\n")
 		config.append(u"[opsi_depot]\n")
 		config.append(u"[opsi_depot_rw]\n")
 		config.append(u"[opsi_images]\n")
@@ -343,7 +345,7 @@ class SambaProcessConfigTest(unittest.TestCase):
 					break
 				elif opsi_depot and line.startswith('['):
 					opsi_depot = False
-					break
+				break
 			else:
 				self.fail('Did not find "admin users" in opsi_depot share')
 
@@ -356,16 +358,15 @@ class SambaWriteConfig(unittest.TestCase):
 			PathToSmbConf = os.path.join(tempDir, 'SMB_CONF')
 			with open(PathToSmbConf, 'w') as fakeSambaConfig:
 				Samba._writeConfig(config, PathToSmbConf)
-				f = codecs.open(PathToSmbConf, 'r', 'utf-8')
-				result = f.readlines()
-				f.close
+				with open(PathToSmbConf, 'r') as readConfig:
+					result = readConfig.readlines()
 
 		self.assertEqual(config, result)
 
 	def testTrueConfigWrite(self):
 
 		config = []
-		config.append(u"[[opt_pcbin]\n")
+		config.append(u"[opt_pcbin]\n")
 		config.append(u"[opsi_depot]\n")
 		config.append(u"[opsi_depot_rw]\n")
 		config.append(u"[opsi_images]\n")
@@ -376,9 +377,8 @@ class SambaWriteConfig(unittest.TestCase):
 			PathToSmbConf = os.path.join(tempDir, 'SMB_CONF')
 			with open(PathToSmbConf, 'w') as fakeSambaConfig:
 				Samba._writeConfig(config, PathToSmbConf)
-				f = codecs.open(PathToSmbConf, 'r', 'utf-8')
-				result = f.readlines()
-				f.close
+				with open(PathToSmbConf, 'r') as readConfig:
+					result = readConfig.readlines()
 
 		self.assertEqual(config, result)
 
