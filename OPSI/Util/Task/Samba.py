@@ -13,7 +13,7 @@ from OPSI.System import *
 
 logger = Logger()
 
-SMB_CONF= (u'/etc/samba/smb.conf')
+SMB_CONF = u'/etc/samba/smb.conf'
 FILE_ADMIN_GROUP = u'pcpatch'
 
 
@@ -60,7 +60,7 @@ def _processConfig(lines):
 	samba4 = isSamba4()
 
 	for i in range(len(lines)):
-		if (lines[i].lower().strip() == '; load opsi shares') and ((i+1) < len(lines)) and (lines[i+1].lower().strip() == 'include = /etc/samba/share.conf'):
+		if (lines[i].lower().strip() == '; load opsi shares') and ((i + 1) < len(lines)) and (lines[i + 1].lower().strip() == 'include = /etc/samba/share.conf'):
 			i += 1
 			continue
 		if (lines[i].lower().strip() == '[opt_pcbin]'):
@@ -193,6 +193,7 @@ def _processConfig(lines):
 
 	return newlines
 
+
 def _writeConfig(newlines, config):
 	logger.notice(u"   Creating backup of %s" % config)
 	shutil.copy(config, config + u'.' + time.strftime("%Y-%m-%d_%H:%M"))
@@ -212,7 +213,7 @@ def configureSamba(config=SMB_CONF):
 
 	logger.notice(u"Configuring samba")
 
-	#smb_init_command = u'service {name}'.format(name=Posix.getSambaServiceName(default="smbd"))
+	smb_init_command = u'service {name}'.format(name=Posix.getSambaServiceName(default="smbd"))
 
 	lines = _readConfig(config)
 
