@@ -105,7 +105,6 @@ def _processConfig(lines):
 			except Exception as e:
 				logger.warning(u"Failed to create depot directory '%s': %s" % (depotDir, e))
 	elif samba4:
-		#raise Exception()
 		logger.notice(u"   Share opsi_depot found and samba 4 is detected. Trying to detect the executablefix for opsi_depot-Share")
 		startpos = 0
 		endpos = 0
@@ -192,7 +191,6 @@ def _processConfig(lines):
 			newlines.append(u"   path = /var/lib/opsi/workbench\n")
 		else:
 			newlines.append(u"   path = /home/opsiproducts\n")
-			#raise Exception()
 
 		newlines.append(u"   writeable = yes\n")
 		newlines.append(u"   invalid users = root\n")

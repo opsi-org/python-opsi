@@ -312,7 +312,7 @@ class SambaProcessConfigTest(unittest.TestCase):
 
 		self.assertTrue(found, 'Missing Admin Users in Share opsi_depot')
 
-	def testCorrectOpsiDepotShareSamba4(self):
+	def testCorrectOpsiDepotShareWithoutSamba4Fix(self):
 		config = []
 		config.append(u"[opsi_depot]\n")
 		config.append(u"   available = yes\n")
@@ -341,6 +341,31 @@ class SambaProcessConfigTest(unittest.TestCase):
 				break
 		else:
 			self.fail('Did not find "admin users" in opsi_depot share')
+
+	def testCorrectOpsiDepotShareWithSamba4Fix(self):
+		config = []
+		config.append(u"[opt_pcbin]\n")
+		config.append(u"[opsi_depot]\n")
+		config.append(u"   admin users = @pcpatch\n")
+		config.append(u"   available = yes\n")
+		config.append(u"   comment = opsi depot share (ro)\n")
+		config.append(u"   path = /var/lib/opsi/depot\n")
+		config.append(u"   oplocks = no\n")
+		config.append(u"   follow symlinks = yes\n")
+		config.append(u"   level2 oplocks = no\n")
+		config.append(u"   writeable = no\n")
+		config.append(u"   invalid users = root\n")
+		config.append(u"[opsi_depot_rw]")
+		config.append(u"[opsi_images]")
+		config.append(u"[opsi_config]")
+		config.append(u"[opsi_workbench]")
+
+
+		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda:True):
+			with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
+				result = Samba._processConfig(config)
+
+		self.assertEqual(config, result)
 
 class SambaWriteConfig(unittest.TestCase):
 
