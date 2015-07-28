@@ -129,12 +129,10 @@ class SambaProcessConfigTest(unittest.TestCase):
 		def fakeDistribution():
 			return 'suse linux enterprise server'
 
-		config = []
-
 		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda:False):
 			with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
 				with mock.patch('OPSI.Util.Task.Samba.getDistribution', fakeDistribution):
-					newlines = Samba._processConfig(config)
+					newlines = Samba._processConfig([])
 
 		suse = False
 		for line in newlines:
@@ -148,12 +146,10 @@ class SambaProcessConfigTest(unittest.TestCase):
 		def fakeDistribution():
 			return 'Ubuntu 14.04.2 LTS'
 
-		config = []
-
 		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda:False):
 			with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
 				with mock.patch('OPSI.Util.Task.Samba.getDistribution', fakeDistribution):
-					result = Samba._processConfig(config)
+					result = Samba._processConfig([])
 
 		filled = False
 		nonSuse = False
@@ -165,19 +161,18 @@ class SambaProcessConfigTest(unittest.TestCase):
 					break
 
 
-		self.assertEqual(filled, nonSuse)
+		self.assertTrue(filled)
+		self.assertTrue(nonSuse)
 
 	def testSambaConfigureUbuntuNoSamba4(self):
 
 		def fakeDistribution():
 			return 'Ubuntu 14.04.2 LTS'
 
-		config = []
-
 		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda:True):
 			with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
 				with mock.patch('OPSI.Util.Task.Samba.getDistribution', fakeDistribution):
-					result = Samba._processConfig(config)
+					result = Samba._processConfig([])
 
 		filled = False
 		nonSuse = False
@@ -188,7 +183,8 @@ class SambaProcessConfigTest(unittest.TestCase):
 					nonSuse = True
 					break
 
-		self.assertEqual(filled, nonSuse)
+		self.assertTrue(filled)
+		self.assertTrue(nonSuse)
 
 	def testSambaConfigureSamba4Share(self):
 
@@ -343,22 +339,21 @@ class SambaProcessConfigTest(unittest.TestCase):
 				elif opsi_depot and line.startswith('['):
 					opsi_depot = False
 				break
-			else:
-				self.fail('Did not find "admin users" in opsi_depot share')
+		else:
+			self.fail('Did not find "admin users" in opsi_depot share')
 
 class SambaWriteConfig(unittest.TestCase):
 
 	def testEmptyConfigWrite(self):
 
-		config = []
 		with workInTemporaryDirectory() as tempDir:
 			PathToSmbConf = os.path.join(tempDir, 'SMB_CONF')
 			with open(PathToSmbConf, 'w') as fakeSambaConfig:
-				Samba._writeConfig(config, PathToSmbConf)
+				Samba._writeConfig([], PathToSmbConf)
 				with open(PathToSmbConf, 'r') as readConfig:
 					result = readConfig.readlines()
 
-		self.assertEqual(config, result)
+		self.assertEqual([], result)
 
 	def testTrueConfigWrite(self):
 
