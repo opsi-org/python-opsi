@@ -44,7 +44,6 @@ except Exception:
 
 
 def getDistribution():
-	distribution = ''
 	try:
 		f = os.popen('lsb_release -d 2>/dev/null')
 		distribution = f.read().split(':')[1].strip()
@@ -57,7 +56,6 @@ def getDistribution():
 
 
 def isSamba4():
-	samba4 = False
 	try:
 		smbd = which('smbd')
 		result = execute('%s -V 2>/dev/null' % smbd)
@@ -66,7 +64,7 @@ def isSamba4():
 				samba4 = line.split()[1].startswith('4')
 	except Exception as error:
 		logger.debug('Getting Samba Version failed due to: %s' % error)
-		samba4 = ''
+		samba4 = False
 
 	return samba4
 
@@ -227,8 +225,8 @@ def _writeConfig(newlines, config):
 	shutil.copy(config, config + u'.' + time.strftime("%Y-%m-%d_%H:%M"))
 
 	logger.notice(u"   Writing new smb.conf")
-	with codecs.open(config, 'w', 'utf-8') as f:
-		f.writelines(newlines)
+	with codecs.open(config, 'w', 'utf-8') as writeConf:
+		writeConf.writelines(newlines)
 
 	logger.notice(u"   Reloading samba")
 	try:
