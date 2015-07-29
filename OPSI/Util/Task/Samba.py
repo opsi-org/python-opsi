@@ -20,8 +20,9 @@ FILE_ADMIN_GROUP = u'pcpatch'
 def getDistribution():
 	distribution = ''
 	try:
-		with os.popen('lsb_release -d 2>/dev/null') as f:
-			distribution = f.read().split(':')[1].strip()
+		f = os.popen('lsb_release -d 2>/dev/null')
+		distribution = f.read().split(':')[1].strip()
+		f.close()
 	except:
 		pass
 	return distribution
