@@ -93,7 +93,6 @@ class SambaReadConfigTest(unittest.TestCase):
 		config.append(u"[opsi_depot]\n")
 		config.append(u"[opsi_depot_rw]\n")
 		config.append(u"[opsi_images]\n")
-		config.append(u"[opsi_config]\n")
 		config.append(u"[opsi_workbench]\n")
 
 		with workInTemporaryDirectory() as tempDir:
@@ -196,7 +195,6 @@ class SambaProcessConfigTest(unittest.TestCase):
 		config.append(u"[opsi_depot]\n")
 		config.append(u"[opsi_depot_rw]\n")
 		config.append(u"[opsi_images]\n")
-		config.append(u"[opsi_config]\n")
 		config.append(u"[opsi_workbench]\n")
 
 		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda:True):
@@ -221,7 +219,6 @@ class SambaProcessConfigTest(unittest.TestCase):
 		config.append(u"[opsi_depot]\n")
 		config.append(u"[opsi_depot_rw]\n")
 		config.append(u"[opsi_images]\n")
-		config.append(u"[opsi_config]\n")
 		config.append(u"[opsi_workbench]\n")
 
 		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda:False):
@@ -246,7 +243,6 @@ class SambaProcessConfigTest(unittest.TestCase):
 		config.append(u"[opsi_depot]\n")
 		config.append(u"[opsi_depot_rw]\n")
 		config.append(u"[opsi_images]\n")
-		config.append(u"[opsi_config]\n")
 		config.append(u"[opsi_workbench]\n")
 
 		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda:True):
@@ -271,7 +267,6 @@ class SambaProcessConfigTest(unittest.TestCase):
 		config.append(u"[opsi_depot]\n")
 		config.append(u"[opsi_depot_rw]\n")
 		config.append(u"[opsi_images]\n")
-		config.append(u"[opsi_config]\n")
 		config.append(u"[opsi_workbench]\n")
 
 		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda:False):
@@ -358,7 +353,6 @@ class SambaProcessConfigTest(unittest.TestCase):
 		config.append(u"   admin users = @%s\n" % Samba.FILE_ADMIN_GROUP)
 		config.append(u"[opsi_depot_rw]\n")
 		config.append(u"[opsi_images]\n")
-		config.append(u"[opsi_config]\n")
 		config.append(u"[opsi_workbench]\n")
 
 
@@ -377,7 +371,6 @@ class SambaProcessConfigTest(unittest.TestCase):
 		config.append(u"[opsi_depot]\n")
 		config.append(u"[opsi_depot_rw]\n")
 		config.append(u"[opsi_images]\n")
-		config.append(u"[opsi_config]\n")
 		config.append(u"[opsi_workbench]\n")
 
 
@@ -416,7 +409,6 @@ class SambaWriteConfig(unittest.TestCase):
 		config.append(u"[opsi_depot]\n")
 		config.append(u"[opsi_depot_rw]\n")
 		config.append(u"[opsi_images]\n")
-		config.append(u"[opsi_config]\n")
 		config.append(u"[opsi_workbench]\n")
 
 		with workInTemporaryDirectory() as tempDir:

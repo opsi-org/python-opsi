@@ -79,7 +79,6 @@ def _processConfig(lines):
 	optPcbinShareFound = False
 	depotShareFound = False
 	depotShareRWFound = False
-	configShareFound = False
 	workbenchShareFound = False
 	opsiImagesFound = False
 
@@ -95,8 +94,6 @@ def _processConfig(lines):
 			depotShareRWFound = True
 		elif currentLine == '[opsi_images]':
 			opsiImagesFound = True
-		elif currentLine == '[opsi_config]':
-			configShareFound = True
 		elif currentLine == '[opsi_workbench]':
 			workbenchShareFound = True
 		newlines.append(line)
@@ -182,16 +179,6 @@ def _processConfig(lines):
 		if not os.path.exists("/var/lib/opsi/ntfs-images"):
 			logger.debug(u"Path:  /var/lib/opsi/ntfs-images not found: creating.")
 			os.mkdir("/var/lib/opsi/ntfs-images")
-
-	if not configShareFound:
-		logger.notice(u"   Adding share [opsi_config]")
-		newlines.append(u"[opsi_config]\n")
-		newlines.append(u"   available = yes\n")
-		newlines.append(u"   comment = opsi config share\n")
-		newlines.append(u"   path = /var/lib/opsi/config\n")
-		newlines.append(u"   writeable = yes\n")
-		newlines.append(u"   invalid users = root\n")
-		newlines.append(u"\n")
 
 	if not workbenchShareFound:
 		logger.notice(u"   Adding share [opsi_workbench]")
