@@ -236,12 +236,8 @@ def _writeConfig(newlines, config):
 
 
 def configureSamba(config=SMB_CONF):
-
 	logger.notice(u"Configuring samba")
-
 	lines = _readConfig(config)
-
 	newlines = _processConfig(lines)
-
 	if lines != newlines:
 		_writeConfig(newlines, config)
