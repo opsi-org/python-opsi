@@ -9,8 +9,7 @@ import time
 
 import OPSI.System.Posix as Posix
 from OPSI.Logger import Logger
-from OPSI.System import execute
-from OPSI.System import which
+from OPSI.System import execute, which
 
 logger = Logger()
 
