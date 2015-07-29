@@ -25,6 +25,7 @@ def getDistribution():
 		f.close()
 	except Exception as error:
 		logger.debug('Getting Distibution failed due to: %s' % error)
+		distribution = ''
 
 	return distribution
 
@@ -39,6 +40,7 @@ def isSamba4():
 				samba4 = line.split()[1].startswith('4')
 	except Exception as error:
 		logger.debug('Getting Samba Version failed due to: %s' % error)
+		samba4 = ''
 
 	return samba4
 
