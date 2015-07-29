@@ -23,8 +23,9 @@ def getDistribution():
 		f = os.popen('lsb_release -d 2>/dev/null')
 		distribution = f.read().split(':')[1].strip()
 		f.close()
-	except:
-		pass
+	except Exception as error:
+		logger.debug('Getting Distibution failed due to: %s' % error)
+
 	return distribution
 
 
@@ -37,15 +38,15 @@ def isSamba4():
 		for line in result:
 			if line.lower().startswith("version"):
 				samba4 = line.split()[1].startswith('4')
-	except Exception:
-		pass
+	except Exception as error:
+		logger.debug('Getting Samba Version failed due to: %s' % error)
+
 	return samba4
 
 
 def _readConfig(config):
-	with codecs.open(config, 'r', 'utf-8') as f:
-		lines = f.readlines()
-	return lines
+	with codecs.open(config, 'r', 'utf-8') as readConf:
+		return readConf.readlines()
 
 
 def _processConfig(lines):
@@ -101,8 +102,8 @@ def _processConfig(lines):
 				os.mkdir(depotDir)
 				if os.path.exists("/opt/pcbin/install"):
 					logger.warning(u"You have an old depot configuration. Using /opt/pcbin/install is depracted, please use /var/lib/opsi/depot instead.")
-			except Exception as e:
-				logger.warning(u"Failed to create depot directory '%s': %s" % (depotDir, e))
+			except Exception as error:
+				logger.warning(u"Failed to create depot directory '%s': %s" % (depotDir, error))
 	elif samba4:
 		logger.notice(u"   Share opsi_depot found and samba 4 is detected. Trying to detect the executablefix for opsi_depot-Share")
 		startpos = 0
@@ -134,8 +135,8 @@ def _processConfig(lines):
 			logger.notice(u"   Reloading samba")
 			try:
 				execute(u'%s reload' % u'service {name}'.format(name=Posix.getSambaServiceName(default="smbd")))
-			except Exception as e:
-				logger.warning(e)
+			except Exception as error:
+				logger.warning(error)
 
 	if not depotShareRWFound:
 		logger.notice(u"   Adding share [opsi_depot_rw]")
@@ -205,15 +206,13 @@ def _writeConfig(newlines, config):
 	logger.notice(u"   Reloading samba")
 	try:
 		execute(u'%s reload' % u'service {name}'.format(name=Posix.getSambaServiceName(default="smbd")))
-	except Exception as e:
-		logger.warning(e)
+	except Exception as error:
+		logger.warning(error)
 
 
 def configureSamba(config=SMB_CONF):
 
 	logger.notice(u"Configuring samba")
-
-	"""smb_init_command = u'service {name}'.format(name=Posix.getSambaServiceName(default="smbd"))"""
 
 	lines = _readConfig(config)
 
