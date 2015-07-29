@@ -393,6 +393,29 @@ class SambaProcessConfigTest(unittest.TestCase):
 		else:
 			self.assertTrue(deleted)
 
+	def test_processConfigNoRepoShare(self):
+		config = []
+		config.append(u"; load opsi shares\n")
+		config.append(u"include = /etc/samba/share.conf\n")
+		config.append(u"[opt_pcbin]\n")
+		config.append(u"[opsi_depot]\n")
+		config.append(u"[opsi_depot_rw]\n")
+		config.append(u"[opsi_images]\n")
+		config.append(u"[opsi_workbench]\n")
+
+		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda:True):
+			with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
+				result = Samba._processConfig(config)
+
+		repository = False
+		for line in result:
+			if '[opsi_repository]' in line:
+				repository = True
+				break
+
+		else:
+			self.assertTrue(repository)
+
 class SambaWriteConfig(unittest.TestCase):
 
 	def testEmptyConfigWrite(self):
