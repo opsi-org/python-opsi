@@ -35,7 +35,12 @@ from OPSI.System import execute, which
 logger = Logger()
 
 SMB_CONF = u'/etc/samba/smb.conf'
-FILE_ADMIN_GROUP = u'pcpatch'
+
+try:
+	from OPSI.Util.File.Opsi import OpsiConfFile
+	FILE_ADMIN_GROUP = OpsiConfFile().getOpsiFileAdminGroup()
+except Exception:
+	FILE_ADMIN_GROUP = u'pcpatch'
 
 
 def getDistribution():
