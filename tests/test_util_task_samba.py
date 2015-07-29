@@ -94,6 +94,7 @@ class SambaReadConfigTest(unittest.TestCase):
 		config.append(u"[opsi_depot_rw]\n")
 		config.append(u"[opsi_images]\n")
 		config.append(u"[opsi_workbench]\n")
+		config.append(u"[opsi_repository]\n")
 
 		with workInTemporaryDirectory() as tempDir:
 			PathToSmbConf = os.path.join(tempDir, 'SMB_CONF')
@@ -196,6 +197,7 @@ class SambaProcessConfigTest(unittest.TestCase):
 		config.append(u"[opsi_depot_rw]\n")
 		config.append(u"[opsi_images]\n")
 		config.append(u"[opsi_workbench]\n")
+		config.append(u"[opsi_repository]\n")
 
 		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda:True):
 			with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
@@ -220,6 +222,7 @@ class SambaProcessConfigTest(unittest.TestCase):
 		config.append(u"[opsi_depot_rw]\n")
 		config.append(u"[opsi_images]\n")
 		config.append(u"[opsi_workbench]\n")
+		config.append(u"[opsi_repository]\n")
 
 		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda:False):
 			with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
@@ -244,6 +247,7 @@ class SambaProcessConfigTest(unittest.TestCase):
 		config.append(u"[opsi_depot_rw]\n")
 		config.append(u"[opsi_images]\n")
 		config.append(u"[opsi_workbench]\n")
+		config.append(u"[opsi_repository]\n")
 
 		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda:True):
 			with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
@@ -268,6 +272,7 @@ class SambaProcessConfigTest(unittest.TestCase):
 		config.append(u"[opsi_depot_rw]\n")
 		config.append(u"[opsi_images]\n")
 		config.append(u"[opsi_workbench]\n")
+		config.append(u"[opsi_repository]\n")
 
 		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda:False):
 			with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
@@ -354,7 +359,7 @@ class SambaProcessConfigTest(unittest.TestCase):
 		config.append(u"[opsi_depot_rw]\n")
 		config.append(u"[opsi_images]\n")
 		config.append(u"[opsi_workbench]\n")
-
+		config.append(u"[opsi_repository]\n")
 
 		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda:True):
 			with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
@@ -372,7 +377,7 @@ class SambaProcessConfigTest(unittest.TestCase):
 		config.append(u"[opsi_depot_rw]\n")
 		config.append(u"[opsi_images]\n")
 		config.append(u"[opsi_workbench]\n")
-
+		config.append(u"[opsi_repository]\n")
 
 		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda:True):
 			with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
@@ -410,6 +415,7 @@ class SambaWriteConfig(unittest.TestCase):
 		config.append(u"[opsi_depot_rw]\n")
 		config.append(u"[opsi_images]\n")
 		config.append(u"[opsi_workbench]\n")
+		config.append(u"[opsi_repository]\n")
 
 		with workInTemporaryDirectory() as tempDir:
 			PathToSmbConf = os.path.join(tempDir, 'SMB_CONF')

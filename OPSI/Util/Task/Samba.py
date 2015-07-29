@@ -81,6 +81,7 @@ def _processConfig(lines):
 	depotShareRWFound = False
 	workbenchShareFound = False
 	opsiImagesFound = False
+	repositoryFound = False
 
 	samba4 = isSamba4()
 
@@ -96,6 +97,8 @@ def _processConfig(lines):
 			opsiImagesFound = True
 		elif currentLine == '[opsi_workbench]':
 			workbenchShareFound = True
+		elif currentLine == '[opsi_repository]':
+			repositoryFound = True
 		newlines.append(line)
 
 	if optPcbinShareFound:
@@ -195,6 +198,21 @@ def _processConfig(lines):
 		newlines.append(u"   create mask = 0660\n")
 		newlines.append(u"   directory mask = 0770\n")
 		newlines.append(u"\n")
+
+	if not repositoryFound:
+		logger.notice(u"  Adding share [opsi_repository]")
+		newlines.append(u"[opsi_repository]\n")
+		newlines.append(u"   available = yes\n")
+		newlines.append(u"   comment = opsi repository share (ro)\n")
+		newlines.append(u"   path = /var/lib/opsi/resposity\n")
+		newlines.append(u"   oplocks = no\n")
+		newlines.append(u"   follow symlinks = yes\n")
+		newlines.append(u"   level2 oplocks = no\n")
+		newlines.append(u"   writeable = no\n")
+		newlines.append(u"   invalid users = root\n")
+		if not os.path.exists("/var/lib/opsi/repository"):
+			logger.debug(u"Path:  /var/lib/opsi/repository not found: creating.")
+			os.mkdir("/var/lib/opsi/repository")
 
 	return newlines
 
