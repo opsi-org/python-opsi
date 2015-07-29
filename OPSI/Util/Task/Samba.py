@@ -85,23 +85,21 @@ def _processConfig(lines):
 
 	samba4 = isSamba4()
 
-	for i in range(len(lines)):
-		if (lines[i].lower().strip() == '; load opsi shares') and ((i + 1) < len(lines)) and (lines[i + 1].lower().strip() == 'include = /etc/samba/share.conf'):
-			i += 1
-			continue
-		if (lines[i].lower().strip() == '[opt_pcbin]'):
+	for line in lines:
+		currentLine = line.lower().strip()
+		if currentLine == '[opt_pcbin]':
 			optPcbinShareFound = True
-		elif (lines[i].lower().strip() == '[opsi_depot]'):
+		elif currentLine == '[opsi_depot]':
 			depotShareFound = True
-		elif (lines[i].lower().strip() == '[opsi_depot_rw]'):
+		elif currentLine == '[opsi_depot_rw]':
 			depotShareRWFound = True
-		elif (lines[i].lower().strip() == '[opsi_images]'):
+		elif currentLine == '[opsi_images]':
 			opsiImagesFound = True
-		elif (lines[i].lower().strip() == '[opsi_config]'):
+		elif currentLine == '[opsi_config]':
 			configShareFound = True
-		elif (lines[i].lower().strip() == '[opsi_workbench]'):
+		elif currentLine == '[opsi_workbench]':
 			workbenchShareFound = True
-		newlines.append(lines[i])
+		newlines.append(line)
 
 	if optPcbinShareFound:
 		logger.warning(u"Share opt_pcbin configuration found. You should use opsi_depot_rw instead, if you need a writeable depot-Share.")
@@ -131,22 +129,21 @@ def _processConfig(lines):
 				logger.warning(u"Failed to create depot directory '%s': %s" % (depotDir, error))
 	elif samba4:
 		logger.notice(u"   Share opsi_depot found and samba 4 is detected. Trying to detect the executablefix for opsi_depot-Share")
-		startpos = 0
 		endpos = 0
 		found = False
 		sectionFound = False
-		for i in range(len(newlines)):
-			if newlines[i].lower().strip() == '[opsi_depot]':
+		for i, line in enumerate(newlines):
+			if line.lower().strip() == '[opsi_depot]':
 				startpos = endpos = i + 1
 				sectionFound = True
 				slicedList = newlines[startpos:]
-				for z in range(len(slicedList)):
-					line = slicedList[z].lower().strip()
-					if line == "admin users = @%s" % FILE_ADMIN_GROUP:
+				for element in slicedList:
+					lines = element.lower().strip()
+					if lines == "admin users = @%s" % FILE_ADMIN_GROUP:
 						logger.notice(u"   fix found, nothing to do")
 						found = True
 						break
-					elif line.startswith("[") or not line:
+					elif lines.startswith("[") or not lines:
 						logger.notice(u"   End of section detected")
 						break
 					else:
@@ -157,11 +154,6 @@ def _processConfig(lines):
 		if not found:
 			logger.notice(u"   Section found but don't inherits samba4 fix, trying to set the fix.")
 			newlines.insert(endpos, u"   admin users = @%s\n" % FILE_ADMIN_GROUP)
-			logger.notice(u"   Reloading samba")
-			try:
-				execute(u'%s reload' % u'service {name}'.format(name=Posix.getSambaServiceName(default="smbd")))
-			except Exception as error:
-				logger.warning(error)
 
 	if not depotShareRWFound:
 		logger.notice(u"   Adding share [opsi_depot_rw]")
@@ -206,7 +198,7 @@ def _processConfig(lines):
 		newlines.append(u"[opsi_workbench]\n")
 		newlines.append(u"   available = yes\n")
 		newlines.append(u"   comment = opsi workbench\n")
-		if (getDistribution().lower().find('suse linux enterprise server') != -1):
+		if 'suse linux enterprise server' in getDistribution().lower():
 			newlines.append(u"   path = /var/lib/opsi/workbench\n")
 		else:
 			newlines.append(u"   path = /home/opsiproducts\n")
