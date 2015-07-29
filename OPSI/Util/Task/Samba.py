@@ -45,9 +45,9 @@ except Exception:
 
 def getDistribution():
 	try:
-		f = os.popen('lsb_release -d 2>/dev/null')
-		distribution = f.read().split(':')[1].strip()
-		f.close()
+		readDistri = os.popen('lsb_release -d 2>/dev/null')
+		distribution = readDistri.read().split(':')[1].strip()
+		readDistri.close()
 	except Exception as error:
 		logger.debug('Getting Distibution failed due to: %s' % error)
 		distribution = ''
