@@ -80,7 +80,7 @@ class SambaReadConfigTest(unittest.TestCase):
 
 		with workInTemporaryDirectory() as tempDir:
 			PathToSmbConf = os.path.join(tempDir, 'SMB_CONF')
-			with open(PathToSmbConf, 'w') as fakeSambaConfig:
+			with open(PathToSmbConf, 'w'):
 				pass
 			result = Samba._readConfig(PathToSmbConf)
 
