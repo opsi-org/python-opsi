@@ -33,7 +33,6 @@ def isSamba4():
 	samba4 = False
 	try:
 		smbd = which('smbd')
-		print smbd
 		result = execute('%s -V 2>/dev/null' % smbd)
 		for line in result:
 			if line.lower().startswith("version"):
