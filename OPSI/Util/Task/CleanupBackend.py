@@ -378,10 +378,8 @@ is either *not_installed* without an action request set.
 		backend.productOnClient_deleteObjects(deleteProductOnClients)
 
 	deleteProductOnClients = []
-	productIds = []
-	for product in backend.product_getObjects():
-		if not product.getId() in productIds:
-			productIds.append(product.getId())
+	productIds = set(product.getId() for product in backend.product_getObjects())
+
 	for productOnClient in backend.productOnClient_getObjects():
 		if not productOnClient.productId in productIds:
 			LOGGER.info(
