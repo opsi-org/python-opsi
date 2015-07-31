@@ -1,6 +1,6 @@
 -r requirements-dev.txt
-nose
-nosexcover
+pytest
+pytest-cov
 astroid<1.3
 pylint<1.4
 flake8

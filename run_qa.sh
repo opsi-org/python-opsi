@@ -8,8 +8,9 @@ pylint --rcfile=.pylintrc OPSI > pylint.txt || echo 'pylint did not finish with 
 echo "Running flake8"
 flake8 --exit-zero OPSI/ > pep8.txt
 
-echo "Running nosetests"
+echo "Running tests"
 if [ -e coverage.xml ]; then
 	rm coverage.xml
 fi
-nosetests --with-xunit --with-xcoverage --cover-erase --cover-package=OPSI tests/ || echo 'nosetests did not finish with return code 0'
+
+py.test --cov OPSI --cov-report xml --quiet tests/
