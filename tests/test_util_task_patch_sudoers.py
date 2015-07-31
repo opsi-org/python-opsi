@@ -28,12 +28,12 @@ from __future__ import absolute_import, unicode_literals
 import os
 import shutil
 
-from .helpers import unittest, copyTestfileToTemporaryFolder
+from .helpers import mock, unittest, copyTestfileToTemporaryFolder
 
 from OPSI.System import which
 from OPSI.Util.Task.Sudoers import (_NO_TTY_FOR_SERVICE_REQUIRED,
     _NO_TTY_REQUIRED_DEFAULT, FILE_ADMIN_GROUP, patchSudoersFileForOpsi,
-    distributionRequiresNoTtyPatch, patchSudoersFileToAllowRestartingDHCPD)
+    patchSudoersFileToAllowRestartingDHCPD)
 
 
 class PatchSudoersFileForOpsiTestCase(unittest.TestCase):
@@ -106,15 +106,14 @@ class PatchSudoersFileForOpsiTestCase(unittest.TestCase):
         showFolderInfo()
         self.assertEqual(2, len(filesInTemporaryFolder))
 
-    @unittest.skipIf(not distributionRequiresNoTtyPatch(), 'Distribution not affected.')
     def testOpsiconfdDoesNotRequireTTY(self):
-        # TODO: patch the distributionCheckFunction so this works with all OS
         with open(self.fileName) as pre:
             for line in pre:
                 if _NO_TTY_REQUIRED_DEFAULT in line:
                     self.fail('Command already existing. Can\'t check.')
 
-        patchSudoersFileForOpsi(self.fileName)
+        with mock.patch('OPSI.Util.Task.Sudoers.distributionRequiresNoTtyPatch', lambda: True):
+            patchSudoersFileForOpsi(self.fileName)
 
         entryFound = False
         with open(self.fileName) as post:
