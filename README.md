@@ -113,11 +113,12 @@ Tests can then be run with:
 
   nosetests tests/
 
+### Unmaintained tests
 
 Currently there are two folders that contain unittests. The current
-set of tests is in the ``tests`` folder. The folder ``OPSI/Tests``
-contains tests in a currently unknown state. We currently do not
-recommend to run these tests.
+set of maintained tests is in the ``tests`` folder. The folder ``OPSI/Tests``
+contains unmaintained tests in a currently unknown state.
+We currently do not recommend to run these tests.
 
 New tests should be placed under ``tests``.
 
