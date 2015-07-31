@@ -330,7 +330,6 @@ class SambaProcessConfigTest(unittest.TestCase):
 
 		opsi_depot = False
 		for line in result:
-			print line
 			if line.strip():
 				if '[opsi_depot]' in line:
 					opsi_depot = True
