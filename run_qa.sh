@@ -13,4 +13,4 @@ if [ -e coverage.xml ]; then
 	rm coverage.xml
 fi
 
-py.test --cov OPSI --cov-report xml --quiet tests/
+py.test --junitxml=testreport.xml --cov OPSI --cov-report xml --quiet tests/
