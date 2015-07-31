@@ -172,6 +172,8 @@ After that you can execute the script:
 The script will not display any problems reported by ``pylint`` or
 ``pep8`` but instead creates the files ``pylint.txt`` and ``pep8.txt``.
 
+It will also run all tests and create a coverage from those tests as
+``coverage.xml``.
 
 ### Documentation
 
