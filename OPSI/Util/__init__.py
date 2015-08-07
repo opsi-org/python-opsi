@@ -896,5 +896,5 @@ def chunk(iterable, size):
 
 	Original recipe from http://stackoverflow.com/a/22045226
 	"""
-    it = iter(iterable)
-    return iter(lambda: tuple(islice(it, size)), ())
+	it = iter(iterable)
+	return iter(lambda: tuple(islice(it, size)), ())
