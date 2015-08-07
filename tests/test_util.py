@@ -34,7 +34,7 @@ import shutil
 import unittest
 from collections import defaultdict
 
-from OPSI.Util import (compareVersions, flattenSequence, formatFileSize,
+from OPSI.Util import (chunk, compareVersions, flattenSequence, formatFileSize,
     generateOpsiHostKey, getfqdn, getGlobalConfig, ipAddressInNetwork,
     isRegularExpressionPattern, librsyncDeltaFile, librsyncSignature,librsyncPatchFile,
     md5sum, objectToBeautifiedText, objectToHtml, randomString, removeUnit)
@@ -270,6 +270,56 @@ class UtilTestCase(unittest.TestCase):
             'testdata', 'util', 'dhcpd', 'dhcpd_1.conf'
         )
         self.assertEqual('5f345ca76574c528903c1022b05acb4c', md5sum(testFile))
+
+
+class ChunkingTestCase(unittest.TestCase):
+    def testChunkingList(self):
+        base = list(range(10))
+
+        chunks = chunk(base, size=3)
+        self.assertEquals((0, 1, 2), next(chunks))
+        self.assertEquals((3, 4, 5), next(chunks))
+        self.assertEquals((6, 7, 8), next(chunks))
+        self.assertEquals((9, ), next(chunks))
+        self.assertRaises(StopIteration, next, chunks)
+
+    def testChunkingGenerator(self):
+        def gen():
+            yield 0
+            yield 1
+            yield 2
+            yield 3
+            yield 4
+            yield 5
+            yield 6
+            yield 7
+            yield 8
+            yield 9
+
+        chunks = chunk(gen(), size=3)
+        self.assertEquals((0, 1, 2), next(chunks))
+        self.assertEquals((3, 4, 5), next(chunks))
+        self.assertEquals((6, 7, 8), next(chunks))
+        self.assertEquals((9, ), next(chunks))
+        self.assertRaises(StopIteration, next, chunks)
+
+    def testChunkingGeneratorWithDifferentSize(self):
+        def gen():
+            yield 0
+            yield 1
+            yield 2
+            yield 3
+            yield 4
+            yield 5
+            yield 6
+            yield 7
+            yield 8
+            yield 9
+
+        chunks = chunk(gen(), size=5)
+        self.assertEquals((0, 1, 2, 3, 4), next(chunks))
+        self.assertEquals((5, 6, 7, 8, 9), next(chunks))
+        self.assertRaises(StopIteration, next, chunks)
 
 
 class LibrsyncTestCase(unittest.TestCase):

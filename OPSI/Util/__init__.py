@@ -45,6 +45,7 @@ import time
 import types
 from Crypto.Cipher import Blowfish
 from hashlib import md5
+from itertools import islice
 
 try:
 	import argparse
@@ -883,3 +884,17 @@ def removeDirectory(directory):
 
 		import OPSI.System  # late import to avoid circular dependency
 		OPSI.System.execute('rm -rf {dir}'.format(dir=directory))
+
+
+def chunk(iterable, size):
+	"""
+	Returns chunks (parts) of a specified `size` from `iterable`.
+	It will not pad (fill) the chunks.
+
+	This works lazy and therefore can be used with any iterable without
+	much overhead.
+
+	Original recipe from http://stackoverflow.com/a/22045226
+	"""
+    it = iter(iterable)
+    return iter(lambda: tuple(islice(it, size)), ())
