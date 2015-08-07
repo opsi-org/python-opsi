@@ -716,7 +716,7 @@ the command output will be returned.
 	:param ignoreExitCode: Ignore exit codes of the program. This can \
 be ``True`` to ignore all exit codes or a list of specific exit codes \
 that should be ignored.
-	:type ignoreExitCode: bool or list
+	:type ignoreExitCode: bool or list or tuple or set
 	:param exitOnStderr: If this is ``True`` output on stderr will be \
 interpreted as an failed execution and will throw an Exception.
 	:type exitOnStderr: bool
@@ -842,9 +842,9 @@ output will be returned.
 
 	logger.debug(u"Exit code: %s" % exitCode)
 	if exitCode:
-		if type(ignoreExitCode) is bool and ignoreExitCode:
+		if isinstance(ignoreExitCode, bool) and ignoreExitCode:
 			pass
-		elif type(ignoreExitCode) is list and exitCode in ignoreExitCode:
+		elif isinstance(ignoreExitCode, (list, tuple, set)) and exitCode in ignoreExitCode:
 			pass
 		else:
 			raise Exception(u"Command '%s' failed (%s):\n%s" % (cmd, exitCode, u'\n'.join(result)))
