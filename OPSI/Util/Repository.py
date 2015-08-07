@@ -1,33 +1,33 @@
-#!/usr/bin/python
+#! /usr/bin/env python
 # -*- coding: utf-8 -*-
+
+# This file is part of python-opsi.
+# Copyright (C) 2006-2015 uib GmbH <info@uib.de>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-	opsi python library - Repository
-	================================
+opsi python library - Repository
+================================
 
-	This module is part of the desktop management solution opsi
-	(open pc server integration) http://www.opsi.org
+Functionality to work with opsi repositories.
 
-	Copyright (C) 2006-2015 uib GmbH <info@uib.de>
-	All rights reserved.
 
-	This program is free software: you can redistribute it and/or modify
-	it under the terms of the GNU Affero General Public License as
-	published by the Free Software Foundation, either version 3 of the
-	License, or (at your option) any later version.
-
-	This program is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU Affero General Public License for more details.
-
-	You should have received a copy of the GNU Affero General Public License
-	along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-	@copyright: uib GmbH <info@uib.de>
-	.. codeauthor:: Jan Schneider <j.schneider@uib.de>
-	.. codeauthor:: Erol Ueluekmen <e.ueluekmen@uib.de>
-	.. codeauthor:: Niko Wenselowski <n.wenselowski@uib.de>
-	@license: GNU Affero General Public License version 3
+:copyright: uib GmbH <info@uib.de>
+:license: GNU Affero General Public License version 3
+.. codeauthor:: Jan Schneider <j.schneider@uib.de>
+.. codeauthor:: Erol Ueluekmen <e.ueluekmen@uib.de>
+.. codeauthor:: Niko Wenselowski <n.wenselowski@uib.de>
 """
 
 import base64
@@ -436,6 +436,7 @@ class Repository:
 			filename = parts[-1]
 			if not filename:
 				return {'name': dirname.split('/')[:-1], 'path': dirname.split('/')[:-1], 'type': 'dir', 'size': long(0)}
+
 			for c in self.content(dirname):
 				if c['name'] == filename:
 					info = c
