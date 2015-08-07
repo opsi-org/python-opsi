@@ -305,9 +305,7 @@ def cleanUpProducts(backend):
 	:param backend: The backend where the data should be cleaned.
 	:type backend: OPSI.Backend.Backend
 	"""
-	productIds = []
 	productIdents = set()
-
 	for productOnDepot in backend.productOnDepot_getObjects():
 		productIdent = ";".join([productOnDepot.productId,
 			productOnDepot.productVersion, productOnDepot.packageVersion]
@@ -319,9 +317,6 @@ def cleanUpProducts(backend):
 		if product.getIdent(returnType='unicode') not in productIdents:
 			LOGGER.info(u"Marking unreferenced product {0} for deletion".format(product))
 			deleteProducts.append(product)
-		else:
-			if product.id not in productIds:
-				productIds.append(product.id)
 
 	if deleteProducts:
 		for products in chunk(deleteProducts, _CHUNK_SIZE):
