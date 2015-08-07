@@ -684,6 +684,8 @@ def halt(wait=10):
 	for hook in hooks:
 		hook.post_halt(wait)
 
+shutdown = halt
+
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # -                                        PROCESS HANDLING                                           -
