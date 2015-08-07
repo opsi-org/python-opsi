@@ -82,6 +82,8 @@ BackendManager from default paths.
 
 		return False
 
+	LOGGER.debug("Cleaning backend chunk size: {0}".format(_CHUNK_SIZE))
+
 	if backend is None:
 		backend = BackendManager(
 			dispatchConfigFile=u'/etc/opsi/backendManager/dispatch.conf',
@@ -138,6 +140,7 @@ BackendManager from default paths.
 
 	if deleteProductProperties:
 		for productProperties in chunk(deleteProductProperties, _CHUNK_SIZE):
+			LOGGER.debug(u"Deleting product properties: {0!r}".format(productProperties))
 			backend.productProperty_deleteObjects(productProperties)  # pylint: disable=maybe-no-member
 
 	LOGGER.notice(u"Cleaning up product property states")
@@ -150,6 +153,7 @@ BackendManager from default paths.
 
 	if deleteProductPropertyStates:
 		for productPropertyStates in chunk(deleteProductPropertyStates, _CHUNK_SIZE):
+			LOGGER.debug(u"Deleting product property states: {0!r}".format(productPropertyStates))
 			backend.productPropertyState_deleteObjects(productPropertyStates)  # pylint: disable=maybe-no-member
 
 	for depot in backend.host_getObjects(type='OpsiDepotserver'):  # pylint: disable=maybe-no-member
@@ -214,11 +218,13 @@ BackendManager from default paths.
 
 		if deleteProductPropertyStates:
 			for productPropertyStates in chunk(deleteProductPropertyStates, _CHUNK_SIZE):
+				LOGGER.debug(u"Deleting product property states: {0!r}".format(productPropertyStates))
 				backend.productPropertyState_deleteObjects(productPropertyStates)  # pylint: disable=maybe-no-member
 			del deleteProductPropertyStates
 
 		if updateProductPropertyStates:
 			for productPropertyStates in chunk(updateProductPropertyStates, _CHUNK_SIZE):
+				LOGGER.debug(u"Updating product property states: {0!r}".format(productPropertyStates))
 				backend.productPropertyState_updateObjects(productPropertyStates)  # pylint: disable=maybe-no-member
 			del updateProductPropertyStates
 
@@ -297,6 +303,7 @@ def cleanUpGroups(backend):
 
 	if updatedGroups:
 		for group in chunk(updatedGroups, _CHUNK_SIZE):
+			LOGGER.debug(u"Updating groups: {0!r}".format(group))
 			backend.group_createObjects(group)
 
 
@@ -322,6 +329,7 @@ def cleanUpProducts(backend):
 
 	if deleteProducts:
 		for products in chunk(deleteProducts, _CHUNK_SIZE):
+			LOGGER.debug(u"Deleting products: {0!r}".format(products))
 			backend.product_deleteObjects(products)
 
 
@@ -359,6 +367,7 @@ product is not existing anymore.
 
 	if deleteProductOnDepots:
 		for productOnDepots in chunk(deleteProductOnDepots, _CHUNK_SIZE):
+			LOGGER.debug(u"Deleting products on depots: {0!r}".format(productOnDepots))
 			backend.productOnDepot_deleteObjects(productOnDepots)
 
 
@@ -390,6 +399,7 @@ is either *not_installed* without an action request set.
 
 	if deleteProductOnClients:
 		for productOnClients in chunk(deleteProductOnClients, _CHUNK_SIZE):
+			LOGGER.debug(u"Deleting products on clients: {0!r}".format(productOnClients))
 			backend.productOnClient_deleteObjects(productOnClients)
 
 	deleteProductOnClients = []
@@ -404,6 +414,7 @@ is either *not_installed* without an action request set.
 
 	if deleteProductOnClients:
 		for productOnClients in chunk(deleteProductOnClients, _CHUNK_SIZE):
+			LOGGER.debug(u"Deleting products on clients: {0!r}".format(productOnClients))
 			backend.productOnClient_deleteObjects(productOnClients)
 
 
@@ -430,6 +441,7 @@ def cleanUpConfigStates(backend):
 
 	if deleteConfigStates:
 		for configStates in chunk(deleteConfigStates, _CHUNK_SIZE):
+			LOGGER.debug(u"Deleting config states: {0!r}".format(configStates))
 			backend.configState_deleteObjects(configStates)
 
 
@@ -445,7 +457,7 @@ def cleanUpAuditSoftwares(backend):
 	for aso in backend.auditSoftware_getHashes():
 		ident = '%(name)s;%(version)s;%(subVersion)s;%(language)s;%(architecture)s' % aso
 		if ident not in idents:
-			LOGGER.info(u"Deleting unreferenced audit software '%s'" % ident)
+			LOGGER.info(u"Deleting unreferenced audit software {0!r}".format(ident))
 			backend.auditSoftware_delete(aso['name'], aso['version'],
 				aso['subVersion'], aso['language'], aso['architecture']
 			)
@@ -463,7 +475,7 @@ def cleanUpAuditSoftwareOnClients(backend):
 	for aso in backend.auditSoftwareOnClient_getHashes():
 		ident = '%(name)s;%(version)s;%(subVersion)s;%(language)s;%(architecture)s' % aso
 		if ident not in idents:
-			LOGGER.info(u"Deleting audit software on client '%s'" % ident)
+			LOGGER.info(u"Deleting audit software on client {0!r}".format(ident))
 			backend.auditSoftwareOnClient_delete(aso['name'], aso['version'],
 				aso['subVersion'], aso['language'], aso['architecture'],
 				aso['clientId']
