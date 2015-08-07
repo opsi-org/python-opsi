@@ -377,7 +377,7 @@ is either *not_installed* without an action request set.
 		if productOnClient.clientId not in clientIds:
 			LOGGER.info(
 				u"Marking productOnClient {0} for deletion, client "
-				u"doesn't exists".format(productOnClient)#
+				u"doesn't exists".format(productOnClient)
 			)
 			deleteProductOnClients.append(productOnClient)
 		elif (productOnClient.installationStatus == u'not_installed'
