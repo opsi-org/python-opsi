@@ -1396,14 +1396,14 @@ class Harddisk:
 		try:
 			self.partitions = []
 			os.putenv("LC_ALL", "C")
-			if self.ldPreload:
+			if self.ldPreload:  # We want this as a context manager!
 				os.putenv("LD_PRELOAD", self.ldPreload)
 
 			result = execute(u'{sfdisk} -L --no-reread -s -uB {device}'.format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1], captureStderr=False)
 			for line in result:
 				try:
-					self.size = int(line.strip())*1024
-				except:
+					self.size = int(line.strip()) * 1024
+				except Exception:
 					pass
 
 			logger.info(u"Size of disk '%s': %s Byte / %s MB" % (self.device, self.size, (self.size/(1024*1024))))
