@@ -163,6 +163,7 @@ class BackendReplicator(object):
 
 			if self.__cleanupFirst:
 				wb.backend_deleteBase()
+				self.__overallProgressSubject.addToState(1)
 
 			wb.backend_createBase()
 
