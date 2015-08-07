@@ -33,8 +33,6 @@ For more specialised cleanup you should use the corresponding methods.
 :license: GNU Affero General Public License version 3
 """
 
-from __future__ import unicode_literals
-
 import re
 
 import OPSI.Util.Task.ConfigureBackend as backendUtil
@@ -75,7 +73,7 @@ BackendManager from default paths.
 		dispatchConfig = bdc.parse()
 		for entry in dispatchConfig:
 			(regex, backends) = entry
-			if not re.search(regex, 'backend_createBase'):
+			if not re.search(regex, u'backend_createBase'):
 				continue
 
 			if 'mysql' in backends:
@@ -106,16 +104,16 @@ BackendManager from default paths.
 	LOGGER.notice(u"Cleaning up products")
 	cleanUpProducts(backend)
 
-	LOGGER.debug('Getting current depots...')
+	LOGGER.debug(u'Getting current depots...')
 	depotIds = [depot.id for depot in backend.host_getObjects(type=["OpsiConfigserver", "OpsiDepotserver"])]  # pylint: disable=maybe-no-member
-	LOGGER.debug('Depots are: {0}'.format(depotIds))
+	LOGGER.debug(u'Depots are: {0}'.format(depotIds))
 
-	LOGGER.debug('Getting current products...')
+	LOGGER.debug(u'Getting current products...')
 	productIdents = []
 	for product in backend.product_getObjects():  # pylint: disable=maybe-no-member
 		if not product.getIdent(returnType='unicode') in productIdents:
 			productIdents.append(product.getIdent(returnType='unicode'))
-	LOGGER.debug('Product idents are: {0}'.format(productIdents))
+	LOGGER.debug(u'Product idents are: {0}'.format(productIdents))
 
 	LOGGER.notice(u"Cleaning up product on depots")
 	cleanUpProductOnDepots(backend, depotIds, productIdents)
@@ -188,12 +186,12 @@ BackendManager from default paths.
 				if value in productProperty.possibleValues:
 					newValues.append(value)
 					continue
-				if productProperty.getType() == 'BoolProductProperty' and forceBool(value) in productProperty.possibleValues:
+				if productProperty.getType() == u'BoolProductProperty' and forceBool(value) in productProperty.possibleValues:
 					newValues.append(forceBool(value))
 					changedValues.append(value)
 					changed = True
 					continue
-				if productProperty.getType() == 'UnicodeProductProperty':
+				if productProperty.getType() == u'UnicodeProductProperty':
 					newValue = None
 					for possibleValue in productProperty.possibleValues:
 						if forceUnicodeLower(possibleValue) == forceUnicodeLower(value):
@@ -247,12 +245,12 @@ used MySQL backend.
 	LOGGER.info(u"Current mysql backend config: %s" % config)
 
 	LOGGER.notice(
-		"Connection to database '{database}' on '{address}' as user "
-		"'{username}'".format(**config)
+		u"Connection to database '{database}' on '{address}' as user "
+		u"'{username}'".format(**config)
 	)
 	mysql = MySQL(**config)
 
-	LOGGER.notice("Cleaning up defaultValues in productProperties")
+	LOGGER.notice(u"Cleaning up defaultValues in productProperties")
 	deleteIds = []
 	found = []
 	for res in mysql.getSet("SELECT * FROM PRODUCT_PROPERTY_VALUE WHERE isDefault like '1'"):
@@ -266,7 +264,7 @@ used MySQL backend.
 				deleteIds.append(res['product_property_id'])
 
 	for ID in deleteIds:
-		LOGGER.notice("Deleting PropertyValue id: {0}".format(ID))
+		LOGGER.notice(u"Deleting PropertyValue id: {0}".format(ID))
 		mysql.execute("DELETE FROM `PRODUCT_PROPERTY_VALUE` where "
 			"`product_property_id` = '{0}'".format(ID)
 		)
@@ -288,8 +286,8 @@ def cleanUpGroups(backend):
 	for group in groups:
 		if group.getParentGroupId() and group.getParentGroupId() not in groupIds:
 			LOGGER.info(
-				"Removing parent group id '{parentGroupId}' from group "
-				"'{groupId}' because parent group does not exist".format(
+				u"Removing parent group id '{parentGroupId}' from group "
+				u"'{groupId}' because parent group does not exist".format(
 					parentGroupId=group.parentGroupId,
 					groupId=group.id
 				)
@@ -321,7 +319,7 @@ def cleanUpProducts(backend):
 	deleteProducts = []
 	for product in backend.product_getObjects():
 		if not product.getIdent(returnType='unicode') in productIdents:
-			LOGGER.info("Marking unreferenced product {0} for deletion".format(product))
+			LOGGER.info(u"Marking unreferenced product {0} for deletion".format(product))
 			deleteProducts.append(product)
 		else:
 			if not product.id in productIds:
@@ -350,8 +348,8 @@ product is not existing anymore.
 			productOnDepot.productVersion, productOnDepot.packageVersion])
 		if not productOnDepot.depotId in depotIds:
 			LOGGER.info(
-				"Marking product on depot {poc} for deletion, because "
-				"opsiDepot-Server '{depotId}' not found".format(
+				u"Marking product on depot {poc} for deletion, because "
+				u"opsiDepot-Server '{depotId}' not found".format(
 					poc=productOnDepot,
 					depotId=productOnDepot.depotId
 				)
@@ -359,8 +357,8 @@ product is not existing anymore.
 			deleteProductOnDepots.append(productOnDepot)
 		elif not productIdent in existingProductIdents:
 			LOGGER.info(
-				"Marking product on depot {0} with missing product reference "
-				"for deletion".format(productOnDepot)
+				u"Marking product on depot {0} with missing product reference "
+				u"for deletion".format(productOnDepot)
 			)
 			deleteProductOnDepots.append(productOnDepot)
 
@@ -384,15 +382,15 @@ is either *not_installed* without an action request set.
 	for productOnClient in backend.productOnClient_getObjects():
 		if productOnClient.clientId not in clientIds:
 			LOGGER.info(
-				"Marking productOnClient {0} for deletion, client "
-				"doesn't exists".format(productOnClient)#
+				u"Marking productOnClient {0} for deletion, client "
+				u"doesn't exists".format(productOnClient)#
 			)
 			deleteProductOnClients.append(productOnClient)
-		elif (productOnClient.installationStatus == 'not_installed'
-				and productOnClient.actionRequest == 'none'):
+		elif (productOnClient.installationStatus == u'not_installed'
+				and productOnClient.actionRequest == u'none'):
 			LOGGER.info(
-				"Marking productOnClient {0} for "
-				"deletion".format(productOnClient)
+				u"Marking productOnClient {0} for "
+				u"deletion".format(productOnClient)
 			)
 			deleteProductOnClients.append(productOnClient)
 
@@ -406,8 +404,8 @@ is either *not_installed* without an action request set.
 	for productOnClient in backend.productOnClient_getObjects():
 		if not productOnClient.productId in productIds:
 			LOGGER.info(
-				"Marking productOnClient {0} for "
-				"deletion".format(productOnClient)
+				u"Marking productOnClient {0} for "
+				u"deletion".format(productOnClient)
 			)
 			deleteProductOnClients.append(productOnClient)
 
@@ -428,8 +426,8 @@ def cleanUpConfigStates(backend):
 	for configState in backend.configState_getObjects():
 		if not configState.configId in configIds:
 			LOGGER.info(
-				"Marking configState {configState} of non existent config "
-				"'{config}' for deletion".format(
+				u"Marking configState {configState} of non existent config "
+				u"'{config}' for deletion".format(
 					configState=configState,
 					config=configState.configId
 				)
