@@ -215,10 +215,12 @@ BackendManager from default paths.
 		if deleteProductPropertyStates:
 			for productPropertyStates in chunk(deleteProductPropertyStates, _CHUNK_SIZE):
 				backend.productPropertyState_deleteObjects(productPropertyStates)  # pylint: disable=maybe-no-member
+			del deleteProductPropertyStates
 
 		if updateProductPropertyStates:
 			for productPropertyStates in chunk(updateProductPropertyStates, _CHUNK_SIZE):
 				backend.productPropertyState_updateObjects(productPropertyStates)  # pylint: disable=maybe-no-member
+			del updateProductPropertyStates
 
 	LOGGER.notice(u"Cleaning up config states")
 	cleanUpConfigStates(backend)
