@@ -47,6 +47,7 @@ try:
 except ImportError:
 	# Fallback for easy distribution
 	# TODO: remove this - import should never fail if python-opsi >= 4.0.6.13
+	from itertools import islice
 
 	def chunk(iterable, size):
 		it = iter(iterable)
