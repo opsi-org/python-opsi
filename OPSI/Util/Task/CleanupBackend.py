@@ -445,7 +445,7 @@ def cleanUpAuditSoftwares(backend):
 
 	:param backend: The backend where the data should be cleaned.
 	:type backend: OPSI.Backend.Backend
-	"""#TODO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	"""
 	idents = set('%(name)s;%(version)s;%(subVersion)s;%(language)s;%(architecture)s' % aso for aso in backend.auditSoftwareOnClient_getHashes())
 
 	for aso in backend.auditSoftware_getHashes():
