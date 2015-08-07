@@ -357,7 +357,7 @@ class LibrsyncTestCase(unittest.TestCase):
             with open(deltafile, "r") as f:
                 self.assertEqual(expectedDelta, f.read())
 
-    def testLibrsyncPatchFile(self):
+    def testLibrsyncPatchFileDoesNotAlterIfUnneeded(self):
         baseFile = os.path.join(
             os.path.dirname(__file__),
             'testdata', 'util', 'syncFiles', 'librsyncSignature.txt'
