@@ -445,12 +445,8 @@ def cleanUpAuditSoftwares(backend):
 
 	:param backend: The backend where the data should be cleaned.
 	:type backend: OPSI.Backend.Backend
-	"""
-	idents = []
-	for aso in backend.auditSoftwareOnClient_getHashes():
-		ident = '%(name)s;%(version)s;%(subVersion)s;%(language)s;%(architecture)s' % aso
-		if ident not in idents:
-			idents.append(ident)
+	"""#TODO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	idents = set('%(name)s;%(version)s;%(subVersion)s;%(language)s;%(architecture)s' % aso for aso in backend.auditSoftwareOnClient_getHashes())
 
 	for aso in backend.auditSoftware_getHashes():
 		ident = '%(name)s;%(version)s;%(subVersion)s;%(language)s;%(architecture)s' % aso
@@ -468,11 +464,7 @@ def cleanUpAuditSoftwareOnClients(backend):
 	:param backend: The backend where the data should be cleaned.
 	:type backend: OPSI.Backend.Backend
 	"""
-	idents = []
-	for aso in backend.auditSoftware_getHashes():
-		ident = '%(name)s;%(version)s;%(subVersion)s;%(language)s;%(architecture)s' % aso
-		if ident not in idents:
-			idents.append(ident)
+	idents = set('%(name)s;%(version)s;%(subVersion)s;%(language)s;%(architecture)s' % aso for aso in backend.auditSoftware_getHashes())
 
 	for aso in backend.auditSoftwareOnClient_getHashes():
 		ident = '%(name)s;%(version)s;%(subVersion)s;%(language)s;%(architecture)s' % aso
