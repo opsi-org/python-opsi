@@ -144,7 +144,7 @@ BackendManager from default paths.
 	deleteProductPropertyStates = []
 	for productPropertyState in backend.productPropertyState_getObjects():  # pylint: disable=maybe-no-member
 		productPropertyIdent = u'%s;%s' % (productPropertyState.productId, productPropertyState.propertyId)
-		if not productPropertyIdent in productPropertyIdents:
+		if productPropertyIdent not in productPropertyIdents:
 			LOGGER.info(u"Marking productPropertyState %s of non existent productProperty '%s' for deletion" % (productPropertyState, productPropertyIdent))
 			deleteProductPropertyStates.append(productPropertyState)
 
@@ -160,8 +160,10 @@ BackendManager from default paths.
 		for productOnDepot in backend.productOnDepot_getObjects(depotId=depot.id):  # pylint: disable=maybe-no-member
 			productIdent = u"%s;%s;%s" % (productOnDepot.productId, productOnDepot.productVersion, productOnDepot.packageVersion)
 			productOnDepotIdents[productOnDepot.productId] = productIdent
+
 		if not productOnDepotIdents:
 			continue
+
 		deleteProductPropertyStates = []
 		updateProductPropertyStates = []
 		for productPropertyState in backend.productPropertyState_getObjects(  # pylint: disable=maybe-no-member
@@ -342,7 +344,7 @@ product is not existing anymore.
 	for productOnDepot in backend.productOnDepot_getObjects():
 		productIdent = ";".join([productOnDepot.productId,
 			productOnDepot.productVersion, productOnDepot.packageVersion])
-		if not productOnDepot.depotId in depotIds:
+		if productOnDepot.depotId not in depotIds:
 			LOGGER.info(
 				u"Marking product on depot {poc} for deletion, because "
 				u"opsiDepot-Server '{depotId}' not found".format(
@@ -351,7 +353,7 @@ product is not existing anymore.
 				)
 			)
 			deleteProductOnDepots.append(productOnDepot)
-		elif not productIdent in existingProductIdents:
+		elif productIdent not in existingProductIdents:
 			LOGGER.info(
 				u"Marking product on depot {0} with missing product reference "
 				u"for deletion".format(productOnDepot)
@@ -395,7 +397,6 @@ is either *not_installed* without an action request set.
 
 	deleteProductOnClients = []
 	productIds = set(product.getId() for product in backend.product_getObjects())
-
 	for productOnClient in backend.productOnClient_getObjects():
 		if productOnClient.productId not in productIds:
 			LOGGER.info(
