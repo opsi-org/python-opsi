@@ -40,18 +40,8 @@ from OPSI.Backend.BackendManager import BackendManager
 from OPSI.Backend.MySQL import MySQL
 from OPSI.Logger import Logger
 from OPSI.Types import forceBool, forceUnicodeLower
+from OPSI.Util import chunk
 from OPSI.Util.File.Opsi import BackendDispatchConfigFile
-
-try:
-	from OPSI.Util import chunk
-except ImportError:
-	# Fallback for easy distribution
-	# TODO: remove this - import should never fail if python-opsi >= 4.0.6.13
-	from itertools import islice
-
-	def chunk(iterable, size):
-		it = iter(iterable)
-		return iter(lambda: tuple(islice(it, size)), ())
 
 LOGGER = Logger()
 _CHUNK_SIZE = 500
