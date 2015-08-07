@@ -106,7 +106,7 @@ BackendManager from default paths.
 	cleanUpProducts(backend)
 
 	LOGGER.debug(u'Getting current depots...')
-	depotIds = [depot.id for depot in backend.host_getObjects(type=["OpsiConfigserver", "OpsiDepotserver"])]  # pylint: disable=maybe-no-member
+	depotIds = set(depot.id for depot in backend.host_getObjects(type=["OpsiConfigserver", "OpsiDepotserver"]))  # pylint: disable=maybe-no-member
 	LOGGER.debug(u'Depots are: {0}'.format(depotIds))
 
 	LOGGER.debug(u'Getting current products...')
@@ -120,7 +120,7 @@ BackendManager from default paths.
 	cleanUpProductOnClients(backend)
 
 	LOGGER.notice(u"Cleaning up product properties")
-	productPropertyIdents = []
+	productPropertyIdents = set()
 	deleteProductProperties = []
 	productPropertiesToCleanup = {}
 	for productProperty in backend.productProperty_getObjects():  # pylint: disable=maybe-no-member
@@ -128,13 +128,13 @@ BackendManager from default paths.
 		if not productProperty.editable and productProperty.possibleValues:
 			productPropertyIdent = u"%s;%s" % (productIdent, productProperty.propertyId)
 			productPropertiesToCleanup[productPropertyIdent] = productProperty
+
 		if not productIdent in productIdents:
 			LOGGER.info(u"Marking productProperty %s of non existent product '%s' for deletion" % (productProperty, productIdent))
 			deleteProductProperties.append(productProperty)
 		else:
 			productPropertyIdent = u'%s;%s' % (productProperty.productId, productProperty.propertyId)
-			if not productPropertyIdent in productPropertyIdents:
-				productPropertyIdents.append(productPropertyIdent)
+			productPropertyIdents.add(productPropertyIdent)
 
 	if deleteProductProperties:
 		for productProperties in chunk(deleteProductProperties, _CHUNK_SIZE):
@@ -276,10 +276,8 @@ def cleanUpGroups(backend):
 	:type backend: OPSI.Backend.Backend
 	"""
 	updatedGroups = []
-	groupIds = set()
 	groups = backend.group_getObjects(type='HostGroup')
-	for group in groups:
-		groupIds.add(group.id)
+	groupIds = set(group.id for group in groups)
 
 	for group in groups:
 		if group.getParentGroupId() and group.getParentGroupId() not in groupIds:
@@ -374,10 +372,8 @@ is either *not_installed* without an action request set.
 	:type backend: OPSI.Backend.Backend
 	"""
 	deleteProductOnClients = []
-	clientIds = []
+	clientIds = set(client.id for client in backend.host_getObjects(type=["OpsiClient"]))
 
-	for client in backend.host_getObjects(type=["OpsiClient"]):
-		clientIds.append(client.id)
 	for productOnClient in backend.productOnClient_getObjects():
 		if productOnClient.clientId not in clientIds:
 			LOGGER.info(
@@ -421,7 +417,7 @@ def cleanUpConfigStates(backend):
 	:type backend: OPSI.Backend.Backend
 	"""
 	deleteConfigStates = []
-	configIds = backend.config_getIdents()
+	configIds = set(backend.config_getIdents())
 
 	for configState in backend.configState_getObjects():
 		if configState.configId not in configIds:
