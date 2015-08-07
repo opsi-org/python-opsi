@@ -508,7 +508,7 @@ class GetFQDNTestCase(unittest.TestCase):
             with patchAddress(fqdn=fqdn):
                 confPath = os.path.join(tempDir, randomString(8))
                 with open(confPath, 'w') as conf:
-                    conf.write('')
+                    pass
 
                 self.assertEqual(fqdn, getfqdn(conf=confPath))
 
