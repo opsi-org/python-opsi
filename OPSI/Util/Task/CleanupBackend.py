@@ -129,7 +129,7 @@ BackendManager from default paths.
 			productPropertyIdent = u"%s;%s" % (productIdent, productProperty.propertyId)
 			productPropertiesToCleanup[productPropertyIdent] = productProperty
 
-		if not productIdent in productIdents:
+		if productIdent not in productIdents:
 			LOGGER.info(u"Marking productProperty %s of non existent product '%s' for deletion" % (productProperty, productIdent))
 			deleteProductProperties.append(productProperty)
 		else:
