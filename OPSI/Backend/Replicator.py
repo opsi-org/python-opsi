@@ -35,7 +35,7 @@ from OPSI.Types import forceBool, forceHostId, forceList
 from OPSI.Util.Message import ProgressSubject
 
 
-__version__ = '4.0.6.10'
+__version__ = '4.0.6.13'
 
 logger = Logger()
 
@@ -169,14 +169,13 @@ class BackendReplicator(object):
 			productOnDepots = []
 			if depotIds:
 				productOnDepots = rb.productOnDepot_getObjects(depotId=depotIds, productId=productIds, productType=productTypes)
-				productIdsOnDepot = []
+				productIdsOnDepot = set()
 				for productOnDepot in productOnDepots:
-					if productOnDepot.productId not in productIdsOnDepot:
-						productIdsOnDepot.append(productOnDepot.productId)
+					productIdsOnDepot.add(productOnDepot.productId)
 
 				if productIdsOnDepot:
 					if not productIds:
-						productIds = productIdsOnDepot
+						productIds = list(productIdsOnDepot)
 					else:
 						newProductIds = []
 						for productId in productIds:

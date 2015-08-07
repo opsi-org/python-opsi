@@ -4,8 +4,9 @@ python-opsi (4.0.6.13-1) UNRELEASED; urgency=medium
   * Added function OPSI.Util.chunk.
   * OPSI.Util.Task.CleanupBackend: added chunking on mass-operations.
   * OPSI.Util.Task.CleanupBackend: Improving speed of operations.
+  * OPSI.Backend.Replicator: Speed up membership test for productsOnDepot.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 07 Aug 2015 12:09:10 +0200
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 07 Aug 2015 16:44:34 +0200
 
 python-opsi (4.0.6.12-1) experimental; urgency=medium
 
