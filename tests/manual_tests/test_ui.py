@@ -78,7 +78,7 @@ if __name__ == "__main__":
         state = 0
         for state in range(step, total + 1, step):
             pb.setState(state)
-            time.sleep(0.5)
+            time.sleep(0.1)
 
     # TODO: give info about what will be tested next.
     progressTest(100, 1)
@@ -96,9 +96,9 @@ if __name__ == "__main__":
     mb = uiTest.createMessageBox(width=-1, height=-1, title=u'€€€€€€€€', text=u'@&%$§"ß')
     mb.show()
     time.sleep(1)
-    mb.setText(u'New text äöü')
+    mb.setText(u'New text äöü----------------------------------------------------------------------------------------------------------------------\n')
     time.sleep(1)
-    mb.addText(u'a\nü\nß\n')
+    mb.addText(u'a\nü\nß\na\nü\nß\n a\n ü\n ß\n a\n ü\n ß\na\nü\nß\na\nü\nß\n a\n ü\n ß\n a\n ü\n ß\na\nü\nß\na\nü\nß\n a\n ü\n ß\n a\n ü\n ß\na\nü\nß\na\nü\nß\na\nü\nß\n')
     time.sleep(1)
 
     mb2 = uiTest.createMessageBox(width=30, height=20, title=u'smaller window', text=u'text\ntext\ntext')

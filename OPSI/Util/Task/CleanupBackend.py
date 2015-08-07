@@ -109,10 +109,7 @@ BackendManager from default paths.
 	LOGGER.debug(u'Depots are: {0}'.format(depotIds))
 
 	LOGGER.debug(u'Getting current products...')
-	productIdents = []
-	for product in backend.product_getObjects():  # pylint: disable=maybe-no-member
-		if not product.getIdent(returnType='unicode') in productIdents:
-			productIdents.append(product.getIdent(returnType='unicode'))
+	productIdents = set(product.getIdent(returnType='unicode') for product in backend.product_getObjects())
 	LOGGER.debug(u'Product idents are: {0}'.format(productIdents))
 
 	LOGGER.notice(u"Cleaning up product on depots")
@@ -155,10 +152,9 @@ BackendManager from default paths.
 			backend.productPropertyState_deleteObjects(productPropertyStates)  # pylint: disable=maybe-no-member
 
 	for depot in backend.host_getObjects(type='OpsiDepotserver'):  # pylint: disable=maybe-no-member
-		objectIds = [depot.id]
-		for clientToDepot in backend.configState_getClientToDepotserver(depotIds=depot.id):  # pylint: disable=maybe-no-member
-			if not clientToDepot['clientId'] in objectIds:
-				objectIds.append(clientToDepot['clientId'])
+		objectIds = set(ClientToDepot['clientID'] for ClientToDepot in backend.configState_getClientToDepotserver(depotIds=depot.id))
+		objectIds.add(depot.id)
+
 		productOnDepotIdents = {}
 		for productOnDepot in backend.productOnDepot_getObjects(depotId=depot.id):  # pylint: disable=maybe-no-member
 			productIdent = u"%s;%s;%s" % (productOnDepot.productId, productOnDepot.productVersion, productOnDepot.packageVersion)
@@ -279,10 +275,11 @@ def cleanUpGroups(backend):
 	:type backend: OPSI.Backend.Backend
 	"""
 	updatedGroups = []
-	groupIds = []
+	groupIds = set()
 	groups = backend.group_getObjects(type='HostGroup')
 	for group in groups:
-		groupIds.append(group.id)
+		groupIds.add(group.id)
+
 	for group in groups:
 		if group.getParentGroupId() and group.getParentGroupId() not in groupIds:
 			LOGGER.info(
@@ -308,21 +305,21 @@ def cleanUpProducts(backend):
 	:type backend: OPSI.Backend.Backend
 	"""
 	productIds = []
-	productIdents = []
+	productIdents = set()
 
 	for productOnDepot in backend.productOnDepot_getObjects():
 		productIdent = ";".join([productOnDepot.productId,
 			productOnDepot.productVersion, productOnDepot.packageVersion]
 		)
-		if not productIdent in productIdents:
-			productIdents.append(productIdent)
+		productIdents.add(productIdent)
+
 	deleteProducts = []
 	for product in backend.product_getObjects():
-		if not product.getIdent(returnType='unicode') in productIdents:
+		if product.getIdent(returnType='unicode') not in productIdents:
 			LOGGER.info(u"Marking unreferenced product {0} for deletion".format(product))
 			deleteProducts.append(product)
 		else:
-			if not product.id in productIds:
+			if product.id not in productIds:
 				productIds.append(product.id)
 
 	if deleteProducts:
@@ -377,6 +374,7 @@ is either *not_installed* without an action request set.
 	"""
 	deleteProductOnClients = []
 	clientIds = []
+
 	for client in backend.host_getObjects(type=["OpsiClient"]):
 		clientIds.append(client.id)
 	for productOnClient in backend.productOnClient_getObjects():
@@ -402,7 +400,7 @@ is either *not_installed* without an action request set.
 	productIds = set(product.getId() for product in backend.product_getObjects())
 
 	for productOnClient in backend.productOnClient_getObjects():
-		if not productOnClient.productId in productIds:
+		if productOnClient.productId not in productIds:
 			LOGGER.info(
 				u"Marking productOnClient {0} for "
 				u"deletion".format(productOnClient)
@@ -423,8 +421,9 @@ def cleanUpConfigStates(backend):
 	"""
 	deleteConfigStates = []
 	configIds = backend.config_getIdents()
+
 	for configState in backend.configState_getObjects():
-		if not configState.configId in configIds:
+		if configState.configId not in configIds:
 			LOGGER.info(
 				u"Marking configState {configState} of non existent config "
 				u"'{config}' for deletion".format(
@@ -449,12 +448,12 @@ def cleanUpAuditSoftwares(backend):
 	idents = []
 	for aso in backend.auditSoftwareOnClient_getHashes():
 		ident = '%(name)s;%(version)s;%(subVersion)s;%(language)s;%(architecture)s' % aso
-		if not ident in idents:
+		if ident not in idents:
 			idents.append(ident)
 
 	for aso in backend.auditSoftware_getHashes():
 		ident = '%(name)s;%(version)s;%(subVersion)s;%(language)s;%(architecture)s' % aso
-		if not ident in idents:
+		if ident not in idents:
 			LOGGER.info(u"Deleting unreferenced audit software '%s'" % ident)
 			backend.auditSoftware_delete(aso['name'], aso['version'],
 				aso['subVersion'], aso['language'], aso['architecture']
@@ -471,12 +470,12 @@ def cleanUpAuditSoftwareOnClients(backend):
 	idents = []
 	for aso in backend.auditSoftware_getHashes():
 		ident = '%(name)s;%(version)s;%(subVersion)s;%(language)s;%(architecture)s' % aso
-		if not ident in idents:
+		if ident not in idents:
 			idents.append(ident)
 
 	for aso in backend.auditSoftwareOnClient_getHashes():
 		ident = '%(name)s;%(version)s;%(subVersion)s;%(language)s;%(architecture)s' % aso
-		if not ident in idents:
+		if ident not in idents:
 			LOGGER.info(u"Deleting audit software on client '%s'" % ident)
 			backend.auditSoftwareOnClient_delete(aso['name'], aso['version'],
 				aso['subVersion'], aso['language'], aso['architecture'],
