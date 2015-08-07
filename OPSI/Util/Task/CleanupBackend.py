@@ -44,7 +44,18 @@ from OPSI.Logger import Logger
 from OPSI.Types import forceBool, forceUnicodeLower
 from OPSI.Util.File.Opsi import BackendDispatchConfigFile
 
+try:
+	from OPSI.Util import chunk
+except ImportError:
+	# Fallback for easy distribution
+	# TODO: remove this - import should never fail if python-opsi >= 4.0.6.13
+
+	def chunk(iterable, size):
+		it = iter(iterable)
+		return iter(lambda: tuple(islice(it, size)), ())
+
 LOGGER = Logger()
+_CHUNK_SIZE = 500
 
 
 def cleanupBackend(backend=None):
@@ -128,8 +139,10 @@ BackendManager from default paths.
 			productPropertyIdent = u'%s;%s' % (productProperty.productId, productProperty.propertyId)
 			if not productPropertyIdent in productPropertyIdents:
 				productPropertyIdents.append(productPropertyIdent)
+
 	if deleteProductProperties:
-		backend.productProperty_deleteObjects(deleteProductProperties)  # pylint: disable=maybe-no-member
+		for productProperties in chunk(deleteProductProperties, _CHUNK_SIZE):
+			backend.productProperty_deleteObjects(productProperties)  # pylint: disable=maybe-no-member
 
 	LOGGER.notice(u"Cleaning up product property states")
 	deleteProductPropertyStates = []
@@ -138,8 +151,10 @@ BackendManager from default paths.
 		if not productPropertyIdent in productPropertyIdents:
 			LOGGER.info(u"Marking productPropertyState %s of non existent productProperty '%s' for deletion" % (productPropertyState, productPropertyIdent))
 			deleteProductPropertyStates.append(productPropertyState)
+
 	if deleteProductPropertyStates:
-		backend.productPropertyState_deleteObjects(deleteProductPropertyStates)  # pylint: disable=maybe-no-member
+		for productPropertyStates in chunk(deleteProductPropertyStates, _CHUNK_SIZE):
+			backend.productPropertyState_deleteObjects(productPropertyStates)  # pylint: disable=maybe-no-member
 
 	for depot in backend.host_getObjects(type='OpsiDepotserver'):  # pylint: disable=maybe-no-member
 		objectIds = [depot.id]
@@ -199,10 +214,14 @@ BackendManager from default paths.
 					productPropertyState.setValues(newValues)
 					LOGGER.info(u"Marking productPropertyState %s for update: values not in possible values: %s, values corrected: %s" % (productPropertyState, removeValues, changedValues))
 					updateProductPropertyStates.append(productPropertyState)
+
 		if deleteProductPropertyStates:
-			backend.productPropertyState_deleteObjects(deleteProductPropertyStates)  # pylint: disable=maybe-no-member
+			for productPropertyStates in chunk(deleteProductPropertyStates, _CHUNK_SIZE):
+				backend.productPropertyState_deleteObjects(productPropertyStates)  # pylint: disable=maybe-no-member
+
 		if updateProductPropertyStates:
-			backend.productPropertyState_updateObjects(updateProductPropertyStates)  # pylint: disable=maybe-no-member
+			for productPropertyStates in chunk(updateProductPropertyStates, _CHUNK_SIZE):
+				backend.productPropertyState_updateObjects(productPropertyStates)  # pylint: disable=maybe-no-member
 
 	LOGGER.notice(u"Cleaning up config states")
 	cleanUpConfigStates(backend)
@@ -279,7 +298,8 @@ def cleanUpGroups(backend):
 			updatedGroups.append(group)
 
 	if updatedGroups:
-		backend.group_createObjects(updatedGroups)
+		for group in chunk(updatedGroups, _CHUNK_SIZE):
+			backend.group_createObjects(group)
 
 
 def cleanUpProducts(backend):
@@ -308,7 +328,8 @@ def cleanUpProducts(backend):
 				productIds.append(product.id)
 
 	if deleteProducts:
-		backend.product_deleteObjects(deleteProducts)
+		for products in chunk(deleteProducts, _CHUNK_SIZE):
+			backend.product_deleteObjects(products)
 
 
 def cleanUpProductOnDepots(backend, depotIds, existingProductIdents):
@@ -344,7 +365,8 @@ product is not existing anymore.
 			deleteProductOnDepots.append(productOnDepot)
 
 	if deleteProductOnDepots:
-		backend.productOnDepot_deleteObjects(deleteProductOnDepots)
+		for productOnDepots in chunk(deleteProductOnDepots, _CHUNK_SIZE):
+			backend.productOnDepot_deleteObjects(productOnDepots)
 
 
 def cleanUpProductOnClients(backend):
@@ -375,7 +397,8 @@ is either *not_installed* without an action request set.
 			deleteProductOnClients.append(productOnClient)
 
 	if deleteProductOnClients:
-		backend.productOnClient_deleteObjects(deleteProductOnClients)
+		for productOnClients in chunk(deleteProductOnClients, _CHUNK_SIZE):
+			backend.productOnClient_deleteObjects(productOnClients)
 
 	deleteProductOnClients = []
 	productIds = set(product.getId() for product in backend.product_getObjects())
@@ -389,7 +412,8 @@ is either *not_installed* without an action request set.
 			deleteProductOnClients.append(productOnClient)
 
 	if deleteProductOnClients:
-		backend.productOnClient_deleteObjects(deleteProductOnClients)
+		for productOnClients in chunk(deleteProductOnClients, _CHUNK_SIZE):
+			backend.productOnClient_deleteObjects(productOnClients)
 
 
 def cleanUpConfigStates(backend):
@@ -413,7 +437,8 @@ def cleanUpConfigStates(backend):
 			deleteConfigStates.append(configState)
 
 	if deleteConfigStates:
-		backend.configState_deleteObjects(deleteConfigStates)
+		for configStates in chunk(deleteConfigStates, _CHUNK_SIZE):
+			backend.configState_deleteObjects(configStates)
 
 
 def cleanUpAuditSoftwares(backend):
