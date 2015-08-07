@@ -23,7 +23,7 @@ Testing the patching of the sudoers file.
 :license: GNU Affero General Public License version 3
 """
 
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import
 
 import os
 import shutil
@@ -79,7 +79,7 @@ class PatchSudoersFileForOpsiTestCase(unittest.TestCase):
                     self.assertTrue(True)
                     return
 
-        self.fail("Missing line starting with 'opsiconfd'")
+        self.fail(u"Missing line starting with 'opsiconfd'")
 
     def testFileEndsWithNewline(self):
         patchSudoersFileForOpsi(sudoersFile=self.fileName)
@@ -92,7 +92,7 @@ class PatchSudoersFileForOpsiTestCase(unittest.TestCase):
 
     def testBackupIsCreated(self):
         def showFolderInfo():
-            print('Files in {0}: {1}'.format(tempFolder, filesInTemporaryFolder))
+            print(u'Files in {0}: {1}'.format(tempFolder, filesInTemporaryFolder))
 
         tempFolder = os.path.dirname(self.fileName)
         filesInTemporaryFolder = os.listdir(tempFolder)
@@ -110,7 +110,7 @@ class PatchSudoersFileForOpsiTestCase(unittest.TestCase):
         with open(self.fileName) as pre:
             for line in pre:
                 if _NO_TTY_REQUIRED_DEFAULT in line:
-                    self.fail('Command already existing. Can\'t check.')
+                    self.fail(u'Command already existing. Can\'t check.')
 
         with mock.patch('OPSI.Util.Task.Sudoers.distributionRequiresNoTtyPatch', lambda: True):
             patchSudoersFileForOpsi(self.fileName)
@@ -123,14 +123,14 @@ class PatchSudoersFileForOpsiTestCase(unittest.TestCase):
 
         self.assertTrue(
             entryFound,
-            "Expected {0} in patched file.".format(_NO_TTY_REQUIRED_DEFAULT)
+            u"Expected {0} in patched file.".format(_NO_TTY_REQUIRED_DEFAULT)
         )
 
     def testExecutingServiceDoesNotRequireTTY(self):
         with open(self.fileName) as pre:
             for line in pre:
                 if _NO_TTY_FOR_SERVICE_REQUIRED in line:
-                    self.fail('Command already existing. Can\'t check.')
+                    self.fail(u'Command already existing. Can\'t check.')
 
         patchSudoersFileForOpsi(self.fileName)
 
@@ -142,7 +142,7 @@ class PatchSudoersFileForOpsiTestCase(unittest.TestCase):
 
         self.assertTrue(
             entryFound,
-            "Expected {0} in patched file.".format(_NO_TTY_FOR_SERVICE_REQUIRED)
+            u"Expected {0} in patched file.".format(_NO_TTY_FOR_SERVICE_REQUIRED)
         )
 
     def testServiceLineHasRightPathToService(self):
@@ -150,15 +150,15 @@ class PatchSudoersFileForOpsiTestCase(unittest.TestCase):
             path = which('service')
             self.assertTrue(path in _NO_TTY_FOR_SERVICE_REQUIRED)
         except Exception:
-            self.skipTest("Cant't find 'service' in path.")
+            self.skipTest(u"Cant't find 'service' in path.")
 
     def testPatchingToAllowRestartingDHCPD(self):
-        serviceCommand = "service dhcpd restart"
+        serviceCommand = u"service dhcpd restart"
 
         with open(self.fileName) as pre:
             for line in pre:
                 if serviceCommand in line:
-                    self.fail("Restart command already existing.")
+                    self.fail(u"Restart command already existing.")
 
         patchSudoersFileToAllowRestartingDHCPD(serviceCommand, self.fileName)
 
@@ -171,7 +171,7 @@ class PatchSudoersFileForOpsiTestCase(unittest.TestCase):
         self.assertTrue(entryFound)
 
     def testDoNotAddDuplicates(self):
-        adminGroup = '%{0}'.format(FILE_ADMIN_GROUP)
+        adminGroup = u'%{0}'.format(FILE_ADMIN_GROUP)
 
         patchSudoersFileForOpsi(sudoersFile=self.fileName)
         with open(self.fileName) as before:

@@ -31,8 +31,6 @@ between servers and clients.
 :license: GNU Affero General Public License version 3
 """
 
-from __future__ import unicode_literals
-
 import os
 import random
 import shutil
@@ -44,8 +42,8 @@ from OPSI.System import which, execute
 from OPSI.Types import forceHostId, forceInt
 from OPSI.Util import getfqdn
 
-OPSI_GLOBAL_CONF = '/etc/opsi/global.conf'
-OPSICONFD_CERTFILE = '/etc/opsi/opsiconfd.pem'
+OPSI_GLOBAL_CONF = u'/etc/opsi/global.conf'
+OPSICONFD_CERTFILE = u'/etc/opsi/opsiconfd.pem'
 DEFAULT_CERTIFICATE_PARAMETERS = {
 	"country": "DE",
 	"state": "RP",
@@ -93,21 +91,21 @@ existing certificate.
 		path = OPSICONFD_CERTFILE
 
 	if not os.path.exists(path):
-		raise NoCertificateError('No certificate found at {0}'.format(path))
+		raise NoCertificateError(u'No certificate found at {0}'.format(path))
 
 	if config is None:
 		config = loadConfigurationFromCertificate(path)
 	config["expires"] = yearsUntilExpiration
 
-	backupfile = ''.join((path, ".bak"))
-	LOGGER.notice("Creating backup of existing certifcate to {0}".format(backupfile))
+	backupfile = u'{0}.bak'.format(path)
+	LOGGER.notice(u"Creating backup of existing certifcate to {0}".format(backupfile))
 	shutil.copy(path, backupfile)
 
 	try:
 		createCertificate(path, config)
 	except CertificateCreationError as error:
-		LOGGER.warning('Problem during the creation of the certificate: {0}'.format(error))
-		LOGGER.notice('Restoring backup.')
+		LOGGER.warning(u'Problem during the creation of the certificate: {0}'.format(error))
+		LOGGER.notice(u'Restoring backup.')
 		shutil.move(backupfile, path)
 		raise error
 
@@ -134,7 +132,7 @@ If not given will use a default.
 	"""
 	try:
 		which("ucr")
-		LOGGER.notice("Don't use certificate creation method on UCS-Systems")
+		LOGGER.notice(u"Don't use certificate creation method on UCS-Systems")
 		return
 	except Exception:
 		pass
@@ -151,20 +149,20 @@ If not given will use a default.
 		certparams["expires"] = forceInt(certparams["expires"])
 	except Exception:
 		raise CertificateCreationError(
-			"No valid expiration date given. Must be an integer."
+			u"No valid expiration date given. Must be an integer."
 		)
 
 	if certparams["commonName"] != forceHostId(getfqdn(conf=OPSI_GLOBAL_CONF)):
 		raise CertificateCreationError(
-			"commonName must be the FQDN of the local server"
+			u"commonName must be the FQDN of the local server"
 		)
 
-	LOGGER.notice("Creating new opsiconfd cert")
-	LOGGER.notice("Generating new key pair")
+	LOGGER.notice(u"Creating new opsiconfd cert")
+	LOGGER.notice(u"Generating new key pair")
 	k = crypto.PKey()
 	k.generate_key(crypto.TYPE_RSA, 2048)
 
-	LOGGER.notice("Generating new self-signed cert")
+	LOGGER.notice(u"Generating new self-signed cert")
 	cert = crypto.X509()
 	cert.get_subject().C = certparams['country']
 	cert.get_subject().ST = certparams['state']
@@ -196,23 +194,23 @@ If not given will use a default.
 	try:
 		serialNumber = int(certparams['serialNumber']) + 1
 	except (KeyError, ValueError):
-		LOGGER.debug("Reading in the existing serial number failed.")
-		LOGGER.info("Creating new random serial number.")
+		LOGGER.debug(u"Reading in the existing serial number failed.")
+		LOGGER.info(u"Creating new random serial number.")
 		serialNumber = random.randint(0, pow(2, 16))
 	cert.set_serial_number(serialNumber)
 
 	LOGGER.notice(
-		"Setting new expiration date (%d years)" % certparams["expires"]
+		u"Setting new expiration date (%d years)" % certparams["expires"]
 	)
 	cert.gmtime_adj_notBefore(0)
 	cert.gmtime_adj_notAfter(certparams["expires"] * 365 * 24 * 60 * 60)
 
-	LOGGER.notice("Filling certificate with new data")
+	LOGGER.notice(u"Filling certificate with new data")
 	cert.set_issuer(cert.get_subject())
 	cert.set_pubkey(k)
 	cert.set_version(2)
 
-	LOGGER.notice("Signing Certificate")
+	LOGGER.notice(u"Signing Certificate")
 	cert.sign(k, str('sha1'))
 
 	certcontext = "".join(
@@ -222,7 +220,7 @@ If not given will use a default.
 		)
 	)
 
-	LOGGER.notice("Beginning to write certificate.")
+	LOGGER.notice(u"Beginning to write certificate.")
 	with open(path, "wt") as certfile:
 		certfile.write(certcontext)
 
@@ -231,20 +229,20 @@ If not given will use a default.
 		try:
 			randomBytes = rand.bytes(512)
 		except AttributeError as error:
-			LOGGER.debug("Getting rand.bytes failed: {0}".format(error))
-			LOGGER.debug("Using workaround with random.getrandbits")
+			LOGGER.debug(u"Getting rand.bytes failed: {0}".format(error))
+			LOGGER.debug(u"Using workaround with random.getrandbits")
 			# SLES11SP3 ships a version so old that rand.bytes does not
 			# even exist yet. As a workaround we use plain old random
 			randomBytes = str(bytearray(random.getrandbits(8) for _ in range(512)))
 		randfile.write(randomBytes)
 
 		execute(
-			"{command} gendh -rand {tempfile} 512 >> {target}".format(
+			u"{command} gendh -rand {tempfile} 512 >> {target}".format(
 				command=which("openssl"), tempfile=randfile.name, target=path
 			)
 		)
 
-	LOGGER.notice('Certificate creation done.')
+	LOGGER.notice(u'Certificate creation done.')
 
 
 def loadConfigurationFromCertificate(path=None):
@@ -263,7 +261,7 @@ Uses `OPSICONFD_CERTFILE` if no path is given.
 		path = OPSICONFD_CERTFILE
 
 	if not os.path.exists(path):
-		raise NoCertificateError('No certificate found at {path}.'.format(
+		raise NoCertificateError(u'No certificate found at {path}.'.format(
 				path=path
 			)
 		)
@@ -274,7 +272,7 @@ Uses `OPSICONFD_CERTFILE` if no path is given.
 			cert = crypto.load_certificate(crypto.FILETYPE_PEM, data.read())
 		except crypto.Error as error:
 			raise UnreadableCertificateError(
-				'Could not read from {path}: {error}'.format(
+				u'Could not read from {path}: {error}'.format(
 					path=path,
 					error=error
 				)

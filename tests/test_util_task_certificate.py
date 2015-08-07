@@ -23,7 +23,7 @@ Testing certificate creation and renewal.
 :license: GNU Affero General Public License version 3
 """
 
-from __future__ import unicode_literals, absolute_import
+from __future__ import absolute_import
 
 import os
 import shutil
@@ -61,14 +61,14 @@ class CertificateCreationWithConfigTestCase(unittest.TestCase):
 
         hostname = forceHostId(getfqdn())
         self.nonDefaultConfig = {
-            'organizationalUnit': 'asdf',
+            'organizationalUnit': u'asdf',
             'expires': 3,
             'commonName': hostname,
-            'country': 'ZZ',  # Top
-            'state': 'HE',
-            'locality': 'Breidenbach',
-            'organization': 'Unittest',
-            'emailAddress': 'no@address.internet',
+            'country': u'ZZ',  # Top
+            'state': u'HE',
+            'locality': u'Breidenbach',
+            'organization': u'Unittest',
+            'emailAddress': u'no@address.internet',
             'serialNumber': 1010,
         }
 
@@ -89,10 +89,10 @@ class CertificateCreationWithConfigTestCase(unittest.TestCase):
         self.assertEquals(self.nonDefaultConfig, loadedConfig)
 
     def testCertificateCreationWithoutValidExpireDateRaisesException(self):
-        self.assertRaises(CertificateCreationError, createCertificate, config={'expires': 'hallo welt'})
+        self.assertRaises(CertificateCreationError, createCertificate, config={'expires': u'hallo welt'})
 
     def testCertificateCreationWithForeignHostnameRaisesException(self):
-        self.nonDefaultConfig['commonName'] = 'this-should-not-be-hostname'
+        self.nonDefaultConfig['commonName'] = u'this-should-not-be-hostname'
         self.assertRaises(CertificateCreationError, createCertificate, config=self.nonDefaultConfig)
 
     def testCertificateFileExists(self):
@@ -173,7 +173,7 @@ class CertificateRenewalTestCase(unittest.TestCase):
             self.assertTrue(os.path.exists(certificate_path))
             backup_file = '{file}.bak'.format(file=certificate_path)
             self.assertTrue(os.path.exists(certificate_path),
-                            "Missing backup-file!")
+                            u"Missing backup-file!")
 
             new_config = loadConfigurationFromCertificate(certificate_path)
 
@@ -184,7 +184,7 @@ class CertificateRenewalTestCase(unittest.TestCase):
             for key in keysToCompare:
                 self.assertEquals(
                     old_config[key], new_config[key],
-                    "Difference at key '{0}' between old and new: {1} vs. {2}".format(
+                    u"Difference at key '{0}' between old and new: {1} vs. {2}".format(
                         key, old_config[key], new_config[key]
                     )
                 )
