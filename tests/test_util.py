@@ -264,6 +264,16 @@ class UtilTestCase(unittest.TestCase):
         self.assertEqual(32, len(generateOpsiHostKey()))
         self.assertEqual(32, len(generateOpsiHostKey(forcePython=True)))
 
+    def testmd5sum(self):
+        testFile = os.path.join(
+            os.path.dirname(__file__),
+            'testdata', 'util', 'dhcpd', 'dhcpd_1.conf'
+        )
+        self.assertEqual('5f345ca76574c528903c1022b05acb4c', md5sum(testFile))
+
+
+class LibrsyncTestCase(unittest.TestCase):
+
     def testLibrsyncSignatureBase64Encoded(self):
         testFile = os.path.join(
             os.path.dirname(__file__),
@@ -381,13 +391,6 @@ class UtilTestCase(unittest.TestCase):
                         break
                 else:
                     self.fail("Missing additional text in new file.")
-
-    def testmd5sum(self):
-        testFile = os.path.join(
-            os.path.dirname(__file__),
-            'testdata', 'util', 'dhcpd', 'dhcpd_1.conf'
-        )
-        self.assertEqual('5f345ca76574c528903c1022b05acb4c', md5sum(testFile))
 
 
 class CompareVersionTestCase(unittest.TestCase):
