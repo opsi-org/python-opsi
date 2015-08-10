@@ -892,7 +892,7 @@ def getHarddisks(data=None):
 			for entry in listing:
 				if len(entry) < 5:
 					dev = entry
-					size = forceInt(execute(u'%s -L --no-reread -s -uB /dev/cciss/%s' % (which('sfdisk'), dev), ignoreExitCode=[1][0])
+					size = forceInt(execute(u'%s -L --no-reread -s -uB /dev/cciss/%s' % (which('sfdisk'), dev), ignoreExitCode=[1][0]))
 					logger.debug(
 						u"Found disk =>>> dev: '{device}', size: {size:0.2f} GB".format(
 							device=dev,
