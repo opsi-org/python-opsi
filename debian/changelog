@@ -1,6 +1,5 @@
-python-opsi (4.0.6.13-1) UNRELEASED; urgency=medium
+python-opsi (4.0.6.13-1) experimental; urgency=medium
 
-  [ Niko Wenselowski ]
   * Provide OPSI.System.Posix.shutdown.
   * Added function OPSI.Util.chunk.
   * OPSI.Util.Task.CleanupBackend: added chunking on mass-operations.
