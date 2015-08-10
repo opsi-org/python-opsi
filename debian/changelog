@@ -1,4 +1,4 @@
-python-opsi (4.0.6.13-1ubuntu1) UNRELEASED; urgency=medium
+python-opsi (4.0.6.13-1) UNRELEASED; urgency=medium
 
   [ Niko Wenselowski ]
   * Provide OPSI.System.Posix.shutdown.
@@ -7,11 +7,10 @@ python-opsi (4.0.6.13-1ubuntu1) UNRELEASED; urgency=medium
   * OPSI.Util.Task.CleanupBackend: Improving speed of operations.
   * OPSI.Backend.Replicator: Speed up membership test for productsOnDepot.
   * OPSI.System.Posix.execute now accepts list, set or tuple for ignoreExitCode
-
-  [ Mathias Radtke ]
+  * Debian: Remove dependency on python-support.
   * OPSI.System.Posix: removed unneded captureStderr flags from sfdisk calls
 
- -- Mathias Radtke <m.radtke@uib.de>  Mon, 10 Aug 2015 13:41:24 +0200
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 10 Aug 2015 15:22:38 +0200
 
 python-opsi (4.0.6.12-1) experimental; urgency=medium
 
