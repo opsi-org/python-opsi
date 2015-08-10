@@ -892,7 +892,7 @@ def getHarddisks(data=None):
 			for entry in listing:
 				if len(entry) < 5:
 					dev = entry
-					size = forceInt(execute(u'%s -L --no-reread -s -uB /dev/cciss/%s' % (which('sfdisk'), dev), ignoreExitCode=[1], captureStderr=False)[0])
+					size = forceInt(execute(u'%s -L --no-reread -s -uB /dev/cciss/%s' % (which('sfdisk'), dev), ignoreExitCode=[1][0])
 					logger.debug(
 						u"Found disk =>>> dev: '{device}', size: {size:0.2f} GB".format(
 							device=dev,
@@ -905,7 +905,7 @@ def getHarddisks(data=None):
 				raise Exception(u'No harddisks found!')
 			return disks
 		else:
-			result = execute(u'%s -L --no-reread -s -uB' % which('sfdisk'), ignoreExitCode=[1], captureStderr=False)
+			result = execute(u'%s -L --no-reread -s -uB' % which('sfdisk'), ignoreExitCode=[1])
 	else:
 		result = data
 
@@ -1399,7 +1399,7 @@ class Harddisk:
 			if self.ldPreload:  # We want this as a context manager!
 				os.putenv("LD_PRELOAD", self.ldPreload)
 
-			result = execute(u'{sfdisk} -L --no-reread -s -uB {device}'.format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1], captureStderr=False)
+			result = execute(u'{sfdisk} -L --no-reread -s -uB {device}'.format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
 			for line in result:
 				try:
 					self.size = int(line.strip()) * 1024
@@ -1408,7 +1408,7 @@ class Harddisk:
 
 			logger.info(u"Size of disk '%s': %s Byte / %s MB" % (self.device, self.size, (self.size/(1024*1024))))
 
-			result = execute(u"{sfdisk} -L --no-reread -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1], captureStderr=True)
+			result = execute(u"{sfdisk} -L --no-reread -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
 			partTablefound = None
 			for line in result:
 				if line.startswith("/dev"):
@@ -1416,12 +1416,12 @@ class Harddisk:
 					break
 			if not partTablefound:
 				logger.notice(u"unrecognized partition table type, writing empty partitiontable")
-				execute('{echo} -e "0,0\n\n\n\n" | {sfdisk} -L --no-reread -D {device}'.format(echo=which('echo'), sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1], captureStderr=False)
-				result = execute("{sfdisk} -L --no-reread -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1], captureStderr=False)
+				execute('{echo} -e "0,0\n\n\n\n" | {sfdisk} -L --no-reread -D {device}'.format(echo=which('echo'), sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
+				result = execute("{sfdisk} -L --no-reread -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
 
 			self._parsePartitionTable(result)
 
-			result = execute(u"{sfdisk} -L --no-reread -uS -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1], captureStderr=False)
+			result = execute(u"{sfdisk} -L --no-reread -uS -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
 			self._parseSectorData(result)
 
 			if self.ldPreload:
@@ -1631,7 +1631,7 @@ class Harddisk:
 				os.putenv("LD_PRELOAD", self.ldPreload)
 
 			#changing execution to os.system
-			execute(cmd, ignoreExitCode=[1], captureStderr=False)
+			execute(cmd, ignoreExitCode=[1])
 			if self.ldPreload:
 				os.unsetenv("LD_PRELOAD")
 			self._forceReReadPartionTable()
@@ -1649,7 +1649,7 @@ class Harddisk:
 			os.putenv("LD_PRELOAD", self.ldPreload)
 		logger.info(u"Forcing kernel to reread partition table of '%s'." % self.device)
 		try:
-			execute(u'%s %s' % (which('partprobe'), self.device), captureStderr=False)
+			execute(u'%s %s' % (which('partprobe'), self.device))
 		except:
 			logger.error(u"Forcing kernel reread partion table failed, waiting 5 sec. and try again")
 			try:
@@ -3006,7 +3006,7 @@ def hardwareInventory(config, progressSubject=None):
 		return [element for element in dom.getElementsByTagName(tagName) if re.search(attributeValue, element.getAttribute(attributeName))]
 
 	# Read output from lshw
-	xmlOut = u'\n'.join(execute(u"%s -xml 2>/dev/null" % which("lshw"), captureStderr=False))
+	xmlOut = u'\n'.join(execute(u"%s -xml 2>/dev/null" % which("lshw", captureStderr=False))
 	xmlOut = re.sub('[%c%c%c%c%c%c%c%c%c%c%c%c%c]' % (0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0xbd, 0xbf, 0xef, 0xdd), u'.', xmlOut)
 	dom = xml.dom.minidom.parseString(xmlOut.encode('utf-8'))
 
