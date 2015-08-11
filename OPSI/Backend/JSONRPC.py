@@ -97,8 +97,8 @@ class JSONRPC(DeferredCall):
 
 						logger.debug("Disabling deflate and trying again!")
 						self.jsonrpcBackend.setDeflate(False)
-						json = self.jsonrpcBackend._jsonRPC(self.method, self.params, retry=False)
-						self.result = json
+						result = self.jsonrpcBackend._jsonRPC(self.method, self.params, retry=False)
+						self.result = result
 						self._gotResult()
 						return
 
