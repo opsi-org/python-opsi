@@ -89,7 +89,7 @@ class JSONRPC(DeferredCall):
 				logger.debug('Result from RPC contained error!')
 				error = result.get('error')
 				# Error occurred
-				if type(error) is dict and error.get('message'):
+				if isinstance(error, dict) and error.get('message'):
 					message = error['message']
 					exception = Exception(message)
 					try:
