@@ -1,4 +1,4 @@
-python-opsi (4.0.6.14-1) UNRELEASED; urgency=medium
+python-opsi (4.0.6.14-1) experimental; urgency=medium
 
   [ Mathias Radtke ]
   * OPSI.System.Posix: removed unneded captureStderr flag
