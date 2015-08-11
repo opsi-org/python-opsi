@@ -51,7 +51,7 @@ from OPSI.Backend.Backend import Backend, DeferredCall
 from OPSI.Util import serialize, deserialize
 from OPSI.Util.HTTP import urlsplit, getSharedConnectionPool, deflateEncode, deflateDecode, gzipDecode
 
-__version__ = '4.0.6.12'
+__version__ = '4.0.6.14'
 
 logger = Logger()
 
@@ -407,6 +407,9 @@ class JSONRPCBackend(Backend):
 			return
 		self._deflate = deflate
 
+	def getDeflate(self):
+		return self._deflate
+
 	def isConnected(self):
 		return self._connected
 
@@ -713,4 +716,4 @@ class JSONRPCBackend(Backend):
 		return self._interface
 
 	def __repr__(self):
-		return u'<{0}(address={1!r}, host={2!r})>'.format(self.__class__.__name__, self._name, self._host)
+		return u'<{0}(address={1!r}, host={2!r}, deflate={3!r})>'.format(self.__class__.__name__, self._name, self._host, self._deflate)
