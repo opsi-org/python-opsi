@@ -86,6 +86,7 @@ class JSONRPC(DeferredCall):
 	def processResult(self, result):
 		try:
 			if result.get('error'):
+				logger.debug('Result from RPC contained error!')
 				error = result.get('error')
 				# Error occurred
 				if type(error) is dict and error.get('message'):
