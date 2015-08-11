@@ -1,3 +1,9 @@
+python-opsi (4.0.6.13-1ubuntu1) UNRELEASED; urgency=medium
+
+  * OPSI.System.Posix: removed unneded captureStderr flag
+
+ -- Mathias Radtke <m.radtke@uib.de>  Tue, 11 Aug 2015 11:52:52 +0200
+
 python-opsi (4.0.6.13-1) experimental; urgency=medium
 
   * Provide OPSI.System.Posix.shutdown.
