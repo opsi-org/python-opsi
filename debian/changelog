@@ -1,5 +1,12 @@
 python-opsi (4.0.6.13-1ubuntu1) UNRELEASED; urgency=medium
 
+  * OPSI.Util.Task.Rights.py: added opsi-deploy-client-agent-default to files that are made executable 
+
+ -- Anna Sucher <a.sucher@uib.de>  Tue, 11 Aug 2015 15:07:00 +0200
+
+
+python-opsi (4.0.6.13-1ubuntu1) UNRELEASED; urgency=medium
+
   * OPSI.System.Posix: removed unneded captureStderr flag
 
  -- Mathias Radtke <m.radtke@uib.de>  Tue, 11 Aug 2015 11:52:52 +0200
