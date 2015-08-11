@@ -1,15 +1,16 @@
-python-opsi (4.0.6.13-1ubuntu1) UNRELEASED; urgency=medium
+python-opsi (4.0.6.14-1) UNRELEASED; urgency=medium
 
-  * OPSI.Util.Task.Rights.py: added opsi-deploy-client-agent-default to files that are made executable 
-
- -- Anna Sucher <a.sucher@uib.de>  Tue, 11 Aug 2015 15:07:00 +0200
-
-
-python-opsi (4.0.6.13-1ubuntu1) UNRELEASED; urgency=medium
-
+  [ Mathias Radtke ]
   * OPSI.System.Posix: removed unneded captureStderr flag
 
- -- Mathias Radtke <m.radtke@uib.de>  Tue, 11 Aug 2015 11:52:52 +0200
+  [ Anna Sucher ]
+  * OPSI.Util.Task.Rights: added opsi-deploy-client-agent-default to
+    files that are made executable
+
+  [ Niko Wenselowski ]
+  * JSONRPCBackend: Better handling of JSON-RPC-response from an old service.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 11 Aug 2015 15:27:10 +0200
 
 python-opsi (4.0.6.13-1) experimental; urgency=medium
 

@@ -91,7 +91,17 @@ class JSONRPC(DeferredCall):
 				# Error occurred
 				if isinstance(error, dict) and error.get('message'):
 					message = error['message']
-					exception = Exception(message)
+
+					if ("Failed to decode rpc: No JSON object could be decoded" in message
+						and self.jsonrpcBackend.getDeflate()):
+
+						logger.debug("Disabling deflate and trying again!")
+						self.jsonrpcBackend.setDeflate(False)
+						json = self.jsonrpcBackend._jsonRPC(self.method, self.params, retry=False)
+						self.result = json
+						self._gotResult()
+						return
+
 					try:
 						exceptionClass = eval(error.get('class', 'Exception'))
 						index = message.find(':')
@@ -99,9 +109,11 @@ class JSONRPC(DeferredCall):
 							message = message[index + 1:].lstrip()
 						exception = exceptionClass(u'%s (error on server)' % message)
 					except Exception:
-						pass
+						exception = Exception(message)
+
 					raise exception
-				raise Exception(u'%s (error on server)' % error)
+
+				raise Exception(u'{0} (error on server)'.format(error))
 			self.result = deserialize(result.get('result'), preventObjectCreation=self.method.endswith('_getHashes'))
 		except Exception as error:
 			logger.logException(error)
