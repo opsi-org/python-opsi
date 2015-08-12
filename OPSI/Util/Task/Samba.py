@@ -210,6 +210,7 @@ def _processConfig(lines):
 		newlines.append(u"   level2 oplocks = no\n")
 		newlines.append(u"   writeable = no\n")
 		newlines.append(u"   invalid users = root\n")
+		newlines.append(u"\n")
 		if not os.path.exists("/var/lib/opsi/repository"):
 			logger.debug(u"Path:  /var/lib/opsi/repository not found: creating.")
 			os.mkdir("/var/lib/opsi/repository")
