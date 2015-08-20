@@ -38,7 +38,7 @@ from OPSI.Object import AuditHardware, AuditHardwareOnHost
 from OPSI.Types import (forceFilename, forceInt, forceList,
 	forceObjectClassList, forceUnicode, forceUnicodeList)
 from OPSI.Util import findFiles
-from OPSI.Util.File import InfFile
+from OPSI.Util.File import InfFile, TxtSetupOemFile
 from OPSI.Util.Repository import Repository
 
 __version__ = '4.0.6.15'
