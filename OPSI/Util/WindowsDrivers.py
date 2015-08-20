@@ -36,10 +36,7 @@ import OPSI.System as System
 from OPSI.Logger import Logger
 from OPSI.Types import (forceFilename, forceInt, forceList, forceObjectClass,
 	forceUnicode, forceUnicodeList)
-from OPSI.Object import *
 from OPSI.Util import findFiles
-from OPSI.Util.File import *
-from OPSI.Util.Message import *
 from OPSI.Util.Repository import Repository
 
 __version__ = '4.0.6.15'
