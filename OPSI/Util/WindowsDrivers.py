@@ -420,7 +420,7 @@ def integrateWindowsTextmodeDrivers(driverDirectory, destination, devices, sifFi
 def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDirectory, additionalDrivers, messageSubject=None, srcRepository=None, auditHardwareOnHosts=None):
 	driverSourceDirectory = forceFilename(driverSourceDirectory)
 	driverDestinationDirectory = forceFilename(driverDestinationDirectory)
-	if type(additionalDrivers) is not list:
+	if not isinstance(additionalDrivers, list):
 		additionalDrivers = [additionalDriver.strip() for additionalDriver in forceUnicodeList(additionalDrivers.split(','))]
 	else:
 		additionalDrivers = forceUnicodeList(additionalDrivers)
