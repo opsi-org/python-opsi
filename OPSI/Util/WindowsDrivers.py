@@ -425,6 +425,9 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 	else:
 		additionalDrivers = forceUnicodeList(additionalDrivers)
 
+	if not auditHardwareOnHosts:
+		auditHardwareOnHosts = []
+
 	exists  = os.path.exists
 	listdir = os.listdir
 	copy    = System.copy
