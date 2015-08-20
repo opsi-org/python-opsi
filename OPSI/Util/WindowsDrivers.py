@@ -477,7 +477,7 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 							additionalDrivers.append(os.path.join("byAudit", vendordirectory, modeldirectory))
 							byAuditIntegrated = True
 
-	if not byAuditIntegrated and exists(rulesdir) and auditInfoByClass.has_key("BASE_BOARD"):
+	if not byAuditIntegrated and exists(rulesdir) and "BASE_BOARD" in auditInfoByClass:
 		logger.info(u"Checking if mainboard-fallback for automated integrating of additional drivers are possible")
 		auditHardwareOnHost = auditInfoByClass["BASE_BOARD"]
 		vendorFromHost = re.sub("[\<\>\?\"\:\|\\\/\*]", "_", auditHardwareOnHost.vendor or "")
