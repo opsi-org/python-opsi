@@ -428,15 +428,15 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 	if not auditHardwareOnHosts:
 		auditHardwareOnHosts = []
 
-	exists  = os.path.exists
+	exists = os.path.exists
 	listdir = os.listdir
-	copy    = System.copy
+	copy = System.copy
 	if srcRepository:
 		if not isinstance(srcRepository, Repository):
 			raise Exception(u"Not a repository: %s" % srcRepository)
-		exists  = srcRepository.exists
+		exists = srcRepository.exists
 		listdir = srcRepository.listdir
-		copy    = srcRepository.copy
+		copy = srcRepository.copy
 
 	logger.info(u"Adding additional drivers")
 
