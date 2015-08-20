@@ -462,14 +462,14 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 
 		if vendorFromHost and modelFromHost:
 			vendordirectories = listdir(rulesdir)
-			if not vendorFromHost in vendordirectories:
+			if vendorFromHost not in vendordirectories:
 				if vendorFromHost.endswith(".") or vendorFromHost.endswith(" "):
 					vendorFromHost = "%s_" % vendorFromHost[:-1]
 
 			for vendordirectory in vendordirectories:
 				if vendordirectory.lower() == vendorFromHost.lower():
-					modeldirectories = listdir(os.path.join(rulesdir,vendordirectory))
-					if not modelFromHost in modeldirectories:
+					modeldirectories = listdir(os.path.join(rulesdir, vendordirectory))
+					if modelFromHost not in modeldirectories:
 						if modelFromHost.endswith(".") or modelFromHost.endswith(" "):
 							modelFromHost = "%s_" % modelFromHost[:-1]
 					for modeldirectory in modeldirectories:
@@ -485,14 +485,14 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 
 		if vendorFromHost and productFromHost:
 			vendordirectories = listdir(rulesdir)
-			if not vendorFromHost in vendordirectories:
+			if vendorFromHost not in vendordirectories:
 				if vendorFromHost.endswith(".") or vendorFromHost.endswith(" "):
 					vendorFromHost = "%s_" % vendorFromHost[:-1]
 
 			for vendordirectory in vendordirectories:
 				if vendordirectory.lower() == vendorFromHost.lower():
-					productdirectories = listdir(os.path.join(rulesdir,vendordirectory))
-					if not productFromHost in productdirectories:
+					productdirectories = listdir(os.path.join(rulesdir, vendordirectory))
+					if productFromHost not in productdirectories:
 						if productFromHost.endswith(".") or productFromHost.endswith(" "):
 							productFromHost = "%s_" % productFromHost[:-1]
 
