@@ -33,7 +33,8 @@ import re
 import codecs
 
 from OPSI.Logger import Logger
-from OPSI.Types import *
+from OPSI.Types import (forceFilename, forceInt, forceList, forceObjectClass,
+	forceUnicode, forceUnicodeList)
 from OPSI.Object import *
 from OPSI import System
 from OPSI.Util import findFiles
