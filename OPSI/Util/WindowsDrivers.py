@@ -153,13 +153,11 @@ def integrateWindowsDrivers(driverSourceDirectories, driverDestinationDirectory,
 			driversOnMachine[vendorId].append(deviceId)
 
 	exists = os.path.exists
-	listdir = os.listdir
 	copy = System.copy
 	if srcRepository:
 		if not isinstance(srcRepository, Repository):
 			raise Exception(u"Not a repository: %s" % srcRepository)
 		exists = srcRepository.exists
-		listdir = srcRepository.listdir
 		copy = srcRepository.copy
 
 	logger.info(u"Integrating drivers: %s" % driverSourceDirectories)
