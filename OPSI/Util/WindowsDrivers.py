@@ -474,7 +474,7 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 							modelFromHost = "%s_" % modelFromHost[:-1]
 					for modeldirectory in modeldirectories:
 						if modeldirectory.lower() == modelFromHost.lower():
-							additionalDrivers.append(os.path.join("byAudit" , vendordirectory, modeldirectory))
+							additionalDrivers.append(os.path.join("byAudit", vendordirectory, modeldirectory))
 							byAuditIntegrated = True
 
 	if not byAuditIntegrated and exists(rulesdir) and auditInfoByClass.has_key("BASE_BOARD"):
@@ -498,7 +498,7 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 
 					for productdirectory in productdirectories:
 						if productdirectory.lower() == productFromHost.lower():
-							additionalDrivers.append(os.path.join("byAudit" , vendordirectory, productdirectory))
+							additionalDrivers.append(os.path.join("byAudit", vendordirectory, productdirectory))
 
 	driverDirectories = []
 	for additionalDriver in additionalDrivers:
