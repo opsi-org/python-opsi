@@ -50,7 +50,7 @@ def searchWindowsDrivers(driverDir, auditHardwares, messageSubject=None, srcRepo
 	driverDir = forceFilename(driverDir)
 	try:
 		auditHardwares = forceObjectClassList(auditHardwares, AuditHardware)
-	except:
+	except Exception:
 		auditHardwares = forceObjectClassList(auditHardwares, AuditHardwareOnHost)
 
 	exists = os.path.exists
