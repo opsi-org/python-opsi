@@ -34,7 +34,7 @@ Requires:       libmagic1 python-pycrypto
 Requires:	python-crypto
 %endif
 Url:            http://www.opsi.org
-License:        AGPLv3+
+License:        AGPL-3.0+
 Group:          Productivity/Networking/Opsi
 AutoReqProv:    on
 Version:        4.0.5.10

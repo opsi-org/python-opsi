@@ -1,8 +1,9 @@
-python-opsi (4.0.6.15-1) UNRELEASED; urgency=medium
+python-opsi (4.0.6.15-1ubuntu1) UNRELEASED; urgency=medium
 
   * OPSI.Util.Task.Samba: add newline when adding repository.
+  * RPM: Made the license machine-parseable.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 12 Aug 2015 16:22:51 +0200
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 20 Aug 2015 16:08:06 +0200
 
 python-opsi (4.0.6.14-1) experimental; urgency=medium
 
