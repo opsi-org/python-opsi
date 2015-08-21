@@ -528,8 +528,9 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 					if entry.lower() == 'txtsetup.oem':
 						additionalDriverDir = parentDir
 						break
-			except Exception as e:
-				logger.debug(e)
+			except Exception as error:
+				logger.debug(error)
+
 			if additionalDriverDir in driverDirectories:
 				continue
 			logger.info(u"Adding additional driver dir '%s'" % additionalDriverDir)
