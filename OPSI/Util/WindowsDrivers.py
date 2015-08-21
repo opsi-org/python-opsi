@@ -272,7 +272,7 @@ def integrateWindowsHardwareDrivers(driverSourceDirectory, driverDestinationDire
 	driverDestinationDirectory = forceFilename(driverDestinationDirectory)
 	try:
 		auditHardwares = forceObjectClassList(auditHardwares, AuditHardware)
-	except:
+	except Exception:
 		auditHardwares = forceObjectClassList(auditHardwares, AuditHardwareOnHost)
 
 	drivers = searchWindowsDrivers(driverDir=driverSourceDirectory, auditHardwares=auditHardwares, messageSubject=messageSubject, srcRepository=srcRepository)
@@ -333,8 +333,9 @@ def integrateWindowsTextmodeDrivers(driverDirectory, destination, devices, sifFi
 			logger.debug2(u"Testing if textmode driver '%s' supports device %s" % (driverPath, device))
 			try:
 				deviceKnown = txtSetupOemFile.isDeviceKnown(vendorId=device.get('vendorId'), deviceId=device.get('deviceId'))
-			except Exception as e:
-				logger.critical(u"Error by integrating TextMode driver, error was: %s" % e)
+			except Exception as error:
+				logger.critical(u"Error by integrating TextMode driver, error was: %s" % error)
+
 			if deviceKnown:
 				logger.debug(u"Textmode driver '%s' supports device %s" % (driverPath, device))
 				supportedDevice = device
