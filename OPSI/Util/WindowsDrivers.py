@@ -376,22 +376,21 @@ def integrateWindowsTextmodeDrivers(driverDirectory, destination, devices, sifFi
 			massStorageDriverLines = []
 			oemBootFileLines = []
 			section = u''
-			sif = codecs.open(sifFile, 'r', 'cp1250')
-			for line in sif.readlines():
-				if line.strip():
-					logger.debug2(u"Current sif file content: %s" % line.rstrip())
-				if line.strip().startswith(u'['):
-					section = line.strip().lower()[1:-1]
-					if section in (u'massstoragedrivers', u'oembootfiles'):
+			with codecs.open(sifFile, 'r', 'cp1250') as sif:
+				for line in sif.readlines():
+					if line.strip():
+						logger.debug2(u"Current sif file content: %s" % line.rstrip())
+					if line.strip().startswith(u'['):
+						section = line.strip().lower()[1:-1]
+						if section in (u'massstoragedrivers', u'oembootfiles'):
+							continue
+					if section == u'massstoragedrivers':
+						massStorageDriverLines.append(line)
 						continue
-				if section == u'massstoragedrivers':
-					massStorageDriverLines.append(line)
-					continue
-				if section == u'oembootfiles':
-					oemBootFileLines.append(line)
-					continue
-				lines.append(line)
-			sif.close()
+					if section == u'oembootfiles':
+						oemBootFileLines.append(line)
+						continue
+					lines.append(line)
 
 			logger.info(u"Patching sections for driver '%s'" % description)
 
@@ -411,9 +410,8 @@ def integrateWindowsTextmodeDrivers(driverDirectory, destination, devices, sifFi
 			logger.debug(oemBootFileLines)
 			lines.extend(oemBootFileLines)
 
-			sif = codecs.open(sifFile, 'w', 'cp1250')
-			sif.writelines(lines)
-			sif.close()
+			with codecs.open(sifFile, 'w', 'cp1250') as sif:
+				sif.writelines(lines)
 
 
 def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDirectory, additionalDrivers, messageSubject=None, srcRepository=None, auditHardwareOnHosts=None):
