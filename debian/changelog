@@ -3,8 +3,9 @@ python-opsi (4.0.6.15-1) UNRELEASED; urgency=medium
   * OPSI.Util.Task.Samba: add newline when adding repository.
   * RPM: Made the license machine-parseable.
   * OPSI.Util.WindowsDrivers: do not fail if Vendor or Model are None.
+  * Create user / groups without explicit uid / gid.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 20 Aug 2015 16:58:03 +0200
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 25 Aug 2015 11:02:44 +0200
 
 python-opsi (4.0.6.14-1) experimental; urgency=medium
 

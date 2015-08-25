@@ -110,20 +110,16 @@ if [ $fileadmingroup != pcpatch -a -z "$(getent group $fileadmingroup)" ]; then
 	groupmod -n $fileadmingroup pcpatch
 else
 	if [ -z "$(getent group $fileadmingroup)" ]; then
-		if [ -z "$(getent group 992)" ]; then
-			groupadd -g 992 $fileadmingroup
-		else
-			groupadd $fileadmingroup
-		fi
+		groupadd $fileadmingroup
 	fi
 fi
 
 if [ -z "`getent passwd pcpatch`" ]; then
-	useradd -u 992 -g $fileadmingroup -d /var/lib/opsi -s /bin/bash pcpatch
+	useradd --system -g $fileadmingroup -d /var/lib/opsi -s /bin/bash pcpatch
 fi
 
 if [ -z "`getent passwd opsiconfd`" ]; then
-	useradd -u 993 -g $fileadmingroup -d /var/lib/opsi -s /bin/bash opsiconfd
+	useradd --system -g $fileadmingroup -d /var/lib/opsi -s /bin/bash opsiconfd
 fi
 
 if [ -z "`getent group opsiadmin`" ]; then
