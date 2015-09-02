@@ -1,4 +1,4 @@
-python-opsi (4.0.6.15-1ubuntu1) UNRELEASED; urgency=medium
+python-opsi (4.0.6.16-1) experimental; urgency=medium
 
   * OPSI.Backend.BackendManager: redirected lsb_release stderr and stdout output to /dev/null
 
