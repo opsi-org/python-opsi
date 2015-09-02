@@ -886,13 +886,12 @@ class BackendAccessControl(object):
 		params = dict(params)
 		logger.debug(u"Filtering params: %s" % params)
 		for (key, value) in params.items():
-			isList = isinstance(value, list)
 			valueList = forceList(value)
 			if len(valueList) == 0:
 				continue
 			if issubclass(valueList[0].__class__, BaseObject) or isinstance(valueList[0], types.DictType):
 				valueList = self._filterObjects(valueList, acls, exceptionOnTruncate=False)
-				if isList:
+				if isinstance(value, list):
 					params[key] = valueList
 				else:
 					if len(valueList) > 0:
@@ -903,11 +902,10 @@ class BackendAccessControl(object):
 
 	def _filterResult(self, result, acls):
 		if result:
-			isList = isinstance(result, list)
 			resultList = forceList(result)
 			if issubclass(resultList[0].__class__, BaseObject) or isinstance(resultList[0], types.DictType):
 				resultList = self._filterObjects(result, acls, exceptionOnTruncate=False, exceptionIfAllRemoved=False)
-				if isList:
+				if isinstance(result, list):
 					return resultList
 				else:
 					if len(resultList) > 0:
