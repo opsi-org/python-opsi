@@ -34,7 +34,7 @@ from OPSI.Object import ProductOnClient
 from OPSI.Types import OpsiProductOrderingError, BackendUnaccomplishableError
 from OPSI.Types import forceInt, forceBool
 
-__version__ = '4.0.6'
+__version__ = '4.0.6.17'
 
 logger = Logger()
 
@@ -592,14 +592,13 @@ def generateProductSequence_algorithm1(availableProducts, productDependencies):
 
 		ob = OrderBuild(len(availableProducts), requObjects, False)
 		try:
-			for k in range(len(availableProducts)):
+			for _ in availableProducts:
 				ob.proceed()
-				logger.debug(u"ordering '%s' " % ob.getOrdering())
-
+				logger.debug(u"ordering {0!r}".format(ob.getOrdering()))
 		except OpsiProductOrderingError as error:
 			logger.warning(u"algo1 catched OpsiProductOrderingError: {0}".format(error))
-			for i in range(len(availableProducts)):
-				logger.warning(u" product %s %s " % (i, availableProducts[i].getId()))
+			for i, product in enumerate(availableProducts):
+				logger.warning(u" product {0} {1}".format(i, product.getId()))
 			raise error
 
 		ordering = ob.getOrdering()
@@ -769,13 +768,12 @@ def generateProductSequence_algorithm2(availableProducts, productDependencies):
 
 				ob = OrderBuild(len(prioclass), requObjects, True)
 				try:
-					for k in range(len(prioclass)):
+					for _ in prioclass:
 						ob.proceed()
-
 				except OpsiProductOrderingError as error:
 					logger.warning(u"algo2 catched OpsiProductOrderingError: {0}".format(error))
-					for i in range(len(prioclass)):
-						logger.warning(u" product %s %s " % (i, prioclass[i]))
+					for i, prio in enumerate(prioclass):
+						logger.warning(u" product {0} {1}".format(i, prio))
 					raise error
 
 				orderingsByClasses[prioclasskey] = ob.getOrdering()
@@ -841,8 +839,8 @@ def _generateProductOnClientSequence_algorithm3(productOnClients, availableProdu
 		productSequence.extend(priorityToProductIds[priority])
 
 	logger.debug2(u"Sequence of available products after priority sorting:")
-	for i in range(len(productSequence)):
-		logger.debug2(u"   [%2.0f] %s" % (i, productSequence[i]))
+	for i, product in enumerate(productSequence):
+		logger.debug2(u"   [{0}] {1}".format(i, product))
 
 	sortedProductOnClients = []
 
@@ -892,9 +890,9 @@ def _generateProductOnClientSequence_algorithm3(productOnClients, availableProdu
 						logger.debug("%s requires %s %s => no sequence change required." % (productId, requiredProductId, requirementType))
 
 		logger.debug2(u"Sequence of available products after dependency sorting (client %s):" % clientId)
-		for i in range(len(sequence)):
-			logger.debug2(u"   [%2.0f] %s" % (i, sequence[i]))
-			productOnClient = productOnClientByProductId[sequence[i]]
+		for i, productId in enumerate(sequence):
+			logger.debug2(u"   [{0}] {1}".format(i, productId))
+			productOnClient = productOnClientByProductId[productId]
 			productOnClient.setActionSequence(i + 1)
 			sortedProductOnClients.append(productOnClient)
 

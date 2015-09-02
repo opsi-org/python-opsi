@@ -2,6 +2,7 @@ python-opsi (4.0.6.18-1) UNRELEASED; urgency=medium
 
   * OPSI.Backend.BackendManager: showing the used ACL only on log level debug
     or higher.
+  * OPSI.SharedAlgorithm: small refactorings regarding iteration of lists
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 02 Sep 2015 15:10:49 +0200
 
