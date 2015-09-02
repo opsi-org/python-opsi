@@ -58,7 +58,7 @@ elif os.name == 'nt':
 	import win32net
 	import win32security
 
-__version__ = '4.0.6.3'
+__version__ = '4.0.6.17'
 
 logger = Logger()
 
@@ -854,7 +854,7 @@ class BackendAccessControl(object):
 					break
 			break
 
-		logger.info("Method: %s, using acls: %s" % (methodName, acls))
+		logger.debug("Method: {0}, using acls: {1}".format(methodName, acls))
 		if granted is True:
 			logger.debug(u"Full access to method '%s' granted to user '%s' by acl %s" % (methodName, self._username, acls[0]))
 			newKwargs = kwargs
