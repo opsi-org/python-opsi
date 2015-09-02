@@ -70,7 +70,7 @@ except ImportError:
 	DISTRIBUTOR = 'unknown'
 
 try:
-	f = os.popen('lsb_release -d 2>/dev/null')
+	f = os.popen('lsb_release -d 2>&1 /dev/null')
 	DISTRIBUTION = f.read().split(':')[1].strip()
 	f.close()
 except Exception as error:
@@ -78,7 +78,7 @@ except Exception as error:
 	DISTRIBUTION = 'unknown'
 
 try:
-	f = os.popen('lsb_release -r 2>/dev/null')
+	f = os.popen('lsb_release -r 2>&1 /dev/null')
 	DISTRELEASE = f.read().split(':')[1].strip()
 	f.close()
 except Exception as error:
