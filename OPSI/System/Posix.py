@@ -2795,7 +2795,7 @@ class Distribution(object):
 		Returns an empty string if no information can be obtained.
 		"""
 		try:
-			lsbReleaseOutput = execute('lsb_release -i', captureStderr=False)
+			lsbReleaseOutput = execute('lsb_release -i')
 			distributor = lsbReleaseOutput[0].split(':')[1].strip()
 		except Exception:
 			distributor = ''
