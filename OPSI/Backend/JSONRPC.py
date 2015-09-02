@@ -417,6 +417,10 @@ class JSONRPCBackend(Backend):
 		return self._connected
 
 	def connect(self):
+		modules = None
+		realmodules = {}
+		mysqlBackend = False
+
 		async = self._async
 		self._async = False
 
@@ -436,9 +440,6 @@ class JSONRPCBackend(Backend):
 				logger.setConsoleLevel(previousLogLevel)
 
 		try:
-			modules = None
-			realmodules = {}
-			mysqlBackend = False
 			try:
 				self._interface = self._jsonRPC(u'backend_getInterface')
 				if 'opsiclientd' in self._application:
