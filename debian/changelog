@@ -3,8 +3,11 @@ python-opsi (4.0.6.18-1) UNRELEASED; urgency=medium
   * OPSI.Backend.BackendManager: showing the used ACL only on log level debug
     or higher.
   * OPSI.SharedAlgorithm: small refactorings regarding iteration of lists
+  * OPSI.Backend.JSONRPC: more reliable fix for working with deflate against
+    older webservice versions. This works by disabling deflate to ensure
+    proper encoding / decoding.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 02 Sep 2015 15:10:49 +0200
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 02 Sep 2015 16:30:33 +0200
 
 python-opsi (4.0.6.17-1) experimental; urgency=medium
 

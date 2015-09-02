@@ -42,7 +42,7 @@ from Queue import Queue, Empty
 from twisted.conch.ssh import keys
 from sys import version_info
 
-from OPSI.Logger import Logger, LOG_INFO
+from OPSI.Logger import Logger, LOG_INFO, LOG_NONE
 from OPSI.Types import (forceBool, forceFilename, forceFloat, forceInt,
 						forceList, forceUnicode)
 from OPSI.Types import (OpsiAuthenticationError, OpsiServiceVerificationError,
@@ -51,7 +51,7 @@ from OPSI.Backend.Backend import Backend, DeferredCall
 from OPSI.Util import serialize, deserialize
 from OPSI.Util.HTTP import urlsplit, getSharedConnectionPool, deflateEncode, deflateDecode, gzipDecode
 
-__version__ = '4.0.6.14'
+__version__ = '4.0.6.18'
 
 logger = Logger()
 
@@ -91,16 +91,6 @@ class JSONRPC(DeferredCall):
 				# Error occurred
 				if isinstance(error, dict) and error.get('message'):
 					message = error['message']
-
-					if ("Failed to decode rpc: No JSON object could be decoded" in message
-						and self.jsonrpcBackend.getDeflate()):
-
-						logger.debug("Disabling deflate and trying again!")
-						self.jsonrpcBackend.setDeflate(False)
-						result = self.jsonrpcBackend._jsonRPC(self.method, self.params, retry=False)
-						self.result = result
-						self._gotResult()
-						return
 
 					try:
 						exceptionClass = eval(error.get('class', 'Exception'))
@@ -429,6 +419,22 @@ class JSONRPCBackend(Backend):
 	def connect(self):
 		async = self._async
 		self._async = False
+
+		if self._deflate:
+			logger.debug(u"Testing if deflated communication works...")
+			previousLogLevel = logger.getConsoleLevel()
+			logger.setConsoleLevel(LOG_NONE)
+			try:
+				self._jsonRPC(u'backend_getInterface')
+				logger.debug(u"Deflated communication works!")
+			except Exception as error:
+				logger.setConsoleLevel(previousLogLevel)
+				logger.debug(u"Caught {0}".format(error))
+				logger.debug(u"Disabling deflate...")
+				self._deflate = False
+			finally:
+				logger.setConsoleLevel(previousLogLevel)
+
 		try:
 			modules = None
 			realmodules = {}
