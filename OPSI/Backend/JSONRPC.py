@@ -620,7 +620,7 @@ class JSONRPCBackend(Backend):
 					if argument == 'self':
 						continue
 
-					if type(defaults) in (tuple, list) and (len(defaults) + i >= len(args)):
+					if isinstance(defaults, (tuple, list)) and len(defaults) + i >= len(args):
 						default = defaults[len(defaults) - len(args) + i]
 						# TODO: watch out for Python 3
 						if isinstance(default, (str, unicode)):
