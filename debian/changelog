@@ -1,3 +1,9 @@
+python-opsi (4.0.6.15-1ubuntu1) UNRELEASED; urgency=medium
+
+  * OPSI.Backend.BackendManager: redirected lsb_release stderr and stdout output to /dev/null
+
+ -- Mathias Radtke <m.radtke@uib.de>  Wed, 02 Sep 2015 09:33:16 +0200
+
 python-opsi (4.0.6.15-1) experimental; urgency=medium
 
   * OPSI.Util.Task.Samba: add newline when adding repository.
