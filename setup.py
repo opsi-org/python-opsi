@@ -30,7 +30,7 @@ opsi python library - setup file
 from setuptools import setup, find_packages
 import os
 
-LANGUAGES = ['de', 'fr', 'da']
+LANGUAGES = ['da', 'de', 'es', 'fr', 'it', 'ru']
 
 VERSION = None
 with open(os.path.join("debian", "changelog")) as changelog:
