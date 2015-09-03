@@ -1,3 +1,10 @@
+python-opsi (4.0.6.20-1) UNRELEASED; urgency=medium
+
+  * OPSI.Service.Worker: Excepted header parsing errors are now logged
+    with loglevel 8.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 03 Sep 2015 12:07:27 +0200
+
 python-opsi (4.0.6.19-2) experimental; urgency=medium
 
   * Translations updated and translations for es, it & ru added.

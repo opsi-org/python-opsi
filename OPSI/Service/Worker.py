@@ -589,7 +589,7 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 			if 'deflate' in self.request.headers.getHeader('Accept-Encoding'):
 				encoding = 'deflate'
 		except Exception as error:
-			logger.debug("Failed to get Accept-Encoding from request header: {0}".format(error))
+			logger.debug2("Failed to get Accept-Encoding from request header: {0}".format(error))
 
 		try:
 			if self.request.headers.getHeader('Accept'):
