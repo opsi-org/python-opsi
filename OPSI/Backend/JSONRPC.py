@@ -51,7 +51,7 @@ from OPSI.Backend.Backend import Backend, DeferredCall
 from OPSI.Util import serialize, deserialize
 from OPSI.Util.HTTP import urlsplit, getSharedConnectionPool, deflateEncode, deflateDecode, gzipDecode
 
-__version__ = '4.0.6.18'
+__version__ = '4.0.6.19'
 
 logger = Logger()
 
@@ -285,6 +285,7 @@ class JSONRPCBackend(Backend):
 		self._verifyServerCert = False
 		self._verifyServerCertByCa = False
 		self._verifyByCaCertsFile = None
+		self._wrongHTTPHeaders = None
 
 		if not self._username:
 			self._username = u''
@@ -408,6 +409,11 @@ class JSONRPCBackend(Backend):
 		if deflate and self.isLegacyOpsi():
 			logger.error(u"Refusing to set deflate because we are connected to legacy opsi service")
 			return
+
+		if deflate and self._wrongHTTPHeaders:
+			logger.error(u"Refusing to set deflate because opsi service answers with wrong HTTP header contents.")
+			return
+
 		self._deflate = deflate
 
 	def getDeflate(self):
@@ -720,6 +726,9 @@ class JSONRPCBackend(Backend):
 			# Content-type was usually gzip-application/json
 			logger.debug(u"Expecting deflated data from server (backwards compatible)")
 			response = deflateDecode(response)
+
+			if self._wrongHTTPHeaders is None:
+				self._wrongHTTPHeaders = True
 		elif contentEncoding == 'gzip':
 			logger.debug(u"Expecting gzip'ed data from server")
 			response = gzipDecode(response)
