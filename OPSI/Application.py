@@ -103,7 +103,7 @@ class Application(object):
 				return self.profiler[profiler](self._app, self._config)
 
 			raise NotImplementedError(
-				u"Profiler {0}is not supported.".format(profiler)
+				u"Profiler {0} is not supported.".format(profiler)
 			)
 
 		return AppRunner(self._app, self._config)
