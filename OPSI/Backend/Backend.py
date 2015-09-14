@@ -518,7 +518,7 @@ configuration file.
 containing the localisation of the hardware audit.
 		:param opsipasswdfile: Location of opsis own passwd file.
 		:param depotid: Id of the current depot.
-		:param maxlogfilesize: Maximum size of a logfile.
+		:param maxlogsize: Maximum size of a logfile.
 		"""
 		Backend.__init__(self, **kwargs)
 		self._auditHardwareConfigFile = u'/etc/opsi/hwaudit/opsihwaudit.conf'
