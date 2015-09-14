@@ -67,7 +67,7 @@ from OPSI.Util import (timestamp, compareVersions, blowfishDecrypt,
 from OPSI.Util.File import ConfigFile
 import OPSI.SharedAlgorithm
 
-__version__ = '4.0.6.12'
+__version__ = '4.0.6.21'
 
 logger = Logger()
 OPSI_VERSION_FILE = u'/etc/opsi/version'
@@ -1624,7 +1624,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 					}
 
 	def __repr__(self):
-		return u"<ExtendedConfigDataBackend(configDataBackend={0!r})>".format(repr(self._backend))
+		return u"<{0}(configDataBackend={1!r})>".format(self.__class__.__name__, self._backend)
 
 	def backend_searchIdents(self, filter):
 		logger.info(u"=== Starting search, filter: %s" % filter)
