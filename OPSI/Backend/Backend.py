@@ -616,19 +616,24 @@ overwrite the log.
 		if self._maxLogfileSize:
 			data = self._truncateLogData(data, self._maxLogfileSize)
 
-		logWriteMode = None
-		if forceBool(append) and (self._maxLogfileSize > 0):
-			currentSize = os.stat(logFile).st_size
-			maxFileSize = self._maxLogfileSize - len(data)
-			if currentSize > maxFileSize:
-				with codecs.open(logFile, 'r', 'utf-8', 'replace') as log:
-					log.seek(currentSize - maxFileSize)
-					data = log.read() + data
-					data = data[data.find('\n') + 1:]
-			else:
-				logWriteMode = 'a+'
+		if forceBool(append):
+			logWriteMode = 'a+'
 
-		with codecs.open(logFile, logWriteMode or "w", 'utf-8', 'replace') as log:
+			if self._maxLogfileSize > 0:
+				currentSize = os.stat(logFile).st_size
+				maxFileSize = self._maxLogfileSize - len(data)
+
+				if currentSize > maxFileSize:
+					with codecs.open(logFile, 'r', 'utf-8', 'replace') as log:
+						log.seek(currentSize - maxFileSize)
+						data = log.read() + data
+						data = data[data.find('\n') + 1:]
+
+					logWriteMode = "w"
+		else:
+			logWriteMode = "w"
+
+		with codecs.open(logFile, logWriteMode, 'utf-8', 'replace') as log:
 			log.write(data)
 
 		os.chmod(logFile, 0o640)
