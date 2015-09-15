@@ -1,3 +1,9 @@
+python-opsi (4.0.6.22-1) UNRELEASED; urgency=medium
+
+  * log_read: Removed append-feature for rotated logs.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 15 Sep 2015 14:23:46 +0200
+
 python-opsi (4.0.6.21-1) experimental; urgency=medium
 
   * ExtendedConfigBackend: repr now works also with subclasses.
