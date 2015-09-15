@@ -613,7 +613,7 @@ overwrite the log.
 				pass
 
 		data = forceUnicode(data)
-		if self._maxLogfileSize:
+		if self._maxLogfileSize > 0:
 			data = self._truncateLogData(data, self._maxLogfileSize)
 
 		if forceBool(append):
@@ -641,11 +641,12 @@ overwrite the log.
 	@staticmethod
 	def _truncateLogData(data, maxSize):
 		maxSize = forceInt(maxSize)
-		if len(data) > maxSize:
-			start = data.find('\n', len(data) - maxSize)
+		dataLength = len(data)
+		if dataLength > maxSize:
+			start = data.find('\n', dataLength - maxSize)
 			if start == -1:
-				start = len(data) - maxSize
-			return data[start + 1:]
+				start = dataLength - maxSize
+			return data[start:].lstrip()
 
 		return data
 

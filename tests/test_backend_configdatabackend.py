@@ -38,7 +38,7 @@ from OPSI.Types import BackendBadValueError
 from .helpers import mock, unittest
 
 
-class ConfigDataBackendTestCase(unittest.TestCase):
+class ConfigDataBackendLogTestCase(unittest.TestCase):
 	def setUp(self):
 		self.logDirectory = tempfile.mkdtemp()
 		self.logDirectoryPatch = mock.patch('OPSI.Backend.Backend.LOG_DIR', self.logDirectory)
@@ -114,13 +114,13 @@ class ConfigDataBackendTestCase(unittest.TestCase):
 		self.assertEquals('data4\n', cdb.log_read('opsiconfd', 'foo.bar.baz', maxSize=10))
 
 	def testAppendingLog(self):
-		cdb = OPSI.Backend.Backend.ConfigDataBackend(maxLogSize=10)
+		cdb = OPSI.Backend.Backend.ConfigDataBackend()
 
 		longData = 'data1\ndata2\ndata3\ndata4\n'
-		cdb.log_write('opsiconfd', longData, objectId='foo.bar.baz', append=True)
+		cdb.log_write('opsiconfd', longData, objectId='foo.bar.baz')
 		cdb.log_write('opsiconfd', "data5\n", objectId='foo.bar.baz', append=True)
 
-		self.assertEquals('data5\n', cdb.log_read('opsiconfd', 'foo.bar.baz'))
+		self.assertEquals('data1\ndata2\ndata3\ndata4\ndata5\n', cdb.log_read('opsiconfd', 'foo.bar.baz'))
 
 	def testWritingAndReadingLogWithoutLimits(self):
 		# Not even the sky is the limit!
@@ -181,6 +181,17 @@ Wo dann?
 		self.assertEquals(expectedResult, cdb.log_read('opsiconfd', clientName))
 		self.assertEquals(expectedResult, cdb.log_read('opsiconfd', clientName, maxSize=False))
 
+	def testTruncatingData(self):
+		cdb = OPSI.Backend.Backend.ConfigDataBackend(maxLogSize=10)
+
+		self.assertEquals('o', cdb._truncateLogData('hallo', 1))
+		self.assertEquals('llo', cdb._truncateLogData('hallo', 3))
+
+		self.assertEquals('elt', cdb._truncateLogData('hallo\nwelt', 3))
+		self.assertEquals('welt', cdb._truncateLogData('hallo\nwelt', 4))
+
+		self.assertEquals('', cdb._truncateLogData('hallo\nwelt', 0))
+		self.assertEquals('hallo\nwelt', cdb._truncateLogData('hallo\nwelt', 10))
 
 if __name__ == '__main__':
 	unittest.main()
