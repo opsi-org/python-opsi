@@ -1,4 +1,4 @@
-python-opsi (4.0.6.22-1) UNRELEASED; urgency=medium
+python-opsi (4.0.6.22-1) experimental; urgency=medium
 
   * log_read: Removed append-feature for rotated logs.
 
