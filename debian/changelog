@@ -1,4 +1,4 @@
-python-opsi (4.0.6.21-1) UNRELEASED; urgency=medium
+python-opsi (4.0.6.21-1) experimental; urgency=medium
 
   * ExtendedConfigBackend: repr now works also with subclasses.
   * ConfigDataBackend: log_write does correctly limit the logsize.
