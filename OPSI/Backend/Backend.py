@@ -34,7 +34,6 @@ import base64
 import codecs
 import collections
 import copy as pycopy
-import gzip
 import inspect
 import json
 import new
@@ -43,8 +42,6 @@ import random
 import threading
 import types
 import warnings
-from contextlib import closing  # Needed for Python 2.6
-from glob import glob
 from hashlib import md5
 from twisted.conch.ssh import keys
 

@@ -26,11 +26,9 @@ Testing ConfigDataBackend.
 from __future__ import absolute_import
 
 import codecs
-import gzip
 import os
 import shutil
 import tempfile
-from contextlib import closing  # Needed for Python 2.6
 
 import OPSI.Backend.Backend
 from OPSI.Types import BackendBadValueError
