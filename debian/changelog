@@ -1,4 +1,4 @@
-python-opsi (4.0.6.23-1) UNRELEASED; urgency=medium
+python-opsi (4.0.6.23-1) experimental; urgency=medium
 
   * Copy the following methods to 30_configed.conf: getDomain,
     getOpsiHWAuditConf, getPossibleMethods_listOfHashes, getServerIds_list
