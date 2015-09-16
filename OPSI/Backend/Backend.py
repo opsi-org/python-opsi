@@ -59,12 +59,12 @@ from OPSI.Logger import Logger
 from OPSI.Types import BackendError, BackendBadValueError
 from OPSI.Types import *
 from OPSI.Object import *
-from OPSI.Util import (timestamp, compareVersions, blowfishDecrypt,
-	blowfishEncrypt, getfqdn)
+from OPSI.Util import (blowfishEncrypt, blowfishDecrypt, compareVersions,
+	getfqdn, removeUnit, timestamp)
 from OPSI.Util.File import ConfigFile
 import OPSI.SharedAlgorithm
 
-__version__ = '4.0.6.21'
+__version__ = '4.0.6.23'
 
 logger = Logger()
 OPSI_VERSION_FILE = u'/etc/opsi/version'
@@ -72,7 +72,21 @@ OPSI_MODULES_FILE = u'/etc/opsi/modules'
 OPSI_PASSWD_FILE = u'/etc/opsi/passwd'
 OPSI_GLOBAL_CONF = u'/etc/opsi/global.conf'
 LOG_DIR = u'/var/log/opsi'
-DEFAULT_MAX_LOGFILE_SIZE = 5000000
+
+try:
+	with open(os.path.join('/etc', 'opsi', 'opsiconfd.conf')) as config:
+		for line in config:
+			if line.strip().startswith('max log size'):
+				_, logSize = line.strip().split('=', 1)
+				logSize = removeUnit(logSize.strip())
+				logger.debug("Setting max log size {0}".format(logSize))
+				DEFAULT_MAX_LOGFILE_SIZE = logSize
+				break
+		else:
+			raise Exception("No custom setting found.")
+except Exception as error:
+	logger.debug("Failed to set MAX LOG SIZE from config: {0}".format(error))
+	DEFAULT_MAX_LOGFILE_SIZE = 5000000
 
 
 def getArgAndCallString(method):
