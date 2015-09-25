@@ -1,4 +1,4 @@
-python-opsi (4.0.6.23-2) UNRELEASED; urgency=medium
+python-opsi (4.0.6.23-2) experimental; urgency=medium
 
   * Added Danish translation for hwaudit.
 
