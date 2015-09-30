@@ -55,7 +55,7 @@ from OPSI.Types import forceHostId
 from OPSI.Util import findFiles, getfqdn
 from OPSI.Util.File.Opsi import OpsiConfFile
 
-__version__ = '4.0.6.12'
+__version__ = '4.0.6.24'
 
 LOGGER = Logger()
 
@@ -70,9 +70,9 @@ except Exception:
 	_FILE_ADMIN_GROUP = u'pcpatch'
 
 KNOWN_EXECUTABLES = frozenset((
-	u'create_driver_links.py', u'opsi-deploy-client-agent',u'opsi-deploy-client-agent-default',
-	u'opsi-deploy-client-agent-old', u'service_setup.sh', u'setup.py',
-	u'show_drivers.py', u'winexe'
+	u'create_driver_links.py', u'opsi-deploy-client-agent',
+	u'opsi-deploy-client-agent-default', u'opsi-deploy-client-agent-old',
+	u'service_setup.sh', u'setup.py', u'show_drivers.py', u'winexe'
 ))
 
 
