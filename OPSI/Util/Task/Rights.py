@@ -151,16 +151,16 @@ def setRights(path=u'/'):
 				LOGGER.debug(u"Setting rights on directory '%s'" % filepath)
 				os.chmod(filepath, dmod)
 			elif os.path.isfile(filepath):
-				LOGGER.debug(u"Setting rights on file '%s'" % filepath)
+				LOGGER.debug(u"Setting rights on file {0!r}".format(filepath))
 				if filepath.startswith(u'/var/lib/opsi/depot/'):
 					if os.path.basename(filepath) in KNOWN_EXECUTABLES:
-						LOGGER.debug(u"Setting rights on special file '{0}'".format(filepath))
+						LOGGER.debug(u"Setting rights on special file {0!r}".format(filepath))
 						os.chmod(filepath, 0o770)
 					else:
-						LOGGER.debug(u"Setting rights on file '{0}'".format(filepath))
+						LOGGER.debug(u"Setting rights on file {0!r}".format(filepath))
 						os.chmod(filepath, (os.stat(filepath)[0] | 0o660) & 0o770)
 				else:
-					LOGGER.debug(u"Setting rights {rights} on file '{file}'".format(file=filepath, rights=fmod))
+					LOGGER.debug(u"Setting rights {rights!r} on file {file!r}".format(file=filepath, rights=fmod))
 					os.chmod(filepath, fmod)
 
 		if startPath.startswith(u'/var/lib/opsi') and os.geteuid() == 0:
@@ -189,7 +189,7 @@ def getDirectoriesForProcessing(path):
 				LOGGER.error(error)
 
 		if os.path.exists(depotDir):
-			LOGGER.info(u"Local depot directory '%s' found" % depotDir)
+			LOGGER.info(u"Local depot directory {0!r} found".format(depotDir))
 			dirnames.append(depotDir)
 
 	if basedir.startswith('/opt/pcbin/install'):
@@ -299,13 +299,13 @@ def chown(path, uid, gid):
 	"""
 	try:
 		if os.geteuid() == 0:
-			LOGGER.debug(u"Setting ownership to {user}:{group} on '{path}'".format(path=path, user=uid, group=gid))
+			LOGGER.debug(u"Setting ownership to {user}:{group} on {path!r}".format(path=path, user=uid, group=gid))
 			if os.path.islink(path):
 				os.lchown(path, uid, gid)
 			else:
 				os.chown(path, uid, gid)
 		else:
-			LOGGER.debug(u"Setting ownership to -1:{group} on '{path}'".format(path=path, group=gid))
+			LOGGER.debug(u"Setting ownership to -1:{group} on {path!r}".format(path=path, group=gid))
 			if os.path.islink(path):
 				os.lchown(path, -1, gid)
 			else:
@@ -315,7 +315,7 @@ def chown(path, uid, gid):
 			# We are root so something must be really wrong!
 			raise fist
 
-		LOGGER.warning(u"Failed to set ownership on '{file}': {error}".format(
+		LOGGER.warning(u"Failed to set ownership on {file!r}: {error}".format(
 			file=path,
 			error=fist
 		))
