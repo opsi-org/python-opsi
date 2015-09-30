@@ -104,6 +104,7 @@ def setRights(path=u'/'):
 
 	for dirname in removeDuplicatesFromDirectories(directories):
 		if not dirname.startswith(basedir) and not basedir.startswith(dirname):
+			LOGGER.debug(u"Skipping {0!r}".format(dirname))
 			continue
 		uid = opsiconfdUid
 		gid = fileAdminGroupGid
