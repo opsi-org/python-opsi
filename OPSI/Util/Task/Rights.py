@@ -269,7 +269,7 @@ def removeDuplicatesFromDirectories(directories):
 
 		shouldAdd = True
 		for alreadyAddedFolder in folders.copy():
-			if alreadyAddedFolder.startswith(folder):
+			if alreadyAddedFolder.startswith(folder) and not alreadyAddedFolder == folder:
 				LOGGER.debug("{0} in {1}. Removing {1}, adding {0}".format(folder, alreadyAddedFolder))
 				folders.remove(alreadyAddedFolder)
 				folders.add(folder)
