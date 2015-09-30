@@ -88,7 +88,7 @@ def getLocalFQDN():
 
 
 def setRights(path=u'/'):
-	LOGGER.debug(u"Setting rights on '{0}'".format(path))
+	LOGGER.debug(u"Setting rights on {0!r}".format(path))
 	LOGGER.debug("euid is {0}".format(os.geteuid()))
 
 	basedir = os.path.abspath(path)
