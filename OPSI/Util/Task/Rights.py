@@ -124,7 +124,7 @@ def setRights(path=u'/'):
 		if os.path.isfile(path):
 			chown(path, uid, gid)
 
-			LOGGER.debug(u"Setting rights on file '%s'" % path)
+			LOGGER.debug(u"Setting rights on file {0!r}".format(path))
 			if path.startswith(u'/var/lib/opsi/depot/'):
 				LOGGER.debug("Assuming file in product folder...")
 				os.chmod(path, (os.stat(path)[0] | 0o660) & 0o770)
@@ -140,14 +140,14 @@ def setRights(path=u'/'):
 		if dirname == depotDir:
 			dmod = 0o2770
 
-		LOGGER.notice(u"Setting rights on directory '%s'" % startPath)
+		LOGGER.notice(u"Setting rights on directory {0!r}".format(startPath))
 		LOGGER.debug2(u"Current setting: startPath={path}, uid={uid}, gid={gid}".format(path=startPath, uid=uid, gid=gid))
 		chown(startPath, uid, gid)
 		os.chmod(startPath, dmod)
 		for filepath in findFiles(startPath, prefix=startPath, returnLinks=correctLinks, excludeFile=re.compile("(.swp|~)$")):
 			chown(filepath, uid, gid)
 			if os.path.isdir(filepath):
-				LOGGER.debug(u"Setting rights on directory '%s'" % filepath)
+				LOGGER.debug(u"Setting rights on directory {0!r}".format(filepath))
 				os.chmod(filepath, dmod)
 			elif os.path.isfile(filepath):
 				LOGGER.debug(u"Setting rights on file {0!r}".format(filepath))
@@ -227,7 +227,7 @@ def getDepotUrl():
 		depot = depot[0]
 		depotUrl = depot.getDepotLocalUrl()
 		if not depotUrl.startswith('file:///'):
-			raise Exception(u"Bad repository local url '%s'" % depotUrl)
+			raise Exception(u"Bad repository local url {0!r}".format(depotUrl))
 
 		return depotUrl
 
