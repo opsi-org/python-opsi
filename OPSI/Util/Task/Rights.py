@@ -152,7 +152,7 @@ def setRights(path=u'/'):
 				os.chmod(filepath, dmod)
 			elif os.path.isfile(filepath):
 				LOGGER.debug(u"Setting rights on file {0!r}".format(filepath))
-				if filepath.startswith(u'/var/lib/opsi/depot/'):
+				if filepath.startswith((u'/var/lib/opsi/depot/', u'/opt/pcbin/install/')):
 					if os.path.basename(filepath) in KNOWN_EXECUTABLES:
 						LOGGER.debug(u"Setting rights on special file {0!r}".format(filepath))
 						os.chmod(filepath, 0o770)
