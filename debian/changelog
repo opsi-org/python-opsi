@@ -1,4 +1,4 @@
-python-opsi (4.0.6.24-1) UNRELEASED; urgency=medium
+python-opsi (4.0.6.24-1) experimental; urgency=medium
 
   * OPSI.Util.Task.Rights: set +x on known executables in /opt/pcbin/install
   * OPSI.Util.Task.Rights: disabled the removal of duplicate folders to avoid
