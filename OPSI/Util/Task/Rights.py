@@ -39,6 +39,11 @@ provides helpers for this task.
 	Improved :py:func:`removeDuplicatesFromDirectories`.
 
 
+.. versionchanged:: 4.0.6.24
+
+	Disabled :py:func:`removeDuplicatesFromDirectories` to avoid
+	problems with wrong rights set on /var/lib/opsi/depot
+
 :copyright:  uib GmbH <info@uib.de>
 :author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
@@ -102,7 +107,8 @@ def setRights(path=u'/'):
 	adminGroupGid = grp.getgrnam(_ADMIN_GROUP)[2]
 	fileAdminGroupGid = grp.getgrnam(_FILE_ADMIN_GROUP)[2]
 
-	for dirname in removeDuplicatesFromDirectories(directories):
+	# TODO: try to re-introduce removeDuplicatesFromDirectories for speedups
+	for dirname in directories:
 		if not dirname.startswith(basedir) and not basedir.startswith(dirname):
 			LOGGER.debug(u"Skipping {0!r}".format(dirname))
 			continue

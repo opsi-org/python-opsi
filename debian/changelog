@@ -1,8 +1,10 @@
 python-opsi (4.0.6.24-1) UNRELEASED; urgency=medium
 
   * OPSI.Util.Task.Rights: set +x on known executables in /opt/pcbin/install
+  * OPSI.Util.Task.Rights: disabled the removal of duplicate folders to avoid
+    problems with wrong rights in the depot.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 01 Oct 2015 11:43:51 +0200
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 01 Oct 2015 17:27:07 +0200
 
 python-opsi (4.0.6.23-2) testing; urgency=medium
 
