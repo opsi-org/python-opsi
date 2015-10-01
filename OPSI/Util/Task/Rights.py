@@ -239,7 +239,7 @@ def _isSLES():
 	return 'suse linux enterprise server' in getDistribution().lower()
 
 
-# TODO: better ways!
+# TODO: re-use existing code for this
 def getDistribution():
 	try:
 		f = os.popen('lsb_release -d 2>/dev/null')
