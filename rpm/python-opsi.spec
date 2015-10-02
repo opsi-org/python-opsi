@@ -27,7 +27,7 @@ Requires:	net-tools
 %else
 Requires:       python-m2crypto python-openssl lsb-release python-newt python-pam python-mysql
 %endif
-%if 0%{?sles_version}
+%if 0%{?suse_version}
 # Needed for working python-magic
 Requires:       libmagic1 python-pycrypto
 %else
@@ -92,7 +92,7 @@ sed -i 's#dhcp3-server#dhcpd#' $RPM_BUILD_ROOT/etc/opsi/backends/dhcpd.conf
 sed -i 's#/etc/dhcp3/dhcpd.conf#/etc/dhcpd.conf#;s#dhcp3-server#dhcpd#' $RPM_BUILD_ROOT/etc/opsi/backends/dhcpd.conf
 %endif
 
-%if 0%{?sles_version}
+%if 0%{?suse_version}
 	sed -i 's#linux/pxelinux.0#opsi/pxelinux.0#' $RPM_BUILD_ROOT/etc/opsi/backends/dhcpd.conf
 %endif
 
