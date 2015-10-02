@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2014 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2015 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -28,9 +28,9 @@ from __future__ import absolute_import
 import os
 import mock
 import sys
-import unittest
+from contextlib import contextmanager
 
-from .helpers import workInTemporaryDirectory
+from .helpers import unittest, workInTemporaryDirectory
 
 from OPSI.Util.Task.Backup import OpsiBackup
 
@@ -92,7 +92,13 @@ class BackupTestCase(unittest.TestCase):
                         backup = OpsiBackup()
                         backup._create()
 
-                        self.assertEquals(len(os.listdir(tempDir)), 1)
+                        dirListing = os.listdir(tempDir)
+                        try:
+                            dirListing.remove('.coverage')
+                        except ValueError:
+                            pass
+
+                        self.assertEquals(len(dirListing), 1)
 
 
 if __name__ == '__main__':
