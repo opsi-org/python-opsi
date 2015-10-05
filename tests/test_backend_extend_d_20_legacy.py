@@ -1,5 +1,5 @@
-#!/usr/bin/env python
-#-*- coding: utf-8 -*-
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
 # Copyright (C) 2015 uib GmbH <info@uib.de>
@@ -31,9 +31,8 @@ that were written for opsi 3.
 
 from __future__ import absolute_import
 
-import unittest
-
 from .Backends.File import ExtendedFileBackendMixin
+from .helpers import unittest
 
 
 class LegacyFunctionsTestCase(unittest.TestCase, ExtendedFileBackendMixin):
