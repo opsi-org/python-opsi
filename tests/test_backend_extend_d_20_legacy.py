@@ -32,7 +32,7 @@ that were written for opsi 3.
 from __future__ import absolute_import
 
 from .Backends.File import ExtendedFileBackendMixin
-from .helpers import unittest
+from .helpers import requiresModulesFile, unittest
 
 
 class LegacyFunctionsTestCase(unittest.TestCase, ExtendedFileBackendMixin):
@@ -64,6 +64,25 @@ class LegacyFunctionsTestCase(unittest.TestCase, ExtendedFileBackendMixin):
             'bar',
             self.backend.getGeneralConfigValue('foo', 'some.client.fqdn')
         )
+
+    @requiresModulesFile
+    def testCreateLicenseContractReturnsLicenseContractID(self):
+        """
+        Creating a new license contract must return the ID of the new contract.
+
+        This should work on other backends too.
+        """
+        try:
+            self.assertTrue(self.backend.backend_info()["modules"]["license_management"])
+        except KeyError:
+            self.skipTest("This requires the license management module.")
+
+        contractId = self.backend.createLicenseContract()
+        self.assertTrue(contractId)
+        self.assertTrue(contractId in self.backend.licenseContract_getIdents(returnType='unicode'))
+
+        self.assertTrue("hanswurst" not in self.backend.licenseContract_getIdents(returnType='unicode'))
+        self.assertEquals("hanswurst", self.backend.createLicenseContract(licenseContractId="hanswurst"))
 
 
 if __name__ == '__main__':
