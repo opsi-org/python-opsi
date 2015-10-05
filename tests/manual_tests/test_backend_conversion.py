@@ -33,18 +33,16 @@ logger = Logger()
 
 
 def main():
+	# TODO: make this a test that is run automatically
 	#init and reset
 	fileBackend = ExtendedConfigDataBackend(FileBackend())
-	btfileBackend.backend_deleteBase()
-	btfileBackend.backend_createBase()
+	fileBackend.backend_deleteBase()
+	fileBackend.backend_createBase()
 
-	mysqlBackend = ExtendedConfigDataBackend(MySQLBackend(username = 'opsi', password = 'opsi', database='opsi'))
-	btmysqlBackend.backend_deleteBase()
-	btmysqlBackend.backend_createBase()
-
-	#create data
-	btfileBackend.testObjectMethods()
+	mysqlBackend = ExtendedConfigDataBackend(MySQLBackend(username='opsi', password='opsi', database='opsi'))
+	mysqlBackend.backend_deleteBase()
 	mysqlBackend.backend_createBase()
+
 
 	def check(one, two):
 		objectTypesToCheck = (
