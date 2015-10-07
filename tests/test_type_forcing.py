@@ -316,7 +316,7 @@ class ForceNetworkAddressTestCase(unittest.TestCase):
 		self.assertEquals(forceNetworkAddress('192.168.0.0/16'), u'192.168.0.0/16')
 
 	def testForcingReturnsUnicode(self):
-		self.assertTrue(isinstance(forceNetworkAddress('10.10.10.10/32')), unicode))
+		self.assertTrue(isinstance(forceNetworkAddress('10.10.10.10/32'), unicode))
 
 	def testForcingWithInvalidAddressesRaisesExceptions(self):
 		self.assertRaises(ValueError, forceNetworkAddress, '192.168.101.1')
