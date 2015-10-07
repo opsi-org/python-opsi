@@ -1036,7 +1036,7 @@ class SQLBackend(ConfigDataBackend):
 		ConfigDataBackend.host_deleteObjects(self, hosts)
 
 		for host in forceObjectClassList(hosts, Host):
-			logger.info(u"Deleting host %s" % host)
+			logger.info(u"Deleting host {0}".format(host))
 			where = self._uniqueCondition(host)
 			self._sql.delete('HOST', where)
 
