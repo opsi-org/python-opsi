@@ -156,13 +156,13 @@ class ForceListTestCase(unittest.TestCase):
 
 class ForceUnicodeTestCase(unittest.TestCase):
 	def testForcingResultsInUnicode(self):
-		self.assertTrue(type(forceUnicode('x')) is unicode)
+		self.assertTrue(isinstance(forceUnicode('x'), unicode))
 
 
 class ForceUnicodeListTestCase(unittest.TestCase):
 	def testForcingResultsInUnicode(self):
 		for i in forceUnicodeList([None, 1, 'x', u'y']):
-			self.assertTrue(type(i) is unicode)
+			self.assertTrue(isinstance(i, unicode))
 
 
 class ForceUnicodeLowerListTestCase(unittest.TestCase):
@@ -171,7 +171,7 @@ class ForceUnicodeLowerListTestCase(unittest.TestCase):
 
 	def testForcingResultsInUnicode(self):
 		for i in forceUnicodeLowerList([None, 1, 'X', u'y']):
-			self.assertTrue(type(i) is unicode)
+			self.assertTrue(isinstance(i, unicode))
 
 
 class ForceBoolTestCase(unittest.TestCase):
@@ -248,7 +248,7 @@ class ForceOpsiTimeStampTestCase(unittest.TestCase):
 		self.assertEquals(forceOpsiTimestamp('20000202111213'), u'2000-02-02 11:12:13')
 
 	def testResultIsUnicode(self):
-		self.assertTrue(type(forceOpsiTimestamp('2000-02-02 11:12:13')) is unicode)
+		self.assertTrue(isinstance(forceOpsiTimestamp('2000-02-02 11:12:13'), unicode))
 
 	def testRaisingErrorsOnWrongInput(self):
 		self.assertRaises(ValueError, forceOpsiTimestamp, 'abc')
@@ -282,7 +282,7 @@ class ForceHardwareAddressTestCase(unittest.TestCase):
 		self.assertEquals(forceHardwareAddress('12-34-56:78AB-CD'), u'12:34:56:78:ab:cd')
 
 	def testForcingResultsInUnicode(self):
-		self.assertTrue(type(forceHardwareAddress('12345678ABCD')) is unicode)
+		self.assertTrue(isinstance(forceHardwareAddress('12345678ABCD'), unicode))
 
 	def testForcingInvalidAddressesRaiseExceptions(self):
 		self.assertRaises(ValueError, forceHardwareAddress, '12345678abc')
@@ -300,7 +300,7 @@ class ForceIPAdressTestCase(unittest.TestCase):
 		self.assertEquals(forceIPAddress('192.168.101.1'), u'192.168.101.1')
 
 	def testForcingReturnsUnicode(self):
-		self.assertTrue(type(forceIPAddress('1.1.1.1')) is unicode)
+		self.assertTrue(isinstance(forceIPAddress('1.1.1.1'), unicode))
 
 	def testForcingWithInvalidAddressesRaisesExceptions(self):
 		self.assertRaises(ValueError, forceIPAddress, '1922.1.1.1')
@@ -316,7 +316,7 @@ class ForceNetworkAddressTestCase(unittest.TestCase):
 		self.assertEquals(forceNetworkAddress('192.168.0.0/16'), u'192.168.0.0/16')
 
 	def testForcingReturnsUnicode(self):
-		self.assertTrue(type(forceNetworkAddress('10.10.10.10/32')) is unicode)
+		self.assertTrue(isinstance(forceNetworkAddress('10.10.10.10/32')), unicode))
 
 	def testForcingWithInvalidAddressesRaisesExceptions(self):
 		self.assertRaises(ValueError, forceNetworkAddress, '192.168.101.1')
@@ -335,10 +335,10 @@ class ForceUrlTestCase(unittest.TestCase):
 		self.assertTrue(forceUrl('https://x:y@server.domain.tld:4447/resource'), 'https://x:y@server.domain.tld:4447/resource')
 
 	def testForcingReturnsUnicode(self):
-		self.assertTrue(type(forceUrl('file:///')) is unicode)
-		self.assertTrue(type(forceUrl('file:///path/to/file')) is unicode)
-		self.assertTrue(type(forceUrl('smb://server/path')) is unicode)
-		self.assertTrue(type(forceUrl('https://x:y@server.domain.tld:4447/resource')) is unicode)
+		self.assertTrue(isinstance(forceUrl('file:///'), unicode))
+		self.assertTrue(isinstance(forceUrl('file:///path/to/file'), unicode))
+		self.assertTrue(isinstance(forceUrl('smb://server/path'), unicode))
+		self.assertTrue(isinstance(forceUrl('https://x:y@server.domain.tld:4447/resource'), unicode))
 
 	def testForcingWithInvalidURLsRaisesExceptions(self):
 		self.assertRaises(ValueError, forceUrl, 'abc')
@@ -362,7 +362,7 @@ class ForceOpsiHostKeyTestCase(unittest.TestCase):
 		self.assertEquals(forceOpsiHostKey('abCdeF78901234567890123456789012'), 'abcdef78901234567890123456789012')
 
 	def testForcingReturnsUnicode(self):
-		self.assertTrue(type(forceOpsiHostKey('12345678901234567890123456789012')) is unicode)
+		self.assertTrue(isinstance(forceOpsiHostKey('12345678901234567890123456789012'), unicode))
 
 	def testForcingWithInvalidHostKeysRaisesExceptions(self):
 		self.assertRaises(ValueError, forceOpsiHostKey, 'abCdeF7890123456789012345678901')
@@ -375,7 +375,7 @@ class ForceProductVersionTestCase(unittest.TestCase):
 		forceProductVersion('1.0') == '1.0'
 
 	def testForcingReturnsUnicode(self):
-		self.assertTrue(type(forceProductVersion('1.0')) is unicode)
+		self.assertTrue(isinstance(forceProductVersion('1.0'), unicode))
 
 	def testProductVersionDoesNotContainUppercase(self):
 		self.assertRaises(ValueError, forceProductVersion, 'A1.0')
@@ -386,7 +386,7 @@ class ForcePackageVersionTestCase(unittest.TestCase):
 		self.assertEquals(forcePackageVersion(1), '1')
 
 	def testForcingReturnsUnicode(self):
-		self.assertTrue(type(forcePackageVersion('8')) is unicode)
+		self.assertTrue(isinstance(forcePackageVersion('8'), unicode))
 
 	def testPackageVersionDoesNotContainUppercase(self):
 		self.assertRaises(ValueError, forcePackageVersion, 'A')
@@ -397,8 +397,7 @@ class ForceProductIdTestCase(unittest.TestCase):
 		self.assertEquals(forceProductId('testProduct1'), 'testproduct1')
 
 	def testForcingReturnsUnicode(self):
-		self.assertTrue(type(forceProductId('test-Product-1')) is unicode)
-
+		self.assertTrue(isinstance(forceProductId('test-Product-1'), unicode))
 
 	def testForcingWithInvalidProductIdRaisesExceptions(self):
 		self.assertRaises(ValueError, forceProductId, u'äöü')
@@ -407,7 +406,7 @@ class ForceProductIdTestCase(unittest.TestCase):
 
 class ForceFilenameTestCase(unittest.TestCase):
 	def testForcingReturnsUnicode(self):
-		self.assertTrue(type(forceFilename('/tmp/test.txt')) is unicode)
+		self.assertTrue(isinstance(forceFilename('/tmp/test.txt'), unicode))
 
 	def testForcingFilename(self):
 		self.assertEquals(forceFilename('c:\\tmp\\test.txt'), u'c:\\tmp\\test.txt')
@@ -419,8 +418,8 @@ class ForceInstallationStatusTestCase(unittest.TestCase):
 		self.assertEquals(forceInstallationStatus('not_installed'), 'not_installed')
 
 	def testForcingReturnsUnicode(self):
-		self.assertTrue(type(forceInstallationStatus('installed')) is unicode)
-		self.assertTrue(type(forceInstallationStatus('not_installed')) is unicode)
+		self.assertTrue(isinstance(forceInstallationStatus('installed'), unicode)
+		self.assertTrue(isinstance(forceInstallationStatus('not_installed'), unicode)
 
 	def testForcingWithInvalidStatusRaisesExceptions(self):
 		self.assertRaises(ValueError, forceInstallationStatus, 'none')
@@ -432,7 +431,7 @@ class ForceActionRequestTestCase(unittest.TestCase):
 		self.assertRaises(ValueError, forceActionRequest, 'installed')
 
 	def testForcingReturnsUnicode(self):
-		self.assertTrue(type(forceActionRequest('setup')) is unicode)
+		self.assertTrue(isinstance(forceActionRequest('setup'), unicode))
 
 	def testForcingReturnsLowercase(self):
 		self.assertEquals(forceActionRequest('setup'), str('setup').lower())
@@ -449,7 +448,7 @@ class ForceActionRequestTestCase(unittest.TestCase):
 
 class ForceActionProgressTestCase(unittest.TestCase):
 	def testForcingReturnsUnicode(self):
-		self.assertTrue(type(forceActionProgress('installing 50%')) is unicode)
+		self.assertTrue(isinstance(forceActionProgress('installing 50%'), unicode))
 
 	def testForcing(self):
 		self.assertEquals(forceActionProgress('installing 50%'), u'installing 50%')
