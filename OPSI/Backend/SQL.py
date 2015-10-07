@@ -1677,7 +1677,7 @@ class SQLBackend(ConfigDataBackend):
 	def licenseContract_getObjects(self, attributes=[], **filter):
 		if not self._licenseManagementModule:
 			logger.warning(u"License management module disabled")
-			return
+			return []
 
 		ConfigDataBackend.licenseContract_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting licenseContracts, filter: %s" % filter)
@@ -1729,7 +1729,7 @@ class SQLBackend(ConfigDataBackend):
 	def softwareLicense_getObjects(self, attributes=[], **filter):
 		if not self._licenseManagementModule:
 			logger.warning(u"License management module disabled")
-			return
+			return []
 
 		ConfigDataBackend.softwareLicense_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting softwareLicenses, filter: %s" % filter)

@@ -3,8 +3,10 @@ python-opsi (4.0.6.27-1) UNRELEASED; urgency=medium
   * OPSI.Util.flattenSequence now can handle sets.
   * OPSI.Backend.ConfigDataBackend.host_deleteObjects does not fail if
     no license management module is present.
+  * OPSI.Backend.MySQL.SQLBackend: softwareLicense_getObjects and
+    licenseContract_getObjects now return an empty list instead of None.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 07 Oct 2015 15:09:18 +0200
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 07 Oct 2015 15:13:19 +0200
 
 python-opsi (4.0.6.26-1) testing; urgency=medium
 
