@@ -5,8 +5,10 @@ python-opsi (4.0.6.27-1) UNRELEASED; urgency=medium
     no license management module is present.
   * OPSI.Backend.MySQL.SQLBackend: softwareLicense_getObjects and
     licenseContract_getObjects now return an empty list instead of None.
+  * addDynamicDepotDriveSelection now only adds the new value and does
+    not change the default.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 07 Oct 2015 15:13:19 +0200
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 07 Oct 2015 16:37:33 +0200
 
 python-opsi (4.0.6.26-1) testing; urgency=medium
 

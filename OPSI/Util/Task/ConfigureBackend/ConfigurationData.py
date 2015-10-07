@@ -307,21 +307,8 @@ def addDynamicDepotDriveSelection(backend):
 				u"selection. Adding it to 'clientconfig.depot.drive'."
 		)
 
-		backend.config_insertObject(
-			oobject.UnicodeConfig(
-				id=u'clientconfig.depot.drive',
-				description=u'Drive letter for depot share',
-				possibleValues=[
-					u'c:', u'd:', u'e:', u'f:', u'g:', u'h:', u'i:', u'j:',
-					u'k:', u'l:', u'm:', u'n:', u'o:', u'p:', u'q:', u'r:',
-					u's:', u't:', u'u:', u'v:', u'w:', u'x:', u'y:', u'z:',
-					u'dynamic'
-				],
-				defaultValues=[u'p:'],
-				editable=False,
-				multiValue=False
-			)
-		)
+		config.possibleValues.append(u'dynamic')
+		backend.config_updateObject(config)
 
 
 def createWANconfigs(backend):
