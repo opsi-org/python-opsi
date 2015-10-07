@@ -111,18 +111,19 @@ def deserialize(obj, preventObjectCreation=False):
 
 def serialize(obj):
 	newObj = None
-	if type(obj) in (unicode, str):
+	if isinstance(obj, (unicode, str)):
 		return obj
 	elif hasattr(obj, 'serialize'):
 		newObj = obj.serialize()
-	elif type(obj) is list:
+	elif isinstance(obj, (list, set)):
 		newObj = [serialize(tempObject) for tempObject in obj]
-	elif type(obj) is dict:
+	elif isinstance(obj, dict):
 		newObj = {}
-		for (key, value) in obj.items():
+		for key, value in obj.items():
 			newObj[key] = serialize(value)
 	else:
 		return obj
+
 	return newObj
 
 

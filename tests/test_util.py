@@ -35,9 +35,10 @@ import unittest
 from collections import defaultdict
 
 from OPSI.Util import (chunk, compareVersions, flattenSequence, formatFileSize,
-    generateOpsiHostKey, getfqdn, getGlobalConfig, ipAddressInNetwork,
-    isRegularExpressionPattern, librsyncDeltaFile, librsyncSignature,librsyncPatchFile,
-    md5sum, objectToBeautifiedText, objectToHtml, randomString, removeUnit)
+    fromJson, generateOpsiHostKey, getfqdn, getGlobalConfig, ipAddressInNetwork,
+    isRegularExpressionPattern, librsyncDeltaFile, librsyncSignature,
+    librsyncPatchFile, md5sum, objectToBeautifiedText, objectToHtml,
+    randomString, removeUnit, toJson)
 from OPSI.Object import LocalbootProduct
 
 from .helpers import (fakeGlobalConf, patchAddress, patchEnvironmentVariables,
@@ -574,6 +575,15 @@ class GetFQDNTestCase(unittest.TestCase):
 
         with patchAddress(fqdn=fqdn, address=address):
             self.assertEqual(fqdn, getfqdn(name=address))
+
+
+class JSONSerialisiationTestCase(unittest.TestCase):
+    def testSerialisingSet(self):
+        input = set([u'opsi-client-agent', u'apple_itunes', u'nodejs', u'adobe_reader', u'microsoft_vc_2010', u'adobe_flash_activex', u'image-einrichtung', u'dbvisualizer', u'mozillafirefox', u'java_jre8_x64', u'apple_mobile_device_support', u'paintnet', u'googledrive', u'apple_application_support', u'deploy_modifications', u'swaudit', u'python', u'admintools_hash_and_crc', u'shutdownwanted', u'inventory', u'hwaudit', u'libreoffice', u'teamviewer10', u'languagepacks', u'apple_bonjour', u'admintools_wuinstall', u'java_jre8_x86', u'adobe_acrobat_x', u'googlechrome', u'tortoise_git', u'java_jre7_x86', u'cdburnerxp', u'apple_quicktime', u'adobe_air', u'inventarisierung_silent', u'python3', u'mysysgit', u'java_jre7_x64', u'opsi-winst', u'setacl', u'adobe_flash_pluginbased', u'tortoise_svn', u'admintools_virtualbox', u'windows_config'])
+
+        output = toJson(input)
+
+        self.assertEquals(set(fromJson(output)), input)
 
 
 if __name__ == '__main__':
