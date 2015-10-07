@@ -1,4 +1,4 @@
-python-opsi (4.0.6.27-1) UNRELEASED; urgency=medium
+python-opsi (4.0.6.27-1) experimental; urgency=medium
 
   * OPSI.Util.flattenSequence now can handle sets.
   * OPSI.Backend.ConfigDataBackend.host_deleteObjects does not fail if
