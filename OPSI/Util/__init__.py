@@ -809,7 +809,7 @@ def ipAddressInNetwork(ipAddress, networkAddress):
 def flattenSequence(sequence):
 	listToReturn = []
 	for part in sequence:
-		if type(part) in (types.ListType, types.TupleType):
+		if isinstance(part, (list, tuple, set)):
 			listToReturn.extend(flattenSequence(part))
 		else:
 			listToReturn.append(part)

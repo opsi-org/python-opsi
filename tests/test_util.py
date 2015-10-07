@@ -248,6 +248,9 @@ class UtilTestCase(unittest.TestCase):
         self.assertEqual([1, 2], flattenSequence((1, [2])))
         self.assertEqual([1, 2, 3], flattenSequence((1, [2, (3, )])))
         self.assertEqual([1, 2, 3], flattenSequence(((1, ),(2, ), 3)))
+        self.assertEqual([1, 2, 3], flattenSequence(set([1, 2, 3])))
+        self.assertEqual([1, 2, 3, 4, 5],
+                         flattenSequence([1, set([2,]), 3, 4, set([5])]))
 
     def test_formatFileSize(self):
         self.assertEqual('123', formatFileSize(123))
