@@ -228,7 +228,7 @@ class SQLBackend(ConfigDataBackend):
 		Creates a SQL condition out of the given filter.
 		"""
 		condition = []
-		for (key, values) in filter.items():
+		for key, values in filter.items():
 			if values is None:
 				continue
 			values = forceList(values)
