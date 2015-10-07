@@ -431,12 +431,12 @@ def replaceSpecialHTMLCharacters(text):
 	return forceUnicode(text)\
 		.replace(u'\r', u'')\
 		.replace(u'\t', u'   ')\
-		.replace(u'&',  u'&amp;')\
-		.replace(u'"',  u'&quot;')\
-		.replace(u"'",  u'&apos;')\
-		.replace(u' ',  u'&nbsp;')\
-		.replace(u'<',  u'&lt;')\
-		.replace(u'>',  u'&gt;')\
+		.replace(u'&', u'&amp;')\
+		.replace(u'"', u'&quot;')\
+		.replace(u"'", u'&apos;')\
+		.replace(u' ', u'&nbsp;')\
+		.replace(u'<', u'&lt;')\
+		.replace(u'>', u'&gt;')\
 		.replace(u'\n', u'<br />\n')
 
 
