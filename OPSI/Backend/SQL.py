@@ -1040,8 +1040,9 @@ class SQLBackend(ConfigDataBackend):
 			where = self._uniqueCondition(host)
 			self._sql.delete('HOST', where)
 
-			auditHardwareOnDeletedHost = self.auditHardwareOnHost_getObjects([], objectId=host.id)
-			self.auditHardwareOnHost_deleteObjects(auditHardwareOnDeletedHost)
+			auditHardwareOnDeletedHost = self.auditHardwareOnHost_getObjects(objectId=host.id)
+			if auditHardwareOnDeletedHost:
+				self.auditHardwareOnHost_deleteObjects(auditHardwareOnDeletedHost)
 
 			# TODO: Delete audit data!
 			# Siehe: https://redmine.uib.local/issues/869
