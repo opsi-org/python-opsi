@@ -7,8 +7,10 @@ python-opsi (4.0.6.27-1) UNRELEASED; urgency=medium
     licenseContract_getObjects now return an empty list instead of None.
   * addDynamicDepotDriveSelection now only adds the new value and does
     not change the default.
+  * The config for 'clientconfig.depot.drive' now also has the drives 'a:'
+    and 'b:' present if it is created anew.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 07 Oct 2015 16:37:33 +0200
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 07 Oct 2015 16:40:29 +0200
 
 python-opsi (4.0.6.26-1) testing; urgency=medium
 
