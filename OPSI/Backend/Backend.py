@@ -64,7 +64,7 @@ from OPSI.Util import (blowfishEncrypt, blowfishDecrypt, compareVersions,
 from OPSI.Util.File import ConfigFile
 import OPSI.SharedAlgorithm
 
-__version__ = '4.0.6.23'
+__version__ = '4.0.6.27'
 
 logger = Logger()
 OPSI_VERSION_FILE = u'/etc/opsi/version'
@@ -863,7 +863,9 @@ depot where the method is.
 					self._context.licenseOnClient_getObjects(clientId=host.id)  # pylint: disable=maybe-no-member
 				)
 
-				for softwareLicense in self._context.softwareLicense_getObjects(boundToHost=host.id):  # pylint: disable=maybe-no-member
+				softwareLicenses = self._context.softwareLicense_getObjects(boundToHost=host.id)  # pylint: disable=maybe-no-member
+				softwareLicenses = softwareLicenses or []
+				for softwareLicense in softwareLicenses:
 					softwareLicense.boundToHost = None
 					self._context.softwareLicense_insertObject(softwareLicense)  # pylint: disable=maybe-no-member
 
