@@ -418,8 +418,8 @@ class ForceInstallationStatusTestCase(unittest.TestCase):
 		self.assertEquals(forceInstallationStatus('not_installed'), 'not_installed')
 
 	def testForcingReturnsUnicode(self):
-		self.assertTrue(isinstance(forceInstallationStatus('installed'), unicode)
-		self.assertTrue(isinstance(forceInstallationStatus('not_installed'), unicode)
+		self.assertTrue(isinstance(forceInstallationStatus('installed'), unicode))
+		self.assertTrue(isinstance(forceInstallationStatus('not_installed'), unicode))
 
 	def testForcingWithInvalidStatusRaisesExceptions(self):
 		self.assertRaises(ValueError, forceInstallationStatus, 'none')
