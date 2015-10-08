@@ -493,7 +493,7 @@ def generateProductOnClientSequence(productOnClients, sortedList):
 		productOnClientsByClientIdAndProductId[productOnClient.clientId][productOnClient.productId] = productOnClient
 
 	productOnClients = []
-	for (clientId, productOnClientsByProductId) in productOnClientsByClientIdAndProductId.items():
+	for productOnClientsByProductId in productOnClientsByClientIdAndProductId.values():
 		sequence = 0
 		for productId in sortedList:
 			if productId in productOnClientsByProductId:
