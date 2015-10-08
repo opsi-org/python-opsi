@@ -221,7 +221,7 @@ class OrderRequirement(object):
 class Requirements(object):
 	# Comprises a list with ordering requirements and ordered lists of them
 
-	def __init__(self, allItemsCount):
+	def __init__(self):
 		self.list = []
 		self.orderByPrior = []
 		self.orderByPosterior = []
@@ -585,7 +585,7 @@ def generateProductSequence_algorithm1(availableProducts, productDependencies):
 	logger.debug(u"requs %s " % requs)
 
 	try:
-		requObjects = Requirements(len(requirements))
+		requObjects = Requirements()
 		for item in requs:
 			requObj = OrderRequirement(item[0], item[1], False)
 			logger.debug(u"requObj %s " % requObj)
@@ -763,7 +763,7 @@ def generateProductSequence_algorithm2(availableProducts, productDependencies):
 
 			if prioclasskey in requirementsByClasses:
 				requs = requirementsByClasses[prioclasskey]
-				requObjects = Requirements(len(prioclass))
+				requObjects = Requirements()
 				for item in requs:
 					requObjects.add(OrderRequirement(item[0], item[1], False))
 
