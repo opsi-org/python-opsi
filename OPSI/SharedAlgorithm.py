@@ -609,7 +609,6 @@ def generateProductSequence_algorithm1(availableProducts, productDependencies):
 			sortedList.append(productIds[idx])
 
 		logger.debug(u"sortedList algo1 '%s' " % sortedList)
-
 	except OpsiProductOrderingError as error:
 		logger.warning(u"algo1 outer catched OpsiProductOrderingError: {0}".format(error))
 		raise error
@@ -622,9 +621,7 @@ def generateProductSequence_algorithm1(availableProducts, productDependencies):
 	prioClassStart = 100
 
 	while shrinkingSortedList:
-
 		prioClassHead = -100
-
 		productHeading = None
 		for productId in shrinkingSortedList:
 			logger.debug(u"product %s " % productId)
@@ -795,7 +792,6 @@ def generateProductSequence_algorithm2(availableProducts, productDependencies):
 					sortedList.append(element)
 
 		logger.debug(u"sortedList algo2  '%s' " % sortedList)
-
 	except OpsiProductOrderingError as error:
 		logger.warning(u"algo2 outer catched OpsiProductOrderingError: {0}".format(error))
 		raise error
