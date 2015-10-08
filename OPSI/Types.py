@@ -811,6 +811,32 @@ class OpsiTimeoutError(OpsiError):
 class OpsiProductOrderingError(OpsiError):
 	ExceptionShortDescription = u"A condition for ordering cannot be fulfilled"
 
+	def __init__(self, message='', problematicRequirements=None):
+		problematicRequirements = problematicRequirements or []
+
+		self._message = forceUnicode(message)
+		self.problematicRequirements = problematicRequirements
+
+	def __repr__(self):
+		if self._message and self._message != u'None':
+			text = u"<{0}({1!r}, {2!r})>".format(self.__class__.__name__, self._message, self.problematicRequirements)
+		else:
+			text = u"<{0}()>".format(self.__class__.__name__)
+
+		if sys.version_info > (3, ):
+			return text
+		else:
+			return text.encode('utf-8')
+
+	def __unicode__(self):
+		if self._message:
+			if self.problematicRequirements:
+				return u"{0}: {1} ({2})".format(self.ExceptionShortDescription, self._message, self.problematicRequirements)
+			else:
+				return u"{0}: {1}".format(self.ExceptionShortDescription, self._message)
+		else:
+			return forceUnicode(self.ExceptionShortDescription)
+
 
 class OpsiVersionError(OpsiError):
 	ExceptionShortDescription = u"Opsi version error"

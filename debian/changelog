@@ -1,3 +1,10 @@
+python-opsi (4.0.6.2-1) UNRELEASED; urgency=medium
+
+  * OPSI.SharedAlgorithm: OpsiProductOrderingErrors now show what products
+    cause the problems.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 08 Oct 2015 13:47:35 +0200
+
 python-opsi (4.0.6.27-1) experimental; urgency=medium
 
   * OPSI.Util.flattenSequence now can handle sets.

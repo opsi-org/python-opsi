@@ -29,6 +29,7 @@ import unittest
 from OPSI.Object import LocalbootProduct, ProductDependency, ProductOnClient
 from OPSI import SharedAlgorithm
 from OPSI.Types import OpsiProductOrderingError
+from OPSI.Types import forceUnicode
 
 
 class TestFrame(unittest.TestCase):
@@ -393,8 +394,24 @@ class CircularDependenciesTestCase(TestFrame):
 	def testAlgo1RaisesAnException(self):
 		self.assertRaises(OpsiProductOrderingError, SharedAlgorithm.generateProductSequence_algorithm1, self.availProducts, self.deps)
 
+	def testExceptionIsHelpfulForAlgo1(self):
+		try:
+			SharedAlgorithm.generateProductSequence_algorithm1(self.availProducts, self.deps)
+		except OpsiProductOrderingError as error:
+			self.assertIn('firefox', forceUnicode(error))
+			self.assertIn('javavm', forceUnicode(error))
+			self.assertIn('ultravnc', forceUnicode(error))
+
 	def testAlgo2RaisesAnException(self):
 		self.assertRaises(OpsiProductOrderingError, SharedAlgorithm.generateProductSequence_algorithm2, self.availProducts, self.deps)
+
+	def testExceptionIsHelpfulForAlgo2(self):
+		try:
+			SharedAlgorithm.generateProductSequence_algorithm2(self.availProducts, self.deps)
+		except OpsiProductOrderingError as error:
+			self.assertIn('firefox', forceUnicode(error))
+			self.assertIn('javavm', forceUnicode(error))
+			self.assertIn('ultravnc', forceUnicode(error))
 
 
 if __name__ == '__main__':

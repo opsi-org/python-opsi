@@ -358,7 +358,7 @@ class Requirements(object):
 
 		errorMessage = u'Potentially conflicting requirements for: {0}'.format(candidatesCausingProblemes)
 		logger.error(errorMessage)
-		raise OpsiProductOrderingError(errorMessage)
+		raise OpsiProductOrderingError(errorMessage, candidatesCausingProblemes)
 
 	def getCount(self):
 		return len(self.list)
@@ -600,7 +600,12 @@ def generateProductSequence_algorithm1(availableProducts, productDependencies):
 			logger.warning(u"algo1 catched OpsiProductOrderingError: {0}".format(error))
 			for i, product in enumerate(availableProducts):
 				logger.warning(u" product {0} {1}".format(i, product.getId()))
-			raise error
+
+			raise OpsiProductOrderingError(
+				u'Potentially conflicting requirements for: {0}'.format(
+					', '.join([availableProducts[index].id for index in error.problematicRequirements])
+				)
+			)
 
 		ordering = ob.getOrdering()
 		logger.debug(u"completed ordering '%s' " % ordering)
@@ -767,7 +772,12 @@ def generateProductSequence_algorithm2(availableProducts, productDependencies):
 					logger.warning(u"algo2 catched OpsiProductOrderingError: {0}".format(error))
 					for i, prio in enumerate(prioclass):
 						logger.warning(u" product {0} {1}".format(i, prio))
-					raise error
+
+					raise OpsiProductOrderingError(
+						u"Potentially conflicting requirements for: {0}".format(
+							', '.join([prioclass[index] for index in error.problematicRequirements])
+						)
+					)
 
 				orderingsByClasses[prioclasskey] = ob.getOrdering()
 				logger.debug(u"prioclasskey, ordering '%s' , '%s'" % (prioclasskey, ob.getOrdering()))

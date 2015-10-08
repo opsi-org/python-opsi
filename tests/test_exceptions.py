@@ -26,8 +26,7 @@ Testing behaviour of exceptions.
 import time
 import unittest
 
-
-from OPSI.Types import OpsiError, BackendError
+from OPSI.Types import BackendError, OpsiError, OpsiProductOrderingError
 
 
 class OpsiErrorTestCase(unittest.TestCase):
@@ -89,6 +88,14 @@ class OpsiErrorWithUTF16StringTestCase(OpsiErrorTestCase):
 
 class OpsiErrorWithLatin1StringTestCase(OpsiErrorTestCase):
     ERROR_ARGUMENT = u'latin1 string: äöüß'.encode('latin-1')
+
+
+class OpsiProductOrderingErrorTestCase(OpsiErrorTestCase):
+    def setUp(self):
+        self.error = OpsiProductOrderingError(self.ERROR_ARGUMENT, [3, 4, 5])
+
+    def testOrderingIsAccessible(self):
+        self.assertEquals([3, 4, 5], self.error.problematicRequirements)
 
 
 class BackendErrorTest(unittest.TestCase):
