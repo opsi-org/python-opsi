@@ -29,9 +29,6 @@ import tempfile
 from contextlib import contextmanager
 from functools import wraps
 
-from OPSI.Types import forceHostId
-from OPSI.Util import getfqdn
-
 try:
     import unittest.mock as mock
 except ImportError:
@@ -81,6 +78,11 @@ def copyTestfileToTemporaryFolder(filename):
 
 
 def getLocalFQDN():
+    'Get the FQDN of the local machine.'
+    # Lazy imports to not hinder other tests.
+    from OPSI.Types import forceHostId
+    from OPSI.Util import getfqdn
+
     return forceHostId(getfqdn())
 
 
