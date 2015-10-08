@@ -34,7 +34,7 @@ from OPSI.Object import ProductOnClient
 from OPSI.Types import OpsiProductOrderingError, BackendUnaccomplishableError
 from OPSI.Types import forceInt, forceBool
 
-__version__ = '4.0.6.17'
+__version__ = '4.0.6.28'
 
 logger = Logger()
 
@@ -43,8 +43,9 @@ class CircularProductDependencyError(BackendUnaccomplishableError):
 	ExceptionShortDescription = "A circular dependency between products."
 
 
-def addActionRequest(productOnClientByProductId, productId, productDependenciesByProductId, availableProductsByProductId, addedInfo={}):
+def addActionRequest(productOnClientByProductId, productId, productDependenciesByProductId, availableProductsByProductId, addedInfo=None):
 	logger.debug(u"checking dependencies for product '%s', action '%s'" % (productId, productOnClientByProductId[productId].actionRequest))
+	addedInfo = addedInfo or {}
 
 	poc = productOnClientByProductId[productId]
 	if poc.actionRequest == 'none' or not productDependenciesByProductId.get(productId):
