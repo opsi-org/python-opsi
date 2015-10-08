@@ -24,7 +24,9 @@ Testing OPSI.SharedAlgorithm
 :license: GNU Affero General Public License version 3
 """
 
-import unittest
+from __future__ import absolute_import
+
+from .helpers import unittest
 
 from OPSI.Object import LocalbootProduct, ProductDependency, ProductOnClient
 from OPSI import SharedAlgorithm
