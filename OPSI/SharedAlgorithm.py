@@ -717,26 +717,21 @@ def generateProductSequence_algorithm2(availableProducts, productDependencies):
 	requirementsByClasses = defaultdict(list)
 
 	for (prod1, prod2) in setupRequirements:
-		logger.debug(u"Product 1 %s" % prod1)
+		logger.debug(u"First product: {0}".format(prod1))
 		if prod1 not in productById:
 			logger.warning(u"Product %s is requested but not available" % prod1)
 			continue
 
-		prio1 = productById[prod1].priority
-		if not prio1:
-			prio1 = 0
-
-		logger.debug(u"Product 2 %s" % prod2)
+		logger.debug(u"Second product: {0}".format(prod2))
 		if prod2 not in productById:
 			logger.warning(u"Product %s is requested but not available" % prod2)
 			continue
 
-		prio2 = productById[prod2].priority
-		if not prio2:
-			prio2 = 0
+		prio1 = productById[prod1].priority or 0
+		prio2 = productById[prod2].priority or 0
 
-		logger.debug(u"Priority product 1 %s" % prio1)
-		logger.debug(u"Priority product 2 %s" % prio2)
+		logger.debug(u"Priority {0}: {1}".format(prod1, prio1))
+		logger.debug(u"Priority {0}: {1}".format(prod2, prio2))
 		if prio1 > prio2:
 			logger.notice(u"The ordering is guaranteed by priority handling")
 		elif prio1 < prio2:
