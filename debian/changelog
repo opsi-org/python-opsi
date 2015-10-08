@@ -1,9 +1,10 @@
-python-opsi (4.0.6.2-1) UNRELEASED; urgency=medium
+python-opsi (4.0.6.28-1) UNRELEASED; urgency=medium
 
   * OPSI.SharedAlgorithm: OpsiProductOrderingErrors now show what products
     cause the problem.
+  * OPSI.Util.Task.CleanupBackend: Reference correct key.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 08 Oct 2015 13:47:35 +0200
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 08 Oct 2015 14:37:45 +0200
 
 python-opsi (4.0.6.27-1) experimental; urgency=medium
 

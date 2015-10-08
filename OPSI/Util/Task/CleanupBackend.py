@@ -147,7 +147,7 @@ BackendManager from default paths.
 			backend.productPropertyState_deleteObjects(productPropertyStates)  # pylint: disable=maybe-no-member
 
 	for depot in backend.host_getObjects(type='OpsiDepotserver'):  # pylint: disable=maybe-no-member
-		objectIds = set(ClientToDepot['clientID'] for ClientToDepot in backend.configState_getClientToDepotserver(depotIds=depot.id))
+		objectIds = set(ClientToDepot['clientId'] for ClientToDepot in backend.configState_getClientToDepotserver(depotIds=depot.id))
 		objectIds.add(depot.id)
 
 		productOnDepotIdents = {}
