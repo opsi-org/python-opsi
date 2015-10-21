@@ -582,11 +582,44 @@ class GetFQDNTestCase(unittest.TestCase):
 
 class JSONSerialisiationTestCase(unittest.TestCase):
     def testSerialisingSet(self):
-        input = set([u'opsi-client-agent', u'apple_itunes', u'nodejs', u'adobe_reader', u'microsoft_vc_2010', u'adobe_flash_activex', u'image-einrichtung', u'dbvisualizer', u'mozillafirefox', u'java_jre8_x64', u'apple_mobile_device_support', u'paintnet', u'googledrive', u'apple_application_support', u'deploy_modifications', u'swaudit', u'python', u'admintools_hash_and_crc', u'shutdownwanted', u'inventory', u'hwaudit', u'libreoffice', u'teamviewer10', u'languagepacks', u'apple_bonjour', u'admintools_wuinstall', u'java_jre8_x86', u'adobe_acrobat_x', u'googlechrome', u'tortoise_git', u'java_jre7_x86', u'cdburnerxp', u'apple_quicktime', u'adobe_air', u'inventarisierung_silent', u'python3', u'mysysgit', u'java_jre7_x64', u'opsi-winst', u'setacl', u'adobe_flash_pluginbased', u'tortoise_svn', u'admintools_virtualbox', u'windows_config'])
+        inputSet = set([u'opsi-client-agent', u'mshotfix', u'firefox'])
+        output = toJson(inputSet)
 
-        output = toJson(input)
+        self.assertEquals(set(fromJson(output)), inputSet)
 
-        self.assertEquals(set(fromJson(output)), input)
+    def testSerialisingList(self):
+        inputValues = ['a', 'b', 'c', 4, 5.6]
+        output = toJson(inputValues)
+
+        self.assertEquals(inputValues, fromJson(output))
+        self.assertEquals(u'["a", "b", "c", 4, 5.6]', output)
+
+    def testSerialisingListInList(self):
+        inputValues = ['a', 'b', 'c', [4, 5.6, ['f']]]
+        self.assertEquals(u'["a", "b", "c", [4, 5.6, ["f"]]]', toJson(inputValues))
+
+    def testSerialisingSetInList(self):
+        inputValues = ['a', 'b', set('c'), 4, 5.6]
+        self.assertEquals(u'["a", "b", ["c"], 4, 5.6]', toJson(inputValues))
+
+    def testSerialisingDictsInList(self):
+        inputValues = [
+            {'a': 'b', 'c': 1, 'e': 2.3},
+            {'g': 'h', 'i': 4, 'k': 5.6},
+        ]
+        output = toJson(inputValues)
+
+        self.assertEquals(u'[{"a": "b", "c": 1, "e": 2.3}, {"i": 4, "k": 5.6, "g": "h"}]', output)
+
+    def testSerialisingDict(self):
+        inputValues = {'a': 'b', 'c': 1, 'e': 2.3}
+        self.assertEquals(u'{"a": "b", "c": 1, "e": 2.3}', toJson(inputValues))
+
+    def testUnserialisableThingsFail(self):
+        class Foo(object):
+            pass
+
+        self.assertRaises(TypeError, toJson, Foo())
 
 
 if __name__ == '__main__':
