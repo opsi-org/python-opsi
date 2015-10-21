@@ -23,6 +23,7 @@ Testing session and sessionhandler.
 :license: GNU Affero General Public License version 3
 """
 
+import time
 import unittest
 from contextlib import contextmanager
 
@@ -137,6 +138,27 @@ class SessionHandlerTestCase(unittest.TestCase):
 		session.expire()
 
 		self.assertEquals(0, len(handler.sessions))
+
+	def testCreatingAndExpiringManySessions(self):
+		"Creating a lot of sessions and wait for them to expire."
+
+		deletion_time_in_sec = 2
+		session_count = 256
+
+		handler = SessionHandler(
+			"testapp",
+			maxSessionsPerIp=4,
+			sessionMaxInactiveInterval=deletion_time_in_sec,
+			sessionDeletionTimeout=23
+		)
+
+		for _ in range(session_count):
+			handler.createSession()
+
+		for _ in range(deletion_time_in_sec + 1):
+			time.sleep(1)
+
+		self.assertEquals({}, handler.getSessions())
 
 
 if __name__ == '__main__':
