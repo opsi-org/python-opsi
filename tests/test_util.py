@@ -680,7 +680,7 @@ class JSONSerialisiationTestCase(unittest.TestCase):
         self.assertEquals(1, len(result))
 
         obj = result[0]
-        self.assertTrue(obj, isinstance(obj, OpsiClient))
+        self.assertTrue(isinstance(obj, OpsiClient))
 
     def testDeserialisationWithoutObjectCreation(self):
         json = """[
@@ -706,12 +706,13 @@ class JSONSerialisiationTestCase(unittest.TestCase):
         self.assertEquals(1, len(result))
 
         obj = result[0]
-        self.assertTrue(obj, isinstance(obj, dict))
+        self.assertTrue(isinstance(obj, dict))
+        self.assertTrue('ident' in obj)
 
     def testDeserialisationWithExplicitTypeSetting(self):
         "It must be possible to set an type."
 
-        json = """[
+        json = """
     {
     "ident" : "baert.niko.uib.local",
     "description" : "",
@@ -725,15 +726,11 @@ class JSONSerialisiationTestCase(unittest.TestCase):
     "opsiHostKey" : "7dc2b49c20d545bdbfad9a326380cea3",
     "id" : "baert.niko.uib.local"
     }
-]"""
+"""
 
-        result = fromJson(json, objectType="OpsiClient", preventObjectCreation=False)
+        obj = fromJson(json, objectType="OpsiClient", preventObjectCreation=False)
 
-        self.assertTrue(isinstance(result, list))
-        self.assertEquals(1, len(result))
-
-        obj = result[0]
-        self.assertTrue(obj, isinstance(obj, OpsiClient))
+        self.assertTrue(isinstance(obj, OpsiClient))
 
     def testDeserialisationWithExplicitTypeSettingWorksOnUnknown(self):
         "Setting invalid types must not fail but return the input instead."
@@ -760,7 +757,7 @@ class JSONSerialisiationTestCase(unittest.TestCase):
         self.assertEquals(1, len(result))
 
         obj = result[0]
-        self.assertTrue(obj, isinstance(obj, dict))
+        self.assertTrue(isinstance(obj, dict))
         self.assertEquals("baert.niko.uib.local", obj['ident'])
 
 
