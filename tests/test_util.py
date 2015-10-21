@@ -734,7 +734,7 @@ class JSONSerialisiationTestCase(unittest.TestCase):
     def testDeserialisationWithExplicitTypeSettingWorksOnUnknown(self):
         "Setting invalid types must not fail but return the input instead."
 
-        json = """[
+        json = """
     {
     "ident" : "baert.niko.uib.local",
     "description" : "",
@@ -748,14 +748,10 @@ class JSONSerialisiationTestCase(unittest.TestCase):
     "opsiHostKey" : "7dc2b49c20d545bdbfad9a326380cea3",
     "id" : "baert.niko.uib.local"
     }
-]"""
+"""
 
-        result = fromJson(json, objectType="NotYourType", preventObjectCreation=False)
+        obj = fromJson(json, objectType="NotYourType", preventObjectCreation=False)
 
-        self.assertTrue(isinstance(result, list))
-        self.assertEquals(1, len(result))
-
-        obj = result[0]
         self.assertTrue(isinstance(obj, dict))
         self.assertEquals("baert.niko.uib.local", obj['ident'])
 
