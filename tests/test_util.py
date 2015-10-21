@@ -32,7 +32,6 @@ import os
 import os.path
 import shutil
 import sys
-import unittest
 from collections import defaultdict
 
 from OPSI.Util import (chunk, compareVersions, flattenSequence, formatFileSize,
@@ -43,7 +42,7 @@ from OPSI.Util import (chunk, compareVersions, flattenSequence, formatFileSize,
 from OPSI.Object import LocalbootProduct, OpsiClient
 
 from .helpers import (fakeGlobalConf, patchAddress, patchEnvironmentVariables,
-    workInTemporaryDirectory)
+    unittest, workInTemporaryDirectory)
 
 
 class IPAddressInNetwork(unittest.TestCase):
@@ -595,31 +594,31 @@ class JSONSerialisiationTestCase(unittest.TestCase):
         self.assertEquals(inputValues, fromJson(output))
         self.assertEquals(u'["a", "b", "c", 4, 5]', output)
 
-        if sys.version_info >= (2, 7):
-            # 2.6 does display 5.6 something like this: 5.599999999999991
-            inputValues = ['a', 'b', 'c', 4, 5.6]
-            output = toJson(inputValues)
+    @unittest.skipIf(sys.version_info < (2, 7), "Python 2.6 is unprecise with floats")
+    def testSerialisingListWithFLoat(self):
+        inputValues = ['a', 'b', 'c', 4, 5.6]
+        output = toJson(inputValues)
 
-            self.assertEquals(inputValues, fromJson(output))
-            self.assertEquals(u'["a", "b", "c", 4, 5.6]', output)
+        self.assertEquals(inputValues, fromJson(output))
+        self.assertEquals(u'["a", "b", "c", 4, 5.6]', output)
 
     def testSerialisingListInList(self):
         inputValues = ['a', 'b', 'c', [4, 5, ['f']]]
         self.assertEquals(u'["a", "b", "c", [4, 5, ["f"]]]', toJson(inputValues))
 
-        if sys.version_info >= (2, 7):
-            # 2.6 does display 5.6 something like this: 5.599999999999991
-            inputValues = ['a', 'b', 'c', [4, 5.6, ['f']]]
-            self.assertEquals(u'["a", "b", "c", [4, 5.6, ["f"]]]', toJson(inputValues))
+    @unittest.skipIf(sys.version_info < (2, 7), "Python 2.6 is unprecise with floats")
+    def testSerialisingListInListWithFloat(self):
+        inputValues = ['a', 'b', 'c', [4, 5.6, ['f']]]
+        self.assertEquals(u'["a", "b", "c", [4, 5.6, ["f"]]]', toJson(inputValues))
 
     def testSerialisingSetInList(self):
         inputValues = ['a', 'b', set('c'), 4, 5]
         self.assertEquals(u'["a", "b", ["c"], 4, 5]', toJson(inputValues))
 
-        if sys.version_info >= (2, 7):
-            # 2.6 does display 5.6 something like this: 5.599999999999991
-            inputValues = ['a', 'b', set('c'), 4, 5.6]
-            self.assertEquals(u'["a", "b", ["c"], 4, 5.6]', toJson(inputValues))
+    @unittest.skipIf(sys.version_info < (2, 7), "Python 2.6 is unprecise with floats")
+    def testSerialisingSetInListWithFloat(self):
+        inputValues = ['a', 'b', set('c'), 4, 5.6]
+        self.assertEquals(u'["a", "b", ["c"], 4, 5.6]', toJson(inputValues))
 
     def testSerialisingDictsInList(self):
         inputValues = [
@@ -630,15 +629,15 @@ class JSONSerialisiationTestCase(unittest.TestCase):
 
         self.assertEquals(u'[{"a": "b", "c": 1}, {"a": "b", "c": 1}]', output)
 
-        if sys.version_info >= (2, 7):
-            # 2.6 does display 5.6 something like this: 5.599999999999991
-            inputValues = [
-                {'a': 'b', 'c': 1, 'e': 2.3},
-                {'g': 'h', 'i': 4, 'k': 5.6},
-            ]
-            output = toJson(inputValues)
+    @unittest.skipIf(sys.version_info < (2, 7), "Python 2.6 is unprecise with floats")
+    def testSerialisingDictsInListWithFloat(self):
+        inputValues = [
+            {'a': 'b', 'c': 1, 'e': 2.3},
+            {'g': 'h', 'i': 4, 'k': 5.6},
+        ]
+        output = toJson(inputValues)
 
-            self.assertEquals(u'[{"a": "b", "c": 1, "e": 2.3}, {"i": 4, "k": 5.6, "g": "h"}]', output)
+        self.assertEquals(u'[{"a": "b", "c": 1, "e": 2.3}, {"i": 4, "k": 5.6, "g": "h"}]', output)
 
     def testSerialisingDict(self):
         inputValues = {'a': 'b', 'c': 1, 'e': 2}
