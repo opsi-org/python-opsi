@@ -595,7 +595,7 @@ class JSONSerialisiationTestCase(unittest.TestCase):
         self.assertEquals(inputValues, fromJson(output))
         self.assertEquals(u'["a", "b", "c", 4, 5]', output)
 
-        if sys.version_info > (2, 6):
+        if sys.version_info >= (2, 7):
             # 2.6 does display 5.6 something like this: 5.599999999999991
             inputValues = ['a', 'b', 'c', 4, 5.6]
             output = toJson(inputValues)
@@ -607,7 +607,7 @@ class JSONSerialisiationTestCase(unittest.TestCase):
         inputValues = ['a', 'b', 'c', [4, 5, ['f']]]
         self.assertEquals(u'["a", "b", "c", [4, 5, ["f"]]]', toJson(inputValues))
 
-        if sys.version_info > (2, 6):
+        if sys.version_info >= (2, 7):
             # 2.6 does display 5.6 something like this: 5.599999999999991
             inputValues = ['a', 'b', 'c', [4, 5.6, ['f']]]
             self.assertEquals(u'["a", "b", "c", [4, 5.6, ["f"]]]', toJson(inputValues))
@@ -616,7 +616,7 @@ class JSONSerialisiationTestCase(unittest.TestCase):
         inputValues = ['a', 'b', set('c'), 4, 5]
         self.assertEquals(u'["a", "b", ["c"], 4, 5]', toJson(inputValues))
 
-        if sys.version_info > (2, 6):
+        if sys.version_info >= (2, 7):
             # 2.6 does display 5.6 something like this: 5.599999999999991
             inputValues = ['a', 'b', set('c'), 4, 5.6]
             self.assertEquals(u'["a", "b", ["c"], 4, 5.6]', toJson(inputValues))
@@ -630,7 +630,7 @@ class JSONSerialisiationTestCase(unittest.TestCase):
 
         self.assertEquals(u'[{"a": "b", "c": 1}, {"a": "b", "c": 1}]', output)
 
-        if sys.version_info > (2, 6):
+        if sys.version_info >= (2, 7):
             # 2.6 does display 5.6 something like this: 5.599999999999991
             inputValues = [
                 {'a': 'b', 'c': 1, 'e': 2.3},
@@ -644,7 +644,7 @@ class JSONSerialisiationTestCase(unittest.TestCase):
         inputValues = {'a': 'b', 'c': 1, 'e': 2}
         self.assertEquals(u'{"a": "b", "c": 1, "e": 2}', toJson(inputValues))
 
-        if sys.version_info > (2, 6):
+        if sys.version_info >= (2, 7):
             # 2.6 does display 5.6 something like this: 5.599999999999991
             inputValues = {'a': 'b', 'c': 1, 'e': 2.3}
             self.assertEquals(u'{"a": "b", "c": 1, "e": 2.3}', toJson(inputValues))
