@@ -40,7 +40,7 @@ from OPSI.Util import (chunk, compareVersions, flattenSequence, formatFileSize,
     isRegularExpressionPattern, librsyncDeltaFile, librsyncSignature,
     librsyncPatchFile, md5sum, objectToBeautifiedText, objectToHtml,
     randomString, removeUnit, toJson)
-from OPSI.Object import LocalbootProduct
+from OPSI.Object import LocalbootProduct, OpsiClient
 
 from .helpers import (fakeGlobalConf, patchAddress, patchEnvironmentVariables,
     workInTemporaryDirectory)
@@ -643,6 +643,7 @@ class JSONSerialisiationTestCase(unittest.TestCase):
     def testSerialisingDict(self):
         inputValues = {'a': 'b', 'c': 1, 'e': 2}
         self.assertEquals(u'{"a": "b", "c": 1, "e": 2}', toJson(inputValues))
+        self.assertEquals(inputValues, fromJson(toJson(inputValues)))
 
         if sys.version_info >= (2, 7):
             # 2.6 does display 5.6 something like this: 5.599999999999991
@@ -654,6 +655,113 @@ class JSONSerialisiationTestCase(unittest.TestCase):
             pass
 
         self.assertRaises(TypeError, toJson, Foo())
+
+    def testDeserialisationWithObjectCreation(self):
+        json = """[
+    {
+    "ident" : "baert.niko.uib.local",
+    "description" : "",
+    "created" : "2014-08-29 10:41:27",
+    "inventoryNumber" : "loel",
+    "ipAddress" : null,
+    "notes" : "",
+    "oneTimePassword" : null,
+    "lastSeen" : "2014-08-29 10:41:27",
+    "hardwareAddress" : null,
+    "opsiHostKey" : "7dc2b49c20d545bdbfad9a326380cea3",
+    "type" : "OpsiClient",
+    "id" : "baert.niko.uib.local"
+    }
+]"""
+
+        result = fromJson(json, preventObjectCreation=False)
+
+        self.assertTrue(isinstance(result, list))
+        self.assertEquals(1, len(result))
+
+        obj = result[0]
+        self.assertTrue(obj, isinstance(obj, OpsiClient))
+
+    def testDeserialisationWithoutObjectCreation(self):
+        json = """[
+    {
+    "ident" : "baert.niko.uib.local",
+    "description" : "",
+    "created" : "2014-08-29 10:41:27",
+    "inventoryNumber" : "loel",
+    "ipAddress" : null,
+    "notes" : "",
+    "oneTimePassword" : null,
+    "lastSeen" : "2014-08-29 10:41:27",
+    "hardwareAddress" : null,
+    "opsiHostKey" : "7dc2b49c20d545bdbfad9a326380cea3",
+    "type" : "OpsiClient",
+    "id" : "baert.niko.uib.local"
+    }
+]"""
+
+        result = fromJson(json, preventObjectCreation=True)
+
+        self.assertTrue(isinstance(result, list))
+        self.assertEquals(1, len(result))
+
+        obj = result[0]
+        self.assertTrue(obj, isinstance(obj, dict))
+
+    def testDeserialisationWithExplicitTypeSetting(self):
+        "It must be possible to set an type."
+
+        json = """[
+    {
+    "ident" : "baert.niko.uib.local",
+    "description" : "",
+    "created" : "2014-08-29 10:41:27",
+    "inventoryNumber" : "loel",
+    "ipAddress" : null,
+    "notes" : "",
+    "oneTimePassword" : null,
+    "lastSeen" : "2014-08-29 10:41:27",
+    "hardwareAddress" : null,
+    "opsiHostKey" : "7dc2b49c20d545bdbfad9a326380cea3",
+    "id" : "baert.niko.uib.local"
+    }
+]"""
+
+        result = fromJson(json, objectType="OpsiClient", preventObjectCreation=False)
+
+        self.assertTrue(isinstance(result, list))
+        self.assertEquals(1, len(result))
+
+        obj = result[0]
+        self.assertTrue(obj, isinstance(obj, OpsiClient))
+
+    def testDeserialisationWithExplicitTypeSettingWorksOnUnknown(self):
+        "Setting invalid types must not fail but return the input instead."
+
+        json = """[
+    {
+    "ident" : "baert.niko.uib.local",
+    "description" : "",
+    "created" : "2014-08-29 10:41:27",
+    "inventoryNumber" : "loel",
+    "ipAddress" : null,
+    "notes" : "",
+    "oneTimePassword" : null,
+    "lastSeen" : "2014-08-29 10:41:27",
+    "hardwareAddress" : null,
+    "opsiHostKey" : "7dc2b49c20d545bdbfad9a326380cea3",
+    "id" : "baert.niko.uib.local"
+    }
+]"""
+
+        result = fromJson(json, objectType="NotYourType", preventObjectCreation=False)
+
+        self.assertTrue(isinstance(result, list))
+        self.assertEquals(1, len(result))
+
+        obj = result[0]
+        self.assertTrue(obj, isinstance(obj, dict))
+        self.assertEquals("baert.niko.uib.local", obj['ident'])
 
 
 if __name__ == '__main__':
