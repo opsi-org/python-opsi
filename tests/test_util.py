@@ -31,6 +31,7 @@ import re
 import os
 import os.path
 import shutil
+import sys
 import unittest
 from collections import defaultdict
 
@@ -588,32 +589,65 @@ class JSONSerialisiationTestCase(unittest.TestCase):
         self.assertEquals(set(fromJson(output)), inputSet)
 
     def testSerialisingList(self):
-        inputValues = ['a', 'b', 'c', 4, 5.6]
+        inputValues = ['a', 'b', 'c', 4, 5]
         output = toJson(inputValues)
 
         self.assertEquals(inputValues, fromJson(output))
-        self.assertEquals(u'["a", "b", "c", 4, 5.6]', output)
+        self.assertEquals(u'["a", "b", "c", 4, 5]', output)
+
+        if sys.version_info > (2, 6):
+            # 2.6 does display 5.6 something like this: 5.599999999999991
+            inputValues = ['a', 'b', 'c', 4, 5.6]
+            output = toJson(inputValues)
+
+            self.assertEquals(inputValues, fromJson(output))
+            self.assertEquals(u'["a", "b", "c", 4, 5.6]', output)
 
     def testSerialisingListInList(self):
-        inputValues = ['a', 'b', 'c', [4, 5.6, ['f']]]
-        self.assertEquals(u'["a", "b", "c", [4, 5.6, ["f"]]]', toJson(inputValues))
+        inputValues = ['a', 'b', 'c', [4, 5, ['f']]]
+        self.assertEquals(u'["a", "b", "c", [4, 5, ["f"]]]', toJson(inputValues))
+
+        if sys.version_info > (2, 6):
+            # 2.6 does display 5.6 something like this: 5.599999999999991
+            inputValues = ['a', 'b', 'c', [4, 5.6, ['f']]]
+            self.assertEquals(u'["a", "b", "c", [4, 5.6, ["f"]]]', toJson(inputValues))
 
     def testSerialisingSetInList(self):
-        inputValues = ['a', 'b', set('c'), 4, 5.6]
-        self.assertEquals(u'["a", "b", ["c"], 4, 5.6]', toJson(inputValues))
+        inputValues = ['a', 'b', set('c'), 4, 5]
+        self.assertEquals(u'["a", "b", ["c"], 4, 5]', toJson(inputValues))
+
+        if sys.version_info > (2, 6):
+            # 2.6 does display 5.6 something like this: 5.599999999999991
+            inputValues = ['a', 'b', set('c'), 4, 5.6]
+            self.assertEquals(u'["a", "b", ["c"], 4, 5.6]', toJson(inputValues))
 
     def testSerialisingDictsInList(self):
         inputValues = [
-            {'a': 'b', 'c': 1, 'e': 2.3},
-            {'g': 'h', 'i': 4, 'k': 5.6},
+            {'a': 'b', 'c': 1},
+            {'a': 'b', 'c': 1},
         ]
         output = toJson(inputValues)
 
-        self.assertEquals(u'[{"a": "b", "c": 1, "e": 2.3}, {"i": 4, "k": 5.6, "g": "h"}]', output)
+        self.assertEquals(u'[{"a": "b", "c": 1}, {"a": "b", "c": 1}]', output)
+
+        if sys.version_info > (2, 6):
+            # 2.6 does display 5.6 something like this: 5.599999999999991
+            inputValues = [
+                {'a': 'b', 'c': 1, 'e': 2.3},
+                {'g': 'h', 'i': 4, 'k': 5.6},
+            ]
+            output = toJson(inputValues)
+
+            self.assertEquals(u'[{"a": "b", "c": 1, "e": 2.3}, {"i": 4, "k": 5.6, "g": "h"}]', output)
 
     def testSerialisingDict(self):
-        inputValues = {'a': 'b', 'c': 1, 'e': 2.3}
-        self.assertEquals(u'{"a": "b", "c": 1, "e": 2.3}', toJson(inputValues))
+        inputValues = {'a': 'b', 'c': 1, 'e': 2}
+        self.assertEquals(u'{"a": "b", "c": 1, "e": 2}', toJson(inputValues))
+
+        if sys.version_info > (2, 6):
+            # 2.6 does display 5.6 something like this: 5.599999999999991
+            inputValues = {'a': 'b', 'c': 1, 'e': 2.3}
+            self.assertEquals(u'{"a": "b", "c": 1, "e": 2.3}', toJson(inputValues))
 
     def testUnserialisableThingsFail(self):
         class Foo(object):
