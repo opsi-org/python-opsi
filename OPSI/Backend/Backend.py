@@ -39,6 +39,7 @@ import json
 import new
 import os
 import random
+import re
 import threading
 import warnings
 from hashlib import md5
