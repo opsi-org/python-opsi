@@ -576,9 +576,8 @@ class BackendAccessControl(object):
 			if re.search('^[^\.]+\.[^\.]+\.\S+$', self._username):
 				# Username starts with something like hostname.domain.tld:
 				# Assuming it is a host passing his FQDN as username
-				self._username = self._username.lower()
-
 				logger.debug(u"Trying to authenticate by opsiHostKey...")
+				self._username = self._username.lower()
 
 				if not hasattr(self._context, 'host_getObjects'):
 					raise Exception(u"Passed backend has no method 'host_getObjects', cannot authenticate host '%s'" % self._username)
