@@ -139,6 +139,9 @@ class MySQL(SQL):
 		self._createConnectionPool()
 		logger.debug(u'MySQL created: %s' % self)
 
+	def __repr__(self):
+		return u'<{0}(address={1!r})>'.format(self.__class__.__name__, self._address)
+
 	def _createConnectionPool(self):
 		logger.debug2(u"Creating connection pool")
 		self._transactionLock.acquire(False)

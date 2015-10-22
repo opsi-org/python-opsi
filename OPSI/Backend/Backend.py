@@ -432,7 +432,10 @@ This defaults to ``self``.
 		pass
 
 	def __repr__(self):
-		return u'<{0}(name={1!r})>'.format(self.__class__.__name__, self._name)
+		if self._name:
+			return u'<{0}(name={1!r})>'.format(self.__class__.__name__, self._name)
+		else:
+			return u'<{0}()>'.format(self.__class__.__name__)
 
 
 class ExtendedBackend(Backend):
