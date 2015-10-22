@@ -45,6 +45,7 @@ from OPSI.Types import (forceBool, forceUnicodeLower, forceOpsiTimestamp,
 from OPSI.Types import BackendReferentialIntegrityError, BackendModuleDisabledError
 from OPSI.Object import *
 from OPSI.Backend.Backend import BackendModificationListener, ConfigDataBackend
+from OPSI.Util import timestamp
 
 logger = Logger()
 
