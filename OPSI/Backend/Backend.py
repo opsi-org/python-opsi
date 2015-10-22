@@ -194,8 +194,8 @@ This defaults to ``self``.
 		try:
 			with codecs.open(self._opsiVersionFile, 'r', 'utf-8') as f:
 				self._opsiVersion = f.readline().strip()
-		except Exception as e:
-			logger.error(u"Failed to read version info from file '%s': %s" % (self._opsiVersionFile, e))
+		except Exception as error:
+			logger.error(u"Failed to read version info from file {0!r}: {1}".format(self._opsiVersionFile, error))
 			self._opsiVersion = 'unknown'
 
 	def _setContext(self, context):

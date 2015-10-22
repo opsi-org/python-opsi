@@ -509,8 +509,8 @@ class BackendExtender(ExtendedBackend):
 						if isinstance(val, types.FunctionType):   # TODO: find a better way
 							logger.debug2(u"Extending %s with instancemethod: '%s'" % (self._backend.__class__.__name__, key))
 							setattr(self, key, new.instancemethod(val, self, self.__class__))
-			except Exception as e:
-				raise BackendConfigurationError(u"Failed to read extensions from '%s': %s" % (self._extensionConfigDir, e))
+			except Exception as error:
+				raise BackendConfigurationError(u"Failed to read extensions from '%s': %s" % (self._extensionConfigDir, error))
 
 
 class BackendAccessControl(object):

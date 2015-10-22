@@ -93,8 +93,8 @@ def deserialize(obj, preventObjectCreation=False):
 			import OPSI.Object
 			c = eval('OPSI.Object.%s' % obj['type'])
 			newObj = c.fromHash(obj)
-		except Exception as e:
-			logger.debug(u"Failed to get object from dict '%s': %s" % (obj, forceUnicode(e)))
+		except Exception as error:
+			logger.debug(u"Failed to get object from dict {0!r}: {1}".format(obj, forceUnicode(error)))
 			return obj
 	elif isinstance(obj, list):
 		newObj = [deserialize(tempObject, preventObjectCreation=preventObjectCreation) for tempObject in obj]
