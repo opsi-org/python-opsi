@@ -384,7 +384,7 @@ class BackendDispatcher(Backend):
 				logger.debug2(u"Found public %s method '%s'" % (Class.__name__, methodName))
 
 				if hasattr(self, methodName):
-					logger.debug(u"%s: overwriting method %s" % (self.__class__.__name__, methodName))
+					logger.debug(u"{0}: skipping already present method {1}".format(self.__class__.__name__, methodName))
 					continue
 
 				methodBackends = []
