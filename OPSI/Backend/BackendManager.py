@@ -800,7 +800,7 @@ class BackendAccessControl(object):
 		if not params:
 			return False
 		for (param, value) in params.items():
-			if type(value) is types.ClassType and issubclass(value, Object) and (value.id == self._username):
+			if isinstance(value, types.ClassType) and issubclass(value, Object) and (value.id == self._username):
 				return True
 			if param in ('id', 'objectId', 'hostId', 'clientId', 'serverId', 'depotId') and (value == self._username):
 				return True

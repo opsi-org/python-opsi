@@ -2126,7 +2126,7 @@ class SQLBackend(ConfigDataBackend):
 		for (attribute, value) in auditHardware.toHash().items():
 			if value is None:
 				filter[attribute] = [None]
-			elif type(value) is unicode:
+			elif isinstance(value, unicode):
 				filter[attribute] = self._sql.escapeAsterisk(value)
 			else:
 				filter[attribute] = value
