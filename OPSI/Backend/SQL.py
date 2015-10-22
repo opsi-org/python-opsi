@@ -219,8 +219,9 @@ class SQLBackend(ConfigDataBackend):
 
 	def _requiresEnabledSQLBackendModule(self):
 		"""
-		This will raise an exception if the SQL backend module is
-		not enabled.
+		This will raise an exception if the SQL backend module is not enabled.
+
+		:raises BackendModuleDisabledError: if SQL backend module disabled
 		"""
 		if not self._sqlBackendModule:
 			raise BackendModuleDisabledError(u"SQL backend module disabled")
