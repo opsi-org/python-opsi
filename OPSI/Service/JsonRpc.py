@@ -4,7 +4,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2010-2014 uib GmbH
+# Copyright (C) 2010-2015 uib GmbH
 
 # http://www.uib.de/
 
@@ -110,7 +110,7 @@ class JsonRpc(object):
 					l += len(methodInterface['varargs'])
 
 				if len(params) >= l:
-					if not type(params[-1]) is types.DictType:
+					if not isinstance(params[-1], dict):
 						raise Exception(u"kwargs param is not a dict: %s" % params[-1])
 
 					for (key, value) in params.pop(-1).items():

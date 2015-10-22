@@ -41,7 +41,7 @@ from OPSI.Logger import Logger
 from OPSI.Types import (forceBool, forceInt, forceIntList, forceIpAddress,
 	forceList, forceUnicode, forceUnicodeList)
 
-__version__ = '4.0.1'
+__version__ = '4.0.6.29'
 
 logger = Logger()
 
@@ -535,12 +535,12 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 		self.notify( name = u"endConnection", params = [ clientIds ] )
 
 	def notify(self, name, params, clients = []):
-		if not type(params) is list:
-			params = [ params ]
+		if not isinstance(params, list):
+			params = [params]
 		if not clients:
 			clients = self.clients
-		if not type(clients) is list:
-			clients = [ clients ]
+		if not isinstance(clients, list):
+			clients = [clients]
 		if not clients:
 			logger.debug(u"cannot send notification '%s', no client connected" % name)
 			return
@@ -548,7 +548,7 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 		for client in clients:
 			# json-rpc: notifications have id null
 			jsonString = json.dumps( {"id": None, "method": name, "params": params } )
-			if type(jsonString) is unicode:
+			if isinstance(jsonString, unicode):
 				jsonString = jsonString.encode('utf-8')
 			client.sendLine(jsonString)
 
@@ -703,8 +703,8 @@ class NotificationClientFactory(ClientFactory):
 		logger.debug(u"executing method '%s', params %s" % (method, params))
 		if not params:
 			params = []
-		if not type(params) in (list, tuple):
-			params = [ params ]
+		if not isinstance(params, (list, tuple)):
+			params = [params]
 
 		timeout = 0
 		while not self.isReady() and (timeout < self._timeout):

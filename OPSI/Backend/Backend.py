@@ -64,7 +64,7 @@ from OPSI.Util import (blowfishEncrypt, blowfishDecrypt, compareVersions,
 from OPSI.Util.File import ConfigFile
 import OPSI.SharedAlgorithm
 
-__version__ = '4.0.6.27'
+__version__ = '4.0.6.29'
 
 logger = Logger()
 OPSI_VERSION_FILE = u'/etc/opsi/version'
@@ -105,11 +105,11 @@ def getArgAndCallString(method):
 			continue
 
 		callString.append(u'='.join((element, element)))
-		if type(argDefaults) is tuple and (len(argDefaults) + args.index(element) >= len(args)):
+		if isinstance(argDefaults, tuple) and (len(argDefaults) + args.index(element) >= len(args)):
 			default = argDefaults[len(argDefaults) - len(args) + args.index(element)]
-			if type(default) is str:
+			if isinstance(default, str):
 				default = u"'{0}'".format(default)
-			elif type(default) is unicode:
+			elif isinstance(default, unicode):
 				default = u"u'{0}'".format(default)
 
 			argString.append(u'='.join((element, unicode(default))))

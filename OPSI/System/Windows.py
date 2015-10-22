@@ -67,7 +67,7 @@ from datetime import datetime
 from OPSI.Logger import *
 from OPSI.Types import *
 
-__version__ = '4.0.6.1'
+__version__ = '4.0.6.29'
 
 logger = Logger()
 hooks = []
@@ -624,7 +624,7 @@ def getRegistryValue(key, subKey, valueName, reflection=True):
 def setRegistryValue(key, subKey, valueName, value):
 	_winreg.CreateKey(key, subKey)
 	hkey = _winreg.OpenKey(key, subKey, 0, _winreg.KEY_WRITE)
-	if type(value) is int:
+	if isinstance(value, int):
 		_winreg.SetValueEx(hkey, valueName, 0, _winreg.REG_DWORD, value)
 	else:
 		_winreg.SetValueEx(hkey, valueName, 0, _winreg.REG_SZ, value)
@@ -1413,9 +1413,9 @@ def execute(cmd, waitForEnding=True, getHandle=False, ignoreExitCode=[], exitOnS
 
 	logger.debug(u"Exit code: %s" % exitCode)
 	if exitCode:
-		if   type(ignoreExitCode) is bool and ignoreExitCode:
+		if isinstance(ignoreExitCode, bool) and ignoreExitCode:
 			pass
-		elif type(ignoreExitCode) is list and exitCode in ignoreExitCode:
+		elif isinstance(ignoreExitCode, list) and exitCode in ignoreExitCode:
 			pass
 		else:
 			raise IOError(exitCode, u"Command '%s' failed (%s):\n%s" % (cmd, exitCode, u'\n'.join(result)))

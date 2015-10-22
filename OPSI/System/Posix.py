@@ -55,7 +55,7 @@ from OPSI.Types import OpsiVersionError
 from OPSI.Object import *
 from OPSI.Util import objectToBeautifiedText, removeUnit
 
-__version__ = '4.0.6.12'
+__version__ = '4.0.6.29'
 
 logger = Logger()
 
@@ -2976,7 +2976,7 @@ def hardwareExtendedInventory(config, opsiValues={}, progressSubject=None):
 						pythonline = pythonline.replace("#%s#" % srcfields, "'%s'" % attr)
 						result = eval(pythonline)
 
-					if type(result) is unicode:
+					if isinstance(result, unicode):
 						result = result.encode('utf-8')
 					if not opsiName in opsiValues:
 						opsiValues[opsiName].append({})
@@ -3134,7 +3134,7 @@ def hardwareInventory(config, progressSubject=None):
 			if match:
 				descriptor = match.group(2).strip().lower()
 				logger.debug(u"Descriptor: %s" % descriptor)
-				if type(lsusb[busId + ":" + devId][descriptor]) is list:
+				if isinstance(lsusb[busId + ":" + devId][descriptor], list):
 					lsusb[busId + ":" + devId][descriptor].append({})
 				currentKey = None
 				indent = -1
@@ -3169,7 +3169,7 @@ def hardwareInventory(config, progressSubject=None):
 				continue
 
 			currentKey = key
-			if type(lsusb[busId + ":" + devId][descriptor]) is list:
+			if isinstance(lsusb[busId + ":" + devId][descriptor], list):
 				if key not in lsusb[busId + ":" + devId][descriptor][-1]:
 					lsusb[busId + ":" + devId][descriptor][-1][key] = []
 				lsusb[busId + ":" + devId][descriptor][-1][key].append(value)
@@ -3214,7 +3214,7 @@ def hardwareInventory(config, progressSubject=None):
 					value = match.group(3).strip()
 					dmidecode[dmiType][-1][option] = removeUnit(value)
 				elif option:
-					if not type(dmidecode[dmiType][-1][option]) is list:
+					if not isinstance(dmidecode[dmiType][-1][option], list):
 						if dmidecode[dmiType][-1][option]:
 							dmidecode[dmiType][-1][option] = [dmidecode[dmiType][-1][option]]
 						else:
@@ -3422,12 +3422,12 @@ def hardwareInventory(config, progressSubject=None):
 							method = None
 							if '.' in key:
 								(key, method) = key.split('.', 1)
-							if not type(value) is dict or not value.has_key(key):
+							if not isinstance(value, dict) or not value.has_key(key):
 								logger.error(u"Key '%s' not found" % key)
 								value = u''
 								break
 							value = value[key]
-							if type(value) is list:
+							if isinstance(value, list):
 								value = u', '.join(value)
 							if method:
 								value = eval("value.%s" % method)

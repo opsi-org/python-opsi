@@ -48,7 +48,7 @@ from OPSI.Types import (forceActionProgress, forceActionRequest,
 	forceUnicodeList, forceUnicodeLower, forceUnsignedInt, forceUrl)
 from OPSI.Util import fromJson, toJson, generateOpsiHostKey, timestamp
 
-__version__ = '4.0.6.11'
+__version__ = '4.0.6.29'
 
 logger = Logger()
 _MANDATORY_CONSTRUCTOR_ARGS_CACHE = {}
@@ -3082,7 +3082,7 @@ class AuditHardware(Entity):
 					raise BackendConfigurationError(u"Attribute '%s' of hardware class '%s' has unknown type '%s'" % (attribute, hardwareClass, type))
 		else:
 			for (attribute, value) in kwargs.items():
-				if type(value) is str:
+				if isinstance(value, str):
 					kwargs[attribute] = forceUnicode(value).strip()
 
 		self.__dict__.update(kwargs)
@@ -3132,7 +3132,7 @@ class AuditHardware(Entity):
 			if key == 'type':
 				continue
 
-			if type(key) is unicode:
+			if isinstance(key, unicode):
 				key = str(key)
 			initHash[key] = value
 		return AuditHardware(**initHash)
@@ -3236,7 +3236,7 @@ class AuditHardwareOnHost(Relationship):
 					raise BackendConfigurationError(u"Attribute '%s' of hardware class '%s' has unknown type '%s'" % (attribute, hardwareClass, type))
 		else:
 			for (attribute, value) in kwargs.items():
-				if type(value) is str:
+				if isinstance(value, str):
 					kwargs[attribute] = forceUnicode(value).strip()
 
 		self.__dict__.update(kwargs)
@@ -3339,7 +3339,7 @@ class AuditHardwareOnHost(Relationship):
 			if key == 'type':
 				continue
 
-			if type(key) is unicode:
+			if isinstance(key, unicode):
 				key = str(key)
 
 			initHash[key] = value

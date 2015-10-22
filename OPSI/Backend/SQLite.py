@@ -142,14 +142,14 @@ class SQLite(SQL):
 				colNames.append(u"`{0}`".format(key))
 				if value is None:
 					values.append(u"NULL")
-				elif type(value) is bool:
+				elif isinstance(value, bool):
 					if value:
 						values.append(u"1")
 					else:
 						values.append(u"0")
-				elif type(value) in (float, long, int):
+				elif isinstance(value, (float, long, int)):
 					values.append(u"{0}".format(value))
-				elif type(value) is str:
+				elif isinstance(value, str):
 					values.append(u"\'{0}\'".format(self.escapeApostrophe(self.escapeBackslash(value.decode("utf-8")))))
 				else:
 					values.append(u"\'{0}\'".format(self.escapeApostrophe(self.escapeBackslash(value))))
@@ -178,14 +178,14 @@ class SQLite(SQL):
 
 				if value is None:
 					values.append(u"`{0}` = NULL".format(key))
-				elif type(value) is bool:
+				elif isinstance(value, bool):
 					if value:
 						values.append(u"`{0}` = 1".format(key))
 					else:
 						values.append(u"`{0}` = 0".format(key))
-				elif type(value) in (float, long, int):
+				elif isinstance(value, (float, long, int)):
 					values.append(u"`{0}` = {1}".format(key, value))
-				elif type(value) is str:
+				elif isinstance(value, str):
 					values.append(u"`{0}` = \'{1}\'".format(key, self.escapeApostrophe(self.escapeBackslash(value.decode("utf-8")))))
 				else:
 					values.append(u"`{0}` = \'{1}\'".format(key, self.escapeApostrophe(self.escapeBackslash(value))))

@@ -58,7 +58,7 @@ elif os.name == 'nt':
 	import win32file
 	import pywintypes
 
-__version__ = "4.0.6.3"
+__version__ = "4.0.6.29"
 
 logger = Logger()
 
@@ -100,7 +100,7 @@ class File(object):
 			logger.warning(u"Not implemented on windows")
 			return
 		uid = -1
-		if type(user) is int:
+		if isinstance(user, int):
 			if user > -1:
 				uid = user
 		elif user is not None:
@@ -110,7 +110,7 @@ class File(object):
 				raise Exception(u"Unknown user '%s'" % user)
 
 		gid = -1
-		if type(group) is int:
+		if isinstance(group, int):
 			if group > -1:
 				gid = group
 		elif group is not None:
@@ -1431,7 +1431,7 @@ class DHCPDConf_Parameter(DHCPDConf_Component):
 		DHCPDConf_Component.__init__(self, startLine, parentBlock)
 		self.key = key
 		self.value = value
-		if type(self.value) in (unicode, str):
+		if isinstance(self.value, (unicode, str)):
 			if self.value.lower() in (u'yes', u'true', u'on'):
 				self.value = True
 			elif self.value.lower() in (u'no', u'false', u'off'):
@@ -1439,7 +1439,7 @@ class DHCPDConf_Parameter(DHCPDConf_Component):
 
 	def asText(self):
 		value = self.value
-		if type(value) is bool:
+		if isinstance(value, bool):
 			if value:
 				value = u'on'
 			else:
@@ -1461,7 +1461,7 @@ class DHCPDConf_Option(DHCPDConf_Component):
 		DHCPDConf_Component.__init__(self, startLine, parentBlock)
 		self.key = key
 		self.value = value
-		if not type(self.value) is list:
+		if not isinstance(self.value, list):
 			self.value = [self.value]
 
 	def asText(self):

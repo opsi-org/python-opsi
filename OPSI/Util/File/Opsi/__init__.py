@@ -69,7 +69,7 @@ from OPSI.Types import (BackendBadValueError, OpsiBackupBackendNotFound,
 from OPSI.Util.File import ConfigFile, IniFile, TextFile, requiresParsing
 from OPSI.Util import md5sum, toJson, fromJson
 
-__version__ = '4.0.6.12'
+__version__ = '4.0.6.29'
 
 logger = Logger()
 
@@ -559,7 +559,7 @@ class PackageControlFile(TextFile):
 			if not self._sections[sectionType][-1].has_key(option):
 				self._sections[sectionType][-1][option] = value
 			else:
-				if type(self._sections[sectionType][-1][option]) is unicode:
+				if isinstance(self._sections[sectionType][-1][option], unicode):
 					if not self._sections[sectionType][-1][option].endswith('\n'):
 						self._sections[sectionType][-1][option] += u'\n'
 					self._sections[sectionType][-1][option] += value.lstrip()
@@ -604,7 +604,7 @@ class PackageControlFile(TextFile):
 									tmp.append(v)
 							value = tmp
 
-					if type(value) is unicode:
+					if isinstance(value, unicode):
 						value = value.rstrip()
 
 					self._sections[sectionType][i][option] = value

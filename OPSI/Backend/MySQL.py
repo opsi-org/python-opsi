@@ -47,7 +47,7 @@ from OPSI.Backend.Backend import ConfigDataBackend
 from OPSI.Backend.SQL import (onlyAllowSelect, SQL, SQLBackend,
 	SQLBackendObjectModificationTracker)
 
-__version__ = '4.0.6.10'
+__version__ = '4.0.6.29'
 
 logger = Logger()
 
@@ -323,14 +323,14 @@ class MySQL(SQL):
 				colNames.append(u"`{0}`".format(key))
 				if value is None:
 					values.append(u"NULL")
-				elif type(value) is bool:
+				elif isinstance(value, bool):
 					if value:
 						values.append(u"1")
 					else:
 						values.append(u"0")
-				elif type(value) in (float, long, int):
+				elif isinstance(value, (float, long, int)):
 					values.append(u"{0}".format(value))
-				elif type(value) is str:
+				elif isinstance(value, str):
 					values.append(u"\'{0}\'".format(self.escapeApostrophe(self.escapeBackslash(value.decode("utf-8")))))
 				else:
 					values.append(u"\'{0}\'".format(self.escapeApostrophe(self.escapeBackslash(value))))
@@ -366,14 +366,14 @@ class MySQL(SQL):
 						continue
 
 					value = u"NULL"
-				elif type(value) is bool:
+				elif isinstance(value, bool):
 					if value:
 						value = u"1"
 					else:
 						value = u"0"
-				elif type(value) in (float, long, int):
+				elif isinstance(value, (float, long, int)):
 					value = u"%s" % value
-				elif type(value) is str:
+				elif isinstance(value, str):
 					value = u"\'{0}\'".format(self.escapeApostrophe(self.escapeBackslash(value.decode("utf-8"))))
 				else:
 					value = u"\'{0}\'".format(self.escapeApostrophe(self.escapeBackslash(value)))
@@ -637,12 +637,12 @@ class MySQLBackend(SQLBackend):
 				else:
 					myPPVdefault = u"`isDefault` = 0"
 
-				if type(value) is bool:
+				if isinstance(value, bool):
 					if value:
 						myPPVvalue = u"`value` = 1"
 					else:
 						myPPVvalue = u"`value` = 0"
-				elif type(value) in (float, long, int):
+				elif isinstance(value, (float, long, int)):
 					myPPVvalue = u"`value` = %s" % (value)
 				else:
 					myPPVvalue = u"`value` = '%s'" % (self._sql.escapeApostrophe(self._sql.escapeBackslash(value)))

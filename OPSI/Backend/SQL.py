@@ -237,12 +237,12 @@ class SQLBackend(ConfigDataBackend):
 
 			tmp = []
 			for value in values:
-				if type(value) is bool:
+				if isinstance(value, bool):
 					if value:
 						tmp.append(u"`{0}` = 1".format(key))
 					else:
 						tmp.append(u"`{0}` = 0".format(key))
-				elif type(value) in (float, long, int):
+				elif isinstance(value, (float, long, int)):
 					tmp.append(u"`{0}` = {1}".format(key, value))
 				elif value is None:
 					tmp.append(u"`{0}` is NULL".format(key))
@@ -394,12 +394,12 @@ class SQLBackend(ConfigDataBackend):
 			if value is None:
 				continue
 			arg = self._objectAttributeToDatabaseAttribute(object.__class__, arg)
-			if type(value) is bool:
+			if isinstance(value, bool):
 				if value:
 					condition.append(u"`{0}` = 1".format(arg))
 				else:
 					condition.append(u"`{0}` = 0".format(arg))
-			elif type(value) in (float, long, int):
+			elif isinstance(value, (float, long, int)):
 				condition.append(u"`{0}` = {1}".format(arg, value))
 			else:
 				condition.append(u"`{0}` = '{1}'".format(arg, self._sql.escapeApostrophe(self._sql.escapeBackslash(value))))
@@ -2096,7 +2096,7 @@ class SQLBackend(ConfigDataBackend):
 				continue
 			if value is None or value == [None]:
 				condition.append(u"`{0}` is NULL".format(attribute))
-			elif type(value) in (float, long, int, bool):
+			elif isinstance(value, (float, long, int, bool)):
 				condition.append(u"`{0}` = {1}".format(attribute, value))
 			else:
 				condition.append(u"`{0}` = '{1}'".format(attribute, self._sql.escapeApostrophe(self._sql.escapeBackslash(value))))
@@ -2109,7 +2109,7 @@ class SQLBackend(ConfigDataBackend):
 		for (attribute, value) in auditHardware.items():
 			if value is None:
 				auditHardware[attribute] = [None]
-			elif type(value) is unicode:
+			elif isinstance(value, unicode):
 				auditHardware[attribute] = self._sql.escapeAsterisk(value)
 
 		logger.debug(u"Getting hardware ids, filter %s" % auditHardware)
@@ -2287,7 +2287,7 @@ class SQLBackend(ConfigDataBackend):
 		for (attribute, value) in auditHardwareOnHost.iteritems():
 			if value is None:
 				filter[attribute] = [None]
-			elif type(value) is unicode:
+			elif isinstance(value, unicode):
 				filter[attribute] = self._sql.escapeAsterisk(value)
 			else:
 				filter[attribute] = value

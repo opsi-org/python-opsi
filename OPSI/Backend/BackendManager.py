@@ -58,7 +58,7 @@ elif os.name == 'nt':
 	import win32net
 	import win32security
 
-__version__ = '4.0.6.17'
+__version__ = '4.0.6.29'
 
 logger = Logger()
 
@@ -166,7 +166,7 @@ class BackendManager(ExtendedBackend):
 			elif option == 'password':
 				password = value
 			elif option == 'backend':
-				if type(value) in (str, unicode):
+				if isinstance(value, (str, unicode)):
 					loadBackend = value
 				else:
 					self._backend = value
@@ -274,7 +274,7 @@ class BackendManager(ExtendedBackend):
 		backendConfigFile = os.path.join(self._backendConfigDir, '%s.conf' % name)
 		if not config['module']:
 			raise BackendConfigurationError(u"No module defined in backend config file '%s'" % backendConfigFile)
-		if not type(config['config']) is dict:
+		if not isinstance(config['config'], dict):
 			raise BackendConfigurationError(u"Bad type for config var in backend config file '%s', has to be dict" % backendConfigFile)
 		config['config']['name'] = name
 		exec(u'from %s import %sBackend' % (config['module'], config['module']))
@@ -344,7 +344,7 @@ class BackendDispatcher(Backend):
 			raise BackendConfigurationError(u"Backend config dir '%s' not found" % self._backendConfigDir)
 
 		for i in xrange(len(self._dispatchConfig)):
-			if not type(self._dispatchConfig[i][1]) is list:
+			if not isinstance(self._dispatchConfig[i][1], list):  # TODO: set?
 				self._dispatchConfig[i][1] = [self._dispatchConfig[i][1]]
 
 			for value in self._dispatchConfig[i][1]:
@@ -367,7 +367,7 @@ class BackendDispatcher(Backend):
 				logger.notice(u"Ignoring module '%s', backend '%s'" % (l['module'], backend))
 				del self._backends[backend]
 				continue
-			if not type(l['config']) is dict:
+			if not isinstance(l['config'], dict):
 				raise BackendConfigurationError(u"Bad type for config var in backend config file '%s', has to be dict" % backendConfigFile)
 			backendInstance = None
 			l["config"]["context"] = self
@@ -418,10 +418,15 @@ class BackendDispatcher(Backend):
 			meth = getattr(self._backends[methodBackend]["instance"], methodName)
 			res = meth(**kwargs)
 
-			if type(result) is types.ListType and type(res) is types.ListType:
+			# TODO: handling of generators?
+			if isinstance(result, list) and isinstance(res, list):
 				result.extend(res)
-			elif type(result) is types.DictType and type(res) is types.DictType:
+			elif isinstance(result, dict) and isinstance(res, dict):
 				result.update(res)
+			elif isinstance(result, set) and isinstance(res, set):
+				result = result.union(res)
+			elif isinstance(result, tuple) and isinstance(res, tuple):
+				result = result + res
 			elif res is not None:
 				result = res
 
@@ -501,7 +506,7 @@ class BackendExtender(ExtendedBackend):
 						raise Exception(u"Error reading file '%s': %s" % (confFile, e))
 
 					for (key, val) in locals().items():
-						if type(val) == types.FunctionType:
+						if isinstance(val, types.FunctionType):   # TODO: find a better way
 							logger.debug2(u"Extending %s with instancemethod: '%s'" % (self._backend.__class__.__name__, key))
 							setattr(self, key, new.instancemethod(val, self, self.__class__))
 			except Exception as e:

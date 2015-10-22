@@ -56,7 +56,7 @@ from OPSI.Logger import Logger
 from OPSI.Types import (forceBool, forceFilename, forceFqdn, forceInt,
 						forceIPAddress, forceNetworkAddress, forceUnicode)
 
-__version__ = '4.0.6.27'
+__version__ = '4.0.6.29'
 
 logger = Logger()
 
@@ -89,7 +89,7 @@ class PickleString(str):
 
 def deserialize(obj, preventObjectCreation=False):
 	newObj = None
-	if not preventObjectCreation and type(obj) is dict and 'type' in obj:
+	if not preventObjectCreation and isinstance(obj, dict) and 'type' in obj:
 		try:
 			import OPSI.Object
 			c = eval('OPSI.Object.%s' % obj['type'])
@@ -97,9 +97,9 @@ def deserialize(obj, preventObjectCreation=False):
 		except Exception as e:
 			logger.debug(u"Failed to get object from dict '%s': %s" % (obj, forceUnicode(e)))
 			return obj
-	elif type(obj) is list:
+	elif isinstance(obj, list):
 		newObj = [deserialize(tempObject, preventObjectCreation=preventObjectCreation) for tempObject in obj]
-	elif type(obj) is dict:
+	elif isinstance(obj, dict):
 		newObj = {}
 		for (key, value) in obj.items():
 			newObj[key] = deserialize(value, preventObjectCreation=preventObjectCreation)
@@ -140,7 +140,7 @@ def formatFileSize(sizeInBytes):
 
 def fromJson(obj, objectType=None, preventObjectCreation=False):
 	obj = json.loads(obj)
-	if type(obj) is dict and objectType:
+	if isinstance(obj, dict) and objectType:
 		obj['type'] = objectType
 	return deserialize(obj, preventObjectCreation=preventObjectCreation)
 
@@ -515,9 +515,9 @@ def compareVersions(v1, condition, v2):
 					logger.debug2(u"%s == %s => continue" % (cv1, cv2))
 					continue
 
-				if type(cv1) is not int:
+				if not isinstance(cv1, int):
 					cv1 = u"'%s'" % cv1
-				if type(cv2) is not int:
+				if not isinstance(cv2, int):
 					cv2 = u"'%s'" % cv2
 
 				b = eval(u"%s %s %s" % (cv1, condition, cv2))
@@ -700,7 +700,7 @@ def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeD
 
 	files = []
 	for entry in listdir(directory):
-		if type(entry) is str:
+		if isinstance(entry, str):  # TODO how to handle this with Python 3?
 			logger.error(u"Bad filename '%s' found in directory '%s', skipping entry!" % (unicode(entry, 'ascii', 'replace'), directory))
 			continue
 		pp = os.path.join(prefix, entry)

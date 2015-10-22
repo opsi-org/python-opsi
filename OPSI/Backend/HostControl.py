@@ -49,7 +49,7 @@ from OPSI.Util import fromJson, toJson
 from OPSI.Util.Thread import KillableThread
 from OPSI.Util.HTTP import non_blocking_connect_https
 
-__version__ = '4.0.6.12'
+__version__ = '4.0.6.29'
 
 logger = Logger()
 
@@ -102,7 +102,7 @@ class RpcThread(KillableThread):
 			response = response.read()
 			response = fromJson(unicode(response, 'utf-8'))
 
-			if response and type(response) is dict:
+			if response and isinstance(response, dict):
 				self.error = response.get('error')
 				self.result = response.get('result')
 			else:
