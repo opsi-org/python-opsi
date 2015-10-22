@@ -146,7 +146,7 @@ def objectsDiffer(obj1, obj2, excludeAttributes=None):
 
 		value2 = obj2.get(attribute)
 
-		if not type(value1) is type(value2):
+		if type(value1) is not type(value2):
 			return True
 
 		if isinstance(value1, dict):
@@ -3193,6 +3193,7 @@ class AuditHardwareOnHost(Relationship):
 		self.state = None
 		self.setHostId(hostId)
 		self.setHardwareClass(hardwareClass)
+
 		for attribute in self.hardwareAttributes.get(hardwareClass, {}):
 			if attribute not in kwargs:
 				if attribute.lower() in kwargs:
