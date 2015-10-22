@@ -500,12 +500,11 @@ class BackendExtender(ExtendedBackend):
 					try:
 						logger.info(u"Reading config file '%s'" % confFile)
 						execfile(confFile)
+					except Exception as execError:
+						logger.logException(execError)
+						raise Exception(u"Error reading file {0!r}: {1}".format(confFile, execError))
 
-					except Exception as e:
-						logger.logException(e)
-						raise Exception(u"Error reading file '%s': %s" % (confFile, e))
-
-					for (key, val) in locals().items():
+					for key, val in locals().items():
 						if isinstance(val, types.FunctionType):   # TODO: find a better way
 							logger.debug2(u"Extending %s with instancemethod: '%s'" % (self._backend.__class__.__name__, key))
 							setattr(self, key, new.instancemethod(val, self, self.__class__))
