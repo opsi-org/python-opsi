@@ -40,7 +40,6 @@ import new
 import os
 import random
 import threading
-import types
 import warnings
 from hashlib import md5
 from twisted.conch.ssh import keys
@@ -243,7 +242,7 @@ This defaults to ``self``.
 								break
 
 							continue
-						elif isinstance(value, (types.NoneType, types.BooleanType)):
+						elif value is None or isinstance(value, bool):
 							continue
 						elif isinstance(value, (float, long, int)) or re.search('^\s*([>=<]+)\s*([\d\.]+)', forceUnicode(filterValue)):
 							operator = '=='

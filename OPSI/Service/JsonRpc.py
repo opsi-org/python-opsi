@@ -33,7 +33,6 @@ opsi python library - JsonRpc
 
 import sys
 import time
-import types
 import zlib
 
 from twisted.internet.defer import maybeDeferred, DeferredList

@@ -35,7 +35,6 @@ import json
 import new
 import socket
 import time
-import types
 import threading
 from hashlib import md5
 from Queue import Queue, Empty
@@ -51,7 +50,7 @@ from OPSI.Backend.Backend import Backend, DeferredCall
 from OPSI.Util import serialize, deserialize
 from OPSI.Util.HTTP import urlsplit, getSharedConnectionPool, deflateEncode, deflateDecode, gzipDecode
 
-__version__ = '4.0.6.19'
+__version__ = '4.0.6.29'
 
 logger = Logger()
 
@@ -677,7 +676,7 @@ class JSONRPCBackend(Backend):
 			'Accept-Encoding': 'deflate, gzip',
 			'content-type': 'application/json',
 		}
-		if isinstance(data, types.StringType):
+		if isinstance(data, str):
 			data = unicode(data, 'utf-8')
 		data = data.encode('utf-8')
 

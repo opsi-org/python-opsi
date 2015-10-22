@@ -42,7 +42,6 @@ import shutil
 import socket
 import struct
 import time
-import types
 from Crypto.Cipher import Blowfish
 from hashlib import md5
 from itertools import islice
@@ -286,13 +285,13 @@ def objectToBeautifiedText(obj, level=0):
 	text = []
 	append = text.append
 
-	if isinstance(obj, types.ListType):
+	if isinstance(obj, list):  # TODO: handle set ?
 		append(indent)
 		append(u'[\n')
 
 		if obj:
 			for element in obj:
-				if not isinstance(element, (types.DictType, types.ListType)):
+				if not isinstance(element, (dict, list)):
 					append(indent)
 				append(objectToBeautifiedText(element, level + 1))
 				append(u',')
@@ -302,7 +301,7 @@ def objectToBeautifiedText(obj, level=0):
 
 		append(indent)
 		append(u']')
-	elif isinstance(obj, types.DictType):
+	elif isinstance(obj, dict):
 		append(indent)
 		append(u'{\n')
 
@@ -310,7 +309,7 @@ def objectToBeautifiedText(obj, level=0):
 			for (key, value) in obj.iteritems():
 				append(indent)
 				append(key.join((u'"', u'" : ')))
-				if isinstance(value, (types.DictType, types.ListType)):
+				if isinstance(value, (dict, list)):
 					append(u'\n')
 				append(objectToBeautifiedText(value, level + 1))
 				append(u',')
@@ -348,10 +347,10 @@ def objectToBash(obj, bashVars=None, level=0):
 	if hasattr(obj, 'serialize'):
 		obj = obj.serialize()
 
-	if isinstance(obj, types.ListType):
+	if isinstance(obj, list):
 		bashVars[varName] += u'(\n'
 		for i in range( len(obj) ):
-			if isinstance(obj[i], (types.DictType, types.ListType)):
+			if isinstance(obj[i], (dict, list)):
 				hashFound = True
 				level += 1
 				objectToBash(obj[i], bashVars, level)
@@ -360,11 +359,11 @@ def objectToBash(obj, bashVars=None, level=0):
 				objectToBash(obj[i], bashVars, level)
 			bashVars[varName] += u'\n'
 		bashVars[varName] = bashVars[varName][:-1] + u'\n)'
-	elif isinstance(obj, types.DictType):
+	elif isinstance(obj, dict):
 		bashVars[varName] += u'(\n'
 		for (key, value) in obj.items():
 			bashVars[varName] += '%s=' % key
-			if isinstance(value, (types.DictType, types.ListType)):
+			if isinstance(value, (dict, list)):
 				level += 1
 				v = objectToBash(value, bashVars, level)
 				bashVars[varName] += u'${RESULT%d[*]}' % level
@@ -389,7 +388,7 @@ def objectToHtml(obj, level=0):
 	html = []
 	append = html.append
 
-	if isinstance(obj, types.ListType):
+	if isinstance(obj, list):
 		append(u'[')
 		if len(obj) > 0:
 			append(u'<div style="padding-left: 3em;">')
@@ -399,7 +398,7 @@ def objectToHtml(obj, level=0):
 					append(u',<br />\n')
 			append(u'</div>')
 		append(u']')
-	elif isinstance(obj, types.DictType):
+	elif isinstance(obj, dict):
 		append(u'{')
 		if len(obj) > 0:
 			append(u'<div style="padding-left: 3em;">')
@@ -414,9 +413,9 @@ def objectToHtml(obj, level=0):
 				i += 1
 			append(u'</div>')
 		append(u'}')
-	elif isinstance(obj, types.BooleanType):
+	elif isinstance(obj, bool):
 		append(str(obj).lower())
-	elif isinstance(obj, types.NoneType):
+	elif obj is None:
 		append('null')
 	else:
 		if isinstance(obj, (str, unicode)):  # TODO: watch out for Python 3

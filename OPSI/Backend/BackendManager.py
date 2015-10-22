@@ -894,7 +894,7 @@ class BackendAccessControl(object):
 			valueList = forceList(value)
 			if len(valueList) == 0:
 				continue
-			if issubclass(valueList[0].__class__, BaseObject) or isinstance(valueList[0], types.DictType):
+			if issubclass(valueList[0].__class__, BaseObject) or isinstance(valueList[0], dict):
 				valueList = self._filterObjects(valueList, acls, exceptionOnTruncate=False)
 				if isinstance(value, list):
 					params[key] = valueList
@@ -908,7 +908,7 @@ class BackendAccessControl(object):
 	def _filterResult(self, result, acls):
 		if result:
 			resultList = forceList(result)
-			if issubclass(resultList[0].__class__, BaseObject) or isinstance(resultList[0], types.DictType):
+			if issubclass(resultList[0].__class__, BaseObject) or isinstance(resultList[0], dict):
 				resultList = self._filterObjects(result, acls, exceptionOnTruncate=False, exceptionIfAllRemoved=False)
 				if isinstance(result, list):
 					return resultList
@@ -923,7 +923,7 @@ class BackendAccessControl(object):
 		logger.info(u"Filtering objects by acls")
 		newObjects = []
 		for obj in forceList(objects):
-			isDict = isinstance(obj, types.DictType)
+			isDict = isinstance(obj, dict)
 			if isDict:
 				objHash = obj
 			else:

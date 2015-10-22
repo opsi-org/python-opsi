@@ -39,7 +39,7 @@ import types
 
 from OPSI.Logger import Logger
 
-__version__ = '4.0.6.12'
+__version__ = '4.0.6.29'
 
 encoding = sys.getfilesystemencoding()
 logger = Logger()
@@ -79,9 +79,9 @@ if sys.version_info > (3, ):
 	_STRING_TYPES = (str, )
 else:
 	# Python 2
-	_STRING_TYPE = types.StringType
-	_UNICODE_TYPE = types.UnicodeType
-	_STRING_TYPES = (types.StringType, types.UnicodeType)
+	_STRING_TYPE = str
+	_UNICODE_TYPE = unicode
+	_STRING_TYPES = (str, unicode)
 
 
 def forceList(var):
@@ -142,7 +142,7 @@ def forceUnicodeLowerList(var):
 
 
 def forceBool(var):
-	if isinstance(var, types.BooleanType):
+	if isinstance(var, bool):
 		return var
 
 	if isinstance(var, _STRING_TYPES):
@@ -159,7 +159,7 @@ def forceBoolList(var):
 
 
 def forceInt(var):
-	if isinstance(var, types.IntType):
+	if isinstance(var, int):
 		return var
 	try:
 		return int(var)
@@ -179,7 +179,7 @@ def forceUnsignedInt(var):
 
 
 def forceOct(var):
-	if isinstance(var, types.IntType):
+	if isinstance(var, int):
 		return var
 
 	try:
@@ -199,7 +199,7 @@ def forceOct(var):
 
 
 def forceFloat(var):
-	if isinstance(var, types.FloatType):
+	if isinstance(var, float):
 		return var
 
 	try:
@@ -211,7 +211,7 @@ def forceFloat(var):
 def forceDict(var):
 	if var is None:
 		return {}
-	elif isinstance(var, types.DictType):
+	elif isinstance(var, dict):
 		return var
 
 	raise ValueError(u"Not a dict '%s'" % var)
@@ -220,7 +220,7 @@ def forceDict(var):
 def forceTime(var):
 	if isinstance(var, time.struct_time):
 		return var
-	if isinstance(var, (types.IntType, types.FloatType)):
+	if isinstance(var, (int, float)):
 		return time.localtime(var)
 
 	raise ValueError(u"Not a time '%s'" % var)
@@ -496,7 +496,7 @@ def forceObjectClass(var, objectClass):
 			exception = error
 			logger.debug(u"Failed to get object from json '%s': %s" % (var, error))
 
-	if isinstance(var, types.DictType):
+	if isinstance(var, dict):
 		if 'type' not in var:
 			raise ValueError(u"Key 'type' missing in hash '%s'" % var)
 

@@ -31,7 +31,6 @@ import os
 import sys
 import threading
 import time
-import types
 import warnings
 
 try:
@@ -54,7 +53,7 @@ try:
 except ImportError:
 	syslog = None
 
-__version__ = '4.0.6.12'
+__version__ = '4.0.6.29'
 
 if sys.version_info > (3, ):
 	# Python 3
@@ -63,8 +62,8 @@ if sys.version_info > (3, ):
 	_UNICODE_TYPE = str
 else:
 	# Python 2
-	_STRING_TYPE = types.StringType
-	_UNICODE_TYPE = types.UnicodeType
+	_STRING_TYPE = str
+	_UNICODE_TYPE = unicode
 
 # Loglevels
 LOG_CONFIDENTIAL = 9
