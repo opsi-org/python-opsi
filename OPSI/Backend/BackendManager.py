@@ -394,10 +394,10 @@ class BackendDispatcher(Backend):
 
 					for backend in forceList(backends):
 						if backend not in self._backends:
-							logger.debug(u"Ignoring backend '%s': backend not available" % backend)
+							logger.debug(u"Ignoring backend {0!r}: backend not available".format(backend))
 							continue
 						methodBackends.append(backend)
-					logger.debug(u"'%s' matches method '%s', dispatching to backends: %s" % (regex, methodName, u', '.join(methodBackends)))
+					logger.debug(u"{0!r} matches method {1!r}, dispatching to backends: {2}".format(regex, methodName, u', '.join(methodBackends)))
 					break
 
 				if not methodBackends:
@@ -409,7 +409,7 @@ class BackendDispatcher(Backend):
 				setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
 
 	def _dispatchMethod(self, methodBackends, methodName, **kwargs):
-		logger.debug(u"Dispatching method '%s' to backends: %s" % (methodName, methodBackends))
+		logger.debug(u"Dispatching method {0!r} to backends: {1}".format(methodName, methodBackends))
 		result = None
 
 		for methodBackend in methodBackends:
