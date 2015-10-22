@@ -157,8 +157,9 @@ class SQLBackendObjectModificationTracker(BackendModificationListener):
 
 	def _trackModification(self, command, obj):
 		command = forceUnicodeLower(command)
-		if not command in ('insert', 'update', 'delete'):
-			raise Exception(u"Unhandled command '%s'" % command)
+		if command not in ('insert', 'update', 'delete'):
+			raise Exception(u"Unhandled command {0!r}".format(command))
+
 		data = {
 			'command': command,
 			'objectClass': obj.__class__.__name__,
