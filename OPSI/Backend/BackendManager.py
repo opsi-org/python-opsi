@@ -376,9 +376,8 @@ class BackendDispatcher(Backend):
 
 	def _createInstanceMethods(self):
 		logger.debug(u"BackendDispatcher is creating instance methods")
-		for Class in (ConfigDataBackend,):#, ExtendedConfigDataBackend):
-			for member in inspect.getmembers(Class, inspect.ismethod):
-				methodName = member[0]
+		for Class in (ConfigDataBackend, ):  #  Also apply to ExtendedConfigDataBackend?
+			for methodName, functionRef in inspect.getmembers(Class, inspect.ismethod):
 				if methodName.startswith('_'):
 					# Not a public method
 					continue
@@ -389,8 +388,7 @@ class BackendDispatcher(Backend):
 					continue
 
 				methodBackends = []
-				for i in xrange(len(self._dispatchConfig)):
-					(regex, backends) = self._dispatchConfig[i]
+				for regex, backends in self._dispatchConfig:
 					if not re.search(regex, methodName):
 						continue
 
@@ -405,7 +403,7 @@ class BackendDispatcher(Backend):
 				if not methodBackends:
 					continue
 
-				(argString, callString) = getArgAndCallString(member[1])
+				argString, callString = getArgAndCallString(functionRef)
 
 				exec(u'def %s(self, %s): return self._dispatchMethod(%s, "%s", %s)' % (methodName, argString, methodBackends, methodName, callString))
 				setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
@@ -641,17 +639,15 @@ class BackendAccessControl(object):
 	def _createInstanceMethods(self):
 		protectedMethods = set()
 		for Class in (ExtendedConfigDataBackend, ConfigDataBackend, DepotserverBackend, HostControlBackend, HostControlSafeBackend):
-			methodnames = (method[0] for method in inspect.getmembers(Class, inspect.ismethod))
-			[protectedMethods.add(methodName) for methodName in
-			(name for name in methodnames if not name.startswith('_'))]
+			methodnames = (name for name, _ in inspect.getmembers(Class, inspect.ismethod) if not name.startswith('_'))
+			[protectedMethods.add(methodName) for methodName in methodnames]
 
-		for member in inspect.getmembers(self._backend, inspect.ismethod):
-			methodName = member[0]
+		for methodName, functionRef in inspect.getmembers(self._backend, inspect.ismethod):
 			if methodName.startswith('_'):
 				# Not a public method
 				continue
 
-			(argString, callString) = getArgAndCallString(member[1])
+			argString, callString = getArgAndCallString(functionRef)
 
 			if methodName in protectedMethods:
 				logger.debug2(u"Protecting %s method '%s'" % (Class.__name__, methodName))

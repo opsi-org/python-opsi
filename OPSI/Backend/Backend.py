@@ -315,13 +315,12 @@ This defaults to ``self``.
 
 	def backend_getInterface(self):
 		methods = {}
-		for member in inspect.getmembers(self, inspect.ismethod):
-			methodName = member[0]
+		for methodName, function in inspect.getmembers(self, inspect.ismethod):
 			if methodName.startswith('_'):
 				# protected / private
 				continue
 
-			(args, varargs, keywords, defaults) = inspect.getargspec(member[1])
+			args, varargs, keywords, defaults = inspect.getargspec(function)
 			if args:
 				params = [arg for arg in forceList(args) if arg != 'self']
 			else:
