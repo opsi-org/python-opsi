@@ -480,14 +480,14 @@ class BackendExtender(ExtendedBackend):
 				methodName = member[0]
 				if methodName.startswith('_'):
 					continue
-				logger.debug2(u"Extending %s with instancemethod: '%s'" % (self._backend.__class__.__name__, methodName))
+				logger.debug2(u"Extending {0} with instancemethod: {1!r}".format(self._backend.__class__.__name__, methodName))
 				new_function = new.function(member[1].func_code, member[1].func_globals, member[1].func_code.co_name)
 				new_method = new.instancemethod(new_function, self, self.__class__)
 				setattr(self, methodName, new_method)
 
 		if self._extensionConfigDir:
 			if not os.path.exists(self._extensionConfigDir):
-				logger.error(u"No extensions loaded: '%s' does not exist" % self._extensionConfigDir)
+				logger.error(u"No extensions loaded: extension directory {0!r} does not exist".format(self._extensionConfigDir))
 				return
 
 			try:
