@@ -778,7 +778,7 @@ def ipAddressInNetwork(ipAddress, networkAddress):
 
 	ip = createBytemaskFromAddress(ipAddress)
 
-	(network, netmask) = networkAddress.split(u'/')
+	network, netmask = networkAddress.split(u'/')
 
 	if '.' not in netmask:
 		netmask = forceUnicode(socket.inet_ntoa(struct.pack('>I', 0xffffffff ^ (1 << 32 - forceInt(netmask)) - 1)))
@@ -799,7 +799,7 @@ def ipAddressInNetwork(ipAddress, networkAddress):
 	netmask = createBytemaskFromAddress(netmask)
 
 	wildcard = netmask ^ 0xFFFFFFFF
-	if (wildcard | ip == wildcard | network):
+	if wildcard | ip == wildcard | network:
 		return True
 
 	return False
