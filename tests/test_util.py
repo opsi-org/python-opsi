@@ -755,6 +755,17 @@ class JSONSerialisiationTestCase(unittest.TestCase):
         self.assertTrue(isinstance(obj, dict))
         self.assertEquals("baert.niko.uib.local", obj['ident'])
 
+    def testSerialisingGeneratorFunction(self):
+        def gen():
+            yield 1
+            yield 2
+            yield 3
+            yield u"a"
+
+        obj = toJson(gen())
+
+        self.assertEquals(u'[1, 2, 3, "a"]', obj)
+
 
 if __name__ == '__main__':
     unittest.main()

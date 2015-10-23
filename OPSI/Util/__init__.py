@@ -42,6 +42,7 @@ import shutil
 import socket
 import struct
 import time
+import types
 from Crypto.Cipher import Blowfish
 from hashlib import md5
 from itertools import islice
@@ -114,7 +115,7 @@ def serialize(obj):
 		return obj
 	elif hasattr(obj, 'serialize'):
 		newObj = obj.serialize()
-	elif isinstance(obj, (list, set)):
+	elif isinstance(obj, (list, set, types.GeneratorType)):
 		newObj = [serialize(tempObject) for tempObject in obj]
 	elif isinstance(obj, dict):
 		newObj = {}

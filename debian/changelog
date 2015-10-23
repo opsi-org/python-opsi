@@ -8,8 +8,9 @@ python-opsi (4.0.6.29-1) UNRELEASED; urgency=medium
   * objectToHtml now works more efficient with large results.
   * OPSI.Util.Task.Samba: Fix typo in share opsi_repository that lead
     to referencing the wrong path.
+  * toJson now handles generators by consuming them.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 23 Oct 2015 12:33:28 +0200
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 23 Oct 2015 14:47:33 +0200
 
 python-opsi (4.0.6.28-1) testing; urgency=medium
 
