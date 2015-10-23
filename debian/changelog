@@ -2,8 +2,9 @@ python-opsi (4.0.6.29-1) UNRELEASED; urgency=medium
 
   * Implementing type checks via isinstance instead of using type.
   * Removed wildcard import in various modules in OPSI.Backend.
+  * 20_legacy.conf: Removed librsyncPatchFile because it never worked.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 22 Oct 2015 17:12:53 +0200
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 23 Oct 2015 10:52:48 +0200
 
 python-opsi (4.0.6.28-1) testing; urgency=medium
 
