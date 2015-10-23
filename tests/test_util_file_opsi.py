@@ -81,6 +81,20 @@ this does not work
 		dispatchConfig = BackendDispatchConfigFile('not_reading_file')
 		dispatchConfig.parse(lines=exampleConfig.split('\n'))
 
+	def testBackendsCanBeEmpty(self):
+		exampleConfig = '''
+no_backends_follow:\t
+empty_backends:\t, ,
+'''
+
+		dispatchConfig = BackendDispatchConfigFile('not_reading_file')
+		result = dispatchConfig.parse(lines=exampleConfig.split('\n'))
+
+		self.assertEquals(1, len(result))
+		regex, backends = result[0]
+		self.assertEquals('empty_backends', regex)
+		self.assertEquals([u''], backends)
+
 
 class OpsiConfigFileTestCase(unittest.TestCase):
 	EXAMPLE_CONFIG_FILE = os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'file', 'opsi', 'opsi.conf')
