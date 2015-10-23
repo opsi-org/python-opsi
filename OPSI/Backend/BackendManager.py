@@ -294,7 +294,7 @@ class BackendDispatcher(Backend):
 		Backend.__init__(self, **kwargs)
 
 		self._dispatchConfigFile = None
-		self._dispatchConfig = None
+		self._dispatchConfig = []
 		self._dispatchIgnoreModules = []
 		self._backendConfigDir = None
 		self._backends = {}
@@ -346,13 +346,10 @@ class BackendDispatcher(Backend):
 		if not os.path.exists(self._backendConfigDir):
 			raise BackendConfigurationError(u"Backend config dir '%s' not found" % self._backendConfigDir)
 
-		for i in xrange(len(self._dispatchConfig)):
-			if not isinstance(self._dispatchConfig[i][1], list):  # TODO: set?
-				self._dispatchConfig[i][1] = [self._dispatchConfig[i][1]]
-
-			for value in self._dispatchConfig[i][1]:
+		for regex, backend in self._dispatchConfig:
+			for value in forceList(backend):
 				if not value:
-					raise BackendConfigurationError(u"Bad dispatcher config '%s'" % self._dispatchConfig[i])
+					raise BackendConfigurationError(u"Bad dispatcher config: {0!r} has empty target backend: {1!r}".format(regex, backend))
 
 				backends.add(value)
 
