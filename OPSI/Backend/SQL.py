@@ -43,7 +43,13 @@ from OPSI.Logger import Logger
 from OPSI.Types import (forceBool, forceUnicodeLower, forceOpsiTimestamp,
 	forceList, forceUnicode, forceUnicodeList, forceDict, forceObjectClassList)
 from OPSI.Types import BackendReferentialIntegrityError, BackendModuleDisabledError
-from OPSI.Object import *
+from OPSI.Object import (AuditHardware, AuditHardwareOnHost, AuditSoftware,
+	AuditSoftwareOnClient, BootConfiguration, Config, ConfigState, Entity,
+	Group, Host, HostGroup, LicenseContract, LicenseOnClient, LicensePool,
+	ObjectToGroup, Product, ProductDependency, ProductGroup, ProductOnClient,
+	ProductOnDepot, ProductProperty, ProductPropertyState, Relationship,
+	SoftwareLicense, SoftwareLicenseToLicensePool,
+	mandatoryConstructorArgs)
 from OPSI.Backend.Backend import BackendModificationListener, ConfigDataBackend
 from OPSI.Util import timestamp
 

@@ -58,8 +58,8 @@ if os.name == 'posix':
 
 from OPSI.Logger import Logger
 from OPSI.Types import BackendError, BackendBadValueError
-from OPSI.Types import *
-from OPSI.Object import *
+from OPSI.Types import *  # this is needed for dynamic loading
+from OPSI.Object import *  # this is needed for dynamic loading
 from OPSI.Util import (blowfishEncrypt, blowfishDecrypt, compareVersions,
 	getfqdn, removeUnit, timestamp)
 from OPSI.Util.File import ConfigFile
