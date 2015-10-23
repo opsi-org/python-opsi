@@ -9,6 +9,7 @@ python-opsi (4.0.6.29-1) UNRELEASED; urgency=medium
   * OPSI.Util.Task.Samba: Fix typo in share opsi_repository that lead
     to referencing the wrong path.
   * toJson now handles generators by consuming them.
+    The output resembles that of a list.
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 23 Oct 2015 14:47:33 +0200
 
