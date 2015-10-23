@@ -239,6 +239,56 @@ class ObjectToBeautifiedTextTestCase(unittest.TestCase):
 
         self.assertEquals(normal, default)
 
+    def testWorkingWithSet(self):
+        # Exactly one product because set is unordered.
+        obj = set([
+            LocalbootProduct(
+                id='htmltestproduct',
+                productVersion='3.1',
+                packageVersion='1',
+                name='Product HTML Test',
+                licenseRequired=False,
+                setupScript='setup.ins',
+                uninstallScript='uninstall.ins',
+                updateScript='update.ins',
+                alwaysScript='always.ins',
+                onceScript='once.ins',
+                priority=0,
+                description="asdf",
+                advice="lolnope",
+                changelog=None,
+                windowsSoftwareIds=None
+            )
+        ])
+
+        expected = """\
+[
+    {
+    "onceScript" : "once.ins",
+    "windowsSoftwareIds" : null,
+    "description" : "asdf",
+    "advice" : "lolnope",
+    "alwaysScript" : "always.ins",
+    "updateScript" : "update.ins",
+    "productClassIds" : null,
+    "id" : "htmltestproduct",
+    "licenseRequired" : false,
+    "ident" : "htmltestproduct;3.1;1",
+    "name" : "Product HTML Test",
+    "changelog" : null,
+    "customScript" : null,
+    "uninstallScript" : "uninstall.ins",
+    "userLoginScript" : null,
+    "priority" : 0,
+    "productVersion" : "3.1",
+    "packageVersion" : "1",
+    "type" : "LocalbootProduct",
+    "setupScript" : "setup.ins"
+    }
+]\
+"""
+
+        self.assertEquals(expected, objectToBeautifiedText(obj))
 
 class UtilTestCase(unittest.TestCase):
     """

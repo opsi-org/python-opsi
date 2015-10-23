@@ -10,6 +10,8 @@ python-opsi (4.0.6.29-1) UNRELEASED; urgency=medium
     to referencing the wrong path.
   * toJson now handles generators by consuming them.
     The output resembles that of a list.
+  * objectToBeautifiedText, objectToBash and objectToHtml are now able
+    to handle sets - they interpret it like a list.
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 23 Oct 2015 14:47:33 +0200
 

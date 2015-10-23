@@ -285,7 +285,7 @@ def objectToBeautifiedText(obj, level=0):
 	text = []
 	append = text.append
 
-	if isinstance(obj, list):  # TODO: handle set ?
+	if isinstance(obj, (list, set)):
 		append(indent)
 		append(u'[\n')
 
@@ -347,7 +347,7 @@ def objectToBash(obj, bashVars=None, level=0):
 	if hasattr(obj, 'serialize'):
 		obj = obj.serialize()
 
-	if isinstance(obj, list):
+	if isinstance(obj, (list, set)):
 		bashVars[varName] += u'(\n'
 		for i in range( len(obj) ):
 			if isinstance(obj[i], (dict, list)):
@@ -388,7 +388,7 @@ def objectToHtml(obj, level=0):
 	html = []
 	append = html.append
 
-	if isinstance(obj, list):
+	if isinstance(obj, (list, set)):
 		append(u'[')
 		if len(obj) > 0:
 			append(u'<div style="padding-left: 3em;">')
