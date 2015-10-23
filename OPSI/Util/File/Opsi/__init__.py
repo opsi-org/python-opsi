@@ -249,10 +249,11 @@ class BackendDispatchConfigFile(ConfigFile):
 			if not match:
 				logger.error(u"Found bad formatted line '%s' in dispatch config file '%s'" % (line, self._filename))
 				continue
+
 			method = match.group(1).strip()
-			dispatch.append([method, []])
-			for entry in match.group(2).strip(',').split(','):
-				dispatch[-1][1].append(entry.strip())
+			backends = [entry.strip() for entry
+						in match.group(2).strip(',').split(',')]
+			dispatch.append([method, backends])
 		self._parsed = True
 
 		return dispatch
