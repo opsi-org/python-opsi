@@ -40,6 +40,7 @@ import types
 
 from OPSI.Backend.Backend import (Backend, BackendModificationListener,
 	ConfigDataBackend, ExtendedBackend, ExtendedConfigDataBackend,
+	ModificationTrackingBackend,
 	getArgAndCallString)
 from OPSI.Backend.Depotserver import DepotserverBackend
 from OPSI.Backend.HostControl import HostControlBackend

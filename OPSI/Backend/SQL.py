@@ -42,13 +42,15 @@ from twisted.conch.ssh import keys
 from OPSI.Logger import Logger
 from OPSI.Types import (forceBool, forceUnicodeLower, forceOpsiTimestamp,
 	forceList, forceUnicode, forceUnicodeList, forceDict, forceObjectClassList)
-from OPSI.Types import BackendReferentialIntegrityError, BackendModuleDisabledError
+from OPSI.Types import (BackendConfigurationError,
+	BackendReferentialIntegrityError, BackendModuleDisabledError)
 from OPSI.Object import (AuditHardware, AuditHardwareOnHost, AuditSoftware,
-	AuditSoftwareOnClient, BootConfiguration, Config, ConfigState, Entity,
-	Group, Host, HostGroup, LicenseContract, LicenseOnClient, LicensePool,
-	ObjectToGroup, Product, ProductDependency, ProductGroup, ProductOnClient,
-	ProductOnDepot, ProductProperty, ProductPropertyState, Relationship,
-	SoftwareLicense, SoftwareLicenseToLicensePool,
+	AuditSoftwareOnClient, AuditSoftwareToLicensePool, BootConfiguration,
+	Config, ConfigState, Entity, Group, Host, HostGroup, LicenseContract,
+	LicenseOnClient, LicensePool, ObjectToGroup, Product, ProductDependency,
+	ProductGroup, ProductOnClient, ProductOnDepot, ProductProperty,
+	ProductPropertyState, Relationship, SoftwareLicense,
+	SoftwareLicenseToLicensePool,
 	mandatoryConstructorArgs)
 from OPSI.Backend.Backend import BackendModificationListener, ConfigDataBackend
 from OPSI.Util import timestamp
