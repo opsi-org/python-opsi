@@ -947,9 +947,9 @@ class OpsiConfFile(IniFile):
 			if match:
 				sectionType = match.group(1).strip().lower()
 				if sectionType not in ('groups', 'packages'):
-					raise Exception(u"Parse error in line %s: unknown section '%s'" % (lineNum, sectionType))
+					raise ValueError(u"Parse error in line %s: unknown section '%s'" % (lineNum, sectionType))
 			elif not sectionType and line:
-				raise Exception(u"Parse error in line %s: not in a section" % lineNum)
+				raise ValueError(u"Parse error in line %s: not in a section" % lineNum)
 
 			key = None
 			value = None
