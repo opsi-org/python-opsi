@@ -391,8 +391,8 @@ def objectToHtml(obj, level=0):
 		append(u'[')
 		if len(obj) > 0:
 			append(u'<div style="padding-left: 3em;">')
-			for i in range(len(obj)):
-				append(objectToHtml(obj[i], level+1))
+			for i, currentElement in enumerate(obj):
+				append(objectToHtml(currentElement, level + 1))
 				if i < len(obj) - 1:
 					append(u',<br />\n')
 			append(u'</div>')
@@ -401,15 +401,13 @@ def objectToHtml(obj, level=0):
 		append(u'{')
 		if len(obj) > 0:
 			append(u'<div style="padding-left: 3em;">')
-			i = 0
-			for (key, value) in obj.items():
+			for i, (key, value) in enumerate(obj.items()):
 				append(u'<font class="json_key">')
 				append(objectToHtml(key))
 				append(u'</font>: ')
-				append(objectToHtml(value, level+1))
+				append(objectToHtml(value, level + 1))
 				if i < len(obj) - 1:
 					append(u',<br />\n')
-				i += 1
 			append(u'</div>')
 		append(u'}')
 	elif isinstance(obj, bool):
