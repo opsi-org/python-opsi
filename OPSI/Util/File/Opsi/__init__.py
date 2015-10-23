@@ -235,7 +235,7 @@ class BackendDispatchConfigFile(ConfigFile):
 		"""
 		Returns the dispatch config entries with RegEx and corresponding backends.
 
-		:returntype: [['regex',['backend1', 'backend2',]
+		:returntype: [['regex', ['backend1', 'backend2',]]]
 		"""
 		if lines:
 			self._lines = forceUnicodeList(lines)
