@@ -407,13 +407,22 @@ class SambaProcessConfigTest(unittest.TestCase):
 				result = Samba._processConfig(config)
 
 		repository = False
+		pathFound = False
 		for line in result:
 			if '[opsi_repository]' in line:
 				repository = True
-				break
+			elif repository:
+				if line.strip().startswith('['):
+					# next section
+					break
+				elif line.strip().startswith('path'):
+					self.assertTrue('/var/lib/opsi/repository' in line)
+					pathFound = True
+					break
 
-		else:
-			self.assertTrue(repository)
+		self.failIf(not repository, "Missing entry 'opsi_repository'")
+		self.failIf(not pathFound, "Missing 'path' in 'opsi_repository'")
+
 
 class SambaWriteConfig(unittest.TestCase):
 

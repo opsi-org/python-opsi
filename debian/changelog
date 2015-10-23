@@ -6,8 +6,10 @@ python-opsi (4.0.6.29-1) UNRELEASED; urgency=medium
   * OpsiConfFile.parse now raises ValueError if invalid sections are
     found or configuration happens outside sections.
   * objectToHtml now works more efficient with large results.
+  * OPSI.Util.Task.Samba: Fix typo in share opsi_repository that lead
+    to referencing the wrong path.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 23 Oct 2015 11:26:17 +0200
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 23 Oct 2015 12:33:28 +0200
 
 python-opsi (4.0.6.28-1) testing; urgency=medium
 

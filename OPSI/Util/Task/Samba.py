@@ -204,7 +204,7 @@ def _processConfig(lines):
 		newlines.append(u"[opsi_repository]\n")
 		newlines.append(u"   available = yes\n")
 		newlines.append(u"   comment = opsi repository share (ro)\n")
-		newlines.append(u"   path = /var/lib/opsi/resposity\n")
+		newlines.append(u"   path = /var/lib/opsi/repository\n")
 		newlines.append(u"   oplocks = no\n")
 		newlines.append(u"   follow symlinks = yes\n")
 		newlines.append(u"   level2 oplocks = no\n")
