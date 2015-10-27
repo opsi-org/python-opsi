@@ -51,6 +51,15 @@ class FakeHeader(object):
 		return self.headers[header]
 
 
+class FakeDictHeader(FakeHeader):
+	def getHeader(self, header):
+		class ReturnWithMediaType:
+			def __init__(self, key):
+				self.mediaType = key
+
+		return dict((ReturnWithMediaType(self.headers[key]), self.headers[key]) for key in self.headers if key.startswith(header))
+
+
 class FakeMediaType:
 	def __init__(self, type):
 		self.mediaType = type
@@ -217,15 +226,6 @@ class BackwardsCompatibilityWorkerJSONRPCTestCase(unittest.TestCase):
 		The returned content-encoding is "gzip" but the content
 		is acutally compressed with deflate.
 		"""
-		class FakeDictHeader(FakeHeader):
-			def getHeader(self, header):
-				class ReturnWithMediaType:
-					def __init__(self, key):
-						self.mediaType = key
-
-				return dict((ReturnWithMediaType(self.headers[key]), self.headers[key]) for key in self.headers if key.startswith(header))
-
-
 		testHeader = FakeDictHeader(
 			{"Accept": "gzip-application/json-rpc",
 			 "invalid": "ignoreme"})
