@@ -1,4 +1,4 @@
-python-opsi (4.0.6.29-1) UNRELEASED; urgency=medium
+python-opsi (4.0.6.29-1) experimental; urgency=medium
 
   * Implementing type checks via isinstance instead of using type.
   * Removed wildcard import in various modules in OPSI.Backend.
