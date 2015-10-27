@@ -12,8 +12,11 @@ python-opsi (4.0.6.29-1) UNRELEASED; urgency=medium
     The output resembles that of a list.
   * objectToBeautifiedText, objectToBash and objectToHtml are now able
     to handle sets - they interpret it like a list.
+  * OPSI.Service.Worker.WorkerOpsiJsonRpc: improved backwards compatible
+    handling of queries without any specific encoding. This should make
+    any call with a plain encoding work as expected.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 23 Oct 2015 14:47:33 +0200
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 27 Oct 2015 17:38:16 +0100
 
 python-opsi (4.0.6.28-1) testing; urgency=medium
 

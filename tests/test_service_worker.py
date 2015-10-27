@@ -242,6 +242,20 @@ class BackwardsCompatibilityWorkerJSONRPCTestCase(unittest.TestCase):
 		data = zlib.decompress(sdata)
 		self.assertEquals('null', data)
 
+	def testReturningPlainCalls(self):
+		testHeader = FakeDictHeader({"Accept": "text/plain"})
+		request = FakeRequest(testHeader)
+		worker = WorkerOpsiJsonRpc(service=None, request=request, resource=None)
+
+		result = worker._generateResponse(None)
+		self.assertTrue(200, result.code)
+		self.assertTrue(result.headers.hasHeader('content-type'))
+		self.assertEquals(['application/json;charset=utf-8'], result.headers.getRawHeaders('content-type'))
+		self.assertFalse(result.headers.hasHeader('content-encoding'))
+
+		data = result.stream.read()
+		self.assertEquals('null', str(data))
+
 
 class WorkerOpsiTestCase(unittest.TestCase):
 	def testDecodingOldCallQuery(self):
