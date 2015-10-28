@@ -31,7 +31,7 @@ from OPSI.Util.HTTP import hybi10Decode, hybi10Encode
 
 
 class Hybi10EncodeTestCase(unittest.TestCase):
-    def testEndocingAndDecodingDoNotAlterString(self):
+    def testEncodingAndDecodingDoNotAlterString(self):
         randstring = (
             u'[{"operations": ["created", "deleted", "updated"], '
             u'message_type": "register_for_object_events", '
@@ -45,7 +45,7 @@ class Hybi10EncodeTestCase(unittest.TestCase):
 
         self.assertEquals(randstring, decoded)
 
-    def testEndocingAndDecodingDoNotAlterStringWithRandomInputs(self):
+    def testEncodingAndDecodingDoNotAlterStringWithRandomInputs(self):
         valid_digits = ''.join((string.ascii_uppercase, string.digits))
         def string_generator(size):
             return ''.join(random.choice(valid_digits) for x in range(size))
