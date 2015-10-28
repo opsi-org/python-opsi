@@ -174,6 +174,8 @@ setup even if they are already installed on a client.
 		self.assertEquals(productThatShouldBeReinstalled.productId, 'already_installed')
 		self.assertEquals(productThatShouldBeReinstalled.actionRequest, 'setup')
 
+	def testGetProductOrdering(self):
+		self.backend.getProductOrdering('depotserver1.some.test')
 
 if __name__ == '__main__':
 	unittest.main()
