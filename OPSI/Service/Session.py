@@ -183,12 +183,13 @@ class SessionHandler(object):
 
 		session.setMarkedForDeletion()
 		timeout = self.sessionDeletionTimeout
+		sleepInSeconds = 0.1
 		while session.usageCount > 0 and timeout > 0:
 			if not self.sessions.get(session.uid):
 				# Session deleted (closed by client)
 				return False
-			time.sleep(0.1)
-			timeout -= 1
+			time.sleep(sleepInSeconds)
+			timeout -= sleepInSeconds
 
 		if timeout == 0:
 			logger.warning(u"Session '%s': timeout occured while waiting for session to get free for deletion" % session.uid)
