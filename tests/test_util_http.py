@@ -57,6 +57,11 @@ class Hybi10EncodeTestCase(unittest.TestCase):
 
             self.assertEquals(randstring, decoded)
 
+    def testDecodingTooSmallStrings(self):
+        self.assertEquals('', hybi10Decode(''))
+        self.assertEquals('', hybi10Decode('a'))
+        self.assertEquals('', hybi10Decode('    a    '))
+
 
 if __name__ == '__main__':
     unittest.main()
