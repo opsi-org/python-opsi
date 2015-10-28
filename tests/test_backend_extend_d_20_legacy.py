@@ -65,6 +65,9 @@ class LegacyFunctionsTestCase(unittest.TestCase, ExtendedFileBackendMixin):
             self.backend.getGeneralConfigValue('foo', 'some.client.fqdn')
         )
 
+    def testGetDomainShouldWork(self):
+        self.assertNotEqual('', self.backend.getDomain())
+
 
 if __name__ == '__main__':
     unittest.main()
