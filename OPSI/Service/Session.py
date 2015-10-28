@@ -187,7 +187,7 @@ class SessionHandler(object):
 			if not self.sessions.get(session.uid):
 				# Session deleted (closed by client)
 				return False
-			time.sleep(1)
+			time.sleep(0.1)
 			timeout -= 1
 
 		if timeout == 0:

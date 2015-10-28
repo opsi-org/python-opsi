@@ -1,3 +1,10 @@
+python-opsi (4.0.6.30-1) UNRELEASED; urgency=medium
+
+  * OPSI.Service.Session: SessionHandler.sessionExpired does more frequently
+    checks if session is still in use or timeout occured.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 28 Oct 2015 10:33:21 +0100
+
 python-opsi (4.0.6.29-1) experimental; urgency=medium
 
   * Implementing type checks via isinstance instead of using type.
