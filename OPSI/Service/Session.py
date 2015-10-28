@@ -183,7 +183,7 @@ class SessionHandler(object):
 
 		session.setMarkedForDeletion()
 		timeout = self.sessionDeletionTimeout
-		sleepInSeconds = 0.1
+		sleepInSeconds = 0.01
 		while session.usageCount > 0 and timeout > 0:
 			if not self.sessions.get(session.uid):
 				# Session deleted (closed by client)
