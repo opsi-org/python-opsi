@@ -50,7 +50,7 @@ from OPSI.Backend.Backend import Backend, DeferredCall
 from OPSI.Util import serialize, deserialize
 from OPSI.Util.HTTP import urlsplit, getSharedConnectionPool, deflateEncode, deflateDecode, gzipDecode
 
-__version__ = '4.0.6.29'
+__version__ = '4.0.6.31'
 
 logger = Logger()
 
@@ -691,6 +691,7 @@ class JSONRPCBackend(Backend):
 			# http://bugs.python.org/issue12398
 			if version_info >= (2, 7):
 				data = bytearray(data)
+			logger.debug2(u"Data compressed.")
 
 		headers['content-length'] = len(data)
 
@@ -700,11 +701,13 @@ class JSONRPCBackend(Backend):
 		if self._sessionId:
 			headers['Cookie'] = self._sessionId
 
+		logger.debug("Posting request...")
 		response = self._connectionPool.urlopen(method='POST', url=baseUrl, body=data, headers=headers, retry=retry)
 
 		return self._processResponse(response)
 
 	def _processResponse(self, response):
+		logger.debug2("Processing response...")
 		# Get cookie from header
 		cookie = response.getheader('set-cookie', None)
 		if cookie:

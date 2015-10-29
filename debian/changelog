@@ -1,3 +1,9 @@
+python-opsi (4.0.6.31-1) UNRELEASED; urgency=medium
+
+  * OPSI.Backend.JSONRPC: Added some debug output.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 29 Oct 2015 14:31:33 +0100
+
 python-opsi (4.0.6.30-1) experimental; urgency=medium
 
   * OPSI.Service.Session: SessionHandler.sessionExpired does more frequently
