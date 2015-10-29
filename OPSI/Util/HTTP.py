@@ -541,12 +541,14 @@ class HTTPConnectionPool(object):
 			try:
 				logger.debug(u"Request to host '%s' failed, retry: %s, firstTryTime: %s, now: %s, retryTime: %s, connectTimeout: %s, socketTimeout: %s (%s)" \
 					% (self.host, retry, firstTryTime, now, self.retryTime, self.connectTimeout, self.socketTimeout, forceUnicode(error)))
-			except Exception:
+			except Exception as loggingError:
+				logger.debug(u"Logging exception failed: {0}".format(forceUnicode(loggingError)))
+				logger.debug(u"Trying to log again without original exception.")
 				try:
 					logger.debug(u"Request to host '%s' failed, retry: %s, firstTryTime: %s, now: %s, retryTime: %s, connectTimeout: %s, socketTimeout: %s" \
 						% (self.host, retry, firstTryTime, now, self.retryTime, self.connectTimeout, self.socketTimeout))
-				except Exception:
-					pass
+				except Exception as error:
+					logger.warning(u"Logging message failed: {0}".format(forceUnicode(error)))
 
 			self._put_conn(None)
 			try:
