@@ -179,7 +179,7 @@ class SessionHandler(object):
 		)
 
 		if session.usageCount > 0:
-			logger.notice(u"Session currently in use, waiting before deletion")
+			logger.notice(u"Session {0!r} currently in use, waiting before deletion".format(session.uid))
 
 		session.setMarkedForDeletion()
 		timeout = self.sessionDeletionTimeout

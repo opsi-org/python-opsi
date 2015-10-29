@@ -1,6 +1,7 @@
 python-opsi (4.0.6.31-1) UNRELEASED; urgency=medium
 
   * OPSI.Backend.JSONRPC: Added some debug output.
+  * OPSI.Service.Session: Show what session is in use before deletion.
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 29 Oct 2015 14:31:33 +0100
 
