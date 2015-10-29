@@ -34,7 +34,7 @@ from OPSI.Object import ProductOnClient
 from OPSI.Types import OpsiProductOrderingError, BackendUnaccomplishableError
 from OPSI.Types import forceInt, forceBool
 
-__version__ = '4.0.6.28'
+__version__ = '4.0.6.32'
 
 logger = Logger()
 
@@ -738,7 +738,7 @@ def generateProductSequence_algorithm2(availableProducts, productDependencies):
 		logger.debug(u"Priority {0}: {1}".format(prod1, prio1))
 		logger.debug(u"Priority {0}: {1}".format(prod2, prio2))
 		if prio1 > prio2:
-			logger.notice(u"The ordering is guaranteed by priority handling")
+			logger.debug(u"The ordering is guaranteed by priority handling")
 		elif prio1 < prio2:
 			logger.warning(u"Dependency declaration between %s and %s contradicts priority declaration, will be ignored" % (prod1, prod2))
 		else:
