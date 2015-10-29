@@ -342,11 +342,15 @@ class HTTPConnectionPool(object):
 					conn = self.pool.get(block=False)
 					if conn:
 						try:
-							if conn.sock:
-								conn.sock.close()
+							conn.sock.close()
+						except Exception:
+							pass
+
+						try:
 							conn.close()
 						except Exception:
 							pass
+
 					time.sleep(0.001)
 				except Empty:
 					break
@@ -531,12 +535,14 @@ class HTTPConnectionPool(object):
 				logger.debug(u"Closing connection: %s" % conn)
 				self._put_conn(None)
 				try:
-					if conn.sock:
-						conn.sock.close()
-					conn.close()
+					conn.sock.close()
 				except Exception:
 					pass
 
+				try:
+					conn.close()
+				except Exception:
+					pass
 		except (SocketTimeout, Empty, HTTPException, SocketError) as error:
 			try:
 				logger.debug(u"Request to host '%s' failed, retry: %s, firstTryTime: %s, now: %s, retryTime: %s, connectTimeout: %s, socketTimeout: %s (%s)" \
@@ -552,12 +558,15 @@ class HTTPConnectionPool(object):
 
 			self._put_conn(None)
 			try:
-				if conn:
-					if conn.sock:
-						conn.sock.close()
-					conn.close()
+				conn.sock.close()
 			except Exception:
 				pass
+
+			try:
+				conn.close()
+			except Exception:
+				pass
+
 			if retry and (now - firstTryTime < self.retryTime):
 				logger.debug(u"Request to '%s' failed: %s, retrying" % (self.host, forceUnicode(error)))
 				time.sleep(0.1)
@@ -567,10 +576,12 @@ class HTTPConnectionPool(object):
 		except Exception:
 			self._put_conn(None)
 			try:
-				if conn:
-					if conn.sock:
-						conn.sock.close()
-					conn.close()
+				conn.sock.close()
+			except Exception:
+				pass
+
+			try:
+				conn.close()
 			except Exception:
 				pass
 			raise
@@ -580,11 +591,14 @@ class HTTPConnectionPool(object):
 			logger.info(u"Redirecting %s -> %s" % (url, response.headers.get('location')))
 			time.sleep(0.1)
 			self._put_conn(None)
+
 			try:
-				if conn:
-					if conn.sock:
-						conn.sock.close()
-					conn.close()
+				conn.sock.close()
+			except Exception:
+				pass
+
+			try:
+				conn.close()
 			except Exception:
 				pass
 			return self.urlopen(method, url, body, headers, retry, redirect, assert_same_host, firstTryTime)
