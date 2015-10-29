@@ -3,6 +3,8 @@ python-opsi (4.0.6.31-1) UNRELEASED; urgency=medium
   * OPSI.Backend.JSONRPC: Added some debug output.
   * OPSI.Service.Session: Show what session is in use before deletion.
   * OPSI.Util.HTTP.HTTPConnectionPool.urlopen: Log errors instead of ignoring
+  * OPSI.Util.HTTP.HTTPConnectionPool.urlopen: slightly increased the delay
+    between retries to not bomb a busy server with even more requests.
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 29 Oct 2015 14:31:33 +0100
 

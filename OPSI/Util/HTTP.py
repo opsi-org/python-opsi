@@ -568,8 +568,9 @@ class HTTPConnectionPool(object):
 				pass
 
 			if retry and (now - firstTryTime < self.retryTime):
-				logger.debug(u"Request to '%s' failed: %s, retrying" % (self.host, forceUnicode(error)))
-				time.sleep(0.1)
+				logger.debug(u"Request to {0!r} failed: {1}".format(self.host, forceUnicode(error)))
+				logger.debug(u"Waiting before retry...")
+				time.sleep(0.2)
 				return self.urlopen(method, url, body, headers, retry, redirect, assert_same_host, firstTryTime)
 			else:
 				raise
