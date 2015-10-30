@@ -33,10 +33,7 @@ from OPSI.Types import forceUnicode
 
 from .helpers import unittest, mock
 
-try:
-	from io import BytesIO as StringIO
-except ImportError:
-	from StringIO import StringIO
+from io import BytesIO as StringIO
 
 
 class LoggerTestCase(unittest.TestCase):
