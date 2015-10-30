@@ -112,9 +112,9 @@ class JSONRPC(DeferredCall):
 			self.error = error
 
 	def process(self):
-		try:
-			logger.debug(u"Executing jsonrpc method '%s' on host %s" % (self.method, self.jsonrpcBackend._host))
+		logger.debug(u"Executing jsonrpc method {0!r} on host {1}".format(self.method, self.jsonrpcBackend._host))
 
+		try:
 			rpc = json.dumps(self.getRpc())
 			logger.debug2(u"jsonrpc: %s" % rpc)
 			response = self.jsonrpcBackend._request(baseUrl=self.baseUrl, data=rpc, retry=self.retry)
