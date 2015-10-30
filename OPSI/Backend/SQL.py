@@ -62,8 +62,10 @@ logger = Logger()
 def timeQuery(query):
 	startingTime = datetime.now()
 	logger.debug(u'start query {0}'.format(query))
-	yield
-	logger.debug(u'ended query (duration: {1}) {0}'.format(query, datetime.now() - startingTime))
+	try:
+		yield
+	finally:
+		logger.debug(u'ended query (duration: {1}) {0}'.format(query, datetime.now() - startingTime))
 
 
 def onlyAllowSelect(query):
