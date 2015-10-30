@@ -116,7 +116,8 @@ class JSONRPC(DeferredCall):
 
 		try:
 			rpc = json.dumps(self.getRpc())
-			logger.debug2(u"jsonrpc: %s" % rpc)
+			logger.debug2(u"jsonrpc: {0!r}".format(rpc))
+
 			response = self.jsonrpcBackend._request(baseUrl=self.baseUrl, data=rpc, retry=self.retry)
 			self.processResult(json.loads(response))
 		except Exception as error:
