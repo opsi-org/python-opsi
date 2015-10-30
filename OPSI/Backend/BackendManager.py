@@ -62,7 +62,7 @@ elif os.name == 'nt':
 	import win32net
 	import win32security
 
-__version__ = '4.0.6.29'
+__version__ = '4.0.6.32'
 
 logger = Logger()
 
@@ -429,6 +429,7 @@ class BackendDispatcher(Backend):
 			elif res is not None:
 				result = res
 
+		logger.debug2(u"Finished dispatching method {0!r}".format(methodName))
 		return result
 
 	def backend_setOptions(self, options):
