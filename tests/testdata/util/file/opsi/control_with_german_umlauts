@@ -1,0 +1,45 @@
+[Package]
+version: 1
+depends: 
+incremental: False
+
+[Product]
+type: localboot
+id: fix_druckerwarteschlange
+name: Druckerwarteschlange neustarten
+description: Startet die Druckerwarteschlange auf dem Client neu / oder überhaupt.
+advice: 
+version: 1.0
+priority: 0
+licenseRequired: False
+productClasses: 
+setupScript: setup.ins
+uninstallScript: 
+updateScript: 
+alwaysScript: 
+onceScript: 
+customScript: 
+userLoginScript: 
+
+[Changelog]
+fix_druckerwarteschlange (1.0-1) testing; urgency=low
+
+  * Initial package
+
+ -- Mike Krause <remove@for.testing>  Mon, 18 Feb 2013 11:34:08 +0000
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

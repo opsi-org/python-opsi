@@ -27,14 +27,14 @@ from __future__ import absolute_import
 import os
 import unittest
 
-from OPSI.Util.File.Opsi import BackendDispatchConfigFile, OpsiConfFile
-
+from OPSI.Util.File.Opsi import BackendDispatchConfigFile, OpsiConfFile, PackageControlFile
 
 
 class BackendDispatchConfigFileTestCase(unittest.TestCase):
 	"""
 	Testing reading in the dispatch.conf
 	"""
+
 	def testReadingAllUsedBackends(self):
 		exampleConfig = '''
 backend_.*         : file, mysql, opsipxeconfd, dhcpd
@@ -129,3 +129,15 @@ class OpsiConfigFileTestCase(unittest.TestCase):
 	def testGettingDefaultPigzStatus(self):
 		self.config.parse([''])
 		self.assertEquals(True, self.config.isPigzEnabled())
+
+
+class OpsiConfigFileTestCase(unittest.TestCase):
+
+	# The file is the one that was causing a problem in
+	# https://forum.opsi.org/viewtopic.php?f=7&t=7907
+	EXAMPLE_CONFIG_FILE = os.path.join(os.path.dirname(__file__),
+		'testdata', 'util', 'file', 'opsi', 'control_with_german_umlauts')
+
+	def testParsingControlFileWithGermanUmlautsInDescription(self):
+		p = PackageControlFile(self.EXAMPLE_CONFIG_FILE)
+		p.parse()
