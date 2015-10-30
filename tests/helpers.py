@@ -54,10 +54,11 @@ be deleted if given.
     """
     temporary_folder = tempDir or tempfile.mkdtemp()
     with cd(temporary_folder):
-        yield temporary_folder
-
-    if not tempDir and os.path.exists(temporary_folder):
-        shutil.rmtree(temporary_folder)
+        try:
+            yield temporary_folder
+        finally:
+            if not tempDir and os.path.exists(temporary_folder):
+                shutil.rmtree(temporary_folder)
 
 
 @contextmanager
