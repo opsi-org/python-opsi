@@ -50,8 +50,17 @@ class Hybi10EncodeTestCase(unittest.TestCase):
         def string_generator(size):
             return ''.join(random.choice(valid_digits) for x in range(size))
 
-        for _ in range(100):
-            randstring = string_generator(random.randint(1, 10000))
+        # Here comes masked data with no length of 126 or 127
+        for _ in range(50):
+            randstring = string_generator(random.randint(3, 125))
+            encoded = hybi10Encode(randstring)
+            decoded = hybi10Decode(encoded)
+
+            self.assertEquals(randstring, decoded)
+
+        # Here comes masked data with length 126
+        for _ in range(50):
+            randstring = string_generator(random.randint(126, 65535))
             encoded = hybi10Encode(randstring)
             decoded = hybi10Decode(encoded)
 
