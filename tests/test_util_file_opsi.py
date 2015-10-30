@@ -97,10 +97,12 @@ empty_backends:\t, ,
 
 
 class OpsiConfigFileTestCase(unittest.TestCase):
-	EXAMPLE_CONFIG_FILE = os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'file', 'opsi', 'opsi.conf')
 	"""
 	Testing functions for /etc/opsi.conf
 	"""
+
+	EXAMPLE_CONFIG_FILE = os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'file', 'opsi', 'opsi.conf')
+
 	def setUp(self):
 		self.config = OpsiConfFile(filename=self.EXAMPLE_CONFIG_FILE)
 
