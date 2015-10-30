@@ -64,8 +64,10 @@ be deleted if given.
 def cd(path):
     old_dir = os.getcwd()
     os.chdir(path)
-    yield
-    os.chdir(old_dir)
+    try:
+        yield
+    finally:
+        os.chdir(old_dir)
 
 
 def copyTestfileToTemporaryFolder(filename):
