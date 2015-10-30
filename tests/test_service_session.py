@@ -33,14 +33,15 @@ from OPSI.Service.Session import Session, SessionHandler
 @contextmanager
 def getTestSession(sessionHandler=None, **kwargs):
 	session = Session(sessionHandler or FakeSessionHandler(), **kwargs)
-	yield session
+	try:
+		yield session
+	finally:
+		# This may leave a thread running afterwards
+		if session and session.sessionTimer:
+			session.sessionTimer.cancel()
+			session.sessionTimer.join(1)
 
-	# This may leave a thread running afterwards
-	if session.sessionTimer:
-		session.sessionTimer.cancel()
-		session.sessionTimer.join(1)
-
-	session.sessionTimer = None
+		session.sessionTimer = None
 
 
 class FakeSessionHandler:
