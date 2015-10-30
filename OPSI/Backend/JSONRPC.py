@@ -50,7 +50,7 @@ from OPSI.Backend.Backend import Backend, DeferredCall
 from OPSI.Util import serialize, deserialize
 from OPSI.Util.HTTP import urlsplit, getSharedConnectionPool, deflateEncode, deflateDecode, gzipDecode
 
-__version__ = '4.0.6.31'
+__version__ = '4.0.6.32'
 
 logger = Logger()
 
@@ -107,7 +107,6 @@ class JSONRPC(DeferredCall):
 		except Exception as error:
 			logger.logException(error)
 			self.error = error
-		self._gotResult()
 
 	def process(self):
 		try:
@@ -121,6 +120,7 @@ class JSONRPC(DeferredCall):
 			if self.method not in ('backend_exit', 'exit'):
 				logger.logException("Failed to process method '%s': %s" % (self.method, forceUnicode(error)), LOG_INFO)
 				self.error = error
+		finally:
 			self._gotResult()
 
 
