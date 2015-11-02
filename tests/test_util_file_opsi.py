@@ -131,7 +131,7 @@ class OpsiConfigFileTestCase(unittest.TestCase):
 		self.assertEquals(True, self.config.isPigzEnabled())
 
 
-class OpsiConfigFileTestCase(unittest.TestCase):
+class OpsiControlFileTestCase(unittest.TestCase):
 
 	# The file is the one that was causing a problem in
 	# https://forum.opsi.org/viewtopic.php?f=7&t=7907
