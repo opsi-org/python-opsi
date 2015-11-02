@@ -497,7 +497,7 @@ class LibrsyncTestCase(unittest.TestCase):
                     self.fail("Missing additional text in new file.")
 
 
-class CompareVersionTestCase(unittest.TestCase):
+class CompareVersionsTestCase(unittest.TestCase):
     def testComparingVersionsOfSameSize(self):
         self.assertTrue(compareVersions('1.0', '<', '2.0'))
 
