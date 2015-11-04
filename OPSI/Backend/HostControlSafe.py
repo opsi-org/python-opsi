@@ -77,9 +77,13 @@ class HostControlSafeBackend(ExtendedBackend):
 			self._maxConnections = 1
 
 	def __repr__(self):
-		return u'<{0}(resolveHostAddress={1!r}, maxConnections={2!r})>'.format(
-			self.__class__.__name__, self._resolveHostAddress, self._maxConnections
-		)
+		try:
+			return u'<{0}(resolveHostAddress={1!r}, maxConnections={2!r})>'.format(
+				self.__class__.__name__, self._resolveHostAddress, self._maxConnections
+			)
+		except AttributeError:
+			# Can happen during initialisation
+			return u'<{0}()>'.format(self.__class__.__name__)
 
 	def _getHostAddress(self, host):
 		address = None
