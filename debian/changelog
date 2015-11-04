@@ -2,8 +2,10 @@ python-opsi (4.0.6.33-1) UNRELEASED; urgency=medium
 
   * OPSI.Service.Session.Session gained a __repr__.
   * OPSI.Backend.BackendManager.BackendDispatcher gained a __repr__.
+  * OPSI.Backend.HostControl.HostControlBackend gained a __repr__.
+  * OPSI.Backend.HostControlSafe.HostControlSafeBackend gained a __repr__.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 04 Nov 2015 11:08:10 +0100
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 04 Nov 2015 11:32:14 +0100
 
 python-opsi (4.0.6.32-1) experimental; urgency=medium
 

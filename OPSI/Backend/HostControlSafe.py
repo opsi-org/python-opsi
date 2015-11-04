@@ -36,7 +36,7 @@ from OPSI.Types import (forceBool, forceHostIdList, forceInt, forceList,
 from OPSI.Backend.Backend import ExtendedBackend
 from OPSI.Backend.HostControl import RpcThread, ConnectionThread
 
-__version__ = '4.0.6.3'
+__version__ = '4.0.6.33'
 
 logger = Logger()
 
@@ -75,6 +75,11 @@ class HostControlSafeBackend(ExtendedBackend):
 
 		if (self._maxConnections < 1):
 			self._maxConnections = 1
+
+	def __repr__(self):
+		return u'<{0}(resolveHostAddress={1!r}, maxConnections={2!r})>'.format(
+			self.__class__.__name__, self._resolveHostAddress, self._maxConnections
+		)
 
 	def _getHostAddress(self, host):
 		address = None

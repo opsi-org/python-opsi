@@ -49,7 +49,7 @@ from OPSI.Util import fromJson, toJson
 from OPSI.Util.Thread import KillableThread
 from OPSI.Util.HTTP import non_blocking_connect_https
 
-__version__ = '4.0.6.29'
+__version__ = '4.0.6.33'
 
 logger = Logger()
 
@@ -168,6 +168,11 @@ class HostControlBackend(ExtendedBackend):
 
 		if self._maxConnections < 1:
 			self._maxConnections = 1
+
+	def __repr__(self):
+		return u'<{0}(resolveHostAddress={1!r}, maxConnections={2!r})>'.format(
+			self.__class__.__name__, self._resolveHostAddress, self._maxConnections
+		)
 
 	def _parseArguments(self, kwargs):
 		for (option, value) in kwargs.items():
