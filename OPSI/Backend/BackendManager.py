@@ -327,16 +327,20 @@ class BackendDispatcher(Backend):
 
 	def __repr__(self):
 		additionalInformation = []
-		if self._dispatchIgnoreModules:
-			additionalInformation.append('dispatchIgnoreModules={0!r}'.format(self._dispatchIgnoreModules))
+		try:
+			if self._dispatchIgnoreModules:
+				additionalInformation.append('dispatchIgnoreModules={0!r}'.format(self._dispatchIgnoreModules))
 
-		if self._dispatchConfigFile:
-			additionalInformation.append('dispatchConfigFile={0!r}'.format(self._dispatchConfigFile))
-		elif self._dispatchConfig:
-			additionalInformation.append('dispatchConfig={0!r}'.format(self._dispatchConfig))
+			if self._dispatchConfigFile:
+				additionalInformation.append('dispatchConfigFile={0!r}'.format(self._dispatchConfigFile))
+			elif self._dispatchConfig:
+				additionalInformation.append('dispatchConfig={0!r}'.format(self._dispatchConfig))
 
-		if self._context != self:
-			additionalInformation.append('context={0!r}'.format(self._context))
+			if self._context != self:
+				additionalInformation.append('context={0!r}'.format(self._context))
+		except AttributeError:
+			# Can happen during initialisation
+			pass
 
 		return '<{0}({1})>'.format(self.__class__.__name__, ', '.join(additionalInformation))
 
