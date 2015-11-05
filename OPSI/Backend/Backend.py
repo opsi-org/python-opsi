@@ -693,11 +693,14 @@ Currently supported: *bootimage*, *clientconnect*, *instlog* or *opsiconfd*.
 
 			logFile = os.path.join(LOG_DIR, logType, 'opsiconfd.log')
 
-		if not os.path.exists(logFile):
-			return u''
+		try:
+			with codecs.open(logFile, 'r', 'utf-8', 'replace') as log:
+				data = log.read()
+		except IOError as ioerr:
+			if ioerr.errno == 2:  # This is "No such file or directory"
+				return u''
 
-		with codecs.open(logFile, 'r', 'utf-8', 'replace') as log:
-			data = log.read()
+			raise
 
 		if maxSize:
 			return self._truncateLogData(data, maxSize)
