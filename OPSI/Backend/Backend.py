@@ -620,20 +620,24 @@ overwrite the log.
 		if not os.path.exists(os.path.join(LOG_DIR, logType)):
 			os.mkdir(os.path.join(LOG_DIR, logType), 0o2770)
 
-		logFile = os.path.join(LOG_DIR, logType, '{0}.log'.format(objectId))
-		if not os.path.exists(logFile):
-			with open(logFile, 'w'):
-				# Making sure that a file exists for the call of os.stat
-				pass
-
 		data = forceUnicode(data)
 		if self._maxLogfileSize > 0:
 			data = self._truncateLogData(data, self._maxLogfileSize)
+
+		logFile = os.path.join(LOG_DIR, logType, '{0}.log'.format(objectId))
 
 		if forceBool(append):
 			logWriteMode = 'a+'
 
 			if self._maxLogfileSize > 0:
+				try:
+					# Making sure that a file exists for the call of os.stat
+					with open(logFile, 'wx'):
+						pass
+				except IOError as ioerr:
+					if ioerr.errno != 17:  # 17 is File exists
+						raise
+
 				currentSize = os.stat(logFile).st_size
 				maxFileSize = self._maxLogfileSize - len(data)
 
