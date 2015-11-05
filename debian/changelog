@@ -4,6 +4,8 @@ python-opsi (4.0.6.33-1) UNRELEASED; urgency=medium
   * OPSI.Backend.BackendManager.BackendDispatcher gained a __repr__.
   * OPSI.Backend.HostControl.HostControlBackend gained a __repr__.
   * OPSI.Backend.HostControlSafe.HostControlSafeBackend gained a __repr__.
+  * ConfigDataBackend: fixed an edge case where the amount of data written
+    would exceed the limit.
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 04 Nov 2015 11:32:14 +0100
 

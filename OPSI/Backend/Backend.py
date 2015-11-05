@@ -643,6 +643,7 @@ overwrite the log.
 						data = log.read() + data
 						data = data[data.find('\n') + 1:]
 
+					data = self._truncateLogData(data, self._maxLogfileSize)
 					logWriteMode = "w"
 		else:
 			logWriteMode = "w"
