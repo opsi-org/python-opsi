@@ -3215,10 +3215,9 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			clientId=productOnClient.clientId
 		)
 		if currentProductOnClients:
-			'''
-			If productOnClient exits (same productId, same clientId, different version)
-			then update existing productOnClient instead of creating a new one
-			'''
+			# If productOnClient exists
+			# (same productId, same clientId, different version)
+			# then update the existing instead of creating a new one
 			nextProductOnClient = currentProductOnClients[0].clone()
 			if update:
 				nextProductOnClient.update(productOnClient, updateWithNoneValues=False)
