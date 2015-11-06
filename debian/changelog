@@ -1,4 +1,4 @@
-python-opsi (4.0.6.33-1) UNRELEASED; urgency=medium
+python-opsi (4.0.6.33-1) experimental; urgency=medium
 
   * OPSI.Service.Session.Session gained a __repr__.
   * OPSI.Backend.BackendManager.BackendDispatcher gained a __repr__.
