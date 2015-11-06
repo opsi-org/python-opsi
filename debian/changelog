@@ -6,8 +6,9 @@ python-opsi (4.0.6.33-1) UNRELEASED; urgency=medium
   * OPSI.Backend.HostControlSafe.HostControlSafeBackend gained a __repr__.
   * ConfigDataBackend: fixed an edge case where the amount of data written
     would exceed the limit.
+  * opsihwaudit.conf: Re-introduce the missing SKU.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 04 Nov 2015 11:32:14 +0100
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 06 Nov 2015 10:37:12 +0100
 
 python-opsi (4.0.6.32-1) experimental; urgency=medium
 
