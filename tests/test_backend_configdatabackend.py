@@ -124,7 +124,9 @@ class ConfigDataBackendLogTestCase(unittest.TestCase):
 		# Not even the sky is the limit!
 		cdb = OPSI.Backend.Backend.ConfigDataBackend(maxLogSize=0)
 
-		longData = 'data1\ndata2\ndata3\ndata4\n'
+		# The magic 218454 are meant to be more than:
+		# MAX_LOG_SIZE / len('data1\ndata2\ndata3\ndata4\n')
+		longData = 'data1\ndata2\ndata3\ndata4\n' * 218454
 		cdb.log_write('opsiconfd', longData, objectId='foo.bar.baz')
 
 		self.assertEquals(longData, cdb.log_read('opsiconfd', 'foo.bar.baz', maxSize=0))
