@@ -702,7 +702,7 @@ Currently supported: *bootimage*, *clientconnect*, *instlog* or *opsiconfd*.
 
 			raise
 
-		if maxSize:
+		if maxSize > 0:
 			return self._truncateLogData(data, maxSize)
 
 		return data

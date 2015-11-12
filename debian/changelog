@@ -1,3 +1,9 @@
+python-opsi (4.0.6.34-1) UNRELEASED; urgency=medium
+
+  * ConfigDataBackend: the argument 'maxSize' for log_read must be positive.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 12 Nov 2015 15:16:28 +0100
+
 python-opsi (4.0.6.33-1) experimental; urgency=medium
 
   * OPSI.Service.Session.Session gained a __repr__.
