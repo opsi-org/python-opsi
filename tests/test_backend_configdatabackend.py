@@ -150,6 +150,7 @@ class ConfigDataBackendLogTestCase(unittest.TestCase):
 		self.assertEquals('welt', cdb._truncateLogData('hallo\nwelt', 5))
 
 		self.assertEquals('hallo\nwelt', cdb._truncateLogData('hallo\nwelt', 10))
+		self.assertEquals('welt\n', cdb._truncateLogData('hallo\nwelt\n', 10))
 		self.assertEquals('hallo\nwelt', cdb._truncateLogData('hallo\nwelt', 15))
 
 	def testTruncatingOldDataWhenAppending(self):
