@@ -201,12 +201,10 @@ class ConfigDataBackendLogTestCase(unittest.TestCase):
 		So every write operation should override the previously written
 		data.
 		"""
-		cdb = OPSI.Backend.Backend.ConfigDataBackend(maxLogSize=5)
+		cdb = OPSI.Backend.Backend.ConfigDataBackend(maxLogSize=7)
 
-		cdb.log_write('opsiconfd', u'data1\n', objectId='foo.bar.baz')
-		cdb.log_write('opsiconfd', u'data2\n', objectId='foo.bar.baz', append=True)
-		cdb.log_write('opsiconfd', u'data3\ndata4\n', objectId='foo.bar.baz', append=True)
-		cdb.log_write('opsiconfd', u'data5\n', objectId='foo.bar.baz', append=True)
+		cdb.log_write('opsiconfd', u'data3\ndata4\n', objectId='foo.bar.baz')
+		cdb.log_write('opsiconfd', u'data4\ndata5\n', objectId='foo.bar.baz', append=True)
 
 		self.assertEquals(
 			'data5\n',
