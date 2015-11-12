@@ -150,6 +150,67 @@ class ConfigDataBackendLogTestCase(unittest.TestCase):
 		self.assertEquals('welt', cdb._truncateLogData('hallo\nwelt', 5))
 
 		self.assertEquals('hallo\nwelt', cdb._truncateLogData('hallo\nwelt', 10))
+		self.assertEquals('hallo\nwelt', cdb._truncateLogData('hallo\nwelt', 15))
+
+	def testTruncatingOldDataWhenAppending(self):
+		cdb = OPSI.Backend.Backend.ConfigDataBackend(maxLogSize=15)
+
+		cdb.log_write('opsiconfd', u'data1data2data3data4data5', objectId='foo.bar.baz')
+		cdb.log_write('opsiconfd', u'data6', objectId='foo.bar.baz', append=True)
+
+		self.assertEquals(
+			'data4data5data6',
+			cdb.log_read('opsiconfd', objectId='foo.bar.baz')
+		)
+
+	def testOverwritingOldDataInAppendMode(self):
+		"""
+		With size limits in place old data should be overwritten.
+
+		Each write operation submits data that is as long as our limit.
+		So every write operation should override the previously written
+		data.
+		"""
+		cdb = OPSI.Backend.Backend.ConfigDataBackend(maxLogSize=5)
+
+		cdb.log_write('opsiconfd', u'data1', objectId='foo.bar.baz', append=True)
+		cdb.log_write('opsiconfd', u'data2', objectId='foo.bar.baz', append=True)
+		cdb.log_write('opsiconfd', u'data3', objectId='foo.bar.baz', append=True)
+
+		self.assertEquals(
+			'data3',
+			cdb.log_read('opsiconfd', objectId='foo.bar.baz', maxSize=0)
+		)
+
+	def testTruncatingOldDataWhenAppendingWithNewlines(self):
+		"If we append data we want to truncate the data at a newline."
+
+		cdb = OPSI.Backend.Backend.ConfigDataBackend(maxLogSize=15)
+
+		cdb.log_write('opsiconfd', u'data1data2data3data4data5\n', objectId='foo.bar.baz', append=True)
+		cdb.log_write('opsiconfd', u'data6', objectId='foo.bar.baz', append=True)
+
+		self.assertEquals('data6', cdb.log_read('opsiconfd', objectId='foo.bar.baz'))
+
+	def testOverwritingOldDataInAppendModeWithNewlines(self):
+		"""
+		With size limits in place old data should be overwritten - even with newlines.
+
+		Each write operation submits data that is as long as our limit.
+		So every write operation should override the previously written
+		data.
+		"""
+		cdb = OPSI.Backend.Backend.ConfigDataBackend(maxLogSize=5)
+
+		cdb.log_write('opsiconfd', u'data1\n', objectId='foo.bar.baz')
+		cdb.log_write('opsiconfd', u'data2\n', objectId='foo.bar.baz', append=True)
+		cdb.log_write('opsiconfd', u'data3\ndata4\n', objectId='foo.bar.baz', append=True)
+		cdb.log_write('opsiconfd', u'data5\n', objectId='foo.bar.baz', append=True)
+
+		self.assertEquals(
+			'data5\n',
+			cdb.log_read('opsiconfd', objectId='foo.bar.baz')
+		)
 
 if __name__ == '__main__':
 	unittest.main()

@@ -620,37 +620,45 @@ overwrite the log.
 		if not os.path.exists(os.path.join(LOG_DIR, logType)):
 			os.mkdir(os.path.join(LOG_DIR, logType), 0o2770)
 
+		limitFileSize = self._maxLogfileSize > 0
 		data = forceUnicode(data)
-		if self._maxLogfileSize > 0:
-			data = self._truncateLogData(data, self._maxLogfileSize)
-
 		logFile = os.path.join(LOG_DIR, logType, '{0}.log'.format(objectId))
 
 		if forceBool(append):
 			logWriteMode = 'a'
 
-			if self._maxLogfileSize > 0:
+			if limitFileSize:
 				try:
-					# Making sure that a file exists for the call of os.stat
 					with open(logFile, 'wx'):
 						pass
+
+					# If we got here the file was created by us and we
+					# can safely assume that it has no content.
+					currentLogSize = 0
 				except IOError as ioerr:
 					if ioerr.errno != 17:  # 17 is File exists
 						raise
 
-				currentSize = os.stat(logFile).st_size
-				maxFileSize = self._maxLogfileSize - len(data)
+					# The file existed before and we can now check it's
+					# current size
+					currentLogSize = os.stat(logFile).st_size
 
-				if currentSize > maxFileSize:
+				amountToReadFromLog = self._maxLogfileSize - len(data)
+
+				if 0 < amountToReadFromLog and amountToReadFromLog < currentLogSize:
 					with codecs.open(logFile, 'r', 'utf-8', 'replace') as log:
-						log.seek(currentSize - maxFileSize)
+						log.seek(currentLogSize - amountToReadFromLog)
 						data = log.read() + data
 						data = data[data.find('\n') + 1:]
 
-					data = self._truncateLogData(data, self._maxLogfileSize)
+					logWriteMode = "w"
+				elif amountToReadFromLog <= 0:
 					logWriteMode = "w"
 		else:
 			logWriteMode = "w"
+
+		if limitFileSize:
+			data = self._truncateLogData(data, self._maxLogfileSize)
 
 		with codecs.open(logFile, logWriteMode, 'utf-8', 'replace') as log:
 			log.write(data)

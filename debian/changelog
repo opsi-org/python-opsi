@@ -1,6 +1,7 @@
 python-opsi (4.0.6.34-1) UNRELEASED; urgency=medium
 
   * ConfigDataBackend: the argument 'maxSize' for log_read must be positive.
+  * ConfigDataBackend: refactored the log_write method.
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 12 Nov 2015 15:16:28 +0100
 
