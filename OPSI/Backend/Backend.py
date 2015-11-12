@@ -627,7 +627,7 @@ overwrite the log.
 		logFile = os.path.join(LOG_DIR, logType, '{0}.log'.format(objectId))
 
 		if forceBool(append):
-			logWriteMode = 'a+'
+			logWriteMode = 'a'
 
 			if self._maxLogfileSize > 0:
 				try:
