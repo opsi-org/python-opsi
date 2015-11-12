@@ -649,7 +649,6 @@ overwrite the log.
 					with codecs.open(logFile, 'r', 'utf-8', 'replace') as log:
 						log.seek(currentLogSize - amountToReadFromLog)
 						data = log.read() + data
-						data = data[data.find('\n') + 1:]
 
 					logWriteMode = "w"
 				elif amountToReadFromLog <= 0:
