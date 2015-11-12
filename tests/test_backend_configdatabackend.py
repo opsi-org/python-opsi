@@ -132,15 +132,17 @@ class ConfigDataBackendLogTestCase(unittest.TestCase):
 		self.assertEquals(longData, cdb.log_read('opsiconfd', 'foo.bar.baz', maxSize=0))
 
 	def testTruncatingData(self):
-		cdb = OPSI.Backend.Backend.ConfigDataBackend(maxLogSize=10)
+		cdb = OPSI.Backend.Backend.ConfigDataBackend()
+
+		self.assertEquals('', cdb._truncateLogData('hallo\nwelt', 0))
 
 		self.assertEquals('o', cdb._truncateLogData('hallo', 1))
 		self.assertEquals('llo', cdb._truncateLogData('hallo', 3))
 
 		self.assertEquals('elt', cdb._truncateLogData('hallo\nwelt', 3))
 		self.assertEquals('welt', cdb._truncateLogData('hallo\nwelt', 4))
+		self.assertEquals('welt', cdb._truncateLogData('hallo\nwelt', 5))
 
-		self.assertEquals('', cdb._truncateLogData('hallo\nwelt', 0))
 		self.assertEquals('hallo\nwelt', cdb._truncateLogData('hallo\nwelt', 10))
 
 if __name__ == '__main__':
