@@ -28,7 +28,6 @@ from __future__ import absolute_import
 import os
 import mock
 import sys
-from contextlib import contextmanager
 
 from .helpers import unittest, workInTemporaryDirectory
 
