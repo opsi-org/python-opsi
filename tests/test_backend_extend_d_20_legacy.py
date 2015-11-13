@@ -81,6 +81,7 @@ class LegacyConfigStateAccessTestCase(unittest.TestCase, ExtendedFileBackendMixi
 
     def testNoConfigReturnsNoValue(self):
         self.assertEquals(None, self.backend.getGeneralConfigValue(None))
+        self.assertEquals(None, self.backend.getGeneralConfigValue(""))
 
     def testEmptyAfterStart(self):
         self.assertEquals({}, self.backend.getGeneralConfig_hash())
@@ -115,6 +116,15 @@ class LegacyConfigStateAccessTestCase(unittest.TestCase, ExtendedFileBackendMixi
 
         self.backend.setGeneralConfig({"bool": "noconversion"})
         self.assertEquals("noconversion", self.backend.getGeneralConfigValue("bool"))
+
+    def testRemovingMissingValue(self):
+        config = {"test.truth": "True", "test.int": "2"}
+        self.backend.setGeneralConfig(config)
+        self.assertEquals(2, len(self.backend.getGeneralConfig_hash()))
+
+        del config["test.int"]
+        self.backend.setGeneralConfig(config)
+        self.assertEquals(1, len(self.backend.getGeneralConfig_hash()))
 
     def testMassFilling(self):
         numberOfConfigs = 250
