@@ -36,9 +36,8 @@ from .helpers import unittest
 
 
 class LegacyFunctionsTestCase(unittest.TestCase, ExtendedFileBackendMixin):
-    """
-    Testing the group actions.
-    """
+    "Testing the legacy / simple functins."
+
     def setUp(self):
         self.setUpBackend()
 
