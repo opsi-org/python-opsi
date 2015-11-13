@@ -99,7 +99,7 @@ class LegacyConfigStateAccessTestCase(unittest.TestCase, ExtendedFileBackendMixi
             self.assertEquals(value, self.backend.getGeneralConfigValue(key))
 
         self.assertNotEquals({}, self.backend.getGeneralConfig_hash())
-        self.assertNotEquals(2, len(self.backend.getGeneralConfig_hash()))
+        self.assertEquals(2, len(self.backend.getGeneralConfig_hash()))
 
     def testSetGeneralConfigValueTypeConversion(self):
         trueValues = set(['yes', 'on', '1', 'true'])
