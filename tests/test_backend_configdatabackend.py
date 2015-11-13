@@ -210,6 +210,10 @@ class ConfigDataBackendLogTestCase(unittest.TestCase):
 			'data5\n',
 			cdb.log_read('opsiconfd', objectId='foo.bar.baz')
 		)
+		self.assertEquals(
+			'data5\n',
+			cdb.log_read('opsiconfd', objectId='foo.bar.baz', maxSize=0)
+		)
 
 if __name__ == '__main__':
 	unittest.main()
