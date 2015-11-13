@@ -68,5 +68,70 @@ class LegacyFunctionsTestCase(unittest.TestCase, ExtendedFileBackendMixin):
         self.assertNotEqual('', self.backend.getDomain())
 
 
+class LegacyConfigStateAccessTestCase(unittest.TestCase, ExtendedFileBackendMixin):
+    """
+    Testing legacy access to ConfigStates.
+    """
+
+    def setUp(self):
+        self.setUpBackend()
+
+    def tearDown(self):
+        self.tearDownBackend()
+
+    def testNoConfigReturnsNoValue(self):
+        self.assertEquals(None, self.backend.getGeneralConfigValue(None))
+
+    def testEmptyAfterStart(self):
+        self.assertEquals({}, self.backend.getGeneralConfig_hash())
+
+    def testUnabledToHandleNonTextValues(self):
+        function = self.backend.setGeneralConfig
+        self.assertRaises(Exception, function, {"test": True})
+        self.assertRaises(Exception, function, {"test": 1})
+        self.assertRaises(Exception, function, {"test": None})
+
+    def testSetGeneralConfigValue(self):
+        config = {"test.truth": "True", "test.int": "2"}
+        self.backend.setGeneralConfig(config)
+
+        for key, value in config.items():
+            self.assertEquals(value, self.backend.getGeneralConfigValue(key))
+
+        self.assertNotEquals({}, self.backend.getGeneralConfig_hash())
+        self.assertNotEquals(2, len(self.backend.getGeneralConfig_hash()))
+
+    def testSetGeneralConfigValueTypeConversion(self):
+        trueValues = set(['yes', 'on', '1', 'true'])
+        falseValues = set(['no', 'off', '0', 'false'])
+
+        for value in trueValues:
+            self.backend.setGeneralConfig({"bool": value})
+            self.assertEquals("True", self.backend.getGeneralConfigValue("bool"))
+
+        for value in falseValues:
+            self.backend.setGeneralConfig({"bool": value})
+            self.assertEquals("False", self.backend.getGeneralConfigValue("bool"))
+
+        self.backend.setGeneralConfig({"bool": "noconversion"})
+        self.assertEquals("noconversion", self.backend.getGeneralConfigValue("bool"))
+
+    def testMassFilling(self):
+        numberOfConfigs = 250
+
+        config = {}
+        for value in range(250):
+            config["bool.{0}".format(value)] = str(value % 2 == 0)
+
+        for value in range(250):
+            config["normal.{0}".format(value)] = "norm-{0}".format(value)
+
+        self.backend.setGeneralConfig(config)
+
+        configFromBackend = self.backend.getGeneralConfig_hash()
+        self.assertEquals(len(config), len(configFromBackend))
+        self.assertEquals(config, configFromBackend)
+
+
 if __name__ == '__main__':
     unittest.main()
