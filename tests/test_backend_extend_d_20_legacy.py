@@ -127,19 +127,20 @@ class LegacyConfigStateAccessTestCase(unittest.TestCase, ExtendedFileBackendMixi
         self.assertEquals(1, len(self.backend.getGeneralConfig_hash()))
 
     def testMassFilling(self):
-        numberOfConfigs = 250
+        numberOfConfigs = 50  # len(config) will be double
 
         config = {}
-        for value in range(250):
+        for value in range(numberOfConfigs):
             config["bool.{0}".format(value)] = str(value % 2 == 0)
 
-        for value in range(250):
+        for value in range(numberOfConfigs):
             config["normal.{0}".format(value)] = "norm-{0}".format(value)
+
+        self.assertEquals(numberOfConfigs * 2, len(config))
 
         self.backend.setGeneralConfig(config)
 
         configFromBackend = self.backend.getGeneralConfig_hash()
-        self.assertEquals(len(config), len(configFromBackend))
         self.assertEquals(config, configFromBackend)
 
 
