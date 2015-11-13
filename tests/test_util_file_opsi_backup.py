@@ -28,9 +28,11 @@ from __future__ import absolute_import
 import os
 import shutil
 import tempfile
+from contextlib import contextmanager
 
 import mock
-from .helpers import unittest
+
+from .helpers import unittest, workInTemporaryDirectory
 
 from OPSI.Util.File.Opsi import OpsiBackupFileError, OpsiBackupArchive
 from OPSI.Util import randomString
@@ -168,6 +170,82 @@ class BackendArchiveTestCase(unittest.TestCase):
     def test_backupVerifyCorrupted(self):
         # TODO: test corrupted Image
         pass
+
+
+@contextmanager
+def getOpsiBackupArchive(name=None, mode=None, tempdir=None, keepArchive=False):
+    with workInTemporaryDirectory(tempdir) as tempDir:
+        baseDir = os.path.join(tempDir, 'base')
+        backendDir = os.path.join(baseDir, 'backends')
+
+        baseDataDir = os.path.join(os.path.dirname(__file__), '..', 'data', 'backends')
+        baseDataDir = os.path.normpath(baseDataDir)
+        try:
+            shutil.copytree(baseDataDir, backendDir)
+        except OSError as error:
+            print(u"Failed to copy {0!r} to {1!r}: {2}".format(baseDataDir, backendDir, error))
+
+        with mock.patch('OPSI.Util.File.Opsi.OpsiBackupArchive.CONF_DIR', baseDir):
+            # TODO: we need to patch the path for the dispatch.conf
+            # DISPATCH_CONF = os.path.join(CONF_DIR, "backendManager", "dispatch.conf")
+            with mock.patch('OPSI.Util.File.Opsi.OpsiBackupArchive.BACKEND_CONF_DIR', backendDir):
+                with mock.patch('OPSI.Util.File.Opsi.OpsiBackupArchive.BACKEND_CONF_DIR', backendDir):
+                    with mock.patch('OPSI.System.Posix.SysInfo.opsiVersion', '1.2.3'):
+                        archive = OpsiBackupArchive(name=name, mode=mode, tempdir=tempDir)
+                        try:
+                            yield archive
+                        finally:
+                            try:
+                                archive.close()
+                            except IOError:
+                                # Archive is probably already closed
+                                pass
+
+                            if not keepArchive:
+                                try:
+                                    os.remove(archive.name)
+                                except OSError:
+                                    pass
+
+
+class BackupArchiveTest(unittest.TestCase):
+    def testCreatingConfigurationBackup(self):
+        def getFolderContent(path):
+            content = []
+            for root, directories, files in os.walk(path):
+                for oldDir in directories:
+                    content.append(os.path.join(root, oldDir))
+
+                for filename in files:
+                    content.append(os.path.join(root, filename))
+
+            return content
+
+        with workInTemporaryDirectory() as tempDir:
+            with getOpsiBackupArchive(tempdir=tempDir, keepArchive=True) as archive:
+                archive.backupConfiguration()
+                oldContent = getFolderContent(archive.CONF_DIR)
+                shutil.rmtree(archive.CONF_DIR, ignore_errors="True")
+
+            self.assertTrue(oldContent, "No data found!")
+
+            with getOpsiBackupArchive(name=archive.name, mode="r", tempdir=tempDir) as backup:
+                backup.restoreConfiguration()
+                newContent = getFolderContent(backup.CONF_DIR)
+
+            self.assertTrue(newContent, "No data found!")
+            self.assertEquals(oldContent, newContent)
+
+    def testBackupHasConfiguration(self):
+        with workInTemporaryDirectory() as tempDir:
+            with getOpsiBackupArchive(tempdir=tempDir, keepArchive=True) as archive:
+                self.assertFalse(archive.hasConfiguration())
+                archiveName = archive.name
+                archive.backupConfiguration()
+
+            with getOpsiBackupArchive(name=archiveName, mode="r", tempdir=tempDir) as backup:
+                self.assertTrue(backup.hasConfiguration())
+
 
 if __name__ == '__main__':
     unittest.main()
