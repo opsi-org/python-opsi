@@ -750,4 +750,7 @@ class JSONRPCBackend(Backend):
 		return self._interface
 
 	def __repr__(self):
-		return u'<{0}(address={1!r}, host={2!r}, deflate={3!r})>'.format(self.__class__.__name__, self._name, self._host, self._deflate)
+		if self._name:
+			return u'<{0}(address={1!r}, host={2!r}, deflate={3!r})>'.format(self.__class__.__name__, self._name, self._host, self._deflate)
+		else:
+			return u'<{0}(host={1!r}, deflate={2!r})>'.format(self.__class__.__name__, self._host, self._deflate)
