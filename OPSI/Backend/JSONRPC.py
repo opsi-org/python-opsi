@@ -494,8 +494,6 @@ class JSONRPCBackend(Backend):
 	def _getRpcId(self):
 		with self._rpcIdLock:
 			self._rpcId += 1
-			if self._rpcId > 100000:
-				self._rpcId = 1
 
 		return self._rpcId
 
