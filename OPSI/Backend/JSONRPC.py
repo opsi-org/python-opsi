@@ -233,10 +233,12 @@ class RpcQueue(threading.Thread):
 					id = resp['id']
 				except Exception as error:
 					raise Exception(u"Failed to get id from: %s (%s): %s" % (resp, response, error))
+
 				try:
 					jsonrpc = self.jsonrpcs[id]
 				except Exception as error:
 					raise Exception(u"Failed to get jsonrpc with id %s: %s" % (id, error))
+
 				try:
 					jsonrpc.processResult(resp)
 				except Exception as error:
