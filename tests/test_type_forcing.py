@@ -232,6 +232,7 @@ class ForceIntListTestCase(unittest.TestCase):
 class ForceOctTestCase(unittest.TestCase):
 	def testForcingDoesNotChangeValue(self):
 		self.assertEquals(forceOct(0o666), 0o666)
+		self.assertEquals(forceOct(0o750), 0o750)
 
 	def testForcingString(self):
 		self.assertEquals(forceOct('666'), 0o666)
@@ -241,6 +242,7 @@ class ForceOctTestCase(unittest.TestCase):
 
 	def testRaisingErrors(self):
 		self.assertRaises(ValueError, forceOct, 'abc')
+		self.assertRaises(ValueError, forceOct, '8')
 
 
 class ForceOpsiTimeStampTestCase(unittest.TestCase):
