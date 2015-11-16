@@ -208,19 +208,20 @@ def getOpsiBackupArchive(name=None, mode=None, tempdir=None, keepArchive=False):
                                     pass
 
 
+def getFolderContent(path):
+    content = []
+    for root, directories, files in os.walk(path):
+        for oldDir in directories:
+            content.append(os.path.join(root, oldDir))
+
+        for filename in files:
+            content.append(os.path.join(root, filename))
+
+    return content
+
+
 class BackupArchiveTest(unittest.TestCase):
     def testCreatingConfigurationBackup(self):
-        def getFolderContent(path):
-            content = []
-            for root, directories, files in os.walk(path):
-                for oldDir in directories:
-                    content.append(os.path.join(root, oldDir))
-
-                for filename in files:
-                    content.append(os.path.join(root, filename))
-
-            return content
-
         with workInTemporaryDirectory() as tempDir:
             with getOpsiBackupArchive(tempdir=tempDir, keepArchive=True) as archive:
                 archive.backupConfiguration()
