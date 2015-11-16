@@ -682,7 +682,7 @@ class JSONRPCBackend(Backend):
 			data = unicode(data, 'utf-8')
 		data = data.encode('utf-8')
 
-		logger.debug2(u"Request to host '%s', baseUrl: %s, query '%s'" % (self._host, baseUrl, data))
+		logger.debug2(u"Request to host {0!r}, baseUrl: {1!r}, query: {2!r}".format(self._host, baseUrl, data))
 
 		if self._deflate:
 			logger.debug2(u"Compressing data")
