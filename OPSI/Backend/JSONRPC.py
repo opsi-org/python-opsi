@@ -492,13 +492,11 @@ class JSONRPCBackend(Backend):
 			self._async = async
 
 	def _getRpcId(self):
-		self._rpcIdLock.acquire()
-		try:
+		with self._rpcIdLock:
 			self._rpcId += 1
 			if self._rpcId > 100000:
 				self._rpcId = 1
-		finally:
-			self._rpcIdLock.release()
+
 		return self._rpcId
 
 	def _processAddress(self, address):
