@@ -57,8 +57,11 @@ be deleted if given.
         try:
             yield temporary_folder
         finally:
-            if not tempDir and os.path.exists(temporary_folder):
-                shutil.rmtree(temporary_folder)
+            if not tempDir:
+                try:
+                    shutil.rmtree(temporary_folder)
+                except OSError:
+                    pass
 
 
 @contextmanager
