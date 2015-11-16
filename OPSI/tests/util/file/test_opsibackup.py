@@ -35,44 +35,6 @@ class BackendArchiveFixture(Fixture):
 
 
 class BackupArchiveTest(TestCase):
-	def test_backupConfiguration(self):
-		archive = self.useFixture(BackendArchiveFixture())
-		archive.backupConfiguration()
-		archive.close()
-
-		old = []
-
-		for root, ds, files in os.walk(archive.CONF_DIR):
-			for d in ds:
-				old.append(os.path.join(root, d))
-			for file in files:
-
-				old.append(file)
-
-		shutil.rmtree(archive.CONF_DIR, ignore_errors="True")
-
-		backup = self.useFixture(BackendArchiveFixture(name=archive.name, mode="r"))
-		backup.restoreConfiguration()
-		backup.close()
-
-		new = []
-
-		for root, ds, files in os.walk(archive.CONF_DIR):
-			for d in ds:
-				new.append(os.path.join(root, d))
-			for file in files:
-				new.append(file)
-
-		self.assertEquals(old, new)
-
-	def test_hasConfiguration(self):
-		archive = self.useFixture(BackendArchiveFixture())
-		archive.backupConfiguration()
-		archive.close()
-
-		backup = self.useFixture(BackendArchiveFixture(archive.name, "r"))
-		self.assertTrue(backup.hasConfiguration())
-		backup.close()
 
 	def test_backupFileBackend(self):
 		archive = self.useFixture(BackendArchiveFixture())
