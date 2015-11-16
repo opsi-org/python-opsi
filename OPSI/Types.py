@@ -144,12 +144,13 @@ def forceUnicodeLowerList(var):
 def forceBool(var):
 	if isinstance(var, bool):
 		return var
-
-	if isinstance(var, _STRING_TYPES):
-		if var.lower() in ('true', 'yes', 'on', '1'):
-			return True
-		elif var.lower() in ('false', 'no', 'off', '0'):
-			return False
+	elif isinstance(var, _STRING_TYPES):
+		if len(var) <= 5:  # longest word is 5 characters ("false")
+			lowValue = var.lower()
+			if lowValue in ('true', 'yes', 'on', '1'):
+				return True
+			elif lowValue in ('false', 'no', 'off', '0'):
+				return False
 
 	return bool(var)
 
