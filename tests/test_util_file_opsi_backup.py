@@ -186,10 +186,47 @@ def getOpsiBackupArchive(name=None, mode=None, tempdir=None, keepArchive=False):
             print(u"Failed to copy {0!r} to {1!r}: {2}".format(baseDataDir, backendDir, error))
 
         with mock.patch('OPSI.Util.File.Opsi.OpsiBackupArchive.CONF_DIR', baseDir):
-            # TODO: we need to patch the path for the dispatch.conf
-            # DISPATCH_CONF = os.path.join(CONF_DIR, "backendManager", "dispatch.conf")
             with mock.patch('OPSI.Util.File.Opsi.OpsiBackupArchive.BACKEND_CONF_DIR', backendDir):
-                with mock.patch('OPSI.Util.File.Opsi.OpsiBackupArchive.BACKEND_CONF_DIR', backendDir):
+
+                fileBackendConfig = os.path.join(backendDir, "file.conf")
+                if not os.path.exists(fileBackendConfig):
+                    raise RuntimeError("Missing file backend config {0!r}".format(fileBackendConfig))
+
+                # TODO: refactor for some code-sharing with the test-setup
+                # from the file backend.
+                with open(fileBackendConfig, "w") as fileConfig:
+                    fileConfig.write("""
+                # -*- coding: utf-8 -*-
+
+module = 'File'
+config = {{
+    "baseDir":     u"{0}",
+    "hostKeyFile": u"/etc/opsi/pckeys",
+}}
+""".format(baseDir))
+
+                try:
+                    os.mkdir(os.path.join(baseDir, "backendManager"))
+                except OSError as oserr:
+                    if oserr.errno != 17:  # 17 is File exists
+                        raise oserr
+
+                dispatchConfig = os.path.join(baseDir, "backendManager", "dispatch.conf")
+
+                try:
+                    with open(dispatchConfig, 'wx') as dispatchFile:
+                        dispatchFile.write("""
+backend_.*         : file, opsipxeconfd, dhcpd
+host_.*            : file, opsipxeconfd, dhcpd
+productOnClient_.* : file, opsipxeconfd
+configState_.*     : file, opsipxeconfd
+.*                 : file
+""")
+                except IOError as error:
+                    if error.errno != 17:  # 17 is File exists
+                        raise oserr
+
+                with mock.patch('OPSI.Util.File.Opsi.OpsiBackupArchive.DISPATCH_CONF', dispatchConfig):
                     with mock.patch('OPSI.System.Posix.SysInfo.opsiVersion', '1.2.3'):
                         archive = OpsiBackupArchive(name=name, mode=mode, tempdir=tempDir)
                         try:
@@ -247,6 +284,39 @@ class BackupArchiveTest(unittest.TestCase):
             with getOpsiBackupArchive(name=archiveName, mode="r", tempdir=tempDir) as backup:
                 self.assertTrue(backup.hasConfiguration())
 
+    def testCreatingFileBackendBackup(self):
+        with workInTemporaryDirectory() as tempDir:
+            with getOpsiBackupArchive(tempdir=tempDir, keepArchive=True) as archive:
+                self.assertTrue(list(archive._getBackends("file")), "Missing file backend!")
+
+                self.assertTrue(1, len(list(archive._getBackends("file"))))
+
+                for backend in archive._getBackends("file"):
+                    baseDir = backend["config"]["baseDir"]
+
+                    oldContent = getFolderContent(baseDir)
+
+                    archive.backupFileBackend()
+                    archive.close()
+
+                    shutil.rmtree(baseDir, ignore_errors=True)
+                    os.mkdir(baseDir)
+
+                with getOpsiBackupArchive(name=archive.name, mode="r", tempdir=tempDir) as backup:
+                    backup.restoreFileBackend()
+                    newContent = getFolderContent(baseDir)
+
+                self.assertEquals(oldContent, newContent)
+
+    def testBackupHasFileBackend(self):
+        with workInTemporaryDirectory() as tempDir:
+            with getOpsiBackupArchive(tempdir=tempDir, keepArchive=True) as archive:
+                self.assertFalse(archive.hasFileBackend())
+                archiveName = archive.name
+                archive.backupFileBackend()
+
+            with getOpsiBackupArchive(name=archiveName, mode="r", tempdir=tempDir) as backup:
+                self.assertTrue(backup.hasFileBackend())
 
 if __name__ == '__main__':
     unittest.main()

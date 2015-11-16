@@ -36,48 +36,6 @@ class BackendArchiveFixture(Fixture):
 
 class BackupArchiveTest(TestCase):
 
-	def test_backupFileBackend(self):
-		archive = self.useFixture(BackendArchiveFixture())
-
-		for backend in archive._getBackends("file"):
-			baseDir = backend["config"]["baseDir"]
-			old = []
-
-			for root, ds, files in os.walk(baseDir):
-				for d in ds:
-					old.append(os.path.join(root, d))
-				for file in files:
-					old.append(file)
-
-
-			archive.backupFileBackend()
-			archive.close()
-
-			shutil.rmtree(baseDir, ignore_errors=True)
-			os.mkdir(baseDir)
-
-			backup = self.useFixture(BackendArchiveFixture(name=archive.name, mode="r"))
-			backup.restoreFileBackend()
-
-			new = []
-
-			for root, ds, files in os.walk(baseDir):
-				for d in ds:
-					new.append(os.path.join(root, d))
-				for file in files:
-					new.append(file)
-
-			self.assertEquals(old, new)
-
-	def test_hasFileBackend(self):
-		archive = self.useFixture(BackendArchiveFixture())
-		archive.backupFileBackend()
-		archive.close()
-
-		backup = self.useFixture(BackendArchiveFixture(archive.name, "r"))
-		self.assertTrue(backup.hasFileBackend())
-		backup.close()
-
 	def test_backupDHCPBackend(self):
 		archive = self.useFixture(BackendArchiveFixture())
 
