@@ -185,8 +185,8 @@ def forceOct(var):
 	try:
 		tmp = forceUnicode(var)
 		var = ''
-		for i in xrange(len(tmp)):
-			x = forceInt(tmp[i])
+		for i, x in enumerate(tmp):
+			x = forceInt(x)
 			if x > 7:
 				raise ValueError(u'{0!r} is too big'.format(x))
 			elif i == 0 and x != '0':
