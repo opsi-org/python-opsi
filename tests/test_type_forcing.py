@@ -199,6 +199,11 @@ class ForceBoolTestCase(unittest.TestCase):
 		self.assertTrue(forceBool(True))
 		self.assertFalse(forceBool(False))
 
+	def testTrueAndFalseAsStrings(self):
+		self.assertTrue(forceBool("TRUE"))
+		self.assertTrue(forceBool("true"))  # JSON style
+		self.assertFalse(forceBool("FALSE"))
+		self.assertFalse(forceBool("false"))  # JSON style
 
 class ForceBoolListTestCase(unittest.TestCase):
 	def testPositiveList(self):
