@@ -170,11 +170,11 @@ class JsonRpc(object):
 
 			if self.exception:
 				if self.rpcVersion == '2.0':
-					code = 0
 					try:
 						code = int(getattr(self.exception, 'errno'))
 					except Exception:
-						pass
+						code = 0
+
 					response['error'] = {
 						'code': code,
 						'message': forceUnicode(self.exception),
