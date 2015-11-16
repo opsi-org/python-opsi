@@ -194,8 +194,8 @@ def forceOct(var):
 			var += str(x)
 		var = eval(var)
 		return var
-	except Exception as e:
-		raise ValueError(u"Bad oct value '%s': %s" % (var, e))
+	except Exception as error:
+		raise ValueError(u"Bad oct value {0!r}: {1}".format(var, error))
 
 
 def forceFloat(var):
