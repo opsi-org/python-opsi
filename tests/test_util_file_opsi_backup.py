@@ -212,44 +212,8 @@ config = {{
 # Since this is not a test this can be some useless text.
 """)
 
-                fileBackendConfig = os.path.join(backendDir, "file.conf")
-                if not os.path.exists(fileBackendConfig):
-                    raise RuntimeError("Missing file backend config {0!r}".format(fileBackendConfig))
-
-                keyFile = os.path.join(baseDir, "pckeys")
-                # TODO: refactor for some code-sharing with the test-setup
-                # from the file backend.
-                with open(fileBackendConfig, "w") as fileConfig:
-                    fileConfig.write("""
-# -*- coding: utf-8 -*-
-
-module = 'File'
-config = {{
-    "baseDir":     u"{0}",
-    "hostKeyFile": u"{1}",
-}}
-""".format(baseDir, keyFile))
-
-                try:
-                    os.mkdir(os.path.join(baseDir, "backendManager"))
-                except OSError as oserr:
-                    if oserr.errno != 17:  # 17 is File exists
-                        raise oserr
-
-                dispatchConfig = os.path.join(baseDir, "backendManager", "dispatch.conf")
-
-                try:
-                    with open(dispatchConfig, 'wx') as dispatchFile:
-                        dispatchFile.write("""
-backend_.*         : file, opsipxeconfd, dhcpd
-host_.*            : file, opsipxeconfd, dhcpd
-productOnClient_.* : file, opsipxeconfd
-configState_.*     : file, opsipxeconfd
-.*                 : file
-""")
-                except IOError as error:
-                    if error.errno != 17:  # 17 is File exists
-                        raise oserr
+                fakeFileBackendConfig(baseDir, backendDir)
+                dispatchConfig = fakeDispatchConfig(baseDir)
 
                 with mock.patch('OPSI.Util.File.Opsi.OpsiBackupArchive.DISPATCH_CONF', dispatchConfig):
                     with mock.patch('OPSI.System.Posix.SysInfo.opsiVersion', '1.2.3'):
@@ -268,6 +232,50 @@ configState_.*     : file, opsipxeconfd
                                     os.remove(archive.name)
                                 except OSError:
                                     pass
+
+def fakeFileBackendConfig(baseDir, backendDir):
+    fileBackendConfig = os.path.join(backendDir, "file.conf")
+    if not os.path.exists(fileBackendConfig):
+        raise RuntimeError("Missing file backend config {0!r}".format(fileBackendConfig))
+
+    keyFile = os.path.join(baseDir, "pckeys")
+    # TODO: refactor for some code-sharing with the test-setup
+    # from the file backend.
+    with open(fileBackendConfig, "w") as fileConfig:
+        fileConfig.write("""
+# -*- coding: utf-8 -*-
+
+module = 'File'
+config = {{
+    "baseDir":     u"{0}",
+    "hostKeyFile": u"{1}",
+}}
+""".format(baseDir, keyFile))
+
+
+def fakeDispatchConfig(baseDir):
+    try:
+        os.mkdir(os.path.join(baseDir, "backendManager"))
+    except OSError as oserr:
+        if oserr.errno != 17:  # 17 is File exists
+            raise oserr
+
+    dispatchConfig = os.path.join(baseDir, "backendManager", "dispatch.conf")
+
+    try:
+        with open(dispatchConfig, 'wx') as dispatchFile:
+            dispatchFile.write("""
+backend_.*         : file, opsipxeconfd, dhcpd
+host_.*            : file, opsipxeconfd, dhcpd
+productOnClient_.* : file, opsipxeconfd
+configState_.*     : file, opsipxeconfd
+.*                 : file
+""")
+    except IOError as error:
+        if error.errno != 17:  # 17 is File exists
+            raise oserr
+
+    return dispatchConfig
 
 
 def getFolderContent(path):
