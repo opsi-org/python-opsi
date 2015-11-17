@@ -1310,10 +1310,6 @@ class BackendContentFixture(Fixture):
 			self.backend.softwareLicenseToLicensePool_createObjects(self.softwareLicenseToLicensePools)
 			self.backend.licenseOnClient_createObjects(self.licenseOnClients)
 
-class FileBackendConfigFixtire(Fixture):
-
-	template = None
-
 
 class FileBackendFixture(_BackendFixture):
 
