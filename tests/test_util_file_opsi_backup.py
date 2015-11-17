@@ -35,7 +35,7 @@ import mock
 from .helpers import unittest, workInTemporaryDirectory
 
 from OPSI.Util.File.Opsi import OpsiBackupFileError, OpsiBackupArchive
-from OPSI.Util import randomString
+from OPSI.Util import md5sum, randomString
 
 
 class BackendArchiveTestCase(unittest.TestCase):
@@ -188,6 +188,34 @@ def getOpsiBackupArchive(name=None, mode=None, tempdir=None, keepArchive=False):
         with mock.patch('OPSI.Util.File.Opsi.OpsiBackupArchive.CONF_DIR', baseDir):
             with mock.patch('OPSI.Util.File.Opsi.OpsiBackupArchive.BACKEND_CONF_DIR', backendDir):
 
+                dhcpdConfig = os.path.join(baseDir, "dhcpd_for_test.conf")
+                dhcpdBackendConfig = os.path.join(backendDir, "dhcpd.conf")
+                if not os.path.exists(dhcpdBackendConfig):
+                    raise RuntimeError("Missing dhcpd backend config {0!r}".format(dhcpdBackendConfig))
+
+                with open(dhcpdBackendConfig, "w") as fileConfig:
+                    fileConfig.write("""
+# -*- coding: utf-8 -*-
+
+module = 'DHCPD'
+
+localip = socket.gethostbyname(socket.getfqdn())
+
+config = {{
+    "dhcpdOnDepot":            False,
+    "dhcpdConfigFile":         u"{0}",
+    "reloadConfigCommand":     u"sudo service dhcp3-server restart",
+    "fixedAddressFormat":      u"IP", # or FQDN
+    "defaultClientParameters": {{ "next-server": localip, "filename": u"linux/pxelinux.0" }}
+}}
+""".format(dhcpdConfig))
+
+                with open(dhcpdConfig, "w") as config:
+                    config.write("""
+# Just some testdata so this is not empty.
+# Since this is not a test this can be some useless text.
+""")
+
                 fileBackendConfig = os.path.join(backendDir, "file.conf")
                 if not os.path.exists(fileBackendConfig):
                     raise RuntimeError("Missing file backend config {0!r}".format(fileBackendConfig))
@@ -318,6 +346,38 @@ class BackupArchiveTest(unittest.TestCase):
 
             with getOpsiBackupArchive(name=archiveName, mode="r", tempdir=tempDir) as backup:
                 self.assertTrue(backup.hasFileBackend())
+
+    def test_backupDHCPBackend(self):
+        with workInTemporaryDirectory() as tempDir:
+            with getOpsiBackupArchive(tempdir=tempDir, keepArchive=True) as archive:
+                archiveName = archive.name
+
+                for backend in archive._getBackends("dhcpd"):
+                    file = backend['config']['dhcpdConfigFile']
+
+                    orig = md5sum(file)
+
+                    archive.backupDHCPBackend()
+                    archive.close()
+
+                    os.remove(file)
+
+            with getOpsiBackupArchive(name=archiveName, mode="r", tempdir=tempDir) as backup:
+                backup.restoreDHCPBackend()
+                new = md5sum(file)
+
+            self.assertEqual(orig, new)
+
+    def testBackupHasDHCPDBackend(self):
+        with workInTemporaryDirectory() as tempDir:
+            with getOpsiBackupArchive(tempdir=tempDir, keepArchive=True) as archive:
+                self.assertFalse(archive.hasDHCPBackend())
+                archiveName = archive.name
+                archive.backupDHCPBackend()
+
+            with getOpsiBackupArchive(name=archiveName, mode="r", tempdir=tempDir) as backup:
+                self.assertTrue(backup.hasDHCPBackend())
+
 
 if __name__ == '__main__':
     unittest.main()
