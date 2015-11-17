@@ -378,6 +378,18 @@ class BackupArchiveTest(unittest.TestCase):
             with getOpsiBackupArchive(name=archiveName, mode="r", tempdir=tempDir) as backup:
                 self.assertTrue(backup.hasDHCPBackend())
 
+    def testBackupHasMySQLBackend(self):
+        with workInTemporaryDirectory() as tempDir:
+            with getOpsiBackupArchive(tempdir=tempDir, keepArchive=True) as archive:
+                self.assertFalse(archive.hasMySQLBackend())
+                archiveName = archive.name
+
+                with mock.patch('OPSI.System.which', lambda x: 'echo'):
+                    archive.backupMySQLBackend()
+
+            with getOpsiBackupArchive(name=archiveName, mode="r", tempdir=tempDir) as backup:
+                self.assertTrue(backup.hasMySQLBackend())
+
 
 if __name__ == '__main__':
     unittest.main()
