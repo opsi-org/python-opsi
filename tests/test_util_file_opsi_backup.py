@@ -185,7 +185,8 @@ def getOpsiBackupArchive(name=None, mode=None, tempdir=None, keepArchive=False, 
             with mock.patch('OPSI.Util.File.Opsi.OpsiBackupArchive.BACKEND_CONF_DIR', backendDir):
                 fakeDHCPDBackendConfig(baseDir, backendDir)
                 if dataBackend == 'file':
-                    fakeFileBackendConfig(baseDir, backendDir)
+                    backendDataDir = fakeFileBackendConfig(baseDir, backendDir)
+                    fillFileBackendWithFakeFiles(backendDataDir)
                 else:
                     raise RuntimeError("Unsupported backend: {0!r}".format(dataBackend))
                 dispatchConfig = fakeDispatchConfig(baseDir, dataBackend)
@@ -266,6 +267,29 @@ config = {{
 """.format(configDataFolder, keyFile))
 
     return configDataFolder
+
+
+def fillFileBackendWithFakeFiles(backendDir):
+    requiredFolders = (u'clients', u'depots', u'products', u'audit', u'templates')
+    for folder in requiredFolders:
+        try:
+            os.mkdir(os.path.join(backendDir, folder))
+        except OSError as error:
+            if error.errno != 17:  # 17 is File exists
+                raise oserr
+
+    exampleFiles = (
+        os.path.join(backendDir, 'config.ini'),
+        os.path.join(backendDir, 'clientgroups.ini'),
+        os.path.join(backendDir, 'productgroups.ini'),
+    )
+    for targetFile in exampleFiles:
+        try:
+            with open(targetFile, 'wx') as dispatchFile:
+                pass
+        except IOError as error:
+            if error.errno != 17:  # 17 is File exists
+                raise error
 
 
 def fakeDispatchConfig(baseDir, dataBackend="file"):
