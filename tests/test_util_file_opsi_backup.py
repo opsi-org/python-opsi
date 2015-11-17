@@ -375,6 +375,8 @@ class BackupArchiveTest(unittest.TestCase):
                     shutil.rmtree(baseDir, ignore_errors=True)
                     os.mkdir(baseDir)
 
+                self.assertTrue(oldContent)
+
                 with getOpsiBackupArchive(name=archive.name, mode="r", tempdir=tempDir) as backup:
                     backup.restoreFileBackend()
                     newContent = getFolderContent(baseDir)
