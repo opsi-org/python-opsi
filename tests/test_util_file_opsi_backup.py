@@ -31,9 +31,15 @@ import tempfile
 from contextlib import contextmanager
 
 import mock
+try:
+    import MySQLdb
+except ImportError as ierr:
+    print(ierr)
+    MySQLdb = None
 
 from .helpers import unittest, workInTemporaryDirectory
 
+from OPSI.System import which
 from OPSI.Types import OpsiBackupBackendNotFound
 from OPSI.Util.File.Opsi import OpsiBackupFileError, OpsiBackupArchive
 from OPSI.Util import md5sum, randomString
@@ -187,6 +193,9 @@ def getOpsiBackupArchive(name=None, mode=None, tempdir=None, keepArchive=False, 
                 if dataBackend == 'file':
                     backendDataDir = fakeFileBackendConfig(baseDir, backendDir)
                     fillFileBackendWithFakeFiles(backendDataDir)
+                elif "mysql" == dataBackend:
+                    mySQLConnectionConfig = fakeMySQLBackend(backendDir)
+                    fillMySQLBackend(mySQLConnectionConfig)
                 else:
                     raise RuntimeError("Unsupported backend: {0!r}".format(dataBackend))
                 dispatchConfig = fakeDispatchConfig(baseDir, dataBackend)
@@ -290,6 +299,62 @@ def fillFileBackendWithFakeFiles(backendDir):
         except IOError as error:
             if error.errno != 17:  # 17 is File exists
                 raise error
+
+
+def fakeMySQLBackend(backendDir):
+    try:
+        from .Backends.config import MySQLconfiguration
+    except ImportError as ierr:
+        raise unittest.SkipTest(u"Missing MySQLconfiguration - "
+            u"please check your config.py in tests/Backends. "
+            u"See config.py.example for example data.")
+
+    mysqlConfigFile = os.path.join(backendDir, "mysql.conf")
+    with open(mysqlConfigFile, 'w') as mySQLConf:
+        mySQLConf.write("""
+# -*- coding: utf-8 -*-
+
+module = 'MySQL'
+config = {{
+    "address":                   u"{address}",
+    "database":                  u"{database}",
+    "username":                  u"{username}",
+    "password":                  u"{password}",
+    "databaseCharset":           "{databaseCharset}",
+    "connectionPoolSize":        {connectionPoolSize},
+    "connectionPoolMaxOverflow": {connectionPoolMaxOverflow},
+    "connectionPoolTimeout":     {connectionPoolTimeout}
+}}
+""".format(**MySQLconfiguration))
+
+    return MySQLconfiguration
+
+
+def fillMySQLBackend(connectionConfig):
+    con = MySQLdb.connect(
+        host=connectionConfig["address"],
+        user=connectionConfig["username"],
+        passwd=connectionConfig["password"],
+        db=connectionConfig["database"]
+    )
+
+    table = u'''CREATE TABLE `CONFIG` (
+            `configId` varchar(200) NOT NULL,
+            `type` varchar(30) NOT NULL,
+            `description` varchar(256),
+            `multiValue` bool NOT NULL,
+            `editable` bool NOT NULL,
+            PRIMARY KEY (`configId`)
+        ) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci;'''
+
+    try:
+        cursor = con.cursor()
+        cursor.execute(table)
+    except MySQLdb.OperationalError as operror:
+        if operror.args[0] != 1050:  # "Table 'CONFIG' already exists"
+            raise operror
+    finally:
+        con.close()
 
 
 def fakeDispatchConfig(baseDir, dataBackend="file"):
@@ -425,6 +490,68 @@ class BackupArchiveTest(unittest.TestCase):
 
             with getOpsiBackupArchive(name=archiveName, mode="r", tempdir=tempDir) as backup:
                 self.assertTrue(backup.hasDHCPBackend())
+
+    def test_backupMySQLBackend(self):
+        # raise unittest.SkipTest("Yolo")
+        if not MySQLdb:
+            raise unittest.SkipTest("Could not import MySQLdb: {0}".format(ierr))
+
+        try:
+            which('mysqldump')
+        except Exception as error:
+            raise unittest.SkipTest("Missing mysqldump: {0}".format(error))
+
+        with workInTemporaryDirectory() as tempDir:
+            with getOpsiBackupArchive(tempdir=tempDir, keepArchive=True, dataBackend="mysql") as archive:
+                self.assertRaises(OpsiBackupBackendNotFound, archive.restoreMySQLBackend)
+
+                archiveName = archive.name
+                archive.backupMySQLBackend()
+                archive.close()
+
+                orig = {}
+                for backend in archive._getBackends("mysql"):
+                    con = MySQLdb.connect(
+                        host=backend["config"]["address"],
+                        user=backend["config"]["username"],
+                        passwd=backend["config"]["password"],
+                        db=backend["config"]["database"]
+                    )
+
+                    cursor = con.cursor()
+                    cursor.execute("SHOW TABLES;")
+                    orig[backend["name"]] = dict.fromkeys([r[0] for r in cursor.fetchall()])
+                    for entry in orig[backend["name"]].keys():
+                        cursor.execute("SELECT COUNT(*) FROM `%s`" % entry)
+                        count = cursor.fetchone()
+                        orig[backend["name"]][entry] = count[0]
+                        cursor.execute("DROP TABLE `%s`" % entry)
+
+            self.assertTrue(orig)
+            for backendName, values in orig.items():
+                print("Checking for content in {0!r}...".format(backendName))
+                self.assertTrue(values)
+
+            with getOpsiBackupArchive(name=archiveName, mode="r", tempdir=tempDir, dataBackend="mysql") as backup:
+                backup.restoreMySQLBackend()
+
+                new = {}
+                for backend in archive._getBackends("mysql"):
+                    con = MySQLdb.connect (
+                        host=backend["config"]["address"],
+                        user=backend["config"]["username"],
+                        passwd=backend["config"]["password"],
+                        db=backend["config"]["database"]
+                    )
+                    cursor = con.cursor()
+                    cursor.execute("SHOW TABLES;")
+                    new[backend["name"]] = dict.fromkeys([r[0] for r in cursor.fetchall()])
+                    for entry in new[backend["name"]].keys():
+                        cursor.execute("SELECT COUNT(*) FROM `%s`" % entry)
+                        count = cursor.fetchone()
+                        new[backend["name"]][entry] = count[0]
+
+            self.assertEqual(orig, new)
 
     def testBackupHasMySQLBackend(self):
         with workInTemporaryDirectory() as tempDir:
