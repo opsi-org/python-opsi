@@ -169,7 +169,7 @@ class BackendArchiveTestCase(unittest.TestCase):
 
 
 @contextmanager
-def getOpsiBackupArchive(name=None, mode=None, tempdir=None, keepArchive=False):
+def getOpsiBackupArchive(name=None, mode=None, tempdir=None, keepArchive=False, dataBackend="file"):
     with workInTemporaryDirectory(tempdir) as tempDir:
         baseDir = os.path.join(tempDir, 'base')
         backendDir = os.path.join(baseDir, 'backends')
@@ -184,8 +184,11 @@ def getOpsiBackupArchive(name=None, mode=None, tempdir=None, keepArchive=False):
         with mock.patch('OPSI.Util.File.Opsi.OpsiBackupArchive.CONF_DIR', baseDir):
             with mock.patch('OPSI.Util.File.Opsi.OpsiBackupArchive.BACKEND_CONF_DIR', backendDir):
                 fakeDHCPDBackendConfig(baseDir, backendDir)
-                fakeFileBackendConfig(baseDir, backendDir)
-                dispatchConfig = fakeDispatchConfig(baseDir)
+                if dataBackend == 'file':
+                    fakeFileBackendConfig(baseDir, backendDir)
+                else:
+                    raise RuntimeError("Unsupported backend: {0!r}".format(dataBackend))
+                dispatchConfig = fakeDispatchConfig(baseDir, dataBackend)
 
                 with mock.patch('OPSI.Util.File.Opsi.OpsiBackupArchive.DISPATCH_CONF', dispatchConfig):
                     with mock.patch('OPSI.System.Posix.SysInfo.opsiVersion', '1.2.3'):
@@ -256,7 +259,7 @@ config = {{
 """.format(baseDir, keyFile))
 
 
-def fakeDispatchConfig(baseDir):
+def fakeDispatchConfig(baseDir, dataBackend="file"):
     try:
         os.mkdir(os.path.join(baseDir, "backendManager"))
     except OSError as oserr:
@@ -268,12 +271,12 @@ def fakeDispatchConfig(baseDir):
     try:
         with open(dispatchConfig, 'wx') as dispatchFile:
             dispatchFile.write("""
-backend_.*         : file, opsipxeconfd, dhcpd
-host_.*            : file, opsipxeconfd, dhcpd
-productOnClient_.* : file, opsipxeconfd
-configState_.*     : file, opsipxeconfd
-.*                 : file
-""")
+backend_.*         : {0}, opsipxeconfd, dhcpd
+host_.*            : {0}, opsipxeconfd, dhcpd
+productOnClient_.* : {0}, opsipxeconfd
+configState_.*     : {0}, opsipxeconfd
+.*                 : {0}
+""".format(dataBackend))
     except IOError as error:
         if error.errno != 17:  # 17 is File exists
             raise oserr
