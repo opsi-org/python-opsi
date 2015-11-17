@@ -34,6 +34,7 @@ import mock
 
 from .helpers import unittest, workInTemporaryDirectory
 
+from OPSI.Types import OpsiBackupBackendNotFound
 from OPSI.Util.File.Opsi import OpsiBackupFileError, OpsiBackupArchive
 from OPSI.Util import md5sum, randomString
 
@@ -312,8 +313,9 @@ class BackupArchiveTest(unittest.TestCase):
         with workInTemporaryDirectory() as tempDir:
             with getOpsiBackupArchive(tempdir=tempDir, keepArchive=True) as archive:
                 self.assertTrue(list(archive._getBackends("file")), "Missing file backend!")
-
                 self.assertTrue(1, len(list(archive._getBackends("file"))))
+
+                self.assertRaises(OpsiBackupBackendNotFound, archive.restoreFileBackend)
 
                 for backend in archive._getBackends("file"):
                     baseDir = backend["config"]["baseDir"]
@@ -345,6 +347,8 @@ class BackupArchiveTest(unittest.TestCase):
     def test_backupDHCPBackend(self):
         with workInTemporaryDirectory() as tempDir:
             with getOpsiBackupArchive(tempdir=tempDir, keepArchive=True) as archive:
+                self.assertRaises(OpsiBackupBackendNotFound, archive.restoreDHCPBackend)
+
                 archiveName = archive.name
 
                 for backend in archive._getBackends("dhcpd"):
