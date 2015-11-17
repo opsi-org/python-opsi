@@ -353,20 +353,20 @@ class BackupArchiveTest(unittest.TestCase):
                 archiveName = archive.name
 
                 for backend in archive._getBackends("dhcpd"):
-                    file = backend['config']['dhcpdConfigFile']
+                    dhcpConfigFile = backend['config']['dhcpdConfigFile']
 
-                    orig = md5sum(file)
+                    md5OfOriginalFile = md5sum(dhcpConfigFile)
 
                     archive.backupDHCPBackend()
                     archive.close()
 
-                    os.remove(file)
+                    os.remove(dhcpConfigFile)
 
             with getOpsiBackupArchive(name=archiveName, mode="r", tempdir=tempDir) as backup:
                 backup.restoreDHCPBackend()
-                new = md5sum(file)
+                md5OfRestoredFile = md5sum(dhcpConfigFile)
 
-            self.assertEqual(orig, new)
+            self.assertEqual(md5OfOriginalFile, md5OfRestoredFile)
 
     def testBackupHasDHCPDBackend(self):
         with workInTemporaryDirectory() as tempDir:
