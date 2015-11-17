@@ -192,18 +192,19 @@ def getOpsiBackupArchive(name=None, mode=None, tempdir=None, keepArchive=False):
                 if not os.path.exists(fileBackendConfig):
                     raise RuntimeError("Missing file backend config {0!r}".format(fileBackendConfig))
 
+                keyFile = os.path.join(baseDir, "pckeys")
                 # TODO: refactor for some code-sharing with the test-setup
                 # from the file backend.
                 with open(fileBackendConfig, "w") as fileConfig:
                     fileConfig.write("""
-                # -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 module = 'File'
 config = {{
     "baseDir":     u"{0}",
-    "hostKeyFile": u"/etc/opsi/pckeys",
+    "hostKeyFile": u"{1}",
 }}
-""".format(baseDir))
+""".format(baseDir, keyFile))
 
                 try:
                     os.mkdir(os.path.join(baseDir, "backendManager"))
