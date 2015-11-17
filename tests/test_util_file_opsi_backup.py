@@ -166,11 +166,6 @@ class BackendArchiveTestCase(unittest.TestCase):
         self.assertTrue(backup.verify())
         backup.close()
 
-    @unittest.skip("TODO: test corrupted Image")
-    def test_backupVerifyCorrupted(self):
-        # TODO: test corrupted Image
-        pass
-
 
 @contextmanager
 def getOpsiBackupArchive(name=None, mode=None, tempdir=None, keepArchive=False):
