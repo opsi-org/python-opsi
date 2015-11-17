@@ -247,6 +247,13 @@ def fakeFileBackendConfig(baseDir, backendDir):
     keyFile = os.path.join(baseDir, "pckeys")
     # TODO: refactor for some code-sharing with the test-setup
     # from the file backend.
+    configDataFolder = os.path.join(backendDir, 'fileBackendData')
+    try:
+        os.mkdir(configDataFolder)
+    except OSError as oserr:
+        if oserr.errno != 17:  # 17 is File exists
+            raise oserr
+
     with open(fileBackendConfig, "w") as fileConfig:
         fileConfig.write("""
 # -*- coding: utf-8 -*-
@@ -256,7 +263,9 @@ config = {{
     "baseDir":     u"{0}",
     "hostKeyFile": u"{1}",
 }}
-""".format(baseDir, keyFile))
+""".format(configDataFolder, keyFile))
+
+    return configDataFolder
 
 
 def fakeDispatchConfig(baseDir, dataBackend="file"):
