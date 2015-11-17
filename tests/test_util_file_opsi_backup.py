@@ -183,35 +183,7 @@ def getOpsiBackupArchive(name=None, mode=None, tempdir=None, keepArchive=False):
 
         with mock.patch('OPSI.Util.File.Opsi.OpsiBackupArchive.CONF_DIR', baseDir):
             with mock.patch('OPSI.Util.File.Opsi.OpsiBackupArchive.BACKEND_CONF_DIR', backendDir):
-
-                dhcpdConfig = os.path.join(baseDir, "dhcpd_for_test.conf")
-                dhcpdBackendConfig = os.path.join(backendDir, "dhcpd.conf")
-                if not os.path.exists(dhcpdBackendConfig):
-                    raise RuntimeError("Missing dhcpd backend config {0!r}".format(dhcpdBackendConfig))
-
-                with open(dhcpdBackendConfig, "w") as fileConfig:
-                    fileConfig.write("""
-# -*- coding: utf-8 -*-
-
-module = 'DHCPD'
-
-localip = socket.gethostbyname(socket.getfqdn())
-
-config = {{
-    "dhcpdOnDepot":            False,
-    "dhcpdConfigFile":         u"{0}",
-    "reloadConfigCommand":     u"sudo service dhcp3-server restart",
-    "fixedAddressFormat":      u"IP", # or FQDN
-    "defaultClientParameters": {{ "next-server": localip, "filename": u"linux/pxelinux.0" }}
-}}
-""".format(dhcpdConfig))
-
-                with open(dhcpdConfig, "w") as config:
-                    config.write("""
-# Just some testdata so this is not empty.
-# Since this is not a test this can be some useless text.
-""")
-
+                fakeDHCPDBackendConfig(baseDir, backendDir)
                 fakeFileBackendConfig(baseDir, backendDir)
                 dispatchConfig = fakeDispatchConfig(baseDir)
 
@@ -232,6 +204,37 @@ config = {{
                                     os.remove(archive.name)
                                 except OSError:
                                     pass
+
+
+def fakeDHCPDBackendConfig(baseDir, backendDir):
+    dhcpdConfig = os.path.join(baseDir, "dhcpd_for_test.conf")
+    dhcpdBackendConfig = os.path.join(backendDir, "dhcpd.conf")
+    if not os.path.exists(dhcpdBackendConfig):
+        raise RuntimeError("Missing dhcpd backend config {0!r}".format(dhcpdBackendConfig))
+
+    with open(dhcpdBackendConfig, "w") as fileConfig:
+        fileConfig.write("""
+# -*- coding: utf-8 -*-
+
+module = 'DHCPD'
+
+localip = socket.gethostbyname(socket.getfqdn())
+
+config = {{
+"dhcpdOnDepot":            False,
+"dhcpdConfigFile":         u"{0}",
+"reloadConfigCommand":     u"sudo service dhcp3-server restart",
+"fixedAddressFormat":      u"IP", # or FQDN
+"defaultClientParameters": {{ "next-server": localip, "filename": u"linux/pxelinux.0" }}
+}}
+""".format(dhcpdConfig))
+
+    with open(dhcpdConfig, "w") as config:
+        config.write("""
+# Just some testdata so this is not empty.
+# Since this is not a test this can be some useless text.
+""")
+
 
 def fakeFileBackendConfig(baseDir, backendDir):
     fileBackendConfig = os.path.join(backendDir, "file.conf")
