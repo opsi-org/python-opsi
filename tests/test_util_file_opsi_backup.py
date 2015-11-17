@@ -492,7 +492,6 @@ class BackupArchiveTest(unittest.TestCase):
                 self.assertTrue(backup.hasDHCPBackend())
 
     def test_backupMySQLBackend(self):
-        # raise unittest.SkipTest("Yolo")
         if not MySQLdb:
             raise unittest.SkipTest("Could not import MySQLdb: {0}".format(ierr))
 
