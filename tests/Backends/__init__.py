@@ -27,6 +27,8 @@ from __future__ import absolute_import
 
 from contextlib import contextmanager
 
+from OPSI.Backend.Backend import ExtendedConfigDataBackend
+
 __all__ = ['getTestBackend', 'BackendMixin']
 
 
