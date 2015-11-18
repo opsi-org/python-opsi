@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014 uib GmbH <info@uib.de>
+# Copyright (C) 2014-2015 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -17,11 +17,41 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-Mixins for easy backend tests.
+Basics for backend tests.
 
 :author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
 """
+
+from __future__ import absolute_import
+
+from contextlib import contextmanager
+
+__all__ = ['getTestBackend', 'BackendMixin']
+
+
+@contextmanager
+def getTestBackend(extended=False):
+    """
+    Get a backend for tests.
+
+    Each call to this will return a different backend.
+
+    If `extended` is True the returned backend will be an
+    `ExtendedConfigDataBackend`.
+    """
+    from .File import getFileBackend  # lazy import
+
+    with getFileBackend() as backend:
+        if extended:
+            backend = ExtendedConfigDataBackend(backend)
+
+        backend.backend_createBase()
+        try:
+            yield backend
+        finally:
+            backend.backend_deleteBase()
+
 
 class BackendMixin(object):
     """
