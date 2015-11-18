@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2014 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2015 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -30,12 +30,14 @@ import os
 import pwd
 import shutil
 import tempfile
+from contextlib import contextmanager
 
 from OPSI.Backend.Backend import ExtendedConfigDataBackend
 from OPSI.Backend.BackendManager import BackendManager
 from OPSI.Backend.File import FileBackend
 
 from . import BackendMixin
+from ..helpers import workInTemporaryDirectory
 
 
 class FileBackendMixin(BackendMixin):
@@ -56,7 +58,7 @@ class FileBackendMixin(BackendMixin):
 
     def _copyOriginalBackendToTemporaryLocation(self):
         tempDir = tempfile.mkdtemp()
-        originalBackendDir = self._getOriginalBackendLocation()
+        originalBackendDir = _getOriginalBackendLocation()
 
         shutil.copytree(originalBackendDir, os.path.join(tempDir, self.BACKEND_SUBFOLDER))
 
@@ -64,14 +66,6 @@ class FileBackendMixin(BackendMixin):
         self._patchDispatchConfig(tempDir)
 
         return tempDir
-
-    @staticmethod
-    def _getOriginalBackendLocation():
-        return os.path.normpath(
-            os.path.join(
-                os.path.dirname(__file__), '..', '..', 'data'
-            )
-        )
 
     def _setupFileBackend(self, targetDirectory):
         self._patchFileBackend(targetDirectory)
@@ -143,3 +137,56 @@ class ExtendedFileBackendMixin(FileBackendMixin):
         )
 
         self.backend.backend_createBase()
+
+
+@contextmanager
+def getFileBackend(path=None):
+    originalLocation = _getOriginalBackendLocation()
+
+    BACKEND_SUBFOLDER = os.path.join('etc', 'opsi')
+    CONFIG_DIRECTORY = os.path.join('var', 'lib', 'opsi')
+
+    with workInTemporaryDirectory(path) as tempDir:
+        shutil.copytree(originalLocation, os.path.join(tempDir, BACKEND_SUBFOLDER))
+
+        baseDir = os.path.join(tempDir, CONFIG_DIRECTORY, 'config')
+        os.makedirs(baseDir)  # Usually done in OS package
+        hostKeyFile = os.path.join(tempDir, BACKEND_SUBFOLDER, 'pckeys')
+
+        currentGroupId = os.getgid()
+        groupName = grp.getgrgid(currentGroupId)[0]
+
+        userName = pwd.getpwuid(os.getuid())[0]
+
+        backendConfig = {
+            "baseDir": baseDir,
+            "hostKeyFile": hostKeyFile,
+            "fileGroupName": groupName,
+            "fileUserName": userName
+        }
+
+        new_configuration = """
+# -*- coding: utf-8 -*-
+
+module = 'File'
+config = {{
+    "baseDir": u"{baseDir}",
+    "hostKeyFile": u"{hostKeyFile}",
+    "fileGroupName": u"{fileGroupName}",
+    "fileUserName": u"{fileUserName}",
+}}
+""".format(**backendConfig)
+
+        config_file = os.path.join(tempDir, BACKEND_SUBFOLDER, 'backends', 'file.conf')
+        with open(config_file, 'w') as config:
+            config.write(new_configuration)
+
+        yield FileBackend(**backendConfig)
+
+
+def _getOriginalBackendLocation():
+    return os.path.normpath(
+        os.path.join(
+            os.path.dirname(__file__), '..', '..', 'data'
+        )
+    )
