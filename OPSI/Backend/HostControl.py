@@ -128,8 +128,8 @@ class ConnectionThread(KillableThread):
 		if timeout < 0:
 			timeout = 0
 
+		logger.info(u"Trying connection to '%s:%d'" % (self.address, self.hostControlBackend._opsiclientdPort))
 		try:
-			logger.info(u"Trying connection to '%s:%d'" % (self.address, self.hostControlBackend._opsiclientdPort))
 			conn = HTTPSConnection(
 				host=self.address,
 				port=self.hostControlBackend._opsiclientdPort,
