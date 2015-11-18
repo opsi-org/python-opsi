@@ -49,7 +49,7 @@ from OPSI.Util import fromJson, toJson
 from OPSI.Util.Thread import KillableThread
 from OPSI.Util.HTTP import non_blocking_connect_https
 
-__version__ = '4.0.6.33'
+__version__ = '4.0.6.35'
 
 logger = Logger()
 
@@ -91,7 +91,7 @@ class RpcThread(KillableThread):
 			)
 			non_blocking_connect_https(connection, timeout)
 			connection.putrequest('POST', '/opsiclientd')
-			connection.putheader('content-type', 'application/json-rpc')
+			connection.putheader('content-type', 'application/json')
 			connection.putheader('content-length', str(len(query)))
 			auth = u'{0}:{1}'.format(self.username, self.password)
 			connection.putheader('Authorization', 'Basic ' + base64.encodestring(auth.encode('latin-1')).strip())
