@@ -94,14 +94,14 @@ def configureDHCPD(configFile=DHCPD_CONF):
 				DHCPDConf_Block(
 					startLine=-1,
 					parentBlock=subnet,
-					type= 'group',
+					type='group',
 					settings=['group']
 				)
 			)
 
 		for group in subnet.getBlocks('group'):
 			logger.info(u"      Configuring group")
-			params = group.getParameters_hash(inherit = 'global')
+			params = group.getParameters_hash(inherit='global')
 			if params.get('next-server'):
 				logger.info(u"         next-server already set")
 			else:
@@ -149,7 +149,7 @@ def configureDHCPD(configFile=DHCPD_CONF):
 	logger.notice(u"Configuring sudoers")
 	patchSudoersFileToAllowRestartingDHCPD(restartCommand)
 
-	opsiconfdUid  = pwd.getpwnam(OPSICONFD_USER)[2]
+	opsiconfdUid = pwd.getpwnam(OPSICONFD_USER)[2]
 	adminGroupGid = grp.getgrnam(ADMIN_GROUP)[2]
 	os.chown(configFile, opsiconfdUid, adminGroupGid)
 	os.chmod(configFile, 0664)
