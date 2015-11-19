@@ -26,15 +26,12 @@ Functionality to automatically configure an OPSI MySQL backend.
 """
 
 import MySQLdb
-import socket
 
 import OPSI.Util.Task.ConfigureBackend as backendUtils
-from OPSI.Backend.Backend import OPSI_GLOBAL_CONF
 from OPSI.Backend.MySQL import MySQLBackend
 from OPSI.Logger import Logger
-from OPSI.System import getEthernetDevices, getNetworkDeviceConfig
-from OPSI.Types import forceHostId
-from OPSI.Util import getfqdn
+
+_getSysConfig = backendUtils._getSysConfig
 
 DATABASE_EXISTS_ERROR_CODE = 1007
 ACCESS_DENIED_ERROR_CODE = 1044
@@ -43,55 +40,6 @@ LOGGER = Logger()
 
 class DatabaseConnectionFailedException(Exception):
 	pass
-
-
-def _getSysConfig():
-	"""
-	Skinned down version of getSysConfig from ``opsi-setup``.
-
-	Should be used as **fallback only**!
-	"""
-	LOGGER.notice(u"Getting current system config")
-	sysConfig = {
-		'hardwareAddress': None,
-	}
-
-	try:
-		fqdn = getfqdn(conf=OPSI_GLOBAL_CONF)
-		sysConfig['fqdn'] = forceHostId(fqdn)
-	except Exception as exc:
-		raise Exception(
-			u"Failed to get fully qualified domain name: {0}".format(exc)
-		)
-
-	sysConfig['hostname'] = fqdn.split(u'.')[0]
-	sysConfig['ipAddress'] = socket.gethostbyname(fqdn)
-
-	if sysConfig['ipAddress'].split(u'.')[0] in ('127', '169'):
-		sysConfig['ipAddress'] = None
-
-	for device in getEthernetDevices():
-		devconf = getNetworkDeviceConfig(device)
-		if devconf['ipAddress'] and devconf['ipAddress'].split(u'.')[0] not in ('127', '169'):
-			if not sysConfig['ipAddress']:
-				sysConfig['ipAddress'] = devconf['ipAddress']
-
-			if sysConfig['ipAddress'] == devconf['ipAddress']:
-				sysConfig['netmask'] = devconf['netmask']
-				sysConfig['hardwareAddress'] = devconf['hardwareAddress']
-				break
-
-	if not sysConfig['ipAddress']:
-		raise Exception(
-			u"Failed to get a valid ip address for fqdn '{0}'".format(fqdn)
-		)
-
-	LOGGER.notice(u"System information:")
-	LOGGER.notice(u"   ip address   : %s" % sysConfig['ipAddress'])
-	LOGGER.notice(u"   fqdn         : %s" % sysConfig['fqdn'])
-	LOGGER.notice(u"   hostname     : %s" % sysConfig['hostname'])
-
-	return sysConfig
 
 
 def configureMySQLBackend(dbAdminUser, dbAdminPass,
