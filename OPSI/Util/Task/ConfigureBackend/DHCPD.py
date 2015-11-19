@@ -25,13 +25,9 @@ Functionality to automatically configure the DHCPD-backend.
 :license: GNU Affero General Public License version 3
 """
 
-import codecs
 import grp
 import os
 import pwd
-import re
-import socket
-import sys
 
 import OPSI.System.Posix as Posix
 from OPSI.Logger import Logger
