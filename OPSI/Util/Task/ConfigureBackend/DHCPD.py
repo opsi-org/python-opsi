@@ -25,11 +25,15 @@ Functionality to automatically configure the DHCPD-backend.
 :license: GNU Affero General Public License version 3
 """
 
+from __future__ import absolute_import
+
 import grp
 import os
 import pwd
 import shutil
 import time
+
+from . import _getSysConfig as getSysConfig
 
 import OPSI.System.Posix as Posix
 from OPSI.Logger import Logger
