@@ -55,7 +55,7 @@ from OPSI.Types import OpsiVersionError
 from OPSI.Object import *
 from OPSI.Util import objectToBeautifiedText, removeUnit
 
-__version__ = '4.0.6.29'
+__version__ = '4.0.6.35'
 
 logger = Logger()
 
@@ -2764,6 +2764,22 @@ class Harddisk:
 
 		for hook in hooks:
 			hook.post_Harddisk_restoreImage(self, partition, imageFile, progressSubject)
+
+
+def isSLES():
+	"""
+	Returns `True` if this is running on Suse Linux Enterprise Server.
+	Returns `False` if otherwise.
+	"""
+
+	try:
+		f = os.popen('lsb_release -d 2>/dev/null')
+		distribution = f.read().split(':')[1].strip()
+		f.close()
+
+		return bool('suse linux enterprise server' in distribution.lower())
+	except Exception:
+		return False
 
 
 class Distribution(object):

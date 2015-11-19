@@ -59,8 +59,9 @@ from OPSI.Logger import Logger
 from OPSI.Types import forceHostId
 from OPSI.Util import findFiles, getfqdn
 from OPSI.Util.File.Opsi import OpsiConfFile
+from OPSI.Util.System.Posix import isSLES
 
-__version__ = '4.0.6.24'
+__version__ = '4.0.6.35'
 
 LOGGER = Logger()
 
@@ -212,7 +213,7 @@ def getDirectoriesForProcessing(path):
 
 
 def getDirectoriesManagedByOpsi():
-	if _isSLES():
+	if isSLES():
 		return [u'/etc/opsi', u'/var/lib/opsi', u'/var/lib/opsi/workbench',
 				u'/var/lib/tftpboot/opsi', u'/var/log/opsi']
 	else:
@@ -239,21 +240,6 @@ def getDepotUrl():
 		return depotUrl
 
 	raise Exception("Could not get depot URL.")
-
-
-def _isSLES():
-	return 'suse linux enterprise server' in getDistribution().lower()
-
-
-# TODO: re-use existing code for this
-def getDistribution():
-	try:
-		f = os.popen('lsb_release -d 2>/dev/null')
-		distribution = f.read().split(':')[1].strip()
-		f.close()
-		return distribution
-	except Exception:
-		return ''
 
 
 def removeDuplicatesFromDirectories(directories):
