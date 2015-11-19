@@ -2777,8 +2777,10 @@ def isSLES():
 		distribution = f.read().split(':')[1].strip()
 		f.close()
 
+		logger.debug("Got as distribution: {0!r}".format(distribution))
 		return bool('suse linux enterprise server' in distribution.lower())
-	except Exception:
+	except Exception as error:
+		logger.debug("Failed to read lsb_release: {0}".format(error))
 		return False
 
 
