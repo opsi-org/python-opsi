@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2014 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2015 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -26,14 +26,12 @@ Backend mixin for testing the functionality of working with hosts.
 import socket
 from OPSI.Object import OpsiConfigserver, OpsiDepotserver
 
+def getConfigServer():
+    serverId = socket.getfqdn()
+    if serverId.count('.') < 2:
+        raise Exception(u"Failed to get fqdn: %s" % serverId)
 
-class HostsMixin(object):
-    def setUpHosts(self):
-        serverId = socket.getfqdn()
-        if (serverId.count('.') < 2):
-            raise Exception(u"Failed to get fqdn: %s" % serverId)
-
-        self.configserver1 = OpsiConfigserver(
+    return OpsiConfigserver(
             id=serverId,
             opsiHostKey='71234545689056789012123678901234',
             depotLocalUrl='file:///opt/pcbin/install',
@@ -49,45 +47,55 @@ class HostsMixin(object):
             networkAddress='192.168.1.0/24',
             maxBandwidth=10000
         )
+
+
+def getDepotServers():
+    depotserver1 = OpsiDepotserver(
+        id='depotserver1.uib.local',
+        opsiHostKey='19012334567845645678901232789012',
+        depotLocalUrl='file:///opt/pcbin/install',
+        depotRemoteUrl='smb://depotserver1.test.invalid/opt_pcbin/install',
+        repositoryLocalUrl='file:///var/lib/opsi/repository',
+        repositoryRemoteUrl='webdavs://depotserver1.test.invalid:4447/repository',
+        description='A depot',
+        notes='D€pot 1',
+        hardwareAddress=None,
+        ipAddress=None,
+        inventoryNumber='00000000002',
+        networkAddress='192.168.2.0/24',
+        maxBandwidth=10000
+    )
+
+    depotserver2 = OpsiDepotserver(
+        id='depotserver2.test.invalid',
+        opsiHostKey='93aa22f38a678c64ef678a012d2e82f2',
+        depotLocalUrl='file:///opt/pcbin/install',
+        depotRemoteUrl='smb://depotserver2.test.invalid/opt_pcbin',
+        repositoryLocalUrl='file:///var/lib/opsi/repository',
+        repositoryRemoteUrl='webdavs://depotserver2.test.invalid:4447/repository',
+        description='Second depot',
+        notes='no notes here',
+        hardwareAddress='00:01:09:07:11:aa',
+        ipAddress='192.168.10.1',
+        inventoryNumber='',
+        networkAddress='192.168.10.0/24',
+        maxBandwidth=240000
+    )
+
+    return depotserver1, depotserver2
+
+
+class HostsMixin(object):
+    def setUpHosts(self):
+        self.configserver1 = getConfigServer()
         self.configservers = [self.configserver1]
+
+        self.depotserver1, self.depotserver2 = getDepotServers()
+        self.depotservers = [self.depotserver1, self.depotserver2]
 
         if not hasattr(self, 'hosts'):
             self.hosts = []
         self.hosts.extend(self.configservers)
-
-        self.depotserver1 = OpsiDepotserver(
-            id='depotserver1.uib.local',
-            opsiHostKey='19012334567845645678901232789012',
-            depotLocalUrl='file:///opt/pcbin/install',
-            depotRemoteUrl='smb://depotserver1.test.invalid/opt_pcbin/install',
-            repositoryLocalUrl='file:///var/lib/opsi/repository',
-            repositoryRemoteUrl='webdavs://depotserver1.test.invalid:4447/repository',
-            description='A depot',
-            notes='D€pot 1',
-            hardwareAddress=None,
-            ipAddress=None,
-            inventoryNumber='00000000002',
-            networkAddress='192.168.2.0/24',
-            maxBandwidth=10000
-        )
-
-        self.depotserver2 = OpsiDepotserver(
-            id='depotserver2.test.invalid',
-            opsiHostKey='93aa22f38a678c64ef678a012d2e82f2',
-            depotLocalUrl='file:///opt/pcbin/install',
-            depotRemoteUrl='smb://depotserver2.test.invalid/opt_pcbin',
-            repositoryLocalUrl='file:///var/lib/opsi/repository',
-            repositoryRemoteUrl='webdavs://depotserver2.test.invalid:4447/repository',
-            description='Second depot',
-            notes='no notes here',
-            hardwareAddress='00:01:09:07:11:aa',
-            ipAddress='192.168.10.1',
-            inventoryNumber='',
-            networkAddress='192.168.10.0/24',
-            maxBandwidth=240000
-        )
-
-        self.depotservers = [self.depotserver1, self.depotserver2]
         self.hosts.extend(self.depotservers)
 
     def createHostsOnBackend(self):

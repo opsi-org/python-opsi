@@ -35,185 +35,199 @@ from .Hosts import HostsMixin
 from .Clients import ClientsMixin
 
 
+def getNetbootProduct():
+    netbootProduct = NetbootProduct(
+        id='product1',
+        name=u'Product 1',
+        productVersion='1.0',
+        packageVersion=1,
+        licenseRequired=True,
+        setupScript="setup.py",
+        uninstallScript=None,
+        updateScript="update.py",
+        alwaysScript=None,
+        onceScript=None,
+        priority='100',
+        description="Nothing",
+        advice=u"No advice",
+        productClassIds=[],
+        windowsSoftwareIds=[
+            '{be21bd07-eb19-44e4-893a-fa4e44e5f806}', 'product1'],
+        pxeConfigTemplate='special'
+    )
+
+    return netbootProduct
+
+
+def getLocalbootProducts():
+    product2 = LocalbootProduct(
+        id='product2',
+        name=u'Product 2',
+        productVersion='2.0',
+        packageVersion='test',
+        licenseRequired=False,
+        setupScript="setup.ins",
+        uninstallScript=u"uninstall.ins",
+        updateScript="update.ins",
+        alwaysScript=None,
+        onceScript=None,
+        priority=0,
+        description=None,
+        advice="",
+        productClassIds=[],
+        windowsSoftwareIds=['{98723-7898adf2-287aab}', 'xxxxxxxx']
+    )
+
+    product3 = LocalbootProduct(
+        id='product3',
+        name=u'Product 3',
+        productVersion=3,
+        packageVersion=1,
+        licenseRequired=True,
+        setupScript="setup.ins",
+        uninstallScript=None,
+        updateScript=None,
+        alwaysScript=None,
+        onceScript=None,
+        priority=100,
+        description="---",
+        advice="---",
+        productClassIds=[],
+        windowsSoftwareIds=[]
+    )
+
+    product4 = LocalbootProduct(
+        id='product4',
+        name=u'Product 4',
+        productVersion="3.0",
+        packageVersion=24,
+        licenseRequired=False,
+        setupScript="setup.ins",
+        uninstallScript="uninstall.ins",
+        updateScript=None,
+        alwaysScript=None,
+        onceScript=None,
+        priority=0,
+        description="",
+        advice="",
+        productClassIds=[],
+        windowsSoftwareIds=[]
+    )
+
+    product5 = LocalbootProduct(
+        id='product4',
+        name=u'Product 4',
+        productVersion="3.0",
+        packageVersion=25,
+        licenseRequired=False,
+        setupScript="setup.ins",
+        uninstallScript="uninstall.ins",
+        updateScript=None,
+        alwaysScript=None,
+        onceScript=None,
+        priority=0,
+        description="",
+        advice="",
+        productClassIds=[],
+        windowsSoftwareIds=[]
+    )
+
+    product6 = LocalbootProduct(
+        id='product6',
+        name=u'Product 6',
+        productVersion="1.0",
+        packageVersion=1,
+        licenseRequired=False,
+        setupScript="setup.ins",
+        uninstallScript="uninstall.ins",
+        updateScript=None,
+        alwaysScript=None,
+        onceScript=None,
+        priority=0,
+        description="",
+        advice="",
+        productClassIds=[],
+        windowsSoftwareIds=[]
+    )
+
+    product7 = LocalbootProduct(
+        id='product7',
+        name=u'Product 7',
+        productVersion="1.0",
+        packageVersion=1,
+        licenseRequired=False,
+        setupScript="setup.ins",
+        uninstallScript="uninstall.ins",
+        updateScript=None,
+        alwaysScript=None,
+        onceScript=None,
+        priority=0,
+        description="",
+        advice="",
+        productClassIds=[],
+        windowsSoftwareIds=[]
+    )
+
+    product8 = LocalbootProduct(
+        id='product7',
+        name=u'Product 7',
+        productVersion="1.0",
+        packageVersion=2,
+        licenseRequired=False,
+        setupScript="setup.ins",
+        uninstallScript="uninstall.ins",
+        updateScript=None,
+        alwaysScript=None,
+        onceScript=None,
+        customScript="custom.ins",
+        priority=0,
+        description="",
+        advice="",
+        productClassIds=[],
+        windowsSoftwareIds=[]
+    )
+
+    product9 = LocalbootProduct(
+        id='product9',
+        name=(u'This is a very long name with 128 characters to test the '
+              u'creation of long product names that should work now but '
+              u'were limited b4'),
+        productVersion="1.0",
+        packageVersion=2,
+        licenseRequired=False,
+        setupScript="setup.ins",
+        uninstallScript="uninstall.ins",
+        updateScript=None,
+        alwaysScript=None,
+        onceScript=None,
+        customScript="custom.ins",
+        priority=0,
+        description="",
+        advice="",
+        productClassIds=[],
+        windowsSoftwareIds=[]
+    )
+
+    return (product2, product3, product4, product5, product6, product7,
+            product8, product9)
+
+
 class ProductsMixin(object):
     def setUpProducts(self):
-        self.product1 = NetbootProduct(
-            id='product1',
-            name=u'Product 1',
-            productVersion='1.0',
-            packageVersion=1,
-            licenseRequired=True,
-            setupScript="setup.py",
-            uninstallScript=None,
-            updateScript="update.py",
-            alwaysScript=None,
-            onceScript=None,
-            priority='100',
-            description="Nothing",
-            advice=u"No advice",
-            productClassIds=[],
-            windowsSoftwareIds=[
-                '{be21bd07-eb19-44e4-893a-fa4e44e5f806}', 'product1'],
-            pxeConfigTemplate='special'
-        )
-
+        self.product1 = getNetbootProduct()
         self.netbootProducts = [self.product1]
+
+        (self.product2, self.product3, self.product4, self.product5,
+         self.product6, self.product7, self.product8,
+         self.product9) = getLocalbootProducts()
+
+        self.localbootProducts = [self.product2, self.product3, self.product4,
+                                  self.product5, self.product6, self.product7,
+                                  self.product8, self.product9]
 
         if not hasattr(self, 'products'):
             self.products = []
-
         self.products.extend(self.netbootProducts)
-
-        self.product2 = LocalbootProduct(
-            id='product2',
-            name=u'Product 2',
-            productVersion='2.0',
-            packageVersion='test',
-            licenseRequired=False,
-            setupScript="setup.ins",
-            uninstallScript=u"uninstall.ins",
-            updateScript="update.ins",
-            alwaysScript=None,
-            onceScript=None,
-            priority=0,
-            description=None,
-            advice="",
-            productClassIds=[],
-            windowsSoftwareIds=['{98723-7898adf2-287aab}', 'xxxxxxxx']
-        )
-
-        self.product3 = LocalbootProduct(
-            id='product3',
-            name=u'Product 3',
-            productVersion=3,
-            packageVersion=1,
-            licenseRequired=True,
-            setupScript="setup.ins",
-            uninstallScript=None,
-            updateScript=None,
-            alwaysScript=None,
-            onceScript=None,
-            priority=100,
-            description="---",
-            advice="---",
-            productClassIds=[],
-            windowsSoftwareIds=[]
-        )
-
-        self.product4 = LocalbootProduct(
-            id='product4',
-            name=u'Product 4',
-            productVersion="3.0",
-            packageVersion=24,
-            licenseRequired=False,
-            setupScript="setup.ins",
-            uninstallScript="uninstall.ins",
-            updateScript=None,
-            alwaysScript=None,
-            onceScript=None,
-            priority=0,
-            description="",
-            advice="",
-            productClassIds=[],
-            windowsSoftwareIds=[]
-        )
-
-        self.product5 = LocalbootProduct(
-            id='product4',
-            name=u'Product 4',
-            productVersion="3.0",
-            packageVersion=25,
-            licenseRequired=False,
-            setupScript="setup.ins",
-            uninstallScript="uninstall.ins",
-            updateScript=None,
-            alwaysScript=None,
-            onceScript=None,
-            priority=0,
-            description="",
-            advice="",
-            productClassIds=[],
-            windowsSoftwareIds=[]
-        )
-
-        self.product6 = LocalbootProduct(
-            id='product6',
-            name=u'Product 6',
-            productVersion="1.0",
-            packageVersion=1,
-            licenseRequired=False,
-            setupScript="setup.ins",
-            uninstallScript="uninstall.ins",
-            updateScript=None,
-            alwaysScript=None,
-            onceScript=None,
-            priority=0,
-            description="",
-            advice="",
-            productClassIds=[],
-            windowsSoftwareIds=[]
-        )
-
-        self.product7 = LocalbootProduct(
-            id='product7',
-            name=u'Product 7',
-            productVersion="1.0",
-            packageVersion=1,
-            licenseRequired=False,
-            setupScript="setup.ins",
-            uninstallScript="uninstall.ins",
-            updateScript=None,
-            alwaysScript=None,
-            onceScript=None,
-            priority=0,
-            description="",
-            advice="",
-            productClassIds=[],
-            windowsSoftwareIds=[]
-        )
-
-        self.product8 = LocalbootProduct(
-            id='product7',
-            name=u'Product 7',
-            productVersion="1.0",
-            packageVersion=2,
-            licenseRequired=False,
-            setupScript="setup.ins",
-            uninstallScript="uninstall.ins",
-            updateScript=None,
-            alwaysScript=None,
-            onceScript=None,
-            customScript="custom.ins",
-            priority=0,
-            description="",
-            advice="",
-            productClassIds=[],
-            windowsSoftwareIds=[]
-        )
-
-        self.product9 = LocalbootProduct(
-            id='product9',
-            name=(u'This is a very long name with 128 characters to test the '
-                  u'creation of long product names that should work now but '
-                  u'were limited b4'),
-            productVersion="1.0",
-            packageVersion=2,
-            licenseRequired=False,
-            setupScript="setup.ins",
-            uninstallScript="uninstall.ins",
-            updateScript=None,
-            alwaysScript=None,
-            onceScript=None,
-            customScript="custom.ins",
-            priority=0,
-            description="",
-            advice="",
-            productClassIds=[],
-            windowsSoftwareIds=[]
-        )
-
-        self.localbootProducts = [self.product2, self.product3, self.product4,
-                                  self.product5, self.product6, self.product7, self.product8, self.product9]
         self.products.extend(self.localbootProducts)
 
     def createProductsOnBackend(self):

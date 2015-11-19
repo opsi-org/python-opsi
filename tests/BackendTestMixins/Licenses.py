@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2014 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2015 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -33,27 +33,33 @@ from .Clients import ClientsMixin
 from .Products import ProductsMixin
 
 
+def getLicenseContracts():
+    licenseContract1 = LicenseContract(
+        id=u'license contract 1',
+        description=u'a license contract',
+        notes=None,
+        partner=u'',
+        conclusionDate=None,
+        notificationDate=None,
+        expirationDate=None
+    )
+
+    licenseContract2 = LicenseContract(
+        id=u'license contract 2',
+        description=u'license contract with company x',
+        notes=u'Contract notes',
+        partner=u'company x',
+        conclusionDate='2009-01-01 00:00:00',
+        notificationDate='2010-12-01 00:00:00',
+        expirationDate='2011-01-01 00:00:00',
+    )
+
+    return licenseContract1, licenseContract2
+
+
 class LicensesMixin(ClientsMixin, ProductsMixin):
     def setUpLicenseContracts(self):
-        self.licenseContract1 = LicenseContract(
-            id=u'license contract 1',
-            description=u'a license contract',
-            notes=None,
-            partner=u'',
-            conclusionDate=None,
-            notificationDate=None,
-            expirationDate=None
-        )
-
-        self.licenseContract2 = LicenseContract(
-            id=u'license contract 2',
-            description=u'license contract with company x',
-            notes=u'Contract notes',
-            partner=u'company x',
-            conclusionDate='2009-01-01 00:00:00',
-            notificationDate='2010-12-01 00:00:00',
-            expirationDate='2011-01-01 00:00:00',
-        )
+        self.licenseContract1, self.licenseContract2 = getLicenseContracts()
         self.licenseContracts = [self.licenseContract1, self.licenseContract2]
 
     def setUpSoftwareLicenses(self):

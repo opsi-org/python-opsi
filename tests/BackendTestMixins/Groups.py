@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2014 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2015 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -26,36 +26,45 @@ Backend for testing group functionality of an backend.
 from OPSI.Object import HostGroup, ProductGroup, ObjectToGroup
 
 
+def getHostGroups():
+    group1 = HostGroup(
+        id='host_group_1',
+        description='Group 1',
+        notes='First group',
+        parentGroupId=None
+    )
+
+    group2 = HostGroup(
+        id=u'host group 2',
+        description='Group 2',
+        notes='Test\nTest\nTest',
+        parentGroupId='host_group_1'
+    )
+    group3 = HostGroup(
+        id=u'host group 3',
+        description='Group 3',
+        notes='',
+        parentGroupId=None
+    )
+
+    return group1, group2, group3
+
+
+def getProductGroup():
+    return ProductGroup(
+        id=u'products group 4',
+        description='Group 4',
+        notes='',
+        parentGroupId=None
+    )
+
+
 class GroupsMixin(object):
     def setUpGroups(self):
-            self.group1 = HostGroup(
-                id='host_group_1',
-                description='Group 1',
-                notes='First group',
-                parentGroupId=None
-            )
+        self.group1, self.group2, self.group3 = getHostGroups()
+        self.group4 = getProductGroup()
 
-            # TODO: test?
-            self.group2 = HostGroup(
-                id=u'host group 2',
-                description='Group 2',
-                notes='Test\nTest\nTest',
-                parentGroupId='host_group_1'
-            )
-
-            self.group3 = HostGroup(
-                id=u'host group 3',
-                description='Group 3',
-                notes='',
-                parentGroupId=None
-            )
-            self.group4 = ProductGroup(
-                id=u'products group 4',
-                description='Group 4',
-                notes='',
-                parentGroupId=None
-            )
-            self.groups = [self.group1, self.group2, self.group3, self.group4]
+        self.groups = [self.group1, self.group2, self.group3, self.group4]
 
     def createGroupsOnBackend(self):
         self.backend.group_createObjects(self.groups)

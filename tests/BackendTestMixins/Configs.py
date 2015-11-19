@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2014 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2015 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -30,53 +30,58 @@ from OPSI.Object import UnicodeConfig, BoolConfig, ConfigState
 from .Clients import ClientsMixin
 from .Hosts import HostsMixin
 
+def getConfigs(depotServerId=None):
+    config1 = UnicodeConfig(
+        id=u'opsi-linux-bootimage.cmdline.reboot',
+        description=(u'Some string üöä?').encode('latin-1'),
+        possibleValues = ['w', 'c', 'b', 'h', 'b,c'],
+        defaultValues = ['b,c']
+    )
+
+    config2 = BoolConfig(
+        id=u'opsi-linux-bootimage.cmdline.bool',
+        description='Bool?',
+        defaultValues='on'
+    )
+
+    config3 = UnicodeConfig(
+        id=u'some.products',
+        description=u'Install this products',
+        possibleValues=['product1', 'product2', 'product3', 'product4'],
+        defaultValues=['product1', 'product3']
+    )
+
+    config4 = UnicodeConfig(
+        id=u'clientconfig.depot.id',
+        description=u'Depotserver to use',
+        possibleValues=[],
+        defaultValues=[depotServerId or "depot3000.domain.invalid"]
+    )
+
+    config5 = UnicodeConfig(
+        id=u'some.other.products',
+        description=u'Some other product ids',
+        possibleValues=['product3', 'product4', 'product5'],
+        defaultValues=['product3']
+    )
+
+    config6 = UnicodeConfig(
+        id=u'%username%',
+        description=u'username',
+        possibleValues=None,
+        defaultValues=['opsi']
+    )
+
+    return (config1, config2, config3, config4, config5, config6)
+
 
 class ConfigsMixin(ClientsMixin, HostsMixin):
     def setUpConfigs(self):
         self.setUpHosts()
         self.setUpClients()
 
-        # TODO: turn this into tests?
-        self.config1 = UnicodeConfig(
-            id=u'opsi-linux-bootimage.cmdline.reboot',
-            description=(u'Some string üöä?').encode('latin-1'),
-            possibleValues = ['w', 'c', 'b', 'h', 'b,c'],
-            defaultValues = ['b,c']
-        )
-
-        self.config2 = BoolConfig(
-            id=u'opsi-linux-bootimage.cmdline.bool',
-            description='Bool?',
-            defaultValues='on'
-        )
-
-        self.config3 = UnicodeConfig(
-            id=u'some.products',
-            description=u'Install this products',
-            possibleValues=['product1', 'product2', 'product3', 'product4'],
-            defaultValues=['product1', 'product3']
-        )
-
-        self.config4 = UnicodeConfig(
-            id=u'clientconfig.depot.id',
-            description=u'Depotserver to use',
-            possibleValues=[],
-            defaultValues=[self.depotserver1.id]
-        )
-
-        self.config5 = UnicodeConfig(
-            id=u'some.other.products',
-            description=u'Some other product ids',
-            possibleValues=['product3', 'product4', 'product5'],
-            defaultValues=['product3']
-        )
-
-        self.config6 = UnicodeConfig(
-            id=u'%username%',
-            description=u'username',
-            possibleValues=None,
-            defaultValues=['opsi']
-        )
+        (self.config1, self.config2, self.config3, self.config4,
+         self.config5, self.config6) = getConfigs(self.depotserver1.id)
 
         self.configs = [
             self.config1, self.config2, self.config3, self.config4,

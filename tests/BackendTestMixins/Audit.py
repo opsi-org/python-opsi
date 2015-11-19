@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2014 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2015 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -29,69 +29,110 @@ from OPSI.Object import (AuditSoftware, AuditSoftwareOnClient,
     AuditHardware, AuditHardwareOnHost, AuditSoftwareToLicensePool)
 
 from .Clients import ClientsMixin
-from .Products import ProductsMixin
+from .Products import getLocalbootProducts, ProductsMixin
 from .Licenses import LicensesMixin
+
+
+def getAuditHardwares():
+    auditHardware1 = AuditHardware(
+        hardwareClass='COMPUTER_SYSTEM',
+        description='a pc',
+        vendor='Dell',
+        model='xyz',
+    )
+
+    auditHardware2 = AuditHardware(
+        hardwareClass='COMPUTER_SYSTEM',
+        description=None,
+        vendor='HP',
+        model='0815',
+    )
+
+    auditHardware3 = AuditHardware(
+        hardwareClass='BASE_BOARD',
+        name='MSI 2442',
+        description='AMD motherboard',
+        vendor='MSI',
+        model='äüöüöäüöüäüööüö11',
+        product=None
+    )
+
+    auditHardware4 = AuditHardware(
+        hardwareClass='CHASSIS',
+        name='Manufacturer XX-112',
+        description='A chassis',
+        chassisType='Desktop'
+    )
+
+    return auditHardware1, auditHardware2, auditHardware3, auditHardware4
+
+
+def getAuditSoftwares(product=None):
+    auditSoftware1 = AuditSoftware(
+        name='A software',
+        version='1.0.21',
+        subVersion='',
+        language='',
+        architecture='',
+        windowsSoftwareId='{480aa013-93a7-488c-89c3-b985b6c8440a}',
+        windowsDisplayName='A Software',
+        windowsDisplayVersion='1.0.21',
+        installSize=129012992
+    )
+
+    if product is None:
+        product = getLocalbootProducts()[0]
+
+    auditSoftware2 = AuditSoftware(
+        name=product.getName(),
+        version=product.getProductVersion(),
+        subVersion='',
+        language='de',
+        architecture='x64',
+        windowsSoftwareId=product.getWindowsSoftwareIds()[0],
+        windowsDisplayName=product.getName(),
+        windowsDisplayVersion=product.getProductVersion(),
+        installSize=217365267
+    )
+
+    auditSoftware3 = AuditSoftware(
+        name='my software',
+        version='',
+        subVersion='12;00;01',
+        language='',
+        architecture='',
+        windowsSoftwareId='my software',
+        windowsDisplayName='',
+        windowsDisplayVersion='',
+        installSize=-1
+    )
+
+    auditSoftware4 = AuditSoftware(
+        name='söftwäre\n;?&%$$$§$§§$$$§$',
+        version=u'\\0012',
+        subVersion='\n',
+        language='de',
+        architecture='',
+        windowsSoftwareId='söftwäre\n;?&%$$$§$§§$$$§$',
+        windowsDisplayName='söftwäre\n;?&%$$$§$§§$$$§$',
+        windowsDisplayVersion='\n\r',
+        installSize=-1
+    )
+
+    return auditSoftware1, auditSoftware2, auditSoftware3, auditSoftware4
 
 
 class AuditSoftwareMixin(ProductsMixin):
     def setUpAuditSoftwares(self):
         self.setUpProducts()
 
-        self.auditSoftware1 = AuditSoftware(
-            name='A software',
-            version='1.0.21',
-            subVersion='',
-            language='',
-            architecture='',
-            windowsSoftwareId='{480aa013-93a7-488c-89c3-b985b6c8440a}',
-            windowsDisplayName='A Software',
-            windowsDisplayVersion='1.0.21',
-            installSize=129012992
-        )
-
-        self.auditSoftware2 = AuditSoftware(
-            name=self.product2.getName(),
-            version=self.product2.getProductVersion(),
-            subVersion='',
-            language='de',
-            architecture='x64',
-            windowsSoftwareId=self.product2.getWindowsSoftwareIds()[0],
-            windowsDisplayName=self.product2.getName(),
-            windowsDisplayVersion=self.product2.getProductVersion(),
-            installSize=217365267
-        )
-
-        # TODO: turn into test?
-        self.auditSoftware3 = AuditSoftware(
-            name='my software',
-            version='',
-            subVersion='12;00;01',
-            language='',
-            architecture='',
-            windowsSoftwareId='my software',
-            windowsDisplayName='',
-            windowsDisplayVersion='',
-            installSize=-1
-        )
-
-        # TODO: turn into test?
-        self.auditSoftware4 = AuditSoftware(
-            name='söftwäre\n;?&%$$$§$§§$$$§$',
-            version=u'\\0012',
-            subVersion='\n',
-            language='de',
-            architecture='',
-            windowsSoftwareId='söftwäre\n;?&%$$$§$§§$$$§$',
-            windowsDisplayName='söftwäre\n;?&%$$$§$§§$$$§$',
-            windowsDisplayVersion='\n\r',
-            installSize=-1
-        )
+        (self.auditSoftware1, self.auditSoftware2, self.auditSoftware3,
+         self.auditSoftware4) = getAuditSoftwares(self.product2)
 
         self.auditSoftwares = [
             self.auditSoftware1, self.auditSoftware2, self.auditSoftware3,
             self.auditSoftware4
         ]
-
 
     def setUpAuditSoftwareToLicensePools(self):
         self.setUpLicensePool()
@@ -189,39 +230,11 @@ class AuditSoftwareMixin(ProductsMixin):
 
 class AuditHardwareMixin(ClientsMixin):
     def setUpAuditHardwares(self):
-        self.auditHardware1 = AuditHardware(
-            hardwareClass='COMPUTER_SYSTEM',
-            description='a pc',
-            vendor='Dell',
-            model='xyz',
-        )
+        (self.auditHardware1, self.auditHardware2,
+         self.auditHardware3, self.auditHardware4) = getAuditHardwares()
 
-        self.auditHardware2 = AuditHardware(
-            hardwareClass='COMPUTER_SYSTEM',
-            description=None,
-            vendor='HP',
-            model='0815',
-        )
-
-        # TODO: turn into a test?
-        self.auditHardware3 = AuditHardware(
-            hardwareClass='BASE_BOARD',
-            name='MSI 2442',
-            description='AMD motherboard',
-            vendor='MSI',
-            model='äüöüöäüöüäüööüö11',
-            product=None
-        )
-
-        self.auditHardware4 = AuditHardware(
-            hardwareClass='CHASSIS',
-            name='Manufacturer XX-112',
-            description='A chassis',
-            chassisType='Desktop'
-        )
-
-        self.auditHardwares = [
-            self.auditHardware1, self.auditHardware2, self.auditHardware3, self.auditHardware4]
+        self.auditHardwares = [self.auditHardware1, self.auditHardware2,
+                               self.auditHardware3, self.auditHardware4]
 
     def setUpAuditHardwareOnHosts(self):
         self.setUpClients()
