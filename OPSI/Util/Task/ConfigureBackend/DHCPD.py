@@ -28,6 +28,8 @@ Functionality to automatically configure the DHCPD-backend.
 import grp
 import os
 import pwd
+import shutil
+import time
 
 import OPSI.System.Posix as Posix
 from OPSI.Logger import Logger
