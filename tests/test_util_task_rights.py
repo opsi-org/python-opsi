@@ -38,7 +38,7 @@ from .helpers import mock, unittest, workInTemporaryDirectory
 
 class SetRightsTestCase(unittest.TestCase):
     def testGetDirectoriesToProcess(self):
-        with mock.patch('OPSI.Util.Task.Rights._isSLES', mock.Mock(return_value=False)):
+        with mock.patch('OPSI.Util.Task.Rights.isSLES', mock.Mock(return_value=False)):
             directories = getDirectoriesManagedByOpsi()
 
         self.assertTrue(u'/home/opsiproducts' in directories)
@@ -48,7 +48,7 @@ class SetRightsTestCase(unittest.TestCase):
         self.assertTrue(u'/var/log/opsi' in directories)
 
     def testGetDirectoriesToProcessOnSLES(self):
-        with mock.patch('OPSI.Util.Task.Rights._isSLES', mock.Mock(return_value=True)):
+        with mock.patch('OPSI.Util.Task.Rights.isSLES', mock.Mock(return_value=True)):
             directories = getDirectoriesManagedByOpsi()
 
         self.assertTrue(u'/var/log/opsi' in directories)
