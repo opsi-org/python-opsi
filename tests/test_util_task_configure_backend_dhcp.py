@@ -49,7 +49,9 @@ def disableSystemCallsForConfigureDHCPD():
                         return 'service opsi-test-dhcpd restart'
 
                     with mock.patch('OPSI.Util.Task.ConfigureBackend.DHCPD.getDHCPDRestartCommand', getFakeRestartCommand):
-                        yield
+                        with mock.patch('OPSI.Util.Task.ConfigureBackend.DHCPD.os.chown'):
+                            with mock.patch('OPSI.Util.Task.ConfigureBackend.DHCPD.os.chmod'):
+                                yield
 
 
 
