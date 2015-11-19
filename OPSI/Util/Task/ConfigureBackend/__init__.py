@@ -143,8 +143,25 @@ def _getSysConfig():
 			u"Failed to get a valid ip address for fqdn '{0}'".format(fqdn)
 		)
 
+	if not sysConfig.get('netmask'):
+		sysConfig['netmask'] = u'255.255.255.0'
+
+	sysConfig['broadcast'] = u''
+	sysConfig['subnet'] = u''
+	for i in range(4):
+		if sysConfig['broadcast']:
+			sysConfig['broadcast'] += u'.'
+		if sysConfig['subnet']:
+			sysConfig['subnet']+= u'.'
+
+		sysConfig['subnet'] += u'%d' % ( int(sysConfig['ipAddress'].split(u'.')[i]) & int(sysConfig['netmask'].split(u'.')[i]) )
+		sysConfig['broadcast'] += u'%d' % ( int(sysConfig['ipAddress'].split(u'.')[i]) | int(sysConfig['netmask'].split(u'.')[i]) ^ 255 )
+
 	LOGGER.notice(u"System information:")
 	LOGGER.notice(u"   ip address   : %s" % sysConfig['ipAddress'])
+	LOGGER.notice(u"   netmask      : %s" % sysConfig['netmask'])
+	LOGGER.notice(u"   subnet       : %s" % sysConfig['subnet'])
+	LOGGER.notice(u"   broadcast    : %s" % sysConfig['broadcast'])
 	LOGGER.notice(u"   fqdn         : %s" % sysConfig['fqdn'])
 	LOGGER.notice(u"   hostname     : %s" % sysConfig['hostname'])
 
