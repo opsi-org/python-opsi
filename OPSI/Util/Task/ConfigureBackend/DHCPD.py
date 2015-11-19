@@ -37,9 +37,9 @@ from . import _getSysConfig as getSysConfig
 
 from OPSI.Logger import Logger
 from OPSI.System import execute
-from OPSI.System.Posix import getDHCPDRestartCommand, isSLES, locateDHCPDConfig
+from OPSI.System.Posix import getDHCPDRestartCommand, locateDHCPDConfig
+from OPSI.System.Posix import isCentOS, isSLES, isRHEL
 from OPSI.Util.File import DHCPDConfFile, DHCPDConf_Block, DHCPDConf_Parameter
-from OPSI.Util.File.Opsi import SysInfo
 from OPSI.Util.Task.Sudoers import patchSudoersFileToAllowRestartingDHCPD
 
 DHCPD_CONF = locateDHCPDConfig(u'/etc/dhcp3/dhcpd.conf')
@@ -154,8 +154,7 @@ def configureDHCPD(configFile=DHCPD_CONF):
 	os.chown(configFile, opsiconfdUid, adminGroupGid)
 	os.chmod(configFile, 0664)
 
-	sysinfo = SysInfo()
-	if 'Red Hat Enterprise Linux' in sysinfo.distribution or 'CentOS' in sysinfo.distribution:
+	if isRHEL() or isCentOS():
 		dhcpDir = os.path.dirname(configFile)
 		if dhcpDir == '/etc':
 			return
