@@ -5,7 +5,7 @@ python-opsi (4.0.6.35-1) UNRELEASED; urgency=medium
   * OPSI.Types: small refactoring in forceBool.
   * HostControl.RpcThread: specify "application/json" as content-type.
   * New module: OPSI.Util.Task.ConfigureBackend.DHCPD
-  * New function: OPSI.System.Posix.isSLES
+  * New functions in OPSI.System.Posix: isCentOS, isSLES & isRHEL
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 19 Nov 2015 13:12:55 +0100
 
