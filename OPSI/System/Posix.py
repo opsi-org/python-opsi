@@ -2805,7 +2805,7 @@ def isCentOS():
 	"""
 	try:
 		sysinfo = SysInfo()
-		return 'CentOS' in sysinfo.distribution:
+		return 'CentOS' in sysinfo.distribution
 	except Exception as error:
 		logger.debug("Failed to check for CentOS: {0}".format(error))
 		return False
