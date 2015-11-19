@@ -2784,6 +2784,33 @@ def isSLES():
 		return False
 
 
+def isRHEL():
+	"""
+	Returns `True` if this is running on Red Hat Enterprise Linux.
+	Returns `False` if otherwise.
+	"""
+
+	try:
+		sysinfo = SysInfo()
+		return 'Red Hat Enterprise Linux' in sysinfo.distribution
+	except Exception as error:
+		logger.debug("Failed to check for RHEL: {0}".format(error))
+		return False
+
+
+def isCentOS():
+	"""
+	Returns `True` if this is running on CentOS.
+	Returns `False` if otherwise.
+	"""
+	try:
+		sysinfo = SysInfo()
+		return 'CentOS' in sysinfo.distribution:
+	except Exception as error:
+		logger.debug("Failed to check for CentOS: {0}".format(error))
+		return False
+
+
 class Distribution(object):
 
 	def __init__(self, distribution_information=None):
