@@ -26,16 +26,24 @@ Functionality to automatically configure the DHCPD-backend.
 """
 
 import codecs
+import grp
 import os
+import pwd
 import re
 import socket
 import sys
 
 import OPSI.System.Posix as Posix
 from OPSI.Logger import Logger
-
+from OPSI.System import execute
+from OPSI.System.Posix import getDHCPDRestartCommand
+from OPSI.Util.File import DHCPDConfFile, DHCPDConf_Block, DHCPDConf_Parameter
+from OPSI.Util.File.Opsi import SysInfo
+from OPSI.Util.Task.Sudoers import patchSudoersFileToAllowRestartingDHCPD
 
 DHCPD_CONF = Posix.locateDHCPDConfig(u'/etc/dhcp3/dhcpd.conf')
+OPSICONFD_USER = u'opsiconfd'
+ADMIN_GROUP = u'opsiadmin'
 
 logger = Logger()
 
