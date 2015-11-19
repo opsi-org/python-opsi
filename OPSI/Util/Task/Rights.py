@@ -59,7 +59,7 @@ from OPSI.Logger import Logger
 from OPSI.Types import forceHostId
 from OPSI.Util import findFiles, getfqdn
 from OPSI.Util.File.Opsi import OpsiConfFile
-from OPSI.Util.System.Posix import isSLES
+from OPSI.System.Posix import isSLES
 
 __version__ = '4.0.6.35'
 
