@@ -121,7 +121,7 @@ def configureDHCPD(configFile=DHCPD_CONF):
 			else:
 				confChanged = True
 				filename = 'linux/pxelinux.0'
-				if (getSysConfig()['distribution'].lower().find('suse linux enterprise server') != -1):
+				if Posix.isSLES():
 					filename = 'opsi/pxelinux.0'
 				group.addComponent(
 					DHCPDConf_Parameter(
