@@ -34,14 +34,9 @@ __unittest = True
 
 import unittest
 
+
 def test_suite():
-	from OPSI.tests.backend import (
-		test_acl,
-		test_modificationtracker,
-		)
-	modules = [
-		test_acl,
-		test_modificationtracker,
-		]
+	from OPSI.tests.backend import test_jsonrpc
+	modules = [test_jsonrpc]
 	suites = map(lambda x: x.test_suite(), modules)
 	return unittest.TestSuite(suites)
