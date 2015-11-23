@@ -143,8 +143,8 @@ def configureDHCPD(configFile=DHCPD_CONF):
 		logger.notice(u"   Restarting dhcpd")
 		try:
 			execute(restartCommand)
-		except Exception as e:
-			logger.warning(e)
+		except Exception as error:
+			logger.warning(error)
 
 	logger.notice(u"Configuring sudoers")
 	patchSudoersFileToAllowRestartingDHCPD(restartCommand)
