@@ -109,7 +109,8 @@ class RpcThread(KillableThread):
 				self.error = u"Bad response from client: %s" % forceUnicode(response)
 		except Exception as e:
 			self.error = forceUnicode(e)
-		self.ended = time.time()
+		finally:
+			self.ended = time.time()
 
 
 class ConnectionThread(KillableThread):
