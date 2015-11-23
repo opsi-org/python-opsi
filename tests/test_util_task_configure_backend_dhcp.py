@@ -54,7 +54,6 @@ def disableSystemCallsForConfigureDHCPD():
                                 yield
 
 
-
 class ConfigureDHCPDTestCase(unittest.TestCase):
     def testJustExitingIfFileDoesNotExist(self):
         with workInTemporaryDirectory() as tempDir:
