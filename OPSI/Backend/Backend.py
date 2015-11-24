@@ -478,7 +478,7 @@ class ExtendedBackend(Backend):
 			setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
 
 	def _executeMethod(self, methodName, **kwargs):
-		logger.debug(u"ExtendedBackend %s: executing '%s' on backend '%s'" % (self, methodName, self._backend))
+		logger.debug(u"ExtendedBackend {0!r}: executing {1!r} on backend {2!r}".format(self, methodName, self._backend))
 		meth = getattr(self._backend, methodName)
 		return meth(**kwargs)
 
@@ -3299,7 +3299,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			productOnClients = self.productOnClient_addDependencies(productOnClients)
 
 		for productOnClient in productOnClients:
-			logger.info(u"Updating productOnClient '%s'" % productOnClient)
+			logger.info(u"Updating productOnClient {0!r}".format(productOnClient))
 			if self.productOnClient_getIdents(
 					productId=productOnClient.productId,
 					productType=productOnClient.productType,
