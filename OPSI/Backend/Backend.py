@@ -464,8 +464,8 @@ class ExtendedBackend(Backend):
 			if methodName.startswith('_'):
 				# Not a public method
 				continue
+
 			logger.debug2(u"Found public %s method '%s'" % (self._backend.__class__.__name__, methodName))
-			# if hasattr(self.__class__, methodName):
 			if hasattr(self, methodName):
 				if self._overwrite:
 					logger.debug(u"%s: overwriting method %s of backend instance %s" % (self.__class__.__name__, methodName, self._backend))
