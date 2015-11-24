@@ -2134,8 +2134,9 @@ class SQLBackend(ConfigDataBackend):
 		ConfigDataBackend.auditHardware_insertObject(self, auditHardware)
 
 		logger.info(u"Inserting auditHardware: %s" % auditHardware)
+		hardwareHash = auditHardware.toHash()
 		filter = {}
-		for (attribute, value) in auditHardware.toHash().items():
+		for attribute, value in hardwareHash.items():
 			if value is None:
 				filter[attribute] = [None]
 			elif isinstance(value, unicode):
@@ -2146,12 +2147,11 @@ class SQLBackend(ConfigDataBackend):
 		if res:
 			return
 
-		data = auditHardware.toHash()
-		table = u'HARDWARE_DEVICE_' + data['hardwareClass']
-		del data['hardwareClass']
-		del data['type']
+		table = u'HARDWARE_DEVICE_' + hardwareHash['hardwareClass']
+		del hardwareHash['hardwareClass']
+		del hardwareHash['type']
 
-		self._sql.insert(table, data)
+		self._sql.insert(table, hardwareHash)
 
 	def auditHardware_updateObject(self, auditHardware):
 		ConfigDataBackend.auditHardware_updateObject(self, auditHardware)
@@ -2161,6 +2161,7 @@ class SQLBackend(ConfigDataBackend):
 		for (attribute, value) in auditHardware.toHash().items():
 			if value is None:
 				filter[attribute] = [None]
+
 		if not self.auditHardware_getObjects(**filter):
 			raise Exception(u"AuditHardware '%s' not found" % auditHardware.getIdent())
 
