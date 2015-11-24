@@ -659,7 +659,8 @@ class BackendAccessControl(object):
 		protectedMethods = set()
 		for Class in (ExtendedConfigDataBackend, ConfigDataBackend, DepotserverBackend, HostControlBackend, HostControlSafeBackend):
 			methodnames = (name for name, _ in inspect.getmembers(Class, inspect.ismethod) if not name.startswith('_'))
-			[protectedMethods.add(methodName) for methodName in methodnames]
+			for methodName in methodnames:
+				protectedMethods.add(methodName)
 
 		for methodName, functionRef in inspect.getmembers(self._backend, inspect.ismethod):
 			if methodName.startswith('_'):
