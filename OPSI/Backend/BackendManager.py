@@ -874,7 +874,7 @@ class BackendAccessControl(object):
 					break
 			break
 
-		logger.debug("Method: {0}, using acls: {1}".format(methodName, acls))
+		logger.debug("Method {0!r} using acls: {1}".format(methodName, acls))
 		if granted is True:
 			logger.debug(u"Full access to method '%s' granted to user '%s' by acl %s" % (methodName, self._username, acls[0]))
 			newKwargs = kwargs
