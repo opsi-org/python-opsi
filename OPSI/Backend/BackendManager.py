@@ -62,7 +62,7 @@ elif os.name == 'nt':
 	import win32net
 	import win32security
 
-__version__ = '4.0.6.32'
+__version__ = '4.0.6.35'
 
 logger = Logger()
 
@@ -495,12 +495,11 @@ class BackendExtender(ExtendedBackend):
 
 	def __createExtensions(self):
 		if self._extensionClass:
-			for member in inspect.getmembers(self._extensionClass, inspect.ismethod):
-				methodName = member[0]
+			for methodName, functionRef in inspect.getmembers(self._extensionClass, inspect.ismethod):
 				if methodName.startswith('_'):
 					continue
 				logger.debug2(u"Extending {0} with instancemethod: {1!r}".format(self._backend.__class__.__name__, methodName))
-				new_function = new.function(member[1].func_code, member[1].func_globals, member[1].func_code.co_name)
+				new_function = new.function(functionRef.func_code, functionRef.func_globals, functionRef.func_code.co_name)
 				new_method = new.instancemethod(new_function, self, self.__class__)
 				setattr(self, methodName, new_method)
 
