@@ -30,6 +30,7 @@ from __future__ import absolute_import
 import grp
 import os
 import pwd
+import re
 import shutil
 import time
 
@@ -164,3 +165,42 @@ def configureDHCPD(configFile=DHCPD_CONF):
 			'to group "{group}"'.format(dir=dhcpDir, group=ADMIN_GROUP)
 		)
 		os.chown(dhcpDir, -1, adminGroupGid)
+
+	backendConfigFile = os.path.join('/etc', 'opsi', 'backends', 'dhcpd.conf')
+	logger.notice('Configuring backend file {0}'.format(backendConfigFile))
+	insertDHCPDRestartCommand(backendConfigFile, restartCommand)
+
+
+def insertDHCPDRestartCommand(dhcpBackendConfigFile, restartCommand):
+	"""
+	Searches for the 'reloadConfigCommand' in the given file and replaces
+	the value of it with `restartCommand`.
+
+	Since the dhcpd.conf usually contains information that is evaluated
+	during runtime it is not possible to just read the config and then
+	patch the value we want as this would result in destroying the
+	dynamic.
+	"""
+	with open(dhcpBackendConfigFile) as configFile:
+		config = configFile.read()
+
+	for line in config.split('\n'):
+		if "reloadConfigCommand" in line and not line.startswith('#'):
+			_, command = line.split(':', 1)
+
+	command = command.strip()
+	logger.debug("Found command: {0!r}".format(command))
+	if command.startswith('u'):
+		command = command[1:]
+
+	if command.endswith(','):
+		command = command[1:-2]
+	else:
+		command = command[1:-1]
+
+	if command.startswith('sudo '):
+		command = command[5:]
+	logger.debug("Processed command to be: {0!r}".format(command))
+
+	with open(dhcpBackendConfigFile, 'w') as configFile:
+		configFile.write(config.replace(command, restartCommand))

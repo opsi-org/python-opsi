@@ -32,8 +32,9 @@ from contextlib import contextmanager
 
 import mock
 
+import OPSI.Util.Task.ConfigureBackend as backendConfigUtils
 from OPSI.Util import md5sum
-from OPSI.Util.Task.ConfigureBackend.DHCPD import configureDHCPD
+from OPSI.Util.Task.ConfigureBackend.DHCPD import configureDHCPD, insertDHCPDRestartCommand
 
 from .helpers import workInTemporaryDirectory
 
@@ -52,7 +53,8 @@ def disableSystemCallsForConfigureDHCPD():
                     with mock.patch('OPSI.Util.Task.ConfigureBackend.DHCPD.getDHCPDRestartCommand', getFakeRestartCommand):
                         with mock.patch('OPSI.Util.Task.ConfigureBackend.DHCPD.os.chown'):
                             with mock.patch('OPSI.Util.Task.ConfigureBackend.DHCPD.os.chmod'):
-                                yield
+                                with mock.patch('OPSI.Util.Task.ConfigureBackend.DHCPD.insertDHCPDRestartCommand'):
+                                    yield
 
 
 class ConfigureDHCPDTestCase(unittest.TestCase):
@@ -104,6 +106,60 @@ subnet 192.168.0.0 netmask 255.255.0.0 {
             newHash = md5sum(filename)
 
             self.assertNotEquals(oldHash, newHash)
+
+    def testConfiguringPatchesDHCPDBackendConfig(self):
+        with workInTemporaryDirectory() as tempDir:
+            filename = 'dhcpd_test.conf'
+            with open(filename, 'wx'):
+                pass
+
+            funcMock = mock.Mock()
+            with disableSystemCallsForConfigureDHCPD():
+                with mock.patch('OPSI.Util.Task.ConfigureBackend.DHCPD.insertDHCPDRestartCommand', funcMock):
+                    configureDHCPD(filename)
+
+            backendConfigTarget = os.path.join('/etc', 'opsi', 'backends', 'dhcpd.conf')
+            funcMock.assert_called_with(backendConfigTarget, FAKE_RESTART_COMMAND)
+
+
+class UpdateDHCPDBackendConfigTestCase(unittest.TestCase):
+    def testReplacingCurrentCommand(self):
+        with workInTemporaryDirectory() as tempDir:
+            target = os.path.join(tempDir, 'dhcpd.test.conf')
+
+            with open(target, 'w') as f:
+                f.write("""
+# -*- coding: utf-8 -*-
+
+module = 'DHCPD'
+
+localip = socket.gethostbyname(socket.getfqdn())
+
+config = {
+    "dhcpdOnDepot":            False,
+    "dhcpdConfigFile":         u"/etc/dhcp3/dhcpd.conf",
+    "reloadConfigCommand":     u"sudo break-things-now --hard",
+    "fixedAddressFormat":      u"IP", # or FQDN
+    "defaultClientParameters": { "next-server": localip, "filename": u"linux/pxelinux.0" }
+}
+""")
+
+            def getFakeRestartCommand(default=None):
+                return FAKE_RESTART_COMMAND
+
+            with mock.patch('OPSI.Util.Task.ConfigureBackend.DHCPD.getDHCPDRestartCommand', getFakeRestartCommand):
+                insertDHCPDRestartCommand(target, FAKE_RESTART_COMMAND)
+
+            config = backendConfigUtils.getBackendConfiguration(target)
+
+            print("Config is: {0}".format(config))
+
+            self.assertEquals("sudo " + FAKE_RESTART_COMMAND, config["reloadConfigCommand"])
+            self.assertEquals(False, config["dhcpdOnDepot"])
+            self.assertEquals(u"/etc/dhcp3/dhcpd.conf", config["dhcpdConfigFile"])
+            self.assertEquals(u"IP", config["fixedAddressFormat"])
+            self.assertTrue(config["defaultClientParameters"])
+            self.assertEquals(u"linux/pxelinux.0", config["defaultClientParameters"]["filename"])
 
 
 if __name__ == '__main__':
