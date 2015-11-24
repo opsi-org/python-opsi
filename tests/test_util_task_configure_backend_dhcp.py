@@ -37,6 +37,7 @@ from OPSI.Util.Task.ConfigureBackend.DHCPD import configureDHCPD
 
 from .helpers import workInTemporaryDirectory
 
+FAKE_RESTART_COMMAND = 'service opsi-test-dhcpd restart'
 
 @contextmanager
 def disableSystemCallsForConfigureDHCPD():
@@ -46,7 +47,7 @@ def disableSystemCallsForConfigureDHCPD():
                 with mock.patch('OPSI.Util.Task.ConfigureBackend.DHCPD.patchSudoersFileToAllowRestartingDHCPD'):
 
                     def getFakeRestartCommand(default=None):
-                        return 'service opsi-test-dhcpd restart'
+                        return FAKE_RESTART_COMMAND
 
                     with mock.patch('OPSI.Util.Task.ConfigureBackend.DHCPD.getDHCPDRestartCommand', getFakeRestartCommand):
                         with mock.patch('OPSI.Util.Task.ConfigureBackend.DHCPD.os.chown'):
