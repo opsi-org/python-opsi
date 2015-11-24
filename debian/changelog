@@ -6,7 +6,8 @@ python-opsi (4.0.6.35-1) UNRELEASED; urgency=medium
   * HostControl.RpcThread: specify "application/json" as content-type.
   * New module: OPSI.Util.Task.ConfigureBackend.DHCPD
   * New functions in OPSI.System.Posix: isCentOS, isSLES & isRHEL
-  * OPSI.Backend.Backend: Refactorings and improved debug output.
+  * OPSI.Backend.Backend: Small refactorings and improved debug output.
+  * OPSI.Backend.ManagerBackend: Small refactorings and improved debug output.
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 24 Nov 2015 10:21:24 +0100
 
