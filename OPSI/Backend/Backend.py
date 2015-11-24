@@ -459,8 +459,7 @@ class ExtendedBackend(Backend):
 
 	def _createInstanceMethods(self):
 		logger.debug(u"%s is creating instance methods" % self.__class__.__name__)
-		for member in inspect.getmembers(self._backend, inspect.ismethod):
-			methodName = member[0]
+		for methodName, functionRef in inspect.getmembers(self._backend, inspect.ismethod):
 			if methodName.startswith('_'):
 				# Not a public method
 				continue
@@ -472,7 +471,8 @@ class ExtendedBackend(Backend):
 					continue
 				else:
 					logger.debug(u"%s: not overwriting method %s of backend instance %s" % (self.__class__.__name__, methodName, self._backend))
-			(argString, callString) = getArgAndCallString(member[1])
+
+			argString, callString = getArgAndCallString(functionRef)
 
 			exec(u'def %s(self, %s): return self._executeMethod("%s", %s)' % (methodName, argString, methodName, callString))
 			setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
