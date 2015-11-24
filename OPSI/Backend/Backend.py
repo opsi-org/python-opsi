@@ -65,7 +65,7 @@ from OPSI.Util import (blowfishEncrypt, blowfishDecrypt, compareVersions,
 from OPSI.Util.File import ConfigFile
 import OPSI.SharedAlgorithm
 
-__version__ = '4.0.6.34'
+__version__ = '4.0.6.35'
 
 logger = Logger()
 OPSI_VERSION_FILE = u'/etc/opsi/version'
@@ -3304,7 +3304,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 					productId=productOnClient.productId,
 					productType=productOnClient.productType,
 					clientId=productOnClient.clientId):
-				logger.info(u"ProductOnClient %s exist, updating" % productOnClient)
+				logger.info(u"ProductOnClient %s exists, updating" % productOnClient)
 				self.productOnClient_updateObject(productOnClient)
 			else:
 				logger.info(u"ProductOnClient %s does not exist, creating" % productOnClient)
