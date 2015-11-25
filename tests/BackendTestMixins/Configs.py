@@ -75,6 +75,62 @@ def getConfigs(depotServerId=None):
     return (config1, config2, config3, config4, config5, config6)
 
 
+def getConfigStates(configs, clients, depotserver):
+    config1, config2, _, config4, _, config6 = configs[:6]
+    client1, client2, _, _, client5, client6, client7 = clients[:7]
+    depotserver2 = depotserver[1]
+
+    # TODO: turn this into tests?
+    configState1 = ConfigState(
+        configId=config1.getId(),
+        objectId=client1.getId(),
+        values=['w']
+    )
+
+    # TODO: turn this into tests?
+    configState2 = ConfigState(
+        configId=config2.getId(),
+        objectId=client1.getId(),
+        values=[False]
+    )
+
+    # TODO: turn this into tests?
+    configState3 = ConfigState(
+        configId=config2.getId(),
+        objectId=client2.getId(),
+        values=[False]
+    )
+
+    # TODO: turn this into tests?
+    configState4 = ConfigState(
+        configId=config6.getId(),
+        objectId=client2.getId(),
+        values=["-------- test --------\n4: %4\n1: %1\n2: %2\n5: %5"]
+    )
+
+    # TODO: turn this into tests?
+    configState5 = ConfigState(
+        configId=config4.getId(),
+        objectId=client5.getId(),
+        values=depotserver2.id
+    )
+
+    configState6 = ConfigState(
+        configId=config4.getId(),
+        objectId=client6.getId(),
+        values=depotserver2.id
+    )
+
+    configState7 = ConfigState(
+        configId=config4.getId(),
+        objectId=client7.getId(),
+        values=depotserver2.id
+    )
+
+    return (configState1, configState2, configState3, configState4,
+            configState5, configState6, configState7)
+
+
 class ConfigsMixin(ClientsMixin, HostsMixin):
     def setUpConfigs(self):
         self.setUpHosts()
@@ -191,52 +247,9 @@ class ConfigStatesMixin(ConfigsMixin):
     def setUpConfigStates(self):
         self.setUpConfigs()
 
-        # TODO: turn this into tests?
-        self.configState1 = ConfigState(
-            configId=self.config1.getId(),
-            objectId=self.client1.getId(),
-            values=['w']
-        )
-
-        # TODO: turn this into tests?
-        self.configState2 = ConfigState(
-            configId=self.config2.getId(),
-            objectId=self.client1.getId(),
-            values=[False]
-        )
-
-        # TODO: turn this into tests?
-        self.configState3 = ConfigState(
-            configId=self.config2.getId(),
-            objectId=self.client2.getId(),
-            values=[False]
-        )
-
-        # TODO: turn this into tests?
-        self.configState4 = ConfigState(
-            configId=self.config6.getId(),
-            objectId=self.client2.getId(),
-            values=["-------- test --------\n4: %4\n1: %1\n2: %2\n5: %5"]
-        )
-
-        # TODO: turn this into tests?
-        self.configState5 = ConfigState(
-            configId=self.config4.getId(),
-            objectId=self.client5.getId(),
-            values=self.depotserver2.id
-        )
-
-        self.configState6 = ConfigState(
-            configId=self.config4.getId(),
-            objectId=self.client6.getId(),
-            values=self.depotserver2.id
-        )
-
-        self.configState7 = ConfigState(
-            configId=self.config4.getId(),
-            objectId=self.client7.getId(),
-            values=self.depotserver2.id
-        )
+        (self.configState1, self.configState2, self.configState3,
+         self.configState4, self.configState5, self.configState6,
+         self.configState7) = getConfigStates(self.configs, self.clients, self.depotservers)
 
         self.configStates = [
             self.configState1, self.configState2, self.configState3,
