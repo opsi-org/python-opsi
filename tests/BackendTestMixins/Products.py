@@ -212,6 +212,228 @@ def getLocalbootProducts():
             product8, product9)
 
 
+def getProductDepdencies(products):
+    print("Got {0} products: {1!r}".format(len(products), products))
+
+    product2, product3, product4, _, product6, product7, _, product9 = products[1:9]
+    print(product2)
+    productDependency1 = ProductDependency(
+        productId=product2.id,
+        productVersion=product2.productVersion,
+        packageVersion=product2.packageVersion,
+        productAction='setup',
+        requiredProductId=product3.id,
+        requiredProductVersion=product3.productVersion,
+        requiredPackageVersion=product3.packageVersion,
+        requiredAction='setup',
+        requiredInstallationStatus=None,
+        requirementType='before'
+    )
+
+    productDependency2 = ProductDependency(
+        productId=product2.id,
+        productVersion=product2.productVersion,
+        packageVersion=product2.packageVersion,
+        productAction='setup',
+        requiredProductId=product4.id,
+        requiredProductVersion=None,
+        requiredPackageVersion=None,
+        requiredAction=None,
+        requiredInstallationStatus='installed',
+        requirementType='after'
+    )
+
+    productDependency3 = ProductDependency(
+        productId=product6.id,
+        productVersion=product6.productVersion,
+        packageVersion=product6.packageVersion,
+        productAction='setup',
+        requiredProductId=product7.id,
+        requiredProductVersion=product7.productVersion,
+        requiredPackageVersion=product7.packageVersion,
+        requiredAction=None,
+        requiredInstallationStatus='installed',
+        requirementType='after'
+    )
+
+    productDependency4 = ProductDependency(
+        productId=product7.id,
+        productVersion=product7.productVersion,
+        packageVersion=product7.packageVersion,
+        productAction='setup',
+        requiredProductId=product9.id,
+        requiredProductVersion=None,
+        requiredPackageVersion=None,
+        requiredAction=None,
+        requiredInstallationStatus='installed',
+        requirementType='after'
+    )
+
+    return (productDependency1, productDependency2, productDependency3, productDependency4)
+
+
+def getProductProperties(products):
+    print("Got {0} products: {1!r}".format(len(products), products))
+
+    product1, _, product3 = products[:3]
+
+    # TODO: turn this into tests?
+    productProperty1 = UnicodeProductProperty(
+        productId=product1.id,
+        productVersion=product1.productVersion,
+        packageVersion=product1.packageVersion,
+        propertyId="productProperty1",
+        description='Test product property (unicode)',
+        possibleValues=['unicode1', 'unicode2', 'unicode3'],
+        defaultValues=['unicode1', 'unicode3'],
+        editable=True,
+        multiValue=True
+    )
+
+    # TODO: turn this into tests?
+    productProperty2 = BoolProductProperty(
+        productId=product1.id,
+        productVersion=product1.productVersion,
+        packageVersion=product1.packageVersion,
+        propertyId="productProperty2",
+        description='Test product property 2 (bool)',
+        defaultValues=True
+    )
+
+    productProperty3 = BoolProductProperty(
+        productId=product3.id,
+        productVersion=product3.productVersion,
+        packageVersion=product3.packageVersion,
+        propertyId=u"productProperty3",
+        description=u'Test product property 3 (bool)',
+        defaultValues=False
+    )
+
+    productProperty4 = UnicodeProductProperty(
+        productId=product1.id,
+        productVersion=product1.productVersion,
+        packageVersion=product1.packageVersion,
+        propertyId=u"i386_dir",
+        description=u'i386 dir to use as installation source',
+        possibleValues=["i386"],
+        defaultValues=["i386"],
+        editable=True,
+        multiValue=False
+    )
+
+    return productProperty1, productProperty2, productProperty3, productProperty4
+
+
+def getProductsOnDepot(products, configServer, depotServer):
+    print("Got {0} products: {1!r}".format(len(products), products))
+
+    product1, product2, product3, _, product5, product6, product7, product8, product9 = products[:9]
+    depotserver1, depotserver2 = depotServer[:2]
+
+    productOnDepot1 = ProductOnDepot(
+        productId=product1.getId(),
+        productType=product1.getType(),
+        productVersion=product1.getProductVersion(),
+        packageVersion=product1.getPackageVersion(),
+        depotId=depotserver1.getId(),
+        locked=False
+    )
+
+    productOnDepot2 = ProductOnDepot(
+        productId=product2.getId(),
+        productType=product2.getType(),
+        productVersion=product2.getProductVersion(),
+        packageVersion=product2.getPackageVersion(),
+        depotId=depotserver1.getId(),
+        locked=False
+    )
+
+    productOnDepot3 = ProductOnDepot(
+        productId=product3.getId(),
+        productType=product3.getType(),
+        productVersion=product3.getProductVersion(),
+        packageVersion=product3.getPackageVersion(),
+        depotId=depotserver1.getId(),
+        locked=False
+    )
+
+    productOnDepot4 = ProductOnDepot(
+        productId=product3.getId(),
+        productType=product3.getType(),
+        productVersion=product3.getProductVersion(),
+        packageVersion=product3.getPackageVersion(),
+        depotId=configServer.getId(),
+        locked=False
+    )
+
+    productOnDepot5 = ProductOnDepot(
+        productId=product5.getId(),
+        productType=product5.getType(),
+        productVersion=product5.getProductVersion(),
+        packageVersion=product5.getPackageVersion(),
+        depotId=configServer.getId(),
+        locked=False
+    )
+
+    productOnDepot6 = ProductOnDepot(
+        productId=product6.getId(),
+        productType=product6.getType(),
+        productVersion=product6.getProductVersion(),
+        packageVersion=product6.getPackageVersion(),
+        depotId=depotserver1.getId(),
+        locked=False
+    )
+
+    productOnDepot7 = ProductOnDepot(
+        productId=product6.getId(),
+        productType=product6.getType(),
+        productVersion=product6.getProductVersion(),
+        packageVersion=product6.getPackageVersion(),
+        depotId=depotserver2.getId(),
+        locked=False
+    )
+
+    productOnDepot8 = ProductOnDepot(
+        productId=product7.getId(),
+        productType=product7.getType(),
+        productVersion=product7.getProductVersion(),
+        packageVersion=product7.getPackageVersion(),
+        depotId=depotserver1.getId(),
+        locked=False
+    )
+
+    productOnDepot9 = ProductOnDepot(
+        productId=product8.getId(),
+        productType=product8.getType(),
+        productVersion=product8.getProductVersion(),
+        packageVersion=product8.getPackageVersion(),
+        depotId=depotserver2.getId(),
+        locked=False
+    )
+
+    productOnDepot10 = ProductOnDepot(
+        productId=product9.getId(),
+        productType=product9.getType(),
+        productVersion=product9.getProductVersion(),
+        packageVersion=product9.getPackageVersion(),
+        depotId=depotserver1.getId(),
+        locked=False
+    )
+
+    productOnDepot11 = ProductOnDepot(
+        productId=product9.getId(),
+        productType=product9.getType(),
+        productVersion=product9.getProductVersion(),
+        packageVersion=product9.getPackageVersion(),
+        depotId=depotserver2.getId(),
+        locked=False
+    )
+
+    return (productOnDepot1, productOnDepot2, productOnDepot3, productOnDepot4,
+            productOnDepot5, productOnDepot6, productOnDepot7, productOnDepot8,
+            productOnDepot9, productOnDepot10, productOnDepot11)
+
+
 class ProductsMixin(object):
     def setUpProducts(self):
         self.product1 = getNetbootProduct()
@@ -283,49 +505,8 @@ class ProductPropertiesMixin(ProductsMixin):
     def setUpProductProperties(self):
         self.setUpProducts()
 
-        # TODO: turn this into tests?
-        self.productProperty1 = UnicodeProductProperty(
-            productId=self.product1.id,
-            productVersion=self.product1.productVersion,
-            packageVersion=self.product1.packageVersion,
-            propertyId="productProperty1",
-            description='Test product property (unicode)',
-            possibleValues=['unicode1', 'unicode2', 'unicode3'],
-            defaultValues=['unicode1', 'unicode3'],
-            editable=True,
-            multiValue=True
-        )
-
-        # TODO: turn this into tests?
-        self.productProperty2 = BoolProductProperty(
-            productId=self.product1.id,
-            productVersion=self.product1.productVersion,
-            packageVersion=self.product1.packageVersion,
-            propertyId="productProperty2",
-            description='Test product property 2 (bool)',
-            defaultValues=True
-        )
-
-        self.productProperty3 = BoolProductProperty(
-            productId=self.product3.id,
-            productVersion=self.product3.productVersion,
-            packageVersion=self.product3.packageVersion,
-            propertyId=u"productProperty3",
-            description=u'Test product property 3 (bool)',
-            defaultValues=False
-        )
-
-        self.productProperty4 = UnicodeProductProperty(
-            productId=self.product1.id,
-            productVersion=self.product1.productVersion,
-            packageVersion=self.product1.packageVersion,
-            propertyId=u"i386_dir",
-            description=u'i386 dir to use as installation source',
-            possibleValues=["i386"],
-            defaultValues=["i386"],
-            editable=True,
-            multiValue=False
-        )
+        (self.productProperty1, self.productProperty2,
+         self.productProperty3, self.productProperty4) = getProductProperties(self.products)
 
         self.productProperties = [
             self.productProperty1, self.productProperty2,
@@ -660,57 +841,8 @@ class ProductDependenciesMixin(ProductsMixin):
     def setUpProductDependencies(self):
         self.setUpProducts()
 
-        self.productDependency1 = ProductDependency(
-            productId=self.product2.id,
-            productVersion=self.product2.productVersion,
-            packageVersion=self.product2.packageVersion,
-            productAction='setup',
-            requiredProductId=self.product3.id,
-            requiredProductVersion=self.product3.productVersion,
-            requiredPackageVersion=self.product3.packageVersion,
-            requiredAction='setup',
-            requiredInstallationStatus=None,
-            requirementType='before'
-        )
-
-        self.productDependency2 = ProductDependency(
-            productId=self.product2.id,
-            productVersion=self.product2.productVersion,
-            packageVersion=self.product2.packageVersion,
-            productAction='setup',
-            requiredProductId=self.product4.id,
-            requiredProductVersion=None,
-            requiredPackageVersion=None,
-            requiredAction=None,
-            requiredInstallationStatus='installed',
-            requirementType='after'
-        )
-
-        self.productDependency3 = ProductDependency(
-            productId=self.product6.id,
-            productVersion=self.product6.productVersion,
-            packageVersion=self.product6.packageVersion,
-            productAction='setup',
-            requiredProductId=self.product7.id,
-            requiredProductVersion=self.product7.productVersion,
-            requiredPackageVersion=self.product7.packageVersion,
-            requiredAction=None,
-            requiredInstallationStatus='installed',
-            requirementType='after'
-        )
-
-        self.productDependency4 = ProductDependency(
-            productId=self.product7.id,
-            productVersion=self.product7.productVersion,
-            packageVersion=self.product7.packageVersion,
-            productAction='setup',
-            requiredProductId=self.product9.id,
-            requiredProductVersion=None,
-            requiredPackageVersion=None,
-            requiredAction=None,
-            requiredInstallationStatus='installed',
-            requirementType='after'
-        )
+        (self.productDependency1, self.productDependency2,
+         self.productDependency3, self.productDependency4) = getProductDepdencies(self.products)
 
         self.productDependencies = [
             self.productDependency1, self.productDependency2,
@@ -766,104 +898,10 @@ class ProductsOnDepotMixin(ProductsMixin, HostsMixin):
         self.setUpProducts()
         self.setUpHosts()
 
-        self.productOnDepot1 = ProductOnDepot(
-            productId=self.product1.getId(),
-            productType=self.product1.getType(),
-            productVersion=self.product1.getProductVersion(),
-            packageVersion=self.product1.getPackageVersion(),
-            depotId=self.depotserver1.getId(),
-            locked=False
-        )
-
-        self.productOnDepot2 = ProductOnDepot(
-            productId=self.product2.getId(),
-            productType=self.product2.getType(),
-            productVersion=self.product2.getProductVersion(),
-            packageVersion=self.product2.getPackageVersion(),
-            depotId=self.depotserver1.getId(),
-            locked=False
-        )
-
-        self.productOnDepot3 = ProductOnDepot(
-            productId=self.product3.getId(),
-            productType=self.product3.getType(),
-            productVersion=self.product3.getProductVersion(),
-            packageVersion=self.product3.getPackageVersion(),
-            depotId=self.depotserver1.getId(),
-            locked=False
-        )
-
-        self.productOnDepot4 = ProductOnDepot(
-            productId=self.product3.getId(),
-            productType=self.product3.getType(),
-            productVersion=self.product3.getProductVersion(),
-            packageVersion=self.product3.getPackageVersion(),
-            depotId=self.configserver1.getId(),
-            locked=False
-        )
-
-        self.productOnDepot5 = ProductOnDepot(
-            productId=self.product5.getId(),
-            productType=self.product5.getType(),
-            productVersion=self.product5.getProductVersion(),
-            packageVersion=self.product5.getPackageVersion(),
-            depotId=self.configserver1.getId(),
-            locked=False
-        )
-
-        self.productOnDepot6 = ProductOnDepot(
-            productId=self.product6.getId(),
-            productType=self.product6.getType(),
-            productVersion=self.product6.getProductVersion(),
-            packageVersion=self.product6.getPackageVersion(),
-            depotId=self.depotserver1.getId(),
-            locked=False
-        )
-
-        self.productOnDepot7 = ProductOnDepot(
-            productId=self.product6.getId(),
-            productType=self.product6.getType(),
-            productVersion=self.product6.getProductVersion(),
-            packageVersion=self.product6.getPackageVersion(),
-            depotId=self.depotserver2.getId(),
-            locked=False
-        )
-
-        self.productOnDepot8 = ProductOnDepot(
-            productId=self.product7.getId(),
-            productType=self.product7.getType(),
-            productVersion=self.product7.getProductVersion(),
-            packageVersion=self.product7.getPackageVersion(),
-            depotId=self.depotserver1.getId(),
-            locked=False
-        )
-
-        self.productOnDepot9 = ProductOnDepot(
-            productId=self.product8.getId(),
-            productType=self.product8.getType(),
-            productVersion=self.product8.getProductVersion(),
-            packageVersion=self.product8.getPackageVersion(),
-            depotId=self.depotserver2.getId(),
-            locked=False
-        )
-
-        self.productOnDepot10 = ProductOnDepot(
-            productId=self.product9.getId(),
-            productType=self.product9.getType(),
-            productVersion=self.product9.getProductVersion(),
-            packageVersion=self.product9.getPackageVersion(),
-            depotId=self.depotserver1.getId(),
-            locked=False
-        )
-
-        self.productOnDepot11 = ProductOnDepot(
-            productId=self.product9.getId(),
-            productType=self.product9.getType(),
-            productVersion=self.product9.getProductVersion(),
-            packageVersion=self.product9.getPackageVersion(),
-            depotId=self.depotserver2.getId(),
-            locked=False
-        )
+        (self.productOnDepot1, self.productOnDepot2, self.productOnDepot3,
+         self.productOnDepot4, self.productOnDepot5, self.productOnDepot6,
+         self.productOnDepot7, self.productOnDepot8, self.productOnDepot9,
+         self.productOnDepot10, self.productOnDepot11) = getProductsOnDepot(self.products, self.configserver1, self.depotservers)
 
         self.productOnDepots = [
             self.productOnDepot1, self.productOnDepot2, self.productOnDepot3,
