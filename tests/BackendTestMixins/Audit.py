@@ -122,6 +122,148 @@ def getAuditSoftwares(product=None):
     return auditSoftware1, auditSoftware2, auditSoftware3, auditSoftware4
 
 
+def getAuditSoftwareOnClient(auditSoftwares, clients):
+    auditSoftware1, auditSoftware2, auditSoftware3 = auditSoftwares[:3]
+    client1, client2 = clients[:2]
+
+    auditSoftwareOnClient1 = AuditSoftwareOnClient(
+        name=auditSoftware1.getName(),
+        version=auditSoftware1.getVersion(),
+        subVersion=auditSoftware1.getSubVersion(),
+        language=auditSoftware1.getLanguage(),
+        architecture=auditSoftware1.getArchitecture(),
+        clientId=client1.getId(),
+        uninstallString='c:\\programme\\a software\\unistall.exe /S',
+        binaryName=u'',
+        firstseen=None,
+        lastseen=None,
+        state=None,
+        usageFrequency=2,
+        lastUsed='2009-02-12 09:48:22'
+    )
+
+    auditSoftwareOnClient2 = AuditSoftwareOnClient(
+        name=auditSoftware2.getName(),
+        version=auditSoftware2.getVersion(),
+        subVersion=auditSoftware2.getSubVersion(),
+        language=auditSoftware2.getLanguage(),
+        architecture=auditSoftware2.getArchitecture(),
+        clientId=client1.getId(),
+        uninstallString='msiexec /x %s' % auditSoftware2.getWindowsSoftwareId(),
+        binaryName=u'',
+        firstseen=None,
+        lastseen=None,
+        state=None,
+        usageFrequency=None,
+        lastUsed=None
+    )
+
+    auditSoftwareOnClient3 = AuditSoftwareOnClient(
+        name=auditSoftware3.getName(),
+        version=auditSoftware3.getVersion(),
+        subVersion=auditSoftware3.getSubVersion(),
+        language=auditSoftware3.getLanguage(),
+        architecture=auditSoftware3.getArchitecture(),
+        clientId=client1.getId(),
+        uninstallString=None,
+        firstseen=None,
+        lastseen=None,
+        state=None,
+        usageFrequency=0,
+        lastUsed='2009-08-01 14:11:00'
+    )
+
+    auditSoftwareOnClient4 = AuditSoftwareOnClient(
+        name=auditSoftware2.getName(),
+        version=auditSoftware2.getVersion(),
+        subVersion=auditSoftware2.getSubVersion(),
+        language=auditSoftware2.getLanguage(),
+        architecture=auditSoftware2.getArchitecture(),
+        clientId=client2.getId(),
+        firstseen=None,
+        lastseen=None,
+        state=None,
+        usageFrequency=0,
+        lastUsed=None
+    )
+
+    return auditSoftwareOnClient1, auditSoftwareOnClient2, auditSoftwareOnClient3, auditSoftwareOnClient4
+
+
+def getAuditHardwareOnHost(auditHardwares, clients):
+    auditHardware1, auditHardware2, auditHardware3 = auditHardwares[:3]
+    client1, client2, client3 = clients[:3]
+
+    auditHardwareOnHost1 = AuditHardwareOnHost(
+        hostId=client1.getId(),
+        hardwareClass='COMPUTER_SYSTEM',
+        description=auditHardware1.description,
+        vendor=auditHardware1.vendor,
+        model=auditHardware1.model,
+        serialNumber='843391034-2192',
+        systemType='Desktop',
+        totalPhysicalMemory=1073741824
+    )
+
+    auditHardwareOnHost2 = AuditHardwareOnHost(
+        hostId=client2.getId(),
+        hardwareClass='COMPUTER_SYSTEM',
+        description=auditHardware1.description,
+        vendor=auditHardware1.vendor,
+        model=auditHardware1.model,
+        serialNumber='142343234-9571',
+        systemType='Desktop',
+        totalPhysicalMemory=1073741824
+    )
+
+    auditHardwareOnHost3 = AuditHardwareOnHost(
+        hostId=client3.getId(),
+        hardwareClass='COMPUTER_SYSTEM',
+        description=auditHardware2.description,
+        vendor=auditHardware2.vendor,
+        model=auditHardware2.model,
+        serialNumber='a63c09dd234a213',
+        systemType=None,
+        totalPhysicalMemory=536870912
+    )
+
+    auditHardwareOnHost4 = AuditHardwareOnHost(
+        hostId=client1.getId(),
+        hardwareClass='BASE_BOARD',
+        name=auditHardware3.name,
+        description=auditHardware3.description,
+        vendor=auditHardware3.vendor,
+        model=auditHardware3.model,
+        product=auditHardware3.product,
+        serialNumber='xxxx-asjdks-sll3kf03-828112'
+    )
+
+    auditHardwareOnHost5 = AuditHardwareOnHost(
+        hostId=client2.getId(),
+        hardwareClass='BASE_BOARD',
+        name=auditHardware3.name,
+        description=auditHardware3.description,
+        vendor=auditHardware3.vendor,
+        model=auditHardware3.model,
+        product=auditHardware3.product,
+        serialNumber='xxxx-asjdks-sll3kf03-213791'
+    )
+
+    auditHardwareOnHost6 = AuditHardwareOnHost(
+        hostId=client3.getId(),
+        hardwareClass='BASE_BOARD',
+        name=auditHardware3.name,
+        description=auditHardware3.description,
+        vendor=auditHardware3.vendor,
+        model=auditHardware3.model,
+        product=auditHardware3.product,
+        serialNumber='xxxx-asjdks-sll3kf03-132290'
+    )
+
+    return (auditHardwareOnHost1, auditHardwareOnHost2, auditHardwareOnHost3,
+            auditHardwareOnHost4, auditHardwareOnHost5, auditHardwareOnHost6)
+
+
 class AuditSoftwareMixin(ProductsMixin):
     def setUpAuditSoftwares(self):
         self.setUpProducts()
@@ -163,67 +305,9 @@ class AuditSoftwareMixin(ProductsMixin):
         self.setUpAuditSoftwares()
         self.setUpClients()
 
-        self.auditSoftwareOnClient1 = AuditSoftwareOnClient(
-            name=self.auditSoftware1.getName(),
-            version=self.auditSoftware1.getVersion(),
-            subVersion=self.auditSoftware1.getSubVersion(),
-            language=self.auditSoftware1.getLanguage(),
-            architecture=self.auditSoftware1.getArchitecture(),
-            clientId=self.client1.getId(),
-            uninstallString='c:\\programme\\a software\\unistall.exe /S',
-            binaryName=u'',
-            firstseen=None,
-            lastseen=None,
-            state=None,
-            usageFrequency=2,
-            lastUsed='2009-02-12 09:48:22'
-        )
+        (self.auditSoftwareOnClient1, self.auditSoftwareOnClient2,
+         self.auditSoftwareOnClient3, self.auditSoftwareOnClient4) = getAuditSoftwareOnClient(self.auditSoftwares, self.clients)
 
-        self.auditSoftwareOnClient2 = AuditSoftwareOnClient(
-            name=self.auditSoftware2.getName(),
-            version=self.auditSoftware2.getVersion(),
-            subVersion=self.auditSoftware2.getSubVersion(),
-            language=self.auditSoftware2.getLanguage(),
-            architecture=self.auditSoftware2.getArchitecture(),
-            clientId=self.client1.getId(),
-            uninstallString='msiexec /x %s' % self.auditSoftware2.getWindowsSoftwareId(
-            ),
-            binaryName=u'',
-            firstseen=None,
-            lastseen=None,
-            state=None,
-            usageFrequency=None,
-            lastUsed=None
-        )
-
-        self.auditSoftwareOnClient3 = AuditSoftwareOnClient(
-            name=self.auditSoftware3.getName(),
-            version=self.auditSoftware3.getVersion(),
-            subVersion=self.auditSoftware3.getSubVersion(),
-            language=self.auditSoftware3.getLanguage(),
-            architecture=self.auditSoftware3.getArchitecture(),
-            clientId=self.client1.getId(),
-            uninstallString=None,
-            firstseen=None,
-            lastseen=None,
-            state=None,
-            usageFrequency=0,
-            lastUsed='2009-08-01 14:11:00'
-        )
-
-        self.auditSoftwareOnClient4 = AuditSoftwareOnClient(
-            name=self.auditSoftware2.getName(),
-            version=self.auditSoftware2.getVersion(),
-            subVersion=self.auditSoftware2.getSubVersion(),
-            language=self.auditSoftware2.getLanguage(),
-            architecture=self.auditSoftware2.getArchitecture(),
-            clientId=self.client2.getId(),
-            firstseen=None,
-            lastseen=None,
-            state=None,
-            usageFrequency=0,
-            lastUsed=None
-        )
         self.auditSoftwareOnClients = [
             self.auditSoftwareOnClient1, self.auditSoftwareOnClient2,
             self.auditSoftwareOnClient3, self.auditSoftwareOnClient4
@@ -242,77 +326,9 @@ class AuditHardwareMixin(ClientsMixin):
         self.setUpClients()
         self.setUpAuditHardwares()
 
-        self.auditHardwareOnHost1 = AuditHardwareOnHost(
-            hostId=self.client1.getId(),
-            hardwareClass='COMPUTER_SYSTEM',
-            description=self.auditHardware1.description,
-            vendor=self.auditHardware1.vendor,
-            model=self.auditHardware1.model,
-
-            serialNumber='843391034-2192',
-            systemType='Desktop',
-            totalPhysicalMemory=1073741824
-        )
-
-        self.auditHardwareOnHost2 = AuditHardwareOnHost(
-            hostId=self.client2.getId(),
-            hardwareClass='COMPUTER_SYSTEM',
-            description=self.auditHardware1.description,
-            vendor=self.auditHardware1.vendor,
-            model=self.auditHardware1.model,
-
-            serialNumber='142343234-9571',
-            systemType='Desktop',
-            totalPhysicalMemory=1073741824
-        )
-
-        self.auditHardwareOnHost3 = AuditHardwareOnHost(
-            hostId=self.client3.getId(),
-            hardwareClass='COMPUTER_SYSTEM',
-            description=self.auditHardware2.description,
-            vendor=self.auditHardware2.vendor,
-            model=self.auditHardware2.model,
-
-            serialNumber='a63c09dd234a213',
-            systemType=None,
-            totalPhysicalMemory=536870912
-        )
-
-        self.auditHardwareOnHost4 = AuditHardwareOnHost(
-            hostId=self.client1.getId(),
-            hardwareClass='BASE_BOARD',
-            name=self.auditHardware3.name,
-            description=self.auditHardware3.description,
-            vendor=self.auditHardware3.vendor,
-            model=self.auditHardware3.model,
-            product=self.auditHardware3.product,
-
-            serialNumber='xxxx-asjdks-sll3kf03-828112'
-        )
-
-        self.auditHardwareOnHost5 = AuditHardwareOnHost(
-            hostId=self.client2.getId(),
-            hardwareClass='BASE_BOARD',
-            name=self.auditHardware3.name,
-            description=self.auditHardware3.description,
-            vendor=self.auditHardware3.vendor,
-            model=self.auditHardware3.model,
-            product=self.auditHardware3.product,
-
-            serialNumber='xxxx-asjdks-sll3kf03-213791'
-        )
-
-        self.auditHardwareOnHost6 = AuditHardwareOnHost(
-            hostId=self.client3.getId(),
-            hardwareClass='BASE_BOARD',
-            name=self.auditHardware3.name,
-            description=self.auditHardware3.description,
-            vendor=self.auditHardware3.vendor,
-            model=self.auditHardware3.model,
-            product=self.auditHardware3.product,
-
-            serialNumber='xxxx-asjdks-sll3kf03-132290'
-        )
+        (self.auditHardwareOnHost1, self.auditHardwareOnHost2,
+        self.auditHardwareOnHost3, self.auditHardwareOnHost4,
+        self.auditHardwareOnHost5, self.auditHardwareOnHost6) = getAuditHardwareOnHost(self.auditHardwares, self.clients)
 
         self.auditHardwareOnHosts = [
             self.auditHardwareOnHost1, self.auditHardwareOnHost2,
