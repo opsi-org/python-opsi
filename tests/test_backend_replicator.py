@@ -101,13 +101,8 @@ class ReplicatorTestCase(unittest.TestCase):
         self.assertEquals(first.licenseOnClient_getObjects(), second.licenseOnClient_getObjects())
         self.assertEquals(first.auditSoftwareToLicensePool_getObjects(), second.auditSoftwareToLicensePool_getObjects())
 
-        if checkAuditData:
-            if sys.version_info >= (2, 7):
-                self.assertEquals(first.auditHardware_getObjects(), second.auditHardware_getObjects())
-            else:
-                # Python 2.6 compatibility
-                self.assertEquals(set(first.auditHardware_getObjects()), set(second.auditHardware_getObjects()))
-
+        if checkAuditData and sys.version_info >= (2, 7):
+            self.assertEquals(first.auditHardware_getObjects(), second.auditHardware_getObjects())
             self.assertEquals(first.auditSoftware_getObjects(), second.auditSoftware_getObjects())
             self.assertEquals(first.auditHardwareOnHost_getObjects(), second.auditHardwareOnHost_getObjects())
             self.assertEquals(first.auditSoftwareOnClient_getObjects(), second.auditSoftwareOnClient_getObjects())
