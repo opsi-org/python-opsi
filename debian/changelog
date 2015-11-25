@@ -10,8 +10,9 @@ python-opsi (4.0.6.35-1) UNRELEASED; urgency=medium
   * OPSI.Backend.ManagerBackend: Small refactorings and improved debug output.
   * configureDHCPD now also patches the DHCPD backend config to use the
     right service restart command.
+  * OPSI.Objects.AuditHardware: improve __repr__
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 24 Nov 2015 15:08:33 +0100
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 25 Nov 2015 16:49:51 +0100
 
 python-opsi (4.0.6.34-1) experimental; urgency=medium
 

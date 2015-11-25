@@ -48,7 +48,7 @@ from OPSI.Types import (forceActionProgress, forceActionRequest,
 	forceUnicodeList, forceUnicodeLower, forceUnsignedInt, forceUrl)
 from OPSI.Util import fromJson, toJson, generateOpsiHostKey, timestamp
 
-__version__ = '4.0.6.29'
+__version__ = '4.0.6.35'
 
 logger = Logger()
 _MANDATORY_CONSTRUCTOR_ARGS_CACHE = {}
@@ -3142,7 +3142,7 @@ class AuditHardware(Entity):
 		return fromJson(jsonString, 'AuditHardware')
 
 	def __unicode__(self):
-		infos = [self.getType()]
+		infos = []
 		hardwareClass = self.getHardwareClass()
 		if hardwareClass:
 			infos.append(u"hardwareClass={0!r}".format(hardwareClass))
@@ -3176,7 +3176,7 @@ class AuditHardware(Entity):
 		except AttributeError:
 			pass
 
-		return u"<{0}>".format(u', '.join(infos))
+		return u"<{0}({1})>".format(self.__class__.__name__, u', '.join(infos))
 
 Entity.subClasses['AuditHardware'] = AuditHardware
 
