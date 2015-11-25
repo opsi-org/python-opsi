@@ -434,6 +434,118 @@ def getProductsOnDepot(products, configServer, depotServer):
             productOnDepot9, productOnDepot10, productOnDepot11)
 
 
+def getProductsOnClients(products, clients):
+    product1, product2 = products[:2]
+    client1, _, client3 = clients[:3]
+
+    productOnClient1 = ProductOnClient(
+        productId=product1.getId(),
+        productType=product1.getType(),
+        clientId=client1.getId(),
+        installationStatus='installed',
+        actionRequest='setup',
+        actionProgress='',
+        productVersion=product1.getProductVersion(),
+        packageVersion=product1.getPackageVersion(),
+        modificationTime='2009-07-01 12:00:00'
+    )
+
+    productOnClient2 = ProductOnClient(
+        productId=product2.getId(),
+        productType=product2.getType(),
+        clientId=client1.getId(),
+        installationStatus='installed',
+        actionRequest='uninstall',
+        actionProgress='',
+        productVersion=product2.getProductVersion(),
+        packageVersion=product2.getPackageVersion()
+    )
+
+    productOnClient3 = ProductOnClient(
+        productId=product2.getId(),
+        productType=product2.getType(),
+        clientId=client3.getId(),
+        installationStatus='installed',
+        actionRequest='setup',
+        actionProgress='running',
+        productVersion=product2.getProductVersion(),
+        packageVersion=product2.getPackageVersion()
+    )
+
+    productOnClient4 = ProductOnClient(
+        productId=product1.getId(),
+        productType=product1.getType(),
+        clientId=client3.getId(),
+        targetConfiguration='installed',
+        installationStatus='installed',
+        actionRequest='none',
+        lastAction='setup',
+        actionProgress='',
+        actionResult='successful',
+        productVersion=product1.getProductVersion(),
+        packageVersion=product1.getPackageVersion()
+    )
+
+    return productOnClient1, productOnClient2, productOnClient3, productOnClient4
+
+
+def getProductPropertyStates(productProperties, depotServer, clients):
+    productProperty1, productProperty2 = productProperties[:2]
+    depotserver1, depotserver2 = depotServer[:2]
+    client1, client2 = clients[:2]
+
+    # TODO: test?
+    productPropertyState1 = ProductPropertyState(
+        productId=productProperty1.getProductId(),
+        propertyId=productProperty1.getPropertyId(),
+        objectId=depotserver1.getId(),
+        values='unicode-depot-default'
+    )
+
+    # TODO: test?
+    productPropertyState2 = ProductPropertyState(
+        productId=productProperty2.getProductId(),
+        propertyId=productProperty2.getPropertyId(),
+        objectId=depotserver1.getId(),
+        values=[True]
+    )
+
+    # TODO: test?
+    productPropertyState3 = ProductPropertyState(
+        productId=productProperty2.getProductId(),
+        propertyId=productProperty2.getPropertyId(),
+        objectId=depotserver2.getId(),
+        values=False
+    )
+
+    # TODO: test?
+    productPropertyState4 = ProductPropertyState(
+        productId=productProperty1.getProductId(),
+        propertyId=productProperty1.getPropertyId(),
+        objectId=client1.getId(),
+        values='unicode1'
+    )
+
+    # TODO: test?
+    productPropertyState5 = ProductPropertyState(
+        productId=productProperty2.getProductId(),
+        propertyId=productProperty2.getPropertyId(),
+        objectId=client1.getId(),
+        values=[False]
+    )
+
+    # TODO: test?
+    productPropertyState6 = ProductPropertyState(
+        productId=productProperty2.getProductId(),
+        propertyId=productProperty2.getPropertyId(),
+        objectId=client2.getId(),
+        values=True
+    )
+
+    return (productPropertyState1, productPropertyState2, productPropertyState3,
+            productPropertyState4, productPropertyState5, productPropertyState6)
+
+
 class ProductsMixin(object):
     def setUpProducts(self):
         self.product1 = getNetbootProduct()
@@ -523,53 +635,9 @@ class ProductPropertyStatesMixin(ProductPropertiesMixin):
         self.setUpHosts()
         self.setUpClients()
 
-        # TODO: test?
-        self.productPropertyState1 = ProductPropertyState(
-            productId=self.productProperty1.getProductId(),
-            propertyId=self.productProperty1.getPropertyId(),
-            objectId=self.depotserver1.getId(),
-            values='unicode-depot-default'
-        )
-
-        # TODO: test?
-        self.productPropertyState2 = ProductPropertyState(
-            productId=self.productProperty2.getProductId(),
-            propertyId=self.productProperty2.getPropertyId(),
-            objectId=self.depotserver1.getId(),
-            values=[True]
-        )
-
-        # TODO: test?
-        self.productPropertyState3 = ProductPropertyState(
-            productId=self.productProperty2.getProductId(),
-            propertyId=self.productProperty2.getPropertyId(),
-            objectId=self.depotserver2.getId(),
-            values=False
-        )
-
-        # TODO: test?
-        self.productPropertyState4 = ProductPropertyState(
-            productId=self.productProperty1.getProductId(),
-            propertyId=self.productProperty1.getPropertyId(),
-            objectId=self.client1.getId(),
-            values='unicode1'
-        )
-
-        # TODO: test?
-        self.productPropertyState5 = ProductPropertyState(
-            productId=self.productProperty2.getProductId(),
-            propertyId=self.productProperty2.getPropertyId(),
-            objectId=self.client1.getId(),
-            values=[False]
-        )
-
-        # TODO: test?
-        self.productPropertyState6 = ProductPropertyState(
-            productId=self.productProperty2.getProductId(),
-            propertyId=self.productProperty2.getPropertyId(),
-            objectId=self.client2.getId(),
-            values=True
-        )
+        (self.productPropertyState1, self.productPropertyState2,
+         self.productPropertyState3, self.productPropertyState4,
+         self.productPropertyState5, self.productPropertyState6) = getProductPropertyStates(self.productProperties, self.depotservers, self.clients)
 
         self.productPropertyStates = [
             self.productPropertyState1, self.productPropertyState2,
@@ -952,53 +1020,8 @@ class ProductsOnClientsMixin(ClientsMixin, ProductsMixin):
         self.setUpProducts()
         self.setUpClients()
 
-        self.productOnClient1 = ProductOnClient(
-            productId=self.product1.getId(),
-            productType=self.product1.getType(),
-            clientId=self.client1.getId(),
-            installationStatus='installed',
-            actionRequest='setup',
-            actionProgress='',
-            productVersion=self.product1.getProductVersion(),
-            packageVersion=self.product1.getPackageVersion(),
-            modificationTime='2009-07-01 12:00:00'
-        )
-
-        self.productOnClient2 = ProductOnClient(
-            productId=self.product2.getId(),
-            productType=self.product2.getType(),
-            clientId=self.client1.getId(),
-            installationStatus='installed',
-            actionRequest='uninstall',
-            actionProgress='',
-            productVersion=self.product2.getProductVersion(),
-            packageVersion=self.product2.getPackageVersion()
-        )
-
-        self.productOnClient3 = ProductOnClient(
-            productId=self.product2.getId(),
-            productType=self.product2.getType(),
-            clientId=self.client3.getId(),
-            installationStatus='installed',
-            actionRequest='setup',
-            actionProgress='running',
-            productVersion=self.product2.getProductVersion(),
-            packageVersion=self.product2.getPackageVersion()
-        )
-
-        self.productOnClient4 = ProductOnClient(
-            productId=self.product1.getId(),
-            productType=self.product1.getType(),
-            clientId=self.client3.getId(),
-            targetConfiguration='installed',
-            installationStatus='installed',
-            actionRequest='none',
-            lastAction='setup',
-            actionProgress='',
-            actionResult='successful',
-            productVersion=self.product1.getProductVersion(),
-            packageVersion=self.product1.getPackageVersion()
-        )
+        (self.productOnClient1, self.productOnClient2, self.productOnClient3,
+         self.productOnClient4) = getProductsOnClients(self.products, self.clients)
 
         self.productOnClients = [
             self.productOnClient1, self.productOnClient2,
