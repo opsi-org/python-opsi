@@ -225,7 +225,9 @@ class AuditSoftwareMixin(ProductsMixin):
             lastUsed=None
         )
         self.auditSoftwareOnClients = [
-            self.auditSoftwareOnClient1, self.auditSoftwareOnClient2, self.auditSoftwareOnClient3, self.auditSoftwareOnClient4]
+            self.auditSoftwareOnClient1, self.auditSoftwareOnClient2,
+            self.auditSoftwareOnClient3, self.auditSoftwareOnClient4
+        ]
 
 
 class AuditHardwareMixin(ClientsMixin):
