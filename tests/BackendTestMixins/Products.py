@@ -273,7 +273,7 @@ def getProductDepdencies(products):
 
 
 def getProductProperties(products):
-    print("Got {0} products: {1!r}".format(len(products), products))
+    print("getProductProperties: Got {0} products: {1!r}".format(len(products), products))
 
     product1, _, product3 = products[:3]
 
@@ -325,7 +325,7 @@ def getProductProperties(products):
 
 
 def getProductsOnDepot(products, configServer, depotServer):
-    print("Got {0} products: {1!r}".format(len(products), products))
+    print("getProductsOnDepot: Got {0} products: {1!r}".format(len(products), products))
 
     product1, product2, product3, _, product5, product6, product7, product8, product9 = products[:9]
     depotserver1, depotserver2 = depotServer[:2]
