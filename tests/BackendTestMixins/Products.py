@@ -216,7 +216,6 @@ def getProductDepdencies(products):
     print("Got {0} products: {1!r}".format(len(products), products))
 
     product2, product3, product4, _, product6, product7, _, product9 = products[1:9]
-    print(product2)
     productDependency1 = ProductDependency(
         productId=product2.id,
         productVersion=product2.productVersion,
