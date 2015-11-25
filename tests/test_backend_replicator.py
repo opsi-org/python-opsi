@@ -88,7 +88,6 @@ class ReplicatorTestCase(unittest.TestCase):
 
 
 def fillBackend(backend, licenseManagementData=False):
-    # TODO: remove the asserts from the backend - they should be subject to tests!
     configServer, depotServer, clients = fillBackendWithHosts(backend)
     products = fillBackendWithProducts(backend)
     configs = fillBackendWithConfigs(backend)
