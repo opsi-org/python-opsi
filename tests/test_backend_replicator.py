@@ -55,6 +55,7 @@ class ReplicatorTestCase(unittest.TestCase):
     def testReplication(self):
         with getTestBackend(extended=True) as readBackend:
             fillBackend(readBackend)
+            checkIfBackendIsFilled(readBackend)
 
             with getTestBackend() as writeBackend:
                 replicator = BackendReplicator(readBackend, writeBackend)
@@ -116,6 +117,31 @@ def fillBackend(backend, licenseManagementData=False):
         fillBackendWithAuditSoftwareToLicensePools(backend)
 
 
+def checkIfBackendIsFilled(backend, licenseManagementData=False):
+    assert len(backend.host_getObjects()) > 2
+    assert len(backend.product_getObjects()) > 2
+    assert len(backend.config_getObjects()) > 0
+    assert len(backend.group_getObjects()) > 2
+
+    if licenseManagementData:
+        # TODO: check licenseManagementData
+        assert len(backend.licenseContract_getObjects()) > 0
+        # fillBackendWithLicensePools(backend)
+        # fillBackendWithSoftwareLicenses(backend)
+
+    assert len(backend.auditHardware_getObjects()) > 0
+    assert len(backend.auditSoftware_getObjects()) > 0
+    assert len(backend.productDependency_getObjects()) > 0
+    assert len(backend.productProperty_getObjects()) > 0
+    assert len(backend.productOnDepot_getObjects()) > 0
+    assert len(backend.productOnClient_getObjects()) > 0
+    assert len(backend.productPropertyState_getObjects()) > 0
+    assert len(backend.objectToGroup_getObjects()) > 0
+    assert len(backend.configState_getObjects()) > 0
+    assert len(backend.auditHardwareOnHost_getObjects()) > 0
+    assert len(backend.auditSoftwareOnClient_getObjects()) > 0
+
+
 def fillBackendWithHosts(backend):
     configServer = getConfigServer()
     backend.host_insertObject(configServer)
@@ -125,8 +151,6 @@ def fillBackendWithHosts(backend):
 
     clients = getClients()
     backend.host_createObjects(clients)
-
-    assert len(clients) + len(depots) + 1 == len(backend.host_getObjects())
 
     return configServer, depots, clients
 
@@ -138,17 +162,12 @@ def fillBackendWithProducts(backend):
     localbootProducts = getLocalbootProducts()
     backend.product_createObjects(localbootProducts)
 
-    assert len(localbootProducts) + 1 == len(backend.product_getObjects())
-
     return [netbootProduct] + list(localbootProducts)
 
 
 def fillBackendWithConfigs(backend):
     configs = getConfigs()
-    assert len(configs) > 0
-
     backend.config_createObjects(configs)
-    assert len(configs) == len(backend.config_getObjects())
 
     return configs
 
@@ -156,10 +175,8 @@ def fillBackendWithConfigs(backend):
 def fillBackendWithGroups(backend):
     groups = list(getHostGroups())
     groups.append(getProductGroup())
-    assert len(groups) > 0
 
     backend.group_createObjects(groups)
-    assert len(groups) == len(backend.group_getObjects())
 
     return groups
 
@@ -167,8 +184,6 @@ def fillBackendWithGroups(backend):
 def fillBackendWithLicenseContracts(backend):
     licenseContracts = getLicenseContracts()
     backend.licenseContract_createObjects(licenseContracts)
-
-    assert len(licenseContracts) == len(backend.licenseContract_getObjects())
 
 
 def fillBackendWithLicensePools(backend):
@@ -181,96 +196,63 @@ def fillBackendWithSoftwareLicenses(backend):
 
 def fillBackendWithAuditHardwares(backend):
     auditHardwares = getAuditHardwares()
-    assert len(auditHardwares) > 0
-
     backend.auditHardware_createObjects(auditHardwares)
-    assert len(auditHardwares) == len(backend.auditHardware_getObjects())
 
     return auditHardwares
 
 
 def fillBackendWithAuditSoftwares(backend):
     auditSoftwares = getAuditSoftwares()
-    assert len(auditSoftwares) > 0
-
     backend.auditSoftware_createObjects(auditSoftwares)
-    assert len(auditSoftwares) == len(backend.auditSoftware_getObjects())
 
     return auditSoftwares
 
 
 def fillBackendWithProductDependencys(backend, products):
     dependencies = getProductDepdencies(products)
-    assert len(dependencies) > 0
-
     backend.productDependency_createObjects(dependencies)
-    assert len(dependencies) == len(backend.productDependency_getObjects())
 
 
 def fillBackendWithProductPropertys(backend, products):
     properties = getProductProperties(products)
-    assert len(properties) > 0
-
     backend.productProperty_createObjects(properties)
-    assert len(properties) == len(backend.productProperty_getObjects())
 
     return properties
 
 
 def fillBackendWithProductOnDepots(backend, products, configServer, depotServer):
     productsOnDepots = getProductsOnDepot(products, configServer, depotServer)
-    assert len(productsOnDepots) > 0
-
     backend.productOnDepot_createObjects(productsOnDepots)
-    assert len(productsOnDepots) == len(backend.productOnDepot_getObjects())
 
 
 def fillBackendWithProductOnClients(backend, products, clients):
     productsOnClients = getProductsOnClients(products, clients)
-    assert len(productsOnClients) > 0
-
     backend.productOnClient_createObjects(productsOnClients)
-    assert len(productsOnClients) == len(backend.productOnClient_getObjects())
 
 
 def fillBackendWithProductPropertyStates(backend, productProperties, depotServer, clients):
     productPropertyStates = getProductPropertyStates(productProperties, depotServer, clients)
-    assert len(productPropertyStates) > 0
-
     backend.productPropertyState_createObjects(productPropertyStates)
-    assert len(productPropertyStates) == len(backend.productPropertyState_getObjects())
 
 
 def fillBackendWithConfigStates(backend, configs, clients, depotserver):
     configStates = getConfigStates(configs, clients, depotserver)
-    assert len(configStates) > 0
-
     backend.configState_createObjects(configStates)
-    assert len(configStates) == len(backend.configState_getObjects())
 
 
 def fillBackendWithObjectToGroups(backend, groups, clients):
     objectToGroups = getObjectToGroups(groups, clients)
-    assert len(objectToGroups) > 0
-
     backend.objectToGroup_createObjects(objectToGroups)
-    assert len(objectToGroups) == len(backend.objectToGroup_getObjects())
 
 
 def fillBackendWithAuditHardwareOnHosts(backend, auditHardwares, clients):
     ahoh = getAuditHardwareOnHost(auditHardwares, clients)
-    assert len(ahoh) > 0
-
     backend.auditHardwareOnHost_createObjects(ahoh)
-    assert len(ahoh) == len(backend.auditHardwareOnHost_getObjects())
 
 
 def fillBackendWithAuditSoftwareOnClients(backend, auditSoftwares, clients):
     asoc = getAuditSoftwareOnClient(auditSoftwares, clients)
-    assert len(asoc) > 0
-
     backend.auditSoftwareOnClient_createObjects(asoc)
-    assert len(asoc) == len(backend.auditSoftwareOnClient_getObjects())
 
 
 def fillBackendWithSoftwareLicenseToLicensePools(backend):
