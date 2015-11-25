@@ -25,6 +25,7 @@ Testing backend replication.
 
 from __future__ import absolute_import
 
+import sys
 import unittest
 
 from OPSI.Backend.Replicator import BackendReplicator
@@ -47,7 +48,9 @@ class ReplicatorTestCase(unittest.TestCase):
     # TODO: there are some cases we should test
     # * cleanupBackend
     # * handling backends with / without license management
-    # * handling replicating the audit data
+    # * test replicating into different backends (file / mysql)
+    # * test strict
+    # * test with serverID, depotID, hostID given
 
     def testInitialisation(self):
         replicator = BackendReplicator(None, None)
@@ -63,7 +66,23 @@ class ReplicatorTestCase(unittest.TestCase):
 
                 self.checkBackendDataIsEqual(readBackend, writeBackend)
 
-    def checkBackendDataIsEqual(self, first, second):
+    def testReplicationWithoutAuditData(self):
+        with getTestBackend(extended=True) as readBackend:
+            fillBackend(readBackend)
+            checkIfBackendIsFilled(readBackend)
+
+            with getTestBackend() as writeBackend:
+                replicator = BackendReplicator(readBackend, writeBackend)
+                replicator.replicate(audit=False)
+
+                self.checkBackendDataIsEqual(readBackend, writeBackend, checkAuditData=False)
+
+                self.assertEquals(0, len(writeBackend.auditHardware_getObjects()))
+                self.assertEquals(0, len(writeBackend.auditSoftware_getObjects()))
+                self.assertEquals(0, len(writeBackend.auditHardwareOnHost_getObjects()))
+                self.assertEquals(0, len(writeBackend.auditSoftwareOnClient_getObjects()))
+
+    def checkBackendDataIsEqual(self, first, second, checkAuditData=True):
         self.assertEquals(first.host_getObjects(), second.host_getObjects())
         self.assertEquals(first.product_getObjects(), second.product_getObjects())
         self.assertEquals(first.config_getObjects(), second.config_getObjects())
@@ -71,8 +90,6 @@ class ReplicatorTestCase(unittest.TestCase):
         self.assertEquals(first.licenseContract_getObjects(), second.licenseContract_getObjects())
         self.assertEquals(first.licensePool_getObjects(), second.licensePool_getObjects())
         self.assertEquals(first.softwareLicense_getObjects(), second.softwareLicense_getObjects())
-        self.assertEquals(first.auditHardware_getObjects(), second.auditHardware_getObjects())
-        self.assertEquals(first.auditSoftware_getObjects(), second.auditSoftware_getObjects())
         self.assertEquals(first.productDependency_getObjects(), second.productDependency_getObjects())
         self.assertEquals(first.productProperty_getObjects(), second.productProperty_getObjects())
         self.assertEquals(first.productOnDepot_getObjects(), second.productOnDepot_getObjects())
@@ -80,11 +97,20 @@ class ReplicatorTestCase(unittest.TestCase):
         self.assertEquals(first.productPropertyState_getObjects(), second.productPropertyState_getObjects())
         self.assertEquals(first.configState_getObjects(), second.configState_getObjects())
         self.assertEquals(first.objectToGroup_getObjects(), second.objectToGroup_getObjects())
-        self.assertEquals(first.auditHardwareOnHost_getObjects(), second.auditHardwareOnHost_getObjects())
-        self.assertEquals(first.auditSoftwareOnClient_getObjects(), second.auditSoftwareOnClient_getObjects())
         self.assertEquals(first.softwareLicenseToLicensePool_getObjects(), second.softwareLicenseToLicensePool_getObjects())
         self.assertEquals(first.licenseOnClient_getObjects(), second.licenseOnClient_getObjects())
         self.assertEquals(first.auditSoftwareToLicensePool_getObjects(), second.auditSoftwareToLicensePool_getObjects())
+
+        if checkAuditData:
+            if sys.version_info >= (2, 7):
+                self.assertEquals(first.auditHardware_getObjects(), second.auditHardware_getObjects())
+            else:
+                # Python 2.6 compatibility
+                self.assertEquals(set(first.auditHardware_getObjects()), set(second.auditHardware_getObjects()))
+
+            self.assertEquals(first.auditSoftware_getObjects(), second.auditSoftware_getObjects())
+            self.assertEquals(first.auditHardwareOnHost_getObjects(), second.auditHardwareOnHost_getObjects())
+            self.assertEquals(first.auditSoftwareOnClient_getObjects(), second.auditSoftwareOnClient_getObjects())
 
 
 def fillBackend(backend, licenseManagementData=False):
