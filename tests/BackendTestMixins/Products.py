@@ -169,8 +169,8 @@ def getLocalbootProducts():
     )
 
     product8 = LocalbootProduct(
-        id='product7',
-        name=u'Product 7',
+        id='product8',
+        name=u'Product 8',
         productVersion="1.0",
         packageVersion=2,
         licenseRequired=False,
