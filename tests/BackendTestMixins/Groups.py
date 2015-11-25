@@ -59,6 +59,31 @@ def getProductGroup():
     )
 
 
+def getObjectToGroups(groups, clients):
+    group1, group2 = groups[:2]
+    client1, client2 = clients[:2]
+
+    objectToGroup1 = ObjectToGroup(
+        groupType=group1.getType(),
+        groupId=group1.getId(),
+        objectId=client1.getId()
+    )
+
+    objectToGroup2 = ObjectToGroup(
+        groupType=group1.getType(),
+        groupId=group1.getId(),
+        objectId=client2.getId()
+    )
+
+    objectToGroup3 = ObjectToGroup(
+        groupType=group2.getType(),
+        groupId=group2.getId(),
+        objectId=client2.getId()
+    )
+
+    return objectToGroup1, objectToGroup2, objectToGroup3
+
+
 class GroupsMixin(object):
     def setUpGroups(self):
         self.group1, self.group2, self.group3 = getHostGroups()
@@ -111,23 +136,8 @@ class ObjectToGroupsMixin(GroupsMixin):
         self.setUpClients()
         self.setUpGroups()
 
-        self.objectToGroup1 = ObjectToGroup(
-            groupType=self.group1.getType(),
-            groupId=self.group1.getId(),
-            objectId=self.client1.getId()
-        )
+        self.objectToGroup1, self.objectToGroup2, self.objectToGroup3 = getObjectToGroups(self.groups, self.clients)
 
-        self.objectToGroup2 = ObjectToGroup(
-            groupType=self.group1.getType(),
-            groupId=self.group1.getId(),
-            objectId=self.client2.getId()
-        )
-
-        self.objectToGroup3 = ObjectToGroup(
-            groupType=self.group2.getType(),
-            groupId=self.group2.getId(),
-            objectId=self.client2.getId()
-        )
         self.objectToGroups = [
             self.objectToGroup1, self.objectToGroup2, self.objectToGroup3
         ]
