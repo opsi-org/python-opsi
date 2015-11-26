@@ -53,7 +53,7 @@ try:
 except ImportError:
 	syslog = None
 
-__version__ = '4.0.6.29'
+__version__ = '4.0.6.35'
 
 if sys.version_info > (3, ):
 	# Python 3
@@ -423,6 +423,8 @@ class LoggerImplementation:
 
 	def setLogFile(self, logFile, currentThread=False, object=None):
 		''' Set the filename of logfile. '''
+		logFile = os.path.abspath(logFile)
+
 		if currentThread:
 			self._setThreadConfig('logFile', logFile)
 			self.debug(u"Now using log-file '%s' for thread %s" \

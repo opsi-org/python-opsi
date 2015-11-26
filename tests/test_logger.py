@@ -25,13 +25,14 @@ Testing our logger.
 
 from __future__ import absolute_import
 
+import os
 import sys
 import warnings
 
 import OPSI.Logger
 from OPSI.Types import forceUnicode
 
-from .helpers import unittest, mock
+from .helpers import cd, mock, unittest, workInTemporaryDirectory
 
 from io import BytesIO as StringIO
 
@@ -281,3 +282,17 @@ class LoggerTestCase(unittest.TestCase):
 		for word in confidential:
 			self.assertFalse(word in value)
 		self.assertTrue("So schnell, so weit" in value)
+
+	def testChangingDirectoriesDoesNotChangePathOfLog(self):
+		with workInTemporaryDirectory():
+			self.logger.setLogFile('test.log')
+			self.logger.setFileLevel(OPSI.Logger.LOG_DEBUG)
+			self.logger.warning('abc')
+
+			self.assertTrue(os.path.exists('test.log'))
+
+			os.mkdir('subdir')
+			with cd('subdir'):
+				self.assertFalse(os.path.exists('test.log'))
+				self.logger.warning('def')
+				self.assertFalse(os.path.exists('test.log'))
