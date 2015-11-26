@@ -46,10 +46,8 @@ from .BackendTestMixins.Products import (getLocalbootProducts,
 
 class ReplicatorTestCase(unittest.TestCase):
     # TODO: there are some cases we should test
-    # * cleanupBackend
     # * handling backends with / without license management
     # * test replicating into different backends (file / mysql)
-    # * test strict
     # * test with serverID, depotID, hostID given
 
     def testInitialisation(self):
