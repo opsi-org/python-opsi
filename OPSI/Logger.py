@@ -822,7 +822,7 @@ False suppresses exceptions.
 		''' Log a notice message. '''
 		self.log(LOG_NOTICE, message)
 
-	def warning(self, message,):
+	def warning(self, message):
 		''' Log a warning message. '''
 		self.log(LOG_WARNING, message)
 
