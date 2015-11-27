@@ -13,8 +13,10 @@ python-opsi (4.0.6.35-1) UNRELEASED; urgency=medium
   * OPSI.Object.AuditHardware: improve __repr__
   * OPSI.Logger: always use the absolute path when setting a logfile.
   * OPSI.Object.Product: __repr__ now shows version of product and package
+  * OPSI.Object.BaseObject now creates a __repr__ out of the attributes
+    that make an object unique.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 27 Nov 2015 10:20:26 +0100
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 27 Nov 2015 10:47:19 +0100
 
 python-opsi (4.0.6.34-1) experimental; urgency=medium
 
