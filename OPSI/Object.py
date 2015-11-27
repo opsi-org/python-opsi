@@ -1240,7 +1240,13 @@ class Product(Entity):
 		return fromJson(jsonString, 'Product')
 
 	def __unicode__(self):
-		return u"<{0}(id={1!r}, name={2!r}>".format(self.getType(), self.id, self.name)
+		return (
+			u"<{0}(id={1!r}, name={2!r}, productVersion={3!r}, "
+			u"packageVersion={4!r})>".format(
+				self.getType(), self.id, self.name, self.productVersion,
+				self.packageVersion
+			)
+		)
 
 Entity.subClasses['Product'] = Product
 
