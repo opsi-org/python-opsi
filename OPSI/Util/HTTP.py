@@ -383,11 +383,11 @@ class HTTPConnectionPool(object):
 		Get a connection. Will return a pooled connection if one is available.
 		Otherwise, a fresh connection is returned.
 		"""
-		conn = None
 		try:
 			conn = self.pool.get(block=self.block, timeout=timeout)
 		except Empty:
-			pass  # Oh well, we'll create a new connection then
+			# Oh well, we'll create a new connection then
+			conn = None
 
 		return conn or self._new_conn()
 
