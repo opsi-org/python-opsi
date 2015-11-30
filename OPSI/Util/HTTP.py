@@ -544,6 +544,7 @@ class HTTPConnectionPool(object):
 				except Exception:
 					pass
 		except (SocketTimeout, Empty, HTTPException, SocketError) as error:
+			logger.logException(error, logLevel=LOG_DEBUG)
 			try:
 				logger.debug(u"Request to host '%s' failed, retry: %s, firstTryTime: %s, now: %s, retryTime: %s, connectTimeout: %s, socketTimeout: %s (%s)" \
 					% (self.host, retry, firstTryTime, now, self.retryTime, self.connectTimeout, self.socketTimeout, forceUnicode(error)))
