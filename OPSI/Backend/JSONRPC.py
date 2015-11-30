@@ -50,7 +50,7 @@ from OPSI.Backend.Backend import Backend, DeferredCall
 from OPSI.Util import serialize, deserialize
 from OPSI.Util.HTTP import urlsplit, getSharedConnectionPool, deflateEncode, deflateDecode, gzipDecode
 
-__version__ = '4.0.6.35'
+__version__ = '4.0.6.36'
 
 logger = Logger()
 
@@ -740,7 +740,7 @@ class JSONRPCBackend(Backend):
 			logger.debug(u"Expecting deflated data from server")
 			response = deflateDecode(response)
 
-		logger.debug2(response)
+		logger.debug2(u"Response is: {0}".format(response))
 		return response
 
 	def getInterface(self):
