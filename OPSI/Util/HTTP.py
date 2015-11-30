@@ -574,6 +574,9 @@ class HTTPConnectionPool(object):
 				time.sleep(0.2)
 				return self.urlopen(method, url, body, headers, retry, redirect, assert_same_host, firstTryTime)
 			else:
+				if retry:
+					logger.warning("Connecting to {0!r} did not succeed after retrying.".format(self.host))
+
 				raise
 		except Exception:
 			self._put_conn(None)
