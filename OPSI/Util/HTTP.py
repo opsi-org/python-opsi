@@ -95,12 +95,12 @@ def hybi10Encode(data):
 		frame.append(dataLength & 0xff)
 
 	frame.extend(mask)
-	for i in range(len(data)):
-		frame.append(ord(data[i]) ^ mask[i % 4])
+	for i, currentData in enumerate(data):
+		frame.append(ord(currentData) ^ mask[i % 4])
 
 	encodedData = ''
-	for i in range(len(frame)):
-		encodedData += chr(frame[i])
+	for currentFrame in frame:
+		encodedData += chr(currentFrame)
 	return encodedData
 
 
@@ -129,8 +129,9 @@ def hybi10Decode(data):
 		else:
 			mask = data[2:6]
 			codedData = data[6:]
-		for i in range(len(codedData)):
-			decodedData += chr(ord(codedData[i]) ^ ord(mask[i % 4]))
+
+		for i, currentData in enumerate(codedData):
+			decodedData += chr(ord(currentData) ^ ord(mask[i % 4]))
 	else:
 		if dataLength == 126:
 			decodedData = data[4:]
@@ -138,6 +139,7 @@ def hybi10Decode(data):
 			decodedData = data[10:]
 		else:
 			decodedData = data[2:]
+
 	return decodedData
 
 
