@@ -65,7 +65,7 @@ from OPSI.Util import (blowfishEncrypt, blowfishDecrypt, compareVersions,
 from OPSI.Util.File import ConfigFile
 import OPSI.SharedAlgorithm
 
-__version__ = '4.0.6.35'
+__version__ = '4.0.6.36'
 
 logger = Logger()
 OPSI_VERSION_FILE = u'/etc/opsi/version'
@@ -485,7 +485,7 @@ class ExtendedBackend(Backend):
 	def backend_info(self):
 		if self._backend:
 			return self._backend.backend_info()
-		return Backend.backend_info()
+		return Backend.backend_info(self)
 
 	def backend_setOptions(self, options):
 		"""

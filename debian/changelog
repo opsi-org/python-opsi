@@ -4,8 +4,10 @@ python-opsi (4.0.6.36-1) UNRELEASED; urgency=medium
   * OPSI.Util.HTTP: Refactorings in hybi10Encode & hybi10Decode
   * OPSI.Backend.JSONRPC: Better readable debug output with loglevel 8.
   * OPSI.Logger: do not fail if calling setLogFile with None.
+  * OPSI.Backend.ExtendedBackend: calling backend_info without backend
+    set will not fail anymore.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 03 Dec 2015 10:02:02 +0100
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 03 Dec 2015 10:10:43 +0100
 
 python-opsi (4.0.6.35-1) experimental; urgency=medium
 
