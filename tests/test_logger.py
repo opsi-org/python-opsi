@@ -296,3 +296,6 @@ class LoggerTestCase(unittest.TestCase):
 				self.assertFalse(os.path.exists('test.log'))
 				self.logger.warning('def')
 				self.assertFalse(os.path.exists('test.log'))
+
+	def testSettingLogPathToNone(self):
+		self.logger.setLogFile(None)

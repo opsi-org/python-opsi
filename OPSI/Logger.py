@@ -53,7 +53,7 @@ try:
 except ImportError:
 	syslog = None
 
-__version__ = '4.0.6.35'
+__version__ = '4.0.6.36'
 
 if sys.version_info > (3, ):
 	# Python 3
@@ -422,8 +422,14 @@ class LoggerImplementation:
 		return self.__logFile
 
 	def setLogFile(self, logFile, currentThread=False, object=None):
-		''' Set the filename of logfile. '''
-		logFile = os.path.abspath(logFile)
+		'''
+		Set the filename of logfile.
+
+		:param logFile: The path to the logfile. Setting this to `None` \
+will disable logging to a file.
+		'''
+		if logFile is not None:
+			logFile = os.path.abspath(logFile)
 
 		if currentThread:
 			self._setThreadConfig('logFile', logFile)
