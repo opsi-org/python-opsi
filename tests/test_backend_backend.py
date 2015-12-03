@@ -25,16 +25,9 @@ Testing BackendDispatcher.
 
 from __future__ import absolute_import
 
-import os
 import unittest
 
 from OPSI.Backend.Backend import ExtendedBackend
-# from OPSI.Backend.BackendManager import BackendDispatcher
-# from OPSI.Types import BackendConfigurationError
-
-# from .Backends import getTestBackend
-# from .Backends.File import FileBackendMixin
-# from .helpers import  workInTemporaryDirectory
 
 
 class ExtendedBackendTestCase(unittest.TestCase):
