@@ -188,6 +188,12 @@ class SessionHandlerTestCase(unittest.TestCase):
 
 		self.assertEqual(firstSession, secondSession)
 
+	def testGettingNewSessionDoesNotSetUid(self):
+		handler = SessionHandler(sessionDeletionTimeout=2)
+		session = handler.getSession(uid='testUID12345')
+
+		self.assertNotEqual(session.uid, 'testUID12345')
+
 
 if __name__ == '__main__':
 	unittest.main()
