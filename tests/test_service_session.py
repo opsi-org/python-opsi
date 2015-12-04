@@ -178,13 +178,12 @@ class SessionHandlerTestCase(unittest.TestCase):
 		self.assertTrue(session.usageCount == 1)
 
 	def testGettingSessionByUIDAndReuse(self):
-		testUID = 'testUID12345'
 		handler = SessionHandler(sessionDeletionTimeout=2)
-		firstSession = handler.getSession(uid=testUID)
+		firstSession = handler.getSession(uid='testUID12345')
 
 		self.assertTrue(firstSession.usageCount == 1)
 
-		secondSession = handler.getSession(uid=testUID)
+		secondSession = handler.getSession(uid=firstSession.uid)
 		self.assertTrue(secondSession.usageCount == 2)
 
 		self.assertEqual(firstSession, secondSession)
