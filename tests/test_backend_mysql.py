@@ -28,7 +28,7 @@ from __future__ import absolute_import
 from .Backends import MySQL as MySQLback
 from .BackendTestMixins import BackendTestMixin
 from .BackendTestMixins.Backend import MultiThreadingTestMixin
-from .helpers import unittest, requiresModulesFile
+from .helpers import requiresModulesFile, unittest
 
 
 class MySQLBackendTestCase(unittest.TestCase, MySQLback.MySQLBackendMixin, BackendTestMixin):
