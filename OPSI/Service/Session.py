@@ -241,7 +241,7 @@ class SessionHandler(object):
 
 		dts = []
 		for uid in self.sessions:
-			logger.debug(u"Deleting session '%s'" % uid)
+			logger.debug(u"Deleting session {0!r}".format(uid))
 			dts.append(SessionDeletionThread(self, uid))
 
 		[dt.start() for dt in dts]
