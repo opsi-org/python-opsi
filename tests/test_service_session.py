@@ -140,6 +140,10 @@ class SessionHandlerTestCase(unittest.TestCase):
 
 		self.assertEquals(0, len(handler.sessions))
 
+	def testDeletingNonExistingSession(self):
+		handler = SessionHandler(sessionDeletionTimeout=2)
+		handler.deleteSession('iAmNotHere')
+
 	def testCreatingAndExpiringManySessions(self):
 		"Creating a lot of sessions and wait for them to expire."
 
@@ -160,6 +164,30 @@ class SessionHandlerTestCase(unittest.TestCase):
 			time.sleep(1)
 
 		self.assertEquals({}, handler.getSessions())
+
+	def testGettingSession(self):
+		handler = SessionHandler(sessionDeletionTimeout=2)
+		session = handler.getSession()
+
+		self.assertTrue(session.usageCount == 1)
+
+	def testGettingSessionByUID(self):
+		handler = SessionHandler(sessionDeletionTimeout=2)
+		session = handler.getSession(uid='testUID12345')
+
+		self.assertTrue(session.usageCount == 1)
+
+	def testGettingSessionByUIDAndReuse(self):
+		testUID = 'testUID12345'
+		handler = SessionHandler(sessionDeletionTimeout=2)
+		firstSession = handler.getSession(uid=testUID)
+
+		self.assertTrue(firstSession.usageCount == 1)
+
+		secondSession = handler.getSession(uid=testUID)
+		self.assertTrue(secondSession.usageCount == 2)
+
+		self.assertEqual(firstSession, secondSession)
 
 
 if __name__ == '__main__':
