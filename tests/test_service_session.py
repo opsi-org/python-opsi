@@ -194,6 +194,14 @@ class SessionHandlerTestCase(unittest.TestCase):
 
 		self.assertNotEqual(session.uid, 'testUID12345')
 
+	def testGettingNewSessionDoesIgnoreSessionMarkedForDeletion(self):
+		handler = SessionHandler(sessionDeletionTimeout=2)
+		session = handler.getSession()
+		session.setMarkedForDeletion()
+
+		secondSession = handler.getSession(uid=session.uid)
+		self.assertNotEquals(secondSession, session)
+
 
 if __name__ == '__main__':
 	unittest.main()
