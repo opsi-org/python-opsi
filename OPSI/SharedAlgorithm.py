@@ -34,7 +34,7 @@ from OPSI.Object import ProductOnClient
 from OPSI.Types import OpsiProductOrderingError, BackendUnaccomplishableError
 from OPSI.Types import forceInt, forceBool
 
-__version__ = '4.0.6.32'
+__version__ = '4.0.6.37'
 
 logger = Logger()
 
@@ -678,7 +678,7 @@ def generateProductSequence_algorithm1(availableProducts, productDependencies):
 
 
 def generateProductOnClientSequence_algorithm1(productOnClients, availableProducts, productDependencies):
-	sortedProductList = generateProductSequence_algorithm2(availableProducts, productDependencies)
+	sortedProductList = generateProductSequence_algorithm1(availableProducts, productDependencies)
 	productOnClients = generateProductOnClientSequence(productOnClients, sortedProductList)
 	return productOnClients
 
