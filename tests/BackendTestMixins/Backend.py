@@ -378,6 +378,7 @@ class BackendTestsMixin(ClientsMixin, HostsMixin):
         The method descriptions in `expected` may vary and should be
         reduced if problems because of missing methods occur.
         """
+        print("Checking with backend {0!r}".format(self.backend))
         results = self.backend.backend_getInterface()
 
         expected = [
@@ -397,6 +398,7 @@ class BackendTestsMixin(ClientsMixin, HostsMixin):
                 if result['name'] == selection['name']:
                     print('Checking {0}'.format(selection['name']))
                     for parameter in ('args', 'params', 'defaults', 'varargs', 'keywords'):
+                        print('Now checking parameter {0!r}'.format(parameter))
                         self.assertEqual(selection[parameter], result[parameter])
 
                     found = True
