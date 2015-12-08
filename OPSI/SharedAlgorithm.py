@@ -207,8 +207,8 @@ class OrderRequirement(object):
 		self.fulfilled = forceBool(fulfilled)
 
 	def __unicode__(self):
-		return (u"<OrderRequirement(prior='{prio}', posterior='{post}', "
-				u"fulfilled='{ful}'>".format(
+		return (u"<OrderRequirement(prior={prio!r}, posterior={post!r}, "
+				u"fulfilled={ful!r}>".format(
 					prio=self.prior, post=self.posterior, ful=self.fulfilled))
 
 	def __str__(self):
