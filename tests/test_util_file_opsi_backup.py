@@ -404,6 +404,16 @@ class BackupArchiveTest(unittest.TestCase):
 
             self.assertTrue(oldContent, "No data found!")
 
+            expectedFiles = (
+                '/backends/sqlite.conf', '/backends/jsonrpc.conf',
+                '/backends/mysql.conf', '/backends/opsipxeconfd.conf',
+                '/backends/file.conf', '/backends/hostcontrol.conf',
+                '/backends/dhcpd.conf', '/backendManager/dispatch.conf',
+            )
+            for expectedFile in expectedFiles:
+                print("Checking for {0!r}".format(expectedFile))
+                assert any(entry.endswith(expectedFile) for entry in oldContent)
+
             with getOpsiBackupArchive(name=archive.name, mode="r", tempdir=tempDir) as backup:
                 backup.restoreConfiguration()
                 newContent = getFolderContent(backup.CONF_DIR)
