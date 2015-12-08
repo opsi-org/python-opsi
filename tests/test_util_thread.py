@@ -269,13 +269,16 @@ class KillableThreadTestCase(unittest.TestCase):
         runningThread = ThirtySecondsToEndThread(self)
         runningThread.start()
 
-        time.sleep(2)
-        self.assertTrue(runningThread.isAlive(), "Thread should be running.")
+        try:
+            time.sleep(2)
+            self.assertTrue(runningThread.isAlive(), "Thread should be running.")
 
-        runningThread.terminate()
+            runningThread.terminate()
 
-        time.sleep(2)
-        self.assertFalse(runningThread.isAlive(), "Thread should be killed.")
+            time.sleep(2)
+            self.assertFalse(runningThread.isAlive(), "Thread should be killed.")
+        finally:
+            runningThread.join(2)
 
 
 if __name__ == '__main__':
