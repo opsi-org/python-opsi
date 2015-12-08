@@ -43,6 +43,7 @@ import socket
 import time
 import zlib
 from contextlib import closing  # Needed for Python 2.6
+from contextlib import contextmanager
 from io import BytesIO
 
 try:
@@ -780,3 +781,25 @@ def gzipDecode(data):
 		uncompressedData = gzipfile.read()
 
 	return forceUnicode(uncompressedData)
+
+
+@contextmanager
+def closingConnection(connection):
+	"This contextmanager closes the connection afterwards."
+	try:
+		yield connection
+	finally:
+		closeConnection(connection)
+
+
+def closeConnection(connection):
+	"Close the given connection and any socket that may be open on it."
+	try:
+		connection.sock.close()
+	except Exception:
+		pass
+
+	try:
+		connection.close()
+	except Exception:
+		pass
