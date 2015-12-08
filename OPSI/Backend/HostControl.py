@@ -47,9 +47,9 @@ from OPSI.Types import (forceBool, forceHostId, forceHostIdList, forceInt,
 from OPSI.Backend.Backend import ExtendedBackend
 from OPSI.Util import fromJson, toJson
 from OPSI.Util.Thread import KillableThread
-from OPSI.Util.HTTP import non_blocking_connect_https
+from OPSI.Util.HTTP import closingConnection, non_blocking_connect_https
 
-__version__ = '4.0.6.35'
+__version__ = '4.0.6.37'
 
 logger = Logger()
 
@@ -136,15 +136,10 @@ class ConnectionThread(KillableThread):
 				port=self.hostControlBackend._opsiclientdPort,
 				timeout=timeout
 			)
-			non_blocking_connect_https(conn, self.hostControlBackend._hostReachableTimeout)
-			if conn:
-				self.result = True
-				try:
-					if conn.sock:
-						conn.sock.close()
-					conn.close()
-				except Exception:
-					pass
+			with closingConnection(conn) as conn:
+				non_blocking_connect_https(conn, self.hostControlBackend._hostReachableTimeout)
+				if conn:
+					self.result = True
 		except Exception as e:
 			logger.logException(e, LOG_DEBUG)
 			logger.debug(e)

@@ -344,15 +344,7 @@ class HTTPConnectionPool(object):
 				try:
 					conn = self.pool.get(block=False)
 					if conn:
-						try:
-							conn.sock.close()
-						except Exception:
-							pass
-
-						try:
-							conn.close()
-						except Exception:
-							pass
+						closeConnection(conn)
 
 					time.sleep(0.001)
 				except Empty:
@@ -537,15 +529,7 @@ class HTTPConnectionPool(object):
 			else:
 				logger.debug(u"Closing connection: %s" % conn)
 				self._put_conn(None)
-				try:
-					conn.sock.close()
-				except Exception:
-					pass
-
-				try:
-					conn.close()
-				except Exception:
-					pass
+				closeConnection(conn)
 		except (SocketTimeout, Empty, HTTPException, SocketError) as error:
 			logger.logException(error, logLevel=LOG_DEBUG)
 			try:
@@ -561,15 +545,7 @@ class HTTPConnectionPool(object):
 					logger.warning(u"Logging message failed: {0}".format(forceUnicode(error)))
 
 			self._put_conn(None)
-			try:
-				conn.sock.close()
-			except Exception:
-				pass
-
-			try:
-				conn.close()
-			except Exception:
-				pass
+			closeConnection(conn)
 
 			if retry and (now - firstTryTime < self.retryTime):
 				logger.debug(u"Request to {0!r} failed: {1}".format(self.host, forceUnicode(error)))
@@ -583,15 +559,7 @@ class HTTPConnectionPool(object):
 				raise
 		except Exception:
 			self._put_conn(None)
-			try:
-				conn.sock.close()
-			except Exception:
-				pass
-
-			try:
-				conn.close()
-			except Exception:
-				pass
+			closeConnection(conn)
 			raise
 
 		# Handle redirection
@@ -599,16 +567,7 @@ class HTTPConnectionPool(object):
 			logger.info(u"Redirecting %s -> %s" % (url, response.headers.get('location')))
 			time.sleep(0.1)
 			self._put_conn(None)
-
-			try:
-				conn.sock.close()
-			except Exception:
-				pass
-
-			try:
-				conn.close()
-			except Exception:
-				pass
+			closeConnection(conn)
 			return self.urlopen(method, url, body, headers, retry, redirect, assert_same_host, firstTryTime)
 
 		return response
@@ -657,9 +616,7 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 				else:
 					raise Exception(u"Failed to get peer certificate")
 			except Exception:
-				if conn.sock:
-					conn.sock.close()
-				conn.close()
+				closeConnection(conn)
 				raise
 		return conn
 
