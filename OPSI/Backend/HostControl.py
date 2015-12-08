@@ -89,24 +89,25 @@ class RpcThread(KillableThread):
 				port=self.hostControlBackend._opsiclientdPort,
 				timeout=timeout
 			)
-			non_blocking_connect_https(connection, timeout)
-			connection.putrequest('POST', '/opsiclientd')
-			connection.putheader('content-type', 'application/json')
-			connection.putheader('content-length', str(len(query)))
-			auth = u'{0}:{1}'.format(self.username, self.password)
-			connection.putheader('Authorization', 'Basic ' + base64.encodestring(auth.encode('latin-1')).strip())
-			connection.endheaders()
-			connection.send(query)
+			with closingConnection(connection) as connection:
+				non_blocking_connect_https(connection, timeout)
+				connection.putrequest('POST', '/opsiclientd')
+				connection.putheader('content-type', 'application/json')
+				connection.putheader('content-length', str(len(query)))
+				auth = u'{0}:{1}'.format(self.username, self.password)
+				connection.putheader('Authorization', 'Basic ' + base64.encodestring(auth.encode('latin-1')).strip())
+				connection.endheaders()
+				connection.send(query)
 
-			response = connection.getresponse()
-			response = response.read()
-			response = fromJson(unicode(response, 'utf-8'))
+				response = connection.getresponse()
+				response = response.read()
+				response = fromJson(unicode(response, 'utf-8'))
 
-			if response and isinstance(response, dict):
-				self.error = response.get('error')
-				self.result = response.get('result')
-			else:
-				self.error = u"Bad response from client: %s" % forceUnicode(response)
+				if response and isinstance(response, dict):
+					self.error = response.get('error')
+					self.result = response.get('result')
+				else:
+					self.error = u"Bad response from client: %s" % forceUnicode(response)
 		except Exception as e:
 			self.error = forceUnicode(e)
 		finally:
