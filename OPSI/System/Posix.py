@@ -2677,7 +2677,8 @@ class Harddisk:
 						continue
 
 				time.sleep(3)
-				if handle: handle.close()
+				if handle:
+					handle.close()
 			else:
 				fs = 'ntfs'
 				logger.info(u"Restoring ntfsclone-image '%s' to '%s'" % \
