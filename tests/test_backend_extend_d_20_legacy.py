@@ -31,11 +31,11 @@ that were written for opsi 3.
 
 from __future__ import absolute_import
 
-from .Backends.File import ExtendedFileBackendMixin
+from .Backends.File import FileBackendBackendManagerMixin
 from .helpers import unittest
 
 
-class LegacyFunctionsTestCase(unittest.TestCase, ExtendedFileBackendMixin):
+class LegacyFunctionsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
     "Testing the legacy / simple functins."
 
     def setUp(self):
@@ -68,7 +68,7 @@ class LegacyFunctionsTestCase(unittest.TestCase, ExtendedFileBackendMixin):
         self.assertNotEqual('', self.backend.getDomain())
 
 
-class LegacyConfigStateAccessTestCase(unittest.TestCase, ExtendedFileBackendMixin):
+class LegacyConfigStateAccessTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
     """
     Testing legacy access to ConfigStates.
     """

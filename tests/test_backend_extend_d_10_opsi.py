@@ -35,10 +35,10 @@ from OPSI.Object import (OpsiClient, LocalbootProduct, ProductOnClient,
 						 ProductDependency, OpsiDepotserver, ProductOnDepot,
 						 UnicodeConfig, ConfigState)
 
-from .Backends.File import ExtendedFileBackendMixin
+from .Backends.File import FileBackendBackendManagerMixin
 
 
-class BackendExtendedThroughOPSITestCase(unittest.TestCase, ExtendedFileBackendMixin):
+class BackendExtendedThroughOPSITestCase(unittest.TestCase, FileBackendBackendManagerMixin):
 	def setUp(self):
 		self.setUpBackend()
 		self.backendManager = self.backend

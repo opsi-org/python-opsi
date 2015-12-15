@@ -34,7 +34,7 @@ import random
 import unittest
 
 from OPSI.Logger import Logger
-from .Backends.File import ExtendedFileBackendMixin
+from .Backends.File import FileBackendBackendManagerMixin
 
 # Logger is needed because the functions expect a global "logger"
 logger = Logger()
@@ -51,7 +51,7 @@ class FakeDepot(object):
 		return "<FakeDepot({id}, latency={latency}, masterDepotId={masterDepotId})>".format(**self.__dict__)
 
 
-class DynamicDepotTestCase(unittest.TestCase, ExtendedFileBackendMixin):
+class DynamicDepotTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
 	"""
 	Testing the dynamic depot selection.
 

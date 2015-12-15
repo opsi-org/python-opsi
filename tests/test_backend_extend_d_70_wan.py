@@ -36,10 +36,10 @@ import unittest
 from OPSI.Object import OpsiClient
 from OPSI.Util.Task.ConfigureBackend.ConfigurationData import createWANconfigs
 
-from .Backends.File import ExtendedFileBackendMixin
+from .Backends.File import FileBackendBackendManagerMixin
 
 
-class SimpleWanConfigTestCase(unittest.TestCase, ExtendedFileBackendMixin):
+class SimpleWanConfigTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
     """
     Testing the group actions.
     """

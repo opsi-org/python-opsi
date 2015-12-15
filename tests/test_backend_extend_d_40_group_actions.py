@@ -34,10 +34,10 @@ import random
 import unittest
 
 from OPSI.Object import HostGroup, OpsiClient, LocalbootProduct, ObjectToGroup, ProductOnDepot, OpsiDepotserver
-from .Backends.File import ExtendedFileBackendMixin
+from .Backends.File import FileBackendBackendManagerMixin
 
 
-class GroupActionsTestCase(unittest.TestCase, ExtendedFileBackendMixin):
+class GroupActionsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
     """
     Testing the group actions.
     """
@@ -125,7 +125,7 @@ class GroupActionsTestCase(unittest.TestCase, ExtendedFileBackendMixin):
             self.assertEquals(poc.productId, product2.getId())
             self.assertTrue(poc.clientId in (client1.id, client2.id))
 
-class GroupRenamingTestCase(unittest.TestCase, ExtendedFileBackendMixin):
+class GroupRenamingTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
     """
     Testing the group actions.
     """

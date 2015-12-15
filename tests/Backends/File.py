@@ -121,7 +121,7 @@ config = {{
         del self.backend
 
 
-class ExtendedFileBackendMixin(FileBackendMixin):
+class FileBackendBackendManagerMixin(FileBackendMixin):
     def setUpBackend(self):
         self._fileBackendConfig = {}
         self._fileTempDir = self._copyOriginalBackendToTemporaryLocation()
