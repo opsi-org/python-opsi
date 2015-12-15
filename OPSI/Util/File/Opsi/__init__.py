@@ -1071,7 +1071,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 			try:
 				dispatchedBackends = BackendDispatchConfigFile(self.DISPATCH_CONF).getUsedBackends()
 			except Exception as error:
-				logger.warning(u"Could not read dispatch configuration: %s" % unicode(error))
+				logger.warning(u"Could not read dispatch configuration: %s" % forceUnicode(error))
 				dispatchedBackends = []
 
 		if not os.path.exists(self.BACKEND_CONF_DIR):
