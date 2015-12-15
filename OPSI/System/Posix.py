@@ -55,7 +55,7 @@ from OPSI.Types import OpsiVersionError
 from OPSI.Object import *
 from OPSI.Util import objectToBeautifiedText, removeUnit
 
-__version__ = '4.0.6.35'
+__version__ = '4.0.6.39'
 
 logger = Logger()
 
@@ -1352,10 +1352,9 @@ class Harddisk:
 					raise Exception(u"Partition type '%s' not supported!" % id)
 			id = eval('0x' + id)
 			offset = 0x1be + (partition-1) * 16 + 4
-			f = open(self.device, 'rb+')
-			f.seek(offset)
-			f.write(chr(id))
-			f.close()
+			with open(self.device, 'rb+') as f:
+				f.seek(offset)
+				f.write(chr(id))
 		except Exception as e:
 			for hook in hooks:
 				hook.error_Harddisk_setPartitionId(self, partition, id, e)
@@ -1374,13 +1373,12 @@ class Harddisk:
 				raise Exception("Partition has to be int value between 1 and 4")
 
 			offset = 0x1be + (partition-1)*16 + 4
-			f = open(self.device, 'rb+')
-			f.seek(offset)
-			if bootable:
-				f.write(chr(0x80))
-			else:
-				f.write(chr(0x00))
-			f.close()
+			with open(self.device, 'rb+') as f:
+				f.seek(offset)
+				if bootable:
+					f.write(chr(0x80))
+				else:
+					f.write(chr(0x00))
 		except Exception as e:
 			for hook in hooks:
 				hook.error_Harddisk_setPartitionBootable(self, partition, bootable, e)
@@ -1666,9 +1664,8 @@ class Harddisk:
 		for hook in hooks:
 			hook.pre_Harddisk_deletePartitionTable(self)
 		try:
-			f = open(self.device, 'rb+')
-			f.write(chr(0)*512)
-			f.close()
+			with open(self.device, 'rb+') as f:
+				f.write(chr(0) * 512)
 
 			self._forceReReadPartionTable()
 			self.label = None
@@ -1831,9 +1828,8 @@ class Harddisk:
 			hook.pre_Harddisk_readMasterBootRecord(self)
 		mbr = None
 		try:
-			f = open(self.device, 'rb')
-			mbr = f.read(512)
-			f.close()
+			with open(self.device, 'rb') as f:
+				mbr = f.read(512)
 		except Exception as e:
 			for hook in hooks:
 				hook.error_Harddisk_readMasterBootRecord(self, e)
@@ -1902,9 +1898,8 @@ class Harddisk:
 			partition = hook.pre_Harddisk_readPartitionBootRecord(self, partition)
 		pbr = None
 		try:
-			f = open(self.getPartition(partition)['device'], 'rb')
-			pbr = f.read(512)
-			f.close()
+			with open(self.getPartition(partition)['device'], 'rb') as f:
+				pbr = f.read(512)
 		except Exception as e:
 			for hook in hooks:
 				hook.error_Harddisk_readPartitionBootRecord(self, partition, e)
@@ -2544,7 +2539,6 @@ class Harddisk:
 			imageFile = forceUnicode(imageFile)
 
 			imageType = None
-			image = None
 			fs = None
 
 			pipe = u''
@@ -2575,22 +2569,21 @@ class Harddisk:
 						for p in pids:
 							if not os.path.exists(os.path.join("/proc", p, "status")):
 								continue
-							f = open(os.path.join("/proc", p, "status"))
-							for line in f.readlines():
-								if line.startswith("PPid:"):
-									ppid = line.split()[1].strip()
-									if ppid == str(pid):
-										logger.info(u"Killing process %s" % p)
-										os.kill(int(p), SIGKILL)
+							with open(os.path.join("/proc", p, "status")) as f:
+								for line in f:
+									if line.startswith("PPid:"):
+										ppid = line.split()[1].strip()
+										if ppid == str(pid):
+											logger.info(u"Killing process %s" % p)
+											os.kill(int(p), SIGKILL)
 
 						logger.info(u"Killing process %s" % pid)
 						os.kill(pid, SIGKILL)
 						time.sleep(1)
 				else:
-					image = open(imageFile, 'r')
-					head = image.read(128)
-					logger.debug(u"Read 128 Bytes from file '%s': %s" % (imageFile, head.decode('ascii', 'replace')))
-					image.close()
+					with open(imageFile, 'r') as image:
+						head = image.read(128)
+						logger.debug(u"Read 128 Bytes from file '%s': %s" % (imageFile, head.decode('ascii', 'replace')))
 
 				if 'ntfsclone-image' in head:
 					logger.notice(u"Image type is ntfsclone")
@@ -2599,8 +2592,6 @@ class Harddisk:
 					logger.notice(u"Image type is partclone")
 					imageType = u'partclone'
 			except Exception:
-				if image:
-					image.close()
 				raise
 
 			if imageType not in (u'ntfsclone', u'partclone'):
@@ -3093,26 +3084,25 @@ def hardwareInventory(config, progressSubject=None):
 					continue
 				if not os.path.isfile('/proc/asound/' + card + '/' + codec):
 					continue
-				f = open('/proc/asound/' + card + '/' + codec)
-				logger.debug(u"   Found hdaudio codec '%s'" % codec)
-				hdaudioId = card + codec
-				hdaudio[hdaudioId] = {}
-				for line in f.readlines():
-					if   line.startswith(u'Codec:'):
-						hdaudio[hdaudioId]['codec'] = line.split(':', 1)[1].strip()
-					elif line.startswith(u'Address:'):
-						hdaudio[hdaudioId]['address'] = line.split(':', 1)[1].strip()
-					elif line.startswith(u'Vendor Id:'):
-						vid = line.split('x', 1)[1].strip()
-						hdaudio[hdaudioId]['vendorId'] = forceHardwareVendorId(vid[0:4])
-						hdaudio[hdaudioId]['deviceId'] = forceHardwareDeviceId(vid[4:8])
-					elif line.startswith(u'Subsystem Id:'):
-						sid = line.split('x', 1)[1].strip()
-						hdaudio[hdaudioId]['subsystemVendorId'] = forceHardwareVendorId(sid[0:4])
-						hdaudio[hdaudioId]['subsystemDeviceId'] = forceHardwareDeviceId(sid[4:8])
-					elif line.startswith(u'Revision Id:'):
-						hdaudio[hdaudioId]['revision'] = line.split('x', 1)[1].strip()
-				f.close()
+				with open('/proc/asound/' + card + '/' + codec) as f:
+					logger.debug(u"   Found hdaudio codec '%s'" % codec)
+					hdaudioId = card + codec
+					hdaudio[hdaudioId] = {}
+					for line in f:
+						if line.startswith(u'Codec:'):
+							hdaudio[hdaudioId]['codec'] = line.split(':', 1)[1].strip()
+						elif line.startswith(u'Address:'):
+							hdaudio[hdaudioId]['address'] = line.split(':', 1)[1].strip()
+						elif line.startswith(u'Vendor Id:'):
+							vid = line.split('x', 1)[1].strip()
+							hdaudio[hdaudioId]['vendorId'] = forceHardwareVendorId(vid[0:4])
+							hdaudio[hdaudioId]['deviceId'] = forceHardwareDeviceId(vid[4:8])
+						elif line.startswith(u'Subsystem Id:'):
+							sid = line.split('x', 1)[1].strip()
+							hdaudio[hdaudioId]['subsystemVendorId'] = forceHardwareVendorId(sid[0:4])
+							hdaudio[hdaudioId]['subsystemDeviceId'] = forceHardwareDeviceId(sid[4:8])
+						elif line.startswith(u'Revision Id:'):
+							hdaudio[hdaudioId]['revision'] = line.split('x', 1)[1].strip()
 				logger.debug(u"      Codec info: '%s'" % hdaudio[hdaudioId])
 
 	# Read output from lsusb

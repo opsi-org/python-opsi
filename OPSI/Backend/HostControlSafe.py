@@ -29,6 +29,8 @@ import socket
 import time
 import struct
 
+from contextlib import closing
+
 from OPSI.Logger import LOG_DEBUG, Logger
 from OPSI.Types import BackendMissingDataError
 from OPSI.Types import (forceBool, forceHostIdList, forceInt, forceList,
@@ -36,7 +38,7 @@ from OPSI.Types import (forceBool, forceHostIdList, forceInt, forceList,
 from OPSI.Backend.Backend import ExtendedBackend
 from OPSI.Backend.HostControl import RpcThread, ConnectionThread
 
-__version__ = '4.0.6.33'
+__version__ = '4.0.6.39'
 
 logger = Logger()
 
@@ -193,10 +195,9 @@ class HostControlSafeBackend(ExtendedBackend):
 				for broadcastAddress in self._broadcastAddresses:
 					logger.debug(u"Sending data to network broadcast %s [%s]" % (broadcastAddress, data))
 					# Broadcast it to the LAN.
-					sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-					sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, True)
-					sock.sendto(send_data, (broadcastAddress, 12287))
-					sock.close()
+					with closing(socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)) as sock:
+						sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, True)
+						sock.sendto(send_data, (broadcastAddress, 12287))
 				result[host.id] = {"result": "sent", "error": None}
 			except Exception as e:
 				logger.logException(e, LOG_DEBUG)

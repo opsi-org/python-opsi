@@ -42,6 +42,7 @@ import tempfile
 import shutil
 import socket
 import StringIO
+from contextlib import closing
 from hashlib import sha1
 from subprocess import Popen, PIPE, STDOUT
 
@@ -69,7 +70,7 @@ from OPSI.Types import (BackendBadValueError, OpsiBackupBackendNotFound,
 from OPSI.Util.File import ConfigFile, IniFile, TextFile, requiresParsing
 from OPSI.Util import md5sum, toJson, fromJson
 
-__version__ = '4.0.6.29'
+__version__ = '4.0.6.39'
 
 logger = Logger()
 
@@ -1135,25 +1136,19 @@ class OpsiBackupArchive(tarfile.TarFile):
 
 	def _readSysInfo(self):
 		map = {}
-		fp = self.extractfile("%s/sysinfo" % self.CONTROL_DIR)
-		try:
+		with closing(self.extractfile("%s/sysinfo" % self.CONTROL_DIR)) as fp:
 			for line in fp.readlines():
 				key, value = line.split(":")
 				map[key.strip()] = value.strip()
-		finally:
-			fp.close()
 
 		return map
 
 	def _readChecksumFile(self):
 		map = {}
-		fp = self.extractfile("%s/checksums" % self.CONTROL_DIR)
-		try:
+		with closing(self.extractfile("%s/checksums" % self.CONTROL_DIR)) as fp:
 			for line in fp.readlines():
 				key, value = line.split(" ", 1)
 				map[value.strip()] = key.strip()
-		finally:
-			fp.close()
 
 		return map
 
@@ -1169,14 +1164,12 @@ class OpsiBackupArchive(tarfile.TarFile):
 		else:
 			checksum = sha1()
 
-			f = open(path)
-			chunk = True
-			try:
+			with open(path) as f:
+				chunk = True
 				while chunk:
 					chunk = f.read()
 					checksum.update(chunk)
-			finally:
-				f.close()
+
 			self._filemap[dest] = checksum.hexdigest()
 
 			self.add(path, dest)
@@ -1214,14 +1207,11 @@ class OpsiBackupArchive(tarfile.TarFile):
 
 				count = 0
 				chunk = True
-				fp = self.extractfile(member)
-				try:
+				with closing(self.extractfile(member)) as fp:
 					while chunk:
 						chunk = fp.read()
 						count += len(chunk)
 						filesum.update(chunk)
-				finally:
-					fp.close()
 
 				if checksum != filesum.hexdigest():
 					logger.debug2("Read %s bytes from file %s, resulting in checksum %s" % (count, member.name, filesum.hexdigest()))
@@ -1245,14 +1235,12 @@ class OpsiBackupArchive(tarfile.TarFile):
 			filesum = sha1()
 
 			chunk = True
-			fp = self.extractfile(member.name)
-			try:
+			with closing(self.extractfile(member.name)) as fp:
 				while chunk:
 					chunk = fp.read()
 					filesum.update(chunk)
 					os.write(tf, chunk)
-			finally:
-				fp.close()
+
 			if filesum.hexdigest() != checksum:
 				raise OpsiBackupFileError("Error restoring file %s: checksum missmacht.")
 

@@ -58,7 +58,7 @@ elif os.name == 'nt':
 	import win32file
 	import pywintypes
 
-__version__ = "4.0.6.29"
+__version__ = "4.0.6.39"
 
 logger = Logger()
 
@@ -1371,29 +1371,29 @@ class ZsyncFile(LockableFile):
 
 		self._parsed = False
 
-		f = open(self._filename, 'rb')
-		while True:
-			line = f.readline().strip()
-			if not line:
-				break
-			(k, v) = line.split(':', 1)
-			self._header[k.strip()] = v.strip()
-		self._data = f.read()
-		f.close()
+		with open(self._filename, 'rb') as f:
+			while True:
+				line = f.readline().strip()
+				if not line:
+					break
+				key, value = line.split(':', 1)
+				self._header[key.strip()] = value.strip()
+			self._data = f.read()
+
 		self._parsed = True
 
 	def generate(self, dataFile=None):
 		if dataFile:
 			execute(u"%s -u '%s' -o '%s' '%s'" % (which('zsyncmake'), os.path.basename(dataFile), self._filename, dataFile))
 			self.parse()
-		f = open(self._filename, 'wb')
-		for (k, v) in self._header.items():
-			if k.lower() == 'mtime':
-				continue
-			f.write('%s: %s\n' % (k, v))
-		f.write('\n')
-		f.write(self._data)
-		f.close()
+
+		with open(self._filename, 'wb') as f:
+			for key, value in self._header.items():
+				if key.lower() == 'mtime':
+					continue
+				f.write('%s: %s\n' % (key, value))
+			f.write('\n')
+			f.write(self._data)
 
 
 class DHCPDConf_Component(object):

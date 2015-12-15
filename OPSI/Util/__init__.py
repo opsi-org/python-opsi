@@ -43,6 +43,7 @@ import socket
 import struct
 import time
 import types
+from contextlib import closing
 from Crypto.Cipher import Blowfish
 from hashlib import md5
 from itertools import islice
@@ -56,7 +57,7 @@ from OPSI.Logger import Logger
 from OPSI.Types import (forceBool, forceFilename, forceFqdn, forceInt,
 						forceIPAddress, forceNetworkAddress, forceUnicode)
 
-__version__ = '4.0.6.29'
+__version__ = '4.0.6.39'
 
 logger = Logger()
 
@@ -150,20 +151,16 @@ def toJson(obj, ensureAscii=False):
 
 
 def librsyncSignature(filename, base64Encoded=True):
-	(f, sf) = (None, None)
 	try:
-		f = open(filename, 'rb')
-		sf = librsync.SigFile(f)
-		if base64Encoded:
-			sig = base64.encodestring(sf.read())
-		else:
-			sig = sf.read()
-		f.close()
-		sf.close()
-		return sig
+		with open(filename, 'rb') as f:
+			with closing(librsync.SigFile(f)) as sf:
+				sig = sf.read()
+
+				if base64Encoded:
+					sig = base64.encodestring(sig)
+
+				return sig
 	except Exception as e:
-		if f: f.close()
-		if sf: sf.close()
 		raise Exception(u"Failed to get librsync signature: %s" % forceUnicode(e))
 
 
@@ -176,48 +173,31 @@ def librsyncPatchFile(oldfile, deltafile, newfile):
 	if deltafile == oldfile:
 		raise ValueError(u"oldfile and deltafile are the same file")
 
-	(of, df, nf, pf) = (None, None, None, None)
-	bufsize = 1024*1024
+	bufsize = 1024 * 1024
 	try:
-		of = open(oldfile, "rb")
-		df = open(deltafile, "rb")
-		nf = open(newfile, "wb")
-		pf = librsync.PatchedFile(of, df)
-		data = True
-		while(data):
-			data = pf.read(bufsize)
-			nf.write(data)
-		nf.close()
-		pf.close()
-		df.close()
-		of.close()
+		with open(oldfile, "rb") as of:
+			with open(deltafile, "rb") as df:
+				with open(newfile, "wb") as nf:
+					with closing(librsync.PatchedFile(of, df)) as pf:
+						data = True
+						while data:
+							data = pf.read(bufsize)
+							nf.write(data)
 	except Exception as e:
-		if nf: nf.close()
-		if pf: pf.close()
-		if df: df.close()
-		if of: of.close()
 		raise Exception(u"Failed to patch file: %s" % forceUnicode(e))
 
 
 def librsyncDeltaFile(filename, signature, deltafile):
-	(f, df, ldf) = (None, None, None)
-	bufsize = 1024*1024
+	bufsize = 1024 * 1024
 	try:
-		f = open(filename, "rb")
-		df = open(deltafile, "wb")
-		ldf = librsync.DeltaFile(signature, f)
-
-		data = True
-		while(data):
-			data = ldf.read(bufsize)
-			df.write(data)
-		df.close()
-		f.close()
-		ldf.close()
+		with open(filename, "rb") as f:
+			with open(deltafile, "wb") as df:
+				with closing(librsync.DeltaFile(signature, f)) as ldf:
+					data = True
+					while data:
+						data = ldf.read(bufsize)
+						df.write(data)
 	except Exception as e:
-		if df:  df.close()
-		if f:   f.close()
-		if ldf: ldf.close()
 		raise Exception(u"Failed to write delta file: %s" % forceUnicode(e))
 
 

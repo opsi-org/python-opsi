@@ -33,6 +33,8 @@ import socket
 import struct
 import time
 
+from contextlib import closing
+
 try:
 	from httplib import HTTPSConnection
 except ImportError:
@@ -49,7 +51,7 @@ from OPSI.Util import fromJson, toJson
 from OPSI.Util.Thread import KillableThread
 from OPSI.Util.HTTP import closingConnection, non_blocking_connect_https
 
-__version__ = '4.0.6.37'
+__version__ = '4.0.6.39'
 
 logger = Logger()
 
@@ -298,10 +300,9 @@ class HostControlBackend(ExtendedBackend):
 				for broadcastAddress in self._broadcastAddresses:
 					logger.debug(u"Sending data to network broadcast %s [%s]" % (broadcastAddress, data))
 					# Broadcast it to the LAN.
-					sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-					sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, True)
-					sock.sendto(send_data, (broadcastAddress, 12287))
-					sock.close()
+					with closing(socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)) as sock:
+						sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, True)
+						sock.sendto(send_data, (broadcastAddress, 12287))
 				result[host.id] = {"result": "sent", "error": None}
 			except Exception as e:
 				logger.logException(e, LOG_DEBUG)

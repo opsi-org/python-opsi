@@ -39,6 +39,8 @@ import stat
 import time
 import urllib
 
+from contextlib import closing
+
 from OPSI.web2 import responsecode
 from OPSI.web2.dav import davxml
 
@@ -50,7 +52,7 @@ from OPSI.Util.File.Opsi import PackageContentFile
 from OPSI.Util.HTTP import getSharedConnectionPool, urlsplit, HTTPResponse
 from OPSI.System import *
 
-__version__ = '4.0.6.12'
+__version__ = '4.0.6.39'
 
 logger = Logger()
 
@@ -722,26 +724,24 @@ class FileRepository(Repository):
 
 		if progressSubject: progressSubject.setEnd(size)
 
-		(src, dst) = (None, None)
 		try:
-			src = open(source, 'rb')
-			if (startByteNumber > -1):
-				src.seek(startByteNumber)
-			bytes = -1
-			if (endByteNumber > -1):
-				bytes = endByteNumber + 1
-				if (startByteNumber > -1):
-					bytes -= startByteNumber
-			if (startByteNumber > 0) and os.path.exists(destination):
-				dst = open(destination, 'ab')
-			else:
-				dst = open(destination, 'wb')
-			self._transferDown(src, dst, progressSubject, bytes = bytes)
-			src.close()
-			dst.close()
+			with open(source, 'rb') as src:
+				if startByteNumber > -1:
+					src.seek(startByteNumber)
+				bytes = -1
+				if endByteNumber > -1:
+					bytes = endByteNumber + 1
+					if startByteNumber > -1:
+						bytes -= startByteNumber
+
+				if startByteNumber > 0 and os.path.exists(destination):
+					dstWriteMode = 'ab'
+				else:
+					dstWriteMode = 'wb'
+
+				with open(destination, 'wb') as dst:
+					self._transferDown(src, dst, progressSubject, bytes=bytes)
 		except Exception as e:
-			if src: src.close()
-			if dst: dst.close()
 			raise RepositoryError(u"Failed to download '%s' to '%s': %s" \
 						% (source, destination, forceUnicode(e)))
 
@@ -755,16 +755,11 @@ class FileRepository(Repository):
 
 		if progressSubject: progressSubject.setEnd(size)
 
-		(src, dst) = (None, None)
 		try:
-			src = open(source, 'rb')
-			dst = open(destination, 'wb')
-			self._transferUp(src, dst, progressSubject)
-			src.close()
-			dst.close()
+			with open(source, 'rb') as src:
+				with open(destination, 'wb') as dst:
+					self._transferUp(src, dst, progressSubject)
 		except Exception as e:
-			if src: src.close()
-			if dst: dst.close()
 			raise RepositoryError(u"Failed to upload '%s' to '%s': %s" \
 						% (source, destination, e))
 
@@ -981,7 +976,6 @@ class HTTPRepository(Repository):
 
 		except Exception as e:
 			logger.logException(e)
-			if dst: dst.close()
 			raise RepositoryError(u"Failed to download '%s' to '%s': %s" % (source, destination, e))
 		logger.debug2(u"HTTP download done")
 
@@ -1068,7 +1062,6 @@ class WebDAVRepository(HTTPRepository):
 
 		if progressSubject: progressSubject.setEnd(size)
 
-		src = None
 		conn = None
 		response = None
 		try:
@@ -1087,16 +1080,13 @@ class WebDAVRepository(HTTPRepository):
 
 				httplib_response = None
 				try:
-					src = open(source, 'rb')
-					self._transferUp(src, conn, progressSubject)
-					src.close()
-					src = None
+					with open(source, 'rb') as src:
+						self._transferUp(src, conn, progressSubject)
 					httplib_response = conn.getresponse()
 				except Exception as e:
 					conn = None
 					self._connectionPool.endConnection(conn)
-					if src: src.close()
-					if (trynum > 2):
+					if trynum > 2:
 						raise
 					logger.info(u"Error '%s' occured while uploading, retrying" % e)
 					continue
@@ -1110,7 +1100,6 @@ class WebDAVRepository(HTTPRepository):
 				raise Exception(response.status)
 		except Exception as e:
 			logger.logException(e)
-			if src: src.close()
 			if conn:
 				self._connectionPool.endConnection(None)
 			raise RepositoryError(u"Failed to upload '%s' to '%s': %s" % (source, destination, forceUnicode(e)))
@@ -1246,14 +1235,9 @@ class DepotToLocalDirectorySychronizer(object):
 					oPath = path[:-1*len(".opsi_sync_endpart")]
 					if os.path.isfile(oPath):
 						logger.info(u"Appending '%s' to '%s'" % (path, oPath))
-						(f1, f2) = (None, None)
-						try:
-							f1 = open(oPath, 'ab')
-							f2 = open(path, 'rb')
-							f1.write(f2.read())
-						finally:
-							if f1: f1.close(); f1 = None
-							if f2: f2.close(); f2 = None
+						with open(oPath, 'ab') as f1:
+							with open(path, 'rb') as f2:
+								f1.write(f2.read())
 				logger.info(u"Deleting '%s'" % relSource)
 				os.remove(path)
 
@@ -1294,14 +1278,11 @@ class DepotToLocalDirectorySychronizer(object):
 					if os.path.exists(partialEndFile):
 						os.remove(partialEndFile)
 					self._sourceDepot.download(s, partialEndFile, startByteNumber = localSize)
-					(f1, f2) = (None, None)
-					try:
-						f1 = open(d, 'ab')
-						f2 = open(partialEndFile, 'rb')
-						f1.write(f2.read())
-					finally:
-						if f1: f1.close(); f1 = None
-						if f2: f2.close(); f2 = None
+
+					with open(d, 'ab') as f1:
+						with open(partialEndFile, 'rb') as f2:
+							f1.write(f2.read())
+
 					md5s = md5sum(d)
 					if (md5s != self._fileInfo[relSource]['md5sum']):
 						logger.warning(u"MD5sum of composed file differs")
@@ -1311,14 +1292,11 @@ class DepotToLocalDirectorySychronizer(object):
 						# Last byte needed is byte number <localSize> - 1
 						logger.info(u"Downloading file '%s' ending at byte number %d" % (f['name'], localSize-1))
 						self._sourceDepot.download(s, partialStartFile, endByteNumber = localSize-1)
-						(f1, f2) = (None, None)
-						try:
-							f1 = open(partialStartFile, 'ab')
-							f2 = open(partialEndFile, 'rb')
-							f1.write(f2.read())
-						finally:
-							if f1: f1.close(); f1 = None
-							if f2: f2.close(); f2 = None
+
+						with open(partialStartFile, 'ab') as f1:
+							with open(partialEndFile, 'rb') as f2:
+								f1.write(f2.read())
+
 						if os.path.exists(d):
 							os.remove(d)
 						os.rename(partialStartFile, d)
