@@ -584,7 +584,7 @@ class PackageControlFile(TextFile):
 							# TODO: use set
 							tmp = []
 							for v in forceList(value):
-								if not v in tmp:
+								if v not in tmp:
 									tmp.append(v)
 							value = tmp
 						except Exception as error:
@@ -602,7 +602,7 @@ class PackageControlFile(TextFile):
 							# TODO: use set
 							tmp = []
 							for v in forceList(value):
-								if not v in ('', None) and v not in tmp:
+								if v not in ('', None) and v not in tmp:
 									tmp.append(v)
 							value = tmp
 
@@ -633,7 +633,7 @@ class PackageControlFile(TextFile):
 						condition = match.group(1)
 						if not condition:
 							condition = u'='
-						if not condition in (u'=', u'<', u'<=', u'>', u'>='):
+						if condition not in (u'=', u'<', u'<=', u'>', u'>='):
 							raise Exception(u"Bad condition string '%s' in package dependency" % condition)
 						version = match.group(2)
 					else:
