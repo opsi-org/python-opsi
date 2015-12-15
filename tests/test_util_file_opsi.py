@@ -141,3 +141,9 @@ class OpsiControlFileTestCase(unittest.TestCase):
 	def testParsingControlFileWithGermanUmlautsInDescription(self):
 		p = PackageControlFile(self.EXAMPLE_CONFIG_FILE)
 		p.parse()
+
+		product = p.getProduct()
+		self.assertEquals(
+			u'Startet die Druckerwarteschlange auf dem Client neu / oder überhaupt.',
+			product.description
+		)
