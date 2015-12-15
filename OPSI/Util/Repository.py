@@ -43,7 +43,7 @@ from OPSI.web2 import responsecode
 from OPSI.web2.dav import davxml
 
 from OPSI.Logger import LOG_INFO, Logger
-from OPSI.System import getFreeDrive, mount, umount
+from OPSI.System import mount, umount
 from OPSI.Types import RepositoryError
 from OPSI.Types import forceBool, forceFilename, forceInt, forceUnicode, forceUnicodeList
 from OPSI.Util.Message import ProgressSubject
@@ -1136,7 +1136,9 @@ class CIFSRepository(FileRepository):
 			if   (os.name == 'posix'):
 				self._mountPoint = u'/tmp/.cifs-mount.%s' % randomString(5)
 			elif (os.name == 'nt'):
-				self._mountPoint = getFreeDrive(startLetter = 'g')
+				from OPSI.System.Windows import getFreeDrive
+
+				self._mountPoint = getFreeDrive(startLetter='g')
 
 		self._username = forceUnicode(kwargs.get('username', 'guest'))
 		self._password = forceUnicode(kwargs.get('password', ''))
