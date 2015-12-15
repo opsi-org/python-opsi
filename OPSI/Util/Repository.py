@@ -39,8 +39,6 @@ import stat
 import time
 import urllib
 
-from contextlib import closing
-
 from OPSI.web2 import responsecode
 from OPSI.web2.dav import davxml
 
