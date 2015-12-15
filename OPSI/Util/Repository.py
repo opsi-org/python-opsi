@@ -45,7 +45,8 @@ from OPSI.web2 import responsecode
 from OPSI.web2.dav import davxml
 
 from OPSI.Logger import LOG_INFO, Logger
-from OPSI.Types import *
+from OPSI.Types import RepositoryError
+from OPSI.Types import forceBool, forceFilename, forceInt, forceUnicode, forceUnicodeList
 from OPSI.Util.Message import ProgressSubject
 from OPSI.Util import md5sum, randomString
 from OPSI.Util.File.Opsi import PackageContentFile
