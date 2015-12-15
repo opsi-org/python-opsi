@@ -49,7 +49,6 @@ from OPSI.Util.Message import ProgressSubject
 from OPSI.Util import md5sum, randomString
 from OPSI.Util.File.Opsi import PackageContentFile
 from OPSI.Util.HTTP import getSharedConnectionPool, urlsplit, HTTPResponse
-from OPSI.System import *
 
 __version__ = '4.0.6.39'
 
