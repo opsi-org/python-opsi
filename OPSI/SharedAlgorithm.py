@@ -678,7 +678,7 @@ def generateProductSequence_algorithm1(availableProducts, productDependencies):
 
 
 def generateProductOnClientSequence_algorithm1(productOnClients, availableProducts, productDependencies):
-	sortedProductList = generateProductSequence_algorithm1(availableProducts, productDependencies)
+	sortedProductList = generateProductSequence_algorithm2(availableProducts, productDependencies)
 	productOnClients = generateProductOnClientSequence(productOnClients, sortedProductList)
 	return productOnClients
 
