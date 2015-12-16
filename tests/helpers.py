@@ -66,6 +66,8 @@ be deleted if given.
 
 @contextmanager
 def cd(path):
+    'Change the current directory to `path` as long as the context exists.'
+
     old_dir = os.getcwd()
     os.chdir(path)
     try:
