@@ -839,8 +839,10 @@ class HTTPRepository(Repository):
 
 		self._host = host
 		self._path = baseurl
-		if not self._username and username: self._username = username
-		if not self._password and password: self._password = password
+		if not self._username and username:
+			self._username = username
+		if not self._password and password:
+			self._password = password
 		self._username = forceUnicode(self._username)
 		self._password = forceUnicode(self._password)
 		if self._password:
@@ -1074,7 +1076,8 @@ class WebDAVRepository(HTTPRepository):
 		size = fs[stat.ST_SIZE]
 		logger.debug(u"Length of binary data to upload: %d" % size)
 
-		if progressSubject: progressSubject.setEnd(size)
+		if progressSubject:
+			progressSubject.setEnd(size)
 
 		conn = None
 		response = None
@@ -1284,7 +1287,9 @@ class DepotToLocalDirectorySychronizer(object):
 							#if progressSubject: progressSubject.addToState(size)
 							continue
 
-				if progressSubject: progressSubject.setMessage( _(u"Downloading file '%s'") % f['name'] )
+				if progressSubject:
+					progressSubject.setMessage(_(u"Downloading file '%s'") % f['name'])
+
 				if exists and (localSize < size):
 					partialEndFile = d + u'.opsi_sync_endpart'
 					# First byte needed is byte number <localSize>
