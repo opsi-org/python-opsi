@@ -204,7 +204,7 @@ class Repository:
 	def _getNetworkUsage(self):
 		networkUsage = 0.0
 		if self._networkPerformanceCounter:
-			if (self._transferDirection == 'out'):
+			if self._transferDirection == 'out':
 				networkUsage = self._networkPerformanceCounter.getBytesOutPerSecond()
 			else:
 				networkUsage = self._networkPerformanceCounter.getBytesInPerSecond()
@@ -259,40 +259,41 @@ class Repository:
 						usage = 1.0
 					#print totalNetworkUsage/1024, usage
 					self._networkUsageData.append([now, usage])
-					if self._networkUsageData and ((now - self._networkUsageData[0][0]) >= 5):
+					if self._networkUsageData and (now - self._networkUsageData[0][0]) >= 5:
 						usage = 0.0
 						count = 0.0
 						index = -1
 						#data = []
 						for i in range(len(self._networkUsageData)):
-							if (now - self._networkUsageData[i][0] <= 5):
+							if now - self._networkUsageData[i][0] <= 5:
 								if index == -1:
 									index = i
-							if (now - self._networkUsageData[i][0] <= 2.0):
+
+							if now - self._networkUsageData[i][0] <= 2.0:
 								usage += self._networkUsageData[i][1]
 								count += 1.0
-								#data.append(self._networkUsageData[i][1])
-						if (count > 0):
-							usage = float(usage)/float(count)
-							#usage = max(data)
-							logger.debug(u"Current network usage %0.2f kByte/s, last measured network bandwidth %0.2f kByte/s, usage: %0.5f, dynamic limit: %0.2f kByte/s" \
-									% ((float(totalNetworkUsage)/1024), (float(self._networkBandwidth)/1024), usage, float(bwlimit)/1024))
-							if (index > 1):
+
+						if count > 0:
+							usage = float(usage) / float(count)
+							logger.debug(u"Current network usage %0.2f kByte/s, last measured network bandwidth %0.2f kByte/s, usage: %0.5f, dynamic limit: %0.2f kByte/s"
+									% ((float(totalNetworkUsage) / 1024), (float(self._networkBandwidth) / 1024), usage, float(bwlimit) / 1024))
+
+							if index > 1:
 								self._networkUsageData = self._networkUsageData[index-1:]
 							if self._dynamicBandwidthLimit:
-								if (usage >= self._dynamicBandwidthThresholdNoLimit):
+								if usage >= self._dynamicBandwidthThresholdNoLimit:
 									logger.info(u"No other traffic detected, resetting dynamically limited bandwidth, using 100%")
 									bwlimit = self._dynamicBandwidthLimit = 0.0
 									self._networkUsageData = []
 									self._fireEvent('dynamicBandwidthLimitChanged', self._dynamicBandwidthLimit)
 							else:
-								if (usage <= self._dynamicBandwidthThresholdLimit):
-									if (self._averageSpeed < 20000):
+								if usage <= self._dynamicBandwidthThresholdLimit:
+									if self._averageSpeed < 20000:
 										self._dynamicBandwidthLimit = bwlimit = 0.0
 										logger.debug(u"Other traffic detected, not limiting traffic because average speed is only %0.2f kByte/s" % (float(self._averageSpeed)/1024))
 									else:
 										self._dynamicBandwidthLimit = bwlimit = self._averageSpeed*self._dynamicBandwidthLimitRate
-										if (self._dynamicBandwidthLimit < 10000):
+										if self._dynamicBandwidthLimit < 10000:
 											self._dynamicBandwidthLimit = bwlimit = 10000
 											logger.info(u"Other traffic detected, dynamically limiting bandwidth to minimum of %0.2f kByte/s" % (float(bwlimit)/1024))
 										else:
@@ -301,20 +302,21 @@ class Repository:
 										self._fireEvent('dynamicBandwidthLimitChanged', self._dynamicBandwidthLimit)
 									self._networkUsageData = []
 
-			if self._maxBandwidth and ((bwlimit == 0) or (bwlimit > self._maxBandwidth)):
+			if self._maxBandwidth and (bwlimit == 0 or bwlimit > self._maxBandwidth):
 				bwlimit = float(self._maxBandwidth)
 
 			speed = float(self._currentSpeed)
-			if (bwlimit > 0) and (speed > 0):
+			if bwlimit > 0 and speed > 0:
 				factor = 1.0
-				if (speed > bwlimit):
-					# To fast
-					factor = float(speed)/float(bwlimit)
+				if speed > bwlimit:
+					# Too fast
+					factor = float(speed) / float(bwlimit)
 					logger.debug(u"Transfer speed %0.2f kByte/s is to fast, limit: %0.2f kByte/s, factor: %0.5f" \
-						% ((speed/1024), (bwlimit/1024), factor))
-					if (factor < 1.001):
+						% ((speed / 1024), (bwlimit / 1024), factor))
+
+					if factor < 1.001:
 						bandwidthSleepTime = self._bandwidthSleepTime + (0.00007 * factor)
-					elif (factor < 1.01):
+					elif factor < 1.01:
 						bandwidthSleepTime = self._bandwidthSleepTime + (0.0007 * factor)
 					else:
 						bandwidthSleepTime = self._bandwidthSleepTime + (0.007 * factor)
@@ -323,28 +325,33 @@ class Repository:
 					# To slow
 					factor = float(bwlimit)/float(speed)
 					logger.debug(u"Transfer speed %0.2f kByte/s is to slow, limit: %0.2f kByte/s, factor: %0.5f" \
-						% ((speed/1024), (bwlimit/1024), factor))
-					if (factor < 1.001):
+						% ((speed / 1024), (bwlimit / 1024), factor))
+
+					if factor < 1.001:
 						bandwidthSleepTime = self._bandwidthSleepTime - (0.00006 * factor)
-					elif (factor < 1.01):
+					elif factor < 1.01:
 						bandwidthSleepTime = self._bandwidthSleepTime - (0.0006 * factor)
 					else:
 						bandwidthSleepTime = self._bandwidthSleepTime - (0.006 * factor)
-					self._bandwidthSleepTime = (bandwidthSleepTime + self._bandwidthSleepTime)/2
-				if (factor > 2):
+					self._bandwidthSleepTime = (bandwidthSleepTime + self._bandwidthSleepTime) / 2
+
+				if factor > 2:
 					self._networkUsageData = []
-				if (self._bandwidthSleepTime <= 0.0):
+
+				if self._bandwidthSleepTime <= 0.0:
 					self._bandwidthSleepTime = 0.000001
-				if (self._bandwidthSleepTime <= 0.2):
-					self._bufferSize = int(float(self._bufferSize)*1.03)
+
+				if self._bandwidthSleepTime <= 0.2:
+					self._bufferSize = int(float(self._bufferSize) * 1.03)
 					self._networkUsageData = []
-				elif (self._bandwidthSleepTime > 0.3):
-					self._bufferSize = int(float(self._bufferSize)/1.1)
+				elif self._bandwidthSleepTime > 0.3:
+					self._bufferSize = int(float(self._bufferSize) / 1.1)
 					self._bandwidthSleepTime = 0.3
 					self._networkUsageData = []
-				if (self._bufferSize > 262144):
+
+				if self._bufferSize > 262144:
 					self._bufferSize = 262144
-				elif (self._bufferSize < 1):
+				elif self._bufferSize < 1:
 					self._bufferSize = 1
 				logger.debug(u"Transfer speed %0.2f kByte/s, limit: %0.2f kByte/s, sleep time: %0.6f, buffer size: %s" \
 					% (speed/1024, bwlimit/1024, self._bandwidthSleepTime, self._bufferSize))
@@ -369,14 +376,14 @@ class Repository:
 				fileSize = os.path.getsize(src.name)
 			logger.debug('Filesize is: {0}'.format(fileSize))
 
-			while buf and ( (bytes < 0) or (self._bytesTransfered < bytes) ):
+			while buf and (bytes < 0 or self._bytesTransfered < bytes):
 				logger.debug2("self._bufferSize: '%d" % self._bufferSize)
 				logger.debug2("self._bytesTransfered: '%d'" % self._bytesTransfered)
 				logger.debug2("bytes: '%d'" % bytes)
 
 				remaining_bytes = fileSize - self._bytesTransfered
 				logger.debug2("self._remainingBytes: '%d'" % remaining_bytes)
-				if (remaining_bytes > 0) and (remaining_bytes < self._bufferSize):
+				if remaining_bytes > 0 and remaining_bytes < self._bufferSize:
 					buf = src.read(remaining_bytes)
 				elif remaining_bytes > 0:
 					buf = src.read(self._bufferSize)
@@ -385,7 +392,7 @@ class Repository:
 				read = len(buf)
 
 				if read > 0:
-					if (bytes >= 0) and ((self._bytesTransfered + read) > bytes):
+					if bytes >= 0 and (self._bytesTransfered + read) > bytes:
 						buf = buf[:bytes-self._bytesTransfered]
 						read = len(buf)
 					self._bytesTransfered += read
@@ -398,13 +405,13 @@ class Repository:
 						progressSubject.addToState(read)
 
 					self._calcSpeed(read)
-					if (self._dynamicBandwidth or self._maxBandwidth):
+					if self._dynamicBandwidth or self._maxBandwidth:
 						self._bandwidthLimit()
-					elif (self._currentSpeed > 1000000):
+					elif self._currentSpeed > 1000000:
 						self._bufferSize = 262144
 
 			transferTime = time.time() - transferStartTime
-			if (transferTime == 0):
+			if transferTime == 0:
 				transferTime = 0.0000001
 			logger.info( u"Transfered %0.2f kByte in %0.2f minutes, average speed was %0.2f kByte/s" % \
 				( (float(self._bytesTransfered)/1024), (float(transferTime)/60), (float(self._bytesTransfered)/transferTime)/1024) )
@@ -510,13 +517,13 @@ class Repository:
 
 			if overallProgressSubject:
 				overallProgressSubject.reset()
-				if (info.get('type') == 'file'):
+				if info.get('type') == 'file':
 					(totalFiles, size) = (1, info['size'])
 				else:
 					(totalFiles, size) = self.getCountAndSize(source)
 				overallProgressSubject.setEnd(size)
 
-			if (info.get('type') == 'file'):
+			if info.get('type') == 'file':
 				destinationFile = destination
 				if not os.path.exists(destination):
 					parent = os.path.dirname(destination)
@@ -527,11 +534,11 @@ class Repository:
 
 				if overallProgressSubject:
 					sizeString = "%d Byte" % info['size']
-					if (info['size'] > 1024*1024):
-						sizeString = "%0.2f MByte" % ( float(info['size'])/(1024*1024) )
-					elif (info['size'] > 1024):
-						sizeString = "%0.2f kByte" % ( float(info['size'])/(1024) )
-					overallProgressSubject.setMessage(u"[1/1] %s (%s)" % (info['name'], sizeString ) )
+					if info['size'] > 1024 * 1024:
+						sizeString = "%0.2f MByte" % (float(info['size']) / (1024 * 1024))
+					elif info['size'] > 1024:
+						sizeString = "%0.2f kByte" % (float(info['size']) / 1024)
+					overallProgressSubject.setMessage(u"[1/1] %s (%s)" % (info['name'], sizeString ))
 
 				try:
 					self.download(source, destinationFile, currentProgressSubject)
@@ -555,7 +562,7 @@ class Repository:
 				content = self.content(source, recursive = True)
 				fileCount = 0
 				for c in content:
-					if (c.get('type') == 'dir'):
+					if c.get('type') == 'dir':
 						path = [ destination ]
 						path.extend(c['path'].split('/'))
 						targetDir = os.path.join(*path)
@@ -563,16 +570,16 @@ class Repository:
 							raise Exception(u"Bad target directory '%s'" % targetDir)
 						if not os.path.isdir(targetDir):
 							os.makedirs(targetDir)
-					elif (c.get('type') == 'file'):
+					elif c.get('type') == 'file':
 						fileCount += 1
 						if overallProgressSubject:
 							countLen = len(str(totalFiles))
 							countLenFormat = '%' + str(countLen) + 's'
 							sizeString = "%d Byte" % c['size']
-							if (c['size'] > 1024*1024):
-								sizeString = "%0.2f MByte" % ( float(c['size'])/(1024*1024) )
-							elif (c['size'] > 1024):
-								sizeString = "%0.2f kByte" % ( float(c['size'])/(1024) )
+							if c['size'] > 1024 * 1024:
+								sizeString = "%0.2f MByte" % (float(c['size']) / (1024 * 1024))
+							elif c['size'] > 1024:
+								sizeString = "%0.2f kByte" % (float(c['size'])/ 1024)
 							overallProgressSubject.setMessage(u"[%s/%s] %s (%s)" \
 									% (countLenFormat % fileCount, totalFiles, c['name'], sizeString ) )
 						path = [ destination ]
@@ -642,8 +649,9 @@ class FileRepository(Repository):
 		if path.endswith('/'):
 			path = path[:-1]
 		path = self._path + u'/' + path
-		if (os.name == 'nt'):
+		if os.name == 'nt':
 			path = path.replace('/', '\\')
+
 		return path
 
 	def fileInfo(self, source):
@@ -716,9 +724,9 @@ class FileRepository(Repository):
 		startByteNumber = forceInt(startByteNumber)
 		endByteNumber = forceInt(endByteNumber)
 
-		if (endByteNumber > -1):
+		if endByteNumber > -1:
 			size -= endByteNumber
-		if (startByteNumber > -1):
+		if startByteNumber > -1:
 			size -= startByteNumber
 
 		logger.debug(u"Length of binary data to download: %d bytes" % size)
@@ -795,23 +803,23 @@ class HTTPRepository(Repository):
 		caCertFile = None
 		verifyServerCertByCa = False
 
-		for (key, value) in kwargs.items():
+		for key, value in kwargs.items():
 			key = key.lower()
-			if   (key == 'application'):
+			if key == 'application':
 				self._application = str(value)
-			elif (key == 'username'):
+			elif key == 'username':
 				self._username = forceUnicode(value)
-			elif (key == 'password'):
+			elif key == 'password':
 				self._password = forceUnicode(value)
-			elif (key == 'proxy'):
+			elif key == 'proxy':
 				proxy = forceUnicode(value)
-			elif (key == 'servercertfile'):
+			elif key == 'servercertfile':
 				serverCertFile = forceFilename(value)
-			elif (key == 'verifyservercert'):
+			elif key == 'verifyservercert':
 				verifyServerCert = forceBool(value)
-			elif (key == 'cacertfile'):
+			elif key == 'cacertfile':
 				caCertFile = forceFilename(value)
-			elif (key == 'verifyservercertbyca'):
+			elif key == 'verifyservercertbyca':
 				verifyServerCertByCa = forceBool(value)
 
 		(scheme, host, port, baseurl, username, password) = urlsplit(self._url)
@@ -929,7 +937,7 @@ class HTTPRepository(Repository):
 
 				headers = self._headers()
 				startByteNumber += bytesTransfered
-				if (startByteNumber > -1) or (endByteNumber > -1):
+				if startByteNumber > -1 or endByteNumber > -1:
 					sbn = startByteNumber
 					ebn = endByteNumber
 					if sbn <= -1:
@@ -939,8 +947,8 @@ class HTTPRepository(Repository):
 					headers['range'] = 'bytes=%s-%s' % (sbn, ebn)
 
 				conn.putrequest('GET', source)
-				for (k, v) in headers.items():
-					conn.putheader(k, v)
+				for key, value in headers.items():
+					conn.putheader(key, value)
 				conn.endheaders()
 				conn.sock.settimeout(self._socketTimeout)
 
@@ -991,7 +999,7 @@ class WebDAVRepository(HTTPRepository):
 	def __init__(self, url, **kwargs):
 		HTTPRepository.__init__(self, url, **kwargs)
 		parts = self._url.split('/')
-		if (len(parts) < 3) or parts[0].lower() not in ('webdav:', 'webdavs:'):
+		if len(parts) < 3 or parts[0].lower() not in ('webdav:', 'webdavs:'):
 			raise RepositoryError(u"Bad http url: '%s'" % self._url)
 		self._contentCache = {}
 
@@ -1003,7 +1011,7 @@ class WebDAVRepository(HTTPRepository):
 			source += '/'
 
 		if recursive and self._contentCache.has_key(source):
-			if (time.time() - self._contentCache[source]['time'] > 60):
+			if time.time() - self._contentCache[source]['time'] > 60:
 				del self._contentCache[source]
 			else:
 				return self._contentCache[source]['content']
@@ -1018,7 +1026,7 @@ class WebDAVRepository(HTTPRepository):
 
 		response = self._connectionPool.urlopen(method = 'PROPFIND', url = source, body = None, headers = headers, retry = True, redirect = True)
 		self._processResponseHeaders(response)
-		if (response.status != responsecode.MULTI_STATUS):
+		if response.status != responsecode.MULTI_STATUS:
 			raise RepositoryError(u"Failed to list dir '%s': %s" % (source, response.status))
 
 		encoding = 'utf-8'
@@ -1037,8 +1045,8 @@ class WebDAVRepository(HTTPRepository):
 			info = { 'size': long(0), 'type': 'file' }
 			info['path'] = unicode(urllib.unquote(child.childOfType(davxml.HRef).children[0].data[srcLen:]), encoding)
 			info['name'] = unicode(pContainer.childOfType(davxml.DisplayName).children[0].data, encoding)
-			if (str(pContainer.childOfType(davxml.GETContentLength)) != 'None'):
-				info['size'] = long( str(pContainer.childOfType(davxml.GETContentLength)) )
+			if str(pContainer.childOfType(davxml.GETContentLength)) != 'None':
+				info['size'] = long(str(pContainer.childOfType(davxml.GETContentLength)))
 			if pContainer.childOfType(davxml.ResourceType).children:
 				info['type'] = 'dir'
 				if info['path'].endswith('/'):
@@ -1112,7 +1120,7 @@ class WebDAVRepository(HTTPRepository):
 		headers = self._headers()
 		response = self._connectionPool.urlopen(method = 'DELETE', url = destination, body = None, headers = headers, retry = True, redirect = True)
 		self._processResponseHeaders(response)
-		if (response.status != responsecode.NO_CONTENT):
+		if response.status != responsecode.NO_CONTENT:
 			raise RepositoryError(u"Failed to delete '%s': %s" % (destination, response.status))
 		## Do we have to read the response?
 		#response.read()
@@ -1150,7 +1158,7 @@ class CIFSRepository(FileRepository):
 		if self._mountShare:
 			self._path = self._mountPoint
 		parts = match.group(2).split('/')
-		if (len(parts) > 2):
+		if len(parts) > 2:
 			self._path += u'/' + u'/'.join(parts[2:])
 		if self._path.endswith('/'):
 			self._path = self._path[:-1]
@@ -1170,9 +1178,10 @@ class CIFSRepository(FileRepository):
 			raise ValueError(u"Mount point not defined")
 		logger.info(u"Mountpoint: %s " % self._mountPoint)
 		logger.info(u"Mounting '%s' to '%s'" % (self._url, self._mountPoint))
-		if (os.name == 'posix') and not os.path.isdir(self._mountPoint):
+		if os.name == 'posix' and not os.path.isdir(self._mountPoint):
 			os.makedirs(self._mountPoint)
 			self._mountPointCreated = True
+
 		try:
 			mountOptions = self._mountOptions
 			mountOptions['username'] = self._username
@@ -1222,7 +1231,7 @@ class DepotToLocalDirectorySychronizer(object):
 
 		for f in os.listdir(destination):
 			relSource = (source + u'/' + f).split(u'/', 1)[1]
-			if (relSource == self._productId + u'.files'):
+			if relSource == self._productId + u'.files':
 				continue
 			if relSource in self._fileInfo:
 				continue
@@ -1246,21 +1255,21 @@ class DepotToLocalDirectorySychronizer(object):
 			source = forceUnicode(source)
 			(s, d) = (source + u'/' + f['name'], os.path.join(destination, f['name']))
 			relSource = s.split(u'/', 1)[1]
-			if (relSource == self._productId + u'.files'):
+			if relSource == self._productId + u'.files':
 				continue
 			if not self._fileInfo.has_key(relSource):
 				continue
-			if (f['type'] == 'dir'):
+			if f['type'] == 'dir':
 				self._synchronizeDirectories(s, d, progressSubject)
 			else:
 				logger.debug(u"Syncing %s with %s %s" % (relSource, d, self._fileInfo[relSource]))
-				if (self._fileInfo[relSource]['type'] == 'l'):
+				if self._fileInfo[relSource]['type'] == 'l':
 					self._linkFiles[relSource] = self._fileInfo[relSource]['target']
 					continue
 				size = 0
 				localSize = 0
 				exists = False
-				if (self._fileInfo[relSource]['type'] == 'f'):
+				if self._fileInfo[relSource]['type'] == 'f':
 					size = int(self._fileInfo[relSource]['size'])
 					exists = os.path.exists(d)
 					if exists:
@@ -1285,7 +1294,7 @@ class DepotToLocalDirectorySychronizer(object):
 							f1.write(f2.read())
 
 					md5s = md5sum(d)
-					if (md5s != self._fileInfo[relSource]['md5sum']):
+					if md5s != self._fileInfo[relSource]['md5sum']:
 						logger.warning(u"MD5sum of composed file differs")
 						partialStartFile = d + u'.opsi_sync_startpart'
 						if os.path.exists(partialStartFile):
@@ -1308,7 +1317,7 @@ class DepotToLocalDirectorySychronizer(object):
 					logger.info(u"Downloading file '%s'" % f['name'])
 					self._sourceDepot.download(s, d, progressSubject = progressSubject)
 				md5s = md5sum(d)
-				if (md5s != self._fileInfo[relSource]['md5sum']):
+				if md5s != self._fileInfo[relSource]['md5sum']:
 					error = u"Failed to download '%s': MD5sum mismatch (local:%s != remote:%s)" % (f['name'], md5s, self._fileInfo[relSource]['md5sum'])
 					logger.error(error)
 					raise Exception(error)
@@ -1361,9 +1370,11 @@ class DepotToLocalDirectorySychronizer(object):
 					cwd = os.getcwd()
 					os.chdir(productDestinationDirectory)
 					try:
-						if (os.name == 'nt'):
-							if t.startswith('/'): t = t[1:]
-							if f.startswith('/'): f = f[1:]
+						if os.name == 'nt':
+							if t.startswith('/'):
+								t = t[1:]
+							if f.startswith('/'):
+								f = f[1:]
 							t = os.path.join(productDestinationDirectory, t.replace('/', '\\'))
 							f = os.path.join(productDestinationDirectory, f.replace('/', '\\'))
 							if os.path.exists(f):
