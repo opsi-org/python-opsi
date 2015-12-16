@@ -1113,7 +1113,7 @@ class WebDAVRepository(HTTPRepository):
 				break
 
 			self._processResponseHeaders(response)
-			if (response.status != responsecode.CREATED) and (response.status != responsecode.NO_CONTENT):
+			if response.status not in (responsecode.CREATED, responsecode.NO_CONTENT):
 				raise Exception(response.status)
 		except Exception as error:
 			logger.logException(error)
