@@ -449,7 +449,12 @@ class Repository:
 			dirname = u'/'.join(parts[:-1])
 			filename = parts[-1]
 			if not filename:
-				return {'name': dirname.split('/')[:-1], 'path': dirname.split('/')[:-1], 'type': 'dir', 'size': 0}
+				return {
+					'name': dirname.split('/')[:-1],
+					'path': dirname.split('/')[:-1],
+					'type': 'dir',
+					'size': 0
+				}
 
 			for c in self.content(dirname):
 				if c['name'] == filename:
