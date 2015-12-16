@@ -432,7 +432,8 @@ class Repository:
 
 	def getCountAndSize(self, source=''):
 		source = forceUnicode(source)
-		(count, size) = (0, 0)
+		count = 0
+		size = 0
 		for entry in self.content(source, recursive=True):
 			if entry.get('type', '') == 'file':
 				count += 1
@@ -514,7 +515,8 @@ class Repository:
 
 			logger.info(u"Copying from '%s' to '%s'" % (source, destination))
 
-			(totalFiles, size) = (0, 0)
+			totalFiles = 0
+			size = 0
 			info = self.fileInfo(source)
 
 			if overallProgressSubject:
@@ -1253,7 +1255,8 @@ class DepotToLocalDirectorySychronizer(object):
 
 		for f in self._sourceDepot.content(source):
 			source = forceUnicode(source)
-			(s, d) = (source + u'/' + f['name'], os.path.join(destination, f['name']))
+			s = source + u'/' + f['name']
+			d = os.path.join(destination, f['name'])
 			relSource = s.split(u'/', 1)[1]
 			if relSource == self._productId + u'.files':
 				continue
