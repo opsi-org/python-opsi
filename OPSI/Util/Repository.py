@@ -397,7 +397,7 @@ class Repository:
 						buf = buf[:bytes-self._bytesTransfered]
 						read = len(buf)
 					self._bytesTransfered += read
-					if isinstance(dst, httplib.HTTPConnection) or isinstance(dst, httplib.HTTPSConnection):
+					if isinstance(dst, (httplib.HTTPConnection, httplib.HTTPSConnection)):
 						dst.send(buf)
 					else:
 						dst.write(buf)
