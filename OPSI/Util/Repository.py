@@ -462,8 +462,9 @@ class Repository:
 	def exists(self, source):
 		try:
 			self.fileInfo(source)
-		except:
+		except Exception:
 			return False
+
 		return True
 
 	def islink(self, source):
@@ -473,14 +474,14 @@ class Repository:
 		try:
 			info = self.fileInfo(source)
 			return (info.get('type', '') == 'file')
-		except:
+		except Exception:
 			return False
 
 	def isdir(self, source):
 		try:
 			info = self.fileInfo(source)
 			return (info.get('type', '') == 'dir')
-		except:
+		except Exception:
 			return False
 
 	def copy(self, source, destination, overallProgressSubject=None, currentProgressSubject=None):
@@ -626,13 +627,13 @@ class Repository:
 		if self._networkPerformanceCounter:
 			try:
 				self._networkPerformanceCounter.stop()
-			except:
+			except Exception:
 				pass
 
 	def __del__(self):
 		try:
 			self.disconnect()
-		except:
+		except Exception:
 			pass
 
 
