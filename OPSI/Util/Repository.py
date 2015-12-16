@@ -180,7 +180,7 @@ class Repository:
 			self._hooks.remove(hook)
 
 	def attachObserver(self, observer):
-		if not observer in self._observers:
+		if observer not in self._observers:
 			self._observers.append(observer)
 
 	def detachObserver(self, observer):
@@ -846,11 +846,11 @@ class HTTPRepository(Repository):
 				raise RepositoryError(u"Bad proxy url: '%s'" % proxy)
 			proxyProtocol = match.group(1)
 			proxyHost = match.group(2)
-			if (self._host.find('@') != -1):
-				(proxyUsername, proxyHost) = proxyHost.split('@', 1)
+			if '@' in self._host:
+				proxyUsername, proxyHost = proxyHost.split('@', 1)
 				proxyPassword = ''
-				if (proxyUsername.find(':') != -1):
-					(proxyUsername, proxyPassword) = proxyUsername.split(':', 1)
+				if ':' in proxyUsername:
+					proxyUsername, proxyPassword = proxyUsername.split(':', 1)
 				auth = u'%s:%s' % (proxyUsername, proxyPassword)
 				self._auth = 'Basic '+ base64.encodestring(auth.encode('latin-1')).strip()
 			proxyPort = forceInt(match.group(3))
@@ -1025,7 +1025,7 @@ class WebDAVRepository(HTTPRepository):
 		encoding = 'utf-8'
 		contentType = response.getheader('content-type', '').lower()
 		for part in contentType.split(';'):
-			if (part.find('charset=') != -1):
+			if 'charset=' in part:
 				encoding = part.split('=')[1].replace('"', '').strip()
 
 		msr = davxml.WebDAVDocument.fromString(response.data)
@@ -1127,7 +1127,7 @@ class CIFSRepository(FileRepository):
 		if not match:
 			raise RepositoryError(u"Bad smb/cifs url: '%s'" % self._url)
 
-		if not os.name in ('posix', 'nt'):
+		if os.name not in ('posix', 'nt'):
 			raise NotImplementedError(u"CIFSRepository not yet avaliable on os '%s'" % os.name)
 
 		self._mountShare = forceBool(kwargs.get('mount', True))
@@ -1225,7 +1225,7 @@ class DepotToLocalDirectorySychronizer(object):
 			relSource = (source + u'/' + f).split(u'/', 1)[1]
 			if (relSource == self._productId + u'.files'):
 				continue
-			if self._fileInfo.has_key(relSource):
+			if relSource in self._fileInfo:
 				continue
 
 			path = os.path.join(destination, f)
@@ -1347,7 +1347,7 @@ class DepotToLocalDirectorySychronizer(object):
 
 				size = 0
 				for value in self._fileInfo.values():
-					if value.has_key('size'):
+					if 'size' in value:
 						size += int(value['size'])
 				productProgressSubject.setMessage( _(u"Synchronizing product %s (%.2f kByte)") % (self._productId, (size/1024)) )
 				productProgressSubject.setEnd(size)
