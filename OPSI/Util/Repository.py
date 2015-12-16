@@ -478,14 +478,14 @@ class Repository:
 	def isfile(self, source):
 		try:
 			info = self.fileInfo(source)
-			return (info.get('type', '') == 'file')
+			return info.get('type', '') == 'file'
 		except Exception:
 			return False
 
 	def isdir(self, source):
 		try:
 			info = self.fileInfo(source)
-			return (info.get('type', '') == 'dir')
+			return info.get('type', '') == 'dir'
 		except Exception:
 			return False
 
@@ -708,7 +708,7 @@ class FileRepository(Repository):
 					entry = os.path.join(path, entry)
 					info['path'] = entry[srcLen:]
 					size = 0
-					if os.path.islink(entry) and not(os.path.isdir(entry)):
+					if os.path.islink(entry) and not os.path.isdir(entry):
 						pass
 					elif os.path.isfile(entry):
 						info['size'] = os.path.getsize(entry)
