@@ -62,7 +62,7 @@ elif os.name == 'nt':
 	import win32net
 	import win32security
 
-__version__ = '4.0.6.35'
+__version__ = '4.0.6.39'
 
 logger = Logger()
 
