@@ -414,7 +414,7 @@ class Repository:
 			transferTime = time.time() - transferStartTime
 			if transferTime == 0:
 				transferTime = 0.0000001
-			logger.info( u"Transfered %0.2f kByte in %0.2f minutes, average speed was %0.2f kByte/s" % \
+			logger.info(u"Transfered %0.2f kByte in %0.2f minutes, average speed was %0.2f kByte/s" % \
 				((float(self._bytesTransfered) / 1024), (float(transferTime) / 60), (float(self._bytesTransfered)/transferTime) / 1024))
 			return self._bytesTransfered
 		except Exception as error:
@@ -569,11 +569,11 @@ class Repository:
 				elif os.path.isdir(destination):
 					if not copySrcContent:
 						destination = os.path.join(destination, info['name'])
-				content = self.content(source, recursive = True)
+				content = self.content(source, recursive=True)
 				fileCount = 0
 				for c in content:
 					if c.get('type') == 'dir':
-						path = [ destination ]
+						path = [destination]
 						path.extend(c['path'].split('/'))
 						targetDir = os.path.join(*path)
 						if not targetDir:
@@ -913,7 +913,7 @@ class HTTPRepository(Repository):
 		return urllib.quote(path.encode('utf-8'))
 
 	def _headers(self):
-		headers = { 'user-agent': self._application }
+		headers = {'user-agent': self._application}
 		if self._cookie:
 			headers['cookie'] = self._cookie
 		if self._auth:
@@ -1301,7 +1301,7 @@ class DepotToLocalDirectorySychronizer(object):
 					logger.info(u"Downloading file '%s' starting at byte number %d" % (f['name'], localSize))
 					if os.path.exists(partialEndFile):
 						os.remove(partialEndFile)
-					self._sourceDepot.download(s, partialEndFile, startByteNumber = localSize)
+					self._sourceDepot.download(s, partialEndFile, startByteNumber=localSize)
 
 					with open(d, 'ab') as f1:
 						with open(partialEndFile, 'rb') as f2:
@@ -1315,7 +1315,7 @@ class DepotToLocalDirectorySychronizer(object):
 							os.remove(partialStartFile)
 						# Last byte needed is byte number <localSize> - 1
 						logger.info(u"Downloading file '%s' ending at byte number %d" % (f['name'], localSize-1))
-						self._sourceDepot.download(s, partialStartFile, endByteNumber = localSize-1)
+						self._sourceDepot.download(s, partialStartFile, endByteNumber=localSize - 1)
 
 						with open(partialStartFile, 'ab') as f1:
 							with open(partialEndFile, 'rb') as f2:
@@ -1329,7 +1329,7 @@ class DepotToLocalDirectorySychronizer(object):
 					if exists:
 						os.remove(d)
 					logger.info(u"Downloading file '%s'" % f['name'])
-					self._sourceDepot.download(s, d, progressSubject = progressSubject)
+					self._sourceDepot.download(s, d, progressSubject=progressSubject)
 				md5s = md5sum(d)
 				if md5s != self._fileInfo[relSource]['md5sum']:
 					error = u"Failed to download '%s': MD5sum mismatch (local:%s != remote:%s)" % (f['name'], md5s, self._fileInfo[relSource]['md5sum'])
@@ -1417,7 +1417,7 @@ class DepotToLocalDirectorySychronizer(object):
 					finally:
 						os.chdir(cwd)
 			except Exception as error:
-				productProgressSubject.setMessage( _(u"Failed to sync product %s: %s") % (self._productId, error) )
+				productProgressSubject.setMessage(_(u"Failed to sync product %s: %s") % (self._productId, error))
 				if packageContentFile and os.path.exists(packageContentFile):
 					os.unlink(packageContentFile)
 				raise
