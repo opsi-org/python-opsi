@@ -139,8 +139,8 @@ class Repository:
 					try:
 						self._networkPerformanceCounter = NetworkPerformanceCounter(getDefaultNetworkInterfaceName())
 						break
-					except Exception as e:
-						exception = forceUnicode(e)
+					except Exception as counterInitError:
+						exception = forceUnicode(counterInitError)
 						logger.debug("Setting dynamic bandwith failed, waiting 5 sec and trying again.")
 						retry += 1
 						time.sleep(5)
@@ -152,8 +152,8 @@ class Repository:
 		elif self._networkPerformanceCounter:
 			try:
 				self._networkPerformanceCounter.stop()
-			except Exception as e:
-				logger.warning(u"Failed to stop networkPerformanceCounter: %s" % e)
+			except Exception as counterStopError:
+				logger.warning(u"Failed to stop networkPerformanceCounter: %s" % counterStopError)
 
 	def setMaxBandwidth(self, maxBandwidth):
 		self.setBandwidth(dynamicBandwidth=self._dynamicBandwidth, maxBandwidth=maxBandwidth)
@@ -192,8 +192,8 @@ class Repository:
 			try:
 				meth = getattr(obs, event)
 				meth(self, *args)
-			except Exception as e:
-				logger.error(e)
+			except Exception as error:
+				logger.error(error)
 
 	def _transferDown(self, src, dst, progressSubject=None, bytes=-1):
 		return self._transfer('in', src, dst, progressSubject, bytes=bytes)
@@ -409,8 +409,8 @@ class Repository:
 			logger.info( u"Transfered %0.2f kByte in %0.2f minutes, average speed was %0.2f kByte/s" % \
 				( (float(self._bytesTransfered)/1024), (float(transferTime)/60), (float(self._bytesTransfered)/transferTime)/1024) )
 			return self._bytesTransfered
-		except Exception as e:
-			logger.logException(e, LOG_INFO)
+		except Exception as error:
+			logger.logException(error, LOG_INFO)
 			raise
 
 	def _preProcessPath(self, path):
@@ -446,9 +446,8 @@ class Repository:
 					info = c
 					return info
 			raise Exception(u'File not found')
-		except Exception as e:
-			#logger.logException(e)
-			raise RepositoryError(u"Failed to get file info for '%s': %s" % (source, e))
+		except Exception as error:
+			raise RepositoryError(u"Failed to get file info for '%s': %s" % (source, error))
 
 	def exists(self, source):
 		try:
@@ -536,15 +535,16 @@ class Repository:
 
 				try:
 					self.download(source, destinationFile, currentProgressSubject)
-				except OSError as e:
-					if (e.errno != 1):
+				except OSError as error:
+					if error.errno != 1:
 						raise
 					# Operation not permitted
-					logger.debug(e)
+					logger.debug(error)
+
 				if overallProgressSubject:
 					overallProgressSubject.addToState(info['size'])
 
-			elif (info.get('type') == 'dir'):
+			elif info.get('type') == 'dir':
 				if not os.path.exists(destination):
 					os.makedirs(destination)
 				elif os.path.isfile(destination):
@@ -591,10 +591,10 @@ class Repository:
 			logger.info(u'Copy done')
 			if overallProgressSubject:
 				overallProgressSubject.setState(size)
-		except Exception as e:
+		except Exception as error:
 			for hook in self._hooks:
-				hook.error_Repository_copy(source, destination, overallProgressSubject, currentProgressSubject, e)
-			raise
+				hook.error_Repository_copy(source, destination, overallProgressSubject, currentProgressSubject, error)
+			raise error
 
 		for hook in self._hooks:
 			hook.post_Repository_copy(source, destination, overallProgressSubject, currentProgressSubject)
@@ -662,9 +662,8 @@ class FileRepository(Repository):
 			if os.path.isfile(source):
 				info['size'] = os.path.getsize(source)
 			return info
-		except Exception as e:
-			#logger.logException(e)
-			raise RepositoryError(u"Failed to get file info for '%s': %s" % (source, e))
+		except Exception as error:
+			raise RepositoryError(u"Failed to get file info for '%s': %s" % (source, error))
 
 	def exists(self, source):
 		return os.path.exists(self._preProcessPath(source))
@@ -700,9 +699,9 @@ class FileRepository(Repository):
 						info['type'] = 'dir'
 						content.append(info)
 						if recursive:
-							_recurse(path = entry, content = content)
-				except Exception as e:
-					logger.error(e)
+							_recurse(path=entry, content=content)
+				except Exception as error:
+					logger.error(error)
 			return content
 		return _recurse(path = source, content = content)
 
@@ -743,9 +742,9 @@ class FileRepository(Repository):
 
 				with open(destination, 'wb') as dst:
 					self._transferDown(src, dst, progressSubject, bytes=bytes)
-		except Exception as e:
+		except Exception as error:
 			raise RepositoryError(u"Failed to download '%s' to '%s': %s" \
-						% (source, destination, forceUnicode(e)))
+						% (source, destination, forceUnicode(error)))
 
 	def upload(self, source, destination, progressSubject=None):
 		source = forceUnicode(source)
@@ -761,9 +760,9 @@ class FileRepository(Repository):
 			with open(source, 'rb') as src:
 				with open(destination, 'wb') as dst:
 					self._transferUp(src, dst, progressSubject)
-		except Exception as e:
+		except Exception as error:
 			raise RepositoryError(u"Failed to upload '%s' to '%s': %s" \
-						% (source, destination, e))
+						% (source, destination, error))
 
 	def delete(self, destination):
 		destination = self._preProcessPath(destination)
@@ -964,21 +963,21 @@ class HTTPRepository(Repository):
 
 					with open(destination, mode) as dst:
 						bytesTransfered = self._transferDown(httplib_response, dst, progressSubject)
-				except Exception as e:
+				except Exception as error:
 					conn = None
 					self._connectionPool.endConnection(conn)
 					if trynum > 2:
 						raise
-					logger.info(u"Error '%s' occured while downloading, retrying" % e)
+					logger.info(u"Error '%s' occured while downloading, retrying" % error)
 					continue
 				response = HTTPResponse.from_httplib(httplib_response)
 				conn = None
 				self._connectionPool.endConnection(conn)
 				break
 
-		except Exception as e:
-			logger.logException(e)
-			raise RepositoryError(u"Failed to download '%s' to '%s': %s" % (source, destination, e))
+		except Exception as error:
+			logger.logException(error)
+			raise RepositoryError(u"Failed to download '%s' to '%s': %s" % (source, destination, error))
 		logger.debug2(u"HTTP download done")
 
 	def disconnect(self):
@@ -1085,12 +1084,12 @@ class WebDAVRepository(HTTPRepository):
 					with open(source, 'rb') as src:
 						self._transferUp(src, conn, progressSubject)
 					httplib_response = conn.getresponse()
-				except Exception as e:
+				except Exception as error:
 					conn = None
 					self._connectionPool.endConnection(conn)
 					if trynum > 2:
 						raise
-					logger.info(u"Error '%s' occured while uploading, retrying" % e)
+					logger.info(u"Error '%s' occured while uploading, retrying" % error)
 					continue
 				response = HTTPResponse.from_httplib(httplib_response)
 				conn = None
@@ -1100,11 +1099,11 @@ class WebDAVRepository(HTTPRepository):
 			self._processResponseHeaders(response)
 			if (response.status != responsecode.CREATED) and (response.status != responsecode.NO_CONTENT):
 				raise Exception(response.status)
-		except Exception as e:
-			logger.logException(e)
+		except Exception as error:
+			logger.logException(error)
 			if conn:
 				self._connectionPool.endConnection(None)
-			raise RepositoryError(u"Failed to upload '%s' to '%s': %s" % (source, destination, forceUnicode(e)))
+			raise RepositoryError(u"Failed to upload '%s' to '%s': %s" % (source, destination, forceUnicode(error)))
 		logger.debug2(u"WebDAV upload done")
 
 	def delete(self, destination):
@@ -1180,13 +1179,13 @@ class CIFSRepository(FileRepository):
 			mountOptions['password'] = self._password
 			mount(self._url, self._mountPoint, **mountOptions)
 			self._mounted = True
-		except Exception as e:
+		except Exception as mountError:
 			if self._mountPointCreated:
 				try:
 					os.rmdir(self._mountPoint)
-				except Exception as e2:
-					logger.error(e2)
-			raise e
+				except Exception as removalError:
+					logger.error(removalError)
+			raise mountError
 
 	def _umount(self):
 		if not self._mounted or not self._mountPoint:
@@ -1391,8 +1390,8 @@ class DepotToLocalDirectorySychronizer(object):
 							os.symlink(t, f)
 					finally:
 						os.chdir(cwd)
-			except Exception as e:
-				productProgressSubject.setMessage( _(u"Failed to sync product %s: %s") % (self._productId, e) )
+			except Exception as error:
+				productProgressSubject.setMessage( _(u"Failed to sync product %s: %s") % (self._productId, error) )
 				if packageContentFile and os.path.exists(packageContentFile):
 					os.unlink(packageContentFile)
 				raise
