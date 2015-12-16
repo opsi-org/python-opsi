@@ -257,13 +257,13 @@ class Repository:
 					usage = (float(self._averageSpeed) / float(totalNetworkUsage)) * 1.03
 					if usage > 1:
 						usage = 1.0
-					#print totalNetworkUsage/1024, usage
+
 					self._networkUsageData.append([now, usage])
 					if self._networkUsageData and (now - self._networkUsageData[0][0]) >= 5:
 						usage = 0.0
 						count = 0.0
 						index = -1
-						#data = []
+
 						for i in range(len(self._networkUsageData)):
 							if now - self._networkUsageData[i][0] <= 5:
 								if index == -1:
@@ -1124,8 +1124,6 @@ class WebDAVRepository(HTTPRepository):
 		self._processResponseHeaders(response)
 		if response.status != responsecode.NO_CONTENT:
 			raise RepositoryError(u"Failed to delete '%s': %s" % (destination, response.status))
-		## Do we have to read the response?
-		#response.read()
 
 
 class CIFSRepository(FileRepository):
@@ -1323,7 +1321,6 @@ class DepotToLocalDirectorySychronizer(object):
 					error = u"Failed to download '%s': MD5sum mismatch (local:%s != remote:%s)" % (f['name'], md5s, self._fileInfo[relSource]['md5sum'])
 					logger.error(error)
 					raise Exception(error)
-				#if progressSubject: progressSubject.addToState(size)
 
 	def synchronize(self, productProgressObserver=None, overallProgressObserver=None):
 		if not self._productIds:
