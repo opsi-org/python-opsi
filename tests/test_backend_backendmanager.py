@@ -26,10 +26,10 @@ Testing BackendManager.
 from __future__ import absolute_import
 
 import os
-import unittest
 
 from OPSI.Backend.Backend import ExtendedConfigDataBackend
 from OPSI.Backend.BackendManager import BackendManager, ConfigDataBackend
+from OPSI.Backend.BackendManager import getBackendManager
 
 from .Backends.File import FileBackendMixin
 from .BackendTestMixins.Backend import BackendTestsMixin
@@ -37,7 +37,7 @@ from .BackendTestMixins.Configs import ConfigStatesMixin
 from .BackendTestMixins.Groups import GroupsMixin
 from .BackendTestMixins.Products import ProductsOnDepotMixin
 
-from .helpers import getLocalFQDN
+from .helpers import getLocalFQDN, unittest
 
 
 class BackendExtensionTestCase(unittest.TestCase):
@@ -347,6 +347,22 @@ class ExtendedBackendManagerTestCase(unittest.TestCase, FileBackendMixin,
         status = bm.getProductInstallationStatus_listOfHashes(objectId=client.id)
         actions = bm.getProductActionRequests_listOfHashes(clientId=client.id)
         states = bm.getLocalBootProductStates_hash()
+
+
+class GettingBackendManagerTestCase(unittest.TestCase):
+    def testGettingBackendManagerWithDefaultConfig(self):
+        requiredThings = (
+            u'/etc/opsi/backendManager/dispatch.conf',
+            u'/etc/opsi/backends',
+            u'/etc/opsi/backendManager/extend.d'
+        )
+
+        for required in requiredThings:
+            if not os.path.exists(required):
+                self.skipTest("Missing {0}".format(required))
+
+        backend = getBackendManager()
+        print(backend.backend_info())
 
 
 if __name__ == '__main__':

@@ -1039,3 +1039,18 @@ def backendManagerFactory(user, password, dispatchConfigFile, backendConfigDir,
 		)
 
 	return backendManager
+
+
+def getBackendManager(**kwargs):
+	if not kwargs:
+		kwargs = {
+			"dispatchConfigFile": u'/etc/opsi/backendManager/dispatch.conf',
+			"backendConfigDir": u'/etc/opsi/backends',
+			"extensionConfigDir": u'/etc/opsi/backendManager/extend.d',
+			"depotBackend": True,
+			"hostControlBackend": True,
+			"hostControlSafeBackend": True,
+		}
+		logger.debug("No config given, using {0!r}".format(kwargs))
+
+	return BackendManager(**kwargs)
