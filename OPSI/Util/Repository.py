@@ -51,6 +51,9 @@ from OPSI.Util import md5sum, randomString
 from OPSI.Util.File.Opsi import PackageContentFile
 from OPSI.Util.HTTP import getSharedConnectionPool, urlsplit, HTTPResponse
 
+if os.name == 'nt':
+	from OPSI.System.Windows import getFreeDrive
+
 __version__ = '4.0.6.39'
 
 logger = Logger()
@@ -1133,11 +1136,9 @@ class CIFSRepository(FileRepository):
 
 		self._mountPoint = kwargs.get('mountPoint')
 		if not self._mountPoint:
-			if   (os.name == 'posix'):
+			if os.name == 'posix':
 				self._mountPoint = u'/tmp/.cifs-mount.%s' % randomString(5)
-			elif (os.name == 'nt'):
-				from OPSI.System.Windows import getFreeDrive
-
+			elif os.name == 'nt':
 				self._mountPoint = getFreeDrive(startLetter='g')
 
 		self._username = forceUnicode(kwargs.get('username', 'guest'))
