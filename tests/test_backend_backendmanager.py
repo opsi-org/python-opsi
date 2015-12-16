@@ -37,7 +37,8 @@ from .BackendTestMixins.Configs import ConfigStatesMixin
 from .BackendTestMixins.Groups import GroupsMixin
 from .BackendTestMixins.Products import ProductsOnDepotMixin
 
-from .helpers import getLocalFQDN, unittest
+from .helpers import getLocalFQDN, unittest, workInTemporaryDirectory
+from .Backends.File import getFileBackend
 
 
 class BackendExtensionTestCase(unittest.TestCase):
@@ -363,6 +364,38 @@ class GettingBackendManagerTestCase(unittest.TestCase):
 
         backend = getBackendManager()
         print(backend.backend_info())
+
+    def testGettingBackendManagerWithCustomConfig(self):
+        with workInTemporaryDirectory() as tempDir:
+            backendsDir = os.path.join(tempDir, 'backendsss')
+            bmDir = os.path.join(tempDir, 'bm')
+            dispatchConfig = os.path.join(bmDir, 'dispatch.conf')
+            extensionDir = os.path.join(bmDir, 'extension')
+
+            os.mkdir(bmDir)
+            os.mkdir(extensionDir)
+            os.mkdir(backendsDir)
+
+            with open(dispatchConfig, 'w') as dpconf:
+                dpconf.write("""
+.* : file
+""")
+
+            kwargs = {
+                "dispatchConfigFile": dispatchConfig,
+                "backendConfigDir": backendsDir,
+                "extensionConfigDir": extensionDir,
+            }
+
+            with getFileBackend(path=tempDir):
+                # We need to make sure there is a file.conf for the backend.
+                os.link(
+                    os.path.join(tempDir, 'etc', 'opsi', 'backends', 'file.conf'),
+                    os.path.join(backendsDir, 'file.conf')
+                )
+
+            backend = getBackendManager(**kwargs)
+            print(backend.backend_info())
 
 
 if __name__ == '__main__':
