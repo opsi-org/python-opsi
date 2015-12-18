@@ -29,7 +29,6 @@ import os
 
 from OPSI.Backend.Backend import ExtendedConfigDataBackend
 from OPSI.Backend.BackendManager import BackendManager, ConfigDataBackend
-from OPSI.Backend.BackendManager import getBackendManager
 
 from .Backends.File import FileBackendMixin
 from .BackendTestMixins.Backend import BackendTestsMixin
@@ -362,7 +361,7 @@ class GettingBackendManagerTestCase(unittest.TestCase):
             if not os.path.exists(required):
                 self.skipTest("Missing {0}".format(required))
 
-        backend = getBackendManager()
+        backend = BackendManager()
         print(backend.backend_info())
 
     def testGettingBackendManagerWithCustomConfig(self):
@@ -394,7 +393,7 @@ class GettingBackendManagerTestCase(unittest.TestCase):
                     os.path.join(backendsDir, 'file.conf')
                 )
 
-            backend = getBackendManager(**kwargs)
+            backend = BackendManager(**kwargs)
             print(backend.backend_info())
 
 

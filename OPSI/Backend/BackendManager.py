@@ -204,6 +204,17 @@ class BackendManager(ExtendedBackend):
 		startReactor = True
 		loadBackend = None
 
+		if not kwargs:
+			kwargs = {
+				"dispatchConfigFile": u'/etc/opsi/backendManager/dispatch.conf',
+				"backendConfigDir": u'/etc/opsi/backends',
+				"extensionConfigDir": u'/etc/opsi/backendManager/extend.d',
+				"depotBackend": True,
+				"hostControlBackend": True,
+				"hostControlSafeBackend": True,
+			}
+			logger.debug("No config given, using {0!r}".format(kwargs))
+
 		for (option, value) in kwargs.items():
 			option = option.lower()
 			if option == 'username':
@@ -1080,18 +1091,3 @@ def backendManagerFactory(user, password, dispatchConfigFile, backendConfigDir,
 		)
 
 	return backendManager
-
-
-def getBackendManager(**kwargs):
-	if not kwargs:
-		kwargs = {
-			"dispatchConfigFile": u'/etc/opsi/backendManager/dispatch.conf',
-			"backendConfigDir": u'/etc/opsi/backends',
-			"extensionConfigDir": u'/etc/opsi/backendManager/extend.d',
-			"depotBackend": True,
-			"hostControlBackend": True,
-			"hostControlSafeBackend": True,
-		}
-		logger.debug("No config given, using {0!r}".format(kwargs))
-
-	return BackendManager(**kwargs)
