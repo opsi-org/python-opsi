@@ -139,7 +139,48 @@ class MessageBusNotifier(BackendModificationListener):
 
 
 class BackendManager(ExtendedBackend):
+	"""
+	The BackendManager manages the backend and glues together various parts.
+
+	This includes extending the backends, dispatching calls to backends,
+	limiting the access	through ACL.
+	"""
+
 	def __init__(self, **kwargs):
+		"""
+		Creating a BackendManager.
+
+		If no configuration is given a default config for accessing the
+		local backend as configured through the files in
+		/etc/opsi/backendManager/ will be used.
+
+		The constructor takes several parameters and these are all optional.
+
+		:param username: A username for authentication.
+		:type username: str
+		:param password: The corresponding password.
+		:type password: str
+		:param backend: A backend to use.
+		:param dispatchconfig: A pre-definded dispatch config to use.
+		:param dispatchconfigfile: The configuration file for dispatching.
+		:type dispatchconfigfile: str
+		:param backendconfigdir: The location of backend configurations.
+		:type backendconfigdir: str
+		:param depotbackend: Allow depot actions?
+		:type depotbackend: bool
+		:param hostcontrolbackend: Allow controlling hosts?
+		:type hostcontrolbackend: bool
+		:param hostcontrolsafebackend: Allow controlling hosts (safe variant)?
+		:type hostcontrolsafebackend: bool
+		:param extensionconfigdir: The directory where backend extensions can be found.
+		:type extensionconfigdir: str
+		:param extend: Extend the backends?
+		:type extend: bool
+		:param acl: An access control list (ACL) configuration to use.
+		:type acl: [[str, ]]
+		:param aclfile: Load the ACL from this file.
+		:type aclfile: str
+		"""
 		self._backend = None
 		self._backendConfigDir = None
 		self._options = {}
