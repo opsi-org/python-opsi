@@ -1,5 +1,9 @@
 python-opsi (4.0.6.39-1) UNRELEASED; urgency=medium
 
+  [Mathias Radtke]
+  * gettext: added faked english 'translation'
+
+  [ Niko Wenselowski]
   * Replacing many try/finally-constructs with contextmanagers.
   * OPSI.Util.Repository: Removed wildcard imports.
   * OPSI.Util.Repository: some small refactorings.
