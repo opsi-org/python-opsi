@@ -1,16 +1,20 @@
-python-opsi (4.0.6.39-3) UNRELEASED; urgency=medium
+python-opsi (4.0.6.40-1) UNRELEASED; urgency=medium
 
+  [ Mathias Radtke ]
   * OPSI.System.Posix.py: fixed bug in HP Smart Array Disk handling
 
- -- Mathias Radtke <m.radtke@uib.de>  Wed, 07 Jan 2016 08:45:00 +0100
+  [ Niko Wenselowski ]
+  * 70_wan.conf: Added docstring for changeWANConfig.
 
-python-opsi (4.0.6.39-2) UNRELEASED; urgency=medium
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 11 Jan 2016 12:01:46 +0100
+
+python-opsi (4.0.6.39-2) experimental; urgency=medium
 
   * gettext.python-opsi_en: copied from python-opsi.pot instead of linking because of placeholder Variables
 
  -- Mathias Radtke <m.radtke@uib.de>  Wed, 06 Jan 2016 08:05:00 +0100
 
-python-opsi (4.0.6.39-1) UNRELEASED; urgency=medium
+python-opsi (4.0.6.39-1) experimental; urgency=medium
 
   [Mathias Radtke]
   * gettext: added faked english 'translation'
