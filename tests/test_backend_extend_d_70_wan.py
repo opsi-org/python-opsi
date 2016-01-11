@@ -118,6 +118,21 @@ class SimpleWanConfigTestCase(unittest.TestCase, FileBackendBackendManagerMixin)
 
         self.assertFalse(self.clientHasWANEnabled(singleClient))
 
+    def testUsingNonBooleanParameters(self):
+        client = OpsiClient(id='testclient101.test.invalid')
+
+        self.backend.host_createObjects([client])
+
+        for term in ("on", "1", "true"):
+            self.backend.changeWANConfig(term, client.id)
+            self.assertTrue(self.clientHasWANEnabled(client.id))
+            self.backend.changeWANConfig(False, client.id)
+
+        for term in ("off", "false", "0"):
+            self.backend.changeWANConfig(term, client.id)
+            self.assertTrue(self.clientHasWANEnabled(client.id))
+            self.backend.changeWANConfig(False, client.id)
+
 
 if __name__ == '__main__':
     unittest.main()
