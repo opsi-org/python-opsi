@@ -123,15 +123,17 @@ class SimpleWanConfigTestCase(unittest.TestCase, FileBackendBackendManagerMixin)
 
         self.backend.host_createObjects([client])
 
+        self.backend.changeWANConfig(False, client.id)
         for term in ("on", "1", "true"):
             self.backend.changeWANConfig(term, client.id)
             self.assertTrue(self.clientHasWANEnabled(client.id))
             self.backend.changeWANConfig(False, client.id)
 
+        self.backend.changeWANConfig(True, client.id)
         for term in ("off", "false", "0"):
             self.backend.changeWANConfig(term, client.id)
-            self.assertTrue(self.clientHasWANEnabled(client.id))
-            self.backend.changeWANConfig(False, client.id)
+            self.assertFalse(self.clientHasWANEnabled(client.id))
+            self.backend.changeWANConfig(True, client.id)
 
 
 if __name__ == '__main__':
