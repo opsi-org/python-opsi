@@ -4,7 +4,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2014-2015 uib GmbH - http://www.uib.de/
+# Copyright (C) 2014-2016 uib GmbH - http://www.uib.de/
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -61,7 +61,7 @@ from OPSI.Util import findFiles, getfqdn
 from OPSI.Util.File.Opsi import OpsiConfFile
 from OPSI.System.Posix import isSLES
 
-__version__ = '4.0.6.35'
+__version__ = '4.0.6.40'
 
 LOGGER = Logger()
 
@@ -78,7 +78,8 @@ except Exception:
 KNOWN_EXECUTABLES = frozenset((
 	u'create_driver_links.py', u'opsi-deploy-client-agent',
 	u'opsi-deploy-client-agent-default', u'opsi-deploy-client-agent-old',
-	u'service_setup.sh', u'setup.py', u'show_drivers.py', u'winexe'
+	u'service_setup.sh', u'setup.py', u'show_drivers.py', u'winexe',
+	u'windows-image-detector.py',
 ))
 
 
