@@ -116,19 +116,19 @@ def setRights(path=u'/'):
 			continue
 		uid = opsiconfdUid
 		gid = fileAdminGroupGid
-		fmod = 0o660
-		dmod = 0o770
+		fileMode = 0o660
+		directoryMode = 0o770
 		correctLinks = False
 
 		if dirname in (u'/var/lib/tftpboot/opsi', u'/tftpboot/linux'):
-			fmod = 0o664
-			dmod = 0o775
+			fileMode = 0o664
+			directoryMode = 0o775
 		elif dirname in (u'/var/log/opsi', u'/etc/opsi'):
 			gid = adminGroupGid
 			correctLinks = True
 		elif dirname in (u'/home/opsiproducts', '/var/lib/opsi/workbench'):
 			uid = -1
-			dmod = 0o2770
+			directoryMode = 0o2770
 
 		if os.path.isfile(path):
 			chown(path, uid, gid)
@@ -139,7 +139,7 @@ def setRights(path=u'/'):
 				os.chmod(path, (os.stat(path)[0] | 0o660) & 0o770)
 			else:
 				LOGGER.debug("Assuming general file...")
-				os.chmod(path, fmod)
+				os.chmod(path, fileMode)
 			continue
 
 		startPath = dirname
@@ -147,17 +147,17 @@ def setRights(path=u'/'):
 			startPath = basedir
 
 		if dirname == depotDir:
-			dmod = 0o2770
+			directoryMode = 0o2770
 
 		LOGGER.notice(u"Setting rights on directory {0!r}".format(startPath))
 		LOGGER.debug2(u"Current setting: startPath={path}, uid={uid}, gid={gid}".format(path=startPath, uid=uid, gid=gid))
 		chown(startPath, uid, gid)
-		os.chmod(startPath, dmod)
+		os.chmod(startPath, directoryMode)
 		for filepath in findFiles(startPath, prefix=startPath, returnLinks=correctLinks, excludeFile=re.compile("(.swp|~)$")):
 			chown(filepath, uid, gid)
 			if os.path.isdir(filepath):
 				LOGGER.debug(u"Setting rights on directory {0!r}".format(filepath))
-				os.chmod(filepath, dmod)
+				os.chmod(filepath, directoryMode)
 			elif os.path.isfile(filepath):
 				LOGGER.debug(u"Setting rights on file {0!r}".format(filepath))
 				if filepath.startswith((u'/var/lib/opsi/depot/', u'/opt/pcbin/install/')):
@@ -168,8 +168,8 @@ def setRights(path=u'/'):
 						LOGGER.debug(u"Setting rights on file {0!r}".format(filepath))
 						os.chmod(filepath, (os.stat(filepath)[0] | 0o660) & 0o770)
 				else:
-					LOGGER.debug(u"Setting rights {rights!r} on file {file!r}".format(file=filepath, rights=fmod))
-					os.chmod(filepath, fmod)
+					LOGGER.debug(u"Setting rights {rights!r} on file {file!r}".format(file=filepath, rights=fileMode))
+					os.chmod(filepath, fileMode)
 
 		if startPath.startswith(u'/var/lib/opsi') and os.geteuid() == 0:
 			os.chmod(u'/var/lib/opsi', 0o750)
