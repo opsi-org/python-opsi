@@ -1,0 +1,160 @@
+WIM Information:
+----------------
+Path:           install.wim
+GUID:           0x5e019eddf37dc84a8bbf3dd994d49480
+Version:        68864
+Image Count:    5
+Compression:    LZX
+Chunk Size:     32768 bytes
+Part Number:    1/1
+Boot Index:     0
+Size:           1892734537 bytes
+Attributes:     Integrity info, Relative path junction
+
+Available Images:
+-----------------
+Index:                  1
+Name:                   Windows 7 STARTERN
+Description:            Windows 7 STARTERN
+Display Name:           Windows 7 Starter N
+Display Description:    Windows 7 Starter N
+Directory Count:        9014
+File Count:             45722
+Total Bytes:            7428395024
+Hard Link Bytes:        2860003786
+Creation Time:          Sa Nov 20 22:25:00 2010 UTC
+Last Modification Time: Di Apr 12 02:53:42 2011 UTC
+Architecture:           x86
+Product Name:           Microsoft® Windows® Operating System
+Edition ID:             StarterN
+Installation Type:      Client
+HAL:                    acpiapic
+Product Type:           WinNT
+Product Suite:          Terminal Server
+Languages:              de-DE 
+Default Language:       de-DE
+System Root:            WINDOWS
+Major Version:          6
+Minor Version:          1
+Build:                  7601
+Service Pack Build:     17514
+Service Pack Level:     1
+Flags:                  StarterN
+WIMBoot compatible:     no
+
+Index:                  2
+Name:                   Windows 7 HOMEBASICN
+Description:            Windows 7 HOMEBASICN
+Display Name:           Windows 7 Home Basic N
+Display Description:    Windows 7 Home Basic N
+Directory Count:        9023
+File Count:             45803
+Total Bytes:            7448208788
+Hard Link Bytes:        2875246145
+Creation Time:          Sa Nov 20 22:25:00 2010 UTC
+Last Modification Time: Di Apr 12 02:54:19 2011 UTC
+Architecture:           x86
+Product Name:           Microsoft® Windows® Operating System
+Edition ID:             HomeBasicN
+Installation Type:      Client
+HAL:                    acpiapic
+Product Type:           WinNT
+Product Suite:          Terminal Server
+Languages:              de-DE 
+Default Language:       de-DE
+System Root:            WINDOWS
+Major Version:          6
+Minor Version:          1
+Build:                  7601
+Service Pack Build:     17514
+Service Pack Level:     1
+Flags:                  HomeBasicN
+WIMBoot compatible:     no
+
+Index:                  3
+Name:                   Windows 7 HOMEPREMIUMN
+Description:            Windows 7 HOMEPREMIUMN
+Display Name:           Windows 7 Home Premium N
+Display Description:    Windows 7 Home Premium N
+Directory Count:        9045
+File Count:             46069
+Total Bytes:            7630052696
+Hard Link Bytes:        3055573026
+Creation Time:          Sa Nov 20 22:25:00 2010 UTC
+Last Modification Time: Di Apr 12 02:54:44 2011 UTC
+Architecture:           x86
+Product Name:           Microsoft® Windows® Operating System
+Edition ID:             HomePremiumN
+Installation Type:      Client
+HAL:                    acpiapic
+Product Type:           WinNT
+Product Suite:          Terminal Server
+Languages:              de-DE 
+Default Language:       de-DE
+System Root:            WINDOWS
+Major Version:          6
+Minor Version:          1
+Build:                  7601
+Service Pack Build:     17514
+Service Pack Level:     1
+Flags:                  HomePremiumN
+WIMBoot compatible:     no
+
+Index:                  4
+Name:                   Windows 7 PROFESSIONALN
+Description:            Windows 7 PROFESSIONALN
+Display Name:           Windows 7 Professional N
+Display Description:    Windows 7 Professional N
+Directory Count:        9102
+File Count:             46516
+Total Bytes:            7512090717
+Hard Link Bytes:        2922460987
+Creation Time:          Sa Nov 20 22:25:00 2010 UTC
+Last Modification Time: Di Apr 12 02:55:24 2011 UTC
+Architecture:           x86
+Product Name:           Microsoft® Windows® Operating System
+Edition ID:             ProfessionalN
+Installation Type:      Client
+HAL:                    acpiapic
+Product Type:           WinNT
+Product Suite:          Terminal Server
+Languages:              de-DE 
+Default Language:       de-DE
+System Root:            WINDOWS
+Major Version:          6
+Minor Version:          1
+Build:                  7601
+Service Pack Build:     17514
+Service Pack Level:     1
+Flags:                  ProfessionalN
+WIMBoot compatible:     no
+
+Index:                  5
+Name:                   Windows 7 ULTIMATEN
+Description:            Windows 7 ULTIMATEN
+Display Name:           Windows 7 Ultimate N
+Display Description:    Windows 7 Ultimate N
+Directory Count:        9138
+File Count:             46701
+Total Bytes:            7672554325
+Hard Link Bytes:        3081162944
+Creation Time:          Sa Nov 20 22:25:00 2010 UTC
+Last Modification Time: Di Apr 12 02:55:49 2011 UTC
+Architecture:           x86
+Product Name:           Microsoft® Windows® Operating System
+Edition ID:             UltimateN
+Installation Type:      Client
+HAL:                    acpiapic
+Product Type:           WinNT
+Product Suite:          Terminal Server
+Languages:              de-DE 
+Default Language:       de-DE
+System Root:            WINDOWS
+Major Version:          6
+Minor Version:          1
+Build:                  7601
+Service Pack Build:     17514
+Service Pack Level:     1
+Flags:                  UltimateN
+WIMBoot compatible:     no
+
