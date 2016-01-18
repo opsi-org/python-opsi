@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2015 uib GmbH <info@uib.de>
+# Copyright (C) 2015-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -19,7 +19,7 @@
 """
 Functionality to automatically configure the DHCPD-backend.
 
-.. versionadded:: 4.0.6.35
+.. versionadded:: 4.0.6.40
 
 :author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
@@ -43,7 +43,7 @@ from OPSI.System.Posix import isCentOS, isSLES, isRHEL
 from OPSI.Util.File import DHCPDConfFile, DHCPDConf_Block, DHCPDConf_Parameter
 from OPSI.Util.Task.Sudoers import patchSudoersFileToAllowRestartingDHCPD
 
-DHCPD_CONF = locateDHCPDConfig(u'/etc/dhcp3/dhcpd.conf')
+DHCPD_CONF = locateDHCPDConfig(default=u'/etc/dhcp3/dhcpd.conf')
 OPSICONFD_USER = u'opsiconfd'
 ADMIN_GROUP = u'opsiadmin'
 
