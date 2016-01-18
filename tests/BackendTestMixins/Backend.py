@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -193,7 +193,7 @@ class BackendTestsMixin(ClientsMixin, HostsMixin):
             maxBandwidth=0)
 
         hosts = self.backend.host_getObjects(id='depot100.test.invalid')
-        assert len(hosts) == 1, u"got: '%s', expected: '%s'" % (hosts, 1)
+        assert len(hosts) == 1, u"got {0!r}, expected only one".format(hosts)
 
         self.setUpProducts()
         self.createProductsOnBackend()
@@ -384,6 +384,14 @@ class BackendTestsMixin(ClientsMixin, HostsMixin):
         reduced if problems because of missing methods occur.
         """
         print("Checking with backend {0!r}".format(self.backend))
+        try:
+            print("Checking with backend {0!r}".format(self.backend._backend._backend))
+        except Exception:
+            try:
+                print("Checking with backend {0!r}".format(self.backend._backend))
+            except Exception:
+                pass
+
         results = self.backend.backend_getInterface()
 
         expected = [
@@ -403,7 +411,7 @@ class BackendTestsMixin(ClientsMixin, HostsMixin):
                 if result['name'] == selection['name']:
                     print('Checking {0}'.format(selection['name']))
                     for parameter in ('args', 'params', 'defaults', 'varargs', 'keywords'):
-                        print('Now checking parameter {0!r}'.format(parameter))
+                        print('Now checking parameter {0!r}, expecting {1!r}'.format(parameter, selection[parameter]))
                         self.assertEqual(selection[parameter], result[parameter])
 
                     found = True
