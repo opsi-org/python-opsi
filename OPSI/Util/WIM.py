@@ -29,7 +29,6 @@ Working with Windows Imaging Format (WIM) files.
 import os.path
 from collections import namedtuple
 
-from OPSI.Backend.BackendManager import BackendManager
 from OPSI.Logger import Logger
 from OPSI.System import execute, which
 from OPSI.Util import getfqdn
