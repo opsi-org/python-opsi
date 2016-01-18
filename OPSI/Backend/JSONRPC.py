@@ -112,7 +112,7 @@ class JSONRPC(DeferredCall):
 			self.error = error
 
 	def process(self):
-		logger.debug(u"Executing jsonrpc method {0!r} on host {1}".format(self.method, self.jsonrpcBackend._host))
+		logger.debug(u"Executing jsonrpc method {0!r} on host {1!r}".format(self.method, self.jsonrpcBackend._host))
 
 		try:
 			rpc = json.dumps(self.getRpc())
@@ -444,7 +444,7 @@ class JSONRPCBackend(Backend):
 				logger.debug(u"Deflated communication works!")
 			except Exception as error:
 				logger.setConsoleLevel(previousLogLevel)
-				logger.debug(u"Caught {0}".format(error))
+				logger.debug(u"Caught {0!r}".format(error))
 				logger.debug(u"Disabling deflate...")
 				self._deflate = False
 			finally:
@@ -474,7 +474,8 @@ class JSONRPCBackend(Backend):
 			except (OpsiAuthenticationError, OpsiTimeoutError, OpsiServiceVerificationError, socket.error):
 				raise
 			except Exception as error:
-				logger.debug(u"backend_getInterface failed: %s, trying getPossibleMethods_listOfHashes" % forceUnicode(error))
+				logger.debug(u"backend_getInterface failed: {0!r}".format(forceUnicode(error)))
+				logger.debug(u"trying getPossibleMethods_listOfHashes")
 				self._interface = self._jsonRPC(u'getPossibleMethods_listOfHashes')
 				logger.info(u"Legacy opsi")
 				self._legacyOpsi = True
