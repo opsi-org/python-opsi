@@ -40,6 +40,13 @@ __all__ = ['parseWIM', 'writeImageInformation']
 
 
 def parseWIM(wimPath):
+	"""
+	Parses the WIM file at the given `path`.
+
+	This requires `wimlib-imagex` to be installed on the server.
+
+	:return: a list of images. These have attributes `name`, `languages` and `default_language`.
+	"""
 	Image = namedtuple("Image", 'name languages default_language')
 
 	if not os.path.exists(wimPath):
@@ -97,6 +104,14 @@ def parseWIM(wimPath):
 
 
 def writeImageInformation(backend, productId, imagenames, languages=None, defaultLanguage=None):
+	"""
+	Writes information about the `imagenames` to the propert *imagename*
+	of the product with the given `productId`.
+
+	If `languages` are given these will be written to the property
+	*system_language*. If an additional `defaultLanguage` is given this
+	will be selected as the default.
+	"""
 	productProperty = _getProductProperty(backend, productId, 'imagename')
 	productProperty.possibleValues = imagenames
 	backend.productProperty_updateObject(productProperty)
