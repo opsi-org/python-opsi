@@ -142,7 +142,7 @@ def _getProductProperty(backend, productId, propertyId):
         LOGGER.debug("Properties: {0}".format(properties))
 
         if not properties:
-            raise RuntimeError("Unable to find property {1!r} for product {0!r}!".format(currentProduct, propertyId))
+            raise RuntimeError("Unable to find property {1!r} for product {0!r}!".format(productId, propertyId))
         elif len(properties) > 1:
             raise RuntimeError("Too many product properties found - aborting.")
 
