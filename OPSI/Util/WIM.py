@@ -31,6 +31,7 @@ from collections import namedtuple
 
 from OPSI.Logger import Logger
 from OPSI.System import execute, which
+from OPSI.Types import forceList
 from OPSI.Util import getfqdn
 
 LOGGER = Logger()
@@ -104,7 +105,7 @@ def writeImageInformation(backend, productId, imagenames, languages=None, defaul
 	if languages:
 		LOGGER.debug("Writing detected languages...")
 		productProperty = _getProductProperty(backend, productId, "system_language")
-		productProperty.possibleValues = languages
+		productProperty.possibleValues = forceList(languages)
 
 		if defaultLanguage and defaultLanguage in languages:
 			LOGGER.debug("Setting language default to {0!r}".format(defaultLanguage))
