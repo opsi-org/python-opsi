@@ -50,7 +50,7 @@ from OPSI.Backend.Backend import Backend, DeferredCall
 from OPSI.Util import serialize, deserialize
 from OPSI.Util.HTTP import urlsplit, getSharedConnectionPool, deflateEncode, deflateDecode, gzipDecode
 
-__version__ = '4.0.6.36'
+__version__ = '4.0.6.40'
 
 logger = Logger()
 
@@ -440,7 +440,7 @@ class JSONRPCBackend(Backend):
 			previousLogLevel = logger.getConsoleLevel()
 			logger.setConsoleLevel(LOG_NONE)
 			try:
-				self._jsonRPC(u'backend_getInterface')
+				self._jsonRPC(u'backend_info')
 				logger.debug(u"Deflated communication works!")
 			except Exception as error:
 				logger.setConsoleLevel(previousLogLevel)

@@ -7,8 +7,9 @@ python-opsi (4.0.6.40-1) UNRELEASED; urgency=medium
   * 70_wan.conf: Added docstring for changeWANConfig.
   * 70_wan.conf: The 'enabled' parameter now will be converted to bool internally.
   * Rights.py: added 'windows-image-detector.py' to known executables.
+  * JSONRPC-Backend: Changed method to use when checking for deflate support.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 14 Jan 2016 12:07:03 +0100
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 18 Jan 2016 14:27:19 +0100
 
 python-opsi (4.0.6.39-2) experimental; urgency=medium
 
