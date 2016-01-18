@@ -39,111 +39,111 @@ __all__ = ['parseWIM', 'writeImageInformation']
 
 
 def parseWIM(wimPath):
-    Image = namedtuple("Image", 'name languages default_language')
+	Image = namedtuple("Image", 'name languages default_language')
 
-    if not os.path.exists(wimPath):
-        raise OSError(u"File {0!r} not found!".format(wimPath))
+	if not os.path.exists(wimPath):
+		raise OSError(u"File {0!r} not found!".format(wimPath))
 
-    try:
-        imagex = which('wimlib-imagex')
-    except Exception as error:
-        LOGGER.logException(error)
-        LOGGER.warning("Unable to find 'wimlib-imagex': {0}".format(error))
-        LOGGER.warning("Please install 'wimtools'.")
-        raise RuntimeError("Unable to find 'wimlib-imagex': {0}".format(error))
+	try:
+		imagex = which('wimlib-imagex')
+	except Exception as error:
+		LOGGER.logException(error)
+		LOGGER.warning("Unable to find 'wimlib-imagex': {0}".format(error))
+		LOGGER.warning("Please install 'wimtools'.")
+		raise RuntimeError("Unable to find 'wimlib-imagex': {0}".format(error))
 
-    images = []
-    imagename = None
-    languages = set()
-    defaultLanguage = None
-    for line in execute("{imagex} info {file!r}".format(imagex=imagex, file=wimPath)):
-        if line.startswith('Name:'):
-            _, name = line.split(' ', 1)
-            imagename = name.strip()
-        elif line.startswith('Languages:'):
-            _, langs = line.split(' ', 1)
-            langs = langs.strip()
-            if ' ' in langs:
-                langs = langs.split(' ')
-            elif ',' in langs:
-                langs = langs.split(',')
-            else:
-                langs = [langs]
+	images = []
+	imagename = None
+	languages = set()
+	defaultLanguage = None
+	for line in execute("{imagex} info {file!r}".format(imagex=imagex, file=wimPath)):
+		if line.startswith('Name:'):
+			_, name = line.split(' ', 1)
+			imagename = name.strip()
+		elif line.startswith('Languages:'):
+			_, langs = line.split(' ', 1)
+			langs = langs.strip()
+			if ' ' in langs:
+				langs = langs.split(' ')
+			elif ',' in langs:
+				langs = langs.split(',')
+			else:
+				langs = [langs]
 
-            for lang in langs:
-                if lang.strip():
-                    languages.add(lang.strip())
-        elif line.startswith('Default Language:'):
-            _, _, defLang = line.split(' ', 2)
-            defaultLanguage = defLang.strip()
-        elif not line:
-            if imagename:
-                images.append(Image(imagename, languages, defaultLanguage))
+			for lang in langs:
+				if lang.strip():
+					languages.add(lang.strip())
+		elif line.startswith('Default Language:'):
+			_, _, defLang = line.split(' ', 2)
+			defaultLanguage = defLang.strip()
+		elif not line:
+			if imagename:
+				images.append(Image(imagename, languages, defaultLanguage))
 
-            imagename = None
-            languages = set()
-            defaultLanguage = None
+			imagename = None
+			languages = set()
+			defaultLanguage = None
 
-    if not images:
-        raise ValueError('Could not find any images')
+	if not images:
+		raise ValueError('Could not find any images')
 
-    LOGGER.debug('images: {0!r}'.format(images))
-    LOGGER.notice("Detected the following images:")
-    for image in images:
-        LOGGER.notice(image.name)
+	LOGGER.debug('images: {0!r}'.format(images))
+	LOGGER.notice("Detected the following images:")
+	for image in images:
+		LOGGER.notice(image.name)
 
-    return images
+	return images
 
 
 def writeImageInformation(backend, productId, imagenames, languages=None, defaultLanguage=None):
-    productProperty = _getProductProperty(backend, productId, 'imagename')
-    productProperty.possibleValues = imagenames
-    backend.productProperty_updateObject(productProperty)
-    LOGGER.notice("Wrote imagenames to property 'imagename' product on {0!r}.".format(productId))
+	productProperty = _getProductProperty(backend, productId, 'imagename')
+	productProperty.possibleValues = imagenames
+	backend.productProperty_updateObject(productProperty)
+	LOGGER.notice("Wrote imagenames to property 'imagename' product on {0!r}.".format(productId))
 
-    if languages:
-        LOGGER.debug("Writing detected languages...")
-        productProperty = _getProductProperty(backend, productId, "system_language")
-        productProperty.possibleValues = languages
+	if languages:
+		LOGGER.debug("Writing detected languages...")
+		productProperty = _getProductProperty(backend, productId, "system_language")
+		productProperty.possibleValues = languages
 
-        if defaultLanguage and defaultLanguage in languages:
-            LOGGER.debug("Setting language default to {0!r}".format(defaultLanguage))
-            productProperty.defaultValues = [defaultLanguage]
+		if defaultLanguage and defaultLanguage in languages:
+			LOGGER.debug("Setting language default to {0!r}".format(defaultLanguage))
+			productProperty.defaultValues = [defaultLanguage]
 
-        backend.productProperty_updateObject(productProperty)
-        LOGGER.notice("Wrote languages to property 'system_language' product on {0!r}.".format(productId))
+		backend.productProperty_updateObject(productProperty)
+		LOGGER.notice("Wrote languages to property 'system_language' product on {0!r}.".format(productId))
 
 
 def _getProductProperty(backend, productId, propertyId):
-    productFilter = {
-        "productId": productId,
-        "propertyId": propertyId
-    }
-    properties = backend.productProperty_getObjects(**productFilter)
-    LOGGER.debug("Properties: {0}".format(properties))
+	productFilter = {
+		"productId": productId,
+		"propertyId": propertyId
+	}
+	properties = backend.productProperty_getObjects(**productFilter)
+	LOGGER.debug("Properties: {0}".format(properties))
 
-    if not properties:
-        raise RuntimeError("No property {1!r} for product {0!r} found!".format(productId, propertyId))
-    elif len(properties) > 1:
-        LOGGER.debug("Found more than one property... trying to be more specific")
+	if not properties:
+		raise RuntimeError("No property {1!r} for product {0!r} found!".format(productId, propertyId))
+	elif len(properties) > 1:
+		LOGGER.debug("Found more than one property... trying to be more specific")
 
-        serverId = getfqdn()
-        prodOnDepot = backend.productOnDepot_getObjects(depotId=serverId, productId=productId)
-        if not prodOnDepot:
-            raise RuntimeError("Did not find product {0!r} on depot {1!r}".format(productId, serverId))
-        elif len(prodOnDepot) > 1:
-            raise RuntimeError("Too many products {0!r} on depot {1!r}".format(productId, serverId))
+		serverId = getfqdn()
+		prodOnDepot = backend.productOnDepot_getObjects(depotId=serverId, productId=productId)
+		if not prodOnDepot:
+			raise RuntimeError("Did not find product {0!r} on depot {1!r}".format(productId, serverId))
+		elif len(prodOnDepot) > 1:
+			raise RuntimeError("Too many products {0!r} on depot {1!r}".format(productId, serverId))
 
-        prodOnDepot = prodOnDepot[0]
-        productFilter['packageVersion'] = prodOnDepot.packageVersion
-        productFilter['productVersion'] = prodOnDepot.productVersion
-        LOGGER.debug('New filter: {0}'.format(productFilter))
-        properties = backend.productProperty_getObjects(**productFilter)
-        LOGGER.debug("Properties: {0}".format(properties))
+		prodOnDepot = prodOnDepot[0]
+		productFilter['packageVersion'] = prodOnDepot.packageVersion
+		productFilter['productVersion'] = prodOnDepot.productVersion
+		LOGGER.debug('New filter: {0}'.format(productFilter))
+		properties = backend.productProperty_getObjects(**productFilter)
+		LOGGER.debug("Properties: {0}".format(properties))
 
-        if not properties:
-            raise RuntimeError("Unable to find property {1!r} for product {0!r}!".format(productId, propertyId))
-        elif len(properties) > 1:
-            raise RuntimeError("Too many product properties found - aborting.")
+		if not properties:
+			raise RuntimeError("Unable to find property {1!r} for product {0!r}!".format(productId, propertyId))
+		elif len(properties) > 1:
+			raise RuntimeError("Too many product properties found - aborting.")
 
-    return properties[0]
+	return properties[0]
