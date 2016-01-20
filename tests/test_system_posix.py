@@ -215,9 +215,6 @@ class HPProliantDisksTestCase(unittest.TestCase):
 			"/fakedev/cciss/c0d0p4          0       -       0 0    0  Empty",
 		]
 
-		with mock.patch('OPSI.System.Posix.getSfdiskVersion', mock.Mock(return_value=False)):
-			d._parsePartitionTable(outputFromSfdiskListing)
-
 		with mock.patch('OPSI.System.Posix.execute'):
 			d = Posix.Harddisk('/fakedev/cciss/c0d0')
 
@@ -225,6 +222,9 @@ class HPProliantDisksTestCase(unittest.TestCase):
 		with mock.patch('os.path.exists', mock.Mock(return_value=True)):
 			# Making sure that we do not run into a timeout.
 			d._parsePartitionTable(outputFromSfdiskListing)
+
+		with mock.patch('OPSI.System.Posix.getSfdiskVersion', mock.Mock(return_value=False)):
+                        d._parsePartitionTable(outputFromSfdiskListing)
 
 		self.assertEquals('/fakedev/cciss/c0d0', d.device)
 		self.assertEquals(17562, d.cylinders)
