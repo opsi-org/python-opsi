@@ -224,7 +224,7 @@ class HPProliantDisksTestCase(unittest.TestCase):
 			d._parsePartitionTable(outputFromSfdiskListing)
 
 		with mock.patch('OPSI.System.Posix.getSfdiskVersion', mock.Mock(return_value=False)):
-                        d._parsePartitionTable(outputFromSfdiskListing)
+                        d.readPartitionTable(outputFromSfdiskListing)
 
 		self.assertEquals('/fakedev/cciss/c0d0', d.device)
 		self.assertEquals(17562, d.cylinders)
