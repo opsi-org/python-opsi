@@ -315,7 +315,7 @@ class DiskTestCase(unittest.TestCase):
 		d.size = 39082680 * 1024  # Faking this
 		d.partitions = []  # Make sure no parsing happened before
 
-		with mock.patch('OPSI.System.Posix.getSfdiskVersion', mock,Mock(return_value=False):
+		with mock.patch('OPSI.System.Posix.getSfdiskVersion', mock,Mock(return_value=False)):
 			with mock.patch('os.path.exists', mock.Mock(return_value=True)):
 				# Making sure that we do not run into a timeout.
 				d._parsePartitionTable(outputFromSfdiskListing)
