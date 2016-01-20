@@ -230,7 +230,7 @@ class HPProliantDisksTestCase(unittest.TestCase):
 		self.assertEquals(17562, d.cylinders)
 		self.assertEquals(255, d.heads)
 		self.assertEquals(32, d.sectors)
-		self.assertEquals(17562, d.cylinders)
+#		self.assertEquals(17562, d.cylinders)
 		self.assertEquals(4177920, d.bytesPerCylinder)
 
 		self.assertTrue(len(d.partitions) > 0)
