@@ -202,9 +202,6 @@ class PosixHardwareInventoryTestCase(unittest.TestCase):
 class HPProliantDisksTestCase(unittest.TestCase):
 	"Testing the behaviour of Disk objects on HP Proliant Hardware."
 
-	def trustySfdiskVersion(command):
-		return False
-
 	def testReadingPartitionTable(self):
 		outputFromSfdiskListing = [
 			"",
@@ -218,8 +215,7 @@ class HPProliantDisksTestCase(unittest.TestCase):
 			"/fakedev/cciss/c0d0p4          0       -       0 0    0  Empty",
 		]
 
-
-		with mock.patch('OPSI.System.Posix.getSfdiskversion', trustySfdiskVersion):
+		with mock.patch('OPSI.System.Posix.getSfdiskVersion', mock.Mock(return_value=False):
 			d._parsePartitionTable(outputFromSfdiskListing)
 
 		with mock.patch('OPSI.System.Posix.execute'):
