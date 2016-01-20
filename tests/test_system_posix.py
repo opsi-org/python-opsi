@@ -220,7 +220,7 @@ class HPProliantDisksTestCase(unittest.TestCase):
 
 		d.partitions = []  # Make sure no parsing happened before
 		
-		with mock.patch('OPSI.System.Posix.getSfdiskVersion', lambda:False):
+		with mock.patch('OPSI.System.Posix.getSfdiskVersion', mock,Mock(return_value=False):
 			with mock.patch('os.path.exists', mock.Mock(return_value=True)):
 				# Making sure that we do not run into a timeout.
 				d._parsePartitionTable(outputFromSfdiskListing)
@@ -315,12 +315,10 @@ class DiskTestCase(unittest.TestCase):
 		d.size = 39082680 * 1024  # Faking this
 		d.partitions = []  # Make sure no parsing happened before
 
-		with mock.patch('os.path.exists', mock.Mock(return_value=True)):
-			# Making sure that we do not run into a timeout.
-			d._parsePartitionTable(outputFromSfdiskListing)
-
-                with mock.patch('OPSI.System.Posix.getSfdiskVersion', mock.Mock(return_value=False)):
-                        d._parsePartitionTable(outputFromSfdiskListing)
+		with mock.patch('OPSI.System.Posix.getSfdiskVersion', mock,Mock(return_value=False):
+			with mock.patch('os.path.exists', mock.Mock(return_value=True)):
+				# Making sure that we do not run into a timeout.
+				d._parsePartitionTable(outputFromSfdiskListing)
 
 		self.assertEquals('/fakedev/sdb', d.device)
 		self.assertEquals(4865, d.cylinders)
