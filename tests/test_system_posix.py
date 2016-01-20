@@ -319,6 +319,9 @@ class DiskTestCase(unittest.TestCase):
 			# Making sure that we do not run into a timeout.
 			d._parsePartitionTable(outputFromSfdiskListing)
 
+                with mock.patch('OPSI.System.Posix.getSfdiskVersion', mock.Mock(return_value=False)):
+                        d._parsePartitionTable(outputFromSfdiskListing)
+
 		self.assertEquals('/fakedev/sdb', d.device)
 		self.assertEquals(4865, d.cylinders)
 		self.assertEquals(255, d.heads)
