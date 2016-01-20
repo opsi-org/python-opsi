@@ -215,7 +215,7 @@ class HPProliantDisksTestCase(unittest.TestCase):
 			"/fakedev/cciss/c0d0p4          0       -       0 0    0  Empty",
 		]
 
-		with mock.patch('OPSI.System.Posix.getSfdiskVersion', mock.Mock(return_value=False):
+		with mock.patch('OPSI.System.Posix.getSfdiskVersion', mock.Mock(return_value=False)):
 			d._parsePartitionTable(outputFromSfdiskListing)
 
 		with mock.patch('OPSI.System.Posix.execute'):
