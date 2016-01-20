@@ -247,7 +247,8 @@ class HPProliantDisksTestCase(unittest.TestCase):
 			"/fakedev/cciss/c0d0p4             0         - 0          0  Empty",
 		]
 
-		d._parseSectorData(outputFromSecondSfdiskListing)
+		with mock.patch('OPSI.System.Posix.getSfdiskVersion', mock.Mock(return_value=False)):
+			d._parseSectorData(outputFromSecondSfdiskListing)
 
 		self.assertTrue(len(d.partitions) > 0)
 		self.assertEquals(
@@ -339,7 +340,8 @@ class DiskTestCase(unittest.TestCase):
 			"/fakedev/sdb3             0         -          0   0  Empty",
 			"/fakedev/sdb4             0         -          0   0  Empty",
 		]
-		d._parseSectorData(outputFromSecondSfdiskListing)
+		with mock.patch('OPSI.System.Posix.getSfdiskVersion', mock.Mock(return_value=False)):
+			d._parseSectorData(outputFromSecondSfdiskListing)
 
 		self.assertTrue(len(d.partitions) > 0, "We should have partitions even after the second parsing.")
 
