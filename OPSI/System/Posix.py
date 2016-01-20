@@ -903,7 +903,7 @@ def getHarddisks(data=None):
 			for entry in listing:
 				if len(entry) < 5:
 					dev = entry
-					if getSfdiskVersion:
+					if getSfdiskVersion():
 						size = forceInt(execute(u'%s --no-reread -s /dev/cciss/%s' % (which('sfdisk'), dev), ignoreExitCode=[1])[0])
 					else:
 						size = forceInt(execute(u'%s -L --no-reread -s -uB /dev/cciss/%s' % (which('sfdisk'), dev), ignoreExitCode=[1])[0])
@@ -919,7 +919,7 @@ def getHarddisks(data=None):
 				raise Exception(u'No harddisks found!')
 			return disks
 		else:
-			if getSfdiskVersion:
+			if getSfdiskVersion():
 				result = execute(u'%s --no-reread -s ' % which('sfdisk'), ignoreExitCode=[1])
 			else:
 				result = execute(u'%s -L --no-reread -s -uB' % which('sfdisk'), ignoreExitCode=[1])
@@ -1413,7 +1413,7 @@ class Harddisk:
 			os.putenv("LC_ALL", "C")
 			if self.ldPreload:  # We want this as a context manager!
 				os.putenv("LD_PRELOAD", self.ldPreload)
-			if getSfdiskVersion:
+			if getSfdiskVersion():
 				result = execute(u'{sfdisk} --no-reread -s {device}'.format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
 			else:
 				result = execute(u'{sfdisk} -L --no-reread -s -uB {device}'.format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
@@ -1424,7 +1424,7 @@ class Harddisk:
 					pass
 
 			logger.info(u"Size of disk '%s': %s Byte / %s MB" % (self.device, self.size, (self.size/(1024*1024))))
-			if getSfdiskVersion:
+			if getSfdiskVersion():
 				result = execute(u"{sfdisk} --no-reread -g {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
 			else:
 				result = execute(u"{sfdisk} -L --no-reread -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
@@ -1435,19 +1435,19 @@ class Harddisk:
 					break
 			if not partTablefound:
 				logger.notice(u"unrecognized partition table type, writing empty partitiontable")
-				if getSfdiskVersion:
+				if getSfdiskVersion():
 					 execute('{echo} -e "0,0\n\n\n\n" | {sfdisk} --no-reread -D {device}'.format(echo=which('echo'), sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
 				else:
 					execute('{echo} -e "0,0\n\n\n\n" | {sfdisk} -L --no-reread -D {device}'.format(echo=which('echo'), sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
 				
-				if getSfdiskVersion:
+				if getSfdiskVersion():
 					result = execute("{sfdisk} --no-reread -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
 				else:
 					result = execute("{sfdisk} -L --no-reread -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
 
 			self._parsePartitionTable(result)
 
-			if getSfdiskVersion:
+			if getSfdiskVersion():
 				result = execute(u"{sfdisk} --no-reread -uS -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
 			else:
 				result = execute(u"{sfdisk} -L --no-reread -uS -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
@@ -1474,7 +1474,7 @@ class Harddisk:
 		
 		for line in sfdiskListingOutput:
 			line = line.strip()
-			if getSfdiskVersion:
+			if getSfdiskVersion():
 				sfdiskSearchType = '/dev/'
 			else:
 				sfdiskSearchType = 'disk'
@@ -1611,7 +1611,7 @@ class Harddisk:
 							)
 							break
 			elif line.lower().startswith('units'):
-				if getSfdiskVersion:
+				if getSfdiskVersion():
 					match = re.search('sectors\s+of\s+\d\s+.\s+\d+\s+.\s+(\d+)\s+bytes', line)
 				else:
 					match = re.search('sectors\s+of\s+(\d+)\s+bytes', line)
