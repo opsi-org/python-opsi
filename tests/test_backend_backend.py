@@ -50,9 +50,10 @@ class CredentialsTestCase(unittest.TestCase):
             with fakeCredentialsFile(backend):
                 self.assertRaises(BackendMissingDataError, backend.user_getCredentials, 'unknown')
 
-                backend.user_setCredentials("hans", '')
+                backend.user_setCredentials(username="hans", password='blablabla')
 
-                self.assertEquals(backend.user_getCredentials(username="hans"))
+                credentials = backend.user_getCredentials(username="hans")
+                self.assertEquals('blablabla', credentials['password'])
 
     def testSettingUserCredentialsWithoutDepot(self):
         with getTestBackend() as backend:
