@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2014-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -124,10 +124,15 @@ def patchEnvironmentVariables(**environmentVariables):
     Patches to environment variables to be empty during the context.
     Anything supplied as keyword argument will be added to the environment.
     """
-    originalEnv = os.environ
-    os.environ = environmentVariables
-    yield
-    os.environ = originalEnv
+    originalEnv = os.environ.copy()
+    try:
+        os.environ.clear()
+        for key, value in environmentVariables.items():
+            os.environ[key] = value
+
+        yield
+    finally:
+        os.environ = originalEnv
 
 
 @contextmanager
