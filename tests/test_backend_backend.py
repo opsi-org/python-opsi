@@ -72,10 +72,10 @@ class CredentialsTestCase(unittest.TestCase):
             backend.host_insertObject(getConfigServer())  # Required for file backend.
 
             with fakeCredentialsFile(backend):
-                backend.user_setCredentials(username="hans", password='bla')
                 for _ in range(100):
                     backend.user_setCredentials(username=randomString(12),
                                                 password=randomString(12))
+                backend.user_setCredentials(username="hans", password='bla')
 
                 credentials = backend.user_getCredentials(username="hans")
                 self.assertEquals('bla', credentials['password'])
