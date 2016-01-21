@@ -31,6 +31,7 @@ from contextlib import contextmanager
 
 from OPSI.Backend.Backend import ExtendedBackend
 from OPSI.Types import BackendMissingDataError
+from OPSI.Util import randomString
 from .Backends import getTestBackend
 from .BackendTestMixins.Hosts import getConfigServer
 from .helpers import workInTemporaryDirectory
@@ -54,6 +55,30 @@ class CredentialsTestCase(unittest.TestCase):
 
                 credentials = backend.user_getCredentials(username="hans")
                 self.assertEquals('blablabla', credentials['password'])
+
+    def testOverWritingOldCredentials(self):
+        with getTestBackend() as backend:
+            backend.host_insertObject(getConfigServer())  # Required for file backend.
+
+            with fakeCredentialsFile(backend):
+                backend.user_setCredentials(username="hans", password='bla')
+                backend.user_setCredentials(username="hans", password='itworks')
+
+                credentials = backend.user_getCredentials(username="hans")
+                self.assertEquals('itworks', credentials['password'])
+
+    def testWorkingWithManyCredentials(self):
+        with getTestBackend() as backend:
+            backend.host_insertObject(getConfigServer())  # Required for file backend.
+
+            with fakeCredentialsFile(backend):
+                backend.user_setCredentials(username="hans", password='bla')
+                for _ in range(100):
+                    backend.user_setCredentials(username=randomString(12),
+                                                password=randomString(12))
+
+                credentials = backend.user_getCredentials(username="hans")
+                self.assertEquals('bla', credentials['password'])
 
     def testSettingUserCredentialsWithoutDepot(self):
         with getTestBackend() as backend:
