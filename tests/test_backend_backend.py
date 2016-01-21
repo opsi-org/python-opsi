@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -25,15 +25,56 @@ Testing basic backends.
 
 from __future__ import absolute_import
 
+import os.path
 import unittest
+from contextlib import contextmanager
 
 from OPSI.Backend.Backend import ExtendedBackend
+from OPSI.Types import BackendMissingDataError
+from .Backends import getTestBackend
+from .BackendTestMixins.Hosts import getConfigServer
+from .helpers import workInTemporaryDirectory
 
 
 class ExtendedBackendTestCase(unittest.TestCase):
     def testBackendInfo(self):
         backend = ExtendedBackend(None)
         backend.backend_info()
+
+
+class CredentialsTestCase(unittest.TestCase):
+    def testSettingAndGettingUserCredentials(self):
+        with getTestBackend() as backend:
+            backend.host_insertObject(getConfigServer())  # Required for file backend.
+
+            with fakeCredentialsFile(backend):
+                self.assertRaises(BackendMissingDataError, backend.user_getCredentials, 'unknown')
+
+                backend.user_setCredentials("hans", '')
+
+                self.assertEquals(backend.user_getCredentials(username="hans"))
+
+    def testSettingUserCredentialsWithoutDepot(self):
+        with getTestBackend() as backend:
+            backend.host_deleteObjects(backend.host_getObjects())
+
+            with fakeCredentialsFile(backend):
+                self.assertRaises(Exception, backend.user_setCredentials, "hans", '')
+
+
+@contextmanager
+def fakeCredentialsFile(backend):
+    with workInTemporaryDirectory() as tempDir:
+        credFile = os.path.join(tempDir, 'credentials')
+        with open(credFile, 'w'):
+            pass
+
+        originalFile = backend._opsiPasswdFile
+        backend._opsiPasswdFile = credFile
+        try:
+            yield
+        finally:
+            backend._opsiPasswdFile = originalFile
 
 
 if __name__ == '__main__':
