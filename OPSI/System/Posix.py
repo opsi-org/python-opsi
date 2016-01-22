@@ -1425,7 +1425,7 @@ class Harddisk:
 
 			logger.info(u"Size of disk '%s': %s Byte / %s MB" % (self.device, self.size, (self.size/(1024*1024))))
 			if getSfdiskVersion():
-				result = execute(u"{sfdisk} --no-reread -g {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
+				result = execute(u"{sfdisk} --no-reread - l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
 			else:
 				result = execute(u"{sfdisk} -L --no-reread -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
 			partTablefound = None
@@ -1463,7 +1463,7 @@ class Harddisk:
 		for hook in hooks:
 			hook.post_Harddisk_readPartitionTable(self)
 
-	def _parsePartitionTable(self, sfdiskListingOutput):
+	def _parsePartitionTable(self, sfdiskListingOutput, geometryOutput=None):
 		"""
 		Parses the partition table and sets the corresponding attributes
 		on this object.
@@ -1474,34 +1474,56 @@ class Harddisk:
 		
 		for line in sfdiskListingOutput:
 			line = line.strip()
-			if getSfdiskVersion():
-				sfdiskSearchType = '/dev/'
-			else:
-				sfdiskSearchType = 'disk'
 	
-			if line.lower().startswith(u'%s' % sfdiskSearchType):
-				match = re.search('\s+(\d+)\s+cylinders,\s+(\d+)\s+heads,\s+(\d+)\s+sectors', line)
-				if not match:
-					raise Exception(u"Unable to get geometry for disk '%s'" % self.device)
+			if line.lower().startswith('disk'):
+				if getSfdiskVersion():
+					geometryOutput = execute(u"{sfdisk} -g {device}".format(sfdisk=which('sfdisk'), device=self.device))
+					for line in geometryOutput:
+						match = re.search('\s+(\d+)\s+cylinders,\s+(\d+)\s+heads,\s+(\d+)\s+sectors', line)
+						if not match:
+							raise Exception(u"Unable to get geometry for disk '%s'" % self.device)
+						self.cylinders = forceInt(match.group(1))
+						self.heads = forceInt(match.group(2))
+						self.sectors = forceInt(match.group(3))
+						self.totalCylinders = self.cylinders
+				else:
+					match = re.search('\s+(\d+)\s+cylinders,\s+(\d+)\s+heads,\s+(\d+)\s+sectors', line)
+					if not match:
+						raise Exception(u"Unable to get geometry for disk '%s'" % self.device)
 
-				self.cylinders = forceInt(match.group(1))
-				self.heads = forceInt(match.group(2))
-				self.sectors = forceInt(match.group(3))
-				self.totalCylinders = self.cylinders
+					self.cylinders = forceInt(match.group(1))
+					self.heads = forceInt(match.group(2))
+					self.sectors = forceInt(match.group(3))
+					self.totalCylinders = self.cylinders
 
 			elif line.lower().startswith(u'units'):
-				match = re.search('cylinders\s+of\s+(\d+)\s+bytes', line)
-				if not match:
-					raise Exception(u"Unable to get bytes/cylinder for disk '%s'" % self.device)
-				self.bytesPerCylinder = forceInt(match.group(1))
-				self.totalCylinders = int(self.size / self.bytesPerCylinder)
+				if getSfdiskVersion():
+					match = re.search('sectors\s+of\s+\d\s+.\s+\d+\s+.\s+(\d+)\s+bytes', line)
+					
+					if not match:
+						raise Exception(u"Unable to get bytes/cylinder for disk '%s'" % self.device)
+					self.bytesPerCylinder = forceInt(match.group(1))
+					self.totalCylinders = int(self.size / self.bytesPerCylinder)
+				else:
+					match = re.search('cylinders\s+of\s+(\d+)\s+bytes', line)
+	
+					if not match:
+						raise Exception(u"Unable to get bytes/cylinder for disk '%s'" % self.device)
+					self.bytesPerCylinder = forceInt(match.group(1))
+					self.totalCylinders = int(self.size / self.bytesPerCylinder)
 				logger.info(u"Total cylinders of disk '%s': %d, %d bytes per cylinder" % (self.device, self.totalCylinders, self.bytesPerCylinder))
 
 			elif line.startswith(self.device):
-				match = re.search('(%sp*)(\d+)\s+(\**)\s*(\d+)[\+\-]*\s+(\d*)[\+\-]*\s+(\d+)[\+\-]*\s+(\d+)[\+\-]*\s+(\S+)\s+(.*)' % self.device, line)
+				if getSfdiskVersion():					
+					match = re.search('(%sp*)(\d+)\s+(\**)\s*(\d+)[\+\-]*\s+(\d*)[\+\-]*\s+(\d+)[\+\-]*\s+(\d+)[\+\-]*.?\d*\S+\s+(\S+)\s*(.*)' % self.device, line)
+					
+					if not match:
+						raise Exception(u"Unable to read partition table of disk '%s'" % self.device)
+				else:
+					match = re.search('(%sp*)(\d+)\s+(\**)\s*(\d+)[\+\-]*\s+(\d*)[\+\-]*\s+(\d+)[\+\-]*\s+(\d+)[\+\-]*\s+(\S+)\s+(.*)' % self.device, line)
 
-				if not match:
-					raise Exception(u"Unable to read partition table of disk '%s'" % self.device)
+					if not match:
+						raise Exception(u"Unable to read partition table of disk '%s'" % self.device)
 
 				if match.group(5):
 					boot = False
@@ -1510,9 +1532,9 @@ class Harddisk:
 
 					fs = u'unknown'
 					fsType = forceUnicodeLower(match.group(8))
-					if fsType in (u"b", u"c", u"e"):
+					if fsType in (u"W95", u"b", u"c", u"e"):
 						fs = u'fat32'
-					elif fsType == u"7":
+					elif fsType in (u"HPFS/NTFS", u"7"):
 						fs = u'ntfs'
 
 					deviceName = forceFilename(match.group(1) + match.group(2))
@@ -1589,9 +1611,14 @@ class Harddisk:
 			line = line.strip()
 
 			if line.startswith(self.device):
-				match = re.search('%sp*(\d+)\s+(\**)\s*(\d+)[\+\-]*\s+(\d*)[\+\-]*\s+(\d+)[\+\-]*\s+(\S+)\s+(.*)' % self.device, line)
-				if not match:
-					raise Exception(u"Unable to read partition table (sectors) of disk '%s'" % self.device)
+				if getSfdiskVersion():
+					match = re.match('%sp*(\d+)\s+(\**)\s*(\d+)[\+\-]*\s+(\d*)[\+\-]*\s+(\d+)[\+\-]*\s+(\d+)[\+\-]*.?\d*\S+\s+(\S+)\s*(.*)' % self.device, line)
+					if not match:
+						raise Exception(u"Unable to read partition table (sectors) of disk '%s'" % self.device)
+				else:
+					match = re.search('%sp*(\d+)\s+(\**)\s*(\d+)[\+\-]*\s+(\d*)[\+\-]*\s+(\d+)[\+\-]*\s+(\S+)\s+(.*)' % self.device, line)
+					if not match:
+						raise Exception(u"Unable to read partition table (sectors) of disk '%s'" % self.device)
 
 				if match.group(4):
 					for p in range(len(self.partitions)):
@@ -1613,12 +1640,18 @@ class Harddisk:
 			elif line.lower().startswith('units'):
 				if getSfdiskVersion():
 					match = re.search('sectors\s+of\s+\d\s+.\s+\d+\s+.\s+(\d+)\s+bytes', line)
+					
+					if not match:
+						raise Exception(u"Unable to get bytes/sector for disk '%s'" % self.device)
+					self.bytesPerSector = forceInt(match.group(1))
+					self.totalSectors = int(self.size / self.bytesPerSector)
+
 				else:
 					match = re.search('sectors\s+of\s+(\d+)\s+bytes', line)
-				if not match:
-					raise Exception(u"Unable to get bytes/sector for disk '%s'" % self.device)
-				self.bytesPerSector = forceInt(match.group(1))
-				self.totalSectors = int(self.size / self.bytesPerSector)
+					if not match:
+						raise Exception(u"Unable to get bytes/sector for disk '%s'" % self.device)
+					self.bytesPerSector = forceInt(match.group(1))
+					self.totalSectors = int(self.size / self.bytesPerSector)
 				logger.info(u"Total sectors of disk '%s': %d, %d bytes per cylinder" % (self.device, self.totalSectors, self.bytesPerSector))
 
 	def writePartitionTable(self):
