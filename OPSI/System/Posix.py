@@ -377,7 +377,7 @@ def getEthernetDevices():
 				continue
 
 			device = line.split(':')[0].strip()
-			if device.startswith(('eth', 'ens', 'tr', 'br')):
+			if device.startswith(('eth', 'ens', 'tr', 'br', 'enp')):
 				logger.info(u"Found ethernet device: '{0}'".format(device))
 				devices.append(device)
 
