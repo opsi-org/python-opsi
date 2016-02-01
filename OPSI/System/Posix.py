@@ -1463,7 +1463,7 @@ class Harddisk:
 		for hook in hooks:
 			hook.post_Harddisk_readPartitionTable(self)
 
-	def _parsePartitionTable(self, sfdiskListingOutput, geometryOutput=None):
+	def _parsePartitionTable(self, sfdiskListingOutput):
 		"""
 		Parses the partition table and sets the corresponding attributes
 		on this object.
@@ -1477,6 +1477,7 @@ class Harddisk:
 	
 			if line.lower().startswith('disk'):
 				if getSfdiskVersion():
+					
 					geometryOutput = execute(u"{sfdisk} -g {device}".format(sfdisk=which('sfdisk'), device=self.device))
 					for line in geometryOutput:
 						match = re.search('\s+(\d+)\s+cylinders,\s+(\d+)\s+heads,\s+(\d+)\s+sectors', line)
@@ -1532,13 +1533,12 @@ class Harddisk:
 
 					fs = u'unknown'
 					fsType = forceUnicodeLower(match.group(8))
-					if fsType in (u"W95", u"b", u"c", u"e"):
+					if fsType in (u"w95", u"b", u"c", u"e"):
 						fs = u'fat32'
-					elif fsType in (u"HPFS/NTFS", u"7"):
+					elif fsType in (u"hpfs/ntfs/exfat", u"hfps/ntfs", u"7"):
 						fs = u'ntfs'
-
+					
 					deviceName = forceFilename(match.group(1) + match.group(2))
-
 					try:
 						logger.debug("Trying using Blkid")
 						fsres = execute(u'%s -o value -s TYPE %s' % (which('blkid'), deviceName))

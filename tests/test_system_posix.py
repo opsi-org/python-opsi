@@ -206,16 +206,19 @@ class HPProliantDisksTestCaseNewSfdiskVersion(unittest.TestCase):
 	def testReadingPartitionTable(self):
 		outputFromSfdiskListing = [
         	"",
-            "Disk /fakedev/cciss/c0d0: 32GiB, 34359738368 bytes, 67108864 sectors",
-            "Units: sectors of 1 * 512 = 512 bytes",
-            "",
-            "   Device             Boot  Start     End   Sectors Size System",
-            "/fakedev/cciss/c0d0p1       0         16558  16558  30G 7 HPFS/NTFS",
-            "/fakedev/cciss/c0d0p2   *  16558      17561    1004  1.1G c W95 FAT32 (LBA)",
+            "Disk /dev/cciss/c0d0: 298,1 GiB, 320039378944 bytes, 625076912 sectors",
+			"Units: sectors of 1 * 512 = 512 bytes",
+			"Sector size (logical/physical): 512 bytes / 512 bytes",
+			"I/O size (minimum/optimal): 512 bytes / 512 bytes",
+			"Disklabel type: dos",
+			"Disk identifier: 0xa7c8dddf",
+			"",
+			"Device            Boot Start       End   Sectors   Size Id Type",
+			"/fakedev/cciss/c0d0p1 *     2048 625074863 625072816 298,1G  7 HPFS/NTFS/exFAT",
         ]
 
 		outputFromSfdiskGeometry = [
-			"/fakedev/cciss/c0d0: 17562 cylinders, 255 heads, 32 sectors/track",
+			"/fakedev/cciss/c0d0: 76602 cylinders, 255 heads, 32 sectors/track",
 		]
 
 		with mock.patch('OPSI.System.Posix.execute'):
@@ -225,46 +228,57 @@ class HPProliantDisksTestCaseNewSfdiskVersion(unittest.TestCase):
 		with mock.patch('OPSI.System.Posix.execute', mock.Mock(return_value=outputFromSfdiskGeometry)):
 			with mock.patch('OPSI.System.Posix.getSfdiskVersion', mock.Mock(return_value=True)):
 				with mock.patch('os.path.exists', mock.Mock(return_value=True)):
-					# Making sure that we do not run into a timeout.
-					d._parsePartitionTable(outputFromSfdiskListing, outputFromSfdiskGeometry)
+				# Making sure that we do not run into a timeout.
+					d._parsePartitionTable(outputFromSfdiskListing)
 
 
 			self.assertEquals('/fakedev/cciss/c0d0', d.device)
-        	self.assertEquals(17562, d.cylinders)
+        	self.assertEquals(76602, d.cylinders)
         	self.assertEquals(255, d.heads)
         	self.assertEquals(32, d.sectors)
 			#self.assertEquals(4177920, d.bytesPerCylinder)
         	self.assertTrue(len(d.partitions) > 0)
 
+
 		outputFromSecondSfdiskListing = [
                         "",
-                        "Disk /fakedev/cciss/c0d0: 17562 cylinders, 255 heads, 32 sectors/track",
-                        "Units: sectors of 1 * 512 = 512 bytes",
-                        "",
-                        "              Device  Boot    Start       End Sectors Size System",
-                        "/fakedev/cciss/c0d0p1       0         16558  16558  30G  HPFS/NTFS",
-                        "/fakedev/cciss/c0d0p2   *  16558      17561    1004  1.1G   W95 FAT32 (LBA)",
-                ]
+                        "Disk /dev/cciss/c0d0: 298,1 GiB, 320039378944 bytes, 625076912 sectors",
+						"Units: sectors of 1 * 512 = 512 bytes",
+						"Sector size (logical/physical): 512 bytes / 512 bytes",
+						"I/O size (minimum/optimal): 512 bytes / 512 bytes",
+						"Disklabel type: dos",
+						"Disk identifier: 0xa7c8dddf",
+						"",
+						"Device            Boot Start       End   Sectors   Size Id Type",
+						"/fakedev/cciss/c0d0p1 *     2048 625074863 625072816 298,1G 7 HPFS/NTFS/exFAT",
+						]
 
-                with mock.patch('OPSI.System.Posix.getSfdiskVersion', mock.Mock(return_value=True)):
-                        d._parseSectorData(outputFromSecondSfdiskListing)
+		blkidOutput = [
+			"ntfs"
+			]
 
-                self.assertTrue(len(d.partitions) > 0)
-                self.assertEquals(
-                        2,
-                        len(d.partitions),
-                        "Read out {0} partitons instead of the expected 2. "
-                        "Maybe parsing empty partitions?".format(len(d.partitions))
+		MagicMock.reset.mock()
+
+		with mock.patch('OPSI.System.Posix.execute', mock.Mock(return_value=blkidOutput)):
+			with mock.patch('OPSI.System.Posix.getSfdiskVersion', mock.Mock(return_value=True)):
+				d._parseSectorData(outputFromSecondSfdiskListing)
+
+		self.assertTrue(len(d.partitions) > 0)
+		self.assertEquals(
+            	1,
+                len(d.partitions),
+                "Read out {0} partitons instead of the expected 1. "
+                "Maybe parsing empty partitions?".format(len(d.partitions))
                 )
 
-#		TODO!!!!!!!!!
-"""
+
+		print d.partitions[0]
                 first_partition_expected = {
                         'fs': u'ntfs',
-                        'cylSize': 16558,
+                        'cylSize': 625072816,
                         'number': 1,
-                        'secStart': 0,
-                        'secSize': 135112704,
+                        'secStart': 2048,
+                        'secSize': 625072816,
                         'device': u'/fakedev/cciss/c0d0p1',
                         'size': long(69177999360),
                         'cylStart': 0,
@@ -277,24 +291,6 @@ class HPProliantDisksTestCaseNewSfdiskVersion(unittest.TestCase):
                 }
                 self.assertEquals(first_partition_expected, d.partitions[0])
 
-		last_partition_expected = {
-                        'fs': u'fat32',
-                        'cylSize': 1004,
-                        'number': 2,
-                        'secStart': 135114752,
-                        'secSize': 8191168,
-                        'device': u'/fakedev/cciss/c0d0p2',
-                        'size': long(4194631680),
-                        'cylStart': 16558,
-                        'end': long(73372631040),
-                        'secEnd': 143305919,
-                        'boot': True,
-                        'start': long(69177999360),
-                        'cylEnd': 17561,
-                        'type': u'W95'
-                }
-                self.assertEquals(last_partition_expected, d.partitions[-1])
-"""
 
 class HPProliantDisksTestCaseOldSfdiskVersion(unittest.TestCase):
         "Testing the behaviour of Disk objects on HP Proliant Hardware."
