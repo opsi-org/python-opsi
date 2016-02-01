@@ -100,7 +100,21 @@ class ObjectToHTMLTestCase(unittest.TestCase):
             for i in range(1024)
         ]
 
-        objectToHtml(obj, level=0)
+        objectToHtml(obj)
+
+    def testWorkingWithGeneratorObjectsMustNotFail(self):
+        generator = (
+            ProductFactory.generateLocalbootProduct(i)
+            for i in range(128)
+        )
+
+        objectToHtml(generator)
+
+        text = objectToHtml(ProductFactory.generateLocalbootProduct(i)
+                            for i in range(2))
+
+        self.assertTrue(text.strip().startswith('['))
+        self.assertTrue(text.strip().endswith(']'))
 
     def testCheckingOutput(self):
         product = LocalbootProduct(
@@ -133,6 +147,25 @@ class ObjectToBeautifiedTextTestCase(unittest.TestCase):
         ]
 
         objectToBeautifiedText(obj)
+
+    def testWorkingWithGeneratorObjectsMustNotFail(self):
+        generator = (
+            ProductFactory.generateLocalbootProduct(i)
+            for i in range(128)
+        )
+
+        objectToBeautifiedText(generator)
+
+        text = objectToBeautifiedText(ProductFactory.generateLocalbootProduct(i)
+                                        for i in range(2))
+
+        self.assertTrue(text.strip().startswith('['))
+        self.assertTrue(text.strip().endswith(']'))
+
+        objects = fromJson(text)
+        self.assertEquals(2, len(objects))
+        for generator in objects:
+            self.assertTrue(isinstance(generator, LocalbootProduct))
 
     def testCheckingOutput(self):
         product = LocalbootProduct(
