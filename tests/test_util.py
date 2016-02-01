@@ -33,12 +33,13 @@ import os.path
 import shutil
 import sys
 from collections import defaultdict
+from contextlib import contextmanager
 
-from OPSI.Util import (chunk, compareVersions, flattenSequence, formatFileSize,
-    fromJson, generateOpsiHostKey, getfqdn, getGlobalConfig, ipAddressInNetwork,
-    isRegularExpressionPattern, librsyncDeltaFile, librsyncSignature,
-    librsyncPatchFile, md5sum, objectToBeautifiedText, objectToHtml,
-    randomString, removeUnit, toJson)
+from OPSI.Util import (chunk, compareVersions, findFiles, flattenSequence,
+    formatFileSize, fromJson, generateOpsiHostKey, getfqdn, getGlobalConfig,
+    ipAddressInNetwork, isRegularExpressionPattern, librsyncDeltaFile,
+    librsyncSignature, librsyncPatchFile, md5sum, objectToBeautifiedText,
+    objectToHtml, randomString, removeUnit, toJson)
 from OPSI.Object import LocalbootProduct, OpsiClient
 
 from .helpers import (fakeGlobalConf, patchAddress, patchEnvironmentVariables,
@@ -322,6 +323,7 @@ class ObjectToBeautifiedTextTestCase(unittest.TestCase):
 """
 
         self.assertEquals(expected, objectToBeautifiedText(obj))
+
 
 class UtilTestCase(unittest.TestCase):
     """
@@ -848,6 +850,36 @@ class JSONSerialisiationTestCase(unittest.TestCase):
         obj = toJson(gen())
 
         self.assertEquals(u'[1, 2, 3, "a"]', obj)
+
+
+class FindFilesTestCase(unittest.TestCase):
+
+    def testEmptyDirectory(self):
+        with workInTemporaryDirectory() as tempDir:
+            self.assertEquals([], findFiles(tempDir))
+
+    def testFindingFolders(self):
+        expectedFolders = ['top1', 'top2', os.path.join('top1', 'sub11')]
+
+        with preparedDemoFolders() as demoFolder:
+            folders = findFiles(demoFolder)
+            for folder in expectedFolders:
+                assert folder in folders
+
+
+@contextmanager
+def preparedDemoFolders():
+    directories = (
+        'top1',
+        'top2',
+        os.path.join('top1', 'sub11')
+    )
+
+    with workInTemporaryDirectory() as tempDir:
+        for dirname in directories:
+            os.mkdir(os.path.join(tempDir, dirname))
+
+        yield tempDir
 
 
 if __name__ == '__main__':
