@@ -337,6 +337,17 @@ class UtilTestCase(unittest.TestCase):
         self.assertEqual([1, 2, 3, 4, 5],
                          flattenSequence([1, set([2,]), 3, 4, set([5])]))
 
+    def test_flattenSequenceIncludingGenerators(self):
+        generator = (x for x in range(1, 6))
+        self.assertEqual([1, 2, 3, 4, 5], flattenSequence(generator))
+
+        def generatorFunc():
+            yield 3
+            yield 4
+            yield [5]
+
+        self.assertEqual([1, 2, 3, 4, 5], flattenSequence([1, 2, generatorFunc()]))
+
     def test_formatFileSize(self):
         self.assertEqual('123', formatFileSize(123))
         self.assertEqual('1K', formatFileSize(1234))

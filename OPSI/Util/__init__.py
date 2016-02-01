@@ -786,7 +786,7 @@ def ipAddressInNetwork(ipAddress, networkAddress):
 def flattenSequence(sequence):
 	listToReturn = []
 	for part in sequence:
-		if isinstance(part, (list, tuple, set)):
+		if isinstance(part, (list, tuple, set, types.GeneratorType)):
 			listToReturn.extend(flattenSequence(part))
 		else:
 			listToReturn.append(part)
