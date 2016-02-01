@@ -28,10 +28,12 @@ Various unittests to test functionality of python-opsi.
 import mock
 import os
 import sys
-import unittest
+from .helpers import unittest
 from contextlib import contextmanager
 
 import OPSI.System.Posix as Posix
+
+
 
 if sys.version_info > (3, ):
     long = int
@@ -256,8 +258,6 @@ class HPProliantDisksTestCaseNewSfdiskVersion(unittest.TestCase):
 		blkidOutput = [
 			"ntfs"
 			]
-
-		MagicMock.reset.mock()
 
 		with mock.patch('OPSI.System.Posix.execute', mock.Mock(return_value=blkidOutput)):
 			with mock.patch('OPSI.System.Posix.getSfdiskVersion', mock.Mock(return_value=True)):
