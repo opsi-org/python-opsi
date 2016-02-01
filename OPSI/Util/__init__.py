@@ -4,7 +4,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2006-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2016 uib GmbH <info@uib.de>
 # http://www.uib.de/
 
 # This program is free software: you can redistribute it and/or modify
@@ -784,6 +784,11 @@ def ipAddressInNetwork(ipAddress, networkAddress):
 
 
 def flattenSequence(sequence):
+	"""
+	Flattens nested sequences so that only a flat list will be returned.
+
+	:returntype: list
+	"""
 	listToReturn = []
 	for part in sequence:
 		if isinstance(part, (list, tuple, set, types.GeneratorType)):
