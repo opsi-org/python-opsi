@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2006-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -243,7 +243,8 @@ def forceHardwareDeviceId(var):
 
 def forceOpsiTimestamp(var):
 	if not var:
-		var = u'0000-00-00 00:00:00'
+		return u'0000-00-00 00:00:00'
+
 	if isinstance(var, datetime.datetime):
 		var = str(var)
 	var = forceUnicode(var)
