@@ -2454,10 +2454,11 @@ class SQLBackend(ConfigDataBackend):
 				except KeyError:
 					pass  # not there - everything okay
 
-				for attribute in self._auditHardwareConfig[hardwareClass].keys():
+				for attribute in self._auditHardwareConfig[hardwareClass]:
 					if attribute not in data:
 						data[attribute] = None
 				hashes.append(data)
+
 		return hashes
 
 	def auditHardwareOnHost_getObjects(self, attributes=[], **filter):
