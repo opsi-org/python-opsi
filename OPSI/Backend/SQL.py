@@ -2402,21 +2402,25 @@ class SQLBackend(ConfigDataBackend):
 			auditHardwareFilter = {}
 			classFilter = {}
 			skipHardwareClass = False
-			for (attribute, value) in filter.items():
+			for attribute, value in filter.iteritems():
 				valueInfo = None
-				if not attribute in ('hostId', 'state', 'firstseen', 'lastseen'):
+				if attribute not in ('hostId', 'state', 'firstseen', 'lastseen'):
 					valueInfo = self._auditHardwareConfig[hardwareClass].get(attribute)
 					if not valueInfo:
 						logger.debug(u"Skipping hardwareClass '%s', because of missing info for attribute '%s'" % (hardwareClass, attribute))
 						skipHardwareClass = True
 						break
-					if valueInfo.get('Scope', '') == 'g':
+
+					scope = valueInfo.get('Scope', '')
+					if scope == 'g':
 						auditHardwareFilter[attribute] = value
 						continue
-					if valueInfo.get('Scope', '') != 'i':
+					if scope != 'i':
 						continue
+
 				if value is not None:
 					value = forceList(value)
+
 				classFilter[attribute] = value
 
 			if skipHardwareClass:
