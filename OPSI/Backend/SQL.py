@@ -2378,9 +2378,7 @@ class SQLBackend(ConfigDataBackend):
 		if hardwareClass not in ([], None):
 			for hwc in forceUnicodeList(hardwareClass):
 				regex = re.compile(u'^{0}$'.format(hwc.replace('*', '.*')))
-				for key in self._auditHardwareConfig:
-					if regex.search(key):
-						hardwareClasses.add(key)
+				[hardwareClasses.add(key) for key in self._auditHardwareConfig if regex.search(key)]
 
 			if not hardwareClasses:
 				return hashes
