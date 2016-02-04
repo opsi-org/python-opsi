@@ -3201,14 +3201,26 @@ class AuditHardwareOnHost(Relationship):
 		if state is not None:
 			self.setState(state)
 
-		if hasattr(self, 'vendorId') and self.vendorId:
+		try:
 			self.vendorId = forceHardwareVendorId(self.vendorId)
-		if hasattr(self, 'subsystemVendorId') and self.subsystemVendorId:
+		except AttributeError:
+			pass
+
+		try:
 			self.subsystemVendorId = forceHardwareVendorId(self.subsystemVendorId)
-		if hasattr(self, 'deviceId') and self.deviceId:
+		except AttributeError:
+			pass
+
+		try:
 			self.deviceId = forceHardwareDeviceId(self.deviceId)
-		if hasattr(self, 'subsystemDeviceId') and self.subsystemDeviceId:
+		except AttributeError:
+			pass
+
+		try:
 			self.subsystemDeviceId = forceHardwareDeviceId(self.subsystemDeviceId)
+		except AttributeError:
+			pass
+
 
 	@staticmethod
 	def setHardwareConfig(hardwareConfig):
