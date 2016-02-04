@@ -6,7 +6,7 @@ opsi python library - Service
 This module is part of the desktop management solution opsi
 (open pc server integration) http://www.opsi.org
 
-Copyright (C) 2006, 2007, 2008, 2009, 2014 uib GmbH
+Copyright (C) 2006-2016 uib GmbH
 
 http://www.uib.de/
 
@@ -49,10 +49,10 @@ class SSLContext(object):
 
 		# Test if server certificate and key file exist.
 		if not os.path.isfile(self._sslServerKeyFile):
-			raise Exception(u"Server key file '%s' does not exist!" % self._sslServerKeyFile)
+			raise OSError(u"Server key file {0!r} does not exist!".format(self._sslServerKeyFile))
 
 		if not os.path.isfile(self._sslServerCertFile):
-			raise Exception(u"Server certificate file '%s' does not exist!" % self._sslServerCertFile)
+			raise OSError(u"Server certificate file {0!r} does not exist!".format(self._sslServerCertFile))
 
 		context = SSL.Context(SSL.SSLv23_METHOD)
 		context.use_privatekey_file(self._sslServerKeyFile)
