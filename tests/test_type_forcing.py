@@ -266,6 +266,11 @@ class ForceOpsiTimeStampTestCase(unittest.TestCase):
 	def testForcingWithDatetime(self):
 		self.assertEqual(forceOpsiTimestamp(datetime.datetime(2013, 9, 11, 10, 54, 23)), '2013-09-11 10:54:23')
 
+	def testForcingEmptyValue(self):
+		self.assertEquals(u'0000-00-00 00:00:00', forceOpsiTimestamp(None))
+		self.assertEquals(u'0000-00-00 00:00:00', forceOpsiTimestamp(0))
+		self.assertEquals(u'0000-00-00 00:00:00', forceOpsiTimestamp(''))
+
 
 class ForceHostIdTestCase(unittest.TestCase):
 	def testForcingWithValidId(self):
