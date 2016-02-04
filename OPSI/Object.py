@@ -4,7 +4,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) - http://www.opsi.org
 
-# Copyright (C) 2006-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -3149,9 +3149,10 @@ class AuditHardwareOnHost(Relationship):
 
 		for attribute in self.hardwareAttributes.get(hardwareClass, {}):
 			if attribute not in kwargs:
-				if attribute.lower() in kwargs:
-					kwargs[attribute] = kwargs[attribute.lower()]
-					del kwargs[attribute.lower()]
+				lowerAttribute = attribute.lower()
+				if lowerAttribute in kwargs:
+					kwargs[attribute] = kwargs[lowerAttribute]
+					del kwargs[lowerAttribute]
 				else:
 					kwargs[attribute] = None
 
