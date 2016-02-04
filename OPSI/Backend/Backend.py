@@ -750,9 +750,8 @@ the opsi host key.
 
 		depot = self.host_getObjects(id=self._depotId)
 		if not depot:
-elf._depotId))
-			raise BackendMissingDataError(u"Depot {0!r} not found in backend".format(s
-elf._depotId))
+			raise BackendMissingDataError(u"Depot {0!r} not found in backend".format(self._depotId))
+
 		depot = depot[0]
 		if not depot.opsiHostKey:
 			raise BackendMissingDataError(u"Host key for depot '%s' not found" % self._depotId)
