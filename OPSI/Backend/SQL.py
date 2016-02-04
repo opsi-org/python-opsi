@@ -2437,12 +2437,14 @@ class SQLBackend(ConfigDataBackend):
 				attributes.append('hardware_id')
 
 			logger.debug(u"Getting auditHardwareOnHosts, hardwareClass '%s', hardwareIds: %s, filter: %s" % (hardwareClass, hardwareIds, classFilter))
-			for res in self._sql.getSet(self._createQuery(u'HARDWARE_CONFIG_' + hardwareClass, attributes, classFilter)):
+			for res in self._sql.getSet(self._createQuery(u'HARDWARE_CONFIG_{0}'.format(hardwareClass), attributes, classFilter)):
 				data = self._sql.getSet(u'SELECT * from `HARDWARE_DEVICE_%s` where `hardware_id` = %s' \
 								% (hardwareClass, res['hardware_id']))
+
 				if not data:
 					logger.error(u"Hardware device of class '%s' with hardware_id '%s' not found" % (hardwareClass, res['hardware_id']))
 					continue
+
 				data = data[0]
 				data.update(res)
 				data['hardwareClass'] = hardwareClass
