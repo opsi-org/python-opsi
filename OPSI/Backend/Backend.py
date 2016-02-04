@@ -789,7 +789,7 @@ depot where the method is.
 
 		depot = self._context.host_getObjects(id=self._depotId)  # pylint: disable=maybe-no-member
 		if not depot:
-			raise Exception(u"Depot '%s' not found in backend %s" % (self._depotId, self._context))
+			raise BackendMissingDataError(u"Depot {0!r} not found in backend {1}".format(self._depotId, self._context))
 		depot = depot[0]
 
 		encodedPassword = blowfishEncrypt(depot.opsiHostKey, password)
