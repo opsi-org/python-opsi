@@ -2435,7 +2435,7 @@ class SQLBackend(ConfigDataBackend):
 					continue
 			classFilter['hardware_id'] = hardwareIds
 
-			if attributes and not 'hardware_id' in attributes:
+			if attributes and 'hardware_id' not in attributes:
 				attributes.append('hardware_id')
 
 			logger.debug(u"Getting auditHardwareOnHosts, hardwareClass '%s', hardwareIds: %s, filter: %s" % (hardwareClass, hardwareIds, classFilter))
