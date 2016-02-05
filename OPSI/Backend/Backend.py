@@ -2519,8 +2519,8 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			pString = pHash.get(usedDepotId, u'')
 			alternativeDepotIds = [depotId for (depotId, ps) in pHash.items() if depotId != usedDepotId and pString == ps]
 
-			for i in range(len(result)):
-				if result[i]['depotId'] == usedDepotId:
+			for i, element in enumerate(result):
+				if element['depotId'] == usedDepotId:
 					result[i]['alternativeDepotIds'] = alternativeDepotIds
 
 		return result

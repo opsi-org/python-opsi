@@ -4,7 +4,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2006-2015 uib GmbH - http://www.uib.de/
+# Copyright (C) 2006-2016 uib GmbH - http://www.uib.de/
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -292,8 +292,8 @@ class TextFile(LockableFile):
 			raise IOError("File not opened")
 		if sequence:
 			self._lines = forceUnicodeList(sequence)
-		for i in range(len(self._lines)):
-			self._lines[i] += self._lineSeperator
+		for index, current in enumerate(self._lines):
+			self._lines[index] = current + self._lineSeperator
 		self._fileHandle.writelines(self._lines)
 
 
@@ -323,9 +323,8 @@ class ChangelogFile(TextFile):
 		self._parsed = False
 		self._entries = []
 		currentEntry = {}
-		for lineNum in range(len(self._lines)):
+		for lineNum, line in enumerate(self._lines):
 			try:
-				line = self._lines[lineNum]
 				match = self.releaseLineRegex.search(line)
 				if match:
 					if currentEntry:
@@ -474,10 +473,10 @@ class ConfigFile(TextFile):
 				quote = 0
 				doublequote = 0
 				cut = -1
-				for i in range(len(parts)):
-					quote += parts[i].count("'")
-					doublequote += parts[i].count('"')
-					if len(parts[i]) > 0 and parts[i][-1] == '\\':
+				for i, part in enumerate(parts):
+					quote += part.count("'")
+					doublequote += part.count('"')
+					if len(part) > 0 and part[-1] == '\\':
 						# escaped comment
 						continue
 
@@ -554,10 +553,10 @@ class IniFile(ConfigFile):
 				quote = 0
 				doublequote = 0
 				cut = -1
-				for i in range(len(parts)):
-					quote += parts[i].count("'")
-					doublequote += parts[i].count('"')
-					if len(parts[i]) > 0 and parts[i][-1] == '\\':
+				for i, part in enumerate(parts):
+					quote += part.count("'")
+					doublequote += part.count('"')
+					if len(part) > 0 and part[-1] == '\\':
 						# escaped comment
 						continue
 					if i == len(parts) - 1:
@@ -565,10 +564,12 @@ class IniFile(ConfigFile):
 					if not quote % 2 and not doublequote % 2:
 						cut = i
 						break
+
 				if cut > -1:
 					line = cc.join(parts[:cut + 1])
 					if returnComments:
 						comment = cc + cc.join(parts[cut + 1:])
+
 			if self._ignoreCase or comment:
 				match = self.optionMatch.search(line)
 				if match:
@@ -645,8 +646,8 @@ class IniFile(ConfigFile):
 			self._lines.append(u'[%s]' % section)
 			options = self._configParser.options(section)
 			options.sort()
-			for i in range(len(options)):
-				options[i] = forceUnicode(options[i])
+			for i, option in enumerate(options):
+				options[i] = forceUnicode(option)
 			optseq = optionSequence.get(section, [])
 			if optseq:
 				optseq.reverse()
@@ -1537,8 +1538,8 @@ class DHCPDConf_Block(DHCPDConf_Component):
 
 	def removeComponent(self, component):
 		index = -1
-		for i in range(len(self.components)):
-			if self.components[i] == component:
+		for i, currentComponent in enumerate(self.components):
+			if currentComponent == component:
 				index = i
 				break
 
@@ -1549,8 +1550,8 @@ class DHCPDConf_Block(DHCPDConf_Component):
 
 		index = -1
 		if component.startLine in self.lineRefs:
-			for i in range(len(self.lineRefs[component.startLine])):
-				if self.lineRefs[component.startLine][i] == component:
+			for i, currentComponent in enumerate(self.lineRefs[component.startLine]):
+				if currentComponent == component:
 					index = i
 					break
 		if index >= 0:
@@ -1630,14 +1631,14 @@ class DHCPDConf_Block(DHCPDConf_Component):
 				lineNumber += 1
 				continue
 
-			for i in range(len(self.lineRefs[lineNumber])):
-				compText = self.lineRefs[lineNumber][i].asText()
-				if i > 0 and isinstance(self.lineRefs[lineNumber][i], DHCPDConf_Comment):
+			for i, lineRef in enumerate(self.lineRefs[lineNumber]):
+				compText = lineRef.asText()
+				if i > 0 and isinstance(lineRef, DHCPDConf_Comment):
 					compText = u' ' + compText.lstrip()
 				text += compText
 				# Mark component as written
-				if self.lineRefs[lineNumber][i] in notWritten:
-					notWritten.remove(self.lineRefs[lineNumber][i])
+				if lineRef in notWritten:
+					notWritten.remove(lineRef)
 			text += u'\n'
 			lineNumber += 1
 

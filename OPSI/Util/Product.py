@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2006-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -509,8 +509,8 @@ class ProductPackageSource(object):
 
 			if self.customName:
 				found = False
-				for i in range(len(dirs)):
-					customDir = u"%s.%s" % (dirs[i], self.customName)
+				for i, currentDir in enumerate(dirs):
+					customDir = u"%s.%s" % (currentDir, self.customName)
 					if os.path.exists( os.path.join(self.packageSourceDir, customDir) ):
 						found = True
 						if self.customOnly:
