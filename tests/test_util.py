@@ -862,6 +862,10 @@ class JSONSerialisiationTestCase(unittest.TestCase):
 
         self.assertEquals(u'[1, 2, 3, "a"]', obj)
 
+    def testSerialisingTuples(self):
+        values = (1, 2, 3, 4)
+        self.assertEquals('[1, 2, 3, 4]', toJson(values))
+
 
 class FindFilesTestCase(unittest.TestCase):
 
