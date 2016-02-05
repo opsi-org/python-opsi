@@ -354,6 +354,7 @@ class UtilTestCase(unittest.TestCase):
         self.assertEqual('1M', formatFileSize(1234567))
         self.assertEqual('300M', formatFileSize(314572800))
         self.assertEqual('1G', formatFileSize(1234567890))
+        self.assertEqual('1T', formatFileSize(1234567890000))
 
     def testRandomString(self):
         self.assertEqual(10, len(randomString(10)))

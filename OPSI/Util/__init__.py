@@ -57,7 +57,7 @@ from OPSI.Logger import Logger
 from OPSI.Types import (forceBool, forceFilename, forceFqdn, forceInt,
 						forceIPAddress, forceNetworkAddress, forceUnicode)
 
-__version__ = '4.0.6.39'
+__version__ = '4.0.6.41'
 
 logger = Logger()
 
@@ -131,12 +131,14 @@ def serialize(obj):
 def formatFileSize(sizeInBytes):
 	if sizeInBytes < 1024:
 		return '%i' % sizeInBytes
-	elif sizeInBytes < (1024**2):
+	elif sizeInBytes < 1048576:  # 1024**2
 		return '%iK' % (sizeInBytes / 1024)
-	elif sizeInBytes < (1024**3):
-		return '%iM' % (sizeInBytes / (1024**2))
+	elif sizeInBytes < 1073741824:  # 1024**3
+		return '%iM' % (sizeInBytes / 1048576)
+	elif sizeInBytes < 1099511627776:  # 1024**4
+		return '%iG' % (sizeInBytes / 1073741824)
 	else:
-		return '%iG' % (sizeInBytes / (1024**3))
+		return '%iT' % (sizeInBytes / 1099511627776)
 
 
 def fromJson(obj, objectType=None, preventObjectCreation=False):
