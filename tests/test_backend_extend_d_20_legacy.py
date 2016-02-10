@@ -146,8 +146,9 @@ class LegacyFunctionsTestCase(unittest.TestCase, FileBackendBackendManagerMixin)
         self.assertFalse(self.backend.productOnClient_getObjects(productId=new_product.id, clientId=client_with_old_product.id, actionRequest="setup"))
         self.assertTrue(self.backend.productOnClient_getObjects(productId=new_product.id, clientId=client_with_current_product.id))
 
-        self.backend.setActionRequestWhereOutdated('setup', new_product.id)
+        clientIDs = self.backend.setActionRequestWhereOutdated('setup', new_product.id)
 
+        self.assertEquals(1, len(clientIDs))
         self.assertFalse(self.backend.productOnClient_getObjects(productId=new_product.id, clientId=client_without_product.id))
         poc = self.backend.productOnClient_getObjects(productId=new_product.id, clientId=client_with_old_product.id)[0]
         self.assertEquals("setup", poc.actionRequest)
