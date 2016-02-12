@@ -34,6 +34,7 @@ from __future__ import absolute_import
 from OPSI.Object import (OpsiClient, LocalbootProduct, ProductOnClient,
                          OpsiDepotserver, ProductOnDepot, UnicodeConfig,
                          ConfigState)
+from OPSI.Types import BackendMissingDataError
 from .Backends.File import FileBackendBackendManagerMixin
 from .helpers import unittest
 
@@ -74,7 +75,7 @@ class LegacyFunctionsTestCase(unittest.TestCase, FileBackendBackendManagerMixin)
         self.assertRaises(TypeError, self.backend.setActionRequestWhereOutdated)
         self.assertRaises(TypeError, self.backend.setActionRequestWhereOutdated, 'setup')
 
-        self.assertRaises(ValueError, self.backend.setActionRequestWhereOutdated, 'setup', 'unknownProductId')
+        self.assertRaises(BackendMissingDataError, self.backend.setActionRequestWhereOutdated, 'setup', 'unknownProductId')
 
         client_with_old_product = OpsiClient(id='clientwithold.test.invalid')
         client_with_current_product = OpsiClient(id='clientwithcurrent.test.invalid')
