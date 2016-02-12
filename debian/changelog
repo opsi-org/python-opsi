@@ -7,8 +7,9 @@ python-opsi (4.0.6.41-1) UNRELEASED; urgency=medium
   [ Niko Wenselowski ]
   * OPSI.Util.flattenSequence is now handles generators by consuming them.
   * OPSI.Util.formatFileSize now handles terrabyte sized data.
+  * 20_legacy.conf: new function setActionRequestWhereOutdated.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 12 Feb 2016 10:32:33 +0100
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 12 Feb 2016 14:00:11 +0100
 
 python-opsi (4.0.6.40-1) experimental; urgency=medium
 
