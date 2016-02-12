@@ -65,7 +65,7 @@ from OPSI.Util import (blowfishEncrypt, blowfishDecrypt, compareVersions,
 from OPSI.Util.File import ConfigFile
 import OPSI.SharedAlgorithm
 
-__version__ = '4.0.6.36'
+__version__ = '4.0.6.41'
 
 logger = Logger()
 OPSI_VERSION_FILE = u'/etc/opsi/version'
@@ -750,7 +750,8 @@ the opsi host key.
 
 		depot = self.host_getObjects(id=self._depotId)
 		if not depot:
-			raise BackendMissingDataError(u"Depot '%s' not found in backend" % self._depotId)
+			raise BackendMissingDataError(u"Depot {0!r} not found in backend".format(self._depotId))
+
 		depot = depot[0]
 		if not depot.opsiHostKey:
 			raise BackendMissingDataError(u"Host key for depot '%s' not found" % self._depotId)
@@ -3063,8 +3064,10 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 	def productOnClient_generateSequence(self, productOnClients):
 		configs = self._context.config_getObjects(id="product_sort_algorithm")  # pylint: disable=maybe-no-member
 		if configs and ("product_on_client" in configs[0].getDefaultValues() or "algorithm1" in configs[0].getDefaultValues()):
+			logger.info("Generating productOnClient sequence with algorithm 1")
 			generateProductOnClientSequence = OPSI.SharedAlgorithm.generateProductOnClientSequence_algorithm1
 		else:
+			logger.info("Generating productOnClient sequence with algorithm 2")
 			generateProductOnClientSequence = OPSI.SharedAlgorithm.generateProductOnClientSequence_algorithm2
 
 		return self._productOnClient_processWithFunction(productOnClients, generateProductOnClientSequence)
