@@ -513,7 +513,7 @@ def generateProductOnClientSequence(productOnClients, sortedList):
 
 
 def generateProductSequence_algorithm1(availableProducts, productDependencies):
-	logger.info(u"Generating product sequence with algorithm 1.")
+	logger.notice(u"Generating product sequence with algorithm 1.")
 
 	# Build priority classes and indices
 	logger.debug(u"*********running algorithm1")
@@ -680,14 +680,14 @@ def generateProductSequence_algorithm1(availableProducts, productDependencies):
 
 
 def generateProductOnClientSequence_algorithm1(productOnClients, availableProducts, productDependencies):
-	logger.info(u"Generating productOnClient sequence with algorithm 1.")
+	logger.notice(u"Generating productOnClient sequence with algorithm 1.")
 	sortedProductList = generateProductSequence_algorithm2(availableProducts, productDependencies)
 	productOnClients = generateProductOnClientSequence(productOnClients, sortedProductList)
 	return productOnClients
 
 
 def generateProductSequence_algorithm2(availableProducts, productDependencies):
-	logger.info(u"Generating product sequence with algorithm 2.")
+	logger.notice(u"Generating product sequence with algorithm 2.")
 
 	# Build priority classes and indices
 	logger.debug(u"*********running algorithm2")
@@ -810,7 +810,7 @@ def generateProductSequence_algorithm2(availableProducts, productDependencies):
 
 
 def generateProductOnClientSequence_algorithm2(productOnClients, availableProducts, productDependencies):
-	logger.info(u"Generating productOnClient sequence with algorithm 2.")
+	logger.notice(u"Generating productOnClient sequence with algorithm 2.")
 	sortedProductList = generateProductSequence_algorithm2(availableProducts, productDependencies)
 	productOnClients = generateProductOnClientSequence(productOnClients, sortedProductList)
 	return productOnClients
@@ -822,7 +822,7 @@ def _generateProductOnClientSequence_algorithm3(productOnClients, availableProdu
 
 	This is the *old* variant and only available for historic reasons.
 	"""
-	logger.info(u"Generating productOnClient sequence with algorithm 3.")
+	logger.notice(u"Generating productOnClient sequence with algorithm 3.")
 
 	logger.debug(u"*********  running algorithm3")
 	productDependenciesByProductId = defaultdict(list)
