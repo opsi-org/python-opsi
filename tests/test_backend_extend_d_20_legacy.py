@@ -156,6 +156,92 @@ class LegacyFunctionsTestCase(unittest.TestCase, FileBackendBackendManagerMixin)
         poc = self.backend.productOnClient_getObjects(productId=new_product.id, clientId=client_with_current_product.id)[0]
         self.assertNotEquals("setup", poc.actionRequest)
 
+    def testUninstallWhereInstalled(self):
+        self.assertRaises(TypeError, self.backend.uninstallWhereInstalled)
+
+        self.assertRaises(BackendMissingDataError, self.backend.uninstallWhereInstalled, 'unknownProductId')
+
+        client_with_product = OpsiClient(id='clientwith.test.invalid')
+        client_without_product = OpsiClient(id='clientwithout.test.invalid')
+        depot = OpsiDepotserver(id='depotserver1.test.invalid')
+
+        self.backend.host_createObjects([depot, client_with_product,
+                                         client_without_product])
+
+        product = LocalbootProduct('thunderheart', '1', '1', uninstallScript='foo.bar')
+        productWithoutScript = LocalbootProduct('installOnly', '1', '1')
+
+        self.backend.product_createObjects([product, productWithoutScript])
+
+        installedProductOnDepot = ProductOnDepot(
+            productId=product.id,
+            productType=product.getType(),
+            productVersion=product.productVersion,
+            packageVersion=product.packageVersion,
+            depotId=depot.id,
+            locked=False
+        )
+        installedProductOnDepot2 = ProductOnDepot(
+            productId=productWithoutScript.id,
+            productType=productWithoutScript.getType(),
+            productVersion=productWithoutScript.productVersion,
+            packageVersion=productWithoutScript.packageVersion,
+            depotId=depot.id,
+            locked=False
+        )
+
+        self.backend.productOnDepot_createObjects([installedProductOnDepot,
+                                                   installedProductOnDepot2])
+
+        poc = ProductOnClient(
+            clientId=client_with_product.id,
+            productId=product.id,
+            productType=product.getType(),
+            productVersion=product.productVersion,
+            packageVersion=product.packageVersion,
+            installationStatus='installed',
+            actionResult='successful'
+        )
+        pocWithoutScript = ProductOnClient(
+            clientId=client_with_product.id,
+            productId=productWithoutScript.id,
+            productType=productWithoutScript.getType(),
+            productVersion=productWithoutScript.productVersion,
+            packageVersion=productWithoutScript.packageVersion,
+            installationStatus='installed',
+            actionResult='successful'
+        )
+        self.backend.productOnClient_createObjects([poc, pocWithoutScript])
+
+        clientConfigDepotId = UnicodeConfig(
+            id=u'clientconfig.depot.id',
+            description=u'Depotserver to use',
+            possibleValues=[],
+            defaultValues=[depot.id]
+        )
+
+        self.backend.config_createObjects(clientConfigDepotId)
+
+        for client in (client_with_product, client_without_product):
+            clientDepotMappingConfigState = ConfigState(
+                configId=u'clientconfig.depot.id',
+                objectId=client.getId(),
+                values=depot.getId()
+            )
+
+            self.backend.configState_createObjects(clientDepotMappingConfigState)
+
+        clientIDs = self.backend.uninstallWhereInstalled(product.id)
+
+        self.assertEquals(1, len(clientIDs))
+        pocAfter = self.backend.productOnClient_getObjects(productId=product.id, clientId=client_with_product.id)
+        self.assertEquals(1, len(pocAfter))
+        pocAfter = pocAfter[0]
+        self.assertEquals("uninstall", pocAfter.actionRequest)
+
+        clientIDs = self.backend.uninstallWhereInstalled(productWithoutScript.id)
+        self.assertEquals(0, len(clientIDs))
+
 
 class LegacyConfigStateAccessTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
     """
