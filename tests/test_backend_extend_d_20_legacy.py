@@ -156,6 +156,75 @@ class LegacyFunctionsTestCase(unittest.TestCase, FileBackendBackendManagerMixin)
         poc = self.backend.productOnClient_getObjects(productId=new_product.id, clientId=client_with_current_product.id)[0]
         self.assertNotEquals("setup", poc.actionRequest)
 
+    def testSetupWhereNotInstalled(self):
+        self.assertRaises(TypeError, self.backend.setupWhereNotInstalled)
+
+        self.assertRaises(BackendMissingDataError, self.backend.setupWhereNotInstalled, 'unknownProductId')
+
+        client_with_current_product = OpsiClient(id='clientwithcurrent.test.invalid')
+        client_without_product = OpsiClient(id='clientwithout.test.invalid')
+
+        depot = OpsiDepotserver(id='depotserver1.test.invalid')
+
+        self.backend.host_createObjects([depot,
+                                        client_with_current_product,
+                                        client_without_product])
+
+        product = LocalbootProduct('thunderheart', '1', '1', setupScript='foo.bar')
+
+        self.backend.product_createObjects([product])
+
+        poc = ProductOnClient(
+            clientId=client_with_current_product.id,
+            productId=product.id,
+            productType=product.getType(),
+            productVersion=product.productVersion,
+            packageVersion=product.packageVersion,
+            installationStatus='installed',
+            actionResult='successful'
+        )
+
+        self.backend.productOnClient_createObjects([poc])
+
+        installedProductOnDepot = ProductOnDepot(
+            productId=product.id,
+            productType=product.getType(),
+            productVersion=product.productVersion,
+            packageVersion=product.packageVersion,
+            depotId=depot.getId(),
+            locked=False
+        )
+
+        self.backend.productOnDepot_createObjects([installedProductOnDepot])
+
+        clientConfigDepotId = UnicodeConfig(
+            id=u'clientconfig.depot.id',
+            description=u'Depotserver to use',
+            possibleValues=[],
+            defaultValues=[depot.id]
+        )
+
+        self.backend.config_createObjects(clientConfigDepotId)
+
+        for client in (client_with_current_product, client_without_product):
+            clientDepotMappingConfigState = ConfigState(
+                configId=u'clientconfig.depot.id',
+                objectId=client.getId(),
+                values=depot.getId()
+            )
+
+            self.backend.configState_createObjects(clientDepotMappingConfigState)
+
+        # Starting the checks
+        self.assertFalse(self.backend.productOnClient_getObjects(productId=product.id, clientId=client_without_product.id))
+        self.assertTrue(self.backend.productOnClient_getObjects(productId=product.id, clientId=client_with_current_product.id))
+
+        clientIDs = self.backend.setupWhereNotInstalled(product.id)
+
+        self.assertEquals(1, len(clientIDs))
+        poc = self.backend.productOnClient_getObjects(productId=product.id, clientId=client_without_product.id)[0]
+        self.assertEquals("setup", poc.actionRequest)
+
 
 class LegacyConfigStateAccessTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
     """
