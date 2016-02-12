@@ -79,8 +79,8 @@ class SQLite(SQL):
 				def rowtrace(cursor, row):
 					valueSet = {}
 					names = cursor.getdescription()
-					for i in range(len(row)):
-						valueSet[names[i][0]] = row[i]
+					for i, current in enumerate(row):
+						valueSet[names[i][0]] = current
 					return valueSet
 
 				self._cursor = self._connection.cursor()
