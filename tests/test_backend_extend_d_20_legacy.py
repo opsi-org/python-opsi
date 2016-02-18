@@ -193,6 +193,8 @@ class LegacyFunctionsTestCase(unittest.TestCase, FileBackendBackendManagerMixin)
         self.backend.productOnDepot_createObjects([installedProductOnDepot,
                                                    installedProductOnDepot2])
 
+        self.assertFalse(self.backend.uninstallWhereInstalled('thunderheart'))
+
         poc = ProductOnClient(
             clientId=client_with_product.id,
             productId=product.id,
@@ -263,6 +265,8 @@ class LegacyFunctionsTestCase(unittest.TestCase, FileBackendBackendManagerMixin)
                                        updateScript='foo.opsiscript')
 
         self.backend.product_createObjects([old_product, new_product])
+
+        self.assertFalse(self.backend.updateWhereInstalled('thunderheart'))
 
         poc = ProductOnClient(
             clientId=client_with_old_product.id,
