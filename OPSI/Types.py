@@ -506,18 +506,6 @@ def forceObjectClass(var, objectClass):
 			c = eval('OPSI.Object.%s' % var['type'])
 			if issubclass(c, objectClass):
 				var = c.fromHash(var)
-		except TypeError as error:
-			if '__init__() takes at least' in str(error):
-				try:
-					args = OPSI.Object.mandatoryConstructorArgs(c)
-					missingArgs = [arg for arg in args if arg not in var]
-					if missingArgs:
-						error = TypeError("Missing required argument(s): {0}".format(', '.join(repr(a) for a in missingArgs)))
-				except NameError:
-					pass
-
-			exception = error
-			logger.debug(u"Failed to get object from dict '%s': %s" % (var, error))
 		except AttributeError as error:
 			if "'module' object has no attribute " in str(error):
 				error = ValueError("Invalild object type: {0}".format(var['type']))
