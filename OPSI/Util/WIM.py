@@ -4,7 +4,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2014-2016 uib GmbH - http://www.uib.de/
+# Copyright (C) 2015-2016 uib GmbH - http://www.uib.de/
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -64,7 +64,7 @@ def parseWIM(wimPath):
 	imagename = None
 	languages = set()
 	defaultLanguage = None
-	for line in execute("{imagex} info {file!r}".format(imagex=imagex, file=wimPath)):
+	for line in execute("{imagex} info '{file}'".format(imagex=imagex, file=wimPath)):
 		if line.startswith('Name:'):
 			_, name = line.split(' ', 1)
 			imagename = name.strip()
@@ -114,6 +114,14 @@ def writeImageInformation(backend, productId, imagenames, languages=None, defaul
 	"""
 	productProperty = _getProductProperty(backend, productId, 'imagename')
 	productProperty.possibleValues = imagenames
+	if productProperty.defaultValues:
+		if productProperty.defaultValues[0] not in imagenames:
+			LOGGER.info("Mismatching default value. Setting first imagename as default.")
+			productProperty.defaultValues = [imagenames[0]]
+	else:
+		LOGGER.info("No default values found. Setting first imagename as default.")
+		productProperty.defaultValues = [imagenames[0]]
+
 	backend.productProperty_updateObject(productProperty)
 	LOGGER.notice("Wrote imagenames to property 'imagename' product on {0!r}.".format(productId))
 
@@ -126,6 +134,8 @@ def writeImageInformation(backend, productId, imagenames, languages=None, defaul
 			LOGGER.debug("Setting language default to {0!r}".format(defaultLanguage))
 			productProperty.defaultValues = [defaultLanguage]
 
+		LOGGER.debug("system_language property is now: {0!r}".format(productProperty))
+		LOGGER.debug("system_language possibleValues are: {0}".format(productProperty.possibleValues))
 		backend.productProperty_updateObject(productProperty)
 		LOGGER.notice("Wrote languages to property 'system_language' product on {0!r}.".format(productId))
 

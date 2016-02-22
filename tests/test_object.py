@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2014 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -25,9 +25,9 @@ Testing OPSI.Objects
 
 import unittest
 
-from OPSI.Object import (AuditHardwareOnHost, Host, OpsiConfigserver,
-    OpsiDepotserver, LocalbootProduct, UnicodeConfig,
-    getPossibleClassAttributes)
+from OPSI.Object import (AuditHardwareOnHost, Host, LocalbootProduct,
+    OpsiConfigserver, OpsiDepotserver, Product, ProductDependency,
+    UnicodeConfig, getPossibleClassAttributes)
 
 
 class GetPossibleClassAttributesTestCase(unittest.TestCase):
@@ -188,3 +188,50 @@ class AuditHardwareOnHostTestCase(unittest.TestCase):
     def test__unicode__with_additionals(self):
         self.ahoh.name = "Ünicöde name."
         self.ahoh.__unicode__()
+
+
+class HelpfulErrorMessageWhenCreationFromHashFailsTestCase(unittest.TestCase):
+    """
+    Error messages for object.fromHash should be helpful.
+
+    If the creation of a new object from a hash fails the resulting error
+    message should show what required attributes are missing.
+    """
+
+    def testGettingHelpfulErrorMessageWithBaseclassRelationship(self):
+        try:
+            ProductDependency.fromHash({
+                    "productAction" : "setup",
+                    "requirementType" : "after",
+                    "requiredInstallationStatus" : "installed",
+                    "requiredProductId" : "mshotfix",
+                    "productId" : "msservicepack"
+                    # The following attributes are missing:
+                    # * productVersion
+                    # * packageVersion
+                })
+            self.fail('Should not get here.')
+        except TypeError as typo:
+            print(u"Error is: {0!r}".format(typo))
+
+            self.assertTrue(u'__init__() takes at least 6 arguments (6 given)' not in str(typo))
+
+            self.assertTrue('productVersion' in str(typo))
+            self.assertTrue('packageVersion' in str(typo))
+
+    def testGettingHelpfulErrorMessageWithBaseclassEntity(self):
+        try:
+            Product.fromHash({
+                    "id": "newProduct",
+                    # The following attributes are missing:
+                    # * productVersion
+                    # * packageVersion
+                })
+            self.fail('Should not get here.')
+        except TypeError as typo:
+            print(u"Error is: {0!r}".format(typo))
+
+            self.assertTrue(u'__init__() takes at least 6 arguments (6 given)' not in str(typo))
+
+            self.assertTrue('productVersion' in str(typo))
+            self.assertTrue('packageVersion' in str(typo))
