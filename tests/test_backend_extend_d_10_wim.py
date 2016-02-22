@@ -34,7 +34,7 @@ from .Backends.File import FileBackendBackendManagerMixin
 from .BackendTestMixins.Hosts import getConfigServer
 from .BackendTestMixins.Products import getNetbootProduct
 from .test_util_wim import fakeWIMEnvironment
-from .helpers import getLocalFQDN, mock, unittest
+from .helpers import getLocalFQDN, mock, patchAddress, patchEnvironmentVariables, unittest
 
 
 class WimFunctionsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
@@ -53,13 +53,29 @@ class WimFunctionsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
         self.assertRaises(OSError, self.backend.updateWIMConfigFromPath, '', None)
 
     def testUpdatingWim(self):
-        print(self.backend.productOnDepot_getObjects())
+        with patchAddress(fqdn=getLocalFQDN()):
+            with patchEnvironmentVariables(OPSI_HOSTNAME=getLocalFQDN()):
+                with fakeWIMEnvironment(self._fileTempDir):
+                    fillBackend(self.backend)
 
-        with fakeWIMEnvironment():
-            fillBackend(self.backend)
-            with mock.patch('OPSI.Util.WIM.os.path.exists', lambda _: True):
-                # self.backend.updateWIMConfig('testWindows')
-                pass
+                    with mock.patch('OPSI.Util.WIM.os.path.exists', lambda _: True):
+                        self.backend.updateWIMConfig('testwindows')
+
+                    imagename = self.backend.productProperty_getObjects(propertyId="imagename", productId='testwindows')
+                    imagename = imagename[0]
+
+                    possibleImageNames = set([
+                        u'Windows 7 HOMEBASICN', u'Windows 7 HOMEPREMIUMN',
+                        u'Windows 7 PROFESSIONALN', u'Windows 7 STARTERN',
+                        u'Windows 7 ULTIMATEN'
+                    ])
+                    self.assertEquals(possibleImageNames, set(imagename.possibleValues))
+                    self.assertTrue(imagename.defaultValues[0] in imagename.possibleValues)
+
+                    language = self.backend.productProperty_getObjects(propertyId="system_language", productId='testwindows')
+                    language = language[0]
+                    self.assertTrue(set(['de-DE']), language.defaultValues)
+                    self.assertTrue(set(['de-DE']), language.possibleValues)
 
 
 def fillBackend(backend):
@@ -84,9 +100,8 @@ def fillBackend(backend):
         productVersion=product.productVersion,
         packageVersion=product.packageVersion,
         propertyId=u"imagename",
-        # description=u'i386 dir to use as installation source',
-        possibleValues=["i386"],
-        defaultValues=["i386"],
+        possibleValues=["NOT YOUR IMAGE", "NO NO NO"],
+        defaultValues=["NOT YOUR IMAGE"],
         editable=True,
         multiValue=False
     )
@@ -95,9 +110,8 @@ def fillBackend(backend):
         productVersion=product.productVersion,
         packageVersion=product.packageVersion,
         propertyId=u"system_language",
-        # description=u'i386 dir to use as installation source',
-        possibleValues=["i386"],
-        defaultValues=["i386"],
+        possibleValues=["lol_NOPE"],
+        defaultValues=["lol_NOPE", "rofl_MAO"],
         editable=True,
         multiValue=False
     )
