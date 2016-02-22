@@ -35,9 +35,9 @@ from .helpers import workInTemporaryDirectory, mock
 
 
 @contextmanager
-def fakeWIMEnvironment():
-    with workInTemporaryDirectory() as tempDir:
-        fakeWimPath = os.path.join(tempDir, 'fake.wim')
+def fakeWIMEnvironment(tempDir=None):
+    with workInTemporaryDirectory(tempDir) as temporaryDir:
+        fakeWimPath = os.path.join(temporaryDir, 'fake.wim')
         with open(fakeWimPath, 'w'):
             pass
 
