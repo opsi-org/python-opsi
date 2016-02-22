@@ -4,7 +4,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2014-2016 uib GmbH - http://www.uib.de/
+# Copyright (C) 2015-2016 uib GmbH - http://www.uib.de/
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -126,6 +126,8 @@ def writeImageInformation(backend, productId, imagenames, languages=None, defaul
 			LOGGER.debug("Setting language default to {0!r}".format(defaultLanguage))
 			productProperty.defaultValues = [defaultLanguage]
 
+		LOGGER.debug("system_language property is now: {0!r}".format(productProperty))
+		LOGGER.debug("system_language possibleValues are: {0}".format(productProperty.possibleValues))
 		backend.productProperty_updateObject(productProperty)
 		LOGGER.notice("Wrote languages to property 'system_language' product on {0!r}.".format(productId))
 
