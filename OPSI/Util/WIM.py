@@ -64,7 +64,7 @@ def parseWIM(wimPath):
 	imagename = None
 	languages = set()
 	defaultLanguage = None
-	for line in execute("{imagex} info {file!r}".format(imagex=imagex, file=wimPath)):
+	for line in execute("{imagex} info '{file}'".format(imagex=imagex, file=wimPath)):
 		if line.startswith('Name:'):
 			_, name = line.split(' ', 1)
 			imagename = name.strip()
