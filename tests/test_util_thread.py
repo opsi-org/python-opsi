@@ -51,7 +51,7 @@ class ThreadPoolTestCase(unittest.TestCase):
 
     def test_stopPool(self):
         self.pool.adjustSize(size=10)
-        for i in range(5):
+        for _ in range(5):
             time.sleep(0.1)
         numThreads = threading.activeCount() - len(self.pool.worker)
         self.pool.stop()
