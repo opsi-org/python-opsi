@@ -1,4 +1,4 @@
-python-opsi (4.0.6.42-1) UNRELEASED; urgency=medium
+python-opsi (4.0.6.42-1) experimental; urgency=medium
 
   * 20_legacy.conf: Added new methods "uninstallWhereInstalled",
     "updateWhereInstalled", "setupWhereNotInstalled" and
