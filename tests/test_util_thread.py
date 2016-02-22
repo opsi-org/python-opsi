@@ -101,13 +101,7 @@ class ThreadPoolTestCase(unittest.TestCase):
         self.assertNotEqual(None, result[2])
 
     def test_invalidThreadPoolSize(self):
-        try:
-            self.pool.adjustSize(-1)
-            self.fail("ThreadPool has an invalid size, but no exception was raised.")
-        except ThreadPoolException as e:
-            return
-        except Exception as e:
-            self.fail(e)
+        self.assertRaises(ThreadPoolException, self.pool.adjustSize, -1)
 
     def test_adjustPoolSize(self):
         self.pool.adjustSize(size=2)
