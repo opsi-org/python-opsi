@@ -114,6 +114,14 @@ def writeImageInformation(backend, productId, imagenames, languages=None, defaul
 	"""
 	productProperty = _getProductProperty(backend, productId, 'imagename')
 	productProperty.possibleValues = imagenames
+	if productProperty.defaultValues:
+		if productProperty.defaultValues[0] not in imagenames:
+			LOGGER.info("Mismatching default value. Setting first imagename as default.")
+			productProperty.defaultValues = [imagenames[0]]
+	else:
+		LOGGER.info("No default values found. Setting first imagename as default.")
+		productProperty.defaultValues = [imagenames[0]]
+
 	backend.productProperty_updateObject(productProperty)
 	LOGGER.notice("Wrote imagenames to property 'imagename' product on {0!r}.".format(productId))
 
