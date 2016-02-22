@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2014-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -39,7 +39,7 @@ from .BackendTestMixins.Products import ProductsOnClientsMixin, ProductPropertyS
 from .Backends.File import FileBackendMixin
 from .Backends.SQLite import getSQLiteBackend
 from .BackendTestMixins.Hosts import HostsMixin
-from .helpers import patchAddress, workInTemporaryDirectory, requiresModulesFile
+from .helpers import workInTemporaryDirectory, requiresModulesFile
 
 
 class BackendACLFileTestCase(unittest.TestCase):
