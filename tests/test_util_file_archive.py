@@ -34,8 +34,8 @@ class ArchiveFactoryTestCase(unittest.TestCase):
         self.assertRaises(Exception, Archive, 'no_filename', format='unknown')
 
     def testGivingKnownFormatsDoesNotRaiseException(self):
-        tarArchive = Archive('no_file', format='tar')
-        cpioArchive = Archive('no_file', format='cpio')
+        Archive('no_file', format='tar')
+        Archive('no_file', format='cpio')
 
     def testRaisingExceptionIfFiletypeCanNotBeDetermined(self):
         # Checking if the filetype for this python file can be guessed.
