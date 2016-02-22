@@ -58,7 +58,7 @@ def disableSystemCallsForConfigureDHCPD():
 
 class ConfigureDHCPDTestCase(unittest.TestCase):
     def testJustExitingIfFileDoesNotExist(self):
-        with workInTemporaryDirectory() as tempDir:
+        with workInTemporaryDirectory():
             configureDHCPD('not.here')
 
     def testNextServer(self):
@@ -92,7 +92,7 @@ subnet 192.168.0.0 netmask 255.255.0.0 {
             self.assertTrue(found, "next-server not fonud in new file.")
 
     def testConfiguringEmptyFile(self):
-        with workInTemporaryDirectory() as tempDir:
+        with workInTemporaryDirectory():
             filename = 'dhcpd_test.conf'
             with open(filename, 'wx'):
                 pass
@@ -107,7 +107,7 @@ subnet 192.168.0.0 netmask 255.255.0.0 {
             self.assertNotEquals(oldHash, newHash)
 
     def testConfiguringPatchesDHCPDBackendConfig(self):
-        with workInTemporaryDirectory() as tempDir:
+        with workInTemporaryDirectory():
             filename = 'dhcpd_test.conf'
             with open(filename, 'wx'):
                 pass
