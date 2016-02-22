@@ -124,6 +124,7 @@ class GroupActionsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
             self.assertEquals(poc.productId, product2.getId())
             self.assertTrue(poc.clientId in (client1.id, client2.id))
 
+
 class GroupRenamingTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
     """
     Testing the group actions.
@@ -158,7 +159,6 @@ class GroupRenamingTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
         self.backend.host_insertObject(self.client2)
         self.backend.group_insertObject(self.testGroup)
         self.backend.objectToGroup_createObjects([client1ToGroup, client2ToGroup])
-        
 
     def tearDown(self):
         self.tearDownBackend()
@@ -196,6 +196,7 @@ class GroupRenamingTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
         objsToGrp = self.backend.objectToGroup_getObjects()
         for obj in objsToGrp:
             self.assertNotEqual(obj.groupId, self.testGroup.id)
+
 
 if __name__ == '__main__':
     unittest.main()
