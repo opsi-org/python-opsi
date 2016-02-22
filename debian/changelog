@@ -3,8 +3,11 @@ python-opsi (4.0.6.42-1) UNRELEASED; urgency=medium
   * 20_legacy.conf: Added new methods "uninstallWhereInstalled",
     "updateWhereInstalled", "setupWhereNotInstalled" and
     "setActionRequestWhereOutdated".
+  * New module: OPSI.Util.WIM.
+  * New file: 10_wim.conf with methods "updateWIMConfigFromPath" and
+    "updateWIMConfig".
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 22 Feb 2016 17:22:03 +0100
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 22 Feb 2016 17:24:13 +0100
 
 python-opsi (4.0.6.41-1) experimental; urgency=medium
 
