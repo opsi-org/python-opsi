@@ -108,13 +108,6 @@ class WorkerOpsiJsonRpcTestCase(unittest.TestCase):
 
 		We do not use any compression in this testcase.
 		"""
-		class FakeRPC(object):
-			def __init__(self, result=None):
-				self.result = result or None
-
-			def getResponse(self):
-				return self.result
-
 		worker = WorkerOpsiJsonRpc(service=None, request=FakeRequest(), resource=None)
 		worker._rpcs = [FakeRPC(), FakeRPC(1), FakeRPC(u"FÄKE!"),
 						FakeRPC({"Narziss": "Morgen Nicht Geboren"})]
