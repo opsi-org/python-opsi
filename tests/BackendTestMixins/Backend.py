@@ -31,7 +31,7 @@ import time
 
 from .Clients import ClientsMixin
 from .Hosts import HostsMixin
-from .Groups import GroupsMixin, ObjectToGroupsMixin
+from .Groups import ObjectToGroupsMixin
 
 from OPSI.Types import BackendError
 

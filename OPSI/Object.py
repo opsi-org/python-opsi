@@ -4,7 +4,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) - http://www.opsi.org
 
-# Copyright (C) 2006-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -310,7 +310,19 @@ class Entity(BaseObject):
 			if varname in hash:
 				kwargs[varname] = hash[varname]
 
-		return Class(**kwargs)
+		try:
+			return Class(**kwargs)
+		except TypeError as error:
+			if '__init__() takes at least' in forceUnicode(error):
+				try:
+					args = mandatoryConstructorArgs(Class)
+					missingArgs = [arg for arg in args if arg not in kwargs]
+					if missingArgs:
+						raise TypeError("Missing required argument(s): {0}".format(', '.join(repr(a) for a in missingArgs)))
+				except NameError:
+					pass
+
+			raise error
 
 	def clone(self, identOnly=False):
 		hash = {}
@@ -358,7 +370,19 @@ class Relationship(BaseObject):
 			if varname in hash:
 				kwargs[varname] = hash[varname]
 
-		return Class(**kwargs)
+		try:
+			return Class(**kwargs)
+		except TypeError as error:
+			if '__init__() takes at least' in forceUnicode(error):
+				try:
+					args = mandatoryConstructorArgs(Class)
+					missingArgs = [arg for arg in args if arg not in kwargs]
+					if missingArgs:
+						raise TypeError("Missing required argument(s): {0}".format(', '.join(repr(a) for a in missingArgs)))
+				except NameError:
+					pass
+
+			raise error
 
 	def clone(self, identOnly=False):
 		hash = {}

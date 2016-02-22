@@ -905,7 +905,6 @@ class PackageControlFile(TextFile):
 		if not self._opsi3compatible and self._product.getChangelog():
 			self._lines.append(u'[Changelog]')
 			self._lines.extend(self._product.getChangelog().split('\n'))
-			self._lines.append(u'')
 
 		self.open('w')
 		self.writelines()

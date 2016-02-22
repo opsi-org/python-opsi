@@ -285,7 +285,7 @@ def fillFileBackendWithFakeFiles(backendDir):
             os.mkdir(os.path.join(backendDir, folder))
         except OSError as error:
             if error.errno != 17:  # 17 is File exists
-                raise oserr
+                raise error
 
     exampleFiles = (
         os.path.join(backendDir, 'config.ini'),

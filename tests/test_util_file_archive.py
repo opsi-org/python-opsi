@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014 uib GmbH <info@uib.de>
+# Copyright (C) 2014-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -32,11 +32,10 @@ from OPSI.Util.File.Archive import Archive, PigzMixin, TarArchive
 class ArchiveFactoryTestCase(unittest.TestCase):
     def testUnknownFormatsRaiseException(self):
         self.assertRaises(Exception, Archive, 'no_filename', format='unknown')
-        # def Archive('no_filename', format=None, compression=None, progressSubject=None):
 
     def testGivingKnownFormatsDoesNotRaiseException(self):
-        tarArchive = Archive('no_file', format='tar')
-        cpioArchive = Archive('no_file', format='cpio')
+        Archive('no_file', format='tar')
+        Archive('no_file', format='cpio')
 
     def testRaisingExceptionIfFiletypeCanNotBeDetermined(self):
         # Checking if the filetype for this python file can be guessed.

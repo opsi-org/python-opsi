@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2014-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -1225,8 +1225,7 @@ class ProductsOnClientTestsMixin(ProductsOnClientsMixin, ProductPropertiesMixin)
             print(u"Got productOnClient: %s" % productOnClient)
             if (productOnClient.actionRequest == 'setup'):
                 setup.append(productOnClient.productId)
-        #assert not 'product6' in setup, u"'%s' is in '%s'" % ('product6', setup)
-        assert not 'product7' in setup, u"'%s' is in '%s'" % (
+        assert 'product7' not in setup, u"'%s' is in '%s'" % (
             'product7', setup)
-        assert not 'product9' in setup, u"'%s' is in '%s'" % (
+        assert 'product9' not in setup, u"'%s' is in '%s'" % (
             'product9', setup)

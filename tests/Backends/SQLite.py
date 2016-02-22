@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2013-2015 uib GmbH
+# Copyright (C) 2013-2016 uib GmbH
 #
 # http://www.uib.de/
 #
@@ -22,6 +22,7 @@
 
 from __future__ import absolute_import
 
+import os
 from contextlib import contextmanager
 from functools import wraps
 

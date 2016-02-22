@@ -1,3 +1,18 @@
+python-opsi (4.0.6.42-1) UNRELEASED; urgency=medium
+
+  * 20_legacy.conf: Added new methods "uninstallWhereInstalled",
+    "updateWhereInstalled", "setupWhereNotInstalled" and
+    "setActionRequestWhereOutdated".
+  * New module: OPSI.Util.WIM.
+  * New file: 10_wim.conf with methods "updateWIMConfigFromPath" and
+    "updateWIMConfig".
+  * OPSI.Util.File.Opsi.PackageControlFile does not add empty line after
+    changelog anymore.
+  * Improved error messages during creation of an object from a dict if that
+    dict does miss an argument required by the constructor.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 22 Feb 2016 17:29:04 +0100
+
 python-opsi (4.0.6.41-1) experimental; urgency=medium
 
   [ Mathias Radtke ]
