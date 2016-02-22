@@ -265,12 +265,24 @@ class KillableThreadTestCase(unittest.TestCase):
         runningThread.start()
 
         try:
-            time.sleep(2)
-            self.assertTrue(runningThread.isAlive(), "Thread should be running.")
+            waited = 0
+            while not runningThread.isAlive():
+                time.sleep(0.1)
+                waited += 1
+
+                if waited > 20:
+                    raise RuntimeError("Thread did not start in timely fashion.")
 
             runningThread.terminate()
 
-            time.sleep(2)
+            runChecks = 0
+            while runningThread.isAlive():
+                time.sleep(0.1)
+                runChecks += 1
+
+                if runChecks > 20:
+                    raise RuntimeError("Thread should be stopped by now.")
+
             self.assertFalse(runningThread.isAlive(), "Thread should be killed.")
         finally:
             runningThread.join(2)
