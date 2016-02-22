@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (C) 2010-2014 uib GmbH
+Copyright (C) 2010-2016 uib GmbH
 
 http://www.uib.de/
 
@@ -167,7 +167,7 @@ class ThreadPoolTestCase(unittest.TestCase):
             results.append(success)
 
         def shortJob():
-            unused = 10 * 10
+            _ = 10 * 10
 
         for i in range(10):
             self.pool.addJob(shortJob, callback=callback)
