@@ -28,6 +28,7 @@ import datetime
 import time
 import threading
 import unittest
+from contextlib import contextmanager
 
 from OPSI.Util.Thread import ThreadPoolException, ThreadPool, getGlobalThreadPool, KillableThread
 
@@ -253,25 +254,24 @@ class KillableThreadTestCase(unittest.TestCase):
 
             def run(self):
                 start = datetime.datetime.now()
-                thirtySeconds = datetime.timedelta(seconds=30)
+                twentySeconds = datetime.timedelta(seconds=20)
 
-                while datetime.datetime.now() < (start + thirtySeconds):
+                while datetime.datetime.now() < (start + twentySeconds):
                     time.sleep(0.1)
 
                 self.testCase.fail("Thread did not get killed in time.")
 
+        @contextmanager
+        def getTestThread():
+            runningThread = ThirtySecondsToEndThread(self)
+            runningThread.start()
+            try:
+                yield runningThread
+            finally:
+                runningThread.join(2)
 
-        runningThread = ThirtySecondsToEndThread(self)
-        runningThread.start()
-
-        try:
-            waited = 0
-            while not runningThread.isAlive():
-                time.sleep(0.1)
-                waited += 1
-
-                if waited > 20:
-                    self.fail("Thread did not start in timely fashion.")
+        with getTestThread() as runningThread:
+            assert runningThread.isAlive()
 
             runningThread.terminate()
 
@@ -280,12 +280,10 @@ class KillableThreadTestCase(unittest.TestCase):
                 time.sleep(0.1)
                 runChecks += 1
 
-                if runChecks > 20:
+                if runChecks > 30:
                     self.fail("Thread should be stopped by now.")
 
             self.assertFalse(runningThread.isAlive(), "Thread should be killed.")
-        finally:
-            runningThread.join(2)
 
 
 if __name__ == '__main__':
