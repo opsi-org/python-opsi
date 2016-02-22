@@ -271,7 +271,7 @@ class KillableThreadTestCase(unittest.TestCase):
                 waited += 1
 
                 if waited > 20:
-                    raise RuntimeError("Thread did not start in timely fashion.")
+                    self.fail("Thread did not start in timely fashion.")
 
             runningThread.terminate()
 
@@ -281,7 +281,7 @@ class KillableThreadTestCase(unittest.TestCase):
                 runChecks += 1
 
                 if runChecks > 20:
-                    raise RuntimeError("Thread should be stopped by now.")
+                    self.fail("Thread should be stopped by now.")
 
             self.assertFalse(runningThread.isAlive(), "Thread should be killed.")
         finally:
