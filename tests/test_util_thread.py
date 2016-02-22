@@ -125,10 +125,10 @@ class ThreadPoolTestCase(unittest.TestCase):
             results.append(success)
 
         def waitJob():
-            for i in range(3):
+            for _ in range(3):
                 time.sleep(1)
 
-        for i in range(5):
+        for _ in range(5):
             self.pool.addJob(waitJob, callback=callback)
 
         self.assertEquals(2, len(self.pool.worker),
@@ -136,7 +136,7 @@ class ThreadPoolTestCase(unittest.TestCase):
         self.assertTrue(self.pool.jobQueue.unfinished_tasks > len(self.pool.worker),
         "Expected more tasks in Queue than workers in pool, but got %s tasks and %s worker" % (self.pool.jobQueue.unfinished_tasks, len(self.pool.worker)))
 
-        for i in range(10):
+        for _ in range(10):
             time.sleep(0.4)
         self.assertEquals(5, len(results), "Expected %s results but, but got %s" % (5, len(results)))
 
@@ -164,7 +164,7 @@ class ThreadPoolTestCase(unittest.TestCase):
         def shortJob():
             _ = 10 * 10
 
-        for i in range(10):
+        for _ in range(10):
             self.pool.addJob(shortJob, callback=callback)
 
         time.sleep(1)
@@ -172,7 +172,7 @@ class ThreadPoolTestCase(unittest.TestCase):
 
         time.sleep(2)
         results = []
-        for i in range(10):
+        for _ in range(10):
             self.pool.addJob(shortJob, callback=callback)
         time.sleep(1)
         self.assertEquals(10, len(results), "Expected %s results, but got %s" % (10, len(results)))
@@ -189,7 +189,7 @@ class ThreadPoolTestCase(unittest.TestCase):
         def sleepJob():
             time.sleep(2)
 
-        for i in range(10):
+        for _ in range(10):
             self.pool.addJob(sleepJob, callback=callback)
         time.sleep(3)
         self.assertEqual(len(results), 2, "Expected %s results, but got %s" % (2, len(results)))
@@ -210,7 +210,7 @@ class ThreadPoolTestCase(unittest.TestCase):
         def sleepJob():
             time.sleep(2)
 
-        for i in range(12):
+        for _ in range(12):
             self.pool.addJob(sleepJob, callback=callback)
         time.sleep(3)
         self.assertEqual(len(results), 5, "Expected %s results, but got %s" % (5, len(results)))
