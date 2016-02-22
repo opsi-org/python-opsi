@@ -29,7 +29,7 @@ from __future__ import absolute_import
 from contextlib import contextmanager
 
 from OPSI.System import which
-from OPSI.Object import UnicodeProductProperty, ProductOnDepot
+from OPSI.Object import NetbootProduct, ProductOnDepot, UnicodeProductProperty
 from .Backends.File import FileBackendBackendManagerMixin
 from .BackendTestMixins.Hosts import getConfigServer
 from .BackendTestMixins.Products import getNetbootProduct
@@ -63,19 +63,11 @@ class WimFunctionsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
 
 
 def fillBackend(backend):
-    return
-
-
-    backend.backend_createBase()
-
     configServer = getConfigServer()
     backend.host_insertObject(configServer)
 
-    product = getNetbootProduct()
-    product.id = 'testWindows'
+    product = NetbootProduct(id='testWindows', productVersion=1, packageVersion=1)
     backend.product_insertObject(product)
-
-    print(backend.product_getObjects())
 
     productOnDepot = ProductOnDepot(
         productId=product.id,
@@ -111,15 +103,6 @@ def fillBackend(backend):
     )
     backend.productProperty_insertObject(imagenameProductProperty)
     backend.productProperty_insertObject(systemLanguageProductProperty)
-
-    # productOnDepot1 = ProductOnDepot(
-    #     productId=product.getId(),
-    #     productType=product.getType(),
-    #     productVersion=product.getProductVersion(),
-    #     packageVersion=product.getPackageVersion(),
-    #     depotId=depotserver1.getId(),
-    #     locked=False
-    # )
 
 
 if __name__ == '__main__':
