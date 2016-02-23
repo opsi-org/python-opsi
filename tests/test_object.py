@@ -23,6 +23,8 @@ Testing OPSI.Objects
 :license: GNU Affero General Public License version 3
 """
 
+from __future__ import print_function
+
 import unittest
 
 from OPSI.Object import (AuditHardwareOnHost, Host, LocalbootProduct,

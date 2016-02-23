@@ -23,7 +23,7 @@ Backend mixin for testing software / hardware audit functionality.
 :license: GNU Affero General Public License version 3
 """
 
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 
 from OPSI.Object import (AuditSoftware, AuditSoftwareOnClient,
     AuditHardware, AuditHardwareOnHost, AuditSoftwareToLicensePool)
