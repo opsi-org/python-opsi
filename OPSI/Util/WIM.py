@@ -47,15 +47,14 @@ def parseWIM(wimPath):
 
 	:return: a list of images. These have attributes `name`, `languages` and `default_language`.
 	"""
-	images = getImageInformation(wimPath)
+	LOGGER.notice("Detected the following images:")
+	images = []
+	for image in getImageInformation(wimPath):
+		LOGGER.notice(image.name)
+		images.append(image)
 
 	if not images:
 		raise ValueError('Could not find any images')
-
-	LOGGER.debug('images: {0!r}'.format(images))
-	LOGGER.notice("Detected the following images:")
-	for image in images:
-		LOGGER.notice(image.name)
 
 	return images
 
