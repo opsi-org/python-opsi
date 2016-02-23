@@ -47,11 +47,13 @@ def parseWIM(wimPath):
 
 	:return: a list of images. These have attributes `name`, `languages` and `default_language`.
 	"""
+	Image = namedtuple("Image", 'name languages default_language')
+
 	LOGGER.notice("Detected the following images:")
 	images = []
 	for image in getImageInformation(wimPath):
-		LOGGER.notice(image.name)
-		images.append(image)
+		LOGGER.notice(image['name'])
+		images.append(Image(image['name'], image.get('languages', tuple()), image.get('default language', None)))
 
 	if not images:
 		raise ValueError('Could not find any images')
@@ -60,6 +62,13 @@ def parseWIM(wimPath):
 
 
 def getImageInformation(imagePath):
+	"""
+	Read information from a WIM file at `imagePath`.
+
+	This method acts as a generator that yields information for each image
+	in the file as a `dict`. The keys in the dict are all lowercase.
+	Every dict has at least the key 'name'.
+	"""
 	if not os.path.exists(imagePath):
 		raise OSError(u"File {0!r} not found!".format(imagePath))
 
@@ -71,38 +80,36 @@ def getImageInformation(imagePath):
 		LOGGER.warning("Please install 'wimtools'.")
 		raise RuntimeError("Unable to find 'wimlib-imagex': {0}".format(error))
 
-	Image = namedtuple("Image", 'name languages default_language')
-
-	imagename = None
-	languages = set()
-	defaultLanguage = None
+	imageinfo = {}
 	for line in execute("{imagex} info '{file}'".format(imagex=imagex, file=imagePath)):
-		if line.startswith('Name:'):
-			_, name = line.split(' ', 1)
-			imagename = name.strip()
-		elif line.startswith('Languages:'):
-			_, langs = line.split(' ', 1)
-			langs = langs.strip()
-			if ' ' in langs:
-				langs = langs.split(' ')
-			elif ',' in langs:
-				langs = langs.split(',')
-			else:
-				langs = [langs]
+		if line and ':' in line:
+			key, value = line.split(':', 1)
+			key = key.strip().lower()
+			value = value.strip()
 
-			for lang in langs:
-				if lang.strip():
-					languages.add(lang.strip())
-		elif line.startswith('Default Language:'):
-			_, _, defLang = line.split(' ', 2)
-			defaultLanguage = defLang.strip()
-		elif not line:
-			if imagename:
-				yield Image(imagename, languages, defaultLanguage)
+			if key == 'languages':
+				langs = value
+				if ' ' in langs:
+					langs = langs.split(' ')
+				elif ',' in langs:
+					langs = langs.split(',')
+				else:
+					langs = [langs]
 
-			imagename = None
-			languages = set()
-			defaultLanguage = None
+				languages = set()
+				for lang in langs:
+					if lang.strip():
+						languages.add(lang.strip())
+
+				value = languages
+
+			imageinfo[key] = value
+		elif not line and imageinfo:
+			if 'name' in imageinfo:  # Do not return file information.
+				LOGGER.debug("Collected information {0!r}".format(imageinfo))
+				yield imageinfo
+
+			imageinfo = {}
 
 
 def writeImageInformation(backend, productId, imagenames, languages=None, defaultLanguage=None):
