@@ -49,7 +49,7 @@ class WimFunctionsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
         self.assertRaises(ValueError, self.backend.updateWIMConfig, '')
         self.assertRaises(ValueError, self.backend.updateWIMConfig, None)
 
-    def testUpdatingWimFailsWithInvalidObjectId(self):
+    def testUpdatingWimFailsWithInvalidProductId(self):
         self.assertRaises(OSError, self.backend.updateWIMConfigFromPath, '', None)
 
     def testUpdatingWim(self):
