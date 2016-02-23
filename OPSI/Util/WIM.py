@@ -36,7 +36,7 @@ from OPSI.Util import getfqdn
 
 LOGGER = Logger()
 
-__all__ = ['parseWIM', 'writeImageInformation']
+__all__ = ['getImageInformation', 'parseWIM', 'writeImageInformation']
 
 
 def parseWIM(wimPath):
@@ -47,10 +47,22 @@ def parseWIM(wimPath):
 
 	:return: a list of images. These have attributes `name`, `languages` and `default_language`.
 	"""
-	Image = namedtuple("Image", 'name languages default_language')
+	images = getImageInformation(wimPath)
 
-	if not os.path.exists(wimPath):
-		raise OSError(u"File {0!r} not found!".format(wimPath))
+	if not images:
+		raise ValueError('Could not find any images')
+
+	LOGGER.debug('images: {0!r}'.format(images))
+	LOGGER.notice("Detected the following images:")
+	for image in images:
+		LOGGER.notice(image.name)
+
+	return images
+
+
+def getImageInformation(imagePath):
+	if not os.path.exists(imagePath):
+		raise OSError(u"File {0!r} not found!".format(imagePath))
 
 	try:
 		imagex = which('wimlib-imagex')
@@ -60,11 +72,13 @@ def parseWIM(wimPath):
 		LOGGER.warning("Please install 'wimtools'.")
 		raise RuntimeError("Unable to find 'wimlib-imagex': {0}".format(error))
 
+	Image = namedtuple("Image", 'name languages default_language')
+
 	images = []
 	imagename = None
 	languages = set()
 	defaultLanguage = None
-	for line in execute("{imagex} info '{file}'".format(imagex=imagex, file=wimPath)):
+	for line in execute("{imagex} info '{file}'".format(imagex=imagex, file=imagePath)):
 		if line.startswith('Name:'):
 			_, name = line.split(' ', 1)
 			imagename = name.strip()
@@ -91,14 +105,6 @@ def parseWIM(wimPath):
 			imagename = None
 			languages = set()
 			defaultLanguage = None
-
-	if not images:
-		raise ValueError('Could not find any images')
-
-	LOGGER.debug('images: {0!r}'.format(images))
-	LOGGER.notice("Detected the following images:")
-	for image in images:
-		LOGGER.notice(image.name)
 
 	return images
 
