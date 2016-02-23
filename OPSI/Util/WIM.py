@@ -73,7 +73,6 @@ def getImageInformation(imagePath):
 
 	Image = namedtuple("Image", 'name languages default_language')
 
-	images = []
 	imagename = None
 	languages = set()
 	defaultLanguage = None
@@ -99,13 +98,11 @@ def getImageInformation(imagePath):
 			defaultLanguage = defLang.strip()
 		elif not line:
 			if imagename:
-				images.append(Image(imagename, languages, defaultLanguage))
+				yield Image(imagename, languages, defaultLanguage)
 
 			imagename = None
 			languages = set()
 			defaultLanguage = None
-
-	return images
 
 
 def writeImageInformation(backend, productId, imagenames, languages=None, defaultLanguage=None):
