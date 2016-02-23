@@ -1,3 +1,10 @@
+python-opsi (4.0.6.43-1) experimental; urgency=medium
+
+  * Small bugfix in 10_wim.conf.
+  * OPSI.Util.WIM got a new function getImageInformation.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 23 Feb 2016 13:32:33 +0100
+
 python-opsi (4.0.6.42-1) experimental; urgency=medium
 
   * 20_legacy.conf: Added new methods "uninstallWhereInstalled",

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2015 uib GmbH <info@uib.de>
+# Copyright (C) 2015-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -33,7 +33,7 @@ from OPSI.Util.HTTP import deflateEncode, gzipEncode
 # (i.e. as in BackendTestMixins.Backends) on that backend.
 
 
-class FakeResponse:
+class FakeResponse(object):
     def __init__(self, header=None, data=None):
         self._header = header or {}
         self.data = data

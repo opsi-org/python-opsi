@@ -23,7 +23,7 @@ Backend functionality for testing the functionality of working with products.
 :license: GNU Affero General Public License version 3
 """
 
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 
 from OPSI.Object import (NetbootProduct, LocalbootProduct,
     UnicodeProductProperty, BoolProductProperty, ProductDependency,

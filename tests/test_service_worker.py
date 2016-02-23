@@ -59,7 +59,7 @@ class FakeDictHeader(FakeHeader):
 		return dict((ReturnWithMediaType(self.headers[key]), self.headers[key]) for key in self.headers if key.startswith(header))
 
 
-class FakeMediaType:
+class FakeMediaType(object):
 	def __init__(self, type):
 		self.mediaType = type
 
