@@ -31,7 +31,7 @@ from collections import namedtuple
 
 from OPSI.Logger import Logger
 from OPSI.System import execute, which
-from OPSI.Types import forceList
+from OPSI.Types import forceList, forceProductId
 from OPSI.Util import getfqdn
 
 LOGGER = Logger()
@@ -112,6 +112,10 @@ def writeImageInformation(backend, productId, imagenames, languages=None, defaul
 	*system_language*. If an additional `defaultLanguage` is given this
 	will be selected as the default.
 	"""
+	if not productId:
+		raise ValueError("Not a valid productId: {0!r}".format(productId))
+	productId = forceProductId(productId)
+
 	productProperty = _getProductProperty(backend, productId, 'imagename')
 	productProperty.possibleValues = imagenames
 	if productProperty.defaultValues:
