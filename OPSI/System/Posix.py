@@ -3925,6 +3925,8 @@ def setLocalSystemTime(timestring):
         try:
                 dt = datetime.datetime.strptime(timestring, '%Y-%m-%d %H:%M:%S.%f')
                 logger.info(u"Setting Systemtime Time to %s" % timestring)
-                winapi32.SetSystemTime(dt.year, dt.month, dt.weekday(), dt.day, dt.hour, dt.minute, dt.second, dt.microsecond)
+                systemTime = date --set='%s-%s-%s %s:%s:%s.%s' % (dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second, dt.microsecond)
+		subprocess.call([systemTime])
+		#winapi32.SetSystemTime(dt.year, dt.month, dt.weekday(), dt.day, dt.hour, dt.minute, dt.second, dt.microsecond)
         except Exception as e:
                 logger.error(u"Failed to set System Time: '%s'" % e)
