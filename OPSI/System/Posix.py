@@ -3896,3 +3896,35 @@ until the execution of the process is terminated.
 	exitCode = process.returncode
 	logger.notice(u"Process {0} ended with exit code {1}".format(process.pid, exitCode))
 	return (None, None, None, None)
+
+def setLocalSystemTime(timestring):
+        """
+        Method sets the local systemtime
+        param timestring = "2014-07-15 13:20:24.085661"
+        Die Typ SYSTEMTIME-Struktur ist wie folgt:
+
+        WYear           Integer-The current year.
+        WMonth          Integer-The current month. January is 1.
+        WDayOfWeek      Integer-The current day of the week. Sunday is 0.
+        WDay            Integer-The current day of the month.
+        WHour           Integer-The current hour.
+        wMinute         Integer-The current minute.
+        wSecond         Integer-The current second.
+        wMilliseconds   Integer-The current millisecond.
+
+
+        win32api.SetSystemTime
+
+        int = SetSystemTime(year, month , dayOfWeek , day , hour , minute , second , millseconds )
+
+        http://docs.activestate.com/activepython/2.5/pywin32/win32api__SetSystemTime_meth.html
+        """
+        if not timestring:
+                raise Exception(u"Invalid timestring given. It should be in format like: '2014-07-15 13:20:24.085661'")
+
+        try:
+                dt = datetime.datetime.strptime(timestring, '%Y-%m-%d %H:%M:%S.%f')
+                logger.info(u"Setting Systemtime Time to %s" % timestring)
+                winapi32.SetSystemTime(dt.year, dt.month, dt.weekday(), dt.day, dt.hour, dt.minute, dt.second, dt.microsecond)
+        except Exception as e:
+                logger.error(u"Failed to set System Time: '%s'" % e)
