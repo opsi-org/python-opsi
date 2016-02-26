@@ -221,10 +221,11 @@ def forceDict(var):
 def forceTime(var):
 	if isinstance(var, time.struct_time):
 		return var
+	elif isinstance(var, datetime.datetime):
+		var = time.mktime(var.timetuple()) + var.microsecond / 1E6
+
 	if isinstance(var, (int, float)):
 		return time.localtime(var)
-	elif isinstance(var, datetime.datetime):
-		return time.mktime(var.timetuple()) + var.microsecond / 1E6
 
 	raise ValueError(u"Not a time '%s'" % var)
 

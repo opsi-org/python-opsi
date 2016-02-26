@@ -486,9 +486,9 @@ class ForceTimeTestCase(unittest.TestCase):
 		self.assertRaises(ValueError, forceTime, 'Hello World!')
 
 	def testForcingWorksWithVariousTypes(self):
-		forceTime(time.time())
-		forceTime(time.localtime())
-		forceTime(datetime.datetime.now())
+		self.assertTrue(isinstance(forceTime(time.time()), time.struct_time))
+		self.assertTrue(isinstance(forceTime(time.localtime()), time.struct_time))
+		self.assertTrue(isinstance(forceTime(datetime.datetime.now()), time.struct_time))
 
 
 class ForceEmailAddressTestCase(unittest.TestCase):
