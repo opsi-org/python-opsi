@@ -223,6 +223,8 @@ def forceTime(var):
 		return var
 	if isinstance(var, (int, float)):
 		return time.localtime(var)
+	elif isinstance(var, datetime.datetime):
+		return time.mktime(var.timetuple()) + var.microsecond / 1E6
 
 	raise ValueError(u"Not a time '%s'" % var)
 
