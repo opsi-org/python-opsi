@@ -227,7 +227,7 @@ def forceTime(var):
 	if isinstance(var, (int, float)):
 		return time.localtime(var)
 
-	raise ValueError(u"Not a time '%s'" % var)
+	raise ValueError(u"Not a time {0!r}".format(var))
 
 
 def forceHardwareVendorId(var):
