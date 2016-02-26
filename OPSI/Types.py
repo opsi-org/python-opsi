@@ -219,6 +219,11 @@ def forceDict(var):
 
 
 def forceTime(var):
+	"""
+	Convert `var` to a time.struct_time.
+
+	If no conversion is possible a `ValueError` will be raised.
+	"""
 	if isinstance(var, time.struct_time):
 		return var
 	elif isinstance(var, datetime.datetime):
@@ -245,6 +250,13 @@ def forceHardwareDeviceId(var):
 
 
 def forceOpsiTimestamp(var):
+	"""
+	Make `var` an opsi-compatible timestamp.
+
+	This is a string with the format "YYYY-MM-DD HH:MM:SS".
+
+	If a conversion is not possible a `ValueError` will be raised.
+	"""
 	if not var:
 		return u'0000-00-00 00:00:00'
 	elif isinstance(var, datetime.datetime):
