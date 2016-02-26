@@ -3218,25 +3218,28 @@ class AuditHardwareOnHost(Relationship):
 			self.setState(state)
 
 		try:
-			self.vendorId = forceHardwareVendorId(self.vendorId)
+			if self.vendorId:
+				self.vendorId = forceHardwareVendorId(self.vendorId)
 		except AttributeError:
 			pass
 
 		try:
-			self.subsystemVendorId = forceHardwareVendorId(self.subsystemVendorId)
+			if self.subsystemVendorId:
+				self.subsystemVendorId = forceHardwareVendorId(self.subsystemVendorId)
 		except AttributeError:
 			pass
 
 		try:
-			self.deviceId = forceHardwareDeviceId(self.deviceId)
+			if self.deviceId:
+				self.deviceId = forceHardwareDeviceId(self.deviceId)
 		except AttributeError:
 			pass
 
 		try:
-			self.subsystemDeviceId = forceHardwareDeviceId(self.subsystemDeviceId)
+			if self.subsystemDeviceId:
+				self.subsystemDeviceId = forceHardwareDeviceId(self.subsystemDeviceId)
 		except AttributeError:
 			pass
-
 
 	@staticmethod
 	def setHardwareConfig(hardwareConfig):
