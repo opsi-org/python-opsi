@@ -246,9 +246,9 @@ def forceHardwareDeviceId(var):
 
 def forceOpsiTimestamp(var):
 	if not var:
-		var = u'0000-00-00 00:00:00'
+		return u'0000-00-00 00:00:00'
 	elif isinstance(var, datetime.datetime):
-		var = forceUnicode(var.strftime('%Y-%m-%d %H:%M:%S'))
+		return forceUnicode(var.strftime('%Y-%m-%d %H:%M:%S'))
 
 	var = forceUnicode(var)
 	match = re.search(_OPSI_TIMESTAMP_REGEX, var)
