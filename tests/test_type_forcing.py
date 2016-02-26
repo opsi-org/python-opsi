@@ -488,6 +488,7 @@ class ForceTimeTestCase(unittest.TestCase):
 	def testForcingWorksWithVariousTypes(self):
 		forceTime(time.time())
 		forceTime(time.localtime())
+		forceTime(datetime.datetime.now())
 
 
 class ForceEmailAddressTestCase(unittest.TestCase):
