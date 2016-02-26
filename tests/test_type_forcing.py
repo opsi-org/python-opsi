@@ -265,6 +265,7 @@ class ForceOpsiTimeStampTestCase(unittest.TestCase):
 
 	def testForcingWithDatetime(self):
 		self.assertEqual(forceOpsiTimestamp(datetime.datetime(2013, 9, 11, 10, 54, 23)), '2013-09-11 10:54:23')
+		self.assertEqual(forceOpsiTimestamp(datetime.datetime(2013, 9, 11, 10, 54, 23, 123123)), '2013-09-11 10:54:23')
 
 
 class ForceHostIdTestCase(unittest.TestCase):
