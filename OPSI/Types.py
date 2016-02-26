@@ -39,7 +39,7 @@ import types
 
 from OPSI.Logger import Logger
 
-__version__ = '4.0.6.40'
+__version__ = '4.0.6.44'
 
 encoding = sys.getfilesystemencoding()
 logger = Logger()
