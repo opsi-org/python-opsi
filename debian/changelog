@@ -6,6 +6,10 @@ python-opsi (4.0.6.44-1) experimental; urgency=medium
     datetime.datetime objects.
   * OPSI.Types.forceTime can now handle datetime.datetime objects.
   * OPSI.Object.mandatoryConstructorArgs has been refactored.
+  * Moved the methods "uninstallWhereInstalled",
+    "updateWhereInstalled", "setupWhereNotInstalled" and
+    "setActionRequestWhereOutdated" into the new backend extension
+    "40_admin_tasks.conf".
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 29 Feb 2016 16:52:09 +0100
 
