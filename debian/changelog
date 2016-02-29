@@ -1,3 +1,14 @@
+python-opsi (4.0.6.44-1) experimental; urgency=medium
+
+  * .spec: Naming all known config files.
+  * Small improvements around the creation of AuditHardwareOnHosts.
+  * OPSI.Types.forceOpsiTimestamp has received improved handling of
+    datetime.datetime objects.
+  * OPSI.Types.forceTime can now handle datetime.datetime objects.
+  * OPSI.Object.mandatoryConstructorArgs has been refactored.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 29 Feb 2016 16:52:09 +0100
+
 python-opsi (4.0.6.43-1) experimental; urgency=medium
 
   * Small bugfix in 10_wim.conf.
