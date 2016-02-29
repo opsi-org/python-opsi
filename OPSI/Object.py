@@ -3064,14 +3064,29 @@ class AuditHardware(Entity):
 
 		self.__dict__.update(kwargs)
 
-		if hasattr(self, 'vendorId') and self.vendorId:
-			self.vendorId = forceHardwareVendorId(self.vendorId)
-		if hasattr(self, 'subsystemVendorId') and self.subsystemVendorId:
-			self.subsystemVendorId = forceHardwareVendorId(self.subsystemVendorId)
-		if hasattr(self, 'deviceId') and self.deviceId:
-			self.deviceId = forceHardwareDeviceId(self.deviceId)
-		if hasattr(self, 'subsystemDeviceId') and self.subsystemDeviceId:
-			self.subsystemDeviceId = forceHardwareDeviceId(self.subsystemDeviceId)
+		try:
+			if self.vendorId:
+				self.vendorId = forceHardwareVendorId(self.vendorId)
+		except AttributeError:
+			pass
+
+		try:
+			if self.subsystemVendorId:
+				self.subsystemVendorId = forceHardwareVendorId(self.subsystemVendorId)
+		except AttributeError:
+			pass
+
+		try:
+			if self.deviceId:
+				self.deviceId = forceHardwareDeviceId(self.deviceId)
+		except AttributeError:
+			pass
+
+		try:
+			if self.subsystemDeviceId:
+				self.subsystemDeviceId = forceHardwareDeviceId(self.subsystemDeviceId)
+		except AttributeError:
+			pass
 
 	@staticmethod
 	def setHardwareConfig(hardwareConfig):
@@ -3173,9 +3188,10 @@ class AuditHardwareOnHost(Relationship):
 
 		for attribute in self.hardwareAttributes.get(hardwareClass, {}):
 			if attribute not in kwargs:
-				if attribute.lower() in kwargs:
-					kwargs[attribute] = kwargs[attribute.lower()]
-					del kwargs[attribute.lower()]
+				lowerAttribute = attribute.lower()
+				if lowerAttribute in kwargs:
+					kwargs[attribute] = kwargs[lowerAttribute]
+					del kwargs[lowerAttribute]
 				else:
 					kwargs[attribute] = None
 
@@ -3225,14 +3241,29 @@ class AuditHardwareOnHost(Relationship):
 		if state is not None:
 			self.setState(state)
 
-		if hasattr(self, 'vendorId') and self.vendorId:
-			self.vendorId = forceHardwareVendorId(self.vendorId)
-		if hasattr(self, 'subsystemVendorId') and self.subsystemVendorId:
-			self.subsystemVendorId = forceHardwareVendorId(self.subsystemVendorId)
-		if hasattr(self, 'deviceId') and self.deviceId:
-			self.deviceId = forceHardwareDeviceId(self.deviceId)
-		if hasattr(self, 'subsystemDeviceId') and self.subsystemDeviceId:
-			self.subsystemDeviceId = forceHardwareDeviceId(self.subsystemDeviceId)
+		try:
+			if self.vendorId:
+				self.vendorId = forceHardwareVendorId(self.vendorId)
+		except AttributeError:
+			pass
+
+		try:
+			if self.subsystemVendorId:
+				self.subsystemVendorId = forceHardwareVendorId(self.subsystemVendorId)
+		except AttributeError:
+			pass
+
+		try:
+			if self.deviceId:
+				self.deviceId = forceHardwareDeviceId(self.deviceId)
+		except AttributeError:
+			pass
+
+		try:
+			if self.subsystemDeviceId:
+				self.subsystemDeviceId = forceHardwareDeviceId(self.subsystemDeviceId)
+		except AttributeError:
+			pass
 
 	@staticmethod
 	def setHardwareConfig(hardwareConfig):

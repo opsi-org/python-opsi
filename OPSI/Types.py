@@ -267,7 +267,8 @@ def forceOpsiTimestamp(var):
 	if not match:
 		match = re.search(_OPSI_DATE_REGEX, var)
 		if not match:
-			raise ValueError(u"Bad opsi timestamp: '%s'" % var)
+			raise ValueError(u"Bad opsi timestamp: {0!r}".format(var))
+
 		return u'%s-%s-%s 00:00:00' % (match.group(1), match.group(2), match.group(3))
 
 	return u'%s-%s-%s %s:%s:%s' % (match.group(1), match.group(2), match.group(3), match.group(4), match.group(5), match.group(6))
