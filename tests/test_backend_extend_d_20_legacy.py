@@ -80,12 +80,16 @@ class LegacyFunctionsTestCase(unittest.TestCase, FileBackendBackendManagerMixin)
         client_with_old_product = OpsiClient(id='clientwithold.test.invalid')
         client_with_current_product = OpsiClient(id='clientwithcurrent.test.invalid')
         client_without_product = OpsiClient(id='clientwithout.test.invalid')
+        client_unknown_status = OpsiClient(id='clientunkown.test.invalid')
+        clients = [client_with_old_product, client_with_current_product,
+                   client_without_product, client_unknown_status]
 
         depot = OpsiDepotserver(id='depotserver1.test.invalid')
 
         self.backend.host_createObjects([depot, client_with_old_product,
                                         client_with_current_product,
-                                        client_without_product])
+                                        client_without_product,
+                                        client_unknown_status])
 
         old_product = LocalbootProduct('thunderheart', '1', '1')
         new_product = LocalbootProduct('thunderheart', '1', '2')
@@ -110,8 +114,16 @@ class LegacyFunctionsTestCase(unittest.TestCase, FileBackendBackendManagerMixin)
             installationStatus='installed',
             actionResult='successful'
         )
+        poc3 = ProductOnClient(
+            clientId=client_unknown_status.id,
+            productId=old_product.id,
+            productType=old_product.getType(),
+            productVersion=old_product.productVersion,
+            packageVersion=old_product.packageVersion,
+            installationStatus='unknown',
+        )
 
-        self.backend.productOnClient_createObjects([poc, poc2])
+        self.backend.productOnClient_createObjects([poc, poc2, poc3])
 
         installedProductOnDepot = ProductOnDepot(
             productId=new_product.id,
@@ -133,7 +145,7 @@ class LegacyFunctionsTestCase(unittest.TestCase, FileBackendBackendManagerMixin)
 
         self.backend.config_createObjects(clientConfigDepotId)
 
-        for client in (client_with_current_product, client_with_old_product, client_without_product):
+        for client in clients:
             clientDepotMappingConfigState = ConfigState(
                 configId=u'clientconfig.depot.id',
                 objectId=client.getId(),
@@ -146,15 +158,20 @@ class LegacyFunctionsTestCase(unittest.TestCase, FileBackendBackendManagerMixin)
         self.assertFalse(self.backend.productOnClient_getObjects(productId=new_product.id, clientId=client_without_product.id))
         self.assertFalse(self.backend.productOnClient_getObjects(productId=new_product.id, clientId=client_with_old_product.id, actionRequest="setup"))
         self.assertTrue(self.backend.productOnClient_getObjects(productId=new_product.id, clientId=client_with_current_product.id))
+        self.assertTrue(self.backend.productOnClient_getObjects(productId=old_product.id, clientId=client_unknown_status.id, installationStatus='unknown'))
 
         clientIDs = self.backend.setActionRequestWhereOutdated('setup', new_product.id)
 
         self.assertEquals(1, len(clientIDs))
+        self.assertTrue(client_with_old_product.id, list(clientIDs)[0])
         self.assertFalse(self.backend.productOnClient_getObjects(productId=new_product.id, clientId=client_without_product.id))
         poc = self.backend.productOnClient_getObjects(productId=new_product.id, clientId=client_with_old_product.id)[0]
         self.assertEquals("setup", poc.actionRequest)
         poc = self.backend.productOnClient_getObjects(productId=new_product.id, clientId=client_with_current_product.id)[0]
         self.assertNotEquals("setup", poc.actionRequest)
+        poc = self.backend.productOnClient_getObjects(productId=old_product.id, clientId=client_unknown_status.id)[0]
+        self.assertNotEquals("setup", poc.actionRequest)
+        self.assertEquals("unknown", poc.installationStatus)
 
     def testUninstallWhereInstalled(self):
         self.assertRaises(TypeError, self.backend.uninstallWhereInstalled)
