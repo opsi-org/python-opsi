@@ -39,7 +39,7 @@ import types
 
 from OPSI.Logger import Logger
 
-__version__ = '4.0.6.40'
+__version__ = '4.0.6.44'
 
 encoding = sys.getfilesystemencoding()
 logger = Logger()
@@ -219,12 +219,20 @@ def forceDict(var):
 
 
 def forceTime(var):
+	"""
+	Convert `var` to a time.struct_time.
+
+	If no conversion is possible a `ValueError` will be raised.
+	"""
 	if isinstance(var, time.struct_time):
 		return var
+	elif isinstance(var, datetime.datetime):
+		var = time.mktime(var.timetuple()) + var.microsecond / 1E6
+
 	if isinstance(var, (int, float)):
 		return time.localtime(var)
 
-	raise ValueError(u"Not a time '%s'" % var)
+	raise ValueError(u"Not a time {0!r}".format(var))
 
 
 def forceHardwareVendorId(var):
@@ -242,10 +250,18 @@ def forceHardwareDeviceId(var):
 
 
 def forceOpsiTimestamp(var):
+	"""
+	Make `var` an opsi-compatible timestamp.
+
+	This is a string with the format "YYYY-MM-DD HH:MM:SS".
+
+	If a conversion is not possible a `ValueError` will be raised.
+	"""
 	if not var:
-		var = u'0000-00-00 00:00:00'
-	if isinstance(var, datetime.datetime):
-		var = str(var)
+		return u'0000-00-00 00:00:00'
+	elif isinstance(var, datetime.datetime):
+		return forceUnicode(var.strftime('%Y-%m-%d %H:%M:%S'))
+
 	var = forceUnicode(var)
 	match = re.search(_OPSI_TIMESTAMP_REGEX, var)
 	if not match:

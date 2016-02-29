@@ -265,6 +265,7 @@ class ForceOpsiTimeStampTestCase(unittest.TestCase):
 
 	def testForcingWithDatetime(self):
 		self.assertEqual(forceOpsiTimestamp(datetime.datetime(2013, 9, 11, 10, 54, 23)), '2013-09-11 10:54:23')
+		self.assertEqual(forceOpsiTimestamp(datetime.datetime(2013, 9, 11, 10, 54, 23, 123123)), '2013-09-11 10:54:23')
 
 
 class ForceHostIdTestCase(unittest.TestCase):
@@ -486,8 +487,9 @@ class ForceTimeTestCase(unittest.TestCase):
 		self.assertRaises(ValueError, forceTime, 'Hello World!')
 
 	def testForcingWorksWithVariousTypes(self):
-		forceTime(time.time())
-		forceTime(time.localtime())
+		self.assertTrue(isinstance(forceTime(time.time()), time.struct_time))
+		self.assertTrue(isinstance(forceTime(time.localtime()), time.struct_time))
+		self.assertTrue(isinstance(forceTime(datetime.datetime.now()), time.struct_time))
 
 
 class ForceEmailAddressTestCase(unittest.TestCase):
