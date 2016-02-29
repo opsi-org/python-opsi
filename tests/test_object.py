@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2014 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -23,11 +23,15 @@ Testing OPSI.Objects
 :license: GNU Affero General Public License version 3
 """
 
+from __future__ import absolute_import
+
 import unittest
 
 from OPSI.Object import (AuditHardwareOnHost, Host, OpsiConfigserver,
     OpsiDepotserver, LocalbootProduct, UnicodeConfig,
-    getPossibleClassAttributes)
+    getPossibleClassAttributes, mandatoryConstructorArgs)
+
+from .helpers import mock
 
 
 class GetPossibleClassAttributesTestCase(unittest.TestCase):
@@ -188,3 +192,89 @@ class AuditHardwareOnHostTestCase(unittest.TestCase):
     def test__unicode__with_additionals(self):
         self.ahoh.name = "Ünicöde name."
         self.ahoh.__unicode__()
+
+
+class MandatoryConstructorArgsTestCase(unittest.TestCase):
+    """
+    Testing if reading the required constructor arguments works.
+
+    Inside the test functions we patch _MANDATORY_CONSTRUCTOR_ARGS_CACHE
+    to avoid using cached data or storing data inside the cache.
+    """
+
+    def testNoArguments(self):
+        class NoArgs(object):
+            def __init__(self):
+                pass
+
+        n = NoArgs()
+        with mock.patch('OPSI.Object._MANDATORY_CONSTRUCTOR_ARGS_CACHE', {}):
+            args = mandatoryConstructorArgs(n.__class__)
+
+        self.assertEquals([], args)
+
+    def testOnlyMandatoryArguments(self):
+        class OnlyMandatory(object):
+            def __init__(self, give, me, this):
+                pass
+
+        om = OnlyMandatory(1, 1, 1)
+        with mock.patch('OPSI.Object._MANDATORY_CONSTRUCTOR_ARGS_CACHE', {}):
+            args = mandatoryConstructorArgs(om.__class__)
+
+        self.assertEquals(['give', 'me', 'this'], args)
+
+    def testOnlyOptionalArguments(self):
+        class OnlyOptional(object):
+            def __init__(self, only=1, optional=2, arguments=[]):
+                pass
+
+        oo = OnlyOptional()
+        with mock.patch('OPSI.Object._MANDATORY_CONSTRUCTOR_ARGS_CACHE', {}):
+            args = mandatoryConstructorArgs(oo.__class__)
+
+        self.assertEquals([], args)
+
+    def testMixedArguments(self):
+        class MixedArgs(object):
+            def __init__(self, i, want, this, but=0, that=0, notso=0, much=0):
+                pass
+
+        ma = MixedArgs(True, True, True)
+        with mock.patch('OPSI.Object._MANDATORY_CONSTRUCTOR_ARGS_CACHE', {}):
+            args = mandatoryConstructorArgs(ma.__class__)
+
+        self.assertEquals(['i', 'want', 'this'], args)
+
+    def testWildcardArguments(self):
+        class WildcardOnly(object):
+            def __init__(self, *only):
+                pass
+
+        wo = WildcardOnly("yeah", "great", "thing")
+        with mock.patch('OPSI.Object._MANDATORY_CONSTRUCTOR_ARGS_CACHE', {}):
+            args = mandatoryConstructorArgs(wo.__class__)
+
+        self.assertEquals([], args)
+
+    def testKeywordArguments(self):
+        class Kwargz(object):
+            def __init__(self, **kwargs):
+                pass
+
+        kw = Kwargz(go=1, get="asdf", them=[], girl=True)
+        with mock.patch('OPSI.Object._MANDATORY_CONSTRUCTOR_ARGS_CACHE', {}):
+            args = mandatoryConstructorArgs(kw.__class__)
+
+        self.assertEquals([], args)
+
+    def testMixedWithArgsAndKwargs(self):
+        class KwargzAndMore(object):
+            def __init__(self, crosseyed, heart, *more, **kwargs):
+                pass
+
+        kwam = KwargzAndMore(False, True, "some", "more", things="here")
+        with mock.patch('OPSI.Object._MANDATORY_CONSTRUCTOR_ARGS_CACHE', {}):
+            args = mandatoryConstructorArgs(kwam.__class__)
+
+        self.assertEquals(["crosseyed", "heart"], args)
