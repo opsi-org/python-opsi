@@ -60,9 +60,9 @@ def mandatoryConstructorArgs(Class):
 		return _MANDATORY_CONSTRUCTOR_ARGS_CACHE[cacheKey]
 	except KeyError:
 		args, _, _, defaults = inspect.getargspec(Class.__init__)
-		if defaults:
-			last = -1 * len(defaults)
-		else:
+		try:
+			last = len(defaults) * -1
+		except TypeError:  # Happens if defaults is None
 			last = len(args)
 
 		mandatory = args[1:][:last]
