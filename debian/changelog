@@ -10,6 +10,8 @@ python-opsi (4.0.6.44-1) experimental; urgency=medium
     "updateWhereInstalled", "setupWhereNotInstalled" and
     "setActionRequestWhereOutdated" into the new backend extension
     "40_admin_tasks.conf".
+  * Method "setActionRequestWhereOutdated" ignores products on client
+    with installation-status 'unknown'.
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 29 Feb 2016 16:52:09 +0100
 
