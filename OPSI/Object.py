@@ -4,7 +4,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) - http://www.opsi.org
 
-# Copyright (C) 2006-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -48,7 +48,7 @@ from OPSI.Types import (forceActionProgress, forceActionRequest,
 	forceUnicodeList, forceUnicodeLower, forceUnsignedInt, forceUrl)
 from OPSI.Util import fromJson, toJson, generateOpsiHostKey, timestamp
 
-__version__ = '4.0.6.35'
+__version__ = '4.0.6.44'
 
 logger = Logger()
 _MANDATORY_CONSTRUCTOR_ARGS_CACHE = {}
@@ -62,10 +62,10 @@ def mandatoryConstructorArgs(Class):
 		args, _, _, defaults = inspect.getargspec(Class.__init__)
 		try:
 			last = len(defaults) * -1
+			mandatory = args[1:][:last]
 		except TypeError:  # Happens if defaults is None
-			last = len(args)
+			mandatory = args[1:]
 
-		mandatory = args[1:][:last]
 		logger.debug2(u"mandatoryConstructorArgs for {0!r}: {1}".format(Class.__class__, mandatory))
 		_MANDATORY_CONSTRUCTOR_ARGS_CACHE[cacheKey] = mandatory
 		return mandatory
