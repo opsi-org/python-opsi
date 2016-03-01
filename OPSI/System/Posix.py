@@ -1632,17 +1632,12 @@ class Harddisk:
 				if newSfdiskVersion():
 					match = re.search('sectors\s+of\s+\d\s+.\s+\d+\s+.\s+(\d+)\s+bytes', line)
 					
-					if not match:
-						raise Exception(u"Unable to get bytes/sector for disk '%s'" % self.device)
-					self.bytesPerSector = forceInt(match.group(1))
-					self.totalSectors = int(self.size / self.bytesPerSector)
-
 				else:
 					match = re.search('sectors\s+of\s+(\d+)\s+bytes', line)
-					if not match:
-						raise Exception(u"Unable to get bytes/sector for disk '%s'" % self.device)
-					self.bytesPerSector = forceInt(match.group(1))
-					self.totalSectors = int(self.size / self.bytesPerSector)
+				if not match:
+					raise Exception(u"Unable to get bytes/sector for disk '%s'" % self.device)
+				self.bytesPerSector = forceInt(match.group(1))
+				self.totalSectors = int(self.size / self.bytesPerSector)
 				logger.info(u"Total sectors of disk '%s': %d, %d bytes per cylinder" % (self.device, self.totalSectors, self.bytesPerSector))
 
 	def writePartitionTable(self):
