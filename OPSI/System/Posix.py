@@ -1436,15 +1436,12 @@ class Harddisk:
 			if not partTablefound:
 				logger.notice(u"unrecognized partition table type, writing empty partitiontable")
 				if newSfdiskVersion():
-					 execute('{echo} -e "0,0\n\n\n\n" | {sfdisk} --no-reread -D {device}'.format(echo=which('echo'), sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
-				else:
-					execute('{echo} -e "0,0\n\n\n\n" | {sfdisk} -L --no-reread -D {device}'.format(echo=which('echo'), sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
-				
-				if newSfdiskVersion():
+					execute('{echo} -e "0,0\n\n\n\n" | {sfdisk} --no-reread -D {device}'.format(echo=which('echo'), sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
 					result = execute("{sfdisk} --no-reread -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
 				else:
+					execute('{echo} -e "0,0\n\n\n\n" | {sfdisk} -L --no-reread -D {device}'.format(echo=which('echo'), sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
 					result = execute("{sfdisk} -L --no-reread -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
-
+				
 			self._parsePartitionTable(result)
 
 			if newSfdiskVersion():
@@ -1501,17 +1498,13 @@ class Harddisk:
 				if newSfdiskVersion():
 					match = re.search('sectors\s+of\s+\d\s+.\s+\d+\s+.\s+(\d+)\s+bytes', line)
 					
-					if not match:
-						raise Exception(u"Unable to get bytes/cylinder for disk '%s'" % self.device)
-					self.bytesPerCylinder = forceInt(match.group(1))
-					self.totalCylinders = int(self.size / self.bytesPerCylinder)
 				else:
 					match = re.search('cylinders\s+of\s+(\d+)\s+bytes', line)
 	
-					if not match:
-						raise Exception(u"Unable to get bytes/cylinder for disk '%s'" % self.device)
-					self.bytesPerCylinder = forceInt(match.group(1))
-					self.totalCylinders = int(self.size / self.bytesPerCylinder)
+				if not match:
+					raise Exception(u"Unable to get bytes/cylinder for disk '%s'" % self.device)
+				self.bytesPerCylinder = forceInt(match.group(1))
+				self.totalCylinders = int(self.size / self.bytesPerCylinder)
 				logger.info(u"Total cylinders of disk '%s': %d, %d bytes per cylinder" % (self.device, self.totalCylinders, self.bytesPerCylinder))
 
 			elif line.startswith(self.device):
@@ -1613,12 +1606,10 @@ class Harddisk:
 			if line.startswith(self.device):
 				if newSfdiskVersion():
 					match = re.match('%sp*(\d+)\s+(\**)\s*(\d+)[\+\-]*\s+(\d*)[\+\-]*\s+(\d+)[\+\-]*\s+(\d+)[\+\-]*.?\d*\S+\s+(\S+)\s*(.*)' % self.device, line)
-					if not match:
-						raise Exception(u"Unable to read partition table (sectors) of disk '%s'" % self.device)
 				else:
 					match = re.search('%sp*(\d+)\s+(\**)\s*(\d+)[\+\-]*\s+(\d*)[\+\-]*\s+(\d+)[\+\-]*\s+(\S+)\s+(.*)' % self.device, line)
-					if not match:
-						raise Exception(u"Unable to read partition table (sectors) of disk '%s'" % self.device)
+				if not match:
+					raise Exception(u"Unable to read partition table (sectors) of disk '%s'" % self.device)
 
 				if match.group(4):
 					for p in range(len(self.partitions)):
