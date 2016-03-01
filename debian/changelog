@@ -1,3 +1,9 @@
+python-opsi (4.0.6.44-1) UNRELEASED; urgency=medium
+
+  * OPSI.System.Posix: refactored sfdisk compatability from 4.0.6.41-1
+
+ -- Mathias Radtke <m.radtke@uib.de>  Tue, 01 Mar 2016 13:45:40 +0100
+
 python-opsi (4.0.6.43-1) experimental; urgency=medium
 
   * Small bugfix in 10_wim.conf.
