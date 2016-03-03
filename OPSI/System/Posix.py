@@ -3920,5 +3920,5 @@ def setLocalSystemTime(timestring):
 		logger.info(u"Setting Systemtime Time to %s" % timestring)
 		systemTime = 'date --set="%s-%s-%s %s:%s:%s.%s"' % (dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second, dt.microsecond)
 		subprocess.call([systemTime])
-        except Exception as e:
-                logger.error(u"Failed to set System Time: %s" % e)
+        except Exception as error:
+                logger.error(u"Failed to set System Time: %s" % error)
