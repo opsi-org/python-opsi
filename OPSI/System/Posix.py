@@ -1682,8 +1682,10 @@ class Harddisk:
 			if self.blockAlignment:
 				cmd += u'" | %s -L --no-reread -uS -f %s' % (which('sfdisk'), self.device)
 			else:
-				cmd += u'" | %s -L --no-reread -uC %s%s' % (which('sfdisk'), dosCompat, self.device)
-
+				if isXenialSfdiskVersion():
+					cmd += u'" | %s -L --no-reread %s' % (which('sfdisk'), self.device)
+				else:
+					cmd += u'" | %s -L --no-reread -uC %s%s' % (which('sfdisk'), dosCompat, self.device)
 			if self.ldPreload:
 				os.putenv("LD_PRELOAD", self.ldPreload)
 
