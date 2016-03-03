@@ -1,7 +1,7 @@
 #
 # spec file for package python-opsi
 #
-# Copyright (c) 2013-2015 uib GmbH.
+# Copyright (c) 2013-2016 uib GmbH.
 # This file and all modifications and additions to the pristine
 # package are under the same license as the package itself.
 #
@@ -164,7 +164,12 @@ chmod 660 /etc/opsi/passwd
 %config /etc/opsi/backendManager/acl.conf.default
 %config(noreplace) /etc/opsi/backendManager/dispatch.conf.default
 %config /etc/opsi/backendManager/extend.d/10_opsi.conf
+%config /etc/opsi/backendManager/extend.d/10_wim.conf
 %config /etc/opsi/backendManager/extend.d/20_legacy.conf
+%config /etc/opsi/backendManager/extend.d/40_groupActions.conf
+%config /etc/opsi/backendManager/extend.d/40_admin_tasks.conf
+%config /etc/opsi/backendManager/extend.d/70_wan.conf
+%config /etc/opsi/backendManager/extend.d/70_dynamic_depot.conf
 %config /etc/opsi/hwaudit/opsihwaudit.conf
 %config /etc/opsi/hwaudit/locales/de_DE
 %config /etc/opsi/hwaudit/locales/en_US

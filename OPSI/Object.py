@@ -48,7 +48,7 @@ from OPSI.Types import (forceActionProgress, forceActionRequest,
 	forceUnicodeList, forceUnicodeLower, forceUnsignedInt, forceUrl)
 from OPSI.Util import fromJson, toJson, generateOpsiHostKey, timestamp
 
-__version__ = '4.0.6.35'
+__version__ = '4.0.6.44'
 
 logger = Logger()
 _MANDATORY_CONSTRUCTOR_ARGS_CACHE = {}
@@ -59,14 +59,14 @@ def mandatoryConstructorArgs(Class):
 	try:
 		return _MANDATORY_CONSTRUCTOR_ARGS_CACHE[cacheKey]
 	except KeyError:
-		(args, _, _, defaults) = inspect.getargspec(Class.__init__)
-		if not defaults:
-			defaults = []
-		last = -1 * len(defaults)
-		if last == 0:
-			last = len(args)
-		mandatory = args[1:][:last]
-		logger.debug2(u"mandatoryConstructorArgs for %s: %s" % (Class.__class__, mandatory))
+		args, _, _, defaults = inspect.getargspec(Class.__init__)
+		try:
+			last = len(defaults) * -1
+			mandatory = args[1:][:last]
+		except TypeError:  # Happens if defaults is None
+			mandatory = args[1:]
+
+		logger.debug2(u"mandatoryConstructorArgs for {0!r}: {1}".format(Class.__class__, mandatory))
 		_MANDATORY_CONSTRUCTOR_ARGS_CACHE[cacheKey] = mandatory
 		return mandatory
 
@@ -3064,14 +3064,29 @@ class AuditHardware(Entity):
 
 		self.__dict__.update(kwargs)
 
-		if hasattr(self, 'vendorId') and self.vendorId:
-			self.vendorId = forceHardwareVendorId(self.vendorId)
-		if hasattr(self, 'subsystemVendorId') and self.subsystemVendorId:
-			self.subsystemVendorId = forceHardwareVendorId(self.subsystemVendorId)
-		if hasattr(self, 'deviceId') and self.deviceId:
-			self.deviceId = forceHardwareDeviceId(self.deviceId)
-		if hasattr(self, 'subsystemDeviceId') and self.subsystemDeviceId:
-			self.subsystemDeviceId = forceHardwareDeviceId(self.subsystemDeviceId)
+		try:
+			if self.vendorId:
+				self.vendorId = forceHardwareVendorId(self.vendorId)
+		except AttributeError:
+			pass
+
+		try:
+			if self.subsystemVendorId:
+				self.subsystemVendorId = forceHardwareVendorId(self.subsystemVendorId)
+		except AttributeError:
+			pass
+
+		try:
+			if self.deviceId:
+				self.deviceId = forceHardwareDeviceId(self.deviceId)
+		except AttributeError:
+			pass
+
+		try:
+			if self.subsystemDeviceId:
+				self.subsystemDeviceId = forceHardwareDeviceId(self.subsystemDeviceId)
+		except AttributeError:
+			pass
 
 	@staticmethod
 	def setHardwareConfig(hardwareConfig):
@@ -3173,9 +3188,10 @@ class AuditHardwareOnHost(Relationship):
 
 		for attribute in self.hardwareAttributes.get(hardwareClass, {}):
 			if attribute not in kwargs:
-				if attribute.lower() in kwargs:
-					kwargs[attribute] = kwargs[attribute.lower()]
-					del kwargs[attribute.lower()]
+				lowerAttribute = attribute.lower()
+				if lowerAttribute in kwargs:
+					kwargs[attribute] = kwargs[lowerAttribute]
+					del kwargs[lowerAttribute]
 				else:
 					kwargs[attribute] = None
 
@@ -3225,14 +3241,29 @@ class AuditHardwareOnHost(Relationship):
 		if state is not None:
 			self.setState(state)
 
-		if hasattr(self, 'vendorId') and self.vendorId:
-			self.vendorId = forceHardwareVendorId(self.vendorId)
-		if hasattr(self, 'subsystemVendorId') and self.subsystemVendorId:
-			self.subsystemVendorId = forceHardwareVendorId(self.subsystemVendorId)
-		if hasattr(self, 'deviceId') and self.deviceId:
-			self.deviceId = forceHardwareDeviceId(self.deviceId)
-		if hasattr(self, 'subsystemDeviceId') and self.subsystemDeviceId:
-			self.subsystemDeviceId = forceHardwareDeviceId(self.subsystemDeviceId)
+		try:
+			if self.vendorId:
+				self.vendorId = forceHardwareVendorId(self.vendorId)
+		except AttributeError:
+			pass
+
+		try:
+			if self.subsystemVendorId:
+				self.subsystemVendorId = forceHardwareVendorId(self.subsystemVendorId)
+		except AttributeError:
+			pass
+
+		try:
+			if self.deviceId:
+				self.deviceId = forceHardwareDeviceId(self.deviceId)
+		except AttributeError:
+			pass
+
+		try:
+			if self.subsystemDeviceId:
+				self.subsystemDeviceId = forceHardwareDeviceId(self.subsystemDeviceId)
+		except AttributeError:
+			pass
 
 	@staticmethod
 	def setHardwareConfig(hardwareConfig):
