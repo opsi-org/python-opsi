@@ -658,9 +658,9 @@ def reboot(wait=10):
 		else:
 			execute(u'%s -r now' % which('shutdown'), nowait=True)
 		execute(u'%s 5' % (which('sleep')), nowait=True)
-                execute(u'%s -p' % (which('reboot')), nowait=True)
-                execute(u'%s 5' % (which('sleep')), nowait=True)
-                execute(u'%s -6' % (which('init')), nowait=True)
+		execute(u'%s -p' % (which('reboot')), nowait=True)
+		execute(u'%s 5' % (which('sleep')), nowait=True)
+		execute(u'%s -6' % (which('init')), nowait=True)
 	except Exception as e:
 		for hook in hooks:
 			hook.error_reboot(wait, e)
