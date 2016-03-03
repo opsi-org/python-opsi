@@ -877,15 +877,16 @@ def _terminateProcess(process):
 # -                                            FILESYSTEMS                                            -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 def isXenialSfdiskVersion():
-        """
-        check for sfdisk version to adapt commands to changed output
-        """
-        sfdiskVersionOutput = execute('%s --version' % which('sfdisk'))
-        sfdiskVersion = sfdiskVersionOutput[0].split(' ')[3].strip()
-        if sfdiskVersion == '2.27.1':
-                return True
-        else:
-                return False
+	"""
+	check for sfdisk version to adapt commands to changed output
+	"""
+	sfdiskVersionOutput = execute('%s --version' % which('sfdisk'))
+	sfdiskVersion = sfdiskVersionOutput[0].split(' ')[3].strip()
+	if sfdiskVersion == '2.27.1':
+			return True
+	else:
+			return False
+
 
 def getHarddisks(data=None):
 	"""
@@ -3891,34 +3892,34 @@ until the execution of the process is terminated.
 
 
 def setLocalSystemTime(timestring):
-        """
-        Method sets the local systemtime
-        param timestring = "2014-07-15 13:20:24.085661"
-        Die Typ SYSTEMTIME-Struktur ist wie folgt:
+	"""
+	Method sets the local systemtime
+	param timestring = "2014-07-15 13:20:24.085661"
+	Die Typ SYSTEMTIME-Struktur ist wie folgt:
 
-        WYear           Integer-The current year.
-        WMonth          Integer-The current month. January is 1.
-        WDayOfWeek      Integer-The current day of the week. Sunday is 0.
-        WDay            Integer-The current day of the month.
-        WHour           Integer-The current hour.
-        wMinute         Integer-The current minute.
-        wSecond         Integer-The current second.
-        wMilliseconds   Integer-The current millisecond.
+	WYear           Integer-The current year.
+	WMonth          Integer-The current month. January is 1.
+	WDayOfWeek      Integer-The current day of the week. Sunday is 0.
+	WDay            Integer-The current day of the month.
+	WHour           Integer-The current hour.
+	wMinute         Integer-The current minute.
+	wSecond         Integer-The current second.
+	wMilliseconds   Integer-The current millisecond.
 
 
-        win32api.SetSystemTime
+	win32api.SetSystemTime
 
-        int = SetSystemTime(year, month , dayOfWeek , day , hour , minute , second , millseconds )
+	int = SetSystemTime(year, month , dayOfWeek , day , hour , minute , second , millseconds )
 
-        http://docs.activestate.com/activepython/2.5/pywin32/win32api__SetSystemTime_meth.html
-        """
-        if not timestring:
-                raise Exception(u"Invalid timestring given. It should be in format like: '2014-07-15 13:20:24.085661'")
+	http://docs.activestate.com/activepython/2.5/pywin32/win32api__SetSystemTime_meth.html
+	"""
+	if not timestring:
+		raise Exception(u"Invalid timestring given. It should be in format like: '2014-07-15 13:20:24.085661'")
 
-        try:
-		dt = datetime.datetime.strptime(timestring, '%Y-%m-%d %H:%M:%S.%f')
-		logger.info(u"Setting Systemtime Time to %s" % timestring)
-		systemTime = 'date --set="%s-%s-%s %s:%s:%s.%s"' % (dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second, dt.microsecond)
-		subprocess.call([systemTime])
-        except Exception as error:
-                logger.error(u"Failed to set System Time: %s" % error)
+	try:
+	dt = datetime.datetime.strptime(timestring, '%Y-%m-%d %H:%M:%S.%f')
+	logger.info(u"Setting Systemtime Time to %s" % timestring)
+	systemTime = 'date --set="%s-%s-%s %s:%s:%s.%s"' % (dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second, dt.microsecond)
+	subprocess.call([systemTime])
+	except Exception as error:
+			logger.error(u"Failed to set System Time: %s" % error)
