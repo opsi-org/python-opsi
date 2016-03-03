@@ -876,13 +876,13 @@ def _terminateProcess(process):
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # -                                            FILESYSTEMS                                            -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-def getSfdiskVersion():
+def isXenialSfdiskVersion():
         """
         check for sfdisk version to adapt commands to changed output
         """
         sfdiskVersionOutput = execute('%s --version' % which('sfdisk'))
         sfdiskVersion = sfdiskVersionOutput[0].split(' ')[3].strip()
-        if sfdiskVersion != '2.20.1':
+        if sfdiskVersion == '2.27.1':
                 return True
         else:
                 return False
@@ -907,7 +907,7 @@ def getHarddisks(data=None):
 			for entry in listing:
 				if len(entry) < 5:
 					dev = entry
-					if getSfdiskVersion():
+					if isXenialSfdiskVersion():
 						size = forceInt(execute(u'%s --no-reread -s /dev/cciss/%s' % (which('sfdisk'), dev), ignoreExitCode=[1])[0])
 					else:
 						size = forceInt(execute(u'%s -L --no-reread -s -uB /dev/cciss/%s' % (which('sfdisk'), dev), ignoreExitCode=[1])[0])
@@ -923,7 +923,7 @@ def getHarddisks(data=None):
 				raise Exception(u'No harddisks found!')
 			return disks
 		else:
-			if getSfdiskVersion():
+			if isXenialSfdiskVersion():
 				result = execute(u'%s --no-reread -s ' % which('sfdisk'), ignoreExitCode=[1])
 			else:
 				result = execute(u'%s -L --no-reread -s -uB' % which('sfdisk'), ignoreExitCode=[1])
@@ -1417,7 +1417,7 @@ class Harddisk:
 			os.putenv("LC_ALL", "C")
 			if self.ldPreload:  # We want this as a context manager!
 				os.putenv("LD_PRELOAD", self.ldPreload)
-			if getSfdiskVersion():
+			if isXenialSfdiskVersion():
 				result = execute(u'{sfdisk} --no-reread -s {device}'.format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
 			else:
 				result = execute(u'{sfdisk} -L --no-reread -s -uB {device}'.format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
@@ -1428,7 +1428,7 @@ class Harddisk:
 					pass
 
 			logger.info(u"Size of disk '%s': %s Byte / %s MB" % (self.device, self.size, (self.size/(1024*1024))))
-			if getSfdiskVersion():
+			if isXenialSfdiskVersion():
 				result = execute(u"{sfdisk} --no-reread -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
 			else:
 				result = execute(u"{sfdisk} -L --no-reread -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
@@ -1439,19 +1439,16 @@ class Harddisk:
 					break
 			if not partTablefound:
 				logger.notice(u"unrecognized partition table type, writing empty partitiontable")
-				if getSfdiskVersion():
-					 execute('{echo} -e "0,0\n\n\n\n" | {sfdisk} --no-reread -D {device}'.format(echo=which('echo'), sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
-				else:
-					execute('{echo} -e "0,0\n\n\n\n" | {sfdisk} -L --no-reread -D {device}'.format(echo=which('echo'), sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
-				
-				if getSfdiskVersion():
+				if isXenialSfdiskVersion():
+					execute('{echo} -e "0,0\n\n\n\n" | {sfdisk} --no-reread -D {device}'.format(echo=which('echo'), sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
 					result = execute("{sfdisk} --no-reread -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
 				else:
+					execute('{echo} -e "0,0\n\n\n\n" | {sfdisk} -L --no-reread -D {device}'.format(echo=which('echo'), sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
 					result = execute("{sfdisk} -L --no-reread -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
 
 			self._parsePartitionTable(result)
 
-			if getSfdiskVersion():
+			if isXenialSfdiskVersion():
 				result = execute(u"{sfdisk} --no-reread -uS -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
 			else:
 				result = execute(u"{sfdisk} -L --no-reread -uS -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
@@ -1475,13 +1472,13 @@ class Harddisk:
 		:param sfdiskListingOutput: The output from ``sfdisk -l /dev/foo``
 		:type sfdiskListingOutput: [str, ]
 		"""
-		
+
 		for line in sfdiskListingOutput:
 			line = line.strip()
-	
+
 			if line.lower().startswith('disk'):
-				if getSfdiskVersion():
-					
+				if isXenialSfdiskVersion():
+
 					geometryOutput = execute(u"{sfdisk} -g {device}".format(sfdisk=which('sfdisk'), device=self.device))
 					for line in geometryOutput:
 						match = re.search('\s+(\d+)\s+cylinders,\s+(\d+)\s+heads,\s+(\d+)\s+sectors', line)
@@ -1502,26 +1499,22 @@ class Harddisk:
 					self.totalCylinders = self.cylinders
 
 			elif line.lower().startswith(u'units'):
-				if getSfdiskVersion():
+				if isXenialSfdiskVersion():
 					match = re.search('sectors\s+of\s+\d\s+.\s+\d+\s+.\s+(\d+)\s+bytes', line)
-					
-					if not match:
-						raise Exception(u"Unable to get bytes/cylinder for disk '%s'" % self.device)
-					self.bytesPerCylinder = forceInt(match.group(1))
-					self.totalCylinders = int(self.size / self.bytesPerCylinder)
+
 				else:
 					match = re.search('cylinders\s+of\s+(\d+)\s+bytes', line)
-	
-					if not match:
-						raise Exception(u"Unable to get bytes/cylinder for disk '%s'" % self.device)
-					self.bytesPerCylinder = forceInt(match.group(1))
-					self.totalCylinders = int(self.size / self.bytesPerCylinder)
+
+				if not match:
+					raise Exception(u"Unable to get bytes/cylinder for disk '%s'" % self.device)
+				self.bytesPerCylinder = forceInt(match.group(1))
+				self.totalCylinders = int(self.size / self.bytesPerCylinder)
 				logger.info(u"Total cylinders of disk '%s': %d, %d bytes per cylinder" % (self.device, self.totalCylinders, self.bytesPerCylinder))
 
 			elif line.startswith(self.device):
-				if getSfdiskVersion():					
+				if isXenialSfdiskVersion():
 					match = re.search('(%sp*)(\d+)\s+(\**)\s*(\d+)[\+\-]*\s+(\d*)[\+\-]*\s+(\d+)[\+\-]*\s+(\d+)[\+\-]*.?\d*\S+\s+(\S+)\s*(.*)' % self.device, line)
-					
+
 					if not match:
 						raise Exception(u"Unable to read partition table of disk '%s'" % self.device)
 				else:
@@ -1541,7 +1534,7 @@ class Harddisk:
 						fs = u'fat32'
 					elif fsType in (u"hpfs/ntfs/exfat", u"hfps/ntfs", u"7"):
 						fs = u'ntfs'
-					
+
 					deviceName = forceFilename(match.group(1) + match.group(2))
 					try:
 						logger.debug("Trying using Blkid")
@@ -1615,14 +1608,12 @@ class Harddisk:
 			line = line.strip()
 
 			if line.startswith(self.device):
-				if getSfdiskVersion():
+				if isXenialSfdiskVersion():
 					match = re.match('%sp*(\d+)\s+(\**)\s*(\d+)[\+\-]*\s+(\d*)[\+\-]*\s+(\d+)[\+\-]*\s+(\d+)[\+\-]*.?\d*\S+\s+(\S+)\s*(.*)' % self.device, line)
-					if not match:
-						raise Exception(u"Unable to read partition table (sectors) of disk '%s'" % self.device)
 				else:
 					match = re.search('%sp*(\d+)\s+(\**)\s*(\d+)[\+\-]*\s+(\d*)[\+\-]*\s+(\d+)[\+\-]*\s+(\S+)\s+(.*)' % self.device, line)
-					if not match:
-						raise Exception(u"Unable to read partition table (sectors) of disk '%s'" % self.device)
+				if not match:
+					raise Exception(u"Unable to read partition table (sectors) of disk '%s'" % self.device)
 
 				if match.group(4):
 					for p in range(len(self.partitions)):
@@ -1642,20 +1633,15 @@ class Harddisk:
 							)
 							break
 			elif line.lower().startswith('units'):
-				if getSfdiskVersion():
+				if isXenialSfdiskVersion():
 					match = re.search('sectors\s+of\s+\d\s+.\s+\d+\s+.\s+(\d+)\s+bytes', line)
-					
-					if not match:
-						raise Exception(u"Unable to get bytes/sector for disk '%s'" % self.device)
-					self.bytesPerSector = forceInt(match.group(1))
-					self.totalSectors = int(self.size / self.bytesPerSector)
 
 				else:
 					match = re.search('sectors\s+of\s+(\d+)\s+bytes', line)
-					if not match:
-						raise Exception(u"Unable to get bytes/sector for disk '%s'" % self.device)
-					self.bytesPerSector = forceInt(match.group(1))
-					self.totalSectors = int(self.size / self.bytesPerSector)
+				if not match:
+					raise Exception(u"Unable to get bytes/sector for disk '%s'" % self.device)
+				self.bytesPerSector = forceInt(match.group(1))
+				self.totalSectors = int(self.size / self.bytesPerSector)
 				logger.info(u"Total sectors of disk '%s': %d, %d bytes per cylinder" % (self.device, self.totalSectors, self.bytesPerSector))
 
 	def writePartitionTable(self):
@@ -1700,8 +1686,10 @@ class Harddisk:
 			if self.blockAlignment:
 				cmd += u'" | %s -L --no-reread -uS -f %s' % (which('sfdisk'), self.device)
 			else:
-				cmd += u'" | %s -L --no-reread -uC %s%s' % (which('sfdisk'), dosCompat, self.device)
-
+				if isXenialSfdiskVersion():
+					cmd += u'" | %s -L --no-reread %s' % (which('sfdisk'), self.device)
+				else:
+					cmd += u'" | %s -L --no-reread -uC %s%s' % (which('sfdisk'), dosCompat, self.device)
 			if self.ldPreload:
 				os.putenv("LD_PRELOAD", self.ldPreload)
 

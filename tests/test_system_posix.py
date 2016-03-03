@@ -228,7 +228,7 @@ class HPProliantDisksTestCaseNewSfdiskVersion(unittest.TestCase):
 
 
 		with mock.patch('OPSI.System.Posix.execute', mock.Mock(return_value=outputFromSfdiskGeometry)):
-			with mock.patch('OPSI.System.Posix.getSfdiskVersion', mock.Mock(return_value=True)):
+			with mock.patch('OPSI.System.Posix.isXenialSfdiskVersion', mock.Mock(return_value=True)):
 				with mock.patch('os.path.exists', mock.Mock(return_value=True)):
 				# Making sure that we do not run into a timeout.
 					d._parsePartitionTable(outputFromSfdiskListing)
@@ -260,7 +260,7 @@ class HPProliantDisksTestCaseNewSfdiskVersion(unittest.TestCase):
 			]
 
 		with mock.patch('OPSI.System.Posix.execute', mock.Mock(return_value=blkidOutput)):
-			with mock.patch('OPSI.System.Posix.getSfdiskVersion', mock.Mock(return_value=True)):
+			with mock.patch('OPSI.System.Posix.isXenialSfdiskVersion', mock.Mock(return_value=True)):
 				d._parseSectorData(outputFromSecondSfdiskListing)
 
 		self.assertTrue(len(d.partitions) > 0)
@@ -313,7 +313,7 @@ class HPProliantDisksTestCaseOldSfdiskVersion(unittest.TestCase):
 
                 d.partitions = []  # Make sure no parsing happened before
 
-                with mock.patch('OPSI.System.Posix.getSfdiskVersion', mock.Mock(return_value=False)):
+                with mock.patch('OPSI.System.Posix.isXenialSfdiskVersion', mock.Mock(return_value=False)):
                         with mock.patch('os.path.exists', mock.Mock(return_value=True)):
                                 # Making sure that we do not run into a timeout.
                                 d._parsePartitionTable(outputFromSfdiskListing)
@@ -339,7 +339,7 @@ class HPProliantDisksTestCaseOldSfdiskVersion(unittest.TestCase):
                         "/fakedev/cciss/c0d0p4             0         - 0          0  Empty",
                 ]
 
-                with mock.patch('OPSI.System.Posix.getSfdiskVersion', mock.Mock(return_value=False)):
+                with mock.patch('OPSI.System.Posix.isXenialSfdiskVersion', mock.Mock(return_value=False)):
                         d._parseSectorData(outputFromSecondSfdiskListing)
 
                 self.assertTrue(len(d.partitions) > 0)
@@ -409,7 +409,7 @@ class DiskTestCaseOldSfdiskVersion(unittest.TestCase):
 		d.size = 39082680 * 1024  # Faking this
 		d.partitions = []  # Make sure no parsing happened before
 
-		with mock.patch('OPSI.System.Posix.getSfdiskVersion', mock.Mock(return_value=False)):
+		with mock.patch('OPSI.System.Posix.isXenialSfdiskVersion', mock.Mock(return_value=False)):
 			with mock.patch('os.path.exists', mock.Mock(return_value=True)):
 				# Making sure that we do not run into a timeout.
 				d._parsePartitionTable(outputFromSfdiskListing)
@@ -433,7 +433,7 @@ class DiskTestCaseOldSfdiskVersion(unittest.TestCase):
 			"/fakedev/sdb3             0         -          0   0  Empty",
 			"/fakedev/sdb4             0         -          0   0  Empty",
 		]
-		with mock.patch('OPSI.System.Posix.getSfdiskVersion', mock.Mock(return_value=False)):
+		with mock.patch('OPSI.System.Posix.isXenialSfdiskVersion', mock.Mock(return_value=False)):
 			d._parseSectorData(outputFromSecondSfdiskListing)
 
 		self.assertTrue(len(d.partitions) > 0, "We should have partitions even after the second parsing.")
