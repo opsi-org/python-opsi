@@ -16,8 +16,9 @@ python-opsi (4.0.6.44-1) experimental; urgency=medium
   * OPSI.System.Posix: corrected typo in sfdisk call
   * OPSI.System.Posix: added more reboot calls in reboot() function
   * OPSI.System.Posix: refactored sfdisk compatability from 4.0.6.41-1
+  * OPSI.System.Posix: added new function setLocalSystemTime.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 29 Feb 2016 16:52:09 +0100
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 03 Mar 2016 13:58:55 +0100
 
 python-opsi (4.0.6.43-1) experimental; urgency=medium
 
