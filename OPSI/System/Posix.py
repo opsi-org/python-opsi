@@ -2251,6 +2251,10 @@ class Harddisk:
 			except Exception:
 				pass
 
+			if isXenialSfdiskVersion():
+				if start < 2048:
+					start = 2048
+
 			if unit == 'sec':
 				logger.info(u"Creating partition on '%s': number: %s, type '%s', filesystem '%s', start: %s sec, end: %s sec." \
 							% (self.device, number, type, fs, start, end))

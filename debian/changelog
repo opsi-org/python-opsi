@@ -1,3 +1,9 @@
+python-opsi (4.0.6.45-1) UNRELEASED; urgency=medium
+
+  * OPSI.System.Posix: bypassed startsector 0 in Xenial Sfdisk
+
+ -- Mathias Radtke <m.radtke@uib.de>  Thu, 03 Mar 2016 15:27:14 +0100
+
 python-opsi (4.0.6.44-1) experimental; urgency=medium
 
   * .spec: Naming all known config files.
