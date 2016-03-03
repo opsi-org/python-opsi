@@ -885,9 +885,9 @@ def isXenialSfdiskVersion():
 	sfdiskVersionOutput = execute('%s --version' % which('sfdisk'))
 	sfdiskVersion = sfdiskVersionOutput[0].split(' ')[3].strip()
 	if sfdiskVersion == '2.27.1':
-			return True
+		return True
 	else:
-			return False
+		return False
 
 
 def getHarddisks(data=None):
@@ -3919,9 +3919,9 @@ def setLocalSystemTime(timestring):
 		raise Exception(u"Invalid timestring given. It should be in format like: '2014-07-15 13:20:24.085661'")
 
 	try:
-	dt = datetime.datetime.strptime(timestring, '%Y-%m-%d %H:%M:%S.%f')
-	logger.info(u"Setting Systemtime Time to %s" % timestring)
-	systemTime = 'date --set="%s-%s-%s %s:%s:%s.%s"' % (dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second, dt.microsecond)
-	subprocess.call([systemTime])
+		dt = datetime.datetime.strptime(timestring, '%Y-%m-%d %H:%M:%S.%f')
+		logger.info(u"Setting Systemtime Time to %s" % timestring)
+		systemTime = 'date --set="%s-%s-%s %s:%s:%s.%s"' % (dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second, dt.microsecond)
+		subprocess.call([systemTime])
 	except Exception as error:
 			logger.error(u"Failed to set System Time: %s" % error)
