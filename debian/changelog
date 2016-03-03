@@ -1,3 +1,9 @@
+python-opsi (4.0.6.45-1) UNRELEASED; urgency=medium
+
+  * OPSI.System.Posix: corrected typo in sfdisk call
+
+ -- Mathias Radtke <m.radtke@uib.de>  Thu, 03 Mar 2016 08:20:19 +0100
+
 python-opsi (4.0.6.43-1) experimental; urgency=medium
 
   * Small bugfix in 10_wim.conf.
