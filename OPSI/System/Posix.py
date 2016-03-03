@@ -879,6 +879,8 @@ def _terminateProcess(process):
 def isXenialSfdiskVersion():
 	"""
 	check for sfdisk version to adapt commands to changed output
+
+	Returns `True` for versions equal 2.27.1 - the one used in Ubuntu Xenial.
 	"""
 	sfdiskVersionOutput = execute('%s --version' % which('sfdisk'))
 	sfdiskVersion = sfdiskVersionOutput[0].split(' ')[3].strip()
