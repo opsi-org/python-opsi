@@ -1425,7 +1425,7 @@ class Harddisk:
 
 			logger.info(u"Size of disk '%s': %s Byte / %s MB" % (self.device, self.size, (self.size/(1024*1024))))
 			if getSfdiskVersion():
-				result = execute(u"{sfdisk} --no-reread - l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
+				result = execute(u"{sfdisk} --no-reread -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
 			else:
 				result = execute(u"{sfdisk} -L --no-reread -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
 			partTablefound = None
