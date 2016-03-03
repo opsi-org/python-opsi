@@ -14,6 +14,7 @@ python-opsi (4.0.6.44-1) experimental; urgency=medium
     with installation-status 'unknown'.
   * Added polish translation. Thanks to Jerzy Włudarczylk!
   * OPSI.System.Posix: corrected typo in sfdisk call
+  * OPSI.System.Posix: added more reboot calls in reboot() function
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 29 Feb 2016 16:52:09 +0100
 
