@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2006-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -54,6 +54,18 @@ except ImportError:
 	syslog = None
 
 __version__ = '4.0.6.36'
+__all__ = [
+	'COLORS_AVAILABLE', 'COLOR_BLACK', 'COLOR_BLUE', 'COLOR_CYAN',
+	'COLOR_GREEN', 'COLOR_LIGHT_BLACK', 'COLOR_LIGHT_BLUE', 'COLOR_LIGHT_CYAN',
+	'COLOR_LIGHT_GREEN', 'COLOR_LIGHT_MAGENTA', 'COLOR_LIGHT_RED',
+	'COLOR_LIGHT_WHITE', 'COLOR_LIGHT_YELLOW', 'COLOR_MAGENTA', 'COLOR_NORMAL',
+	'COLOR_RED', 'COLOR_WHITE', 'COLOR_YELLOW', 'COMMENT_COLOR',
+	'CONFIDENTIAL_COLOR', 'CRITICAL_COLOR', 'DEBUG_COLOR', 'ERROR_COLOR',
+	'ESSENTIAL_COLOR', 'INFO_COLOR', 'LOG_COMMENT', 'LOG_CONFIDENTIAL',
+	'LOG_CRITICAL', 'LOG_DEBUG', 'LOG_DEBUG2', 'LOG_ERROR', 'LOG_ESSENTIAL',
+	'LOG_INFO', 'LOG_NONE', 'LOG_NOTICE', 'LOG_WARNING', 'Logger',
+	'NOTICE_COLOR', 'WARNING_COLOR'
+]
 
 if sys.version_info > (3, ):
 	# Python 3
