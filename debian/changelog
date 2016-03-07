@@ -4,6 +4,7 @@ python-opsi (4.0.6.45-1) UNRELEASED; urgency=medium
   * 40_admin_tasks.conf: added method getClientsWithOutdatedProduct.
   * 40_admin_tasks.conf: added method
     setActionRequestWhereOutdatedWithDependencies.
+  * Updated French translation for hwaudit.
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 07 Mar 2016 17:12:50 +0100
 
