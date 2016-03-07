@@ -72,6 +72,8 @@ class AdminTaskFunctionsTestCase(unittest.TestCase, FileBackendBackendManagerMix
 
         self.backend.product_createObjects([old_product, new_product])
 
+        self.assertRaises(ValueError, self.backend.setActionRequestWhereOutdated, 'invalid', 'thunderheart')
+
         poc = ProductOnClient(
             clientId=client_with_old_product.id,
             productId=old_product.id,
