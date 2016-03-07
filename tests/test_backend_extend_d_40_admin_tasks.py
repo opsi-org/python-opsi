@@ -32,6 +32,7 @@ from __future__ import absolute_import
 from OPSI.Object import (OpsiClient, LocalbootProduct, ProductOnClient,
                          OpsiDepotserver, ProductOnDepot, UnicodeConfig,
                          ConfigState)
+from OPSI.Types import forceList
 from OPSI.Types import BackendMissingDataError
 from .Backends.File import FileBackendBackendManagerMixin
 from .helpers import unittest
@@ -394,6 +395,92 @@ class AdminTaskFunctionsTestCase(unittest.TestCase, FileBackendBackendManagerMix
         self.assertEquals(1, len(clientIDs))
         poc = self.backend.productOnClient_getObjects(productId=product.id, clientId=client_without_product.id)[0]
         self.assertEquals("setup", poc.actionRequest)
+
+    def testSetupWhereInstalled(self):
+        self.assertRaises(TypeError, self.backend.setupWhereInstalled)
+
+        self.assertRaises(BackendMissingDataError, self.backend.setupWhereInstalled, 'unknownProductId')
+
+        client_with_product = OpsiClient(id='clientwith.test.invalid')
+        client_with_failed_product = OpsiClient(id='failedclient.test.invalid')
+        client_without_product = OpsiClient(id='clientwithout.test.invalid')
+
+        clients = set([client_with_product, client_without_product, client_with_failed_product])
+        depot = OpsiDepotserver(id='depotserver1.test.invalid')
+
+        self.backend.host_createObjects([depot])
+        self.backend.host_createObjects(clients)
+
+        product = LocalbootProduct('thunderheart', '1', '1', setupScript='foo.bar')
+
+        self.backend.product_createObjects([product])
+
+        installedProductOnDepot = ProductOnDepot(
+            productId=product.id,
+            productType=product.getType(),
+            productVersion=product.productVersion,
+            packageVersion=product.packageVersion,
+            depotId=depot.id,
+            locked=False
+        )
+
+        self.backend.productOnDepot_createObjects([installedProductOnDepot])
+
+        self.assertFalse(self.backend.setupWhereInstalled('thunderheart'))
+
+        poc = ProductOnClient(
+            clientId=client_with_product.id,
+            productId=product.id,
+            productType=product.getType(),
+            productVersion=product.productVersion,
+            packageVersion=product.packageVersion,
+            installationStatus='installed',
+            actionResult='successful'
+        )
+        pocFailed = ProductOnClient(
+            clientId=client_with_failed_product.id,
+            productId=product.id,
+            productType=product.getType(),
+            productVersion=product.productVersion,
+            packageVersion=product.packageVersion,
+            installationStatus='unknown',
+            actionResult='failed'
+        )
+        self.backend.productOnClient_createObjects([poc, pocFailed])
+
+        clientConfigDepotId = UnicodeConfig(
+            id=u'clientconfig.depot.id',
+            description=u'Depotserver to use',
+            possibleValues=[],
+            defaultValues=[depot.id]
+        )
+
+        self.backend.config_createObjects(clientConfigDepotId)
+
+        for client in clients:
+            clientDepotMappingConfigState = ConfigState(
+                configId=u'clientconfig.depot.id',
+                objectId=client.getId(),
+                values=depot.getId()
+            )
+
+            self.backend.configState_createObjects(clientDepotMappingConfigState)
+
+        clientIDs = self.backend.setupWhereInstalled(product.id)
+        self.assertEquals(1, len(clientIDs))
+        self.assertEquals(client_with_product.id, forceList(clientIDs)[0])
+
+        self.assertFalse(self.backend.productOnClient_getObjects(productId=product.id, clientId=client_without_product.id))
+
+        pocAfter = self.backend.productOnClient_getObjects(productId=product.id, clientId=client_with_product.id)
+        self.assertEquals(1, len(pocAfter))
+        pocAfter = pocAfter[0]
+        self.assertEquals("setup", pocAfter.actionRequest)
+
+        pocFailed = self.backend.productOnClient_getObjects(productId=product.id, clientId=client_with_failed_product.id)
+        self.assertEquals(1, len(pocFailed))
+        pocFailed = pocFailed[0]
+        self.assertNotEquals("setup", pocFailed.actionRequest)
 
 
 if __name__ == '__main__':
