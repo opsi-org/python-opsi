@@ -1,4 +1,4 @@
-python-opsi (4.0.6.45-1) UNRELEASED; urgency=medium
+python-opsi (4.0.6.45-1) experimental; urgency=medium
 
   * 40_admin_tasks.conf: added method setupWhereInstalled.
   * 40_admin_tasks.conf: added method getClientsWithOutdatedProduct.
