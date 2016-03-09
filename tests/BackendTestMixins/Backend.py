@@ -178,6 +178,10 @@ class BackendTestsMixin(ClientsMixin, HostsMixin):
         })
 
     def testNonObjectMethods(self):
+        if 'jsonrpc' in str(self.backend).lower():  # TODO: improve test implementation
+            self.skipTest('Unable to run these tests with the current '
+                          'implementation of a fake JSONRPC-Backend.')
+
         # Hosts
         self.backend.host_createOpsiDepotserver(
             id='depot100.test.invalid',
