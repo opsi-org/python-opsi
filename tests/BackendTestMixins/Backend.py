@@ -28,6 +28,7 @@ from __future__ import absolute_import, print_function
 import random
 import threading
 import time
+from itertools import izip
 
 from .Clients import ClientsMixin
 from .Hosts import HostsMixin
@@ -403,19 +404,28 @@ class BackendTestsMixin(ClientsMixin, HostsMixin):
             {'name': 'productPropertyState_getObjects', 'args': ['self', 'attributes'], 'params': ['*attributes', '**filter'], 'defaults': ([],), 'varargs': None, 'keywords': 'filter'},
         ]
 
+        results = self.backend.backend_getInterface()
         for selection in expected:
-            found = False
             for result in results:
                 if result['name'] == selection['name']:
                     print('Checking {0}'.format(selection['name']))
                     for parameter in ('args', 'params', 'defaults', 'varargs', 'keywords'):
                         print('Now checking parameter {0!r}, expecting {1!r}'.format(parameter, selection[parameter]))
-                        self.assertEqual(selection[parameter], result[parameter])
+                        singleResult = result[parameter]
+                        if isinstance(singleResult, (list, tuple)):
+                            # We do check the content of the result
+                            # because JSONRPC-Backends can only work
+                            # with JSON and therefore not with tuples
+                            self.assertEqual(len(singleResult), len(selection[parameter]))
 
-                    found = True
-                    break
+                            for exp, res in izip(singleResult, selection[parameter]):
+                                self.assertEqual(exp, res)
+                        else:
+                            self.assertEqual(singleResult, selection[parameter])
 
-            self.assertTrue(found, "Expected method {0} not found".format(selection['name']))
+                    break  # We found what we are looking for.
+            else:
+                self.assertTrue(found, "Expected method {0} not found".format(selection['name']))
 
     def testBackend_info(self):
         info = self.backend.backend_info()
