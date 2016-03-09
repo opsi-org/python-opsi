@@ -425,7 +425,7 @@ class BackendTestsMixin(ClientsMixin, HostsMixin):
 
                     break  # We found what we are looking for.
             else:
-                self.assertTrue(found, "Expected method {0} not found".format(selection['name']))
+                self.fail("Expected method {0!r} not found".format(selection['name']))
 
     def testBackend_info(self):
         info = self.backend.backend_info()
