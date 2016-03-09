@@ -383,16 +383,14 @@ class BackendTestsMixin(ClientsMixin, HostsMixin):
         The method descriptions in `expected` may vary and should be
         reduced if problems because of missing methods occur.
         """
-        print("Checking with backend {0!r}".format(self.backend))
+        print("Base backend {0!r}".format(self.backend))
         try:
             print("Checking with backend {0!r}".format(self.backend._backend._backend))
-        except Exception:
+        except AttributeError:
             try:
                 print("Checking with backend {0!r}".format(self.backend._backend))
-            except Exception:
+            except AttributeError:
                 pass
-
-        results = self.backend.backend_getInterface()
 
         expected = [
             {'name': 'backend_getInterface', 'args': ['self'], 'params': [], 'defaults': None, 'varargs': None, 'keywords': None},
