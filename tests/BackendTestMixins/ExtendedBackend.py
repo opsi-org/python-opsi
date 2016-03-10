@@ -148,14 +148,7 @@ class ExtendedBackendTestsMixin(object):
             possibleValues=[],
             defaultValues=[depot.id]
         )
-
         self.backend.config_createObjects(clientConfigDepotId)
-
-        clientDepotMappingConfigState = ConfigState(
-            configId=u'clientconfig.depot.id',
-            objectId=client.id,
-            values=depot.id,
-        )
 
         with temporaryBackendOptions(self.backend, addProductOnClientDefaults=True):
             productOnClients = [pocc.productId for pocc in
