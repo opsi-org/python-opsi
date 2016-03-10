@@ -27,8 +27,12 @@ from __future__ import absolute_import
 
 from contextlib import contextmanager
 
-from OPSI.Object import (ConfigState, LocalbootProduct, OpsiClient,
-    OpsiDepotserver, ProductOnClient, ProductOnDepot, UnicodeConfig)
+from OPSI.Object import (LocalbootProduct, OpsiClient, OpsiDepotserver,
+    ProductOnClient, ProductOnDepot, UnicodeConfig)
+
+from .Clients import getClients
+from .Hosts import getDepotServers
+from .Products import getLocalbootProducts, getNetbootProduct, getProductsOnDepot
 
 
 @contextmanager
@@ -44,38 +48,48 @@ def temporaryBackendOptions(backend, **config):
 
 
 class ExtendedBackendTestsMixin(object):
-    def testExtendedBackend(self):
-        self.backend.backend_setOptions({
-            'addProductOnClientDefaults':          True,
-            'addProductPropertyStateDefaults':     True,
-            'addConfigStateDefaults':              True,
-            'deleteConfigStateIfDefault':          True,
-            'returnObjectsOnUpdateAndCreate':      False
-        })
+    # TODO: provide tests for these backend options:
+    #     self.backend.backend_setOptions({
+    #     'addProductPropertyStateDefaults':     True,
+    #     'addConfigStateDefaults':              True,
+    #     'deleteConfigStateIfDefault':          True,
+    #     'returnObjectsOnUpdateAndCreate':      False
+    # })
 
-        self.setUpClients()
-        self.setUpHosts()
-        self.createHostsOnBackend()
+    def test_configState_getClientToDepotserver(self):
+        originalClients = getClients()
+        depotservers = getDepotServers()
+        depot1 = depotservers[0]
+        self.backend.host_createObjects(depotservers)
+        self.backend.host_createObjects(originalClients)
 
-        self.setUpConfigStates()
-        self.createConfigOnBackend()
-        self.createConfigStatesOnBackend()
+        clientConfigDepotId = UnicodeConfig(
+            id=u'clientconfig.depot.id',
+            description=u'Depotserver to use',
+            possibleValues=[],
+            defaultValues=[depot1.id]
+        )
+        self.backend.config_createObjects(clientConfigDepotId)
+
+        products = list(getLocalbootProducts()) + [getNetbootProduct()]
+        self.backend.product_createObjects(products)
+        originalProductsOnDepots = getProductsOnDepot(products, depot1, depotservers)
+        self.backend.productOnDepot_createObjects(originalProductsOnDepots)
 
         clients = self.backend.host_getObjects(type='OpsiClient')
-        clientToDepots = self.backend.configState_getClientToDepotserver()
-        self.assertEquals(len(clientToDepots), len(clients))
+        with temporaryBackendOptions(self.backend, addConfigStateDefaults=True):
+            clientToDepots = self.backend.configState_getClientToDepotserver()
 
-        for depotserver in self.depotservers:
+        self.assertEqual(len(clientToDepots), len(clients), u"Expected %s clients, but got %s from backend." % (len(clientToDepots), len(clients)))
+
+        for depotserver in getDepotServers():
             productOnDepots = self.backend.productOnDepot_getObjects(depotId=depotserver.id)
+            expectedProducts = [x for x in originalProductsOnDepots if x.depotId == depotserver.id]
+            for productOnDepot in productOnDepots:
+                self.assertTrue(productOnDepot in expectedProducts, u"Expected products %s do be on depotserver %s, but depotserver found %s." % (expectedProducts, depotserver.id, productOnDepot.productId))
 
-            # TODO: richtige Tests
-            # for productOnDepot in productOnDepots:
-            #     logger.info(u"Got productOnDepot: %s" % productOnDepot)
-
-            # for clientToDepot in clientToDepots:
-            #     if (clientToDepot['depotId'] == depotserver.id):
-            #         # TODO: richtige Tests
-            #         logger.info(u"Got client to depot: %s" % clientToDepot)
+        for clientToDepot in clientToDepots:
+           self.assertTrue(clientToDepot['depotId'] in [ds.id for ds in depotservers])
 
     def test_createProductOnClient(self):
         client = OpsiClient(id='client.test.invalid')
