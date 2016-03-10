@@ -270,7 +270,9 @@ def fillBackendWithAuditHardwareOnHosts(backend, auditHardwares, clients):
 
 def fillBackendWithAuditSoftwareOnClients(backend, auditSoftwares, clients):
     asoc = getAuditSoftwareOnClient(auditSoftwares, clients)
+    assert len(asoc) > 0
     backend.auditSoftwareOnClient_createObjects(asoc)
+    assert len(backend.auditSoftwareOnClient_getObjects()) > 0
 
 
 def fillBackendWithSoftwareLicenseToLicensePools(backend):
