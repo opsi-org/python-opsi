@@ -25,9 +25,9 @@ Backend functionality for testing the functionality of working with products.
 
 from __future__ import absolute_import, print_function
 
-from OPSI.Object import (NetbootProduct, LocalbootProduct,
-    UnicodeProductProperty, BoolProductProperty, ProductDependency,
-    ProductOnDepot, ProductOnClient, ProductPropertyState)
+from OPSI.Object import (BoolProductProperty, NetbootProduct, LocalbootProduct,
+    ProductDependency, ProductOnClient, ProductOnDepot, ProductPropertyState,
+    UnicodeProductProperty)
 from OPSI.Types import forceHostId
 from OPSI.Util import getfqdn
 
@@ -1229,3 +1229,30 @@ class ProductsOnClientTestsMixin(ProductsOnClientsMixin, ProductPropertiesMixin)
             'product7', setup)
         assert 'product9' not in setup, u"'%s' is in '%s'" % (
             'product9', setup)
+
+    def testLongProductName(self):
+        """
+        Can the backend handle product names of 128 characters length?
+        """
+        product = LocalbootProduct(
+            id='new_prod',
+            name='New Product for Tests',
+            productVersion=1,
+            packageVersion=1
+        )
+
+        newName = (
+            u'This is a very long name with 128 characters to test the '
+            u'creation of long product names that should work now but '
+            u'were limited b4'
+        )
+
+        product.setName(newName)
+
+        self.backend.product_createObjects(product)
+        backendProduct = self.backend.product_getObjects(id=product.id)
+
+        self.assertEquals(1, len(backendProduct))
+        backendProduct = backendProduct[0]
+
+        self.assertEquals(newName, backendProduct.name)
