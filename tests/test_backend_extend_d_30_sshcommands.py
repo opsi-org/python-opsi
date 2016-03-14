@@ -33,115 +33,77 @@ import unittest
 # from OPSI.Types import BackendIOError
 from .Backends.File import FileBackendBackendManagerMixin
 import JSON
-
 class SSHCommandsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
-     def setUp(self):
-        self.setUpBackend()
-        jsonObj={
-
-        }
-
-    def tearDown(self):
-        self.tearDownBackend()
-
-    def testCreateSSHCommand(self):
-        self.backend.host_insertObject(client1)
-        self.backend.host_insertObject(client2)
-        self.backend.host_insertObject(depot)
-        self.backend.group_insertObject(testGroup)
-        self.backend.objectToGroup_createObjects([client1ToGroup, client2ToGroup])
-        self.backend.config_create(u'clientconfig.depot.id')
-        self.backend.configState_create(u'clientconfig.depot.id', client1.getId(), values=[depot.getId()])
-        self.backend.configState_create(u'clientconfig.depot.id', client2.getId(), values=[depot.getId()])
-        self.backend.product_insertObject(product2)
-        self.backend.productOnDepot_insertObject(prodOnDepot)
-
-        self.assertFalse(self.backend.productOnClient_getObjects())
-        self.assertTrue(self.backend.objectToGroup_getObjects(groupType="HostGroup"))
-
-        self.backend.setProductActionRequestForHostGroup('host_group_1', 'product2', 'setup')
-
-        print(self.backend.productOnClient_getObjects())
-        self.assertTrue(self.backend.productOnClient_getObjects())
-
-        self.assertEquals(2, len(self.backend.productOnClient_getObjects()))
-
-        for poc in self.backend.productOnClient_getObjects():
-            self.assertEquals(poc.productId, product2.getId())
-            self.assertTrue(poc.clientId in (client1.id, client2.id))
-
-
-class GroupRenamingTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
     """
     Testing the group actions.
     """
     def setUp(self):
         self.setUpBackend()
-        self.testGroup = HostGroup(
-            id='host_group_1',
-            description='Group 1',
-            notes='First group',
-            parentGroupId=None
-        )
-        self.testGroup2 = HostGroup(
-            id='new_group_1',
-            description='Group 1',
-            notes='First group',
-            parentGroupId=None
-        )
+        # self.testGroup = HostGroup(
+        #     id='host_group_1',
+        #     description='Group 1',
+        #     notes='First group',
+        #     parentGroupId=None
+        # )
+        # self.testGroup2 = HostGroup(
+        #     id='new_group_1',
+        #     description='Group 1',
+        #     notes='First group',
+        #     parentGroupId=None
+        # )
 
-        self.client1 = OpsiClient(
-            id='client1.test.invalid',
-        )
+        # self.client1 = OpsiClient(
+        #     id='client1.test.invalid',
+        # )
 
-        self.client2 = OpsiClient(
-            id='client2.test.invalid',
-        )
+        # self.client2 = OpsiClient(
+        #     id='client2.test.invalid',
+        # )
 
-        client1ToGroup = ObjectToGroup(self.testGroup.getType(),self.testGroup.id, self.client1.id)
-        client2ToGroup = ObjectToGroup(self.testGroup.getType(),self.testGroup.id, self.client2.id)
+        # client1ToGroup = ObjectToGroup(self.testGroup.getType(),self.testGroup.id, self.client1.id)
+        # client2ToGroup = ObjectToGroup(self.testGroup.getType(),self.testGroup.id, self.client2.id)
 
-        self.backend.host_insertObject(self.client1)
-        self.backend.host_insertObject(self.client2)
-        self.backend.group_insertObject(self.testGroup)
-        self.backend.objectToGroup_createObjects([client1ToGroup, client2ToGroup])
+        # self.backend.host_insertObject(self.client1)
+        # self.backend.host_insertObject(self.client2)
+        # self.backend.group_insertObject(self.testGroup)
+        # self.backend.objectToGroup_createObjects([client1ToGroup, client2ToGroup])
 
     def tearDown(self):
         self.tearDownBackend()
 
-    def testGroupnameExists(self):
-        self.assertTrue(self.backend.groupname_exists(self.testGroup.id))
-        self.assertFalse(self.backend.groupname_exists(u'testgruppe'))
+    # def testGroupnameExists(self):
+    #     self.assertTrue(self.backend.groupname_exists(self.testGroup.id))
+    #     self.assertFalse(self.backend.groupname_exists(u'testgruppe'))
 
-    def testAlreadyExistingGroup(self):
-        self.assertRaises(Exception, self.backend.group_rename, self.testGroup.id, self.testGroup.id)
-        self.assertRaises(Exception, self.backend.group_rename, u'notExisting', self.testGroup.id)
+    # def testAlreadyExistingGroup(self):
+    #     self.assertRaises(Exception, self.backend.group_rename, self.testGroup.id, self.testGroup.id)
+    #     self.assertRaises(Exception, self.backend.group_rename, u'notExisting', self.testGroup.id)
 
-    def testCreateNewDeleteOldGroup(self):
-        self.backend.group_rename(self.testGroup.id, self.testGroup2.id)
+    # def testCreateNewDeleteOldGroup(self):
+    #     self.backend.group_rename(self.testGroup.id, self.testGroup2.id)
 
-        group = self.backend.group_getObjects(id=self.testGroup2.id) [0]
-        self.assertEquals(group.description, self.testGroup.description)
-        self.assertEquals(group.notes, self.testGroup.notes)
-        self.assertEquals(group.parentGroupId, self.testGroup.parentGroupId)
+    #     group = self.backend.group_getObjects(id=self.testGroup2.id) [0]
+    #     self.assertEquals(group.description, self.testGroup.description)
+    #     self.assertEquals(group.notes, self.testGroup.notes)
+    #     self.assertEquals(group.parentGroupId, self.testGroup.parentGroupId)
 
-        self.assertFalse(self.backend.groupname_exists(self.testGroup.id))
+    #     self.assertFalse(self.backend.groupname_exists(self.testGroup.id))
 
-    def testObjectToGroupsHaveNewGroupIds(self):
-        self.backend.group_rename(self.testGroup.id, self.testGroup2.id)
+    # def testObjectToGroupsHaveNewGroupIds(self):
+    #     self.backend.group_rename(self.testGroup.id, self.testGroup2.id)
 
-        objTpGrp_client1 = self.backend.objectToGroup_getObjects(objectId=self.client1.id) [0]
-        self.assertTrue(objTpGrp_client1.groupId, self.testGroup2.id )
+    #     objTpGrp_client1 = self.backend.objectToGroup_getObjects(objectId=self.client1.id) [0]
+    #     self.assertTrue(objTpGrp_client1.groupId, self.testGroup2.id )
 
-        objTpGrp_client2 = self.backend.objectToGroup_getObjects(objectId=self.client2.id) [0]
-        self.assertTrue(objTpGrp_client2.groupId, self.testGroup2.id )
+    #     objTpGrp_client2 = self.backend.objectToGroup_getObjects(objectId=self.client2.id) [0]
+    #     self.assertTrue(objTpGrp_client2.groupId, self.testGroup2.id )
 
-    def testObjectToGroupsHaveNotOldGroupIds(self):
-        self.backend.group_rename(self.testGroup.id, self.testGroup2.id)
+    # def testObjectToGroupsHaveNotOldGroupIds(self):
+    #     self.backend.group_rename(self.testGroup.id, self.testGroup2.id)
 
-        objsToGrp = self.backend.objectToGroup_getObjects()
-        for obj in objsToGrp:
-            self.assertNotEqual(obj.groupId, self.testGroup.id)
+    #     objsToGrp = self.backend.objectToGroup_getObjects()
+    #     for obj in objsToGrp:
+    #         self.assertNotEqual(obj.groupId, self.testGroup.id)
 
 
 if __name__ == '__main__':
