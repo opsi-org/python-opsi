@@ -166,6 +166,7 @@ chmod 660 /etc/opsi/passwd
 %config /etc/opsi/backendManager/extend.d/10_opsi.conf
 %config /etc/opsi/backendManager/extend.d/10_wim.conf
 %config /etc/opsi/backendManager/extend.d/20_legacy.conf
+%config /etc/opsi/backendManager/extend.d/30_sshcommands.conf
 %config /etc/opsi/backendManager/extend.d/40_groupActions.conf
 %config /etc/opsi/backendManager/extend.d/40_admin_tasks.conf
 %config /etc/opsi/backendManager/extend.d/70_wan.conf

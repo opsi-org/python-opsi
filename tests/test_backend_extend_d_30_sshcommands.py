@@ -24,53 +24,43 @@ Testing CRUD Methods for sshcommands (read from / write to jsonfile).
 """
 
 from __future__ import absolute_import
-
+from .Backends.File import FileBackendBackendManagerMixin
 import unittest
 
 
-# from OPSI.Backend.DHCPD import DHCPDBackend
-# from OPSI.Object import OpsiClient
-# from OPSI.Types import BackendIOError
-from .Backends.File import FileBackendBackendManagerMixin
-import JSON
 class SSHCommandsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
     """
-    Testing the group actions.
+    Testing the crud methods for json commands .
     """
     def setUp(self):
         self.setUpBackend()
-        # self.testGroup = HostGroup(
-        #     id='host_group_1',
-        #     description='Group 1',
-        #     notes='First group',
-        #     parentGroupId=None
-        # )
-        # self.testGroup2 = HostGroup(
-        #     id='new_group_1',
-        #     description='Group 1',
-        #     notes='First group',
-        #     parentGroupId=None
-        # )
-
-        # self.client1 = OpsiClient(
-        #     id='client1.test.invalid',
-        # )
-
-        # self.client2 = OpsiClient(
-        #     id='client2.test.invalid',
-        # )
-
-        # client1ToGroup = ObjectToGroup(self.testGroup.getType(),self.testGroup.id, self.client1.id)
-        # client2ToGroup = ObjectToGroup(self.testGroup.getType(),self.testGroup.id, self.client2.id)
-
-        # self.backend.host_insertObject(self.client1)
-        # self.backend.host_insertObject(self.client2)
-        # self.backend.group_insertObject(self.testGroup)
-        # self.backend.objectToGroup_createObjects([client1ToGroup, client2ToGroup])
 
     def tearDown(self):
         self.tearDownBackend()
 
+    def testCreateCommand(self):
+        name=u'testname'
+        menuText=u'Test Menu'
+        commands=[u'test1', u'test2']
+        needSudo=True
+        priority=1
+        # tooltip=
+        parentMenu=None
+        self.backend.createCommand(name, menuText, commands, needSudo, priority )
+        # command={u'name':name}
+        command={u'name':name,
+            u'menuText':menuText,
+            u'tooltip':u'""',
+            u'commands':commands,
+            u'needSudo':needSudo,
+            u'priority':priority,
+            u'parentMenu':parentMenu
+            }
+        # self.assertEquals(self.backend.readCommands() , command)
+        self.assertNotEquals(self.backend.readCommands() , {u'name':u'bla'})
+
+    # def testCreateCommand(self):
+        # self.assertTrueS(self.backend.createCommand("name1"))
     # def testGroupnameExists(self):
     #     self.assertTrue(self.backend.groupname_exists(self.testGroup.id))
     #     self.assertFalse(self.backend.groupname_exists(u'testgruppe'))
