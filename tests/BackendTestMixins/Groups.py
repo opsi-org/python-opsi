@@ -240,11 +240,11 @@ class ObjectToGroupTestsMixin(ObjectToGroupsMixin):
                 objectId=self.client2.getId()
             )
             self.backend.objectToGroup_updateObject(objectToGroup3update)
-    #
-            # cannot be updated ...
-    #       groups = self.backend.group_getObjects(description = self.group1.description)
-    #       assert len(groups) == 1
-    #       assert groups[0].getDescription() == 'new description'
+
+            # TODO: cannot be updated ...?
+            # groups = self.backend.group_getObjects(description=self.group1.description)
+            # assert len(groups) == 1
+            # assert groups[0].getDescription() == 'new description'
 
             self.backend.objectToGroup_deleteObjects(objectToGroup3update)
             objectToGroups = self.backend.objectToGroup_getObjects()
