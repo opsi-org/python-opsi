@@ -261,6 +261,8 @@ class ObjectToGroupTestsMixin(ObjectToGroupsMixin):
         clients = getClients()
         groups = getHostGroups()
         o2g = getObjectToGroups(groups, clients)
+        self.backend.host_createObjects(clients)
+        self.backend.group_createObjects(groups)
         self.backend.objectToGroup_createObjects(o2g)
 
         objectToGroups = self.backend.objectToGroup_getObjects()
@@ -277,6 +279,8 @@ class ObjectToGroupTestsMixin(ObjectToGroupsMixin):
         client1ObjectToGroups = [objectToGroup for objectToGroup in o2g if objectToGroup.objectId == client1.id]
         client2ObjectToGroups = [objectToGroup for objectToGroup in o2g if objectToGroup.objectId == client2.id]
 
+        self.backend.host_createObjects(clients)
+        self.backend.group_createObjects(groups)
         self.backend.objectToGroup_createObjects(o2g)
         objectToGroups = self.backend.objectToGroup_getObjects(objectId=client1.getId())
         self.assertEqual(len(objectToGroups), len(client1ObjectToGroups))
@@ -292,6 +296,8 @@ class ObjectToGroupTestsMixin(ObjectToGroupsMixin):
         clients = getClients()
         groups = getHostGroups()
         o2g = getObjectToGroups(groups, clients)
+        self.backend.host_createObjects(clients)
+        self.backend.group_createObjects(groups)
         self.backend.objectToGroup_createObjects(o2g)
 
         objectToGroup3 = o2g[2]
@@ -303,6 +309,8 @@ class ObjectToGroupTestsMixin(ObjectToGroupsMixin):
         clients = getClients()
         groups = getHostGroups()
         o2g = getObjectToGroups(groups, clients)
+        self.backend.host_createObjects(clients)
+        self.backend.group_createObjects(groups)
         self.backend.objectToGroup_createObjects(o2g)
 
         objectToGroup3 = o2g[2]
