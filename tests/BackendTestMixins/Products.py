@@ -31,7 +31,7 @@ from OPSI.Object import (BoolProductProperty, LocalbootProduct, NetbootProduct,
 from OPSI.Types import forceHostId
 from OPSI.Util import getfqdn
 
-from .Hosts import HostsMixin, getDepotServers
+from .Hosts import HostsMixin, getConfigServer, getDepotServers
 from .Clients import ClientsMixin, getClients
 
 
@@ -1086,6 +1086,49 @@ class ProductsOnDepotTestsMixin(ProductsOnDepotMixin):
         self.backend.productOnDepot_createObjects(self.productOnDepots)
         productOnDepots = self.backend.productOnDepot_getObjects()
         self.assertEqual(len(productOnDepots), len(self.productOnDepots))
+
+    def test_getProductOnDepotsFromBackend(self):
+        products = getProducts()
+        configServer = getConfigServer()
+        depots = getDepotServers()
+        productsOnDepotOrig = getProductsOnDepot(products, configServer, depots)
+        self.backend.host_createObjects(configServer)
+        self.backend.host_createObjects(depots)
+        self.backend.product_createObjects(products)
+        self.backend.productOnDepot_createObjects(productsOnDepotOrig)
+
+        productOnDepots = self.backend.productOnDepot_getObjects(attributes=['productId'])
+        self.assertEqual(len(productOnDepots), len(productsOnDepotOrig))
+
+    def test_deleteProductOnDepot(self):
+        products = getProducts()
+        configServer = getConfigServer()
+        depots = getDepotServers()
+        productsOnDepotOrig = getProductsOnDepot(products, configServer, depots)
+        self.backend.host_createObjects(configServer)
+        self.backend.host_createObjects(depots)
+        self.backend.product_createObjects(products)
+        self.backend.productOnDepot_createObjects(productsOnDepotOrig)
+
+        productOnDepot1 = productsOnDepotOrig[0]
+        self.backend.productOnDepot_deleteObjects(productOnDepot1)
+        productOnDepots = self.backend.productOnDepot_getObjects()
+        self.assertEqual(len(productOnDepots), len(productsOnDepotOrig) - 1)
+
+    def test_createDuplicateProductsOnDepots(self):
+        products = getProducts()
+        configServer = getConfigServer()
+        depots = getDepotServers()
+        productsOnDepotOrig = getProductsOnDepot(products, configServer, depots)
+        self.backend.host_createObjects(configServer)
+        self.backend.host_createObjects(depots)
+        self.backend.product_createObjects(products)
+
+        self.backend.productOnDepot_createObjects(productsOnDepotOrig)
+        self.backend.productOnDepot_createObjects(productsOnDepotOrig)
+
+        productOnDepots = self.backend.productOnDepot_getObjects()
+        self.assertEqual(len(productOnDepots), len(productsOnDepotOrig))
 
 
 class ProductsOnClientsMixin(ClientsMixin, ProductsMixin):

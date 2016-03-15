@@ -388,19 +388,3 @@ class ObjectMethodsMixin(object):
 		self.assertGreater(posProduct2, posProduct4, u"Wrong sequence: product4 not before product2")
 		self.assertGreater(posProduct2, posProduct5, u"Wrong sequence: product5 not before product2")
 		self.assertGreater(posProduct4, posProduct5, u"Wrong sequence: product5 not before product4")
-		
-	def test_getProductOnDepotsFromBackend(self):
-		productOnDepots = self.backend.productOnDepot_getObjects( attributes = ['productId'] )
-		self.assertEqual(len(productOnDepots), len(self.expected.productOnDepots), u"Expected %s products on depots, but got %s from backend." % (len(self.expected.productOnDepots), len(productOnDepots)))
-		
-
-	def test_deleteProductOnDepot(self):
-		self.backend.productOnDepot_deleteObjects(self.expected.productOnDepot1)
-		productOnDepots = self.backend.productOnDepot_getObjects()
-		self.assertEqual(len(productOnDepots), len(self.expected.productOnDepots) - 1, u"Expected %s products on depots, but got %s from backend." % (len(self.expected.productOnDepots) - 1, len(productOnDepots)))
-
-
-	def test_createDuplicateProductsOnDepots(self):
-		self.backend.productOnDepot_createObjects(self.expected.productOnDepots)
-		productOnDepots = self.backend.productOnDepot_getObjects()
-		self.assertEqual(len(productOnDepots),len(self.expected.productOnDepots), u"Expected %s products on depots, but got %s from backend." % (len(self.expected.productOnDepots), len(productOnDepots)))
