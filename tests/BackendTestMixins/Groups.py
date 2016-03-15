@@ -201,111 +201,111 @@ class ObjectToGroupsMixin(GroupsMixin):
 
 
 class ObjectToGroupTestsMixin(ObjectToGroupsMixin):
-        def testObjectToGroupMethods(self):
-            self.setUpObjectToGroups()
-            self.createHostsOnBackend()
-            self.createGroupsOnBackend()
+    def testObjectToGroupMethods(self):
+        self.setUpObjectToGroups()
+        self.createHostsOnBackend()
+        self.createGroupsOnBackend()
 
-            self.backend.objectToGroup_createObjects(self.objectToGroups)
+        self.backend.objectToGroup_createObjects(self.objectToGroups)
 
-            objectToGroups = self.backend.objectToGroup_getObjects()
-            assert len(objectToGroups) == len(self.objectToGroups)
+        objectToGroups = self.backend.objectToGroup_getObjects()
+        assert len(objectToGroups) == len(self.objectToGroups)
 
-            client1ObjectToGroups = []
-            client2ObjectToGroups = []
-            for objectToGroup in self.objectToGroups:
-                if (objectToGroup.objectId == self.client1.getId()):
-                    client1ObjectToGroups.append(objectToGroup)
-                if (objectToGroup.objectId == self.client2.getId()):
-                    client2ObjectToGroups.append(objectToGroup)
-            objectToGroups = self.backend.objectToGroup_getObjects(
-                objectId=self.client1.getId())
-            assert len(objectToGroups) == len(client1ObjectToGroups), u"got: '%s', expected: '%s'" % (
-                objectToGroups, client1ObjectToGroups)
-            for objectToGroup in objectToGroups:
-                assert objectToGroup.objectId == self.client1.id, u"got: '%s', expected: '%s'" % (
-                    objectToGroup.objectId, self.client1.id)
+        client1ObjectToGroups = []
+        client2ObjectToGroups = []
+        for objectToGroup in self.objectToGroups:
+            if (objectToGroup.objectId == self.client1.getId()):
+                client1ObjectToGroups.append(objectToGroup)
+            if (objectToGroup.objectId == self.client2.getId()):
+                client2ObjectToGroups.append(objectToGroup)
+        objectToGroups = self.backend.objectToGroup_getObjects(
+            objectId=self.client1.getId())
+        assert len(objectToGroups) == len(client1ObjectToGroups), u"got: '%s', expected: '%s'" % (
+            objectToGroups, client1ObjectToGroups)
+        for objectToGroup in objectToGroups:
+            assert objectToGroup.objectId == self.client1.id, u"got: '%s', expected: '%s'" % (
+                objectToGroup.objectId, self.client1.id)
 
-            objectToGroups = self.backend.objectToGroup_getObjects(
-                objectId=self.client2.getId())
-            assert len(objectToGroups) == len(client2ObjectToGroups), u"got: '%s', expected: '%s'" % (
-                objectToGroups, client2ObjectToGroups)
-            for objectToGroup in objectToGroups:
-                assert objectToGroup.objectId == self.client2.id, u"got: '%s', expected: '%s'" % (
-                    objectToGroup.objectId, self.client2.id)
+        objectToGroups = self.backend.objectToGroup_getObjects(
+            objectId=self.client2.getId())
+        assert len(objectToGroups) == len(client2ObjectToGroups), u"got: '%s', expected: '%s'" % (
+            objectToGroups, client2ObjectToGroups)
+        for objectToGroup in objectToGroups:
+            assert objectToGroup.objectId == self.client2.id, u"got: '%s', expected: '%s'" % (
+                objectToGroup.objectId, self.client2.id)
 
-            objectToGroup3update = ObjectToGroup(
-                groupType=self.group2.getType(),
-                groupId=self.group2.getId(),
-                objectId=self.client2.getId()
-            )
-            self.backend.objectToGroup_updateObject(objectToGroup3update)
+        objectToGroup3update = ObjectToGroup(
+            groupType=self.group2.getType(),
+            groupId=self.group2.getId(),
+            objectId=self.client2.getId()
+        )
+        self.backend.objectToGroup_updateObject(objectToGroup3update)
 
-            # TODO: cannot be updated ...?
-            # groups = self.backend.group_getObjects(description=self.group1.description)
-            # assert len(groups) == 1
-            # assert groups[0].getDescription() == 'new description'
+        # TODO: cannot be updated ...?
+        # groups = self.backend.group_getObjects(description=self.group1.description)
+        # assert len(groups) == 1
+        # assert groups[0].getDescription() == 'new description'
 
-            self.backend.objectToGroup_deleteObjects(objectToGroup3update)
-            objectToGroups = self.backend.objectToGroup_getObjects()
-            assert len(objectToGroups) == len(self.objectToGroups) - \
-                1, u"got: '%s', expected: '%s'" % (
-                    objectToGroups, len(self.objectToGroups) - 1)
+        self.backend.objectToGroup_deleteObjects(objectToGroup3update)
+        objectToGroups = self.backend.objectToGroup_getObjects()
+        assert len(objectToGroups) == len(self.objectToGroups) - \
+            1, u"got: '%s', expected: '%s'" % (
+                objectToGroups, len(self.objectToGroups) - 1)
 
-            self.backend.objectToGroup_createObjects(objectToGroup3update)
-            objectToGroups = self.backend.objectToGroup_getObjects()
-            assert len(objectToGroups) == len(self.objectToGroups), u"got: '%s', expected: '%s'" % (
-                objectToGroups, self.objectToGroups)
+        self.backend.objectToGroup_createObjects(objectToGroup3update)
+        objectToGroups = self.backend.objectToGroup_getObjects()
+        assert len(objectToGroups) == len(self.objectToGroups), u"got: '%s', expected: '%s'" % (
+            objectToGroups, self.objectToGroups)
 
-        def test_getObjectsToGroupFromBackend(self):
-            clients = getClients()
-            groups = getHostGroups()
-            o2g = getObjectToGroups(groups, clients)
-            self.backend.objectToGroup_createObjects(o2g)
+    def test_getObjectsToGroupFromBackend(self):
+        clients = getClients()
+        groups = getHostGroups()
+        o2g = getObjectToGroups(groups, clients)
+        self.backend.objectToGroup_createObjects(o2g)
 
-            objectToGroups = self.backend.objectToGroup_getObjects()
-            self.assertEqual(len(objectToGroups), len(o2g))
-            # TODO: check contents
+        objectToGroups = self.backend.objectToGroup_getObjects()
+        self.assertEqual(len(objectToGroups), len(o2g))
+        # TODO: check contents
 
-        def test_selectObjectToGroupById(self):
-            clients = getClients()
-            groups = getHostGroups()
-            o2g = getObjectToGroups(groups, clients)
-            client1 = clients[0]
-            client2 = clients[1]
+    def test_selectObjectToGroupById(self):
+        clients = getClients()
+        groups = getHostGroups()
+        o2g = getObjectToGroups(groups, clients)
+        client1 = clients[0]
+        client2 = clients[1]
 
-            client1ObjectToGroups = [objectToGroup for objectToGroup in o2g if objectToGroup.objectId == client1.id]
-            client2ObjectToGroups = [objectToGroup for objectToGroup in o2g if objectToGroup.objectId == client2.id]
+        client1ObjectToGroups = [objectToGroup for objectToGroup in o2g if objectToGroup.objectId == client1.id]
+        client2ObjectToGroups = [objectToGroup for objectToGroup in o2g if objectToGroup.objectId == client2.id]
 
-            self.backend.objectToGroup_createObjects(o2g)
-            objectToGroups = self.backend.objectToGroup_getObjects(objectId=client1.getId())
-            self.assertEqual(len(objectToGroups), len(client1ObjectToGroups))
-            for objectToGroup in objectToGroups:
-                self.assertEqual(objectToGroup.objectId, client1.id)
+        self.backend.objectToGroup_createObjects(o2g)
+        objectToGroups = self.backend.objectToGroup_getObjects(objectId=client1.getId())
+        self.assertEqual(len(objectToGroups), len(client1ObjectToGroups))
+        for objectToGroup in objectToGroups:
+            self.assertEqual(objectToGroup.objectId, client1.id)
 
-            objectToGroups = self.backend.objectToGroup_getObjects(objectId=client2.getId())
-            self.assertEqual(len(objectToGroups), len(client2ObjectToGroups))
-            for objectToGroup in objectToGroups:
-                self.assertEqual(objectToGroup.objectId, client2.id)
+        objectToGroups = self.backend.objectToGroup_getObjects(objectId=client2.getId())
+        self.assertEqual(len(objectToGroups), len(client2ObjectToGroups))
+        for objectToGroup in objectToGroups:
+            self.assertEqual(objectToGroup.objectId, client2.id)
 
-        def test_deleteObjectToGroup(self):
-            clients = getClients()
-            groups = getHostGroups()
-            o2g = getObjectToGroups(groups, clients)
-            self.backend.objectToGroup_createObjects(o2g)
+    def test_deleteObjectToGroup(self):
+        clients = getClients()
+        groups = getHostGroups()
+        o2g = getObjectToGroups(groups, clients)
+        self.backend.objectToGroup_createObjects(o2g)
 
-            objectToGroup3 = o2g[2]
-            self.backend.objectToGroup_deleteObjects(objectToGroup3)
-            objectToGroups = self.backend.objectToGroup_getObjects()
-            self.assertEqual(len(objectToGroups), len(o2g) - 1)
+        objectToGroup3 = o2g[2]
+        self.backend.objectToGroup_deleteObjects(objectToGroup3)
+        objectToGroups = self.backend.objectToGroup_getObjects()
+        self.assertEqual(len(objectToGroups), len(o2g) - 1)
 
-        def test_createDuplicateObjectToGroup(self):
-            clients = getClients()
-            groups = getHostGroups()
-            o2g = getObjectToGroups(groups, clients)
-            self.backend.objectToGroup_createObjects(o2g)
+    def test_createDuplicateObjectToGroup(self):
+        clients = getClients()
+        groups = getHostGroups()
+        o2g = getObjectToGroups(groups, clients)
+        self.backend.objectToGroup_createObjects(o2g)
 
-            objectToGroup3 = o2g[2]
-            self.backend.objectToGroup_createObjects(objectToGroup3)
-            objectToGroups = self.backend.objectToGroup_getObjects()
-            self.assertEqual(len(objectToGroups), len(o2g))
+        objectToGroup3 = o2g[2]
+        self.backend.objectToGroup_createObjects(objectToGroup3)
+        objectToGroups = self.backend.objectToGroup_getObjects()
+        self.assertEqual(len(objectToGroups), len(o2g))
