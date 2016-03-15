@@ -978,36 +978,27 @@ class ProductsOnDepotMixin(ProductsMixin, HostsMixin):
 
 class ProductsOnDepotTestsMixin(ProductsOnDepotMixin):
     def testProductOnDepotMethods(self):
-        from .ExtendedBackend import temporaryBackendOptions
+        self.setUpProductOnDepots()
 
-        with temporaryBackendOptions(self.backend,
-                                     addProductOnClientDefaults=False,
-                                     addProductPropertyStateDefaults=False,
-                                     addConfigStateDefaults=False,
-                                     deleteConfigStateIfDefault=False,
-                                     returnObjectsOnUpdateAndCreate=False):
+        self.createHostsOnBackend()
+        self.createProductsOnBackend()
 
-            self.setUpProductOnDepots()
+        self.backend.productOnDepot_createObjects(self.productOnDepots)
+        productOnDepots = self.backend.productOnDepot_getObjects(
+            attributes=['productId'])
+        self.assertEqual(len(productOnDepots), len(self.productOnDepots))
 
-            self.createHostsOnBackend()
-            self.createProductsOnBackend()
+        self.backend.productOnDepot_deleteObjects(self.productOnDepot1)
+        productOnDepots = self.backend.productOnDepot_getObjects()
+        self.assertEqual(len(productOnDepots), len(self.productOnDepots) - 1)
 
-            self.backend.productOnDepot_createObjects(self.productOnDepots)
-            productOnDepots = self.backend.productOnDepot_getObjects(
-                attributes=['productId'])
-            self.assertEqual(len(productOnDepots), len(self.productOnDepots))
+        # Non-existing product, must fail.
+        self.assertRaises(Exception, self.backend.productOnDepot_createObjects, self.productOnDepots)
 
-            self.backend.productOnDepot_deleteObjects(self.productOnDepot1)
-            productOnDepots = self.backend.productOnDepot_getObjects()
-            self.assertEqual(len(productOnDepots), len(self.productOnDepots) - 1)
-
-            # Non-existing product, must fail.
-            self.assertRaises(Exception, self.backend.productOnDepot_createObjects, self.productOnDepots)
-
-            self.backend.product_createObjects(self.products)
-            self.backend.productOnDepot_createObjects(self.productOnDepots)
-            productOnDepots = self.backend.productOnDepot_getObjects()
-            self.assertEqual(len(productOnDepots), len(self.productOnDepots))
+        self.backend.product_createObjects(self.products)
+        self.backend.productOnDepot_createObjects(self.productOnDepots)
+        productOnDepots = self.backend.productOnDepot_getObjects()
+        self.assertEqual(len(productOnDepots), len(self.productOnDepots))
 
 
 class ProductsOnClientsMixin(ClientsMixin, ProductsMixin):
