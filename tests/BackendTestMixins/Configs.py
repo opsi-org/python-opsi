@@ -151,18 +151,7 @@ class ConfigsMixin(ClientsMixin, HostsMixin):
 
 
 class ConfigTestsMixin(ConfigsMixin):
-    def configureBackendOptions(self):
-        self.backend.backend_setOptions({
-            'addProductOnClientDefaults': False,
-            'addProductPropertyStateDefaults': False,
-            'addConfigStateDefaults': False,
-            'deleteConfigStateIfDefault': False,
-            'returnObjectsOnUpdateAndCreate': False
-        })
-
     def testConfigMethods(self):
-        self.configureBackendOptions()
-
         self.setUpConfigs()
         self.createConfigOnBackend()
 
@@ -262,18 +251,7 @@ class ConfigStatesMixin(ConfigsMixin):
 
 
 class ConfigStateTestsMixin(ConfigStatesMixin):
-    def configureBackendOptions(self):
-        self.backend.backend_setOptions({
-            'addProductOnClientDefaults': False,
-            'addProductPropertyStateDefaults': False,
-            'addConfigStateDefaults': False,
-            'deleteConfigStateIfDefault': False,
-            'returnObjectsOnUpdateAndCreate': False
-        })
-
     def testConfigStateMethods(self):
-        self.configureBackendOptions()
-
         self.setUpConfigStates()
 
         self.createHostsOnBackend()

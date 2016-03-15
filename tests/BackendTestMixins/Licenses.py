@@ -177,7 +177,6 @@ class LicensesMixin(ClientsMixin, ProductsMixin):
 
 class LicensesTestMixin(LicensesMixin):
     def testLicenseContractMethods(self):
-        self.configureBackendOptions()
         self.setUpLicenseContracts()
 
         self.backend.licenseContract_createObjects(self.licenseContracts)
@@ -186,7 +185,6 @@ class LicensesTestMixin(LicensesMixin):
         self.assertEqual(len(licenseContracts), len(self.licenseContracts))
 
     def testSoftwareLicenseMethods(self):
-        self.configureBackendOptions()
         self.setUpSoftwareLicenses()
         self.backend.licenseContract_createObjects(self.licenseContracts)
 
@@ -197,7 +195,6 @@ class LicensesTestMixin(LicensesMixin):
             softwareLicenses, self.softwareLicenses)
 
     def testLicensePoolMethods(self):
-        self.configureBackendOptions()
         self.setUpLicensePool()
 
         self.backend.licensePool_createObjects(self.licensePools)
@@ -228,7 +225,6 @@ class LicensesTestMixin(LicensesMixin):
             licensePools, len(self.licensePools))
 
     def testSoftwareLicenseToLicensePoolMethods(self):
-        self.configureBackendOptions()
         self.setUpSoftwareLicenseToLicensePools()
         self.backend.licenseContract_createObjects(self.licenseContracts)
         self.backend.softwareLicense_createObjects(self.softwareLicenses)
@@ -243,7 +239,6 @@ class LicensesTestMixin(LicensesMixin):
             softwareLicenseToLicensePools, len(self.softwareLicenseToLicensePools))
 
     def testLicenseOnClientMethods(self):
-        self.configureBackendOptions()
         self.setUpLicenseOnClients()
 
         self.backend.licenseContract_createObjects(self.licenseContracts)
@@ -308,7 +303,6 @@ class LicensesTestMixin(LicensesMixin):
         self.assertEqual(len(self.licenseOnClients), len(licenseOnClients))
 
     def test_selectLicensePoolByInvalidProduct(self):
-        self.configureBackendOptions()
         self.setUpLicensePool()
         self.backend.licensePool_createObjects(self.licensePools)
 

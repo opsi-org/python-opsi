@@ -39,7 +39,6 @@ from OPSI.Types import BackendError
 
 class BackendTestsMixin(ClientsMixin, HostsMixin):
     def testObjectMethods(self):
-        self.configureBackendOptions()
         self.backend.backend_createBase()
 
         self.setUpHosts()
@@ -167,15 +166,6 @@ class BackendTestsMixin(ClientsMixin, HostsMixin):
             hosts[0].getId(), self.client2.getId())
         assert hosts[0].getDescription() == 'Test client 2', u"got: '%s', expected: '%s'" % (
             hosts[0].getDescription(), 'Test client 2')
-
-    def configureBackendOptions(self):
-        self.backend.backend_setOptions({
-            'addProductOnClientDefaults': False,
-            'addProductPropertyStateDefaults': False,
-            'addConfigStateDefaults': False,
-            'deleteConfigStateIfDefault': False,
-            'returnObjectsOnUpdateAndCreate': False
-        })
 
     def testNonObjectMethods(self):
         if 'jsonrpc' in str(self.backend).lower():  # TODO: improve test implementation
