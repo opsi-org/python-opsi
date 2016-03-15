@@ -2,45 +2,10 @@ from OPSI.Object import *
 
 class ObjectMethodsMixin(object):
 
-	def test_getConfigStatesFromBackend(self):
-		configStates = self.backend.configState_getObjects()
-		for state in self.expected.configStates:
-			self.assertIn(state, configStates, u"Expected config state %s on backend, but did not find it." % state)
-
-
-	def test_getConfigStateByClientID(self):
-		client1ConfigStates = []
-		for configState in self.expected.configStates:
-			if configState.getObjectId() == self.expected.client1.getId():
-				client1ConfigStates.append(configState)
-		configStates = self.backend.configState_getObjects( attributes = [], objectId = self.expected.client1.getId() )
-		for configState in configStates:
-			self.assertIn( configState.objectId , self.expected.client1.getId(), u"got: '%s', expected: '%s'" % (configState.objectId, self.expected.client1.getId()))
-	
-
-	def test_deleteConfigStateFromBackend(self):
-		self.backend.configState_deleteObjects(self.expected.configState2)
-		configStates = self.backend.configState_getObjects()
-		self.assertNotIn(self.expected.configState2, configStates, "Expected config state %s to be deleted, but found it on backend." % self.expected.configState2.configId)
-
-	def test_updateConfigState(self):
-		self.expected.configState3.setValues([True])
-		self.backend.configState_updateObject(self.expected.configState3)
-		configStates = self.backend.configState_getObjects(objectId = self.expected.configState3.getObjectId(), configId = self.expected.configState3.getConfigId())
-		self.assertEqual(len(configStates), 1, u"Expected one config state, but found '%s' on backend." % len(configStates))
-		self.assertEqual(configStates[0].getValues(), [True], u"Expected config state %s do have values %s, got '%s'" % (configStates[0].getObjectId(), [True], configStates[0].getValues()))
-
-	def test_selectConfigStateFromBackend(self):
-		configStates = self.backend.configState_getObjects(objectId = self.expected.configState4.getObjectId(), configId = self.expected.configState4.getConfigId())
-		self.assertEqual(len(configStates),1, u"Expected one config state, but found '%s' on backend." % len(configStates))
-		self.assertEqual(configStates[0].getValues()[0], self.expected.configState4.getValues()[0], u"Expected config state %s to have values ==>>>%s<<<==, got ==>>>%s<<<==" \
-					% (self.expected.configState4.getObjectId(), self.expected.configState4.getValues()[0],configStates[0].getValues()[0]))
-		
-
 	def test_getProductsFromBackend(self):
 		products = self.backend.product_getObjects()
 		self.assertEqual(len(products), len(self.expected.products), u"Expected %s products, but found '%s' on backend." % (len(self.expected.products), len(products)))
-		
+
 	def test_getProductsByType(self):
 		products = self.backend.product_getObjects(type = 'Product')
 		self.assertEqual(len(products), len(self.expected.products), u"Expected %s products, but found '%s' on backend." % (len(self.expected.products), len(products)))

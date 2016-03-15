@@ -27,8 +27,8 @@ Backend mixin for testing configuration objects on a backend.
 from __future__ import absolute_import
 from OPSI.Object import UnicodeConfig, BoolConfig, ConfigState
 
-from .Clients import ClientsMixin
-from .Hosts import HostsMixin
+from .Clients import ClientsMixin, getClients
+from .Hosts import HostsMixin, getDepotServers
 
 
 def getConfigs(depotServerId=None):
@@ -389,3 +389,92 @@ class ConfigStateTestsMixin(ConfigStatesMixin):
             configStates, 1)
         assert configStates[0].getValues()[0] == self.configState4.getValues()[
             0], u"got: '%s', expected: '%s'" % (configStates[0].getValues()[0], self.configState4.getValues()[0])
+
+    def test_getConfigStatesFromBackend(self):
+        configs = getConfigs()
+        clients = getClients()
+        depots = getDepotServers()
+        configStatesOrig = getConfigStates(configs, clients, depots)
+
+        self.backend.host_createObjects(clients)
+        self.backend.host_createObjects(depots)
+        self.backend.config_createObjects(configs)
+        self.backend.configState_createObjects(configStatesOrig)
+
+        configStates = self.backend.configState_getObjects()
+        assert configStates
+
+        for state in configStatesOrig:
+            self.assertIn(state, configStates)
+
+    def test_getConfigStateByClientID(self):
+        configs = getConfigs()
+        clients = getClients()
+        depots = getDepotServers()
+        configStatesOrig = getConfigStates(configs, clients, depots)
+
+        self.backend.host_createObjects(clients)
+        self.backend.host_createObjects(depots)
+        self.backend.config_createObjects(configs)
+        self.backend.configState_createObjects(configStatesOrig)
+
+        client1 = clients[0]
+        client1ConfigStates = [configState for configState in configStatesOrig if configState.getObjectId() == client1.getId()]
+
+        configStates = self.backend.configState_getObjects(attributes=[], objectId=client1.getId())
+        assert configStates
+        for configState in configStates:
+            self.assertEqual(configState.objectId, client1.getId())
+
+    def test_deleteConfigStateFromBackend(self):
+        configs = getConfigs()
+        clients = getClients()
+        depots = getDepotServers()
+        configStatesOrig = getConfigStates(configs, clients, depots)
+
+        self.backend.host_createObjects(clients)
+        self.backend.host_createObjects(depots)
+        self.backend.config_createObjects(configs)
+        self.backend.configState_createObjects(configStatesOrig)
+
+        configState2 = configStatesOrig[1]
+
+        self.backend.configState_deleteObjects(configState2)
+        configStates = self.backend.configState_getObjects()
+        self.assertEqual(len(configStates), len(configStatesOrig) - 1)
+        self.assertNotIn(configState2, configStates)
+
+    def test_updateConfigState(self):
+        configs = getConfigs()
+        clients = getClients()
+        depots = getDepotServers()
+        configStatesOrig = getConfigStates(configs, clients, depots)
+
+        self.backend.host_createObjects(clients)
+        self.backend.host_createObjects(depots)
+        self.backend.config_createObjects(configs)
+        self.backend.configState_createObjects(configStatesOrig)
+
+        configState3 = configStatesOrig[2]
+        configState3.setValues([True])
+        self.backend.configState_updateObject(configState3)
+        configStates = self.backend.configState_getObjects(objectId=configState3.getObjectId(), configId=configState3.getConfigId())
+        self.assertEqual(len(configStates), 1)
+        self.assertEqual(configStates[0].getValues(), [True])
+
+    def test_selectConfigStateFromBackend(self):
+        configs = getConfigs()
+        clients = getClients()
+        depots = getDepotServers()
+        configStatesOrig = getConfigStates(configs, clients, depots)
+
+        self.backend.host_createObjects(clients)
+        self.backend.host_createObjects(depots)
+        self.backend.config_createObjects(configs)
+        self.backend.configState_createObjects(configStatesOrig)
+
+        configState4 = configStatesOrig[3]
+
+        configStates = self.backend.configState_getObjects(objectId=configState4.getObjectId(), configId=configState4.getConfigId())
+        self.assertEqual(len(configStates), 1)
+        self.assertEqual(configStates[0].getValues()[0], configState4.getValues()[0])
