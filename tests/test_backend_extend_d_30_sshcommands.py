@@ -29,71 +29,59 @@ import unittest
 
 
 class SSHCommandsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
-    """
-    Testing the crud methods for json commands .
-    """
-    def setUp(self):
-        self.setUpBackend()
+        """
+        Testing the crud methods for json commands .
+        """
+        def setUp(self):
+                self.setUpBackend()
+                
+                # self.backend._deleteSshCommandFileContent()
+                self.name1=u'ÚTestName1'
+                self.menuText1=u'UTestMenu1'
+                self.command1={u'name':self.name1, u'menuText':self.menuText1}
 
-    def tearDown(self):
-        self.tearDownBackend()
+                self.name2=u'TUestName2'
+                self.menuText2=u'UTestMenu2'
+                self.command2={u'name':self.name2, u'menuText':self.menuText2}
 
-    def testCreateCommand(self):
-        name=u'testname'
-        menuText=u'Test Menu'
-        commands=[u'test1', u'test2']
-        needSudo=True
-        priority=1
-        # tooltip=
-        parentMenu=None
-        self.backend.createCommand(name, menuText, commands, needSudo, priority )
-        # command={u'name':name}
-        command={u'name':name,
-            u'menuText':menuText,
-            u'tooltip':u'""',
-            u'commands':commands,
-            u'needSudo':needSudo,
-            u'priority':priority,
-            u'parentMenu':parentMenu
-            }
-        # self.assertEquals(self.backend.readCommands() , command)
-        self.assertNotEquals(self.backend.readCommands() , {u'name':u'bla'})
+                self.name3=u'UTestName3'
+                self.menuText3=u'UTestMenu3'
+                self.command3={u'name':self.name3, u'menuText':self.menuText3}
+                # self.commands=[u'test1', u'test2']
+                # self.needSudo=True
+                # self.priority=1
+                # self.tooltip=u''
+                # self.parentMenu=None
+                self.commandlist=[]
+                self.commandlist.append(self.command1)
 
-    # def testCreateCommand(self):
-        # self.assertTrueS(self.backend.createCommand("name1"))
-    # def testGroupnameExists(self):
-    #     self.assertTrue(self.backend.groupname_exists(self.testGroup.id))
-    #     self.assertFalse(self.backend.groupname_exists(u'testgruppe'))
 
-    # def testAlreadyExistingGroup(self):
-    #     self.assertRaises(Exception, self.backend.group_rename, self.testGroup.id, self.testGroup.id)
-    #     self.assertRaises(Exception, self.backend.group_rename, u'notExisting', self.testGroup.id)
+        def tearDown(self):
+                self.tearDownBackend()
 
-    # def testCreateNewDeleteOldGroup(self):
-    #     self.backend.group_rename(self.testGroup.id, self.testGroup2.id)
+        def testCreateCommand(self):
+                # self.backend._deleteSshCommandFileContent()        
+                # self.backend.createCommand(self.command1["name"], self.command1["menuText"]) 
+                self.backend.createCommands(self.commandlist) 
 
-    #     group = self.backend.group_getObjects(id=self.testGroup2.id) [0]
-    #     self.assertEquals(group.description, self.testGroup.description)
-    #     self.assertEquals(group.notes, self.testGroup.notes)
-    #     self.assertEquals(group.parentGroupId, self.testGroup.parentGroupId)
+                #, self.commands, self.needSudo, self.priority )
+                # self.assertRaises(self.backend.createCommand(self.command1["name"], self.command1["menuText"]), Exception )
+                self.assertEquals(self.backend.readCommands() , self.commandlist)
+                self.assertNotEquals(self.backend.readCommands() , self.command2)
 
-    #     self.assertFalse(self.backend.groupname_exists(self.testGroup.id))
+        # def testDeleteCommand(self):
+        #         # self.backend.createCommand(name1, self.menuText, self.commands, self.needSudo, self.priority )
+        #         # self.backend.createCommand(name2, self.menuText, self.commands, self.needSudo, self.priority )
+        #         self.backend.createCommand(self.command1["name"], self.command1.["menuText"])
+        #         self.backend.createCommand(self.command2["name"], self.command2.["menuText"])
+        #         self.backend.createCommand(self.command3["name"], self.command3.["menuText"])
+        #         self.backend.deleteCommand(self.command2["name"])
+        #         commands=self.backend.readCommands()
 
-    # def testObjectToGroupsHaveNewGroupIds(self):
-    #     self.backend.group_rename(self.testGroup.id, self.testGroup2.id)
+        #         self.assertFalse(self.backend.getCommand(name1), commands)
+        #         self.assertTrue(self.backend.getCommand(name2), commands)
+        #         # self.assert()
 
-    #     objTpGrp_client1 = self.backend.objectToGroup_getObjects(objectId=self.client1.id) [0]
-    #     self.assertTrue(objTpGrp_client1.groupId, self.testGroup2.id )
-
-    #     objTpGrp_client2 = self.backend.objectToGroup_getObjects(objectId=self.client2.id) [0]
-    #     self.assertTrue(objTpGrp_client2.groupId, self.testGroup2.id )
-
-    # def testObjectToGroupsHaveNotOldGroupIds(self):
-    #     self.backend.group_rename(self.testGroup.id, self.testGroup2.id)
-
-    #     objsToGrp = self.backend.objectToGroup_getObjects()
-    #     for obj in objsToGrp:
-    #         self.assertNotEqual(obj.groupId, self.testGroup.id)
 
 
 if __name__ == '__main__':
