@@ -25,14 +25,18 @@ Backend functionality for testing the functionality of working with products.
 
 from __future__ import absolute_import, print_function
 
-from OPSI.Object import (BoolProductProperty, NetbootProduct, LocalbootProduct,
-    ProductDependency, ProductOnClient, ProductOnDepot, ProductPropertyState,
-    UnicodeProductProperty)
+from OPSI.Object import (BoolProductProperty, LocalbootProduct, NetbootProduct,
+    OpsiClient, ProductDependency, ProductOnClient, ProductOnDepot,
+    ProductPropertyState, UnicodeProductProperty)
 from OPSI.Types import forceHostId
 from OPSI.Util import getfqdn
 
-from .Hosts import HostsMixin
-from .Clients import ClientsMixin
+from .Hosts import HostsMixin, getDepotServers
+from .Clients import ClientsMixin, getClients
+
+
+def getProducts():
+    return list(getLocalbootProducts()) + [getNetbootProduct()]
 
 
 def getNetbootProduct():
@@ -902,6 +906,89 @@ the name of the product equals the name of a product property.
         self.assertTrue(propertyStatesForServer)
         self.assertEquals(len(propertyStatesForServer), 2)
 
+    def test_insertFaultyPropertyState(self):
+        product = LocalbootProduct('p1', productVersion=1, packageVersion=1)
+        productProp = BoolProductProperty(
+            productId=product.id,
+            productVersion=product.productVersion,
+            packageVersion=product.packageVersion,
+            propertyId="testtest",
+            defaultValues=True,
+        )
+
+        self.backend.product_createObjects(product)
+        self.backend.productProperty_createObjects(productProp)
+
+        pps0 = ProductPropertyState(
+            productId=productProp.getProductId(),
+            propertyId=productProp.getPropertyId(),
+            objectId='kaputtesdepot.dom.local'
+        )
+        self.assertRaises(Exception, self.backend.productPropertyState_insertObject, pps0)
+
+    def test_getProductPropertyStatesFromBackend(self):
+        products = getProducts()
+        clients = getClients()
+        depotServer = getDepotServers()
+        properties = getProductProperties(products)
+        pps = getProductPropertyStates(properties, depotServer, clients)
+
+        self.backend.host_createObjects(clients)
+        self.backend.host_createObjects(depotServer)
+        self.backend.product_createObjects(products)
+        self.backend.productProperty_createObjects(properties)
+        self.backend.productPropertyState_createObjects(pps)
+
+        productPropertyStates = self.backend.productPropertyState_getObjects()
+        self.assertEqual(len(pps), len(productPropertyStates))
+
+        for state in pps:
+            self.assertIn(state, productPropertyStates)
+
+    def test_deleteProductPropertyState(self):
+        products = getProducts()
+        clients = getClients()
+        depotServer = getDepotServers()
+        properties = getProductProperties(products)
+        pps = getProductPropertyStates(properties, depotServer, clients)
+
+        self.backend.host_createObjects(clients)
+        self.backend.host_createObjects(depotServer)
+        self.backend.product_createObjects(products)
+        self.backend.productProperty_createObjects(properties)
+        self.backend.productPropertyState_createObjects(pps)
+
+        productPropertyState2 = pps[1]
+        self.backend.productPropertyState_deleteObjects(productPropertyState2)
+        productPropertyStates = self.backend.productPropertyState_getObjects()
+        self.assertNotIn(productPropertyState2, productPropertyStates)
+
+    def test_insertProductPropertyState(self):
+        self.backend.productPropertyState_deleteObjects(self.backend.productPropertyState_getObjects())
+
+        client = OpsiClient(id='someclient.test.invalid')
+        product = LocalbootProduct('p1', productVersion=1, packageVersion=1)
+        productProp = BoolProductProperty(
+            productId=product.id,
+            productVersion=product.productVersion,
+            packageVersion=product.packageVersion,
+            propertyId="testtest",
+            defaultValues=True,
+        )
+        pps = ProductPropertyState(
+            productId=productProp.getProductId(),
+            propertyId=productProp.getPropertyId(),
+            objectId=client.id
+        )
+
+        self.backend.host_createObjects(client)
+        self.backend.product_createObjects(product)
+        self.backend.productProperty_createObjects(productProp)
+        self.backend.productPropertyState_insertObject(pps)
+
+        productPropertyStates = self.backend.productPropertyState_getObjects()
+        self.assertIn(pps, productPropertyStates)
+        self.assertEqual(1, len(productPropertyStates))
 
 
 class ProductDependenciesMixin(ProductsMixin):
@@ -1241,3 +1328,87 @@ class ProductsOnClientTestsMixin(ProductsOnClientsMixin, ProductPropertiesMixin)
         backendProduct = backendProduct[0]
 
         self.assertEquals(newName, backendProduct.name)
+
+    def test_getProductsOnClientsFromBackend(self):
+        clients = getClients()
+        products = getLocalbootProducts()
+        pocs = getProductsOnClients(products, clients)
+
+        self.backend.host_createObjects(clients)
+        self.backend.product_createObjects(products)
+        self.backend.productOnClient_createObjects(pocs)
+
+        productOnClients = self.backend.productOnClient_getObjects()
+        for poc in pocs:
+            self.assertIn(poc, productOnClients)
+
+    def test_selectProductOnClient(self):
+        products = getProducts()
+        clients = getClients()
+        pocs = getProductsOnClients(products, clients)
+
+        self.backend.host_createObjects(clients)
+        self.backend.product_createObjects(products)
+        self.backend.productOnClient_createObjects(pocs)
+
+        client1 = clients[0]
+        client1ProductOnClients = [productOnClient for productOnClient in pocs
+                                   if productOnClient.getClientId() == client1.id]
+
+        productOnClients = self.backend.productOnClient_getObjects(clientId=client1.getId())
+        for productOnClient in productOnClients:
+            self.assertEqual(productOnClient.getClientId(), client1.getId())
+
+    def test_selectProductOnClientById(self):
+        products = getProducts()
+        clients = getClients()
+        pocs = getProductsOnClients(products, clients)
+
+        self.backend.host_createObjects(clients)
+        self.backend.product_createObjects(products)
+        self.backend.productOnClient_createObjects(pocs)
+
+        client1 = clients[0]
+        product2 = products[1]
+
+        productOnClients = self.backend.productOnClient_getObjects(clientId=client1.getId(), productId=product2.getId())
+        self.assertEqual(1, len(productOnClients))
+        poc = productOnClients[0]
+        self.assertEqual(poc.getProductId(), product2.getId())
+        self.assertEqual(poc.getClientId(), client1.getId())
+
+    def test_updateProductsOnClients(self):
+        products = getProducts()
+        clients = getClients()
+        pocs = getProductsOnClients(products, clients)
+
+        self.backend.host_createObjects(clients)
+        self.backend.product_createObjects(products)
+        self.backend.productOnClient_createObjects(pocs)
+
+        productOnClient2 = pocs[1]
+        productOnClient2.setTargetConfiguration('forbidden')
+        self.backend.productOnClient_updateObject(productOnClient2)
+        productOnClients = self.backend.productOnClient_getObjects(targetConfiguration='forbidden')
+        self.assertIn(productOnClient2, productOnClients)
+
+        productOnClient2.setInstallationStatus('unknown')
+        self.backend.productOnClient_updateObject(productOnClient2)
+        productOnClients = self.backend.productOnClient_getObjects(installationStatus='unknown')
+        self.assertEqual(len(productOnClients), 1)
+
+    def test_deleteProductOnClient(self):
+        products = getProducts()
+        clients = getClients()
+        pocs = getProductsOnClients(products, clients)
+
+        self.backend.host_createObjects(clients)
+        self.backend.product_createObjects(products)
+        self.backend.productOnClient_createObjects(pocs)
+
+        productOnClient2 = pocs[1]
+        self.backend.productOnClient_deleteObjects(productOnClient2)
+        productOnClients = self.backend.productOnClient_getObjects()
+
+        self.assertEquals(len(pocs) - 1, len(productOnClients))
+        self.assertNotIn(productOnClient2, productOnClients)
