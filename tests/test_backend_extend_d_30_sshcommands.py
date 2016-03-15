@@ -34,9 +34,9 @@ class SSHCommandsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
         """
         def setUp(self):
                 self.setUpBackend()
-                
+                #self.filename=u'/home/sucher/tmp/json/com-test.json'
                 # self.backend._deleteSshCommandFileContent()
-                self.name1=u'ÚTestName1'
+                self.name1=u'UTestName1'
                 self.menuText1=u'UTestMenu1'
                 self.command1={u'name':self.name1, u'menuText':self.menuText1}
 
@@ -52,22 +52,57 @@ class SSHCommandsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
                 # self.priority=1
                 # self.tooltip=u''
                 # self.parentMenu=None
-                self.commandlist=[]
-                self.commandlist.append(self.command1)
 
+
+                self.commandlist1=[]
+                self.commandlist1.append(self.command1)
+
+                self.commandlist11=[]
+                self.commandlist11.append(self.command1)
+                self.commandlist11.append(self.command1)
+
+                self.commandlist2=[]
+                self.commandlist2.append(self.command1)
+                self.commandlist2.append(self.command2)
+
+                self.commandlist3=[]
+                self.commandlist3.append(self.command1)
+                self.commandlist3.append(self.command2)
+                self.commandlist3.append(self.command3)
+                # self.backend.createCommands(self.commandlist3)
 
         def tearDown(self):
                 self.tearDownBackend()
 
-        def testCreateCommand(self):
-                # self.backend._deleteSshCommandFileContent()        
-                # self.backend.createCommand(self.command1["name"], self.command1["menuText"]) 
-                self.backend.createCommands(self.commandlist) 
+        def testReadCommand(self):
+                self.assertEquals(self.backend.readCommands(), [], "readCommands is empty list (at beginning)")
+        
 
-                #, self.commands, self.needSudo, self.priority )
-                # self.assertRaises(self.backend.createCommand(self.command1["name"], self.command1["menuText"]), Exception )
-                self.assertEquals(self.backend.readCommands() , self.commandlist)
-                self.assertNotEquals(self.backend.readCommands() , self.command2)
+        def testCreateCommand(self):
+                self.assertListEqual(self.backend.createCommand(self.command1["name"], self.command1["menuText"]) , self.commandlist1, "create command with strings")
+                self.assertNotEquals(self.backend.createCommand(self.command2["name"], self.command2["menuText"]) , self.commandlist1, "create the right command with strings")
+
+        def testCreateCommands(self):
+                self.assertEqual(self.backend.createCommands(self.commandlist1) , self.commandlist1, "create single command as list")
+                self.assertNotEquals(self.backend.createCommands(self.commandlist2), self.commandlist1, "create the right single command as list ")
+                self.assertListEqual(self.backend.createCommands(self.commandlist11) , self.commandlist1, "do not create double commands (same names)")
+
+        def testUpdateCommand(self):
+                self.u_name1=u'UTestName1'
+                self.u_menuText1=u'UTestMenu1'
+                self.u_menuText2=u'UTestMenu1Neu'
+                self.u_command1=[{u'name':self.u_name1, u'menuText':self.u_menuText1}]
+                self.u_command2=[{u'name':self.u_name1, u'menuText':self.u_menuText2}]
+
+                self.backend.createCommand(self.u_name1, self.u_menuText1)
+                self.assertListEqual(self.backend.updateCommand(self.u_name1, self.u_menuText2), self.u_command2, "update command ")
+                self.assertNotEquals(self.backend.updateCommand(self.u_name1, self.u_menuText2), self.u_command1, "update right command")
+
+        # def testDeleteCommand(self):
+                # self.backend.createCommands(self.commandlist3)
+                # self.assertEqual( self.backend.deleteCommand(self.command3["name"]) , self.commandlist2) #, "remove command")
+                # self.assertEqual( self.backend.createCommands(self.commandlist3), self.backend.deleteCommand(self.command3["name"])) #, "remove command")
+
 
         # def testDeleteCommand(self):
         #         # self.backend.createCommand(name1, self.menuText, self.commands, self.needSudo, self.priority )
