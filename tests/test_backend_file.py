@@ -35,6 +35,7 @@ from .BackendTestMixins import (ConfigStateTestsMixin, ProductPropertiesTestMixi
     ConfigTestsMixin, ProductsTestMixin, ProductsOnClientTestsMixin,
     ProductsOnDepotTestsMixin, ProductPropertyStateTestsMixin, GroupTestsMixin,
     ObjectToGroupTestsMixin, ExtendedBackendTestsMixin, BackendTestsMixin)
+from .BackendTestMixins.Hosts import HostsTestMixin
 
 
 class FileBackendTestCase(unittest.TestCase, FileBackendMixin,
@@ -42,7 +43,7 @@ class FileBackendTestCase(unittest.TestCase, FileBackendMixin,
     ProductDependenciesTestMixin, AuditTestsMixin, ProductsTestMixin,
     ProductsOnClientTestsMixin, ProductsOnDepotTestsMixin,
     ProductPropertyStateTestsMixin, GroupTestsMixin, ObjectToGroupTestsMixin,
-    ExtendedBackendTestsMixin, BackendTestsMixin):
+    ExtendedBackendTestsMixin, BackendTestsMixin, HostsTestMixin):
     """
     Testing the file backend.
 
