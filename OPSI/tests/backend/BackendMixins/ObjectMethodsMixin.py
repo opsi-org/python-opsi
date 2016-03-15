@@ -2,78 +2,11 @@ from OPSI.Object import *
 
 class ObjectMethodsMixin(object):
 
-	def test_getConfigFromBackend(self):
-		configs = self.backend.config_getObjects()
-		self.assertEqual(len(configs),len(self.expected.configs), u"Expected %s config objects, but found '%s' on backend." % (len(configs),len(self.expected.configs)))
-
-	def test_verifyConfigs(self):
-		configs = self.backend.config_getObjects()
-
-		ids = []
-		for config in configs:
-			ids.append(config.id)
-		for config in self.expected.configs:
-			self.assertIn(config.id, ids)
-		
-		for config in configs:
-			for c in self.expected.configs:
-				if (config.id == c.id):
-					self.assertEqual(config, c, u"Expected config to be %s, got %s" % (c, config))
-				
-	def test_getConfigByDefaultValues(self):
-		configs = self.backend.config_getObjects(defaultValues = self.expected.config2.defaultValues)
-		self.assertEqual(len(configs), 1, u"Expected one config object, but found '%s' on backend." % len(configs))
-		self.assertEqual( configs[0].getId(), self.expected.config2.getId(), u"Expected ID of config %s to be '%s', got: '%s'" % (self.expected.config2.getId(), self.expected.config2.getId(), configs[0].id))
-		
-	def test_getConfigByPossibleValues(self):
-		configs = self.backend.config_getObjects(possibleValues = [])
-		self.assertEqual(len(configs),len(self.expected.configs), u"Expected %s config objects, but found '%s' on backend." % (len(configs),len(self.expected.configs)))
-		
-		configs = self.backend.config_getObjects(possibleValues = self.expected.config1.possibleValues, defaultValues = self.expected.config1.defaultValues)
-		self.assertEqual(len(configs), 1, u"Expected one config object, but found '%s' on backend." % len(configs))
-		self.assertEqual( configs[0].getId(), self.expected.config1.getId(), u"Expected ID of config %s to be '%s', got: '%s'" % (self.expected.config1.getId(), self.expected.config1.getId(), configs[0].id))
-		
-		configs = self.backend.config_getObjects(possibleValues = self.expected.config5.possibleValues, defaultValues = self.expected.config5.defaultValues)
-		self.assertEqual(len(configs), 2, u"Expected two config objects, but found '%s' on backend." % len(configs))
-		for config in configs:
-			self.assertIn(config.getId(), (self.expected.config3.id, self.expected.config5.id), u"'%s' not in '%s'" % (config.getId(), (self.expected.config3.id, self.expected.config5.id)))
-		
-	def test_getMultiValueConfigs(self):
-		multiValueConfigNames = []
-		for config in self.expected.configs:
-			if config.getMultiValue():
-				multiValueConfigNames.append(config.id)
-		configs = self.backend.config_getObjects( attributes = [], multiValue = True )
-		self.assertEqual(len(configs), len(multiValueConfigNames),  u"Expected %s config objects, but found '%s' on backend." % (len(multiValueConfigNames),len(configs)))
-		for config in configs:
-			self.assertIn(config.id, multiValueConfigNames, u"'%s' not in '%s'" % (config.id, multiValueConfigNames))
-			
-	def test_deleteConfigFromBackend(self):
-		self.backend.config_deleteObjects(self.expected.config1)
-		configs = self.backend.config_getObjects()
-		self.assertEqual(len(configs), len(self.expected.configs) - 1, u"Expected %s config objects, but found '%s' on backend." % (len(self.expected.configs) - 1, len(configs)))
-			
-			
-	def test_updateConfig(self):
-		self.expected.config3.setDescription(u'Updated')
-		self.expected.config3.setPossibleValues(['1', '2', '3'])
-		self.expected.config3.setDefaultValues(['1', '2'])
-		self.backend.config_updateObject(self.expected.config3)
-		
-		configs = self.backend.config_getObjects(description = u'Updated')
-		self.assertEqual(len(configs), 1, u"Expected one config object, but found '%s' on backend." % len(configs))
-		self.assertEqual(len(configs[0].getPossibleValues()), 3, u"Expected three possible values, but found '%s'." % len(configs[0].getPossibleValues()))
-		for i in ['1', '2', '3']:
-			self.assertIn(i, configs[0].getPossibleValues(), u"%s not in %s" % (i, configs[0].getPossibleValues()))
-		self.assertEqual(len(configs[0].getDefaultValues()),2, u"Expected two possible values, but found '%s'." % len(configs[0].getDefaultValues()))
-		for i in ['1', '2']:
-			self.assertIn(i, configs[0].getDefaultValues(), u"%s not in %s" % (i, configs[0].getDefaultValues()))
-			
 	def test_getConfigStatesFromBackend(self):
 		configStates = self.backend.configState_getObjects()
 		for state in self.expected.configStates:
 			self.assertIn(state, configStates, u"Expected config state %s on backend, but did not find it." % state)
-		
+
 
 	def test_getConfigStateByClientID(self):
 		client1ConfigStates = []
