@@ -735,6 +735,69 @@ class ProductPropertyStateTestsMixin(ProductPropertyStatesMixin):
         assert len(productPropertyStates) == len(self.productPropertyStates), u"got: '%s', expected: '%s'" % (
             productPropertyStates, len(self.productPropertyStates))
 
+    def test_getProductPropertiesFromBackend(self):
+        prods = getProducts()
+        prodProperties = getProductProperties(prods)
+        self.backend.product_createObjects(prods)
+        self.backend.productProperty_createObjects(prodProperties)
+
+        productProperties = self.backend.productProperty_getObjects()
+        self.assertEqual(len(productProperties), len(prodProperties))
+
+    def test_verifyProductProperties(self):
+        prods = getProducts()
+        prodPropertiesOrig = getProductProperties(prods)
+        self.backend.product_createObjects(prods)
+        self.backend.productProperty_createObjects(prodPropertiesOrig)
+
+        productProperties = self.backend.productProperty_getObjects()
+        self.assertEqual(len(productProperties), len(prodPropertiesOrig))
+
+        for productProperty in productProperties:
+            for p in prodPropertiesOrig:
+                if (productProperty.productId == p.productId and
+                    productProperty.propertyId == p.propertyId and
+                    productProperty.productVersion == p.productVersion and
+                    productProperty.packageVersion == p.packageVersion):
+
+                    productProperty = productProperty.toHash()
+                    p = p.toHash()
+                    for (attribute, value) in p.items():
+                        if value is not None:
+                            if type(value) is list:
+                                for v in value:
+                                    self.assertIn(v, productProperty[attribute])
+                            else:
+                                self.assertEqual(value, productProperty[attribute])
+
+                    break  # Stop iterating the original product properties
+
+    def test_updateProductProperty(self):
+        prods = getProducts()
+        prodPropertiesOrig = getProductProperties(prods)
+        self.backend.product_createObjects(prods)
+        self.backend.productProperty_createObjects(prodPropertiesOrig)
+
+        productProperty2 = prodPropertiesOrig[1]
+        productProperty2.setDescription(u'updatedfortest')
+        self.backend.productProperty_updateObject(productProperty2)
+        productProperties = self.backend.productProperty_getObjects(attributes=[], description=u'updatedfortest')
+
+        self.assertEqual(len(productProperties), 1)
+        self.assertEqual(productProperties[0].getDescription(), u'updatedfortest')
+
+    def test_deleteProductProperty(self):
+        prods = getProducts()
+        prodPropertiesOrig = getProductProperties(prods)
+        self.backend.product_createObjects(prods)
+        self.backend.productProperty_createObjects(prodPropertiesOrig)
+
+        productProperty2 = prodPropertiesOrig[1]
+        self.backend.productProperty_deleteObjects(productProperty2)
+        productProperties = self.backend.productProperty_getObjects()
+        self.assertEqual(len(productProperties), len(prodPropertiesOrig) - 1)
+        self.assertTrue(productProperty2 not in productProperties)
+
 
 class ProductPropertiesTestMixin(ProductPropertiesMixin):
 

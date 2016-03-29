@@ -2,46 +2,6 @@ from OPSI.Object import *
 
 class ObjectMethodsMixin(object):
 
-	def test_getProductPropertiesFromBackend(self):
-		productProperties = self.backend.productProperty_getObjects()
-		self.assertEqual(len(productProperties), len(self.expected.productProperties), u"Expected %s product properties, but got %s from backend." % (len(self.expected.productProperties),len(productProperties)))
-		
-	def test_verifyProductProperties(self):
-
-		productProperties = self.backend.productProperty_getObjects()
-		self.assertEqual(len(productProperties), len(self.expected.productProperties), u"Expected %s product properties, but got %s from backend." % (len(self.expected.productProperties), len(productProperties)))
-		for productProperty in productProperties:
-			#logger.debug(productProperty)
-			for p in self.expected.productProperties:
-				if (productProperty.productId == p.productId)           and (productProperty.propertyId == p.propertyId) and \
-				   (productProperty.productVersion == p.productVersion) and (productProperty.packageVersion == p.packageVersion):
-					productProperty = productProperty.toHash()
-					p = p.toHash()
-					for (attribute, value) in p.items():
-						if not value is None:
-							if type(value) is list:
-								for v in value:
-									assert v in productProperty[attribute], u"'%s' not in '%s'" % (v, productProperty[attribute])
-							else:
-								assert value == productProperty[attribute], u"got: '%s', expected: '%s'" % (productProperty[attribute], value)
-					break
-		
-
-	def test_updateProductProperty(self):
-		self.expected.productProperty2.setDescription(u'updatedfortest')
-		self.backend.productProperty_updateObject(self.expected.productProperty2)
-		productProperties = self.backend.productProperty_getObjects( attributes = [],\
-			description = u'updatedfortest')
-		
-		self.assertEqual(len(productProperties), 1, u"Expected one product property object, but got %s from backend" % len(productProperties))
-		self.assertEqual(productProperties[0].getDescription(), u'updatedfortest', u"Expected description of product property %s to be '%s', got '%s'" % (productProperties[0].getProductId(), u'updatedfortest',productProperties[0].getDescription()))
-		
-		
-	def test_deleteProductPropert(self):
-		self.backend.productProperty_deleteObjects(self.expected.productProperty2)
-		productProperties = self.backend.productProperty_getObjects()
-		self.assertEqual(len(productProperties), len(self.expected.productProperties) - 1, u"Expected %s product properties, but got %s from backend." % (len(self.expected.productProperties) - 1, len(productProperties)))
-
 	def test_createDuplicateProductProperies(self):
 		self.backend.productProperty_createObjects([self.expected.productProperty4, self.expected.productProperty1, self.expected.productProperty4, self.expected.productProperty4, self.expected.productProperty4])
 		productProperties = self.backend.productProperty_getObjects()
