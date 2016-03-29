@@ -2,10 +2,6 @@ from OPSI.Object import *
 
 class ObjectMethodsMixin(object):
 
-	def test_getProductsFromBackend(self):
-		products = self.backend.product_getObjects()
-		self.assertEqual(len(products), len(self.expected.products), u"Expected %s products, but found '%s' on backend." % (len(self.expected.products), len(products)))
-
 	def test_getProductPropertiesFromBackend(self):
 		productProperties = self.backend.productProperty_getObjects()
 		self.assertEqual(len(productProperties), len(self.expected.productProperties), u"Expected %s product properties, but got %s from backend." % (len(self.expected.productProperties),len(productProperties)))

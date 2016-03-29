@@ -615,6 +615,13 @@ class ProductsTestMixin(ProductsMixin):
         assert products[0].getPriority() == 60, u"got: '%s', expected: '60'" % products[
             0].getPriority()
 
+    def test_getProductsFromBackend(self):
+        origProds = getProducts()
+        self.backend.product_createObjects(origProds)
+
+        products = self.backend.product_getObjects()
+        self.assertEqual(len(products), len(origProds))
+
     def test_getProductsByType(self):
         origProds = getProducts()
         self.backend.product_createObjects(origProds)
