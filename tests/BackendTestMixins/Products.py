@@ -615,6 +615,57 @@ class ProductsTestMixin(ProductsMixin):
         assert products[0].getPriority() == 60, u"got: '%s', expected: '60'" % products[
             0].getPriority()
 
+    def test_getProductsByType(self):
+        origProds = getProducts()
+        self.backend.product_createObjects(origProds)
+
+        products = self.backend.product_getObjects(type='Product')
+        self.assertEqual(len(products), len(origProds))
+
+    def test_verifyProducts(self):
+        localProducts = getLocalbootProducts()
+        netbootProducts = getNetbootProduct()
+        origProds = [netbootProducts] + list(localProducts)
+        self.backend.product_createObjects(origProds)
+
+        products = self.backend.product_getObjects(type=localProducts[0].getType())
+        self.assertEqual(len(products), len(localProducts))
+
+        ids = [product.getId() for product in products]
+        for product in localProducts:
+            self.assertIn(product.id, ids)
+
+        for product in products:
+2           for p in origProds:
+                if product.id == p.id and product.productVersion == p.productVersion and product.packageVersion == p.packageVersion:
+                    product = product.toHash()
+                    p = p.toHash()
+                    for attribute, value in p.items():
+                        if attribute == 'productClassIds':
+                            continue
+
+                        if value is not None:
+                            if type(value) is list:
+                                for v in value:
+                                    self.assertIn(v, product[attribute])
+                            else:
+                                self.assertEqual(value, product[attribute], u"Value for attribute %s of product %s is: '%s', expected: '%s'" % (attribute, product['id'], product[attribute], value))
+                    break
+
+    def test_updatingProducts(self):
+        origProds = getProducts()
+        self.backend.product_createObjects(origProds)
+
+        product2 = origProds[1]
+        product2.setName(u'Product 2 updated')
+        product2.setPriority(60)
+
+        products = self.backend.product_updateObject(product2)
+        products = self.backend.product_getObjects(attributes=['name', 'priority'], id=product2.id)
+        self.assertEqual(len(products), 1)
+        self.assertEqual(products[0].getName(), u'Product 2 updated')
+        self.assertEqual(products[0].getPriority(), 60)
+
 
 class ProductPropertiesMixin(ProductsMixin):
     def setUpProductProperties(self):
