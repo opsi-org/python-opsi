@@ -673,6 +673,33 @@ class ProductsTestMixin(ProductsMixin):
         self.assertEqual(products[0].getName(), u'Product 2 updated')
         self.assertEqual(products[0].getPriority(), 60)
 
+    def testLongProductName(self):
+        """
+        Can the backend handle product names of 128 characters length?
+        """
+        product = LocalbootProduct(
+            id='new_prod',
+            name='New Product for Tests',
+            productVersion=1,
+            packageVersion=1
+        )
+
+        newName = (
+            u'This is a very long name with 128 characters to test the '
+            u'creation of long product names that should work now but '
+            u'were limited b4'
+        )
+
+        product.setName(newName)
+
+        self.backend.product_createObjects(product)
+        backendProduct = self.backend.product_getObjects(id=product.id)
+
+        self.assertEquals(1, len(backendProduct))
+        backendProduct = backendProduct[0]
+
+        self.assertEquals(newName, backendProduct.name)
+
 
 class ProductPropertiesMixin(ProductsMixin):
     def setUpProductProperties(self):
@@ -1477,33 +1504,6 @@ class ProductsOnClientTestsMixin(ProductsOnClientsMixin, ProductPropertiesMixin)
             'product7', setup)
         assert 'product9' not in setup, u"'%s' is in '%s'" % (
             'product9', setup)
-
-    def testLongProductName(self):
-        """
-        Can the backend handle product names of 128 characters length?
-        """
-        product = LocalbootProduct(
-            id='new_prod',
-            name='New Product for Tests',
-            productVersion=1,
-            packageVersion=1
-        )
-
-        newName = (
-            u'This is a very long name with 128 characters to test the '
-            u'creation of long product names that should work now but '
-            u'were limited b4'
-        )
-
-        product.setName(newName)
-
-        self.backend.product_createObjects(product)
-        backendProduct = self.backend.product_getObjects(id=product.id)
-
-        self.assertEquals(1, len(backendProduct))
-        backendProduct = backendProduct[0]
-
-        self.assertEquals(newName, backendProduct.name)
 
     def test_getProductsOnClientsFromBackend(self):
         clients = getClients()
