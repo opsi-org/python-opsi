@@ -1,12 +1,6 @@
 from OPSI.Object import *
 
 class ObjectMethodsMixin(object):
-
-	def test_createDuplicateProductProperies(self):
-		self.backend.productProperty_createObjects([self.expected.productProperty4, self.expected.productProperty1, self.expected.productProperty4, self.expected.productProperty4, self.expected.productProperty4])
-		productProperties = self.backend.productProperty_getObjects()
-		self.assertEqual(len(productProperties), len(self.expected.productProperties), u"Expected %s product properties, but got %s from backend." % (len(self.expected.productProperties), len(productProperties)))
-
 	def test_getProductDependenciesFromBackend(self):
 		productDependencies = self.backend.productDependency_getObjects()
 		self.assertEqual(len(productDependencies),len(self.expected.productDependencies), u"Expected %s product dependencies, but got %s from backend." % (len(self.expected.productDependencies), len(productDependencies)))

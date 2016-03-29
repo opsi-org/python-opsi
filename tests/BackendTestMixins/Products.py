@@ -798,6 +798,22 @@ class ProductPropertyStateTestsMixin(ProductPropertyStatesMixin):
         self.assertEqual(len(productProperties), len(prodPropertiesOrig) - 1)
         self.assertTrue(productProperty2 not in productProperties)
 
+    def test_createDuplicateProductProperies(self):
+        prods = getProducts()
+        prodPropertiesOrig = getProductProperties(prods)
+        self.backend.product_createObjects(prods)
+        self.backend.productProperty_createObjects(prodPropertiesOrig)
+
+        productProperty1 = prodPropertiesOrig[0]
+        productProperty4 = prodPropertiesOrig[3]
+        self.backend.productProperty_createObjects([productProperty1,
+                                                    productProperty4,
+                                                    productProperty4,
+                                                    productProperty4,
+                                                    productProperty4])
+        productProperties = self.backend.productProperty_getObjects()
+        self.assertEqual(len(productProperties), len(prodPropertiesOrig))
+
 
 class ProductPropertiesTestMixin(ProductPropertiesMixin):
 
