@@ -6,47 +6,6 @@ class ObjectMethodsMixin(object):
 		products = self.backend.product_getObjects()
 		self.assertEqual(len(products), len(self.expected.products), u"Expected %s products, but found '%s' on backend." % (len(self.expected.products), len(products)))
 
-	def test_getProductsByType(self):
-		products = self.backend.product_getObjects(type = 'Product')
-		self.assertEqual(len(products), len(self.expected.products), u"Expected %s products, but found '%s' on backend." % (len(self.expected.products), len(products)))
-
-	def test_verifyProducts(self):
-		products = self.backend.product_getObjects(type = self.expected.localbootProducts[0].getType())
-		self.assertEqual(len(products),len(self.expected.localbootProducts), u"Expected %s products, but found '%s' on backend." % (len(self.expected.localbootProducts), len(products)))
-		ids = []
-		for product in products:
-			ids.append(product.getId())
-		for product in self.expected.localbootProducts:
-			self.assertIn(product.id, ids, u"'%s' not in '%s'" % (product.id, ids))
-		
-		for product in products:
-			#logger.debug(product)
-			for p in self.expected.products:
-				if (product.id == p.id) and (product.productVersion == p.productVersion) and (product.packageVersion == p.packageVersion):
-					product = product.toHash()
-					p = p.toHash()
-					for (attribute, value) in p.items():
-						if (attribute == 'productClassIds'):
-							#logger.warning(u"Skipping productClassIds attribute test!!!")
-							continue
-						if not value is None:
-							
-							if type(value) is list:
-								for v in value:
-									self.assertIn(v, product[attribute], u"'%s' not in '%s'" % (v, product[attribute]))
-							else:
-								self.assertEqual( value, product[attribute], u"Value for attribute %s of product %s is: '%s', expected: '%s'" % (attribute, product['id'], product[attribute], value ))
-					break
-				
-	def test_updateProducts(self):
-		self.expected.product2.setName(u'Product 2 updated')
-		self.expected.product2.setPriority(60)
-		products = self.backend.product_updateObject(self.expected.product2)
-		products = self.backend.product_getObjects( attributes = ['name', 'priority'], id = 'product2' )
-		self.assertEqual(len(products), 1, u"Expected one product, but got '%s' from backend." % len(products))
-		self.assertEqual(products[0].getName(), u'Product 2 updated', u"Expected product name to be '%s', but got '%s'." % (u'Product 2 updated',products[0].getName()))
-		self.assertEqual(products[0].getPriority(), 60, u"Expected product priority to be %s but got %s'" % (products[0].getPriority(),60))
-	
 	def test_getProductPropertiesFromBackend(self):
 		productProperties = self.backend.productProperty_getObjects()
 		self.assertEqual(len(productProperties), len(self.expected.productProperties), u"Expected %s product properties, but got %s from backend." % (len(self.expected.productProperties),len(productProperties)))
