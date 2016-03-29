@@ -650,7 +650,7 @@ class ProductsTestMixin(ProductsMixin):
                                     self.assertIn(v, product[attribute])
                             else:
                                 self.assertEqual(value, product[attribute], u"Value for attribute %s of product %s is: '%s', expected: '%s'" % (attribute, product['id'], product[attribute], value))
-                    break
+                    break  # Stop iterating origProds
 
     def test_updatingProducts(self):
         origProds = getProducts()
