@@ -1295,11 +1295,7 @@ class ProductsOnClientTestsMixin(ProductsOnClientsMixin, ProductPropertiesMixin)
 
         productOnClients = self.backend.productOnClient_getObjects(
             clientId='client1.test.invalid')
-        setup = []
-        for productOnClient in productOnClients:
-            print(u"Got productOnClient: %s" % productOnClient)
-            if (productOnClient.actionRequest == 'setup'):
-                setup.append(productOnClient.productId)
+        setup = [productOnClient.productId for productOnClient in productOnClients if productOnClient.actionRequest == 'setup']
         assert 'product6' in setup, u"'%s' not in '%s'" % ('product6', setup)
         #assert 'product7' in setup, u"'%s' not in '%s'" % ('product7', setup)
         #assert 'product9' in setup, u"'%s' not in '%s'" % ('product9', setup)
