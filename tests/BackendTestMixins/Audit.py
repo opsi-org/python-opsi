@@ -825,14 +825,11 @@ class AuditTestsMixin(AuditHardwareMixin, AuditSoftwareMixin):
         auditHardwareOnHost4update.setLastseen('2000-01-01 01:01:01')
         self.backend.auditHardwareOnHost_insertObject(auditHardwareOnHost4update)
 
-        # TODO: provide an implementation for that
-        # This is a rest from the previously existing tests.
-        #
-        # auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects()
-        # if self.inventoryHistory:
-        #     self.assertEqual(len(auditHardwareOnHosts), len(self.expected.auditHardwareOnHosts) + 1, u"Expected %s audit hardware objects on host, but found %s on backend." % (len(self.expected.auditHardwareOnHosts)+1, len(auditHardwareOnHosts)))
-        # else:
-        #     self.assertEqual(len(auditHardwareOnHosts), len(self.expected.auditHardwareOnHosts), u"Expected %s audit hardware objects on host, but found %s on backend." % (len(self.expected.auditHardwareOnHosts), len(auditHardwareOnHosts)))
+        auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects()
+        if self.CREATES_INVENTORY_HISTORY:
+            self.assertEqual(len(auditHardwareOnHosts), len(ahoh) + 1)
+        else:
+            self.assertEqual(len(auditHardwareOnHosts), len(ahoh))
 
         auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects(lastseen='2000-01-01 01:01:01')
         self.assertEqual(len(auditHardwareOnHosts), 1)
@@ -841,14 +838,11 @@ class AuditTestsMixin(AuditHardwareMixin, AuditSoftwareMixin):
         auditHardwareOnHost4update.setState(0)
         self.backend.auditHardwareOnHost_insertObject(auditHardwareOnHost4update)
 
-        # TODO: provide an implementation for that
-        # This is a rest from the previously existing tests.
-        #
-        # auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects()
-        # if self.inventoryHistory:
-        #     self.assertEqual(len(auditHardwareOnHosts), len(self.expected.auditHardwareOnHosts) + 2, u"Expected %s audit hardware objects on host, but found %s on backend." % (len(self.expected.auditHardwareOnHosts)+2, len(auditHardwareOnHosts)))
-        # else:
-        #     self.assertEqual(len(auditHardwareOnHosts), len(self.expected.auditHardwareOnHosts), u"Expected %s audit hardware objects on host, but found %s on backend." % (len(self.expected.auditHardwareOnHosts), len(auditHardwareOnHosts)))
+        auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects()
+        if self.CREATES_INVENTORY_HISTORY:
+            self.assertEqual(len(auditHardwareOnHosts), len(ahoh) + 2)
+        else:
+            self.assertEqual(len(auditHardwareOnHosts), len(ahoh))
 
     def test_deleteAllAuditHardwareOnHost(self):
         self.backend.auditHardwareOnHost_delete(hostId=[], hardwareClass=[], firstseen=[], lastseen=[], state=[])
