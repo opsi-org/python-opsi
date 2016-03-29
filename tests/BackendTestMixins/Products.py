@@ -643,7 +643,7 @@ class ProductsTestMixin(ProductsMixin):
             self.assertIn(product.id, ids)
 
         for product in products:
-2           for p in origProds:
+            for p in origProds:
                 if product.id == p.id and product.productVersion == p.productVersion and product.packageVersion == p.packageVersion:
                     product = product.toHash()
                     p = p.toHash()
