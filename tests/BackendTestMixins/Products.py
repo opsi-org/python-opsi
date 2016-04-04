@@ -1211,6 +1211,107 @@ class ProductDependenciesTestMixin(ProductDependenciesMixin):
         assert len(productDependencies) == len(self.productDependencies), u"got: '%s', expected: '%s'" % (
             productDependencies, len(self.productDependencies))
 
+    def test_getProductDependenciesFromBackendSmallExample(self):
+        prod1 = LocalbootProduct('bla', 1, 1)
+        prod2 = LocalbootProduct('foo', 2, 2)
+        prod3 = LocalbootProduct('zulu', 3, 3)
+
+        dep1 = ProductDependency(
+            productId=prod1.id,
+            productVersion=prod1.productVersion,
+            packageVersion=prod1.packageVersion,
+            productAction='setup',
+            requiredProductId=prod2.id,
+            requiredProductVersion=prod2.productVersion,
+            requiredPackageVersion=prod2.packageVersion,
+            requiredAction='setup',
+            requiredInstallationStatus=None,
+            requirementType='before'
+        )
+        dep2 = ProductDependency(
+            productId=prod1.id,
+            productVersion=prod1.productVersion,
+            packageVersion=prod1.packageVersion,
+            productAction='setup',
+            requiredProductId=prod3.id,
+            requiredProductVersion=prod3.productVersion,
+            requiredPackageVersion=prod3.packageVersion,
+            requiredAction='setup',
+            requiredInstallationStatus=None,
+            requirementType='before'
+        )
+
+        self.backend.product_createObjects([prod1, prod2, prod3])
+        self.assertEqual(0, len(self.backend.productDependency_getObjects()))
+
+        self.backend.productDependency_createObjects([dep1, dep2])
+
+        productDependencies = self.backend.productDependency_getObjects()
+        self.assertEqual(2, len(productDependencies))
+
+    def test_getProductDependenciesFromBackend(self):
+        products = getProducts()
+        productDepedenciesOrig = list(getProductDepdencies(products))
+
+        assert not self.backend.product_getObjects()
+        assert not self.backend.productDependency_getObjects()
+        self.backend.product_createObjects(products)
+        self.backend.productDependency_createObjects(productDepedenciesOrig)
+
+        productDependencies = self.backend.productDependency_getObjects()
+        self.assertEqual(len(productDependencies), len(productDepedenciesOrig))
+
+    def test_updateProductDependencies(self):
+        products = getProducts()
+        productDepedenciesOrig = getProductDepdencies(products)
+
+        self.backend.product_createObjects(products)
+        self.backend.productDependency_createObjects(productDepedenciesOrig)
+
+        productDependency2 = productDepedenciesOrig[1]
+
+        assert productDependency2.requiredProductVersion != "2.0"
+        productDependency2.requiredProductVersion = "2.0"
+        assert productDependency2.requirementType is not None
+        productDependency2.requirementType = None
+
+        self.backend.productDependency_updateObject(productDependency2)
+        productDependencies = self.backend.productDependency_getObjects()
+
+        self.assertEqual(len(productDependencies), len(productDepedenciesOrig))
+        for productDependency in productDependencies:
+            if productDependency.getIdent() == productDependency2.getIdent():
+                self.assertEqual(productDependency.getRequiredProductVersion(), u"2.0")
+                # TODO: this should work too
+                # self.assertEqual(productDependency.getRequirementType(), 'before')
+                break
+
+    def test_deleteProductDependency(self):
+        products = getProducts()
+        productDepedenciesOrig = getProductDepdencies(products)
+        self.backend.product_createObjects(products)
+        self.backend.productDependency_createObjects(productDepedenciesOrig)
+
+        productDependency2 = productDepedenciesOrig[1]
+
+        self.backend.productDependency_deleteObjects(productDependency2)
+        productDependencies = self.backend.productDependency_getObjects()
+        self.assertEqual(len(productDependencies), len(productDepedenciesOrig) - 1)
+
+    def testNotCreatingDuplicateProductDependency(self):
+        assert not self.backend.productDependency_getObjects()
+        assert not self.backend.product_getObjects()
+
+        products = getProducts()
+        productDepedenciesOrig = getProductDepdencies(products)
+        self.backend.product_createObjects(products)
+
+        self.backend.productDependency_createObjects(productDepedenciesOrig)
+        self.backend.productDependency_createObjects(productDepedenciesOrig)
+        productDependencies = self.backend.productDependency_getObjects()
+
+        self.assertEqual(len(productDepedenciesOrig), len(productDependencies))
+
 
 class ProductsOnDepotMixin(ProductsMixin, HostsMixin):
     def setUpProductOnDepots(self):
