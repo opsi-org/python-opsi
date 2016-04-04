@@ -1200,12 +1200,14 @@ class ProductDependenciesTestMixin(ProductDependenciesMixin):
 
         self.backend.productDependency_deleteObjects(self.productDependency2)
         productDependencies = self.backend.productDependency_getObjects()
+        assert productDependencies
         assert len(productDependencies) == len(self.productDependencies) - \
             1, u"got: '%s', expected: '%s'" % (
                 productDependencies, len(self.productDependencies) - 1)
 
         self.backend.productDependency_createObjects(self.productDependencies)
         productDependencies = self.backend.productDependency_getObjects()
+        assert productDependencies
         assert len(productDependencies) == len(self.productDependencies), u"got: '%s', expected: '%s'" % (
             productDependencies, len(self.productDependencies))
 
