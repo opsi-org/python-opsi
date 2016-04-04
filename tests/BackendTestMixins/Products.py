@@ -1179,6 +1179,7 @@ class ProductDependenciesTestMixin(ProductDependenciesMixin):
         self.createProductDepedenciesOnBackend()
 
         productDependencies = self.backend.productDependency_getObjects()
+        assert productDependencies
         assert len(productDependencies) == len(self.productDependencies), u"got: '%s', expected: '%s'" % (
             productDependencies, len(self.productDependencies))
 
@@ -1186,7 +1187,7 @@ class ProductDependenciesTestMixin(ProductDependenciesMixin):
         self.productDependency2.requirementType = None
         self.backend.productDependency_updateObject(self.productDependency2)
         productDependencies = self.backend.productDependency_getObjects()
-
+        assert productDependencies
         assert len(productDependencies) == len(self.productDependencies), u"got: '%s', expected: '%s'" % (
             productDependencies, len(self.productDependencies))
         for productDependency in productDependencies:
