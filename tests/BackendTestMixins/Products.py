@@ -36,7 +36,7 @@ from .Clients import ClientsMixin, getClients
 
 
 def getProducts():
-    return list(getLocalbootProducts()) + [getNetbootProduct()]
+    return [getNetbootProduct()] + list(getLocalbootProducts())
 
 
 def getNetbootProduct():
