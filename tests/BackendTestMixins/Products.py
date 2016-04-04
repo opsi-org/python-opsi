@@ -1282,9 +1282,7 @@ class ProductDependenciesTestMixin(ProductDependenciesMixin):
         for productDependency in productDependencies:
             if productDependency.getIdent() == productDependency2.getIdent():
                 self.assertEqual(productDependency.getRequiredProductVersion(), u"2.0")
-                # TODO: this should work too
-                # self.assertEqual(productDependency.getRequirementType(), 'before')
-                break
+                self.assertEqual(productDependency.getRequirementType(), 'after')
 
     def test_deleteProductDependency(self):
         products = getProducts()
