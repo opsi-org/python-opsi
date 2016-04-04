@@ -563,6 +563,8 @@ class MultiThreadingTestMixin(HostsMixin, ClientsMixin, ObjectToGroupsMixin):
             def __init__(self, backendTest):
                 threading.Thread.__init__(self)
                 self._backendTest = backendTest
+                self.exitCode = 0
+                self.errorMessage = None
 
             def run(self):
                 try:
@@ -586,7 +588,8 @@ class MultiThreadingTestMixin(HostsMixin, ClientsMixin, ObjectToGroupsMixin):
                     self._backendTest.backend.host_getObjects()
                     print(u"Thread %s done" % self)
                 except Exception as e:
-                    self._backendTest.fail(u"Test failed: {0}".format(e))
+                    self.errorMessage = e
+                    self.exitCode = 1
 
         mtts = [MultiThreadTest(self) for _ in range(self.NUMBER_OF_THREADS)]
         for mtt in mtts:
@@ -597,5 +600,12 @@ class MultiThreadingTestMixin(HostsMixin, ClientsMixin, ObjectToGroupsMixin):
 
         try:
             self.backend.host_createObjects(self.client1)
+
+            while len(mtts) > 0:
+                mtt = mtts.pop(0)
+                if not mtt.isAlive():
+                    self.assertEqual(mtt.exitCode, 0, u"Mutlithreading test failed: Exit Code %s: %s"% (mtt.exitCode, mtt.errorMessage))
+                else:
+                    mtts.append(mtt)
         except Exception as e:
             self.fail(u"Creating object on backend failed: {0}".format(e))
