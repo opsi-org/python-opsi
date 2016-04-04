@@ -35,6 +35,22 @@ from .Hosts import HostsMixin
 from .Groups import ObjectToGroupsMixin
 
 from OPSI.Types import BackendError
+from ..helpers import unittest
+
+
+try:
+    from MySQLdb.constants.ER import DUP_ENTRY
+    from MySQLdb import IntegrityError
+except ImportError as imperr:
+    print(imperr)
+    DUP_ENTRY = None
+    IntegrityError = None
+
+try:
+    from apsw import ConstraintError
+except ImportError:
+    class ConstraintError(BaseException):
+        result = 0
 
 
 class BackendTestsMixin(ClientsMixin, HostsMixin):
@@ -548,8 +564,10 @@ class BackendPerformanceTestMixin(object):
 
 
 class MultiThreadingTestMixin(HostsMixin, ClientsMixin, ObjectToGroupsMixin):
-    NUMBER_OF_THREADS = 1
+    NUMBER_OF_THREADS = 50
 
+    @unittest.skipIf(DUP_ENTRY is None or IntegrityError is None,
+                     'Missing imports from MySQLdb-module.')
     def testMultithreading(self):
         self.setUpHosts()
         self.setUpClients()
@@ -587,6 +605,14 @@ class MultiThreadingTestMixin(HostsMixin, ClientsMixin, ObjectToGroupsMixin):
                     self._backendTest.backend.host_createObjects(self._backendTest.client1)
                     self._backendTest.backend.host_getObjects()
                     print(u"Thread %s done" % self)
+                except IntegrityError as e:
+                    if e[0] != DUP_ENTRY:
+                        self.errorMessage = e
+                        self.exitCode = 1
+                except ConstraintError as e:
+                    if e.result != 19:  # column is not unique
+                        self.errorMessage = e
+                        self.exitCode = 1
                 except Exception as e:
                     self.errorMessage = e
                     self.exitCode = 1
