@@ -80,6 +80,7 @@ data_files = [
 		'/etc/opsi/',
 		[
 			'data/version',
+			'data/server_commands.conf',
 			'data/opsi.conf'
 		]
 	),
