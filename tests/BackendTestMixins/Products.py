@@ -31,7 +31,7 @@ from OPSI.Object import (NetbootProduct, LocalbootProduct,
 from OPSI.Types import forceHostId
 from OPSI.Util import getfqdn
 
-from .Hosts import HostsMixin
+from .Hosts import HostsMixin, getConfigServer
 from .Clients import ClientsMixin
 
 
@@ -1012,6 +1012,31 @@ class ProductsOnDepotTestsMixin(ProductsOnDepotMixin):
         self.backend.productOnDepot_createObjects(self.productOnDepots)
         productOnDepots = self.backend.productOnDepot_getObjects()
         self.assertEqual(len(productOnDepots), len(self.productOnDepots))
+
+    def testLockingProducts(self):
+        prod = LocalbootProduct('Ruhe', 1, 1)
+        depotserver = getConfigServer()  # A configserver always is also a depot.
+        pod = ProductOnDepot(
+            productId=prod.id,
+            productType=prod.getType(),
+            productVersion=prod.productVersion,
+            packageVersion=prod.packageVersion,
+            depotId=depotserver.id,
+            locked=False
+        )
+
+        self.backend.host_createObjects(depotserver)
+        self.backend.product_createObjects(prod)
+        self.backend.productOnDepot_createObjects(pod)
+
+        podFromBackend = self.backend.productOnDepot_getObjects(productId=prod.id)[0]
+        self.assertFalse(podFromBackend.locked)
+
+        podFromBackend.locked = True
+        self.backend.productOnDepot_updateObjects(podFromBackend)
+
+        podFromBackend = self.backend.productOnDepot_getObjects(productId=prod.id)[0]
+        self.assertTrue(podFromBackend.locked)
 
 
 class ProductsOnClientsMixin(ClientsMixin, ProductsMixin):
