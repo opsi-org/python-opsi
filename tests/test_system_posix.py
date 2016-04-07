@@ -207,7 +207,8 @@ class xenialSfdiskVersionTestCase(unittest.TestCase):
     def testReturnXenialfdiskVersion(self):
 
         with mock.patch('OPSI.System.Posix.execute', mock.Mock(return_value=['sfdisk von util-linux 2.27.1'])):
-            self.assertTrue(Posix.isXenialSfdiskVersion())
+            with mock.patch('OPSI.System.Posix.which', mock.Mock(return_value='/sbin/sfdisk')):
+                self.assertTrue(Posix.isXenialSfdiskVersion())
 
     def testReturnNonXenialSfdiskVersion(self):
         with mock.patch('OPSI.System.Posix.execute', mock.Mock(return_value=['sfdisk von util-linux 2.20.1'])):
