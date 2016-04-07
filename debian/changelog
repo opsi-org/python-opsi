@@ -1,3 +1,9 @@
+python-opsi (4.0.6.46-1) UNRELEASED; urgency=medium
+
+  * File backend: Correctly read/write the locked attribute on ProductOnDepot.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 07 Apr 2016 11:07:15 +0200
+
 python-opsi (4.0.6.45-1) experimental; urgency=medium
 
   * 40_admin_tasks.conf: added method setupWhereInstalled.
