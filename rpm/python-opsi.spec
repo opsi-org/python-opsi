@@ -136,7 +136,7 @@ chmod 660 /etc/opsi/backends/*.conf
 chown root:$fileadmingroup /etc/opsi/opsi.conf
 chmod 660 /etc/opsi/opsi.conf
 
-chown root:$fileadmingroup /etc/opsi/server_commands.conf
+# chown root:$fileadmingroup /etc/opsi/server_commands.conf
 chmod 660 /etc/opsi/server_commands.conf
 
 test -e /etc/opsi/pckeys || touch /etc/opsi/pckeys
