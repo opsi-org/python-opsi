@@ -160,7 +160,7 @@ chmod 660 /etc/opsi/passwd
 %config(noreplace) /etc/opsi/backends/dhcpd.conf
 %config(noreplace) /etc/opsi/backends/file.conf
 %config(noreplace) /etc/opsi/backends/hostcontrol.conf
-%config(noreplace) /etc/opsi/backends/server_commands.conf
+%config(noreplace) /etc/opsi/server_commands.conf
 %config(noreplace) /etc/opsi/backends/jsonrpc.conf
 %config(noreplace) /etc/opsi/backends/mysql.conf
 %config(noreplace) /etc/opsi/backends/multiplex.conf
