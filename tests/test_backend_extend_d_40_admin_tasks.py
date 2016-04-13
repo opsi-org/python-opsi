@@ -216,17 +216,7 @@ class AdminTaskFunctionsTestCase(unittest.TestCase, FileBackendBackendManagerMix
             possibleValues=[],
             defaultValues=[depot.id]
         )
-
         self.backend.config_createObjects(clientConfigDepotId)
-
-        for client in (client_with_product, client_without_product):
-            clientDepotMappingConfigState = ConfigState(
-                configId=u'clientconfig.depot.id',
-                objectId=client.getId(),
-                values=depot.getId()
-            )
-
-            self.backend.configState_createObjects(clientDepotMappingConfigState)
 
         clientIDs = self.backend.uninstallWhereInstalled(product.id)
 
@@ -302,15 +292,6 @@ class AdminTaskFunctionsTestCase(unittest.TestCase, FileBackendBackendManagerMix
         )
 
         self.backend.config_createObjects(clientConfigDepotId)
-
-        for client in (client_with_current_product, client_with_old_product, client_without_product):
-            clientDepotMappingConfigState = ConfigState(
-                configId=u'clientconfig.depot.id',
-                objectId=client.getId(),
-                values=depot.getId()
-            )
-
-            self.backend.configState_createObjects(clientDepotMappingConfigState)
 
         # Starting the checks
         self.assertFalse(self.backend.productOnClient_getObjects(productId=new_product.id, clientId=client_without_product.id))
