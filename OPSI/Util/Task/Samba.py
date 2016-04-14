@@ -239,3 +239,4 @@ def configureSamba(config=SMB_CONF):
 	newlines = _processConfig(lines)
 	if lines != newlines:
 		_writeConfig(newlines, config)
+	logger.notice(u"Samba configuration finished. You may want to restart your Samba daemon.")
