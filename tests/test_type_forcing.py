@@ -38,6 +38,8 @@ from OPSI.Types import (forceObjectClass, forceUnicode, forceUnicodeList,
 	forceProductType, forceDict, forceUniqueList, args, forceFqdn,
 	forceGroupType, forceFloat)
 
+import pytest
+
 
 class ForceObjectClassJSONTestCase(unittest.TestCase):
 	def setUp(self):
@@ -602,20 +604,25 @@ class ForceGroupTypeTestCase(unittest.TestCase):
 		self.assertEquals('ProductGroup', forceGroupType('PrOdUcTgRoUp'))
 
 
-class ForceFloatTypeTestCase(unittest.TestCase):
-	def testForcingNumber(self):
-		self.assertEquals(1.0, forceFloat(1))
-		self.assertEquals(1.3, forceFloat(1.3))
+@pytest.mark.parametrize("input, expected", [
+	(1, 1.0),
+	(1.3, 1.3),
+	("1", 1.0),
+	("1.3", 1.3),
+	("    1.4   ", 1.4),
+])
+def testForceFloat(input, expected):
+	assert expected == forceFloat(input)
 
-	def testForcingFromString(self):
-		self.assertEquals(1.0, forceFloat("1"))
-		self.assertEquals(1.3, forceFloat("1.3"))
-		self.assertEquals(1.4, forceFloat("  1.4  "))
-
-	def testForcingCanFail(self):
-		self.assertRaises(ValueError, forceFloat, {"abc": 123})
-		self.assertRaises(ValueError, forceFloat, ['a', 'b'])
-		self.assertRaises(ValueError, forceFloat, "No float")
+@pytest.mark.parametrize("invalidInput", [
+	{"abc": 123},
+	['a', 'b'],
+	"No float",
+	"text",
+])
+def testForceFloatFailsWithInvalidInput(invalidInput):
+	with pytest.raises(ValueError):
+		forceFloat(invalidInput)
 
 
 if __name__ == '__main__':
