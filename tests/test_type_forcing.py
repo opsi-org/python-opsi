@@ -310,20 +310,28 @@ class ForceHardwareAddressTestCase(unittest.TestCase):
 		self.assertEquals("", forceHardwareAddress(""))
 
 
-class ForceIPAdressTestCase(unittest.TestCase):
-	def testForcing(self):
-		self.assertEquals(forceIPAddress('192.168.101.1'), u'192.168.101.1')
+@pytest.mark.parametrize("input, expected", [
+	('1.1.1.1', u'1.1.1.1'),
+	('192.168.101.1', u'192.168.101.1'),
+	(u'192.168.101.1', u'192.168.101.1'),
+])
+def testForceIPAddress(input, expected):
+	output = forceIPAddress(input)
+	assert expected == output
+	assert isinstance(output, unicode)
 
-	def testForcingReturnsUnicode(self):
-		self.assertTrue(isinstance(forceIPAddress('1.1.1.1'), unicode))
 
-	def testForcingWithInvalidAddressesRaisesExceptions(self):
-		self.assertRaises(ValueError, forceIPAddress, '1922.1.1.1')
-		self.assertRaises(ValueError, forceIPAddress, None)
-		self.assertRaises(ValueError, forceIPAddress, True)
-		self.assertRaises(ValueError, forceIPAddress, '1.1.1.1.')
-		self.assertRaises(ValueError, forceIPAddress, '2.2.2.2.2')
-		self.assertRaises(ValueError, forceIPAddress, 'a.2.3.4')
+@pytest.mark.parametrize("malformed_input", [
+	'1922.1.1.1',
+	None,
+	True,
+	'1.1.1.1.',
+	'2.2.2.2.2',
+	'a.2.3.4',
+])
+def testForceIPAddressFailsOnInvalidInput(malformed_input):
+	with pytest.raises(ValueError):
+		forceIPAddress(input)
 
 
 class ForceNetworkAddressTestCase(unittest.TestCase):
