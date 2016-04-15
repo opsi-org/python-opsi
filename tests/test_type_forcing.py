@@ -125,35 +125,36 @@ class ForceObjectClassHashTestCase(unittest.TestCase):
 		self.assertTrue(isinstance(forceObjectClass(self.hash, OpsiClient), OpsiClient))
 
 
-class ForceListTestCase(unittest.TestCase):
-	def testForceListDoesNotIterateOverString(self):
-		self.assertEquals(forceList('x'), ['x'])
+def funkyGenerator():
+	yield "y"
+	yield "u"
+	yield "so"
+	yield "funky"
 
-	def testTupleGetsConvertedToList(self):
-		self.assertEquals(forceList(('x', 'a')), ['x', 'a'])
 
-	def testListIsListAfterwartds(self):
-		self.assertEquals(forceList(['x', 'a']), ['x', 'a'])
+@pytest.mark.parametrize("input, expected", [
+	("x", ['x']),
+	("xy", ['xy']),
+	(None, [None]),
+	((0, 1), [0, 1]),
+	(('x', 'a'), ['x', 'a']),
+	(['x', 'a'], ['x', 'a']),
+	(funkyGenerator(), ['y', 'u', 'so', 'funky']),
+])
+def testForceList(input, expected):
+	result = forceList(input)
+	assert isinstance(result, list)
+	assert expected == result
 
-	def testGeneratorGetsConsumed(self):
-		def generatorFunc():
-			yield "y"
-			yield "u"
-			yield "so"
-			yield "funky"
 
-		generator = generatorFunc()
+def testForceListConvertingSet():
+	inputset = set('abc')
+	resultList = forceList(inputset)
 
-		self.assertEquals(forceList(generator), ['y', 'u', 'so', 'funky'])
+	assert len(inputset) == len(resultList)
 
-	def testSetGetsConvertedToList(self):
-		inputset = set('abc')
-		resultList = forceList(inputset)
-
-		self.assertEquals(len(inputset), len(resultList))
-
-		for element in inputset:
-			self.assertTrue(element in resultList)
+	for element in inputset:
+		assert element in resultList
 
 
 class ForceUnicodeTestCase(unittest.TestCase):
