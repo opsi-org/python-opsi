@@ -614,6 +614,7 @@ class ForceGroupTypeTestCase(unittest.TestCase):
 def testForceFloat(input, expected):
 	assert expected == forceFloat(input)
 
+
 @pytest.mark.parametrize("invalidInput", [
 	{"abc": 123},
 	['a', 'b'],
