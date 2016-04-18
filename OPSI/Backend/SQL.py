@@ -2178,7 +2178,6 @@ class SQLBackend(ConfigDataBackend):
 		return self._auditHardware_search(returnHardwareIds=False, attributes=attributes, **filter)
 
 	def _auditHardware_search(self, returnHardwareIds=False, attributes=[], **filter):
-		results = []
 		hardwareClasses = set()
 		hardwareClass = filter.get('hardwareClass')
 		if hardwareClass not in ([], None):
@@ -2189,7 +2188,7 @@ class SQLBackend(ConfigDataBackend):
 						hardwareClasses.add(key)
 
 			if not hardwareClasses:
-				return results
+				return []
 
 		if not hardwareClasses:
 			hardwareClasses = set(key for key in self._auditHardwareConfig)
@@ -2210,6 +2209,7 @@ class SQLBackend(ConfigDataBackend):
 		if returnHardwareIds and attributes and not 'hardware_id' in attributes:
 			attributes.append('hardware_id')
 
+		results = []
 		for hardwareClass in hardwareClasses:
 			classFilter = {}
 			skipHardwareClass = False
