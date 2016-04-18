@@ -2191,7 +2191,7 @@ class SQLBackend(ConfigDataBackend):
 				return []
 
 		if not hardwareClasses:
-			hardwareClasses = set(key for key in self._auditHardwareConfig)
+			hardwareClasses = set(self._auditHardwareConfig)
 
 		for unwanted_key in ('hardwareClass', 'type'):
 			try:
