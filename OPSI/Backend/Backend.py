@@ -253,8 +253,6 @@ This defaults to ``self``.
 							if match:
 								operator = match.group(1)  # pylint: disable=maybe-no-member
 								v = match.group(2)  # pylint: disable=maybe-no-member
-								if operator == '=':
-									operator = '=='
 
 							try:
 								matched = compareVersions(value, operator, v)
