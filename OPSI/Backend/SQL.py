@@ -2116,8 +2116,10 @@ class SQLBackend(ConfigDataBackend):
 		return u' and '.join(condition)
 
 	def _getHardwareIds(self, auditHardware):
-		if hasattr(auditHardware, 'toHash'):
+		try:
 			auditHardware = auditHardware.toHash()
+		except AttributeError:  # Method not present
+			pass
 
 		for (attribute, value) in auditHardware.items():
 			if value is None:
