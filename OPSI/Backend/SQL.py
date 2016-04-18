@@ -2206,7 +2206,7 @@ class SQLBackend(ConfigDataBackend):
 			if attribute not in filter:
 				filter[attribute] = None
 
-		if returnHardwareIds and attributes and not 'hardware_id' in attributes:
+		if returnHardwareIds and attributes and 'hardware_id' not in attributes:
 			attributes.append('hardware_id')
 
 		results = []
