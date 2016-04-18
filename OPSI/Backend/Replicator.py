@@ -344,7 +344,7 @@ class BackendReplicator(object):
 						logger.error(u"No config/depot servers found")
 
 				if self.__oldServerId and self.__oldServerId != self.__newServerId:
-					logger.notice(u"Renaming config server '%s' to '%s'" % (self.__oldServerId, self.__newServerId))
+					logger.notice(u"Renaming config server {0!r} to {1!r}".format(self.__oldServerId, self.__newServerId))
 					renamingBackend = wb
 					try:
 						renamingBackend.host_renameOpsiDepotserver()
