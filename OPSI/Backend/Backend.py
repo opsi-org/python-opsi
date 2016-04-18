@@ -269,8 +269,8 @@ This defaults to ``self``.
 
 				if matched:
 					logger.debug(
-						u"Value '{0}' matched filter '{1}', attribute "
-						u"'{2}'".format(value, filter[attribute], attribute)
+						u"Value {0!r} matched filter {1!r}, attribute "
+						u"{2!r}".format(value, filter[attribute], attribute)
 					)
 				else:
 					matchedAll = False
