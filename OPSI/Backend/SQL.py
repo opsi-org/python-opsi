@@ -298,10 +298,11 @@ class SQLBackend(ConfigDataBackend):
 		return query
 
 	def _adjustAttributes(self, objectClass, attributes, filter):
-		if not attributes:
-			attributes = []
+		if attributes:
+			newAttributes = forceUnicodeList(attributes)
+		else:
+			newAttributes = []
 
-		newAttributes = forceUnicodeList(attributes)
 		newFilter = forceDict(filter)
 		objectId = self._objectAttributeToDatabaseAttribute(objectClass, 'id')
 
