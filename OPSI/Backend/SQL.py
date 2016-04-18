@@ -2212,11 +2212,9 @@ class SQLBackend(ConfigDataBackend):
 		results = []
 		for hardwareClass in hardwareClasses:
 			classFilter = {}
-			skipHardwareClass = False
-			for (attribute, value) in filter.items():
+			for (attribute, value) in filter.iteritems():
 				valueInfo = self._auditHardwareConfig[hardwareClass].get(attribute)
 				if not valueInfo:
-					skipHardwareClass = True
 					logger.debug(u"Skipping hardwareClass '%s', because of missing info for attribute '%s'" % (hardwareClass, attribute))
 					break
 				if valueInfo.get('Scope', '') != 'g':
@@ -2224,28 +2222,31 @@ class SQLBackend(ConfigDataBackend):
 				if value is not None:
 					value = forceList(value)
 				classFilter[attribute] = value
-
-			if skipHardwareClass:
-				continue
-
-			if not classFilter and filter:
-				continue
-
-			logger.debug(u"Getting auditHardwares, hardwareClass '%s', filter: %s" % (hardwareClass, classFilter))
-			query = self._createQuery(u'HARDWARE_DEVICE_' + hardwareClass, attributes, classFilter)
-			for res in self._sql.getSet(query):
-				if returnHardwareIds:
-					results.append(res['hardware_id'])
+			else:
+				if not classFilter and filter:
 					continue
-				elif 'hardware_id' in res:
-					del res['hardware_id']
-				res['hardwareClass'] = hardwareClass
-				for (attribute, valueInfo) in self._auditHardwareConfig[hardwareClass].items():
-					if valueInfo.get('Scope', 'g') == 'i':
+
+				logger.debug(u"Getting auditHardwares, hardwareClass '%s', filter: %s" % (hardwareClass, classFilter))
+				query = self._createQuery(u'HARDWARE_DEVICE_' + hardwareClass, attributes, classFilter)
+				for res in self._sql.getSet(query):
+					if returnHardwareIds:
+						results.append(res['hardware_id'])
 						continue
-					if attribute not in res:
-						res[attribute] = None
-				results.append(res)
+
+					try:
+						del res['hardware_id']
+					except KeyError:
+						pass
+
+					res['hardwareClass'] = hardwareClass
+					for (attribute, valueInfo) in self._auditHardwareConfig[hardwareClass].iteritems():
+						if valueInfo.get('Scope', 'g') == 'i':
+							continue
+						if attribute not in res:
+							res[attribute] = None
+
+					results.append(res)
+
 		return results
 
 	def auditHardware_deleteObjects(self, auditHardwares):
