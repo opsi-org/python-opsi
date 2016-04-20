@@ -29,6 +29,7 @@ from OPSI.Object import (BoolProductProperty, LocalbootProduct, NetbootProduct,
     OpsiClient, OpsiDepotserver, ProductDependency, ProductOnClient, ProductOnDepot,
     ProductPropertyState, UnicodeConfig, UnicodeProductProperty)
 from OPSI.Types import forceHostId
+from OPSI.Types import BackendBadValueError
 from OPSI.Util import getfqdn
 
 from .Hosts import HostsMixin, getConfigServer, getDepotServers
