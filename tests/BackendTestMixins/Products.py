@@ -842,7 +842,7 @@ class ProductPropertyStateTestsMixin(ProductPropertyStatesMixin):
         productProperties = self.backend.productProperty_getObjects()
         self.assertEqual(len(productProperties), len(prodPropertiesOrig))
 
-    def testGettingErrorMessageWhenAttributeIsMissing(self):
+    def testGettingErrorMessageWhenAttributeInFilterIsNotAtObject(self):
         try:
             self.backend.productPropertyState_getObjects(unknownAttribute='foobar')
             self.fail("We should not get here.")
