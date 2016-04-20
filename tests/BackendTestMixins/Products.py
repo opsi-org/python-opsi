@@ -851,6 +851,15 @@ class ProductPropertyStateTestsMixin(ProductPropertyStatesMixin):
             self.assertTrue('has no attribute' in str(bbve))
             self.assertTrue('unknownAttribute' in str(bbve))
 
+    def testGettingErrorMessageWhenAttributeIsMissing(self):
+        try:
+            self.backend.productPropertyState_getObjects(attributes=['unknownAttribute'])
+            self.fail("We should not get here.")
+        except BackendBadValueError as bbve:
+            print(bbve)
+            self.assertTrue('has no attribute' in str(bbve))
+            self.assertTrue('unknownAttribute' in str(bbve))
+
 
 class ProductPropertiesTestMixin(ProductPropertiesMixin):
 
