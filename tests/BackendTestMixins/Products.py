@@ -847,6 +847,7 @@ class ProductPropertyStateTestsMixin(ProductPropertyStatesMixin):
             self.backend.productPropertyState_getObjects(unknownAttribute='foobar')
             self.fail("We should not get here.")
         except BackendBadValueError as bbve:
+            print(bbve)
             self.assertTrue('has no attribute' in str(bbve))
             self.assertTrue('unknownAttribute' in str(bbve))
 
