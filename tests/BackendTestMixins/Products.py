@@ -29,6 +29,7 @@ from OPSI.Object import (BoolProductProperty, LocalbootProduct, NetbootProduct,
     OpsiClient, OpsiDepotserver, ProductDependency, ProductOnClient, ProductOnDepot,
     ProductPropertyState, UnicodeConfig, UnicodeProductProperty)
 from OPSI.Types import forceHostId
+from OPSI.Types import BackendBadValueError
 from OPSI.Util import getfqdn
 
 from .Hosts import HostsMixin, getConfigServer, getDepotServers
@@ -840,6 +841,15 @@ class ProductPropertyStateTestsMixin(ProductPropertyStatesMixin):
                                                     productProperty4])
         productProperties = self.backend.productProperty_getObjects()
         self.assertEqual(len(productProperties), len(prodPropertiesOrig))
+
+    def testGettingErrorMessageWhenAttributeInFilterIsNotAtObject(self):
+        try:
+            self.backend.productPropertyState_getObjects(unknownAttribute='foobar')
+            self.fail("We should not get here.")
+        except BackendBadValueError as bbve:
+            print(bbve)
+            self.assertTrue('has no attribute' in str(bbve))
+            self.assertTrue('unknownAttribute' in str(bbve))
 
 
 class ProductPropertiesTestMixin(ProductPropertiesMixin):
