@@ -1,4 +1,4 @@
-#! /bin/bash
+#! /bin/bash -e
 # Running QA tools against the current repo.
 # This will create various files with QA information.
 # Please make sure the tools from requirements-qa.txt are installed
