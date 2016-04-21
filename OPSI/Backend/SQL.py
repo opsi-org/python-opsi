@@ -363,9 +363,7 @@ class SQLBackend(ConfigDataBackend):
 				hash['changelog'] = hash['changelog'][:65534]
 			except (KeyError, TypeError) as e:
 				# Either not present in hash or set to None
-				# pass
-				print(e)
-				raise e
+				pass
 
 		if issubclass(object.__class__, Relationship):
 			try:
