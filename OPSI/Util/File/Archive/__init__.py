@@ -201,6 +201,7 @@ class BaseArchive(object):
 								self._progressSubject.addToState(filesAdded)
 				except Exception:
 					pass
+
 				try:
 					chunk = proc.stderr.read()
 					if chunk:
@@ -218,15 +219,16 @@ class BaseArchive(object):
 				ret = proc.poll()
 				try:
 					chunk = proc.stdout.read()
-				except:
+				except Exception:
 					pass
+
 				try:
 					chunk = proc.stderr.read()
 					if chunk:
 						if self._progressSubject:
 							self._progressSubject.addToState(chunk.count('\n'))
 						error += chunk
-				except:
+				except Exception:
 					pass
 
 			logger.info(u"Exit code: %s" % ret)
