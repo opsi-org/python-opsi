@@ -65,7 +65,7 @@ class ForceObjectClassJSONTestCase(unittest.TestCase):
 
 	def testForcingObjectClassFromJSON(self):
 		json = {
-			"clientId": "dolly.janus.vatur",
+			"clientId": "dolly.janus.vater",
 			"actionRequest": "setup",
 			"productType": "LocalbootProduct",
 			"type": "ProductOnClient",

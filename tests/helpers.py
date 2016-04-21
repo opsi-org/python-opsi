@@ -165,3 +165,23 @@ def requiresModulesFile(function):
         return function(*args, **kwargs)
 
     return wrapped_function
+
+
+@contextmanager
+def showLogs(logLevel=7, color=True):
+    """
+    A contextmanager that returns a usable logger that is configured
+    to log debug output.
+    """
+    from OPSI.Logger import Logger
+
+    logger = Logger()
+
+    logLevelBefore = logger.getConsoleLevel()
+
+    try:
+        logger.setConsoleLevel(logLevel)
+        logger.setConsoleColor(color)
+        yield logger
+    finally:
+        logger.setConsoleLevel(logLevelBefore)

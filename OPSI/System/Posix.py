@@ -1716,12 +1716,12 @@ class Harddisk:
 		logger.info(u"Forcing kernel to reread partition table of '%s'." % self.device)
 		try:
 			execute(u'%s %s' % (which('partprobe'), self.device))
-		except:
+		except Exception:
 			logger.error(u"Forcing kernel reread partion table failed, waiting 5 sec. and try again")
 			try:
 				time.sleep(5)
 				execute(u'%s %s' % (which('partprobe'), self.device), ignoreExitCode=[1])
-			except:
+			except Exception:
 				logger.error(u"Reread Partiontabel failed the second time, given up.")
 				raise
 		if self.ldPreload:
@@ -1920,7 +1920,7 @@ class Harddisk:
 				res = execute(cmd)
 				if res:
 					ms_sys_version = res[0][14:].strip()
-			except:
+			except Exception:
 				ms_sys_version = u"2.1.3"
 
 
@@ -2533,8 +2533,9 @@ class Harddisk:
 					for i in range(len(buf) - 1):
 						try:
 							logger.debug(u" -->>> %s" % buf[i])
-						except:
+						except Exception:
 							pass
+
 						if u'Partclone fail' in buf[i]:
 							raise Exception(u"Failed: %s" % '\n'.join(buf))
 						if u'Partclone successfully' in buf[i]:

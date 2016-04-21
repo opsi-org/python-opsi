@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -177,7 +177,6 @@ class LicensesMixin(ClientsMixin, ProductsMixin):
 
 class LicensesTestMixin(LicensesMixin):
     def testLicenseContractMethods(self):
-        self.configureBackendOptions()
         self.setUpLicenseContracts()
 
         self.backend.licenseContract_createObjects(self.licenseContracts)
@@ -186,7 +185,6 @@ class LicensesTestMixin(LicensesMixin):
         self.assertEqual(len(licenseContracts), len(self.licenseContracts))
 
     def testSoftwareLicenseMethods(self):
-        self.configureBackendOptions()
         self.setUpSoftwareLicenses()
         self.backend.licenseContract_createObjects(self.licenseContracts)
 
@@ -197,7 +195,6 @@ class LicensesTestMixin(LicensesMixin):
             softwareLicenses, self.softwareLicenses)
 
     def testLicensePoolMethods(self):
-        self.configureBackendOptions()
         self.setUpLicensePool()
 
         self.backend.licensePool_createObjects(self.licensePools)
@@ -227,13 +224,7 @@ class LicensesTestMixin(LicensesMixin):
         assert len(licensePools) == len(self.licensePools), u"got: '%s', expected: '%s'" % (
             licensePools, len(self.licensePools))
 
-        licensePools = self.backend.licensePool_getObjects(
-            productIds=['xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'])
-        assert len(licensePools) == 0, u"got: '%s', expected: '%s'" % (
-            licensePools, 0)
-
     def testSoftwareLicenseToLicensePoolMethods(self):
-        self.configureBackendOptions()
         self.setUpSoftwareLicenseToLicensePools()
         self.backend.licenseContract_createObjects(self.licenseContracts)
         self.backend.softwareLicense_createObjects(self.softwareLicenses)
@@ -248,7 +239,6 @@ class LicensesTestMixin(LicensesMixin):
             softwareLicenseToLicensePools, len(self.softwareLicenseToLicensePools))
 
     def testLicenseOnClientMethods(self):
-        self.configureBackendOptions()
         self.setUpLicenseOnClients()
 
         self.backend.licenseContract_createObjects(self.licenseContracts)
@@ -262,3 +252,59 @@ class LicensesTestMixin(LicensesMixin):
         licenseOnClients = self.backend.licenseOnClient_getObjects()
         assert len(licenseOnClients) == len(self.licenseOnClients), u"got: '%s', expected: '%s'" % (
             licenseOnClients, len(self.licenseOnClients))
+
+    def test_selectLicensePoolsByProductIds(self):
+        self.setUpLicensePool()
+        self.backend.licensePool_createObjects(self.licensePools)
+
+        licensePools = self.backend.licensePool_getObjects(productIds=self.licensePool1.productIds)
+        self.assertEqual(len(licensePools), 1)
+        self.assertEqual(licensePools[0].getId(), self.licensePool1.getId())
+
+    def test_selectInvalidLicensePoolById(self):
+        self.setUpLicensePool()
+        self.backend.licensePool_createObjects(self.licensePools)
+
+        licensePools = self.backend.licensePool_getObjects(id=self.licensePool2.id, productIds=self.licensePool1.productIds)
+        self.assertEqual(len(licensePools), 0, u"Got %s license pools from backend but did not expect any." % len(licensePools))
+
+    def test_selectLicensePoolWithoutProducts(self):
+        self.setUpLicensePool()
+        self.backend.licensePool_createObjects(self.licensePools)
+
+        licensePools = self.backend.licensePool_getObjects(productIds=None)
+        self.assertEqual(len(self.licensePools), len(licensePools))
+
+    def test_licensePools(self):
+        self.setUpSoftwareLicenseToLicensePools()
+        self.backend.licenseContract_createObjects(self.licenseContracts)
+        self.backend.softwareLicense_createObjects(self.softwareLicenses)
+        self.backend.licensePool_createObjects(self.licensePools)
+
+        licensePools = self.backend.licensePool_getObjects()
+        self.assertEqual(len(self.licensePools), len(licensePools))
+        for licensePool in licensePools:
+            if licensePool.id == self.licensePool1.id:
+                softwareInPool = set(licensePool.getProductIds())
+                expectedSoftwareInPool = set(self.licensePool1.getProductIds())
+
+                self.assertEqual(softwareInPool, expectedSoftwareInPool)
+
+    def test_getLicenseOnClientFromBackend(self):
+        self.setUpSoftwareLicenseToLicensePools()
+        self.setUpLicenseOnClients()
+        self.backend.licenseContract_createObjects(self.licenseContracts)
+        self.backend.softwareLicense_createObjects(self.softwareLicenses)
+        self.backend.licensePool_createObjects(self.licensePools)
+        self.backend.softwareLicenseToLicensePool_createObjects(self.softwareLicenseToLicensePools)
+        self.backend.licenseOnClient_createObjects(self.licenseOnClients)
+
+        licenseOnClients = self.backend.licenseOnClient_getObjects()
+        self.assertEqual(len(self.licenseOnClients), len(licenseOnClients))
+
+    def test_selectLicensePoolByInvalidProduct(self):
+        self.setUpLicensePool()
+        self.backend.licensePool_createObjects(self.licensePools)
+
+        licensePools = self.backend.licensePool_getObjects(productIds=['xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'])
+        self.assertEqual(len(licensePools), 0, u"Did not expect any license pools, but found %s on backend." % len(licensePools))

@@ -344,18 +344,27 @@ class BackendReplicator(object):
 						logger.error(u"No config/depot servers found")
 
 				if self.__oldServerId and self.__oldServerId != self.__newServerId:
-					logger.notice(u"Renaming config server '%s' to '%s'" % (self.__oldServerId, self.__newServerId))
-					wb.host_renameOpsiDepotserver(id=self.__oldServerId, newId=self.__newServerId)
+					logger.notice(u"Renaming config server {0!r} to {1!r}".format(self.__oldServerId, self.__newServerId))
+					renamingBackend = wb
+					try:
+						renamingBackend.host_renameOpsiDepotserver()
+					except TypeError:
+						pass  # Missing arguments but method exists
+					except AttributeError:
+						# Missing the method - need to use extended backend
+						renamingBackend = self._extendedWriteBackend
+
+					renamingBackend.host_renameOpsiDepotserver(id=self.__oldServerId, newId=self.__newServerId)
 
 					newDepots = []
-					for depot in wb.host_getObjects(type='OpsiDepotserver'):
+					for depot in renamingBackend.host_getObjects(type='OpsiDepotserver'):
 						hash = depot.toHash()
 						del hash['type']
 						if depot.id == self.__newServerId:
 							newDepots.append(OpsiConfigserver.fromHash(hash))
 						else:
 							newDepots.append(OpsiDepotserver.fromHash(hash))
-					wb.host_createObjects(newDepots)
+					renamingBackend.host_createObjects(newDepots)
 		finally:
 			wb.backend_setOptions({'additionalReferentialIntegrityChecks': aric})
 
