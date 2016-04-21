@@ -41,7 +41,7 @@ class DHCPDConfFileTestCase(unittest.TestCase):
         )
 
         with createTemporaryTestfile(testExample) as fileName:
-            confFile = DHCPDConfFile(self.fileName)
+            confFile = DHCPDConfFile(fileName)
             confFile.parse()
 
 
