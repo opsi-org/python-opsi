@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -28,7 +28,7 @@ from __future__ import absolute_import, print_function
 import os
 import shutil
 
-from .helpers import mock, unittest, copyTestfileToTemporaryFolder
+from .helpers import mock, unittest, createTemporaryTestfile, workInTemporaryDirectory
 
 from OPSI.System import which
 from OPSI.Util.Task.Sudoers import (_NO_TTY_FOR_SERVICE_REQUIRED,
@@ -36,90 +36,85 @@ from OPSI.Util.Task.Sudoers import (_NO_TTY_FOR_SERVICE_REQUIRED,
     patchSudoersFileToAllowRestartingDHCPD)
 
 
+SUDOERS_WITHOUT_ENTRIES = os.path.join(
+    os.path.dirname(__file__),
+    'testdata', 'util', 'task', 'sudoers', 'sudoers_without_entries'
+)
+
 class PatchSudoersFileForOpsiTestCase(unittest.TestCase):
-    def setUp(self):
-        emptyExampleFile = os.path.join(
-            os.path.dirname(__file__),
-            'testdata', 'util', 'task', 'sudoers', 'sudoers_without_entries'
-        )
-
-        self.fileName = copyTestfileToTemporaryFolder(emptyExampleFile)
-
-    def tearDown(self):
-        tempDirectory = os.path.dirname(self.fileName)
-        if os.path.exists(tempDirectory):
-            shutil.rmtree(tempDirectory)
-
-        del self.fileName
-
     def testDoNotAlterFileIfEntryAlreadyExisting(self):
-        patchSudoersFileForOpsi(sudoersFile=self.fileName)
-        with open(self.fileName) as first:
-            contentAfterFirstPatch = first.readlines()
+        with createTemporaryTestfile(SUDOERS_WITHOUT_ENTRIES) as fileName:
+            patchSudoersFileForOpsi(sudoersFile=fileName)
+            with open(fileName) as first:
+                contentAfterFirstPatch = first.readlines()
 
-        patchSudoersFileForOpsi(sudoersFile=self.fileName)
-        with open(self.fileName) as second:
-            contentAfterSecondPatch = second.readlines()
+            patchSudoersFileForOpsi(sudoersFile=fileName)
+            with open(fileName) as second:
+                contentAfterSecondPatch = second.readlines()
 
         self.assertEqual(contentAfterFirstPatch, contentAfterSecondPatch)
 
     def testAlterFileIfPartOfPreviousPatchWasMissing(self):
-        patchSudoersFileForOpsi(sudoersFile=self.fileName)
-        with open(self.fileName) as before:
-            lines = before.readlines()
+        with createTemporaryTestfile(SUDOERS_WITHOUT_ENTRIES) as fileName:
+            patchSudoersFileForOpsi(sudoersFile=fileName)
+            with open(fileName) as before:
+                lines = before.readlines()
 
-        lines = [line for line in lines if not line.startswith('opsiconfd')]
-        with open(self.fileName, 'w') as before:
-            before.writelines(lines)
+            lines = [line for line in lines if not line.startswith('opsiconfd')]
+            with open(fileName, 'w') as before:
+                before.writelines(lines)
 
-        patchSudoersFileForOpsi(sudoersFile=self.fileName)
-        with open(self.fileName) as after:
-            for line in after:
-                if line.startswith('opsiconfd'):
-                    self.assertTrue(True)
-                    return
+            patchSudoersFileForOpsi(sudoersFile=fileName)
+            with open(fileName) as after:
+                for line in after:
+                    if line.startswith('opsiconfd'):
+                        self.assertTrue(True)
+                        return
 
-        self.fail(u"Missing line starting with 'opsiconfd'")
+            self.fail(u"Missing line starting with 'opsiconfd'")
 
     def testFileEndsWithNewline(self):
-        patchSudoersFileForOpsi(sudoersFile=self.fileName)
+        with createTemporaryTestfile(SUDOERS_WITHOUT_ENTRIES) as fileName:
+            patchSudoersFileForOpsi(sudoersFile=fileName)
 
-        with open(self.fileName) as changedFile:
-            for line in changedFile:
-                lastLine = line
+            with open(fileName) as changedFile:
+                for line in changedFile:
+                    lastLine = line
 
-            self.assertTrue('\n' == lastLine)
+                self.assertTrue('\n' == lastLine)
 
     def testBackupIsCreated(self):
         def showFolderInfo():
             print(u'Files in {0}: {1}'.format(tempFolder, filesInTemporaryFolder))
 
-        tempFolder = os.path.dirname(self.fileName)
-        filesInTemporaryFolder = os.listdir(tempFolder)
+        with workInTemporaryDirectory() as tempFolder:
+            with createTemporaryTestfile(SUDOERS_WITHOUT_ENTRIES, tempDir=tempFolder) as fileName:
+                filesInTemporaryFolder = os.listdir(tempFolder)
 
-        showFolderInfo()
-        self.assertEqual(1, len(filesInTemporaryFolder))
+                showFolderInfo()
+                self.assertEqual(1, len(filesInTemporaryFolder))
 
-        patchSudoersFileForOpsi(sudoersFile=self.fileName)
+                patchSudoersFileForOpsi(sudoersFile=fileName)
 
-        filesInTemporaryFolder = os.listdir(tempFolder)
-        showFolderInfo()
-        self.assertEqual(2, len(filesInTemporaryFolder))
+                filesInTemporaryFolder = os.listdir(tempFolder)
+                showFolderInfo()
+                self.assertEqual(2, len(filesInTemporaryFolder))
 
     def testOpsiconfdDoesNotRequireTTY(self):
-        with open(self.fileName) as pre:
-            for line in pre:
-                if _NO_TTY_REQUIRED_DEFAULT in line:
-                    self.fail(u'Command already existing. Can\'t check.')
+        with createTemporaryTestfile(SUDOERS_WITHOUT_ENTRIES) as fileName:
+            with open(fileName) as pre:
+                for line in pre:
+                    if _NO_TTY_REQUIRED_DEFAULT in line:
+                        self.fail(u'Command already existing. Can\'t check.')
 
-        with mock.patch('OPSI.Util.Task.Sudoers.distributionRequiresNoTtyPatch', lambda: True):
-            patchSudoersFileForOpsi(self.fileName)
+            with mock.patch('OPSI.Util.Task.Sudoers.distributionRequiresNoTtyPatch', lambda: True):
+                patchSudoersFileForOpsi(fileName)
 
-        entryFound = False
-        with open(self.fileName) as post:
-            for line in post:
-                if _NO_TTY_REQUIRED_DEFAULT in line:
-                    entryFound = True
+            entryFound = False
+            with open(fileName) as post:
+                for line in post:
+                    if _NO_TTY_REQUIRED_DEFAULT in line:
+                        entryFound = True
 
         self.assertTrue(
             entryFound,
@@ -127,18 +122,19 @@ class PatchSudoersFileForOpsiTestCase(unittest.TestCase):
         )
 
     def testExecutingServiceDoesNotRequireTTY(self):
-        with open(self.fileName) as pre:
-            for line in pre:
-                if _NO_TTY_FOR_SERVICE_REQUIRED in line:
-                    self.fail(u'Command already existing. Can\'t check.')
+        with createTemporaryTestfile(SUDOERS_WITHOUT_ENTRIES) as fileName:
+            with open(fileName) as pre:
+                for line in pre:
+                    if _NO_TTY_FOR_SERVICE_REQUIRED in line:
+                        self.fail(u'Command already existing. Can\'t check.')
 
-        patchSudoersFileForOpsi(self.fileName)
+            patchSudoersFileForOpsi(fileName)
 
-        entryFound = False
-        with open(self.fileName) as post:
-            for line in post:
-                if _NO_TTY_FOR_SERVICE_REQUIRED in line:
-                    entryFound = True
+            entryFound = False
+            with open(fileName) as post:
+                for line in post:
+                    if _NO_TTY_FOR_SERVICE_REQUIRED in line:
+                        entryFound = True
 
         self.assertTrue(
             entryFound,
@@ -155,37 +151,39 @@ class PatchSudoersFileForOpsiTestCase(unittest.TestCase):
     def testPatchingToAllowRestartingDHCPD(self):
         serviceCommand = u"service dhcpd restart"
 
-        with open(self.fileName) as pre:
-            for line in pre:
-                if serviceCommand in line:
-                    self.fail(u"Restart command already existing.")
+        with createTemporaryTestfile(SUDOERS_WITHOUT_ENTRIES) as fileName:
+            with open(fileName) as pre:
+                for line in pre:
+                    if serviceCommand in line:
+                        self.fail(u"Restart command already existing.")
 
-        patchSudoersFileToAllowRestartingDHCPD(serviceCommand, self.fileName)
+            patchSudoersFileToAllowRestartingDHCPD(serviceCommand, fileName)
 
-        entryFound = False
-        with open(self.fileName) as post:
-            for line in post:
-                if serviceCommand in line:
-                    entryFound = True
+            entryFound = False
+            with open(fileName) as post:
+                for line in post:
+                    if serviceCommand in line:
+                        entryFound = True
 
         self.assertTrue(entryFound)
 
     def testDoNotAddDuplicates(self):
         adminGroup = u'%{0}'.format(FILE_ADMIN_GROUP)
 
-        patchSudoersFileForOpsi(sudoersFile=self.fileName)
-        with open(self.fileName) as before:
-            lines = before.readlines()
+        with createTemporaryTestfile(SUDOERS_WITHOUT_ENTRIES) as fileName:
+            patchSudoersFileForOpsi(sudoersFile=fileName)
+            with open(fileName) as before:
+                lines = before.readlines()
 
-        lines = [line for line in lines if not line.startswith('opsiconfd')]
-        self.assertEquals(len([line for line in lines if line.startswith(adminGroup)]), 1)
+            lines = [line for line in lines if not line.startswith('opsiconfd')]
+            self.assertEquals(len([line for line in lines if line.startswith(adminGroup)]), 1)
 
-        with open(self.fileName, 'w') as before:
-            before.writelines(lines)
+            with open(fileName, 'w') as before:
+                before.writelines(lines)
 
-        patchSudoersFileForOpsi(sudoersFile=self.fileName)
-        with open(self.fileName) as after:
-            afterLines = after.readlines()
+            patchSudoersFileForOpsi(sudoersFile=fileName)
+            with open(fileName) as after:
+                afterLines = after.readlines()
 
         self.assertEquals(len([line for line in afterLines if line.startswith(adminGroup)]), 1)
 
