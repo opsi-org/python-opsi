@@ -198,7 +198,7 @@ def getDirectoriesForProcessing(path):
 
 		if os.path.exists(depotDir):
 			LOGGER.info(u"Local depot directory {0!r} found".format(depotDir))
-			dirnames.append(depotDir)
+			dirnames.add(depotDir)
 
 	if basedir.startswith('/opt/pcbin/install'):
 		found = False
@@ -208,18 +208,18 @@ def getDirectoriesForProcessing(path):
 				break
 
 		if not found:
-			dirnames.append('/opt/pcbin/install')
+			dirnames.add('/opt/pcbin/install')
 
 	return (dirnames, depotDir)
 
 
 def getDirectoriesManagedByOpsi():
 	if isSLES():
-		return [u'/etc/opsi', u'/var/lib/opsi', u'/var/lib/opsi/workbench',
-				u'/var/lib/tftpboot/opsi', u'/var/log/opsi']
+		return set([u'/etc/opsi', u'/var/lib/opsi', u'/var/lib/opsi/workbench',
+					u'/var/lib/tftpboot/opsi', u'/var/log/opsi'])
 	else:
-		return [u'/etc/opsi', u'/home/opsiproducts', u'/tftpboot/linux',
-				u'/var/lib/opsi', u'/var/log/opsi']
+		return set([u'/etc/opsi', u'/home/opsiproducts', u'/tftpboot/linux',
+				u'/var/lib/opsi', u'/var/log/opsi'])
 
 
 def getDepotUrl():
