@@ -109,6 +109,7 @@ def setRights(path=u'/'):
 
 	(directories, depotDir) = getDirectoriesForProcessing(path)
 
+	processedDirectories = set()
 	# TODO: try to re-introduce removeDuplicatesFromDirectories for speedups
 	for dirname in directories:
 		if not dirname.startswith(basedir) and not basedir.startswith(dirname):
@@ -146,6 +147,10 @@ def setRights(path=u'/'):
 		if basedir.startswith(dirname):
 			startPath = basedir
 
+		if startPath in processedDirectories:
+			LOGGER.debug(u"Already proceesed {0}, Skipping.".format(startPath))
+			continue
+
 		if dirname == depotDir:
 			directoryMode = 0o2770
 
@@ -175,6 +180,8 @@ def setRights(path=u'/'):
 			os.chmod(u'/var/lib/opsi', 0o750)
 			chown(u'/var/lib/opsi', clientUserUid, fileAdminGroupGid)
 			setRightsOnSSHDirectory(clientUserUid, fileAdminGroupGid)
+
+		processedDirectories.add(startPath)
 
 
 def getDirectoriesForProcessing(path):
