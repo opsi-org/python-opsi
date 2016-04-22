@@ -201,13 +201,10 @@ def getDirectoriesForProcessing(path):
 			dirnames.add(depotDir)
 
 	if basedir.startswith('/opt/pcbin/install'):
-		found = False
 		for dirname in dirnames:
 			if dirname.startswith('/opt/pcbin/install'):
-				found = True
 				break
-
-		if not found:
+		else:
 			dirnames.add('/opt/pcbin/install')
 
 	return (dirnames, depotDir)
