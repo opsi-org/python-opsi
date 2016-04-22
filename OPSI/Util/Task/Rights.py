@@ -102,12 +102,12 @@ def setRights(path=u'/'):
 	if not os.path.isdir(basedir):
 		basedir = os.path.dirname(basedir)
 
-	(directories, depotDir) = getDirectoriesForProcessing(path)
-
 	clientUserUid = pwd.getpwnam(_CLIENT_USER)[2]
 	opsiconfdUid = pwd.getpwnam(_OPSICONFD_USER)[2]
 	adminGroupGid = grp.getgrnam(_ADMIN_GROUP)[2]
 	fileAdminGroupGid = grp.getgrnam(_FILE_ADMIN_GROUP)[2]
+
+	(directories, depotDir) = getDirectoriesForProcessing(path)
 
 	# TODO: try to re-introduce removeDuplicatesFromDirectories for speedups
 	for dirname in directories:
