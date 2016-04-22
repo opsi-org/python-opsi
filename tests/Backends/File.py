@@ -115,8 +115,10 @@ config = {{
     def tearDownBackend(self):
         self.backend.backend_deleteBase()
 
-        if os.path.exists(self._fileTempDir):
+        try:
             shutil.rmtree(self._fileTempDir)
+        except OSError:
+            pass
 
         del self.backend
 
