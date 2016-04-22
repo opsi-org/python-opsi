@@ -61,7 +61,7 @@ from OPSI.Util import findFiles, getfqdn
 from OPSI.Util.File.Opsi import OpsiConfFile
 from OPSI.System.Posix import isSLES
 
-__version__ = '4.0.6.40'
+__version__ = '4.0.6.48'
 
 LOGGER = Logger()
 
