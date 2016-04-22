@@ -124,7 +124,7 @@ class GetDirectoriesForProcessingTestCase(unittest.TestCase):
             directories, depotDir = getDirectoriesForProcessing('/var/lib/opsi/depot/')
 
         print("Directories: {0}".format(directories))
-        assert '/var/lib/opsi/depot' in directories
+        assert '/var/lib/opsi' in directories
         print("depotDir: {0}".format(depotDir))
         assert depotDir == '/var/lib/opsi/depot'
 
