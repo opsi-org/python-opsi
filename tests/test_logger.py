@@ -63,6 +63,24 @@ def testLoggingMessage(logger):
 	assert "This is not a test!" in messageBuffer.getvalue()
 
 
+@pytest.mark.parametrize("logLevel", [
+    OPSI.Logger.LOG_CONFIDENTIAL,
+	OPSI.Logger.LOG_DEBUG2,
+	OPSI.Logger.LOG_DEBUG,
+	OPSI.Logger.LOG_INFO,
+	OPSI.Logger.LOG_NOTICE,
+	OPSI.Logger.LOG_WARNING,
+	OPSI.Logger.LOG_ERROR,
+	OPSI.Logger.LOG_CRITICAL,
+	OPSI.Logger.LOG_ESSENTIAL,
+	OPSI.Logger.LOG_COMMENT,
+	OPSI.Logger.LOG_NONE
+])
+def testChangingConsoleLogLevel(logger, logLevel):
+	logger.setConsoleLevel(logLevel)
+	self.assertEquals(logLevel, logger.getConsoleLevel())
+
+
 class LoggerTestCase(unittest.TestCase):
 	def setUp(self):
 		self.logger = OPSI.Logger.LoggerImplementation()
@@ -74,27 +92,6 @@ class LoggerTestCase(unittest.TestCase):
 		# Making sure that a possible switched function is resetted to
 		# it's default.
 		warnings.showwarning = OPSI.Logger._showwarning
-
-	def testChangingConsoleLogLevel(self):
-		logLevel = (OPSI.Logger.LOG_CONFIDENTIAL,
-					OPSI.Logger.LOG_DEBUG2,
-					OPSI.Logger.LOG_DEBUG,
-					OPSI.Logger.LOG_INFO,
-					OPSI.Logger.LOG_NOTICE,
-					OPSI.Logger.LOG_WARNING,
-					OPSI.Logger.LOG_ERROR,
-					OPSI.Logger.LOG_CRITICAL,
-					OPSI.Logger.LOG_ESSENTIAL,
-					OPSI.Logger.LOG_COMMENT,
-					OPSI.Logger.LOG_NONE)
-
-		for level in logLevel:
-			self.logger.setConsoleLevel(level)
-			self.assertEquals(level, self.logger.getConsoleLevel())
-
-		for level in reversed(logLevel):
-			self.logger.setConsoleLevel(level)
-			self.assertEquals(level, self.logger.getConsoleLevel())
 
 	def testLoggingUnicode(self):
 		level = OPSI.Logger.LOG_CONFIDENTIAL
