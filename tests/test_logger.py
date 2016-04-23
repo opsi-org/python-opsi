@@ -148,165 +148,129 @@ class LoggerTestCase(unittest.TestCase):
 
 		warnings.showwarning = originalWarningFunction
 
-	def testLoggingFromWarningsModule(self):
-		self.logger.setConsoleLevel(OPSI.Logger.LOG_WARNING)
-		self.logger.setLogFormat('[%l] %M')
 
-		messageBuffer = StringIO()
+def testLoggingFromWarningsModule(logger):
+	logger.setConsoleLevel(OPSI.Logger.LOG_WARNING)
+	logger.setLogFormat('[%l] %M')
 
-		with mock.patch('OPSI.Logger.sys.stdin', messageBuffer):
-			with mock.patch('OPSI.Logger.sys.stderr', messageBuffer):
-				self.logger.logWarnings()
+	messageBuffer = StringIO()
 
-				warnings.warn("usermessage")
-				warnings.warn("another message", DeprecationWarning)
-				warnings.warn("message", DeprecationWarning, stacklevel=2)
+	with mock.patch('OPSI.Logger.sys.stdin', messageBuffer):
+		with mock.patch('OPSI.Logger.sys.stderr', messageBuffer):
+			logger.logWarnings()
 
-		value = messageBuffer.getvalue()
+			warnings.warn("usermessage")
+			warnings.warn("another message", DeprecationWarning)
+			warnings.warn("message", DeprecationWarning, stacklevel=2)
 
-		self.assertTrue(value.startswith("[{0:d}]".format(OPSI.Logger.LOG_WARNING)))
-		self.assertTrue("UserWarning: usermessage" in value)
+	value = messageBuffer.getvalue()
 
-		if sys.version_info < (2, 7):
-			# Changed in version 2.7: DeprecationWarning is ignored by default.
-			# Source: https://docs.python.org/2.7/library/warnings.html#warning-categories
-			self.assertTrue("DeprecationWarning: message" in value)
-			self.assertTrue("DeprecationWarning: another message" in value)
+	assert value.startswith("[{0:d}]".format(OPSI.Logger.LOG_WARNING))
+	assert "UserWarning: usermessage" in value
 
-	def testLoggingLevels(self):
-		def resetBuffer():
-			messageBuffer.seek(0)
-			messageBuffer.truncate(0)
+	if sys.version_info < (2, 7):
+		# Changed in version 2.7: DeprecationWarning is ignored by default.
+		# Source: https://docs.python.org/2.7/library/warnings.html#warning-categories
+		assert "DeprecationWarning: message" in value
+		assert "DeprecationWarning: another message" in value
 
-		self.logger.setConsoleLevel(OPSI.Logger.LOG_CONFIDENTIAL)
-		self.logger.setLogFormat('[%l] %M')
 
-		messageBuffer = StringIO()
+@pytest.mark.parametrize("logLevel, message", [
+    ("my password", OPSI.Logger.LOG_CONFIDENTIAL),
+	("beepbeepbeepbeeeeeeeeeep", OPSI.Logger.LOG_DEBUG2),
+	("Beep, beep.", OPSI.Logger.LOG_DEBUG),
+	("The Stark Tower", OPSI.Logger.LOG_INFO),
+	("Hulk not angry", OPSI.Logger.LOG_NOTICE),
+	("Loki lifes!", OPSI.Logger.LOG_WARNING),
+	("under 9000", OPSI.Logger.LOG_ERROR),
+	("over 9000", OPSI.Logger.LOG_CRITICAL),
+	("never miss", OPSI.Logger.LOG_ESSENTIAL),
+	("my words blabla", OPSI.Logger.LOG_COMMENT),
+])
+def testLogLevelIsShownInOutput(logger, message, logLevel):
+	logger.setConsoleLevel(OPSI.Logger.LOG_CONFIDENTIAL)
+	logger.setLogFormat('[%l] %M')
 
-		with mock.patch('OPSI.Logger.sys.stdin', messageBuffer):
-			with mock.patch('OPSI.Logger.sys.stderr', messageBuffer):
-				self.logger.essential("never miss")
-				value = messageBuffer.getvalue()
-				self.assertTrue(value.startswith("[{0:d}]".format(OPSI.Logger.LOG_ESSENTIAL)))
-				self.assertTrue("never miss" in value)
+	messageBuffer = StringIO()
 
-				resetBuffer()
-				self.logger.comment("my words blabla")
-				value = messageBuffer.getvalue()
-				self.assertTrue(value.startswith("[{0:d}]".format(OPSI.Logger.LOG_COMMENT)))
-				self.assertTrue("my words blabla" in value)
+	with mock.patch('OPSI.Logger.sys.stdin', messageBuffer):
+		with mock.patch('OPSI.Logger.sys.stderr', messageBuffer):
+			logger.log(message, logLevel)
+			value = messageBuffer.getvalue()
+			assert value.startswith("[{0:d}]".format(logLevel))
+			assert message in value
+			assert value.endswith('message')
 
-				resetBuffer()
-				self.logger.critical("over 9000")
-				value = messageBuffer.getvalue()
-				self.assertTrue(value.startswith("[{0:d}]".format(OPSI.Logger.LOG_CRITICAL)))
-				self.assertTrue("over 9000" in value)
 
-				resetBuffer()
-				self.logger.error("under 9000")
-				value = messageBuffer.getvalue()
-				self.assertTrue(value.startswith("[{0:d}]".format(OPSI.Logger.LOG_ERROR)))
-				self.assertTrue("under 9000" in value)
+def testConfidentialStringsAreNotLogged(logger):
+	secretWord = 'mySecr3tP4ssw0rd!'
 
-				resetBuffer()
-				self.logger.warning("Loki lifes!")
-				value = messageBuffer.getvalue()
-				self.assertTrue(value.startswith("[{0:d}]".format(OPSI.Logger.LOG_WARNING)))
-				self.assertTrue("Loki lifes!" in value)
+	logger.addConfidentialString(secretWord)
+	logger.setConsoleLevel(OPSI.Logger.LOG_DEBUG2)
 
-				resetBuffer()
-				self.logger.notice("Hulk not angry")
-				value = messageBuffer.getvalue()
-				self.assertTrue(value.startswith("[{0:d}]".format(OPSI.Logger.LOG_NOTICE)))
-				self.assertTrue("Hulk not angry" in value)
+	messageBuffer = StringIO()
+	with mock.patch('OPSI.Logger.sys.stdin', messageBuffer):
+		with mock.patch('OPSI.Logger.sys.stderr', messageBuffer):
+			logger.notice("Psst... {0}".format(secretWord))
 
-				resetBuffer()
-				self.logger.info("The Stark Tower")
-				value = messageBuffer.getvalue()
-				self.assertTrue(value.startswith("[{0:d}]".format(OPSI.Logger.LOG_INFO)))
-				self.assertTrue("The Stark Tower" in value)
+	value = messageBuffer.getvalue()
+	assert secretWord not in value
+	assert "Psst... " in value
+	assert "*** confidential ***" in value
 
-				resetBuffer()
-				self.logger.debug("Beep, beep.")
-				value = messageBuffer.getvalue()
-				self.assertTrue(value.startswith("[{0:d}]".format(OPSI.Logger.LOG_DEBUG)))
-				self.assertTrue("Beep, beep." in value)
 
-				resetBuffer()
-				self.logger.debug2("beepbeepbeepbeeeeeeeeeep")
-				value = messageBuffer.getvalue()
-				self.assertTrue(value.startswith("[{0:d}]".format(OPSI.Logger.LOG_DEBUG2)))
-				self.assertTrue("beepbeepbeepbeeeeeeeeeep" in value)
+def testConfidentialStringsCanNotBeEmpty(logger):
+	with pytest.raises(ValueError):
+		logger.addConfidentialString('')
 
-				resetBuffer()
-				self.logger.confidential("my password")
-				value = messageBuffer.getvalue()
-				self.assertTrue(value.startswith("[{0:d}]".format(OPSI.Logger.LOG_CONFIDENTIAL)))
-				self.assertTrue("my password" in value)
 
-	def testConfidentialStringsAreNotLogged(self):
-		secretWord = 'mySecr3tP4ssw0rd!'
+def testLogFormatting(logger):
+	logger.setConsoleLevel(OPSI.Logger.LOG_CONFIDENTIAL)
+	logger.setLogFormat('[%l - %L] %F %M')
 
-		self.logger.addConfidentialString(secretWord)
-		self.logger.setConsoleLevel(OPSI.Logger.LOG_DEBUG2)
+	messageBuffer = StringIO()
+	with mock.patch('OPSI.Logger.sys.stdin', messageBuffer):
+		with mock.patch('OPSI.Logger.sys.stderr', messageBuffer):
+			logger.debug("Chocolate Starfish")
 
-		messageBuffer = StringIO()
-		with mock.patch('OPSI.Logger.sys.stdin', messageBuffer):
-			with mock.patch('OPSI.Logger.sys.stderr', messageBuffer):
-				self.logger.notice("Psst... {0}".format(secretWord))
+	value = messageBuffer.getvalue()
+	assert '[7 - debug] test_logger.py Chocolate Starfish', value.strip()
 
-		value = messageBuffer.getvalue()
-		self.assertFalse(secretWord in value)
-		self.assertTrue("Psst... " in value)
-		self.assertTrue("*** confidential ***" in value)
 
-	def testConfidentialStringsCanNotBeEmpty(self):
-		self.assertRaises(ValueError, self.logger.addConfidentialString, '')
+def testSettingConfidentialStrings(logger):
+	confidential = ["Momente", "Wahnsinn"]
+	logger.setConfidentialStrings(confidential)
 
-	def testLogFormatting(self):
-		self.logger.setConsoleLevel(OPSI.Logger.LOG_CONFIDENTIAL)
-		self.logger.setLogFormat('[%l - %L] %F %M')
+	logger.setConsoleLevel(OPSI.Logger.LOG_DEBUG2)
 
-		messageBuffer = StringIO()
-		with mock.patch('OPSI.Logger.sys.stdin', messageBuffer):
-			with mock.patch('OPSI.Logger.sys.stderr', messageBuffer):
-				self.logger.debug("Chocolate Starfish")
+	messageBuffer = StringIO()
+	with mock.patch('OPSI.Logger.sys.stdin', messageBuffer):
+		with mock.patch('OPSI.Logger.sys.stderr', messageBuffer):
+			logger.notice("Die Momente, die es wert sind, ziehen so schnell vorbei")
+			logger.notice("So schnell, so weit")
+			logger.notice("Der Wahnsinn folgt jetzt nicht mehr dem Asphalt")
+			logger.notice("Du lässt ihn zurück")
 
-		value = messageBuffer.getvalue()
-		self.assertEquals('[7 - debug] test_logger.py Chocolate Starfish', value.strip())
+	value = messageBuffer.getvalue()
+	for word in confidential:
+		assert word not in value
+	assert "So schnell, so weit" in value
 
-	def testSettingConfidentialStrings(self):
-		confidential = ["Momente", "Wahnsinn"]
-		self.logger.setConfidentialStrings(confidential)
 
-		self.logger.setConsoleLevel(OPSI.Logger.LOG_DEBUG2)
+def testChangingDirectoriesDoesNotChangePathOfLog(logger):
+	with workInTemporaryDirectory():
+		logger.setLogFile('test.log')
+		logger.setFileLevel(OPSI.Logger.LOG_DEBUG)
+		logger.warning('abc')
 
-		messageBuffer = StringIO()
-		with mock.patch('OPSI.Logger.sys.stdin', messageBuffer):
-			with mock.patch('OPSI.Logger.sys.stderr', messageBuffer):
-				self.logger.notice("Die Momente, die es wert sind, ziehen so schnell vorbei")
-				self.logger.notice("So schnell, so weit")
-				self.logger.notice("Der Wahnsinn folgt jetzt nicht mehr dem Asphalt")
-				self.logger.notice("Du lässt ihn zurück")
+		assert os.path.exists('test.log')
 
-		value = messageBuffer.getvalue()
-		for word in confidential:
-			self.assertFalse(word in value)
-		self.assertTrue("So schnell, so weit" in value)
+		os.mkdir('subdir')
+		with cd('subdir'):
+			assert not os.path.exists('test.log')
+			logger.warning('def')
+			assert not os.path.exists('test.log')
 
-	def testChangingDirectoriesDoesNotChangePathOfLog(self):
-		with workInTemporaryDirectory():
-			self.logger.setLogFile('test.log')
-			self.logger.setFileLevel(OPSI.Logger.LOG_DEBUG)
-			self.logger.warning('abc')
 
-			self.assertTrue(os.path.exists('test.log'))
-
-			os.mkdir('subdir')
-			with cd('subdir'):
-				self.assertFalse(os.path.exists('test.log'))
-				self.logger.warning('def')
-				self.assertFalse(os.path.exists('test.log'))
-
-	def testSettingLogPathToNone(self):
-		self.logger.setLogFile(None)
+def testSettingLogPathToNone(logger):
+	logger.setLogFile(None)
