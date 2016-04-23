@@ -58,9 +58,9 @@ def testLoggingMessage(logger):
 	messageBuffer = StringIO()
 	with mock.patch('OPSI.Logger.sys.stdin', messageBuffer):
 		with mock.patch('OPSI.Logger.sys.stderr', messageBuffer):
-			self.logger.log(level, "This is not a test!", raiseException=True)
+			logger.log(level, "This is not a test!", raiseException=True)
 
-	self.assertTrue("This is not a test!" in messageBuffer.getvalue())
+	assert "This is not a test!" in messageBuffer.getvalue()
 
 
 class LoggerTestCase(unittest.TestCase):
