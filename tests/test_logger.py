@@ -135,13 +135,17 @@ class LoggerTestCase(unittest.TestCase):
 				value = err.getvalue()
 				self.assertEquals("[{0:d}] [twisted] 'message'\n".format(OPSI.Logger.LOG_ERROR), value)
 
-	def testPatchingShowwarnings(self):
-		originalWarningFunction = warnings.showwarning
-		self.assertTrue(originalWarningFunction is warnings.showwarning)
 
-		self.logger.logWarnings()
-		self.assertFalse(originalWarningFunction is warnings.showwarning)
+def testPatchingShowwarnings(logger):
+	originalWarningFunction = warnings.showwarning
+	assert originalWarningFunction is warnings.showwarning
 
+	try:
+		logger.logWarnings()
+		assert originalWarningFunction is not warnings.showwarning
+	finally:
+		# Making sure that the switched function is
+		# resetted to it's default.
 		warnings.showwarning = originalWarningFunction
 
 
