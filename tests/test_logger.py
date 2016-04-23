@@ -46,10 +46,6 @@ def logger():
 		logger.setConsoleLevel(OPSI.Logger.LOG_NONE)
 		logger.setFileLevel(OPSI.Logger.LOG_NONE)
 
-		# Making sure that a possible switched function is resetted to
-		# it's default.
-		warnings.showwarning = OPSI.Logger._showwarning
-
 
 def testLoggingMessage(logger):
 	level = OPSI.Logger.LOG_CONFIDENTIAL
@@ -157,11 +153,16 @@ def testLoggingFromWarningsModule(logger):
 
 	with mock.patch('OPSI.Logger.sys.stdin', messageBuffer):
 		with mock.patch('OPSI.Logger.sys.stderr', messageBuffer):
-			logger.logWarnings()
+			try:
+				logger.logWarnings()
 
-			warnings.warn("usermessage")
-			warnings.warn("another message", DeprecationWarning)
-			warnings.warn("message", DeprecationWarning, stacklevel=2)
+				warnings.warn("usermessage")
+				warnings.warn("another message", DeprecationWarning)
+				warnings.warn("message", DeprecationWarning, stacklevel=2)
+			finally:
+				# Making sure that the switched function is
+				# resetted to it's default.
+				warnings.showwarning = OPSI.Logger._showwarning
 
 	value = messageBuffer.getvalue()
 
