@@ -78,7 +78,7 @@ def testLoggingMessage(logger):
 ])
 def testChangingConsoleLogLevel(logger, logLevel):
 	logger.setConsoleLevel(logLevel)
-	self.assertEquals(logLevel, logger.getConsoleLevel())
+	assert logLevel == logger.getConsoleLevel()
 
 
 class LoggerTestCase(unittest.TestCase):
