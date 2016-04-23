@@ -28,12 +28,27 @@ from __future__ import absolute_import
 import os
 import sys
 import warnings
+from io import BytesIO as StringIO
 
 import OPSI.Logger
+import pytest
 
 from .helpers import cd, mock, unittest, workInTemporaryDirectory
 
-from io import BytesIO as StringIO
+
+@pytest.yield_fixture
+def logger():
+	logger = OPSI.Logger.LoggerImplementation()
+
+	try:
+		yield logger
+	finally:
+		logger.setConsoleLevel(OPSI.Logger.LOG_NONE)
+		logger.setFileLevel(OPSI.Logger.LOG_NONE)
+
+		# Making sure that a possible switched function is resetted to
+		# it's default.
+		warnings.showwarning = OPSI.Logger._showwarning
 
 
 class LoggerTestCase(unittest.TestCase):
