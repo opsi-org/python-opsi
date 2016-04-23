@@ -33,11 +33,11 @@ from io import BytesIO as StringIO
 import OPSI.Logger
 import pytest
 
-from .helpers import cd, mock, unittest, workInTemporaryDirectory
+from .helpers import cd, mock, workInTemporaryDirectory
 
 # Log level that will result in log output.
 LOGGING_LEVELS = [
-    OPSI.Logger.LOG_CONFIDENTIAL,
+	OPSI.Logger.LOG_CONFIDENTIAL,
 	OPSI.Logger.LOG_DEBUG2,
 	OPSI.Logger.LOG_DEBUG,
 	OPSI.Logger.LOG_INFO,
@@ -48,6 +48,7 @@ LOGGING_LEVELS = [
 	OPSI.Logger.LOG_ESSENTIAL,
 	OPSI.Logger.LOG_COMMENT
 ]
+
 
 @pytest.yield_fixture
 def logger():
