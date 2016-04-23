@@ -180,8 +180,8 @@ def testLoggingFromWarningsModule(logger):
 		assert "DeprecationWarning: another message" in value
 
 
-@pytest.mark.parametrize("logLevel, message", [
-    ("my password", OPSI.Logger.LOG_CONFIDENTIAL),
+@pytest.mark.parametrize("message, logLevel", [
+	("my password", OPSI.Logger.LOG_CONFIDENTIAL),
 	("beepbeepbeepbeeeeeeeeeep", OPSI.Logger.LOG_DEBUG2),
 	("Beep, beep.", OPSI.Logger.LOG_DEBUG),
 	("The Stark Tower", OPSI.Logger.LOG_INFO),
