@@ -51,6 +51,18 @@ def logger():
 		warnings.showwarning = OPSI.Logger._showwarning
 
 
+def testLoggingMessage(logger):
+	level = OPSI.Logger.LOG_CONFIDENTIAL
+	logger.setConsoleLevel(level)
+
+	messageBuffer = StringIO()
+	with mock.patch('OPSI.Logger.sys.stdin', messageBuffer):
+		with mock.patch('OPSI.Logger.sys.stderr', messageBuffer):
+			self.logger.log(level, "This is not a test!", raiseException=True)
+
+	self.assertTrue("This is not a test!" in messageBuffer.getvalue())
+
+
 class LoggerTestCase(unittest.TestCase):
 	def setUp(self):
 		self.logger = OPSI.Logger.LoggerImplementation()
@@ -83,18 +95,6 @@ class LoggerTestCase(unittest.TestCase):
 		for level in reversed(logLevel):
 			self.logger.setConsoleLevel(level)
 			self.assertEquals(level, self.logger.getConsoleLevel())
-
-	def testLoggingMessage(self):
-		level = OPSI.Logger.LOG_CONFIDENTIAL
-		self.logger.setConsoleLevel(level)
-
-		messageBuffer = StringIO()
-		with mock.patch('OPSI.Logger.sys.stdin', messageBuffer):
-			with mock.patch('OPSI.Logger.sys.stderr', messageBuffer):
-				self.logger.log(level, "This is not a test!",
-								raiseException=True)
-
-		self.assertTrue("This is not a test!" in messageBuffer.getvalue())
 
 	def testLoggingUnicode(self):
 		level = OPSI.Logger.LOG_CONFIDENTIAL
