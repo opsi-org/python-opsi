@@ -35,6 +35,19 @@ import pytest
 
 from .helpers import cd, mock, unittest, workInTemporaryDirectory
 
+# Log level that will result in log output.
+LOGGING_LEVELS = [
+    OPSI.Logger.LOG_CONFIDENTIAL,
+	OPSI.Logger.LOG_DEBUG2,
+	OPSI.Logger.LOG_DEBUG,
+	OPSI.Logger.LOG_INFO,
+	OPSI.Logger.LOG_NOTICE,
+	OPSI.Logger.LOG_WARNING,
+	OPSI.Logger.LOG_ERROR,
+	OPSI.Logger.LOG_CRITICAL,
+	OPSI.Logger.LOG_ESSENTIAL,
+	OPSI.Logger.LOG_COMMENT
+]
 
 @pytest.yield_fixture
 def logger():
@@ -59,81 +72,54 @@ def testLoggingMessage(logger):
 	assert "This is not a test!" in messageBuffer.getvalue()
 
 
-@pytest.mark.parametrize("logLevel", [
-    OPSI.Logger.LOG_CONFIDENTIAL,
-	OPSI.Logger.LOG_DEBUG2,
-	OPSI.Logger.LOG_DEBUG,
-	OPSI.Logger.LOG_INFO,
-	OPSI.Logger.LOG_NOTICE,
-	OPSI.Logger.LOG_WARNING,
-	OPSI.Logger.LOG_ERROR,
-	OPSI.Logger.LOG_CRITICAL,
-	OPSI.Logger.LOG_ESSENTIAL,
-	OPSI.Logger.LOG_COMMENT,
-	OPSI.Logger.LOG_NONE
-])
+@pytest.mark.parametrize("logLevel", [OPSI.Logger.LOG_NONE] + LOGGING_LEVELS)
 def testChangingConsoleLogLevel(logger, logLevel):
 	logger.setConsoleLevel(logLevel)
 	assert logLevel == logger.getConsoleLevel()
 
 
-class LoggerTestCase(unittest.TestCase):
-	def setUp(self):
-		self.logger = OPSI.Logger.LoggerImplementation()
+@pytest.mark.parametrize("logLevel", LOGGING_LEVELS)
+def testLoggingUnicode(logger, logLevel):
+	logger.setConsoleLevel(logLevel)
 
-	def tearDown(self):
-		self.logger.setConsoleLevel(OPSI.Logger.LOG_NONE)
-		self.logger.setFileLevel(OPSI.Logger.LOG_NONE)
+	messageBuffer = StringIO()
+	with mock.patch('OPSI.Logger.sys.stdin', messageBuffer):
+		with mock.patch('OPSI.Logger.sys.stderr', messageBuffer):
+			logger.log(logLevel, u"Heävy Metäl Ümläüts! Öy!", raiseException=True)
 
-		# Making sure that a possible switched function is resetted to
-		# it's default.
-		warnings.showwarning = OPSI.Logger._showwarning
+	# Currently this has to be suffice
+	# TODO: better check for logged string.
+	assert messageBuffer.getvalue()
 
-	def testLoggingUnicode(self):
-		level = OPSI.Logger.LOG_CONFIDENTIAL
-		self.logger.setConsoleLevel(level)
 
-		messageBuffer = StringIO()
-		with mock.patch('OPSI.Logger.sys.stdin', messageBuffer):
-			with mock.patch('OPSI.Logger.sys.stderr', messageBuffer):
-				self.logger.log(level, u"Heävy Metäl Ümläüts! Öy!",
-								raiseException=True)
+def test_logTwisted(logger):
+	log = pytest.importorskip("twisted.python.log")
 
-		# Currently this has to be suffice
-		# TODO: better check for logged string.
-		self.assertTrue(messageBuffer.getvalue())
+	logger.setConsoleLevel(OPSI.Logger.LOG_DEBUG)
+	logger.setLogFormat('[%l] %M')
 
-	def test_logTwisted(self):
-		try:
-			from twisted.python import log
-		except ImportError:
-			self.skipTest("Could not import twisted log module.")
+	err = StringIO()
 
-		self.logger.setConsoleLevel(OPSI.Logger.LOG_DEBUG)
-		self.logger.setLogFormat('[%l] %M')
+	with mock.patch('OPSI.Logger.sys.stdin', err):
+		with mock.patch('OPSI.Logger.sys.stderr', err):
+			logger.startTwistedLogging()
 
-		err = StringIO()
+			value = err.getvalue()
+			assert "" != value
+			assert value == "[{0:d}] [twisted] Log opened.\n".format(OPSI.Logger.LOG_DEBUG)
+			err.seek(0)
+			err.truncate(0)
 
-		with mock.patch('OPSI.Logger.sys.stdin', err):
-			with mock.patch('OPSI.Logger.sys.stderr', err):
-				self.logger.startTwistedLogging()
+			log.msg("message")
+			value = err.getvalue()
+			assert "" != value
+			assert value == "[{0:d}] [twisted] message\n".format(OPSI.Logger.LOG_DEBUG)
+			err.seek(0)
+			err.truncate(0)
 
-				value = err.getvalue()
-				self.assertNotEquals("", value)
-				self.assertEquals("[{0:d}] [twisted] Log opened.\n".format(OPSI.Logger.LOG_DEBUG), value)
-				err.seek(0)
-				err.truncate(0)
-
-				log.msg("message")
-				value = err.getvalue()
-				self.assertNotEquals("", value)
-				self.assertEquals("[{0:d}] [twisted] message\n".format(OPSI.Logger.LOG_DEBUG), value)
-				err.seek(0)
-				err.truncate(0)
-
-				log.err("message")
-				value = err.getvalue()
-				self.assertEquals("[{0:d}] [twisted] 'message'\n".format(OPSI.Logger.LOG_ERROR), value)
+			log.err("message")
+			value = err.getvalue()
+			assert value == "[{0:d}] [twisted] 'message'\n".format(OPSI.Logger.LOG_ERROR)
 
 
 def testPatchingShowwarnings(logger):
