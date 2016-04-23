@@ -186,7 +186,7 @@ def testLogLevelIsShownInOutput(logger, message, logLevel):
 
 	with mock.patch('OPSI.Logger.sys.stdin', messageBuffer):
 		with mock.patch('OPSI.Logger.sys.stderr', messageBuffer):
-			logger.log(message, logLevel)
+			logger.log(logLevel, message)
 			value = messageBuffer.getvalue()
 			assert value.startswith("[{0:d}]".format(logLevel))
 			assert message in value
