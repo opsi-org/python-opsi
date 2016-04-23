@@ -179,7 +179,7 @@ def testLoggingFromWarningsModule(logger):
 	("my words blabla", OPSI.Logger.LOG_COMMENT),
 ])
 def testLogLevelIsShownInOutput(logger, message, logLevel):
-	logger.setConsoleLevel(OPSI.Logger.LOG_CONFIDENTIAL)
+	logger.setConsoleLevel(logLevel)
 	logger.setLogFormat('[%l] %M')
 
 	messageBuffer = StringIO()
