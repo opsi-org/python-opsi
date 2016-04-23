@@ -191,7 +191,7 @@ def testLogLevelIsShownInOutput(logger, message, logLevel):
 			value = messageBuffer.getvalue()
 			assert value.startswith("[{0:d}]".format(logLevel))
 			assert message in value
-			assert value.endswith(message)
+			assert value.rstrip().endswith(message)
 
 
 def testConfidentialStringsAreNotLogged(logger):
