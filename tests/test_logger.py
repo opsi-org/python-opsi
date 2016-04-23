@@ -266,3 +266,16 @@ def testChangingDirectoriesDoesNotChangePathOfLog(logger):
 
 def testSettingLogPathToNone(logger):
 	logger.setLogFile(None)
+
+
+def testCallingLogMethods(logger):
+	logger.confidential('test message')
+	logger.debug2('test message')
+	logger.debug('test message')
+	logger.info('test message')
+	logger.notice('test message')
+	logger.warning('test message')
+	logger.error('test message')
+	logger.critical('test message')
+	logger.essential('test message')
+	logger.comment('test message')
