@@ -376,7 +376,7 @@ class HTTPConnectionPool(object):
                                         logger.setConfidentialStrings(url.password)
                                         logger.debug(u"Starting new HTTP connection (%d) to %s:%d over proxy-url %s" % (self.num_connections, self.host, self.port, self.proxyURL))
 
-                                conn = HTTPConnection(host=url.hostname,port=url.port):
+                                conn = HTTPConnection(host=url.hostname,port=url.port)
                                 if url.username and url.password:
                                         logger.debug(u"Proxy Authentication detected, setting auth with user: '%s'" % url.username)
                                         auth = "{username}:{password}".format(username=url.username,password=url.password)
