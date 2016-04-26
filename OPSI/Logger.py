@@ -774,8 +774,8 @@ False suppresses exceptions.
 	def logTraceback(self, tb, logLevel=LOG_CRITICAL):
 		''' Log an exception. '''
 		self.log(logLevel, u'Traceback:')
-		# Traceback
 		try:
+			# Collect call stack information from the traceback
 			while tb is not None:
 				f = tb.tb_frame
 				c = f.f_code
