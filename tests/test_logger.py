@@ -31,7 +31,7 @@ import warnings
 
 import OPSI.Logger
 
-from .helpers import cd, mock, unittest, workInTemporaryDirectory
+from .helpers import cd, mock, unittest, workInTemporaryDirectory, showLogs
 
 from io import BytesIO as StringIO
 
@@ -298,3 +298,25 @@ class LoggerTestCase(unittest.TestCase):
 
 	def testSettingLogPathToNone(self):
 		self.logger.setLogFile(None)
+
+
+def testLoggingTracebacks():
+	with showLogs() as logger:
+		messageBuffer = StringIO()
+		with mock.patch('OPSI.Logger.sys.stdin', messageBuffer):
+			with mock.patch('OPSI.Logger.sys.stderr', messageBuffer):
+				try:
+					raise RuntimeError("Foooock")
+				except Exception as e:
+					logger.logException(e)
+
+		values = messageBuffer.getvalue().split('\n')
+		values = [v for v in values if v]  # don't use empty lines
+
+		print(repr(values))
+
+		assert len(values) > 1
+		assert "Traceback" in values[0]
+		assert "line" in values[1]
+		assert "file" in values[1]
+		assert "Foooock" in values[-1]
