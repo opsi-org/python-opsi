@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2006-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -53,7 +53,7 @@ try:
 except ImportError:
 	syslog = None
 
-__version__ = '4.0.6.36'
+__version__ = '4.0.6.48'
 
 if sys.version_info > (3, ):
 	# Python 3
@@ -772,7 +772,11 @@ False suppresses exceptions.
 		self.log(logLevel, u'     ==>>> %s' % message)
 
 	def logTraceback(self, tb, logLevel=LOG_CRITICAL):
-		''' Log an exception. '''
+		'''
+		Log an traceback.
+
+		This will log the call trace from the given traceback.
+		'''
 		self.log(logLevel, u'Traceback:')
 		try:
 			# Collect call stack information from the traceback
