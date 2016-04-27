@@ -327,3 +327,17 @@ def testLoggingTracebacks():
 		assert "line" in values[1]
 		assert "file" in values[1]
 		assert "Foooock" in values[-1]
+
+
+def testLogTracebackCanFail():
+	objectWithoutTraceback = object()
+	with showLogs() as logger:
+		with catchMessages() as messageBuffer:
+			logger.logTraceback(objectWithoutTraceback)
+
+	messages = messageBuffer.getvalue()
+
+	print("Messages: {0!r}".format(messages))
+	assert 'Failed to log traceback for' in messages
+	assert repr(objectWithoutTraceback) in messages
+	assert 'object has no attribute' in messages
