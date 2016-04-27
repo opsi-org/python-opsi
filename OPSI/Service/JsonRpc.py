@@ -251,8 +251,8 @@ class JsonRpcRequestProcessor(object):
 			rpcs = fromJson(self.query, preventObjectCreation=True)
 			if not rpcs:
 				raise Exception(u"Got no rpcs")
-		except Exception as e:
-			raise OpsiBadRpcError(u"Failed to decode rpc: {0}".format(e))
+		except Exception as error:
+			raise OpsiBadRpcError(u"Failed to decode rpc: {0}".format(error))
 
 		for rpc in forceList(rpcs):
 			self.rpcs.append(
