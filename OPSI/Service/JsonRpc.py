@@ -36,6 +36,7 @@ http://www.jsonrpc.org/specification
 
 import sys
 import time
+import traceback
 import zlib
 
 from twisted.internet.defer import maybeDeferred, DeferredList
@@ -147,11 +148,8 @@ class JsonRpc(object):
 			self.traceback = []
 			tb = sys.exc_info()[2]
 			try:
-				while tb is not None:
-					f = tb.tb_frame
-					c = f.f_code
-					self.traceback.append(u"     line %s in '%s' in file '%s'" % (tb.tb_lineno, c.co_name, c.co_filename))
-					tb = tb.tb_next
+				for tbInfo in traceback.format_tb(sys.exc_info()[2]):
+					self.traceback.append(tbInfo)
 			except AttributeError as attre:
 				message = u"Failed to collect traceback: {0}".format(attre)
 				logger.warning(message)

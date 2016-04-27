@@ -31,6 +31,7 @@ import os
 import sys
 import threading
 import time
+import traceback
 import warnings
 
 try:
@@ -779,13 +780,9 @@ False suppresses exceptions.
 		'''
 		self.log(logLevel, u'Traceback:')
 		try:
-			# Collect call stack information from the traceback
-			while tb is not None:
-				f = tb.tb_frame
-				c = f.f_code
-				self.log(logLevel, u"     line %s in '%s' in file '%s'" % (tb.tb_lineno, c.co_name, c.co_filename))
-				tb = tb.tb_next
-		except Exception as e:
+			for tbInfo in traceback.format_tb(tb):
+				self.log(logLevel, tbInfo)
+		except AttributeError as e:
 			self.log(LOG_CRITICAL, u"    Failed to log traceback for '%s': %s" % (tb, e))
 
 	def logWarnings(self):
