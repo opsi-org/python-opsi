@@ -28,6 +28,7 @@ from __future__ import absolute_import
 import os
 import sys
 import warnings
+from contextlib import contextmanager
 
 import OPSI.Logger
 
@@ -300,15 +301,21 @@ class LoggerTestCase(unittest.TestCase):
 		self.logger.setLogFile(None)
 
 
+@contextmanager
+def catchMessages():
+	messageBuffer = StringIO()
+	with mock.patch('OPSI.Logger.sys.stdin', messageBuffer):
+		with mock.patch('OPSI.Logger.sys.stderr', messageBuffer):
+			yield messageBuffer
+
+
 def testLoggingTracebacks():
 	with showLogs() as logger:
-		messageBuffer = StringIO()
-		with mock.patch('OPSI.Logger.sys.stdin', messageBuffer):
-			with mock.patch('OPSI.Logger.sys.stderr', messageBuffer):
-				try:
-					raise RuntimeError("Foooock")
-				except Exception as e:
-					logger.logException(e)
+		with catchMessages() as messageBuffer:
+			try:
+				raise RuntimeError("Foooock")
+			except Exception as e:
+				logger.logException(e)
 
 		values = messageBuffer.getvalue().split('\n')
 		values = [v for v in values if v]  # don't use empty lines
