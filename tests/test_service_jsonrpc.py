@@ -61,6 +61,26 @@ def testLoggingTracebackMayFail():
 	assert 'Failed to collect traceback' in j.traceback[-1]
 
 
+def testLoggingTraceback():
+	j = JsonRpc(None, interface=[], rpc={"id": 1, "method": "foo"})
+	j.execute()
+
+	assert j.ended
+	assert j.exception
+	assert j.traceback
+
+	print("Old traceback was something like this: {0!r}".format(
+		[u"     line 105 in 'execute' in file '/root/python-opsi/OPSI/Service/JsonRpc.py'"]
+	))
+	print("Collected traceback: {0!r}".format(j.traceback))
+	print("Collected Exception: {0!r}".format(j.exception))
+
+	assert 'line' in ''.join(j.traceback).lower()
+	assert 'file' in ''.join(j.traceback).lower()
+	assert 'jsonrpc' in ''.join(j.traceback).lower()  # Module name
+	assert 'execute' in ''.join(j.traceback).lower()  # Function name
+
+
 def testExecutingMethodOnInstance():
 	class TestInstance:
 		def testMethod(self):
