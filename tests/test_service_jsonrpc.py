@@ -68,12 +68,12 @@ def testLoggingTraceback():
 def testExecutingMethodOnInstance():
 	class TestInstance:
 		def testMethod(self):
-			return []
+			return ["yeah it works!"]
 
 	j = JsonRpc(
 		instance=TestInstance(),
 		interface=[{"name": "testMethod", "keywords": []}],
-		rpc={"id": 1, "method": "testMethod"}
+		rpc={"id": 42, "method": "testMethod"}
 	)
 	j.execute()
 
@@ -84,6 +84,10 @@ def testExecutingMethodOnInstance():
 	response = j.getResponse()
 	print(response)
 	assert response
+
+	assert response['id'] == 42
+	assert response['result'] == ["yeah it works!"]
+	assert not response['error']
 
 
 def testRequiringValidMethod():
