@@ -45,15 +45,11 @@ def testJsonRpcRequiresTransactionId(invalidRpcInfo):
 		JsonRpc(None, None, invalidRpcInfo)
 
 
-def testLoggingTraceback():
-	j = JsonRpc(None,
-		interface=[{"name": "foo", "keywords": []}],
-		rpc={"id": 1, "method": "foo"}
-	)
+def testLoggingTracebackMayFail():
+	j = JsonRpc(None, interface=[], rpc={"id": 1, "method": "foo"})
 
-	with mock.patch('OPSI.Service.JsonRpc.deserialize', mock.Mock(side_effect=Exception("Woha"))):
-		with mock.patch('OPSI.Service.JsonRpc.sys.exc_info', return_value=[None, None, object()]):
-			j.execute()
+	with mock.patch('OPSI.Service.JsonRpc.sys.exc_info', return_value=[None, None, object()]):
+		j.execute()
 
 	assert j.ended
 	assert j.exception
