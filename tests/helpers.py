@@ -85,6 +85,21 @@ def copyTestfileToTemporaryFolder(filename):
     return os.path.join(temporary_folder, new_filename)
 
 
+@contextmanager
+def createTemporaryTestfile(original, tempDir=None):
+    '''Copy `original` to a temporary directory and \
+yield the path to the new file.
+
+    The temporary directory can be specified overridden with `tempDir`.'''
+
+    with workInTemporaryDirectory(tempDir) as targetDir:
+        shutil.copy(original, targetDir)
+
+        (_, new_filename) = os.path.split(original)
+
+        yield os.path.join(targetDir, new_filename)
+
+
 def getLocalFQDN():
     'Get the FQDN of the local machine.'
     # Lazy imports to not hinder other tests.
