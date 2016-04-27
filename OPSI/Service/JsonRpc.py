@@ -105,19 +105,21 @@ class JsonRpc(object):
 
 			keywords = {}
 			if methodInterface['keywords']:
-				l = 0
+				parameterCount = 0
 				if methodInterface['args']:
-					l += len(methodInterface['args'])
+					parameterCount += len(methodInterface['args'])
 				if methodInterface['varargs']:
-					l += len(methodInterface['varargs'])
+					parameterCount += len(methodInterface['varargs'])
 
-				if len(params) >= l:
+				if len(params) >= parameterCount:
 					kwargs = params.pop(-1)
 					if not isinstance(kwargs, dict):
 						raise Exception(u"kwargs param is not a dict: %s" % params[-1])
 
 					for (key, value) in kwargs.items():
 						keywords[str(key)] = deserialize(value)
+
+				del parameterCount
 
 			params = deserialize(params)
 
