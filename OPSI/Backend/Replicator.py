@@ -337,7 +337,10 @@ class BackendReplicator(object):
 				self.__overallProgressSubject.addToState(1)
 
 			if self.__newServerId:
+				self.__currentProgressSubject.reset()
+				self.__currentProgressSubject.setMessage(u"Renaming server")
 				self.__currentProgressSubject.setTitle(u"Renaming server")
+				self.__currentProgressSubject.setEnd(1)
 				if not self.__oldServerId:
 					if configServer:
 						self.__oldServerId = configServer.id
