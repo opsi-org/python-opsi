@@ -39,7 +39,7 @@ import types
 
 from OPSI.Logger import Logger
 
-__version__ = '4.0.6.44'
+__version__ = '4.0.6.48'
 
 encoding = sys.getfilesystemencoding()
 logger = Logger()
@@ -184,17 +184,16 @@ def forceOct(var):
 		return var
 
 	try:
-		tmp = forceUnicode(var)
-		var = ''
-		for i, x in enumerate(tmp):
+		octValue = ''
+		for i, x in enumerate(forceUnicode(var)):
 			x = forceInt(x)
 			if x > 7:
 				raise ValueError(u'{0!r} is too big'.format(x))
 			elif i == 0 and x != '0':
-				var += '0'
-			var += str(x)
-		var = eval(var)
-		return var
+				octValue += '0'
+			octValue += str(x)
+		octValue = eval(octValue)
+		return octValue
 	except Exception as error:
 		raise ValueError(u"Bad oct value {0!r}: {1}".format(var, error))
 
