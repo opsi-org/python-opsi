@@ -782,8 +782,8 @@ False suppresses exceptions.
 		try:
 			for tbInfo in traceback.format_tb(tb):
 				self.log(logLevel, tbInfo)
-		except AttributeError as e:
-			self.log(LOG_CRITICAL, u"    Failed to log traceback for '%s': %s" % (tb, e))
+		except AttributeError as attrError:
+			self.log(LOG_CRITICAL, u"    Failed to log traceback for {0!r}: {1}".format(tb, attrError))
 
 	def logWarnings(self):
 		"""
