@@ -116,3 +116,4 @@ def testGettingMetainformation():
 
 	assert j.isStarted()
 	assert j.hasEnded()
+	assert j.getDuration() != None
