@@ -146,7 +146,6 @@ class JsonRpc(object):
 			logger.error(u'Execution error: %s' % forceUnicode(error))
 			self.exception = error
 			self.traceback = []
-			tb = sys.exc_info()[2]
 			try:
 				for tbInfo in traceback.format_tb(sys.exc_info()[2]):
 					self.traceback.append(tbInfo)
@@ -154,8 +153,6 @@ class JsonRpc(object):
 				message = u"Failed to collect traceback: {0}".format(attre)
 				logger.warning(message)
 				self.traceback.append(message)
-			finally:
-				del tb
 		finally:
 			self.ended = time.time()
 
