@@ -141,10 +141,10 @@ class JsonRpc(object):
 
 			logger.info(u'Got result')
 			logger.debug2("RPC ID {0}: {1!r}".format(self.tid, self.result))
-		except Exception as e:
-			logger.logException(e, LOG_INFO)
-			logger.error(u'Execution error: %s' % forceUnicode(e))
-			self.exception = e
+		except Exception as error:
+			logger.logException(error, LOG_INFO)
+			logger.error(u'Execution error: %s' % forceUnicode(error))
+			self.exception = error
 			self.traceback = []
 			tb = sys.exc_info()[2]
 			try:
