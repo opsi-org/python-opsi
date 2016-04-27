@@ -1,3 +1,15 @@
+python-opsi (4.0.6.48-1) stable; urgency=medium
+
+  * OPSI.Types.forceOct avoids using a temporary variable.
+  * OPSI.Util.Task.Rights.setRights: avoid processing the same path
+    twice.
+  * OPSI.Logger and OPSI.Service.JsonRpc now use the 'traceback' module
+    to get the tracebacks.
+  * OPSI.Backend.Replicator: Show the renaming of the server as a single
+    step for better user feedback.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 27 Apr 2016 12:35:39 +0200
+
 python-opsi (4.0.6.47-1) stable; urgency=medium
 
   * Not using bare "except:" - at least catching Exception.
