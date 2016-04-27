@@ -4,7 +4,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2010-2015 uib GmbH
+# Copyright (C) 2010-2016 uib GmbH
 
 # http://www.uib.de/
 
@@ -23,7 +23,10 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-opsi python library - JsonRpc
+Support for JSON-RPC.
+
+Information about the JSON-RPC standard can be found at
+http://www.jsonrpc.org/specification
 
 :copyright: uib GmbH <info@uib.de>
 :author: Jan Schneider <j.schneider@uib.de>
