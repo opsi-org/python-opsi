@@ -144,11 +144,18 @@ class JsonRpc(object):
 			self.exception = e
 			self.traceback = []
 			tb = sys.exc_info()[2]
-			while tb != None:
-				f = tb.tb_frame
-				c = f.f_code
-				self.traceback.append(u"     line %s in '%s' in file '%s'" % (tb.tb_lineno, c.co_name, c.co_filename))
-				tb = tb.tb_next
+			try:
+				while tb is not None:
+					f = tb.tb_frame
+					c = f.f_code
+					self.traceback.append(u"     line %s in '%s' in file '%s'" % (tb.tb_lineno, c.co_name, c.co_filename))
+					tb = tb.tb_next
+			except AttributeError as attre:
+				message = u"Failed to collect traceback: {0}".format(attre)
+				logger.warning(message)
+				self.traceback.append(message)
+			finally:
+				del tb
 		finally:
 			self.ended = time.time()
 
