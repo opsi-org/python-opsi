@@ -323,9 +323,9 @@ def testLoggingTracebacks():
 		print(repr(values))
 
 		assert len(values) > 1
-		assert "Traceback" in values[0]
-		assert "line" in values[1]
-		assert "file" in values[1]
+		assert "traceback" in values[0].lower()
+		assert "line" in values[1].lower()
+		assert "file" in values[1].lower()
 		assert "Foooock" in values[-1]
 
 
