@@ -20,10 +20,13 @@
 :author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
 """
+from __future__ import absolute_import
 
 import pytest
 
 from OPSI.Service.JsonRpc import JsonRpc
+
+from .helpers import mock
 
 
 @pytest.mark.parametrize("invalidRpcInfo", [
@@ -43,10 +46,69 @@ def testJsonRpcRequiresTransactionId(invalidRpcInfo):
 
 
 def testLoggingTraceback():
-	j = JsonRpc(None, None, {"id": 1, "method": "foo"})
+	j = JsonRpc(None,
+		interface=[{"name": "foo", "keywords": []}],
+		rpc={"id": 1, "method": "foo"}
+	)
+
+	with mock.patch('OPSI.Service.JsonRpc.deserialize', mock.Mock(side_effect=Exception("Woha"))):
+		with mock.patch('OPSI.Service.JsonRpc.sys.exc_info', return_value=[None, None, object()]):
+			j.execute()
+
+	assert j.ended
+	assert j.exception
+	assert j.traceback
+
+	print("Collected traceback: {0!r}".format(j.traceback))
+	print("Collected Exception: {0!r}".format(j.exception))
+
+	assert 'Failed to collect traceback' in j.traceback[-1]
+
+
+def testExecutingMethodOnInstance():
+	class TestInstance:
+		def testMethod(self):
+			return []
+
+	j = JsonRpc(
+		instance=TestInstance(),
+		interface=[{"name": "testMethod", "keywords": []}],
+		rpc={"id": 1, "method": "testMethod"}
+	)
+	j.execute()
+
+	assert j.ended
+	assert not j.traceback
+	assert not j.exception
+
+	response = j.getResponse()
+	print(response)
+	assert response
+
+
+def testRequiringValidMethod():
+	j = JsonRpc(None, [], {"id": 1, "method": "foo"})
 	j.execute()
 
 	assert j.ended
 	assert j.traceback
+	assert j.exception
 
-	print("Collected traceback: {0!r}".format(j.traceback))
+	print("Collected Exception: {0!r}".format(j.exception))
+
+	assert "Method 'foo' is not valid" in str(j.exception)
+
+
+def testGettingMetainformation():
+	j = JsonRpc(None, None, {"id": 1, "method": "foo"})
+
+	assert not j.isStarted()
+	assert not j.hasEnded()
+	assert j.getMethodName() == "foo"
+
+	assert j.getDuration() == None
+
+	j.execute()
+
+	assert j.isStarted()
+	assert j.hasEnded()
