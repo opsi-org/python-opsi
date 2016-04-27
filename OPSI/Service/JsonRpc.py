@@ -125,7 +125,7 @@ class JsonRpc(object):
 
 			pString = forceUnicode(params)[1:-1]
 			if keywords:
-				pString = u'{0}, {1}'.format(pString,forceUnicode(keywords))
+				pString = u'{0}, {1}'.format(pString, forceUnicode(keywords))
 
 			if len(pString) > 200:
 				pString = u'{0}...'.format(pString[:200])
