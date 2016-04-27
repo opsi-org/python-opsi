@@ -148,7 +148,8 @@ class JsonRpc(object):
 				c = f.f_code
 				self.traceback.append(u"     line %s in '%s' in file '%s'" % (tb.tb_lineno, c.co_name, c.co_filename))
 				tb = tb.tb_next
-		self.ended = time.time()
+		finally:
+			self.ended = time.time()
 
 	def getResponse(self):
 		response = {}
