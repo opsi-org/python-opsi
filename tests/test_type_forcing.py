@@ -604,14 +604,19 @@ class ForceFqdnTestCase(unittest.TestCase):
 		self.assertEquals('bla.domain.invalid', forceFqdn('bla.domain.iNVAlid'))
 
 
-class ForceGroupTypeTestCase(unittest.TestCase):
-	def testUnknownHostGroupsResultInError(self):
-		self.assertRaises(ValueError, forceGroupType, 'asdf')
-		self.assertRaises(ValueError, forceGroupType, None)
+@pytest.mark.parametrize("input", ['asdf', None])
+def testForceGroupFailsOnInvalidInput(input):
+	with pytest.raises(ValueError):
+		forceGroupType(input)
 
-	def testKnownValuesAreReturnedWithStandardisedCase(self):
-		self.assertEquals('HostGroup', forceGroupType('hostGROUP'))
-		self.assertEquals('ProductGroup', forceGroupType('PrOdUcTgRoUp'))
+
+@pytest.mark.parametrize("input, expected", [
+	('hostGROUP', 'HostGroup'),
+	('HostgROUp', 'HostGroup'),
+	('PrOdUcTgRoUp', 'ProductGroup'),
+])
+def testForceGroupTypeStandardisesCase(input, expected):
+	assert forceGroupType(input) == expected
 
 
 @pytest.mark.parametrize("input, expected", [
