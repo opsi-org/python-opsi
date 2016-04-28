@@ -529,16 +529,17 @@ class ForceProductTypeTestCase(unittest.TestCase):
 		self.assertEquals(forceProductType('nETbOOT'), 'NetbootProduct')
 
 
-class ForceDictTestCase(unittest.TestCase):
-	def testForcingNoneTypeToDictReturnsEmptyDict(self):
-		self.assertEquals({}, forceDict(None))
+@pytest.mark.parametrize("input, expected", [
+	(None, {}),
+	({'a': 1}, {'a': 1}),
+])
+def testForceDictReturnsDict(input, expected):
+	assert forceDict(input) == expected
 
-	def testForcingDictToDictReturnsDict(self):
-		self.assertEquals({'a': 1}, forceDict({'a': 1}))
-
-	def testForcingImpossibleThrowsError(self):
-		self.assertRaises(ValueError, forceDict, 'asdg')
-		self.assertRaises(ValueError, forceDict, ['asdg', 'asg'])
+@pytest.mark.parametrize("input", ['asdg', ['asdfg', 'asd']])
+def testForceDictFailsIfConversionImpossible(input):
+	with pytest.raises(ValueError):
+		forceDict(input)
 
 
 class ForceUniqueListTestCase(unittest.TestCase):
