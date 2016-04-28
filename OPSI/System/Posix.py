@@ -55,7 +55,7 @@ from OPSI.Types import OpsiVersionError
 from OPSI.Object import *
 from OPSI.Util import objectToBeautifiedText, removeUnit
 
-__version__ = '4.0.6.40'
+__version__ = '4.0.6.41'
 
 logger = Logger()
 
@@ -643,6 +643,9 @@ def ifconfig(device, address, netmask=None):
 		cmd += u' netmask %s' % forceNetmask(netmask)
 	execute(cmd)
 
+def getSystemProxySetting():
+	#TODO Have to be implemented for posix machines
+	logger.notice(u'Not Implemented yet')
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # -                                   SESSION / DESKTOP HANDLING                                      -
