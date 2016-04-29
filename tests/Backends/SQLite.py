@@ -26,48 +26,34 @@ import os
 from contextlib import contextmanager
 from functools import wraps
 
-try:
-	import apsw
-except ImportError:
-	apsw = None
-
 from OPSI.Backend.Backend import ExtendedConfigDataBackend
 from OPSI.Backend.SQLite import SQLiteBackend, SQLiteObjectBackendModificationTracker
 from . import BackendMixin
 from ..helpers import workInTemporaryDirectory, unittest
 
+import pytest
+
 try:
-    from .config import SQLiteconfiguration
+	from .config import SQLiteconfiguration
 except ImportError:
-    SQLiteconfiguration = {}
+	SQLiteconfiguration = {}
 
-
-def requiresApsw(function):
-	@wraps(function)
-	def wrapped_func(*args, **kwargs):
-		if apsw is None:
-			raise unittest.SkipTest('SQLite tests skipped: Missing the module "apsw".')
-
-		return function(*args, **kwargs)
-
-	return wrapped_func
+pytest.importorskip("apsw")
 
 
 class SQLiteBackendMixin(BackendMixin):
 
-    CREATES_INVENTORY_HISTORY = True
+	CREATES_INVENTORY_HISTORY = True
 
-    @requiresApsw
-    def setUpBackend(self):
-        self.backend = ExtendedConfigDataBackend(SQLiteBackend(**SQLiteconfiguration))
-        self.backend.backend_createBase()
+	def setUpBackend(self):
+		self.backend = ExtendedConfigDataBackend(SQLiteBackend(**SQLiteconfiguration))
+		self.backend.backend_createBase()
 
-    def tearDownBackend(self):
-        self.backend.backend_deleteBase()
+	def tearDownBackend(self):
+		self.backend.backend_deleteBase()
 
 
 @contextmanager
-@requiresApsw
 def getSQLiteBackend(configuration=None):
 	# Defaults and settings from the old fixture.
 	# defaultOptions = {
@@ -90,7 +76,6 @@ def getSQLiteBackend(configuration=None):
 
 
 @contextmanager
-@requiresApsw
 def getSQLiteModificationTracker(database=":memory:"):
 	if not database:
 		with workInTemporaryDirectory() as tempDir:
