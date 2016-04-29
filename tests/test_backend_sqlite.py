@@ -35,11 +35,10 @@ from .BackendTestMixins import (ConfigStateTestsMixin, LicensesTestMixin,
     ExtendedBackendTestsMixin, BackendTestsMixin)
 from .helpers import unittest, requiresModulesFile
 
-pytest.importorskip("apsw")
-
 
 class BackendSQLiteTestCase(unittest.TestCase):
     def testInitialisationDoesNotFail(self):
+        pytest.importorskip("apsw")
 
         backend = SQLiteBackend()
         backend.backend_createBase()
@@ -54,6 +53,8 @@ class SQLiteBackendTestCase(unittest.TestCase, SQLiteBackendMixin,
 
     @requiresModulesFile
     def setUp(self):
+        pytest.importorskip("apsw")
+
         self.backend = None
         self.setUpBackend()
 

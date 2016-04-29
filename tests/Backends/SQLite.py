@@ -38,14 +38,13 @@ try:
 except ImportError:
 	SQLiteconfiguration = {}
 
-pytest.importorskip("apsw")
-
 
 class SQLiteBackendMixin(BackendMixin):
 
 	CREATES_INVENTORY_HISTORY = True
 
 	def setUpBackend(self):
+		pytest.importorskip("apsw")
 		self.backend = ExtendedConfigDataBackend(SQLiteBackend(**SQLiteconfiguration))
 		self.backend.backend_createBase()
 
@@ -55,6 +54,8 @@ class SQLiteBackendMixin(BackendMixin):
 
 @contextmanager
 def getSQLiteBackend(configuration=None):
+	pytest.importorskip("apsw")
+
 	# Defaults and settings from the old fixture.
 	# defaultOptions = {
 	# 	'processProductPriorities':            True,
@@ -77,6 +78,8 @@ def getSQLiteBackend(configuration=None):
 
 @contextmanager
 def getSQLiteModificationTracker(database=":memory:"):
+	pytest.importorskip("apsw")
+
 	if not database:
 		with workInTemporaryDirectory() as tempDir:
 			database = os.path.join(tempDir, "tracker.sqlite")
