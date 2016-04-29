@@ -4,7 +4,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2010-2015 uib GmbH
+# Copyright (C) 2010-2016 uib GmbH
 
 # http://www.uib.de/
 
@@ -23,7 +23,10 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-opsi python library - JsonRpc
+Support for JSON-RPC.
+
+Information about the JSON-RPC standard can be found at
+http://www.jsonrpc.org/specification
 
 :copyright: uib GmbH <info@uib.de>
 :author: Jan Schneider <j.schneider@uib.de>
@@ -33,6 +36,7 @@ opsi python library - JsonRpc
 
 import sys
 import time
+import traceback
 import zlib
 
 from twisted.internet.defer import maybeDeferred, DeferredList
@@ -102,24 +106,27 @@ class JsonRpc(object):
 
 			keywords = {}
 			if methodInterface['keywords']:
-				l = 0
+				parameterCount = 0
 				if methodInterface['args']:
-					l += len(methodInterface['args'])
+					parameterCount += len(methodInterface['args'])
 				if methodInterface['varargs']:
-					l += len(methodInterface['varargs'])
+					parameterCount += len(methodInterface['varargs'])
 
-				if len(params) >= l:
-					if not isinstance(params[-1], dict):
+				if len(params) >= parameterCount:
+					kwargs = params.pop(-1)
+					if not isinstance(kwargs, dict):
 						raise Exception(u"kwargs param is not a dict: %s" % params[-1])
 
-					for (key, value) in params.pop(-1).items():
+					for (key, value) in kwargs.items():
 						keywords[str(key)] = deserialize(value)
+
+				del parameterCount
 
 			params = deserialize(params)
 
 			pString = forceUnicode(params)[1:-1]
 			if keywords:
-				pString = u'{0}, {1}'.format(pString,forceUnicode(keywords))
+				pString = u'{0}, {1}'.format(pString, forceUnicode(keywords))
 
 			if len(pString) > 200:
 				pString = u'{0}...'.format(pString[:200])
@@ -133,19 +140,21 @@ class JsonRpc(object):
 				self.result = eval("instance.%s(*params)" % self.getMethodName())
 
 			logger.info(u'Got result')
-			logger.debug2("RPC ID %s: %s" %(self.tid, self.result))
-		except Exception as e:
-			logger.logException(e, LOG_INFO)
-			logger.error(u'Execution error: %s' % forceUnicode(e))
-			self.exception = e
+			logger.debug2("RPC ID {0}: {1!r}".format(self.tid, self.result))
+		except Exception as error:
+			logger.logException(error, LOG_INFO)
+			logger.error(u'Execution error: %s' % forceUnicode(error))
+			self.exception = error
 			self.traceback = []
-			tb = sys.exc_info()[2]
-			while tb != None:
-				f = tb.tb_frame
-				c = f.f_code
-				self.traceback.append(u"     line %s in '%s' in file '%s'" % (tb.tb_lineno, c.co_name, c.co_filename))
-				tb = tb.tb_next
-		self.ended = time.time()
+			try:
+				for tbInfo in traceback.format_tb(sys.exc_info()[2]):
+					self.traceback.append(tbInfo)
+			except AttributeError as attre:
+				message = u"Failed to collect traceback: {0}".format(attre)
+				logger.warning(message)
+				self.traceback.append(message)
+		finally:
+			self.ended = time.time()
 
 	def getResponse(self):
 		response = {}
@@ -239,8 +248,8 @@ class JsonRpcRequestProcessor(object):
 			rpcs = fromJson(self.query, preventObjectCreation=True)
 			if not rpcs:
 				raise Exception(u"Got no rpcs")
-		except Exception as e:
-			raise OpsiBadRpcError(u"Failed to decode rpc: {0}".format(e))
+		except Exception as error:
+			raise OpsiBadRpcError(u"Failed to decode rpc: {0}".format(error))
 
 		for rpc in forceList(rpcs):
 			self.rpcs.append(

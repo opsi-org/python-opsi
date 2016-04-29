@@ -35,7 +35,7 @@ from OPSI.Types import forceBool, forceHostId, forceList
 from OPSI.Util.Message import ProgressSubject
 
 
-__version__ = '4.0.6.13'
+__version__ = '4.0.6.48'
 
 logger = Logger()
 
@@ -158,6 +158,8 @@ class BackendReplicator(object):
 			self.__overallProgressSubject.reset()
 			end = self._getNumberOfObjectClassesToProcess(audit, license)
 			if self.__cleanupFirst:
+				end += 1
+			if self.__newServerId:
 				end += 1
 			self.__overallProgressSubject.setEnd(end)
 
@@ -335,6 +337,10 @@ class BackendReplicator(object):
 				self.__overallProgressSubject.addToState(1)
 
 			if self.__newServerId:
+				self.__currentProgressSubject.reset()
+				self.__currentProgressSubject.setMessage(u"Renaming server")
+				self.__currentProgressSubject.setTitle(u"Renaming server")
+				self.__currentProgressSubject.setEnd(1)
 				if not self.__oldServerId:
 					if configServer:
 						self.__oldServerId = configServer.id
@@ -365,6 +371,8 @@ class BackendReplicator(object):
 						else:
 							newDepots.append(OpsiDepotserver.fromHash(hash))
 					renamingBackend.host_createObjects(newDepots)
+
+				self.__overallProgressSubject.addToState(1)
 		finally:
 			wb.backend_setOptions({'additionalReferentialIntegrityChecks': aric})
 

@@ -28,12 +28,14 @@ from __future__ import absolute_import
 import os
 import sys
 import warnings
+from contextlib import contextmanager
 from io import BytesIO as StringIO
 
 import OPSI.Logger
 import pytest
 
-from .helpers import cd, mock, workInTemporaryDirectory
+from .helpers import cd, mock, workInTemporaryDirectory, showLogs
+
 
 # Log level that will result in log output.
 LOGGING_LEVELS = [
@@ -279,3 +281,45 @@ def testCallingLogMethods(logger):
 	logger.critical('test message')
 	logger.essential('test message')
 	logger.comment('test message')
+
+
+@contextmanager
+def catchMessages():
+	messageBuffer = StringIO()
+	with mock.patch('OPSI.Logger.sys.stdin', messageBuffer):
+		with mock.patch('OPSI.Logger.sys.stderr', messageBuffer):
+			yield messageBuffer
+
+
+def testLoggingTracebacks():
+	with showLogs() as logger:
+		with catchMessages() as messageBuffer:
+			try:
+				raise RuntimeError("Foooock")
+			except Exception as e:
+				logger.logException(e)
+
+		values = messageBuffer.getvalue().split('\n')
+		values = [v for v in values if v]  # don't use empty lines
+
+		print(repr(values))
+
+		assert len(values) > 1
+		assert "traceback" in values[0].lower()
+		assert "line" in values[1].lower()
+		assert "file" in values[1].lower()
+		assert "Foooock" in values[-1]
+
+
+def testLogTracebackCanFail():
+	objectWithoutTraceback = object()
+	with showLogs() as logger:
+		with catchMessages() as messageBuffer:
+			logger.logTraceback(objectWithoutTraceback)
+
+	messages = messageBuffer.getvalue()
+
+	print("Messages: {0!r}".format(messages))
+	assert 'Failed to log traceback for' in messages
+	assert repr(objectWithoutTraceback) in messages
+	assert 'object has no attribute' in messages
