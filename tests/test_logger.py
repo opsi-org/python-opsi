@@ -63,16 +63,24 @@ def logger():
 		logger.setFileLevel(OPSI.Logger.LOG_NONE)
 
 
-def testLoggingMessage(logger):
-	level = OPSI.Logger.LOG_CONFIDENTIAL
-	logger.setConsoleLevel(level)
+@contextmanager
+def catchMessages():
+	"Write messages to stdout / stdin into a virtual buffer."
 
 	messageBuffer = StringIO()
 	with mock.patch('OPSI.Logger.sys.stdin', messageBuffer):
 		with mock.patch('OPSI.Logger.sys.stderr', messageBuffer):
-			logger.log(level, "This is not a test!", raiseException=True)
+			yield messageBuffer
 
-	assert "This is not a test!" in messageBuffer.getvalue()
+
+def testLoggingMessage(logger):
+	level = OPSI.Logger.LOG_CONFIDENTIAL
+	logger.setConsoleLevel(level)
+
+	with catchMessages() as messageBuffer:
+		logger.log(level, "This is not a test!", raiseException=True)
+
+		assert "This is not a test!" in messageBuffer.getvalue()
 
 
 @pytest.mark.parametrize("logLevel", [OPSI.Logger.LOG_NONE] + LOGGING_LEVELS)
@@ -85,14 +93,12 @@ def testChangingConsoleLogLevel(logger, logLevel):
 def testLoggingUnicode(logger, logLevel):
 	logger.setConsoleLevel(logLevel)
 
-	messageBuffer = StringIO()
-	with mock.patch('OPSI.Logger.sys.stdin', messageBuffer):
-		with mock.patch('OPSI.Logger.sys.stderr', messageBuffer):
-			logger.log(logLevel, u"Heävy Metäl Ümläüts! Öy!", raiseException=True)
+	with catchMessages() as messageBuffer:
+		logger.log(logLevel, u"Heävy Metäl Ümläüts! Öy!", raiseException=True)
 
-	# Currently this has to be suffice
-	# TODO: better check for logged string.
-	assert messageBuffer.getvalue()
+		# Currently this has to be suffice
+		# TODO: better check for logged string.
+		assert messageBuffer.getvalue()
 
 
 def test_logTwisted(logger):
@@ -101,28 +107,25 @@ def test_logTwisted(logger):
 	logger.setConsoleLevel(OPSI.Logger.LOG_DEBUG)
 	logger.setLogFormat('[%l] %M')
 
-	err = StringIO()
+	with catchMessages() as err:
+		logger.startTwistedLogging()
 
-	with mock.patch('OPSI.Logger.sys.stdin', err):
-		with mock.patch('OPSI.Logger.sys.stderr', err):
-			logger.startTwistedLogging()
+		value = err.getvalue()
+		assert "" != value
+		assert value == "[{0:d}] [twisted] Log opened.\n".format(OPSI.Logger.LOG_DEBUG)
+		err.seek(0)
+		err.truncate(0)
 
-			value = err.getvalue()
-			assert "" != value
-			assert value == "[{0:d}] [twisted] Log opened.\n".format(OPSI.Logger.LOG_DEBUG)
-			err.seek(0)
-			err.truncate(0)
+		log.msg("message")
+		value = err.getvalue()
+		assert "" != value
+		assert value == "[{0:d}] [twisted] message\n".format(OPSI.Logger.LOG_DEBUG)
+		err.seek(0)
+		err.truncate(0)
 
-			log.msg("message")
-			value = err.getvalue()
-			assert "" != value
-			assert value == "[{0:d}] [twisted] message\n".format(OPSI.Logger.LOG_DEBUG)
-			err.seek(0)
-			err.truncate(0)
-
-			log.err("message")
-			value = err.getvalue()
-			assert value == "[{0:d}] [twisted] 'message'\n".format(OPSI.Logger.LOG_ERROR)
+		log.err("message")
+		value = err.getvalue()
+		assert value == "[{0:d}] [twisted] 'message'\n".format(OPSI.Logger.LOG_ERROR)
 
 
 def testPatchingShowwarnings(logger):
@@ -142,22 +145,19 @@ def testLoggingFromWarningsModule(logger):
 	logger.setConsoleLevel(OPSI.Logger.LOG_WARNING)
 	logger.setLogFormat('[%l] %M')
 
-	messageBuffer = StringIO()
+	with catchMessages() as messageBuffer:
+		try:
+			logger.logWarnings()
 
-	with mock.patch('OPSI.Logger.sys.stdin', messageBuffer):
-		with mock.patch('OPSI.Logger.sys.stderr', messageBuffer):
-			try:
-				logger.logWarnings()
+			warnings.warn("usermessage")
+			warnings.warn("another message", DeprecationWarning)
+			warnings.warn("message", DeprecationWarning, stacklevel=2)
+		finally:
+			# Making sure that the switched function is
+			# resetted to it's default.
+			warnings.showwarning = OPSI.Logger._showwarning
 
-				warnings.warn("usermessage")
-				warnings.warn("another message", DeprecationWarning)
-				warnings.warn("message", DeprecationWarning, stacklevel=2)
-			finally:
-				# Making sure that the switched function is
-				# resetted to it's default.
-				warnings.showwarning = OPSI.Logger._showwarning
-
-	value = messageBuffer.getvalue()
+		value = messageBuffer.getvalue()
 
 	assert value.startswith("[{0:d}]".format(OPSI.Logger.LOG_WARNING))
 	assert "UserWarning: usermessage" in value
@@ -185,15 +185,13 @@ def testLogLevelIsShownInOutput(logger, message, logLevel):
 	logger.setConsoleLevel(logLevel)
 	logger.setLogFormat('[%l] %M')
 
-	messageBuffer = StringIO()
+	with catchMessages() as messageBuffer:
+		logger.log(logLevel, message)
+		value = messageBuffer.getvalue()
 
-	with mock.patch('OPSI.Logger.sys.stdin', messageBuffer):
-		with mock.patch('OPSI.Logger.sys.stderr', messageBuffer):
-			logger.log(logLevel, message)
-			value = messageBuffer.getvalue()
-			assert value.startswith("[{0:d}]".format(logLevel))
-			assert message in value
-			assert value.rstrip().endswith(message)
+	assert value.startswith("[{0:d}]".format(logLevel))
+	assert message in value
+	assert value.rstrip().endswith(message)
 
 
 def testConfidentialStringsAreNotLogged(logger):
@@ -202,12 +200,11 @@ def testConfidentialStringsAreNotLogged(logger):
 	logger.addConfidentialString(secretWord)
 	logger.setConsoleLevel(OPSI.Logger.LOG_DEBUG2)
 
-	messageBuffer = StringIO()
-	with mock.patch('OPSI.Logger.sys.stdin', messageBuffer):
-		with mock.patch('OPSI.Logger.sys.stderr', messageBuffer):
-			logger.notice("Psst... {0}".format(secretWord))
+	with catchMessages() as messageBuffer:
+		logger.notice("Psst... {0}".format(secretWord))
 
-	value = messageBuffer.getvalue()
+		value = messageBuffer.getvalue()
+
 	assert secretWord not in value
 	assert "Psst... " in value
 	assert "*** confidential ***" in value
@@ -222,12 +219,11 @@ def testLogFormatting(logger):
 	logger.setConsoleLevel(OPSI.Logger.LOG_CONFIDENTIAL)
 	logger.setLogFormat('[%l - %L] %F %M')
 
-	messageBuffer = StringIO()
-	with mock.patch('OPSI.Logger.sys.stdin', messageBuffer):
-		with mock.patch('OPSI.Logger.sys.stderr', messageBuffer):
-			logger.debug("Chocolate Starfish")
+	with catchMessages() as messageBuffer:
+		logger.debug("Chocolate Starfish")
 
-	value = messageBuffer.getvalue()
+		value = messageBuffer.getvalue()
+
 	assert '[7 - debug] test_logger.py Chocolate Starfish', value.strip()
 
 
@@ -237,15 +233,14 @@ def testSettingConfidentialStrings(logger):
 
 	logger.setConsoleLevel(OPSI.Logger.LOG_DEBUG2)
 
-	messageBuffer = StringIO()
-	with mock.patch('OPSI.Logger.sys.stdin', messageBuffer):
-		with mock.patch('OPSI.Logger.sys.stderr', messageBuffer):
-			logger.notice("Die Momente, die es wert sind, ziehen so schnell vorbei")
-			logger.notice("So schnell, so weit")
-			logger.notice("Der Wahnsinn folgt jetzt nicht mehr dem Asphalt")
-			logger.notice("Du lässt ihn zurück")
+	with catchMessages() as messageBuffer:
+		logger.notice("Die Momente, die es wert sind, ziehen so schnell vorbei")
+		logger.notice("So schnell, so weit")
+		logger.notice("Der Wahnsinn folgt jetzt nicht mehr dem Asphalt")
+		logger.notice("Du lässt ihn zurück")
 
-	value = messageBuffer.getvalue()
+		value = messageBuffer.getvalue()
+
 	for word in confidential:
 		assert word not in value
 	assert "So schnell, so weit" in value
@@ -281,14 +276,6 @@ def testCallingLogMethods(logger):
 	logger.critical('test message')
 	logger.essential('test message')
 	logger.comment('test message')
-
-
-@contextmanager
-def catchMessages():
-	messageBuffer = StringIO()
-	with mock.patch('OPSI.Logger.sys.stdin', messageBuffer):
-		with mock.patch('OPSI.Logger.sys.stderr', messageBuffer):
-			yield messageBuffer
 
 
 def testLoggingTracebacks():
