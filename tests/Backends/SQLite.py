@@ -32,9 +32,6 @@ from ..helpers import workInTemporaryDirectory, unittest
 
 import pytest
 
-SQLiteBackend = pytest.importorskip("OPSI.Backend.SQLite.SQLiteBackend")
-SQLiteObjectBackendModificationTracker = pytest.importorskip("OPSI.Backend.SQLite.SQLiteObjectBackendModificationTracker")
-
 try:
 	from .config import SQLiteconfiguration
 except ImportError:
@@ -46,7 +43,8 @@ class SQLiteBackendMixin(BackendMixin):
 	CREATES_INVENTORY_HISTORY = True
 
 	def setUpBackend(self):
-		pytest.importorskip("apsw")
+		SQLiteBackend = pytest.importorskip("OPSI.Backend.SQLite.SQLiteBackend")
+
 		self.backend = ExtendedConfigDataBackend(SQLiteBackend(**SQLiteconfiguration))
 		self.backend.backend_createBase()
 
@@ -56,7 +54,7 @@ class SQLiteBackendMixin(BackendMixin):
 
 @contextmanager
 def getSQLiteBackend(configuration=None):
-	pytest.importorskip("apsw")
+	SQLiteBackend = pytest.importorskip("OPSI.Backend.SQLite.SQLiteBackend")
 
 	# Defaults and settings from the old fixture.
 	# defaultOptions = {
@@ -81,6 +79,7 @@ def getSQLiteBackend(configuration=None):
 @contextmanager
 def getSQLiteModificationTracker(database=":memory:"):
 	pytest.importorskip("apsw")
+	SQLiteObjectBackendModificationTracker = pytest.importorskip("OPSI.Backend.SQLite.SQLiteObjectBackendModificationTracker")
 
 	if not database:
 		with workInTemporaryDirectory() as tempDir:
