@@ -40,30 +40,34 @@ from .Backends.File import FileBackendMixin
 from .Backends.SQLite import getSQLiteBackend
 from .BackendTestMixins.Hosts import HostsMixin
 from .helpers import workInTemporaryDirectory, requiresModulesFile
+from .opsifixtures import configDataBackend
+from .test_backend_replicator import (fillBackendWithHosts,
+    fillBackendWithProducts, fillBackendWithProductOnClients)
+
+import pytest
 
 
-class BackendACLFileTestCase(unittest.TestCase):
-    def testParsingFile(self):
-        with workInTemporaryDirectory() as tempDir:
-            aclFile = os.path.join(tempDir, 'acl.conf')
-            with open(aclFile, 'w') as exampleConfig:
-                exampleConfig.write(
-    '''
-    host_.*: opsi_depotserver(depot1.test.invalid, depot2.test.invalid); opsi_client(self,  attributes (attr1, attr2)); sys_user(some user, some other user); sys_group(a_group, group2)
-    '''
-            )
+def testParsingBackendACLFile():
+    with workInTemporaryDirectory() as tempDir:
+        aclFile = os.path.join(tempDir, 'acl.conf')
+        with open(aclFile, 'w') as exampleConfig:
+            exampleConfig.write(
+'''
+host_.*: opsi_depotserver(depot1.test.invalid, depot2.test.invalid); opsi_client(self,  attributes (attr1, attr2)); sys_user(some user, some other user); sys_group(a_group, group2)
+'''
+        )
 
-            expectedACL = [
-                [u'host_.*', [
-                    {'denyAttributes': [], 'type': u'opsi_depotserver', 'ids': [u'depot1.test.invalid', u'depot2.test.invalid'], 'allowAttributes': []},
-                    {'denyAttributes': [], 'type': u'opsi_client', 'ids': [u'self'], 'allowAttributes': [u'attr1', u'attr2']},
-                    {'denyAttributes': [], 'type': u'sys_user', 'ids': [u'some user', u'some other user'], 'allowAttributes': []},
-                    {'denyAttributes': [], 'type': u'sys_group', 'ids': [u'a_group', u'group2'], 'allowAttributes': []}
-                    ]
+        expectedACL = [
+            [u'host_.*', [
+                {'denyAttributes': [], 'type': u'opsi_depotserver', 'ids': [u'depot1.test.invalid', u'depot2.test.invalid'], 'allowAttributes': []},
+                {'denyAttributes': [], 'type': u'opsi_client', 'ids': [u'self'], 'allowAttributes': [u'attr1', u'attr2']},
+                {'denyAttributes': [], 'type': u'sys_user', 'ids': [u'some user', u'some other user'], 'allowAttributes': []},
+                {'denyAttributes': [], 'type': u'sys_group', 'ids': [u'a_group', u'group2'], 'allowAttributes': []}
                 ]
             ]
+        ]
 
-            self.assertEquals(expectedACL, BackendACLFile(aclFile).parse())
+        assert expectedACL == BackendACLFile(aclFile).parse()
 
 
 class ACLEnforcingTestCase(unittest.TestCase, FileBackendMixin,
@@ -390,50 +394,50 @@ class ACLTestCase(unittest.TestCase, HostsMixin, ProductsOnClientsMixin):
                                 u"Expected attribute '%s' to be None, but got '%s' from backend" % (attribute, value)
                             )
 
-    @requiresModulesFile  # Until this is implemented without SQL
-    def test_access_self_productOnClients(self):
-        with getSQLiteBackend() as backend:
-            self.backend = ExtendedConfigDataBackend(backend)
-            self.setUpHosts()
-            self.setUpProductOnClients()
+# @requiresModulesFile  # Until this is implemented without SQL
+# TODO: fix the usage of requiresModulesFile!
+def testAccessingSelfProductOnClients(configDataBackend):
+    dataBackend = ExtendedConfigDataBackend(configDataBackend)  # TODO: use an extended backend
 
-            self.createHostsOnBackend()
-            self.createProductsOnBackend()
-            self.backend.productOnClient_createObjects(self.productOnClients)
+    configServer, depotServer, clients = fillBackendWithHosts(dataBackend)
+    products = fillBackendWithProducts(dataBackend)
+    productOnClients = fillBackendWithProductOnClients(dataBackend, products, clients)
 
-            for client in self.clients:
-                if client.id == self.productOnClients[0].clientId:
-                    break
+    for client in clients:
+        if client.id == productOnClients[0].clientId:
+            break
+    else:
+        raise RuntimeError("Missing client!")
 
-            backend = BackendAccessControl(
-                backend=self.backend,
-                username=client.id,
-                password=client.opsiHostKey,
-                acl=[
-                        ['.*',
-                            [
-                                {'type': u'self', 'ids': [], 'denyAttributes': [], 'allowAttributes': []}
-                        ]
-                    ]
+    backend = BackendAccessControl(
+        backend=dataBackend,
+        username=client.id,
+        password=client.opsiHostKey,
+        acl=[
+                ['.*',
+                    [
+                        {'type': u'self', 'ids': [], 'denyAttributes': [], 'allowAttributes': []}
                 ]
-            )
+            ]
+        ]
+    )
 
-            productOnClients = backend.productOnClient_getObjects()
-            for productOnClient in productOnClients:
-                self.assertEqual(client.id, productOnClient.clientId,
-                    u"Expected client id %s in productOnClient, but got client id '%s'" % (client.id, productOnClient.clientId)
-                )
+    productOnClients = backend.productOnClient_getObjects()
+    for productOnClient in productOnClients:
+        assert client.id == productOnClient.clientId, u"Expected client id %s in productOnClient, but got client id '%s'" % (client.id, productOnClient.clientId)
 
-            otherClientId = None
-            for c in self.clients:
-                if client.id != c.id:
-                    otherClientId = c.id
-                    break
+    for c in clients:
+        if client.id != c.id:
+            otherClientId = c.id
+            break
+    else:
+        raise RuntimeError("Failed to get different clientID.")
 
-            productOnClient = productOnClients[0].clone()
-            productOnClient.clientId = otherClientId
+    productOnClient = productOnClients[0].clone()
+    productOnClient.clientId = otherClientId
 
-            self.assertRaises(Exception, backend.productOnClient_updateObjects, productOnClient)
+    with pytest.raises(Exception):
+        backend.productOnClient_updateObjects(productOnClient)
 
 
 if __name__ == '__main__':
