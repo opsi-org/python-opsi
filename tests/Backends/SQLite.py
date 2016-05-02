@@ -78,7 +78,6 @@ def getSQLiteBackend(configuration=None):
 
 @contextmanager
 def getSQLiteModificationTracker(database=":memory:"):
-	pytest.importorskip("apsw")
 	SQLiteObjectBackendModificationTracker = pytest.importorskip("OPSI.Backend.SQLite.SQLiteObjectBackendModificationTracker")
 
 	if not database:
