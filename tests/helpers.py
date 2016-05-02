@@ -114,7 +114,7 @@ def patchAddress(fqdn="opsi.test.invalid", address="172.16.0.1"):
     """
     Modify the results of socket so that expected addresses are returned.
 
-    :param fqdn: The FQDN to use. Everything before the first '.' will server\
+    :param fqdn: The FQDN to use. Everything before the first '.' will serve\
 as hostname.
     :param address: The IP address to use.
     """
