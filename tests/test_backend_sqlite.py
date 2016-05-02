@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -25,15 +25,15 @@ Testing the opsi SQLite backend.
 
 from __future__ import absolute_import
 
-import pytest
-
-from OPSI.Backend.SQLite import SQLiteBackend
-
 from .Backends.SQLite import SQLiteBackendMixin
 from .BackendTestMixins import (ConfigStateTestsMixin, LicensesTestMixin,
     AuditTestsMixin, ConfigTestsMixin, ProductsTestMixin,
     ExtendedBackendTestsMixin, BackendTestsMixin)
 from .helpers import unittest, requiresModulesFile
+
+import pytest
+
+SQLiteBackend = pytest.importorskip("OPSI.Backend.SQLite.SQLiteBackend")
 
 
 class BackendSQLiteTestCase(unittest.TestCase):

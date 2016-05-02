@@ -27,11 +27,13 @@ from contextlib import contextmanager
 from functools import wraps
 
 from OPSI.Backend.Backend import ExtendedConfigDataBackend
-from OPSI.Backend.SQLite import SQLiteBackend, SQLiteObjectBackendModificationTracker
 from . import BackendMixin
 from ..helpers import workInTemporaryDirectory, unittest
 
 import pytest
+
+SQLiteBackend = pytest.importorskip("OPSI.Backend.SQLite.SQLiteBackend")
+SQLiteObjectBackendModificationTracker = pytest.importorskip("OPSI.Backend.SQLite.SQLiteObjectBackendModificationTracker")
 
 try:
 	from .config import SQLiteconfiguration
