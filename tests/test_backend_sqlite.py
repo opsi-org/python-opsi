@@ -33,12 +33,10 @@ from .helpers import unittest, requiresModulesFile
 
 import pytest
 
-SQLiteBackend = pytest.importorskip("OPSI.Backend.SQLite.SQLiteBackend")
-
 
 class BackendSQLiteTestCase(unittest.TestCase):
     def testInitialisationDoesNotFail(self):
-        pytest.importorskip("apsw")
+        SQLiteBackend = pytest.importorskip("OPSI.Backend.SQLite.SQLiteBackend")
 
         backend = SQLiteBackend()
         backend.backend_createBase()
@@ -53,8 +51,6 @@ class SQLiteBackendTestCase(unittest.TestCase, SQLiteBackendMixin,
 
     @requiresModulesFile
     def setUp(self):
-        pytest.importorskip("apsw")
-
         self.backend = None
         self.setUpBackend()
 
