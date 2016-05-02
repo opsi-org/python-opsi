@@ -353,7 +353,8 @@ class GettingBackendManagerTestCase(unittest.TestCase):
         requiredThings = (
             u'/etc/opsi/backendManager/dispatch.conf',
             u'/etc/opsi/backends',
-            u'/etc/opsi/backendManager/extend.d'
+            u'/etc/opsi/backendManager/extend.d',
+            u'/var/lib/opsi/config/depots',
         )
 
         for required in requiredThings:
