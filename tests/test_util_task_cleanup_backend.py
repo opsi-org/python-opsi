@@ -30,7 +30,7 @@ from OPSI.Util.Task.CleanupBackend import cleanupBackend
 from .test_backend_replicator import fillBackend, checkIfBackendIsFilled
 
 
-def testCleanupBackend(extendedConfigDataBackend):
+def testCleanupBackend(cleanableDataBackend):
     # TODO: we need checks to see what get's removed and what not.
     # TODO: we also should provide some senseless data that will be removed!
     fillBackend(extendedConfigDataBackend)

@@ -76,6 +76,20 @@ def extendedConfigDataBackend(configDataBackend):
     yield ExtendedConfigDataBackend(configDataBackend)
 
 
+@pytest.yield_fixture(
+    params=[getFileBackend, getMySQLBackend],
+    ids=['file backend', 'MySQL backend']
+)
+def cleanableDataBackend(request):
+    """
+    Returns an `OPSI.Backend.ConfigDataBackend` that can be cleaned.
+    """
+    with request.param() as backend:
+        backend.backend_createBase()
+        yield backend
+        backend.backend_deleteBase()
+
+
 def pytest_runtest_setup(item):
     envmarker = item.get_marker("requiresModulesFile")
     if envmarker is not None:
