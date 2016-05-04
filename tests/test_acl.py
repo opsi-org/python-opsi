@@ -395,8 +395,8 @@ class ACLTestCase(unittest.TestCase, HostsMixin, ProductsOnClientsMixin):
 
 # @requiresModulesFile  # Until this is implemented without SQL
 # TODO: fix the usage of requiresModulesFile!
-def testAccessingSelfProductOnClients(configDataBackend):
-    dataBackend = ExtendedConfigDataBackend(configDataBackend)  # TODO: use an extended backend
+def testAccessingSelfProductOnClients(extendedConfigDataBackend):
+    dataBackend = extendedConfigDataBackend
 
     configServer, depotServer, clients = fillBackendWithHosts(dataBackend)
     products = fillBackendWithProducts(dataBackend)
