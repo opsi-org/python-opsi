@@ -51,7 +51,9 @@ def configDataBackend(request):
     execution are not met.
     """
     with request.param() as backend:
+        backend.backend_createBase()
         yield backend
+        backend.backend_deleteBase()
 
 
 @pytest.yield_fixture
