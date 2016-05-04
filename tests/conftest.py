@@ -79,4 +79,4 @@ def pytest_runtest_setup(item):
     envmarker = item.get_marker("requiresModulesFile")
     if envmarker is not None:
         if not os.path.exists(os.path.join('/etc', 'opsi', 'modules')):
-            raise pytest.skip("This test requires a modules file!")
+            pytest.skip("{0} requires a modules file!".format(item.name))
