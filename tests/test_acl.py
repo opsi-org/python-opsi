@@ -40,7 +40,6 @@ from .Backends.File import FileBackendMixin
 from .Backends.SQLite import getSQLiteBackend
 from .BackendTestMixins.Hosts import HostsMixin
 from .helpers import workInTemporaryDirectory, requiresModulesFile
-from .opsifixtures import configDataBackend
 from .test_backend_replicator import (fillBackendWithHosts,
     fillBackendWithProducts, fillBackendWithProductOnClients)
 

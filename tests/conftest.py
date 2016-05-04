@@ -28,6 +28,8 @@ writing new tests.
 
 from __future__ import absolute_import
 
+from OPSI.Backend.Backend import ExtendedConfigDataBackend
+
 from .Backends.File import getFileBackend
 from .Backends.SQLite import getSQLiteBackend
 
@@ -40,7 +42,7 @@ import pytest
 )
 def configDataBackend(request):
     """
-    Returns a `OPSI.Backend.ConfigDataBackend` for testing.
+    Returns an `OPSI.Backend.ConfigDataBackend` for testing.
 
     This will return multiple backends but some of these may lead to
     skips if required libraries are missing or conditions for the
@@ -50,14 +52,13 @@ def configDataBackend(request):
         yield backend
 
 
-# @pytest.yield_fixture
-# def extendedConfigDataBackend(configDataBackend):
-#     """
-#     Returns a `OPSI.Backend.ConfigDataBackend` for testing.
+@pytest.yield_fixture
+def extendedConfigDataBackend(configDataBackend):
+    """
+    Returns an `OPSI.Backend.ExtendedConfigDataBackend` for testing.
 
-#     This will return multiple backends but some of these may lead to
-#     skips if required libraries are missing or conditions for the
-#     execution are not met.
-#     """
-#     with request.param() as backend:
-#         yield ExtendedConfigDataBackend(backend)
+    This will return multiple backends but some of these may lead to
+    skips if required libraries are missing or conditions for the
+    execution are not met.
+    """
+    yield ExtendedConfigDataBackend(configDataBackend)
