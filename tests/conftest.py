@@ -41,13 +41,14 @@ from OPSI.Backend.Backend import ExtendedConfigDataBackend
 
 from .Backends.File import getFileBackend
 from .Backends.SQLite import getSQLiteBackend
+from .Backends.MySQL import getMySQLBackend
 
 import pytest
 
 
 @pytest.yield_fixture(
-    params=[getFileBackend, getSQLiteBackend],
-    ids=['file backend', 'SQLite backend']
+    params=[getFileBackend, getSQLiteBackend, getMySQLBackend],
+    ids=['file backend', 'SQLite backend', 'MySQL backend']
 )
 def configDataBackend(request):
     """
