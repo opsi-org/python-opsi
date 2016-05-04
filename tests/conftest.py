@@ -86,7 +86,7 @@ def cleanableDataBackend(request):
     """
     with request.param() as backend:
         backend.backend_createBase()
-        yield backend
+        yield ExtendedConfigDataBackend(backend)
         backend.backend_deleteBase()
 
 
