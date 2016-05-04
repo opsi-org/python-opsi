@@ -28,6 +28,8 @@ writing new tests.
 
 from __future__ import absolute_import
 
+import os
+
 from OPSI.Backend.Backend import ExtendedConfigDataBackend
 
 from .Backends.File import getFileBackend
@@ -62,3 +64,10 @@ def extendedConfigDataBackend(configDataBackend):
     execution are not met.
     """
     yield ExtendedConfigDataBackend(configDataBackend)
+
+
+def pytest_runtest_setup(item):
+    envmarker = item.get_marker("requiresModulesFile")
+    if envmarker is not None:
+        if not os.path.exists(os.path.join('/etc', 'opsi', 'modules')):
+            raise pytest.skip("This test requires a modules file!")

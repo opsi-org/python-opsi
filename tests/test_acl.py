@@ -395,6 +395,7 @@ class ACLTestCase(unittest.TestCase, HostsMixin, ProductsOnClientsMixin):
 
 # @requiresModulesFile  # Until this is implemented without SQL
 # TODO: fix the usage of requiresModulesFile!
+@pytest.mark.requiresModulesFile
 def testAccessingSelfProductOnClients(extendedConfigDataBackend):
     dataBackend = extendedConfigDataBackend
 
