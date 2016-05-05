@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2006-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -85,6 +85,7 @@ class ProductPackageFile(object):
 		logger.info(u"Cleaning up")
 		if os.path.isdir(self.tmpUnpackDir):
 			shutil.rmtree(self.tmpUnpackDir)
+		logger.debug(u"Finished cleaning up")
 
 	def setClientDataDir(self, clientDataDir):
 		self.clientDataDir = os.path.abspath(forceFilename(clientDataDir))
@@ -103,6 +104,7 @@ class ProductPackageFile(object):
 	def uninstall(self):
 		logger.notice(u"Uninstalling package")
 		self.deleteProductClientDataDir()
+		logger.debug(u"Finished uninstalling package")
 
 	def deleteProductClientDataDir(self):
 		if not self.packageControlFile:
@@ -180,7 +182,7 @@ class ProductPackageFile(object):
 				self.packageControlFile.setProduct(product)
 				self.packageControlFile.setFilename(os.path.join(destinationDir, u'OPSI', u'control'))
 				self.packageControlFile.generate()
-
+			logger.debug(u"Finished extracting package source")
 		except Exception as e:
 			logger.logException(e, LOG_INFO)
 			self.cleanup()
@@ -297,7 +299,7 @@ class ProductPackageFile(object):
 				archive = Archive(archiveFile)
 				archive.extract(targetPath = productClientDataDir)
 
-
+			logger.debug(u"Finished extracting data from package")
 		except Exception as e:
 			self.cleanup()
 			raise Exception(u"Failed to extract data from package '%s': %s" % (self.packageFile, e))
@@ -360,6 +362,7 @@ class ProductPackageFile(object):
 						raise Exception(u"Failed to set access rights of '%s': %s" % (path, error))
 					else:
 						raise Exception(u"Failed to set access rights of '%s' to '%o': %s" % (path, mode, error))
+			logger.debug(u"Finished setting access rights of client-data files")
 		except Exception as e:
 			self.cleanup()
 			raise Exception(u"Failed to set access rights of client-data files of package '%s': %s" % (self.packageFile, e))
@@ -387,7 +390,7 @@ class ProductPackageFile(object):
 			packageContentFile.generate()
 			if not packageContentFilename in self.clientDataFiles:
 				self.clientDataFiles.append(packageContentFilename)
-
+			logger.debug(u"Finished creating package content file")
 		except Exception as e:
 			logger.logException(e)
 			self.cleanup()
@@ -422,6 +425,8 @@ class ProductPackageFile(object):
 			logger.logException(error, LOG_ERROR)
 			self.cleanup()
 			raise Exception(u"Failed to execute package script '%s' of package '%s': %s" % (scriptName, self.packageFile, error))
+		finally:
+			logger.debug(u"Finished running package script {0!r}".format(scriptName))
 
 	def runPreinst(self, env={}):
 		return self._runPackageScript(u'preinst', env=env)
@@ -495,6 +500,7 @@ class ProductPackageSource(object):
 		logger.info(u"Cleaning up")
 		if os.path.isdir(self.tmpPackDir):
 			shutil.rmtree(self.tmpPackDir)
+		logger.debug(u"Finished cleaning up")
 
 	def pack(self, progressSubject=None):
 		# Create temporary directory
