@@ -36,12 +36,15 @@ creating a test function. No rurther imports are needed.
 from __future__ import absolute_import
 
 import os
+import shutil
 
 from OPSI.Backend.Backend import ExtendedConfigDataBackend
+from OPSI.Backend.BackendManager import BackendManager
 
-from .Backends.File import getFileBackend
+from .Backends.File import getFileBackend, _getOriginalBackendLocation
 from .Backends.SQLite import getSQLiteBackend
 from .Backends.MySQL import getMySQLBackend
+from .helpers import workInTemporaryDirectory
 
 import pytest
 
@@ -88,6 +91,27 @@ def cleanableDataBackend(request):
         backend.backend_createBase()
         yield ExtendedConfigDataBackend(backend)
         backend.backend_deleteBase()
+
+
+@pytest.yield_fixture
+def backendManager(configDataBackend):
+    """
+    Returns an `OPSI.Backend.ExtendedConfigDataBackend` for testing.
+
+    This will return multiple backends but some of these may lead to
+    skips if required libraries are missing or conditions for the
+    execution are not met.
+    """
+    defaultConfigDir = _getOriginalBackendLocation()
+
+    with workInTemporaryDirectory() as tempDir:
+        shutil.copytree(defaultConfigDir, os.path.join(tempDir, 'etc', 'opsi'))
+
+        yield BackendManager(
+            backend=backend,
+            # backendconfigdir=os.path.join(self._fileTempDir, 'etc', 'opsi', 'backends'),
+            extensionconfigdir=os.path.join(self._fileTempDir, 'etc', 'opsi', 'backendManager', 'extend.d')
+        )
 
 
 def pytest_runtest_setup(item):
