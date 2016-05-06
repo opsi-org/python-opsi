@@ -398,4 +398,4 @@ class GettingBackendManagerTestCase(unittest.TestCase):
 
 
 def testBackendManager(backendManager):
-    print(backend.backend_info())
+    print(backendManager.backend_info())
