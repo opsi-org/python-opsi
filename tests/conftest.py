@@ -48,7 +48,7 @@ import pytest
 
 @pytest.yield_fixture(
     params=[getFileBackend, getSQLiteBackend, getMySQLBackend],
-    ids=['file backend', 'SQLite backend', 'MySQL backend']
+    ids=['file', 'sqlite', 'mysql']
 )
 def configDataBackend(request):
     """
@@ -78,7 +78,7 @@ def extendedConfigDataBackend(configDataBackend):
 
 @pytest.yield_fixture(
     params=[getFileBackend, getMySQLBackend],
-    ids=['file backend', 'MySQL backend']
+    ids=['file', 'mysql']
 )
 def cleanableDataBackend(request):
     """
