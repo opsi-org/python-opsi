@@ -96,11 +96,9 @@ def cleanableDataBackend(request):
 @pytest.yield_fixture
 def backendManager(configDataBackend):
     """
-    Returns an `OPSI.Backend.ExtendedConfigDataBackend` for testing.
+    Returns an `OPSI.Backend.BackendManager.BackendManager` for testing.
 
-    This will return multiple backends but some of these may lead to
-    skips if required libraries are missing or conditions for the
-    execution are not met.
+    The returned instance is set up to have access to backend extensions.
     """
     defaultConfigDir = _getOriginalBackendLocation()
 
@@ -109,7 +107,6 @@ def backendManager(configDataBackend):
 
         yield BackendManager(
             backend=configDataBackend,
-            # backendconfigdir=os.path.join(self._fileTempDir, 'etc', 'opsi', 'backends'),
             extensionconfigdir=os.path.join(tempDir, 'etc', 'opsi', 'backendManager', 'extend.d')
         )
 
