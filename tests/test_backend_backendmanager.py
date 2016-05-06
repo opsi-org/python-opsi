@@ -397,5 +397,8 @@ class GettingBackendManagerTestCase(unittest.TestCase):
             print(backend.backend_info())
 
 
-def testBackendManager(backendManager):
+def testBackendManagerCanAccessExtensions(backendManager):
+    print(backendManager)
     print(backendManager.backend_info())
+
+    print(backendManager.getHost_hash())
