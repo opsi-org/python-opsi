@@ -29,10 +29,6 @@ import os
 import re
 import shutil
 
-if os.name == 'posix':
-	import pwd
-	import grp
-
 from OPSI.Logger import Logger, LOG_INFO, LOG_ERROR
 from OPSI.Util.File.Opsi import PackageControlFile, PackageContentFile
 from OPSI.Util.File.Archive import Archive
@@ -40,6 +36,10 @@ from OPSI.Util import randomString, findFiles, removeDirectory
 from OPSI.System import execute
 from OPSI.Types import (forceBool, forceFilename, forcePackageCustomName,
 	forceUnicode)
+
+if os.name == 'posix':
+	import pwd
+	import grp
 
 __version__ = '4.0.6.12'
 
@@ -138,12 +138,13 @@ class ProductPackageFile(object):
 			if newProductId:
 				newProductId = forceUnicode(newProductId)
 
-			archive = Archive(filename = self.packageFile, progressSubject = progressSubject)
+			archive = Archive(filename=self.packageFile, progressSubject=progressSubject)
 
 			logger.debug(u"Extracting source from package '%s' to: '%s'" % (self.packageFile, destinationDir))
 
-			if progressSubject: progressSubject.setMessage(_(u'Extracting archives'))
-			archive.extract(targetPath = self.tmpUnpackDir)
+			if progressSubject:
+				progressSubject.setMessage(_(u'Extracting archives'))
+			archive.extract(targetPath=self.tmpUnpackDir)
 
 			for f in os.listdir(self.tmpUnpackDir):
 				logger.info(u"Processing file '%s'" % f)
@@ -161,9 +162,10 @@ class ProductPackageFile(object):
 				else:
 					logger.warning(u"Unknown content in archive: %s" % f)
 					continue
-				archive = Archive(filename = os.path.join(self.tmpUnpackDir, f), progressSubject = progressSubject)
-				if progressSubject: progressSubject.setMessage(_(u'Extracting archive %s') % archiveName)
-				archive.extract(targetPath = os.path.join(destinationDir, archiveName))
+				archive = Archive(filename=os.path.join(self.tmpUnpackDir, f), progressSubject=progressSubject)
+				if progressSubject:
+					progressSubject.setMessage(_(u'Extracting archive %s') % archiveName)
+				archive.extract(targetPath=os.path.join(destinationDir, archiveName))
 
 			if newProductId:
 				self.getMetaData()
@@ -202,7 +204,7 @@ class ProductPackageFile(object):
 			archive = Archive(self.packageFile)
 
 			logger.debug(u"Extracting meta data from package '%s' to: '%s'" % (self.packageFile, metaDataTmpDir))
-			archive.extract(targetPath = metaDataTmpDir, patterns=[u"OPSI*"])
+			archive.extract(targetPath=metaDataTmpDir, patterns=[u"OPSI*"])
 
 			metadataArchives = []
 			for f in os.listdir(metaDataTmpDir):
@@ -213,14 +215,14 @@ class ProductPackageFile(object):
 				metadataArchives.append(f)
 			if not metadataArchives:
 				raise Exception(u"No metadata archive found")
-			if (len(metadataArchives) > 2):
+			if len(metadataArchives) > 2:
 				raise Exception(u"More than two metadata archives found")
 
 			# Sorting to unpack custom version metadata at last
 			metadataArchives.sort()
 
 			for metadataArchive in metadataArchives:
-				archive = Archive( os.path.join(metaDataTmpDir, metadataArchive) )
+				archive = Archive(os.path.join(metaDataTmpDir, metadataArchive))
 				archive.extract(targetPath=metaDataTmpDir)
 
 			packageControlFile = os.path.join(metaDataTmpDir, u'control')
@@ -251,17 +253,19 @@ class ProductPackageFile(object):
 			archive = Archive(self.packageFile)
 
 			logger.info(u"Extracting data from package '%s' to: '%s'" % (self.packageFile, self.tmpUnpackDir))
-			archive.extract(targetPath = self.tmpUnpackDir, patterns=[u"CLIENT_DATA*", u"SERVER_DATA*"])
+			archive.extract(targetPath=self.tmpUnpackDir, patterns=[u"CLIENT_DATA*", u"SERVER_DATA*"])
 
 			clientDataArchives = []
 			serverDataArchives = []
 			for f in os.listdir(self.tmpUnpackDir):
 				if f.startswith('OPSI'):
 					continue
+
 				if not f.endswith(u'.cpio.gz') and not f.endswith(u'.tar.gz') and not f.endswith(u'.cpio') and not f.endswith(u'.tar'):
 					logger.warning(u"Unknown content in archive: %s" % f)
 					continue
-				if   f.startswith('CLIENT_DATA'):
+
+				if f.startswith('CLIENT_DATA'):
 					logger.debug(u"Client-data archive found: %s" % f)
 					clientDataArchives.append(f)
 				elif f.startswith('SERVER_DATA'):
@@ -270,23 +274,23 @@ class ProductPackageFile(object):
 
 			if not clientDataArchives:
 				logger.warning(u"No client-data archive found")
-			if (len(clientDataArchives) > 2):
+			if len(clientDataArchives) > 2:
 				raise Exception(u"More than two client-data archives found")
-			if (len(serverDataArchives) > 2):
+			if len(serverDataArchives) > 2:
 				raise Exception(u"More than two server-data archives found")
 
 			# Sorting to unpack custom version data at last
 			def psort(name):
 				return re.sub('(\.tar|\.tar\.gz|\.cpio|\.cpio\.gz)$', '', name)
 
-			clientDataArchives = sorted(clientDataArchives, key = psort)
-			serverDataArchives = sorted(serverDataArchives, key = psort)
+			clientDataArchives = sorted(clientDataArchives, key=psort)
+			serverDataArchives = sorted(serverDataArchives, key=psort)
 
 			for serverDataArchive in serverDataArchives:
 				archiveFile = os.path.join(self.tmpUnpackDir, serverDataArchive)
 				logger.info(u"Extracting server-data archive '%s' to '/'" % archiveFile)
 				archive = Archive(archiveFile)
-				archive.extract(targetPath = u'/')
+				archive.extract(targetPath=u'/')
 
 			productClientDataDir = self.getProductClientDataDir()
 			if not os.path.exists(productClientDataDir):
@@ -297,7 +301,7 @@ class ProductPackageFile(object):
 				archiveFile = os.path.join(self.tmpUnpackDir, clientDataArchive)
 				logger.info(u"Extracting client-data archive '%s' to '%s'" % (archiveFile, productClientDataDir))
 				archive = Archive(archiveFile)
-				archive.extract(targetPath = productClientDataDir)
+				archive.extract(targetPath=productClientDataDir)
 
 			logger.debug(u"Finished extracting data from package")
 		except Exception as e:
@@ -314,8 +318,9 @@ class ProductPackageFile(object):
 
 	def setAccessRights(self):
 		logger.notice(u"Setting access rights of client-data files")
-		if (os.name != 'posix'):
+		if os.name != 'posix':
 			raise NotImplementedError(u"setAccessRights not implemented on windows")
+
 		try:
 			if not self.packageControlFile:
 				raise Exception(u"Metadata not present")
@@ -326,7 +331,7 @@ class ProductPackageFile(object):
 			productClientDataDir = self.getProductClientDataDir()
 
 			uid = -1
-			if (os.geteuid() == 0):
+			if os.geteuid() == 0:
 				uid = pwd.getpwnam(DEFAULT_CLIENT_DATA_USER)[2]
 			gid = grp.getgrnam(DEFAULT_CLIENT_DATA_GROUP)[2]
 
@@ -388,7 +393,7 @@ class ProductPackageFile(object):
 				cdf.remove(packageContentFilename)
 			packageContentFile.setClientDataFiles(self.getClientDataFiles())
 			packageContentFile.generate()
-			if not packageContentFilename in self.clientDataFiles:
+			if packageContentFilename not in self.clientDataFiles:
 				self.clientDataFiles.append(packageContentFilename)
 			logger.debug(u"Finished creating package content file")
 		except Exception as e:
@@ -455,7 +460,7 @@ class ProductPackageSource(object):
 		self.customOnly = forceBool(customOnly)
 
 		if format:
-			if not format in (u'cpio', u'tar'):
+			if format not in (u'cpio', u'tar'):
 				raise Exception(u"Format '%s' not supported" % format)
 			self.format = format
 		else:
@@ -464,7 +469,7 @@ class ProductPackageSource(object):
 		if not compression:
 			self.compression = None
 		else:
-			if not compression in (u'gzip', u'bzip2'):
+			if compression not in (u'gzip', u'bzip2'):
 				raise Exception(u"Compression '%s' not supported" % compression)
 			self.compression = compression
 
@@ -477,7 +482,7 @@ class ProductPackageSource(object):
 			raise Exception(u"Package destination directory '%s' not found" % packageFileDestDir)
 
 		packageControlFile = os.path.join(self.packageSourceDir, u'OPSI', u'control')
-		if customName and os.path.exists( os.path.join(self.packageSourceDir, u'OPSI.%s' % customName, u'control') ):
+		if customName and os.path.exists(os.path.join(self.packageSourceDir, u'OPSI.%s' % customName, u'control')):
 			packageControlFile = os.path.join(self.packageSourceDir, u'OPSI.%s' % customName, u'control')
 		self.packageControlFile = PackageControlFile(packageControlFile)
 		self.packageControlFile.parse()
@@ -489,7 +494,7 @@ class ProductPackageSource(object):
 				self.packageControlFile.getProduct().id,
 				self.packageControlFile.getProduct().productVersion,
 				self.packageControlFile.getProduct().packageVersion,
-				customName ))
+				customName))
 
 		self.tmpPackDir = os.path.join(self.tempDir, u'.opsi.pack.%s' % randomString(5))
 
@@ -511,13 +516,13 @@ class ProductPackageSource(object):
 		try:
 			archives = []
 			diskusage = 0
-			dirs = [ u'CLIENT_DATA', u'SERVER_DATA', u'OPSI' ]
+			dirs = [u'CLIENT_DATA', u'SERVER_DATA', u'OPSI']
 
 			if self.customName:
 				found = False
 				for i in range(len(dirs)):
 					customDir = u"%s.%s" % (dirs[i], self.customName)
-					if os.path.exists( os.path.join(self.packageSourceDir, customDir) ):
+					if os.path.exists(os.path.join(self.packageSourceDir, customDir)):
 						found = True
 						if self.customOnly:
 							dirs[i] = customDir
@@ -528,37 +533,38 @@ class ProductPackageSource(object):
 
 			# Try to define diskusage from Sourcedirectory to prevent a override from cpio sizelimit.
 			for d in dirs:
-				if not os.path.exists( os.path.join(self.packageSourceDir, d) ) and (d != u'OPSI'):
+				if not os.path.exists(os.path.join(self.packageSourceDir, d)) and d != u'OPSI':
 					logger.info(u"Directory '%s' does not exist" % os.path.join(self.packageSourceDir, d))
 					continue
 				fileList = findFiles(
 					os.path.join(self.packageSourceDir, d),
-					excludeDir  = EXCLUDE_DIRS_ON_PACK,
-					excludeFile = EXCLUDE_FILES_ON_PACK,
-					followLinks = self.dereference )
+					excludeDir=EXCLUDE_DIRS_ON_PACK,
+					excludeFile=EXCLUDE_FILES_ON_PACK,
+					followLinks=self.dereference)
 				if fileList:
 					for f in fileList:
 						diskusage = diskusage + os.path.getsize(os.path.join(self.packageSourceDir, d, f))
+
 			if diskusage >= 2147483648:
 				logger.info(u"Switching to tar format, because sourcefiles overrides cpio sizelimit.")
 				self.format = u'tar'
 
 			for d in dirs:
-				if not os.path.exists( os.path.join(self.packageSourceDir, d) ) and (d != u'OPSI'):
+				if not os.path.exists(os.path.join(self.packageSourceDir, d)) and d != u'OPSI':
 					logger.info(u"Directory '%s' does not exist" % os.path.join(self.packageSourceDir, d))
 					continue
 
 				fileList = findFiles(
 					os.path.join(self.packageSourceDir, d),
-					excludeDir  = EXCLUDE_DIRS_ON_PACK,
-					excludeFile = EXCLUDE_FILES_ON_PACK,
-					followLinks = self.dereference )
+					excludeDir=EXCLUDE_DIRS_ON_PACK,
+					excludeFile=EXCLUDE_FILES_ON_PACK,
+					followLinks=self.dereference)
 
 				if d.startswith(u'SERVER_DATA'):
 					# Never change permissions of existing directories in /
 					tmp = []
 					for f in fileList:
-						if (f.find(os.sep) == -1):
+						if f.find(os.sep) == -1:
 							logger.info(u"Skipping dir '%s'" % f)
 							continue
 						tmp.append(f)
@@ -570,23 +576,22 @@ class ProductPackageSource(object):
 					continue
 
 				filename = os.path.join(self.tmpPackDir, u'%s.%s' % (d, self.format))
-				if   (self.compression == 'gzip'):
+				if self.compression == 'gzip':
 					filename += u'.gz'
-				elif (self.compression == 'bzip2'):
+				elif self.compression == 'bzip2':
 					filename += u'.bz2'
-				archive = Archive(filename, format = self.format, compression = self.compression, progressSubject = progressSubject)
+				archive = Archive(filename, format=self.format, compression=self.compression, progressSubject=progressSubject)
 				if progressSubject:
 					progressSubject.reset()
 					progressSubject.setMessage(u'Creating archive %s' % os.path.basename(archive.getFilename()))
-				archive.create(fileList = fileList, baseDir = os.path.join(self.packageSourceDir, d), dereference = self.dereference)
+				archive.create(fileList=fileList, baseDir=os.path.join(self.packageSourceDir, d), dereference=self.dereference)
 				archives.append(filename)
 
-			archive = Archive(self.packageFile, format = self.format, compression = None, progressSubject = progressSubject)
+			archive = Archive(self.packageFile, format=self.format, compression=None, progressSubject=progressSubject)
 			if progressSubject:
 				progressSubject.reset()
 				progressSubject.setMessage(u'Creating archive %s' % os.path.basename(archive.getFilename()))
-			archive.create(fileList = archives, baseDir = self.tmpPackDir)
-
+			archive.create(fileList=archives, baseDir=self.tmpPackDir)
 		except Exception as e:
 			self.cleanup()
 			raise Exception(u"Failed to create package '%s': %s" % (self.packageFile, e))
