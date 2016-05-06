@@ -1,8 +1,9 @@
-python-opsi (4.0.6.49-1) UNRELEASED; urgency=medium
+python-opsi (4.0.6.49-1) stable; urgency=medium
 
   * OPSI.Util.Task.Samba: removed oplocks from opsi_depot share
+  * OPSI.Util.Product: Added debug output to show when tasks end.
 
- -- Mathias Radtke <m.radtke@uib.de>  Fri, 29 Apr 2016 16:00:28 +0200
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 6 May 2016 07:32:28 +0200
 
 python-opsi (4.0.6.48-1) stable; urgency=medium
 
