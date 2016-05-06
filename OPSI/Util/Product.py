@@ -41,7 +41,7 @@ if os.name == 'posix':
 	import pwd
 	import grp
 
-__version__ = '4.0.6.12'
+__version__ = '4.0.6.49'
 
 try:
 	from OPSI.Util.File.Opsi import OpsiConfFile
