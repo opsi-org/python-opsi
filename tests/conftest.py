@@ -110,7 +110,7 @@ def backendManager(configDataBackend):
         yield BackendManager(
             backend=configDataBackend,
             # backendconfigdir=os.path.join(self._fileTempDir, 'etc', 'opsi', 'backends'),
-            extensionconfigdir=os.path.join(self._fileTempDir, 'etc', 'opsi', 'backendManager', 'extend.d')
+            extensionconfigdir=os.path.join(tempDir, 'etc', 'opsi', 'backendManager', 'extend.d')
         )
 
 
