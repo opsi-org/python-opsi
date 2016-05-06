@@ -108,7 +108,7 @@ def backendManager(configDataBackend):
         shutil.copytree(defaultConfigDir, os.path.join(tempDir, 'etc', 'opsi'))
 
         yield BackendManager(
-            backend=backend,
+            backend=configDataBackend,
             # backendconfigdir=os.path.join(self._fileTempDir, 'etc', 'opsi', 'backends'),
             extensionconfigdir=os.path.join(self._fileTempDir, 'etc', 'opsi', 'backendManager', 'extend.d')
         )
