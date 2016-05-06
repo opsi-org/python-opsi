@@ -397,5 +397,5 @@ class GettingBackendManagerTestCase(unittest.TestCase):
             print(backend.backend_info())
 
 
-if __name__ == '__main__':
-    unittest.main()
+def testBackendManager(backendManager):
+    print(backend.backend_info())
