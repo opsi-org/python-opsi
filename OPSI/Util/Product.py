@@ -477,7 +477,7 @@ class ProductPackageSource(object):
 			raise Exception(u"Package destination directory '%s' not found" % packageFileDestDir)
 
 		packageControlFile = os.path.join(self.packageSourceDir, u'OPSI', u'control')
-		if customName and os.path.exists( os.path.join(self.packageSourceDir, u'OPSI.%s' % customName, u'control') ):
+		if customName and os.path.exists(os.path.join(self.packageSourceDir, u'OPSI.%s' % customName, u'control')):
 			packageControlFile = os.path.join(self.packageSourceDir, u'OPSI.%s' % customName, u'control')
 		self.packageControlFile = PackageControlFile(packageControlFile)
 		self.packageControlFile.parse()
