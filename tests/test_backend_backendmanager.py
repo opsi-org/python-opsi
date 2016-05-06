@@ -401,4 +401,4 @@ def testBackendManagerCanAccessExtensions(backendManager):
     print(backendManager)
     print(backendManager.backend_info())
 
-    print(backendManager.getHost_hash())
+    print(backendManager.getServerIds_list())
