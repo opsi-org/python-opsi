@@ -31,6 +31,8 @@ from OPSI.Object import (AuditSoftware, AuditSoftwareOnClient,
 from .Clients import ClientsMixin, getClients
 from .Products import getLocalbootProducts, ProductsMixin
 
+import pytest
+
 
 def getAuditHardwares():
     auditHardware1 = AuditHardware(
@@ -388,6 +390,7 @@ class AuditTestsMixin(AuditHardwareMixin, AuditSoftwareMixin):
             assert len(auditSoftwareToLicensePools) == len(self.auditSoftwareToLicensePools), u"got: '%s', expected: '%s'" % (
                 auditSoftwareToLicensePools, len(self.auditSoftwareToLicensePools))
 
+    @pytest.mark.requiresHwauditConfigFile
     def testAuditSoftwareOnClientsMethods(self):
         # AuditSoftwareOnClients
         print(u"Testing auditSoftwareOnClient methods")
@@ -484,6 +487,7 @@ class AuditTestsMixin(AuditHardwareMixin, AuditSoftwareMixin):
 
         # self.backend.auditHardware_createObjects(self.auditHardwares)
 
+    @pytest.mark.requiresHwauditConfigFile
     def testAuditHardwareOnHostMethods(self, licenseManagementBackend=False):
         # TODO: make it work with inventoryHistory also.
         # maybe create another setup method and then just change the assertions
@@ -615,6 +619,7 @@ class AuditTestsMixin(AuditHardwareMixin, AuditSoftwareMixin):
         assert len(auditHardwareOnHosts) == len(self.auditHardwareOnHosts), u"got: '%s', expected: '%s'" % (
             auditHardwareOnHosts, len(self.auditHardwareOnHosts))
 
+    @pytest.mark.requiresHwauditConfigFile
     def testDeletingHostShouldDeleteHardwareAuditData(self):
         """
         Deleting a host should delete it's audit data.
@@ -764,6 +769,7 @@ class AuditTestsMixin(AuditHardwareMixin, AuditSoftwareMixin):
         auditSoftwareOnClients = self.backend.auditSoftwareOnClient_getObjects()
         self.assertEqual(len(auditSoftwareOnClients), len(asoc))
 
+    @pytest.mark.requiresHwauditConfigFile
     def test_getAuditHardwareFromBackend(self):
         auditHardwaresIn = getAuditHardwares()
         self.backend.auditHardware_createObjects(auditHardwaresIn)
@@ -780,6 +786,7 @@ class AuditTestsMixin(AuditHardwareMixin, AuditSoftwareMixin):
         for auditHardwareClass in auditHardwareClasses:
             self.assertIn(auditHardwareClass, ['CHASSIS', 'COMPUTER_SYSTEM'], u"Hardware class '%s' not in '%s'." % (auditHardwareClass, ['CHASSIS', 'COMPUTER_SYSTEM']))
 
+    @pytest.mark.requiresHwauditConfigFile
     def test_deleteAuditHardware(self):
         auditHardwaresIn = getAuditHardwares()
         self.backend.auditHardware_createObjects(auditHardwaresIn)
@@ -790,11 +797,13 @@ class AuditTestsMixin(AuditHardwareMixin, AuditSoftwareMixin):
         auditHardwares = self.backend.auditHardware_getObjects()
         self.assertEqual(len(auditHardwares), len(auditHardwaresIn) - 2)
 
+    @pytest.mark.requiresHwauditConfigFile
     def test_deleteAllAuditHardware(self):
         self.backend.auditHardware_deleteObjects(self.backend.auditHardware_getObjects())
         auditHardwares = self.backend.auditHardware_getObjects()
         self.assertEqual(len(auditHardwares), 0, u"Expected 0 audit hardware objects, but found %s on backend." % (len(auditHardwares)))
 
+    @pytest.mark.requiresHwauditConfigFile
     def test_createAuditHardware(self):
         auditHardwares = getAuditHardwares()
         self.backend.auditHardware_createObjects(auditHardwares)
@@ -806,6 +815,7 @@ class AuditTestsMixin(AuditHardwareMixin, AuditSoftwareMixin):
         receivedAuditHardwares = self.backend.auditHardware_getObjects()
         self.assertEqual(len(receivedAuditHardwares), len(auditHardwares))
 
+    @pytest.mark.requiresHwauditConfigFile
     def test_getAuditHardwareOnHost(self):
         clients = getClients()
         auditHardwares = getAuditHardwares()
@@ -815,6 +825,7 @@ class AuditTestsMixin(AuditHardwareMixin, AuditSoftwareMixin):
         auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects()
         self.assertEqual(len(auditHardwareOnHosts), len(ahoh))
 
+    @pytest.mark.requiresHwauditConfigFile
     def test_insertAuditHardwareOnHost(self):
         clients = getClients()
         auditHardwares = getAuditHardwares()
@@ -844,11 +855,13 @@ class AuditTestsMixin(AuditHardwareMixin, AuditSoftwareMixin):
         else:
             self.assertEqual(len(auditHardwareOnHosts), len(ahoh))
 
+    @pytest.mark.requiresHwauditConfigFile
     def test_deleteAllAuditHardwareOnHost(self):
         self.backend.auditHardwareOnHost_delete(hostId=[], hardwareClass=[], firstseen=[], lastseen=[], state=[])
         auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects()
         self.assertEqual(len(auditHardwareOnHosts), 0, u"Expected no audit hardware objects on host, but found %s on backend." % (len(auditHardwareOnHosts)))
 
+    @pytest.mark.requiresHwauditConfigFile
     def test_createAuditHardwareOnHost(self):
         clients = getClients()
         auditHardwares = getAuditHardwares()
@@ -860,6 +873,7 @@ class AuditTestsMixin(AuditHardwareMixin, AuditSoftwareMixin):
         self.assertEqual(len(auditHardwareOnHosts), len(ahoh))
         # TODO: check the returned data
 
+    @pytest.mark.requiresHwauditConfigFile
     def test_updatingAuditHardwareOnHost(self):
         clients = getClients()
         auditHardwares = getAuditHardwares()
@@ -876,6 +890,7 @@ class AuditTestsMixin(AuditHardwareMixin, AuditSoftwareMixin):
         numAfter = len(self.backend.auditHardwareOnHost_getObjects())
         self.assertEqual(numBefore, numAfter)
 
+    @pytest.mark.requiresHwauditConfigFile
     def test_deleteAuditHardwareOnHost(self):
         clients = getClients()
         auditHardwares = getAuditHardwares()
@@ -891,6 +906,7 @@ class AuditTestsMixin(AuditHardwareMixin, AuditSoftwareMixin):
         self.assertTrue(ahoh3 not in auditHardwareOnHostsOut)
         self.assertTrue(ahoh4 not in auditHardwareOnHostsOut)
 
+    @pytest.mark.requiresHwauditConfigFile
     def test_setObsoleteAuditHardwareOnHost(self):
         clients = getClients()
         auditHardwares = getAuditHardwares()
