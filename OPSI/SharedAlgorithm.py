@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2010-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2010-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -34,7 +34,7 @@ from OPSI.Object import ProductOnClient
 from OPSI.Types import OpsiProductOrderingError, BackendUnaccomplishableError
 from OPSI.Types import forceInt, forceBool
 
-__version__ = '4.0.6.38'
+__version__ = '4.0.6.41'
 
 logger = Logger()
 
@@ -513,6 +513,8 @@ def generateProductOnClientSequence(productOnClients, sortedList):
 
 
 def generateProductSequence_algorithm1(availableProducts, productDependencies):
+	logger.notice(u"Generating product sequence with algorithm 1.")
+
 	# Build priority classes and indices
 	logger.debug(u"*********running algorithm1")
 	logger.debug(u"availableProducts %s " % availableProducts)
@@ -678,12 +680,15 @@ def generateProductSequence_algorithm1(availableProducts, productDependencies):
 
 
 def generateProductOnClientSequence_algorithm1(productOnClients, availableProducts, productDependencies):
+	logger.notice(u"Generating productOnClient sequence with algorithm 1.")
 	sortedProductList = generateProductSequence_algorithm2(availableProducts, productDependencies)
 	productOnClients = generateProductOnClientSequence(productOnClients, sortedProductList)
 	return productOnClients
 
 
 def generateProductSequence_algorithm2(availableProducts, productDependencies):
+	logger.notice(u"Generating product sequence with algorithm 2.")
+
 	# Build priority classes and indices
 	logger.debug(u"*********running algorithm2")
 	logger.debug(u"availableProducts %s " % availableProducts)
@@ -805,6 +810,7 @@ def generateProductSequence_algorithm2(availableProducts, productDependencies):
 
 
 def generateProductOnClientSequence_algorithm2(productOnClients, availableProducts, productDependencies):
+	logger.notice(u"Generating productOnClient sequence with algorithm 2.")
 	sortedProductList = generateProductSequence_algorithm2(availableProducts, productDependencies)
 	productOnClients = generateProductOnClientSequence(productOnClients, sortedProductList)
 	return productOnClients
@@ -816,6 +822,8 @@ def _generateProductOnClientSequence_algorithm3(productOnClients, availableProdu
 
 	This is the *old* variant and only available for historic reasons.
 	"""
+	logger.notice(u"Generating productOnClient sequence with algorithm 3.")
+
 	logger.debug(u"*********  running algorithm3")
 	productDependenciesByProductId = defaultdict(list)
 	for productDependency in productDependencies:

@@ -3,7 +3,7 @@
 
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
-# Copyright (C) 2013-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -356,6 +356,14 @@ class SQLBackend(ConfigDataBackend):
 				del hash['actionSequence']
 			except KeyError:
 				pass  # not there - can be
+
+		if issubclass(object.__class__,  Product):
+			try:
+				# Truncating a possibly too long changelog entry
+				hash['changelog'] = hash['changelog'][:65534]
+			except (KeyError, TypeError) as e:
+				# Either not present in hash or set to None
+				pass
 
 		if issubclass(object.__class__, Relationship):
 			try:
@@ -2378,15 +2386,13 @@ class SQLBackend(ConfigDataBackend):
 		if hardwareClass not in ([], None):
 			for hwc in forceUnicodeList(hardwareClass):
 				regex = re.compile(u'^{0}$'.format(hwc.replace('*', '.*')))
-				for key in self._auditHardwareConfig:
-					if regex.search(key):
-						hardwareClasses.add(key)
+				[hardwareClasses.add(key) for key in self._auditHardwareConfig if regex.search(key)]
 
 			if not hardwareClasses:
 				return hashes
 
 		if not hardwareClasses:
-			hardwareClasses = set(key for key in self._auditHardwareConfig)
+			hardwareClasses = set(self._auditHardwareConfig.keys())
 
 		for unwanted_key in ('hardwareClass', 'type'):
 			try:
@@ -2402,21 +2408,25 @@ class SQLBackend(ConfigDataBackend):
 			auditHardwareFilter = {}
 			classFilter = {}
 			skipHardwareClass = False
-			for (attribute, value) in filter.items():
+			for attribute, value in filter.iteritems():
 				valueInfo = None
-				if not attribute in ('hostId', 'state', 'firstseen', 'lastseen'):
+				if attribute not in ('hostId', 'state', 'firstseen', 'lastseen'):
 					valueInfo = self._auditHardwareConfig[hardwareClass].get(attribute)
 					if not valueInfo:
 						logger.debug(u"Skipping hardwareClass '%s', because of missing info for attribute '%s'" % (hardwareClass, attribute))
 						skipHardwareClass = True
 						break
-					if valueInfo.get('Scope', '') == 'g':
+
+					scope = valueInfo.get('Scope', '')
+					if scope == 'g':
 						auditHardwareFilter[attribute] = value
 						continue
-					if valueInfo.get('Scope', '') != 'i':
+					if scope != 'i':
 						continue
+
 				if value is not None:
 					value = forceList(value)
+
 				classFilter[attribute] = value
 
 			if skipHardwareClass:
@@ -2431,16 +2441,18 @@ class SQLBackend(ConfigDataBackend):
 					continue
 			classFilter['hardware_id'] = hardwareIds
 
-			if attributes and not 'hardware_id' in attributes:
+			if attributes and 'hardware_id' not in attributes:
 				attributes.append('hardware_id')
 
 			logger.debug(u"Getting auditHardwareOnHosts, hardwareClass '%s', hardwareIds: %s, filter: %s" % (hardwareClass, hardwareIds, classFilter))
-			for res in self._sql.getSet(self._createQuery(u'HARDWARE_CONFIG_' + hardwareClass, attributes, classFilter)):
+			for res in self._sql.getSet(self._createQuery(u'HARDWARE_CONFIG_{0}'.format(hardwareClass), attributes, classFilter)):
 				data = self._sql.getSet(u'SELECT * from `HARDWARE_DEVICE_%s` where `hardware_id` = %s' \
 								% (hardwareClass, res['hardware_id']))
+
 				if not data:
 					logger.error(u"Hardware device of class '%s' with hardware_id '%s' not found" % (hardwareClass, res['hardware_id']))
 					continue
+
 				data = data[0]
 				data.update(res)
 				data['hardwareClass'] = hardwareClass
@@ -2450,10 +2462,11 @@ class SQLBackend(ConfigDataBackend):
 				except KeyError:
 					pass  # not there - everything okay
 
-				for attribute in self._auditHardwareConfig[hardwareClass].keys():
+				for attribute in self._auditHardwareConfig[hardwareClass]:
 					if attribute not in data:
 						data[attribute] = None
 				hashes.append(data)
+
 		return hashes
 
 	def auditHardwareOnHost_getObjects(self, attributes=[], **filter):

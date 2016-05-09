@@ -65,7 +65,7 @@ from OPSI.Util import (blowfishEncrypt, blowfishDecrypt, compareVersions,
 from OPSI.Util.File import ConfigFile
 import OPSI.SharedAlgorithm
 
-__version__ = '4.0.6.36'
+__version__ = '4.0.6.41'
 
 logger = Logger()
 OPSI_VERSION_FILE = u'/etc/opsi/version'
@@ -568,11 +568,11 @@ containing the localisation of the hardware audit.
 		possibleAttributes = getPossibleClassAttributes(Class)
 		for attribute in forceUnicodeList(attributes):
 			if attribute not in possibleAttributes:
-				raise BackendBadValueError("Class '%s' has not attribute '%s'" % (Class, attribute))
+				raise BackendBadValueError("Class {0!r} has no attribute '{1}'".format(Class, attribute))
 
 		for attribute in filter:
 			if attribute not in possibleAttributes:
-				raise BackendBadValueError("Class '%s' has not attribute '%s'" % (Class, attribute))
+				raise BackendBadValueError("Class {0!r} has no attribute '{1}'".format(Class, attribute))
 
 	def backend_createBase(self):
 		"""
@@ -3064,8 +3064,10 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 	def productOnClient_generateSequence(self, productOnClients):
 		configs = self._context.config_getObjects(id="product_sort_algorithm")  # pylint: disable=maybe-no-member
 		if configs and ("product_on_client" in configs[0].getDefaultValues() or "algorithm1" in configs[0].getDefaultValues()):
+			logger.info("Generating productOnClient sequence with algorithm 1")
 			generateProductOnClientSequence = OPSI.SharedAlgorithm.generateProductOnClientSequence_algorithm1
 		else:
+			logger.info("Generating productOnClient sequence with algorithm 2")
 			generateProductOnClientSequence = OPSI.SharedAlgorithm.generateProductOnClientSequence_algorithm2
 
 		return self._productOnClient_processWithFunction(productOnClients, generateProductOnClientSequence)

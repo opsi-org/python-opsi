@@ -1,8 +1,8 @@
-#!/usr/bin/env python
+#! /usr/bin/env python
 #-*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2014 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -30,29 +30,19 @@ import unittest
 
 from OPSI.Util.File import DHCPDConfFile
 
-from .helpers import copyTestfileToTemporaryFolder
+from .helpers import createTemporaryTestfile
 
 
 class DHCPDConfFileTestCase(unittest.TestCase):
-
-    def setUp(self):
-        self.fileName = copyTestfileToTemporaryFolder(
-                            os.path.join(
-                                os.path.dirname(__file__), 'testdata',
-                                'util', 'dhcpd', 'dhcpd_1.conf'
-                            )
-                        )
-
-        self.confFile = DHCPDConfFile(self.fileName)
-
-    def tearDown(self):
-        del self.confFile
-
-        if os.path.exists(self.fileName):
-            os.remove(self.fileName)
-
     def testParsingFile(self):
-        self.confFile.parse()
+        testExample = os.path.join(
+            os.path.dirname(__file__), 'testdata',
+            'util', 'dhcpd', 'dhcpd_1.conf'
+        )
+
+        with createTemporaryTestfile(testExample) as fileName:
+            confFile = DHCPDConfFile(fileName)
+            confFile.parse()
 
 
 if __name__ == '__main__':

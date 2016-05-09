@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -115,8 +115,10 @@ config = {{
     def tearDownBackend(self):
         self.backend.backend_deleteBase()
 
-        if os.path.exists(self._fileTempDir):
+        try:
             shutil.rmtree(self._fileTempDir)
+        except OSError:
+            pass
 
         del self.backend
 

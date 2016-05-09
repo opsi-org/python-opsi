@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2006-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -45,7 +45,7 @@ from OPSI.Util.File.Opsi import OpsiConfFile, HostKeyFile, PackageControlFile
 from OPSI.Object import *  # needed for calls to "eval"
 from OPSI.Types import BackendConfigurationError
 
-__version__ = '4.0.6.12'
+__version__ = '4.0.6.46'
 
 logger = Logger()
 
@@ -188,7 +188,8 @@ class FileBackend(ConfigDataBackend):
 			'ProductOnDepot': [
 				{'fileType': 'ini', 'attribute': 'productType', 'section': '<productId>-state', 'option': 'producttype', 'json': False},
 				{'fileType': 'ini', 'attribute': 'productVersion', 'section': '<productId>-state', 'option': 'productversion', 'json': False},
-				{'fileType': 'ini', 'attribute': 'packageVersion', 'section': '<productId>-state', 'option': 'packageversion', 'json': False}
+				{'fileType': 'ini', 'attribute': 'packageVersion', 'section': '<productId>-state', 'option': 'packageversion', 'json': False},
+				{'fileType': 'ini', 'attribute': 'locked', 'section': '<productId>-state', 'option': 'locked', 'json': False}
 			],
 			'ProductOnClient': [
 				{'fileType': 'ini', 'attribute': 'productType', 'section': '<productId>-state', 'option': 'producttype', 'json': False},

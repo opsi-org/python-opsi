@@ -1,32 +1,34 @@
+#! /usr/bin/env python
 # -*- coding: utf-8 -*-
+
+# This file is part of python-opsi.
+# Copyright (C) 2010-2016 uib GmbH <info@uib.de>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-Copyright (C) 2010-2014 uib GmbH
-
-http://www.uib.de/
-
-All rights reserved.
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License version 2 as
-published by the Free Software Foundation.
-
-This program is distributed in the hope thatf it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+Testing threading utilities.
 
 :author: Christian Kampka <c.kampka@uib.de>
 :author: Niko Wenselowski <n.wenselowski@uib.de>
-:license: GNU General Public License version 2
+:license: GNU Affero General Public License version 3
 """
+
 import datetime
 import time
 import threading
 import unittest
+from contextlib import contextmanager
 
 from OPSI.Util.Thread import ThreadPoolException, ThreadPool, getGlobalThreadPool, KillableThread
 
@@ -50,7 +52,7 @@ class ThreadPoolTestCase(unittest.TestCase):
 
     def test_stopPool(self):
         self.pool.adjustSize(size=10)
-        for i in range(5):
+        for _ in range(5):
             time.sleep(0.1)
         numThreads = threading.activeCount() - len(self.pool.worker)
         self.pool.stop()
@@ -100,13 +102,7 @@ class ThreadPoolTestCase(unittest.TestCase):
         self.assertNotEqual(None, result[2])
 
     def test_invalidThreadPoolSize(self):
-        try:
-            self.pool.adjustSize(-1)
-            self.fail("ThreadPool has an invalid size, but no exception was raised.")
-        except ThreadPoolException as e:
-            return
-        except Exception as e:
-            self.fail(e)
+        self.assertRaises(ThreadPoolException, self.pool.adjustSize, -1)
 
     def test_adjustPoolSize(self):
         self.pool.adjustSize(size=2)
@@ -130,10 +126,10 @@ class ThreadPoolTestCase(unittest.TestCase):
             results.append(success)
 
         def waitJob():
-            for i in range(3):
+            for _ in range(3):
                 time.sleep(1)
 
-        for i in range(5):
+        for _ in range(5):
             self.pool.addJob(waitJob, callback=callback)
 
         self.assertEquals(2, len(self.pool.worker),
@@ -141,7 +137,7 @@ class ThreadPoolTestCase(unittest.TestCase):
         self.assertTrue(self.pool.jobQueue.unfinished_tasks > len(self.pool.worker),
         "Expected more tasks in Queue than workers in pool, but got %s tasks and %s worker" % (self.pool.jobQueue.unfinished_tasks, len(self.pool.worker)))
 
-        for i in range(10):
+        for _ in range(10):
             time.sleep(0.4)
         self.assertEquals(5, len(results), "Expected %s results but, but got %s" % (5, len(results)))
 
@@ -167,9 +163,9 @@ class ThreadPoolTestCase(unittest.TestCase):
             results.append(success)
 
         def shortJob():
-            unused = 10 * 10
+            _ = 10 * 10
 
-        for i in range(10):
+        for _ in range(10):
             self.pool.addJob(shortJob, callback=callback)
 
         time.sleep(1)
@@ -177,7 +173,7 @@ class ThreadPoolTestCase(unittest.TestCase):
 
         time.sleep(2)
         results = []
-        for i in range(10):
+        for _ in range(10):
             self.pool.addJob(shortJob, callback=callback)
         time.sleep(1)
         self.assertEquals(10, len(results), "Expected %s results, but got %s" % (10, len(results)))
@@ -194,7 +190,7 @@ class ThreadPoolTestCase(unittest.TestCase):
         def sleepJob():
             time.sleep(2)
 
-        for i in range(10):
+        for _ in range(10):
             self.pool.addJob(sleepJob, callback=callback)
         time.sleep(3)
         self.assertEqual(len(results), 2, "Expected %s results, but got %s" % (2, len(results)))
@@ -215,7 +211,7 @@ class ThreadPoolTestCase(unittest.TestCase):
         def sleepJob():
             time.sleep(2)
 
-        for i in range(12):
+        for _ in range(12):
             self.pool.addJob(sleepJob, callback=callback)
         time.sleep(3)
         self.assertEqual(len(results), 5, "Expected %s results, but got %s" % (5, len(results)))
@@ -250,35 +246,44 @@ class KillableThreadTestCase(unittest.TestCase):
         they may still be processing.
         """
 
-        class ThirtySecondsToEndThread(KillableThread):
+        class ThreadWithTimeout(KillableThread):
             def __init__(self, testCase):
-                super(ThirtySecondsToEndThread, self).__init__()
+                super(ThreadWithTimeout, self).__init__()
 
                 self.testCase = testCase
 
             def run(self):
                 start = datetime.datetime.now()
-                thirtySeconds = datetime.timedelta(seconds=30)
+                timeout = datetime.timedelta(seconds=30)
 
-                while datetime.datetime.now() < (start + thirtySeconds):
+                while datetime.datetime.now() < (start + timeout):
                     time.sleep(0.1)
 
                 self.testCase.fail("Thread did not get killed in time.")
 
+        @contextmanager
+        def getTestThread():
+            runningThread = ThreadWithTimeout(self)
+            runningThread.start()
+            try:
+                yield runningThread
+            finally:
+                runningThread.join(2)
 
-        runningThread = ThirtySecondsToEndThread(self)
-        runningThread.start()
-
-        try:
-            time.sleep(2)
-            self.assertTrue(runningThread.isAlive(), "Thread should be running.")
+        with getTestThread() as runningThread:
+            assert runningThread.isAlive()
 
             runningThread.terminate()
 
-            time.sleep(2)
+            runChecks = 0
+            while runningThread.isAlive():
+                time.sleep(0.1)
+                runChecks += 1
+
+                if runChecks > 30:
+                    self.fail("Thread should be stopped by now.")
+
             self.assertFalse(runningThread.isAlive(), "Thread should be killed.")
-        finally:
-            runningThread.join(2)
 
 
 if __name__ == '__main__':

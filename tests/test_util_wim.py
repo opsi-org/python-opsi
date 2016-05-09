@@ -29,15 +29,15 @@ import os.path
 import unittest
 from contextlib import contextmanager
 
-from OPSI.Util.WIM import parseWIM
+from OPSI.Util.WIM import getImageInformation, parseWIM
 
 from .helpers import workInTemporaryDirectory, mock
 
 
 @contextmanager
-def fakeWIMEnvironment():
-    with workInTemporaryDirectory() as tempDir:
-        fakeWimPath = os.path.join(tempDir, 'fake.wim')
+def fakeWIMEnvironment(tempDir=None):
+    with workInTemporaryDirectory(tempDir) as temporaryDir:
+        fakeWimPath = os.path.join(temporaryDir, 'fake.wim')
         with open(fakeWimPath, 'w'):
             pass
 
@@ -77,6 +77,21 @@ class ReadingWIMTestCase(unittest.TestCase):
                 del imageData[image.name]
 
             self.assertFalse(imageData, "Missed reading info for {0}".format(imageData.keys()))
+
+    def testReadingImageInformation(self):
+        with fakeWIMEnvironment() as wimPath:
+            infos = getImageInformation(wimPath)
+
+            firstInfo = next(infos)
+            self.assertTrue(firstInfo)
+
+            next(infos)
+            next(infos)
+            next(infos)
+            next(infos)
+
+            # Only five infos in example.
+            self.assertRaises(StopIteration, next, infos)
 
 
 if __name__ == '__main__':

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2015 uib GmbH <info@uib.de>
+# Copyright (C) 2015-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -25,25 +25,15 @@ Testing backend cleaning.
 
 from __future__ import absolute_import
 
-import unittest
-
 from OPSI.Util.Task.CleanupBackend import cleanupBackend
 
-from .Backends import getTestBackend
 from .test_backend_replicator import fillBackend, checkIfBackendIsFilled
 
 
-class CleanupBackendTestCase(unittest.TestCase):
+def testCleanupBackend(cleanableDataBackend):
     # TODO: we need checks to see what get's removed and what not.
     # TODO: we also should provide some senseless data that will be removed!
+    fillBackend(cleanableDataBackend)
 
-    def testCleanupBackend(self):
-        with getTestBackend(extended=True) as backend:
-            fillBackend(backend)
-
-            cleanupBackend(backend)
-            checkIfBackendIsFilled(backend)
-
-
-if __name__ == '__main__':
-    unittest.main()
+    cleanupBackend(cleanableDataBackend)
+    checkIfBackendIsFilled(cleanableDataBackend)

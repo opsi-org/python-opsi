@@ -352,7 +352,9 @@ class UtilTestCase(unittest.TestCase):
         self.assertEqual('123', formatFileSize(123))
         self.assertEqual('1K', formatFileSize(1234))
         self.assertEqual('1M', formatFileSize(1234567))
+        self.assertEqual('300M', formatFileSize(314572800))
         self.assertEqual('1G', formatFileSize(1234567890))
+        self.assertEqual('1T', formatFileSize(1234567890000))
 
     def testRandomString(self):
         self.assertEqual(10, len(randomString(10)))
@@ -861,6 +863,10 @@ class JSONSerialisiationTestCase(unittest.TestCase):
         obj = toJson(gen())
 
         self.assertEquals(u'[1, 2, 3, "a"]', obj)
+
+    def testSerialisingTuples(self):
+        values = (1, 2, 3, 4)
+        self.assertEquals('[1, 2, 3, 4]', toJson(values))
 
 
 class FindFilesTestCase(unittest.TestCase):
