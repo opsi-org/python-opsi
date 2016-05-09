@@ -397,5 +397,8 @@ class GettingBackendManagerTestCase(unittest.TestCase):
             print(backend.backend_info())
 
 
-if __name__ == '__main__':
-    unittest.main()
+def testBackendManagerCanAccessExtensions(backendManager):
+    print(backendManager)
+    print(backendManager.backend_info())
+
+    print(backendManager.getServerIds_list())

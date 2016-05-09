@@ -110,9 +110,7 @@ def _processConfig(lines):
 		newlines.append(u"   available = yes\n")
 		newlines.append(u"   comment = opsi depot share (ro)\n")
 		newlines.append(u"   path = /var/lib/opsi/depot\n")
-		newlines.append(u"   oplocks = no\n")
 		newlines.append(u"   follow symlinks = yes\n")
-		newlines.append(u"   level2 oplocks = no\n")
 		newlines.append(u"   writeable = no\n")
 		newlines.append(u"   invalid users = root\n")
 		if samba4:
