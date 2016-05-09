@@ -36,7 +36,8 @@ import pytest
 
 class BackendSQLiteTestCase(unittest.TestCase):
     def testInitialisationDoesNotFail(self):
-        SQLiteBackend = pytest.importorskip("OPSI.Backend.SQLite.SQLiteBackend")
+        sqlModule = pytest.importorskip("OPSI.Backend.SQLite")
+        SQLiteBackend = sqlModule.SQLiteBackend
 
         backend = SQLiteBackend()
         backend.backend_createBase()
