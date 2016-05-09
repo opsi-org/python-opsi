@@ -247,6 +247,8 @@ def fillBackendWithProductOnClients(backend, products, clients):
     productsOnClients = getProductsOnClients(products, clients)
     backend.productOnClient_createObjects(productsOnClients)
 
+    return productsOnClients
+
 
 def fillBackendWithProductPropertyStates(backend, productProperties, depotServer, clients):
     productPropertyStates = getProductPropertyStates(productProperties, depotServer, clients)

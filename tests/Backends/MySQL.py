@@ -1,6 +1,6 @@
 #-*- coding: utf-8 -*-
 #
-# Copyright (C) 2013 uib GmbH
+# Copyright (C) 2013-2016 uib GmbH
 #
 # http://www.uib.de/
 #
@@ -21,10 +21,14 @@
 
 from __future__ import absolute_import
 
+from contextlib import contextmanager
+
 from OPSI.Backend.MySQL import MySQLBackend
 from OPSI.Backend.Backend import ExtendedConfigDataBackend
 from . import BackendMixin
 from ..helpers import unittest
+
+import pytest
 
 try:
     from .config import MySQLconfiguration
@@ -48,3 +52,11 @@ class MySQLBackendMixin(BackendMixin):
 
     def tearDownBackend(self):
         self.backend.backend_deleteBase()
+
+
+@contextmanager
+def getMySQLBackend():
+    if not MySQLconfiguration:
+        pytest.skip('no MySQL backend configuration given.')
+
+    yield MySQLBackend(**MySQLconfiguration)
