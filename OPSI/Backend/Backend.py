@@ -1506,9 +1506,9 @@ depot where the method is.
 						newValues = []
 						for newValue in clcopy['Values']:
 							foundAt = -1
-							for i in xrange(len(c['Values'])):
-								if c['Values'][i]['Opsi'] == newValue['Opsi']:
-									if not c['Values'][i].get('UI'):
+							for i, currentValue in enumerate(c['Values']):
+								if currentValue['Opsi'] == newValue['Opsi']:
+									if not currentValue.get('UI'):
 										c['Values'][i]['UI'] = newValue.get('UI', '')
 									foundAt = i
 									break
@@ -1526,17 +1526,17 @@ depot where the method is.
 		classes = []
 		try:
 			execfile(self._auditHardwareConfigFile)
-			for i in xrange(len(OPSI_HARDWARE_CLASSES)):
-				opsiClass = OPSI_HARDWARE_CLASSES[i]['Class']['Opsi']
-				if OPSI_HARDWARE_CLASSES[i]['Class']['Type'] == 'STRUCTURAL':
+			for i, currentClassConfig in enumerate(OPSI_HARDWARE_CLASSES):
+				opsiClass = currentClassConfig['Class']['Opsi']
+				if currentClassConfig['Class']['Type'] == 'STRUCTURAL':
 					if locale.get(opsiClass):
 						OPSI_HARDWARE_CLASSES[i]['Class']['UI'] = locale[opsiClass]
 					else:
 						logger.error(u"No translation for class '%s' found" % opsiClass)
 						OPSI_HARDWARE_CLASSES[i]['Class']['UI'] = opsiClass
 
-				for j in xrange(len(OPSI_HARDWARE_CLASSES[i]['Values'])):
-					opsiProperty = OPSI_HARDWARE_CLASSES[i]['Values'][j]['Opsi']
+				for j, currentValue in enumerate(currentClassConfig['Values']):
+					opsiProperty = currentValue['Opsi']
 					if locale.get(opsiClass + '.' + opsiProperty):
 						OPSI_HARDWARE_CLASSES[i]['Values'][j]['UI'] = locale[opsiClass + '.' + opsiProperty]
 
@@ -1551,10 +1551,10 @@ depot where the method is.
 						del ccopy['Class']['Type']
 
 						# Fill up empty display names
-						for j in xrange(len(ccopy.get('Values', []))):
-							if not ccopy['Values'][j].get('UI'):
-								logger.warning("No translation for property '%s.%s' found" % (ccopy['Class']['Opsi'], ccopy['Values'][j]['Opsi']))
-								ccopy['Values'][j]['UI'] = ccopy['Values'][j]['Opsi']
+						for j, currentValue in enumerate(ccopy.get('Values', [])):
+							if not currentValue.get('UI'):
+								logger.warning("No translation for property '%s.%s' found" % (ccopy['Class']['Opsi'], currentValue['Opsi']))
+								ccopy['Values'][j]['UI'] = currentValue['Opsi']
 
 						classes.append(ccopy)
 				except Exception as e:
@@ -1663,10 +1663,10 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			result1IdentIndex = -1
 			result2IdentIndex = -1
 
-			for i in xrange(len(result1['identAttributes'])):
-				for j in xrange(len(result2['identAttributes'])):
-					if result1['identAttributes'][i] == result2['identAttributes'][j]:
-						if (result1['identAttributes'][i] != 'id') or (result1['objectClass'] == result2['objectClass']):
+			for i, identAttr in enumerate(result1['identAttributes']):
+				for j, identAttr2 in enumerate(result2['identAttributes']):
+					if identAttr == identAttr2:
+						if (identAttr != 'id') or (result1['objectClass'] == result2['objectClass']):
 							result1IdentIndex = i
 							result2IdentIndex = j
 							break
@@ -1678,12 +1678,12 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 				if 'id' in result1['identAttributes'] and result1['foreignIdAttributes']:
 					logger.debug(u"Trying foreignIdAttributes of result1: %s" % result1['foreignIdAttributes'])
 					for attr in result1['foreignIdAttributes']:
-						for i in range(len(result2['identAttributes'])):
-							logger.debug2("%s == %s" % (attr, result2['identAttributes'][i]))
-							if attr == result2['identAttributes'][i]:
+						for i, identAttr in enumerate(result2['identAttributes']):
+							logger.debug2("%s == %s" % (attr, identAttr))
+							if attr == identAttr:
 								result2IdentIndex = i
-								for a in range(len(result1['identAttributes'])):
-									if result1['identAttributes'][a] == 'id':
+								for a, identAttr2 in enumerate(result1['identAttributes']):
+									if identAttr2 == 'id':
 										result1IdentIndex = a
 								break
 				else:
@@ -1693,12 +1693,12 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 				if 'id' in result2['identAttributes'] and result2['foreignIdAttributes']:
 					logger.debug(u"Trying foreignIdAttributes of result2: %s" % result2['foreignIdAttributes'])
 					for attr in result2['foreignIdAttributes']:
-						for i in range(len(result1['identAttributes'])):
-							logger.debug2("%s == %s" % (attr, result1['identAttributes'][i]))
-							if attr == result1['identAttributes'][i]:
+						for i, identAttr in enumerate(result1['identAttributes']):
+							logger.debug2("%s == %s" % (attr, identAttr))
+							if attr == identAttr:
 								result1IdentIndex = i
-								for a in range(len(result2['identAttributes'])):
-									if result2['identAttributes'][a] == 'id':
+								for a, identAttr2 in enumerate(result2['identAttributes']):
+									if identAttr2 == 'id':
 										result2IdentIndex = a
 								break
 				else:
