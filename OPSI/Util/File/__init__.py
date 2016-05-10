@@ -38,6 +38,7 @@ import re
 import StringIO
 import threading
 import time
+from itertools import islice
 
 from OPSI.Logger import Logger
 from OPSI.Types import (BackendBadValueError, BackendMissingDataError,
@@ -58,7 +59,7 @@ elif os.name == 'nt':
 	import win32file
 	import pywintypes
 
-__version__ = "4.0.6.39"
+__version__ = "4.0.6.50"
 
 logger = Logger()
 
@@ -473,15 +474,12 @@ class ConfigFile(TextFile):
 				quote = 0
 				doublequote = 0
 				cut = -1
-				for i, part in enumerate(parts):
+				for i, part in enumerate(islice(parts, len(parts) - 1)):
 					quote += part.count("'")
 					doublequote += part.count('"')
 					if len(part) > 0 and part[-1] == '\\':
 						# escaped comment
 						continue
-
-					if i == len(parts) - 1:
-						break
 
 					if not quote % 2 and not doublequote % 2:
 						cut = i
@@ -553,14 +551,12 @@ class IniFile(ConfigFile):
 				quote = 0
 				doublequote = 0
 				cut = -1
-				for i, part in enumerate(parts):
+				for i, part in enumerate(islice(parts, len(parts) - 1)):
 					quote += part.count("'")
 					doublequote += part.count('"')
 					if len(part) > 0 and part[-1] == '\\':
 						# escaped comment
 						continue
-					if i == len(parts) - 1:
-						break
 					if not quote % 2 and not doublequote % 2:
 						cut = i
 						break
