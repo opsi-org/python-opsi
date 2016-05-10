@@ -3059,8 +3059,8 @@ def hardwareExtendedInventory(config, opsiValues={}, progressSubject=None):
 					conditionmatch = None
 
 					logger.info("Condition found, try to check the Condition")
-					for i in range(len(opsiValues[opsiName])):
-						value = opsiValues[opsiName][i].get(val, "")
+					for currentValue in opsiValues[opsiName]:
+						value = currentValue.get(val, "")
 						if value:
 							conditionmatch = re.search(conditionregex, value)
 							break
