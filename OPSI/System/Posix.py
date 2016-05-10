@@ -43,6 +43,7 @@ import subprocess
 import threading
 import time
 import copy as pycopy
+from itertools import islice
 from signal import SIGKILL
 from platform import linux_distribution
 
@@ -55,7 +56,7 @@ from OPSI.Types import OpsiVersionError
 from OPSI.Object import *
 from OPSI.Util import objectToBeautifiedText, removeUnit
 
-__version__ = '4.0.6.44'
+__version__ = '4.0.6.50'
 
 logger = Logger()
 
@@ -2528,20 +2529,18 @@ class Harddisk:
 
 					buf = [buf[-1] + b[0]] + b[1:]
 
-					# TODO: is the range(len(..)) really needed?
-					# Maybe we could iterate directly.
-					for i in range(len(buf) - 1):
+					for currentBuffer in islice(buf, len(buf) - 1):
 						try:
-							logger.debug(u" -->>> %s" % buf[i])
+							logger.debug(u" -->>> %s" % currentBuffer)
 						except Exception:
 							pass
 
-						if u'Partclone fail' in buf[i]:
+						if u'Partclone fail' in currentBuffer:
 							raise Exception(u"Failed: %s" % '\n'.join(buf))
-						if u'Partclone successfully' in buf[i]:
+						if u'Partclone successfully' in currentBuffer:
 							done = True
-						if u'Total Time' in buf[i]:
-							match = re.search('Total\sTime:\s(\d+:\d+:\d+),\sAve.\sRate:\s*(\d*.\d*)([GgMm]B/min)', buf[i])
+						if u'Total Time' in currentBuffer:
+							match = re.search('Total\sTime:\s(\d+:\d+:\d+),\sAve.\sRate:\s*(\d*.\d*)([GgMm]B/min)', currentBuffer)
 							if match:
 								rate = match.group(2)
 								unit = match.group(3)
@@ -2555,12 +2554,12 @@ class Harddisk:
 								}
 
 						if not started:
-							if u'Calculating bitmap' in buf[i]:
+							if u'Calculating bitmap' in currentBuffer:
 								logger.info(u"Save image: Scanning filesystem")
 								if progressSubject:
 									progressSubject.setMessage(u"Scanning filesystem")
-							elif buf[i].count(':') == 1 and 'http:' not in buf[i]:
-								(k, v) = buf[i].split(':')
+							elif currentBuffer.count(':') == 1 and 'http:' not in currentBuffer:
+								(k, v) = currentBuffer.split(':')
 								k = k.strip()
 								v = v.strip()
 								logger.info(u"Save image: %s: %s" % (k, v))
@@ -2572,11 +2571,11 @@ class Harddisk:
 									started = True
 									continue
 						else:
-							match = re.search('Completed:\s*([\d\.]+)%', buf[i])
+							match = re.search('Completed:\s*([\d\.]+)%', currentBuffer)
 							if match:
 								percent = int("%0.f" % float(match.group(1)))
 								if progressSubject and percent != progressSubject.getState():
-									logger.debug(u" -->>> %s" % buf[i])
+									logger.debug(u" -->>> %s" % currentBuffer)
 									progressSubject.setState(percent)
 
 					lastMsg = buf[-2]
@@ -2704,20 +2703,19 @@ class Harddisk:
 
 						buf = [buf[-1] + b[0]] + b[1:]
 
-						# TODO: range(len) really needed?
-						for i in range(len(buf) - 1):
+						for currentBuffer in islice(buf, len(buf) - 1):
 							try:
-								logger.debug(u" -->>> %s" % buf[i])
+								logger.debug(u" -->>> %s" % currentBuffer)
 							except Exception:
 								pass
 
-							if u'Partclone fail' in buf[i]:
+							if u'Partclone fail' in currentBuffer:
 								raise Exception(u"Failed: %s" % '\n'.join(buf))
-							if u'Partclone successfully' in buf[i]:
+							if u'Partclone successfully' in currentBuffer:
 								done = True
 							if not started:
-								if buf[i].count(':') == 1 and 'http:' in buf[i]:
-									(k, v) = buf[i].split(':')
+								if currentBuffer.count(':') == 1 and 'http:' in currentBuffer:
+									(k, v) = currentBuffer.split(':')
 									k = k.strip()
 									v = v.strip()
 									logger.info(u"Save image: %s: %s" % (k, v))
@@ -2731,11 +2729,11 @@ class Harddisk:
 										started = True
 										continue
 							else:
-								match = re.search('Completed:\s*([\d\.]+)%', buf[i])
+								match = re.search('Completed:\s*([\d\.]+)%', currentBuffer)
 								if match:
 									percent = int("%0.f" % float(match.group(1)))
 									if progressSubject and percent != progressSubject.getState():
-										logger.debug(u" -->>> %s" % buf[i])
+										logger.debug(u" -->>> %s" % currentBuffer)
 										progressSubject.setState(percent)
 
 						lastMsg = buf[-2]
@@ -2783,21 +2781,20 @@ class Harddisk:
 
 						buf = [buf[-1] + b[0]] + b[1:]
 
-						# TODO: remove range(len(..) possible?
-						for i in range(len(buf) - 1):
-							if 'Syncing' in buf[i]:
+						for currentBuffer in islice(buf, len(buf) - 1):
+							if 'Syncing' in currentBuffer:
 								logger.info(u"Restore image: Syncing")
 								if progressSubject:
 									progressSubject.setMessage(u"Syncing")
 								done = True
-							match = re.search('\s(\d+)[\.\,]\d\d\spercent', buf[i])
+							match = re.search('\s(\d+)[\.\,]\d\d\spercent', currentBuffer)
 							if match:
 								percent = int(match.group(1))
 								if progressSubject and percent != progressSubject.getState():
-									logger.debug(u" -->>> %s" % buf[i])
+									logger.debug(u" -->>> %s" % currentBuffer)
 									progressSubject.setState(percent)
 							else:
-								logger.debug(u" -->>> %s" % buf[i])
+								logger.debug(u" -->>> %s" % currentBuffer)
 
 						lastMsg = buf[-2]
 						buf[:-1] = []
