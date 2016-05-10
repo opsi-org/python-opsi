@@ -119,6 +119,15 @@ class GetDirectoriesForProcessingTestCase(unittest.TestCase):
         directories, _ = getDirectoriesForProcessing('/tmp')
         self.assertTrue('/opt/pcbin/install' not in directories)
 
+    def testDepotPathMayAlsoExistInDirectories(self):
+        with mock.patch('OPSI.Util.Task.Rights.getDepotUrl', lambda: u'file:///var/lib/opsi/depot'):
+            directories, depotDir = getDirectoriesForProcessing('/var/lib/opsi/depot/')
+
+        print("Directories: {0}".format(directories))
+        assert '/var/lib/opsi' in directories
+        print("depotDir: {0}".format(depotDir))
+        assert depotDir == '/var/lib/opsi/depot'
+
 
 class ChownTestCase(unittest.TestCase):
 

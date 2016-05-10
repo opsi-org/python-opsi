@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2014-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -33,28 +33,17 @@ import OPSI.Util.Task.ConfigureBackend as backendConfigUtils
 import OPSI.Util.Task.ConfigureBackend.ConfigurationData as confData
 
 from .Backends.File import FileBackendMixin
-from .helpers import copyTestfileToTemporaryFolder
+from .helpers import createTemporaryTestfile
 
 
 class ConfigFileManagementTestCase(unittest.TestCase):
 
-    def setUp(self):
-        self.fileName = copyTestfileToTemporaryFolder(
-                            os.path.join(
-                                os.path.dirname(__file__), '..',
-                                'data', 'backends', 'mysql.conf'
-                            )
-                        )
-
-    def tearDown(self):
-        if os.path.exists(self.fileName):
-            os.remove(self.fileName)
-
-        del self.fileName
+    EXAMPLE_CONFIG = os.path.join(
+        os.path.dirname(__file__), '..',
+        'data', 'backends', 'mysql.conf'
+    )
 
     def testReadingMySQLConfigFile(self):
-        config = backendConfigUtils.getBackendConfiguration(self.fileName)
-
         defaultMySQLConfig = {
             "address": u"localhost",
             "database": u"opsi",
@@ -66,23 +55,28 @@ class ConfigFileManagementTestCase(unittest.TestCase):
             "connectionPoolTimeout": 30
         }
 
+        with createTemporaryTestfile(self.EXAMPLE_CONFIG) as fileName:
+            config = backendConfigUtils.getBackendConfiguration(fileName)
+
         self.assertEqual(config, defaultMySQLConfig)
 
     def testUpdatingTestConfigFile(self):
-        config = backendConfigUtils.getBackendConfiguration(self.fileName)
+        with createTemporaryTestfile(self.EXAMPLE_CONFIG) as fileName:
+            config = backendConfigUtils.getBackendConfiguration(fileName)
 
-        self.assertNotEqual('notYourCurrentPassword', config['password'])
-        config['password'] = 'notYourCurrentPassword'
-        backendConfigUtils.updateConfigFile(self.fileName, config)
-        self.assertEqual('notYourCurrentPassword', config['password'])
+            self.assertNotEqual('notYourCurrentPassword', config['password'])
+            config['password'] = 'notYourCurrentPassword'
+            backendConfigUtils.updateConfigFile(fileName, config)
+            self.assertEqual('notYourCurrentPassword', config['password'])
 
-        del config['address']
-        del config['database']
-        del config['password']
+            del config['address']
+            del config['database']
+            del config['password']
 
-        backendConfigUtils.updateConfigFile(self.fileName, config)
+            backendConfigUtils.updateConfigFile(fileName, config)
 
-        config = backendConfigUtils.getBackendConfiguration(self.fileName)
+            config = backendConfigUtils.getBackendConfiguration(fileName)
+
         for key in ('address', 'database', 'password'):
             self.assertTrue(
                 key not in config,

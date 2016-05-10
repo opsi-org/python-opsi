@@ -195,8 +195,9 @@ def getOpsiHotfixName(helper=None):
 			try:
 				result = execute(helper, shell=False)
 				minor = int(result[0].split(".")[1])
-			except:
+			except Exception:
 				logger.warning(u"MSHotfix fix for Windows 8.1 don't work. Fallback to normal mode.")
+
 		if (minor == 0):
 			os = u'vista-win2008'
 		elif (minor == 1):
@@ -439,7 +440,7 @@ class NetworkPerformanceCounterWMI(threading.Thread):
 			try:
 				import pythoncom
 				pythoncom.CoUninitialize()
-			except:
+			except Exception:
 				pass
 
 	def _getStatistics(self):
@@ -941,7 +942,7 @@ def getSessionInformation(sessionId, winApiBugCommand = None):
 	wtsUserName = None
 	try:
 		wtsUserName = win32ts.WTSQuerySessionInformation(None, sessionId, win32ts.WTSUserName)
-	except:
+	except Exception:
 		pass
 
 	# 'UserName': u'Administrator',
@@ -964,7 +965,7 @@ def getSessionInformation(sessionId, winApiBugCommand = None):
 				try:
 					if wtsUserName and not sessionData['UserName'].lower() ==  wtsUserName.lower():
 						sessionData['UserName'] = wtsUserName
-				except:
+				except Exception:
 					pass
 				logger.debug(u"   Found session: %s" % sessionData)
 				return sessionData
@@ -1391,7 +1392,7 @@ def execute(cmd, waitForEnding=True, getHandle=False, ignoreExitCode=[], exitOnS
 				if (timeout > 0) and (time.time() - startTime >= timeout):
 					try:
 						proc.kill()
-					except:
+					except Exception:
 						pass
 					raise IOError(exitCode, u"Command '%s' timed out atfer %d seconds" % (cmd, (time.time() - startTime)) )
 
@@ -1446,7 +1447,7 @@ def getPids(process, sessionId=None):
 		sid = u'unknown'
 		try:
 			sid = win32ts.ProcessIdToSessionId(pid)
-		except:
+		except Exception:
 			pass
 		logger.debug2(u"   got process %s with pid %d in session %s" % (pe32.szExeFile, pid, sid))
 		if (pe32.szExeFile.lower() == process.lower()):

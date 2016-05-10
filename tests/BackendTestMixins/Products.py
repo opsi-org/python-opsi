@@ -29,6 +29,7 @@ from OPSI.Object import (BoolProductProperty, LocalbootProduct, NetbootProduct,
     OpsiClient, OpsiDepotserver, ProductDependency, ProductOnClient, ProductOnDepot,
     ProductPropertyState, UnicodeConfig, UnicodeProductProperty)
 from OPSI.Types import forceHostId
+from OPSI.Types import BackendBadValueError
 from OPSI.Util import getfqdn
 
 from .Hosts import HostsMixin, getConfigServer, getDepotServers
@@ -700,6 +701,34 @@ class ProductsTestMixin(ProductsMixin):
 
         self.assertEquals(newName, backendProduct.name)
 
+    def testLongChangelogOnProductCanBeHandled(self):
+        product = LocalbootProduct(id='freiheit', productVersion=1, packageVersion=1)
+
+        changelog = '''opsi-winst/opsi-script (4.11.5.13) stable; urgency=low
+
+  * do not try to run non existing external sub sections
+
+-- Detlef Oertel <d.oertel@uib.de>  Thu,  21 Aug 2015:15:00:00 +0200
+
+'''
+
+        changelog = changelog * 555
+
+        lc = len(changelog)
+        assert len(changelog.strip()) > 65535  # Limit for `TEXT` in MySQL / MariaDB
+        product.setChangelog(changelog)
+        assert product.getChangelog() == changelog
+
+        self.backend.product_createObjects(product)
+
+        productFromBackend = self.backend.product_getObjects(id=product.id)[0]
+        changelogFromBackend = productFromBackend.getChangelog()
+
+        assert len(changelogFromBackend) > 1
+        assert len(changelogFromBackend) > 63000  # Leaving some room...
+
+        assert changelog[:2048] == changelogFromBackend[:2048]
+
 
 class ProductPropertiesMixin(ProductsMixin):
     def setUpProductProperties(self):
@@ -840,6 +869,15 @@ class ProductPropertyStateTestsMixin(ProductPropertyStatesMixin):
                                                     productProperty4])
         productProperties = self.backend.productProperty_getObjects()
         self.assertEqual(len(productProperties), len(prodPropertiesOrig))
+
+    def testGettingErrorMessageWhenAttributeInFilterIsNotAtObject(self):
+        try:
+            self.backend.productPropertyState_getObjects(unknownAttribute='foobar')
+            self.fail("We should not get here.")
+        except BackendBadValueError as bbve:
+            print(bbve)
+            self.assertTrue('has no attribute' in str(bbve))
+            self.assertTrue('unknownAttribute' in str(bbve))
 
 
 class ProductPropertiesTestMixin(ProductPropertiesMixin):
