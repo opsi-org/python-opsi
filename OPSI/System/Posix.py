@@ -834,9 +834,9 @@ output will be returned.
 			exitCode = ret
 			if data:
 				lines = data.split('\n')
-				for i in range(len(lines)):
-					line = lines[i].decode(encoding, 'replace')
-					if (i == len(lines) - 1) and not line:
+				for i, line in enumerate(lines):
+					line = line.decode(encoding, 'replace')
+					if i == len(lines) - 1 and not line:
 						break
 					logger.debug(u'>>> %s' % line)
 					result.append(line)
@@ -1620,22 +1620,24 @@ class Harddisk:
 					raise Exception(u"Unable to read partition table (sectors) of disk '%s'" % self.device)
 
 				if match.group(4):
-					for p in range(len(self.partitions)):
-						if forceInt(self.partitions[p]['number']) == forceInt(match.group(1)):
-							self.partitions[p]['secStart'] = forceInt(match.group(3))
-							self.partitions[p]['secEnd'] = forceInt(match.group(4))
-							self.partitions[p]['secSize'] = forceInt(match.group(5))
+					for p, partition in enumerate(self.partitions):
+						if forceInt(partition['number']) == forceInt(match.group(1)):
+							partition['secStart'] = forceInt(match.group(3))
+							partition['secEnd'] = forceInt(match.group(4))
+							partition['secSize'] = forceInt(match.group(5))
+							self.partitions[p] = partition
 							logger.debug(
 								u"Partition sector values =>>> number: %s, "
 								u"start: %s sec, end: %s sec, size: %s sec " \
 								% (
-									self.partitions[p]['number'],
-									self.partitions[p]['secStart'],
-									self.partitions[p]['secEnd'],
-									self.partitions[p]['secSize']
+									partition['number'],
+									partition['secStart'],
+									partition['secEnd'],
+									partition['secSize']
 							   )
 							)
 							break
+
 			elif line.lower().startswith('units'):
 				if isXenialSfdiskVersion():
 					match = re.search('sectors\s+of\s+\d\s+.\s+\d+\s+.\s+(\d+)\s+bytes', line)
