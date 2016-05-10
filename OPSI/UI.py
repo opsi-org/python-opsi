@@ -6,7 +6,7 @@ opsi python library - UI
 This module is part of the desktop management solution opsi
 (open pc server integration) http://www.opsi.org
 
-Copyright (C) 2010-2014 uib GmbH
+Copyright (C) 2010-2016 uib GmbH
 
 http://www.uib.de/
 
@@ -519,8 +519,7 @@ class SnackUI(UI):
 
 			row = 0
 			numSelected = 0
-			for i in range(len(entries)):
-				entry = entries[i]
+			for i, entry in enumerate(entries):
 				selected = forceBool(entry.get('selected', False))
 				if radio and (numSelected >= 1):
 					selected = False
