@@ -37,7 +37,7 @@ def decodeDigitalProductId(data):
         offset = 52
         i = 28
         chars = "BCDFGHJKMPQRTVWXY2346789"
-        product_key = ""
+        productKey = ""
         while (i >= 0):
                 acc = 0
                 j = 14
@@ -51,13 +51,13 @@ def decodeDigitalProductId(data):
                         acc = acc % 24
                         j -= 1
                 i -= 1
-                product_key = chars[acc] + product_key
+                productKey = chars[acc] + productKey
                 if (((29 - i) % 6) == 0) and (i != -1):
                         i -= 1
-                        product_key = "-" + product_key
-        return product_key
+                        productKey = "-" + productKey
+        return productKey
 
-def getSoftwareReg(software_hive):
+def get_software_reg(software_hive):
         try:
                 out_file = '/tmp/export.reg'
                 subprocess.call(['/usr/sbin/reged.static -x "' + software_hive + '" "HKEY_LOCAL_MACHINE\Software" "Microsoft\Windows NT\CurrentVersion" "' + out_file + '" 1>/dev/null 2>/dev/null'], shell=True)
@@ -84,7 +84,7 @@ def getSoftwareReg(software_hive):
         finally:
                 os.chdir('/')
 
-def getProductKeyFromRegistry(software_reg):
+def get_product_key_from_registry(software_reg):
         data = software_reg['HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion']['DigitalProductId'].split(':')[1].replace(',','')
         return decode_digital_product_id(binascii.unhexlify(data))
 
