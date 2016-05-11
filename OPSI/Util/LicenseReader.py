@@ -27,6 +27,7 @@ Reading Windows licenses from Regsitry or BIOS
 """
 
 import os
+import codecs
 from OPSI.System.Posix import execute, which
 
 def decodeDigitalProductId(data):
@@ -88,6 +89,10 @@ def get_product_key_from_registry(software_reg):
         data = software_reg['HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion']['DigitalProductId'].split(':')[1].replace(',','')
         return decode_digital_product_id(binascii.unhexlify(data))
 
-def get_product_key_from_bios():
-        return execute('%s -b MSDM | dd bs=1 skip=56 2>/dev/null' % which('acpidump')[0].strip()
+def getProductKeyFrom_bios():
+	with codecs.open ('/sys/firmware/acpi/tables/MSDM', encoding='iso-8859-1') as biosKey:
+		for i, line in biosKey:
+			if i == 1:
+				return line
+#        return execute('%s -b MSDM | dd bs=1 skip=56 2>/dev/null' % which('acpidump')[0].strip()
 
