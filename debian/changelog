@@ -1,3 +1,37 @@
+python-opsi (4.0.6.49-1) stable; urgency=medium
+
+  * OPSI.Util.Task.Samba: removed oplocks from opsi_depot share
+  * OPSI.Util.Product: Added debug output to show when tasks end.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 6 May 2016 07:32:28 +0200
+
+python-opsi (4.0.6.48-1) stable; urgency=medium
+
+  * OPSI.Types.forceOct avoids using a temporary variable.
+  * OPSI.Util.Task.Rights.setRights: avoid processing the same path
+    twice.
+  * OPSI.Logger and OPSI.Service.JsonRpc now use the 'traceback' module
+    to get the tracebacks.
+  * OPSI.Backend.Replicator: Show the renaming of the server as a single
+    step for better user feedback.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 27 Apr 2016 12:35:39 +0200
+
+python-opsi (4.0.6.47-1) stable; urgency=medium
+
+  * Not using bare "except:" - at least catching Exception.
+  * OPSI.Util.Task.Samba: notify the user that he may need to restart the Samba
+    daemon.
+  * Fix typo in error message if the filter was referencing an attribute not
+    present at the used object type.
+  * OPSI.Backend.Replicator: Check if the used backend can rename the server
+    before trying to do so. If the check fails fall back to using an
+    ExtendedBackend.
+  * OPSI.Backend.SQL: Limit the length of inserted changelogs to be lower than
+    65535 to avoid problems with the limited size of columns of type TEXT.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 21 Apr 2016 13:18:16 +0200
+
 python-opsi (4.0.6.46-1) stable; urgency=medium
 
   * File backend: Correctly read/write the locked attribute on ProductOnDepot.

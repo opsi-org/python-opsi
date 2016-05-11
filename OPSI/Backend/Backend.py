@@ -568,11 +568,11 @@ containing the localisation of the hardware audit.
 		possibleAttributes = getPossibleClassAttributes(Class)
 		for attribute in forceUnicodeList(attributes):
 			if attribute not in possibleAttributes:
-				raise BackendBadValueError("Class '%s' has not attribute '%s'" % (Class, attribute))
+				raise BackendBadValueError("Class {0!r} has no attribute '{1}'".format(Class, attribute))
 
 		for attribute in filter:
 			if attribute not in possibleAttributes:
-				raise BackendBadValueError("Class '%s' has not attribute '%s'" % (Class, attribute))
+				raise BackendBadValueError("Class {0!r} has no attribute '{1}'".format(Class, attribute))
 
 	def backend_createBase(self):
 		"""
