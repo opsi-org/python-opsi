@@ -1,3 +1,9 @@
+python-opsi (4.0.6.50-1) stable; urgency=low
+
+  * OPSI.System.Windows: getOpsiHotfixName supports now Windows 10
+
+ -- Erol Ueluekmen <e.ueluekmen@uib.de>  Tue, 17 May 2016 15:06:42 +0200
+
 python-opsi (4.0.6.49-1) stable; urgency=medium
 
   * OPSI.Util.Task.Samba: removed oplocks from opsi_depot share
