@@ -25,7 +25,9 @@ Testing CRUD Methods for sshcommands (read from / write to jsonfile).
 
 from __future__ import absolute_import
 from .Backends.File import FileBackendBackendManagerMixin
+from .helpers import workInTemporaryDirectory, mock
 import unittest, json
+# import unittest, json
 
 
 class SSHCommandsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
@@ -34,28 +36,43 @@ class SSHCommandsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
         """
         def setUp(self):
                 self.setUpBackend()
+
                 #self.filename=u'/home/sucher/tmp/json/com-test.json'
                 # self.backend._deleteSshCommandFileContent()
                 self.name1=u'UTestName1'
                 self.menuText1=u'UTestMenu1'
-                self.commands1=[u'test 1']
-                self.command1={u'name':self.name1, u'menuText':self.menuText1, u'commands':self.commands1}
+                self.commands1=[]
+                self.commands1.append(u'test 1')
+
+                self.command1={u'id':self.name1, u'menuText':self.menuText1, u'commands':self.commands1}
+                print("command1:")
+                print(self.command1)
 
                 self.name2=u'TUestName2'
-                self.menuText2=u'UTestMenu2'
-                self.commands2=[u'test 2']
+                self.menuText2=u'UTestMenu2'ad
+                self.commands2=[]
+                self.commands2.append(u'test 2')
                 self.command2={u'name':self.name2, u'menuText':self.menuText2, u'commands':self.commands2}
 
                 self.name3=u'UTestName3'
                 self.menuText3=u'UTestMenu3'
-                self.commands3=[u'test 3']
+                self.commands3=[]
+                self.commands3.append(u'test 3')
                 self.command3={u'name':self.name3, u'menuText':self.menuText3, u'commands':self.commands3}
                 # self.commands=[u'test1', u'test2']
-                # self.needSudo=True
-                # self.priority=1
-                # self.tooltip=u''
-                # self.parentMenu=None
 
+                self.def_needSudo=False
+                self.def_position=0
+                self.def_tooltipText=u''
+                self.def_parentMenuText=None
+                # print(self.command1)
+                # print(self.command2)
+                # print(self.command3)
+
+
+                self.def_command1={u'id':u'utestmenu1', u'menuText':self.menuText1, u'commands':self.commands1, u'needSudo':self.def_needSudo, u'position':self.def_position, u'tooltipText':self.def_tooltipText, u'parentMenuText':self.def_parentMenuText}
+                self.def_commandlist1=[]
+                self.def_commandlist1.append(self.def_command1)
 
                 self.commandlist1=[]
                 self.commandlist1.append(self.command1)
@@ -78,17 +95,32 @@ class SSHCommandsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
                 self.tearDownBackend()
                 # self.backend.deleteSSHCommands(self.name1,self.name2, self.name3)
 
+        # def testReadCommand(self):
 
-
-        def testReadCommand(self):
-                print(self.getSSHCommands())
-                self.assertEqual(self.backend.getSSHCommands(), '', "readCommands is empty list (at beginning)")
+        #         print(self.backend.getSSHCommands())
+        #         self.assertEqual(self.backend.getSSHCommands(), [], "readCommands is empty list (at beginning)")
 
 
         def testCreateCommand(self):
-                self.assertEqual(self.backend.getSSHCommands(), [], "readCommands is empty list (at beginning)")
-                self.assertListEqual(self.backend.createSSHCommand(self.command1["name"], self.command1["menuText"]) , self.commandlist1, "create command with strings")
-                self.assertNotEquals(self.backend.createSSHCommand(self.command2["name"], self.command2["menuText"]) , self.commandlist1, "create the right command with strings")
+                # print(self.backend.getSSHCommands())
+                # print(self.commandlist1)
+                # print(self.def_commandlist1)
+                with workInTemporaryDirectory():
+                        filename = u'test_file.conf'
+                        with open(filename, "w"):
+                                pass
+                        # with mock.patch.object(self.backend, 'getSSHCommandFilename', return_value=filename):
+                        with mock.patch.object(self.backend._backend, '_getSSHCommandFilename', return_value=filename):
+                                self.assertEqual(self.backend.getSSHCommands(), [], "readCommands is empty list (at beginning)")
+                                print("Datei: {}".format(self.backend._backend._getSSHCommandFilename()))
+                                # print("p1: {}".format(self.backend.createSSHCommands(self.commandlist1)))
+                                return_command = self.backend.createSSHCommand( self.command1["menuText"], self.command1["commands"])
+                                print("p1: {}".format(return_command))
+                                print("p2: {}".format(self.def_commandlist1))
+                                self.assertListEqual(return_command, self.def_commandlist1)
+                                # self.assertEqual(self.backend.createSSHCommands(self.commandlist1) , self.def_commandlist1, "create command with strings")
+                # self.assertListEqual(self.backend.createSSHCommand(self.command1["name"], self.command1["menuText"], self.command1["commands"]) , json.loads(self.commandlist1, "create command with strings"))
+                # self.assertNotEquals(self.backend.createSSHCommand(self.command2["name"], self.command2["menuText"], self.commands2) , json.loads(self.commandlist1, "create the right command with strings"))
 
         # def testCreateCommands(self):
         #         self.assertEquals(self.backend.getSSHCommands(), [], "readCommands is empty list (at beginning)")
