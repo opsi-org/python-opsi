@@ -78,19 +78,22 @@ class SSHCommandsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
                 self.tearDownBackend()
 
         def testReadCommand(self):
-                self.assertEquals(self.backend.getSSHCommands(), [], "readCommands is empty list (at beginning)")
+                self.assertEqual(self.backend.getSSHCommands(), [], "readCommands is empty list (at beginning)")
         
 
         def testCreateCommand(self):
+                self.assertEqual(self.backend.getSSHCommands(), [], "readCommands is empty list (at beginning)")
                 self.assertListEqual(self.backend.createSSHCommand(self.command1["name"], self.command1["menuText"]) , self.commandlist1, "create command with strings")
                 self.assertNotEquals(self.backend.createSSHCommand(self.command2["name"], self.command2["menuText"]) , self.commandlist1, "create the right command with strings")
 
         def testCreateCommands(self):
+                self.assertEquals(self.backend.getSSHCommands(), [], "readCommands is empty list (at beginning)")
                 self.assertEqual(self.backend.createSSHCommands(self.commandlist1) , self.commandlist1, "create single command as list")
                 self.assertNotEquals(self.backend.createSSHCommands(self.commandlist2), self.commandlist1, "create the right single command as list ")
                 self.assertListEqual(self.backend.createSSHCommands(self.commandlist11) , self.commandlist1, "do not create double commands (same names)")
 
         def testUpdateCommand(self):
+                self.assertEquals(self.backend.getSSHCommands(), [], "readCommands is empty list (at beginning)")
                 self.u_name1=u'UTestName1'
                 self.u_menuText1=u'UTestMenu1'
                 self.u_menuText2=u'UTestMenu1Neu'
