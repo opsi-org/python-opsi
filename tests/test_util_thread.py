@@ -246,24 +246,24 @@ class KillableThreadTestCase(unittest.TestCase):
         they may still be processing.
         """
 
-        class ThirtySecondsToEndThread(KillableThread):
+        class ThreadWithTimeout(KillableThread):
             def __init__(self, testCase):
-                super(ThirtySecondsToEndThread, self).__init__()
+                super(ThreadWithTimeout, self).__init__()
 
                 self.testCase = testCase
 
             def run(self):
                 start = datetime.datetime.now()
-                twentySeconds = datetime.timedelta(seconds=20)
+                timeout = datetime.timedelta(seconds=30)
 
-                while datetime.datetime.now() < (start + twentySeconds):
+                while datetime.datetime.now() < (start + timeout):
                     time.sleep(0.1)
 
                 self.testCase.fail("Thread did not get killed in time.")
 
         @contextmanager
         def getTestThread():
-            runningThread = ThirtySecondsToEndThread(self)
+            runningThread = ThreadWithTimeout(self)
             runningThread.start()
             try:
                 yield runningThread

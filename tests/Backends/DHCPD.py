@@ -84,7 +84,9 @@ host out-of-subnet {
     def tearDownDHCPDConf(self):
         del self.dhcpdConf
 
-        if os.path.exists(self.dhcpdConfFile):
+        try:
             os.remove(self.dhcpdConfFile)
+        except OSError:
+            pass
 
         del self.dhcpdConfFile

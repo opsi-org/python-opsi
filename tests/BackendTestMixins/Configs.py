@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -27,8 +27,9 @@ Backend mixin for testing configuration objects on a backend.
 from __future__ import absolute_import
 from OPSI.Object import UnicodeConfig, BoolConfig, ConfigState
 
-from .Clients import ClientsMixin
-from .Hosts import HostsMixin
+from .Clients import ClientsMixin, getClients
+from .Hosts import HostsMixin, getDepotServers
+
 
 def getConfigs(depotServerId=None):
     config1 = UnicodeConfig(
@@ -151,18 +152,7 @@ class ConfigsMixin(ClientsMixin, HostsMixin):
 
 
 class ConfigTestsMixin(ConfigsMixin):
-    def configureBackendOptions(self):
-        self.backend.backend_setOptions({
-            'addProductOnClientDefaults': False,
-            'addProductPropertyStateDefaults': False,
-            'addConfigStateDefaults': False,
-            'deleteConfigStateIfDefault': False,
-            'returnObjectsOnUpdateAndCreate': False
-        })
-
     def testConfigMethods(self):
-        self.configureBackendOptions()
-
         self.setUpConfigs()
         self.createConfigOnBackend()
 
@@ -242,6 +232,101 @@ class ConfigTestsMixin(ConfigsMixin):
             assert i in configs[0].getDefaultValues(), u"%s not in %s" % (
                 i, configs[0].getDefaultValues())
 
+    def test_getConfigFromBackend(self):
+        configsOrig = getConfigs()
+        self.backend.config_createObjects(configsOrig)
+
+        configs = self.backend.config_getObjects()
+        self.assertEqual(len(configs), len(configsOrig))
+
+    def test_verifyConfigs(self):
+        configsOrig = getConfigs()
+        self.backend.config_createObjects(configsOrig)
+
+        configs = self.backend.config_getObjects()
+        assert configs
+
+        ids = [config.id for config in configs]
+        for config in configsOrig:
+            self.assertIn(config.id, ids)
+
+        for config in configs:
+            for c in configsOrig:
+                if config.id == c.id:
+                    self.assertEqual(config, c)
+
+    def test_getConfigByDefaultValues(self):
+        configsOrig = getConfigs()
+        self.backend.config_createObjects(configsOrig)
+
+        config2 = configsOrig[1]
+
+        configs = self.backend.config_getObjects(defaultValues=config2.defaultValues)
+        self.assertEqual(len(configs), 1)
+        self.assertEqual(configs[0].getId(), config2.getId())
+
+    def test_getConfigByPossibleValues(self):
+        configsOrig = getConfigs()
+        self.backend.config_createObjects(configsOrig)
+
+        configs = self.backend.config_getObjects(possibleValues=[])
+        self.assertEqual(len(configs), len(configsOrig))
+
+        config1 = configsOrig[0]
+        configs = self.backend.config_getObjects(possibleValues=config1.possibleValues, defaultValues=config1.defaultValues)
+        self.assertEqual(len(configs), 1)
+        self.assertEqual(configs[0].getId(), config1.getId())
+
+        config5 = configsOrig[4]
+        configs = self.backend.config_getObjects(possibleValues=config5.possibleValues, defaultValues=config5.defaultValues)
+        self.assertEqual(len(configs), 2)
+
+        config3 = configsOrig[2]
+        for config in configs:
+            self.assertIn(config.getId(), (config3.id, config5.id))
+
+    def test_getMultiValueConfigs(self):
+        configsOrig = getConfigs()
+        self.backend.config_createObjects(configsOrig)
+
+        multiValueConfigNames = [config.id for config in configsOrig if config.getMultiValue()]
+        assert multiValueConfigNames
+
+        configs = self.backend.config_getObjects(attributes=[], multiValue=True)
+        self.assertEqual(len(configs), len(multiValueConfigNames))
+        for config in configs:
+            self.assertIn(config.id, multiValueConfigNames)
+
+    def test_deleteConfigFromBackend(self):
+        configsOrig = getConfigs()
+        self.backend.config_createObjects(configsOrig)
+
+        config1 = configsOrig[0]
+        self.backend.config_deleteObjects(config1)
+        configs = self.backend.config_getObjects()
+        self.assertEqual(len(configs), len(configsOrig) - 1)
+
+    def test_updateConfig(self):
+        configsOrig = getConfigs()
+        self.backend.config_createObjects(configsOrig)
+
+        config3 = configsOrig[2]
+
+        config3.setDescription(u'Updated')
+        config3.setPossibleValues(['1', '2', '3'])
+        config3.setDefaultValues(['1', '2'])
+        self.backend.config_updateObject(config3)
+
+        configs = self.backend.config_getObjects(description=u'Updated')
+        self.assertEqual(len(configs), 1)
+        config = configs[0]
+        self.assertEqual(len(config.getPossibleValues()), 3)
+        for i in ['1', '2', '3']:
+            self.assertIn(i, config.getPossibleValues())
+        self.assertEqual(len(config.getDefaultValues()), 2)
+        for i in ['1', '2']:
+            self.assertIn(i, config.getDefaultValues())
+
 
 class ConfigStatesMixin(ConfigsMixin):
     def setUpConfigStates(self):
@@ -262,18 +347,7 @@ class ConfigStatesMixin(ConfigsMixin):
 
 
 class ConfigStateTestsMixin(ConfigStatesMixin):
-    def configureBackendOptions(self):
-        self.backend.backend_setOptions({
-            'addProductOnClientDefaults': False,
-            'addProductPropertyStateDefaults': False,
-            'addConfigStateDefaults': False,
-            'deleteConfigStateIfDefault': False,
-            'returnObjectsOnUpdateAndCreate': False
-        })
-
     def testConfigStateMethods(self):
-        self.configureBackendOptions()
-
         self.setUpConfigStates()
 
         self.createHostsOnBackend()
@@ -315,3 +389,92 @@ class ConfigStateTestsMixin(ConfigStatesMixin):
             configStates, 1)
         assert configStates[0].getValues()[0] == self.configState4.getValues()[
             0], u"got: '%s', expected: '%s'" % (configStates[0].getValues()[0], self.configState4.getValues()[0])
+
+    def test_getConfigStatesFromBackend(self):
+        configs = getConfigs()
+        clients = getClients()
+        depots = getDepotServers()
+        configStatesOrig = getConfigStates(configs, clients, depots)
+
+        self.backend.host_createObjects(clients)
+        self.backend.host_createObjects(depots)
+        self.backend.config_createObjects(configs)
+        self.backend.configState_createObjects(configStatesOrig)
+
+        configStates = self.backend.configState_getObjects()
+        assert configStates
+
+        for state in configStatesOrig:
+            self.assertIn(state, configStates)
+
+    def test_getConfigStateByClientID(self):
+        configs = getConfigs()
+        clients = getClients()
+        depots = getDepotServers()
+        configStatesOrig = getConfigStates(configs, clients, depots)
+
+        self.backend.host_createObjects(clients)
+        self.backend.host_createObjects(depots)
+        self.backend.config_createObjects(configs)
+        self.backend.configState_createObjects(configStatesOrig)
+
+        client1 = clients[0]
+        client1ConfigStates = [configState for configState in configStatesOrig if configState.getObjectId() == client1.getId()]
+
+        configStates = self.backend.configState_getObjects(attributes=[], objectId=client1.getId())
+        assert configStates
+        for configState in configStates:
+            self.assertEqual(configState.objectId, client1.getId())
+
+    def test_deleteConfigStateFromBackend(self):
+        configs = getConfigs()
+        clients = getClients()
+        depots = getDepotServers()
+        configStatesOrig = getConfigStates(configs, clients, depots)
+
+        self.backend.host_createObjects(clients)
+        self.backend.host_createObjects(depots)
+        self.backend.config_createObjects(configs)
+        self.backend.configState_createObjects(configStatesOrig)
+
+        configState2 = configStatesOrig[1]
+
+        self.backend.configState_deleteObjects(configState2)
+        configStates = self.backend.configState_getObjects()
+        self.assertEqual(len(configStates), len(configStatesOrig) - 1)
+        self.assertNotIn(configState2, configStates)
+
+    def test_updateConfigState(self):
+        configs = getConfigs()
+        clients = getClients()
+        depots = getDepotServers()
+        configStatesOrig = getConfigStates(configs, clients, depots)
+
+        self.backend.host_createObjects(clients)
+        self.backend.host_createObjects(depots)
+        self.backend.config_createObjects(configs)
+        self.backend.configState_createObjects(configStatesOrig)
+
+        configState3 = configStatesOrig[2]
+        configState3.setValues([True])
+        self.backend.configState_updateObject(configState3)
+        configStates = self.backend.configState_getObjects(objectId=configState3.getObjectId(), configId=configState3.getConfigId())
+        self.assertEqual(len(configStates), 1)
+        self.assertEqual(configStates[0].getValues(), [True])
+
+    def test_selectConfigStateFromBackend(self):
+        configs = getConfigs()
+        clients = getClients()
+        depots = getDepotServers()
+        configStatesOrig = getConfigStates(configs, clients, depots)
+
+        self.backend.host_createObjects(clients)
+        self.backend.host_createObjects(depots)
+        self.backend.config_createObjects(configs)
+        self.backend.configState_createObjects(configStatesOrig)
+
+        configState4 = configStatesOrig[3]
+
+        configStates = self.backend.configState_getObjects(objectId=configState4.getObjectId(), configId=configState4.getConfigId())
+        self.assertEqual(len(configStates), 1)
+        self.assertEqual(configStates[0].getValues()[0], configState4.getValues()[0])
