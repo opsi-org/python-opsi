@@ -195,26 +195,34 @@ def getOpsiHotfixName(helper=None):
 			try:
 				result = execute(helper, shell=False)
 				minor = int(result[0].split(".")[1])
+				if int(result[0].split(".")[0]) == 10:
+					logger.notice("Windows 10 detected, changing major from 6 to 10")
+					major = 10
 			except Exception:
 				logger.warning(u"MSHotfix fix for Windows 8.1 don't work. Fallback to normal mode.")
-
-		if (minor == 0):
-			os = u'vista-win2008'
-		elif (minor == 1):
-			if (arch == 'x86'):
-				os = u'win7'
+			if (major == 10):
+				if (arch = 'x86'):
+					os = u'win10'
+				else:
+					os = u'win10-win2016'
 			else:
-				os = u'win7-win2008r2'
-		elif (minor == 2):
-			if (arch == 'x86'):
-				os = u'win8'
-			else:
-				os = u'win8-win2012'
-		elif (minor == 3):
-			if (arch == 'x86'):
-				os = u'win81'
-			else:
-				os = u'win81-win2012r2'
+				if (minor == 0):
+					os = u'vista-win2008'
+				elif (minor == 1):
+					if (arch == 'x86'):
+						os = u'win7'
+					else:
+						os = u'win7-win2008r2'
+				elif (minor == 2):
+					if (arch == 'x86'):
+						os = u'win8'
+					else:
+						os = u'win8-win2012'
+				elif (minor == 3):
+					if (arch == 'x86'):
+						os = u'win81'
+					else:
+						os = u'win81-win2012r2'
 
 	return u'mshotfix-%s-%s-%s' % (os, arch, lang)
 
