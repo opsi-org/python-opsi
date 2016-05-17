@@ -201,7 +201,7 @@ def getOpsiHotfixName(helper=None):
 			except Exception:
 				logger.warning(u"MSHotfix fix for Windows 8.1 don't work. Fallback to normal mode.")
 			if (major == 10):
-				if (arch = 'x86'):
+				if (arch == 'x86'):
 					os = u'win10'
 				else:
 					os = u'win10-win2016'
