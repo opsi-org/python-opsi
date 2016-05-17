@@ -49,7 +49,7 @@ class SSHCommandsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
                 print(self.command1)
 
                 self.name2=u'TUestName2'
-                self.menuText2=u'UTestMenu2'ad
+                self.menuText2=u'UTestMenu2'
                 self.commands2=[]
                 self.commands2.append(u'test 2')
                 self.command2={u'name':self.name2, u'menuText':self.menuText2, u'commands':self.commands2}
