@@ -38,15 +38,18 @@ class SSHCommandsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
                 # self.backend._deleteSshCommandFileContent()
                 self.name1=u'UTestName1'
                 self.menuText1=u'UTestMenu1'
-                self.command1={u'name':self.name1, u'menuText':self.menuText1}
+                self.commands1=[u'test 1']
+                self.command1={u'name':self.name1, u'menuText':self.menuText1, u'commands':self.commands1}
 
                 self.name2=u'TUestName2'
                 self.menuText2=u'UTestMenu2'
-                self.command2={u'name':self.name2, u'menuText':self.menuText2}
+                self.commands2=[u'test 2']
+                self.command2={u'name':self.name2, u'menuText':self.menuText2, u'commands':self.commands2}
 
                 self.name3=u'UTestName3'
                 self.menuText3=u'UTestMenu3'
-                self.command3={u'name':self.name3, u'menuText':self.menuText3}
+                self.commands3=[u'test 3']
+                self.command3={u'name':self.name3, u'menuText':self.menuText3, u'commands':self.commands3}
                 # self.commands=[u'test1', u'test2']
                 # self.needSudo=True
                 # self.priority=1
@@ -79,13 +82,13 @@ class SSHCommandsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
         
 
         def testCreateCommand(self):
-                self.assertListEqual(self.backend.createCommand(self.command1["name"], self.command1["menuText"]) , self.commandlist1, "create command with strings")
-                self.assertNotEquals(self.backend.createCommand(self.command2["name"], self.command2["menuText"]) , self.commandlist1, "create the right command with strings")
+                self.assertListEqual(self.backend.createSSHCommand(self.command1["name"], self.command1["menuText"]) , self.commandlist1, "create command with strings")
+                self.assertNotEquals(self.backend.createSSHCommand(self.command2["name"], self.command2["menuText"]) , self.commandlist1, "create the right command with strings")
 
         def testCreateCommands(self):
-                self.assertEqual(self.backend.createCommands(self.commandlist1) , self.commandlist1, "create single command as list")
-                self.assertNotEquals(self.backend.createCommands(self.commandlist2), self.commandlist1, "create the right single command as list ")
-                self.assertListEqual(self.backend.createCommands(self.commandlist11) , self.commandlist1, "do not create double commands (same names)")
+                self.assertEqual(self.backend.createSSHCommands(self.commandlist1) , self.commandlist1, "create single command as list")
+                self.assertNotEquals(self.backend.createSSHCommands(self.commandlist2), self.commandlist1, "create the right single command as list ")
+                self.assertListEqual(self.backend.createSSHCommands(self.commandlist11) , self.commandlist1, "do not create double commands (same names)")
 
         def testUpdateCommand(self):
                 self.u_name1=u'UTestName1'
@@ -94,9 +97,9 @@ class SSHCommandsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
                 self.u_command1=[{u'name':self.u_name1, u'menuText':self.u_menuText1}]
                 self.u_command2=[{u'name':self.u_name1, u'menuText':self.u_menuText2}]
 
-                self.backend.createCommand(self.u_name1, self.u_menuText1)
-                self.assertListEqual(self.backend.updateCommand(self.u_name1, self.u_menuText2), self.u_command2, "update command ")
-                self.assertNotEquals(self.backend.updateCommand(self.u_name1, self.u_menuText2), self.u_command1, "update right command")
+                self.backend.createSSHCommand(self.u_name1, self.u_menuText1)
+                self.assertListEqual(self.backend.updateSSHCommand(self.u_name1, self.u_menuText2), self.u_command2, "update command ")
+                self.assertNotEquals(self.backend.updateSSHCommand(self.u_name1, self.u_menuText2), self.u_command1, "update right command")
 
         # def testDeleteCommand(self):
                 # self.backend.createCommands(self.commandlist3)
