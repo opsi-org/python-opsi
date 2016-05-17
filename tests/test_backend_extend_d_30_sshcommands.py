@@ -78,7 +78,7 @@ class SSHCommandsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
                 self.tearDownBackend()
 
         def testReadCommand(self):
-                self.assertEquals(self.backend.readCommands(), [], "readCommands is empty list (at beginning)")
+                self.assertEquals(self.backend.getSSHCommands(), [], "readCommands is empty list (at beginning)")
         
 
         def testCreateCommand(self):
@@ -94,8 +94,9 @@ class SSHCommandsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
                 self.u_name1=u'UTestName1'
                 self.u_menuText1=u'UTestMenu1'
                 self.u_menuText2=u'UTestMenu1Neu'
-                self.u_command1=[{u'name':self.u_name1, u'menuText':self.u_menuText1}]
-                self.u_command2=[{u'name':self.u_name1, u'menuText':self.u_menuText2}]
+                self.u_command=[u'test']
+                self.u_command1=[{u'name':self.u_name1, u'menuText':self.u_menuText1, u'commands':self.u_command}]
+                self.u_command2=[{u'name':self.u_name1, u'menuText':self.u_menuText2, u'commands':self.u_command}]
 
                 self.backend.createSSHCommand(self.u_name1, self.u_menuText1)
                 self.assertListEqual(self.backend.updateSSHCommand(self.u_name1, self.u_menuText2), self.u_command2, "update command ")
