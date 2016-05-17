@@ -81,6 +81,7 @@ class SSHCommandsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
 
 
         def testReadCommand(self):
+                print(self.getSSHCommands())
                 self.assertEqual(self.backend.getSSHCommands(), '', "readCommands is empty list (at beginning)")
 
 
