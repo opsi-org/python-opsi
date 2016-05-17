@@ -27,8 +27,18 @@ from __future__ import absolute_import
 from .Backends.File import FileBackendBackendManagerMixin
 from .helpers import workInTemporaryDirectory, mock
 import unittest, json
+from contextlib import contextmanager
 # import unittest, json
 
+
+@contextmanager
+def workWithEmptyCommandFile(backend):
+     with workInTemporaryDirectory():
+                filename = u'test_file.conf'
+                with open(filename, "w"):
+                        pass
+                with mock.patch.object(backend, '_getSSHCommandFilename', return_value=filename):
+                        yield
 
 class SSHCommandsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
         """
@@ -102,23 +112,15 @@ class SSHCommandsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
 
 
         def testCreateCommand(self):
-                # print(self.backend.getSSHCommands())
-                # print(self.commandlist1)
-                # print(self.def_commandlist1)
-                with workInTemporaryDirectory():
-                        filename = u'test_file.conf'
-                        with open(filename, "w"):
-                                pass
-                        # with mock.patch.object(self.backend, 'getSSHCommandFilename', return_value=filename):
-                        with mock.patch.object(self.backend._backend, '_getSSHCommandFilename', return_value=filename):
-                                self.assertEqual(self.backend.getSSHCommands(), [], "readCommands is empty list (at beginning)")
-                                print("Datei: {}".format(self.backend._backend._getSSHCommandFilename()))
-                                # print("p1: {}".format(self.backend.createSSHCommands(self.commandlist1)))
-                                return_command = self.backend.createSSHCommand( self.command1["menuText"], self.command1["commands"])
-                                print("p1: {}".format(return_command))
-                                print("p2: {}".format(self.def_commandlist1))
-                                self.assertListEqual(return_command, self.def_commandlist1)
-                                # self.assertEqual(self.backend.createSSHCommands(self.commandlist1) , self.def_commandlist1, "create command with strings")
+                with workWithEmptyCommandFile(self.backend._backend):
+                        self.assertEqual(self.backend.getSSHCommands(), [], "readCommands is empty list (at beginning)")
+                        print("Datei: {}".format(self.backend._backend._getSSHCommandFilename()))
+                        # print("p1: {}".format(self.backend.createSSHCommands(self.commandlist1)))
+                        return_command = self.backend.createSSHCommand( self.command1["menuText"], self.command1["commands"])
+                        print("p1: {}".format(return_command))
+                        print("p2: {}".format(self.def_commandlist1))
+                        self.assertListEqual(return_command, self.def_commandlist1)
+                        # self.assertEqual(self.backend.createSSHCommands(self.commandlist1) , self.def_commandlist1, "create command with strings")
                 # self.assertListEqual(self.backend.createSSHCommand(self.command1["name"], self.command1["menuText"], self.command1["commands"]) , json.loads(self.commandlist1, "create command with strings"))
                 # self.assertNotEquals(self.backend.createSSHCommand(self.command2["name"], self.command2["menuText"], self.commands2) , json.loads(self.commandlist1, "create the right command with strings"))
 
