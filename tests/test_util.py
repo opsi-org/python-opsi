@@ -661,8 +661,14 @@ def testRemoveUnitDoesNotFailWithoutUnit(value, expected):
     assert expected == removeUnit(value)
 
 
-def testRemovingMegabyteFromUnit():
-        assert 2048 * 1024 == removeUnit('2MB')
+@pytest.mark.parametrize("value, expected", [
+    ('2MB', 2097152),  # 2048 * 1024
+    ('2.4MB', 2516582.4),  # (2048 * 1.2) * 1024),
+    ('3GB', 3221225472),
+    ('4Kb', 4096),
+])
+def testRemovingUnitFromValue(value, expected):
+        assert expected == removeUnit(value)
 
 
 class GetFQDNTestCase(unittest.TestCase):
