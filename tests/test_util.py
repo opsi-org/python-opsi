@@ -45,19 +45,25 @@ from OPSI.Object import LocalbootProduct, OpsiClient
 from .helpers import (fakeGlobalConf, patchAddress, patchEnvironmentVariables,
     unittest, workInTemporaryDirectory)
 
+import pytest
 
-class IPAddressInNetwork(unittest.TestCase):
-    def testNetworkWithSlashIntNotation(self):
-        self.assertTrue(ipAddressInNetwork('10.10.1.1', '10.10.0.0/16'))
-        self.assertTrue(ipAddressInNetwork('10.10.1.1', '10.10.0.0/23'))
-        self.assertFalse(ipAddressInNetwork('10.10.1.1', '10.10.0.0/24'))
-        self.assertFalse(ipAddressInNetwork('10.10.1.1', '10.10.0.0/25'))
 
-    def testIpAddressInNetworkWithEmptyNetworkMask(self):
-        self.assertTrue(ipAddressInNetwork('10.10.1.1', '0.0.0.0/0'))
+@pytest.mark.parametrize("ip, network",[
+    ('10.10.1.1', '10.10.0.0/16'),
+    ('10.10.1.1', '10.10.0.0/23'),
+    pytest.mark.xfail(('10.10.1.1', '10.10.0.0/24')),
+    pytest.mark.xfail(('10.10.1.1', '10.10.0.0/25')),
+])
+def testNetworkWithSlashInNotation(ip, network):
+    assert ipAddressInNetwork(ip, network)
 
-    def testIpAddressInNetworkWithFullNetmask(self):
-        self.assertTrue(ipAddressInNetwork('10.10.1.1', '10.10.0.0/255.240.0.0'))
+
+def testIpAddressInNetworkWithEmptyNetworkMask():
+    assert ipAddressInNetwork('10.10.1.1', '0.0.0.0/0')
+
+
+def testIpAddressInNetworkWithFullNetmask():
+    assert ipAddressInNetwork('10.10.1.1', '10.10.0.0/255.240.0.0')
 
 
 class ProductFactory(object):
@@ -545,42 +551,67 @@ class LibrsyncTestCase(unittest.TestCase):
                     self.fail("Missing additional text in new file.")
 
 
-class CompareVersionsTestCase(unittest.TestCase):
-    def testComparingVersionsOfSameSize(self):
-        self.assertTrue(compareVersions('1.0', '<', '2.0'))
+def testComparingVersionsOfSameSize():
+    assert compareVersions('1.0', '<', '2.0')
 
-    def testComparingWithoutGivingOperatorDefaultsToEqual(self):
-        self.assertTrue(compareVersions('1.0', '', '1.0'))
-        self.assertFalse(compareVersions('1', '', '2'))
 
-    def testComparingWithOneEqualitySignWork(self):
-        self.assertTrue(compareVersions('1.0', '=', '1.0'))
+@pytest.mark.parametrize("v1, operator, v2",[
+    ('1.0', '', '1.0'),
+    pytest.mark.xfail(('1', '', '2')),
+])
+def testComparingWithoutGivingOperatorDefaultsToEqual(v1, operator, v2):
+    assert compareVersions(v1, operator, v2)
 
-    def testUsingUnknownOperatorFails(self):
-        self.assertRaises(Exception, compareVersions, '1', 'asdf', '2')
-        self.assertRaises(Exception, compareVersions, '1', '+-', '2')
-        self.assertRaises(Exception, compareVersions, '1', '<>', '2')
-        self.assertRaises(Exception, compareVersions, '1', '!=', '2')
 
-    def testIgnoringVersionsWithWaveInThem(self):
-        self.assertTrue(compareVersions('1.0~20131212', '<', '2.0~20120101'))
-        self.assertTrue(compareVersions('1.0~20131212', '==', '1.0~20120101'))
+def testComparingWithOneEqualitySignWork():
+    assert compareVersions('1.0', '=', '1.0')
 
-    def testUsingInvalidVersionStringsFails(self):
-        self.assertRaises(Exception, compareVersions, 'abc-1.2.3-4', '==', '1.2.3-4')
-        self.assertRaises(Exception, compareVersions, '1.2.3-4', '==', 'abc-1.2.3-4')
 
-    def testComparingWorksWithLettersInVersionString(self):
-        self.assertTrue(compareVersions('1.0.a', '<', '1.0.b'))
-        self.assertTrue(compareVersions('a.b', '>', 'a.a'))
+@pytest.mark.parametrize("operator",['asdf', '+-', '<>', '!='])
+def testUsingUnknownOperatorFails(operator):
+    with pytest.raises(Exception):
+        compareVersions('1', operator, '2')
 
-    def testComparisonsWithDifferntDepthsAreMadeTheSameDepth(self):
-        self.assertTrue(compareVersions('1.1.0.1', '>', '1.1'))
-        self.assertTrue(compareVersions('1.1', '<', '1.1.0.1'))
 
-    def testPackageVersionsAreComparedAswell(self):
-        self.assertTrue(compareVersions('1-2', '<', '1-3'))
-        self.assertTrue(compareVersions('1-2.0', '<', '1-2.1'))
+@pytest.mark.parametrize("v1, operator, v2",[
+    ('1.0~20131212', '<', '2.0~20120101'),
+    ('1.0~20131212', '==', '1.0~20120101'),
+])
+def testIgnoringVersionsWithWaveInThem(v1, operator, v2):
+    assert compareVersions(v1, operator, v2)
+
+
+@pytest.mark.parametrize("v1, operator, v2",[
+    ('abc-1.2.3-4', '==', '1.2.3-4'),
+    ('1.2.3-4', '==', 'abc-1.2.3-4')
+])
+def testUsingInvalidVersionStringsFails(v1, operator, v2):
+    with pytest.raises(Exception):
+        compareVersions(v1, operator, v2)
+
+
+@pytest.mark.parametrize("v1, operator, v2",[
+    ('1.0.a', '<', '1.0.b'),
+    ('a.b', '>', 'a.a'),
+])
+def testComparingWorksWithLettersInVersionString(v1, operator, v2):
+    assert compareVersions(v1, operator, v2)
+
+
+@pytest.mark.parametrize("v1, operator, v2",[
+    ('1.1.0.1', '>', '1.1'),
+    ('1.1', '<', '1.1.0.1'),
+])
+def testComparisonsWithDifferntDepthsAreMadeTheSameDepth(v1, operator, v2):
+    assert compareVersions(v1, operator, v2)
+
+
+@pytest.mark.parametrize("v1, operator, v2",[
+    ('1-2', '<', '1-3'),
+    ('1-2.0', '<', '1-2.1')
+])
+def testPackageVersionsAreComparedAswell(v1, operator, v2):
+    assert compareVersions(v1, operator, v2)
 
 
 class GetGlobalConfigTestCase(unittest.TestCase):
@@ -613,21 +644,25 @@ class GetGlobalConfigTestCase(unittest.TestCase):
         self.assertEqual(None, getGlobalConfig('dontCare', 'nonexistingFile'))
 
 
-class IsRegularExpressionTestCase(unittest.TestCase):
-    def testIfIsRegExObject(self):
-        self.assertFalse(isRegularExpressionPattern("no pattern"))
-        self.assertFalse(isRegularExpressionPattern("SRE_Pattern"))
+@pytest.mark.parametrize("value", [
+    re.compile("ABC"),
+    pytest.mark.xfail("no pattern"),
+    pytest.mark.xfail("SRE_Pattern"),
+])
+def testIfObjectIsRegExObject(value):
+    assert isRegularExpressionPattern(value)
 
-        self.assertTrue(isRegularExpressionPattern(re.compile("ABC")))
+
+@pytest.mark.parametrize("value, expected", [
+    (2, 2),
+    ('2', 2),
+])
+def testRemoveUnitDoesNotFailWithoutUnit(value, expected):
+    assert expected == removeUnit(value)
 
 
-class RemoveUnitTestCase(unittest.TestCase):
-    def testNoUnitMeansNoRemoval(self):
-        self.assertEquals(2, removeUnit(2))
-        self.assertEquals(2, removeUnit('2'))
-
-    def testRemovingMegabyte(self):
-        self.assertEquals(2048 * 1024, removeUnit('2MB'))
+def testRemovingMegabyteFromUnit():
+        assert 2048 * 1024 == removeUnit('2MB')
 
 
 class GetFQDNTestCase(unittest.TestCase):
@@ -897,7 +932,3 @@ def preparedDemoFolders():
             os.mkdir(os.path.join(tempDir, dirname))
 
         yield tempDir
-
-
-if __name__ == '__main__':
-    unittest.main()
