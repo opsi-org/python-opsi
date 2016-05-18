@@ -83,6 +83,7 @@ class SSHCommandsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
                 self.commandlist_com1=[self.com1]
                 self.commandlist_com2=[self.com2]
                 self.commandlist_com3=[self.com3]
+                self.commandlist_com11=[self.com1, self.com1]
                 self.commandlist_com12=[self.com1, self.com2]
                 self.commandlist_com123=[self.com1, self.com2, self.com3]
 
@@ -107,6 +108,14 @@ class SSHCommandsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
                 self.commandlist_com12_withdefval_full=[self.com1_with_defval,self.com2_with_defval]
                 self.commandlist_com123_withdefval_full=[self.com1_with_defval,self.com2_with_defval,self.com3_with_defval]
 
+
+                self.failure_com1_id=u'utestmenu1'
+                self.failure_com1_menuText=20
+                self.failure_com1_commands=u'test 1'
+                self.failure_com1_position=u'O'
+                self.failure_com1_needSudo=u'True'
+                self.failure_com1_tooltipText=False
+                self.failure_com1_parentMenuText=False
 
         def tearDown(self):
                 self.tearDownBackend()
@@ -155,7 +164,7 @@ class SSHCommandsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
         def testUpdateCommands(self):
                 with workWithEmptyCommandFile(self.backend._backend):
                         self.assertEqual(self.backend.SSHCommand_getObjects(), [], "first return of SSHCommand_getObjects should be an empty list")
-                        self.backend.SSHCommand_createObjects( self.commandlist_com123)
+                        self.backend.SSHCommand_createObjects( self.commandlist_com12)
                         self.commandlist_com123_full[0]["commands"]=new_commands1=[u'MyNewTestCom1']
                         self.commandlist_com123_full[0]["position"]=new_position1=11
                         self.commandlist_com123_full[0]["needSudo"]=new_needSudo1=True
@@ -189,6 +198,56 @@ class SSHCommandsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
                         self.assertEqual(self.backend.SSHCommand_getObjects(), [], "first return of SSHCommand_getObjects should be an empty list")
                         self.assertListEqual(self.backend.SSHCommand_createObjects( self.commandlist_com123), self.commandlist_com123_withdefval_full)
                         self.assertListEqual(self.backend.SSHCommand_deleteObjects(self.commandlist_menuTexts_12), self.commandlist_com3_withdefval_full)
+
+        def testExceptionsCreateObject(self):
+                with workWithEmptyCommandFile(self.backend._backend):
+                        self.assertRaises(Exception, self.backend.SSHCommand_createObject, self.com1_menuText, self.failure_com1_commands)
+                        self.assertRaises(Exception, self.backend.SSHCommand_createObject, self.com1_menuText, self.com1_commands, self.failure_com1_position)
+                        self.assertRaises(Exception, self.backend.SSHCommand_createObject, self.com1_menuText, self.com1_commands, self.com1_position, self.failure_com1_needSudo)
+                        self.assertRaises(Exception, self.backend.SSHCommand_createObject, self.com1_menuText, self.com1_commands, self.com1_position, self.com1_needSudo, self.failure_com1_tooltipText)
+                        self.assertRaises(Exception, self.backend.SSHCommand_createObject, self.com1_menuText, self.com1_commands, self.com1_position, self.com1_needSudo, self.com1_tooltipText, self.failure_com1_parentMenuText)
+                        self.assertListEqual(self.backend.SSHCommand_createObjects( self.commandlist_com1), self.commandlist_com1_withdefval_full)
+                        self.assertRaises(Exception, self.backend.SSHCommand_createObject, self.com1_menuText, self.com1_commands, self.com1_position, self.com1_needSudo, self.com1_tooltipText, self.com1_parentMenuText)
+
+        def testExceptionsCreateObjects(self):
+                self.failure_com1_noMenuText=[{u'FailureMenuText':self.com1_menuText, u'commands':self.failure_com1_commands}]
+                self.failure_com1_menuTextFalseType=[{u'menuText':self.failure_com1_menuText, u'commands':self.failure_com1_commands}]
+                self.failure_com1_noCommands=[{u'menuText':self.com1_menuText, u'falseCommands':self.com1_commands}]
+                self.failure_com1_commandsFalseType=[{u'menuText':self.com1_menuText, u'commands':self.failure_com1_commands}]
+                 with workWithEmptyCommandFile(self.backend._backend):
+                        self.assertRaises(Exception, self.backend.SSHCommand_createObjects, u'[this, is, not, a list]')
+                        self.assertRaises(Exception, self.backend.SSHCommand_createObjects, [])
+                        self.assertRaises(Exception, self.backend.SSHCommand_createObjects, [u'{this:is}', u'{not a : dictionary}'])
+                        self.assertRaises(Exception, self.backend.SSHCommand_createObjects, self.failure_com1_noMenuText)
+                        self.assertRaises(Exception, self.backend.SSHCommand_createObjects, self.failure_com1_noCommands)
+                        self.assertRaises(Exception, self.backend.SSHCommand_createObjects, self.failure_com1_menuTextFalseType)
+                        self.assertRaises(Exception, self.backend.SSHCommand_createObjects, self.failure_com1_commandsFalseType)
+                        self.assertRaises(Exception, self.backend.SSHCommand_createObjects, self.commandlist_com11)
+
+
+                        # self.assertRaises(Exception, self.backend.SSHCommand_createObject, self.failure)
+                        # self.assertRaises(ValueError, self.backend.SSHCommand_createObjects, self.failure_list_com1_not_a_list)
+                        # createObject:
+                        # assert Exception commands ist keine liste
+                        # assert Exception position falsch
+                        # assert Exception needSudo falsch
+                        # createObjects:
+                        # command_list should be list
+                            # self.assertRaises(Exception, self.backend.SSHCommand_createObjects( self.failure_list_com1_not_a_list))
+                        # command_list elements should be not None
+                        # command_list elements should be dict
+                        # command_list element menuText should be not None
+                        #  element is not in existing elements
+
+        # def testUpdateExceptions(self):
+        #         with workWithEmptyCommandFile(self.backend._backend):
+        #                 # übergabe parameter sollte eine liste sein
+        #                 # liste muss elemente haben
+        #                 # elemente der liste sollen ein dict sein
+        #                 # jedes element muss einen menuText haben
+        #                 #
+
+
 
 
 if __name__ == '__main__':
