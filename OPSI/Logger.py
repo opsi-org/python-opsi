@@ -146,6 +146,18 @@ if syslog is not None:
 		LOG_COMMENT: syslog.LOG_CRIT
 	}
 
+_LOGLEVEL_NAME_AND_COLOR_MAPPING = {
+	LOG_CONFIDENTIAL: (u'confidential', CONFIDENTIAL_COLOR),
+	LOG_DEBUG2: (u'debug2', DEBUG_COLOR),
+	LOG_DEBUG: (u'debug', DEBUG_COLOR),
+	LOG_INFO: (u'info', INFO_COLOR),
+	LOG_NOTICE: (u'notice', NOTICE_COLOR),
+	LOG_WARNING: (u'warning', WARNING_COLOR),
+	LOG_ERROR: (u'error', ERROR_COLOR),
+	LOG_CRITICAL: (u'critical', CRITICAL_COLOR),
+	LOG_ESSENTIAL: (u'essential',COMMENT_COLOR),
+}
+
 encoding = sys.getfilesystemencoding()
 _showwarning = warnings.showwarning
 
@@ -567,34 +579,9 @@ False suppresses exceptions.
 			threadId = unicode(thread.get_ident())
 			specialConfig = None
 
-			if level == LOG_CONFIDENTIAL:
-				levelname = u'confidential'
-				color = CONFIDENTIAL_COLOR
-			elif level == LOG_DEBUG2:
-				levelname = u'debug2'
-				color = DEBUG_COLOR
-			elif level == LOG_DEBUG:
-				levelname = u'debug'
-				color = DEBUG_COLOR
-			elif level == LOG_INFO:
-				levelname = u'info'
-				color = INFO_COLOR
-			elif level == LOG_NOTICE:
-				levelname = u'notice'
-				color = NOTICE_COLOR
-			elif level == LOG_WARNING:
-				levelname = u'warning'
-				color = WARNING_COLOR
-			elif level == LOG_ERROR:
-				levelname = u'error'
-				color = ERROR_COLOR
-			elif level == LOG_CRITICAL:
-				levelname = u'critical'
-				color = CRITICAL_COLOR
-			elif level == LOG_ESSENTIAL:
-				levelname = u'essential'
-				color = COMMENT_COLOR
-			else:
+			try:
+				levelname, color = _LOGLEVEL_NAME_AND_COLOR_MAPPING[level]
+			except KeyError:
 				levelname = u''
 				color = COLOR_NORMAL
 
