@@ -201,6 +201,7 @@ class SSHCommandsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
 
         def testExceptionsCreateObject(self):
                 with workWithEmptyCommandFile(self.backend._backend):
+                        self.assertRaises(Exception, self.backend.SSHCommand_createObject, None, None)
                         self.assertRaises(Exception, self.backend.SSHCommand_createObject, self.com1_menuText, self.failure_com1_commands)
                         self.assertRaises(Exception, self.backend.SSHCommand_createObject, self.com1_menuText, self.com1_commands, self.failure_com1_position)
                         self.assertRaises(Exception, self.backend.SSHCommand_createObject, self.com1_menuText, self.com1_commands, self.com1_position, self.failure_com1_needSudo)
@@ -214,7 +215,7 @@ class SSHCommandsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
                 self.failure_com1_menuTextFalseType=[{u'menuText':self.failure_com1_menuText, u'commands':self.failure_com1_commands}]
                 self.failure_com1_noCommands=[{u'menuText':self.com1_menuText, u'falseCommands':self.com1_commands}]
                 self.failure_com1_commandsFalseType=[{u'menuText':self.com1_menuText, u'commands':self.failure_com1_commands}]
-                 with workWithEmptyCommandFile(self.backend._backend):
+                with workWithEmptyCommandFile(self.backend._backend):
                         self.assertRaises(Exception, self.backend.SSHCommand_createObjects, u'[this, is, not, a list]')
                         self.assertRaises(Exception, self.backend.SSHCommand_createObjects, [])
                         self.assertRaises(Exception, self.backend.SSHCommand_createObjects, [u'{this:is}', u'{not a : dictionary}'])
@@ -224,28 +225,47 @@ class SSHCommandsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
                         self.assertRaises(Exception, self.backend.SSHCommand_createObjects, self.failure_com1_commandsFalseType)
                         self.assertRaises(Exception, self.backend.SSHCommand_createObjects, self.commandlist_com11)
 
+        def testExceptionsUpdateObject(self):
+                with workWithEmptyCommandFile(self.backend._backend):
+                        self.assertRaises(Exception, self.backend.SSHCommand_updateObject, None, None)
+                        self.assertRaises(Exception, self.backend.SSHCommand_updateObject, self.com1_menuText, self.failure_com1_commands)
+                        self.assertRaises(Exception, self.backend.SSHCommand_updateObject, self.com1_menuText, self.com1_commands, self.failure_com1_position)
+                        self.assertRaises(Exception, self.backend.SSHCommand_updateObject, self.com1_menuText, self.com1_commands, self.com1_position, self.failure_com1_needSudo)
+                        self.assertRaises(Exception, self.backend.SSHCommand_updateObject, self.com1_menuText, self.com1_commands, self.com1_position, self.com1_needSudo, self.failure_com1_tooltipText)
+                        self.assertRaises(Exception, self.backend.SSHCommand_updateObject, self.com1_menuText, self.com1_commands, self.com1_position, self.com1_needSudo, self.com1_tooltipText, self.failure_com1_parentMenuText)
+                        #self.assertListEqual(self.backend.SSHCommand_createObjects( self.commandlist_com1), self.commandlist_com1_withdefval_full)
+                        #self.assertRaises(Exception, self.backend.SSHCommand_updateObject, self.com1_menuText, self.com1_commands, self.com1_position, self.com1_needSudo, self.com1_tooltipText, self.com1_parentMenuText)
 
-                        # self.assertRaises(Exception, self.backend.SSHCommand_createObject, self.failure)
-                        # self.assertRaises(ValueError, self.backend.SSHCommand_createObjects, self.failure_list_com1_not_a_list)
-                        # createObject:
-                        # assert Exception commands ist keine liste
-                        # assert Exception position falsch
-                        # assert Exception needSudo falsch
-                        # createObjects:
-                        # command_list should be list
-                            # self.assertRaises(Exception, self.backend.SSHCommand_createObjects( self.failure_list_com1_not_a_list))
-                        # command_list elements should be not None
-                        # command_list elements should be dict
-                        # command_list element menuText should be not None
-                        #  element is not in existing elements
+        def testExceptionsUpdateObjects(self):
+                self.failure_com1_noMenuText=[{u'FailureMenuText':self.com1_menuText, u'commands':self.failure_com1_commands}]
+                self.failure_com1_menuTextFalseType=[{u'menuText':self.failure_com1_menuText, u'commands':self.failure_com1_commands}]
+                self.failure_com1_noCommands=[{u'menuText':self.com1_menuText, u'falseCommands':self.com1_commands}]
+                self.failure_com1_commandsFalseType=[{u'menuText':self.com1_menuText, u'commands':self.failure_com1_commands}]
+                self.failure_com1_noPosition=[{u'menuText':self.com1_menuText, u'commands':self.failure_com1_commands, u'falsePosition':10}]
+                self.failure_com1_positionFalseType=[{u'menuText':self.com1_menuText, u'commands':self.com1_commands, u'position':u'test'}]
+                self.failure_com1_noNeedSudo=[{u'menuText':self.com1_menuText, u'commands':self.failure_com1_commands, u'position':10, u'FalseNeedSudo':False}]
+                self.failure_com1_needSudoFalseType=[{u'menuText':self.com1_menuText, u'commands':self.com1_commands, u'position':0, u'needSudo':u'shouldBeBool'}]
+                with workWithEmptyCommandFile(self.backend._backend):
+                        self.assertRaises(Exception, self.backend.SSHCommand_updateObjects, u'[this, is, not, a list]')
+                        self.assertRaises(Exception, self.backend.SSHCommand_updateObjects, None)
+                        self.assertRaises(Exception, self.backend.SSHCommand_updateObjects, [])
+                        self.assertRaises(Exception, self.backend.SSHCommand_updateObjects, [u'{this:is}', u'{not a : dictionary}'])
+                        self.assertRaises(Exception, self.backend.SSHCommand_updateObjects, self.failure_com1_noMenuText)
+                        self.assertRaises(Exception, self.backend.SSHCommand_updateObjects, self.failure_com1_noCommands)
+                        self.assertRaises(Exception, self.backend.SSHCommand_updateObjects, self.failure_com1_noPosition)
+                        self.assertRaises(Exception, self.backend.SSHCommand_updateObjects, self.failure_com1_noNeedSudo)
+                        self.assertRaises(Exception, self.backend.SSHCommand_updateObjects, self.failure_com1_menuTextFalseType)
+                        self.assertRaises(Exception, self.backend.SSHCommand_updateObjects, self.failure_com1_commandsFalseType)
+                        #print(self.failure_com1_positionFalseType)
+                        self.assertRaises(Exception, self.backend.SSHCommand_updateObjects, self.failure_com1_positionFalseType)
+                        self.assertRaises(Exception, self.backend.SSHCommand_updateObjects, self.failure_com1_needSudoFalseType)
 
-        # def testUpdateExceptions(self):
-        #         with workWithEmptyCommandFile(self.backend._backend):
-        #                 # übergabe parameter sollte eine liste sein
-        #                 # liste muss elemente haben
-        #                 # elemente der liste sollen ein dict sein
-        #                 # jedes element muss einen menuText haben
-        #                 #
+                        #self.assertRaises(Exception, self.backend.SSHCommand_updateObjects, self.commandlist_com11)
+                         # übergabe parameter sollte eine liste sein
+                         # liste muss elemente haben
+                         # elemente der liste sollen ein dict sein
+                         # jedes element muss einen menuText haben
+                         #
 
 
 
