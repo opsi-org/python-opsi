@@ -155,7 +155,7 @@ _LOGLEVEL_NAME_AND_COLOR_MAPPING = {
 	LOG_WARNING: (u'warning', WARNING_COLOR),
 	LOG_ERROR: (u'error', ERROR_COLOR),
 	LOG_CRITICAL: (u'critical', CRITICAL_COLOR),
-	LOG_ESSENTIAL: (u'essential',COMMENT_COLOR),
+	LOG_ESSENTIAL: (u'essential', COMMENT_COLOR),
 }
 
 encoding = sys.getfilesystemencoding()
