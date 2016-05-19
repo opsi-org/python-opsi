@@ -120,12 +120,6 @@ class SSHCommandsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
         def tearDown(self):
                 self.tearDownBackend()
 
-        # def testValuesForCommand(self):
-                # with workWithEmptyCommandFile(self.backend._backend):
-                         # self.assertRaises(AssertionError, self.backend.SSHCommand_createObject( self.com1["menuText"], "commands") )
-
-# menuText, commands, position=0, needSudo=False ,tooltipText=u'', parentMenuText=None
-
         def testGetCommand(self):
                 with workWithEmptyCommandFile(self.backend._backend):
                         self.assertEqual(self.backend.SSHCommand_getObjects(), [], "first return of SSHCommand_getObjects should be an empty list")
@@ -236,15 +230,13 @@ class SSHCommandsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
                         #self.assertListEqual(self.backend.SSHCommand_createObjects( self.commandlist_com1), self.commandlist_com1_withdefval_full)
                         #self.assertRaises(Exception, self.backend.SSHCommand_updateObject, self.com1_menuText, self.com1_commands, self.com1_position, self.com1_needSudo, self.com1_tooltipText, self.com1_parentMenuText)
 
-        def testExceptionsUpdateObjects(self):
+        def testExceptionsKeysUpdateObjects(self):
                 self.failure_com1_noMenuText=[{u'FailureMenuText':self.com1_menuText, u'commands':self.failure_com1_commands}]
-                self.failure_com1_menuTextFalseType=[{u'menuText':self.failure_com1_menuText, u'commands':self.failure_com1_commands}]
                 self.failure_com1_noCommands=[{u'menuText':self.com1_menuText, u'falseCommands':self.com1_commands}]
-                self.failure_com1_commandsFalseType=[{u'menuText':self.com1_menuText, u'commands':self.failure_com1_commands}]
                 self.failure_com1_noPosition=[{u'menuText':self.com1_menuText, u'commands':self.failure_com1_commands, u'falsePosition':10}]
-                self.failure_com1_positionFalseType=[{u'menuText':self.com1_menuText, u'commands':self.com1_commands, u'position':u'test'}]
                 self.failure_com1_noNeedSudo=[{u'menuText':self.com1_menuText, u'commands':self.failure_com1_commands, u'position':10, u'FalseNeedSudo':False}]
-                self.failure_com1_needSudoFalseType=[{u'menuText':self.com1_menuText, u'commands':self.com1_commands, u'position':0, u'needSudo':u'shouldBeBool'}]
+                self.failure_com1_noTooltipText=[{u'menuText':self.com1_menuText, u'commands':self.failure_com1_commands, u'position':10, u'needSudo':False, u'FalseTooltipText':u'test'}]
+                self.failure_com1_noParentMenuText=[{u'menuText':self.com1_menuText, u'commands':self.failure_com1_commands, u'position':10, u'needSudo':False, u'tooltipText':u'test', u'FalseParentMenu':u'test'}]
                 with workWithEmptyCommandFile(self.backend._backend):
                         self.assertRaises(Exception, self.backend.SSHCommand_updateObjects, u'[this, is, not, a list]')
                         self.assertRaises(Exception, self.backend.SSHCommand_updateObjects, None)
@@ -254,19 +246,50 @@ class SSHCommandsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
                         self.assertRaises(Exception, self.backend.SSHCommand_updateObjects, self.failure_com1_noCommands)
                         self.assertRaises(Exception, self.backend.SSHCommand_updateObjects, self.failure_com1_noPosition)
                         self.assertRaises(Exception, self.backend.SSHCommand_updateObjects, self.failure_com1_noNeedSudo)
+                        self.assertRaises(Exception, self.backend.SSHCommand_updateObjects, self.failure_com1_noTooltipText)
+                        self.assertRaises(Exception, self.backend.SSHCommand_updateObjects, self.failure_com1_noParentMenuText)
+
+        def testExceptionsValueUpdateObjects(self):
+                self.failure_com1_menuTextFalseType=[{u'menuText':self.failure_com1_menuText, u'commands':self.failure_com1_commands}]
+                self.failure_com1_commandsFalseType=[{u'menuText':self.com1_menuText, u'commands':self.failure_com1_commands}]
+                self.failure_com1_positionFalseType=[{u'menuText':self.com1_menuText, u'commands':self.com1_commands, u'position':u'test'}]
+                self.failure_com1_needSudoFalseType=[{u'menuText':self.com1_menuText, u'commands':self.com1_commands, u'position':0, u'needSudo':u'shouldBeBool'}]
+                self.failure_com1_tooltipTextFalseType=[{u'menuText':self.com1_menuText, u'commands':self.com1_commands, u'position':0, u'needSudo':True, u'tooltipText':True}]
+                self.failure_com1_parentMenuTextFalseType=[{u'menuText':self.com1_menuText, u'commands':self.com1_commands, u'position':0, u'needSudo':True, u'tooltipText':u'', u'parentMenuText':False}]
+                with workWithEmptyCommandFile(self.backend._backend):
+                        self.assertRaises(Exception, self.backend.SSHCommand_updateObjects, u'[this, is, not, a list]')
+                        self.assertRaises(Exception, self.backend.SSHCommand_updateObjects, None)
+                        self.assertRaises(Exception, self.backend.SSHCommand_updateObjects, [])
+                        self.assertRaises(Exception, self.backend.SSHCommand_updateObjects, [u'{this:is}', u'{not a : dictionary}'])
                         self.assertRaises(Exception, self.backend.SSHCommand_updateObjects, self.failure_com1_menuTextFalseType)
                         self.assertRaises(Exception, self.backend.SSHCommand_updateObjects, self.failure_com1_commandsFalseType)
-                        #print(self.failure_com1_positionFalseType)
                         self.assertRaises(Exception, self.backend.SSHCommand_updateObjects, self.failure_com1_positionFalseType)
                         self.assertRaises(Exception, self.backend.SSHCommand_updateObjects, self.failure_com1_needSudoFalseType)
+                        self.assertRaises(Exception, self.backend.SSHCommand_updateObjects, self.failure_com1_tooltipTextFalseType)
+                        self.assertRaises(Exception, self.backend.SSHCommand_updateObjects, self.failure_com1_parentMenuTextFalseType)
 
-                        #self.assertRaises(Exception, self.backend.SSHCommand_updateObjects, self.commandlist_com11)
-                         # übergabe parameter sollte eine liste sein
-                         # liste muss elemente haben
-                         # elemente der liste sollen ein dict sein
-                         # jedes element muss einen menuText haben
-                         #
+        def testExceptionsDeleteObject(self):
+                with workWithEmptyCommandFile(self.backend._backend):
+                        self.assertEqual(self.backend.SSHCommand_getObjects(), [], "first return of SSHCommand_getObjects should be an empty list")
+                        self.assertRaises(Exception, self.backend.SSHCommand_deleteObject, u'')
+                        self.assertRaises(Exception, self.backend.SSHCommand_deleteObject, u'test') # Funktioniert nicht, da nicht existiert
+                        self.assertRaises(Exception, self.backend.SSHCommand_deleteObject, [])
+                        self.assertRaises(Exception, self.backend.SSHCommand_deleteObject, {})
+                        self.assertRaises(Exception, self.backend.SSHCommand_deleteObject, None)
+                        self.assertRaises(Exception, self.backend.SSHCommand_deleteObject, 100)
+                        self.assertRaises(Exception, self.backend.SSHCommand_deleteObject, False)
 
+        def testExceptionsDeleteObjects(self):
+                with workWithEmptyCommandFile(self.backend._backend):
+                        self.assertEqual(self.backend.SSHCommand_getObjects(), [], "first return of SSHCommand_getObjects should be an empty list")
+                        self.assertRaises(Exception, self.backend.SSHCommand_deleteObjects, u'')
+                        self.assertRaises(Exception, self.backend.SSHCommand_deleteObjects, u'test')
+                        self.assertRaises(Exception, self.backend.SSHCommand_deleteObjects, [])
+                        self.assertRaises(Exception, self.backend.SSHCommand_deleteObjects, [u'Test']) # Funktioniert nicht, da nicht existiert
+                        self.assertRaises(Exception, self.backend.SSHCommand_deleteObjects, {})
+                        self.assertRaises(Exception, self.backend.SSHCommand_deleteObjects, None)
+                        self.assertRaises(Exception, self.backend.SSHCommand_deleteObjects, 100)
+                        self.assertRaises(Exception, self.backend.SSHCommand_deleteObjects, False)
 
 
 
