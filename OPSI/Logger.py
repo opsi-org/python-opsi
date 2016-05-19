@@ -54,7 +54,7 @@ try:
 except ImportError:
 	syslog = None
 
-__version__ = '4.0.6.48'
+__version__ = '4.0.7.1'
 
 if sys.version_info > (3, ):
 	# Python 3
@@ -525,7 +525,7 @@ will disable logging to a file.
 
 		return self.__objectConfig[objectId].get(key)
 
-	def log(self, level, message, raiseException=False):
+	def log(self, level, message, raiseException=False, formatArgs=[], formatKwargs={}):
 		'''
 		Log a message with the given level.
 
@@ -561,6 +561,15 @@ False suppresses exceptions.
 					message = unicode(message)
 				else:
 					message = unicode(message, 'utf-8', 'replace')
+
+			try:
+				message = message.format(*formatArgs, **formatKwargs)
+			except KeyError as e:
+				if 'Missing format for key ' not in str(e).lower():
+					raise e
+			except ValueError as e:
+				if 'invalid conversion specification' not in str(e).lower():
+					raise e
 
 			componentname = self.__componentName
 			datetime = unicode(time.strftime(u"%b %d %H:%M:%S", time.localtime()), 'utf-8', 'replace')
@@ -827,9 +836,9 @@ False suppresses exceptions.
 		''' Log a info message. '''
 		self.info(message)
 
-	def notice(self, message):
+	def notice(self, message, *args, **kwargs):
 		''' Log a notice message. '''
-		self.log(LOG_NOTICE, message)
+		self.log(LOG_NOTICE, message, formatArgs=args, formatKwargs=kwargs)
 
 	def warning(self, message):
 		''' Log a warning message. '''
