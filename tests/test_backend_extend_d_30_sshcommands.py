@@ -39,6 +39,16 @@ def workWithEmptyCommandFile(backend):
                         pass
                 with mock.patch.object(backend, '_getSSHCommandFilename', return_value=filename):
                         yield
+@contextmanager
+def workWithBrokenCommandFile(backend):
+     import json
+     with workInTemporaryDirectory():
+                filename = u'test_file.conf'
+                element = {"id":"rechte_setzen", "menuText : Rechte setzen":"", "commands":["opsi-set-rights"], "position":30,"needSudo":True, "tooltipText":"Rechte mittels opsi-set-rights setzen", "parentMenuText":"opsi"}
+                with open(filename, "w") as f:
+                        json.dump(element, f)
+                with mock.patch.object(backend, '_getSSHCommandFilename', return_value=filename):
+                        yield
 
 class SSHCommandsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
         """
@@ -119,6 +129,10 @@ class SSHCommandsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
 
         def tearDown(self):
                 self.tearDownBackend()
+
+        def testExceptionGetCommand(self):
+                with workWithBrokenCommandFile(self.backend._backend):
+                        self.assertRaises(Exception, self.backend.SSHCommand_deleteObjects)
 
         def testGetCommand(self):
                 with workWithEmptyCommandFile(self.backend._backend):
