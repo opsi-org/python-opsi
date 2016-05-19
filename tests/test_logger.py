@@ -312,17 +312,31 @@ def testLogTracebackCanFail():
 	assert 'object has no attribute' in messages
 
 
-def testLoggerDoesFormattingIfMessageWillGetLogged():
-	with showLogs(logLevel=OPSI.Logger.LOG_NOTICE) as logger:
+@pytest.mark.parametrize("loglevel, function_name", [
+	(OPSI.Logger.LOG_CONFIDENTIAL, 'confidential'),
+	(OPSI.Logger.LOG_DEBUG2, 'debug2'),
+	(OPSI.Logger.LOG_DEBUG, 'debug'),
+	(OPSI.Logger.LOG_INFO, 'info'),
+	(OPSI.Logger.LOG_NOTICE, 'notice'),
+	(OPSI.Logger.LOG_WARNING, 'warning'),
+	(OPSI.Logger.LOG_ERROR, 'error'),
+	(OPSI.Logger.LOG_CRITICAL, 'critical'),
+	(OPSI.Logger.LOG_ESSENTIAL, 'essential'),
+	(OPSI.Logger.LOG_COMMENT, 'comment'),
+])
+def testLoggerDoesFormattingIfMessageWillGetLogged(loglevel, function_name):
+	with showLogs(logLevel=loglevel) as logger:
 		with catchMessages() as messageBuffer:
-			logger.debug('This should not be shown')
+			logger.confidential('This should not be shown')
 
-			logger.notice('Backwards compatible text without formatting.')
-			logger.notice('This {0:.1f} must be shown {1}: {a}{b:>7}', 1, 'here', a='many', b='kwargs')
+			logFunc = getattr(logger, function_name)
+			logFunc('Backwards compatible text without formatting.')
+			logFunc('This {0:.1f} must be shown {1}: {a}{b:>7}', 1, 'here', a='many', b='kwargs')
 
 	messages = messageBuffer.getvalue()
 
 	print("Messages: {0!r}".format(messages))
 	assert messages
-	assert 'This should not be shown' not in messages
+	if function_name != 'confidential':
+		assert 'This should not be shown' not in messages
 	assert 'This 1.0 must be shown here: many kwargs' in messages

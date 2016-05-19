@@ -812,57 +812,57 @@ False suppresses exceptions.
 		observer = TwistedLogObserver(self)
 		log.startLoggingWithObserver(observer.emit, setStdout=0)
 
-	def confidential(self, message):
+	def confidential(self, message, *args, **kwargs):
 		''' Log a confidential message. '''
-		self.log(LOG_CONFIDENTIAL, message)
+		self.log(LOG_CONFIDENTIAL, message, formatArgs=args, formatKwargs=kwargs)
 
-	def debug3(self, message):
+	def debug3(self, message, *args, **kwargs):
 		''' Log a debug message. '''
-		self.debug2(message)
+		self.debug2(message, *args, **kwargs)
 
-	def debug2(self, message):
+	def debug2(self, message, *args, **kwargs):
 		''' Log a debug message. '''
-		self.log(LOG_DEBUG2, message)
+		self.log(LOG_DEBUG2, message, formatArgs=args, formatKwargs=kwargs)
 
-	def debug(self, message):
+	def debug(self, message, *args, **kwargs):
 		''' Log a debug message. '''
-		self.log(LOG_DEBUG, message)
+		self.log(LOG_DEBUG, message, formatArgs=args, formatKwargs=kwargs)
 
-	def info(self, message):
+	def info(self, message, *args, **kwargs):
 		''' Log a info message. '''
-		self.log(LOG_INFO, message)
+		self.log(LOG_INFO, message, formatArgs=args, formatKwargs=kwargs)
 
-	def msg(self, message):
+	def msg(self, message, *args, **kwargs):
 		''' Log a info message. '''
-		self.info(message)
+		self.info(message, *args, **kwargs)
 
 	def notice(self, message, *args, **kwargs):
 		''' Log a notice message. '''
 		self.log(LOG_NOTICE, message, formatArgs=args, formatKwargs=kwargs)
 
-	def warning(self, message):
+	def warning(self, message, *args, **kwargs):
 		''' Log a warning message. '''
-		self.log(LOG_WARNING, message)
+		self.log(LOG_WARNING, message, formatArgs=args, formatKwargs=kwargs)
 
-	def error(self, message):
+	def error(self, message, *args, **kwargs):
 		''' Log a error message. '''
-		self.log(LOG_ERROR, message)
+		self.log(LOG_ERROR, message, formatArgs=args, formatKwargs=kwargs)
 
 	def err(self, message):
 		''' Log a error message. '''
 		self.error(message)
 
-	def critical(self, message):
+	def critical(self, message, *args, **kwargs):
 		''' Log a critical message. '''
-		self.log(LOG_CRITICAL, message)
+		self.log(LOG_CRITICAL, message, formatArgs=args, formatKwargs=kwargs)
 
-	def essential(self, message):
+	def essential(self, message, *args, **kwargs):
 		''' Log a essential message. '''
-		self.log(LOG_ESSENTIAL, message)
+		self.log(LOG_ESSENTIAL, message, formatArgs=args, formatKwargs=kwargs)
 
-	def comment(self, message):
+	def comment(self, message, *args, **kwargs):
 		''' Log a comment message. '''
-		self.essential(message)
+		self.essential(message, *args, **kwargs)
 
 
 class Logger(LoggerImplementation):
