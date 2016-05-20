@@ -51,13 +51,12 @@ logger = Logger()
 
 
 def configureDHCPD(configFile=DHCPD_CONF):
-	logger.notice(u"Configuring dhcpd")
-
 	if not os.path.exists(configFile):
 		logger.warning("Can't find an dhcpd.conf. Aborting configuration.")
 		return
 
 	sysConfig = getSysConfig()
+	logger.notice(u"Configuring dhcpd")
 
 	dhcpdConf = DHCPDConfFile(configFile)
 	dhcpdConf.parse()
