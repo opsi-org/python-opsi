@@ -112,11 +112,11 @@ class JSONRPC(DeferredCall):
 			self.error = error
 
 	def process(self):
-		logger.debug(u"Executing jsonrpc method {0!r} on host {1!r}".format(self.method, self.jsonrpcBackend._host))
+		logger.debug(u"Executing jsonrpc method {0!r} on host {1!r}", self.method, self.jsonrpcBackend._host)
 
 		try:
 			rpc = json.dumps(self.getRpc())
-			logger.debug2(u"jsonrpc: {0!r}".format(rpc))
+			logger.debug2(u"jsonrpc: {0!r}", rpc)
 
 			response = self.jsonrpcBackend._request(baseUrl=self.baseUrl, data=rpc, retry=self.retry)
 			self.processResult(json.loads(response))
@@ -444,7 +444,7 @@ class JSONRPCBackend(Backend):
 				logger.debug(u"Deflated communication works!")
 			except Exception as error:
 				logger.setConsoleLevel(previousLogLevel)
-				logger.debug(u"Caught {0!r}".format(error))
+				logger.debug(u"Caught {0!r}", error)
 				logger.debug(u"Disabling deflate...")
 				self._deflate = False
 			finally:
@@ -474,7 +474,7 @@ class JSONRPCBackend(Backend):
 			except (OpsiAuthenticationError, OpsiTimeoutError, OpsiServiceVerificationError, socket.error):
 				raise
 			except Exception as error:
-				logger.debug(u"backend_getInterface failed: {0!r}".format(forceUnicode(error)))
+				logger.debug(u"backend_getInterface failed: {0}", forceUnicode(error))
 				logger.debug(u"trying getPossibleMethods_listOfHashes")
 				self._interface = self._jsonRPC(u'getPossibleMethods_listOfHashes')
 				logger.info(u"Legacy opsi")
@@ -488,7 +488,7 @@ class JSONRPCBackend(Backend):
 				self._createInstanceMethods(modules, realmodules, mysqlBackend)
 
 			self._connected = True
-			logger.info(u"%s: Connected to service" % self)
+			logger.info(u"{0}: Connected to service", self)
 		finally:
 			self._async = async
 
@@ -721,7 +721,7 @@ class JSONRPCBackend(Backend):
 
 		contentType = response.getheader('content-type', '')
 		contentEncoding = response.getheader('content-encoding', '').lower()
-		logger.debug(u"Content-Type: %s, Content-Encoding: %s" % (contentType, contentEncoding))
+		logger.debug(u"Content-Type: {0}, Content-Encoding: {1}", contentType, contentEncoding)
 
 		response = response.data
 		if contentType.lower().startswith('gzip'):
