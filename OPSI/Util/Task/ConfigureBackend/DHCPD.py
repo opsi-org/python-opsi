@@ -57,6 +57,8 @@ def configureDHCPD(configFile=DHCPD_CONF):
 		logger.warning("Can't find an dhcpd.conf. Aborting configuration.")
 		return
 
+	sysConfig = getSysConfig()
+
 	dhcpdConf = DHCPDConfFile(configFile)
 	dhcpdConf.parse()
 
@@ -83,7 +85,7 @@ def configureDHCPD(configFile=DHCPD_CONF):
 				startLine=-1,
 				parentBlock=dhcpdConf.getGlobalBlock(),
 				type='subnet',
-				settings=['subnet', getSysConfig()['subnet'], 'netmask', getSysConfig()['netmask']] ) )
+				settings=['subnet', sysConfig['subnet'], 'netmask', sysConfig['netmask']]))
 
 	for subnet in dhcpdConf.getGlobalBlock().getBlocks('subnet', recursive=True):
 		logger.info(u"   Found subnet %s/%s" % (subnet.settings[1], subnet.settings[3]))
@@ -112,10 +114,10 @@ def configureDHCPD(configFile=DHCPD_CONF):
 						startLine=-1,
 						parentBlock=group,
 						key='next-server',
-						value=getSysConfig()['ipAddress']
+						value=sysConfig['ipAddress']
 					)
 				)
-				logger.notice(u"   next-server set to %s" % getSysConfig()['ipAddress'])
+				logger.notice(u"   next-server set to %s" % sysConfig['ipAddress'])
 			if params.get('filename'):
 				logger.info(u"         filename already set")
 			else:
