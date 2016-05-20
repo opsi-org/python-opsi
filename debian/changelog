@@ -1,4 +1,4 @@
-python-opsi (4.0.7.1-1) testing; urgency=medium
+python-opsi (4.0.7.1-1) UNRELEASED; urgency=medium
 
   * forceObjectClass got a faster check to see if we are processing JSON.
   * OPSI.System.Posix: fixed typo: init -6 -> init 6.
