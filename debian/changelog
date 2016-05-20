@@ -1,3 +1,13 @@
+python-opsi (4.0.7.1-1) testing; urgency=medium
+
+  * forceObjectClass got a faster check to see if we are processing JSON.
+  * OPSI.System.Posix: fixed typo: init -6 -> init 6.
+  * OPSI.Backend.Backend: _testFilterAndAttributes is faster if attributes
+    and filter are missing.
+  * OPSI.Backend.Backend: _objectHashMatches now avoids temporary variable.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 20 May 2016 15:44:59 +0200
+
 python-opsi (4.0.6.49-1) stable; urgency=medium
 
   * OPSI.Util.Task.Samba: removed oplocks from opsi_depot share

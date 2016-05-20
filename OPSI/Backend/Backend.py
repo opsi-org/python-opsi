@@ -4,7 +4,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2013-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -65,7 +65,7 @@ from OPSI.Util import (blowfishEncrypt, blowfishDecrypt, compareVersions,
 from OPSI.Util.File import ConfigFile
 import OPSI.SharedAlgorithm
 
-__version__ = '4.0.6.41'
+__version__ = '4.0.7.1'
 
 logger = Logger()
 OPSI_VERSION_FILE = u'/etc/opsi/version'
