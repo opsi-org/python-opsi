@@ -66,6 +66,7 @@ def configureDHCPD(configFile=DHCPD_CONF):
 		logger.info(u"   use-host-decl-names already enabled")
 	else:
 		confChanged = True
+		logger.notice(u"  enabling use-host-decl-names")
 		dhcpdConf.getGlobalBlock().addComponent(
 			DHCPDConf_Parameter(
 				startLine=-1,
