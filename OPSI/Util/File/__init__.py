@@ -59,7 +59,7 @@ elif os.name == 'nt':
 	import win32file
 	import pywintypes
 
-__version__ = "4.0.6.50"
+__version__ = "4.0.7.1"
 
 logger = Logger()
 

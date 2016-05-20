@@ -27,6 +27,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 @copyright:	uib GmbH <info@uib.de>
 @author: Jan Schneider <j.schneider@uib.de>
+@author: Niko Wenselowski <n.wenselowski@uib.de>
 @license: GNU General Public License version 2
 """
 
@@ -41,7 +42,7 @@ from OPSI.Types import (forceBool, forceInt, forceList, forceUnicode,
 	forceUnicodeList)
 from OPSI.Util.Message import MessageObserver, ProgressObserver
 
-__version__ = '4.0'
+__version__ = '4.0.7.1'
 
 logger = Logger()
 encoding = locale.getpreferredencoding()

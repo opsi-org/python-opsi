@@ -56,7 +56,7 @@ from OPSI.Types import OpsiVersionError
 from OPSI.Object import *
 from OPSI.Util import objectToBeautifiedText, removeUnit
 
-__version__ = '4.0.6.50'
+__version__ = '4.0.7.1'
 
 logger = Logger()
 
