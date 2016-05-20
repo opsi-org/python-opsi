@@ -563,9 +563,13 @@ containing the localisation of the hardware audit.
 
 	def _testFilterAndAttributes(self, Class, attributes, **filter):
 		if not attributes:
+			if not filter:
+				return
+
 			attributes = []
 
 		possibleAttributes = getPossibleClassAttributes(Class)
+
 		for attribute in forceUnicodeList(attributes):
 			if attribute not in possibleAttributes:
 				raise BackendBadValueError("Class {0!r} has no attribute '{1}'".format(Class, attribute))
