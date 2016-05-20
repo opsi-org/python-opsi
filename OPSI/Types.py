@@ -504,7 +504,7 @@ def forceRequirementType(var):
 
 def forceObjectClass(var, objectClass):
 	exception = None
-	if isinstance(var, _STRING_TYPES) and var.lstrip() and var.lstrip().startswith('{'):
+	if isinstance(var, _STRING_TYPES) and var.lstrip().startswith('{'):
 		from OPSI.Util import fromJson
 
 		try:
