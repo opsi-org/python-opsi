@@ -10,6 +10,7 @@ python-opsi (4.0.7.1-1) UNRELEASED; urgency=medium
     then supply args / kwargs as needed.
     Formatting will only be applied if the message will actually be logged.
   * Improved iteration in many parts to be more efficient.
+  * OPSI.Logger: Faster lookup for output color / level name.
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 20 May 2016 15:44:59 +0200
 
