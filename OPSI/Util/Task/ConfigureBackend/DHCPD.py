@@ -63,7 +63,7 @@ def configureDHCPD(configFile=DHCPD_CONF):
 
 	confChanged = False
 	if dhcpdConf.getGlobalBlock().getParameters_hash().get('use-host-decl-names', False):
-		logger.info(u"   use-host-decl-names already enabled")
+		logger.info(u"  use-host-decl-names already enabled")
 	else:
 		confChanged = True
 		logger.notice(u"  enabling use-host-decl-names")
@@ -79,7 +79,7 @@ def configureDHCPD(configFile=DHCPD_CONF):
 	subnets = dhcpdConf.getGlobalBlock().getBlocks('subnet', recursive=True)
 	if not subnets:
 		confChanged = True
-		logger.notice(u"   No subnets found, adding subnet")
+		logger.notice(u"  No subnets found, adding subnet")
 		dhcpdConf.getGlobalBlock().addComponent(
 			DHCPDConf_Block(
 				startLine=-1,
@@ -88,11 +88,11 @@ def configureDHCPD(configFile=DHCPD_CONF):
 				settings=['subnet', sysConfig['subnet'], 'netmask', sysConfig['netmask']]))
 
 	for subnet in dhcpdConf.getGlobalBlock().getBlocks('subnet', recursive=True):
-		logger.info(u"   Found subnet %s/%s" % (subnet.settings[1], subnet.settings[3]))
+		logger.info(u"  Found subnet %s/%s" % (subnet.settings[1], subnet.settings[3]))
 		groups = subnet.getBlocks('group')
 		if not groups:
 			confChanged = True
-			logger.notice(u"      No groups found, adding group")
+			logger.notice(u"    No groups found, adding group")
 			subnet.addComponent(
 				DHCPDConf_Block(
 					startLine=-1,
@@ -103,10 +103,11 @@ def configureDHCPD(configFile=DHCPD_CONF):
 			)
 
 		for group in subnet.getBlocks('group'):
-			logger.info(u"      Configuring group")
-			params = group.getParameters_hash(inherit='global')
+			logger.info(u"    Configuring group")
+			params = group.getParameters_hash(inherit='global')#
+
 			if params.get('next-server'):
-				logger.info(u"         next-server already set")
+				logger.info(u"      next-server already set")
 			else:
 				confChanged = True
 				group.addComponent(
@@ -117,9 +118,10 @@ def configureDHCPD(configFile=DHCPD_CONF):
 						value=sysConfig['ipAddress']
 					)
 				)
-				logger.notice(u"   next-server set to %s" % sysConfig['ipAddress'])
+				logger.notice(u"      next-server set to %s" % sysConfig['ipAddress'])
+
 			if params.get('filename'):
-				logger.info(u"         filename already set")
+				logger.info(u"      filename already set")
 			else:
 				confChanged = True
 				filename = 'linux/pxelinux.0'
@@ -133,17 +135,17 @@ def configureDHCPD(configFile=DHCPD_CONF):
 						value=filename
 					)
 				)
-				logger.notice(u"         filename set to %s" % filename)
+				logger.notice(u"      filename set to %s" % filename)
 
 	restartCommand = getDHCPDRestartCommand(default=u'/etc/init.d/dhcp3-server restart')
 	if confChanged:
-		logger.notice(u"   Creating backup of %s" % configFile)
+		logger.notice(u"  Creating backup of %s" % configFile)
 		shutil.copy(configFile, configFile + u'.' + time.strftime("%Y-%m-%d_%H:%M"))
 
-		logger.notice(u"   Writing new %s" % configFile)
+		logger.notice(u"  Writing new %s" % configFile)
 		dhcpdConf.generate()
 
-		logger.notice(u"   Restarting dhcpd")
+		logger.notice(u"  Restarting dhcpd")
 		try:
 			execute(restartCommand)
 		except Exception as error:
