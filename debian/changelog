@@ -5,6 +5,11 @@ python-opsi (4.0.7.1-1) testing; urgency=medium
   * OPSI.Backend.Backend: _testFilterAndAttributes is faster if attributes
     and filter are missing.
   * OPSI.Backend.Backend: _objectHashMatches now avoids temporary variable.
+  * OPSI.Logger.Logger now is able to do formatting in the style of
+    str.format. To format a message use the appropriate placeholders and
+    then supply args / kwargs as needed.
+    Formatting will only be applied if the message will actually be logged.
+  * Improved iteration in many parts to be more efficient.
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 20 May 2016 15:44:59 +0200
 
