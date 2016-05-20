@@ -213,11 +213,11 @@ This defaults to ``self``.
 
 		:returntype: bool
 		"""
-		matchedAll = True
-		for (attribute, value) in objHash.items():
+		for attribute, value in objHash.iteritems():
 			if not filter.get(attribute):
 				continue
 			matched = False
+
 			try:
 				logger.debug(
 					u"Testing match of filter {0!r} of attribute {1!r} with "
@@ -253,8 +253,6 @@ This defaults to ``self``.
 							if match:
 								operator = match.group(1)  # pylint: disable=maybe-no-member
 								v = match.group(2)  # pylint: disable=maybe-no-member
-								if operator == '=':
-									operator = '=='
 
 							try:
 								matched = compareVersions(value, operator, v)
@@ -271,12 +269,12 @@ This defaults to ``self``.
 
 				if matched:
 					logger.debug(
-						u"Value '{0}' matched filter '{1}', attribute "
-						u"'{2}'".format(value, filter[attribute], attribute)
+						u"Value {0!r} matched filter {1!r}, attribute "
+						u"{2!r}".format(value, filter[attribute], attribute)
 					)
 				else:
-					matchedAll = False
-					break
+					# No match, we can stop further checks.
+					return False
 			except Exception as err:
 				raise Exception(
 					u"Testing match of filter {0!r} of attribute {1!r} with "
@@ -285,7 +283,7 @@ This defaults to ``self``.
 					)
 				)
 
-		return matchedAll
+		return True
 
 	def backend_setOptions(self, options):
 		"""
