@@ -263,50 +263,7 @@ def objectToBeautifiedText(obj, level=0):
 	if level == 0:
 		obj = serialize(obj)
 
-	indent = u' ' * (4 * level)  # indent with four spaces
-	text = []
-	append = text.append
-
-	if isinstance(obj, (list, set)):
-		append(indent)
-		append(u'[\n')
-
-		if obj:
-			for element in obj:
-				if not isinstance(element, (dict, list)):
-					append(indent)
-				append(objectToBeautifiedText(element, level + 1))
-				append(u',')
-				append(u'\n')
-
-			del text[-2]  # Deleting the last comma
-
-		append(indent)
-		append(u']')
-	elif isinstance(obj, dict):
-		append(indent)
-		append(u'{\n')
-
-		if obj:
-			for (key, value) in obj.iteritems():
-				append(indent)
-				append(key.join((u'"', u'" : ')))
-				if isinstance(value, (dict, list)):
-					append(u'\n')
-				append(objectToBeautifiedText(value, level + 1))
-				append(u',')
-				append(u'\n')
-
-			del text[-2]  # Deleting the last comma
-
-		append(indent)
-		append(u'}')
-	elif isinstance(obj, str):  # TODO: watch out for Python 3
-		append(toJson(forceUnicode(obj)))
-	else:
-		append(toJson(obj))
-
-	return ''.join(text)
+	return json.dumps(obj, indent=4, ensure_ascii=False)
 
 
 def objectToBash(obj, bashVars=None, level=0):
