@@ -259,11 +259,8 @@ def timestamp(secs=0, dateOnly=False):
 		return time.strftime(u"%Y-%m-%d %H:%M:%S", time.localtime(secs))
 
 
-def objectToBeautifiedText(obj, level=0):
-	if level == 0:
-		obj = serialize(obj)
-
-	return json.dumps(obj, indent=4, ensure_ascii=False)
+def objectToBeautifiedText(obj):
+	return json.dumps(serialize(obj), indent=4, ensure_ascii=False)
 
 
 def objectToBash(obj, bashVars=None, level=0):

@@ -252,7 +252,6 @@ class ObjectToBeautifiedTextTestCase(unittest.TestCase):
 
     def testFormattingEmptyDict(self):
         self.assertEquals('{}', objectToBeautifiedText({}))
-        self.assertEquals('{}', objectToBeautifiedText({}, level=1))
 
     def testFormattingDefaultDict(self):
         normalDict = {u'lastStateChange': u'', u'actionRequest': u'none', u'productVersion': u'', u'productActionProgress': u'', u'packageVersion': u'', u'installationStatus': u'not_installed', u'productId': u'thunderbird'}
