@@ -190,48 +190,48 @@ class ObjectToBeautifiedTextTestCase(unittest.TestCase):
         expected = u"""\
 [
     {
-        "onceScript": "once.ins", \n\
-        "windowsSoftwareIds": null, \n\
-        "description": "asdf", \n\
-        "advice": "lolnope", \n\
-        "alwaysScript": "always.ins", \n\
-        "updateScript": "update.ins", \n\
-        "productClassIds": null, \n\
-        "id": "htmltestproduct", \n\
-        "licenseRequired": false, \n\
-        "ident": "htmltestproduct;3.1;1", \n\
-        "name": "Product HTML Test", \n\
-        "changelog": null, \n\
-        "customScript": null, \n\
-        "uninstallScript": "uninstall.ins", \n\
-        "userLoginScript": null, \n\
-        "priority": 0, \n\
-        "productVersion": "3.1", \n\
-        "packageVersion": "1", \n\
-        "type": "LocalbootProduct", \n\
-        "setupScript": "setup.ins"
-    }, \n\
+    "onceScript" : "once.ins",
+    "windowsSoftwareIds" : null,
+    "description" : "asdf",
+    "advice" : "lolnope",
+    "alwaysScript" : "always.ins",
+    "updateScript" : "update.ins",
+    "productClassIds" : null,
+    "id" : "htmltestproduct",
+    "licenseRequired" : false,
+    "ident" : "htmltestproduct;3.1;1",
+    "name" : "Product HTML Test",
+    "changelog" : null,
+    "customScript" : null,
+    "uninstallScript" : "uninstall.ins",
+    "userLoginScript" : null,
+    "priority" : 0,
+    "productVersion" : "3.1",
+    "packageVersion" : "1",
+    "type" : "LocalbootProduct",
+    "setupScript" : "setup.ins"
+    },
     {
-        "onceScript": "once.ins", \n\
-        "windowsSoftwareIds": null, \n\
-        "description": "asdf", \n\
-        "advice": "lolnope", \n\
-        "alwaysScript": "always.ins", \n\
-        "updateScript": "update.ins", \n\
-        "productClassIds": null, \n\
-        "id": "htmltestproduct", \n\
-        "licenseRequired": false, \n\
-        "ident": "htmltestproduct;3.1;1", \n\
-        "name": "Product HTML Test", \n\
-        "changelog": null, \n\
-        "customScript": null, \n\
-        "uninstallScript": "uninstall.ins", \n\
-        "userLoginScript": null, \n\
-        "priority": 0, \n\
-        "productVersion": "3.1", \n\
-        "packageVersion": "1", \n\
-        "type": "LocalbootProduct", \n\
-        "setupScript": "setup.ins"
+    "onceScript" : "once.ins",
+    "windowsSoftwareIds" : null,
+    "description" : "asdf",
+    "advice" : "lolnope",
+    "alwaysScript" : "always.ins",
+    "updateScript" : "update.ins",
+    "productClassIds" : null,
+    "id" : "htmltestproduct",
+    "licenseRequired" : false,
+    "ident" : "htmltestproduct;3.1;1",
+    "name" : "Product HTML Test",
+    "changelog" : null,
+    "customScript" : null,
+    "uninstallScript" : "uninstall.ins",
+    "userLoginScript" : null,
+    "priority" : 0,
+    "productVersion" : "3.1",
+    "packageVersion" : "1",
+    "type" : "LocalbootProduct",
+    "setupScript" : "setup.ins"
     }
 ]\
 """
@@ -239,20 +239,27 @@ class ObjectToBeautifiedTextTestCase(unittest.TestCase):
         self.assertEquals(expected, objectToBeautifiedText([product, product]))
 
     def testFormattingEmptyList(self):
-        self.assertEquals('[]', objectToBeautifiedText([]))
+        self.assertEquals('[\n]', objectToBeautifiedText([]))
 
     def testFormattingListOfEmptyLists(self):
         expected = u"""\
 [
-    [], \n\
-    []
+    [
+    ],
+    [
+    ]
 ]\
 """
         self.assertEquals(expected, objectToBeautifiedText([[],[]]))
 
     def testFormattingEmptyDict(self):
-        self.assertEquals('{}', objectToBeautifiedText({}))
-        self.assertEquals('{}', objectToBeautifiedText({}, level=1))
+        self.assertEquals('{\n}', objectToBeautifiedText({}))
+
+        expected = u"""\
+    {
+    }\
+"""
+        self.assertEquals(expected, objectToBeautifiedText({}, level=1))
 
     def testFormattingDefaultDict(self):
         normalDict = {u'lastStateChange': u'', u'actionRequest': u'none', u'productVersion': u'', u'productActionProgress': u'', u'packageVersion': u'', u'installationStatus': u'not_installed', u'productId': u'thunderbird'}
@@ -291,26 +298,26 @@ class ObjectToBeautifiedTextTestCase(unittest.TestCase):
         expected = """\
 [
     {
-        "onceScript": "once.ins", \n\
-        "windowsSoftwareIds": null, \n\
-        "description": "asdf", \n\
-        "advice": "lolnope", \n\
-        "alwaysScript": "always.ins", \n\
-        "updateScript": "update.ins", \n\
-        "productClassIds": null, \n\
-        "id": "htmltestproduct", \n\
-        "licenseRequired": false, \n\
-        "ident": "htmltestproduct;3.1;1", \n\
-        "name": "Product HTML Test", \n\
-        "changelog": null, \n\
-        "customScript": null, \n\
-        "uninstallScript": "uninstall.ins", \n\
-        "userLoginScript": null, \n\
-        "priority": 0, \n\
-        "productVersion": "3.1", \n\
-        "packageVersion": "1", \n\
-        "type": "LocalbootProduct", \n\
-        "setupScript": "setup.ins"
+    "onceScript" : "once.ins",
+    "windowsSoftwareIds" : null,
+    "description" : "asdf",
+    "advice" : "lolnope",
+    "alwaysScript" : "always.ins",
+    "updateScript" : "update.ins",
+    "productClassIds" : null,
+    "id" : "htmltestproduct",
+    "licenseRequired" : false,
+    "ident" : "htmltestproduct;3.1;1",
+    "name" : "Product HTML Test",
+    "changelog" : null,
+    "customScript" : null,
+    "uninstallScript" : "uninstall.ins",
+    "userLoginScript" : null,
+    "priority" : 0,
+    "productVersion" : "3.1",
+    "packageVersion" : "1",
+    "type" : "LocalbootProduct",
+    "setupScript" : "setup.ins"
     }
 ]\
 """
