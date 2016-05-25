@@ -332,6 +332,7 @@ class JSONRPCBackend(Backend):
 			elif option == 'verifyservercertbyca':
 				self._verifyServerCertByCa = forceBool(value)
 			elif option == 'proxyurl':
+                                logger.debug(u"ProxyURL detected: '%s'" % value)
 				self._proxyURL = forceUnicode(value)
 
 		if not retry:
