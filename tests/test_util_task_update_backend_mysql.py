@@ -27,6 +27,10 @@ from __future__ import absolute_import
 
 import os
 
+from collections import namedtuple
+from contextlib import contextmanager
+
+from OPSI.Backend.MySQL import MySQL
 from OPSI.Util.Task.UpdateBackend.MySQL import updateMySQLBackend
 from OPSI.Util.Task.ConfigureBackend import updateConfigFile
 
@@ -34,6 +38,32 @@ from .Backends.MySQL import MySQLconfiguration
 from .helpers import workInTemporaryDirectory
 
 import pytest
+
+
+@contextmanager
+def disableForeignKeyChecks(database):
+    database.execute('SET FOREIGN_KEY_CHECKS=0;')
+    try:
+        yield
+    finally:
+        database.execute('SET FOREIGN_KEY_CHECKS=1;')
+
+
+@contextmanager
+def cleanDatabase(database):
+    def cleanDatabase():
+        with disableForeignKeyChecks(database):
+            for tableName in getTableNames(database):
+                try:
+                    database.execute(u'DROP TABLE `{0}`;'.format(tableName))
+                except Exception as error:
+                    print("Failed to drop {0}: {1}".format(tableName, error))
+
+    cleanDatabase()
+    try:
+        yield database
+    finally:
+        cleanDatabase()
 
 
 def testCorrectingLicenseOnClientLicenseKeyLength():
@@ -55,8 +85,103 @@ def testCorrectingLicenseOnClientLicenseKeyLength():
 
         updateConfigFile(configFile, MySQLconfiguration)
 
-        # TODO: prepare the table the have a column length of just 100.
+        with cleanDatabase(MySQL(**MySQLconfiguration)) as db:
+            createRequiredTables(db)
 
-        updateMySQLBackend(backendConfigFile=configFile)
+            updateMySQLBackend(backendConfigFile=configFile)
 
-        # TODO: add
+            assert 'LICENSE_ON_CLIENT' in getTableNames(db)
+
+            for column in getTableColumns(db, 'LICENSE_ON_CLIENT'):
+                if column.name.lower() == 'licensekey':
+                    assert column.type.lower().startswith('varchar(')
+
+                    _, length = column.type.split('(')
+                    length = int(length[:-1])
+
+                    assert length == 1024
+                    break
+            else:
+                raise ValueError("Missing column 'licensekey'")
+
+
+def createRequiredTables(database):
+    table = u'''CREATE TABLE `LICENSE_POOL` (
+            `licensePoolId` VARCHAR(100) NOT NULL,
+            `type` varchar(30) NOT NULL,
+            `description` varchar(200),
+            PRIMARY KEY (`licensePoolId`)
+        ) %s;
+        ''' % database.getTableCreationOptions('LICENSE_POOL')
+    database.execute(table)
+    database.execute('CREATE INDEX `index_license_pool_type` on `LICENSE_POOL` (`type`);')
+
+    table = u'''CREATE TABLE `LICENSE_CONTRACT` (
+            `licenseContractId` VARCHAR(100) NOT NULL,
+            `type` varchar(30) NOT NULL,
+            `description` varchar(100),
+            `notes` varchar(1000),
+            `partner` varchar(100),
+            `conclusionDate` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
+            `notificationDate` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
+            `expirationDate` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
+            PRIMARY KEY (`licenseContractId`)
+        ) %s;
+        ''' % database.getTableCreationOptions('LICENSE_CONTRACT')
+    database.execute(table)
+    database.execute('CREATE INDEX `index_license_contract_type` on `LICENSE_CONTRACT` (`type`);')
+
+    table = u'''CREATE TABLE `SOFTWARE_LICENSE` (
+            `softwareLicenseId` VARCHAR(100) NOT NULL,
+            `licenseContractId` VARCHAR(100) NOT NULL,
+            `type` varchar(30) NOT NULL,
+            `boundToHost` varchar(255),
+            `maxInstallations` integer,
+            `expirationDate` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
+            PRIMARY KEY (`softwareLicenseId`),
+            FOREIGN KEY (`licenseContractId`) REFERENCES `LICENSE_CONTRACT` (`licenseContractId`)
+        ) %s;
+        ''' % database.getTableCreationOptions('SOFTWARE_LICENSE')
+    database.execute(table)
+    database.execute('CREATE INDEX `index_software_license_type` on `SOFTWARE_LICENSE` (`type`);')
+    database.execute('CREATE INDEX `index_software_license_boundToHost` on `SOFTWARE_LICENSE` (`boundToHost`);')
+
+    database.execute("""CREATE TABLE `PRODUCT_PROPERTY` (
+        `productId` varchar(255) NOT NULL,
+        `productVersion` varchar(32) NOT NULL,
+        `packageVersion` varchar(16) NOT NULL,
+        `propertyId` varchar(200) NOT NULL,
+        `type` varchar(30) NOT NULL,
+        `description` TEXT,
+        `multiValue` bool NOT NULL,
+        `editable` bool NOT NULL,
+        PRIMARY KEY (`productId`, `productVersion`, `packageVersion`, `propertyId`)
+    ) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci """)
+
+    database.execute("""CREATE TABLE `BOOT_CONFIGURATION` (
+        `name` varchar(64) NOT NULL,
+        `clientId` varchar(255) NOT NULL,
+        `priority` integer DEFAULT 0,
+        `description` TEXT,
+        `netbootProductId` varchar(255),
+        `pxeTemplate` varchar(255),
+        `options` varchar(255),
+        `disk` integer,
+        `partition` integer,
+        `active` bool,
+        `deleteAfter` integer,
+        `deactivateAfter` integer,
+        `accessCount` integer,
+        `osName` varchar(128),
+        PRIMARY KEY (`name`, `clientId`)
+    ) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci """)
+
+
+def getTableNames(database):
+    return set(i.values()[0] for i in database.getSet(u'SHOW TABLES;'))
+
+
+def getTableColumns(database, tableName):
+    tablecolumn = namedtuple("column", ["name", "type"])
+    return [tablecolumn(column['Field'], column['Type']) for column
+            in database.getSet(u'SHOW COLUMNS FROM `{0}`;'.format(tableName))]
