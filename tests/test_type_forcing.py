@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -65,7 +65,7 @@ class ForceObjectClassJSONTestCase(unittest.TestCase):
 
 	def testForcingObjectClassFromJSON(self):
 		json = {
-			"clientId": "dolly.janus.vatur",
+			"clientId": "dolly.janus.vater",
 			"actionRequest": "setup",
 			"productType": "LocalbootProduct",
 			"type": "ProductOnClient",
@@ -265,6 +265,12 @@ class ForceOpsiTimeStampTestCase(unittest.TestCase):
 
 	def testForcingWithDatetime(self):
 		self.assertEqual(forceOpsiTimestamp(datetime.datetime(2013, 9, 11, 10, 54, 23)), '2013-09-11 10:54:23')
+		self.assertEqual(forceOpsiTimestamp(datetime.datetime(2013, 9, 11, 10, 54, 23, 123123)), '2013-09-11 10:54:23')
+
+	def testForcingEmptyValue(self):
+		self.assertEquals(u'0000-00-00 00:00:00', forceOpsiTimestamp(None))
+		self.assertEquals(u'0000-00-00 00:00:00', forceOpsiTimestamp(0))
+		self.assertEquals(u'0000-00-00 00:00:00', forceOpsiTimestamp(''))
 
 
 class ForceHostIdTestCase(unittest.TestCase):
@@ -486,8 +492,9 @@ class ForceTimeTestCase(unittest.TestCase):
 		self.assertRaises(ValueError, forceTime, 'Hello World!')
 
 	def testForcingWorksWithVariousTypes(self):
-		forceTime(time.time())
-		forceTime(time.localtime())
+		self.assertTrue(isinstance(forceTime(time.time()), time.struct_time))
+		self.assertTrue(isinstance(forceTime(time.localtime()), time.struct_time))
+		self.assertTrue(isinstance(forceTime(datetime.datetime.now()), time.struct_time))
 
 
 class ForceEmailAddressTestCase(unittest.TestCase):

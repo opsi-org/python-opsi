@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2015 uib GmbH <info@uib.de>
+# Copyright (C) 2015-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -23,10 +23,9 @@ Testing the backend configuration.
 :license: GNU Affero General Public License version 3
 """
 
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 
 import os
-import shutil
 import unittest
 from contextlib import contextmanager
 
@@ -59,7 +58,7 @@ def disableSystemCallsForConfigureDHCPD():
 
 class ConfigureDHCPDTestCase(unittest.TestCase):
     def testJustExitingIfFileDoesNotExist(self):
-        with workInTemporaryDirectory() as tempDir:
+        with workInTemporaryDirectory():
             configureDHCPD('not.here')
 
     def testNextServer(self):
@@ -93,7 +92,7 @@ subnet 192.168.0.0 netmask 255.255.0.0 {
             self.assertTrue(found, "next-server not fonud in new file.")
 
     def testConfiguringEmptyFile(self):
-        with workInTemporaryDirectory() as tempDir:
+        with workInTemporaryDirectory():
             filename = 'dhcpd_test.conf'
             with open(filename, 'wx'):
                 pass
@@ -108,7 +107,7 @@ subnet 192.168.0.0 netmask 255.255.0.0 {
             self.assertNotEquals(oldHash, newHash)
 
     def testConfiguringPatchesDHCPDBackendConfig(self):
-        with workInTemporaryDirectory() as tempDir:
+        with workInTemporaryDirectory():
             filename = 'dhcpd_test.conf'
             with open(filename, 'wx'):
                 pass

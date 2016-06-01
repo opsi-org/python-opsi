@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2014 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -23,11 +23,15 @@ Testing OPSI.Objects
 :license: GNU Affero General Public License version 3
 """
 
+from __future__ import absolute_import, print_function
+
 import unittest
 
-from OPSI.Object import (AuditHardwareOnHost, Host, OpsiConfigserver,
-    OpsiDepotserver, LocalbootProduct, UnicodeConfig,
-    getPossibleClassAttributes)
+from OPSI.Object import (AuditHardwareOnHost, Host, LocalbootProduct,
+    OpsiConfigserver, OpsiDepotserver, Product, ProductDependency,
+    UnicodeConfig, getPossibleClassAttributes, mandatoryConstructorArgs)
+
+from .helpers import mock
 
 
 class GetPossibleClassAttributesTestCase(unittest.TestCase):
@@ -188,3 +192,163 @@ class AuditHardwareOnHostTestCase(unittest.TestCase):
     def test__unicode__with_additionals(self):
         self.ahoh.name = "Ünicöde name."
         self.ahoh.__unicode__()
+
+
+class HelpfulErrorMessageWhenCreationFromHashFailsTestCase(unittest.TestCase):
+    """
+    Error messages for object.fromHash should be helpful.
+
+    If the creation of a new object from a hash fails the resulting error
+    message should show what required attributes are missing.
+    """
+
+    def testGettingHelpfulErrorMessageWithBaseclassRelationship(self):
+        try:
+            ProductDependency.fromHash({
+                    "productAction" : "setup",
+                    "requirementType" : "after",
+                    "requiredInstallationStatus" : "installed",
+                    "requiredProductId" : "mshotfix",
+                    "productId" : "msservicepack"
+                    # The following attributes are missing:
+                    # * productVersion
+                    # * packageVersion
+                })
+            self.fail('Should not get here.')
+        except TypeError as typo:
+            print(u"Error is: {0!r}".format(typo))
+
+            self.assertTrue(u'__init__() takes at least 6 arguments (6 given)' not in str(typo))
+
+            self.assertTrue('productVersion' in str(typo))
+            self.assertTrue('packageVersion' in str(typo))
+
+    def testGettingHelpfulErrorMessageWithBaseclassEntity(self):
+        try:
+            Product.fromHash({
+                    "id": "newProduct",
+                    # The following attributes are missing:
+                    # * productVersion
+                    # * packageVersion
+                })
+            self.fail('Should not get here.')
+        except TypeError as typo:
+            print(u"Error is: {0!r}".format(typo))
+
+            self.assertTrue(u'__init__() takes at least 6 arguments (6 given)' not in str(typo))
+
+            self.assertTrue('productVersion' in str(typo))
+            self.assertTrue('packageVersion' in str(typo))
+
+
+class MandatoryConstructorArgsTestCase(unittest.TestCase):
+    """
+    Testing if reading the required constructor arguments works.
+
+    Inside the test functions we patch _MANDATORY_CONSTRUCTOR_ARGS_CACHE
+    to avoid using cached data or storing data inside the cache.
+    """
+
+    def testNoArguments(self):
+        class NoArgs(object):
+            def __init__(self):
+                pass
+
+        n = NoArgs()
+        with mock.patch('OPSI.Object._MANDATORY_CONSTRUCTOR_ARGS_CACHE', {}):
+            args = mandatoryConstructorArgs(n.__class__)
+
+        self.assertEquals([], args)
+
+    def testOnlyMandatoryArguments(self):
+        class OnlyMandatory(object):
+            def __init__(self, give, me, this):
+                pass
+
+        om = OnlyMandatory(1, 1, 1)
+        with mock.patch('OPSI.Object._MANDATORY_CONSTRUCTOR_ARGS_CACHE', {}):
+            args = mandatoryConstructorArgs(om.__class__)
+
+        self.assertEquals(['give', 'me', 'this'], args)
+
+    def testOnlyOptionalArguments(self):
+        class OnlyOptional(object):
+            def __init__(self, only=1, optional=2, arguments=[]):
+                pass
+
+        oo = OnlyOptional()
+        with mock.patch('OPSI.Object._MANDATORY_CONSTRUCTOR_ARGS_CACHE', {}):
+            args = mandatoryConstructorArgs(oo.__class__)
+
+        self.assertEquals([], args)
+
+    def testMixedArguments(self):
+        class MixedArgs(object):
+            def __init__(self, i, want, this, but=0, that=0, notso=0, much=0):
+                pass
+
+        ma = MixedArgs(True, True, True)
+        with mock.patch('OPSI.Object._MANDATORY_CONSTRUCTOR_ARGS_CACHE', {}):
+            args = mandatoryConstructorArgs(ma.__class__)
+
+        self.assertEquals(['i', 'want', 'this'], args)
+
+    def testWildcardArguments(self):
+        class WildcardOnly(object):
+            def __init__(self, *only):
+                pass
+
+        wo = WildcardOnly("yeah", "great", "thing")
+        with mock.patch('OPSI.Object._MANDATORY_CONSTRUCTOR_ARGS_CACHE', {}):
+            args = mandatoryConstructorArgs(wo.__class__)
+
+        self.assertEquals([], args)
+
+    def testKeywordArguments(self):
+        class Kwargz(object):
+            def __init__(self, **kwargs):
+                pass
+
+        kw = Kwargz(go=1, get="asdf", them=[], girl=True)
+        with mock.patch('OPSI.Object._MANDATORY_CONSTRUCTOR_ARGS_CACHE', {}):
+            args = mandatoryConstructorArgs(kw.__class__)
+
+        self.assertEquals([], args)
+
+    def testMixedWithArgsAndKwargs(self):
+        class KwargzAndMore(object):
+            def __init__(self, crosseyed, heart, *more, **kwargs):
+                pass
+
+        kwam = KwargzAndMore(False, True, "some", "more", things="here")
+        with mock.patch('OPSI.Object._MANDATORY_CONSTRUCTOR_ARGS_CACHE', {}):
+            args = mandatoryConstructorArgs(kwam.__class__)
+
+        self.assertEquals(["crosseyed", "heart"], args)
+
+
+class ProductTestCase(unittest.TestCase):
+
+    def testLongNameCanBeSetAndRead(self):
+        """
+        Namens with a length of more than 128 characters can are supported.
+        """
+        product = Product(
+            id='new_prod',
+            name='New Product for Tests',
+            productVersion='1.0',
+            packageVersion='1.0'
+        )
+
+        newName = (
+            u'This is a very long name with 128 characters to test the '
+            u'creation of long product names that should work now but '
+            u'were limited b4'
+        )
+
+        product.setName(newName)
+
+        nameFromProd = product.getName()
+
+        self.assertEqual(newName, nameFromProd)
+        self.assertEqual(128, len(nameFromProd))

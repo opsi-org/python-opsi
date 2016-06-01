@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2006-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -31,6 +31,7 @@ import os
 import sys
 import threading
 import time
+import traceback
 import warnings
 
 try:
@@ -53,7 +54,7 @@ try:
 except ImportError:
 	syslog = None
 
-__version__ = '4.0.6.36'
+__version__ = '4.0.6.48'
 
 if sys.version_info > (3, ):
 	# Python 3
@@ -772,17 +773,17 @@ False suppresses exceptions.
 		self.log(logLevel, u'     ==>>> %s' % message)
 
 	def logTraceback(self, tb, logLevel=LOG_CRITICAL):
-		''' Log an exception. '''
+		'''
+		Log an traceback.
+
+		This will log the call trace from the given traceback.
+		'''
 		self.log(logLevel, u'Traceback:')
-		# Traceback
 		try:
-			while tb is not None:
-				f = tb.tb_frame
-				c = f.f_code
-				self.log(logLevel, u"     line %s in '%s' in file '%s'" % (tb.tb_lineno, c.co_name, c.co_filename))
-				tb = tb.tb_next
-		except Exception as e:
-			self.log(LOG_CRITICAL, u"    Failed to log traceback for '%s': %s" % (tb, e))
+			for tbInfo in traceback.format_tb(tb):
+				self.log(logLevel, tbInfo)
+		except AttributeError as attrError:
+			self.log(LOG_CRITICAL, u"    Failed to log traceback for {0!r}: {1}".format(tb, attrError))
 
 	def logWarnings(self):
 		"""

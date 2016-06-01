@@ -61,7 +61,7 @@ from OPSI.Util import findFiles, getfqdn
 from OPSI.Util.File.Opsi import OpsiConfFile
 from OPSI.System.Posix import isSLES
 
-__version__ = '4.0.6.40'
+__version__ = '4.0.6.48'
 
 LOGGER = Logger()
 
@@ -102,13 +102,14 @@ def setRights(path=u'/'):
 	if not os.path.isdir(basedir):
 		basedir = os.path.dirname(basedir)
 
-	(directories, depotDir) = getDirectoriesForProcessing(path)
-
 	clientUserUid = pwd.getpwnam(_CLIENT_USER)[2]
 	opsiconfdUid = pwd.getpwnam(_OPSICONFD_USER)[2]
 	adminGroupGid = grp.getgrnam(_ADMIN_GROUP)[2]
 	fileAdminGroupGid = grp.getgrnam(_FILE_ADMIN_GROUP)[2]
 
+	(directories, depotDir) = getDirectoriesForProcessing(path)
+
+	processedDirectories = set()
 	# TODO: try to re-introduce removeDuplicatesFromDirectories for speedups
 	for dirname in directories:
 		if not dirname.startswith(basedir) and not basedir.startswith(dirname):
@@ -146,6 +147,10 @@ def setRights(path=u'/'):
 		if basedir.startswith(dirname):
 			startPath = basedir
 
+		if startPath in processedDirectories:
+			LOGGER.debug(u"Already proceesed {0}, Skipping.".format(startPath))
+			continue
+
 		if dirname == depotDir:
 			directoryMode = 0o2770
 
@@ -176,6 +181,8 @@ def setRights(path=u'/'):
 			chown(u'/var/lib/opsi', clientUserUid, fileAdminGroupGid)
 			setRightsOnSSHDirectory(clientUserUid, fileAdminGroupGid)
 
+		processedDirectories.add(startPath)
+
 
 def getDirectoriesForProcessing(path):
 	basedir = os.path.abspath(path)
@@ -198,28 +205,25 @@ def getDirectoriesForProcessing(path):
 
 		if os.path.exists(depotDir):
 			LOGGER.info(u"Local depot directory {0!r} found".format(depotDir))
-			dirnames.append(depotDir)
+			dirnames.add(depotDir)
 
 	if basedir.startswith('/opt/pcbin/install'):
-		found = False
 		for dirname in dirnames:
 			if dirname.startswith('/opt/pcbin/install'):
-				found = True
 				break
-
-		if not found:
-			dirnames.append('/opt/pcbin/install')
+		else:
+			dirnames.add('/opt/pcbin/install')
 
 	return (dirnames, depotDir)
 
 
 def getDirectoriesManagedByOpsi():
 	if isSLES():
-		return [u'/etc/opsi', u'/var/lib/opsi', u'/var/lib/opsi/workbench',
-				u'/var/lib/tftpboot/opsi', u'/var/log/opsi']
+		return set([u'/etc/opsi', u'/var/lib/opsi', u'/var/lib/opsi/workbench',
+					u'/var/lib/tftpboot/opsi', u'/var/log/opsi'])
 	else:
-		return [u'/etc/opsi', u'/home/opsiproducts', u'/tftpboot/linux',
-				u'/var/lib/opsi', u'/var/log/opsi']
+		return set([u'/etc/opsi', u'/home/opsiproducts', u'/tftpboot/linux',
+				u'/var/lib/opsi', u'/var/log/opsi'])
 
 
 def getDepotUrl():

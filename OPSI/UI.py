@@ -204,7 +204,7 @@ class SnackUI(UI):
 	def __del__(self):
 		try:
 			self.exit()
-		except:
+		except Exception:
 			pass
 
 	def sigwinchHandler(self, signo, stackFrame):

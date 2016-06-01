@@ -419,21 +419,24 @@ class MySQL(SQL):
 				if e[0] != 2006:
 					# 2006: MySQL server has gone away
 					raise
+
 				self._createConnectionPool()
-				(conn, cursor) = self.connect()
+				conn, cursor = self.connect()
 				self.execute(query, conn, cursor)
+
 			result = cursor.rowcount
 		finally:
 			if closeConnection:
 				self.close(conn, cursor)
+
 		return result
 
 	def execute(self, query, conn=None, cursor=None):
-		if not (conn and cursor):
-			(conn, cursor) = self.connect()
-			needClose = True
-		else:
+		if conn and cursor:
 			needClose = False
+		else:
+			needClose = True
+			conn, cursor = self.connect()
 
 		res = None
 		try:

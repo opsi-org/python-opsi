@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -23,11 +23,10 @@ Testing BackendManager.
 :license: GNU Affero General Public License version 3
 """
 
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 
 import os
 
-from OPSI.Backend.Backend import ExtendedConfigDataBackend
 from OPSI.Backend.BackendManager import BackendManager, ConfigDataBackend
 
 from .Backends.File import FileBackendMixin
@@ -354,7 +353,8 @@ class GettingBackendManagerTestCase(unittest.TestCase):
         requiredThings = (
             u'/etc/opsi/backendManager/dispatch.conf',
             u'/etc/opsi/backends',
-            u'/etc/opsi/backendManager/extend.d'
+            u'/etc/opsi/backendManager/extend.d',
+            u'/var/lib/opsi/config/depots',
         )
 
         for required in requiredThings:
@@ -397,5 +397,8 @@ class GettingBackendManagerTestCase(unittest.TestCase):
             print(backend.backend_info())
 
 
-if __name__ == '__main__':
-    unittest.main()
+def testBackendManagerCanAccessExtensions(backendManager):
+    print(backendManager)
+    print(backendManager.backend_info())
+
+    print(backendManager.getServerIds_list())

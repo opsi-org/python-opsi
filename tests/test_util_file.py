@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2014 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -103,10 +103,11 @@ class CopySetupOemFileTestsMixin(object):
     @classmethod
     def tearDownClass(self):
         testDirectory = os.path.dirname(self.txtSetupOemFile.getFilename())
-        if (os.path.exists(testDirectory)
-            and (os.path.normpath(self.TEST_DATA_FOLDER) !=
-                 os.path.normpath(testDirectory))):
-            shutil.rmtree(testDirectory)
+        if os.path.normpath(self.TEST_DATA_FOLDER) != os.path.normpath(testDirectory):
+            try:
+                shutil.rmtree(testDirectory)
+            except OSError:
+                pass
 
         del self.txtSetupOemFile
 
