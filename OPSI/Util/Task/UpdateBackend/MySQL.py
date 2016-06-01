@@ -508,6 +508,7 @@ def _fixLengthOfLicenseKeys(database):
 			length = int(length[:-1])
 
 			if length != 1024:
+				logger.notice(u"Fixing length of 'licenseKey' column on table 'LICENSE_ON_CLIENT'")
 				database.execute(u"ALTER TABLE `LICENSE_ON_CLIENT` MODIFY COLUMN `licenseKey` VARCHAR(1024);")
 
 
