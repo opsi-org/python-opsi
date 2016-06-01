@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -24,6 +24,8 @@ Functionality to update an MySQL backend.
 :author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
 """
+
+from collections import namedtuple
 
 from OPSI.Backend.MySQL import MySQL, MySQLBackend
 from OPSI.Logger import Logger
@@ -491,3 +493,9 @@ def updateMySQLBackend(backendConfigFile=u'/etc/opsi/backends/mysql.conf',
 	mysqlBackend = MySQLBackend(**config)
 	mysqlBackend.backend_createBase()
 	mysqlBackend.backend_exit()
+
+
+def getTableColumns(database, tableName):
+	TableColumn = namedtuple("TableColumn", ["name", "type"])
+	return [TableColumn(column['Field'], column['Type']) for column
+			in database.getSet(u'SHOW COLUMNS FROM `{0}`;'.format(tableName))]

@@ -27,11 +27,10 @@ from __future__ import absolute_import
 
 import os
 
-from collections import namedtuple
 from contextlib import contextmanager
 
 from OPSI.Backend.MySQL import MySQL
-from OPSI.Util.Task.UpdateBackend.MySQL import updateMySQLBackend
+from OPSI.Util.Task.UpdateBackend.MySQL import updateMySQLBackend, getTableColumns
 from OPSI.Util.Task.ConfigureBackend import updateConfigFile
 
 from .Backends.MySQL import MySQLconfiguration
@@ -196,9 +195,3 @@ def createRequiredTables(database):
 
 def getTableNames(database):
     return set(i.values()[0] for i in database.getSet(u'SHOW TABLES;'))
-
-
-def getTableColumns(database, tableName):
-    TableColumn = namedtuple("TableColumn", ["name", "type"])
-    return [TableColumn(column['Field'], column['Type']) for column
-            in database.getSet(u'SHOW COLUMNS FROM `{0}`;'.format(tableName))]
