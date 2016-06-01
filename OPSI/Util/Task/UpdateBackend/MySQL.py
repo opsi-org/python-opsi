@@ -132,7 +132,7 @@ def updateMySQLBackend(backendConfigFile=u'/etc/opsi/backends/mysql.conf',
 			logger.debug(u"      %s" % j)
 			tables[tableName].append(j['Field'])
 
-	if 'HOST' in tables.keys() and not 'depotLocalUrl' in tables['HOST']:
+	if 'HOST' in tables.keys() and 'depotLocalUrl' not in tables['HOST']:
 		logger.notice(u"Updating database table HOST from opsi 3.4 to 4.0")
 		# HOST
 		logger.notice(u"Updating table HOST")
@@ -232,7 +232,7 @@ def updateMySQLBackend(backendConfigFile=u'/etc/opsi/backends/mysql.conf',
 		mysql.execute(u"insert into LICENSE_ON_CLIENT (`softwareLicenseId`, `licensePoolId`, `clientId`, `licenseKey`, `notes`) select `softwareLicenseId`, `licensePoolId`, `hostId`, `licenseKey`, `notes` from LICENSE_USED_BY_HOST where `softwareLicenseId` != ''")
 		mysql.execute(u"drop table LICENSE_USED_BY_HOST")
 
-	if 'SOFTWARE' in tables.keys() and not 'name' in tables['SOFTWARE']:
+	if 'SOFTWARE' in tables.keys() and 'name' not in tables['SOFTWARE']:
 		logger.notice(u"Updating database table SOFTWARE from opsi 3.4 to 4.0")
 		# SOFTWARE
 		logger.notice(u"Updating table SOFTWARE")
@@ -287,7 +287,7 @@ def updateMySQLBackend(backendConfigFile=u'/etc/opsi/backends/mysql.conf',
 		mysql.execute(u"alter table SOFTWARE add INDEX( `windowsSoftwareId` );")
 		mysql.execute(u"alter table SOFTWARE add INDEX( `type` );")
 
-	if 'SOFTWARE_CONFIG' in tables.keys() and not 'clientId' in tables['SOFTWARE_CONFIG']:
+	if 'SOFTWARE_CONFIG' in tables.keys() and 'clientId' not in tables['SOFTWARE_CONFIG']:
 		logger.notice(u"Updating database table SOFTWARE_CONFIG from opsi 3.4 to 4.0")
 		# SOFTWARE_CONFIG
 		logger.notice(u"Updating table SOFTWARE_CONFIG")
@@ -316,7 +316,7 @@ def updateMySQLBackend(backendConfigFile=u'/etc/opsi/backends/mysql.conf',
 		mysql.execute(u"delete from SOFTWARE_CONFIG where `name` = '';")
 		mysql.execute(u"alter table SOFTWARE_CONFIG drop `softwareId`;")
 
-	if 'LICENSE_CONTRACT' in tables.keys() and not 'type' in tables['LICENSE_CONTRACT']:
+	if 'LICENSE_CONTRACT' in tables.keys() and 'type' not in tables['LICENSE_CONTRACT']:
 		logger.notice(u"Updating database table LICENSE_CONTRACT from opsi 3.4 to 4.0")
 		# LICENSE_CONTRACT
 		mysql.execute(u"alter table LICENSE_CONTRACT add `type` varchar(30) NOT NULL;")
@@ -328,7 +328,7 @@ def updateMySQLBackend(backendConfigFile=u'/etc/opsi/backends/mysql.conf',
 
 		mysql.execute(u"alter table LICENSE_CONTRACT add INDEX( `type` );")
 
-	if 'SOFTWARE_LICENSE' in tables.keys() and not 'type' in tables['SOFTWARE_LICENSE']:
+	if 'SOFTWARE_LICENSE' in tables.keys() and 'type' not in tables['SOFTWARE_LICENSE']:
 		logger.notice(u"Updating database table SOFTWARE_LICENSE from opsi 3.4 to 4.0")
 		# SOFTWARE_LICENSE
 		mysql.execute(u"alter table SOFTWARE_LICENSE add `type` varchar(30) NOT NULL;")
@@ -343,7 +343,7 @@ def updateMySQLBackend(backendConfigFile=u'/etc/opsi/backends/mysql.conf',
 		mysql.execute(u"alter table SOFTWARE_LICENSE add INDEX( `type` );")
 		mysql.execute(u"alter table SOFTWARE_LICENSE add INDEX( `boundToHost` );")
 
-	if 'LICENSE_POOL' in tables.keys() and not 'type' in tables['LICENSE_POOL']:
+	if 'LICENSE_POOL' in tables.keys() and 'type' not in tables['LICENSE_POOL']:
 		logger.notice(u"Updating database table LICENSE_POOL from opsi 3.4 to 4.0")
 		# LICENSE_POOL
 		mysql.execute(u"alter table LICENSE_POOL add `type` varchar(30) NOT NULL;")
