@@ -589,19 +589,24 @@ class ArgsDecoratorTestCase(unittest.TestCase):
 		self.assertEquals(None, someObj._someOtherArg, "Expected someOtherArg to be None, but got %s instead" % someObj._someOtherArg)
 
 
-class ForceFqdnTestCase(unittest.TestCase):
-	def testTrailingDotIsRemoved(self):
-		self.assertEqual('abc.example.local', forceFqdn('abc.example.local.'))
 
-	def testFqdnContainsHostnameRootZoneAndTopLevelDomain(self):
-		self.assertRaises(ValueError, forceFqdn, 'hostname.tld')
+def testForceFqdnRemovesTrailingDot():
+	assert 'abc.example.local' == forceFqdn('abc.example.local.')
 
-		forceFqdn('hostname.rootzone.tld')
 
-	def testForcingMakesLowercase(self):
-		self.assertEquals('bla.domain.invalid', forceFqdn('BLA.domain.invalid'))
-		self.assertEquals('bla.domain.invalid', forceFqdn('bla.doMAIN.invalid'))
-		self.assertEquals('bla.domain.invalid', forceFqdn('bla.domain.iNVAlid'))
+def testForceFqdnRequiresHostnameRootZoneAndTopLevelDomain():
+	with pytest.raises(ValueError):
+		forceFqdn('hostname.tld')
+
+	forceFqdn('hostname.rootzone.tld')
+
+
+@pytest.mark.parametrize("domain", [
+	'BLA.domain.invalid',
+	'bla.doMAIN.invalid',
+	'bla.domain.iNVAlid'])
+def testForceFqdnAlwaysReturnsLowercase(domain):
+	assert 'bla.domain.invalid' == forceFqdn(domain)
 
 
 @pytest.mark.parametrize("input", ['asdf', None])
