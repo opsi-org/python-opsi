@@ -29,107 +29,87 @@ that were written for opsi 3.
 :license: GNU Affero General Public License version 3
 """
 
-from __future__ import absolute_import
-
-from OPSI.Object import (OpsiClient, LocalbootProduct, ProductOnClient,
-                         OpsiDepotserver, ProductOnDepot, UnicodeConfig,
-                         ConfigState)
-from OPSI.Types import BackendMissingDataError
-from .Backends.File import FileBackendBackendManagerMixin
-from .helpers import unittest
-
 import pytest
 
-class LegacyFunctionsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
-    "Testing the legacy / simple functins."
 
-    def setUp(self):
-        self.setUpBackend()
-
-    def tearDown(self):
-        self.tearDownBackend()
-
-    def testGetGeneralConfigValueFailsWithInvalidObjectId(self):
-        self.assertRaises(ValueError, self.backend.getGeneralConfig_hash, 'foo')
-
-    def testGetGeneralConfig(self):
-        """
-        Calling the function with some valid FQDN must not fail.
-        """
-        self.backend.getGeneralConfig_hash('some.client.fqdn')
-
-    def testSetGeneralConfigValue(self):
-        # required by File-backend
-        self.backend.host_createOpsiClient('some.client.fqdn')
-
-        self.backend.setGeneralConfigValue('foo', 'bar', 'some.client.fqdn')
-
-        self.assertEquals(
-            'bar',
-            self.backend.getGeneralConfigValue('foo', 'some.client.fqdn')
-        )
-
-    def testGetDomainShouldWork(self):
-        self.assertNotEqual('', self.backend.getDomain())
+def testGetGeneralConfigValueFailsWithInvalidObjectId(backendManager):
+    with pytest.raises(ValueError):
+        backendManager.getGeneralConfig_hash('foo')
 
 
-class LegacyConfigStateAccessTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
+def testGetGeneralConfig(backendManager):
     """
-    Testing legacy access to ConfigStates.
+    Calling the function with some valid FQDN must not fail.
     """
+    values = backendManager.getGeneralConfig_hash('some.client.fqdn')
+    print(values)
 
-    def setUp(self):
-        self.setUpBackend()
 
-    def tearDown(self):
-        self.tearDownBackend()
+def testSetGeneralConfigValue(backendManager):
+    backendManager.host_createOpsiClient('some.client.fqdn')  # required by File-backend
+    backendManager.setGeneralConfigValue('foo', 'bar', 'some.client.fqdn')
 
-    def testNoConfigReturnsNoValue(self):
-        self.assertEquals(None, self.backend.getGeneralConfigValue(None))
-        self.assertEquals(None, self.backend.getGeneralConfigValue(""))
+    assert 'bar' == backendManager.getGeneralConfigValue('foo', 'some.client.fqdn')
 
-    def testEmptyAfterStart(self):
-        self.assertEquals({}, self.backend.getGeneralConfig_hash())
 
-    def testUnabledToHandleNonTextValues(self):
-        function = self.backend.setGeneralConfig
-        self.assertRaises(Exception, function, {"test": True})
-        self.assertRaises(Exception, function, {"test": 1})
-        self.assertRaises(Exception, function, {"test": None})
+def testGetDomainShouldWork(backendManager):
+    assert backendManager.getDomain()
 
-    def testSetGeneralConfigValue(self):
-        config = {"test.truth": "True", "test.int": "2"}
-        self.backend.setGeneralConfig(config)
 
-        for key, value in config.items():
-            self.assertEquals(value, self.backend.getGeneralConfigValue(key))
+@pytest.mark.parametrize("value", [None, ""])
+def testGetGeneralConfigValueWithoutConfigReturnsNoValue(backendManager, value):
+    assert backendManager.getGeneralConfigValue(value) is None
 
-        self.assertNotEquals({}, self.backend.getGeneralConfig_hash())
-        self.assertEquals(2, len(self.backend.getGeneralConfig_hash()))
 
-    def testSetGeneralConfigValueTypeConversion(self):
-        trueValues = set(['yes', 'on', '1', 'true'])
-        falseValues = set(['no', 'off', '0', 'false'])
+def testGetGeneralConfigIsEmptyAfterStart(backendManager):
+    assert {} == backendManager.getGeneralConfig_hash()
 
-        for value in trueValues:
-            self.backend.setGeneralConfig({"bool": value})
-            self.assertEquals("True", self.backend.getGeneralConfigValue("bool"))
 
-        for value in falseValues:
-            self.backend.setGeneralConfig({"bool": value})
-            self.assertEquals("False", self.backend.getGeneralConfigValue("bool"))
+@pytest.mark.parametrize("value", [
+    {"test": True},
+    {"test": 1},
+    {"test": None}
+])
+def testSetGeneralConfigIsUnabledToHandleNonTextValues(backendManager, value):
+    with pytest.raises(Exception):
+        backendManager.setGeneralConfig(value)
 
-        self.backend.setGeneralConfig({"bool": "noconversion"})
-        self.assertEquals("noconversion", self.backend.getGeneralConfigValue("bool"))
 
-    def testRemovingMissingValue(self):
-        config = {"test.truth": "True", "test.int": "2"}
-        self.backend.setGeneralConfig(config)
-        self.assertEquals(2, len(self.backend.getGeneralConfig_hash()))
+def testSetGeneralConfigValueAndReadValues(backendManager):
+    config = {"test.truth": "True", "test.int": "2"}
+    backendManager.setGeneralConfig(config)
 
-        del config["test.int"]
-        self.backend.setGeneralConfig(config)
-        self.assertEquals(1, len(self.backend.getGeneralConfig_hash()))
+    for key, value in config.items():
+        assert value == backendManager.getGeneralConfigValue(key)
+
+    assert {} != backendManager.getGeneralConfig_hash()
+    assert 2 == len(backendManager.getGeneralConfig_hash())
+
+
+def testSetGeneralConfigValueTypeConversion(backendManager):
+    trueValues = set(['yes', 'on', '1', 'true'])
+    falseValues = set(['no', 'off', '0', 'false'])
+
+    for value in trueValues:
+        backendManager.setGeneralConfig({"bool": value})
+        assert "True" == backendManager.getGeneralConfigValue("bool")
+
+    for value in falseValues:
+        backendManager.setGeneralConfig({"bool": value})
+        assert "False" == backendManager.getGeneralConfigValue("bool")
+
+    backendManager.setGeneralConfig({"bool": "noconversion"})
+    assert "noconversion" == backendManager.getGeneralConfigValue("bool")
+
+
+def testSetGeneralConfigIsAbleToRemovingMissingValue(backendManager):
+    config = {"test.truth": "True", "test.int": "2"}
+    backendManager.setGeneralConfig(config)
+    assert 2 == len(backendManager.getGeneralConfig_hash())
+
+    del config["test.int"]
+    backendManager.setGeneralConfig(config)
+    assert 1 == len(backendManager.getGeneralConfig_hash())
 
 
 def testMassFilling(backendManager):
