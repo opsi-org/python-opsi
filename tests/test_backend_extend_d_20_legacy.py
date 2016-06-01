@@ -86,20 +86,20 @@ def testSetGeneralConfigValueAndReadValues(backendManager):
     assert 2 == len(backendManager.getGeneralConfig_hash())
 
 
-def testSetGeneralConfigValueTypeConversion(backendManager):
-    trueValues = set(['yes', 'on', '1', 'true'])
-    falseValues = set(['no', 'off', '0', 'false'])
-
-    for value in trueValues:
-        backendManager.setGeneralConfig({"bool": value})
-        assert "True" == backendManager.getGeneralConfigValue("bool")
-
-    for value in falseValues:
-        backendManager.setGeneralConfig({"bool": value})
-        assert "False" == backendManager.getGeneralConfigValue("bool")
-
-    backendManager.setGeneralConfig({"bool": "noconversion"})
-    assert "noconversion" == backendManager.getGeneralConfigValue("bool")
+@pytest.mark.parametrize("value, expected", [
+    ('yes', "True"),
+    ('on', "True"),
+    ('1', "True"),
+    ('true', "True"),
+    ('no', "False"),
+    ('off', "False"),
+    ('0', "False"),
+    ('false', "False"),
+    ("noconversion", "noconversion")
+])
+def testSetGeneralConfigValueTypeConversion(backendManager, value, expected):
+    backendManager.setGeneralConfig({"bool": value})
+    assert expected == backendManager.getGeneralConfigValue("bool")
 
 
 def testSetGeneralConfigIsAbleToRemovingMissingValue(backendManager):
