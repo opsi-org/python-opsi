@@ -176,6 +176,23 @@ def createRequiredTables(database):
         PRIMARY KEY (`name`, `clientId`)
     ) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci """)
 
+    database.execute(u'''CREATE TABLE `SOFTWARE_LICENSE_TO_LICENSE_POOL` (
+        `softwareLicenseId` VARCHAR(100) NOT NULL,
+        `licensePoolId` VARCHAR(100) NOT NULL,
+        `licenseKey` VARCHAR(1024),
+        PRIMARY KEY (`softwareLicenseId`, `licensePoolId`),
+        FOREIGN KEY (`softwareLicenseId`) REFERENCES `SOFTWARE_LICENSE` (`softwareLicenseId`),
+        FOREIGN KEY (`licensePoolId`) REFERENCES `LICENSE_POOL` (`licensePoolId`)
+    ) %s;''' % database.getTableCreationOptions('SOFTWARE_LICENSE_TO_LICENSE_POOL'))
+
+    database.execute("""CREATE TABLE `LICENSE_USED_BY_HOST` (
+        `softwareLicenseId` VARCHAR(100) NOT NULL,
+        `licensePoolId` VARCHAR(100) NOT NULL,
+        `hostId` varchar(255),
+        `licenseKey` VARCHAR(100),
+        `notes` VARCHAR(1024)
+    ) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci """)
+
 
 def getTableNames(database):
     return set(i.values()[0] for i in database.getSet(u'SHOW TABLES;'))
