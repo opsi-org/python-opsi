@@ -32,6 +32,7 @@ from contextlib import contextmanager
 
 from OPSI.Util.Thread import ThreadPoolException, ThreadPool, getGlobalThreadPool, KillableThread
 
+import pytest
 
 class ThreadPoolTestCase(unittest.TestCase):
     POOL_SIZE = 10
@@ -240,6 +241,8 @@ class ThreadPoolTestCase(unittest.TestCase):
 
 
 class KillableThreadTestCase(unittest.TestCase):
+
+    @pytest.mark.xfail(strict=False)  # This test is not stable.
     def test_terminating_running_thread(self):
         """
         It must be possible to interrupt running threads even though
