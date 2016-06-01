@@ -182,6 +182,6 @@ def getTableNames(database):
 
 
 def getTableColumns(database, tableName):
-    tablecolumn = namedtuple("column", ["name", "type"])
-    return [tablecolumn(column['Field'], column['Type']) for column
+    TableColumn = namedtuple("TableColumn", ["name", "type"])
+    return [TableColumn(column['Field'], column['Type']) for column
             in database.getSet(u'SHOW COLUMNS FROM `{0}`;'.format(tableName))]
