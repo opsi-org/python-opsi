@@ -490,7 +490,17 @@ def updateMySQLBackend(backendConfigFile=u'/etc/opsi/backends/mysql.conf',
 			logger.notice(u"Fixing length of 'hostId' column on {table}".format(table=tablename))
 			mysql.execute(u"ALTER TABLE `{table}` MODIFY COLUMN `hostId` VARCHAR(255) NOT NULL;".format(table=tablename))
 
-	for column in getTableColumns(mysql, 'LICENSE_ON_CLIENT'):
+	_fixLengthOfLicenseKeys(mysql)
+
+	mysqlBackend = MySQLBackend(**config)
+	mysqlBackend.backend_createBase()
+	mysqlBackend.backend_exit()
+
+
+def _fixLengthOfLicenseKeys(database):
+	"Correct the length of license key columns to be consistent."
+
+	for column in getTableColumns(database, 'LICENSE_ON_CLIENT'):
 		if column.name == 'licenseKey':
 			assert column.type.lower().startswith('varchar(')
 
@@ -498,11 +508,7 @@ def updateMySQLBackend(backendConfigFile=u'/etc/opsi/backends/mysql.conf',
 			length = int(length[:-1])
 
 			if length != 1024:
-				mysql.execute(u"ALTER TABLE `LICENSE_ON_CLIENT` MODIFY COLUMN `licenseKey` VARCHAR(1024);".format(table=tablename))
-
-	mysqlBackend = MySQLBackend(**config)
-	mysqlBackend.backend_createBase()
-	mysqlBackend.backend_exit()
+				database.execute(u"ALTER TABLE `LICENSE_ON_CLIENT` MODIFY COLUMN `licenseKey` VARCHAR(1024);")
 
 
 def getTableColumns(database, tableName):
