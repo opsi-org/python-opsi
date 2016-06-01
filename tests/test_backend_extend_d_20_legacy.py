@@ -38,6 +38,7 @@ from OPSI.Types import BackendMissingDataError
 from .Backends.File import FileBackendBackendManagerMixin
 from .helpers import unittest
 
+import pytest
 
 class LegacyFunctionsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
     "Testing the legacy / simple functins."
@@ -130,23 +131,19 @@ class LegacyConfigStateAccessTestCase(unittest.TestCase, FileBackendBackendManag
         self.backend.setGeneralConfig(config)
         self.assertEquals(1, len(self.backend.getGeneralConfig_hash()))
 
-    def testMassFilling(self):
-        numberOfConfigs = 50  # len(config) will be double
 
-        config = {}
-        for value in range(numberOfConfigs):
-            config["bool.{0}".format(value)] = str(value % 2 == 0)
+def testMassFilling(backendManager):
+    numberOfConfigs = 50  # len(config) will be double
 
-        for value in range(numberOfConfigs):
-            config["normal.{0}".format(value)] = "norm-{0}".format(value)
+    config = {}
+    for value in range(numberOfConfigs):
+        config["bool.{0}".format(value)] = str(value % 2 == 0)
 
-        self.assertEquals(numberOfConfigs * 2, len(config))
+    for value in range(numberOfConfigs):
+        config["normal.{0}".format(value)] = "norm-{0}".format(value)
 
-        self.backend.setGeneralConfig(config)
+    assert numberOfConfigs * 2 == len(config)
 
-        configFromBackend = self.backend.getGeneralConfig_hash()
-        self.assertEquals(config, configFromBackend)
+    backendManager.setGeneralConfig(config)
 
-
-if __name__ == '__main__':
-    unittest.main()
+    assert config == backendManager.getGeneralConfig_hash()
