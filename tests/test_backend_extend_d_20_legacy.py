@@ -112,18 +112,24 @@ def testSetGeneralConfigIsAbleToRemovingMissingValue(backendManager):
     assert 1 == len(backendManager.getGeneralConfig_hash())
 
 
-def testMassFilling(backendManager):
+def generateLargeConfig(numberOfConfigs):
     numberOfConfigs = 50  # len(config) will be double
 
     config = {}
     for value in range(numberOfConfigs):
         config["bool.{0}".format(value)] = str(value % 2 == 0)
-
-    for value in range(numberOfConfigs):
         config["normal.{0}".format(value)] = "norm-{0}".format(value)
 
     assert numberOfConfigs * 2 == len(config)
 
+    return config
+
+
+@pytest.mark.parametrize("config",
+    [generateLargeConfig(50), generateLargeConfig(250)],
+    ids=['50', '250']
+)
+def testMassFilling(backendManager, config):
     backendManager.setGeneralConfig(config)
 
     assert config == backendManager.getGeneralConfig_hash()
