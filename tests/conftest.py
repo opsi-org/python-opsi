@@ -128,6 +128,24 @@ def backendManager(_serverBackend):
         )
 
 
+@pytest.yield_fixture
+def licenseManagementBackend(_sqlBackend):
+    '''Returns a backend that can handle License Management.'''
+    yield ExtendedConfigDataBackend(_sqlBackend)
+
+
+@pytest.yield_fixture(
+    params=[getSQLiteBackend, getMySQLBackend],
+    ids=['sqlite', 'mysql']
+)
+def _sqlBackend(request):
+    '''Backends that make use of SQL.'''
+
+    with request.param() as backend:
+        with _backendBase(backend):
+            yield backend
+
+
 def pytest_runtest_setup(item):
     envmarker = item.get_marker("requiresModulesFile")
     if envmarker is not None:
