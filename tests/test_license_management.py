@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-Testing working with licenses.
+Testing the license management functionality.
 
 :author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
@@ -57,6 +57,58 @@ def getLicenseContracts():
 	)
 
 	return licenseContract1, licenseContract2
+
+
+@pytest.mark.requiresModulesFile
+def testCreatingAndGettingLicenseOnClient(licenseManagementBackend):
+	originalLicenseOnClients, _, _, _, _, _, _ = createLicenseOnClients(licenseManagementBackend)
+
+	licenseOnClients = licenseManagementBackend.licenseOnClient_getObjects()
+	assert len(licenseOnClients) == len(originalLicenseOnClients)
+
+
+def createLicenseOnClients(backend):
+	(
+		softwareLicenseToLicensePools,
+		licensePools,
+		products,
+		softwareLicenses,
+		licenseContracts,
+		clients
+	) = createSoftwareLicenseToLicensePools(backend)
+
+	softwareLicenseToLicensePool1 = softwareLicenseToLicensePools[0]
+	client1 = clients[0]
+	client2 = clients[1]
+
+	licenseOnClient1 = LicenseOnClient(
+		softwareLicenseId=softwareLicenseToLicensePool1.getSoftwareLicenseId(),
+		licensePoolId=softwareLicenseToLicensePool1.getLicensePoolId(),
+		clientId=client1.getId(),
+		licenseKey=softwareLicenseToLicensePool1.getLicenseKey(),
+		notes=None
+	)
+
+	licenseOnClient2 = LicenseOnClient(
+		softwareLicenseId=softwareLicenseToLicensePool1.getSoftwareLicenseId(),
+		licensePoolId=softwareLicenseToLicensePool1.getLicensePoolId(),
+		clientId=client2.getId(),
+		licenseKey=softwareLicenseToLicensePool1.getLicenseKey(),
+		notes=u'Installed manually'
+	)
+	licenseOnClients = [licenseOnClient1, licenseOnClient2]
+
+	backend.licenseOnClient_createObjects(licenseOnClients)
+
+	return (
+		licenseOnClients,
+		softwareLicenseToLicensePools,
+		licensePools,
+		products,
+		softwareLicenses,
+		licenseContracts,
+		clients
+	)
 
 
 @pytest.mark.requiresModulesFile
