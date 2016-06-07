@@ -80,7 +80,7 @@ try:
 			if line.strip().startswith('max log size'):
 				_, logSize = line.strip().split('=', 1)
 				logSize = removeUnit(logSize.strip())
-				logger.debug("Setting max log size {0}".format(logSize))
+				logger.debug("Setting max log size {0}", logSize)
 				DEFAULT_MAX_LOGFILE_SIZE = logSize
 				break
 		else:
@@ -221,7 +221,7 @@ This defaults to ``self``.
 			try:
 				logger.debug(
 					u"Testing match of filter {0!r} of attribute {1!r} with "
-					u"value {2!r}".format(filter[attribute], attribute, value)
+					u"value {2!r}", filter[attribute], attribute, value
 				)
 				filterValues = forceUnicodeList(filter[attribute])
 				if forceUnicodeList(value) == filterValues or forceUnicode(value) in filterValues:
@@ -269,8 +269,8 @@ This defaults to ``self``.
 
 				if matched:
 					logger.debug(
-						u"Value {0!r} matched filter {1!r}, attribute "
-						u"{2!r}".format(value, filter[attribute], attribute)
+						u"Value {0!r} matched filter {1!r}, attribute {2!r}",
+						value, filter[attribute], attribute
 					)
 				else:
 					# No match, we can stop further checks.
@@ -335,7 +335,7 @@ This defaults to ``self``.
 					stars = '*' * index
 					params.extend(['{0}{1}'.format(stars, arg) for arg in forceList(element)])
 
-			logger.debug2(u"{0} interface method: name '{1}', params {2}".format(self.__class__.__name__, methodName, params))
+			logger.debug2(u"{0} interface method: name {1!r}, params {2}", self.__class__.__name__, methodName, params)
 			methods[methodName] = {
 				'name': methodName,
 				'params': params,
@@ -462,7 +462,7 @@ class ExtendedBackend(Backend):
 				# Not a public method
 				continue
 
-			logger.debug2(u"Found public %s method '%s'" % (self._backend.__class__.__name__, methodName))
+			logger.debug2(u"Found public {0} method {1!r}", self._backend.__class__.__name__, methodName)
 			if hasattr(self, methodName):
 				if self._overwrite:
 					logger.debug(u"%s: overwriting method %s of backend instance %s" % (self.__class__.__name__, methodName, self._backend))
@@ -476,7 +476,7 @@ class ExtendedBackend(Backend):
 			setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
 
 	def _executeMethod(self, methodName, **kwargs):
-		logger.debug(u"ExtendedBackend {0!r}: executing {1!r} on backend {2!r}".format(self, methodName, self._backend))
+		logger.debug(u"ExtendedBackend {0!r}: executing {1!r} on backend {2!r}", self, methodName, self._backend)
 		meth = getattr(self._backend, methodName)
 		return meth(**kwargs)
 
@@ -1651,9 +1651,9 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		try:
 			parsedFilter = ldapfilter.parseFilter(filter)
 		except Exception as e:
-			logger.debug(u"Failed to parse filter '{0}': {1}".format(filter, e))
+			logger.debug(u"Failed to parse filter {0!r}: {1}", filter, e)
 			raise BackendBadValueError(u"Failed to parse filter '%s'" % filter)
-		logger.debug(u"Parsed search filter: %s" % repr(parsedFilter))
+		logger.debug(u"Parsed search filter: {0!r}", parsedFilter)
 
 
 		def combineResults(result1, result2, operator):
@@ -1674,11 +1674,11 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 							break
 
 			if result1IdentIndex == -1:
-				logger.debug(u"No matching identAttributes found (%s, %s)" % (result1['identAttributes'], result2['identAttributes']))
+				logger.debug(u"No matching identAttributes found ({0}, {1})", result1['identAttributes'], result2['identAttributes'])
 
 			if result1IdentIndex == -1:
 				if 'id' in result1['identAttributes'] and result1['foreignIdAttributes']:
-					logger.debug(u"Trying foreignIdAttributes of result1: %s" % result1['foreignIdAttributes'])
+					logger.debug(u"Trying foreignIdAttributes of result1: {0}", result1['foreignIdAttributes'])
 					for attr in result1['foreignIdAttributes']:
 						for i, identAttr in enumerate(result2['identAttributes']):
 							logger.debug2("%s == %s" % (attr, identAttr))
@@ -1693,7 +1693,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 
 			if result1IdentIndex == -1:
 				if 'id' in result2['identAttributes'] and result2['foreignIdAttributes']:
-					logger.debug(u"Trying foreignIdAttributes of result2: %s" % result2['foreignIdAttributes'])
+					logger.debug(u"Trying foreignIdAttributes of result2: {0}", result2['foreignIdAttributes'])
 					for attr in result2['foreignIdAttributes']:
 						for i, identAttr in enumerate(result1['identAttributes']):
 							logger.debug2("%s == %s" % (attr, identAttr))
@@ -1759,7 +1759,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			objectFilter = {}
 			result = None
 
-			logger.debug(u"Level %s, processing: %s" % (level, repr(f)))
+			logger.debug(u"Level {0}, processing: {1!r}", level, f)
 
 			if isinstance(f, pureldap.LDAPFilter_equalityMatch):
 				logger.debug(u"Handle equality attribute '%s', value '%s'" % (f.attributeDesc.value, f.assertionValue.value))
@@ -1861,7 +1861,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 							result = combineResults(result, res, operator)
 						else:
 							result = res
-						logger.debug("Result: %s" % result)
+						logger.debug("Result: {0}", result)
 					except Exception as e:
 						logger.logException(e)
 						raise BackendBadValueError(u"Failed to process search filter '%s': %s" % (repr(f), e))
@@ -2349,7 +2349,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		clientIds = self.host_getIdents(id=filter.get('objectId'), returnType='unicode')
 		# Create missing config states
 		for config in self._backend.config_getObjects(id=filter.get('configId')):
-			logger.debug(u"Default values for '%s': %s" % (config.id, config.defaultValues))
+			logger.debug(u"Default values for {0!r}: {1}", config.id, config.defaultValues)
 			for clientId in clientIds:
 				if config.id not in css.get(clientId, []):
 					# Config state does not exist for client => create default
@@ -2385,7 +2385,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 	def configState_insertObject(self, configState):
 		if self._options['deleteConfigStateIfDefault'] and self._configStateMatchesDefault(configState):
 			# Do not insert configStates which match the default
-			logger.debug(u"Not inserting configState '%s', because it does not differ from defaults" % configState)
+			logger.debug(u"Not inserting configState {0!r}, because it does not differ from defaults", configState)
 			return
 		self._configState_checkValid(configState)
 		self._backend.configState_insertObject(configState)
@@ -2393,7 +2393,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 	def configState_updateObject(self, configState):
 		if self._options['deleteConfigStateIfDefault'] and self._configStateMatchesDefault(configState):
 			# Do not update configStates which match the default
-			logger.debug(u"Deleting configState '%s', because it does not differ from defaults" % configState)
+			logger.debug(u"Deleting configState {0!r}, because it does not differ from defaults", configState)
 			return self._backend.configState_deleteObjects(configState)
 		self._configState_checkValid(configState)
 		self._backend.configState_updateObject(configState)
@@ -2476,7 +2476,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		result = []
 		addConfigStateDefaults = self.backend_getOptions().get('addConfigStateDefaults', False)
 		try:
-			logger.debug(u"Calling backend_setOptions on %s" % self)
+			logger.debug(u"Calling backend_setOptions on {0}", self)
 			self.backend_setOptions({'addConfigStateDefaults': True})
 			for configState in self.configState_getObjects(configId=u'clientconfig.depot.id', objectId=clientIds):
 				if not configState.values or not configState.values[0]:
