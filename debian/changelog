@@ -1,3 +1,9 @@
+python-opsi (4.0.6.50-1) experimental; urgency=medium
+
+  * Improved logging during HTTP Connection.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 07 Jun 2016 10:47:44 +0200
+
 python-opsi (4.0.6.49-1) stable; urgency=medium
 
   * OPSI.Util.Task.Samba: removed oplocks from opsi_depot share
