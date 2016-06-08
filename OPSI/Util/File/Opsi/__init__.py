@@ -6,7 +6,7 @@ opsi python library - File.Opsi
 This module is part of the desktop management solution opsi
 (open pc server integration) http://www.opsi.org
 
-Copyright (C) 2006-2015 uib GmbH
+Copyright (C) 2006-2016 uib GmbH
 
 http://www.uib.de/
 
@@ -70,7 +70,7 @@ from OPSI.Types import (BackendBadValueError, OpsiBackupBackendNotFound,
 from OPSI.Util.File import ConfigFile, IniFile, TextFile, requiresParsing
 from OPSI.Util import md5sum, toJson, fromJson
 
-__version__ = '4.0.6.39'
+__version__ = '4.0.7.1'
 
 logger = Logger()
 
@@ -179,8 +179,7 @@ class BackendACLFile(ConfigFile):
 					aclTypeParam = u''
 					aclTypeParamValues = [u'']
 					inAclTypeParamValues = False
-					for i in range(len(aclTypeParams)):
-						c = aclTypeParams[i]
+					for i, c in enumerate(aclTypeParams):
 						if c == '(':
 							if inAclTypeParamValues:
 								raise Exception(u"Bad formatted acl type params '%s'" % aclTypeParams)
@@ -309,25 +308,31 @@ class PackageContentFile(TextFile):
 		for line in self._lines:
 			(type, tmp) = line.strip().split(None, 1)
 			filename = u''
-			for i in range(len(tmp)):
-				if tmp[i] == u"'":
+
+			for i, currentElement in enumerate(tmp):
+				if currentElement == u"'":
 					if i > 0:
-						if tmp[i-1] == u'\\':
+						if tmp[i - 1] == u'\\':
 							filename = filename[:-1] + u"'"
 							continue
 						else:
 							break
 					else:
 						continue
-				filename += tmp[i]
-			(size, target, md5) = (0, u'', '')
-			tmp = tmp[i+2:]
+				filename += currentElement
+
+			size = 0
+			target = u''
+			md5 = ''
+
+			tmp = tmp[i + 2:]
 			if u' ' in tmp:
 				parts = tmp.split(None, 1)
 				tmp = u''
 				size = parts[0]
 				if len(parts) > 1:
 					tmp = parts[1]
+
 			if type == 'f':
 				md5 = tmp
 			elif type == 'l':
@@ -412,10 +417,7 @@ class PackageControlFile(TextFile):
 
 		sectionType = None
 		option = None
-		lineNum = 0
-		for line in self._lines:
-			lineNum += 1
-
+		for lineNum, line in enumerate(self._lines, start=1):
 			if line and line.startswith((';', '#')):
 				# Comment
 				continue
@@ -569,8 +571,9 @@ class PackageControlFile(TextFile):
 		for (sectionType, secs) in self._sections.items():
 			if sectionType == 'changelog':
 				continue
-			for i in range(len(secs)):
-				for (option, value) in secs[i].items():
+
+			for i, currentSection in enumerate(secs):
+				for (option, value) in currentSection.items():
 					if (sectionType == 'product' and option == 'productclasses') or \
 					   (sectionType == 'package' and option == 'depends') or \
 					   (sectionType == 'productproperty' and option == 'default') or \

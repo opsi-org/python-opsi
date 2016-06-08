@@ -327,8 +327,6 @@ def testLogTracebackCanFail():
 def testLoggerDoesFormattingIfMessageWillGetLogged(loglevel, function_name):
 	with showLogs(logLevel=loglevel) as logger:
 		with catchMessages() as messageBuffer:
-			logger.confidential('This should not be shown')
-
 			logFunc = getattr(logger, function_name)
 			logFunc('Backwards compatible text without formatting.')
 			logFunc('This {0:.1f} must be shown {1}: {a}{b:>7}', 1, 'here', a='many', b='kwargs')
@@ -336,7 +334,4 @@ def testLoggerDoesFormattingIfMessageWillGetLogged(loglevel, function_name):
 	messages = messageBuffer.getvalue()
 
 	print("Messages: {0!r}".format(messages))
-	assert messages
-	if function_name != 'confidential':
-		assert 'This should not be shown' not in messages
 	assert 'This 1.0 must be shown here: many kwargs' in messages

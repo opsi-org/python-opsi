@@ -4,7 +4,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2013-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -65,7 +65,7 @@ from OPSI.Util import (blowfishEncrypt, blowfishDecrypt, compareVersions,
 from OPSI.Util.File import ConfigFile
 import OPSI.SharedAlgorithm
 
-__version__ = '4.0.6.41'
+__version__ = '4.0.7.1'
 
 logger = Logger()
 OPSI_VERSION_FILE = u'/etc/opsi/version'
@@ -80,7 +80,7 @@ try:
 			if line.strip().startswith('max log size'):
 				_, logSize = line.strip().split('=', 1)
 				logSize = removeUnit(logSize.strip())
-				logger.debug("Setting max log size {0}".format(logSize))
+				logger.debug("Setting max log size {0}", logSize)
 				DEFAULT_MAX_LOGFILE_SIZE = logSize
 				break
 		else:
@@ -213,15 +213,15 @@ This defaults to ``self``.
 
 		:returntype: bool
 		"""
-		matchedAll = True
-		for (attribute, value) in objHash.items():
+		for attribute, value in objHash.iteritems():
 			if not filter.get(attribute):
 				continue
 			matched = False
+
 			try:
 				logger.debug(
 					u"Testing match of filter {0!r} of attribute {1!r} with "
-					u"value {2!r}".format(filter[attribute], attribute, value)
+					u"value {2!r}", filter[attribute], attribute, value
 				)
 				filterValues = forceUnicodeList(filter[attribute])
 				if forceUnicodeList(value) == filterValues or forceUnicode(value) in filterValues:
@@ -253,8 +253,6 @@ This defaults to ``self``.
 							if match:
 								operator = match.group(1)  # pylint: disable=maybe-no-member
 								v = match.group(2)  # pylint: disable=maybe-no-member
-								if operator == '=':
-									operator = '=='
 
 							try:
 								matched = compareVersions(value, operator, v)
@@ -271,12 +269,12 @@ This defaults to ``self``.
 
 				if matched:
 					logger.debug(
-						u"Value '{0}' matched filter '{1}', attribute "
-						u"'{2}'".format(value, filter[attribute], attribute)
+						u"Value {0!r} matched filter {1!r}, attribute {2!r}",
+						value, filter[attribute], attribute
 					)
 				else:
-					matchedAll = False
-					break
+					# No match, we can stop further checks.
+					return False
 			except Exception as err:
 				raise Exception(
 					u"Testing match of filter {0!r} of attribute {1!r} with "
@@ -285,7 +283,7 @@ This defaults to ``self``.
 					)
 				)
 
-		return matchedAll
+		return True
 
 	def backend_setOptions(self, options):
 		"""
@@ -337,7 +335,7 @@ This defaults to ``self``.
 					stars = '*' * index
 					params.extend(['{0}{1}'.format(stars, arg) for arg in forceList(element)])
 
-			logger.debug2(u"{0} interface method: name '{1}', params {2}".format(self.__class__.__name__, methodName, params))
+			logger.debug2(u"{0} interface method: name {1!r}, params {2}", self.__class__.__name__, methodName, params)
 			methods[methodName] = {
 				'name': methodName,
 				'params': params,
@@ -464,7 +462,7 @@ class ExtendedBackend(Backend):
 				# Not a public method
 				continue
 
-			logger.debug2(u"Found public %s method '%s'" % (self._backend.__class__.__name__, methodName))
+			logger.debug2(u"Found public {0} method {1!r}", self._backend.__class__.__name__, methodName)
 			if hasattr(self, methodName):
 				if self._overwrite:
 					logger.debug(u"%s: overwriting method %s of backend instance %s" % (self.__class__.__name__, methodName, self._backend))
@@ -478,7 +476,7 @@ class ExtendedBackend(Backend):
 			setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
 
 	def _executeMethod(self, methodName, **kwargs):
-		logger.debug(u"ExtendedBackend {0!r}: executing {1!r} on backend {2!r}".format(self, methodName, self._backend))
+		logger.debug(u"ExtendedBackend {0!r}: executing {1!r} on backend {2!r}", self, methodName, self._backend)
 		meth = getattr(self._backend, methodName)
 		return meth(**kwargs)
 
@@ -563,9 +561,13 @@ containing the localisation of the hardware audit.
 
 	def _testFilterAndAttributes(self, Class, attributes, **filter):
 		if not attributes:
+			if not filter:
+				return
+
 			attributes = []
 
 		possibleAttributes = getPossibleClassAttributes(Class)
+
 		for attribute in forceUnicodeList(attributes):
 			if attribute not in possibleAttributes:
 				raise BackendBadValueError("Class {0!r} has no attribute '{1}'".format(Class, attribute))
@@ -1506,9 +1508,9 @@ depot where the method is.
 						newValues = []
 						for newValue in clcopy['Values']:
 							foundAt = -1
-							for i in xrange(len(c['Values'])):
-								if c['Values'][i]['Opsi'] == newValue['Opsi']:
-									if not c['Values'][i].get('UI'):
+							for i, currentValue in enumerate(c['Values']):
+								if currentValue['Opsi'] == newValue['Opsi']:
+									if not currentValue.get('UI'):
 										c['Values'][i]['UI'] = newValue.get('UI', '')
 									foundAt = i
 									break
@@ -1526,17 +1528,17 @@ depot where the method is.
 		classes = []
 		try:
 			execfile(self._auditHardwareConfigFile)
-			for i in xrange(len(OPSI_HARDWARE_CLASSES)):
-				opsiClass = OPSI_HARDWARE_CLASSES[i]['Class']['Opsi']
-				if OPSI_HARDWARE_CLASSES[i]['Class']['Type'] == 'STRUCTURAL':
+			for i, currentClassConfig in enumerate(OPSI_HARDWARE_CLASSES):
+				opsiClass = currentClassConfig['Class']['Opsi']
+				if currentClassConfig['Class']['Type'] == 'STRUCTURAL':
 					if locale.get(opsiClass):
 						OPSI_HARDWARE_CLASSES[i]['Class']['UI'] = locale[opsiClass]
 					else:
 						logger.error(u"No translation for class '%s' found" % opsiClass)
 						OPSI_HARDWARE_CLASSES[i]['Class']['UI'] = opsiClass
 
-				for j in xrange(len(OPSI_HARDWARE_CLASSES[i]['Values'])):
-					opsiProperty = OPSI_HARDWARE_CLASSES[i]['Values'][j]['Opsi']
+				for j, currentValue in enumerate(currentClassConfig['Values']):
+					opsiProperty = currentValue['Opsi']
 					if locale.get(opsiClass + '.' + opsiProperty):
 						OPSI_HARDWARE_CLASSES[i]['Values'][j]['UI'] = locale[opsiClass + '.' + opsiProperty]
 
@@ -1551,10 +1553,10 @@ depot where the method is.
 						del ccopy['Class']['Type']
 
 						# Fill up empty display names
-						for j in xrange(len(ccopy.get('Values', []))):
-							if not ccopy['Values'][j].get('UI'):
-								logger.warning("No translation for property '%s.%s' found" % (ccopy['Class']['Opsi'], ccopy['Values'][j]['Opsi']))
-								ccopy['Values'][j]['UI'] = ccopy['Values'][j]['Opsi']
+						for j, currentValue in enumerate(ccopy.get('Values', [])):
+							if not currentValue.get('UI'):
+								logger.warning("No translation for property '%s.%s' found" % (ccopy['Class']['Opsi'], currentValue['Opsi']))
+								ccopy['Values'][j]['UI'] = currentValue['Opsi']
 
 						classes.append(ccopy)
 				except Exception as e:
@@ -1649,9 +1651,9 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		try:
 			parsedFilter = ldapfilter.parseFilter(filter)
 		except Exception as e:
-			logger.debug(u"Failed to parse filter '{0}': {1}".format(filter, e))
+			logger.debug(u"Failed to parse filter {0!r}: {1}", filter, e)
 			raise BackendBadValueError(u"Failed to parse filter '%s'" % filter)
-		logger.debug(u"Parsed search filter: %s" % repr(parsedFilter))
+		logger.debug(u"Parsed search filter: {0!r}", parsedFilter)
 
 
 		def combineResults(result1, result2, operator):
@@ -1663,27 +1665,27 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			result1IdentIndex = -1
 			result2IdentIndex = -1
 
-			for i in xrange(len(result1['identAttributes'])):
-				for j in xrange(len(result2['identAttributes'])):
-					if result1['identAttributes'][i] == result2['identAttributes'][j]:
-						if (result1['identAttributes'][i] != 'id') or (result1['objectClass'] == result2['objectClass']):
+			for i, identAttr in enumerate(result1['identAttributes']):
+				for j, identAttr2 in enumerate(result2['identAttributes']):
+					if identAttr == identAttr2:
+						if (identAttr != 'id') or (result1['objectClass'] == result2['objectClass']):
 							result1IdentIndex = i
 							result2IdentIndex = j
 							break
 
 			if result1IdentIndex == -1:
-				logger.debug(u"No matching identAttributes found (%s, %s)" % (result1['identAttributes'], result2['identAttributes']))
+				logger.debug(u"No matching identAttributes found ({0}, {1})", result1['identAttributes'], result2['identAttributes'])
 
 			if result1IdentIndex == -1:
 				if 'id' in result1['identAttributes'] and result1['foreignIdAttributes']:
-					logger.debug(u"Trying foreignIdAttributes of result1: %s" % result1['foreignIdAttributes'])
+					logger.debug(u"Trying foreignIdAttributes of result1: {0}", result1['foreignIdAttributes'])
 					for attr in result1['foreignIdAttributes']:
-						for i in range(len(result2['identAttributes'])):
-							logger.debug2("%s == %s" % (attr, result2['identAttributes'][i]))
-							if attr == result2['identAttributes'][i]:
+						for i, identAttr in enumerate(result2['identAttributes']):
+							logger.debug2("%s == %s" % (attr, identAttr))
+							if attr == identAttr:
 								result2IdentIndex = i
-								for a in range(len(result1['identAttributes'])):
-									if result1['identAttributes'][a] == 'id':
+								for a, identAttr2 in enumerate(result1['identAttributes']):
+									if identAttr2 == 'id':
 										result1IdentIndex = a
 								break
 				else:
@@ -1691,14 +1693,14 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 
 			if result1IdentIndex == -1:
 				if 'id' in result2['identAttributes'] and result2['foreignIdAttributes']:
-					logger.debug(u"Trying foreignIdAttributes of result2: %s" % result2['foreignIdAttributes'])
+					logger.debug(u"Trying foreignIdAttributes of result2: {0}", result2['foreignIdAttributes'])
 					for attr in result2['foreignIdAttributes']:
-						for i in range(len(result1['identAttributes'])):
-							logger.debug2("%s == %s" % (attr, result1['identAttributes'][i]))
-							if attr == result1['identAttributes'][i]:
+						for i, identAttr in enumerate(result1['identAttributes']):
+							logger.debug2("%s == %s" % (attr, identAttr))
+							if attr == identAttr:
 								result1IdentIndex = i
-								for a in range(len(result2['identAttributes'])):
-									if result2['identAttributes'][a] == 'id':
+								for a, identAttr2 in enumerate(result2['identAttributes']):
+									if identAttr2 == 'id':
 										result2IdentIndex = a
 								break
 				else:
@@ -1757,7 +1759,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			objectFilter = {}
 			result = None
 
-			logger.debug(u"Level %s, processing: %s" % (level, repr(f)))
+			logger.debug(u"Level {0}, processing: {1!r}", level, f)
 
 			if isinstance(f, pureldap.LDAPFilter_equalityMatch):
 				logger.debug(u"Handle equality attribute '%s', value '%s'" % (f.attributeDesc.value, f.assertionValue.value))
@@ -1859,7 +1861,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 							result = combineResults(result, res, operator)
 						else:
 							result = res
-						logger.debug("Result: %s" % result)
+						logger.debug("Result: {0}", result)
 					except Exception as e:
 						logger.logException(e)
 						raise BackendBadValueError(u"Failed to process search filter '%s': %s" % (repr(f), e))
@@ -2347,7 +2349,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		clientIds = self.host_getIdents(id=filter.get('objectId'), returnType='unicode')
 		# Create missing config states
 		for config in self._backend.config_getObjects(id=filter.get('configId')):
-			logger.debug(u"Default values for '%s': %s" % (config.id, config.defaultValues))
+			logger.debug(u"Default values for {0!r}: {1}", config.id, config.defaultValues)
 			for clientId in clientIds:
 				if config.id not in css.get(clientId, []):
 					# Config state does not exist for client => create default
@@ -2383,7 +2385,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 	def configState_insertObject(self, configState):
 		if self._options['deleteConfigStateIfDefault'] and self._configStateMatchesDefault(configState):
 			# Do not insert configStates which match the default
-			logger.debug(u"Not inserting configState '%s', because it does not differ from defaults" % configState)
+			logger.debug(u"Not inserting configState {0!r}, because it does not differ from defaults", configState)
 			return
 		self._configState_checkValid(configState)
 		self._backend.configState_insertObject(configState)
@@ -2391,7 +2393,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 	def configState_updateObject(self, configState):
 		if self._options['deleteConfigStateIfDefault'] and self._configStateMatchesDefault(configState):
 			# Do not update configStates which match the default
-			logger.debug(u"Deleting configState '%s', because it does not differ from defaults" % configState)
+			logger.debug(u"Deleting configState {0!r}, because it does not differ from defaults", configState)
 			return self._backend.configState_deleteObjects(configState)
 		self._configState_checkValid(configState)
 		self._backend.configState_updateObject(configState)
@@ -2474,7 +2476,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		result = []
 		addConfigStateDefaults = self.backend_getOptions().get('addConfigStateDefaults', False)
 		try:
-			logger.debug(u"Calling backend_setOptions on %s" % self)
+			logger.debug(u"Calling backend_setOptions on {0}", self)
 			self.backend_setOptions({'addConfigStateDefaults': True})
 			for configState in self.configState_getObjects(configId=u'clientconfig.depot.id', objectId=clientIds):
 				if not configState.values or not configState.values[0]:
@@ -2519,8 +2521,8 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			pString = pHash.get(usedDepotId, u'')
 			alternativeDepotIds = [depotId for (depotId, ps) in pHash.items() if depotId != usedDepotId and pString == ps]
 
-			for i in range(len(result)):
-				if result[i]['depotId'] == usedDepotId:
+			for i, element in enumerate(result):
+				if element['depotId'] == usedDepotId:
 					result[i]['alternativeDepotIds'] = alternativeDepotIds
 
 		return result

@@ -61,11 +61,11 @@ logger = Logger()
 @contextmanager
 def timeQuery(query):
 	startingTime = datetime.now()
-	logger.debug(u'start query {0}'.format(query))
+	logger.debug(u'start query {0}', query)
 	try:
 		yield
 	finally:
-		logger.debug(u'ended query (duration: {1}) {0}'.format(query, datetime.now() - startingTime))
+		logger.debug(u'ended query (duration: {1}) {0}', query, datetime.now() - startingTime)
 
 
 def onlyAllowSelect(query):
@@ -294,7 +294,7 @@ class SQLBackend(ConfigDataBackend):
 			query = u'select %s from `%s` where %s' % (select, table, where)
 		else:
 			query = u'select %s from `%s`' % (select, table)
-		logger.debug(u"Created query: '%s'" % query)
+		logger.debug(u"Created query: {0}", query)
 		return query
 
 	def _adjustAttributes(self, objectClass, attributes, filter):
@@ -2436,7 +2436,7 @@ class SQLBackend(ConfigDataBackend):
 			if auditHardwareFilter:
 				auditHardwareFilter['hardwareClass'] = hardwareClass
 				hardwareIds = self._getHardwareIds(auditHardwareFilter)
-				logger.debug2(u"Filtered matching hardware ids: %s" % hardwareIds)
+				logger.debug2(u"Filtered matching hardware ids: {0}", hardwareIds)
 				if not hardwareIds:
 					continue
 			classFilter['hardware_id'] = hardwareIds

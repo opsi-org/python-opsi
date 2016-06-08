@@ -41,7 +41,7 @@ if os.name == 'posix':
 	import pwd
 	import grp
 
-__version__ = '4.0.6.49'
+__version__ = '4.0.7.1'
 
 try:
 	from OPSI.Util.File.Opsi import OpsiConfFile
@@ -520,8 +520,8 @@ class ProductPackageSource(object):
 
 			if self.customName:
 				found = False
-				for i in range(len(dirs)):
-					customDir = u"%s.%s" % (dirs[i], self.customName)
+				for i, currentDir in enumerate(dirs):
+					customDir = u"%s.%s" % (currentDir, self.customName)
 					if os.path.exists(os.path.join(self.packageSourceDir, customDir)):
 						found = True
 						if self.customOnly:
