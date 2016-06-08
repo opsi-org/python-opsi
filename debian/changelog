@@ -7,6 +7,11 @@ python-opsi (4.0.7.1-1) UNRELEASED; urgency=medium
   * OPSI.Backend.Backend: _objectHashMatches now avoids temporary variable.
   * Improved iteration in many parts to be more efficient.
   * OPSI.Logger: Faster lookup for output color / level name.
+  * Changed some log outputs to make use of the formatting during logging.
+  * Updated hwaudit.conf: Now showing the number of physical and logical
+    cores.
+  * OPSI.Util.Task.ConfigureBackend.DHCP: only retrieve and show system
+    information once.
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 20 May 2016 15:44:59 +0200
 
