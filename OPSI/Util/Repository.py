@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2006-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -54,7 +54,7 @@ from OPSI.Util.HTTP import getSharedConnectionPool, urlsplit, HTTPResponse
 if os.name == 'nt':
 	from OPSI.System.Windows import getFreeDrive
 
-__version__ = '4.0.6.39'
+__version__ = '4.0.7.1'
 
 logger = Logger()
 
@@ -264,13 +264,13 @@ class Repository:
 						count = 0.0
 						index = -1
 
-						for i in range(len(self._networkUsageData)):
-							if now - self._networkUsageData[i][0] <= 5:
+						for i, element in enumerate(self._networkUsageData):
+							if now - element[0] <= 5:
 								if index == -1:
 									index = i
 
-							if now - self._networkUsageData[i][0] <= 2.0:
-								usage += self._networkUsageData[i][1]
+							if now - element[0] <= 2.0:
+								usage += element[1]
 								count += 1.0
 
 						if count > 0:

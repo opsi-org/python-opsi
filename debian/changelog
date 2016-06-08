@@ -1,3 +1,31 @@
+python-opsi (4.0.7.1-1) testing; urgency=medium
+
+  * forceObjectClass got a faster check to see if we are processing JSON.
+  * OPSI.System.Posix: fixed typo: init -6 -> init 6.
+  * OPSI.Backend.Backend: _testFilterAndAttributes is faster if attributes
+    and filter are missing.
+  * OPSI.Backend.Backend: _objectHashMatches now avoids temporary variable.
+  * Improved iteration in many parts to be more efficient.
+  * OPSI.Logger: Faster lookup for output color / level name.
+  * Changed some log outputs to make use of the formatting during logging.
+  * Updated hwaudit.conf: Now showing the number of physical and logical
+    cores.
+  * OPSI.Util.Task.ConfigureBackend.DHCP: only retrieve and show system
+    information once.
+  * 20_legacy.conf: Refactored setGeneralConfig.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 20 May 2016 15:44:59 +0200
+
+python-opsi (4.0.6.50-1) experimental; urgency=medium
+
+  * OPSI.Logger.Logger now is able to do formatting in the style of
+    str.format. To format a message use the appropriate placeholders and
+    then supply args / kwargs as needed.
+    Formatting will only be applied if the message will actually be logged.
+  * Improved logging during HTTP Connection.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 07 Jun 2016 10:47:44 +0200
+
 python-opsi (4.0.6.49-1) stable; urgency=medium
 
   * OPSI.Util.Task.Samba: removed oplocks from opsi_depot share
