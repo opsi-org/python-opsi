@@ -405,8 +405,7 @@ class BackendDispatcher(Backend):
 
 		try:
 			self._dispatchConfig = BackendDispatchConfigFile(self._dispatchConfigFile).parse()
-			logger.debug(u"Read dispatch config from file '%s':" % self._dispatchConfigFile)
-			logger.debug(objectToBeautifiedText(self._dispatchConfig))
+			logger.debug(u"Read dispatch config from file {0!r}: {1!r}", self._dispatchConfigFile, self._dispatchConfig)
 		except Exception as e:
 			raise BackendConfigurationError(u"Failed to load dispatch config file '%s': %s" % (self._dispatchConfigFile, e))
 
@@ -456,7 +455,7 @@ class BackendDispatcher(Backend):
 				logger.debug2(u"Found public %s method '%s'" % (Class.__name__, methodName))
 
 				if hasattr(self, methodName):
-					logger.debug(u"{0}: skipping already present method {1}".format(self.__class__.__name__, methodName))
+					logger.debug(u"{0}: skipping already present method {1}", self.__class__.__name__, methodName)
 					continue
 
 				methodBackends = []
@@ -466,10 +465,10 @@ class BackendDispatcher(Backend):
 
 					for backend in forceList(backends):
 						if backend not in self._backends:
-							logger.debug(u"Ignoring backend {0!r}: backend not available".format(backend))
+							logger.debug(u"Ignoring backend {0!r}: backend not available", backend)
 							continue
 						methodBackends.append(backend)
-					logger.debug(u"{0!r} matches method {1!r}, dispatching to backends: {2}".format(regex, methodName, u', '.join(methodBackends)))
+					logger.debug(u"{0!r} matches method {1!r}, dispatching to backends: {2}", regex, methodName, u', '.join(methodBackends))
 					break
 
 				if not methodBackends:
@@ -481,7 +480,7 @@ class BackendDispatcher(Backend):
 				setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
 
 	def _dispatchMethod(self, methodBackends, methodName, **kwargs):
-		logger.debug(u"Dispatching method {0!r} to backends: {1}".format(methodName, methodBackends))
+		logger.debug(u"Dispatching method {0!r} to backends: {1}", methodName, methodBackends)
 		result = None
 
 		for methodBackend in methodBackends:
@@ -500,7 +499,7 @@ class BackendDispatcher(Backend):
 			elif res is not None:
 				result = res
 
-		logger.debug2(u"Finished dispatching method {0!r}".format(methodName))
+		logger.debug2(u"Finished dispatching method {0!r}", methodName)
 		return result
 
 	def backend_setOptions(self, options):
@@ -550,7 +549,7 @@ class BackendExtender(ExtendedBackend):
 			for methodName, functionRef in inspect.getmembers(self._extensionClass, inspect.ismethod):
 				if methodName.startswith('_'):
 					continue
-				logger.debug2(u"Extending {0} with instancemethod: {1!r}".format(self._backend.__class__.__name__, methodName))
+				logger.debug2(u"Extending {0} with instancemethod: {1!r}", self._backend.__class__.__name__, methodName)
 				new_function = new.function(functionRef.func_code, functionRef.func_globals, functionRef.func_code.co_name)
 				new_method = new.instancemethod(new_function, self, self.__class__)
 				setattr(self, methodName, new_method)
@@ -701,8 +700,7 @@ class BackendAccessControl(object):
 			if not os.path.exists(self._aclFile):
 				raise Exception(u"Acl file '%s' not found" % self._aclFile)
 			self._acl = BackendACLFile(self._aclFile).parse()
-			logger.debug(u"Read acl from file '%s':" % self._aclFile)
-			logger.debug(objectToBeautifiedText(self._acl))
+			logger.debug(u"Read acl from file {0!r}: {1!r}", self._aclFile, self._acl)
 		except Exception as e:
 			logger.logException(e)
 			raise BackendConfigurationError(u"Failed to load acl file '%s': %s" % (self._aclFile, e))
@@ -769,7 +767,7 @@ class BackendAccessControl(object):
 								(username, domain, type) = win32security.LookupAccountSid(None, sid)
 								if username.lower() == self._username.lower():
 									self._userGroups.add(groupname)
-									logger.debug(u"User '%s' is member of group '%s'" % (self._username, groupname))
+									logger.debug(u"User {0!r} is member of group {1!r}", self._username, groupname)
 							if uresume == 0:
 								break
 						if gresume == 0:
@@ -785,7 +783,7 @@ class BackendAccessControl(object):
 
 		:raises BackendAuthenticationError: If authentication fails.
 		'''
-		logger.confidential(u"Trying to authenticate user '%s' with password '%s' by PAM" % (self._username, self._password))
+		logger.confidential(u"Trying to authenticate user {0!r} with password {1!r} by PAM", self._username, self._password)
 
 		class AuthConv:
 			''' Handle PAM conversation '''
@@ -796,7 +794,7 @@ class BackendAccessControl(object):
 			def __call__(self, auth, query_list, userData=None):
 				response = []
 				for (query, qtype) in query_list:
-					logger.debug(u"PAM conversation: query '%s', type '%s'" % (query, qtype))
+					logger.debug(u"PAM conversation: query {0!r}, type {1!r}", query, qtype)
 					if qtype == PAM.PAM_PROMPT_ECHO_ON:
 						response.append((self.user, 0))
 					elif qtype == PAM.PAM_PROMPT_ECHO_OFF:
@@ -831,11 +829,11 @@ class BackendAccessControl(object):
 				logger.info(u"Forced groups for user '%s': %s" % (self._username, self._userGroups))
 			else:
 				primaryGroup = forceUnicode(grp.getgrgid(pwd.getpwnam(self._username)[3])[0])
-				logger.debug(u"Primary group of user '{0}' is '{1}'".format(self._username, primaryGroup))
+				logger.debug(u"Primary group of user {0!r} is {1!r}", self._username, primaryGroup)
 
 				self._userGroups = set(forceUnicode(group[0]) for group in grp.getgrall() if self._username in group[3])
 				self._userGroups.add(primaryGroup)
-				logger.debug(u"User '{0}' is member of groups: {1}".format(self._username, self._userGroups))
+				logger.debug(u"User {0!r} is member of groups: {1}", self._username, self._userGroups)
 		except Exception as e:
 			raise BackendAuthenticationError(u"PAM authentication failed for user '%s': %s" % (self._username, e))
 
@@ -886,12 +884,12 @@ class BackendAccessControl(object):
 		granted = False
 		newKwargs = {}
 		acls = []
-		logger.debug(u"Access control for method '%s' params %s" % (methodName, kwargs))
+		logger.debug(u"Access control for method {0!r} params {1!r}", methodName, kwargs)
 		for (regex, acl) in self._acl:
-			logger.debug2(u"Testing acl %s: %s for method '%s'" % (regex, acl, methodName))
+			logger.debug2(u"Testing acl {0}: {1} for method {2!r}", regex, acl, methodName)
 			if not re.search(regex, methodName):
 				continue
-			logger.debug(u"Found matching acl %s for method '%s'" % (acl, methodName))
+			logger.debug(u"Found matching acl {0} for method {1!r}", acl, methodName)
 			for entry in acl:
 				aclType = entry.get('type')
 				ids = entry.get('ids', [])
@@ -926,14 +924,14 @@ class BackendAccessControl(object):
 					break
 			break
 
-		logger.debug("Method {0!r} using acls: {1}".format(methodName, acls))
+		logger.debug("Method {0!r} using acls: {1}", methodName, acls)
 		if granted is True:
-			logger.debug(u"Full access to method '%s' granted to user '%s' by acl %s" % (methodName, self._username, acls[0]))
+			logger.debug(u"Full access to method {0!r} granted to user {1!r} by acl {2!r}", methodName, self._username, acls[0])
 			newKwargs = kwargs
 		elif granted is False:
 			raise BackendPermissionDeniedError(u"Access to method '%s' denied for user '%s'" % (methodName, self._username))
 		else:
-			logger.debug(u"Partial access to method '%s' granted to user '%s' by acls %s" % (methodName, self._username, acls))
+			logger.debug(u"Partial access to method {0!r} granted to user {1!r} by acls {2!r}", methodName, self._username, acls)
 			try:
 
 				newKwargs = self._filterParams(kwargs, acls)
@@ -943,7 +941,7 @@ class BackendAccessControl(object):
 				logger.logException(e, LOG_INFO)
 				raise BackendPermissionDeniedError(u"Access to method '%s' denied for user '%s': %s" % (methodName, self._username, e))
 
-		logger.debug("newKwargs: %s" % newKwargs)
+		logger.debug("newKwargs: {0}", newKwargs)
 
 		meth = getattr(self._backend, methodName)
 		result = meth(**newKwargs)
@@ -956,7 +954,7 @@ class BackendAccessControl(object):
 
 	def _filterParams(self, params, acls):
 		params = dict(params)
-		logger.debug(u"Filtering params: %s" % params)
+		logger.debug(u"Filtering params: {0}", params)
 		for (key, value) in params.items():
 			valueList = forceList(value)
 			if len(valueList) == 0:

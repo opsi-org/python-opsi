@@ -184,11 +184,11 @@ class DHCPDBackend(ConfigDataBackend):
 		ipAddress = host.ipAddress  # pylint: disable=maybe-no-member
 		if not ipAddress:
 			try:
-				logger.info(u"Ip addess of client %s unknown, trying to get host by name" % host)
+				logger.info(u"Ip addess of client {0} unknown, trying to get host by name", host)
 				ipAddress = socket.gethostbyname(host.id)  # pylint: disable=maybe-no-member
-				logger.info(u"Client fqdn resolved to '%s'" % ipAddress)
+				logger.info(u"Client fqdn resolved to {0!r}", ipAddress)
 			except Exception as error:
-				logger.debug(u"Failed to get IP by hostname: {0}".format(error))
+				logger.debug(u"Failed to get IP by hostname: {0}", error)
 				with self._reloadLock:
 					self._dhcpdConfFile.parse()
 					currentHostParams = self._dhcpdConfFile.getHost(hostname)
@@ -196,7 +196,7 @@ class DHCPDBackend(ConfigDataBackend):
 				if currentHostParams:
 					logger.debug(
 						'Trying to use address for {0} from existing DHCP '
-						'configuration.'.format(hostname)
+						'configuration.', hostname
 					)
 
 					if currentHostParams.get('fixed-address'):
