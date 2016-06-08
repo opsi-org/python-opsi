@@ -66,7 +66,7 @@ def mandatoryConstructorArgs(Class):
 		except TypeError:  # Happens if defaults is None
 			mandatory = args[1:]
 
-		logger.debug2(u"mandatoryConstructorArgs for {0!r}: {1}", Class.__class__, mandatory)
+		logger.debug2(u"mandatoryConstructorArgs for {0!r}: {1}", Class.__name__, mandatory)
 		_MANDATORY_CONSTRUCTOR_ARGS_CACHE[cacheKey] = mandatory
 		return mandatory
 
