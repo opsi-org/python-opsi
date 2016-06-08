@@ -654,7 +654,7 @@ class JSONRPCBackend(Backend):
 				logger.debug2(u"{1}: call string is: {0!r}", callString, methodName)
 				# This would result in not overwriting Backend methods like log_read, log_write, ...
 				# if getattr(self, methodName, None) is None:
-				if not licenseManagementModule and (methodName.find("license") != -1):
+				if not licenseManagementModule and "license" in methodName:
 					exec(u'def %s(self, %s): return' % (methodName, argString))
 				else:
 					exec(u'def %s(self, %s): return self._jsonRPC("%s", [%s])' % (methodName, argString, methodName, callString))
