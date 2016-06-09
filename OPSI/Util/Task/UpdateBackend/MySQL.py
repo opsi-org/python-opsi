@@ -500,16 +500,19 @@ def updateMySQLBackend(backendConfigFile=u'/etc/opsi/backends/mysql.conf',
 def _fixLengthOfLicenseKeys(database):
 	"Correct the length of license key columns to be consistent."
 
-	for column in getTableColumns(database, 'LICENSE_ON_CLIENT'):
-		if column.name == 'licenseKey':
-			assert column.type.lower().startswith('varchar(')
+	relevantTables = ('LICENSE_ON_CLIENT', 'SOFTWARE_LICENSE_TO_LICENSE_POOL')
 
-			_, length = column.type.split('(')
-			length = int(length[:-1])
+	for table in relevantTables:
+		for column in getTableColumns(database, table):
+			if column.name == 'licenseKey':
+				assert column.type.lower().startswith('varchar(')
 
-			if length != 1024:
-				logger.notice(u"Fixing length of 'licenseKey' column on table 'LICENSE_ON_CLIENT'")
-				database.execute(u"ALTER TABLE `LICENSE_ON_CLIENT` MODIFY COLUMN `licenseKey` VARCHAR(1024);")
+				_, length = column.type.split('(')
+				length = int(length[:-1])
+
+				if length != 1024:
+					logger.notice(u"Fixing length of 'licenseKey' column on table {0!r}".format(table))
+					database.execute(u"ALTER TABLE `{0}` MODIFY COLUMN `licenseKey` VARCHAR(1024);".format(table))
 
 
 def getTableColumns(database, tableName):
