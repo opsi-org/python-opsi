@@ -51,7 +51,7 @@ from OPSI.Util import fromJson, toJson
 from OPSI.Util.Thread import KillableThread
 from OPSI.Util.HTTP import closingConnection, non_blocking_connect_https
 
-__version__ = '4.0.6.47'
+__version__ = '4.0.7.2'
 
 logger = Logger()
 

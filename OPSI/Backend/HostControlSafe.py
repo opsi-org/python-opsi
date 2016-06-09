@@ -38,7 +38,7 @@ from OPSI.Types import (forceBool, forceHostIdList, forceInt, forceList,
 from OPSI.Backend.Backend import ExtendedBackend
 from OPSI.Backend.HostControl import RpcThread, ConnectionThread
 
-__version__ = '4.0.6.47'
+__version__ = '4.0.7.2'
 
 logger = Logger()
 
