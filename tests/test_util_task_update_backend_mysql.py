@@ -89,20 +89,22 @@ def testCorrectingLicenseOnClientLicenseKeyLength():
 
             updateMySQLBackend(backendConfigFile=configFile)
 
-            tableName = 'LICENSE_ON_CLIENT'
-            assert tableName in getTableNames(db)
+            for tableName in ('LICENSE_ON_CLIENT', 'SOFTWARE_LICENSE_TO_LICENSE_POOL'):
+                print("Checking {0}...".format(tableName))
 
-            for column in getTableColumns(db, tableName):
-                if column.name.lower() == 'licensekey':
-                    assert column.type.lower().startswith('varchar(')
+                assert tableName in getTableNames(db)
 
-                    _, length = column.type.split('(')
-                    length = int(length[:-1])
+                for column in getTableColumns(db, tableName):
+                    if column.name.lower() == 'licensekey':
+                        assert column.type.lower().startswith('varchar(')
 
-                    assert length == 1024
-                    break
-            else:
-                raise ValueError("Missing column 'licensekey' in table {0!r}".format(tableName))
+                        _, length = column.type.split('(')
+                        length = int(length[:-1])
+
+                        assert length == 1024
+                        break
+                else:
+                    raise ValueError("Missing column 'licensekey' in table {0!r}".format(tableName))
 
 
 def createRequiredTables(database):
