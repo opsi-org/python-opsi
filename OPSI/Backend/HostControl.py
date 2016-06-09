@@ -197,7 +197,7 @@ class HostControlBackend(ExtendedBackend):
 			try:
 				address = socket.gethostbyname(host.id)
 			except socket.error as lookupError:
-				logger.debug2("Failed to lookup ip address for {0}: {1!r}".format(host.id, lookupError))
+				logger.debug2("Failed to lookup ip address for {0}: {1!r}", host.id, lookupError)
 		if not address:
 			address = host.ipAddress
 		if not address and not self._resolveHostAddress:
