@@ -67,30 +67,6 @@ def configDataBackend(request):
             yield backend
 
 
-@pytest.yield_fixture
-def extendedConfigDataBackend(configDataBackend):
-    """
-    Returns an `OPSI.Backend.ExtendedConfigDataBackend` for testing.
-
-    This will return multiple backends but some of these may lead to
-    skips if required libraries are missing or conditions for the
-    execution are not met.
-    """
-    yield ExtendedConfigDataBackend(configDataBackend)
-
-
-@pytest.yield_fixture(
-    params=[getFileBackend, getMySQLBackend],
-    ids=['file', 'mysql']
-)
-def _serverBackend(request):
-    "Shortcut to specify backends used on an opsi server."
-
-    with request.param() as backend:
-        with _backendBase(backend):
-            yield backend
-
-
 @contextmanager
 def _backendBase(backend):
     "Creates the backend base before and deletes it after use."
@@ -103,11 +79,35 @@ def _backendBase(backend):
 
 
 @pytest.yield_fixture
+def extendedConfigDataBackend(configDataBackend):
+    """
+    Returns an `OPSI.Backend.ExtendedConfigDataBackend` for testing.
+
+    This will return multiple backends but some of these may lead to
+    skips if required libraries are missing or conditions for the
+    execution are not met.
+    """
+    yield ExtendedConfigDataBackend(configDataBackend)
+
+
+@pytest.yield_fixture
 def cleanableDataBackend(_serverBackend):
     """
     Returns an backend that can be cleaned.
     """
     yield ExtendedConfigDataBackend(_serverBackend)
+
+
+@pytest.yield_fixture(
+    params=[getFileBackend, getMySQLBackend],
+    ids=['file', 'mysql']
+)
+def _serverBackend(request):
+    "Shortcut to specify backends used on an opsi server."
+
+    with request.param() as backend:
+        with _backendBase(backend):
+            yield backend
 
 
 @pytest.yield_fixture
@@ -126,6 +126,24 @@ def backendManager(_serverBackend):
             backend=_serverBackend,
             extensionconfigdir=os.path.join(tempDir, 'etc', 'opsi', 'backendManager', 'extend.d')
         )
+
+
+@pytest.yield_fixture
+def licenseManagementBackend(_sqlBackend):
+    '''Returns a backend that can handle License Management.'''
+    yield ExtendedConfigDataBackend(_sqlBackend)
+
+
+@pytest.yield_fixture(
+    params=[getSQLiteBackend, getMySQLBackend],
+    ids=['sqlite', 'mysql']
+)
+def _sqlBackend(request):
+    '''Backends that make use of SQL.'''
+
+    with request.param() as backend:
+        with _backendBase(backend):
+            yield backend
 
 
 def pytest_runtest_setup(item):

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2010-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2010-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -51,7 +51,7 @@ from OPSI.Util import fromJson, toJson
 from OPSI.Util.Thread import KillableThread
 from OPSI.Util.HTTP import closingConnection, non_blocking_connect_https
 
-__version__ = '4.0.6.39'
+__version__ = '4.0.7.2'
 
 logger = Logger()
 
@@ -196,8 +196,8 @@ class HostControlBackend(ExtendedBackend):
 		if self._resolveHostAddress:
 			try:
 				address = socket.gethostbyname(host.id)
-			except socket.error:
-				raise Exception(u"Failed to resolve ip address for host '%s'" % host.id)
+			except socket.error as lookupError:
+				logger.debug2("Failed to lookup ip address for {0}: {1!r}", host.id, lookupError)
 		if not address:
 			address = host.ipAddress
 		if not address and not self._resolveHostAddress:

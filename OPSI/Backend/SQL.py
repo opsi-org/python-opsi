@@ -298,10 +298,11 @@ class SQLBackend(ConfigDataBackend):
 		return query
 
 	def _adjustAttributes(self, objectClass, attributes, filter):
-		if not attributes:
-			attributes = []
+		if attributes:
+			newAttributes = forceUnicodeList(attributes)
+		else:
+			newAttributes = []
 
-		newAttributes = forceUnicodeList(attributes)
 		newFilter = forceDict(filter)
 		objectId = self._objectAttributeToDatabaseAttribute(objectClass, 'id')
 
@@ -2124,8 +2125,10 @@ class SQLBackend(ConfigDataBackend):
 		return u' and '.join(condition)
 
 	def _getHardwareIds(self, auditHardware):
-		if hasattr(auditHardware, 'toHash'):
+		try:
 			auditHardware = auditHardware.toHash()
+		except AttributeError:  # Method not present
+			pass
 
 		for (attribute, value) in auditHardware.items():
 			if value is None:
@@ -2184,7 +2187,6 @@ class SQLBackend(ConfigDataBackend):
 		return self._auditHardware_search(returnHardwareIds=False, attributes=attributes, **filter)
 
 	def _auditHardware_search(self, returnHardwareIds=False, attributes=[], **filter):
-		results = []
 		hardwareClasses = set()
 		hardwareClass = filter.get('hardwareClass')
 		if hardwareClass not in ([], None):
@@ -2195,10 +2197,10 @@ class SQLBackend(ConfigDataBackend):
 						hardwareClasses.add(key)
 
 			if not hardwareClasses:
-				return results
+				return []
 
 		if not hardwareClasses:
-			hardwareClasses = set(key for key in self._auditHardwareConfig)
+			hardwareClasses = set(self._auditHardwareConfig)
 
 		for unwanted_key in ('hardwareClass', 'type'):
 			try:
@@ -2213,45 +2215,56 @@ class SQLBackend(ConfigDataBackend):
 			if attribute not in filter:
 				filter[attribute] = None
 
-		if returnHardwareIds and attributes and not 'hardware_id' in attributes:
+		if returnHardwareIds and attributes and 'hardware_id' not in attributes:
 			attributes.append('hardware_id')
 
+		results = []
 		for hardwareClass in hardwareClasses:
 			classFilter = {}
-			skipHardwareClass = False
-			for (attribute, value) in filter.items():
+			for (attribute, value) in filter.iteritems():
 				valueInfo = self._auditHardwareConfig[hardwareClass].get(attribute)
 				if not valueInfo:
-					skipHardwareClass = True
 					logger.debug(u"Skipping hardwareClass '%s', because of missing info for attribute '%s'" % (hardwareClass, attribute))
 					break
-				if valueInfo.get('Scope', '') != 'g':
-					continue
+
+				try:
+					if valueInfo['Scope'] != 'g':
+						continue
+				except KeyError:
+					pass
+
 				if value is not None:
 					value = forceList(value)
 				classFilter[attribute] = value
-
-			if skipHardwareClass:
-				continue
-
-			if not classFilter and filter:
-				continue
-
-			logger.debug(u"Getting auditHardwares, hardwareClass '%s', filter: %s" % (hardwareClass, classFilter))
-			query = self._createQuery(u'HARDWARE_DEVICE_' + hardwareClass, attributes, classFilter)
-			for res in self._sql.getSet(query):
-				if returnHardwareIds:
-					results.append(res['hardware_id'])
+			else:
+				if not classFilter and filter:
 					continue
-				elif 'hardware_id' in res:
-					del res['hardware_id']
-				res['hardwareClass'] = hardwareClass
-				for (attribute, valueInfo) in self._auditHardwareConfig[hardwareClass].items():
-					if valueInfo.get('Scope', 'g') == 'i':
+
+				logger.debug(u"Getting auditHardwares, hardwareClass '%s', filter: %s" % (hardwareClass, classFilter))
+				query = self._createQuery(u'HARDWARE_DEVICE_' + hardwareClass, attributes, classFilter)
+				for res in self._sql.getSet(query):
+					if returnHardwareIds:
+						results.append(res['hardware_id'])
 						continue
-					if attribute not in res:
-						res[attribute] = None
-				results.append(res)
+
+					try:
+						del res['hardware_id']
+					except KeyError:
+						pass
+
+					res['hardwareClass'] = hardwareClass
+					for (attribute, valueInfo) in self._auditHardwareConfig[hardwareClass].iteritems():
+						try:
+							if valueInfo['Scope'] == 'i':
+								continue
+						except KeyError:
+							pass
+
+						if attribute not in res:
+							res[attribute] = None
+
+					results.append(res)
+
 		return results
 
 	def auditHardware_deleteObjects(self, auditHardwares):

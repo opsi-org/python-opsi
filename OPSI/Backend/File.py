@@ -697,7 +697,7 @@ class FileBackend(ConfigDataBackend):
 			logger.warning(u"Unhandled objType '%s'" % objType)
 
 		if not objIdents:
-			logger.debug2(u"Could not retrieve any idents, returning empty list." % ())
+			logger.debug2(u"Could not retrieve any idents, returning empty list.")
 			return []
 
 		needFilter = False
@@ -707,7 +707,7 @@ class FileBackend(ConfigDataBackend):
 				break
 
 		if not needFilter:
-			logger.debug2(u"Returning idents without filter." % ())
+			logger.debug2(u"Returning idents without filter.")
 			return objIdents
 
 		return [ident for ident in objIdents
