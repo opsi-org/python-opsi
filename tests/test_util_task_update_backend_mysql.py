@@ -179,7 +179,7 @@ def createRequiredTables(database):
     database.execute(u'''CREATE TABLE `SOFTWARE_LICENSE_TO_LICENSE_POOL` (
         `softwareLicenseId` VARCHAR(100) NOT NULL,
         `licensePoolId` VARCHAR(100) NOT NULL,
-        `licenseKey` VARCHAR(1024),
+        `licenseKey` VARCHAR(100),
         PRIMARY KEY (`softwareLicenseId`, `licensePoolId`),
         FOREIGN KEY (`softwareLicenseId`) REFERENCES `SOFTWARE_LICENSE` (`softwareLicenseId`),
         FOREIGN KEY (`licensePoolId`) REFERENCES `LICENSE_POOL` (`licensePoolId`)
