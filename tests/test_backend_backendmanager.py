@@ -350,16 +350,16 @@ class ExtendedBackendManagerTestCase(unittest.TestCase, FileBackendMixin,
 
 class GettingBackendManagerTestCase(unittest.TestCase):
     def testGettingBackendManagerWithDefaultConfig(self):
-        requiredThings = (
+        requiredPaths = (
             u'/etc/opsi/backendManager/dispatch.conf',
             u'/etc/opsi/backends',
             u'/etc/opsi/backendManager/extend.d',
             u'/var/lib/opsi/config/depots',
         )
 
-        for required in requiredThings:
-            if not os.path.exists(required):
-                self.skipTest("Missing {0}".format(required))
+        for path in requiredPaths:
+            if not os.path.exists(path):
+                self.skipTest("Missing {0}".format(path))
 
         backend = BackendManager()
         print(backend.backend_info())

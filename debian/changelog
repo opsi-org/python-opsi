@@ -1,3 +1,9 @@
+python-opsi (4.0.7.3-1) testing; urgency=medium
+
+  * Repaired sort algorithm 1.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 10 Jun 2016 13:36:41 +0200
+
 python-opsi (4.0.7.2-1) testing; urgency=medium
 
   * OPSI.Util.Task.UpdateBackend.MySQL: making sure that columns for license
