@@ -154,5 +154,14 @@ setup even if they are already installed on a client.
 	assert productThatShouldBeReinstalled.actionRequest == 'setup'
 
 
-def testGetProductOrdering(prefilledBackendManager):
-	prefilledBackendManager.getProductOrdering('depotserver1.some.test')
+@pytest.mark.parametrize("sortalgorithm", [None, 'algorithm1', 'algorithm2'])
+def testGetProductOrdering(prefilledBackendManager, sortalgorithm):
+	ordering = prefilledBackendManager.getProductOrdering('depotserver1.some.test', sortalgorithm)
+	print("Result after ordering: {0!r}".format(ordering))
+
+	sortedProducts = ordering['sorted']
+	unsortedProducts = ordering['not_sorted']
+
+	assert sortedProducts
+	assert unsortedProducts
+	assert len(sortedProducts) == len(unsortedProducts)
