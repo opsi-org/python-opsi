@@ -32,7 +32,7 @@ from itertools import izip
 
 from .Clients import ClientsMixin
 from .Hosts import HostsMixin
-from .Groups import ObjectToGroupsMixin
+from ..test_groups import fillBackendWithObjectToGroups
 
 from OPSI.Types import BackendError
 from ..helpers import unittest
@@ -563,19 +563,21 @@ class BackendPerformanceTestMixin(object):
             ((time.time() - start), nrOfproductOnClients))
 
 
-class MultiThreadingTestMixin(HostsMixin, ClientsMixin, ObjectToGroupsMixin):
+class MultiThreadingTestMixin(HostsMixin, ClientsMixin):
     NUMBER_OF_THREADS = 50
 
     @unittest.skipIf(DUP_ENTRY is None or IntegrityError is None,
                      'Missing imports from MySQLdb-module.')
     def testMultithreading(self):
         self.setUpHosts()
-        self.setUpClients()
-        self.setUpGroups()
-        self.setUpObjectToGroups()
+
+        o2g, _, clients = fillBackendWithObjectToGroups(self.backend)
+        self.client1 = clients[0]
+        self.client2 = clients[1]
+        self.objectToGroup1 = o2g[0]
+        self.objectToGroup2 = o2g[0]
 
         self.createHostsOnBackend()
-        self.createGroupsOnBackend()
 
         class MultiThreadTest(threading.Thread):
             def __init__(self, backendTest):
