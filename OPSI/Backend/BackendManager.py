@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2006-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -62,7 +62,7 @@ elif os.name == 'nt':
 	import win32net
 	import win32security
 
-__version__ = '4.0.6.39'
+__version__ = '4.0.7.4'
 
 logger = Logger()
 
@@ -638,11 +638,6 @@ class BackendAccessControl(object):
 		if isinstance(self._backend, BackendAccessControl):
 			raise BackendConfigurationError(u"Cannot use BackendAccessControl instance as backend")
 
-		# TODO: forceACL
-		# for i in range(len(self._acl)):
-		# 	self._acl[i][0] = re.compile(self._acl[i][0])
-		# 	self._acl[i][1] = forceUnicodeList(self._acl[i][1])
-
 		try:
 			if re.search('^[^\.]+\.[^\.]+\.\S+$', self._username):
 				# Username starts with something like hostname.domain.tld:
@@ -680,6 +675,10 @@ class BackendAccessControl(object):
 		if self._aclFile:
 			self.__loadACLFile()
 		self._authenticated = True
+
+		# Pre-compiling regex patterns for speedup.
+		for i, (pattern, acl) in enumerate(self._acl):
+			self._acl[i] = (re.compile(pattern), acl)
 
 	def accessControl_authenticated(self):
 		return self._authenticated
@@ -885,11 +884,13 @@ class BackendAccessControl(object):
 		newKwargs = {}
 		acls = []
 		logger.debug(u"Access control for method {0!r} params {1!r}", methodName, kwargs)
-		for (regex, acl) in self._acl:
-			logger.debug2(u"Testing acl {0}: {1} for method {2!r}", regex, acl, methodName)
-			if not re.search(regex, methodName):
+		for regex, acl in self._acl:
+			logger.debug2(u"Testing if ACL pattern {0!r} matches method {1!r}", regex.pattern, methodName)
+			if not regex.search(methodName):
+				logger.debug2(u"No match -> skipping.")
 				continue
-			logger.debug(u"Found matching acl {0} for method {1!r}", acl, methodName)
+
+			logger.debug(u"Found matching acl for method {1!r}: {0}", acl, methodName)
 			for entry in acl:
 				aclType = entry.get('type')
 				ids = entry.get('ids', [])
