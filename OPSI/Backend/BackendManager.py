@@ -950,7 +950,6 @@ class BackendAccessControl(object):
 		if granted is True:
 			return result
 
-		# Filter result
 		return self._filterResult(result, acls)
 
 	def _filterParams(self, params, acls):
