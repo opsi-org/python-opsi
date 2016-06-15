@@ -908,7 +908,7 @@ class BackendAccessControl(object):
 				elif aclType == 'self':
 					newGranted = 'partial_object'
 				else:
-					logger.error(u"Unhandled acl entry type: %s" % aclType)
+					logger.error(u"Unhandled acl entry type: {0}", aclType)
 					continue
 
 				if newGranted is False:
