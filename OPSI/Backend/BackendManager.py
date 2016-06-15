@@ -669,7 +669,7 @@ class BackendAccessControl(object):
 				# Authentication did not throw exception => authentication successful
 				logger.info(u"Operating system authentication successful for user '%s', groups '%s'" % (self._username, ','.join(self._userGroups)))
 		except Exception as e:
-			raise BackendAuthenticationError(u"%s" % e)
+			raise BackendAuthenticationError(forceUnicode(e))
 
 		self._createInstanceMethods()
 		if self._aclFile:
