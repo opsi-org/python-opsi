@@ -942,7 +942,7 @@ class BackendAccessControl(object):
 				logger.logException(e, LOG_INFO)
 				raise BackendPermissionDeniedError(u"Access to method '%s' denied for user '%s': %s" % (methodName, self._username, e))
 
-		logger.debug("newKwargs: {0}", newKwargs)
+		logger.debug2("newKwargs: {0}", newKwargs)
 
 		meth = getattr(self._backend, methodName)
 		result = meth(**newKwargs)
