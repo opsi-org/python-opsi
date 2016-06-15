@@ -96,15 +96,10 @@ If you are unsure what testrunner to use we recommend using _nose_.
 
 ### Installing Requirements
 
-Requirements for the tests can be found in ``requirements-dev.txt``.
+Requirements for the tests can be found in ``requirements-qa.txt``.
 They can be installed with the following command:
 
-  pip install -r requirements-dev.txt
-
-
-If you want to install _nose_ you can do so with the following command:
-
-  pip install nose
+  pip install -r requirements-qa.txt
 
 
 ### Running
