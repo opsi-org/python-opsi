@@ -627,8 +627,6 @@ class BackendAccessControl(object):
 				if value is not None:
 					self._forceGroups = forceUnicodeList(value)
 
-		if not self._acl:
-			self._acl = [['.*', [{'type': u'sys_group', 'ids': [u'opsiadmin'], 'denyAttributes': [], 'allowAttributes': []}]]]
 		if not self._username:
 			raise BackendAuthenticationError(u"No username specified")
 		if not self._password:
@@ -637,6 +635,8 @@ class BackendAccessControl(object):
 			raise BackendAuthenticationError(u"No backend specified")
 		if isinstance(self._backend, BackendAccessControl):
 			raise BackendConfigurationError(u"Cannot use BackendAccessControl instance as backend")
+		if not self._acl:
+			self._acl = [['.*', [{'type': u'sys_group', 'ids': [u'opsiadmin'], 'denyAttributes': [], 'allowAttributes': []}]]]
 
 		try:
 			if re.search('^[^\.]+\.[^\.]+\.\S+$', self._username):
