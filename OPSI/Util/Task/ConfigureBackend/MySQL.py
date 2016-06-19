@@ -35,6 +35,7 @@ _getSysConfig = backendUtils._getSysConfig
 
 DATABASE_EXISTS_ERROR_CODE = 1007
 ACCESS_DENIED_ERROR_CODE = 1044
+INVALID_DEFAULT_VALUE = 1067
 LOGGER = Logger()
 
 
@@ -109,7 +110,20 @@ on to. Defaults to ``Logger.error``.
 
 	notificationFunction(u"Initializing mysql backend")
 	backend = MySQLBackend(**config)
-	backend.backend_createBase()
+	try:
+		backend.backend_createBase()
+        except MySQLdb.OperationalError as exc: 
+                if exc[0] == INVALID_DEFAULT_VALUE:
+                        errorFunction(
+                                u"It seems you have the MySQL strict mode enabled. Please read the opsi handbook.\n"
+                                u"{error}".format(
+                                        hostname=config['address'],
+                                        username=dbAdminUser,
+                                        error=exc,
+                                )   
+                        )   
+                        raise exc
+
 	notificationFunction(u"Finished initializing mysql backend.")
 
 
