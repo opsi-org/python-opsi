@@ -37,6 +37,7 @@ from __future__ import absolute_import
 
 import os
 import shutil
+from contextlib import contextmanager
 
 from OPSI.Backend.Backend import ExtendedConfigDataBackend
 from OPSI.Backend.BackendManager import BackendManager
@@ -62,8 +63,18 @@ def configDataBackend(request):
     execution are not met.
     """
     with request.param() as backend:
-        backend.backend_createBase()
-        yield backend
+        with _backendBase(backend):
+            yield backend
+
+
+@contextmanager
+def _backendBase(backend):
+    "Creates the backend base before and deletes it after use."
+
+    backend.backend_createBase()
+    try:
+        yield
+    finally:
         backend.backend_deleteBase()
 
 
@@ -79,22 +90,28 @@ def extendedConfigDataBackend(configDataBackend):
     yield ExtendedConfigDataBackend(configDataBackend)
 
 
+@pytest.yield_fixture
+def cleanableDataBackend(_serverBackend):
+    """
+    Returns an backend that can be cleaned.
+    """
+    yield ExtendedConfigDataBackend(_serverBackend)
+
+
 @pytest.yield_fixture(
     params=[getFileBackend, getMySQLBackend],
     ids=['file', 'mysql']
 )
-def cleanableDataBackend(request):
-    """
-    Returns an `OPSI.Backend.ConfigDataBackend` that can be cleaned.
-    """
+def _serverBackend(request):
+    "Shortcut to specify backends used on an opsi server."
+
     with request.param() as backend:
-        backend.backend_createBase()
-        yield ExtendedConfigDataBackend(backend)
-        backend.backend_deleteBase()
+        with _backendBase(backend):
+            yield backend
 
 
 @pytest.yield_fixture
-def backendManager(configDataBackend):
+def backendManager(_serverBackend):
     """
     Returns an `OPSI.Backend.BackendManager.BackendManager` for testing.
 
@@ -106,9 +123,27 @@ def backendManager(configDataBackend):
         shutil.copytree(defaultConfigDir, os.path.join(tempDir, 'etc', 'opsi'))
 
         yield BackendManager(
-            backend=configDataBackend,
+            backend=_serverBackend,
             extensionconfigdir=os.path.join(tempDir, 'etc', 'opsi', 'backendManager', 'extend.d')
         )
+
+
+@pytest.yield_fixture
+def licenseManagementBackend(_sqlBackend):
+    '''Returns a backend that can handle License Management.'''
+    yield ExtendedConfigDataBackend(_sqlBackend)
+
+
+@pytest.yield_fixture(
+    params=[getSQLiteBackend, getMySQLBackend],
+    ids=['sqlite', 'mysql']
+)
+def _sqlBackend(request):
+    '''Backends that make use of SQL.'''
+
+    with request.param() as backend:
+        with _backendBase(backend):
+            yield backend
 
 
 def pytest_runtest_setup(item):

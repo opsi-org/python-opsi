@@ -63,7 +63,7 @@ class ResourceOpsi(resource.Resource):
 	def renderHTTP(self, request):
 		''' Process request. '''
 		try:
-			logger.debug2(u"%s.renderHTTP()" % self.__class__.__name__)
+			logger.debug2(u"{0}.renderHTTP()", self.__class__.__name__)
 			if not self.WorkerClass:
 				raise Exception(u"No worker class defined in resource %s" % self.__class__.__name__)
 			worker = self.WorkerClass(self._service, request, self)

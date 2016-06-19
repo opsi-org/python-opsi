@@ -238,7 +238,7 @@ def testDenyingAccessToOtherObjects(extendedConfigDataBackend):
         )
 
 
-def test_get_access_full(extendedConfigDataBackend):
+def testGettingFullAccess(extendedConfigDataBackend):
     backend = extendedConfigDataBackend
 
     configServer, depotServer, clients = fillBackendWithHosts(backend)

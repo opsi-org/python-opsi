@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2014 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -26,156 +26,142 @@ This tests what usually is found under
 :license: GNU Affero General Public License version 3
 """
 
-from __future__ import absolute_import
-
-import unittest
-
-
 from OPSI.Object import (OpsiClient, LocalbootProduct, ProductOnClient,
 						 ProductDependency, OpsiDepotserver, ProductOnDepot,
 						 UnicodeConfig, ConfigState)
 
-from .Backends.File import FileBackendBackendManagerMixin
+import pytest
 
 
-class BackendExtendedThroughOPSITestCase(unittest.TestCase, FileBackendBackendManagerMixin):
-	def setUp(self):
-		self.setUpBackend()
-		self.backendManager = self.backend
-		self.fillBackend()
+@pytest.yield_fixture
+def prefilledBackendManager(backendManager):
+	fillBackend(backendManager)
+	yield backendManager
 
-	def fillBackend(self):
-		client = OpsiClient(
-			id='backend-test-1.vmnat.local',
-			description='Unittest Test client.'
-		)
 
-		depot = OpsiDepotserver(
-			id='depotserver1.some.test',
-			description='Test Depot',
-		)
+def fillBackend(backend):
+	client = OpsiClient(
+		id='backend-test-1.vmnat.local',
+		description='Unittest Test client.'
+	)
 
-		self.backendManager.host_createObjects([client, depot])
+	depot = OpsiDepotserver(
+		id='depotserver1.some.test',
+		description='Test Depot',
+	)
 
-		firstProduct = LocalbootProduct('to_install', '1.0', '1.0')
-		secondProduct = LocalbootProduct('already_installed', '1.0', '1.0')
+	backend.host_createObjects([client, depot])
 
-		prodDependency = ProductDependency(
-			productId=firstProduct.id,
-			productVersion=firstProduct.productVersion,
-			packageVersion=firstProduct.packageVersion,
-			productAction='setup',
-			requiredProductId=secondProduct.id,
-			# requiredProductVersion=secondProduct.productVersion,
-			# requiredPackageVersion=secondProduct.packageVersion,
-			requiredAction='setup',
-			requiredInstallationStatus='installed',
-			requirementType='after'
-		)
+	firstProduct = LocalbootProduct('to_install', '1.0', '1.0')
+	secondProduct = LocalbootProduct('already_installed', '1.0', '1.0')
 
-		self.backendManager.product_createObjects([firstProduct, secondProduct])
-		self.backendManager.productDependency_createObjects([prodDependency])
+	prodDependency = ProductDependency(
+		productId=firstProduct.id,
+		productVersion=firstProduct.productVersion,
+		packageVersion=firstProduct.packageVersion,
+		productAction='setup',
+		requiredProductId=secondProduct.id,
+		# requiredProductVersion=secondProduct.productVersion,
+		# requiredPackageVersion=secondProduct.packageVersion,
+		requiredAction='setup',
+		requiredInstallationStatus='installed',
+		requirementType='after'
+	)
 
-		poc = ProductOnClient(
-			clientId=client.id,
-			productId=firstProduct.id,
-			productType=firstProduct.getType(),
-			productVersion=firstProduct.productVersion,
-			packageVersion=firstProduct.packageVersion,
-			installationStatus='installed',
-			actionResult='successful'
-		)
+	backend.product_createObjects([firstProduct, secondProduct])
+	backend.productDependency_createObjects([prodDependency])
 
-		self.backendManager.productOnClient_createObjects([poc])
+	poc = ProductOnClient(
+		clientId=client.id,
+		productId=firstProduct.id,
+		productType=firstProduct.getType(),
+		productVersion=firstProduct.productVersion,
+		packageVersion=firstProduct.packageVersion,
+		installationStatus='installed',
+		actionResult='successful'
+	)
 
-		firstProductOnDepot = ProductOnDepot(
-			productId=firstProduct.id,
-			productType=firstProduct.getType(),
-			productVersion=firstProduct.productVersion,
-			packageVersion=firstProduct.packageVersion,
-			depotId=depot.getId(),
-			locked=False
-		)
+	backend.productOnClient_createObjects([poc])
 
-		secondProductOnDepot = ProductOnDepot(
-			productId=secondProduct.id,
-			productType=secondProduct.getType(),
-			productVersion=secondProduct.productVersion,
-			packageVersion=secondProduct.packageVersion,
-			depotId=depot.getId(),
-			locked=False
-		)
+	firstProductOnDepot = ProductOnDepot(
+		productId=firstProduct.id,
+		productType=firstProduct.getType(),
+		productVersion=firstProduct.productVersion,
+		packageVersion=firstProduct.packageVersion,
+		depotId=depot.getId(),
+		locked=False
+	)
 
-		self.backendManager.productOnDepot_createObjects([firstProductOnDepot, secondProductOnDepot])
+	secondProductOnDepot = ProductOnDepot(
+		productId=secondProduct.id,
+		productType=secondProduct.getType(),
+		productVersion=secondProduct.productVersion,
+		packageVersion=secondProduct.packageVersion,
+		depotId=depot.getId(),
+		locked=False
+	)
 
-		clientConfigDepotId = UnicodeConfig(
-			id=u'clientconfig.depot.id',
-			description=u'Depotserver to use',
-			possibleValues=[],
-			defaultValues=[depot.id]
-		)
+	backend.productOnDepot_createObjects([firstProductOnDepot, secondProductOnDepot])
 
-		self.backendManager.config_createObjects(clientConfigDepotId)
+	clientConfigDepotId = UnicodeConfig(
+		id=u'clientconfig.depot.id',
+		description=u'Depotserver to use',
+		possibleValues=[],
+		defaultValues=[depot.id]
+	)
 
-		clientDepotMappingConfigState = ConfigState(
-			configId=clientConfigDepotId.getId(),
-			objectId=client.getId(),
-			values=depot.getId()
-		)
+	backend.config_createObjects(clientConfigDepotId)
 
-		self.backendManager.configState_createObjects(clientDepotMappingConfigState)
+	clientDepotMappingConfigState = ConfigState(
+		configId=clientConfigDepotId.getId(),
+		objectId=client.getId(),
+		values=depot.getId()
+	)
 
-	def tearDown(self):
-		self.tearDownBackend()
+	backend.configState_createObjects(clientDepotMappingConfigState)
 
-	def testBackendDoesNotCreateProductsOnClientsOnItsOwn(self):
-		pocs = self.backendManager.productOnClient_getObjects()
-		self.assertEqual(
-			1,
-			len(pocs),
-			'Expected to have only one ProductOnClient but got {n} instead: '
-			'{0}'.format(pocs, n=len(pocs))
-		)
 
-	def testSetProductActionRequestWithDependenciesSetsProductsToSetup(self):
-		"""
-		An product action request should set product that are dependencies to \
+def testBackendDoesNotCreateProductsOnClientsOnItsOwn(prefilledBackendManager):
+	pocs = prefilledBackendManager.productOnClient_getObjects()
+	assert 1 == len(pocs), 'Expected to have only one ProductOnClient but got {n} instead: {0}'.format(pocs, n=len(pocs))
+
+
+def testSetProductActionRequestWithDependenciesSetsProductsToSetup(prefilledBackendManager):
+	"""
+	An product action request should set product that are dependencies to \
 setup even if they are already installed on a client.
-		"""
-		self.backendManager.setProductActionRequestWithDependencies(
-			'to_install',
-			'backend-test-1.vmnat.local',
-			'setup'
-		)
+	"""
+	prefilledBackendManager.setProductActionRequestWithDependencies(
+		'to_install',
+		'backend-test-1.vmnat.local',
+		'setup'
+	)
 
-		productsOnClient = self.backendManager.productOnClient_getObjects()
-		self.assertEqual(
-			2,
-			len(productsOnClient),
-			'Expected to have two ProductOnClients. Instead we got {n}: '
-			'{0}'.format(productsOnClient, n=len(productsOnClient))
-		)
+	productsOnClient = prefilledBackendManager.productOnClient_getObjects()
+	assert 2 == len(productsOnClient)
 
-		productThatShouldBeReinstalled = None
-		for poc in productsOnClient:
-			self.assertEqual(
-				'backend-test-1.vmnat.local',
-				poc.clientId,
-				'Wrong client id. Expected it to be "{0}" but got: '
-				'{1}'.format('backend-test-1.vmnat.local', poc.clientId)
-			)
+	productThatShouldBeReinstalled = None
+	for poc in productsOnClient:
+		assert 'backend-test-1.vmnat.local' == poc.clientId, 'Wrong client id. Expected it to be {0!r} but got: {1!r}'.format('backend-test-1.vmnat.local', poc.clientId)
 
-			if poc.productId == 'already_installed':
-				productThatShouldBeReinstalled = poc
+		if poc.productId == 'already_installed':
+			productThatShouldBeReinstalled = poc
 
-		if productThatShouldBeReinstalled is None:
-			self.fail('Could not find a product "{0}" on the client.'.format('already_installed'))
+	if productThatShouldBeReinstalled is None:
+		raise AssertionError('Could not find a product "{0}" on the client.'.format('already_installed'))
 
-		self.assertEquals(productThatShouldBeReinstalled.productId, 'already_installed')
-		self.assertEquals(productThatShouldBeReinstalled.actionRequest, 'setup')
+	assert productThatShouldBeReinstalled.productId == 'already_installed'
+	assert productThatShouldBeReinstalled.actionRequest == 'setup'
 
-	def testGetProductOrdering(self):
-		self.backend.getProductOrdering('depotserver1.some.test')
 
-if __name__ == '__main__':
-	unittest.main()
+@pytest.mark.parametrize("sortalgorithm", [None, 'algorithm1', 'algorithm2', 'unknown-algo'])
+def testGetProductOrdering(prefilledBackendManager, sortalgorithm):
+	ordering = prefilledBackendManager.getProductOrdering('depotserver1.some.test', sortalgorithm)
+	print("Result after ordering: {0!r}".format(ordering))
+
+	sortedProducts = ordering['sorted']
+	unsortedProducts = ordering['not_sorted']
+
+	assert sortedProducts
+	assert unsortedProducts
+	assert len(sortedProducts) == len(unsortedProducts)
