@@ -884,7 +884,7 @@ class BackendAccessControl(object):
 		granted = False
 		newKwargs = {}
 		acls = []
-		logger.debug(u"Access control for method {0!r} params {1!r}", methodName, kwargs)
+		logger.debug(u"Access control for method {0!r} with params {1!r}", methodName, kwargs)
 		for regex, acl in self._acl:
 			logger.debug2(u"Testing if ACL pattern {0!r} matches method {1!r}", regex.pattern, methodName)
 			if not regex.search(methodName):
@@ -935,7 +935,6 @@ class BackendAccessControl(object):
 		else:
 			logger.debug(u"Partial access to method {0!r} granted to user {1!r} by acls {2!r}", methodName, self._username, acls)
 			try:
-
 				newKwargs = self._filterParams(kwargs, acls)
 				if not newKwargs:
 					raise BackendPermissionDeniedError(u"No allowed param supplied")
