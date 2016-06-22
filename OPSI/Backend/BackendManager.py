@@ -661,12 +661,12 @@ class BackendAccessControl(object):
 				if not self._host.opsiHostKey:
 					raise Exception(u"OpsiHostKey not found for host '%s'" % self._username)
 
-				logger.confidential(u"Client '%s', key sent '%s', key stored '%s'" % (self._username, self._password, self._host.opsiHostKey))
+				logger.confidential(u"Client {0!r}, key sent {1!r}, key stored {2!r}", self._username, self._password, self._host.opsiHostKey)
 
 				if self._password != self._host.opsiHostKey:
 					raise BackendAuthenticationError(u"OpsiHostKey authentication failed for host '%s': wrong key" % self._host.id)
 
-				logger.info(u"OpsiHostKey authentication successful for host '%s'" % self._host.id)
+				logger.info(u"OpsiHostKey authentication successful for host {0!r}", self._host.id)
 			else:
 				# System user trying to log in with username and password
 				logger.debug(u"Trying to authenticate by operating system...")
