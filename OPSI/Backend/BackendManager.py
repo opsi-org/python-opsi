@@ -953,7 +953,6 @@ class BackendAccessControl(object):
 		return self._filterResult(result, acls)
 
 	def _filterParams(self, params, acls):
-		params = dict(params)
 		logger.debug(u"Filtering params: {0}", params)
 		for (key, value) in params.items():
 			valueList = forceList(value)
