@@ -475,14 +475,14 @@ class HTTPConnectionPool(object):
 					logger.info(u"Encoding authorization")
 					randomKey = randomString(32).encode('latin-1')
 					encryptedKey = encryptWithPublicKeyFromX509CertificatePEMFile(randomKey, self.serverCertFile)
-					headers['X-opsi-service-verification-key'] = base64.encodestring(encryptedKey)
+					headers['X-opsi-service-verification-key'] = base64.b64encode(encryptedKey)
 					for key, value in headers.items():
 						if key.lower() == 'authorization':
 							if value.lower().startswith('basic'):
 								value = value[5:].strip()
-							value = base64.decodestring(value).strip()
+							value = base64.b64decode(value).strip()
 							encodedAuth = encryptWithPublicKeyFromX509CertificatePEMFile(value, self.serverCertFile)
-							headers[key] = 'Opsi ' + base64.encodestring(encodedAuth).strip()
+							headers[key] = 'Opsi ' + base64.b64encode(encodedAuth)
 				except Exception as error:
 					logger.logException(error, LOG_INFO)
 					logger.critical(u"Cannot verify server based on certificate file '%s': %s" % (self.serverCertFile, error))

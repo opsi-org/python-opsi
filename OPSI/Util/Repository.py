@@ -854,7 +854,7 @@ class HTTPRepository(Repository):
 			logger.addConfidentialString(self._password)
 
 		auth = u'%s:%s' % (self._username, self._password)
-		self._auth = 'Basic '+ base64.encodestring(auth.encode('latin-1')).strip()
+		self._auth = 'Basic '+ base64.b64encode(auth.encode('latin-1')
 		self._proxy = None
 
 		if proxy:
@@ -871,7 +871,7 @@ class HTTPRepository(Repository):
 				if ':' in proxyUsername:
 					proxyUsername, proxyPassword = proxyUsername.split(':', 1)
 				auth = u'%s:%s' % (proxyUsername, proxyPassword)
-				self._auth = 'Basic '+ base64.encodestring(auth.encode('latin-1')).strip()
+				self._auth = 'Basic '+ base64.b64encode(auth.encode('latin-1'))
 			proxyPort = forceInt(match.group(3))
 			if self._username and self._password:
 				self._url = u'%s://%s:%s@%s:%d%s' % (self._protocol, self._username, self._password, self._host, self._port, self._path)
