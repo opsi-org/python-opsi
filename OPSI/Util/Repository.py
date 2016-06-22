@@ -854,7 +854,7 @@ class HTTPRepository(Repository):
 			logger.addConfidentialString(self._password)
 
 		auth = u'%s:%s' % (self._username, self._password)
-		self._auth = 'Basic '+ base64.b64encode(auth.encode('latin-1')
+		self._auth = 'Basic '+ base64.b64encode(auth.encode('latin-1'))
 		self._proxy = None
 
 		if proxy:
