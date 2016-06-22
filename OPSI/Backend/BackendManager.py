@@ -635,8 +635,6 @@ class BackendAccessControl(object):
 			raise BackendAuthenticationError(u"No backend specified")
 		if isinstance(self._backend, BackendAccessControl):
 			raise BackendConfigurationError(u"Cannot use BackendAccessControl instance as backend")
-		if not self._acl:
-			self._acl = [['.*', [{'type': u'sys_group', 'ids': [u'opsiadmin'], 'denyAttributes': [], 'allowAttributes': []}]]]
 
 		try:
 			if re.search('^[^\.]+\.[^\.]+\.\S+$', self._username):
@@ -675,6 +673,9 @@ class BackendAccessControl(object):
 		if self._aclFile:
 			self.__loadACLFile()
 		self._authenticated = True
+
+		if not self._acl:
+			self._acl = [['.*', [{'type': u'sys_group', 'ids': [u'opsiadmin'], 'denyAttributes': [], 'allowAttributes': []}]]]
 
 		# Pre-compiling regex patterns for speedup.
 		for i, (pattern, acl) in enumerate(self._acl):
