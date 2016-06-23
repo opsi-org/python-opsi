@@ -1,6 +1,7 @@
 python-opsi (4.0.7.4-1) UNRELEASED; urgency=medium
 
-  * OPSI.Util.Task.UpdateBackend.MySQL: Also correct table SOFTWARE_CONFIG.
+  * OPSI.Util.Task.UpdateBackend.MySQL: Also correct license key column in
+    table SOFTWARE_CONFIG.
   * ACL: Pre-compiling patterns
   * ACL: Changed log output for easier debugging.
   * Various small improvements in OPSI.Backend.BackendManager.
