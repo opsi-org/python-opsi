@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2006-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -62,7 +62,7 @@ elif os.name == 'nt':
 	import win32net
 	import win32security
 
-__version__ = '4.0.6.39'
+__version__ = '4.0.7.4'
 
 logger = Logger()
 
@@ -627,8 +627,6 @@ class BackendAccessControl(object):
 				if value is not None:
 					self._forceGroups = forceUnicodeList(value)
 
-		if not self._acl:
-			self._acl = [['.*', [{'type': u'sys_group', 'ids': [u'opsiadmin'], 'denyAttributes': [], 'allowAttributes': []}]]]
 		if not self._username:
 			raise BackendAuthenticationError(u"No username specified")
 		if not self._password:
@@ -637,11 +635,6 @@ class BackendAccessControl(object):
 			raise BackendAuthenticationError(u"No backend specified")
 		if isinstance(self._backend, BackendAccessControl):
 			raise BackendConfigurationError(u"Cannot use BackendAccessControl instance as backend")
-
-		# TODO: forceACL
-		# for i in range(len(self._acl)):
-		# 	self._acl[i][0] = re.compile(self._acl[i][0])
-		# 	self._acl[i][1] = forceUnicodeList(self._acl[i][1])
 
 		try:
 			if re.search('^[^\.]+\.[^\.]+\.\S+$', self._username):
@@ -674,12 +667,19 @@ class BackendAccessControl(object):
 				# Authentication did not throw exception => authentication successful
 				logger.info(u"Operating system authentication successful for user '%s', groups '%s'" % (self._username, ','.join(self._userGroups)))
 		except Exception as e:
-			raise BackendAuthenticationError(u"%s" % e)
+			raise BackendAuthenticationError(forceUnicode(e))
 
 		self._createInstanceMethods()
 		if self._aclFile:
 			self.__loadACLFile()
 		self._authenticated = True
+
+		if not self._acl:
+			self._acl = [['.*', [{'type': u'sys_group', 'ids': [u'opsiadmin'], 'denyAttributes': [], 'allowAttributes': []}]]]
+
+		# Pre-compiling regex patterns for speedup.
+		for i, (pattern, acl) in enumerate(self._acl):
+			self._acl[i] = (re.compile(pattern), acl)
 
 	def accessControl_authenticated(self):
 		return self._authenticated
@@ -884,12 +884,14 @@ class BackendAccessControl(object):
 		granted = False
 		newKwargs = {}
 		acls = []
-		logger.debug(u"Access control for method {0!r} params {1!r}", methodName, kwargs)
-		for (regex, acl) in self._acl:
-			logger.debug2(u"Testing acl {0}: {1} for method {2!r}", regex, acl, methodName)
-			if not re.search(regex, methodName):
+		logger.debug(u"Access control for method {0!r} with params {1!r}", methodName, kwargs)
+		for regex, acl in self._acl:
+			logger.debug2(u"Testing if ACL pattern {0!r} matches method {1!r}", regex.pattern, methodName)
+			if not regex.search(methodName):
+				logger.debug2(u"No match -> skipping.")
 				continue
-			logger.debug(u"Found matching acl {0} for method {1!r}", acl, methodName)
+
+			logger.debug(u"Found matching acl for method {1!r}: {0}", acl, methodName)
 			for entry in acl:
 				aclType = entry.get('type')
 				ids = entry.get('ids', [])
@@ -907,7 +909,7 @@ class BackendAccessControl(object):
 				elif aclType == 'self':
 					newGranted = 'partial_object'
 				else:
-					logger.error(u"Unhandled acl entry type: %s" % aclType)
+					logger.error(u"Unhandled acl entry type: {0}", aclType)
 					continue
 
 				if newGranted is False:
@@ -933,7 +935,6 @@ class BackendAccessControl(object):
 		else:
 			logger.debug(u"Partial access to method {0!r} granted to user {1!r} by acls {2!r}", methodName, self._username, acls)
 			try:
-
 				newKwargs = self._filterParams(kwargs, acls)
 				if not newKwargs:
 					raise BackendPermissionDeniedError(u"No allowed param supplied")
@@ -941,7 +942,7 @@ class BackendAccessControl(object):
 				logger.logException(e, LOG_INFO)
 				raise BackendPermissionDeniedError(u"Access to method '%s' denied for user '%s': %s" % (methodName, self._username, e))
 
-		logger.debug("newKwargs: {0}", newKwargs)
+		logger.debug2("newKwargs: {0}", newKwargs)
 
 		meth = getattr(self._backend, methodName)
 		result = meth(**newKwargs)
@@ -949,11 +950,9 @@ class BackendAccessControl(object):
 		if granted is True:
 			return result
 
-		# Filter result
 		return self._filterResult(result, acls)
 
 	def _filterParams(self, params, acls):
-		params = dict(params)
 		logger.debug(u"Filtering params: {0}", params)
 		for (key, value) in params.items():
 			valueList = forceList(value)
