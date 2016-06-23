@@ -643,13 +643,17 @@ class BackendAccessControl(object):
 				logger.debug(u"Trying to authenticate by opsiHostKey...")
 				self._username = self._username.lower()
 
-				if not hasattr(self._context, 'host_getObjects'):
+				try:
+					host = self._context.host_getObjects(id=self._username)
+				except AttributeError as aerr:
+					logger.debug(u"{0!r}", aerr)
 					raise Exception(u"Passed backend has no method 'host_getObjects', cannot authenticate host '%s'" % self._username)
 
-				host = self._context.host_getObjects(id=self._username)
-				if not host:
+				try:
+					self._host = host[0]
+				except IndexError as ierr:
+					logger.debug(u"{0!r}", ierr)
 					raise Exception(u"Host '%s' not found in backend %s" % (self._username, self._context))
-				self._host = host[0]
 
 				if not self._host.opsiHostKey:
 					raise Exception(u"OpsiHostKey not found for host '%s'" % self._username)
