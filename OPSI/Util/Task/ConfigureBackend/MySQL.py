@@ -116,11 +116,7 @@ on to. Defaults to ``Logger.error``.
                 if exc[0] == INVALID_DEFAULT_VALUE:
                         errorFunction(
                                 u"It seems you have the MySQL strict mode enabled. Please read the opsi handbook.\n"
-                                u"{error}".format(
-                                        hostname=config['address'],
-                                        username=dbAdminUser,
-                                        error=exc,
-                                )   
+                                u"{error}".format(error=exc)   
                         )   
 		raise exc
 
