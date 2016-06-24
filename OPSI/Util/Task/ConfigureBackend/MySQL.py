@@ -122,7 +122,7 @@ on to. Defaults to ``Logger.error``.
                                         error=exc,
                                 )   
                         )   
-                        raise exc
+		raise exc
 
 	notificationFunction(u"Finished initializing mysql backend.")
 
