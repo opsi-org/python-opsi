@@ -56,7 +56,7 @@ from OPSI.Types import OpsiVersionError
 from OPSI.Object import *
 from OPSI.Util import objectToBeautifiedText, removeUnit
 
-__version__ = '4.0.7.1'
+__version__ = '4.0.7.4'
 
 logger = Logger()
 
@@ -378,7 +378,7 @@ def getEthernetDevices():
 				continue
 
 			device = line.split(':')[0].strip()
-			if device.startswith(('eth', 'ens', 'tr', 'br', 'enp')):
+			if device.startswith(('eth', 'ens', 'eno', 'tr', 'br', 'enp')):
 				logger.info(u"Found ethernet device: '{0}'".format(device))
 				devices.append(device)
 
@@ -3929,3 +3929,4 @@ def setLocalSystemTime(timestring):
 		subprocess.call([systemTime])
 	except Exception as error:
 			logger.error(u"Failed to set System Time: %s" % error)
+

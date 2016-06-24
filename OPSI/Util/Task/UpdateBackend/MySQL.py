@@ -500,7 +500,10 @@ def updateMySQLBackend(backendConfigFile=u'/etc/opsi/backends/mysql.conf',
 def _fixLengthOfLicenseKeys(database):
 	"Correct the length of license key columns to be consistent."
 
-	relevantTables = ('LICENSE_ON_CLIENT', 'SOFTWARE_LICENSE_TO_LICENSE_POOL')
+	relevantTables = (
+		'LICENSE_ON_CLIENT', 'SOFTWARE_CONFIG',
+		'SOFTWARE_LICENSE_TO_LICENSE_POOL'
+	)
 
 	for table in relevantTables:
 		for column in getTableColumns(database, table):
