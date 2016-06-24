@@ -89,7 +89,7 @@ def testCorrectingLicenseOnClientLicenseKeyLength():
 
             updateMySQLBackend(backendConfigFile=configFile)
 
-            for tableName in ('LICENSE_ON_CLIENT', 'SOFTWARE_LICENSE_TO_LICENSE_POOL'):
+            for tableName in ('LICENSE_ON_CLIENT', 'SOFTWARE_CONFIG', 'SOFTWARE_LICENSE_TO_LICENSE_POOL'):
                 print("Checking {0}...".format(tableName))
 
                 assert tableName in getTableNames(db)
@@ -194,6 +194,26 @@ def createRequiredTables(database):
         `licenseKey` VARCHAR(100),
         `notes` VARCHAR(1024)
     ) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci """)
+
+    database.execute(u'''CREATE TABLE `SOFTWARE_CONFIG` (
+        `config_id` integer NOT NULL AUTO_INCREMENT,
+        `clientId` varchar(255) NOT NULL,
+        `name` varchar(100) NOT NULL,
+        `version` varchar(100) NOT NULL,
+        `subVersion` varchar(100) NOT NULL,
+        `language` varchar(10) NOT NULL,
+        `architecture` varchar(3) NOT NULL,
+        `uninstallString` varchar(200),
+        `binaryName` varchar(100),
+        `firstseen` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
+        `lastseen` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
+        `state` TINYINT NOT NULL,
+        `usageFrequency` integer NOT NULL DEFAULT -1,
+        `lastUsed` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
+        `licenseKey` VARCHAR(100),
+        PRIMARY KEY (`config_id`)
+    ) %s;
+    ''' % database.getTableCreationOptions('SOFTWARE_CONFIG'))
 
 
 def getTableNames(database):

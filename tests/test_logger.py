@@ -287,7 +287,8 @@ def testLoggingTracebacks():
 				logger.logException(e)
 
 		values = messageBuffer.getvalue().split('\n')
-		values = [v for v in values if v]  # don't use empty lines
+		if not values[-1]:  # removing last, empty line
+			values = values[:-1]
 
 		print(repr(values))
 
@@ -295,7 +296,35 @@ def testLoggingTracebacks():
 		assert "traceback" in values[0].lower()
 		assert "line" in values[1].lower()
 		assert "file" in values[1].lower()
+		assert __file__ in values[1]
 		assert "Foooock" in values[-1]
+
+
+def testLoggingTraceBacksFromInsideAFunction():
+
+	def failyMcFailFace():
+		raise RuntimeError("Something bad happened!")
+
+	with showLogs() as logger:
+		with catchMessages() as messageBuffer:
+			try:
+				failyMcFailFace()
+			except Exception as e:
+				logger.logException(e)
+
+		values = messageBuffer.getvalue().split('\n')
+		if not values[-1]:  # removing last, empty line
+			values = values[:-1]
+
+		print(repr(values))
+
+		assert len(values) > 1
+		assert "traceback" in values[0].lower()
+		assert "line" in values[1].lower()
+		assert "file" in values[1].lower()
+		assert __file__ in values[1]
+		assert failyMcFailFace.func_name in values[2]
+		assert "Something bad happened" in values[-1]
 
 
 def testLogTracebackCanFail():
