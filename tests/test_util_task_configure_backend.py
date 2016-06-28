@@ -90,131 +90,123 @@ class ConfigFileManagementTestCase(unittest.TestCase):
             )
 
 
-class InitialiseConfigsTestCase(unittest.TestCase):
-    def testReadingWindowsDomain(self):
-        testConfig = os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'task', 'smb.conf')
-        domain = confData.readWindowsDomainFromSambaConfig(testConfig)
+def testReadingWindowsDomainFromSambaConfig():
+    testConfig = os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'task', 'smb.conf')
+    domain = confData.readWindowsDomainFromSambaConfig(testConfig)
 
-        self.assertEquals('WWWORK', domain)
+    assert 'WWWORK' == domain
 
 
-class ConfigureBackendTestCase(unittest.TestCase, FileBackendMixin):
+def testConfigureBackendAddsMissingEntries(extendedConfigDataBackend):
+    wantedConfigs = set([
+        u'clientconfig.depot.dynamic',
+        u'clientconfig.depot.drive',
+        u'clientconfig.depot.protocol',
+        u'clientconfig.windows.domain',
+        u'opsi-linux-bootimage.append',
+        u'license-management.use',
+        u'software-on-demand.active',
+        u'software-on-demand.product-group-ids',
+        u'software-on-demand.show-details',
+        u'product_sort_algorithm',
+        u'clientconfig.dhcpd.filename'
+    ])
 
-    def setUp(self):
-        self.setUpBackend()
+    # Making sure we have an empty backend regarding the defaults we want.
+    extendedConfigDataBackend.config_delete(id=list(wantedConfigs))
 
-    def tearDown(self):
-        self.tearDownBackend()
+    sambaTestConfig = os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'task', 'smb.conf')
+    confData.initializeConfigs(backend=extendedConfigDataBackend, pathToSMBConf=sambaTestConfig)
 
-    def testConfigureBackendAddsMissingEntries(self):
-        wantedConfigs = set([
-            u'clientconfig.depot.dynamic',
-            u'clientconfig.depot.drive',
-            u'clientconfig.depot.protocol',
-            u'clientconfig.windows.domain',
-            u'opsi-linux-bootimage.append',
-            u'license-management.use',
-            u'software-on-demand.active',
-            u'software-on-demand.show-details',
-            u'software-on-demand.product-group-ids',
-            u'product_sort_algorithm',
-            u'clientconfig.dhcpd.filename'
-        ])
+    configIdents = set(extendedConfigDataBackend.config_getIdents(returnType='unicode'))
 
-        # Making sure we have an empty backend regarding the defaults we want.
-        self.backend.config_delete(id=list(wantedConfigs))
+    for configId in wantedConfigs:
+        assert configId in configIdents
 
-        sambaTestConfig = os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'task', 'smb.conf')
-        confData.initializeConfigs(backend=self.backend, pathToSMBConf=sambaTestConfig)
+    config = extendedConfigDataBackend.config_getObjects(id=u'clientconfig.depot.drive')[0]
+    assert u'dynamic' in config.possibleValues
 
-        configIdents = set(self.backend.config_getIdents(returnType='unicode'))
 
-        for configId in wantedConfigs:
-            self.assertTrue(configId in configIdents)
+def testAddingDynamicClientConfigDepotDrive(extendedConfigDataBackend):
+    """
+    'dynamic' should be a possible value in 'clientconfig.depot.drive'.
 
-        config = self.backend.config_getObjects(id=u'clientconfig.depot.drive')[0]
-        self.assertTrue(u'dynamic' in config.possibleValues)
+    This makes sure that old configs are updated aswell.
+    """
+    extendedConfigDataBackend.config_delete(id=[u'clientconfig.depot.drive'])
 
-    def testAddingDynamicClientConfigDepotDrive(self):
-        """
-        'dynamic' should be a possible value in 'clientconfig.depot.drive'.
+    oldConfig = UnicodeConfig(
+        id=u'clientconfig.depot.drive',
+        description=u'Drive letter for depot share',
+        possibleValues=[
+            u'c:', u'd:', u'e:', u'f:', u'g:', u'h:', u'i:', u'j:',
+            u'k:', u'l:', u'm:', u'n:', u'o:', u'p:', u'q:', u'r:',
+            u's:', u't:', u'u:', u'v:', u'w:', u'x:', u'y:', u'z:',
+        ],
+        defaultValues=[u'p:'],
+        editable=False,
+        multiValue=False
+    )
+    extendedConfigDataBackend.config_createObjects([oldConfig])
 
-        This makes sure that old configs are updated aswell.
-        """
-        self.backend.config_delete(id=[u'clientconfig.depot.drive'])
+    sambaTestConfig = os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'task', 'smb.conf')
+    confData.initializeConfigs(backend=extendedConfigDataBackend, pathToSMBConf=sambaTestConfig)
 
-        oldConfig = UnicodeConfig(
-            id=u'clientconfig.depot.drive',
-            description=u'Drive letter for depot share',
-            possibleValues=[
-                u'c:', u'd:', u'e:', u'f:', u'g:', u'h:', u'i:', u'j:',
-                u'k:', u'l:', u'm:', u'n:', u'o:', u'p:', u'q:', u'r:',
-                u's:', u't:', u'u:', u'v:', u'w:', u'x:', u'y:', u'z:',
-            ],
-            defaultValues=[u'p:'],
-            editable=False,
-            multiValue=False
-        )
-        self.backend.config_createObjects([oldConfig])
+    config = extendedConfigDataBackend.config_getObjects(id=u'clientconfig.depot.drive')[0]
+    assert u'dynamic' in config.possibleValues
 
-        sambaTestConfig = os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'task', 'smb.conf')
-        confData.initializeConfigs(backend=self.backend, pathToSMBConf=sambaTestConfig)
 
-        config = self.backend.config_getObjects(id=u'clientconfig.depot.drive')[0]
-        self.assertTrue(u'dynamic' in config.possibleValues)
+def testAddingDynamicClientConfigDepotDriveKeepsOldDefault(extendedConfigDataBackend):
+    """
+    Adding the new property should keep the old defaults.
+    """
+    sambaTestConfig = os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'task', 'smb.conf')
+    confData.initializeConfigs(backend=extendedConfigDataBackend, pathToSMBConf=sambaTestConfig)
 
-    def testAddingDynamicClientConfigDepotDriveKeepsOldDefault(self):
-        """
-        Adding the new property should keep the old defaults.
-        """
-        sambaTestConfig = os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'task', 'smb.conf')
-        confData.initializeConfigs(backend=self.backend, pathToSMBConf=sambaTestConfig)
+    extendedConfigDataBackend.config_delete(id=[u'clientconfig.depot.drive'])
+    oldConfig = UnicodeConfig(
+        id=u'clientconfig.depot.drive',
+        description=u'Drive letter for depot share',
+        possibleValues=[
+            u'c:', u'd:', u'e:', u'f:', u'g:', u'h:', u'i:', u'j:',
+            u'k:', u'l:', u'm:', u'n:', u'o:', u'p:', u'q:', u'r:',
+            u's:', u't:', u'u:', u'v:', u'w:', u'x:', u'y:', u'z:',
+        ],
+        defaultValues=[u'n:'],
+        editable=False,
+        multiValue=False
+    )
+    extendedConfigDataBackend.config_createObjects([oldConfig])
 
-        self.backend.config_delete(id=[u'clientconfig.depot.drive'])
-        oldConfig = UnicodeConfig(
-            id=u'clientconfig.depot.drive',
-            description=u'Drive letter for depot share',
-            possibleValues=[
-                u'c:', u'd:', u'e:', u'f:', u'g:', u'h:', u'i:', u'j:',
-                u'k:', u'l:', u'm:', u'n:', u'o:', u'p:', u'q:', u'r:',
-                u's:', u't:', u'u:', u'v:', u'w:', u'x:', u'y:', u'z:',
-            ],
-            defaultValues=[u'n:'],
-            editable=False,
-            multiValue=False
-        )
-        self.backend.config_createObjects([oldConfig])
+    sambaTestConfig = os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'task', 'smb.conf')
+    confData.initializeConfigs(backend=extendedConfigDataBackend, pathToSMBConf=sambaTestConfig)
 
-        sambaTestConfig = os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'task', 'smb.conf')
-        confData.initializeConfigs(backend=self.backend, pathToSMBConf=sambaTestConfig)
+    config = extendedConfigDataBackend.config_getObjects(id=u'clientconfig.depot.drive')[0]
+    assert [u'n:'] == config.defaultValues
 
-        config = self.backend.config_getObjects(id=u'clientconfig.depot.drive')[0]
-        self.assertTrue([u'n:'], config.defaultValues)
 
-    def testAddingWANConfigs(self):
-        requiredConfigIdents = [
-            "opsiclientd.event_gui_startup.active",
-            "opsiclientd.event_gui_startup{user_logged_in}.active",
-            "opsiclientd.event_net_connection.active",
-            "opsiclientd.event_timer.active",
-        ]
+def testAddingWANConfigs(extendedConfigDataBackend):
+    requiredConfigIdents = [
+        "opsiclientd.event_gui_startup.active",
+        "opsiclientd.event_gui_startup{user_logged_in}.active",
+        "opsiclientd.event_net_connection.active",
+        "opsiclientd.event_timer.active",
+    ]
 
-        confData.createWANconfigs(self.backend)
-        identsInBackend = set(self.backend.config_getIdents())
+    confData.createWANconfigs(extendedConfigDataBackend)
+    identsInBackend = set(extendedConfigDataBackend.config_getIdents())
 
-        for ident in requiredConfigIdents:
-            self.assertTrue(ident in identsInBackend, "Missing config id {0}".format(ident))
+    for ident in requiredConfigIdents:
+        assert ident in identsInBackend, "Missing config id {0}".format(ident)
 
-    def testAddingInstallByShutdownConfig(self):
-        requiredConfigIdents = [
-            "clientconfig.install_by_shutdown.active",
-        ]
 
-        confData.createInstallByShutdownConfig(self.backend)
-        identsInBackend = set(self.backend.config_getIdents())
+def testAddingInstallByShutdownConfig(extendedConfigDataBackend):
+    requiredConfigIdents = [
+        "clientconfig.install_by_shutdown.active",
+    ]
 
-        for ident in requiredConfigIdents:
-            self.assertTrue(ident in identsInBackend, "Missing config id {0}".format(ident))
+    confData.createInstallByShutdownConfig(extendedConfigDataBackend)
+    identsInBackend = set(extendedConfigDataBackend.config_getIdents())
 
-if __name__ == '__main__':
-    unittest.main()
+    for ident in requiredConfigIdents:
+        assert ident in identsInBackend, "Missing config id {0}".format(ident)
