@@ -26,14 +26,15 @@ Testing the backend configuration.
 from __future__ import absolute_import
 
 import os
-import unittest
 
 from OPSI.Object import UnicodeConfig
 import OPSI.Util.Task.ConfigureBackend as backendConfigUtils
 import OPSI.Util.Task.ConfigureBackend.ConfigurationData as confData
 
 from .Backends.File import FileBackendMixin
-from .helpers import createTemporaryTestfile
+from .helpers import createTemporaryTestfile, unittest
+
+import pytest
 
 
 class ConfigFileManagementTestCase(unittest.TestCase):
@@ -97,34 +98,26 @@ def testReadingWindowsDomainFromSambaConfig():
     assert 'WWWORK' == domain
 
 
-def testConfigureBackendAddsMissingEntries(extendedConfigDataBackend):
-    wantedConfigs = set([
-        u'clientconfig.depot.dynamic',
-        u'clientconfig.depot.drive',
-        u'clientconfig.depot.protocol',
-        u'clientconfig.windows.domain',
-        u'opsi-linux-bootimage.append',
-        u'license-management.use',
-        u'software-on-demand.active',
-        u'software-on-demand.product-group-ids',
-        u'software-on-demand.show-details',
-        u'product_sort_algorithm',
-        u'clientconfig.dhcpd.filename'
-    ])
-
-    # Making sure we have an empty backend regarding the defaults we want.
-    extendedConfigDataBackend.config_delete(id=list(wantedConfigs))
-
+@pytest.mark.parametrize("configId", [
+    u'clientconfig.depot.dynamic',
+    u'clientconfig.depot.drive',
+    u'clientconfig.depot.protocol',
+    u'clientconfig.windows.domain',
+    u'opsi-linux-bootimage.append',
+    u'license-management.use',
+    u'software-on-demand.active',
+    u'software-on-demand.product-group-ids',
+    u'software-on-demand.show-details',
+    u'product_sort_algorithm',
+    u'clientconfig.dhcpd.filename'
+])
+def testConfigureBackendAddsMissingEntries(extendedConfigDataBackend, configId):
     sambaTestConfig = os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'task', 'smb.conf')
     confData.initializeConfigs(backend=extendedConfigDataBackend, pathToSMBConf=sambaTestConfig)
 
     configIdents = set(extendedConfigDataBackend.config_getIdents(returnType='unicode'))
 
-    for configId in wantedConfigs:
-        assert configId in configIdents
-
-    config = extendedConfigDataBackend.config_getObjects(id=u'clientconfig.depot.drive')[0]
-    assert u'dynamic' in config.possibleValues
+    assert configId in configIdents
 
 
 def testAddingDynamicClientConfigDepotDrive(extendedConfigDataBackend):
