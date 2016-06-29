@@ -160,8 +160,9 @@ setup even if they are already installed on a client.
 	assert productThatShouldBeReinstalled.actionRequest == 'setup'
 
 
+@pytest.mark.parametrize("actionRequest", ["setup", "once"])
 @pytest.mark.parametrize("installationStatus", ["installed", "unknown", "not_installed", None])
-def testSetProductActionRequestWithDependenciesWithDependencyRequestingAction(backendManager, installationStatus):
+def testSetProductActionRequestWithDependenciesWithDependencyRequestingAction(backendManager, installationStatus, actionRequest):
 	client, depot = createClientAndDepot(backendManager)
 
 	jedit = LocalbootProduct('jedit', '1.0', '1.0')
@@ -207,7 +208,7 @@ def testSetProductActionRequestWithDependenciesWithDependencyRequestingAction(ba
 
 		backendManager.productOnClient_createObjects([poc])
 
-	backendManager.setProductActionRequestWithDependencies('jedit', client.id, 'setup')
+	backendManager.setProductActionRequestWithDependencies('jedit', client.id, actionRequest)
 
 	productsOnClient = backendManager.productOnClient_getObjects()
 	assert 2 == len(productsOnClient)
@@ -221,6 +222,7 @@ def testSetProductActionRequestWithDependenciesWithDependencyRequestingAction(ba
 
 	assert productThatShouldBeSetup.productId == 'javavm'
 	assert productThatShouldBeSetup.actionRequest == 'setup'
+
 
 @pytest.mark.parametrize("sortalgorithm", [None, 'algorithm1', 'algorithm2', 'unknown-algo'])
 def testGetProductOrdering(prefilledBackendManager, sortalgorithm):
