@@ -160,9 +160,8 @@ setup even if they are already installed on a client.
 	assert productThatShouldBeReinstalled.actionRequest == 'setup'
 
 
-@pytest.mark.parametrize("actionRequest", ["setup", "once"])
 @pytest.mark.parametrize("installationStatus", ["installed", "unknown", "not_installed", None])
-def testSetProductActionRequestWithDependenciesWithDependencyRequestingAction(backendManager, installationStatus, actionRequest):
+def testSetProductActionRequestWithDependenciesWithDependencyRequestingAction(backendManager, installationStatus):
 	client, depot = createClientAndDepot(backendManager)
 
 	jedit = LocalbootProduct('jedit', '1.0', '1.0')
@@ -208,7 +207,7 @@ def testSetProductActionRequestWithDependenciesWithDependencyRequestingAction(ba
 
 		backendManager.productOnClient_createObjects([poc])
 
-	backendManager.setProductActionRequestWithDependencies('jedit', client.id, actionRequest)
+	backendManager.setProductActionRequestWithDependencies('jedit', client.id, "setup")
 
 	productsOnClient = backendManager.productOnClient_getObjects()
 	assert 2 == len(productsOnClient)
