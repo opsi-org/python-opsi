@@ -231,7 +231,7 @@ class MySQL(SQL):
 			self._transactionLock.release()
 
 	def getSet(self, query):
-		logger.debug2(u"getSet: %s" % query)
+		logger.debug2(u"getSet: {0}", query)
 		(conn, cursor) = self.connect()
 
 		try:
@@ -254,7 +254,7 @@ class MySQL(SQL):
 		return valueSet or []
 
 	def getRows(self, query):
-		logger.debug2(u"getRows: %s" % query)
+		logger.debug2(u"getRows: {0}", query)
 		onlyAllowSelect(query)
 
 		(conn, cursor) = self.connect(cursorType=MySQLdb.cursors.Cursor)
@@ -273,7 +273,7 @@ class MySQL(SQL):
 
 			valueSet = cursor.fetchall()
 			if not valueSet:
-				logger.debug(u"No result for query '%s'" % query)
+				logger.debug(u"No result for query {0!r}", query)
 				valueSet = []
 		finally:
 			self.close(conn, cursor)
@@ -281,7 +281,7 @@ class MySQL(SQL):
 		return valueSet
 
 	def getRow(self, query, conn=None, cursor=None):
-		logger.debug2(u"getRow: %s" % query)
+		logger.debug2(u"getRow: {0}", query)
 		closeConnection = True
 		if conn and cursor:
 			logger.debug(u"TRANSACTION: conn and cursor given, so we should not close the connection.")
@@ -293,7 +293,7 @@ class MySQL(SQL):
 			try:
 				self.execute(query, conn, cursor)
 			except Exception as e:
-				logger.debug(u"Execute error: %s" % e)
+				logger.debug(u"Execute error: {0!r}", e)
 				if e[0] != 2006:
 					# 2006: MySQL server has gone away
 					raise
@@ -302,10 +302,10 @@ class MySQL(SQL):
 				self.execute(query, conn, cursor)
 			row = cursor.fetchone()
 			if not row:
-				logger.debug(u"No result for query '%s'" % query)
+				logger.debug(u"No result for query {0!r}", query)
 				row = {}
 			else:
-				logger.debug2(u"Result: '%s'" % row)
+				logger.debug2(u"Result: {0!r}", row)
 		finally:
 			if closeConnection:
 				self.close(conn, cursor)
@@ -339,11 +339,11 @@ class MySQL(SQL):
 					values.append(u"\'{0}\'".format(self.escapeApostrophe(self.escapeBackslash(value))))
 
 			query = u'INSERT INTO `{0}` ({1}) VALUES ({2});'.format(table, ', '.join(colNames), ', '.join(values))
-			logger.debug2(u"insert: %s" % query)
+			logger.debug2(u"insert: {0}", query)
 			try:
 				self.execute(query, conn, cursor)
 			except Exception as e:
-				logger.debug(u"Execute error: %s" % e)
+				logger.debug(u"Execute error: {0!r}", e)
 				if e[0] != 2006:
 					# 2006: MySQL server has gone away
 					raise
@@ -384,11 +384,11 @@ class MySQL(SQL):
 				query.append(u"`{0}` = {1}".format(key, value))
 
 			query = u"UPDATE `{0}` SET {1} WHERE {2};".format(table, ', '.join(query), where)
-			logger.debug2(u"update: %s" % query)
+			logger.debug2(u"update: {0}", query)
 			try:
 				self.execute(query, conn, cursor)
 			except Exception as e:
-				logger.debug(u"Execute error: %s" % e)
+				logger.debug(u"Execute error: {0!r}", e)
 				if e[0] != 2006:
 					# 2006: MySQL server has gone away
 					raise
@@ -411,34 +411,37 @@ class MySQL(SQL):
 		result = 0
 		try:
 			query = u"DELETE FROM `%s` WHERE %s;" % (table, where)
-			logger.debug2(u"delete: %s" % query)
+			logger.debug2(u"delete: {0}", query)
 			try:
 				self.execute(query, conn, cursor)
 			except Exception as e:
-				logger.debug(u"Execute error: %s" % e)
+				logger.debug(u"Execute error: {0}", e)
 				if e[0] != 2006:
 					# 2006: MySQL server has gone away
 					raise
+
 				self._createConnectionPool()
-				(conn, cursor) = self.connect()
+				conn, cursor = self.connect()
 				self.execute(query, conn, cursor)
+
 			result = cursor.rowcount
 		finally:
 			if closeConnection:
 				self.close(conn, cursor)
+
 		return result
 
 	def execute(self, query, conn=None, cursor=None):
-		if not (conn and cursor):
-			(conn, cursor) = self.connect()
-			needClose = True
-		else:
+		if conn and cursor:
 			needClose = False
+		else:
+			needClose = True
+			conn, cursor = self.connect()
 
 		res = None
 		try:
 			query = forceUnicode(query)
-			logger.debug2(u"SQL query: %s" % query)
+			logger.debug2(u"SQL query: {0}", query)
 			res = cursor.execute(query)
 			if self.doCommit:
 				conn.commit()

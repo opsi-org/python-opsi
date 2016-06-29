@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -23,21 +23,20 @@ Testing BackendManager.
 :license: GNU Affero General Public License version 3
 """
 
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 
 import os
 
-from OPSI.Backend.Backend import ExtendedConfigDataBackend
 from OPSI.Backend.BackendManager import BackendManager, ConfigDataBackend
 
 from .Backends.File import FileBackendMixin
 from .BackendTestMixins.Backend import BackendTestsMixin
 from .BackendTestMixins.Configs import ConfigStatesMixin
-from .BackendTestMixins.Groups import GroupsMixin
 from .BackendTestMixins.Products import ProductsOnDepotMixin
 
 from .helpers import getLocalFQDN, unittest, workInTemporaryDirectory
 from .Backends.File import getFileBackend
+from .test_groups import fillBackendWithGroups
 
 
 class BackendExtensionTestCase(unittest.TestCase):
@@ -63,10 +62,11 @@ class BackendExtensionTestCase(unittest.TestCase):
 
 
 class ExtendedBackendManagerTestCase(unittest.TestCase, FileBackendMixin,
-        BackendTestsMixin, ProductsOnDepotMixin, ConfigStatesMixin, GroupsMixin):
+        BackendTestsMixin, ProductsOnDepotMixin, ConfigStatesMixin):
     """
     This tests an extended BackendManager that makes use of the extensions.
     """
+    # TODO: we may want to extend the backend fixtures to make use of a backendmanager aswell.
 
     def setUp(self):
         self.setUpBackend()
@@ -117,8 +117,7 @@ class ExtendedBackendManagerTestCase(unittest.TestCase, FileBackendMixin,
         bm.deleteGeneralConfig(self.client1.id)
         self.assertEquals('changed', bm.getGeneralConfigValue(key=anotherKey, objectId=self.client1.id))
 
-        self.setUpGroups()
-        self.createGroupsOnBackend()
+        self.groups = fillBackendWithGroups(self.backend)
 
         groupIds = bm.getGroupIds_list()
         for group in self.groups:
@@ -351,15 +350,16 @@ class ExtendedBackendManagerTestCase(unittest.TestCase, FileBackendMixin,
 
 class GettingBackendManagerTestCase(unittest.TestCase):
     def testGettingBackendManagerWithDefaultConfig(self):
-        requiredThings = (
+        requiredPaths = (
             u'/etc/opsi/backendManager/dispatch.conf',
             u'/etc/opsi/backends',
-            u'/etc/opsi/backendManager/extend.d'
+            u'/etc/opsi/backendManager/extend.d',
+            u'/var/lib/opsi/config/depots',
         )
 
-        for required in requiredThings:
-            if not os.path.exists(required):
-                self.skipTest("Missing {0}".format(required))
+        for path in requiredPaths:
+            if not os.path.exists(path):
+                self.skipTest("Missing {0}".format(path))
 
         backend = BackendManager()
         print(backend.backend_info())
@@ -397,5 +397,8 @@ class GettingBackendManagerTestCase(unittest.TestCase):
             print(backend.backend_info())
 
 
-if __name__ == '__main__':
-    unittest.main()
+def testBackendManagerCanAccessExtensions(backendManager):
+    print(backendManager)
+    print(backendManager.backend_info())
+
+    print(backendManager.getServerIds_list())

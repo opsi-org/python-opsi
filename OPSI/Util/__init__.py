@@ -57,7 +57,7 @@ from OPSI.Logger import Logger
 from OPSI.Types import (forceBool, forceFilename, forceFqdn, forceInt,
 						forceIPAddress, forceNetworkAddress, forceUnicode)
 
-__version__ = '4.0.6.39'
+__version__ = '4.0.6.41'
 
 logger = Logger()
 
@@ -96,7 +96,7 @@ def deserialize(obj, preventObjectCreation=False):
 			c = eval('OPSI.Object.%s' % obj['type'])
 			newObj = c.fromHash(obj)
 		except Exception as error:
-			logger.debug(u"Failed to get object from dict {0!r}: {1}".format(obj, forceUnicode(error)))
+			logger.debug(u"Failed to get object from dict {0!r}: {1}", obj, forceUnicode(error))
 			return obj
 	elif isinstance(obj, list):
 		newObj = [deserialize(tempObject, preventObjectCreation=preventObjectCreation) for tempObject in obj]
@@ -131,12 +131,14 @@ def serialize(obj):
 def formatFileSize(sizeInBytes):
 	if sizeInBytes < 1024:
 		return '%i' % sizeInBytes
-	elif sizeInBytes < (1024**2):
+	elif sizeInBytes < 1048576:  # 1024**2
 		return '%iK' % (sizeInBytes / 1024)
-	elif sizeInBytes < (1024**3):
-		return '%iM' % (sizeInBytes / (1024**2))
+	elif sizeInBytes < 1073741824:  # 1024**3
+		return '%iM' % (sizeInBytes / 1048576)
+	elif sizeInBytes < 1099511627776:  # 1024**4
+		return '%iG' % (sizeInBytes / 1073741824)
 	else:
-		return '%iG' % (sizeInBytes / (1024**3))
+		return '%iT' % (sizeInBytes / 1099511627776)
 
 
 def fromJson(obj, objectType=None, preventObjectCreation=False):

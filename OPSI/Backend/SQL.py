@@ -3,7 +3,7 @@
 
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
-# Copyright (C) 2013-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -61,11 +61,11 @@ logger = Logger()
 @contextmanager
 def timeQuery(query):
 	startingTime = datetime.now()
-	logger.debug(u'start query {0}'.format(query))
+	logger.debug(u'start query {0}', query)
 	try:
 		yield
 	finally:
-		logger.debug(u'ended query (duration: {1}) {0}'.format(query, datetime.now() - startingTime))
+		logger.debug(u'ended query (duration: {1}) {0}', query, datetime.now() - startingTime)
 
 
 def onlyAllowSelect(query):
@@ -294,14 +294,15 @@ class SQLBackend(ConfigDataBackend):
 			query = u'select %s from `%s` where %s' % (select, table, where)
 		else:
 			query = u'select %s from `%s`' % (select, table)
-		logger.debug(u"Created query: '%s'" % query)
+		logger.debug(u"Created query: {0}", query)
 		return query
 
 	def _adjustAttributes(self, objectClass, attributes, filter):
-		if not attributes:
-			attributes = []
+		if attributes:
+			newAttributes = forceUnicodeList(attributes)
+		else:
+			newAttributes = []
 
-		newAttributes = forceUnicodeList(attributes)
 		newFilter = forceDict(filter)
 		objectId = self._objectAttributeToDatabaseAttribute(objectClass, 'id')
 
@@ -356,6 +357,14 @@ class SQLBackend(ConfigDataBackend):
 				del hash['actionSequence']
 			except KeyError:
 				pass  # not there - can be
+
+		if issubclass(object.__class__,  Product):
+			try:
+				# Truncating a possibly too long changelog entry
+				hash['changelog'] = hash['changelog'][:65534]
+			except (KeyError, TypeError) as e:
+				# Either not present in hash or set to None
+				pass
 
 		if issubclass(object.__class__, Relationship):
 			try:
@@ -2116,8 +2125,10 @@ class SQLBackend(ConfigDataBackend):
 		return u' and '.join(condition)
 
 	def _getHardwareIds(self, auditHardware):
-		if hasattr(auditHardware, 'toHash'):
+		try:
 			auditHardware = auditHardware.toHash()
+		except AttributeError:  # Method not present
+			pass
 
 		for (attribute, value) in auditHardware.items():
 			if value is None:
@@ -2176,7 +2187,6 @@ class SQLBackend(ConfigDataBackend):
 		return self._auditHardware_search(returnHardwareIds=False, attributes=attributes, **filter)
 
 	def _auditHardware_search(self, returnHardwareIds=False, attributes=[], **filter):
-		results = []
 		hardwareClasses = set()
 		hardwareClass = filter.get('hardwareClass')
 		if hardwareClass not in ([], None):
@@ -2187,10 +2197,10 @@ class SQLBackend(ConfigDataBackend):
 						hardwareClasses.add(key)
 
 			if not hardwareClasses:
-				return results
+				return []
 
 		if not hardwareClasses:
-			hardwareClasses = set(key for key in self._auditHardwareConfig)
+			hardwareClasses = set(self._auditHardwareConfig)
 
 		for unwanted_key in ('hardwareClass', 'type'):
 			try:
@@ -2205,45 +2215,56 @@ class SQLBackend(ConfigDataBackend):
 			if attribute not in filter:
 				filter[attribute] = None
 
-		if returnHardwareIds and attributes and not 'hardware_id' in attributes:
+		if returnHardwareIds and attributes and 'hardware_id' not in attributes:
 			attributes.append('hardware_id')
 
+		results = []
 		for hardwareClass in hardwareClasses:
 			classFilter = {}
-			skipHardwareClass = False
-			for (attribute, value) in filter.items():
+			for (attribute, value) in filter.iteritems():
 				valueInfo = self._auditHardwareConfig[hardwareClass].get(attribute)
 				if not valueInfo:
-					skipHardwareClass = True
 					logger.debug(u"Skipping hardwareClass '%s', because of missing info for attribute '%s'" % (hardwareClass, attribute))
 					break
-				if valueInfo.get('Scope', '') != 'g':
-					continue
+
+				try:
+					if valueInfo['Scope'] != 'g':
+						continue
+				except KeyError:
+					pass
+
 				if value is not None:
 					value = forceList(value)
 				classFilter[attribute] = value
-
-			if skipHardwareClass:
-				continue
-
-			if not classFilter and filter:
-				continue
-
-			logger.debug(u"Getting auditHardwares, hardwareClass '%s', filter: %s" % (hardwareClass, classFilter))
-			query = self._createQuery(u'HARDWARE_DEVICE_' + hardwareClass, attributes, classFilter)
-			for res in self._sql.getSet(query):
-				if returnHardwareIds:
-					results.append(res['hardware_id'])
+			else:
+				if not classFilter and filter:
 					continue
-				elif 'hardware_id' in res:
-					del res['hardware_id']
-				res['hardwareClass'] = hardwareClass
-				for (attribute, valueInfo) in self._auditHardwareConfig[hardwareClass].items():
-					if valueInfo.get('Scope', 'g') == 'i':
+
+				logger.debug(u"Getting auditHardwares, hardwareClass '%s', filter: %s" % (hardwareClass, classFilter))
+				query = self._createQuery(u'HARDWARE_DEVICE_' + hardwareClass, attributes, classFilter)
+				for res in self._sql.getSet(query):
+					if returnHardwareIds:
+						results.append(res['hardware_id'])
 						continue
-					if attribute not in res:
-						res[attribute] = None
-				results.append(res)
+
+					try:
+						del res['hardware_id']
+					except KeyError:
+						pass
+
+					res['hardwareClass'] = hardwareClass
+					for (attribute, valueInfo) in self._auditHardwareConfig[hardwareClass].iteritems():
+						try:
+							if valueInfo['Scope'] == 'i':
+								continue
+						except KeyError:
+							pass
+
+						if attribute not in res:
+							res[attribute] = None
+
+					results.append(res)
+
 		return results
 
 	def auditHardware_deleteObjects(self, auditHardwares):
@@ -2378,15 +2399,13 @@ class SQLBackend(ConfigDataBackend):
 		if hardwareClass not in ([], None):
 			for hwc in forceUnicodeList(hardwareClass):
 				regex = re.compile(u'^{0}$'.format(hwc.replace('*', '.*')))
-				for key in self._auditHardwareConfig:
-					if regex.search(key):
-						hardwareClasses.add(key)
+				[hardwareClasses.add(key) for key in self._auditHardwareConfig if regex.search(key)]
 
 			if not hardwareClasses:
 				return hashes
 
 		if not hardwareClasses:
-			hardwareClasses = set(key for key in self._auditHardwareConfig)
+			hardwareClasses = set(self._auditHardwareConfig.keys())
 
 		for unwanted_key in ('hardwareClass', 'type'):
 			try:
@@ -2402,21 +2421,25 @@ class SQLBackend(ConfigDataBackend):
 			auditHardwareFilter = {}
 			classFilter = {}
 			skipHardwareClass = False
-			for (attribute, value) in filter.items():
+			for attribute, value in filter.iteritems():
 				valueInfo = None
-				if not attribute in ('hostId', 'state', 'firstseen', 'lastseen'):
+				if attribute not in ('hostId', 'state', 'firstseen', 'lastseen'):
 					valueInfo = self._auditHardwareConfig[hardwareClass].get(attribute)
 					if not valueInfo:
 						logger.debug(u"Skipping hardwareClass '%s', because of missing info for attribute '%s'" % (hardwareClass, attribute))
 						skipHardwareClass = True
 						break
-					if valueInfo.get('Scope', '') == 'g':
+
+					scope = valueInfo.get('Scope', '')
+					if scope == 'g':
 						auditHardwareFilter[attribute] = value
 						continue
-					if valueInfo.get('Scope', '') != 'i':
+					if scope != 'i':
 						continue
+
 				if value is not None:
 					value = forceList(value)
+
 				classFilter[attribute] = value
 
 			if skipHardwareClass:
@@ -2426,21 +2449,23 @@ class SQLBackend(ConfigDataBackend):
 			if auditHardwareFilter:
 				auditHardwareFilter['hardwareClass'] = hardwareClass
 				hardwareIds = self._getHardwareIds(auditHardwareFilter)
-				logger.debug2(u"Filtered matching hardware ids: %s" % hardwareIds)
+				logger.debug2(u"Filtered matching hardware ids: {0}", hardwareIds)
 				if not hardwareIds:
 					continue
 			classFilter['hardware_id'] = hardwareIds
 
-			if attributes and not 'hardware_id' in attributes:
+			if attributes and 'hardware_id' not in attributes:
 				attributes.append('hardware_id')
 
 			logger.debug(u"Getting auditHardwareOnHosts, hardwareClass '%s', hardwareIds: %s, filter: %s" % (hardwareClass, hardwareIds, classFilter))
-			for res in self._sql.getSet(self._createQuery(u'HARDWARE_CONFIG_' + hardwareClass, attributes, classFilter)):
+			for res in self._sql.getSet(self._createQuery(u'HARDWARE_CONFIG_{0}'.format(hardwareClass), attributes, classFilter)):
 				data = self._sql.getSet(u'SELECT * from `HARDWARE_DEVICE_%s` where `hardware_id` = %s' \
 								% (hardwareClass, res['hardware_id']))
+
 				if not data:
 					logger.error(u"Hardware device of class '%s' with hardware_id '%s' not found" % (hardwareClass, res['hardware_id']))
 					continue
+
 				data = data[0]
 				data.update(res)
 				data['hardwareClass'] = hardwareClass
@@ -2450,10 +2475,11 @@ class SQLBackend(ConfigDataBackend):
 				except KeyError:
 					pass  # not there - everything okay
 
-				for attribute in self._auditHardwareConfig[hardwareClass].keys():
+				for attribute in self._auditHardwareConfig[hardwareClass]:
 					if attribute not in data:
 						data[attribute] = None
 				hashes.append(data)
+
 		return hashes
 
 	def auditHardwareOnHost_getObjects(self, attributes=[], **filter):

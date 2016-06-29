@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014 uib GmbH <info@uib.de>
+# Copyright (C) 2014-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -29,18 +29,16 @@ from .Audit import AuditTestsMixin
 from .Backend import BackendTestsMixin
 from .Configs import ConfigTestsMixin, ConfigStateTestsMixin
 from .ExtendedBackend import ExtendedBackendTestsMixin
-from .Groups import GroupTestsMixin, ObjectToGroupTestsMixin
-from .Licenses import LicensesTestMixin
 from .Products import (ProductPropertiesTestMixin, ProductDependenciesTestMixin,
     ProductsTestMixin, ProductsOnClientTestsMixin,
     ProductsOnDepotTestsMixin, ProductPropertyStateTestsMixin)
 
 
 class BackendTestMixin(ConfigStateTestsMixin, ProductPropertiesTestMixin,
-    ProductDependenciesTestMixin, LicensesTestMixin, AuditTestsMixin,
-    ConfigTestsMixin, ProductsTestMixin, ProductsOnClientTestsMixin,
-    ProductsOnDepotTestsMixin, ProductPropertyStateTestsMixin, GroupTestsMixin,
-    ObjectToGroupTestsMixin, ExtendedBackendTestsMixin, BackendTestsMixin):
+    ProductDependenciesTestMixin, AuditTestsMixin, ConfigTestsMixin,
+    ProductsTestMixin, ProductsOnClientTestsMixin, ProductsOnDepotTestsMixin,
+    ProductPropertyStateTestsMixin,
+    ExtendedBackendTestsMixin, BackendTestsMixin):
     """
     Class collecting functional backend tests.
 

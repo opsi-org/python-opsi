@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014 uib GmbH <info@uib.de>
+# Copyright (C) 2014-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -28,9 +28,8 @@ This tests what usually is found under
 :license: GNU Affero General Public License version 3
 """
 
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 
-import random
 import unittest
 
 from OPSI.Object import HostGroup, OpsiClient, LocalbootProduct, ObjectToGroup, ProductOnDepot, OpsiDepotserver
@@ -125,6 +124,7 @@ class GroupActionsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
             self.assertEquals(poc.productId, product2.getId())
             self.assertTrue(poc.clientId in (client1.id, client2.id))
 
+
 class GroupRenamingTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
     """
     Testing the group actions.
@@ -159,7 +159,6 @@ class GroupRenamingTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
         self.backend.host_insertObject(self.client2)
         self.backend.group_insertObject(self.testGroup)
         self.backend.objectToGroup_createObjects([client1ToGroup, client2ToGroup])
-        
 
     def tearDown(self):
         self.tearDownBackend()
@@ -197,6 +196,7 @@ class GroupRenamingTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
         objsToGrp = self.backend.objectToGroup_getObjects()
         for obj in objsToGrp:
             self.assertNotEqual(obj.groupId, self.testGroup.id)
+
 
 if __name__ == '__main__':
     unittest.main()

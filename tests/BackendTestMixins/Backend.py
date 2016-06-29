@@ -23,22 +23,38 @@ Mixin for testing various backend methods.
 :license: GNU Affero General Public License version 3
 """
 
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 
 import random
 import threading
 import time
+from itertools import izip
 
 from .Clients import ClientsMixin
 from .Hosts import HostsMixin
-from .Groups import GroupsMixin, ObjectToGroupsMixin
+from ..test_groups import fillBackendWithObjectToGroups
 
 from OPSI.Types import BackendError
+from ..helpers import unittest
+
+
+try:
+    from MySQLdb.constants.ER import DUP_ENTRY
+    from MySQLdb import IntegrityError
+except ImportError as imperr:
+    print(imperr)
+    DUP_ENTRY = None
+    IntegrityError = None
+
+try:
+    from apsw import ConstraintError
+except ImportError:
+    class ConstraintError(BaseException):
+        result = 0
 
 
 class BackendTestsMixin(ClientsMixin, HostsMixin):
     def testObjectMethods(self):
-        self.configureBackendOptions()
         self.backend.backend_createBase()
 
         self.setUpHosts()
@@ -167,16 +183,11 @@ class BackendTestsMixin(ClientsMixin, HostsMixin):
         assert hosts[0].getDescription() == 'Test client 2', u"got: '%s', expected: '%s'" % (
             hosts[0].getDescription(), 'Test client 2')
 
-    def configureBackendOptions(self):
-        self.backend.backend_setOptions({
-            'addProductOnClientDefaults': False,
-            'addProductPropertyStateDefaults': False,
-            'addConfigStateDefaults': False,
-            'deleteConfigStateIfDefault': False,
-            'returnObjectsOnUpdateAndCreate': False
-        })
-
     def testNonObjectMethods(self):
+        if 'jsonrpc' in str(self.backend).lower():  # TODO: improve test implementation
+            self.skipTest('Unable to run these tests with the current '
+                          'implementation of a fake JSONRPC-Backend.')
+
         # Hosts
         self.backend.host_createOpsiDepotserver(
             id='depot100.test.invalid',
@@ -383,16 +394,14 @@ class BackendTestsMixin(ClientsMixin, HostsMixin):
         The method descriptions in `expected` may vary and should be
         reduced if problems because of missing methods occur.
         """
-        print("Checking with backend {0!r}".format(self.backend))
+        print("Base backend {0!r}".format(self.backend))
         try:
             print("Checking with backend {0!r}".format(self.backend._backend._backend))
-        except Exception:
+        except AttributeError:
             try:
                 print("Checking with backend {0!r}".format(self.backend._backend))
-            except Exception:
+            except AttributeError:
                 pass
-
-        results = self.backend.backend_getInterface()
 
         expected = [
             {'name': 'backend_getInterface', 'args': ['self'], 'params': [], 'defaults': None, 'varargs': None, 'keywords': None},
@@ -405,19 +414,28 @@ class BackendTestsMixin(ClientsMixin, HostsMixin):
             {'name': 'productPropertyState_getObjects', 'args': ['self', 'attributes'], 'params': ['*attributes', '**filter'], 'defaults': ([],), 'varargs': None, 'keywords': 'filter'},
         ]
 
+        results = self.backend.backend_getInterface()
         for selection in expected:
-            found = False
             for result in results:
                 if result['name'] == selection['name']:
                     print('Checking {0}'.format(selection['name']))
                     for parameter in ('args', 'params', 'defaults', 'varargs', 'keywords'):
                         print('Now checking parameter {0!r}, expecting {1!r}'.format(parameter, selection[parameter]))
-                        self.assertEqual(selection[parameter], result[parameter])
+                        singleResult = result[parameter]
+                        if isinstance(singleResult, (list, tuple)):
+                            # We do check the content of the result
+                            # because JSONRPC-Backends can only work
+                            # with JSON and therefore not with tuples
+                            self.assertEqual(len(singleResult), len(selection[parameter]))
 
-                    found = True
-                    break
+                            for exp, res in izip(singleResult, selection[parameter]):
+                                self.assertEqual(exp, res)
+                        else:
+                            self.assertEqual(singleResult, selection[parameter])
 
-            self.assertTrue(found, "Expected method {0} not found".format(selection['name']))
+                    break  # We found what we are looking for.
+            else:
+                self.fail("Expected method {0!r} not found".format(selection['name']))
 
     def testBackend_info(self):
         info = self.backend.backend_info()
@@ -545,22 +563,28 @@ class BackendPerformanceTestMixin(object):
             ((time.time() - start), nrOfproductOnClients))
 
 
-class MultiThreadingTestMixin(HostsMixin, ClientsMixin, ObjectToGroupsMixin):
-    NUMBER_OF_THREADS = 1
+class MultiThreadingTestMixin(HostsMixin, ClientsMixin):
+    NUMBER_OF_THREADS = 50
 
+    @unittest.skipIf(DUP_ENTRY is None or IntegrityError is None,
+                     'Missing imports from MySQLdb-module.')
     def testMultithreading(self):
         self.setUpHosts()
-        self.setUpClients()
-        self.setUpGroups()
-        self.setUpObjectToGroups()
+
+        o2g, _, clients = fillBackendWithObjectToGroups(self.backend)
+        self.client1 = clients[0]
+        self.client2 = clients[1]
+        self.objectToGroup1 = o2g[0]
+        self.objectToGroup2 = o2g[0]
 
         self.createHostsOnBackend()
-        self.createGroupsOnBackend()
 
         class MultiThreadTest(threading.Thread):
             def __init__(self, backendTest):
                 threading.Thread.__init__(self)
                 self._backendTest = backendTest
+                self.exitCode = 0
+                self.errorMessage = None
 
             def run(self):
                 try:
@@ -583,8 +607,17 @@ class MultiThreadingTestMixin(HostsMixin, ClientsMixin, ObjectToGroupsMixin):
                     self._backendTest.backend.host_createObjects(self._backendTest.client1)
                     self._backendTest.backend.host_getObjects()
                     print(u"Thread %s done" % self)
+                except IntegrityError as e:
+                    if e[0] != DUP_ENTRY:
+                        self.errorMessage = e
+                        self.exitCode = 1
+                except ConstraintError as e:
+                    if e.result != 19:  # column is not unique
+                        self.errorMessage = e
+                        self.exitCode = 1
                 except Exception as e:
-                    self._backendTest.fail(u"Test failed: {0}".format(e))
+                    self.errorMessage = e
+                    self.exitCode = 1
 
         mtts = [MultiThreadTest(self) for _ in range(self.NUMBER_OF_THREADS)]
         for mtt in mtts:
@@ -595,5 +628,12 @@ class MultiThreadingTestMixin(HostsMixin, ClientsMixin, ObjectToGroupsMixin):
 
         try:
             self.backend.host_createObjects(self.client1)
+
+            while len(mtts) > 0:
+                mtt = mtts.pop(0)
+                if not mtt.isAlive():
+                    self.assertEqual(mtt.exitCode, 0, u"Mutlithreading test failed: Exit Code %s: %s"% (mtt.exitCode, mtt.errorMessage))
+                else:
+                    mtts.append(mtt)
         except Exception as e:
             self.fail(u"Creating object on backend failed: {0}".format(e))

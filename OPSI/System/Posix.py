@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 # This module is part of the desktop management solution opsi
@@ -43,6 +43,7 @@ import subprocess
 import threading
 import time
 import copy as pycopy
+from itertools import islice
 from signal import SIGKILL
 from platform import linux_distribution
 
@@ -55,7 +56,7 @@ from OPSI.Types import OpsiVersionError
 from OPSI.Object import *
 from OPSI.Util import objectToBeautifiedText, removeUnit
 
-__version__ = '4.0.6.40'
+__version__ = '4.0.7.4'
 
 logger = Logger()
 
@@ -377,7 +378,7 @@ def getEthernetDevices():
 				continue
 
 			device = line.split(':')[0].strip()
-			if device.startswith(('eth', 'ens', 'tr', 'br', 'enp')):
+			if device.startswith(('eth', 'ens', 'eno', 'tr', 'br', 'enp')):
 				logger.info(u"Found ethernet device: '{0}'".format(device))
 				devices.append(device)
 
@@ -657,6 +658,10 @@ def reboot(wait=10):
 			execute(u'%s %d; %s -r now' % (which('sleep'), wait, which('shutdown')), nowait=True)
 		else:
 			execute(u'%s -r now' % which('shutdown'), nowait=True)
+		execute(u'%s 5' % (which('sleep')), nowait=True)
+		execute(u'%s -p' % (which('reboot')), nowait=True)
+		execute(u'%s 5' % (which('sleep')), nowait=True)
+		execute(u'%s 6' % (which('init')), nowait=True)
 	except Exception as e:
 		for hook in hooks:
 			hook.error_reboot(wait, e)
@@ -829,9 +834,9 @@ output will be returned.
 			exitCode = ret
 			if data:
 				lines = data.split('\n')
-				for i in range(len(lines)):
-					line = lines[i].decode(encoding, 'replace')
-					if (i == len(lines) - 1) and not line:
+				for i, line in enumerate(lines):
+					line = line.decode(encoding, 'replace')
+					if i == len(lines) - 1 and not line:
 						break
 					logger.debug(u'>>> %s' % line)
 					result.append(line)
@@ -872,16 +877,19 @@ def _terminateProcess(process):
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # -                                            FILESYSTEMS                                            -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-def getSfdiskVersion():
-        """
-        check for sfdisk version to adapt commands to changed output
-        """
-        sfdiskVersionOutput = execute('%s --version' % which('sfdisk'))
-        sfdiskVersion = sfdiskVersionOutput[0].split(' ')[3].strip()
-        if sfdiskVersion != '2.20.1':
-                return True
-        else:
-                return False
+def isXenialSfdiskVersion():
+	"""
+	check for sfdisk version to adapt commands to changed output
+
+	Returns `True` for versions equal 2.27.1 - the one used in Ubuntu Xenial.
+	"""
+	sfdiskVersionOutput = execute('%s --version' % which('sfdisk'))
+	sfdiskVersion = sfdiskVersionOutput[0].split(' ')[3].strip()
+	if sfdiskVersion == '2.27.1':
+		return True
+	else:
+		return False
+
 
 def getHarddisks(data=None):
 	"""
@@ -903,7 +911,7 @@ def getHarddisks(data=None):
 			for entry in listing:
 				if len(entry) < 5:
 					dev = entry
-					if getSfdiskVersion():
+					if isXenialSfdiskVersion():
 						size = forceInt(execute(u'%s --no-reread -s /dev/cciss/%s' % (which('sfdisk'), dev), ignoreExitCode=[1])[0])
 					else:
 						size = forceInt(execute(u'%s -L --no-reread -s -uB /dev/cciss/%s' % (which('sfdisk'), dev), ignoreExitCode=[1])[0])
@@ -919,7 +927,7 @@ def getHarddisks(data=None):
 				raise Exception(u'No harddisks found!')
 			return disks
 		else:
-			if getSfdiskVersion():
+			if isXenialSfdiskVersion():
 				result = execute(u'%s --no-reread -s ' % which('sfdisk'), ignoreExitCode=[1])
 			else:
 				result = execute(u'%s -L --no-reread -s -uB' % which('sfdisk'), ignoreExitCode=[1])
@@ -1125,8 +1133,8 @@ def getBlockDeviceBusType(device):
 				devs = match.group(1).replace(u')', u' ').split(u'(')
 			else:
 				devs = [match.group(1)]
-			for i in range(len(devs)):
-				devs[i] = devs[i].strip()
+
+			devs = [currentDev.strip() for currentDiv in devs]
 
 		match = re.search('^\s+Attached to:\s+[^\(]+\((\S+)\s*', line)
 		if match:
@@ -1413,7 +1421,7 @@ class Harddisk:
 			os.putenv("LC_ALL", "C")
 			if self.ldPreload:  # We want this as a context manager!
 				os.putenv("LD_PRELOAD", self.ldPreload)
-			if getSfdiskVersion():
+			if isXenialSfdiskVersion():
 				result = execute(u'{sfdisk} --no-reread -s {device}'.format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
 			else:
 				result = execute(u'{sfdisk} -L --no-reread -s -uB {device}'.format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
@@ -1424,8 +1432,8 @@ class Harddisk:
 					pass
 
 			logger.info(u"Size of disk '%s': %s Byte / %s MB" % (self.device, self.size, (self.size/(1024*1024))))
-			if getSfdiskVersion():
-				result = execute(u"{sfdisk} --no-reread - l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
+			if isXenialSfdiskVersion():
+				result = execute(u"{sfdisk} --no-reread -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
 			else:
 				result = execute(u"{sfdisk} -L --no-reread -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
 			partTablefound = None
@@ -1435,19 +1443,16 @@ class Harddisk:
 					break
 			if not partTablefound:
 				logger.notice(u"unrecognized partition table type, writing empty partitiontable")
-				if getSfdiskVersion():
-					 execute('{echo} -e "0,0\n\n\n\n" | {sfdisk} --no-reread -D {device}'.format(echo=which('echo'), sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
-				else:
-					execute('{echo} -e "0,0\n\n\n\n" | {sfdisk} -L --no-reread -D {device}'.format(echo=which('echo'), sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
-				
-				if getSfdiskVersion():
+				if isXenialSfdiskVersion():
+					execute('{echo} -e "0,0\n\n\n\n" | {sfdisk} --no-reread -D {device}'.format(echo=which('echo'), sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
 					result = execute("{sfdisk} --no-reread -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
 				else:
+					execute('{echo} -e "0,0\n\n\n\n" | {sfdisk} -L --no-reread -D {device}'.format(echo=which('echo'), sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
 					result = execute("{sfdisk} -L --no-reread -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
 
 			self._parsePartitionTable(result)
 
-			if getSfdiskVersion():
+			if isXenialSfdiskVersion():
 				result = execute(u"{sfdisk} --no-reread -uS -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
 			else:
 				result = execute(u"{sfdisk} -L --no-reread -uS -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
@@ -1471,13 +1476,13 @@ class Harddisk:
 		:param sfdiskListingOutput: The output from ``sfdisk -l /dev/foo``
 		:type sfdiskListingOutput: [str, ]
 		"""
-		
+
 		for line in sfdiskListingOutput:
 			line = line.strip()
-	
+
 			if line.lower().startswith('disk'):
-				if getSfdiskVersion():
-					
+				if isXenialSfdiskVersion():
+
 					geometryOutput = execute(u"{sfdisk} -g {device}".format(sfdisk=which('sfdisk'), device=self.device))
 					for line in geometryOutput:
 						match = re.search('\s+(\d+)\s+cylinders,\s+(\d+)\s+heads,\s+(\d+)\s+sectors', line)
@@ -1498,26 +1503,22 @@ class Harddisk:
 					self.totalCylinders = self.cylinders
 
 			elif line.lower().startswith(u'units'):
-				if getSfdiskVersion():
+				if isXenialSfdiskVersion():
 					match = re.search('sectors\s+of\s+\d\s+.\s+\d+\s+.\s+(\d+)\s+bytes', line)
-					
-					if not match:
-						raise Exception(u"Unable to get bytes/cylinder for disk '%s'" % self.device)
-					self.bytesPerCylinder = forceInt(match.group(1))
-					self.totalCylinders = int(self.size / self.bytesPerCylinder)
+
 				else:
 					match = re.search('cylinders\s+of\s+(\d+)\s+bytes', line)
-	
-					if not match:
-						raise Exception(u"Unable to get bytes/cylinder for disk '%s'" % self.device)
-					self.bytesPerCylinder = forceInt(match.group(1))
-					self.totalCylinders = int(self.size / self.bytesPerCylinder)
+
+				if not match:
+					raise Exception(u"Unable to get bytes/cylinder for disk '%s'" % self.device)
+				self.bytesPerCylinder = forceInt(match.group(1))
+				self.totalCylinders = int(self.size / self.bytesPerCylinder)
 				logger.info(u"Total cylinders of disk '%s': %d, %d bytes per cylinder" % (self.device, self.totalCylinders, self.bytesPerCylinder))
 
 			elif line.startswith(self.device):
-				if getSfdiskVersion():					
+				if isXenialSfdiskVersion():
 					match = re.search('(%sp*)(\d+)\s+(\**)\s*(\d+)[\+\-]*\s+(\d*)[\+\-]*\s+(\d+)[\+\-]*\s+(\d+)[\+\-]*.?\d*\S+\s+(\S+)\s*(.*)' % self.device, line)
-					
+
 					if not match:
 						raise Exception(u"Unable to read partition table of disk '%s'" % self.device)
 				else:
@@ -1537,7 +1538,7 @@ class Harddisk:
 						fs = u'fat32'
 					elif fsType in (u"hpfs/ntfs/exfat", u"hfps/ntfs", u"7"):
 						fs = u'ntfs'
-					
+
 					deviceName = forceFilename(match.group(1) + match.group(2))
 					try:
 						logger.debug("Trying using Blkid")
@@ -1611,47 +1612,42 @@ class Harddisk:
 			line = line.strip()
 
 			if line.startswith(self.device):
-				if getSfdiskVersion():
+				if isXenialSfdiskVersion():
 					match = re.match('%sp*(\d+)\s+(\**)\s*(\d+)[\+\-]*\s+(\d*)[\+\-]*\s+(\d+)[\+\-]*\s+(\d+)[\+\-]*.?\d*\S+\s+(\S+)\s*(.*)' % self.device, line)
-					if not match:
-						raise Exception(u"Unable to read partition table (sectors) of disk '%s'" % self.device)
 				else:
 					match = re.search('%sp*(\d+)\s+(\**)\s*(\d+)[\+\-]*\s+(\d*)[\+\-]*\s+(\d+)[\+\-]*\s+(\S+)\s+(.*)' % self.device, line)
-					if not match:
-						raise Exception(u"Unable to read partition table (sectors) of disk '%s'" % self.device)
+				if not match:
+					raise Exception(u"Unable to read partition table (sectors) of disk '%s'" % self.device)
 
 				if match.group(4):
-					for p in range(len(self.partitions)):
-						if forceInt(self.partitions[p]['number']) == forceInt(match.group(1)):
-							self.partitions[p]['secStart'] = forceInt(match.group(3))
-							self.partitions[p]['secEnd'] = forceInt(match.group(4))
-							self.partitions[p]['secSize'] = forceInt(match.group(5))
+					for p, partition in enumerate(self.partitions):
+						if forceInt(partition['number']) == forceInt(match.group(1)):
+							partition['secStart'] = forceInt(match.group(3))
+							partition['secEnd'] = forceInt(match.group(4))
+							partition['secSize'] = forceInt(match.group(5))
+							self.partitions[p] = partition
 							logger.debug(
 								u"Partition sector values =>>> number: %s, "
 								u"start: %s sec, end: %s sec, size: %s sec " \
 								% (
-									self.partitions[p]['number'],
-									self.partitions[p]['secStart'],
-									self.partitions[p]['secEnd'],
-									self.partitions[p]['secSize']
+									partition['number'],
+									partition['secStart'],
+									partition['secEnd'],
+									partition['secSize']
 							   )
 							)
 							break
+
 			elif line.lower().startswith('units'):
-				if getSfdiskVersion():
+				if isXenialSfdiskVersion():
 					match = re.search('sectors\s+of\s+\d\s+.\s+\d+\s+.\s+(\d+)\s+bytes', line)
-					
-					if not match:
-						raise Exception(u"Unable to get bytes/sector for disk '%s'" % self.device)
-					self.bytesPerSector = forceInt(match.group(1))
-					self.totalSectors = int(self.size / self.bytesPerSector)
 
 				else:
 					match = re.search('sectors\s+of\s+(\d+)\s+bytes', line)
-					if not match:
-						raise Exception(u"Unable to get bytes/sector for disk '%s'" % self.device)
-					self.bytesPerSector = forceInt(match.group(1))
-					self.totalSectors = int(self.size / self.bytesPerSector)
+				if not match:
+					raise Exception(u"Unable to get bytes/sector for disk '%s'" % self.device)
+				self.bytesPerSector = forceInt(match.group(1))
+				self.totalSectors = int(self.size / self.bytesPerSector)
 				logger.info(u"Total sectors of disk '%s': %d, %d bytes per cylinder" % (self.device, self.totalSectors, self.bytesPerSector))
 
 	def writePartitionTable(self):
@@ -1696,8 +1692,10 @@ class Harddisk:
 			if self.blockAlignment:
 				cmd += u'" | %s -L --no-reread -uS -f %s' % (which('sfdisk'), self.device)
 			else:
-				cmd += u'" | %s -L --no-reread -uC %s%s' % (which('sfdisk'), dosCompat, self.device)
-
+				if isXenialSfdiskVersion():
+					cmd += u'" | %s -L --no-reread %s' % (which('sfdisk'), self.device)
+				else:
+					cmd += u'" | %s -L --no-reread -uC %s%s' % (which('sfdisk'), dosCompat, self.device)
 			if self.ldPreload:
 				os.putenv("LD_PRELOAD", self.ldPreload)
 
@@ -1721,12 +1719,12 @@ class Harddisk:
 		logger.info(u"Forcing kernel to reread partition table of '%s'." % self.device)
 		try:
 			execute(u'%s %s' % (which('partprobe'), self.device))
-		except:
+		except Exception:
 			logger.error(u"Forcing kernel reread partion table failed, waiting 5 sec. and try again")
 			try:
 				time.sleep(5)
 				execute(u'%s %s' % (which('partprobe'), self.device), ignoreExitCode=[1])
-			except:
+			except Exception:
 				logger.error(u"Reread Partiontabel failed the second time, given up.")
 				raise
 		if self.ldPreload:
@@ -1925,7 +1923,7 @@ class Harddisk:
 				res = execute(cmd)
 				if res:
 					ms_sys_version = res[0][14:].strip()
-			except:
+			except Exception:
 				ms_sys_version = u"2.1.3"
 
 
@@ -2256,6 +2254,10 @@ class Harddisk:
 			except Exception:
 				pass
 
+			if isXenialSfdiskVersion():
+				if start < 2048:
+					start = 2048
+
 			if unit == 'sec':
 				logger.info(u"Creating partition on '%s': number: %s, type '%s', filesystem '%s', start: %s sec, end: %s sec." \
 							% (self.device, number, type, fs, start, end))
@@ -2529,19 +2531,18 @@ class Harddisk:
 
 					buf = [buf[-1] + b[0]] + b[1:]
 
-					# TODO: is the range(len(..)) really needed?
-					# Maybe we could iterate directly.
-					for i in range(len(buf) - 1):
+					for currentBuffer in islice(buf, len(buf) - 1):
 						try:
-							logger.debug(u" -->>> %s" % buf[i])
-						except:
+							logger.debug(u" -->>> %s" % currentBuffer)
+						except Exception:
 							pass
-						if u'Partclone fail' in buf[i]:
+
+						if u'Partclone fail' in currentBuffer:
 							raise Exception(u"Failed: %s" % '\n'.join(buf))
-						if u'Partclone successfully' in buf[i]:
+						if u'Partclone successfully' in currentBuffer:
 							done = True
-						if u'Total Time' in buf[i]:
-							match = re.search('Total\sTime:\s(\d+:\d+:\d+),\sAve.\sRate:\s*(\d*.\d*)([GgMm]B/min)', buf[i])
+						if u'Total Time' in currentBuffer:
+							match = re.search('Total\sTime:\s(\d+:\d+:\d+),\sAve.\sRate:\s*(\d*.\d*)([GgMm]B/min)', currentBuffer)
 							if match:
 								rate = match.group(2)
 								unit = match.group(3)
@@ -2555,12 +2556,12 @@ class Harddisk:
 								}
 
 						if not started:
-							if u'Calculating bitmap' in buf[i]:
+							if u'Calculating bitmap' in currentBuffer:
 								logger.info(u"Save image: Scanning filesystem")
 								if progressSubject:
 									progressSubject.setMessage(u"Scanning filesystem")
-							elif buf[i].count(':') == 1 and 'http:' not in buf[i]:
-								(k, v) = buf[i].split(':')
+							elif currentBuffer.count(':') == 1 and 'http:' not in currentBuffer:
+								(k, v) = currentBuffer.split(':')
 								k = k.strip()
 								v = v.strip()
 								logger.info(u"Save image: %s: %s" % (k, v))
@@ -2572,11 +2573,11 @@ class Harddisk:
 									started = True
 									continue
 						else:
-							match = re.search('Completed:\s*([\d\.]+)%', buf[i])
+							match = re.search('Completed:\s*([\d\.]+)%', currentBuffer)
 							if match:
 								percent = int("%0.f" % float(match.group(1)))
 								if progressSubject and percent != progressSubject.getState():
-									logger.debug(u" -->>> %s" % buf[i])
+									logger.debug(u" -->>> %s" % currentBuffer)
 									progressSubject.setState(percent)
 
 					lastMsg = buf[-2]
@@ -2704,20 +2705,19 @@ class Harddisk:
 
 						buf = [buf[-1] + b[0]] + b[1:]
 
-						# TODO: range(len) really needed?
-						for i in range(len(buf) - 1):
+						for currentBuffer in islice(buf, len(buf) - 1):
 							try:
-								logger.debug(u" -->>> %s" % buf[i])
+								logger.debug(u" -->>> %s" % currentBuffer)
 							except Exception:
 								pass
 
-							if u'Partclone fail' in buf[i]:
+							if u'Partclone fail' in currentBuffer:
 								raise Exception(u"Failed: %s" % '\n'.join(buf))
-							if u'Partclone successfully' in buf[i]:
+							if u'Partclone successfully' in currentBuffer:
 								done = True
 							if not started:
-								if buf[i].count(':') == 1 and 'http:' in buf[i]:
-									(k, v) = buf[i].split(':')
+								if currentBuffer.count(':') == 1 and 'http:' in currentBuffer:
+									(k, v) = currentBuffer.split(':')
 									k = k.strip()
 									v = v.strip()
 									logger.info(u"Save image: %s: %s" % (k, v))
@@ -2731,11 +2731,11 @@ class Harddisk:
 										started = True
 										continue
 							else:
-								match = re.search('Completed:\s*([\d\.]+)%', buf[i])
+								match = re.search('Completed:\s*([\d\.]+)%', currentBuffer)
 								if match:
 									percent = int("%0.f" % float(match.group(1)))
 									if progressSubject and percent != progressSubject.getState():
-										logger.debug(u" -->>> %s" % buf[i])
+										logger.debug(u" -->>> %s" % currentBuffer)
 										progressSubject.setState(percent)
 
 						lastMsg = buf[-2]
@@ -2783,21 +2783,20 @@ class Harddisk:
 
 						buf = [buf[-1] + b[0]] + b[1:]
 
-						# TODO: remove range(len(..) possible?
-						for i in range(len(buf) - 1):
-							if 'Syncing' in buf[i]:
+						for currentBuffer in islice(buf, len(buf) - 1):
+							if 'Syncing' in currentBuffer:
 								logger.info(u"Restore image: Syncing")
 								if progressSubject:
 									progressSubject.setMessage(u"Syncing")
 								done = True
-							match = re.search('\s(\d+)[\.\,]\d\d\spercent', buf[i])
+							match = re.search('\s(\d+)[\.\,]\d\d\spercent', currentBuffer)
 							if match:
 								percent = int(match.group(1))
 								if progressSubject and percent != progressSubject.getState():
-									logger.debug(u" -->>> %s" % buf[i])
+									logger.debug(u" -->>> %s" % currentBuffer)
 									progressSubject.setState(percent)
 							else:
-								logger.debug(u" -->>> %s" % buf[i])
+								logger.debug(u" -->>> %s" % currentBuffer)
 
 						lastMsg = buf[-2]
 						buf[:-1] = []
@@ -3060,8 +3059,8 @@ def hardwareExtendedInventory(config, opsiValues={}, progressSubject=None):
 					conditionmatch = None
 
 					logger.info("Condition found, try to check the Condition")
-					for i in range(len(opsiValues[opsiName])):
-						value = opsiValues[opsiName][i].get(val, "")
+					for currentValue in opsiValues[opsiName]:
+						value = currentValue.get(val, "")
 						if value:
 							conditionmatch = re.search(conditionregex, value)
 							break
@@ -3896,3 +3895,38 @@ until the execution of the process is terminated.
 	exitCode = process.returncode
 	logger.notice(u"Process {0} ended with exit code {1}".format(process.pid, exitCode))
 	return (None, None, None, None)
+
+
+def setLocalSystemTime(timestring):
+	"""
+	Method sets the local systemtime
+	param timestring = "2014-07-15 13:20:24.085661"
+	Die Typ SYSTEMTIME-Struktur ist wie folgt:
+
+	WYear           Integer-The current year.
+	WMonth          Integer-The current month. January is 1.
+	WDayOfWeek      Integer-The current day of the week. Sunday is 0.
+	WDay            Integer-The current day of the month.
+	WHour           Integer-The current hour.
+	wMinute         Integer-The current minute.
+	wSecond         Integer-The current second.
+	wMilliseconds   Integer-The current millisecond.
+
+
+	win32api.SetSystemTime
+
+	int = SetSystemTime(year, month , dayOfWeek , day , hour , minute , second , millseconds )
+
+	http://docs.activestate.com/activepython/2.5/pywin32/win32api__SetSystemTime_meth.html
+	"""
+	if not timestring:
+		raise Exception(u"Invalid timestring given. It should be in format like: '2014-07-15 13:20:24.085661'")
+
+	try:
+		dt = datetime.datetime.strptime(timestring, '%Y-%m-%d %H:%M:%S.%f')
+		logger.info(u"Setting Systemtime Time to %s" % timestring)
+		systemTime = 'date --set="%s-%s-%s %s:%s:%s.%s"' % (dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second, dt.microsecond)
+		subprocess.call([systemTime])
+	except Exception as error:
+			logger.error(u"Failed to set System Time: %s" % error)
+

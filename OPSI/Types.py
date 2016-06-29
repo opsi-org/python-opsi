@@ -39,7 +39,7 @@ import types
 
 from OPSI.Logger import Logger
 
-__version__ = '4.0.6.40'
+__version__ = '4.0.7.1'
 
 encoding = sys.getfilesystemencoding()
 logger = Logger()
@@ -184,17 +184,16 @@ def forceOct(var):
 		return var
 
 	try:
-		tmp = forceUnicode(var)
-		var = ''
-		for i, x in enumerate(tmp):
+		octValue = ''
+		for i, x in enumerate(forceUnicode(var)):
 			x = forceInt(x)
 			if x > 7:
 				raise ValueError(u'{0!r} is too big'.format(x))
 			elif i == 0 and x != '0':
-				var += '0'
-			var += str(x)
-		var = eval(var)
-		return var
+				octValue += '0'
+			octValue += str(x)
+		octValue = eval(octValue)
+		return octValue
 	except Exception as error:
 		raise ValueError(u"Bad oct value {0!r}: {1}".format(var, error))
 
@@ -219,12 +218,20 @@ def forceDict(var):
 
 
 def forceTime(var):
+	"""
+	Convert `var` to a time.struct_time.
+
+	If no conversion is possible a `ValueError` will be raised.
+	"""
 	if isinstance(var, time.struct_time):
 		return var
+	elif isinstance(var, datetime.datetime):
+		var = time.mktime(var.timetuple()) + var.microsecond / 1E6
+
 	if isinstance(var, (int, float)):
 		return time.localtime(var)
 
-	raise ValueError(u"Not a time '%s'" % var)
+	raise ValueError(u"Not a time {0!r}".format(var))
 
 
 def forceHardwareVendorId(var):
@@ -242,16 +249,25 @@ def forceHardwareDeviceId(var):
 
 
 def forceOpsiTimestamp(var):
+	"""
+	Make `var` an opsi-compatible timestamp.
+
+	This is a string with the format "YYYY-MM-DD HH:MM:SS".
+
+	If a conversion is not possible a `ValueError` will be raised.
+	"""
 	if not var:
-		var = u'0000-00-00 00:00:00'
-	if isinstance(var, datetime.datetime):
-		var = str(var)
+		return u'0000-00-00 00:00:00'
+	elif isinstance(var, datetime.datetime):
+		return forceUnicode(var.strftime('%Y-%m-%d %H:%M:%S'))
+
 	var = forceUnicode(var)
 	match = re.search(_OPSI_TIMESTAMP_REGEX, var)
 	if not match:
 		match = re.search(_OPSI_DATE_REGEX, var)
 		if not match:
-			raise ValueError(u"Bad opsi timestamp: '%s'" % var)
+			raise ValueError(u"Bad opsi timestamp: {0!r}".format(var))
+
 		return u'%s-%s-%s 00:00:00' % (match.group(1), match.group(2), match.group(3))
 
 	return u'%s-%s-%s %s:%s:%s' % (match.group(1), match.group(2), match.group(3), match.group(4), match.group(5), match.group(6))
@@ -488,14 +504,14 @@ def forceRequirementType(var):
 
 def forceObjectClass(var, objectClass):
 	exception = None
-	if isinstance(var, _STRING_TYPES) and var.lstrip() and var.lstrip().startswith('{'):
+	if isinstance(var, _STRING_TYPES) and var.lstrip().startswith('{'):
 		from OPSI.Util import fromJson
 
 		try:
 			var = fromJson(var)
 		except Exception as error:
 			exception = error
-			logger.debug(u"Failed to get object from json '%s': %s" % (var, error))
+			logger.debug(u"Failed to get object from json {0!r}: {1!r}", var, error)
 
 	if isinstance(var, dict):
 		if 'type' not in var:
@@ -506,27 +522,15 @@ def forceObjectClass(var, objectClass):
 			c = eval('OPSI.Object.%s' % var['type'])
 			if issubclass(c, objectClass):
 				var = c.fromHash(var)
-		except TypeError as error:
-			if '__init__() takes at least' in str(error):
-				try:
-					args = OPSI.Object.mandatoryConstructorArgs(c)
-					missingArgs = [arg for arg in args if arg not in var]
-					if missingArgs:
-						error = TypeError("Missing required argument(s): {0}".format(', '.join(repr(a) for a in missingArgs)))
-				except NameError:
-					pass
-
-			exception = error
-			logger.debug(u"Failed to get object from dict '%s': %s" % (var, error))
 		except AttributeError as error:
 			if "'module' object has no attribute " in str(error):
 				error = ValueError("Invalild object type: {0}".format(var['type']))
 
 			exception = error
-			logger.debug(u"Failed to get object from dict '%s': %s" % (var, error))
+			logger.debug(u"Failed to get object from dict {0!r}: {1!r}", var, error)
 		except Exception as error:
 			exception = error
-			logger.debug(u"Failed to get object from dict '%s': %s" % (var, error))
+			logger.debug(u"Failed to get object from dict {0!r}: {1!r}", var, error)
 
 	if not isinstance(var, objectClass):
 		if exception is not None:

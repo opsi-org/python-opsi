@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2015 uib GmbH <info@uib.de>
+# Copyright (C) 2015-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -110,9 +110,7 @@ def _processConfig(lines):
 		newlines.append(u"   available = yes\n")
 		newlines.append(u"   comment = opsi depot share (ro)\n")
 		newlines.append(u"   path = /var/lib/opsi/depot\n")
-		newlines.append(u"   oplocks = no\n")
 		newlines.append(u"   follow symlinks = yes\n")
-		newlines.append(u"   level2 oplocks = no\n")
 		newlines.append(u"   writeable = no\n")
 		newlines.append(u"   invalid users = root\n")
 		if samba4:
@@ -161,9 +159,7 @@ def _processConfig(lines):
 		newlines.append(u"   available = yes\n")
 		newlines.append(u"   comment = opsi depot share (rw)\n")
 		newlines.append(u"   path = /var/lib/opsi/depot\n")
-		newlines.append(u"   oplocks = no\n")
 		newlines.append(u"   follow symlinks = yes\n")
-		newlines.append(u"   level2 oplocks = no\n")
 		newlines.append(u"   writeable = yes\n")
 		newlines.append(u"   invalid users = root\n")
 		newlines.append(u"\n")
@@ -174,8 +170,6 @@ def _processConfig(lines):
 		newlines.append(u"   available = yes\n")
 		newlines.append(u"   comment = opsi ntfs images share (rw)\n")
 		newlines.append(u"   path = /var/lib/opsi/ntfs-images\n")
-		newlines.append(u"   oplocks = no\n")
-		newlines.append(u"   level2 oplocks = no\n")
 		newlines.append(u"   writeable = yes\n")
 		newlines.append(u"   invalid users = root\n")
 		newlines.append(u"\n")
@@ -205,9 +199,7 @@ def _processConfig(lines):
 		newlines.append(u"   available = yes\n")
 		newlines.append(u"   comment = opsi repository share (ro)\n")
 		newlines.append(u"   path = /var/lib/opsi/repository\n")
-		newlines.append(u"   oplocks = no\n")
 		newlines.append(u"   follow symlinks = yes\n")
-		newlines.append(u"   level2 oplocks = no\n")
 		newlines.append(u"   writeable = no\n")
 		newlines.append(u"   invalid users = root\n")
 		newlines.append(u"\n")
@@ -239,3 +231,4 @@ def configureSamba(config=SMB_CONF):
 	newlines = _processConfig(lines)
 	if lines != newlines:
 		_writeConfig(newlines, config)
+		logger.notice(u"Samba configuration finished. You may want to restart your Samba daemon.")

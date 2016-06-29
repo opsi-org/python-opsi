@@ -25,6 +25,7 @@ Testing backend replication.
 
 from __future__ import absolute_import
 
+import os
 import sys
 import unittest
 
@@ -35,13 +36,12 @@ from .BackendTestMixins.Audit import (getAuditHardwares,
     getAuditHardwareOnHost, getAuditSoftwares, getAuditSoftwareOnClient)
 from .BackendTestMixins.Clients import getClients
 from .BackendTestMixins.Configs import getConfigs, getConfigStates
-from .BackendTestMixins.Groups import (getHostGroups, getObjectToGroups,
-    getProductGroup)
 from .BackendTestMixins.Hosts import getConfigServer, getDepotServers
-from .BackendTestMixins.Licenses import getLicenseContracts
+from .test_license_management import getLicenseContracts
 from .BackendTestMixins.Products import (getLocalbootProducts,
     getNetbootProduct, getProductDepdencies, getProductProperties,
     getProductsOnDepot, getProductsOnClients, getProductPropertyStates)
+from .test_groups import (getHostGroups, getObjectToGroups, getProductGroup)
 
 
 class ReplicatorTestCase(unittest.TestCase):
@@ -117,8 +117,6 @@ def fillBackend(backend, licenseManagementData=False):
         fillBackendWithLicensePools(backend)
         fillBackendWithSoftwareLicenses(backend)
 
-    auditHardwares = fillBackendWithAuditHardwares(backend)
-    auditSoftwares = fillBackendWithAuditSoftwares(backend)
     fillBackendWithProductDependencys(backend, products)
     productProperties = fillBackendWithProductPropertys(backend, products)
     fillBackendWithProductOnDepots(backend, products, configServer, depotServer)
@@ -126,8 +124,12 @@ def fillBackend(backend, licenseManagementData=False):
     fillBackendWithProductPropertyStates(backend, productProperties, depotServer, clients)
     fillBackendWithConfigStates(backend, configs, clients, depotServer)
     fillBackendWithObjectToGroups(backend, groups, clients)
-    fillBackendWithAuditHardwareOnHosts(backend, auditHardwares, clients)
+    auditSoftwares = fillBackendWithAuditSoftwares(backend)
     fillBackendWithAuditSoftwareOnClients(backend, auditSoftwares, clients)
+
+    if existsHwAuditConfig():
+        auditHardwares = fillBackendWithAuditHardwares(backend)
+        fillBackendWithAuditHardwareOnHosts(backend, auditHardwares, clients)
 
     if licenseManagementData:
         fillBackendWithSoftwareLicenseToLicensePools(backend)
@@ -147,8 +149,6 @@ def checkIfBackendIsFilled(backend, licenseManagementData=False):
         # fillBackendWithLicensePools(backend)
         # fillBackendWithSoftwareLicenses(backend)
 
-    assert len(backend.auditHardware_getObjects()) > 0
-    assert len(backend.auditSoftware_getObjects()) > 0
     assert len(backend.productDependency_getObjects()) > 0
     assert len(backend.productProperty_getObjects()) > 0
     assert len(backend.productOnDepot_getObjects()) > 0
@@ -156,8 +156,16 @@ def checkIfBackendIsFilled(backend, licenseManagementData=False):
     assert len(backend.productPropertyState_getObjects()) > 0
     assert len(backend.objectToGroup_getObjects()) > 0
     assert len(backend.configState_getObjects()) > 0
-    assert len(backend.auditHardwareOnHost_getObjects()) > 0
+    assert len(backend.auditSoftware_getObjects()) > 0
     assert len(backend.auditSoftwareOnClient_getObjects()) > 0
+
+    if existsHwAuditConfig():
+        assert len(backend.auditHardwareOnHost_getObjects()) > 0
+        assert len(backend.auditHardware_getObjects()) > 0
+
+
+def existsHwAuditConfig():
+    return os.path.exists('/etc/opsi/hwaudit/opsihwaudit.conf')
 
 
 def fillBackendWithHosts(backend):
@@ -213,6 +221,9 @@ def fillBackendWithSoftwareLicenses(backend):
 
 
 def fillBackendWithAuditHardwares(backend):
+    if not existsHwAuditConfig():
+        return []
+
     auditHardwares = getAuditHardwares()
     backend.auditHardware_createObjects(auditHardwares)
 
@@ -247,6 +258,8 @@ def fillBackendWithProductOnClients(backend, products, clients):
     productsOnClients = getProductsOnClients(products, clients)
     backend.productOnClient_createObjects(productsOnClients)
 
+    return productsOnClients
+
 
 def fillBackendWithProductPropertyStates(backend, productProperties, depotServer, clients):
     productPropertyStates = getProductPropertyStates(productProperties, depotServer, clients)
@@ -264,13 +277,18 @@ def fillBackendWithObjectToGroups(backend, groups, clients):
 
 
 def fillBackendWithAuditHardwareOnHosts(backend, auditHardwares, clients):
+    if not auditHardwares:
+        return
+
     ahoh = getAuditHardwareOnHost(auditHardwares, clients)
     backend.auditHardwareOnHost_createObjects(ahoh)
 
 
 def fillBackendWithAuditSoftwareOnClients(backend, auditSoftwares, clients):
     asoc = getAuditSoftwareOnClient(auditSoftwares, clients)
+    assert len(asoc) > 0
     backend.auditSoftwareOnClient_createObjects(asoc)
+    assert len(backend.auditSoftwareOnClient_getObjects()) > 0
 
 
 def fillBackendWithSoftwareLicenseToLicensePools(backend):

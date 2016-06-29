@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2015 uib GmbH <info@uib.de>
+# Copyright (C) 2015-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -22,18 +22,19 @@ Testing the JSON-RPC backend.
 :author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
 """
-import unittest
+from __future__ import absolute_import
 
 from OPSI.Backend.JSONRPC import JSONRPCBackend
+from OPSI.Logger import Logger, LOG_DEBUG, LOG_NONE
 from OPSI.Util.HTTP import deflateEncode, gzipEncode
 
+from .helpers import unittest
+from .Backends.JSONRPC import JSONRPCTestCase
+from .BackendTestMixins import ExtendedBackendTestsMixin, BackendTestsMixin
+from .BackendTestMixins.Configs import ConfigStatesMixin
 
-# TODO: What we are currently missing is the connection of an
-# JSONRPC-Backend to a local instance and then run the backend test
-# (i.e. as in BackendTestMixins.Backends) on that backend.
 
-
-class FakeResponse:
+class FakeResponse(object):
     def __init__(self, header=None, data=None):
         self._header = header or {}
         self.data = data
@@ -61,6 +62,8 @@ class JSONRPCBackendTestCase(unittest.TestCase):
 
         self.assertEquals(None, result)
 
+
+class JSONRPCBackendCompressionTestCase(unittest.TestCase):
     def testProcessingGzippedResponse(self):
         backend = JSONRPCBackend("localhost", connectoninit=False)
 
@@ -90,6 +93,18 @@ class JSONRPCBackendTestCase(unittest.TestCase):
         )
 
         self.assertEquals("This is deflated", backend._processResponse(response))
+
+
+class JSONRPCBackendUsingTestCase(unittest.TestCase, JSONRPCTestCase,
+    # ExtendedBackendTestsMixin,
+    BackendTestsMixin,
+    # ConfigStatesMixin
+    ):
+    def setUp(self):
+        self.setUpBackend()
+
+    def tearDown(self):
+        self.tearDownBackend()
 
 
 if __name__ == '__main__':

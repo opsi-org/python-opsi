@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014 uib GmbH <info@uib.de>
+# Copyright (C) 2014-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -28,12 +28,10 @@ from __future__ import absolute_import
 import mock
 import os
 import re
-import shutil
 import tempfile
 import unittest
 
 import OPSI.Util.Product as Product
-import OPSI.Util.File.Archive as Archive
 
 from .helpers import cd, workInTemporaryDirectory
 

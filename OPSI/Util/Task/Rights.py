@@ -61,7 +61,7 @@ from OPSI.Util import findFiles, getfqdn
 from OPSI.Util.File.Opsi import OpsiConfFile
 from OPSI.System.Posix import isSLES
 
-__version__ = '4.0.6.40'
+__version__ = '4.0.6.48'
 
 LOGGER = Logger()
 
@@ -95,24 +95,25 @@ def getLocalFQDN():
 
 
 def setRights(path=u'/'):
-	LOGGER.debug(u"Setting rights on {0!r}".format(path))
-	LOGGER.debug("euid is {0}".format(os.geteuid()))
+	LOGGER.debug(u"Setting rights on {0!r}", path)
+	LOGGER.debug("euid is {0}", os.geteuid())
 
 	basedir = os.path.abspath(path)
 	if not os.path.isdir(basedir):
 		basedir = os.path.dirname(basedir)
-
-	(directories, depotDir) = getDirectoriesForProcessing(path)
 
 	clientUserUid = pwd.getpwnam(_CLIENT_USER)[2]
 	opsiconfdUid = pwd.getpwnam(_OPSICONFD_USER)[2]
 	adminGroupGid = grp.getgrnam(_ADMIN_GROUP)[2]
 	fileAdminGroupGid = grp.getgrnam(_FILE_ADMIN_GROUP)[2]
 
+	(directories, depotDir) = getDirectoriesForProcessing(path)
+
+	processedDirectories = set()
 	# TODO: try to re-introduce removeDuplicatesFromDirectories for speedups
 	for dirname in directories:
 		if not dirname.startswith(basedir) and not basedir.startswith(dirname):
-			LOGGER.debug(u"Skipping {0!r}".format(dirname))
+			LOGGER.debug(u"Skipping {0!r}", dirname)
 			continue
 		uid = opsiconfdUid
 		gid = fileAdminGroupGid
@@ -133,7 +134,7 @@ def setRights(path=u'/'):
 		if os.path.isfile(path):
 			chown(path, uid, gid)
 
-			LOGGER.debug(u"Setting rights on file {0!r}".format(path))
+			LOGGER.debug(u"Setting rights on file {0!r}", path)
 			if path.startswith(u'/var/lib/opsi/depot/'):
 				LOGGER.debug("Assuming file in product folder...")
 				os.chmod(path, (os.stat(path)[0] | 0o660) & 0o770)
@@ -146,35 +147,41 @@ def setRights(path=u'/'):
 		if basedir.startswith(dirname):
 			startPath = basedir
 
+		if startPath in processedDirectories:
+			LOGGER.debug(u"Already proceesed {0}, Skipping.", startPath)
+			continue
+
 		if dirname == depotDir:
 			directoryMode = 0o2770
 
-		LOGGER.notice(u"Setting rights on directory {0!r}".format(startPath))
-		LOGGER.debug2(u"Current setting: startPath={path}, uid={uid}, gid={gid}".format(path=startPath, uid=uid, gid=gid))
+		LOGGER.notice(u"Setting rights on directory {0!r}", startPath)
+		LOGGER.debug2(u"Current setting: startPath={path}, uid={uid}, gid={gid}", path=startPath, uid=uid, gid=gid)
 		chown(startPath, uid, gid)
 		os.chmod(startPath, directoryMode)
 		for filepath in findFiles(startPath, prefix=startPath, returnLinks=correctLinks, excludeFile=re.compile("(.swp|~)$")):
 			chown(filepath, uid, gid)
 			if os.path.isdir(filepath):
-				LOGGER.debug(u"Setting rights on directory {0!r}".format(filepath))
+				LOGGER.debug(u"Setting rights on directory {0!r}", filepath)
 				os.chmod(filepath, directoryMode)
 			elif os.path.isfile(filepath):
-				LOGGER.debug(u"Setting rights on file {0!r}".format(filepath))
+				LOGGER.debug(u"Setting rights on file {0!r}", filepath)
 				if filepath.startswith((u'/var/lib/opsi/depot/', u'/opt/pcbin/install/')):
 					if os.path.basename(filepath) in KNOWN_EXECUTABLES:
-						LOGGER.debug(u"Setting rights on special file {0!r}".format(filepath))
+						LOGGER.debug(u"Setting rights on special file {0!r}", filepath)
 						os.chmod(filepath, 0o770)
 					else:
-						LOGGER.debug(u"Setting rights on file {0!r}".format(filepath))
+						LOGGER.debug(u"Setting rights on file {0!r}", filepath)
 						os.chmod(filepath, (os.stat(filepath)[0] | 0o660) & 0o770)
 				else:
-					LOGGER.debug(u"Setting rights {rights!r} on file {file!r}".format(file=filepath, rights=fileMode))
+					LOGGER.debug(u"Setting rights {rights!r} on file {file!r}", file=filepath, rights=fileMode)
 					os.chmod(filepath, fileMode)
 
 		if startPath.startswith(u'/var/lib/opsi') and os.geteuid() == 0:
 			os.chmod(u'/var/lib/opsi', 0o750)
 			chown(u'/var/lib/opsi', clientUserUid, fileAdminGroupGid)
 			setRightsOnSSHDirectory(clientUserUid, fileAdminGroupGid)
+
+		processedDirectories.add(startPath)
 
 
 def getDirectoriesForProcessing(path):
@@ -197,29 +204,26 @@ def getDirectoriesForProcessing(path):
 				LOGGER.error(error)
 
 		if os.path.exists(depotDir):
-			LOGGER.info(u"Local depot directory {0!r} found".format(depotDir))
-			dirnames.append(depotDir)
+			LOGGER.info(u"Local depot directory {0!r} found", depotDir)
+			dirnames.add(depotDir)
 
 	if basedir.startswith('/opt/pcbin/install'):
-		found = False
 		for dirname in dirnames:
 			if dirname.startswith('/opt/pcbin/install'):
-				found = True
 				break
-
-		if not found:
-			dirnames.append('/opt/pcbin/install')
+		else:
+			dirnames.add('/opt/pcbin/install')
 
 	return (dirnames, depotDir)
 
 
 def getDirectoriesManagedByOpsi():
 	if isSLES():
-		return [u'/etc/opsi', u'/var/lib/opsi', u'/var/lib/opsi/workbench',
-				u'/var/lib/tftpboot/opsi', u'/var/log/opsi']
+		return set([u'/etc/opsi', u'/var/lib/opsi', u'/var/lib/opsi/workbench',
+					u'/var/lib/tftpboot/opsi', u'/var/log/opsi'])
 	else:
-		return [u'/etc/opsi', u'/home/opsiproducts', u'/tftpboot/linux',
-				u'/var/lib/opsi', u'/var/log/opsi']
+		return set([u'/etc/opsi', u'/home/opsiproducts', u'/tftpboot/linux',
+				u'/var/lib/opsi', u'/var/log/opsi'])
 
 
 def getDepotUrl():
@@ -264,19 +268,19 @@ def removeDuplicatesFromDirectories(directories):
 		shouldAdd = True
 		for alreadyAddedFolder in folders.copy():
 			if alreadyAddedFolder.startswith(folder) and not alreadyAddedFolder == folder:
-				LOGGER.debug("{0} in {1}. Removing {1}, adding {0}".format(folder, alreadyAddedFolder))
+				LOGGER.debug("{0} in {1}. Removing {1}, adding {0}", folder, alreadyAddedFolder)
 				folders.remove(alreadyAddedFolder)
 				folders.add(folder)
 				shouldAdd = False
 			elif folder.startswith(alreadyAddedFolder):
-				LOGGER.debug("{1} in {0}. Ignoring.".format(folder, alreadyAddedFolder))
+				LOGGER.debug("{1} in {0}. Ignoring.", folder, alreadyAddedFolder)
 				shouldAdd = False
 
 		if shouldAdd:
-			LOGGER.debug("Adding new folder: {0}".format(folder))
+			LOGGER.debug("Adding new folder: {0}", folder)
 			folders.add(folder)
 
-	LOGGER.debug("Final folder collection: {0}".format(folders))
+	LOGGER.debug("Final folder collection: {0}", folders)
 	return folders
 
 
@@ -292,13 +296,13 @@ def chown(path, uid, gid):
 	"""
 	try:
 		if os.geteuid() == 0:
-			LOGGER.debug(u"Setting ownership to {user}:{group} on {path!r}".format(path=path, user=uid, group=gid))
+			LOGGER.debug(u"Setting ownership to {user}:{group} on {path!r}", path=path, user=uid, group=gid)
 			if os.path.islink(path):
 				os.lchown(path, uid, gid)
 			else:
 				os.chown(path, uid, gid)
 		else:
-			LOGGER.debug(u"Setting ownership to -1:{group} on {path!r}".format(path=path, group=gid))
+			LOGGER.debug(u"Setting ownership to -1:{group} on {path!r}", path=path, group=gid)
 			if os.path.islink(path):
 				os.lchown(path, -1, gid)
 			else:
@@ -308,10 +312,7 @@ def chown(path, uid, gid):
 			# We are root so something must be really wrong!
 			raise fist
 
-		LOGGER.warning(u"Failed to set ownership on {file!r}: {error}".format(
-			file=path,
-			error=fist
-		))
+		LOGGER.warning(u"Failed to set ownership on {file!r}: {error}", file=path, error=fist)
 		LOGGER.notice(u"Please try setting the rights as root.")
 
 
