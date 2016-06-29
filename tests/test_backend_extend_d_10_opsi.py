@@ -132,14 +132,19 @@ def testBackendDoesNotCreateProductsOnClientsOnItsOwn(prefilledBackendManager):
 	assert 1 == len(pocs), 'Expected to have only one ProductOnClient but got {n} instead: {0}'.format(pocs, n=len(pocs))
 
 
-def testSetProductActionRequestWithDependenciesSetsProductsToSetup(prefilledBackendManager):
+@pytest.mark.parametrize("clientId", [
+	"backend-test-1.vmnat.local",
+	"BACKEND-test-1.VMNAT.local",
+	"BACKEND-TEST-1.VMNAT.LOCAL",
+])
+def testSetProductActionRequestWithDependenciesSetsProductsToSetup(prefilledBackendManager, clientId):
 	"""
 	An product action request should set product that are dependencies to \
 setup even if they are already installed on a client.
 	"""
 	prefilledBackendManager.setProductActionRequestWithDependencies(
 		'to_install',
-		'backend-test-1.vmnat.local',
+		clientId,
 		'setup'
 	)
 
