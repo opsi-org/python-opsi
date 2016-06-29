@@ -52,6 +52,23 @@ def fillBackend(backend):
 
 	backend.host_createObjects([client, depot])
 
+	clientConfigDepotId = UnicodeConfig(
+		id=u'clientconfig.depot.id',
+		description=u'Depotserver to use',
+		possibleValues=[],
+		defaultValues=[depot.id]
+	)
+
+	backend.config_createObjects(clientConfigDepotId)
+
+	clientDepotMappingConfigState = ConfigState(
+		configId=clientConfigDepotId.getId(),
+		objectId=client.getId(),
+		values=depot.getId()
+	)
+
+	backend.configState_createObjects(clientDepotMappingConfigState)
+
 	firstProduct = LocalbootProduct('to_install', '1.0', '1.0')
 	secondProduct = LocalbootProduct('already_installed', '1.0', '1.0')
 
@@ -102,23 +119,6 @@ def fillBackend(backend):
 	)
 
 	backend.productOnDepot_createObjects([firstProductOnDepot, secondProductOnDepot])
-
-	clientConfigDepotId = UnicodeConfig(
-		id=u'clientconfig.depot.id',
-		description=u'Depotserver to use',
-		possibleValues=[],
-		defaultValues=[depot.id]
-	)
-
-	backend.config_createObjects(clientConfigDepotId)
-
-	clientDepotMappingConfigState = ConfigState(
-		configId=clientConfigDepotId.getId(),
-		objectId=client.getId(),
-		values=depot.getId()
-	)
-
-	backend.configState_createObjects(clientDepotMappingConfigState)
 
 
 def testBackendDoesNotCreateProductsOnClientsOnItsOwn(prefilledBackendManager):
