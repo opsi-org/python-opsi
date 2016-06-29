@@ -162,10 +162,6 @@ setup even if they are already installed on a client.
 
 @pytest.mark.parametrize("installationStatus", ["installed", "unknown", "not_installed", None])
 def testSetProductActionRequestWithDependenciesWithDependencyRequestingAction(backendManager, installationStatus):
-	"""
-	An product action request should set product that are dependencies to \
-setup even if they are already installed on a client.
-	"""
 	client, depot = createClientAndDepot(backendManager)
 
 	jedit = LocalbootProduct('jedit', '1.0', '1.0')
