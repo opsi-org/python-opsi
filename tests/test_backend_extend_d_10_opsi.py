@@ -146,14 +146,13 @@ setup even if they are already installed on a client.
 	productsOnClient = prefilledBackendManager.productOnClient_getObjects()
 	assert 2 == len(productsOnClient)
 
-	productThatShouldBeReinstalled = None
 	for poc in productsOnClient:
 		assert 'backend-test-1.vmnat.local' == poc.clientId, 'Wrong client id. Expected it to be {0!r} but got: {1!r}'.format('backend-test-1.vmnat.local', poc.clientId)
 
 		if poc.productId == 'already_installed':
 			productThatShouldBeReinstalled = poc
-
-	if productThatShouldBeReinstalled is None:
+			break
+	else:
 		raise AssertionError('Could not find a product "{0}" on the client.'.format('already_installed'))
 
 	assert productThatShouldBeReinstalled.productId == 'already_installed'
