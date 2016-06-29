@@ -178,21 +178,21 @@ def testSetProductActionRequestWithDependenciesWithDependencyRequestingAction(ba
 	)
 	backendManager.productDependency_createObjects([prodDependency])
 
-	firstProductOnDepot = ProductOnDepot(
+	jeditOnDepot = ProductOnDepot(
 		productId=jedit.id,
 		productType=jedit.getType(),
 		productVersion=jedit.productVersion,
 		packageVersion=jedit.packageVersion,
 		depotId=depot.id,
 	)
-	secondProductOnDepot = ProductOnDepot(
+	javavmOnDepot = ProductOnDepot(
 		productId=javavm.id,
 		productType=javavm.getType(),
 		productVersion=javavm.productVersion,
 		packageVersion=javavm.packageVersion,
 		depotId=depot.id,
 	)
-	backendManager.productOnDepot_createObjects([firstProductOnDepot, secondProductOnDepot])
+	backendManager.productOnDepot_createObjects([jeditOnDepot, javavmOnDepot])
 
 	if installationStatus:
 		poc = ProductOnClient(
