@@ -160,6 +160,72 @@ setup even if they are already installed on a client.
 	assert productThatShouldBeReinstalled.actionRequest == 'setup'
 
 
+@pytest.mark.parametrize("installationStatus", ["installed", "unknown", "not_installed", None])
+def testSetProductActionRequestWithDependenciesWithDependencyRequestingAction(backendManager, installationStatus):
+	"""
+	An product action request should set product that are dependencies to \
+setup even if they are already installed on a client.
+	"""
+	client, depot = createClientAndDepot(backendManager)
+
+	jedit = LocalbootProduct('jedit', '1.0', '1.0')
+	javavm = LocalbootProduct('javavm', '1.0', '1.0')
+	backendManager.product_createObjects([jedit, javavm])
+
+	prodDependency = ProductDependency(
+		productId=jedit.id,
+		productVersion=jedit.productVersion,
+		packageVersion=jedit.packageVersion,
+		productAction='setup',
+		requiredProductId=javavm.id,
+		requiredAction='setup',
+	)
+	backendManager.productDependency_createObjects([prodDependency])
+
+	firstProductOnDepot = ProductOnDepot(
+		productId=jedit.id,
+		productType=jedit.getType(),
+		productVersion=jedit.productVersion,
+		packageVersion=jedit.packageVersion,
+		depotId=depot.id,
+	)
+	secondProductOnDepot = ProductOnDepot(
+		productId=javavm.id,
+		productType=javavm.getType(),
+		productVersion=javavm.productVersion,
+		packageVersion=javavm.packageVersion,
+		depotId=depot.id,
+	)
+	backendManager.productOnDepot_createObjects([firstProductOnDepot, secondProductOnDepot])
+
+	if installationStatus:
+		poc = ProductOnClient(
+			clientId=client.id,
+			productId=javavm.id,
+			productType=javavm.getType(),
+			productVersion=javavm.productVersion,
+			packageVersion=javavm.packageVersion,
+			installationStatus=installationStatus,
+			actionResult='successful'
+		)
+
+		backendManager.productOnClient_createObjects([poc])
+
+	backendManager.setProductActionRequestWithDependencies('jedit', client.id, 'setup')
+
+	productsOnClient = backendManager.productOnClient_getObjects()
+	assert 2 == len(productsOnClient)
+
+	for poc in productsOnClient:
+		if poc.productId == 'javavm':
+			productThatShouldBeSetup = poc
+			break
+	else:
+		raise ValueError('Could not find a product "{0}" on the client.'.format('already_installed'))
+
+	assert productThatShouldBeSetup.productId == 'javavm'
+	assert productThatShouldBeSetup.actionRequest == 'setup'
+
 @pytest.mark.parametrize("sortalgorithm", [None, 'algorithm1', 'algorithm2', 'unknown-algo'])
 def testGetProductOrdering(prefilledBackendManager, sortalgorithm):
 	ordering = prefilledBackendManager.getProductOrdering('depotserver1.some.test', sortalgorithm)
