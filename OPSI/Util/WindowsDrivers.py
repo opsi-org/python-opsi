@@ -458,6 +458,9 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 		auditHardwareOnHost = auditInfoByClass["COMPUTER_SYSTEM"]
 		vendorFromHost = re.sub("[\<\>\?\"\:\|\\\/\*]", "_", auditHardwareOnHost.vendor or "")
 		modelFromHost = re.sub("[\<\>\?\"\:\|\\\/\*]", "_", auditHardwareOnHost.model or "")
+		skuFromHost = auditHardwareOnHost.model or ""
+		skuLabel = ""
+		fallbackPath = ""
 
 		if vendorFromHost and modelFromHost:
 			vendordirectories = listdir(rulesdir)
@@ -468,13 +471,24 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 			for vendordirectory in vendordirectories:
 				if vendordirectory.lower() == vendorFromHost.lower():
 					modeldirectories = listdir(os.path.join(rulesdir, vendordirectory))
+					if skuFromHost and skuFromHost in modelFromHost:
+						skuLabel = "(%s)" % skuFromHost
 					if modelFromHost not in modeldirectories:
 						if modelFromHost.endswith(".") or modelFromHost.endswith(" "):
 							modelFromHost = "%s_" % modelFromHost[:-1]
 					for modeldirectory in modeldirectories:
 						if modeldirectory.lower() == modelFromHost.lower():
+							logger.info("ByAudit: Exact match found.")
 							additionalDrivers.append(os.path.join("byAudit", vendordirectory, modeldirectory))
 							byAuditIntegrated = True
+							break
+						elif modeldirectory.lower() == modelFromHost.replace(skuLabel, "").strip():
+							fallbackPath = os.path.join("byAudit", vendordirectory, modeldirectory)
+					if not byAuditIntegrated and fallbackPath:
+						logger.info("ByAudit: No Exact match found but model without sku found. Using Directory: '%s'" % modeldirectory )
+						additionalDrivers.append(fallbackPath)
+						byAuditIntegrated = True
+					break
 
 	if not byAuditIntegrated and exists(rulesdir) and "BASE_BOARD" in auditInfoByClass:
 		logger.info(u"Checking if mainboard-fallback for automated integrating of additional drivers are possible")
