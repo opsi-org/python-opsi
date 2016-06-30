@@ -50,7 +50,7 @@ from OPSI.Backend.Backend import Backend, DeferredCall
 from OPSI.Util import serialize, deserialize
 from OPSI.Util.HTTP import urlsplit, getSharedConnectionPool, deflateEncode, deflateDecode, gzipDecode
 
-__version__ = '4.0.7.1'
+__version__ = '4.0.7.5'
 
 logger = Logger()
 
@@ -230,14 +230,14 @@ class RpcQueue(threading.Thread):
 
 			for resp in response:
 				try:
-					id = resp['id']
+					responseId = resp['id']
 				except Exception as error:
 					raise Exception(u"Failed to get id from: %s (%s): %s" % (resp, response, error))
 
 				try:
-					jsonrpc = self.jsonrpcs[id]
+					jsonrpc = self.jsonrpcs[responseId]
 				except Exception as error:
-					raise Exception(u"Failed to get jsonrpc with id %s: %s" % (id, error))
+					raise Exception(u"Failed to get jsonrpc with id %s: %s" % (responseId, error))
 
 				try:
 					jsonrpc.processResult(resp)
