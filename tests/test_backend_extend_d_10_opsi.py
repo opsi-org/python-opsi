@@ -227,6 +227,66 @@ def testSetProductActionRequestWithDependenciesWithDependencyRequestingAction(ba
 	assert productThatShouldBeSetup.actionRequest == 'setup'
 
 
+def testSetProductActionRequestWithDependenciesWithOnce(backendManager):
+	client, depot = createClientAndDepot(backendManager)
+
+	masterProduct = LocalbootProduct('master', '3', '1.0')
+	prodWithSetup = LocalbootProduct('reiter', '1.0', '1.0')
+	prodWithOnce = LocalbootProduct('mania', '1.0', '1.0')
+	backendManager.product_createObjects([masterProduct, prodWithOnce, prodWithSetup])
+
+	prodOnceDependency = ProductDependency(
+		productId=masterProduct.id,
+		productVersion=masterProduct.productVersion,
+		packageVersion=masterProduct.packageVersion,
+		productAction='once',
+		requiredProductId=prodWithOnce.id,
+		requiredAction='once',
+		requirementType='after',
+	)
+	prodSetupDependency = ProductDependency(
+		productId=masterProduct.id,
+		productVersion=masterProduct.productVersion,
+		packageVersion=masterProduct.packageVersion,
+		productAction='once',
+		requiredProductId=prodWithSetup.id,
+		requiredAction='setup',
+		requirementType='after',
+	)
+	backendManager.productDependency_createObjects([prodOnceDependency, prodSetupDependency])
+
+	for prod in (masterProduct, prodWithOnce, prodWithSetup):
+		pod = ProductOnDepot(
+			productId=prod.id,
+			productType=prod.getType(),
+			productVersion=prod.productVersion,
+			packageVersion=prod.packageVersion,
+			depotId=depot.id,
+		)
+		backendManager.productOnDepot_createObjects([pod])
+
+	backendManager.setProductActionRequestWithDependencies(masterProduct.id, 'backend-test-1.vmnat.local', "once")
+
+	productsOnClient = backendManager.productOnClient_getObjects()
+	assert 3 == len(productsOnClient)
+
+	depOnce = None
+	depSetup = None
+
+	for poc in productsOnClient:
+		if poc.productId == prodWithOnce.id:
+			depOnce = poc
+		elif poc.productId == prodWithSetup.id:
+			depSetup = poc
+
+	if not depOnce:
+		raise ValueError('Could not find a product {0!r} on the client.'.format(prodWithOnce.id))
+	if not depSetup:
+		raise ValueError('Could not find a product {0!r} on the client.'.format(prodWithSetup.id))
+
+	assert depOnce.actionRequest == 'once'
+	assert depSetup.actionRequest == 'setup'
+
 @pytest.mark.parametrize("sortalgorithm", [None, 'algorithm1', 'algorithm2', 'unknown-algo'])
 def testGetProductOrdering(prefilledBackendManager, sortalgorithm):
 	ordering = prefilledBackendManager.getProductOrdering('depotserver1.some.test', sortalgorithm)
