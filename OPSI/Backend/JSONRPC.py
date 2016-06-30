@@ -455,8 +455,9 @@ class JSONRPCBackend(Backend):
 				self._interface = self._jsonRPC(u'backend_getInterface')
 				if 'opsiclientd' in self._application:
 					try:
-						modules = self._jsonRPC(u'backend_info').get('modules', None)
-						realmodules = self._jsonRPC(u'backend_info').get('realmodules', None)
+						backendInfo = self._jsonRPC(u'backend_info')
+						modules = backendInfo.get('modules', None)
+						realmodules = backendInfo.get('realmodules', None)
 						if modules:
 							logger.confidential(u"Modules: %s" % modules)
 						else:
