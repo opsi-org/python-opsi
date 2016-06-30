@@ -231,13 +231,13 @@ class RpcQueue(threading.Thread):
 			for resp in response:
 				try:
 					responseId = resp['id']
-				except Exception as error:
-					raise Exception(u"Failed to get id from: %s (%s): %s" % (resp, response, error))
+				except KeyError as error:
+					raise KeyError(u"Failed to get id from: %s (%s): %s" % (resp, response, error))
 
 				try:
 					jsonrpc = self.jsonrpcs[responseId]
-				except Exception as error:
-					raise Exception(u"Failed to get jsonrpc with id %s: %s" % (responseId, error))
+				except KeyError as error:
+					raise KeyError(u"Failed to get jsonrpc with id %s: %s" % (responseId, error))
 
 				try:
 					jsonrpc.processResult(resp)
