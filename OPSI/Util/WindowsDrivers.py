@@ -456,7 +456,7 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 		auditHardwareOnHost = auditInfoByClass["COMPUTER_SYSTEM"]
 		vendorFromHost = re.sub("[\<\>\?\"\:\|\\\/\*]", "_", auditHardwareOnHost.vendor or "")
 		modelFromHost = re.sub("[\<\>\?\"\:\|\\\/\*]", "_", auditHardwareOnHost.model or "")
-		skuFromHost = auditHardwareOnHost.model or ""
+		skuFromHost = auditHardwareOnHost.sku or ""
 		skuLabel = ""
 		fallbackPath = ""
 
