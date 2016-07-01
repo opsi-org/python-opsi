@@ -480,7 +480,7 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 							additionalDrivers.append(os.path.join("byAudit", vendordirectory, modeldirectory))
 							byAuditIntegrated = True
 							break
-						elif modeldirectory.lower() == modelFromHost.replace(skuLabel, "").strip():
+						elif modeldirectory.lower() == modelFromHost.replace(skuLabel, "").strip().lower():
 							fallbackPath = os.path.join("byAudit", vendordirectory, modeldirectory)
 					if not byAuditIntegrated and fallbackPath:
 						logger.info("ByAudit: No Exact match found but model without sku found. Using Directory: '%s'" % modeldirectory )
