@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014 uib GmbH <info@uib.de>
+# Copyright (C) 2014-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -112,12 +112,13 @@ on to. Defaults to ``Logger.error``.
 	backend = MySQLBackend(**config)
 	try:
 		backend.backend_createBase()
-        except MySQLdb.OperationalError as exc: 
-                if exc[0] == INVALID_DEFAULT_VALUE:
-                        errorFunction(
-                                u"It seems you have the MySQL strict mode enabled. Please read the opsi handbook.\n"
-                                u"{error}".format(error=exc)   
-                        )   
+	except MySQLdb.OperationalError as exc:
+		if exc[0] == INVALID_DEFAULT_VALUE:
+				errorFunction(
+						u"It seems you have the MySQL strict mode enabled. Please read the opsi handbook.\n"
+						u"{error}".format(error=exc)
+				)
+
 		raise exc
 
 	notificationFunction(u"Finished initializing mysql backend.")
@@ -130,11 +131,11 @@ def initializeDatabase(dbAdminUser, dbAdminPass, config,
 	"""
 	def createUser(host):
 		notificationFunction(u"Creating user '{username}' and granting"
-							 u" all rights on '{database}'".format(**config))
+							u" all rights on '{database}'".format(**config))
 		db.query(u'USE {database};'.format(**config))
 		db.query(
 			(
-				u'GRANT ALL ON {1[database]}.* TO {1[username]}@{0} '
+				u'GRANT ALL ON {1[database]}.* TO {1[username]}@\'{0}\''
 				u'IDENTIFIED BY \'{1[password]}\'').format(
 					host,
 					config,
@@ -185,7 +186,7 @@ def initializeDatabase(dbAdminUser, dbAdminPass, config,
 	notificationFunction(u"Database '{database}' created".format(**config))
 
 	if config['address'] in ("localhost", "127.0.0.1",
-							 systemConfig['hostname'], systemConfig['fqdn']):
+							systemConfig['hostname'], systemConfig['fqdn']):
 		createUser("localhost")
 		if config['address'] not in ("localhost", "127.0.0.1"):
 			createUser(config['address'])
