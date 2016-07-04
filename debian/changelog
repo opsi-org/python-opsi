@@ -1,4 +1,4 @@
-python-opsi (4.0.7.6-1) UNRELEASED; urgency=medium
+python-opsi (4.0.7.6-1) stable; urgency=medium
 
   * Changed formatting in Logger to not expose parts of confidential strings
     under special circumstances.
