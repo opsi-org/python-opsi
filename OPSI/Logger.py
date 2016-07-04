@@ -54,7 +54,7 @@ try:
 except ImportError:
 	syslog = None
 
-__version__ = '4.0.7.1'
+__version__ = '4.0.7.6'
 
 if sys.version_info > (3, ):
 	# Python 3
@@ -547,18 +547,6 @@ will disable logging to a file.
 False suppresses exceptions.
 		:type raiseException: bool
 		'''
-		def formatMessage(unformattedMessage):
-			tempMessage = unicode(unformattedMessage)
-			tempMessage = tempMessage.replace(u'%D', datetime)
-			tempMessage = tempMessage.replace(u'%T', threadId)
-			tempMessage = tempMessage.replace(u'%l', unicode(level))
-			tempMessage = tempMessage.replace(u'%L', levelname)
-			tempMessage = tempMessage.replace(u'%C', componentname)
-			tempMessage = tempMessage.replace(u'%M', message)
-			tempMessage = tempMessage.replace(u'%F', filename)
-			tempMessage = tempMessage.replace(u'%N', linenumber)
-			return tempMessage
-
 		if (level > self.__messageSubjectLevel and
 			level > self.__consoleLevel and
 			level > self.__fileLevel and
@@ -566,6 +554,23 @@ False suppresses exceptions.
 			not self.univentionLogger_priv):
 
 			return
+
+		def formatMessage(unformattedMessage, removeConfidential=False):
+			tempMessage = unicode(unformattedMessage)
+			tempMessage = tempMessage.replace(u'%M', message)
+
+			if removeConfidential:
+				for string in self.__confidentialStrings:
+					tempMessage = tempMessage.replace(string, u'*** confidential ***')
+
+			tempMessage = tempMessage.replace(u'%D', datetime)
+			tempMessage = tempMessage.replace(u'%T', threadId)
+			tempMessage = tempMessage.replace(u'%l', unicode(level))
+			tempMessage = tempMessage.replace(u'%L', levelname)
+			tempMessage = tempMessage.replace(u'%C', componentname)
+			tempMessage = tempMessage.replace(u'%F', filename)
+			tempMessage = tempMessage.replace(u'%N', linenumber)
+			return tempMessage
 
 		try:
 			if not isinstance(message, unicode):
@@ -629,10 +634,7 @@ False suppresses exceptions.
 				m = self.__messageSubjectFormat
 				if specialConfig:
 					m = specialConfig.get('messageSubjectFormat', m)
-				m = formatMessage(m)
-				if self.__messageSubjectLevel < LOG_CONFIDENTIAL:
-					for string in self.__confidentialStrings:
-						m = m.replace(string, u'*** confidential ***')
+				m = formatMessage(m, removeConfidential=self.__messageSubjectLevel < LOG_CONFIDENTIAL)
 
 				self.__loggerSubject.setMessage(m, level)
 
@@ -641,10 +643,7 @@ False suppresses exceptions.
 				m = self.__consoleFormat
 				if specialConfig:
 					m = specialConfig.get('consoleFormat', m)
-				m = formatMessage(m)
-				if self.__consoleLevel < LOG_CONFIDENTIAL:
-					for string in self.__confidentialStrings:
-						m = m.replace(string, u'*** confidential ***')
+				m = formatMessage(m, removeConfidential=self.__consoleLevel < LOG_CONFIDENTIAL)
 
 				if self.__consoleStdout:
 					fh = sys.stdout
@@ -674,10 +673,7 @@ False suppresses exceptions.
 					m = self.__fileFormat
 					if specialConfig:
 						m = specialConfig.get('fileFormat', m)
-					m = formatMessage(m)
-					if self.__fileLevel < LOG_CONFIDENTIAL:
-						for string in self.__confidentialStrings:
-							m = m.replace(string, u'*** confidential ***')
+					m = formatMessage(m, removeConfidential=self.__fileLevel < LOG_CONFIDENTIAL)
 
 					try:
 						lf = codecs.open(logFile, 'a+', 'utf-8', 'replace')
@@ -721,10 +717,7 @@ False suppresses exceptions.
 				m = self.__syslogFormat
 				if specialConfig:
 					m = specialConfig.get('syslogFormat', m)
-				m = formatMessage(m)
-				if self.__syslogLevel < LOG_CONFIDENTIAL:
-					for string in self.__confidentialStrings:
-						m = m.replace(string, u'*** confidential ***')
+				m = formatMessage(m, removeConfidential=self.__syslogLevel < LOG_CONFIDENTIAL)
 
 				try:
 					syslog.syslog(_SYSLOG_LEVEL_MAPPING[level], m)
@@ -737,9 +730,7 @@ False suppresses exceptions.
 				m = self.__univentionFormat
 				if specialConfig:
 					m = specialConfig.get('univentionFormat', m)
-				m = formatMessage(m)
-				for string in self.__confidentialStrings:
-					m = m.replace(string, u'*** confidential ***')
+				m = formatMessage(m, removeConfidential=True)
 
 				if level in (LOG_DEBUG2, LOG_DEBUG, LOG_INFO):
 					univentionLevel = self.univentionLogger_priv.ALL

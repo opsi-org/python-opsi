@@ -1,3 +1,11 @@
+python-opsi (4.0.7.6-1) stable; urgency=medium
+
+  * Changed formatting in Logger to not expose parts of confidential strings
+    under special circumstances.
+  * OPSI.Util.Task.ConfigureBackend.MySQL: fixed error on hostname with dash
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 04 Jul 2016 17:49:17 +0200
+
 python-opsi (4.0.7.5-1) testing; urgency=medium
 
   * JSONRPC backend has received small refactorings.
