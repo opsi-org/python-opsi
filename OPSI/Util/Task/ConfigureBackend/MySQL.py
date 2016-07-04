@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014 uib GmbH <info@uib.de>
+# Copyright (C) 2014-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -112,12 +112,12 @@ on to. Defaults to ``Logger.error``.
 	backend = MySQLBackend(**config)
 	try:
 		backend.backend_createBase()
-        except MySQLdb.OperationalError as exc: 
+        except MySQLdb.OperationalError as exc:
                 if exc[0] == INVALID_DEFAULT_VALUE:
                         errorFunction(
                                 u"It seems you have the MySQL strict mode enabled. Please read the opsi handbook.\n"
-                                u"{error}".format(error=exc)   
-                        )   
+                                u"{error}".format(error=exc)
+                        )
 		raise exc
 
 	notificationFunction(u"Finished initializing mysql backend.")
@@ -134,7 +134,7 @@ def initializeDatabase(dbAdminUser, dbAdminPass, config,
 		db.query(u'USE {database};'.format(**config))
 		db.query(
 			(
-				u'GRANT ALL ON {1[database]}.* TO {1[username]}@{0} '
+				u'GRANT ALL ON {1[database]}.* TO {1[username]}@\'{0}\''
 				u'IDENTIFIED BY \'{1[password]}\'').format(
 					host,
 					config,
