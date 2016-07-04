@@ -547,6 +547,14 @@ will disable logging to a file.
 False suppresses exceptions.
 		:type raiseException: bool
 		'''
+		if (level > self.__messageSubjectLevel and
+			level > self.__consoleLevel and
+			level > self.__fileLevel and
+			level > self.__syslogLevel and
+			not self.univentionLogger_priv):
+
+			return
+
 		def formatMessage(unformattedMessage, removeConfidential=False):
 			tempMessage = unicode(unformattedMessage)
 			tempMessage = tempMessage.replace(u'%D', datetime)
@@ -563,14 +571,6 @@ False suppresses exceptions.
 			tempMessage = tempMessage.replace(u'%F', filename)
 			tempMessage = tempMessage.replace(u'%N', linenumber)
 			return tempMessage
-
-		if (level > self.__messageSubjectLevel and
-			level > self.__consoleLevel and
-			level > self.__fileLevel and
-			level > self.__syslogLevel and
-			not self.univentionLogger_priv):
-
-			return
 
 		try:
 			if not isinstance(message, unicode):
