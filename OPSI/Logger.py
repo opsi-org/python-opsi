@@ -557,17 +557,17 @@ False suppresses exceptions.
 
 		def formatMessage(unformattedMessage, removeConfidential=False):
 			tempMessage = unicode(unformattedMessage)
-			tempMessage = tempMessage.replace(u'%D', datetime)
-			tempMessage = tempMessage.replace(u'%T', threadId)
-			tempMessage = tempMessage.replace(u'%l', unicode(level))
-			tempMessage = tempMessage.replace(u'%L', levelname)
-			tempMessage = tempMessage.replace(u'%C', componentname)
 			tempMessage = tempMessage.replace(u'%M', message)
 
 			if removeConfidential:
 				for string in self.__confidentialStrings:
 					tempMessage = tempMessage.replace(string, u'*** confidential ***')
 
+			tempMessage = tempMessage.replace(u'%D', datetime)
+			tempMessage = tempMessage.replace(u'%T', threadId)
+			tempMessage = tempMessage.replace(u'%l', unicode(level))
+			tempMessage = tempMessage.replace(u'%L', levelname)
+			tempMessage = tempMessage.replace(u'%C', componentname)
 			tempMessage = tempMessage.replace(u'%F', filename)
 			tempMessage = tempMessage.replace(u'%N', linenumber)
 			return tempMessage
