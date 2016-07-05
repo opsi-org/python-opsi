@@ -1,3 +1,9 @@
+python-opsi (4.0.7.7-1) stable; urgency=low
+
+  * WindowsDrivers byAudit sku fallback fixed.
+
+ -- Erol Ueluekmen <e.ueluekmen@uib.de>  Tue, 05 Jul 2016 15:29:36 +0200
+
 python-opsi (4.0.7.6-1) stable; urgency=medium
 
   * Changed formatting in Logger to not expose parts of confidential strings
