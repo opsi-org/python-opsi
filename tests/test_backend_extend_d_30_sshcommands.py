@@ -34,12 +34,15 @@ from contextlib import contextmanager
 def workWithEmptyCommandFile(backend):
 	with workInTemporaryDirectory():
 		filename = u'test_file.conf'
-		filenames = [filename]
 		with open(filename, "w"):
 			pass
 		with mock.patch.object(backend, '_getSSHCommandCustomFilename', return_value=filename):
+			# logger.info(u'new filename: {0}'.format(filename))
 			with mock.patch.object(backend, '_getSSHCommandFilenames', return_value=[filename]):
-				yield
+				# logger.info(u'new filenames: [{0}]'.format(filename))
+				with mock.patch.object(backend, '_isBuildIn', return_value=False):
+					# logger.info(u'new return value _isBuildIn: [{0}]'.format(False))
+					yield
 			# yield
 
 @contextmanager
@@ -51,9 +54,16 @@ def workWithBrokenCommandFile(backend):
 		element = {"id":"rechte_setzen", "menuText : Rechte setzen":"", "commands":["opsi-set-rights"], "position":30,"needSudo":True, "tooltipText":"Rechte mittels opsi-set-rights setzen", "parentMenuText":"opsi"}
 		with open(filename, "w") as f:
 			json.dump(element, f)
+		# with mock.patch.object(backend, '_getSSHCommandCustomFilename', return_value=filename):
+		# 		with mock.patch.object(backend, '_isBuildIn', return_value=False):
+		# 			yield
 		with mock.patch.object(backend, '_getSSHCommandCustomFilename', return_value=filename):
+			# logger.info(u'new filename: {0}'.format(filename))
 			with mock.patch.object(backend, '_getSSHCommandFilenames', return_value=[filename]):
-				yield
+				# logger.info(u'new filenames: [{0}]'.format(filename))
+				with mock.patch.object(backend, '_isBuildIn', return_value=False):
+					# logger.info(u'new return value _isBuildIn: [{0}]'.format(False))
+					yield
 			# yield
 
 class SSHCommandsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
@@ -64,7 +74,8 @@ class SSHCommandsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
 		self.setUpBackend()
 		self.com1_id=u'utestmenu1'
 		self.com1_menuText=u'UTestMenu1'
-		self.com1_commands=[u'test 1']
+		self.com1_string = u'test 1'
+		self.com1_commands=[self.com1_string]
 		self.com1_position=5
 		self.com1_needSudo=True
 		self.com1_tooltipText=u'Test Tooltip1'
@@ -113,23 +124,31 @@ class SSHCommandsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
 		self.def_needSudo=False
 		self.def_tooltipText=u''
 		self.def_parentMenuText=None
-		self.com1_with_defval={u'id':self.com1_id, u'buildIn':True, u'menuText':self.com1_menuText, u'commands':self.com1_commands, u'needSudo':self.def_needSudo, u'position':self.def_position, u'tooltipText':self.def_tooltipText, u'parentMenuText':self.def_parentMenuText}
-		self.com2_with_defval={u'id':self.com2_id, u'buildIn':True, u'menuText':self.com2_menuText, u'commands':self.com2_commands, u'needSudo':self.def_needSudo, u'position':self.def_position, u'tooltipText':self.def_tooltipText, u'parentMenuText':self.def_parentMenuText}
-		self.com3_with_defval={u'id':self.com3_id, u'buildIn':True, u'menuText':self.com3_menuText, u'commands':self.com3_commands, u'needSudo':self.def_needSudo, u'position':self.def_position, u'tooltipText':self.def_tooltipText, u'parentMenuText':self.def_parentMenuText}
+		self.com1_with_defval={u'id':self.com1_id,  u'menuText':self.com1_menuText, u'commands':self.com1_commands, u'needSudo':self.def_needSudo, u'position':self.def_position, u'tooltipText':self.def_tooltipText, u'parentMenuText':self.def_parentMenuText}
+		# self.com1_with_defval_buildIn={u'id':self.com1_id, u'buildIn':True, u'menuText':self.com1_menuText, u'commands':self.com1_commands, u'needSudo':self.def_needSudo, u'position':self.def_position, u'tooltipText':self.def_tooltipText, u'parentMenuText':self.def_parentMenuText}
+		self.com2_with_defval={u'id':self.com2_id, u'menuText':self.com2_menuText, u'commands':self.com2_commands, u'needSudo':self.def_needSudo, u'position':self.def_position, u'tooltipText':self.def_tooltipText, u'parentMenuText':self.def_parentMenuText}
+		# self.com2_with_defval_buildIn={u'id':self.com2_id, u'buildIn':True, u'menuText':self.com2_menuText, u'commands':self.com2_commands, u'needSudo':self.def_needSudo, u'position':self.def_position, u'tooltipText':self.def_tooltipText, u'parentMenuText':self.def_parentMenuText}
+		self.com3_with_defval={u'id':self.com3_id, u'menuText':self.com3_menuText, u'commands':self.com3_commands, u'needSudo':self.def_needSudo, u'position':self.def_position, u'tooltipText':self.def_tooltipText, u'parentMenuText':self.def_parentMenuText}
+		# self.com3_with_defval_buildIn={u'id':self.com3_id, u'buildIn':True, u'menuText':self.com3_menuText, u'commands':self.com3_commands, u'needSudo':self.def_needSudo, u'position':self.def_position, u'tooltipText':self.def_tooltipText, u'parentMenuText':self.def_parentMenuText}
 		# self.commandlist_com11=[self.com1, self.com1]
 
 		self.commandlist_com1_withdefval_full=[self.com1_with_defval]
 		self.commandlist_com2_withdefval_full=[self.com2_with_defval]
 		self.commandlist_com3_withdefval_full=[self.com3_with_defval]
+		# self.commandlist_com1_withdefval_full_buildIn=[self.com1_with_defval]
+		# self.commandlist_com2_withdefval_full_buildIn=[self.com2_with_defval_buildIn]
+		# self.commandlist_com3_withdefval_full_buildIn=[self.com3_with_defval_buildIn]
 		self.commandlist_com12_withdefval_full=[self.com1_with_defval,self.com2_with_defval]
+		# self.commandlist_com12_withdefval_full_buildIn=[self.com1_with_defval_buildIn,self.com2_with_defval_buildIn]
 		self.commandlist_com123_withdefval_full=[self.com1_with_defval,self.com2_with_defval,self.com3_with_defval]
+		# self.commandlist_com123_withdefval_full_buildIn=[self.com1_with_defval_buildIn,self.com2_with_defval_buildIn,self.com3_with_defval_buildIn]
 
 
 		self.failure_com1_id=u'utestmenu1'
 		self.failure_com1_menuText=20
 		self.failure_com1_commands=u'test 1'
 		self.failure_com1_position=u'O'
-		self.failure_com1_needSudo=u'True'
+		self.failure_com1_needSudo=u'Nein'
 		self.failure_com1_tooltipText=False
 		self.failure_com1_parentMenuText=False
 
@@ -151,6 +170,11 @@ class SSHCommandsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
 			self.assertEqual(self.backend.SSHCommand_getObjects(), [], "first return of SSHCommand_getObjects should be an empty list")
 			return_value = self.backend.SSHCommand_createObject( self.com1["menuText"], self.com1["commands"])
 			self.assertListEqual(return_value, self.commandlist_com1_withdefval_full)
+		with workWithEmptyCommandFile(self.backend._backend):
+			self.assertEqual(self.backend.SSHCommand_getObjects(), [], "first return of SSHCommand_getObjects should be an empty list")
+			return_value = self.backend.SSHCommand_createObject( self.com1["menuText"], self.com1_string)
+			self.assertListEqual(return_value, self.commandlist_com1_withdefval_full)
+			
 
 	def testCreateCommands(self):
 		with workWithEmptyCommandFile(self.backend._backend):
@@ -159,6 +183,8 @@ class SSHCommandsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
 		with workWithEmptyCommandFile(self.backend._backend):
 			self.assertEqual(self.backend.SSHCommand_getObjects(), [], "first return of SSHCommand_getObjects should be an empty list")
 			self.assertListEqual(self.backend.SSHCommand_createObjects( self.commandlist_com12), self.commandlist_com12_withdefval_full)
+			# print ('1:' + self.commandlist_com12)
+			# print ('2:' + self.commandlist_com12_withdefval_full)
 		with workWithEmptyCommandFile(self.backend._backend):
 			self.assertEqual(self.backend.SSHCommand_getObjects(), [], "first return of SSHCommand_getObjects should be an empty list")
 			self.assertListEqual(self.backend.SSHCommand_createObjects( self.commandlist_com123), self.commandlist_com123_withdefval_full)
@@ -216,7 +242,7 @@ class SSHCommandsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
 	def testExceptionsCreateObject(self):
 		with workWithEmptyCommandFile(self.backend._backend):
 			self.assertRaises(Exception, self.backend.SSHCommand_createObject, None, None)
-			self.assertRaises(Exception, self.backend.SSHCommand_createObject, self.com1_menuText, self.failure_com1_commands)
+			# self.assertRaises(Exception, self.backend.SSHCommand_createObject, self.com1_menuText, self.failure_com1_commands)
 			self.assertRaises(Exception, self.backend.SSHCommand_createObject, self.com1_menuText, self.com1_commands, self.failure_com1_position)
 			self.assertRaises(Exception, self.backend.SSHCommand_createObject, self.com1_menuText, self.com1_commands, self.com1_position, self.failure_com1_needSudo)
 			self.assertRaises(Exception, self.backend.SSHCommand_createObject, self.com1_menuText, self.com1_commands, self.com1_position, self.com1_needSudo, self.failure_com1_tooltipText)
