@@ -38,9 +38,9 @@ def workWithEmptyCommandFile(backend):
 		with open(filename, "w"):
 			pass
 		with mock.patch.object(backend, '_getSSHCommandCustomFilename', return_value=filename):
-			yield
-		with mock.patch.object(backend, '_getSSHCommandFilenames', return_value=[filename]):
-			yield
+			with mock.patch.object(backend, '_getSSHCommandFilenames', return_value=[filename]):
+				yield
+			# yield
 
 @contextmanager
 def workWithBrokenCommandFile(backend):
@@ -52,9 +52,9 @@ def workWithBrokenCommandFile(backend):
 		with open(filename, "w") as f:
 			json.dump(element, f)
 		with mock.patch.object(backend, '_getSSHCommandCustomFilename', return_value=filename):
-			yield
-		with mock.patch.object(backend, '_getSSHCommandFilenames', return_value=[filename]):
-			yield
+			with mock.patch.object(backend, '_getSSHCommandFilenames', return_value=[filename]):
+				yield
+			# yield
 
 class SSHCommandsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
 	"""
@@ -113,9 +113,9 @@ class SSHCommandsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
 		self.def_needSudo=False
 		self.def_tooltipText=u''
 		self.def_parentMenuText=None
-		self.com1_with_defval={u'id':self.com1_id, u'menuText':self.com1_menuText, u'commands':self.com1_commands, u'needSudo':self.def_needSudo, u'position':self.def_position, u'tooltipText':self.def_tooltipText, u'parentMenuText':self.def_parentMenuText}
-		self.com2_with_defval={u'id':self.com2_id, u'menuText':self.com2_menuText, u'commands':self.com2_commands, u'needSudo':self.def_needSudo, u'position':self.def_position, u'tooltipText':self.def_tooltipText, u'parentMenuText':self.def_parentMenuText}
-		self.com3_with_defval={u'id':self.com3_id, u'menuText':self.com3_menuText, u'commands':self.com3_commands, u'needSudo':self.def_needSudo, u'position':self.def_position, u'tooltipText':self.def_tooltipText, u'parentMenuText':self.def_parentMenuText}
+		self.com1_with_defval={u'id':self.com1_id, u'buildIn':True, u'menuText':self.com1_menuText, u'commands':self.com1_commands, u'needSudo':self.def_needSudo, u'position':self.def_position, u'tooltipText':self.def_tooltipText, u'parentMenuText':self.def_parentMenuText}
+		self.com2_with_defval={u'id':self.com2_id, u'buildIn':True, u'menuText':self.com2_menuText, u'commands':self.com2_commands, u'needSudo':self.def_needSudo, u'position':self.def_position, u'tooltipText':self.def_tooltipText, u'parentMenuText':self.def_parentMenuText}
+		self.com3_with_defval={u'id':self.com3_id, u'buildIn':True, u'menuText':self.com3_menuText, u'commands':self.com3_commands, u'needSudo':self.def_needSudo, u'position':self.def_position, u'tooltipText':self.def_tooltipText, u'parentMenuText':self.def_parentMenuText}
 		# self.commandlist_com11=[self.com1, self.com1]
 
 		self.commandlist_com1_withdefval_full=[self.com1_with_defval]
