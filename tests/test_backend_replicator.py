@@ -36,13 +36,12 @@ from .BackendTestMixins.Audit import (getAuditHardwares,
     getAuditHardwareOnHost, getAuditSoftwares, getAuditSoftwareOnClient)
 from .BackendTestMixins.Clients import getClients
 from .BackendTestMixins.Configs import getConfigs, getConfigStates
-from .BackendTestMixins.Groups import (getHostGroups, getObjectToGroups,
-    getProductGroup)
 from .BackendTestMixins.Hosts import getConfigServer, getDepotServers
-from .BackendTestMixins.Licenses import getLicenseContracts
+from .test_license_management import getLicenseContracts
 from .BackendTestMixins.Products import (getLocalbootProducts,
     getNetbootProduct, getProductDepdencies, getProductProperties,
     getProductsOnDepot, getProductsOnClients, getProductPropertyStates)
+from .test_groups import (getHostGroups, getObjectToGroups, getProductGroup)
 
 
 class ReplicatorTestCase(unittest.TestCase):

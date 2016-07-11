@@ -280,7 +280,7 @@ class WorkerOpsi:
 		return DelayResult(seconds, result).deferred
 
 	def _errback(self, failure):
-		logger.debug2("%s._errback" % self.__class__.__name__)
+		logger.debug2("{0}._errback", self.__class__.__name__)
 
 		self._freeSession(failure)
 
@@ -329,7 +329,7 @@ class WorkerOpsi:
 			try:
 				encoded = auth[1]
 
-				logger.confidential(u"Auth encoded: %s" % encoded)
+				logger.confidential(u"Auth encoded: {0}", encoded)
 				parts = unicode(base64.decodestring(encoded), 'latin-1').split(':')
 				if len(parts) > 6:
 					user = u':'.join(parts[:6])
@@ -384,7 +384,7 @@ class WorkerOpsi:
 		''' This method restores a session or generates a new one. '''
 		self.session = None
 
-		logger.confidential(u"Request headers: %s " % self.request.headers)
+		logger.confidential(u"Request headers: {0}", self.request.headers)
 
 		userAgent = self._getUserAgent()
 		sessionHandler = self._getSessionHandler()
@@ -412,10 +412,10 @@ class WorkerOpsi:
 				% (self.session.userAgent, userAgent, self.request.remoteAddr.host))
 		self.session.userAgent = userAgent
 
-		logger.confidential(u"Session id is '%s' for client '%s', application '%s'" \
-			% (self.session.uid, self.request.remoteAddr.host, self.session.userAgent))
+		logger.confidential(u"Session id is {0!r} for client {1!r}, application {2!r}",
+							self.session.uid, self.request.remoteAddr.host, self.session.userAgent)
 
-		logger.confidential(u"Session content: %s" % self.session.__dict__)
+		logger.confidential(u"Session content: {0}", self.session.__dict__)
 		return result
 
 	def _setCookie(self, result):
@@ -473,7 +473,7 @@ class WorkerOpsi:
 				except Exception:
 					contentEncoding = None
 
-				logger.debug(u"Content-Type: %s, Content-Encoding: %s" % (contentType, contentEncoding))
+				logger.debug(u"Content-Type: {0}, Content-Encoding: {1}", contentType, contentEncoding)
 				if contentType and contentType.mediaType.startswith('gzip'):
 					# Invalid MIME type.
 					# Probably it is gzip-application/json-rpc and therefore
@@ -501,7 +501,7 @@ class WorkerOpsi:
 			logger.warning("Unexpected error during decoding of query: {0}".format(error))
 			raise error
 
-		logger.debug2(u"query: %s" % self.query)
+		logger.debug2(u"query: {0}", self.query)
 		return result
 
 	def _processQuery(self, result):
@@ -781,7 +781,7 @@ class WorkerOpsiDAV(WorkerOpsi):
 		return deferred
 
 	def _setResponse(self, result):
-		logger.debug(u"Client requests DAV operation: %s" % self.request)
+		logger.debug(u"Client requests DAV operation: {0}", self.request)
 		if not self.resource._authRequired and self.request.method not in ('GET', 'PROPFIND', 'OPTIONS', 'USERINFO', 'HEAD'):
 			logger.critical(u"Method '%s' not allowed (read only)" % self.request.method)
 			return http.Response(code=responsecode.FORBIDDEN, stream="Readonly!")

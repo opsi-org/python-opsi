@@ -26,9 +26,9 @@ Testing the opsi SQLite backend.
 from __future__ import absolute_import
 
 from .Backends.SQLite import SQLiteBackendMixin
-from .BackendTestMixins import (ConfigStateTestsMixin, LicensesTestMixin,
-    AuditTestsMixin, ConfigTestsMixin, ProductsTestMixin,
-    ExtendedBackendTestsMixin, BackendTestsMixin)
+from .BackendTestMixins import (ConfigStateTestsMixin, AuditTestsMixin,
+    ConfigTestsMixin, ProductsTestMixin, ExtendedBackendTestsMixin,
+    BackendTestsMixin)
 from .helpers import unittest, requiresModulesFile
 
 import pytest
@@ -44,7 +44,7 @@ class BackendSQLiteTestCase(unittest.TestCase):
 
 
 class SQLiteBackendTestCase(unittest.TestCase, SQLiteBackendMixin,
-    BackendTestsMixin, ProductsTestMixin, AuditTestsMixin, LicensesTestMixin,
+    BackendTestsMixin, ProductsTestMixin, AuditTestsMixin,
     ExtendedBackendTestsMixin, ConfigTestsMixin, ConfigStateTestsMixin):
     """Testing the SQLite backend.
 

@@ -50,7 +50,7 @@ from OPSI.Backend.Backend import Backend, DeferredCall
 from OPSI.Util import serialize, deserialize
 from OPSI.Util.HTTP import urlsplit, getSharedConnectionPool, deflateEncode, deflateDecode, gzipDecode
 
-__version__ = '4.0.6.40'
+__version__ = '4.0.7.5'
 
 logger = Logger()
 
@@ -112,11 +112,11 @@ class JSONRPC(DeferredCall):
 			self.error = error
 
 	def process(self):
-		logger.debug(u"Executing jsonrpc method {0!r} on host {1!r}".format(self.method, self.jsonrpcBackend._host))
+		logger.debug(u"Executing jsonrpc method {0!r} on host {1!r}", self.method, self.jsonrpcBackend._host)
 
 		try:
 			rpc = json.dumps(self.getRpc())
-			logger.debug2(u"jsonrpc: {0!r}".format(rpc))
+			logger.debug2(u"jsonrpc: {0!r}", rpc)
 
 			response = self.jsonrpcBackend._request(baseUrl=self.baseUrl, data=rpc, retry=self.retry)
 			self.processResult(json.loads(response))
@@ -230,14 +230,14 @@ class RpcQueue(threading.Thread):
 
 			for resp in response:
 				try:
-					id = resp['id']
-				except Exception as error:
-					raise Exception(u"Failed to get id from: %s (%s): %s" % (resp, response, error))
+					responseId = resp['id']
+				except KeyError as error:
+					raise KeyError(u"Failed to get id from: %s (%s): %s" % (resp, response, error))
 
 				try:
-					jsonrpc = self.jsonrpcs[id]
-				except Exception as error:
-					raise Exception(u"Failed to get jsonrpc with id %s: %s" % (id, error))
+					jsonrpc = self.jsonrpcs[responseId]
+				except KeyError as error:
+					raise KeyError(u"Failed to get jsonrpc with id %s: %s" % (responseId, error))
 
 				try:
 					jsonrpc.processResult(resp)
@@ -444,7 +444,7 @@ class JSONRPCBackend(Backend):
 				logger.debug(u"Deflated communication works!")
 			except Exception as error:
 				logger.setConsoleLevel(previousLogLevel)
-				logger.debug(u"Caught {0!r}".format(error))
+				logger.debug(u"Caught {0!r}", error)
 				logger.debug(u"Disabling deflate...")
 				self._deflate = False
 			finally:
@@ -455,8 +455,9 @@ class JSONRPCBackend(Backend):
 				self._interface = self._jsonRPC(u'backend_getInterface')
 				if 'opsiclientd' in self._application:
 					try:
-						modules = self._jsonRPC(u'backend_info').get('modules', None)
-						realmodules = self._jsonRPC(u'backend_info').get('realmodules', None)
+						backendInfo = self._jsonRPC(u'backend_info')
+						modules = backendInfo.get('modules', None)
+						realmodules = backendInfo.get('realmodules', None)
 						if modules:
 							logger.confidential(u"Modules: %s" % modules)
 						else:
@@ -474,7 +475,7 @@ class JSONRPCBackend(Backend):
 			except (OpsiAuthenticationError, OpsiTimeoutError, OpsiServiceVerificationError, socket.error):
 				raise
 			except Exception as error:
-				logger.debug(u"backend_getInterface failed: {0!r}".format(forceUnicode(error)))
+				logger.debug(u"backend_getInterface failed: {0}", forceUnicode(error))
 				logger.debug(u"trying getPossibleMethods_listOfHashes")
 				self._interface = self._jsonRPC(u'getPossibleMethods_listOfHashes')
 				logger.info(u"Legacy opsi")
@@ -488,7 +489,7 @@ class JSONRPCBackend(Backend):
 				self._createInstanceMethods(modules, realmodules, mysqlBackend)
 
 			self._connected = True
-			logger.info(u"%s: Connected to service" % self)
+			logger.info(u"{0}: Connected to service", self)
 		finally:
 			self._async = async
 
@@ -650,11 +651,11 @@ class JSONRPCBackend(Backend):
 				argString = u', '.join(argString)
 				callString = u', '.join(callString)
 
-				logger.debug2(u"{1}: arg string is: {0!r}".format(argString, methodName))
-				logger.debug2(u"{1}: call string is: {0!r}".format(callString, methodName))
+				logger.debug2(u"{1}: arg string is: {0!r}", argString, methodName)
+				logger.debug2(u"{1}: call string is: {0!r}", callString, methodName)
 				# This would result in not overwriting Backend methods like log_read, log_write, ...
 				# if getattr(self, methodName, None) is None:
-				if not licenseManagementModule and (methodName.find("license") != -1):
+				if not licenseManagementModule and "license" in methodName:
 					exec(u'def %s(self, %s): return' % (methodName, argString))
 				else:
 					exec(u'def %s(self, %s): return self._jsonRPC("%s", [%s])' % (methodName, argString, methodName, callString))
@@ -699,7 +700,7 @@ class JSONRPCBackend(Backend):
 		headers['content-length'] = len(data)
 
 		auth = (self._username + u':' + self._password).encode('latin-1')
-		headers['Authorization'] = 'Basic ' + base64.encodestring(auth).strip().replace('\n', '')
+		headers['Authorization'] = 'Basic ' + base64.b64encode(auth)
 
 		if self._sessionId:
 			headers['Cookie'] = self._sessionId
@@ -721,7 +722,7 @@ class JSONRPCBackend(Backend):
 
 		contentType = response.getheader('content-type', '')
 		contentEncoding = response.getheader('content-encoding', '').lower()
-		logger.debug(u"Content-Type: %s, Content-Encoding: %s" % (contentType, contentEncoding))
+		logger.debug(u"Content-Type: {0}, Content-Encoding: {1}", contentType, contentEncoding)
 
 		response = response.data
 		if contentType.lower().startswith('gzip'):
@@ -741,7 +742,7 @@ class JSONRPCBackend(Backend):
 			logger.debug(u"Expecting deflated data from server")
 			response = deflateDecode(response)
 
-		logger.debug2(u"Response is: {0}".format(response))
+		logger.debug2(u"Response is: {0}", response)
 		return response
 
 	def getInterface(self):
