@@ -6,7 +6,7 @@ opsi python library - Windows
 This module is part of the desktop management solution opsi
 (open pc server integration) http://www.opsi.org
 
-Copyright (C) 2013-2015 uib GmbH
+Copyright (C) 2013-2016 uib GmbH
 
 http://www.uib.de/
 
@@ -67,7 +67,7 @@ from datetime import datetime
 from OPSI.Logger import *
 from OPSI.Types import *
 
-__version__ = '4.0.6.29'
+__version__ = '4.0.6.30'
 
 logger = Logger()
 hooks = []
@@ -324,6 +324,12 @@ def getDefaultNetworkInterfaceName():
 	for interface in getNetworkInterfaces():
 		if interface.gatewayList.ipAddress:
 			return interface.description
+	return None
+
+def getSystemProxySetting():
+	#TODO read proxy settings from system registry
+	#HINTS: If proxycfg is not installed read this way (you have to cut)
+	#netsh winhttp show proxy
 	return None
 
 
