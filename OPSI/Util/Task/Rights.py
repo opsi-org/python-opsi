@@ -218,12 +218,16 @@ def getDirectoriesForProcessing(path):
 
 
 def getDirectoriesManagedByOpsi():
+	directories = set([u'/etc/opsi', u'/var/lib/opsi', u'/var/log/opsi'])
+
 	if isSLES():
-		return set([u'/etc/opsi', u'/var/lib/opsi', u'/var/lib/opsi/workbench',
-					u'/var/lib/tftpboot/opsi', u'/var/log/opsi'])
+		directories.add(u'/var/lib/tftpboot/opsi')
+		directories.add(u'/var/lib/opsi/workbench')
 	else:
-		return set([u'/etc/opsi', u'/home/opsiproducts', u'/tftpboot/linux',
-				u'/var/lib/opsi', u'/var/log/opsi'])
+		directories.add(u'/tftpboot/linux')
+		directories.add(u'/home/opsiproducts')
+
+	return directories
 
 
 def getDepotUrl():
