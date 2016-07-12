@@ -34,7 +34,6 @@ import shutil
 import sys
 from collections import defaultdict
 from contextlib import contextmanager
-from itertools import combinations_with_replacement
 
 from OPSI.Util import (chunk, compareVersions, findFiles, flattenSequence,
     formatFileSize, fromJson, generateOpsiHostKey, getfqdn, getGlobalConfig,
@@ -47,6 +46,21 @@ from .helpers import (fakeGlobalConf, patchAddress, patchEnvironmentVariables,
     unittest, workInTemporaryDirectory)
 
 import pytest
+
+try:
+    from itertools import combinations_with_replacement
+except ImportError:  # Python 2.6...
+    # We define our own fallback by copying what is written in the
+    # documentation at https://docs.python.org/2.7/library/itertools.html#itertools.combinations_with_replacement
+    from itertools import product
+
+    def combinations_with_replacement(iterable, r):
+        pool = tuple(iterable)
+        n = len(pool)
+        for indices in product(range(n), repeat=r):
+            if sorted(indices) == list(indices):
+                yield tuple(pool[i] for i in indices)
+
 
 
 @pytest.mark.parametrize("ip, network",[
