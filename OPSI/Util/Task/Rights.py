@@ -232,11 +232,8 @@ def getDirectoriesManagedByOpsi():
 
 def getDepotUrl():
 	from OPSI.Backend.BackendManager import BackendManager
-	backend = BackendManager(
-		dispatchConfigFile=u'/etc/opsi/backendManager/dispatch.conf',
-		backendConfigDir=u'/etc/opsi/backends',
-		extensionConfigDir=u'/etc/opsi/backendManager/extend.d'
-	)
+
+	backend = BackendManager()
 	depot = backend.host_getObjects(type='OpsiDepotserver', id=getLocalFQDN())
 	backend.backend_exit()
 
