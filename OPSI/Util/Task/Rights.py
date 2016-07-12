@@ -241,7 +241,7 @@ def getDepotUrl():
 		depot = depot[0]
 		depotUrl = depot.getDepotLocalUrl()
 		if not depotUrl.startswith('file:///'):
-			raise Exception(u"Bad repository local url {0!r}".format(depotUrl))
+			raise ValueError(u"Bad repository local url {0!r}".format(depotUrl))
 
 		return depotUrl
 
