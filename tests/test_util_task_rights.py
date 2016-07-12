@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2014-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -35,59 +35,37 @@ from OPSI.Util.Task.Rights import (getDirectoriesManagedByOpsi, getDirectoriesFo
 
 from .helpers import mock, unittest, workInTemporaryDirectory
 
+import pytest
+
+
+@pytest.mark.parametrize("sles_support, workbench, tftpdir", [
+    (False, u'/home/opsiproducts', u'/tftpboot/linux'),
+    (True, u'/var/lib/opsi/workbench', u'/var/lib/tftpboot/opsi')
+], ids=["sles", "non-sles"])
+def testGetDirectoriesToProcess(sles_support, workbench, tftpdir):
+    with mock.patch('OPSI.Util.Task.Rights.isSLES', mock.Mock(return_value=sles_support)):
+        directories = getDirectoriesManagedByOpsi()
+
+    assert u'/etc/opsi' in directories
+    assert u'/var/lib/opsi' in directories
+    assert u'/var/log/opsi' in directories
+    assert workbench in directories
+    assert tftpdir in directories
+
+
+@pytest.mark.parametrize("originalDirs, expected", [
+    (['/home/', '/etc'], set(['/home', '/etc'])),
+    (['/home/', '/home/'], set(['/home'])),
+    (['/home/', '/home/abc'], set(['/home'])),
+    (['/home/abc/', '/home/', '/home/def/ghi'], set(['/home'])),
+    (['/home/', '/etc', '/'], set(['/'])),
+    (['/a/bc/de', '/ab/c', '/bc/de'], set(['/a/bc/de', '/ab/c', '/bc/de'])),
+])
+def testCleaningDirectoryList(originalDirs, expected):
+    assert expected == removeDuplicatesFromDirectories(originalDirs)
+
 
 class SetRightsTestCase(unittest.TestCase):
-    def testGetDirectoriesToProcess(self):
-        with mock.patch('OPSI.Util.Task.Rights.isSLES', mock.Mock(return_value=False)):
-            directories = getDirectoriesManagedByOpsi()
-
-        self.assertTrue(u'/home/opsiproducts' in directories)
-        self.assertTrue(u'/etc/opsi' in directories)
-        self.assertTrue(u'/tftpboot/linux' in directories)
-        self.assertTrue(u'/var/lib/opsi' in directories)
-        self.assertTrue(u'/var/log/opsi' in directories)
-
-    def testGetDirectoriesToProcessOnSLES(self):
-        with mock.patch('OPSI.Util.Task.Rights.isSLES', mock.Mock(return_value=True)):
-            directories = getDirectoriesManagedByOpsi()
-
-        self.assertTrue(u'/var/log/opsi' in directories)
-        self.assertTrue(u'/etc/opsi' in directories)
-        self.assertTrue(u'/var/lib/opsi' in directories)
-        self.assertTrue(u'/var/lib/tftpboot/opsi' in directories)
-        self.assertTrue(u'/var/lib/opsi/workbench' in directories)
-
-    def testCleaningDirectoryList(self):
-        self.assertEquals(
-            set(['/home', '/etc']),
-            removeDuplicatesFromDirectories(['/home/', '/etc'])
-        )
-
-        self.assertEquals(
-            set(['/home']),
-            removeDuplicatesFromDirectories(['/home/', '/home/'])
-        )
-
-        self.assertEquals(
-            set(['/home']),
-            removeDuplicatesFromDirectories(['/home/', '/home/abc'])
-        )
-
-        self.assertEquals(
-            set(['/home']),
-            removeDuplicatesFromDirectories(['/home/abc/', '/home/', '/home/def/ghi'])
-        )
-
-        self.assertEquals(
-            set(['/']),
-            removeDuplicatesFromDirectories(['/home/', '/etc', '/'])
-        )
-
-        self.assertEquals(
-            set(['/a/bc/de', '/ab/c', '/bc/de']),
-            removeDuplicatesFromDirectories(['/a/bc/de', '/ab/c', '/bc/de'])
-        )
-
     def testIgnoringSubfolders(self):
         """
         Subfolder should be ignored - real world testcase.
@@ -208,7 +186,3 @@ class ChownTestCase(unittest.TestCase):
                 self.assertEquals(groupId, stat.st_gid)
                 if not isRoot:
                     self.assertEquals(userId, stat.st_uid)
-
-
-if __name__ == '__main__':
-    unittest.main()
