@@ -32,10 +32,10 @@ This backend executes the calls on a remote backend via JSONRPC.
 
 import base64
 import json
-import new
 import socket
 import time
 import threading
+import types
 from hashlib import md5
 from Queue import Queue, Empty
 from twisted.conch.ssh import keys
@@ -557,7 +557,7 @@ class JSONRPCBackend(Backend):
 				logger.debug2(methodCode)
 				exec(methodCode)
 
-			setattr(self.__class__, method['name'], new.instancemethod(eval(method['name']), None, self.__class__))
+			setattr(self.__class__, method['name'], types.UnboundMethodType(eval(method['name']), None, self.__class__))
 
 	def _createInstanceMethods(self, modules=None, realmodules={}, mysqlBackend=False):
 		licenseManagementModule = True
@@ -659,7 +659,7 @@ class JSONRPCBackend(Backend):
 					exec(u'def %s(self, %s): return' % (methodName, argString))
 				else:
 					exec(u'def %s(self, %s): return self._jsonRPC("%s", [%s])' % (methodName, argString, methodName, callString))
-				setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
+				setattr(self, methodName, types.MethodType(eval(methodName), self))
 			except Exception as error:
 				logger.critical(u"Failed to create instance method '%s': %s" % (method, error))
 
