@@ -34,6 +34,7 @@ import shutil
 import sys
 from collections import defaultdict
 from contextlib import contextmanager
+from itertools import combinations_with_replacement
 
 from OPSI.Util import (chunk, compareVersions, findFiles, flattenSequence,
     formatFileSize, fromJson, generateOpsiHostKey, getfqdn, getGlobalConfig,
@@ -549,6 +550,12 @@ class LibrsyncTestCase(unittest.TestCase):
                         break
                 else:
                     self.fail("Missing additional text in new file.")
+
+
+@pytest.mark.parametrize("old, delta, new", list(combinations_with_replacement(('foo', 'bar'), 3)))
+def testLibrsyncPatchFileAvoidsPatchingSameFile(old, delta, new):
+    with pytest.raises(ValueError):
+        librsyncPatchFile(old, delta, new)
 
 
 def testComparingVersionsOfSameSize():
