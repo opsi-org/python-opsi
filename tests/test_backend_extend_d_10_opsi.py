@@ -226,6 +226,71 @@ def testSetProductActionRequestWithDependenciesWithDependencyRequestingAction(ba
 	assert productThatShouldBeSetup.productId == 'javavm'
 	assert productThatShouldBeSetup.actionRequest == 'setup'
 
+@pytest.mark.parametrize("installationStatus", ["installed", "unknown", "not_installed", None])
+def testSetProductActionRequestWithDependenciesWithDependencyRequiredInstallationStatus(backendManager, installationStatus):
+	client, depot = createClientAndDepot(backendManager)
+
+	jedit = LocalbootProduct('jedit', '1.0', '1.0')
+	javavm = LocalbootProduct('javavm', '1.0', '1.0')
+	backendManager.product_createObjects([jedit, javavm])
+
+	prodDependency = ProductDependency(
+		productId=jedit.id,
+		productVersion=jedit.productVersion,
+		packageVersion=jedit.packageVersion,
+		productAction='setup',
+		requiredProductId=javavm.id,
+		requiredInstallationStatus="installed",
+		requirementType='after',
+	)
+	backendManager.productDependency_createObjects([prodDependency])
+
+	jeditOnDepot = ProductOnDepot(
+		productId=jedit.id,
+		productType=jedit.getType(),
+		productVersion=jedit.productVersion,
+		packageVersion=jedit.packageVersion,
+		depotId=depot.id,
+	)
+	javavmOnDepot = ProductOnDepot(
+		productId=javavm.id,
+		productType=javavm.getType(),
+		productVersion=javavm.productVersion,
+		packageVersion=javavm.packageVersion,
+		depotId=depot.id,
+	)
+	backendManager.productOnDepot_createObjects([jeditOnDepot, javavmOnDepot])
+
+	if installationStatus:
+		poc = ProductOnClient(
+			clientId=client.id,
+			productId=javavm.id,
+			productType=javavm.getType(),
+			productVersion=javavm.productVersion,
+			packageVersion=javavm.packageVersion,
+			installationStatus=installationStatus,
+			actionRequest=None,
+			actionResult='successful'
+		)
+
+		backendManager.productOnClient_createObjects([poc])
+
+	backendManager.setProductActionRequestWithDependencies('jedit', client.id, "setup")
+
+	productsOnClient = backendManager.productOnClient_getObjects()
+	assert 2 == len(productsOnClient)
+
+	for poc in productsOnClient:
+		if poc.productId == 'javavm':
+			productThatShouldBeInstalled = poc
+			break
+	else:
+		raise ValueError('Could not find a product "{0}" on the client.'.format('already_installed'))
+
+	assert productThatShouldBeInstalled.productId == 'javavm'
+        if installStatus == 'installed':
+	    assert productThatShouldBeInstalled.actionRequest == 'setup'
+
 
 def testSetProductActionRequestWithDependenciesWithOnce(backendManager):
 	client, depot = createClientAndDepot(backendManager)
