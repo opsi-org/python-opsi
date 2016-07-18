@@ -73,7 +73,13 @@ OPSI_MODULES_FILE = u'/etc/opsi/modules'
 OPSI_PASSWD_FILE = u'/etc/opsi/passwd'
 OPSI_GLOBAL_CONF = u'/etc/opsi/global.conf'
 LOG_DIR = u'/var/log/opsi'
-LOG_TYPES = set(('bootimage', 'clientconnect', 'instlog', 'opsiconfd', 'userlogin'))
+LOG_TYPES = {  # key = logtype, value = requires objectId for read
+	'bootimage': True,
+	'clientconnect': True,
+	'instlog': True,
+	'opsiconfd': False,
+	'userlogin': True,
+}
 
 try:
 	with open(os.path.join('/etc', 'opsi', 'opsiconfd.conf')) as config:
@@ -691,16 +697,17 @@ Currently supported: *bootimage*, *clientconnect*, *instlog* or *opsiconfd*.
 		"""
 		logType = forceUnicode(logType)
 
-		if logType not in LOG_TYPES:
+		try:
+			objectIdRequired = LOG_TYPES[logType]:
+		except KeyError:
 			raise BackendBadValueError(u'Unknown log type {0!r}'.format(logType))
 
-		if objectId:
+		if objectIdRequired:
+			if not objectId:
+				raise BackendBadValueError(u"Log type {0!r} requires objectId".format(logType))
 			objectId = forceObjectId(objectId)
 			logFile = os.path.join(LOG_DIR, logType, '{0}.log'.format(objectId))
 		else:
-			if logType in ('bootimage', 'clientconnect', 'userlogin', 'instlog'):
-				raise BackendBadValueError(u"Log type {0!r} requires objectId".format(logType))
-
 			logFile = os.path.join(LOG_DIR, logType, 'opsiconfd.log')
 
 		try:
