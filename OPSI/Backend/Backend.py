@@ -73,6 +73,7 @@ OPSI_MODULES_FILE = u'/etc/opsi/modules'
 OPSI_PASSWD_FILE = u'/etc/opsi/passwd'
 OPSI_GLOBAL_CONF = u'/etc/opsi/global.conf'
 LOG_DIR = u'/var/log/opsi'
+LOG_TYPES = set(('bootimage', 'clientconnect', 'instlog', 'opsiconfd', 'userlogin'))
 
 try:
 	with open(os.path.join('/etc', 'opsi', 'opsiconfd.conf')) as config:
@@ -610,7 +611,7 @@ overwrite the log.
 		:type append: bool
 		"""
 		logType = forceUnicode(logType)
-		if logType not in ('bootimage', 'clientconnect', 'instlog', 'userlogin', 'opsiconfd'):
+		if logType not in LOG_TYPES:
 			raise BackendBadValueError(u"Unknown log type '%s'" % logType)
 
 		if not objectId:
@@ -690,7 +691,7 @@ Currently supported: *bootimage*, *clientconnect*, *instlog* or *opsiconfd*.
 		"""
 		logType = forceUnicode(logType)
 
-		if logType not in ('bootimage', 'clientconnect', 'instlog', 'userlogin', 'opsiconfd'):
+		if logType not in LOG_TYPES:
 			raise BackendBadValueError(u'Unknown log type {0!r}'.format(logType))
 
 		if objectId:
