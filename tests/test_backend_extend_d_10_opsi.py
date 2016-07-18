@@ -288,7 +288,7 @@ def testSetProductActionRequestWithDependenciesWithDependencyRequiredInstallatio
 		raise ValueError('Could not find a product "{0}" on the client.'.format('already_installed'))
 
 	assert productThatShouldBeInstalled.productId == 'javavm'
-        if installationStatus == 'installed':
+	if installationStatus == 'installed':
 	    assert productThatShouldBeInstalled.actionRequest == 'setup'
 
 
