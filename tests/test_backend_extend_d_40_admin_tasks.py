@@ -27,379 +27,396 @@ This tests what usually is found under
 :license: GNU Affero General Public License version 3
 """
 
-from __future__ import absolute_import
-
 from OPSI.Object import (OpsiClient, LocalbootProduct, ProductOnClient,
                          OpsiDepotserver, ProductOnDepot, UnicodeConfig,
                          ConfigState)
 from OPSI.Types import forceList
 from OPSI.Types import BackendMissingDataError
-from .Backends.File import FileBackendBackendManagerMixin
-from .helpers import unittest
 
 import pytest
 
 
-class AdminTaskFunctionsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
-    "Testing the legacy / simple functins."
+def testSetActionRequestWhereOutdatedRequiresExistingActionRequestAndProductId(backendManager):
+    with pytest.raises(TypeError):
+        backendManager.setActionRequestWhereOutdated()
 
-    def setUp(self):
-        self.setUpBackend()
+    with pytest.raises(TypeError):
+        backendManager.setActionRequestWhereOutdated('setup')
 
-    def tearDown(self):
-        self.tearDownBackend()
+    with pytest.raises(BackendMissingDataError):
+        backendManager.setActionRequestWhereOutdated('setup', 'unknownProductId')
 
-    def testSetActionRequestWhereOutdated(self):
-        self.assertRaises(TypeError, self.backend.setActionRequestWhereOutdated)
-        self.assertRaises(TypeError, self.backend.setActionRequestWhereOutdated, 'setup')
 
-        self.assertRaises(BackendMissingDataError, self.backend.setActionRequestWhereOutdated, 'setup', 'unknownProductId')
+def testSetActionRequestWhereOutdated(backendManager):
+    backend = backendManager
 
-        client_with_old_product = OpsiClient(id='clientwithold.test.invalid')
-        client_with_current_product = OpsiClient(id='clientwithcurrent.test.invalid')
-        client_without_product = OpsiClient(id='clientwithout.test.invalid')
-        client_unknown_status = OpsiClient(id='clientunkown.test.invalid')
-        clients = [client_with_old_product, client_with_current_product,
-                   client_without_product, client_unknown_status]
+    client_with_old_product = OpsiClient(id='clientwithold.test.invalid')
+    client_with_current_product = OpsiClient(id='clientwithcurrent.test.invalid')
+    client_without_product = OpsiClient(id='clientwithout.test.invalid')
+    client_unknown_status = OpsiClient(id='clientunkown.test.invalid')
+    clients = [client_with_old_product, client_with_current_product,
+               client_without_product, client_unknown_status]
 
-        depot = OpsiDepotserver(id='depotserver1.test.invalid')
+    depot = OpsiDepotserver(id='depotserver1.test.invalid')
 
-        self.backend.host_createObjects([depot, client_with_old_product,
-                                        client_with_current_product,
-                                        client_without_product,
-                                        client_unknown_status])
+    backend.host_createObjects([depot, client_with_old_product,
+                                client_with_current_product,
+                                client_without_product, client_unknown_status])
 
-        old_product = LocalbootProduct('thunderheart', '1', '1')
-        new_product = LocalbootProduct('thunderheart', '1', '2')
+    old_product = LocalbootProduct('thunderheart', '1', '1')
+    new_product = LocalbootProduct('thunderheart', '1', '2')
 
-        self.backend.product_createObjects([old_product, new_product])
+    backend.product_createObjects([old_product, new_product])
 
-        self.assertRaises(ValueError, self.backend.setActionRequestWhereOutdated, 'invalid', 'thunderheart')
+    with pytest.raises(ValueError):
+        backend.setActionRequestWhereOutdated('invalid', 'thunderheart')
 
-        poc = ProductOnClient(
-            clientId=client_with_old_product.id,
-            productId=old_product.id,
-            productType=old_product.getType(),
-            productVersion=old_product.productVersion,
-            packageVersion=old_product.packageVersion,
-            installationStatus='installed',
-            actionResult='successful'
-        )
-        poc2 = ProductOnClient(
-            clientId=client_with_current_product.id,
-            productId=new_product.id,
-            productType=new_product.getType(),
-            productVersion=new_product.productVersion,
-            packageVersion=new_product.packageVersion,
-            installationStatus='installed',
-            actionResult='successful'
-        )
-        poc3 = ProductOnClient(
-            clientId=client_unknown_status.id,
-            productId=old_product.id,
-            productType=old_product.getType(),
-            productVersion=old_product.productVersion,
-            packageVersion=old_product.packageVersion,
-            installationStatus='unknown',
-        )
+    poc = ProductOnClient(
+        clientId=client_with_old_product.id,
+        productId=old_product.id,
+        productType=old_product.getType(),
+        productVersion=old_product.productVersion,
+        packageVersion=old_product.packageVersion,
+        installationStatus='installed',
+        actionResult='successful'
+    )
+    poc2 = ProductOnClient(
+        clientId=client_with_current_product.id,
+        productId=new_product.id,
+        productType=new_product.getType(),
+        productVersion=new_product.productVersion,
+        packageVersion=new_product.packageVersion,
+        installationStatus='installed',
+        actionResult='successful'
+    )
+    poc3 = ProductOnClient(
+        clientId=client_unknown_status.id,
+        productId=old_product.id,
+        productType=old_product.getType(),
+        productVersion=old_product.productVersion,
+        packageVersion=old_product.packageVersion,
+        installationStatus='unknown',
+    )
 
-        self.backend.productOnClient_createObjects([poc, poc2, poc3])
+    backend.productOnClient_createObjects([poc, poc2, poc3])
 
-        installedProductOnDepot = ProductOnDepot(
-            productId=new_product.id,
-            productType=new_product.getType(),
-            productVersion=new_product.productVersion,
-            packageVersion=new_product.packageVersion,
-            depotId=depot.getId(),
-            locked=False
-        )
+    installedProductOnDepot = ProductOnDepot(
+        productId=new_product.id,
+        productType=new_product.getType(),
+        productVersion=new_product.productVersion,
+        packageVersion=new_product.packageVersion,
+        depotId=depot.getId(),
+        locked=False
+    )
 
-        self.backend.productOnDepot_createObjects([installedProductOnDepot])
+    backend.productOnDepot_createObjects([installedProductOnDepot])
 
-        clientConfigDepotId = UnicodeConfig(
-            id=u'clientconfig.depot.id',
-            description=u'Depotserver to use',
-            possibleValues=[],
-            defaultValues=[depot.id]
-        )
+    clientConfigDepotId = UnicodeConfig(
+        id=u'clientconfig.depot.id',
+        description=u'Depotserver to use',
+        possibleValues=[],
+        defaultValues=[depot.id]
+    )
 
-        self.backend.config_createObjects(clientConfigDepotId)
+    backend.config_createObjects(clientConfigDepotId)
 
-        for client in clients:
-            clientDepotMappingConfigState = ConfigState(
-                configId=u'clientconfig.depot.id',
-                objectId=client.getId(),
-                values=depot.getId()
-            )
-
-            self.backend.configState_createObjects(clientDepotMappingConfigState)
-
-        # Starting the checks
-        self.assertFalse(self.backend.productOnClient_getObjects(productId=new_product.id, clientId=client_without_product.id))
-        self.assertFalse(self.backend.productOnClient_getObjects(productId=new_product.id, clientId=client_with_old_product.id, actionRequest="setup"))
-        self.assertTrue(self.backend.productOnClient_getObjects(productId=new_product.id, clientId=client_with_current_product.id))
-        self.assertTrue(self.backend.productOnClient_getObjects(productId=old_product.id, clientId=client_unknown_status.id, installationStatus='unknown'))
-
-        clientIDs = self.backend.setActionRequestWhereOutdated('setup', new_product.id)
-
-        self.assertEquals(1, len(clientIDs))
-        self.assertTrue(client_with_old_product.id, list(clientIDs)[0])
-        self.assertFalse(self.backend.productOnClient_getObjects(productId=new_product.id, clientId=client_without_product.id))
-        poc = self.backend.productOnClient_getObjects(productId=new_product.id, clientId=client_with_old_product.id)[0]
-        self.assertEquals("setup", poc.actionRequest)
-        poc = self.backend.productOnClient_getObjects(productId=new_product.id, clientId=client_with_current_product.id)[0]
-        self.assertNotEquals("setup", poc.actionRequest)
-        poc = self.backend.productOnClient_getObjects(productId=old_product.id, clientId=client_unknown_status.id)[0]
-        self.assertNotEquals("setup", poc.actionRequest)
-        self.assertEquals("unknown", poc.installationStatus)
-
-    def testUninstallWhereInstalled(self):
-        self.assertRaises(TypeError, self.backend.uninstallWhereInstalled)
-
-        self.assertRaises(BackendMissingDataError, self.backend.uninstallWhereInstalled, 'unknownProductId')
-
-        client_with_product = OpsiClient(id='clientwith.test.invalid')
-        client_without_product = OpsiClient(id='clientwithout.test.invalid')
-        depot = OpsiDepotserver(id='depotserver1.test.invalid')
-
-        self.backend.host_createObjects([depot, client_with_product,
-                                         client_without_product])
-
-        product = LocalbootProduct('thunderheart', '1', '1', uninstallScript='foo.bar')
-        productWithoutScript = LocalbootProduct('installOnly', '1', '1')
-
-        self.backend.product_createObjects([product, productWithoutScript])
-
-        installedProductOnDepot = ProductOnDepot(
-            productId=product.id,
-            productType=product.getType(),
-            productVersion=product.productVersion,
-            packageVersion=product.packageVersion,
-            depotId=depot.id,
-            locked=False
-        )
-        installedProductOnDepot2 = ProductOnDepot(
-            productId=productWithoutScript.id,
-            productType=productWithoutScript.getType(),
-            productVersion=productWithoutScript.productVersion,
-            packageVersion=productWithoutScript.packageVersion,
-            depotId=depot.id,
-            locked=False
+    for client in clients:
+        clientDepotMappingConfigState = ConfigState(
+            configId=u'clientconfig.depot.id',
+            objectId=client.getId(),
+            values=depot.getId()
         )
 
-        self.backend.productOnDepot_createObjects([installedProductOnDepot,
-                                                   installedProductOnDepot2])
+        backend.configState_createObjects(clientDepotMappingConfigState)
 
-        self.assertFalse(self.backend.uninstallWhereInstalled('thunderheart'))
+    # Starting the checks
+    assert not backend.productOnClient_getObjects(productId=new_product.id, clientId=client_without_product.id)
+    assert not backend.productOnClient_getObjects(productId=new_product.id, clientId=client_with_old_product.id, actionRequest="setup")
+    assert backend.productOnClient_getObjects(productId=new_product.id, clientId=client_with_current_product.id)
+    assert backend.productOnClient_getObjects(productId=old_product.id, clientId=client_unknown_status.id, installationStatus='unknown')
 
-        poc = ProductOnClient(
-            clientId=client_with_product.id,
-            productId=product.id,
-            productType=product.getType(),
-            productVersion=product.productVersion,
-            packageVersion=product.packageVersion,
-            installationStatus='installed',
-            actionResult='successful'
+    clientIDs = backend.setActionRequestWhereOutdated('setup', new_product.id)
+
+    assert 1 == len(clientIDs)
+    assert client_with_old_product.id, list(clientIDs)[0]
+    assert not backend.productOnClient_getObjects(productId=new_product.id, clientId=client_without_product.id)
+    poc = backend.productOnClient_getObjects(productId=new_product.id, clientId=client_with_old_product.id)[0]
+    assert "setup" == poc.actionRequest
+
+    poc = backend.productOnClient_getObjects(productId=new_product.id, clientId=client_with_current_product.id)[0]
+    assert "setup" != poc.actionRequest
+
+    poc = backend.productOnClient_getObjects(productId=old_product.id, clientId=client_unknown_status.id)[0]
+    assert "setup" != poc.actionRequest
+    assert "unknown" == poc.installationStatus
+
+
+def testUninstallWhereInstalledFailsWithoutExistingProductId(backendManager):
+    with pytest.raises(TypeError):
+        backendManager.uninstallWhereInstalled()
+
+    with pytest.raises(BackendMissingDataError):
+        backendManager.uninstallWhereInstalled('unknownProductId')
+
+
+def testUninstallWhereInstalled(backendManager):
+    backend = backendManager
+    client_with_product = OpsiClient(id='clientwith.test.invalid')
+    client_without_product = OpsiClient(id='clientwithout.test.invalid')
+    depot = OpsiDepotserver(id='depotserver1.test.invalid')
+
+    backend.host_createObjects([depot, client_with_product,
+                                client_without_product])
+
+    product = LocalbootProduct('thunderheart', '1', '1', uninstallScript='foo.bar')
+    productWithoutScript = LocalbootProduct('installOnly', '1', '1')
+
+    backend.product_createObjects([product, productWithoutScript])
+
+    installedProductOnDepot = ProductOnDepot(
+        productId=product.id,
+        productType=product.getType(),
+        productVersion=product.productVersion,
+        packageVersion=product.packageVersion,
+        depotId=depot.id,
+        locked=False
+    )
+    installedProductOnDepot2 = ProductOnDepot(
+        productId=productWithoutScript.id,
+        productType=productWithoutScript.getType(),
+        productVersion=productWithoutScript.productVersion,
+        packageVersion=productWithoutScript.packageVersion,
+        depotId=depot.id,
+        locked=False
+    )
+
+    backend.productOnDepot_createObjects([installedProductOnDepot,
+                                          installedProductOnDepot2])
+
+    assert not backend.uninstallWhereInstalled('thunderheart')
+
+    poc = ProductOnClient(
+        clientId=client_with_product.id,
+        productId=product.id,
+        productType=product.getType(),
+        productVersion=product.productVersion,
+        packageVersion=product.packageVersion,
+        installationStatus='installed',
+        actionResult='successful'
+    )
+    pocWithoutScript = ProductOnClient(
+        clientId=client_with_product.id,
+        productId=productWithoutScript.id,
+        productType=productWithoutScript.getType(),
+        productVersion=productWithoutScript.productVersion,
+        packageVersion=productWithoutScript.packageVersion,
+        installationStatus='installed',
+        actionResult='successful'
+    )
+    backend.productOnClient_createObjects([poc, pocWithoutScript])
+
+    clientConfigDepotId = UnicodeConfig(
+        id=u'clientconfig.depot.id',
+        description=u'Depotserver to use',
+        possibleValues=[],
+        defaultValues=[depot.id]
+    )
+    backend.config_createObjects(clientConfigDepotId)
+
+    clientIDs = backend.uninstallWhereInstalled(product.id)
+
+    assert 1 == len(clientIDs)
+    pocAfter = backend.productOnClient_getObjects(productId=product.id, clientId=client_with_product.id)
+    assert 1 == len(pocAfter)
+    pocAfter = pocAfter[0]
+    assert "uninstall" == pocAfter.actionRequest
+
+    clientIDs = backend.uninstallWhereInstalled(productWithoutScript.id)
+    assert 0 == len(clientIDs)
+
+
+def testUpdateWhereInstalledFailsWithoutKnownProduct(backendManager):
+    with pytest.raises(TypeError):
+        backendManager.updateWhereInstalled()
+
+    with pytest.raises(BackendMissingDataError):
+        backendManager.updateWhereInstalled('unknownProductId')
+
+
+def testUpdateWhereInstalled(backendManager):
+    backend = backendManager
+
+    client_with_old_product = OpsiClient(id='clientwithold.test.invalid')
+    client_with_current_product = OpsiClient(id='clientwithcurrent.test.invalid')
+    client_without_product = OpsiClient(id='clientwithout.test.invalid')
+
+    depot = OpsiDepotserver(id='depotserver1.test.invalid')
+
+    backend.host_createObjects([depot, client_with_old_product,
+                                client_with_current_product,
+                                client_without_product])
+
+    old_product = LocalbootProduct('thunderheart', '1', '1')
+    new_product = LocalbootProduct('thunderheart', '1', '2',
+                                   updateScript='foo.opsiscript')
+
+    backend.product_createObjects([old_product, new_product])
+
+    assert not backend.updateWhereInstalled('thunderheart')
+
+    poc = ProductOnClient(
+        clientId=client_with_old_product.id,
+        productId=old_product.id,
+        productType=old_product.getType(),
+        productVersion=old_product.productVersion,
+        packageVersion=old_product.packageVersion,
+        installationStatus='installed',
+        actionResult='successful'
+    )
+    poc2 = ProductOnClient(
+        clientId=client_with_current_product.id,
+        productId=new_product.id,
+        productType=new_product.getType(),
+        productVersion=new_product.productVersion,
+        packageVersion=new_product.packageVersion,
+        installationStatus='installed',
+        actionResult='successful'
+    )
+
+    backend.productOnClient_createObjects([poc, poc2])
+
+    installedProductOnDepot = ProductOnDepot(
+        productId=new_product.id,
+        productType=new_product.getType(),
+        productVersion=new_product.productVersion,
+        packageVersion=new_product.packageVersion,
+        depotId=depot.getId(),
+        locked=False
+    )
+
+    backend.productOnDepot_createObjects([installedProductOnDepot])
+
+    clientConfigDepotId = UnicodeConfig(
+        id=u'clientconfig.depot.id',
+        description=u'Depotserver to use',
+        possibleValues=[],
+        defaultValues=[depot.id]
+    )
+
+    backend.config_createObjects(clientConfigDepotId)
+
+    # Starting the checks
+    assert not backend.productOnClient_getObjects(productId=new_product.id, clientId=client_without_product.id)
+    assert not backend.productOnClient_getObjects(productId=new_product.id, clientId=client_with_old_product.id, actionRequest="setup")
+    assert backend.productOnClient_getObjects(productId=new_product.id, clientId=client_with_current_product.id)
+
+    clientIDs = backend.updateWhereInstalled('thunderheart')
+
+    assert not backend.productOnClient_getObjects(productId=new_product.id, clientId=client_without_product.id)
+    poc = backend.productOnClient_getObjects(productId=new_product.id, clientId=client_with_old_product.id)[0]
+    assert "update" == poc.actionRequest
+    poc = backend.productOnClient_getObjects(productId=new_product.id, clientId=client_with_current_product.id)[0]
+    assert "update" == poc.actionRequest
+
+    assert 2 == len(clientIDs)
+    assert client_with_old_product.id in clientIDs
+    assert client_with_current_product.id in clientIDs
+
+
+def testSetupWhereInstalledFailsWithoutExistingProductId(backendManager):
+    with pytest.raises(TypeError):
+        backendManager.setupWhereInstalled()
+
+    with pytest.raises(BackendMissingDataError):
+        backendManager.setupWhereInstalled('unknownProductId')
+
+
+def testSetupWhereInstalled(backendManager):
+    backend = backendManager
+
+    client_with_product = OpsiClient(id='clientwith.test.invalid')
+    client_with_failed_product = OpsiClient(id='failedclient.test.invalid')
+    client_without_product = OpsiClient(id='clientwithout.test.invalid')
+
+    clients = set([client_with_product, client_without_product, client_with_failed_product])
+    depot = OpsiDepotserver(id='depotserver1.test.invalid')
+
+    backend.host_createObjects([depot])
+    backend.host_createObjects(clients)
+
+    product = LocalbootProduct('thunderheart', '1', '1', setupScript='foo.bar')
+
+    backend.product_createObjects([product])
+
+    installedProductOnDepot = ProductOnDepot(
+        productId=product.id,
+        productType=product.getType(),
+        productVersion=product.productVersion,
+        packageVersion=product.packageVersion,
+        depotId=depot.id,
+        locked=False
+    )
+
+    backend.productOnDepot_createObjects([installedProductOnDepot])
+
+    assert not backend.setupWhereInstalled('thunderheart')
+
+    poc = ProductOnClient(
+        clientId=client_with_product.id,
+        productId=product.id,
+        productType=product.getType(),
+        productVersion=product.productVersion,
+        packageVersion=product.packageVersion,
+        installationStatus='installed',
+        actionResult='successful'
+    )
+    pocFailed = ProductOnClient(
+        clientId=client_with_failed_product.id,
+        productId=product.id,
+        productType=product.getType(),
+        productVersion=product.productVersion,
+        packageVersion=product.packageVersion,
+        installationStatus='unknown',
+        actionResult='failed'
+    )
+    backend.productOnClient_createObjects([poc, pocFailed])
+
+    clientConfigDepotId = UnicodeConfig(
+        id=u'clientconfig.depot.id',
+        description=u'Depotserver to use',
+        possibleValues=[],
+        defaultValues=[depot.id]
+    )
+
+    backend.config_createObjects(clientConfigDepotId)
+
+    for client in clients:
+        clientDepotMappingConfigState = ConfigState(
+            configId=u'clientconfig.depot.id',
+            objectId=client.getId(),
+            values=depot.getId()
         )
-        pocWithoutScript = ProductOnClient(
-            clientId=client_with_product.id,
-            productId=productWithoutScript.id,
-            productType=productWithoutScript.getType(),
-            productVersion=productWithoutScript.productVersion,
-            packageVersion=productWithoutScript.packageVersion,
-            installationStatus='installed',
-            actionResult='successful'
-        )
-        self.backend.productOnClient_createObjects([poc, pocWithoutScript])
 
-        clientConfigDepotId = UnicodeConfig(
-            id=u'clientconfig.depot.id',
-            description=u'Depotserver to use',
-            possibleValues=[],
-            defaultValues=[depot.id]
-        )
-        self.backend.config_createObjects(clientConfigDepotId)
+        backend.configState_createObjects(clientDepotMappingConfigState)
 
-        clientIDs = self.backend.uninstallWhereInstalled(product.id)
+    clientIDs = backend.setupWhereInstalled(product.id)
+    assert 1 == len(clientIDs)
+    assert client_with_product.id == forceList(clientIDs)[0]
 
-        self.assertEquals(1, len(clientIDs))
-        pocAfter = self.backend.productOnClient_getObjects(productId=product.id, clientId=client_with_product.id)
-        self.assertEquals(1, len(pocAfter))
-        pocAfter = pocAfter[0]
-        self.assertEquals("uninstall", pocAfter.actionRequest)
+    assert not backend.productOnClient_getObjects(productId=product.id, clientId=client_without_product.id)
 
-        clientIDs = self.backend.uninstallWhereInstalled(productWithoutScript.id)
-        self.assertEquals(0, len(clientIDs))
+    pocAfter = backend.productOnClient_getObjects(productId=product.id, clientId=client_with_product.id)
+    assert 1 == len(pocAfter)
+    pocAfter = pocAfter[0]
+    assert "setup" == pocAfter.actionRequest
 
-    def testUpdateWhereInstalled(self):
-        self.assertRaises(BackendMissingDataError, self.backend.updateWhereInstalled, 'unknown')
-
-        self.assertRaises(BackendMissingDataError, self.backend.updateWhereInstalled, 'unknown')
-
-        client_with_old_product = OpsiClient(id='clientwithold.test.invalid')
-        client_with_current_product = OpsiClient(id='clientwithcurrent.test.invalid')
-        client_without_product = OpsiClient(id='clientwithout.test.invalid')
-
-        depot = OpsiDepotserver(id='depotserver1.test.invalid')
-
-        self.backend.host_createObjects([depot, client_with_old_product,
-                                        client_with_current_product,
-                                        client_without_product])
-
-        old_product = LocalbootProduct('thunderheart', '1', '1')
-        new_product = LocalbootProduct('thunderheart', '1', '2',
-                                       updateScript='foo.opsiscript')
-
-        self.backend.product_createObjects([old_product, new_product])
-
-        self.assertFalse(self.backend.updateWhereInstalled('thunderheart'))
-
-        poc = ProductOnClient(
-            clientId=client_with_old_product.id,
-            productId=old_product.id,
-            productType=old_product.getType(),
-            productVersion=old_product.productVersion,
-            packageVersion=old_product.packageVersion,
-            installationStatus='installed',
-            actionResult='successful'
-        )
-        poc2 = ProductOnClient(
-            clientId=client_with_current_product.id,
-            productId=new_product.id,
-            productType=new_product.getType(),
-            productVersion=new_product.productVersion,
-            packageVersion=new_product.packageVersion,
-            installationStatus='installed',
-            actionResult='successful'
-        )
-
-        self.backend.productOnClient_createObjects([poc, poc2])
-
-        installedProductOnDepot = ProductOnDepot(
-            productId=new_product.id,
-            productType=new_product.getType(),
-            productVersion=new_product.productVersion,
-            packageVersion=new_product.packageVersion,
-            depotId=depot.getId(),
-            locked=False
-        )
-
-        self.backend.productOnDepot_createObjects([installedProductOnDepot])
-
-        clientConfigDepotId = UnicodeConfig(
-            id=u'clientconfig.depot.id',
-            description=u'Depotserver to use',
-            possibleValues=[],
-            defaultValues=[depot.id]
-        )
-
-        self.backend.config_createObjects(clientConfigDepotId)
-
-        # Starting the checks
-        self.assertFalse(self.backend.productOnClient_getObjects(productId=new_product.id, clientId=client_without_product.id))
-        self.assertFalse(self.backend.productOnClient_getObjects(productId=new_product.id, clientId=client_with_old_product.id, actionRequest="setup"))
-        self.assertTrue(self.backend.productOnClient_getObjects(productId=new_product.id, clientId=client_with_current_product.id))
-
-        clientIDs = self.backend.updateWhereInstalled('thunderheart')
-
-        self.assertFalse(self.backend.productOnClient_getObjects(productId=new_product.id, clientId=client_without_product.id))
-        poc = self.backend.productOnClient_getObjects(productId=new_product.id, clientId=client_with_old_product.id)[0]
-        self.assertEquals("update", poc.actionRequest)
-        poc = self.backend.productOnClient_getObjects(productId=new_product.id, clientId=client_with_current_product.id)[0]
-        self.assertEquals("update", poc.actionRequest)
-
-        self.assertEquals(2, len(clientIDs))
-        self.assertTrue(client_with_old_product.id in clientIDs)
-        self.assertTrue(client_with_current_product.id in clientIDs)
-
-    def testSetupWhereInstalled(self):
-        self.assertRaises(TypeError, self.backend.setupWhereInstalled)
-
-        self.assertRaises(BackendMissingDataError, self.backend.setupWhereInstalled, 'unknownProductId')
-
-        client_with_product = OpsiClient(id='clientwith.test.invalid')
-        client_with_failed_product = OpsiClient(id='failedclient.test.invalid')
-        client_without_product = OpsiClient(id='clientwithout.test.invalid')
-
-        clients = set([client_with_product, client_without_product, client_with_failed_product])
-        depot = OpsiDepotserver(id='depotserver1.test.invalid')
-
-        self.backend.host_createObjects([depot])
-        self.backend.host_createObjects(clients)
-
-        product = LocalbootProduct('thunderheart', '1', '1', setupScript='foo.bar')
-
-        self.backend.product_createObjects([product])
-
-        installedProductOnDepot = ProductOnDepot(
-            productId=product.id,
-            productType=product.getType(),
-            productVersion=product.productVersion,
-            packageVersion=product.packageVersion,
-            depotId=depot.id,
-            locked=False
-        )
-
-        self.backend.productOnDepot_createObjects([installedProductOnDepot])
-
-        self.assertFalse(self.backend.setupWhereInstalled('thunderheart'))
-
-        poc = ProductOnClient(
-            clientId=client_with_product.id,
-            productId=product.id,
-            productType=product.getType(),
-            productVersion=product.productVersion,
-            packageVersion=product.packageVersion,
-            installationStatus='installed',
-            actionResult='successful'
-        )
-        pocFailed = ProductOnClient(
-            clientId=client_with_failed_product.id,
-            productId=product.id,
-            productType=product.getType(),
-            productVersion=product.productVersion,
-            packageVersion=product.packageVersion,
-            installationStatus='unknown',
-            actionResult='failed'
-        )
-        self.backend.productOnClient_createObjects([poc, pocFailed])
-
-        clientConfigDepotId = UnicodeConfig(
-            id=u'clientconfig.depot.id',
-            description=u'Depotserver to use',
-            possibleValues=[],
-            defaultValues=[depot.id]
-        )
-
-        self.backend.config_createObjects(clientConfigDepotId)
-
-        for client in clients:
-            clientDepotMappingConfigState = ConfigState(
-                configId=u'clientconfig.depot.id',
-                objectId=client.getId(),
-                values=depot.getId()
-            )
-
-            self.backend.configState_createObjects(clientDepotMappingConfigState)
-
-        clientIDs = self.backend.setupWhereInstalled(product.id)
-        self.assertEquals(1, len(clientIDs))
-        self.assertEquals(client_with_product.id, forceList(clientIDs)[0])
-
-        self.assertFalse(self.backend.productOnClient_getObjects(productId=product.id, clientId=client_without_product.id))
-
-        pocAfter = self.backend.productOnClient_getObjects(productId=product.id, clientId=client_with_product.id)
-        self.assertEquals(1, len(pocAfter))
-        pocAfter = pocAfter[0]
-        self.assertEquals("setup", pocAfter.actionRequest)
-
-        pocFailed = self.backend.productOnClient_getObjects(productId=product.id, clientId=client_with_failed_product.id)
-        self.assertEquals(1, len(pocFailed))
-        pocFailed = pocFailed[0]
-        self.assertNotEquals("setup", pocFailed.actionRequest)
+    pocFailed = backend.productOnClient_getObjects(productId=product.id, clientId=client_with_failed_product.id)
+    assert 1 == len(pocFailed)
+    pocFailed = pocFailed[0]
+    assert "setup" != pocFailed.actionRequest
 
 
-def testSetupWhereNotInstalledRequiresExistingProductId(backendManager):
+def testSetupWhereNotInstalledFailsWithoutExistingProductId(backendManager):
     with pytest.raises(TypeError):
         backendManager.setupWhereInstalled()
 
