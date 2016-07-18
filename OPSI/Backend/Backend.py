@@ -65,7 +65,7 @@ from OPSI.Util import (blowfishEncrypt, blowfishDecrypt, compareVersions,
 from OPSI.Util.File import ConfigFile
 import OPSI.SharedAlgorithm
 
-__version__ = '4.0.7.2'
+__version__ = '4.0.7.8'
 
 logger = Logger()
 OPSI_VERSION_FILE = u'/etc/opsi/version'
@@ -697,17 +697,16 @@ Currently supported: *bootimage*, *clientconnect*, *instlog* or *opsiconfd*.
 		"""
 		logType = forceUnicode(logType)
 
-		try:
-			objectIdRequired = LOG_TYPES[logType]
-		except KeyError:
+		if logType not in LOG_TYPES:
 			raise BackendBadValueError(u'Unknown log type {0!r}'.format(logType))
 
-		if objectIdRequired:
-			if not objectId:
-				raise BackendBadValueError(u"Log type {0!r} requires objectId".format(logType))
+		if objectId:
 			objectId = forceObjectId(objectId)
 			logFile = os.path.join(LOG_DIR, logType, '{0}.log'.format(objectId))
 		else:
+			if LOG_TYPES[logType]:
+				raise BackendBadValueError(u"Log type {0!r} requires objectId".format(logType))
+
 			logFile = os.path.join(LOG_DIR, logType, 'opsiconfd.log')
 
 		try:
