@@ -619,8 +619,10 @@ overwrite the log.
 		else:
 			objectId = forceObjectId(objectId)
 
-		if not os.path.exists(os.path.join(LOG_DIR, logType)):
+		try:
 			os.mkdir(os.path.join(LOG_DIR, logType), 0o2770)
+		except OSError:
+			pass  # Directory already existing
 
 		limitFileSize = self._maxLogfileSize > 0
 		data = forceUnicode(data)
