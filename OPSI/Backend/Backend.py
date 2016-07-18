@@ -698,7 +698,7 @@ Currently supported: *bootimage*, *clientconnect*, *instlog* or *opsiconfd*.
 		logType = forceUnicode(logType)
 
 		try:
-			objectIdRequired = LOG_TYPES[logType]:
+			objectIdRequired = LOG_TYPES[logType]
 		except KeyError:
 			raise BackendBadValueError(u'Unknown log type {0!r}'.format(logType))
 
