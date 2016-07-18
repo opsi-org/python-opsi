@@ -614,10 +614,8 @@ overwrite the log.
 			raise BackendBadValueError(u"Unknown log type '%s'" % logType)
 
 		if not objectId:
-			if logType in ('bootimage', 'clientconnect', 'userlogin', 'instlog', 'opsiconfd'):
-				raise BackendBadValueError(u"Log type '%s' requires objectId" % logType)
-		else:
-			objectId = forceObjectId(objectId)
+			raise BackendBadValueError(u"Log type {0!r} requires objectId".format(logType))
+		objectId = forceObjectId(objectId)
 
 		try:
 			os.mkdir(os.path.join(LOG_DIR, logType), 0o2770)
