@@ -615,7 +615,7 @@ overwrite the log.
 			raise BackendBadValueError(u"Unknown log type '%s'" % logType)
 
 		if not objectId:
-			raise BackendBadValueError(u"Log type {0!r} requires objectId".format(logType))
+			raise BackendBadValueError(u"Writing {0} log requires an objectId".format(logType))
 		objectId = forceObjectId(objectId)
 
 		try:
