@@ -182,11 +182,11 @@ def getCountAndSize(path):
 	(count, size) = (0, 0)
 	try:
 		if os.path.isfile(path):
-			logger.debug2(u"Is file: %s" % path)
+			logger.debug2(u"Is file: {0}", path)
 			(count, size) = (1, os.path.getsize(path))
 		elif os.path.isdir(path):
-			logger.debug2(u"Is dir: %s" % path)
-			logger.debug(u"Counting and getting sizes of files in dir '%s'" % path)
+			logger.debug2(u"Is dir: {0}", path)
+			logger.debug(u"Counting and getting sizes of files in dir {0!r}", path)
 			for element in os.listdir(path):
 				(elementCount, elementSize) = getCountAndSize(os.path.join(path, element))
 				count += elementCount

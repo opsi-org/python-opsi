@@ -262,6 +262,7 @@ class HTTPResponse(object):
 		NOTE: This method will perform r.read() which will have side effects
 		on the original http.HTTPResponse object.
 		"""
+		logger.debug2("Creating HTTPResponse from httplib...")
 		return HTTPResponse(
 			data=r.read(),
 			headers=dict(r.getheaders()),
@@ -496,19 +497,20 @@ class HTTPConnectionPool(object):
 					logger.info(u"Encoding authorization")
 					randomKey = randomString(32).encode('latin-1')
 					encryptedKey = encryptWithPublicKeyFromX509CertificatePEMFile(randomKey, self.serverCertFile)
-					headers['X-opsi-service-verification-key'] = base64.encodestring(encryptedKey)
+					headers['X-opsi-service-verification-key'] = base64.b64encode(encryptedKey)
 					for key, value in headers.items():
 						if key.lower() == 'authorization':
 							if value.lower().startswith('basic'):
 								value = value[5:].strip()
-							value = base64.decodestring(value).strip()
+							value = base64.b64decode(value).strip()
 							encodedAuth = encryptWithPublicKeyFromX509CertificatePEMFile(value, self.serverCertFile)
-							headers[key] = 'Opsi ' + base64.encodestring(encodedAuth).strip()
+							headers[key] = 'Opsi ' + base64.b64encode(encodedAuth)
 				except Exception as error:
 					logger.logException(error, LOG_INFO)
-					logger.critical(u"Cannot verify server based on certificate file '%s': %s" % (self.serverCertFile, error))
+					logger.critical(u"Cannot verify server based on certificate file {0!r}: {1}", self.serverCertFile, error)
 					randomKey = None
 
+			logger.debug2("Handing data to connection...")
 			conn.request(method, url, body=body, headers=headers)
 			if self.socketTimeout:
 				conn.sock.settimeout(self.socketTimeout)
@@ -522,6 +524,7 @@ class HTTPConnectionPool(object):
 			response = HTTPResponse.from_httplib(httplib_response)
 
 			if randomKey:
+				logger.debug2("Checking for random key...")
 				try:
 					key = response.getheader('x-opsi-service-verification-key', None)
 					if not key:
@@ -531,7 +534,7 @@ class HTTPConnectionPool(object):
 					self.serverVerified = True
 					logger.notice(u"Service verified by opsi-service-verification-key")
 				except Exception as error:
-					logger.error(u"Service verification failed: %s" % error)
+					logger.error(u"Service verification failed: {0}", error)
 					raise OpsiServiceVerificationError(u"Service verification failed: %s" % error)
 
 			if self.serverCertFile and self.peerCertificate:
@@ -542,40 +545,45 @@ class HTTPConnectionPool(object):
 					with open(self.serverCertFile, 'w') as f:
 						f.write(self.peerCertificate)
 				except Exception as error:
-					logger.error(u"Failed to create server cert file '%s': %s" % (self.serverCertFile, error))
+					logger.error(u"Failed to create server cert file {0!r}: {1}", self.serverCertFile, error)
 
 			# Put the connection back to be reused
 			if self.reuseConnection:
 				self._put_conn(conn)
 			else:
-				logger.debug(u"Closing connection: %s" % conn)
+				logger.debug(u"Closing connection: {0}", conn)
 				self._put_conn(None)
 				closeConnection(conn)
 		except (SocketTimeout, Empty, HTTPException, SocketError) as error:
 			logger.logException(error, logLevel=LOG_DEBUG)
 			try:
-				logger.debug(u"Request to host '%s' failed, retry: %s, firstTryTime: %s, now: %s, retryTime: %s, connectTimeout: %s, socketTimeout: %s (%s)" \
-					% (self.host, retry, firstTryTime, now, self.retryTime, self.connectTimeout, self.socketTimeout, forceUnicode(error)))
+				logger.debug(
+					u"Request to host {0!r} failed, retry: {1}, firstTryTime: {2}, now: {3}, retryTime: {4}, connectTimeout: {5}, socketTimeout: {6} ({7!r})",
+					self.host, retry, firstTryTime, now, self.retryTime, self.connectTimeout, self.socketTimeout, error
+				)
 			except Exception as loggingError:
-				logger.debug(u"Logging exception failed: {0}".format(forceUnicode(loggingError)))
+				logger.debug(u"Logging exception failed: {0}", forceUnicode(loggingError))
 				logger.debug(u"Trying to log again without original exception.")
 				try:
-					logger.debug(u"Request to host '%s' failed, retry: %s, firstTryTime: %s, now: %s, retryTime: %s, connectTimeout: %s, socketTimeout: %s" \
-						% (self.host, retry, firstTryTime, now, self.retryTime, self.connectTimeout, self.socketTimeout))
+					logger.debug(
+						u"Request to host {0!r} failed, retry: {1}, firstTryTime: {2}, now: {3}, retryTime: {4}, connectTimeout: {5}, socketTimeout: {6}",
+						self.host, retry, firstTryTime, now, self.retryTime, self.connectTimeout, self.isocketTimeout
+					 )
 				except Exception as error:
-					logger.warning(u"Logging message failed: {0}".format(forceUnicode(error)))
+					logger.debug(u"Logging message failed: {0!r}", error)
+					logger.warning(u"Logging message failed: {0}", forceUnicode(error))
 
 			self._put_conn(None)
 			closeConnection(conn)
 
 			if retry and (now - firstTryTime < self.retryTime):
-				logger.debug(u"Request to {0!r} failed: {1}".format(self.host, forceUnicode(error)))
+				logger.debug(u"Request to {0!r} failed: {1}", self.host, forceUnicode(error))
 				logger.debug(u"Waiting before retry...")
 				time.sleep(0.2)
 				return self.urlopen(method, url, body, headers, retry, redirect, assert_same_host, firstTryTime)
 			else:
 				if retry:
-					logger.warning("Connecting to {0!r} did not succeed after retrying.".format(self.host))
+					logger.warning("Connecting to {0!r} did not succeed after retrying.", self.host)
 
 				raise
 		except Exception:
