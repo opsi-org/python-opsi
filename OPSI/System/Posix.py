@@ -2829,22 +2829,20 @@ class Harddisk:
 			hook.post_Harddisk_restoreImage(self, partition, imageFile, progressSubject)
 
 
-def isSLES():
+def isCentOS():
 	"""
-	Returns `True` if this is running on Suse Linux Enterprise Server.
+	Returns `True` if this is running on CentOS.
 	Returns `False` if otherwise.
 	"""
+	return _checkForDistribution('CentOS')
 
-	try:
-		f = os.popen('lsb_release -d 2>/dev/null')
-		distribution = f.read().split(':')[1].strip()
-		f.close()
 
-		logger.debug("Got as distribution: {0!r}".format(distribution))
-		return bool('suse linux enterprise server' in distribution.lower())
-	except Exception as error:
-		logger.debug("Failed to read lsb_release: {0}".format(error))
-		return False
+def isDebian():
+	return _checkForDistribution('Debian')
+
+
+def isOpenSUSE():
+	return _checkForDistribution('opensuse')
 
 
 def isRHEL():
@@ -2852,25 +2850,31 @@ def isRHEL():
 	Returns `True` if this is running on Red Hat Enterprise Linux.
 	Returns `False` if otherwise.
 	"""
-
-	try:
-		sysinfo = SysInfo()
-		return 'Red Hat Enterprise Linux' in sysinfo.distribution
-	except Exception as error:
-		logger.debug("Failed to check for RHEL: {0}".format(error))
-		return False
+	return _checkForDistribution('Red Hat Enterprise Linux')
 
 
-def isCentOS():
+def isSLES():
 	"""
-	Returns `True` if this is running on CentOS.
+	Returns `True` if this is running on Suse Linux Enterprise Server.
 	Returns `False` if otherwise.
 	"""
+	return _checkForDistribution('suse linux enterprise server')
+
+
+def isUbuntu():
+	return _checkForDistribution('Ubuntu')
+
+
+def isUCS():
+	return _checkForDistribution('Univention Corporate Server')
+
+
+def _checkForDistribution(name):
 	try:
 		sysinfo = SysInfo()
-		return 'CentOS' in sysinfo.distribution
+		return name.lower() in sysinfo.distribution.lower()
 	except Exception as error:
-		logger.debug("Failed to check for CentOS: {0}".format(error))
+		logger.debug("Failed to check for Distribution: {0}", error)
 		return False
 
 
