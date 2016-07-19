@@ -102,16 +102,7 @@ def setRights(path=u'/'):
 	LOGGER.debug(u"Setting rights on {0!r}", path)
 	LOGGER.debug("euid is {0}", os.geteuid())
 
-	basedir = os.path.abspath(path)
-	if not os.path.isdir(basedir):
-		basedir = os.path.dirname(basedir)
-
-	processedDirectories = set()
-	for dirname, rights in getDirectoriesAndExpectedRights(path):
-		if not dirname.startswith(basedir) and not basedir.startswith(dirname):
-			LOGGER.debug(u"Skipping {0!r}", dirname)
-			continue
-
+	for startPath, rights in filterDirsAndRights(path):
 		if os.path.isfile(path):
 			chown(path, rights.uid, rights.gid)
 
@@ -122,14 +113,6 @@ def setRights(path=u'/'):
 			else:
 				LOGGER.debug("Assuming general file...")
 				os.chmod(path, rights.files)
-			continue
-
-		startPath = dirname
-		if basedir.startswith(dirname):
-			startPath = basedir
-
-		if startPath in processedDirectories:
-			LOGGER.debug(u"Already proceesed {0}, Skipping.", startPath)
 			continue
 
 		LOGGER.notice(u"Setting rights on directory {0!r}", startPath)
@@ -161,6 +144,28 @@ def setRights(path=u'/'):
 			os.chmod(u'/var/lib/opsi', 0o750)
 			chown(u'/var/lib/opsi', clientUserUid, fileAdminGroupGid)
 			setRightsOnSSHDirectory(clientUserUid, fileAdminGroupGid)
+
+
+def filterDirsAndRights(path):
+	basedir = os.path.abspath(path)
+	if not os.path.isdir(basedir):
+		basedir = os.path.dirname(basedir)
+
+	processedDirectories = set()
+	for dirname, right in getDirectoriesForProcessing(path):
+		if not dirname.startswith(basedir) and not basedir.startswith(dirname):
+			LOGGER.debug(u"Skipping {0!r}", dirname)
+			continue
+
+		startPath = dirname
+		if basedir.startswith(dirname):
+			startPath = basedir
+
+		if startPath in processedDirectories:
+			LOGGER.debug(u"Already proceesed {0}, skipping.", startPath)
+			continue
+
+		yield startPath, right
 
 		processedDirectories.add(startPath)
 
