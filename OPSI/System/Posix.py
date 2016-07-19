@@ -45,7 +45,6 @@ import time
 import copy as pycopy
 from itertools import islice
 from signal import SIGKILL
-from platform import linux_distribution
 
 from OPSI.Logger import Logger, LOG_NONE
 from OPSI.Types import (forceDomain, forceInt, forceBool, forceUnicode,
@@ -56,7 +55,7 @@ from OPSI.Types import OpsiVersionError
 from OPSI.Object import *
 from OPSI.Util import objectToBeautifiedText, removeUnit
 
-__version__ = '4.0.7.4'
+__version__ = '4.0.7.8'
 
 logger = Logger()
 
@@ -2879,7 +2878,7 @@ class Distribution(object):
 
 	def __init__(self, distribution_information=None):
 		if distribution_information is None:
-			distribution_information = linux_distribution()
+			distribution_information = platform.linux_distribution()
 
 		self.distribution, self._version, self.id = distribution_information
 		self.distribution = self.distribution.strip()
