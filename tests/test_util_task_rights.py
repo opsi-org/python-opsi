@@ -33,7 +33,7 @@ from contextlib import contextmanager
 
 from OPSI.Util.Task.Rights import (chown, getApacheRepositoryPath,
     getDirectoriesManagedByOpsi, getDirectoriesForProcessing,
-    removeDuplicatesFromDirectories, setRightsOnApacheDir)
+    removeDuplicatesFromDirectories)
 
 from .helpers import mock, unittest, workInTemporaryDirectory
 
