@@ -53,6 +53,7 @@ import grp
 import os
 import pwd
 import re
+from collections import namedtuple
 
 from OPSI.Backend.Backend import OPSI_GLOBAL_CONF
 from OPSI.Logger import Logger
@@ -82,6 +83,8 @@ KNOWN_EXECUTABLES = frozenset((
 	u'service_setup.sh', u'setup.py', u'show_drivers.py', u'winexe',
 	u'windows-image-detector.py',
 ))
+
+Rights = namedtuple("Rights", ["uid", "gid", "files", "directories", "correctLinks"])
 
 
 # TODO: use OPSI.System.Posix.Sysconfig for a more standardized approach
@@ -116,24 +119,18 @@ def setRights(path=u'/'):
 		if not dirname.startswith(basedir) and not basedir.startswith(dirname):
 			LOGGER.debug(u"Skipping {0!r}", dirname)
 			continue
-		uid = opsiconfdUid
-		gid = fileAdminGroupGid
-		fileMode = 0o660
-		directoryMode = 0o770
-		correctLinks = False
 
 		if dirname in (u'/var/lib/tftpboot/opsi', u'/tftpboot/linux'):
-			fileMode = 0o664
-			directoryMode = 0o775
+			rights = Rights(opsiconfdUid, fileAdminGroupGid, 0o664, 0o775, False)
 		elif dirname in (u'/var/log/opsi', u'/etc/opsi'):
-			gid = adminGroupGid
-			correctLinks = True
+			rights = Rights(opsiconfdUid, adminGroupGid, 0o660, 0o770, True)
 		elif dirname in (u'/home/opsiproducts', '/var/lib/opsi/workbench'):
-			uid = -1
-			directoryMode = 0o2770
+			rights = Rights(-1, fileAdminGroupGid, 0o660, 0o2770, False)
+		else:
+			rights = Rights(opsiconfdUid, fileAdminGroupGid, 0o660, 0o770, False)
 
 		if os.path.isfile(path):
-			chown(path, uid, gid)
+			chown(path, rights.uid, rights.gid)
 
 			LOGGER.debug(u"Setting rights on file {0!r}", path)
 			if path.startswith(u'/var/lib/opsi/depot/'):
@@ -141,7 +138,7 @@ def setRights(path=u'/'):
 				os.chmod(path, (os.stat(path)[0] | 0o660) & 0o770)
 			else:
 				LOGGER.debug("Assuming general file...")
-				os.chmod(path, fileMode)
+				os.chmod(path, rights.files)
 			continue
 
 		startPath = dirname
@@ -153,17 +150,17 @@ def setRights(path=u'/'):
 			continue
 
 		if dirname == depotDir:
-			directoryMode = 0o2770
+			rights = Rights(rights.uid, rights.gid, rights.files, 0o2770, rights.fixLinks)
 
 		LOGGER.notice(u"Setting rights on directory {0!r}", startPath)
-		LOGGER.debug2(u"Current setting: startPath={path}, uid={uid}, gid={gid}", path=startPath, uid=uid, gid=gid)
-		chown(startPath, uid, gid)
-		os.chmod(startPath, directoryMode)
-		for filepath in findFiles(startPath, prefix=startPath, returnLinks=correctLinks, excludeFile=re.compile("(.swp|~)$")):
-			chown(filepath, uid, gid)
+		LOGGER.debug2(u"Current setting: startPath={path}, uid={uid}, gid={gid}", path=startPath, uid=rights.uid, gid=rights.gid)
+		chown(startPath, rights.uid, rights.gid)
+		os.chmod(startPath, rights.directories)
+		for filepath in findFiles(startPath, prefix=startPath, returnLinks=rights.correctLinks, excludeFile=re.compile("(.swp|~)$")):
+			chown(filepath, rights.uid, rights.gid)
 			if os.path.isdir(filepath):
 				LOGGER.debug(u"Setting rights on directory {0!r}", filepath)
-				os.chmod(filepath, directoryMode)
+				os.chmod(filepath, rights.directories)
 			elif os.path.isfile(filepath):
 				LOGGER.debug(u"Setting rights on file {0!r}", filepath)
 				if filepath.startswith((u'/var/lib/opsi/depot/', u'/opt/pcbin/install/')):
@@ -174,8 +171,8 @@ def setRights(path=u'/'):
 						LOGGER.debug(u"Setting rights on file {0!r}", filepath)
 						os.chmod(filepath, (os.stat(filepath)[0] | 0o660) & 0o770)
 				else:
-					LOGGER.debug(u"Setting rights {rights!r} on file {file!r}", file=filepath, rights=fileMode)
-					os.chmod(filepath, fileMode)
+					LOGGER.debug(u"Setting rights {rights!r} on file {file!r}", file=filepath, rights=rights.files)
+					os.chmod(filepath, rights.files)
 
 		if startPath.startswith(u'/var/lib/opsi') and os.geteuid() == 0:
 			os.chmod(u'/var/lib/opsi', 0o750)
