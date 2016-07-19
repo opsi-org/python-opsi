@@ -6,7 +6,7 @@ opsi python library - Windows
 This module is part of the desktop management solution opsi
 (open pc server integration) http://www.opsi.org
 
-Copyright (C) 2013-2015 uib GmbH
+Copyright (C) 2013-2016 uib GmbH
 
 http://www.uib.de/
 
@@ -67,7 +67,7 @@ from datetime import datetime
 from OPSI.Logger import *
 from OPSI.Types import *
 
-__version__ = '4.0.6.29'
+__version__ = '4.0.6.30'
 
 logger = Logger()
 hooks = []
@@ -195,26 +195,34 @@ def getOpsiHotfixName(helper=None):
 			try:
 				result = execute(helper, shell=False)
 				minor = int(result[0].split(".")[1])
+				if int(result[0].split(".")[0]) == 10:
+					logger.notice("Windows 10 detected, changing major from 6 to 10")
+					major = 10
 			except Exception:
 				logger.warning(u"MSHotfix fix for Windows 8.1 don't work. Fallback to normal mode.")
-
-		if (minor == 0):
-			os = u'vista-win2008'
-		elif (minor == 1):
-			if (arch == 'x86'):
-				os = u'win7'
+			if (major == 10):
+				if (arch == 'x86'):
+					os = u'win10'
+				else:
+					os = u'win10-win2016'
 			else:
-				os = u'win7-win2008r2'
-		elif (minor == 2):
-			if (arch == 'x86'):
-				os = u'win8'
-			else:
-				os = u'win8-win2012'
-		elif (minor == 3):
-			if (arch == 'x86'):
-				os = u'win81'
-			else:
-				os = u'win81-win2012r2'
+				if (minor == 0):
+					os = u'vista-win2008'
+				elif (minor == 1):
+					if (arch == 'x86'):
+						os = u'win7'
+					else:
+						os = u'win7-win2008r2'
+				elif (minor == 2):
+					if (arch == 'x86'):
+						os = u'win8'
+					else:
+						os = u'win8-win2012'
+				elif (minor == 3):
+					if (arch == 'x86'):
+						os = u'win81'
+					else:
+						os = u'win81-win2012r2'
 
 	return u'mshotfix-%s-%s-%s' % (os, arch, lang)
 
@@ -316,6 +324,12 @@ def getDefaultNetworkInterfaceName():
 	for interface in getNetworkInterfaces():
 		if interface.gatewayList.ipAddress:
 			return interface.description
+	return None
+
+def getSystemProxySetting():
+	#TODO read proxy settings from system registry
+	#HINTS: If proxycfg is not installed read this way (you have to cut)
+	#netsh winhttp show proxy
 	return None
 
 
@@ -1768,7 +1782,7 @@ def setLocalSystemTime(timestring):
 	try:
 		dt = datetime.datetime.strptime(timestring, '%Y-%m-%d %H:%M:%S.%f')
 		logger.info(u"Setting Systemtime Time to %s" % timestring)
-		winapi32.SetSystemTime(dt.year, dt.month, dt.weekday(), dt.day, dt.hour, dt.minute, dt.second, dt.microsecond)
+		win32api.SetSystemTime(dt.year, dt.month, 0, dt.day, dt.hour, dt.minute, dt.second, 0)
 	except Exception as e:
 		logger.error(u"Failed to set System Time: '%s'" % e)
 

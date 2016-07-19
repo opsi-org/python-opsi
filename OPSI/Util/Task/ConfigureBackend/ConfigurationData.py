@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2014-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -209,15 +209,7 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 				defaultValues=[False]
 			)
 		)
-	if u'software-on-demand.show-details' not in configIdents:
-		LOGGER.debug(u"Missing software-on-demand.show-details - adding it.")
-		configs.append(
-			oobject.BoolConfig(
-				id=u'software-on-demand.show-details',
-				description=u'Show more details for software-on-demand',
-				defaultValues=[False]
-			)
-		)
+
 	if u'software-on-demand.product-group-ids' not in configIdents:
 		LOGGER.debug(u"Missing software-on-demand.product-group-ids - adding it.")
 		configs.append(
