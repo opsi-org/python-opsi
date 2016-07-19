@@ -364,3 +364,38 @@ def testLoggerDoesFormattingIfMessageWillGetLogged(loglevel, function_name):
 
 	print("Messages: {0!r}".format(messages))
 	assert 'This 1.0 must be shown here: many kwargs' in messages
+
+
+@pytest.mark.parametrize("replacement", 'DTlLCFN')  # not: Message
+@pytest.mark.parametrize("loglevel", [
+	OPSI.Logger.LOG_DEBUG2,
+	OPSI.Logger.LOG_DEBUG,
+	OPSI.Logger.LOG_INFO,
+	OPSI.Logger.LOG_NOTICE,
+	OPSI.Logger.LOG_WARNING,
+	OPSI.Logger.LOG_ERROR,
+	OPSI.Logger.LOG_CRITICAL,
+	OPSI.Logger.LOG_ESSENTIAL,
+	OPSI.Logger.LOG_COMMENT,
+])
+def testLoggerDoesNotShowSecretWordBeginningWithCapitalisedF(loglevel, replacement):
+	assert len(replacement) == 1
+	secretWord = "{0}ooBar".format(replacement)
+	assert secretWord.startswith(replacement)
+	command = 'prog.exe -credentials "username%{0}"'.format(secretWord)
+
+	with showLogs(logLevel=loglevel) as logger:
+		logger.setLogFormat('%{formatter} %M'.format(formatter=replacement))
+		logger.addConfidentialString(secretWord)
+
+		with catchMessages() as messageBuffer:
+			logger.log(loglevel, command)
+
+	message = ''.join(messageBuffer.getvalue())
+	assert message
+	assert not message.startswith('%')
+
+	print("Message: {0!r}".format(message))
+
+	assert secretWord not in message
+	assert secretWord[1:] not in message

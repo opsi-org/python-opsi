@@ -50,7 +50,7 @@ from OPSI.Backend.Backend import Backend, DeferredCall
 from OPSI.Util import serialize, deserialize
 from OPSI.Util.HTTP import urlsplit, getSharedConnectionPool, deflateEncode, deflateDecode, gzipDecode
 
-__version__ = '4.0.7.1'
+__version__ = '4.0.7.5'
 
 logger = Logger()
 
@@ -230,14 +230,14 @@ class RpcQueue(threading.Thread):
 
 			for resp in response:
 				try:
-					id = resp['id']
-				except Exception as error:
-					raise Exception(u"Failed to get id from: %s (%s): %s" % (resp, response, error))
+					responseId = resp['id']
+				except KeyError as error:
+					raise KeyError(u"Failed to get id from: %s (%s): %s" % (resp, response, error))
 
 				try:
-					jsonrpc = self.jsonrpcs[id]
-				except Exception as error:
-					raise Exception(u"Failed to get jsonrpc with id %s: %s" % (id, error))
+					jsonrpc = self.jsonrpcs[responseId]
+				except KeyError as error:
+					raise KeyError(u"Failed to get jsonrpc with id %s: %s" % (responseId, error))
 
 				try:
 					jsonrpc.processResult(resp)
@@ -291,6 +291,7 @@ class JSONRPCBackend(Backend):
 		self._verifyServerCertByCa = False
 		self._verifyByCaCertsFile = None
 		self._wrongHTTPHeaders = None
+		self._proxyURL = None
 
 		if not self._username:
 			self._username = u''
@@ -330,6 +331,9 @@ class JSONRPCBackend(Backend):
 				self._caCertFile = forceFilename(value)
 			elif option == 'verifyservercertbyca':
 				self._verifyServerCertByCa = forceBool(value)
+			elif option == 'proxyurl':
+                                logger.debug(u"ProxyURL detected: '%s'" % value)
+				self._proxyURL = forceUnicode(value)
 
 		if not retry:
 			self._retryTime = 0
@@ -350,7 +354,8 @@ class JSONRPCBackend(Backend):
 			verifyServerCert=self._verifyServerCert,
 			serverCertFile=self._serverCertFile,
 			caCertFile=self._caCertFile,
-			verifyServerCertByCa=self._verifyServerCertByCa
+			verifyServerCertByCa=self._verifyServerCertByCa,
+			proxyURL=self._proxyURL
 		)
 
 		if self._connectOnInit:
@@ -455,8 +460,9 @@ class JSONRPCBackend(Backend):
 				self._interface = self._jsonRPC(u'backend_getInterface')
 				if 'opsiclientd' in self._application:
 					try:
-						modules = self._jsonRPC(u'backend_info').get('modules', None)
-						realmodules = self._jsonRPC(u'backend_info').get('realmodules', None)
+						backendInfo = self._jsonRPC(u'backend_info')
+						modules = backendInfo.get('modules', None)
+						realmodules = backendInfo.get('realmodules', None)
 						if modules:
 							logger.confidential(u"Modules: %s" % modules)
 						else:
