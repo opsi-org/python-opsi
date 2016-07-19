@@ -63,7 +63,7 @@ from OPSI.Util.File.Opsi import OpsiConfFile
 from OPSI.System.Posix import (isCentOS, isDebian, isOpenSUSE, isRHEL, isSLES,
 	isUbuntu, isUCS)
 
-__version__ = '4.0.6.48'
+__version__ = '4.0.7.8'
 
 LOGGER = Logger()
 
@@ -217,15 +217,25 @@ def getDirectoriesForProcessing(path):
 
 def getDirectoriesManagedByOpsi():
 	directories = set([u'/etc/opsi', u'/var/lib/opsi', u'/var/log/opsi'])
-
-	if isSLES():
-		directories.add(u'/var/lib/tftpboot/opsi')
-		directories.add(u'/var/lib/opsi/workbench')
-	else:
-		directories.add(u'/tftpboot/linux')
-		directories.add(u'/home/opsiproducts')
+	directories.add(_getWorkbenchDirectory())
+	directories.add(_getPxeDirectory())
 
 	return directories
+
+
+def _getWorkbenchDirectory():
+	if isSLES():
+		return u'/var/lib/opsi/workbench'
+	else:
+		return u'/home/opsiproducts'
+
+
+def _getPxeDirectory():
+	if isSLES():
+		return u'/var/lib/tftpboot/opsi'
+	else:
+		return u'/tftpboot/linux'
+
 
 
 def getApacheRepositoryPath():
