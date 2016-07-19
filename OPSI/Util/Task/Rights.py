@@ -59,7 +59,8 @@ from OPSI.Logger import Logger
 from OPSI.Types import forceHostId
 from OPSI.Util import findFiles, getfqdn
 from OPSI.Util.File.Opsi import OpsiConfFile
-from OPSI.System.Posix import isSLES
+from OPSI.System.Posix import (isCentOS, isDebian, isOpenSUSE, isRHEL, isSLES,
+	isUbuntu, isUCS)
 
 __version__ = '4.0.6.48'
 
@@ -228,6 +229,22 @@ def getDirectoriesManagedByOpsi():
 		directories.add(u'/home/opsiproducts')
 
 	return directories
+
+
+def getApacheRepositoryPath():
+	"""
+	Returns the path to the directory where packages for Linux netboot \
+installations may be.
+
+	If this is running on an unsuported distribution no path may be
+	returned.
+	"""
+	if any(func() for func in (isDebian, isCentOS, isRHEL, isSLES, isUbuntu, isUCS)):
+		return '/var/www/html/opsi'
+	elif isOpenSUSE():
+		return '/srv/www/htdocs/opsi'
+	else:
+		LOGGER.info("Unsupported distribution.")
 
 
 def getDepotUrl():
