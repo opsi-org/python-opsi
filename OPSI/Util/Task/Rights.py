@@ -106,28 +106,11 @@ def setRights(path=u'/'):
 	if not os.path.isdir(basedir):
 		basedir = os.path.dirname(basedir)
 
-	clientUserUid = pwd.getpwnam(_CLIENT_USER)[2]
-	opsiconfdUid = pwd.getpwnam(_OPSICONFD_USER)[2]
-	adminGroupGid = grp.getgrnam(_ADMIN_GROUP)[2]
-	fileAdminGroupGid = grp.getgrnam(_FILE_ADMIN_GROUP)[2]
-
-	(directories, depotDir) = getDirectoriesForProcessing(path)
-
 	processedDirectories = set()
-	# TODO: try to re-introduce removeDuplicatesFromDirectories for speedups
-	for dirname in directories:
+	for dirname, rights in getDirectoriesAndExpectedRights(path):
 		if not dirname.startswith(basedir) and not basedir.startswith(dirname):
 			LOGGER.debug(u"Skipping {0!r}", dirname)
 			continue
-
-		if dirname in (u'/var/lib/tftpboot/opsi', u'/tftpboot/linux'):
-			rights = Rights(opsiconfdUid, fileAdminGroupGid, 0o664, 0o775, False)
-		elif dirname in (u'/var/log/opsi', u'/etc/opsi'):
-			rights = Rights(opsiconfdUid, adminGroupGid, 0o660, 0o770, True)
-		elif dirname in (u'/home/opsiproducts', '/var/lib/opsi/workbench'):
-			rights = Rights(-1, fileAdminGroupGid, 0o660, 0o2770, False)
-		else:
-			rights = Rights(opsiconfdUid, fileAdminGroupGid, 0o660, 0o770, False)
 
 		if os.path.isfile(path):
 			chown(path, rights.uid, rights.gid)
@@ -148,9 +131,6 @@ def setRights(path=u'/'):
 		if startPath in processedDirectories:
 			LOGGER.debug(u"Already proceesed {0}, Skipping.", startPath)
 			continue
-
-		if dirname == depotDir:
-			rights = Rights(rights.uid, rights.gid, rights.files, 0o2770, rights.fixLinks)
 
 		LOGGER.notice(u"Setting rights on directory {0!r}", startPath)
 		LOGGER.debug2(u"Current setting: startPath={path}, uid={uid}, gid={gid}", path=startPath, uid=rights.uid, gid=rights.gid)
@@ -175,11 +155,37 @@ def setRights(path=u'/'):
 					os.chmod(filepath, rights.files)
 
 		if startPath.startswith(u'/var/lib/opsi') and os.geteuid() == 0:
+			clientUserUid = pwd.getpwnam(_CLIENT_USER)[2]
+			fileAdminGroupGid = grp.getgrnam(_FILE_ADMIN_GROUP)[2]
+
 			os.chmod(u'/var/lib/opsi', 0o750)
 			chown(u'/var/lib/opsi', clientUserUid, fileAdminGroupGid)
 			setRightsOnSSHDirectory(clientUserUid, fileAdminGroupGid)
 
 		processedDirectories.add(startPath)
+
+
+def getDirectoriesAndExpectedRights(path):
+	opsiconfdUid = pwd.getpwnam(_OPSICONFD_USER)[2]
+	adminGroupGid = grp.getgrnam(_ADMIN_GROUP)[2]
+	fileAdminGroupGid = grp.getgrnam(_FILE_ADMIN_GROUP)[2]
+
+	(directories, depotDir) = getDirectoriesForProcessing(path)
+
+	for dirname in directories:
+		if dirname in (u'/var/lib/tftpboot/opsi', u'/tftpboot/linux'):
+			rights = Rights(opsiconfdUid, fileAdminGroupGid, 0o664, 0o775, False)
+		elif dirname in (u'/var/log/opsi', u'/etc/opsi'):
+			rights = Rights(opsiconfdUid, adminGroupGid, 0o660, 0o770, True)
+		elif dirname in (u'/home/opsiproducts', '/var/lib/opsi/workbench'):
+			rights = Rights(-1, fileAdminGroupGid, 0o660, 0o2770, False)
+		else:
+			rights = Rights(opsiconfdUid, fileAdminGroupGid, 0o660, 0o770, False)
+
+		if dirname == depotDir:
+			rights = Rights(rights.uid, rights.gid, rights.files, 0o2770, rights.correctLinks)
+
+		yield dirname, rights
 
 
 def getDirectoriesForProcessing(path):
@@ -237,7 +243,6 @@ def _getPxeDirectory():
 		return u'/tftpboot/linux'
 
 
-
 def getApacheRepositoryPath():
 	"""
 	Returns the path to the directory where packages for Linux netboot \
@@ -270,43 +275,6 @@ def getDepotUrl():
 		return depotUrl
 
 	raise Exception("Could not get depot URL.")
-
-
-def removeDuplicatesFromDirectories(directories):
-	"""
-	Cleans the iterable `directories` from duplicates and also makes
-	sure that no subfolders are included to avoid duplicate processing.
-
-	:returntype: set
-	"""
-	folders = set()
-
-	for folder in directories:
-		folder = os.path.normpath(folder)
-		folder = os.path.realpath(folder)
-
-		if not folders:
-			LOGGER.debug("Initial fill for folders with: {0}".format(folder))
-			folders.add(folder)
-			continue
-
-		shouldAdd = True
-		for alreadyAddedFolder in folders.copy():
-			if alreadyAddedFolder.startswith(folder) and not alreadyAddedFolder == folder:
-				LOGGER.debug("{0} in {1}. Removing {1}, adding {0}", folder, alreadyAddedFolder)
-				folders.remove(alreadyAddedFolder)
-				folders.add(folder)
-				shouldAdd = False
-			elif folder.startswith(alreadyAddedFolder):
-				LOGGER.debug("{1} in {0}. Ignoring.", folder, alreadyAddedFolder)
-				shouldAdd = False
-
-		if shouldAdd:
-			LOGGER.debug("Adding new folder: {0}", folder)
-			folders.add(folder)
-
-	LOGGER.debug("Final folder collection: {0}", folders)
-	return folders
 
 
 def chown(path, uid, gid):

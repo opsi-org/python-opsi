@@ -33,7 +33,7 @@ from contextlib import contextmanager
 
 from OPSI.Util.Task.Rights import (chown, getApacheRepositoryPath,
     getDirectoriesManagedByOpsi, getDirectoriesForProcessing,
-    removeDuplicatesFromDirectories)
+    getDirectoriesAndExpectedRights)
 
 from .helpers import mock, unittest, workInTemporaryDirectory
 
@@ -53,37 +53,6 @@ def testGetDirectoriesToProcess(sles_support, workbench, tftpdir):
     assert u'/var/log/opsi' in directories
     assert workbench in directories
     assert tftpdir in directories
-
-
-@pytest.mark.parametrize("originalDirs, expected", [
-    (['/home/', '/etc'], set(['/home', '/etc'])),
-    (['/home/', '/home/'], set(['/home'])),
-    (['/home/', '/home/abc'], set(['/home'])),
-    (['/home/abc/', '/home/', '/home/def/ghi'], set(['/home'])),
-    (['/home/', '/etc', '/'], set(['/'])),
-    (['/a/bc/de', '/ab/c', '/bc/de'], set(['/a/bc/de', '/ab/c', '/bc/de'])),
-])
-def testCleaningDirectoryList(originalDirs, expected):
-    assert expected == removeDuplicatesFromDirectories(originalDirs)
-
-
-class SetRightsTestCase(unittest.TestCase):
-    def testIgnoringSubfolders(self):
-        """
-        Subfolder should be ignored - real world testcase.
-
-        Running this on old opsi servers might cause problems if
-        they link /opt/pcbin/install to /var/lib/opsi/depot.
-        That's the reason for the patch.
-        """
-        def fakeRealpath(path):
-            return path
-
-        with mock.patch('OPSI.Util.Task.Rights.os.path.realpath', fakeRealpath):
-            self.assertEquals(
-                set([u'/var/log/opsi', u'/tftpboot/linux', u'/home/opsiproducts', u'/etc/opsi', u'/var/lib/opsi']),
-                removeDuplicatesFromDirectories([u'/var/log/opsi', u'/var/lib/opsi/depot', u'/tftpboot/linux', u'/var/lib/opsi/depot', u'/home/opsiproducts', u'/etc/opsi', u'/var/lib/opsi'])
-            )
 
 
 class GetDirectoriesForProcessingTestCase(unittest.TestCase):
@@ -188,6 +157,41 @@ class ChownTestCase(unittest.TestCase):
                 self.assertEquals(groupId, stat.st_gid)
                 if not isRoot:
                     self.assertEquals(userId, stat.st_uid)
+
+
+@pytest.yield_fixture
+def patchUserInfo():
+    with mock.patch('OPSI.Util.Task.Rights.pwd.getpwnam', return_value=(None, None, 1234)):
+        with mock.patch('OPSI.Util.Task.Rights.grp.getgrnam', return_value=(None, None, 5678)):
+            yield
+
+
+def testGettingDirectoriesAndRights(patchUserInfo):
+    dm = dict(getDirectoriesAndExpectedRights('/'))
+    print(dm)
+
+    for rights in dm.values():
+        # For now we just want to make sure these fields are filled.
+        assert rights.uid
+        assert rights.gid
+
+    rights = dm[u'/etc/opsi']
+    print(rights)
+    assert rights.files == 0o660
+    assert rights.directories == 0o770
+    assert rights.correctLinks
+
+    rights = dm[u'/var/lib/opsi']
+    print(rights)
+    assert rights.files == 0o660
+    assert rights.directories == 0o770
+    assert not rights.correctLinks
+
+    rights = dm[u'/var/log/opsi']
+    print(rights)
+    assert rights.files == 0o660
+    assert rights.directories == 0o770
+    assert rights.correctLinks
 
 
 @pytest.mark.parametrize("dir, function", [
