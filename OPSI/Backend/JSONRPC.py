@@ -291,6 +291,7 @@ class JSONRPCBackend(Backend):
 		self._verifyServerCertByCa = False
 		self._verifyByCaCertsFile = None
 		self._wrongHTTPHeaders = None
+		self._proxyURL = None
 
 		if not self._username:
 			self._username = u''
@@ -330,6 +331,9 @@ class JSONRPCBackend(Backend):
 				self._caCertFile = forceFilename(value)
 			elif option == 'verifyservercertbyca':
 				self._verifyServerCertByCa = forceBool(value)
+			elif option == 'proxyurl':
+                                logger.debug(u"ProxyURL detected: '%s'" % value)
+				self._proxyURL = forceUnicode(value)
 
 		if not retry:
 			self._retryTime = 0
@@ -350,7 +354,8 @@ class JSONRPCBackend(Backend):
 			verifyServerCert=self._verifyServerCert,
 			serverCertFile=self._serverCertFile,
 			caCertFile=self._caCertFile,
-			verifyServerCertByCa=self._verifyServerCertByCa
+			verifyServerCertByCa=self._verifyServerCertByCa,
+			proxyURL=self._proxyURL
 		)
 
 		if self._connectOnInit:
