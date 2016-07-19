@@ -29,9 +29,11 @@ import grp
 import os
 import os.path
 import pwd
+from contextlib import contextmanager
 
-from OPSI.Util.Task.Rights import (getDirectoriesManagedByOpsi, getDirectoriesForProcessing,
-    removeDuplicatesFromDirectories, chown)
+from OPSI.Util.Task.Rights import (chown, getApacheRepositoryPath,
+    getDirectoriesManagedByOpsi, getDirectoriesForProcessing,
+    removeDuplicatesFromDirectories, setRightsOnApacheDir)
 
 from .helpers import mock, unittest, workInTemporaryDirectory
 
@@ -186,3 +188,33 @@ class ChownTestCase(unittest.TestCase):
                 self.assertEquals(groupId, stat.st_gid)
                 if not isRoot:
                     self.assertEquals(userId, stat.st_uid)
+
+
+@pytest.mark.parametrize("dir, function", [
+    ('/var/www/html/opsi', 'isCentOS'),
+    ('/var/www/html/opsi', 'isDebian'),
+    ('/srv/www/htdocs/opsi', 'isOpenSUSE'),
+    ('/var/www/html/opsi', 'isRHEL'),
+    ('/var/www/html/opsi', 'isSLES'),
+    ('/var/www/html/opsi', 'isUbuntu'),
+    ('/var/www/html/opsi', 'isUCS'),
+    pytest.mark.xfail(('/var/www/html/opsi', 'getDirectoriesManagedByOpsi')),
+    (None, 'getDirectoriesManagedByOpsi'),
+])
+def testGettingApacheRepositoryPath(dir, function):
+    functions = ['isRHEL', 'isCentOS', 'isSLES', 'isOpenSUSE', 'isUbuntu', 'isDebian', 'isUCS']
+
+    with disableOSChecks(functions):
+        with mock.patch('OPSI.Util.Task.Rights.{0}'.format(function), lambda: True):
+            assert dir == getApacheRepositoryPath()
+
+
+@contextmanager
+def disableOSChecks(functions):
+    try:
+        func = functions.pop()
+        with mock.patch('OPSI.Util.Task.Rights.{0}'.format(func), return_value=False):
+            with disableOSChecks(functions):
+                yield
+    except IndexError:
+        yield
