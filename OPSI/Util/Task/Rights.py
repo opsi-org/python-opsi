@@ -71,6 +71,7 @@ _DEPOT_DIRECTORY = None
 _OPSICONFD_USER = u'opsiconfd'
 _ADMIN_GROUP = u'opsiadmin'
 _CLIENT_USER = u'pcpatch'
+_HAS_ROOT_RIGHTS = os.geteuid() == 0
 
 try:
 	_FILE_ADMIN_GROUP = OpsiConfFile().getOpsiFileAdminGroup()
@@ -120,7 +121,7 @@ def setRights(path=u'/'):
 			elif os.path.isfile(filepath):
 				_setRightsOnFile(filepath, rights.files)
 
-		if startPath.startswith(u'/var/lib/opsi') and os.geteuid() == 0:
+		if startPath.startswith(u'/var/lib/opsi') and _HAS_ROOT_RIGHTS:
 			clientUserUid = pwd.getpwnam(_CLIENT_USER)[2]
 			fileAdminGroupGid = grp.getgrnam(_FILE_ADMIN_GROUP)[2]
 
@@ -289,7 +290,7 @@ def chown(path, uid, gid):
 	In all other cases only a warning is shown.
 	"""
 	try:
-		if os.geteuid() == 0:
+		if _HAS_ROOT_RIGHTS:
 			LOGGER.debug(u"Setting ownership to {user}:{group} on {path!r}", path=path, user=uid, group=gid)
 			if os.path.islink(path):
 				os.lchown(path, uid, gid)
@@ -302,7 +303,7 @@ def chown(path, uid, gid):
 			else:
 				os.chown(path, -1, gid)
 	except OSError as fist:
-		if os.geteuid() == 0:
+		if _HAS_ROOT_RIGHTS:
 			# We are root so something must be really wrong!
 			raise fist
 
