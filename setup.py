@@ -28,12 +28,12 @@ opsi python library - setup file
 """
 
 from setuptools import setup, find_packages
+import codecs
 import os
 
 LANGUAGES = ['da', 'de', 'es', 'fr', 'it', 'ru', 'en', 'pl']
 
-VERSION = None
-with open(os.path.join("debian", "changelog")) as changelog:
+with codecs.open(os.path.join("debian", "changelog"), 'r', 'utf-8') as changelog:
 	VERSION = changelog.readline().split('(')[1].split('-')[0]
 
 if not VERSION:
