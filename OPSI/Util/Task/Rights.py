@@ -226,15 +226,16 @@ def getDepotUrl():
 	depot = backend.host_getObjects(type='OpsiDepotserver', id=getLocalFQDN())
 	backend.backend_exit()
 
-	if depot:
+	try:
 		depot = depot[0]
-		depotUrl = depot.getDepotLocalUrl()
-		if not depotUrl.startswith('file:///'):
-			raise ValueError(u"Bad repository local url {0!r}".format(depotUrl))
+	except IndexError:
+		raise RuntimeError("Could not get depot URL.")
 
-		return depotUrl
+	depotUrl = depot.getDepotLocalUrl()
+	if not depotUrl.startswith('file:///'):
+		raise ValueError(u"Bad repository local url {0!r}".format(depotUrl))
 
-	raise RuntimeError("Could not get depot URL.")
+	return depotUrl
 
 
 def getApacheRepositoryPath():
