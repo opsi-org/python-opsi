@@ -252,8 +252,7 @@ def getApacheRepositoryPath():
 	Returns the path to the directory where packages for Linux netboot \
 installations may be.
 
-	If this is running on an unsuported distribution no path may be
-	returned.
+	On an unsuported distribution `None` will be returned.
 	"""
 	if any(func() for func in (isDebian, isCentOS, isRHEL, isSLES, isUbuntu, isUCS)):
 		return '/var/www/html/opsi'
