@@ -229,7 +229,7 @@ def getDepotUrl():
 	try:
 		depot = depot[0]
 	except IndexError:
-		raise RuntimeError("Could not get depot URL.")
+		raise ValueError("No depots found!")
 
 	depotUrl = depot.getDepotLocalUrl()
 	if not depotUrl.startswith('file:///'):
