@@ -124,17 +124,7 @@ def setRights(path=u'/'):
 				LOGGER.debug(u"Setting rights on directory {0!r}", filepath)
 				os.chmod(filepath, rights.directories)
 			elif os.path.isfile(filepath):
-				LOGGER.debug(u"Setting rights on file {0!r}", filepath)
-				if filepath.startswith((u'/var/lib/opsi/depot/', u'/opt/pcbin/install/')):
-					if os.path.basename(filepath) in KNOWN_EXECUTABLES:
-						LOGGER.debug(u"Setting rights on special file {0!r}", filepath)
-						os.chmod(filepath, 0o770)
-					else:
-						LOGGER.debug(u"Setting rights on file {0!r}", filepath)
-						os.chmod(filepath, (os.stat(filepath)[0] | 0o660) & 0o770)
-				else:
-					LOGGER.debug(u"Setting rights {rights!r} on file {file!r}", file=filepath, rights=rights.files)
-					os.chmod(filepath, rights.files)
+				_setRightsOnFile(filepath, rights.files)
 
 		if startPath.startswith(u'/var/lib/opsi') and os.geteuid() == 0:
 			clientUserUid = pwd.getpwnam(_CLIENT_USER)[2]
@@ -143,6 +133,20 @@ def setRights(path=u'/'):
 			os.chmod(u'/var/lib/opsi', 0o750)
 			chown(u'/var/lib/opsi', clientUserUid, fileAdminGroupGid)
 			setRightsOnSSHDirectory(clientUserUid, fileAdminGroupGid)
+
+
+def _setRightsOnFile(filepath, filemod):
+	LOGGER.debug(u"Setting rights on file {0!r}", filepath)
+	if filepath.startswith((u'/var/lib/opsi/depot/', u'/opt/pcbin/install/')):
+		if os.path.basename(filepath) in KNOWN_EXECUTABLES:
+			LOGGER.debug(u"Setting rights on special file {0!r}", filepath)
+			os.chmod(filepath, 0o770)
+		else:
+			LOGGER.debug(u"Setting rights on file {0!r}", filepath)
+			os.chmod(filepath, (os.stat(filepath)[0] | 0o660) & 0o770)
+	else:
+		LOGGER.debug(u"Setting rights {rights!r} on file {file!r}", file=filepath, rights=filemod)
+		os.chmod(filepath, filemod)
 
 
 def filterDirsAndRights(path):
