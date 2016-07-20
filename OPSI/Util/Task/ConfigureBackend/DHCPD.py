@@ -30,7 +30,6 @@ from __future__ import absolute_import
 import grp
 import os
 import pwd
-import re
 import shutil
 import time
 
