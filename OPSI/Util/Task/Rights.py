@@ -277,7 +277,7 @@ def getDepotUrl():
 
 		return depotUrl
 
-	raise Exception("Could not get depot URL.")
+	raise RuntimeError("Could not get depot URL.")
 
 
 def chown(path, uid, gid):
