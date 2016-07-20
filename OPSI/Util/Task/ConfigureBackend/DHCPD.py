@@ -157,7 +157,7 @@ def configureDHCPD(configFile=DHCPD_CONF):
 	opsiconfdUid = pwd.getpwnam(OPSICONFD_USER)[2]
 	adminGroupGid = grp.getgrnam(ADMIN_GROUP)[2]
 	os.chown(configFile, opsiconfdUid, adminGroupGid)
-	os.chmod(configFile, 0664)
+	os.chmod(configFile, 0o664)
 
 	if isRHEL() or isCentOS():
 		dhcpDir = os.path.dirname(configFile)
