@@ -202,9 +202,12 @@ def _getDepotDirectory(path):
 
 	try:
 		depotUrl = getDepotUrl()
+		if not depotUrl.startswith('file:///'):
+			raise ValueError(u"Bad repository local url {0!r}".format(depotUrl))
+
 		depotDir = depotUrl[7:]
 		_DEPOT_DIRECTORY = depotDir
-	except Exception as error:
+	except ValueError as error:
 		LOGGER.error(error)
 		depotDir = ''
 
@@ -231,11 +234,7 @@ def getDepotUrl():
 	except IndexError:
 		raise ValueError("No depots found!")
 
-	depotUrl = depot.getDepotLocalUrl()
-	if not depotUrl.startswith('file:///'):
-		raise ValueError(u"Bad repository local url {0!r}".format(depotUrl))
-
-	return depotUrl
+	return depot.getDepotLocalUrl()
 
 
 def getApacheRepositoryPath():

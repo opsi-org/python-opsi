@@ -69,7 +69,7 @@ def patchUserInfo():
     (False, u'/home/opsiproducts', u'/tftpboot/linux'),
     (True, u'/var/lib/opsi/workbench', u'/var/lib/tftpboot/opsi')
 ], ids=["sles", "non-sles"])
-def testGetDirectoriesToProcess(patchUserInfo, sles_support, workbench, tftpdir):
+def testGetDirectoriesToProcess(depotDirectory, patchUserInfo, sles_support, workbench, tftpdir):
     with mock.patch('OPSI.Util.Task.Rights.getApacheRepositoryPath', lambda: '/path/to/apache'):
         with mock.patch('OPSI.Util.Task.Rights.isSLES', lambda: sles_support):
             directories = [d for d, _ in filterDirsAndRights('/')]
