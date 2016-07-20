@@ -104,14 +104,8 @@ def setRights(path=u'/'):
 
 	for startPath, rights in filterDirsAndRights(path):
 		if os.path.isfile(path):
-			LOGGER.debug(u"Setting rights on file {0!r}", path)
 			chown(path, rights.uid, rights.gid)
-			if path.startswith(u'/var/lib/opsi/depot/'):
-				LOGGER.debug("Assuming file in product folder...")
-				os.chmod(path, (os.stat(path)[0] | 0o660) & 0o770)
-			else:
-				LOGGER.debug("Assuming general file...")
-				os.chmod(path, rights.files)
+			_setRightsOnFile(os.path.abspath(path), rights.files)
 			continue
 
 		LOGGER.notice(u"Setting rights on directory {0!r}", startPath)
