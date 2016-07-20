@@ -136,20 +136,6 @@ def setRights(path=u'/'):
 			setRightsOnSSHDirectory(clientUserUid, fileAdminGroupGid)
 
 
-def _setRightsOnFile(filepath, filemod):
-	LOGGER.debug(u"Setting rights on file {0!r}", filepath)
-	if filepath.startswith((u'/var/lib/opsi/depot/', u'/opt/pcbin/install/')):
-		if os.path.basename(filepath) in KNOWN_EXECUTABLES:
-			LOGGER.debug(u"Setting rights on special file {0!r}", filepath)
-			os.chmod(filepath, 0o770)
-		else:
-			LOGGER.debug(u"Setting rights on file {0!r}", filepath)
-			os.chmod(filepath, (os.stat(filepath)[0] | 0o660) & 0o770)
-	else:
-		LOGGER.debug(u"Setting rights {rights!r} on file {file!r}", file=filepath, rights=filemod)
-		os.chmod(filepath, filemod)
-
-
 def filterDirsAndRights(path):
 	basedir = os.path.abspath(path)
 	if not os.path.isdir(basedir):
@@ -194,6 +180,21 @@ def getDirectoriesAndExpectedRights(path):
 		# TODO: figure out the correct rights...
 		yield apacheDir, Rights(opsiconfdUid, fileAdminGroupGid, 0o664, 0o775, False)
 
+
+def _getWorkbenchDirectory():
+	if isSLES():
+		return u'/var/lib/opsi/workbench'
+	else:
+		return u'/home/opsiproducts'
+
+
+def _getPxeDirectory():
+	if isSLES():
+		return u'/var/lib/tftpboot/opsi'
+	else:
+		return u'/tftpboot/linux'
+
+
 def _getDepotDirectory(path):
 	global _DEPOT_DIRECTORY
 	if _DEPOT_DIRECTORY is not None:
@@ -218,18 +219,22 @@ def _getDepotDirectory(path):
 	return depotDir
 
 
-def _getWorkbenchDirectory():
-	if isSLES():
-		return u'/var/lib/opsi/workbench'
-	else:
-		return u'/home/opsiproducts'
+def getDepotUrl():
+	from OPSI.Backend.BackendManager import BackendManager
 
+	backend = BackendManager()
+	depot = backend.host_getObjects(type='OpsiDepotserver', id=getLocalFQDN())
+	backend.backend_exit()
 
-def _getPxeDirectory():
-	if isSLES():
-		return u'/var/lib/tftpboot/opsi'
-	else:
-		return u'/tftpboot/linux'
+	if depot:
+		depot = depot[0]
+		depotUrl = depot.getDepotLocalUrl()
+		if not depotUrl.startswith('file:///'):
+			raise ValueError(u"Bad repository local url {0!r}".format(depotUrl))
+
+		return depotUrl
+
+	raise RuntimeError("Could not get depot URL.")
 
 
 def getApacheRepositoryPath():
@@ -247,22 +252,18 @@ installations may be.
 		LOGGER.info("Unsupported distribution.")
 
 
-def getDepotUrl():
-	from OPSI.Backend.BackendManager import BackendManager
-
-	backend = BackendManager()
-	depot = backend.host_getObjects(type='OpsiDepotserver', id=getLocalFQDN())
-	backend.backend_exit()
-
-	if depot:
-		depot = depot[0]
-		depotUrl = depot.getDepotLocalUrl()
-		if not depotUrl.startswith('file:///'):
-			raise ValueError(u"Bad repository local url {0!r}".format(depotUrl))
-
-		return depotUrl
-
-	raise RuntimeError("Could not get depot URL.")
+def _setRightsOnFile(filepath, filemod):
+	LOGGER.debug(u"Setting rights on file {0!r}", filepath)
+	if filepath.startswith((u'/var/lib/opsi/depot/', u'/opt/pcbin/install/')):
+		if os.path.basename(filepath) in KNOWN_EXECUTABLES:
+			LOGGER.debug(u"Setting rights on special file {0!r}", filepath)
+			os.chmod(filepath, 0o770)
+		else:
+			LOGGER.debug(u"Setting rights on file {0!r}", filepath)
+			os.chmod(filepath, (os.stat(filepath)[0] | 0o660) & 0o770)
+	else:
+		LOGGER.debug(u"Setting rights {rights!r} on file {file!r}", file=filepath, rights=filemod)
+		os.chmod(filepath, filemod)
 
 
 def chown(path, uid, gid):
