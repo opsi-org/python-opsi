@@ -189,6 +189,10 @@ def getDirectoriesAndExpectedRights(path):
 	if depotDir:
 		yield depotDir, Rights(opsiconfdUid, fileAdminGroupGid, 0o660, 0o2770, False)
 
+	apacheDir = getApacheRepositoryPath()
+	if apacheDir:
+		# TODO: figure out the correct rights...
+		yield apacheDir, Rights(opsiconfdUid, fileAdminGroupGid, 0o664, 0o775, False)
 
 def _getDepotDirectory(path):
 	global _DEPOT_DIRECTORY
