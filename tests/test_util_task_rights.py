@@ -33,7 +33,7 @@ from contextlib import contextmanager
 
 from OPSI.Util.Task.Rights import (chown, getApacheRepositoryPath,
     getDirectoriesManagedByOpsi, getDirectoriesForProcessing,
-    getDirectoriesAndExpectedRights)
+    getDirectoriesAndExpectedRights, filterDirsAndRights)
 
 from .helpers import mock, unittest, workInTemporaryDirectory
 
@@ -231,3 +231,19 @@ def disableOSChecks(functions):
                 yield
     except IndexError:
         yield
+
+
+def testFilterDirsAndRights(patchUserInfo):
+    dar = list(filterDirsAndRights('/'))
+
+    assert len(dar) > 4
+
+    dirsReturned = set()
+
+    for dirname, rights in dar:
+        assert dirname
+        assert rights
+
+        dirsReturned.add(dirname)
+
+    assert len(dirsReturned) == len(dar), "Duplicate entry returned"
