@@ -151,7 +151,7 @@ def filterDirsAndRights(path):
 		basedir = os.path.dirname(basedir)
 
 	processedDirectories = set()
-	for dirname, right in getDirectoriesForProcessing(path):
+	for dirname, right in getDirectoriesAndExpectedRights(path):
 		if not dirname.startswith(basedir) and not basedir.startswith(dirname):
 			LOGGER.debug(u"Skipping {0!r}", dirname)
 			continue
