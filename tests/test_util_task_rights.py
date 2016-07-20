@@ -250,6 +250,21 @@ def testFilterDirsAndRights(patchUserInfo):
     assert len(dirsReturned) == len(dar), "Duplicate entry returned"
 
 
+def testLimitingFilterDirsAndRights(patchUserInfo):
+    workbench = '/var/lib/opsi/workbench'
+    dar = list(filterDirsAndRights(workbench))
+
+    assert len(dar) == 1
+
+    dirname, _ = dar[0]
+
+    if not os.path.exists(workbench):
+        assert dirname == '/var/lib/opsi'
+    else:
+        assert dirname == '/var/lib/opsi/workbench'
+
+
+
 def testSetRightsOnSSHDirectory():
     groupId = os.getgid()
     userId = os.getuid()
