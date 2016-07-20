@@ -67,13 +67,13 @@ def testGettingDirectories(depotDirectory):
     assert len(directories) > 2
 
 
-@pytest.mark.parametrize("testDir, oldDepotExpected", [
-    ('/opt/pcbin/install/foo', True),
-    ('/tmp', False),
+@pytest.mark.parametrize("testDir", [
+    '/opt/pcbin/install/foo',
+    pytest.mark.xfail('/tmp'),
 ])
-def testOptPcbinGetRelevantIfInParameter(depotDirectory, testDir, oldDepotExpected):
+def testOptPcbinGetRelevantIfInParameter(depotDirectory, testDir):
     directories, _ = getDirectoriesForProcessing(testDir)
-    assert oldDepotExpected == ('/opt/pcbin/install' in directories)
+    assert '/opt/pcbin/install' in directories
 
 
 def testDepotPathMayAlsoExistInDirectories(depotDirectory):
