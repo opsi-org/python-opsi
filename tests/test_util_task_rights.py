@@ -33,7 +33,8 @@ from contextlib import contextmanager
 
 from OPSI.Util.Task.Rights import (chown, getApacheRepositoryPath,
     getDirectoriesManagedByOpsi, getDirectoriesForProcessing,
-    getDirectoriesAndExpectedRights, filterDirsAndRights)
+    getDirectoriesAndExpectedRights, filterDirsAndRights,
+    setRightsOnSSHDirectory)
 
 from .helpers import mock, unittest, workInTemporaryDirectory
 
@@ -247,3 +248,40 @@ def testFilterDirsAndRights(patchUserInfo):
         dirsReturned.add(dirname)
 
     assert len(dirsReturned) == len(dar), "Duplicate entry returned"
+
+
+def testSetRightsOnSSHDirectory():
+    groupId = os.getgid()
+    userId = os.getuid()
+
+    with workInTemporaryDirectory() as sshDir:
+        expectedFilemod = {
+            os.path.join(sshDir, u'id_rsa'): 0o640,
+            os.path.join(sshDir, u'id_rsa.pub'): 0o644,
+            os.path.join(sshDir, u'authorized_keys'): 0o600,
+        }
+
+        for filename in expectedFilemod:
+            with open(filename, 'w'):
+                pass
+
+            os.chmod(filename, 0o400)
+
+        setRightsOnSSHDirectory(userId, groupId, path=sshDir)
+
+        for filename, mod in expectedFilemod.items():
+            print("Checking {0} with expected mod {1}".format(filename, mod))
+            assert os.path.exists(filename)
+
+            stats = os.stat(filename)
+
+            # As the returned value has many more information but we
+            # only require the last 3 digits we apply a logical AND
+            # with 777 to it. It's 777 because we have octal values...
+            filemod = os.stat(filename).st_mode & 0o777
+            assert filemod == mod
+
+            # The following checks are not that good yet...
+            # ... but make sure the files are still accessible.
+            assert stats.st_gid == groupId
+            assert stats.st_uid == userId
