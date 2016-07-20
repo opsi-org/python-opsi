@@ -251,18 +251,22 @@ def testFilterDirsAndRights(patchUserInfo):
 
 
 def testLimitingFilterDirsAndRights(patchUserInfo):
-    workbench = '/var/lib/opsi/workbench'
-    dar = list(filterDirsAndRights(workbench))
+    depotDir = '/var/lib/opsi/depot'
+    depotDirExists = os.path.exists(depotDir)
 
-    assert len(dar) == 1
+    dar = list(filterDirsAndRights(depotDir))
 
-    dirname, _ = dar[0]
+    assert 3 > len(dar) >= 1
 
-    if not os.path.exists(workbench):
-        assert dirname == '/var/lib/opsi'
+    for dirname, _ in dar:
+        if depotDirExists and dirname == '/var/lib/opsi/depot':
+            break
+        elif not depotDirExists and dirname == '/var/lib/opsi':
+            break
     else:
-        assert dirname == '/var/lib/opsi/workbench'
-
+        print("Dar is: {0}".format(dar))
+        print("Exists directory? {0}".format(depotDirExists))
+        raise RuntimeError("Missing path to workbench!")
 
 
 def testSetRightsOnSSHDirectory():
