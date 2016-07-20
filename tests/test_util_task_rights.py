@@ -55,27 +55,36 @@ def testGetDirectoriesToProcess(sles_support, workbench, tftpdir):
     assert tftpdir in directories
 
 
-class GetDirectoriesForProcessingTestCase(unittest.TestCase):
-    def testGettingDirectories(self):
-        directories, _ = getDirectoriesForProcessing('/tmp')
+@pytest.yield_fixture
+def depotDirectory():
+    depotUrl = u'file:///var/lib/opsi/depot'
+    with mock.patch('OPSI.Util.Task.Rights.getDepotUrl', lambda: depotUrl):
+        yield depotUrl
 
-        self.assertTrue(len(directories) > 2)
 
-    def testOptPcbinGetRelevantIfInParameter(self):
-        directories, _ = getDirectoriesForProcessing('/opt/pcbin/install/foo')
-        self.assertTrue('/opt/pcbin/install' in directories)
+def testGettingDirectories(depotDirectory):
+    directories, _ = getDirectoriesForProcessing('/tmp')
+    assert len(directories) > 2
 
-        directories, _ = getDirectoriesForProcessing('/tmp')
-        self.assertTrue('/opt/pcbin/install' not in directories)
 
-    def testDepotPathMayAlsoExistInDirectories(self):
-        with mock.patch('OPSI.Util.Task.Rights.getDepotUrl', lambda: u'file:///var/lib/opsi/depot'):
-            directories, depotDir = getDirectoriesForProcessing('/var/lib/opsi/depot/')
+@pytest.mark.parametrize("testDir, oldDepotExpected", [
+    ('/opt/pcbin/install/foo', True),
+    ('/tmp', False),
+])
+def testOptPcbinGetRelevantIfInParameter(depotDirectory, testDir, oldDepotExpected):
+    directories, _ = getDirectoriesForProcessing(testDir)
+    assert oldDepotExpected == ('/opt/pcbin/install' in directories)
 
-        print("Directories: {0}".format(directories))
-        assert '/var/lib/opsi' in directories
-        print("depotDir: {0}".format(depotDir))
-        assert depotDir == '/var/lib/opsi/depot'
+
+def testDepotPathMayAlsoExistInDirectories(depotDirectory):
+    depotDirToCheck = depotDirectory.split('file://', 1)[1]
+
+    directories, depotDir = getDirectoriesForProcessing(depotDirToCheck)
+
+    print("Directories: {0}".format(directories))
+    assert '/var/lib/opsi' in directories
+    print("depotDir: {0}".format(depotDir))
+    assert depotDir == '/var/lib/opsi/depot'
 
 
 class ChownTestCase(unittest.TestCase):
