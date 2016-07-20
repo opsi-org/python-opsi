@@ -44,6 +44,12 @@ provides helpers for this task.
 	Disabled :py:func:`removeDuplicatesFromDirectories` to avoid
 	problems with wrong rights set on /var/lib/opsi/depot
 
+
+.. versionchanged:: 4.0.7.8
+
+	Many internal refactorings to make adding new directories easier.
+
+
 :copyright:  uib GmbH <info@uib.de>
 :author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
@@ -173,63 +179,39 @@ def getDirectoriesAndExpectedRights(path):
 	adminGroupGid = grp.getgrnam(_ADMIN_GROUP)[2]
 	fileAdminGroupGid = grp.getgrnam(_FILE_ADMIN_GROUP)[2]
 
-	(directories, depotDir) = getDirectoriesForProcessing(path)
+	yield u'/etc/opsi', Rights(opsiconfdUid, adminGroupGid, 0o660, 0o770, True)
+	yield u'/var/log/opsi', Rights(opsiconfdUid, adminGroupGid, 0o660, 0o770, True)
+	yield u'/var/lib/opsi', Rights(opsiconfdUid, fileAdminGroupGid, 0o660, 0o770, False)
+	yield _getWorkbenchDirectory(), Rights(-1, fileAdminGroupGid, 0o660, 0o2770, False)
+	yield _getPxeDirectory(), Rights(opsiconfdUid, fileAdminGroupGid, 0o664, 0o775, False)
 
-	for dirname in directories:
-		if dirname in (u'/var/lib/tftpboot/opsi', u'/tftpboot/linux'):
-			rights = Rights(opsiconfdUid, fileAdminGroupGid, 0o664, 0o775, False)
-		elif dirname in (u'/var/log/opsi', u'/etc/opsi'):
-			rights = Rights(opsiconfdUid, adminGroupGid, 0o660, 0o770, True)
-		elif dirname in (u'/home/opsiproducts', '/var/lib/opsi/workbench'):
-			rights = Rights(-1, fileAdminGroupGid, 0o660, 0o2770, False)
-		else:
-			rights = Rights(opsiconfdUid, fileAdminGroupGid, 0o660, 0o770, False)
-
-		if dirname == depotDir:
-			rights = Rights(rights.uid, rights.gid, rights.files, 0o2770, rights.correctLinks)
-
-		yield dirname, rights
+	depotDir = _getDepotDirectory(path)
+	if depotDir:
+		yield depotDir, Rights(opsiconfdUid, fileAdminGroupGid, 0o660, 0o2770, False)
 
 
-def getDirectoriesForProcessing(path):
+def _getDepotDirectory(path):
+	global _DEPOT_DIRECTORY
+	if _DEPOT_DIRECTORY is not None:
+		return _DEPOT_DIRECTORY
+
+	try:
+		depotUrl = getDepotUrl()
+		depotDir = depotUrl[7:]
+		_DEPOT_DIRECTORY = depotDir
+	except Exception as error:
+		LOGGER.error(error)
+		depotDir = ''
+
 	basedir = os.path.abspath(path)
 	if not os.path.isdir(basedir):
 		basedir = os.path.dirname(basedir)
 
-	depotDir = ''
-	dirnames = getDirectoriesManagedByOpsi()
-	if not basedir.startswith(('/etc', '/tftpboot')):
-		global _DEPOT_DIRECTORY
-		if _DEPOT_DIRECTORY is not None:
-			depotDir = _DEPOT_DIRECTORY
-		else:
-			try:
-				depotUrl = getDepotUrl()
-				depotDir = depotUrl[7:]
-				_DEPOT_DIRECTORY = depotDir
-			except Exception as error:
-				LOGGER.error(error)
-
-		if os.path.exists(depotDir):
-			LOGGER.info(u"Local depot directory {0!r} found", depotDir)
-			dirnames.add(depotDir)
-
 	if basedir.startswith('/opt/pcbin/install'):
-		for dirname in dirnames:
-			if dirname.startswith('/opt/pcbin/install'):
-				break
-		else:
-			dirnames.add('/opt/pcbin/install')
+		depotDir = '/opt/pcbin/install'
 
-	return (dirnames, depotDir)
-
-
-def getDirectoriesManagedByOpsi():
-	directories = set([u'/etc/opsi', u'/var/lib/opsi', u'/var/log/opsi'])
-	directories.add(_getWorkbenchDirectory())
-	directories.add(_getPxeDirectory())
-
-	return directories
+	LOGGER.info(u"Depot directory {0!r} found", depotDir)
+	return depotDir
 
 
 def _getWorkbenchDirectory():

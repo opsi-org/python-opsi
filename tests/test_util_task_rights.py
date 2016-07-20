@@ -32,22 +32,46 @@ import pwd
 from contextlib import contextmanager
 
 from OPSI.Util.Task.Rights import (chown, getApacheRepositoryPath,
-    getDirectoriesManagedByOpsi, getDirectoriesForProcessing,
-    getDirectoriesAndExpectedRights, filterDirsAndRights,
-    setRightsOnSSHDirectory)
+    getDirectoriesAndExpectedRights,
+    filterDirsAndRights, setRightsOnSSHDirectory, _getDepotDirectory)
 
 from .helpers import mock, unittest, workInTemporaryDirectory
 
 import pytest
 
 
+@pytest.yield_fixture
+def depotDirectory():
+    'Returning a fixed address when checking for a depotUrl'
+    depotUrl = u'file:///var/lib/opsi/depot'
+    with mock.patch('OPSI.Util.Task.Rights.getDepotUrl', lambda: depotUrl):
+        yield depotUrl
+
+
+@pytest.yield_fixture
+def resetDepotDirectoryCache():
+    'Making sure that no depotUrl is cached.'
+    with mock.patch('OPSI.Util.Task.Rights._DEPOT_DIRECTORY', None):
+        yield
+
+
+@pytest.yield_fixture
+def patchUserInfo():
+    'Calls to find uid / gid will always succeed.'
+    uid = 1234
+    gid = 5678
+    with mock.patch('OPSI.Util.Task.Rights.pwd.getpwnam', return_value=(None, None, uid)):
+        with mock.patch('OPSI.Util.Task.Rights.grp.getgrnam', return_value=(None, None, gid)):
+            yield uid, gid
+
+
 @pytest.mark.parametrize("sles_support, workbench, tftpdir", [
     (False, u'/home/opsiproducts', u'/tftpboot/linux'),
     (True, u'/var/lib/opsi/workbench', u'/var/lib/tftpboot/opsi')
 ], ids=["sles", "non-sles"])
-def testGetDirectoriesToProcess(sles_support, workbench, tftpdir):
+def testGetDirectoriesToProcess(patchUserInfo, sles_support, workbench, tftpdir):
     with mock.patch('OPSI.Util.Task.Rights.isSLES', mock.Mock(return_value=sles_support)):
-        directories = getDirectoriesManagedByOpsi()
+        directories = [d for d, _ in filterDirsAndRights('/')]
 
     assert u'/etc/opsi' in directories
     assert u'/var/lib/opsi' in directories
@@ -56,15 +80,8 @@ def testGetDirectoriesToProcess(sles_support, workbench, tftpdir):
     assert tftpdir in directories
 
 
-@pytest.yield_fixture
-def depotDirectory():
-    depotUrl = u'file:///var/lib/opsi/depot'
-    with mock.patch('OPSI.Util.Task.Rights.getDepotUrl', lambda: depotUrl):
-        yield depotUrl
-
-
-def testGettingDirectories(depotDirectory):
-    directories, _ = getDirectoriesForProcessing('/tmp')
+def testGettingDirectories(patchUserInfo, depotDirectory):
+    directories = [d for d, _ in getDirectoriesAndExpectedRights('/tmp')]
     assert len(directories) > 2
 
 
@@ -72,19 +89,16 @@ def testGettingDirectories(depotDirectory):
     '/opt/pcbin/install/foo',
     pytest.mark.xfail('/tmp'),
 ])
-def testOptPcbinGetRelevantIfInParameter(depotDirectory, testDir):
-    directories, _ = getDirectoriesForProcessing(testDir)
+def testOptPcbinGetRelevantIfInParameter(resetDepotDirectoryCache, depotDirectory, testDir):
+    directories = _getDepotDirectory(testDir)
     assert '/opt/pcbin/install' in directories
 
 
-def testDepotPathMayAlsoExistInDirectories(depotDirectory):
+def testDepotPathMayWillBeReturned(depotDirectory):
     depotDirToCheck = depotDirectory.split('file://', 1)[1]
 
-    directories, depotDir = getDirectoriesForProcessing(depotDirToCheck)
+    depotDir = _getDepotDirectory(depotDirToCheck)
 
-    print("Directories: {0}".format(directories))
-    assert '/var/lib/opsi' in directories
-    print("depotDir: {0}".format(depotDir))
     assert depotDir == '/var/lib/opsi/depot'
 
 
@@ -169,13 +183,6 @@ class ChownTestCase(unittest.TestCase):
                     self.assertEquals(userId, stat.st_uid)
 
 
-@pytest.yield_fixture
-def patchUserInfo():
-    with mock.patch('OPSI.Util.Task.Rights.pwd.getpwnam', return_value=(None, None, 1234)):
-        with mock.patch('OPSI.Util.Task.Rights.grp.getgrnam', return_value=(None, None, 5678)):
-            yield
-
-
 def testGettingDirectoriesAndRights(patchUserInfo):
     dm = dict(getDirectoriesAndExpectedRights('/'))
     print(dm)
@@ -212,8 +219,8 @@ def testGettingDirectoriesAndRights(patchUserInfo):
     ('/var/www/html/opsi', 'isSLES'),
     ('/var/www/html/opsi', 'isUbuntu'),
     ('/var/www/html/opsi', 'isUCS'),
-    pytest.mark.xfail(('/var/www/html/opsi', 'getDirectoriesManagedByOpsi')),
-    (None, 'getDirectoriesManagedByOpsi'),
+    pytest.mark.xfail(('/var/www/html/opsi', 'forceHostId')),
+    (None, 'forceHostId'),
 ])
 def testGettingApacheRepositoryPath(dir, function):
     functions = ['isRHEL', 'isCentOS', 'isSLES', 'isOpenSUSE', 'isUbuntu', 'isDebian', 'isUCS']
