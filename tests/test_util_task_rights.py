@@ -33,7 +33,7 @@ from contextlib import contextmanager
 
 from OPSI.Util.Task.Rights import (chown, getApacheRepositoryPath,
     getDirectoriesAndExpectedRights,
-    filterDirsAndRights, setRightsOnSSHDirectory, _getDepotDirectory)
+    filterDirsAndRights, setRightsOnSSHDirectory, getDepotDirectory)
 
 from .helpers import mock, unittest, workInTemporaryDirectory
 
@@ -92,14 +92,14 @@ def testGettingDirectories(patchUserInfo, depotDirectory):
     pytest.mark.xfail('/tmp'),
 ])
 def testOptPcbinGetRelevantIfInParameter(resetDepotDirectoryCache, depotDirectory, testDir):
-    directories = _getDepotDirectory(testDir)
+    directories = getDepotDirectory(testDir)
     assert '/opt/pcbin/install' in directories
 
 
 def testDepotPathMayWillBeReturned(depotDirectory):
     depotDirToCheck = depotDirectory.split('file://', 1)[1]
 
-    depotDir = _getDepotDirectory(depotDirToCheck)
+    depotDir = getDepotDirectory(depotDirToCheck)
 
     assert depotDir == '/var/lib/opsi/depot'
 

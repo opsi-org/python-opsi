@@ -112,7 +112,7 @@ def setRights(path=u'/'):
 	for startPath, rights in filterDirsAndRights(path):
 		if os.path.isfile(path):
 			chown(path, rights.uid, rights.gid)
-			_setRightsOnFile(os.path.abspath(path), rights.files)
+			setRightsOnFile(os.path.abspath(path), rights.files)
 			continue
 
 		LOGGER.notice(u"Setting rights on directory {0!r}", startPath)
@@ -125,7 +125,7 @@ def setRights(path=u'/'):
 				LOGGER.debug(u"Setting rights on directory {0!r}", filepath)
 				os.chmod(filepath, rights.directories)
 			elif os.path.isfile(filepath):
-				_setRightsOnFile(filepath, rights.files)
+				setRightsOnFile(filepath, rights.files)
 
 		if startPath.startswith(u'/var/lib/opsi') and _HAS_ROOT_RIGHTS:
 			clientUserUid = pwd.getpwnam(_CLIENT_USER)[2]
@@ -168,10 +168,10 @@ def getDirectoriesAndExpectedRights(path):
 	yield u'/etc/opsi', Rights(opsiconfdUid, adminGroupGid, 0o660, 0o770, True)
 	yield u'/var/log/opsi', Rights(opsiconfdUid, adminGroupGid, 0o660, 0o770, True)
 	yield u'/var/lib/opsi', Rights(opsiconfdUid, fileAdminGroupGid, 0o660, 0o770, False)
-	yield _getWorkbenchDirectory(), Rights(-1, fileAdminGroupGid, 0o660, 0o2770, False)
-	yield _getPxeDirectory(), Rights(opsiconfdUid, fileAdminGroupGid, 0o664, 0o775, False)
+	yield getWorkbenchDirectory(), Rights(-1, fileAdminGroupGid, 0o660, 0o2770, False)
+	yield getPxeDirectory(), Rights(opsiconfdUid, fileAdminGroupGid, 0o664, 0o775, False)
 
-	depotDir = _getDepotDirectory(path)
+	depotDir = getDepotDirectory(path)
 	if depotDir:
 		yield depotDir, Rights(opsiconfdUid, fileAdminGroupGid, 0o660, 0o2770, False)
 
@@ -181,21 +181,21 @@ def getDirectoriesAndExpectedRights(path):
 		yield apacheDir, Rights(opsiconfdUid, fileAdminGroupGid, 0o664, 0o775, False)
 
 
-def _getWorkbenchDirectory():
+def getWorkbenchDirectory():
 	if isSLES():
 		return u'/var/lib/opsi/workbench'
 	else:
 		return u'/home/opsiproducts'
 
 
-def _getPxeDirectory():
+def getPxeDirectory():
 	if isSLES():
 		return u'/var/lib/tftpboot/opsi'
 	else:
 		return u'/tftpboot/linux'
 
 
-def _getDepotDirectory(path):
+def getDepotDirectory(path):
 	global _DEPOT_DIRECTORY
 	if _DEPOT_DIRECTORY is not None:
 		return _DEPOT_DIRECTORY
@@ -252,7 +252,7 @@ installations may be.
 		LOGGER.info("Unsupported distribution.")
 
 
-def _setRightsOnFile(filepath, filemod):
+def setRightsOnFile(filepath, filemod):
 	LOGGER.debug(u"Setting rights on file {0!r}", filepath)
 	if filepath.startswith((u'/var/lib/opsi/depot/', u'/opt/pcbin/install/')):
 		if os.path.basename(filepath) in KNOWN_EXECUTABLES:
