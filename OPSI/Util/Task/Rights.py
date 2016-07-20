@@ -93,7 +93,7 @@ def getLocalFQDN():
 		fqdn = getfqdn(conf=OPSI_GLOBAL_CONF)
 		return forceHostId(fqdn)
 	except Exception as error:
-		raise Exception(
+		raise RuntimeError(
 			u"Failed to get fully qualified domain name: {0}".format(error)
 		)
 
