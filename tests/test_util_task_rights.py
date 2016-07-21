@@ -242,6 +242,7 @@ def testGettingWebserverRepositoryPath(dir, function):
     ('isSLES', 'wwwrun', 'www'),
     ('isUbuntu', 'www-data', 'www-data'),
     ('isUCS', 'www-data', 'www-data'),
+    pytest.mark.xfail(('forceHostId', '', '')),
 ])
 def testGettingWebserverUsernameAndGroupname(function, username, groupname):
     with disableOSChecks(OS_CHECK_FUNCTIONS[:]):
