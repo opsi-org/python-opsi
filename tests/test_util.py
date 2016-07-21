@@ -47,6 +47,21 @@ from .helpers import (fakeGlobalConf, patchAddress, patchEnvironmentVariables,
 
 import pytest
 
+try:
+    from itertools import combinations_with_replacement
+except ImportError:  # Python 2.6...
+    # We define our own fallback by copying what is written in the
+    # documentation at https://docs.python.org/2.7/library/itertools.html#itertools.combinations_with_replacement
+    from itertools import product
+
+    def combinations_with_replacement(iterable, r):
+        pool = tuple(iterable)
+        n = len(pool)
+        for indices in product(range(n), repeat=r):
+            if sorted(indices) == list(indices):
+                yield tuple(pool[i] for i in indices)
+
+
 
 @pytest.mark.parametrize("ip, network",[
     ('10.10.1.1', '10.10.0.0/16'),
@@ -549,6 +564,12 @@ class LibrsyncTestCase(unittest.TestCase):
                         break
                 else:
                     self.fail("Missing additional text in new file.")
+
+
+@pytest.mark.parametrize("old, delta, new", list(combinations_with_replacement(('foo', 'bar'), 3)))
+def testLibrsyncPatchFileAvoidsPatchingSameFile(old, delta, new):
+    with pytest.raises(ValueError):
+        librsyncPatchFile(old, delta, new)
 
 
 def testComparingVersionsOfSameSize():
