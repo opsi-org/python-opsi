@@ -45,7 +45,6 @@ import time
 import copy as pycopy
 from itertools import islice
 from signal import SIGKILL
-from platform import linux_distribution
 
 from OPSI.Logger import Logger, LOG_NONE
 from OPSI.Types import (forceDomain, forceInt, forceBool, forceUnicode,
@@ -56,8 +55,7 @@ from OPSI.Types import OpsiVersionError
 from OPSI.Object import *
 from OPSI.Util import objectToBeautifiedText, removeUnit
 
-
-__version__ = '4.0.7.8'
+__version__ = '4.0.7.9'
 
 logger = Logger()
 
@@ -2834,22 +2832,28 @@ class Harddisk:
 			hook.post_Harddisk_restoreImage(self, partition, imageFile, progressSubject)
 
 
-def isSLES():
+def isCentOS():
 	"""
-	Returns `True` if this is running on Suse Linux Enterprise Server.
+	Returns `True` if this is running on CentOS.
 	Returns `False` if otherwise.
 	"""
+	return _checkForDistribution('CentOS')
 
-	try:
-		f = os.popen('lsb_release -d 2>/dev/null')
-		distribution = f.read().split(':')[1].strip()
-		f.close()
 
-		logger.debug("Got as distribution: {0!r}".format(distribution))
-		return bool('suse linux enterprise server' in distribution.lower())
-	except Exception as error:
-		logger.debug("Failed to read lsb_release: {0}".format(error))
-		return False
+def isDebian():
+	"""
+	Returns `True` if this is running on Debian.
+	Returns `False` if otherwise.
+	"""
+	return _checkForDistribution('Debian')
+
+
+def isOpenSUSE():
+	"""
+	Returns `True` if this is running on openSUSE.
+	Returns `False` if otherwise.
+	"""
+	return _checkForDistribution('opensuse')
 
 
 def isRHEL():
@@ -2857,25 +2861,39 @@ def isRHEL():
 	Returns `True` if this is running on Red Hat Enterprise Linux.
 	Returns `False` if otherwise.
 	"""
-
-	try:
-		sysinfo = SysInfo()
-		return 'Red Hat Enterprise Linux' in sysinfo.distribution
-	except Exception as error:
-		logger.debug("Failed to check for RHEL: {0}".format(error))
-		return False
+	return _checkForDistribution('Red Hat Enterprise Linux')
 
 
-def isCentOS():
+def isSLES():
 	"""
-	Returns `True` if this is running on CentOS.
+	Returns `True` if this is running on Suse Linux Enterprise Server.
 	Returns `False` if otherwise.
 	"""
+	return _checkForDistribution('suse linux enterprise server')
+
+
+def isUbuntu():
+	"""
+	Returns `True` if this is running on Ubuntu.
+	Returns `False` if otherwise.
+	"""
+	return _checkForDistribution('Ubuntu')
+
+
+def isUCS():
+	"""
+	Returns `True` if this is running on Univention Corporate Server.
+	Returns `False` if otherwise.
+	"""
+	return _checkForDistribution('Univention')
+
+
+def _checkForDistribution(name):
 	try:
 		sysinfo = SysInfo()
-		return 'CentOS' in sysinfo.distribution
+		return name.lower() in sysinfo.distribution.lower()
 	except Exception as error:
-		logger.debug("Failed to check for CentOS: {0}".format(error))
+		logger.debug("Failed to check for Distribution: {0}", error)
 		return False
 
 
@@ -2883,7 +2901,7 @@ class Distribution(object):
 
 	def __init__(self, distribution_information=None):
 		if distribution_information is None:
-			distribution_information = linux_distribution()
+			distribution_information = platform.linux_distribution()
 
 		self.distribution, self._version, self.id = distribution_information
 		self.distribution = self.distribution.strip()

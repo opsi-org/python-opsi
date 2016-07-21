@@ -1,3 +1,12 @@
+python-opsi (4.0.7.9-1) UNRELEASED; urgency=medium
+
+  * OPSI.System.Posix: new functions: isDebian, isOpenSuse, isUbuntu, isUCS.
+  * OPSI.Util.Task.Rights: Refactored module.
+  * OPSI.Util.Task.Rights: setRights will try to set rights on the  webserver
+    directory as installed by the package opsi-linux-support.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 21 Jul 2016 11:11:05 +0200
+
 python-opsi (4.0.7.8-1) stable; urgency=low
 
   * OPSI.System.Windows:
