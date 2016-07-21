@@ -202,7 +202,6 @@ def getDirectoriesAndExpectedRights(path):
 			webUid = pwd.getpwnam(username)[2]
 			webGid = grp.getgrnam(groupname)[2]
 
-			# TODO: figure out the correct rights...
 			yield apacheDir, Rights(webUid, webGid, 0o664, 0o775, False)
 		except (KeyError, TypeError, RuntimeError) as kerr:
 			LOGGER.debug("Lookup of user / group failed: {0!r}", kerr)
