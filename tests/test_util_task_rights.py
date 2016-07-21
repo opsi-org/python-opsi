@@ -69,13 +69,13 @@ def patchUserInfo():
             yield uid, gid
 
 
-@pytest.mark.parametrize("sles_support, workbench, tftpdir", [
+@pytest.mark.parametrize("slesSupport, workbench, tftpdir", [
     (False, u'/home/opsiproducts', u'/tftpboot/linux'),
     (True, u'/var/lib/opsi/workbench', u'/var/lib/tftpboot/opsi')
 ], ids=["sles", "non-sles"])
-def testGetDirectoriesToProcess(depotDirectory, patchUserInfo, sles_support, workbench, tftpdir):
+def testGetDirectoriesToProcess(depotDirectory, patchUserInfo, slesSupport, workbench, tftpdir):
     with mock.patch('OPSI.Util.Task.Rights.getWebserverRepositoryPath', lambda: '/path/to/apache'):
-        with mock.patch('OPSI.Util.Task.Rights.isSLES', lambda: sles_support):
+        with mock.patch('OPSI.Util.Task.Rights.isSLES', lambda: slesSupport):
             directories = [d for d, _ in getDirectoriesAndExpectedRights('/')]
 
     assert u'/etc/opsi' in directories
