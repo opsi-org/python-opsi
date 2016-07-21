@@ -2881,7 +2881,11 @@ def isUbuntu():
 
 
 def isUCS():
-	return _checkForDistribution('Univention Corporate Server')
+	"""
+	Returns `True` if this is running on Univention Corporate Server.
+	Returns `False` if otherwise.
+	"""
+	return _checkForDistribution('Univention')
 
 
 def _checkForDistribution(name):
