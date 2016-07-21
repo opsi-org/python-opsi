@@ -231,7 +231,8 @@ def testGettingDirectoriesAndRights(patchUserInfo):
 def testGettingWebserverRepositoryPath(dir, function):
     with disableOSChecks(OS_CHECK_FUNCTIONS[:]):
         with mock.patch('OPSI.Util.Task.Rights.{0}'.format(function), lambda: True):
-            assert dir == getWebserverRepositoryPath()
+            with mock.patch('OPSI.Util.Task.Rights.os.path.exists', lambda x: True):
+                assert dir == getWebserverRepositoryPath()
 
 
 @pytest.mark.parametrize("function, username, groupname", [

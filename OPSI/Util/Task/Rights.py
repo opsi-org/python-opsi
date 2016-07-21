@@ -267,14 +267,22 @@ def getWebserverRepositoryPath():
 	Returns the path to the directory where packages for Linux netboot \
 installations may be.
 
-	On an unsuported distribution `None` will be returned.
+	On an unsuported distribution or without the relevant folder
+	existing `None` will be returned.
 	"""
 	if any(func() for func in (isDebian, isCentOS, isRHEL, isSLES, isUbuntu, isUCS)):
-		return '/var/www/html/opsi'
+		path = u'/var/www/html/opsi'
 	elif isOpenSUSE():
-		return '/srv/www/htdocs/opsi'
+		path = u'/srv/www/htdocs/opsi'
 	else:
 		LOGGER.info("Unsupported distribution.")
+		return
+
+	if not os.path.exists(path):
+		LOGGER.debug(u"Oops, found path {0!r} but does not exist.", path)
+		path = None
+
+	return path
 
 
 def getWebserverUsernameAndGroupname():
