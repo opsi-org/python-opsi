@@ -53,9 +53,9 @@ def depotDirectory():
 
 
 @pytest.yield_fixture
-def resetDepotDirectoryCache():
+def emptyDepotDirectoryCache():
     'Making sure that no depotUrl is cached.'
-    with mock.patch('OPSI.Util.Task.Rights._DEPOT_DIRECTORY', None):
+    with mock.patch('OPSI.Util.Task.Rights._CACHED_DEPOT_DIRECTORY', None):
         yield
 
 
@@ -95,7 +95,7 @@ def testGettingDirectories(patchUserInfo, depotDirectory):
     '/opt/pcbin/install/foo',
     pytest.mark.xfail('/tmp'),
 ])
-def testOptPcbinGetRelevantIfInParameter(resetDepotDirectoryCache, depotDirectory, testDir):
+def testOptPcbinGetRelevantIfInParameter(emptyDepotDirectoryCache, depotDirectory, testDir):
     directories = getDepotDirectory(testDir)
     assert '/opt/pcbin/install' in directories
 

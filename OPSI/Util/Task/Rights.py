@@ -73,10 +73,11 @@ __version__ = '4.0.7.9'
 
 LOGGER = Logger()
 
-_DEPOT_DIRECTORY = None
 _OPSICONFD_USER = u'opsiconfd'
 _ADMIN_GROUP = u'opsiadmin'
 _CLIENT_USER = u'pcpatch'
+_POSSIBLE_DEPOT_DIRECTORIES = (u'/var/lib/opsi/depot/', u'/opt/pcbin/install/')
+_CACHED_DEPOT_DIRECTORY = None
 _HAS_ROOT_RIGHTS = os.geteuid() == 0
 
 try:
@@ -222,9 +223,9 @@ def getPxeDirectory():
 
 
 def getDepotDirectory(path):
-	global _DEPOT_DIRECTORY
-	if _DEPOT_DIRECTORY is not None:
-		return _DEPOT_DIRECTORY
+	global _CACHED_DEPOT_DIRECTORY
+	if _CACHED_DEPOT_DIRECTORY is not None:
+		return _CACHED_DEPOT_DIRECTORY
 
 	try:
 		depotUrl = getDepotUrl()
@@ -232,7 +233,7 @@ def getDepotDirectory(path):
 			raise ValueError(u"Bad repository local url {0!r}".format(depotUrl))
 
 		depotDir = depotUrl[7:]
-		_DEPOT_DIRECTORY = depotDir
+		_CACHED_DEPOT_DIRECTORY = depotDir
 	except ValueError as error:
 		LOGGER.error(error)
 		depotDir = ''
@@ -295,7 +296,7 @@ in the default configuration.
 
 def setRightsOnFile(filepath, filemod):
 	LOGGER.debug(u"Setting rights on file {0!r}", filepath)
-	if filepath.startswith((u'/var/lib/opsi/depot/', u'/opt/pcbin/install/')):
+	if filepath.startswith(_POSSIBLE_DEPOT_DIRECTORIES):
 		if os.path.basename(filepath) in KNOWN_EXECUTABLES:
 			LOGGER.debug(u"Setting rights on special file {0!r}", filepath)
 			os.chmod(filepath, 0o770)
