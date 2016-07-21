@@ -217,6 +217,7 @@ def testGettingDirectoriesAndRights(patchUserInfo):
     assert rights.correctLinks
 
 
+@pytest.mark.parametrize("directoryExists", [True, pytest.mark.xfail(False)])
 @pytest.mark.parametrize("dir, function", [
     ('/var/www/html/opsi', 'isCentOS'),
     ('/var/www/html/opsi', 'isDebian'),
@@ -225,13 +226,11 @@ def testGettingDirectoriesAndRights(patchUserInfo):
     ('/var/www/html/opsi', 'isSLES'),
     ('/var/www/html/opsi', 'isUbuntu'),
     ('/var/www/html/opsi', 'isUCS'),
-    pytest.mark.xfail(('/var/www/html/opsi', 'forceHostId')),
-    (None, 'forceHostId'),
 ])
-def testGettingWebserverRepositoryPath(dir, function):
+def testGettingWebserverRepositoryPath(dir, function, directoryExists):
     with disableOSChecks(OS_CHECK_FUNCTIONS[:]):
         with mock.patch('OPSI.Util.Task.Rights.{0}'.format(function), lambda: True):
-            with mock.patch('OPSI.Util.Task.Rights.os.path.exists', lambda x: True):
+            with mock.patch('OPSI.Util.Task.Rights.os.path.exists', lambda x: directoryExists):
                 assert dir == getWebserverRepositoryPath()
 
 
