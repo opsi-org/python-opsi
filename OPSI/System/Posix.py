@@ -2841,10 +2841,18 @@ def isCentOS():
 
 
 def isDebian():
+	"""
+	Returns `True` if this is running on Debian.
+	Returns `False` if otherwise.
+	"""
 	return _checkForDistribution('Debian')
 
 
 def isOpenSUSE():
+	"""
+	Returns `True` if this is running on openSUSE.
+	Returns `False` if otherwise.
+	"""
 	return _checkForDistribution('opensuse')
 
 
@@ -2865,6 +2873,10 @@ def isSLES():
 
 
 def isUbuntu():
+	"""
+	Returns `True` if this is running on Ubuntu.
+	Returns `False` if otherwise.
+	"""
 	return _checkForDistribution('Ubuntu')
 
 
