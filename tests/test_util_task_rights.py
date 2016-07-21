@@ -33,8 +33,8 @@ from contextlib import contextmanager
 from collections import defaultdict
 
 from OPSI.Util.Task.Rights import (chown, getApacheRepositoryPath,
-    getDirectoriesAndExpectedRights,
-    filterDirsAndRights, setRightsOnSSHDirectory, getDepotDirectory)
+    getDepotDirectory, getDirectoriesAndExpectedRights, filterDirsAndRights,
+    setRightsOnSSHDirectory, setRightsOnFile)
 
 from .helpers import mock, unittest, workInTemporaryDirectory
 
@@ -318,15 +318,36 @@ def testSetRightsOnSSHDirectory():
             print("Checking {0} with expected mod {1}".format(filename, mod))
             assert os.path.exists(filename)
 
+            assert getMod(filename) == mod
+
             stats = os.stat(filename)
-
-            # As the returned value has many more information but we
-            # only require the last 3 digits we apply a logical AND
-            # with 777 to it. It's 777 because we have octal values...
-            filemod = os.stat(filename).st_mode & 0o777
-            assert filemod == mod
-
             # The following checks are not that good yet...
             # ... but make sure the files are still accessible.
             assert stats.st_gid == groupId
             assert stats.st_uid == userId
+
+
+def getMod(path):
+    """
+    Return the octal representation of rights for a `path`.
+
+    Will only return the last three values, i.e. 664.
+    """
+    # As the returned value has many more information but we
+    # only require the last 3 digits we apply a logical AND
+    # with 777 to it. It's 777 because we have octal values...
+    return os.stat(path).st_mode & 0o777
+
+
+def testSettingRightsOnFile():
+    with workInTemporaryDirectory() as tempDir:
+        filePath = os.path.join(tempDir, 'foobar')
+        with open(filePath, 'w'):
+            pass
+
+        os.chmod(filePath, 0o000)
+        assert getMod(filePath) == 0o000
+
+        setRightsOnFile(filePath, 0o777)
+
+        assert getMod(filePath) == 0o777
