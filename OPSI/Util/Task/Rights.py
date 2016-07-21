@@ -109,7 +109,9 @@ def setRights(path=u'/'):
 	LOGGER.debug(u"Setting rights on {0!r}", path)
 	LOGGER.debug("euid is {0}", os.geteuid())
 
-	for startPath, rights in filterDirsAndRights(path):
+	dirAndRights = getDirectoriesAndExpectedRights(path)
+
+	for startPath, rights in filterDirsAndRights(path, dirAndRights):
 		if os.path.isfile(path):
 			chown(path, rights.uid, rights.gid)
 			setRightsOnFile(os.path.abspath(path), rights.files)
@@ -136,13 +138,13 @@ def setRights(path=u'/'):
 			setRightsOnSSHDirectory(clientUserUid, fileAdminGroupGid)
 
 
-def filterDirsAndRights(path):
+def filterDirsAndRights(path, iterable):
 	basedir = os.path.abspath(path)
 	if not os.path.isdir(basedir):
 		basedir = os.path.dirname(basedir)
 
 	processedDirectories = set()
-	for dirname, right in getDirectoriesAndExpectedRights(path):
+	for dirname, right in iterable:
 		if not dirname.startswith(basedir) and not basedir.startswith(dirname):
 			LOGGER.debug(u"Skipping {0!r}", dirname)
 			continue

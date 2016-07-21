@@ -30,6 +30,7 @@ import os
 import os.path
 import pwd
 from contextlib import contextmanager
+from collections import defaultdict
 
 from OPSI.Util.Task.Rights import (chown, getApacheRepositoryPath,
     getDirectoriesAndExpectedRights,
@@ -72,7 +73,7 @@ def patchUserInfo():
 def testGetDirectoriesToProcess(depotDirectory, patchUserInfo, sles_support, workbench, tftpdir):
     with mock.patch('OPSI.Util.Task.Rights.getApacheRepositoryPath', lambda: '/path/to/apache'):
         with mock.patch('OPSI.Util.Task.Rights.isSLES', lambda: sles_support):
-            directories = [d for d, _ in filterDirsAndRights('/')]
+            directories = [d for d, _ in getDirectoriesAndExpectedRights('/')]
 
     assert u'/etc/opsi' in directories
     assert u'/var/lib/opsi' in directories
@@ -243,8 +244,9 @@ def disableOSChecks(functions):
         yield
 
 
-def testFilterDirsAndRights(patchUserInfo):
-    dar = list(filterDirsAndRights('/'))
+def testFilterDirsAndRightsReturnsAllWhenRootIsGiven(patchUserInfo):
+    defaultDirGenerator = getDirectoriesAndExpectedRights('/')
+    dar = list(filterDirsAndRights('/', defaultDirGenerator))
 
     assert len(dar) > 4
 
@@ -263,7 +265,8 @@ def testLimitingFilterDirsAndRights(patchUserInfo):
     depotDir = '/var/lib/opsi/depot'
     depotDirExists = os.path.exists(depotDir)
 
-    dar = list(filterDirsAndRights(depotDir))
+    defaultDirGenerator = getDirectoriesAndExpectedRights(depotDir)
+    dar = list(filterDirsAndRights(depotDir, defaultDirGenerator))
 
     assert 3 > len(dar) >= 1
 
@@ -276,6 +279,20 @@ def testLimitingFilterDirsAndRights(patchUserInfo):
         print("Dar is: {0}".format(dar))
         print("Exists directory? {0}".format(depotDirExists))
         raise RuntimeError("Missing path to workbench!")
+
+
+def testFilteringOutDuplicateDirectories():
+    def duplicatingGenerator():
+        for i, x in enumerate(('/etc/opsi', '/var/lib/opsi/', '/unrelated/')):
+            for _ in range(i):
+                yield x, None
+
+    counts = defaultdict(lambda: 0)
+    for d, _ in filterDirsAndRights('/', duplicatingGenerator()):
+        counts[d] += 1
+
+    for d, count in counts.items():
+        assert count == 1, "{0} was returned more than once!".format(d)
 
 
 def testSetRightsOnSSHDirectory():
