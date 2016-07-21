@@ -643,6 +643,9 @@ def ifconfig(device, address, netmask=None):
 		cmd += u' netmask %s' % forceNetmask(netmask)
 	execute(cmd)
 
+def getSystemProxySetting():
+	#TODO Have to be implemented for posix machines
+	logger.notice(u'Not Implemented yet')
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # -                                   SESSION / DESKTOP HANDLING                                      -
