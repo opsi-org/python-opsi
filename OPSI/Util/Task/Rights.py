@@ -189,10 +189,17 @@ def getDirectoriesAndExpectedRights(path):
 	if depotDir:
 		yield depotDir, Rights(opsiconfdUid, fileAdminGroupGid, 0o660, 0o2770, False)
 
-	apacheDir = getApacheRepositoryPath()
+	apacheDir = getWebserverRepositoryPath()
 	if apacheDir:
-		# TODO: figure out the correct rights...
-		yield apacheDir, Rights(opsiconfdUid, fileAdminGroupGid, 0o664, 0o775, False)
+		try:
+			username, groupname = getWebserverUsernameAndGroupname()
+			webUid = pwd.getpwnam(username)[2]
+			webGid = grp.getgrnam(groupname)[2]
+
+			# TODO: figure out the correct rights...
+			yield apacheDir, Rights(webUid, webGid, 0o664, 0o775, False)
+		except (KeyError, TypeError, RuntimeError) as kerr:
+			LOGGER.debug("Lookup of user / group failed: {0!r}", kerr)
 
 
 def getWorkbenchDirectory():
@@ -249,7 +256,7 @@ def getDepotUrl():
 	return depot.getDepotLocalUrl()
 
 
-def getApacheRepositoryPath():
+def getWebserverRepositoryPath():
 	"""
 	Returns the path to the directory where packages for Linux netboot \
 installations may be.
@@ -262,6 +269,23 @@ installations may be.
 		return '/srv/www/htdocs/opsi'
 	else:
 		LOGGER.info("Unsupported distribution.")
+
+
+def getWebserverUsernameAndGroupname():
+	'''
+	Returns the name of the user and group belonging to the webserver \
+in the default configuration.
+
+	:raises RuntimeError: If running on an Unsupported distribution.
+	'''
+	if isDebian() or isUbuntu() or isUCS():
+		return 'www-data', 'www-data'
+	elif isOpenSUSE() or isSLES():
+		return 'wwwrun', 'www'
+	elif isCentOS() or isRHEL():
+		return 'apache', 'apache'
+	else:
+		raise RuntimeError("Unsupported distribution.")
 
 
 def setRightsOnFile(filepath, filemod):

@@ -32,13 +32,16 @@ import pwd
 from contextlib import contextmanager
 from collections import defaultdict
 
-from OPSI.Util.Task.Rights import (chown, getApacheRepositoryPath,
-    getDepotDirectory, getDirectoriesAndExpectedRights, filterDirsAndRights,
+from OPSI.Util.Task.Rights import (chown, getDepotDirectory,
+    getDirectoriesAndExpectedRights, getWebserverRepositoryPath,
+    getWebserverUsernameAndGroupname, filterDirsAndRights,
     setRightsOnSSHDirectory, setRightsOnFile)
 
 from .helpers import mock, unittest, workInTemporaryDirectory
 
 import pytest
+
+OS_CHECK_FUNCTIONS = ['isRHEL', 'isCentOS', 'isSLES', 'isOpenSUSE', 'isUbuntu', 'isDebian', 'isUCS']
 
 
 @pytest.yield_fixture
@@ -71,7 +74,7 @@ def patchUserInfo():
     (True, u'/var/lib/opsi/workbench', u'/var/lib/tftpboot/opsi')
 ], ids=["sles", "non-sles"])
 def testGetDirectoriesToProcess(depotDirectory, patchUserInfo, sles_support, workbench, tftpdir):
-    with mock.patch('OPSI.Util.Task.Rights.getApacheRepositoryPath', lambda: '/path/to/apache'):
+    with mock.patch('OPSI.Util.Task.Rights.getWebserverRepositoryPath', lambda: '/path/to/apache'):
         with mock.patch('OPSI.Util.Task.Rights.isSLES', lambda: sles_support):
             directories = [d for d, _ in getDirectoriesAndExpectedRights('/')]
 
@@ -225,12 +228,27 @@ def testGettingDirectoriesAndRights(patchUserInfo):
     pytest.mark.xfail(('/var/www/html/opsi', 'forceHostId')),
     (None, 'forceHostId'),
 ])
-def testGettingApacheRepositoryPath(dir, function):
-    functions = ['isRHEL', 'isCentOS', 'isSLES', 'isOpenSUSE', 'isUbuntu', 'isDebian', 'isUCS']
-
-    with disableOSChecks(functions):
+def testGettingWebserverRepositoryPath(dir, function):
+    with disableOSChecks(OS_CHECK_FUNCTIONS[:]):
         with mock.patch('OPSI.Util.Task.Rights.{0}'.format(function), lambda: True):
-            assert dir == getApacheRepositoryPath()
+            assert dir == getWebserverRepositoryPath()
+
+
+@pytest.mark.parametrize("function, username, groupname", [
+    ('isCentOS', 'apache', 'apache'),
+    ('isDebian', 'www-data', 'www-data'),
+    ('isOpenSUSE', 'wwwrun', 'www'),
+    ('isRHEL', 'apache', 'apache'),
+    ('isSLES', 'wwwrun', 'www'),
+    ('isUbuntu', 'www-data', 'www-data'),
+    ('isUCS', 'www-data', 'www-data'),
+])
+def testGettingWebserverUsernameAndGroupname(function, username, groupname):
+    with disableOSChecks(OS_CHECK_FUNCTIONS[:]):
+        with mock.patch('OPSI.Util.Task.Rights.{0}'.format(function), lambda: True):
+            user, group = getWebserverUsernameAndGroupname()
+            assert user == username
+            assert group == groupname
 
 
 @contextmanager
