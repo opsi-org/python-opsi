@@ -118,7 +118,7 @@ def setRights(path=u'/'):
 			continue
 
 		LOGGER.notice(u"Setting rights on directory {0!r}", startPath)
-		LOGGER.debug2(u"Current setting: uid={r.uid}, gid={r.gid}", r=rights)
+		LOGGER.debug2(u"Rights configuration: {0}", rights)
 		chown(startPath, rights.uid, rights.gid)
 		os.chmod(startPath, rights.directories)
 		for filepath in findFiles(startPath, prefix=startPath, returnLinks=rights.correctLinks, excludeFile=re.compile("(.swp|~)$")):
