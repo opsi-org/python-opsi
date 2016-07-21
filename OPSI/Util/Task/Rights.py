@@ -139,9 +139,7 @@ def setRights(path=u'/'):
 
 
 def filterDirsAndRights(path, iterable):
-	basedir = os.path.abspath(path)
-	if not os.path.isdir(basedir):
-		basedir = os.path.dirname(basedir)
+	basedir = getAbsoluteDir(path)
 
 	processedDirectories = set()
 	for dirname, right in iterable:
@@ -160,6 +158,20 @@ def filterDirsAndRights(path, iterable):
 		yield startPath, right
 
 		processedDirectories.add(startPath)
+
+
+def getAbsoluteDir(path):
+	'''
+	Returns to absolute path to the directory.
+
+	If `path` is no directory the absolute path to the dir containing
+	`path` will be used.
+	'''
+	basedir = os.path.abspath(path)
+	if not os.path.isdir(basedir):
+		basedir = os.path.dirname(basedir)
+
+	return basedir
 
 
 def getDirectoriesAndExpectedRights(path):
@@ -213,9 +225,7 @@ def getDepotDirectory(path):
 		LOGGER.error(error)
 		depotDir = ''
 
-	basedir = os.path.abspath(path)
-	if not os.path.isdir(basedir):
-		basedir = os.path.dirname(basedir)
+	basedir = getAbsoluteDir(path)
 
 	if basedir.startswith('/opt/pcbin/install'):
 		depotDir = '/opt/pcbin/install'
