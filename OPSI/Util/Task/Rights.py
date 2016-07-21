@@ -139,6 +139,11 @@ def setRights(path=u'/'):
 
 
 def filterDirsAndRights(path, iterable):
+	'''
+	Iterates over `iterable` and the yields the appropriate directories.
+
+	This function also avoids that directorires get returned more than once.
+	'''
 	basedir = getAbsoluteDir(path)
 
 	processedDirectories = set()
