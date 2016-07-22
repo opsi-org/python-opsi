@@ -45,7 +45,7 @@ provides helpers for this task.
 	problems with wrong rights set on /var/lib/opsi/depot
 
 
-.. versionchanged:: 4.0.7.8
+.. versionchanged:: 4.0.7.9
 
 	Many internal refactorings to make adding new directories easier.
 
@@ -69,7 +69,7 @@ from OPSI.Util.File.Opsi import OpsiConfFile
 from OPSI.System.Posix import (isCentOS, isDebian, isOpenSUSE, isRHEL, isSLES,
 	isUbuntu, isUCS)
 
-__version__ = '4.0.7.9'
+__version__ = '4.0.7.10'
 
 LOGGER = Logger()
 
@@ -233,7 +233,7 @@ def getDepotDirectory(path):
 
 		depotDir = depotUrl[7:]
 		_CACHED_DEPOT_DIRECTORY = depotDir
-	except ValueError as error:
+	except Exception as error:
 		LOGGER.error(error)
 		depotDir = ''
 
