@@ -33,7 +33,7 @@ from .helpers import unittest, requiresModulesFile
 import pytest
 
 
-def testInitialisationOfSQLiteBackendWithoutParametersDoesNotFail(self):
+def testInitialisationOfSQLiteBackendWithoutParametersDoesNotFail():
     sqlModule = pytest.importorskip("OPSI.Backend.SQLite")
     SQLiteBackend = sqlModule.SQLiteBackend
 
