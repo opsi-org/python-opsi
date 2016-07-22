@@ -62,7 +62,7 @@ import re
 from collections import namedtuple
 
 from OPSI.Backend.Backend import OPSI_GLOBAL_CONF
-from OPSI.Logger import Logger
+from OPSI.Logger import LOG_DEBUG, Logger
 from OPSI.Types import forceHostId
 from OPSI.Util import findFiles, getfqdn
 from OPSI.Util.File.Opsi import OpsiConfFile
@@ -234,7 +234,8 @@ def getDepotDirectory(path):
 		depotDir = depotUrl[7:]
 		_CACHED_DEPOT_DIRECTORY = depotDir
 	except Exception as error:
-		LOGGER.error(error)
+		LOGGER.logException(error, logLevel=LOG_DEBUG)
+		LOGGER.warning(u"Could not get path for depot: {0}", error)
 		depotDir = ''
 
 	basedir = getAbsoluteDir(path)
