@@ -34,16 +34,6 @@ from .BackendTestMixins.Products import getLocalbootProducts, ProductsMixin
 import pytest
 
 
-@pytest.yield_fixture
-def hardwareAuditBackend(extendedConfigDataBackend):
-    yield extendedConfigDataBackend
-
-
-@pytest.yield_fixture
-def softwareAuditBackend(extendedConfigDataBackend):
-    yield extendedConfigDataBackend
-
-
 def getAuditHardwares():
     auditHardware1 = AuditHardware(
         hardwareClass='COMPUTER_SYSTEM',
