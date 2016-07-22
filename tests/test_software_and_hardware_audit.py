@@ -633,6 +633,9 @@ def test_insertAuditSoftwareOnClient(softwareAuditBackend):
     asoc1 = asoc[0]
 
     softwareAuditBackend.auditSoftwareOnClient_deleteObjects(asoc1)
+    auditSoftwareOnClients = softwareAuditBackend.auditSoftwareOnClient_getObjects()
+    assert len(auditSoftwareOnClients) == len(asoc) - 1
+
     softwareAuditBackend.auditSoftwareOnClient_insertObject(asoc1)
     auditSoftwareOnClients = softwareAuditBackend.auditSoftwareOnClient_getObjects()
 
