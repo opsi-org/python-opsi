@@ -100,6 +100,14 @@ def testOptPcbinGetRelevantIfInParameter(emptyDepotDirectoryCache, depotDirector
     assert '/opt/pcbin/install' in directories
 
 
+def testReturningEmptyPathIfLookupFailed(emptyDepotDirectoryCache, depotDirectory):
+    with mock.patch('OPSI.Util.Task.Rights.getDepotUrl', mock.Mock(side_effect=Exception)):
+        assert not getDepotDirectory('/')
+
+    with mock.patch('OPSI.Util.Task.Rights.getDepotUrl', lambda: 'invalid:/x'):
+        assert not getDepotDirectory('/')
+
+
 def testDepotPathMayWillBeReturned(depotDirectory):
     depotDirToCheck = depotDirectory.split('file://', 1)[1]
 
