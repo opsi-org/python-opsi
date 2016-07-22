@@ -656,6 +656,24 @@ def fillBackendWithAuditSoftwareOnClient(backend):
 
 
 @pytest.mark.requiresHwauditConfigFile
+def testUpdatingAuditHardware(hardwareAuditBackend):
+    auditHardwaresIn = getAuditHardwares()
+    hardwareAuditBackend.auditHardware_createObjects(auditHardwaresIn)
+
+    auditHardwares = hardwareAuditBackend.auditHardware_getObjects()
+    assert len(auditHardwares) == len(auditHardwaresIn)
+
+    auditHardware1 = auditHardwaresIn[0]
+    auditHardware2 = auditHardwaresIn[1]
+    hardwareAuditBackend.auditHardware_deleteObjects([auditHardware1, auditHardware2])
+    auditHardwares = hardwareAuditBackend.auditHardware_getObjects()
+    assert len(auditHardwares) == len(auditHardwaresIn) - 2
+
+    hardwareAuditBackend.auditHardware_updateObjects([auditHardware1, auditHardware2])
+    assert len(auditHardwares) == len(auditHardwaresIn) - 2
+
+
+@pytest.mark.requiresHwauditConfigFile
 def testDeletingHostShouldDeleteHardwareAuditData(hardwareAuditBackend):
     """
     Deleting a host should delete it's audit data.
