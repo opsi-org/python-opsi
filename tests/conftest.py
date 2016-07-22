@@ -147,17 +147,12 @@ def _sqlBackend(request):
 
 
 @pytest.yield_fixture
-def hardwareAuditBackend(extendedConfigDataBackend):
-    yield extendedConfigDataBackend
-
-
-@pytest.yield_fixture
 def hardwareAuditBackendWithHistory(_sqlBackend):
     yield ExtendedConfigDataBackend(_sqlBackend)
 
 
 @pytest.yield_fixture
-def softwareAuditBackend(extendedConfigDataBackend):
+def auditDataBackend(extendedConfigDataBackend):
     yield extendedConfigDataBackend
 
 
