@@ -576,51 +576,6 @@ class AuditTestsMixin(AuditHardwareMixin, AuditSoftwareMixin):
             assert len(auditHardwareOnHosts) == len(self.auditHardwareOnHosts), u"got: '%s', expected: '%s'" % (
                 auditHardwareOnHosts, len(self.auditHardwareOnHosts))
 
-        self.backend.auditHardwareOnHost_delete(
-            hostId=[], hardwareClass=[], firstseen=[], lastseen=[], state=[])
-        auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects()
-        assert len(auditHardwareOnHosts) == 0, u"got: '%s', expected: '%s'" % (
-            auditHardwareOnHosts, 0)
-
-        self.backend.auditHardwareOnHost_createObjects(
-            self.auditHardwareOnHosts)
-        auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects()
-        assert len(auditHardwareOnHosts) == len(self.auditHardwareOnHosts), u"got: '%s', expected: '%s'" % (
-            auditHardwareOnHosts, len(self.auditHardwareOnHosts))
-
-        auditHardwareOnHost4update = self.auditHardwareOnHost4.clone()
-        self.backend.auditHardwareOnHost_updateObject(
-            auditHardwareOnHost4update)
-        auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects()
-        assert len(auditHardwareOnHosts) == len(self.auditHardwareOnHosts), u"got: '%s', expected: '%s'" % (
-            auditHardwareOnHosts, len(self.auditHardwareOnHosts))
-
-        self.backend.auditHardwareOnHost_delete(
-            hostId=[], hardwareClass=[], firstseen=[], lastseen=[], state=[])
-        auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects()
-        assert len(auditHardwareOnHosts) == 0, u"got: '%s', expected: '%s'" % (
-            auditHardwareOnHosts, 0)
-
-        self.backend.auditHardwareOnHost_createObjects(
-            self.auditHardwareOnHosts)
-        auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects()
-        assert len(auditHardwareOnHosts) == len(self.auditHardwareOnHosts), u"got: '%s', expected: '%s'" % (
-            auditHardwareOnHosts, len(self.auditHardwareOnHosts))
-
-        self.backend.auditHardwareOnHost_deleteObjects(
-            [self.auditHardwareOnHost4, self.auditHardwareOnHost3])
-        auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects()
-        assert len(auditHardwareOnHosts) == len(self.auditHardwareOnHosts) - \
-            2, u"got: '%s', expected: '%s'" % (
-                auditHardwareOnHosts, len(self.auditHardwareOnHosts) - 2)
-
-        self.backend.auditHardwareOnHost_insertObject(
-            self.auditHardwareOnHost4)
-        self.backend.auditHardwareOnHost_insertObject(
-            self.auditHardwareOnHost3)
-        auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects()
-        assert len(auditHardwareOnHosts) == len(self.auditHardwareOnHosts), u"got: '%s', expected: '%s'" % (
-            auditHardwareOnHosts, len(self.auditHardwareOnHosts))
 
     @pytest.mark.requiresHwauditConfigFile
     def testDeletingHostShouldDeleteHardwareAuditData(self):
