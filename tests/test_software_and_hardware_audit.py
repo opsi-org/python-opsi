@@ -269,205 +269,42 @@ def getAuditHardwareOnHost(auditHardwares=None, clients=None):
             auditHardwareOnHost4, auditHardwareOnHost5, auditHardwareOnHost6)
 
 
-class AuditSoftwareMixin(ProductsMixin):
-    def setUpAuditSoftwares(self):
-        self.setUpProducts()
+@pytest.mark.requiresHwauditConfigFile
+def test_insertAuditHardwareOnHost(hardwareAuditBackendWithHistory):
+    backend = hardwareAuditBackendWithHistory
 
-        (self.auditSoftware1, self.auditSoftware2, self.auditSoftware3,
-         self.auditSoftware4) = getAuditSoftwares(self.product2)
+    clients = getClients()
+    auditHardwares = getAuditHardwares()
+    ahoh = getAuditHardwareOnHost(auditHardwares, clients)
+    backend.auditHardwareOnHost_createObjects(ahoh)
 
-        self.auditSoftwares = [
-            self.auditSoftware1, self.auditSoftware2, self.auditSoftware3,
-            self.auditSoftware4
-        ]
+    historyRelevantActions = 0
 
-    def setUpAuditSoftwareToLicensePools(self):
-        self.setUpLicensePool()
+    auditHardwareOnHost4update = ahoh[3].clone()
+    auditHardwareOnHost4update.setLastseen('2000-01-01 01:01:01')
+    backend.auditHardwareOnHost_insertObject(auditHardwareOnHost4update)
+    historyRelevantActions += 1
 
-        self.auditSoftwareToLicensePool1 = AuditSoftwareToLicensePool(
-            name=self.auditSoftware1.name,
-            version=self.auditSoftware1.version,
-            subVersion=self.auditSoftware1.subVersion,
-            language=self.auditSoftware1.language,
-            architecture=self.auditSoftware1.architecture,
-            licensePoolId=self.licensePool1.id
-        )
+    auditHardwareOnHosts = backend.auditHardwareOnHost_getObjects()
+    assert len(auditHardwareOnHosts) == len(ahoh) + historyRelevantActions
 
-        self.auditSoftwareToLicensePool2 = AuditSoftwareToLicensePool(
-            name=self.auditSoftware2.name,
-            version=self.auditSoftware2.version,
-            subVersion=self.auditSoftware2.subVersion,
-            language=self.auditSoftware2.language,
-            architecture=self.auditSoftware2.architecture,
-            licensePoolId=self.licensePool2.id
-        )
+    auditHardwareOnHosts = backend.auditHardwareOnHost_getObjects(lastseen='2000-01-01 01:01:01')
+    assert 1 == len(auditHardwareOnHosts)
+    assert auditHardwareOnHost4update == auditHardwareOnHosts[0]
 
-        self.auditSoftwareToLicensePools = [
-            self.auditSoftwareToLicensePool1, self.auditSoftwareToLicensePool2
-        ]
+    auditHardwareOnHost4update.setState(0)
+    backend.auditHardwareOnHost_insertObject(auditHardwareOnHost4update)
+    historyRelevantActions += 1
 
-    def setUpAuditSoftwareOnClients(self):
-        self.setUpAuditSoftwares()
-        self.setUpClients()
+    auditHardwareOnHosts = backend.auditHardwareOnHost_getObjects()
+    assert len(auditHardwareOnHosts) == len(ahoh) + historyRelevantActions
 
-        (self.auditSoftwareOnClient1, self.auditSoftwareOnClient2,
-         self.auditSoftwareOnClient3, self.auditSoftwareOnClient4) = getAuditSoftwareOnClient(self.auditSoftwares, self.clients)
+    auditHardwareOnHost4update.setLastseen(None)
+    backend.auditHardwareOnHost_insertObject(auditHardwareOnHost4update)
+    historyRelevantActions += 1
 
-        self.auditSoftwareOnClients = [
-            self.auditSoftwareOnClient1, self.auditSoftwareOnClient2,
-            self.auditSoftwareOnClient3, self.auditSoftwareOnClient4
-        ]
-
-
-class AuditHardwareMixin(ClientsMixin):
-    def setUpAuditHardwares(self):
-        (self.auditHardware1, self.auditHardware2,
-         self.auditHardware3, self.auditHardware4) = getAuditHardwares()
-
-        self.auditHardwares = [self.auditHardware1, self.auditHardware2,
-                               self.auditHardware3, self.auditHardware4]
-
-    def setUpAuditHardwareOnHosts(self):
-        self.setUpClients()
-        self.setUpAuditHardwares()
-
-        (self.auditHardwareOnHost1, self.auditHardwareOnHost2,
-        self.auditHardwareOnHost3, self.auditHardwareOnHost4,
-        self.auditHardwareOnHost5, self.auditHardwareOnHost6) = getAuditHardwareOnHost(self.auditHardwares, self.clients)
-
-        self.auditHardwareOnHosts = [
-            self.auditHardwareOnHost1, self.auditHardwareOnHost2,
-            self.auditHardwareOnHost3, self.auditHardwareOnHost4,
-            self.auditHardwareOnHost5, self.auditHardwareOnHost6
-        ]
-
-class AuditTestsMixin(AuditHardwareMixin, AuditSoftwareMixin):
-
-    @pytest.mark.requiresHwauditConfigFile
-    def testAuditHardwareOnHostMethods(self, licenseManagementBackend=False):
-        # TODO: make it work with inventoryHistory also.
-        # maybe create another setup method and then just change the assertions
-        # depending on what is used.
-        self.setUpAuditSoftwares()
-        self.setUpAuditHardwareOnHosts()
-
-        self.backend.auditHardwareOnHost_createObjects(self.auditHardwareOnHosts)
-        auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects()
-        self.assertEqual(len(auditHardwareOnHosts), len(self.auditHardwareOnHosts),
-            u"Expected {nexpected} but got {n}: {ahoh}".format(
-                nexpected=len(auditHardwareOnHosts),
-                n=len(self.auditHardwareOnHosts),
-                ahoh=auditHardwareOnHosts
-            )
-        )
-
-        auditHardwareOnHost4update = self.auditHardwareOnHost4.clone()
-        auditHardwareOnHost4update.setLastseen('2000-01-01 01:01:01')
-        self.backend.auditHardwareOnHost_insertObject(
-            auditHardwareOnHost4update)
-        auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects()
-
-        print('Using inventory history? {0}'.format(self.CREATES_INVENTORY_HISTORY))
-        if self.CREATES_INVENTORY_HISTORY:
-            self.assertEqual(
-                len(self.auditHardwareOnHosts) + 1,
-                len(auditHardwareOnHosts),
-                'Expected {nexpected} but got {actual}: {items}'.format(
-                    actual=len(auditHardwareOnHosts),
-                    nexpected=len(self.auditHardwareOnHosts) + 1,
-                    items=auditHardwareOnHosts
-                )
-            )
-        else:
-            self.assertEqual(
-                len(self.auditHardwareOnHosts),
-                len(auditHardwareOnHosts),
-                'Expected {nexpected} but got {actual}: {items}'.format(
-                    actual=len(auditHardwareOnHosts),
-                    nexpected=len(self.auditHardwareOnHosts),
-                    items=auditHardwareOnHosts
-                )
-            )
-
-        auditHardwareOnHost4update.setState(0)
-        self.backend.auditHardwareOnHost_insertObject(
-            auditHardwareOnHost4update)
-        auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects()
-        if self.CREATES_INVENTORY_HISTORY:
-            assert len(auditHardwareOnHosts) == len(self.auditHardwareOnHosts) + \
-                2, u"got: '%s', expected: '%s'" % (
-                    auditHardwareOnHosts, len(self.auditHardwareOnHosts) + 2)
-        else:
-            assert len(auditHardwareOnHosts) == len(self.auditHardwareOnHosts), u"got: '%s', expected: '%s'" % (
-                auditHardwareOnHosts, len(self.auditHardwareOnHosts))
-
-        self.backend.auditHardwareOnHost_insertObject(
-            auditHardwareOnHost4update)
-        auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects()
-        if self.CREATES_INVENTORY_HISTORY:
-            assert len(auditHardwareOnHosts) == len(self.auditHardwareOnHosts) + \
-                2, u"got: '%s', expected: '%s'" % (
-                    auditHardwareOnHosts, len(self.auditHardwareOnHosts) + 2)
-        else:
-            assert len(auditHardwareOnHosts) == len(self.auditHardwareOnHosts), u"got: '%s', expected: '%s'" % (
-                auditHardwareOnHosts, len(self.auditHardwareOnHosts))
-
-        auditHardwareOnHost4update.setLastseen(None)
-        self.backend.auditHardwareOnHost_insertObject(
-            auditHardwareOnHost4update)
-        auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects()
-        if self.CREATES_INVENTORY_HISTORY:
-            assert len(auditHardwareOnHosts) == len(self.auditHardwareOnHosts) + \
-                3, u"got: '%s', expected: '%s'" % (
-                    auditHardwareOnHosts, len(self.auditHardwareOnHosts) + 3)
-        else:
-            assert len(auditHardwareOnHosts) == len(self.auditHardwareOnHosts), u"got: '%s', expected: '%s'" % (
-                auditHardwareOnHosts, len(self.auditHardwareOnHosts))
-
-    # def test_getAuditSoftewareLicensePoolFromBackend(self):
-    #     # TODO: implement check - probably with requiredModules
-    #     if not self.expected.licenseManagement:
-    #         self.skipTest("LicenseManagement is not enabled on %s." % self.__class__.__name__)
-    #         # AuditSoftwareToLicensePools
-
-    #     self.backend.auditSoftwareToLicensePool_createObjects(self.expected.auditSoftwareToLicensePools)
-
-    #     auditSoftwareToLicensePools = self.backend.auditSoftwareToLicensePool_getObjects()
-    #     self.assertEqual(len(auditSoftwareToLicensePools), len(self.expected.auditSoftwareToLicensePools), u"Expected %s audit license objects in pool, but found %s on backend." % (len(self.expected.auditSoftwareToLicensePools), len(auditSoftwareToLicensePools)))
-
-    @pytest.mark.requiresHwauditConfigFile
-    def test_insertAuditHardwareOnHost(self):
-        clients = getClients()
-        auditHardwares = getAuditHardwares()
-        ahoh = getAuditHardwareOnHost(auditHardwares, clients)
-        self.backend.auditHardwareOnHost_createObjects(ahoh)
-
-        history = 0
-
-        auditHardwareOnHost4update = ahoh[3].clone()
-        auditHardwareOnHost4update.setLastseen('2000-01-01 01:01:01')
-        self.backend.auditHardwareOnHost_insertObject(auditHardwareOnHost4update)
-        history += 1
-
-        auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects()
-        if self.CREATES_INVENTORY_HISTORY:
-            self.assertEqual(len(auditHardwareOnHosts), len(ahoh) + history)
-        else:
-            self.assertEqual(len(auditHardwareOnHosts), len(ahoh))
-
-        auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects(lastseen='2000-01-01 01:01:01')
-        self.assertEqual(len(auditHardwareOnHosts), 1)
-        self.assertEqual(auditHardwareOnHost4update, auditHardwareOnHosts[0])
-
-        auditHardwareOnHost4update.setState(0)
-        self.backend.auditHardwareOnHost_insertObject(auditHardwareOnHost4update)
-        history += 1
-
-        auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects()
-        if self.CREATES_INVENTORY_HISTORY:
-            self.assertEqual(len(auditHardwareOnHosts), len(ahoh) + history)
-        else:
-            self.assertEqual(len(auditHardwareOnHosts), len(ahoh))
+    auditHardwareOnHosts = backend.auditHardwareOnHost_getObjects()
+    assert len(auditHardwareOnHosts) == len(ahoh) + historyRelevantActions
 
 
 def testInventoryObjectMethods(licenseManagentAndAuditBackend):

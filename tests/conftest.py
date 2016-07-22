@@ -152,6 +152,11 @@ def hardwareAuditBackend(extendedConfigDataBackend):
 
 
 @pytest.yield_fixture
+def hardwareAuditBackendWithHistory(_sqlBackend):
+    yield ExtendedConfigDataBackend(_sqlBackend)
+
+
+@pytest.yield_fixture
 def softwareAuditBackend(extendedConfigDataBackend):
     yield extendedConfigDataBackend
 
