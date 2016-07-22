@@ -343,7 +343,6 @@ class AuditHardwareMixin(ClientsMixin):
 
 class AuditTestsMixin(AuditHardwareMixin, AuditSoftwareMixin):
 
-
     @pytest.mark.requiresHwauditConfigFile
     def testAuditHardwareOnHostMethods(self, licenseManagementBackend=False):
         # TODO: make it work with inventoryHistory also.
@@ -595,7 +594,7 @@ def test_updateAuditSoftwareOnClient(softwareAuditBackend):
 
     softwareAuditBackend.auditSoftwareOnClient_updateObject(auditSoftwareOnClient1update)
     auditSoftwareOnClients = softwareAuditBackend.auditSoftwareOnClient_getObjects(binaryName='updatedBN')
-    assert 1 == len(auditSoftwareOnClients), "Expected one software object in pool, but found %s on backend." % len(auditSoftwareOnClients)
+    assert 1 == len(auditSoftwareOnClients)
     assert auditSoftwareOnClient1update == auditSoftwareOnClients[0]
 
 
