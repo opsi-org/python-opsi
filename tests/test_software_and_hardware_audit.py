@@ -34,6 +34,11 @@ from .BackendTestMixins.Products import getLocalbootProducts, ProductsMixin
 import pytest
 
 
+@pytest.yield_fixture
+def hardwareAuditBackend(extendedConfigDataBackend):
+    yield extendedConfigDataBackend
+
+
 def getAuditHardwares():
     auditHardware1 = AuditHardware(
         hardwareClass='COMPUTER_SYSTEM',
@@ -866,38 +871,38 @@ class AuditTestsMixin(AuditHardwareMixin, AuditSoftwareMixin):
 
 
 @pytest.mark.requiresHwauditConfigFile
-def test_createAuditHardwareOnHost(extendedConfigDataBackend):
-    ahoh, _, _ = fillBackendWithAuditHardwareOnHosts(extendedConfigDataBackend)
+def test_createAuditHardwareOnHost(hardwareAuditBackend):
+    ahoh, _, _ = fillBackendWithAuditHardwareOnHosts(hardwareAuditBackend)
 
-    extendedConfigDataBackend.auditHardwareOnHost_delete(hostId=[], hardwareClass=[], firstseen=[], lastseen=[], state=[])
-    extendedConfigDataBackend.auditHardwareOnHost_createObjects(ahoh)
-    auditHardwareOnHosts = extendedConfigDataBackend.auditHardwareOnHost_getObjects()
+    hardwareAuditBackend.auditHardwareOnHost_delete(hostId=[], hardwareClass=[], firstseen=[], lastseen=[], state=[])
+    hardwareAuditBackend.auditHardwareOnHost_createObjects(ahoh)
+    auditHardwareOnHosts = hardwareAuditBackend.auditHardwareOnHost_getObjects()
     assert len(auditHardwareOnHosts) == len(ahoh)
     # TODO: check the returned data
 
 
 @pytest.mark.requiresHwauditConfigFile
-def test_updatingAuditHardwareOnHost(extendedConfigDataBackend):
-    auditHardwareOnHosts, _, _ = fillBackendWithAuditHardwareOnHosts(extendedConfigDataBackend)
+def test_updatingAuditHardwareOnHost(hardwareAuditBackend):
+    auditHardwareOnHosts, _, _ = fillBackendWithAuditHardwareOnHosts(hardwareAuditBackend)
 
-    numBefore = len(extendedConfigDataBackend.auditHardwareOnHost_getObjects())
+    numBefore = len(hardwareAuditBackend.auditHardwareOnHost_getObjects())
     assert numBefore == len(auditHardwareOnHosts)
 
     auditHardwareOnHost4 = auditHardwareOnHosts[3]
     auditHardwareOnHost4update = auditHardwareOnHost4.clone()
-    extendedConfigDataBackend.auditHardwareOnHost_updateObject(auditHardwareOnHost4update)
-    auditHardwareOnHosts = extendedConfigDataBackend.auditHardwareOnHost_getObjects()
-    numAfter = len(extendedConfigDataBackend.auditHardwareOnHost_getObjects())
+    hardwareAuditBackend.auditHardwareOnHost_updateObject(auditHardwareOnHost4update)
+    auditHardwareOnHosts = hardwareAuditBackend.auditHardwareOnHost_getObjects()
+    numAfter = len(hardwareAuditBackend.auditHardwareOnHost_getObjects())
     assert numBefore == numAfter
 
 
 @pytest.mark.requiresHwauditConfigFile
-def test_deleteAuditHardwareOnHost(extendedConfigDataBackend):
-    auditHardwareOnHostsIn, _, _ = fillBackendWithAuditHardwareOnHosts(extendedConfigDataBackend)
+def test_deleteAuditHardwareOnHost(hardwareAuditBackend):
+    auditHardwareOnHostsIn, _, _ = fillBackendWithAuditHardwareOnHosts(hardwareAuditBackend)
 
     ahoh3, ahoh4 = auditHardwareOnHostsIn[2:4]
-    extendedConfigDataBackend.auditHardwareOnHost_deleteObjects([ahoh3, ahoh4])
-    auditHardwareOnHostsOut = extendedConfigDataBackend.auditHardwareOnHost_getObjects()
+    hardwareAuditBackend.auditHardwareOnHost_deleteObjects([ahoh3, ahoh4])
+    auditHardwareOnHostsOut = hardwareAuditBackend.auditHardwareOnHost_getObjects()
     assert len(auditHardwareOnHostsIn) - 2 == len(auditHardwareOnHostsOut)
 
     # Making sure that the deleted IDs arent found anymore.
@@ -906,13 +911,13 @@ def test_deleteAuditHardwareOnHost(extendedConfigDataBackend):
 
 
 @pytest.mark.requiresHwauditConfigFile
-def testAuditHardwareOnHostSetObsolete(extendedConfigDataBackend):
-    auditHardwareOnHostsIn, _, clients = fillBackendWithAuditHardwareOnHosts(extendedConfigDataBackend)
+def testAuditHardwareOnHostSetObsolete(hardwareAuditBackend):
+    auditHardwareOnHostsIn, _, clients = fillBackendWithAuditHardwareOnHosts(hardwareAuditBackend)
 
     client3 = clients[2]
 
-    extendedConfigDataBackend.auditHardwareOnHost_setObsolete(client3.id)
-    auditHardwareOnHosts = extendedConfigDataBackend.auditHardwareOnHost_getObjects(hostId=client3.id)
+    hardwareAuditBackend.auditHardwareOnHost_setObsolete(client3.id)
+    auditHardwareOnHosts = hardwareAuditBackend.auditHardwareOnHost_getObjects(hostId=client3.id)
     for auditHardwareOnHost in auditHardwareOnHosts:
         assert auditHardwareOnHost.getState() == 0
 
