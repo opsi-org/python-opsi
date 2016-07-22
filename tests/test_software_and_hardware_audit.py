@@ -541,11 +541,6 @@ class AuditTestsMixin(AuditHardwareMixin, AuditSoftwareMixin):
                 )
             )
 
-        auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects(
-            lastseen='2000-01-01 01:01:01')
-        assert len(auditHardwareOnHosts) == 1, u"got: '%s', expected: '%s'" % (
-            auditHardwareOnHosts, 1)
-
         auditHardwareOnHost4update.setState(0)
         self.backend.auditHardwareOnHost_insertObject(
             auditHardwareOnHost4update)
@@ -806,6 +801,19 @@ class AuditTestsMixin(AuditHardwareMixin, AuditSoftwareMixin):
             self.assertEqual(len(auditHardwareOnHosts), len(ahoh) + 2)
         else:
             self.assertEqual(len(auditHardwareOnHosts), len(ahoh))
+
+
+@pytest.mark.requiresHwauditConfigFile
+def testSelecingAuditHardwareOnHostByLastseen(hardwareAuditBackend):
+    ahoh, _, _ = fillBackendWithAuditHardwareOnHosts(hardwareAuditBackend)
+
+    auditHardwareOnHost4update = ahoh[3].clone()
+    auditHardwareOnHost4update.setLastseen('2000-01-01 01:01:01')
+    hardwareAuditBackend.auditHardwareOnHost_insertObject(auditHardwareOnHost4update)
+
+    auditHardwareOnHosts = hardwareAuditBackend.auditHardwareOnHost_getObjects(lastseen='2000-01-01 01:01:01')
+    assert len(auditHardwareOnHosts) == 1
+    assert auditHardwareOnHost4update == auditHardwareOnHosts[0]
 
 
 @pytest.mark.parametrize("searchTerms", [
