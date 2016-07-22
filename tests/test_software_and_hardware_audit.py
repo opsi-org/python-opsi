@@ -824,16 +824,6 @@ class AuditTestsMixin(AuditHardwareMixin, AuditSoftwareMixin):
         self.assertEqual(len(receivedAuditHardwares), len(auditHardwares))
 
     @pytest.mark.requiresHwauditConfigFile
-    def test_getAuditHardwareOnHost(self):
-        clients = getClients()
-        auditHardwares = getAuditHardwares()
-        ahoh = getAuditHardwareOnHost(auditHardwares, clients)
-        self.backend.auditHardwareOnHost_createObjects(ahoh)
-
-        auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects()
-        self.assertEqual(len(auditHardwareOnHosts), len(ahoh))
-
-    @pytest.mark.requiresHwauditConfigFile
     def test_insertAuditHardwareOnHost(self):
         clients = getClients()
         auditHardwares = getAuditHardwares()
