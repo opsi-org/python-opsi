@@ -30,6 +30,7 @@ from OPSI.Object import (AuditSoftware, AuditSoftwareOnClient,
 
 from .BackendTestMixins.Clients import ClientsMixin, getClients
 from .BackendTestMixins.Products import getLocalbootProducts, ProductsMixin
+from .test_license_management import createLicensePool
 
 import pytest
 
@@ -341,57 +342,7 @@ class AuditHardwareMixin(ClientsMixin):
         ]
 
 class AuditTestsMixin(AuditHardwareMixin, AuditSoftwareMixin):
-    def testInventoryObjectMethods(self, licenseManagementBackend=False):
-        # AuditSoftwares
-        print(u"Testing auditSoftware methods")
-        self.setUpAuditSoftwares()
 
-        self.backend.auditSoftware_createObjects(self.auditSoftwares)
-
-        auditSoftwares = self.backend.auditSoftware_getObjects()
-        assert len(auditSoftwares) == len(self.auditSoftwares), u"got: '%s', expected: '%s'" % (
-            auditSoftwares, len(self.auditSoftwares))
-
-        auditSoftware3update = AuditSoftware(
-            name=self.auditSoftware3.name,
-            version=self.auditSoftware3.version,
-            subVersion=self.auditSoftware3.subVersion,
-            language=self.auditSoftware3.language,
-            architecture=self.auditSoftware3.architecture,
-            windowsSoftwareId=self.auditSoftware3.windowsSoftwareId,
-            windowsDisplayName='updatedDN',
-            windowsDisplayVersion=self.auditSoftware3.windowsDisplayVersion,
-            installSize=self.auditSoftware3.installSize
-        )
-
-        self.backend.auditSoftware_updateObject(auditSoftware3update)
-        auditSoftwares = self.backend.auditSoftware_getObjects(
-            windowsDisplayName='updatedDN')
-        assert len(auditSoftwares) == 1, u"got: '%s', expected: '%s'" % (
-            auditSoftwares, 1)
-
-        self.backend.auditSoftware_deleteObjects(self.auditSoftware3)
-        auditSoftwares = self.backend.auditSoftware_getObjects()
-        assert len(auditSoftwares) == len(self.auditSoftwares) - \
-            1, u"got: '%s', expected: '%s'" % (
-                auditSoftwares, len(self.auditSoftwares) - 1)
-
-        self.backend.auditSoftware_insertObject(self.auditSoftware3)
-        auditSoftwares = self.backend.auditSoftware_getObjects()
-        assert len(auditSoftwares) == len(self.auditSoftwares), u"got: '%s', expected: '%s'" % (
-            auditSoftwares, len(self.auditSoftwares))
-
-        if (licenseManagementBackend):
-            # TODO: this
-            # AuditSoftwareToLicensePools
-            print(u"Testing AuditSoftwareToLicensePool methods")
-            self.backend.auditSoftwareToLicensePool_createObjects(
-                self.auditSoftwareToLicensePools)
-
-            auditSoftwareToLicensePools = self.backend.auditSoftwareToLicensePool_getObjects(
-            )
-            assert len(auditSoftwareToLicensePools) == len(self.auditSoftwareToLicensePools), u"got: '%s', expected: '%s'" % (
-                auditSoftwareToLicensePools, len(self.auditSoftwareToLicensePools))
 
     @pytest.mark.requiresHwauditConfigFile
     def testAuditHardwareOnHostMethods(self, licenseManagementBackend=False):
@@ -518,6 +469,43 @@ class AuditTestsMixin(AuditHardwareMixin, AuditSoftwareMixin):
             self.assertEqual(len(auditHardwareOnHosts), len(ahoh) + history)
         else:
             self.assertEqual(len(auditHardwareOnHosts), len(ahoh))
+
+
+def testInventoryObjectMethods(licenseManagentAndAuditBackend):
+    backend = licenseManagentAndAuditBackend
+
+    auditSoftwaresIn = getAuditSoftwares()
+    backend.auditSoftware_createObjects(auditSoftwaresIn)
+
+    licensePools, _ = createLicensePool(backend)
+
+    auditSoftware1 = auditSoftwaresIn[0]
+    auditSoftware2 = auditSoftwaresIn[1]
+    licensePool1 = licensePools[0]
+    licensePool2 = licensePools[1]
+
+    auditSoftwareToLicensePool1 = AuditSoftwareToLicensePool(
+        name=auditSoftware1.name,
+        version=auditSoftware1.version,
+        subVersion=auditSoftware1.subVersion,
+        language=auditSoftware1.language,
+        architecture=auditSoftware1.architecture,
+        licensePoolId=licensePool1.id
+    )
+    auditSoftwareToLicensePool2 = AuditSoftwareToLicensePool(
+        name=auditSoftware2.name,
+        version=auditSoftware2.version,
+        subVersion=auditSoftware2.subVersion,
+        language=auditSoftware2.language,
+        architecture=auditSoftware2.architecture,
+        licensePoolId=licensePool2.id
+    )
+
+    auditSoftwareToLicensePoolsIn = [auditSoftwareToLicensePool1, auditSoftwareToLicensePool2]
+    backend.auditSoftwareToLicensePool_createObjects(auditSoftwareToLicensePoolsIn)
+
+    auditSoftwareToLicensePools = backend.auditSoftwareToLicensePool_getObjects()
+    assert len(auditSoftwareToLicensePools) == len(auditSoftwareToLicensePoolsIn)
 
 
 def test_getAuditSoftwareFromBackend(softwareAuditBackend):
