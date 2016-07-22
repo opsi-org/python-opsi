@@ -778,52 +778,6 @@ class AuditTestsMixin(AuditHardwareMixin, AuditSoftwareMixin):
         self.assertEqual(len(auditSoftwareOnClients), len(asoc))
 
     @pytest.mark.requiresHwauditConfigFile
-    def test_getAuditHardwareFromBackend(self):
-        auditHardwaresIn = getAuditHardwares()
-        self.backend.auditHardware_createObjects(auditHardwaresIn)
-
-        auditHardwares = self.backend.auditHardware_getObjects()
-        self.assertEqual(len(auditHardwares), len(auditHardwaresIn))
-
-    def test_selectAuditHardwareClasses(self):
-        auditHardwareClasses = map((lambda x: x.getHardwareClass()),self.backend.auditHardware_getObjects(hardwareClass=['CHASSIS', 'COMPUTER_SYSTEM']))
-        for auditHardwareClass in auditHardwareClasses:
-            self.assertIn(auditHardwareClass, ['CHASSIS', 'COMPUTER_SYSTEM'], u"Hardware class '%s' not in '%s'." % (auditHardwareClass, ['CHASSIS', 'COMPUTER_SYSTEM']))
-
-        auditHardwareClasses = map((lambda x: x.getHardwareClass()), self.backend.auditHardware_getObjects(hardwareClass=['CHA*IS', '*UTER_SYS*']))
-        for auditHardwareClass in auditHardwareClasses:
-            self.assertIn(auditHardwareClass, ['CHASSIS', 'COMPUTER_SYSTEM'], u"Hardware class '%s' not in '%s'." % (auditHardwareClass, ['CHASSIS', 'COMPUTER_SYSTEM']))
-
-    @pytest.mark.requiresHwauditConfigFile
-    def test_deleteAuditHardware(self):
-        auditHardwaresIn = getAuditHardwares()
-        self.backend.auditHardware_createObjects(auditHardwaresIn)
-
-        auditHardware1, auditHardware2 = auditHardwaresIn[:2]
-
-        self.backend.auditHardware_deleteObjects([auditHardware1, auditHardware2])
-        auditHardwares = self.backend.auditHardware_getObjects()
-        self.assertEqual(len(auditHardwares), len(auditHardwaresIn) - 2)
-
-    @pytest.mark.requiresHwauditConfigFile
-    def test_deleteAllAuditHardware(self):
-        self.backend.auditHardware_deleteObjects(self.backend.auditHardware_getObjects())
-        auditHardwares = self.backend.auditHardware_getObjects()
-        self.assertEqual(len(auditHardwares), 0, u"Expected 0 audit hardware objects, but found %s on backend." % (len(auditHardwares)))
-
-    @pytest.mark.requiresHwauditConfigFile
-    def test_createAuditHardware(self):
-        auditHardwares = getAuditHardwares()
-        self.backend.auditHardware_createObjects(auditHardwares)
-        receivedAuditHardwares = self.backend.auditHardware_getObjects()
-        self.assertEqual(len(receivedAuditHardwares), len(auditHardwares))
-
-        self.backend.auditHardware_deleteObjects(self.backend.auditHardware_getObjects())
-        self.backend.auditHardware_createObjects(auditHardwares)
-        receivedAuditHardwares = self.backend.auditHardware_getObjects()
-        self.assertEqual(len(receivedAuditHardwares), len(auditHardwares))
-
-    @pytest.mark.requiresHwauditConfigFile
     def test_insertAuditHardwareOnHost(self):
         clients = getClients()
         auditHardwares = getAuditHardwares()
@@ -852,6 +806,67 @@ class AuditTestsMixin(AuditHardwareMixin, AuditSoftwareMixin):
             self.assertEqual(len(auditHardwareOnHosts), len(ahoh) + 2)
         else:
             self.assertEqual(len(auditHardwareOnHosts), len(ahoh))
+
+
+@pytest.mark.parametrize("searchTerms", [
+    ['CHASSIS', 'COMPUTER_SYSTEM'],
+    ['CHA*IS', '*UTER_SYS*']
+])
+@pytest.mark.requiresHwauditConfigFile
+def test_selectAuditHardwareClasses(hardwareAuditBackend, searchTerms):
+    auditHardwaresIn = getAuditHardwares()
+    hardwareAuditBackend.auditHardware_createObjects(auditHardwaresIn)
+
+    auditHardwareClasses = [x.getHardwareClass() for x in hardwareAuditBackend.auditHardware_getObjects(hardwareClass=searchTerms)]
+    assert auditHardwareClasses
+
+    for auditHardwareClass in auditHardwareClasses:
+        assert auditHardwareClass in ['CHASSIS', 'COMPUTER_SYSTEM']
+
+
+@pytest.mark.requiresHwauditConfigFile
+def test_deleteAuditHardware(hardwareAuditBackend):
+    auditHardwaresIn = getAuditHardwares()
+    hardwareAuditBackend.auditHardware_createObjects(auditHardwaresIn)
+
+    auditHardware1, auditHardware2 = auditHardwaresIn[:2]
+
+    hardwareAuditBackend.auditHardware_deleteObjects([auditHardware1, auditHardware2])
+    auditHardwares = hardwareAuditBackend.auditHardware_getObjects()
+    assert len(auditHardwares) == len(auditHardwaresIn) - 2
+
+
+@pytest.mark.requiresHwauditConfigFile
+def testDeletingAllAuditHardware(hardwareAuditBackend):
+    auditHardwares = getAuditHardwares()
+    hardwareAuditBackend.auditHardware_createObjects(auditHardwares)
+    assert hardwareAuditBackend.auditHardware_getObjects()
+
+    hardwareAuditBackend.auditHardware_deleteObjects(auditHardwares)
+    auditHardwares = hardwareAuditBackend.auditHardware_getObjects()
+    assert 0 == len(auditHardwares), u"Expected 0 audit hardware objects, but found %s on backend." % len(auditHardwares)
+
+
+@pytest.mark.requiresHwauditConfigFile
+def testCreatingAndGetingAuditHardwareFromBackend(hardwareAuditBackend):
+    auditHardwaresIn = getAuditHardwares()
+    hardwareAuditBackend.auditHardware_createObjects(auditHardwaresIn)
+
+    auditHardwares = hardwareAuditBackend.auditHardware_getObjects()
+    assert len(auditHardwares) == len(auditHardwaresIn)
+    # TODO: check content
+
+
+@pytest.mark.requiresHwauditConfigFile
+def testCreatingAuditHardwareAfterDeletion(hardwareAuditBackend):
+    auditHardwares = getAuditHardwares()
+
+    hardwareAuditBackend.auditHardware_createObjects(auditHardwares)
+    hardwareAuditBackend.auditHardware_deleteObjects(hardwareAuditBackend.auditHardware_getObjects())
+
+    hardwareAuditBackend.auditHardware_createObjects(auditHardwares)
+    receivedAuditHardwares = hardwareAuditBackend.auditHardware_getObjects()
+    assert len(receivedAuditHardwares) == len(auditHardwares)
 
 
 @pytest.mark.requiresHwauditConfigFile
