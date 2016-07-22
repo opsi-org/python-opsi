@@ -502,13 +502,16 @@ class AuditTestsMixin(AuditHardwareMixin, AuditSoftwareMixin):
         ahoh = getAuditHardwareOnHost(auditHardwares, clients)
         self.backend.auditHardwareOnHost_createObjects(ahoh)
 
+        history = 0
+
         auditHardwareOnHost4update = ahoh[3].clone()
         auditHardwareOnHost4update.setLastseen('2000-01-01 01:01:01')
         self.backend.auditHardwareOnHost_insertObject(auditHardwareOnHost4update)
+        history += 1
 
         auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects()
         if self.CREATES_INVENTORY_HISTORY:
-            self.assertEqual(len(auditHardwareOnHosts), len(ahoh) + 1)
+            self.assertEqual(len(auditHardwareOnHosts), len(ahoh) + history)
         else:
             self.assertEqual(len(auditHardwareOnHosts), len(ahoh))
 
@@ -518,10 +521,11 @@ class AuditTestsMixin(AuditHardwareMixin, AuditSoftwareMixin):
 
         auditHardwareOnHost4update.setState(0)
         self.backend.auditHardwareOnHost_insertObject(auditHardwareOnHost4update)
+        history += 1
 
         auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects()
         if self.CREATES_INVENTORY_HISTORY:
-            self.assertEqual(len(auditHardwareOnHosts), len(ahoh) + 2)
+            self.assertEqual(len(auditHardwareOnHosts), len(ahoh) + history)
         else:
             self.assertEqual(len(auditHardwareOnHosts), len(ahoh))
 
