@@ -581,82 +581,6 @@ class AuditTestsMixin(AuditHardwareMixin, AuditSoftwareMixin):
             assert len(auditHardwareOnHosts) == len(self.auditHardwareOnHosts), u"got: '%s', expected: '%s'" % (
                 auditHardwareOnHosts, len(self.auditHardwareOnHosts))
 
-
-    @pytest.mark.requiresHwauditConfigFile
-    def testDeletingHostShouldDeleteHardwareAuditData(self):
-        """
-        Deleting a host should delete it's audit data.
-        """
-        self.setUpAuditHardwareOnHosts()
-
-        self.backend.host_createObjects(self.client1)
-        self.backend.auditHardwareOnHost_createObjects(self.auditHardwareOnHost1)
-
-        self.assertEquals(1, len(self.backend.host_getObjects()),
-            'Self-test failed: Too much hosts.')
-        self.assertEquals(1, len(self.backend.auditHardwareOnHost_getObjects()),
-            'Self-test failed: Too much auditHardwareOnHosts.')
-
-        self.backend.host_deleteObjects([self.client1])
-
-        self.assertEquals(0, len(self.backend.host_getObjects()))
-        self.assertEquals(0, len(self.backend.auditHardwareOnHost_getObjects()))
-
-        self.backend.host_createObjects(self.client1)
-        self.assertEquals(1, len(self.backend.host_getObjects()))
-        self.assertEquals(0, len(self.backend.auditHardwareOnHost_getObjects()))
-
-    def test_getAuditSoftwareFromBackend(self):
-        auditSoftwaresIn = getAuditSoftwares()
-        self.backend.auditSoftware_createObjects(auditSoftwaresIn)
-
-        auditSoftwaresOut = self.backend.auditSoftware_getObjects()
-        self.assertEqual(len(auditSoftwaresIn), len(auditSoftwaresOut))
-        # TODO: provide a check that no data was changed.
-
-    def test_updateAuditSoftware(self):
-        auditSoftwaresIn = getAuditSoftwares()
-        self.backend.auditSoftware_createObjects(auditSoftwaresIn)
-
-        auditSoftware3 = auditSoftwaresIn[2]
-        auditSoftware3update = AuditSoftware(
-            name=auditSoftware3.name,
-            version=auditSoftware3.version,
-            subVersion=auditSoftware3.subVersion,
-            language=auditSoftware3.language,
-            architecture=auditSoftware3.architecture,
-            windowsSoftwareId=auditSoftware3.windowsSoftwareId,
-            windowsDisplayName='updatedDN',
-            windowsDisplayVersion=auditSoftware3.windowsDisplayVersion,
-            installSize=auditSoftware3.installSize
-        )
-
-        self.backend.auditSoftware_updateObject(auditSoftware3update)
-        auditSoftwares = self.backend.auditSoftware_getObjects(windowsDisplayName='updatedDN')
-        self.assertEqual(len(auditSoftwares), 1, u"Expected one audit software object, but found %s on backend." % (len(auditSoftwares)))
-        self.assertEqual(auditSoftware3update, auditSoftwares[0])
-
-    def test_deleteAuditSoftware(self):
-        auditSoftwaresIn = getAuditSoftwares()
-        self.backend.auditSoftware_createObjects(auditSoftwaresIn)
-
-        as3 = auditSoftwaresIn[2]
-
-        self.backend.auditSoftware_deleteObjects(as3)
-        auditSoftwares = self.backend.auditSoftware_getObjects()
-        self.assertEqual(len(auditSoftwares), len(auditSoftwaresIn) - 1)
-        self.assertTrue(as3.name not in [a.name for a in auditSoftwares])
-
-    def test_insertAuditSoftware(self):
-        auditSoftwaresIn = getAuditSoftwares()
-        self.backend.auditSoftware_createObjects(auditSoftwaresIn)
-
-        auditSoftware3 = auditSoftwaresIn[2]
-        self.backend.auditSoftware_deleteObjects(auditSoftware3)
-        self.backend.auditSoftware_insertObject(auditSoftware3)
-        auditSoftwares = self.backend.auditSoftware_getObjects()
-        self.assertEqual(len(auditSoftwares), len(auditSoftwaresIn))
-
     # def test_getAuditSoftewareLicensePoolFromBackend(self):
     #     # TODO: implement check - probably with requiredModules
     #     if not self.expected.licenseManagement:
@@ -667,70 +591,6 @@ class AuditTestsMixin(AuditHardwareMixin, AuditSoftwareMixin):
 
     #     auditSoftwareToLicensePools = self.backend.auditSoftwareToLicensePool_getObjects()
     #     self.assertEqual(len(auditSoftwareToLicensePools), len(self.expected.auditSoftwareToLicensePools), u"Expected %s audit license objects in pool, but found %s on backend." % (len(self.expected.auditSoftwareToLicensePools), len(auditSoftwareToLicensePools)))
-
-    def test_getAuditSoftwareOnClients(self):
-        auditSoftwares = getAuditSoftwares()
-        clients = getClients()
-        asoc = getAuditSoftwareOnClient(auditSoftwares, clients)
-        self.backend.auditSoftwareOnClient_createObjects(asoc)
-
-        auditSoftwareOnClients = self.backend.auditSoftwareOnClient_getObjects()
-        self.assertEqual(len(asoc), len(auditSoftwareOnClients))
-
-    def test_updateAuditSoftwareOnClient(self):
-        clients = getClients()
-        auditSoftwaresIn = getAuditSoftwares()
-        asoc = getAuditSoftwareOnClient(auditSoftwaresIn, clients)
-        self.backend.host_createObjects(clients)
-        self.backend.auditSoftware_createObjects(auditSoftwaresIn)
-        self.backend.auditSoftwareOnClient_createObjects(asoc)
-
-        client1 = clients[0]
-        auditSoftware1 = auditSoftwaresIn[0]
-        auditSoftwareOnClient1update = AuditSoftwareOnClient(
-            name=auditSoftware1.getName(),
-            version=auditSoftware1.getVersion(),
-            subVersion=auditSoftware1.getSubVersion(),
-            language=auditSoftware1.getLanguage(),
-            architecture=auditSoftware1.getArchitecture(),
-            clientId=client1.getId(),
-            uninstallString=None,
-            binaryName='updatedBN',
-            firstseen=None,
-            lastseen=None,
-            state=None,
-            usageFrequency=2,
-            lastUsed='2009-02-12 09:48:22'
-        )
-
-        self.backend.auditSoftwareOnClient_updateObject(auditSoftwareOnClient1update)
-        auditSoftwareOnClients = self.backend.auditSoftwareOnClient_getObjects(binaryName='updatedBN')
-        self.assertEqual(len(auditSoftwareOnClients), 1, "Expected one software object in pool, but found %s on backend." % (len(auditSoftwareOnClients)))
-        self.assertEqual(auditSoftwareOnClient1update, auditSoftwareOnClients[0])
-
-    def test_deleteAuditSoftwareOnClient(self):
-        auditSoftwares = getAuditSoftwares()
-        clients = getClients()
-        asoc = getAuditSoftwareOnClient(auditSoftwares, clients)
-        self.backend.auditSoftwareOnClient_createObjects(asoc)
-
-        asoc1 = asoc[0]
-        self.backend.auditSoftwareOnClient_deleteObjects(asoc1)
-        auditSoftwareOnClients = self.backend.auditSoftwareOnClient_getObjects()
-        self.assertEqual(len(asoc) - 1, len(auditSoftwareOnClients))
-
-    def test_insertAuditSoftwareOnClient(self):
-        auditSoftwares = getAuditSoftwares()
-        clients = getClients()
-        asoc = getAuditSoftwareOnClient(auditSoftwares, clients)
-        self.backend.auditSoftwareOnClient_createObjects(asoc)
-
-        asoc1 = asoc[0]
-
-        self.backend.auditSoftwareOnClient_deleteObjects(asoc1)
-        self.backend.auditSoftwareOnClient_insertObject(asoc1)
-        auditSoftwareOnClients = self.backend.auditSoftwareOnClient_getObjects()
-        self.assertEqual(len(auditSoftwareOnClients), len(asoc))
 
     @pytest.mark.requiresHwauditConfigFile
     def test_insertAuditHardwareOnHost(self):
@@ -761,6 +621,159 @@ class AuditTestsMixin(AuditHardwareMixin, AuditSoftwareMixin):
             self.assertEqual(len(auditHardwareOnHosts), len(ahoh) + 2)
         else:
             self.assertEqual(len(auditHardwareOnHosts), len(ahoh))
+
+
+def test_getAuditSoftwareFromBackend(softwareAuditBackend):
+    auditSoftwaresIn = getAuditSoftwares()
+    softwareAuditBackend.auditSoftware_createObjects(auditSoftwaresIn)
+
+    auditSoftwaresOut = softwareAuditBackend.auditSoftware_getObjects()
+    assert len(auditSoftwaresIn) == len(auditSoftwaresOut)
+    # TODO: provide a check that no data was changed.
+
+
+def test_updateAuditSoftware(softwareAuditBackend):
+    auditSoftwaresIn = getAuditSoftwares()
+    softwareAuditBackend.auditSoftware_createObjects(auditSoftwaresIn)
+
+    auditSoftware3 = auditSoftwaresIn[2]
+    auditSoftware3update = AuditSoftware(
+        name=auditSoftware3.name,
+        version=auditSoftware3.version,
+        subVersion=auditSoftware3.subVersion,
+        language=auditSoftware3.language,
+        architecture=auditSoftware3.architecture,
+        windowsSoftwareId=auditSoftware3.windowsSoftwareId,
+        windowsDisplayName='updatedDN',
+        windowsDisplayVersion=auditSoftware3.windowsDisplayVersion,
+        installSize=auditSoftware3.installSize
+    )
+
+    softwareAuditBackend.auditSoftware_updateObject(auditSoftware3update)
+    auditSoftwares = softwareAuditBackend.auditSoftware_getObjects(windowsDisplayName='updatedDN')
+    assert 1 == len(auditSoftwares), u"Expected one audit software object, but found %s on backend." % len(auditSoftwares)
+    assert auditSoftware3update == auditSoftwares[0]
+
+
+def test_deleteAuditSoftware(softwareAuditBackend):
+    auditSoftwaresIn = getAuditSoftwares()
+    softwareAuditBackend.auditSoftware_createObjects(auditSoftwaresIn)
+
+    as3 = auditSoftwaresIn[2]
+    softwareAuditBackend.auditSoftware_deleteObjects(as3)
+    auditSoftwares = softwareAuditBackend.auditSoftware_getObjects()
+
+    assert len(auditSoftwares) == len(auditSoftwaresIn) - 1
+    assert as3.name not in [a.name for a in auditSoftwares]
+
+
+def test_insertAuditSoftware(softwareAuditBackend):
+    auditSoftwaresIn = getAuditSoftwares()
+    softwareAuditBackend.auditSoftware_createObjects(auditSoftwaresIn)
+
+    auditSoftware3 = auditSoftwaresIn[2]
+    softwareAuditBackend.auditSoftware_deleteObjects(auditSoftware3)
+    softwareAuditBackend.auditSoftware_insertObject(auditSoftware3)
+    auditSoftwares = softwareAuditBackend.auditSoftware_getObjects()
+
+    assert len(auditSoftwares) == len(auditSoftwaresIn)
+
+
+def test_getAuditSoftwareOnClients(softwareAuditBackend):
+    asoc, _, _ = fillBackendWithAuditSoftwareOnClient(softwareAuditBackend)
+    softwareAuditBackend.auditSoftwareOnClient_createObjects(asoc)
+
+    auditSoftwareOnClients = softwareAuditBackend.auditSoftwareOnClient_getObjects()
+    assert len(asoc) == len(auditSoftwareOnClients)
+
+
+def test_updateAuditSoftwareOnClient(softwareAuditBackend):
+    asoc, auditSoftwaresIn, clients = fillBackendWithAuditSoftwareOnClient(softwareAuditBackend)
+
+    client1 = clients[0]
+    auditSoftware1 = auditSoftwaresIn[0]
+    auditSoftwareOnClient1update = AuditSoftwareOnClient(
+        name=auditSoftware1.getName(),
+        version=auditSoftware1.getVersion(),
+        subVersion=auditSoftware1.getSubVersion(),
+        language=auditSoftware1.getLanguage(),
+        architecture=auditSoftware1.getArchitecture(),
+        clientId=client1.getId(),
+        uninstallString=None,
+        binaryName='updatedBN',
+        firstseen=None,
+        lastseen=None,
+        state=None,
+        usageFrequency=2,
+        lastUsed='2009-02-12 09:48:22'
+    )
+
+    softwareAuditBackend.auditSoftwareOnClient_updateObject(auditSoftwareOnClient1update)
+    auditSoftwareOnClients = softwareAuditBackend.auditSoftwareOnClient_getObjects(binaryName='updatedBN')
+    assert 1 == len(auditSoftwareOnClients), "Expected one software object in pool, but found %s on backend." % len(auditSoftwareOnClients)
+    assert auditSoftwareOnClient1update == auditSoftwareOnClients[0]
+
+
+def test_deleteAuditSoftwareOnClient(softwareAuditBackend):
+    asoc, _, _ = fillBackendWithAuditSoftwareOnClient(softwareAuditBackend)
+    softwareAuditBackend.auditSoftwareOnClient_createObjects(asoc)
+
+    asoc1 = asoc[0]
+    softwareAuditBackend.auditSoftwareOnClient_deleteObjects(asoc1)
+    auditSoftwareOnClients = softwareAuditBackend.auditSoftwareOnClient_getObjects()
+    assert len(asoc) - 1 == len(auditSoftwareOnClients)
+
+
+def test_insertAuditSoftwareOnClient(softwareAuditBackend):
+    asoc, _, _ = fillBackendWithAuditSoftwareOnClient(softwareAuditBackend)
+
+    asoc1 = asoc[0]
+
+    softwareAuditBackend.auditSoftwareOnClient_deleteObjects(asoc1)
+    softwareAuditBackend.auditSoftwareOnClient_insertObject(asoc1)
+    auditSoftwareOnClients = softwareAuditBackend.auditSoftwareOnClient_getObjects()
+
+    assert len(auditSoftwareOnClients) == len(asoc)
+
+
+def fillBackendWithAuditSoftwareOnClient(backend):
+    auditSoftwares = getAuditSoftwares()
+    backend.auditSoftware_createObjects(auditSoftwares)
+
+    clients = getClients()
+    backend.host_createObjects(clients)
+
+    asoc = getAuditSoftwareOnClient(auditSoftwares, clients)
+    backend.auditSoftwareOnClient_createObjects(asoc)
+
+    return asoc, auditSoftwares, clients
+
+
+@pytest.mark.requiresHwauditConfigFile
+def testDeletingHostShouldDeleteHardwareAuditData(hardwareAuditBackend):
+    """
+    Deleting a host should delete it's audit data.
+    """
+    clients = getClients()
+    auditHardwares = getAuditHardwares()
+    auditHardwareOnHosts = getAuditHardwareOnHost(auditHardwares, clients)
+
+    client1 = clients[0]
+    auditHardwareOnHost1 = auditHardwareOnHosts[0]
+
+    hardwareAuditBackend.host_createObjects(client1)
+    hardwareAuditBackend.auditHardwareOnHost_createObjects(auditHardwareOnHost1)
+
+    assert 1 == len(hardwareAuditBackend.host_getObjects()), 'Self-test failed: Too much hosts.'
+    assert 1 == len(hardwareAuditBackend.auditHardwareOnHost_getObjects()), 'Self-test failed: Too much auditHardwareOnHosts.'
+
+    hardwareAuditBackend.host_deleteObjects([client1])
+    assert 0 == len(hardwareAuditBackend.host_getObjects())
+    assert 0 == len(hardwareAuditBackend.auditHardwareOnHost_getObjects())
+
+    hardwareAuditBackend.host_createObjects(client1)
+    assert 1 == len(hardwareAuditBackend.host_getObjects())
+    assert 0 == len(hardwareAuditBackend.auditHardwareOnHost_getObjects())
 
 
 @pytest.mark.requiresHwauditConfigFile
