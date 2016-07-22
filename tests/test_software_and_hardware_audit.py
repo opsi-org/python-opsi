@@ -853,11 +853,17 @@ class AuditTestsMixin(AuditHardwareMixin, AuditSoftwareMixin):
         else:
             self.assertEqual(len(auditHardwareOnHosts), len(ahoh))
 
-    @pytest.mark.requiresHwauditConfigFile
-    def test_deleteAllAuditHardwareOnHost(self):
-        self.backend.auditHardwareOnHost_delete(hostId=[], hardwareClass=[], firstseen=[], lastseen=[], state=[])
-        auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects()
-        self.assertEqual(len(auditHardwareOnHosts), 0, u"Expected no audit hardware objects on host, but found %s on backend." % (len(auditHardwareOnHosts)))
+
+@pytest.mark.requiresHwauditConfigFile
+def testDeletingAllAuditHardwareOnHost(hardwareAuditBackend):
+    ahoh, _, _ = fillBackendWithAuditHardwareOnHosts(hardwareAuditBackend)
+    hardwareAuditBackend.auditHardwareOnHost_createObjects(ahoh)
+
+    assert hardwareAuditBackend.auditHardwareOnHost_getObjects()
+
+    hardwareAuditBackend.auditHardwareOnHost_delete(hostId=[], hardwareClass=[], firstseen=[], lastseen=[], state=[])
+    auditHardwareOnHosts = hardwareAuditBackend.auditHardwareOnHost_getObjects()
+    assert 0 == len(auditHardwareOnHosts), u"Expected no audit hardware objects on host, but found %s on backend." % len(auditHardwareOnHosts)
 
 
 @pytest.mark.requiresHwauditConfigFile
