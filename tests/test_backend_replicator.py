@@ -32,8 +32,6 @@ import unittest
 from OPSI.Backend.Replicator import BackendReplicator
 
 from .Backends import getTestBackend
-from .BackendTestMixins.Audit import (getAuditHardwares,
-    getAuditHardwareOnHost, getAuditSoftwares, getAuditSoftwareOnClient)
 from .BackendTestMixins.Clients import getClients
 from .BackendTestMixins.Configs import getConfigs, getConfigStates
 from .BackendTestMixins.Hosts import getConfigServer, getDepotServers
@@ -42,6 +40,8 @@ from .BackendTestMixins.Products import (getLocalbootProducts,
     getNetbootProduct, getProductDepdencies, getProductProperties,
     getProductsOnDepot, getProductsOnClients, getProductPropertyStates)
 from .test_groups import (getHostGroups, getObjectToGroups, getProductGroup)
+from .test_software_and_hardware_audit import (getAuditHardwares,
+    getAuditHardwareOnHost, getAuditSoftwares, getAuditSoftwareOnClient)
 
 
 class ReplicatorTestCase(unittest.TestCase):
