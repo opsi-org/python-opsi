@@ -67,7 +67,7 @@ from OPSI.Types import forceHostId
 from OPSI.Util import findFiles, getfqdn
 from OPSI.Util.File.Opsi import OpsiConfFile
 from OPSI.System.Posix import (isCentOS, isDebian, isOpenSUSE, isRHEL, isSLES,
-	isUbuntu, isUCS)
+	isUbuntu, isUCS, Distribution)
 
 __version__ = '4.0.7.10'
 
@@ -270,8 +270,15 @@ installations may be.
 	On an unsuported distribution or without the relevant folder
 	existing `None` will be returned.
 	"""
-	if any(func() for func in (isDebian, isCentOS, isRHEL, isSLES, isUbuntu, isUCS)):
+	if any(func() for func in (isDebian, isCentOS, isRHEL, isUbuntu, isUCS)):
 		path = u'/var/www/html/opsi'
+	elif isSLES():
+		distri = Distribution()
+
+		if distri.version == (11, ):
+			path = u'/var/www/html/opsi'
+		else:
+			path = u'/srv/www/htdocs/opsi'
 	elif isOpenSUSE():
 		path = u'/srv/www/htdocs/opsi'
 	else:
