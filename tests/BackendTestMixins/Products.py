@@ -1769,7 +1769,7 @@ class ProductsOnClientTestsMixin(ProductsOnClientsMixin, ProductPropertiesMixin)
         * product4 (setup)
         * product2 (setup)
         """
-        from .ExtendedBackend import temporaryBackendOptions
+        from ..test_backend_extendedconfigdatabackend import temporaryBackendOptions
 
         clients = getClients()
         client1 = clients[0]

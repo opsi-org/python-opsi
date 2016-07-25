@@ -30,7 +30,7 @@ from OPSI.Util.HTTP import deflateEncode, gzipEncode
 
 from .helpers import unittest
 from .Backends.JSONRPC import JSONRPCTestCase
-from .BackendTestMixins import ExtendedBackendTestsMixin, BackendTestsMixin
+from .BackendTestMixins import BackendTestsMixin
 from .BackendTestMixins.Configs import ConfigStatesMixin
 
 
@@ -95,11 +95,7 @@ class JSONRPCBackendCompressionTestCase(unittest.TestCase):
         self.assertEquals("This is deflated", backend._processResponse(response))
 
 
-class JSONRPCBackendUsingTestCase(unittest.TestCase, JSONRPCTestCase,
-    # ExtendedBackendTestsMixin,
-    BackendTestsMixin,
-    # ConfigStatesMixin
-    ):
+class JSONRPCBackendUsingTestCase(unittest.TestCase, JSONRPCTestCase, BackendTestsMixin):
     def setUp(self):
         self.setUpBackend()
 
