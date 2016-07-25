@@ -1,3 +1,9 @@
+python-opsi (4.0.7.11-1) testing; urgency=medium
+
+  * OPSI.Util.Task.Rights: Better support for different SLES versions.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 25 Jul 2016 13:13:55 +0200
+
 python-opsi (4.0.7.10-1) testing; urgency=medium
 
   * OPSI.Util.Task.Rights: Do not fail if MySQL backend is configured but

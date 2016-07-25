@@ -146,6 +146,29 @@ def _sqlBackend(request):
             yield backend
 
 
+@pytest.yield_fixture
+def hardwareAuditBackendWithHistory(_sqlBackend):
+    yield ExtendedConfigDataBackend(_sqlBackend)
+
+
+@pytest.yield_fixture
+def auditDataBackend(extendedConfigDataBackend):
+    yield extendedConfigDataBackend
+
+
+@pytest.yield_fixture(
+    params=[getMySQLBackend],
+    ids=['mysql']
+)
+def licenseManagentAndAuditBackend(request):
+    # Note: this could run include SQLite but because then won't work
+    # on servers without opsi / licensing. Sadly sticking to this.
+
+    with request.param() as backend:
+        with _backendBase(backend):
+            yield ExtendedConfigDataBackend(backend)
+
+
 def pytest_runtest_setup(item):
     envmarker = item.get_marker("requiresModulesFile")
     if envmarker is not None:

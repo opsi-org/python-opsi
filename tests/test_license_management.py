@@ -29,8 +29,8 @@ from OPSI.Object import (LicenseContract, RetailSoftwareLicense,
 	OEMSoftwareLicense, VolumeSoftwareLicense, ConcurrentSoftwareLicense,
 	LicensePool, SoftwareLicenseToLicensePool, LicenseOnClient)
 
-from .BackendTestMixins.Clients import ClientsMixin, getClients
-from .BackendTestMixins.Products import ProductsMixin, getProducts
+from .BackendTestMixins.Clients import getClients
+from .BackendTestMixins.Products import getProducts
 
 import pytest
 
