@@ -29,70 +29,66 @@ import mock
 import os
 import re
 import tempfile
-import unittest
 
 import OPSI.Util.Product as Product
 
 from .helpers import cd, workInTemporaryDirectory
 
-
-class DirectoryExclusionRegexTestCase(unittest.TestCase):
-	def setUp(self):
-		self.regex = re.compile(Product.EXCLUDE_DIRS_ON_PACK)
-
-	def tearDown(self):
-		del self.regex
-
-	def testIgnoringSubversionDirectory(self):
-		self.assertTrue(self.regex.match('.svn'))
-		self.assertFalse(self.regex.match('.svnotmatching'))
-
-	def testIgnoringGitDirectory(self):
-		self.assertTrue(self.regex.match('.git'))
-		self.assertFalse(self.regex.match('.gitignore'))
+import pytest
 
 
-class ProductPackageFileTestCase(unittest.TestCase):
-
-	def testRemovingFolderWithUnicodeFilenamesInsideFails(self):
-		"""
-		As mentioned in http://bugs.python.org/issue3616 the attempt to
-		remove a filename that contains unicode can fail.
-
-		Sometimes products are created that feature files with filenames
-		that do containt just that.
-		We need to make shure that removing such fails does not fail and
-		that we are able to remove them.
-		"""
-		with workInTemporaryDirectory() as tempDir:
-			tempPackageFilename = tempfile.NamedTemporaryFile(suffix='.opsi')
-
-			ppf = Product.ProductPackageFile(tempPackageFilename.name)
-			ppf.setClientDataDir(tempDir)
-
-			fakeProduct = mock.Mock()
-			fakeProduct.getId.return_value = 'umlauts'
-			fakePackageControlFile = mock.Mock()
-			fakePackageControlFile.getProduct.return_value = fakeProduct
-
-			# Setting up evil file
-			targetDir = os.path.join(tempDir, 'umlauts')
-			os.makedirs(targetDir)
-
-			with cd(targetDir):
-				os.system(r"touch -- $(echo -e '--\0250--')")
-
-			with mock.patch.object(ppf, 'packageControlFile', fakePackageControlFile):
-				ppf.deleteProductClientDataDir()
-
-			self.assertFalse(
-				os.path.exists(targetDir),
-				"Product directory in depot should be deleted."
-			)
-
-	def testSettigUpWithNonExistingFileFails(self):
-		self.assertRaises(Exception, Product.ProductPackageFile, 'nonexisting.opsi')
+@pytest.mark.parametrize("text", [
+	'.svn',
+	pytest.mark.xfail('.svnotmatching'),
+	'.git',
+	pytest.mark.xfail('.gitignore'),
+])
+def testDirectoryExclusion(text):
+	assert re.match(Product.EXCLUDE_DIRS_ON_PACK, text)
 
 
-if __name__ == '__main__':
-	unittest.main()
+def testProductPackageFileRemovingFolderWithUnicodeFilenamesInsideFails():
+	"""
+	As mentioned in http://bugs.python.org/issue3616 the attempt to
+	remove a filename that contains unicode can fail.
+
+	Sometimes products are created that feature files with filenames
+	that do containt just that.
+	We need to make shure that removing such fails does not fail and
+	that we are able to remove them.
+	"""
+	with workInTemporaryDirectory() as tempDir:
+		tempPackageFilename = tempfile.NamedTemporaryFile(suffix='.opsi')
+
+		ppf = Product.ProductPackageFile(tempPackageFilename.name)
+		ppf.setClientDataDir(tempDir)
+
+		fakeProduct = mock.Mock()
+		fakeProduct.getId.return_value = 'umlauts'
+		fakePackageControlFile = mock.Mock()
+		fakePackageControlFile.getProduct.return_value = fakeProduct
+
+		# Setting up evil file
+		targetDir = os.path.join(tempDir, 'umlauts')
+		os.makedirs(targetDir)
+
+		with cd(targetDir):
+			os.system(r"touch -- $(echo -e '--\0250--')")
+
+		with mock.patch.object(ppf, 'packageControlFile', fakePackageControlFile):
+			ppf.deleteProductClientDataDir()
+
+		assert not os.path.exists(targetDir), "Product directory in depot should be deleted."
+
+
+def testSettigUpProductPackageFileWithNonExistingFileFails():
+	with pytest.raises(Exception):
+		Product.ProductPackageFile('nonexisting.opsi')
+
+
+def testCreatingProductPackageSourceRequiresExistingSourceFolder():
+	with workInTemporaryDirectory() as tempDir:
+		targetDir = os.path.join(tempDir, 'nope')
+
+		with pytest.raises(Exception):
+			Product.ProductPackageSource(targetDir)
