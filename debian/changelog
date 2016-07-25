@@ -1,3 +1,9 @@
+python-opsi (4.0.7.12-1) UNRELEASED; urgency=medium
+
+  * Correct version in OPSI.Util.Task.Rights.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 25 Jul 2016 14:39:25 +0200
+
 python-opsi (4.0.7.11-1) testing; urgency=medium
 
   * OPSI.Util.Task.Rights: Better support for different SLES versions.
