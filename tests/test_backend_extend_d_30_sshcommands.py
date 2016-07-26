@@ -90,39 +90,39 @@ def getTestCommandWithDefault( existingcom):
 
 def getSSHCommandCreationParameter():
 	(com1_min, com1_full), (com2_min, com2_full), (com3_min, com3_full) = getTestCommands()
-	c1 = getTestOneCommand( None,"menuText1", [u'commands'], 10, True, u'testtooltiptext', u'testparentmenu')
-	c1_f = c1
-	c1_f["id"] = "menutext1"
-	 # = getTestOneCommand( "menutext1","menuText1", [u'commands'], 10, True, u'testtooltiptext', u'testparentmenu')
-	c2 = getTestOneCommand( None,"menuText2", [u'commands'], 10, False, u'', u'testparentmenu')
-	c2_f = c2
-	c2_f["id"] = "menutext2"
-	# c2_f = getTestOneCommand( "menutext2","menuText2", [u'commands'], 10, False, u'', u'testparentmenu')
+	# c1 = getTestOneCommand( None,"menuText1", [u'commands'], 10, True, u'testtooltiptext', u'testparentmenu')
+	# c1_f = c1
+	# c1_f["id"] = "menutext1"
+	#  # = getTestOneCommand( "menutext1","menuText1", [u'commands'], 10, True, u'testtooltiptext', u'testparentmenu')
+	# c2 = getTestOneCommand( None,"menuText2", [u'commands'], 10, False, u'', u'testparentmenu')
+	# c2_f = c2
+	# c2_f["id"] = "menutext2"
+	# # c2_f = getTestOneCommand( "menutext2","menuText2", [u'commands'], 10, False, u'', u'testparentmenu')
 
-	c3 = getTestOneCommand( None,"menuText2", [u'commands'], 10, False, False, False)
-	c3_f = c3
-	c3_f["id"] = "menutext3"
-	# c3_f = getTestOneCommand( "menutext3","menuText2", [u'commands'], 10, False, False, False)
+	# c3 = getTestOneCommand( None,"menuText2", [u'commands'], 10, False, False, False)
+	# c3_f = c3
+	# c3_f["id"] = "menutext3"
+	# # c3_f = getTestOneCommand( "menutext3","menuText2", [u'commands'], 10, False, False, False)
 
-	c4 = getTestOneCommand( None,"menuText2", [u'commands'], 10, False, False, None)
-	c4_f = c4
-	c4_f["id"] = "menutext4"
-	# c4_f = getTestOneCommand( "menutext4","menuText2", [u'commands'], 10, False, False, None)
+	# c4 = getTestOneCommand( None,"menuText2", [u'commands'], 10, False, False, None)
+	# c4_f = c4
+	# c4_f["id"] = "menutext4"
+	# # c4_f = getTestOneCommand( "menutext4","menuText2", [u'commands'], 10, False, False, None)
 
-	c5 = getTestOneCommand( None,"menuText2", [u'commands'], 10, False, 50, 20)
-	c5_f = c5
-	c5_f["id"] = "menutext5"
-	# c5_f = getTestOneCommand( "menutext5","menuText2", [u'commands'], 10, False, 50, 20)
+	# c5 = getTestOneCommand( None,"menuText2", [u'commands'], 10, False, 50, 20)
+	# c5_f = c5
+	# c5_f["id"] = "menutext5"
+	# # c5_f = getTestOneCommand( "menutext5","menuText2", [u'commands'], 10, False, 50, 20)
 
-	c6 = getTestOneCommand( None,"menuText2", [u'commands'], 10, False, u'', False)
-	c6_f = c6
-	c6_f["id"] = "menutext6"
-	# c6_f = getTestOneCommand( "menutext6","menuText2", [u'commands'], 10, False, u'', False)
+	# c6 = getTestOneCommand( None,"menuText2", [u'commands'], 10, False, u'', False)
+	# c6_f = c6
+	# c6_f["id"] = "menutext6"
+	# # c6_f = getTestOneCommand( "menutext6","menuText2", [u'commands'], 10, False, u'', False)
 
-	c7 = getTestOneCommand( None,"menuText2", ["commands"], 10, False, u'', u'')
-	c7_f = c7
-	c7_f["id"] = "menutext7"
-	# c7_f = getTestOneCommand( "menutext7","menuText2", ["commands"], 10, False, u'', u'')
+	# c7 = getTestOneCommand( None,"menuText2", ["commands"], 10, False, u'', u'')
+	# c7_f = c7
+	# c7_f["id"] = "menutext7"
+	# # c7_f = getTestOneCommand( "menutext7","menuText2", ["commands"], 10, False, u'', u'')
 	return [
 		[[com1_min] , [getTestCommandWithDefault(com1_full)]],
 		[[com1_min, com2_min] , [getTestCommandWithDefault(com1_full), getTestCommandWithDefault(com2_full)]],
@@ -134,7 +134,7 @@ def getSSHCommandCreationParameter():
 		# [[c5] , [c5_f]],
 		# [[c6] , [c6_f]],
 		# [[c7] , [c7_f]]
-		# [[c1,c2] , [c7]],
+		# [[c1,c2] , [c1_f,c2_f]]
 	]
 
 @pytest.mark.parametrize("val,expected_result", getSSHCommandCreationParameter())
@@ -296,8 +296,8 @@ class SSHCommandsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
 		with workWithEmptyCommandFile(self.backend._backend):
 			com123_new_full = [self.com1_full, self.com2_full, self.com3_full]
 			com123_new_full[0] = self.setNewSSHCommand(com123_new_full[0], [u'MyNewTestCom1'], 11, True, u'MyNewTooltipText1', u'myParent1')
-			com123_new_full[1] = self.setNewSSHCommand(com123_new_full[1], [u'MyNewTestCom2'], 12, True, u'MyNewTooltipText2', u'myParent2')
-			com123_new_full[2] = self.setNewSSHCommand(com123_new_full[2], [u'MyNewTestCom3'], 13, True, u'MyNewTooltipText3', u'myParent3')
+			com123_new_full[1] = self.setNewSSHCommand(com123_new_full[1], [u'MyNewTestCom2'], 12, False, u'MyNewTooltipText2', u'myParent2')
+			com123_new_full[2] = self.setNewSSHCommand(com123_new_full[2], [u'MyNewTestCom3'], 13, False, u'MyNewTooltipText3', u'myParent3')
 			self.assertEqual(self.backend.SSHCommand_getObjects(), [], "first return of SSHCommand_getObjects should be an empty list")
 			self.backend.SSHCommand_createObjects( [self.com1_min, self.com2_min])
 			return_command = self.backend.SSHCommand_updateObjects( com123_new_full)
