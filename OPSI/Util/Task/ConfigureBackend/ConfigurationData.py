@@ -327,7 +327,7 @@ def _createBooleanConfigsIfMissing(backend, configs):
 	availableConfigs = set(backend.config_getIdents())
 	for config in configs:
 		if config.id not in availableConfigs:
-			LOGGER.debug(u"Adding missing config '{0}'".format(config.id))
+			LOGGER.debug(u"Adding missing config {0!r}", config.id)
 			backend.config_createBool(config.id, config.description, config.value)
 
 
