@@ -218,3 +218,16 @@ def testAddingUCSSpecificConfigs(extendedConfigDataBackend, runningOnUCS):
     assert ('clientconfig.depot.user' in configIdents) == runningOnUCS
 
     # TODO: check the returned depot user
+
+
+def testConfigsAreOnlyAddedOnce(extendedConfigDataBackend):
+    sambaTestConfig = os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'task', 'smb.conf')
+    confData.initializeConfigs(backend=extendedConfigDataBackend, pathToSMBConf=sambaTestConfig)
+
+    configIdentsFirst = set(extendedConfigDataBackend.config_getIdents(returnType='unicode'))
+
+    confData.initializeConfigs(backend=extendedConfigDataBackend, pathToSMBConf=sambaTestConfig)
+    configIdentsSecond = set(extendedConfigDataBackend.config_getIdents(returnType='unicode'))
+
+    assert configIdentsFirst == configIdentsSecond
+
