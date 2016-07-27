@@ -73,9 +73,8 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 		backend = bm.BackendManager()
 		backend.backend_createBase()
 
-
 	LOGGER.notice(u'Setting up default values.')
-	backend.config_createObjects(getDefaultConfigs())  # pylint: disable=maybe-no-member
+	backend.config_createObjects(getDefaultConfigs(backend))  # pylint: disable=maybe-no-member
 
 	addDynamicDepotDriveSelection(backend)
 	createWANconfigs(backend)
