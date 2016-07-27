@@ -39,6 +39,8 @@ from OPSI.Logger import Logger
 LOGGER = Logger()
 SMB_CONF = u'/etc/samba/smb.conf'
 
+SimpleConfig = namedtuple('SimpleConfig', ['id', 'description', 'value'])
+
 
 def initializeConfigs(backend=None, configServer=None, pathToSMBConf=SMB_CONF):
 	"""
@@ -307,8 +309,6 @@ def addDynamicDepotDriveSelection(backend):
 def createWANconfigs(backend):
 	"Create the configurations that are used by the WAN extension if missing."
 
-	SimpleConfig = namedtuple('SimpleConfig', ['id', 'description', 'value'])
-
 	configs = [
 		SimpleConfig(u"opsiclientd.event_gui_startup.active",
 			u"gui_startup active", True),
@@ -320,24 +320,21 @@ def createWANconfigs(backend):
 			u"event_timer active", False)
 	]
 
+	_createBooleanConfigsIfMissing(backend, configs)
+
+
+def _createBooleanConfigsIfMissing(backend, configs):
 	availableConfigs = set(backend.config_getIdents())
 	for config in configs:
 		if config.id not in availableConfigs:
 			LOGGER.debug(u"Adding missing config '{0}'".format(config.id))
 			backend.config_createBool(config.id, config.description, config.value)
+
 
 def createInstallByShutdownConfig(backend):
 	"Create the configurations that are used by the InstallByShutdown extension if missing."
 
-	SimpleConfig = namedtuple('SimpleConfig', ['id', 'description', 'value'])
+	config = SimpleConfig(u"clientconfig.install_by_shutdown.active",
+		u"install_by_shutdown active", False)
 
-	configs = [
-		SimpleConfig(u"clientconfig.install_by_shutdown.active",
-			u"install_by_shutdown active", False)
-	]
-
-	availableConfigs = set(backend.config_getIdents())
-	for config in configs:
-		if config.id not in availableConfigs:
-			LOGGER.debug(u"Adding missing config '{0}'".format(config.id))
-			backend.config_createBool(config.id, config.description, config.value)
+	_createBooleanConfigsIfMissing(backend, [config])
