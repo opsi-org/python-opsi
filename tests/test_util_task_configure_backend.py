@@ -205,3 +205,16 @@ def testAddingInstallByShutdownConfig(extendedConfigDataBackend):
 
     for ident in requiredConfigIdents:
         assert ident in identsInBackend, "Missing config id {0}".format(ident)
+
+
+@pytest.mark.parametrize("runningOnUCS", [True, False])
+def testConfigureBackendAddsMissingEntries(extendedConfigDataBackend, runningOnUCS):
+    sambaTestConfig = os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'task', 'smb.conf')
+    with mock.patch('OPSI.Util.Task.ConfigureBackend.ConfigurationData.isUCS', runningOnUCS):
+        confData.initializeConfigs(backend=extendedConfigDataBackend, pathToSMBConf=sambaTestConfig)
+
+    configIdents = set(extendedConfigDataBackend.config_getIdents(returnType='unicode'))
+
+    assert ('clientconfig.depot.user' in configIdents) == runningOnUCS
+
+    # TODO: check the returned depot user
