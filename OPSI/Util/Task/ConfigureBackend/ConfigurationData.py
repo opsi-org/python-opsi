@@ -74,7 +74,7 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 		backend.backend_createBase()
 
 	LOGGER.notice(u'Setting up default values.')
-	backend.config_createObjects(getDefaultConfigs(backend))  # pylint: disable=maybe-no-member
+	backend.config_createObjects(getDefaultConfigs(backend, configServer, pathToSMBConf))  # pylint: disable=maybe-no-member
 
 	addDynamicDepotDriveSelection(backend)
 	createWANconfigs(backend)
@@ -86,7 +86,7 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 		backend.backend_exit()
 
 
-def getDefaultConfigs(backend):
+def getDefaultConfigs(backend, configServer=None, pathToSMBConf=SMB_CONF):
 	configIdents = set(backend.config_getIdents(returnType='unicode'))  # pylint: disable=maybe-no-member
 
 	if isUCS():
