@@ -110,6 +110,8 @@ def testReadingWindowsDomainFromSambaConfig():
     u'product_sort_algorithm',
     u'clientconfig.dhcpd.filename',
     pytest.mark.xfail(u'software-on-demand.show-details', strict=True),
+    u'opsiclientd.event_user_login.active',
+    u'opsiclientd.event_user_login.action_processor_command',
 ])
 def testConfigureBackendAddsMissingEntries(extendedConfigDataBackend, configId):
     sambaTestConfig = os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'task', 'smb.conf')

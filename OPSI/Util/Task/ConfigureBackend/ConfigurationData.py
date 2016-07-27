@@ -40,6 +40,7 @@ LOGGER = Logger()
 SMB_CONF = u'/etc/samba/smb.conf'
 
 SimpleBoolConfig = namedtuple('SimpleBoolConfig', ['id', 'description', 'value'])
+SimpleUnicodeConfig = namedtuple('SimpleUnicodeConfig', ['id', 'description', 'values'])
 
 
 def initializeConfigs(backend=None, configServer=None, pathToSMBConf=SMB_CONF):
@@ -315,3 +316,25 @@ def createInstallByShutdownConfig(backend):
 		u"install_by_shutdown active", False)
 
 	_createBooleanConfigsIfMissing(backend, [config])
+
+
+def createUserProfileManagementDefaults(backend):
+	"Create the default configuration for the User Profile Management extension."
+
+	eventActiveConfig = SimpleBoolConfig(u"opsiclientd.event_user_login.active", u"user_login active", False)
+	_createBooleanConfigsIfMissing(backend, [eventActiveConfig])
+
+	actionProcressorCommand = SimpleUnicodeConfig(
+		'opsiclientd.event_user_login.action_processor_command',
+		"user_login action_processor",
+		["%action_processor.command% /sessionid service_session /loginscripts /silent"]
+	)
+
+	if actionProcressorCommand.id not in set(backend.config_getIdents()):
+		LOGGER.debug(u"Adding missing config {0!r}", actionProcressorCommand.id)
+		backend.config_createUnicode(
+			actionProcressorCommand.id,
+			actionProcressorCommand.description,
+			possibleValues=actionProcressorCommand.values,
+			defaultValues=actionProcressorCommand.values
+		)
