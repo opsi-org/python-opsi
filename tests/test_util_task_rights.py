@@ -35,7 +35,7 @@ from collections import defaultdict
 from OPSI.Util.Task.Rights import (chown, getDepotDirectory,
     getDirectoriesAndExpectedRights, getWebserverRepositoryPath,
     getWebserverUsernameAndGroupname, filterDirsAndRights,
-    setRightsOnSSHDirectory, setRightsOnFile, Distribution)
+    setRightsOnSSHDirectory, setRightsOnFile)
 
 from .helpers import mock, unittest, workInTemporaryDirectory
 
@@ -230,6 +230,7 @@ def testGettingDirectoriesAndRights(patchUserInfo):
     ('/var/www/html/opsi', 'isCentOS'),
     ('/var/www/html/opsi', 'isDebian'),
     ('/srv/www/htdocs/opsi', 'isOpenSUSE'),
+    ('/srv/www/htdocs/opsi', 'isSLES'),
     ('/var/www/html/opsi', 'isRHEL'),
     ('/var/www/html/opsi', 'isUbuntu'),
     ('/var/www/html/opsi', 'isUCS'),
@@ -239,22 +240,6 @@ def testGettingWebserverRepositoryPath(dir, function, directoryExists):
         with mock.patch('OPSI.Util.Task.Rights.{0}'.format(function), lambda: True):
             with mock.patch('OPSI.Util.Task.Rights.os.path.exists', lambda x: directoryExists):
                 assert dir == getWebserverRepositoryPath()
-
-
-@pytest.mark.parametrize("directoryExists", [True, pytest.mark.xfail(False)])
-@pytest.mark.parametrize("dir, version_info", [
-    ('/srv/www/htdocs/opsi', '12'),
-    ('/var/www/html/opsi', '11'),
-])
-def testGettingWebserverRepositoryPathOnSLES(dir, version_info, directoryExists):
-    def fakeDistriFactory():
-        return Distribution(('SUSE Linux Enterprise Server ', version_info, 'x86_64'))
-
-    with disableOSChecks(OS_CHECK_FUNCTIONS[:]):
-        with mock.patch('OPSI.Util.Task.Rights.isSLES', lambda: True):
-            with mock.patch('OPSI.Util.Task.Rights.Distribution', fakeDistriFactory):
-                with mock.patch('OPSI.Util.Task.Rights.os.path.exists', lambda x: directoryExists):
-                    assert dir == getWebserverRepositoryPath()
 
 
 @pytest.mark.parametrize("function, username, groupname", [

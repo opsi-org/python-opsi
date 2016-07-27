@@ -1,3 +1,9 @@
+python-opsi (4.0.7.13-1) testing; urgency=medium
+
+  * OPSI.Util.Task.Rights: Corrected path for SLES 11.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 27 Jul 2016 17:11:57 +0200
+
 python-opsi (4.0.7.12-1) stable; urgency=medium
 
   * Correct indentation in some places.
