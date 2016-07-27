@@ -31,7 +31,7 @@ import re
 from collections import namedtuple
 
 import OPSI.Backend.BackendManager as bm
-import OPSI.Object as oobject
+from OPSI.Object import UnicodeConfig, BoolConfig
 from OPSI.System.Posix import isUCS
 
 from OPSI.Logger import Logger
@@ -97,7 +97,7 @@ def getDefaultConfigs(backend, configServer=None, pathToSMBConf=SMB_CONF):
 			if depotdomain:
 				depotuser = u'\\'.join((depotdomain, depotuser))
 
-			yield oobject.UnicodeConfig(
+			yield UnicodeConfig(
 				id=u'clientconfig.depot.user',
 				description=u'User for depot share',
 				possibleValues=[],
@@ -108,7 +108,7 @@ def getDefaultConfigs(backend, configServer=None, pathToSMBConf=SMB_CONF):
 
 	if configServer and u'clientconfig.configserver.url' not in configIdents:
 		LOGGER.debug("Missing clientconfig.configserver.url - adding it.")
-		yield oobject.UnicodeConfig(
+		yield UnicodeConfig(
 			id=u'clientconfig.configserver.url',
 			description=u'URL(s) of opsi config service(s) to use',
 			possibleValues=[u'https://%s:4447/rpc' % configServer.getIpAddress()],
@@ -119,7 +119,7 @@ def getDefaultConfigs(backend, configServer=None, pathToSMBConf=SMB_CONF):
 
 	if configServer and u'clientconfig.depot.id' not in configIdents:
 		LOGGER.debug(u"Missing clientconfig.depot.id - adding it.")
-		yield oobject.UnicodeConfig(
+		yield UnicodeConfig(
 			id=u'clientconfig.depot.id',
 			description=u'ID of the opsi depot to use',
 			possibleValues=[configServer.getId()],
@@ -130,7 +130,7 @@ def getDefaultConfigs(backend, configServer=None, pathToSMBConf=SMB_CONF):
 
 	if u'clientconfig.depot.dynamic' not in configIdents:
 		LOGGER.debug(u"Missing clientconfig.depot.dynamic - adding it.")
-		yield oobject.BoolConfig(
+		yield BoolConfig(
 			id=u'clientconfig.depot.dynamic',
 			description=u'Use dynamic depot selection',
 			defaultValues=[False]
@@ -139,7 +139,7 @@ def getDefaultConfigs(backend, configServer=None, pathToSMBConf=SMB_CONF):
 	if u'clientconfig.depot.drive' not in configIdents:
 		LOGGER.debug(u"Missing clientconfig.depot.drive - adding it.")
 
-		yield oobject.UnicodeConfig(
+		yield UnicodeConfig(
 			id=u'clientconfig.depot.drive',
 			description=u'Drive letter for depot share',
 			possibleValues=[
@@ -156,7 +156,7 @@ def getDefaultConfigs(backend, configServer=None, pathToSMBConf=SMB_CONF):
 
 	if u'clientconfig.depot.protocol' not in configIdents:
 		LOGGER.debug(u"Missing clientconfig.depot.protocol - adding it.")
-		yield oobject.UnicodeConfig(
+		yield UnicodeConfig(
 			id=u'clientconfig.depot.protocol',
 			description=u'Protocol for file transfer',
 			possibleValues=['cifs', 'webdav'],
@@ -167,7 +167,7 @@ def getDefaultConfigs(backend, configServer=None, pathToSMBConf=SMB_CONF):
 
 	if u'clientconfig.windows.domain' not in configIdents:
 		LOGGER.debug(u"Missing clientconfig.windows.domain - adding it.")
-		yield oobject.UnicodeConfig(
+		yield UnicodeConfig(
 			id=u'clientconfig.windows.domain',
 			description=u'Windows domain',
 			possibleValues=[],
@@ -178,7 +178,7 @@ def getDefaultConfigs(backend, configServer=None, pathToSMBConf=SMB_CONF):
 
 	if u'opsi-linux-bootimage.append' not in configIdents:
 		LOGGER.debug(u"Missing opsi-linux-bootimage.append - adding it.")
-		yield oobject.UnicodeConfig(
+		yield UnicodeConfig(
 			id=u'opsi-linux-bootimage.append',
 			description=u'Extra options to append to kernel command line',
 			possibleValues=[
@@ -192,7 +192,7 @@ def getDefaultConfigs(backend, configServer=None, pathToSMBConf=SMB_CONF):
 
 	if u'license-management.use' not in configIdents:
 		LOGGER.debug(u"Missing license-management.use - adding it.")
-		yield oobject.BoolConfig(
+		yield BoolConfig(
 			id=u'license-management.use',
 			description=u'Activate license management',
 			defaultValues=[False]
@@ -200,7 +200,7 @@ def getDefaultConfigs(backend, configServer=None, pathToSMBConf=SMB_CONF):
 
 	if u'software-on-demand.active' not in configIdents:
 		LOGGER.debug(u"Missing software-on-demand.active - adding it.")
-		yield oobject.BoolConfig(
+		yield BoolConfig(
 			id=u'software-on-demand.active',
 			description=u'Activate software-on-demand',
 			defaultValues=[False]
@@ -208,7 +208,7 @@ def getDefaultConfigs(backend, configServer=None, pathToSMBConf=SMB_CONF):
 
 	if u'software-on-demand.product-group-ids' not in configIdents:
 		LOGGER.debug(u"Missing software-on-demand.product-group-ids - adding it.")
-		yield oobject.UnicodeConfig(
+		yield UnicodeConfig(
 			id=u'software-on-demand.product-group-ids',
 			description=(
 				u'Product group ids containing products which are '
@@ -222,7 +222,7 @@ def getDefaultConfigs(backend, configServer=None, pathToSMBConf=SMB_CONF):
 
 	if u'product_sort_algorithm' not in configIdents:
 		LOGGER.debug(u"Missing product_sort_algorithm - adding it.")
-		yield oobject.UnicodeConfig(
+		yield UnicodeConfig(
 			id=u'product_sort_algorithm',
 			description=u'Product sorting algorithm',
 			possibleValues=[u'algorithm1', u'algorithm2'],
@@ -233,7 +233,7 @@ def getDefaultConfigs(backend, configServer=None, pathToSMBConf=SMB_CONF):
 
 	if u'clientconfig.dhcpd.filename' not in configIdents:
 		LOGGER.debug(u"Missing clientconfig.dhcpd.filename - adding it.")
-		yield oobject.UnicodeConfig(
+		yield UnicodeConfig(
 			id=u'clientconfig.dhcpd.filename',
 			description=(
 				u"The name of the file that will be presented to the "
