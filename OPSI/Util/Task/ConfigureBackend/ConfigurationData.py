@@ -32,14 +32,14 @@ from collections import namedtuple
 
 import OPSI.Backend.BackendManager as bm
 import OPSI.Object as oobject
-import OPSI.System.Posix as Posix
+from OPSI.System.Posix import isUCS
 
 from OPSI.Logger import Logger
 
 LOGGER = Logger()
 SMB_CONF = u'/etc/samba/smb.conf'
 
-SimpleConfig = namedtuple('SimpleConfig', ['id', 'description', 'value'])
+SimpleBoolConfig = namedtuple('SimpleBoolConfig', ['id', 'description', 'value'])
 
 
 def initializeConfigs(backend=None, configServer=None, pathToSMBConf=SMB_CONF):
@@ -310,13 +310,13 @@ def createWANconfigs(backend):
 	"Create the configurations that are used by the WAN extension if missing."
 
 	configs = [
-		SimpleConfig(u"opsiclientd.event_gui_startup.active",
+		SimpleBoolConfig(u"opsiclientd.event_gui_startup.active",
 			u"gui_startup active", True),
-		SimpleConfig(u"opsiclientd.event_gui_startup{user_logged_in}.active",
+		SimpleBoolConfig(u"opsiclientd.event_gui_startup{user_logged_in}.active",
 			u"gui_startup{user_logged_in} active", True),
-		SimpleConfig(u"opsiclientd.event_net_connection.active",
+		SimpleBoolConfig(u"opsiclientd.event_net_connection.active",
 			u"event_net_connection active", False),
-		SimpleConfig(u"opsiclientd.event_timer.active",
+		SimpleBoolConfig(u"opsiclientd.event_timer.active",
 			u"event_timer active", False)
 	]
 
@@ -334,7 +334,7 @@ def _createBooleanConfigsIfMissing(backend, configs):
 def createInstallByShutdownConfig(backend):
 	"Create the configurations that are used by the InstallByShutdown extension if missing."
 
-	config = SimpleConfig(u"clientconfig.install_by_shutdown.active",
+	config = SimpleBoolConfig(u"clientconfig.install_by_shutdown.active",
 		u"install_by_shutdown active", False)
 
 	_createBooleanConfigsIfMissing(backend, [config])
