@@ -2885,7 +2885,8 @@ def isUCS():
 	Returns `True` if this is running on Univention Corporate Server.
 	Returns `False` if otherwise.
 	"""
-	return _checkForDistribution('Univention')
+	return (_checkForDistribution('Univention')
+			or u'univention' in Distribution().distributor.lower())
 
 
 def _checkForDistribution(name):

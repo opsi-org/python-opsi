@@ -65,9 +65,6 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 
 	    Adding WAN extension configurations if missing.
 	"""
-	def runningOnUCS():
-		return u'univention' in Posix.Distribution().distributor.lower()
-
 	backendProvided = True
 
 	if backend is None:
@@ -83,7 +80,7 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 	configs = []
 	configIdents = set(backend.config_getIdents(returnType='unicode'))  # pylint: disable=maybe-no-member
 
-	if runningOnUCS():
+	if isUCS():
 		# We have a domain present and people might want to change this.
 		if u'clientconfig.depot.user' not in configIdents:
 			depotuser = u'pcpatch'
