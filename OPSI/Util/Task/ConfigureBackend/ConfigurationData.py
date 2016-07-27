@@ -69,12 +69,7 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 
 	if backend is None:
 		backendProvided = False
-		backend = bm.BackendManager(
-			dispatchConfigFile=u'/etc/opsi/backendManager/dispatch.conf',
-			backendConfigDir=u'/etc/opsi/backends',
-			extensionConfigDir=u'/etc/opsi/backendManager/extend.d',
-			depotbackend=False
-		)
+		backend = bm.BackendManager()
 		backend.backend_createBase()
 
 	configs = []
