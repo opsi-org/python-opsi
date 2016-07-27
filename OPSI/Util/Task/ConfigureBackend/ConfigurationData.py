@@ -260,12 +260,12 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 	if configs:
 		LOGGER.notice(u'Setting up default values.')
 		backend.config_createObjects(configs)  # pylint: disable=maybe-no-member
-		LOGGER.notice(u'Finished setting up default values.')
 
 	addDynamicDepotDriveSelection(backend)
 	createWANconfigs(backend)
 	createInstallByShutdownConfig(backend)
 
+	LOGGER.notice(u'Finished setting up default values.')
 	if not backendProvided:
 		backend.backend_exit()
 
