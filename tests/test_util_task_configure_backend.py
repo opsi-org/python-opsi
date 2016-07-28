@@ -210,7 +210,7 @@ def testAddingInstallByShutdownConfig(extendedConfigDataBackend):
 @pytest.mark.parametrize("runningOnUCS", [True, False])
 def testAddingUCSSpecificConfigs(extendedConfigDataBackend, runningOnUCS):
     sambaTestConfig = os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'task', 'smb.conf')
-    with mock.patch('OPSI.Util.Task.ConfigureBackend.ConfigurationData.isUCS', runningOnUCS):
+    with mock.patch('OPSI.Util.Task.ConfigureBackend.ConfigurationData.isUCS', lambda: runningOnUCS):
         confData.initializeConfigs(backend=extendedConfigDataBackend, pathToSMBConf=sambaTestConfig)
 
     configIdents = set(extendedConfigDataBackend.config_getIdents(returnType='unicode'))
