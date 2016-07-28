@@ -32,7 +32,7 @@ import OPSI.Util.Task.ConfigureBackend as backendConfigUtils
 import OPSI.Util.Task.ConfigureBackend.ConfigurationData as confData
 
 from .Backends.File import FileBackendMixin
-from .helpers import createTemporaryTestfile, unittest
+from .helpers import createTemporaryTestfile, mock, unittest
 
 import pytest
 
