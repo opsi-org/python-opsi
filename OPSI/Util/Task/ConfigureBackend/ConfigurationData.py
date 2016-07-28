@@ -33,6 +33,7 @@ from collections import namedtuple
 import OPSI.Backend.BackendManager as bm
 from OPSI.Object import UnicodeConfig, BoolConfig
 from OPSI.System.Posix import isUCS
+from OPSI.Types import BackendMissingDataError
 
 from OPSI.Logger import Logger
 
@@ -108,11 +109,19 @@ def getDefaultConfigs(backend, configServer=None, pathToSMBConf=SMB_CONF):
 
 	if configServer and u'clientconfig.configserver.url' not in configIdents:
 		LOGGER.debug("Missing clientconfig.configserver.url - adding it.")
+		ipAddress = configServer.getIpAddress()
+		if not ipAddress:
+			raise BackendMissingDataError(
+				"No IP address configured for the configserver {0}".format(
+					configServer.id
+				)
+			)
+
 		yield UnicodeConfig(
 			id=u'clientconfig.configserver.url',
 			description=u'URL(s) of opsi config service(s) to use',
-			possibleValues=[u'https://%s:4447/rpc' % configServer.getIpAddress()],
-			defaultValues=[u'https://%s:4447/rpc' % configServer.getIpAddress()],
+			possibleValues=[u'https://%s:4447/rpc' % ipAddress],
+			defaultValues=[u'https://%s:4447/rpc' % ipAddress],
 			editable=True,
 			multiValue=True
 		)
