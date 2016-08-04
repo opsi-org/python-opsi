@@ -65,7 +65,7 @@ from OPSI.Util import (blowfishEncrypt, blowfishDecrypt, compareVersions,
 from OPSI.Util.File import ConfigFile
 import OPSI.SharedAlgorithm
 
-__version__ = '4.0.7.2'
+__version__ = '4.0.7.8'
 
 logger = Logger()
 OPSI_VERSION_FILE = u'/etc/opsi/version'
@@ -73,6 +73,13 @@ OPSI_MODULES_FILE = u'/etc/opsi/modules'
 OPSI_PASSWD_FILE = u'/etc/opsi/passwd'
 OPSI_GLOBAL_CONF = u'/etc/opsi/global.conf'
 LOG_DIR = u'/var/log/opsi'
+LOG_TYPES = {  # key = logtype, value = requires objectId for read
+	'bootimage': True,
+	'clientconnect': True,
+	'instlog': True,
+	'opsiconfd': False,
+	'userlogin': True,
+}
 
 try:
 	with open(os.path.join('/etc', 'opsi', 'opsiconfd.conf')) as config:
@@ -610,17 +617,17 @@ overwrite the log.
 		:type append: bool
 		"""
 		logType = forceUnicode(logType)
-		if logType not in ('bootimage', 'clientconnect', 'instlog', 'userlogin', 'opsiconfd'):
+		if logType not in LOG_TYPES:
 			raise BackendBadValueError(u"Unknown log type '%s'" % logType)
 
 		if not objectId:
-			if logType in ('bootimage', 'clientconnect', 'userlogin', 'instlog', 'opsiconfd'):
-				raise BackendBadValueError(u"Log type '%s' requires objectId" % logType)
-		else:
-			objectId = forceObjectId(objectId)
+			raise BackendBadValueError(u"Writing {0} log requires an objectId".format(logType))
+		objectId = forceObjectId(objectId)
 
-		if not os.path.exists(os.path.join(LOG_DIR, logType)):
+		try:
 			os.mkdir(os.path.join(LOG_DIR, logType), 0o2770)
+		except OSError:
+			pass  # Directory already existing
 
 		limitFileSize = self._maxLogfileSize > 0
 		data = forceUnicode(data)
@@ -690,14 +697,14 @@ Currently supported: *bootimage*, *clientconnect*, *instlog* or *opsiconfd*.
 		"""
 		logType = forceUnicode(logType)
 
-		if logType not in ('bootimage', 'clientconnect', 'instlog', 'userlogin', 'opsiconfd'):
+		if logType not in LOG_TYPES:
 			raise BackendBadValueError(u'Unknown log type {0!r}'.format(logType))
 
 		if objectId:
 			objectId = forceObjectId(objectId)
 			logFile = os.path.join(LOG_DIR, logType, '{0}.log'.format(objectId))
 		else:
-			if logType in ('bootimage', 'clientconnect', 'userlogin', 'instlog'):
+			if LOG_TYPES[logType]:
 				raise BackendBadValueError(u"Log type {0!r} requires objectId".format(logType))
 
 			logFile = os.path.join(LOG_DIR, logType, 'opsiconfd.log')

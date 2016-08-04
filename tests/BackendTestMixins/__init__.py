@@ -25,20 +25,17 @@ Mixins to test the functionality of backends.
 
 from __future__ import absolute_import
 
-from .Audit import AuditTestsMixin
 from .Backend import BackendTestsMixin
 from .Configs import ConfigTestsMixin, ConfigStateTestsMixin
-from .ExtendedBackend import ExtendedBackendTestsMixin
 from .Products import (ProductPropertiesTestMixin, ProductDependenciesTestMixin,
     ProductsTestMixin, ProductsOnClientTestsMixin,
     ProductsOnDepotTestsMixin, ProductPropertyStateTestsMixin)
 
 
 class BackendTestMixin(ConfigStateTestsMixin, ProductPropertiesTestMixin,
-    ProductDependenciesTestMixin, AuditTestsMixin, ConfigTestsMixin,
+    ProductDependenciesTestMixin, ConfigTestsMixin,
     ProductsTestMixin, ProductsOnClientTestsMixin, ProductsOnDepotTestsMixin,
-    ProductPropertyStateTestsMixin,
-    ExtendedBackendTestsMixin, BackendTestsMixin):
+    ProductPropertyStateTestsMixin, BackendTestsMixin):
     """
     Class collecting functional backend tests.
 

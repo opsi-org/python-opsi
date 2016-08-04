@@ -23,7 +23,7 @@
 opsi python library - HTTP
 
 
-.. versionadded:: 4.0.6.8
+.. versionadded:: 4.0.6.9
 
   Added functions :py:func:`deflateEncode`, :py:func:`deflateDecode`,
   :py:func:`gzipEncode` and :py:func:`gzipDecode`.
@@ -31,6 +31,7 @@ opsi python library - HTTP
 
 :author: Jan Schneider <j.schneider@uib.de>
 :author: Niko Wenselowski <n.wenselowski@uib.de>
+:author: Erol Ueluekmen <e.ueluekmen@uib.de>
 :license: GNU Affero General Public License version 3
 """
 
@@ -42,6 +43,7 @@ import re
 import socket
 import time
 import zlib
+import urlparse
 from contextlib import closing  # Needed for Python 2.6
 from contextlib import contextmanager
 from io import BytesIO
@@ -285,7 +287,7 @@ class HTTPConnectionPool(object):
 	def __init__(self, host, port, socketTimeout=None, connectTimeout=None,
 				retryTime=0, maxsize=1, block=False, reuseConnection=False,
 				verifyServerCert=False, serverCertFile=None, caCertFile=None,
-				verifyServerCertByCa=False):
+				verifyServerCertByCa=False, proxyURL=None):
 
 		self.host = forceUnicode(host)
 		self.port = forceInt(port)
@@ -294,6 +296,7 @@ class HTTPConnectionPool(object):
 		self.retryTime = forceInt(retryTime)
 		self.block = forceBool(block)
 		self.reuseConnection = forceBool(reuseConnection)
+		self.proxyURL = forceUnicode(proxyURL or u"")
 		self.pool = None
 		self.usageCount = 1
 		self.num_connections = 0
@@ -368,10 +371,28 @@ class HTTPConnectionPool(object):
 		Return a fresh HTTPConnection.
 		"""
 		self.num_connections += 1
-		logger.debug(u"Starting new HTTP connection (%d) to %s:%d" % (self.num_connections, self.host, self.port))
-		conn = HTTPConnection(host=self.host, port=self.port)
-		non_blocking_connect_http(conn, self.connectTimeout)
-		logger.debug(u"Connection established to: %s" % self.host)
+		if self.proxyURL:
+			headers = {}
+			try:
+				url = urlparse.urlparse(self.proxyURL)
+				if url.password:
+					logger.setConfidentialStrings(url.password)
+					logger.debug(u"Starting new HTTP connection (%d) to %s:%d over proxy-url %s" % (self.num_connections, self.host, self.port, self.proxyURL))
+
+				conn = HTTPConnection(host=url.hostname, port=url.port)
+				if url.username and url.password:
+					logger.debug(u"Proxy Authentication detected, setting auth with user: '%s'" % url.username)
+					auth = "{username}:{password}".format(username=url.username, password=url.password)
+					headers['Proxy-Authorization'] = 'Basic ' + base64.base64encode(auth)
+				conn.set_tunnel(self.host, self.port, headers)
+				logger.debug(u"Connection established to: %s" % self.host)
+			except Exception as error:
+				logger.error(error)
+		else:
+			logger.debug(u"Starting new HTTP connection (%d) to %s:%d" % (self.num_connections, self.host, self.port))
+			conn = HTTPConnection(host=self.host, port=self.port)
+			non_blocking_connect_http(conn, self.connectTimeout)
+			logger.debug(u"Connection established to: %s" % self.host)
 		return conn
 
 	def _get_conn(self, timeout=None):
@@ -592,8 +613,28 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 		"""
 		Return a fresh HTTPSConnection.
 		"""
-		logger.debug(u"Starting new HTTPS connection (%d) to %s:%d" % (self.num_connections, self.host, self.port))
-		conn = HTTPSConnection(host=self.host, port=self.port)
+
+		if self.proxyURL:
+			headers = {}
+			try:
+				url = urlparse.urlparse(self.proxyURL)
+				if url.password:
+					logger.setConfidentialString(url.password)
+					logger.debug(u"Starting new HTTPS connection (%d) to %s:%d over proxy-url %s" % (self.num_connections, self.host, self.port, self.proxyURL))
+				conn = HTTPSConnection(host=url.hostname, port=url.port)
+				if url.username and url.password:
+					logger.debug(u"Proxy Authentication detected, setting auth with user: '%s'" % url.username)
+					auth = "{username}:{password}".format(username=url.username,password=url.password)
+					headers['Proxy-Authorization'] = 'Basic ' + base64.base64encode(auth)
+				conn.set_tunnel(self.host, self.port, headers)
+				logger.debug(u"Connection established to: %s" % self.host)
+			except Exception as e:
+				logger.logException(e)
+		else:
+			logger.debug(u"Starting new HTTPS connection (%d) to %s:%d" % (self.num_connections, self.host, self.port))
+			conn = HTTPSConnection(host=self.host, port=self.port)
+			logger.debug(u"Connection established to: %s" % self.host)
+
 		if self.verifyServerCert or self.verifyServerCertByCa:
 			try:
 				non_blocking_connect_https(conn, self.connectTimeout, self.caCertFile)
@@ -605,7 +646,6 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 					raise OpsiServiceVerificationError(u"Failed to verify server cert by CA: %s" % error)
 				non_blocking_connect_https(conn, self.connectTimeout)
 
-		logger.debug(u"Connection established to: %s" % self.host)
 		self.num_connections += 1
 		self.peerCertificate = getPeerCertificate(conn, asPEM=True)
 		if self.verifyServerCertByCa:

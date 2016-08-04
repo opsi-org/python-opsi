@@ -26,26 +26,24 @@ Testing the opsi SQLite backend.
 from __future__ import absolute_import
 
 from .Backends.SQLite import SQLiteBackendMixin
-from .BackendTestMixins import (ConfigStateTestsMixin, AuditTestsMixin,
-    ConfigTestsMixin, ProductsTestMixin, ExtendedBackendTestsMixin,
-    BackendTestsMixin)
+from .BackendTestMixins import (ConfigStateTestsMixin, ConfigTestsMixin,
+    ProductsTestMixin, BackendTestsMixin)
 from .helpers import unittest, requiresModulesFile
 
 import pytest
 
 
-class BackendSQLiteTestCase(unittest.TestCase):
-    def testInitialisationDoesNotFail(self):
-        sqlModule = pytest.importorskip("OPSI.Backend.SQLite")
-        SQLiteBackend = sqlModule.SQLiteBackend
+def testInitialisationOfSQLiteBackendWithoutParametersDoesNotFail():
+    sqlModule = pytest.importorskip("OPSI.Backend.SQLite")
+    SQLiteBackend = sqlModule.SQLiteBackend
 
-        backend = SQLiteBackend()
-        backend.backend_createBase()
+    backend = SQLiteBackend()
+    backend.backend_createBase()
 
 
 class SQLiteBackendTestCase(unittest.TestCase, SQLiteBackendMixin,
-    BackendTestsMixin, ProductsTestMixin, AuditTestsMixin,
-    ExtendedBackendTestsMixin, ConfigTestsMixin, ConfigStateTestsMixin):
+    BackendTestsMixin, ProductsTestMixin, ConfigTestsMixin,
+    ConfigStateTestsMixin):
     """Testing the SQLite backend.
 
     This currently requires a valid modules file with enabled MySQL backend."""
