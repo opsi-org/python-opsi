@@ -69,7 +69,7 @@ from OPSI.Util.File.Opsi import OpsiConfFile
 from OPSI.System.Posix import (isCentOS, isDebian, isOpenSUSE, isRHEL, isSLES,
 	isUbuntu, isUCS)
 
-__version__ = '4.0.7.13'
+__version__ = '4.0.7.14'
 
 LOGGER = Logger()
 
@@ -270,8 +270,10 @@ installations may be.
 	On an unsuported distribution or without the relevant folder
 	existing `None` will be returned.
 	"""
-	if any(func() for func in (isDebian, isCentOS, isRHEL, isUbuntu, isUCS)):
+	if any(func() for func in (isDebian, isCentOS, isRHEL, isUbuntu)):
 		path = u'/var/www/html/opsi'
+	elif isUCS():
+		path = u'/var/www/opsi'
 	elif isOpenSUSE() or isSLES():
 		path = u'/srv/www/htdocs/opsi'
 	else:
