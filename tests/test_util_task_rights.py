@@ -233,7 +233,7 @@ def testGettingDirectoriesAndRights(patchUserInfo):
     ('/srv/www/htdocs/opsi', 'isSLES'),
     ('/var/www/html/opsi', 'isRHEL'),
     ('/var/www/html/opsi', 'isUbuntu'),
-    ('/var/www/html/opsi', 'isUCS'),
+    ('/var/www/opsi', 'isUCS'),
 ])
 def testGettingWebserverRepositoryPath(dir, function, directoryExists):
     with disableOSChecks(OS_CHECK_FUNCTIONS[:]):
