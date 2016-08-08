@@ -39,9 +39,12 @@ def checkIfMultipleCallsSucceed():
 		username='exp-40-wks-001.test.invalid',
 		password='352360038fb824baf836a6b448845745'
 	)
-	print(be.backend_info())
-	print(be.backend_info())
-	print(be.backend_info())
+	first = be.backend_info()
+	second = be.backend_info()
+	third = be.backend_info()
+
+	assert first == second
+	assert second == third
 
 
 def checkIfConnectionWithCertWorks():
