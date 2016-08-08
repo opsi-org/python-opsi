@@ -63,7 +63,7 @@ def checkAsynchronosProcessing():
 		username = 'someone',
 		password = '123'
 	)
-	print(be.authenticated())
+	assert be.authenticated()
 
 	def callback(jsonrpc):
 		print(jsonrpc.result)
