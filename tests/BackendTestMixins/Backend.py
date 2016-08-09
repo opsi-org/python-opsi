@@ -30,10 +30,9 @@ import threading
 import time
 from itertools import izip
 
-from .Clients import ClientsMixin
-from .Hosts import HostsMixin
 from ..test_configs import getConfigs, getConfigStates
 from ..test_groups import fillBackendWithObjectToGroups
+from ..test_hosts import getClients, getConfigServer, getDepotServers
 from ..test_products import getProducts
 
 from OPSI.Types import BackendError
@@ -55,7 +54,7 @@ except ImportError:
         result = 0
 
 
-class BackendTestsMixin(ClientsMixin, HostsMixin):
+class BackendTestsMixin(object):
     def testObjectMethods(self):
         self.backend.backend_createBase()
 
