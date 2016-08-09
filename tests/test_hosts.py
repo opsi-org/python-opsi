@@ -90,25 +90,6 @@ def getDepotServers():
     return depotserver1, depotserver2
 
 
-class HostsMixin(object):
-    def setUpHosts(self):
-        self.configserver1 = getConfigServer()
-        self.configservers = [self.configserver1]
-
-        self.depotserver1, self.depotserver2 = getDepotServers()
-        self.depotservers = [self.depotserver1, self.depotserver2]
-
-        if not hasattr(self, 'hosts'):
-            self.hosts = []
-        self.hosts.extend(self.configservers)
-        self.hosts.extend(self.depotservers)
-
-    def createHostsOnBackend(self):
-        for host in self.hosts:
-            host.setDefaults()
-        self.backend.host_createObjects(self.hosts)
-
-
 def test_getHostsHostOnBackend(extendedConfigDataBackend):
     clients = getClients()
     configServer = getConfigServer()
