@@ -1,5 +1,5 @@
-#!/usr/bin/env python
-#-*- coding: utf-8 -*-
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
 # Copyright (C) 2013-2016 uib GmbH <info@uib.de>
@@ -31,7 +31,6 @@ from OPSI.Backend.BackendManager import BackendManager, ConfigDataBackend
 
 from .Backends.File import FileBackendMixin
 from .BackendTestMixins.Backend import BackendTestsMixin
-from .BackendTestMixins.Configs import ConfigStatesMixin
 
 from .helpers import getLocalFQDN, unittest, workInTemporaryDirectory
 from .Backends.File import getFileBackend
@@ -62,7 +61,7 @@ class BackendExtensionTestCase(unittest.TestCase):
 
 
 class ExtendedBackendManagerTestCase(unittest.TestCase, FileBackendMixin,
-        BackendTestsMixin, ConfigStatesMixin):
+        BackendTestsMixin):
     """
     This tests an extended BackendManager that makes use of the extensions.
     """
