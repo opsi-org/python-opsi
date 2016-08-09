@@ -34,6 +34,7 @@ from .BackendTestMixins.Backend import BackendTestsMixin
 
 from .helpers import getLocalFQDN, unittest, workInTemporaryDirectory
 from .Backends.File import getFileBackend
+from .test_configs import getConfigs
 from .test_groups import fillBackendWithGroups
 from .test_products import getProducts, getProductsOnDepot
 
