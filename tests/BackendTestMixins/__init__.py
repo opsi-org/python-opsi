@@ -26,10 +26,9 @@ Mixins to test the functionality of backends.
 from __future__ import absolute_import
 
 from .Backend import BackendTestsMixin
-from .Configs import ConfigTestsMixin, ConfigStateTestsMixin
 
 
-class BackendTestMixin(ConfigStateTestsMixin, ConfigTestsMixin, BackendTestsMixin):
+class BackendTestMixin(BackendTestsMixin):
     """
     Class collecting functional backend tests.
 

@@ -32,6 +32,7 @@ from itertools import izip
 
 from .Clients import ClientsMixin
 from .Hosts import HostsMixin
+from ..test_configs import getConfigs, getConfigStates
 from ..test_groups import fillBackendWithObjectToGroups
 from ..test_products import getProducts
 
@@ -298,12 +299,22 @@ class BackendTestsMixin(ClientsMixin, HostsMixin):
                     break
             assert found, u"'%s' not in '%s'" % (ident, selfIdents)
 
-        self.setUpConfigs()
+        (self.config1, self.config2, self.config3, self.config4,
+         self.config5, self.config6) = getConfigs(self.depotserver1.id)
+
+        self.configs = [
+            self.config1, self.config2, self.config3, self.config4,
+            self.config5, self.config6
+        ]
+
         selfIdents = []
         for config in self.configs:
             selfIdents.append(config.getIdent(returnType='dict'))
 
-        self.createConfigOnBackend()
+        for config in self.configs:
+            config.setDefaults()
+        self.backend.config_createObjects(self.configs)
+
         ids = self.backend.config_getIdents()
         assert len(ids) == len(
             selfIdents), u"got: '%s', expected: '%s'" % (ids, len(selfIdents))
@@ -316,7 +327,15 @@ class BackendTestsMixin(ClientsMixin, HostsMixin):
             assert found, u"'%s' not in '%s'" % (ident, selfIdents)
 
 
-        self.setUpConfigStates()
+        (self.configState1, self.configState2, self.configState3,
+         self.configState4, self.configState5, self.configState6,
+         self.configState7) = getConfigStates(self.configs, self.clients, self.depotservers)
+
+        self.configStates = [
+            self.configState1, self.configState2, self.configState3,
+            self.configState4, self.configState5, self.configState6,
+            self.configState7
+        ]
         # some deleted?
         self.backend.configState_createObjects(self.configStates)
 

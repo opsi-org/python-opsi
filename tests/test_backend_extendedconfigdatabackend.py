@@ -31,12 +31,13 @@ from OPSI.Object import (LocalbootProduct, OpsiClient, OpsiDepotserver,
     ProductOnClient, ProductOnDepot, UnicodeConfig)
 
 from .BackendTestMixins.Clients import getClients
-from .BackendTestMixins.Configs import getConfigs, getConfigStates
 from .BackendTestMixins.Hosts import getDepotServers
+from .test_configs import getConfigs, getConfigStates
 from .test_products import (getLocalbootProducts, getNetbootProduct,
     getProductsOnClients, getProductsOnDepot)
 
 import pytest
+
 
 @contextmanager
 def temporaryBackendOptions(backend, **config):

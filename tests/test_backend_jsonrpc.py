@@ -25,13 +25,11 @@ Testing the JSON-RPC backend.
 from __future__ import absolute_import
 
 from OPSI.Backend.JSONRPC import JSONRPCBackend
-from OPSI.Logger import Logger, LOG_DEBUG, LOG_NONE
 from OPSI.Util.HTTP import deflateEncode, gzipEncode
 
 from .helpers import unittest
 from .Backends.JSONRPC import JSONRPCTestCase
 from .BackendTestMixins import BackendTestsMixin
-from .BackendTestMixins.Configs import ConfigStatesMixin
 
 
 class FakeResponse(object):
