@@ -117,7 +117,7 @@ def testDenyingAttributes(extendedConfigDataBackend):
         if host.id == client1.id:
             assert host.opsiHostKey == client1.opsiHostKey
         else:
-            assert None == host.opsiHostKey
+            assert host.opsiHostKey is None
 
 
 # def testAllowingOnlyUpdatesOfSpecificAttributes(extendedConfigDataBackend):
@@ -376,7 +376,7 @@ def testGettingAccessButDenyingAttributesOnSelf(extendedConfigDataBackend):
         else:
             for attribute, value in host.toHash().items():
                 if attribute in denyAttributes:
-                    assert None == value
+                    assert value is None
 
 
 @pytest.mark.requiresModulesFile
