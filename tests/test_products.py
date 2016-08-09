@@ -552,6 +552,7 @@ def getProductPropertyStates(productProperties, depotServer, clients):
             productPropertyState4, productPropertyState5, productPropertyState6)
 
 
+@pytest.mark.requiresModulesFile  # because of SQLite backend...
 def testProductMethods(extendedConfigDataBackend):
     netbootProducts = [getNetbootProduct()]
     localbootProducts = list(getLocalbootProducts())
@@ -592,6 +593,7 @@ def testProductMethods(extendedConfigDataBackend):
     assert products[0].getPriority() == 60
 
 
+@pytest.mark.requiresModulesFile  # because of SQLite backend...
 def test_getProductsFromBackend(extendedConfigDataBackend):
     origProds = getProducts()
     extendedConfigDataBackend.product_createObjects(origProds)
@@ -600,6 +602,7 @@ def test_getProductsFromBackend(extendedConfigDataBackend):
     assert len(products) == len(origProds)
 
 
+@pytest.mark.requiresModulesFile  # because of SQLite backend...
 def test_getProductsByType(extendedConfigDataBackend):
     origProds = getProducts()
     extendedConfigDataBackend.product_createObjects(origProds)
@@ -608,6 +611,7 @@ def test_getProductsByType(extendedConfigDataBackend):
     assert len(products) == len(origProds)
 
 
+@pytest.mark.requiresModulesFile  # because of SQLite backend...
 def test_verifyProducts(extendedConfigDataBackend):
     localProducts = getLocalbootProducts()
     netbootProducts = getNetbootProduct()
@@ -639,6 +643,7 @@ def test_verifyProducts(extendedConfigDataBackend):
                 break  # Stop iterating origProds
 
 
+@pytest.mark.requiresModulesFile  # because of SQLite backend...
 def test_updatingProducts(extendedConfigDataBackend):
     origProds = getProducts()
     extendedConfigDataBackend.product_createObjects(origProds)
@@ -654,6 +659,7 @@ def test_updatingProducts(extendedConfigDataBackend):
     assert products[0].getPriority() == 60
 
 
+@pytest.mark.requiresModulesFile  # because of SQLite backend...
 def testLongProductName(extendedConfigDataBackend):
     """
     Can the backend handle product names of 128 characters length?
@@ -682,6 +688,7 @@ def testLongProductName(extendedConfigDataBackend):
     assert newName == backendProduct.name
 
 
+@pytest.mark.requiresModulesFile  # because of SQLite backend...
 def testLongChangelogOnProductCanBeHandled(extendedConfigDataBackend):
     product = LocalbootProduct(id='freiheit', productVersion=1, packageVersion=1)
 
@@ -710,6 +717,7 @@ def testLongChangelogOnProductCanBeHandled(extendedConfigDataBackend):
     assert changelog[:2048] == changelogFromBackend[:2048]
 
 
+@pytest.mark.requiresModulesFile  # because of SQLite backend...
 def testProductPropertyStateMethods(extendedConfigDataBackend):
     products = getProducts()
     clients = getClients()
@@ -737,6 +745,7 @@ def testProductPropertyStateMethods(extendedConfigDataBackend):
     assert len(productPropertyStates) == len(pps)
 
 
+@pytest.mark.requiresModulesFile  # because of SQLite backend...
 def test_getProductPropertiesFromBackend(extendedConfigDataBackend):
     prods = getProducts()
     prodProperties = getProductProperties(prods)
@@ -747,6 +756,7 @@ def test_getProductPropertiesFromBackend(extendedConfigDataBackend):
     assert len(productProperties) == len(prodProperties)
 
 
+@pytest.mark.requiresModulesFile  # because of SQLite backend...
 def test_verifyProductProperties(extendedConfigDataBackend):
     prods = getProducts()
     prodPropertiesOrig = getProductProperties(prods)
@@ -776,6 +786,7 @@ def test_verifyProductProperties(extendedConfigDataBackend):
                 break  # Stop iterating the original product properties
 
 
+@pytest.mark.requiresModulesFile  # because of SQLite backend...
 def test_updateProductProperty(extendedConfigDataBackend):
     prods = getProducts()
     prodPropertiesOrig = getProductProperties(prods)
@@ -791,6 +802,7 @@ def test_updateProductProperty(extendedConfigDataBackend):
     assert productProperties[0].getDescription() == u'updatedfortest'
 
 
+@pytest.mark.requiresModulesFile  # because of SQLite backend...
 def test_deleteProductProperty(extendedConfigDataBackend):
     prods = getProducts()
     prodPropertiesOrig = getProductProperties(prods)
@@ -804,6 +816,7 @@ def test_deleteProductProperty(extendedConfigDataBackend):
     assert productProperty2 not in productProperties
 
 
+@pytest.mark.requiresModulesFile  # because of SQLite backend...
 def test_createDuplicateProductProperies(extendedConfigDataBackend):
     prods = getProducts()
     prodPropertiesOrig = getProductProperties(prods)
@@ -831,6 +844,7 @@ def testGettingErrorMessageWhenAttributeInFilterIsNotAtObject(extendedConfigData
         assert 'unknownAttribute' in str(bbve)
 
 
+@pytest.mark.requiresModulesFile  # because of SQLite backend...
 def testProductAndPropertyWithSameName(extendedConfigDataBackend):
     """
     Product and property may have the same name.
@@ -884,6 +898,7 @@ def testProductAndPropertyWithSameName(extendedConfigDataBackend):
     assert [True] == prop.defaultValues
 
 
+@pytest.mark.requiresModulesFile  # because of SQLite backend...
 def testProductPropertyMethods(extendedConfigDataBackend):
     products = getProducts()
     productPropertiesOrig = getProductProperties(products)
@@ -943,6 +958,7 @@ def testProductPropertyMethods(extendedConfigDataBackend):
     assert len(productProperties) == len(productPropertiesOrig)
 
 
+@pytest.mark.requiresModulesFile  # because of SQLite backend...
 def testProductPropertyStatesMustReferValidObjectId(extendedConfigDataBackend):
     products = getProducts()
     productProperties = getProductProperties(products)
@@ -961,6 +977,7 @@ def testProductPropertyStatesMustReferValidObjectId(extendedConfigDataBackend):
         extendedConfigDataBackend.productPropertyState_insertObject(pps0)
 
 
+@pytest.mark.requiresModulesFile  # because of SQLite backend...
 def testFixing1554(extendedConfigDataBackend):
     """
     The backend must not ignore product property states of a product when \
@@ -1065,6 +1082,7 @@ the name of the product equals the name of a product property.
     assert len(propertyStatesForServer) == 2
 
 
+@pytest.mark.requiresModulesFile  # because of SQLite backend...
 def test_insertFaultyPropertyState(extendedConfigDataBackend):
     product = LocalbootProduct('p1', productVersion=1, packageVersion=1)
     productProp = BoolProductProperty(
@@ -1088,6 +1106,7 @@ def test_insertFaultyPropertyState(extendedConfigDataBackend):
         extendedConfigDataBackend.productPropertyState_insertObject(pps0)
 
 
+@pytest.mark.requiresModulesFile  # because of SQLite backend...
 def test_getProductPropertyStatesFromBackend(extendedConfigDataBackend):
     products = getProducts()
     clients = getClients()
@@ -1108,6 +1127,7 @@ def test_getProductPropertyStatesFromBackend(extendedConfigDataBackend):
         assert state in productPropertyStates
 
 
+@pytest.mark.requiresModulesFile  # because of SQLite backend...
 def test_deleteProductPropertyState(extendedConfigDataBackend):
     products = getProducts()
     clients = getClients()
@@ -1127,6 +1147,7 @@ def test_deleteProductPropertyState(extendedConfigDataBackend):
     assert productPropertyState2 not in productPropertyStates
 
 
+@pytest.mark.requiresModulesFile  # because of SQLite backend...
 def test_insertProductPropertyState(extendedConfigDataBackend):
     client = OpsiClient(id='someclient.test.invalid')
     product = LocalbootProduct('p1', productVersion=1, packageVersion=1)
@@ -1153,6 +1174,7 @@ def test_insertProductPropertyState(extendedConfigDataBackend):
     assert 1 == len(productPropertyStates)
 
 
+@pytest.mark.requiresModulesFile  # because of SQLite backend...
 def testProductDependencies(extendedConfigDataBackend):
     products = getProducts()
     productDependenciesOrig = list(getProductDepdencies(products))
@@ -1188,6 +1210,7 @@ def testProductDependencies(extendedConfigDataBackend):
     assert len(productDependencies) == len(productDependenciesOrig)
 
 
+@pytest.mark.requiresModulesFile  # because of SQLite backend...
 def test_getProductDependenciesFromBackendSmallExample(extendedConfigDataBackend):
     prod1 = LocalbootProduct('bla', 1, 1)
     prod2 = LocalbootProduct('foo', 2, 2)
@@ -1227,6 +1250,7 @@ def test_getProductDependenciesFromBackendSmallExample(extendedConfigDataBackend
     assert 2 == len(productDependencies)
 
 
+@pytest.mark.requiresModulesFile  # because of SQLite backend...
 def test_getProductDependenciesFromBackend(extendedConfigDataBackend):
     products = getProducts()
     productDependenciesOrig = list(getProductDepdencies(products))
@@ -1238,6 +1262,7 @@ def test_getProductDependenciesFromBackend(extendedConfigDataBackend):
     assert len(productDependencies) == len(productDependenciesOrig)
 
 
+@pytest.mark.requiresModulesFile  # because of SQLite backend...
 def test_updateProductDependencies(extendedConfigDataBackend):
     products = getProducts()
     productDependenciesOrig = getProductDepdencies(products)
@@ -1262,6 +1287,7 @@ def test_updateProductDependencies(extendedConfigDataBackend):
             assert productDependency.getRequirementType() == 'after'
 
 
+@pytest.mark.requiresModulesFile  # because of SQLite backend...
 def test_deleteProductDependency(extendedConfigDataBackend):
     products = getProducts()
     productDependenciesOrig = getProductDepdencies(products)
@@ -1275,6 +1301,7 @@ def test_deleteProductDependency(extendedConfigDataBackend):
     assert len(productDependencies) == len(productDependenciesOrig) - 1
 
 
+@pytest.mark.requiresModulesFile  # because of SQLite backend...
 def testNotCreatingDuplicateProductDependency(extendedConfigDataBackend):
     products = getProducts()
     productDependenciesOrig = getProductDepdencies(products)
@@ -1287,6 +1314,7 @@ def testNotCreatingDuplicateProductDependency(extendedConfigDataBackend):
     assert len(productDependenciesOrig) == len(productDependencies)
 
 
+@pytest.mark.requiresModulesFile  # because of SQLite backend...
 def testProductOnDepotMethods(extendedConfigDataBackend):
     products = getProducts()
     configServer = getConfigServer()
@@ -1314,6 +1342,7 @@ def testProductOnDepotMethods(extendedConfigDataBackend):
     assert len(productOnDepots) == len(productsOnDepotOrig)
 
 
+@pytest.mark.requiresModulesFile  # because of SQLite backend...
 def testLockingProducts(extendedConfigDataBackend):
     prod = LocalbootProduct('Ruhe', 1, 1)
     depotserver = getConfigServer()  # A configserver always is also a depot.
@@ -1340,6 +1369,7 @@ def testLockingProducts(extendedConfigDataBackend):
     assert podFromBackend.locked
 
 
+@pytest.mark.requiresModulesFile  # because of SQLite backend...
 def test_getProductOnDepotsFromBackend(extendedConfigDataBackend):
     products = getProducts()
     configServer = getConfigServer()
@@ -1354,6 +1384,7 @@ def test_getProductOnDepotsFromBackend(extendedConfigDataBackend):
     assert len(productOnDepots) == len(productsOnDepotOrig)
 
 
+@pytest.mark.requiresModulesFile  # because of SQLite backend...
 def test_deleteProductOnDepot(extendedConfigDataBackend):
     products = getProducts()
     configServer = getConfigServer()
@@ -1370,6 +1401,7 @@ def test_deleteProductOnDepot(extendedConfigDataBackend):
     assert len(productOnDepots) == len(productsOnDepotOrig) - 1
 
 
+@pytest.mark.requiresModulesFile  # because of SQLite backend...
 def test_createDuplicateProductsOnDepots(extendedConfigDataBackend):
     products = getProducts()
     configServer = getConfigServer()
@@ -1386,6 +1418,7 @@ def test_createDuplicateProductsOnDepots(extendedConfigDataBackend):
     assert len(productOnDepots) == len(productsOnDepotOrig)
 
 
+@pytest.mark.requiresModulesFile  # because of SQLite backend...
 def testProductOnClientMethods(extendedConfigDataBackend):
     backend = extendedConfigDataBackend
 
@@ -1485,6 +1518,7 @@ def testProductOnClientMethods(extendedConfigDataBackend):
     # TODO: test something here?!
 
 
+@pytest.mark.requiresModulesFile  # because of SQLite backend...
 def testProductOnClientDependencies(extendedConfigDataBackend):
     backend = extendedConfigDataBackend
 
@@ -1571,6 +1605,7 @@ def testProductOnClientDependencies(extendedConfigDataBackend):
         'product9', setup)
 
 
+@pytest.mark.requiresModulesFile  # because of SQLite backend...
 def test_getProductsOnClientsFromBackend(extendedConfigDataBackend):
     clients = getClients()
     products = getLocalbootProducts()
@@ -1585,6 +1620,7 @@ def test_getProductsOnClientsFromBackend(extendedConfigDataBackend):
         assert poc in productOnClients
 
 
+@pytest.mark.requiresModulesFile  # because of SQLite backend...
 def test_selectProductOnClient(extendedConfigDataBackend):
     products = getProducts()
     clients = getClients()
@@ -1605,6 +1641,7 @@ def test_selectProductOnClient(extendedConfigDataBackend):
     assert client1ProductOnClients == productOnClients
 
 
+@pytest.mark.requiresModulesFile  # because of SQLite backend...
 def test_selectProductOnClientById(extendedConfigDataBackend):
     products = getProducts()
     clients = getClients()
@@ -1624,6 +1661,7 @@ def test_selectProductOnClientById(extendedConfigDataBackend):
     assert poc.getClientId() == client1.getId()
 
 
+@pytest.mark.requiresModulesFile  # because of SQLite backend...
 def test_updateProductsOnClients(extendedConfigDataBackend):
     products = getProducts()
     clients = getClients()
@@ -1645,6 +1683,7 @@ def test_updateProductsOnClients(extendedConfigDataBackend):
     assert len(productOnClients) == 1
 
 
+@pytest.mark.requiresModulesFile  # because of SQLite backend...
 def test_deleteProductOnClient(extendedConfigDataBackend):
     products = getProducts()
     clients = getClients()
@@ -1662,6 +1701,7 @@ def test_deleteProductOnClient(extendedConfigDataBackend):
     assert productOnClient2 not in productOnClients
 
 
+@pytest.mark.requiresModulesFile  # because of SQLite backend...
 def test_processProductOnClientSequence(extendedConfigDataBackend):
     """
     Checking that the backend is able to compute the sequences of clients.
