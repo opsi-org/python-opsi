@@ -35,36 +35,36 @@ import pytest
 
 
 @pytest.yield_fixture
-def DHCPDBackend(dhcpdConf):
+def dhcpdBackend(dhcpdConf):
     yield DHCPDBackend(
         dhcpdConfigFile=dhcpdConf._filename,
         reloadConfigCommand=u'/bin/echo "Reloading dhcpd.conf"'
     )
 
 
-def testAddingHostsToBackend(DHCPDBackend):
-    DHCPDBackend.host_insertObject(
+def testAddingHostsToBackend(dhcpdBackend):
+    dhcpdBackend.host_insertObject(
         OpsiClient(
             id='client1.test.invalid',
             hardwareAddress='00:01:02:03:04:05',
             ipAddress='192.168.1.101',
         )
     )
-    DHCPDBackend.host_insertObject(
+    dhcpdBackend.host_insertObject(
         OpsiClient(
             id='client2.test.invalid',
             hardwareAddress='00:01:02:03:11:22',
             ipAddress='192.168.1.102',
         )
     )
-    DHCPDBackend.host_insertObject(
+    dhcpdBackend.host_insertObject(
         OpsiClient(
             id='client3.test.invalid',
             hardwareAddress='1101:02:03-83:22',
             ipAddress='192.168.1.103',
         )
     )
-    DHCPDBackend.host_insertObject(
+    dhcpdBackend.host_insertObject(
         OpsiClient(
             id='client4.test.invalid',
             hardwareAddress='00:99:88:77:77:11',
@@ -73,17 +73,17 @@ def testAddingHostsToBackend(DHCPDBackend):
     )
 
 
-def testUpdatingHostWhereAddressCantBeResolvedFails(DHCPDBackend):
+def testUpdatingHostWhereAddressCantBeResolvedFails(dhcpdBackend):
     client = OpsiClient(
         id='unknown-client.test.invalid',
         hardwareAddress='00:99:88:77:77:21'
     )
 
     with pytest.raises(BackendIOError):
-        DHCPDBackend.host_insertObject(client)
+        dhcpdBackend.host_insertObject(client)
 
 
-def testUpdatingHostTriggersChangeInDHCPDConfiguration(DHCPDBackend):
+def testUpdatingHostTriggersChangeInDHCPDConfiguration(dhcpdBackend):
     """
     Updating hosts should trigger an update in the DHCP config.
 
@@ -102,7 +102,7 @@ def testUpdatingHostTriggersChangeInDHCPDConfiguration(DHCPDBackend):
         if caseInSensitive:
             elem = elem.lower()
 
-        with open(DHCPDBackend._dhcpdConfFile._filename) as config:
+        with open(dhcpdBackend._dhcpdConfFile._filename) as config:
             for line in config:
                 if caseInSensitive:
                     line = line.lower()
@@ -119,7 +119,7 @@ def testUpdatingHostTriggersChangeInDHCPDConfiguration(DHCPDBackend):
 
     showMissingInfo = lambda x: "Expected {term} to be in DHCPD config {file}".format(
         term=x,
-        file=DHCPDBackend._dhcpdConfFile._filename
+        file=dhcpdBackend._dhcpdConfFile._filename
     )
 
     for (hostname, oldMAC, newMAC, additionalClientConfig) in configs:
@@ -130,13 +130,13 @@ def testUpdatingHostTriggersChangeInDHCPDConfiguration(DHCPDBackend):
         clientConfig.update(additionalClientConfig)
 
         client = OpsiClient(**clientConfig)
-        DHCPDBackend.host_insertObject(client)
+        dhcpdBackend.host_insertObject(client)
 
         assert isElementInConfigFile(hostname.lower()), showMissingInfo(client.id)
         assert isMacAddressInConfigFile(oldMAC), showMissingInfo(oldMAC)
 
         client.hardwareAddress = newMAC
-        DHCPDBackend.host_updateObject(client)
+        dhcpdBackend.host_updateObject(client)
 
         assert isMacAddressInConfigFile(newMAC), showMissingInfo(newMAC)
         assert not isMacAddressInConfigFile(oldMAC)
