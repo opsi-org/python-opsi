@@ -77,21 +77,3 @@ def getClients():
     )
 
     return client1, client2, client3, client4, client5, client6, client7
-
-
-class ClientsMixin(object):
-    def setUpClients(self):
-        (self.client1, self.client2, self.client3, self.client4,
-         self.client5, self.client6, self.client7) = getClients()
-
-        self.clients = [self.client1, self.client2, self.client3,
-                        self.client4, self.client5, self.client6, self.client7]
-
-        if not hasattr(self, 'hosts'):
-            self.hosts = []
-        self.hosts.extend(self.clients)
-
-    def createHostsOnBackend(self):
-        for host in self.hosts:
-            host.setDefaults()
-        self.backend.host_createObjects(self.hosts)

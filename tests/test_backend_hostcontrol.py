@@ -28,10 +28,10 @@ from __future__ import absolute_import
 import unittest
 
 from .Backends.HostControl import HostControlBackendMixin
-from .BackendTestMixins.Clients import ClientsMixin
+from .test_hosts import getClients
 
 
-class HostControlBackendTestCase(unittest.TestCase, HostControlBackendMixin, ClientsMixin):
+class HostControlBackendTestCase(unittest.TestCase, HostControlBackendMixin):
     def setUp(self):
         self.setUpBackend()
 
@@ -45,8 +45,8 @@ class HostControlBackendTestCase(unittest.TestCase, HostControlBackendMixin, Cli
         This test does not check if WOL on these clients work nor that
         they do exist.
         """
-        self.setUpClients()
-        self.createHostsOnBackend()
+        clients = getClients()
+        self.backend.host_createObjects(clients)
 
         self.backend.hostControl_start([u'client1.test.invalid'])
         self.backend.hostControl_shutdown([u'client1.test.invalid'])
