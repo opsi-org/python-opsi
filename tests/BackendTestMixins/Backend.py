@@ -28,7 +28,6 @@ from __future__ import absolute_import, print_function
 import random
 import threading
 import time
-from itertools import izip
 
 from ..test_configs import getConfigs, getConfigStates
 from ..test_groups import fillBackendWithObjectToGroups

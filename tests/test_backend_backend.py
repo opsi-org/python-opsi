@@ -26,6 +26,7 @@ Testing basic backends.
 from __future__ import absolute_import
 
 import os.path
+from itertools import izip
 
 from OPSI.Backend.Backend import ExtendedBackend
 from OPSI.Types import BackendError, BackendMissingDataError
