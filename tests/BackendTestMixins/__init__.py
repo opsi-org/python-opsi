@@ -27,15 +27,9 @@ from __future__ import absolute_import
 
 from .Backend import BackendTestsMixin
 from .Configs import ConfigTestsMixin, ConfigStateTestsMixin
-from .Products import (ProductPropertiesTestMixin, ProductDependenciesTestMixin,
-    ProductsTestMixin, ProductsOnClientTestsMixin,
-    ProductsOnDepotTestsMixin, ProductPropertyStateTestsMixin)
 
 
-class BackendTestMixin(ConfigStateTestsMixin, ProductPropertiesTestMixin,
-    ProductDependenciesTestMixin, ConfigTestsMixin,
-    ProductsTestMixin, ProductsOnClientTestsMixin, ProductsOnDepotTestsMixin,
-    ProductPropertyStateTestsMixin, BackendTestsMixin):
+class BackendTestMixin(ConfigStateTestsMixin, ConfigTestsMixin, BackendTestsMixin):
     """
     Class collecting functional backend tests.
 

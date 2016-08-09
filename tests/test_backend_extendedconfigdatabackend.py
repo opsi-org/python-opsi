@@ -33,7 +33,7 @@ from OPSI.Object import (LocalbootProduct, OpsiClient, OpsiDepotserver,
 from .BackendTestMixins.Clients import getClients
 from .BackendTestMixins.Configs import getConfigs, getConfigStates
 from .BackendTestMixins.Hosts import getDepotServers
-from .BackendTestMixins.Products import (getLocalbootProducts, getNetbootProduct,
+from .test_products import (getLocalbootProducts, getNetbootProduct,
     getProductsOnClients, getProductsOnDepot)
 
 import pytest

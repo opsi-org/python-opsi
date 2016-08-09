@@ -32,11 +32,11 @@ from OPSI.Backend.BackendManager import BackendManager, ConfigDataBackend
 from .Backends.File import FileBackendMixin
 from .BackendTestMixins.Backend import BackendTestsMixin
 from .BackendTestMixins.Configs import ConfigStatesMixin
-from .BackendTestMixins.Products import ProductsOnDepotMixin
 
 from .helpers import getLocalFQDN, unittest, workInTemporaryDirectory
 from .Backends.File import getFileBackend
 from .test_groups import fillBackendWithGroups
+from .test_products import getProducts, getProductsOnDepot
 
 
 class BackendExtensionTestCase(unittest.TestCase):
@@ -62,7 +62,7 @@ class BackendExtensionTestCase(unittest.TestCase):
 
 
 class ExtendedBackendManagerTestCase(unittest.TestCase, FileBackendMixin,
-        BackendTestsMixin, ProductsOnDepotMixin, ConfigStatesMixin):
+        BackendTestsMixin, ConfigStatesMixin):
     """
     This tests an extended BackendManager that makes use of the extensions.
     """
@@ -231,19 +231,20 @@ class ExtendedBackendManagerTestCase(unittest.TestCase, FileBackendMixin,
         depotIds = bm.getDepotIds_list()
         self.assertTrue(depotId not in depotIds)
 
-        self.setUpProducts()
-        self.createProductsOnBackend()
+        self.products = getProducts()
+        self.backend.product_createObjects(self.products)
 
         depotserver1 = {
-            "isMasterDepot" : True,
-            "type" : "OpsiDepotserver",
-            "id" : self.depotserver1.id,
+            "isMasterDepot": True,
+            "type": "OpsiDepotserver",
+            "id": self.depotserver1.id,
         }
         self.backend.host_createObjects(depotserver1)
 
-        self.setUpProductOnDepots()
+        self.productOnDepots = getProductsOnDepot(self.products, self.configserver1, self.depotservers)
         self.backend.productOnDepot_createObjects(self.productOnDepots)
 
+        self.product1 = self.products[0]
         bm.lockProduct(productId=self.product1.id, depotIds=[self.depotserver1.id])
         productLocks = bm.getProductLocks_hash(depotIds=[])
         for (prductId, depotIds) in productLocks.items():
