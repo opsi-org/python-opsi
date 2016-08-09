@@ -30,9 +30,8 @@ from contextlib import contextmanager
 from OPSI.Object import (LocalbootProduct, OpsiClient, OpsiDepotserver,
     ProductOnClient, ProductOnDepot, UnicodeConfig)
 
-from .BackendTestMixins.Hosts import getDepotServers
 from .test_configs import getConfigs, getConfigStates
-from .test_hosts import getClients
+from .test_hosts import getClients, getDepotServers
 from .test_products import (getLocalbootProducts, getNetbootProduct,
     getProductsOnClients, getProductsOnDepot)
 

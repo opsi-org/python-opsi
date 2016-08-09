@@ -30,7 +30,7 @@ import os.path
 from OPSI.Backend.Backend import ExtendedBackend
 from OPSI.Types import BackendMissingDataError
 from OPSI.Util import randomString
-from .BackendTestMixins.Hosts import getConfigServer
+from .test_hosts import getConfigServer
 from .helpers import workInTemporaryDirectory
 
 import pytest
