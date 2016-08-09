@@ -26,9 +26,60 @@ Testing the functionality of working with hosts.
 from __future__ import absolute_import
 
 import socket
-from OPSI.Object import OpsiConfigserver, OpsiDepotserver
+from OPSI.Object import OpsiClient, OpsiConfigserver, OpsiDepotserver
 
-from .BackendTestMixins.Clients import getClients
+
+def getClients():
+    client1 = OpsiClient(
+        id='client1.test.invalid',
+        description='Test client 1',
+        notes='Notes ...',
+        hardwareAddress='00:01:02:03:04:05',
+        ipAddress='192.168.1.100',
+        lastSeen='2009-01-01 00:00:00',
+        opsiHostKey='45656789789012789012345612340123',
+        inventoryNumber=None
+    )
+
+    client2 = OpsiClient(
+        id='client2.test.invalid',
+        description='Test client 2',
+        notes=';;;;;;;;;;;;;;',
+        hardwareAddress='00-ff0aa3:0b-B5',
+        opsiHostKey='59051234345678890121678901223467',
+        inventoryNumber='00000000003',
+        oneTimePassword='logmein'
+    )
+
+    client3 = OpsiClient(
+        id='client3.test.invalid',
+        description='Test client 3',
+        notes='#############',
+        inventoryNumber='XYZABC_1200292'
+    )
+
+    client4 = OpsiClient(
+        id='client4.test.invalid',
+        description='Test client 4',
+    )
+
+    client5 = OpsiClient(
+        id='client5.test.invalid',
+        description='Test client 5',
+        oneTimePassword='abe8327kjdsfda'
+    )
+
+    client6 = OpsiClient(
+        id='client6.test.invalid',
+        description='Test client 6',
+    )
+
+    client7 = OpsiClient(
+        id='client7.test.invalid',
+        description='Test client 7',
+    )
+
+    return client1, client2, client3, client4, client5, client6, client7
 
 
 def getConfigServer():

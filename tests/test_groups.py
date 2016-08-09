@@ -27,7 +27,7 @@ from __future__ import absolute_import
 
 from OPSI.Object import HostGroup, ProductGroup, ObjectToGroup
 
-from .BackendTestMixins.Clients import getClients
+from .test_hosts import getClients
 
 
 def getGroups():

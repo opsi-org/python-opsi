@@ -23,12 +23,11 @@ Testing configuration objects on a backend.
 :license: GNU Affero General Public License version 3
 """
 
-
 from __future__ import absolute_import
+
 from OPSI.Object import UnicodeConfig, BoolConfig, ConfigState
 
-from .BackendTestMixins.Clients import getClients
-from .BackendTestMixins.Hosts import getDepotServers
+from .test_hosts import getClients, getDepotServers
 
 
 def getConfigs(depotServerId=None):
