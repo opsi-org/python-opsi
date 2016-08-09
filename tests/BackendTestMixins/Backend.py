@@ -253,8 +253,26 @@ class BackendTestsMixin(object):
         hosts = self.backend.host_getObjects(id='client100.test.invalid')
         assert len(hosts) == 1, u"got: '%s', expected: '%s'" % (hosts, 1)
 
-        self.setUpHosts()
-        self.setUpClients()
+        (self.client1, self.client2, self.client3, self.client4,
+         self.client5, self.client6, self.client7) = getClients()
+
+        self.clients = [self.client1, self.client2, self.client3,
+                        self.client4, self.client5, self.client6, self.client7]
+
+        if not hasattr(self, 'hosts'):
+            self.hosts = []
+        self.hosts.extend(self.clients)
+
+        self.configserver1 = getConfigServer()
+        self.configservers = [self.configserver1]
+
+        self.depotserver1, self.depotserver2 = getDepotServers()
+        self.depotservers = [self.depotserver1, self.depotserver2]
+
+        if not hasattr(self, 'hosts'):
+            self.hosts = []
+        self.hosts.extend(self.configservers)
+        self.hosts.extend(self.depotservers)
 
         selfIdents = []
         for host in self.hosts:
@@ -263,7 +281,10 @@ class BackendTestsMixin(object):
         selfIdents.append({'id': 'depot100.test.invalid'})
         selfIdents.append({'id': 'client100.test.invalid'})
 
-        self.createHostsOnBackend()
+        for host in self.hosts:
+            host.setDefaults()
+        self.backend.host_createObjects(self.hosts)
+
         ids = self.backend.host_getIdents()
         assert len(ids) == len(
             selfIdents), u"got: '%s', expected: '%s'" % (ids, len(selfIdents))
