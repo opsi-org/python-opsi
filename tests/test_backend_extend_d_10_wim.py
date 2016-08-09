@@ -26,9 +26,6 @@ This tests what usually is found under
 
 from __future__ import absolute_import
 
-from contextlib import contextmanager
-
-from OPSI.System import which
 from OPSI.Object import NetbootProduct, ProductOnDepot, UnicodeProductProperty
 from .Backends.File import FileBackendBackendManagerMixin
 from .BackendTestMixins.Hosts import getConfigServer
