@@ -115,19 +115,19 @@ def testBackend_getSharedAlgorithmThrowsExceptionIfAlgoUnknown(configDataBackend
         configDataBackend.backend_getSharedAlgorithm("foo")
 
 
-def testBackend_getInterface(configDataBackend):
+def testBackend_getInterface(extendedConfigDataBackend):
     """
     Testing the behaviour of backend_getInterface.
 
     The method descriptions in `expected` may vary and should be
     reduced if problems because of missing methods occur.
     """
-    print("Base backend {0!r}".format(configDataBackend))
+    print("Base backend {0!r}".format(extendedConfigDataBackend))
     try:
-        print("Checking with backend {0!r}".format(configDataBackend._backend._backend))
+        print("Checking with backend {0!r}".format(extendedConfigDataBackend._backend._backend))
     except AttributeError:
         try:
-            print("Checking with backend {0!r}".format(configDataBackend._backend))
+            print("Checking with backend {0!r}".format(extendedConfigDataBackend._backend))
         except AttributeError:
             pass
 
@@ -142,7 +142,7 @@ def testBackend_getInterface(configDataBackend):
         {'name': 'productPropertyState_getObjects', 'args': ['self', 'attributes'], 'params': ['*attributes', '**filter'], 'defaults': ([],), 'varargs': None, 'keywords': 'filter'},
     ]
 
-    results = configDataBackend.backend_getInterface()
+    results = extendedConfigDataBackend.backend_getInterface()
     for selection in expected:
         for result in results:
             if result['name'] == selection['name']:
