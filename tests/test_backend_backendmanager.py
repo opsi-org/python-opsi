@@ -89,8 +89,16 @@ class ExtendedBackendManagerTestCase(unittest.TestCase, FileBackendMixin,
         # No configs set - should be equal now
         self.assertEquals(bm.getGeneralConfig_hash(), bm.getGeneralConfig_hash(objectId=self.client1.id))
 
-        self.setUpConfigs()
-        self.createConfigOnBackend()
+        (self.config1, self.config2, self.config3, self.config4,
+         self.config5, self.config6) = getConfigs(self.depotserver1.id)
+
+        self.configs = [
+            self.config1, self.config2, self.config3, self.config4,
+            self.config5, self.config6
+        ]
+        for config in self.configs:
+            config.setDefaults()
+        self.backend.config_createObjects(self.configs)
 
         self.assertEquals(self.config1.defaultValues[0], bm.getGeneralConfigValue(key=self.config1.id, objectId=None))
 
