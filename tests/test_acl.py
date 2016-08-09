@@ -177,9 +177,9 @@ def testDenyingAccessToOtherObjects(extendedConfigDataBackend):
 
     serverFqdn = OPSI.Types.forceHostId(getfqdn())  # using local FQDN
     depotserver1 = {
-        "isMasterDepot" : True,
-        "type" : "OpsiConfigserver",
-        "id" : serverFqdn,
+        "isMasterDepot": True,
+        "type": "OpsiConfigserver",
+        "id": serverFqdn,
     }
 
     backend.host_createObjects(depotserver1)
