@@ -28,12 +28,11 @@ from __future__ import absolute_import
 from .Backends import MySQL as MySQLback
 from .BackendTestMixins import BackendTestMixin
 from .BackendTestMixins.Backend import MultiThreadingTestMixin
-from .BackendTestMixins.Hosts import HostsTestMixin
-from .helpers import requiresModulesFile, unittest
+from .helpers import unittest
 
 
 class MySQLBackendTestCase(unittest.TestCase, MySQLback.MySQLBackendMixin,
-    BackendTestMixin, HostsTestMixin):
+    BackendTestMixin):
     """
     Testing the MySQL backend.
 
