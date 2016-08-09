@@ -32,10 +32,9 @@ import unittest
 from OPSI.Backend.Replicator import BackendReplicator
 
 from .Backends import getTestBackend
-from .BackendTestMixins.Hosts import getConfigServer, getDepotServers
 from .test_configs import getConfigs, getConfigStates
 from .test_groups import (getHostGroups, getObjectToGroups, getProductGroup)
-from .test_hosts import getClients
+from .test_hosts import getClients, getConfigServer, getDepotServers
 from .test_license_management import getLicenseContracts
 from .test_products import (getLocalbootProducts, getNetbootProduct,
     getProductDepdencies, getProductProperties, getProductsOnDepot,
