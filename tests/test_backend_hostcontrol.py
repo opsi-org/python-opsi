@@ -1,5 +1,5 @@
-#!/usr/bin/env python
-#-*- coding: utf-8 -*-
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
 # Copyright (C) 2013-2015 uib GmbH <info@uib.de>
@@ -25,32 +25,25 @@ Testing the Host Control backend.
 
 from __future__ import absolute_import
 
-import unittest
-
-from .Backends.HostControl import HostControlBackendMixin
 from .test_hosts import getClients
 
-
-class HostControlBackendTestCase(unittest.TestCase, HostControlBackendMixin):
-    def setUp(self):
-        self.setUpBackend()
-
-    def tearDown(self):
-        self.tearDownBackend()
-
-    def testCallingStartAndStopMethod(self):
-        """
-        Test if calling the methods works.
-
-        This test does not check if WOL on these clients work nor that
-        they do exist.
-        """
-        clients = getClients()
-        self.backend.host_createObjects(clients)
-
-        self.backend.hostControl_start([u'client1.test.invalid'])
-        self.backend.hostControl_shutdown([u'client1.test.invalid'])
+import pytest
 
 
-if __name__ == '__main__':
-    unittest.main()
+def testCallingStartAndStopMethod(hostControlBackend):
+    """
+    Test if calling the methods works.
+
+    This test does not check if WOL on these clients work nor that
+    they do exist.
+    """
+    clients = getClients()
+    hostControlBackend.host_createObjects(clients)
+
+    hostControlBackend.hostControl_start([u'client1.test.invalid'])
+    hostControlBackend.hostControl_shutdown([u'client1.test.invalid'])
+
+
+@pytest.yield_fixture
+def hostControlBackend(extendedConfigDataBackend):
+    yield HostControlBackend(extendedConfigDataBackend)
