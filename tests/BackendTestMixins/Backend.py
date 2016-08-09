@@ -35,7 +35,6 @@ from ..test_groups import fillBackendWithObjectToGroups
 from ..test_hosts import getClients, getConfigServer, getDepotServers
 from ..test_products import getProducts
 
-from OPSI.Types import BackendError
 from ..helpers import unittest
 
 
@@ -447,67 +446,6 @@ class BackendTestsMixin(object):
         # This is special for the file backend: there the ConfigServer
         # will stay in the backend and does not get deleted.
         assert len(hosts) <= 1
-
-    def testBackend_getInterface(self):
-        """
-        Testing the behaviour of backend_getInterface.
-
-        The method descriptions in `expected` may vary and should be
-        reduced if problems because of missing methods occur.
-        """
-        print("Base backend {0!r}".format(self.backend))
-        try:
-            print("Checking with backend {0!r}".format(self.backend._backend._backend))
-        except AttributeError:
-            try:
-                print("Checking with backend {0!r}".format(self.backend._backend))
-            except AttributeError:
-                pass
-
-        expected = [
-            {'name': 'backend_getInterface', 'args': ['self'], 'params': [], 'defaults': None, 'varargs': None, 'keywords': None},
-            {'name': 'backend_getOptions', 'args': ['self'], 'params': [], 'defaults': None, 'varargs': None, 'keywords': None},
-            {'name': 'backend_info', 'args': ['self'], 'params': [], 'defaults': None, 'varargs': None, 'keywords': None},
-            {'name': 'configState_getObjects', 'args': ['self', 'attributes'], 'params': ['*attributes', '**filter'], 'defaults': ([],), 'varargs': None, 'keywords': 'filter'},
-            {'name': 'config_getIdents', 'args': ['self', 'returnType'], 'params': ['*returnType', '**filter'], 'defaults': ('unicode',), 'varargs': None, 'keywords': 'filter'},
-            {'name': 'host_getObjects', 'args': ['self', 'attributes'], 'params': ['*attributes', '**filter'], 'defaults': ([],), 'varargs': None, 'keywords': 'filter'},
-            {'name': 'productOnClient_getObjects', 'args': ['self', 'attributes'], 'params': ['*attributes', '**filter'], 'defaults': ([],), 'varargs': None, 'keywords': 'filter'},
-            {'name': 'productPropertyState_getObjects', 'args': ['self', 'attributes'], 'params': ['*attributes', '**filter'], 'defaults': ([],), 'varargs': None, 'keywords': 'filter'},
-        ]
-
-        results = self.backend.backend_getInterface()
-        for selection in expected:
-            for result in results:
-                if result['name'] == selection['name']:
-                    print('Checking {0}'.format(selection['name']))
-                    for parameter in ('args', 'params', 'defaults', 'varargs', 'keywords'):
-                        print('Now checking parameter {0!r}, expecting {1!r}'.format(parameter, selection[parameter]))
-                        singleResult = result[parameter]
-                        if isinstance(singleResult, (list, tuple)):
-                            # We do check the content of the result
-                            # because JSONRPC-Backends can only work
-                            # with JSON and therefore not with tuples
-                            self.assertEqual(len(singleResult), len(selection[parameter]))
-
-                            for exp, res in izip(singleResult, selection[parameter]):
-                                self.assertEqual(exp, res)
-                        else:
-                            self.assertEqual(singleResult, selection[parameter])
-
-                    break  # We found what we are looking for.
-            else:
-                self.fail("Expected method {0!r} not found".format(selection['name']))
-
-    def testBackend_info(self):
-        info = self.backend.backend_info()
-
-        self.assertTrue('opsiVersion' in info)
-        self.assertTrue('modules' in info)
-        self.assertTrue('realmodules' in info)
-
-    def testBackend_getSharedAlgorithmThrowsExceptionIfAlgoUnknown(self):
-        self.assertRaises(BackendError, self.backend.backend_getSharedAlgorithm, "foo")
-
 
 class BackendPerformanceTestMixin(object):
     def testBackendPerformance(self, clientCount=500, productCount=50):
