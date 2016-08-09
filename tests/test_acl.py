@@ -46,11 +46,9 @@ def testParsingBackendACLFile():
     with workInTemporaryDirectory() as tempDir:
         aclFile = os.path.join(tempDir, 'acl.conf')
         with open(aclFile, 'w') as exampleConfig:
-            exampleConfig.write(
-'''
+            exampleConfig.write('''
 host_.*: opsi_depotserver(depot1.test.invalid, depot2.test.invalid); opsi_client(self,  attributes (attr1, attr2)); sys_user(some user, some other user); sys_group(a_group, group2)
-'''
-        )
+''')
 
         expectedACL = [
             [u'host_.*', [
