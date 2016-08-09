@@ -27,8 +27,8 @@ Testing configuration objects on a backend.
 from __future__ import absolute_import
 from OPSI.Object import UnicodeConfig, BoolConfig, ConfigState
 
-from .Clients import ClientsMixin, getClients
-from .Hosts import HostsMixin, getDepotServers
+from .BackendTestMixins.Clients import getClients
+from .BackendTestMixins.Hosts import getDepotServers
 
 
 def getConfigs(depotServerId=None):
