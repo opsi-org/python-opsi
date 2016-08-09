@@ -29,7 +29,7 @@ from OPSI.Object import (AuditSoftware, AuditSoftwareOnClient,
     AuditHardware, AuditHardwareOnHost, AuditSoftwareToLicensePool)
 
 from .BackendTestMixins.Clients import getClients
-from .BackendTestMixins.Products import getLocalbootProducts, ProductsMixin
+from .test_products import getLocalbootProducts
 from .test_license_management import createLicensePool
 
 import pytest

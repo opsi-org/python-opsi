@@ -36,9 +36,9 @@ from .BackendTestMixins.Clients import getClients
 from .BackendTestMixins.Configs import getConfigs, getConfigStates
 from .BackendTestMixins.Hosts import getConfigServer, getDepotServers
 from .test_license_management import getLicenseContracts
-from .BackendTestMixins.Products import (getLocalbootProducts,
-    getNetbootProduct, getProductDepdencies, getProductProperties,
-    getProductsOnDepot, getProductsOnClients, getProductPropertyStates)
+from .test_products import (getLocalbootProducts, getNetbootProduct,
+    getProductDepdencies, getProductProperties, getProductsOnDepot,
+    getProductsOnClients, getProductPropertyStates)
 from .test_groups import (getHostGroups, getObjectToGroups, getProductGroup)
 from .test_software_and_hardware_audit import (getAuditHardwares,
     getAuditHardwareOnHost, getAuditSoftwares, getAuditSoftwareOnClient)

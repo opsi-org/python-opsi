@@ -32,7 +32,6 @@ from OPSI.System import which
 from OPSI.Object import NetbootProduct, ProductOnDepot, UnicodeProductProperty
 from .Backends.File import FileBackendBackendManagerMixin
 from .BackendTestMixins.Hosts import getConfigServer
-from .BackendTestMixins.Products import getNetbootProduct
 from .test_util_wim import fakeWIMEnvironment
 from .helpers import getLocalFQDN, mock, patchAddress, patchEnvironmentVariables, unittest
 
