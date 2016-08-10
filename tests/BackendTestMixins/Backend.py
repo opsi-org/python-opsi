@@ -361,7 +361,6 @@ class BackendTestsMixin(object):
                     break
             assert found, u"'%s' not in '%s'" % (ident, selfIdents)
 
-
         (self.configState1, self.configState2, self.configState3,
          self.configState4, self.configState5, self.configState6,
          self.configState7) = getConfigStates(self.configs, self.clients, self.depotservers)
@@ -389,18 +388,6 @@ class BackendTestsMixin(object):
                     found = True
                     break
             assert found, u"'%s' not in '%s'" % (ident, selfIdents)
-
-        ids = self.backend.product_getIdents()
-        ids = self.backend.productProperty_getIdents()
-        ids = self.backend.productOnDepot_getIdents()
-        ids = self.backend.productOnDepot_getIdents()
-        ids = self.backend.productPropertyState_getIdents()
-        ids = self.backend.productPropertyState_getIdents(returnType='tuple')
-        ids = self.backend.productPropertyState_getIdents(returnType='list')
-        ids = self.backend.productPropertyState_getIdents(returnType='dict')
-        ids = self.backend.group_getIdents()
-        ids = self.backend.objectToGroup_getIdents()
-        ids = self.backend.product_getIdents(id='*product*')
 
         # TODO: assertions
         result = self.backend.backend_searchIdents(
