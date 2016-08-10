@@ -480,3 +480,53 @@ def test_selectConfigStateFromBackend(extendedConfigDataBackend):
     )
     assert len(configStates) == 1
     assert configStates[0].getValues()[0] == configState4.getValues()[0]
+
+
+def testGettingConfigIdents(extendedConfigDataBackend):
+    depots = getDepotServers()
+    origConfigs = getConfigs(depots[0].id)
+
+    selfIdents = [config.getIdent(returnType='dict') for config in origConfigs]
+
+    for config in origConfigs:
+        config.setDefaults()
+    extendedConfigDataBackend.config_createObjects(origConfigs)
+
+    ids = extendedConfigDataBackend.config_getIdents()
+    assert len(ids) == len(selfIdents)
+
+    for ident in ids:
+        found = False
+        for selfIdent in selfIdents:
+            if ident == selfIdent['id']:
+                found = True
+                break
+
+        assert found, u"'%s' not in '%s'" % (ident, selfIdents)
+
+
+def testGetConfigStateIdents(extendedConfigDataBackend):
+    configs = getConfigs()
+    clients = getClients()
+    depots = getDepotServers()
+    configStatesOrig = getConfigStates(configs, clients, depots)
+
+    extendedConfigDataBackend.host_createObjects(clients)
+    extendedConfigDataBackend.host_createObjects(depots)
+    extendedConfigDataBackend.config_createObjects(configs)
+    extendedConfigDataBackend.configState_createObjects(configStatesOrig)
+
+    selfIdents = [configState.getIdent(returnType='dict') for configState in configStatesOrig]
+
+    ids = extendedConfigDataBackend.configState_getIdents()
+    assert len(ids) == len(selfIdents)
+
+    for ident in ids:
+        i = ident.split(';')
+        found = False
+        for selfIdent in selfIdents:
+            if (i[0] == selfIdent['configId']) and (i[1] == selfIdent['objectId']):
+                found = True
+                break
+
+        assert found, u"'%s' not in '%s'" % (ident, selfIdents)

@@ -337,3 +337,103 @@ def testDeletingAllHosts(extendedConfigDataBackend):
     # This is special for the file backend: there the ConfigServer
     # will stay in the backend and does not get deleted.
     assert len(hosts) <= 1
+
+
+def testGettingHostIdents(extendedConfigDataBackend):
+    clients = getClients()
+    configserver1 = getConfigServer()
+    depots = getDepotServers()
+
+    extendedConfigDataBackend.host_createObjects(clients)
+    extendedConfigDataBackend.host_createObjects(depots)
+    extendedConfigDataBackend.host_createObjects(configserver1)
+    extendedConfigDataBackend.host_createOpsiClient(
+        id='client100.test.invalid',
+        opsiHostKey=None,
+        description='Client 100',
+        notes='No notes',
+        hardwareAddress='00:00:01:01:02:02',
+        ipAddress='192.168.0.200',
+        created=None,
+        lastSeen=None
+    )
+    extendedConfigDataBackend.host_createOpsiDepotserver(
+        id='depot100.test.invalid',
+        opsiHostKey='123456789012345678901234567890aa',
+        depotLocalUrl='file:///opt/pcbin/install',
+        depotRemoteUrl='smb://depot3.uib.local/opt_pcbin/install',
+        repositoryLocalUrl='file:///var/lib/opsi/products',
+        repositoryRemoteUrl='webdavs://depot3.uib.local:4447/products',
+        description='A depot',
+        notes='Depot 100',
+        hardwareAddress=None,
+        ipAddress=None,
+        networkAddress='192.168.100.0/24',
+        maxBandwidth=0
+    )
+
+    selfIdents = []
+    for host in clients:
+        selfIdents.append(host.getIdent(returnType='dict'))
+    for host in depots:
+        selfIdents.append(host.getIdent(returnType='dict'))
+    selfIdents.append(configserver1.getIdent(returnType='dict'))
+
+    selfIdents.append({'id': 'depot100.test.invalid'})
+    selfIdents.append({'id': 'client100.test.invalid'})
+
+    # TODO: split this into multiple tests
+
+    ids = extendedConfigDataBackend.host_getIdents()
+    assert len(ids) == len(
+        selfIdents), u"got: '%s', expected: '%s'" % (ids, len(selfIdents))
+    for ident in ids:
+        found = False
+        for selfIdent in selfIdents:
+            if (ident == selfIdent['id']):
+                found = True
+                break
+        assert found, u"'%s' not in '%s'" % (ident, selfIdents)
+
+    ids = extendedConfigDataBackend.host_getIdents(id='*100*')
+    assert len(ids) == 2, u"got: '%s', expected: '%s'" % (ids, 2)
+    for ident in ids:
+        found = False
+        for selfIdent in selfIdents:
+            if (ident == selfIdent['id']):
+                found = True
+                break
+        assert found, u"'%s' not in '%s'" % (ident, selfIdents)
+
+    ids = extendedConfigDataBackend.host_getIdents(returnType='tuple')
+    assert len(ids) == len(
+        selfIdents), u"got: '%s', expected: '%s'" % (ids, len(selfIdents))
+    for ident in ids:
+        found = False
+        for selfIdent in selfIdents:
+            if (ident[0] == selfIdent['id']):
+                found = True
+                break
+        assert found, u"'%s' not in '%s'" % (ident, selfIdents)
+
+    ids = extendedConfigDataBackend.host_getIdents(returnType='list')
+    assert len(ids) == len(
+        selfIdents), u"got: '%s', expected: '%s'" % (ids, len(selfIdents))
+    for ident in ids:
+        found = False
+        for selfIdent in selfIdents:
+            if (ident[0] == selfIdent['id']):
+                found = True
+                break
+        assert found, u"'%s' not in '%s'" % (ident, selfIdents)
+
+    ids = extendedConfigDataBackend.host_getIdents(returnType='dict')
+    assert len(ids) == len(
+        selfIdents), u"got: '%s', expected: '%s'" % (ids, len(selfIdents))
+    for ident in ids:
+        found = False
+        for selfIdent in selfIdents:
+            if (ident['id'] == selfIdent['id']):
+                found = True
+                break
+        assert found, u"'%s' not in '%s'" % (ident, selfIdents)
