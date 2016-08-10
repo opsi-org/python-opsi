@@ -421,14 +421,6 @@ class BackendTestsMixin(object):
             '(&(&(objectClass=Product)(description=*))(&(objectClass=ProductOnClient)(installationStatus=installed)))')
         print(result)
 
-        hosts = self.backend.host_getObjects()
-        assert len(hosts) > 1
-        self.backend.host_delete(id=[])  # Deletes all clients
-        hosts = self.backend.host_getObjects()
-
-        # This is special for the file backend: there the ConfigServer
-        # will stay in the backend and does not get deleted.
-        assert len(hosts) <= 1
 
 class BackendPerformanceTestMixin(object):
     def testBackendPerformance(self, clientCount=500, productCount=50):

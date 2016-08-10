@@ -324,3 +324,16 @@ def test_createObjectOnBackend(extendedConfigDataBackend):
     assert len(hosts) == 1
     assert hosts[0].getId() == client2.getId()
     assert hosts[0].getDescription() == u'Test client 2'
+
+
+def testDeletingAllHosts(extendedConfigDataBackend):
+    extendedConfigDataBackend.host_createObjects(getClients())
+
+    hosts = extendedConfigDataBackend.host_getObjects()
+    assert len(hosts) > 1
+    extendedConfigDataBackend.host_delete(id=[])  # Deletes all clients
+    hosts = extendedConfigDataBackend.host_getObjects()
+
+    # This is special for the file backend: there the ConfigServer
+    # will stay in the backend and does not get deleted.
+    assert len(hosts) <= 1
