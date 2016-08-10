@@ -26,7 +26,6 @@ Testing the Host Control backend.
 from __future__ import absolute_import
 
 from OPSI.Backend.HostControl import HostControlBackend
-from OPSI.Backend.HostControlSafe import HostControlSafeBackend
 from .test_hosts import getClients
 
 import pytest
@@ -46,8 +45,6 @@ def testCallingStartAndStopMethod(hostControlBackend):
     hostControlBackend.hostControl_shutdown([u'client1.test.invalid'])
 
 
-@pytest.yield_fixture(
-    params=[HostControlBackend, HostControlSafeBackend]
-)
-def hostControlBackend(request, extendedConfigDataBackend):
-    yield request.param(extendedConfigDataBackend)
+@pytest.yield_fixture
+def hostControlBackend(extendedConfigDataBackend):
+    yield HostControlBackend(extendedConfigDataBackend)
