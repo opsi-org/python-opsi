@@ -94,6 +94,7 @@ def test_configState_getClientToDepotserver(extendedConfigDataBackend):
     for clientToDepot in clientToDepots:
        assert clientToDepot['depotId'] in [ds.id for ds in depotservers]
 
+
 @pytest.mark.requiresModulesFile
 def test_createProductOnClient(extendedConfigDataBackend):
     client = OpsiClient(id='client.test.invalid')
@@ -113,6 +114,7 @@ def test_createProductOnClient(extendedConfigDataBackend):
                         if poc.actionRequest == 'setup']
 
     assert [originalPoc] == productOnClients
+
 
 @pytest.mark.requiresModulesFile
 def test_selectProductOnClientWithDefault(extendedConfigDataBackend):
@@ -158,8 +160,10 @@ def test_selectProductOnClientWithDefault(extendedConfigDataBackend):
         depotId=depot.getId(),
         locked=False
     )
-    extendedConfigDataBackend.productOnDepot_createObjects([installedProductOnDepot6,
-                                               installedProductOnDepot7])
+    extendedConfigDataBackend.productOnDepot_createObjects([
+        installedProductOnDepot6,
+        installedProductOnDepot7
+    ])
 
     clientConfigDepotId = UnicodeConfig(
         id=u'clientconfig.depot.id',
@@ -176,7 +180,8 @@ def test_selectProductOnClientWithDefault(extendedConfigDataBackend):
                                 productId=['product6', 'product7'])]
 
     productOnClients.sort()
-    assert productOnClients == [u'product6',u'product7']
+    assert productOnClients == [u'product6', u'product7']
+
 
 def test_selectProductOnClientsByWildcard(extendedConfigDataBackend):
     client = OpsiClient(id='client.test.invalid')
@@ -197,6 +202,7 @@ def test_selectProductOnClientsByWildcard(extendedConfigDataBackend):
     )
     assert productOnClients == [poc]
 
+
 def test_createDepotServer(extendedConfigDataBackend):
     extendedConfigDataBackend.host_createOpsiDepotserver(
             id='depot100.test.invalid',
@@ -212,10 +218,10 @@ def test_createDepotServer(extendedConfigDataBackend):
             networkAddress='192.168.100.0/24',
             maxBandwidth=0)
 
-
     hosts = extendedConfigDataBackend.host_getObjects(id='depot100.test.invalid')
     assert len(hosts) == 1
     # TODO: check host!
+
 
 @pytest.mark.requiresModulesFile
 def test_createClient(extendedConfigDataBackend):
@@ -229,9 +235,10 @@ def test_createClient(extendedConfigDataBackend):
             created=None,
             lastSeen=None)
 
-    hosts = extendedConfigDataBackend.host_getObjects(id = 'client100.uib.local')
+    hosts = extendedConfigDataBackend.host_getObjects(id='client100.uib.local')
     assert len(hosts) == 1
     # TODO: check Host
+
 
 def test_hostIdents(extendedConfigDataBackend):
     extendedConfigDataBackend.host_createOpsiDepotserver(
