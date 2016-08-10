@@ -208,14 +208,14 @@ def getDirectoriesAndExpectedRights(path):
 
 
 def getWorkbenchDirectory():
-	if isSLES():
+	if isSLES() or isOpenSUSE():
 		return u'/var/lib/opsi/workbench'
 	else:
 		return u'/home/opsiproducts'
 
 
 def getPxeDirectory():
-	if isSLES():
+	if isSLES() or isOpenSUSE():
 		return u'/var/lib/tftpboot/opsi'
 	else:
 		return u'/tftpboot/linux'
