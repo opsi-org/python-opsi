@@ -26,13 +26,9 @@ This tests what usually is found under
 
 from __future__ import absolute_import
 
-from contextlib import contextmanager
-
-from OPSI.System import which
 from OPSI.Object import NetbootProduct, ProductOnDepot, UnicodeProductProperty
 from .Backends.File import FileBackendBackendManagerMixin
 from .BackendTestMixins.Hosts import getConfigServer
-from .BackendTestMixins.Products import getNetbootProduct
 from .test_util_wim import fakeWIMEnvironment
 from .helpers import getLocalFQDN, mock, patchAddress, patchEnvironmentVariables, unittest
 

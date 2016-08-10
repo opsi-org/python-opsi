@@ -33,6 +33,7 @@ from itertools import izip
 from .Clients import ClientsMixin
 from .Hosts import HostsMixin
 from ..test_groups import fillBackendWithObjectToGroups
+from ..test_products import getProducts
 
 from OPSI.Types import BackendError
 from ..helpers import unittest
@@ -206,9 +207,10 @@ class BackendTestsMixin(ClientsMixin, HostsMixin):
         hosts = self.backend.host_getObjects(id='depot100.test.invalid')
         assert len(hosts) == 1, u"got {0!r}, expected only one".format(hosts)
 
-        self.setUpProducts()
-        self.createProductsOnBackend()
+        self.products = getProducts()
+        self.backend.product_createObjects(self.products)
 
+        self.product4 = self.products[3]
         self.backend.productOnDepot_create(
             productId=self.product4.getId(),
             productType=self.product4.getType(),

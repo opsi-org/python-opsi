@@ -34,10 +34,10 @@ from OPSI.Util.File.Opsi import BackendACLFile
 from OPSI.Backend.BackendManager import BackendAccessControl
 
 from .BackendTestMixins.Clients import getClients
-from .BackendTestMixins.Products import getProducts
 from .helpers import workInTemporaryDirectory
 from .test_backend_replicator import (fillBackendWithHosts,
     fillBackendWithProducts, fillBackendWithProductOnClients)
+from .test_products import getProducts
 
 import pytest
 
@@ -46,11 +46,9 @@ def testParsingBackendACLFile():
     with workInTemporaryDirectory() as tempDir:
         aclFile = os.path.join(tempDir, 'acl.conf')
         with open(aclFile, 'w') as exampleConfig:
-            exampleConfig.write(
-'''
+            exampleConfig.write('''
 host_.*: opsi_depotserver(depot1.test.invalid, depot2.test.invalid); opsi_client(self,  attributes (attr1, attr2)); sys_user(some user, some other user); sys_group(a_group, group2)
-'''
-        )
+''')
 
         expectedACL = [
             [u'host_.*', [
@@ -119,7 +117,7 @@ def testDenyingAttributes(extendedConfigDataBackend):
         if host.id == client1.id:
             assert host.opsiHostKey == client1.opsiHostKey
         else:
-            assert None == host.opsiHostKey
+            assert host.opsiHostKey is None
 
 
 # def testAllowingOnlyUpdatesOfSpecificAttributes(extendedConfigDataBackend):
@@ -179,9 +177,9 @@ def testDenyingAccessToOtherObjects(extendedConfigDataBackend):
 
     serverFqdn = OPSI.Types.forceHostId(getfqdn())  # using local FQDN
     depotserver1 = {
-        "isMasterDepot" : True,
-        "type" : "OpsiConfigserver",
-        "id" : serverFqdn,
+        "isMasterDepot": True,
+        "type": "OpsiConfigserver",
+        "id": serverFqdn,
     }
 
     backend.host_createObjects(depotserver1)
@@ -378,7 +376,7 @@ def testGettingAccessButDenyingAttributesOnSelf(extendedConfigDataBackend):
         else:
             for attribute, value in host.toHash().items():
                 if attribute in denyAttributes:
-                    assert None == value
+                    assert value is None
 
 
 @pytest.mark.requiresModulesFile
