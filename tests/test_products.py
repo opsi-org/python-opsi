@@ -32,8 +32,7 @@ from OPSI.Types import forceHostId
 from OPSI.Types import BackendBadValueError
 from OPSI.Util import getfqdn
 
-from .BackendTestMixins.Hosts import getConfigServer, getDepotServers
-from .BackendTestMixins.Clients import getClients
+from .test_hosts import getClients, getConfigServer, getDepotServers
 
 import pytest
 
