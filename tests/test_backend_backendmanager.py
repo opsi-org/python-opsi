@@ -30,12 +30,12 @@ import os
 from OPSI.Backend.BackendManager import BackendManager, ConfigDataBackend
 
 from .Backends.File import FileBackendMixin
-from .BackendTestMixins.Backend import BackendTestsMixin
 
 from .helpers import getLocalFQDN, unittest, workInTemporaryDirectory
 from .Backends.File import getFileBackend
 from .test_configs import getConfigs
 from .test_groups import fillBackendWithGroups
+from .test_hosts import getClients, getConfigServer, getDepotServers
 from .test_products import getProducts, getProductsOnDepot
 
 
@@ -61,8 +61,7 @@ class BackendExtensionTestCase(unittest.TestCase):
         bm.testMethod2()
 
 
-class ExtendedBackendManagerTestCase(unittest.TestCase, FileBackendMixin,
-        BackendTestsMixin):
+class ExtendedBackendManagerTestCase(unittest.TestCase, FileBackendMixin):
     """
     This tests an extended BackendManager that makes use of the extensions.
     """
@@ -79,17 +78,27 @@ class ExtendedBackendManagerTestCase(unittest.TestCase, FileBackendMixin,
         self.tearDownBackend()
 
     def testBackendManager(self):
+        # TODO: use fixtures!
         bm = self.backend
 
-        self.testObjectMethods()
+        self.clients = getClients()
+        self.configserver1 = getConfigServer()
+        self.depotservers = getDepotServers()
+        self.hosts = list(self.clients) + list(self.depotservers) + [self.configserver1]
+
+        bm.host_createObjects(self.clients)
+        bm.host_createObjects(self.depotservers)
+        bm.host_createObjects(self.configserver1)
 
         hostIds = bm.host_getIdents()
         for host in self.hosts:
             self.assertTrue(host.id in hostIds)
 
         # No configs set - should be equal now
+        self.client1 = self.clients[0]
         self.assertEquals(bm.getGeneralConfig_hash(), bm.getGeneralConfig_hash(objectId=self.client1.id))
 
+        self.depotserver1 = self.depotservers[0]
         (self.config1, self.config2, self.config3, self.config4,
          self.config5, self.config6) = getConfigs(self.depotserver1.id)
 
@@ -131,6 +140,7 @@ class ExtendedBackendManagerTestCase(unittest.TestCase, FileBackendMixin,
         for group in self.groups:
             self.assertTrue(group.id in groupIds)
 
+        self.client2 = self.clients[1]
         clients = [self.client1.id, self.client2.id]
         groupId = 'a test group'
         bm.createGroup(
@@ -352,6 +362,7 @@ class ExtendedBackendManagerTestCase(unittest.TestCase, FileBackendMixin,
         productIds = bm.getInstallableProductIds_list(clientId=client.id)
         productIds = bm.getInstallableLocalBootProductIds_list(clientId=client.id)
         productIds = bm.getInstallableNetBootProductIds_list(clientId=client.id)
+        # TODO: assertions!
         status = bm.getProductInstallationStatus_listOfHashes(objectId=client.id)
         actions = bm.getProductActionRequests_listOfHashes(clientId=client.id)
         states = bm.getLocalBootProductStates_hash()
