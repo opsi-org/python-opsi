@@ -1,5 +1,5 @@
-#!/usr/bin/env python
-#-*- coding: utf-8 -*-
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
 # Copyright (C) 2014-2016 uib GmbH <info@uib.de>
@@ -22,16 +22,3 @@ Mixins to test the functionality of backends.
 :author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
 """
-
-from __future__ import absolute_import
-
-from .Backend import BackendTestsMixin
-
-
-class BackendTestMixin(BackendTestsMixin):
-    """
-    Class collecting functional backend tests.
-
-    MultiThreadingTestMixin and BackendPerformanceTest are excluded.
-    Please inherit them manually if you feel the need.
-    """

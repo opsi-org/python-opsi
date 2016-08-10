@@ -29,7 +29,6 @@ from OPSI.Util.HTTP import deflateEncode, gzipEncode
 
 from .helpers import unittest
 from .Backends.JSONRPC import JSONRPCTestCase
-from .BackendTestMixins import BackendTestsMixin
 
 
 class FakeResponse(object):
@@ -49,7 +48,7 @@ class JSONRPCBackendTestCase(unittest.TestCase):
         We connect to localhost without making a connection right from
         the start on.
         """
-        backend = JSONRPCBackend("localhost", connectoninit=False)
+        JSONRPCBackend("localhost", connectoninit=False)
 
     def testProcessingEmptyResponse(self):
         """
@@ -93,7 +92,7 @@ class JSONRPCBackendCompressionTestCase(unittest.TestCase):
         self.assertEquals("This is deflated", backend._processResponse(response))
 
 
-class JSONRPCBackendUsingTestCase(unittest.TestCase, JSONRPCTestCase, BackendTestsMixin):
+class JSONRPCBackendUsingTestCase(unittest.TestCase, JSONRPCTestCase):
     def setUp(self):
         self.setUpBackend()
 
