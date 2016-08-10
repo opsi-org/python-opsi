@@ -222,9 +222,6 @@ class BackendTestsMixin(object):
             networkAddress='192.168.100.0/24',
             maxBandwidth=0)
 
-        hosts = self.backend.host_getObjects(id='depot100.test.invalid')
-        assert len(hosts) == 1, u"got {0!r}, expected only one".format(hosts)
-
         self.products = getProducts()
         self.backend.product_createObjects(self.products)
 
