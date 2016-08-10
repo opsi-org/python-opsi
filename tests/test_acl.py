@@ -33,10 +33,10 @@ from OPSI.Util import getfqdn
 from OPSI.Util.File.Opsi import BackendACLFile
 from OPSI.Backend.BackendManager import BackendAccessControl
 
-from .BackendTestMixins.Clients import getClients
 from .helpers import workInTemporaryDirectory
 from .test_backend_replicator import (fillBackendWithHosts,
     fillBackendWithProducts, fillBackendWithProductOnClients)
+from .test_hosts import getClients
 from .test_products import getProducts
 
 import pytest
