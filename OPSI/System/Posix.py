@@ -709,7 +709,7 @@ def which(cmd):
 		if not path:
 			raise CommandNotFoundException(u"Command {0!r} not found in PATH".format(cmd))
 
-		logger.debug(u"Command {0!r} found at: {1!r}", cmd, WHICH_CACHE[cmd])
+		logger.debug(u"Command {0!r} found at: {1!r}", cmd, path)
 		WHICH_CACHE[cmd] = path
 
 	return WHICH_CACHE[cmd]
