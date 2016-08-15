@@ -69,7 +69,7 @@ from OPSI.Util.File.Opsi import OpsiConfFile
 from OPSI.System.Posix import (isCentOS, isDebian, isOpenSUSE, isRHEL, isSLES,
 	isUbuntu, isUCS, isOpenSUSELeap)
 
-__version__ = '4.0.7.14'
+__version__ = '4.0.7.16'
 
 LOGGER = Logger()
 
