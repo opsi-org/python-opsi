@@ -2864,11 +2864,11 @@ def isOpenSUSELeap():
         if isOpenSUSE():
                 leap = Distribution()
                 if leap.version >= (42, 1):
-                        return "True"
+                        return True
                 else:
-                        return "False"
+                        return False
         else:
-                return "False"
+                return False
 
 
 def isRHEL():
