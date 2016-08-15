@@ -2852,8 +2852,23 @@ def isOpenSUSE():
 	"""
 	Returns `True` if this is running on openSUSE.
 	Returns `False` if otherwise.
+	For OpenSUSE Leap please use isOpenSUSELeap()
 	"""
 	return _checkForDistribution('opensuse')
+
+def isOpenSUSELeap():
+        """
+        Returns `True` if this is running on OpenSUSE Leap.
+        Returns `False` if otherwise.
+        """
+        if isOpenSUSE():
+                leap = Distribution()
+                if leap.version >= (42, 1):
+                        return True
+                else:
+                        return False
+        else:
+                return False
 
 
 def isRHEL():
