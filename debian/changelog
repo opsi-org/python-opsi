@@ -1,3 +1,10 @@
+python-opsi (4.0.7.16-1) testing; urgency=medium
+
+  * OPSI.System.Posix: new function isOpenSUSELeap.
+  * OPSI.Util.Task.Rights: Improved support for openSUSE Leap.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 15 Aug 2016 16:53:24 +0200
+
 python-opsi (4.0.7.15-1) stable; urgency=medium
 
   * corrected opsi-set-rights for openSUSE
