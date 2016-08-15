@@ -1,5 +1,5 @@
-#!/usr/bin/env python
-#-*- coding: utf-8 -*-
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
 # Copyright (C) 2013-2016 uib GmbH <info@uib.de>
@@ -26,8 +26,6 @@ Testing the opsi SQLite backend.
 from __future__ import absolute_import
 
 from .Backends.SQLite import SQLiteBackendMixin
-from .BackendTestMixins import (ConfigStateTestsMixin, ConfigTestsMixin,
-    ProductsTestMixin, BackendTestsMixin)
 from .helpers import unittest, requiresModulesFile
 
 import pytest
@@ -41,9 +39,7 @@ def testInitialisationOfSQLiteBackendWithoutParametersDoesNotFail():
     backend.backend_createBase()
 
 
-class SQLiteBackendTestCase(unittest.TestCase, SQLiteBackendMixin,
-    BackendTestsMixin, ProductsTestMixin, ConfigTestsMixin,
-    ConfigStateTestsMixin):
+class SQLiteBackendTestCase(unittest.TestCase, SQLiteBackendMixin):
     """Testing the SQLite backend.
 
     This currently requires a valid modules file with enabled MySQL backend."""
@@ -59,7 +55,3 @@ class SQLiteBackendTestCase(unittest.TestCase, SQLiteBackendMixin,
 
     def testWeHaveABackend(self):
         self.assertNotEqual(None, self.backend)
-
-
-if __name__ == '__main__':
-    unittest.main()

@@ -28,8 +28,8 @@ from __future__ import absolute_import, print_function
 from OPSI.Object import (AuditSoftware, AuditSoftwareOnClient,
     AuditHardware, AuditHardwareOnHost, AuditSoftwareToLicensePool)
 
-from .BackendTestMixins.Clients import getClients
-from .BackendTestMixins.Products import getLocalbootProducts, ProductsMixin
+from .test_hosts import getClients
+from .test_products import getLocalbootProducts
 from .test_license_management import createLicensePool
 
 import pytest

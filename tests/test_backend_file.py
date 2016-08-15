@@ -30,18 +30,9 @@ from .helpers import unittest
 from OPSI.Types import BackendConfigurationError
 
 from .Backends.File import FileBackendMixin
-from .BackendTestMixins import (ConfigStateTestsMixin,
-    ProductPropertiesTestMixin, ProductDependenciesTestMixin, ConfigTestsMixin,
-    ProductsTestMixin, ProductsOnClientTestsMixin, ProductsOnDepotTestsMixin,
-    ProductPropertyStateTestsMixin, BackendTestsMixin)
-from .BackendTestMixins.Hosts import HostsTestMixin
 
 
-class FileBackendTestCase(unittest.TestCase, FileBackendMixin,
-    ConfigStateTestsMixin, ProductPropertiesTestMixin, ConfigTestsMixin,
-    ProductDependenciesTestMixin, ProductsTestMixin,
-    ProductsOnClientTestsMixin, ProductsOnDepotTestsMixin,
-    ProductPropertyStateTestsMixin, BackendTestsMixin, HostsTestMixin):
+class FileBackendTestCase(unittest.TestCase, FileBackendMixin):
     """
     Testing the file backend.
 

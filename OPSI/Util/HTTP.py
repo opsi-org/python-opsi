@@ -568,7 +568,7 @@ class HTTPConnectionPool(object):
 					logger.debug(
 						u"Request to host {0!r} failed, retry: {1}, firstTryTime: {2}, now: {3}, retryTime: {4}, connectTimeout: {5}, socketTimeout: {6}",
 						self.host, retry, firstTryTime, now, self.retryTime, self.connectTimeout, self.isocketTimeout
-					 )
+					)
 				except Exception as error:
 					logger.debug(u"Logging message failed: {0!r}", error)
 					logger.warning(u"Logging message failed: {0}", forceUnicode(error))
