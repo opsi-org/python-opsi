@@ -807,7 +807,7 @@ class HTTPRepository(Repository):
 		self._retryTime = 5
 		self._connectionPoolSize = 1
 		self._cookie = ''
-		proxyUrl = None
+		self._proxy = None
 		serverCertFile = None
 		verifyServerCert = False
 		caCertFile = None
@@ -822,7 +822,7 @@ class HTTPRepository(Repository):
 			elif key == 'password':
 				self._password = forceUnicode(value)
 			elif key == 'proxyurl':
-				proxyUrl = forceUnicode(value)
+				self._proxy = forceUnicode(value)
 			elif key == 'servercertfile':
 				serverCertFile = forceFilename(value)
 			elif key == 'verifyservercert':
@@ -869,7 +869,7 @@ class HTTPRepository(Repository):
 			verifyServerCert=verifyServerCert,
 			caCertFile=caCertFile,
 			verifyServerCertByCa=verifyServerCertByCa,
-			proxyUrl=proxyUrl
+			proxyUrl=self._proxy
 		)
 
 	def _preProcessPath(self, path):
