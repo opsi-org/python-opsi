@@ -2866,10 +2866,8 @@ def isOpenSUSELeap():
 		leap = Distribution()
 		if leap.version >= (42, 1):
 			return True
-		else:
-			return False
-	else:
-		return False
+
+	return False
 
 
 def isRHEL():
