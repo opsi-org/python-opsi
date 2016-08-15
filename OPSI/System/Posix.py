@@ -55,7 +55,7 @@ from OPSI.Types import OpsiVersionError
 from OPSI.Object import *
 from OPSI.Util import objectToBeautifiedText, removeUnit
 
-__version__ = '4.0.7.9'
+__version__ = '4.0.7.16'
 
 logger = Logger()
 
@@ -2856,19 +2856,20 @@ def isOpenSUSE():
 	"""
 	return _checkForDistribution('opensuse')
 
+
 def isOpenSUSELeap():
-        """
-        Returns `True` if this is running on OpenSUSE Leap.
-        Returns `False` if otherwise.
-        """
-        if isOpenSUSE():
-                leap = Distribution()
-                if leap.version >= (42, 1):
-                        return True
-                else:
-                        return False
-        else:
-                return False
+	"""
+	Returns `True` if this is running on OpenSUSE Leap.
+	Returns `False` if otherwise.
+	"""
+	if isOpenSUSE():
+		leap = Distribution()
+		if leap.version >= (42, 1):
+			return True
+		else:
+			return False
+	else:
+		return False
 
 
 def isRHEL():
