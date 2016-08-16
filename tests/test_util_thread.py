@@ -66,7 +66,7 @@ def testThreadPoolWorkerHandlingCallback(threadPool):
 
     threadPool.addJob(function=lambda: 'test', callback=assertCallback)
 
-    time.sleep(1)  # give thread time to finish
+    time.sleep(0.1)  # give thread time to finish
 
     assert 1 == len(result)
     r = result[0]
@@ -88,7 +88,7 @@ def testThreadPoolWorkerHandlingCallbackWithException(threadPool):
 
     threadPool.addJob(function=raiseError, callback=assertCallback)
 
-    time.sleep(1)  # give thread time to finish
+    time.sleep(0.1)  # give thread time to finish
 
     assert len(result) == 1
     r = result[0]
@@ -124,8 +124,7 @@ def testSmallThreadPoolHandlingManyLongRunningTasks(threadPool):
         results.append(success)
 
     def waitJob():
-        for _ in range(3):
-            time.sleep(1)
+        time.sleep(3)
 
     for _ in range(5):
         threadPool.addJob(waitJob, callback=callback)
@@ -133,8 +132,7 @@ def testSmallThreadPoolHandlingManyLongRunningTasks(threadPool):
     assert 2 == len(threadPool.worker)
     assert threadPool.jobQueue.unfinished_tasks > len(threadPool.worker), "Expected more tasks in Queue than workers in pool, but got %s tasks and %s worker" % (threadPool.jobQueue.unfinished_tasks, len(threadPool.worker))
 
-    for _ in range(10):
-        time.sleep(0.4)
+    time.sleep(4)
     assert 5 == len(results)
 
 
@@ -150,7 +148,7 @@ def testContinueWorkingAfterStandingStill(threadPool):
     for _ in range(10):
         threadPool.addJob(shortJob, callback=callback)
 
-    time.sleep(1)  # Let the pool handle the work...
+    time.sleep(0.1)  # Let the pool handle the work...
     assert 10 == len(results)
 
     time.sleep(1)  # Wait some time...
@@ -158,7 +156,7 @@ def testContinueWorkingAfterStandingStill(threadPool):
     results = []  # Resetting our results
     for _ in range(10):
         threadPool.addJob(shortJob, callback=callback)
-    time.sleep(1)
+    time.sleep(0.1)
     assert 10 == len(results)
 
 
