@@ -139,8 +139,6 @@ def test_floodPool(threadPool):
 
 
 def testContinueWorkingAfterStandingStill(threadPool):
-    # threadPool.adjustSize(5)
-
     results = []
 
     def callback(success, returned, errors):
