@@ -115,7 +115,7 @@ def testAdjustingThreadPoolSize(threadPool):
     assert 2 == len(threadPool.worker)
 
 
-def test_floodPool(threadPool):
+def testSmallThreadPoolHandlingManyLongRunningTasks(threadPool):
     threadPool.adjustSize(2)
 
     results = []
