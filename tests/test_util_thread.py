@@ -124,8 +124,7 @@ def testSmallThreadPoolHandlingManyLongRunningTasks(threadPool):
         results.append(success)
 
     def waitJob():
-        for _ in range(3):
-            time.sleep(1)
+        time.sleep(3)
 
     for _ in range(5):
         threadPool.addJob(waitJob, callback=callback)
@@ -133,8 +132,7 @@ def testSmallThreadPoolHandlingManyLongRunningTasks(threadPool):
     assert 2 == len(threadPool.worker)
     assert threadPool.jobQueue.unfinished_tasks > len(threadPool.worker), "Expected more tasks in Queue than workers in pool, but got %s tasks and %s worker" % (threadPool.jobQueue.unfinished_tasks, len(threadPool.worker))
 
-    for _ in range(10):
-        time.sleep(0.4)
+    time.sleep(4)
     assert 5 == len(results)
 
 
