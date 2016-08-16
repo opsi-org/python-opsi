@@ -869,7 +869,7 @@ class HTTPRepository(Repository):
 			verifyServerCert=verifyServerCert,
 			caCertFile=caCertFile,
 			verifyServerCertByCa=verifyServerCertByCa,
-			proxyUrl=self._proxy
+			proxyURL=self._proxy
 		)
 
 	def _preProcessPath(self, path):
