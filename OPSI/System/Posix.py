@@ -1997,6 +1997,8 @@ class Harddisk:
 			else:
 				fsType = u'--%s' % fsType
 
+			time.sleep(10)
+
 			cmd = u"%s -p %s %s" % (which('ms-sys'), fsType, self.getPartition(partition)['device'])
 			try:
 				if self.ldPreload:
