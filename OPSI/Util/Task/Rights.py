@@ -67,9 +67,9 @@ from OPSI.Types import forceHostId
 from OPSI.Util import findFiles, getfqdn
 from OPSI.Util.File.Opsi import OpsiConfFile
 from OPSI.System.Posix import (isCentOS, isDebian, isOpenSUSE, isRHEL, isSLES,
-	isUbuntu, isUCS)
+	isUbuntu, isUCS, isOpenSUSELeap)
 
-__version__ = '4.0.7.14'
+__version__ = '4.0.7.16'
 
 LOGGER = Logger()
 
@@ -208,14 +208,14 @@ def getDirectoriesAndExpectedRights(path):
 
 
 def getWorkbenchDirectory():
-	if isSLES() or isOpenSUSE():
+	if isSLES() or isOpenSUSELeap():
 		return u'/var/lib/opsi/workbench'
 	else:
 		return u'/home/opsiproducts'
 
 
 def getPxeDirectory():
-	if isSLES() or isOpenSUSE():
+	if isSLES() or isOpenSUSELeap():
 		return u'/var/lib/tftpboot/opsi'
 	else:
 		return u'/tftpboot/linux'
