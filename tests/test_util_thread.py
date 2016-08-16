@@ -66,7 +66,7 @@ def testThreadPoolWorkerHandlingCallback(threadPool):
 
     threadPool.addJob(function=lambda: 'test', callback=assertCallback)
 
-    time.sleep(1)  # give thread time to finish
+    time.sleep(0.1)  # give thread time to finish
 
     assert 1 == len(result)
     r = result[0]
@@ -88,7 +88,7 @@ def testThreadPoolWorkerHandlingCallbackWithException(threadPool):
 
     threadPool.addJob(function=raiseError, callback=assertCallback)
 
-    time.sleep(1)  # give thread time to finish
+    time.sleep(0.1)  # give thread time to finish
 
     assert len(result) == 1
     r = result[0]
@@ -150,7 +150,7 @@ def testContinueWorkingAfterStandingStill(threadPool):
     for _ in range(10):
         threadPool.addJob(shortJob, callback=callback)
 
-    time.sleep(1)  # Let the pool handle the work...
+    time.sleep(0.1)  # Let the pool handle the work...
     assert 10 == len(results)
 
     time.sleep(1)  # Wait some time...
@@ -158,7 +158,7 @@ def testContinueWorkingAfterStandingStill(threadPool):
     results = []  # Resetting our results
     for _ in range(10):
         threadPool.addJob(shortJob, callback=callback)
-    time.sleep(1)
+    time.sleep(0.1)
     assert 10 == len(results)
 
 
