@@ -1,3 +1,9 @@
+python-opsi (4.0.7.17-1) experimental; urgency=medium
+
+  * OPSI.System.Posix: added sleep function when using ms-sys to write partition boot record
+
+ -- Mathias Radtke <m.radtke@uib.de>  Tue, 16 Aug 2016 14:52:57 +0200
+
 python-opsi (4.0.7.16-1) testing; urgency=medium
 
   * OPSI.System.Posix: new function isOpenSUSELeap.
