@@ -424,7 +424,7 @@ class HTTPConnectionPool(object):
 			logger.warning(u"HttpConnectionPool is full, discarding connection: %s" % self.host)
 
 	def get_host(self, url):
-		(scheme, host, port, username, password) = urlsplit(url)
+		(scheme, host, port, baseurl, username, password) = urlsplit(url)
 		return (scheme, host, port)
 
 	def is_same_host(self, url):
