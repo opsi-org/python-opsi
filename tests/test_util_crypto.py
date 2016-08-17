@@ -36,7 +36,7 @@ from .helpers import workInTemporaryDirectory
 import pytest
 
 
-@pytest.mark.parametrize("inputLength", [1, 5, 12, 256, 512, 1024, 2048])
+@pytest.mark.parametrize("inputLength", [1, 5, 91, 256, 337, 512, 829, 3333])
 def testEncryptingAndDecryptingTextWithCertificate(inputLength):
     pytest.importorskip("M2Crypto")  # Lazy import in the encrypt / decrypt functions
 
