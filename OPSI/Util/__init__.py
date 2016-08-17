@@ -606,43 +606,33 @@ def blowfishDecrypt(key, crypt):
 def encryptWithPublicKeyFromX509CertificatePEMFile(data, filename):
 	import M2Crypto
 
-	chunks = []
-	chunkLength = 32
-	while len(data) > chunkLength:
-		chunks.append(data[:chunkLength])
-		data = data[chunkLength:]
-	chunks.append(data)
-
 	cert = M2Crypto.X509.load_cert(filename)
 	rsa = cert.get_pubkey().get_rsa()
-	enc = ''
-	for chunk in chunks:
-		enc += rsa.public_encrypt(data=chunk, padding=M2Crypto.RSA.pkcs1_oaep_padding)
+	padding = M2Crypto.RSA.pkcs1_oaep_padding
 
-	return enc
+	def encrypt():
+		for parts in chunk(data, size=32):
+			yield rsa.public_encrypt(data=''.join(parts), padding=padding)
+
+	return ''.join(encrypt())
 
 
 def decryptWithPrivateKeyFromPEMFile(data, filename):
 	import M2Crypto
 
 	privateKey = M2Crypto.RSA.load_key(filename)
-	chunks = []
-	chunkLength = 256
-	while len(data) > chunkLength:
-		chunks.append(data[:chunkLength])
-		data = data[chunkLength:]
-	chunks.append(data)
+	padding = M2Crypto.RSA.pkcs1_oaep_padding
 
-	res = ''
-	for chunk in chunks:
-		decr = privateKey.private_decrypt(data=chunk, padding=M2Crypto.RSA.pkcs1_oaep_padding)
+	def decrypt():
+		for parts in chunk(data, size=256):
+			decr = privateKey.private_decrypt(data=''.join(parts), padding=padding)
 
-		for x in decr:
-			if x not in ('\x00', '\0'):
-				# Avoid any nullbytes
-				res += x
+			for x in decr:
+				if x not in ('\x00', '\0'):
+					# Avoid any nullbytes
+					yield x
 
-	return res
+	return ''.join(decrypt())
 
 
 def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeDir=None, includeFile=None, returnDirs=True, returnLinks=True, followLinks=False, repository=None):
