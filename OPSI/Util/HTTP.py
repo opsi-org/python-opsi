@@ -377,7 +377,7 @@ class HTTPConnectionPool(object):
 				url = urlparse.urlparse(self.proxyURL)
 				if url.password:
 					logger.setConfidentialStrings(url.password)
-					logger.debug(u"Starting new HTTP connection (%d) to %s:%d over proxy-url %s" % (self.num_connections, self.host, self.port, self.proxyURL))
+				logger.debug(u"Starting new HTTP connection (%d) to %s:%d over proxy-url %s" % (self.num_connections, self.host, self.port, self.proxyURL))
 
 				conn = HTTPConnection(host=url.hostname, port=url.port)
 				if url.username and url.password:
@@ -620,7 +620,7 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 				url = urlparse.urlparse(self.proxyURL)
 				if url.password:
 					logger.setConfidentialString(url.password)
-					logger.debug(u"Starting new HTTPS connection (%d) to %s:%d over proxy-url %s" % (self.num_connections, self.host, self.port, self.proxyURL))
+				logger.debug(u"Starting new HTTPS connection (%d) to %s:%d over proxy-url %s" % (self.num_connections, self.host, self.port, self.proxyURL))
 				conn = HTTPSConnection(host=url.hostname, port=url.port)
 				if url.username and url.password:
 					logger.debug(u"Proxy Authentication detected, setting auth with user: '%s'" % url.username)
