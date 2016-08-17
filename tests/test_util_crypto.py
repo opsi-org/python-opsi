@@ -27,7 +27,6 @@ from __future__ import absolute_import
 
 import os.path
 
-
 from OPSI.Util import randomString
 from OPSI.Util import encryptWithPublicKeyFromX509CertificatePEMFile, decryptWithPrivateKeyFromPEMFile
 from OPSI.Util.Task.Certificate import createCertificate
@@ -37,7 +36,7 @@ from .helpers import workInTemporaryDirectory
 import pytest
 
 
-@pytest.mark.parametrize("inputLength", [5])
+@pytest.mark.parametrize("inputLength", [1, 5, 12, 256, 512, 1024, 2048])
 def testEncryptingAndDecryptingTextWithCertificate(inputLength):
     pytest.importorskip("M2Crypto")  # Lazy import in the encrypt / decrypt functions
 
