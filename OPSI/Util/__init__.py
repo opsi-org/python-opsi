@@ -606,18 +606,20 @@ def blowfishDecrypt(key, crypt):
 def encryptWithPublicKeyFromX509CertificatePEMFile(data, filename):
 	import M2Crypto
 
-	with open(filename, 'r') as f:
-		cert = M2Crypto.X509.load_cert_string(f.read())
-		rsa = cert.get_pubkey().get_rsa()
-		enc = ''
-		chunks = []
-		while (len(data) > 16):
-			chunks.append(data[:16])
-			data = data[16:]
-		chunks.append(data)
-		for chunk in chunks:
-			enc += rsa.public_encrypt(data=chunk, padding=M2Crypto.RSA.pkcs1_oaep_padding)
-		return enc
+	chunks = []
+	chunkLength = 32
+	while len(data) > chunkLength:
+		chunks.append(data[:chunkLength])
+		data = data[chunkLength:]
+	chunks.append(data)
+
+	cert = M2Crypto.X509.load_cert(filename)
+	rsa = cert.get_pubkey().get_rsa()
+	enc = ''
+	for chunk in chunks:
+		enc += rsa.public_encrypt(data=chunk, padding=M2Crypto.RSA.pkcs1_oaep_padding)
+
+	return enc
 
 
 def decryptWithPrivateKeyFromPEMFile(data, filename):
