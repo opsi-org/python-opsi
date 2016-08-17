@@ -86,6 +86,23 @@ def testGetDirectoriesToProcess(depotDirectory, patchUserInfo, slesSupport, work
     assert '/path/to/apache' in directories
 
 
+@pytest.mark.parametrize("slesSupport, workbench, tftpdir", [
+    (False, u'/home/opsiproducts', u'/tftpboot/linux'),
+    (True, u'/var/lib/opsi/workbench', u'/var/lib/tftpboot/opsi')
+], ids=["opensuse", "non-opensuse"])
+def testGetDirectoriesToProcessOpenSUSELeap(depotDirectory, patchUserInfo, slesSupport, workbench, tftpdir):
+    with mock.patch('OPSI.Util.Task.Rights.getWebserverRepositoryPath', lambda: '/path/to/apache'):
+        with mock.patch('OPSI.Util.Task.Rights.isOpenSUSELeap', lambda: slesSupport):
+            directories = [d for d, _ in getDirectoriesAndExpectedRights('/')]
+
+    assert u'/etc/opsi' in directories
+    assert u'/var/lib/opsi' in directories
+    assert u'/var/log/opsi' in directories
+    assert workbench in directories
+    assert tftpdir in directories
+    assert '/path/to/apache' in directories
+
+
 def testGettingDirectories(patchUserInfo, depotDirectory):
     directories = [d for d, _ in getDirectoriesAndExpectedRights('/tmp')]
     assert len(directories) > 2
