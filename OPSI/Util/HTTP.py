@@ -423,8 +423,12 @@ class HTTPConnectionPool(object):
 			# This should never happen if self.block == True
 			logger.warning(u"HttpConnectionPool is full, discarding connection: %s" % self.host)
 
+	def get_host(self, url):
+		(scheme, host, port, username, password) = urlsplit(url)
+		return (scheme, host, port)
+
 	def is_same_host(self, url):
-		return url.startswith('/') or get_host(url) == (self.scheme, self.host, self.port)
+		return url.startswith('/') or self.get_host(url) == (self.scheme, self.host, self.port)
 
 	def getPeerCertificate(self, asPem=False):
 		if not self.peerCertificate:
