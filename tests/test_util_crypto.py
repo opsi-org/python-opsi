@@ -51,5 +51,3 @@ def testEncryptingAndDecryptingTextWithCertificate(inputLength):
         decryptedText = decryptWithPrivateKeyFromPEMFile(encryptedText, keyFile)
 
         assert decryptedText == exampleInput
-
-        assert False
