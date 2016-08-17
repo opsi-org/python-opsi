@@ -41,7 +41,7 @@ import pytest
 def testEncryptingAndDecryptingTextWithCertificate(inputLength):
     pytest.importorskip("M2Crypto")  # Lazy import in the encrypt / decrypt functions
 
-    exampleInput = randomString(5)
+    exampleInput = randomString(inputLength)
 
     with workInTemporaryDirectory() as tempDir:
         keyFile = os.path.join(tempDir, randomString(10))
