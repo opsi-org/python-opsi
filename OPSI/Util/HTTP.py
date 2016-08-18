@@ -657,16 +657,17 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 					if re.search('^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$', host):
 						fqdn = socket.getfqdn(host)
 						if fqdn == host:
-							raise Exception(u"Failed to get fqdn for ip %s" % host)
+							raise OpsiServiceVerificationError(u"Failed to get fqdn for ip %s" % host)
 						host = fqdn
 					if not host or not commonName or (host.lower() != commonName.lower()):
-						raise Exception(u"Host '%s' does not match common name '%s'" % (host, commonName))
+						raise OpsiServiceVerificationError(u"Host '%s' does not match common name '%s'" % (host, commonName))
 					self.serverVerified = True
 				else:
-					raise Exception(u"Failed to get peer certificate")
+					raise OpsiServiceVerificationError(u"Failed to get peer certificate")
 			except Exception:
 				closeConnection(conn)
 				raise
+
 		return conn
 
 
