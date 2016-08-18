@@ -642,7 +642,7 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 				if not self.verifyServerCertByCa:
 					self.serverVerified = True
 			except Exception as error:
-				logger.debug(error)
+				logger.debug(u"Verification failed: {0!r}", error)
 				if error.__class__.__name__ != 'SSLError' or self.verifyServerCertByCa:
 					raise OpsiServiceVerificationError(u"Failed to verify server cert by CA: %s" % error)
 				non_blocking_connect_https(conn, self.connectTimeout)
