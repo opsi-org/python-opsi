@@ -933,8 +933,11 @@ class HTTPRepository(Repository):
 					if ebn <= -1:
 						ebn = ''
 					headers['range'] = 'bytes=%s-%s' % (sbn, ebn)
-
-				conn.putrequest('GET', source)
+				if self._proxy:
+					conn.putrequest('GET', source, skip_host=True)
+					conn.putheader('Host', self._host)
+				else:
+					conn.putrequest('GET', source)
 				for key, value in headers.items():
 					conn.putheader(key, value)
 				conn.endheaders()
