@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -40,6 +40,8 @@ def testCallingStartAndStopMethod(hostControlBackend):
     """
     clients = getClients()
     hostControlBackend.host_createObjects(clients)
+
+    hostControlBackend._hostRpcTimeout = 1  # for faster finishing of the test
 
     hostControlBackend.hostControl_start([u'client1.test.invalid'])
     hostControlBackend.hostControl_shutdown([u'client1.test.invalid'])
