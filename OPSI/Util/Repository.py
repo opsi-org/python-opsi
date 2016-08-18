@@ -935,7 +935,7 @@ class HTTPRepository(Repository):
 					headers['range'] = 'bytes=%s-%s' % (sbn, ebn)
 				if self._proxy:
 					conn.putrequest('GET', source, skip_host=True)
-					conn.putheader('Host', self._host)
+					conn.putheader('Host', "%s:%s" % (self._host,self._port))
 				else:
 					conn.putrequest('GET', source)
 				for key, value in headers.items():
