@@ -174,6 +174,7 @@ def non_blocking_connect_http(self, connectTimeout=0):
 def non_blocking_connect_https(self, connectTimeout=0, verifyByCaCertsFile=None):
 	non_blocking_connect_http(self, connectTimeout)
 	if verifyByCaCertsFile:
+		logger.debug(u"verifyByCaCertsFile is: {0!r}", verifyByCaCertsFile)
 		self.sock = ssl_module.wrap_socket(self.sock, keyfile=self.key_file, certfile=self.cert_file, cert_reqs=ssl_module.CERT_REQUIRED, ca_certs=verifyByCaCertsFile)
 		logger.debug(u"Server verified by CA")
 	else:
