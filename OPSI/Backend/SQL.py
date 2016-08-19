@@ -1046,15 +1046,18 @@ class SQLBackend(ConfigDataBackend):
 	def host_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.host_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting hosts, filter: %s" % filter)
-		hosts = []
+
 		type = forceList(filter.get('type', []))
 		if 'OpsiDepotserver' in type and not 'OpsiConfigserver' in type:
 			type.append('OpsiConfigserver')
 			filter['type'] = type
+
+		hosts = []
 		(attributes, filter) = self._adjustAttributes(Host, attributes, filter)
 		for res in self._sql.getSet(self._createQuery('HOST', attributes, filter)):
 			self._adjustResult(Host, res)
 			hosts.append(Host.fromHash(res))
+
 		return hosts
 
 	def host_deleteObjects(self, hosts):
