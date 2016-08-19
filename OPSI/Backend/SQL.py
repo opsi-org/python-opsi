@@ -362,7 +362,7 @@ class SQLBackend(ConfigDataBackend):
 			except KeyError:
 				pass  # not there - can be
 
-		if issubclass(object.__class__,  Product):
+		if issubclass(object.__class__, Product):
 			try:
 				# Truncating a possibly too long changelog entry
 				hash['changelog'] = hash['changelog'][:65534]
