@@ -641,6 +641,7 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 				non_blocking_connect_https(conn, self.connectTimeout, self.caCertFile)
 				if not self.verifyServerCertByCa:
 					self.serverVerified = True
+					logger.debug("Server verified.")
 			except Exception as error:
 				logger.debug(u"Verification failed: {0!r}", error)
 				if error.__class__.__name__ != 'SSLError' or self.verifyServerCertByCa:
@@ -650,6 +651,7 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 		self.num_connections += 1
 		self.peerCertificate = getPeerCertificate(conn, asPEM=True)
 		if self.verifyServerCertByCa:
+			logger.debug("Attempting to verify server cert by CA...")
 			try:
 				if self.peerCertificate:
 					commonName = crypto.load_certificate(crypto.FILETYPE_PEM, self.peerCertificate).get_subject().commonName
