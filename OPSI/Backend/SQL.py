@@ -366,9 +366,8 @@ class SQLBackend(ConfigDataBackend):
 			try:
 				# Truncating a possibly too long changelog entry
 				hash['changelog'] = hash['changelog'][:65534]
-			except (KeyError, TypeError) as e:
-				# Either not present in hash or set to None
-				pass
+			except (KeyError, TypeError):
+				pass  # Either not present in hash or set to None
 
 		if issubclass(object.__class__, Relationship):
 			try:
