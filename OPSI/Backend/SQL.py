@@ -375,11 +375,11 @@ class SQLBackend(ConfigDataBackend):
 			except KeyError:
 				pass  # not there - can be
 
-		for (key, value) in hash.items():
-			arg = self._objectAttributeToDatabaseAttribute(object.__class__, key)
-			if key != arg:
-				hash[arg] = hash[key]
-				del hash[key]
+		for objectAttribute in hash:
+			dbAttribute = self._objectAttributeToDatabaseAttribute(object.__class__, objectAttribute)
+			if objectAttribute != dbAttribute:
+				hash[dbAttribute] = hash[objectAttribute]
+				del hash[objectAttribute]
 
 		return hash
 
