@@ -844,7 +844,7 @@ output will be returned.
 					result.append(line)
 
 	except (os.error, IOError) as e:
-		# Some error occured during execution
+		# Some error occurred during execution
 		raise Exception(u"Command '%s' failed:\n%s" % (cmd, e))
 
 	logger.debug(u"Exit code: %s" % exitCode)
