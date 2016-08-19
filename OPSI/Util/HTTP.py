@@ -625,7 +625,7 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 				conn = HTTPSConnection(host=url.hostname, port=url.port)
 				if url.username and url.password:
 					logger.debug(u"Proxy Authentication detected, setting auth with user: '%s'" % url.username)
-					auth = "{username}:{password}".format(username=url.username,password=url.password)
+					auth = "{username}:{password}".format(username=url.username, password=url.password)
 					headers['Proxy-Authorization'] = 'Basic ' + base64.base64encode(auth)
 				conn.set_tunnel(self.host, self.port, headers)
 				logger.debug(u"Connection established to: %s" % self.host)
