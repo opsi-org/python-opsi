@@ -344,10 +344,14 @@ class SQLBackend(ConfigDataBackend):
 		return (newAttributes, newFilter)
 
 	def _adjustResult(self, objectClass, result):
-		id = self._objectAttributeToDatabaseAttribute(objectClass, 'id')
-		if id in result:
-			result['id'] = result[id]
-			del result[id]
+		idAttribute = self._objectAttributeToDatabaseAttribute(objectClass, 'id')
+
+		try:
+			result['id'] = result[idAttribute]
+			del result[idAttribute]
+		except KeyError:
+			pass
+
 		return result
 
 	def _objectToDatabaseHash(self, object):
