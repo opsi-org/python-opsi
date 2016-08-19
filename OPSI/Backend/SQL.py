@@ -1048,7 +1048,7 @@ class SQLBackend(ConfigDataBackend):
 		logger.info(u"Getting hosts, filter: %s" % filter)
 
 		type = forceList(filter.get('type', []))
-		if 'OpsiDepotserver' in type and not 'OpsiConfigserver' in type:
+		if 'OpsiDepotserver' in type and 'OpsiConfigserver' not in type:
 			type.append('OpsiConfigserver')
 			filter['type'] = type
 
