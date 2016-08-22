@@ -72,13 +72,24 @@ totalRequests = 0
 # This could be an import - but support for pycurl is currently not fully implrement
 pycurl = None
 
-if hasattr(ssl_module, '_create_unverified_context'):
-	# We are running a new version of Python that implements PEP 476:
-	# https://www.python.org/dev/peps/pep-0476/
-	# To not break our expected behaviour we patch the default context
-	# until we have a correct certificate check implementation.
-	# TODO: remove this workaround when support for TLS1.1+ is implemented
-	ssl_module._create_default_https_context = ssl_module._create_unverified_context
+try:
+	# Setting the HTTPS verification to work as Python 2.7.8 or lower.
+	# This is required in order to be able to connect to servers
+	# that use self-signed certificates.
+	# The "Rationale" of PEP 493 does a good job describing of the "why":
+	# https://www.python.org/dev/peps/pep-0493/#rationale
+	ssl_module._https_verify_certificates(enable=False)
+except AttributeError:  # Probably Python < 2.7.12 or Python 3
+	# Now trying the fallback from PEP 476...
+	try:
+		# We are running a new version of Python that implements PEP 476:
+		# https://www.python.org/dev/peps/pep-0476/
+		# To not break our expected behaviour we patch the default context
+		# until we have a correct certificate check implementation.
+		# TODO: remove this workaround when support for TLS1.1+ is implemented
+		ssl_module._create_default_https_context = ssl_module._create_unverified_context
+	except AttributeError:
+		pass
 
 
 def hybi10Encode(data):
