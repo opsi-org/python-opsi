@@ -118,6 +118,67 @@ def txtSetupOemFilePath(request):
     yield os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'file', request.param)
 
 
+@pytest.yield_fixture
+def regeneratedtxtSetupOemFileWithWorkarounds(txtSetupOemFileInTempDirectory):
+    txtSetupOemFile = txtSetupOemFileInTempDirectory
+    txtSetupOemFile.parse()
+    txtSetupOemFile.applyWorkarounds()
+    txtSetupOemFile.generate()
+
+    yield txtSetupOemFile
+
+
+def testTxtSetupOemFileApplyingWorkaroundsRemovesComments(regeneratedtxtSetupOemFileWithWorkarounds):
+    comment_chars = (';', '#')
+
+    with open(regeneratedtxtSetupOemFileWithWorkarounds.getFilename()) as setupfile:
+        for line in setupfile:
+            assert not line.startswith(comment_chars)
+
+
+def testTxtSetupOemFileApplyingWorkaroundsCreatesDisksSection(regeneratedtxtSetupOemFileWithWorkarounds):
+    assert _sectionExists(regeneratedtxtSetupOemFileWithWorkarounds.getFilename(), '[Disks]')
+
+
+def _sectionExists(filepath, sectionName):
+    sectionFound = False
+
+    with open(filepath) as setupfile:
+        for line in setupfile:
+            sectionFound = sectionName in line
+
+            if sectionFound:
+                break
+
+    return sectionFound
+
+
+def testTxtSetupOemFileApplyingWorkaroundsCreatesDefaultsSection(regeneratedtxtSetupOemFileWithWorkarounds):
+    assert _sectionExists(regeneratedtxtSetupOemFileWithWorkarounds.getFilename(), '[Defaults]')
+
+
+def testTxtSetupOemFileCommasAreFollowdBySpace(regeneratedtxtSetupOemFileWithWorkarounds):
+    with open(regeneratedtxtSetupOemFileWithWorkarounds.getFilename()) as setupfile:
+        for line in setupfile:
+            if ',' in line:
+                commaIndex = line.index(',')
+                assert ' ' == line[commaIndex + 1]
+
+
+def testTxtSetupOemFileApplyingWorkaroundsChangesContents(txtSetupOemFileInTempDirectory):
+    with open(txtSetupOemFileInTempDirectory.getFilename()) as setupfile:
+        before = setupfile.readlines()
+
+    txtSetupOemFileInTempDirectory.parse()
+    txtSetupOemFileInTempDirectory.applyWorkarounds()
+    txtSetupOemFileInTempDirectory.generate()
+
+    with open(txtSetupOemFileInTempDirectory.getFilename()) as setupfile:
+        after = setupfile.readlines()
+
+    assert before != after
+
+
 class CopySetupOemFileTestsMixin(object):
     TEST_DATA_FOLDER = os.path.join(
         os.path.dirname(__file__), 'testdata', 'util', 'file',
@@ -145,78 +206,7 @@ class CopySetupOemFileTestsMixin(object):
         del self.txtSetupOemFile
 
 
-class ApplyingWorkaroundsTestsMixin(object):
-    COMMENT_CHARACTERS = (';', '#')
-
-    def testApplyingWorkaroundsRemovesComments(self):
-        self.txtSetupOemFile.applyWorkarounds()
-        self.txtSetupOemFile.generate()
-
-        with open(self.txtSetupOemFile.getFilename()) as setupfile:
-            for line in setupfile:
-                for comment_char in self.COMMENT_CHARACTERS:
-                    self.assertFalse(
-                        line.startswith(';'),
-                        'Line starts with character "{c}"" but should not: '
-                        '{line}'.format(line=line, c=comment_char)
-                    )
-
-    def testApplyingWorkaroundsCreatesDisksSection(self):
-        self.txtSetupOemFile.applyWorkarounds()
-        self.txtSetupOemFile.generate()
-
-        self.searchForSection('[Disks]')
-
-    def searchForSection(self, sectionName):
-        sectionFound = False
-
-        with open(self.txtSetupOemFile.getFilename()) as setupfile:
-            for line in setupfile:
-                sectionFound = sectionName in line
-
-                if sectionFound:
-                    break
-
-        self.assertTrue(
-            sectionFound,
-            'Expected sektion "{0}" inside the setup file.'.format(sectionName)
-        )
-
-    def testApplyingWorkaroundsCreatesDefaultsSection(self):
-        self.txtSetupOemFile.applyWorkarounds()
-        self.txtSetupOemFile.generate()
-
-        self.searchForSection('[Defaults]')
-
-    def testCommasAreFollowdBySpace(self):
-        self.txtSetupOemFile.applyWorkarounds()
-        self.txtSetupOemFile.generate()
-
-        with open(self.txtSetupOemFile.getFilename()) as setupfile:
-            for line in setupfile:
-                if ',' in line:
-                    commaIndex = line.index(',')
-                    self.assertEqual(
-                        ' ',
-                        line[commaIndex + 1],
-                        'Expected a space after the comma at position {i} in '
-                        'line: {l}'.format(i=commaIndex, l=line)
-                    )
-
-    def testApplyingWorkaroundsChangesContents(self):
-        with open(self.txtSetupOemFile.getFilename()) as setupfile:
-            before = setupfile.readlines()
-
-        self.txtSetupOemFile.applyWorkarounds()
-        self.txtSetupOemFile.generate()
-
-        with open(self.txtSetupOemFile.getFilename()) as setupfile:
-            after = setupfile.readlines()
-
-        self.assertNotEqual(before, after)
-
-
-class ApplyingWorkaroundsForExistingIDsMixin(ApplyingWorkaroundsTestsMixin):
+class ApplyingWorkaroundsForExistingIDsMixin(object):
     EXISTING_VENDOR_AND_DEVICE_IDS = ((None, None), )  # example to show format
 
     def testReadingInSpecialDevicesAndApplyingFixes(self):
@@ -260,7 +250,7 @@ class ApplyingWorkaroundsForExistingIDsMixin(ApplyingWorkaroundsTestsMixin):
             )
 
 
-class ApplyingWorkaroundsForNonExistingIDsMixin(ApplyingWorkaroundsTestsMixin):
+class ApplyingWorkaroundsForNonExistingIDsMixin(object):
     NON_EXISTING_VENDOR_AND_DEVICE_IDS = ((None, None), )  # example to show format
 
     def testReadingInSpecialDevicesAndApplyingFixes(self):
