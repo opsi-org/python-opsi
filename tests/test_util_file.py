@@ -280,48 +280,37 @@ class ApplyingWorkaroundsForNonExistingIDsMixin(object):
             )
 
 
-class DeviceDataTestsMixin(object):
-    def testDevicesContents(self):
-        devices = self.txtSetupOemFile.getDevices()
+@pytest.mark.parametrize("filename", [
+    'txtsetupoem_testdata_1.oem',
+    'txtsetupoem_testdata_2.oem',
+    'txtsetupoem_testdata_3.oem',
+    'txtsetupoem_testdata_4.oem',
+    'txtsetupoem_testdata_6.oem',
+    'txtsetupoem_testdata_7.oem',
+])
+def testDevicesInTxtSetupOemFileHaveVendorAndDeviceId(filename):
+    absFile = getAbsolutePathToTestData(filename)
+
+    with setupFileInTemporaryFolder(absFile) as filePath:
+        setupFile = TxtSetupOemFile(filePath)
+        devices = setupFile.getDevices()
+
+        assert devices
 
         for device in devices:
-            self.assertNotEqual(None, device['vendor'],
-                'The vendor should be set but isn\'t: {0}'.format(device))
-            self.assertNotEqual(None, device['device'])
-
-    def testDevicesAreRead(self):
-        devices = self.txtSetupOemFile.getDevices()
-
-        self.assertTrue(bool(devices), 'No devices found!')
-
-
-class SetupOemTestCase1(CopySetupOemFileTestsMixin,
-                        unittest.TestCase,
-                        DeviceDataTestsMixin):
-
-    ORIGINAL_SETUP_FILE = 'txtsetupoem_testdata_1.oem'
-    EXISTING_VENDOR_AND_DEVICE_IDS = (('10DE', '07F6'), )
+            assert device['vendor']
+            assert device['device']
 
 
 class SetupOemTestCase2(CopySetupOemFileTestsMixin,
                         unittest.TestCase,
-                        ApplyingWorkaroundsForNonExistingIDsMixin,
-                        DeviceDataTestsMixin):
+                        ApplyingWorkaroundsForNonExistingIDsMixin):
     ORIGINAL_SETUP_FILE = 'txtsetupoem_testdata_2.oem'
     NON_EXISTING_VENDOR_AND_DEVICE_IDS = (('10DE', '07F6'), )
 
 
-class SetupOemTestCase3(CopySetupOemFileTestsMixin,
-                        unittest.TestCase,
-                        DeviceDataTestsMixin):
-
-    ORIGINAL_SETUP_FILE = 'txtsetupoem_testdata_3.oem'
-    EXISTING_VENDOR_AND_DEVICE_IDS = (('10DE', '07F6'), )
-
-
 class SetupOemTestCase4(CopySetupOemFileTestsMixin,
-                        unittest.TestCase,
-                        DeviceDataTestsMixin):
+                        unittest.TestCase):
     ORIGINAL_SETUP_FILE = 'txtsetupoem_testdata_4.oem'
     EXISTING_VENDOR_AND_DEVICE_IDS = (('1002', '4391'), )
 
@@ -411,8 +400,7 @@ class SetupOemTestCase5(CopySetupOemFileTestsMixin,
 
 class SetupOemTestCase6(CopySetupOemFileTestsMixin,
                         unittest.TestCase,
-                        ApplyingWorkaroundsForNonExistingIDsMixin,
-                        DeviceDataTestsMixin):
+                        ApplyingWorkaroundsForNonExistingIDsMixin):
     ORIGINAL_SETUP_FILE = 'txtsetupoem_testdata_6.oem'
     NON_EXISTING_VENDOR_AND_DEVICE_IDS = (('10DE', '07F6'), )
 
@@ -455,8 +443,7 @@ class SetupOemTestCase6(CopySetupOemFileTestsMixin,
 
 
 class SetupOemTestCase7(CopySetupOemFileTestsMixin,
-                        unittest.TestCase,
-                        DeviceDataTestsMixin):
+                        unittest.TestCase):
     ORIGINAL_SETUP_FILE = 'txtsetupoem_testdata_7.oem'
     EXISTING_VENDOR_AND_DEVICE_IDS = (('8086', '3B22'), )
 
