@@ -33,6 +33,8 @@ from OPSI.Util.File import IniFile, InfFile, TxtSetupOemFile, ZsyncFile
 
 from .helpers import copyTestfileToTemporaryFolder, workInTemporaryDirectory
 
+import pytest
+
 
 class ParseIniFileTestCase(unittest.TestCase):
     def test_parsing_does_not_fail(self):
@@ -85,6 +87,37 @@ class ParseInfFileTestCase(unittest.TestCase):
             self.assertNotEqual(None, dev['device'])
 
 
+def testTxtSetupOemFileParseAndGenerateDoesNotFail(txtSetupOemFileInTempDirectory):
+    txtSetupOemFileInTempDirectory.parse()
+
+    txtSetupOemFileInTempDirectory.generate()
+
+
+@pytest.yield_fixture
+def txtSetupOemFileInTempDirectory(txtSetupOemFilePath):
+    with workInTemporaryDirectory() as tempDir:
+        shutil.copy(txtSetupOemFilePath, tempDir)
+
+        filename = os.path.basename(txtSetupOemFilePath)
+
+        yield TxtSetupOemFile(os.path.join(tempDir, filename))
+
+
+def txtSetupOemFileNames():
+    yield 'txtsetupoem_testdata_1.oem'
+    yield 'txtsetupoem_testdata_2.oem'
+    yield 'txtsetupoem_testdata_3.oem'
+    yield 'txtsetupoem_testdata_4.oem'
+    yield 'txtsetupoem_testdata_5.oem'
+    yield 'txtsetupoem_testdata_6.oem'
+    yield 'txtsetupoem_testdata_7.oem'
+
+
+@pytest.yield_fixture(params=[f for f in txtSetupOemFileNames()])
+def txtSetupOemFilePath(request):
+    yield os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'file', request.param)
+
+
 class CopySetupOemFileTestsMixin(object):
     TEST_DATA_FOLDER = os.path.join(
         os.path.dirname(__file__), 'testdata', 'util', 'file',
@@ -110,9 +143,6 @@ class CopySetupOemFileTestsMixin(object):
                 pass
 
         del self.txtSetupOemFile
-
-    def testGenerationDoesNotFail(self):
-        self.txtSetupOemFile.generate()
 
 
 class ApplyingWorkaroundsTestsMixin(object):
@@ -229,6 +259,7 @@ class ApplyingWorkaroundsForExistingIDsMixin(ApplyingWorkaroundsTestsMixin):
                 )
             )
 
+
 class ApplyingWorkaroundsForNonExistingIDsMixin(ApplyingWorkaroundsTestsMixin):
     NON_EXISTING_VENDOR_AND_DEVICE_IDS = ((None, None), )  # example to show format
 
@@ -321,7 +352,7 @@ class SetupOemTestCase4(CopySetupOemFileTestsMixin,
         self.assertFalse(
             self.txtSetupOemFile.isDeviceKnown(
                 vendorId='10DE',
-                deviceId = '0AD4'
+                deviceId='0AD4'
             )
         )
 
@@ -344,7 +375,7 @@ class SetupOemTestCase4(CopySetupOemFileTestsMixin,
         self.assertFalse(
             self.txtSetupOemFile.isDeviceKnown(
                 vendorId='10DE',
-                deviceId = '0754'
+                deviceId='0754'
             )
         )
 
@@ -352,7 +383,7 @@ class SetupOemTestCase4(CopySetupOemFileTestsMixin,
             Exception,
             self.txtSetupOemFile.getComponentOptionsForDevice,
             vendorId='10DE',
-            deviceId = '0AD4'
+            deviceId='0AD4'
         )
 
 
@@ -366,7 +397,7 @@ class SetupOemTestCase5(CopySetupOemFileTestsMixin,
         self.assertFalse(
             self.txtSetupOemFile.isDeviceKnown(
                 vendorId='10DE',
-                deviceId = '0AD4'
+                deviceId='0AD4'
             )
         )
 
@@ -381,7 +412,7 @@ class SetupOemTestCase5(CopySetupOemFileTestsMixin,
         self.assertFalse(
             self.txtSetupOemFile.isDeviceKnown(
                 vendorId='10DE',
-                deviceId = '0754'
+                deviceId='0754'
             )
         )
 
@@ -389,7 +420,7 @@ class SetupOemTestCase5(CopySetupOemFileTestsMixin,
             Exception,
             self.txtSetupOemFile.getComponentOptionsForDevice,
             vendorId='10DE',
-            deviceId = '0AD4'
+            deviceId='0AD4'
         )
 
     def testDevicesContents(self):
@@ -412,7 +443,7 @@ class SetupOemTestCase6(CopySetupOemFileTestsMixin,
         self.assertFalse(
             self.txtSetupOemFile.isDeviceKnown(
                 vendorId='10DE',
-                deviceId = '0AD4'
+                deviceId='0AD4'
             )
         )
 
@@ -434,7 +465,7 @@ class SetupOemTestCase6(CopySetupOemFileTestsMixin,
         self.assertFalse(
             self.txtSetupOemFile.isDeviceKnown(
                 vendorId='10DE',
-                deviceId = '0754'
+                deviceId='0754'
             )
         )
 
@@ -442,7 +473,7 @@ class SetupOemTestCase6(CopySetupOemFileTestsMixin,
             Exception,
             self.txtSetupOemFile.getComponentOptionsForDevice,
             vendorId='10DE',
-            deviceId = '0AD4'
+            deviceId='0AD4'
         )
 
 
@@ -457,7 +488,7 @@ class SetupOemTestCase7(CopySetupOemFileTestsMixin,
         self.assertFalse(
             self.txtSetupOemFile.isDeviceKnown(
                 vendorId='10DE',
-                deviceId = '0AD4'
+                deviceId='0AD4'
             )
         )
 
@@ -478,7 +509,7 @@ class SetupOemTestCase7(CopySetupOemFileTestsMixin,
         self.assertFalse(
             self.txtSetupOemFile.isDeviceKnown(
                 vendorId='10DE',
-                deviceId = '0754'
+                deviceId='0754'
             )
         )
 
@@ -486,7 +517,7 @@ class SetupOemTestCase7(CopySetupOemFileTestsMixin,
             Exception,
             self.txtSetupOemFile.getComponentOptionsForDevice,
             vendorId='10DE',
-            deviceId = '0AD4'
+            deviceId='0AD4'
         )
 
 
