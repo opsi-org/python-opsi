@@ -217,48 +217,27 @@ class CopySetupOemFileTestsMixin(object):
         del self.txtSetupOemFile
 
 
-class ApplyingWorkaroundsForExistingIDsMixin(object):
-    EXISTING_VENDOR_AND_DEVICE_IDS = ((None, None), )  # example to show format
+@pytest.mark.parametrize("filename, vendorId, deviceId", [
+    ('txtsetupoem_testdata_1.oem', '10DE', '07F6'),
+    ('txtsetupoem_testdata_3.oem', '10DE', '07F6'),
+    ('txtsetupoem_testdata_4.oem', '1002', '4391'),
+])
+def testReadingInExistingSpecialDevicesAndApplyingFixes(filename, vendorId, deviceId):
+    absFile = getAbsolutePathToTestData(filename)
 
-    def testReadingInSpecialDevicesAndApplyingFixes(self):
-        for (vendorId, deviceId) in self.EXISTING_VENDOR_AND_DEVICE_IDS:
-            self.assertTrue(
-                self.txtSetupOemFile.isDeviceKnown(
-                    vendorId=vendorId,
-                    deviceId=deviceId
-                ),
-                'No device found for vendor "{0}" and device ID '
-                '"{1}"'.format(vendorId, deviceId)
-            )
+    with setupFileInTemporaryFolder(absFile) as filePath:
+        setupFile = TxtSetupOemFile(filePath)
 
-            self.assertNotEqual(
-                [],
-                self.txtSetupOemFile.getFilesForDevice(
-                    vendorId=vendorId,
-                    deviceId=deviceId,
-                    fileTypes=[]
-                ),
-                'Could not find files for vendor "{0}" and device ID '
-                '"{1}"'.format(vendorId, deviceId)
-            )
+        assert setupFile.isDeviceKnown(vendorId=vendorId, deviceId=deviceId)
 
-            self.assertTrue(
-                bool(
-                    self.txtSetupOemFile.getComponentOptionsForDevice(vendorId=vendorId, deviceId=deviceId)['description']
-                )
-            )
+        assert [] != setupFile.getFilesForDevice(vendorId=vendorId, deviceId=deviceId, fileTypes=[])
 
-            self.txtSetupOemFile.applyWorkarounds()
-            self.txtSetupOemFile.generate()
+        assert setupFile.getComponentOptionsForDevice(vendorId=vendorId, deviceId=deviceId)['description']
 
-            self.assertNotEqual(
-                [],
-                self.txtSetupOemFile.getFilesForDevice(
-                    vendorId=vendorId,
-                    deviceId=deviceId,
-                    fileTypes=[]
-                )
-            )
+        setupFile.applyWorkarounds()
+        setupFile.generate()
+
+        assert [] != setupFile.getFilesForDevice(vendorId=vendorId, deviceId=deviceId, fileTypes=[])
 
 
 class ApplyingWorkaroundsForNonExistingIDsMixin(object):
@@ -318,7 +297,6 @@ class DeviceDataTestsMixin(object):
 
 class SetupOemTestCase1(CopySetupOemFileTestsMixin,
                         unittest.TestCase,
-                        ApplyingWorkaroundsForExistingIDsMixin,
                         DeviceDataTestsMixin):
 
     ORIGINAL_SETUP_FILE = 'txtsetupoem_testdata_1.oem'
@@ -335,7 +313,6 @@ class SetupOemTestCase2(CopySetupOemFileTestsMixin,
 
 class SetupOemTestCase3(CopySetupOemFileTestsMixin,
                         unittest.TestCase,
-                        ApplyingWorkaroundsForExistingIDsMixin,
                         DeviceDataTestsMixin):
 
     ORIGINAL_SETUP_FILE = 'txtsetupoem_testdata_3.oem'
@@ -344,7 +321,6 @@ class SetupOemTestCase3(CopySetupOemFileTestsMixin,
 
 class SetupOemTestCase4(CopySetupOemFileTestsMixin,
                         unittest.TestCase,
-                        ApplyingWorkaroundsForExistingIDsMixin,
                         DeviceDataTestsMixin):
     ORIGINAL_SETUP_FILE = 'txtsetupoem_testdata_4.oem'
     EXISTING_VENDOR_AND_DEVICE_IDS = (('1002', '4391'), )
@@ -480,7 +456,6 @@ class SetupOemTestCase6(CopySetupOemFileTestsMixin,
 
 class SetupOemTestCase7(CopySetupOemFileTestsMixin,
                         unittest.TestCase,
-                        ApplyingWorkaroundsForExistingIDsMixin,
                         DeviceDataTestsMixin):
     ORIGINAL_SETUP_FILE = 'txtsetupoem_testdata_7.oem'
     EXISTING_VENDOR_AND_DEVICE_IDS = (('8086', '3B22'), )
