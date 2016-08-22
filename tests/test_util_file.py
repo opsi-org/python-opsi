@@ -502,6 +502,13 @@ def testZsyncFile():
         'zsync': '0.6.2',
     }
 
+    def checkZsyncFile(zf):
+        assert zf._data
+        assert zf._header
+
+        for key, value in expectedHeaders.items():
+            assert zf._header[key] == value
+
     with workInTemporaryDirectory() as tempDir:
         shutil.copy(os.path.join(os.path.dirname(__file__), 'testdata',
                     'util', 'file', filename), tempDir)
@@ -511,13 +518,7 @@ def testZsyncFile():
         zf = ZsyncFile(testFile)
         assert not zf._parsed
         zf.parse()
-        assert zf._parsed
-
-        assert zf._data
-        assert zf._header
-
-        for key, value in expectedHeaders.items():
-            assert zf._header[key] == value
+        checkZsyncFile(zf)
 
         zf.generate()
         zf.close()
@@ -525,9 +526,4 @@ def testZsyncFile():
 
         zf = ZsyncFile(testFile)
         zf.parse()
-
-        assert zf._data
-        assert zf._header
-
-        for key, value in expectedHeaders.items():
-            assert zf._header[key] == value
+        checkZsyncFile(zf)
