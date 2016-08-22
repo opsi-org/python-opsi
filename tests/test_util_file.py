@@ -1,5 +1,5 @@
-#!/usr/bin/env python
-#-*- coding: utf-8 -*-
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
 # Copyright (C) 2013-2016 uib GmbH <info@uib.de>
@@ -29,9 +29,9 @@ import os
 import shutil
 import unittest
 
-from OPSI.Util.File import IniFile, InfFile, TxtSetupOemFile
+from OPSI.Util.File import IniFile, InfFile, TxtSetupOemFile, ZsyncFile
 
-from .helpers import copyTestfileToTemporaryFolder
+from .helpers import copyTestfileToTemporaryFolder, workInTemporaryDirectory
 
 
 class ParseIniFileTestCase(unittest.TestCase):
@@ -490,5 +490,28 @@ class SetupOemTestCase7(CopySetupOemFileTestsMixin,
         )
 
 
-if __name__ == '__main__':
-    unittest.main()
+def testZsyncFile():
+    filename = 'opsi-configed_4.0.7.1.3-2.opsi.zsync'
+    expectedHeaders = {
+        'Blocksize': '2048',
+        'Filename': 'opsi-configed_4.0.7.1.3-2.opsi',
+        'Hash-Lengths': '2,2,5',
+        'Length': '9574912',
+        'SHA-1': '702afc14c311ce9e4083c893c9ac4f4390413ae9',
+        'URL': 'opsi-configed_4.0.7.1.3-2.opsi',
+        'zsync': '0.6.2',
+    }
+
+    with workInTemporaryDirectory() as tempDir:
+        shutil.copy(os.path.join(os.path.dirname(__file__), 'testdata',
+                    'util', 'file', filename), tempDir)
+
+        zf = ZsyncFile(os.path.join(tempDir, filename))
+        zf.parse()
+        assert zf._parsed
+
+        assert zf._data
+        assert zf._header
+
+        for key, value in expectedHeaders.items():
+            assert zf._header[key] == value
