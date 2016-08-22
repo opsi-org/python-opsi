@@ -509,6 +509,8 @@ def testZsyncFile():
         for key, value in expectedHeaders.items():
             assert zf._header[key] == value
 
+        assert 'mtime' not in zf._header
+
     with workInTemporaryDirectory() as tempDir:
         shutil.copy(os.path.join(os.path.dirname(__file__), 'testdata',
                     'util', 'file', filename), tempDir)
@@ -520,6 +522,7 @@ def testZsyncFile():
         zf.parse()
         checkZsyncFile(zf)
 
+        zf._header['mtime'] = 'should not be written'
         zf.generate()
         zf.close()
         del zf
