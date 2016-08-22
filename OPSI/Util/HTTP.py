@@ -5,7 +5,7 @@
 # Based on urllib3
 # (open pc server integration) http://www.opsi.org
 # Copyright (C) 2010 Andrey Petrov
-# Copyright (C) 2010-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2010-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -184,6 +184,7 @@ def non_blocking_connect_http(self, connectTimeout=0):
 
 def non_blocking_connect_https(self, connectTimeout=0, verifyByCaCertsFile=None):
 	non_blocking_connect_http(self, connectTimeout)
+	logger.debug2(u"verifyByCaCertsFile is: {0!r}", verifyByCaCertsFile)
 	if verifyByCaCertsFile:
 		logger.debug(u"verifyByCaCertsFile is: {0!r}", verifyByCaCertsFile)
 		self.sock = ssl_module.wrap_socket(self.sock, keyfile=self.key_file, certfile=self.cert_file, cert_reqs=ssl_module.CERT_REQUIRED, ca_certs=verifyByCaCertsFile)
@@ -657,6 +658,8 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 				logger.debug(u"Verification failed: {0!r}", error)
 				if error.__class__.__name__ != 'SSLError' or self.verifyServerCertByCa:
 					raise OpsiServiceVerificationError(u"Failed to verify server cert by CA: %s" % error)
+
+				logger.debug("Going to try a connect without caCertFile...")
 				non_blocking_connect_https(conn, self.connectTimeout)
 
 		self.num_connections += 1
