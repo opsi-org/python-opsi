@@ -28,6 +28,7 @@ from __future__ import absolute_import
 import os
 import shutil
 import unittest
+from contextlib import contextmanager
 
 from OPSI.Util.File import IniFile, InfFile, TxtSetupOemFile, ZsyncFile
 
@@ -95,12 +96,18 @@ def testTxtSetupOemFileParseAndGenerateDoesNotFail(txtSetupOemFileInTempDirector
 
 @pytest.yield_fixture
 def txtSetupOemFileInTempDirectory(txtSetupOemFilePath):
+    with setupFileInTemporaryFolder(txtSetupOemFilePath) as newFilePath:
+        yield TxtSetupOemFile(newFilePath)
+
+
+@contextmanager
+def setupFileInTemporaryFolder(filePath):
     with workInTemporaryDirectory() as tempDir:
-        shutil.copy(txtSetupOemFilePath, tempDir)
+        shutil.copy(filePath, tempDir)
 
-        filename = os.path.basename(txtSetupOemFilePath)
+        filename = os.path.basename(filePath)
 
-        yield TxtSetupOemFile(os.path.join(tempDir, filename))
+        yield os.path.join(tempDir, filename)
 
 
 def txtSetupOemFileNames():
@@ -115,7 +122,11 @@ def txtSetupOemFileNames():
 
 @pytest.yield_fixture(params=[f for f in txtSetupOemFileNames()])
 def txtSetupOemFilePath(request):
-    yield os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'file', request.param)
+    yield getAbsolutePathToTestData(request.param)
+
+
+def getAbsolutePathToTestData(filename):
+    return os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'file', filename)
 
 
 @pytest.yield_fixture
