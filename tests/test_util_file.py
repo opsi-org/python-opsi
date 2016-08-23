@@ -75,17 +75,12 @@ def infFile(request):
 def testDeviceDataIsReadFromInfFile(infFile):
     infFile.parse()
 
-    for dev in infFile.getDevices():
+    devices = infFile.getDevices()
+    assert devices
+
+    for dev in devices:
         assert dev['vendor']
         assert dev['device']
-
-
-def testDevicesAreReadFromInfFile(infFile):
-    infFile.parse()
-    devices = infFile.getDevices()
-
-    assert devices
-    assert [] != devices
 
 
 def testTxtSetupOemFileParseAndGenerateDoesNotFail(txtSetupOemFileInTempDirectory):
