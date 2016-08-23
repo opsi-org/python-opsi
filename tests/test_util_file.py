@@ -58,7 +58,16 @@ key = \;\;\;\;\;\;\;\;\;\;\;\;
     iniFile.parse(iniTestData.split('\n'))
 
 
-@pytest.yield_fixture(params=['inf_testdata_8.inf'])
+@pytest.yield_fixture(params=[
+    'inf_testdata_1.inf',
+    'inf_testdata_2.inf',
+    'inf_testdata_3.inf',
+    'inf_testdata_4.inf',
+    'inf_testdata_5.inf',
+    'inf_testdata_6.inf',
+    'inf_testdata_7.inf',
+    'inf_testdata_8.inf',
+])
 def infFile(request):
     yield InfFile(getAbsolutePathToTestData(request.param))
 
