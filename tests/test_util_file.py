@@ -96,18 +96,19 @@ def testTxtSetupOemFileParseAndGenerateDoesNotFail(txtSetupOemFileInTempDirector
 
 @pytest.yield_fixture
 def txtSetupOemFileInTempDirectory(txtSetupOemFilePath):
-    with setupFileInTemporaryFolder(txtSetupOemFilePath) as newFilePath:
-        yield TxtSetupOemFile(newFilePath)
+    with getTempTxtSetupOemFileFromPath(txtSetupOemFilePath) as setupFile:
+        yield setupFile
 
 
 @contextmanager
-def setupFileInTemporaryFolder(filePath):
+def getTempTxtSetupOemFileFromPath(filePath):
     with workInTemporaryDirectory() as tempDir:
         shutil.copy(filePath, tempDir)
 
         filename = os.path.basename(filePath)
 
-        yield os.path.join(tempDir, filename)
+        newPath = os.path.join(tempDir, filename)
+        yield TxtSetupOemFile(newPath)
 
 
 def txtSetupOemFileNames():
@@ -226,9 +227,7 @@ class CopySetupOemFileTestsMixin(object):
 def testReadingInExistingSpecialDevicesAndApplyingFixes(filename, vendorId, deviceId):
     absFile = getAbsolutePathToTestData(filename)
 
-    with setupFileInTemporaryFolder(absFile) as filePath:
-        setupFile = TxtSetupOemFile(filePath)
-
+    with getTempTxtSetupOemFileFromPath(absFile) as setupFile:
         assert setupFile.isDeviceKnown(vendorId=vendorId, deviceId=deviceId)
 
         assert [] != setupFile.getFilesForDevice(vendorId=vendorId, deviceId=deviceId, fileTypes=[])
@@ -249,9 +248,7 @@ def testReadingInExistingSpecialDevicesAndApplyingFixes(filename, vendorId, devi
 def testCheckingForMissingVendorAndDevices(filename, vendorId, deviceId):
     absFile = getAbsolutePathToTestData(filename)
 
-    with setupFileInTemporaryFolder(absFile) as filePath:
-        setupFile = TxtSetupOemFile(filePath)
-
+    with getTempTxtSetupOemFileFromPath(absFile) as setupFile:
         assert not setupFile.isDeviceKnown(vendorId=vendorId, deviceId=deviceId)
 
         with pytest.raises(Exception):
@@ -278,8 +275,7 @@ def testCheckingForMissingVendorAndDevices(filename, vendorId, deviceId):
 def testDevicesInTxtSetupOemFileHaveVendorAndDeviceId(filename):
     absFile = getAbsolutePathToTestData(filename)
 
-    with setupFileInTemporaryFolder(absFile) as filePath:
-        setupFile = TxtSetupOemFile(filePath)
+    with getTempTxtSetupOemFileFromPath(absFile) as setupFile:
         devices = setupFile.getDevices()
 
         assert devices
@@ -293,9 +289,7 @@ def testDevicesInTxtSetupOemFileHaveVendorAndDeviceId(filename):
 def testReadingDevicesContents(filename):
     absFile = getAbsolutePathToTestData(filename)
 
-    with setupFileInTemporaryFolder(absFile) as filePath:
-        setupFile = TxtSetupOemFile(filePath)
-
+    with getTempTxtSetupOemFileFromPath(absFile) as setupFile:
         for device in setupFile.getDevices():
             assert device['vendor']
             assert 'fttxr5_O' == device['serviceName']
@@ -313,9 +307,7 @@ def testReadingDevicesContents(filename):
 def testReadingDataFromTextfileOemSetup(filename):
     absFile = getAbsolutePathToTestData(filename)
 
-    with setupFileInTemporaryFolder(absFile) as filePath:
-        setupFile = TxtSetupOemFile(filePath)
-
+    with getTempTxtSetupOemFileFromPath(absFile) as setupFile:
         assert not setupFile.isDeviceKnown(vendorId='10DE', deviceId='0AD4')
 
         with pytest.raises(Exception):
