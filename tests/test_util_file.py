@@ -241,44 +241,30 @@ def testReadingInExistingSpecialDevicesAndApplyingFixes(filename, vendorId, devi
         assert [] != setupFile.getFilesForDevice(vendorId=vendorId, deviceId=deviceId, fileTypes=[])
 
 
-class ApplyingWorkaroundsForNonExistingIDsMixin(object):
-    NON_EXISTING_VENDOR_AND_DEVICE_IDS = ((None, None), )  # example to show format
+@pytest.mark.parametrize("filename, vendorId, deviceId", [
+    ('txtsetupoem_testdata_2.oem', '10DE', '07F6'),
+    ('txtsetupoem_testdata_5.oem', '10DE', '07F6'),
+    ('txtsetupoem_testdata_6.oem', '10DE', '07F6'),
+])
+def testCheckingForMissingVendorAndDevices(filename, vendorId, deviceId):
+    absFile = getAbsolutePathToTestData(filename)
 
-    def testReadingInSpecialDevicesAndApplyingFixes(self):
-        for (vendorId, deviceId) in self.NON_EXISTING_VENDOR_AND_DEVICE_IDS:
-            self.assertFalse(
-                self.txtSetupOemFile.isDeviceKnown(
-                    vendorId=vendorId,
-                    deviceId=deviceId
-                ),
-                'Device found for vendor "{0}" and device ID "{1}"'.format(vendorId, deviceId)
-            )
+    with setupFileInTemporaryFolder(absFile) as filePath:
+        setupFile = TxtSetupOemFile(filePath)
 
-            self.assertRaises(
-                Exception,
-                self.txtSetupOemFile.getFilesForDevice,
-                vendorId=vendorId,
-                deviceId=deviceId,
-                fileTypes=[]
-            )
+        assert not setupFile.isDeviceKnown(vendorId=vendorId, deviceId=deviceId)
 
-            self.assertRaises(
-                Exception,
-                self.txtSetupOemFile.getComponentOptionsForDevice,
-                vendorId=vendorId,
-                deviceId=deviceId
-            )
+        with pytest.raises(Exception):
+            setupFile.getFilesForDevice(vendorId=vendorId, deviceId=deviceId, fileTypes=[])
 
-            self.txtSetupOemFile.applyWorkarounds()
-            self.txtSetupOemFile.generate()
+        with pytest.raises(Exception):
+            setupFile.getComponentOptionsForDevice(vendorId=vendorId, deviceId=deviceId)
 
-            self.assertRaises(
-                Exception,
-                self.txtSetupOemFile.getFilesForDevice,
-                vendorId=vendorId,
-                deviceId=deviceId,
-                fileTypes=[]
-            )
+        setupFile.applyWorkarounds()
+        setupFile.generate()
+
+        with pytest.raises(Exception):
+            setupFile.getFilesForDevice(vendorId=vendorId, deviceId=deviceId, fileTypes=[])
 
 
 @pytest.mark.parametrize("filename", [
