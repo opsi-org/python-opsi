@@ -27,7 +27,6 @@ from __future__ import absolute_import
 
 import os
 import shutil
-import unittest
 from contextlib import contextmanager
 
 from OPSI.Util.File import IniFile, InfFile, TxtSetupOemFile, ZsyncFile
@@ -37,9 +36,8 @@ from .helpers import copyTestfileToTemporaryFolder, workInTemporaryDirectory
 import pytest
 
 
-class ParseIniFileTestCase(unittest.TestCase):
-    def test_parsing_does_not_fail(self):
-        iniTestData = '''
+def testParsingIniFileDoesNotFail():
+    iniTestData = '''
 #[section1]
 # abc = def
 
@@ -54,38 +52,31 @@ key = value \; no comment \# comment2 ;# comment3
 
 [section5]
 key = \;\;\;\;\;\;\;\;\;\;\;\;
-        '''
+    '''
 
-        iniFile = IniFile('filename_is_irrelevant_for_this')
-        iniFile.parse(iniTestData.split('\n'))
+    iniFile = IniFile('filename_is_irrelevant_for_this')
+    iniFile.parse(iniTestData.split('\n'))
 
 
-class ParseInfFileTestCase(unittest.TestCase):
-    @classmethod
-    def setUpClass(self):
-        pathToConfig = os.path.join(os.path.dirname(__file__), 'testdata',
-                                    'util', 'file', 'inf_testdata_8.inf')
-        infFile = InfFile(pathToConfig)
-        infFile.parse()
-        self.devices = infFile.getDevices()
+@pytest.yield_fixture(params=['inf_testdata_8.inf'])
+def infFile(request):
+    yield InfFile(getAbsolutePathToTestData(request.param))
 
-    @classmethod
-    def tearDownClass(self):
-        del self.devices
 
-    def testDevicesAreRead(self):
-        devices = self.devices
+def testDeviceDataIsReadFromInfFile(infFile):
+    infFile.parse()
 
-        self.assertNotEqual(None, devices)
-        self.assertNotEqual([], devices)
-        self.assertTrue(bool(devices), 'No devices found.')
+    for dev in infFile.getDevices():
+        assert dev['vendor']
+        assert dev['device']
 
-    def test_device_data_is_correct(self):
-        devices = self.devices
 
-        for dev in devices:
-            self.assertNotEqual(None, dev['vendor'])
-            self.assertNotEqual(None, dev['device'])
+def testDevicesAreReadFromInfFile(infFile):
+    infFile.parse()
+    devices = infFile.getDevices()
+
+    assert devices
+    assert [] != devices
 
 
 def testTxtSetupOemFileParseAndGenerateDoesNotFail(txtSetupOemFileInTempDirectory):
