@@ -221,6 +221,7 @@ class CopySetupOemFileTestsMixin(object):
     ('txtsetupoem_testdata_1.oem', '10DE', '07F6'),
     ('txtsetupoem_testdata_3.oem', '10DE', '07F6'),
     ('txtsetupoem_testdata_4.oem', '1002', '4391'),
+    ('txtsetupoem_testdata_7.oem', '8086', '3B22'),
 ])
 def testReadingInExistingSpecialDevicesAndApplyingFixes(filename, vendorId, deviceId):
     absFile = getAbsolutePathToTestData(filename)
@@ -445,7 +446,6 @@ class SetupOemTestCase6(CopySetupOemFileTestsMixin,
 class SetupOemTestCase7(CopySetupOemFileTestsMixin,
                         unittest.TestCase):
     ORIGINAL_SETUP_FILE = 'txtsetupoem_testdata_7.oem'
-    EXISTING_VENDOR_AND_DEVICE_IDS = (('8086', '3B22'), )
 
     def testReadingDataFromTextfile(self):
         self.assertFalse(
