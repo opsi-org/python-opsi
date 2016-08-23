@@ -289,185 +289,45 @@ def testDevicesInTxtSetupOemFileHaveVendorAndDeviceId(filename):
             assert device['device']
 
 
-class SetupOemTestCase2(CopySetupOemFileTestsMixin,
-                        unittest.TestCase,
-                        ApplyingWorkaroundsForNonExistingIDsMixin):
-    ORIGINAL_SETUP_FILE = 'txtsetupoem_testdata_2.oem'
-    NON_EXISTING_VENDOR_AND_DEVICE_IDS = (('10DE', '07F6'), )
+@pytest.mark.parametrize("filename", ['txtsetupoem_testdata_5.oem'])
+def testReadingDevicesContents(filename):
+    absFile = getAbsolutePathToTestData(filename)
+
+    with setupFileInTemporaryFolder(absFile) as filePath:
+        setupFile = TxtSetupOemFile(filePath)
+
+        for device in setupFile.getDevices():
+            assert device['vendor']
+            assert 'fttxr5_O' == device['serviceName']
 
 
-class SetupOemTestCase4(CopySetupOemFileTestsMixin,
-                        unittest.TestCase):
-    ORIGINAL_SETUP_FILE = 'txtsetupoem_testdata_4.oem'
-    EXISTING_VENDOR_AND_DEVICE_IDS = (('1002', '4391'), )
+@pytest.mark.parametrize("filename", [
+    pytest.mark.xfail('txtsetupoem_testdata_1.oem'),
+    'txtsetupoem_testdata_2.oem',
+    pytest.mark.xfail('txtsetupoem_testdata_3.oem'),
+    'txtsetupoem_testdata_4.oem',
+    'txtsetupoem_testdata_5.oem',
+    'txtsetupoem_testdata_6.oem',
+    'txtsetupoem_testdata_7.oem'
+])
+def testReadingDataFromTextfileOemSetup(filename):
+    absFile = getAbsolutePathToTestData(filename)
 
-    def testReadingDataFromTextfile(self):
-        self.assertFalse(
-            self.txtSetupOemFile.isDeviceKnown(
-                vendorId='10DE',
-                deviceId='0AD4'
-            )
-        )
+    with setupFileInTemporaryFolder(absFile) as filePath:
+        setupFile = TxtSetupOemFile(filePath)
 
-        self.assertRaises(
-            Exception,
-            self.txtSetupOemFile.getFilesForDevice,
-            vendorId='10DE',
-            deviceId='0AD4',
-            fileTypes=[]
-        )
+        assert not setupFile.isDeviceKnown(vendorId='10DE', deviceId='0AD4')
 
-        self.assertRaises(
-            Exception,
-            self.txtSetupOemFile.getFilesForDevice,
-            vendorId='10DE',
-            deviceId='07F6',
-            fileTypes=[]
-        )
+        with pytest.raises(Exception):
+            setupFile.getFilesForDevice(vendorId='10DE', deviceId='0AD4', fileTypes=[])
 
-        self.assertFalse(
-            self.txtSetupOemFile.isDeviceKnown(
-                vendorId='10DE',
-                deviceId='0754'
-            )
-        )
+        with pytest.raises(Exception):
+            setupFile.getFilesForDevice(vendorId='10DE', deviceId='07F6', fileTypes=[])
 
-        self.assertRaises(
-            Exception,
-            self.txtSetupOemFile.getComponentOptionsForDevice,
-            vendorId='10DE',
-            deviceId='0AD4'
-        )
+        assert not setupFile.isDeviceKnown(vendorId='10DE', deviceId='0754')
 
-
-class SetupOemTestCase5(CopySetupOemFileTestsMixin,
-                        unittest.TestCase,
-                        ApplyingWorkaroundsForNonExistingIDsMixin):
-    ORIGINAL_SETUP_FILE = 'txtsetupoem_testdata_5.oem'
-    NON_EXISTING_VENDOR_AND_DEVICE_IDS = (('10DE', '07F6'), )
-
-    def testReadingDataFromTextfile(self):
-        self.assertFalse(
-            self.txtSetupOemFile.isDeviceKnown(
-                vendorId='10DE',
-                deviceId='0AD4'
-            )
-        )
-
-        self.assertRaises(
-            Exception,
-            self.txtSetupOemFile.getFilesForDevice,
-            vendorId='10DE',
-            deviceId='07F6',
-            fileTypes=[]
-        )
-
-        self.assertFalse(
-            self.txtSetupOemFile.isDeviceKnown(
-                vendorId='10DE',
-                deviceId='0754'
-            )
-        )
-
-        self.assertRaises(
-            Exception,
-            self.txtSetupOemFile.getComponentOptionsForDevice,
-            vendorId='10DE',
-            deviceId='0AD4'
-        )
-
-    def testDevicesContents(self):
-        devices = self.txtSetupOemFile.getDevices()
-
-        for device in devices:
-            self.assertNotEqual(None, device['vendor'],
-                'The vendor should be set but isn\'t: {0}'.format(device))
-            self.assertEqual('fttxr5_O', device['serviceName'])
-
-
-class SetupOemTestCase6(CopySetupOemFileTestsMixin,
-                        unittest.TestCase,
-                        ApplyingWorkaroundsForNonExistingIDsMixin):
-    ORIGINAL_SETUP_FILE = 'txtsetupoem_testdata_6.oem'
-    NON_EXISTING_VENDOR_AND_DEVICE_IDS = (('10DE', '07F6'), )
-
-    def testReadingDataFromTextfile(self):
-        self.assertFalse(
-            self.txtSetupOemFile.isDeviceKnown(
-                vendorId='10DE',
-                deviceId='0AD4'
-            )
-        )
-
-        self.assertRaises(Exception,
-            self.txtSetupOemFile.getFilesForDevice,
-            vendorId='10DE',
-            deviceId='0AD4',
-            fileTypes=[]
-        )
-
-        self.assertRaises(
-            Exception,
-            self.txtSetupOemFile.getFilesForDevice,
-            vendorId='10DE',
-            deviceId='07F6',
-            fileTypes=[]
-        )
-
-        self.assertFalse(
-            self.txtSetupOemFile.isDeviceKnown(
-                vendorId='10DE',
-                deviceId='0754'
-            )
-        )
-
-        self.assertRaises(
-            Exception,
-            self.txtSetupOemFile.getComponentOptionsForDevice,
-            vendorId='10DE',
-            deviceId='0AD4'
-        )
-
-
-class SetupOemTestCase7(CopySetupOemFileTestsMixin,
-                        unittest.TestCase):
-    ORIGINAL_SETUP_FILE = 'txtsetupoem_testdata_7.oem'
-
-    def testReadingDataFromTextfile(self):
-        self.assertFalse(
-            self.txtSetupOemFile.isDeviceKnown(
-                vendorId='10DE',
-                deviceId='0AD4'
-            )
-        )
-
-        self.assertRaises(Exception,
-            self.txtSetupOemFile.getFilesForDevice,
-            vendorId='10DE',
-            deviceId='0AD4',
-            fileTypes=[]
-        )
-
-        self.assertRaises(Exception,
-            self.txtSetupOemFile.getFilesForDevice,
-            vendorId='10DE',
-            deviceId='07F6',
-            fileTypes=[]
-        )
-
-        self.assertFalse(
-            self.txtSetupOemFile.isDeviceKnown(
-                vendorId='10DE',
-                deviceId='0754'
-            )
-        )
-
-        self.assertRaises(
-            Exception,
-            self.txtSetupOemFile.getComponentOptionsForDevice,
-            vendorId='10DE',
-            deviceId='0AD4'
-        )
+        with pytest.raises(Exception):
+            setupFile.getComponentOptionsForDevice(vendorId='10DE', deviceId='0AD4')
 
 
 def testZsyncFile():
