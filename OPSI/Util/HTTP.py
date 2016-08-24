@@ -203,7 +203,7 @@ def getPeerCertificate(httpsConnectionOrSSLSocket, asPEM=True):
 			return cert
 		return crypto.dump_certificate(crypto.FILETYPE_PEM, cert)
 	except Exception as error:
-		logger.debug(u"Failed to get peer cert: %s" % error)
+		logger.debug2(u"Failed to get peer cert: %s" % error)
 		return None
 
 
