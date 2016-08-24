@@ -1,3 +1,9 @@
+python-opsi (4.0.7.18-1) UNRELEASED; urgency=medium
+
+  * OPSI.System.Posix: added sleep function when using ms-sys to write partition boot record
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 24 Aug 2016 17:08:55 +0200
+
 python-opsi (4.0.7.17-1) experimental; urgency=medium
 
   * OPSI.Util: Refactored encryptWithPublicKeyFromX509CertificatePEMFile
