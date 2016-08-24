@@ -204,7 +204,7 @@ class SessionHandler(object):
 			timeout -= sleepInSeconds
 
 		if timeout == 0:
-			logger.warning(u"Session '%s': timeout occured while waiting for session to get free for deletion" % session.uid)
+			logger.warning(u"Session '%s': timeout occurred while waiting for session to get free for deletion" % session.uid)
 
 		self.deleteSession(session.uid)
 		return True

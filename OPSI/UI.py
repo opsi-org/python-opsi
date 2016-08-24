@@ -111,7 +111,7 @@ class UI:
 	def drawRootText(self, x=1, y=1, text=''):
 		pass
 
-	def showError(self, text, title=_(u'An error occured'), okLabel=_(u'OK'), width=-1, height=-1, seconds=0):
+	def showError(self, text, title=_(u'An error occurred'), okLabel=_(u'OK'), width=-1, height=-1, seconds=0):
 		pass
 
 	def showMessage(self, text, title=_(u'Message'), okLabel=_(u'OK'), width=-1, height=-1, seconds=0):
@@ -241,7 +241,7 @@ class SnackUI(UI):
 			logger.logException(e)
 			raise
 
-	def showError(self, text, title=_(u'An error occured'), okLabel=_(u'OK'), width=-1, height=-1, seconds=0):
+	def showError(self, text, title=_(u'An error occurred'), okLabel=_(u'OK'), width=-1, height=-1, seconds=0):
 		try:
 			text = forceUnicode(text)
 			title = forceUnicode(title)

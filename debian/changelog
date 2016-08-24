@@ -397,7 +397,7 @@ python-opsi (4.0.6.31-1) experimental; urgency=medium
 python-opsi (4.0.6.30-1) experimental; urgency=medium
 
   * OPSI.Service.Session: SessionHandler.sessionExpired does more frequently
-    checks if session is still in use or timeout occured.
+    checks if session is still in use or timeout occurred.
   * 20_legacy.conf & 30_configed.conf: getDomain: Fix NameError caused by
     implicit import.
   * 10_opsi.conf & 30_configed.conf: getProductOrdering: Fix NameError caused
