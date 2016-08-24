@@ -721,7 +721,7 @@ class GetFQDNTestCase(unittest.TestCase):
             fqdn = "opsi.fqdntestcase.invalid"
             with patchAddress(fqdn=fqdn):
                 confPath = os.path.join(tempDir, randomString(8))
-                with open(confPath, 'w') as conf:
+                with open(confPath, 'w'):
                     pass
 
                 self.assertEqual(fqdn, getfqdn(conf=confPath))
