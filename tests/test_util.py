@@ -576,7 +576,7 @@ def testComparingVersionsOfSameSize():
     assert compareVersions('1.0', '<', '2.0')
 
 
-@pytest.mark.parametrize("v1, operator, v2",[
+@pytest.mark.parametrize("v1, operator, v2", [
     ('1.0', '', '1.0'),
     pytest.mark.xfail(('1', '', '2')),
 ])
@@ -588,13 +588,13 @@ def testComparingWithOneEqualitySignWork():
     assert compareVersions('1.0', '=', '1.0')
 
 
-@pytest.mark.parametrize("operator",['asdf', '+-', '<>', '!='])
+@pytest.mark.parametrize("operator", ['asdf', '+-', '<>', '!='])
 def testUsingUnknownOperatorFails(operator):
     with pytest.raises(Exception):
         compareVersions('1', operator, '2')
 
 
-@pytest.mark.parametrize("v1, operator, v2",[
+@pytest.mark.parametrize("v1, operator, v2", [
     ('1.0~20131212', '<', '2.0~20120101'),
     ('1.0~20131212', '==', '1.0~20120101'),
 ])
@@ -602,7 +602,7 @@ def testIgnoringVersionsWithWaveInThem(v1, operator, v2):
     assert compareVersions(v1, operator, v2)
 
 
-@pytest.mark.parametrize("v1, operator, v2",[
+@pytest.mark.parametrize("v1, operator, v2", [
     ('abc-1.2.3-4', '==', '1.2.3-4'),
     ('1.2.3-4', '==', 'abc-1.2.3-4')
 ])
@@ -611,7 +611,7 @@ def testUsingInvalidVersionStringsFails(v1, operator, v2):
         compareVersions(v1, operator, v2)
 
 
-@pytest.mark.parametrize("v1, operator, v2",[
+@pytest.mark.parametrize("v1, operator, v2", [
     ('1.0.a', '<', '1.0.b'),
     ('a.b', '>', 'a.a'),
 ])
@@ -619,7 +619,7 @@ def testComparingWorksWithLettersInVersionString(v1, operator, v2):
     assert compareVersions(v1, operator, v2)
 
 
-@pytest.mark.parametrize("v1, operator, v2",[
+@pytest.mark.parametrize("v1, operator, v2", [
     ('1.1.0.1', '>', '1.1'),
     ('1.1', '<', '1.1.0.1'),
 ])
@@ -627,7 +627,7 @@ def testComparisonsWithDifferntDepthsAreMadeTheSameDepth(v1, operator, v2):
     assert compareVersions(v1, operator, v2)
 
 
-@pytest.mark.parametrize("v1, operator, v2",[
+@pytest.mark.parametrize("v1, operator, v2", [
     ('1-2', '<', '1-3'),
     ('1-2.0', '<', '1-2.1')
 ])
