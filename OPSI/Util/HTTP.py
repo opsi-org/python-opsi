@@ -664,6 +664,9 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 				logger.debug(u"Verification failed: {0!r}", error)
 				if error.__class__.__name__ != 'SSLError' or self.verifyServerCertByCa:
 					raise OpsiServiceVerificationError(u"Failed to verify server cert by CA: %s" % error)
+				if not os.path.exists(self.serverCertFile):
+					logger.debug("Going to try a connect without caCertFile...")
+					non_blocking_connect_https(conn, self.connectTimeout)
 
 		self.num_connections += 1
 		self.peerCertificate = getPeerCertificate(conn, asPEM=True)
