@@ -513,12 +513,15 @@ class HTTPConnectionPool(object):
 					logger.info(u"Encoding authorization")
 					randomKey = randomString(32).encode('latin-1')
 					encryptedKey = encryptWithPublicKeyFromX509CertificatePEMFile(randomKey, self.serverCertFile)
+					logger.debug2("Key encrypted...")
 					headers['X-opsi-service-verification-key'] = base64.b64encode(encryptedKey)
 					for key, value in headers.items():
 						if key.lower() == 'authorization':
+							logger.debug2("Procesing authorization header...")
 							if value.lower().startswith('basic'):
 								value = value[5:].strip()
 							value = base64.b64decode(value).strip()
+							logger.debug2("Decoded authorization header...")
 							encodedAuth = encryptWithPublicKeyFromX509CertificatePEMFile(value, self.serverCertFile)
 							headers[key] = 'Opsi ' + base64.b64encode(encodedAuth)
 				except Exception as error:
