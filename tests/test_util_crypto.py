@@ -45,7 +45,7 @@ def tempCertPath():
         yield keyFile
 
 
-@pytest.yield_fixture(params=[1, 5, 91, 256, 337, 512, 829, 3333])
+@pytest.yield_fixture(params=[1, 5, 32, 91, 256, 337, 512, 829, 3333])
 def randomText(request):
     yield randomString(request.param)
 
