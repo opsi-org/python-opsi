@@ -195,8 +195,8 @@ def non_blocking_connect_https(self, connectTimeout=0, verifyByCaCertsFile=None)
 
 def getPeerCertificate(httpsConnectionOrSSLSocket, asPEM=True):
 	logger.debug2("Trying to get peer cert...")
+	sock = httpsConnectionOrSSLSocket
 	try:
-		sock = httpsConnectionOrSSLSocket
 		if hasattr(sock, 'sock'):
 			sock = sock.sock
 		cert = crypto.load_certificate(crypto.FILETYPE_ASN1, sock.getpeercert(binary_form=True))
