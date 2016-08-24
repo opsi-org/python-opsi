@@ -346,16 +346,15 @@ class ObjectToBeautifiedTextTestCase(unittest.TestCase):
         self.assertEquals(expected, objectToBeautifiedText(obj))
 
 
-class UtilTestCase(unittest.TestCase):
-    """
-    General tests for functions in the Util module.
-    """
+def testRandomStringBuildsStringOutOfGivenCharacters():
+    assert 5*'a' == randomString(5, characters='a')
 
-    def testRandomString(self):
-        self.assertEqual(10, len(randomString(10)))
-        self.assertNotEqual('', randomString(1).strip())
-        self.assertEqual('', randomString(0).strip())
-        self.assertEqual(5*'a', randomString(5, characters='a'))
+
+@pytest.mark.parametrize("length", [10, 1, 0])
+def testRandomStringHasExpectedLength(length):
+    result = randomString(length)
+    assert length == len(result)
+    assert length == len(result.strip())
 
 
 def _dummyGeneratorFunc():
