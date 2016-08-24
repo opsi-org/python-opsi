@@ -36,17 +36,25 @@ from .helpers import workInTemporaryDirectory
 import pytest
 
 
-@pytest.mark.parametrize("inputLength", [1, 5, 91, 256, 337, 512, 829, 3333])
-def testEncryptingAndDecryptingTextWithCertificate(inputLength):
-    pytest.importorskip("M2Crypto")  # Lazy import in the encrypt / decrypt functions
-
-    exampleInput = randomString(inputLength)
-
+@pytest.yield_fixture(scope='module')
+def tempCertPath():
     with workInTemporaryDirectory() as tempDir:
-        keyFile = os.path.join(tempDir, randomString(10))
+        keyFile = os.path.join(tempDir, 'temp.pem')
         createCertificate(keyFile)
 
-        encryptedText = encryptWithPublicKeyFromX509CertificatePEMFile(exampleInput, keyFile)
-        decryptedText = decryptWithPrivateKeyFromPEMFile(encryptedText, keyFile)
+        yield keyFile
 
-        assert decryptedText == exampleInput
+
+@pytest.yield_fixture(params=[1, 5, 32, 91, 256, 337, 512, 829, 3333])
+def randomText(request):
+    yield randomString(request.param)
+
+
+def testEncryptingAndDecryptingTextWithCertificate(tempCertPath, randomText):
+    pytest.importorskip("M2Crypto")  # Lazy import in the encrypt / decrypt functions
+
+    encryptedText = encryptWithPublicKeyFromX509CertificatePEMFile(randomText, tempCertPath)
+    assert encryptedText != randomText
+
+    decryptedText = decryptWithPrivateKeyFromPEMFile(encryptedText, tempCertPath)
+    assert decryptedText == randomText

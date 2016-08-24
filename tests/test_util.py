@@ -346,53 +346,58 @@ class ObjectToBeautifiedTextTestCase(unittest.TestCase):
         self.assertEquals(expected, objectToBeautifiedText(obj))
 
 
-class UtilTestCase(unittest.TestCase):
-    """
-    General tests for functions in the Util module.
-    """
-    def test_flattenSequence(self):
-        self.assertEqual([1, 2], flattenSequence((1, [2])))
-        self.assertEqual([1, 2, 3], flattenSequence((1, [2, (3, )])))
-        self.assertEqual([1, 2, 3], flattenSequence(((1, ),(2, ), 3)))
-        self.assertEqual([1, 2, 3], flattenSequence(set([1, 2, 3])))
-        self.assertEqual([1, 2, 3, 4, 5],
-                         flattenSequence([1, set([2,]), 3, 4, set([5])]))
+def testRandomStringBuildsStringOutOfGivenCharacters():
+    assert 5*'a' == randomString(5, characters='a')
 
-    def test_flattenSequenceIncludingGenerators(self):
-        generator = (x for x in range(1, 6))
-        self.assertEqual([1, 2, 3, 4, 5], flattenSequence(generator))
 
-        def generatorFunc():
-            yield 3
-            yield 4
-            yield [5]
+@pytest.mark.parametrize("length", [10, 1, 0])
+def testRandomStringHasExpectedLength(length):
+    result = randomString(length)
+    assert length == len(result)
+    assert length == len(result.strip())
 
-        self.assertEqual([1, 2, 3, 4, 5], flattenSequence([1, 2, generatorFunc()]))
 
-    def test_formatFileSize(self):
-        self.assertEqual('123', formatFileSize(123))
-        self.assertEqual('1K', formatFileSize(1234))
-        self.assertEqual('1M', formatFileSize(1234567))
-        self.assertEqual('300M', formatFileSize(314572800))
-        self.assertEqual('1G', formatFileSize(1234567890))
-        self.assertEqual('1T', formatFileSize(1234567890000))
+def _dummyGeneratorFunc():
+    yield 3
+    yield 4
+    yield [5]
 
-    def testRandomString(self):
-        self.assertEqual(10, len(randomString(10)))
-        self.assertNotEqual('', randomString(1).strip())
-        self.assertEqual('', randomString(0).strip())
-        self.assertEqual(5*'a', randomString(5, characters='a'))
 
-    def testGenerateOpsiHostKeyIs32CharsLong(self):
-        self.assertEqual(32, len(generateOpsiHostKey()))
-        self.assertEqual(32, len(generateOpsiHostKey(forcePython=True)))
+@pytest.mark.parametrize("sequence, out", [
+    ((1, [2]), [1, 2]),
+    ((1, [2, (3, )]), [1, 2, 3]),
+    (((1, ), (2, ), 3), [1, 2, 3]),
+    (set([1, 2, 3]), [1, 2, 3]),
+    ([1, set([2, ]), 3, 4, set([5])], [1, 2, 3, 4, 5]),
+    ((x for x in range(1, 6)), [1, 2, 3, 4, 5]),
+    ([1, 2, _dummyGeneratorFunc()], [1, 2, 3, 4, 5])
+])
+def testFlattenSequence(sequence, out):
+    assert out == flattenSequence(sequence)
 
-    def testmd5sum(self):
-        testFile = os.path.join(
-            os.path.dirname(__file__),
-            'testdata', 'util', 'dhcpd', 'dhcpd_1.conf'
-        )
-        self.assertEqual('5f345ca76574c528903c1022b05acb4c', md5sum(testFile))
+
+@pytest.mark.parametrize("kwargs", [{}, {"forcePython": True}])
+def testGenerateOpsiHostKeyIs32CharsLong(kwargs):
+    assert 32 == len(generateOpsiHostKey(kwargs))
+
+
+@pytest.mark.parametrize("testInput, expected", [
+    (123, '123'),
+    (1234, '1K'),
+    (1234567, '1M'),
+    (314572800, '300M'),
+    (1234567890, '1G'),
+    (1234567890000, '1T'),
+])
+def testFormatFileSize(testInput, expected):
+    assert expected == formatFileSize(testInput)
+
+
+@pytest.mark.parametrize("testFile, expectedHash", [
+    (os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'dhcpd', 'dhcpd_1.conf'), '5f345ca76574c528903c1022b05acb4c'),
+])
+def testCreatingMd5sum(testFile, expectedHash):
+    assert expectedHash == md5sum(testFile)
 
 
 class ChunkingTestCase(unittest.TestCase):
@@ -576,7 +581,7 @@ def testComparingVersionsOfSameSize():
     assert compareVersions('1.0', '<', '2.0')
 
 
-@pytest.mark.parametrize("v1, operator, v2",[
+@pytest.mark.parametrize("v1, operator, v2", [
     ('1.0', '', '1.0'),
     pytest.mark.xfail(('1', '', '2')),
 ])
@@ -588,13 +593,13 @@ def testComparingWithOneEqualitySignWork():
     assert compareVersions('1.0', '=', '1.0')
 
 
-@pytest.mark.parametrize("operator",['asdf', '+-', '<>', '!='])
+@pytest.mark.parametrize("operator", ['asdf', '+-', '<>', '!='])
 def testUsingUnknownOperatorFails(operator):
     with pytest.raises(Exception):
         compareVersions('1', operator, '2')
 
 
-@pytest.mark.parametrize("v1, operator, v2",[
+@pytest.mark.parametrize("v1, operator, v2", [
     ('1.0~20131212', '<', '2.0~20120101'),
     ('1.0~20131212', '==', '1.0~20120101'),
 ])
@@ -602,7 +607,7 @@ def testIgnoringVersionsWithWaveInThem(v1, operator, v2):
     assert compareVersions(v1, operator, v2)
 
 
-@pytest.mark.parametrize("v1, operator, v2",[
+@pytest.mark.parametrize("v1, operator, v2", [
     ('abc-1.2.3-4', '==', '1.2.3-4'),
     ('1.2.3-4', '==', 'abc-1.2.3-4')
 ])
@@ -611,7 +616,7 @@ def testUsingInvalidVersionStringsFails(v1, operator, v2):
         compareVersions(v1, operator, v2)
 
 
-@pytest.mark.parametrize("v1, operator, v2",[
+@pytest.mark.parametrize("v1, operator, v2", [
     ('1.0.a', '<', '1.0.b'),
     ('a.b', '>', 'a.a'),
 ])
@@ -619,7 +624,7 @@ def testComparingWorksWithLettersInVersionString(v1, operator, v2):
     assert compareVersions(v1, operator, v2)
 
 
-@pytest.mark.parametrize("v1, operator, v2",[
+@pytest.mark.parametrize("v1, operator, v2", [
     ('1.1.0.1', '>', '1.1'),
     ('1.1', '<', '1.1.0.1'),
 ])
@@ -627,7 +632,7 @@ def testComparisonsWithDifferntDepthsAreMadeTheSameDepth(v1, operator, v2):
     assert compareVersions(v1, operator, v2)
 
 
-@pytest.mark.parametrize("v1, operator, v2",[
+@pytest.mark.parametrize("v1, operator, v2", [
     ('1-2', '<', '1-3'),
     ('1-2.0', '<', '1-2.1')
 ])
@@ -721,7 +726,7 @@ class GetFQDNTestCase(unittest.TestCase):
             fqdn = "opsi.fqdntestcase.invalid"
             with patchAddress(fqdn=fqdn):
                 confPath = os.path.join(tempDir, randomString(8))
-                with open(confPath, 'w') as conf:
+                with open(confPath, 'w'):
                     pass
 
                 self.assertEqual(fqdn, getfqdn(conf=confPath))

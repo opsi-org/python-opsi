@@ -109,7 +109,7 @@ def searchWindowsDrivers(driverDir, auditHardwares, messageSubject=None, srcRepo
 			continue
 
 		if exists(os.path.join(srcDriverPath, 'WINDOWS_BUILDIN')):
-			logger.notice(u"Found windows build-in driver")
+			logger.notice(u"Found windows built-in driver")
 			driver['buildin'] = True
 			drivers.append(driver)
 			continue
