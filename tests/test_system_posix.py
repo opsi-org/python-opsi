@@ -201,11 +201,10 @@ class PosixHardwareInventoryTestCase(unittest.TestCase):
 		self.assertEqual({}, Posix.hardwareExtendedInventory({}, self.hardwareInfo))
 
 
-class xenialSfdiskVersionTestCase(unittest.TestCase):
+class XenialSfdiskVersionTestCase(unittest.TestCase):
     "Testing newSfdiskVersion behavior"
 
     def testReturnXenialfdiskVersion(self):
-
         with mock.patch('OPSI.System.Posix.execute', mock.Mock(return_value=['sfdisk von util-linux 2.27.1'])):
             with mock.patch('OPSI.System.Posix.which', mock.Mock(return_value='/sbin/sfdisk')):
                 self.assertTrue(Posix.isXenialSfdiskVersion())
