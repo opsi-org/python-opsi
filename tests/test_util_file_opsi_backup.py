@@ -491,6 +491,23 @@ class BackupArchiveTest(unittest.TestCase):
 
             self.assertEqual(md5OfOriginalFile, md5OfRestoredFile)
 
+    def testBackupDHCPBackendDoesNotFailIfConfigFileIsMissing(self):
+        with workInTemporaryDirectory() as tempDir:
+            with getOpsiBackupArchive(tempdir=tempDir, keepArchive=True) as archive:
+
+                archiveName = archive.name
+
+                for backend in archive._getBackends("dhcpd"):
+                    dhcpConfigFile = backend['config']['dhcpdConfigFile']
+                    os.remove(dhcpConfigFile)
+
+                archive.backupDHCPBackend()
+                archive.close()
+
+            with getOpsiBackupArchive(name=archiveName, mode="r", tempdir=tempDir) as backup:
+                backup.restoreDHCPBackend()
+                assert not os.path.exists(dhcpConfigFile)
+
     def testBackupHasDHCPDBackend(self):
         with workInTemporaryDirectory() as tempDir:
             with getOpsiBackupArchive(tempdir=tempDir, keepArchive=True) as archive:
