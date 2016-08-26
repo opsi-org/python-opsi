@@ -1492,11 +1492,12 @@ depot where the method is.
 		try:
 			lf = ConfigFile(localeFile)
 			for line in lf.parse():
-				if '=' not in line:
-					continue
-
-				(k, v) = line.split('=', 1)
-				locale[k.strip()] = v.strip()
+				try:
+					identifier, translation = line.split('=', 1)
+					locale[identifier.strip()] = translation.strip()
+				except ValueError as verr:
+					logger.debug2(u"Failed to read translation: {0!r}", verr)
+			del lf
 		except Exception as e:
 			logger.error(u"Failed to read translation file for language %s: %s" % (language, e))
 
