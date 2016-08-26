@@ -1506,8 +1506,6 @@ depot where the method is.
 				for scname in c['Class'].get('Super', []):
 					__inheritFromSuperClasses(classes, c, scname)
 			else:
-				sc = None
-				found = False
 				for cl in classes:
 					if cl['Class'].get('Opsi') == scname:
 						clcopy = pycopy.deepcopy(cl)
@@ -1525,11 +1523,10 @@ depot where the method is.
 								newValue = c['Values'][foundAt]
 								del c['Values'][foundAt]
 							newValues.append(newValue)
-						found = True
 						newValues.extend(c['Values'])
 						c['Values'] = newValues
 						break
-				if not found:
+				else:
 					logger.error(u"Super class '%s' of class '%s' not found!" % (scname, c['Class'].get('Opsi')))
 
 		classes = []
