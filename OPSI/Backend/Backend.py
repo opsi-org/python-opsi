@@ -1543,8 +1543,10 @@ depot where the method is.
 
 				for j, currentValue in enumerate(currentClassConfig['Values']):
 					opsiProperty = currentValue['Opsi']
-					if locale.get(opsiClass + '.' + opsiProperty):
+					try:
 						OPSI_HARDWARE_CLASSES[i]['Values'][j]['UI'] = locale[opsiClass + '.' + opsiProperty]
+					except KeyError:
+						pass
 
 			for c in OPSI_HARDWARE_CLASSES:
 				try:
