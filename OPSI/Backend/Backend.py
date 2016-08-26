@@ -1553,7 +1553,7 @@ depot where the method is.
 					if c['Class'].get('Type') == 'STRUCTURAL':
 						logger.debug(u"Found STRUCTURAL hardware class '%s'" % c['Class'].get('Opsi'))
 						ccopy = pycopy.deepcopy(c)
-						if ccopy['Class'].has_key('Super'):
+						if 'Super' in ccopy['Class']:
 							__inheritFromSuperClasses(OPSI_HARDWARE_CLASSES, ccopy)
 							del ccopy['Class']['Super']
 						del ccopy['Class']['Type']
