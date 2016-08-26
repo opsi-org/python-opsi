@@ -511,8 +511,8 @@ class BackupArchiveTest(unittest.TestCase):
                 archive.close()
 
             with getOpsiBackupArchive(name=archiveName, mode="r", tempdir=tempDir) as backup:
-                backup.restoreDHCPBackend()
-                assert not os.path.exists(dhcpConfigFile)
+                assert not backup.hasDHCPBackend()
+                self.assertRaises(OpsiBackupBackendNotFound, backup.restoreDHCPBackend)
 
     def testBackupHasDHCPDBackend(self):
         with workInTemporaryDirectory() as tempDir:
