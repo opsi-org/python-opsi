@@ -58,7 +58,7 @@ key = \;\;\;\;\;\;\;\;\;\;\;\;
     iniFile.parse(iniTestData.split('\n'))
 
 
-@pytest.yield_fixture(params=[
+@pytest.fixture(params=[
     'inf_testdata_1.inf',
     'inf_testdata_2.inf',
     'inf_testdata_3.inf',
@@ -89,7 +89,7 @@ def testTxtSetupOemFileParseAndGenerateDoesNotFail(txtSetupOemFileInTempDirector
     txtSetupOemFileInTempDirectory.generate()
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def txtSetupOemFileInTempDirectory(txtSetupOemFilePath):
     with getTempTxtSetupOemFileFromPath(txtSetupOemFilePath) as setupFile:
         yield setupFile
@@ -116,7 +116,7 @@ def txtSetupOemFileNames():
     yield 'txtsetupoem_testdata_7.oem'
 
 
-@pytest.yield_fixture(params=[f for f in txtSetupOemFileNames()])
+@pytest.fixture(params=[f for f in txtSetupOemFileNames()])
 def txtSetupOemFilePath(request):
     yield getAbsolutePathToTestData(request.param)
 
@@ -125,7 +125,7 @@ def getAbsolutePathToTestData(filename):
     return os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'file', filename)
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def regeneratedtxtSetupOemFileWithWorkarounds(txtSetupOemFileInTempDirectory):
     txtSetupOemFile = txtSetupOemFileInTempDirectory
     txtSetupOemFile.parse()

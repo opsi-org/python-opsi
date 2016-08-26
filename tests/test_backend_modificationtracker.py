@@ -36,7 +36,7 @@ from .Backends.MySQL import getMySQLBackend, getMySQLModificationTracker
 import pytest
 
 
-@pytest.yield_fixture(
+@pytest.fixture(
     params=[
         (getSQLiteBackend, getSQLiteModificationTracker),
         (getMySQLBackend, getMySQLModificationTracker),
