@@ -128,13 +128,6 @@ class OpsiBackup(object):
 					if backend in ("dhcp", "all", "auto"):
 						logger.debug(u"Backing up dhcp configuration.")
 						archive.backupDHCPBackend(auto=("auto" in backends))
-					#TODO: implement ldap/univention backup
-					#if backend in ("ldap", "all"):
-					#	logger.debug(u"Backing up ldap backend.")
-					#	archive.backupLdapBackend()
-					#if backend in ("ldap", "all"):
-					#	logger.debug(u"Backing up univention backend.")
-					#	archive.backupUniventionBackend()
 
 			if not no_configuration:
 				logger.debug(u"Backing up opsi configuration.")
