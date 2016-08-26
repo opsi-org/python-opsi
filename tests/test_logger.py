@@ -52,7 +52,7 @@ LOGGING_LEVELS = [
 ]
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def logger():
 	logger = OPSI.Logger.LoggerImplementation()
 

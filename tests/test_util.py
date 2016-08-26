@@ -968,7 +968,7 @@ def preparedDemoFolders():
         yield tempDir
 
 
-@pytest.yield_fixture(scope='module')
+@pytest.fixture(scope='module')
 def tempCertPath():
     with workInTemporaryDirectory() as tempDir:
         keyFile = os.path.join(tempDir, 'temp.pem')
@@ -977,7 +977,7 @@ def tempCertPath():
         yield keyFile
 
 
-@pytest.yield_fixture(params=[1, 5, 91, 256, 337, 512, 829, 3333])
+@pytest.fixture(params=[1, 5, 91, 256, 337, 512, 829, 3333])
 def randomText(request):
     yield randomString(request.param)
 
