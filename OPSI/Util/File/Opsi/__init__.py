@@ -1164,6 +1164,10 @@ class OpsiBackupArchive(tarfile.TarFile):
 			for entry in os.listdir(path):
 				self._addContent(os.path.join(path, entry), sub=sub)
 		else:
+			if not os.path.exists(path):
+				logger.info(u"{0} does not exist. Skipping.", path)
+				continue
+
 			checksum = sha1()
 
 			with open(path) as f:
@@ -1332,10 +1336,6 @@ class OpsiBackupArchive(tarfile.TarFile):
 					logger.warning("Backing up backend %s although it's currently not in use." % backend["name"])
 
 				dhcpdConfigFile = backend["config"]['dhcpdConfigFile']
-				if not os.path.exists(dhcpdConfigFile):
-					logger.info(u"{0} does not exist or is not accessible. Skipping.", dhcpdConfigFile)
-					continue
-
 				self._addContent(dhcpdConfigFile, sub=(os.path.dirname(dhcpdConfigFile), "BACKENDS/DHCP/%s" % backend["name"]))
 
 	def hasDHCPBackend(self, name=None):
