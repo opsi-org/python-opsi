@@ -1166,7 +1166,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 		else:
 			if not os.path.exists(path):
 				logger.info(u"{0} does not exist. Skipping.", path)
-				continue
+				return
 
 			checksum = sha1()
 
