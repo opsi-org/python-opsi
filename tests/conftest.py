@@ -50,7 +50,7 @@ from .helpers import workInTemporaryDirectory
 import pytest
 
 
-@pytest.yield_fixture(
+@pytest.fixture(
     params=[getFileBackend, getSQLiteBackend, getMySQLBackend],
     ids=['file', 'sqlite', 'mysql']
 )
@@ -78,7 +78,7 @@ def _backendBase(backend):
         backend.backend_deleteBase()
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def extendedConfigDataBackend(configDataBackend):
     """
     Returns an `OPSI.Backend.ExtendedConfigDataBackend` for testing.
@@ -90,7 +90,7 @@ def extendedConfigDataBackend(configDataBackend):
     yield ExtendedConfigDataBackend(configDataBackend)
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def cleanableDataBackend(_serverBackend):
     """
     Returns an backend that can be cleaned.
@@ -98,7 +98,7 @@ def cleanableDataBackend(_serverBackend):
     yield ExtendedConfigDataBackend(_serverBackend)
 
 
-@pytest.yield_fixture(
+@pytest.fixture(
     params=[getFileBackend, getMySQLBackend],
     ids=['file', 'mysql']
 )
@@ -110,7 +110,7 @@ def _serverBackend(request):
             yield backend
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def backendManager(_serverBackend):
     """
     Returns an `OPSI.Backend.BackendManager.BackendManager` for testing.
@@ -128,13 +128,13 @@ def backendManager(_serverBackend):
         )
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def licenseManagementBackend(_sqlBackend):
     '''Returns a backend that can handle License Management.'''
     yield ExtendedConfigDataBackend(_sqlBackend)
 
 
-@pytest.yield_fixture(
+@pytest.fixture(
     params=[getSQLiteBackend, getMySQLBackend],
     ids=['sqlite', 'mysql']
 )
@@ -146,17 +146,17 @@ def _sqlBackend(request):
             yield backend
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def hardwareAuditBackendWithHistory(_sqlBackend):
     yield ExtendedConfigDataBackend(_sqlBackend)
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def auditDataBackend(extendedConfigDataBackend):
     yield extendedConfigDataBackend
 
 
-@pytest.yield_fixture(
+@pytest.fixture(
     params=[getMySQLBackend],
     ids=['mysql']
 )

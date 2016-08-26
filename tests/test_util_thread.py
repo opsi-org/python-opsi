@@ -36,7 +36,7 @@ from OPSI.Util.Thread import KillableThread
 import pytest
 
 
-@pytest.yield_fixture(params=[10])
+@pytest.fixture(params=[10])
 def threadPool(request):
     '''Returns an already started ThreadPool.'''
     pool = ThreadPool(size=request.param, autostart=False)
