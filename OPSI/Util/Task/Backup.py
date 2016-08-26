@@ -34,6 +34,7 @@ import os
 import shutil
 import sys
 import termios
+from contextlib import closing
 
 from OPSI.Types import (forceList, forceUnicode, OpsiBackupFileError,
 	OpsiBackupBackendNotFound, OpsiError)
@@ -48,7 +49,6 @@ try:
 	_ = translation.ugettext
 except Exception as error:
 	logger.error(u"Locale not found: {0}".format(error))
-
 
 	def _(string):
 		""" Function for translating text. """
@@ -164,16 +164,15 @@ class OpsiBackup(object):
 		result = 0
 
 		for fileName in files:
-			archive = self._getArchive(mode="r", file=fileName)
+			with closing(self._getArchive(mode="r", file=fileName)) as archive:
+				logger.info(u"Verifying archive %s" % fileName)
+				try:
+					archive.verify()
+					logger.notice(u"Archive is OK.")
+				except OpsiBackupFileError as error:
+					logger.error(error)
+					result = 1
 
-			logger.info(u"Verifying archive %s" % fileName)
-			try:
-				archive.verify()
-				logger.notice(u"Archive is OK.")
-			except OpsiBackupFileError as error:
-				logger.error(error)
-				result = 1
-			archive.close()
 		return result
 
 	def _verifySysconfig(self, archive):
@@ -254,9 +253,7 @@ class OpsiBackup(object):
 
 		auto = "auto" in backends
 
-		archive = self._getArchive(file=file[0], mode="r")
-
-		try:
+		with closing(self._getArchive(file=file[0], mode="r")) as archive:
 			self._verify(archive.name)
 
 			functions = []
@@ -301,5 +298,3 @@ class OpsiBackup(object):
 					raise error
 
 				logger.notice(u"Restoration complete")
-		finally:
-			archive.close()
