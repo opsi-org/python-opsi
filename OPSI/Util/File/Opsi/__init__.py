@@ -46,29 +46,24 @@ from contextlib import closing
 from hashlib import sha1
 from subprocess import Popen, PIPE, STDOUT
 
-if os.name == 'posix':
-	import fcntl
-	import grp
-	import pwd
-	from OPSI.System.Posix import SysInfo
-elif os.name == 'nt':
-	import win32con
-	import win32file
-	import pywintypes
-
 import OPSI.System
 from OPSI.Logger import Logger
 from OPSI.Object import BoolProductProperty, LocalbootProduct, NetbootProduct, Product, ProductDependency, ProductProperty, UnicodeProductProperty
 from OPSI.Types import (BackendBadValueError, OpsiBackupBackendNotFound,
 	OpsiBackupFileError, OpsiBackupFileNotFound, forceActionRequest, forceBool,
 	forceDictList, forceFilename, forceHostId, forceInstallationStatus,
-	forceInt, forceList, forceObjectClass, forceObjectClassList,
-	forceOpsiHostKey, forcePackageVersion, forceProductId,
-	forceProductPriority, forceProductPropertyType, forceProductType,
-	forceProductVersion, forceRequirementType, forceUnicode, forceUnicodeList,
-	forceUnicodeLower)
+	forceList, forceObjectClass, forceObjectClassList, forceOpsiHostKey,
+	forcePackageVersion, forceProductId, forceProductPriority,
+	forceProductPropertyType, forceProductType, forceProductVersion,
+	forceRequirementType, forceUnicode, forceUnicodeList, forceUnicodeLower)
 from OPSI.Util.File import ConfigFile, IniFile, TextFile, requiresParsing
 from OPSI.Util import md5sum, toJson, fromJson
+
+if os.name == 'posix':
+	import fcntl
+	import grp
+	import pwd
+	from OPSI.System.Posix import SysInfo
 
 __version__ = '4.0.7.1'
 
