@@ -1499,7 +1499,7 @@ depot where the method is.
 					logger.debug2(u"Failed to read translation: {0!r}", verr)
 			del lf
 		except Exception as e:
-			logger.error(u"Failed to read translation file for language %s: %s" % (language, e))
+			logger.error(u"Failed to read translation file for language {0}: {1}", language, e)
 
 		def __inheritFromSuperClasses(classes, c, scname=None):
 			if not scname:
