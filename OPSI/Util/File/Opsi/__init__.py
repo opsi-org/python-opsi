@@ -1330,7 +1330,9 @@ class OpsiBackupArchive(tarfile.TarFile):
 			if not auto or backend["dispatch"]:
 				if not backend["dispatch"]:
 					logger.warning("Backing up backend %s although it's currently not in use." % backend["name"])
-				self._addContent(backend["config"]['dhcpdConfigFile'], sub=(os.path.dirname(backend["config"]['dhcpdConfigFile']), "BACKENDS/DHCP/%s" % backend["name"]))
+
+				dhcpdConfigFile = backend["config"]['dhcpdConfigFile']
+				self._addContent(dhcpdConfigFile, sub=(os.path.dirname(dhcpdConfigFile), "BACKENDS/DHCP/%s" % backend["name"]))
 
 	def hasDHCPBackend(self, name=None):
 		return self._hasBackend("DHCP", name=name)
