@@ -62,7 +62,7 @@ if os.name == 'posix':
 	import pwd
 	from OPSI.System.Posix import SysInfo
 
-__version__ = '4.0.7.1'
+__version__ = '4.0.7.19'
 
 logger = Logger()
 
