@@ -83,7 +83,7 @@ def testSettingUserCredentialsWithoutDepot(fakeCredentialsBackend):
         backend.user_setCredentials("hans", '')
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def fakeCredentialsBackend(configDataBackend):
     backend = configDataBackend
     backend.host_insertObject(getConfigServer())  # Required for file backend.

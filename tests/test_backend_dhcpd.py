@@ -34,7 +34,7 @@ from .test_util_file_dhcpdconf import dhcpdConf
 import pytest
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def dhcpdBackend(dhcpdConf):
     yield DHCPDBackend(
         dhcpdConfigFile=dhcpdConf._filename,
