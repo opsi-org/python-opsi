@@ -1,3 +1,10 @@
+python-opsi (4.0.7.19-1) testing; urgency=medium
+
+  * OPSI.Util.Task.UpdateBackend.MySQL: temporary disable foreign key checks
+    when altering the depotId / hostId.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 06 Sep 2016 14:11:02 +0200
+
 python-opsi (4.0.7.18-1) stable; urgency=medium
 
   * OPSI.System.Posix: added sleep function when using ms-sys to write partition
