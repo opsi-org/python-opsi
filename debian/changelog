@@ -1,6 +1,14 @@
+python-opsi (4.0.7.19-1) testing; urgency=medium
+
+  * OPSI.Util.Task.UpdateBackend.MySQL: temporary disable foreign key checks
+    when altering the depotId / hostId.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 06 Sep 2016 14:11:02 +0200
+
 python-opsi (4.0.7.18-1) stable; urgency=medium
 
-  * OPSI.System.Posix: added sleep function when using ms-sys to write partition boot record
+  * OPSI.System.Posix: added sleep function when using ms-sys to write partition
+    boot record
   * Corrected some typos.
   * Make header verify_server_cert work with current Python 2.7.
   * OPSI.Util.Task.Samba.configureSamba: warn if oplocks are present in
