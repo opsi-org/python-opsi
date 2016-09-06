@@ -314,7 +314,7 @@ def testDenyingAccessToSpecifiedAttributes(extendedConfigDataBackend):
     for host in hosts:
         for attribute, value in host.toHash().items():
             if attribute in denyAttributes:
-                assert None == value
+                assert value is None
 
 
 def testGettingAccessAndOnlyAllowingSomeAttributes(extendedConfigDataBackend):
@@ -343,7 +343,7 @@ def testGettingAccessAndOnlyAllowingSomeAttributes(extendedConfigDataBackend):
     for host in hosts:
         for attribute, value in host.toHash().items():
             if attribute not in allowAttributes:
-                assert None == value
+                assert value is None
 
 
 def testGettingAccessButDenyingAttributesOnSelf(extendedConfigDataBackend):
