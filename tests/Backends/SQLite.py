@@ -22,13 +22,10 @@
 
 from __future__ import absolute_import
 
-import os
 from contextlib import contextmanager
-from functools import wraps
 
 from OPSI.Backend.Backend import ExtendedConfigDataBackend
 from . import BackendMixin
-from ..helpers import workInTemporaryDirectory, unittest
 
 import pytest
 
@@ -79,13 +76,8 @@ def getSQLiteBackend(configuration=None):
 
 
 @contextmanager
-def getSQLiteModificationTracker(database=":memory:"):
+def getSQLiteModificationTracker():
 	sqliteModule = pytest.importorskip("OPSI.Backend.SQLite")
-	SQLiteObjectBackendModificationTracker = sqliteModule.SQLiteObjectBackendModificationTracker
+	trackerClass = sqliteModule.SQLiteObjectBackendModificationTracker
 
-	if not database:
-		with workInTemporaryDirectory() as tempDir:
-			database = os.path.join(tempDir, "tracker.sqlite")
-			yield SQLiteObjectBackendModificationTracker(database=database)
-	else:
-		yield SQLiteObjectBackendModificationTracker(database=database)
+	yield trackerClass(database=":memory:")

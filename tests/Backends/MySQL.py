@@ -1,4 +1,4 @@
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 #
 # Copyright (C) 2013-2016 uib GmbH
 #
@@ -23,7 +23,7 @@ from __future__ import absolute_import
 
 from contextlib import contextmanager
 
-from OPSI.Backend.MySQL import MySQLBackend
+from OPSI.Backend.MySQL import MySQLBackend, MySQLBackendObjectModificationTracker
 from OPSI.Backend.Backend import ExtendedConfigDataBackend
 from . import BackendMixin
 from ..helpers import unittest
@@ -60,3 +60,11 @@ def getMySQLBackend():
         pytest.skip('no MySQL backend configuration given.')
 
     yield MySQLBackend(**MySQLconfiguration)
+
+
+@contextmanager
+def getMySQLModificationTracker():
+    if not MySQLconfiguration:
+        pytest.skip('no MySQL backend configuration given.')
+
+    yield MySQLBackendObjectModificationTracker(**MySQLconfiguration)

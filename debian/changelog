@@ -1,3 +1,43 @@
+python-opsi (4.0.7.19-1) testing; urgency=medium
+
+  * OPSI.Util.Task.UpdateBackend.MySQL: temporary disable foreign key checks
+    when altering the depotId / hostId.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 06 Sep 2016 14:11:02 +0200
+
+python-opsi (4.0.7.18-1) stable; urgency=medium
+
+  * OPSI.System.Posix: added sleep function when using ms-sys to write partition
+    boot record
+  * Corrected some typos.
+  * Make header verify_server_cert work with current Python 2.7.
+  * OPSI.Util.Task.Samba.configureSamba: warn if oplocks are present in
+    Samba configuration.
+  * OPSI.System.Posix: Wait a few seconds before running ms-sys to avoid
+    timing problems on systems with NVME storage.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 24 Aug 2016 17:08:55 +0200
+
+python-opsi (4.0.7.17-1) stable; urgency=medium
+
+  * OPSI.Util: Refactored encryptWithPublicKeyFromX509CertificatePEMFile
+    and decryptWithPrivateKeyFromPEMFile.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 18 Aug 2016 10:10:53 +0200
+
+python-opsi (4.0.7.16-1) testing; urgency=medium
+
+  * OPSI.System.Posix: new function isOpenSUSELeap.
+  * OPSI.Util.Task.Rights: Improved support for openSUSE Leap.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 15 Aug 2016 16:53:24 +0200
+
+python-opsi (4.0.7.15-1) stable; urgency=medium
+
+  * corrected opsi-set-rights for openSUSE
+
+ -- Mathias Radtke <m.radtke@uib.de>  Wed, 10 Aug 2016 13:44:48 +0200
+
 python-opsi (4.0.7.14-1) stable; urgency=medium
 
   * OPSI.Util.Task.Rights: Corrected path for UCS.
@@ -377,7 +417,7 @@ python-opsi (4.0.6.31-1) experimental; urgency=medium
 python-opsi (4.0.6.30-1) experimental; urgency=medium
 
   * OPSI.Service.Session: SessionHandler.sessionExpired does more frequently
-    checks if session is still in use or timeout occured.
+    checks if session is still in use or timeout occurred.
   * 20_legacy.conf & 30_configed.conf: getDomain: Fix NameError caused by
     implicit import.
   * 10_opsi.conf & 30_configed.conf: getProductOrdering: Fix NameError caused

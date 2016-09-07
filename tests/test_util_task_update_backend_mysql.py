@@ -30,22 +30,14 @@ import os
 from contextlib import contextmanager
 
 from OPSI.Backend.MySQL import MySQL
-from OPSI.Util.Task.UpdateBackend.MySQL import updateMySQLBackend, getTableColumns
+from OPSI.Util.Task.UpdateBackend.MySQL import (disableForeignKeyChecks,
+    getTableColumns, updateMySQLBackend)
 from OPSI.Util.Task.ConfigureBackend import updateConfigFile
 
 from .Backends.MySQL import MySQLconfiguration
 from .helpers import workInTemporaryDirectory
 
 import pytest
-
-
-@contextmanager
-def disableForeignKeyChecks(database):
-    database.execute('SET FOREIGN_KEY_CHECKS=0;')
-    try:
-        yield
-    finally:
-        database.execute('SET FOREIGN_KEY_CHECKS=1;')
 
 
 @contextmanager

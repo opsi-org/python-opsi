@@ -45,7 +45,7 @@ def testParsingExampleDHCPDConf():
         confFile.parse()
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def dhcpdConf():
     """Mixin for an DHCPD backend.
     Manages a subnet 192.168.99.0/24"""

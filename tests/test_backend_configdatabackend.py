@@ -35,12 +35,12 @@ from .helpers import mock, workInTemporaryDirectory
 import pytest
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def logBackend(patchLogDir):
 	yield OPSI.Backend.Backend.ConfigDataBackend()
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def patchLogDir():
 	with workInTemporaryDirectory() as tempDir:
 		with mock.patch('OPSI.Backend.Backend.LOG_DIR', tempDir):

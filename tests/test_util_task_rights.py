@@ -44,7 +44,7 @@ import pytest
 OS_CHECK_FUNCTIONS = ['isRHEL', 'isCentOS', 'isSLES', 'isOpenSUSE', 'isUbuntu', 'isDebian', 'isUCS']
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def depotDirectory():
     'Returning a fixed address when checking for a depotUrl'
     depotUrl = u'file:///var/lib/opsi/depot'
@@ -52,14 +52,14 @@ def depotDirectory():
         yield depotUrl
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def emptyDepotDirectoryCache():
     'Making sure that no depotUrl is cached.'
     with mock.patch('OPSI.Util.Task.Rights._CACHED_DEPOT_DIRECTORY', None):
         yield
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def patchUserInfo():
     'Calls to find uid / gid will always succeed.'
     uid = 1234
@@ -76,6 +76,23 @@ def patchUserInfo():
 def testGetDirectoriesToProcess(depotDirectory, patchUserInfo, slesSupport, workbench, tftpdir):
     with mock.patch('OPSI.Util.Task.Rights.getWebserverRepositoryPath', lambda: '/path/to/apache'):
         with mock.patch('OPSI.Util.Task.Rights.isSLES', lambda: slesSupport):
+            directories = [d for d, _ in getDirectoriesAndExpectedRights('/')]
+
+    assert u'/etc/opsi' in directories
+    assert u'/var/lib/opsi' in directories
+    assert u'/var/log/opsi' in directories
+    assert workbench in directories
+    assert tftpdir in directories
+    assert '/path/to/apache' in directories
+
+
+@pytest.mark.parametrize("slesSupport, workbench, tftpdir", [
+    (False, u'/home/opsiproducts', u'/tftpboot/linux'),
+    (True, u'/var/lib/opsi/workbench', u'/var/lib/tftpboot/opsi')
+], ids=["opensuse", "non-opensuse"])
+def testGetDirectoriesToProcessOpenSUSELeap(depotDirectory, patchUserInfo, slesSupport, workbench, tftpdir):
+    with mock.patch('OPSI.Util.Task.Rights.getWebserverRepositoryPath', lambda: '/path/to/apache'):
+        with mock.patch('OPSI.Util.Task.Rights.isOpenSUSELeap', lambda: slesSupport):
             directories = [d for d, _ in getDirectoriesAndExpectedRights('/')]
 
     assert u'/etc/opsi' in directories
