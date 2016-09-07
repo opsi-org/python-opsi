@@ -1,8 +1,8 @@
-#!/usr/bin/env python
-#-*- coding: utf-8 -*-
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -27,170 +27,157 @@ from __future__ import absolute_import
 
 import os
 import shutil
-import tempfile
-import unittest
 
 from OPSI.Types import forceHostId
-from OPSI.Util import getfqdn
+from OPSI.Util import getfqdn, randomString
 from OPSI.Util.Task.Certificate import (NoCertificateError,
     CertificateCreationError, UnreadableCertificateError, createCertificate,
     loadConfigurationFromCertificate, renewCertificate)
 
 from .helpers import workInTemporaryDirectory
 
-
-class CertificateCreationTestCase(unittest.TestCase):
-    def setUp(self):
-        self.certificate_path = tempfile.mkstemp()[1]
-
-        createCertificate(self.certificate_path)
-
-    def tearDown(self):
-        if os.path.exists(self.certificate_path):
-            os.remove(self.certificate_path)
-
-        del self.certificate_path
-
-    def testCertificateFileExists(self):
-        self.assertTrue(os.path.exists(self.certificate_path))
+import pytest
 
 
-class CertificateCreationWithConfigTestCase(unittest.TestCase):
-    def setUp(self):
-        self.certificate_path = tempfile.mkstemp()[1]
-
-        hostname = forceHostId(getfqdn())
-        self.nonDefaultConfig = {
-            'organizationalUnit': u'asdf',
-            'expires': 3,
-            'commonName': hostname,
-            'country': u'ZZ',  # Top
-            'state': u'HE',
-            'locality': u'Breidenbach',
-            'organization': u'Unittest',
-            'emailAddress': u'no@address.internet',
-            'serialNumber': 1010,
-        }
-
-    def tearDown(self):
-        if os.path.exists(self.certificate_path):
-            os.remove(self.certificate_path)
-
-        del self.certificate_path
-        del self.nonDefaultConfig
-
-    def testCertificateWasCreatedWithConfigValues(self):
-        createCertificate(self.certificate_path, config=self.nonDefaultConfig)
-        loadedConfig = loadConfigurationFromCertificate(self.certificate_path)
-
-        del self.nonDefaultConfig['expires']  # written as date to config
-        self.nonDefaultConfig['serialNumber'] += 1  # incremented
-
-        self.assertEquals(self.nonDefaultConfig, loadedConfig)
-
-    def testCertificateCreationWithoutValidExpireDateRaisesException(self):
-        self.assertRaises(CertificateCreationError, createCertificate, config={'expires': u'hallo welt'})
-
-    def testCertificateCreationWithForeignHostnameRaisesException(self):
-        self.nonDefaultConfig['commonName'] = u'this-should-not-be-hostname'
-        self.assertRaises(CertificateCreationError, createCertificate, config=self.nonDefaultConfig)
-
-    def testCertificateFileExists(self):
-        self.assertTrue(os.path.exists(self.certificate_path))
-
-    def testCertificateCreationWorksWithoutMail(self):
-        del self.nonDefaultConfig['emailAddress']
-        createCertificate(self.certificate_path, config=self.nonDefaultConfig)
-
-    def testCertificateCreationWorksWithoutOU(self):
-        del self.nonDefaultConfig['organizationalUnit']
-        createCertificate(self.certificate_path, config=self.nonDefaultConfig)
-
-    def testCertificateCreationWorksWithEmptyMail(self):
-        del self.nonDefaultConfig['emailAddress']
-        createCertificate(self.certificate_path, config=self.nonDefaultConfig)
-
-    def testCertificateCreationWorksWithEmptyOU(self):
-        del self.nonDefaultConfig['organizationalUnit']
-        createCertificate(self.certificate_path, config=self.nonDefaultConfig)
+@pytest.fixture
+def pathToTempFile():
+    with workInTemporaryDirectory() as tempDir:
+        yield os.path.join(tempDir, randomString(8))
 
 
-class LoadConfigurationTestCase(unittest.TestCase):
-    EXAMPLE_CERTIFICATE = os.path.join(os.path.dirname(__file__),
-        'testdata', 'util', 'task', 'certificate', 'example.pem')
+def testCertificateFileExistsAfterCreation(pathToTempFile):
+    assert not os.path.exists(pathToTempFile)
 
-    def testLoadingFailsIfNoFileFound(self):
-        filename = 'nofile'
-        self.assertFalse(os.path.exists(filename))
-        self.assertRaises(NoCertificateError, loadConfigurationFromCertificate, filename)
-
-    def testLoadingFromFile(self):
-        certparams = loadConfigurationFromCertificate(self.EXAMPLE_CERTIFICATE)
-
-        self.assertEqual('DE', certparams["country"])
-        self.assertEqual('RP', certparams["state"])
-        self.assertEqual('Mainz', certparams["locality"])
-        self.assertEqual('UIB', certparams["organization"])
-        self.assertEqual('test', certparams["organizationalUnit"])
-        self.assertEqual('niko-linux', certparams["commonName"])
-        self.assertEqual('info@uib.de', certparams["emailAddress"])
-        self.assertEqual(18428462229954092504, certparams["serialNumber"])
+    createCertificate(pathToTempFile)
+    assert os.path.exists(pathToTempFile)
 
 
-class LoadBrokenConfigurationTestCase(unittest.TestCase):
-    def testLoadingFromCorruptFileWithValidBlockSignsRaisesError(self):
-        corruptCertPath = os.path.join(os.path.dirname(__file__),
-        'testdata', 'util', 'task', 'certificate', 'corrupt.pem')
+@pytest.fixture
+def customConfig():
+    hostname = forceHostId(getfqdn())
+    yield {
+        'organizationalUnit': u'asdf',
+        'expires': 3,
+        'commonName': hostname,
+        'country': u'ZZ',  # Top
+        'state': u'HE',
+        'locality': u'Breidenbach',
+        'organization': u'Unittest',
+        'emailAddress': u'no@address.internet',
+        'serialNumber': 1010,
+    }
 
-        self.assertRaises(UnreadableCertificateError, loadConfigurationFromCertificate, corruptCertPath)
 
-    def testLoadingFromInvalidFileRaisesError(self):
-        corruptCertPath = os.path.join(os.path.dirname(__file__),
-        'testdata', 'util', 'task', 'certificate', 'invalid.pem')
+def testCertificateWasCreatedWithConfigValues(pathToTempFile, customConfig):
+    createCertificate(pathToTempFile, config=customConfig)
+    loadedConfig = loadConfigurationFromCertificate(pathToTempFile)
 
-        self.assertRaises(UnreadableCertificateError, loadConfigurationFromCertificate, corruptCertPath)
+    del customConfig['expires']  # written as date to config
+    customConfig['serialNumber'] += 1  # incremented
+
+    assert customConfig == loadedConfig
 
 
-class CertificateRenewalTestCase(unittest.TestCase):
-    EXAMPLE_CERTIFICATE = os.path.join(os.path.dirname(__file__),
-        'testdata', 'util', 'task', 'certificate', 'example.pem')
+def testCertificateCreationWithoutValidExpireDateRaisesException(customConfig):
+    customConfig['expires'] = u'hallo welt'
 
-    def testFailsOnMissingFile(self):
-        self.assertRaises(NoCertificateError, renewCertificate, 'nofile')
+    with pytest.raises(CertificateCreationError):
+        createCertificate(config=customConfig)
 
-    def testCertificateFileExistsAfterRecreation(self):
-        with workInTemporaryDirectory() as certificate_folder:
-            shutil.copy(self.EXAMPLE_CERTIFICATE, certificate_folder)
-            certificate_path = os.path.join(certificate_folder, 'example.pem')
-            self.assertTrue(os.path.exists(certificate_path))
 
-            old_config = loadConfigurationFromCertificate(certificate_path)
+def testCertificateCreationWithForeignHostnameRaisesException(customConfig):
+    customConfig['commonName'] = u'this-should-not-be-hostname'
 
-            configForCreating = old_config
-            configForCreating['commonName'] = forceHostId(getfqdn())
-            renewCertificate(path=certificate_path, config=configForCreating)
+    with pytest.raises(CertificateCreationError):
+        createCertificate(config=customConfig)
 
-            self.assertTrue(os.path.exists(certificate_path))
-            backup_file = '{file}.bak'.format(file=certificate_path)
-            self.assertTrue(os.path.exists(certificate_path),
-                            u"Missing backup-file!")
 
-            new_config = loadConfigurationFromCertificate(certificate_path)
+@pytest.mark.parametrize("value", ['organizationalUnit', 'emailAddress'])
+def testCertificateCreationWorksWithoutSomeValues(value, pathToTempFile, customConfig):
+    del customConfig[value]
+    createCertificate(pathToTempFile, config=customConfig)
 
-            keysToCompare = ('organizationalUnit', 'commonName', 'country',
-                            'state', 'locality', 'organization',
-                            'emailAddress')
+    assert os.path.exists(pathToTempFile)
 
-            for key in keysToCompare:
-                self.assertEquals(
-                    old_config[key], new_config[key],
-                    u"Difference at key '{0}' between old and new: {1} vs. {2}".format(
-                        key, old_config[key], new_config[key]
-                    )
+
+@pytest.mark.parametrize("value", [None, ''])
+@pytest.mark.parametrize("key", ['organizationalUnit', 'emailAddress'])
+def testCertificateCreationWorksWithoutSomeEmptyvalues(key, value, pathToTempFile, customConfig):
+    customConfig[key] = value
+
+    createCertificate(pathToTempFile, config=customConfig)
+
+    assert os.path.exists(pathToTempFile)
+
+
+def testLoadingCertificateConfigFromFile():
+    certPath = getAbsolutePathToTestCert('example.pem')
+    certparams = loadConfigurationFromCertificate(certPath)
+
+    assert 'DE' == certparams["country"]
+    assert 'RP' == certparams["state"]
+    assert 'Mainz' == certparams["locality"]
+    assert 'UIB' == certparams["organization"]
+    assert 'test' == certparams["organizationalUnit"]
+    assert 'niko-linux' == certparams["commonName"]
+    assert 'info@uib.de' == certparams["emailAddress"]
+    assert 18428462229954092504 == certparams["serialNumber"]
+
+
+def testLoadingConfigurationFailsIfNoFileFound():
+    filename = 'nofile'
+    assert not os.path.exists(filename)
+    with pytest.raises(NoCertificateError):
+        loadConfigurationFromCertificate(filename)
+
+
+@pytest.mark.parametrize("filename", ['invalid.pem', 'corrupt.pem'])
+def testLoadingConfigurationFromInvalidFileRaisesError(filename):
+    filePath = getAbsolutePathToTestCert(filename)
+
+    with pytest.raises(UnreadableCertificateError):
+        loadConfigurationFromCertificate(filePath)
+
+
+def getAbsolutePathToTestCert(filename):
+    return os.path.join(os.path.dirname(__file__),
+                        'testdata', 'util', 'task', 'certificate', filename)
+
+
+def testCertificateRenewalFailsOnMissingFile():
+    with pytest.raises(NoCertificateError):
+        renewCertificate('nofile')
+
+
+def testCertificateFileAfterRenewal():
+    exampleCertificate = getAbsolutePathToTestCert('example.pem')
+
+    with workInTemporaryDirectory() as certificate_folder:
+        shutil.copy(exampleCertificate, certificate_folder)
+        certificate_path = os.path.join(certificate_folder, 'example.pem')
+        assert os.path.exists(certificate_path)
+
+        old_config = loadConfigurationFromCertificate(certificate_path)
+
+        configForCreating = old_config
+        configForCreating['commonName'] = forceHostId(getfqdn())
+        renewCertificate(path=certificate_path, config=configForCreating)
+
+        assert os.path.exists(certificate_path)
+        backupFile = '{file}.bak'.format(file=certificate_path)
+        assert os.path.exists(backupFile), u"Missing backup-file!"
+
+        new_config = loadConfigurationFromCertificate(certificate_path)
+
+        keysToCompare = ('organizationalUnit', 'commonName', 'country',
+                         'state', 'locality', 'organization',
+                         'emailAddress')
+
+        for key in keysToCompare:
+            assert old_config[key] == new_config[key], (
+                u"Difference at key {0!r} between old and new: {1!r} vs. {2!r}".format(
+                    key, old_config[key], new_config[key]
                 )
+            )
 
-            self.assertNotEqual(old_config['serialNumber'], new_config['serialNumber'])
-
-
-if __name__ == '__main__':
-    unittest.main()
+        assert old_config['serialNumber'] != new_config['serialNumber']

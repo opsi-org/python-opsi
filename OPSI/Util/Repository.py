@@ -967,7 +967,7 @@ class HTTPRepository(Repository):
 					self._connectionPool.endConnection(conn)
 					if trynum > 2:
 						raise
-					logger.info(u"Error '%s' occured while downloading, retrying" % error)
+					logger.info(u"Error '%s' occurred while downloading, retrying" % error)
 					continue
 				response = HTTPResponse.from_httplib(httplib_response)
 				conn = None
@@ -1089,7 +1089,7 @@ class WebDAVRepository(HTTPRepository):
 					self._connectionPool.endConnection(conn)
 					if trynum > 2:
 						raise
-					logger.info(u"Error '%s' occured while uploading, retrying" % error)
+					logger.info(u"Error '%s' occurred while uploading, retrying" % error)
 					continue
 				response = HTTPResponse.from_httplib(httplib_response)
 				conn = None

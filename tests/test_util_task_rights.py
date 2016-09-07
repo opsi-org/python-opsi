@@ -44,7 +44,7 @@ import pytest
 OS_CHECK_FUNCTIONS = ['isRHEL', 'isCentOS', 'isSLES', 'isOpenSUSE', 'isUbuntu', 'isDebian', 'isUCS']
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def depotDirectory():
     'Returning a fixed address when checking for a depotUrl'
     depotUrl = u'file:///var/lib/opsi/depot'
@@ -52,14 +52,14 @@ def depotDirectory():
         yield depotUrl
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def emptyDepotDirectoryCache():
     'Making sure that no depotUrl is cached.'
     with mock.patch('OPSI.Util.Task.Rights._CACHED_DEPOT_DIRECTORY', None):
         yield
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def patchUserInfo():
     'Calls to find uid / gid will always succeed.'
     uid = 1234

@@ -26,6 +26,7 @@ Functionality to update an MySQL backend.
 """
 
 from collections import namedtuple
+from contextlib import contextmanager
 
 from OPSI.Backend.MySQL import MySQL, MySQLBackend
 from OPSI.Logger import Logger
@@ -482,19 +483,38 @@ def updateMySQLBackend(backendConfigFile=u'/etc/opsi/backends/mysql.conf',
 
 		return False
 
-	for tablename in tables.keys():
-		if tablename == 'PRODUCT_ON_DEPOT' and tableNeedsHostIDLengthFix(tablename, columnName="depotId"):
-			logger.notice(u"Fixing length of 'depotId' column on {table}".format(table=tablename))
-			mysql.execute(u"ALTER TABLE `PRODUCT_ON_DEPOT` MODIFY COLUMN `depotId` VARCHAR(255) NOT NULL;")
-		elif tablename.startswith(u'HARDWARE_CONFIG') and tableNeedsHostIDLengthFix(tablename):
-			logger.notice(u"Fixing length of 'hostId' column on {table}".format(table=tablename))
-			mysql.execute(u"ALTER TABLE `{table}` MODIFY COLUMN `hostId` VARCHAR(255) NOT NULL;".format(table=tablename))
+	with disableForeignKeyChecks(mysql):
+		for tablename in tables.keys():
+			if tablename == 'PRODUCT_ON_DEPOT' and tableNeedsHostIDLengthFix(tablename, columnName="depotId"):
+				logger.notice(u"Fixing length of 'depotId' column on {table}".format(table=tablename))
+				mysql.execute(u"ALTER TABLE `PRODUCT_ON_DEPOT` MODIFY COLUMN `depotId` VARCHAR(255) NOT NULL;")
+			elif tablename.startswith(u'HARDWARE_CONFIG') and tableNeedsHostIDLengthFix(tablename):
+				logger.notice(u"Fixing length of 'hostId' column on {table}".format(table=tablename))
+				mysql.execute(u"ALTER TABLE `{table}` MODIFY COLUMN `hostId` VARCHAR(255) NOT NULL;".format(table=tablename))
 
 	_fixLengthOfLicenseKeys(mysql)
 
 	mysqlBackend = MySQLBackend(**config)
 	mysqlBackend.backend_createBase()
 	mysqlBackend.backend_exit()
+
+
+@contextmanager
+def disableForeignKeyChecks(database):
+	"""
+	Disable checks for foreign keys in context and enable afterwards.
+
+	This will disable FOREIGN_KEY_CHECKS for the context and enable
+	them afterwards.
+	It will set this per session, not global.
+	"""
+	database.execute('SET FOREIGN_KEY_CHECKS=0;')
+	logger.debug("Disabled FOREIGN_KEY_CHECKS for session.")
+	try:
+		yield
+	finally:
+		database.execute('SET FOREIGN_KEY_CHECKS=1;')
+		logger.debug("Enabled FOREIGN_KEY_CHECKS for session.")
 
 
 def _fixLengthOfLicenseKeys(database):
