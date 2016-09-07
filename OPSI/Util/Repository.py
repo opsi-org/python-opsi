@@ -873,10 +873,7 @@ class HTTPRepository(Repository):
 		)
 
 	def _preProcessPath(self, path):
-		path = forceUnicode(path)
-		path = path.lstrip("/")
-		path = forceUnicode(path)
-		path = path.lstrip("/")
+		path = forceUnicode(path).lstrip("/")
 		path = (u"/".join([self._path, path])).lstrip("/")
 		if not self._url.endswith("/"):
 			path = u"/" + path
