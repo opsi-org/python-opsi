@@ -89,10 +89,7 @@ For building on a RPM-based system you can use the following command:
 
 ## Testing
 
-Tests can be found in the ``tests`` folder. The tests can be run with
-any testrunner. We currently use
-[nose](http://nose.readthedocs.org/en/latest/) as a testrunner.
-If you are unsure what testrunner to use we recommend using _nose_.
+Tests can be found in the `tests` folder. We use [pytest](http://pytest.org/) for our tests.
 
 ### Installing Requirements
 
