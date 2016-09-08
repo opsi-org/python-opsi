@@ -35,6 +35,7 @@ from __future__ import absolute_import
 import os
 import shutil
 
+from OPSI.Logger import Logger
 from OPSI.Types import forceFilename
 
 if os.name == 'posix':
@@ -43,6 +44,8 @@ elif os.name == 'nt':
 	from .Windows import *
 
 __version__ = '4.0.7.20'
+
+logger = Logger()
 
 
 class SystemHook(SystemSpecificHook):
