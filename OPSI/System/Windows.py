@@ -67,7 +67,31 @@ from datetime import datetime
 from OPSI.Logger import *
 from OPSI.Types import *
 
-__version__ = '4.0.6.30'
+__version__ = '4.0.7.20'
+__all__ = [
+	'HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE', 'hooks', 'TH32CS_SNAPPROCESS',
+	'MAX_INTERFACE_NAME_LEN', 'MAXLEN_IFDESCR', 'MAXLEN_PHYSADDR',
+	'MAX_INTERFACES', 'PROCESSENTRY32', 'MIB_IFROW', 'MIB_IFTABLE',
+	'SystemSpecificHook', 'addSystemHook', 'removeSystemHook',
+	'getArchitecture', 'getOpsiHotfixName', 'getHostname', 'getFQDN',
+	'getFileVersionInfo', 'getProgramFilesDir', 'getSystemDrive',
+	'getNetworkInterfaces', 'getDefaultNetworkInterfaceName',
+	'getSystemProxySetting', 'NetworkPerformanceCounter',
+	'NetworkPerformanceCounterWMI', 'NetworkPerformanceCounterPDH',
+	'copyACL', 'adjustPrivilege', 'getRegistryValue', 'setRegistryValue',
+	'createRegistryKey', 'getFreeDrive', 'getDiskSpaceUsage', 'mount', 'umount',
+	'getActiveConsoleSessionId', 'getActiveDesktopName', 'getActiveSessionIds',
+	'getActiveSessionId', 'getSessionInformation',
+	'getActiveSessionInformation', 'getUserSessionIds', 'logoffCurrentUser',
+	'lockWorkstation', 'reboot', 'shutdown', 'abortShutdown',
+	'createWindowStation', 'createDesktop', 'getDesktops', 'switchDesktop',
+	'addUserToDesktop', 'addUserToWindowStation', 'which', 'execute', 'getPids',
+	'getPid', 'getProcessName', 'getProcessHandle', 'getProcessWindowHandles',
+	'closeProcessWindows', 'terminateProcess', 'getUserToken',
+	'runCommandInSession', 'createUser', 'deleteUser', 'existsUser',
+	'getUserSidFromHandle', 'getUserSid', 'getAdminGroupName',
+	'setLocalSystemTime', 'Impersonate'
+]
 
 logger = Logger()
 hooks = []
@@ -1597,6 +1621,7 @@ def getUserToken(sessionId=None, duplicateFrom=u"winlogon.exe"):
 
 	return hUserTokenDup
 
+
 def runCommandInSession(command, sessionId=None, desktop=u"default", duplicateFrom=u"winlogon.exe", waitForProcessEnding=True, timeoutSeconds=0):
 	command = forceUnicode(command)
 	if sessionId is not None:
@@ -1754,6 +1779,7 @@ def getAdminGroupName():
 	logger.info(u"Admin group name is '%s'" % groupName)
 	return groupName
 
+
 def setLocalSystemTime(timestring):
 	"""
 	Method sets the local systemtime
@@ -1785,8 +1811,6 @@ def setLocalSystemTime(timestring):
 		win32api.SetSystemTime(dt.year, dt.month, 0, dt.day, dt.hour, dt.minute, dt.second, 0)
 	except Exception as e:
 		logger.error(u"Failed to set System Time: '%s'" % e)
-
-
 
 
 class Impersonate:
