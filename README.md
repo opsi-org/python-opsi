@@ -124,7 +124,7 @@ Besides this please follow
 [PEP 008](http://legacy.python.org/dev/peps/pep-0008/).
 
 
-#### Automated Quality Checks
+#### Semi-Automated Quality Checks
 
 There is a script that runs ``pylint``, ``flake8`` and all the tests.
 If you want to use it please install the requirements for it first:
@@ -136,6 +136,7 @@ After that you can execute the script:
 
 The script will not display any problems reported by `pylint` or
 `pep8` but instead creates the files `pylint.txt` and `pep8.txt`.
+You then can check the corresponding output.
 
 It will also run all tests and create a coverage from those tests as
 `coverage.xml`.
