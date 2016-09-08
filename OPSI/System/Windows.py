@@ -61,7 +61,7 @@ import win32security
 import win32service
 import win32ts
 import win32wnet
-from ctypes import Structure, c_char, c_uint, c_ulong, c_wchar
+from ctypes import *
 from datetime import datetime
 
 from OPSI.Logger import Logger
