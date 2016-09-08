@@ -1,6 +1,6 @@
 # python-opsi
 
-This is the Python library behind the client management-tool opsi.
+This is the Python library behind the client management-tool [opsi](http://www.opsi.org/).
 
 
 ## License
