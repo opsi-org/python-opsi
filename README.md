@@ -18,12 +18,10 @@ system please get the _getting started_ from opsi.org.
 ### Building the documentation
 
 First we create the API documentation from the Python files:
-
-  sphinx-apidoc --separate --output-dir=doc/src OPSI/
+``sphinx-apidoc --separate --output-dir=doc/src OPSI/``
 
 After that we can build the documentation:
-
-  sphinx-build -b html -d doc/_build/doctrees doc/src/ doc/html/
+``sphinx-build -b html -d doc/_build/doctrees doc/src/ doc/html/``
 
 
 After that you will find the documentation in the folder ``doc/html``.
@@ -34,33 +32,30 @@ Opsi relies on a mix of Python-libraries and system tools that need to
 be installed.
 
 The dependencies for your distribution can either be found in
-``debian/control`` or ``rpm/python-opsi.spec``.
+`debian/control` or `rpm/python-opsi.spec`.
 Please use your distributions recommended tool for the installation of
 these.
 
 Installing the depedencies on Ubuntu 12.04:
 
-  apt-get install lsb-release python-twisted-web python-twisted-conch \
-  python-magic python-crypto python-ldap python-newt \
-  python-pam python-openssl python-mysqldb python-sqlalchemy iproute \
-  duplicity python-m2crypto lshw python-dev python-ldaptor
+Installing the depedencies via apt-get:
+``apt-get install lsb-release python-twisted-web python-twisted-conch python-magic python-crypto python-ldap python-newt python-pam python-openssl python-mysqldb python-sqlalchemy iproute duplicity python-m2crypto lshw python-dev python-ldaptor``
 
 
 For installing further depedencies on your system we also recommend to
 install the header files for Python, librsync and to test the
 SQLite-backend we also need apsw.
 
-This can be done on Ubuntu 12.04 with:
-
-  apt-get install build-essential python-dev librsync-dev python-apsw
+This can be done with:
+``apt-get install build-essential python-dev librsync-dev python-apsw``
 
 
 ### Install via pip
 
-It is possible to use ``pip`` to install most of the requirements - some
+It is possible to use `pip` to install most of the requirements - some
 requirements are for other programs that can not be installed via pip.
 
-  pip install -r requirements.txt
+``pip install -r requirements.txt``
 
 
 ## Building
@@ -78,13 +73,13 @@ Installing the build-requirements on a Ubuntu 12.04:
 
 
 For building on a Debian-based system you can use the following command:
+``dpkg-buildpackage -us -uc``
 
   dpkg-buildpackage -us -uc
 
 
 For building on a RPM-based system you can use the following command:
-
-  rpmbuild -ba rpm/python-opsi.spec
+``rpmbuild -ba rpm/python-opsi.spec``
 
 
 ## Testing
@@ -127,13 +122,13 @@ After applying your code changes all tests must pass.
 
 Indentation should be done with hard tabs.
 
-Code should be written in ``camelCase``.
+Code should be written in `camelCase`.
 For backend methods that can be executed via a call to the webservice
 please use stick to the use of camelCase but seperate the object type
 and the method name with an underscore like this:
 
-* ``backend_info``
-* ``configState_getHashes``
+* `backend_info`
+* `configState_getHashes`
 
 
 Besides this please follow
@@ -144,19 +139,17 @@ Besides this please follow
 
 There is a script that runs ``pylint``, ``flake8`` and all the tests.
 If you want to use it please install the requirements for it first:
-
-  pip install -r requirements-qa.txt
+``pip install -r requirements-qa.txt``
 
 
 After that you can execute the script:
+``./run_qa.sh``
 
-  ./run_qa.sh
-
-The script will not display any problems reported by ``pylint`` or
-``pep8`` but instead creates the files ``pylint.txt`` and ``pep8.txt``.
+The script will not display any problems reported by `pylint` or
+`pep8` but instead creates the files `pylint.txt` and `pep8.txt`.
 
 It will also run all tests and create a coverage from those tests as
-``coverage.xml``.
+`coverage.xml`.
 
 ### Documentation
 
