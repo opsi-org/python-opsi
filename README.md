@@ -84,16 +84,13 @@ Tests can be found in the `tests` folder. We use [pytest](http://pytest.org/) fo
 
 Requirements for the tests can be found in ``requirements-qa.txt``.
 They can be installed with the following command:
-
-  pip install -r requirements-qa.txt
+``pip install -r requirements-qa.txt``
 
 
 ### Running
 
 Tests can then be run with:
-
-  ./run_tests.sh
-
+``./run_tests.sh``
 
 ## Contributing
 
