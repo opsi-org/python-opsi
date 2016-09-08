@@ -97,15 +97,13 @@ Tests can then be run with:
 
 ## Contributing
 
-Please feel free to contribute.
+Contributions are welcome.
 
-An easy way to contribute is to provide patches. You can either send
-them to _info@uib.de_ or post them in the [forums](https://forum.opsi.org).
+If you find any security problem please inform us (info@uib.de) before disclosing the security vulnerability in public.
 
 ### Translation
 
-Translations can be edited with any editor that can handle ``.po``-files.
-These files can be found in the folder ``gettext``.
+Translations are made via [Transifex](https://www.transifex.com/opsi-org/opsiorg/) and the corresponding resource is located [here](https://www.transifex.com/opsi-org/opsiorg/python-opsi/).
 
 ### Tests
 
