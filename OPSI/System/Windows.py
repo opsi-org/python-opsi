@@ -61,11 +61,12 @@ import win32security
 import win32service
 import win32ts
 import win32wnet
-from ctypes import *
+from ctypes import Structure, c_char, c_uint, c_ulong, c_wchar
 from datetime import datetime
 
-from OPSI.Logger import *
-from OPSI.Types import *
+from OPSI.Logger import Logger
+from OPSI.Types import (forceBool, forceDict, forceInt, forceUnicode,
+	forceUnicodeList, forceUnicodeLower, forceFilename, forceList)
 
 __version__ = '4.0.7.20'
 __all__ = [
