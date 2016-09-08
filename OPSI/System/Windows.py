@@ -70,13 +70,10 @@ from OPSI.Types import (forceBool, forceDict, forceInt, forceUnicode,
 
 __version__ = '4.0.7.20'
 __all__ = [
-	'HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE', 'hooks', 'TH32CS_SNAPPROCESS',
-	'MAX_INTERFACE_NAME_LEN', 'MAXLEN_IFDESCR', 'MAXLEN_PHYSADDR',
-	'MAX_INTERFACES', 'PROCESSENTRY32', 'MIB_IFROW', 'MIB_IFTABLE',
-	'SystemSpecificHook', 'addSystemHook', 'removeSystemHook',
-	'getArchitecture', 'getOpsiHotfixName', 'getHostname', 'getFQDN',
-	'getFileVersionInfo', 'getProgramFilesDir', 'getSystemDrive',
-	'getNetworkInterfaces', 'getDefaultNetworkInterfaceName',
+	'HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE', 'hooks', 'SystemSpecificHook',
+	'addSystemHook', 'removeSystemHook', 'getArchitecture', 'getOpsiHotfixName',
+	'getHostname', 'getFQDN', 'getFileVersionInfo', 'getProgramFilesDir',
+	'getSystemDrive', 'getNetworkInterfaces', 'getDefaultNetworkInterfaceName',
 	'getSystemProxySetting', 'NetworkPerformanceCounter',
 	'NetworkPerformanceCounterWMI', 'NetworkPerformanceCounterPDH',
 	'copyACL', 'adjustPrivilege', 'getRegistryValue', 'setRegistryValue',
