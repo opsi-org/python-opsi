@@ -375,7 +375,7 @@ class SQLBackend(ConfigDataBackend):
 			except KeyError:
 				pass  # not there - can be
 
-		for objectAttribute in hash:
+		for objectAttribute in hash.keys():
 			dbAttribute = self._objectAttributeToDatabaseAttribute(object.__class__, objectAttribute)
 			if objectAttribute != dbAttribute:
 				hash[dbAttribute] = hash[objectAttribute]
