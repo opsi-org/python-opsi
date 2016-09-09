@@ -27,13 +27,33 @@ from __future__ import print_function
 
 import time
 
-from OPSI.Types import BackendError, OpsiError, OpsiProductOrderingError
-
 import pytest
+
+from OPSI.Types import (BackendError, OpsiError, OpsiProductOrderingError,
+    OpsiBackupFileError, OpsiBackupFileNotFound, OpsiBackupBackendNotFound,
+    OpsiAuthenticationError, OpsiServiceVerificationError, OpsiBadRpcError,
+    OpsiRpcError, OpsiConnectionError, OpsiTimeoutError, OpsiVersionError,
+    BackendIOError, BackendConfigurationError, BackendReferentialIntegrityError,
+    BackendBadValueError, BackendMissingDataError, BackendAuthenticationError,
+    BackendPermissionDeniedError, BackendTemporaryError,
+    BackendUnaccomplishableError, BackendModuleDisabledError,
+    LicenseConfigurationError, LicenseMissingError, RepositoryError)
 
 
 @pytest.fixture(
-    params=[OpsiError, OpsiProductOrderingError, BackendError],
+    params=[
+        OpsiError, OpsiProductOrderingError, BackendError,
+        OpsiBackupFileError, OpsiBackupFileNotFound,
+        OpsiBackupBackendNotFound, OpsiAuthenticationError,
+        OpsiServiceVerificationError, OpsiBadRpcError, OpsiRpcError,
+        OpsiConnectionError, OpsiTimeoutError, OpsiVersionError,
+        BackendIOError, BackendConfigurationError,
+        BackendReferentialIntegrityError, BackendBadValueError,
+        BackendMissingDataError, BackendAuthenticationError,
+        BackendPermissionDeniedError, BackendTemporaryError,
+        BackendUnaccomplishableError, BackendModuleDisabledError,
+        LicenseConfigurationError, LicenseMissingError, RepositoryError
+    ],
 )
 def exceptionClass(request):
     yield request.param
