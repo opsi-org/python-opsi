@@ -72,6 +72,7 @@ def testExceptionHas__repr__(exception):
     r = repr(exception)
 
     assert r.startswith('<')
+    assert exception.__class__.__name__ in r
     assert r.endswith('>')
 
 
