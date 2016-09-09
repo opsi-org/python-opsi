@@ -75,6 +75,10 @@ except Exception:
 	pass
 
 
+class CommandNotFoundException(RuntimeError):
+	pass
+
+
 class SystemSpecificHook(object):
 	def __init__(self):
 		pass
@@ -701,9 +705,10 @@ def which(cmd):
 		path = w.readline().strip()
 		w.close()
 		if not path:
-			raise Exception(u"Command '%s' not found in PATH" % cmd)
+			raise CommandNotFoundException(u"Command {0!r} not found in PATH".format(cmd))
+
+		logger.debug(u"Command {0!r} found at: {1!r}", cmd, path)
 		WHICH_CACHE[cmd] = path
-		logger.debug(u"Command '%s' found at: '%s'" % (cmd, WHICH_CACHE[cmd]))
 
 	return WHICH_CACHE[cmd]
 
