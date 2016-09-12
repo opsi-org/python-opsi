@@ -1,8 +1,8 @@
-#!/usr/bin/env python
-#-*- coding: utf-8 -*-
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2015 uib GmbH <info@uib.de>
+# Copyright (C) 2015-2016  uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -23,70 +23,57 @@ Testing functionality for compression in an HTTP context.
 :license: GNU Affero General Public License version 3
 """
 
-import unittest
-
 from OPSI.Util.HTTP import deflateEncode, deflateDecode
 from OPSI.Util.HTTP import gzipEncode, gzipDecode
 
-
-class DeflateCompressionTestCase(unittest.TestCase):
-    def testDeflating(self):
-        text = "Das ist ein Test und so."
-
-        deflated = deflateEncode(text)
-        self.assertTrue(deflated)
-        self.assertNotEquals(text, deflated)
-
-        newText = deflateDecode(deflated)
-        self.assertEquals(text, newText)
-
-    def testDeflatingUnicode(self):
-        text = u"Mötörheäd!"
-
-        deflated = deflateEncode(text)
-        self.assertTrue(deflated)
-        self.assertNotEquals(text[0], deflated[0])
-
-        newText = deflateDecode(deflated)
-        self.assertEquals(text, newText)
-
-    def testHandingOverDifferentCompressionLevel(self):
-        text = "Das ist ein Test und so."
-
-        for level in range(1, 10):
-            deflated = deflateEncode(text, level)
-            self.assertTrue(deflated)
-            self.assertNotEquals(text[0], deflated[0])
+import pytest
 
 
-class GzipCompressionTestCase(unittest.TestCase):
-    def testEncodedObjectIsNotCleartext(self):
-        text = "Das ist ein Test und so."
-
-        gzipped = gzipEncode(text)
-        self.assertNotEquals(text, gzipped)
-
-        newText = gzipDecode(gzipped)
-        self.assertEquals(text, newText)
-
-    def testDecodingUnicode(self):
-        text = u"Mötörheäd!"
-
-        gzipped = gzipEncode(text)
-        self.assertTrue(gzipped)
-        self.assertNotEqual(text[0], gzipped[0])
-
-        newText = gzipDecode(gzipped)
-        self.assertEquals(text, newText)
-
-    def testWorkingWithDifferentCompressionLevel(self):
-        text = "Das ist ein Test und so."
-
-        for level in range(1, 10):
-            gzipped = deflateEncode(text, level)
-            self.assertTrue(gzipped)
-            self.assertNotEqual(text[0], gzipped[0])
+@pytest.fixture(params=[1, 2, 3, 4, 5, 6, 7, 8, 9])
+def compressionLevel(request):
+    yield request.param
 
 
-if __name__ == '__main__':
-    unittest.main()
+@pytest.fixture(
+    params=[u"Mötörheäd!", "Das ist ein Test und so."],
+    ids=["unicode", "str"]
+)
+def text(request):
+    yield request.param
+
+
+def testDeflate(text):
+    deflated = deflateEncode(text)
+    assert deflated
+    assert text != deflated
+
+    newText = deflateDecode(deflated)
+    assert text == newText
+
+
+def testDeflateWithDifferentCompressionLevels(text, compressionLevel):
+    deflated = deflateEncode(text, compressionLevel)
+
+    assert deflated
+    assert text != deflated
+
+    newText = deflateDecode(deflated)
+    assert text == newText
+
+
+def testGzip(text):
+    gzipped = gzipEncode(text)
+    assert gzipped
+    assert text[0] != gzipped[0]
+
+    newText = gzipDecode(gzipped)
+    assert text == newText
+
+
+def testGzipWithDifferentCompressionLevels(text, compressionLevel):
+    gzipped = gzipEncode(text, compressionLevel)
+    assert gzipped
+    assert text[0] != gzipped[0]
+
+    newText = gzipDecode(gzipped)
+    assert text == newText
