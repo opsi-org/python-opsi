@@ -1,3 +1,9 @@
+python-opsi (4.1.1-1) UNRELEASED; urgency=medium
+
+  * Removed parts of an old message bus implementation.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 12 Sep 2016 10:26:33 +0200
+
 python-opsi (4.0.7.19-1) testing; urgency=medium
 
   * OPSI.Util.Task.UpdateBackend.MySQL: temporary disable foreign key checks

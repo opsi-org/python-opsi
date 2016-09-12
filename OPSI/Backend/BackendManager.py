@@ -52,7 +52,6 @@ from OPSI.Object import *  # this is needed for dynamic extension loading
 from OPSI.Types import *  # this is needed for dynamic extension loading
 from OPSI.Util import objectToBeautifiedText, getfqdn
 from OPSI.Util.File.Opsi import BackendACLFile, BackendDispatchConfigFile, OpsiConfFile
-from OPSI.Util.MessageBus import MessageBusClient
 
 if os.name == 'posix':
 	import grp
@@ -88,54 +87,6 @@ try:
 except Exception as error:
 	logger.debug("Reading release failed: {0}".format(error))
 	DISTRELEASE = 'unknown'
-
-
-class MessageBusNotifier(BackendModificationListener):
-	def __init__(self, startReactor=True):
-		self._startReactor = startReactor
-		BackendModificationListener.__init__(self)
-		self._messageBusClient = MessageBusClient()
-		self._messageBusClient.start(self._startReactor)
-
-	def objectInserted(self, backend, obj):
-		self._messageBusClient.waitInitialized(5)
-		if not self._messageBusClient.isInitialized():
-			logger.error(u"Cannot notify: message bus not initialized")
-			return
-
-		try:
-			self._messageBusClient.notifyObjectCreated(obj)
-		except Exception as e:
-			logger.logException(e)
-
-	def objectUpdated(self, backend, obj):
-		self._messageBusClient.waitInitialized(5)
-		if not self._messageBusClient.isInitialized():
-			logger.error(u"Cannot notify: message bus not initialized")
-			return
-		try:
-			self._messageBusClient.notifyObjectUpdated(obj)
-		except Exception as e:
-			logger.logException(e)
-
-	def objectsDeleted(self, backend, objs):
-		self._messageBusClient.waitInitialized(5)
-		if not self._messageBusClient.isInitialized():
-			logger.error(u"Cannot notify: message bus not initialized")
-			return
-		for obj in objs:
-			try:
-				self._messageBusClient.notifyObjectDeleted(obj)
-			except Exception as e:
-				logger.logException(e)
-
-	def backendModified(self, backend):
-		pass
-
-	def stop(self):
-		logger.info(u"Stopping message bus client")
-		self._messageBusClient.stop(stopReactor=self._startReactor)
-		self._messageBusClient.join(5)
 
 
 class BackendManager(ExtendedBackend):
@@ -186,7 +137,6 @@ class BackendManager(ExtendedBackend):
 		self._options = {}
 		self._overwrite = True
 		self._context = self
-		self._messageBusNotifier = None
 
 		Backend.__init__(self, **kwargs)
 
@@ -200,7 +150,6 @@ class BackendManager(ExtendedBackend):
 		depotBackend = False
 		hostControlBackend = False
 		hostControlSafeBackend = False
-		messageBusNotifier = False
 		startReactor = True
 		loadBackend = None
 
@@ -247,8 +196,6 @@ class BackendManager(ExtendedBackend):
 				extend = forceBool(value)
 			elif option in ('acl', 'aclfile') and value:
 				accessControl = True
-			elif option == 'messagebusnotifier' and value:
-				messageBusNotifier = True
 			elif option == 'startreactor' and value is False:
 				startReactor = False
 
@@ -264,12 +211,6 @@ class BackendManager(ExtendedBackend):
 			logger.info(u"* BackendManager is creating BackendDispatcher")
 			self._backend = BackendDispatcher(context=self, **kwargs)
 			# self._backend is now a BackendDispatcher which is a ConfigDataBackend
-
-		if messageBusNotifier:
-			logger.info(u"* BackendManager is creating ModificationTrackingBackend and MessageBusNotifier")
-			self._backend = ModificationTrackingBackend(self._backend)
-			self._messageBusNotifier = MessageBusNotifier(startReactor)
-			self._backend.addBackendChangeListener(self._messageBusNotifier)
 
 		if extend or depotBackend:
 			logger.info(u"* BackendManager is creating ExtendedConfigDataBackend")
@@ -335,11 +276,6 @@ class BackendManager(ExtendedBackend):
 		config['config']['name'] = name
 		exec(u'from %s import %sBackend' % (config['module'], config['module']))
 		return eval(u'%sBackend(**config["config"])' % config['module'])
-
-	def backend_exit(self):
-		ExtendedBackend.backend_exit(self)
-		if self._messageBusNotifier:
-			self._messageBusNotifier.stop()
 
 
 class BackendDispatcher(Backend):
