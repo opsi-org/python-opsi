@@ -42,38 +42,33 @@ def text(request):
     yield request.param
 
 
-def testDeflate(text):
-    deflated = deflateEncode(text)
-    assert deflated
-    assert text != deflated
+@pytest.fixture(params=[
+    (gzipEncode, gzipDecode),
+    (deflateEncode, deflateDecode)
+],
+    ids=["gzip", "deflate"]
+)
+def compressionFunctions(request):
+    yield request.param
 
-    newText = deflateDecode(deflated)
+
+def testCompressionAndDecompression(compressionFunctions, text):
+    encode, decode = compressionFunctions
+
+    compressed = encode(text)
+    assert compressed
+    assert text != compressed
+
+    newText = decode(compressed)
     assert text == newText
 
 
-def testDeflateWithDifferentCompressionLevels(text, compressionLevel):
-    deflated = deflateEncode(text, compressionLevel)
+def testCompressionWithDifferentLevels(compressionFunctions, text, compressionLevel):
+    encode, decode = compressionFunctions
+    compressed = encode(text, compressionLevel)
 
-    assert deflated
-    assert text != deflated
+    assert compressed
+    assert text != compressed
 
-    newText = deflateDecode(deflated)
-    assert text == newText
-
-
-def testGzip(text):
-    gzipped = gzipEncode(text)
-    assert gzipped
-    assert text[0] != gzipped[0]
-
-    newText = gzipDecode(gzipped)
-    assert text == newText
-
-
-def testGzipWithDifferentCompressionLevels(text, compressionLevel):
-    gzipped = gzipEncode(text, compressionLevel)
-    assert gzipped
-    assert text[0] != gzipped[0]
-
-    newText = gzipDecode(gzipped)
+    newText = decode(compressed)
     assert text == newText
