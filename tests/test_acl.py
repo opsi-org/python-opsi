@@ -43,22 +43,22 @@ import pytest
 
 
 def testParsingBackendACLFile():
+    expectedACL = [
+        [u'host_.*', [
+            {'denyAttributes': [], 'type': u'opsi_depotserver', 'ids': [u'depot1.test.invalid', u'depot2.test.invalid'], 'allowAttributes': []},
+            {'denyAttributes': [], 'type': u'opsi_client', 'ids': [u'self'], 'allowAttributes': [u'attr1', u'attr2']},
+            {'denyAttributes': [], 'type': u'sys_user', 'ids': [u'some user', u'some other user'], 'allowAttributes': []},
+            {'denyAttributes': [], 'type': u'sys_group', 'ids': [u'a_group', u'group2'], 'allowAttributes': []}
+            ]
+        ]
+    ]
+
     with workInTemporaryDirectory() as tempDir:
         aclFile = os.path.join(tempDir, 'acl.conf')
         with open(aclFile, 'w') as exampleConfig:
             exampleConfig.write('''
 host_.*: opsi_depotserver(depot1.test.invalid, depot2.test.invalid); opsi_client(self,  attributes (attr1, attr2)); sys_user(some user, some other user); sys_group(a_group, group2)
 ''')
-
-        expectedACL = [
-            [u'host_.*', [
-                {'denyAttributes': [], 'type': u'opsi_depotserver', 'ids': [u'depot1.test.invalid', u'depot2.test.invalid'], 'allowAttributes': []},
-                {'denyAttributes': [], 'type': u'opsi_client', 'ids': [u'self'], 'allowAttributes': [u'attr1', u'attr2']},
-                {'denyAttributes': [], 'type': u'sys_user', 'ids': [u'some user', u'some other user'], 'allowAttributes': []},
-                {'denyAttributes': [], 'type': u'sys_group', 'ids': [u'a_group', u'group2'], 'allowAttributes': []}
-                ]
-            ]
-        ]
 
         assert expectedACL == BackendACLFile(aclFile).parse()
 
@@ -314,7 +314,7 @@ def testDenyingAccessToSpecifiedAttributes(extendedConfigDataBackend):
     for host in hosts:
         for attribute, value in host.toHash().items():
             if attribute in denyAttributes:
-                assert None == value
+                assert value is None
 
 
 def testGettingAccessAndOnlyAllowingSomeAttributes(extendedConfigDataBackend):
@@ -343,7 +343,7 @@ def testGettingAccessAndOnlyAllowingSomeAttributes(extendedConfigDataBackend):
     for host in hosts:
         for attribute, value in host.toHash().items():
             if attribute not in allowAttributes:
-                assert None == value
+                assert value is None
 
 
 def testGettingAccessButDenyingAttributesOnSelf(extendedConfigDataBackend):
