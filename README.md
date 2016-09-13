@@ -119,6 +119,8 @@ and the method name with an underscore like this:
 * `backend_info`
 * `configState_getHashes`
 
+For more general information about webservice methods please refer to the [manual](http://download.uib.de/opsi4.0/doc/html/en/opsi-manual/opsi-manual.html#opsi-manual-api-datastructure-opsi).
+
 
 Besides this please follow
 [PEP 008](http://legacy.python.org/dev/peps/pep-0008/).
