@@ -1,32 +1,29 @@
 # -*- coding: utf-8 -*-
+
+# This module is part of the desktop management solution opsi
+# (open pc server integration) http://www.opsi.org
+
+# Copyright (C) 2006-2016 uib GmbH <info@uib.de>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-opsi python library - Util - Task
+Utilites to backup configuration of an opsi system.
 
-This module is part of the desktop management solution opsi
-(open pc server integration) http://www.opsi.org
-
-Copyright (C) 2006, 2007, 2008, 2013 uib GmbH
-
-http://www.uib.de/
-
-All rights reserved.
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License version 2 as
-published by the Free Software Foundation.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-
-@copyright:	uib GmbH <info@uib.de>
-@author: Christian Kampka <c.kampka@uib.de>
-@license: GNU General Public License version 2
+:copyright: uib GmbH <info@uib.de>
+:author: Christian Kampka <c.kampka@uib.de>
+:author: Niko Wenselowski <n.wenselowski@uib.de>
+:license: GNU Affero General Public License version 3
 """
 
 import bz2
@@ -37,6 +34,7 @@ import os
 import shutil
 import sys
 import termios
+from contextlib import closing
 
 from OPSI.Types import (forceList, forceUnicode, OpsiBackupFileError,
 	OpsiBackupBackendNotFound, OpsiError)
@@ -51,7 +49,6 @@ try:
 	_ = translation.ugettext
 except Exception as error:
 	logger.error(u"Locale not found: {0}".format(error))
-
 
 	def _(string):
 		""" Function for translating text. """
@@ -131,13 +128,6 @@ class OpsiBackup(object):
 					if backend in ("dhcp", "all", "auto"):
 						logger.debug(u"Backing up dhcp configuration.")
 						archive.backupDHCPBackend(auto=("auto" in backends))
-					#TODO: implement ldap/univention backup
-					#if backend in ("ldap", "all"):
-					#	logger.debug(u"Backing up ldap backend.")
-					#	archive.backupLdapBackend()
-					#if backend in ("ldap", "all"):
-					#	logger.debug(u"Backing up univention backend.")
-					#	archive.backupUniventionBackend()
 
 			if not no_configuration:
 				logger.debug(u"Backing up opsi configuration.")
@@ -174,16 +164,15 @@ class OpsiBackup(object):
 		result = 0
 
 		for fileName in files:
-			archive = self._getArchive(mode="r", file=fileName)
+			with closing(self._getArchive(mode="r", file=fileName)) as archive:
+				logger.info(u"Verifying archive %s" % fileName)
+				try:
+					archive.verify()
+					logger.notice(u"Archive is OK.")
+				except OpsiBackupFileError as error:
+					logger.error(error)
+					result = 1
 
-			logger.info(u"Verifying archive %s" % fileName)
-			try:
-				archive.verify()
-				logger.notice(u"Archive is OK.")
-			except OpsiBackupFileError as error:
-				logger.error(error)
-				result = 1
-			archive.close()
 		return result
 
 	def _verifySysconfig(self, archive):
@@ -264,9 +253,7 @@ class OpsiBackup(object):
 
 		auto = "auto" in backends
 
-		archive = self._getArchive(file=file[0], mode="r")
-
-		try:
+		with closing(self._getArchive(file=file[0], mode="r")) as archive:
 			self._verify(archive.name)
 
 			functions = []
@@ -311,5 +298,3 @@ class OpsiBackup(object):
 					raise error
 
 				logger.notice(u"Restoration complete")
-		finally:
-			archive.close()
