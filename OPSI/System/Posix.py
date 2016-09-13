@@ -55,7 +55,7 @@ from OPSI.Types import OpsiVersionError
 from OPSI.Object import *
 from OPSI.Util import objectToBeautifiedText, removeUnit
 
-__version__ = '4.0.7.16'
+__version__ = '4.0.7.20'
 
 logger = Logger()
 
@@ -72,6 +72,10 @@ try:
 	if "64bit" in platform.architecture():
 		x86_64 = True
 except Exception:
+	pass
+
+
+class CommandNotFoundException(RuntimeError):
 	pass
 
 
@@ -701,9 +705,10 @@ def which(cmd):
 		path = w.readline().strip()
 		w.close()
 		if not path:
-			raise Exception(u"Command '%s' not found in PATH" % cmd)
+			raise CommandNotFoundException(u"Command {0!r} not found in PATH".format(cmd))
+
+		logger.debug(u"Command {0!r} found at: {1!r}", cmd, path)
 		WHICH_CACHE[cmd] = path
-		logger.debug(u"Command '%s' found at: '%s'" % (cmd, WHICH_CACHE[cmd]))
 
 	return WHICH_CACHE[cmd]
 
