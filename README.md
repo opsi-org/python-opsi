@@ -63,7 +63,7 @@ requirements are for other programs that can not be installed via pip.
 Packages can be build for distributions that use either Debian or RPM
 packages.
 Please install the necessary build requirements from either `debian/control` or
-`rpm/python-opsi.spec` before you try to build an package.
+`rpm/python-opsi.spec` before you build a package.
 
 ### On Debian-based systems
 
