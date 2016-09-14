@@ -42,7 +42,6 @@ import time
 
 # Win32 imports
 import _winreg
-import msvcrt
 import ntsecuritycon
 import pywintypes
 import win32api
@@ -54,7 +53,6 @@ import win32net
 import win32netcon
 import win32pdh
 import win32pdhutil
-import win32pipe
 import win32process
 import win32profile
 import win32security
