@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2006-2008, 2015 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2008, 2015-2016 uib GmbH <info@uib.de>
 # All rights reserved.
 
 # This program is free software: you can redistribute it and/or modify
@@ -37,7 +37,7 @@ from OPSI.Logger import Logger
 from OPSI.Types import (forceBool, forceInt, forceIntList, forceIpAddress,
 	forceList, forceUnicode, forceUnicodeList)
 
-__version__ = '4.0.6.29'
+__version__ = '4.0.7.21'
 
 logger = Logger()
 
@@ -68,7 +68,7 @@ class Subject(object):
 		self._title = forceUnicode(title)
 
 	def attachObserver(self, observer):
-		if not observer in self._observers:
+		if observer not in self._observers:
 			self._observers.append(observer)
 
 	def detachObserver(self, observer):
@@ -76,7 +76,12 @@ class Subject(object):
 			self._observers.remove(observer)
 
 	def serializable(self):
-		return { "id": self.getId(), "type": self.getType(), "title": self.getTitle(), "class": self.getClass() }
+		return {
+			"id": self.getId(),
+			"type": self.getType(),
+			"title": self.getTitle(),
+			"class": self.getClass()
+		}
 
 	def __unicode__(self):
 		return u'<%s type: %s, id: %s>' % (self.__class__.__name__, self._type, self._id)
@@ -92,19 +97,25 @@ class MessageSubject(Subject):
 	def __init__(self, id, type=u'', title=u'', **args):
 		Subject.__init__(self, id, type, title, **args)
 		self.reset()
-		if args.has_key('message'):
-			self._message  = forceUnicode(args['message'])
-		if args.has_key('severity'):
+		try:
+			self._message = forceUnicode(args['message'])
+		except KeyError:
+			pass  # no matching key
+
+		try:
 			self._severity = forceInt(args['severity'])
-		logger.debug(u"MessageSubject '%s' created" % self._id)
+		except KeyError:
+			pass  # no matching key
+
+		logger.debug(u"MessageSubject {0!r} created", self._id)
 
 	def reset(self):
 		Subject.reset(self)
-		self._message  = u''
+		self._message = u''
 		self._severity = 0
 
-	def setMessage(self, message, severity = 0):
-		self._message  = forceUnicode(message)
+	def setMessage(self, message, severity=0):
+		self._message = forceUnicode(message)
 		self._severity = forceInt(severity)
 		self._notifyMessageChanged()
 
@@ -205,26 +216,54 @@ class ProgressSubject(MessageSubject):
 		self.reset()
 		self._fireAlways = True
 		self._endChangable = True
-		if args.has_key('end'):
+		try:
 			self._end = forceInt(args['end'])
-			if (self._end < 0): self._end = 0
-		if args.has_key('percent'):
+			if self._end < 0:
+				self._end = 0
+		except KeyError:
+			pass
+
+		try:
 			self._percent = args['percent']
-		if args.has_key('state'):
+		except KeyError:
+			pass
+
+		try:
 			self._state = args['state']
-		if args.has_key('timeStarted'):
+		except KeyError:
+			pass
+
+		try:
 			self._timeStarted = args['timeStarted']
-		if args.has_key('timeSpend'):
+		except KeyError:
+			pass
+
+		try:
 			self._timeSpend = args['timeSpend']
-		if args.has_key('timeLeft'):
+		except KeyError:
+			pass
+
+		try:
 			self._timeLeft = args['timeLeft']
-		if args.has_key('timeFired'):
+		except KeyError:
+			pass
+
+		try:
 			self._timeFired = args['timeFired']
-		if args.has_key('speed'):
+		except KeyError:
+			pass
+
+		try:
 			self._speed = args['speed']
-		if args.has_key('fireAlways'):
+		except KeyError:
+			pass
+
+		try:
 			self._fireAlways = forceBool(args['fireAlways'])
-		logger.debug(u"ProgressSubject '%s' created" % self._id)
+		except KeyError:
+			pass
+
+		logger.debug(u"ProgressSubject {0!r} created", self._id)
 
 	def reset(self):
 		MessageSubject.reset(self)
@@ -246,8 +285,9 @@ class ProgressSubject(MessageSubject):
 	def setEnd(self, end):
 		if not self._endChangable:
 			return
+
 		self._end = forceInt(end)
-		if (self._end < 0):
+		if self._end < 0:
 			self._end = 0
 		self.setState(self._state)
 		self._notifyEndChanged()
@@ -278,7 +318,6 @@ class ProgressSubject(MessageSubject):
 					self._speed = 0
 				elif (self._speed > 0):
 					self._timeLeft = int(((float(self._timeLeft)*2.0) + (float(self._end)-float(self._state))/float(self._speed))/3.0)
-					#self._timeLeft = int((float(self._end)-float(self._state))/float(self._speed))
 
 			self._timeFired = now
 			self._notifyProgressChanged()
@@ -314,12 +353,12 @@ class ProgressSubject(MessageSubject):
 
 	def serializable(self):
 		s = MessageSubject.serializable(self)
-		s['end']          = self.getEnd()
-		s['state']        = self.getState()
-		s['percent']      = self.getPercent()
-		s['timeSpend']    = self.getTimeSpend()
-		s['timeLeft']     = self.getTimeLeft()
-		s['speed']        = self.getSpeed()
+		s['end'] = self.getEnd()
+		s['state'] = self.getState()
+		s['percent'] = self.getPercent()
+		s['timeSpend'] = self.getTimeSpend()
+		s['timeLeft'] = self.getTimeLeft()
+		s['speed'] = self.getSpeed()
 		return s
 
 
@@ -366,7 +405,7 @@ class SubjectsObserver(ChoiceObserver, ProgressObserver):
 		self.subjectsChanged(self._subjects)
 
 	def addSubject(self, subject):
-		if not subject in self._subjects:
+		if subject not in self._subjects:
 			self._subjects.append(subject)
 			subject.attachObserver(self)
 		self.subjectsChanged(self._subjects)
@@ -392,7 +431,7 @@ class MessageSubjectProxy(ProgressSubject, ProgressObserver, ChoiceSubject, Choi
 		ProgressObserver.__init__(self)
 
 	def messageChanged(self, subject, message):
-		self.setMessage(message, severity = subject.getSeverity())
+		self.setMessage(message, severity=subject.getSeverity())
 
 	def selectedIndexesChanged(self, subject, selectedIndexes):
 		self.setSelectedIndexes(selectedIndexes)
@@ -432,9 +471,9 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 	protocol = NotificationServerProtocol
 
 	def __init__(self):
-		self.clients   = []
+		self.clients = []
 		self._subjects = []
-		self._rpcs     = {}
+		self._rpcs = {}
 
 	def connectionCount(self):
 		return len(self.clients)
@@ -482,21 +521,21 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 			logger.error(u"Failed to execute rpc: %s" % e)
 
 	def messageChanged(self, subject, message):
-		if not subject in self.getSubjects():
+		if subject not in self.getSubjects():
 			logger.info(u"Unknown subject %s passed to messageChanged, automatically adding subject" % subject)
 			self.addSubject(subject)
 		logger.debug(u"messageChanged: subject id '%s', message '%s'" % (subject.getId(), message))
-		self.notify( name = u"messageChanged", params = [subject.serializable(), message] )
+		self.notify(name=u"messageChanged", params=[subject.serializable(), message])
 
 	def selectedIndexesChanged(self, subject, selectedIndexes):
-		if not subject in self.getSubjects():
+		if subject not in self.getSubjects():
 			logger.info(u"Unknown subject %s passed to selectedIndexesChanged, automatically adding subject" % subject)
 			self.addSubject(subject)
 		logger.debug(u"selectedIndexesChanged: subject id '%s', selectedIndexes %s" % (subject.getId(), selectedIndexes))
-		self.notify( name = u"selectedIndexesChanged", params = [ subject.serializable(), selectedIndexes ] )
+		self.notify(name=u"selectedIndexesChanged", params=[subject.serializable(), selectedIndexes])
 
 	def choicesChanged(self, subject, choices):
-		if not subject in self.getSubjects():
+		if subject not in self.getSubjects():
 			logger.info(u"Unknown subject %s passed to choicesChanged, automatically adding subject" % subject)
 			self.addSubject(subject)
 		logger.debug(u"choicesChanged: subject id '%s', choices %s" % (subject.getId(), choices))
@@ -596,7 +635,7 @@ class NotificationServer(threading.Thread, SubjectsObserver):
 			if (self._address == '0.0.0.0'):
 				self._server = reactor.listenTCP(self._port, self._factory)
 			else:
-				self._server = reactor.listenTCP(self._port, self._factory, interface = self._address)
+				self._server = reactor.listenTCP(self._port, self._factory, interface=self._address)
 
 			self._listening = True
 			if not reactor.running:
@@ -617,7 +656,6 @@ class NotificationServer(threading.Thread, SubjectsObserver):
 			timeout -= 0.1
 
 		if self._server:
-			#self._server.loseConnection()
 			result = self._server.stopListening()
 			if isinstance(result, defer.Deferred):
 				result.addCallback(self._stopListeningCompleted)
@@ -666,7 +704,7 @@ class NotificationClientFactory(ClientFactory):
 		self._client = client
 
 	def isReady(self):
-		return (self._client != None)
+		return self._client is not None
 
 	def sendLine(self, line):
 		logger.debug(u"sending line '%s'" % line)
@@ -690,8 +728,8 @@ class NotificationClientFactory(ClientFactory):
 					if not params or not params[0] or not self._notificationClient.getId() or self._notificationClient.getId() in forceList(params[0]):
 						self._notificationClient.endConnectionRequested()
 				else:
-					logger.debug( "self._observer.%s(*params)" % method )
-					eval( "self._observer.%s(*params)" % method )
+					logger.debug("self._observer.%s(*params)" % method)
+					eval("self._observer.%s(*params)" % method)
 		except Exception as e:
 			logger.error(e)
 
@@ -709,12 +747,12 @@ class NotificationClientFactory(ClientFactory):
 		if (timeout >= self._timeout):
 			raise Exception(u"execute timed out after %d seconds" % self._timeout)
 
-		rpc = {'id': None, "method": method, "params": params }
+		rpc = {'id': None, "method": method, "params": params}
 		self.sendLine(json.dumps(rpc))
 
 
 class NotificationClient(threading.Thread):
-	def __init__(self, address, port, observer, clientId = None):
+	def __init__(self, address, port, observer, clientId=None):
 		threading.Thread.__init__(self)
 		self._address = address
 		self._port = port
@@ -728,7 +766,7 @@ class NotificationClient(threading.Thread):
 		return self._id
 
 	def addEndConnectionRequestedCallback(self, endConnectionRequestedCallback):
-		if not endConnectionRequestedCallback in self._endConnectionRequestedCallbacks:
+		if endConnectionRequestedCallback not in self._endConnectionRequestedCallbacks:
 			self._endConnectionRequestedCallbacks.append(endConnectionRequestedCallback)
 
 	def removeEndConnectionRequestedCallback(self, endConnectionRequestedCallback):
@@ -762,7 +800,7 @@ class NotificationClient(threading.Thread):
 			reactor.stop()
 
 	def setSelectedIndexes(self, subjectId, selectedIndexes):
-		self._factory.execute(method = 'setSelectedIndexes', params = [ subjectId, selectedIndexes ])
+		self._factory.execute(method='setSelectedIndexes', params=[subjectId, selectedIndexes])
 
 	def selectChoice(self, subjectId):
-		self._factory.execute(method = 'selectChoice', params = [ subjectId ])
+		self._factory.execute(method='selectChoice', params=[subjectId])
