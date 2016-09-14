@@ -55,7 +55,23 @@ from OPSI.Types import OpsiVersionError
 from OPSI.Object import *
 from OPSI.Util import objectToBeautifiedText, removeUnit
 
-__version__ = '4.0.7.20'
+__version__ = '4.1.1'
+__all__ = [
+	'Distribution', 'Harddisk', 'NetworkPerformanceCounter', 'SysInfo',
+	'SystemSpecificHook', 'addSystemHook', 'auditHardware', 'daemonize',
+	'execute', 'getActiveConsoleSessionId', 'getActiveSessionId',
+	'getActiveSessionIds', 'getBlockDeviceBusType',
+	'getBlockDeviceContollerInfo', 'getDHCPDRestartCommand', 'getDHCPResult',
+	'getDHCPServiceName', 'getDefaultNetworkInterfaceName', 'getDiskSpaceUsage',
+	'getEthernetDevices', 'getFQDN', 'getHarddisks', 'getHostname',
+	'getKernelParams', 'getNetworkDeviceConfig', 'getNetworkInterfaces',
+	'getSambaServiceName', 'getServiceNames', 'getSystemProxySetting', 'halt',
+	'hardwareExtendedInventory', 'hardwareInventory', 'hooks', 'ifconfig',
+	'isCentOS', 'isDebian', 'isOpenSUSE', 'isOpenSUSELeap', 'isRHEL', 'isSLES',
+	'isUCS', 'isUbuntu', 'isXenialSfdiskVersion', 'locateDHCPDConfig',
+	'locateDHCPDInit', 'mount', 'reboot', 'removeSystemHook',
+	'runCommandInSession', 'setLocalSystemTime', 'shutdown', 'umount', 'which'
+]
 
 logger = Logger()
 
@@ -646,6 +662,7 @@ def ifconfig(device, address, netmask=None):
 	if netmask:
 		cmd += u' netmask %s' % forceNetmask(netmask)
 	execute(cmd)
+
 
 def getSystemProxySetting():
 	#TODO Have to be implemented for posix machines
