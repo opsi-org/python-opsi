@@ -1,3 +1,20 @@
+python-opsi (4.1.1-1) UNRELEASED; urgency=medium
+
+  * OPSI.Logger, OPSI.Object, OPSI.System.Posix, OPSI.System.Windows,
+    OPSI.Util now use __all__.
+  * JSONRPCBackend: Avoid using "async" as name for a variable because
+    this will become a keyword with Python 3.5.
+  * ConfigurationData.initializeConfigs now creates entries for
+    opsiclientd.event_user_login.active and
+    opsiclientd.event_user_login.action_processor_command by default.
+  * Removed parts of an old message bus implementation.
+  * Replacing the deprecated module 'new' with 'types'.
+  * SQLBackend: Filter creation is done through generators.
+  * OPSI.Util.objectToBeautifiedText now uses the json module instead of
+    a custom implementation.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 16 Sep 2016 12:25:22 +0200
+
 python-opsi (4.0.7.20-1) stable; urgency=medium
 
   * Various internal refactorings.
