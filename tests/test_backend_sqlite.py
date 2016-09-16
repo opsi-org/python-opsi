@@ -1,8 +1,8 @@
-#!/usr/bin/env python
-#-*- coding: utf-8 -*-
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -25,31 +25,26 @@ Testing the opsi SQLite backend.
 
 from __future__ import absolute_import
 
-from OPSI.Backend.SQLite import SQLiteBackend
-
-from .Backends.SQLite import SQLiteBackendMixin, requiresApsw
-from .BackendTestMixins import (ConfigStateTestsMixin, LicensesTestMixin,
-    AuditTestsMixin, ConfigTestsMixin, ProductsTestMixin,
-    ExtendedBackendTestsMixin, BackendTestsMixin)
+from .Backends.SQLite import SQLiteBackendMixin
 from .helpers import unittest, requiresModulesFile
 
-
-class BackendSQLiteTestCase(unittest.TestCase):
-    @requiresApsw
-    def testInitialisationDoesNotFail(self):
-        backend = SQLiteBackend()
-        backend.backend_createBase()
+import pytest
 
 
-class SQLiteBackendTestCase(unittest.TestCase, SQLiteBackendMixin,
-    BackendTestsMixin, ProductsTestMixin, AuditTestsMixin, LicensesTestMixin,
-    ExtendedBackendTestsMixin, ConfigTestsMixin, ConfigStateTestsMixin):
+def testInitialisationOfSQLiteBackendWithoutParametersDoesNotFail():
+    sqlModule = pytest.importorskip("OPSI.Backend.SQLite")
+    SQLiteBackend = sqlModule.SQLiteBackend
+
+    backend = SQLiteBackend()
+    backend.backend_createBase()
+
+
+class SQLiteBackendTestCase(unittest.TestCase, SQLiteBackendMixin):
     """Testing the SQLite backend.
 
     This currently requires a valid modules file with enabled MySQL backend."""
 
     @requiresModulesFile
-    @requiresApsw
     def setUp(self):
         self.backend = None
         self.setUpBackend()
@@ -60,7 +55,3 @@ class SQLiteBackendTestCase(unittest.TestCase, SQLiteBackendMixin,
 
     def testWeHaveABackend(self):
         self.assertNotEqual(None, self.backend)
-
-
-if __name__ == '__main__':
-    unittest.main()

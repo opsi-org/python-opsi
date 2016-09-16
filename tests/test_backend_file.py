@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -25,24 +25,14 @@ Testing the opsi file backend.
 
 from __future__ import absolute_import
 
-import unittest
+from .helpers import unittest
 
 from OPSI.Types import BackendConfigurationError
 
 from .Backends.File import FileBackendMixin
-from .BackendTestMixins import (ConfigStateTestsMixin, ProductPropertiesTestMixin,
-    ProductDependenciesTestMixin, AuditTestsMixin,
-    ConfigTestsMixin, ProductsTestMixin, ProductsOnClientTestsMixin,
-    ProductsOnDepotTestsMixin, ProductPropertyStateTestsMixin, GroupTestsMixin,
-    ObjectToGroupTestsMixin, ExtendedBackendTestsMixin, BackendTestsMixin)
 
 
-class FileBackendTestCase(unittest.TestCase, FileBackendMixin,
-    ConfigStateTestsMixin, ProductPropertiesTestMixin, ConfigTestsMixin,
-    ProductDependenciesTestMixin, AuditTestsMixin, ProductsTestMixin,
-    ProductsOnClientTestsMixin, ProductsOnDepotTestsMixin,
-    ProductPropertyStateTestsMixin, GroupTestsMixin, ObjectToGroupTestsMixin,
-    ExtendedBackendTestsMixin, BackendTestsMixin):
+class FileBackendTestCase(unittest.TestCase, FileBackendMixin):
     """
     Testing the file backend.
 

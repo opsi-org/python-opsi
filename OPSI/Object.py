@@ -4,7 +4,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) - http://www.opsi.org
 
-# Copyright (C) 2006-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -48,7 +48,24 @@ from OPSI.Types import (forceActionProgress, forceActionRequest,
 	forceUnicodeList, forceUnicodeLower, forceUnsignedInt, forceUrl)
 from OPSI.Util import fromJson, toJson, generateOpsiHostKey, timestamp
 
-__version__ = '4.0.6.35'
+__version__ = '4.1.1'
+__all__ = [
+    'AuditHardware', 'AuditHardwareOnHost', 'AuditSoftware',
+    'AuditSoftwareOnClient', 'AuditSoftwareToLicensePool', 'BaseObject',
+    'BoolConfig', 'BoolProductProperty', 'BootConfiguration',
+    'ConcurrentSoftwareLicense', 'Config', 'ConfigState', 'Entity', 'Group',
+    'Host', 'HostGroup', 'LicenseContract', 'LicenseOnClient', 'LicensePool',
+    'LocalbootProduct', 'Logger', 'NetbootProduct', 'OEMSoftwareLicense',
+    'Object', 'ObjectToGroup', 'OpsiClient', 'OpsiConfigserver',
+    'OpsiDepotserver', 'Product', 'ProductDependency', 'ProductGroup',
+    'ProductOnClient', 'ProductOnDepot', 'ProductProperty',
+    'ProductPropertyState', 'Relationship', 'RetailSoftwareLicense',
+    'SoftwareLicense', 'SoftwareLicenseToLicensePool', 'UnicodeConfig',
+    'UnicodeProductProperty', 'VolumeSoftwareLicense',
+    'decodeIdent', 'getBackendMethodPrefix', 'getForeignIdAttributes',
+    'getIdentAttributes', 'getPossibleClassAttributes',
+    'mandatoryConstructorArgs', 'objectsDiffer'
+]
 
 logger = Logger()
 _MANDATORY_CONSTRUCTOR_ARGS_CACHE = {}
@@ -59,14 +76,14 @@ def mandatoryConstructorArgs(Class):
 	try:
 		return _MANDATORY_CONSTRUCTOR_ARGS_CACHE[cacheKey]
 	except KeyError:
-		(args, _, _, defaults) = inspect.getargspec(Class.__init__)
-		if not defaults:
-			defaults = []
-		last = -1 * len(defaults)
-		if last == 0:
-			last = len(args)
-		mandatory = args[1:][:last]
-		logger.debug2(u"mandatoryConstructorArgs for %s: %s" % (Class.__class__, mandatory))
+		args, _, _, defaults = inspect.getargspec(Class.__init__)
+		try:
+			last = len(defaults) * -1
+			mandatory = args[1:][:last]
+		except TypeError:  # Happens if defaults is None
+			mandatory = args[1:]
+
+		logger.debug2(u"mandatoryConstructorArgs for {0!r}: {1}", cacheKey, mandatory)
 		_MANDATORY_CONSTRUCTOR_ARGS_CACHE[cacheKey] = mandatory
 		return mandatory
 
@@ -310,7 +327,19 @@ class Entity(BaseObject):
 			if varname in hash:
 				kwargs[varname] = hash[varname]
 
-		return Class(**kwargs)
+		try:
+			return Class(**kwargs)
+		except TypeError as error:
+			if '__init__() takes at least' in forceUnicode(error):
+				try:
+					args = mandatoryConstructorArgs(Class)
+					missingArgs = [arg for arg in args if arg not in kwargs]
+					if missingArgs:
+						raise TypeError("Missing required argument(s): {0}".format(', '.join(repr(a) for a in missingArgs)))
+				except NameError:
+					pass
+
+			raise error
 
 	def clone(self, identOnly=False):
 		hash = {}
@@ -358,7 +387,19 @@ class Relationship(BaseObject):
 			if varname in hash:
 				kwargs[varname] = hash[varname]
 
-		return Class(**kwargs)
+		try:
+			return Class(**kwargs)
+		except TypeError as error:
+			if '__init__() takes at least' in forceUnicode(error):
+				try:
+					args = mandatoryConstructorArgs(Class)
+					missingArgs = [arg for arg in args if arg not in kwargs]
+					if missingArgs:
+						raise TypeError("Missing required argument(s): {0}".format(', '.join(repr(a) for a in missingArgs)))
+				except NameError:
+					pass
+
+			raise error
 
 	def clone(self, identOnly=False):
 		hash = {}
@@ -3040,14 +3081,29 @@ class AuditHardware(Entity):
 
 		self.__dict__.update(kwargs)
 
-		if hasattr(self, 'vendorId') and self.vendorId:
-			self.vendorId = forceHardwareVendorId(self.vendorId)
-		if hasattr(self, 'subsystemVendorId') and self.subsystemVendorId:
-			self.subsystemVendorId = forceHardwareVendorId(self.subsystemVendorId)
-		if hasattr(self, 'deviceId') and self.deviceId:
-			self.deviceId = forceHardwareDeviceId(self.deviceId)
-		if hasattr(self, 'subsystemDeviceId') and self.subsystemDeviceId:
-			self.subsystemDeviceId = forceHardwareDeviceId(self.subsystemDeviceId)
+		try:
+			if self.vendorId:
+				self.vendorId = forceHardwareVendorId(self.vendorId)
+		except AttributeError:
+			pass
+
+		try:
+			if self.subsystemVendorId:
+				self.subsystemVendorId = forceHardwareVendorId(self.subsystemVendorId)
+		except AttributeError:
+			pass
+
+		try:
+			if self.deviceId:
+				self.deviceId = forceHardwareDeviceId(self.deviceId)
+		except AttributeError:
+			pass
+
+		try:
+			if self.subsystemDeviceId:
+				self.subsystemDeviceId = forceHardwareDeviceId(self.subsystemDeviceId)
+		except AttributeError:
+			pass
 
 	@staticmethod
 	def setHardwareConfig(hardwareConfig):
@@ -3149,9 +3205,10 @@ class AuditHardwareOnHost(Relationship):
 
 		for attribute in self.hardwareAttributes.get(hardwareClass, {}):
 			if attribute not in kwargs:
-				if attribute.lower() in kwargs:
-					kwargs[attribute] = kwargs[attribute.lower()]
-					del kwargs[attribute.lower()]
+				lowerAttribute = attribute.lower()
+				if lowerAttribute in kwargs:
+					kwargs[attribute] = kwargs[lowerAttribute]
+					del kwargs[lowerAttribute]
 				else:
 					kwargs[attribute] = None
 
@@ -3201,14 +3258,29 @@ class AuditHardwareOnHost(Relationship):
 		if state is not None:
 			self.setState(state)
 
-		if hasattr(self, 'vendorId') and self.vendorId:
-			self.vendorId = forceHardwareVendorId(self.vendorId)
-		if hasattr(self, 'subsystemVendorId') and self.subsystemVendorId:
-			self.subsystemVendorId = forceHardwareVendorId(self.subsystemVendorId)
-		if hasattr(self, 'deviceId') and self.deviceId:
-			self.deviceId = forceHardwareDeviceId(self.deviceId)
-		if hasattr(self, 'subsystemDeviceId') and self.subsystemDeviceId:
-			self.subsystemDeviceId = forceHardwareDeviceId(self.subsystemDeviceId)
+		try:
+			if self.vendorId:
+				self.vendorId = forceHardwareVendorId(self.vendorId)
+		except AttributeError:
+			pass
+
+		try:
+			if self.subsystemVendorId:
+				self.subsystemVendorId = forceHardwareVendorId(self.subsystemVendorId)
+		except AttributeError:
+			pass
+
+		try:
+			if self.deviceId:
+				self.deviceId = forceHardwareDeviceId(self.deviceId)
+		except AttributeError:
+			pass
+
+		try:
+			if self.subsystemDeviceId:
+				self.subsystemDeviceId = forceHardwareDeviceId(self.subsystemDeviceId)
+		except AttributeError:
+			pass
 
 	@staticmethod
 	def setHardwareConfig(hardwareConfig):

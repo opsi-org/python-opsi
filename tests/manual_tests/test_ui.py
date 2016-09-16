@@ -68,8 +68,8 @@ if __name__ == "__main__":
     uiTest.createMessageBox(title="TEST").show()
     time.sleep(1)
 
-    uiTest.showError(text=u'Test error', title=u'An error occured', okLabel=u'Read', width=-1, height=-1, seconds=2)
-    uiTest.showError(text=u'Test error äöü', title=u'An €rror occured', okLabel=u'ÖK', width=30, height=10)
+    uiTest.showError(text=u'Test error', title=u'An error occurred', okLabel=u'Read', width=-1, height=-1, seconds=2)
+    uiTest.showError(text=u'Test error äöü', title=u'An €rror occurred', okLabel=u'ÖK', width=30, height=10)
     uiTest.showMessage(text=u'A message', title=u'Message', width=5, height=5, seconds=2)
     uiTest.showMessage(text=u'Ä$§€€üüüüüüüüßßßßßßßßßß', title=u'Titel ä', okLabel=u'ÖK', width=-1, height=-1, seconds=0)
 
@@ -143,7 +143,7 @@ if __name__ == "__main__":
     answer = uiTest.yesno(text=u'Täxt', title=u'Yäs Or Nö', okLabel=u'ÖK', cancelLabel=u'Cäncel', width=-1, height=-1)
     uiTest.showMessage(text=u'Answer was: %s' % answer, seconds=2)
 
-    uiTest.showError(text=_(u'Nothing selected'), title=_(u'An error occured'), okLabel=_(u'OK'), width=-1, height=-1, seconds=0)
+    uiTest.showError(text=_(u'Nothing selected'), title=_(u'An error occurred'), okLabel=_(u'OK'), width=-1, height=-1, seconds=0)
     uiTest.showMessage(text=u'Answer was: %s' % _(u'Nothing selected'), seconds=2)
 
     time.sleep(2)

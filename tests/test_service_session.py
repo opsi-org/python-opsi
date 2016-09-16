@@ -1,8 +1,8 @@
-#!/usr/bin/env python
-#-*- coding: utf-8 -*-
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2015 uib GmbH <info@uib.de>
+# Copyright (C) 2015-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -25,73 +25,71 @@ Testing session and sessionhandler.
 
 import time
 import unittest
-from contextlib import contextmanager
 
 from OPSI.Service.Session import Session, SessionHandler
 
+import pytest
 
-@contextmanager
-def getTestSession(sessionHandler=None, **kwargs):
-	session = Session(sessionHandler or FakeSessionHandler(), **kwargs)
+
+@pytest.fixture
+def session():
+	testSession = Session(FakeSessionHandler())
 	try:
-		yield session
+		yield testSession
 	finally:
 		# This may leave a thread running afterwards
-		if session and session.sessionTimer:
-			session.sessionTimer.cancel()
-			session.sessionTimer.join(1)
+		# if testSession and testSession.sessionTimer:
+		try:
+			testSession.sessionTimer.cancel()
+			testSession.sessionTimer.join(1)
+		except AttributeError:
+			pass
 
-		session.sessionTimer = None
+		testSession.sessionTimer = None
 
 
-class FakeSessionHandler:
+class FakeSessionHandler(object):
 	def sessionExpired(self, session):
 		pass
 
 
-class SessionTestCase(unittest.TestCase):
-	def testUsageCount(self):
-		with getTestSession() as session:
-			self.assertEquals(0, session.usageCount)
+def testSessionUsageCount(session):
+	assert 0 == session.usageCount
 
-			session.increaseUsageCount()
-			self.assertEquals(1, session.usageCount)
+	session.increaseUsageCount()
+	assert 1 == session.usageCount
 
-			session.decreaseUsageCount()
-			self.assertEquals(0, session.usageCount)
+	session.decreaseUsageCount()
+	assert 0 == session.usageCount
 
-	def testUsageCountDoesNothingOnExpiredSession(self):
-		with getTestSession() as session:
-			self.assertEquals(0, session.usageCount)
 
-			session.delete()
+def testUsageCountDoesNothingOnExpiredSession(session):
+	assert 0 == session.usageCount
 
-			session.increaseUsageCount()
-			self.assertEquals(0, session.usageCount)
+	session.delete()
 
-			session.decreaseUsageCount()
-			self.assertEquals(0, session.usageCount)
+	session.increaseUsageCount()
+	assert 0 == session.usageCount
 
-	def testMarkingForDeletion(self):
-		with getTestSession() as session:
-			self.assertFalse(session.getMarkedForDeletion(),
-				"New session should not be marked for deletion."
-			)
+	session.decreaseUsageCount()
+	assert 0 == session.usageCount
 
-			self.assertFalse(session.getMarkedForDeletion())
 
-			session.setMarkedForDeletion()
+def testMarkingSessionForDeletion(session):
+	assert not session.getMarkedForDeletion(), "New session should not be marked for deletion."
 
-			self.assertTrue(session.getMarkedForDeletion())
+	session.setMarkedForDeletion()
 
-	def testValidity(self):
-		with getTestSession() as session:
-			self.assertTrue(session.getValidity())
+	assert session.getMarkedForDeletion()
 
-	def testDeletedSessionsAreInvalid(self):
-		with getTestSession() as session:
-			session.delete()
-			self.assertFalse(session.getValidity())
+
+def testSessionValidity(session):
+	assert session.getValidity()
+
+
+def testDeletedSessionsAreMadeInvalid(session):
+	session.delete()
+	assert not session.getValidity()
 
 
 class SessionHandlerTestCase(unittest.TestCase):

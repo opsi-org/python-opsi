@@ -44,6 +44,12 @@ provides helpers for this task.
 	Disabled :py:func:`removeDuplicatesFromDirectories` to avoid
 	problems with wrong rights set on /var/lib/opsi/depot
 
+
+.. versionchanged:: 4.0.7.9
+
+	Many internal refactorings to make adding new directories easier.
+
+
 :copyright:  uib GmbH <info@uib.de>
 :author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
@@ -53,22 +59,26 @@ import grp
 import os
 import pwd
 import re
+from collections import namedtuple
 
 from OPSI.Backend.Backend import OPSI_GLOBAL_CONF
-from OPSI.Logger import Logger
+from OPSI.Logger import LOG_DEBUG, Logger
 from OPSI.Types import forceHostId
 from OPSI.Util import findFiles, getfqdn
 from OPSI.Util.File.Opsi import OpsiConfFile
-from OPSI.System.Posix import isSLES
+from OPSI.System.Posix import (isCentOS, isDebian, isOpenSUSE, isRHEL, isSLES,
+	isUbuntu, isUCS, isOpenSUSELeap)
 
-__version__ = '4.0.6.40'
+__version__ = '4.0.7.16'
 
 LOGGER = Logger()
 
-_DEPOT_DIRECTORY = None
 _OPSICONFD_USER = u'opsiconfd'
 _ADMIN_GROUP = u'opsiadmin'
 _CLIENT_USER = u'pcpatch'
+_POSSIBLE_DEPOT_DIRECTORIES = (u'/var/lib/opsi/depot/', u'/opt/pcbin/install/')
+_CACHED_DEPOT_DIRECTORY = None
+_HAS_ROOT_RIGHTS = os.geteuid() == 0
 
 try:
 	_FILE_ADMIN_GROUP = OpsiConfFile().getOpsiFileAdminGroup()
@@ -82,6 +92,8 @@ KNOWN_EXECUTABLES = frozenset((
 	u'windows-image-detector.py',
 ))
 
+Rights = namedtuple("Rights", ["uid", "gid", "files", "directories", "correctLinks"])
+
 
 # TODO: use OPSI.System.Posix.Sysconfig for a more standardized approach
 def getLocalFQDN():
@@ -89,195 +101,221 @@ def getLocalFQDN():
 		fqdn = getfqdn(conf=OPSI_GLOBAL_CONF)
 		return forceHostId(fqdn)
 	except Exception as error:
-		raise Exception(
+		raise RuntimeError(
 			u"Failed to get fully qualified domain name: {0}".format(error)
 		)
 
 
 def setRights(path=u'/'):
-	LOGGER.debug(u"Setting rights on {0!r}".format(path))
-	LOGGER.debug("euid is {0}".format(os.geteuid()))
+	LOGGER.debug(u"Setting rights on {0!r}", path)
+	LOGGER.debug("euid is {0}", os.geteuid())
 
-	basedir = os.path.abspath(path)
-	if not os.path.isdir(basedir):
-		basedir = os.path.dirname(basedir)
+	dirAndRights = getDirectoriesAndExpectedRights(path)
 
-	(directories, depotDir) = getDirectoriesForProcessing(path)
-
-	clientUserUid = pwd.getpwnam(_CLIENT_USER)[2]
-	opsiconfdUid = pwd.getpwnam(_OPSICONFD_USER)[2]
-	adminGroupGid = grp.getgrnam(_ADMIN_GROUP)[2]
-	fileAdminGroupGid = grp.getgrnam(_FILE_ADMIN_GROUP)[2]
-
-	# TODO: try to re-introduce removeDuplicatesFromDirectories for speedups
-	for dirname in directories:
-		if not dirname.startswith(basedir) and not basedir.startswith(dirname):
-			LOGGER.debug(u"Skipping {0!r}".format(dirname))
-			continue
-		uid = opsiconfdUid
-		gid = fileAdminGroupGid
-		fileMode = 0o660
-		directoryMode = 0o770
-		correctLinks = False
-
-		if dirname in (u'/var/lib/tftpboot/opsi', u'/tftpboot/linux'):
-			fileMode = 0o664
-			directoryMode = 0o775
-		elif dirname in (u'/var/log/opsi', u'/etc/opsi'):
-			gid = adminGroupGid
-			correctLinks = True
-		elif dirname in (u'/home/opsiproducts', '/var/lib/opsi/workbench'):
-			uid = -1
-			directoryMode = 0o2770
-
+	for startPath, rights in filterDirsAndRights(path, dirAndRights):
 		if os.path.isfile(path):
-			chown(path, uid, gid)
+			chown(path, rights.uid, rights.gid)
+			setRightsOnFile(os.path.abspath(path), rights.files)
+			continue
 
-			LOGGER.debug(u"Setting rights on file {0!r}".format(path))
-			if path.startswith(u'/var/lib/opsi/depot/'):
-				LOGGER.debug("Assuming file in product folder...")
-				os.chmod(path, (os.stat(path)[0] | 0o660) & 0o770)
-			else:
-				LOGGER.debug("Assuming general file...")
-				os.chmod(path, fileMode)
+		LOGGER.notice(u"Setting rights on directory {0!r}", startPath)
+		LOGGER.debug2(u"Rights configuration: {0}", rights)
+		chown(startPath, rights.uid, rights.gid)
+		os.chmod(startPath, rights.directories)
+		for filepath in findFiles(startPath, prefix=startPath, returnLinks=rights.correctLinks, excludeFile=re.compile("(.swp|~)$")):
+			chown(filepath, rights.uid, rights.gid)
+			if os.path.isdir(filepath):
+				LOGGER.debug(u"Setting rights on directory {0!r}", filepath)
+				os.chmod(filepath, rights.directories)
+			elif os.path.isfile(filepath):
+				setRightsOnFile(filepath, rights.files)
+
+		if startPath.startswith(u'/var/lib/opsi') and _HAS_ROOT_RIGHTS:
+			clientUserUid = pwd.getpwnam(_CLIENT_USER)[2]
+			fileAdminGroupGid = grp.getgrnam(_FILE_ADMIN_GROUP)[2]
+
+			os.chmod(u'/var/lib/opsi', 0o750)
+			chown(u'/var/lib/opsi', clientUserUid, fileAdminGroupGid)
+			setRightsOnSSHDirectory(clientUserUid, fileAdminGroupGid)
+
+
+def filterDirsAndRights(path, iterable):
+	'''
+	Iterates over `iterable` and the yields the appropriate directories.
+
+	This function also avoids that directorires get returned more than once.
+	'''
+	basedir = getAbsoluteDir(path)
+
+	processedDirectories = set()
+	for dirname, right in iterable:
+		if not dirname.startswith(basedir) and not basedir.startswith(dirname):
+			LOGGER.debug(u"Skipping {0!r}", dirname)
 			continue
 
 		startPath = dirname
 		if basedir.startswith(dirname):
 			startPath = basedir
 
-		if dirname == depotDir:
-			directoryMode = 0o2770
+		if startPath in processedDirectories:
+			LOGGER.debug(u"Already proceesed {0}, skipping.", startPath)
+			continue
 
-		LOGGER.notice(u"Setting rights on directory {0!r}".format(startPath))
-		LOGGER.debug2(u"Current setting: startPath={path}, uid={uid}, gid={gid}".format(path=startPath, uid=uid, gid=gid))
-		chown(startPath, uid, gid)
-		os.chmod(startPath, directoryMode)
-		for filepath in findFiles(startPath, prefix=startPath, returnLinks=correctLinks, excludeFile=re.compile("(.swp|~)$")):
-			chown(filepath, uid, gid)
-			if os.path.isdir(filepath):
-				LOGGER.debug(u"Setting rights on directory {0!r}".format(filepath))
-				os.chmod(filepath, directoryMode)
-			elif os.path.isfile(filepath):
-				LOGGER.debug(u"Setting rights on file {0!r}".format(filepath))
-				if filepath.startswith((u'/var/lib/opsi/depot/', u'/opt/pcbin/install/')):
-					if os.path.basename(filepath) in KNOWN_EXECUTABLES:
-						LOGGER.debug(u"Setting rights on special file {0!r}".format(filepath))
-						os.chmod(filepath, 0o770)
-					else:
-						LOGGER.debug(u"Setting rights on file {0!r}".format(filepath))
-						os.chmod(filepath, (os.stat(filepath)[0] | 0o660) & 0o770)
-				else:
-					LOGGER.debug(u"Setting rights {rights!r} on file {file!r}".format(file=filepath, rights=fileMode))
-					os.chmod(filepath, fileMode)
+		yield startPath, right
 
-		if startPath.startswith(u'/var/lib/opsi') and os.geteuid() == 0:
-			os.chmod(u'/var/lib/opsi', 0o750)
-			chown(u'/var/lib/opsi', clientUserUid, fileAdminGroupGid)
-			setRightsOnSSHDirectory(clientUserUid, fileAdminGroupGid)
+		processedDirectories.add(startPath)
 
 
-def getDirectoriesForProcessing(path):
+def getAbsoluteDir(path):
+	'''
+	Returns to absolute path to the directory.
+
+	If `path` is no directory the absolute path to the dir containing
+	`path` will be used.
+	'''
 	basedir = os.path.abspath(path)
 	if not os.path.isdir(basedir):
 		basedir = os.path.dirname(basedir)
 
-	depotDir = ''
-	dirnames = getDirectoriesManagedByOpsi()
-	if not basedir.startswith(('/etc', '/tftpboot')):
-		global _DEPOT_DIRECTORY
-		if _DEPOT_DIRECTORY is not None:
-			depotDir = _DEPOT_DIRECTORY
-		else:
-			try:
-				depotUrl = getDepotUrl()
-				depotDir = depotUrl[7:]
-				_DEPOT_DIRECTORY = depotDir
-			except Exception as error:
-				LOGGER.error(error)
+	return basedir
 
-		if os.path.exists(depotDir):
-			LOGGER.info(u"Local depot directory {0!r} found".format(depotDir))
-			dirnames.append(depotDir)
+
+def getDirectoriesAndExpectedRights(path):
+	opsiconfdUid = pwd.getpwnam(_OPSICONFD_USER)[2]
+	adminGroupGid = grp.getgrnam(_ADMIN_GROUP)[2]
+	fileAdminGroupGid = grp.getgrnam(_FILE_ADMIN_GROUP)[2]
+
+	yield u'/etc/opsi', Rights(opsiconfdUid, adminGroupGid, 0o660, 0o770, True)
+	yield u'/var/log/opsi', Rights(opsiconfdUid, adminGroupGid, 0o660, 0o770, True)
+	yield u'/var/lib/opsi', Rights(opsiconfdUid, fileAdminGroupGid, 0o660, 0o770, False)
+	yield getWorkbenchDirectory(), Rights(-1, fileAdminGroupGid, 0o660, 0o2770, False)
+	yield getPxeDirectory(), Rights(opsiconfdUid, fileAdminGroupGid, 0o664, 0o775, False)
+
+	depotDir = getDepotDirectory(path)
+	if depotDir:
+		yield depotDir, Rights(opsiconfdUid, fileAdminGroupGid, 0o660, 0o2770, False)
+
+	apacheDir = getWebserverRepositoryPath()
+	if apacheDir:
+		try:
+			username, groupname = getWebserverUsernameAndGroupname()
+			webUid = pwd.getpwnam(username)[2]
+			webGid = grp.getgrnam(groupname)[2]
+
+			yield apacheDir, Rights(webUid, webGid, 0o664, 0o775, False)
+		except (KeyError, TypeError, RuntimeError) as kerr:
+			LOGGER.debug("Lookup of user / group failed: {0!r}", kerr)
+
+
+def getWorkbenchDirectory():
+	if isSLES() or isOpenSUSELeap():
+		return u'/var/lib/opsi/workbench'
+	else:
+		return u'/home/opsiproducts'
+
+
+def getPxeDirectory():
+	if isSLES() or isOpenSUSELeap():
+		return u'/var/lib/tftpboot/opsi'
+	else:
+		return u'/tftpboot/linux'
+
+
+def getDepotDirectory(path):
+	global _CACHED_DEPOT_DIRECTORY
+	if _CACHED_DEPOT_DIRECTORY is not None:
+		return _CACHED_DEPOT_DIRECTORY
+
+	try:
+		depotUrl = getDepotUrl()
+		if not depotUrl.startswith('file:///'):
+			raise ValueError(u"Bad repository local url {0!r}".format(depotUrl))
+
+		depotDir = depotUrl[7:]
+		_CACHED_DEPOT_DIRECTORY = depotDir
+	except Exception as error:
+		LOGGER.logException(error, logLevel=LOG_DEBUG)
+		LOGGER.warning(u"Could not get path for depot: {0}", error)
+		depotDir = ''
+
+	basedir = getAbsoluteDir(path)
 
 	if basedir.startswith('/opt/pcbin/install'):
-		found = False
-		for dirname in dirnames:
-			if dirname.startswith('/opt/pcbin/install'):
-				found = True
-				break
+		depotDir = '/opt/pcbin/install'
 
-		if not found:
-			dirnames.append('/opt/pcbin/install')
-
-	return (dirnames, depotDir)
-
-
-def getDirectoriesManagedByOpsi():
-	if isSLES():
-		return [u'/etc/opsi', u'/var/lib/opsi', u'/var/lib/opsi/workbench',
-				u'/var/lib/tftpboot/opsi', u'/var/log/opsi']
-	else:
-		return [u'/etc/opsi', u'/home/opsiproducts', u'/tftpboot/linux',
-				u'/var/lib/opsi', u'/var/log/opsi']
+	LOGGER.info(u"Depot directory {0!r} found", depotDir)
+	return depotDir
 
 
 def getDepotUrl():
 	from OPSI.Backend.BackendManager import BackendManager
-	backend = BackendManager(
-		dispatchConfigFile=u'/etc/opsi/backendManager/dispatch.conf',
-		backendConfigDir=u'/etc/opsi/backends',
-		extensionConfigDir=u'/etc/opsi/backendManager/extend.d'
-	)
+
+	backend = BackendManager()
 	depot = backend.host_getObjects(type='OpsiDepotserver', id=getLocalFQDN())
 	backend.backend_exit()
 
-	if depot:
+	try:
 		depot = depot[0]
-		depotUrl = depot.getDepotLocalUrl()
-		if not depotUrl.startswith('file:///'):
-			raise Exception(u"Bad repository local url {0!r}".format(depotUrl))
+	except IndexError:
+		raise ValueError("No depots found!")
 
-		return depotUrl
-
-	raise Exception("Could not get depot URL.")
+	return depot.getDepotLocalUrl()
 
 
-def removeDuplicatesFromDirectories(directories):
+def getWebserverRepositoryPath():
 	"""
-	Cleans the iterable `directories` from duplicates and also makes
-	sure that no subfolders are included to avoid duplicate processing.
+	Returns the path to the directory where packages for Linux netboot \
+installations may be.
 
-	:returntype: set
+	On an unsuported distribution or without the relevant folder
+	existing `None` will be returned.
 	"""
-	folders = set()
+	if any(func() for func in (isDebian, isCentOS, isRHEL, isUbuntu)):
+		path = u'/var/www/html/opsi'
+	elif isUCS():
+		path = u'/var/www/opsi'
+	elif isOpenSUSE() or isSLES():
+		path = u'/srv/www/htdocs/opsi'
+	else:
+		LOGGER.info("Unsupported distribution.")
+		return
 
-	for folder in directories:
-		folder = os.path.normpath(folder)
-		folder = os.path.realpath(folder)
+	if not os.path.exists(path):
+		LOGGER.debug(u"Oops, found path {0!r} but does not exist.", path)
+		path = None
 
-		if not folders:
-			LOGGER.debug("Initial fill for folders with: {0}".format(folder))
-			folders.add(folder)
-			continue
+	return path
 
-		shouldAdd = True
-		for alreadyAddedFolder in folders.copy():
-			if alreadyAddedFolder.startswith(folder) and not alreadyAddedFolder == folder:
-				LOGGER.debug("{0} in {1}. Removing {1}, adding {0}".format(folder, alreadyAddedFolder))
-				folders.remove(alreadyAddedFolder)
-				folders.add(folder)
-				shouldAdd = False
-			elif folder.startswith(alreadyAddedFolder):
-				LOGGER.debug("{1} in {0}. Ignoring.".format(folder, alreadyAddedFolder))
-				shouldAdd = False
 
-		if shouldAdd:
-			LOGGER.debug("Adding new folder: {0}".format(folder))
-			folders.add(folder)
+def getWebserverUsernameAndGroupname():
+	'''
+	Returns the name of the user and group belonging to the webserver \
+in the default configuration.
 
-	LOGGER.debug("Final folder collection: {0}".format(folders))
-	return folders
+	:raises RuntimeError: If running on an Unsupported distribution.
+	'''
+	if isDebian() or isUbuntu() or isUCS():
+		return 'www-data', 'www-data'
+	elif isOpenSUSE() or isSLES():
+		return 'wwwrun', 'www'
+	elif isCentOS() or isRHEL():
+		return 'apache', 'apache'
+	else:
+		raise RuntimeError("Unsupported distribution.")
+
+
+def setRightsOnFile(filepath, filemod):
+	LOGGER.debug(u"Setting rights on file {0!r}", filepath)
+	if filepath.startswith(_POSSIBLE_DEPOT_DIRECTORIES):
+		if os.path.basename(filepath) in KNOWN_EXECUTABLES:
+			LOGGER.debug(u"Setting rights on special file {0!r}", filepath)
+			os.chmod(filepath, 0o770)
+		else:
+			LOGGER.debug(u"Setting rights on file {0!r}", filepath)
+			os.chmod(filepath, (os.stat(filepath)[0] | 0o660) & 0o770)
+	else:
+		LOGGER.debug(u"Setting rights {rights!r} on file {file!r}", file=filepath, rights=filemod)
+		os.chmod(filepath, filemod)
 
 
 def chown(path, uid, gid):
@@ -291,27 +329,24 @@ def chown(path, uid, gid):
 	In all other cases only a warning is shown.
 	"""
 	try:
-		if os.geteuid() == 0:
-			LOGGER.debug(u"Setting ownership to {user}:{group} on {path!r}".format(path=path, user=uid, group=gid))
+		if _HAS_ROOT_RIGHTS:
+			LOGGER.debug(u"Setting ownership to {user}:{group} on {path!r}", path=path, user=uid, group=gid)
 			if os.path.islink(path):
 				os.lchown(path, uid, gid)
 			else:
 				os.chown(path, uid, gid)
 		else:
-			LOGGER.debug(u"Setting ownership to -1:{group} on {path!r}".format(path=path, group=gid))
+			LOGGER.debug(u"Setting ownership to -1:{group} on {path!r}", path=path, group=gid)
 			if os.path.islink(path):
 				os.lchown(path, -1, gid)
 			else:
 				os.chown(path, -1, gid)
 	except OSError as fist:
-		if os.geteuid() == 0:
+		if _HAS_ROOT_RIGHTS:
 			# We are root so something must be really wrong!
 			raise fist
 
-		LOGGER.warning(u"Failed to set ownership on {file!r}: {error}".format(
-			file=path,
-			error=fist
-		))
+		LOGGER.warning(u"Failed to set ownership on {file!r}: {error}", file=path, error=fist)
 		LOGGER.notice(u"Please try setting the rights as root.")
 
 

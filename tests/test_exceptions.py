@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -23,88 +23,84 @@ Testing behaviour of exceptions.
 :license: GNU Affero General Public License version 3
 """
 
+from __future__ import print_function
+
 import time
-import unittest
 
-from OPSI.Types import BackendError, OpsiError, OpsiProductOrderingError
+import pytest
 
-
-class OpsiErrorTestCase(unittest.TestCase):
-    ERROR_ARGUMENT = None
-
-    def setUp(self):
-        self.error = OpsiError(self.ERROR_ARGUMENT)
-
-    def tearDown(self):
-        del self.error
-
-    def testCanBePrinted(self):
-        print(self.error)
-
-    def testCanBeCaught(self):
-        def raiseError():
-            raise self.error
-
-        self.assertRaises(OpsiError, raiseError)
-
-    def test__repr__(self):
-        r = repr(self.error)
-
-        self.assertTrue(r.startswith('<'))
-        self.assertTrue(r.endswith('>'))
-
-        if not self.ERROR_ARGUMENT:
-            print(r)
-            self.assertTrue('()' in r)
+from OPSI.Types import (BackendError, OpsiError, OpsiProductOrderingError,
+    OpsiBackupFileError, OpsiBackupFileNotFound, OpsiBackupBackendNotFound,
+    OpsiAuthenticationError, OpsiServiceVerificationError, OpsiBadRpcError,
+    OpsiRpcError, OpsiConnectionError, OpsiTimeoutError, OpsiVersionError,
+    BackendIOError, BackendConfigurationError, BackendReferentialIntegrityError,
+    BackendBadValueError, BackendMissingDataError, BackendAuthenticationError,
+    BackendPermissionDeniedError, BackendTemporaryError,
+    BackendUnaccomplishableError, BackendModuleDisabledError,
+    LicenseConfigurationError, LicenseMissingError, RepositoryError)
 
 
-class OpsiErrorWithIntTestCase(OpsiErrorTestCase):
-    ERROR_ARGUMENT = 1
+@pytest.fixture(
+    params=[
+        OpsiError, OpsiProductOrderingError, BackendError,
+        OpsiBackupFileError, OpsiBackupFileNotFound,
+        OpsiBackupBackendNotFound, OpsiAuthenticationError,
+        OpsiServiceVerificationError, OpsiBadRpcError, OpsiRpcError,
+        OpsiConnectionError, OpsiTimeoutError, OpsiVersionError,
+        BackendIOError, BackendConfigurationError,
+        BackendReferentialIntegrityError, BackendBadValueError,
+        BackendMissingDataError, BackendAuthenticationError,
+        BackendPermissionDeniedError, BackendTemporaryError,
+        BackendUnaccomplishableError, BackendModuleDisabledError,
+        LicenseConfigurationError, LicenseMissingError, RepositoryError
+    ],
+)
+def exceptionClass(request):
+    yield request.param
 
 
-class OpsiErrorWithBoolTestCase(OpsiErrorTestCase):
-    ERROR_ARGUMENT = True
+@pytest.fixture(
+    params=[
+        1,
+        True,
+        time.localtime(),
+        u'unicode string',
+        u'utf-8 string: äöüß€'.encode('utf-8'),
+        u'windows-1258 string: äöüß€'.encode('windows-1258'),
+        u'utf-16 string: äöüß€'.encode('utf-16'),
+        u'latin1 string: äöüß'.encode('latin-1'),
+    ],
+    ids=[
+        'int', 'bool', 'time', 'unicode', 'utf8-encoded',
+        'windows-1258-encoded', 'utf16-encoded', 'latin1-encoded'
+    ]
+)
+def exceptionParameter(request):
+    yield request.param
 
 
-class OpsiErrorWithTimeTestCase(OpsiErrorTestCase):
-    ERROR_ARGUMENT = time.localtime()
+@pytest.fixture
+def exception(exceptionClass, exceptionParameter):
+    yield exceptionClass(exceptionParameter)
 
 
-class OpsiErrorWithUnicodeStringTestCase(OpsiErrorTestCase):
-    ERROR_ARGUMENT = u'unicode string'
+def testExceptionCanBePrinted(exception):
+    print(exception)
 
 
-class OpsiErrorWithUTF8StringTestCase(OpsiErrorTestCase):
-    ERROR_ARGUMENT = u'utf-8 string: äöüß€'.encode('utf-8')
+def testExceptionHas__repr__(exception):
+    r = repr(exception)
+
+    assert r.startswith('<')
+    assert exception.__class__.__name__ in r
+    assert r.endswith('>')
 
 
-class OpsiErrorWithWindowsEncodedStringTestCase(OpsiErrorTestCase):
-    ERROR_ARGUMENT = u'windows-1258 string: äöüß€'.encode('windows-1258')
+def testOpsiProductOrderingErrorOrderingIsAccessible():
+    error = OpsiProductOrderingError('message', [3, 4, 5])
+    assert [3, 4, 5] == error.problematicRequirements
 
 
-class OpsiErrorWithUTF16StringTestCase(OpsiErrorTestCase):
-    ERROR_ARGUMENT = u'utf-16 string: äöüß€'.encode('utf-16'),
-
-
-class OpsiErrorWithLatin1StringTestCase(OpsiErrorTestCase):
-    ERROR_ARGUMENT = u'latin1 string: äöüß'.encode('latin-1')
-
-
-class OpsiProductOrderingErrorTestCase(OpsiErrorTestCase):
-    def setUp(self):
-        self.error = OpsiProductOrderingError(self.ERROR_ARGUMENT, [3, 4, 5])
-
-    def testOrderingIsAccessible(self):
-        self.assertEquals([3, 4, 5], self.error.problematicRequirements)
-
-
-class BackendErrorTest(unittest.TestCase):
-    def testIsSubClassOfOpsiError(self):
-        def raiseError():
-            raise BackendError('Test')
-
-        self.assertRaises(OpsiError, raiseError)
-
-
-if __name__ == '__main__':
-    unittest.main()
+def testExceptionIsSubClassOfOpsiError(exceptionClass):
+    with pytest.raises(OpsiError):
+        raise exceptionClass('message')

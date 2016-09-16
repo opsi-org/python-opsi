@@ -96,31 +96,17 @@ If you are unsure what testrunner to use we recommend using _nose_.
 
 ### Installing Requirements
 
-Requirements for the tests can be found in ``requirements-dev.txt``.
+Requirements for the tests can be found in ``requirements-qa.txt``.
 They can be installed with the following command:
 
-  pip install -r requirements-dev.txt
-
-
-If you want to install _nose_ you can do so with the following command:
-
-  pip install nose
+  pip install -r requirements-qa.txt
 
 
 ### Running
 
 Tests can then be run with:
 
-  nosetests tests/
-
-### Unmaintained tests
-
-Currently there are two folders that contain unittests. The current
-set of maintained tests is in the ``tests`` folder. The folder ``OPSI/Tests``
-contains unmaintained tests in a currently unknown state.
-We currently do not recommend to run these tests.
-
-New tests should be placed under ``tests``.
+  ./run_tests.sh
 
 
 ## Contributing

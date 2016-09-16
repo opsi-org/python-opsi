@@ -130,11 +130,11 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 
 	def _pxeBootConfigurationUpdateNeeded(self, productOnClient):
 		if productOnClient.productType != 'NetbootProduct':
-			logger.debug(u"Not a netboot product: '%s', nothing to do" % productOnClient.productId)
+			logger.debug(u"Not a netboot product: {0!r}, nothing to do", productOnClient.productId)
 			return False
 
 		if not productOnClient.actionRequest:
-			logger.debug(u"No action request update for product '%s', client '%s', nothing to do" % (productOnClient.productId, productOnClient.clientId))
+			logger.debug(u"No action request update for product {0!r}, client {1!r}, nothing to do", productOnClient.productId, productOnClient.clientId)
 			return False
 
 		return True

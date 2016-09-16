@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -26,6 +26,7 @@ SQLite backend.
 """
 
 import threading
+from itertools import izip
 
 from apsw import (SQLITE_OPEN_CREATE, SQLITE_CONFIG_MULTITHREAD,
 				  SQLITE_OPEN_READWRITE, Connection)
@@ -35,7 +36,7 @@ from OPSI.Types import forceBool, forceFilename, forceUnicode
 from OPSI.Types import BackendBadValueError
 from OPSI.Backend.SQL import SQL, SQLBackend, SQLBackendObjectModificationTracker
 
-__version__ = '4.0.6.1'
+__version__ = '4.0.7.1'
 
 logger = Logger()
 
@@ -78,9 +79,9 @@ class SQLite(SQL):
 			if not self._cursor:
 				def rowtrace(cursor, row):
 					valueSet = {}
-					names = cursor.getdescription()
-					for i in range(len(row)):
-						valueSet[names[i][0]] = row[i]
+					for rowDescription, current in izip(cursor.getdescription(), row):
+						valueSet[rowDescription[0]] = current
+
 					return valueSet
 
 				self._cursor = self._connection.cursor()

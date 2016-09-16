@@ -4,7 +4,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2014-2016 uib GmbH - http://www.uib.de/
+# Copyright (C) 2015-2016 uib GmbH - http://www.uib.de/
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -31,12 +31,12 @@ from collections import namedtuple
 
 from OPSI.Logger import Logger
 from OPSI.System import execute, which
-from OPSI.Types import forceList
+from OPSI.Types import forceList, forceProductId
 from OPSI.Util import getfqdn
 
 LOGGER = Logger()
 
-__all__ = ['parseWIM', 'writeImageInformation']
+__all__ = ['getImageInformation', 'parseWIM', 'writeImageInformation']
 
 
 def parseWIM(wimPath):
@@ -49,8 +49,28 @@ def parseWIM(wimPath):
 	"""
 	Image = namedtuple("Image", 'name languages default_language')
 
-	if not os.path.exists(wimPath):
-		raise OSError(u"File {0!r} not found!".format(wimPath))
+	LOGGER.notice("Detected the following images:")
+	images = []
+	for image in getImageInformation(wimPath):
+		LOGGER.notice(image['name'])
+		images.append(Image(image['name'], image.get('languages', tuple()), image.get('default language', None)))
+
+	if not images:
+		raise ValueError('Could not find any images')
+
+	return images
+
+
+def getImageInformation(imagePath):
+	"""
+	Read information from a WIM file at `imagePath`.
+
+	This method acts as a generator that yields information for each image
+	in the file as a `dict`. The keys in the dict are all lowercase.
+	Every dict has at least the key 'name'.
+	"""
+	if not os.path.exists(imagePath):
+		raise OSError(u"File {0!r} not found!".format(imagePath))
 
 	try:
 		imagex = which('wimlib-imagex')
@@ -60,47 +80,36 @@ def parseWIM(wimPath):
 		LOGGER.warning("Please install 'wimtools'.")
 		raise RuntimeError("Unable to find 'wimlib-imagex': {0}".format(error))
 
-	images = []
-	imagename = None
-	languages = set()
-	defaultLanguage = None
-	for line in execute("{imagex} info {file!r}".format(imagex=imagex, file=wimPath)):
-		if line.startswith('Name:'):
-			_, name = line.split(' ', 1)
-			imagename = name.strip()
-		elif line.startswith('Languages:'):
-			_, langs = line.split(' ', 1)
-			langs = langs.strip()
-			if ' ' in langs:
-				langs = langs.split(' ')
-			elif ',' in langs:
-				langs = langs.split(',')
-			else:
-				langs = [langs]
+	imageinfo = {}
+	for line in execute("{imagex} info '{file}'".format(imagex=imagex, file=imagePath)):
+		if line and ':' in line:
+			key, value = line.split(':', 1)
+			key = key.strip().lower()
+			value = value.strip()
 
-			for lang in langs:
-				if lang.strip():
-					languages.add(lang.strip())
-		elif line.startswith('Default Language:'):
-			_, _, defLang = line.split(' ', 2)
-			defaultLanguage = defLang.strip()
-		elif not line:
-			if imagename:
-				images.append(Image(imagename, languages, defaultLanguage))
+			if key == 'languages':
+				langs = value
+				if ' ' in langs:
+					langs = langs.split(' ')
+				elif ',' in langs:
+					langs = langs.split(',')
+				else:
+					langs = [langs]
 
-			imagename = None
-			languages = set()
-			defaultLanguage = None
+				languages = set()
+				for lang in langs:
+					if lang.strip():
+						languages.add(lang.strip())
 
-	if not images:
-		raise ValueError('Could not find any images')
+				value = languages
 
-	LOGGER.debug('images: {0!r}'.format(images))
-	LOGGER.notice("Detected the following images:")
-	for image in images:
-		LOGGER.notice(image.name)
+			imageinfo[key] = value
+		elif not line and imageinfo:
+			if 'name' in imageinfo:  # Do not return file information.
+				LOGGER.debug("Collected information {0!r}".format(imageinfo))
+				yield imageinfo
 
-	return images
+			imageinfo = {}
 
 
 def writeImageInformation(backend, productId, imagenames, languages=None, defaultLanguage=None):
@@ -112,8 +121,20 @@ def writeImageInformation(backend, productId, imagenames, languages=None, defaul
 	*system_language*. If an additional `defaultLanguage` is given this
 	will be selected as the default.
 	"""
+	if not productId:
+		raise ValueError("Not a valid productId: {0!r}".format(productId))
+	productId = forceProductId(productId)
+
 	productProperty = _getProductProperty(backend, productId, 'imagename')
 	productProperty.possibleValues = imagenames
+	if productProperty.defaultValues:
+		if productProperty.defaultValues[0] not in imagenames:
+			LOGGER.info("Mismatching default value. Setting first imagename as default.")
+			productProperty.defaultValues = [imagenames[0]]
+	else:
+		LOGGER.info("No default values found. Setting first imagename as default.")
+		productProperty.defaultValues = [imagenames[0]]
+
 	backend.productProperty_updateObject(productProperty)
 	LOGGER.notice("Wrote imagenames to property 'imagename' product on {0!r}.".format(productId))
 
@@ -126,6 +147,8 @@ def writeImageInformation(backend, productId, imagenames, languages=None, defaul
 			LOGGER.debug("Setting language default to {0!r}".format(defaultLanguage))
 			productProperty.defaultValues = [defaultLanguage]
 
+		LOGGER.debug("system_language property is now: {0!r}".format(productProperty))
+		LOGGER.debug("system_language possibleValues are: {0}".format(productProperty.possibleValues))
 		backend.productProperty_updateObject(productProperty)
 		LOGGER.notice("Wrote languages to property 'system_language' product on {0!r}.".format(productId))
 

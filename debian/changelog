@@ -1,4 +1,294 @@
-python-opsi (4.0.6.40-2) UNRELEASED; urgency=medium
+python-opsi (4.0.7.20-1) stable; urgency=medium
+
+  * Various internal refactorings.
+  * OPSI.System.Posix.which now throws CommandNotFoundException instead of
+    a basic Exception to make catching errors easier.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 13 Sep 2016 09:39:56 +0200
+
+python-opsi (4.0.7.19-1) testing; urgency=medium
+
+  * OPSI.Util.Task.UpdateBackend.MySQL: temporary disable foreign key checks
+    when altering the depotId / hostId.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 06 Sep 2016 14:11:02 +0200
+
+python-opsi (4.0.7.18-1) stable; urgency=medium
+
+  * OPSI.System.Posix: added sleep function when using ms-sys to write partition
+    boot record
+  * Corrected some typos.
+  * Make header verify_server_cert work with current Python 2.7.
+  * OPSI.Util.Task.Samba.configureSamba: warn if oplocks are present in
+    Samba configuration.
+  * OPSI.System.Posix: Wait a few seconds before running ms-sys to avoid
+    timing problems on systems with NVME storage.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 24 Aug 2016 17:08:55 +0200
+
+python-opsi (4.0.7.17-1) stable; urgency=medium
+
+  * OPSI.Util: Refactored encryptWithPublicKeyFromX509CertificatePEMFile
+    and decryptWithPrivateKeyFromPEMFile.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 18 Aug 2016 10:10:53 +0200
+
+python-opsi (4.0.7.16-1) testing; urgency=medium
+
+  * OPSI.System.Posix: new function isOpenSUSELeap.
+  * OPSI.Util.Task.Rights: Improved support for openSUSE Leap.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 15 Aug 2016 16:53:24 +0200
+
+python-opsi (4.0.7.15-1) stable; urgency=medium
+
+  * corrected opsi-set-rights for openSUSE
+
+ -- Mathias Radtke <m.radtke@uib.de>  Wed, 10 Aug 2016 13:44:48 +0200
+
+python-opsi (4.0.7.14-1) stable; urgency=medium
+
+  * OPSI.Util.Task.Rights: Corrected path for UCS.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 05 Aug 2016 15:56:55 +0200
+
+python-opsi (4.0.7.13-1) testing; urgency=medium
+
+  * OPSI.Util.Task.Rights: Corrected path for SLES 11.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 27 Jul 2016 17:11:57 +0200
+
+python-opsi (4.0.7.12-1) stable; urgency=medium
+
+  * Correct indentation in some places.
+  * Use future-proof octal values.
+  * Correct version in OPSI.Util.Task.Rights and OPSI.Backend.JSONRPC.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 25 Jul 2016 14:39:25 +0200
+
+python-opsi (4.0.7.11-1) testing; urgency=medium
+
+  * OPSI.Util.Task.Rights: Better support for different SLES versions.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 25 Jul 2016 13:13:55 +0200
+
+python-opsi (4.0.7.10-1) testing; urgency=medium
+
+  * OPSI.Util.Task.Rights: Do not fail if MySQL backend is configured but
+    not yet set up.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 22 Jul 2016 11:17:24 +0200
+
+python-opsi (4.0.7.9-1) testing; urgency=medium
+
+  * OPSI.System.Posix: new functions: isDebian, isOpenSuse, isUbuntu, isUCS.
+  * OPSI.Util.Task.Rights: Refactored module.
+  * OPSI.Util.Task.Rights: setRights will try to set rights on the webserver
+    directory as installed by the package opsi-linux-support.
+  * 40_admin_tasks.conf: Bugfix for setupWhereNotInstalled
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 21 Jul 2016 16:22:58 +0200
+
+python-opsi (4.0.7.8-1) stable; urgency=low
+
+  * OPSI.System.Windows:
+    - getOpsiHotfixName supports now Windows 10
+    - fixed Syncing Time function with service
+  * Proxysupport for HTTP-Connections
+  * Fix for setActionRequestWithDependencies
+  * do not add obsolete config software-on-demand.show-details
+  * ConfigDataBackend: internal refactoring in log_read and log_write
+
+ -- Erol Ueluekmen <e.ueluekmen@uib.de>  Tue, 19 Jul 2016 15:36:42 +0200
+
+python-opsi (4.0.7.7-1) stable; urgency=low
+
+  * WindowsDrivers byAudit sku fallback fixed.
+
+ -- Erol Ueluekmen <e.ueluekmen@uib.de>  Tue, 05 Jul 2016 15:29:36 +0200
+
+python-opsi (4.0.7.6-1) stable; urgency=medium
+
+  * Changed formatting in Logger to not expose parts of confidential strings
+    under special circumstances.
+  * OPSI.Util.Task.ConfigureBackend.MySQL: fixed error on hostname with dash
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 04 Jul 2016 17:49:17 +0200
+
+python-opsi (4.0.7.5-1) testing; urgency=medium
+
+  * JSONRPC backend has received small refactorings.
+  * 10_opsi.conf: Refactored setProductActionRequestWithDependencies.
+    With this change the 'force' parameter is deprecated and does not have
+    any effect. It may be removed in future releases.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 30 Jun 2016 15:39:29 +0200
+
+python-opsi (4.0.7.4-1) testing; urgency=medium
+
+  * OPSI.Util.Task.UpdateBackend.MySQL: Also correct license key column in
+    table SOFTWARE_CONFIG.
+  * ACL: Pre-compiling patterns
+  * ACL: Changed log output for easier debugging.
+  * Various small improvements in OPSI.Backend.BackendManager.
+  * OPSI.Util.Task.Samba: Removed oplocks from share definition.
+    This will only affect new share configurations.
+  * OPSI.System.Posix: Improved detection for predictable network interfaces.
+  * Configuration of MySQL backends warns if strict mode seems to be
+    enabled.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 24 Jun 2016 14:28:26 +0200
+
+python-opsi (4.0.7.3-1) testing; urgency=medium
+
+  * Repaired sort algorithm 1.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 10 Jun 2016 13:36:41 +0200
+
+python-opsi (4.0.7.2-1) testing; urgency=medium
+
+  * OPSI.Util.Task.UpdateBackend.MySQL: making sure that columns for license
+    keys are 1024 characters long.
+  * HostControl: If resolveHostAddress is set to True we fall back to
+    using the specified in case of a lookup failure.
+  * Various small changes.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 09 Jun 2016 15:34:59 +0200
+
+python-opsi (4.0.7.1-1) testing; urgency=medium
+
+  * forceObjectClass got a faster check to see if we are processing JSON.
+  * OPSI.System.Posix: fixed typo: init -6 -> init 6.
+  * OPSI.Backend.Backend: _testFilterAndAttributes is faster if attributes
+    and filter are missing.
+  * OPSI.Backend.Backend: _objectHashMatches now avoids temporary variable.
+  * Improved iteration in many parts to be more efficient.
+  * OPSI.Logger: Faster lookup for output color / level name.
+  * Changed some log outputs to make use of the formatting during logging.
+  * Updated hwaudit.conf: Now showing the number of physical and logical
+    cores.
+  * OPSI.Util.Task.ConfigureBackend.DHCP: only retrieve and show system
+    information once.
+  * 20_legacy.conf: Refactored setGeneralConfig.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 20 May 2016 15:44:59 +0200
+
+python-opsi (4.0.6.50-1) experimental; urgency=medium
+
+  * OPSI.Logger.Logger now is able to do formatting in the style of
+    str.format. To format a message use the appropriate placeholders and
+    then supply args / kwargs as needed.
+    Formatting will only be applied if the message will actually be logged.
+  * Improved logging during HTTP Connection.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 07 Jun 2016 10:47:44 +0200
+
+python-opsi (4.0.6.49-1) stable; urgency=medium
+
+  * OPSI.Util.Task.Samba: removed oplocks from opsi_depot share
+  * OPSI.Util.Product: Added debug output to show when tasks end.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 6 May 2016 07:32:28 +0200
+
+python-opsi (4.0.6.48-1) stable; urgency=medium
+
+  * OPSI.Types.forceOct avoids using a temporary variable.
+  * OPSI.Util.Task.Rights.setRights: avoid processing the same path
+    twice.
+  * OPSI.Logger and OPSI.Service.JsonRpc now use the 'traceback' module
+    to get the tracebacks.
+  * OPSI.Backend.Replicator: Show the renaming of the server as a single
+    step for better user feedback.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 27 Apr 2016 12:35:39 +0200
+
+python-opsi (4.0.6.47-1) stable; urgency=medium
+
+  * Not using bare "except:" - at least catching Exception.
+  * OPSI.Util.Task.Samba: notify the user that he may need to restart the Samba
+    daemon.
+  * Fix typo in error message if the filter was referencing an attribute not
+    present at the used object type.
+  * OPSI.Backend.Replicator: Check if the used backend can rename the server
+    before trying to do so. If the check fails fall back to using an
+    ExtendedBackend.
+  * OPSI.Backend.SQL: Limit the length of inserted changelogs to be lower than
+    65535 to avoid problems with the limited size of columns of type TEXT.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 21 Apr 2016 13:18:16 +0200
+
+python-opsi (4.0.6.46.1-1) stable; urgency=medium
+
+  * Using the new-style base64 Python interface to avoid breaking with
+    combinations of username and password that exceed 72 characters and
+    lead to newlines in the base64-encoded authentication header.
+    This is in response to CVE-2016-5699 / Python bug 22928 as these
+    patched Python versions may lead to breaks on some systems.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 22 Jun 2016 17:28:31 +0200
+
+python-opsi (4.0.6.46-1) stable; urgency=medium
+
+  * File backend: Correctly read/write the locked attribute on ProductOnDepot.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 07 Apr 2016 11:07:15 +0200
+
+python-opsi (4.0.6.45-1) experimental; urgency=medium
+
+  * 40_admin_tasks.conf: added method setupWhereInstalled.
+  * 40_admin_tasks.conf: added method getClientsWithOutdatedProduct.
+  * 40_admin_tasks.conf: added method
+    setActionRequestWhereOutdatedWithDependencies.
+  * Updated French translation for hwaudit.
+  * OPSI.System.Posix: bypassed startsector 0 in Xenial Sfdisk
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 07 Mar 2016 17:12:50 +0100
+
+python-opsi (4.0.6.44-1) experimental; urgency=medium
+
+  * .spec: Naming all known config files.
+  * Small improvements around the creation of AuditHardwareOnHosts.
+  * OPSI.Types.forceOpsiTimestamp has received improved handling of
+    datetime.datetime objects.
+  * OPSI.Types.forceTime can now handle datetime.datetime objects.
+  * OPSI.Object.mandatoryConstructorArgs has been refactored.
+  * Moved the methods "uninstallWhereInstalled",
+    "updateWhereInstalled", "setupWhereNotInstalled" and
+    "setActionRequestWhereOutdated" into the new backend extension
+    "40_admin_tasks.conf".
+  * Method "setActionRequestWhereOutdated" ignores products on client
+    with installation-status 'unknown'.
+  * Added polish translation. Thanks to Jerzy Włudarczylk!
+  * OPSI.System.Posix: corrected typo in sfdisk call
+  * OPSI.System.Posix: added more reboot calls in reboot() function
+  * OPSI.System.Posix: refactored sfdisk compatability from 4.0.6.41-1
+  * OPSI.System.Posix: added new function setLocalSystemTime.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 03 Mar 2016 13:58:55 +0100
+
+python-opsi (4.0.6.43-1) experimental; urgency=medium
+
+  * Small bugfix in 10_wim.conf.
+  * OPSI.Util.WIM got a new function getImageInformation.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 23 Feb 2016 13:32:33 +0100
+
+python-opsi (4.0.6.42-1) experimental; urgency=medium
+
+  * 20_legacy.conf: Added new methods "uninstallWhereInstalled",
+    "updateWhereInstalled", "setupWhereNotInstalled" and
+    "setActionRequestWhereOutdated".
+  * New module: OPSI.Util.WIM.
+  * New file: 10_wim.conf with methods "updateWIMConfigFromPath" and
+    "updateWIMConfig".
+  * OPSI.Util.File.Opsi.PackageControlFile does not add empty line after
+    changelog anymore.
+  * Improved error messages during creation of an object from a dict if that
+    dict does miss an argument required by the constructor.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 22 Feb 2016 17:29:04 +0100
+
+python-opsi (4.0.6.41-1) experimental; urgency=medium
 
   [ Mathias Radtke ]
   * OPSI.System.Posix.py: Added sfdisk (2.26) compatability on HP Smart-Array
@@ -6,8 +296,11 @@ python-opsi (4.0.6.40-2) UNRELEASED; urgency=medium
 
   [ Niko Wenselowski ]
   * OPSI.Util.flattenSequence is now handles generators by consuming them.
+  * OPSI.Util.formatFileSize now handles terrabyte sized data.
+  * 20_legacy.conf: new function setActionRequestWhereOutdated.
+  * Show what sort algorithm get's called.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 01 Feb 2016 15:30:16 +0100
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 12 Feb 2016 14:45:33 +0100
 
 python-opsi (4.0.6.40-1) experimental; urgency=medium
 
@@ -132,7 +425,7 @@ python-opsi (4.0.6.31-1) experimental; urgency=medium
 python-opsi (4.0.6.30-1) experimental; urgency=medium
 
   * OPSI.Service.Session: SessionHandler.sessionExpired does more frequently
-    checks if session is still in use or timeout occured.
+    checks if session is still in use or timeout occurred.
   * 20_legacy.conf & 30_configed.conf: getDomain: Fix NameError caused by
     implicit import.
   * 10_opsi.conf & 30_configed.conf: getProductOrdering: Fix NameError caused

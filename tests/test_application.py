@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2015 uib GmbH <info@uib.de>
+# Copyright (C) 2015-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -26,7 +26,7 @@ This is based on work by Christian Kampka.
 :license: GNU Affero General Public License version 3
 """
 
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 
 import os
 import sys
@@ -54,7 +54,7 @@ class MockApp(object):
 		self.ran = True
 
 
-class TestApplication(Application):
+class FakeApplication(Application):
 
 	def __init__(self, config):
 		Application.__init__(self, config)
@@ -76,7 +76,7 @@ class ApplicationTests(unittest.TestCase):
 		"""
 		First we should do a setup and the last thing should be shutdown.
 		"""
-		a = TestApplication({})
+		a = FakeApplication({})
 
 		class MockRunner(object):
 			def run(self):
@@ -97,7 +97,7 @@ class ApplicationTests(unittest.TestCase):
 				"profiler": "profiler"
 			}
 
-			a = TestApplication(config)
+			a = FakeApplication(config)
 			a.run()
 			self.assertTrue(a._app.ran)
 
@@ -117,7 +117,7 @@ class ApplicationTests(unittest.TestCase):
 				"profiler": "cProfiler"
 			}
 
-			a = TestApplication(config)
+			a = FakeApplication(config)
 			a.run()
 			self.assertTrue(a._app.ran)
 
@@ -140,7 +140,7 @@ class ApplicationTests(unittest.TestCase):
 					"profiler": "cProfiler"
 				}
 
-				a = TestApplication(config)
+				a = FakeApplication(config)
 
 				self.assertRaises(ImportError, a.run)
 		finally:
@@ -156,13 +156,13 @@ class ApplicationTests(unittest.TestCase):
 				"profiler": "foobar"
 			}
 
-			self.assertRaises(NotImplementedError, TestApplication, config)
+			self.assertRaises(NotImplementedError, FakeApplication, config)
 
 	def testDefaultProfiler(self):
 		with workInTemporaryDirectory() as tempDir:
 			path = os.path.join(tempDir, "profile")
 			config = {"profile": path}
-			a = TestApplication(config)
+			a = FakeApplication(config)
 			self.assertEquals(a._runner.__class__, ProfileRunner)
 
 	def testCaseInsensitiveProfilerName(self):
@@ -174,5 +174,5 @@ class ApplicationTests(unittest.TestCase):
 				"profiler": "cPrOfIlEr"
 			}
 
-			a = TestApplication(config)
+			a = FakeApplication(config)
 			self.assertEquals(a._runner.__class__, CProfileRunner)

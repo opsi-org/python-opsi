@@ -31,16 +31,18 @@ import unittest
 
 from OPSI.Util.WindowsDrivers import integrateAdditionalWindowsDrivers
 from OPSI.Object import AuditHardwareOnHost
+from .test_logger import showLogs
 
 from .helpers import workInTemporaryDirectory
 
 
 class WindowsDriversTestCase(unittest.TestCase):
 
-	def _generateAuditHardwareOnHost(self, hardwareClass, hostId, vendor, model):
+	def _generateAuditHardwareOnHost(self, hardwareClass, hostId, vendor, model, sku = None):
 		auditHardwareOnHost = AuditHardwareOnHost(hardwareClass, hostId)
 		auditHardwareOnHost.vendor = vendor
 		auditHardwareOnHost.model = model
+		auditHardwareOnHost.sku = sku
 
 		return auditHardwareOnHost
 
@@ -88,6 +90,27 @@ class WindowsDriversTestCase(unittest.TestCase):
 			testData1 = self._generateAuditHardwareOnHost(hardwareClass, hostId, "Dell Inc.", model)
 			self._generateDirectories(temporary_folder, vendor, model)
 			self._generateTestFiles(temporary_folder, vendor, model, "test.inf")
+
+			result = integrateAdditionalWindowsDrivers(temporary_folder, destinationDir, [], auditHardwareOnHosts = [ testData1 ])
+
+			expectedResult = [
+					{'devices': [],
+					'directory': u'%s/1' % destinationDir,
+					'driverNumber': 1,
+					'infFile': u'%s/1/test.inf' % destinationDir}]
+
+			self.assertEquals(expectedResult, result)
+	
+	def testByAuditWithSKUFallback(self):
+		with workInTemporaryDirectory() as temporary_folder:
+			destinationDir = os.path.join(temporary_folder, "destination")
+
+			hardwareClass, hostId, vendor, model, sku = ("COMPUTER_SYSTEM", "test.domain.local", "Dell Inc_", "Venue 11 Pro 7130 MS (ABC)", "ABC")
+			model_without_sku = "Venue 11 Pro 7130 MS"
+
+			testData1 = self._generateAuditHardwareOnHost(hardwareClass, hostId, "Dell Inc.", model, sku)
+			self._generateDirectories(temporary_folder, vendor, model_without_sku)
+			self._generateTestFiles(temporary_folder, vendor, model_without_sku, "test.inf")
 
 			result = integrateAdditionalWindowsDrivers(temporary_folder, destinationDir, [], auditHardwareOnHosts = [ testData1 ])
 

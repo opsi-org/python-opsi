@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2015 uib GmbH <info@uib.de>
+# Copyright (C) 2015-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -24,6 +24,7 @@ Manual tests for the JSONRPCBackend.
 :license: GNU Affero General Public License version 3
 """
 
+import time
 import threading
 from OPSI.Logger import Logger, LOG_INFO
 from OPSI.Backend.JSONRPC import JSONRPCBackend
@@ -38,9 +39,12 @@ def checkIfMultipleCallsSucceed():
 		username='exp-40-wks-001.test.invalid',
 		password='352360038fb824baf836a6b448845745'
 	)
-	print(be.backend_info())
-	print(be.backend_info())
-	print(be.backend_info())
+	first = be.backend_info()
+	second = be.backend_info()
+	third = be.backend_info()
+
+	assert first == second
+	assert second == third
 
 
 def checkIfConnectionWithCertWorks():
@@ -59,7 +63,7 @@ def checkAsynchronosProcessing():
 		username = 'someone',
 		password = '123'
 	)
-	print(be.authenticated())
+	assert be.authenticated()
 
 	def callback(jsonrpc):
 		print(jsonrpc.result)

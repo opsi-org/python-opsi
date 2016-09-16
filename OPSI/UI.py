@@ -6,7 +6,7 @@ opsi python library - UI
 This module is part of the desktop management solution opsi
 (open pc server integration) http://www.opsi.org
 
-Copyright (C) 2010-2014 uib GmbH
+Copyright (C) 2010-2016 uib GmbH
 
 http://www.uib.de/
 
@@ -27,6 +27,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 @copyright:	uib GmbH <info@uib.de>
 @author: Jan Schneider <j.schneider@uib.de>
+@author: Niko Wenselowski <n.wenselowski@uib.de>
 @license: GNU General Public License version 2
 """
 
@@ -41,7 +42,7 @@ from OPSI.Types import (forceBool, forceInt, forceList, forceUnicode,
 	forceUnicodeList)
 from OPSI.Util.Message import MessageObserver, ProgressObserver
 
-__version__ = '4.0'
+__version__ = '4.0.7.1'
 
 logger = Logger()
 encoding = locale.getpreferredencoding()
@@ -110,7 +111,7 @@ class UI:
 	def drawRootText(self, x=1, y=1, text=''):
 		pass
 
-	def showError(self, text, title=_(u'An error occured'), okLabel=_(u'OK'), width=-1, height=-1, seconds=0):
+	def showError(self, text, title=_(u'An error occurred'), okLabel=_(u'OK'), width=-1, height=-1, seconds=0):
 		pass
 
 	def showMessage(self, text, title=_(u'Message'), okLabel=_(u'OK'), width=-1, height=-1, seconds=0):
@@ -204,7 +205,7 @@ class SnackUI(UI):
 	def __del__(self):
 		try:
 			self.exit()
-		except:
+		except Exception:
 			pass
 
 	def sigwinchHandler(self, signo, stackFrame):
@@ -240,7 +241,7 @@ class SnackUI(UI):
 			logger.logException(e)
 			raise
 
-	def showError(self, text, title=_(u'An error occured'), okLabel=_(u'OK'), width=-1, height=-1, seconds=0):
+	def showError(self, text, title=_(u'An error occurred'), okLabel=_(u'OK'), width=-1, height=-1, seconds=0):
 		try:
 			text = forceUnicode(text)
 			title = forceUnicode(title)
@@ -519,8 +520,7 @@ class SnackUI(UI):
 
 			row = 0
 			numSelected = 0
-			for i in range(len(entries)):
-				entry = entries[i]
+			for i, entry in enumerate(entries):
 				selected = forceBool(entry.get('selected', False))
 				if radio and (numSelected >= 1):
 					selected = False

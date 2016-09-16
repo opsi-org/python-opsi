@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -38,6 +38,8 @@ from OPSI.Types import (forceObjectClass, forceUnicode, forceUnicodeList,
 	forceProductType, forceDict, forceUniqueList, args, forceFqdn,
 	forceGroupType, forceFloat)
 
+import pytest
+
 
 class ForceObjectClassJSONTestCase(unittest.TestCase):
 	def setUp(self):
@@ -65,7 +67,7 @@ class ForceObjectClassJSONTestCase(unittest.TestCase):
 
 	def testForcingObjectClassFromJSON(self):
 		json = {
-			"clientId": "dolly.janus.vatur",
+			"clientId": "dolly.janus.vater",
 			"actionRequest": "setup",
 			"productType": "LocalbootProduct",
 			"type": "ProductOnClient",
@@ -123,35 +125,36 @@ class ForceObjectClassHashTestCase(unittest.TestCase):
 		self.assertTrue(isinstance(forceObjectClass(self.hash, OpsiClient), OpsiClient))
 
 
-class ForceListTestCase(unittest.TestCase):
-	def testForceListDoesNotIterateOverString(self):
-		self.assertEquals(forceList('x'), ['x'])
+def funkyGenerator():
+	yield "y"
+	yield "u"
+	yield "so"
+	yield "funky"
 
-	def testTupleGetsConvertedToList(self):
-		self.assertEquals(forceList(('x', 'a')), ['x', 'a'])
 
-	def testListIsListAfterwartds(self):
-		self.assertEquals(forceList(['x', 'a']), ['x', 'a'])
+@pytest.mark.parametrize("input, expected", [
+	("x", ['x']),
+	("xy", ['xy']),
+	(None, [None]),
+	((0, 1), [0, 1]),
+	(('x', 'a'), ['x', 'a']),
+	(['x', 'a'], ['x', 'a']),
+	(funkyGenerator(), ['y', 'u', 'so', 'funky']),
+])
+def testForceList(input, expected):
+	result = forceList(input)
+	assert isinstance(result, list)
+	assert expected == result
 
-	def testGeneratorGetsConsumed(self):
-		def generatorFunc():
-			yield "y"
-			yield "u"
-			yield "so"
-			yield "funky"
 
-		generator = generatorFunc()
+def testForceListConvertingSet():
+	inputset = set('abc')
+	resultList = forceList(inputset)
 
-		self.assertEquals(forceList(generator), ['y', 'u', 'so', 'funky'])
+	assert len(inputset) == len(resultList)
 
-	def testSetGetsConvertedToList(self):
-		inputset = set('abc')
-		resultList = forceList(inputset)
-
-		self.assertEquals(len(inputset), len(resultList))
-
-		for element in inputset:
-			self.assertTrue(element in resultList)
+	for element in inputset:
+		assert element in resultList
 
 
 class ForceUnicodeTestCase(unittest.TestCase):
@@ -265,6 +268,12 @@ class ForceOpsiTimeStampTestCase(unittest.TestCase):
 
 	def testForcingWithDatetime(self):
 		self.assertEqual(forceOpsiTimestamp(datetime.datetime(2013, 9, 11, 10, 54, 23)), '2013-09-11 10:54:23')
+		self.assertEqual(forceOpsiTimestamp(datetime.datetime(2013, 9, 11, 10, 54, 23, 123123)), '2013-09-11 10:54:23')
+
+	def testForcingEmptyValue(self):
+		self.assertEquals(u'0000-00-00 00:00:00', forceOpsiTimestamp(None))
+		self.assertEquals(u'0000-00-00 00:00:00', forceOpsiTimestamp(0))
+		self.assertEquals(u'0000-00-00 00:00:00', forceOpsiTimestamp(''))
 
 
 class ForceHostIdTestCase(unittest.TestCase):
@@ -302,20 +311,28 @@ class ForceHardwareAddressTestCase(unittest.TestCase):
 		self.assertEquals("", forceHardwareAddress(""))
 
 
-class ForceIPAdressTestCase(unittest.TestCase):
-	def testForcing(self):
-		self.assertEquals(forceIPAddress('192.168.101.1'), u'192.168.101.1')
+@pytest.mark.parametrize("input, expected", [
+	('1.1.1.1', u'1.1.1.1'),
+	('192.168.101.1', u'192.168.101.1'),
+	(u'192.168.101.1', u'192.168.101.1'),
+])
+def testForceIPAddress(input, expected):
+	output = forceIPAddress(input)
+	assert expected == output
+	assert isinstance(output, unicode)
 
-	def testForcingReturnsUnicode(self):
-		self.assertTrue(isinstance(forceIPAddress('1.1.1.1'), unicode))
 
-	def testForcingWithInvalidAddressesRaisesExceptions(self):
-		self.assertRaises(ValueError, forceIPAddress, '1922.1.1.1')
-		self.assertRaises(ValueError, forceIPAddress, None)
-		self.assertRaises(ValueError, forceIPAddress, True)
-		self.assertRaises(ValueError, forceIPAddress, '1.1.1.1.')
-		self.assertRaises(ValueError, forceIPAddress, '2.2.2.2.2')
-		self.assertRaises(ValueError, forceIPAddress, 'a.2.3.4')
+@pytest.mark.parametrize("malformed_input", [
+	'1922.1.1.1',
+	None,
+	True,
+	'1.1.1.1.',
+	'2.2.2.2.2',
+	'a.2.3.4',
+])
+def testForceIPAddressFailsOnInvalidInput(malformed_input):
+	with pytest.raises(ValueError):
+		forceIPAddress(input)
 
 
 class ForceNetworkAddressTestCase(unittest.TestCase):
@@ -486,8 +503,9 @@ class ForceTimeTestCase(unittest.TestCase):
 		self.assertRaises(ValueError, forceTime, 'Hello World!')
 
 	def testForcingWorksWithVariousTypes(self):
-		forceTime(time.time())
-		forceTime(time.localtime())
+		self.assertTrue(isinstance(forceTime(time.time()), time.struct_time))
+		self.assertTrue(isinstance(forceTime(time.localtime()), time.struct_time))
+		self.assertTrue(isinstance(forceTime(datetime.datetime.now()), time.struct_time))
 
 
 class ForceEmailAddressTestCase(unittest.TestCase):
@@ -511,16 +529,17 @@ class ForceProductTypeTestCase(unittest.TestCase):
 		self.assertEquals(forceProductType('nETbOOT'), 'NetbootProduct')
 
 
-class ForceDictTestCase(unittest.TestCase):
-	def testForcingNoneTypeToDictReturnsEmptyDict(self):
-		self.assertEquals({}, forceDict(None))
+@pytest.mark.parametrize("input, expected", [
+	(None, {}),
+	({'a': 1}, {'a': 1}),
+])
+def testForceDictReturnsDict(input, expected):
+	assert forceDict(input) == expected
 
-	def testForcingDictToDictReturnsDict(self):
-		self.assertEquals({'a': 1}, forceDict({'a': 1}))
-
-	def testForcingImpossibleThrowsError(self):
-		self.assertRaises(ValueError, forceDict, 'asdg')
-		self.assertRaises(ValueError, forceDict, ['asdg', 'asg'])
+@pytest.mark.parametrize("input", ['asdg', ['asdfg', 'asd']])
+def testForceDictFailsIfConversionImpossible(input):
+	with pytest.raises(ValueError):
+		forceDict(input)
 
 
 class ForceUniqueListTestCase(unittest.TestCase):
@@ -570,45 +589,61 @@ class ArgsDecoratorTestCase(unittest.TestCase):
 		self.assertEquals(None, someObj._someOtherArg, "Expected someOtherArg to be None, but got %s instead" % someObj._someOtherArg)
 
 
-class ForceFqdnTestCase(unittest.TestCase):
-	def testTrailingDotIsRemoved(self):
-		self.assertEqual('abc.example.local', forceFqdn('abc.example.local.'))
 
-	def testFqdnContainsHostnameRootZoneAndTopLevelDomain(self):
-		self.assertRaises(ValueError, forceFqdn, 'hostname.tld')
-
-		forceFqdn('hostname.rootzone.tld')
-
-	def testForcingMakesLowercase(self):
-		self.assertEquals('bla.domain.invalid', forceFqdn('BLA.domain.invalid'))
-		self.assertEquals('bla.domain.invalid', forceFqdn('bla.doMAIN.invalid'))
-		self.assertEquals('bla.domain.invalid', forceFqdn('bla.domain.iNVAlid'))
+def testForceFqdnRemovesTrailingDot():
+	assert 'abc.example.local' == forceFqdn('abc.example.local.')
 
 
-class ForceGroupTypeTestCase(unittest.TestCase):
-	def testUnknownHostGroupsResultInError(self):
-		self.assertRaises(ValueError, forceGroupType, 'asdf')
-		self.assertRaises(ValueError, forceGroupType, None)
+def testForceFqdnRequiresHostnameRootZoneAndTopLevelDomain():
+	with pytest.raises(ValueError):
+		forceFqdn('hostname.tld')
 
-	def testKnownValuesAreReturnedWithStandardisedCase(self):
-		self.assertEquals('HostGroup', forceGroupType('hostGROUP'))
-		self.assertEquals('ProductGroup', forceGroupType('PrOdUcTgRoUp'))
+	forceFqdn('hostname.rootzone.tld')
 
 
-class ForceFloatTypeTestCase(unittest.TestCase):
-	def testForcingNumber(self):
-		self.assertEquals(1.0, forceFloat(1))
-		self.assertEquals(1.3, forceFloat(1.3))
+@pytest.mark.parametrize("domain", [
+	'BLA.domain.invalid',
+	'bla.doMAIN.invalid',
+	'bla.domain.iNVAlid'])
+def testForceFqdnAlwaysReturnsLowercase(domain):
+	assert 'bla.domain.invalid' == forceFqdn(domain)
 
-	def testForcingFromString(self):
-		self.assertEquals(1.0, forceFloat("1"))
-		self.assertEquals(1.3, forceFloat("1.3"))
-		self.assertEquals(1.4, forceFloat("  1.4  "))
 
-	def testForcingCanFail(self):
-		self.assertRaises(ValueError, forceFloat, {"abc": 123})
-		self.assertRaises(ValueError, forceFloat, ['a', 'b'])
-		self.assertRaises(ValueError, forceFloat, "No float")
+@pytest.mark.parametrize("input", ['asdf', None])
+def testForceGroupFailsOnInvalidInput(input):
+	with pytest.raises(ValueError):
+		forceGroupType(input)
+
+
+@pytest.mark.parametrize("input, expected", [
+	('hostGROUP', 'HostGroup'),
+	('HostgROUp', 'HostGroup'),
+	('PrOdUcTgRoUp', 'ProductGroup'),
+])
+def testForceGroupTypeStandardisesCase(input, expected):
+	assert forceGroupType(input) == expected
+
+
+@pytest.mark.parametrize("input, expected", [
+	(1, 1.0),
+	(1.3, 1.3),
+	("1", 1.0),
+	("1.3", 1.3),
+	("    1.4   ", 1.4),
+])
+def testForceFloat(input, expected):
+	assert expected == forceFloat(input)
+
+
+@pytest.mark.parametrize("invalidInput", [
+	{"abc": 123},
+	['a', 'b'],
+	"No float",
+	"text",
+])
+def testForceFloatFailsWithInvalidInput(invalidInput):
+	with pytest.raises(ValueError):
+		forceFloat(invalidInput)
 
 
 if __name__ == '__main__':

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2006-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -31,6 +31,7 @@ import os
 import sys
 import threading
 import time
+import traceback
 import warnings
 
 try:
@@ -53,7 +54,19 @@ try:
 except ImportError:
 	syslog = None
 
-__version__ = '4.0.6.36'
+__version__ = '4.1.1'
+__all__ = [
+	'COLORS_AVAILABLE', 'COLOR_BLACK', 'COLOR_BLUE', 'COLOR_CYAN',
+	'COLOR_GREEN', 'COLOR_LIGHT_BLACK', 'COLOR_LIGHT_BLUE', 'COLOR_LIGHT_CYAN',
+	'COLOR_LIGHT_GREEN', 'COLOR_LIGHT_MAGENTA', 'COLOR_LIGHT_RED',
+	'COLOR_LIGHT_WHITE', 'COLOR_LIGHT_YELLOW', 'COLOR_MAGENTA', 'COLOR_NORMAL',
+	'COLOR_RED', 'COLOR_WHITE', 'COLOR_YELLOW', 'COMMENT_COLOR',
+	'CONFIDENTIAL_COLOR', 'CRITICAL_COLOR', 'DEBUG_COLOR', 'ERROR_COLOR',
+	'ESSENTIAL_COLOR', 'INFO_COLOR', 'LOG_COMMENT', 'LOG_CONFIDENTIAL',
+	'LOG_CRITICAL', 'LOG_DEBUG', 'LOG_DEBUG2', 'LOG_ERROR', 'LOG_ESSENTIAL',
+	'LOG_INFO', 'LOG_NONE', 'LOG_NOTICE', 'LOG_WARNING', 'Logger',
+	'NOTICE_COLOR', 'WARNING_COLOR'
+]
 
 if sys.version_info > (3, ):
 	# Python 3
@@ -144,6 +157,18 @@ if syslog is not None:
 		LOG_CRITICAL: syslog.LOG_CRIT,
 		LOG_COMMENT: syslog.LOG_CRIT
 	}
+
+_LOGLEVEL_NAME_AND_COLOR_MAPPING = {
+	LOG_CONFIDENTIAL: (u'confidential', CONFIDENTIAL_COLOR),
+	LOG_DEBUG2: (u'debug2', DEBUG_COLOR),
+	LOG_DEBUG: (u'debug', DEBUG_COLOR),
+	LOG_INFO: (u'info', INFO_COLOR),
+	LOG_NOTICE: (u'notice', NOTICE_COLOR),
+	LOG_WARNING: (u'warning', WARNING_COLOR),
+	LOG_ERROR: (u'error', ERROR_COLOR),
+	LOG_CRITICAL: (u'critical', CRITICAL_COLOR),
+	LOG_ESSENTIAL: (u'essential', COMMENT_COLOR),
+}
 
 encoding = sys.getfilesystemencoding()
 _showwarning = warnings.showwarning
@@ -524,7 +549,7 @@ will disable logging to a file.
 
 		return self.__objectConfig[objectId].get(key)
 
-	def log(self, level, message, raiseException=False):
+	def log(self, level, message, raiseException=False, formatArgs=[], formatKwargs={}):
 		'''
 		Log a message with the given level.
 
@@ -534,18 +559,6 @@ will disable logging to a file.
 False suppresses exceptions.
 		:type raiseException: bool
 		'''
-		def formatMessage(unformattedMessage):
-			tempMessage = unicode(unformattedMessage)
-			tempMessage = tempMessage.replace(u'%D', datetime)
-			tempMessage = tempMessage.replace(u'%T', threadId)
-			tempMessage = tempMessage.replace(u'%l', unicode(level))
-			tempMessage = tempMessage.replace(u'%L', levelname)
-			tempMessage = tempMessage.replace(u'%C', componentname)
-			tempMessage = tempMessage.replace(u'%M', message)
-			tempMessage = tempMessage.replace(u'%F', filename)
-			tempMessage = tempMessage.replace(u'%N', linenumber)
-			return tempMessage
-
 		if (level > self.__messageSubjectLevel and
 			level > self.__consoleLevel and
 			level > self.__fileLevel and
@@ -554,6 +567,23 @@ False suppresses exceptions.
 
 			return
 
+		def formatMessage(unformattedMessage, removeConfidential=False):
+			tempMessage = unicode(unformattedMessage)
+			tempMessage = tempMessage.replace(u'%M', message)
+
+			if removeConfidential:
+				for string in self.__confidentialStrings:
+					tempMessage = tempMessage.replace(string, u'*** confidential ***')
+
+			tempMessage = tempMessage.replace(u'%D', datetime)
+			tempMessage = tempMessage.replace(u'%T', threadId)
+			tempMessage = tempMessage.replace(u'%l', unicode(level))
+			tempMessage = tempMessage.replace(u'%L', levelname)
+			tempMessage = tempMessage.replace(u'%C', componentname)
+			tempMessage = tempMessage.replace(u'%F', filename)
+			tempMessage = tempMessage.replace(u'%N', linenumber)
+			return tempMessage
+
 		try:
 			if not isinstance(message, unicode):
 				if not isinstance(message, str):
@@ -561,39 +591,23 @@ False suppresses exceptions.
 				else:
 					message = unicode(message, 'utf-8', 'replace')
 
+			try:
+				message = message.format(*formatArgs, **formatKwargs)
+			except KeyError as e:
+				if 'Missing format for key ' not in str(e).lower():
+					raise e
+			except ValueError as e:
+				if 'invalid conversion specification' not in str(e).lower():
+					raise e
+
 			componentname = self.__componentName
 			datetime = unicode(time.strftime(u"%b %d %H:%M:%S", time.localtime()), 'utf-8', 'replace')
 			threadId = unicode(thread.get_ident())
 			specialConfig = None
 
-			if level == LOG_CONFIDENTIAL:
-				levelname = u'confidential'
-				color = CONFIDENTIAL_COLOR
-			elif level == LOG_DEBUG2:
-				levelname = u'debug2'
-				color = DEBUG_COLOR
-			elif level == LOG_DEBUG:
-				levelname = u'debug'
-				color = DEBUG_COLOR
-			elif level == LOG_INFO:
-				levelname = u'info'
-				color = INFO_COLOR
-			elif level == LOG_NOTICE:
-				levelname = u'notice'
-				color = NOTICE_COLOR
-			elif level == LOG_WARNING:
-				levelname = u'warning'
-				color = WARNING_COLOR
-			elif level == LOG_ERROR:
-				levelname = u'error'
-				color = ERROR_COLOR
-			elif level == LOG_CRITICAL:
-				levelname = u'critical'
-				color = CRITICAL_COLOR
-			elif level == LOG_ESSENTIAL:
-				levelname = u'essential'
-				color = COMMENT_COLOR
-			else:
+			try:
+				levelname, color = _LOGLEVEL_NAME_AND_COLOR_MAPPING[level]
+			except KeyError:
 				levelname = u''
 				color = COLOR_NORMAL
 
@@ -632,10 +646,7 @@ False suppresses exceptions.
 				m = self.__messageSubjectFormat
 				if specialConfig:
 					m = specialConfig.get('messageSubjectFormat', m)
-				m = formatMessage(m)
-				if self.__messageSubjectLevel < LOG_CONFIDENTIAL:
-					for string in self.__confidentialStrings:
-						m = m.replace(string, u'*** confidential ***')
+				m = formatMessage(m, removeConfidential=self.__messageSubjectLevel < LOG_CONFIDENTIAL)
 
 				self.__loggerSubject.setMessage(m, level)
 
@@ -644,10 +655,7 @@ False suppresses exceptions.
 				m = self.__consoleFormat
 				if specialConfig:
 					m = specialConfig.get('consoleFormat', m)
-				m = formatMessage(m)
-				if self.__consoleLevel < LOG_CONFIDENTIAL:
-					for string in self.__confidentialStrings:
-						m = m.replace(string, u'*** confidential ***')
+				m = formatMessage(m, removeConfidential=self.__consoleLevel < LOG_CONFIDENTIAL)
 
 				if self.__consoleStdout:
 					fh = sys.stdout
@@ -677,10 +685,7 @@ False suppresses exceptions.
 					m = self.__fileFormat
 					if specialConfig:
 						m = specialConfig.get('fileFormat', m)
-					m = formatMessage(m)
-					if self.__fileLevel < LOG_CONFIDENTIAL:
-						for string in self.__confidentialStrings:
-							m = m.replace(string, u'*** confidential ***')
+					m = formatMessage(m, removeConfidential=self.__fileLevel < LOG_CONFIDENTIAL)
 
 					try:
 						lf = codecs.open(logFile, 'a+', 'utf-8', 'replace')
@@ -724,10 +729,7 @@ False suppresses exceptions.
 				m = self.__syslogFormat
 				if specialConfig:
 					m = specialConfig.get('syslogFormat', m)
-				m = formatMessage(m)
-				if self.__syslogLevel < LOG_CONFIDENTIAL:
-					for string in self.__confidentialStrings:
-						m = m.replace(string, u'*** confidential ***')
+				m = formatMessage(m, removeConfidential=self.__syslogLevel < LOG_CONFIDENTIAL)
 
 				try:
 					syslog.syslog(_SYSLOG_LEVEL_MAPPING[level], m)
@@ -740,9 +742,7 @@ False suppresses exceptions.
 				m = self.__univentionFormat
 				if specialConfig:
 					m = specialConfig.get('univentionFormat', m)
-				m = formatMessage(m)
-				for string in self.__confidentialStrings:
-					m = m.replace(string, u'*** confidential ***')
+				m = formatMessage(m, removeConfidential=True)
 
 				if level in (LOG_DEBUG2, LOG_DEBUG, LOG_INFO):
 					univentionLevel = self.univentionLogger_priv.ALL
@@ -772,17 +772,17 @@ False suppresses exceptions.
 		self.log(logLevel, u'     ==>>> %s' % message)
 
 	def logTraceback(self, tb, logLevel=LOG_CRITICAL):
-		''' Log an exception. '''
+		'''
+		Log an traceback.
+
+		This will log the call trace from the given traceback.
+		'''
 		self.log(logLevel, u'Traceback:')
-		# Traceback
 		try:
-			while tb is not None:
-				f = tb.tb_frame
-				c = f.f_code
-				self.log(logLevel, u"     line %s in '%s' in file '%s'" % (tb.tb_lineno, c.co_name, c.co_filename))
-				tb = tb.tb_next
-		except Exception as e:
-			self.log(LOG_CRITICAL, u"    Failed to log traceback for '%s': %s" % (tb, e))
+			for tbInfo in traceback.format_tb(tb):
+				self.log(logLevel, tbInfo)
+		except AttributeError as attrError:
+			self.log(LOG_CRITICAL, u"    Failed to log traceback for {0!r}: {1}".format(tb, attrError))
 
 	def logWarnings(self):
 		"""
@@ -802,57 +802,57 @@ False suppresses exceptions.
 		observer = TwistedLogObserver(self)
 		log.startLoggingWithObserver(observer.emit, setStdout=0)
 
-	def confidential(self, message):
+	def confidential(self, message, *args, **kwargs):
 		''' Log a confidential message. '''
-		self.log(LOG_CONFIDENTIAL, message)
+		self.log(LOG_CONFIDENTIAL, message, formatArgs=args, formatKwargs=kwargs)
 
-	def debug3(self, message):
+	def debug3(self, message, *args, **kwargs):
 		''' Log a debug message. '''
-		self.debug2(message)
+		self.debug2(message, *args, **kwargs)
 
-	def debug2(self, message):
+	def debug2(self, message, *args, **kwargs):
 		''' Log a debug message. '''
-		self.log(LOG_DEBUG2, message)
+		self.log(LOG_DEBUG2, message, formatArgs=args, formatKwargs=kwargs)
 
-	def debug(self, message):
+	def debug(self, message, *args, **kwargs):
 		''' Log a debug message. '''
-		self.log(LOG_DEBUG, message)
+		self.log(LOG_DEBUG, message, formatArgs=args, formatKwargs=kwargs)
 
-	def info(self, message):
+	def info(self, message, *args, **kwargs):
 		''' Log a info message. '''
-		self.log(LOG_INFO, message)
+		self.log(LOG_INFO, message, formatArgs=args, formatKwargs=kwargs)
 
-	def msg(self, message):
+	def msg(self, message, *args, **kwargs):
 		''' Log a info message. '''
-		self.info(message)
+		self.info(message, *args, **kwargs)
 
-	def notice(self, message):
+	def notice(self, message, *args, **kwargs):
 		''' Log a notice message. '''
-		self.log(LOG_NOTICE, message)
+		self.log(LOG_NOTICE, message, formatArgs=args, formatKwargs=kwargs)
 
-	def warning(self, message):
+	def warning(self, message, *args, **kwargs):
 		''' Log a warning message. '''
-		self.log(LOG_WARNING, message)
+		self.log(LOG_WARNING, message, formatArgs=args, formatKwargs=kwargs)
 
-	def error(self, message):
+	def error(self, message, *args, **kwargs):
 		''' Log a error message. '''
-		self.log(LOG_ERROR, message)
+		self.log(LOG_ERROR, message, formatArgs=args, formatKwargs=kwargs)
 
 	def err(self, message):
 		''' Log a error message. '''
 		self.error(message)
 
-	def critical(self, message):
+	def critical(self, message, *args, **kwargs):
 		''' Log a critical message. '''
-		self.log(LOG_CRITICAL, message)
+		self.log(LOG_CRITICAL, message, formatArgs=args, formatKwargs=kwargs)
 
-	def essential(self, message):
+	def essential(self, message, *args, **kwargs):
 		''' Log a essential message. '''
-		self.log(LOG_ESSENTIAL, message)
+		self.log(LOG_ESSENTIAL, message, formatArgs=args, formatKwargs=kwargs)
 
-	def comment(self, message):
+	def comment(self, message, *args, **kwargs):
 		''' Log a comment message. '''
-		self.essential(message)
+		self.essential(message, *args, **kwargs)
 
 
 class Logger(LoggerImplementation):

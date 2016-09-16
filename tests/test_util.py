@@ -1,5 +1,5 @@
-#!/usr/bin/env python
-#-*- coding: utf-8 -*-
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
 # Copyright (C) 2013-2016 uib GmbH <info@uib.de>
@@ -35,29 +35,52 @@ import sys
 from collections import defaultdict
 from contextlib import contextmanager
 
-from OPSI.Util import (chunk, compareVersions, findFiles, flattenSequence,
+from OPSI.Object import LocalbootProduct, OpsiClient
+from OPSI.Util import (chunk, compareVersions, decryptWithPrivateKeyFromPEMFile,
+    encryptWithPublicKeyFromX509CertificatePEMFile, findFiles, flattenSequence,
     formatFileSize, fromJson, generateOpsiHostKey, getfqdn, getGlobalConfig,
     ipAddressInNetwork, isRegularExpressionPattern, librsyncDeltaFile,
     librsyncSignature, librsyncPatchFile, md5sum, objectToBeautifiedText,
     objectToHtml, randomString, removeUnit, toJson)
-from OPSI.Object import LocalbootProduct, OpsiClient
+from OPSI.Util.Task.Certificate import createCertificate
 
 from .helpers import (fakeGlobalConf, patchAddress, patchEnvironmentVariables,
     unittest, workInTemporaryDirectory)
 
+import pytest
 
-class IPAddressInNetwork(unittest.TestCase):
-    def testNetworkWithSlashIntNotation(self):
-        self.assertTrue(ipAddressInNetwork('10.10.1.1', '10.10.0.0/16'))
-        self.assertTrue(ipAddressInNetwork('10.10.1.1', '10.10.0.0/23'))
-        self.assertFalse(ipAddressInNetwork('10.10.1.1', '10.10.0.0/24'))
-        self.assertFalse(ipAddressInNetwork('10.10.1.1', '10.10.0.0/25'))
+try:
+    from itertools import combinations_with_replacement
+except ImportError:  # Python 2.6...
+    # We define our own fallback by copying what is written in the
+    # documentation at https://docs.python.org/2.7/library/itertools.html#itertools.combinations_with_replacement
+    from itertools import product
 
-    def testIpAddressInNetworkWithEmptyNetworkMask(self):
-        self.assertTrue(ipAddressInNetwork('10.10.1.1', '0.0.0.0/0'))
+    def combinations_with_replacement(iterable, r):
+        pool = tuple(iterable)
+        n = len(pool)
+        for indices in product(range(n), repeat=r):
+            if sorted(indices) == list(indices):
+                yield tuple(pool[i] for i in indices)
 
-    def testIpAddressInNetworkWithFullNetmask(self):
-        self.assertTrue(ipAddressInNetwork('10.10.1.1', '10.10.0.0/255.240.0.0'))
+
+
+@pytest.mark.parametrize("ip, network",[
+    ('10.10.1.1', '10.10.0.0/16'),
+    ('10.10.1.1', '10.10.0.0/23'),
+    pytest.mark.xfail(('10.10.1.1', '10.10.0.0/24')),
+    pytest.mark.xfail(('10.10.1.1', '10.10.0.0/25')),
+])
+def testNetworkWithSlashInNotation(ip, network):
+    assert ipAddressInNetwork(ip, network)
+
+
+def testIpAddressInNetworkWithEmptyNetworkMask():
+    assert ipAddressInNetwork('10.10.1.1', '0.0.0.0/0')
+
+
+def testIpAddressInNetworkWithFullNetmask():
+    assert ipAddressInNetwork('10.10.1.1', '10.10.0.0/255.240.0.0')
 
 
 class ProductFactory(object):
@@ -325,51 +348,58 @@ class ObjectToBeautifiedTextTestCase(unittest.TestCase):
         self.assertEquals(expected, objectToBeautifiedText(obj))
 
 
-class UtilTestCase(unittest.TestCase):
-    """
-    General tests for functions in the Util module.
-    """
-    def test_flattenSequence(self):
-        self.assertEqual([1, 2], flattenSequence((1, [2])))
-        self.assertEqual([1, 2, 3], flattenSequence((1, [2, (3, )])))
-        self.assertEqual([1, 2, 3], flattenSequence(((1, ),(2, ), 3)))
-        self.assertEqual([1, 2, 3], flattenSequence(set([1, 2, 3])))
-        self.assertEqual([1, 2, 3, 4, 5],
-                         flattenSequence([1, set([2,]), 3, 4, set([5])]))
+def testRandomStringBuildsStringOutOfGivenCharacters():
+    assert 5*'a' == randomString(5, characters='a')
 
-    def test_flattenSequenceIncludingGenerators(self):
-        generator = (x for x in range(1, 6))
-        self.assertEqual([1, 2, 3, 4, 5], flattenSequence(generator))
 
-        def generatorFunc():
-            yield 3
-            yield 4
-            yield [5]
+@pytest.mark.parametrize("length", [10, 1, 0])
+def testRandomStringHasExpectedLength(length):
+    result = randomString(length)
+    assert length == len(result)
+    assert length == len(result.strip())
 
-        self.assertEqual([1, 2, 3, 4, 5], flattenSequence([1, 2, generatorFunc()]))
 
-    def test_formatFileSize(self):
-        self.assertEqual('123', formatFileSize(123))
-        self.assertEqual('1K', formatFileSize(1234))
-        self.assertEqual('1M', formatFileSize(1234567))
-        self.assertEqual('1G', formatFileSize(1234567890))
+def _dummyGeneratorFunc():
+    yield 3
+    yield 4
+    yield [5]
 
-    def testRandomString(self):
-        self.assertEqual(10, len(randomString(10)))
-        self.assertNotEqual('', randomString(1).strip())
-        self.assertEqual('', randomString(0).strip())
-        self.assertEqual(5*'a', randomString(5, characters='a'))
 
-    def testGenerateOpsiHostKeyIs32CharsLong(self):
-        self.assertEqual(32, len(generateOpsiHostKey()))
-        self.assertEqual(32, len(generateOpsiHostKey(forcePython=True)))
+@pytest.mark.parametrize("sequence, out", [
+    ((1, [2]), [1, 2]),
+    ((1, [2, (3, )]), [1, 2, 3]),
+    (((1, ), (2, ), 3), [1, 2, 3]),
+    (set([1, 2, 3]), [1, 2, 3]),
+    ([1, set([2, ]), 3, 4, set([5])], [1, 2, 3, 4, 5]),
+    ((x for x in range(1, 6)), [1, 2, 3, 4, 5]),
+    ([1, 2, _dummyGeneratorFunc()], [1, 2, 3, 4, 5])
+])
+def testFlattenSequence(sequence, out):
+    assert out == flattenSequence(sequence)
 
-    def testmd5sum(self):
-        testFile = os.path.join(
-            os.path.dirname(__file__),
-            'testdata', 'util', 'dhcpd', 'dhcpd_1.conf'
-        )
-        self.assertEqual('5f345ca76574c528903c1022b05acb4c', md5sum(testFile))
+
+@pytest.mark.parametrize("kwargs", [{}, {"forcePython": True}])
+def testGenerateOpsiHostKeyIs32CharsLong(kwargs):
+    assert 32 == len(generateOpsiHostKey(kwargs))
+
+
+@pytest.mark.parametrize("testInput, expected", [
+    (123, '123'),
+    (1234, '1K'),
+    (1234567, '1M'),
+    (314572800, '300M'),
+    (1234567890, '1G'),
+    (1234567890000, '1T'),
+])
+def testFormatFileSize(testInput, expected):
+    assert expected == formatFileSize(testInput)
+
+
+@pytest.mark.parametrize("testFile, expectedHash", [
+    (os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'dhcpd', 'dhcpd_1.conf'), '5f345ca76574c528903c1022b05acb4c'),
+])
+def testCreatingMd5sum(testFile, expectedHash):
+    assert expectedHash == md5sum(testFile)
 
 
 class ChunkingTestCase(unittest.TestCase):
@@ -543,42 +573,73 @@ class LibrsyncTestCase(unittest.TestCase):
                     self.fail("Missing additional text in new file.")
 
 
-class CompareVersionsTestCase(unittest.TestCase):
-    def testComparingVersionsOfSameSize(self):
-        self.assertTrue(compareVersions('1.0', '<', '2.0'))
+@pytest.mark.parametrize("old, delta, new", list(combinations_with_replacement(('foo', 'bar'), 3)))
+def testLibrsyncPatchFileAvoidsPatchingSameFile(old, delta, new):
+    with pytest.raises(ValueError):
+        librsyncPatchFile(old, delta, new)
 
-    def testComparingWithoutGivingOperatorDefaultsToEqual(self):
-        self.assertTrue(compareVersions('1.0', '', '1.0'))
-        self.assertFalse(compareVersions('1', '', '2'))
 
-    def testComparingWithOneEqualitySignWork(self):
-        self.assertTrue(compareVersions('1.0', '=', '1.0'))
+def testComparingVersionsOfSameSize():
+    assert compareVersions('1.0', '<', '2.0')
 
-    def testUsingUnknownOperatorFails(self):
-        self.assertRaises(Exception, compareVersions, '1', 'asdf', '2')
-        self.assertRaises(Exception, compareVersions, '1', '+-', '2')
-        self.assertRaises(Exception, compareVersions, '1', '<>', '2')
-        self.assertRaises(Exception, compareVersions, '1', '!=', '2')
 
-    def testIgnoringVersionsWithWaveInThem(self):
-        self.assertTrue(compareVersions('1.0~20131212', '<', '2.0~20120101'))
-        self.assertTrue(compareVersions('1.0~20131212', '==', '1.0~20120101'))
+@pytest.mark.parametrize("v1, operator, v2", [
+    ('1.0', '', '1.0'),
+    pytest.mark.xfail(('1', '', '2')),
+])
+def testComparingWithoutGivingOperatorDefaultsToEqual(v1, operator, v2):
+    assert compareVersions(v1, operator, v2)
 
-    def testUsingInvalidVersionStringsFails(self):
-        self.assertRaises(Exception, compareVersions, 'abc-1.2.3-4', '==', '1.2.3-4')
-        self.assertRaises(Exception, compareVersions, '1.2.3-4', '==', 'abc-1.2.3-4')
 
-    def testComparingWorksWithLettersInVersionString(self):
-        self.assertTrue(compareVersions('1.0.a', '<', '1.0.b'))
-        self.assertTrue(compareVersions('a.b', '>', 'a.a'))
+def testComparingWithOneEqualitySignWork():
+    assert compareVersions('1.0', '=', '1.0')
 
-    def testComparisonsWithDifferntDepthsAreMadeTheSameDepth(self):
-        self.assertTrue(compareVersions('1.1.0.1', '>', '1.1'))
-        self.assertTrue(compareVersions('1.1', '<', '1.1.0.1'))
 
-    def testPackageVersionsAreComparedAswell(self):
-        self.assertTrue(compareVersions('1-2', '<', '1-3'))
-        self.assertTrue(compareVersions('1-2.0', '<', '1-2.1'))
+@pytest.mark.parametrize("operator", ['asdf', '+-', '<>', '!='])
+def testUsingUnknownOperatorFails(operator):
+    with pytest.raises(Exception):
+        compareVersions('1', operator, '2')
+
+
+@pytest.mark.parametrize("v1, operator, v2", [
+    ('1.0~20131212', '<', '2.0~20120101'),
+    ('1.0~20131212', '==', '1.0~20120101'),
+])
+def testIgnoringVersionsWithWaveInThem(v1, operator, v2):
+    assert compareVersions(v1, operator, v2)
+
+
+@pytest.mark.parametrize("v1, operator, v2", [
+    ('abc-1.2.3-4', '==', '1.2.3-4'),
+    ('1.2.3-4', '==', 'abc-1.2.3-4')
+])
+def testUsingInvalidVersionStringsFails(v1, operator, v2):
+    with pytest.raises(Exception):
+        compareVersions(v1, operator, v2)
+
+
+@pytest.mark.parametrize("v1, operator, v2", [
+    ('1.0.a', '<', '1.0.b'),
+    ('a.b', '>', 'a.a'),
+])
+def testComparingWorksWithLettersInVersionString(v1, operator, v2):
+    assert compareVersions(v1, operator, v2)
+
+
+@pytest.mark.parametrize("v1, operator, v2", [
+    ('1.1.0.1', '>', '1.1'),
+    ('1.1', '<', '1.1.0.1'),
+])
+def testComparisonsWithDifferntDepthsAreMadeTheSameDepth(v1, operator, v2):
+    assert compareVersions(v1, operator, v2)
+
+
+@pytest.mark.parametrize("v1, operator, v2", [
+    ('1-2', '<', '1-3'),
+    ('1-2.0', '<', '1-2.1')
+])
+def testPackageVersionsAreComparedAswell(v1, operator, v2):
+    assert compareVersions(v1, operator, v2)
 
 
 class GetGlobalConfigTestCase(unittest.TestCase):
@@ -611,21 +672,31 @@ class GetGlobalConfigTestCase(unittest.TestCase):
         self.assertEqual(None, getGlobalConfig('dontCare', 'nonexistingFile'))
 
 
-class IsRegularExpressionTestCase(unittest.TestCase):
-    def testIfIsRegExObject(self):
-        self.assertFalse(isRegularExpressionPattern("no pattern"))
-        self.assertFalse(isRegularExpressionPattern("SRE_Pattern"))
+@pytest.mark.parametrize("value", [
+    re.compile("ABC"),
+    pytest.mark.xfail("no pattern"),
+    pytest.mark.xfail("SRE_Pattern"),
+])
+def testIfObjectIsRegExObject(value):
+    assert isRegularExpressionPattern(value)
 
-        self.assertTrue(isRegularExpressionPattern(re.compile("ABC")))
+
+@pytest.mark.parametrize("value, expected", [
+    (2, 2),
+    ('2', 2),
+])
+def testRemoveUnitDoesNotFailWithoutUnit(value, expected):
+    assert expected == removeUnit(value)
 
 
-class RemoveUnitTestCase(unittest.TestCase):
-    def testNoUnitMeansNoRemoval(self):
-        self.assertEquals(2, removeUnit(2))
-        self.assertEquals(2, removeUnit('2'))
-
-    def testRemovingMegabyte(self):
-        self.assertEquals(2048 * 1024, removeUnit('2MB'))
+@pytest.mark.parametrize("value, expected", [
+    ('2MB', 2097152),  # 2048 * 1024
+    ('2.4MB', 2516582.4),  # (2048 * 1.2) * 1024),
+    ('3GB', 3221225472),
+    ('4Kb', 4096),
+])
+def testRemovingUnitFromValue(value, expected):
+        assert expected == removeUnit(value)
 
 
 class GetFQDNTestCase(unittest.TestCase):
@@ -657,7 +728,7 @@ class GetFQDNTestCase(unittest.TestCase):
             fqdn = "opsi.fqdntestcase.invalid"
             with patchAddress(fqdn=fqdn):
                 confPath = os.path.join(tempDir, randomString(8))
-                with open(confPath, 'w') as conf:
+                with open(confPath, 'w'):
                     pass
 
                 self.assertEqual(fqdn, getfqdn(conf=confPath))
@@ -862,6 +933,10 @@ class JSONSerialisiationTestCase(unittest.TestCase):
 
         self.assertEquals(u'[1, 2, 3, "a"]', obj)
 
+    def testSerialisingTuples(self):
+        values = (1, 2, 3, 4)
+        self.assertEquals('[1, 2, 3, 4]', toJson(values))
+
 
 class FindFilesTestCase(unittest.TestCase):
 
@@ -893,5 +968,25 @@ def preparedDemoFolders():
         yield tempDir
 
 
-if __name__ == '__main__':
-    unittest.main()
+@pytest.fixture(scope='module')
+def tempCertPath():
+    with workInTemporaryDirectory() as tempDir:
+        keyFile = os.path.join(tempDir, 'temp.pem')
+        createCertificate(keyFile)
+
+        yield keyFile
+
+
+@pytest.fixture(params=[1, 5, 91, 256, 337, 512, 829, 3333])
+def randomText(request):
+    yield randomString(request.param)
+
+
+def testEncryptingAndDecryptingTextWithCertificate(tempCertPath, randomText):
+    pytest.importorskip("M2Crypto")  # Lazy import in the encrypt / decrypt functions
+
+    encryptedText = encryptWithPublicKeyFromX509CertificatePEMFile(randomText, tempCertPath)
+    assert encryptedText != randomText
+
+    decryptedText = decryptWithPrivateKeyFromPEMFile(encryptedText, tempCertPath)
+    assert decryptedText == randomText

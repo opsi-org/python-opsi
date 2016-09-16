@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2015 uib GmbH <info@uib.de>
+# Copyright (C) 2015-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -25,195 +25,205 @@ Testing ConfigDataBackend.
 
 from __future__ import absolute_import
 
-import codecs
 import os
-import shutil
-import tempfile
 
 import OPSI.Backend.Backend
 from OPSI.Types import BackendBadValueError
 
-from .helpers import mock, unittest
+from .helpers import mock, workInTemporaryDirectory
+
+import pytest
 
 
-class ConfigDataBackendLogTestCase(unittest.TestCase):
-	def setUp(self):
-		self.logDirectory = tempfile.mkdtemp()
-		self.logDirectoryPatch = mock.patch('OPSI.Backend.Backend.LOG_DIR', self.logDirectory)
-		self.logDirectoryPatch.start()
+@pytest.fixture
+def logBackend(patchLogDir):
+	yield OPSI.Backend.Backend.ConfigDataBackend()
 
-	def tearDown(self):
-		if os.path.exists(self.logDirectory):
-			shutil.rmtree(self.logDirectory)
 
-		self.logDirectoryPatch.stop()
+@pytest.fixture
+def patchLogDir():
+	with workInTemporaryDirectory() as tempDir:
+		with mock.patch('OPSI.Backend.Backend.LOG_DIR', tempDir):
+			yield tempDir
 
-	def testReadingLogFailsIfTypeUnknown(self):
-		cdb = OPSI.Backend.Backend.ConfigDataBackend()
 
-		self.assertRaises(BackendBadValueError, cdb.log_read, 'blablabla')
+def testReadingLogFailsIfTypeUnknown(logBackend):
+	with pytest.raises(BackendBadValueError):
+		logBackend.log_read('unknowntype')
 
-	def testReadingLogRequiresObjectId(self):
-		cdb = OPSI.Backend.Backend.ConfigDataBackend()
 
-		for logType in ('bootimage', 'clientconnect', 'userlogin', 'instlog'):
-			print("Logtype: {0}".format(logType))
-			self.assertRaises(BackendBadValueError, cdb.log_read, logType)
+@pytest.mark.parametrize("logType", ['bootimage', 'clientconnect', 'instlog', 'userlogin'])
+def testReadingLogRequiresObjectId(logBackend, logType):
+	with pytest.raises(BackendBadValueError):
+		logBackend.log_read(logType)
 
-	def testReadingOpsiconfdLogDoesNotRequireObjectId(self):
-		cdb = OPSI.Backend.Backend.ConfigDataBackend()
-		cdb.log_read('opsiconfd')
 
-	def testReadingNonExistingLogReturnsEmptyString(self):
-		"""
-		Valid calls to read logs should return empty strings if no file
-		does exist.
-		"""
-		cdb = OPSI.Backend.Backend.ConfigDataBackend()
-		self.assertEquals("", cdb.log_read('opsiconfd'))
-		self.assertEquals("", cdb.log_read('opsiconfd', 'unknown_object'))
+def testReadingOpsiconfdLogDoesNotRequireObjectId(logBackend):
+	logBackend.log_read('opsiconfd')
 
-	def testOnlyValidLogTypesAreWritten(self):
-		cdb = OPSI.Backend.Backend.ConfigDataBackend()
-		self.assertRaises(BackendBadValueError, cdb.log_write, 'foobar', '')
 
-	def testWritingLogRequiresObjectId(self):
-		cdb = OPSI.Backend.Backend.ConfigDataBackend()
-		self.assertRaises(BackendBadValueError, cdb.log_write, 'opsiconfd', None)
+@pytest.mark.parametrize("objectId", [None, 'unknown_object'])
+def testReadingNonExistingLogReturnsEmptyString(logBackend, objectId):
+	"""
+	Valid calls to read logs should return empty strings if no file
+	does exist.
+	"""
+	assert '' == logBackend.log_read('opsiconfd', objectId)
 
-	def testWritingLogCreatesFile(self):
-		cdb = OPSI.Backend.Backend.ConfigDataBackend()
-		cdb.log_write('opsiconfd', 'data', objectId='foo.bar.baz')
 
-		expectedLogPath = os.path.join(self.logDirectory, 'opsiconfd', 'foo.bar.baz.log')
-		self.assertTrue(os.path.exists(expectedLogPath),
-						"Log path {0} should exist.".format(expectedLogPath))
+def testOnlyValidLogTypesAreWritten(logBackend):
+	with pytest.raises(BackendBadValueError):
+		logBackend.log_write('foobar', '')
 
-	def testWritingAndThenReadingDataFromLog(self):
-		cdb = OPSI.Backend.Backend.ConfigDataBackend()
-		cdb.log_write('opsiconfd', 'data', objectId='foo.bar.baz')
 
-		self.assertEquals('data', cdb.log_read('opsiconfd', 'foo.bar.baz'))
+@pytest.mark.parametrize("objectId", [
+	'foo.bar.baz',
+	'opsiconfd',
+	pytest.mark.xfail(''),
+	pytest.mark.xfail(None),
+])
+@pytest.mark.parametrize("logType", [
+	'bootimage',
+	'clientconnect',
+	'instlog',
+	'opsiconfd',
+	'userlogin'
+])
+def testWritingLogRequiresValidObjectId(logBackend, logType, objectId):
+	logBackend.log_write(logType, 'logdata', objectId)
 
-	def testWritingAndThenReadingDataFromLogWithLimitedWrite(self):
-		cdb = OPSI.Backend.Backend.ConfigDataBackend(maxLogSize=10)
 
-		longData = 'data1\ndata2\ndata3\ndata4\n'
-		cdb.log_write('opsiconfd', longData, objectId='foo.bar.baz')
+def testWritingAndThenReadingDataFromLog(logBackend):
+	logBackend.log_write('opsiconfd', 'data', objectId='foo.bar.baz')
 
-		self.assertEquals('data4\n', cdb.log_read('opsiconfd', 'foo.bar.baz'))
+	assert 'data' == logBackend.log_read('opsiconfd', 'foo.bar.baz')
 
-	def testWritingAndThenReadingDataFromLogWithLimitedRead(self):
-		cdb = OPSI.Backend.Backend.ConfigDataBackend()
 
-		longData = 'data1\ndata2\ndata3\ndata4\n'
-		cdb.log_write('opsiconfd', longData, objectId='foo.bar.baz')
+@pytest.mark.parametrize("logType", [
+	'bootimage', 'clientconnect', 'instlog', 'opsiconfd', 'userlogin'
+])
+def testWritingLogCreatesFile(patchLogDir, logType):
+	cdb = OPSI.Backend.Backend.ConfigDataBackend()
+	cdb.log_write(logType, 'logdata', objectId='foo.bar.baz')
 
-		self.assertEquals('data4\n', cdb.log_read('opsiconfd', 'foo.bar.baz', maxSize=10))
+	expectedLogDir = os.path.join(patchLogDir, logType)
+	assert os.path.exists(expectedLogDir)
 
-	def testAppendingLog(self):
-		data1 = 'data1\ndata2\ndata3\ndata4\n'
-		data2 = "data5\n"
+	expectedLogPath = os.path.join(expectedLogDir, 'foo.bar.baz.log')
+	assert os.path.exists(expectedLogPath)
 
-		maxLogSize = len(data1 + data2)
-		cdb = OPSI.Backend.Backend.ConfigDataBackend(maxLogSize=maxLogSize)
 
-		cdb.log_write('opsiconfd', data1, objectId='foo.bar.baz')
-		cdb.log_write('opsiconfd', data2, objectId='foo.bar.baz', append=True)
+@pytest.mark.parametrize("expected, text, length", [
+		('', 'hallo\nwelt', 0),
+		('o', 'hallo', 1),
+		('llo', 'hallo', 3),
+		('elt', 'hallo\nwelt', 3),
+		('welt', 'hallo\nwelt', 4),
+		('welt', 'hallo\nwelt', 5),
+		('hallo\nwelt', 'hallo\nwelt', 10),
+		('welt\n', 'hallo\nwelt\n', 10),
+		('hallo\nwelt', 'hallo\nwelt', 15),
+	])
+def testTruncatingLogData(logBackend, text, length, expected):
+	assert expected == logBackend._truncateLogData(text, length)
 
-		self.assertEquals(
-			data1 + data2,
-			cdb.log_read('opsiconfd', 'foo.bar.baz', maxSize=maxLogSize)
-		)
 
-	def testWritingAndReadingLogWithoutLimits(self):
-		# Not even the sky is the limit!
-		cdb = OPSI.Backend.Backend.ConfigDataBackend(maxLogSize=0)
+def testWritingAndThenReadingDataFromLogWithLimitedWrite(patchLogDir):
+	cdb = OPSI.Backend.Backend.ConfigDataBackend(maxLogSize=10)
 
-		# The magic 218454 are meant to be more than:
-		# MAX_LOG_SIZE / len('data1\ndata2\ndata3\ndata4\n')
-		longData = 'data1\ndata2\ndata3\ndata4\n' * 218454
-		cdb.log_write('opsiconfd', longData, objectId='foo.bar.baz')
+	longData = 'data1\ndata2\ndata3\ndata4\n'
+	cdb.log_write('opsiconfd', longData, objectId='foo.bar.baz')
 
-		self.assertEquals(longData, cdb.log_read('opsiconfd', 'foo.bar.baz', maxSize=0))
+	assert 'data4\n' == cdb.log_read('opsiconfd', 'foo.bar.baz')
 
-	def testTruncatingData(self):
-		cdb = OPSI.Backend.Backend.ConfigDataBackend()
 
-		self.assertEquals('', cdb._truncateLogData('hallo\nwelt', 0))
+def testWritingAndThenReadingDataFromLogWithLimitedRead(logBackend):
+	objId = 'foo.bar.baz'
+	longData = 'data1\ndata2\ndata3\ndata4\n'
+	logBackend.log_write('opsiconfd', longData, objectId=objId)
 
-		self.assertEquals('o', cdb._truncateLogData('hallo', 1))
-		self.assertEquals('llo', cdb._truncateLogData('hallo', 3))
+	assert 'data4\n' == logBackend.log_read('opsiconfd', objId, maxSize=10)
 
-		self.assertEquals('elt', cdb._truncateLogData('hallo\nwelt', 3))
-		self.assertEquals('welt', cdb._truncateLogData('hallo\nwelt', 4))
-		self.assertEquals('welt', cdb._truncateLogData('hallo\nwelt', 5))
 
-		self.assertEquals('hallo\nwelt', cdb._truncateLogData('hallo\nwelt', 10))
-		self.assertEquals('welt\n', cdb._truncateLogData('hallo\nwelt\n', 10))
-		self.assertEquals('hallo\nwelt', cdb._truncateLogData('hallo\nwelt', 15))
+def testAppendingLog(patchLogDir):
+	data1 = 'data1\ndata2\ndata3\ndata4\n'
+	data2 = "data5\n"
 
-	def testTruncatingOldDataWhenAppending(self):
-		cdb = OPSI.Backend.Backend.ConfigDataBackend(maxLogSize=15)
+	maxLogSize = len(data1 + data2)
+	cdb = OPSI.Backend.Backend.ConfigDataBackend(maxLogSize=maxLogSize)
 
-		cdb.log_write('opsiconfd', u'data1data2data3data4data5', objectId='foo.bar.baz')
-		cdb.log_write('opsiconfd', u'data6', objectId='foo.bar.baz', append=True)
+	cdb.log_write('opsiconfd', data1, objectId='foo.bar.baz')
+	cdb.log_write('opsiconfd', data2, objectId='foo.bar.baz', append=True)
 
-		self.assertEquals(
-			'data4data5data6',
-			cdb.log_read('opsiconfd', objectId='foo.bar.baz')
-		)
+	logData = cdb.log_read('opsiconfd', 'foo.bar.baz', maxSize=maxLogSize)
+	assert data1 + data2 == logData
 
-	def testOverwritingOldDataInAppendMode(self):
-		"""
-		With size limits in place old data should be overwritten.
 
-		Each write operation submits data that is as long as our limit.
-		So every write operation should override the previously written
-		data.
-		"""
-		cdb = OPSI.Backend.Backend.ConfigDataBackend(maxLogSize=5)
+def testWritingAndReadingLogWithoutLimits(patchLogDir):
+	# 0 means no limit.
+	cdb = OPSI.Backend.Backend.ConfigDataBackend(maxLogSize=0)
 
-		cdb.log_write('opsiconfd', u'data1', objectId='foo.bar.baz', append=True)
-		cdb.log_write('opsiconfd', u'data2', objectId='foo.bar.baz', append=True)
-		cdb.log_write('opsiconfd', u'data3', objectId='foo.bar.baz', append=True)
+	# The magic 218454 are meant to be more than:
+	# MAX_LOG_SIZE / len('data1\ndata2\ndata3\ndata4\n')
+	longData = 'data1\ndata2\ndata3\ndata4\n' * 218454
+	cdb.log_write('opsiconfd', longData, objectId='foo.bar.baz')
 
-		self.assertEquals(
-			'data3',
-			cdb.log_read('opsiconfd', objectId='foo.bar.baz', maxSize=0)
-		)
+	assert longData == cdb.log_read('opsiconfd', 'foo.bar.baz', maxSize=0)
 
-	def testTruncatingOldDataWhenAppendingWithNewlines(self):
-		"If we append data we want to truncate the data at a newline."
 
-		cdb = OPSI.Backend.Backend.ConfigDataBackend(maxLogSize=15)
+def testTruncatingOldDataWhenAppending(patchLogDir):
+	cdb = OPSI.Backend.Backend.ConfigDataBackend(maxLogSize=15)
 
-		cdb.log_write('opsiconfd', u'data1data2data3data4data5\n', objectId='foo.bar.baz', append=True)
-		cdb.log_write('opsiconfd', u'data6', objectId='foo.bar.baz', append=True)
+	objId = 'foo.bar.baz'
+	cdb.log_write('opsiconfd', u'data1data2data3data4data5', objectId=objId)
+	cdb.log_write('opsiconfd', u'data6', objectId=objId, append=True)
 
-		self.assertEquals('data6', cdb.log_read('opsiconfd', objectId='foo.bar.baz'))
+	assert 'data4data5data6' == cdb.log_read('opsiconfd', objectId=objId)
 
-	def testOverwritingOldDataInAppendModeWithNewlines(self):
-		"""
-		With size limits in place old data should be overwritten - even with newlines.
 
-		Each write operation submits data that is as long as our limit.
-		So every write operation should override the previously written
-		data.
-		"""
-		cdb = OPSI.Backend.Backend.ConfigDataBackend(maxLogSize=7)
+def testOverwritingOldDataInAppendMode(patchLogDir):
+	"""
+	With size limits in place old data should be overwritten.
 
-		cdb.log_write('opsiconfd', u'data3\ndata4\n', objectId='foo.bar.baz')
-		cdb.log_write('opsiconfd', u'data4\ndata5\n', objectId='foo.bar.baz', append=True)
+	Each write operation submits data that is as long as our limit.
+	So every write operation should override the previously written
+	data.
+	"""
+	cdb = OPSI.Backend.Backend.ConfigDataBackend(maxLogSize=5)
 
-		self.assertEquals(
-			'data5\n',
-			cdb.log_read('opsiconfd', objectId='foo.bar.baz')
-		)
-		self.assertEquals(
-			'data5\n',
-			cdb.log_read('opsiconfd', objectId='foo.bar.baz', maxSize=0)
-		)
+	objId = 'foo.bar.baz'
+	cdb.log_write('opsiconfd', u'data1', objectId=objId, append=True)
+	cdb.log_write('opsiconfd', u'data2', objectId=objId, append=True)
+	cdb.log_write('opsiconfd', u'data3', objectId=objId, append=True)
 
-if __name__ == '__main__':
-	unittest.main()
+	assert 'data3' == cdb.log_read('opsiconfd', objectId=objId, maxSize=0)
+
+
+def testTruncatingOldDataWhenAppendingWithNewlines(patchLogDir):
+	"If we append data we want to truncate the data at a newline."
+
+	cdb = OPSI.Backend.Backend.ConfigDataBackend(maxLogSize=15)
+
+	objId = 'foo.bar.baz'
+	cdb.log_write('opsiconfd', u'data1data2data3data4data5\n', objectId=objId, append=True)
+	cdb.log_write('opsiconfd', u'data6', objectId=objId, append=True)
+
+	assert 'data6' == cdb.log_read('opsiconfd', objectId=objId)
+
+
+def testOverwritingOldDataInAppendModeWithNewlines(patchLogDir):
+	"""
+	With size limits in place old data should be overwritten - even with newlines.
+
+	Each write operation submits data that is as long as our limit.
+	So every write operation should override the previously written
+	data.
+	"""
+	cdb = OPSI.Backend.Backend.ConfigDataBackend(maxLogSize=7)
+
+	objId = 'foo.bar.baz'
+	cdb.log_write('opsiconfd', u'data3\ndata4\n', objectId=objId)
+	cdb.log_write('opsiconfd', u'data4\ndata5\n', objectId=objId, append=True)
+
+	assert 'data5\n' == cdb.log_read('opsiconfd', objectId=objId)
+	assert 'data5\n' == cdb.log_read('opsiconfd', objectId=objId, maxSize=0)

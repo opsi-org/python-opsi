@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
 # Copyright (C) 2013-2016 uib GmbH <info@uib.de>
@@ -26,70 +26,68 @@ Testing basic backends.
 from __future__ import absolute_import
 
 import os.path
-import unittest
-from contextlib import contextmanager
 
 from OPSI.Backend.Backend import ExtendedBackend
-from OPSI.Types import BackendMissingDataError
+from OPSI.Types import BackendError, BackendMissingDataError
 from OPSI.Util import randomString
-from .Backends import getTestBackend
-from .BackendTestMixins.Hosts import getConfigServer
+from .test_hosts import getConfigServer
 from .helpers import workInTemporaryDirectory
 
-
-class ExtendedBackendTestCase(unittest.TestCase):
-    def testBackendInfo(self):
-        backend = ExtendedBackend(None)
-        backend.backend_info()
+import pytest
 
 
-class CredentialsTestCase(unittest.TestCase):
-    def testSettingAndGettingUserCredentials(self):
-        with getTestBackend() as backend:
-            backend.host_insertObject(getConfigServer())  # Required for file backend.
-
-            with fakeCredentialsFile(backend):
-                self.assertRaises(BackendMissingDataError, backend.user_getCredentials, 'unknown')
-
-                backend.user_setCredentials(username="hans", password='blablabla')
-
-                credentials = backend.user_getCredentials(username="hans")
-                self.assertEquals('blablabla', credentials['password'])
-
-    def testOverWritingOldCredentials(self):
-        with getTestBackend() as backend:
-            backend.host_insertObject(getConfigServer())  # Required for file backend.
-
-            with fakeCredentialsFile(backend):
-                backend.user_setCredentials(username="hans", password='bla')
-                backend.user_setCredentials(username="hans", password='itworks')
-
-                credentials = backend.user_getCredentials(username="hans")
-                self.assertEquals('itworks', credentials['password'])
-
-    def testWorkingWithManyCredentials(self):
-        with getTestBackend() as backend:
-            backend.host_insertObject(getConfigServer())  # Required for file backend.
-
-            with fakeCredentialsFile(backend):
-                for _ in range(100):
-                    backend.user_setCredentials(username=randomString(12),
-                                                password=randomString(12))
-                backend.user_setCredentials(username="hans", password='bla')
-
-                credentials = backend.user_getCredentials(username="hans")
-                self.assertEquals('bla', credentials['password'])
-
-    def testSettingUserCredentialsWithoutDepot(self):
-        with getTestBackend() as backend:
-            backend.host_deleteObjects(backend.host_getObjects())
-
-            with fakeCredentialsFile(backend):
-                self.assertRaises(Exception, backend.user_setCredentials, "hans", '')
+def testGettingBackendInfoWithoutBackend():
+    backend = ExtendedBackend(None)
+    backend.backend_info()
 
 
-@contextmanager
-def fakeCredentialsFile(backend):
+def testSettingAndGettingUserCredentials(fakeCredentialsBackend):
+    backend = fakeCredentialsBackend
+
+    with pytest.raises(BackendMissingDataError):
+        backend.user_getCredentials('unknown')
+
+    backend.user_setCredentials(username="hans", password='blablabla')
+
+    credentials = backend.user_getCredentials(username="hans")
+    assert 'blablabla' == credentials['password']
+
+
+def testOverWritingOldCredentials(fakeCredentialsBackend):
+    backend = fakeCredentialsBackend
+
+    backend.user_setCredentials(username="hans", password='bla')
+    backend.user_setCredentials(username="hans", password='itworks')
+
+    credentials = backend.user_getCredentials(username="hans")
+    assert 'itworks' == credentials['password']
+
+
+def testWorkingWithManyCredentials(fakeCredentialsBackend):
+    backend = fakeCredentialsBackend
+
+    for _ in range(100):
+        backend.user_setCredentials(username=randomString(12),
+                                    password=randomString(12))
+    backend.user_setCredentials(username="hans", password='bla')
+
+    credentials = backend.user_getCredentials(username="hans")
+    assert 'bla' == credentials['password']
+
+
+def testSettingUserCredentialsWithoutDepot(fakeCredentialsBackend):
+    backend = fakeCredentialsBackend
+    backend.host_deleteObjects(backend.host_getObjects())
+
+    with pytest.raises(Exception):
+        backend.user_setCredentials("hans", '')
+
+
+@pytest.fixture
+def fakeCredentialsBackend(configDataBackend):
+    backend = configDataBackend
+    backend.host_insertObject(getConfigServer())  # Required for file backend.
+
     with workInTemporaryDirectory() as tempDir:
         credFile = os.path.join(tempDir, 'credentials')
         with open(credFile, 'w'):
@@ -98,10 +96,19 @@ def fakeCredentialsFile(backend):
         originalFile = backend._opsiPasswdFile
         backend._opsiPasswdFile = credFile
         try:
-            yield
+            yield backend
         finally:
             backend._opsiPasswdFile = originalFile
 
 
-if __name__ == '__main__':
-    unittest.main()
+def testBackend_info(configDataBackend):
+    info = configDataBackend.backend_info()
+
+    assert 'opsiVersion' in info
+    assert 'modules' in info
+    assert 'realmodules' in info
+
+
+def testBackend_getSharedAlgorithmThrowsExceptionIfAlgoUnknown(configDataBackend):
+    with pytest.raises(BackendError):
+        configDataBackend.backend_getSharedAlgorithm("foo")

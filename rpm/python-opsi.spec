@@ -1,7 +1,7 @@
 #
 # spec file for package python-opsi
 #
-# Copyright (c) 2013-2015 uib GmbH.
+# Copyright (c) 2013-2016 uib GmbH.
 # This file and all modifications and additions to the pristine
 # package are under the same license as the package itself.
 #
@@ -37,10 +37,10 @@ Url:            http://www.opsi.org
 License:        AGPL-3.0+
 Group:          Productivity/Networking/Opsi
 AutoReqProv:    on
-Version:        4.0.6.40
-Release:        2
+Version:        4.0.7.17
+Release:        1
 Summary:        Python library for the client management solution opsi
-Source:         python-opsi_4.0.6.40-2.tar.gz
+Source:         python-opsi_4.0.7.17-1.tar.gz
 #Source2:        setup.py
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 # python noarch modules are only working on openSUSE 11.2 or higher
@@ -164,7 +164,12 @@ chmod 660 /etc/opsi/passwd
 %config /etc/opsi/backendManager/acl.conf.default
 %config(noreplace) /etc/opsi/backendManager/dispatch.conf.default
 %config /etc/opsi/backendManager/extend.d/10_opsi.conf
+%config /etc/opsi/backendManager/extend.d/10_wim.conf
 %config /etc/opsi/backendManager/extend.d/20_legacy.conf
+%config /etc/opsi/backendManager/extend.d/40_groupActions.conf
+%config /etc/opsi/backendManager/extend.d/40_admin_tasks.conf
+%config /etc/opsi/backendManager/extend.d/70_wan.conf
+%config /etc/opsi/backendManager/extend.d/70_dynamic_depot.conf
 %config /etc/opsi/hwaudit/opsihwaudit.conf
 %config /etc/opsi/hwaudit/locales/de_DE
 %config /etc/opsi/hwaudit/locales/en_US

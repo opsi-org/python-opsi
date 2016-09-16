@@ -85,6 +85,21 @@ def copyTestfileToTemporaryFolder(filename):
     return os.path.join(temporary_folder, new_filename)
 
 
+@contextmanager
+def createTemporaryTestfile(original, tempDir=None):
+    '''Copy `original` to a temporary directory and \
+yield the path to the new file.
+
+    The temporary directory can be specified overridden with `tempDir`.'''
+
+    with workInTemporaryDirectory(tempDir) as targetDir:
+        shutil.copy(original, targetDir)
+
+        (_, new_filename) = os.path.split(original)
+
+        yield os.path.join(targetDir, new_filename)
+
+
 def getLocalFQDN():
     'Get the FQDN of the local machine.'
     # Lazy imports to not hinder other tests.
@@ -99,7 +114,7 @@ def patchAddress(fqdn="opsi.test.invalid", address="172.16.0.1"):
     """
     Modify the results of socket so that expected addresses are returned.
 
-    :param fqdn: The FQDN to use. Everything before the first '.' will server\
+    :param fqdn: The FQDN to use. Everything before the first '.' will serve\
 as hostname.
     :param address: The IP address to use.
     """
@@ -165,3 +180,23 @@ def requiresModulesFile(function):
         return function(*args, **kwargs)
 
     return wrapped_function
+
+
+@contextmanager
+def showLogs(logLevel=7, color=True):
+    """
+    A contextmanager that returns a usable logger that is configured
+    to log debug output.
+    """
+    from OPSI.Logger import Logger
+
+    logger = Logger()
+
+    logLevelBefore = logger.getConsoleLevel()
+
+    try:
+        logger.setConsoleLevel(logLevel)
+        logger.setConsoleColor(color)
+        yield logger
+    finally:
+        logger.setConsoleLevel(logLevelBefore)

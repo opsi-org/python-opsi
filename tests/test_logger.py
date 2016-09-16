@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2015 uib GmbH <info@uib.de>
+# Copyright (C) 2015-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -28,274 +28,375 @@ from __future__ import absolute_import
 import os
 import sys
 import warnings
-
-import OPSI.Logger
-from OPSI.Types import forceUnicode
-
-from .helpers import cd, mock, unittest, workInTemporaryDirectory
-
+from contextlib import contextmanager
 from io import BytesIO as StringIO
 
+import OPSI.Logger
+import pytest
 
-class LoggerTestCase(unittest.TestCase):
-	def setUp(self):
-		self.logger = OPSI.Logger.LoggerImplementation()
+from .helpers import cd, mock, workInTemporaryDirectory, showLogs
 
-	def tearDown(self):
-		self.logger.setConsoleLevel(OPSI.Logger.LOG_NONE)
-		self.logger.setFileLevel(OPSI.Logger.LOG_NONE)
 
-		# Making sure that a possible switched function is resetted to
-		# it's default.
-		warnings.showwarning = OPSI.Logger._showwarning
+# Log level that will result in log output.
+LOGGING_LEVELS = [
+	OPSI.Logger.LOG_CONFIDENTIAL,
+	OPSI.Logger.LOG_DEBUG2,
+	OPSI.Logger.LOG_DEBUG,
+	OPSI.Logger.LOG_INFO,
+	OPSI.Logger.LOG_NOTICE,
+	OPSI.Logger.LOG_WARNING,
+	OPSI.Logger.LOG_ERROR,
+	OPSI.Logger.LOG_CRITICAL,
+	OPSI.Logger.LOG_ESSENTIAL,
+	OPSI.Logger.LOG_COMMENT
+]
 
-	def testChangingConsoleLogLevel(self):
-		logLevel = (OPSI.Logger.LOG_CONFIDENTIAL,
-					OPSI.Logger.LOG_DEBUG2,
-					OPSI.Logger.LOG_DEBUG,
-					OPSI.Logger.LOG_INFO,
-					OPSI.Logger.LOG_NOTICE,
-					OPSI.Logger.LOG_WARNING,
-					OPSI.Logger.LOG_ERROR,
-					OPSI.Logger.LOG_CRITICAL,
-					OPSI.Logger.LOG_ESSENTIAL,
-					OPSI.Logger.LOG_COMMENT,
-					OPSI.Logger.LOG_NONE)
 
-		for level in logLevel:
-			self.logger.setConsoleLevel(level)
-			self.assertEquals(level, self.logger.getConsoleLevel())
+@pytest.fixture
+def logger():
+	logger = OPSI.Logger.LoggerImplementation()
 
-		for level in reversed(logLevel):
-			self.logger.setConsoleLevel(level)
-			self.assertEquals(level, self.logger.getConsoleLevel())
+	try:
+		yield logger
+	finally:
+		logger.setConsoleLevel(OPSI.Logger.LOG_NONE)
+		logger.setFileLevel(OPSI.Logger.LOG_NONE)
 
-	def testLoggingMessage(self):
-		level = OPSI.Logger.LOG_CONFIDENTIAL
-		self.logger.setConsoleLevel(level)
 
-		messageBuffer = StringIO()
-		with mock.patch('OPSI.Logger.sys.stdin', messageBuffer):
-			with mock.patch('OPSI.Logger.sys.stderr', messageBuffer):
-				self.logger.log(level, "This is not a test!",
-								raiseException=True)
+@contextmanager
+def catchMessages():
+	"Write messages to stdout / stdin into a virtual buffer."
 
-		self.assertTrue("This is not a test!" in messageBuffer.getvalue())
+	messageBuffer = StringIO()
+	with mock.patch('OPSI.Logger.sys.stdin', messageBuffer):
+		with mock.patch('OPSI.Logger.sys.stderr', messageBuffer):
+			yield messageBuffer
 
-	def testLoggingUnicode(self):
-		level = OPSI.Logger.LOG_CONFIDENTIAL
-		self.logger.setConsoleLevel(level)
 
-		messageBuffer = StringIO()
-		with mock.patch('OPSI.Logger.sys.stdin', messageBuffer):
-			with mock.patch('OPSI.Logger.sys.stderr', messageBuffer):
-				self.logger.log(level, u"Heävy Metäl Ümläüts! Öy!",
-								raiseException=True)
+def testLoggingMessage(logger):
+	level = OPSI.Logger.LOG_CONFIDENTIAL
+	logger.setConsoleLevel(level)
+
+	with catchMessages() as messageBuffer:
+		logger.log(level, "This is not a test!", raiseException=True)
+
+		assert "This is not a test!" in messageBuffer.getvalue()
+
+
+@pytest.mark.parametrize("logLevel", [OPSI.Logger.LOG_NONE] + LOGGING_LEVELS)
+def testChangingConsoleLogLevel(logger, logLevel):
+	logger.setConsoleLevel(logLevel)
+	assert logLevel == logger.getConsoleLevel()
+
+
+@pytest.mark.parametrize("logLevel", LOGGING_LEVELS)
+def testLoggingUnicode(logger, logLevel):
+	logger.setConsoleLevel(logLevel)
+
+	with catchMessages() as messageBuffer:
+		logger.log(logLevel, u"Heävy Metäl Ümläüts! Öy!", raiseException=True)
 
 		# Currently this has to be suffice
 		# TODO: better check for logged string.
-		self.assertTrue(messageBuffer.getvalue())
+		assert messageBuffer.getvalue()
 
-	def test_logTwisted(self):
-		try:
-			from twisted.python import log
-		except ImportError:
-			self.skipTest("Could not import twisted log module.")
 
-		self.logger.setConsoleLevel(OPSI.Logger.LOG_DEBUG)
-		self.logger.setLogFormat('[%l] %M')
+def test_logTwisted(logger):
+	log = pytest.importorskip("twisted.python.log")
 
-		err = StringIO()
+	logger.setConsoleLevel(OPSI.Logger.LOG_DEBUG)
+	logger.setLogFormat('[%l] %M')
 
-		with mock.patch('OPSI.Logger.sys.stdin', err):
-			with mock.patch('OPSI.Logger.sys.stderr', err):
-				self.logger.startTwistedLogging()
+	with catchMessages() as err:
+		logger.startTwistedLogging()
 
-				value = err.getvalue()
-				self.assertNotEquals("", value)
-				self.assertEquals("[{0:d}] [twisted] Log opened.\n".format(OPSI.Logger.LOG_DEBUG), value)
-				err.seek(0)
-				err.truncate(0)
+		value = err.getvalue()
+		assert "" != value
+		assert value == "[{0:d}] [twisted] Log opened.\n".format(OPSI.Logger.LOG_DEBUG)
+		err.seek(0)
+		err.truncate(0)
 
-				log.msg("message")
-				value = err.getvalue()
-				self.assertNotEquals("", value)
-				self.assertEquals("[{0:d}] [twisted] message\n".format(OPSI.Logger.LOG_DEBUG), value)
-				err.seek(0)
-				err.truncate(0)
+		log.msg("message")
+		value = err.getvalue()
+		assert "" != value
+		assert value == "[{0:d}] [twisted] message\n".format(OPSI.Logger.LOG_DEBUG)
+		err.seek(0)
+		err.truncate(0)
 
-				log.err("message")
-				value = err.getvalue()
-				self.assertEquals("[{0:d}] [twisted] 'message'\n".format(OPSI.Logger.LOG_ERROR), value)
+		log.err("message")
+		value = err.getvalue()
+		assert value == "[{0:d}] [twisted] 'message'\n".format(OPSI.Logger.LOG_ERROR)
 
-	def testPatchingShowwarnings(self):
-		originalWarningFunction = warnings.showwarning
-		self.assertTrue(originalWarningFunction is warnings.showwarning)
 
-		self.logger.logWarnings()
-		self.assertFalse(originalWarningFunction is warnings.showwarning)
+def testPatchingShowwarnings(logger):
+	originalWarningFunction = warnings.showwarning
+	assert originalWarningFunction is warnings.showwarning
 
+	try:
+		logger.logWarnings()
+		assert originalWarningFunction is not warnings.showwarning
+	finally:
+		# Making sure that the switched function is
+		# resetted to it's default.
 		warnings.showwarning = originalWarningFunction
 
-	def testLoggingFromWarningsModule(self):
-		self.logger.setConsoleLevel(OPSI.Logger.LOG_WARNING)
-		self.logger.setLogFormat('[%l] %M')
 
-		messageBuffer = StringIO()
+def testLoggingFromWarningsModule(logger):
+	logger.setConsoleLevel(OPSI.Logger.LOG_WARNING)
+	logger.setLogFormat('[%l] %M')
 
-		with mock.patch('OPSI.Logger.sys.stdin', messageBuffer):
-			with mock.patch('OPSI.Logger.sys.stderr', messageBuffer):
-				self.logger.logWarnings()
+	with catchMessages() as messageBuffer:
+		try:
+			logger.logWarnings()
 
-				warnings.warn("usermessage")
-				warnings.warn("another message", DeprecationWarning)
-				warnings.warn("message", DeprecationWarning, stacklevel=2)
+			warnings.warn("usermessage")
+			warnings.warn("another message", DeprecationWarning)
+			warnings.warn("message", DeprecationWarning, stacklevel=2)
+		finally:
+			# Making sure that the switched function is
+			# resetted to it's default.
+			warnings.showwarning = OPSI.Logger._showwarning
+
+		value = messageBuffer.getvalue()
+
+	assert value.startswith("[{0:d}]".format(OPSI.Logger.LOG_WARNING))
+	assert "UserWarning: usermessage" in value
+
+	if sys.version_info < (2, 7):
+		# Changed in version 2.7: DeprecationWarning is ignored by default.
+		# Source: https://docs.python.org/2.7/library/warnings.html#warning-categories
+		assert "DeprecationWarning: message" in value
+		assert "DeprecationWarning: another message" in value
+
+
+@pytest.mark.parametrize("message, logLevel", [
+	("my password", OPSI.Logger.LOG_CONFIDENTIAL),
+	("beepbeepbeepbeeeeeeeeeep", OPSI.Logger.LOG_DEBUG2),
+	("Beep, beep.", OPSI.Logger.LOG_DEBUG),
+	("The Stark Tower", OPSI.Logger.LOG_INFO),
+	("Hulk not angry", OPSI.Logger.LOG_NOTICE),
+	("Loki lifes!", OPSI.Logger.LOG_WARNING),
+	("under 9000", OPSI.Logger.LOG_ERROR),
+	("over 9000", OPSI.Logger.LOG_CRITICAL),
+	("never miss", OPSI.Logger.LOG_ESSENTIAL),
+	("my words blabla", OPSI.Logger.LOG_COMMENT),
+])
+def testLogLevelIsShownInOutput(logger, message, logLevel):
+	logger.setConsoleLevel(logLevel)
+	logger.setLogFormat('[%l] %M')
+
+	with catchMessages() as messageBuffer:
+		logger.log(logLevel, message)
+		value = messageBuffer.getvalue()
+
+	assert value.startswith("[{0:d}]".format(logLevel))
+	assert message in value
+	assert value.rstrip().endswith(message)
+
+
+def testConfidentialStringsAreNotLogged(logger):
+	secretWord = 'mySecr3tP4ssw0rd!'
+
+	logger.addConfidentialString(secretWord)
+	logger.setConsoleLevel(OPSI.Logger.LOG_DEBUG2)
+
+	with catchMessages() as messageBuffer:
+		logger.notice("Psst... {0}".format(secretWord))
 
 		value = messageBuffer.getvalue()
 
-		self.assertTrue(value.startswith("[{0:d}]".format(OPSI.Logger.LOG_WARNING)))
-		self.assertTrue("UserWarning: usermessage" in value)
+	assert secretWord not in value
+	assert "Psst... " in value
+	assert "*** confidential ***" in value
 
-		if sys.version_info < (2, 7):
-			# Changed in version 2.7: DeprecationWarning is ignored by default.
-			# Source: https://docs.python.org/2.7/library/warnings.html#warning-categories
-			self.assertTrue("DeprecationWarning: message" in value)
-			self.assertTrue("DeprecationWarning: another message" in value)
 
-	def testLoggingLevels(self):
-		def resetBuffer():
-			messageBuffer.seek(0)
-			messageBuffer.truncate(0)
+def testConfidentialStringsCanNotBeEmpty(logger):
+	with pytest.raises(ValueError):
+		logger.addConfidentialString('')
 
-		self.logger.setConsoleLevel(OPSI.Logger.LOG_CONFIDENTIAL)
-		self.logger.setLogFormat('[%l] %M')
 
-		messageBuffer = StringIO()
+def testLogFormatting(logger):
+	logger.setConsoleLevel(OPSI.Logger.LOG_CONFIDENTIAL)
+	logger.setLogFormat('[%l - %L] %F %M')
 
-		with mock.patch('OPSI.Logger.sys.stdin', messageBuffer):
-			with mock.patch('OPSI.Logger.sys.stderr', messageBuffer):
-				self.logger.essential("never miss")
-				value = messageBuffer.getvalue()
-				self.assertTrue(value.startswith("[{0:d}]".format(OPSI.Logger.LOG_ESSENTIAL)))
-				self.assertTrue("never miss" in value)
-
-				resetBuffer()
-				self.logger.comment("my words blabla")
-				value = messageBuffer.getvalue()
-				self.assertTrue(value.startswith("[{0:d}]".format(OPSI.Logger.LOG_COMMENT)))
-				self.assertTrue("my words blabla" in value)
-
-				resetBuffer()
-				self.logger.critical("over 9000")
-				value = messageBuffer.getvalue()
-				self.assertTrue(value.startswith("[{0:d}]".format(OPSI.Logger.LOG_CRITICAL)))
-				self.assertTrue("over 9000" in value)
-
-				resetBuffer()
-				self.logger.error("under 9000")
-				value = messageBuffer.getvalue()
-				self.assertTrue(value.startswith("[{0:d}]".format(OPSI.Logger.LOG_ERROR)))
-				self.assertTrue("under 9000" in value)
-
-				resetBuffer()
-				self.logger.warning("Loki lifes!")
-				value = messageBuffer.getvalue()
-				self.assertTrue(value.startswith("[{0:d}]".format(OPSI.Logger.LOG_WARNING)))
-				self.assertTrue("Loki lifes!" in value)
-
-				resetBuffer()
-				self.logger.notice("Hulk not angry")
-				value = messageBuffer.getvalue()
-				self.assertTrue(value.startswith("[{0:d}]".format(OPSI.Logger.LOG_NOTICE)))
-				self.assertTrue("Hulk not angry" in value)
-
-				resetBuffer()
-				self.logger.info("The Stark Tower")
-				value = messageBuffer.getvalue()
-				self.assertTrue(value.startswith("[{0:d}]".format(OPSI.Logger.LOG_INFO)))
-				self.assertTrue("The Stark Tower" in value)
-
-				resetBuffer()
-				self.logger.debug("Beep, beep.")
-				value = messageBuffer.getvalue()
-				self.assertTrue(value.startswith("[{0:d}]".format(OPSI.Logger.LOG_DEBUG)))
-				self.assertTrue("Beep, beep." in value)
-
-				resetBuffer()
-				self.logger.debug2("beepbeepbeepbeeeeeeeeeep")
-				value = messageBuffer.getvalue()
-				self.assertTrue(value.startswith("[{0:d}]".format(OPSI.Logger.LOG_DEBUG2)))
-				self.assertTrue("beepbeepbeepbeeeeeeeeeep" in value)
-
-				resetBuffer()
-				self.logger.confidential("my password")
-				value = messageBuffer.getvalue()
-				self.assertTrue(value.startswith("[{0:d}]".format(OPSI.Logger.LOG_CONFIDENTIAL)))
-				self.assertTrue("my password" in value)
-
-	def testConfidentialStringsAreNotLogged(self):
-		secretWord = 'mySecr3tP4ssw0rd!'
-
-		self.logger.addConfidentialString(secretWord)
-		self.logger.setConsoleLevel(OPSI.Logger.LOG_DEBUG2)
-
-		messageBuffer = StringIO()
-		with mock.patch('OPSI.Logger.sys.stdin', messageBuffer):
-			with mock.patch('OPSI.Logger.sys.stderr', messageBuffer):
-				self.logger.notice("Psst... {0}".format(secretWord))
+	with catchMessages() as messageBuffer:
+		logger.debug("Chocolate Starfish")
 
 		value = messageBuffer.getvalue()
-		self.assertFalse(secretWord in value)
-		self.assertTrue("Psst... " in value)
-		self.assertTrue("*** confidential ***" in value)
 
-	def testConfidentialStringsCanNotBeEmpty(self):
-		self.assertRaises(ValueError, self.logger.addConfidentialString, '')
+	assert '[7 - debug] test_logger.py Chocolate Starfish', value.strip()
 
-	def testLogFormatting(self):
-		self.logger.setConsoleLevel(OPSI.Logger.LOG_CONFIDENTIAL)
-		self.logger.setLogFormat('[%l - %L] %F %M')
 
-		messageBuffer = StringIO()
-		with mock.patch('OPSI.Logger.sys.stdin', messageBuffer):
-			with mock.patch('OPSI.Logger.sys.stderr', messageBuffer):
-				self.logger.debug("Chocolate Starfish")
+def testSettingConfidentialStrings(logger):
+	confidential = ["Momente", "Wahnsinn"]
+	logger.setConfidentialStrings(confidential)
 
-		value = messageBuffer.getvalue()
-		self.assertEquals('[7 - debug] test_logger.py Chocolate Starfish', value.strip())
+	logger.setConsoleLevel(OPSI.Logger.LOG_DEBUG2)
 
-	def testSettingConfidentialStrings(self):
-		confidential = ["Momente", "Wahnsinn"]
-		self.logger.setConfidentialStrings(confidential)
-
-		self.logger.setConsoleLevel(OPSI.Logger.LOG_DEBUG2)
-
-		messageBuffer = StringIO()
-		with mock.patch('OPSI.Logger.sys.stdin', messageBuffer):
-			with mock.patch('OPSI.Logger.sys.stderr', messageBuffer):
-				self.logger.notice("Die Momente, die es wert sind, ziehen so schnell vorbei")
-				self.logger.notice("So schnell, so weit")
-				self.logger.notice("Der Wahnsinn folgt jetzt nicht mehr dem Asphalt")
-				self.logger.notice("Du lässt ihn zurück")
+	with catchMessages() as messageBuffer:
+		logger.notice("Die Momente, die es wert sind, ziehen so schnell vorbei")
+		logger.notice("So schnell, so weit")
+		logger.notice("Der Wahnsinn folgt jetzt nicht mehr dem Asphalt")
+		logger.notice("Du lässt ihn zurück")
 
 		value = messageBuffer.getvalue()
-		for word in confidential:
-			self.assertFalse(word in value)
-		self.assertTrue("So schnell, so weit" in value)
 
-	def testChangingDirectoriesDoesNotChangePathOfLog(self):
-		with workInTemporaryDirectory():
-			self.logger.setLogFile('test.log')
-			self.logger.setFileLevel(OPSI.Logger.LOG_DEBUG)
-			self.logger.warning('abc')
+	for word in confidential:
+		assert word not in value
+	assert "So schnell, so weit" in value
 
-			self.assertTrue(os.path.exists('test.log'))
 
-			os.mkdir('subdir')
-			with cd('subdir'):
-				self.assertFalse(os.path.exists('test.log'))
-				self.logger.warning('def')
-				self.assertFalse(os.path.exists('test.log'))
+def testChangingDirectoriesDoesNotChangePathOfLog(logger):
+	with workInTemporaryDirectory():
+		logger.setLogFile('test.log')
+		logger.setFileLevel(OPSI.Logger.LOG_DEBUG)
+		logger.warning('abc')
 
-	def testSettingLogPathToNone(self):
-		self.logger.setLogFile(None)
+		assert os.path.exists('test.log')
+
+		os.mkdir('subdir')
+		with cd('subdir'):
+			assert not os.path.exists('test.log')
+			logger.warning('def')
+			assert not os.path.exists('test.log')
+
+
+def testSettingLogPathToNone(logger):
+	logger.setLogFile(None)
+
+
+def testCallingLogMethods(logger):
+	logger.confidential('test message')
+	logger.debug2('test message')
+	logger.debug('test message')
+	logger.info('test message')
+	logger.notice('test message')
+	logger.warning('test message')
+	logger.error('test message')
+	logger.critical('test message')
+	logger.essential('test message')
+	logger.comment('test message')
+
+
+def testLoggingTracebacks():
+	with showLogs() as logger:
+		with catchMessages() as messageBuffer:
+			try:
+				raise RuntimeError("Foooock")
+			except Exception as e:
+				logger.logException(e)
+
+		values = messageBuffer.getvalue().split('\n')
+		if not values[-1]:  # removing last, empty line
+			values = values[:-1]
+
+		print(repr(values))
+
+		assert len(values) > 1
+		assert "traceback" in values[0].lower()
+		assert "line" in values[1].lower()
+		assert "file" in values[1].lower()
+		assert __file__ in values[1]
+		assert "Foooock" in values[-1]
+		assert '==>>> Fooo' in values[-1]  # startswith does not work because of colors...
+
+
+def testLoggingTraceBacksFromInsideAFunction():
+
+	def failyMcFailFace():
+		raise RuntimeError("Something bad happened!")
+
+	with showLogs() as logger:
+		with catchMessages() as messageBuffer:
+			try:
+				failyMcFailFace()
+			except Exception as e:
+				logger.logException(e)
+
+		values = messageBuffer.getvalue().split('\n')
+		if not values[-1]:  # removing last, empty line
+			values = values[:-1]
+
+		print(repr(values))
+
+		assert len(values) > 1
+		assert "traceback" in values[0].lower()
+		assert "line" in values[1].lower()
+		assert "file" in values[1].lower()
+		assert __file__ in values[1]
+		assert failyMcFailFace.func_name in values[2]
+		assert "Something bad happened" in values[-1]
+
+
+def testLogTracebackCanFail():
+	objectWithoutTraceback = object()
+	with showLogs() as logger:
+		with catchMessages() as messageBuffer:
+			logger.logTraceback(objectWithoutTraceback)
+
+	messages = messageBuffer.getvalue()
+
+	print("Messages: {0!r}".format(messages))
+	assert 'Failed to log traceback for' in messages
+	assert repr(objectWithoutTraceback) in messages
+	assert 'object has no attribute' in messages
+
+
+@pytest.mark.parametrize("loglevel, function_name", [
+	(OPSI.Logger.LOG_CONFIDENTIAL, 'confidential'),
+	(OPSI.Logger.LOG_DEBUG2, 'debug2'),
+	(OPSI.Logger.LOG_DEBUG, 'debug'),
+	(OPSI.Logger.LOG_INFO, 'info'),
+	(OPSI.Logger.LOG_NOTICE, 'notice'),
+	(OPSI.Logger.LOG_WARNING, 'warning'),
+	(OPSI.Logger.LOG_ERROR, 'error'),
+	(OPSI.Logger.LOG_CRITICAL, 'critical'),
+	(OPSI.Logger.LOG_ESSENTIAL, 'essential'),
+	(OPSI.Logger.LOG_COMMENT, 'comment'),
+])
+def testLoggerDoesFormattingIfMessageWillGetLogged(loglevel, function_name):
+	with showLogs(logLevel=loglevel) as logger:
+		with catchMessages() as messageBuffer:
+			logFunc = getattr(logger, function_name)
+			logFunc('Backwards compatible text without formatting.')
+			logFunc('This {0:.1f} must be shown {1}: {a}{b:>7}', 1, 'here', a='many', b='kwargs')
+
+	messages = messageBuffer.getvalue()
+
+	print("Messages: {0!r}".format(messages))
+	assert 'This 1.0 must be shown here: many kwargs' in messages
+
+
+@pytest.mark.parametrize("replacement", 'DTlLCFN')  # not: Message
+@pytest.mark.parametrize("loglevel", [
+	OPSI.Logger.LOG_DEBUG2,
+	OPSI.Logger.LOG_DEBUG,
+	OPSI.Logger.LOG_INFO,
+	OPSI.Logger.LOG_NOTICE,
+	OPSI.Logger.LOG_WARNING,
+	OPSI.Logger.LOG_ERROR,
+	OPSI.Logger.LOG_CRITICAL,
+	OPSI.Logger.LOG_ESSENTIAL,
+	OPSI.Logger.LOG_COMMENT,
+])
+def testLoggerDoesNotShowSecretWordBeginningWithCapitalisedF(loglevel, replacement):
+	assert len(replacement) == 1
+	secretWord = "{0}ooBar".format(replacement)
+	assert secretWord.startswith(replacement)
+	command = 'prog.exe -credentials "username%{0}"'.format(secretWord)
+
+	with showLogs(logLevel=loglevel) as logger:
+		logger.setLogFormat('%{formatter} %M'.format(formatter=replacement))
+		logger.addConfidentialString(secretWord)
+
+		with catchMessages() as messageBuffer:
+			logger.log(loglevel, command)
+
+	message = ''.join(messageBuffer.getvalue())
+	assert message
+	assert not message.startswith('%')
+
+	print("Message: {0!r}".format(message))
+
+	assert secretWord not in message
+	assert secretWord[1:] not in message
