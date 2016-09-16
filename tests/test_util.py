@@ -276,13 +276,7 @@ class ObjectToBeautifiedTextTestCase(unittest.TestCase):
         self.assertEquals(expected, objectToBeautifiedText([[],[]]))
 
     def testFormattingEmptyDict(self):
-        self.assertEquals('{\n}', objectToBeautifiedText({}))
-
-        expected = u"""\
-    {
-    }\
-"""
-        self.assertEquals(expected, objectToBeautifiedText({}, level=1))
+        self.assertEquals('{}', objectToBeautifiedText({}))
 
     def testFormattingDefaultDict(self):
         normalDict = {u'lastStateChange': u'', u'actionRequest': u'none', u'productVersion': u'', u'productActionProgress': u'', u'packageVersion': u'', u'installationStatus': u'not_installed', u'productId': u'thunderbird'}
