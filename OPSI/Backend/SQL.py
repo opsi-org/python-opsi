@@ -240,25 +240,27 @@ class SQLBackend(ConfigDataBackend):
 		"""
 		Creates a SQL condition out of the given filter.
 		"""
-		condition = []
-		for key, values in filter.items():
-			if values is None:
-				continue
-			values = forceList(values)
-			if not values:
-				continue
+		def buildCondition():
+			for key, values in filter.items():
+				if values is None:
+					continue
+				values = forceList(values)
+				if not values:
+					continue
 
-			tmp = []
+				yield u' or '.join(processValues(key, values))
+
+		def processValues(key, values):
 			for value in values:
 				if isinstance(value, bool):
 					if value:
-						tmp.append(u"`{0}` = 1".format(key))
+						yield u"`{0}` = 1".format(key)
 					else:
-						tmp.append(u"`{0}` = 0".format(key))
+						yield u"`{0}` = 0".format(key)
 				elif isinstance(value, (float, long, int)):
-					tmp.append(u"`{0}` = {1}".format(key, value))
+					yield u"`{0}` = {1}".format(key, value)
 				elif value is None:
-					tmp.append(u"`{0}` is NULL".format(key))
+					yield u"`{0}` is NULL".format(key)
 				else:
 					value = value.replace(self._sql.ESCAPED_ASTERISK, u'\uffff')
 					value = self._sql.escapeApostrophe(self._sql.escapeBackslash(value))
@@ -267,7 +269,7 @@ class SQLBackend(ConfigDataBackend):
 						operator = match.group(1)
 						value = match.group(2)
 						value = value.replace(u'\uffff', self._sql.ESCAPED_ASTERISK)
-						tmp.append(u"`%s` %s %s" % (key, operator, forceUnicode(value)))
+						yield u"`%s` %s %s" % (key, operator, forceUnicode(value))
 					else:
 						if '*' in value:
 							operator = 'LIKE'
@@ -276,14 +278,13 @@ class SQLBackend(ConfigDataBackend):
 							operator = '='
 
 						value = value.replace(u'\uffff', self._sql.ESCAPED_ASTERISK)
-						tmp.append(u"`{0}` {1} '{2}'".format(key, operator, forceUnicode(value)))
-			condition.append(u' or '.join(tmp))
+						yield u"`{0}` {1} '{2}'".format(key, operator, forceUnicode(value))
 
-		return u' and '.join([u'({0})'.format(c) for c in condition])
+		return u' and '.join(u'({0})'.format(c) for c in buildCondition())
 
 	def _createQuery(self, table, attributes=[], filter={}):
 		select = u','.join(
-			[u'`{0}`'.format(attribute) for attribute in attributes]
+			u'`{0}`'.format(attribute) for attribute in attributes
 		)
 
 		if not select:
