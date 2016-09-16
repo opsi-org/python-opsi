@@ -64,7 +64,6 @@ except ImportError:  # Python 2.6...
                 yield tuple(pool[i] for i in indices)
 
 
-
 @pytest.mark.parametrize("ip, network",[
     ('10.10.1.1', '10.10.0.0/16'),
     ('10.10.1.1', '10.10.0.0/23'),
@@ -210,70 +209,17 @@ class ObjectToBeautifiedTextTestCase(unittest.TestCase):
             windowsSoftwareIds=None
         )
 
-        expected = u"""\
-[
-    {
-    "onceScript" : "once.ins",
-    "windowsSoftwareIds" : null,
-    "description" : "asdf",
-    "advice" : "lolnope",
-    "alwaysScript" : "always.ins",
-    "updateScript" : "update.ins",
-    "productClassIds" : null,
-    "id" : "htmltestproduct",
-    "licenseRequired" : false,
-    "ident" : "htmltestproduct;3.1;1",
-    "name" : "Product HTML Test",
-    "changelog" : null,
-    "customScript" : null,
-    "uninstallScript" : "uninstall.ins",
-    "userLoginScript" : null,
-    "priority" : 0,
-    "productVersion" : "3.1",
-    "packageVersion" : "1",
-    "type" : "LocalbootProduct",
-    "setupScript" : "setup.ins"
-    },
-    {
-    "onceScript" : "once.ins",
-    "windowsSoftwareIds" : null,
-    "description" : "asdf",
-    "advice" : "lolnope",
-    "alwaysScript" : "always.ins",
-    "updateScript" : "update.ins",
-    "productClassIds" : null,
-    "id" : "htmltestproduct",
-    "licenseRequired" : false,
-    "ident" : "htmltestproduct;3.1;1",
-    "name" : "Product HTML Test",
-    "changelog" : null,
-    "customScript" : null,
-    "uninstallScript" : "uninstall.ins",
-    "userLoginScript" : null,
-    "priority" : 0,
-    "productVersion" : "3.1",
-    "packageVersion" : "1",
-    "type" : "LocalbootProduct",
-    "setupScript" : "setup.ins"
-    }
-]\
-"""
+        expected = u'[\n    {\n        "onceScript": "once.ins", \n        "windowsSoftwareIds": null, \n        "description": "asdf", \n        "advice": "lolnope", \n        "alwaysScript": "always.ins", \n        "updateScript": "update.ins", \n        "productClassIds": null, \n        "id": "htmltestproduct", \n        "licenseRequired": false, \n        "ident": "htmltestproduct;3.1;1", \n        "name": "Product HTML Test", \n        "changelog": null, \n        "customScript": null, \n        "uninstallScript": "uninstall.ins", \n        "userLoginScript": null, \n        "priority": 0, \n        "productVersion": "3.1", \n        "packageVersion": "1", \n        "type": "LocalbootProduct", \n        "setupScript": "setup.ins"\n    }, \n    {\n        "onceScript": "once.ins", \n        "windowsSoftwareIds": null, \n        "description": "asdf", \n        "advice": "lolnope", \n        "alwaysScript": "always.ins", \n        "updateScript": "update.ins", \n        "productClassIds": null, \n        "id": "htmltestproduct", \n        "licenseRequired": false, \n        "ident": "htmltestproduct;3.1;1", \n        "name": "Product HTML Test", \n        "changelog": null, \n        "customScript": null, \n        "uninstallScript": "uninstall.ins", \n        "userLoginScript": null, \n        "priority": 0, \n        "productVersion": "3.1", \n        "packageVersion": "1", \n        "type": "LocalbootProduct", \n        "setupScript": "setup.ins"\n    }\n]'
+
         self.maxDiff = None
         self.assertEquals(expected, objectToBeautifiedText([product, product]))
 
     def testFormattingEmptyList(self):
-        self.assertEquals('[\n]', objectToBeautifiedText([]))
+        self.assertEquals('[]', objectToBeautifiedText([]))
 
     def testFormattingListOfEmptyLists(self):
-        expected = u"""\
-[
-    [
-    ],
-    [
-    ]
-]\
-"""
-        self.assertEquals(expected, objectToBeautifiedText([[],[]]))
+        expected = '[\n    [], \n    []\n]'
+        self.assertEquals(expected, objectToBeautifiedText([[], []]))
 
     def testFormattingEmptyDict(self):
         self.assertEquals('{}', objectToBeautifiedText({}))
@@ -312,32 +258,7 @@ class ObjectToBeautifiedTextTestCase(unittest.TestCase):
             )
         ])
 
-        expected = """\
-[
-    {
-    "onceScript" : "once.ins",
-    "windowsSoftwareIds" : null,
-    "description" : "asdf",
-    "advice" : "lolnope",
-    "alwaysScript" : "always.ins",
-    "updateScript" : "update.ins",
-    "productClassIds" : null,
-    "id" : "htmltestproduct",
-    "licenseRequired" : false,
-    "ident" : "htmltestproduct;3.1;1",
-    "name" : "Product HTML Test",
-    "changelog" : null,
-    "customScript" : null,
-    "uninstallScript" : "uninstall.ins",
-    "userLoginScript" : null,
-    "priority" : 0,
-    "productVersion" : "3.1",
-    "packageVersion" : "1",
-    "type" : "LocalbootProduct",
-    "setupScript" : "setup.ins"
-    }
-]\
-"""
+        expected = u'[\n    {\n        "onceScript": "once.ins", \n        "windowsSoftwareIds": null, \n        "description": "asdf", \n        "advice": "lolnope", \n        "alwaysScript": "always.ins", \n        "updateScript": "update.ins", \n        "productClassIds": null, \n        "id": "htmltestproduct", \n        "licenseRequired": false, \n        "ident": "htmltestproduct;3.1;1", \n        "name": "Product HTML Test", \n        "changelog": null, \n        "customScript": null, \n        "uninstallScript": "uninstall.ins", \n        "userLoginScript": null, \n        "priority": 0, \n        "productVersion": "3.1", \n        "packageVersion": "1", \n        "type": "LocalbootProduct", \n        "setupScript": "setup.ins"\n    }\n]'
 
         self.assertEquals(expected, objectToBeautifiedText(obj))
 
