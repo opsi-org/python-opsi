@@ -36,12 +36,12 @@ import collections
 import copy as pycopy
 import inspect
 import json
-import new
 import os
 import random
 import re
 import threading
 import time
+import types
 import warnings
 from hashlib import md5
 from twisted.conch.ssh import keys
@@ -480,7 +480,7 @@ class ExtendedBackend(Backend):
 			argString, callString = getArgAndCallString(functionRef)
 
 			exec(u'def %s(self, %s): return self._executeMethod("%s", %s)' % (methodName, argString, methodName, callString))
-			setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
+			setattr(self, methodName, types.MethodType(eval(methodName), self))
 
 	def _executeMethod(self, methodName, **kwargs):
 		logger.debug(u"ExtendedBackend {0!r}: executing {1!r} on backend {2!r}", self, methodName, self._backend)

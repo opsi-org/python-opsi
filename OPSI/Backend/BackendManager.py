@@ -31,7 +31,6 @@ need to set up you backends, ACL, multiplexing etc. yourself.
 """
 
 import inspect
-import new
 import os
 import re
 import socket
@@ -477,7 +476,7 @@ class BackendDispatcher(Backend):
 				argString, callString = getArgAndCallString(functionRef)
 
 				exec(u'def %s(self, %s): return self._dispatchMethod(%s, "%s", %s)' % (methodName, argString, methodBackends, methodName, callString))
-				setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
+				setattr(self, methodName, types.MethodType(eval(methodName), self))
 
 	def _dispatchMethod(self, methodBackends, methodName, **kwargs):
 		logger.debug(u"Dispatching method {0!r} to backends: {1}", methodName, methodBackends)
@@ -550,8 +549,8 @@ class BackendExtender(ExtendedBackend):
 				if methodName.startswith('_'):
 					continue
 				logger.debug2(u"Extending {0} with instancemethod: {1!r}", self._backend.__class__.__name__, methodName)
-				new_function = new.function(functionRef.func_code, functionRef.func_globals, functionRef.func_code.co_name)
-				new_method = new.instancemethod(new_function, self, self.__class__)
+				new_function = types.FunctionType(functionRef.func_code, functionRef.func_globals, functionRef.func_code.co_name)
+				new_method = types.MethodType(new_function, self)
 				setattr(self, methodName, new_method)
 
 		if self._extensionConfigDir:
@@ -576,7 +575,7 @@ class BackendExtender(ExtendedBackend):
 					for key, val in locals().items():
 						if isinstance(val, types.FunctionType):   # TODO: find a better way
 							logger.debug2(u"Extending %s with instancemethod: '%s'" % (self._backend.__class__.__name__, key))
-							setattr(self, key, new.instancemethod(val, self, self.__class__))
+							setattr(self, key, types.MethodType(val, self))
 			except Exception as error:
 				raise BackendConfigurationError(u"Failed to read extensions from '%s': %s" % (self._extensionConfigDir, error))
 
@@ -730,7 +729,7 @@ class BackendAccessControl(object):
 				logger.debug2(u"Not protecting %s method '%s'" % (Class.__name__, methodName))
 				exec(u'def %s(self, %s): return self._executeMethod("%s", %s)' % (methodName, argString, methodName, callString))
 
-			setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
+			setattr(self, methodName, types.MethodType(eval(methodName), self))
 
 	def _authenticateUser(self):
 		'''
