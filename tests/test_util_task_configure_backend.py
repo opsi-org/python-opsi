@@ -32,7 +32,8 @@ import OPSI.Util.Task.ConfigureBackend as backendConfigUtils
 import OPSI.Util.Task.ConfigureBackend.ConfigurationData as confData
 
 from .Backends.File import FileBackendMixin
-from .helpers import createTemporaryTestfile, unittest
+from .BackendTestMixins.Hosts import getConfigServer
+from .helpers import createTemporaryTestfile, mock, patchAddress, unittest
 
 import pytest
 
@@ -110,6 +111,8 @@ def testReadingWindowsDomainFromSambaConfig():
     u'product_sort_algorithm',
     u'clientconfig.dhcpd.filename',
     pytest.mark.xfail(u'software-on-demand.show-details', strict=True),
+    u'opsiclientd.event_user_login.active',
+    u'opsiclientd.event_user_login.action_processor_command',
 ])
 def testConfigureBackendAddsMissingEntries(extendedConfigDataBackend, configId):
     sambaTestConfig = os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'task', 'smb.conf')
@@ -203,3 +206,72 @@ def testAddingInstallByShutdownConfig(extendedConfigDataBackend):
 
     for ident in requiredConfigIdents:
         assert ident in identsInBackend, "Missing config id {0}".format(ident)
+
+
+@pytest.mark.parametrize("runningOnUCS", [True, False])
+def testAddingUCSSpecificConfigs(extendedConfigDataBackend, runningOnUCS):
+    sambaTestConfig = os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'task', 'smb.conf')
+    with mock.patch('OPSI.Util.Task.ConfigureBackend.ConfigurationData.isUCS', lambda: runningOnUCS):
+        confData.initializeConfigs(backend=extendedConfigDataBackend, pathToSMBConf=sambaTestConfig)
+
+    configIdents = set(extendedConfigDataBackend.config_getIdents(returnType='unicode'))
+
+    assert ('clientconfig.depot.user' in configIdents) == runningOnUCS
+
+    # TODO: check the returned depot user
+
+
+def testAddingConfigsBasedOnConfigServer(extendedConfigDataBackend):
+    sambaTestConfig = os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'task', 'smb.conf')
+    configServer = getConfigServer()
+    configServer.ipAddress = '12.34.56.78'
+
+    confData.initializeConfigs(backend=extendedConfigDataBackend, pathToSMBConf=sambaTestConfig, configServer=configServer)
+
+    configIdents = set(extendedConfigDataBackend.config_getIdents(returnType='unicode'))
+    expectedConfigIDs = [u'clientconfig.configserver.url', u'clientconfig.depot.id']
+
+    for cId in expectedConfigIDs:
+        assert cId in configIdents
+
+    urlConfig = extendedConfigDataBackend.config_getObjects(id=u'clientconfig.configserver.url')[0]
+    assert 1 == len(urlConfig.defaultValues)
+    value = urlConfig.defaultValues[0]
+    print(value)
+    assert value.endswith('/rpc')
+    assert value.startswith('https://')
+    assert configServer.ipAddress in value
+    assert urlConfig.editable
+
+
+    depotConfig = extendedConfigDataBackend.config_getObjects(id=u'clientconfig.depot.id')[0]
+    print(depotConfig)
+    assert 1 == len(depotConfig.defaultValues)
+    assert configServer.id == depotConfig.defaultValues[0]
+    assert configServer.id == depotConfig.possibleValues[0]
+    assert not depotConfig.multiValue
+    assert depotConfig.editable
+
+
+def testAddingConfigBasedOnConfigServerFailsIfServerMissesIP(extendedConfigDataBackend):
+    sambaTestConfig = os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'task', 'smb.conf')
+    configServer = getConfigServer()
+    configServer.ipAddress = None
+
+    with pytest.raises(Exception):
+        confData.initializeConfigs(backend=extendedConfigDataBackend, pathToSMBConf=sambaTestConfig, configServer=configServer)
+
+
+def testConfigsAreOnlyAddedOnce(extendedConfigDataBackend):
+    sambaTestConfig = os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'task', 'smb.conf')
+    confData.initializeConfigs(backend=extendedConfigDataBackend, pathToSMBConf=sambaTestConfig)
+
+    configIdentsFirst = extendedConfigDataBackend.config_getIdents(returnType='unicode')
+    configIdentsFirst = sorted(configIdentsFirst)
+
+    confData.initializeConfigs(backend=extendedConfigDataBackend, pathToSMBConf=sambaTestConfig)
+    configIdentsSecond = extendedConfigDataBackend.config_getIdents(returnType='unicode')
+    configIdentsSecond = sorted(configIdentsSecond)
+
+    assert configIdentsFirst == configIdentsSecond
+    assert len(configIdentsSecond) == len(set(configIdentsSecond))
