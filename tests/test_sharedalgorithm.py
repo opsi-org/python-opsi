@@ -26,134 +26,43 @@ Testing OPSI.SharedAlgorithm
 
 from __future__ import absolute_import, print_function
 
-from .helpers import unittest
+from .helpers import showLogs, unittest
 
-from OPSI.Object import LocalbootProduct, ProductDependency, ProductOnClient
+from OPSI.Object import LocalbootProduct, ProductDependency
 from OPSI import SharedAlgorithm
 from OPSI.Types import OpsiProductOrderingError
 from OPSI.Types import forceUnicode
 
+import pytest
 
-class TestFrame(unittest.TestCase):
-	opsiAgent = LocalbootProduct(
-		id='opsi-agent',
-		name=u'opsi client agent',
-		productVersion='4.0',
-		packageVersion='1',
-		licenseRequired=False,
-		setupScript="setup.ins",
-		uninstallScript=u"uninstall.ins",
-		updateScript=None,
-		alwaysScript=None,
-		onceScript=None,
-		priority=95,
-		description=None,
-		advice="",
-		windowsSoftwareIds=[]
-	)
 
-	ultravnc = LocalbootProduct(
-		id='ultravnc',
-		name=u'Ult@VNC',
-		productVersion='1.0.8.2',
-		packageVersion='1',
-		licenseRequired=False,
-		setupScript="setup.ins",
-		uninstallScript=u"uninstall.ins",
-		updateScript=None,
-		alwaysScript=None,
-		onceScript=None,
-		priority=0,
-		description=None,
-		advice="",
-		windowsSoftwareIds=[]
-	)
+def testSortingWithoutConflicts(productSequenceAlgorithm):
+	"""
+	Test sorting products without conflicts.
 
-	firefox = LocalbootProduct(
-		id='firefox',
-		name=u'Mozilla Firefox',
-		productVersion='3.6',
-		packageVersion='1',
-		licenseRequired=False,
-		setupScript="setup.ins",
-		uninstallScript=u"uninstall.ins",
-		updateScript="update.ins",
-		alwaysScript=None,
-		onceScript=None,
-		priority=0,
-		description=None,
-		advice="",
-		windowsSoftwareIds=[]
-	)
+	There are no conflicting products and no failures expected.
+	"""
+	dependencies, products = getDependencies()
 
-	flashplayer = LocalbootProduct(
-		id='flashplayer',
-		name=u'Adobe Flashplayer',
-		productVersion='10.0.45.2',
-		packageVersion='2',
-		licenseRequired=False,
-		setupScript="setup.ins",
-		uninstallScript=u"uninstall.ins",
-		updateScript=None,
-		alwaysScript=None,
-		onceScript=None,
-		priority=0,
-		description=None,
-		advice="",
-		windowsSoftwareIds=[]
-	)
+	print("Products: {0}".format(products))
+	print("Dependencies: {0}".format(dependencies))
 
-	sysessential = LocalbootProduct(
-		id='sysessential',
-		name=u'Sys Essential',
-		productVersion='1.10.0',
-		packageVersion=2,
-		licenseRequired=False,
-		setupScript="setup.ins",
-		uninstallScript=u"uninstall.ins",
-		updateScript=None,
-		alwaysScript=None,
-		onceScript=None,
-		priority=55,
-		description=None,
-		advice="",
-		windowsSoftwareIds=[]
-	)
+	expectedResult = [
+		u'opsi-agent', u'sysessential', u'firefox', u'javavm',
+		u'ultravnc', u'flashplayer', u'jedit'
+	]
 
-	javavm = LocalbootProduct(
-		id='javavm',
-		name=u'Sun Java',
-		productVersion='1.6.20',
-		packageVersion=2,
-		licenseRequired=False,
-		setupScript="setup.ins",
-		uninstallScript=u"uninstall.ins",
-		updateScript=None,
-		alwaysScript=None,
-		onceScript=None,
-		priority=0,
-		description=None,
-		advice="",
-		windowsSoftwareIds=[]
-	)
+	assert expectedResult == productSequenceAlgorithm(products, dependencies)
 
-	jedit = LocalbootProduct(
-		id='jedit',
-		name=u'jEdit',
-		productVersion='5.1.0',
-		packageVersion=2,
-		licenseRequired=False,
-		setupScript="setup.ins",
-		uninstallScript=u"uninstall.ins",
-		updateScript=None,
-		alwaysScript=None,
-		onceScript=None,
-		priority=0,
-		description=None,
-		advice="",
-		windowsSoftwareIds=[]
-	)
 
+def getDependencies():
+	products = getAvailableProducts()
+
+	flashplayer = _getProductWithId(products, 'flashplayer')
+	firefox = _getProductWithId(products, 'firefox')
+	javavm = _getProductWithId(products, 'javavm')
+	jedit = _getProductWithId(products, 'jedit')
+	ultravnc = _getProductWithId(products, 'ultravnc')
 
 	flashplayerDependency1 = ProductDependency(
 		productId=flashplayer.id,
@@ -194,7 +103,6 @@ class TestFrame(unittest.TestCase):
 		requirementType='before'
 	)
 
-
 	ultravncDependency1 = ProductDependency(
 		productId=ultravnc.id,
 		productVersion=ultravnc.productVersion,
@@ -208,6 +116,333 @@ class TestFrame(unittest.TestCase):
 		requirementType='before'
 	)
 
+	dependencies = [flashplayerDependency1, javavmDependency1,
+		jeditDependency1, ultravncDependency1]
+
+	return dependencies, products
+
+
+def getAvailableProducts():
+	opsiAgent = LocalbootProduct(
+		id='opsi-agent',
+		name=u'opsi client agent',
+		productVersion='4.0',
+		packageVersion='1',
+		licenseRequired=False,
+		setupScript="setup.ins",
+		uninstallScript=u"uninstall.ins",
+		priority=95,
+	)
+
+	ultravnc = LocalbootProduct(
+		id='ultravnc',
+		name=u'Ult@VNC',
+		productVersion='1.0.8.2',
+		packageVersion='1',
+		licenseRequired=False,
+		setupScript="setup.ins",
+		uninstallScript=u"uninstall.ins",
+		priority=0,
+	)
+
+	firefox = LocalbootProduct(
+		id='firefox',
+		name=u'Mozilla Firefox',
+		productVersion='3.6',
+		packageVersion='1',
+		licenseRequired=False,
+		setupScript="setup.ins",
+		uninstallScript=u"uninstall.ins",
+		updateScript="update.ins",
+		priority=0,
+	)
+
+	flashplayer = LocalbootProduct(
+		id='flashplayer',
+		name=u'Adobe Flashplayer',
+		productVersion='10.0.45.2',
+		packageVersion='2',
+		licenseRequired=False,
+		setupScript="setup.ins",
+		uninstallScript=u"uninstall.ins",
+		priority=0,
+	)
+
+	sysessential = LocalbootProduct(
+		id='sysessential',
+		name=u'Sys Essential',
+		productVersion='1.10.0',
+		packageVersion=2,
+		licenseRequired=False,
+		setupScript="setup.ins",
+		uninstallScript=u"uninstall.ins",
+		priority=55,
+	)
+
+	javavm = LocalbootProduct(
+		id='javavm',
+		name=u'Sun Java',
+		productVersion='1.6.20',
+		packageVersion=2,
+		licenseRequired=False,
+		setupScript="setup.ins",
+		uninstallScript=u"uninstall.ins",
+		priority=0,
+	)
+
+	jedit = LocalbootProduct(
+		id='jedit',
+		name=u'jEdit',
+		productVersion='5.1.0',
+		packageVersion=2,
+		licenseRequired=False,
+		setupScript="setup.ins",
+		uninstallScript=u"uninstall.ins",
+		priority=0,
+	)
+
+	products = [
+		opsiAgent, ultravnc, flashplayer, javavm, jedit, firefox, sysessential
+	]
+
+	return products
+
+
+def _getProductWithId(products, productId):
+	for product in products:
+		if product.id == productId:
+			return product
+	else:
+		raise ValueError("Missing product with ID {0!r}".format(productId))
+
+
+@pytest.fixture(
+	params=[SharedAlgorithm.generateProductSequence_algorithm1, SharedAlgorithm.generateProductSequence_algorithm2],
+	ids=['algo1', 'algo2']
+)
+def productSequenceAlgorithm(request):
+	"""
+	Returns an a sort function for creating an product sequence.
+	"""
+	yield request.param
+
+
+def testCreatingOrderWithImpossibleDependenciesFails(productSequenceAlgorithm):
+	products = [
+	{
+		"setupScript" : "setup.ins",
+		"name" : "firefox-sequ",
+		"priority" : 0,
+		"packageVersion" : "1",
+		"productVersion" : "1.0",
+		"id" : "firefox-sequ",
+	},
+	{
+		"setupScript" : "setup.ins",
+		"uninstallScript" : "unsetup.ins",
+		"name" : "flashplayer-sequ",
+		"priority" : 0,
+		"packageVersion" : "1",
+		"productVersion" : "1.0",
+		"id" : "flashplayer-sequ",
+	},
+	{
+		"setupScript" : "setup.ins",
+		"uninstallScript" : "unsetup.ins",
+		"name" : "javavm-sequ",
+		"priority" : 0,
+		"packageVersion" : "1",
+		"productVersion" : "1.0",
+		"id" : "javavm-sequ",
+	},
+	{
+		"setupScript" : "setup.ins",
+		"name" : "jedit-sequ",
+		"priority" : 0,
+		"packageVersion" : "1",
+		"productVersion" : "1.0",
+		"id" : "jedit-sequ",
+	},
+	{
+		"setupScript" : "setup.ins",
+		"uninstallScript" : "unsetup.ins",
+		"name" : "sysessential-sequ",
+		"priority" : 55,
+		"packageVersion" : "1",
+		"productVersion" : "1.0",
+		"id" : "sysessential-sequ",
+	},
+	{
+		"setupScript" : "setup.ins",
+		"uninstallScript" : "unsetup.ins",
+		"name" : "ultravnc-sequ",
+		"priority" : 0,
+		"packageVersion" : "1",
+		"productVersion" : "1.0",
+		"id" : "ultravnc-sequ",
+	}
+]
+
+	deps = [
+	{
+		"productAction" : "setup",
+		"requirementType" : "before",
+		"requiredInstallationStatus" : "installed",
+		"productVersion" : "1.0",
+		"requiredProductId" : "ultravnc-sequ",
+		"packageVersion" : "1",
+		"productId" : "firefox-sequ"
+	},
+	{
+		"productAction" : "setup",
+		"requirementType" : "before",
+		"requiredInstallationStatus" : "installed",
+		"productVersion" : "1.0",
+		"requiredProductId" : "firefox-sequ",
+		"packageVersion" : "1",
+		"productId" : "flashplayer-sequ"
+	},
+	{
+		"productAction" : "setup",
+		"requirementType" : "before",
+		"requiredInstallationStatus" : "installed",
+		"productVersion" : "1.0",
+		"requiredProductId" : "firefox-sequ",
+		"packageVersion" : "1",
+		"productId" : "javavm-sequ"
+	},
+	{
+		"productAction" : "setup",
+		"requirementType" : "before",
+		"requiredInstallationStatus" : "installed",
+		"productVersion" : "1.0",
+		"requiredProductId" : "javavm-sequ",
+		"packageVersion" : "1",
+		"productId" : "jedit-sequ"
+	},
+	{
+		"productAction" : "setup",
+		"requirementType" : "before",
+		"requiredInstallationStatus" : "installed",
+		"productVersion" : "1.0",
+		"requiredProductId" : "ultravnc-sequ",
+		"packageVersion" : "1",
+		"productId" : "sysessential-sequ"
+	},
+	{
+		"ident" : "ultravnc-sequ;1.0;1;setup;javavm-sequ",
+		"productAction" : "setup",
+		"requirementType" : "before",
+		"requiredInstallationStatus" : "installed",
+		"productVersion" : "1.0",
+		"requiredProductId" : "javavm-sequ",
+		"packageVersion" : "1",
+		"productId" : "ultravnc-sequ"
+	}
+]
+
+	products = [LocalbootProduct.fromHash(h) for h in products]
+	deps = [ProductDependency.fromHash(h) for h in deps]
+
+	with pytest.raises(OpsiProductOrderingError):
+		try:
+			productSequenceAlgorithm(products, deps)
+		except OpsiProductOrderingError as error:
+			raise error
+
+	errormessage = forceUnicode(error)
+
+	assert 'firefox-sequ' in errormessage
+	assert 'javavm-sequ' in errormessage
+	assert 'ultravnc-sequ' in errormessage
+
+
+def testCircularDependenciesRaiseException(productSequenceAlgorithm):
+	'Creating a circular dependency raises an exception.'
+
+	dependencies, products = getCircularDepedencies()
+
+	with pytest.raises(OpsiProductOrderingError):
+		productSequenceAlgorithm(products, dependencies)
+
+
+def testCircularDependenciesExceptionNamesConflictingProducts(productSequenceAlgorithm):
+	'''
+	A circular dependency exception should inform the user what \
+products are currently conflicting.
+	'''
+	dependencies, products = getCircularDepedencies()
+
+	try:
+		productSequenceAlgorithm(products, dependencies)
+		pytest.fail("Should not get here.")
+	except OpsiProductOrderingError as error:
+		assert 'firefox' in forceUnicode(error)
+		assert 'javavm' in forceUnicode(error)
+		assert 'ultravnc' in forceUnicode(error)
+
+
+def getCircularDepedencies():
+	'''
+	This creates a circular dependency.
+
+	The testcase is that ultravnc depends on javavm, javavm on firefox
+	and, now added, firefox on ultravnc.
+	'''
+	dependencies, products = getDependencies()
+	firefox = _getProductWithId(products, 'firefox')
+	ultravnc = _getProductWithId(products, 'ultravnc')
+
+	dependencies.append(
+		ProductDependency(
+			productId=firefox.id,
+			productVersion=firefox.productVersion,
+			packageVersion=firefox.packageVersion,
+			productAction='setup',
+			requiredProductId=ultravnc.id,
+			requiredProductVersion=ultravnc.productVersion,
+			requiredPackageVersion=ultravnc.packageVersion,
+			requiredAction=None,
+			requiredInstallationStatus='installed',
+			requirementType='before'
+		)
+	)
+
+	return dependencies, products
+
+
+@pytest.mark.parametrize("sortFunction, expectedOrder",
+	[
+		(SharedAlgorithm.generateProductSequence_algorithm1,
+			[u'opsi-agent', u'firefox', u'javavm', u'ultravnc',
+			u'sysessential', u'flashplayer', u'jedit']
+		),
+		(SharedAlgorithm.generateProductSequence_algorithm2,
+			[u'opsi-agent', u'sysessential', u'firefox', u'javavm',
+			u'ultravnc', u'flashplayer', u'jedit']
+		)
+	],
+	ids=['algo1', 'algo2']
+)
+def testSortingWithOverlappingDependencies(sortFunction, expectedOrder):
+	dependencies, products = getDependenciesWithCrossingPriority()
+	print("Products: {0}".format(products))
+	print("Deps: {0}".format(dependencies))
+	sortedProductList = sortFunction(products, dependencies)
+	print(u"produced sorted list : %s " % sortedProductList)
+
+	assert sortedProductList == expectedOrder
+
+
+def getDependenciesWithCrossingPriority():
+	'''
+	The sysessential dependency tries to move the product ultravnc to \
+front in contradiction to priority
+	'''
+	dependencies, products = getDependencies()
+
+	sysessential = _getProductWithId(products, 'sysessential')
+	ultravnc = _getProductWithId(products, 'ultravnc')
 	sysessentialDependency1 = ProductDependency(
 		productId=sysessential.id,
 		productVersion=sysessential.productVersion,
@@ -220,201 +455,75 @@ class TestFrame(unittest.TestCase):
 		requiredInstallationStatus='installed',
 		requirementType='before'
 	)
-	firefoxDependency1 = ProductDependency(
-		productId=firefox.id,
-		productVersion=firefox.productVersion,
-		packageVersion=firefox.packageVersion,
-		productAction='setup',
-		requiredProductId=ultravnc.id,
-		requiredProductVersion=ultravnc.productVersion,
-		requiredPackageVersion=ultravnc.packageVersion,
-		requiredAction=None,
-		requiredInstallationStatus='installed',
-		requirementType='before'
-	)
+
+	dependencies.append(sysessentialDependency1)
+
+	return dependencies, products
 
 
-	productOnClient1 = ProductOnClient(
-		productId=flashplayer.getId(),
-		productType=flashplayer.getType(),
-		clientId='client1.test.invalid',
-		installationStatus='installed',
-		actionRequest='setup',
-		actionProgress='',
-		productVersion=flashplayer.getProductVersion(),
-		packageVersion=flashplayer.getPackageVersion(),
-		modificationTime='2009-07-01 12:00:00'
-	)
-	productOnClient2 = ProductOnClient(
-		productId=opsiAgent.getId(),
-		productType=opsiAgent.getType(),
-		clientId='client1.test.invalid',
-		installationStatus='not_installed',
-		actionRequest='setup',
-		actionProgress='',
-		productVersion=None,
-		packageVersion=None,
-		modificationTime='2009-07-01 12:00:00'
-	)
-	productOnClient3 = ProductOnClient(
-		productId=jedit.getId(),
-		productType=jedit.getType(),
-		clientId='client1.test.invalid',
-		installationStatus='not_installed',
-		actionRequest='setup',
-		actionProgress='',
-		productVersion=None,
-		packageVersion=None,
-		modificationTime='2009-07-01 12:00:00'
-	)
-	productOnClient4 = ProductOnClient(
-		productId=ultravnc.getId(),
-		productType=ultravnc.getType(),
-		clientId='client1.test.invalid',
-		installationStatus='not_installed',
-		actionRequest='setup',
-		actionProgress='',
-		productVersion=None,
-		packageVersion=None,
-		modificationTime='2009-07-01 12:00:00'
-	)
+def testAlgorithm1SortingWithDifferentPriorities():
+	msServicePack = LocalbootProduct.fromHash({
+		"priority" : 0,
+		"packageVersion" : "5",
+		"productVersion" : "xpsp3",
+		"id" : "msservicepack"
+		})
 
-	productOnClient5 = ProductOnClient(
-		productId=sysessential.getId(),
-		productType=sysessential .getType(),
-		clientId='client1.test.invalid',
-		installationStatus='not_installed',
-		actionRequest='setup',
-		actionProgress='',
-		productVersion=None,
-		packageVersion=None,
-		modificationTime='2009-07-01 12:00:00'
-	)
+	msHotFix = LocalbootProduct.fromHash({
+		"priority" : 80,
+		"packageVersion" : "1",
+		"productVersion" : "201305",
+		"id" : "mshotfix"
+		})
 
-	productOnClient6 = ProductOnClient(
-		productId=jedit.getId(),
-		productType=javavm .getType(),
-		clientId='client2.test.invalid',
-		installationStatus='not_installed',
-		actionRequest='setup',
-		actionProgress='',
-		productVersion=None,
-		packageVersion=None,
-		modificationTime='2009-07-01 12:00:00'
-	)
+	productDep = ProductDependency.fromHash({
+		"productAction" : "setup",
+		"requirementType" : "after",
+		"requiredInstallationStatus" : "installed",
+		"productVersion" : "xpsp3",
+		"requiredProductId" : "mshotfix",
+		"packageVersion" : "5",
+		"productId" : "msservicepack"
+	})
 
-	availProducts = [
-		opsiAgent, ultravnc, flashplayer, javavm, jedit, firefox, sysessential
-	]
-	deps = [
-		flashplayerDependency1, javavmDependency1, jeditDependency1,
-		ultravncDependency1
-	]
+	results = SharedAlgorithm.generateProductSequence_algorithm1([msServicePack, msHotFix], [productDep])
 
-	productOnClients = [
-		productOnClient1, productOnClient2, productOnClient3,
-		productOnClient4, productOnClient5,productOnClient6
-	]
+	print(u"Results are: {0}".format(results))
+	first, second = results
+
+	assert msServicePack.id == first
+	assert msHotFix.id == second
 
 
-class DependenciesOnlyInsideAPriorityclassTestCase(TestFrame):
-	"""
-	CASE: priority levels and dependency do not interfer
-	"""
+def testAlgorithm1SortingWithAfterSetupDependency():
+	renameClient = LocalbootProduct.fromHash({
+		"priority" : 0,
+		"packageVersion" : "2",
+		"productVersion" : "1.0",
+		"id" : "renameopsiclient",
+	})
 
-	def setUp(self):
-		self.sortedProductList = [
-			u'opsi-agent', u'sysessential', u'firefox', u'javavm',
-			u'ultravnc', u'flashplayer', u'jedit'
-		]
-		self.sortedProductList1 = SharedAlgorithm.generateProductSequence_algorithm1(self.availProducts, self.deps)
-		self.sortedProductList2 = SharedAlgorithm.generateProductSequence_algorithm2(self.availProducts, self.deps)
+	winDomain = LocalbootProduct.fromHash({
+		"priority" : 20,
+		"packageVersion" : "6",
+		"productVersion" : "1.0",
+		"id" : "windomain",
+	})
 
-	def tearDown(self):
-		del self.sortedProductList
-		del self.sortedProductList1
-		del self.sortedProductList2
+	productDep = ProductDependency.fromHash({
+		"productAction" : "setup",
+		"requirementType" : "after",
+		"productVersion" : "1.0",
+		"requiredProductId" : "windomain",
+		"requiredAction" : "setup",
+		"packageVersion" : "6",
+		"productId" : "renameopsiclient"
+	})
 
-	def testAlgo1(self):
-		print("availProducts %s " % self.availProducts)
-		print("dependencies %s " % self.deps)
-		print(u"compare to sortedProductList %s " % self.sortedProductList)
-		print(u"produced sorted list  with 1: %s " % self.sortedProductList1)
-		self.assertEqual(self.sortedProductList1, self.sortedProductList)
+	results = SharedAlgorithm.generateProductSequence_algorithm1([winDomain, renameClient], [productDep])
 
-	def testAlgo2(self):
-		print(u"compare to sortedProductList %s " % self.sortedProductList)
-		print(u"produced sorted list : %s " % self.sortedProductList2)
-		self.assertEqual(self.sortedProductList2, self.sortedProductList)
+	print(u"Results are: {0}".format(results))
+	first, second = results
 
-
-class DependenciesCrossingPriorityclassesTestCase(TestFrame):
-	"""
-	CASE: the sysessential dependency tries to move the product ultravnc to front in contradiction to priority
-	"""
-
-	def setUp(self):
-		self.deps = TestFrame.deps[:]
-		self.deps.append(TestFrame.sysessentialDependency1)
-
-		self.sortedProductList1 = SharedAlgorithm.generateProductSequence_algorithm1(self.availProducts, self.deps)
-		self.sortedProductList2 = SharedAlgorithm.generateProductSequence_algorithm2(self.availProducts, self.deps)
-
-	def tearDown(self):
-		del self.sortedProductList1
-		del self.sortedProductList2
-
-	def testAlgo1(self):
-		sortedProductListTarget = [
-			'opsi-agent', u'firefox', u'javavm', u'ultravnc', u'flashplayer',
-			u'jedit', u'sysessential'
-		]
-		print(u"produced sorted list : %s " % self.sortedProductList1)
-		self.assertEqual(self.sortedProductList1, sortedProductListTarget)
-
-	def testAlgo2(self):
-		sortedProductListTarget = [
-			u'opsi-agent', u'sysessential', u'firefox', u'javavm',
-			u'ultravnc', u'flashplayer', u'jedit'
-		]
-		print(u"produced sorted list : %s " % self.sortedProductList2)
-		self.assertEqual(self.sortedProductList2, sortedProductListTarget)
-
-
-class CircularDependenciesTestCase(TestFrame):
-	"""
-	This testcase shows how Circular Dependencies raise an exception.
-
-	The testcase is that ultravnc depends on javavm, javavm on firefox
-	and, now added, firefox on ultravnc.
-	"""
-
-	def setUp(self):
-		self.deps = TestFrame.deps[:]
-		self.deps.append(TestFrame.firefoxDependency1)
-
-	def testAlgo1RaisesAnException(self):
-		self.assertRaises(OpsiProductOrderingError, SharedAlgorithm.generateProductSequence_algorithm1, self.availProducts, self.deps)
-
-	def testExceptionIsHelpfulForAlgo1(self):
-		try:
-			SharedAlgorithm.generateProductSequence_algorithm1(self.availProducts, self.deps)
-		except OpsiProductOrderingError as error:
-			self.assertIn('firefox', forceUnicode(error))
-			self.assertIn('javavm', forceUnicode(error))
-			self.assertIn('ultravnc', forceUnicode(error))
-
-	def testAlgo2RaisesAnException(self):
-		self.assertRaises(OpsiProductOrderingError, SharedAlgorithm.generateProductSequence_algorithm2, self.availProducts, self.deps)
-
-	def testExceptionIsHelpfulForAlgo2(self):
-		try:
-			SharedAlgorithm.generateProductSequence_algorithm2(self.availProducts, self.deps)
-		except OpsiProductOrderingError as error:
-			self.assertIn('firefox', forceUnicode(error))
-			self.assertIn('javavm', forceUnicode(error))
-			self.assertIn('ultravnc', forceUnicode(error))
-
-
-if __name__ == '__main__':
-	unittest.main()
+	assert renameClient.id == first
+	assert winDomain.id == second

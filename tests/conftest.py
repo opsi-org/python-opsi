@@ -50,7 +50,7 @@ from .helpers import workInTemporaryDirectory
 import pytest
 
 
-@pytest.yield_fixture(
+@pytest.fixture(
     params=[getFileBackend, getSQLiteBackend, getMySQLBackend],
     ids=['file', 'sqlite', 'mysql']
 )
@@ -67,30 +67,6 @@ def configDataBackend(request):
             yield backend
 
 
-@pytest.yield_fixture
-def extendedConfigDataBackend(configDataBackend):
-    """
-    Returns an `OPSI.Backend.ExtendedConfigDataBackend` for testing.
-
-    This will return multiple backends but some of these may lead to
-    skips if required libraries are missing or conditions for the
-    execution are not met.
-    """
-    yield ExtendedConfigDataBackend(configDataBackend)
-
-
-@pytest.yield_fixture(
-    params=[getFileBackend, getMySQLBackend],
-    ids=['file', 'mysql']
-)
-def _serverBackend(request):
-    "Shortcut to specify backends used on an opsi server."
-
-    with request.param() as backend:
-        with _backendBase(backend):
-            yield backend
-
-
 @contextmanager
 def _backendBase(backend):
     "Creates the backend base before and deletes it after use."
@@ -102,7 +78,19 @@ def _backendBase(backend):
         backend.backend_deleteBase()
 
 
-@pytest.yield_fixture
+@pytest.fixture
+def extendedConfigDataBackend(configDataBackend):
+    """
+    Returns an `OPSI.Backend.ExtendedConfigDataBackend` for testing.
+
+    This will return multiple backends but some of these may lead to
+    skips if required libraries are missing or conditions for the
+    execution are not met.
+    """
+    yield ExtendedConfigDataBackend(configDataBackend)
+
+
+@pytest.fixture
 def cleanableDataBackend(_serverBackend):
     """
     Returns an backend that can be cleaned.
@@ -110,7 +98,19 @@ def cleanableDataBackend(_serverBackend):
     yield ExtendedConfigDataBackend(_serverBackend)
 
 
-@pytest.yield_fixture
+@pytest.fixture(
+    params=[getFileBackend, getMySQLBackend],
+    ids=['file', 'mysql']
+)
+def _serverBackend(request):
+    "Shortcut to specify backends used on an opsi server."
+
+    with request.param() as backend:
+        with _backendBase(backend):
+            yield backend
+
+
+@pytest.fixture
 def backendManager(_serverBackend):
     """
     Returns an `OPSI.Backend.BackendManager.BackendManager` for testing.
@@ -126,6 +126,47 @@ def backendManager(_serverBackend):
             backend=_serverBackend,
             extensionconfigdir=os.path.join(tempDir, 'etc', 'opsi', 'backendManager', 'extend.d')
         )
+
+
+@pytest.fixture
+def licenseManagementBackend(_sqlBackend):
+    '''Returns a backend that can handle License Management.'''
+    yield ExtendedConfigDataBackend(_sqlBackend)
+
+
+@pytest.fixture(
+    params=[getSQLiteBackend, getMySQLBackend],
+    ids=['sqlite', 'mysql']
+)
+def _sqlBackend(request):
+    '''Backends that make use of SQL.'''
+
+    with request.param() as backend:
+        with _backendBase(backend):
+            yield backend
+
+
+@pytest.fixture
+def hardwareAuditBackendWithHistory(_sqlBackend):
+    yield ExtendedConfigDataBackend(_sqlBackend)
+
+
+@pytest.fixture
+def auditDataBackend(extendedConfigDataBackend):
+    yield extendedConfigDataBackend
+
+
+@pytest.fixture(
+    params=[getMySQLBackend],
+    ids=['mysql']
+)
+def licenseManagentAndAuditBackend(request):
+    # Note: this could run include SQLite but because then won't work
+    # on servers without opsi / licensing. Sadly sticking to this.
+
+    with request.param() as backend:
+        with _backendBase(backend):
+            yield ExtendedConfigDataBackend(backend)
 
 
 def pytest_runtest_setup(item):

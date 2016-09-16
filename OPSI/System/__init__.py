@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2006-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -35,14 +35,17 @@ from __future__ import absolute_import
 import os
 import shutil
 
+from OPSI.Logger import Logger
+from OPSI.Types import forceFilename
+
 if os.name == 'posix':
 	from .Posix import *
 elif os.name == 'nt':
 	from .Windows import *
 
-from OPSI.Types import forceFilename
+__version__ = '4.0.7.20'
 
-__version__ = '4.0.6.12'
+logger = Logger()
 
 
 class SystemHook(SystemSpecificHook):
@@ -182,11 +185,11 @@ def getCountAndSize(path):
 	(count, size) = (0, 0)
 	try:
 		if os.path.isfile(path):
-			logger.debug2(u"Is file: %s" % path)
+			logger.debug2(u"Is file: {0}", path)
 			(count, size) = (1, os.path.getsize(path))
 		elif os.path.isdir(path):
-			logger.debug2(u"Is dir: %s" % path)
-			logger.debug(u"Counting and getting sizes of files in dir '%s'" % path)
+			logger.debug2(u"Is dir: {0}", path)
+			logger.debug(u"Counting and getting sizes of files in dir {0!r}", path)
 			for element in os.listdir(path):
 				(elementCount, elementSize) = getCountAndSize(os.path.join(path, element))
 				count += elementCount

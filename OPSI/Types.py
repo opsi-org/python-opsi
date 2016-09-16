@@ -39,7 +39,44 @@ import types
 
 from OPSI.Logger import Logger
 
-__version__ = '4.0.6.48'
+__version__ = '4.1.1'
+__all__ = [
+    'BackendAuthenticationError', 'BackendBadValueError',
+    'BackendConfigurationError', 'BackendError', 'BackendIOError',
+    'BackendMissingDataError', 'BackendModuleDisabledError',
+    'BackendPermissionDeniedError', 'BackendReferentialIntegrityError',
+    'BackendTemporaryError', 'BackendUnaccomplishableError',
+    'CanceledException', 'LicenseConfigurationError', 'LicenseMissingError',
+    'OpsiAuthenticationError', 'OpsiBackupBackendNotFound',
+    'OpsiBackupFileError', 'OpsiBackupFileNotFound', 'OpsiBadRpcError',
+    'OpsiConnectionError', 'OpsiError', 'OpsiProductOrderingError',
+    'OpsiRpcError', 'OpsiServiceVerificationError', 'OpsiTimeoutError',
+    'OpsiVersionError', 'RepositoryError',
+    'args', 'forceActionProgress', 'forceActionRequest',
+    'forceActionRequestList', 'forceActionResult', 'forceArchitecture',
+    'forceArchitectureList', 'forceAuditState', 'forceBool', 'forceBoolList',
+    'forceBootConfigurationPriority', 'forceConfigId', 'forceDict',
+    'forceDictList', 'forceDomain', 'forceEmailAddress', 'forceFilename',
+    'forceFloat', 'forceFqdn', 'forceGroupId', 'forceGroupIdList',
+    'forceGroupType', 'forceGroupTypeList', 'forceHardwareAddress',
+    'forceHardwareDeviceId', 'forceHardwareVendorId', 'forceHostAddress',
+    'forceHostId', 'forceHostIdList', 'forceHostname', 'forceIPAddress',
+    'forceInstallationStatus', 'forceInt', 'forceIntList', 'forceIpAddress',
+    'forceLanguageCode', 'forceLanguageCodeList', 'forceLicenseContractId',
+    'forceLicenseContractIdList', 'forceLicensePoolId',
+    'forceLicensePoolIdList', 'forceList', 'forceNetmask',
+    'forceNetworkAddress', 'forceObjectClass', 'forceObjectClassList',
+    'forceObjectId', 'forceObjectIdList', 'forceOct', 'forceOpsiHostKey',
+    'forceOpsiTimestamp', 'forcePackageCustomName', 'forcePackageVersion',
+    'forcePackageVersionList', 'forceProductId', 'forceProductIdList',
+    'forceProductPriority', 'forceProductPropertyId',
+    'forceProductPropertyType', 'forceProductTargetConfiguration',
+    'forceProductType', 'forceProductVersion', 'forceProductVersionList',
+    'forceRequirementType', 'forceSoftwareLicenseId',
+    'forceSoftwareLicenseIdList', 'forceTime', 'forceUnicode',
+    'forceUnicodeList', 'forceUnicodeLower', 'forceUnicodeLowerList',
+    'forceUnicodeUpper', 'forceUniqueList', 'forceUnsignedInt', 'forceUrl'
+]
 
 encoding = sys.getfilesystemencoding()
 logger = Logger()
@@ -504,14 +541,14 @@ def forceRequirementType(var):
 
 def forceObjectClass(var, objectClass):
 	exception = None
-	if isinstance(var, _STRING_TYPES) and var.lstrip() and var.lstrip().startswith('{'):
+	if isinstance(var, _STRING_TYPES) and var.lstrip().startswith('{'):
 		from OPSI.Util import fromJson
 
 		try:
 			var = fromJson(var)
 		except Exception as error:
 			exception = error
-			logger.debug(u"Failed to get object from json '%s': %s" % (var, error))
+			logger.debug(u"Failed to get object from json {0!r}: {1!r}", var, error)
 
 	if isinstance(var, dict):
 		if 'type' not in var:
@@ -527,10 +564,10 @@ def forceObjectClass(var, objectClass):
 				error = ValueError("Invalild object type: {0}".format(var['type']))
 
 			exception = error
-			logger.debug(u"Failed to get object from dict '%s': %s" % (var, error))
+			logger.debug(u"Failed to get object from dict {0!r}: {1!r}", var, error)
 		except Exception as error:
 			exception = error
-			logger.debug(u"Failed to get object from dict '%s': %s" % (var, error))
+			logger.debug(u"Failed to get object from dict {0!r}: {1!r}", var, error)
 
 	if not isinstance(var, objectClass):
 		if exception is not None:

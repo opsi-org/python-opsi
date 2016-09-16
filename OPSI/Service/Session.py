@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2006-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -204,7 +204,7 @@ class SessionHandler(object):
 			timeout -= sleepInSeconds
 
 		if timeout == 0:
-			logger.warning(u"Session '%s': timeout occured while waiting for session to get free for deletion" % session.uid)
+			logger.warning(u"Session '%s': timeout occurred while waiting for session to get free for deletion" % session.uid)
 
 		self.deleteSession(session.uid)
 		return True
@@ -241,7 +241,7 @@ class SessionHandler(object):
 
 		dts = []
 		for uid in self.sessions:
-			logger.debug(u"Deleting session {0!r}".format(uid))
+			logger.debug(u"Deleting session {0!r}", uid)
 			dts.append(SessionDeletionThread(self, uid))
 
 		[dt.start() for dt in dts]

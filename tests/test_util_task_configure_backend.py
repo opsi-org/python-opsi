@@ -26,14 +26,16 @@ Testing the backend configuration.
 from __future__ import absolute_import
 
 import os
-import unittest
 
 from OPSI.Object import UnicodeConfig
 import OPSI.Util.Task.ConfigureBackend as backendConfigUtils
 import OPSI.Util.Task.ConfigureBackend.ConfigurationData as confData
 
 from .Backends.File import FileBackendMixin
-from .helpers import createTemporaryTestfile
+from .BackendTestMixins.Hosts import getConfigServer
+from .helpers import createTemporaryTestfile, mock, patchAddress, unittest
+
+import pytest
 
 
 class ConfigFileManagementTestCase(unittest.TestCase):
@@ -90,131 +92,186 @@ class ConfigFileManagementTestCase(unittest.TestCase):
             )
 
 
-class InitialiseConfigsTestCase(unittest.TestCase):
-    def testReadingWindowsDomain(self):
-        testConfig = os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'task', 'smb.conf')
-        domain = confData.readWindowsDomainFromSambaConfig(testConfig)
+def testReadingWindowsDomainFromSambaConfig():
+    testConfig = os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'task', 'smb.conf')
+    domain = confData.readWindowsDomainFromSambaConfig(testConfig)
 
-        self.assertEquals('WWWORK', domain)
+    assert 'WWWORK' == domain
 
 
-class ConfigureBackendTestCase(unittest.TestCase, FileBackendMixin):
+@pytest.mark.parametrize("configId", [
+    u'clientconfig.depot.dynamic',
+    u'clientconfig.depot.drive',
+    u'clientconfig.depot.protocol',
+    u'clientconfig.windows.domain',
+    u'opsi-linux-bootimage.append',
+    u'license-management.use',
+    u'software-on-demand.active',
+    u'software-on-demand.product-group-ids',
+    u'product_sort_algorithm',
+    u'clientconfig.dhcpd.filename',
+    pytest.mark.xfail(u'software-on-demand.show-details', strict=True),
+    u'opsiclientd.event_user_login.active',
+    u'opsiclientd.event_user_login.action_processor_command',
+])
+def testConfigureBackendAddsMissingEntries(extendedConfigDataBackend, configId):
+    sambaTestConfig = os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'task', 'smb.conf')
+    confData.initializeConfigs(backend=extendedConfigDataBackend, pathToSMBConf=sambaTestConfig)
 
-    def setUp(self):
-        self.setUpBackend()
+    configIdents = set(extendedConfigDataBackend.config_getIdents(returnType='unicode'))
 
-    def tearDown(self):
-        self.tearDownBackend()
+    assert configId in configIdents
 
-    def testConfigureBackendAddsMissingEntries(self):
-        wantedConfigs = set([
-            u'clientconfig.depot.dynamic',
-            u'clientconfig.depot.drive',
-            u'clientconfig.depot.protocol',
-            u'clientconfig.windows.domain',
-            u'opsi-linux-bootimage.append',
-            u'license-management.use',
-            u'software-on-demand.active',
-            u'software-on-demand.show-details',
-            u'software-on-demand.product-group-ids',
-            u'product_sort_algorithm',
-            u'clientconfig.dhcpd.filename'
-        ])
 
-        # Making sure we have an empty backend regarding the defaults we want.
-        self.backend.config_delete(id=list(wantedConfigs))
+def testAddingDynamicClientConfigDepotDrive(extendedConfigDataBackend):
+    """
+    'dynamic' should be a possible value in 'clientconfig.depot.drive'.
 
-        sambaTestConfig = os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'task', 'smb.conf')
-        confData.initializeConfigs(backend=self.backend, pathToSMBConf=sambaTestConfig)
+    This makes sure that old configs are updated aswell.
+    """
+    extendedConfigDataBackend.config_delete(id=[u'clientconfig.depot.drive'])
 
-        configIdents = set(self.backend.config_getIdents(returnType='unicode'))
+    oldConfig = UnicodeConfig(
+        id=u'clientconfig.depot.drive',
+        description=u'Drive letter for depot share',
+        possibleValues=[
+            u'c:', u'd:', u'e:', u'f:', u'g:', u'h:', u'i:', u'j:',
+            u'k:', u'l:', u'm:', u'n:', u'o:', u'p:', u'q:', u'r:',
+            u's:', u't:', u'u:', u'v:', u'w:', u'x:', u'y:', u'z:',
+        ],
+        defaultValues=[u'p:'],
+        editable=False,
+        multiValue=False
+    )
+    extendedConfigDataBackend.config_createObjects([oldConfig])
 
-        for configId in wantedConfigs:
-            self.assertTrue(configId in configIdents)
+    sambaTestConfig = os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'task', 'smb.conf')
+    confData.initializeConfigs(backend=extendedConfigDataBackend, pathToSMBConf=sambaTestConfig)
 
-        config = self.backend.config_getObjects(id=u'clientconfig.depot.drive')[0]
-        self.assertTrue(u'dynamic' in config.possibleValues)
+    config = extendedConfigDataBackend.config_getObjects(id=u'clientconfig.depot.drive')[0]
+    assert u'dynamic' in config.possibleValues
 
-    def testAddingDynamicClientConfigDepotDrive(self):
-        """
-        'dynamic' should be a possible value in 'clientconfig.depot.drive'.
 
-        This makes sure that old configs are updated aswell.
-        """
-        self.backend.config_delete(id=[u'clientconfig.depot.drive'])
+def testAddingDynamicClientConfigDepotDriveKeepsOldDefault(extendedConfigDataBackend):
+    """
+    Adding the new property should keep the old defaults.
+    """
+    sambaTestConfig = os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'task', 'smb.conf')
+    confData.initializeConfigs(backend=extendedConfigDataBackend, pathToSMBConf=sambaTestConfig)
 
-        oldConfig = UnicodeConfig(
-            id=u'clientconfig.depot.drive',
-            description=u'Drive letter for depot share',
-            possibleValues=[
-                u'c:', u'd:', u'e:', u'f:', u'g:', u'h:', u'i:', u'j:',
-                u'k:', u'l:', u'm:', u'n:', u'o:', u'p:', u'q:', u'r:',
-                u's:', u't:', u'u:', u'v:', u'w:', u'x:', u'y:', u'z:',
-            ],
-            defaultValues=[u'p:'],
-            editable=False,
-            multiValue=False
-        )
-        self.backend.config_createObjects([oldConfig])
+    extendedConfigDataBackend.config_delete(id=[u'clientconfig.depot.drive'])
+    oldConfig = UnicodeConfig(
+        id=u'clientconfig.depot.drive',
+        description=u'Drive letter for depot share',
+        possibleValues=[
+            u'c:', u'd:', u'e:', u'f:', u'g:', u'h:', u'i:', u'j:',
+            u'k:', u'l:', u'm:', u'n:', u'o:', u'p:', u'q:', u'r:',
+            u's:', u't:', u'u:', u'v:', u'w:', u'x:', u'y:', u'z:',
+        ],
+        defaultValues=[u'n:'],
+        editable=False,
+        multiValue=False
+    )
+    extendedConfigDataBackend.config_createObjects([oldConfig])
 
-        sambaTestConfig = os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'task', 'smb.conf')
-        confData.initializeConfigs(backend=self.backend, pathToSMBConf=sambaTestConfig)
+    sambaTestConfig = os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'task', 'smb.conf')
+    confData.initializeConfigs(backend=extendedConfigDataBackend, pathToSMBConf=sambaTestConfig)
 
-        config = self.backend.config_getObjects(id=u'clientconfig.depot.drive')[0]
-        self.assertTrue(u'dynamic' in config.possibleValues)
+    config = extendedConfigDataBackend.config_getObjects(id=u'clientconfig.depot.drive')[0]
+    assert [u'n:'] == config.defaultValues
 
-    def testAddingDynamicClientConfigDepotDriveKeepsOldDefault(self):
-        """
-        Adding the new property should keep the old defaults.
-        """
-        sambaTestConfig = os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'task', 'smb.conf')
-        confData.initializeConfigs(backend=self.backend, pathToSMBConf=sambaTestConfig)
 
-        self.backend.config_delete(id=[u'clientconfig.depot.drive'])
-        oldConfig = UnicodeConfig(
-            id=u'clientconfig.depot.drive',
-            description=u'Drive letter for depot share',
-            possibleValues=[
-                u'c:', u'd:', u'e:', u'f:', u'g:', u'h:', u'i:', u'j:',
-                u'k:', u'l:', u'm:', u'n:', u'o:', u'p:', u'q:', u'r:',
-                u's:', u't:', u'u:', u'v:', u'w:', u'x:', u'y:', u'z:',
-            ],
-            defaultValues=[u'n:'],
-            editable=False,
-            multiValue=False
-        )
-        self.backend.config_createObjects([oldConfig])
+def testAddingWANConfigs(extendedConfigDataBackend):
+    requiredConfigIdents = [
+        "opsiclientd.event_gui_startup.active",
+        "opsiclientd.event_gui_startup{user_logged_in}.active",
+        "opsiclientd.event_net_connection.active",
+        "opsiclientd.event_timer.active",
+    ]
 
-        sambaTestConfig = os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'task', 'smb.conf')
-        confData.initializeConfigs(backend=self.backend, pathToSMBConf=sambaTestConfig)
+    confData.createWANconfigs(extendedConfigDataBackend)
+    identsInBackend = set(extendedConfigDataBackend.config_getIdents())
 
-        config = self.backend.config_getObjects(id=u'clientconfig.depot.drive')[0]
-        self.assertTrue([u'n:'], config.defaultValues)
+    for ident in requiredConfigIdents:
+        assert ident in identsInBackend, "Missing config id {0}".format(ident)
 
-    def testAddingWANConfigs(self):
-        requiredConfigIdents = [
-            "opsiclientd.event_gui_startup.active",
-            "opsiclientd.event_gui_startup{user_logged_in}.active",
-            "opsiclientd.event_net_connection.active",
-            "opsiclientd.event_timer.active",
-        ]
 
-        confData.createWANconfigs(self.backend)
-        identsInBackend = set(self.backend.config_getIdents())
+def testAddingInstallByShutdownConfig(extendedConfigDataBackend):
+    requiredConfigIdents = [
+        "clientconfig.install_by_shutdown.active",
+    ]
 
-        for ident in requiredConfigIdents:
-            self.assertTrue(ident in identsInBackend, "Missing config id {0}".format(ident))
+    confData.createInstallByShutdownConfig(extendedConfigDataBackend)
+    identsInBackend = set(extendedConfigDataBackend.config_getIdents())
 
-    def testAddingInstallByShutdownConfig(self):
-        requiredConfigIdents = [
-            "clientconfig.install_by_shutdown.active",
-        ]
+    for ident in requiredConfigIdents:
+        assert ident in identsInBackend, "Missing config id {0}".format(ident)
 
-        confData.createInstallByShutdownConfig(self.backend)
-        identsInBackend = set(self.backend.config_getIdents())
 
-        for ident in requiredConfigIdents:
-            self.assertTrue(ident in identsInBackend, "Missing config id {0}".format(ident))
+@pytest.mark.parametrize("runningOnUCS", [True, False])
+def testAddingUCSSpecificConfigs(extendedConfigDataBackend, runningOnUCS):
+    sambaTestConfig = os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'task', 'smb.conf')
+    with mock.patch('OPSI.Util.Task.ConfigureBackend.ConfigurationData.isUCS', lambda: runningOnUCS):
+        confData.initializeConfigs(backend=extendedConfigDataBackend, pathToSMBConf=sambaTestConfig)
 
-if __name__ == '__main__':
-    unittest.main()
+    configIdents = set(extendedConfigDataBackend.config_getIdents(returnType='unicode'))
+
+    assert ('clientconfig.depot.user' in configIdents) == runningOnUCS
+
+    # TODO: check the returned depot user
+
+
+def testAddingConfigsBasedOnConfigServer(extendedConfigDataBackend):
+    sambaTestConfig = os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'task', 'smb.conf')
+    configServer = getConfigServer()
+    configServer.ipAddress = '12.34.56.78'
+
+    confData.initializeConfigs(backend=extendedConfigDataBackend, pathToSMBConf=sambaTestConfig, configServer=configServer)
+
+    configIdents = set(extendedConfigDataBackend.config_getIdents(returnType='unicode'))
+    expectedConfigIDs = [u'clientconfig.configserver.url', u'clientconfig.depot.id']
+
+    for cId in expectedConfigIDs:
+        assert cId in configIdents
+
+    urlConfig = extendedConfigDataBackend.config_getObjects(id=u'clientconfig.configserver.url')[0]
+    assert 1 == len(urlConfig.defaultValues)
+    value = urlConfig.defaultValues[0]
+    print(value)
+    assert value.endswith('/rpc')
+    assert value.startswith('https://')
+    assert configServer.ipAddress in value
+    assert urlConfig.editable
+
+
+    depotConfig = extendedConfigDataBackend.config_getObjects(id=u'clientconfig.depot.id')[0]
+    print(depotConfig)
+    assert 1 == len(depotConfig.defaultValues)
+    assert configServer.id == depotConfig.defaultValues[0]
+    assert configServer.id == depotConfig.possibleValues[0]
+    assert not depotConfig.multiValue
+    assert depotConfig.editable
+
+
+def testAddingConfigBasedOnConfigServerFailsIfServerMissesIP(extendedConfigDataBackend):
+    sambaTestConfig = os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'task', 'smb.conf')
+    configServer = getConfigServer()
+    configServer.ipAddress = None
+
+    with pytest.raises(Exception):
+        confData.initializeConfigs(backend=extendedConfigDataBackend, pathToSMBConf=sambaTestConfig, configServer=configServer)
+
+
+def testConfigsAreOnlyAddedOnce(extendedConfigDataBackend):
+    sambaTestConfig = os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'task', 'smb.conf')
+    confData.initializeConfigs(backend=extendedConfigDataBackend, pathToSMBConf=sambaTestConfig)
+
+    configIdentsFirst = extendedConfigDataBackend.config_getIdents(returnType='unicode')
+    configIdentsFirst = sorted(configIdentsFirst)
+
+    confData.initializeConfigs(backend=extendedConfigDataBackend, pathToSMBConf=sambaTestConfig)
+    configIdentsSecond = extendedConfigDataBackend.config_getIdents(returnType='unicode')
+    configIdentsSecond = sorted(configIdentsSecond)
+
+    assert configIdentsFirst == configIdentsSecond
+    assert len(configIdentsSecond) == len(set(configIdentsSecond))

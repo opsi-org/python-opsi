@@ -34,41 +34,32 @@ from OPSI.Types import BackendConfigurationError
 from .Backends.File import FileBackendMixin
 from .helpers import workInTemporaryDirectory
 
-
-class BackendDispatcherTestCase(unittest.TestCase):
-    def testBackendCreationFailsIfConfigMissing(self):
-        self.assertRaises(BackendConfigurationError, BackendDispatcher)
-
-        self.assertRaises(BackendConfigurationError, BackendDispatcher, dispatchConfigfile='')
-        self.assertRaises(BackendConfigurationError, BackendDispatcher, dispatchConfigfile='nope')
-
-        self.assertRaises(BackendConfigurationError, BackendDispatcher, dispatchConfig='')
-
-        self.assertRaises(BackendConfigurationError, BackendDispatcher, dispatchConfig=[[u'.*', [u'file']]])
+import pytest
 
 
-class BackendDispatcherWithFilesTestCase(unittest.TestCase):
-    """
-    Testing the BackendDispatcher with files on the disk.
+@pytest.mark.parametrize("kwargs", [
+    {},
+    {'dispatchConfigfile': ''},
+    {'dispatchConfigfile': 'nope'},
+    {'dispatchConfig': ''},
+    {'dispatchConfig': [[u'.*', [u'file']]]},
+])
+def testBackendCreationFailsIfConfigMissing(kwargs):
+    with pytest.raises(BackendConfigurationError):
+        BackendDispatcher(**kwargs)
 
-    This will create files that look like an actual backend to simulate
-    correct loading of backend information.
-    """
-    def testLoadingDispatchConfigFailsIfBackendConfigMissing(self):
-        with workInTemporaryDirectory() as testDir:
-            backendDir = os.path.join(testDir, 'backends')
 
-            self.assertRaises(
-                BackendConfigurationError,
-                BackendDispatcher,
-                dispatchConfig=[[u'.*', [u'file']]],
-                backendConfigDir=backendDir
-            )
+@pytest.mark.parametrize("create_folder", [True, False], ids=["existing folder", "nonexisting folder"])
+def testLoadingDispatchConfigFailsIfBackendConfigWithoutConfigs(create_folder):
+    with workInTemporaryDirectory() as testDir:
+        backendDir = os.path.join(testDir, 'backends')
 
+        if create_folder:
             os.mkdir(backendDir)
-            self.assertRaises(
-                BackendConfigurationError,
-                BackendDispatcher,
+            print("Created folder: {0}".format(backendDir))
+
+        with pytest.raises(BackendConfigurationError):
+            BackendDispatcher(
                 dispatchConfig=[[u'.*', [u'file']]],
                 backendConfigDir=backendDir
             )
@@ -105,7 +96,3 @@ class BackendDispatcherWithBackendTestCase(unittest.TestCase, FileBackendMixin):
         )
 
         self.assertEquals([], dispatcher.host_getObjects())
-
-
-if __name__ == '__main__':
-    unittest.main()

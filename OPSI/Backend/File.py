@@ -45,7 +45,7 @@ from OPSI.Util.File.Opsi import OpsiConfFile, HostKeyFile, PackageControlFile
 from OPSI.Object import *  # needed for calls to "eval"
 from OPSI.Types import BackendConfigurationError
 
-__version__ = '4.0.6.46'
+__version__ = '4.0.7.1'
 
 logger = Logger()
 
@@ -697,7 +697,7 @@ class FileBackend(ConfigDataBackend):
 			logger.warning(u"Unhandled objType '%s'" % objType)
 
 		if not objIdents:
-			logger.debug2(u"Could not retrieve any idents, returning empty list." % ())
+			logger.debug2(u"Could not retrieve any idents, returning empty list.")
 			return []
 
 		needFilter = False
@@ -707,7 +707,7 @@ class FileBackend(ConfigDataBackend):
 				break
 
 		if not needFilter:
-			logger.debug2(u"Returning idents without filter." % ())
+			logger.debug2(u"Returning idents without filter.")
 			return objIdents
 
 		return [ident for ident in objIdents
@@ -1040,12 +1040,12 @@ class FileBackend(ConfigDataBackend):
 						currentObjects = packageControlFile.getProductProperties()
 
 					found = False
-					for i in range(len(currentObjects)):
-						if currentObjects[i].getIdent(returnType='unicode') == obj.getIdent(returnType='unicode'):
+					for i, currentObj in enumerate(currentObjects):
+						if currentObj.getIdent(returnType='unicode') == obj.getIdent(returnType='unicode'):
 							if mode == 'create':
 								currentObjects[i] = obj
 							else:
-								newHash = currentObjects[i].toHash()
+								newHash = currentObj.toHash()
 								for (attribute, value) in obj.toHash().items():
 									if value is not None:
 										newHash[attribute] = value
@@ -1256,8 +1256,8 @@ class FileBackend(ConfigDataBackend):
 
 		if opsiConfigServers:
 			contained = False
-			for i in range(len(result)):
-				if result[i].getId() == opsiConfigServers[0].getId():
+			for i, currentResult in enumerate(result):
+				if currentResult.getId() == opsiConfigServers[0].getId():
 					result[i] = opsiConfigServers[0]
 					contained = True
 					break

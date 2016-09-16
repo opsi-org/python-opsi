@@ -6,7 +6,7 @@ opsi python library - Windows
 This module is part of the desktop management solution opsi
 (open pc server integration) http://www.opsi.org
 
-Copyright (C) 2013-2015 uib GmbH
+Copyright (C) 2013-2016 uib GmbH
 
 http://www.uib.de/
 
@@ -42,7 +42,6 @@ import time
 
 # Win32 imports
 import _winreg
-import msvcrt
 import ntsecuritycon
 import pywintypes
 import win32api
@@ -54,7 +53,6 @@ import win32net
 import win32netcon
 import win32pdh
 import win32pdhutil
-import win32pipe
 import win32process
 import win32profile
 import win32security
@@ -64,10 +62,32 @@ import win32wnet
 from ctypes import *
 from datetime import datetime
 
-from OPSI.Logger import *
-from OPSI.Types import *
+from OPSI.Logger import Logger
+from OPSI.Types import (forceBool, forceDict, forceInt, forceUnicode,
+	forceUnicodeList, forceUnicodeLower, forceFilename, forceList)
 
-__version__ = '4.0.6.29'
+__version__ = '4.0.7.20'
+__all__ = [
+	'HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE', 'hooks', 'SystemSpecificHook',
+	'addSystemHook', 'removeSystemHook', 'getArchitecture', 'getOpsiHotfixName',
+	'getHostname', 'getFQDN', 'getFileVersionInfo', 'getProgramFilesDir',
+	'getSystemDrive', 'getNetworkInterfaces', 'getDefaultNetworkInterfaceName',
+	'getSystemProxySetting', 'NetworkPerformanceCounter',
+	'NetworkPerformanceCounterWMI', 'NetworkPerformanceCounterPDH',
+	'copyACL', 'adjustPrivilege', 'getRegistryValue', 'setRegistryValue',
+	'createRegistryKey', 'getFreeDrive', 'getDiskSpaceUsage', 'mount', 'umount',
+	'getActiveConsoleSessionId', 'getActiveDesktopName', 'getActiveSessionIds',
+	'getActiveSessionId', 'getSessionInformation',
+	'getActiveSessionInformation', 'getUserSessionIds', 'logoffCurrentUser',
+	'lockWorkstation', 'reboot', 'shutdown', 'abortShutdown',
+	'createWindowStation', 'createDesktop', 'getDesktops', 'switchDesktop',
+	'addUserToDesktop', 'addUserToWindowStation', 'which', 'execute', 'getPids',
+	'getPid', 'getProcessName', 'getProcessHandle', 'getProcessWindowHandles',
+	'closeProcessWindows', 'terminateProcess', 'getUserToken',
+	'runCommandInSession', 'createUser', 'deleteUser', 'existsUser',
+	'getUserSidFromHandle', 'getUserSid', 'getAdminGroupName',
+	'setLocalSystemTime', 'Impersonate'
+]
 
 logger = Logger()
 hooks = []
@@ -195,26 +215,34 @@ def getOpsiHotfixName(helper=None):
 			try:
 				result = execute(helper, shell=False)
 				minor = int(result[0].split(".")[1])
+				if int(result[0].split(".")[0]) == 10:
+					logger.notice("Windows 10 detected, changing major from 6 to 10")
+					major = 10
 			except Exception:
 				logger.warning(u"MSHotfix fix for Windows 8.1 don't work. Fallback to normal mode.")
-
-		if (minor == 0):
-			os = u'vista-win2008'
-		elif (minor == 1):
-			if (arch == 'x86'):
-				os = u'win7'
+			if (major == 10):
+				if (arch == 'x86'):
+					os = u'win10'
+				else:
+					os = u'win10-win2016'
 			else:
-				os = u'win7-win2008r2'
-		elif (minor == 2):
-			if (arch == 'x86'):
-				os = u'win8'
-			else:
-				os = u'win8-win2012'
-		elif (minor == 3):
-			if (arch == 'x86'):
-				os = u'win81'
-			else:
-				os = u'win81-win2012r2'
+				if (minor == 0):
+					os = u'vista-win2008'
+				elif (minor == 1):
+					if (arch == 'x86'):
+						os = u'win7'
+					else:
+						os = u'win7-win2008r2'
+				elif (minor == 2):
+					if (arch == 'x86'):
+						os = u'win8'
+					else:
+						os = u'win8-win2012'
+				elif (minor == 3):
+					if (arch == 'x86'):
+						os = u'win81'
+					else:
+						os = u'win81-win2012r2'
 
 	return u'mshotfix-%s-%s-%s' % (os, arch, lang)
 
@@ -316,6 +344,12 @@ def getDefaultNetworkInterfaceName():
 	for interface in getNetworkInterfaces():
 		if interface.gatewayList.ipAddress:
 			return interface.description
+	return None
+
+def getSystemProxySetting():
+	#TODO read proxy settings from system registry
+	#HINTS: If proxycfg is not installed read this way (you have to cut)
+	#netsh winhttp show proxy
 	return None
 
 
@@ -1409,7 +1443,7 @@ def execute(cmd, waitForEnding=True, getHandle=False, ignoreExitCode=[], exitOnS
 					result.append(line)
 
 	except (os.error, IOError) as e:
-		# Some error occured during execution
+		# Some error occurred during execution
 		raise IOError(e.errno, u"Command '%s' failed:\n%s" % (cmd, e) )
 
 	logger.debug(u"Exit code: %s" % exitCode)
@@ -1583,6 +1617,7 @@ def getUserToken(sessionId=None, duplicateFrom=u"winlogon.exe"):
 
 	return hUserTokenDup
 
+
 def runCommandInSession(command, sessionId=None, desktop=u"default", duplicateFrom=u"winlogon.exe", waitForProcessEnding=True, timeoutSeconds=0):
 	command = forceUnicode(command)
 	if sessionId is not None:
@@ -1740,6 +1775,7 @@ def getAdminGroupName():
 	logger.info(u"Admin group name is '%s'" % groupName)
 	return groupName
 
+
 def setLocalSystemTime(timestring):
 	"""
 	Method sets the local systemtime
@@ -1768,11 +1804,9 @@ def setLocalSystemTime(timestring):
 	try:
 		dt = datetime.datetime.strptime(timestring, '%Y-%m-%d %H:%M:%S.%f')
 		logger.info(u"Setting Systemtime Time to %s" % timestring)
-		winapi32.SetSystemTime(dt.year, dt.month, dt.weekday(), dt.day, dt.hour, dt.minute, dt.second, dt.microsecond)
+		win32api.SetSystemTime(dt.year, dt.month, 0, dt.day, dt.hour, dt.minute, dt.second, 0)
 	except Exception as e:
 		logger.error(u"Failed to set System Time: '%s'" % e)
-
-
 
 
 class Impersonate:

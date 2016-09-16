@@ -82,6 +82,7 @@ def _processConfig(lines):
 	workbenchShareFound = False
 	opsiImagesFound = False
 	repositoryFound = False
+	oplocksFound = False
 
 	samba4 = isSamba4()
 
@@ -99,6 +100,8 @@ def _processConfig(lines):
 			workbenchShareFound = True
 		elif currentLine == '[opsi_repository]':
 			repositoryFound = True
+		elif 'oplocks' in currentLine:
+			oplocksFound = True
 		newlines.append(line)
 
 	if optPcbinShareFound:
@@ -159,9 +162,7 @@ def _processConfig(lines):
 		newlines.append(u"   available = yes\n")
 		newlines.append(u"   comment = opsi depot share (rw)\n")
 		newlines.append(u"   path = /var/lib/opsi/depot\n")
-		newlines.append(u"   oplocks = no\n")
 		newlines.append(u"   follow symlinks = yes\n")
-		newlines.append(u"   level2 oplocks = no\n")
 		newlines.append(u"   writeable = yes\n")
 		newlines.append(u"   invalid users = root\n")
 		newlines.append(u"\n")
@@ -172,8 +173,6 @@ def _processConfig(lines):
 		newlines.append(u"   available = yes\n")
 		newlines.append(u"   comment = opsi ntfs images share (rw)\n")
 		newlines.append(u"   path = /var/lib/opsi/ntfs-images\n")
-		newlines.append(u"   oplocks = no\n")
-		newlines.append(u"   level2 oplocks = no\n")
 		newlines.append(u"   writeable = yes\n")
 		newlines.append(u"   invalid users = root\n")
 		newlines.append(u"\n")
@@ -203,15 +202,15 @@ def _processConfig(lines):
 		newlines.append(u"   available = yes\n")
 		newlines.append(u"   comment = opsi repository share (ro)\n")
 		newlines.append(u"   path = /var/lib/opsi/repository\n")
-		newlines.append(u"   oplocks = no\n")
 		newlines.append(u"   follow symlinks = yes\n")
-		newlines.append(u"   level2 oplocks = no\n")
 		newlines.append(u"   writeable = no\n")
 		newlines.append(u"   invalid users = root\n")
 		newlines.append(u"\n")
 		if not os.path.exists("/var/lib/opsi/repository"):
 			logger.debug(u"Path:  /var/lib/opsi/repository not found: creating.")
 			os.mkdir("/var/lib/opsi/repository")
+	if oplocksFound:
+		logger.warning(u" Detected oplocks in your samba configuration. It is not recommended to use them with opsi. Please see the opsi manual for further information.")
 
 	return newlines
 

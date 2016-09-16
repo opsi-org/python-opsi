@@ -52,7 +52,7 @@ LOGGING_LEVELS = [
 ]
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def logger():
 	logger = OPSI.Logger.LoggerImplementation()
 
@@ -287,7 +287,8 @@ def testLoggingTracebacks():
 				logger.logException(e)
 
 		values = messageBuffer.getvalue().split('\n')
-		values = [v for v in values if v]  # don't use empty lines
+		if not values[-1]:  # removing last, empty line
+			values = values[:-1]
 
 		print(repr(values))
 
@@ -295,7 +296,36 @@ def testLoggingTracebacks():
 		assert "traceback" in values[0].lower()
 		assert "line" in values[1].lower()
 		assert "file" in values[1].lower()
+		assert __file__ in values[1]
 		assert "Foooock" in values[-1]
+		assert '==>>> Fooo' in values[-1]  # startswith does not work because of colors...
+
+
+def testLoggingTraceBacksFromInsideAFunction():
+
+	def failyMcFailFace():
+		raise RuntimeError("Something bad happened!")
+
+	with showLogs() as logger:
+		with catchMessages() as messageBuffer:
+			try:
+				failyMcFailFace()
+			except Exception as e:
+				logger.logException(e)
+
+		values = messageBuffer.getvalue().split('\n')
+		if not values[-1]:  # removing last, empty line
+			values = values[:-1]
+
+		print(repr(values))
+
+		assert len(values) > 1
+		assert "traceback" in values[0].lower()
+		assert "line" in values[1].lower()
+		assert "file" in values[1].lower()
+		assert __file__ in values[1]
+		assert failyMcFailFace.func_name in values[2]
+		assert "Something bad happened" in values[-1]
 
 
 def testLogTracebackCanFail():
@@ -310,3 +340,63 @@ def testLogTracebackCanFail():
 	assert 'Failed to log traceback for' in messages
 	assert repr(objectWithoutTraceback) in messages
 	assert 'object has no attribute' in messages
+
+
+@pytest.mark.parametrize("loglevel, function_name", [
+	(OPSI.Logger.LOG_CONFIDENTIAL, 'confidential'),
+	(OPSI.Logger.LOG_DEBUG2, 'debug2'),
+	(OPSI.Logger.LOG_DEBUG, 'debug'),
+	(OPSI.Logger.LOG_INFO, 'info'),
+	(OPSI.Logger.LOG_NOTICE, 'notice'),
+	(OPSI.Logger.LOG_WARNING, 'warning'),
+	(OPSI.Logger.LOG_ERROR, 'error'),
+	(OPSI.Logger.LOG_CRITICAL, 'critical'),
+	(OPSI.Logger.LOG_ESSENTIAL, 'essential'),
+	(OPSI.Logger.LOG_COMMENT, 'comment'),
+])
+def testLoggerDoesFormattingIfMessageWillGetLogged(loglevel, function_name):
+	with showLogs(logLevel=loglevel) as logger:
+		with catchMessages() as messageBuffer:
+			logFunc = getattr(logger, function_name)
+			logFunc('Backwards compatible text without formatting.')
+			logFunc('This {0:.1f} must be shown {1}: {a}{b:>7}', 1, 'here', a='many', b='kwargs')
+
+	messages = messageBuffer.getvalue()
+
+	print("Messages: {0!r}".format(messages))
+	assert 'This 1.0 must be shown here: many kwargs' in messages
+
+
+@pytest.mark.parametrize("replacement", 'DTlLCFN')  # not: Message
+@pytest.mark.parametrize("loglevel", [
+	OPSI.Logger.LOG_DEBUG2,
+	OPSI.Logger.LOG_DEBUG,
+	OPSI.Logger.LOG_INFO,
+	OPSI.Logger.LOG_NOTICE,
+	OPSI.Logger.LOG_WARNING,
+	OPSI.Logger.LOG_ERROR,
+	OPSI.Logger.LOG_CRITICAL,
+	OPSI.Logger.LOG_ESSENTIAL,
+	OPSI.Logger.LOG_COMMENT,
+])
+def testLoggerDoesNotShowSecretWordBeginningWithCapitalisedF(loglevel, replacement):
+	assert len(replacement) == 1
+	secretWord = "{0}ooBar".format(replacement)
+	assert secretWord.startswith(replacement)
+	command = 'prog.exe -credentials "username%{0}"'.format(secretWord)
+
+	with showLogs(logLevel=loglevel) as logger:
+		logger.setLogFormat('%{formatter} %M'.format(formatter=replacement))
+		logger.addConfidentialString(secretWord)
+
+		with catchMessages() as messageBuffer:
+			logger.log(loglevel, command)
+
+	message = ''.join(messageBuffer.getvalue())
+	assert message
+	assert not message.startswith('%')
+
+	print("Message: {0!r}".format(message))
+
+	assert secretWord not in message
+	assert secretWord[1:] not in message

@@ -43,8 +43,8 @@ import subprocess
 import threading
 import time
 import copy as pycopy
+from itertools import islice
 from signal import SIGKILL
-from platform import linux_distribution
 
 from OPSI.Logger import Logger, LOG_NONE
 from OPSI.Types import (forceDomain, forceInt, forceBool, forceUnicode,
@@ -55,7 +55,23 @@ from OPSI.Types import OpsiVersionError
 from OPSI.Object import *
 from OPSI.Util import objectToBeautifiedText, removeUnit
 
-__version__ = '4.0.6.44'
+__version__ = '4.1.1'
+__all__ = [
+	'Distribution', 'Harddisk', 'NetworkPerformanceCounter', 'SysInfo',
+	'SystemSpecificHook', 'addSystemHook', 'auditHardware', 'daemonize',
+	'execute', 'getActiveConsoleSessionId', 'getActiveSessionId',
+	'getActiveSessionIds', 'getBlockDeviceBusType',
+	'getBlockDeviceContollerInfo', 'getDHCPDRestartCommand', 'getDHCPResult',
+	'getDHCPServiceName', 'getDefaultNetworkInterfaceName', 'getDiskSpaceUsage',
+	'getEthernetDevices', 'getFQDN', 'getHarddisks', 'getHostname',
+	'getKernelParams', 'getNetworkDeviceConfig', 'getNetworkInterfaces',
+	'getSambaServiceName', 'getServiceNames', 'getSystemProxySetting', 'halt',
+	'hardwareExtendedInventory', 'hardwareInventory', 'hooks', 'ifconfig',
+	'isCentOS', 'isDebian', 'isOpenSUSE', 'isOpenSUSELeap', 'isRHEL', 'isSLES',
+	'isUCS', 'isUbuntu', 'isXenialSfdiskVersion', 'locateDHCPDConfig',
+	'locateDHCPDInit', 'mount', 'reboot', 'removeSystemHook',
+	'runCommandInSession', 'setLocalSystemTime', 'shutdown', 'umount', 'which'
+]
 
 logger = Logger()
 
@@ -72,6 +88,10 @@ try:
 	if "64bit" in platform.architecture():
 		x86_64 = True
 except Exception:
+	pass
+
+
+class CommandNotFoundException(RuntimeError):
 	pass
 
 
@@ -377,7 +397,7 @@ def getEthernetDevices():
 				continue
 
 			device = line.split(':')[0].strip()
-			if device.startswith(('eth', 'ens', 'tr', 'br', 'enp')):
+			if device.startswith(('eth', 'ens', 'eno', 'tr', 'br', 'enp')):
 				logger.info(u"Found ethernet device: '{0}'".format(device))
 				devices.append(device)
 
@@ -644,6 +664,10 @@ def ifconfig(device, address, netmask=None):
 	execute(cmd)
 
 
+def getSystemProxySetting():
+	#TODO Have to be implemented for posix machines
+	logger.notice(u'Not Implemented yet')
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # -                                   SESSION / DESKTOP HANDLING                                      -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -657,10 +681,8 @@ def reboot(wait=10):
 			execute(u'%s %d; %s -r now' % (which('sleep'), wait, which('shutdown')), nowait=True)
 		else:
 			execute(u'%s -r now' % which('shutdown'), nowait=True)
-		execute(u'%s 5' % (which('sleep')), nowait=True)
+		execute(u'%s 1' % (which('sleep')), nowait=True)
 		execute(u'%s -p' % (which('reboot')), nowait=True)
-		execute(u'%s 5' % (which('sleep')), nowait=True)
-		execute(u'%s -6' % (which('init')), nowait=True)
 	except Exception as e:
 		for hook in hooks:
 			hook.error_reboot(wait, e)
@@ -700,9 +722,10 @@ def which(cmd):
 		path = w.readline().strip()
 		w.close()
 		if not path:
-			raise Exception(u"Command '%s' not found in PATH" % cmd)
+			raise CommandNotFoundException(u"Command {0!r} not found in PATH".format(cmd))
+
+		logger.debug(u"Command {0!r} found at: {1!r}", cmd, path)
 		WHICH_CACHE[cmd] = path
-		logger.debug(u"Command '%s' found at: '%s'" % (cmd, WHICH_CACHE[cmd]))
 
 	return WHICH_CACHE[cmd]
 
@@ -833,15 +856,15 @@ output will be returned.
 			exitCode = ret
 			if data:
 				lines = data.split('\n')
-				for i in range(len(lines)):
-					line = lines[i].decode(encoding, 'replace')
-					if (i == len(lines) - 1) and not line:
+				for i, line in enumerate(lines):
+					line = line.decode(encoding, 'replace')
+					if i == len(lines) - 1 and not line:
 						break
 					logger.debug(u'>>> %s' % line)
 					result.append(line)
 
 	except (os.error, IOError) as e:
-		# Some error occured during execution
+		# Some error occurred during execution
 		raise Exception(u"Command '%s' failed:\n%s" % (cmd, e))
 
 	logger.debug(u"Exit code: %s" % exitCode)
@@ -1132,8 +1155,8 @@ def getBlockDeviceBusType(device):
 				devs = match.group(1).replace(u')', u' ').split(u'(')
 			else:
 				devs = [match.group(1)]
-			for i in range(len(devs)):
-				devs[i] = devs[i].strip()
+
+			devs = [currentDev.strip() for currentDiv in devs]
 
 		match = re.search('^\s+Attached to:\s+[^\(]+\((\S+)\s*', line)
 		if match:
@@ -1619,22 +1642,24 @@ class Harddisk:
 					raise Exception(u"Unable to read partition table (sectors) of disk '%s'" % self.device)
 
 				if match.group(4):
-					for p in range(len(self.partitions)):
-						if forceInt(self.partitions[p]['number']) == forceInt(match.group(1)):
-							self.partitions[p]['secStart'] = forceInt(match.group(3))
-							self.partitions[p]['secEnd'] = forceInt(match.group(4))
-							self.partitions[p]['secSize'] = forceInt(match.group(5))
+					for p, partition in enumerate(self.partitions):
+						if forceInt(partition['number']) == forceInt(match.group(1)):
+							partition['secStart'] = forceInt(match.group(3))
+							partition['secEnd'] = forceInt(match.group(4))
+							partition['secSize'] = forceInt(match.group(5))
+							self.partitions[p] = partition
 							logger.debug(
 								u"Partition sector values =>>> number: %s, "
 								u"start: %s sec, end: %s sec, size: %s sec " \
 								% (
-									self.partitions[p]['number'],
-									self.partitions[p]['secStart'],
-									self.partitions[p]['secEnd'],
-									self.partitions[p]['secSize']
+									partition['number'],
+									partition['secStart'],
+									partition['secEnd'],
+									partition['secSize']
 							   )
 							)
 							break
+
 			elif line.lower().startswith('units'):
 				if isXenialSfdiskVersion():
 					match = re.search('sectors\s+of\s+\d\s+.\s+\d+\s+.\s+(\d+)\s+bytes', line)
@@ -1991,6 +2016,8 @@ class Harddisk:
 				fsType = u'-w'
 			else:
 				fsType = u'--%s' % fsType
+
+			time.sleep(10)
 
 			cmd = u"%s -p %s %s" % (which('ms-sys'), fsType, self.getPartition(partition)['device'])
 			try:
@@ -2528,20 +2555,18 @@ class Harddisk:
 
 					buf = [buf[-1] + b[0]] + b[1:]
 
-					# TODO: is the range(len(..)) really needed?
-					# Maybe we could iterate directly.
-					for i in range(len(buf) - 1):
+					for currentBuffer in islice(buf, len(buf) - 1):
 						try:
-							logger.debug(u" -->>> %s" % buf[i])
+							logger.debug(u" -->>> %s" % currentBuffer)
 						except Exception:
 							pass
 
-						if u'Partclone fail' in buf[i]:
+						if u'Partclone fail' in currentBuffer:
 							raise Exception(u"Failed: %s" % '\n'.join(buf))
-						if u'Partclone successfully' in buf[i]:
+						if u'Partclone successfully' in currentBuffer:
 							done = True
-						if u'Total Time' in buf[i]:
-							match = re.search('Total\sTime:\s(\d+:\d+:\d+),\sAve.\sRate:\s*(\d*.\d*)([GgMm]B/min)', buf[i])
+						if u'Total Time' in currentBuffer:
+							match = re.search('Total\sTime:\s(\d+:\d+:\d+),\sAve.\sRate:\s*(\d*.\d*)([GgMm]B/min)', currentBuffer)
 							if match:
 								rate = match.group(2)
 								unit = match.group(3)
@@ -2555,12 +2580,12 @@ class Harddisk:
 								}
 
 						if not started:
-							if u'Calculating bitmap' in buf[i]:
+							if u'Calculating bitmap' in currentBuffer:
 								logger.info(u"Save image: Scanning filesystem")
 								if progressSubject:
 									progressSubject.setMessage(u"Scanning filesystem")
-							elif buf[i].count(':') == 1 and 'http:' not in buf[i]:
-								(k, v) = buf[i].split(':')
+							elif currentBuffer.count(':') == 1 and 'http:' not in currentBuffer:
+								(k, v) = currentBuffer.split(':')
 								k = k.strip()
 								v = v.strip()
 								logger.info(u"Save image: %s: %s" % (k, v))
@@ -2572,11 +2597,11 @@ class Harddisk:
 									started = True
 									continue
 						else:
-							match = re.search('Completed:\s*([\d\.]+)%', buf[i])
+							match = re.search('Completed:\s*([\d\.]+)%', currentBuffer)
 							if match:
 								percent = int("%0.f" % float(match.group(1)))
 								if progressSubject and percent != progressSubject.getState():
-									logger.debug(u" -->>> %s" % buf[i])
+									logger.debug(u" -->>> %s" % currentBuffer)
 									progressSubject.setState(percent)
 
 					lastMsg = buf[-2]
@@ -2704,20 +2729,19 @@ class Harddisk:
 
 						buf = [buf[-1] + b[0]] + b[1:]
 
-						# TODO: range(len) really needed?
-						for i in range(len(buf) - 1):
+						for currentBuffer in islice(buf, len(buf) - 1):
 							try:
-								logger.debug(u" -->>> %s" % buf[i])
+								logger.debug(u" -->>> %s" % currentBuffer)
 							except Exception:
 								pass
 
-							if u'Partclone fail' in buf[i]:
+							if u'Partclone fail' in currentBuffer:
 								raise Exception(u"Failed: %s" % '\n'.join(buf))
-							if u'Partclone successfully' in buf[i]:
+							if u'Partclone successfully' in currentBuffer:
 								done = True
 							if not started:
-								if buf[i].count(':') == 1 and 'http:' in buf[i]:
-									(k, v) = buf[i].split(':')
+								if currentBuffer.count(':') == 1 and 'http:' in currentBuffer:
+									(k, v) = currentBuffer.split(':')
 									k = k.strip()
 									v = v.strip()
 									logger.info(u"Save image: %s: %s" % (k, v))
@@ -2731,11 +2755,11 @@ class Harddisk:
 										started = True
 										continue
 							else:
-								match = re.search('Completed:\s*([\d\.]+)%', buf[i])
+								match = re.search('Completed:\s*([\d\.]+)%', currentBuffer)
 								if match:
 									percent = int("%0.f" % float(match.group(1)))
 									if progressSubject and percent != progressSubject.getState():
-										logger.debug(u" -->>> %s" % buf[i])
+										logger.debug(u" -->>> %s" % currentBuffer)
 										progressSubject.setState(percent)
 
 						lastMsg = buf[-2]
@@ -2783,21 +2807,20 @@ class Harddisk:
 
 						buf = [buf[-1] + b[0]] + b[1:]
 
-						# TODO: remove range(len(..) possible?
-						for i in range(len(buf) - 1):
-							if 'Syncing' in buf[i]:
+						for currentBuffer in islice(buf, len(buf) - 1):
+							if 'Syncing' in currentBuffer:
 								logger.info(u"Restore image: Syncing")
 								if progressSubject:
 									progressSubject.setMessage(u"Syncing")
 								done = True
-							match = re.search('\s(\d+)[\.\,]\d\d\spercent', buf[i])
+							match = re.search('\s(\d+)[\.\,]\d\d\spercent', currentBuffer)
 							if match:
 								percent = int(match.group(1))
 								if progressSubject and percent != progressSubject.getState():
-									logger.debug(u" -->>> %s" % buf[i])
+									logger.debug(u" -->>> %s" % currentBuffer)
 									progressSubject.setState(percent)
 							else:
-								logger.debug(u" -->>> %s" % buf[i])
+								logger.debug(u" -->>> %s" % currentBuffer)
 
 						lastMsg = buf[-2]
 						buf[:-1] = []
@@ -2831,22 +2854,42 @@ class Harddisk:
 			hook.post_Harddisk_restoreImage(self, partition, imageFile, progressSubject)
 
 
-def isSLES():
+def isCentOS():
 	"""
-	Returns `True` if this is running on Suse Linux Enterprise Server.
+	Returns `True` if this is running on CentOS.
 	Returns `False` if otherwise.
 	"""
+	return _checkForDistribution('CentOS')
 
-	try:
-		f = os.popen('lsb_release -d 2>/dev/null')
-		distribution = f.read().split(':')[1].strip()
-		f.close()
 
-		logger.debug("Got as distribution: {0!r}".format(distribution))
-		return bool('suse linux enterprise server' in distribution.lower())
-	except Exception as error:
-		logger.debug("Failed to read lsb_release: {0}".format(error))
-		return False
+def isDebian():
+	"""
+	Returns `True` if this is running on Debian.
+	Returns `False` if otherwise.
+	"""
+	return _checkForDistribution('Debian')
+
+
+def isOpenSUSE():
+	"""
+	Returns `True` if this is running on openSUSE.
+	Returns `False` if otherwise.
+	For OpenSUSE Leap please use isOpenSUSELeap()
+	"""
+	return _checkForDistribution('opensuse')
+
+
+def isOpenSUSELeap():
+	"""
+	Returns `True` if this is running on OpenSUSE Leap.
+	Returns `False` if otherwise.
+	"""
+	if isOpenSUSE():
+		leap = Distribution()
+		if leap.version >= (42, 1):
+			return True
+
+	return False
 
 
 def isRHEL():
@@ -2854,25 +2897,40 @@ def isRHEL():
 	Returns `True` if this is running on Red Hat Enterprise Linux.
 	Returns `False` if otherwise.
 	"""
-
-	try:
-		sysinfo = SysInfo()
-		return 'Red Hat Enterprise Linux' in sysinfo.distribution
-	except Exception as error:
-		logger.debug("Failed to check for RHEL: {0}".format(error))
-		return False
+	return _checkForDistribution('Red Hat Enterprise Linux')
 
 
-def isCentOS():
+def isSLES():
 	"""
-	Returns `True` if this is running on CentOS.
+	Returns `True` if this is running on Suse Linux Enterprise Server.
 	Returns `False` if otherwise.
 	"""
+	return _checkForDistribution('suse linux enterprise server')
+
+
+def isUbuntu():
+	"""
+	Returns `True` if this is running on Ubuntu.
+	Returns `False` if otherwise.
+	"""
+	return _checkForDistribution('Ubuntu')
+
+
+def isUCS():
+	"""
+	Returns `True` if this is running on Univention Corporate Server.
+	Returns `False` if otherwise.
+	"""
+	return (_checkForDistribution('Univention')
+			or u'univention' in Distribution().distributor.lower())
+
+
+def _checkForDistribution(name):
 	try:
 		sysinfo = SysInfo()
-		return 'CentOS' in sysinfo.distribution
+		return name.lower() in sysinfo.distribution.lower()
 	except Exception as error:
-		logger.debug("Failed to check for CentOS: {0}".format(error))
+		logger.debug("Failed to check for Distribution: {0}", error)
 		return False
 
 
@@ -2880,7 +2938,7 @@ class Distribution(object):
 
 	def __init__(self, distribution_information=None):
 		if distribution_information is None:
-			distribution_information = linux_distribution()
+			distribution_information = platform.linux_distribution()
 
 		self.distribution, self._version, self.id = distribution_information
 		self.distribution = self.distribution.strip()
@@ -3060,8 +3118,8 @@ def hardwareExtendedInventory(config, opsiValues={}, progressSubject=None):
 					conditionmatch = None
 
 					logger.info("Condition found, try to check the Condition")
-					for i in range(len(opsiValues[opsiName])):
-						value = opsiValues[opsiName][i].get(val, "")
+					for currentValue in opsiValues[opsiName]:
+						value = currentValue.get(val, "")
 						if value:
 							conditionmatch = re.search(conditionregex, value)
 							break
@@ -3930,3 +3988,4 @@ def setLocalSystemTime(timestring):
 		subprocess.call([systemTime])
 	except Exception as error:
 			logger.error(u"Failed to set System Time: %s" % error)
+
