@@ -38,7 +38,6 @@ opsi python library - HTTP
 import base64
 import gzip
 import os
-import random
 import re
 import socket
 import time
@@ -82,71 +81,6 @@ try:
 	ssl_module._create_default_https_context = ssl_module._create_unverified_context
 except AttributeError:
 	pass
-
-
-def hybi10Encode(data):
-	# Code stolen from http://lemmingzshadow.net/files/2011/09/Connection.php.txt
-	frame = [0x81]
-	mask = [
-		random.randint(0, 255), random.randint(0, 255),
-		random.randint(0, 255), random.randint(0, 255)
-	]
-	dataLength = len(data)
-
-	if dataLength <= 125:
-		frame.append(dataLength + 128)
-	else:
-		frame.append(254)
-		frame.append(dataLength >> 8)
-		frame.append(dataLength & 0xff)
-
-	frame.extend(mask)
-	for i, currentData in enumerate(data):
-		frame.append(ord(currentData) ^ mask[i % 4])
-
-	encodedData = ''
-	for currentFrame in frame:
-		encodedData += chr(currentFrame)
-	return encodedData
-
-
-def hybi10Decode(data):
-	if len(data.strip()) < 2:
-		return ''
-	# Code stolen from http://lemmingzshadow.net/files/2011/09/Connection.php.txt
-	mask = ''
-	codedData = ''
-	decodedData = ''
-	secondByte = bin(ord(data[1]))[2:]
-	masked = False
-	dataLength = ord(data[1])
-
-	if secondByte[0] == '1':
-		masked = True
-		dataLength = ord(data[1]) & 127
-
-	if masked:
-		if dataLength == 126:
-			mask = data[4:8]
-			codedData = data[8:]
-		elif dataLength == 127:
-			mask = data[10:14]
-			codedData = data[14:]
-		else:
-			mask = data[2:6]
-			codedData = data[6:]
-
-		for i, currentData in enumerate(codedData):
-			decodedData += chr(ord(currentData) ^ ord(mask[i % 4]))
-	else:
-		if dataLength == 126:
-			decodedData = data[4:]
-		elif dataLength == 127:
-			decodedData = data[10:]
-		else:
-			decodedData = data[2:]
-
-	return decodedData
 
 
 def non_blocking_connect_http(self, connectTimeout=0):

@@ -105,7 +105,7 @@ class OpsiBackendService(Service):
 
 	def initialize(self, user, password, forceGroups, dispatchConfigFile,
 			backendConfigDir, extensionConfigDir, aclFile, depotId, postpath,
-			messageBusNotifier, startReactor):
+			startReactor):
 
 		self.user = user
 		self.password = password
@@ -116,7 +116,6 @@ class OpsiBackendService(Service):
 		self.aclFile = aclFile
 		self.depotId = depotId
 		self.postpath = postpath
-		self.messageBusNotifier = messageBusNotifier
 		self.startReactor = startReactor
 
 		self._backend = BackendManager(
