@@ -48,7 +48,24 @@ from OPSI.Types import (forceActionProgress, forceActionRequest,
 	forceUnicodeList, forceUnicodeLower, forceUnsignedInt, forceUrl)
 from OPSI.Util import fromJson, toJson, generateOpsiHostKey, timestamp
 
-__version__ = '4.0.6.44'
+__version__ = '4.1.1'
+__all__ = [
+    'AuditHardware', 'AuditHardwareOnHost', 'AuditSoftware',
+    'AuditSoftwareOnClient', 'AuditSoftwareToLicensePool', 'BaseObject',
+    'BoolConfig', 'BoolProductProperty', 'BootConfiguration',
+    'ConcurrentSoftwareLicense', 'Config', 'ConfigState', 'Entity', 'Group',
+    'Host', 'HostGroup', 'LicenseContract', 'LicenseOnClient', 'LicensePool',
+    'LocalbootProduct', 'Logger', 'NetbootProduct', 'OEMSoftwareLicense',
+    'Object', 'ObjectToGroup', 'OpsiClient', 'OpsiConfigserver',
+    'OpsiDepotserver', 'Product', 'ProductDependency', 'ProductGroup',
+    'ProductOnClient', 'ProductOnDepot', 'ProductProperty',
+    'ProductPropertyState', 'Relationship', 'RetailSoftwareLicense',
+    'SoftwareLicense', 'SoftwareLicenseToLicensePool', 'UnicodeConfig',
+    'UnicodeProductProperty', 'VolumeSoftwareLicense',
+    'decodeIdent', 'getBackendMethodPrefix', 'getForeignIdAttributes',
+    'getIdentAttributes', 'getPossibleClassAttributes',
+    'mandatoryConstructorArgs', 'objectsDiffer'
+]
 
 logger = Logger()
 _MANDATORY_CONSTRUCTOR_ARGS_CACHE = {}
@@ -66,7 +83,7 @@ def mandatoryConstructorArgs(Class):
 		except TypeError:  # Happens if defaults is None
 			mandatory = args[1:]
 
-		logger.debug2(u"mandatoryConstructorArgs for {0!r}: {1}", Class.__name__, mandatory)
+		logger.debug2(u"mandatoryConstructorArgs for {0!r}: {1}", cacheKey, mandatory)
 		_MANDATORY_CONSTRUCTOR_ARGS_CACHE[cacheKey] = mandatory
 		return mandatory
 

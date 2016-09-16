@@ -36,12 +36,12 @@ import collections
 import copy as pycopy
 import inspect
 import json
-import new
 import os
 import random
 import re
 import threading
 import time
+import types
 import warnings
 from hashlib import md5
 from twisted.conch.ssh import keys
@@ -65,7 +65,7 @@ from OPSI.Util import (blowfishEncrypt, blowfishDecrypt, compareVersions,
 from OPSI.Util.File import ConfigFile
 import OPSI.SharedAlgorithm
 
-__version__ = '4.0.7.8'
+__version__ = '4.0.7.20'
 
 logger = Logger()
 OPSI_VERSION_FILE = u'/etc/opsi/version'
@@ -480,7 +480,7 @@ class ExtendedBackend(Backend):
 			argString, callString = getArgAndCallString(functionRef)
 
 			exec(u'def %s(self, %s): return self._executeMethod("%s", %s)' % (methodName, argString, methodName, callString))
-			setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
+			setattr(self, methodName, types.MethodType(eval(methodName), self))
 
 	def _executeMethod(self, methodName, **kwargs):
 		logger.debug(u"ExtendedBackend {0!r}: executing {1!r} on backend {2!r}", self, methodName, self._backend)
@@ -1492,21 +1492,20 @@ depot where the method is.
 		try:
 			lf = ConfigFile(localeFile)
 			for line in lf.parse():
-				if '=' not in line:
-					continue
-
-				(k, v) = line.split('=', 1)
-				locale[k.strip()] = v.strip()
+				try:
+					identifier, translation = line.split('=', 1)
+					locale[identifier.strip()] = translation.strip()
+				except ValueError as verr:
+					logger.debug2(u"Failed to read translation: {0!r}", verr)
+			del lf
 		except Exception as e:
-			logger.error(u"Failed to read translation file for language %s: %s" % (language, e))
+			logger.error(u"Failed to read translation file for language {0}: {1}", language, e)
 
 		def __inheritFromSuperClasses(classes, c, scname=None):
 			if not scname:
 				for scname in c['Class'].get('Super', []):
 					__inheritFromSuperClasses(classes, c, scname)
 			else:
-				sc = None
-				found = False
 				for cl in classes:
 					if cl['Class'].get('Opsi') == scname:
 						clcopy = pycopy.deepcopy(cl)
@@ -1524,11 +1523,10 @@ depot where the method is.
 								newValue = c['Values'][foundAt]
 								del c['Values'][foundAt]
 							newValues.append(newValue)
-						found = True
 						newValues.extend(c['Values'])
 						c['Values'] = newValues
 						break
-				if not found:
+				else:
 					logger.error(u"Super class '%s' of class '%s' not found!" % (scname, c['Class'].get('Opsi')))
 
 		classes = []
@@ -1545,15 +1543,17 @@ depot where the method is.
 
 				for j, currentValue in enumerate(currentClassConfig['Values']):
 					opsiProperty = currentValue['Opsi']
-					if locale.get(opsiClass + '.' + opsiProperty):
+					try:
 						OPSI_HARDWARE_CLASSES[i]['Values'][j]['UI'] = locale[opsiClass + '.' + opsiProperty]
+					except KeyError:
+						pass
 
 			for c in OPSI_HARDWARE_CLASSES:
 				try:
 					if c['Class'].get('Type') == 'STRUCTURAL':
 						logger.debug(u"Found STRUCTURAL hardware class '%s'" % c['Class'].get('Opsi'))
 						ccopy = pycopy.deepcopy(c)
-						if ccopy['Class'].has_key('Super'):
+						if 'Super' in ccopy['Class']:
 							__inheritFromSuperClasses(OPSI_HARDWARE_CLASSES, ccopy)
 							del ccopy['Class']['Super']
 						del ccopy['Class']['Type']

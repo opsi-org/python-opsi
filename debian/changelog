@@ -1,8 +1,10 @@
-python-opsi (4.1.1-1) UNRELEASED; urgency=medium
+python-opsi (4.0.7.20-1) stable; urgency=medium
 
-  * Removed parts of an old message bus implementation.
+  * Various internal refactorings.
+  * OPSI.System.Posix.which now throws CommandNotFoundException instead of
+    a basic Exception to make catching errors easier.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 12 Sep 2016 10:26:33 +0200
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 13 Sep 2016 09:39:56 +0200
 
 python-opsi (4.0.7.19-1) testing; urgency=medium
 

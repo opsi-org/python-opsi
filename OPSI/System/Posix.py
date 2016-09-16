@@ -55,7 +55,23 @@ from OPSI.Types import OpsiVersionError
 from OPSI.Object import *
 from OPSI.Util import objectToBeautifiedText, removeUnit
 
-__version__ = '4.0.7.16'
+__version__ = '4.1.1'
+__all__ = [
+	'Distribution', 'Harddisk', 'NetworkPerformanceCounter', 'SysInfo',
+	'SystemSpecificHook', 'addSystemHook', 'auditHardware', 'daemonize',
+	'execute', 'getActiveConsoleSessionId', 'getActiveSessionId',
+	'getActiveSessionIds', 'getBlockDeviceBusType',
+	'getBlockDeviceContollerInfo', 'getDHCPDRestartCommand', 'getDHCPResult',
+	'getDHCPServiceName', 'getDefaultNetworkInterfaceName', 'getDiskSpaceUsage',
+	'getEthernetDevices', 'getFQDN', 'getHarddisks', 'getHostname',
+	'getKernelParams', 'getNetworkDeviceConfig', 'getNetworkInterfaces',
+	'getSambaServiceName', 'getServiceNames', 'getSystemProxySetting', 'halt',
+	'hardwareExtendedInventory', 'hardwareInventory', 'hooks', 'ifconfig',
+	'isCentOS', 'isDebian', 'isOpenSUSE', 'isOpenSUSELeap', 'isRHEL', 'isSLES',
+	'isUCS', 'isUbuntu', 'isXenialSfdiskVersion', 'locateDHCPDConfig',
+	'locateDHCPDInit', 'mount', 'reboot', 'removeSystemHook',
+	'runCommandInSession', 'setLocalSystemTime', 'shutdown', 'umount', 'which'
+]
 
 logger = Logger()
 
@@ -72,6 +88,10 @@ try:
 	if "64bit" in platform.architecture():
 		x86_64 = True
 except Exception:
+	pass
+
+
+class CommandNotFoundException(RuntimeError):
 	pass
 
 
@@ -643,6 +663,7 @@ def ifconfig(device, address, netmask=None):
 		cmd += u' netmask %s' % forceNetmask(netmask)
 	execute(cmd)
 
+
 def getSystemProxySetting():
 	#TODO Have to be implemented for posix machines
 	logger.notice(u'Not Implemented yet')
@@ -701,9 +722,10 @@ def which(cmd):
 		path = w.readline().strip()
 		w.close()
 		if not path:
-			raise Exception(u"Command '%s' not found in PATH" % cmd)
+			raise CommandNotFoundException(u"Command {0!r} not found in PATH".format(cmd))
+
+		logger.debug(u"Command {0!r} found at: {1!r}", cmd, path)
 		WHICH_CACHE[cmd] = path
-		logger.debug(u"Command '%s' found at: '%s'" % (cmd, WHICH_CACHE[cmd]))
 
 	return WHICH_CACHE[cmd]
 
@@ -2899,7 +2921,8 @@ def isUCS():
 	Returns `True` if this is running on Univention Corporate Server.
 	Returns `False` if otherwise.
 	"""
-	return _checkForDistribution('Univention')
+	return (_checkForDistribution('Univention')
+			or u'univention' in Distribution().distributor.lower())
 
 
 def _checkForDistribution(name):

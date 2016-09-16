@@ -32,10 +32,10 @@ This backend executes the calls on a remote backend via JSONRPC.
 
 import base64
 import json
-import new
 import socket
 import time
 import threading
+import types
 from hashlib import md5
 from Queue import Queue, Empty
 from twisted.conch.ssh import keys
@@ -397,11 +397,11 @@ class JSONRPCBackend(Backend):
 			self._rpcQueue.stop()
 		return res
 
-	def setAsync(self, async):
+	def setAsync(self, enableAsync):
 		if not self._connected:
 			raise Exception(u'Not connected')
 
-		if async:
+		if enableAsync:
 			if self.isLegacyOpsi():
 				logger.error(u"Refusing to set async because we are connected to legacy opsi service")
 				return
@@ -437,7 +437,7 @@ class JSONRPCBackend(Backend):
 		realmodules = {}
 		mysqlBackend = False
 
-		async = self._async
+		asyncStatus = self._async
 		self._async = False
 
 		if self._deflate:
@@ -496,7 +496,7 @@ class JSONRPCBackend(Backend):
 			self._connected = True
 			logger.info(u"{0}: Connected to service", self)
 		finally:
-			self._async = async
+			self._async = asyncStatus
 
 	def _getRpcId(self):
 		with self._rpcIdLock:
@@ -562,7 +562,7 @@ class JSONRPCBackend(Backend):
 				logger.debug2(methodCode)
 				exec(methodCode)
 
-			setattr(self.__class__, method['name'], new.instancemethod(eval(method['name']), None, self.__class__))
+			setattr(self.__class__, method['name'], types.UnboundMethodType(eval(method['name']), None, self.__class__))
 
 	def _createInstanceMethods(self, modules=None, realmodules={}, mysqlBackend=False):
 		licenseManagementModule = True
@@ -664,7 +664,7 @@ class JSONRPCBackend(Backend):
 					exec(u'def %s(self, %s): return' % (methodName, argString))
 				else:
 					exec(u'def %s(self, %s): return self._jsonRPC("%s", [%s])' % (methodName, argString, methodName, callString))
-				setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
+				setattr(self, methodName, types.MethodType(eval(methodName), self))
 			except Exception as error:
 				logger.critical(u"Failed to create instance method '%s': %s" % (method, error))
 

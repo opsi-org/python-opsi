@@ -57,7 +57,19 @@ from OPSI.Logger import Logger
 from OPSI.Types import (forceBool, forceFilename, forceFqdn, forceInt,
 						forceIPAddress, forceNetworkAddress, forceUnicode)
 
-__version__ = '4.0.7.17'
+__version__ = '4.1.1'
+__all__ = [
+	'BLOWFISH_IV', 'OPSI_GLOBAL_CONF', 'PickleString',
+	'RANDOM_DEVICE', 'argparse', 'blowfishDecrypt', 'blowfishEncrypt',
+	'chunk', 'compareVersions', 'decryptWithPrivateKeyFromPEMFile',
+	'deserialize', 'encryptWithPublicKeyFromX509CertificatePEMFile',
+	'findFiles', 'flattenSequence', 'formatFileSize', 'fromJson',
+	'generateOpsiHostKey', 'getGlobalConfig', 'getfqdn', 'ipAddressInNetwork',
+	'isRegularExpressionPattern', 'librsyncDeltaFile', 'librsyncPatchFile',
+	'librsyncSignature', 'md5sum', 'objectToBash', 'objectToBeautifiedText',
+	'objectToHtml', 'randomString', 'removeDirectory', 'removeUnit',
+	'replaceSpecialHTMLCharacters', 'serialize', 'timestamp', 'toJson'
+]
 
 logger = Logger()
 
