@@ -1,5 +1,5 @@
-#!/usr/bin/env python
-#-*- coding: utf-8 -*-
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
 # Copyright (C) 2014-2016 uib GmbH <info@uib.de>
@@ -31,9 +31,8 @@ from OPSI.Object import UnicodeConfig
 import OPSI.Util.Task.ConfigureBackend as backendConfigUtils
 import OPSI.Util.Task.ConfigureBackend.ConfigurationData as confData
 
-from .Backends.File import FileBackendMixin
-from .BackendTestMixins.Hosts import getConfigServer
-from .helpers import createTemporaryTestfile, mock, patchAddress, unittest
+from .test_hosts import getConfigServer
+from .helpers import createTemporaryTestfile, mock, unittest
 
 import pytest
 
@@ -242,7 +241,6 @@ def testAddingConfigsBasedOnConfigServer(extendedConfigDataBackend):
     assert value.startswith('https://')
     assert configServer.ipAddress in value
     assert urlConfig.editable
-
 
     depotConfig = extendedConfigDataBackend.config_getObjects(id=u'clientconfig.depot.id')[0]
     print(depotConfig)
