@@ -231,10 +231,11 @@ class DepotserverPackageManager(object):
 							productId=productId,
 							productVersion=product.getProductVersion(),
 							packageVersion=product.getPackageVersion()):
-					ident = productProperty.getIdent(returnType = 'unicode')
+					ident = productProperty.getIdent(returnType='unicode')
 					currentProductProperties[ident] = productProperty
+
 				for productProperty in ppf.packageControlFile.getProductProperties():
-					ident = productProperty.getIdent(returnType = 'unicode')
+					ident = productProperty.getIdent(returnType='unicode')
 					if ident in currentProductProperties:
 						del currentProductProperties[ident]
 					productProperties.append(productProperty)
