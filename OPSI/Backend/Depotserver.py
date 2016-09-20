@@ -371,8 +371,9 @@ class DepotserverPackageManager(object):
 				try:
 					ppf.cleanup()
 				except Exception as e2:
-					logger.error(e2)
-				raise
+					logger.error("Cleanup failed: {0!r}", e2)
+
+				raise e
 
 		except Exception as e:
 			logger.logException(e)
