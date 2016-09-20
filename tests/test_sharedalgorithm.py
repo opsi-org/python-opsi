@@ -216,7 +216,7 @@ def _getProductWithId(products, productId):
 		raise ValueError("Missing product with ID {0!r}".format(productId))
 
 
-@pytest.yield_fixture(
+@pytest.fixture(
 	params=[SharedAlgorithm.generateProductSequence_algorithm1, SharedAlgorithm.generateProductSequence_algorithm2],
 	ids=['algo1', 'algo2']
 )

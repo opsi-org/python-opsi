@@ -55,7 +55,7 @@ from OPSI.Types import OpsiVersionError
 from OPSI.Object import *
 from OPSI.Util import objectToBeautifiedText, removeUnit
 
-__version__ = '4.0.7.16'
+__version__ = '4.0.7.20'
 
 logger = Logger()
 
@@ -72,6 +72,10 @@ try:
 	if "64bit" in platform.architecture():
 		x86_64 = True
 except Exception:
+	pass
+
+
+class CommandNotFoundException(RuntimeError):
 	pass
 
 
@@ -660,10 +664,8 @@ def reboot(wait=10):
 			execute(u'%s %d; %s -r now' % (which('sleep'), wait, which('shutdown')), nowait=True)
 		else:
 			execute(u'%s -r now' % which('shutdown'), nowait=True)
-		execute(u'%s 5' % (which('sleep')), nowait=True)
+		execute(u'%s 1' % (which('sleep')), nowait=True)
 		execute(u'%s -p' % (which('reboot')), nowait=True)
-		execute(u'%s 5' % (which('sleep')), nowait=True)
-		execute(u'%s 6' % (which('init')), nowait=True)
 	except Exception as e:
 		for hook in hooks:
 			hook.error_reboot(wait, e)
@@ -703,9 +705,10 @@ def which(cmd):
 		path = w.readline().strip()
 		w.close()
 		if not path:
-			raise Exception(u"Command '%s' not found in PATH" % cmd)
+			raise CommandNotFoundException(u"Command {0!r} not found in PATH".format(cmd))
+
+		logger.debug(u"Command {0!r} found at: {1!r}", cmd, path)
 		WHICH_CACHE[cmd] = path
-		logger.debug(u"Command '%s' found at: '%s'" % (cmd, WHICH_CACHE[cmd]))
 
 	return WHICH_CACHE[cmd]
 
@@ -844,7 +847,7 @@ output will be returned.
 					result.append(line)
 
 	except (os.error, IOError) as e:
-		# Some error occured during execution
+		# Some error occurred during execution
 		raise Exception(u"Command '%s' failed:\n%s" % (cmd, e))
 
 	logger.debug(u"Exit code: %s" % exitCode)
@@ -1996,6 +1999,8 @@ class Harddisk:
 				fsType = u'-w'
 			else:
 				fsType = u'--%s' % fsType
+
+			time.sleep(10)
 
 			cmd = u"%s -p %s %s" % (which('ms-sys'), fsType, self.getPartition(partition)['device'])
 			try:

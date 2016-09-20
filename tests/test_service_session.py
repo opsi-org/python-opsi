@@ -31,7 +31,7 @@ from OPSI.Service.Session import Session, SessionHandler
 import pytest
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def session():
 	testSession = Session(FakeSessionHandler())
 	try:

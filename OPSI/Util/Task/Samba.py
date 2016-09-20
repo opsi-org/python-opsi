@@ -82,6 +82,7 @@ def _processConfig(lines):
 	workbenchShareFound = False
 	opsiImagesFound = False
 	repositoryFound = False
+	oplocksFound = False
 
 	samba4 = isSamba4()
 
@@ -99,6 +100,8 @@ def _processConfig(lines):
 			workbenchShareFound = True
 		elif currentLine == '[opsi_repository]':
 			repositoryFound = True
+		elif 'oplocks' in currentLine:
+			oplocksFound = True
 		newlines.append(line)
 
 	if optPcbinShareFound:
@@ -206,6 +209,8 @@ def _processConfig(lines):
 		if not os.path.exists("/var/lib/opsi/repository"):
 			logger.debug(u"Path:  /var/lib/opsi/repository not found: creating.")
 			os.mkdir("/var/lib/opsi/repository")
+	if oplocksFound:
+		logger.warning(u" Detected oplocks in your samba configuration. It is not recommended to use them with opsi. Please see the opsi manual for further information.")
 
 	return newlines
 

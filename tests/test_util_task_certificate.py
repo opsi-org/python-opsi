@@ -39,7 +39,7 @@ from .helpers import workInTemporaryDirectory
 import pytest
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def pathToTempFile():
     with workInTemporaryDirectory() as tempDir:
         yield os.path.join(tempDir, randomString(8))
@@ -52,7 +52,7 @@ def testCertificateFileExistsAfterCreation(pathToTempFile):
     assert os.path.exists(pathToTempFile)
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def customConfig():
     hostname = forceHostId(getfqdn())
     yield {

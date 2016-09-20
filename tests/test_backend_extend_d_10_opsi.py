@@ -33,7 +33,7 @@ from OPSI.Object import (OpsiClient, LocalbootProduct, ProductOnClient,
 import pytest
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def prefilledBackendManager(backendManager):
 	fillBackend(backendManager)
 	yield backendManager

@@ -1,5 +1,5 @@
-#!/usr/bin/env python
-#-*- coding: utf-8 -*-
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
 # Copyright (C) 2013-2016 uib GmbH <info@uib.de>
@@ -35,12 +35,14 @@ import sys
 from collections import defaultdict
 from contextlib import contextmanager
 
-from OPSI.Util import (chunk, compareVersions, findFiles, flattenSequence,
+from OPSI.Object import LocalbootProduct, OpsiClient
+from OPSI.Util import (chunk, compareVersions, decryptWithPrivateKeyFromPEMFile,
+    encryptWithPublicKeyFromX509CertificatePEMFile, findFiles, flattenSequence,
     formatFileSize, fromJson, generateOpsiHostKey, getfqdn, getGlobalConfig,
     ipAddressInNetwork, isRegularExpressionPattern, librsyncDeltaFile,
     librsyncSignature, librsyncPatchFile, md5sum, objectToBeautifiedText,
     objectToHtml, randomString, removeUnit, toJson)
-from OPSI.Object import LocalbootProduct, OpsiClient
+from OPSI.Util.Task.Certificate import createCertificate
 
 from .helpers import (fakeGlobalConf, patchAddress, patchEnvironmentVariables,
     unittest, workInTemporaryDirectory)
@@ -964,3 +966,27 @@ def preparedDemoFolders():
             os.mkdir(os.path.join(tempDir, dirname))
 
         yield tempDir
+
+
+@pytest.fixture(scope='module')
+def tempCertPath():
+    with workInTemporaryDirectory() as tempDir:
+        keyFile = os.path.join(tempDir, 'temp.pem')
+        createCertificate(keyFile)
+
+        yield keyFile
+
+
+@pytest.fixture(params=[1, 5, 91, 256, 337, 512, 829, 3333])
+def randomText(request):
+    yield randomString(request.param)
+
+
+def testEncryptingAndDecryptingTextWithCertificate(tempCertPath, randomText):
+    pytest.importorskip("M2Crypto")  # Lazy import in the encrypt / decrypt functions
+
+    encryptedText = encryptWithPublicKeyFromX509CertificatePEMFile(randomText, tempCertPath)
+    assert encryptedText != randomText
+
+    decryptedText = decryptWithPrivateKeyFromPEMFile(encryptedText, tempCertPath)
+    assert decryptedText == randomText

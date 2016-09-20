@@ -1423,7 +1423,7 @@ def execute(cmd, waitForEnding=True, getHandle=False, ignoreExitCode=[], exitOnS
 					result.append(line)
 
 	except (os.error, IOError) as e:
-		# Some error occured during execution
+		# Some error occurred during execution
 		raise IOError(e.errno, u"Command '%s' failed:\n%s" % (cmd, e) )
 
 	logger.debug(u"Exit code: %s" % exitCode)

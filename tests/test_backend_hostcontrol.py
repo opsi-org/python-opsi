@@ -47,6 +47,6 @@ def testCallingStartAndStopMethod(hostControlBackend):
     hostControlBackend.hostControl_shutdown([u'client1.test.invalid'])
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def hostControlBackend(extendedConfigDataBackend):
     yield HostControlBackend(extendedConfigDataBackend)
