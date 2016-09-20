@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2010-2014 uib GmbH <info@uib.de>
+# Copyright (C) 2010-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -40,7 +40,7 @@ from OPSI.Util import (compareVersions, getfqdn, md5sum, librsyncSignature,
 	librsyncPatchFile, librsyncDeltaFile, removeDirectory)
 from OPSI.Util.File import ZsyncFile
 
-__version__ = '4.0.6.1'
+__version__ = '4.0.7.21'
 
 logger = Logger()
 
@@ -165,20 +165,21 @@ class DepotserverPackageManager(object):
 
 			try:
 				product = ppf.packageControlFile.getProduct()
+				productId = product.getId()
 
 				logger.notice(u"Creating product in backend")
 				self._depotBackend._context.product_createObjects(product)
 
 				logger.notice(u"Locking product '%s' on depot '%s'" % (product.getId(), depotId))
 				productOnDepot = ProductOnDepot(
-					productId=product.getId(),
+					productId=productId,
 					productType=product.getType(),
 					productVersion=product.getProductVersion(),
 					packageVersion=product.getPackageVersion(),
 					depotId=depotId,
 					locked=True
 				)
-				productOnDepots = self._depotBackend._context.productOnDepot_getObjects(depotId=depotId, productId=product.getId())
+				productOnDepots = self._depotBackend._context.productOnDepot_getObjects(depotId=depotId, productId=productId)
 				if productOnDepots and productOnDepots[0].getLocked():
 					logger.notice(u"Product currently locked on depot '%s'" % depotId)
 					if not force:
@@ -207,7 +208,7 @@ class DepotserverPackageManager(object):
 				currentProductDependencies = {}
 				productDependencies = []
 				for productDependency in self._depotBackend._context.productDependency_getObjects(
-							productId=product.getId(),
+							productId=productId,
 							productVersion=product.getProductVersion(),
 							packageVersion=product.getPackageVersion()):
 					ident = productDependency.getIdent(returnType='unicode')
@@ -227,7 +228,7 @@ class DepotserverPackageManager(object):
 				currentProductProperties = {}
 				productProperties = []
 				for productProperty in self._depotBackend._context.productProperty_getObjects(
-							productId=product.getId(),
+							productId=productId,
 							productVersion=product.getProductVersion(),
 							packageVersion=product.getPackageVersion()):
 					ident = productProperty.getIdent(returnType = 'unicode')
@@ -256,17 +257,17 @@ class DepotserverPackageManager(object):
 						currentProductProperties.values()
 					)
 
-				logger.info(u"Deleting product property states of product %s on depot '%s'" % (product.getId(), depotId))
+				logger.info(u"Deleting product property states of product %s on depot '%s'" % (productId, depotId))
 				self._depotBackend._context.productPropertyState_deleteObjects(
 					self._depotBackend._context.productPropertyState_getObjects(
-						productId=product.getId(),
+						productId=productId,
 						objectId=depotId
 					)
 				)
 
-				logger.info(u"Deleting not needed property states of product %s" % product.getId())
-				productPropertyStates = self._depotBackend._context.productPropertyState_getObjects(productId=product.getId())
-				baseProperties = self._depotBackend._context.productProperty_getObjects(productId=product.getId())
+				logger.info(u"Deleting not needed property states of product %s" % productId)
+				productPropertyStates = self._depotBackend._context.productPropertyState_getObjects(productId=productId)
+				baseProperties = self._depotBackend._context.productProperty_getObjects(productId=productId)
 
 				productPropertyIds = None
 				productPropertyStatesToDelete = None
@@ -281,7 +282,7 @@ class DepotserverPackageManager(object):
 				for productProperty in productProperties:
 					productPropertyStates.append(
 						ProductPropertyState(
-							productId=product.getId(),
+							productId=productId,
 							propertyId=productProperty.propertyId,
 							objectId=depotId,
 							values=productProperty.defaultValues
