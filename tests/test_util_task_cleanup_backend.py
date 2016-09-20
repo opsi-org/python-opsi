@@ -25,6 +25,8 @@ Testing backend cleaning.
 
 from __future__ import absolute_import
 
+import pytest
+
 from OPSI.Object import LocalbootProduct, ProductOnDepot
 from OPSI.Util.Task.CleanupBackend import cleanupBackend, cleanUpProducts
 
@@ -41,7 +43,8 @@ def testCleanupBackend(cleanableDataBackend):
     checkIfBackendIsFilled(cleanableDataBackend)
 
 
-def testCleaninUpProducts(cleanableDataBackend):
+@pytest.mark.parametrize("filterProduct", [True, False])
+def testCleaninUpProducts(cleanableDataBackend, filterProduct):
     productIdToClean = 'dissection'
 
     prod1 = LocalbootProduct(productIdToClean, 1, 1)
@@ -49,10 +52,11 @@ def testCleaninUpProducts(cleanableDataBackend):
     prod13 = LocalbootProduct(productIdToClean, 1, 3)
     prod2 = LocalbootProduct(productIdToClean + '2', 1, 1)
     prod3 = LocalbootProduct('unhallowed', 1, 1)
+    prod32 = LocalbootProduct('unhallowed', 1, 2)
 
     print(dir(cleanableDataBackend))
 
-    products = [prod1, prod12, prod13, prod2, prod3]
+    products = [prod1, prod12, prod13, prod2, prod3, prod32]
     for p in products:
         cleanableDataBackend.product_insertObject(p)
 
@@ -67,7 +71,10 @@ def testCleaninUpProducts(cleanableDataBackend):
     for pod in [pod1, pod1d, pod2, pod3]:
         cleanableDataBackend.productOnDepot_insertObject(pod)
 
-    cleanUpProducts(cleanableDataBackend, productIdToClean)
+    if filterProduct:
+        cleanUpProducts(cleanableDataBackend, productIdToClean)
+    else:
+        cleanUpProducts(cleanableDataBackend)
 
     products = cleanableDataBackend.product_getObjects(id=productIdToClean)
     assert len(products) == 1
@@ -76,4 +83,7 @@ def testCleaninUpProducts(cleanableDataBackend):
     assert product.id == productIdToClean
 
     allProducts = cleanableDataBackend.product_getObjects()
-    assert len(allProducts) == 3
+    if filterProduct:
+        assert len(allProducts) == 4  # prod13, prod2, prod3, prod32
+    else:
+        assert len(allProducts) == 3  # prod13, prod2, prod3
