@@ -78,3 +78,39 @@ def testInstallingPackageOnDepotserver(depotserverBackend):
     assert product.id == 'testingproduct'
     assert product.productVersion == '23'
     assert product.packageVersion == '42'
+
+    depot = depotserverBackend.host_getObjects(type="OpsiDepotserver")[0]
+    depotPath = depot.depotLocalUrl.replace('file://', '')
+
+    assert isProductFolderInDepot(depotPath, 'testingproduct')
+
+
+def isProductFolderInDepot(depotPath, productId):
+    for listing in os.listdir(depotPath):
+        if productId == listing:
+            if os.path.isdir(listing):
+                return True
+
+    return False
+
+
+@pytest.mark.requiresModulesFile  # because of SQLite...
+def testInstallingPackageOnDepotserverWithForcedProductId(depotserverBackend):
+    pathToPackage = os.path.join(os.path.dirname(__file__), 'testdata', 'backend', 'testingproduct_23-42.opsi')
+    wantedProductId = 'jumpinthefire'
+
+    depotserverBackend.depot_installPackage(pathToPackage, forceProductId=wantedProductId)
+
+    products = depotserverBackend.product_getObjects()
+    assert len(products) == 1
+
+    product = products[0]
+    assert product.id == wantedProductId
+    assert product.productVersion == '23'
+    assert product.packageVersion == '42'
+
+    depot = depotserverBackend.host_getObjects(type="OpsiDepotserver")[0]
+    depotPath = depot.depotLocalUrl.replace('file://', '')
+
+    assert isProductFolderInDepot(depotPath, wantedProductId)
+    assert not isProductFolderInDepot(depotPath, 'testingproduct')

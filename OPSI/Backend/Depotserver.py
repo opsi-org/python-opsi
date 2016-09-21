@@ -99,8 +99,8 @@ class DepotserverBackend(ExtendedBackend):
 		except Exception as e:
 			raise BackendIOError(u"Failed to get disk space usage: %s" % e)
 
-	def depot_installPackage(self, filename, force=False, propertyDefaultValues={}, tempDir=None):
-		self._packageManager.installPackage(filename, force, propertyDefaultValues, tempDir)
+	def depot_installPackage(self, filename, force=False, propertyDefaultValues={}, tempDir=None, forceProductId=None):
+		self._packageManager.installPackage(filename, force, propertyDefaultValues, tempDir, forceProductId=forceProductId)
 
 	def depot_uninstallPackage(self, productId, force=False, deleteFiles=True):
 		self._packageManager.uninstallPackage(productId, force, deleteFiles)
@@ -128,7 +128,7 @@ class DepotserverPackageManager(object):
 		self._depotBackend = depotBackend
 		logger.setLogFile(self._depotBackend._packageLog, object=self)
 
-	def installPackage(self, filename, force=False, propertyDefaultValues={}, tempDir=None):
+	def installPackage(self, filename, force=False, propertyDefaultValues={}, tempDir=None, forceProductId=None):
 		from OPSI.Util.Task.CleanupBackend import cleanUpProducts
 
 		depotId = self._depotBackend._depotId
@@ -170,6 +170,12 @@ class DepotserverPackageManager(object):
 			try:
 				product = ppf.packageControlFile.getProduct()
 				productId = product.getId()
+				if forceProductId:
+					forceProductId = forceProductIdFunc(forceProductId)
+					logger.notice(u"Forcing product id '{0}'", forceProductId)
+					productId = forceProductId
+					product.setId(forceProductId)
+					ppf.packageControlFile.setProduct(product)
 
 				logger.notice(u"Creating product in backend")
 				self._depotBackend._context.product_createObjects(product)
