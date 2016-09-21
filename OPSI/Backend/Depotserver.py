@@ -29,7 +29,8 @@ import os
 
 from OPSI.Logger import Logger
 from OPSI.Types import (forceBool, forceDict, forceFilename, forceHostId,
-	forceUnicode, forceUnicodeLower, forceProductId)
+	forceUnicode, forceUnicodeLower)
+from OPSI.Types import forceProductId as forceProductIdFunc
 from OPSI.Types import (BackendIOError, BackendError, BackendTemporaryError,
 	BackendMissingDataError, BackendBadValueError)
 from OPSI.Object import ProductOnDepot, ProductPropertyState
@@ -396,7 +397,7 @@ class DepotserverPackageManager(object):
 		logger.notice(u"=================================================================================================")
 		logger.notice(u"Uninstalling product '%s' on depot '%s'" % (productId, depotId))
 		try:
-			productId = forceProductId(productId)
+			productId = forceProductIdFunc(productId)
 			force = forceBool(force)
 			deleteFiles = forceBool(deleteFiles)
 
