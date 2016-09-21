@@ -239,8 +239,10 @@ class DepotserverPackageManager(object):
 
 				for productProperty in ppf.packageControlFile.getProductProperties():
 					ident = productProperty.getIdent(returnType='unicode')
-					if ident in currentProductProperties:
+					try:
 						del currentProductProperties[ident]
+					except KeyError:
+						pass  # Property not found - everyhing okay
 					productProperties.append(productProperty)
 				self._depotBackend._context.productProperty_createObjects(productProperties)
 
