@@ -51,14 +51,14 @@ def depotserverBackend(extendedConfigDataBackend):
                 groupData = grp.getgrnam(g.gr_name)
                 break
         else:
-            pytest.skip("Unable to find group")
+            pytest.skip("Unable to get group data for patching.")
 
         for u in pwd.getpwall():
             if u.pw_uid == os.getuid():
                 userData = pwd.getpwnam(u.pw_name)
                 break
         else:
-            pytest.skip("Unable to find user data for mocking.")
+            pytest.skip("Unable to get user data for mocking.")
 
         with patchAddress(fqdn=fakeFQDN):
             with mock.patch('OPSI.Util.Product.grp.getgrnam', lambda x: groupData):
