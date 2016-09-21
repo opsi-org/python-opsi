@@ -194,7 +194,7 @@ class DepotserverPackageManager(object):
 
 				logger.notice(u"Running preinst script")
 				for line in ppf.runPreinst(({'DEPOT_ID': depotId})):
-					logger.info(u"[preinst] %s" % line)
+					logger.info(u"[preinst] {0}", line)
 
 				logger.notice(u"Unpacking package files")
 				if ppf.packageControlFile.getIncrementalPackage():
@@ -305,7 +305,7 @@ class DepotserverPackageManager(object):
 
 				logger.notice(u"Running postinst script")
 				for line in ppf.runPostinst({'DEPOT_ID': depotId}):
-					logger.info(u"[postinst] %s" % line)
+					logger.info(u"[postinst] {0}", line)
 
 				ppf.createPackageContentFile()
 				ppf.setAccessRights()
