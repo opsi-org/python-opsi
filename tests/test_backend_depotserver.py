@@ -48,8 +48,7 @@ def depotserverBackend(extendedConfigDataBackend):
 
         for g in grp.getgrall():
             if g.gr_gid == os.getgid():
-                groupName = g.gr_name
-                groupData = grp.getgrnam(groupName)
+                groupData = grp.getgrnam(g.gr_name)
                 break
         else:
             pytest.skip("Unable to find group")
