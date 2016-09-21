@@ -25,11 +25,12 @@ Testing Depotserver features.
 
 from __future__ import absolute_import
 
+import grp
 import os
 import pytest
 from OPSI.Backend.Depotserver import DepotserverBackend
 
-from .helpers import patchAddress, workInTemporaryDirectory
+from .helpers import mock, patchAddress, workInTemporaryDirectory
 
 
 @pytest.fixture
@@ -44,8 +45,17 @@ def depotserverBackend(extendedConfigDataBackend):
         depot.depotLocalUrl = 'file://' + tempDir
         extendedConfigDataBackend.host_updateObject(depot)
 
+        for g in grp.getgrall():
+            if g.gr_gid == os.getgid():
+                groupName = g.gr_name
+                groupData = grp.getgrnam(groupName)
+                break
+        else:
+            pytest.skip("Unable to find group")
+
         with patchAddress(fqdn=fakeFQDN):
-            yield DepotserverBackend(extendedConfigDataBackend)
+            with mock.patch('OPSI.Util.Product.grp.getgrnam', lambda x: groupData):
+                yield DepotserverBackend(extendedConfigDataBackend)
 
 
 @pytest.mark.requiresModulesFile  # because of SQLite...
