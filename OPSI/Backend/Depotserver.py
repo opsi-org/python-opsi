@@ -131,6 +131,7 @@ class DepotserverPackageManager(object):
 		depotId = self._depotBackend._depotId
 		logger.notice(u"=================================================================================================")
 		logger.notice(u"Installing package file '%s' on depot '%s'" % (filename, depotId))
+
 		try:
 			filename = forceFilename(filename)
 			force = forceBool(force)
@@ -213,11 +214,13 @@ class DepotserverPackageManager(object):
 							packageVersion=product.getPackageVersion()):
 					ident = productDependency.getIdent(returnType='unicode')
 					currentProductDependencies[ident] = productDependency
+
 				for productDependency in ppf.packageControlFile.getProductDependencies():
 					ident = productDependency.getIdent(returnType='unicode')
 					if ident in currentProductDependencies:
 						del currentProductDependencies[ident]
 					productDependencies.append(productDependency)
+
 				self._depotBackend._context.productDependency_createObjects(productDependencies)
 				if currentProductDependencies.values():
 					self._depotBackend._context.productDependency_deleteObjects(
@@ -249,6 +252,7 @@ class DepotserverPackageManager(object):
 					for v in propertyDefaultValues.get(productProperty.propertyId, []):
 						if v in productProperty.possibleValues:
 							newValues.append(v)
+
 					if not newValues and productProperty.defaultValues:
 						newValues = productProperty.defaultValues
 					propertyDefaultValues[productProperty.propertyId] = newValues
@@ -272,7 +276,7 @@ class DepotserverPackageManager(object):
 
 				productPropertyIds = None
 				productPropertyStatesToDelete = None
-				productPropertyIds = [productProperty.propertyId for productProperty in  baseProperties]
+				productPropertyIds = [productProperty.propertyId for productProperty in baseProperties]
 				productPropertyStatesToDelete = [ppState for ppState in productPropertyStates if ppState.propertyId not in productPropertyIds]
 				logger.debug(u"Following productPropertyStates are marked to delete: '%s'" % productPropertyStatesToDelete)
 				if productPropertyStatesToDelete:
@@ -289,6 +293,7 @@ class DepotserverPackageManager(object):
 							values=productProperty.defaultValues
 						)
 					)
+
 				for productPropertyState in productPropertyStates:
 					if productPropertyState.propertyId in propertyDefaultValues:
 						try:
@@ -321,11 +326,13 @@ class DepotserverPackageManager(object):
 					if productProperty.editable or not productProperty.possibleValues:
 						continue
 					productPropertiesToCleanup[productProperty.propertyId] = productProperty
+
 				if productPropertiesToCleanup:
 					clientIds = []
 					for clientToDepot in self._depotBackend._context.configState_getClientToDepotserver(depotIds=depotId):
 						if clientToDepot['clientId'] not in clientIds:
 							clientIds.append(clientToDepot['clientId'])
+
 					if clientIds:
 						deleteProductPropertyStates = []
 						updateProductPropertyStates = []
@@ -340,6 +347,7 @@ class DepotserverPackageManager(object):
 								if v in productProperty.possibleValues:
 									newValues.append(v)
 									continue
+
 								if productProperty.getType() == 'BoolProductProperty' and forceBool(v) in productProperty.possibleValues:
 									newValues.append(forceBool(v))
 									changed = True
@@ -355,6 +363,7 @@ class DepotserverPackageManager(object):
 										changed = True
 										continue
 								changed = True
+
 							if changed:
 								if not newValues:
 									logger.debug(u"Properties changed: marking productPropertyState %s for deletion" % productPropertyState)
@@ -363,11 +372,11 @@ class DepotserverPackageManager(object):
 									productPropertyState.setValues(newValues)
 									logger.debug(u"Properties changed: marking productPropertyState %s for update" % productPropertyState)
 									updateProductPropertyStates.append(productPropertyState)
+
 						if deleteProductPropertyStates:
 							self._depotBackend._context.productPropertyState_deleteObjects(deleteProductPropertyStates)
 						if updateProductPropertyStates:
 							self._depotBackend._context.productPropertyState_updateObjects(updateProductPropertyStates)
-
 			except Exception as e:
 				try:
 					ppf.cleanup()
@@ -375,7 +384,6 @@ class DepotserverPackageManager(object):
 					logger.error("Cleanup failed: {0!r}", e2)
 
 				raise e
-
 		except Exception as e:
 			logger.logException(e)
 			raise BackendError(u"Failed to install package '%s' on depot '%s': %s" % (filename, depotId, e))
