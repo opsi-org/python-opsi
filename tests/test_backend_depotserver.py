@@ -25,6 +25,7 @@ Testing Depotserver features.
 
 from __future__ import absolute_import
 
+import pwd
 import grp
 import os
 import pytest
@@ -53,9 +54,17 @@ def depotserverBackend(extendedConfigDataBackend):
         else:
             pytest.skip("Unable to find group")
 
+        for u in pwd.getpwall():
+            if u.pw_uid == os.getuid():
+                userData = pwd.getpwnam(u.pw_name)
+                break
+        else:
+            pytest.skip("Unable to find user data for mocking.")
+
         with patchAddress(fqdn=fakeFQDN):
             with mock.patch('OPSI.Util.Product.grp.getgrnam', lambda x: groupData):
-                yield DepotserverBackend(extendedConfigDataBackend)
+                with mock.patch('OPSI.Util.Product.pwd.getpwnam', lambda x: userData):
+                    yield DepotserverBackend(extendedConfigDataBackend)
 
 
 @pytest.mark.requiresModulesFile  # because of SQLite...
