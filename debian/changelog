@@ -1,3 +1,11 @@
+python-opsi (4.0.7.21-1) stable; urgency=medium
+
+  * New BackendMethod changeWANConfig
+  * OPSI.System.Posix: added enx network device support
+  * small fix in Repository-Handling
+
+ -- Erol Ueluekmen <e.ueluekmen@uib.de>  Wed, 21 Sep 2016 01:22:59 +0200
+
 python-opsi (4.0.7.20-1) stable; urgency=medium
 
   * Various internal refactorings.
