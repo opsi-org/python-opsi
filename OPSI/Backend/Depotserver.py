@@ -222,7 +222,7 @@ class DepotserverPackageManager(object):
 					productDependencies.append(productDependency)
 
 				self._depotBackend._context.productDependency_createObjects(productDependencies)
-				if currentProductDependencies.values():
+				if currentProductDependencies:
 					self._depotBackend._context.productDependency_deleteObjects(
 						currentProductDependencies.values()
 					)
