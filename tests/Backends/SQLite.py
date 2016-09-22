@@ -50,8 +50,10 @@ def getSQLiteBackend():
 	# licenseManagement = True
 	backend = SQLiteBackend(**SQLiteconfiguration)
 	backend.backend_createBase()
-	yield backend
-	backend.backend_deleteBase()
+	try:
+		yield backend
+	finally:
+		backend.backend_deleteBase()
 
 
 @contextmanager
