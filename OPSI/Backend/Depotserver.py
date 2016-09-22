@@ -225,6 +225,9 @@ class DepotserverPackageManager(object):
 					currentProductDependencies[ident] = productDependency
 
 				for productDependency in ppf.packageControlFile.getProductDependencies():
+					if forceProductId:
+						productDependency.productId = forceProductId
+
 					ident = productDependency.getIdent(returnType='unicode')
 					if ident in currentProductDependencies:
 						del currentProductDependencies[ident]
@@ -247,6 +250,9 @@ class DepotserverPackageManager(object):
 					currentProductProperties[ident] = productProperty
 
 				for productProperty in ppf.packageControlFile.getProductProperties():
+					if forceProductId:
+						productProperty.productId = forceProductId
+
 					ident = productProperty.getIdent(returnType='unicode')
 					try:
 						del currentProductProperties[ident]

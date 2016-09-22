@@ -114,3 +114,18 @@ def testInstallingPackageOnDepotserverWithForcedProductId(depotserverBackend):
 
     assert isProductFolderInDepot(depotPath, wantedProductId)
     assert not isProductFolderInDepot(depotPath, 'testingproduct')
+
+    dependencies = depotserverBackend.productDependency_getObjects()
+    assert len(dependencies) == 1
+    dependency = dependencies[0]
+    assert dependency.productId == wantedProductId
+    assert dependency.requiredProductId == 'javavm'
+
+    properties = depotserverBackend.productProperty_getObjects()
+    assert len(properties) == 1
+    prodProperty = properties[0]
+    assert prodProperty.productId == wantedProductId
+    assert prodProperty.propertyId == 'awesome'
+
+    assert prodProperty.productVersion == product.productVersion
+    assert prodProperty.packageVersion == product.packageVersion
