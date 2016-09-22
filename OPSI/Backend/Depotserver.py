@@ -229,8 +229,10 @@ class DepotserverPackageManager(object):
 						productDependency.productId = forceProductId
 
 					ident = productDependency.getIdent(returnType='unicode')
-					if ident in currentProductDependencies:
+					try:
 						del currentProductDependencies[ident]
+					except KeyError:
+						pass  # Dependency does currently not exist.
 					productDependencies.append(productDependency)
 
 				self._depotBackend._context.productDependency_createObjects(productDependencies)
