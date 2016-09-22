@@ -24,30 +24,12 @@ from __future__ import absolute_import
 
 from contextlib import contextmanager
 
-from OPSI.Backend.Backend import ExtendedConfigDataBackend
-from . import BackendMixin
-
 import pytest
 
 try:
 	from .config import SQLiteconfiguration
 except ImportError:
 	SQLiteconfiguration = {}
-
-
-class SQLiteBackendMixin(BackendMixin):
-
-	CREATES_INVENTORY_HISTORY = True
-
-	def setUpBackend(self):
-		sqliteModule = pytest.importorskip("OPSI.Backend.SQLite")
-		SQLiteBackend = sqliteModule.SQLiteBackend
-
-		self.backend = ExtendedConfigDataBackend(SQLiteBackend(**SQLiteconfiguration))
-		self.backend.backend_createBase()
-
-	def tearDownBackend(self):
-		self.backend.backend_deleteBase()
 
 
 @contextmanager
