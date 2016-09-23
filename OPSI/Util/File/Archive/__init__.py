@@ -23,13 +23,14 @@ Working with archives.
 
 This include functionality for using Tar-Files and their compression.
 
+
+.. versionadded:: 4.0.5.1
+   Control the usage of pigz via ``PIGZ_ENABLED``
+
 :copyright: uib GmbH <info@uib.de>
 :author: Jan Schneider <j.schneider@uib.de>
 :author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
-
-.. versionadded:: 4.0.5.1
-   Control the usage of pigz via ``PIGZ_ENABLED``
 """
 
 import locale
