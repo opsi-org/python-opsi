@@ -37,6 +37,7 @@ import os
 import re
 import subprocess
 import time
+from contextlib import closing
 
 if os.name == 'posix':
 	import fcntl
@@ -63,11 +64,9 @@ def getFileType(filename):
 		raise NotImplementedError(u"getFileType() not implemented on windows")
 
 	filename = forceFilename(filename)
-	ms = magic.open(magic.MAGIC_SYMLINK)
-	ms.load()
-	fileType = ms.file(filename)
-	ms.close()
-	return fileType
+	with closing(magic.open(magic.MAGIC_SYMLINK)) as ms:
+		ms.load()
+		return ms.file(filename)
 
 
 class BaseArchive(object):
