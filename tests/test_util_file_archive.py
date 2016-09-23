@@ -23,12 +23,17 @@ Testing the work with archives.
 :license: GNU Affero General Public License version 3
 """
 
+from __future__ import absolute_import
+
 import mock
+import os
 import unittest
 
 import pytest
 
 from OPSI.Util.File.Archive import getFileType, Archive, PigzMixin, TarArchive
+
+from .helpers import workInTemporaryDirectory
 
 
 class ArchiveFactoryTestCase(unittest.TestCase):
@@ -76,12 +81,24 @@ class PigzMixinAppliedTestCase(unittest.TestCase):
             self.assertEqual(False, self.test_object.is_pigz_available())
 
 
-@pytest.mark.parametrize("expectedType, filename", [
-    ('Python', __file__),
-    # TODO: enhance this with more files...
-])
-def testGetFileType(filename, expectedType):
+@pytest.fixture(params=[('Python', __file__)])
+# TODO: enhance this with more files...
+def filenameAndExpectedType(request):
+    yield request.param
+
+
+def testGetFileType(filenameAndExpectedType):
+    expectedType, filename = filenameAndExpectedType
     assert expectedType.lower() in getFileType(filename).lower()
+
+
+def testGetFileTypeFollowsSymlink(filenameAndExpectedType):
+    expectedType, filename = filenameAndExpectedType
+    with workInTemporaryDirectory() as tempDir:
+        linkFile = os.path.join(tempDir, 'mylink')
+        os.symlink(filename, linkFile)
+
+        assert expectedType.lower() in getFileType(linkFile).lower()
 
 
 if __name__ == '__main__':

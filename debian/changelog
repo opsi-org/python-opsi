@@ -1,3 +1,13 @@
+python-opsi (4.0.7.22-1) testing; urgency=medium
+
+  * DepotserverBackend: function depot_installPackage now has parameter
+    'forceProductId' to force a specific product id when installing a
+     product. The installation will be made into the corresponding directory
+     of the given product id.
+  * OPSI.Util.File.Archive.getFileType now follows symlinks.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 23 Sep 2016 14:15:56 +0200
+
 python-opsi (4.0.7.21-1) stable; urgency=medium
 
   * New BackendMethod changeWANConfig
