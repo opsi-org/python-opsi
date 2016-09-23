@@ -133,7 +133,13 @@ class DepotserverPackageManager(object):
 
 		depotId = self._depotBackend._depotId
 		logger.notice(u"=================================================================================================")
-		logger.notice(u"Installing package file '%s' on depot '%s'" % (filename, depotId))
+		if forceProductId:
+			forceProductId = forceProductIdFunc(forceProductId)
+			logger.notice(u"Installing package file '{filename}' as '{productId}' on depot '{depotId}'",
+				filename=filename, depotId=depotId, productId=forceProductId
+			)
+		else:
+			logger.notice(u"Installing package file '%s' on depot '%s'" % (filename, depotId))
 
 		try:
 			filename = forceFilename(filename)
@@ -171,7 +177,6 @@ class DepotserverPackageManager(object):
 				product = ppf.packageControlFile.getProduct()
 				productId = product.getId()
 				if forceProductId:
-					forceProductId = forceProductIdFunc(forceProductId)
 					logger.notice(u"Forcing product id '{0}'", forceProductId)
 					productId = forceProductId
 					product.setId(forceProductId)
