@@ -1,5 +1,5 @@
-#!/usr/bin/env python
-#-*- coding: utf-8 -*-
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
 # Copyright (C) 2014-2016 uib GmbH <info@uib.de>
@@ -26,7 +26,9 @@ Testing the work with archives.
 import mock
 import unittest
 
-from OPSI.Util.File.Archive import Archive, PigzMixin, TarArchive
+import pytest
+
+from OPSI.Util.File.Archive import getFileType, Archive, PigzMixin, TarArchive
 
 
 class ArchiveFactoryTestCase(unittest.TestCase):
@@ -72,6 +74,14 @@ class PigzMixinAppliedTestCase(unittest.TestCase):
         """
         with mock.patch('OPSI.Util.File.Archive.PIGZ_ENABLED', False):
             self.assertEqual(False, self.test_object.is_pigz_available())
+
+
+@pytest.mark.parametrize("expectedType, filename", [
+    ('Python', __file__),
+    # TODO: enhance this with more files...
+])
+def testGetFileType(filename, expectedType):
+    assert expectedType.lower() in getFileType(filename).lower()
 
 
 if __name__ == '__main__':
