@@ -49,7 +49,7 @@ from OPSI import System
 from OPSI.Types import forceBool, forceFilename, forceUnicodeList, forceUnicodeLower
 from OPSI.Util import compareVersions
 
-__version__ = "4.0.6.1"
+__version__ = "4.0.7.22"
 
 logger = Logger()
 

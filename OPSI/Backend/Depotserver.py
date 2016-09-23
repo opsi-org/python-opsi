@@ -41,7 +41,7 @@ from OPSI.Util import (compareVersions, getfqdn, md5sum, librsyncSignature,
 	librsyncPatchFile, librsyncDeltaFile, removeDirectory)
 from OPSI.Util.File import ZsyncFile
 
-__version__ = '4.0.7.21'
+__version__ = '4.0.7.22'
 
 logger = Logger()
 
