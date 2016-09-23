@@ -38,15 +38,15 @@ import re
 import subprocess
 import time
 
-if os.name == 'posix':
-	import fcntl
-	import magic
-
 import OPSI.Util.File.Opsi
 from OPSI.Logger import Logger
 from OPSI import System
 from OPSI.Types import forceBool, forceFilename, forceUnicodeList, forceUnicodeLower
 from OPSI.Util import compareVersions
+
+if os.name == 'posix':
+	import fcntl
+	import magic
 
 __version__ = "4.0.6.1"
 
