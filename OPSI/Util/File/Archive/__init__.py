@@ -63,7 +63,7 @@ def getFileType(filename):
 		raise NotImplementedError(u"getFileType() not implemented on windows")
 
 	filename = forceFilename(filename)
-	ms = magic.open(magic.MAGIC_NONE)
+	ms = magic.open(magic.MAGIC_SYMLINK)
 	ms.load()
 	fileType = ms.file(filename)
 	ms.close()
