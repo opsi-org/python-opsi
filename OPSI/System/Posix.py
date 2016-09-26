@@ -1142,7 +1142,7 @@ def getBlockDeviceBusType(device):
 			else:
 				devs = [match.group(1)]
 
-			devs = [currentDev.strip() for currentDiv in devs]
+			devs = [currentDev.strip() for currentDev in devs]
 
 		match = re.search('^\s+Attached to:\s+[^\(]+\((\S+)\s*', line)
 		if match:
