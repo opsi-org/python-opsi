@@ -348,11 +348,11 @@ class WorkerOpsi:
 		return self._getAuthorization()
 
 	def _getUserAgent(self):
-		userAgent = None
 		try:
 			userAgent = self.request.headers.getHeader('user-agent')
 		except Exception:
 			logger.info(u"Client '%s' did not supply user-agent" % self.request.remoteAddr.host)
+			userAgent = None
 
 		if not userAgent:
 			userAgent = 'unknown'
