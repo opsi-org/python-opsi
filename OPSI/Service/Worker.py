@@ -711,9 +711,6 @@ class WorkerOpsiJsonInterface(WorkerOpsiJsonRpc):
 	"""
 	Worker responsible for creating the human-usable interface page.
 	"""
-	def __init__(self, service, request, resource):
-		WorkerOpsiJsonRpc.__init__(self, service, request, resource)
-
 	def _generateResponse(self, result):
 		logger.info(u"Creating interface page")
 
@@ -778,9 +775,6 @@ class WorkerOpsiJsonInterface(WorkerOpsiJsonRpc):
 
 
 class WorkerOpsiDAV(WorkerOpsi):
-	def __init__(self, service, request, resource):
-		WorkerOpsi.__init__(self, service, request, resource)
-
 	def process(self):
 		logger.debug(u"Worker {0} started processing", self)
 
