@@ -31,6 +31,7 @@ Functions and classes for the use with a POSIX operating system.
 """
 
 import codecs
+import datetime
 import fcntl
 import locale
 import os
@@ -1132,7 +1133,10 @@ def umount(devOrMountpoint):
 
 
 def getBlockDeviceBusType(device):
-	# Returns either 'IDE', 'SCSI', 'SATA', 'RAID' or None (not found)
+	"""
+	:return: 'IDE', 'SCSI', 'SATA', 'RAID' or None (not found)
+	:returntype: str or None
+	"""
 	device = forceFilename(device)
 
 	(devs, type) = ([], None)
@@ -1156,7 +1160,7 @@ def getBlockDeviceBusType(device):
 			else:
 				devs = [match.group(1)]
 
-			devs = [currentDev.strip() for currentDiv in devs]
+			devs = [currentDev.strip() for currentDev in devs]
 
 		match = re.search('^\s+Attached to:\s+[^\(]+\((\S+)\s*', line)
 		if match:
@@ -3988,4 +3992,3 @@ def setLocalSystemTime(timestring):
 		subprocess.call([systemTime])
 	except Exception as error:
 			logger.error(u"Failed to set System Time: %s" % error)
-
