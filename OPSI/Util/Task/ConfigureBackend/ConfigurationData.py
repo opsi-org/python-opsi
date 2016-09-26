@@ -61,7 +61,7 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 
 	.. versionchanged:: 4.0.6.3
 
-	    Adding WAN extension configurations if missing.
+		Adding WAN extension configurations if missing.
 	"""
 	def runningOnUCS():
 		return u'univention' in Posix.Distribution().distributor.lower()
