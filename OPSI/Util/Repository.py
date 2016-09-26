@@ -807,7 +807,7 @@ class HTTPRepository(Repository):
 		self._retryTime = 5
 		self._connectionPoolSize = 1
 		self._cookie = ''
-		proxy = None
+		self._proxy = None
 		serverCertFile = None
 		verifyServerCert = False
 		caCertFile = None
@@ -821,8 +821,8 @@ class HTTPRepository(Repository):
 				self._username = forceUnicode(value)
 			elif key == 'password':
 				self._password = forceUnicode(value)
-			elif key == 'proxy':
-				proxy = forceUnicode(value)
+			elif key == 'proxyurl':
+				self._proxy = forceUnicode(value)
 			elif key == 'servercertfile':
 				serverCertFile = forceFilename(value)
 			elif key == 'verifyservercert':
@@ -855,31 +855,6 @@ class HTTPRepository(Repository):
 
 		auth = u'%s:%s' % (self._username, self._password)
 		self._auth = 'Basic '+ base64.b64encode(auth.encode('latin-1'))
-		self._proxy = None
-
-		if proxy:
-			self._proxy = forceUnicode(proxy)
-			self._auth = None
-			match = re.search('^(https?)://([^:]+:*[^:]+):(\d+)$', proxy, re.IGNORECASE)
-			if not match:
-				raise RepositoryError(u"Bad proxy url: '%s'" % proxy)
-			proxyProtocol = match.group(1)
-			proxyHost = match.group(2)
-			if '@' in self._host:
-				proxyUsername, proxyHost = proxyHost.split('@', 1)
-				proxyPassword = ''
-				if ':' in proxyUsername:
-					proxyUsername, proxyPassword = proxyUsername.split(':', 1)
-				auth = u'%s:%s' % (proxyUsername, proxyPassword)
-				self._auth = 'Basic '+ base64.b64encode(auth.encode('latin-1'))
-			proxyPort = forceInt(match.group(3))
-			if self._username and self._password:
-				self._url = u'%s://%s:%s@%s:%d%s' % (self._protocol, self._username, self._password, self._host, self._port, self._path)
-			else:
-				self._url = u'%s://%s:%d%s' % (self._protocol, self._host, self._port, self._path)
-			self._protocol = proxyProtocol
-			self._host = proxyHost
-			self._port = proxyPort
 
 		self._connectionPool = getSharedConnectionPool(
 			scheme=self._protocol,
@@ -893,21 +868,15 @@ class HTTPRepository(Repository):
 			serverCertFile=serverCertFile,
 			verifyServerCert=verifyServerCert,
 			caCertFile=caCertFile,
-			verifyServerCertByCa=verifyServerCertByCa
+			verifyServerCertByCa=verifyServerCertByCa,
+			proxyURL=self._proxy
 		)
 
 	def _preProcessPath(self, path):
-		path = forceUnicode(path)
-		path = path.lstrip("/")
-		if self._proxy:
-			if self._url.endswith('/'):
-				path = self._url + path
-			else:
-				path = self._url + u'/' + path
-		else:
-			path = (u"/".join([self._path, path])).lstrip("/")
-			if not self._url.endswith("/"):
-				path = u"/" + path
+		path = forceUnicode(path).lstrip("/")
+		path = (u"/".join([self._path, path])).lstrip("/")
+		if not self._url.endswith("/"):
+			path = u"/" + path
 
 		path = path.rstrip("/")
 		return urllib.quote(path.encode('utf-8'))
@@ -957,8 +926,11 @@ class HTTPRepository(Repository):
 					if ebn <= -1:
 						ebn = ''
 					headers['range'] = 'bytes=%s-%s' % (sbn, ebn)
-
-				conn.putrequest('GET', source)
+				if self._proxy:
+					conn.putrequest('GET', source, skip_host=True)
+					conn.putheader('Host', "%s:%s" % (self._host,self._port))
+				else:
+					conn.putrequest('GET', source)
 				for key, value in headers.items():
 					conn.putheader(key, value)
 				conn.endheaders()

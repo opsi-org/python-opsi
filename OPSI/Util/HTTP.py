@@ -319,7 +319,7 @@ class HTTPConnectionPool(object):
 				url = urlparse.urlparse(self.proxyURL)
 				if url.password:
 					logger.setConfidentialStrings(url.password)
-					logger.debug(u"Starting new HTTP connection (%d) to %s:%d over proxy-url %s" % (self.num_connections, self.host, self.port, self.proxyURL))
+				logger.debug(u"Starting new HTTP connection (%d) to %s:%d over proxy-url %s" % (self.num_connections, self.host, self.port, self.proxyURL))
 
 				conn = HTTPConnection(host=url.hostname, port=url.port)
 				if url.username and url.password:
@@ -365,8 +365,12 @@ class HTTPConnectionPool(object):
 			# This should never happen if self.block == True
 			logger.warning(u"HttpConnectionPool is full, discarding connection: %s" % self.host)
 
+	def get_host(self, url):
+		(scheme, host, port, baseurl, username, password) = urlsplit(url)
+		return (scheme, host, port)
+
 	def is_same_host(self, url):
-		return url.startswith('/') or get_host(url) == (self.scheme, self.host, self.port)
+		return url.startswith('/') or self.get_host(url) == (self.scheme, self.host, self.port)
 
 	def getPeerCertificate(self, asPem=False):
 		if not self.peerCertificate:
@@ -565,7 +569,7 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 				url = urlparse.urlparse(self.proxyURL)
 				if url.password:
 					logger.setConfidentialString(url.password)
-					logger.debug(u"Starting new HTTPS connection (%d) to %s:%d over proxy-url %s" % (self.num_connections, self.host, self.port, self.proxyURL))
+				logger.debug(u"Starting new HTTPS connection (%d) to %s:%d over proxy-url %s" % (self.num_connections, self.host, self.port, self.proxyURL))
 				conn = HTTPSConnection(host=url.hostname, port=url.port)
 				if url.username and url.password:
 					logger.debug(u"Proxy Authentication detected, setting auth with user: '%s'" % url.username)
