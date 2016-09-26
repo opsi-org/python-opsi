@@ -1,3 +1,10 @@
+python-opsi (4.0.7.23-1) UNRELEASED; urgency=medium
+
+  * OPSI.System.Posix: added missing 'datetime' import.
+  * OPSI.System.Posix: fix wrong reference in getBlockDeviceBusType
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 26 Sep 2016 13:18:20 +0200
+
 python-opsi (4.0.7.22-1) testing; urgency=medium
 
   * DepotserverBackend: function depot_installPackage now has parameter
