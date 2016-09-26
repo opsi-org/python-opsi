@@ -1115,7 +1115,10 @@ def umount(devOrMountpoint):
 
 
 def getBlockDeviceBusType(device):
-	# Returns either 'IDE', 'SCSI', 'SATA', 'RAID' or None (not found)
+	"""
+	:return: 'IDE', 'SCSI', 'SATA', 'RAID' or None (not found)
+	:returntype: str or None
+	"""
 	device = forceFilename(device)
 
 	(devs, type) = ([], None)
