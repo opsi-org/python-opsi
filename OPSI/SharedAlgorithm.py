@@ -40,8 +40,6 @@ from OPSI.Object import ProductOnClient
 from OPSI.Types import OpsiProductOrderingError, BackendUnaccomplishableError
 from OPSI.Types import forceInt, forceBool
 
-__version__ = '4.0.7.3'
-
 logger = Logger()
 
 BOTTOM = -100

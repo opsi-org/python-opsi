@@ -41,8 +41,6 @@ if os.name == 'posix':
 	import pwd
 	import grp
 
-__version__ = '4.0.7.1'
-
 try:
 	from OPSI.Util.File.Opsi import OpsiConfFile
 	DEFAULT_CLIENT_DATA_GROUP = OpsiConfFile().getOpsiFileAdminGroup()

@@ -54,8 +54,6 @@ try:
 except ImportError:
 	syslog = None
 
-__version__ = '4.0.7.6'
-
 if sys.version_info > (3, ):
 	# Python 3
 	unicode = str

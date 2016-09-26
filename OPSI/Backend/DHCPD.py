@@ -41,8 +41,6 @@ from OPSI.Types import BackendIOError, BackendBadValueError, BackendMissingDataE
 from OPSI.Util.File import DHCPDConfFile
 from OPSI.Util import getfqdn
 
-__version__ = '4.0.6.3'
-
 logger = Logger()
 
 

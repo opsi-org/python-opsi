@@ -42,6 +42,7 @@ import urllib
 from OPSI.web2 import responsecode
 from OPSI.web2.dav import davxml
 
+from OPSI import __version__
 from OPSI.Logger import LOG_INFO, Logger
 from OPSI.System import mount, umount
 from OPSI.Types import RepositoryError
@@ -53,8 +54,6 @@ from OPSI.Util.HTTP import getSharedConnectionPool, urlsplit, HTTPResponse
 
 if os.name == 'nt':
 	from OPSI.System.Windows import getFreeDrive
-
-__version__ = '4.0.7.1'
 
 logger = Logger()
 

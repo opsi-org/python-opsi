@@ -57,8 +57,6 @@ from OPSI.Logger import Logger
 from OPSI.Types import (forceBool, forceFilename, forceFqdn, forceInt,
 						forceIPAddress, forceNetworkAddress, forceUnicode)
 
-__version__ = '4.0.7.17'
-
 logger = Logger()
 
 if os.name == 'posix':

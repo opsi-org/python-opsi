@@ -70,8 +70,6 @@ from OPSI.Types import (BackendBadValueError, OpsiBackupBackendNotFound,
 from OPSI.Util.File import ConfigFile, IniFile, TextFile, requiresParsing
 from OPSI.Util import md5sum, toJson, fromJson
 
-__version__ = '4.0.7.1'
-
 logger = Logger()
 
 

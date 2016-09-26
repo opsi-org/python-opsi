@@ -42,8 +42,6 @@ from OPSI.Types import (forceBool, forceInt, forceList, forceUnicode,
 	forceUnicodeList)
 from OPSI.Util.Message import MessageObserver, ProgressObserver
 
-__version__ = '4.0.7.1'
-
 logger = Logger()
 encoding = locale.getpreferredencoding()
 

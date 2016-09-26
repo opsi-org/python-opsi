@@ -42,8 +42,6 @@ elif os.name == 'nt':
 
 from OPSI.Types import forceFilename
 
-__version__ = '4.0.6.12'
-
 
 class SystemHook(SystemSpecificHook):
 	def __init__(self):

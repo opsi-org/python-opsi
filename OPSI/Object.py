@@ -48,8 +48,6 @@ from OPSI.Types import (forceActionProgress, forceActionRequest,
 	forceUnicodeList, forceUnicodeLower, forceUnsignedInt, forceUrl)
 from OPSI.Util import fromJson, toJson, generateOpsiHostKey, timestamp
 
-__version__ = '4.0.7.20'
-
 logger = Logger()
 _MANDATORY_CONSTRUCTOR_ARGS_CACHE = {}
 

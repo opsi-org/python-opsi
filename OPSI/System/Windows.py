@@ -67,8 +67,6 @@ from datetime import datetime
 from OPSI.Logger import *
 from OPSI.Types import *
 
-__version__ = '4.0.6.30'
-
 logger = Logger()
 hooks = []
 

@@ -35,8 +35,6 @@ from Queue import Queue, Empty
 
 from OPSI.Logger import Logger
 
-__version__ = '4.0.6.1'
-
 logger = Logger()
 GlobalPool = None
 

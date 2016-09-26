@@ -45,8 +45,6 @@ from OPSI.Util.File.Opsi import OpsiConfFile, HostKeyFile, PackageControlFile
 from OPSI.Object import *  # needed for calls to "eval"
 from OPSI.Types import BackendConfigurationError
 
-__version__ = '4.0.7.1'
-
 logger = Logger()
 
 
