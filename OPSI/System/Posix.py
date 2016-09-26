@@ -31,6 +31,7 @@ Functions and classes for the use with a POSIX operating system.
 """
 
 import codecs
+import datetime
 import fcntl
 import locale
 import os
@@ -55,7 +56,7 @@ from OPSI.Types import OpsiVersionError
 from OPSI.Object import *
 from OPSI.Util import objectToBeautifiedText, removeUnit
 
-__version__ = '4.0.7.20'
+__version__ = '4.0.7.23'
 
 logger = Logger()
 
@@ -3970,4 +3971,3 @@ def setLocalSystemTime(timestring):
 		subprocess.call([systemTime])
 	except Exception as error:
 			logger.error(u"Failed to set System Time: %s" % error)
-
