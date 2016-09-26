@@ -4,7 +4,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2006-2014 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -102,7 +102,9 @@ class ResourceOpsiDAV(OPSI.web2.dav.static.DAVFile):
 		self._authRequired = authRequired
 
 	def createSimilarFile(self, path):
-		return self.__class__(self._service, path,
+		return self.__class__(
+			self._service,
+			path,
 			readOnly=self._readOnly,
 			defaultType=self.defaultType,
 			indexNames=self.indexNames[:],
@@ -117,6 +119,7 @@ class ResourceOpsiDAV(OPSI.web2.dav.static.DAVFile):
 					code=responsecode.FORBIDDEN,
 					stream="Readonly!"
 				)
+
 			worker = self.WorkerClass(self._service, request, self)
 			return worker.process()
 		except Exception as exc:
