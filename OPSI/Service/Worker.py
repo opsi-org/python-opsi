@@ -363,9 +363,9 @@ class WorkerOpsi:
 		"Get session id from cookie request header"
 		sessionId = u''
 		try:
-			for (k, v) in self.request.headers.getAllRawHeaders():
-				if k.lower() == 'cookie':
-					for cookie in v:
+			for (headerTag, headerValue) in self.request.headers.getAllRawHeaders():
+				if headerTag.lower() == 'cookie':
+					for cookie in headerValue:
 						for c in cookie.split(';'):
 							if '=' not in c:
 								continue
