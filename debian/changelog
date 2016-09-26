@@ -1,4 +1,10 @@
-python-opsi (4.0.7.23-1) UNRELEASED; urgency=medium
+python-opsi (4.0.7.23-2) stable; urgency=medium
+
+  * Correct entry in changelog.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 26 Sep 2016 15:29:35 +0200
+
+python-opsi (4.0.7.23-1) stable; urgency=medium
 
   * OPSI.System.Posix: added missing 'datetime' import.
   * OPSI.System.Posix: fix wrong reference in getBlockDeviceBusType
