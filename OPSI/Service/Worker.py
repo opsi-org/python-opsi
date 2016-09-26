@@ -563,7 +563,7 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 		try:
 			rpcs = fromJson(self.query, preventObjectCreation=True)
 			if not rpcs:
-				raise Exception(u"Got no rpcs")
+				raise ValueError(u"Got no rpcs")
 		except Exception as e:
 			raise OpsiBadRpcError(u"Failed to decode rpc: %s" % e)
 
