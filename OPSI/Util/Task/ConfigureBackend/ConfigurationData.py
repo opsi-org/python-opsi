@@ -304,7 +304,7 @@ def readWindowsDomainFromUCR():
 	Get the Windows domain from Univention Config registry
 	If no domain can be found this returns an empty string.
 
-	:return: The Windows domain
+	:return: The Windows domain in uppercase letters.
 	:returntype: str
 	"""
 	domain = ''
@@ -312,7 +312,7 @@ def readWindowsDomainFromUCR():
 		readCommand = u'{ucr} get windows/domain'.format(ucr=Posix.which('ucr'))
 		for output in Posix.execute(readCommand):
 			if output:
-				domain = output.strip()
+				domain = output.strip().upper()
 				break
 	except Posix.CommandNotFoundException as missingCommandError:
 		LOGGER.info('Could not find ucr: {0}', missingCommandError)

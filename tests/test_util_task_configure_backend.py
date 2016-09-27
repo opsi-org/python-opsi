@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
 # Copyright (C) 2014-2016 uib GmbH <info@uib.de>
@@ -208,4 +207,4 @@ def testAddingInstallByShutdownConfig(extendedConfigDataBackend):
 def testReadingDomainFromUCR():
     with mock.patch('OPSI.Util.Task.ConfigureBackend.ConfigurationData.Posix.which', lambda x: '/no/real/path/ucr'):
         with mock.patch('OPSI.Util.Task.ConfigureBackend.ConfigurationData.Posix.execute', lambda x: ['sharpdressed']):
-            assert 'sharpdressed' == confData.readWindowsDomainFromUCR()
+            assert 'SHARPDRESSED' == confData.readWindowsDomainFromUCR()
