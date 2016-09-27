@@ -32,7 +32,7 @@ import OPSI.Util.Task.ConfigureBackend as backendConfigUtils
 import OPSI.Util.Task.ConfigureBackend.ConfigurationData as confData
 
 from .Backends.File import FileBackendMixin
-from .helpers import createTemporaryTestfile, unittest
+from .helpers import createTemporaryTestfile, mock, unittest
 
 import pytest
 
@@ -203,3 +203,9 @@ def testAddingInstallByShutdownConfig(extendedConfigDataBackend):
 
     for ident in requiredConfigIdents:
         assert ident in identsInBackend, "Missing config id {0}".format(ident)
+
+
+def testReadingDomainFromUCR():
+    with mock.patch('OPSI.Util.Task.ConfigureBackend.ConfigurationData.Posix.which', lambda x: '/no/real/path/ucr'):
+        with mock.patch('OPSI.Util.Task.ConfigureBackend.ConfigurationData.Posix.execute', lambda x: ['sharpdressed']):
+            assert 'sharpdressed' == confData.readWindowsDomainFromUCR()

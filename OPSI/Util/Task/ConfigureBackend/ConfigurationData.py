@@ -288,6 +288,27 @@ def readWindowsDomainFromSambaConfig(pathToConfig=SMB_CONF):
 	return winDomain
 
 
+def readWindowsDomainFromUCR():
+	"""
+	Get the Windows domain from Univention Config registry
+	If no domain can be found this returns an empty string.
+
+	:return: The Windows domain
+	:returntype: str
+	"""
+	domain = ''
+	try:
+		readCommand = u'{ucr} get windows/domain'.format(ucr=Posix.which('ucr'))
+		for output in Posix.execute(readCommand):
+			if output:
+				domain = output.strip()
+				break
+	except Posix.CommandNotFoundException as missingCommandError:
+		LOGGER.info('Could not find ucr: {0}', missingCommandError)
+
+	return domain
+
+
 def addDynamicDepotDriveSelection(backend):
 	config = backend.config_getObjects(id=u'clientconfig.depot.drive')[0]
 
