@@ -1,3 +1,10 @@
+python-opsi (4.0.7.24-1) stable; urgency=medium
+
+  * ConfigurationData: On UCS we preferably read the domain from UCR.
+    If this fails we resort to the Samba config file.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 27 Sep 2016 12:37:43 +0200
+
 python-opsi (4.0.7.23-2) stable; urgency=medium
 
   * Correct entry in changelog.
