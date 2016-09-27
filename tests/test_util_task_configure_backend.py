@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
 # Copyright (C) 2014-2016 uib GmbH <info@uib.de>
@@ -28,11 +27,11 @@ from __future__ import absolute_import
 import os
 
 from OPSI.Object import UnicodeConfig
+from OPSI.System.Posix import CommandNotFoundException
 import OPSI.Util.Task.ConfigureBackend as backendConfigUtils
 import OPSI.Util.Task.ConfigureBackend.ConfigurationData as confData
 
-from .Backends.File import FileBackendMixin
-from .helpers import createTemporaryTestfile, unittest
+from .helpers import createTemporaryTestfile, mock, unittest
 
 import pytest
 
@@ -203,3 +202,15 @@ def testAddingInstallByShutdownConfig(extendedConfigDataBackend):
 
     for ident in requiredConfigIdents:
         assert ident in identsInBackend, "Missing config id {0}".format(ident)
+
+
+def testReadingDomainFromUCR():
+    with mock.patch('OPSI.Util.Task.ConfigureBackend.ConfigurationData.Posix.which', lambda x: '/no/real/path/ucr'):
+        with mock.patch('OPSI.Util.Task.ConfigureBackend.ConfigurationData.Posix.execute', lambda x: ['sharpdressed']):
+            assert 'SHARPDRESSED' == confData.readWindowsDomainFromUCR()
+
+
+def testReadingDomainFromUCRReturnEmptyStringOnProblem():
+    failingWhich = mock.Mock(side_effect=CommandNotFoundException('Whoops.'))
+    with mock.patch('OPSI.Util.Task.ConfigureBackend.ConfigurationData.Posix.which', failingWhich):
+        assert '' == confData.readWindowsDomainFromUCR()

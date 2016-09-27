@@ -61,11 +61,14 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 
 	.. versionchanged:: 4.0.6.3
 
-	    Adding WAN extension configurations if missing.
-	"""
-	def runningOnUCS():
-		return u'univention' in Posix.Distribution().distributor.lower()
+		Adding WAN extension configurations if missing.
 
+
+	.. versionchanged:: 4.0.7.24
+
+		On UCR we try read the domain for ``clientconfig.depot.user``
+		preferably from Univention config registry (UCR).
+	"""
 	backendProvided = True
 
 	if backend is None:
@@ -81,11 +84,16 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 	configs = []
 	configIdents = set(backend.config_getIdents(returnType='unicode'))  # pylint: disable=maybe-no-member
 
-	if runningOnUCS():
+	if Posix.isUCS():
 		# We have a domain present and people might want to change this.
 		if u'clientconfig.depot.user' not in configIdents:
 			depotuser = u'pcpatch'
-			depotdomain = readWindowsDomainFromSambaConfig(pathToSMBConf)
+			depotdomain = readWindowsDomainFromUCR()
+			if not depotdomain:
+				LOGGER.info(u"Reading domain from UCR returned no result. "
+							u"Trying to read from samba config.")
+				depotdomain = readWindowsDomainFromSambaConfig(pathToSMBConf)
+
 			if depotdomain:
 				depotuser = u'\\'.join((depotdomain, depotuser))
 
@@ -289,6 +297,27 @@ def readWindowsDomainFromSambaConfig(pathToConfig=SMB_CONF):
 					break
 
 	return winDomain
+
+
+def readWindowsDomainFromUCR():
+	"""
+	Get the Windows domain from Univention Config registry
+	If no domain can be found this returns an empty string.
+
+	:return: The Windows domain in uppercase letters.
+	:returntype: str
+	"""
+	domain = ''
+	try:
+		readCommand = u'{ucr} get windows/domain'.format(ucr=Posix.which('ucr'))
+		for output in Posix.execute(readCommand):
+			if output:
+				domain = output.strip().upper()
+				break
+	except Posix.CommandNotFoundException as missingCommandError:
+		LOGGER.info('Could not find ucr: {0}', missingCommandError)
+
+	return domain
 
 
 def addDynamicDepotDriveSelection(backend):
