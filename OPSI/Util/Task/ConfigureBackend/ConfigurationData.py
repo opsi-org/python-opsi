@@ -85,7 +85,7 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 			depotdomain = readWindowsDomainFromUCR()
 			if not depotdomain:
 				LOGGER.info(u"Reading domain from UCR returned no result. "
-							u"Reading from samba config {0}", pathToSMBConf)
+							u"Trying to read from samba config.")
 				depotdomain = readWindowsDomainFromSambaConfig(pathToSMBConf)
 
 			if depotdomain:
