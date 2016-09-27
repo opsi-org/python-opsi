@@ -62,6 +62,12 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 	.. versionchanged:: 4.0.6.3
 
 		Adding WAN extension configurations if missing.
+
+
+	.. versionchanged:: 4.0.7.24
+
+		On UCR we try read the domain for ``clientconfig.depot.user``
+		preferably from Univention config registry (UCR).
 	"""
 	backendProvided = True
 
