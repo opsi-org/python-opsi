@@ -27,6 +27,7 @@ from __future__ import absolute_import
 import os
 
 from OPSI.Object import UnicodeConfig
+from OPSI.System.Posix import CommandNotFoundException
 import OPSI.Util.Task.ConfigureBackend as backendConfigUtils
 import OPSI.Util.Task.ConfigureBackend.ConfigurationData as confData
 
@@ -208,3 +209,9 @@ def testReadingDomainFromUCR():
     with mock.patch('OPSI.Util.Task.ConfigureBackend.ConfigurationData.Posix.which', lambda x: '/no/real/path/ucr'):
         with mock.patch('OPSI.Util.Task.ConfigureBackend.ConfigurationData.Posix.execute', lambda x: ['sharpdressed']):
             assert 'SHARPDRESSED' == confData.readWindowsDomainFromUCR()
+
+
+def testReadingDomainFromUCRReturnEmptyStringOnProblem():
+    failingWhich = mock.Mock(side_effect=CommandNotFoundException('Whoops.'))
+    with mock.patch('OPSI.Util.Task.ConfigureBackend.ConfigurationData.Posix.which', failingWhich):
+        assert '' == confData.readWindowsDomainFromUCR()
