@@ -82,7 +82,12 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 		# We have a domain present and people might want to change this.
 		if u'clientconfig.depot.user' not in configIdents:
 			depotuser = u'pcpatch'
-			depotdomain = readWindowsDomainFromSambaConfig(pathToSMBConf)
+			depotdomain = readWindowsDomainFromUCR()
+			if not depotdomain:
+				LOGGER.info(u"Reading domain from UCR returned no result. "
+							u"Reading from samba config {0}", pathToSMBConf)
+				depotdomain = readWindowsDomainFromSambaConfig(pathToSMBConf)
+
 			if depotdomain:
 				depotuser = u'\\'.join((depotdomain, depotuser))
 
