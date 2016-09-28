@@ -99,6 +99,7 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 			if depotdomain:
 				depotuser = u'\\'.join((depotdomain, depotuser))
 
+			LOGGER.debug(u"Using {0!r} as clientconfig.depot.user.", depotuser)
 			configs.append(
 				oobject.UnicodeConfig(
 					id=u'clientconfig.depot.user',
