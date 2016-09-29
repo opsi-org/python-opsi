@@ -146,6 +146,16 @@ def _sqlBackend(request):
             yield backend
 
 
+@pytest.fixture(
+    params=[getMySQLBackend],
+    ids=['mysql']
+)
+def multithreadingBackend(request):
+    with request.param() as backend:
+        with _backendBase(backend):
+            yield backend
+
+
 @pytest.fixture
 def hardwareAuditBackendWithHistory(_sqlBackend):
     yield ExtendedConfigDataBackend(_sqlBackend)

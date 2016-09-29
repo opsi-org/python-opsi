@@ -23,30 +23,10 @@ Mixin for testing various backend methods.
 :license: GNU Affero General Public License version 3
 """
 
-from __future__ import absolute_import, print_function
+from __future__ import print_function
 
 import random
-import threading
 import time
-
-from ..test_groups import fillBackendWithObjectToGroups
-
-from ..helpers import unittest
-
-
-try:
-    from MySQLdb.constants.ER import DUP_ENTRY
-    from MySQLdb import IntegrityError
-except ImportError as imperr:
-    print(imperr)
-    DUP_ENTRY = None
-    IntegrityError = None
-
-try:
-    from apsw import ConstraintError
-except ImportError:
-    class ConstraintError(BaseException):
-        result = 0
 
 
 class BackendPerformanceTestMixin(object):
@@ -162,75 +142,3 @@ class BackendPerformanceTestMixin(object):
         print(
             u"Took %.2f seconds to create %d random productsOnClient" %
             ((time.time() - start), nrOfproductOnClients))
-
-
-class MultiThreadingTestMixin(object):
-    NUMBER_OF_THREADS = 50
-
-    @unittest.skipIf(DUP_ENTRY is None or IntegrityError is None,
-                     'Missing imports from MySQLdb-module.')
-    def testMultithreading(self):
-        o2g, _, clients = fillBackendWithObjectToGroups(self.backend)
-        self.client1 = clients[0]
-        self.client2 = clients[1]
-        self.objectToGroup1 = o2g[0]
-        self.objectToGroup2 = o2g[0]
-
-        class MultiThreadTest(threading.Thread):
-            def __init__(self, backendTest):
-                threading.Thread.__init__(self)
-                self._backendTest = backendTest
-                self.exitCode = 0
-                self.errorMessage = None
-
-            def run(self):
-                try:
-                    print(u"Thread %s started" % self)
-                    time.sleep(1)
-                    self._backendTest.backend.host_getObjects()
-                    self._backendTest.backend.host_deleteObjects(self._backendTest.client1)
-
-                    self._backendTest.backend.host_getObjects()
-                    self._backendTest.backend.host_deleteObjects(self._backendTest.client2)
-
-                    self._backendTest.backend.host_createObjects(self._backendTest.client2)
-                    self._backendTest.backend.host_createObjects(self._backendTest.client1)
-                    self._backendTest.backend.objectToGroup_createObjects(self._backendTest.objectToGroup1)
-                    self._backendTest.backend.objectToGroup_createObjects(self._backendTest.objectToGroup2)
-
-                    self._backendTest.backend.host_getObjects()
-                    self._backendTest.backend.host_createObjects(self._backendTest.client1)
-                    self._backendTest.backend.host_deleteObjects(self._backendTest.client2)
-                    self._backendTest.backend.host_createObjects(self._backendTest.client1)
-                    self._backendTest.backend.host_getObjects()
-                    print(u"Thread %s done" % self)
-                except IntegrityError as e:
-                    if e[0] != DUP_ENTRY:
-                        self.errorMessage = e
-                        self.exitCode = 1
-                except ConstraintError as e:
-                    if e.result != 19:  # column is not unique
-                        self.errorMessage = e
-                        self.exitCode = 1
-                except Exception as e:
-                    self.errorMessage = e
-                    self.exitCode = 1
-
-        mtts = [MultiThreadTest(self) for _ in range(self.NUMBER_OF_THREADS)]
-        for mtt in mtts:
-            mtt.start()
-
-        for mtt in mtts:
-            mtt.join()
-
-        try:
-            self.backend.host_createObjects(self.client1)
-
-            while len(mtts) > 0:
-                mtt = mtts.pop(0)
-                if not mtt.isAlive():
-                    self.assertEqual(mtt.exitCode, 0, u"Mutlithreading test failed: Exit Code %s: %s"% (mtt.exitCode, mtt.errorMessage))
-                else:
-                    mtts.append(mtt)
-        except Exception as e:
-            self.fail(u"Creating object on backend failed: {0}".format(e))
