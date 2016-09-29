@@ -231,7 +231,7 @@ class DepotserverPackageManager(object):
 
 				for productDependency in ppf.packageControlFile.getProductDependencies():
 					if forceProductId:
-						productDependency.productId = forceProductId
+						productDependency.productId = productId
 
 					ident = productDependency.getIdent(returnType='unicode')
 					try:
@@ -258,7 +258,7 @@ class DepotserverPackageManager(object):
 
 				for productProperty in ppf.packageControlFile.getProductProperties():
 					if forceProductId:
-						productProperty.productId = forceProductId
+						productProperty.productId = productId
 
 					ident = productProperty.getIdent(returnType='unicode')
 					try:
