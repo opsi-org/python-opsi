@@ -341,7 +341,18 @@ class DepotserverPackageManager(object):
 				self._depotBackend._context.productOnDepot_updateObject(productOnDepot)
 
 				# Clean up products
-				cleanUpProducts(self._depotBackend._context, productOnDepot.productId)
+				productIdents = set()
+				for productOnDepot in self._depotBackend._context.productOnDepot_getObjects(productId=productOnDepot.productId):
+					productIdent = u"%s;%s;%s" % (productOnDepot.productId, productOnDepot.productVersion, productOnDepot.packageVersion)
+					productIdents.add(productIdent)
+
+				deleteProducts = []
+				for product in self._depotBackend._context.product_getObjects(id=productOnDepot.productId):
+					if product.getIdent(returnType='unicode') not in productIdents:
+						deleteProducts.append(product)
+
+				if deleteProducts:
+					self._depotBackend._context.product_deleteObjects(deleteProducts)
 
 				# Clean up productPropertyStates
 				productPropertiesToCleanup = {}
