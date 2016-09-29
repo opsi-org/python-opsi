@@ -175,12 +175,12 @@ class DepotserverPackageManager(object):
 
 			try:
 				product = ppf.packageControlFile.getProduct()
-				productId = product.getId()
 				if forceProductId:
 					logger.notice(u"Forcing product id '{0}'", forceProductId)
-					productId = forceProductId
 					product.setId(forceProductId)
 					ppf.packageControlFile.setProduct(product)
+
+				productId = product.getId()
 
 				logger.notice(u"Creating product in backend")
 				self._depotBackend._context.product_createObjects(product)
