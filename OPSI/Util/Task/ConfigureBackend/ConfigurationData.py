@@ -87,6 +87,8 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 	if Posix.isUCS():
 		# We have a domain present and people might want to change this.
 		if u'clientconfig.depot.user' not in configIdents:
+			LOGGER.debug("Missing clientconfig.depot.user - adding it.")
+
 			depotuser = u'pcpatch'
 			depotdomain = readWindowsDomainFromUCR()
 			if not depotdomain:
@@ -97,6 +99,7 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 			if depotdomain:
 				depotuser = u'\\'.join((depotdomain, depotuser))
 
+			LOGGER.debug(u"Using {0!r} as clientconfig.depot.user.", depotuser)
 			configs.append(
 				oobject.UnicodeConfig(
 					id=u'clientconfig.depot.user',
