@@ -61,7 +61,7 @@ class ReplicatorTestCase(unittest.TestCase):
                 replicator = BackendReplicator(readBackend, writeBackend)
                 replicator.replicate()
 
-                self.checkBackendDataIsEqual(readBackend, writeBackend)
+                checkBackendDataIsEqual(readBackend, writeBackend)
 
     def testReplicationWithoutAuditData(self):
         with getTestBackend(extended=True) as readBackend:
@@ -72,37 +72,38 @@ class ReplicatorTestCase(unittest.TestCase):
                 replicator = BackendReplicator(readBackend, writeBackend)
                 replicator.replicate(audit=False)
 
-                self.checkBackendDataIsEqual(readBackend, writeBackend, checkAuditData=False)
+                checkBackendDataIsEqual(readBackend, writeBackend, checkAuditData=False)
 
                 self.assertEquals(0, len(writeBackend.auditHardware_getObjects()))
                 self.assertEquals(0, len(writeBackend.auditSoftware_getObjects()))
                 self.assertEquals(0, len(writeBackend.auditHardwareOnHost_getObjects()))
                 self.assertEquals(0, len(writeBackend.auditSoftwareOnClient_getObjects()))
 
-    def checkBackendDataIsEqual(self, first, second, checkAuditData=True):
-        self.assertEquals(first.host_getObjects(), second.host_getObjects())
-        self.assertEquals(first.product_getObjects(), second.product_getObjects())
-        self.assertEquals(first.config_getObjects(), second.config_getObjects())
-        self.assertEquals(first.group_getObjects(), second.group_getObjects())
-        self.assertEquals(first.licenseContract_getObjects(), second.licenseContract_getObjects())
-        self.assertEquals(first.licensePool_getObjects(), second.licensePool_getObjects())
-        self.assertEquals(first.softwareLicense_getObjects(), second.softwareLicense_getObjects())
-        self.assertEquals(first.productDependency_getObjects(), second.productDependency_getObjects())
-        self.assertEquals(first.productProperty_getObjects(), second.productProperty_getObjects())
-        self.assertEquals(first.productOnDepot_getObjects(), second.productOnDepot_getObjects())
-        self.assertEquals(first.productOnClient_getObjects(), second.productOnClient_getObjects())
-        self.assertEquals(first.productPropertyState_getObjects(), second.productPropertyState_getObjects())
-        self.assertEquals(first.configState_getObjects(), second.configState_getObjects())
-        self.assertEquals(first.objectToGroup_getObjects(), second.objectToGroup_getObjects())
-        self.assertEquals(first.softwareLicenseToLicensePool_getObjects(), second.softwareLicenseToLicensePool_getObjects())
-        self.assertEquals(first.licenseOnClient_getObjects(), second.licenseOnClient_getObjects())
-        self.assertEquals(first.auditSoftwareToLicensePool_getObjects(), second.auditSoftwareToLicensePool_getObjects())
 
-        if checkAuditData and sys.version_info >= (2, 7):
-            self.assertEquals(first.auditHardware_getObjects(), second.auditHardware_getObjects())
-            self.assertEquals(first.auditSoftware_getObjects(), second.auditSoftware_getObjects())
-            self.assertEquals(first.auditHardwareOnHost_getObjects(), second.auditHardwareOnHost_getObjects())
-            self.assertEquals(first.auditSoftwareOnClient_getObjects(), second.auditSoftwareOnClient_getObjects())
+def checkBackendDataIsEqual(first, second, checkAuditData=True):
+    assert first.host_getObjects() == second.host_getObjects()
+    assert first.product_getObjects() == second.product_getObjects()
+    assert first.config_getObjects() == second.config_getObjects()
+    assert first.group_getObjects() == second.group_getObjects()
+    assert first.licenseContract_getObjects() == second.licenseContract_getObjects()
+    assert first.licensePool_getObjects() == second.licensePool_getObjects()
+    assert first.softwareLicense_getObjects() == second.softwareLicense_getObjects()
+    assert first.productDependency_getObjects() == second.productDependency_getObjects()
+    assert first.productProperty_getObjects() == second.productProperty_getObjects()
+    assert first.productOnDepot_getObjects() == second.productOnDepot_getObjects()
+    assert first.productOnClient_getObjects() == second.productOnClient_getObjects()
+    assert first.productPropertyState_getObjects() == second.productPropertyState_getObjects()
+    assert first.configState_getObjects() == second.configState_getObjects()
+    assert first.objectToGroup_getObjects() == second.objectToGroup_getObjects()
+    assert first.softwareLicenseToLicensePool_getObjects() == second.softwareLicenseToLicensePool_getObjects()
+    assert first.licenseOnClient_getObjects() == second.licenseOnClient_getObjects()
+    assert first.auditSoftwareToLicensePool_getObjects() == second.auditSoftwareToLicensePool_getObjects()
+
+    if checkAuditData and sys.version_info >= (2, 7):
+        assert first.auditHardware_getObjects() == second.auditHardware_getObjects()
+        assert first.auditSoftware_getObjects() == second.auditSoftware_getObjects()
+        assert first.auditHardwareOnHost_getObjects() == second.auditHardwareOnHost_getObjects()
+        assert first.auditSoftwareOnClient_getObjects() == second.auditSoftwareOnClient_getObjects()
 
 
 def fillBackend(backend, licenseManagementData=False):
