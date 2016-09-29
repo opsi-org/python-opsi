@@ -27,7 +27,7 @@ Depotserver backend.
 
 import os
 
-from OPSI.Logger import Logger
+from OPSI.Logger import Logger, LOG_DEBUG
 from OPSI.Types import (forceBool, forceDict, forceFilename, forceHostId,
 	forceUnicode, forceUnicodeLower)
 from OPSI.Types import forceProductId as forceProductIdFunc
@@ -400,13 +400,15 @@ class DepotserverPackageManager(object):
 							self._depotBackend._context.productPropertyState_deleteObjects(deleteProductPropertyStates)
 						if updateProductPropertyStates:
 							self._depotBackend._context.productPropertyState_updateObjects(updateProductPropertyStates)
-			except Exception as e:
+			except Exception as installingPackageError:
+				logger.debug(u"Failed to install the package :(")
+				logger.logException(installingPackageError, logLevel=LOG_DEBUG)
 				try:
 					ppf.cleanup()
-				except Exception as e2:
-					logger.error("Cleanup failed: {0!r}", e2)
+				except Exception as cleanupError:
+					logger.error("Cleanup failed: {0!r}", cleanupError)
 
-				raise e
+				raise installingPackageError
 		except Exception as e:
 			logger.logException(e)
 			raise BackendError(u"Failed to install package '%s' on depot '%s': %s" % (filename, depotId, e))
