@@ -297,21 +297,15 @@ def cleanUpGroups(backend):
 			backend.group_createObjects(group)
 
 
-def cleanUpProducts(backend, productId=None):
+def cleanUpProducts(backend):
 	"""
 	This will delete any unreferenced product from the backend.
-
-	If `productId` is set only products with this ID will be processed.
 
 	:param backend: The backend where the data should be cleaned.
 	:type backend: OPSI.Backend.Backend
 	"""
-	podFilter = {}
-	if productId:
-		podFilter['productId'] = productId
-
 	productIdents = set()
-	for productOnDepot in backend.productOnDepot_getObjects(**podFilter):
+	for productOnDepot in backend.productOnDepot_getObjects():
 		productIdent = ";".join((
 			productOnDepot.productId,
 			productOnDepot.productVersion,
@@ -319,18 +313,14 @@ def cleanUpProducts(backend, productId=None):
 		))
 		productIdents.add(productIdent)
 
-	productFilter = {}
-	if productId:
-		productFilter['id'] = productId
-
 	deleteProducts = []
-	for product in backend.product_getObjects(**productFilter):
+	for product in backend.product_getObjects():
 		if product.getIdent(returnType='unicode') not in productIdents:
-			LOGGER.info(u"Marking unreferenced product {0} for deletion".format(product))
+			LOGGER.info(u"Marking unreferenced product {0} for deletion", product)
 			deleteProducts.append(product)
 
 	for products in chunk(deleteProducts, _CHUNK_SIZE):
-		LOGGER.debug(u"Deleting products: {0!r}".format(products))
+		LOGGER.debug(u"Deleting products: {0!r}", products)
 		backend.product_deleteObjects(products)
 
 

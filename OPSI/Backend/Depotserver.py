@@ -27,7 +27,7 @@ Depotserver backend.
 
 import os
 
-from OPSI.Logger import Logger
+from OPSI.Logger import Logger, LOG_DEBUG
 from OPSI.Types import (forceBool, forceDict, forceFilename, forceHostId,
 	forceUnicode, forceUnicodeLower)
 from OPSI.Types import forceProductId as forceProductIdFunc
@@ -175,12 +175,12 @@ class DepotserverPackageManager(object):
 
 			try:
 				product = ppf.packageControlFile.getProduct()
-				productId = product.getId()
 				if forceProductId:
 					logger.notice(u"Forcing product id '{0}'", forceProductId)
-					productId = forceProductId
 					product.setId(forceProductId)
 					ppf.packageControlFile.setProduct(product)
+
+				productId = product.getId()
 
 				logger.notice(u"Creating product in backend")
 				self._depotBackend._context.product_createObjects(product)
@@ -231,7 +231,7 @@ class DepotserverPackageManager(object):
 
 				for productDependency in ppf.packageControlFile.getProductDependencies():
 					if forceProductId:
-						productDependency.productId = forceProductId
+						productDependency.productId = productId
 
 					ident = productDependency.getIdent(returnType='unicode')
 					try:
@@ -258,7 +258,7 @@ class DepotserverPackageManager(object):
 
 				for productProperty in ppf.packageControlFile.getProductProperties():
 					if forceProductId:
-						productProperty.productId = forceProductId
+						productProperty.productId = productId
 
 					ident = productProperty.getIdent(returnType='unicode')
 					try:
@@ -341,7 +341,18 @@ class DepotserverPackageManager(object):
 				self._depotBackend._context.productOnDepot_updateObject(productOnDepot)
 
 				# Clean up products
-				cleanUpProducts(self._depotBackend._context, productOnDepot.productId)
+				productIdents = set()
+				for productOnDepot in self._depotBackend._context.productOnDepot_getObjects(productId=productOnDepot.productId):
+					productIdent = u"%s;%s;%s" % (productOnDepot.productId, productOnDepot.productVersion, productOnDepot.packageVersion)
+					productIdents.add(productIdent)
+
+				deleteProducts = []
+				for product in self._depotBackend._context.product_getObjects(id=productOnDepot.productId):
+					if product.getIdent(returnType='unicode') not in productIdents:
+						deleteProducts.append(product)
+
+				if deleteProducts:
+					self._depotBackend._context.product_deleteObjects(deleteProducts)
 
 				# Clean up productPropertyStates
 				productPropertiesToCleanup = {}
@@ -400,13 +411,15 @@ class DepotserverPackageManager(object):
 							self._depotBackend._context.productPropertyState_deleteObjects(deleteProductPropertyStates)
 						if updateProductPropertyStates:
 							self._depotBackend._context.productPropertyState_updateObjects(updateProductPropertyStates)
-			except Exception as e:
+			except Exception as installingPackageError:
+				logger.debug(u"Failed to install the package :(")
+				logger.logException(installingPackageError, logLevel=LOG_DEBUG)
 				try:
 					ppf.cleanup()
-				except Exception as e2:
-					logger.error("Cleanup failed: {0!r}", e2)
+				except Exception as cleanupError:
+					logger.error("Cleanup failed: {0!r}", cleanupError)
 
-				raise e
+				raise installingPackageError
 		except Exception as e:
 			logger.logException(e)
 			raise BackendError(u"Failed to install package '%s' on depot '%s': %s" % (filename, depotId, e))
