@@ -1,3 +1,9 @@
+python-opsi (4.0.7.25-1) testing; urgency=medium
+
+  * DepotserverBackend: Fix problem with package installation.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 29 Sep 2016 18:16:54 +0200
+
 python-opsi (4.0.7.24-1) stable; urgency=medium
 
   * ConfigurationData: On UCS we preferably read the domain from UCR.
