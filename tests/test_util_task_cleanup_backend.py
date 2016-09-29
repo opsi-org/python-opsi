@@ -43,16 +43,15 @@ def testCleanupBackend(cleanableDataBackend):
     checkIfBackendIsFilled(cleanableDataBackend)
 
 
-@pytest.mark.parametrize("filterProduct", [True, False])
-def testCleaninUpProducts(cleanableDataBackend, filterProduct):
+def testCleaninUpProducts(cleanableDataBackend):
     productIdToClean = 'dissection'
 
     prod1 = LocalbootProduct(productIdToClean, 1, 1)
     prod12 = LocalbootProduct(productIdToClean, 1, 2)
     prod13 = LocalbootProduct(productIdToClean, 1, 3)
-    prod2 = LocalbootProduct(productIdToClean + '2', 1, 1)
-    prod3 = LocalbootProduct('unhallowed', 1, 1)
-    prod32 = LocalbootProduct('unhallowed', 1, 2)
+    prod2 = LocalbootProduct(productIdToClean + '2', 2, 1)
+    prod3 = LocalbootProduct('unhallowed', 3, 1)
+    prod32 = LocalbootProduct('unhallowed', 3, 2)
 
     print(dir(cleanableDataBackend))
 
@@ -71,10 +70,7 @@ def testCleaninUpProducts(cleanableDataBackend, filterProduct):
     for pod in [pod1, pod1d, pod2, pod3]:
         cleanableDataBackend.productOnDepot_insertObject(pod)
 
-    if filterProduct:
-        cleanUpProducts(cleanableDataBackend, productIdToClean)
-    else:
-        cleanUpProducts(cleanableDataBackend)
+    cleanUpProducts(cleanableDataBackend)
 
     products = cleanableDataBackend.product_getObjects(id=productIdToClean)
     assert len(products) == 1
@@ -83,7 +79,4 @@ def testCleaninUpProducts(cleanableDataBackend, filterProduct):
     assert product.id == productIdToClean
 
     allProducts = cleanableDataBackend.product_getObjects()
-    if filterProduct:
-        assert len(allProducts) == 4  # prod13, prod2, prod3, prod32
-    else:
-        assert len(allProducts) == 3  # prod13, prod2, prod3
+    assert len(allProducts) == 3  # prod13, prod2, prod3
