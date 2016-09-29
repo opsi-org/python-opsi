@@ -27,11 +27,11 @@ from __future__ import absolute_import
 
 import os
 import sys
-import unittest
+
+import pytest
 
 from OPSI.Backend.Replicator import BackendReplicator
 
-from .Backends import getTestBackend
 from .test_configs import getConfigs, getConfigStates
 from .test_groups import getHostGroups, getObjectToGroups, getProductGroup
 from .test_hosts import getClients, getConfigServer, getDepotServers
@@ -43,41 +43,32 @@ from .test_software_and_hardware_audit import (getAuditHardwares,
     getAuditHardwareOnHost, getAuditSoftwares, getAuditSoftwareOnClient)
 
 
-class ReplicatorTestCase(unittest.TestCase):
-    # TODO: there are some cases we should test
-    # * handling backends with / without license management
-    # * test replicating into different backends (file / mysql)
-    # * test with serverID, depotID, hostID given
+@pytest.fixture
+def configDataDestinationBackend(configDataBackend):
+    yield configDataBackend
 
-    def testInitialisation(self):
-        replicator = BackendReplicator(None, None)
 
-    def testReplication(self):
-        with getTestBackend(extended=True) as readBackend:
-            fillBackend(readBackend)
-            checkIfBackendIsFilled(readBackend)
+# TODO: there are some cases we should test
+# * handling backends with / without license management
+# * test with serverID, depotID, hostID given
+@pytest.mark.parametrize("checkAuditData", [True, False], ids=["with audit", "without audit"])
+def testBackendReplication(extendedConfigDataBackend, configDataDestinationBackend, checkAuditData):
+    readBackend = extendedConfigDataBackend
 
-            with getTestBackend() as writeBackend:
-                replicator = BackendReplicator(readBackend, writeBackend)
-                replicator.replicate()
+    fillBackend(readBackend)
+    checkIfBackendIsFilled(readBackend)
 
-                checkBackendDataIsEqual(readBackend, writeBackend)
+    writeBackend = configDataDestinationBackend
+    replicator = BackendReplicator(readBackend, writeBackend)
+    replicator.replicate(audit=checkAuditData)
 
-    def testReplicationWithoutAuditData(self):
-        with getTestBackend(extended=True) as readBackend:
-            fillBackend(readBackend)
-            checkIfBackendIsFilled(readBackend)
+    checkBackendDataIsEqual(readBackend, writeBackend, checkAuditData=checkAuditData)
 
-            with getTestBackend() as writeBackend:
-                replicator = BackendReplicator(readBackend, writeBackend)
-                replicator.replicate(audit=False)
-
-                checkBackendDataIsEqual(readBackend, writeBackend, checkAuditData=False)
-
-                self.assertEquals(0, len(writeBackend.auditHardware_getObjects()))
-                self.assertEquals(0, len(writeBackend.auditSoftware_getObjects()))
-                self.assertEquals(0, len(writeBackend.auditHardwareOnHost_getObjects()))
-                self.assertEquals(0, len(writeBackend.auditSoftwareOnClient_getObjects()))
+    if not checkAuditData:
+        assert 0 == len(writeBackend.auditHardware_getObjects())
+        assert 0 == len(writeBackend.auditSoftware_getObjects())
+        assert 0 == len(writeBackend.auditHardwareOnHost_getObjects())
+        assert 0 == len(writeBackend.auditSoftwareOnClient_getObjects())
 
 
 def checkBackendDataIsEqual(first, second, checkAuditData=True):
