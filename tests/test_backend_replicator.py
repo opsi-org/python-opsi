@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2015 uib GmbH <info@uib.de>
+# Copyright (C) 2015-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -292,16 +292,12 @@ def fillBackendWithAuditSoftwareOnClients(backend, auditSoftwares, clients):
 
 
 def fillBackendWithSoftwareLicenseToLicensePools(backend):
-    raise NotImplementedError("This is yet to be implemented.")
+    raise NotImplementedError("This is yet to be implemented.")  # TODO: <--
 
 
 def fillBackendWithLicenseOnClients(backend):
-    raise NotImplementedError("This is yet to be implemented.")
+    raise NotImplementedError("This is yet to be implemented.")  # TODO: <--
 
 
 def fillBackendWithAuditSoftwareToLicensePools(backend):
-    raise NotImplementedError("This is yet to be implemented.")
-
-
-if __name__ == '__main__':
-    unittest.main()
+    raise NotImplementedError("This is yet to be implemented.")  # TODO: <--
