@@ -32,6 +32,7 @@ import pytest
 
 from OPSI.Backend.Replicator import BackendReplicator
 
+from .Backends import getTestBackend
 from .test_configs import getConfigs, getConfigStates
 from .test_groups import getHostGroups, getObjectToGroups, getProductGroup
 from .test_hosts import getClients, getConfigServer, getDepotServers
@@ -43,58 +44,71 @@ from .test_software_and_hardware_audit import (getAuditHardwares,
     getAuditHardwareOnHost, getAuditSoftwares, getAuditSoftwareOnClient)
 
 
-@pytest.fixture
-def configDataDestinationBackend(configDataBackend):
-    yield configDataBackend
-
-
 # TODO: there are some cases we should test
 # * handling backends with / without license management
 # * test with serverID, depotID, hostID given
 @pytest.mark.parametrize("checkAuditData", [True, False], ids=["with audit", "without audit"])
-def testBackendReplication(extendedConfigDataBackend, configDataDestinationBackend, checkAuditData):
-    readBackend = extendedConfigDataBackend
+def testBackendReplication(replicationDestinationBackend, checkAuditData):
+    # One important note regarding pytest:
+    # With our current way of setting up backends we may end up in
+    # reading from and writing to the same source!
+    # This is the only reason why we still have getTestBackend present.
+    with getTestBackend(extended=True) as readBackend:
+        fillBackend(readBackend)
+        checkIfBackendIsFilled(readBackend)
 
-    fillBackend(readBackend)
-    checkIfBackendIsFilled(readBackend)
+        writeBackend = replicationDestinationBackend
+        replicator = BackendReplicator(readBackend, writeBackend)
+        replicator.replicate(audit=checkAuditData)
 
-    writeBackend = configDataDestinationBackend
-    replicator = BackendReplicator(readBackend, writeBackend)
-    replicator.replicate(audit=checkAuditData)
+        checkIfBackendIsFilled(writeBackend)
+        checkBackendDataIsEqual(readBackend, writeBackend, checkAuditData=checkAuditData)
 
-    checkBackendDataIsEqual(readBackend, writeBackend, checkAuditData=checkAuditData)
-
-    if not checkAuditData:
-        assert 0 == len(writeBackend.auditHardware_getObjects())
-        assert 0 == len(writeBackend.auditSoftware_getObjects())
-        assert 0 == len(writeBackend.auditHardwareOnHost_getObjects())
-        assert 0 == len(writeBackend.auditSoftwareOnClient_getObjects())
+        if not checkAuditData:
+            assert 0 == len(writeBackend.auditHardware_getObjects())
+            assert 0 == len(writeBackend.auditSoftware_getObjects())
+            assert 0 == len(writeBackend.auditHardwareOnHost_getObjects())
+            assert 0 == len(writeBackend.auditSoftwareOnClient_getObjects())
 
 
 def checkBackendDataIsEqual(first, second, checkAuditData=True):
-    assert first.host_getObjects() == second.host_getObjects()
-    assert first.product_getObjects() == second.product_getObjects()
-    assert first.config_getObjects() == second.config_getObjects()
-    assert first.group_getObjects() == second.group_getObjects()
-    assert first.licenseContract_getObjects() == second.licenseContract_getObjects()
-    assert first.licensePool_getObjects() == second.licensePool_getObjects()
-    assert first.softwareLicense_getObjects() == second.softwareLicense_getObjects()
-    assert first.productDependency_getObjects() == second.productDependency_getObjects()
-    assert first.productProperty_getObjects() == second.productProperty_getObjects()
-    assert first.productOnDepot_getObjects() == second.productOnDepot_getObjects()
-    assert first.productOnClient_getObjects() == second.productOnClient_getObjects()
-    assert first.productPropertyState_getObjects() == second.productPropertyState_getObjects()
-    assert first.configState_getObjects() == second.configState_getObjects()
-    assert first.objectToGroup_getObjects() == second.objectToGroup_getObjects()
-    assert first.softwareLicenseToLicensePool_getObjects() == second.softwareLicenseToLicensePool_getObjects()
-    assert first.licenseOnClient_getObjects() == second.licenseOnClient_getObjects()
-    assert first.auditSoftwareToLicensePool_getObjects() == second.auditSoftwareToLicensePool_getObjects()
+    compareResultsFromBackendMethod(first, second, 'host_getObjects')
+    compareResultsFromBackendMethod(first, second, 'product_getObjects')
+    compareResultsFromBackendMethod(first, second, 'config_getObjects')
+    compareResultsFromBackendMethod(first, second, 'group_getObjects')
+    compareResultsFromBackendMethod(first, second, 'licenseContract_getObjects')
+    compareResultsFromBackendMethod(first, second, 'licensePool_getObjects')
+    compareResultsFromBackendMethod(first, second, 'softwareLicense_getObjects')
+    compareResultsFromBackendMethod(first, second, 'productDependency_getObjects')
+    compareResultsFromBackendMethod(first, second, 'productProperty_getObjects')
+    compareResultsFromBackendMethod(first, second, 'productOnDepot_getObjects')
+    compareResultsFromBackendMethod(first, second, 'productOnClient_getObjects')
+    compareResultsFromBackendMethod(first, second, 'productPropertyState_getObjects')
+    compareResultsFromBackendMethod(first, second, 'configState_getObjects')
+    compareResultsFromBackendMethod(first, second, 'objectToGroup_getObjects')
+    compareResultsFromBackendMethod(first, second, 'softwareLicenseToLicensePool_getObjects')
+    compareResultsFromBackendMethod(first, second, 'licenseOnClient_getObjects')
+    compareResultsFromBackendMethod(first, second, 'auditSoftwareToLicensePool_getObjects')
 
     if checkAuditData and sys.version_info >= (2, 7):
-        assert first.auditHardware_getObjects() == second.auditHardware_getObjects()
-        assert first.auditSoftware_getObjects() == second.auditSoftware_getObjects()
-        assert first.auditHardwareOnHost_getObjects() == second.auditHardwareOnHost_getObjects()
-        assert first.auditSoftwareOnClient_getObjects() == second.auditSoftwareOnClient_getObjects()
+        compareResultsFromBackendMethod(first, second, 'auditHardware_getObjects')
+        compareResultsFromBackendMethod(first, second, 'auditSoftware_getObjects')
+        compareResultsFromBackendMethod(first, second, 'auditHardwareOnHost_getObjects')
+        compareResultsFromBackendMethod(first, second, 'auditSoftwareOnClient_getObjects')
+
+
+def compareResultsFromBackendMethod(firstBackend, secondBackend, methodname):
+    firstMethod = getattr(firstBackend, methodname)
+    secondMethod = getattr(secondBackend, methodname)
+
+    checkContents(firstMethod(), secondMethod())
+
+
+def checkContents(firstData, secondData):
+    assert len(firstData) == len(secondData)
+
+    for obj in firstData:
+        assert obj in secondData
 
 
 def fillBackend(backend, licenseManagementData=False):
@@ -128,7 +142,7 @@ def fillBackend(backend, licenseManagementData=False):
         fillBackendWithAuditSoftwareToLicensePools(backend)
 
 
-def checkIfBackendIsFilled(backend, licenseManagementData=False):
+def checkIfBackendIsFilled(backend, licenseManagementData=False, auditData=False):
     assert len(backend.host_getObjects()) > 2
     assert len(backend.product_getObjects()) > 2
     assert len(backend.config_getObjects()) > 0
@@ -147,12 +161,14 @@ def checkIfBackendIsFilled(backend, licenseManagementData=False):
     assert len(backend.productPropertyState_getObjects()) > 0
     assert len(backend.objectToGroup_getObjects()) > 0
     assert len(backend.configState_getObjects()) > 0
-    assert len(backend.auditSoftware_getObjects()) > 0
-    assert len(backend.auditSoftwareOnClient_getObjects()) > 0
 
-    if existsHwAuditConfig():
-        assert len(backend.auditHardwareOnHost_getObjects()) > 0
-        assert len(backend.auditHardware_getObjects()) > 0
+    if auditData:
+        assert len(backend.auditSoftware_getObjects()) > 0
+        assert len(backend.auditSoftwareOnClient_getObjects()) > 0
+
+        if existsHwAuditConfig():
+            assert len(backend.auditHardwareOnHost_getObjects()) > 0
+            assert len(backend.auditHardware_getObjects()) > 0
 
 
 def existsHwAuditConfig():
