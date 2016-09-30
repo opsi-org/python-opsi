@@ -23,35 +23,14 @@ from __future__ import absolute_import
 
 from contextlib import contextmanager
 
-from OPSI.Backend.MySQL import MySQLBackend, MySQLBackendObjectModificationTracker
-from OPSI.Backend.Backend import ExtendedConfigDataBackend
-from . import BackendMixin
-from ..helpers import unittest
-
 import pytest
+
+from OPSI.Backend.MySQL import MySQLBackend, MySQLBackendObjectModificationTracker
 
 try:
     from .config import MySQLconfiguration
 except ImportError:
     MySQLconfiguration = None
-
-
-class MySQLBackendMixin(BackendMixin):
-    """
-    Backend for the use of a MySQL backend.
-    Please make sure that ``MySQLconfiguration`` holds a valid configuration.
-    """
-
-    CREATES_INVENTORY_HISTORY = True
-
-    @unittest.skipIf(not MySQLconfiguration,
-                    'no MySQL backend configuration given.')
-    def setUpBackend(self):
-        self.backend = ExtendedConfigDataBackend(MySQLBackend(**MySQLconfiguration))
-        self.backend.backend_createBase()
-
-    def tearDownBackend(self):
-        self.backend.backend_deleteBase()
 
 
 @contextmanager
