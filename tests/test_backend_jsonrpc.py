@@ -30,9 +30,6 @@ from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Util.HTTP import deflateEncode, gzipEncode
 from OPSI.Util import randomString
 
-from .helpers import unittest
-from .Backends.JSONRPC import JSONRPCTestCase
-
 
 class FakeResponse(object):
     def __init__(self, header=None, data=None):
@@ -85,15 +82,3 @@ def testProcessingResponseBackwardsCompatible(jsonRpcBackend, encodingFunction, 
     )
 
     assert text == jsonRpcBackend._processResponse(response)
-
-
-class JSONRPCBackendUsingTestCase(unittest.TestCase, JSONRPCTestCase):
-    def setUp(self):
-        self.setUpBackend()
-
-    def tearDown(self):
-        self.tearDownBackend()
-
-
-if __name__ == '__main__':
-    unittest.main()
