@@ -1104,7 +1104,6 @@ class OpsiBackupArchive(tarfile.TarFile):
 
 		return backends
 
-
 	def _getBackends(self, type=None):
 		if not self._backends:
 			self._backends = self._readBackendConfiguration()
@@ -1462,13 +1461,3 @@ class OpsiBackupArchive(tarfile.TarFile):
 				finally:
 					os.close(fd)
 					os.remove(name)
-
-	def hasLDAPBackend(self):
-		#TODO: LDAP-Backend will not be supported in future version. Mark deprecated.
-		return False
-
-	def backupLDAPBackend(self):
-		raise NotImplementedError("LDAP backend backups are not supported yet.")
-
-	def backupUniventionBackend(self):
-		raise NotImplementedError("Univention backend backups are not supported yet.")
