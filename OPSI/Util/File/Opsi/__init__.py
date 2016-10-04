@@ -1104,7 +1104,6 @@ class OpsiBackupArchive(tarfile.TarFile):
 
 		return backends
 
-
 	def _getBackends(self, type=None):
 		if not self._backends:
 			self._backends = self._readBackendConfiguration()
@@ -1462,6 +1461,3 @@ class OpsiBackupArchive(tarfile.TarFile):
 				finally:
 					os.close(fd)
 					os.remove(name)
-
-	def backupUniventionBackend(self):
-		raise NotImplementedError("Univention backend backups are not supported yet.")
