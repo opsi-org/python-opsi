@@ -70,7 +70,6 @@ data_files = [
 			'data/backends/jsonrpc.conf',
 			'data/backends/mysql.conf',
 			'data/backends/sqlite.conf',
-			'data/backends/multiplex.conf',
 			'data/backends/hostcontrol.conf',
 			'data/backends/opsipxeconfd.conf'
 		]

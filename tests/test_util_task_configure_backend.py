@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
@@ -28,6 +27,7 @@ from __future__ import absolute_import
 import os
 
 from OPSI.Object import UnicodeConfig
+from OPSI.System.Posix import CommandNotFoundException
 import OPSI.Util.Task.ConfigureBackend as backendConfigUtils
 import OPSI.Util.Task.ConfigureBackend.ConfigurationData as confData
 
@@ -210,7 +210,7 @@ def testAddingInstallByShutdownConfig(extendedConfigDataBackend):
 @pytest.mark.parametrize("runningOnUCS", [True, False])
 def testAddingUCSSpecificConfigs(extendedConfigDataBackend, runningOnUCS):
     sambaTestConfig = os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'task', 'smb.conf')
-    with mock.patch('OPSI.Util.Task.ConfigureBackend.ConfigurationData.isUCS', lambda: runningOnUCS):
+    with mock.patch('OPSI.Util.Task.ConfigureBackend.ConfigurationData.Posix.isUCS', lambda: runningOnUCS):
         confData.initializeConfigs(backend=extendedConfigDataBackend, pathToSMBConf=sambaTestConfig)
 
     configIdents = set(extendedConfigDataBackend.config_getIdents(returnType='unicode'))
@@ -273,3 +273,15 @@ def testConfigsAreOnlyAddedOnce(extendedConfigDataBackend):
 
     assert configIdentsFirst == configIdentsSecond
     assert len(configIdentsSecond) == len(set(configIdentsSecond))
+
+
+def testReadingDomainFromUCR():
+    with mock.patch('OPSI.Util.Task.ConfigureBackend.ConfigurationData.Posix.which', lambda x: '/no/real/path/ucr'):
+        with mock.patch('OPSI.Util.Task.ConfigureBackend.ConfigurationData.Posix.execute', lambda x: ['sharpdressed']):
+            assert 'SHARPDRESSED' == confData.readWindowsDomainFromUCR()
+
+
+def testReadingDomainFromUCRReturnEmptyStringOnProblem():
+    failingWhich = mock.Mock(side_effect=CommandNotFoundException('Whoops.'))
+    with mock.patch('OPSI.Util.Task.ConfigureBackend.ConfigurationData.Posix.which', failingWhich):
+        assert '' == confData.readWindowsDomainFromUCR()

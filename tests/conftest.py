@@ -110,6 +110,17 @@ def _serverBackend(request):
             yield backend
 
 
+@pytest.fixture(
+    params=[getFileBackend, getMySQLBackend],
+    ids=['destination:file', 'destination:mysql']
+)
+def replicationDestinationBackend(request):
+    # This is the same as _serverBackend, but has custom id's set.
+    with request.param() as backend:
+        with _backendBase(backend):
+            yield backend
+
+
 @pytest.fixture
 def backendManager(_serverBackend):
     """
@@ -141,6 +152,16 @@ def licenseManagementBackend(_sqlBackend):
 def _sqlBackend(request):
     '''Backends that make use of SQL.'''
 
+    with request.param() as backend:
+        with _backendBase(backend):
+            yield backend
+
+
+@pytest.fixture(
+    params=[getMySQLBackend],
+    ids=['mysql']
+)
+def multithreadingBackend(request):
     with request.param() as backend:
         with _backendBase(backend):
             yield backend

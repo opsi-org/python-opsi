@@ -31,11 +31,10 @@ import re
 from collections import namedtuple
 
 import OPSI.Backend.BackendManager as bm
+import OPSI.System.Posix as Posix
 from OPSI.Object import UnicodeConfig, BoolConfig
-from OPSI.System.Posix import isUCS
-from OPSI.Types import BackendMissingDataError
-
 from OPSI.Logger import Logger
+from OPSI.Types import BackendMissingDataError
 
 LOGGER = Logger()
 SMB_CONF = u'/etc/samba/smb.conf'
@@ -65,7 +64,13 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 
 	.. versionchanged:: 4.0.6.3
 
-	    Adding WAN extension configurations if missing.
+		Adding WAN extension configurations if missing.
+
+
+	.. versionchanged:: 4.0.7.24
+
+		On UCR we try read the domain for ``clientconfig.depot.user``
+		preferably from Univention config registry (UCR).
 	"""
 	backendProvided = True
 
@@ -90,13 +95,22 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 def getDefaultConfigs(backend, configServer=None, pathToSMBConf=SMB_CONF):
 	configIdents = set(backend.config_getIdents(returnType='unicode'))  # pylint: disable=maybe-no-member
 
-	if isUCS():
+	if Posix.isUCS():
 		# We have a domain present and people might want to change this.
 		if u'clientconfig.depot.user' not in configIdents:
+			LOGGER.debug("Missing clientconfig.depot.user - adding it.")
+
 			depotuser = u'pcpatch'
-			depotdomain = readWindowsDomainFromSambaConfig(pathToSMBConf)
+			depotdomain = readWindowsDomainFromUCR()
+			if not depotdomain:
+				LOGGER.info(u"Reading domain from UCR returned no result. "
+							u"Trying to read from samba config.")
+				depotdomain = readWindowsDomainFromSambaConfig(pathToSMBConf)
+
 			if depotdomain:
 				depotuser = u'\\'.join((depotdomain, depotuser))
+
+			LOGGER.debug(u"Using {0!r} as clientconfig.depot.user.", depotuser)
 
 			yield UnicodeConfig(
 				id=u'clientconfig.depot.user',
@@ -277,6 +291,27 @@ def readWindowsDomainFromSambaConfig(pathToConfig=SMB_CONF):
 					break
 
 	return winDomain
+
+
+def readWindowsDomainFromUCR():
+	"""
+	Get the Windows domain from Univention Config registry
+	If no domain can be found this returns an empty string.
+
+	:return: The Windows domain in uppercase letters.
+	:returntype: str
+	"""
+	domain = ''
+	try:
+		readCommand = u'{ucr} get windows/domain'.format(ucr=Posix.which('ucr'))
+		for output in Posix.execute(readCommand):
+			if output:
+				domain = output.strip().upper()
+				break
+	except Posix.CommandNotFoundException as missingCommandError:
+		LOGGER.info('Could not find ucr: {0}', missingCommandError)
+
+	return domain
 
 
 def addDynamicDepotDriveSelection(backend):
