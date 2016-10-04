@@ -12,8 +12,9 @@ python-opsi (4.1.1-1) UNRELEASED; urgency=medium
   * SQLBackend: Filter creation is done through generators.
   * OPSI.Util.objectToBeautifiedText now uses the json module instead of
     a custom implementation.
+  * Removed unsupported backends: Cache, Multiplex, LDAP.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 16 Sep 2016 12:25:22 +0200
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 04 Oct 2016 16:15:11 +0200
 
 python-opsi (4.0.7.25-1) testing; urgency=medium
 
