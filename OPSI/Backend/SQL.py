@@ -417,27 +417,27 @@ class SQLBackend(ConfigDataBackend):
 		:param object: The object to create an condition for.
 		:returntype: str
 		"""
-		condition = []
-		args = mandatoryConstructorArgs(object.__class__)
-		for arg in args:
-			value = getattr(object, arg)
-			if value is None:
-				continue
-			arg = self._objectAttributeToDatabaseAttribute(object.__class__, arg)
-			if isinstance(value, bool):
-				if value:
-					condition.append(u"`{0}` = 1".format(arg))
+		def createCondition():
+			for argument in mandatoryConstructorArgs(object.__class__):
+				value = getattr(object, argument)
+				if value is None:
+					continue
+
+				arg = self._objectAttributeToDatabaseAttribute(object.__class__, argument)
+				if isinstance(value, bool):
+					if value:
+						yield u"`{0}` = 1".format(arg)
+					else:
+						yield u"`{0}` = 0".format(arg)
+				elif isinstance(value, (float, long, int)):
+					yield u"`{0}` = {1}".format(arg, value)
 				else:
-					condition.append(u"`{0}` = 0".format(arg))
-			elif isinstance(value, (float, long, int)):
-				condition.append(u"`{0}` = {1}".format(arg, value))
-			else:
-				condition.append(u"`{0}` = '{1}'".format(arg, self._sql.escapeApostrophe(self._sql.escapeBackslash(value))))
+					yield u"`{0}` = '{1}'".format(arg, self._sql.escapeApostrophe(self._sql.escapeBackslash(value)))
 
-		if isinstance(object, HostGroup) or isinstance(object, ProductGroup):
-			condition.append(u"`type` = '{0}'".format(object.getType()))
+			if isinstance(object, HostGroup) or isinstance(object, ProductGroup):
+				yield u"`type` = '{0}'".format(object.getType())
 
-		return ' and '.join(condition)
+		return ' and '.join(createCondition())
 
 	def _objectExists(self, table, object):
 		query = 'select * from `%s` where %s' % (table, self._uniqueCondition(object))
