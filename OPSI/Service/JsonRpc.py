@@ -60,13 +60,10 @@ class JsonRpc(object):
 		self.tid = rpc.get('tid', rpc.get('id'))
 		self.action = rpc.get('action')
 		self.method = rpc.get('method')
-		self.params = rpc.get('params', rpc.get('data'))
+		self.params = rpc.get('params', rpc.get('data')) or []
 		self.result = None
 		self.exception = None
 		self.traceback = None
-
-		if not self.params:
-			self.params = []
 
 		if not self.tid:
 			raise Exception(u"No transaction id ((t)id) found in rpc")
