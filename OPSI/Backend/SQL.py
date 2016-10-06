@@ -2123,17 +2123,19 @@ class SQLBackend(ConfigDataBackend):
 		if hasattr(auditHardware, 'toHash'):
 			auditHardware = auditHardware.toHash()
 
-		condition = []
-		for (attribute, value) in auditHardware.items():
-			if attribute in ('hardwareClass', 'type'):
-				continue
-			if value is None or value == [None]:
-				condition.append(u"`{0}` is NULL".format(attribute))
-			elif isinstance(value, (float, long, int, bool)):
-				condition.append(u"`{0}` = {1}".format(attribute, value))
-			else:
-				condition.append(u"`{0}` = '{1}'".format(attribute, self._sql.escapeApostrophe(self._sql.escapeBackslash(value))))
-		return u' and '.join(condition)
+		def createCondition():
+			for attribute, value in auditHardware.items():
+				if attribute in ('hardwareClass', 'type'):
+					continue
+
+				if value is None or value == [None]:
+					yield u"`{0}` is NULL".format(attribute)
+				elif isinstance(value, (float, long, int, bool)):
+					yield u"`{0}` = {1}".format(attribute, value)
+				else:
+					yield u"`{0}` = '{1}'".format(attribute, self._sql.escapeApostrophe(self._sql.escapeBackslash(value)))
+
+		return u' and '.join(createCondition())
 
 	def _getHardwareIds(self, auditHardware):
 		try:
