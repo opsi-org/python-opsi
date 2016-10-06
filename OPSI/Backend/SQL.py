@@ -1048,10 +1048,10 @@ class SQLBackend(ConfigDataBackend):
 		ConfigDataBackend.host_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting hosts, filter: %s" % filter)
 
-		type = forceList(filter.get('type', []))
-		if 'OpsiDepotserver' in type and 'OpsiConfigserver' not in type:
-			type.append('OpsiConfigserver')
-			filter['type'] = type
+		hostType = forceList(filter.get('type', []))
+		if 'OpsiDepotserver' in hostType and 'OpsiConfigserver' not in hostType:
+			hostType.append('OpsiConfigserver')
+			filter['type'] = hostType
 
 		hosts = []
 		(attributes, filter) = self._adjustAttributes(Host, attributes, filter)
