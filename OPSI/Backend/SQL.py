@@ -291,9 +291,9 @@ class SQLBackend(ConfigDataBackend):
 			u'`{0}`'.format(attribute) for attribute in attributes
 		) or u'*'
 
-		where = self._filterToSql(filter)
-		if where:
-			query = u'select %s from `%s` where %s' % (select, table, where)
+		condition = self._filterToSql(filter)
+		if condition:
+			query = u'select %s from `%s` where %s' % (select, table, condition)
 		else:
 			query = u'select %s from `%s`' % (select, table)
 		logger.debug(u"Created query: {0}", query)
