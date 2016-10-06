@@ -289,10 +289,7 @@ class SQLBackend(ConfigDataBackend):
 	def _createQuery(self, table, attributes=[], filter={}):
 		select = u','.join(
 			u'`{0}`'.format(attribute) for attribute in attributes
-		)
-
-		if not select:
-			select = u'*'
+		) or u'*'
 
 		where = self._filterToSql(filter)
 		if where:
