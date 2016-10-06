@@ -280,7 +280,11 @@ class SQLBackend(ConfigDataBackend):
 						value = value.replace(u'\uffff', self._sql.ESCAPED_ASTERISK)
 						yield u"`{0}` {1} '{2}'".format(key, operator, forceUnicode(value))
 
-		return u' and '.join(u'({0})'.format(c) for c in buildCondition())
+		def addParenthesis(conditions):
+			for condition in conditions:
+				yield u'({0})'.format(condition)
+
+		return u' and '.join(addParenthesis(buildCondition()))
 
 	def _createQuery(self, table, attributes=[], filter={}):
 		select = u','.join(
