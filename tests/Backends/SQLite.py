@@ -52,13 +52,7 @@ def getSQLiteBackend(**backendOptions):
 	optionsForBackend = SQLiteconfiguration
 	optionsForBackend.update(backendOptions)
 
-	backend = SQLiteBackend(**optionsForBackend)
-
-	backend.backend_createBase()
-	try:
-		yield backend
-	finally:
-		backend.backend_deleteBase()
+	yield SQLiteBackend(**optionsForBackend)
 
 
 @contextmanager
