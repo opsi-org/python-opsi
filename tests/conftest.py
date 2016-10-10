@@ -173,8 +173,25 @@ def hardwareAuditBackendWithHistory(_sqlBackend):
 
 
 @pytest.fixture
-def auditDataBackend(extendedConfigDataBackend):
-    yield extendedConfigDataBackend
+def hardwareAuditConfigPath():
+    filename = 'opsihwaudit.conf'
+    pathToOriginalConfig = os.path.join(os.path.dirname(__file__), '..',
+                                        'data', 'hwaudit', filename)
+
+    with workInTemporaryDirectory() as tempDir:
+        shutil.copy(pathToOriginalConfig, tempDir)
+
+        yield os.path.join(tempDir, filename)
+
+
+@pytest.fixture(
+    params=[getFileBackend, getSQLiteBackend, getMySQLBackend],
+    ids=['file', 'sqlite', 'mysql']
+)
+def auditDataBackend(request, hardwareAuditConfigPath):
+    with request.param(auditHardwareConfigFile=hardwareAuditConfigPath) as backend:
+        with _backendBase(backend):
+            yield ExtendedConfigDataBackend(backend)
 
 
 @pytest.fixture(
