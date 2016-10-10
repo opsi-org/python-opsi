@@ -26,11 +26,21 @@ Testing opsi SQL backend.
 import sys
 import unittest
 
+import pytest
+
 import OPSI.Backend.SQL as sql
 import OPSI.Object as ob
 
 if sys.version_info > (3, ):
     long = int
+
+
+@pytest.fixture
+def sqlBackendWithoutConnection():
+    backend = sql.SQLBackend()
+    backend._sql = sql.SQL()
+
+    yield backend
 
 
 class SQLBackendWithoutConnectionTestCase(unittest.TestCase):
@@ -215,69 +225,73 @@ class UniqueConditionTestCase(SQLBackendWithoutConnectionTestCase):
         self.assertEquals('`param` = 4', self.backend._uniqueCondition(FooParam(long(4))))
 
 
-class UniqueAuditHardwareConditionTestCase(SQLBackendWithoutConnectionTestCase):
-    def testCreatingUniqueHardwareConditionIgnoresHardwareClassAndType(self):
-        hwDict = {
-            "hardwareClass": "abc",
-            "type": 'def'
-        }
+def testCreatingUniqueHardwareConditionIgnoresHardwareClassAndType(sqlBackendWithoutConnection):
+    hwDict = {
+        "hardwareClass": "abc",
+        "type": 'def'
+    }
 
-        self.assertEquals('', self.backend._uniqueAuditHardwareCondition(hwDict))
-
-    def testCreatingConditionWithNoneTypes(self):
-        testDict = {
-            "abc": None,
-            'def': [None]
-        }
-
-        condition = self.backend._uniqueAuditHardwareCondition(testDict)
-        self.assertTrue(u'`abc` is NULL' in condition)
-        self.assertTrue(u' and ' in condition)
-        self.assertTrue(u'`def` is NULL' in condition)
-
-    def testAddingMultipleParametersWithAnd(self):
-        testDict = {
-            "abc": None,
-            'def': [None]
-        }
-
-        condition = self.backend._uniqueAuditHardwareCondition(testDict)
-        self.assertTrue(u' and ' in condition)
-        self.assertFalse(condition.strip().endswith('and'))
-        self.assertFalse(condition.strip().startswith('and'))
-
-    def testCreatingQueryWithVariousTypes(self):
-        testDict = {
-            "int": 1,
-            "float": 2.3,
-            "long": long(4),
-            "bool_true": True,
-            "bool_false": False,
-            "string": "caramba",
-        }
-
-        condition = self.backend._uniqueAuditHardwareCondition(testDict)
-        self.assertTrue(u' and ' in condition)
-        self.assertTrue(u'`int` = 1' in condition)
-        self.assertTrue(u'`float` = 2.3' in condition)
-        self.assertTrue(u'`long` = 4' in condition)
-        self.assertTrue(u'`bool_false` = False' in condition)
-        self.assertTrue(u'`bool_true` = True' in condition)
-        self.assertTrue(u"`string` = 'caramba'" in condition)
+    assert '' == sqlBackendWithoutConnection._uniqueAuditHardwareCondition(hwDict)
 
 
-class AvoidingMaliciousQueryTestCase(SQLBackendWithoutConnectionTestCase):
-    def testOnlySelectAllowedDecorator(self):
-        def returnQuery(query):
-            sql.onlyAllowSelect(query)
-            return query
+def testCreatingConditionWithNoneTypes(sqlBackendWithoutConnection):
+    testDict = {
+        "abc": None,
+        'def': [None]
+    }
 
-        self.assertRaises(ValueError, returnQuery, "ALTER TABLE blabla")
-        self.assertRaises(ValueError, returnQuery, "DROP TABLE blabla")
+    condition = sqlBackendWithoutConnection._uniqueAuditHardwareCondition(testDict)
+    assert u'`abc` is NULL' in condition
+    assert u' and ' in condition
+    assert u'`def` is NULL' in condition
 
-        testQuery = "SELECT something"
-        self.assertEquals(testQuery, returnQuery(testQuery))
+
+def testAddingMultipleParametersWithAnd(sqlBackendWithoutConnection):
+    testDict = {
+        "abc": None,
+        'def': [None]
+    }
+
+    condition = sqlBackendWithoutConnection._uniqueAuditHardwareCondition(testDict)
+    assert u' and ' in condition
+    assert not condition.strip().endswith('and')
+    assert not condition.strip().startswith('and')
 
 
-if __name__ == '__main__':
-    unittest.main()
+def testCreatingQueryWithVariousTypes(sqlBackendWithoutConnection):
+    testDict = {
+        "int": 1,
+        "float": 2.3,
+        "long": long(4),
+        "bool_true": True,
+        "bool_false": False,
+        "string": "caramba",
+    }
+
+    condition = sqlBackendWithoutConnection._uniqueAuditHardwareCondition(testDict)
+    assert u' and ' in condition
+    assert u'`int` = 1' in condition
+    assert u'`float` = 2.3' in condition
+    assert u'`long` = 4' in condition
+    assert u'`bool_false` = False' in condition
+    assert u'`bool_true` = True' in condition
+    assert u"`string` = 'caramba'" in condition
+
+
+@pytest.mark.parametrize("query", ["SELECT something"])
+def testAvoidingMaliciousQueryOnlySelectAllowed(query):
+    assert query == returnQueryAfterCheck(query)
+
+
+@pytest.mark.parametrize("query", [
+    "ALTER TABLE blabla",
+    "DROP TABLE blabla"
+])
+def testOnlySelectAllowedRaisesExceptionWithNonSelectQuery(query):
+    with pytest.raises(ValueError):
+        returnQueryAfterCheck(query)
+
+
+def returnQueryAfterCheck(query):
+    sql.onlyAllowSelect(query)
+    return query
