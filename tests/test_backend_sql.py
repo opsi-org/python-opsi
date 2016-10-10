@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
 # Copyright (C) 2014-2015 uib GmbH <info@uib.de>
@@ -23,6 +22,8 @@ Testing opsi SQL backend.
 :license: GNU Affero General Public License version 3
 """
 
+from __future__ import absolute_import
+
 import sys
 import unittest
 
@@ -30,6 +31,8 @@ import pytest
 
 import OPSI.Backend.SQL as sql
 import OPSI.Object as ob
+
+from .helpers import cleanMandatoryConstructorArgsCache as cmcac
 
 if sys.version_info > (3, ):
     long = int
@@ -134,95 +137,83 @@ class QueryCreationTestCase(SQLBackendWithoutConnectionTestCase):
         self.assertTrue(u'where' in self.backend._createQuery('foo', filter={'a': 1}))
 
 
-class UniqueConditionTestCase(SQLBackendWithoutConnectionTestCase):
-    """
-    Testing the creation of an unique condition.
+@pytest.fixture
+def cleanMandatoryConstructorArgsCache():
+    with cmcac():
+        yield
 
-    **Notes**: Because of the function that reads the mandatory parameters
-    and its caching function the Foo-Classes in the tests must all be
-    named different!
-    """
 
-    def testHostObject(self):
-        host = ob.Host('foo.bar.baz')
-        self.assertEquals(
-            "`hostId` = 'foo.bar.baz'",
-            self.backend._uniqueCondition(host)
-        )
+def testHostObject(sqlBackendWithoutConnection, cleanMandatoryConstructorArgsCache):
+    host = ob.Host('foo.bar.baz')
+    assert "`hostId` = 'foo.bar.baz'" == sqlBackendWithoutConnection._uniqueCondition(host)
 
-    def testOptionalParametersAreIgnored(self):
-        host = ob.Host('foo.bar.baz', inventoryNumber='ABC+333')
 
-        self.assertEquals(
-            "`hostId` = 'foo.bar.baz'",
-            self.backend._uniqueCondition(host)
-        )
+def testOptionalParametersAreIgnored(sqlBackendWithoutConnection, cleanMandatoryConstructorArgsCache):
+    host = ob.Host('foo.bar.baz', inventoryNumber='ABC+333')
 
-    def testMultipleParametersAreJoinedWithAnAnd(self):
-        license = ob.SoftwareLicense('a', 'b')
-        condition = self.backend._uniqueCondition(license)
+    assert "`hostId` = 'foo.bar.baz'" == sqlBackendWithoutConnection._uniqueCondition(host)
 
-        self.assertTrue(' and ' in condition)
-        self.assertEquals(
-            "`softwareLicenseId` = 'a' and `licenseContractId` = 'b'",
-            condition
-        )
 
-    def testConditionForHostGroupHasTypeAppended(self):
-        group = ob.ProductGroup('t')
-        condition = self.backend._uniqueCondition(group)
+def testMultipleParametersAreJoinedWithAnAnd(sqlBackendWithoutConnection, cleanMandatoryConstructorArgsCache):
+    softwareLicense = ob.SoftwareLicense('a', 'b')
+    condition = sqlBackendWithoutConnection._uniqueCondition(softwareLicense)
 
-        self.assertTrue("`groupId` = 't'" in condition)
-        self.assertTrue("and" in condition)
-        self.assertTrue("`type` = 'ProductGroup'" in condition)
+    assert ' and ' in condition
+    assert "`softwareLicenseId` = 'a' and `licenseContractId` = 'b'" == condition
 
-    def testConditionForProductGroupHasTypeAppended(self):
-        group = ob.HostGroup('hg')
-        condition = self.backend._uniqueCondition(group)
 
-        self.assertTrue("`groupId` = 'hg'" in condition)
-        self.assertTrue("and" in condition)
-        self.assertTrue("`type` = 'HostGroup'" in condition)
+def testConditionForHostGroupHasTypeAppended(sqlBackendWithoutConnection, cleanMandatoryConstructorArgsCache):
+    group = ob.ProductGroup('t')
+    condition = sqlBackendWithoutConnection._uniqueCondition(group)
 
-    def testBooleanParameters(self):
-        class Foo(object):
-            def __init__(self, true, false):
-                self.true = true
-                self.false = false
+    assert "`groupId` = 't'" in condition
+    assert "and" in condition
+    assert "`type` = 'ProductGroup'" in condition
 
-        f00 = Foo(True, False)
-        condition = self.backend._uniqueCondition(f00)
 
-        self.assertTrue("`true` = 1" in condition)
-        self.assertTrue("and" in condition)
-        self.assertTrue("`false` = 0" in condition)
+def testConditionForProductGroupHasTypeAppended(sqlBackendWithoutConnection, cleanMandatoryConstructorArgsCache):
+    group = ob.HostGroup('hg')
+    condition = sqlBackendWithoutConnection._uniqueCondition(group)
 
-    def testAccessingParametersWithAttributenamesFails(self):
-        class Foo2(object):
-            def __init__(self, something):
-                self._something = something
+    assert "`groupId` = 'hg'" in condition
+    assert "and" in condition
+    assert "`type` = 'HostGroup'" in condition
 
-        f00 = Foo2(True)
 
-        self.assertRaises(AttributeError, self.backend._uniqueCondition, f00)
+def testBooleanParameters(sqlBackendWithoutConnection, cleanMandatoryConstructorArgsCache):
+    class Foo(object):
+        def __init__(self, true, false):
+            self.true = true
+            self.false = false
 
-    def testMandatoryParametersAreSkippedIfValueIsNone(self):
-        class Foo3(object):
-            def __init__(self, something):
-                self.something = something
+    condition = sqlBackendWithoutConnection._uniqueCondition(Foo(True, False))
 
-        f00 = Foo3(None)
+    assert "`true` = 1" in condition
+    assert "and" in condition
+    assert "`false` = 0" in condition
 
-        self.assertEquals('', self.backend._uniqueCondition(f00))
 
-    def testParameterIsNumber(self):
-        class FooParam(object):
-            def __init__(self, param):
-                self.param = param
+def testAccessingParametersWithAttributenamesFails(sqlBackendWithoutConnection, cleanMandatoryConstructorArgsCache):
+    class Foo2(object):
+        def __init__(self, something):
+            self._something = something
 
-        self.assertEquals('`param` = 1', self.backend._uniqueCondition(FooParam(1)))
-        self.assertEquals('`param` = 2.3', self.backend._uniqueCondition(FooParam(2.3)))
-        self.assertEquals('`param` = 4', self.backend._uniqueCondition(FooParam(long(4))))
+    with pytest.raises(AttributeError):
+        sqlBackendWithoutConnection._uniqueCondition(Foo2(True))
+
+
+def testMandatoryParametersAreSkippedIfValueIsNone(sqlBackendWithoutConnection, cleanMandatoryConstructorArgsCache):
+    assert '' == sqlBackendWithoutConnection._uniqueCondition(FooParam(None))
+
+
+@pytest.mark.parametrize("number", [1, 2.3, 4])
+def testParameterIsNumber(sqlBackendWithoutConnection, number, cleanMandatoryConstructorArgsCache):
+    assert '`param` = {0!s}'.format(number) == sqlBackendWithoutConnection._uniqueCondition(FooParam(number))
+
+
+class FooParam(object):
+    def __init__(self, param):
+        self.param = param
 
 
 def testCreatingUniqueHardwareConditionIgnoresHardwareClassAndType(sqlBackendWithoutConnection):
