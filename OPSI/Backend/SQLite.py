@@ -36,7 +36,7 @@ from OPSI.Types import forceBool, forceFilename, forceUnicode
 from OPSI.Types import BackendBadValueError
 from OPSI.Backend.SQL import SQL, SQLBackend, SQLBackendObjectModificationTracker
 
-__version__ = '4.0.7.1'
+__version__ = '4.0.7.26'
 
 logger = Logger()
 

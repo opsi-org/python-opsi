@@ -1,3 +1,10 @@
+python-opsi (4.0.7.26-1) experimental; urgency=medium
+
+  * SQLite backend: Fix syntax error that may occur during an ALTER TABLE
+    if more than one column should be altered.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 10 Oct 2016 17:54:42 +0200
+
 python-opsi (4.0.7.25-1) testing; urgency=medium
 
   * DepotserverBackend: Fix problem with package installation.
