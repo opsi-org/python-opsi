@@ -24,6 +24,7 @@ Testing opsi SQL backend.
 
 from __future__ import absolute_import
 
+import os.path
 import sys
 
 import pytest
@@ -32,6 +33,7 @@ import OPSI.Backend.SQL as sql
 import OPSI.Object as ob
 
 from .helpers import cleanMandatoryConstructorArgsCache as cmcac
+from .helpers import createTemporaryTestfile
 
 if sys.version_info > (3, ):
     long = int
@@ -296,3 +298,26 @@ def testOnlySelectAllowedRaisesExceptionWithNonSelectQuery(query):
 def returnQueryAfterCheck(query):
     sql.onlyAllowSelect(query)
     return query
+
+
+def testAlteringTableAfterChangeOfHardwareAuditConfig(sqlBackendCreationContextManager):
+    """
+    Test if adding and altering hardware audit tables works.
+
+    We must be able to alter the table after a change of the hardware
+    audit configuration took place. This is a commong operation during
+    updates.
+    """
+    configDir = os.path.join(os.path.dirname(__file__), 'testdata', 'backend')
+    pathToOldConfig = os.path.join(configDir, 'small_hwaudit.conf')
+    pathToNewConfig = os.path.join(configDir, 'small_extended_hwaudit.conf')
+
+    with createTemporaryTestfile(pathToOldConfig) as oldConfig:
+        with sqlBackendCreationContextManager(auditHardwareConfigFile=oldConfig) as backend:
+            backend.backend_createBase()
+
+            with createTemporaryTestfile(pathToNewConfig) as newConfig:
+                backend._auditHardwareConfigFile = newConfig
+                backend._setAuditHardwareConfig(backend.auditHardware_getConfig())
+
+                backend.backend_createBase()

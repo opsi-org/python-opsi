@@ -257,6 +257,153 @@ class SQLiteBackend(SQLBackend):
 		self._sqlBackendModule = True
 		logger.debug(u'SQLiteBackend created: %s' % self)
 
+	def _createAuditHardwareTables(self):
+		"""
+		Creating tables for hardware audit data.
+
+		The speciatly for SQLite is that an ALTER TABLE may not list
+		multiple columns to alter but instead has to alter one column
+		after another.
+		"""
+		tables = self._sql.getTables()
+		existingTables = set(tables.keys())
+
+		def removeTrailingComma(query):
+			if query.endswith(u','):
+				return query[:-1]
+
+			return query
+
+		def finishSQLQuery(tableExists, tableName):
+			if tableExists:
+				return u' ;\n'
+			else:
+				return u'\n) %s;\n' % self._sql.getTableCreationOptions(tableName)
+
+		def getSQLStatements():
+			for (hwClass, values) in self._auditHardwareConfig.items():
+				logger.debug(u"Processing hardware class '%s'" % hwClass)
+				hardwareDeviceTableName = u'HARDWARE_DEVICE_{0}'.format(hwClass)
+				hardwareConfigTableName = u'HARDWARE_CONFIG_{0}'.format(hwClass)
+
+				hardwareDeviceTableExists = hardwareDeviceTableName in existingTables
+				hardwareConfigTableExists = hardwareConfigTableName in existingTables
+
+				if hardwareDeviceTableExists:
+					hardwareDeviceTable = u'ALTER TABLE `{name}`\n'.format(
+						name=hardwareDeviceTableName
+					)
+				else:
+					hardwareDeviceTable = (
+						u'CREATE TABLE `{name}` (\n'
+						u'`hardware_id` INTEGER NOT NULL {autoincrement},\n'.format(
+							name=hardwareDeviceTableName,
+							autoincrement=self._sql.AUTOINCREMENT
+						)
+					)
+
+				avoidProcessingFurtherHardwareDevice = False
+				hardwareDeviceValuesProcessed = 0
+				for (value, valueInfo) in values.items():
+					logger.debug(u"  Processing value '%s'" % value)
+					if valueInfo['Scope'] == 'g':
+						if hardwareDeviceTableExists:
+							if value in tables[hardwareDeviceTableName]:
+								# Column exists => change
+								if not self._sql.ALTER_TABLE_CHANGE_SUPPORTED:
+									continue
+
+								hardwareDeviceTable += u'CHANGE `{column}` `{column}` {type} NULL,\n'.format(
+									column=value,
+									type=valueInfo['Type']
+								)
+							else:
+								# Column does not exist => add
+								yield hardwareDeviceTable + u'ADD COLUMN `{column}` {type} NULL;'.format(
+									column=value,
+									type=valueInfo["Type"]
+								)
+								avoidProcessingFurtherHardwareDevice = True
+						else:
+							hardwareDeviceTable += u'`{column}` {type} NULL,\n'.format(
+								column=value,
+								type=valueInfo["Type"]
+							)
+						hardwareDeviceValuesProcessed += 1
+
+				if hardwareConfigTableExists:
+					hardwareConfigTable = u'ALTER TABLE `{name}`\n'.format(
+						name=hardwareConfigTableName
+					)
+				else:
+					hardwareConfigTable = (
+						u'CREATE TABLE `{name}` (\n'
+						u'`config_id` INTEGER NOT NULL {autoincrement},\n'
+						u'`hostId` varchar(255) NOT NULL,\n'
+						u'`hardware_id` INTEGER NOT NULL,\n'
+						u'`firstseen` TIMESTAMP NOT NULL DEFAULT \'0000-00-00 00:00:00\',\n'
+						u'`lastseen` TIMESTAMP NOT NULL DEFAULT \'0000-00-00 00:00:00\',\n'
+						u'`state` TINYINT NOT NULL,\n'.format(
+							name=hardwareConfigTableName,
+							autoincrement=self._sql.AUTOINCREMENT
+						)
+					)
+
+				avoidProcessingFurtherHardwareConfig = False
+				hardwareConfigValuesProcessed = 0
+				for (value, valueInfo) in values.items():
+					logger.debug(u"  Processing value '%s'" % value)
+					if valueInfo['Scope'] == 'i':
+						if hardwareConfigTableExists:
+							if value in tables[hardwareConfigTableName]:
+								# Column exists => change
+								if not self._sql.ALTER_TABLE_CHANGE_SUPPORTED:
+									continue
+
+								hardwareConfigTable += u'CHANGE `{column}` `{column}` {type} NULL,\n'.format(
+									column=value,
+									type=valueInfo['Type']
+								)
+							else:
+								# Column does not exist => add
+								yield hardwareConfigTable + u' ADD COLUMN `{column}` {type} NULL;'.format(
+									column=value,
+									type=valueInfo['Type']
+								)
+								avoidProcessingFurtherHardwareConfig = True
+						else:
+							hardwareConfigTable += u'`%s` %s NULL,\n' % (value, valueInfo['Type'])
+						hardwareConfigValuesProcessed += 1
+
+				if avoidProcessingFurtherHardwareConfig or avoidProcessingFurtherHardwareDevice:
+					continue
+
+				if not hardwareDeviceTableExists:
+					hardwareDeviceTable += u'PRIMARY KEY (`hardware_id`)\n'
+				if not hardwareConfigTableExists:
+					hardwareConfigTable += u'PRIMARY KEY (`config_id`)\n'
+
+				# Remove leading and trailing whitespace
+				hardwareDeviceTable = hardwareDeviceTable.strip()
+				hardwareConfigTable = hardwareConfigTable.strip()
+
+				hardwareDeviceTable = removeTrailingComma(hardwareDeviceTable)
+				hardwareConfigTable = removeTrailingComma(hardwareConfigTable)
+
+				hardwareDeviceTable += finishSQLQuery(hardwareDeviceTableExists, hardwareDeviceTableName)
+				hardwareConfigTable += finishSQLQuery(hardwareConfigTableExists, hardwareConfigTableName)
+
+				if hardwareDeviceValuesProcessed or not hardwareDeviceTableExists:
+					yield hardwareDeviceTable
+
+				if hardwareConfigValuesProcessed or not hardwareConfigTableExists:
+					yield hardwareConfigTable
+
+		for statement in getSQLStatements():
+			logger.debug2("Processing statement {0!r}", statement)
+			self._sql.execute(statement)
+			logger.debug2("Done with statement.")
+
 
 class SQLiteObjectBackendModificationTracker(SQLBackendObjectModificationTracker):
 	def __init__(self, **kwargs):
