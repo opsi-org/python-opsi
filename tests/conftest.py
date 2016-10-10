@@ -179,6 +179,11 @@ def hardwareAuditBackendWithHistory(request, hardwareAuditConfigPath):
 
 @pytest.fixture
 def hardwareAuditConfigPath():
+    '''
+    Copies the opsihwaudit.conf that is usually distributed for
+    installation to a temporary folder and then returns the new absolute
+    path of the config file.
+    '''
     filename = 'opsihwaudit.conf'
     pathToOriginalConfig = os.path.join(os.path.dirname(__file__), '..',
                                         'data', 'hwaudit', filename)
