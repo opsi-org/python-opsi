@@ -143,18 +143,18 @@ def cleanMandatoryConstructorArgsCache():
         yield
 
 
-def testHostObject(sqlBackendWithoutConnection, cleanMandatoryConstructorArgsCache):
+def testUniqueConditionForHostObject(sqlBackendWithoutConnection, cleanMandatoryConstructorArgsCache):
     host = ob.Host('foo.bar.baz')
     assert "`hostId` = 'foo.bar.baz'" == sqlBackendWithoutConnection._uniqueCondition(host)
 
 
-def testOptionalParametersAreIgnored(sqlBackendWithoutConnection, cleanMandatoryConstructorArgsCache):
+def testUniqueConditionOptionalParametersAreIgnored(sqlBackendWithoutConnection, cleanMandatoryConstructorArgsCache):
     host = ob.Host('foo.bar.baz', inventoryNumber='ABC+333')
 
     assert "`hostId` = 'foo.bar.baz'" == sqlBackendWithoutConnection._uniqueCondition(host)
 
 
-def testMultipleParametersAreJoinedWithAnAnd(sqlBackendWithoutConnection, cleanMandatoryConstructorArgsCache):
+def testUniqueConditionMultipleParametersAreJoinedWithAnAnd(sqlBackendWithoutConnection, cleanMandatoryConstructorArgsCache):
     softwareLicense = ob.SoftwareLicense('a', 'b')
     condition = sqlBackendWithoutConnection._uniqueCondition(softwareLicense)
 
@@ -162,7 +162,7 @@ def testMultipleParametersAreJoinedWithAnAnd(sqlBackendWithoutConnection, cleanM
     assert "`softwareLicenseId` = 'a' and `licenseContractId` = 'b'" == condition
 
 
-def testConditionForHostGroupHasTypeAppended(sqlBackendWithoutConnection, cleanMandatoryConstructorArgsCache):
+def testUniqueConditionForHostGroupHasTypeAppended(sqlBackendWithoutConnection, cleanMandatoryConstructorArgsCache):
     group = ob.ProductGroup('t')
     condition = sqlBackendWithoutConnection._uniqueCondition(group)
 
@@ -171,7 +171,7 @@ def testConditionForHostGroupHasTypeAppended(sqlBackendWithoutConnection, cleanM
     assert "`type` = 'ProductGroup'" in condition
 
 
-def testConditionForProductGroupHasTypeAppended(sqlBackendWithoutConnection, cleanMandatoryConstructorArgsCache):
+def testUniqueConditionForProductGroupHasTypeAppended(sqlBackendWithoutConnection, cleanMandatoryConstructorArgsCache):
     group = ob.HostGroup('hg')
     condition = sqlBackendWithoutConnection._uniqueCondition(group)
 
@@ -180,7 +180,7 @@ def testConditionForProductGroupHasTypeAppended(sqlBackendWithoutConnection, cle
     assert "`type` = 'HostGroup'" in condition
 
 
-def testBooleanParameters(sqlBackendWithoutConnection, cleanMandatoryConstructorArgsCache):
+def testUniqueConditionForBooleanParameters(sqlBackendWithoutConnection, cleanMandatoryConstructorArgsCache):
     class Foo(object):
         def __init__(self, true, false):
             self.true = true
@@ -202,7 +202,7 @@ def testAccessingParametersWithAttributenamesFails(sqlBackendWithoutConnection, 
         sqlBackendWithoutConnection._uniqueCondition(Foo2(True))
 
 
-def testMandatoryParametersAreSkippedIfValueIsNone(sqlBackendWithoutConnection, cleanMandatoryConstructorArgsCache):
+def testUniqueConditionMandatoryParametersAreSkippedIfValueIsNone(sqlBackendWithoutConnection, cleanMandatoryConstructorArgsCache):
     assert '' == sqlBackendWithoutConnection._uniqueCondition(FooParam(None))
 
 
