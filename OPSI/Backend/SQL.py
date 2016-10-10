@@ -876,7 +876,7 @@ class SQLBackend(ConfigDataBackend):
 			self._sql.execute('CREATE INDEX `index_software_config_clientId` on `SOFTWARE_CONFIG` (`clientId`);')
 			self._sql.execute('CREATE INDEX `index_software_config_nvsla` on `SOFTWARE_CONFIG` (`name`, `version`, `subVersion`, `language`, `architecture`);')
 
-		self._createHardwareAuditTables()
+		self._createAuditHardwareTables()
 
 	def _createTableHost(self):
 		logger.debug(u'Creating table HOST')
@@ -907,7 +907,7 @@ class SQLBackend(ConfigDataBackend):
 		self._sql.execute(table)
 		self._sql.execute('CREATE INDEX `index_host_type` on `HOST` (`type`);')
 
-	def _createHardwareAuditTables(self):
+	def _createAuditHardwareTables(self):
 		tables = self._sql.getTables()
 		existingTables = set(tables.keys())
 
