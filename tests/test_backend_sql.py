@@ -30,7 +30,6 @@ import unittest
 
 import OPSI.Backend.SQL as sql
 import OPSI.Object as ob
-from OPSI.Backend.Backend import ExtendedConfigDataBackend
 
 from .helpers import createTemporaryTestfile
 
@@ -284,23 +283,17 @@ class AvoidingMaliciousQueryTestCase(SQLBackendWithoutConnectionTestCase):
         self.assertEquals(testQuery, returnQuery(testQuery))
 
 
-def testAlteringTableAfterChangeOfHardwareAuditConfig(backendCreationContextManager):
-    # TODO:
-    # * create a backend with an old version of hwaudit.conf
-    # * backend_createBase
-    # * change the hwaudit.conf
-    # * create a new backend with the new config
-    # * backend_createBase
-
+def testAlteringTableAfterChangeOfHardwareAuditConfig(sqlBackendCreationContextManager):
     configDir = os.path.join(os.path.dirname(__file__), 'testdata', 'backend')
     pathToOldConfig = os.path.join(configDir, 'small_hwaudit.conf')
     pathToNewConfig = os.path.join(configDir, 'small_extended_hwaudit.conf')
 
     with createTemporaryTestfile(pathToOldConfig) as oldConfig:
-        with backendCreationContextManager(auditHardwareConfigFile=oldConfig) as backend:
-            backend = ExtendedConfigDataBackend(backend)
+        with sqlBackendCreationContextManager(auditHardwareConfigFile=oldConfig) as backend:
             backend.backend_createBase()
 
             with createTemporaryTestfile(pathToNewConfig) as newConfig:
-                with backendCreationContextManager(auditHardwareConfigFile=newConfig) as backend:
-                    backend.backend_createBase()
+                backend._auditHardwareConfigFile = newConfig
+                backend._setAuditHardwareConfig(backend.auditHardware_getConfig())
+
+                backend.backend_createBase()
