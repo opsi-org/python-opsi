@@ -45,16 +45,13 @@ from OPSI.Backend.BackendManager import BackendManager
 from .Backends.File import getFileBackend, _getOriginalBackendLocation
 from .Backends.SQLite import getSQLiteBackend
 from .Backends.MySQL import getMySQLBackend
-from .helpers import workInTemporaryDirectory
+from .helpers import workInTemporaryDirectory, createTemporaryTestfile
 
 import pytest
 
 
-@pytest.fixture(
-    params=[getFileBackend, getSQLiteBackend, getMySQLBackend],
-    ids=['file', 'sqlite', 'mysql']
-)
-def configDataBackend(request):
+@pytest.fixture
+def configDataBackend(backendCreationContextManager):
     """
     Returns an `OPSI.Backend.ConfigDataBackend` for testing.
 
@@ -62,7 +59,7 @@ def configDataBackend(request):
     skips if required libraries are missing or conditions for the
     execution are not met.
     """
-    with request.param() as backend:
+    with backendCreationContextManager() as backend:
         with _backendBase(backend):
             yield backend
 
@@ -157,10 +154,14 @@ def licenseManagementBackend(_sqlBackend):
     params=[getSQLiteBackend, getMySQLBackend],
     ids=['sqlite', 'mysql']
 )
-def _sqlBackend(request):
+def sqlBackendCreationContextManager(request):
+    yield request.param
+
+
+def _sqlBackend(sqlBackendCreationContextManager):
     '''Backends that make use of SQL.'''
 
-    with request.param() as backend:
+    with sqlBackendCreationContextManager() as backend:
         with _backendBase(backend):
             yield backend
 
@@ -199,12 +200,9 @@ def hardwareAuditConfigPath():
         yield fileCopy
 
 
-@pytest.fixture(
-    params=[getFileBackend, getSQLiteBackend, getMySQLBackend],
-    ids=['file', 'sqlite', 'mysql']
-)
-def auditDataBackend(request, hardwareAuditConfigPath):
-    with request.param(auditHardwareConfigFile=hardwareAuditConfigPath) as backend:
+@pytest.fixture
+def auditDataBackend(backendCreationContextManager, hardwareAuditConfigPath):
+    with backendCreationContextManager(auditHardwareConfigFile=hardwareAuditConfigPath) as backend:
         with _backendBase(backend):
             yield ExtendedConfigDataBackend(backend)
 
