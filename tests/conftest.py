@@ -158,6 +158,7 @@ def sqlBackendCreationContextManager(request):
     yield request.param
 
 
+@pytest.fixture
 def _sqlBackend(sqlBackendCreationContextManager):
     '''Backends that make use of SQL.'''
 
