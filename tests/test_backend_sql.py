@@ -25,7 +25,6 @@ Testing opsi SQL backend.
 from __future__ import absolute_import
 
 import sys
-import unittest
 
 import pytest
 
@@ -46,95 +45,106 @@ def sqlBackendWithoutConnection():
     yield backend
 
 
-class SQLBackendWithoutConnectionTestCase(unittest.TestCase):
-    """
-    Testing the backend functions that do not require an connection
-    to an actual database.
-    """
-    def setUp(self):
-        self.backend = sql.SQLBackend()
-        self.backend._sql = sql.SQL()
-
-    def tearDown(self):
-        del self.backend
+def testCreatingFilterWithoutParameters(sqlBackendWithoutConnection):
+    assert '' == sqlBackendWithoutConnection._filterToSql()
 
 
-class FilterToSQLTestCase(SQLBackendWithoutConnectionTestCase):
-    def testCreatingFilter(self):
-        self.assertEquals('', self.backend._filterToSql())
-        self.assertEquals(u'(`lol` = 0)', self.backend._filterToSql({'lol': False}))
-
-    def testCreatingFilterHasParentheses(self):
-        self.assertTrue(self.backend._filterToSql({'lol': False}).startswith('('))
-        self.assertTrue(self.backend._filterToSql({'lol': False}).endswith(')'))
-
-    def testNoFilterForNoneValues(self):
-        result = self.backend._filterToSql({'a': False, 'b': None})
-        self.assertTrue('b' not in result)
-        self.assertTrue('NULL' not in result)
-        self.assertTrue('None' not in result)
-
-    def testCreatingFilterForNoneInList(self):
-        self.assertTrue('`a` is NULL' in self.backend._filterToSql({'a': [None]}))
-
-    def testEmptyListsGetSkipped(self):
-        self.assertTrue('a' not in self.backend._filterToSql({'a': []}))
-        self.assertEquals('', self.backend._filterToSql({'a': []}))
-
-    def testBoolValueRepresentation(self):
-        self.assertTrue('0' in self.backend._filterToSql({'a': False}))
-        self.assertTrue('1' in self.backend._filterToSql({'a': True}))
-
-        self.assertEquals(
-            u'(`a` = 1) and (`b` = 0)',
-            self.backend._filterToSql({'a': True, 'b': False})
-        )
-
-    def testMultipleValuesAreAddedWithAnAnd(self):
-        self.assertTrue(
-            u' and ' in self.backend._filterToSql({'a': True, 'b': False})
-        )
-
-    def testNumberRepresentation(self):
-        self.assertEquals(u'(`a` = 1)', self.backend._filterToSql({'a': 1}))
-        self.assertEquals(u'(`b` = 2.3)', self.backend._filterToSql({'b': 2.3}))
-        self.assertEquals(u'(`c` = 4)', self.backend._filterToSql({'c': long(4)}))
-
-    def testCreatingFilterForStringValue(self):
-        self.assertEquals(u"(`a` = 'b')", self.backend._filterToSql({'a': "b"}))
-
-    def testListOfValuesCreatesAnOrExpression(self):
-        result = self.backend._filterToSql({'a': [1, 2]})
-        self.assertTrue(u' or ' in result)
-        self.assertTrue(u'1' in result)
-        self.assertTrue(u'2' in result)
-
-        anotherResult = self.backend._filterToSql({'a': [1, 2], 'b': False})
-        self.assertEquals(u'(`a` = 1 or `a` = 2) and (`b` = 0)', anotherResult)
-
-    def testCreatingFilterWithWildcard(self):
-        self.assertEquals(u"(`a` LIKE '%bc')", self.backend._filterToSql({'a': '*bc'}))
-
-    def testCreatingFilterWithGreaterOrLowerOrEqualSign(self):
-        self.assertEquals(u"(`a` > 1)", self.backend._filterToSql({'a': '> 1'}))
-        self.assertEquals(u"(`a` < 1)", self.backend._filterToSql({'a': '< 1'}))
-        self.assertEquals(u"(`a` = 1)", self.backend._filterToSql({'a': '= 1'}))
-        self.assertEquals(u"(`a` <=> 1)", self.backend._filterToSql({'a': '<=> 1'}))
+def testCreatingFilterHasParentheses(sqlBackendWithoutConnection):
+    query = sqlBackendWithoutConnection._filterToSql({'lol': False})
+    assert '`lol` = 0' in query
+    assert query.startswith('(')
+    assert query.endswith(')')
 
 
-class QueryCreationTestCase(SQLBackendWithoutConnectionTestCase):
-    def testCreatingQueryIncludesTableName(self):
-        self.assertTrue("foo" in self.backend._createQuery('foo'))
+def testCreatingNoFilterForNone(sqlBackendWithoutConnection):
+    result = sqlBackendWithoutConnection._filterToSql({'a': False, 'b': None})
+    assert 'a' in result
+    assert 'b' not in result
+    assert 'NULL' not in result
+    assert 'None' not in result
 
-    def testWithoutAttributesEverythingIsSelected(self):
-        self.assertTrue(u'select * from' in self.backend._createQuery('foo'))
 
-    def testDefiningColumnsToSelect(self):
-        self.assertTrue(u'`first`,`second`' in self.backend._createQuery('foo', ['first', 'second']))
+def testCreatingFilterForNoneInList(sqlBackendWithoutConnection):
+    assert '`a` is NULL' in sqlBackendWithoutConnection._filterToSql({'a': [None]})
 
-    def testHavingFilterAddsWhereClause(self):
-        self.assertTrue(u'where' not in self.backend._createQuery('foo'))
-        self.assertTrue(u'where' in self.backend._createQuery('foo', filter={'a': 1}))
+
+@pytest.mark.parametrize("filterExpression", [{'a': []}])
+def testFilterCreationSkiptsEmptyLists(sqlBackendWithoutConnection, filterExpression):
+    resultingQuery = sqlBackendWithoutConnection._filterToSql(filterExpression)
+
+    assert filterExpression
+    for key in filterExpression:
+        assert key not in resultingQuery
+
+    assert '' == resultingQuery
+
+
+@pytest.mark.parametrize("expectedConversion, filterExpression", [
+    ('0', {'a': False}),
+    ('1', {'a': True})
+])
+def testBoolValueRepresentation(sqlBackendWithoutConnection, expectedConversion, filterExpression):
+    assert expectedConversion in sqlBackendWithoutConnection._filterToSql(filterExpression)
+
+
+def testCreateFilterForMultipleBools(sqlBackendWithoutConnection):
+    assert u'(`a` = 1) and (`b` = 0)' == sqlBackendWithoutConnection._filterToSql({'a': True, 'b': False})
+
+
+def testCreatingFilterAddsMultipleValuesWithAnAnd(sqlBackendWithoutConnection):
+    assert u' and ' in sqlBackendWithoutConnection._filterToSql({'a': True, 'b': False})
+
+
+@pytest.mark.parametrize("result, filterExpression", [
+    ('(`a` = 1)', {'a': 1}),
+    ('(`b` = 2.3)', {'b': 2.3}),
+    ('(`c` = 4)', {'c': long(4)}),
+])
+def testCreatingFilterForNumberRepresentation(sqlBackendWithoutConnection, result, filterExpression):
+    assert result == sqlBackendWithoutConnection._filterToSql(filterExpression)
+
+
+def testCreatingFilterForStringValue(sqlBackendWithoutConnection):
+    assert "(`a` = 'b')" == sqlBackendWithoutConnection._filterToSql({'a': "b"})
+
+
+@pytest.mark.parametrize("expected, filterExpression", [
+    ('(`a` = 1 or `a` = 2)', {'a': [1, 2]}),
+    ('(`a` = 1 or `a` = 2) and (`b` = 0)', {'a': [1, 2], 'b': False})
+])
+def testCreatingFilterWithListOfValuesCreatesAnOrExpression(sqlBackendWithoutConnection, expected, filterExpression):
+    assert expected == sqlBackendWithoutConnection._filterToSql(filterExpression)
+
+
+def testCreatingFilterWithWildcard(sqlBackendWithoutConnection):
+    assert u"(`a` LIKE '%bc')" == sqlBackendWithoutConnection._filterToSql({'a': '*bc'})
+
+
+@pytest.mark.parametrize("result, filterExpression", [
+    (u"(`a` > 1)", {'a': '> 1'}),
+    (u"(`a` < 1)", {'a': '< 1'}),
+    (u"(`a` = 1)", {'a': '= 1'}),
+    (u"(`a` <=> 1)", {'a': '<=> 1'}),
+])
+def testCreatingFilterWithGreaterOrLowerOrEqualSign(sqlBackendWithoutConnection, result, filterExpression):
+    assert result == sqlBackendWithoutConnection._filterToSql(filterExpression)
+
+
+def testCreatingQueryIncludesTableName(sqlBackendWithoutConnection):
+    assert "foo" in sqlBackendWithoutConnection._createQuery('foo')
+
+
+def testQueryCreationWithoutAttributesEverythingIsSelected(sqlBackendWithoutConnection):
+    assert u'select * from' in sqlBackendWithoutConnection._createQuery('foo')
+
+
+def testQueryCreationDefiningColumnsToSelect(sqlBackendWithoutConnection):
+    assert u'`first`,`second`' in sqlBackendWithoutConnection._createQuery('foo', ['first', 'second'])
+
+
+def testQueryCreationHavingFilterAddsWhereClause(sqlBackendWithoutConnection):
+    assert u'where' not in sqlBackendWithoutConnection._createQuery('foo')
+    assert u'where' in sqlBackendWithoutConnection._createQuery('foo', filter={'a': 1})
 
 
 @pytest.fixture
