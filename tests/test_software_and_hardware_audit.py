@@ -269,7 +269,6 @@ def getAuditHardwareOnHost(auditHardwares=None, clients=None):
             auditHardwareOnHost4, auditHardwareOnHost5, auditHardwareOnHost6)
 
 
-@pytest.mark.requiresHwauditConfigFile
 def test_insertAuditHardwareOnHost(hardwareAuditBackendWithHistory):
     backend = hardwareAuditBackendWithHistory
 

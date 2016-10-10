@@ -167,9 +167,14 @@ def multithreadingBackend(request):
             yield backend
 
 
-@pytest.fixture
-def hardwareAuditBackendWithHistory(_sqlBackend):
-    yield ExtendedConfigDataBackend(_sqlBackend)
+@pytest.fixture(
+    params=[getSQLiteBackend, getMySQLBackend],
+    ids=['sqlite', 'mysql']
+)
+def hardwareAuditBackendWithHistory(request, hardwareAuditConfigPath):
+    with request.param(auditHardwareConfigFile=hardwareAuditConfigPath) as backend:
+        with _backendBase(backend):
+            yield ExtendedConfigDataBackend(backend)
 
 
 @pytest.fixture
