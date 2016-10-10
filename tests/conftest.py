@@ -67,6 +67,14 @@ def configDataBackend(request):
             yield backend
 
 
+@pytest.fixture(
+    params=[getFileBackend, getSQLiteBackend, getMySQLBackend],
+    ids=['file', 'sqlite', 'mysql']
+)
+def backendCreationContextManager(request):
+    yield request.param
+
+
 @contextmanager
 def _backendBase(backend):
     "Creates the backend base before and deletes it after use."
