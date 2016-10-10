@@ -31,7 +31,7 @@ from OPSI.Object import (AuditHardwareOnHost, Host, LocalbootProduct,
     OpsiConfigserver, OpsiDepotserver, Product, ProductDependency,
     UnicodeConfig, getPossibleClassAttributes, mandatoryConstructorArgs)
 
-from .helpers import mock
+from .helpers import mock, cleanMandatoryConstructorArgsCache
 
 
 class GetPossibleClassAttributesTestCase(unittest.TestCase):
@@ -255,7 +255,7 @@ class MandatoryConstructorArgsTestCase(unittest.TestCase):
                 pass
 
         n = NoArgs()
-        with mock.patch('OPSI.Object._MANDATORY_CONSTRUCTOR_ARGS_CACHE', {}):
+        with cleanMandatoryConstructorArgsCache():
             args = mandatoryConstructorArgs(n.__class__)
 
         self.assertEquals([], args)
@@ -266,7 +266,7 @@ class MandatoryConstructorArgsTestCase(unittest.TestCase):
                 pass
 
         om = OnlyMandatory(1, 1, 1)
-        with mock.patch('OPSI.Object._MANDATORY_CONSTRUCTOR_ARGS_CACHE', {}):
+        with cleanMandatoryConstructorArgsCache():
             args = mandatoryConstructorArgs(om.__class__)
 
         self.assertEquals(['give', 'me', 'this'], args)
@@ -277,7 +277,7 @@ class MandatoryConstructorArgsTestCase(unittest.TestCase):
                 pass
 
         oo = OnlyOptional()
-        with mock.patch('OPSI.Object._MANDATORY_CONSTRUCTOR_ARGS_CACHE', {}):
+        with cleanMandatoryConstructorArgsCache():
             args = mandatoryConstructorArgs(oo.__class__)
 
         self.assertEquals([], args)
@@ -288,7 +288,7 @@ class MandatoryConstructorArgsTestCase(unittest.TestCase):
                 pass
 
         ma = MixedArgs(True, True, True)
-        with mock.patch('OPSI.Object._MANDATORY_CONSTRUCTOR_ARGS_CACHE', {}):
+        with cleanMandatoryConstructorArgsCache():
             args = mandatoryConstructorArgs(ma.__class__)
 
         self.assertEquals(['i', 'want', 'this'], args)
@@ -299,7 +299,7 @@ class MandatoryConstructorArgsTestCase(unittest.TestCase):
                 pass
 
         wo = WildcardOnly("yeah", "great", "thing")
-        with mock.patch('OPSI.Object._MANDATORY_CONSTRUCTOR_ARGS_CACHE', {}):
+        with cleanMandatoryConstructorArgsCache():
             args = mandatoryConstructorArgs(wo.__class__)
 
         self.assertEquals([], args)
@@ -310,7 +310,7 @@ class MandatoryConstructorArgsTestCase(unittest.TestCase):
                 pass
 
         kw = Kwargz(go=1, get="asdf", them=[], girl=True)
-        with mock.patch('OPSI.Object._MANDATORY_CONSTRUCTOR_ARGS_CACHE', {}):
+        with cleanMandatoryConstructorArgsCache():
             args = mandatoryConstructorArgs(kw.__class__)
 
         self.assertEquals([], args)
@@ -321,7 +321,7 @@ class MandatoryConstructorArgsTestCase(unittest.TestCase):
                 pass
 
         kwam = KwargzAndMore(False, True, "some", "more", things="here")
-        with mock.patch('OPSI.Object._MANDATORY_CONSTRUCTOR_ARGS_CACHE', {}):
+        with cleanMandatoryConstructorArgsCache():
             args = mandatoryConstructorArgs(kwam.__class__)
 
         self.assertEquals(["crosseyed", "heart"], args)

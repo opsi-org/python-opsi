@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
@@ -24,8 +23,6 @@ Testing backend cleaning.
 """
 
 from __future__ import absolute_import
-
-import pytest
 
 from OPSI.Object import LocalbootProduct, ProductOnDepot
 from OPSI.Util.Task.CleanupBackend import cleanupBackend, cleanUpProducts

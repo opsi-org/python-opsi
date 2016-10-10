@@ -219,8 +219,6 @@ def getLocalbootProducts():
 
 
 def getProductDepdencies(products):
-    print("Got {0} products: {1!r}".format(len(products), products))
-
     product2, product3, product4, _, product6, product7, _, product9 = products[1:9]
     productDependency1 = ProductDependency(
         productId=product2.id,
@@ -278,8 +276,6 @@ def getProductDepdencies(products):
 
 
 def getProductProperties(products):
-    print("getProductProperties: Got {0} products: {1!r}".format(len(products), products))
-
     product1, _, product3 = products[:3]
 
     # TODO: turn this into tests?
@@ -330,8 +326,6 @@ def getProductProperties(products):
 
 
 def getProductsOnDepot(products, configServer, depotServer):
-    print("getProductsOnDepot: Got {0} products: {1!r}".format(len(products), products))
-
     product1, product2, product3, _, product5, product6, product7, product8, product9 = products[:9]
     depotserver1, depotserver2 = depotServer[:2]
 

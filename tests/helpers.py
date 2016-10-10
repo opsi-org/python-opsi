@@ -182,3 +182,9 @@ def showLogs(logLevel=7, color=True):
         yield logger
     finally:
         logger.setConsoleLevel(logLevelBefore)
+
+
+@contextmanager
+def cleanMandatoryConstructorArgsCache():
+    with mock.patch('OPSI.Object._MANDATORY_CONSTRUCTOR_ARGS_CACHE', {}):
+        yield
