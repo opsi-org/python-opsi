@@ -138,7 +138,7 @@ class FileBackendBackendManagerMixin(FileBackendMixin):
 
 
 @contextmanager
-def getFileBackend(path=None):
+def getFileBackend(path=None, **backendOptions):
     originalLocation = _getOriginalBackendLocation()
 
     BACKEND_SUBFOLDER = os.path.join('etc', 'opsi')
@@ -162,6 +162,7 @@ def getFileBackend(path=None):
             "fileGroupName": groupName,
             "fileUserName": userName
         }
+        backendConfig.update(backendOptions)
 
         new_configuration = """
 # -*- coding: utf-8 -*-
