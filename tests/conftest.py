@@ -42,16 +42,13 @@ from OPSI.Backend.BackendManager import BackendManager
 from .Backends.File import getFileBackend, _getOriginalBackendLocation
 from .Backends.SQLite import getSQLiteBackend
 from .Backends.MySQL import getMySQLBackend
-from .helpers import workInTemporaryDirectory
+from .helpers import workInTemporaryDirectory, createTemporaryTestfile
 
 import pytest
 
 
-@pytest.fixture(
-    params=[getFileBackend, getSQLiteBackend, getMySQLBackend],
-    ids=['file', 'sqlite', 'mysql']
-)
-def configDataBackend(request):
+@pytest.fixture
+def configDataBackend(backendCreationContextManager):
     """
     Returns an `OPSI.Backend.ConfigDataBackend` for testing.
 
@@ -59,9 +56,17 @@ def configDataBackend(request):
     skips if required libraries are missing or conditions for the
     execution are not met.
     """
-    with request.param() as backend:
+    with backendCreationContextManager() as backend:
         with _backendBase(backend):
             yield backend
+
+
+@pytest.fixture(
+    params=[getFileBackend, getSQLiteBackend, getMySQLBackend],
+    ids=['file', 'sqlite', 'mysql']
+)
+def backendCreationContextManager(request):
+    yield request.param
 
 
 @contextmanager
@@ -146,10 +151,15 @@ def licenseManagementBackend(_sqlBackend):
     params=[getSQLiteBackend, getMySQLBackend],
     ids=['sqlite', 'mysql']
 )
-def _sqlBackend(request):
+def sqlBackendCreationContextManager(request):
+    yield request.param
+
+
+@pytest.fixture
+def _sqlBackend(sqlBackendCreationContextManager):
     '''Backends that make use of SQL.'''
 
-    with request.param() as backend:
+    with sqlBackendCreationContextManager() as backend:
         with _backendBase(backend):
             yield backend
 
@@ -181,22 +191,16 @@ def hardwareAuditConfigPath():
     installation to a temporary folder and then returns the new absolute
     path of the config file.
     '''
-    filename = 'opsihwaudit.conf'
     pathToOriginalConfig = os.path.join(os.path.dirname(__file__), '..',
-                                        'data', 'hwaudit', filename)
+                                        'data', 'hwaudit', 'opsihwaudit.conf')
 
-    with workInTemporaryDirectory() as tempDir:
-        shutil.copy(pathToOriginalConfig, tempDir)
-
-        yield os.path.join(tempDir, filename)
+    with createTemporaryTestfile(pathToOriginalConfig) as fileCopy:
+        yield fileCopy
 
 
-@pytest.fixture(
-    params=[getFileBackend, getSQLiteBackend, getMySQLBackend],
-    ids=['file', 'sqlite', 'mysql']
-)
-def auditDataBackend(request, hardwareAuditConfigPath):
-    with request.param(auditHardwareConfigFile=hardwareAuditConfigPath) as backend:
+@pytest.fixture
+def auditDataBackend(backendCreationContextManager, hardwareAuditConfigPath):
+    with backendCreationContextManager(auditHardwareConfigFile=hardwareAuditConfigPath) as backend:
         with _backendBase(backend):
             yield ExtendedConfigDataBackend(backend)
 
