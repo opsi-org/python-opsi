@@ -222,8 +222,3 @@ def pytest_runtest_setup(item):
     if envmarker is not None:
         if not os.path.exists(os.path.join('/etc', 'opsi', 'modules')):
             pytest.skip("{0} requires a modules file!".format(item.name))
-
-    envmarker = item.get_marker("requiresHwauditConfigFile")
-    if envmarker is not None:
-        if not os.path.exists(os.path.join('/etc', 'opsi', 'hwaudit', 'opsihwaudit.conf')):
-            pytest.skip("{0} requires a opsihwaudit.conf in /etc/opsi/hwaudit!".format(item.name))
