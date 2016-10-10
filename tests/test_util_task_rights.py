@@ -133,32 +133,15 @@ def testDepotPathMayWillBeReturned(depotDirectory):
     assert depotDir == '/var/lib/opsi/depot'
 
 
-# TODO: pimp this thing with fixtures for selecting uid / gid
-# Should improve the reability and size of the test.
-def testChangingOwnershipWithOurChown():
-    try:
-        groupId = os.getgid()
-        userId = os.getuid()
-    except Exception as exc:
-        print("Could not get uid/guid: {0}".format(exc))
-        pytest.skip("Could not get uid/guid: {0}".format(exc))
+@pytest.fixture
+def currentUserId():
+    yield os.getuid()
 
-    print("Current group ID: {0}".format(groupId))
-    print("Current user ID: {0}".format(userId))
+
+@pytest.fixture
+def nonRootUserId():
+    userId = os.getuid()
     isRoot = os.geteuid() == 0
-
-    for gid in range(2, 60000):
-        try:
-            grp.getgrgid(gid)
-            changedGid = gid
-            break
-        except KeyError:
-            pass
-    else:
-        pytest.skip("No group for test found. Aborting.")
-
-    if groupId == changedGid:
-        pytest.skip("Could not find another group.")
 
     if isRoot:
         for uid in range(2, 60000):
@@ -173,9 +156,35 @@ def testChangingOwnershipWithOurChown():
 
         if userId == changedUid:
             pytest.skip("Could not find another user.")
-    else:
-        changedUid = -1
 
+        return changedUid
+    else:
+        return -1
+
+
+@pytest.fixture
+def currentGroupId():
+    yield os.getgid()
+
+
+@pytest.fixture
+def nonRootGroupId():
+    for gid in range(2, 60000):
+        try:
+            grp.getgrgid(gid)
+            return gid
+        except KeyError:
+            pass
+    else:
+        pytest.skip("No group for test found. Aborting.")
+
+
+def testChangingOwnershipWithOurChown(currentUserId, nonRootUserId, currentGroupId, nonRootGroupId):
+    if currentGroupId == nonRootGroupId:
+        pytest.skip("This test requires to use a different GID, "
+                    "but has been provided the same GIDs.")
+
+    isRoot = os.geteuid() == 0
     with workInTemporaryDirectory() as tempDir:
         original = os.path.join(tempDir, 'original')
         with open(original, 'w'):
@@ -186,8 +195,8 @@ def testChangingOwnershipWithOurChown():
         assert os.path.islink(linkfile)
 
         # Changing the uid/gid to something different
-        os.chown(original, changedUid, changedGid)
-        os.lchown(linkfile, changedUid, changedGid)
+        os.chown(original, nonRootUserId, nonRootGroupId)
+        os.lchown(linkfile, nonRootUserId, nonRootGroupId)
 
         for filename in (original, linkfile):
             if os.path.islink(filename):
@@ -195,13 +204,13 @@ def testChangingOwnershipWithOurChown():
             else:
                 stat = os.stat(linkfile)
 
-            assert changedGid == stat.st_gid
+            assert nonRootGroupId == stat.st_gid
             if not isRoot:
-                assert changedUid == stat.st_uid
+                assert nonRootUserId == stat.st_uid
 
         # Correcting the uid/gid
-        chown(linkfile, userId, groupId)
-        chown(original, userId, groupId)
+        chown(linkfile, currentUserId, currentGroupId)
+        chown(original, currentUserId, currentGroupId)
 
         for filename in (original, linkfile):
             if os.path.islink(filename):
@@ -209,9 +218,9 @@ def testChangingOwnershipWithOurChown():
             else:
                 stat = os.stat(linkfile)
 
-            assert groupId == stat.st_gid
+            assert currentGroupId == stat.st_gid
             if not isRoot:
-                assert userId == stat.st_uid
+                assert currentUserId == stat.st_uid
 
 
 def testGettingDirectoriesAndRights(patchUserInfo):
