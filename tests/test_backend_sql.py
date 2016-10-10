@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
 # Copyright (C) 2014-2015 uib GmbH <info@uib.de>
@@ -23,11 +22,17 @@ Testing opsi SQL backend.
 :license: GNU Affero General Public License version 3
 """
 
+from __future__ import absolute_import
+
+import os
 import sys
 import unittest
 
 import OPSI.Backend.SQL as sql
 import OPSI.Object as ob
+from OPSI.Backend.Backend import ExtendedConfigDataBackend
+
+from .helpers import createTemporaryTestfile
 
 if sys.version_info > (3, ):
     long = int
@@ -279,5 +284,23 @@ class AvoidingMaliciousQueryTestCase(SQLBackendWithoutConnectionTestCase):
         self.assertEquals(testQuery, returnQuery(testQuery))
 
 
-if __name__ == '__main__':
-    unittest.main()
+def testAlteringTableAfterChangeOfHardwareAuditConfig(backendCreationContextManager):
+    # TODO:
+    # * create a backend with an old version of hwaudit.conf
+    # * backend_createBase
+    # * change the hwaudit.conf
+    # * create a new backend with the new config
+    # * backend_createBase
+
+    configDir = os.path.join(os.path.dirname(__file__), 'testdata', 'backend')
+    pathToOldConfig = os.path.join(configDir, 'small_hwaudit.conf')
+    pathToNewConfig = os.path.join(configDir, 'small_extended_hwaudit.conf')
+
+    with createTemporaryTestfile(pathToOldConfig) as oldConfig:
+        with backendCreationContextManager(auditHardwareConfigFile=oldConfig) as backend:
+            backend = ExtendedConfigDataBackend(backend)
+            backend.backend_createBase()
+
+            with createTemporaryTestfile(pathToNewConfig) as newConfig:
+                with backendCreationContextManager(auditHardwareConfigFile=newConfig) as backend:
+                    backend.backend_createBase()
