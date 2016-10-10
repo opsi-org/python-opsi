@@ -19,9 +19,6 @@
 """
 Fixtures for tests.
 
-These will replace the mixins in the future and should be preferred when
-writing new tests.
-
 To use any of these fixtures use their name as a parameter when
 creating a test function. No rurther imports are needed.
 
