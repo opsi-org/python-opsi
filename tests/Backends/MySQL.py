@@ -34,11 +34,14 @@ except ImportError:
 
 
 @contextmanager
-def getMySQLBackend():
+def getMySQLBackend(**backendOptions):
     if not MySQLconfiguration:
         pytest.skip('no MySQL backend configuration given.')
 
-    yield MySQLBackend(**MySQLconfiguration)
+    optionsForBackend = MySQLconfiguration
+    optionsForBackend.update(backendOptions)
+
+    yield MySQLBackend(**optionsForBackend)
 
 
 @contextmanager

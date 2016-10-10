@@ -132,7 +132,7 @@ def fillBackend(backend, licenseManagementData=False):
     auditSoftwares = fillBackendWithAuditSoftwares(backend)
     fillBackendWithAuditSoftwareOnClients(backend, auditSoftwares, clients)
 
-    if existsHwAuditConfig():
+    if existsHwAuditConfig(backend):
         auditHardwares = fillBackendWithAuditHardwares(backend)
         fillBackendWithAuditHardwareOnHosts(backend, auditHardwares, clients)
 
@@ -166,13 +166,13 @@ def checkIfBackendIsFilled(backend, licenseManagementData=False, auditData=False
         assert len(backend.auditSoftware_getObjects()) > 0
         assert len(backend.auditSoftwareOnClient_getObjects()) > 0
 
-        if existsHwAuditConfig():
+        if existsHwAuditConfig(backend):
             assert len(backend.auditHardwareOnHost_getObjects()) > 0
             assert len(backend.auditHardware_getObjects()) > 0
 
 
-def existsHwAuditConfig():
-    return os.path.exists('/etc/opsi/hwaudit/opsihwaudit.conf')
+def existsHwAuditConfig(backend):
+    return bool(backend._auditHardwareConfig)
 
 
 def fillBackendWithHosts(backend):
@@ -228,7 +228,7 @@ def fillBackendWithSoftwareLicenses(backend):
 
 
 def fillBackendWithAuditHardwares(backend):
-    if not existsHwAuditConfig():
+    if not existsHwAuditConfig(backend):
         return []
 
     auditHardwares = getAuditHardwares()

@@ -167,14 +167,41 @@ def multithreadingBackend(request):
             yield backend
 
 
-@pytest.fixture
-def hardwareAuditBackendWithHistory(_sqlBackend):
-    yield ExtendedConfigDataBackend(_sqlBackend)
+@pytest.fixture(
+    params=[getSQLiteBackend, getMySQLBackend],
+    ids=['sqlite', 'mysql']
+)
+def hardwareAuditBackendWithHistory(request, hardwareAuditConfigPath):
+    with request.param(auditHardwareConfigFile=hardwareAuditConfigPath) as backend:
+        with _backendBase(backend):
+            yield ExtendedConfigDataBackend(backend)
 
 
 @pytest.fixture
-def auditDataBackend(extendedConfigDataBackend):
-    yield extendedConfigDataBackend
+def hardwareAuditConfigPath():
+    '''
+    Copies the opsihwaudit.conf that is usually distributed for
+    installation to a temporary folder and then returns the new absolute
+    path of the config file.
+    '''
+    filename = 'opsihwaudit.conf'
+    pathToOriginalConfig = os.path.join(os.path.dirname(__file__), '..',
+                                        'data', 'hwaudit', filename)
+
+    with workInTemporaryDirectory() as tempDir:
+        shutil.copy(pathToOriginalConfig, tempDir)
+
+        yield os.path.join(tempDir, filename)
+
+
+@pytest.fixture(
+    params=[getFileBackend, getSQLiteBackend, getMySQLBackend],
+    ids=['file', 'sqlite', 'mysql']
+)
+def auditDataBackend(request, hardwareAuditConfigPath):
+    with request.param(auditHardwareConfigFile=hardwareAuditConfigPath) as backend:
+        with _backendBase(backend):
+            yield ExtendedConfigDataBackend(backend)
 
 
 @pytest.fixture(
@@ -195,8 +222,3 @@ def pytest_runtest_setup(item):
     if envmarker is not None:
         if not os.path.exists(os.path.join('/etc', 'opsi', 'modules')):
             pytest.skip("{0} requires a modules file!".format(item.name))
-
-    envmarker = item.get_marker("requiresHwauditConfigFile")
-    if envmarker is not None:
-        if not os.path.exists(os.path.join('/etc', 'opsi', 'hwaudit', 'opsihwaudit.conf')):
-            pytest.skip("{0} requires a opsihwaudit.conf in /etc/opsi/hwaudit!".format(item.name))

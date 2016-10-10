@@ -269,7 +269,6 @@ def getAuditHardwareOnHost(auditHardwares=None, clients=None):
             auditHardwareOnHost4, auditHardwareOnHost5, auditHardwareOnHost6)
 
 
-@pytest.mark.requiresHwauditConfigFile
 def test_insertAuditHardwareOnHost(hardwareAuditBackendWithHistory):
     backend = hardwareAuditBackendWithHistory
 
@@ -473,7 +472,6 @@ def fillBackendWithAuditSoftwareOnClient(backend):
     return asoc, auditSoftwares, clients
 
 
-@pytest.mark.requiresHwauditConfigFile
 def testUpdatingAuditHardware(auditDataBackend):
     auditHardwaresIn = getAuditHardwares()
     auditDataBackend.auditHardware_createObjects(auditHardwaresIn)
@@ -491,7 +489,6 @@ def testUpdatingAuditHardware(auditDataBackend):
     assert len(auditHardwares) == len(auditHardwaresIn) - 2
 
 
-@pytest.mark.requiresHwauditConfigFile
 def testDeletingHostShouldDeleteHardwareAuditData(auditDataBackend):
     """
     Deleting a host should delete it's audit data.
@@ -518,7 +515,6 @@ def testDeletingHostShouldDeleteHardwareAuditData(auditDataBackend):
     assert 0 == len(auditDataBackend.auditHardwareOnHost_getObjects())
 
 
-@pytest.mark.requiresHwauditConfigFile
 def testSelecingAuditHardwareOnHostByLastseen(auditDataBackend):
     ahoh, _, _ = fillBackendWithAuditHardwareOnHosts(auditDataBackend)
 
@@ -535,7 +531,6 @@ def testSelecingAuditHardwareOnHostByLastseen(auditDataBackend):
     ['CHASSIS', 'COMPUTER_SYSTEM'],
     ['CHA*IS', '*UTER_SYS*']
 ])
-@pytest.mark.requiresHwauditConfigFile
 def test_selectAuditHardwareClasses(auditDataBackend, searchTerms):
     auditHardwaresIn = getAuditHardwares()
     auditDataBackend.auditHardware_createObjects(auditHardwaresIn)
@@ -547,7 +542,6 @@ def test_selectAuditHardwareClasses(auditDataBackend, searchTerms):
         assert auditHardwareClass in ['CHASSIS', 'COMPUTER_SYSTEM']
 
 
-@pytest.mark.requiresHwauditConfigFile
 def test_deleteAuditHardware(auditDataBackend):
     auditHardwaresIn = getAuditHardwares()
     auditDataBackend.auditHardware_createObjects(auditHardwaresIn)
@@ -559,7 +553,6 @@ def test_deleteAuditHardware(auditDataBackend):
     assert len(auditHardwares) == len(auditHardwaresIn) - 2
 
 
-@pytest.mark.requiresHwauditConfigFile
 def testDeletingAllAuditHardware(auditDataBackend):
     auditHardwares = getAuditHardwares()
     auditDataBackend.auditHardware_createObjects(auditHardwares)
@@ -570,7 +563,6 @@ def testDeletingAllAuditHardware(auditDataBackend):
     assert 0 == len(auditHardwares), u"Expected 0 audit hardware objects, but found %s on backend." % len(auditHardwares)
 
 
-@pytest.mark.requiresHwauditConfigFile
 def testCreatingAndGetingAuditHardwareFromBackend(auditDataBackend):
     auditHardwaresIn = getAuditHardwares()
     auditDataBackend.auditHardware_createObjects(auditHardwaresIn)
@@ -580,7 +572,6 @@ def testCreatingAndGetingAuditHardwareFromBackend(auditDataBackend):
     # TODO: check content
 
 
-@pytest.mark.requiresHwauditConfigFile
 def testCreatingAuditHardwareAfterDeletion(auditDataBackend):
     auditHardwares = getAuditHardwares()
 
@@ -592,7 +583,6 @@ def testCreatingAuditHardwareAfterDeletion(auditDataBackend):
     assert len(receivedAuditHardwares) == len(auditHardwares)
 
 
-@pytest.mark.requiresHwauditConfigFile
 def testDeletingAllAuditHardwareOnHost(auditDataBackend):
     ahoh, _, _ = fillBackendWithAuditHardwareOnHosts(auditDataBackend)
     auditDataBackend.auditHardwareOnHost_createObjects(ahoh)
@@ -604,7 +594,6 @@ def testDeletingAllAuditHardwareOnHost(auditDataBackend):
     assert 0 == len(auditHardwareOnHosts), u"Expected no audit hardware objects on host, but found %s on backend." % len(auditHardwareOnHosts)
 
 
-@pytest.mark.requiresHwauditConfigFile
 def test_createAuditHardwareOnHost(auditDataBackend):
     ahoh, _, _ = fillBackendWithAuditHardwareOnHosts(auditDataBackend)
 
@@ -615,7 +604,6 @@ def test_createAuditHardwareOnHost(auditDataBackend):
     # TODO: check the returned data
 
 
-@pytest.mark.requiresHwauditConfigFile
 def test_updatingAuditHardwareOnHost(auditDataBackend):
     auditHardwareOnHosts, _, _ = fillBackendWithAuditHardwareOnHosts(auditDataBackend)
 
@@ -630,7 +618,6 @@ def test_updatingAuditHardwareOnHost(auditDataBackend):
     assert numBefore == numAfter
 
 
-@pytest.mark.requiresHwauditConfigFile
 def test_deleteAuditHardwareOnHost(auditDataBackend):
     auditHardwareOnHostsIn, _, _ = fillBackendWithAuditHardwareOnHosts(auditDataBackend)
 
@@ -644,7 +631,6 @@ def test_deleteAuditHardwareOnHost(auditDataBackend):
     assert ahoh4 not in auditHardwareOnHostsOut
 
 
-@pytest.mark.requiresHwauditConfigFile
 def testAuditHardwareOnHostSetObsolete(auditDataBackend):
     auditHardwareOnHostsIn, _, clients = fillBackendWithAuditHardwareOnHosts(auditDataBackend)
 
