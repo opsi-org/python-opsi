@@ -1593,6 +1593,25 @@ class BoolProductProperty(ProductProperty):
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'BoolProductProperty')
 
+	def __unicode__(self):
+		attributes = [
+			'productId={0!r}'.format(self.productId),
+			'productVersion={0!r}'.format(self.productVersion),
+			'packageVersion={0!r}'.format(self.packageVersion),
+			'propertyId={0!r}'.format(self.propertyId),
+		]
+
+		for attribute in ('description',  'defaultValues'):
+			try:
+				value = getattr(self, attribute)
+				if value:
+					attributes.append('{0}={1!r}'.format(attribute, value))
+			except AttributeError:
+				pass
+
+		return u"<{klass}({0})>".format(', '.join(attributes),
+					klass=self.__class__.__name__)
+
 ProductProperty.subClasses['BoolProductProperty'] = BoolProductProperty
 
 
