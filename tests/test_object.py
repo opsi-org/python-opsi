@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
 # Copyright (C) 2013-2016 uib GmbH <info@uib.de>
@@ -31,7 +30,7 @@ from OPSI.Object import (AuditHardwareOnHost, Host, LocalbootProduct,
     OpsiConfigserver, OpsiDepotserver, Product, ProductDependency,
     UnicodeConfig, getPossibleClassAttributes, mandatoryConstructorArgs)
 
-from .helpers import mock, cleanMandatoryConstructorArgsCache
+from .helpers import cleanMandatoryConstructorArgsCache
 
 
 class GetPossibleClassAttributesTestCase(unittest.TestCase):
@@ -120,38 +119,38 @@ class OpsiConfigServerComparisonTestCase(unittest.TestCase):
 class LocalbootProductTestCase(unittest.TestCase):
     def testComparison(self):
         obj1 = LocalbootProduct(
-            id                 = 'product2',
-            name               = u'Product 2',
-            productVersion     = '2.0',
-            packageVersion     = 'test',
-            licenseRequired    = False,
-            setupScript        = "setup.ins",
-            uninstallScript    = u"uninstall.ins",
-            updateScript       = "update.ins",
-            alwaysScript       = None,
-            onceScript         = None,
-            priority           = 0,
-            description        = None,
-            advice             = "",
-            productClassIds    = ['localboot-products'],
-            windowsSoftwareIds = ['{98723-7898adf2-287aab}', 'xxxxxxxx']
+            id='product2',
+            name=u'Product 2',
+            productVersion='2.0',
+            packageVersion='test',
+            licenseRequired=False,
+            setupScript="setup.ins",
+            uninstallScript=u"uninstall.ins",
+            updateScript="update.ins",
+            alwaysScript=None,
+            onceScript=None,
+            priority=0,
+            description=None,
+            advice="",
+            productClassIds=['localboot-products'],
+            windowsSoftwareIds=['{98723-7898adf2-287aab}', 'xxxxxxxx']
         )
         obj2 = LocalbootProduct(
-            id                 = 'product2',
-            name               = u'Product 2',
-            productVersion     = '2.0',
-            packageVersion     = 'test',
-            licenseRequired    = False,
-            setupScript        = "setup.ins",
-            uninstallScript    = u"uninstall.ins",
-            updateScript       = "update.ins",
-            alwaysScript       = None,
-            onceScript         = None,
-            priority           = 0,
-            description        = None,
-            advice             = "",
-            productClassIds    = ['localboot-products'],
-            windowsSoftwareIds = ['xxxxxxxx', '{98723-7898adf2-287aab}']
+            id='product2',
+            name=u'Product 2',
+            productVersion='2.0',
+            packageVersion='test',
+            licenseRequired=False,
+            setupScript="setup.ins",
+            uninstallScript=u"uninstall.ins",
+            updateScript="update.ins",
+            alwaysScript=None,
+            onceScript=None,
+            priority=0,
+            description=None,
+            advice="",
+            productClassIds=['localboot-products'],
+            windowsSoftwareIds=['xxxxxxxx', '{98723-7898adf2-287aab}']
         )
 
         self.assertEquals(obj1, obj2)
