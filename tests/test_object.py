@@ -24,11 +24,14 @@ Testing OPSI.Objects
 
 from __future__ import absolute_import, print_function
 
+import pytest
 import unittest
 
-from OPSI.Object import (AuditHardwareOnHost, Host, LocalbootProduct,
-    OpsiConfigserver, OpsiDepotserver, Product, ProductDependency,
-    UnicodeConfig, getPossibleClassAttributes, mandatoryConstructorArgs)
+from OPSI.Object import (AuditHardwareOnHost, BoolProductProperty, Host,
+    LocalbootProduct, OpsiConfigserver, OpsiDepotserver, Product,
+    ProductDependency, ProductProperty, ProductPropertyState,
+    UnicodeConfig, UnicodeProductProperty,
+    getPossibleClassAttributes, mandatoryConstructorArgs)
 
 from .helpers import cleanMandatoryConstructorArgsCache
 
@@ -351,3 +354,45 @@ class ProductTestCase(unittest.TestCase):
 
         self.assertEqual(newName, nameFromProd)
         self.assertEqual(128, len(nameFromProd))
+
+
+@pytest.mark.parametrize("propertyClass", [ProductProperty, BoolProductProperty, UnicodeProductProperty])
+@pytest.mark.parametrize("requiredAttribute", ["description", "defaultValues"])
+def testProductPropertyShowsOptionalArgumentsInRepr(propertyClass, requiredAttribute):
+    additionalParam = {requiredAttribute: [True]}
+    prodProp = propertyClass('testprod', '1.0', '2', 'myproperty', **additionalParam)
+
+    r = repr(prodProp)
+    assert requiredAttribute in r
+    assert r.startswith('<')
+    assert r.endswith('>')
+
+
+@pytest.mark.parametrize("propertyClass", [ProductProperty, UnicodeProductProperty])
+@pytest.mark.parametrize("requiredAttribute", ["multiValue", "editable", "possibleValues"])
+def testProductPropertyShowsOptionalArgumentsInRepr2(propertyClass, requiredAttribute):
+    additionalParam = {requiredAttribute: [True]}
+    prodProp = propertyClass('testprod', '1.0', '2', 'myproperty', **additionalParam)
+
+    r = repr(prodProp)
+    assert requiredAttribute in r
+    assert r.startswith('<')
+    assert r.endswith('>')
+
+
+def testProductPropertyStateShowSelectedValues():
+    productId = 'testprod'
+    propertyId = 'myproperty'
+    objectId = 'testobject.foo.bar'
+    testValues = [1, 2, 3]
+    state = ProductPropertyState(productId, propertyId, objectId, values=testValues)
+
+    r = repr(state)
+    assert state.__class__.__name__ in r
+    assert productId in r
+    assert propertyId in r
+    assert objectId in r
+    assert 'values=' in r
+    assert repr(testValues) in r
+    assert r.startswith('<')
+    assert r.endswith('>')
