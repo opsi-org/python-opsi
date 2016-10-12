@@ -363,6 +363,7 @@ def testProductPropertyShowsOptionalArgumentsInRepr(propertyClass, requiredAttri
     prodProp = propertyClass('testprod', '1.0', '2', 'myproperty', **additionalParam)
 
     r = repr(prodProp)
+    print(r)
     assert requiredAttribute in r
     assert r.startswith('<')
     assert r.endswith('>')
@@ -375,6 +376,7 @@ def testProductPropertyShowsOptionalArgumentsInRepr2(propertyClass, requiredAttr
     prodProp = propertyClass('testprod', '1.0', '2', 'myproperty', **additionalParam)
 
     r = repr(prodProp)
+    print(r)
     assert requiredAttribute in r
     assert r.startswith('<')
     assert r.endswith('>')
@@ -388,6 +390,7 @@ def testProductPropertyStateShowSelectedValues():
     state = ProductPropertyState(productId, propertyId, objectId, values=testValues)
 
     r = repr(state)
+    print(r)
     assert state.__class__.__name__ in r
     assert productId in r
     assert propertyId in r
