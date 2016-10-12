@@ -204,11 +204,11 @@ class HelpfulErrorMessageWhenCreationFromHashFailsTestCase(unittest.TestCase):
     def testGettingHelpfulErrorMessageWithBaseclassRelationship(self):
         try:
             ProductDependency.fromHash({
-                    "productAction" : "setup",
-                    "requirementType" : "after",
-                    "requiredInstallationStatus" : "installed",
-                    "requiredProductId" : "mshotfix",
-                    "productId" : "msservicepack"
+                    "productAction": "setup",
+                    "requirementType": "after",
+                    "requiredInstallationStatus": "installed",
+                    "requiredProductId": "mshotfix",
+                    "productId": "msservicepack"
                     # The following attributes are missing:
                     # * productVersion
                     # * packageVersion
