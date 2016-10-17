@@ -357,10 +357,10 @@ This defaults to ``self``.
 
 		:returntype: dict
 		"""
-		modules = {}
+		modules = {'valid': False}
 		helpermodules = {}
+
 		try:
-			modules['valid'] = False
 			with codecs.open(self._opsiModulesFile, 'r', 'utf-8') as modulesFile:
 				for line in modulesFile:
 					line = line.strip()
