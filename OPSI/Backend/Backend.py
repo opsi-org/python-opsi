@@ -331,7 +331,7 @@ This defaults to ``self``.
 			else:
 				params = []
 
-			if defaults is not None and len(defaults) > 0:
+			if defaults is not None:
 				offset = len(params) - len(defaults)
 				for i in xrange(len(defaults)):
 					index = offset + i
