@@ -1492,7 +1492,7 @@ class ProductProperty(Entity):
 		for attribute in ('description',  'possibleValues',  'defaultValues',  'editable',  'multiValue'):
 			try:
 				value = getattr(self, attribute)
-				if value:
+				if value is not None:
 					attributes.append('{0}={1!r}'.format(attribute, value))
 			except AttributeError:
 				pass
@@ -1604,7 +1604,7 @@ class BoolProductProperty(ProductProperty):
 		for attribute in ('description',  'defaultValues'):
 			try:
 				value = getattr(self, attribute)
-				if value:
+				if value is not None:
 					attributes.append('{0}={1!r}'.format(attribute, value))
 			except AttributeError:
 				pass
@@ -2022,7 +2022,7 @@ class ProductPropertyState(Relationship):
 			'objectId={0!r}'.format(self.objectId),
 		]
 
-		if self.values:
+		if self.values is not None:
 			states.append('values={0!r}'.format(self.values))
 
 		return u"<{klass}({0})>".format(', '.join(states), klass=self.getType())
