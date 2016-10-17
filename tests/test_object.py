@@ -382,11 +382,17 @@ def testProductPropertyShowsOptionalArgumentsInRepr2(propertyClass, requiredAttr
     assert r.endswith('>')
 
 
-def testProductPropertyStateShowSelectedValues():
+@pytest.mark.parametrize("testValues", [
+    [1, 2, 3],
+    [False],
+    False,
+    [True],
+    True,
+])
+def testProductPropertyStateShowSelectedValues(testValues):
     productId = 'testprod'
     propertyId = 'myproperty'
     objectId = 'testobject.foo.bar'
-    testValues = [1, 2, 3]
     state = ProductPropertyState(productId, propertyId, objectId, values=testValues)
 
     r = repr(state)
