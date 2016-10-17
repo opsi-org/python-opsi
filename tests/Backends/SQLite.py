@@ -33,7 +33,7 @@ except ImportError:
 
 
 @contextmanager
-def getSQLiteBackend():
+def getSQLiteBackend(**backendOptions):
 	sqliteModule = pytest.importorskip("OPSI.Backend.SQLite")
 	SQLiteBackend = sqliteModule.SQLiteBackend
 
@@ -48,12 +48,11 @@ def getSQLiteBackend():
 	# 	'returnObjectsOnUpdateAndCreate':      False
 	# }
 	# licenseManagement = True
-	backend = SQLiteBackend(**SQLiteconfiguration)
-	backend.backend_createBase()
-	try:
-		yield backend
-	finally:
-		backend.backend_deleteBase()
+
+	optionsForBackend = SQLiteconfiguration
+	optionsForBackend.update(backendOptions)
+
+	yield SQLiteBackend(**optionsForBackend)
 
 
 @contextmanager

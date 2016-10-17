@@ -878,7 +878,41 @@ class SQLBackend(ConfigDataBackend):
 			self._sql.execute('CREATE INDEX `index_software_config_clientId` on `SOFTWARE_CONFIG` (`clientId`);')
 			self._sql.execute('CREATE INDEX `index_software_config_nvsla` on `SOFTWARE_CONFIG` (`name`, `version`, `subVersion`, `language`, `architecture`);')
 
-		# Hardware audit tables
+		self._createAuditHardwareTables()
+
+	def _createTableHost(self):
+		logger.debug(u'Creating table HOST')
+		table = u'''CREATE TABLE `HOST` (
+				`hostId` varchar(255) NOT NULL,
+				`type` varchar(30),
+				`description` varchar(100),
+				`notes` varchar(500),
+				`hardwareAddress` varchar(17),
+				`ipAddress` varchar(15),
+				`inventoryNumber` varchar(30),
+				`created` TIMESTAMP,
+				`lastSeen` TIMESTAMP,
+				`opsiHostKey` varchar(32),
+				`oneTimePassword` varchar(32),
+				`maxBandwidth` integer,
+				`depotLocalUrl` varchar(128),
+				`depotRemoteUrl` varchar(255),
+				`depotWebdavUrl` varchar(255),
+				`repositoryLocalUrl` varchar(128),
+				`repositoryRemoteUrl` varchar(255),
+				`networkAddress` varchar(31),
+				`isMasterDepot` bool,
+				`masterDepotId` varchar(255),
+				PRIMARY KEY (`hostId`)
+			) {0};'''.format(self._sql.getTableCreationOptions('HOST'))
+		logger.debug(table)
+		self._sql.execute(table)
+		self._sql.execute('CREATE INDEX `index_host_type` on `HOST` (`type`);')
+
+	def _createAuditHardwareTables(self):
+		tables = self._sql.getTables()
+		existingTables = set(tables.keys())
+
 		for (hwClass, values) in self._auditHardwareConfig.items():
 			logger.debug(u"Processing hardware class '%s'" % hwClass)
 			hardwareDeviceTableName = u'HARDWARE_DEVICE_{0}'.format(hwClass)
@@ -997,35 +1031,6 @@ class SQLBackend(ConfigDataBackend):
 			if hardwareConfigValuesProcessed or not hardwareConfigTableExists:
 				logger.debug(hardwareConfigTable)
 				self._sql.execute(hardwareConfigTable)
-
-	def _createTableHost(self):
-		logger.debug(u'Creating table HOST')
-		table = u'''CREATE TABLE `HOST` (
-				`hostId` varchar(255) NOT NULL,
-				`type` varchar(30),
-				`description` varchar(100),
-				`notes` varchar(500),
-				`hardwareAddress` varchar(17),
-				`ipAddress` varchar(15),
-				`inventoryNumber` varchar(30),
-				`created` TIMESTAMP,
-				`lastSeen` TIMESTAMP,
-				`opsiHostKey` varchar(32),
-				`oneTimePassword` varchar(32),
-				`maxBandwidth` integer,
-				`depotLocalUrl` varchar(128),
-				`depotRemoteUrl` varchar(255),
-				`depotWebdavUrl` varchar(255),
-				`repositoryLocalUrl` varchar(128),
-				`repositoryRemoteUrl` varchar(255),
-				`networkAddress` varchar(31),
-				`isMasterDepot` bool,
-				`masterDepotId` varchar(255),
-				PRIMARY KEY (`hostId`)
-			) {0};'''.format(self._sql.getTableCreationOptions('HOST'))
-		logger.debug(table)
-		self._sql.execute(table)
-		self._sql.execute('CREATE INDEX `index_host_type` on `HOST` (`type`);')
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Hosts
