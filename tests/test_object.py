@@ -369,6 +369,19 @@ def testProductPropertyShowsOptionalArgumentsInRepr(propertyClass, requiredAttri
     assert r.endswith('>')
 
 
+@pytest.mark.parametrize("propertyClass", [ProductProperty, BoolProductProperty, UnicodeProductProperty])
+@pytest.mark.parametrize("attributeName", ['description'])
+@pytest.mark.parametrize("attributeValue", [True, False, ''])
+def testProductPropertyRepresentationShowsValueIfNotNone(propertyClass, attributeName, attributeValue):
+    attrs = {attributeName: attributeValue}
+    prodProp = propertyClass('testprod', '1.0', '2', 'myproperty', **attrs)
+
+    r = repr(prodProp)
+    print(r)
+    assert '{0}='.format(attributeName) in r
+    assert repr(attributeValue) in r
+
+
 @pytest.mark.parametrize("propertyClass", [ProductProperty, UnicodeProductProperty])
 @pytest.mark.parametrize("requiredAttribute", ["multiValue", "editable", "possibleValues"])
 def testProductPropertyShowsOptionalArgumentsInRepr2(propertyClass, requiredAttribute):
