@@ -4,7 +4,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2010-2014 uib GmbH - http://www.uib.de/
+# Copyright (C) 2010-2016 uib GmbH - http://www.uib.de/
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -35,7 +35,7 @@ from Queue import Queue, Empty
 
 from OPSI.Logger import Logger
 
-__version__ = '4.0.6.1'
+__version__ = '4.1.1.1'
 
 logger = Logger()
 GlobalPool = None
@@ -141,10 +141,6 @@ class ThreadPool(object):
 				if len(self.worker) < self.size:
 					self.__createWorkers(num=self.size - len(self.worker))
 
-	def __deleteWorker(self, wait=False):
-		logger.debug(u"Deleting a worker")
-		self.__deleteWorkers(1, wait=wait)
-
 	def __deleteWorkers(self, num, wait=False):
 		logger.debug(u"Deleting %d workers" % num)
 		deleteWorkers = set()
@@ -169,10 +165,6 @@ class ThreadPool(object):
 		self.worker = [worker for worker in self.worker if worker not in deleteWorkers]
 		if wait:
 			[worker.join(60) for worker in deleteWorkers]
-
-	def __createWorker(self):
-		logger.debug(u"Creating new worker {0}", len(self.worker) + 1)
-		self.__createWorkers(1)
 
 	def __createWorkers(self, num):
 		logger.debug(u"Creating {n} new workers", n=num)
