@@ -362,7 +362,7 @@ This defaults to ``self``.
 		try:
 			modules['valid'] = False
 			with codecs.open(self._opsiModulesFile, 'r', 'utf-8') as f:
-				for line in f.readlines():
+				for line in f:
 					line = line.strip()
 					if '=' not in line:
 						logger.error(u"Found bad line '%s' in modules file '%s'" % (line, self._opsiModulesFile))
