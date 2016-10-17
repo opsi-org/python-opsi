@@ -361,8 +361,8 @@ This defaults to ``self``.
 		helpermodules = {}
 		try:
 			modules['valid'] = False
-			with codecs.open(self._opsiModulesFile, 'r', 'utf-8') as f:
-				for line in f:
+			with codecs.open(self._opsiModulesFile, 'r', 'utf-8') as modulesFile:
+				for line in modulesFile:
 					line = line.strip()
 					if '=' not in line:
 						logger.error(u"Found bad line '%s' in modules file '%s'" % (line, self._opsiModulesFile))
