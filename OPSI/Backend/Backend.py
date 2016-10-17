@@ -361,31 +361,31 @@ This defaults to ``self``.
 		helpermodules = {}
 		try:
 			modules['valid'] = False
-			f = codecs.open(self._opsiModulesFile, 'r', 'utf-8')
-			for line in f.readlines():
-				line = line.strip()
-				if '=' not in line:
-					logger.error(u"Found bad line '%s' in modules file '%s'" % (line, self._opsiModulesFile))
-					continue
-				(module, state) = line.split('=', 1)
-				module = module.strip().lower()
-				state = state.strip()
-				if module in ('signature', 'customer', 'expires'):
-					modules[module] = state
-					continue
-				state = state.lower()
-				if state not in ('yes', 'no'):
-					try:
-						helpermodules[module] = state
-						state = int(state)
-					except ValueError:
+			with codecs.open(self._opsiModulesFile, 'r', 'utf-8') as f:
+				for line in f.readlines():
+					line = line.strip()
+					if '=' not in line:
 						logger.error(u"Found bad line '%s' in modules file '%s'" % (line, self._opsiModulesFile))
 						continue
-				if isinstance(state, int):
-					modules[module] = (state > 0)
-				else:
-					modules[module] = (state == 'yes')
-			f.close()
+					(module, state) = line.split('=', 1)
+					module = module.strip().lower()
+					state = state.strip()
+					if module in ('signature', 'customer', 'expires'):
+						modules[module] = state
+						continue
+					state = state.lower()
+					if state not in ('yes', 'no'):
+						try:
+							helpermodules[module] = state
+							state = int(state)
+						except ValueError:
+							logger.error(u"Found bad line '%s' in modules file '%s'" % (line, self._opsiModulesFile))
+							continue
+					if isinstance(state, int):
+						modules[module] = (state > 0)
+					else:
+						modules[module] = (state == 'yes')
+
 			if not modules.get('signature'):
 				modules = {'valid': False}
 				raise Exception(u"Signature not found")
