@@ -326,10 +326,7 @@ This defaults to ``self``.
 				continue
 
 			args, varargs, keywords, defaults = inspect.getargspec(function)
-			if args:
-				params = [arg for arg in forceList(args) if arg != 'self']
-			else:
-				params = []
+			params = [arg for arg in args if arg != 'self']
 
 			if defaults is not None:
 				offset = len(params) - len(defaults)
