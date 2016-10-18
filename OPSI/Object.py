@@ -48,7 +48,7 @@ from OPSI.Types import (forceActionProgress, forceActionRequest,
 	forceUnicodeList, forceUnicodeLower, forceUnsignedInt, forceUrl)
 from OPSI.Util import fromJson, toJson, generateOpsiHostKey, timestamp
 
-__version__ = '4.0.7.20'
+__version__ = '4.0.7.27'
 
 logger = Logger()
 _MANDATORY_CONSTRUCTOR_ARGS_CACHE = {}
@@ -2023,7 +2023,7 @@ class Group(Object):
 		return fromJson(jsonString, 'Group')
 
 	def __unicode__(self):
-		return (u"<{klass}(id={id!r} parentGroupId={parentId!r}>".format(
+		return (u"<{klass}(id={id!r}, parentGroupId={parentId!r}>".format(
 				klass=self.getType(), id=self.id, parentId=self.parentGroupId))
 
 Object.subClasses['Group'] = Group
