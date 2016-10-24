@@ -1482,23 +1482,22 @@ class ProductProperty(Entity):
 		return fromJson(jsonString, 'ProductProperty')
 
 	def __unicode__(self):
-		attributes = [
-			'productId={0!r}'.format(self.productId),
-			'productVersion={0!r}'.format(self.productVersion),
-			'packageVersion={0!r}'.format(self.packageVersion),
-			'propertyId={0!r}'.format(self.propertyId),
-		]
+		def getAttributes():
+			yield 'productId={0!r}'.format(self.productId)
+			yield 'productVersion={0!r}'.format(self.productVersion)
+			yield 'packageVersion={0!r}'.format(self.packageVersion)
+			yield 'propertyId={0!r}'.format(self.propertyId)
 
-		for attribute in ('description',  'possibleValues',  'defaultValues',  'editable',  'multiValue'):
-			try:
-				value = getattr(self, attribute)
-				if value is not None:
-					attributes.append('{0}={1!r}'.format(attribute, value))
-			except AttributeError:
-				pass
+			for attribute in ('description',  'possibleValues',  'defaultValues',  'editable',  'multiValue'):
+				try:
+					value = getattr(self, attribute)
+					if value is not None:
+						yield '{0}={1!r}'.format(attribute, value)
+				except AttributeError:
+					pass
 
-		return u"<{klass}({0})>".format(', '.join(attributes),
-					klass=self.__class__.__name__)
+		return u"<{klass}({0})>".format(', '.join(getAttributes()),
+										klass=self.__class__.__name__)
 
 Entity.subClasses['ProductProperty'] = ProductProperty
 
@@ -1594,23 +1593,22 @@ class BoolProductProperty(ProductProperty):
 		return fromJson(jsonString, 'BoolProductProperty')
 
 	def __unicode__(self):
-		attributes = [
-			'productId={0!r}'.format(self.productId),
-			'productVersion={0!r}'.format(self.productVersion),
-			'packageVersion={0!r}'.format(self.packageVersion),
-			'propertyId={0!r}'.format(self.propertyId),
-		]
+		def getAttributes():
+			yield 'productId={0!r}'.format(self.productId)
+			yield 'productVersion={0!r}'.format(self.productVersion)
+			yield 'packageVersion={0!r}'.format(self.packageVersion)
+			yield 'propertyId={0!r}'.format(self.propertyId)
 
-		for attribute in ('description',  'defaultValues'):
-			try:
-				value = getattr(self, attribute)
-				if value is not None:
-					attributes.append('{0}={1!r}'.format(attribute, value))
-			except AttributeError:
-				pass
+			for attribute in ('description',  'defaultValues'):
+				try:
+					value = getattr(self, attribute)
+					if value is not None:
+						yield '{0}={1!r}'.format(attribute, value)
+				except AttributeError:
+					pass
 
-		return u"<{klass}({0})>".format(', '.join(attributes),
-					klass=self.__class__.__name__)
+		return u"<{klass}({0})>".format(', '.join(getAttributes()),
+										klass=self.__class__.__name__)
 
 ProductProperty.subClasses['BoolProductProperty'] = BoolProductProperty
 
@@ -2016,16 +2014,16 @@ class ProductPropertyState(Relationship):
 		return fromJson(jsonString, 'ProductPropertyState')
 
 	def __unicode__(self):
-		states = [
-			'productId={0!r}'.format(self.productId),
-			'propertyId={0!r}'.format(self.propertyId),
-			'objectId={0!r}'.format(self.objectId),
-		]
+		def getAttributes():
+			yield 'productId={0!r}'.format(self.productId)
+			yield 'propertyId={0!r}'.format(self.propertyId)
+			yield 'objectId={0!r}'.format(self.objectId)
 
-		if self.values is not None:
-			states.append('values={0!r}'.format(self.values))
+			if self.values is not None:
+				yield 'values={0!r}'.format(self.values)
 
-		return u"<{klass}({0})>".format(', '.join(states), klass=self.getType())
+		return u"<{klass}({0})>".format(', '.join(getAttributes()),
+										klass=self.getType())
 
 Relationship.subClasses['ProductPropertyState'] = ProductPropertyState
 
