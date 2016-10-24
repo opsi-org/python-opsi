@@ -1488,7 +1488,15 @@ class ProductProperty(Entity):
 			yield 'packageVersion={0!r}'.format(self.packageVersion)
 			yield 'propertyId={0!r}'.format(self.propertyId)
 
-			for attribute in ('description',  'possibleValues',  'defaultValues',  'editable',  'multiValue'):
+			for attribute in ('description', 'defaultValues', 'possibleValues'):
+				try:
+					value = getattr(self, attribute)
+					if value:
+						yield '{0}={1!r}'.format(attribute, value)
+				except AttributeError:
+					pass
+
+			for attribute in ('editable', 'multiValue'):
 				try:
 					value = getattr(self, attribute)
 					if value is not None:
@@ -1599,10 +1607,10 @@ class BoolProductProperty(ProductProperty):
 			yield 'packageVersion={0!r}'.format(self.packageVersion)
 			yield 'propertyId={0!r}'.format(self.propertyId)
 
-			for attribute in ('description',  'defaultValues'):
+			for attribute in ('description', 'defaultValues'):
 				try:
 					value = getattr(self, attribute)
-					if value is not None:
+					if value:
 						yield '{0}={1!r}'.format(attribute, value)
 				except AttributeError:
 					pass
