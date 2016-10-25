@@ -1,34 +1,31 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+
+# This module is part of the desktop management solution opsi
+# (open pc server integration) http://www.opsi.org
+
+# Copyright (C) 2006-2016 uib GmbH <info@uib.de>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-opsi python library - File.Opsi
+Utilites to handle files specific to opsi.
 
-This module is part of the desktop management solution opsi
-(open pc server integration) http://www.opsi.org
-
-Copyright (C) 2006-2016 uib GmbH
-
-http://www.uib.de/
-
-All rights reserved.
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License version 2 as
-published by the Free Software Foundation.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 :copyright: uib GmbH <info@uib.de>
 :author: Jan Schneider <j.schneider@uib.de>
 :author: Niko Wenselowski <n.wenselowski@uib.de>
-:license: GNU General Public License version 2
+:license: GNU Affero General Public License version 3
 """
 
 import bz2
@@ -46,31 +43,26 @@ from contextlib import closing
 from hashlib import sha1
 from subprocess import Popen, PIPE, STDOUT
 
-if os.name == 'posix':
-	import fcntl
-	import grp
-	import pwd
-	from OPSI.System.Posix import SysInfo
-elif os.name == 'nt':
-	import win32con
-	import win32file
-	import pywintypes
-
 import OPSI.System
 from OPSI.Logger import Logger
 from OPSI.Object import BoolProductProperty, LocalbootProduct, NetbootProduct, Product, ProductDependency, ProductProperty, UnicodeProductProperty
 from OPSI.Types import (BackendBadValueError, OpsiBackupBackendNotFound,
 	OpsiBackupFileError, OpsiBackupFileNotFound, forceActionRequest, forceBool,
 	forceDictList, forceFilename, forceHostId, forceInstallationStatus,
-	forceInt, forceList, forceObjectClass, forceObjectClassList,
-	forceOpsiHostKey, forcePackageVersion, forceProductId,
-	forceProductPriority, forceProductPropertyType, forceProductType,
-	forceProductVersion, forceRequirementType, forceUnicode, forceUnicodeList,
-	forceUnicodeLower)
+	forceList, forceObjectClass, forceObjectClassList, forceOpsiHostKey,
+	forcePackageVersion, forceProductId, forceProductPriority,
+	forceProductPropertyType, forceProductType, forceProductVersion,
+	forceRequirementType, forceUnicode, forceUnicodeList, forceUnicodeLower)
 from OPSI.Util.File import ConfigFile, IniFile, TextFile, requiresParsing
 from OPSI.Util import md5sum, toJson, fromJson
 
-__version__ = '4.0.7.1'
+if os.name == 'posix':
+	import fcntl
+	import grp
+	import pwd
+	from OPSI.System.Posix import SysInfo
+
+__version__ = '4.0.7.19'
 
 logger = Logger()
 
@@ -1164,6 +1156,10 @@ class OpsiBackupArchive(tarfile.TarFile):
 			for entry in os.listdir(path):
 				self._addContent(os.path.join(path, entry), sub=sub)
 		else:
+			if not os.path.exists(path):
+				logger.info(u"{0} does not exist. Skipping.", path)
+				return
+
 			checksum = sha1()
 
 			with open(path) as f:
@@ -1330,7 +1326,9 @@ class OpsiBackupArchive(tarfile.TarFile):
 			if not auto or backend["dispatch"]:
 				if not backend["dispatch"]:
 					logger.warning("Backing up backend %s although it's currently not in use." % backend["name"])
-				self._addContent(backend["config"]['dhcpdConfigFile'], sub=(os.path.dirname(backend["config"]['dhcpdConfigFile']), "BACKENDS/DHCP/%s" % backend["name"]))
+
+				dhcpdConfigFile = backend["config"]['dhcpdConfigFile']
+				self._addContent(dhcpdConfigFile, sub=(os.path.dirname(dhcpdConfigFile), "BACKENDS/DHCP/%s" % backend["name"]))
 
 	def hasDHCPBackend(self, name=None):
 		return self._hasBackend("DHCP", name=name)
