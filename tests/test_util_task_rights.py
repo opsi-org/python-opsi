@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
 # Copyright (C) 2014-2016 uib GmbH <info@uib.de>
@@ -32,14 +31,15 @@ import pwd
 from contextlib import contextmanager
 from collections import defaultdict
 
+import pytest
+
 from OPSI.Util.Task.Rights import (chown, getDepotDirectory,
     getDirectoriesAndExpectedRights, getWebserverRepositoryPath,
     getWebserverUsernameAndGroupname, filterDirsAndRights,
     setRightsOnSSHDirectory, setRightsOnFile)
 
-from .helpers import mock, unittest, workInTemporaryDirectory
+from .helpers import mock, workInTemporaryDirectory
 
-import pytest
 
 OS_CHECK_FUNCTIONS = ['isRHEL', 'isCentOS', 'isSLES', 'isOpenSUSE', 'isUbuntu', 'isDebian', 'isUCS']
 
@@ -133,85 +133,94 @@ def testDepotPathMayWillBeReturned(depotDirectory):
     assert depotDir == '/var/lib/opsi/depot'
 
 
-class ChownTestCase(unittest.TestCase):
+@pytest.fixture
+def currentUserId():
+    yield os.getuid()
 
-    def testChangingOwnership(self):
-        try:
-            groupId = os.getgid()
-            userId = os.getuid()
-        except Exception as exc:
-            print("Could not get uid/guid: {0}".format(exc))
-            self.skipTest("Could not get uid/guid: {0}".format(exc))
 
-        print("Current group ID: {0}".format(groupId))
-        print("Current user ID: {0}".format(userId))
-        isRoot = os.geteuid() == 0
+@pytest.fixture
+def nonRootUserId():
+    userId = os.getuid()
+    isRoot = os.geteuid() == 0
 
-        for gid in range(2, 60000):
+    if isRoot:
+        for uid in range(2, 60000):
             try:
-                grp.getgrgid(gid)
-                changedGid = gid
+                pwd.getpwuid(uid)
+                changedUid = uid
                 break
             except KeyError:
                 pass
         else:
-            self.skipTest("No group for test found. Aborting.")
+            pytest.skip("No userId for test found. Aborting.")
 
-        if groupId == changedGid:
-            self.skipTest("Could not find another group.")
+        if userId == changedUid:
+            pytest.skip("Could not find another user.")
 
-        if isRoot:
-            for uid in range(2, 60000):
-                try:
-                    pwd.getpwuid(uid)
-                    changedUid = uid
-                    break
-                except KeyError:
-                    pass
+        return changedUid
+    else:
+        return -1
+
+
+@pytest.fixture
+def currentGroupId():
+    yield os.getgid()
+
+
+@pytest.fixture
+def nonRootGroupId(currentGroupId):
+    for gid in range(2, 60000):
+        try:
+            grp.getgrgid(gid)
+            if currentGroupId == gid:
+                # We do not want to use the same group ID.
+                continue
+
+            return gid
+        except KeyError:
+            pass
+    else:
+        pytest.skip("No group for test found. Aborting.")
+
+
+def testChangingOwnershipWithOurChown(currentUserId, nonRootUserId, currentGroupId, nonRootGroupId):
+    isRoot = os.geteuid() == 0
+    with workInTemporaryDirectory() as tempDir:
+        original = os.path.join(tempDir, 'original')
+        with open(original, 'w'):
+            pass
+
+        linkfile = os.path.join(tempDir, 'linkfile')
+        os.symlink(original, linkfile)
+        assert os.path.islink(linkfile)
+
+        # Changing the uid/gid to something different
+        os.chown(original, nonRootUserId, nonRootGroupId)
+        os.lchown(linkfile, nonRootUserId, nonRootGroupId)
+
+        for filename in (original, linkfile):
+            if os.path.islink(filename):
+                stat = os.lstat(filename)
             else:
-                self.skipTest("No userId for test found. Aborting.")
+                stat = os.stat(linkfile)
 
-            if userId == changedUid:
-                self.skipTest("Could not find another user.")
-        else:
-            changedUid = -1
+            assert nonRootGroupId == stat.st_gid
+            if not isRoot:
+                assert nonRootUserId == stat.st_uid
 
-        with workInTemporaryDirectory() as tempDir:
-            original = os.path.join(tempDir, 'original')
-            with open(original, 'w'):
-                pass
+        # Correcting the uid/gid
+        chown(linkfile, currentUserId, currentGroupId)
+        chown(original, currentUserId, currentGroupId)
 
-            linkfile = os.path.join(tempDir, 'linkfile')
-            os.symlink(original, linkfile)
-            self.assertTrue(os.path.islink(linkfile))
+        for filename in (original, linkfile):
+            if os.path.islink(filename):
+                stat = os.lstat(filename)
+            else:
+                stat = os.stat(linkfile)
 
-            # Changing the uid/gid to something different
-            os.chown(original, changedUid, changedGid)
-            os.lchown(linkfile, changedUid, changedGid)
-
-            for filename in (original, linkfile):
-                if os.path.islink(filename):
-                    stat = os.lstat(filename)
-                else:
-                    stat = os.stat(linkfile)
-
-                self.assertEquals(changedGid, stat.st_gid)
-                if not isRoot:
-                    self.assertEquals(changedUid, stat.st_uid)
-
-            # Correcting the uid/gid
-            chown(linkfile, userId, groupId)
-            chown(original, userId, groupId)
-
-            for filename in (original, linkfile):
-                if os.path.islink(filename):
-                    stat = os.lstat(filename)
-                else:
-                    stat = os.stat(linkfile)
-
-                self.assertEquals(groupId, stat.st_gid)
-                if not isRoot:
-                    self.assertEquals(userId, stat.st_uid)
+            assert currentGroupId == stat.st_gid
+            if not isRoot:
+                assert currentUserId == stat.st_uid
 
 
 def testGettingDirectoriesAndRights(patchUserInfo):
