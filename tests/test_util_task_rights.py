@@ -168,10 +168,14 @@ def currentGroupId():
 
 
 @pytest.fixture
-def nonRootGroupId():
+def nonRootGroupId(currentGroupId):
     for gid in range(2, 60000):
         try:
             grp.getgrgid(gid)
+            if currentGroupId == gid:
+                # We do not want to use the same group ID.
+                continue
+
             return gid
         except KeyError:
             pass
@@ -180,10 +184,6 @@ def nonRootGroupId():
 
 
 def testChangingOwnershipWithOurChown(currentUserId, nonRootUserId, currentGroupId, nonRootGroupId):
-    if currentGroupId == nonRootGroupId:
-        pytest.skip("This test requires to use a different GID, "
-                    "but has been provided the same GIDs.")
-
     isRoot = os.geteuid() == 0
     with workInTemporaryDirectory() as tempDir:
         original = os.path.join(tempDir, 'original')
