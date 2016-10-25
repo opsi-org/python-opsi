@@ -484,12 +484,35 @@ class BackupArchiveTest(unittest.TestCase):
                     archive.close()
 
                     os.remove(dhcpConfigFile)
+                    break
+                else:
+                    raise RuntimeError("No DHCPD backend configured!")
 
             with getOpsiBackupArchive(name=archiveName, mode="r", tempdir=tempDir) as backup:
                 backup.restoreDHCPBackend()
                 md5OfRestoredFile = md5sum(dhcpConfigFile)
 
             self.assertEqual(md5OfOriginalFile, md5OfRestoredFile)
+
+    def testBackupDHCPBackendDoesNotFailIfConfigFileIsMissing(self):
+        with workInTemporaryDirectory() as tempDir:
+            with getOpsiBackupArchive(tempdir=tempDir, keepArchive=True) as archive:
+
+                archiveName = archive.name
+
+                for backend in archive._getBackends("dhcpd"):
+                    dhcpConfigFile = backend['config']['dhcpdConfigFile']
+                    os.remove(dhcpConfigFile)
+                    break
+                else:
+                    raise RuntimeError("No DHCPD backend configured!")
+
+                archive.backupDHCPBackend()
+                archive.close()
+
+            with getOpsiBackupArchive(name=archiveName, mode="r", tempdir=tempDir) as backup:
+                assert not backup.hasDHCPBackend()
+                self.assertRaises(OpsiBackupBackendNotFound, backup.restoreDHCPBackend)
 
     def testBackupHasDHCPDBackend(self):
         with workInTemporaryDirectory() as tempDir:
