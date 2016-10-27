@@ -54,6 +54,7 @@ logger = Logger()
 
 USE_BUFFERED_RESPONSE = "__USE_BUFFERED_RESPONSE__"
 
+
 class RemoteArgument(Argument):
 
 	def toString(self, obj):
@@ -62,8 +63,10 @@ class RemoteArgument(Argument):
 	def fromString(self, str):
 		return loads(str)
 
+
 class RemoteExecutionException(Exception):
 	pass
+
 
 class OpsiProcessException(Exception):
 
@@ -80,43 +83,61 @@ class OpsiProcessException(Exception):
 		self.failure = Failure()
 		self.failure.__setstate__(state)
 
+
 class RemoteProcessCall(Command):
 
-	arguments = [	('name', String()),
-			('argString', String()),
-			('tag', Integer())]
+	arguments = [
+		('name', String()),
+		('argString', String()),
+		('tag', Integer())
+	]
 
-	response = [	('tag', Integer()),
-			('result', RemoteArgument())]
+	response = [
+		('tag', Integer()),
+		('result', RemoteArgument())
+	]
 
-	errors = {	RemoteExecutionException: 'RemoteExecutionError',
-			OpsiProcessException: 'OpsiProcessError'}
+	errors = {
+		RemoteExecutionException: 'RemoteExecutionError',
+		OpsiProcessException: 'OpsiProcessError'
+	}
 
 	requiresAnswer = True
+
 
 class ChunkedArgument(Command):
 
-	arguments = [	('tag', Integer()),
-			('chunk', String())]
+	arguments = [
+		('tag', Integer()),
+		('chunk', String())
+	]
 
 	response = [('result', Integer())]
 
-	errors = {	RemoteExecutionException: 'RemoteExecutionError',
-			OpsiProcessException: 'OpsiProcessError'}
+	errors = {
+		RemoteExecutionException: 'RemoteExecutionError',
+		OpsiProcessException: 'OpsiProcessError'
+	}
 
 	requiresAnswer = True
+
 
 class ResponseBufferPush(Command):
 
-	arguments = [	('tag', Integer()),
-			('chunk', String())]
+	arguments = [
+		('tag', Integer()),
+		('chunk', String())
+	]
 
 	response = [('result', Integer())]
 
-	errors = {	RemoteExecutionException: 'RemoteExecutionError',
-			OpsiProcessException: 'OpsiProcessError'}
+	errors = {
+		RemoteExecutionException: 'RemoteExecutionError',
+		OpsiProcessException: 'OpsiProcessError'
+	}
 
 	requiresAnswer = True
+
 
 class OpsiProcessAddress(UNIXAddress):
 
@@ -131,7 +152,7 @@ class OpsiProcessAddress(UNIXAddress):
 		return os.path.join(self.dir, self._name+".socket")
 
 	def generateUniqueName(self):
-		return os.path.join(self.dir, "%s-%s.socket" %(self._name, randomString(32)))
+		return os.path.join(self.dir, "%s-%s.socket" % (self._name, randomString(32)))
 
 
 class OpsiQueryingProtocol(AMP):
@@ -143,7 +164,7 @@ class OpsiQueryingProtocol(AMP):
 		self.dataSink = None
 
 	def getNextTag(self):
-		self.tag = self.tag +1
+		self.tag = self.tag + 1
 		return self.tag
 
 	def openDataSink(self, address):
@@ -155,14 +176,12 @@ class OpsiQueryingProtocol(AMP):
 			raise e
 
 	def closeDataSink(self):
-
 		self.dataSink.factory.stopTrying()
 		if self.dataSink is not None:
 			self.dataSink.loseConnection()
 			self.dataSink = None
 
 	def _callRemote(self, command, **kwargs):
-
 		deferred = Deferred()
 
 		def p(response):
@@ -172,11 +191,10 @@ class OpsiQueryingProtocol(AMP):
 		return deferred
 
 	def sendRemoteCall(self, method, args=[], kwargs={}):
-
 		d = Deferred()
 		result = Deferred()
 
-		argString = dumps((args,kwargs), HIGHEST_PROTOCOL)
+		argString = dumps((args, kwargs), HIGHEST_PROTOCOL)
 		tag = self.getNextTag()
 
 		chunks = [argString[i:i + MAX_VALUE_LENGTH] for i in xrange(0, len(argString), MAX_VALUE_LENGTH)]
@@ -199,9 +217,9 @@ class OpsiQueryingProtocol(AMP):
 		self.responseBuffer.setdefault(tag, StringIO.StringIO()).write(chunk)
 		return {'result': tag}
 
-
-	def getResponseBuffer(self,tag):
+	def getResponseBuffer(self, tag):
 		return self.responseBuffer.pop(tag)
+
 
 class OpsiResponseProtocol(AMP):
 
@@ -232,7 +250,6 @@ class OpsiResponseProtocol(AMP):
 
 		method = getattr(self.factory._remote, name, None)
 
-
 		if method is None:
 			raise RemoteExecutionException(u"Daemon has no method %s" % (name))
 		rd = Deferred()
@@ -245,13 +262,12 @@ class OpsiResponseProtocol(AMP):
 		return rd
 
 	def processResult(self, result, tag):
-
 		r = dumps(result, HIGHEST_PROTOCOL)
 		chunks = [r[i:i + MAX_VALUE_LENGTH] for i in xrange(0, len(r), MAX_VALUE_LENGTH)]
 		dd = Deferred()
 
 		def handleConnectionFailure(fail):
-			logger.error(u"Failed to connect to socket %s: %s" %(self.factory._dataport, fail.getErrorMessage()))
+			logger.error(u"Failed to connect to socket %s: %s" % (self.factory._dataport, fail.getErrorMessage()))
 			return fail
 
 		if len(chunks) > 1:
@@ -273,7 +289,7 @@ class OpsiResponseProtocol(AMP):
 			dd.addCallback(lambda x: {"tag": tag, "result": USE_BUFFERED_RESPONSE})
 
 		else:
-			dd.addCallback(lambda x: {"tag": tag, "result":result})
+			dd.addCallback(lambda x: {"tag": tag, "result": result})
 		dd.addBoth(self.closeDataPort)
 		dd.callback(None)
 		return dd
@@ -284,11 +300,9 @@ class OpsiResponseProtocol(AMP):
 		buffer.write(chunk)
 		return {'result': tag}
 
-
 	def processFailure(self, failure):
 		logger.logFailure(failure, logLevel=LOG_DEBUG)
 		raise OpsiProcessException(failure)
-
 
 
 class OpsiProcessProtocol(OpsiQueryingProtocol, OpsiResponseProtocol):
@@ -301,7 +315,7 @@ class OpsiProcessProtocolFactory(ReconnectingClientFactory):
 
 	protocol = OpsiProcessProtocol
 
-	def __init__(self, remote=None, dataport = None, reactor=reactor):
+	def __init__(self, remote=None, dataport=None, reactor=reactor):
 		self._remote = remote
 		self._dataport = dataport
 		self._protocol = None
@@ -319,7 +333,7 @@ class OpsiProcessProtocolFactory(ReconnectingClientFactory):
 		self._notifiers.append((callback, errback))
 
 	def removeNotifier(self, callback, errback=None):
-		if (callback,errback) in self._notifiers:
+		if (callback, errback) in self._notifiers:
 			self._notifiers.remove((callback, errback))
 
 	def notifySuccess(self, *args, **kwargs):
@@ -332,10 +346,10 @@ class OpsiProcessProtocolFactory(ReconnectingClientFactory):
 				self._reactor.callLater(0, errback, failure)
 
 	def clientConnectionFailed(self, connector, reason):
-		ReconnectingClientFactory.clientConnectionFailed(self, connector,
-							 reason)
+		ReconnectingClientFactory.clientConnectionFailed(self, connector, reason)
+
 		if self.maxRetries is not None and (self.retries > self.maxRetries):
-			self.notifyFailure(reason) # Give up
+			self.notifyFailure(reason)  # Give up
 
 	def shutdown(self):
 		self.stopTrying()
@@ -347,12 +361,11 @@ class OpsiProcessProtocolFactory(ReconnectingClientFactory):
 			if self._protocol.dataSink:
 				self._protocol.closeDataSink()
 
+
 class RemoteDaemonProxy(object):
 
 	def __init__(self, protocol):
-
 		self._protocol = protocol
-
 		self._dataport = None
 
 	def __getattr__(self, method):
@@ -377,7 +390,6 @@ class RemoteDaemonProxy(object):
 
 					result.callback(obj)
 				else:
-
 					result.callback(r)
 
 			def processFailure(failure):
@@ -394,9 +406,11 @@ class RemoteDaemonProxy(object):
 						result.errback(failure)
 				else:
 					result.errback(failure)
-			d = self._protocol.sendRemoteCall(	method=method,
-								args=args,
-								kwargs=kwargs)
+			d = self._protocol.sendRemoteCall(
+				method=method,
+				args=args,
+				kwargs=kwargs
+			)
 			d.addCallback(processResponse)
 			d.addErrback(processFailure)
 			return result
@@ -404,6 +418,7 @@ class RemoteDaemonProxy(object):
 
 	def attachDataPort(self, dataport):
 		self._dataport = dataport
+
 
 class OpsiProcessConnector(object):
 
@@ -430,18 +445,17 @@ class OpsiProcessConnector(object):
 			self._connectDataPort()
 			d.callback(self._remote)
 
-
 		def failure(fail):
 			self._factory.removeNotifier(success, failure)
 			d, self._connected = self._connected, None
 			d.errback(fail)
 
-		self._factory = self.factory(reactor = self._reactor)
+		self._factory = self.factory(reactor=self._reactor)
 		try:
 			self._reactor.connectUNIX(self._socket, self._factory)
 			self._factory.addNotifier(success, failure)
 		except Exception as e:
-			logger.error(u"Failed to connect to socket %s: %s"(self._socket,e))
+			logger.error(u"Failed to connect to socket %s: %s"(self._socket, e))
 			self._connected.errback(Failure())
 
 		return self._connected
@@ -451,7 +465,6 @@ class OpsiProcessConnector(object):
 		f.addNotifier(self._remote.attachDataPort)
 		self._dataport = self._reactor.listenUNIX("%s.dataport" % self._socket, f)
 		return self._dataport
-
 
 	def connectionFailed(self, reason):
 		d, self._connected = self._connected, None
