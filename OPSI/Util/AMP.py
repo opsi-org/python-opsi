@@ -192,7 +192,6 @@ class OpsiQueryingProtocol(AMP):
 
 	def sendRemoteCall(self, method, args=[], kwargs={}):
 		d = Deferred()
-		result = Deferred()
 
 		argString = dumps((args, kwargs), HIGHEST_PROTOCOL)
 		tag = self.getNextTag()
