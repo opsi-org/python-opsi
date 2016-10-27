@@ -41,7 +41,7 @@ from twisted.internet.address import UNIXAddress
 from twisted.protocols.amp import Argument, String, Integer, Command, AMP, MAX_VALUE_LENGTH
 from twisted.python.failure import Failure
 
-from OPSI.Logger import *
+from OPSI.Logger import LOG_DEBUG, Logger
 from OPSI.Util import randomString
 
 try:
