@@ -6,7 +6,7 @@
    (open pc server integration) http://www.opsi.org
 
    Copyright (C) 2010 Andrey Petrov
-   Copyright (C) 2010 uib GmbH
+   Copyright (C) 2010-2016 uib GmbH
 
    http://www.uib.de/
 
@@ -31,17 +31,15 @@
 """
 
 from twisted.internet import reactor
-from twisted.internet.task import deferLater
 from twisted.internet.protocol import ReconnectingClientFactory, ClientCreator
-from twisted.internet.defer import DeferredList, maybeDeferred, Deferred, succeed
-from twisted.internet.unix import Connector
+from twisted.internet.defer import maybeDeferred, Deferred, succeed
 from twisted.internet.address import UNIXAddress
-from twisted.protocols.amp import Argument, String, Integer, Boolean, Command, AMP, MAX_VALUE_LENGTH
+from twisted.protocols.amp import Argument, String, Integer, Command, AMP, MAX_VALUE_LENGTH
 from twisted.python.failure import Failure
 
 import os
 from pickle import dumps, loads, HIGHEST_PROTOCOL
-from types import StringType, StringTypes
+from types import StringType
 from OPSI.Logger import *
 from OPSI.Util import randomString
 logger = Logger()
