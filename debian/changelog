@@ -14,6 +14,7 @@ python-opsi (4.1.1-1) UNRELEASED; urgency=medium
     a custom implementation.
   * Removed unsupported backends: Cache, Multiplex, LDAP.
   * ThreadPool: removed functions __createWorker & __deleteWorker.
+  * Removed unused function OPSI.Util.flattenSequence.
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 04 Oct 2016 16:15:11 +0200
 

@@ -37,11 +37,11 @@ from contextlib import contextmanager
 
 from OPSI.Object import LocalbootProduct, OpsiClient
 from OPSI.Util import (chunk, compareVersions, decryptWithPrivateKeyFromPEMFile,
-    encryptWithPublicKeyFromX509CertificatePEMFile, findFiles, flattenSequence,
-    formatFileSize, fromJson, generateOpsiHostKey, getfqdn, getGlobalConfig,
-    ipAddressInNetwork, isRegularExpressionPattern, librsyncDeltaFile,
-    librsyncSignature, librsyncPatchFile, md5sum, objectToBeautifiedText,
-    objectToHtml, randomString, removeUnit, toJson)
+    encryptWithPublicKeyFromX509CertificatePEMFile, findFiles, formatFileSize,
+    fromJson, generateOpsiHostKey, getfqdn, getGlobalConfig, ipAddressInNetwork,
+    isRegularExpressionPattern, librsyncDeltaFile, librsyncSignature,
+    librsyncPatchFile, md5sum, objectToBeautifiedText, objectToHtml,
+    randomString, removeUnit, toJson)
 from OPSI.Util.Task.Certificate import createCertificate
 
 from .helpers import (fakeGlobalConf, patchAddress, patchEnvironmentVariables,
@@ -272,25 +272,6 @@ def testRandomStringHasExpectedLength(length):
     result = randomString(length)
     assert length == len(result)
     assert length == len(result.strip())
-
-
-def _dummyGeneratorFunc():
-    yield 3
-    yield 4
-    yield [5]
-
-
-@pytest.mark.parametrize("sequence, out", [
-    ((1, [2]), [1, 2]),
-    ((1, [2, (3, )]), [1, 2, 3]),
-    (((1, ), (2, ), 3), [1, 2, 3]),
-    (set([1, 2, 3]), [1, 2, 3]),
-    ([1, set([2, ]), 3, 4, set([5])], [1, 2, 3, 4, 5]),
-    ((x for x in range(1, 6)), [1, 2, 3, 4, 5]),
-    ([1, 2, _dummyGeneratorFunc()], [1, 2, 3, 4, 5])
-])
-def testFlattenSequence(sequence, out):
-    assert out == flattenSequence(sequence)
 
 
 @pytest.mark.parametrize("kwargs", [{}, {"forcePython": True}])
