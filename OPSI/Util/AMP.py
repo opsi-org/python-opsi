@@ -30,6 +30,10 @@
    @license: GNU General Public License version 2
 """
 
+import os
+from pickle import dumps, loads, HIGHEST_PROTOCOL
+from types import StringType
+
 from twisted.internet import reactor
 from twisted.internet.protocol import ReconnectingClientFactory, ClientCreator
 from twisted.internet.defer import maybeDeferred, Deferred, succeed
@@ -37,18 +41,15 @@ from twisted.internet.address import UNIXAddress
 from twisted.protocols.amp import Argument, String, Integer, Command, AMP, MAX_VALUE_LENGTH
 from twisted.python.failure import Failure
 
-import os
-from pickle import dumps, loads, HIGHEST_PROTOCOL
-from types import StringType
 from OPSI.Logger import *
 from OPSI.Util import randomString
-logger = Logger()
 
 try:
 	import cStringIO as StringIO
 except ImportError:
 	import StringIO
 
+logger = Logger()
 
 
 USE_BUFFERED_RESPONSE = "__USE_BUFFERED_RESPONSE__"
