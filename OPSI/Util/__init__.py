@@ -63,8 +63,8 @@ __all__ = [
 	'RANDOM_DEVICE', 'argparse', 'blowfishDecrypt', 'blowfishEncrypt',
 	'chunk', 'compareVersions', 'decryptWithPrivateKeyFromPEMFile',
 	'deserialize', 'encryptWithPublicKeyFromX509CertificatePEMFile',
-	'findFiles', 'flattenSequence', 'formatFileSize', 'fromJson',
-	'generateOpsiHostKey', 'getGlobalConfig', 'getfqdn', 'ipAddressInNetwork',
+	'findFiles', 'formatFileSize', 'fromJson', 'generateOpsiHostKey',
+	'getGlobalConfig', 'getfqdn', 'ipAddressInNetwork',
 	'isRegularExpressionPattern', 'librsyncDeltaFile', 'librsyncPatchFile',
 	'librsyncSignature', 'md5sum', 'objectToBash', 'objectToBeautifiedText',
 	'objectToHtml', 'randomString', 'removeDirectory', 'removeUnit',
@@ -747,21 +747,6 @@ def ipAddressInNetwork(ipAddress, networkAddress):
 		return True
 
 	return False
-
-
-def flattenSequence(sequence):
-	"""
-	Flattens nested sequences so that only a flat list will be returned.
-
-	:returntype: list
-	"""
-	listToReturn = []
-	for part in sequence:
-		if isinstance(part, (list, tuple, set, types.GeneratorType)):
-			listToReturn.extend(flattenSequence(part))
-		else:
-			listToReturn.append(part)
-	return listToReturn
 
 
 def getfqdn(name='', conf=None):
