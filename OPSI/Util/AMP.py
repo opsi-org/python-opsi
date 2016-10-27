@@ -438,7 +438,6 @@ class OpsiProcessConnector(object):
 		def success(result):
 			self._factory.removeNotifier(success, failure)
 			self._protocol = result
-			#self._protocol.openDataSink(self._socket)
 			self._remote = self.remote(self._protocol)
 			d, self._connected = self._connected, None
 			self._connectDataPort()
