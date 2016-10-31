@@ -65,24 +65,24 @@ class DepotserverBackend(ExtendedBackend):
 			return forceUnicode(publicKey.read())
 
 	def depot_getMD5Sum(self, filename, forceCalculation=False):
-		res = None
+		checksum = None
 		try:
 			if not forceBool(forceCalculation):
 				hashFile = filename + '.md5'
 
 				try:
 					with open(hashFile) as fileHandle:
-						res = fileHandle.read()
+						checksum = fileHandle.read()
 
 					logger.info(u"Using pre-calculated MD5sum from '{0}'.", hashFile)
 				except (OSError, IOError):
 					pass
 
-			if not res:
-				res = md5sum(filename)
+			if not checksum:
+				checksum = md5sum(filename)
 
-			logger.info(u"MD5sum of file '{0}' is '{1}'", filename, res)
-			return res
+			logger.info(u"MD5sum of file '{0}' is '{1}'", filename, checksum)
+			return checksum
 		except Exception as e:
 			raise BackendIOError(u"Failed to get md5sum: %s" % e)
 
