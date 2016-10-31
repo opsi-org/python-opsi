@@ -64,9 +64,23 @@ class DepotserverBackend(ExtendedBackend):
 		with open(self._sshRSAPublicKeyFile, 'r') as publicKey:
 			return forceUnicode(publicKey.read())
 
-	def depot_getMD5Sum(self, filename):
+	def depot_getMD5Sum(self, filename, forceCalculation=False):
+		res = None
 		try:
-			res = md5sum(filename)
+			if not forceBool(forceCalculation):
+				hashFile = filename + '.md5'
+
+				try:
+					with open(hashFile) as f:
+						res = f.read()
+
+					logger.info(u"Using pre-calculated md5sum from '{0}.", hashFile)
+				except (OSError, IOError):
+					pass
+
+			if not res:
+				res = md5sum(filename)
+
 			logger.info(u"MD5sum of file '%s' is '%s'" % (filename, res))
 			return res
 		except Exception as e:
