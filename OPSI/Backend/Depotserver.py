@@ -81,7 +81,7 @@ class DepotserverBackend(ExtendedBackend):
 			if not res:
 				res = md5sum(filename)
 
-			logger.info(u"MD5sum of file '%s' is '%s'" % (filename, res))
+			logger.info(u"MD5sum of file '{0}' is '{1}'", filename, res)
 			return res
 		except Exception as e:
 			raise BackendIOError(u"Failed to get md5sum: %s" % e)
