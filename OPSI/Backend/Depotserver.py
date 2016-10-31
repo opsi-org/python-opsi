@@ -74,7 +74,7 @@ class DepotserverBackend(ExtendedBackend):
 					with open(hashFile) as fileHandle:
 						res = fileHandle.read()
 
-					logger.info(u"Using pre-calculated md5sum from '{0}.", hashFile)
+					logger.info(u"Using pre-calculated MD5sum from '{0}'.", hashFile)
 				except (OSError, IOError):
 					pass
 
