@@ -71,8 +71,8 @@ class DepotserverBackend(ExtendedBackend):
 				hashFile = filename + '.md5'
 
 				try:
-					with open(hashFile) as f:
-						res = f.read()
+					with open(hashFile) as fileHandle:
+						res = fileHandle.read()
 
 					logger.info(u"Using pre-calculated md5sum from '{0}.", hashFile)
 				except (OSError, IOError):
