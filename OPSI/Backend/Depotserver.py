@@ -83,8 +83,8 @@ class DepotserverBackend(ExtendedBackend):
 
 			logger.info(u"MD5sum of file '{0}' is '{1}'", filename, checksum)
 			return checksum
-		except Exception as e:
-			raise BackendIOError(u"Failed to get md5sum: %s" % e)
+		except Exception as error:
+			raise BackendIOError(u"Failed to get md5sum: %s" % error)
 
 	def depot_librsyncSignature(self, filename):
 		try:
