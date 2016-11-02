@@ -227,20 +227,20 @@ class BackendManager(ExtendedBackend):
 
 		if hostControlBackend:
 			logger.info(u"* BackendManager is creating HostControlBackend")
-			hcc = {}
 			try:
 				hcc = self.__loadBackendConfig('hostcontrol')['config']
 			except Exception as e:
 				logger.error(e)
+				hcc = {}
 			self._backend = HostControlBackend(self._backend, **hcc)
 
 		if hostControlSafeBackend:
 			logger.info(u"* BackendManager is creating HostControlBackend")
-			hcc = {}
 			try:
 				hcc = self.__loadBackendConfig('hostcontrol')['config']
 			except Exception as e:
 				logger.error(e)
+				hcc = {}
 			self._backend = HostControlSafeBackend(self._backend, **hcc)
 
 		if accessControl:
