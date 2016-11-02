@@ -72,7 +72,6 @@ __all__ = [
 	'ModificationTrackingBackend', 'BackendModificationListener'
 ]
 
-logger = Logger()
 OPSI_VERSION_FILE = u'/etc/opsi/version'
 OPSI_MODULES_FILE = u'/etc/opsi/modules'
 OPSI_PASSWD_FILE = u'/etc/opsi/passwd'
@@ -85,6 +84,8 @@ LOG_TYPES = {  # key = logtype, value = requires objectId for read
 	'opsiconfd': False,
 	'userlogin': True,
 }
+
+logger = Logger()
 
 try:
 	with open(os.path.join('/etc', 'opsi', 'opsiconfd.conf')) as config:
