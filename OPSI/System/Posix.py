@@ -1797,11 +1797,9 @@ class Harddisk:
 			error = u''
 			if progressSubject:
 				progressSubject.setEnd(100)
-			while True:
-				line = handle.readline().strip()
+
+			for line in iter(lambda: handle.readline().strip(), ''):
 				logger.debug(u"From shred =>>> %s" % line)
-				if not line:
-					break
 				# shred: /dev/xyz: Pass 1/25 (random)...232MiB/512MiB 45%
 				match = re.search(lineRegex, line)
 				if match:

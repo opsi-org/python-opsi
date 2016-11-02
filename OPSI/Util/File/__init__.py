@@ -1369,12 +1369,11 @@ class ZsyncFile(LockableFile):
 		self._parsed = False
 
 		with open(self._filename, 'rb') as f:
-			while True:
-				line = f.readline().strip()
-				if not line:
-					break
+			for line in iter(lambda: f.readline().strip(), ''):
 				key, value = line.split(':', 1)
 				self._header[key.strip()] = value.strip()
+
+			# Header and data are divided by an empty line
 			self._data = f.read()
 
 		self._parsed = True
