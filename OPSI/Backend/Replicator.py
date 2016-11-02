@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2010-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2010-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -36,6 +36,7 @@ from OPSI.Util.Message import ProgressSubject
 
 
 __version__ = '4.0.6.48'
+__all__ = ['BackendReplicator']
 
 logger = Logger()
 

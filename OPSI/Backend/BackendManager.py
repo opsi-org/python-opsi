@@ -61,6 +61,10 @@ elif os.name == 'nt':
 	import win32security
 
 __version__ = '4.0.7.4'
+__all__ = [
+	'BackendManager', 'BackendDispatcher', 'BackendExtender',
+	'BackendAccessControl', 'backendManagerFactory'
+]
 
 logger = Logger()
 

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2010-2014 uib GmbH <info@uib.de>
+# Copyright (C) 2010-2016 uib GmbH <info@uib.de>
 # All rights reserved.
 
 # This program is free software: you can redistribute it and/or modify
@@ -39,6 +39,7 @@ from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Util import getfqdn
 
 __version__ = '4.0.6.3'
+__all__ = ['ServerConnection', 'OpsiPXEConfdBackend']
 
 logger = Logger()
 

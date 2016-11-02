@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2010-2014 uib GmbH <info@uib.de>
+# Copyright (C) 2010-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -44,6 +44,12 @@ from OPSI.Util.AMP import OpsiProcessProtocolFactory, OpsiProcessConnector
 from OPSI.Util.Twisted import ResetableLoop
 from OPSI.Service.JsonRpc import JsonRpcRequestProcessor
 from OPSI.Logger import LOG_WARNING, Logger
+
+__all__ = [
+	'BackendProcessConfiguration', 'BackendDataExchangeProtocol',
+	'OpsiBackendService', 'OpsiBackendProcessConnector',
+	'OpsiBackendProcess'
+]
 
 logger = Logger()
 

@@ -46,6 +46,7 @@ from OPSI.Object import *  # needed for calls to "eval"
 from OPSI.Types import BackendBadValueError, BackendConfigurationError
 
 __version__ = '4.0.7.1'
+__all__ = ['FileBackend']
 
 logger = Logger()
 

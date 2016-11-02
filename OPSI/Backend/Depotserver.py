@@ -42,6 +42,7 @@ from OPSI.Util import (compareVersions, getfqdn, md5sum, librsyncSignature,
 from OPSI.Util.File import ZsyncFile
 
 __version__ = '4.0.7.25'
+__all__ = ['DepotserverBackend', 'DepotserverPackageManager']
 
 logger = Logger()
 

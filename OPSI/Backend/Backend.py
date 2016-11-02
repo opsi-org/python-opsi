@@ -66,6 +66,11 @@ if os.name == 'posix':
 			from OPSI.ldaptor import ldapfilter
 
 __version__ = '4.0.7.20'
+__all__ = [
+	'getArgAndCallString', 'DeferredCall', 'Backend', 'ExtendedBackend',
+	'ConfigDataBackend', 'ExtendedConfigDataBackend',
+	'ModificationTrackingBackend', 'BackendModificationListener'
+]
 
 logger = Logger()
 OPSI_VERSION_FILE = u'/etc/opsi/version'

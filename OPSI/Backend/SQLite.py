@@ -37,6 +37,7 @@ from OPSI.Types import BackendBadValueError
 from OPSI.Backend.SQL import SQL, SQLBackend, SQLBackendObjectModificationTracker
 
 __version__ = '4.0.7.26'
+__all__ = ['SQLite', 'SQLiteBackend', 'SQLiteObjectBackendModificationTracker']
 
 logger = Logger()
 

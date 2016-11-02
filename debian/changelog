@@ -1,7 +1,7 @@
 python-opsi (4.1.1-1) UNRELEASED; urgency=medium
 
   * OPSI.Logger, OPSI.Object, OPSI.System.Posix, OPSI.System.Windows,
-    OPSI.Util now use __all__.
+    OPSI.Util and the modules in OPSI.Backend now provide __all__.
   * JSONRPCBackend: Avoid using "async" as name for a variable because
     this will become a keyword with Python 3.5.
   * ConfigurationData.initializeConfigs now creates entries for

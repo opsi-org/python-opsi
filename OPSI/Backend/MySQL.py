@@ -48,6 +48,7 @@ from OPSI.Backend.SQL import (onlyAllowSelect, SQL, SQLBackend,
 	SQLBackendObjectModificationTracker)
 
 __version__ = '4.0.6.29'
+__all__ = ['ConnectionPool', 'MySQL', 'MySQLBackend', 'MySQLBackendObjectModificationTracker']
 
 logger = Logger()
 
