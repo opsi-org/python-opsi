@@ -4,7 +4,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2010-2015 uib GmbH
+# Copyright (C) 2010-2016 uib GmbH
 
 # http://www.uib.de/
 
@@ -248,7 +248,7 @@ class WorkerOpsi:
 		self.authRealm = 'OPSI Service'
 
 	def process(self):
-		logger.info(u"Worker %s started processing" % self)
+		logger.info(u"Worker {0} started processing", self)
 		deferred = defer.Deferred()
 		deferred.addCallback(self._getSession)
 		deferred.addCallback(self._authenticate)
@@ -316,7 +316,7 @@ class WorkerOpsi:
 
 	def _freeSession(self, result):
 		if self.session:
-			logger.debug(u"Freeing session %s" % self.session)
+			logger.debug(u"Freeing session {0}", self.session)
 			self.session.decreaseUsageCount()
 		return result
 
@@ -325,7 +325,7 @@ class WorkerOpsi:
 		logger.debug(u"Trying to get username and password from Authorization header")
 		auth = self.request.headers.getHeader('Authorization')
 		if auth:
-			logger.debug(u"Authorization header found (type: %s)" % auth[0])
+			logger.debug(u"Authorization header found (type: {0})", auth[0])
 			try:
 				encoded = auth[1]
 
@@ -338,20 +338,21 @@ class WorkerOpsi:
 					user = parts[0]
 					password = u':'.join(parts[1:])
 				user = user.strip()
-				logger.confidential(u"Client supplied username '%s' and password '%s'" % (user, password))
+				logger.confidential(u"Client supplied username {0!r} and password {1!r}", user, password)
 			except Exception as error:
-				logger.error(u"Bad Authorization header from '%s': %s" % (self.request.remoteAddr.host, error))
+				logger.error(u"Bad Authorization header from '{0}': {1}", self.request.remoteAddr.host, error)
+
 		return (user, password)
 
 	def _getCredentials(self):
 		return self._getAuthorization()
 
 	def _getUserAgent(self):
-		userAgent = None
 		try:
 			userAgent = self.request.headers.getHeader('user-agent')
 		except Exception:
 			logger.info(u"Client '%s' did not supply user-agent" % self.request.remoteAddr.host)
+			userAgent = None
 
 		if not userAgent:
 			userAgent = 'unknown'
@@ -362,9 +363,9 @@ class WorkerOpsi:
 		"Get session id from cookie request header"
 		sessionId = u''
 		try:
-			for (k, v) in self.request.headers.getAllRawHeaders():
-				if k.lower() == 'cookie':
-					for cookie in v:
+			for (headerTag, headerValue) in self.request.headers.getAllRawHeaders():
+				if headerTag.lower() == 'cookie':
+					for cookie in headerValue:
 						for c in cookie.split(';'):
 							if '=' not in c:
 								continue
@@ -376,7 +377,7 @@ class WorkerOpsi:
 
 					break
 		except Exception as error:
-			logger.error(u"Failed to get cookie from header: %s" % error)
+			logger.error(u"Failed to get cookie from header: {0}", error)
 
 		return sessionId
 
@@ -393,13 +394,17 @@ class WorkerOpsi:
 		# Get Session object
 		self.session = sessionHandler.getSession(sessionId, self.request.remoteAddr.host)
 		if sessionId == self.session.uid:
-			logger.info(u"Reusing session for client '%s', application '%s'" % (self.request.remoteAddr.host, userAgent))
+			logger.info(u"Reusing session for client '{0}', application '{1}'", self.request.remoteAddr.host, userAgent)
 		elif sessionId:
-			logger.notice(u"Application '%s' on client '%s' supplied non existing session id: %s" % (userAgent, self.request.remoteAddr.host, sessionId))
+			logger.notice(u"Application '{0}' on client '{1}' supplied non existing session id: {2}", userAgent, self.request.remoteAddr.host, sessionId)
 
 		if sessionHandler and self.session.ip and (self.session.ip != self.request.remoteAddr.host):
-			logger.critical(u"Client ip '%s' does not match session ip '%s', deleting old session and creating a new one" \
-				% (self.request.remoteAddr.host, self.session.ip))
+			logger.critical(
+				u"Client ip '{0}' does not match session ip '{1}', "
+				u"deleting old session and creating a new one",
+				self.request.remoteAddr.host,
+				self.session.ip
+			)
 			sessionHandler.deleteSession(self.session.uid)
 			self.session = sessionHandler.getSession()
 
@@ -408,12 +413,20 @@ class WorkerOpsi:
 
 		# Set user-agent / application
 		if self.session.userAgent and (self.session.userAgent != userAgent):
-			logger.warning(u"Application changed from '%s' to '%s' for existing session of client '%s'" \
-				% (self.session.userAgent, userAgent, self.request.remoteAddr.host))
+			logger.warning(
+				u"Application changed from '{0}' to '{1}' for existing session of client '{2}'",
+				self.session.userAgent,
+				userAgent,
+				self.request.remoteAddr.host
+			)
 		self.session.userAgent = userAgent
 
-		logger.confidential(u"Session id is {0!r} for client {1!r}, application {2!r}",
-							self.session.uid, self.request.remoteAddr.host, self.session.userAgent)
+		logger.confidential(
+			u"Session id is {0!r} for client {1!r}, application {2!r}",
+			self.session.uid,
+			self.request.remoteAddr.host,
+			self.session.userAgent
+		)
 
 		logger.confidential(u"Session content: {0}", self.session.__dict__)
 		return result
@@ -431,8 +444,10 @@ class WorkerOpsi:
 		return result
 
 	def _authenticate(self, result):
-		''' This function tries to authenticate a user.
-		    Raises an exception on authentication failure. '''
+		'''
+		This function tries to authenticate a user.
+		Raises an exception on authentication failure.
+		'''
 		if self.session.authenticated:
 			return result
 
@@ -498,14 +513,14 @@ class WorkerOpsi:
 				self.query = unicode(self.query, 'utf-8', 'replace')
 		except Exception as error:
 			logger.logException(error)
-			logger.warning("Unexpected error during decoding of query: {0}".format(error))
+			logger.warning("Unexpected error during decoding of query: {0}", error)
 			raise error
 
 		logger.debug2(u"query: {0}", self.query)
 		return result
 
 	def _processQuery(self, result):
-		logger.warning(u"Class %s should overwrite _processQuery" % self.__class__.__name__)
+		logger.warning(u"Class {0} should overwrite _processQuery", self.__class__.__name__)
 		return self._decodeQuery(result)
 
 	def _generateResponse(self, result):
@@ -533,7 +548,7 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 		self._rpcs = []
 
 	def _getCallInstance(self, result):
-		logger.warning(u"Class %s should overwrite _getCallInstance" % self.__class__.__name__)
+		logger.warning(u"Class {0} should overwrite _getCallInstance", self.__class__.__name__)
 		self._callInstance = None
 		self._callInterface = None
 
@@ -548,7 +563,7 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 		try:
 			rpcs = fromJson(self.query, preventObjectCreation=True)
 			if not rpcs:
-				raise Exception(u"Got no rpcs")
+				raise ValueError(u"Got no rpcs")
 		except Exception as e:
 			raise OpsiBadRpcError(u"Failed to decode rpc: %s" % e)
 
@@ -599,7 +614,7 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 						encoding = 'gzip'
 						break
 		except Exception as error:
-			logger.error(u"Failed to get accepted mime types from header: %s" % error)
+			logger.error(u"Failed to get accepted mime types from header: {0}", error)
 
 		response = [serialize(rpc.getResponse()) for rpc in self._rpcs]
 
@@ -620,7 +635,7 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 				# gzip but the content is deflated.
 				result.headers.setHeader('content-encoding', [encoding])
 				result.headers.setHeader('content-type', http_headers.MimeType("gzip-application", "json", {"charset": "utf-8"}))
-				logger.debug(u"Sending deflated data (backwards compatible - with content-encoding {0!r})".format(encoding))
+				logger.debug(u"Sending deflated data (backwards compatible - with content-encoding {0!r})", encoding)
 				result.stream = stream.IByteStream(deflateEncode(toJson(response).encode('utf-8')))
 			else:
 				logger.debug(u"Sending plain data")
@@ -660,7 +675,7 @@ class MultiprocessWorkerOpsiJsonRpc(WorkerOpsiJsonRpc):
 
 		def cleanup(rpc):
 			if rpc.getMethodName() == 'backend_exit':
-				logger.notice(u"User '%s' asked to close the session" % self.session.user)
+				logger.notice(u"User '{0}' asked to close the session", self.session.user)
 				self._freeSession(result)
 				self.service._getSessionHandler().deleteSession(self.session.uid)
 
@@ -696,9 +711,6 @@ class WorkerOpsiJsonInterface(WorkerOpsiJsonRpc):
 	"""
 	Worker responsible for creating the human-usable interface page.
 	"""
-	def __init__(self, service, request, resource):
-		WorkerOpsiJsonRpc.__init__(self, service, request, resource)
-
 	def _generateResponse(self, result):
 		logger.info(u"Creating interface page")
 
@@ -763,11 +775,9 @@ class WorkerOpsiJsonInterface(WorkerOpsiJsonRpc):
 
 
 class WorkerOpsiDAV(WorkerOpsi):
-	def __init__(self, service, request, resource):
-		WorkerOpsi.__init__(self, service, request, resource)
-
 	def process(self):
-		logger.debug(u"Worker %s started processing" % self)
+		logger.debug(u"Worker {0} started processing", self)
+
 		deferred = defer.Deferred()
 		if self.resource._authRequired:
 			deferred.addCallback(self._getSession)
@@ -783,7 +793,7 @@ class WorkerOpsiDAV(WorkerOpsi):
 	def _setResponse(self, result):
 		logger.debug(u"Client requests DAV operation: {0}", self.request)
 		if not self.resource._authRequired and self.request.method not in ('GET', 'PROPFIND', 'OPTIONS', 'USERINFO', 'HEAD'):
-			logger.critical(u"Method '%s' not allowed (read only)" % self.request.method)
+			logger.critical(u"Method '{0}' not allowed (read only)", self.request.method)
 			return http.Response(code=responsecode.FORBIDDEN, stream="Readonly!")
 
 		return self.resource.renderHTTP_super(self.request, self)
