@@ -2504,14 +2504,11 @@ class Harddisk:
 		for hook in hooks:
 			(partition, imageFile, progressSubject) = hook.pre_Harddisk_saveImage(self, partition, imageFile, progressSubject)
 
+		saveImageResult = {'TotalTime': 'n/a', 'AveRate': 'n/a', 'AveUnit': 'n/a'}
+
 		try:
 			partition = forceInt(partition)
 			imageFile = forceUnicode(imageFile)
-
-			imageType = None
-			image = None
-
-			saveImageResult = {'TotalTime': 'n/a', 'AveRate': 'n/a', 'AveUnit': 'n/a',}
 
 			part = self.getPartition(partition)
 			if not part:
