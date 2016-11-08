@@ -1114,7 +1114,7 @@ def mount(dev, mountpoint, **options):
 		optString = u''
 
 	try:
-		result = execute(u"%s %s %s %s %s" % (which('mount'), fs, optString, dev, mountpoint))
+		execute(u"%s %s %s %s %s" % (which('mount'), fs, optString, dev, mountpoint))
 	except Exception as e:
 		logger.error(u"Failed to mount '%s': %s" % (dev, e))
 		raise Exception(u"Failed to mount '%s': %s" % (dev, e))
@@ -1124,9 +1124,8 @@ def mount(dev, mountpoint, **options):
 
 
 def umount(devOrMountpoint):
-	cmd = u"%s %s" % (which('umount'), devOrMountpoint)
 	try:
-		result = execute(cmd)
+		execute(u"%s %s" % (which('umount'), devOrMountpoint))
 	except Exception as e:
 		logger.error(u"Failed to umount '%s': %s" % (devOrMountpoint, e))
 		raise Exception(u"Failed to umount '%s': %s" % (devOrMountpoint, e))
@@ -1972,7 +1971,7 @@ class Harddisk:
 			try:
 				if self.ldPreload:
 					os.putenv("LD_PRELOAD", self.ldPreload)
-				result = execute(cmd)
+				execute(cmd)
 				if self.ldPreload:
 					os.unsetenv("LD_PRELOAD")
 			except Exception as e:
