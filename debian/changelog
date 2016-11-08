@@ -15,6 +15,8 @@ python-opsi (4.1.1-1) UNRELEASED; urgency=medium
   * Removed unsupported backends: Cache, Multiplex, LDAP.
   * ThreadPool: removed functions __createWorker & __deleteWorker.
   * Removed unused function OPSI.Util.flattenSequence.
+  * OPSI.Backend.Backend implemented the protocol for being used as a
+    context manager.
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 04 Oct 2016 16:15:11 +0200
 
