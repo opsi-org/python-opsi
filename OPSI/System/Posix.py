@@ -800,7 +800,7 @@ output will be returned.
 			data = ''
 			stderr = None
 			if captureStderr:
-				stderr	= subprocess.PIPE
+				stderr = subprocess.PIPE
 			proc = subprocess.Popen(
 				cmd,
 				shell=True,
@@ -1344,7 +1344,6 @@ class Harddisk:
 					return
 			else:
 				devicename = self.device.split("/")[2]
-
 
 			for line in execute(u'cat /sys/block/{0}/queue/rotational'.format(devicename)):
 				try:
@@ -1949,7 +1948,6 @@ class Harddisk:
 					ms_sys_version = res[0][14:].strip()
 			except Exception:
 				ms_sys_version = u"2.1.3"
-
 
 			mbrType = u'-w'
 
@@ -3041,7 +3039,7 @@ class SysInfo(object):
 
 	@property
 	def broadcast(self):
-		return u".".join(u"%d" % (int(self.ipAddress.split(u'.')[i]) | int(self.netmask.split(u'.')[i]) ^255) for i in range(len(self.ipAddress.split('.'))))
+		return u".".join(u"%d" % (int(self.ipAddress.split(u'.')[i]) | int(self.netmask.split(u'.')[i]) ^ 255) for i in range(len(self.ipAddress.split('.'))))
 
 	@property
 	def subnet(self):
