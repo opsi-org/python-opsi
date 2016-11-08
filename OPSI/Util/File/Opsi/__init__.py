@@ -340,8 +340,6 @@ class PackageContentFile(TextFile):
 		self._lines = []
 		for filename in self._clientDataFiles:
 			try:
-				#if (filename == self.clientDataDir):
-				#	continue
 				type = u'f'
 				md5 = u''
 				target = u''
@@ -451,7 +449,6 @@ class PackageControlFile(TextFile):
 				match = self.optionRegex.search(line)
 				if match:
 					key = match.group(1).lower()
-					#value = match.group(2).lstrip()
 					value = match.group(2).strip()
 
 			if sectionType == 'package' and key in ('version', 'depends', 'incremental'):
@@ -852,8 +849,6 @@ class PackageControlFile(TextFile):
 			self._lines.append(u'action: %s' % dependency.getProductAction())
 			if dependency.getRequiredProductId():
 				self._lines.append(u'requiredProduct: %s' % dependency.getRequiredProductId())
-			#if dependency.requiredProductClassId:
-			#	self._lines.append( u'requiredClass: %s'   % dependency.requiredProductClassId )
 			if not self._opsi3compatible and dependency.getRequiredProductVersion():
 				self._lines.append(u'requiredProductVersion: %s' % dependency.getRequiredProductVersion())
 			if not self._opsi3compatible and dependency.getRequiredPackageVersion():
@@ -1434,7 +1429,6 @@ class OpsiBackupArchive(tarfile.TarFile):
 							self._extractFile(member, name)
 
 					cmd = [OPSI.System.which("mysql")]
-					#cmd.append("--max_allowed_packet=%s" % os.path.getsize(name))
 					cmd.append("--host=%s" % backend["config"]["address"])
 					cmd.append("--user=%s" % backend["config"]["username"])
 					cmd.append("--password=%s" % backend["config"]["password"])
