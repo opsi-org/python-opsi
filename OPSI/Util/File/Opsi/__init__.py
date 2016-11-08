@@ -552,7 +552,7 @@ class PackageControlFile(TextFile):
 			if not option:
 				raise Exception(u"Parse error in line '%s': no option / bad option defined" % lineNum)
 
-			if not self._sections[sectionType][-1].has_key(option):
+			if option not in self._sections[sectionType][-1]:
 				self._sections[sectionType][-1][option] = value
 			else:
 				if isinstance(self._sections[sectionType][-1][option], unicode):
@@ -1386,7 +1386,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 							currentError = p.stderr.readline().strip()
 							if currentError:
 								lastErrors.append(currentError)
-								if not "Warning: Using a password on the command line interface can be insecure." in currentError:
+								if "Warning: Using a password on the command line interface can be insecure." not in currentError:
 									collectedErrors.append(currentError)
 						except Exception:
 							continue
