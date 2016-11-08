@@ -824,7 +824,7 @@ class PackageControlFile(TextFile):
 		self._lines.append(u'priority: %s' % self._product.getPriority())
 		self._lines.append(u'licenseRequired: %s' % self._product.getLicenseRequired())
 		if self._product.getProductClassIds() is not None:
-			self._lines.append(u'productClasses: %s'  % u', '.join(self._product.getProductClassIds()))
+			self._lines.append(u'productClasses: %s' % u', '.join(self._product.getProductClassIds()))
 		self._lines.append(u'setupScript: %s' % self._product.getSetupScript())
 		self._lines.append(u'uninstallScript: %s' % self._product.getUninstallScript())
 		self._lines.append(u'updateScript: %s' % self._product.getUpdateScript())
@@ -1181,7 +1181,8 @@ class OpsiBackupArchive(tarfile.TarFile):
 		string = StringIO.StringIO()
 
 		for key, value in self.sysinfo.iteritems():
-			string.write("%s: %s\n" %(key, value))
+			string.write("%s: %s\n" % (key, value))
+
 		string.seek(0)
 		info = tarfile.TarInfo(name="%s/sysinfo" % self.CONTROL_DIR)
 		info.size = len(string.buf)
@@ -1339,7 +1340,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 					os.remove(file)
 
 				for member in members:
-					if member.name.startswith(os.path.join(self.CONTENT_DIR, "BACKENDS/DHCP/%s" %backend["name"])):
+					if member.name.startswith(os.path.join(self.CONTENT_DIR, "BACKENDS/DHCP/%s" % backend["name"])):
 						self._extractFile(member, backend["config"]['dhcpdConfigFile'])
 
 	def hasMySQLBackend(self, name=None):
@@ -1370,7 +1371,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 					p = Popen(cmd, stdout=PIPE, stderr=PIPE)
 
 					flags = fcntl.fcntl(p.stderr, fcntl.F_GETFL)
-					fcntl.fcntl(p.stderr, fcntl.F_SETFL, flags| os.O_NONBLOCK)
+					fcntl.fcntl(p.stderr, fcntl.F_SETFL, flags | os.O_NONBLOCK)
 
 					out = p.stdout.readline()
 
@@ -1411,7 +1412,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 					if p.returncode not in (0, None):
 						raise OpsiBackupFileError(u"MySQL dump failed for backend %s: %s" % (backend["name"], u"".join(collectedErrors)))
 
-					self._addContent(name, (name, "BACKENDS/MYSQL/%s/database.sql" %backend["name"]))
+					self._addContent(name, (name, "BACKENDS/MYSQL/%s/database.sql" % backend["name"]))
 				finally:
 					os.close(fd)
 					os.remove(name)
