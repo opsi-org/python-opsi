@@ -789,7 +789,9 @@ class PackageControlFile(TextFile):
 		self._lines.append(u'version: %s' % self._product.getPackageVersion())
 		depends = u''
 		for packageDependency in self._packageDependencies:
-			if depends: depends += u', '
+			if depends:
+				depends += u', '
+
 			depends += packageDependency['package']
 			if packageDependency['version']:
 				depends += u' (%s %s)' % (packageDependency['condition'], packageDependency['version'])
