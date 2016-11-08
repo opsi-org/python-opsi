@@ -65,13 +65,27 @@ class DepotserverBackend(ExtendedBackend):
 		with open(self._sshRSAPublicKeyFile, 'r') as publicKey:
 			return forceUnicode(publicKey.read())
 
-	def depot_getMD5Sum(self, filename):
+	def depot_getMD5Sum(self, filename, forceCalculation=False):
+		checksum = None
 		try:
-			res = md5sum(filename)
-			logger.info(u"MD5sum of file '%s' is '%s'" % (filename, res))
-			return res
-		except Exception as e:
-			raise BackendIOError(u"Failed to get md5sum: %s" % e)
+			if not forceBool(forceCalculation):
+				hashFile = filename + '.md5'
+
+				try:
+					with open(hashFile) as fileHandle:
+						checksum = fileHandle.read()
+
+					logger.info(u"Using pre-calculated MD5sum from '{0}'.", hashFile)
+				except (OSError, IOError):
+					pass
+
+			if not checksum:
+				checksum = md5sum(filename)
+
+			logger.info(u"MD5sum of file '{0}' is '{1}'", filename, checksum)
+			return checksum
+		except Exception as error:
+			raise BackendIOError(u"Failed to get md5sum: %s" % error)
 
 	def depot_librsyncSignature(self, filename):
 		try:
