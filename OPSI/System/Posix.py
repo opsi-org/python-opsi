@@ -1008,11 +1008,11 @@ def mount(dev, mountpoint, **options):
 			fs = u'-t cifs'
 			parts = match.group(2).split('/')
 			dev = u'//%s/%s' % (parts[0], parts[1])
-			if not 'username' in options:
+			if 'username' not in options:
 				options['username'] = u'guest'
-			if not 'password' in options:
+			if 'password' not in options:
 				options['password'] = u''
-			if options['username'].find('\\') != -1:
+			if '\\' in options['username']:
 				(options['domain'], options['username']) = options['username'].split('\\', 1)
 
 			credentialsFile = u"/tmp/.cifs-credentials.%s" % parts[0]
@@ -1052,11 +1052,11 @@ def mount(dev, mountpoint, **options):
 		else:
 			raise Exception(u"Bad webdav url '%s'" % dev)
 
-		if not 'username' in options:
+		if 'username' not in options:
 			options['username'] = u''
-		if not 'password' in options:
+		if 'password' not in options:
 			options['password'] = u''
-		if not 'servercert' in options:
+		if 'servercert' not in options:
 			options['servercert'] = u''
 
 		if options['servercert']:
@@ -2418,7 +2418,7 @@ class Harddisk:
 				fs = self.getPartition(partition)['fs']
 			fs = forceUnicodeLower(fs)
 
-			if not fs in (u'fat32', u'ntfs', u'linux-swap', u'ext2', u'ext3', u'ext4', u'reiserfs', u'reiser4', u'xfs'):
+			if fs not in (u'fat32', u'ntfs', u'linux-swap', u'ext2', u'ext3', u'ext4', u'reiserfs', u'reiser4', u'xfs'):
 				raise Exception(u"Creation of filesystem '%s' not supported!" % fs)
 
 			logger.info(u"Creating filesystem '%s' on '%s'." % (fs, self.getPartition(partition)['device']))
@@ -2472,7 +2472,7 @@ class Harddisk:
 			if not fs:
 				fs = self.getPartition(partition)['fs']
 			fs = forceUnicodeLower(fs)
-			if not fs in (u'ntfs',):
+			if fs not in (u'ntfs',):
 				raise Exception(u"Resizing of filesystem '%s' not supported!" % fs)
 
 			if size <= 0:
@@ -3146,7 +3146,7 @@ def hardwareExtendedInventory(config, opsiValues={}, progressSubject=None):
 
 					if isinstance(result, unicode):
 						result = result.encode('utf-8')
-					if not opsiName in opsiValues:
+					if opsiName not in opsiValues:
 						opsiValues[opsiName].append({})
 					for i in range(len(opsiValues[opsiName])):
 						opsiValues[opsiName][i][item['Opsi']] = result
@@ -3564,7 +3564,7 @@ def hardwareInventory(config, progressSubject=None):
 			for (hdaudioId, dev) in hdaudio.items():
 				device = {}
 				for attribute in hwClass['Values']:
-					if not attribute.get('Linux') or not dev.has_key(attribute['Linux']):
+					if not attribute.get('Linux') or attribute['Linux'] not in dev:
 						continue
 
 					try:
@@ -3589,7 +3589,7 @@ def hardwareInventory(config, progressSubject=None):
 							method = None
 							if '.' in key:
 								(key, method) = key.split('.', 1)
-							if not isinstance(value, dict) or not value.has_key(key):
+							if not isinstance(value, dict) or key not in value:
 								logger.error(u"Key '%s' not found" % key)
 								value = u''
 								break
