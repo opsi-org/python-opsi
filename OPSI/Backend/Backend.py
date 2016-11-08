@@ -212,6 +212,12 @@ This defaults to ``self``.
 			logger.error(u"Failed to read version info from file {0!r}: {1}".format(self._opsiVersionFile, error))
 			self._opsiVersion = 'unknown'
 
+	def __enter__(self):
+		return self
+
+	def __exit__(self, exc_type, exc_value, traceback):
+		self.backend_exit()
+
 	def _setContext(self, context):
 		"""Setting the context backend."""
 		self._context = context
