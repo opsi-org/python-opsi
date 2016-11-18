@@ -31,6 +31,7 @@ Functions and classes for the use with a POSIX operating system.
 """
 
 import codecs
+import datetime
 import fcntl
 import locale
 import os
@@ -45,7 +46,6 @@ import time
 import copy as pycopy
 from itertools import islice
 from signal import SIGKILL
-from platform import linux_distribution
 
 from OPSI.Logger import Logger, LOG_NONE
 from OPSI.Types import (forceDomain, forceInt, forceBool, forceUnicode,
@@ -56,8 +56,7 @@ from OPSI.Types import OpsiVersionError
 from OPSI.Object import *
 from OPSI.Util import objectToBeautifiedText, removeUnit
 
-
-__version__ = '4.0.7.8'
+__version__ = '4.0.7.23'
 
 logger = Logger()
 
@@ -74,6 +73,10 @@ try:
 	if "64bit" in platform.architecture():
 		x86_64 = True
 except Exception:
+	pass
+
+
+class CommandNotFoundException(RuntimeError):
 	pass
 
 
@@ -379,7 +382,7 @@ def getEthernetDevices():
 				continue
 
 			device = line.split(':')[0].strip()
-			if device.startswith(('eth', 'ens', 'eno', 'tr', 'br', 'enp')):
+			if device.startswith(('eth', 'ens', 'eno', 'tr', 'br', 'enp', 'enx')):
 				logger.info(u"Found ethernet device: '{0}'".format(device))
 				devices.append(device)
 
@@ -662,10 +665,8 @@ def reboot(wait=10):
 			execute(u'%s %d; %s -r now' % (which('sleep'), wait, which('shutdown')), nowait=True)
 		else:
 			execute(u'%s -r now' % which('shutdown'), nowait=True)
-		execute(u'%s 5' % (which('sleep')), nowait=True)
+		execute(u'%s 1' % (which('sleep')), nowait=True)
 		execute(u'%s -p' % (which('reboot')), nowait=True)
-		execute(u'%s 5' % (which('sleep')), nowait=True)
-		execute(u'%s 6' % (which('init')), nowait=True)
 	except Exception as e:
 		for hook in hooks:
 			hook.error_reboot(wait, e)
@@ -705,9 +706,10 @@ def which(cmd):
 		path = w.readline().strip()
 		w.close()
 		if not path:
-			raise Exception(u"Command '%s' not found in PATH" % cmd)
+			raise CommandNotFoundException(u"Command {0!r} not found in PATH".format(cmd))
+
+		logger.debug(u"Command {0!r} found at: {1!r}", cmd, path)
 		WHICH_CACHE[cmd] = path
-		logger.debug(u"Command '%s' found at: '%s'" % (cmd, WHICH_CACHE[cmd]))
 
 	return WHICH_CACHE[cmd]
 
@@ -846,7 +848,7 @@ output will be returned.
 					result.append(line)
 
 	except (os.error, IOError) as e:
-		# Some error occured during execution
+		# Some error occurred during execution
 		raise Exception(u"Command '%s' failed:\n%s" % (cmd, e))
 
 	logger.debug(u"Exit code: %s" % exitCode)
@@ -1114,7 +1116,10 @@ def umount(devOrMountpoint):
 
 
 def getBlockDeviceBusType(device):
-	# Returns either 'IDE', 'SCSI', 'SATA', 'RAID' or None (not found)
+	"""
+	:return: 'IDE', 'SCSI', 'SATA', 'RAID' or None (not found)
+	:returntype: str or None
+	"""
 	device = forceFilename(device)
 
 	(devs, type) = ([], None)
@@ -1138,7 +1143,7 @@ def getBlockDeviceBusType(device):
 			else:
 				devs = [match.group(1)]
 
-			devs = [currentDev.strip() for currentDiv in devs]
+			devs = [currentDev.strip() for currentDev in devs]
 
 		match = re.search('^\s+Attached to:\s+[^\(]+\((\S+)\s*', line)
 		if match:
@@ -1999,6 +2004,8 @@ class Harddisk:
 			else:
 				fsType = u'--%s' % fsType
 
+			time.sleep(10)
+
 			cmd = u"%s -p %s %s" % (which('ms-sys'), fsType, self.getPartition(partition)['device'])
 			try:
 				if self.ldPreload:
@@ -2834,22 +2841,42 @@ class Harddisk:
 			hook.post_Harddisk_restoreImage(self, partition, imageFile, progressSubject)
 
 
-def isSLES():
+def isCentOS():
 	"""
-	Returns `True` if this is running on Suse Linux Enterprise Server.
+	Returns `True` if this is running on CentOS.
 	Returns `False` if otherwise.
 	"""
+	return _checkForDistribution('CentOS')
 
-	try:
-		f = os.popen('lsb_release -d 2>/dev/null')
-		distribution = f.read().split(':')[1].strip()
-		f.close()
 
-		logger.debug("Got as distribution: {0!r}".format(distribution))
-		return bool('suse linux enterprise server' in distribution.lower())
-	except Exception as error:
-		logger.debug("Failed to read lsb_release: {0}".format(error))
-		return False
+def isDebian():
+	"""
+	Returns `True` if this is running on Debian.
+	Returns `False` if otherwise.
+	"""
+	return _checkForDistribution('Debian')
+
+
+def isOpenSUSE():
+	"""
+	Returns `True` if this is running on openSUSE.
+	Returns `False` if otherwise.
+	For OpenSUSE Leap please use isOpenSUSELeap()
+	"""
+	return _checkForDistribution('opensuse')
+
+
+def isOpenSUSELeap():
+	"""
+	Returns `True` if this is running on OpenSUSE Leap.
+	Returns `False` if otherwise.
+	"""
+	if isOpenSUSE():
+		leap = Distribution()
+		if leap.version >= (42, 1):
+			return True
+
+	return False
 
 
 def isRHEL():
@@ -2857,25 +2884,39 @@ def isRHEL():
 	Returns `True` if this is running on Red Hat Enterprise Linux.
 	Returns `False` if otherwise.
 	"""
-
-	try:
-		sysinfo = SysInfo()
-		return 'Red Hat Enterprise Linux' in sysinfo.distribution
-	except Exception as error:
-		logger.debug("Failed to check for RHEL: {0}".format(error))
-		return False
+	return _checkForDistribution('Red Hat Enterprise Linux')
 
 
-def isCentOS():
+def isSLES():
 	"""
-	Returns `True` if this is running on CentOS.
+	Returns `True` if this is running on Suse Linux Enterprise Server.
 	Returns `False` if otherwise.
 	"""
+	return _checkForDistribution('suse linux enterprise server')
+
+
+def isUbuntu():
+	"""
+	Returns `True` if this is running on Ubuntu.
+	Returns `False` if otherwise.
+	"""
+	return _checkForDistribution('Ubuntu')
+
+
+def isUCS():
+	"""
+	Returns `True` if this is running on Univention Corporate Server.
+	Returns `False` if otherwise.
+	"""
+	return _checkForDistribution('Univention')
+
+
+def _checkForDistribution(name):
 	try:
 		sysinfo = SysInfo()
-		return 'CentOS' in sysinfo.distribution
+		return name.lower() in sysinfo.distribution.lower()
 	except Exception as error:
-		logger.debug("Failed to check for CentOS: {0}".format(error))
+		logger.debug("Failed to check for Distribution: {0}", error)
 		return False
 
 
@@ -2883,7 +2924,7 @@ class Distribution(object):
 
 	def __init__(self, distribution_information=None):
 		if distribution_information is None:
-			distribution_information = linux_distribution()
+			distribution_information = platform.linux_distribution()
 
 		self.distribution, self._version, self.id = distribution_information
 		self.distribution = self.distribution.strip()
@@ -3933,4 +3974,3 @@ def setLocalSystemTime(timestring):
 		subprocess.call([systemTime])
 	except Exception as error:
 			logger.error(u"Failed to set System Time: %s" % error)
-

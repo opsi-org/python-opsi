@@ -33,34 +33,32 @@ from OPSI.Util import getfqdn
 from OPSI.Util.File.Opsi import BackendACLFile
 from OPSI.Backend.BackendManager import BackendAccessControl
 
-from .BackendTestMixins.Clients import getClients
-from .BackendTestMixins.Products import getProducts
 from .helpers import workInTemporaryDirectory
 from .test_backend_replicator import (fillBackendWithHosts,
     fillBackendWithProducts, fillBackendWithProductOnClients)
+from .test_hosts import getClients
+from .test_products import getProducts
 
 import pytest
 
 
 def testParsingBackendACLFile():
+    expectedACL = [
+        [u'host_.*', [
+            {'denyAttributes': [], 'type': u'opsi_depotserver', 'ids': [u'depot1.test.invalid', u'depot2.test.invalid'], 'allowAttributes': []},
+            {'denyAttributes': [], 'type': u'opsi_client', 'ids': [u'self'], 'allowAttributes': [u'attr1', u'attr2']},
+            {'denyAttributes': [], 'type': u'sys_user', 'ids': [u'some user', u'some other user'], 'allowAttributes': []},
+            {'denyAttributes': [], 'type': u'sys_group', 'ids': [u'a_group', u'group2'], 'allowAttributes': []}
+            ]
+        ]
+    ]
+
     with workInTemporaryDirectory() as tempDir:
         aclFile = os.path.join(tempDir, 'acl.conf')
         with open(aclFile, 'w') as exampleConfig:
-            exampleConfig.write(
-'''
+            exampleConfig.write('''
 host_.*: opsi_depotserver(depot1.test.invalid, depot2.test.invalid); opsi_client(self,  attributes (attr1, attr2)); sys_user(some user, some other user); sys_group(a_group, group2)
-'''
-        )
-
-        expectedACL = [
-            [u'host_.*', [
-                {'denyAttributes': [], 'type': u'opsi_depotserver', 'ids': [u'depot1.test.invalid', u'depot2.test.invalid'], 'allowAttributes': []},
-                {'denyAttributes': [], 'type': u'opsi_client', 'ids': [u'self'], 'allowAttributes': [u'attr1', u'attr2']},
-                {'denyAttributes': [], 'type': u'sys_user', 'ids': [u'some user', u'some other user'], 'allowAttributes': []},
-                {'denyAttributes': [], 'type': u'sys_group', 'ids': [u'a_group', u'group2'], 'allowAttributes': []}
-                ]
-            ]
-        ]
+''')
 
         assert expectedACL == BackendACLFile(aclFile).parse()
 
@@ -119,7 +117,7 @@ def testDenyingAttributes(extendedConfigDataBackend):
         if host.id == client1.id:
             assert host.opsiHostKey == client1.opsiHostKey
         else:
-            assert None == host.opsiHostKey
+            assert host.opsiHostKey is None
 
 
 # def testAllowingOnlyUpdatesOfSpecificAttributes(extendedConfigDataBackend):
@@ -179,9 +177,9 @@ def testDenyingAccessToOtherObjects(extendedConfigDataBackend):
 
     serverFqdn = OPSI.Types.forceHostId(getfqdn())  # using local FQDN
     depotserver1 = {
-        "isMasterDepot" : True,
-        "type" : "OpsiConfigserver",
-        "id" : serverFqdn,
+        "isMasterDepot": True,
+        "type": "OpsiConfigserver",
+        "id": serverFqdn,
     }
 
     backend.host_createObjects(depotserver1)
@@ -316,7 +314,7 @@ def testDenyingAccessToSpecifiedAttributes(extendedConfigDataBackend):
     for host in hosts:
         for attribute, value in host.toHash().items():
             if attribute in denyAttributes:
-                assert None == value
+                assert value is None
 
 
 def testGettingAccessAndOnlyAllowingSomeAttributes(extendedConfigDataBackend):
@@ -345,7 +343,7 @@ def testGettingAccessAndOnlyAllowingSomeAttributes(extendedConfigDataBackend):
     for host in hosts:
         for attribute, value in host.toHash().items():
             if attribute not in allowAttributes:
-                assert None == value
+                assert value is None
 
 
 def testGettingAccessButDenyingAttributesOnSelf(extendedConfigDataBackend):
@@ -378,7 +376,7 @@ def testGettingAccessButDenyingAttributesOnSelf(extendedConfigDataBackend):
         else:
             for attribute, value in host.toHash().items():
                 if attribute in denyAttributes:
-                    assert None == value
+                    assert value is None
 
 
 @pytest.mark.requiresModulesFile

@@ -52,7 +52,7 @@ LOGGING_LEVELS = [
 ]
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def logger():
 	logger = OPSI.Logger.LoggerImplementation()
 
@@ -298,6 +298,7 @@ def testLoggingTracebacks():
 		assert "file" in values[1].lower()
 		assert __file__ in values[1]
 		assert "Foooock" in values[-1]
+		assert '==>>> Fooo' in values[-1]  # startswith does not work because of colors...
 
 
 def testLoggingTraceBacksFromInsideAFunction():

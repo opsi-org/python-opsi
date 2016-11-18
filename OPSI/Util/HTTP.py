@@ -5,7 +5,7 @@
 # Based on urllib3
 # (open pc server integration) http://www.opsi.org
 # Copyright (C) 2010 Andrey Petrov
-# Copyright (C) 2010-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2010-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -72,13 +72,16 @@ totalRequests = 0
 # This could be an import - but support for pycurl is currently not fully implrement
 pycurl = None
 
-if hasattr(ssl_module, '_create_unverified_context'):
+
+try:
 	# We are running a new version of Python that implements PEP 476:
 	# https://www.python.org/dev/peps/pep-0476/
 	# To not break our expected behaviour we patch the default context
 	# until we have a correct certificate check implementation.
 	# TODO: remove this workaround when support for TLS1.1+ is implemented
 	ssl_module._create_default_https_context = ssl_module._create_unverified_context
+except AttributeError:
+	pass
 
 
 def hybi10Encode(data):
@@ -173,7 +176,9 @@ def non_blocking_connect_http(self, connectTimeout=0):
 
 def non_blocking_connect_https(self, connectTimeout=0, verifyByCaCertsFile=None):
 	non_blocking_connect_http(self, connectTimeout)
+	logger.debug2(u"verifyByCaCertsFile is: {0!r}", verifyByCaCertsFile)
 	if verifyByCaCertsFile:
+		logger.debug(u"verifyByCaCertsFile is: {0!r}", verifyByCaCertsFile)
 		self.sock = ssl_module.wrap_socket(self.sock, keyfile=self.key_file, certfile=self.cert_file, cert_reqs=ssl_module.CERT_REQUIRED, ca_certs=verifyByCaCertsFile)
 		logger.debug(u"Server verified by CA")
 	else:
@@ -181,16 +186,19 @@ def non_blocking_connect_https(self, connectTimeout=0, verifyByCaCertsFile=None)
 
 
 def getPeerCertificate(httpsConnectionOrSSLSocket, asPEM=True):
+	logger.debug2("Trying to get peer cert...")
+	sock = httpsConnectionOrSSLSocket
 	try:
-		sock = httpsConnectionOrSSLSocket
 		if hasattr(sock, 'sock'):
 			sock = sock.sock
 		cert = crypto.load_certificate(crypto.FILETYPE_ASN1, sock.getpeercert(binary_form=True))
+
 		if not asPEM:
 			return cert
+
 		return crypto.dump_certificate(crypto.FILETYPE_PEM, cert)
 	except Exception as error:
-		logger.debug(u"Failed to get peer cert: %s" % error)
+		logger.debug2(u"Failed to get peer cert: %s" % error)
 		return None
 
 
@@ -296,7 +304,7 @@ class HTTPConnectionPool(object):
 		self.retryTime = forceInt(retryTime)
 		self.block = forceBool(block)
 		self.reuseConnection = forceBool(reuseConnection)
-                self.proxyURL = forceUnicode(proxyURL or u"")
+		self.proxyURL = forceUnicode(proxyURL or u"")
 		self.pool = None
 		self.usageCount = 1
 		self.num_connections = 0
@@ -371,28 +379,28 @@ class HTTPConnectionPool(object):
 		Return a fresh HTTPConnection.
 		"""
 		self.num_connections += 1
-                if self.proxyURL:
-                        headers = {}
-                        try:
-                                url = urlparse.urlparse(self.proxyURL)
-                                if url.password:
-                                        logger.setConfidentialStrings(url.password)
-                                        logger.debug(u"Starting new HTTP connection (%d) to %s:%d over proxy-url %s" % (self.num_connections, self.host, self.port, self.proxyURL))
+		if self.proxyURL:
+			headers = {}
+			try:
+				url = urlparse.urlparse(self.proxyURL)
+				if url.password:
+					logger.setConfidentialStrings(url.password)
+				logger.debug(u"Starting new HTTP connection (%d) to %s:%d over proxy-url %s" % (self.num_connections, self.host, self.port, self.proxyURL))
 
-                                conn = HTTPConnection(host=url.hostname,port=url.port)
-                                if url.username and url.password:
-                                        logger.debug(u"Proxy Authentication detected, setting auth with user: '%s'" % url.username)
-                                        auth = "{username}:{password}".format(username=url.username,password=url.password)
-                                        headers['Proxy-Authorization'] = 'Basic ' + base64.base64encode(auth)
-                                conn.set_tunnel(self.host, self.port, headers)
-		                logger.debug(u"Connection established to: %s" % self.host)
-                        except Exception as e:
-                                logger.error(e)
+				conn = HTTPConnection(host=url.hostname, port=url.port)
+				if url.username and url.password:
+					logger.debug(u"Proxy Authentication detected, setting auth with user: '%s'" % url.username)
+					auth = "{username}:{password}".format(username=url.username, password=url.password)
+					headers['Proxy-Authorization'] = 'Basic ' + base64.base64encode(auth)
+				conn.set_tunnel(self.host, self.port, headers)
+				logger.debug(u"Connection established to: %s" % self.host)
+			except Exception as error:
+				logger.error(error)
 		else:
-		        logger.debug(u"Starting new HTTP connection (%d) to %s:%d" % (self.num_connections, self.host, self.port))
-		        conn = HTTPConnection(host=self.host, port=self.port)
-		        non_blocking_connect_http(conn, self.connectTimeout)
-		        logger.debug(u"Connection established to: %s" % self.host)
+			logger.debug(u"Starting new HTTP connection (%d) to %s:%d" % (self.num_connections, self.host, self.port))
+			conn = HTTPConnection(host=self.host, port=self.port)
+			non_blocking_connect_http(conn, self.connectTimeout)
+			logger.debug(u"Connection established to: %s" % self.host)
 		return conn
 
 	def _get_conn(self, timeout=None):
@@ -423,8 +431,12 @@ class HTTPConnectionPool(object):
 			# This should never happen if self.block == True
 			logger.warning(u"HttpConnectionPool is full, discarding connection: %s" % self.host)
 
+	def get_host(self, url):
+		(scheme, host, port, baseurl, username, password) = urlsplit(url)
+		return (scheme, host, port)
+
 	def is_same_host(self, url):
-		return url.startswith('/') or get_host(url) == (self.scheme, self.host, self.port)
+		return url.startswith('/') or self.get_host(url) == (self.scheme, self.host, self.port)
 
 	def getPeerCertificate(self, asPem=False):
 		if not self.peerCertificate:
@@ -497,12 +509,15 @@ class HTTPConnectionPool(object):
 					logger.info(u"Encoding authorization")
 					randomKey = randomString(32).encode('latin-1')
 					encryptedKey = encryptWithPublicKeyFromX509CertificatePEMFile(randomKey, self.serverCertFile)
+					logger.debug2("Key encrypted...")
 					headers['X-opsi-service-verification-key'] = base64.b64encode(encryptedKey)
 					for key, value in headers.items():
 						if key.lower() == 'authorization':
+							logger.debug2("Procesing authorization header...")
 							if value.lower().startswith('basic'):
 								value = value[5:].strip()
 							value = base64.b64decode(value).strip()
+							logger.debug2("Decoded authorization header...")
 							encodedAuth = encryptWithPublicKeyFromX509CertificatePEMFile(value, self.serverCertFile)
 							headers[key] = 'Opsi ' + base64.b64encode(encodedAuth)
 				except Exception as error:
@@ -568,7 +583,7 @@ class HTTPConnectionPool(object):
 					logger.debug(
 						u"Request to host {0!r} failed, retry: {1}, firstTryTime: {2}, now: {3}, retryTime: {4}, connectTimeout: {5}, socketTimeout: {6}",
 						self.host, retry, firstTryTime, now, self.retryTime, self.connectTimeout, self.isocketTimeout
-					 )
+					)
 				except Exception as error:
 					logger.debug(u"Logging message failed: {0!r}", error)
 					logger.warning(u"Logging message failed: {0}", forceUnicode(error))
@@ -613,18 +628,30 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 		"""
 		Return a fresh HTTPSConnection.
 		"""
+<<<<<<< HEAD
 		
+=======
+
+>>>>>>> devel
 		if self.proxyURL:
 			headers = {}
 			try:
 				url = urlparse.urlparse(self.proxyURL)
 				if url.password:
 					logger.setConfidentialString(url.password)
+<<<<<<< HEAD
 					logger.debug(u"Starting new HTTPS connection (%d) to %s:%d over proxy-url %s" % (self.num_connections, self.host, self.port, self.proxyURL))
 				conn = HTTPSConnection(host=url.hostname, port=url.port)
 				if url.username and url.password:
 					logger.debug(u"Proxy Authentication detected, setting auth with user: '%s'" % url.username)
 					auth = "{username}:{password}".format(username=url.username,password=url.password)
+=======
+				logger.debug(u"Starting new HTTPS connection (%d) to %s:%d over proxy-url %s" % (self.num_connections, self.host, self.port, self.proxyURL))
+				conn = HTTPSConnection(host=url.hostname, port=url.port)
+				if url.username and url.password:
+					logger.debug(u"Proxy Authentication detected, setting auth with user: '%s'" % url.username)
+					auth = "{username}:{password}".format(username=url.username, password=url.password)
+>>>>>>> devel
 					headers['Proxy-Authorization'] = 'Basic ' + base64.base64encode(auth)
 				conn.set_tunnel(self.host, self.port, headers)
 				logger.debug(u"Connection established to: %s" % self.host)
@@ -634,19 +661,34 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 			logger.debug(u"Starting new HTTPS connection (%d) to %s:%d" % (self.num_connections, self.host, self.port))
 			conn = HTTPSConnection(host=self.host, port=self.port)
 			logger.debug(u"Connection established to: %s" % self.host)
+<<<<<<< HEAD
+=======
+
+>>>>>>> devel
 		if self.verifyServerCert or self.verifyServerCertByCa:
 			try:
 				non_blocking_connect_https(conn, self.connectTimeout, self.caCertFile)
 				if not self.verifyServerCertByCa:
 					self.serverVerified = True
-			except Exception as error:
-				logger.debug(error)
-				if error.__class__.__name__ != 'SSLError' or self.verifyServerCertByCa:
+					logger.debug("Server verified.")
+			except ssl_module.SSLError as error:
+				logger.debug(u"Verification failed: {0!r}", error)
+				if self.verifyServerCertByCa:
 					raise OpsiServiceVerificationError(u"Failed to verify server cert by CA: %s" % error)
+
+				logger.debug("Going to try a connect without caCertFile...")
 				non_blocking_connect_https(conn, self.connectTimeout)
+<<<<<<< HEAD
+=======
+			except Exception as error:
+				logger.debug(u"Verification failed: {0!r}", error)
+				raise OpsiServiceVerificationError(forceUnicode(error))
+
+>>>>>>> devel
 		self.num_connections += 1
 		self.peerCertificate = getPeerCertificate(conn, asPEM=True)
 		if self.verifyServerCertByCa:
+			logger.debug("Attempting to verify server cert by CA...")
 			try:
 				if self.peerCertificate:
 					commonName = crypto.load_certificate(crypto.FILETYPE_PEM, self.peerCertificate).get_subject().commonName
@@ -654,16 +696,17 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 					if re.search('^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$', host):
 						fqdn = socket.getfqdn(host)
 						if fqdn == host:
-							raise Exception(u"Failed to get fqdn for ip %s" % host)
+							raise OpsiServiceVerificationError(u"Failed to get fqdn for ip %s" % host)
 						host = fqdn
 					if not host or not commonName or (host.lower() != commonName.lower()):
-						raise Exception(u"Host '%s' does not match common name '%s'" % (host, commonName))
+						raise OpsiServiceVerificationError(u"Host '%s' does not match common name '%s'" % (host, commonName))
 					self.serverVerified = True
 				else:
-					raise Exception(u"Failed to get peer certificate")
+					raise OpsiServiceVerificationError(u"Failed to get peer certificate")
 			except Exception:
 				closeConnection(conn)
 				raise
+
 		return conn
 
 

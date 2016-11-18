@@ -1,5 +1,5 @@
-#!/usr/bin/env python
-#-*- coding: utf-8 -*-
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
 # Copyright (C) 2013-2016 uib GmbH <info@uib.de>
@@ -25,43 +25,14 @@ Testing the opsi file backend.
 
 from __future__ import absolute_import
 
-from .helpers import unittest
+import pytest
 
 from OPSI.Types import BackendConfigurationError
 
-from .Backends.File import FileBackendMixin
-from .BackendTestMixins import (ConfigStateTestsMixin, ProductPropertiesTestMixin,
-    ProductDependenciesTestMixin, AuditTestsMixin,
-    ConfigTestsMixin, ProductsTestMixin, ProductsOnClientTestsMixin,
-    ProductsOnDepotTestsMixin, ProductPropertyStateTestsMixin,
-    ExtendedBackendTestsMixin, BackendTestsMixin)
-from .BackendTestMixins.Hosts import HostsTestMixin
+from .Backends.File import getFileBackend
 
 
-class FileBackendTestCase(unittest.TestCase, FileBackendMixin,
-    ConfigStateTestsMixin, ProductPropertiesTestMixin, ConfigTestsMixin,
-    ProductDependenciesTestMixin, AuditTestsMixin, ProductsTestMixin,
-    ProductsOnClientTestsMixin, ProductsOnDepotTestsMixin,
-    ProductPropertyStateTestsMixin,
-    ExtendedBackendTestsMixin, BackendTestsMixin, HostsTestMixin):
-    """
-    Testing the file backend.
-
-    There is no license backend test, because that information gets not
-    stored in the file backend.
-    """
-    def setUp(self):
-        self.setUpBackend()
-
-    def tearDown(self):
-        self.tearDownBackend()
-
-    def testMethod(self):
-        self.assertNotEqual(None, self.backend)
-
-    def testGetRawDataFailsBecauseNoQuerySupport(self):
-        self.assertRaises(BackendConfigurationError, self.backend.getRawData, "blabla")
-
-
-if __name__ == '__main__':
-    unittest.main()
+def testGetRawDataFailsOnFileBackendBecauseMissingQuerySupport():
+    with getFileBackend() as backend:
+        with pytest.raises(BackendConfigurationError):
+            backend.getRawData('SELECT * FROM BAR;')

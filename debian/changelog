@@ -1,3 +1,153 @@
+python-opsi (4.0.7.27-1) experimental; urgency=medium
+
+  * Improved __repr__ of Group, ProductProperty, ProductPropertyState and
+    their subclasses.
+  * OpsiBackupArchive does not fail anymore if an added file does not exist.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 25 Oct 2016 11:29:56 +0200
+
+python-opsi (4.0.7.26-1) experimental; urgency=medium
+
+  * SQLite backend: Fix syntax error that may occur during an ALTER TABLE
+    if more than one column should be altered.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 10 Oct 2016 17:54:42 +0200
+
+python-opsi (4.0.7.25-1) testing; urgency=medium
+
+  * DepotserverBackend: Fix problem with package installation.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 29 Sep 2016 18:16:54 +0200
+
+python-opsi (4.0.7.24-1) stable; urgency=medium
+
+  * ConfigurationData: On UCS we preferably read the domain from UCR.
+    If this fails we resort to the Samba config file.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 27 Sep 2016 12:37:43 +0200
+
+python-opsi (4.0.7.23-2) stable; urgency=medium
+
+  * Correct entry in changelog.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 26 Sep 2016 15:29:35 +0200
+
+python-opsi (4.0.7.23-1) stable; urgency=medium
+
+  * OPSI.System.Posix: added missing 'datetime' import.
+  * OPSI.System.Posix: fix wrong reference in getBlockDeviceBusType
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 26 Sep 2016 13:18:20 +0200
+
+python-opsi (4.0.7.22-1) testing; urgency=medium
+
+  * DepotserverBackend: function depot_installPackage now has parameter
+    'forceProductId' to force a specific product id when installing a
+     product. The installation will be made into the corresponding directory
+     of the given product id.
+  * OPSI.Util.File.Archive.getFileType now follows symlinks.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 23 Sep 2016 14:15:56 +0200
+
+python-opsi (4.0.7.21-1) stable; urgency=medium
+
+  * New BackendMethod changeWANConfig
+  * OPSI.System.Posix: added enx network device support
+  * small fix in Repository-Handling
+
+ -- Erol Ueluekmen <e.ueluekmen@uib.de>  Wed, 21 Sep 2016 01:22:59 +0200
+
+python-opsi (4.0.7.20-1) stable; urgency=medium
+
+  * Various internal refactorings.
+  * OPSI.System.Posix.which now throws CommandNotFoundException instead of
+    a basic Exception to make catching errors easier.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 13 Sep 2016 09:39:56 +0200
+
+python-opsi (4.0.7.19-1) testing; urgency=medium
+
+  * OPSI.Util.Task.UpdateBackend.MySQL: temporary disable foreign key checks
+    when altering the depotId / hostId.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 06 Sep 2016 14:11:02 +0200
+
+python-opsi (4.0.7.18-1) stable; urgency=medium
+
+  * OPSI.System.Posix: added sleep function when using ms-sys to write partition
+    boot record
+  * Corrected some typos.
+  * Make header verify_server_cert work with current Python 2.7.
+  * OPSI.Util.Task.Samba.configureSamba: warn if oplocks are present in
+    Samba configuration.
+  * OPSI.System.Posix: Wait a few seconds before running ms-sys to avoid
+    timing problems on systems with NVME storage.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 24 Aug 2016 17:08:55 +0200
+
+python-opsi (4.0.7.17-1) stable; urgency=medium
+
+  * OPSI.Util: Refactored encryptWithPublicKeyFromX509CertificatePEMFile
+    and decryptWithPrivateKeyFromPEMFile.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 18 Aug 2016 10:10:53 +0200
+
+python-opsi (4.0.7.16-1) testing; urgency=medium
+
+  * OPSI.System.Posix: new function isOpenSUSELeap.
+  * OPSI.Util.Task.Rights: Improved support for openSUSE Leap.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 15 Aug 2016 16:53:24 +0200
+
+python-opsi (4.0.7.15-1) stable; urgency=medium
+
+  * corrected opsi-set-rights for openSUSE
+
+ -- Mathias Radtke <m.radtke@uib.de>  Wed, 10 Aug 2016 13:44:48 +0200
+
+python-opsi (4.0.7.14-1) stable; urgency=medium
+
+  * OPSI.Util.Task.Rights: Corrected path for UCS.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 05 Aug 2016 15:56:55 +0200
+
+python-opsi (4.0.7.13-1) testing; urgency=medium
+
+  * OPSI.Util.Task.Rights: Corrected path for SLES 11.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 27 Jul 2016 17:11:57 +0200
+
+python-opsi (4.0.7.12-1) stable; urgency=medium
+
+  * Correct indentation in some places.
+  * Use future-proof octal values.
+  * Correct version in OPSI.Util.Task.Rights and OPSI.Backend.JSONRPC.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 25 Jul 2016 14:39:25 +0200
+
+python-opsi (4.0.7.11-1) testing; urgency=medium
+
+  * OPSI.Util.Task.Rights: Better support for different SLES versions.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 25 Jul 2016 13:13:55 +0200
+
+python-opsi (4.0.7.10-1) testing; urgency=medium
+
+  * OPSI.Util.Task.Rights: Do not fail if MySQL backend is configured but
+    not yet set up.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 22 Jul 2016 11:17:24 +0200
+
+python-opsi (4.0.7.9-1) testing; urgency=medium
+
+  * OPSI.System.Posix: new functions: isDebian, isOpenSuse, isUbuntu, isUCS.
+  * OPSI.Util.Task.Rights: Refactored module.
+  * OPSI.Util.Task.Rights: setRights will try to set rights on the webserver
+    directory as installed by the package opsi-linux-support.
+  * 40_admin_tasks.conf: Bugfix for setupWhereNotInstalled
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 21 Jul 2016 16:22:58 +0200
+
 python-opsi (4.0.7.8-1) stable; urgency=low
 
   * OPSI.System.Windows:
@@ -335,7 +485,7 @@ python-opsi (4.0.6.31-1) experimental; urgency=medium
 python-opsi (4.0.6.30-1) experimental; urgency=medium
 
   * OPSI.Service.Session: SessionHandler.sessionExpired does more frequently
-    checks if session is still in use or timeout occured.
+    checks if session is still in use or timeout occurred.
   * 20_legacy.conf & 30_configed.conf: getDomain: Fix NameError caused by
     implicit import.
   * 10_opsi.conf & 30_configed.conf: getProductOrdering: Fix NameError caused

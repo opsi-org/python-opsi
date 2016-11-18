@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
 # Copyright (C) 2013-2016 uib GmbH <info@uib.de>
@@ -28,9 +28,9 @@ from __future__ import absolute_import
 import os.path
 
 from OPSI.Backend.Backend import ExtendedBackend
-from OPSI.Types import BackendMissingDataError
+from OPSI.Types import BackendError, BackendMissingDataError
 from OPSI.Util import randomString
-from .BackendTestMixins.Hosts import getConfigServer
+from .test_hosts import getConfigServer
 from .helpers import workInTemporaryDirectory
 
 import pytest
@@ -83,7 +83,7 @@ def testSettingUserCredentialsWithoutDepot(fakeCredentialsBackend):
         backend.user_setCredentials("hans", '')
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def fakeCredentialsBackend(configDataBackend):
     backend = configDataBackend
     backend.host_insertObject(getConfigServer())  # Required for file backend.
@@ -99,3 +99,16 @@ def fakeCredentialsBackend(configDataBackend):
             yield backend
         finally:
             backend._opsiPasswdFile = originalFile
+
+
+def testBackend_info(configDataBackend):
+    info = configDataBackend.backend_info()
+
+    assert 'opsiVersion' in info
+    assert 'modules' in info
+    assert 'realmodules' in info
+
+
+def testBackend_getSharedAlgorithmThrowsExceptionIfAlgoUnknown(configDataBackend):
+    with pytest.raises(BackendError):
+        configDataBackend.backend_getSharedAlgorithm("foo")

@@ -344,10 +344,14 @@ class SQLBackend(ConfigDataBackend):
 		return (newAttributes, newFilter)
 
 	def _adjustResult(self, objectClass, result):
-		id = self._objectAttributeToDatabaseAttribute(objectClass, 'id')
-		if id in result:
-			result['id'] = result[id]
-			del result[id]
+		idAttribute = self._objectAttributeToDatabaseAttribute(objectClass, 'id')
+
+		try:
+			result['id'] = result[idAttribute]
+			del result[idAttribute]
+		except KeyError:
+			pass
+
 		return result
 
 	def _objectToDatabaseHash(self, object):
@@ -358,13 +362,12 @@ class SQLBackend(ConfigDataBackend):
 			except KeyError:
 				pass  # not there - can be
 
-		if issubclass(object.__class__,  Product):
+		if issubclass(object.__class__, Product):
 			try:
 				# Truncating a possibly too long changelog entry
 				hash['changelog'] = hash['changelog'][:65534]
-			except (KeyError, TypeError) as e:
-				# Either not present in hash or set to None
-				pass
+			except (KeyError, TypeError):
+				pass  # Either not present in hash or set to None
 
 		if issubclass(object.__class__, Relationship):
 			try:
@@ -372,11 +375,11 @@ class SQLBackend(ConfigDataBackend):
 			except KeyError:
 				pass  # not there - can be
 
-		for (key, value) in hash.items():
-			arg = self._objectAttributeToDatabaseAttribute(object.__class__, key)
-			if key != arg:
-				hash[arg] = hash[key]
-				del hash[key]
+		for objectAttribute in hash.keys():
+			dbAttribute = self._objectAttributeToDatabaseAttribute(object.__class__, objectAttribute)
+			if objectAttribute != dbAttribute:
+				hash[dbAttribute] = hash[objectAttribute]
+				del hash[objectAttribute]
 
 		return hash
 
@@ -873,7 +876,41 @@ class SQLBackend(ConfigDataBackend):
 			self._sql.execute('CREATE INDEX `index_software_config_clientId` on `SOFTWARE_CONFIG` (`clientId`);')
 			self._sql.execute('CREATE INDEX `index_software_config_nvsla` on `SOFTWARE_CONFIG` (`name`, `version`, `subVersion`, `language`, `architecture`);')
 
-		# Hardware audit tables
+		self._createAuditHardwareTables()
+
+	def _createTableHost(self):
+		logger.debug(u'Creating table HOST')
+		table = u'''CREATE TABLE `HOST` (
+				`hostId` varchar(255) NOT NULL,
+				`type` varchar(30),
+				`description` varchar(100),
+				`notes` varchar(500),
+				`hardwareAddress` varchar(17),
+				`ipAddress` varchar(15),
+				`inventoryNumber` varchar(30),
+				`created` TIMESTAMP,
+				`lastSeen` TIMESTAMP,
+				`opsiHostKey` varchar(32),
+				`oneTimePassword` varchar(32),
+				`maxBandwidth` integer,
+				`depotLocalUrl` varchar(128),
+				`depotRemoteUrl` varchar(255),
+				`depotWebdavUrl` varchar(255),
+				`repositoryLocalUrl` varchar(128),
+				`repositoryRemoteUrl` varchar(255),
+				`networkAddress` varchar(31),
+				`isMasterDepot` bool,
+				`masterDepotId` varchar(255),
+				PRIMARY KEY (`hostId`)
+			) {0};'''.format(self._sql.getTableCreationOptions('HOST'))
+		logger.debug(table)
+		self._sql.execute(table)
+		self._sql.execute('CREATE INDEX `index_host_type` on `HOST` (`type`);')
+
+	def _createAuditHardwareTables(self):
+		tables = self._sql.getTables()
+		existingTables = set(tables.keys())
+
 		for (hwClass, values) in self._auditHardwareConfig.items():
 			logger.debug(u"Processing hardware class '%s'" % hwClass)
 			hardwareDeviceTableName = u'HARDWARE_DEVICE_{0}'.format(hwClass)
@@ -993,35 +1030,6 @@ class SQLBackend(ConfigDataBackend):
 				logger.debug(hardwareConfigTable)
 				self._sql.execute(hardwareConfigTable)
 
-	def _createTableHost(self):
-		logger.debug(u'Creating table HOST')
-		table = u'''CREATE TABLE `HOST` (
-				`hostId` varchar(255) NOT NULL,
-				`type` varchar(30),
-				`description` varchar(100),
-				`notes` varchar(500),
-				`hardwareAddress` varchar(17),
-				`ipAddress` varchar(15),
-				`inventoryNumber` varchar(30),
-				`created` TIMESTAMP,
-				`lastSeen` TIMESTAMP,
-				`opsiHostKey` varchar(32),
-				`oneTimePassword` varchar(32),
-				`maxBandwidth` integer,
-				`depotLocalUrl` varchar(128),
-				`depotRemoteUrl` varchar(255),
-				`depotWebdavUrl` varchar(255),
-				`repositoryLocalUrl` varchar(128),
-				`repositoryRemoteUrl` varchar(255),
-				`networkAddress` varchar(31),
-				`isMasterDepot` bool,
-				`masterDepotId` varchar(255),
-				PRIMARY KEY (`hostId`)
-			) {0};'''.format(self._sql.getTableCreationOptions('HOST'))
-		logger.debug(table)
-		self._sql.execute(table)
-		self._sql.execute('CREATE INDEX `index_host_type` on `HOST` (`type`);')
-
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Hosts
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1043,15 +1051,18 @@ class SQLBackend(ConfigDataBackend):
 	def host_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.host_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting hosts, filter: %s" % filter)
-		hosts = []
+
 		type = forceList(filter.get('type', []))
-		if 'OpsiDepotserver' in type and not 'OpsiConfigserver' in type:
+		if 'OpsiDepotserver' in type and 'OpsiConfigserver' not in type:
 			type.append('OpsiConfigserver')
 			filter['type'] = type
+
+		hosts = []
 		(attributes, filter) = self._adjustAttributes(Host, attributes, filter)
 		for res in self._sql.getSet(self._createQuery('HOST', attributes, filter)):
 			self._adjustResult(Host, res)
 			hosts.append(Host.fromHash(res))
+
 		return hosts
 
 	def host_deleteObjects(self, hosts):

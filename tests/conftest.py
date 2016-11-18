@@ -19,9 +19,6 @@
 """
 Fixtures for tests.
 
-These will replace the mixins in the future and should be preferred when
-writing new tests.
-
 To use any of these fixtures use their name as a parameter when
 creating a test function. No rurther imports are needed.
 
@@ -45,16 +42,13 @@ from OPSI.Backend.BackendManager import BackendManager
 from .Backends.File import getFileBackend, _getOriginalBackendLocation
 from .Backends.SQLite import getSQLiteBackend
 from .Backends.MySQL import getMySQLBackend
-from .helpers import workInTemporaryDirectory
+from .helpers import workInTemporaryDirectory, createTemporaryTestfile
 
 import pytest
 
 
-@pytest.yield_fixture(
-    params=[getFileBackend, getSQLiteBackend, getMySQLBackend],
-    ids=['file', 'sqlite', 'mysql']
-)
-def configDataBackend(request):
+@pytest.fixture
+def configDataBackend(backendCreationContextManager):
     """
     Returns an `OPSI.Backend.ConfigDataBackend` for testing.
 
@@ -62,9 +56,17 @@ def configDataBackend(request):
     skips if required libraries are missing or conditions for the
     execution are not met.
     """
-    with request.param() as backend:
+    with backendCreationContextManager() as backend:
         with _backendBase(backend):
             yield backend
+
+
+@pytest.fixture(
+    params=[getFileBackend, getSQLiteBackend, getMySQLBackend],
+    ids=['file', 'sqlite', 'mysql']
+)
+def backendCreationContextManager(request):
+    yield request.param
 
 
 @contextmanager
@@ -78,7 +80,7 @@ def _backendBase(backend):
         backend.backend_deleteBase()
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def extendedConfigDataBackend(configDataBackend):
     """
     Returns an `OPSI.Backend.ExtendedConfigDataBackend` for testing.
@@ -90,7 +92,7 @@ def extendedConfigDataBackend(configDataBackend):
     yield ExtendedConfigDataBackend(configDataBackend)
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def cleanableDataBackend(_serverBackend):
     """
     Returns an backend that can be cleaned.
@@ -98,7 +100,7 @@ def cleanableDataBackend(_serverBackend):
     yield ExtendedConfigDataBackend(_serverBackend)
 
 
-@pytest.yield_fixture(
+@pytest.fixture(
     params=[getFileBackend, getMySQLBackend],
     ids=['file', 'mysql']
 )
@@ -110,7 +112,18 @@ def _serverBackend(request):
             yield backend
 
 
-@pytest.yield_fixture
+@pytest.fixture(
+    params=[getFileBackend, getMySQLBackend],
+    ids=['destination:file', 'destination:mysql']
+)
+def replicationDestinationBackend(request):
+    # This is the same as _serverBackend, but has custom id's set.
+    with request.param() as backend:
+        with _backendBase(backend):
+            yield backend
+
+
+@pytest.fixture
 def backendManager(_serverBackend):
     """
     Returns an `OPSI.Backend.BackendManager.BackendManager` for testing.
@@ -128,22 +141,81 @@ def backendManager(_serverBackend):
         )
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def licenseManagementBackend(_sqlBackend):
     '''Returns a backend that can handle License Management.'''
     yield ExtendedConfigDataBackend(_sqlBackend)
 
 
-@pytest.yield_fixture(
+@pytest.fixture(
     params=[getSQLiteBackend, getMySQLBackend],
     ids=['sqlite', 'mysql']
 )
-def _sqlBackend(request):
+def sqlBackendCreationContextManager(request):
+    yield request.param
+
+
+@pytest.fixture
+def _sqlBackend(sqlBackendCreationContextManager):
     '''Backends that make use of SQL.'''
 
+    with sqlBackendCreationContextManager() as backend:
+        with _backendBase(backend):
+            yield backend
+
+
+@pytest.fixture(
+    params=[getMySQLBackend],
+    ids=['mysql']
+)
+def multithreadingBackend(request):
     with request.param() as backend:
         with _backendBase(backend):
             yield backend
+
+
+@pytest.fixture(
+    params=[getSQLiteBackend, getMySQLBackend],
+    ids=['sqlite', 'mysql']
+)
+def hardwareAuditBackendWithHistory(request, hardwareAuditConfigPath):
+    with request.param(auditHardwareConfigFile=hardwareAuditConfigPath) as backend:
+        with _backendBase(backend):
+            yield ExtendedConfigDataBackend(backend)
+
+
+@pytest.fixture
+def hardwareAuditConfigPath():
+    '''
+    Copies the opsihwaudit.conf that is usually distributed for
+    installation to a temporary folder and then returns the new absolute
+    path of the config file.
+    '''
+    pathToOriginalConfig = os.path.join(os.path.dirname(__file__), '..',
+                                        'data', 'hwaudit', 'opsihwaudit.conf')
+
+    with createTemporaryTestfile(pathToOriginalConfig) as fileCopy:
+        yield fileCopy
+
+
+@pytest.fixture
+def auditDataBackend(backendCreationContextManager, hardwareAuditConfigPath):
+    with backendCreationContextManager(auditHardwareConfigFile=hardwareAuditConfigPath) as backend:
+        with _backendBase(backend):
+            yield ExtendedConfigDataBackend(backend)
+
+
+@pytest.fixture(
+    params=[getMySQLBackend],
+    ids=['mysql']
+)
+def licenseManagentAndAuditBackend(request):
+    # Note: this could run include SQLite but because then won't work
+    # on servers without opsi / licensing. Sadly sticking to this.
+
+    with request.param() as backend:
+        with _backendBase(backend):
+            yield ExtendedConfigDataBackend(backend)
 
 
 def pytest_runtest_setup(item):
@@ -151,8 +223,3 @@ def pytest_runtest_setup(item):
     if envmarker is not None:
         if not os.path.exists(os.path.join('/etc', 'opsi', 'modules')):
             pytest.skip("{0} requires a modules file!".format(item.name))
-
-    envmarker = item.get_marker("requiresHwauditConfigFile")
-    if envmarker is not None:
-        if not os.path.exists(os.path.join('/etc', 'opsi', 'hwaudit', 'opsihwaudit.conf')):
-            pytest.skip("{0} requires a opsihwaudit.conf in /etc/opsi/hwaudit!".format(item.name))

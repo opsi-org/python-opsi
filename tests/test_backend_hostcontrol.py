@@ -1,8 +1,8 @@
-#!/usr/bin/env python
-#-*- coding: utf-8 -*-
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -25,32 +25,28 @@ Testing the Host Control backend.
 
 from __future__ import absolute_import
 
-import unittest
+from OPSI.Backend.HostControl import HostControlBackend
+from .test_hosts import getClients
 
-from .Backends.HostControl import HostControlBackendMixin
-from .BackendTestMixins.Clients import ClientsMixin
-
-
-class HostControlBackendTestCase(unittest.TestCase, HostControlBackendMixin, ClientsMixin):
-    def setUp(self):
-        self.setUpBackend()
-
-    def tearDown(self):
-        self.tearDownBackend()
-
-    def testCallingStartAndStopMethod(self):
-        """
-        Test if calling the methods works.
-
-        This test does not check if WOL on these clients work nor that
-        they do exist.
-        """
-        self.setUpClients()
-        self.createHostsOnBackend()
-
-        self.backend.hostControl_start([u'client1.test.invalid'])
-        self.backend.hostControl_shutdown([u'client1.test.invalid'])
+import pytest
 
 
-if __name__ == '__main__':
-    unittest.main()
+def testCallingStartAndStopMethod(hostControlBackend):
+    """
+    Test if calling the methods works.
+
+    This test does not check if WOL on these clients work nor that
+    they do exist.
+    """
+    clients = getClients()
+    hostControlBackend.host_createObjects(clients)
+
+    hostControlBackend._hostRpcTimeout = 1  # for faster finishing of the test
+
+    hostControlBackend.hostControl_start([u'client1.test.invalid'])
+    hostControlBackend.hostControl_shutdown([u'client1.test.invalid'])
+
+
+@pytest.fixture
+def hostControlBackend(extendedConfigDataBackend):
+    yield HostControlBackend(extendedConfigDataBackend)

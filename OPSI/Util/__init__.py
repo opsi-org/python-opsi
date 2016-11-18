@@ -57,7 +57,7 @@ from OPSI.Logger import Logger
 from OPSI.Types import (forceBool, forceFilename, forceFqdn, forceInt,
 						forceIPAddress, forceNetworkAddress, forceUnicode)
 
-__version__ = '4.0.6.41'
+__version__ = '4.0.7.17'
 
 logger = Logger()
 
@@ -606,35 +606,33 @@ def blowfishDecrypt(key, crypt):
 def encryptWithPublicKeyFromX509CertificatePEMFile(data, filename):
 	import M2Crypto
 
-	with open(filename, 'r') as f:
-		cert = M2Crypto.X509.load_cert_string(f.read())
-		rsa = cert.get_pubkey().get_rsa()
-		enc = ''
-		chunks = []
-		while (len(data) > 16):
-			chunks.append(data[:16])
-			data = data[16:]
-		chunks.append(data)
-		for chunk in chunks:
-			enc += rsa.public_encrypt(data=chunk, padding=M2Crypto.RSA.pkcs1_oaep_padding)
-		return enc
+	cert = M2Crypto.X509.load_cert(filename)
+	rsa = cert.get_pubkey().get_rsa()
+	padding = M2Crypto.RSA.pkcs1_oaep_padding
+
+	def encrypt():
+		for parts in chunk(data, size=32):
+			yield rsa.public_encrypt(data=''.join(parts), padding=padding)
+
+	return ''.join(encrypt())
 
 
 def decryptWithPrivateKeyFromPEMFile(data, filename):
 	import M2Crypto
-	privateKey = M2Crypto.RSA.load_key(filename)
-	chunks = []
-	while (len(data) > 128):
-		chunks.append(data[:128])
-		data = data[128:]
-	chunks.append(data)
-	res = ''
-	for chunk in chunks:
-		res += privateKey.private_decrypt(data=chunk, padding=M2Crypto.RSA.pkcs1_oaep_padding)
 
-	if '\0' in res:
-		res = res[:res.find('\0')]
-	return res
+	privateKey = M2Crypto.RSA.load_key(filename)
+	padding = M2Crypto.RSA.pkcs1_oaep_padding
+
+	def decrypt():
+		for parts in chunk(data, size=256):
+			decr = privateKey.private_decrypt(data=''.join(parts), padding=padding)
+
+			for x in decr:
+				if x not in ('\x00', '\0'):
+					# Avoid any nullbytes
+					yield x
+
+	return ''.join(decrypt())
 
 
 def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeDir=None, includeFile=None, returnDirs=True, returnLinks=True, followLinks=False, repository=None):

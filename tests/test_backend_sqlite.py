@@ -1,5 +1,5 @@
-#!/usr/bin/env python
-#-*- coding: utf-8 -*-
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
 # Copyright (C) 2013-2016 uib GmbH <info@uib.de>
@@ -25,43 +25,12 @@ Testing the opsi SQLite backend.
 
 from __future__ import absolute_import
 
-from .Backends.SQLite import SQLiteBackendMixin
-from .BackendTestMixins import (ConfigStateTestsMixin, AuditTestsMixin,
-    ConfigTestsMixin, ProductsTestMixin, ExtendedBackendTestsMixin,
-    BackendTestsMixin)
-from .helpers import unittest, requiresModulesFile
-
 import pytest
 
 
-class BackendSQLiteTestCase(unittest.TestCase):
-    def testInitialisationDoesNotFail(self):
-        sqlModule = pytest.importorskip("OPSI.Backend.SQLite")
-        SQLiteBackend = sqlModule.SQLiteBackend
+def testInitialisationOfSQLiteBackendWithoutParametersDoesNotFail():
+    sqlModule = pytest.importorskip("OPSI.Backend.SQLite")
+    SQLiteBackend = sqlModule.SQLiteBackend
 
-        backend = SQLiteBackend()
-        backend.backend_createBase()
-
-
-class SQLiteBackendTestCase(unittest.TestCase, SQLiteBackendMixin,
-    BackendTestsMixin, ProductsTestMixin, AuditTestsMixin,
-    ExtendedBackendTestsMixin, ConfigTestsMixin, ConfigStateTestsMixin):
-    """Testing the SQLite backend.
-
-    This currently requires a valid modules file with enabled MySQL backend."""
-
-    @requiresModulesFile
-    def setUp(self):
-        self.backend = None
-        self.setUpBackend()
-
-    def tearDown(self):
-        self.tearDownBackend()
-        del self.backend
-
-    def testWeHaveABackend(self):
-        self.assertNotEqual(None, self.backend)
-
-
-if __name__ == '__main__':
-    unittest.main()
+    backend = SQLiteBackend()
+    backend.backend_createBase()

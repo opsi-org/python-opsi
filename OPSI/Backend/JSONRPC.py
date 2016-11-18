@@ -50,7 +50,7 @@ from OPSI.Backend.Backend import Backend, DeferredCall
 from OPSI.Util import serialize, deserialize
 from OPSI.Util.HTTP import urlsplit, getSharedConnectionPool, deflateEncode, deflateDecode, gzipDecode
 
-__version__ = '4.0.7.5'
+__version__ = '4.0.7.12'
 
 logger = Logger()
 
@@ -331,9 +331,9 @@ class JSONRPCBackend(Backend):
 				self._caCertFile = forceFilename(value)
 			elif option == 'verifyservercertbyca':
 				self._verifyServerCertByCa = forceBool(value)
-			elif option == 'proxyurl':
-                                logger.debug(u"ProxyURL detected: '%s'" % value)
-				self._proxyURL = forceUnicode(value)
+			elif option == 'proxyurl' and value is not None:
+			    logger.debug(u"ProxyURL detected: '%s'" % value)
+			    self._proxyURL = forceUnicode(value)
 
 		if not retry:
 			self._retryTime = 0

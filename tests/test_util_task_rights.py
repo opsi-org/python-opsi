@@ -1,8 +1,7 @@
-#!/usr/bin/env python
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2014-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -29,186 +28,379 @@ import grp
 import os
 import os.path
 import pwd
+from contextlib import contextmanager
+from collections import defaultdict
 
-from OPSI.Util.Task.Rights import (getDirectoriesManagedByOpsi, getDirectoriesForProcessing,
-    removeDuplicatesFromDirectories, chown)
+import pytest
 
-from .helpers import mock, unittest, workInTemporaryDirectory
+from OPSI.Util.Task.Rights import (chown, getDepotDirectory,
+    getDirectoriesAndExpectedRights, getWebserverRepositoryPath,
+    getWebserverUsernameAndGroupname, filterDirsAndRights,
+    setRightsOnSSHDirectory, setRightsOnFile)
 
-
-class SetRightsTestCase(unittest.TestCase):
-    def testGetDirectoriesToProcess(self):
-        with mock.patch('OPSI.Util.Task.Rights.isSLES', mock.Mock(return_value=False)):
-            directories = getDirectoriesManagedByOpsi()
-
-        self.assertTrue(u'/home/opsiproducts' in directories)
-        self.assertTrue(u'/etc/opsi' in directories)
-        self.assertTrue(u'/tftpboot/linux' in directories)
-        self.assertTrue(u'/var/lib/opsi' in directories)
-        self.assertTrue(u'/var/log/opsi' in directories)
-
-    def testGetDirectoriesToProcessOnSLES(self):
-        with mock.patch('OPSI.Util.Task.Rights.isSLES', mock.Mock(return_value=True)):
-            directories = getDirectoriesManagedByOpsi()
-
-        self.assertTrue(u'/var/log/opsi' in directories)
-        self.assertTrue(u'/etc/opsi' in directories)
-        self.assertTrue(u'/var/lib/opsi' in directories)
-        self.assertTrue(u'/var/lib/tftpboot/opsi' in directories)
-        self.assertTrue(u'/var/lib/opsi/workbench' in directories)
-
-    def testCleaningDirectoryList(self):
-        self.assertEquals(
-            set(['/home', '/etc']),
-            removeDuplicatesFromDirectories(['/home/', '/etc'])
-        )
-
-        self.assertEquals(
-            set(['/home']),
-            removeDuplicatesFromDirectories(['/home/', '/home/'])
-        )
-
-        self.assertEquals(
-            set(['/home']),
-            removeDuplicatesFromDirectories(['/home/', '/home/abc'])
-        )
-
-        self.assertEquals(
-            set(['/home']),
-            removeDuplicatesFromDirectories(['/home/abc/', '/home/', '/home/def/ghi'])
-        )
-
-        self.assertEquals(
-            set(['/']),
-            removeDuplicatesFromDirectories(['/home/', '/etc', '/'])
-        )
-
-        self.assertEquals(
-            set(['/a/bc/de', '/ab/c', '/bc/de']),
-            removeDuplicatesFromDirectories(['/a/bc/de', '/ab/c', '/bc/de'])
-        )
-
-    def testIgnoringSubfolders(self):
-        """
-        Subfolder should be ignored - real world testcase.
-
-        Running this on old opsi servers might cause problems if
-        they link /opt/pcbin/install to /var/lib/opsi/depot.
-        That's the reason for the patch.
-        """
-        def fakeRealpath(path):
-            return path
-
-        with mock.patch('OPSI.Util.Task.Rights.os.path.realpath', fakeRealpath):
-            self.assertEquals(
-                set([u'/var/log/opsi', u'/tftpboot/linux', u'/home/opsiproducts', u'/etc/opsi', u'/var/lib/opsi']),
-                removeDuplicatesFromDirectories([u'/var/log/opsi', u'/var/lib/opsi/depot', u'/tftpboot/linux', u'/var/lib/opsi/depot', u'/home/opsiproducts', u'/etc/opsi', u'/var/lib/opsi'])
-            )
+from .helpers import mock, workInTemporaryDirectory
 
 
-class GetDirectoriesForProcessingTestCase(unittest.TestCase):
-    def testGettingDirectories(self):
-        directories, _ = getDirectoriesForProcessing('/tmp')
-
-        self.assertTrue(len(directories) > 2)
-
-    def testOptPcbinGetRelevantIfInParameter(self):
-        directories, _ = getDirectoriesForProcessing('/opt/pcbin/install/foo')
-        self.assertTrue('/opt/pcbin/install' in directories)
-
-        directories, _ = getDirectoriesForProcessing('/tmp')
-        self.assertTrue('/opt/pcbin/install' not in directories)
-
-    def testDepotPathMayAlsoExistInDirectories(self):
-        with mock.patch('OPSI.Util.Task.Rights.getDepotUrl', lambda: u'file:///var/lib/opsi/depot'):
-            directories, depotDir = getDirectoriesForProcessing('/var/lib/opsi/depot/')
-
-        print("Directories: {0}".format(directories))
-        assert '/var/lib/opsi' in directories
-        print("depotDir: {0}".format(depotDir))
-        assert depotDir == '/var/lib/opsi/depot'
+OS_CHECK_FUNCTIONS = ['isRHEL', 'isCentOS', 'isSLES', 'isOpenSUSE', 'isUbuntu', 'isDebian', 'isUCS']
 
 
-class ChownTestCase(unittest.TestCase):
+@pytest.fixture
+def depotDirectory():
+    'Returning a fixed address when checking for a depotUrl'
+    depotUrl = u'file:///var/lib/opsi/depot'
+    with mock.patch('OPSI.Util.Task.Rights.getDepotUrl', lambda: depotUrl):
+        yield depotUrl
 
-    def testChangingOwnership(self):
-        try:
-            groupId = os.getgid()
-            userId = os.getuid()
-        except Exception as exc:
-            print("Could not get uid/guid: {0}".format(exc))
-            self.skipTest("Could not get uid/guid: {0}".format(exc))
 
-        print("Current group ID: {0}".format(groupId))
-        print("Current user ID: {0}".format(userId))
-        isRoot = os.geteuid() == 0
+@pytest.fixture
+def emptyDepotDirectoryCache():
+    'Making sure that no depotUrl is cached.'
+    with mock.patch('OPSI.Util.Task.Rights._CACHED_DEPOT_DIRECTORY', None):
+        yield
 
-        for gid in range(2, 60000):
+
+@pytest.fixture
+def patchUserInfo():
+    'Calls to find uid / gid will always succeed.'
+    uid = 1234
+    gid = 5678
+    with mock.patch('OPSI.Util.Task.Rights.pwd.getpwnam', return_value=(None, None, uid)):
+        with mock.patch('OPSI.Util.Task.Rights.grp.getgrnam', return_value=(None, None, gid)):
+            yield uid, gid
+
+
+@pytest.mark.parametrize("slesSupport, workbench, tftpdir", [
+    (False, u'/home/opsiproducts', u'/tftpboot/linux'),
+    (True, u'/var/lib/opsi/workbench', u'/var/lib/tftpboot/opsi')
+], ids=["sles", "non-sles"])
+def testGetDirectoriesToProcess(depotDirectory, patchUserInfo, slesSupport, workbench, tftpdir):
+    with mock.patch('OPSI.Util.Task.Rights.getWebserverRepositoryPath', lambda: '/path/to/apache'):
+        with mock.patch('OPSI.Util.Task.Rights.isSLES', lambda: slesSupport):
+            directories = [d for d, _ in getDirectoriesAndExpectedRights('/')]
+
+    assert u'/etc/opsi' in directories
+    assert u'/var/lib/opsi' in directories
+    assert u'/var/log/opsi' in directories
+    assert workbench in directories
+    assert tftpdir in directories
+    assert '/path/to/apache' in directories
+
+
+@pytest.mark.parametrize("slesSupport, workbench, tftpdir", [
+    (False, u'/home/opsiproducts', u'/tftpboot/linux'),
+    (True, u'/var/lib/opsi/workbench', u'/var/lib/tftpboot/opsi')
+], ids=["opensuse", "non-opensuse"])
+def testGetDirectoriesToProcessOpenSUSELeap(depotDirectory, patchUserInfo, slesSupport, workbench, tftpdir):
+    with mock.patch('OPSI.Util.Task.Rights.getWebserverRepositoryPath', lambda: '/path/to/apache'):
+        with mock.patch('OPSI.Util.Task.Rights.isOpenSUSELeap', lambda: slesSupport):
+            directories = [d for d, _ in getDirectoriesAndExpectedRights('/')]
+
+    assert u'/etc/opsi' in directories
+    assert u'/var/lib/opsi' in directories
+    assert u'/var/log/opsi' in directories
+    assert workbench in directories
+    assert tftpdir in directories
+    assert '/path/to/apache' in directories
+
+
+def testGettingDirectories(patchUserInfo, depotDirectory):
+    directories = [d for d, _ in getDirectoriesAndExpectedRights('/tmp')]
+    assert len(directories) > 2
+
+
+@pytest.mark.parametrize("testDir", [
+    '/opt/pcbin/install/foo',
+    pytest.mark.xfail('/tmp'),
+])
+def testOptPcbinGetRelevantIfInParameter(emptyDepotDirectoryCache, depotDirectory, testDir):
+    directories = getDepotDirectory(testDir)
+    assert '/opt/pcbin/install' in directories
+
+
+def testReturningEmptyPathIfLookupFailed(emptyDepotDirectoryCache, depotDirectory):
+    with mock.patch('OPSI.Util.Task.Rights.getDepotUrl', mock.Mock(side_effect=Exception)):
+        assert not getDepotDirectory('/')
+
+    with mock.patch('OPSI.Util.Task.Rights.getDepotUrl', lambda: 'invalid:/x'):
+        assert not getDepotDirectory('/')
+
+
+def testDepotPathMayWillBeReturned(depotDirectory):
+    depotDirToCheck = depotDirectory.split('file://', 1)[1]
+
+    depotDir = getDepotDirectory(depotDirToCheck)
+
+    assert depotDir == '/var/lib/opsi/depot'
+
+
+@pytest.fixture
+def currentUserId():
+    yield os.getuid()
+
+
+@pytest.fixture
+def nonRootUserId():
+    userId = os.getuid()
+    isRoot = os.geteuid() == 0
+
+    if isRoot:
+        for uid in range(2, 60000):
             try:
-                grp.getgrgid(gid)
-                changedGid = gid
+                pwd.getpwuid(uid)
+                changedUid = uid
                 break
             except KeyError:
                 pass
         else:
-            self.skipTest("No group for test found. Aborting.")
+            pytest.skip("No userId for test found. Aborting.")
 
-        if groupId == changedGid:
-            self.skipTest("Could not find another group.")
+        if userId == changedUid:
+            pytest.skip("Could not find another user.")
 
-        if isRoot:
-            for uid in range(2, 60000):
-                try:
-                    pwd.getpwuid(uid)
-                    changedUid = uid
-                    break
-                except KeyError:
-                    pass
+        return changedUid
+    else:
+        return -1
+
+
+@pytest.fixture
+def currentGroupId():
+    yield os.getgid()
+
+
+@pytest.fixture
+def nonRootGroupId(currentGroupId):
+    for gid in range(2, 60000):
+        try:
+            grp.getgrgid(gid)
+            if currentGroupId == gid:
+                # We do not want to use the same group ID.
+                continue
+
+            return gid
+        except KeyError:
+            pass
+    else:
+        pytest.skip("No group for test found. Aborting.")
+
+
+def testChangingOwnershipWithOurChown(currentUserId, nonRootUserId, currentGroupId, nonRootGroupId):
+    isRoot = os.geteuid() == 0
+    with workInTemporaryDirectory() as tempDir:
+        original = os.path.join(tempDir, 'original')
+        with open(original, 'w'):
+            pass
+
+        linkfile = os.path.join(tempDir, 'linkfile')
+        os.symlink(original, linkfile)
+        assert os.path.islink(linkfile)
+
+        # Changing the uid/gid to something different
+        os.chown(original, nonRootUserId, nonRootGroupId)
+        os.lchown(linkfile, nonRootUserId, nonRootGroupId)
+
+        for filename in (original, linkfile):
+            if os.path.islink(filename):
+                stat = os.lstat(filename)
             else:
-                self.skipTest("No userId for test found. Aborting.")
+                stat = os.stat(linkfile)
 
-            if userId == changedUid:
-                self.skipTest("Could not find another user.")
-        else:
-            changedUid = -1
+            assert nonRootGroupId == stat.st_gid
+            if not isRoot:
+                assert nonRootUserId == stat.st_uid
 
-        with workInTemporaryDirectory() as tempDir:
-            original = os.path.join(tempDir, 'original')
-            with open(original, 'w'):
+        # Correcting the uid/gid
+        chown(linkfile, currentUserId, currentGroupId)
+        chown(original, currentUserId, currentGroupId)
+
+        for filename in (original, linkfile):
+            if os.path.islink(filename):
+                stat = os.lstat(filename)
+            else:
+                stat = os.stat(linkfile)
+
+            assert currentGroupId == stat.st_gid
+            if not isRoot:
+                assert currentUserId == stat.st_uid
+
+
+def testGettingDirectoriesAndRights(patchUserInfo):
+    dm = dict(getDirectoriesAndExpectedRights('/'))
+    print(dm)
+
+    for rights in dm.values():
+        # For now we just want to make sure these fields are filled.
+        assert rights.uid
+        assert rights.gid
+
+    rights = dm[u'/etc/opsi']
+    print(rights)
+    assert rights.files == 0o660
+    assert rights.directories == 0o770
+    assert rights.correctLinks
+
+    rights = dm[u'/var/lib/opsi']
+    print(rights)
+    assert rights.files == 0o660
+    assert rights.directories == 0o770
+    assert not rights.correctLinks
+
+    rights = dm[u'/var/log/opsi']
+    print(rights)
+    assert rights.files == 0o660
+    assert rights.directories == 0o770
+    assert rights.correctLinks
+
+
+@pytest.mark.parametrize("directoryExists", [True, pytest.mark.xfail(False)])
+@pytest.mark.parametrize("dir, function", [
+    ('/var/www/html/opsi', 'isCentOS'),
+    ('/var/www/html/opsi', 'isDebian'),
+    ('/srv/www/htdocs/opsi', 'isOpenSUSE'),
+    ('/srv/www/htdocs/opsi', 'isSLES'),
+    ('/var/www/html/opsi', 'isRHEL'),
+    ('/var/www/html/opsi', 'isUbuntu'),
+    ('/var/www/opsi', 'isUCS'),
+])
+def testGettingWebserverRepositoryPath(dir, function, directoryExists):
+    with disableOSChecks(OS_CHECK_FUNCTIONS[:]):
+        with mock.patch('OPSI.Util.Task.Rights.{0}'.format(function), lambda: True):
+            with mock.patch('OPSI.Util.Task.Rights.os.path.exists', lambda x: directoryExists):
+                assert dir == getWebserverRepositoryPath()
+
+
+@pytest.mark.parametrize("function, username, groupname", [
+    ('isCentOS', 'apache', 'apache'),
+    ('isDebian', 'www-data', 'www-data'),
+    ('isOpenSUSE', 'wwwrun', 'www'),
+    ('isRHEL', 'apache', 'apache'),
+    ('isSLES', 'wwwrun', 'www'),
+    ('isUbuntu', 'www-data', 'www-data'),
+    ('isUCS', 'www-data', 'www-data'),
+    pytest.mark.xfail(('forceHostId', '', '')),
+])
+def testGettingWebserverUsernameAndGroupname(function, username, groupname):
+    with disableOSChecks(OS_CHECK_FUNCTIONS[:]):
+        with mock.patch('OPSI.Util.Task.Rights.{0}'.format(function), lambda: True):
+            user, group = getWebserverUsernameAndGroupname()
+            assert user == username
+            assert group == groupname
+
+
+@contextmanager
+def disableOSChecks(functions):
+    try:
+        func = functions.pop()
+        with mock.patch('OPSI.Util.Task.Rights.{0}'.format(func), return_value=False):
+            with disableOSChecks(functions):
+                yield
+    except IndexError:
+        yield
+
+
+def testFilterDirsAndRightsReturnsAllWhenRootIsGiven(patchUserInfo):
+    defaultDirGenerator = getDirectoriesAndExpectedRights('/')
+    dar = list(filterDirsAndRights('/', defaultDirGenerator))
+
+    assert len(dar) > 4
+
+    dirsReturned = set()
+
+    for dirname, rights in dar:
+        assert dirname
+        assert rights
+
+        dirsReturned.add(dirname)
+
+    assert len(dirsReturned) == len(dar), "Duplicate entry returned"
+
+
+def testLimitingFilterDirsAndRights(patchUserInfo):
+    depotDir = '/var/lib/opsi/depot'
+    depotDirExists = os.path.exists(depotDir)
+
+    defaultDirGenerator = getDirectoriesAndExpectedRights(depotDir)
+    dar = list(filterDirsAndRights(depotDir, defaultDirGenerator))
+
+    assert 3 > len(dar) >= 1
+
+    for dirname, _ in dar:
+        if depotDirExists and dirname == '/var/lib/opsi/depot':
+            break
+        elif not depotDirExists and dirname == '/var/lib/opsi':
+            break
+    else:
+        print("Dar is: {0}".format(dar))
+        print("Exists directory? {0}".format(depotDirExists))
+        raise RuntimeError("Missing path to workbench!")
+
+
+def testFilteringOutDuplicateDirectories():
+    def duplicatingGenerator():
+        for i, x in enumerate(('/etc/opsi', '/var/lib/opsi/', '/unrelated/')):
+            for _ in range(i):
+                yield x, None
+
+    counts = defaultdict(lambda: 0)
+    for d, _ in filterDirsAndRights('/', duplicatingGenerator()):
+        counts[d] += 1
+
+    for d, count in counts.items():
+        assert count == 1, "{0} was returned more than once!".format(d)
+
+
+def testSetRightsOnSSHDirectory():
+    groupId = os.getgid()
+    userId = os.getuid()
+
+    with workInTemporaryDirectory() as sshDir:
+        expectedFilemod = {
+            os.path.join(sshDir, u'id_rsa'): 0o640,
+            os.path.join(sshDir, u'id_rsa.pub'): 0o644,
+            os.path.join(sshDir, u'authorized_keys'): 0o600,
+        }
+
+        for filename in expectedFilemod:
+            with open(filename, 'w'):
                 pass
 
-            linkfile = os.path.join(tempDir, 'linkfile')
-            os.symlink(original, linkfile)
-            self.assertTrue(os.path.islink(linkfile))
+            os.chmod(filename, 0o400)
 
-            # Changing the uid/gid to something different
-            os.chown(original, changedUid, changedGid)
-            os.lchown(linkfile, changedUid, changedGid)
+        setRightsOnSSHDirectory(userId, groupId, path=sshDir)
 
-            for filename in (original, linkfile):
-                if os.path.islink(filename):
-                    stat = os.lstat(filename)
-                else:
-                    stat = os.stat(linkfile)
+        for filename, mod in expectedFilemod.items():
+            print("Checking {0} with expected mod {1}".format(filename, mod))
+            assert os.path.exists(filename)
 
-                self.assertEquals(changedGid, stat.st_gid)
-                if not isRoot:
-                    self.assertEquals(changedUid, stat.st_uid)
+            assert getMod(filename) == mod
 
-            # Correcting the uid/gid
-            chown(linkfile, userId, groupId)
-            chown(original, userId, groupId)
-
-            for filename in (original, linkfile):
-                if os.path.islink(filename):
-                    stat = os.lstat(filename)
-                else:
-                    stat = os.stat(linkfile)
-
-                self.assertEquals(groupId, stat.st_gid)
-                if not isRoot:
-                    self.assertEquals(userId, stat.st_uid)
+            stats = os.stat(filename)
+            # The following checks are not that good yet...
+            # ... but make sure the files are still accessible.
+            assert stats.st_gid == groupId
+            assert stats.st_uid == userId
 
 
-if __name__ == '__main__':
-    unittest.main()
+def getMod(path):
+    """
+    Return the octal representation of rights for a `path`.
+
+    Will only return the last three values, i.e. 664.
+    """
+    # As the returned value has many more information but we
+    # only require the last 3 digits we apply a logical AND
+    # with 777 to it. It's 777 because we have octal values...
+    return os.stat(path).st_mode & 0o777
+
+
+def testSettingRightsOnFile():
+    with workInTemporaryDirectory() as tempDir:
+        filePath = os.path.join(tempDir, 'foobar')
+        with open(filePath, 'w'):
+            pass
+
+        os.chmod(filePath, 0o000)
+        assert getMod(filePath) == 0o000
+
+        setRightsOnFile(filePath, 0o777)
+
+        assert getMod(filePath) == 0o777

@@ -24,14 +24,11 @@ Testing the JSON-RPC backend.
 """
 from __future__ import absolute_import
 
-from OPSI.Backend.JSONRPC import JSONRPCBackend
-from OPSI.Logger import Logger, LOG_DEBUG, LOG_NONE
-from OPSI.Util.HTTP import deflateEncode, gzipEncode
+import pytest
 
-from .helpers import unittest
-from .Backends.JSONRPC import JSONRPCTestCase
-from .BackendTestMixins import ExtendedBackendTestsMixin, BackendTestsMixin
-from .BackendTestMixins.Configs import ConfigStatesMixin
+from OPSI.Backend.JSONRPC import JSONRPCBackend
+from OPSI.Util.HTTP import deflateEncode, gzipEncode
+from OPSI.Util import randomString
 
 
 class FakeResponse(object):
@@ -43,69 +40,45 @@ class FakeResponse(object):
         return self._header.get(field, default)
 
 
-class JSONRPCBackendTestCase(unittest.TestCase):
-    def testCreatingInstance(self):
-        """
-        Testing the creation of an instance.
-
-        We connect to localhost without making a connection right from
-        the start on.
-        """
-        backend = JSONRPCBackend("localhost", connectoninit=False)
-
-    def testProcessingEmptyResponse(self):
-        """
-        Test processing an empty response
-        """
-        backend = JSONRPCBackend("localhost", connectoninit=False)
-        result = backend._processResponse(FakeResponse())
-
-        self.assertEquals(None, result)
+@pytest.fixture
+def jsonRpcBackend():
+    yield JSONRPCBackend("localhost", connectoninit=False)
 
 
-class JSONRPCBackendCompressionTestCase(unittest.TestCase):
-    def testProcessingGzippedResponse(self):
-        backend = JSONRPCBackend("localhost", connectoninit=False)
+def testProcessingEmptyResponse(jsonRpcBackend):
+    """
+    Test processing an empty response
+    """
+    result = jsonRpcBackend._processResponse(FakeResponse())
 
-        response = FakeResponse(
-            data=gzipEncode("This is gzipped"),
-            header={'content-encoding': 'gzip'}
-        )
-
-        self.assertEquals("This is gzipped", backend._processResponse(response))
-
-    def testProcessingDeflatedResponse(self):
-        backend = JSONRPCBackend("localhost", connectoninit=False)
-
-        response = FakeResponse(
-            data=deflateEncode("This is deflated"),
-            header={'content-encoding': 'deflate'}
-        )
-
-        self.assertEquals("This is deflated", backend._processResponse(response))
-
-    def testProcessingResponseBackwardsCompatible(self):
-        backend = JSONRPCBackend("localhost", connectoninit=False)
-
-        response = FakeResponse(
-            data=deflateEncode("This is deflated"),
-            header={'content-type': 'gzip-application/json'}
-        )
-
-        self.assertEquals("This is deflated", backend._processResponse(response))
+    assert result is None
 
 
-class JSONRPCBackendUsingTestCase(unittest.TestCase, JSONRPCTestCase,
-    # ExtendedBackendTestsMixin,
-    BackendTestsMixin,
-    # ConfigStatesMixin
-    ):
-    def setUp(self):
-        self.setUpBackend()
-
-    def tearDown(self):
-        self.tearDownBackend()
+@pytest.fixture
+def text():
+    return randomString(24)
 
 
-if __name__ == '__main__':
-    unittest.main()
+@pytest.mark.parametrize("contentEncoding, encodingFunction", [
+    ('deflate', deflateEncode),
+    ('gzip', gzipEncode),
+])
+def testProcessingResponseWithEncodedContent(jsonRpcBackend, encodingFunction, contentEncoding, text):
+    response = FakeResponse(
+        data=encodingFunction(text),
+        header={'content-encoding': contentEncoding}
+    )
+
+    assert text == jsonRpcBackend._processResponse(response)
+
+
+@pytest.mark.parametrize("contentType, encodingFunction", [
+    ('gzip-application/json', deflateEncode),
+])
+def testProcessingResponseBackwardsCompatible(jsonRpcBackend, encodingFunction, contentType, text):
+    response = FakeResponse(
+        data=encodingFunction(text),
+        header={'content-type': contentType}
+    )
+
+    assert text == jsonRpcBackend._processResponse(response)
