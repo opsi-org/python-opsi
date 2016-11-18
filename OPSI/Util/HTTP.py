@@ -628,30 +628,17 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 		"""
 		Return a fresh HTTPSConnection.
 		"""
-<<<<<<< HEAD
-		
-=======
-
->>>>>>> devel
 		if self.proxyURL:
 			headers = {}
 			try:
 				url = urlparse.urlparse(self.proxyURL)
 				if url.password:
 					logger.setConfidentialString(url.password)
-<<<<<<< HEAD
-					logger.debug(u"Starting new HTTPS connection (%d) to %s:%d over proxy-url %s" % (self.num_connections, self.host, self.port, self.proxyURL))
-				conn = HTTPSConnection(host=url.hostname, port=url.port)
-				if url.username and url.password:
-					logger.debug(u"Proxy Authentication detected, setting auth with user: '%s'" % url.username)
-					auth = "{username}:{password}".format(username=url.username,password=url.password)
-=======
 				logger.debug(u"Starting new HTTPS connection (%d) to %s:%d over proxy-url %s" % (self.num_connections, self.host, self.port, self.proxyURL))
 				conn = HTTPSConnection(host=url.hostname, port=url.port)
 				if url.username and url.password:
 					logger.debug(u"Proxy Authentication detected, setting auth with user: '%s'" % url.username)
 					auth = "{username}:{password}".format(username=url.username, password=url.password)
->>>>>>> devel
 					headers['Proxy-Authorization'] = 'Basic ' + base64.base64encode(auth)
 				conn.set_tunnel(self.host, self.port, headers)
 				logger.debug(u"Connection established to: %s" % self.host)
@@ -661,10 +648,7 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 			logger.debug(u"Starting new HTTPS connection (%d) to %s:%d" % (self.num_connections, self.host, self.port))
 			conn = HTTPSConnection(host=self.host, port=self.port)
 			logger.debug(u"Connection established to: %s" % self.host)
-<<<<<<< HEAD
-=======
 
->>>>>>> devel
 		if self.verifyServerCert or self.verifyServerCertByCa:
 			try:
 				non_blocking_connect_https(conn, self.connectTimeout, self.caCertFile)
@@ -678,13 +662,10 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 
 				logger.debug("Going to try a connect without caCertFile...")
 				non_blocking_connect_https(conn, self.connectTimeout)
-<<<<<<< HEAD
-=======
 			except Exception as error:
 				logger.debug(u"Verification failed: {0!r}", error)
 				raise OpsiServiceVerificationError(forceUnicode(error))
 
->>>>>>> devel
 		self.num_connections += 1
 		self.peerCertificate = getPeerCertificate(conn, asPEM=True)
 		if self.verifyServerCertByCa:
