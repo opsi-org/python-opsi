@@ -29,6 +29,7 @@ OpsiPXEConfd-Backend
 import socket
 import threading
 import time
+from contextlib import closing, contextmanager
 
 from OPSI.Logger import Logger
 from OPSI.Object import OpsiClient
@@ -39,7 +40,7 @@ from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Util import getfqdn
 
 __version__ = '4.0.6.3'
-__all__ = ['ServerConnection', 'OpsiPXEConfdBackend']
+__all__ = ['ServerConnection', 'OpsiPXEConfdBackend', 'createUnixSocket']
 
 logger = Logger()
 
@@ -49,27 +50,34 @@ class ServerConnection:
 		self.port = port
 		self.timeout = forceInt(timeout)
 
-	def createUnixSocket(self):
-		logger.notice(u"Creating unix socket '%s'" % self.port)
-		self._socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-		self._socket.settimeout(self.timeout)
-		try:
-			self._socket.connect(self.port)
-		except Exception as exc:
-			raise Exception(u"Failed to connect to socket '%s': %s" % (self.port, exc))
-
 	def sendCommand(self, cmd):
-		self.createUnixSocket()
-		self._socket.send(forceUnicode(cmd).encode('utf-8'))
-		result = None
-		try:
-			result = forceUnicode(self._socket.recv(4096))
-		except Exception as exc:
-			raise Exception(u"Failed to receive: %s" % exc)
-		self._socket.close()
+		with createUnixSocket(self.port, timeout=self.timeout) as unixSocket:
+			unixSocket.send(forceUnicode(cmd).encode('utf-8'))
+
+			result = ''
+			try:
+				for part in iter(lambda: unixSocket.recv(4096), ''):
+					result += forceUnicode(part)
+			except Exception as error:
+				raise Exception(u"Failed to receive: %s" % error)
+
 		if result.startswith(u'(ERROR)'):
 			raise Exception(u"Command '%s' failed: %s" % (cmd, result))
+
 		return result
+
+
+@contextmanager
+def createUnixSocket(port, timeout=5.0):
+	logger.notice(u"Creating unix socket '%s'" % port)
+	_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+	_socket.settimeout(timeout)
+	try:
+		with closing(_socket) as unixSocket:
+			unixSocket.connect(port)
+			yield unixSocket
+	except Exception as error:
+		raise Exception(u"Failed to connect to socket '%s': %s" % (port, error))
 
 
 class OpsiPXEConfdBackend(ConfigDataBackend):
