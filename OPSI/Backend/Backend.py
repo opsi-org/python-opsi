@@ -65,7 +65,7 @@ if os.name == 'posix':
 			from OPSI.ldaptor.protocols import pureldap
 			from OPSI.ldaptor import ldapfilter
 
-__version__ = '4.0.7.20'
+__version__ = '4.0.7.28'
 __all__ = [
 	'getArgAndCallString', 'DeferredCall', 'Backend', 'ExtendedBackend',
 	'ConfigDataBackend', 'ExtendedConfigDataBackend',
@@ -317,7 +317,7 @@ This defaults to ``self``.
 				continue
 
 			if type(value) != type(self._options[key]):
-				# raise ValueError(u"Wrong type '%s' for option '%s', expecting type '%s'" % (type(value), key, type(self._options[key])))
+				logger.debug(u"Wrong type {0} for option {1}, expecting type {2}", type(value), key, type(self._options[key]))
 				continue
 
 			self._options[key] = value

@@ -20,6 +20,22 @@ python-opsi (4.1.1-1) UNRELEASED; urgency=medium
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 04 Oct 2016 16:15:11 +0200
 
+python-opsi (4.0.7.28-1) stable; urgency=medium
+
+  * OPSI.Backend.Backend.Backend.backend_setOptions now logs whenever a value
+    is skipped because of the type differs from the expected one.
+  * OPSI.Backend.JSONRPC.JSONRPCBackend: corrected indentation.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 22 Nov 2016 14:12:48 +0100
+
+python-opsi (4.0.7.27-1) experimental; urgency=medium
+
+  * Improved __repr__ of Group, ProductProperty, ProductPropertyState and
+    their subclasses.
+  * OpsiBackupArchive does not fail anymore if an added file does not exist.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 25 Oct 2016 11:29:56 +0200
+
 python-opsi (4.0.7.26-1) experimental; urgency=medium
 
   * SQLite backend: Fix syntax error that may occur during an ALTER TABLE

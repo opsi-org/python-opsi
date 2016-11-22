@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This module is part of the desktop management solution opsi
@@ -1499,6 +1498,32 @@ class ProductProperty(Entity):
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'ProductProperty')
 
+	def __unicode__(self):
+		def getAttributes():
+			yield 'productId={0!r}'.format(self.productId)
+			yield 'productVersion={0!r}'.format(self.productVersion)
+			yield 'packageVersion={0!r}'.format(self.packageVersion)
+			yield 'propertyId={0!r}'.format(self.propertyId)
+
+			for attribute in ('description', 'defaultValues', 'possibleValues'):
+				try:
+					value = getattr(self, attribute)
+					if value:
+						yield '{0}={1!r}'.format(attribute, value)
+				except AttributeError:
+					pass
+
+			for attribute in ('editable', 'multiValue'):
+				try:
+					value = getattr(self, attribute)
+					if value is not None:
+						yield '{0}={1!r}'.format(attribute, value)
+				except AttributeError:
+					pass
+
+		return u"<{klass}({0})>".format(', '.join(getAttributes()),
+										klass=self.__class__.__name__)
+
 Entity.subClasses['ProductProperty'] = ProductProperty
 
 
@@ -1591,6 +1616,24 @@ class BoolProductProperty(ProductProperty):
 	@staticmethod
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'BoolProductProperty')
+
+	def __unicode__(self):
+		def getAttributes():
+			yield 'productId={0!r}'.format(self.productId)
+			yield 'productVersion={0!r}'.format(self.productVersion)
+			yield 'packageVersion={0!r}'.format(self.packageVersion)
+			yield 'propertyId={0!r}'.format(self.propertyId)
+
+			for attribute in ('description', 'defaultValues'):
+				try:
+					value = getattr(self, attribute)
+					if value:
+						yield '{0}={1!r}'.format(attribute, value)
+				except AttributeError:
+					pass
+
+		return u"<{klass}({0})>".format(', '.join(getAttributes()),
+										klass=self.__class__.__name__)
 
 ProductProperty.subClasses['BoolProductProperty'] = BoolProductProperty
 
@@ -1995,6 +2038,18 @@ class ProductPropertyState(Relationship):
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'ProductPropertyState')
 
+	def __unicode__(self):
+		def getAttributes():
+			yield 'productId={0!r}'.format(self.productId)
+			yield 'propertyId={0!r}'.format(self.propertyId)
+			yield 'objectId={0!r}'.format(self.objectId)
+
+			if self.values is not None:
+				yield 'values={0!r}'.format(self.values)
+
+		return u"<{klass}({0})>".format(', '.join(getAttributes()),
+										klass=self.getType())
+
 Relationship.subClasses['ProductPropertyState'] = ProductPropertyState
 
 
@@ -2040,7 +2095,7 @@ class Group(Object):
 		return fromJson(jsonString, 'Group')
 
 	def __unicode__(self):
-		return (u"<{klass}(id={id!r} parentGroupId={parentId!r}>".format(
+		return (u"<{klass}(id={id!r}, parentGroupId={parentId!r}>".format(
 				klass=self.getType(), id=self.id, parentId=self.parentGroupId))
 
 Object.subClasses['Group'] = Group

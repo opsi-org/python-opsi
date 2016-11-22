@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
 # Copyright (C) 2013-2016 uib GmbH <info@uib.de>
@@ -25,13 +24,16 @@ Testing OPSI.Objects
 
 from __future__ import absolute_import, print_function
 
+import pytest
 import unittest
 
-from OPSI.Object import (AuditHardwareOnHost, Host, LocalbootProduct,
-    OpsiConfigserver, OpsiDepotserver, Product, ProductDependency,
-    UnicodeConfig, getPossibleClassAttributes, mandatoryConstructorArgs)
+from OPSI.Object import (AuditHardwareOnHost, BoolProductProperty, Host,
+    LocalbootProduct, OpsiConfigserver, OpsiDepotserver, Product,
+    ProductDependency, ProductProperty, ProductPropertyState,
+    UnicodeConfig, UnicodeProductProperty,
+    getPossibleClassAttributes, mandatoryConstructorArgs)
 
-from .helpers import mock, cleanMandatoryConstructorArgsCache
+from .helpers import cleanMandatoryConstructorArgsCache
 
 
 class GetPossibleClassAttributesTestCase(unittest.TestCase):
@@ -120,38 +122,38 @@ class OpsiConfigServerComparisonTestCase(unittest.TestCase):
 class LocalbootProductTestCase(unittest.TestCase):
     def testComparison(self):
         obj1 = LocalbootProduct(
-            id                 = 'product2',
-            name               = u'Product 2',
-            productVersion     = '2.0',
-            packageVersion     = 'test',
-            licenseRequired    = False,
-            setupScript        = "setup.ins",
-            uninstallScript    = u"uninstall.ins",
-            updateScript       = "update.ins",
-            alwaysScript       = None,
-            onceScript         = None,
-            priority           = 0,
-            description        = None,
-            advice             = "",
-            productClassIds    = ['localboot-products'],
-            windowsSoftwareIds = ['{98723-7898adf2-287aab}', 'xxxxxxxx']
+            id='product2',
+            name=u'Product 2',
+            productVersion='2.0',
+            packageVersion='test',
+            licenseRequired=False,
+            setupScript="setup.ins",
+            uninstallScript=u"uninstall.ins",
+            updateScript="update.ins",
+            alwaysScript=None,
+            onceScript=None,
+            priority=0,
+            description=None,
+            advice="",
+            productClassIds=['localboot-products'],
+            windowsSoftwareIds=['{98723-7898adf2-287aab}', 'xxxxxxxx']
         )
         obj2 = LocalbootProduct(
-            id                 = 'product2',
-            name               = u'Product 2',
-            productVersion     = '2.0',
-            packageVersion     = 'test',
-            licenseRequired    = False,
-            setupScript        = "setup.ins",
-            uninstallScript    = u"uninstall.ins",
-            updateScript       = "update.ins",
-            alwaysScript       = None,
-            onceScript         = None,
-            priority           = 0,
-            description        = None,
-            advice             = "",
-            productClassIds    = ['localboot-products'],
-            windowsSoftwareIds = ['xxxxxxxx', '{98723-7898adf2-287aab}']
+            id='product2',
+            name=u'Product 2',
+            productVersion='2.0',
+            packageVersion='test',
+            licenseRequired=False,
+            setupScript="setup.ins",
+            uninstallScript=u"uninstall.ins",
+            updateScript="update.ins",
+            alwaysScript=None,
+            onceScript=None,
+            priority=0,
+            description=None,
+            advice="",
+            productClassIds=['localboot-products'],
+            windowsSoftwareIds=['xxxxxxxx', '{98723-7898adf2-287aab}']
         )
 
         self.assertEquals(obj1, obj2)
@@ -205,11 +207,11 @@ class HelpfulErrorMessageWhenCreationFromHashFailsTestCase(unittest.TestCase):
     def testGettingHelpfulErrorMessageWithBaseclassRelationship(self):
         try:
             ProductDependency.fromHash({
-                    "productAction" : "setup",
-                    "requirementType" : "after",
-                    "requiredInstallationStatus" : "installed",
-                    "requiredProductId" : "mshotfix",
-                    "productId" : "msservicepack"
+                    "productAction": "setup",
+                    "requirementType": "after",
+                    "requiredInstallationStatus": "installed",
+                    "requiredProductId": "mshotfix",
+                    "productId": "msservicepack"
                     # The following attributes are missing:
                     # * productVersion
                     # * packageVersion
@@ -352,3 +354,67 @@ class ProductTestCase(unittest.TestCase):
 
         self.assertEqual(newName, nameFromProd)
         self.assertEqual(128, len(nameFromProd))
+
+
+@pytest.mark.parametrize("propertyClass", [ProductProperty, BoolProductProperty, UnicodeProductProperty])
+@pytest.mark.parametrize("requiredAttribute", ["description", "defaultValues"])
+def testProductPropertyShowsOptionalArgumentsInRepr(propertyClass, requiredAttribute):
+    additionalParam = {requiredAttribute: [True]}
+    prodProp = propertyClass('testprod', '1.0', '2', 'myproperty', **additionalParam)
+
+    r = repr(prodProp)
+    print(r)
+    assert requiredAttribute in r
+    assert r.startswith('<')
+    assert r.endswith('>')
+
+
+@pytest.mark.parametrize("propertyClass", [ProductProperty, BoolProductProperty, UnicodeProductProperty])
+@pytest.mark.parametrize("attributeName", ['description'])
+@pytest.mark.parametrize("attributeValue", ['someText', pytest.mark.xfail(''), pytest.mark.xfail(None)])
+def testProductPropertyRepresentationShowsValueIfFilled(propertyClass, attributeName, attributeValue):
+    attrs = {attributeName: attributeValue}
+    prodProp = propertyClass('testprod', '1.0', '2', 'myproperty', **attrs)
+
+    r = repr(prodProp)
+    print(r)
+    assert '{0}='.format(attributeName) in r
+    assert repr(attributeValue) in r
+
+
+@pytest.mark.parametrize("propertyClass", [ProductProperty, UnicodeProductProperty])
+@pytest.mark.parametrize("requiredAttribute", ["multiValue", "editable", "possibleValues"])
+def testProductPropertyShowsOptionalArgumentsInRepr2(propertyClass, requiredAttribute):
+    additionalParam = {requiredAttribute: [True]}
+    prodProp = propertyClass('testprod', '1.0', '2', 'myproperty', **additionalParam)
+
+    r = repr(prodProp)
+    print(r)
+    assert requiredAttribute in r
+    assert r.startswith('<')
+    assert r.endswith('>')
+
+
+@pytest.mark.parametrize("testValues", [
+    [1, 2, 3],
+    [False],
+    False,
+    [True],
+    True,
+])
+def testProductPropertyStateShowSelectedValues(testValues):
+    productId = 'testprod'
+    propertyId = 'myproperty'
+    objectId = 'testobject.foo.bar'
+    state = ProductPropertyState(productId, propertyId, objectId, values=testValues)
+
+    r = repr(state)
+    print(r)
+    assert state.__class__.__name__ in r
+    assert productId in r
+    assert propertyId in r
+    assert objectId in r
+    assert 'values=' in r
+    assert repr(testValues) in r
+    assert r.startswith('<')
+    assert r.endswith('>')
