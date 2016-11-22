@@ -2413,7 +2413,6 @@ class SQLBackend(ConfigDataBackend):
 			self._sql.update('HARDWARE_CONFIG_%s' % auditHardwareOnHost.hardwareClass, where, update)
 
 	def auditHardwareOnHost_getHashes(self, attributes=[], **filter):
-		hashes = []
 		hardwareClasses = set()
 		hardwareClass = filter.get('hardwareClass')
 		if hardwareClass not in ([], None):
@@ -2422,7 +2421,7 @@ class SQLBackend(ConfigDataBackend):
 				[hardwareClasses.add(key) for key in self._auditHardwareConfig if regex.search(key)]
 
 			if not hardwareClasses:
-				return hashes
+				return []
 
 		if not hardwareClasses:
 			hardwareClasses = set(self._auditHardwareConfig)
@@ -2437,6 +2436,7 @@ class SQLBackend(ConfigDataBackend):
 			if attribute not in filter:
 				filter[attribute] = None
 
+		hashes = []
 		for hardwareClass in hardwareClasses:
 			auditHardwareFilter = {}
 			classFilter = {}
