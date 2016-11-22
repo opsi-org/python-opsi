@@ -4,7 +4,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2010-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2010-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -332,8 +332,8 @@ class JSONRPCBackend(Backend):
 			elif option == 'verifyservercertbyca':
 				self._verifyServerCertByCa = forceBool(value)
 			elif option == 'proxyurl' and value is not None:
-			    logger.debug(u"ProxyURL detected: '%s'" % value)
-			    self._proxyURL = forceUnicode(value)
+				logger.debug(u"ProxyURL detected: '%s'" % value)
+				self._proxyURL = forceUnicode(value)
 
 		if not retry:
 			self._retryTime = 0
