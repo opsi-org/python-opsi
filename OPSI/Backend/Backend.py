@@ -305,7 +305,7 @@ This defaults to ``self``.
 				continue
 
 			if type(value) != type(self._options[key]):
-				# raise ValueError(u"Wrong type '%s' for option '%s', expecting type '%s'" % (type(value), key, type(self._options[key])))
+				logger.debug(u"Wrong type {0} for option {1}, expecting type {2}", type(value), key, type(self._options[key]))
 				continue
 
 			self._options[key] = value
