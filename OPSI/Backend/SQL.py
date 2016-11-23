@@ -453,9 +453,10 @@ class SQLBackend(ConfigDataBackend):
 
 		# Drop database
 		for i in self._sql.getTables().keys():
+			dropCommand = u'DROP TABLE `{name}`;'.format(name=i)
+			logger.debug(dropCommand)
 			try:
-				logger.debug(u'DROP TABLE `%s`;' % i)
-				self._sql.execute(u'DROP TABLE `%s`;' % i)
+				self._sql.execute(dropCommand)
 			except Exception as error:
 				logger.error(error)
 
