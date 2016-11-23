@@ -452,13 +452,19 @@ class SQLBackend(ConfigDataBackend):
 		ConfigDataBackend.backend_deleteBase(self)
 
 		# Drop database
-		for tableName in self._sql.getTables().keys():
-			dropCommand = u'DROP TABLE `{name}`;'.format(name=tableName)
-			logger.debug(dropCommand)
-			try:
-				self._sql.execute(dropCommand)
-			except Exception as error:
-				logger.error(u"Failed to drop table '{name}': {error}", name=tableName, error=error)
+		errorCount = 0
+		errorsExist = True
+		while errorsExist and errorCount < 96:
+			errorsExist = False
+			for tableName in self._sql.getTables().keys():
+				dropCommand = u'DROP TABLE `{name}`;'.format(name=tableName)
+				logger.debug(dropCommand)
+				try:
+					self._sql.execute(dropCommand)
+				except Exception as error:
+					logger.error(u"Failed to drop table '{name}': {error}", name=tableName, error=error)
+					errorCount += 1
+					errorsExist = True
 
 	def backend_createBase(self):
 		ConfigDataBackend.backend_createBase(self)
