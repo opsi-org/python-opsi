@@ -452,8 +452,8 @@ class SQLBackend(ConfigDataBackend):
 		ConfigDataBackend.backend_deleteBase(self)
 
 		# Drop database
-		for i in self._sql.getTables().keys():
-			dropCommand = u'DROP TABLE `{name}`;'.format(name=i)
+		for tableName in self._sql.getTables().keys():
+			dropCommand = u'DROP TABLE `{name}`;'.format(name=tableName)
 			logger.debug(dropCommand)
 			try:
 				self._sql.execute(dropCommand)
