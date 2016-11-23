@@ -198,7 +198,7 @@ class OpsiBackup(object):
 				while True:
 					try:
 						firstCharacter = sys.stdin.read(1)
-						return (forceUnicode(firstCharacter) in (u"y", u"Y"))
+						return forceUnicode(firstCharacter) in (u"y", u"Y")
 					except IOError:
 						pass
 			finally:
