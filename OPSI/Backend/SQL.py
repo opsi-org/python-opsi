@@ -458,7 +458,7 @@ class SQLBackend(ConfigDataBackend):
 			try:
 				self._sql.execute(dropCommand)
 			except Exception as error:
-				logger.error(error)
+				logger.error(u"Failed to drop table '{name}': {error}", name=tableName, error=error)
 
 	def backend_createBase(self):
 		ConfigDataBackend.backend_createBase(self)
