@@ -96,7 +96,7 @@ class OpsiBackup(object):
 
 		return OpsiBackupArchive(name=file, mode=mode, fileobj=fileobj)
 
-	def _create(self, destination=None, mode="raw", backends=["auto"], no_configuration=False, compression="bz2", flush_logs=False, **kwargs):
+	def create(self, destination=None, mode="raw", backends=["auto"], no_configuration=False, compression="bz2", flush_logs=False, **kwargs):
 		if "all" in backends:
 			backends = ["all"]
 
@@ -135,7 +135,7 @@ class OpsiBackup(object):
 
 			archive.close()
 
-			self._verify(archive.name)
+			self.verify(archive.name)
 
 			filename = archive.name.split(os.sep)[-1]
 			if not destination:
@@ -152,7 +152,7 @@ class OpsiBackup(object):
 			logger.logException(error, LOG_DEBUG)
 			raise error
 
-	def _verify(self, file, **kwargs):
+	def verify(self, file, **kwargs):
 		"""
 		Verify a backup.
 
@@ -244,7 +244,7 @@ class OpsiBackup(object):
 
 		return diff
 
-	def _restore(self, file, mode="raw", backends=[], configuration=True, force=False, **kwargs):
+	def restore(self, file, mode="raw", backends=[], configuration=True, force=False, **kwargs):
 		if not backends:
 			backends = []
 
@@ -254,7 +254,7 @@ class OpsiBackup(object):
 		auto = "auto" in backends
 
 		with closing(self._getArchive(file=file[0], mode="r")) as archive:
-			self._verify(archive.name)
+			self.verify(archive.name)
 
 			functions = []
 
