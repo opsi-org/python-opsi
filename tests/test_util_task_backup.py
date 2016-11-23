@@ -107,7 +107,7 @@ class BackupTestCase(unittest.TestCase):
                     with mock.patch('OPSI.Util.Task.Backup.OpsiBackupArchive.CONF_DIR', os.path.dirname(__file__)):
                         with mock.patch('OPSI.Util.Task.Backup.OpsiBackupArchive.BACKEND_CONF_DIR', fakeBackendDir):
                             backup = OpsiBackup()
-                            backup._create()
+                            backup.create()
 
                             dirListing = os.listdir(tempDir)
                             try:
