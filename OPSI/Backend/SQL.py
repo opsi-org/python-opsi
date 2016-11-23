@@ -450,19 +450,14 @@ class SQLBackend(ConfigDataBackend):
 
 	def backend_deleteBase(self):
 		ConfigDataBackend.backend_deleteBase(self)
+
 		# Drop database
-		errors = 0
-		done = False
-		while not done and (errors < 100):
-			done = True
-			for i in self._sql.getTables().keys():
-				try:
-					logger.debug(u'DROP TABLE `%s`;' % i)
-					self._sql.execute(u'DROP TABLE `%s`;' % i)
-				except Exception as error:
-					logger.error(error)
-					done = False
-					errors += 1
+		for i in self._sql.getTables().keys():
+			try:
+				logger.debug(u'DROP TABLE `%s`;' % i)
+				self._sql.execute(u'DROP TABLE `%s`;' % i)
+			except Exception as error:
+				logger.error(error)
 
 	def backend_createBase(self):
 		ConfigDataBackend.backend_createBase(self)
