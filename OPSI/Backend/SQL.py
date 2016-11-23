@@ -2156,9 +2156,9 @@ class SQLBackend(ConfigDataBackend):
 			elif isinstance(value, unicode):
 				auditHardware[attribute] = self._sql.escapeAsterisk(value)
 
-		logger.debug(u"Getting hardware ids, filter %s" % auditHardware)
+		logger.debug(u"Getting hardware ids, filter {0}", auditHardware)
 		hardwareIds = self._auditHardware_search(returnHardwareIds=True, attributes=[], **auditHardware)
-		logger.debug(u"Found hardware ids: %s" % hardwareIds)
+		logger.debug(u"Found hardware ids: {0}", hardwareIds)
 		return hardwareIds
 
 	def auditHardware_insertObject(self, auditHardware):
