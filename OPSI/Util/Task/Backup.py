@@ -96,7 +96,7 @@ class OpsiBackup(object):
 
 		return OpsiBackupArchive(name=file, mode=mode, fileobj=fileobj)
 
-	def create(self, destination=None, mode="raw", backends=["auto"], no_configuration=False, compression="bz2", flush_logs=False, **kwargs):
+	def create(self, destination=None, mode="raw", backends=["auto"], noConfiguration=False, compression="bz2", flushLogs=False, **kwargs):
 		if "all" in backends:
 			backends = ["all"]
 
@@ -124,12 +124,12 @@ class OpsiBackup(object):
 						archive.backupFileBackend(auto=("auto" in backends))
 					if backend in ("mysql", "all", "auto"):
 						logger.debug(u"Backing up mysql backend.")
-						archive.backupMySQLBackend(flushLogs=flush_logs, auto=("auto" in backends))
+						archive.backupMySQLBackend(flushLogs=flushLogs, auto=("auto" in backends))
 					if backend in ("dhcp", "all", "auto"):
 						logger.debug(u"Backing up dhcp configuration.")
 						archive.backupDHCPBackend(auto=("auto" in backends))
 
-			if not no_configuration:
+			if not noConfiguration:
 				logger.debug(u"Backing up opsi configuration.")
 				archive.backupConfiguration()
 
