@@ -245,7 +245,6 @@ def generateOpsiHostKey(forcePython=False):
 
 	:param forcePython: Force the usage of Python for host key generation.
 	"""
-	key = u''
 	if os.name == 'posix' and not forcePython:
 		logger.debug(u"Opening random device '%s' to generate opsi host key" % RANDOM_DEVICE)
 		with open(RANDOM_DEVICE) as r:
@@ -255,6 +254,7 @@ def generateOpsiHostKey(forcePython=False):
 	else:
 		logger.debug(u"Using python random module to generate opsi host key")
 		key = randomString(32, "0123456789abcdef")
+
 	return key
 
 
