@@ -48,7 +48,7 @@ try:
 	translation = gettext.translation('opsi-utils', '/usr/share/locale')
 	_ = translation.ugettext
 except Exception as error:
-	logger.error(u"Locale not found: {0}".format(error))
+	logger.error(u"Locale not found: {0}", error)
 
 	def _(string):
 		""" Function for translating text. """
@@ -96,7 +96,7 @@ class OpsiBackup(object):
 
 		return OpsiBackupArchive(name=file, mode=mode, fileobj=fileobj)
 
-	def _create(self, destination=None, mode="raw", backends=["auto"], no_configuration=False, compression="bz2", flush_logs=False, **kwargs):
+	def create(self, destination=None, mode="raw", backends=["auto"], noConfiguration=False, compression="bz2", flushLogs=False, **kwargs):
 		if "all" in backends:
 			backends = ["all"]
 
@@ -115,7 +115,7 @@ class OpsiBackup(object):
 				name = archive.name.split(os.sep)[-1]
 			else:
 				name = archive.name
-			logger.notice(u"Creating backup archive %s" % name)
+			logger.notice(u"Creating backup archive {0}", name)
 
 			if mode == "raw":
 				for backend in backends:
@@ -124,18 +124,18 @@ class OpsiBackup(object):
 						archive.backupFileBackend(auto=("auto" in backends))
 					if backend in ("mysql", "all", "auto"):
 						logger.debug(u"Backing up mysql backend.")
-						archive.backupMySQLBackend(flushLogs=flush_logs, auto=("auto" in backends))
+						archive.backupMySQLBackend(flushLogs=flushLogs, auto=("auto" in backends))
 					if backend in ("dhcp", "all", "auto"):
 						logger.debug(u"Backing up dhcp configuration.")
 						archive.backupDHCPBackend(auto=("auto" in backends))
 
-			if not no_configuration:
+			if not noConfiguration:
 				logger.debug(u"Backing up opsi configuration.")
 				archive.backupConfiguration()
 
 			archive.close()
 
-			self._verify(archive.name)
+			self.verify(archive.name)
 
 			filename = archive.name.split(os.sep)[-1]
 			if not destination:
@@ -152,7 +152,7 @@ class OpsiBackup(object):
 			logger.logException(error, LOG_DEBUG)
 			raise error
 
-	def _verify(self, file, **kwargs):
+	def verify(self, file, **kwargs):
 		"""
 		Verify a backup.
 
@@ -165,7 +165,7 @@ class OpsiBackup(object):
 
 		for fileName in files:
 			with closing(self._getArchive(mode="r", file=fileName)) as archive:
-				logger.info(u"Verifying archive %s" % fileName)
+				logger.info(u"Verifying archive {0}", fileName)
 				try:
 					archive.verify()
 					logger.notice(u"Archive is OK.")
@@ -198,7 +198,7 @@ class OpsiBackup(object):
 				while True:
 					try:
 						firstCharacter = sys.stdin.read(1)
-						return (forceUnicode(firstCharacter) in (u"y", u"Y"))
+						return forceUnicode(firstCharacter) in (u"y", u"Y")
 					except IOError:
 						pass
 			finally:
@@ -233,18 +233,16 @@ class OpsiBackup(object):
 			sysValue = str(getattr(sysInfo, key, None))
 			if sysValue.strip() != value.strip():
 				logger.debug(
-					'Found difference (System != Archive) at "{key}": '
-					'"{0}" vs. "{1}"'.format(
-						sysValue,
-						value,
-						key=key
-					)
+					'Found difference (System != Archive) at {key!r}: {0!r} vs. {1!r}',
+					sysValue,
+					value,
+					key=key
 				)
 				diff[key] = value
 
 		return diff
 
-	def _restore(self, file, mode="raw", backends=[], configuration=True, force=False, **kwargs):
+	def restore(self, file, mode="raw", backends=[], configuration=True, force=False, **kwargs):
 		if not backends:
 			backends = []
 
@@ -254,12 +252,12 @@ class OpsiBackup(object):
 		auto = "auto" in backends
 
 		with closing(self._getArchive(file=file[0], mode="r")) as archive:
-			self._verify(archive.name)
+			self.verify(archive.name)
 
 			functions = []
 
 			if force or self._verifySysconfig(archive):
-				logger.notice(u"Restoring data from backup archive %s." % archive.name)
+				logger.notice(u"Restoring data from backup archive {0}.", archive.name)
 
 				if configuration:
 					if not archive.hasConfiguration() and not force:
@@ -287,14 +285,14 @@ class OpsiBackup(object):
 
 				try:
 					for restoreFunction in functions:
-						logger.debug2(u"Running restoration function %s" % repr(restoreFunction))
+						logger.debug2(u"Running restoration function {0!r}", restoreFunction)
 						restoreFunction(auto)
 				except OpsiBackupBackendNotFound as error:
 					if not auto:
 						raise error
 				except Exception as error:
-					logger.error(u"Failed to restore data from archive %s: %s. Aborting." % (archive.name, error))
 					logger.logException(error, LOG_DEBUG)
+					logger.error(u"Failed to restore data from archive {0}: {1}. Aborting.", archive.name, error)
 					raise error
 
 				logger.notice(u"Restoration complete")
