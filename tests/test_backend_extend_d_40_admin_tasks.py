@@ -490,3 +490,70 @@ def testSetupWhereNotInstalled(backendManager):
     assert 1 == len(clientIDs)
     poc = backend.productOnClient_getObjects(productId=product.id, clientId=client_without_product.id)[0]
     assert "setup" == poc.actionRequest
+
+
+def testSetupWhereFailed(backendManager):
+    backend = backendManager
+
+    client_with_failed_product = OpsiClient(id='clientwithcurrent.test.invalid')
+    client_without_product = OpsiClient(id='clientwithout.test.invalid')
+
+    depot = OpsiDepotserver(id='depotserver1.test.invalid')
+
+    backend.host_createObjects([depot,
+                                client_with_failed_product,
+                                client_without_product])
+
+    product = LocalbootProduct('thunderheart', '1', '1', setupScript='foo.bar')
+
+    backend.product_createObjects([product])
+
+    poc = ProductOnClient(
+        clientId=client_with_failed_product.id,
+        productId=product.id,
+        productType=product.getType(),
+        productVersion=product.productVersion,
+        packageVersion=product.packageVersion,
+        actionResult='failed',
+    )
+
+    backend.productOnClient_createObjects([poc])
+
+    installedProductOnDepot = ProductOnDepot(
+        productId=product.id,
+        productType=product.getType(),
+        productVersion=product.productVersion,
+        packageVersion=product.packageVersion,
+        depotId=depot.getId(),
+        locked=False
+    )
+
+    backend.productOnDepot_createObjects([installedProductOnDepot])
+
+    clientConfigDepotId = UnicodeConfig(
+        id=u'clientconfig.depot.id',
+        description=u'Depotserver to use',
+        possibleValues=[],
+        defaultValues=[depot.id]
+    )
+
+    backend.config_createObjects(clientConfigDepotId)
+
+    for client in (client_with_failed_product, client_without_product):
+        clientDepotMappingConfigState = ConfigState(
+            configId=u'clientconfig.depot.id',
+            objectId=client.getId(),
+            values=depot.getId()
+        )
+
+        backend.configState_createObjects(clientDepotMappingConfigState)
+
+    # Starting the checks
+    assert not backend.productOnClient_getObjects(productId=product.id, clientId=client_without_product.id)
+    assert backend.productOnClient_getObjects(productId=product.id, clientId=client_with_failed_product.id)
+
+    clientIDs = backend.setupWhereFailed(product.id)
+
+    assert 1 == len(clientIDs)
+    poc = backend.productOnClient_getObjects(productId=product.id, clientId=client_with_failed_product.id)[0]
+    assert "setup" == poc.actionRequest
