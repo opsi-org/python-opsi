@@ -42,7 +42,7 @@ def workWithEmptyCommandFile(backend):
 			pass
 		with mock.patch.object(backend, '_getSSHCommandCustomFilename', return_value=filename):
 			with mock.patch.object(backend, '_getSSHCommandFilenames', return_value=[filename]):
-				with mock.patch.object(backend, '_isBuildIn', return_value=False):
+				with mock.patch.object(backend, '_isBuiltIn', return_value=False):
 					yield
 
 
@@ -65,7 +65,7 @@ def workWithBrokenCommandFile(backend):
 
 		with mock.patch.object(backend, '_getSSHCommandCustomFilename', return_value=filename):
 			with mock.patch.object(backend, '_getSSHCommandFilenames', return_value=[filename]):
-				with mock.patch.object(backend, '_isBuildIn', return_value=False):
+				with mock.patch.object(backend, '_isBuiltIn', return_value=False):
 					yield
 
 
