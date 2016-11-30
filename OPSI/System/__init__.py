@@ -43,8 +43,6 @@ if os.name == 'posix':
 elif os.name == 'nt':
 	from .Windows import *
 
-__version__ = '4.0.7.20'
-
 logger = Logger()
 
 

@@ -66,7 +66,6 @@ from OPSI.Logger import Logger
 from OPSI.Types import (forceBool, forceDict, forceInt, forceUnicode,
 	forceUnicodeList, forceUnicodeLower, forceFilename, forceList)
 
-__version__ = '4.0.7.20'
 __all__ = [
 	'HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE', 'hooks', 'SystemSpecificHook',
 	'addSystemHook', 'removeSystemHook', 'getArchitecture', 'getOpsiHotfixName',

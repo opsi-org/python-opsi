@@ -41,6 +41,7 @@ from Queue import Queue, Empty
 from twisted.conch.ssh import keys
 from sys import version_info
 
+from OPSI import __version__
 from OPSI.Logger import Logger, LOG_INFO, LOG_NONE
 from OPSI.Types import (forceBool, forceFilename, forceFloat, forceInt,
 						forceList, forceUnicode)
@@ -50,7 +51,6 @@ from OPSI.Backend.Backend import Backend, DeferredCall
 from OPSI.Util import serialize, deserialize
 from OPSI.Util.HTTP import urlsplit, getSharedConnectionPool, deflateEncode, deflateDecode, gzipDecode
 
-__version__ = '4.0.7.28'
 __all__ = ['JSONRPC', 'JSONRPCThread', 'RpcQueue', 'JSONRPCBackend']
 
 logger = Logger()

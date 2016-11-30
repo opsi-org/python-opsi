@@ -44,8 +44,6 @@ import time
 from OPSI.Logger import Logger
 from OPSI.System.Posix import Distribution, which
 
-__version__ = '4.0.6.6'
-
 LOGGER = Logger()
 
 try:

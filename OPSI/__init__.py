@@ -25,3 +25,5 @@ This module is part of the desktop management solution opsi
 :copyright: uib GmbH <info@uib.de>
 :license: GNU Affero General Public License version 3
 """
+
+__version__ = '4.0.7.22'

@@ -42,6 +42,23 @@ if not VERSION:
 with open("data/version", "w") as versionFile:
 	versionFile.write(VERSION)
 
+# Always set __version__ in OPSI.__init__.py to the version found in
+# the changelog to make sure the version is always up-to-date
+# and nobody needs to manually update it.
+initFilePath = os.path.join('OPSI', '__init__.py')
+newInitLines = []
+with open(initFilePath) as originalFile:
+	for line in originalFile:
+		if line.startswith('__version__'):
+			newInitLines.append("__version__ = '{0}'\n".format(VERSION))
+			continue
+
+		newInitLines.append(line)
+
+with open(initFilePath, 'w') as newInitFile:
+	newInitFile.writelines(newInitLines)
+print("Patched version {1!r} from changelog into {0}".format(initFilePath, VERSION))
+
 data_files = [
 	(
 		'/etc/opsi/backendManager',

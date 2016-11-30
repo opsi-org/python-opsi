@@ -56,7 +56,6 @@ from OPSI.Types import OpsiVersionError
 from OPSI.Object import *
 from OPSI.Util import objectToBeautifiedText, removeUnit
 
-__version__ = '4.1.1'
 __all__ = [
 	'Distribution', 'Harddisk', 'NetworkPerformanceCounter', 'SysInfo',
 	'SystemSpecificHook', 'addSystemHook', 'auditHardware', 'daemonize',

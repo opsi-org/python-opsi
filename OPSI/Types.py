@@ -39,7 +39,6 @@ import types
 
 from OPSI.Logger import Logger
 
-__version__ = '4.1.1'
 __all__ = [
 	'BackendAuthenticationError', 'BackendBadValueError',
 	'BackendConfigurationError', 'BackendError', 'BackendIOError',

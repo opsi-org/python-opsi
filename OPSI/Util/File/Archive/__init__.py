@@ -50,8 +50,6 @@ if os.name == 'posix':
 	import fcntl
 	import magic
 
-__version__ = "4.0.7.22"
-
 logger = Logger()
 
 try:

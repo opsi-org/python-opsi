@@ -47,7 +47,6 @@ from OPSI.Types import (forceActionProgress, forceActionRequest,
 	forceUnicodeList, forceUnicodeLower, forceUnsignedInt, forceUrl)
 from OPSI.Util import fromJson, toJson, generateOpsiHostKey, timestamp
 
-__version__ = '4.1.1'
 __all__ = [
     'AuditHardware', 'AuditHardwareOnHost', 'AuditSoftware',
     'AuditSoftwareOnClient', 'AuditSoftwareToLicensePool', 'BaseObject',

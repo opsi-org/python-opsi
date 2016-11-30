@@ -54,7 +54,6 @@ try:
 except ImportError:
 	syslog = None
 
-__version__ = '4.1.1'
 __all__ = [
 	'COLORS_AVAILABLE', 'COLOR_BLACK', 'COLOR_BLUE', 'COLOR_CYAN',
 	'COLOR_GREEN', 'COLOR_LIGHT_BLACK', 'COLOR_LIGHT_BLUE', 'COLOR_LIGHT_CYAN',

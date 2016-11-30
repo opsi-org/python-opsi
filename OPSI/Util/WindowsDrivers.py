@@ -41,8 +41,6 @@ from OPSI.Util import findFiles
 from OPSI.Util.File import InfFile, TxtSetupOemFile
 from OPSI.Util.Repository import Repository
 
-__version__ = '4.0.6.15'
-
 logger = Logger()
 
 
