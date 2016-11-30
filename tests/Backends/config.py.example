@@ -44,8 +44,8 @@ MySQLconfiguration = {
 # If database is set to :memory: it will use an in-memory database.
 # Otherwise you can set the path to an sqlite-db here.
 SQLiteconfiguration = {
-    # "database": u"/tmp/opsi.sqlite3",
-    "database": u":memory:",
-    "synchronous": True,
-    "databasecharset": 'utf8'
+	# "database": u"/tmp/opsi.sqlite3",
+	"database": u":memory:",
+	"synchronous": True,
+	"databasecharset": 'utf8'
 }
