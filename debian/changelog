@@ -1,4 +1,4 @@
-python-opsi (4.1.1-1) UNRELEASED; urgency=medium
+python-opsi (4.1.1.1-1) experimental; urgency=medium
 
   * OPSI.Logger, OPSI.Object, OPSI.System.Posix, OPSI.System.Windows,
     OPSI.Util and the modules in OPSI.Backend now provide __all__.
