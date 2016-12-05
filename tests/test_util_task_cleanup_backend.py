@@ -50,8 +50,6 @@ def testCleaninUpProducts(cleanableDataBackend):
     prod3 = LocalbootProduct('unhallowed', 3, 1)
     prod32 = LocalbootProduct('unhallowed', 3, 2)
 
-    print(dir(cleanableDataBackend))
-
     products = [prod1, prod12, prod13, prod2, prod3, prod32]
     for p in products:
         cleanableDataBackend.product_insertObject(p)
