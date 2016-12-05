@@ -183,11 +183,11 @@ class GroupRenamingTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
     def testObjectToGroupsHaveNewGroupIds(self):
         self.backend.group_rename(self.testGroup.id, self.testGroup2.id)
 
-        objTpGrp_client1 = self.backend.objectToGroup_getObjects(objectId=self.client1.id) [0]
-        self.assertTrue(objTpGrp_client1.groupId, self.testGroup2.id )
+        objTpGrp_client1 = self.backend.objectToGroup_getObjects(objectId=self.client1.id)[0]
+        self.assertEquals(objTpGrp_client1.groupId, self.testGroup2.id)
 
-        objTpGrp_client2 = self.backend.objectToGroup_getObjects(objectId=self.client2.id) [0]
-        self.assertTrue(objTpGrp_client2.groupId, self.testGroup2.id )
+        objTpGrp_client2 = self.backend.objectToGroup_getObjects(objectId=self.client2.id)[0]
+        self.assertEquals(objTpGrp_client2.groupId, self.testGroup2.id)
 
     def testObjectToGroupsHaveNotOldGroupIds(self):
         self.backend.group_rename(self.testGroup.id, self.testGroup2.id)
