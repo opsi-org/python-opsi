@@ -276,7 +276,7 @@ def test_hostIdents(extendedConfigDataBackend):
         {'id': 'client100.test.invalid'}
     ]
     for host in clients:
-        selfIdents.append(host.getIdent(returnType = 'dict'))
+        selfIdents.append(host.getIdent(returnType='dict'))
 
     selfIds = [d['id'] for d in selfIdents]
 
@@ -301,7 +301,7 @@ def test_hostIdents(extendedConfigDataBackend):
     for ident in ids:
         assert ident[0] in selfIds
 
-    ids = extendedConfigDataBackend.host_getIdents(returnType = 'dict')
+    ids = extendedConfigDataBackend.host_getIdents(returnType='dict')
     assert len(ids) == len(selfIdents)
     for ident in ids:
         assert ident['id'] in selfIds
