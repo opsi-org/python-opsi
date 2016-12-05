@@ -360,7 +360,7 @@ def testGettingBackendManagerWithDefaultConfig():
             pytest.skip("Missing {0}".format(path))
 
     backend = BackendManager()
-    print(backend.backend_info())
+    assert backend.backend_info()
 
 
 def testGettingBackendManagerWithCustomConfig():
@@ -393,11 +393,11 @@ def testGettingBackendManagerWithCustomConfig():
             )
 
         backend = BackendManager(**kwargs)
-        print(backend.backend_info())
+        assert backend.backend_info()
 
 
 def testBackendManagerCanAccessExtensions(backendManager):
-    print(backendManager)
-    print(backendManager.backend_info())
+    assert backendManager.backend_info()
 
-    print(backendManager.getServerIds_list())
+    # This may be empty but the call must not fail.
+    backendManager.getServerIds_list()

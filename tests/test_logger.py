@@ -23,7 +23,7 @@ Testing our logger.
 :license: GNU Affero General Public License version 3
 """
 
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 
 import os
 import sys
@@ -290,7 +290,7 @@ def testLoggingTracebacks():
 		if not values[-1]:  # removing last, empty line
 			values = values[:-1]
 
-		print(repr(values))
+		print("Traceback is: {0!r}".format(values))
 
 		assert len(values) > 1
 		assert "traceback" in values[0].lower()

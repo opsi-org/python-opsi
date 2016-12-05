@@ -1,5 +1,5 @@
-#!/usr/bin/env python
-#-*- coding: utf-8 -*-
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
 # Copyright (C) 2014-2016 uib GmbH <info@uib.de>
@@ -23,7 +23,7 @@ Testing extended backends features
 :license: GNU Affero General Public License version 3
 """
 
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 
 from contextlib import contextmanager
 from itertools import izip
@@ -92,8 +92,10 @@ def test_configState_getClientToDepotserver(extendedConfigDataBackend):
         for productOnDepot in productOnDepots:
             assert productOnDepot in expectedProducts
 
+    depotServerIDs = set(ds.id for ds in depotservers)
+
     for clientToDepot in clientToDepots:
-       assert clientToDepot['depotId'] in [ds.id for ds in depotservers]
+        assert clientToDepot['depotId'] in depotServerIDs
 
 
 @pytest.mark.requiresModulesFile
@@ -382,7 +384,6 @@ def test_ldapSearchFilter(extendedConfigDataBackend):
     extendedConfigDataBackend.productOnClient_createObjects(pocs)
     result = extendedConfigDataBackend.backend_searchIdents('(&(&(objectClass=OpsiClient))(&(objectClass=ProductOnClient)(installationStatus=installed))(&(objectClass=ProductOnClient)(productId={0})))'.format(product1.id))
     expected = [x["clientId"] for x in extendedConfigDataBackend.productOnClient_getIdents(returnType="dict", installationStatus="installed", productId=product1.id)]
-    print(extendedConfigDataBackend.productOnClient_getIdents(returnType="dict"))
     result.sort()
     expected.sort()
     assert expected  # If this fails there are no objects.
@@ -394,6 +395,9 @@ def test_ldapSearchFilter(extendedConfigDataBackend):
     expected.sort()
     assert expected  # If this fails there are no objects.
     assert expected == result
+
+    pocIdents = extendedConfigDataBackend.productOnClient_getIdents(returnType="dict")
+    assert pocIdents
 
 
 def test_gettingIdentsDoesNotRaiseAnException(extendedConfigDataBackend):

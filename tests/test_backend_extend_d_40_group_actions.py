@@ -1,5 +1,5 @@
-#!/usr/bin/env python
-#-*- coding: utf-8 -*-
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
 # Copyright (C) 2014-2016 uib GmbH <info@uib.de>
@@ -28,7 +28,7 @@ This tests what usually is found under
 :license: GNU Affero General Public License version 3
 """
 
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import
 
 import unittest
 
@@ -98,7 +98,6 @@ class GroupActionsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
             locked=False
         )
 
-
         self.backend.host_insertObject(client1)
         self.backend.host_insertObject(client2)
         self.backend.host_insertObject(depot)
@@ -115,8 +114,8 @@ class GroupActionsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
 
         self.backend.setProductActionRequestForHostGroup('host_group_1', 'product2', 'setup')
 
-        print(self.backend.productOnClient_getObjects())
-        self.assertTrue(self.backend.productOnClient_getObjects())
+        pocs = self.backend.productOnClient_getObjects()
+        self.assertTrue(pocs)
 
         self.assertEquals(2, len(self.backend.productOnClient_getObjects()))
 
