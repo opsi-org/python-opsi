@@ -1849,7 +1849,6 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 							objectFilterNew[str(key)] = value
 						objectFilter = objectFilterNew
 
-						logger.debug(u"Executing: this.%s_getIdents(returnType = 'list', %s)" % (getBackendMethodPrefix(oc), objectFilter))
 						addProductOnClientDefaults = self._options.get('addProductOnClientDefaults', False)
 						addConfigStateDefaults = self._options.get('addConfigStateDefaults', False)
 						addProductPropertyStateDefaults = self._options.get('addProductPropertyStateDefaults', False)
@@ -1859,6 +1858,8 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 							self._options['addConfigStateDefaults'] = True
 						elif objectClass == 'ProductPropertyState':
 							self._options['addProductPropertyStateDefaults'] = True
+
+						logger.debug(u"Executing: this.%s_getIdents(returnType = 'list', %s)" % (getBackendMethodPrefix(oc), objectFilter))
 						try:
 							res = {
 								"objectClass": objectClass,
