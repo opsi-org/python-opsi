@@ -271,8 +271,6 @@ def test_hostIdents(extendedConfigDataBackend):
     clients = getClients()
     extendedConfigDataBackend.host_createObjects(clients)
 
-    numHosts = len(clients) + 2
-
     selfIdents = [
         {'id': 'depot100.test.invalid'},
         {'id': 'client100.test.invalid'}
