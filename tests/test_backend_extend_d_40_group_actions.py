@@ -151,8 +151,8 @@ class GroupRenamingTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
             id='client2.test.invalid',
         )
 
-        client1ToGroup = ObjectToGroup(self.testGroup.getType(),self.testGroup.id, self.client1.id)
-        client2ToGroup = ObjectToGroup(self.testGroup.getType(),self.testGroup.id, self.client2.id)
+        client1ToGroup = ObjectToGroup(self.testGroup.getType(), self.testGroup.id, self.client1.id)
+        client2ToGroup = ObjectToGroup(self.testGroup.getType(), self.testGroup.id, self.client2.id)
 
         self.backend.host_insertObject(self.client1)
         self.backend.host_insertObject(self.client2)
@@ -173,7 +173,7 @@ class GroupRenamingTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
     def testCreateNewDeleteOldGroup(self):
         self.backend.group_rename(self.testGroup.id, self.testGroup2.id)
 
-        group = self.backend.group_getObjects(id=self.testGroup2.id) [0]
+        group = self.backend.group_getObjects(id=self.testGroup2.id)[0]
         self.assertEquals(group.description, self.testGroup.description)
         self.assertEquals(group.notes, self.testGroup.notes)
         self.assertEquals(group.parentGroupId, self.testGroup.parentGroupId)
