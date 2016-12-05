@@ -1761,7 +1761,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			elif operator == 'AND':
 				alreadyAddedValues = set()
 				for value in values2:
-					if not value in values1 or value in alreadyAddedValues:
+					if value not in values1 or value in alreadyAddedValues:
 						continue
 					alreadyAddedValues.add(value)
 					result['identValues'].append([value])
