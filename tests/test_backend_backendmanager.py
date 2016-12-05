@@ -45,19 +45,19 @@ def testBackendManagerDispatchesCallsToExtensionClass():
     These calls should not fail.
     """
     class TestClass(object):
-        def testMethod(self, y):
-            print("Working test.")
-            print('Argument: {0}'.format(y))
+        def methodOnBackend(self, y):
+            assert y == 'yyyyyyyy'
             print('This is me: {0}'.format(self))
 
-        def testMethod2(self):
+        def checkIfOptionsExist(self):
             print('Getting all that shiny options...')
-            print(self.backend_getOptions())
+            options = self.backend_getOptions()
+            assert options
 
     cdb = ConfigDataBackend()
     bm = BackendManager(backend=cdb, extensionClass=TestClass)
-    bm.testMethod('yyyyyyyy')
-    bm.testMethod2()
+    bm.methodOnBackend('yyyyyyyy')
+    bm.checkIfOptionsExist()
 
 
 def testBackendManagerMethods(backendManager):
