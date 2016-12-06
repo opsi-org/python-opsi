@@ -63,12 +63,14 @@ def testOverWritingOldCredentials(fakeCredentialsBackend):
     assert 'itworks' == credentials['password']
 
 
-def testWorkingWithManyCredentials(fakeCredentialsBackend):
+@pytest.mark.parametrize("number", [128])
+def testWorkingWithManyCredentials(fakeCredentialsBackend, number):
     backend = fakeCredentialsBackend
 
-    for _ in range(100):
+    for _ in range(number):
         backend.user_setCredentials(username=randomString(12),
                                     password=randomString(12))
+
     backend.user_setCredentials(username="hans", password='bla')
 
     credentials = backend.user_getCredentials(username="hans")
