@@ -43,6 +43,7 @@ import threading
 import time
 import types
 import warnings
+from contextlib import contextmanager
 from hashlib import md5
 from twisted.conch.ssh import keys
 
@@ -66,8 +67,9 @@ if os.name == 'posix':
 			from OPSI.ldaptor import ldapfilter
 
 __all__ = [
-	'getArgAndCallString', 'DeferredCall', 'Backend', 'ExtendedBackend',
-	'ConfigDataBackend', 'ExtendedConfigDataBackend',
+	'getArgAndCallString', 'temporaryBackendOptions',
+	'DeferredCall', 'Backend', 'ExtendedBackend', 'ConfigDataBackend',
+	'ExtendedConfigDataBackend',
 	'ModificationTrackingBackend', 'BackendModificationListener'
 ]
 
@@ -136,6 +138,16 @@ def getArgAndCallString(method):
 			callString.append(toAdd)
 
 	return (u', '.join(argString), u', '.join(callString))
+
+
+@contextmanager
+def temporaryBackendOptions(backend, **options):
+	oldOptions = backend.backend_getOptions()
+	try:
+		backend.backend_setOptions(options)
+		yield
+	finally:
+		backend.backend_setOptions(oldOptions)
 
 
 class DeferredCall(object):

@@ -1,3 +1,9 @@
+python-opsi (4.1.1.2-1) UNRELEASED; urgency=medium
+
+  * OPSI.Backend.Backend got new context manager temporaryBackendOptions.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 06 Dec 2016 10:10:55 +0100
+
 python-opsi (4.1.1.1-1) experimental; urgency=medium
 
   * OPSI.Logger, OPSI.Object, OPSI.System.Posix, OPSI.System.Windows,

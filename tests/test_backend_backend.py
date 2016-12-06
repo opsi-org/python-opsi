@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
@@ -27,6 +26,7 @@ from __future__ import absolute_import
 
 import os.path
 
+from OPSI.Backend.Backend import temporaryBackendOptions
 from OPSI.Backend.Backend import Backend, ExtendedBackend
 from OPSI.Types import BackendError, BackendMissingDataError
 from OPSI.Util import randomString
@@ -119,3 +119,32 @@ def testBackend_getSharedAlgorithmThrowsExceptionIfAlgoUnknown(configDataBackend
 def testBackendCanBeUsedAsContextManager():
     with Backend() as backend:
         print(backend.backend_info())
+
+
+@pytest.mark.parametrize("option", [
+    'addProductOnClientDefaults',
+    'returnObjectsOnUpdateAndCreate'
+])
+def testSettingTemporaryBackendOptions(extendedConfigDataBackend, option):
+    optionDefaults = {
+        'addProductOnClientDefaults': False,
+        'addProductPropertyStateDefaults': False,
+        'addConfigStateDefaults': False,
+        'deleteConfigStateIfDefault': False,
+        'returnObjectsOnUpdateAndCreate': False,
+        'addDependentProductOnClients': False,
+        'processProductOnClientSequence': False
+    }
+
+    tempOptions = {
+        option: True
+    }
+
+    with temporaryBackendOptions(extendedConfigDataBackend, **tempOptions):
+        currentOptions = extendedConfigDataBackend.backend_getOptions()
+        for key, value in optionDefaults.items():
+            if key == option:
+                assert currentOptions[key] == True
+                continue
+
+            assert currentOptions[key] == False
