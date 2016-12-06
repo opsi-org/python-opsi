@@ -25,9 +25,9 @@ Testing extended backends features
 
 from __future__ import absolute_import
 
-from contextlib import contextmanager
 from itertools import izip
 
+from OPSI.Backend.Backend import temporaryBackendOptions
 from OPSI.Object import (LocalbootProduct, OpsiClient, OpsiDepotserver,
     ProductOnClient, ProductOnDepot, UnicodeConfig)
 
@@ -37,18 +37,6 @@ from .test_products import (getLocalbootProducts, getNetbootProduct,
     getProductsOnClients, getProductsOnDepot)
 
 import pytest
-
-
-@contextmanager
-def temporaryBackendOptions(backend, **config):
-    oldkeys = backend.backend_getOptions()
-
-    try:
-        print("Setting backend option {0!r}".format(config))
-        backend.backend_setOptions(config)
-        yield
-    finally:
-        backend.backend_setOptions(oldkeys)
 
 
 # TODO: provide tests for these backend options:

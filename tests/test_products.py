@@ -25,6 +25,7 @@ Testing the functionality of working with products.
 
 from __future__ import absolute_import, print_function
 
+from OPSI.Backend.Backend import temporaryBackendOptions
 from OPSI.Object import (BoolProductProperty, LocalbootProduct, NetbootProduct,
     OpsiClient, OpsiDepotserver, ProductDependency, ProductOnClient,
     ProductOnDepot, ProductPropertyState, UnicodeConfig, UnicodeProductProperty)
@@ -1710,7 +1711,6 @@ def test_processProductOnClientSequence(extendedConfigDataBackend):
     * product4 (setup)
     * product2 (setup)
     """
-    from .test_backend_extendedconfigdatabackend import temporaryBackendOptions
     backend = extendedConfigDataBackend
 
     clients = getClients()
