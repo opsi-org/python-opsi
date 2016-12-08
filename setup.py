@@ -31,7 +31,7 @@ from setuptools import setup, find_packages
 import codecs
 import os
 
-LANGUAGES = ['da', 'de', 'es', 'fr', 'it', 'ru', 'en', 'pl']
+LANGUAGES = ['da', 'de', 'es', 'en', 'fr', 'it', 'pl', 'ru']
 
 with codecs.open(os.path.join("debian", "changelog"), 'r', 'utf-8') as changelog:
 	VERSION = changelog.readline().split('(')[1].split('-')[0]
