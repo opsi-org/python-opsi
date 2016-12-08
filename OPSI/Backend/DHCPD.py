@@ -151,13 +151,14 @@ class DHCPDBackend(ConfigDataBackend):
 
 	def _getResponsibleDepotId(self, clientId):
 		configStates = self._context.configState_getObjects(configId=u'clientconfig.depot.id', objectId=clientId)  # pylint: disable=maybe-no-member
-		if configStates and configStates[0].values:
+		try:
 			depotId = configStates[0].values[0]
-		else:
+		except IndexError:
 			configs = self._context.config_getObjects(id=u'clientconfig.depot.id')  # pylint: disable=maybe-no-member
 			if not configs or not configs[0].defaultValues:
 				raise Exception(u"Failed to get depotserver for client '%s', config 'clientconfig.depot.id' not set and no defaults found" % clientId)
 			depotId = configs[0].defaultValues[0]
+
 		return depotId
 
 	def backend_exit(self):
