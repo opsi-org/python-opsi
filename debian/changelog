@@ -1,3 +1,9 @@
+python-opsi (4.0.7.28-2) stable; urgency=medium
+
+  * Updated translations.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 08 Dec 2016 14:11:42 +0100
+
 python-opsi (4.0.7.28-1) stable; urgency=medium
 
   * OPSI.Backend.Backend.Backend.backend_setOptions now logs whenever a value
