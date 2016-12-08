@@ -89,10 +89,12 @@ data_files = [
 	(
 		'/etc/opsi/hwaudit/locales',
 		[
+			'data/hwaudit/locales/da_DA',
 			'data/hwaudit/locales/de_DE',
 			'data/hwaudit/locales/en_US',
+			'data/hwaudit/locales/es_ES',
 			'data/hwaudit/locales/fr_FR',
-			'data/hwaudit/locales/da_DA',
+			'data/hwaudit/locales/ru_RU',
 		]
 	)
 ]
