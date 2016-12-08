@@ -1,3 +1,9 @@
+python-opsi (4.0.7.28-3) stable; urgency=medium
+
+  * Updated translations for hwaudit.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 08 Dec 2016 15:17:30 +0100
+
 python-opsi (4.0.7.28-2) stable; urgency=medium
 
   * Updated translations.
