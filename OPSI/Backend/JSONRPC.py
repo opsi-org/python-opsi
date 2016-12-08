@@ -87,7 +87,7 @@ class JSONRPC(DeferredCall):
 		try:
 			if result.get('error'):
 				logger.debug('Result from RPC contained error!')
-				error = result.get('error')
+				error = result['error']
 				# Error occurred
 				if isinstance(error, dict) and error.get('message'):
 					message = error['message']
@@ -104,6 +104,7 @@ class JSONRPC(DeferredCall):
 					raise exception
 
 				raise Exception(u'{0} (error on server)'.format(error))
+
 			self.result = deserialize(
 				result.get('result'),
 				preventObjectCreation=self.method.endswith('_getHashes')
