@@ -129,7 +129,9 @@ class DHCPDBackend(ConfigDataBackend):
 		if depotId == self._depotId:
 			return self
 
-		if not self._depotConnections.get(depotId):
+		try:
+			return self._depotConnections[depotId]
+		except KeyError:
 			if not self._opsiHostKey:
 				depots = self._context.host_getObjects(id=self._depotId)  # pylint: disable=maybe-no-member
 				if not depots or not depots[0].getOpsiHostKey():
@@ -145,7 +147,7 @@ class DHCPDBackend(ConfigDataBackend):
 			except Exception as error:
 				raise Exception(u"Failed to connect to depot '%s': %s" % (depotId, error))
 
-		return self._depotConnections[depotId]
+			return self._depotConnections[depotId]
 
 	def _getResponsibleDepotId(self, clientId):
 		configStates = self._context.configState_getObjects(configId=u'clientconfig.depot.id', objectId=clientId)  # pylint: disable=maybe-no-member
