@@ -24,6 +24,8 @@ Functionality to automatically configure an OPSI MySQL backend.
 :license: GNU Affero General Public License version 3
 """
 
+from contextlib import closing, contextmanager
+
 import MySQLdb
 
 import OPSI.Util.Task.ConfigureBackend as backendUtils
@@ -128,6 +130,20 @@ def initializeDatabase(dbAdminUser, dbAdminPass, config,
 	"""
 	Create a database and grant the OPSI user the needed rights on it.
 	"""
+	@contextmanager
+	def connectAsDBA():
+		conConfig = {
+			"host": config['address'],
+			"user": dbAdminUser,
+			"passwd": dbAdminPass
+		}
+
+		try:
+			with closing(MySQLdb.connect(**conConfig)) as db:
+				yield db
+		except Exception as error:
+			raise DatabaseConnectionFailedException(error)
+
 	def createUser(host):
 		notificationFunction(u"Creating user '{username}' and granting"
 							u" all rights on '{database}'".format(**config))
@@ -157,45 +173,35 @@ def initializeDatabase(dbAdminUser, dbAdminPass, config,
 	# Connect to database host
 	notificationFunction(u"Connecting to host '{0[address]}' as user "
 						u"'{username}'".format(config, username=dbAdminUser))
-	try:
-		db = MySQLdb.connect(
-			host=config['address'],
-			user=dbAdminUser,
-			passwd=dbAdminPass
+	with connectAsDBA() as db:
+		notificationFunction(u"Successfully connected to host '{0[address]}'"
+							u" as user '{username}'".format(config,
+															username=dbAdminUser
+			)
 		)
-	except Exception as error:
-		raise DatabaseConnectionFailedException(error)
-	notificationFunction(u"Successfully connected to host '{0[address]}'"
-						u" as user '{username}'".format(config,
-														username=dbAdminUser
-		)
-	)
 
-	# Create opsi database and user
-	notificationFunction(u"Creating database '{database}'".format(**config))
-	try:
-		db.query(u'CREATE DATABASE {database} DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_bin;'.format(**config))
-	except MySQLdb.OperationalError as error:
-		if error[0] == ACCESS_DENIED_ERROR_CODE:
-			raise DatabaseConnectionFailedException(error)
-		raise error
-	except MySQLdb.ProgrammingError as error:
-		if error[0] != DATABASE_EXISTS_ERROR_CODE:
+		# Create opsi database and user
+		notificationFunction(u"Creating database '{database}'".format(**config))
+		try:
+			db.query(u'CREATE DATABASE {database} DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_bin;'.format(**config))
+		except MySQLdb.OperationalError as error:
+			if error[0] == ACCESS_DENIED_ERROR_CODE:
+				raise DatabaseConnectionFailedException(error)
 			raise error
-	notificationFunction(u"Database '{database}' created".format(**config))
+		except MySQLdb.ProgrammingError as error:
+			if error[0] != DATABASE_EXISTS_ERROR_CODE:
+				raise error
+		notificationFunction(u"Database '{database}' created".format(**config))
 
-	if config['address'] in ("localhost", "127.0.0.1",
-							systemConfig['hostname'], systemConfig['fqdn']):
-		createUser("localhost")
-		if config['address'] not in ("localhost", "127.0.0.1"):
-			createUser(config['address'])
-	else:
-		createUser(systemConfig['ipAddress'])
-		createUser(systemConfig['fqdn'])
-		createUser(systemConfig['hostname'])
-
-	# Disconnect from database
-	db.close()
+		if config['address'] in ("localhost", "127.0.0.1",
+								systemConfig['hostname'], systemConfig['fqdn']):
+			createUser("localhost")
+			if config['address'] not in ("localhost", "127.0.0.1"):
+				createUser(config['address'])
+		else:
+			createUser(systemConfig['ipAddress'])
+			createUser(systemConfig['fqdn'])
+			createUser(systemConfig['hostname'])
 
 	# Test connection / credentials
 	notificationFunction(
@@ -203,14 +209,15 @@ def initializeDatabase(dbAdminUser, dbAdminPass, config,
 		u"user '{username}'".format(**config)
 	)
 
+	userConnectionSettings = {
+		"host": config['address'],
+		"user": config['username'],
+		"passwd": config['password'],
+		"db": config['database']
+	}
 	try:
-		db = MySQLdb.connect(
-			host=config['address'],
-			user=config['username'],
-			passwd=config['password'],
-			db=config['database']
-		)
-		db.close()
+		with closing(MySQLdb.connect(**userConnectionSettings)):
+			pass
 	except Exception as error:
 		raise DatabaseConnectionFailedException(error)
 
