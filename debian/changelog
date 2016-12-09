@@ -1,3 +1,10 @@
+python-opsi (4.0.7.29-1) testing; urgency=medium
+
+  * OPSI.Util.Task.ConfigureBackend.MySQL: allow creation of users containing
+    a minus in their name.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 09 Dec 2016 17:28:45 +0100
+
 python-opsi (4.0.7.28-3) stable; urgency=medium
 
   * Updated translations for hwaudit.
