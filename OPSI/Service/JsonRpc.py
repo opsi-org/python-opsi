@@ -1,4 +1,3 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 # This module is part of the desktop management solution opsi
@@ -37,13 +36,10 @@ http://www.jsonrpc.org/specification
 import sys
 import time
 import traceback
-import zlib
 
-from twisted.internet.defer import maybeDeferred, DeferredList
-from twisted.internet import threads
-from OPSI.Util import fromJson, deserialize
+from OPSI.Util import deserialize
 from OPSI.Logger import Logger, LOG_INFO
-from OPSI.Types import forceUnicode, forceList, OpsiRpcError, OpsiBadRpcError
+from OPSI.Types import forceUnicode, OpsiRpcError
 
 
 logger = Logger()
@@ -206,69 +202,3 @@ class JsonRpc(object):
 		state['_instance'] = None
 		state['_interface'] = None
 		return state
-
-
-class JsonRpcRequestProcessor(object):
-
-	def __init__(self, query, callInstance, callInterface=None, gzip=False):
-		self.callInstance = callInstance
-		self.gzip = gzip
-
-		if callInterface is None:
-			self.callInterface = callInstance.backend_getInterface()
-		else:
-			self.callInterface = callInterface
-
-		self.query = query
-		self.rpcs = []
-
-	def decodeQuery(self):
-		try:
-			if self.gzip:
-				logger.debug(u"Expecting compressed data from client")
-				self.query = zlib.decompress(self.query)
-			self.query = unicode(self.query, 'utf-8')
-		except (UnicodeError, UnicodeEncodeError):
-			self.query = unicode(self.query, 'utf-8', 'replace')
-
-		return self.query
-
-	def buildRpcs(self):
-		if not self.query:
-			return None
-		if not self.callInstance:
-			raise Exception(u"Call instance not defined in %s" % self)
-		if not self.callInterface:
-			raise Exception(u"Call interface not defined in %s" % self)
-
-		try:
-			rpcs = fromJson(self.query, preventObjectCreation=True)
-			if not rpcs:
-				raise Exception(u"Got no rpcs")
-		except Exception as error:
-			raise OpsiBadRpcError(u"Failed to decode rpc: {0}".format(error))
-
-		for rpc in forceList(rpcs):
-			self.rpcs.append(
-				JsonRpc(
-					instance=self.callInstance,
-					interface=self.callInterface,
-					rpc=rpc
-				)
-			)
-
-		return self.rpcs
-
-	def _executeRpc(self, rpc, thread=True):
-		if thread:
-			deferred = threads.deferToThread(rpc.execute)
-		else:
-			deferred = maybeDeferred(rpc.execute)
-		return deferred
-
-	def executeRpcs(self, thread=True):
-		dl = [self._executeRpc(rpc=rpc, thread=thread) for rpc in self.rpcs]
-		return DeferredList(dl)
-
-	def getResults(self):
-		return self.rpcs

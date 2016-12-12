@@ -1,10 +1,9 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2011-2015 uib GmbH
+# Copyright (C) 2011-2016 uib GmbH
 
 # http://www.uib.de/
 
@@ -202,37 +201,5 @@ class OpsiDaemon(object):
 		d = self.isRunning()
 		d.addCallback(lambda x, s=sig: _sendSignal(s))
 
-
 	def getSocket(self):
 		return self.__class__.socket
-
-
-class OpsiPyDaemon(OpsiDaemon):
-
-	MAIN = """\
-import sys
-
-from twisted.application.reactors import getReactorTypes, installReactor
-
-for r in getReactorTypes():
-	if sys.argv[-3] == r.moduleName:
-		installReactor(r.shortName)
-
-from OPSI.Service.Process import runOpsiService
-
-runOpsiService(sys.argv[-1],sys.argv[-2], sys.argv[-3])
-"""
-
-	script = sys.executable
-
-	def __init__(self, socket, args=[], reactor=reactor):
-		args.extend([reactor.__module__, reflect.qual(self.configurationClass), reflect.qual(self.serviceClass)])
-		self.socket = socket
-
-		OpsiDaemon.__init__(self, args=["-c", self.MAIN] + args, reactor=reactor)
-
-	def findScript(self):
-		return sys.executable
-
-	def getSocket(self):
-		return self.socket
