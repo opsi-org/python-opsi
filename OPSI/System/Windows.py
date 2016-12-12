@@ -1132,7 +1132,7 @@ def logoffCurrentUser():
 	if (sys.getwindowsversion()[0] == 5):
 		if (sys.getwindowsversion()[1] == 0):
 			# NT5.0: win2k
-			raise NotImplemented(u"Not available on win2k")
+			raise NotImplementedError(u"Not available on win2k")
 		else:
 			# NT5.1: XP
 			command = u'logoff.exe'
