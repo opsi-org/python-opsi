@@ -403,6 +403,23 @@ class PackageControlFile(TextFile):
 		self._packageDependencies = []
 		self._incrementalPackage = False
 
+		productAttributes = set([
+			'id', 'type', 'name', 'description', 'advice', 'version',
+			'packageversion', 'priority', 'licenserequired', 'productclasses',
+			'pxeconfigtemplate', 'setupscript', 'uninstallscript',
+			'updatescript', 'alwaysscript', 'oncescript', 'customscript',
+			'userloginscript'
+		])
+		dependencyAttributes = set([
+			'action', 'requiredproduct', 'requiredproductversion',
+			'requiredpackageversion', 'requiredclass', 'requiredstatus',
+			'requiredaction', 'requirementtype'
+		])
+		propertyAttributes = set([
+			'type', 'name', 'default', 'values', 'description', 'editable',
+			'multivalue'
+		])
+
 		sectionType = None
 		option = None
 		for lineNum, line in enumerate(self._lines, start=1):
@@ -455,12 +472,7 @@ class PackageControlFile(TextFile):
 				elif key == 'incremental':
 					value = forceBool(value)
 
-			elif (sectionType == 'product' and key in \
-					('id', 'type', 'name', 'description', 'advice',
-					 'version', 'packageversion', 'priority',
-					 'licenserequired', 'productclasses', 'pxeconfigtemplate',
-					 'setupscript', 'uninstallscript', 'updatescript',
-					 'alwaysscript', 'oncescript', 'customscript', 'userloginscript')):
+			elif sectionType == 'product' and key in productAttributes:
 				option = key
 				if key == 'id':
 					value = forceProductId(value)
@@ -503,9 +515,7 @@ class PackageControlFile(TextFile):
 				option = key
 				value = forceUnicodeLower(value)
 
-			elif (sectionType == 'productdependency' and key in \
-					('action', 'requiredproduct', 'requiredproductversion', 'requiredpackageversion',
-					 'requiredclass', 'requiredstatus', 'requiredaction', 'requirementtype')):
+			elif sectionType == 'productdependency' and key in dependencyAttributes:
 				option = key
 				if key == 'action':
 					value = forceActionRequest(value)
@@ -524,7 +534,7 @@ class PackageControlFile(TextFile):
 				elif key == 'requirementtype':
 					value = forceRequirementType(value)
 
-			elif sectionType == 'productproperty' and key in ('type', 'name', 'default', 'values', 'description', 'editable', 'multivalue'):
+			elif sectionType == 'productproperty' and key in propertyAttributes:
 				option = key
 				if key == 'type':
 					value = forceProductPropertyType(value)
