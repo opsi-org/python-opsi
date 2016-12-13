@@ -28,8 +28,8 @@ SQLite backend.
 import threading
 from itertools import izip
 
-from apsw import (SQLITE_OPEN_CREATE, SQLITE_CONFIG_MULTITHREAD,
-				  SQLITE_OPEN_READWRITE, Connection)
+from apsw import (SQLITE_CONFIG_MULTITHREAD, SQLITE_OPEN_CREATE,
+	SQLITE_OPEN_READWRITE, Connection)
 
 from OPSI.Logger import Logger
 from OPSI.Types import forceBool, forceFilename, forceUnicode

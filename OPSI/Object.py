@@ -48,21 +48,21 @@ from OPSI.Types import (forceActionProgress, forceActionRequest,
 from OPSI.Util import fromJson, toJson, generateOpsiHostKey, timestamp
 
 __all__ = [
-    'AuditHardware', 'AuditHardwareOnHost', 'AuditSoftware',
-    'AuditSoftwareOnClient', 'AuditSoftwareToLicensePool', 'BaseObject',
-    'BoolConfig', 'BoolProductProperty', 'BootConfiguration',
-    'ConcurrentSoftwareLicense', 'Config', 'ConfigState', 'Entity', 'Group',
-    'Host', 'HostGroup', 'LicenseContract', 'LicenseOnClient', 'LicensePool',
-    'LocalbootProduct', 'Logger', 'NetbootProduct', 'OEMSoftwareLicense',
-    'Object', 'ObjectToGroup', 'OpsiClient', 'OpsiConfigserver',
-    'OpsiDepotserver', 'Product', 'ProductDependency', 'ProductGroup',
-    'ProductOnClient', 'ProductOnDepot', 'ProductProperty',
-    'ProductPropertyState', 'Relationship', 'RetailSoftwareLicense',
-    'SoftwareLicense', 'SoftwareLicenseToLicensePool', 'UnicodeConfig',
-    'UnicodeProductProperty', 'VolumeSoftwareLicense',
-    'decodeIdent', 'getBackendMethodPrefix', 'getForeignIdAttributes',
-    'getIdentAttributes', 'getPossibleClassAttributes',
-    'mandatoryConstructorArgs', 'objectsDiffer'
+	'AuditHardware', 'AuditHardwareOnHost', 'AuditSoftware',
+	'AuditSoftwareOnClient', 'AuditSoftwareToLicensePool', 'BaseObject',
+	'BoolConfig', 'BoolProductProperty', 'BootConfiguration',
+	'ConcurrentSoftwareLicense', 'Config', 'ConfigState', 'Entity', 'Group',
+	'Host', 'HostGroup', 'LicenseContract', 'LicenseOnClient', 'LicensePool',
+	'LocalbootProduct', 'Logger', 'NetbootProduct', 'OEMSoftwareLicense',
+	'Object', 'ObjectToGroup', 'OpsiClient', 'OpsiConfigserver',
+	'OpsiDepotserver', 'Product', 'ProductDependency', 'ProductGroup',
+	'ProductOnClient', 'ProductOnDepot', 'ProductProperty',
+	'ProductPropertyState', 'Relationship', 'RetailSoftwareLicense',
+	'SoftwareLicense', 'SoftwareLicenseToLicensePool', 'UnicodeConfig',
+	'UnicodeProductProperty', 'VolumeSoftwareLicense',
+	'decodeIdent', 'getBackendMethodPrefix', 'getForeignIdAttributes',
+	'getIdentAttributes', 'getPossibleClassAttributes',
+	'mandatoryConstructorArgs', 'objectsDiffer'
 ]
 
 logger = Logger()
