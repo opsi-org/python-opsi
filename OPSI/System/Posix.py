@@ -907,10 +907,7 @@ def isXenialSfdiskVersion():
 	"""
 	sfdiskVersionOutput = execute('%s --version' % which('sfdisk'))
 	sfdiskVersion = sfdiskVersionOutput[0].split(' ')[3].strip()
-	if sfdiskVersion == '2.27.1':
-		return True
-	else:
-		return False
+	return bool(sfdiskVersion == '2.27.1')
 
 
 def getHarddisks(data=None):
