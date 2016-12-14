@@ -623,27 +623,27 @@ def modifySortingClassesForAlgorithm1(products, setupRequirements):
 		logger.debug2(u"we are about to correct level {0}...", px)
 		if not fLevel2Prodlist[px]:
 			logger.debug2(u"no elements in this level")
-			pass
-		else:
-			for posti in fLevel2Prodlist[px]:
-				logger.debug2(u"posti {0}", posti)
-				if posti.id in requsByPosterior:
-					removeRequs = []
-					for requ in requsByPosterior[posti.id]:
-						if requ[0] not in fId2Prod:
-							logger.notice(u"product {0!r} should be arranged before product {1!r} but is not available", requ[0], requ[1])
-							removeRequs.append(requ)
-						else:
-							if fId2Prod[requ[0]].revisedPriority < px:
-								logger.notice(
-									u"product {0} must be pushed upwards from level {1} to level {2}, the level of {3}, to meet the requirement first {0}, later {4}",
-									requ[0], fId2Prod[requ[0]].revisedPriority, px, posti.id, requ[1]
-								)
-								fId2Prod[requ[0]].revisedPriority = px
-								recursionNecessary = True
+			continue
 
-					for requ in removeRequs:
-						requsByPosterior[posti.id].remove(requ)
+		for posti in fLevel2Prodlist[px]:
+			logger.debug2(u"posti {0}", posti)
+			if posti.id in requsByPosterior:
+				removeRequs = []
+				for requ in requsByPosterior[posti.id]:
+					if requ[0] not in fId2Prod:
+						logger.notice(u"product {0!r} should be arranged before product {1!r} but is not available", requ[0], requ[1])
+						removeRequs.append(requ)
+					else:
+						if fId2Prod[requ[0]].revisedPriority < px:
+							logger.notice(
+								u"product {0} must be pushed upwards from level {1} to level {2}, the level of {3}, to meet the requirement first {0}, later {4}",
+								requ[0], fId2Prod[requ[0]].revisedPriority, px, posti.id, requ[1]
+							)
+							fId2Prod[requ[0]].revisedPriority = px
+							recursionNecessary = True
+
+				for requ in removeRequs:
+					requsByPosterior[posti.id].remove(requ)
 
 	return recursionNecessary
 
