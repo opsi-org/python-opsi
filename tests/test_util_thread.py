@@ -30,8 +30,8 @@ import threading
 from collections import namedtuple
 from contextlib import contextmanager
 
-from OPSI.Util.Thread import ThreadPoolException, getGlobalThreadPool, ThreadPool
-from OPSI.Util.Thread import KillableThread
+from OPSI.Util.Thread import ThreadPoolException
+from OPSI.Util.Thread import getGlobalThreadPool, ThreadPool, KillableThread
 
 import pytest
 
