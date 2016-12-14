@@ -453,7 +453,7 @@ class OpsiProcessConnector(object):
 			self._reactor.connectUNIX(self._socket, self._factory)
 			self._factory.addNotifier(success, failure)
 		except Exception as e:
-			logger.error(u"Failed to connect to socket %s: %s"(self._socket, e))
+			logger.error(u"Failed to connect to socket {0}: {1}", self._socket, e)
 			self._connected.errback(Failure())
 
 		return self._connected
