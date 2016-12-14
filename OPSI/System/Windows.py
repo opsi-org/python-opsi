@@ -769,10 +769,10 @@ def mount(dev, mountpoint, **options):
 				options['domain'] = options['username'].split(u'\\')[0]
 				options['username'] = options['username'].split(u'\\')[-1]
 
-			if not 'password' in options:
-				options['password'] = None
-			else:
+			try:
 				logger.addConfidentialString(options['password'])
+			except KeyError:
+				options['password'] = None
 
 			if 'domain' not in options:
 				options['domain'] = getHostname()
