@@ -453,8 +453,5 @@ class SambaWriteConfig(unittest.TestCase):
 
 		self.assertEqual(config, result)
 
-def main():
-	unittest.main()
-
 if __name__ == '__main__':
-	main()
+	unittest.main()
