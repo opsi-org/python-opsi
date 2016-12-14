@@ -32,6 +32,7 @@ import pytest
 from OPSI.Backend.Depotserver import DepotserverBackend
 
 from .helpers import mock, patchAddress, workInTemporaryDirectory
+from .test_util import fileAndHash  # test fixture
 
 
 @pytest.fixture

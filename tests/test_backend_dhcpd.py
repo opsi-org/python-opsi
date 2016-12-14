@@ -25,11 +25,13 @@ Testing DHCPD Backend.
 
 from __future__ import absolute_import
 
+import pytest
+
 from OPSI.Backend.DHCPD import DHCPDBackend
 from OPSI.Object import OpsiClient
 from OPSI.Types import BackendIOError
 
-import pytest
+from .test_util_file_dhcpdconf import dhcpdConf  # test fixture
 
 
 @pytest.fixture
