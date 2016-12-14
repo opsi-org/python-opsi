@@ -233,14 +233,16 @@ def testGetGlobalThreadPoolReturnsTheSamePool():
     pool1 = getGlobalThreadPool()
     pool2 = getGlobalThreadPool()
 
-    assert isinstance(pool1, ThreadPool)
-    assert isinstance(pool2, ThreadPool)
-    assert pool1 is pool2
+    try:
+        assert isinstance(pool1, ThreadPool)
+        assert isinstance(pool2, ThreadPool)
+        assert pool1 is pool2
 
-    pool2.adjustSize(5)
-    assert 5 == pool1.size
-
-    pool1.stop()  # without this running threads will prevent test from stopping
+        pool2.adjustSize(5)
+        assert 5 == pool1.size
+    finally:
+        # without this running threads will prevent test from stopping
+        pool1.stop()
 
 
 @pytest.mark.xfail(strict=False)  # This test is not stable.
