@@ -1365,7 +1365,7 @@ class SQLBackend(ConfigDataBackend):
 		else:
 			self._sql.insert('PRODUCT_PROPERTY', data)
 
-		if possibleValues is not None:
+		if possibleValues is not None:  # TODO: this is always true. Does it hurt to always do this?
 			self._sql.delete('PRODUCT_PROPERTY_VALUE', where)
 
 		for value in possibleValues:
@@ -1393,7 +1393,7 @@ class SQLBackend(ConfigDataBackend):
 		del data['defaultValues']
 		self._sql.update('PRODUCT_PROPERTY', where, data)
 
-		if possibleValues is not None:
+		if possibleValues is not None:  # TODO: this is always true. Does it hurt to always do this?
 			self._sql.delete('PRODUCT_PROPERTY_VALUE', where)
 
 		for value in possibleValues:
