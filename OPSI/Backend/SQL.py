@@ -2370,8 +2370,6 @@ class SQLBackend(ConfigDataBackend):
 	def _auditHardwareOnHostObjectToDatabaseHash(self, auditHardwareOnHost):
 		(auditHardware, auditHardwareOnHost) = self._extractAuditHardwareHash(auditHardwareOnHost)
 
-		hardwareClass = auditHardwareOnHost['hardwareClass']
-
 		data = {}
 		for (attribute, value) in auditHardwareOnHost.items():
 			if attribute in ('hardwareClass', 'type'):
