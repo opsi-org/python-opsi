@@ -244,6 +244,8 @@ class SessionHandler(object):
 			logger.debug(u"Deleting session {0!r}", uid)
 			thread = SessionDeletionThread(self, uid)
 			deletionThreads.append(thread)
+
+		for thread in deletionThreads:
 			thread.start()
 
 		for thread in deletionThreads:
