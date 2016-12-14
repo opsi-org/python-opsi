@@ -1125,12 +1125,8 @@ class SQLBackend(ConfigDataBackend):
 		ConfigDataBackend.config_updateObject(self, config)
 		data = self._objectToDatabaseHash(config)
 		where = self._uniqueCondition(config)
-		possibleValues = data['possibleValues']
-		defaultValues = data['defaultValues']
-		if possibleValues is None:
-			possibleValues = []
-		if defaultValues is None:
-			defaultValues = []
+		possibleValues = data['possibleValues'] or []
+		defaultValues = data['defaultValues'] or []
 		del data['possibleValues']
 		del data['defaultValues']
 
@@ -1306,7 +1302,7 @@ class SQLBackend(ConfigDataBackend):
 		ConfigDataBackend.product_updateObject(self, product)
 		data = self._objectToDatabaseHash(product)
 		where = self._uniqueCondition(product)
-		windowsSoftwareIds = data['windowsSoftwareIds']
+		windowsSoftwareIds = data['windowsSoftwareIds'] or []
 		del data['windowsSoftwareIds']
 		del data['productClassIds']
 
