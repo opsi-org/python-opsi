@@ -33,7 +33,7 @@ from OPSI.Object import AuditHardwareOnHost
 from .helpers import workInTemporaryDirectory
 
 
-def _generateAuditHardwareOnHost(hardwareClass, hostId, vendor, model, sku=None):
+def auditHardwareOnHostFactory(hardwareClass, hostId, vendor, model, sku=None):
 	auditHardwareOnHost = AuditHardwareOnHost(hardwareClass, hostId)
 	auditHardwareOnHost.vendor = vendor
 	auditHardwareOnHost.model = model
@@ -68,7 +68,7 @@ def testByAudit(self):
 		vendor = "Dell Inc."
 		model = "Venue 11 Pro 7130 MS"
 
-		testData1 = _generateAuditHardwareOnHost(hardwareClass, hostId, vendor, model)
+		testData1 = auditHardwareOnHostFactory(hardwareClass, hostId, vendor, model)
 		_generateDirectories(temporary_folder, vendor, model)
 		_generateTestFiles(temporary_folder, vendor, model, "test.inf")
 
@@ -93,7 +93,7 @@ def testByAuditWithUnderscoreAtTheEnd():
 		vendor = "Dell Inc_"
 		model = "Venue 11 Pro 7130 MS"
 
-		testData1 = _generateAuditHardwareOnHost(hardwareClass, hostId, "Dell Inc.", model)
+		testData1 = auditHardwareOnHostFactory(hardwareClass, hostId, "Dell Inc.", model)
 		_generateDirectories(temporary_folder, vendor, model)
 		_generateTestFiles(temporary_folder, vendor, model, "test.inf")
 
@@ -120,7 +120,7 @@ def testByAuditWithSKUFallback():
 		sku = "ABC"
 		model_without_sku = "Venue 11 Pro 7130 MS"
 
-		testData1 = _generateAuditHardwareOnHost(hardwareClass, hostId, "Dell Inc.", model, sku)
+		testData1 = auditHardwareOnHostFactory(hardwareClass, hostId, "Dell Inc.", model, sku)
 		_generateDirectories(temporary_folder, vendor, model_without_sku)
 		_generateTestFiles(temporary_folder, vendor, model_without_sku, "test.inf")
 
