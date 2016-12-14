@@ -26,8 +26,6 @@ Testing OPSI.SharedAlgorithm
 
 from __future__ import absolute_import, print_function
 
-from .helpers import showLogs, unittest
-
 from OPSI.Object import LocalbootProduct, ProductDependency
 from OPSI import SharedAlgorithm
 from OPSI.Types import OpsiProductOrderingError

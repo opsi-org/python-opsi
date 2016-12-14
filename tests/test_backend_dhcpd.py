@@ -29,8 +29,6 @@ from OPSI.Backend.DHCPD import DHCPDBackend
 from OPSI.Object import OpsiClient
 from OPSI.Types import BackendIOError
 
-from .test_util_file_dhcpdconf import dhcpdConf
-
 import pytest
 
 
