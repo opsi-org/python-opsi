@@ -71,9 +71,17 @@ def destinationDir(tempDir):
 	yield os.path.join(temporary_folder, "destination")
 
 
-def testByAudit(tempDir, destinationDir):
-	hardwareClass = "COMPUTER_SYSTEM"
-	hostId = "test.domain.local"
+@pytest.fixture
+def hostId():
+	yield "test.domain.local"
+
+
+@pytest.fixture
+def hardwareClass():
+	yield "COMPUTER_SYSTEM"
+
+
+def testByAudit(tempDir, destinationDir, hardwareClass, hostId):
 	vendor = "Dell Inc."
 	model = "Venue 11 Pro 7130 MS"
 
@@ -93,9 +101,7 @@ def testByAudit(tempDir, destinationDir):
 	assert expectedResult == result
 
 
-def testByAuditWithUnderscoreAtTheEnd(tempDir, destinationDir):
-	hardwareClass = "COMPUTER_SYSTEM"
-	hostId = "test.domain.local"
+def testByAuditWithUnderscoreAtTheEnd(tempDir, destinationDir, hardwareClass, hostId):
 	vendor = "Dell Inc_"
 	model = "Venue 11 Pro 7130 MS"
 
@@ -115,9 +121,7 @@ def testByAuditWithUnderscoreAtTheEnd(tempDir, destinationDir):
 	assert expectedResult == result
 
 
-def testByAuditWithSKUFallback(tempDir, destinationDir):
-	hardwareClass = "COMPUTER_SYSTEM"
-	hostId = "test.domain.local"
+def testByAuditWithSKUFallback(tempDir, destinationDir, hardwareClass, hostId):
 	vendor = "Dell Inc_"
 	model = "Venue 11 Pro 7130 MS (ABC)"
 	sku = "ABC"
