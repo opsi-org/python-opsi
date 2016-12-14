@@ -948,11 +948,15 @@ class BackendAccessControl(object):
 						continue
 
 				if acl.get('allowAttributes'):
-					[allowedAttributes.add(attribute) for attribute in acl['allowAttributes']]
+					attributesToAdd = acl['allowAttributes']
 				elif acl.get('denyAttributes'):
-					[allowedAttributes.add(attribute) for attribute in objHash.keys() if attribute not in acl['denyAttributes']]
+					attributesToAdd = (attribute for attribute in objHash.keys()
+										if attribute not in acl['denyAttributes'])
 				else:
-					[allowedAttributes.add(attribute) for attribute in objHash.keys()]
+					attributesToAdd = objHash.keys()
+
+				for attribute in attributesToAdd:
+					allowedAttributes.add(attribute)
 
 			if not allowedAttributes:
 				continue
