@@ -37,7 +37,8 @@ from .helpers import workInTemporaryDirectory
 
 class WindowsDriversTestCase(unittest.TestCase):
 
-	def _generateAuditHardwareOnHost(self, hardwareClass, hostId, vendor, model, sku = None):
+	@staticmethod
+	def _generateAuditHardwareOnHost(hardwareClass, hostId, vendor, model, sku=None):
 		auditHardwareOnHost = AuditHardwareOnHost(hardwareClass, hostId)
 		auditHardwareOnHost.vendor = vendor
 		auditHardwareOnHost.model = model
@@ -45,7 +46,8 @@ class WindowsDriversTestCase(unittest.TestCase):
 
 		return auditHardwareOnHost
 
-	def _generateDirectories(self, folder, vendor, model):
+	@staticmethod
+	def _generateDirectories(folder, vendor, model):
 		rulesDir = os.path.join(folder, "byAudit")
 		if not os.path.exists(rulesDir):
 			os.mkdir(rulesDir)
@@ -55,7 +57,8 @@ class WindowsDriversTestCase(unittest.TestCase):
 		os.mkdir(vendorDir)
 		os.mkdir(modelDir)
 
-	def _generateTestFiles(self, folder, vendor, model, filename):
+	@staticmethod
+	def _generateTestFiles(folder, vendor, model, filename):
 		dstFilename = os.path.join(folder, "byAudit", vendor, model, filename)
 		with open(dstFilename, "w"):
 			pass
