@@ -143,8 +143,6 @@ class DepotserverPackageManager(object):
 		logger.setLogFile(self._depotBackend._packageLog, object=self)
 
 	def installPackage(self, filename, force=False, propertyDefaultValues={}, tempDir=None, forceProductId=None):
-		from OPSI.Util.Task.CleanupBackend import cleanUpProducts
-
 		depotId = self._depotBackend._depotId
 		logger.notice(u"=================================================================================================")
 		if forceProductId:
