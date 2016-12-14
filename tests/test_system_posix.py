@@ -40,7 +40,7 @@ if sys.version_info > (3, ):
 
 class PosixMethodsTestCase(unittest.TestCase):
 	def testGetBlockDeviceContollerInfo(self):
-		testcase = [
+		data = [
 			'/0/100/1f.2               storage        82801JD/DO (ICH10 Family) SATA AHCI Controller [8086:3A02]',
 			'/0/100/1f.3               bus            82801JD/DO (ICH10 Family) SMBus Controller [8086:3A60]',
 			'/0/1          scsi0       storage',
@@ -48,7 +48,7 @@ class PosixMethodsTestCase(unittest.TestCase):
 			'/0/1/0.0.0/1  /dev/sda1   volume         465GiB Windows FAT volume',
 		]
 
-		deviceInfo = Posix.getBlockDeviceContollerInfo('dev/sda', testcase)
+		deviceInfo = Posix.getBlockDeviceContollerInfo('dev/sda', data)
 		self.assertTrue(deviceInfo)
 
 		self.assertEqual('dev/sda', deviceInfo['device'])
