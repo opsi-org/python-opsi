@@ -205,7 +205,8 @@ class SQLBackendObjectModificationTracker(BackendModificationListener):
 		self._trackModification('update', obj)
 
 	def objectsDeleted(self, backend, objs):
-		[self._trackModification('delete', obj) for obj in forceList(objs)]
+		for obj in forceList(objs):
+			self._trackModification('delete', obj)
 
 
 class SQLBackend(ConfigDataBackend):
@@ -1135,12 +1136,13 @@ class SQLBackend(ConfigDataBackend):
 
 		self._sql.update('CONFIG', where, data)
 		self._sql.delete('CONFIG_VALUE', where)
-		[self._sql.insert('CONFIG_VALUE', {
-			'configId': data['configId'],
-			'value': value,
-			'isDefault': (value in defaultValues)
-			}
-		) for value in possibleValues]
+		for value in possibleValues:
+			self._sql.insert('CONFIG_VALUE', {
+				'configId': data['configId'],
+				'value': value,
+				'isDefault': (value in defaultValues)
+				}
+			)
 
 	def config_getObjects(self, attributes=[], **filter):
 		self._requiresEnabledSQLBackendModule()
@@ -1292,12 +1294,12 @@ class SQLBackend(ConfigDataBackend):
 
 		self._sql.delete('WINDOWS_SOFTWARE_ID_TO_PRODUCT', "`productId` = '%s'" % data['productId'])
 
-		[self._sql.insert('WINDOWS_SOFTWARE_ID_TO_PRODUCT',
-			{
+		for windowsSoftwareId in windowsSoftwareIds:
+			mapping = {
 				'windowsSoftwareId': windowsSoftwareId,
 				'productId': data['productId']
 			}
-		) for windowsSoftwareId in windowsSoftwareIds]
+			self._sql.insert('WINDOWS_SOFTWARE_ID_TO_PRODUCT', mapping)
 
 	def product_updateObject(self, product):
 		self._requiresEnabledSQLBackendModule()
@@ -1307,15 +1309,16 @@ class SQLBackend(ConfigDataBackend):
 		windowsSoftwareIds = data['windowsSoftwareIds']
 		del data['windowsSoftwareIds']
 		del data['productClassIds']
+
 		self._sql.update('PRODUCT', where, data)
 		self._sql.delete('WINDOWS_SOFTWARE_ID_TO_PRODUCT', "`productId` = '%s'" % data['productId'])
-		if windowsSoftwareIds:
-			[self._sql.insert('WINDOWS_SOFTWARE_ID_TO_PRODUCT',
-				{
-					'windowsSoftwareId': windowsSoftwareId,
-					'productId': data['productId']
-				}
-			) for windowsSoftwareId in windowsSoftwareIds]
+
+		for windowsSoftwareId in windowsSoftwareIds:
+			mapping = {
+				'windowsSoftwareId': windowsSoftwareId,
+				'productId': data['productId']
+			}
+			self._sql.insert('WINDOWS_SOFTWARE_ID_TO_PRODUCT', mapping)
 
 	def product_getObjects(self, attributes=[], **filter):
 		self._requiresEnabledSQLBackendModule()
@@ -1369,16 +1372,15 @@ class SQLBackend(ConfigDataBackend):
 		if possibleValues is not None:
 			self._sql.delete('PRODUCT_PROPERTY_VALUE', where)
 
-		[self._sql.insert('PRODUCT_PROPERTY_VALUE',
-			{
+		for value in possibleValues:
+			self._sql.insert('PRODUCT_PROPERTY_VALUE', {
 				'productId': data['productId'],
 				'productVersion': data['productVersion'],
 				'packageVersion': data['packageVersion'],
 				'propertyId': data['propertyId'],
 				'value': value,
 				'isDefault': (value in defaultValues)
-			}
-		) for value in possibleValues]
+			})
 
 	def productProperty_updateObject(self, productProperty):
 		self._requiresEnabledSQLBackendModule()
@@ -1398,16 +1400,15 @@ class SQLBackend(ConfigDataBackend):
 		if possibleValues is not None:
 			self._sql.delete('PRODUCT_PROPERTY_VALUE', where)
 
-		[self._sql.insert('PRODUCT_PROPERTY_VALUE',
-			{
+		for value in possibleValues:
+			self._sql.insert('PRODUCT_PROPERTY_VALUE', {
 				'productId': data['productId'],
 				'productVersion': data['productVersion'],
 				'packageVersion': data['packageVersion'],
 				'propertyId': data['propertyId'],
 				'value': value,
 				'isDefault': (value in defaultValues)
-			}
-		) for value in possibleValues]
+			})
 
 	def productProperty_getObjects(self, attributes=[], **filter):
 		self._requiresEnabledSQLBackendModule()
@@ -1841,12 +1842,12 @@ class SQLBackend(ConfigDataBackend):
 
 		self._sql.delete('PRODUCT_ID_TO_LICENSE_POOL', "`licensePoolId` = '%s'" % data['licensePoolId'])
 
-		[self._sql.insert('PRODUCT_ID_TO_LICENSE_POOL',
-			{
+		for productId in productIds:
+			mapping = {
 				'productId': productId,
 				'licensePoolId': data['licensePoolId']
 			}
-		) for productId in productIds]
+			self._sql.insert('PRODUCT_ID_TO_LICENSE_POOL', mapping)
 
 	def licensePool_updateObject(self, licensePool):
 		if not self._licenseManagementModule:
@@ -1861,12 +1862,12 @@ class SQLBackend(ConfigDataBackend):
 		self._sql.update('LICENSE_POOL', where, data)
 		self._sql.delete('PRODUCT_ID_TO_LICENSE_POOL', "`licensePoolId` = '%s'" % data['licensePoolId'])
 
-		[self._sql.insert('PRODUCT_ID_TO_LICENSE_POOL',
-			{
+		for productId in productIds:
+			mapping = {
 				'productId': productId,
 				'licensePoolId': data['licensePoolId']
 			}
-		) for productId in productIds]
+			self._sql.insert('PRODUCT_ID_TO_LICENSE_POOL', mapping)
 
 	def licensePool_getObjects(self, attributes=[], **filter):
 		if not self._licenseManagementModule:
@@ -2295,12 +2296,14 @@ class SQLBackend(ConfigDataBackend):
 			logger.info(u"Deleting auditHardware: %s" % auditHardware)
 
 			where = self._uniqueAuditHardwareCondition(auditHardware)
-			[self._sql.delete(
-				u'HARDWARE_CONFIG_{0}'.format(auditHardware.getHardwareClass()),
-				u'`hardware_id` = {0}'.format(hardware_id)
-			) for hardware_id in self._getHardwareIds(auditHardware)]
+			hardwareClass = auditHardware.getHardwareClass()
+			for hardwareId in self._getHardwareIds(auditHardware):
+				self._sql.delete(
+					u'HARDWARE_CONFIG_{0}'.format(hardwareClass),
+					u'`hardware_id` = {0}'.format(hardwareId)
+				)
 
-			self._sql.delete(u'HARDWARE_DEVICE_{0}'.format(auditHardware.getHardwareClass()), where)
+			self._sql.delete(u'HARDWARE_DEVICE_{0}'.format(hardwareClass), where)
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   AuditHardwareOnHosts
@@ -2420,7 +2423,9 @@ class SQLBackend(ConfigDataBackend):
 		if hardwareClass not in ([], None):
 			for hwc in forceUnicodeList(hardwareClass):
 				regex = re.compile(u'^{0}$'.format(hwc.replace('*', '.*')))
-				[hardwareClasses.add(key) for key in self._auditHardwareConfig if regex.search(key)]
+				keys = (key for key in self._auditHardwareConfig if regex.search(key))
+				for key in keys:
+					hardwareClasses.add(key)
 
 			if not hardwareClasses:
 				return []

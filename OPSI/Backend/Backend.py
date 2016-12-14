@@ -1241,13 +1241,12 @@ depot where the method is.
 		return []
 
 	def group_deleteObjects(self, groups):
-		[self._context.objectToGroup_deleteObjects(  # pylint: disable=maybe-no-member
-			self._context.objectToGroup_getObjects(  # pylint: disable=maybe-no-member
+		for group in forceObjectClassList(groups, Group):
+			matchingMappings = self._context.objectToGroup_getObjects(
 				groupType=group.getType(),
 				groupId=group.id
 			)
-		) for group in forceObjectClassList(groups, Group)]
-
+			self._context.objectToGroup_deleteObjects(matchingMappings)
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ObjectToGroups                                                                            -
@@ -2069,7 +2068,8 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 				self._backend.host_insertObject(host)
 
 		hostList = forceObjectClassList(hosts, Host)
-		[updateOrInsert(host) for host in hostList]
+		for host in hostList:
+			updateOrInsert(host)
 
 		if self._options['returnObjectsOnUpdateAndCreate']:
 			return self._backend.host_getObjects(id=[host.id for host in hostList])

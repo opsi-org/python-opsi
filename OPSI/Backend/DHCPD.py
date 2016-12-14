@@ -310,20 +310,20 @@ class DHCPDBackend(ConfigDataBackend):
 		if configState.configId != 'clientconfig.depot.id':
 			return
 
-		[self.host_updateObject(host) for host in
-		self._context.host_getObjects(id=configState.objectId)]  # pylint: disable=maybe-no-member
+		for host in self._context.host_getObjects(id=configState.objectId):
+			self.host_updateObject(host)
 
 	def configState_updateObject(self, configState):
 		if configState.configId != 'clientconfig.depot.id':
 			return
 
-		[self.host_updateObject(host) for host in
-		self._context.host_getObjects(id=configState.objectId)]  # pylint: disable=maybe-no-member
+		for host in self._context.host_getObjects(id=configState.objectId):
+			self.host_updateObject(host)
 
 	def configState_deleteObjects(self, configStates):
 		for configState in configStates:
 			if configState.configId != 'clientconfig.depot.id':
 				continue
 
-			[self.host_updateObject(host) for host in
-			self._context.host_getObjects(id=configState.objectId)]  # pylint: disable=maybe-no-member
+			for host in self._context.host_getObjects(id=configState.objectId):
+				self.host_updateObject(host)

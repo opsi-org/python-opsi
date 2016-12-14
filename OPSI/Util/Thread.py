@@ -161,8 +161,10 @@ class ThreadPool(object):
 						break
 
 		self.worker = [worker for worker in self.worker if worker not in deleteWorkers]
+
 		if wait:
-			[worker.join(60) for worker in deleteWorkers]
+			for worker in deleteWorkers:
+				worker.join(60)
 
 	def __createWorkers(self, num):
 		logger.debug(u"Creating {n} new workers", n=num)

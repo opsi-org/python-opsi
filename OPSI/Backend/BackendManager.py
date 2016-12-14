@@ -960,8 +960,8 @@ class BackendAccessControl(object):
 			if not isDict:
 				allowedAttributes.add('type')
 
-				[allowedAttributes.add(attribute) for attribute
-				in mandatoryConstructorArgs(obj.__class__)]
+				for attribute in mandatoryConstructorArgs(obj.__class__):
+					allowedAttributes.add(attribute)
 
 			for key in objHash.keys():
 				if key not in allowedAttributes:
