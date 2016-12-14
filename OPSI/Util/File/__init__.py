@@ -715,10 +715,7 @@ class InfFile(ConfigFile):
 			else:
 				newLines.append(line)
 
-			if line.endswith(u'\\'):
-				appendNext = True
-			else:
-				appendNext = False
+			appendNext = line.endswith(u'\\')
 		lines = newLines
 
 		# Get strings
@@ -750,11 +747,9 @@ class InfFile(ConfigFile):
 			match = re.search(self.sectionRegex, line)
 			if match:
 				section = match.group(1)
-				if section.lower().startswith(u'sourcedisksnames'):
-					sectionFound = True
-				else:
-					sectionFound = False
+				sectionFound = section.lower().startswith(u'sourcedisksnames')
 				continue
+
 			if sectionFound:
 				if '=' not in line:
 					continue

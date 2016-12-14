@@ -207,10 +207,7 @@ class RpcQueue(threading.Thread):
 			baseUrl = None
 			rpc = []
 			for jsonrpc in self.jsonrpcs.values():
-				if jsonrpc.method in ('backend_exit', 'exit'):
-					isExit = True
-				else:
-					isExit = False
+				isExit = jsonrpc.method in ('backend_exit', 'exit')
 
 				if jsonrpc.retry:
 					retry = True
