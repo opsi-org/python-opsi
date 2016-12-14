@@ -3158,13 +3158,13 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 
 		if (self._options['addProductOnClientDefaults'] or self._options['processProductOnClientSequence']) and attributes:
 			# In this case we definetly need to add the following attributes
-			if not 'installationStatus' in pocAttributes:
+			if 'installationStatus' not in pocAttributes:
 				pocAttributes.append('installationStatus')
-			if not 'actionRequest' in pocAttributes:
+			if 'actionRequest' not in pocAttributes:
 				pocAttributes.append('actionRequest')
-			if not 'productVersion' in pocAttributes:
+			if 'productVersion' not in pocAttributes:
 				pocAttributes.append('productVersion')
-			if not 'packageVersion' in pocAttributes:
+			if 'packageVersion' not in pocAttributes:
 				pocAttributes.append('packageVersion')
 
 		# Get product states from backend

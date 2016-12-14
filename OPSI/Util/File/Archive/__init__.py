@@ -75,7 +75,7 @@ class BaseArchive(object):
 		self._compression = None
 		if compression:
 			compression = forceUnicodeLower(compression)
-			if not compression in ('gzip', 'bzip2'):
+			if compression not in ('gzip', 'bzip2'):
 				raise Exception(u"Compression '%s' not supported" % compression)
 			self._compression = compression
 		elif os.path.exists(self._filename):

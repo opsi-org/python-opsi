@@ -1949,7 +1949,7 @@ class Harddisk:
 			if system in (u'win2000', u'winxp', u'win2003', u'nt5'):
 				mbrType = u'--mbr'
 			elif system in (u'vista', u'win7', u'nt6'):
-				if not ms_sys_version == "2.1.3":
+				if ms_sys_version != "2.1.3":
 					if system == u'vista':
 						mbrType = u'--mbrvista'
 					else:

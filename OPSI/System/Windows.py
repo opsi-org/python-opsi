@@ -762,7 +762,7 @@ def mount(dev, mountpoint, **options):
 			parts = match.group(2).split('/')
 			dev = u'\\\\%s\\%s' % (parts[0], parts[1])
 
-			if not 'username' in options:
+			if 'username' not in options:
 				options['username'] = None
 
 			elif options['username'] and (options['username'].find(u'\\') != -1):
@@ -774,7 +774,7 @@ def mount(dev, mountpoint, **options):
 			else:
 				logger.addConfidentialString(options['password'])
 
-			if not 'domain' in options:
+			if 'domain' not in options:
 				options['domain'] = getHostname()
 			username = None
 			if options['username']:
@@ -860,14 +860,14 @@ def getActiveSessionIds(winApiBugCommand = None):
 	else:
 		for s in win32security.LsaEnumerateLogonSessions():
 			sessionData = win32security.LsaGetLogonSessionData(s)
-			if not forceInt(sessionData['LogonType']) in (2, 10) or sessionData['LogonDomain'] == u'Window Manager':
+			if forceInt(sessionData['LogonType']) not in (2, 10) or sessionData['LogonDomain'] == u'Window Manager':
 				continue
 			sessionId = forceInt(sessionData['Session'])
 			if (sessionId == 0) and (sys.getwindowsversion()[0] >= 6):
 				# Service session
 				continue
 			logger.debug(u"   Found session: %s" % sessionData)
-			if not sessionId in sessionIds:
+			if sessionId not in sessionIds:
 				sessionIds.append(sessionId)
 	return sessionIds
 
@@ -916,7 +916,7 @@ def getActiveSessionId(verifyProcessRunning = "winlogon.exe", winApiBugCommand =
 	else:
 		for s in win32security.LsaEnumerateLogonSessions():
 			sessionData = win32security.LsaGetLogonSessionData(s)
-			if not forceInt(sessionData['LogonType']) in (2, 10) or sessionData['LogonDomain'] == u'Window Manager':
+			if forceInt(sessionData['LogonType']) not in (2, 10) or sessionData['LogonDomain'] == u'Window Manager':
 				continue
 			sessionId = forceInt(sessionData['Session'])
 			if (sessionId == 0) and (sys.getwindowsversion()[0] >= 6):
@@ -928,7 +928,7 @@ def getActiveSessionId(verifyProcessRunning = "winlogon.exe", winApiBugCommand =
 			if verifyProcessRunning and not getPids(verifyProcessRunning, sessionId = sessionId):
 				continue
 
-			if not sessionId in sessionIds:
+			if sessionId not in sessionIds:
 				sessionIds.append(sessionId)
 			if newest:
 				try:
@@ -1876,7 +1876,7 @@ class Impersonate:
 				logger.debug(u"Process window station set")
 
 				self.newDesktop = None
-				if not self.desktop in ('default', 'winlogon'):
+				if self.desktop not in ('default', 'winlogon'):
 					logger.info(u"Creating new desktop '%s'" % self.desktop)
 					try:
 						self.newDesktop = createDesktop(self.desktop)
