@@ -303,7 +303,8 @@ class HTTPConnectionPool(object):
 		self.delPool()
 		self.pool = Queue(self.maxsize)
 		# Fill the queue up so that doing get() on it will block properly
-		[self.pool.put(None) for i in xrange(self.maxsize)]
+		for _ in range(self.maxsize):
+			self.pool.put(None)
 
 	def __del__(self):
 		self.delPool()
