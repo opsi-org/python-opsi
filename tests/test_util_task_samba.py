@@ -21,16 +21,17 @@ Testing functionality of OPSI.Util.Task.Samba
 
 :author: Mathias Radtke <m.radtke@uib.de>
 :license: GNU Affero General Public License version 3
-
-
 """
+
 from __future__ import absolute_import
+
 import os
 import os.path
 import mock
 import unittest
 import OPSI.Util.Task.Samba as Samba
 from .helpers import workInTemporaryDirectory
+
 
 class Samba4Test(unittest.TestCase):
 
@@ -70,6 +71,7 @@ class Samba4Test(unittest.TestCase):
 			with mock.patch('OPSI.Util.Task.Samba.which', fakeWhich):
 				self.assertFalse(Samba.isSamba4())
 
+
 class SambaReadConfigTest(unittest.TestCase):
 
 	def testEmptyConfigRead(self):
@@ -101,6 +103,7 @@ class SambaReadConfigTest(unittest.TestCase):
 
 		self.assertEqual(config, result)
 
+
 class SambaProcessConfigTest(unittest.TestCase):
 
 	def testSambaConfigureSuseSamba4(self):
@@ -108,7 +111,7 @@ class SambaProcessConfigTest(unittest.TestCase):
 		def fakeDistribution():
 			return 'suse linux enterprise server'
 
-		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda:True):
+		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda: True):
 			with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
 				with mock.patch('OPSI.Util.Task.Samba.getDistribution', fakeDistribution):
 					newlines = Samba._processConfig([])
@@ -125,7 +128,7 @@ class SambaProcessConfigTest(unittest.TestCase):
 		def fakeDistribution():
 			return 'suse linux enterprise server'
 
-		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda:False):
+		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda: False):
 			with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
 				with mock.patch('OPSI.Util.Task.Samba.getDistribution', fakeDistribution):
 					newlines = Samba._processConfig([])
@@ -142,7 +145,7 @@ class SambaProcessConfigTest(unittest.TestCase):
 		def fakeDistribution():
 			return 'Ubuntu 14.04.2 LTS'
 
-		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda:False):
+		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda: False):
 			with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
 				with mock.patch('OPSI.Util.Task.Samba.getDistribution', fakeDistribution):
 					result = Samba._processConfig([])
@@ -156,7 +159,6 @@ class SambaProcessConfigTest(unittest.TestCase):
 					nonSuse = True
 					break
 
-
 		self.assertTrue(filled)
 		self.assertTrue(nonSuse)
 
@@ -165,7 +167,7 @@ class SambaProcessConfigTest(unittest.TestCase):
 		def fakeDistribution():
 			return 'Ubuntu 14.04.2 LTS'
 
-		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda:True):
+		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda: True):
 			with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
 				with mock.patch('OPSI.Util.Task.Samba.getDistribution', fakeDistribution):
 					result = Samba._processConfig([])
@@ -195,12 +197,12 @@ class SambaProcessConfigTest(unittest.TestCase):
 		config.append(u"[opsi_workbench]\n")
 		config.append(u"[opsi_repository]\n")
 
-		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda:True):
+		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda: True):
 			with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
 				with mock.patch('OPSI.Util.Task.Samba.getDistribution', fakeDistribution):
 					Samba._processConfig(config)
 
-		filled=False
+		filled = False
 		for line in config:
 			if line.strip():
 				filled = True
@@ -220,12 +222,12 @@ class SambaProcessConfigTest(unittest.TestCase):
 		config.append(u"[opsi_workbench]\n")
 		config.append(u"[opsi_repository]\n")
 
-		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda:False):
+		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda: False):
 			with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
 				with mock.patch('OPSI.Util.Task.Samba.getDistribution', fakeDistribution):
 					Samba._processConfig(config)
 
-		filled=False
+		filled = False
 		for line in config:
 			if line.strip():
 				filled = True
@@ -245,12 +247,12 @@ class SambaProcessConfigTest(unittest.TestCase):
 		config.append(u"[opsi_workbench]\n")
 		config.append(u"[opsi_repository]\n")
 
-		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda:True):
+		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda: True):
 			with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
 				with mock.patch('OPSI.Util.Task.Samba.getDistribution', fakeDistribution):
 					Samba._processConfig(config)
 
-		filled=False
+		filled = False
 		for line in config:
 			if line.strip():
 				filled = True
@@ -270,12 +272,12 @@ class SambaProcessConfigTest(unittest.TestCase):
 		config.append(u"[opsi_workbench]\n")
 		config.append(u"[opsi_repository]\n")
 
-		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda:False):
+		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda: False):
 			with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
 				with mock.patch('OPSI.Util.Task.Samba.getDistribution', fakeDistribution):
 					Samba._processConfig(config)
 
-		filled=False
+		filled = False
 		for line in config:
 			if line.strip():
 				filled = True
@@ -283,7 +285,6 @@ class SambaProcessConfigTest(unittest.TestCase):
 		self.assertTrue(filled)
 
 	def testOpsiDepotShareSamba4(self):
-
 		config = []
 		config.append(u"[opsi_depot]\n")
 		config.append(u"   available = yes\n")
@@ -320,7 +321,7 @@ class SambaProcessConfigTest(unittest.TestCase):
 		config.append(u"   writeable = no\n")
 		config.append(u"   invalid users = root\n")
 
-		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda:True):
+		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda: True):
 			with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
 				result = Samba._processConfig(config)
 
@@ -338,7 +339,6 @@ class SambaProcessConfigTest(unittest.TestCase):
 			self.fail('Did not find "admin users" in opsi_depot share')
 
 	def testCorrectOpsiDepotShareWithSamba4Fix(self):
-
 		config = []
 		config.append(u"[opt_pcbin]\n")
 		config.append(u"[opsi_depot]\n")
@@ -356,7 +356,7 @@ class SambaProcessConfigTest(unittest.TestCase):
 		config.append(u"[opsi_workbench]\n")
 		config.append(u"[opsi_repository]\n")
 
-		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda:True):
+		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda: True):
 			with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
 				result = Samba._processConfig(config)
 
@@ -374,7 +374,7 @@ class SambaProcessConfigTest(unittest.TestCase):
 		config.append(u"[opsi_workbench]\n")
 		config.append(u"[opsi_repository]\n")
 
-		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda:True):
+		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda: True):
 			with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
 				result = Samba._processConfig(config)
 
@@ -398,7 +398,7 @@ class SambaProcessConfigTest(unittest.TestCase):
 		config.append(u"[opsi_images]\n")
 		config.append(u"[opsi_workbench]\n")
 
-		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda:True):
+		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda: True):
 			with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
 				result = Samba._processConfig(config)
 
@@ -435,7 +435,6 @@ class SambaWriteConfig(unittest.TestCase):
 		self.assertEqual([], result)
 
 	def testTrueConfigWrite(self):
-
 		config = []
 		config.append(u"[opt_pcbin]\n")
 		config.append(u"[opsi_depot]\n")

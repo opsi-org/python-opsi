@@ -43,7 +43,6 @@ class GetRepositoryTestCase(unittest.TestCase):
         self.assertRaises(RepositoryError, getRepository, "lolnope:///asdf")
 
 
-
 class FileRepositoryTestCase(unittest.TestCase):
     def testListingRepository(self):
         with workInTemporaryDirectory() as tempDir:
