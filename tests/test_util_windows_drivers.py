@@ -64,22 +64,23 @@ def tempDir():
 	with workInTemporaryDirectory() as temporary_folder:
 		yield temporary_folder
 
+
 @pytest.fixture
 def destinationDir(tempDir):
 	yield os.path.join(temporary_folder, "destination")
 
 
-def testByAudit(temporary_folder, destinationDir):
+def testByAudit(tempDir, destinationDir):
 	hardwareClass = "COMPUTER_SYSTEM"
 	hostId = "test.domain.local"
 	vendor = "Dell Inc."
 	model = "Venue 11 Pro 7130 MS"
 
 	testData1 = auditHardwareOnHostFactory(hardwareClass, hostId, vendor, model)
-	_generateDirectories(temporary_folder, vendor, model)
-	_generateTestFiles(temporary_folder, vendor, model, "test.inf")
+	_generateDirectories(tempDir, vendor, model)
+	_generateTestFiles(tempDir, vendor, model, "test.inf")
 
-	result = integrateAdditionalWindowsDrivers(temporary_folder, destinationDir, [], auditHardwareOnHosts=[testData1])
+	result = integrateAdditionalWindowsDrivers(tempDir, destinationDir, [], auditHardwareOnHosts=[testData1])
 
 	expectedResult = [{
 		'devices': [],
@@ -91,17 +92,17 @@ def testByAudit(temporary_folder, destinationDir):
 	assert expectedResult == result
 
 
-def testByAuditWithUnderscoreAtTheEnd(temporary_folder, destinationDir):
+def testByAuditWithUnderscoreAtTheEnd(tempDir, destinationDir):
 	hardwareClass = "COMPUTER_SYSTEM"
 	hostId = "test.domain.local"
 	vendor = "Dell Inc_"
 	model = "Venue 11 Pro 7130 MS"
 
 	testData1 = auditHardwareOnHostFactory(hardwareClass, hostId, "Dell Inc.", model)
-	_generateDirectories(temporary_folder, vendor, model)
-	_generateTestFiles(temporary_folder, vendor, model, "test.inf")
+	_generateDirectories(tempDir, vendor, model)
+	_generateTestFiles(tempDir, vendor, model, "test.inf")
 
-	result = integrateAdditionalWindowsDrivers(temporary_folder, destinationDir, [], auditHardwareOnHosts=[testData1])
+	result = integrateAdditionalWindowsDrivers(tempDir, destinationDir, [], auditHardwareOnHosts=[testData1])
 
 	expectedResult = [{
 		'devices': [],
@@ -113,7 +114,7 @@ def testByAuditWithUnderscoreAtTheEnd(temporary_folder, destinationDir):
 	assert expectedResult == result
 
 
-def testByAuditWithSKUFallback(temporary_folder, destinationDir):
+def testByAuditWithSKUFallback(tempDir, destinationDir):
 	hardwareClass = "COMPUTER_SYSTEM"
 	hostId = "test.domain.local"
 	vendor = "Dell Inc_"
@@ -122,10 +123,10 @@ def testByAuditWithSKUFallback(temporary_folder, destinationDir):
 	model_without_sku = "Venue 11 Pro 7130 MS"
 
 	testData1 = auditHardwareOnHostFactory(hardwareClass, hostId, "Dell Inc.", model, sku)
-	_generateDirectories(temporary_folder, vendor, model_without_sku)
-	_generateTestFiles(temporary_folder, vendor, model_without_sku, "test.inf")
+	_generateDirectories(tempDir, vendor, model_without_sku)
+	_generateTestFiles(tempDir, vendor, model_without_sku, "test.inf")
 
-	result = integrateAdditionalWindowsDrivers(temporary_folder, destinationDir, [], auditHardwareOnHosts=[testData1])
+	result = integrateAdditionalWindowsDrivers(tempDir, destinationDir, [], auditHardwareOnHosts=[testData1])
 
 	expectedResult = [{
 		'devices': [],
