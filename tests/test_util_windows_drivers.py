@@ -67,19 +67,23 @@ class WindowsDriversTestCase(unittest.TestCase):
 		with workInTemporaryDirectory() as temporary_folder:
 			destinationDir = os.path.join(temporary_folder, "destination")
 
-			hardwareClass, hostId, vendor, model = ("COMPUTER_SYSTEM", "test.domain.local", "Dell Inc.", "Venue 11 Pro 7130 MS")
+			hardwareClass = "COMPUTER_SYSTEM"
+			hostId = "test.domain.local"
+			vendor = "Dell Inc."
+			model = "Venue 11 Pro 7130 MS"
 
 			testData1 = self._generateAuditHardwareOnHost(hardwareClass, hostId, vendor, model)
 			self._generateDirectories(temporary_folder, vendor, model)
 			self._generateTestFiles(temporary_folder, vendor, model, "test.inf")
 
-			result = integrateAdditionalWindowsDrivers(temporary_folder, destinationDir, [], auditHardwareOnHosts = [ testData1 ])
+			result = integrateAdditionalWindowsDrivers(temporary_folder, destinationDir, [], auditHardwareOnHosts=[testData1])
 
-			expectedResult = [
-					{'devices': [],
-					'directory': u'%s/1' % destinationDir,
-					'driverNumber': 1,
-					'infFile': u'%s/1/test.inf' % destinationDir}]
+			expectedResult = [{
+				'devices': [],
+				'directory': u'%s/1' % destinationDir,
+				'driverNumber': 1,
+				'infFile': u'%s/1/test.inf' % destinationDir
+			}]
 
 			self.assertEquals(expectedResult, result)
 
@@ -87,39 +91,48 @@ class WindowsDriversTestCase(unittest.TestCase):
 		with workInTemporaryDirectory() as temporary_folder:
 			destinationDir = os.path.join(temporary_folder, "destination")
 
-			hardwareClass, hostId, vendor, model = ("COMPUTER_SYSTEM", "test.domain.local", "Dell Inc_", "Venue 11 Pro 7130 MS")
+			hardwareClass = "COMPUTER_SYSTEM"
+			hostId = "test.domain.local"
+			vendor = "Dell Inc_"
+			model = "Venue 11 Pro 7130 MS"
 
 			testData1 = self._generateAuditHardwareOnHost(hardwareClass, hostId, "Dell Inc.", model)
 			self._generateDirectories(temporary_folder, vendor, model)
 			self._generateTestFiles(temporary_folder, vendor, model, "test.inf")
 
-			result = integrateAdditionalWindowsDrivers(temporary_folder, destinationDir, [], auditHardwareOnHosts = [ testData1 ])
+			result = integrateAdditionalWindowsDrivers(temporary_folder, destinationDir, [], auditHardwareOnHosts=[testData1])
 
-			expectedResult = [
-					{'devices': [],
-					'directory': u'%s/1' % destinationDir,
-					'driverNumber': 1,
-					'infFile': u'%s/1/test.inf' % destinationDir}]
+			expectedResult = [{
+				'devices': [],
+				'directory': u'%s/1' % destinationDir,
+				'driverNumber': 1,
+				'infFile': u'%s/1/test.inf' % destinationDir
+			}]
 
 			self.assertEquals(expectedResult, result)
-	
+
 	def testByAuditWithSKUFallback(self):
 		with workInTemporaryDirectory() as temporary_folder:
 			destinationDir = os.path.join(temporary_folder, "destination")
 
-			hardwareClass, hostId, vendor, model, sku = ("COMPUTER_SYSTEM", "test.domain.local", "Dell Inc_", "Venue 11 Pro 7130 MS (ABC)", "ABC")
+			hardwareClass = "COMPUTER_SYSTEM"
+			hostId = "test.domain.local"
+			vendor = "Dell Inc_"
+			model = "Venue 11 Pro 7130 MS (ABC)"
+			sku = "ABC"
 			model_without_sku = "Venue 11 Pro 7130 MS"
 
 			testData1 = self._generateAuditHardwareOnHost(hardwareClass, hostId, "Dell Inc.", model, sku)
 			self._generateDirectories(temporary_folder, vendor, model_without_sku)
 			self._generateTestFiles(temporary_folder, vendor, model_without_sku, "test.inf")
 
-			result = integrateAdditionalWindowsDrivers(temporary_folder, destinationDir, [], auditHardwareOnHosts = [ testData1 ])
+			result = integrateAdditionalWindowsDrivers(temporary_folder, destinationDir, [], auditHardwareOnHosts=[testData1])
 
-			expectedResult = [
-					{'devices': [],
-					'directory': u'%s/1' % destinationDir,
-					'driverNumber': 1,
-					'infFile': u'%s/1/test.inf' % destinationDir}]
+			expectedResult = [{
+				'devices': [],
+				'directory': u'%s/1' % destinationDir,
+				'driverNumber': 1,
+				'infFile': u'%s/1/test.inf' % destinationDir
+			}]
 
 			self.assertEquals(expectedResult, result)
