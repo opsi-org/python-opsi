@@ -2654,7 +2654,7 @@ class Harddisk:
 					proc.stdout.close()
 					proc.stdin.close()
 
-					while proc.poll() == None:
+					while proc.poll() is None:
 						pids = os.listdir("/proc")
 						for p in pids:
 							if not os.path.exists(os.path.join("/proc", p, "status")):
