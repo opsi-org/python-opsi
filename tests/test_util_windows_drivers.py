@@ -59,6 +59,7 @@ def _generateTestFiles(folder, vendor, model, filename):
 	with open(dstFilename, "w"):
 		pass
 
+
 @pytest.fixture
 def tempDir():
 	with workInTemporaryDirectory() as temporary_folder:
