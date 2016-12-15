@@ -102,7 +102,7 @@ def testSessionHandlerInitialisation():
 
 
 def testHandlerCreatesAndExpiresSessions():
-	handler = SessionHandler()
+	handler = SessionHandler(sessionDeletionTimeout=2)
 	assert not handler.sessions
 
 	session = handler.createSession()
@@ -127,7 +127,7 @@ def testDeletingAllSessions():
 
 
 def testSessionHandlerDeletingSessionInUse():
-	handler = SessionHandler()
+	handler = SessionHandler(sessionDeletionTimeout=2)
 	assert not handler.sessions
 
 	session = handler.createSession()
