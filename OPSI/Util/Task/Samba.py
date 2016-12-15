@@ -65,7 +65,7 @@ def isSamba4():
 			if line.lower().startswith("version"):
 				samba4 = line.split()[1].startswith('4')
 	except Exception as error:
-		logger.debug('Getting Samba Version failed due to: %s' % error)
+		logger.debug('Getting Samba Version failed due to: {0}', error)
 
 	return samba4
 
