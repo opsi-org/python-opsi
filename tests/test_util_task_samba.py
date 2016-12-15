@@ -262,7 +262,7 @@ def test_processConfigRemoveComment():
 	assert not any('; load opsi shares' in line for line in result)
 
 
-def test_processConfigNoRepoShare(self):
+def test_processConfigNoRepoShare():
 	config = [
 		u"; load opsi shares\n",
 		u"include = /etc/samba/share.conf\n",
