@@ -25,6 +25,7 @@ Testing the backend configuration.
 from __future__ import absolute_import
 
 import os
+import pytest
 
 from OPSI.Object import UnicodeConfig
 from OPSI.System.Posix import CommandNotFoundException
@@ -32,63 +33,59 @@ import OPSI.Util.Task.ConfigureBackend as backendConfigUtils
 import OPSI.Util.Task.ConfigureBackend.ConfigurationData as confData
 
 from .test_hosts import getConfigServer
-from .helpers import createTemporaryTestfile, mock, unittest
-
-import pytest
+from .helpers import createTemporaryTestfile, mock
 
 
-class ConfigFileManagementTestCase(unittest.TestCase):
-
-    EXAMPLE_CONFIG = os.path.join(
+@pytest.fixture
+def exampleMySQLBackendConfig():
+    templateFile = os.path.join(
         os.path.dirname(__file__), '..',
         'data', 'backends', 'mysql.conf'
     )
 
-    def testReadingMySQLConfigFile(self):
-        defaultMySQLConfig = {
-            "address": u"localhost",
-            "database": u"opsi",
-            "username": u"opsi",
-            "password": u"opsi",
-            "databaseCharset": "utf8",
-            "connectionPoolSize": 20,
-            "connectionPoolMaxOverflow": 10,
-            "connectionPoolTimeout": 30
-        }
+    with createTemporaryTestfile(templateFile) as fileName:
+        yield fileName
 
-        with createTemporaryTestfile(self.EXAMPLE_CONFIG) as fileName:
-            config = backendConfigUtils.getBackendConfiguration(fileName)
 
-        self.assertEqual(config, defaultMySQLConfig)
+def testReadingMySQLConfigFile(exampleMySQLBackendConfig):
+    defaultMySQLConfig = {
+        "address": u"localhost",
+        "database": u"opsi",
+        "username": u"opsi",
+        "password": u"opsi",
+        "databaseCharset": "utf8",
+        "connectionPoolSize": 20,
+        "connectionPoolMaxOverflow": 10,
+        "connectionPoolTimeout": 30
+    }
 
-    def testUpdatingTestConfigFile(self):
-        with createTemporaryTestfile(self.EXAMPLE_CONFIG) as fileName:
-            config = backendConfigUtils.getBackendConfiguration(fileName)
+    config = backendConfigUtils.getBackendConfiguration(exampleMySQLBackendConfig)
 
-            self.assertNotEqual('notYourCurrentPassword', config['password'])
-            config['password'] = 'notYourCurrentPassword'
-            backendConfigUtils.updateConfigFile(fileName, config)
-            self.assertEqual('notYourCurrentPassword', config['password'])
+    assert config == defaultMySQLConfig
 
-            del config['address']
-            del config['database']
-            del config['password']
 
-            backendConfigUtils.updateConfigFile(fileName, config)
+def testUpdatingTestConfigFile(exampleMySQLBackendConfig):
+    fileName = exampleMySQLBackendConfig
+    config = backendConfigUtils.getBackendConfiguration(fileName)
 
-            config = backendConfigUtils.getBackendConfiguration(fileName)
+    assert 'notYourCurrentPassword' != config['password']
+    config['password'] = 'notYourCurrentPassword'
+    backendConfigUtils.updateConfigFile(fileName, config)
+    assert 'notYourCurrentPassword' == config['password']
 
-        for key in ('address', 'database', 'password'):
-            self.assertTrue(
-                key not in config,
-                '{0} should not be in {1}'.format(key, config)
-            )
+    del config['address']
+    del config['database']
+    del config['password']
 
-        for key in ('username', 'connectionPoolMaxOverflow'):
-            self.assertTrue(
-                key in config,
-                '{0} should be in {1}'.format(key, config)
-            )
+    backendConfigUtils.updateConfigFile(fileName, config)
+
+    config = backendConfigUtils.getBackendConfiguration(fileName)
+
+    for key in ('address', 'database', 'password'):
+        assert key not in config, '{0} should not be in {1}'.format(key, config)
+
+    for key in ('username', 'connectionPoolMaxOverflow'):
+        assert key in config, '{0} should be in {1}'.format(key, config)
 
 
 def testReadingWindowsDomainFromSambaConfig():
