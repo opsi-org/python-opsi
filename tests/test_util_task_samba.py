@@ -19,6 +19,7 @@
 Testing functionality of OPSI.Util.Task.Samba
 
 :author: Mathias Radtke <m.radtke@uib.de>
+:author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
 """
 
