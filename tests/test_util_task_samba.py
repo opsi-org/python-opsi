@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
 # Copyright (C) 2015-2016 uib GmbH <info@uib.de>
@@ -20,6 +19,7 @@
 Testing functionality of OPSI.Util.Task.Samba
 
 :author: Mathias Radtke <m.radtke@uib.de>
+:author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
 """
 
@@ -28,9 +28,10 @@ from __future__ import absolute_import
 import os
 import os.path
 import mock
-import unittest
 import pytest
+
 import OPSI.Util.Task.Samba as Samba
+
 from .helpers import workInTemporaryDirectory
 
 
@@ -41,412 +42,289 @@ def testCheckForSambaVersionWithoutSMBD(emptyoutput):
 			assert not Samba.isSamba4()
 
 
-class Samba4Test(unittest.TestCase):
-	def testIsSamba4(self):
-
-		def fakeExecute(command):
-			return ['version 4.0.3']
-
-		def fakeWhich(command):
-			return command
-
-		with mock.patch('OPSI.Util.Task.Samba.execute', fakeExecute):
-			with mock.patch('OPSI.Util.Task.Samba.which', fakeWhich):
-				self.assertTrue(Samba.isSamba4())
-
-	def testIsNotSamba4(self):
-
-		def fakeExecute(command):
-			return ['version 3.1']
-
-		def fakeWhich(command):
-			return command
-
-		with mock.patch('OPSI.Util.Task.Samba.execute', fakeExecute):
-			with mock.patch('OPSI.Util.Task.Samba.which', fakeWhich):
-				self.assertFalse(Samba.isSamba4())
+@pytest.mark.parametrize("versionString, isSamba4", [
+	('version 4.0.3', True),
+	('version 3.1', False)
+])
+def testCheckForSamba4DependsOnVersion(versionString, isSamba4):
+	with mock.patch('OPSI.Util.Task.Samba.execute', lambda cmd: [versionString]):
+		with mock.patch('OPSI.Util.Task.Samba.which', lambda cmd: cmd):
+			assert Samba.isSamba4() == isSamba4
 
 
-class SambaReadConfigTest(unittest.TestCase):
+def testReadingEmptySambaConfig():
 
-	def testEmptyConfigRead(self):
+	with workInTemporaryDirectory() as tempDir:
+		PathToSmbConf = os.path.join(tempDir, 'SMB_CONF')
+		with open(PathToSmbConf, 'w'):
+			pass
+		result = Samba._readConfig(PathToSmbConf)
 
-		with workInTemporaryDirectory() as tempDir:
-			PathToSmbConf = os.path.join(tempDir, 'SMB_CONF')
-			with open(PathToSmbConf, 'w'):
-				pass
-			result = Samba._readConfig(PathToSmbConf)
-
-		self.assertEqual([], result)
-
-	def testTrueConfigRead(self):
-
-		config = []
-		config.append(u"[opt_pcbin]\n")
-		config.append(u"[opsi_depot]\n")
-		config.append(u"[opsi_depot_rw]\n")
-		config.append(u"[opsi_images]\n")
-		config.append(u"[opsi_workbench]\n")
-		config.append(u"[opsi_repository]\n")
-
-		with workInTemporaryDirectory() as tempDir:
-			PathToSmbConf = os.path.join(tempDir, 'SMB_CONF')
-			with open(PathToSmbConf, 'w') as fakeSambaConfig:
-				for line in config:
-					fakeSambaConfig.write(line)
-			result = Samba._readConfig(PathToSmbConf)
-
-		self.assertEqual(config, result)
+	assert [] == result
 
 
-class SambaProcessConfigTest(unittest.TestCase):
+def testReadingSambaConfig():
+	config = [
+		u"[opt_pcbin]\n",
+		u"[opsi_depot]\n",
+		u"[opsi_depot_rw]\n",
+		u"[opsi_images]\n",
+		u"[opsi_workbench]\n",
+		u"[opsi_repository]\n",
+	]
 
-	def testSambaConfigureSuseSamba4(self):
+	with workInTemporaryDirectory() as tempDir:
+		PathToSmbConf = os.path.join(tempDir, 'SMB_CONF')
+		with open(PathToSmbConf, 'w') as fakeSambaConfig:
+			for line in config:
+				fakeSambaConfig.write(line)
 
-		def fakeDistribution():
-			return 'suse linux enterprise server'
+		result = Samba._readConfig(PathToSmbConf)
 
-		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda: True):
-			with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
-				with mock.patch('OPSI.Util.Task.Samba.getDistribution', fakeDistribution):
-					newlines = Samba._processConfig([])
+	assert config == result
 
-		suse = False
-		for line in newlines:
-			if 'path = /var/lib/opsi/workbench' in line:
-					suse = True
-					break
-		self.assertTrue(suse)
 
-	def testSambaConfigureSuseNoSamba4(self):
+def testConfigureSamba4OnSLES():
 
-		def fakeDistribution():
-			return 'suse linux enterprise server'
+	def fakeDistribution():
+		return 'suse linux enterprise server'
 
-		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda: False):
-			with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
-				with mock.patch('OPSI.Util.Task.Samba.getDistribution', fakeDistribution):
-					newlines = Samba._processConfig([])
+	with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda: True):
+		with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
+			with mock.patch('OPSI.Util.Task.Samba.getDistribution', fakeDistribution):
+				newlines = Samba._processConfig([])
 
-		suse = False
-		for line in newlines:
-			if 'path = /var/lib/opsi/workbench' in line:
-					suse = True
-					break
-		self.assertTrue(suse)
+	assert any('path = /var/lib/opsi/workbench' in line for line in newlines)
 
-	def testSambaConfigureUbuntuSamba4(self):
 
-		def fakeDistribution():
-			return 'Ubuntu 14.04.2 LTS'
+def testConfigureSamba3OnSLES():
 
-		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda: False):
-			with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
-				with mock.patch('OPSI.Util.Task.Samba.getDistribution', fakeDistribution):
-					result = Samba._processConfig([])
+	def fakeDistribution():
+		return 'suse linux enterprise server'
 
-		filled = False
-		nonSuse = False
-		for line in result:
-			if line.strip():
-				filled = True
-				if '/home/opsiproducts' in line:
-					nonSuse = True
-					break
+	with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda: False):
+		with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
+			with mock.patch('OPSI.Util.Task.Samba.getDistribution', fakeDistribution):
+				newlines = Samba._processConfig([])
 
-		self.assertTrue(filled)
-		self.assertTrue(nonSuse)
+	assert any('path = /var/lib/opsi/workbench' in line for line in newlines)
 
-	def testSambaConfigureUbuntuNoSamba4(self):
 
-		def fakeDistribution():
-			return 'Ubuntu 14.04.2 LTS'
+@pytest.mark.parametrize("isSamba4", [True, False])
+def testConfigureSambaOnUbuntu(isSamba4):
 
-		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda: True):
-			with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
-				with mock.patch('OPSI.Util.Task.Samba.getDistribution', fakeDistribution):
-					result = Samba._processConfig([])
+	def fakeDistribution():
+		return 'Ubuntu 14.04.2 LTS'
 
-		filled = False
-		nonSuse = False
-		for line in result:
-			if line.strip():
-				filled = True
-				if '/home/opsiproducts' in line:
-					nonSuse = True
-					break
+	with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda: isSamba4):
+		with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
+			with mock.patch('OPSI.Util.Task.Samba.getDistribution', fakeDistribution):
+				result = Samba._processConfig([])
 
-		self.assertTrue(filled)
-		self.assertTrue(nonSuse)
+	assert any('/home/opsiproducts' in line for line in result)
 
-	def testSambaConfigureSamba4Share(self):
 
-		def fakeDistribution():
-			return ''
+@pytest.mark.parametrize("isSamba4", [True, False])
+def testSambaConfigureSamba4Share(isSamba4):
+	config = [
+		u"[opt_pcbin]\n",
+		u"[opsi_depot]\n",
+		u"[opsi_depot_rw]\n",
+		u"[opsi_images]\n",
+		u"[opsi_workbench]\n",
+		u"[opsi_repository]\n",
+	]
 
-		config = []
-		config.append(u"[opt_pcbin]\n")
-		config.append(u"[opsi_depot]\n")
-		config.append(u"[opsi_depot_rw]\n")
-		config.append(u"[opsi_images]\n")
-		config.append(u"[opsi_workbench]\n")
-		config.append(u"[opsi_repository]\n")
-
-		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda: True):
-			with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
-				with mock.patch('OPSI.Util.Task.Samba.getDistribution', fakeDistribution):
-					Samba._processConfig(config)
-
-		filled = False
-		for line in config:
-			if line.strip():
-				filled = True
-				break
-		self.assertTrue(filled)
-
-	def testSambaConfigureNoSamba4Share(self):
-
-		def fakeDistribution():
-			return ''
-
-		config = []
-		config.append(u"[opt_pcbin]\n")
-		config.append(u"[opsi_depot]\n")
-		config.append(u"[opsi_depot_rw]\n")
-		config.append(u"[opsi_images]\n")
-		config.append(u"[opsi_workbench]\n")
-		config.append(u"[opsi_repository]\n")
-
-		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda: False):
-			with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
-				with mock.patch('OPSI.Util.Task.Samba.getDistribution', fakeDistribution):
-					Samba._processConfig(config)
-
-		filled = False
-		for line in config:
-			if line.strip():
-				filled = True
-				break
-		self.assertTrue(filled)
-
-	def testSambaConfigureSuseSamba4Share(self):
-
-		def fakeDistribution():
-			return 'suse linux enterprise server'
-
-		config = []
-		config.append(u"[opt_pcbin]\n")
-		config.append(u"[opsi_depot]\n")
-		config.append(u"[opsi_depot_rw]\n")
-		config.append(u"[opsi_images]\n")
-		config.append(u"[opsi_workbench]\n")
-		config.append(u"[opsi_repository]\n")
-
-		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda: True):
-			with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
-				with mock.patch('OPSI.Util.Task.Samba.getDistribution', fakeDistribution):
-					Samba._processConfig(config)
-
-		filled = False
-		for line in config:
-			if line.strip():
-				filled = True
-				break
-		self.assertTrue(filled)
-
-	def testSambaConfigureSuseNoSamba4Share(self):
-
-		def fakeDistribution():
-			return 'suse linux enterprise server'
-
-		config = []
-		config.append(u"[opt_pcbin]\n")
-		config.append(u"[opsi_depot]\n")
-		config.append(u"[opsi_depot_rw]\n")
-		config.append(u"[opsi_images]\n")
-		config.append(u"[opsi_workbench]\n")
-		config.append(u"[opsi_repository]\n")
-
-		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda: False):
-			with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
-				with mock.patch('OPSI.Util.Task.Samba.getDistribution', fakeDistribution):
-					Samba._processConfig(config)
-
-		filled = False
-		for line in config:
-			if line.strip():
-				filled = True
-				break
-		self.assertTrue(filled)
-
-	def testOpsiDepotShareSamba4(self):
-		config = []
-		config.append(u"[opsi_depot]\n")
-		config.append(u"   available = yes\n")
-		config.append(u"   comment = opsi depot share (ro)\n")
-		config.append(u"   path = /var/lib/opsi/depot\n")
-		config.append(u"   oplocks = no\n")
-		config.append(u"   follow symlinks = yes\n")
-		config.append(u"   level2 oplocks = no\n")
-		config.append(u"   writeable = no\n")
-		config.append(u"   invalid users = root\n")
-
-		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda:True):
-			with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
+	with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda: isSamba4):
+		with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
+			with mock.patch('OPSI.Util.Task.Samba.getDistribution', lambda: ''):
 				result = Samba._processConfig(config)
 
-		found = False
-		for line in result:
-			if line.strip():
-				if 'admin users' in line:
-					found = True
-					break
+	assert any(line.strip() for line in result)
 
-		self.assertTrue(found, 'Missing Admin Users in Share opsi_depot')
 
-	def testCorrectOpsiDepotShareWithoutSamba4Fix(self):
-		config = []
-		config.append(u"[opsi_depot]\n")
-		config.append(u"   available = yes\n")
-		config.append(u"   comment = opsi depot share (ro)\n")
-		config.append(u"   path = /var/lib/opsi/depot\n")
-		config.append(u"   oplocks = no\n")
-		config.append(u"   follow symlinks = yes\n")
-		config.append(u"   level2 oplocks = no\n")
-		config.append(u"   writeable = no\n")
-		config.append(u"   invalid users = root\n")
+@pytest.mark.parametrize("isSamba4", [True, False])
+def testConfigureSambaOnSLESWithFilledConfig(isSamba4):
 
-		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda: True):
-			with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
+	def fakeDistribution():
+		return 'suse linux enterprise server'
+
+	config = [
+		u"[opt_pcbin]\n",
+		u"[opsi_depot]\n",
+		u"[opsi_depot_rw]\n",
+		u"[opsi_images]\n",
+		u"[opsi_workbench]\n",
+		u"[opsi_repository]\n",
+	]
+
+	with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda: isSamba4):
+		with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
+			with mock.patch('OPSI.Util.Task.Samba.getDistribution', fakeDistribution):
 				result = Samba._processConfig(config)
 
-		opsi_depot = False
-		for line in result:
-			if line.strip():
-				if '[opsi_depot]' in line:
-					opsi_depot = True
-				elif opsi_depot and 'admin users' in line:
-					break
-				elif opsi_depot and line.startswith('['):
-					opsi_depot = False
+	assert any(line.strip() for line in result)
+
+
+def testAdminUsersAreAddedToExistingOpsiDepotShare():
+	config = [
+		u"[opsi_depot]\n",
+		u"   available = yes\n",
+		u"   comment = opsi depot share (ro)\n",
+		u"   path = /var/lib/opsi/depot\n",
+		u"   oplocks = no\n",
+		u"   follow symlinks = yes\n",
+		u"   level2 oplocks = no\n",
+		u"   writeable = no\n",
+		u"   invalid users = root\n",
+	]
+
+	with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda: True):
+		with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
+			result = Samba._processConfig(config)
+
+	assert any('admin users' in line for line in result), 'Missing Admin Users in Share opsi_depot'
+
+
+def testCorrectOpsiDepotShareWithoutSamba4Fix():
+	config = [
+		u"[opsi_depot]\n",
+		u"   available = yes\n",
+		u"   comment = opsi depot share (ro)\n",
+		u"   path = /var/lib/opsi/depot\n",
+		u"   oplocks = no\n",
+		u"   follow symlinks = yes\n",
+		u"   level2 oplocks = no\n",
+		u"   writeable = no\n",
+		u"   invalid users = root\n",
+	]
+
+	with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda: True):
+		with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
+			result = Samba._processConfig(config)
+
+	opsi_depot = False
+	for line in result:
+		if line.strip():
+			if '[opsi_depot]' in line:
+				opsi_depot = True
+			elif opsi_depot and 'admin users' in line:
 				break
-		else:
-			self.fail('Did not find "admin users" in opsi_depot share')
-
-	def testCorrectOpsiDepotShareWithSamba4Fix(self):
-		config = []
-		config.append(u"[opt_pcbin]\n")
-		config.append(u"[opsi_depot]\n")
-		config.append(u"   available = yes\n")
-		config.append(u"   comment = opsi depot share (ro)\n")
-		config.append(u"   path = /var/lib/opsi/depot\n")
-		config.append(u"   oplocks = no\n")
-		config.append(u"   follow symlinks = yes\n")
-		config.append(u"   level2 oplocks = no\n")
-		config.append(u"   writeable = no\n")
-		config.append(u"   invalid users = root\n")
-		config.append(u"   admin users = @%s\n" % Samba.FILE_ADMIN_GROUP)
-		config.append(u"[opsi_depot_rw]\n")
-		config.append(u"[opsi_images]\n")
-		config.append(u"[opsi_workbench]\n")
-		config.append(u"[opsi_repository]\n")
-
-		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda: True):
-			with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
-				result = Samba._processConfig(config)
-
-		self.assertEqual(config, result)
-
-	def test_processConfigRemoveComment(self):
-
-		config = []
-		config.append(u"; load opsi shares\n")
-		config.append(u"include = /etc/samba/share.conf\n")
-		config.append(u"[opt_pcbin]\n")
-		config.append(u"[opsi_depot]\n")
-		config.append(u"[opsi_depot_rw]\n")
-		config.append(u"[opsi_images]\n")
-		config.append(u"[opsi_workbench]\n")
-		config.append(u"[opsi_repository]\n")
-
-		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda: True):
-			with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
-				result = Samba._processConfig(config)
-
-		deleted = True
-		for line in result:
-			if line.strip():
-				if '; load opsi shares' in line:
-					deleted = False
-					break
-
-		else:
-			self.assertTrue(deleted)
-
-	def test_processConfigNoRepoShare(self):
-		config = []
-		config.append(u"; load opsi shares\n")
-		config.append(u"include = /etc/samba/share.conf\n")
-		config.append(u"[opt_pcbin]\n")
-		config.append(u"[opsi_depot]\n")
-		config.append(u"[opsi_depot_rw]\n")
-		config.append(u"[opsi_images]\n")
-		config.append(u"[opsi_workbench]\n")
-
-		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda: True):
-			with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
-				result = Samba._processConfig(config)
-
-		repository = False
-		pathFound = False
-		for line in result:
-			if '[opsi_repository]' in line:
-				repository = True
-			elif repository:
-				if line.strip().startswith('['):
-					# next section
-					break
-				elif line.strip().startswith('path'):
-					self.assertTrue('/var/lib/opsi/repository' in line)
-					pathFound = True
-					break
-
-		self.failIf(not repository, "Missing entry 'opsi_repository'")
-		self.failIf(not pathFound, "Missing 'path' in 'opsi_repository'")
+			elif opsi_depot and line.startswith('['):
+				opsi_depot = False
+				break
+	else:
+		assert False, 'Did not find "admin users" in opsi_depot share'
 
 
-class SambaWriteConfig(unittest.TestCase):
+def testCorrectOpsiDepotShareWithSamba4Fix():
+	config = [
+		u"[opt_pcbin]\n",
+		u"[opsi_depot]\n",
+		u"   available = yes\n",
+		u"   comment = opsi depot share (ro)\n",
+		u"   path = /var/lib/opsi/depot\n",
+		u"   oplocks = no\n",
+		u"   follow symlinks = yes\n",
+		u"   level2 oplocks = no\n",
+		u"   writeable = no\n",
+		u"   invalid users = root\n",
+		u"   admin users = @%s\n" % Samba.FILE_ADMIN_GROUP,
+		u"[opsi_depot_rw]\n",
+		u"[opsi_images]\n",
+		u"[opsi_workbench]\n",
+		u"[opsi_repository]\n",
+	]
 
-	def testEmptyConfigWrite(self):
+	with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda: True):
+		with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
+			result = Samba._processConfig(config)
 
-		with workInTemporaryDirectory() as tempDir:
-			PathToSmbConf = os.path.join(tempDir, 'SMB_CONF')
-			with open(PathToSmbConf, 'w'):
-				pass
-			Samba._writeConfig([], PathToSmbConf)
-			with open(PathToSmbConf, 'r') as readConfig:
-				result = readConfig.readlines()
+	assert config == result
 
-		self.assertEqual([], result)
 
-	def testTrueConfigWrite(self):
-		config = []
-		config.append(u"[opt_pcbin]\n")
-		config.append(u"[opsi_depot]\n")
-		config.append(u"[opsi_depot_rw]\n")
-		config.append(u"[opsi_images]\n")
-		config.append(u"[opsi_workbench]\n")
-		config.append(u"[opsi_repository]\n")
+def testProcessConfigDoesNotRemoveComment():
+	config = [
+		u"; load opsi shares\n",
+		u"include = /etc/samba/share.conf\n",
+		u"[opt_pcbin]\n",
+		u"[opsi_depot]\n",
+		u"[opsi_depot_rw]\n",
+		u"[opsi_images]\n",
+		u"[opsi_workbench]\n",
+		u"[opsi_repository]\n",
+	]
 
-		with workInTemporaryDirectory() as tempDir:
-			PathToSmbConf = os.path.join(tempDir, 'SMB_CONF')
-			with open(PathToSmbConf, 'w'):
-				pass
-			Samba._writeConfig(config, PathToSmbConf)
-			with open(PathToSmbConf, 'r') as readConfig:
-				result = readConfig.readlines()
+	with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda: True):
+		with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
+			result = Samba._processConfig(config)
 
-		self.assertEqual(config, result)
+	assert any('; load opsi shares' in line for line in result)
 
-if __name__ == '__main__':
-	unittest.main()
+
+def testProcessConfigAddsMissingRepositoryShare():
+	config = [
+		u"; load opsi shares\n",
+		u"include = /etc/samba/share.conf\n",
+		u"[opt_pcbin]\n",
+		u"[opsi_depot]\n",
+		u"[opsi_depot_rw]\n",
+		u"[opsi_images]\n",
+		u"[opsi_workbench]\n",
+	]
+
+	with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda: True):
+		with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
+			result = Samba._processConfig(config)
+
+	repository = False
+	pathFound = False
+	for line in result:
+		if '[opsi_repository]' in line:
+			repository = True
+		elif repository:
+			if line.strip().startswith('['):
+				# next section
+				break
+			elif line.strip().startswith('path'):
+				assert '/var/lib/opsi/repository' in line
+				pathFound = True
+				break
+
+	assert repository, "Missing entry 'opsi_repository'"
+	assert pathFound, "Missing 'path' in 'opsi_repository'"
+
+
+def testWritingEmptySambaConfig():
+	with workInTemporaryDirectory() as tempDir:
+		PathToSmbConf = os.path.join(tempDir, 'SMB_CONF')
+		with open(PathToSmbConf, 'w'):
+			pass
+
+		Samba._writeConfig([], PathToSmbConf)
+		with open(PathToSmbConf, 'r') as readConfig:
+			result = readConfig.readlines()
+
+		assert [] == result
+
+
+def testWritingSambaConfig():
+	config = [
+		u"[opt_pcbin]\n",
+		u"[opsi_depot]\n",
+		u"[opsi_depot_rw]\n",
+		u"[opsi_images]\n",
+		u"[opsi_workbench]\n",
+		u"[opsi_repository]\n",
+	]
+
+	with workInTemporaryDirectory() as tempDir:
+		PathToSmbConf = os.path.join(tempDir, 'SMB_CONF')
+		with open(PathToSmbConf, 'w'):
+			pass
+
+		Samba._writeConfig(config, PathToSmbConf)
+		with open(PathToSmbConf, 'r') as readConfig:
+			result = readConfig.readlines()
+
+		assert config == result
