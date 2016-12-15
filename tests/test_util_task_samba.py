@@ -29,24 +29,19 @@ import os
 import os.path
 import mock
 import unittest
+import pytest
 import OPSI.Util.Task.Samba as Samba
 from .helpers import workInTemporaryDirectory
 
 
+@pytest.mark.parametrize("emptyoutput", [None, []])
+def testCheckForSambaVersionWithoutSMBD(emptyoutput):
+	with mock.patch('OPSI.Util.Task.Samba.execute', lambda cmd: emptyoutput):
+		with mock.patch('OPSI.Util.Task.Samba.which', lambda cmd: None):
+			assert not Samba.isSamba4()
+
+
 class Samba4Test(unittest.TestCase):
-
-	def testNoSmbd(self):
-
-		def fakeWhich(command):
-			return None
-
-		def fakeExecute(command):
-			return None
-
-		with mock.patch('OPSI.Util.Task.Samba.execute', fakeExecute):
-			with mock.patch('OPSI.Util.Task.Samba.which', fakeWhich):
-				self.assertFalse(Samba.isSamba4())
-
 	def testIsSamba4(self):
 
 		def fakeExecute(command):
