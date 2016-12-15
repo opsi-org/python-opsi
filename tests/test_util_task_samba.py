@@ -166,7 +166,7 @@ def testConfigureSambaOnSLESWithFilledConfig(isSamba4):
 	assert any(line.strip() for line in result)
 
 
-def testOpsiDepotShareSamba4():
+def testAdminUsersAreAddedToExistingOpsiDepotShare():
 	config = [
 		u"[opsi_depot]\n",
 		u"   available = yes\n",
@@ -243,7 +243,7 @@ def testCorrectOpsiDepotShareWithSamba4Fix():
 	assert config == result
 
 
-def test_processConfigRemoveComment():
+def testProcessConfigDoesNotRemoveComment():
 	config = [
 		u"; load opsi shares\n",
 		u"include = /etc/samba/share.conf\n",
@@ -262,7 +262,7 @@ def test_processConfigRemoveComment():
 	assert not any('; load opsi shares' in line for line in result)
 
 
-def test_processConfigNoRepoShare():
+def testProcessConfigAddsMissingRepositoryShare():
 	config = [
 		u"; load opsi shares\n",
 		u"include = /etc/samba/share.conf\n",
