@@ -1,8 +1,7 @@
-#!/usr/bin/env python
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2014 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -23,199 +22,214 @@ Testing functionality of OPSI.System
 :license: GNU Affero General Public License version 3
 """
 
+from __future__ import absolute_import
+
 import os
+import pytest
 import shutil
-import tempfile
-import unittest
 
 from OPSI.System import copy
 from OPSI.Util.Message import ProgressSubject
 
+from .helpers import workInTemporaryDirectory
 
-class CopyFilesTestCase(unittest.TestCase):
-	EXAMPLE_FILENAMES = ('file1', 'file2', 'file3')
-	EXAMPLE_DIRECTORIES = ('dir1', 'dir2', 'dir3')
 
-	def setUp(self):
-		self.testDir = tempfile.mkdtemp()
+@pytest.fixture(
+	params=[None, ProgressSubject(id=u'copy_test', title=u'Copy test')],
+	ids=['non-tracking', 'progresstracking']
+)
+def progressSubject(request):
+	yield request.param
 
-		self.srcDir = os.path.join(self.testDir, 'src')
-		self.dstDir = os.path.join(self.testDir, 'dst')
-		os.makedirs(self.srcDir)
-		os.makedirs(self.dstDir)
 
-		self.progressSubject = ProgressSubject(id=u'copy_test', title=u'Copy test')
+@pytest.fixture
+def exampleFilenames():
+	return ('file1', 'file2', 'file3')
 
-	def tearDown(self):
-		if os.path.exists(self.testDir):
-			shutil.rmtree(self.testDir)
 
-		del self.progressSubject
-		del self.srcDir
-		del self.dstDir
-		del self.testDir
+@pytest.fixture
+def exampleDirectories():
+	return ('dir1', 'dir2', 'dir3')
 
-	def _fillDirectoryWithFilesAndFolders(self):
-		fileContent = 'x'*10*1024
 
-		for filename in self.EXAMPLE_FILENAMES:
-			pathToFile = os.path.join(self.srcDir, filename)
+@pytest.fixture
+def tempDir():
+	with workInTemporaryDirectory() as tDir:
+		yield tDir
+
+
+@pytest.fixture
+def srcDir(tempDir):
+	path = os.path.join(tempDir, 'src')
+	os.mkdir(path)
+	return path
+
+
+@pytest.fixture
+def dstDir(tempDir):
+	path = os.path.join(tempDir, 'dst')
+	os.mkdir(path)
+	return path
+
+
+@pytest.fixture
+def filledSourceDirectory(srcDir, exampleFilenames, exampleDirectories):
+	return fillDirectoryWithFilesAndFolders(srcDir, exampleFilenames, exampleDirectories)
+
+
+def fillDirectoryWithFilesAndFolders(sourceDirectory, filenames, directories):
+	fileContent = 'x' * 10 * 1024
+
+	for filename in filenames:
+		pathToFile = os.path.join(sourceDirectory, filename)
+		with open(pathToFile, 'w') as outputFile:
+			outputFile.write(fileContent)
+
+	for dirname in directories:
+		pathToDir = os.path.join(sourceDirectory, dirname)
+		os.mkdir(pathToDir)
+
+		for filename in filenames:
+			pathToFile = os.path.join(pathToDir, filename)
 			with open(pathToFile, 'w') as outputFile:
 				outputFile.write(fileContent)
 
-		for dirname in self.EXAMPLE_DIRECTORIES:
-			pathToDir = os.path.join(self.srcDir, dirname)
-			os.mkdir(pathToDir)
-
-			for filename in self.EXAMPLE_FILENAMES:
-				pathToFile = os.path.join(pathToDir, filename)
-				with open(pathToFile, 'w') as outputFile:
-					outputFile.write(fileContent)
-
-	def _makeSureFilesAndFoldersExistAtDestination(self):
-		for filename in self.EXAMPLE_FILENAMES:
-			pathToFile = os.path.join(self.dstDir, os.path.basename(self.srcDir), filename)
-			self.assertTrue(os.path.isfile(pathToFile))
-
-		for dirname in self.EXAMPLE_DIRECTORIES:
-			pathToDir = os.path.join(self.dstDir, os.path.basename(self.srcDir), dirname)
-			self.assertTrue(os.path.isdir(pathToDir))
-
-			for filename in self.EXAMPLE_FILENAMES:
-				pathToFile = os.path.join(pathToDir, filename)
-				self.assertTrue(os.path.isfile(pathToFile))
-
-	def _makeSureFilesAndFoldersExistAtDestinationWithoutLongPath(self):
-		"""
-		Checking method for files and folders that does nut include the basename
-		of the source directory.
-		"""
-		for filename in self.EXAMPLE_FILENAMES:
-			a = os.path.join(self.dstDir, filename)
-			self.assertTrue(os.path.isfile(a))
-
-		for dirname in self.EXAMPLE_DIRECTORIES:
-			a = os.path.join(self.dstDir, dirname)
-			self.assertTrue(os.path.isdir(a))
-
-			for filename in self.EXAMPLE_FILENAMES:
-				a2 = os.path.join(a, filename)
-				self.assertTrue(os.path.isfile(a2))
-
-	def testCopyingFromFileToFileOverwritesDestination(self):
-		srcfile = os.path.join(self.srcDir, 'testfile')
-		with open(srcfile, 'w') as f:
-			f.write('new')
-
-		dstfile = os.path.join(self.dstDir, 'testfile')
-		with open(dstfile, 'w') as f:
-			f.write('old')
-
-		copy(srcfile, dstfile, self.progressSubject)
-
-		with open(dstfile) as f:
-			data = f.read()
-
-		self.assertEquals('new', data)
-
-	def testCopyingFromFileToDirectory(self):
-		# src = file,  dst = dir            => copy into dst
-		srcfile = os.path.join(self.srcDir, 'testfile')
-		dstfile = os.path.join(self.dstDir, 'testfile2')
-
-		with open(srcfile, 'w') as f:
-			f.write('new')
-
-		copy(srcfile, dstfile, self.progressSubject)
-
-		with open(dstfile) as f:
-			data = f.read()
-
-		self.assertEquals('new', data)
-
-	def testCopyingFromFileToNonExistingDestination(self):
-		# src = file,  dst = not existent   => create dst directories, copy src to dst
-		srcfile = os.path.join(self.srcDir, 'testfile')
-		dstfile = os.path.join(self.dstDir, 'newdir', 'testfile')
-
-		with open(srcfile, 'w') as f:
-			f.write('new')
-
-		copy(srcfile, dstfile, self.progressSubject)
-
-		with open(dstfile) as f:
-			data = f.read()
-
-		self.assertEquals('new', data)
-
-	def testCopyingFromDirectoryToFileRaisesException(self):
-		# src = dir,   dst = file           => error
-		testSrcDir = os.path.join(self.srcDir, 'testdir')
-		os.makedirs(testSrcDir)
-
-		testDstDir = os.path.join(self.dstDir, 'testdir')
-		with open(testDstDir, 'w'):
-			pass
-
-		self.assertRaises(OSError, copy, testSrcDir, testDstDir, self.progressSubject)
-
-	def testCopyingFromDirectoryToDirectoryCopiesContent(self):
-		#src = dir,   dst = dir            => copy src dir into dst
-		self._fillDirectoryWithFilesAndFolders()
-		copy(self.srcDir, self.dstDir, self.progressSubject)
-		self._makeSureFilesAndFoldersExistAtDestination()
-
-		copy(self.srcDir, self.dstDir, self.progressSubject)
-
-		for name in os.listdir(os.path.join(self.dstDir, os.path.basename(self.srcDir))):
-			self.assertTrue(name in self.EXAMPLE_DIRECTORIES + self.EXAMPLE_FILENAMES)
-
-		for dirname in self.EXAMPLE_DIRECTORIES:
-			a = os.path.join(self.dstDir, os.path.basename(self.srcDir), dirname)
-			for name in os.listdir(a):
-				self.assertTrue(name in self.EXAMPLE_FILENAMES)
-
-	def testCopyingFromDirectoryToNonExistingCreatesFolderAndCopiesContent(self):
-		# src = dir,   dst = not existent   => create dst, copy content of src into dst
-		self._fillDirectoryWithFilesAndFolders()
-
-		shutil.rmtree(self.dstDir)
-		copy(self.srcDir, self.dstDir, self.progressSubject)
-
-		self._makeSureFilesAndFoldersExistAtDestinationWithoutLongPath()
-
-	def testCopyingManyFilesIntoNonFileDestination(self):
-		# src = dir/*, dst = not file       => create dst if not exists, copy content of src into dst
-		self._fillDirectoryWithFilesAndFolders()
-
-		copy(self.srcDir + '/*.*', self.dstDir, self.progressSubject)
-
-		self._makeSureFilesAndFoldersExistAtDestinationWithoutLongPath()
-
-	def testCopyingFilesWithWildcardPattern(self):
-		self._fillDirectoryWithFilesAndFolders()
-
-		copy(self.srcDir + '/*', self.dstDir, self.progressSubject)
-
-		self._makeSureFilesAndFoldersExistAtDestinationWithoutLongPath()
-
-	def testCopyingFilesWithWildcardPatternIncludingDot(self):
-		self._fillDirectoryWithFilesAndFolders()
-
-		copy(self.srcDir + '/*.*', self.dstDir, self.progressSubject)
-
-		self._makeSureFilesAndFoldersExistAtDestinationWithoutLongPath()
+	return sourceDirectory
 
 
-class CopyFilesWithoutProgressSubjectTestCase(CopyFilesTestCase):
+def makeSureFilesAndFoldersExistAtDestination(filenames, directories, sourceDirectory, destinationDirectory):
+	bname = os.path.basename(sourceDirectory)
+	for filename in filenames:
+		pathToFile = os.path.join(destinationDirectory, bname, filename)
+		assert os.path.isfile(pathToFile)
+
+	for dirname in directories:
+		pathToDir = os.path.join(destinationDirectory, bname, dirname)
+		assert os.path.isdir(pathToDir)
+
+		for filename in filenames:
+			pathToFile = os.path.join(pathToDir, filename)
+			assert os.path.isfile(pathToFile)
+
+
+def makeSureFilesAndFoldersExistAtDestinationWithoutLongPath(filenames, directories, destinationDirectory):
 	"""
-	Repeating the tests from CopyFilesTestCase without a progressSubject.
+	Checking method for files and folders that does nut include the basename
+	of the source directory.
 	"""
-	def setUp(self):
-		super(CopyFilesWithoutProgressSubjectTestCase, self).setUp()
+	for filename in filenames:
+		absPath = os.path.join(destinationDirectory, filename)
+		assert os.path.isfile(absPath)
 
-		self.progressSubject = None
+	for dirname in directories:
+		fullDirPath = os.path.join(destinationDirectory, dirname)
+		assert os.path.isdir(fullDirPath)
+
+		for filename in filenames:
+			filePath = os.path.join(fullDirPath, filename)
+			assert os.path.isfile(filePath)
 
 
-if __name__ == '__main__':
-	unittest.main()
+def testCopyingFromFileToFileOverwritesDestination(progressSubject, srcDir, dstDir):
+	srcfile = os.path.join(srcDir, 'testfile')
+	with open(srcfile, 'w') as f:
+		f.write('new')
+
+	dstfile = os.path.join(dstDir, 'testfile')
+	with open(dstfile, 'w') as f:
+		f.write('old')
+
+	copy(srcfile, dstfile, progressSubject)
+
+	with open(dstfile) as f:
+		data = f.read()
+
+	assert 'new' == data
+
+
+def testCopyingFromFileToDirectory(progressSubject, srcDir, dstDir):
+	# src = file,  dst = dir            => copy into dst
+	srcfile = os.path.join(srcDir, 'testfile')
+	dstfile = os.path.join(dstDir, 'testfile2')
+
+	with open(srcfile, 'w') as f:
+		f.write('new')
+
+	copy(srcfile, dstfile, progressSubject)
+
+	with open(dstfile) as f:
+		data = f.read()
+
+	assert 'new' == data
+
+
+def testCopyingFromFileToNonExistingDestination(progressSubject, srcDir, dstDir):
+	# src = file,  dst = not existent   => create dst directories, copy src to dst
+	srcfile = os.path.join(srcDir, 'testfile')
+	dstfile = os.path.join(dstDir, 'newdir', 'testfile')
+
+	with open(srcfile, 'w') as f:
+		f.write('new')
+
+	copy(srcfile, dstfile, progressSubject)
+
+	with open(dstfile) as f:
+		data = f.read()
+
+	assert 'new' == data
+
+
+def testCopyingFromDirectoryToFileRaisesException(progressSubject, srcDir, dstDir):
+	# src = dir,   dst = file           => error
+	testSrcDir = os.path.join(srcDir, 'testdir')
+	os.makedirs(testSrcDir)
+
+	testDstDir = os.path.join(dstDir, 'testdir')
+	with open(testDstDir, 'w'):
+		pass
+
+	with pytest.raises(OSError):
+		copy(testSrcDir, testDstDir, progressSubject)
+
+
+def testCopyingFromDirectoryToDirectoryCopiesContent(progressSubject, filledSourceDirectory, dstDir, exampleFilenames, exampleDirectories):
+	# src = dir,   dst = dir            => copy src dir into dst
+	copy(filledSourceDirectory, dstDir, progressSubject)
+	makeSureFilesAndFoldersExistAtDestination(exampleFilenames, exampleDirectories, filledSourceDirectory, dstDir)
+
+	copy(filledSourceDirectory, dstDir, progressSubject)
+
+	for name in os.listdir(os.path.join(dstDir, os.path.basename(filledSourceDirectory))):
+		assert name in exampleDirectories + exampleFilenames
+
+	for dirname in exampleDirectories:
+		a = os.path.join(dstDir, os.path.basename(filledSourceDirectory), dirname)
+		for name in os.listdir(a):
+			assert name in exampleFilenames
+
+
+def testCopyingFromDirectoryToNonExistingCreatesFolderAndCopiesContent(progressSubject, filledSourceDirectory, dstDir, exampleFilenames, exampleDirectories):
+	# src = dir,   dst = not existent   => create dst, copy content of src into dst
+	shutil.rmtree(dstDir)
+	copy(filledSourceDirectory, dstDir, progressSubject)
+
+	makeSureFilesAndFoldersExistAtDestinationWithoutLongPath(exampleFilenames, exampleDirectories, dstDir)
+
+
+def testCopyingManyFilesIntoNonFileDestination(progressSubject, filledSourceDirectory, dstDir, exampleFilenames, exampleDirectories):
+	# src = dir/*, dst = not file       => create dst if not exists, copy content of src into dst
+	copy(filledSourceDirectory + '/*.*', dstDir, progressSubject)
+
+	makeSureFilesAndFoldersExistAtDestinationWithoutLongPath(exampleFilenames, exampleDirectories, dstDir)
+
+
+def testCopyingFilesWithWildcardPattern(progressSubject, filledSourceDirectory, dstDir, exampleFilenames, exampleDirectories):
+	copy(filledSourceDirectory + '/*', dstDir, progressSubject)
+
+	makeSureFilesAndFoldersExistAtDestinationWithoutLongPath(exampleFilenames, exampleDirectories, dstDir)
+
+
+def testCopyingFilesWithWildcardPatternIncludingDot(progressSubject, filledSourceDirectory, dstDir, exampleFilenames, exampleDirectories):
+	copy(filledSourceDirectory + '/*.*', dstDir, progressSubject)
+
+	makeSureFilesAndFoldersExistAtDestinationWithoutLongPath(exampleFilenames, exampleDirectories, dstDir)
