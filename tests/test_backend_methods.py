@@ -1,8 +1,7 @@
-#!/usr/bin/env python
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014 uib GmbH <info@uib.de>
+# Copyright (C) 2014-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -23,132 +22,134 @@ Testing unbound methods for the backends.
 :license: GNU Affero General Public License version 3
 """
 
-import unittest
 import OPSI.Backend.Backend as Backend
 
 
-class TestReadingMethodInformationTestCase(unittest.TestCase):
-	"""
-	Testing getArgAndCallString
-	"""
-	def testGettingSignatureForMethodWithoutArguments(self):
-		def foo():
-			pass
+def testGettingSignatureForMethodWithoutArguments():
+	def foo():
+		pass
 
-		(args, kwargs) = Backend.getArgAndCallString(foo)
+	args, kwargs = Backend.getArgAndCallString(foo)
 
-		self.assertFalse(args)
-		self.assertFalse(kwargs)
-
-	def testGettingSignatureForMethodWithOnePositionalArgument(self):
-		def foo(bar):
-			pass
-
-		(args, kwargs) = Backend.getArgAndCallString(foo)
-
-		self.assertEquals('bar', args)
-		self.assertEquals('bar=bar', kwargs)
-
-	def testGettingSignatureForMethodWithMultiplePositionalArguments(self):
-		def foo(bar, baz):
-			pass
-
-		(args, kwargs) = Backend.getArgAndCallString(foo)
-
-		self.assertEquals('bar, baz', args)
-		self.assertEquals('bar=bar, baz=baz', kwargs)
-
-	def testGettingSignatureForMethodWithKeywordArgumentOnly(self):
-		def foo(bar=None):
-			pass
-
-		(args, kwargs) = Backend.getArgAndCallString(foo)
-
-		self.assertEquals('bar=None', args)
-		self.assertEquals('bar=bar', kwargs)
-
-	def testGettingSignatureForMethodWithMultipleKeywordArgumentsOnly(self):
-		def foo(bar=None, baz=None):
-			pass
-
-		(args, kwargs) = Backend.getArgAndCallString(foo)
-
-		self.assertEquals('bar=None, baz=None', args)
-		self.assertEquals('bar=bar, baz=baz', kwargs)
-
-	def testGettingSignatureForMethodWithMixedArguments(self):
-		def foo(bar, baz=None):
-			pass
-
-		(args, kwargs) = Backend.getArgAndCallString(foo)
-
-		self.assertEquals('bar, baz=None', args)
-		self.assertEquals('bar=bar, baz=baz', kwargs)
-
-	def testSelfAsFirstArgumentIsIgnored(self):
-		def foo(self, bar=None):
-			pass
-
-		(args, kwargs) = Backend.getArgAndCallString(foo)
-
-		self.assertEquals('bar=None', args)
-		self.assertEquals('bar=bar', kwargs)
-
-	def testArgumentWithStringDefault(self):
-		def foo(bar='baz'):
-			pass
-
-		(args, kwargs) = Backend.getArgAndCallString(foo)
-
-		self.assertEquals("bar='baz'", args)
-		self.assertEquals('bar=bar', kwargs)
-
-	def testArgumentWithUnicodeDefault(self):
-		def foo(bar=u'baz'):
-			pass
-
-		(args, kwargs) = Backend.getArgAndCallString(foo)
-
-		self.assertEquals("bar=u'baz'", args)
-		self.assertEquals('bar=bar', kwargs)
-
-	def testArgumentWithVariableArgumentCount(self):
-		def foo(*bar):
-			pass
-
-		(args, kwargs) = Backend.getArgAndCallString(foo)
-
-		self.assertEquals("*bar", args)
-		self.assertEquals('*bar', kwargs)
-
-	def testArgumentWithPositionalArgumentAndVariableArgumentCount(self):
-		def foo(bar, *baz):
-			pass
-
-		(args, kwargs) = Backend.getArgAndCallString(foo)
-
-		self.assertEquals("bar, *baz", args)
-		self.assertEquals('bar=bar, *baz', kwargs)
-
-	def testVariableKeywordArguments(self):
-		def foo(**bar):
-			pass
-
-		(args, kwargs) = Backend.getArgAndCallString(foo)
-
-		self.assertEquals("**bar", args)
-		self.assertEquals('**bar', kwargs)
-
-	def testMethodWithAllTypesOfArguments(self):
-		def foo(ironman, blackWidow=True, *hulk, **deadpool):
-			pass
-
-		(args, kwargs) = Backend.getArgAndCallString(foo)
-
-		self.assertEquals("ironman, blackWidow=True, *hulk, **deadpool", args)
-		self.assertEquals('ironman=ironman, blackWidow=blackWidow, *hulk, **deadpool', kwargs)
+	assert not args
+	assert not kwargs
 
 
+def testGettingSignatureForMethodWithOnePositionalArgument():
+	def foo(bar):
+		pass
 
-if __name__ == '__main__':
-	unittest.main()
+	args, kwargs = Backend.getArgAndCallString(foo)
+
+	assert 'bar' == args
+	assert 'bar=bar' == kwargs
+
+
+def testGettingSignatureForMethodWithMultiplePositionalArguments():
+	def foo(bar, baz):
+		pass
+
+	args, kwargs = Backend.getArgAndCallString(foo)
+
+	assert 'bar, baz' == args
+	assert 'bar=bar, baz=baz' == kwargs
+
+
+def testGettingSignatureForMethodWithKeywordArgumentOnly():
+	def foo(bar=None):
+		pass
+
+	args, kwargs = Backend.getArgAndCallString(foo)
+
+	assert 'bar=None' == args
+	assert 'bar=bar' == kwargs
+
+
+def testGettingSignatureForMethodWithMultipleKeywordArgumentsOnly():
+	def foo(bar=None, baz=None):
+		pass
+
+	args, kwargs = Backend.getArgAndCallString(foo)
+
+	assert 'bar=None, baz=None' == args
+	assert 'bar=bar, baz=baz' == kwargs
+
+
+def testGettingSignatureForMethodWithMixedArguments():
+	def foo(bar, baz=None):
+		pass
+
+	args, kwargs = Backend.getArgAndCallString(foo)
+
+	assert 'bar, baz=None' == args
+	assert 'bar=bar, baz=baz' == kwargs
+
+
+def testSelfAsFirstArgumentIsIgnored():
+	def foo(self, bar=None):
+		pass
+
+	args, kwargs = Backend.getArgAndCallString(foo)
+
+	assert 'bar=None' == args
+	assert 'bar=bar' == kwargs
+
+
+def testArgumentWithStringDefault():
+	def foo(bar='baz'):
+		pass
+
+	args, kwargs = Backend.getArgAndCallString(foo)
+
+	assert "bar='baz'" == args
+	assert 'bar=bar' == kwargs
+
+
+def testArgumentWithUnicodeDefault():
+	def foo(bar=u'baz'):
+		pass
+
+	args, kwargs = Backend.getArgAndCallString(foo)
+
+	assert "bar=u'baz'" == args
+	assert 'bar=bar' == kwargs
+
+
+def testArgumentWithVariableArgumentCount():
+	def foo(*bar):
+		pass
+
+	args, kwargs = Backend.getArgAndCallString(foo)
+
+	assert "*bar" == args
+	assert '*bar' == kwargs
+
+
+def testArgumentWithPositionalArgumentAndVariableArgumentCount():
+	def foo(bar, *baz):
+		pass
+
+	args, kwargs = Backend.getArgAndCallString(foo)
+
+	assert "bar, *baz" == args
+	assert 'bar=bar, *baz' == kwargs
+
+
+def testVariableKeywordArguments():
+	def foo(**bar):
+		pass
+
+	args, kwargs = Backend.getArgAndCallString(foo)
+
+	assert "**bar" == args
+	assert '**bar' == kwargs
+
+
+def testMethodWithAllTypesOfArguments():
+	def foo(ironman, blackWidow=True, *hulk, **deadpool):
+		pass
+
+	args, kwargs = Backend.getArgAndCallString(foo)
+
+	assert "ironman, blackWidow=True, *hulk, **deadpool" == args
+	assert 'ironman=ironman, blackWidow=blackWidow, *hulk, **deadpool' == kwargs
