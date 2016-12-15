@@ -259,7 +259,7 @@ def testProcessConfigDoesNotRemoveComment():
 		with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
 			result = Samba._processConfig(config)
 
-	assert not any('; load opsi shares' in line for line in result)
+	assert any('; load opsi shares' in line for line in result)
 
 
 def testProcessConfigAddsMissingRepositoryShare():
