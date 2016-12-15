@@ -68,7 +68,7 @@ def tempDir():
 
 @pytest.fixture
 def destinationDir(tempDir):
-	yield os.path.join(temporary_folder, "destination")
+	yield os.path.join(tempDir, "destination")
 
 
 @pytest.fixture
