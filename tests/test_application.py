@@ -92,7 +92,7 @@ def testSetupShutdown():
 	assert ["setup", "run", "shutdown"] == a.steps
 
 
-@pytest.mark.skipif(pstats is None, "Missing pstats module")
+@pytest.mark.skipif(pstats is None, reason="Missing pstats module")
 def testProfiler(temporaryProfileFile):
 	config = {
 		"profile": temporaryProfileFile,
@@ -110,7 +110,7 @@ def testProfiler(temporaryProfileFile):
 	assert "function calls" in data
 
 
-@pytest.mark.skipif(pstats is None, "Missing pstats module")
+@pytest.mark.skipif(pstats is None, reason="Missing pstats module")
 def testCProfiler(temporaryProfileFile):
 	config = {
 		"profile": temporaryProfileFile,
