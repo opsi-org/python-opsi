@@ -155,7 +155,7 @@ def testPatchingToAllowRestartingDHCPD(temporarySudoersFile, command):
         assert any(command in line for line in post)
 
 
-def testDoNotAddDuplicates():
+def testDoNotAddDuplicates(temporarySudoersFile):
     adminGroup = u'%{0}'.format(FILE_ADMIN_GROUP)
 
     fileName = temporarySudoersFile
