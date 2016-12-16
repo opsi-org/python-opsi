@@ -156,7 +156,7 @@ def testPatchingToAllowRestartingDHCPD(temporarySudoersFile, command):
 
 
 def testDoNotAddDuplicates(temporarySudoersFile):
-    adminGroup = u'%{0}'.format(FILE_ADMIN_GROUP)
+    adminGroup = u'%{group}'.format(group=FILE_ADMIN_GROUP)
 
     fileName = temporarySudoersFile
     patchSudoersFileForOpsi(sudoersFile=fileName)
