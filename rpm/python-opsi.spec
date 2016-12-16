@@ -172,7 +172,11 @@ chmod 660 /etc/opsi/passwd
 %config /etc/opsi/backendManager/extend.d/70_dynamic_depot.conf
 %config /etc/opsi/hwaudit/opsihwaudit.conf
 %config /etc/opsi/hwaudit/locales/de_DE
+%config /etc/opsi/hwaudit/locales/da_DA
 %config /etc/opsi/hwaudit/locales/en_US
+%config /etc/opsi/hwaudit/locales/es_ES
+%config /etc/opsi/hwaudit/locales/fr_FR
+%config /etc/opsi/hwaudit/locales/ru_RU
 
 # directories
 #%dir /var/lib/opsi

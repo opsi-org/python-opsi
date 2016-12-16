@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
 # Copyright (C) 2015-2016 uib GmbH <info@uib.de>
@@ -20,6 +19,7 @@
 Function and classes for Samba
 
 :author: Mathias Radtke <m.radtke@uib.de>
+:author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
 """
 
@@ -56,6 +56,8 @@ def getDistribution():
 
 
 def isSamba4():
+	samba4 = False
+
 	try:
 		smbd = which('smbd')
 		result = execute('%s -V 2>/dev/null' % smbd)
@@ -63,8 +65,7 @@ def isSamba4():
 			if line.lower().startswith("version"):
 				samba4 = line.split()[1].startswith('4')
 	except Exception as error:
-		logger.debug('Getting Samba Version failed due to: %s' % error)
-		samba4 = False
+		logger.debug('Getting Samba Version failed due to: {0}', error)
 
 	return samba4
 
