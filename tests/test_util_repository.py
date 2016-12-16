@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2015 uib GmbH <info@uib.de>
+# Copyright (C) 2015-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -26,7 +25,7 @@ Testing the work with repositories.
 from __future__ import absolute_import
 
 import os
-import unittest
+import pytest
 
 from OPSI.Types import RepositoryError
 from OPSI.Util.Repository import FileRepository, getRepository
@@ -34,38 +33,37 @@ from OPSI.Util.Repository import FileRepository, getRepository
 from .helpers import workInTemporaryDirectory
 
 
-class GetRepositoryTestCase(unittest.TestCase):
-    def testGettingFileRepository(self):
-        repo = getRepository("file:///not-here")
-        self.assertTrue(isinstance(repo, FileRepository))
-
-    def testFailingOnUnsupportedURL(self):
-        self.assertRaises(RepositoryError, getRepository, "lolnope:///asdf")
+def testGettingFileRepository():
+    repo = getRepository("file:///not-here")
+    assert isinstance(repo, FileRepository)
 
 
-class FileRepositoryTestCase(unittest.TestCase):
-    def testListingRepository(self):
-        with workInTemporaryDirectory() as tempDir:
-            repo = FileRepository(url=u'file://{path}'.format(path=tempDir))
-            for content in repo.content('', recursive=True):
-                self.fail("Should be empty.")
-
-            os.mkdir(os.path.join(tempDir, "foobar"))
-
-            self.assertEquals(1, len(repo.content('', recursive=True)))
-            for content in repo.content('', recursive=True):
-                self.assertEquals({'path': u'foobar', 'type': 'dir', 'name': u'foobar', 'size': 0}, content)
-
-            with open(os.path.join(tempDir, "bar"), "w"):
-                pass
-
-            self.assertEquals(2, len(repo.content('', recursive=True)))
-            self.assertEquals(2, len(repo.listdir()))
-            self.assertTrue("bar" in repo.listdir())
-
-    def testFailWithWrongURL(self):
-        self.assertRaises(RepositoryError, FileRepository, u'nofile://nada')
+def testGettingRepositoryFailsOnUnsupportedURL():
+    with pytest.raises(RepositoryError):
+        getRepository("lolnope:///asdf")
 
 
-if __name__ == '__main__':
-    unittest.main()
+def testListingRepository():
+    with workInTemporaryDirectory() as tempDir:
+        repo = FileRepository(url=u'file://{path}'.format(path=tempDir))
+        assert not repo.content('', recursive=True)
+
+        os.mkdir(os.path.join(tempDir, "foobar"))
+
+        assert 1 == len(repo.content('', recursive=True))
+        for content in repo.content('', recursive=True):
+            assert content == {'path': u'foobar', 'type': 'dir', 'name': u'foobar', 'size': 0}
+
+        with open(os.path.join(tempDir, "bar"), "w"):
+            pass
+
+        assert 2 == len(repo.content('', recursive=True))
+        assert 2 == len(repo.listdir())
+        assert "bar" in repo.listdir()
+
+        # TODO: list subdir tempDir and check if file is shown
+
+
+def testFileRepositoryFailsWithWrongURL():
+    with pytest.raises(RepositoryError):
+        FileRepository(u'nofile://nada')

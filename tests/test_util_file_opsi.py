@@ -1,8 +1,7 @@
-#!/usr/bin/env python
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -25,18 +24,14 @@ Testing OPSI.Util.File.Opsi
 from __future__ import absolute_import
 
 import os
-import unittest
+
+import pytest
 
 from OPSI.Util.File.Opsi import BackendDispatchConfigFile, OpsiConfFile, PackageControlFile
 
 
-class BackendDispatchConfigFileTestCase(unittest.TestCase):
-	"""
-	Testing reading in the dispatch.conf
-	"""
-
-	def testReadingAllUsedBackends(self):
-		exampleConfig = '''
+def testReadingAllUsedBackends():
+	exampleConfig = '''
 backend_.*         : file, mysql, opsipxeconfd, dhcpd
 host_.*            : file, mysql, opsipxeconfd, dhcpd
 productOnClient_.* : file, mysql, opsipxeconfd
@@ -47,103 +42,98 @@ audit.*            : mysql
 .*                 : mysql
 '''
 
-		dispatchConfig = BackendDispatchConfigFile('not_reading_file')
+	dispatchConfig = BackendDispatchConfigFile('not_reading_file')
 
-		self.assertEqual(
-			set(('file', 'mysql', 'opsipxeconfd', 'dhcpd')),
-			dispatchConfig.getUsedBackends(lines=exampleConfig.split('\n'))
-		)
+	assert set(('file', 'mysql', 'opsipxeconfd', 'dhcpd')) == dispatchConfig.getUsedBackends(lines=exampleConfig.split('\n'))
 
-	def testParsingIgnoresCommentedLines(self):
-		exampleConfig = '''
+
+def testParsingIgnoresCommentedLines():
+	exampleConfig = '''
 ;backend_.*.*  : fail
 	#audit.*            : fail
 		.*                 : yolofile
 '''
 
-		dispatchConfig = BackendDispatchConfigFile('not_reading_file')
-		usedBackends = dispatchConfig.getUsedBackends(lines=exampleConfig.split('\n'))
+	dispatchConfig = BackendDispatchConfigFile('not_reading_file')
+	usedBackends = dispatchConfig.getUsedBackends(lines=exampleConfig.split('\n'))
 
-		self.assertTrue('fail' not in usedBackends)
-		self.assertEqual(
-			set(('yolofile',)),
-			usedBackends
-		)
+	assert 'fail' not in usedBackends
+	assert set(('yolofile',)), usedBackends
 
-	def testNotFailingOnInvalidLines(self):
-		"""
-		Reading invalid lines in a config must not lead to an exception.
-		"""
-		exampleConfig = '''
+
+def testBackendDispatchConfigFileNotFailingOnInvalidLines():
+	"""
+	Reading invalid lines in a config must not lead to an exception.
+	"""
+	exampleConfig = '''
 this does not work
 '''
 
-		dispatchConfig = BackendDispatchConfigFile('not_reading_file')
-		dispatchConfig.parse(lines=exampleConfig.split('\n'))
+	dispatchConfig = BackendDispatchConfigFile('not_reading_file')
+	dispatchConfig.parse(lines=exampleConfig.split('\n'))
 
-	def testBackendsCanBeEmpty(self):
-		exampleConfig = '''
+
+def testBackendDispatchConfigFileBackendsCanBeEmpty():
+	exampleConfig = '''
 no_backends_follow:\t
 empty_backends:\t, ,
 '''
 
-		dispatchConfig = BackendDispatchConfigFile('not_reading_file')
-		result = dispatchConfig.parse(lines=exampleConfig.split('\n'))
+	dispatchConfig = BackendDispatchConfigFile('not_reading_file')
+	result = dispatchConfig.parse(lines=exampleConfig.split('\n'))
 
-		self.assertEquals(1, len(result))
-		regex, backends = result[0]
-		self.assertEquals('empty_backends', regex)
-		self.assertEquals([u''], backends)
-
-
-class OpsiConfigFileTestCase(unittest.TestCase):
-	"""
-	Testing functions for /etc/opsi.conf
-	"""
-
-	EXAMPLE_CONFIG_FILE = os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'file', 'opsi', 'opsi.conf')
-
-	def setUp(self):
-		self.config = OpsiConfFile(filename=self.EXAMPLE_CONFIG_FILE)
-
-	def tearDown(self):
-		del self.config
-
-	def testReadingFileAdminGroupReturnsLowercaseName(self):
-		self.assertEquals('mypcpatch', self.config.getOpsiFileAdminGroup())
-
-	def testReturningDefaultForFileAdminGroup(self):
-		self.config.parse([''])
-		self.assertEquals('pcpatch', self.config.getOpsiFileAdminGroup())
-
-	def testReadingReadonlyGroups(self):
-		self.assertEquals(['myopsireadonlys'], self.config.getOpsiGroups("readonly"))
-
-	def testGettingDefaultForReadonlyGroups(self):
-		self.config.parse([''])
-		self.assertEquals(None, self.config.getOpsiGroups("readonly"))
-
-	def testReadingPigzStatus(self):
-		self.assertEquals(False, self.config.isPigzEnabled())
-
-	def testGettingDefaultPigzStatus(self):
-		self.config.parse([''])
-		self.assertEquals(True, self.config.isPigzEnabled())
+	assert 1 == len(result)
+	regex, backends = result[0]
+	assert 'empty_backends' == regex
+	assert [u''] == backends
 
 
-class OpsiControlFileTestCase(unittest.TestCase):
+@pytest.fixture
+def opsiConfigFile():
+	path = os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'file', 'opsi', 'opsi.conf')
+	return OpsiConfFile(filename=path)
 
+
+def testReadingFileAdminGroupReturnsLowercaseName(opsiConfigFile):
+	assert 'mypcpatch' == opsiConfigFile.getOpsiFileAdminGroup()
+
+
+def testReturningDefaultForFileAdminGroup(opsiConfigFile):
+	opsiConfigFile.parse([''])
+	assert 'pcpatch' == opsiConfigFile.getOpsiFileAdminGroup()
+
+
+def testReadingReadonlyGroups(opsiConfigFile):
+	assert ['myopsireadonlys'] == opsiConfigFile.getOpsiGroups("readonly")
+
+
+def testGettingDefaultForReadonlyGroups(opsiConfigFile):
+	opsiConfigFile.parse([''])
+	assert opsiConfigFile.getOpsiGroups("readonly") is None
+
+
+def testReadingPigzStatus(opsiConfigFile):
+	assert not opsiConfigFile.isPigzEnabled()
+
+
+def testGettingDefaultPigzStatus(opsiConfigFile):
+	opsiConfigFile.parse([''])
+	assert opsiConfigFile.isPigzEnabled()
+
+
+@pytest.fixture
+def opsiControlFilePath():
 	# The file is the one that was causing a problem in
 	# https://forum.opsi.org/viewtopic.php?f=7&t=7907
-	EXAMPLE_CONFIG_FILE = os.path.join(os.path.dirname(__file__),
-		'testdata', 'util', 'file', 'opsi', 'control_with_german_umlauts')
+	return os.path.join(
+		os.path.dirname(__file__),
+		'testdata', 'util', 'file', 'opsi', 'control_with_german_umlauts'
+	)
 
-	def testParsingControlFileWithGermanUmlautsInDescription(self):
-		p = PackageControlFile(self.EXAMPLE_CONFIG_FILE)
-		p.parse()
 
-		product = p.getProduct()
-		self.assertEquals(
-			u'Startet die Druckerwarteschlange auf dem Client neu / oder überhaupt.',
-			product.description
-		)
+def testParsingControlFileWithGermanUmlautsInDescription(opsiControlFilePath):
+	p = PackageControlFile(opsiControlFilePath)
+	p.parse()
+
+	product = p.getProduct()
+	assert u'Startet die Druckerwarteschlange auf dem Client neu / oder überhaupt.' == product.description
