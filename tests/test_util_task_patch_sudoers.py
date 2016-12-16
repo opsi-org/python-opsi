@@ -82,7 +82,7 @@ def testFileEndsWithNewline(temporarySudoersFile):
         for line in changedFile:
             lastLine = line
 
-        assert '\n' == lastLine
+    assert '\n' == lastLine
 
 
 def testBackupIsCreated():
