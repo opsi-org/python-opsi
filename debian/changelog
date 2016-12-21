@@ -1,3 +1,9 @@
+python-opsi (4.0.7.31-1) UNRELEASED; urgency=medium
+
+  * OPSI.System.Posix: Reboot scheduled after 1 minute of reboot() call
+
+ -- Mathias Radtke <m.radtke@uib.de>  Wed, 21 Dec 2016 14:15:55 +0100
+
 python-opsi (4.0.7.30-1) stable; urgency=medium
 
   * OPSI.Util.Task.Samba.isSamba4: fix possible reference to unitialised
