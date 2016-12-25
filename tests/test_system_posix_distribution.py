@@ -30,12 +30,18 @@ import pytest
 
 DISTRI_INFOS = [
     (('debian', '7.1', ''), (7, 1)),
+    # TODO: add Debian 8
     (('CentOS', '6.4', 'Final'), (6, 4)),
-    (('Red Hat Enterprise Linux Server', '7.0', 'Maipo'), (7, 0)),
+    # TODO: add CentOS 7
     (('Red Hat Enterprise Linux Server', '6.4', 'Santiago'), (6, 4)),
+    (('Red Hat Enterprise Linux Server', '7.0', 'Maipo'), (7, 0)),
     (('Ubuntu', '12.04', 'precise'), (12, 4)),
+    # TODO: add current Ubuntus: 14.04 and 16.04
     (('"Univention"', '"3.1-1 errata163"', '"Findorff"'), (3, 1)),
+    # TODO: add UCS 4.x
     (('SUSE Linux Enterprise Server ', '11', 'x86_64'), (11, ))
+    # TODO: add SLES12
+    # TODO: add OpenSUSE Leap
 ]
 
 
