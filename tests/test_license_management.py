@@ -273,14 +273,12 @@ def testCheckingProductIdsInLicensePool(licenseManagementBackend):
 	licensePools = licenseManagementBackend.licensePool_getObjects()
 	assert len(licensePools) == len(originalLicensePools)
 
-	checked = False
 	for licensePool in licensePools:
-		for origLicensePool in originalLicensePools:
-			if licensePool.getId() == origLicensePool.getId():
-				assert set(licensePool.getProductIds()) == set(origLicensePool.getProductIds())
-				checked = True
-
-	assert checked
+		assert any(
+			set(licensePool.getProductIds()) == set(origLicensePool.getProductIds())
+			for origLicensePool in originalLicensePools
+			if licensePool.getId() == origLicensePool.getId()
+		)
 
 
 @pytest.mark.requiresModulesFile
