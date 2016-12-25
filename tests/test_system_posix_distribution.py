@@ -29,7 +29,6 @@ import pytest
 
 
 DISTRI_INFOS = [
-    (('debian', '6.0.7', ''), (6, 0, 7)),
     (('debian', '7.1', ''), (7, 1)),
     (('CentOS', '6.4', 'Final'), (6, 4)),
     (('Red Hat Enterprise Linux Server', '7.0', 'Maipo'), (7, 0)),
