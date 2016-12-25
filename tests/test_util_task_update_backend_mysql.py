@@ -82,8 +82,6 @@ def testCorrectingLicenseOnClientLicenseKeyLength():
             updateMySQLBackend(backendConfigFile=configFile)
 
             for tableName in ('LICENSE_ON_CLIENT', 'SOFTWARE_CONFIG', 'SOFTWARE_LICENSE_TO_LICENSE_POOL'):
-                print("Checking {0}...".format(tableName))
-
                 assert tableName in getTableNames(db)
 
                 for column in getTableColumns(db, tableName):

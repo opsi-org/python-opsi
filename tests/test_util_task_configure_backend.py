@@ -236,14 +236,12 @@ def testAddingConfigsBasedOnConfigServer(extendedConfigDataBackend):
     urlConfig = extendedConfigDataBackend.config_getObjects(id=u'clientconfig.configserver.url')[0]
     assert 1 == len(urlConfig.defaultValues)
     value = urlConfig.defaultValues[0]
-    print(value)
     assert value.endswith('/rpc')
     assert value.startswith('https://')
     assert configServer.ipAddress in value
     assert urlConfig.editable
 
     depotConfig = extendedConfigDataBackend.config_getObjects(id=u'clientconfig.depot.id')[0]
-    print(depotConfig)
     assert 1 == len(depotConfig.defaultValues)
     assert configServer.id == depotConfig.defaultValues[0]
     assert configServer.id == depotConfig.possibleValues[0]

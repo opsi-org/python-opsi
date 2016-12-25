@@ -47,10 +47,8 @@ def testBackendManagerDispatchesCallsToExtensionClass():
     class TestClass(object):
         def methodOnBackend(self, y):
             assert y == 'yyyyyyyy'
-            print('This is me: {0}'.format(self))
 
         def checkIfOptionsExist(self):
-            print('Getting all that shiny options...')
             options = self.backend_getOptions()
             assert options
 

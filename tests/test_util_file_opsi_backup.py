@@ -411,7 +411,6 @@ class BackupArchiveTest(unittest.TestCase):
                 '/backends/dhcpd.conf', '/backendManager/dispatch.conf',
             )
             for expectedFile in expectedFiles:
-                print("Checking for {0!r}".format(expectedFile))
                 assert any(entry.endswith(expectedFile) for entry in oldContent)
 
             with getOpsiBackupArchive(name=archive.name, mode="r", tempdir=tempDir) as backup:
@@ -559,10 +558,9 @@ class BackupArchiveTest(unittest.TestCase):
                         orig[backend["name"]][entry] = count[0]
                         cursor.execute("DROP TABLE `%s`" % entry)
 
-            self.assertTrue(orig)
+            assert orig
             for backendName, values in orig.items():
-                print("Checking for content in {0!r}...".format(backendName))
-                self.assertTrue(values)
+                assert values
 
             with getOpsiBackupArchive(name=archiveName, mode="r", tempdir=tempDir, dataBackend="mysql") as backup:
                 backup.restoreMySQLBackend()
