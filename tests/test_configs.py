@@ -496,13 +496,7 @@ def testGettingConfigIdents(extendedConfigDataBackend):
     assert len(ids) == len(selfIdents)
 
     for ident in ids:
-        found = False
-        for selfIdent in selfIdents:
-            if ident == selfIdent['id']:
-                found = True
-                break
-
-        assert found, u"'%s' not in '%s'" % (ident, selfIdents)
+        assert any(ident == selfIdent['id'] for selfIdent in selfIdents), u"'%s' not in '%s'" % (ident, selfIdents)
 
 
 def testGetConfigStateIdents(extendedConfigDataBackend):
@@ -523,10 +517,5 @@ def testGetConfigStateIdents(extendedConfigDataBackend):
 
     for ident in ids:
         i = ident.split(';')
-        found = False
-        for selfIdent in selfIdents:
-            if (i[0] == selfIdent['configId']) and (i[1] == selfIdent['objectId']):
-                found = True
-                break
 
-        assert found, u"'%s' not in '%s'" % (ident, selfIdents)
+        assert any(((i[0] == selfIdent['configId']) and (i[1] == selfIdent['objectId'])) for selfIdent in selfIdents), u"'%s' not in '%s'" % (ident, selfIdents)

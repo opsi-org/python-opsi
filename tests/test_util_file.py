@@ -148,16 +148,8 @@ def testTxtSetupOemFileApplyingWorkaroundsCreatesDisksSection(regeneratedtxtSetu
 
 
 def _sectionExists(filepath, sectionName):
-    sectionFound = False
-
     with open(filepath) as setupfile:
-        for line in setupfile:
-            sectionFound = sectionName in line
-
-            if sectionFound:
-                break
-
-    return sectionFound
+        return any(sectionName in line for line in setupfile)
 
 
 def testTxtSetupOemFileApplyingWorkaroundsCreatesDefaultsSection(regeneratedtxtSetupOemFileWithWorkarounds):

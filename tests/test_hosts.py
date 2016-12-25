@@ -388,52 +388,27 @@ def testGettingHostIdents(extendedConfigDataBackend):
     assert len(ids) == len(
         selfIdents), u"got: '%s', expected: '%s'" % (ids, len(selfIdents))
     for ident in ids:
-        found = False
-        for selfIdent in selfIdents:
-            if (ident == selfIdent['id']):
-                found = True
-                break
-        assert found, u"'%s' not in '%s'" % (ident, selfIdents)
+        assert any(ident == selfIdent['id'] for selfIdent in selfIdents), u"'%s' not in '%s'" % (ident, selfIdents)
 
     ids = extendedConfigDataBackend.host_getIdents(id='*100*')
     assert len(ids) == 2, u"got: '%s', expected: '%s'" % (ids, 2)
     for ident in ids:
-        found = False
-        for selfIdent in selfIdents:
-            if (ident == selfIdent['id']):
-                found = True
-                break
-        assert found, u"'%s' not in '%s'" % (ident, selfIdents)
+        assert any(ident == selfIdent['id'] for selfIdent in selfIdents), u"'%s' not in '%s'" % (ident, selfIdents)
 
     ids = extendedConfigDataBackend.host_getIdents(returnType='tuple')
     assert len(ids) == len(
         selfIdents), u"got: '%s', expected: '%s'" % (ids, len(selfIdents))
     for ident in ids:
-        found = False
-        for selfIdent in selfIdents:
-            if (ident[0] == selfIdent['id']):
-                found = True
-                break
-        assert found, u"'%s' not in '%s'" % (ident, selfIdents)
+        assert any(ident[0] == selfIdent['id'] for selfIdent in selfIdents), u"'%s' not in '%s'" % (ident, selfIdents)
 
     ids = extendedConfigDataBackend.host_getIdents(returnType='list')
     assert len(ids) == len(
         selfIdents), u"got: '%s', expected: '%s'" % (ids, len(selfIdents))
     for ident in ids:
-        found = False
-        for selfIdent in selfIdents:
-            if (ident[0] == selfIdent['id']):
-                found = True
-                break
-        assert found, u"'%s' not in '%s'" % (ident, selfIdents)
+        assert any(ident[0] == selfIdent['id'] for selfIdent in selfIdents), u"'%s' not in '%s'" % (ident, selfIdents)
 
     ids = extendedConfigDataBackend.host_getIdents(returnType='dict')
     assert len(ids) == len(
         selfIdents), u"got: '%s', expected: '%s'" % (ids, len(selfIdents))
     for ident in ids:
-        found = False
-        for selfIdent in selfIdents:
-            if (ident['id'] == selfIdent['id']):
-                found = True
-                break
-        assert found, u"'%s' not in '%s'" % (ident, selfIdents)
+        assert any(ident['id'] == selfIdent['id'] for selfIdent in selfIdents), u"'%s' not in '%s'" % (ident, selfIdents)
