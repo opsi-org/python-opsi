@@ -470,31 +470,31 @@ def testSearchingForIdents(extendedConfigDataBackend):
     # TODO: assertions
     result = extendedConfigDataBackend.backend_searchIdents(
         '(&(objectClass=Host)(type=OpsiDepotserver))')
-    print(result)
+    assert result
     result = extendedConfigDataBackend.backend_searchIdents(
         '(&(&(objectClass=Host)(type=OpsiDepotserver))(objectClass=Host))')
-    print(result)
+    assert result
     result = extendedConfigDataBackend.backend_searchIdents(
         '(|(&(objectClass=OpsiClient)(id=client1*))(&(objectClass=OpsiClient)(id=client2*)))')
-    print(result)
+    assert result
     result = extendedConfigDataBackend.backend_searchIdents(
         '(&(&(objectClass=OpsiClient))(&(objectClass=ProductOnClient)(installationStatus=installed))(&(objectClass=ProductOnClient)(productId=product1)))')
-    print(result)
+    assert result
     result = extendedConfigDataBackend.backend_searchIdents(
         '(&(&(objectClass=OpsiClient))(&(objectClass=ProductOnClient)(installationStatus=installed))(|(&(objectClass=ProductOnClient)(productId=product1))(&(objectClass=ProductOnClient)(productId=product2))))')
-    print(result)
+    assert result
     result = extendedConfigDataBackend.backend_searchIdents(
         '(&(objectClass=OpsiClient)(&(objectClass=ProductOnClient)(installationStatus=installed))(&(objectClass=ProductOnClient)(productId=product1)))')
-    print(result)
+    assert result
     result = extendedConfigDataBackend.backend_searchIdents(
         '(&(objectClass=Host)(description=T*))')
-    print(result)
+    assert result
     result = extendedConfigDataBackend.backend_searchIdents(
         '(&(objectClass=Host)(description=*))')
-    print(result)
+    assert result
     result = extendedConfigDataBackend.backend_searchIdents(
         '(&(&(objectClass=OpsiClient)(ipAddress=192*))(&(objectClass=ProductOnClient)(installationStatus=installed)))')
-    print(result)
+    assert result
     result = extendedConfigDataBackend.backend_searchIdents(
         '(&(&(objectClass=Product)(description=*))(&(objectClass=ProductOnClient)(installationStatus=installed)))')
-    print(result)
+    assert result
