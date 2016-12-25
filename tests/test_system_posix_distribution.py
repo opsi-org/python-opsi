@@ -35,7 +35,6 @@ DISTRI_INFOS = [
     (('Red Hat Enterprise Linux Server', '7.0', 'Maipo'), (7, 0)),
     (('Red Hat Enterprise Linux Server', '6.4', 'Santiago'), (6, 4)),
     (('Ubuntu', '12.04', 'precise'), (12, 4)),
-    (('"Univention"', '"3.0-2 errata145"', '"Horn-Lehe"'), (3, 0)),
     (('"Univention"', '"3.1-1 errata163"', '"Findorff"'), (3, 1)),
     (('SUSE Linux Enterprise Server ', '11', 'x86_64'), (11, ))
 ]
