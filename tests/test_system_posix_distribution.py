@@ -37,7 +37,6 @@ DISTRI_INFOS = [
     (('Ubuntu', '12.04', 'precise'), (12, 4)),
     (('"Univention"', '"3.0-2 errata145"', '"Horn-Lehe"'), (3, 0)),
     (('"Univention"', '"3.1-1 errata163"', '"Findorff"'), (3, 1)),
-    (('openSUSE ', '12.1', 'x86_64'), (12, 1)),
     (('SUSE Linux Enterprise Server ', '11', 'x86_64'), (11, ))
 ]
 

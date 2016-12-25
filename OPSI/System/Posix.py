@@ -3831,7 +3831,6 @@ Used for testing.
 		'(?P<servicename>.+) \(PID',  # RHEL 6
 		'(?P<servicename>.+) w',  # RHEL 6, part 2
 		r'(?P<servicename>([\w-]|@)+)\.service',  # systemd-based
-		'Checking the status of (?P<servicename>.+)\s+',  # opensuse 12.1
 	]
 	patterns = [re.compile(pattern) for pattern in patterns]
 

@@ -633,65 +633,6 @@ class GetSambaServiceNameTestCase(unittest.TestCase):
 			Posix.getServiceNames(_serviceStatusOutput=output)
 		)
 
-	def testParsingOpensuse121(self):
-		output = [
-			'redirecting to systemctl',
-			'SuSEfirewall2_init.service - LSB: SuSEfirewall2 phase 1',
-			'	  Loaded: loaded (/etc/init.d/SuSEfirewall2_init)',
-			'	  Active: inactive (dead)',
-			'	  CGroup: name=systemd:/system/SuSEfirewall2_init.service',
-			'Checking the status of SuSEfirewall2                                                                        unused',
-			'redirecting to systemctl',
-			'avahi-daemon.service - Avahi mDNS/DNS-SD Stack',
-			'	  Loaded: loaded (/lib/systemd/system/avahi-daemon.service; enabled)',
-			'	  Active: active (running) since Tue, 07 Oct 2014 16:00:13 +0200; 6min ago',
-			'	Main PID: 611 (avahi-daemon)',
-			'	  Status: "Server startup complete. Host name is stb-40-srv-111.local. Local service cookie is 634832754."',
-			'	  CGroup: name=systemd:/system/avahi-daemon.service',
-			'		  └ 611 avahi-daemon: running [stb-40-srv-111.local]',
-			'redirecting to systemctl',
-			'cgroup.service',
-			'	  Loaded: masked (/dev/null)',
-			'	  Active: inactive (dead)',
-			'redirecting to systemctl',
-			'device-mapper.service',
-			'	  Loaded: masked (/dev/null)',
-			'	  Active: inactive (dead)',
-			'',
-			"Warning: Unit file changed on disk, 'systemctl --system daemon-reload' recommended.",
-			'redirecting to systemctl',
-			'udev.service - udev Kernel Device Manager',
-			'	  Loaded: loaded (/lib/systemd/system/udev.service; static)',
-			'	  Active: active (running) since Tue, 07 Oct 2014 16:00:10 +0200; 6min ago',
-			'	Main PID: 319 (udevd)',
-			'	  CGroup: name=systemd:/system/udev.service',
-			'		  ├ 319 /sbin/udevd',
-			'		  ├ 452 /sbin/udevd',
-			'		  └ 453 /sbin/udevd',
-			'Checking opsi config service... (not running).',
-		]
-
-		self.assertEquals(
-			set(["SuSEfirewall2_init", "SuSEfirewall2", "avahi-daemon",
-				 "cgroup", "device-mapper", "udev"]),
-			Posix.getServiceNames(_serviceStatusOutput=output)
-		)
-
-	def testParsingOpensuse122andOpenSuse123(self):
-		output = [
-			'console-kit-log-system-start.service loaded active exited      Console System Startup Logging',
-			'getty@tty1.service                   loaded active running     Getty on tty1',
-			'opsipxeconfd.service                 loaded failed failed      LSB: opsi pxe config service',
-			'rc-local.service                     loaded active exited      /etc/init.d/boot.local Compatibility',
-			'sshd.service                         loaded active running     OpenSSH Daemon',
-			'SuSEfirewall2_setup.service          loaded active exited      LSB: SuSEfirewall2 phase 2',
-		]
-
-		self.assertEquals(
-			set(["console-kit-log-system-start", "getty@tty1", "opsipxeconfd",
-				 "rc-local", "sshd", "SuSEfirewall2_setup"]),
-			Posix.getServiceNames(_serviceStatusOutput=output)
-		)
 
 def testParsingSystemdOutputFromCentOS7():
 	output = [
