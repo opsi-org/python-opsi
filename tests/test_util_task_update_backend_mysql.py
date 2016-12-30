@@ -214,12 +214,7 @@ def getTableNames(database):
 
 def testCorrectingProductIdLength():
     """
-    Test if the license key length is correctly set.
-
-    An backend updated from an older version has the field 'licenseKey'
-    on the LICENSE_ON_CLIENT table as VARCHAR(100).
-    A fresh backend has the length of 1024.
-    The size should be the same.
+    Test if the product id length is correctly set.
     """
     if not MySQLconfiguration:
         pytest.skip("Missing configuration for MySQL.")
