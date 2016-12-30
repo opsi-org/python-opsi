@@ -141,7 +141,7 @@ def createRequiredTables(database):
     database.execute('CREATE INDEX `index_software_license_boundToHost` on `SOFTWARE_LICENSE` (`boundToHost`);')
 
     database.execute("""CREATE TABLE `PRODUCT_PROPERTY` (
-        `productId` varchar(255) NOT NULL,
+        `productId` varchar(128) NOT NULL,
         `productVersion` varchar(32) NOT NULL,
         `packageVersion` varchar(16) NOT NULL,
         `propertyId` varchar(200) NOT NULL,
@@ -210,3 +210,45 @@ def createRequiredTables(database):
 
 def getTableNames(database):
     return set(i.values()[0] for i in database.getSet(u'SHOW TABLES;'))
+
+
+def testCorrectingProductIdLength():
+    """
+    Test if the license key length is correctly set.
+
+    An backend updated from an older version has the field 'licenseKey'
+    on the LICENSE_ON_CLIENT table as VARCHAR(100).
+    A fresh backend has the length of 1024.
+    The size should be the same.
+    """
+    if not MySQLconfiguration:
+        pytest.skip("Missing configuration for MySQL.")
+
+    with workInTemporaryDirectory() as tempDir:
+        configFile = os.path.join(tempDir, 'asdf')
+        with open(configFile, 'w'):
+            pass
+
+        updateConfigFile(configFile, MySQLconfiguration)
+
+        with cleanDatabase(MySQL(**MySQLconfiguration)) as db:
+            createRequiredTables(db)
+
+            updateMySQLBackend(backendConfigFile=configFile)
+
+            for tableName in ('PRODUCT_PROPERTY', ):
+                print("Checking {0}...".format(tableName))
+
+                assert tableName in getTableNames(db)
+
+                for column in getTableColumns(db, tableName):
+                    if column.name.lower() == 'productid':
+                        assert column.type.lower().startswith('varchar(')
+
+                        _, length = column.type.split('(')
+                        length = int(length[:-1])
+
+                        assert length == 255
+                        break
+                else:
+                    raise ValueError("Missing column 'productid' in table {0!r}".format(tableName))
