@@ -96,17 +96,7 @@ def testCorrectingLicenseOnClientLicenseKeyLength(mysqlBackendConfig, mySQLBacke
 
             assert tableName in getTableNames(db)
 
-            for column in getTableColumns(db, tableName):
-                if column.name.lower() == 'licensekey':
-                    assert column.type.lower().startswith('varchar(')
-
-                    _, length = column.type.split('(')
-                    length = int(length[:-1])
-
-                    assert length == 1024
-                    break
-            else:
-                raise ValueError("Missing column 'licensekey' in table {0!r}".format(tableName))
+            assertColumnIsVarchar(db, tableName, 'licenseKey', 1024)
 
 
 def testCorrectingProductIdLength(mysqlBackendConfig, mySQLBackendConfigFile):
@@ -123,17 +113,7 @@ def testCorrectingProductIdLength(mysqlBackendConfig, mySQLBackendConfigFile):
 
             assert tableName in getTableNames(db)
 
-            for column in getTableColumns(db, tableName):
-                if column.name.lower() == 'productid':
-                    assert column.type.lower().startswith('varchar(')
-
-                    _, length = column.type.split('(')
-                    length = int(length[:-1])
-
-                    assert length == 255
-                    break
-            else:
-                raise ValueError("Missing column 'productid' in table {0!r}".format(tableName))
+            assertColumnIsVarchar(db, tableName, 'productId', 255)
 
 
 def createRequiredTables(database):
@@ -247,3 +227,17 @@ def createRequiredTables(database):
 
 def getTableNames(database):
     return set(i.values()[0] for i in database.getSet(u'SHOW TABLES;'))
+
+
+def assertColumnIsVarchar(database, tableName, columnName, length):
+    for column in getTableColumns(database, tableName):
+        if column.name.lower() == columnName.lower():
+            assert column.type.lower().startswith('varchar(')
+
+            _, currentLength = column.type.split('(')
+            currentLength = int(currentLength[:-1])
+
+            assert currentLength == length
+            break
+    else:
+        raise ValueError("Missing column '{1}' in table {0!r}".format(tableName, columnName))
