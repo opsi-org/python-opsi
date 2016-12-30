@@ -57,7 +57,27 @@ def cleanDatabase(database):
         cleanDatabase()
 
 
-def testCorrectingLicenseOnClientLicenseKeyLength():
+@pytest.fixture
+def mysqlBackendConfig():
+    if not MySQLconfiguration:
+        pytest.skip("Missing configuration for MySQL.")
+
+    return MySQLconfiguration
+
+
+@pytest.fixture
+def mySQLBackendConfigFile(mysqlBackendConfig):
+    with workInTemporaryDirectory() as tempDir:
+        configFile = os.path.join(tempDir, 'asdf')
+        with open(configFile, 'w'):
+            pass
+
+        updateConfigFile(configFile, mysqlBackendConfig)
+
+        yield configFile
+
+
+def testCorrectingLicenseOnClientLicenseKeyLength(mysqlBackendConfig, mySQLBackendConfigFile):
     """
     Test if the license key length is correctly set.
 
@@ -66,37 +86,27 @@ def testCorrectingLicenseOnClientLicenseKeyLength():
     A fresh backend has the length of 1024.
     The size should be the same.
     """
-    if not MySQLconfiguration:
-        pytest.skip("Missing configuration for MySQL.")
+    with cleanDatabase(MySQL(**mysqlBackendConfig)) as db:
+        createRequiredTables(db)
 
-    with workInTemporaryDirectory() as tempDir:
-        configFile = os.path.join(tempDir, 'asdf')
-        with open(configFile, 'w'):
-            pass
+        updateMySQLBackend(backendConfigFile=mySQLBackendConfigFile)
 
-        updateConfigFile(configFile, MySQLconfiguration)
+        for tableName in ('LICENSE_ON_CLIENT', 'SOFTWARE_CONFIG', 'SOFTWARE_LICENSE_TO_LICENSE_POOL'):
+            print("Checking {0}...".format(tableName))
 
-        with cleanDatabase(MySQL(**MySQLconfiguration)) as db:
-            createRequiredTables(db)
+            assert tableName in getTableNames(db)
 
-            updateMySQLBackend(backendConfigFile=configFile)
+            for column in getTableColumns(db, tableName):
+                if column.name.lower() == 'licensekey':
+                    assert column.type.lower().startswith('varchar(')
 
-            for tableName in ('LICENSE_ON_CLIENT', 'SOFTWARE_CONFIG', 'SOFTWARE_LICENSE_TO_LICENSE_POOL'):
-                print("Checking {0}...".format(tableName))
+                    _, length = column.type.split('(')
+                    length = int(length[:-1])
 
-                assert tableName in getTableNames(db)
-
-                for column in getTableColumns(db, tableName):
-                    if column.name.lower() == 'licensekey':
-                        assert column.type.lower().startswith('varchar(')
-
-                        _, length = column.type.split('(')
-                        length = int(length[:-1])
-
-                        assert length == 1024
-                        break
-                else:
-                    raise ValueError("Missing column 'licensekey' in table {0!r}".format(tableName))
+                    assert length == 1024
+                    break
+            else:
+                raise ValueError("Missing column 'licensekey' in table {0!r}".format(tableName))
 
 
 def createRequiredTables(database):
@@ -212,38 +222,28 @@ def getTableNames(database):
     return set(i.values()[0] for i in database.getSet(u'SHOW TABLES;'))
 
 
-def testCorrectingProductIdLength():
+def testCorrectingProductIdLength(mysqlBackendConfig, mySQLBackendConfigFile):
     """
     Test if the product id length is correctly set.
     """
-    if not MySQLconfiguration:
-        pytest.skip("Missing configuration for MySQL.")
+    with cleanDatabase(MySQL(**mysqlBackendConfig)) as db:
+        createRequiredTables(db)
 
-    with workInTemporaryDirectory() as tempDir:
-        configFile = os.path.join(tempDir, 'asdf')
-        with open(configFile, 'w'):
-            pass
+        updateMySQLBackend(backendConfigFile=mySQLBackendConfigFile)
 
-        updateConfigFile(configFile, MySQLconfiguration)
+        for tableName in ('PRODUCT_PROPERTY', ):
+            print("Checking {0}...".format(tableName))
 
-        with cleanDatabase(MySQL(**MySQLconfiguration)) as db:
-            createRequiredTables(db)
+            assert tableName in getTableNames(db)
 
-            updateMySQLBackend(backendConfigFile=configFile)
+            for column in getTableColumns(db, tableName):
+                if column.name.lower() == 'productid':
+                    assert column.type.lower().startswith('varchar(')
 
-            for tableName in ('PRODUCT_PROPERTY', ):
-                print("Checking {0}...".format(tableName))
+                    _, length = column.type.split('(')
+                    length = int(length[:-1])
 
-                assert tableName in getTableNames(db)
-
-                for column in getTableColumns(db, tableName):
-                    if column.name.lower() == 'productid':
-                        assert column.type.lower().startswith('varchar(')
-
-                        _, length = column.type.split('(')
-                        length = int(length[:-1])
-
-                        assert length == 255
-                        break
-                else:
-                    raise ValueError("Missing column 'productid' in table {0!r}".format(tableName))
+                    assert length == 255
+                    break
+            else:
+                raise ValueError("Missing column 'productid' in table {0!r}".format(tableName))
