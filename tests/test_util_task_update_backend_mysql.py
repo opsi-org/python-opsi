@@ -109,6 +109,33 @@ def testCorrectingLicenseOnClientLicenseKeyLength(mysqlBackendConfig, mySQLBacke
                 raise ValueError("Missing column 'licensekey' in table {0!r}".format(tableName))
 
 
+def testCorrectingProductIdLength(mysqlBackendConfig, mySQLBackendConfigFile):
+    """
+    Test if the product id length is correctly set.
+    """
+    with cleanDatabase(MySQL(**mysqlBackendConfig)) as db:
+        createRequiredTables(db)
+
+        updateMySQLBackend(backendConfigFile=mySQLBackendConfigFile)
+
+        for tableName in ('PRODUCT_PROPERTY', ):
+            print("Checking {0}...".format(tableName))
+
+            assert tableName in getTableNames(db)
+
+            for column in getTableColumns(db, tableName):
+                if column.name.lower() == 'productid':
+                    assert column.type.lower().startswith('varchar(')
+
+                    _, length = column.type.split('(')
+                    length = int(length[:-1])
+
+                    assert length == 255
+                    break
+            else:
+                raise ValueError("Missing column 'productid' in table {0!r}".format(tableName))
+
+
 def createRequiredTables(database):
     table = u'''CREATE TABLE `LICENSE_POOL` (
             `licensePoolId` VARCHAR(100) NOT NULL,
@@ -220,30 +247,3 @@ def createRequiredTables(database):
 
 def getTableNames(database):
     return set(i.values()[0] for i in database.getSet(u'SHOW TABLES;'))
-
-
-def testCorrectingProductIdLength(mysqlBackendConfig, mySQLBackendConfigFile):
-    """
-    Test if the product id length is correctly set.
-    """
-    with cleanDatabase(MySQL(**mysqlBackendConfig)) as db:
-        createRequiredTables(db)
-
-        updateMySQLBackend(backendConfigFile=mySQLBackendConfigFile)
-
-        for tableName in ('PRODUCT_PROPERTY', ):
-            print("Checking {0}...".format(tableName))
-
-            assert tableName in getTableNames(db)
-
-            for column in getTableColumns(db, tableName):
-                if column.name.lower() == 'productid':
-                    assert column.type.lower().startswith('varchar(')
-
-                    _, length = column.type.split('(')
-                    length = int(length[:-1])
-
-                    assert length == 255
-                    break
-            else:
-                raise ValueError("Missing column 'productid' in table {0!r}".format(tableName))
