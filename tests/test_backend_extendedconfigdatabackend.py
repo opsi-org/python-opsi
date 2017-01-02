@@ -466,6 +466,7 @@ def testBackend_getInterface(extendedConfigDataBackend):
             pytest.fail("Expected method {0!r} not found".format(selection['name']))
 
 
+@pytest.mark.requiresModulesFile
 def testSearchingForIdents(extendedConfigDataBackend):
     fillBackend(extendedConfigDataBackend)
 
