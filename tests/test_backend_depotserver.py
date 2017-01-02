@@ -85,12 +85,7 @@ def testInstallingPackageOnDepotserver(depotserverBackend):
 
 
 def isProductFolderInDepot(depotPath, productId):
-    for listing in os.listdir(depotPath):
-        if productId == listing:
-            if os.path.isdir(listing):
-                return True
-
-    return False
+    return any(os.path.isdir(listing) for listing in os.listdir(depotPath) if productId == listing)
 
 
 @pytest.mark.requiresModulesFile  # because of SQLite...
