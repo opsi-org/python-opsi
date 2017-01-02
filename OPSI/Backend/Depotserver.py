@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2010-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2010-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -99,8 +99,12 @@ class DepotserverBackend(ExtendedBackend):
 		except Exception as e:
 			raise BackendIOError(u"Failed to get disk space usage: %s" % e)
 
-	def depot_installPackage(self, filename, force=False, propertyDefaultValues={}, tempDir=None, forceProductId=None):
-		self._packageManager.installPackage(filename, force, propertyDefaultValues, tempDir, forceProductId=forceProductId)
+	def depot_installPackage(self, filename, force=False, propertyDefaultValues={}, tempDir=None, forceProductId=None, suppressPackageContentFileGeneration=False):
+		self._packageManager.installPackage(filename,
+			force=force, propertyDefaultValues=propertyDefaultValues,
+			tempDir=tempDir, forceProductId=forceProductId,
+			suppressPackageContentFileGeneration=suppressPackageContentFileGeneration
+		)
 
 	def depot_uninstallPackage(self, productId, force=False, deleteFiles=True):
 		self._packageManager.uninstallPackage(productId, force, deleteFiles)
@@ -128,9 +132,7 @@ class DepotserverPackageManager(object):
 		self._depotBackend = depotBackend
 		logger.setLogFile(self._depotBackend._packageLog, object=self)
 
-	def installPackage(self, filename, force=False, propertyDefaultValues={}, tempDir=None, forceProductId=None):
-		from OPSI.Util.Task.CleanupBackend import cleanUpProducts
-
+	def installPackage(self, filename, force=False, propertyDefaultValues={}, tempDir=None, forceProductId=None, suppressPackageContentFileGeneration=False):
 		depotId = self._depotBackend._depotId
 		logger.notice(u"=================================================================================================")
 		if forceProductId:
@@ -331,7 +333,11 @@ class DepotserverPackageManager(object):
 				for line in ppf.runPostinst({'DEPOT_ID': depotId}):
 					logger.info(u"[postinst] {0}", line)
 
-				ppf.createPackageContentFile()
+				if not suppressPackageContentFileGeneration:
+					ppf.createPackageContentFile()
+				else:
+					logger.debug("Suppressed generation of package content file.")
+
 				ppf.setAccessRights()
 				ppf.cleanup()
 

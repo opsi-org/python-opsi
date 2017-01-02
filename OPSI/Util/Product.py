@@ -120,12 +120,24 @@ class ProductPackageFile(object):
 				logger.info("Deleting client data dir '%s'" % clientDataDir)
 				removeDirectory(clientDataDir)
 
-	def install(self, clientDataDir):
+	def install(self, clientDataDir, suppressPackageContentFileGeneration=False):
+		"""
+		Install a package.
+
+		This runs the preinst-script, extracts the data, creates a
+		package content file, sets the rights on extracted files, runs
+		the postinst and removes temporary files created during the
+		installation.
+
+		Setting `suppressPackageContentFileGeneration` to `True` will
+		suppress the creation of the package content file.
+		"""
 		self.setClientDataDir(clientDataDir)
 		self.getMetaData()
 		self.runPreinst()
 		self.extractData()
-		self.createPackageContentFile()
+		if not suppressPackageContentFileGeneration:
+			self.createPackageContentFile()
 		self.setAccessRights()
 		self.runPostinst()
 		self.cleanup()
