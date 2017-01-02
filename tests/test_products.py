@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2014-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -832,7 +832,6 @@ def testGettingErrorMessageWhenAttributeInFilterIsNotAtObject(extendedConfigData
         extendedConfigDataBackend.productPropertyState_getObjects(unknownAttribute='foobar')
         pytest.fail("We should not get here.")
     except BackendBadValueError as bbve:
-        print(bbve)
         assert 'has no attribute' in str(bbve)
         assert 'unknownAttribute' in str(bbve)
 
@@ -880,7 +879,6 @@ def testProductAndPropertyWithSameName(extendedConfigDataBackend):
 
     properties = extendedConfigDataBackend.productProperty_getObjects(productId='cbk')
 
-    print("Used backend: {0}".format(extendedConfigDataBackend))
     assert 1 == len(properties)
     prop = properties[0]
 

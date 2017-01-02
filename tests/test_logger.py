@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2015-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2015-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -336,8 +336,7 @@ def testLogTracebackCanFail():
 
 	messages = messageBuffer.getvalue()
 
-	print("Messages: {0!r}".format(messages))
-	assert 'Failed to log traceback for' in messages
+	assert 'Failed to log traceback for ' in messages
 	assert repr(objectWithoutTraceback) in messages
 	assert 'object has no attribute' in messages
 
@@ -363,7 +362,6 @@ def testLoggerDoesFormattingIfMessageWillGetLogged(loglevel, function_name):
 
 	messages = messageBuffer.getvalue()
 
-	print("Messages: {0!r}".format(messages))
 	assert 'This 1.0 must be shown here: many kwargs' in messages
 
 
@@ -395,8 +393,6 @@ def testLoggerDoesNotShowSecretWordBeginningWithCapitalisedF(loglevel, replaceme
 	message = ''.join(messageBuffer.getvalue())
 	assert message
 	assert not message.startswith('%')
-
-	print("Message: {0!r}".format(message))
 
 	assert secretWord not in message
 	assert secretWord[1:] not in message
