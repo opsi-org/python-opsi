@@ -4,7 +4,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 #
-# Copyright (C) 2006-2010, 2013-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2010, 2013-2017 uib GmbH <info@uib.de>
 # All rights reserved.
 #
 # This program is free software: you can redistribute it and/or modify
@@ -678,11 +678,9 @@ def reboot(wait=10):
 	try:
 		wait = forceInt(wait)
 		if wait > 0:
-			execute(u'%s %d; %s -r now' % (which('sleep'), wait, which('shutdown')), nowait=True)
+			execute(u'%s %d; %s -r -t 1' % (which('sleep'), wait, which('shutdown')), nowait=True)
 		else:
-			execute(u'%s -r now' % which('shutdown'), nowait=True)
-		execute(u'%s 1' % (which('sleep')), nowait=True)
-		execute(u'%s -p' % (which('reboot')), nowait=True)
+			execute(u'%s -r -t 1' % which('shutdown'), nowait=True)
 	except Exception as e:
 		for hook in hooks:
 			hook.error_reboot(wait, e)
