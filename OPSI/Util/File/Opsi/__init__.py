@@ -298,9 +298,9 @@ class PackageContentFile(TextFile):
 
 		fileInfo = {}
 		for line in self._lines:
-			(type, tmp) = line.strip().split(None, 1)
-			filename = u''
+			(entryType, tmp) = line.strip().split(None, 1)
 
+			filename = u''
 			for i, currentElement in enumerate(tmp):
 				if currentElement == u"'":
 					if i > 0:
@@ -325,11 +325,13 @@ class PackageContentFile(TextFile):
 				if len(parts) > 1:
 					tmp = parts[1]
 
-			if type == 'f':
+			if entryType == 'f':
 				md5 = tmp
-			elif type == 'l':
+			elif entryType == 'l':
 				target = tmp[1:-1].replace(u'\\\'', u'\'')
-			fileInfo[filename] = {'type': type, 'size': int(size), 'md5sum': md5, 'target': target}
+
+			fileInfo[filename] = {'type': entryType, 'size': int(size), 'md5sum': md5, 'target': target}
+
 		self._parsed = True
 		return fileInfo
 
