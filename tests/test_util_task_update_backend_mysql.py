@@ -57,7 +57,27 @@ def cleanDatabase(database):
         cleanDatabase()
 
 
-def testCorrectingLicenseOnClientLicenseKeyLength():
+@pytest.fixture
+def mysqlBackendConfig():
+    if not MySQLconfiguration:
+        pytest.skip("Missing configuration for MySQL.")
+
+    return MySQLconfiguration
+
+
+@pytest.fixture
+def mySQLBackendConfigFile(mysqlBackendConfig):
+    with workInTemporaryDirectory() as tempDir:
+        configFile = os.path.join(tempDir, 'asdf')
+        with open(configFile, 'w'):
+            pass
+
+        updateConfigFile(configFile, mysqlBackendConfig)
+
+        yield configFile
+
+
+def testCorrectingLicenseOnClientLicenseKeyLength(mysqlBackendConfig, mySQLBackendConfigFile):
     """
     Test if the license key length is correctly set.
 
@@ -66,37 +86,34 @@ def testCorrectingLicenseOnClientLicenseKeyLength():
     A fresh backend has the length of 1024.
     The size should be the same.
     """
-    if not MySQLconfiguration:
-        pytest.skip("Missing configuration for MySQL.")
+    with cleanDatabase(MySQL(**mysqlBackendConfig)) as db:
+        createRequiredTables(db)
 
-    with workInTemporaryDirectory() as tempDir:
-        configFile = os.path.join(tempDir, 'asdf')
-        with open(configFile, 'w'):
-            pass
+        updateMySQLBackend(backendConfigFile=mySQLBackendConfigFile)
 
-        updateConfigFile(configFile, MySQLconfiguration)
+        for tableName in ('LICENSE_ON_CLIENT', 'SOFTWARE_CONFIG', 'SOFTWARE_LICENSE_TO_LICENSE_POOL'):
+            print("Checking {0}...".format(tableName))
 
-        with cleanDatabase(MySQL(**MySQLconfiguration)) as db:
-            createRequiredTables(db)
+            assert tableName in getTableNames(db)
 
-            updateMySQLBackend(backendConfigFile=configFile)
+            assertColumnIsVarchar(db, tableName, 'licenseKey', 1024)
 
-            for tableName in ('LICENSE_ON_CLIENT', 'SOFTWARE_CONFIG', 'SOFTWARE_LICENSE_TO_LICENSE_POOL'):
-                print("Checking {0}...".format(tableName))
 
-                assert tableName in getTableNames(db)
+def testCorrectingProductIdLength(mysqlBackendConfig, mySQLBackendConfigFile):
+    """
+    Test if the product id length is correctly set.
+    """
+    with cleanDatabase(MySQL(**mysqlBackendConfig)) as db:
+        createRequiredTables(db)
 
-                for column in getTableColumns(db, tableName):
-                    if column.name.lower() == 'licensekey':
-                        assert column.type.lower().startswith('varchar(')
+        updateMySQLBackend(backendConfigFile=mySQLBackendConfigFile)
 
-                        _, length = column.type.split('(')
-                        length = int(length[:-1])
+        for tableName in ('PRODUCT_PROPERTY', ):
+            print("Checking {0}...".format(tableName))
 
-                        assert length == 1024
-                        break
-                else:
-                    raise ValueError("Missing column 'licensekey' in table {0!r}".format(tableName))
+            assert tableName in getTableNames(db)
+
+            assertColumnIsVarchar(db, tableName, 'productId', 255)
 
 
 def createRequiredTables(database):
@@ -141,7 +158,7 @@ def createRequiredTables(database):
     database.execute('CREATE INDEX `index_software_license_boundToHost` on `SOFTWARE_LICENSE` (`boundToHost`);')
 
     database.execute("""CREATE TABLE `PRODUCT_PROPERTY` (
-        `productId` varchar(255) NOT NULL,
+        `productId` varchar(128) NOT NULL,
         `productVersion` varchar(32) NOT NULL,
         `packageVersion` varchar(16) NOT NULL,
         `propertyId` varchar(200) NOT NULL,
@@ -210,3 +227,17 @@ def createRequiredTables(database):
 
 def getTableNames(database):
     return set(i.values()[0] for i in database.getSet(u'SHOW TABLES;'))
+
+
+def assertColumnIsVarchar(database, tableName, columnName, length):
+    for column in getTableColumns(database, tableName):
+        if column.name.lower() == columnName.lower():
+            assert column.type.lower().startswith('varchar(')
+
+            _, currentLength = column.type.split('(')
+            currentLength = int(currentLength[:-1])
+
+            assert currentLength == length
+            break
+    else:
+        raise ValueError("Missing column '{1}' in table {0!r}".format(tableName, columnName))
