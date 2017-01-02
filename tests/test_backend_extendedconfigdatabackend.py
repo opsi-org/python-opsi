@@ -467,46 +467,23 @@ def testBackend_getInterface(extendedConfigDataBackend):
 
 
 @pytest.mark.requiresModulesFile
-def testSearchingForIdents(extendedConfigDataBackend):
+@pytest.mark.parametrize("query", [
+    '(&(objectClass=Host)(type=OpsiDepotserver))',
+    '(&(&(objectClass=Host)(type=OpsiDepotserver))(objectClass=Host))',
+    '(|(&(objectClass=OpsiClient)(id=client1*))(&(objectClass=OpsiClient)(id=client2*)))',
+    '(&(&(objectClass=OpsiClient))(&(objectClass=ProductOnClient)(installationStatus=installed))(&(objectClass=ProductOnClient)(productId=product1)))',
+    '(&(&(objectClass=OpsiClient))(&(objectClass=ProductOnClient)(installationStatus=installed))(|(&(objectClass=ProductOnClient)(productId=product1))(&(objectClass=ProductOnClient)(productId=product2))))',
+    '(&(objectClass=OpsiClient)(&(objectClass=ProductOnClient)(installationStatus=installed))(&(objectClass=ProductOnClient)(productId=product1)))',
+    '(&(objectClass=Host)(description=T*))',
+    '(&(objectClass=Host)(description=*))',
+    '(&(&(objectClass=OpsiClient)(ipAddress=192*))(&(objectClass=ProductOnClient)(installationStatus=installed)))',
+    '(&(objectClass=Product)(description=*))',
+    '(&(objectClass=ProductOnClient)(installationStatus=installed))',
+    # TODO: this fails with SQL backends. Fix it:
+    # '(&(&(objectClass=Product)(description=*))(&(objectClass=ProductOnClient)(installationStatus=installed)))'
+])
+def testSearchingForIdents(extendedConfigDataBackend, query):
     fillBackend(extendedConfigDataBackend)
 
-    result = extendedConfigDataBackend.backend_searchIdents(
-        '(&(objectClass=Host)(type=OpsiDepotserver))')
+    result = extendedConfigDataBackend.backend_searchIdents(query)
     assert result
-    result = extendedConfigDataBackend.backend_searchIdents(
-        '(&(&(objectClass=Host)(type=OpsiDepotserver))(objectClass=Host))')
-    assert result
-    result = extendedConfigDataBackend.backend_searchIdents(
-        '(|(&(objectClass=OpsiClient)(id=client1*))(&(objectClass=OpsiClient)(id=client2*)))')
-    assert result
-    result = extendedConfigDataBackend.backend_searchIdents(
-        '(&(&(objectClass=OpsiClient))(&(objectClass=ProductOnClient)(installationStatus=installed))(&(objectClass=ProductOnClient)(productId=product1)))')
-    assert result
-    result = extendedConfigDataBackend.backend_searchIdents(
-        '(&(&(objectClass=OpsiClient))(&(objectClass=ProductOnClient)(installationStatus=installed))(|(&(objectClass=ProductOnClient)(productId=product1))(&(objectClass=ProductOnClient)(productId=product2))))')
-    assert result
-    result = extendedConfigDataBackend.backend_searchIdents(
-        '(&(objectClass=OpsiClient)(&(objectClass=ProductOnClient)(installationStatus=installed))(&(objectClass=ProductOnClient)(productId=product1)))')
-    assert result
-    result = extendedConfigDataBackend.backend_searchIdents(
-        '(&(objectClass=Host)(description=T*))')
-    assert result
-    result = extendedConfigDataBackend.backend_searchIdents(
-        '(&(objectClass=Host)(description=*))')
-    assert result
-    result = extendedConfigDataBackend.backend_searchIdents(
-        '(&(&(objectClass=OpsiClient)(ipAddress=192*))(&(objectClass=ProductOnClient)(installationStatus=installed)))')
-    assert result
-
-    # The following to tests first test the conditions alone and then
-    # the combinations of these two is tested.
-    result = extendedConfigDataBackend.backend_searchIdents(
-        '(&(objectClass=Product)(description=*))')
-    assert result
-    result = extendedConfigDataBackend.backend_searchIdents(
-        '(&(objectClass=ProductOnClient)(installationStatus=installed))')
-    assert result
-    # TODO: this fails with SQL backends. Fix it.
-    # result = extendedConfigDataBackend.backend_searchIdents(
-    #     '(&(&(objectClass=Product)(description=*))(&(objectClass=ProductOnClient)(installationStatus=installed)))')
-    # assert result
