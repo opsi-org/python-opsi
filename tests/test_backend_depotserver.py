@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2016 uib GmbH <info@uib.de>
+# Copyright (C) 2016-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -86,12 +85,7 @@ def testInstallingPackageOnDepotserver(depotserverBackend):
 
 
 def isProductFolderInDepot(depotPath, productId):
-    for listing in os.listdir(depotPath):
-        if productId == listing:
-            if os.path.isdir(listing):
-                return True
-
-    return False
+    return any(os.path.isdir(listing) for listing in os.listdir(depotPath) if productId == listing)
 
 
 @pytest.mark.requiresModulesFile  # because of SQLite...
@@ -129,3 +123,16 @@ def testInstallingPackageOnDepotserverWithForcedProductId(depotserverBackend):
 
     assert prodProperty.productVersion == product.productVersion
     assert prodProperty.packageVersion == product.packageVersion
+
+
+@pytest.mark.requiresModulesFile  # because of SQLite...
+@pytest.mark.parametrize("suppressCreation", [False, True])
+def testInstallingPackageCreatesPackageContentFile(depotserverBackend, suppressCreation):
+    pathToPackage = os.path.join(os.path.dirname(__file__), 'testdata', 'backend', 'testingproduct_23-42.opsi')
+    depotserverBackend.depot_installPackage(pathToPackage, suppressPackageContentFileGeneration=suppressCreation)
+
+    depot = depotserverBackend.host_getObjects(type="OpsiDepotserver")[0]
+    depotPath = depot.depotLocalUrl.replace('file://', '')
+
+    assert isProductFolderInDepot(depotPath, 'testingproduct')
+    assert suppressCreation != os.path.exists(os.path.join(depotPath, 'testingproduct', 'testingproduct.files'))

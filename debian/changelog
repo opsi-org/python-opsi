@@ -1,3 +1,12 @@
+python-opsi (4.0.7.32-1) experimental; urgency=medium
+
+  * DepotserverBackend: the function depot_installPackage has a new parameter
+    suppressPackageContentFileGeneration that can be used to avoid the
+    generation of package content file during installation.
+  * OPSI.Util: Backported md5sum from opsi 4.1.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 02 Jan 2017 17:14:58 +0100
+
 python-opsi (4.0.7.31-1) stable; urgency=medium
 
   [ Mathias Radtke ]
