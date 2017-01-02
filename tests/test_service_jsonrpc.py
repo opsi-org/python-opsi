@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
 # Copyright (C) 2016 uib GmbH <info@uib.de>
@@ -31,14 +31,14 @@ from .helpers import mock
 
 @pytest.mark.parametrize("invalidRpcInfo", [
 	None,
-    {},
-    {"id": 0},
-    {"tid": 0},
-    {"id": 1},
-    {"id": 1, "method": ""},
-    {"id": 1, "method": None},
-    {"id": 1, "method": 0},
-    {"id": 1, "method": False},
+	{},
+	{"id": 0},
+	{"tid": 0},
+	{"id": 1},
+	{"id": 1, "method": ""},
+	{"id": 1, "method": None},
+	{"id": 1, "method": 0},
+	{"id": 1, "method": False},
 ])
 def testJsonRpcRequiresTransactionId(invalidRpcInfo):
 	with pytest.raises(Exception):  # TODO: better Exception class
