@@ -4,7 +4,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2006-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2017 uib GmbH <info@uib.de>
 # http://www.uib.de/
 
 # This program is free software: you can redistribute it and/or modify
@@ -208,10 +208,7 @@ def md5sum(filename):
 	md5object = md5()
 
 	with open(filename, 'rb') as fileToHash:
-		while True:
-			data = fileToHash.read(524288)
-			if not data:
-				break
+		for data in iter(lambda: fileToHash.read(524288), ''):
 			md5object.update(data)
 
 	return md5object.hexdigest()
@@ -667,13 +664,14 @@ def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeD
 	returnLinks = forceBool(returnLinks)
 	followLinks = forceBool(followLinks)
 
-	islink = os.path.islink
-	isdir = os.path.isdir
-	listdir = os.listdir
 	if repository:
 		islink = repository.islink
 		isdir = repository.isdir
 		listdir = repository.listdir
+	else:
+		islink = os.path.islink
+		isdir = os.path.isdir
+		listdir = os.listdir
 
 	files = []
 	for entry in listdir(directory):

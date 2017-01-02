@@ -4,7 +4,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2006-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -298,9 +298,9 @@ class PackageContentFile(TextFile):
 
 		fileInfo = {}
 		for line in self._lines:
-			(type, tmp) = line.strip().split(None, 1)
-			filename = u''
+			(entryType, tmp) = line.strip().split(None, 1)
 
+			filename = u''
 			for i, currentElement in enumerate(tmp):
 				if currentElement == u"'":
 					if i > 0:
@@ -325,11 +325,13 @@ class PackageContentFile(TextFile):
 				if len(parts) > 1:
 					tmp = parts[1]
 
-			if type == 'f':
+			if entryType == 'f':
 				md5 = tmp
-			elif type == 'l':
+			elif entryType == 'l':
 				target = tmp[1:-1].replace(u'\\\'', u'\'')
-			fileInfo[filename] = {'type': type, 'size': int(size), 'md5sum': md5, 'target': target}
+
+			fileInfo[filename] = {'type': entryType, 'size': int(size), 'md5sum': md5, 'target': target}
+
 		self._parsed = True
 		return fileInfo
 
@@ -337,37 +339,36 @@ class PackageContentFile(TextFile):
 		self._lines = []
 		for filename in self._clientDataFiles:
 			try:
-				#if (filename == self.clientDataDir):
-				#	continue
-				type = u'f'
 				md5 = u''
-				target = u''
 				size = 0
+				target = None
+
 				path = os.path.join(self._productClientDataDir, filename)
 				if os.path.islink(path):
-					type = u'l'
+					elementType = u'l'
 					target = os.path.realpath(path)
 					if target.startswith(self._productClientDataDir):
 						target = target[len(self._productClientDataDir):]
 					else:
 						if os.path.isdir(path):
-							type = u'd'
+							elementType = u'd'
 						else:
 							# link target not in client data dir => treat as file
-							type = u'f'
+							elementType = u'f'
 							size = os.path.getsize(target)
 							md5 = md5sum(target)
 							target = u''
 				elif os.path.isdir(path):
-					type = u'd'
+					elementType = u'd'
 				else:
+					elementType = u'f'
 					size = os.path.getsize(path)
 					md5 = md5sum(path)
 
-				if target:
-					self._lines.append("%s '%s' %s '%s'" % (type, filename.replace(u'\'', u'\\\''), size, target.replace(u'\'', u'\\\'')))
+				if target is not None:
+					self._lines.append("%s '%s' %s '%s'" % (elementType, filename.replace(u'\'', u'\\\''), size, target.replace(u'\'', u'\\\'')))
 				else:
-					self._lines.append("%s '%s' %s %s" % (type, filename.replace(u'\'', u'\\\''), size, md5))
+					self._lines.append("%s '%s' %s %s" % (elementType, filename.replace(u'\'', u'\\\''), size, md5))
 			except Exception as error:
 				logger.logException(error)
 
