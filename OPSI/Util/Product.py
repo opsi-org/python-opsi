@@ -388,12 +388,18 @@ class ProductPackageFile(object):
 			packageContentFile = PackageContentFile(packageContentFile)
 			packageContentFile.setProductClientDataDir(productClientDataDir)
 			cdf = self.getClientDataFiles()
-			if packageContentFilename in cdf:
+			try:
+				# The package content file will be re-written and
+				# then the hash will be different so we need to remove
+				# this before the generation.
 				cdf.remove(packageContentFilename)
-			packageContentFile.setClientDataFiles(self.getClientDataFiles())
+			except ValueError:
+				pass  # not in list
+			packageContentFile.setClientDataFiles(cdf)
 			packageContentFile.generate()
-			if packageContentFilename not in self.clientDataFiles:
-				self.clientDataFiles.append(packageContentFilename)
+
+			cdf.append(packageContentFilename)
+			self.clientDataFiles = cdf
 			logger.debug(u"Finished creating package content file")
 		except Exception as e:
 			logger.logException(e)
