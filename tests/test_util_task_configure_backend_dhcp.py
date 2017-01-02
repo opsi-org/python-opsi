@@ -22,7 +22,7 @@ Testing the backend configuration.
 :license: GNU Affero General Public License version 3
 """
 
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import
 
 import os
 from contextlib import contextmanager
@@ -142,8 +142,6 @@ config = {
             insertDHCPDRestartCommand(target, FAKE_RESTART_COMMAND)
 
         config = backendConfigUtils.getBackendConfiguration(target)
-
-        print("Config is: {0}".format(config))
 
         assert "sudo " + FAKE_RESTART_COMMAND == config["reloadConfigCommand"]
         assert not config["dhcpdOnDepot"]

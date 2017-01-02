@@ -284,7 +284,6 @@ class HPProliantDisksTestCaseNewSfdiskVersion(unittest.TestCase):
 				"Maybe parsing empty partitions?".format(len(d.partitions))
 				)
 
-		print d.partitions[0]
 		first_partition_expected = {
 			'fs': u'ntfs',
 			'cylSize': 625072816,

@@ -352,6 +352,7 @@ def testSetProductActionRequestWithDependenciesWithOnce(backendManager):
 	assert depOnce.actionRequest == 'once'
 	assert depSetup.actionRequest == 'setup'
 
+
 @pytest.mark.parametrize("sortalgorithm", [None, 'algorithm1', 'algorithm2', 'unknown-algo'])
 def testGetProductOrdering(prefilledBackendManager, sortalgorithm):
 	ordering = prefilledBackendManager.getProductOrdering('depotserver1.some.test', sortalgorithm)

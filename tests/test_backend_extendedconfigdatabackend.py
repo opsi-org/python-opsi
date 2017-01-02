@@ -1,8 +1,8 @@
-#!/usr/bin/env python
-#-*- coding: utf-8 -*-
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2014-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -23,7 +23,7 @@ Testing extended backends features
 :license: GNU Affero General Public License version 3
 """
 
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 
 from itertools import izip
 
@@ -31,6 +31,7 @@ from OPSI.Backend.Backend import temporaryBackendOptions
 from OPSI.Object import (LocalbootProduct, OpsiClient, OpsiDepotserver,
     ProductOnClient, ProductOnDepot, UnicodeConfig)
 
+from .test_backend_replicator import fillBackend
 from .test_configs import getConfigs, getConfigStates
 from .test_hosts import getClients, getDepotServers
 from .test_products import (getLocalbootProducts, getNetbootProduct,
@@ -80,8 +81,10 @@ def test_configState_getClientToDepotserver(extendedConfigDataBackend):
         for productOnDepot in productOnDepots:
             assert productOnDepot in expectedProducts
 
+    depotServerIDs = set(ds.id for ds in depotservers)
+
     for clientToDepot in clientToDepots:
-       assert clientToDepot['depotId'] in [ds.id for ds in depotservers]
+        assert clientToDepot['depotId'] in depotServerIDs
 
 
 @pytest.mark.requiresModulesFile
@@ -257,14 +260,12 @@ def test_hostIdents(extendedConfigDataBackend):
     clients = getClients()
     extendedConfigDataBackend.host_createObjects(clients)
 
-    numHosts = len(clients) + 2
-
     selfIdents = [
         {'id': 'depot100.test.invalid'},
         {'id': 'client100.test.invalid'}
     ]
     for host in clients:
-        selfIdents.append(host.getIdent(returnType = 'dict'))
+        selfIdents.append(host.getIdent(returnType='dict'))
 
     selfIds = [d['id'] for d in selfIdents]
 
@@ -289,7 +290,7 @@ def test_hostIdents(extendedConfigDataBackend):
     for ident in ids:
         assert ident[0] in selfIds
 
-    ids = extendedConfigDataBackend.host_getIdents(returnType = 'dict')
+    ids = extendedConfigDataBackend.host_getIdents(returnType='dict')
     assert len(ids) == len(selfIdents)
     for ident in ids:
         assert ident['id'] in selfIds
@@ -370,7 +371,6 @@ def test_ldapSearchFilter(extendedConfigDataBackend):
     extendedConfigDataBackend.productOnClient_createObjects(pocs)
     result = extendedConfigDataBackend.backend_searchIdents('(&(&(objectClass=OpsiClient))(&(objectClass=ProductOnClient)(installationStatus=installed))(&(objectClass=ProductOnClient)(productId={0})))'.format(product1.id))
     expected = [x["clientId"] for x in extendedConfigDataBackend.productOnClient_getIdents(returnType="dict", installationStatus="installed", productId=product1.id)]
-    print(extendedConfigDataBackend.productOnClient_getIdents(returnType="dict"))
     result.sort()
     expected.sort()
     assert expected  # If this fails there are no objects.
@@ -382,6 +382,9 @@ def test_ldapSearchFilter(extendedConfigDataBackend):
     expected.sort()
     assert expected  # If this fails there are no objects.
     assert expected == result
+
+    pocIdents = extendedConfigDataBackend.productOnClient_getIdents(returnType="dict")
+    assert pocIdents
 
 
 def test_gettingIdentsDoesNotRaiseAnException(extendedConfigDataBackend):
@@ -451,36 +454,24 @@ def testBackend_getInterface(extendedConfigDataBackend):
             pytest.fail("Expected method {0!r} not found".format(selection['name']))
 
 
-def testSearchingForIdents(extendedConfigDataBackend):
-    # TODO: fill the backend with data!
-    # TODO: assertions
-    result = extendedConfigDataBackend.backend_searchIdents(
-        '(&(objectClass=Host)(type=OpsiDepotserver))')
-    print(result)
-    result = extendedConfigDataBackend.backend_searchIdents(
-        '(&(&(objectClass=Host)(type=OpsiDepotserver))(objectClass=Host))')
-    print(result)
-    result = extendedConfigDataBackend.backend_searchIdents(
-        '(|(&(objectClass=OpsiClient)(id=client1*))(&(objectClass=OpsiClient)(id=client2*)))')
-    print(result)
-    result = extendedConfigDataBackend.backend_searchIdents(
-        '(&(&(objectClass=OpsiClient))(&(objectClass=ProductOnClient)(installationStatus=installed))(&(objectClass=ProductOnClient)(productId=product1)))')
-    print(result)
-    result = extendedConfigDataBackend.backend_searchIdents(
-        '(&(&(objectClass=OpsiClient))(&(objectClass=ProductOnClient)(installationStatus=installed))(|(&(objectClass=ProductOnClient)(productId=product1))(&(objectClass=ProductOnClient)(productId=product2))))')
-    print(result)
-    result = extendedConfigDataBackend.backend_searchIdents(
-        '(&(objectClass=OpsiClient)(&(objectClass=ProductOnClient)(installationStatus=installed))(&(objectClass=ProductOnClient)(productId=product1)))')
-    print(result)
-    result = extendedConfigDataBackend.backend_searchIdents(
-        '(&(objectClass=Host)(description=T*))')
-    print(result)
-    result = extendedConfigDataBackend.backend_searchIdents(
-        '(&(objectClass=Host)(description=*))')
-    print(result)
-    result = extendedConfigDataBackend.backend_searchIdents(
-        '(&(&(objectClass=OpsiClient)(ipAddress=192*))(&(objectClass=ProductOnClient)(installationStatus=installed)))')
-    print(result)
-    result = extendedConfigDataBackend.backend_searchIdents(
-        '(&(&(objectClass=Product)(description=*))(&(objectClass=ProductOnClient)(installationStatus=installed)))')
-    print(result)
+@pytest.mark.requiresModulesFile
+@pytest.mark.parametrize("query", [
+    '(&(objectClass=Host)(type=OpsiDepotserver))',
+    '(&(&(objectClass=Host)(type=OpsiDepotserver))(objectClass=Host))',
+    '(|(&(objectClass=OpsiClient)(id=client1*))(&(objectClass=OpsiClient)(id=client2*)))',
+    '(&(&(objectClass=OpsiClient))(&(objectClass=ProductOnClient)(installationStatus=installed))(&(objectClass=ProductOnClient)(productId=product1)))',
+    '(&(&(objectClass=OpsiClient))(&(objectClass=ProductOnClient)(installationStatus=installed))(|(&(objectClass=ProductOnClient)(productId=product1))(&(objectClass=ProductOnClient)(productId=product2))))',
+    '(&(objectClass=OpsiClient)(&(objectClass=ProductOnClient)(installationStatus=installed))(&(objectClass=ProductOnClient)(productId=product1)))',
+    '(&(objectClass=Host)(description=T*))',
+    '(&(objectClass=Host)(description=*))',
+    '(&(&(objectClass=OpsiClient)(ipAddress=192*))(&(objectClass=ProductOnClient)(installationStatus=installed)))',
+    '(&(objectClass=Product)(description=*))',
+    '(&(objectClass=ProductOnClient)(installationStatus=installed))',
+    # TODO: this fails with SQL backends. Fix it:
+    # '(&(&(objectClass=Product)(description=*))(&(objectClass=ProductOnClient)(installationStatus=installed)))'
+])
+def testSearchingForIdents(extendedConfigDataBackend, query):
+    fillBackend(extendedConfigDataBackend)
+
+    result = extendedConfigDataBackend.backend_searchIdents(query)
+    assert result

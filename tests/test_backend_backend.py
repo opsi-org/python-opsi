@@ -118,7 +118,7 @@ def testBackend_getSharedAlgorithmThrowsExceptionIfAlgoUnknown(configDataBackend
 
 def testBackendCanBeUsedAsContextManager():
     with Backend() as backend:
-        print(backend.backend_info())
+        assert backend.backend_info()
 
 
 @pytest.mark.parametrize("option", [

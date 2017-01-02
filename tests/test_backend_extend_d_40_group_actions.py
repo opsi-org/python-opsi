@@ -1,5 +1,5 @@
-#!/usr/bin/env python
-#-*- coding: utf-8 -*-
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
 # Copyright (C) 2014-2016 uib GmbH <info@uib.de>
@@ -28,7 +28,7 @@ This tests what usually is found under
 :license: GNU Affero General Public License version 3
 """
 
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import
 
 import unittest
 
@@ -98,7 +98,6 @@ class GroupActionsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
             locked=False
         )
 
-
         self.backend.host_insertObject(client1)
         self.backend.host_insertObject(client2)
         self.backend.host_insertObject(depot)
@@ -115,8 +114,8 @@ class GroupActionsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
 
         self.backend.setProductActionRequestForHostGroup('host_group_1', 'product2', 'setup')
 
-        print(self.backend.productOnClient_getObjects())
-        self.assertTrue(self.backend.productOnClient_getObjects())
+        pocs = self.backend.productOnClient_getObjects()
+        self.assertTrue(pocs)
 
         self.assertEquals(2, len(self.backend.productOnClient_getObjects()))
 
@@ -152,8 +151,8 @@ class GroupRenamingTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
             id='client2.test.invalid',
         )
 
-        client1ToGroup = ObjectToGroup(self.testGroup.getType(),self.testGroup.id, self.client1.id)
-        client2ToGroup = ObjectToGroup(self.testGroup.getType(),self.testGroup.id, self.client2.id)
+        client1ToGroup = ObjectToGroup(self.testGroup.getType(), self.testGroup.id, self.client1.id)
+        client2ToGroup = ObjectToGroup(self.testGroup.getType(), self.testGroup.id, self.client2.id)
 
         self.backend.host_insertObject(self.client1)
         self.backend.host_insertObject(self.client2)
@@ -174,7 +173,7 @@ class GroupRenamingTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
     def testCreateNewDeleteOldGroup(self):
         self.backend.group_rename(self.testGroup.id, self.testGroup2.id)
 
-        group = self.backend.group_getObjects(id=self.testGroup2.id) [0]
+        group = self.backend.group_getObjects(id=self.testGroup2.id)[0]
         self.assertEquals(group.description, self.testGroup.description)
         self.assertEquals(group.notes, self.testGroup.notes)
         self.assertEquals(group.parentGroupId, self.testGroup.parentGroupId)
@@ -184,11 +183,11 @@ class GroupRenamingTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
     def testObjectToGroupsHaveNewGroupIds(self):
         self.backend.group_rename(self.testGroup.id, self.testGroup2.id)
 
-        objTpGrp_client1 = self.backend.objectToGroup_getObjects(objectId=self.client1.id) [0]
-        self.assertTrue(objTpGrp_client1.groupId, self.testGroup2.id )
+        objTpGrp_client1 = self.backend.objectToGroup_getObjects(objectId=self.client1.id)[0]
+        self.assertEquals(objTpGrp_client1.groupId, self.testGroup2.id)
 
-        objTpGrp_client2 = self.backend.objectToGroup_getObjects(objectId=self.client2.id) [0]
-        self.assertTrue(objTpGrp_client2.groupId, self.testGroup2.id )
+        objTpGrp_client2 = self.backend.objectToGroup_getObjects(objectId=self.client2.id)[0]
+        self.assertEquals(objTpGrp_client2.groupId, self.testGroup2.id)
 
     def testObjectToGroupsHaveNotOldGroupIds(self):
         self.backend.group_rename(self.testGroup.id, self.testGroup2.id)

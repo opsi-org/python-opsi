@@ -42,7 +42,7 @@ def testGetGeneralConfig(backendManager):
     Calling the function with some valid FQDN must not fail.
     """
     values = backendManager.getGeneralConfig_hash('some.client.fqdn')
-    print(values)
+    assert not values
 
 
 def testSetGeneralConfigValue(backendManager):

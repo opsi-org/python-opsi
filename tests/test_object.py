@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -353,7 +353,6 @@ def testProductPropertyShowsOptionalArgumentsInRepr(propertyClass, requiredAttri
     prodProp = propertyClass('testprod', '1.0', '2', 'myproperty', **additionalParam)
 
     r = repr(prodProp)
-    print(r)
     assert requiredAttribute in r
     assert r.startswith('<')
     assert r.endswith('>')
@@ -367,7 +366,6 @@ def testProductPropertyRepresentationShowsValueIfFilled(propertyClass, attribute
     prodProp = propertyClass('testprod', '1.0', '2', 'myproperty', **attrs)
 
     r = repr(prodProp)
-    print(r)
     assert '{0}='.format(attributeName) in r
     assert repr(attributeValue) in r
 
@@ -379,7 +377,6 @@ def testProductPropertyShowsOptionalArgumentsInRepr2(propertyClass, requiredAttr
     prodProp = propertyClass('testprod', '1.0', '2', 'myproperty', **additionalParam)
 
     r = repr(prodProp)
-    print(r)
     assert requiredAttribute in r
     assert r.startswith('<')
     assert r.endswith('>')
@@ -399,7 +396,6 @@ def testProductPropertyStateShowSelectedValues(testValues):
     state = ProductPropertyState(productId, propertyId, objectId, values=testValues)
 
     r = repr(state)
-    print(r)
     assert state.__class__.__name__ in r
     assert productId in r
     assert propertyId in r

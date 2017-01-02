@@ -45,19 +45,17 @@ def testBackendManagerDispatchesCallsToExtensionClass():
     These calls should not fail.
     """
     class TestClass(object):
-        def testMethod(self, y):
-            print("Working test.")
-            print('Argument: {0}'.format(y))
-            print('This is me: {0}'.format(self))
+        def methodOnBackend(self, y):
+            assert y == 'yyyyyyyy'
 
-        def testMethod2(self):
-            print('Getting all that shiny options...')
-            print(self.backend_getOptions())
+        def checkIfOptionsExist(self):
+            options = self.backend_getOptions()
+            assert options
 
     cdb = ConfigDataBackend()
     bm = BackendManager(backend=cdb, extensionClass=TestClass)
-    bm.testMethod('yyyyyyyy')
-    bm.testMethod2()
+    bm.methodOnBackend('yyyyyyyy')
+    bm.checkIfOptionsExist()
 
 
 def testBackendManagerMethods(backendManager):
@@ -360,7 +358,7 @@ def testGettingBackendManagerWithDefaultConfig():
             pytest.skip("Missing {0}".format(path))
 
     backend = BackendManager()
-    print(backend.backend_info())
+    assert backend.backend_info()
 
 
 def testGettingBackendManagerWithCustomConfig():
@@ -393,11 +391,11 @@ def testGettingBackendManagerWithCustomConfig():
             )
 
         backend = BackendManager(**kwargs)
-        print(backend.backend_info())
+        assert backend.backend_info()
 
 
 def testBackendManagerCanAccessExtensions(backendManager):
-    print(backendManager)
-    print(backendManager.backend_info())
+    assert backendManager.backend_info()
 
-    print(backendManager.getServerIds_list())
+    # This may be empty but the call must not fail.
+    backendManager.getServerIds_list()

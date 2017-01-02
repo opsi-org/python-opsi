@@ -225,7 +225,6 @@ def testChangingOwnershipWithOurChown(currentUserId, nonRootUserId, currentGroup
 
 def testGettingDirectoriesAndRights(patchUserInfo):
     dm = dict(getDirectoriesAndExpectedRights('/'))
-    print(dm)
 
     for rights in dm.values():
         # For now we just want to make sure these fields are filled.
@@ -233,19 +232,16 @@ def testGettingDirectoriesAndRights(patchUserInfo):
         assert rights.gid
 
     rights = dm[u'/etc/opsi']
-    print(rights)
     assert rights.files == 0o660
     assert rights.directories == 0o770
     assert rights.correctLinks
 
     rights = dm[u'/var/lib/opsi']
-    print(rights)
     assert rights.files == 0o660
     assert rights.directories == 0o770
     assert not rights.correctLinks
 
     rights = dm[u'/var/log/opsi']
-    print(rights)
     assert rights.files == 0o660
     assert rights.directories == 0o770
     assert rights.correctLinks
@@ -368,7 +364,6 @@ def testSetRightsOnSSHDirectory():
         setRightsOnSSHDirectory(userId, groupId, path=sshDir)
 
         for filename, mod in expectedFilemod.items():
-            print("Checking {0} with expected mod {1}".format(filename, mod))
             assert os.path.exists(filename)
 
             assert getMod(filename) == mod
