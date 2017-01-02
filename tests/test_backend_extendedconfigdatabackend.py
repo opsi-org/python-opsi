@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2014-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -31,6 +31,7 @@ from itertools import izip
 from OPSI.Object import (LocalbootProduct, OpsiClient, OpsiDepotserver,
     ProductOnClient, ProductOnDepot, UnicodeConfig)
 
+from .test_backend_replicator import fillBackend
 from .test_configs import getConfigs, getConfigStates
 from .test_hosts import getClients, getDepotServers
 from .test_products import (getLocalbootProducts, getNetbootProduct,
@@ -466,8 +467,8 @@ def testBackend_getInterface(extendedConfigDataBackend):
 
 
 def testSearchingForIdents(extendedConfigDataBackend):
-    # TODO: fill the backend with data!
-    # TODO: assertions
+    fillBackend(extendedConfigDataBackend)
+
     result = extendedConfigDataBackend.backend_searchIdents(
         '(&(objectClass=Host)(type=OpsiDepotserver))')
     assert result
