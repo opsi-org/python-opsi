@@ -667,13 +667,14 @@ def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeD
 	returnLinks = forceBool(returnLinks)
 	followLinks = forceBool(followLinks)
 
-	islink = os.path.islink
-	isdir = os.path.isdir
-	listdir = os.listdir
 	if repository:
 		islink = repository.islink
 		isdir = repository.isdir
 		listdir = repository.listdir
+	else:
+		islink = os.path.islink
+		isdir = os.path.isdir
+		listdir = os.listdir
 
 	files = []
 	for entry in listdir(directory):
