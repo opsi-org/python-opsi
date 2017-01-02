@@ -313,7 +313,6 @@ class ProductPackageFile(object):
 			return self.clientDataFiles
 
 		self.clientDataFiles = findFiles(self.getProductClientDataDir())
-		self.clientDataFiles.sort()
 		return self.clientDataFiles
 
 	def setAccessRights(self):
