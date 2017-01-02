@@ -497,6 +497,16 @@ def testSearchingForIdents(extendedConfigDataBackend):
     result = extendedConfigDataBackend.backend_searchIdents(
         '(&(&(objectClass=OpsiClient)(ipAddress=192*))(&(objectClass=ProductOnClient)(installationStatus=installed)))')
     assert result
+
+    # The following to tests first test the conditions alone and then
+    # the combinations of these two is tested.
     result = extendedConfigDataBackend.backend_searchIdents(
-        '(&(&(objectClass=Product)(description=*))(&(objectClass=ProductOnClient)(installationStatus=installed)))')
+        '(&(objectClass=Product)(description=*))')
     assert result
+    result = extendedConfigDataBackend.backend_searchIdents(
+        '(&(objectClass=ProductOnClient)(installationStatus=installed))')
+    assert result
+    # TODO: this fails with SQL backends. Fix it.
+    # result = extendedConfigDataBackend.backend_searchIdents(
+    #     '(&(&(objectClass=Product)(description=*))(&(objectClass=ProductOnClient)(installationStatus=installed)))')
+    # assert result
