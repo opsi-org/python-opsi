@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2016 uib GmbH <info@uib.de>
+# Copyright (C) 2016-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -26,6 +26,8 @@ This tests what usually is found under
 
 from __future__ import absolute_import
 
+import pytest
+
 from OPSI.Object import NetbootProduct, ProductOnDepot, UnicodeProductProperty
 from .Backends.File import FileBackendBackendManagerMixin
 from .test_hosts import getConfigServer
@@ -40,13 +42,6 @@ class WimFunctionsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
 
     def tearDown(self):
         self.tearDownBackend()
-
-    def testUpdatingWimFailsWithInvalidObjectId(self):
-        self.assertRaises(ValueError, self.backend.updateWIMConfig, '')
-        self.assertRaises(ValueError, self.backend.updateWIMConfig, None)
-
-    def testUpdatingWimFailsWithInvalidProductId(self):
-        self.assertRaises(OSError, self.backend.updateWIMConfigFromPath, '', '')
 
     def testUpdatingWim(self):
         with patchAddress(fqdn=getLocalFQDN()):
@@ -70,8 +65,19 @@ class WimFunctionsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
 
                     language = self.backend.productProperty_getObjects(propertyId="system_language", productId='testwindows')
                     language = language[0]
-                    self.assertTrue(set(['de-DE']), language.defaultValues)
-                    self.assertTrue(set(['de-DE']), language.possibleValues)
+                    assert ['de-DE'] == language.defaultValues
+                    assert ['de-DE'] == language.possibleValues
+
+
+@pytest.mark.parametrize("objectId", ['', None])
+def testUpdatingWimFailsWithInvalidObjectId(backendManager, objectId):
+    with pytest.raises(ValueError):
+        backendManager.updateWIMConfig(objectId)
+
+
+def testUpdatingWimFailsWithInvalidProductId(backendManager):
+    with pytest.raises(OSError):
+        backendManager.updateWIMConfigFromPath('', '')
 
 
 def fillBackend(backend):
