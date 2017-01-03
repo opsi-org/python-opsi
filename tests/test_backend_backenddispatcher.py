@@ -83,8 +83,8 @@ class BackendDispatcherWithBackendTestCase(unittest.TestCase, FileBackendMixin):
             backendConfigDir=os.path.join(self._fileTempDir, 'etc', 'opsi', 'backends')
         )
 
-        self.assertTrue('file' in dispatcher.dispatcher_getBackendNames())
-        self.assertEquals(dispatchConfig, dispatcher.dispatcher_getConfig())
+        assert 'file' in dispatcher.dispatcher_getBackendNames()
+        assert dispatchConfig == dispatcher.dispatcher_getConfig()
 
     def testDispatchingMethodAndReceivingResults(self):
         dispatcher = BackendDispatcher(
@@ -92,4 +92,4 @@ class BackendDispatcherWithBackendTestCase(unittest.TestCase, FileBackendMixin):
             backendConfigDir=os.path.join(self._fileTempDir, 'etc', 'opsi', 'backends')
         )
 
-        self.assertEquals([], dispatcher.host_getObjects())
+        assert [] == dispatcher.host_getObjects()
