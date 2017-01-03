@@ -229,7 +229,7 @@ def testHost_createDepotServer(extendedConfigDataBackend):
 
 
 @pytest.mark.requiresModulesFile
-def test_createClient(extendedConfigDataBackend):
+def testHost_createClient(extendedConfigDataBackend):
     extendedConfigDataBackend.host_createOpsiClient(
         id='client100.test.invalid',
         opsiHostKey=None,
@@ -243,7 +243,18 @@ def test_createClient(extendedConfigDataBackend):
 
     hosts = extendedConfigDataBackend.host_getObjects(id='client100.test.invalid')
     assert len(hosts) == 1
-    # TODO: check Host
+
+    client = hosts[0]
+    assert client.id == 'client100.test.invalid'
+    assert client.description == 'Client 100'
+    assert client.notes == 'No notes'
+    assert client.hardwareAddress == '00:00:01:01:02:02'
+    assert client.ipAddress == '192.168.0.200'
+
+    # Automatically filled atttributes
+    assert client.opsiHostKey
+    assert client.created
+    assert client.lastSeen
 
 
 def test_hostIdents(extendedConfigDataBackend):
