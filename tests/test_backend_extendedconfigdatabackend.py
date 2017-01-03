@@ -364,7 +364,7 @@ def test_ldapSearchFilter(extendedConfigDataBackend):
     assert pocIdents
 
 
-@pytest.mark.parametrize("returnType, klass", ((None, None), ('tuple', tuple), ('list', list), ('dict', dict)))
+@pytest.mark.parametrize("returnType, klass", ((None, object), ('tuple', tuple), ('list', list), ('dict', dict)))
 @pytest.mark.parametrize("objectType", (
     'config',
     'group',
@@ -388,8 +388,8 @@ def test_gettingIdentsDoesNotRaiseAnException(extendedConfigDataBackend, objectT
     result = method(**methodOptions)
     assert result
 
-    if klass is not None:
-        assert isinstance(result[0], klass)
+    for obj in result:
+        assert isinstance(obj, klass)
 
 
 def testGetIdentsWithWildcardFilter(extendedConfigDataBackend):
