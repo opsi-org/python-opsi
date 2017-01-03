@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2014-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -33,7 +32,6 @@ from OPSI.Util import getfqdn
 from OPSI.Util.File.Opsi import BackendACLFile
 from OPSI.Backend.BackendManager import BackendAccessControl
 
-from .helpers import workInTemporaryDirectory
 from .test_backend_replicator import (fillBackendWithHosts,
     fillBackendWithProducts, fillBackendWithProductOnClients)
 from .test_hosts import getClients
