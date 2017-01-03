@@ -257,7 +257,7 @@ def testHost_createClient(extendedConfigDataBackend):
     assert client.lastSeen
 
 
-def test_hostIdents(extendedConfigDataBackend):
+def testHost_getIdents(extendedConfigDataBackend):
     extendedConfigDataBackend.host_createOpsiDepotserver(
         id='depot100.test.invalid',
         opsiHostKey='123456789012345678901234567890aa',
@@ -283,67 +283,21 @@ def test_hostIdents(extendedConfigDataBackend):
     clients = getClients()
     extendedConfigDataBackend.host_createObjects(clients)
 
-    selfIdents = [
-        {'id': 'depot100.test.invalid'},
-        {'id': 'client100.test.invalid'}
-    ]
-    for host in clients:
-        selfIdents.append(host.getIdent(returnType='dict'))
-
-    selfIds = [d['id'] for d in selfIdents]
-
-    ids = extendedConfigDataBackend.host_getIdents()
-    assert len(ids) == len(selfIdents)
-
-    for ident in ids:
-        assert ident in selfIds
-
-    ids = extendedConfigDataBackend.host_getIdents(id='*100*')
-    assert 2 == len(ids)
-    for ident in ids:
-        assert ident in selfIds
-
-    ids = extendedConfigDataBackend.host_getIdents(returnType='tuple')
-    assert len(ids) == len(selfIdents)
-    for ident in ids:
-        assert ident[0] in selfIds
-
-    ids = extendedConfigDataBackend.host_getIdents(returnType='list')
-    assert len(ids) == len(selfIdents)
-    for ident in ids:
-        assert ident[0] in selfIds
-
-    ids = extendedConfigDataBackend.host_getIdents(returnType='dict')
-    assert len(ids) == len(selfIdents)
-    for ident in ids:
-        assert ident['id'] in selfIds
-
     configs = getConfigs()
     extendedConfigDataBackend.config_createObjects(configs)
-    selfIdents = []
-    for config in configs:
-        selfIdents.append(config.getIdent(returnType='dict'))
-    selfIds = [d['id'] for d in selfIdents]
-
-    ids = extendedConfigDataBackend.config_getIdents()
-    assert len(ids) == len(selfIdents)
-    for ident in ids:
-        assert ident in selfIds
 
     depotServer = extendedConfigDataBackend.host_getObjects(id='depot100.test.invalid')[0]
     configStates = getConfigStates(configs, clients, [None, depotServer])
     extendedConfigDataBackend.configState_createObjects(configStates)
-    selfIdents = []
-    for configState in configStates:
-        selfIdents.append(configState.getIdent(returnType='dict'))
+    expectedIdents = [configState.getIdent(returnType='dict') for configState in configStates]
 
     with temporaryBackendOptions(extendedConfigDataBackend, addConfigStateDefaults=False):
         ids = extendedConfigDataBackend.configState_getIdents()
 
-    assert len(ids) == len(selfIdents)
+    assert len(ids) == len(expectedIdents)
     for ident in ids:
-        id = dict(zip(('configId', 'objectId'), tuple(ident.split(";"))))
-        assert id in selfIdents
+        objectIdent = dict(zip(('configId', 'objectId'), tuple(ident.split(";"))))
+        assert objectIdent in expectedIdents
 
     expect = len(extendedConfigDataBackend.host_getObjects()) * len(configs)
     with temporaryBackendOptions(extendedConfigDataBackend, addConfigStateDefaults=True):
