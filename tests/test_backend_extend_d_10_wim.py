@@ -49,7 +49,7 @@ class WimFunctionsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
                 with fakeWIMEnvironment(self._fileTempDir):
                     fillBackend(self.backend)
 
-                    with mock.patch('OPSI.Util.WIM.os.path.exists', lambda _: True):
+                    with mock.patch('OPSI.Util.WIM.os.path.exists', lambda path: True):
                         self.backend.updateWIMConfig('testwindows')
 
                     imagename = self.backend.productProperty_getObjects(propertyId="imagename", productId='testwindows')
