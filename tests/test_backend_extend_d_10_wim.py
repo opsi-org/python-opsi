@@ -60,8 +60,8 @@ class WimFunctionsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
                         u'Windows 7 PROFESSIONALN', u'Windows 7 STARTERN',
                         u'Windows 7 ULTIMATEN'
                     ])
-                    self.assertEquals(possibleImageNames, set(imagename.possibleValues))
-                    self.assertTrue(imagename.defaultValues[0] in imagename.possibleValues)
+                    assert possibleImageNames == set(imagename.possibleValues)
+                    assert imagename.defaultValues[0] in imagename.possibleValues
 
                     language = self.backend.productProperty_getObjects(propertyId="system_language", productId='testwindows')
                     language = language[0]
