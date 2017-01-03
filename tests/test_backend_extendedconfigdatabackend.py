@@ -194,7 +194,7 @@ def test_selectProductOnClientsByWildcard(extendedConfigDataBackend):
     assert productOnClients == [poc]
 
 
-def test_createDepotServer(extendedConfigDataBackend):
+def testHost_createDepotServer(extendedConfigDataBackend):
     extendedConfigDataBackend.host_createOpsiDepotserver(
         id='depot100.test.invalid',
         opsiHostKey='123456789012345678901234567890aa',
@@ -212,7 +212,20 @@ def test_createDepotServer(extendedConfigDataBackend):
 
     hosts = extendedConfigDataBackend.host_getObjects(id='depot100.test.invalid')
     assert len(hosts) == 1
-    # TODO: check host!
+
+    depot = hosts[0]
+    assert depot.id == 'depot100.test.invalid'
+    assert depot.opsiHostKey == '123456789012345678901234567890aa'
+    assert depot.depotLocalUrl == 'file:///opt/pcbin/install'
+    assert depot.depotRemoteUrl == 'smb://depot3.uib.local/opt_pcbin/install'
+    assert depot.repositoryLocalUrl == 'file:///var/lib/opsi/products'
+    assert depot.repositoryRemoteUrl == 'webdavs://depot3.uib.local:4447/products'
+    assert depot.description == 'A depot'
+    assert depot.notes == 'Depot 100'
+    assert depot.hardwareAddress is None
+    assert depot.ipAddress is None
+    assert depot.networkAddress == '192.168.100.0/24'
+    assert depot.maxBandwidth == 0
 
 
 @pytest.mark.requiresModulesFile
