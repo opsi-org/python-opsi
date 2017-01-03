@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -31,8 +31,6 @@ import pytest
 from OPSI.Util.WindowsDrivers import integrateAdditionalWindowsDrivers
 from OPSI.Object import AuditHardwareOnHost
 
-from .helpers import workInTemporaryDirectory
-
 
 def auditHardwareOnHostFactory(hardwareClass, hostId, vendor, model, sku=None):
 	auditHardwareOnHost = AuditHardwareOnHost(hardwareClass, hostId)
@@ -58,12 +56,6 @@ def _generateTestFiles(folder, vendor, model, filename):
 	dstFilename = os.path.join(folder, "byAudit", vendor, model, filename)
 	with open(dstFilename, "w"):
 		pass
-
-
-@pytest.fixture
-def tempDir():
-	with workInTemporaryDirectory() as temporary_folder:
-		yield temporary_folder
 
 
 @pytest.fixture

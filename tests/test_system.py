@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -31,8 +31,6 @@ import shutil
 from OPSI.System import copy
 from OPSI.Util.Message import ProgressSubject
 
-from .helpers import workInTemporaryDirectory
-
 
 @pytest.fixture(
 	params=[None, ProgressSubject(id=u'copy_test', title=u'Copy test')],
@@ -50,12 +48,6 @@ def exampleFilenames():
 @pytest.fixture
 def exampleDirectories():
 	return ('dir1', 'dir2', 'dir3')
-
-
-@pytest.fixture
-def tempDir():
-	with workInTemporaryDirectory() as tDir:
-		yield tDir
 
 
 @pytest.fixture

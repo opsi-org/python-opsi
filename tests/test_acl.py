@@ -42,7 +42,7 @@ from .test_products import getProducts
 import pytest
 
 
-def testParsingBackendACLFile():
+def testParsingBackendACLFile(tempDir):
     expectedACL = [
         [u'host_.*', [
             {'denyAttributes': [], 'type': u'opsi_depotserver', 'ids': [u'depot1.test.invalid', u'depot2.test.invalid'], 'allowAttributes': []},
@@ -53,14 +53,13 @@ def testParsingBackendACLFile():
         ]
     ]
 
-    with workInTemporaryDirectory() as tempDir:
-        aclFile = os.path.join(tempDir, 'acl.conf')
-        with open(aclFile, 'w') as exampleConfig:
-            exampleConfig.write('''
+    aclFile = os.path.join(tempDir, 'acl.conf')
+    with open(aclFile, 'w') as exampleConfig:
+        exampleConfig.write('''
 host_.*: opsi_depotserver(depot1.test.invalid, depot2.test.invalid); opsi_client(self,  attributes (attr1, attr2)); sys_user(some user, some other user); sys_group(a_group, group2)
 ''')
 
-        assert expectedACL == BackendACLFile(aclFile).parse()
+    assert expectedACL == BackendACLFile(aclFile).parse()
 
 
 def testAllowingMethodsForSpecificClient(extendedConfigDataBackend):
