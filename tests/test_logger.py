@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
@@ -34,7 +33,7 @@ from io import BytesIO as StringIO
 import OPSI.Logger
 import pytest
 
-from .helpers import cd, mock, workInTemporaryDirectory, showLogs
+from .helpers import cd, mock, showLogs
 
 
 # Log level that will result in log output.
@@ -246,19 +245,18 @@ def testSettingConfidentialStrings(logger):
 	assert "So schnell, so weit" in value
 
 
-def testChangingDirectoriesDoesNotChangePathOfLog(logger):
-	with workInTemporaryDirectory():
-		logger.setLogFile('test.log')
-		logger.setFileLevel(OPSI.Logger.LOG_DEBUG)
-		logger.warning('abc')
+def testChangingDirectoriesDoesNotChangePathOfLog(logger, tempDir):
+	logger.setLogFile('test.log')
+	logger.setFileLevel(OPSI.Logger.LOG_DEBUG)
+	logger.warning('abc')
 
-		assert os.path.exists('test.log')
+	assert os.path.exists('test.log')
 
-		os.mkdir('subdir')
-		with cd('subdir'):
-			assert not os.path.exists('test.log')
-			logger.warning('def')
-			assert not os.path.exists('test.log')
+	os.mkdir('subdir')
+	with cd('subdir'):
+		assert not os.path.exists('test.log')
+		logger.warning('def')
+		assert not os.path.exists('test.log')
 
 
 def testSettingLogPathToNone(logger):

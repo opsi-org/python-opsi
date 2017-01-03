@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2014-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -38,7 +38,7 @@ from OPSI.Util.Task.Rights import (chown, getDepotDirectory,
     getWebserverUsernameAndGroupname, filterDirsAndRights,
     setRightsOnSSHDirectory, setRightsOnFile)
 
-from .helpers import mock, workInTemporaryDirectory
+from .helpers import mock
 
 
 OS_CHECK_FUNCTIONS = ['isRHEL', 'isCentOS', 'isSLES', 'isOpenSUSE', 'isUbuntu', 'isDebian', 'isUCS']
@@ -183,44 +183,43 @@ def nonRootGroupId(currentGroupId):
         pytest.skip("No group for test found. Aborting.")
 
 
-def testChangingOwnershipWithOurChown(currentUserId, nonRootUserId, currentGroupId, nonRootGroupId):
+def testChangingOwnershipWithOurChown(currentUserId, nonRootUserId, currentGroupId, nonRootGroupId, tempDir):
     isRoot = os.geteuid() == 0
-    with workInTemporaryDirectory() as tempDir:
-        original = os.path.join(tempDir, 'original')
-        with open(original, 'w'):
-            pass
+    original = os.path.join(tempDir, 'original')
+    with open(original, 'w'):
+        pass
 
-        linkfile = os.path.join(tempDir, 'linkfile')
-        os.symlink(original, linkfile)
-        assert os.path.islink(linkfile)
+    linkfile = os.path.join(tempDir, 'linkfile')
+    os.symlink(original, linkfile)
+    assert os.path.islink(linkfile)
 
-        # Changing the uid/gid to something different
-        os.chown(original, nonRootUserId, nonRootGroupId)
-        os.lchown(linkfile, nonRootUserId, nonRootGroupId)
+    # Changing the uid/gid to something different
+    os.chown(original, nonRootUserId, nonRootGroupId)
+    os.lchown(linkfile, nonRootUserId, nonRootGroupId)
 
-        for filename in (original, linkfile):
-            if os.path.islink(filename):
-                stat = os.lstat(filename)
-            else:
-                stat = os.stat(linkfile)
+    for filename in (original, linkfile):
+        if os.path.islink(filename):
+            stat = os.lstat(filename)
+        else:
+            stat = os.stat(linkfile)
 
-            assert nonRootGroupId == stat.st_gid
-            if not isRoot:
-                assert nonRootUserId == stat.st_uid
+        assert nonRootGroupId == stat.st_gid
+        if not isRoot:
+            assert nonRootUserId == stat.st_uid
 
-        # Correcting the uid/gid
-        chown(linkfile, currentUserId, currentGroupId)
-        chown(original, currentUserId, currentGroupId)
+    # Correcting the uid/gid
+    chown(linkfile, currentUserId, currentGroupId)
+    chown(original, currentUserId, currentGroupId)
 
-        for filename in (original, linkfile):
-            if os.path.islink(filename):
-                stat = os.lstat(filename)
-            else:
-                stat = os.stat(linkfile)
+    for filename in (original, linkfile):
+        if os.path.islink(filename):
+            stat = os.lstat(filename)
+        else:
+            stat = os.stat(linkfile)
 
-            assert currentGroupId == stat.st_gid
-            if not isRoot:
-                assert currentUserId == stat.st_uid
+        assert currentGroupId == stat.st_gid
+        if not isRoot:
+            assert currentUserId == stat.st_uid
 
 
 def testGettingDirectoriesAndRights(patchUserInfo):
@@ -344,35 +343,35 @@ def testFilteringOutDuplicateDirectories():
         assert count == 1, "{0} was returned more than once!".format(d)
 
 
-def testSetRightsOnSSHDirectory():
+def testSetRightsOnSSHDirectory(tempDir):
     groupId = os.getgid()
     userId = os.getuid()
 
-    with workInTemporaryDirectory() as sshDir:
-        expectedFilemod = {
-            os.path.join(sshDir, u'id_rsa'): 0o640,
-            os.path.join(sshDir, u'id_rsa.pub'): 0o644,
-            os.path.join(sshDir, u'authorized_keys'): 0o600,
-        }
+    sshDir = tempDir
+    expectedFilemod = {
+        os.path.join(sshDir, u'id_rsa'): 0o640,
+        os.path.join(sshDir, u'id_rsa.pub'): 0o644,
+        os.path.join(sshDir, u'authorized_keys'): 0o600,
+    }
 
-        for filename in expectedFilemod:
-            with open(filename, 'w'):
-                pass
+    for filename in expectedFilemod:
+        with open(filename, 'w'):
+            pass
 
-            os.chmod(filename, 0o400)
+        os.chmod(filename, 0o400)
 
-        setRightsOnSSHDirectory(userId, groupId, path=sshDir)
+    setRightsOnSSHDirectory(userId, groupId, path=sshDir)
 
-        for filename, mod in expectedFilemod.items():
-            assert os.path.exists(filename)
+    for filename, mod in expectedFilemod.items():
+        assert os.path.exists(filename)
 
-            assert getMod(filename) == mod
+        assert getMod(filename) == mod
 
-            stats = os.stat(filename)
-            # The following checks are not that good yet...
-            # ... but make sure the files are still accessible.
-            assert stats.st_gid == groupId
-            assert stats.st_uid == userId
+        stats = os.stat(filename)
+        # The following checks are not that good yet...
+        # ... but make sure the files are still accessible.
+        assert stats.st_gid == groupId
+        assert stats.st_uid == userId
 
 
 def getMod(path):
@@ -387,15 +386,14 @@ def getMod(path):
     return os.stat(path).st_mode & 0o777
 
 
-def testSettingRightsOnFile():
-    with workInTemporaryDirectory() as tempDir:
-        filePath = os.path.join(tempDir, 'foobar')
-        with open(filePath, 'w'):
-            pass
+def testSettingRightsOnFile(tempDir):
+    filePath = os.path.join(tempDir, 'foobar')
+    with open(filePath, 'w'):
+        pass
 
-        os.chmod(filePath, 0o000)
-        assert getMod(filePath) == 0o000
+    os.chmod(filePath, 0o000)
+    assert getMod(filePath) == 0o000
 
-        setRightsOnFile(filePath, 0o777)
+    setRightsOnFile(filePath, 0o777)
 
-        assert getMod(filePath) == 0o777
+    assert getMod(filePath) == 0o777

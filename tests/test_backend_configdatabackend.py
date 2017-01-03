@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2015-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2015-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -30,7 +29,7 @@ import os
 import OPSI.Backend.Backend
 from OPSI.Types import BackendBadValueError
 
-from .helpers import mock, workInTemporaryDirectory
+from .helpers import mock
 
 import pytest
 
@@ -41,10 +40,9 @@ def logBackend(patchLogDir):
 
 
 @pytest.fixture
-def patchLogDir():
-	with workInTemporaryDirectory() as tempDir:
-		with mock.patch('OPSI.Backend.Backend.LOG_DIR', tempDir):
-			yield tempDir
+def patchLogDir(tempDir):
+	with mock.patch('OPSI.Backend.Backend.LOG_DIR', tempDir):
+		yield tempDir
 
 
 def testReadingLogFailsIfTypeUnknown(logBackend):

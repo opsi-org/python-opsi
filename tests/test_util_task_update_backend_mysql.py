@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2016 uib GmbH <info@uib.de>
+# Copyright (C) 2016-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -35,7 +34,6 @@ from OPSI.Util.Task.UpdateBackend.MySQL import (disableForeignKeyChecks,
 from OPSI.Util.Task.ConfigureBackend import updateConfigFile
 
 from .Backends.MySQL import MySQLconfiguration
-from .helpers import workInTemporaryDirectory
 
 import pytest
 
@@ -66,15 +64,14 @@ def mysqlBackendConfig():
 
 
 @pytest.fixture
-def mySQLBackendConfigFile(mysqlBackendConfig):
-    with workInTemporaryDirectory() as tempDir:
-        configFile = os.path.join(tempDir, 'asdf')
-        with open(configFile, 'w'):
-            pass
+def mySQLBackendConfigFile(mysqlBackendConfig, tempDir):
+    configFile = os.path.join(tempDir, 'asdf')
+    with open(configFile, 'w'):
+        pass
 
-        updateConfigFile(configFile, mysqlBackendConfig)
+    updateConfigFile(configFile, mysqlBackendConfig)
 
-        yield configFile
+    yield configFile
 
 
 def testCorrectingLicenseOnClientLicenseKeyLength(mysqlBackendConfig, mySQLBackendConfigFile):

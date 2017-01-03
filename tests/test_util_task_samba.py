@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2015-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2015-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -32,8 +32,6 @@ import pytest
 
 import OPSI.Util.Task.Samba as Samba
 
-from .helpers import workInTemporaryDirectory
-
 
 @pytest.mark.parametrize("emptyoutput", [None, []])
 def testCheckForSambaVersionWithoutSMBD(emptyoutput):
@@ -52,18 +50,16 @@ def testCheckForSamba4DependsOnVersion(versionString, isSamba4):
 			assert Samba.isSamba4() == isSamba4
 
 
-def testReadingEmptySambaConfig():
-
-	with workInTemporaryDirectory() as tempDir:
-		PathToSmbConf = os.path.join(tempDir, 'SMB_CONF')
-		with open(PathToSmbConf, 'w'):
-			pass
-		result = Samba._readConfig(PathToSmbConf)
+def testReadingEmptySambaConfig(tempDir):
+	PathToSmbConf = os.path.join(tempDir, 'SMB_CONF')
+	with open(PathToSmbConf, 'w'):
+		pass
+	result = Samba._readConfig(PathToSmbConf)
 
 	assert [] == result
 
 
-def testReadingSambaConfig():
+def testReadingSambaConfig(tempDir):
 	config = [
 		u"[opt_pcbin]\n",
 		u"[opsi_depot]\n",
@@ -73,13 +69,12 @@ def testReadingSambaConfig():
 		u"[opsi_repository]\n",
 	]
 
-	with workInTemporaryDirectory() as tempDir:
-		PathToSmbConf = os.path.join(tempDir, 'SMB_CONF')
-		with open(PathToSmbConf, 'w') as fakeSambaConfig:
-			for line in config:
-				fakeSambaConfig.write(line)
+	PathToSmbConf = os.path.join(tempDir, 'SMB_CONF')
+	with open(PathToSmbConf, 'w') as fakeSambaConfig:
+		for line in config:
+			fakeSambaConfig.write(line)
 
-		result = Samba._readConfig(PathToSmbConf)
+	result = Samba._readConfig(PathToSmbConf)
 
 	assert config == result
 
@@ -295,20 +290,19 @@ def testProcessConfigAddsMissingRepositoryShare():
 	assert pathFound, "Missing 'path' in 'opsi_repository'"
 
 
-def testWritingEmptySambaConfig():
-	with workInTemporaryDirectory() as tempDir:
-		PathToSmbConf = os.path.join(tempDir, 'SMB_CONF')
-		with open(PathToSmbConf, 'w'):
-			pass
+def testWritingEmptySambaConfig(tempDir):
+	PathToSmbConf = os.path.join(tempDir, 'SMB_CONF')
+	with open(PathToSmbConf, 'w'):
+		pass
 
-		Samba._writeConfig([], PathToSmbConf)
-		with open(PathToSmbConf, 'r') as readConfig:
-			result = readConfig.readlines()
+	Samba._writeConfig([], PathToSmbConf)
+	with open(PathToSmbConf, 'r') as readConfig:
+		result = readConfig.readlines()
 
-		assert [] == result
+	assert [] == result
 
 
-def testWritingSambaConfig():
+def testWritingSambaConfig(tempDir):
 	config = [
 		u"[opt_pcbin]\n",
 		u"[opsi_depot]\n",
@@ -318,13 +312,12 @@ def testWritingSambaConfig():
 		u"[opsi_repository]\n",
 	]
 
-	with workInTemporaryDirectory() as tempDir:
-		PathToSmbConf = os.path.join(tempDir, 'SMB_CONF')
-		with open(PathToSmbConf, 'w'):
-			pass
+	PathToSmbConf = os.path.join(tempDir, 'SMB_CONF')
+	with open(PathToSmbConf, 'w'):
+		pass
 
-		Samba._writeConfig(config, PathToSmbConf)
-		with open(PathToSmbConf, 'r') as readConfig:
-			result = readConfig.readlines()
+	Samba._writeConfig(config, PathToSmbConf)
+	with open(PathToSmbConf, 'r') as readConfig:
+		result = readConfig.readlines()
 
-		assert config == result
+	assert config == result

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -27,7 +27,7 @@ from __future__ import absolute_import, print_function
 import os
 import pytest
 
-from .helpers import mock, createTemporaryTestfile, workInTemporaryDirectory
+from .helpers import mock, createTemporaryTestfile
 
 from OPSI.System import which
 from OPSI.Util.Task.Sudoers import (_NO_TTY_FOR_SERVICE_REQUIRED,
@@ -85,22 +85,21 @@ def testFileEndsWithNewline(temporarySudoersFile):
     assert '\n' == lastLine
 
 
-def testBackupIsCreated():
+def testBackupIsCreated(tempDir):
     def showFolderInfo():
-        print(u'Files in {0}: {1}'.format(tempFolder, filesInTemporaryFolder))
+        print(u'Files in {0}: {1}'.format(tempDir, filesInTemporaryFolder))
 
-    with workInTemporaryDirectory() as tempFolder:
-        with createTemporaryTestfile(SUDOERS_WITHOUT_ENTRIES, tempDir=tempFolder) as fileName:
-            filesInTemporaryFolder = os.listdir(tempFolder)
+    with createTemporaryTestfile(SUDOERS_WITHOUT_ENTRIES, tempDir=tempDir) as fileName:
+        filesInTemporaryFolder = os.listdir(tempDir)
 
-            showFolderInfo()
-            assert 1 == len(filesInTemporaryFolder)
+        showFolderInfo()
+        assert 1 == len(filesInTemporaryFolder)
 
-            patchSudoersFileForOpsi(sudoersFile=fileName)
+        patchSudoersFileForOpsi(sudoersFile=fileName)
 
-            filesInTemporaryFolder = os.listdir(tempFolder)
-            showFolderInfo()
-            assert 2 == len(filesInTemporaryFolder)
+        filesInTemporaryFolder = os.listdir(tempDir)
+        showFolderInfo()
+        assert 2 == len(filesInTemporaryFolder)
 
 
 def testOpsiconfdDoesNotRequireTTY(temporarySudoersFile):

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -31,7 +31,6 @@ from OPSI.Backend.Backend import Backend, ExtendedBackend
 from OPSI.Types import BackendError, BackendMissingDataError
 from OPSI.Util import randomString
 from .test_hosts import getConfigServer
-from .helpers import workInTemporaryDirectory
 
 import pytest
 
@@ -86,21 +85,20 @@ def testSettingUserCredentialsWithoutDepot(fakeCredentialsBackend):
 
 
 @pytest.fixture
-def fakeCredentialsBackend(configDataBackend):
+def fakeCredentialsBackend(configDataBackend, tempDir):
     backend = configDataBackend
     backend.host_insertObject(getConfigServer())  # Required for file backend.
 
-    with workInTemporaryDirectory() as tempDir:
-        credFile = os.path.join(tempDir, 'credentials')
-        with open(credFile, 'w'):
-            pass
+    credFile = os.path.join(tempDir, 'credentials')
+    with open(credFile, 'w'):
+        pass
 
-        originalFile = backend._opsiPasswdFile
-        backend._opsiPasswdFile = credFile
-        try:
-            yield backend
-        finally:
-            backend._opsiPasswdFile = originalFile
+    originalFile = backend._opsiPasswdFile
+    backend._opsiPasswdFile = credFile
+    try:
+        yield backend
+    finally:
+        backend._opsiPasswdFile = originalFile
 
 
 def testBackend_info(configDataBackend):

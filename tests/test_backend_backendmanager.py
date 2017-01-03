@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -29,7 +28,7 @@ import os
 
 from OPSI.Backend.BackendManager import BackendManager, ConfigDataBackend
 
-from .helpers import getLocalFQDN, workInTemporaryDirectory
+from .helpers import getLocalFQDN
 from .Backends.File import getFileBackend
 from .test_configs import getConfigs
 from .test_groups import fillBackendWithGroups
@@ -361,37 +360,36 @@ def testGettingBackendManagerWithDefaultConfig():
     assert backend.backend_info()
 
 
-def testGettingBackendManagerWithCustomConfig():
-    with workInTemporaryDirectory() as tempDir:
-        backendsDir = os.path.join(tempDir, 'backendsss')
-        bmDir = os.path.join(tempDir, 'bm')
-        dispatchConfig = os.path.join(bmDir, 'dispatch.conf')
-        extensionDir = os.path.join(bmDir, 'extension')
+def testGettingBackendManagerWithCustomConfig(tempDir):
+    backendsDir = os.path.join(tempDir, 'backendsss')
+    bmDir = os.path.join(tempDir, 'bm')
+    dispatchConfig = os.path.join(bmDir, 'dispatch.conf')
+    extensionDir = os.path.join(bmDir, 'extension')
 
-        os.mkdir(bmDir)
-        os.mkdir(extensionDir)
-        os.mkdir(backendsDir)
+    os.mkdir(bmDir)
+    os.mkdir(extensionDir)
+    os.mkdir(backendsDir)
 
-        with open(dispatchConfig, 'w') as dpconf:
-            dpconf.write("""
+    with open(dispatchConfig, 'w') as dpconf:
+        dpconf.write("""
 .* : file
 """)
 
-        kwargs = {
-            "dispatchConfigFile": dispatchConfig,
-            "backendConfigDir": backendsDir,
-            "extensionConfigDir": extensionDir,
-        }
+    kwargs = {
+        "dispatchConfigFile": dispatchConfig,
+        "backendConfigDir": backendsDir,
+        "extensionConfigDir": extensionDir,
+    }
 
-        with getFileBackend(path=tempDir):
-            # We need to make sure there is a file.conf for the backend.
-            os.link(
-                os.path.join(tempDir, 'etc', 'opsi', 'backends', 'file.conf'),
-                os.path.join(backendsDir, 'file.conf')
-            )
+    with getFileBackend(path=tempDir):
+        # We need to make sure there is a file.conf for the backend.
+        os.link(
+            os.path.join(tempDir, 'etc', 'opsi', 'backends', 'file.conf'),
+            os.path.join(backendsDir, 'file.conf')
+        )
 
-        backend = BackendManager(**kwargs)
-        assert backend.backend_info()
+    backend = BackendManager(**kwargs)
+    assert backend.backend_info()
 
 
 def testBackendManagerCanAccessExtensions(backendManager):

@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2015-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2015-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -34,8 +33,6 @@ import sys
 
 from OPSI.Application import Application, ProfileRunner, CProfileRunner
 
-from .helpers import workInTemporaryDirectory
-
 try:
 	import pstats
 except ImportError:
@@ -44,9 +41,8 @@ except ImportError:
 
 
 @pytest.fixture
-def temporaryProfileFile():
-	with workInTemporaryDirectory() as tempDir:
-		yield os.path.join(tempDir, "profile")
+def temporaryProfileFile(tempDir):
+	yield os.path.join(tempDir, "profile")
 
 
 class MockApp(object):

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2015-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2015-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -30,8 +30,6 @@ import pytest
 from OPSI.Types import RepositoryError
 from OPSI.Util.Repository import FileRepository, getRepository
 
-from .helpers import workInTemporaryDirectory
-
 
 def testGettingFileRepository():
     repo = getRepository("file:///not-here")
@@ -43,25 +41,24 @@ def testGettingRepositoryFailsOnUnsupportedURL():
         getRepository("lolnope:///asdf")
 
 
-def testListingRepository():
-    with workInTemporaryDirectory() as tempDir:
-        repo = FileRepository(url=u'file://{path}'.format(path=tempDir))
-        assert not repo.content('', recursive=True)
+def testListingRepository(tempDir):
+    repo = FileRepository(url=u'file://{path}'.format(path=tempDir))
+    assert not repo.content('', recursive=True)
 
-        os.mkdir(os.path.join(tempDir, "foobar"))
+    os.mkdir(os.path.join(tempDir, "foobar"))
 
-        assert 1 == len(repo.content('', recursive=True))
-        for content in repo.content('', recursive=True):
-            assert content == {'path': u'foobar', 'type': 'dir', 'name': u'foobar', 'size': 0}
+    assert 1 == len(repo.content('', recursive=True))
+    for content in repo.content('', recursive=True):
+        assert content == {'path': u'foobar', 'type': 'dir', 'name': u'foobar', 'size': 0}
 
-        with open(os.path.join(tempDir, "bar"), "w"):
-            pass
+    with open(os.path.join(tempDir, "bar"), "w"):
+        pass
 
-        assert 2 == len(repo.content('', recursive=True))
-        assert 2 == len(repo.listdir())
-        assert "bar" in repo.listdir()
+    assert 2 == len(repo.content('', recursive=True))
+    assert 2 == len(repo.listdir())
+    assert "bar" in repo.listdir()
 
-        # TODO: list subdir tempDir and check if file is shown
+    # TODO: list subdir tempDir and check if file is shown
 
 
 def testFileRepositoryFailsWithWrongURL():

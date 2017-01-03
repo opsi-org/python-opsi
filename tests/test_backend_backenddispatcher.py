@@ -1,8 +1,7 @@
-#!/usr/bin/env python
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -32,7 +31,6 @@ from OPSI.Backend.BackendManager import BackendDispatcher
 from OPSI.Types import BackendConfigurationError
 
 from .Backends.File import FileBackendMixin
-from .helpers import workInTemporaryDirectory
 
 import pytest
 
@@ -50,19 +48,18 @@ def testBackendCreationFailsIfConfigMissing(kwargs):
 
 
 @pytest.mark.parametrize("create_folder", [True, False], ids=["existing folder", "nonexisting folder"])
-def testLoadingDispatchConfigFailsIfBackendConfigWithoutConfigs(create_folder):
-    with workInTemporaryDirectory() as testDir:
-        backendDir = os.path.join(testDir, 'backends')
+def testLoadingDispatchConfigFailsIfBackendConfigWithoutConfigs(create_folder, tempDir):
+    backendDir = os.path.join(tempDir, 'backends')
 
-        if create_folder:
-            os.mkdir(backendDir)
-            print("Created folder: {0}".format(backendDir))
+    if create_folder:
+        os.mkdir(backendDir)
+        print("Created folder: {0}".format(backendDir))
 
-        with pytest.raises(BackendConfigurationError):
-            BackendDispatcher(
-                dispatchConfig=[[u'.*', [u'file']]],
-                backendConfigDir=backendDir
-            )
+    with pytest.raises(BackendConfigurationError):
+        BackendDispatcher(
+            dispatchConfig=[[u'.*', [u'file']]],
+            backendConfigDir=backendDir
+        )
 
 
 class BackendDispatcherWithBackendTestCase(unittest.TestCase, FileBackendMixin):

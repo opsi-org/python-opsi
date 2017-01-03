@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2014-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -31,8 +30,6 @@ import os
 import pytest
 
 from OPSI.Util.File.Archive import getFileType, Archive, PigzMixin, TarArchive
-
-from .helpers import workInTemporaryDirectory
 
 
 def testArchiveFactoryRaisesExceptionOnUnknownFormat():
@@ -91,10 +88,10 @@ def testGetFileType(filenameAndExpectedType):
     assert expectedType.lower() in getFileType(filename).lower()
 
 
-def testGetFileTypeFollowsSymlink(filenameAndExpectedType):
+def testGetFileTypeFollowsSymlink(filenameAndExpectedType, tempDir):
     expectedType, filename = filenameAndExpectedType
-    with workInTemporaryDirectory() as tempDir:
-        linkFile = os.path.join(tempDir, 'mylink')
-        os.symlink(filename, linkFile)
 
-        assert expectedType.lower() in getFileType(linkFile).lower()
+    linkFile = os.path.join(tempDir, 'mylink')
+    os.symlink(filename, linkFile)
+
+    assert expectedType.lower() in getFileType(linkFile).lower()

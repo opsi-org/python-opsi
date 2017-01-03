@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2016 uib GmbH <info@uib.de>
+# Copyright (C) 2016-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -31,40 +30,38 @@ import os
 import pytest
 from OPSI.Backend.Depotserver import DepotserverBackend
 
-from .helpers import mock, patchAddress, workInTemporaryDirectory
+from .helpers import mock, patchAddress
 from .test_util import fileAndHash  # test fixture
 
 
 @pytest.fixture
-def depotserverBackend(extendedConfigDataBackend):
+def depotserverBackend(extendedConfigDataBackend, tempDir):
     fakeFQDN = "depotserver.test.invalid"
 
     extendedConfigDataBackend.host_createOpsiDepotserver(fakeFQDN)
 
     depot = extendedConfigDataBackend.host_getObjects(id=fakeFQDN)[0]
+    depot.depotLocalUrl = 'file://' + tempDir
+    extendedConfigDataBackend.host_updateObject(depot)
 
-    with workInTemporaryDirectory() as tempDir:
-        depot.depotLocalUrl = 'file://' + tempDir
-        extendedConfigDataBackend.host_updateObject(depot)
+    for g in grp.getgrall():
+        if g.gr_gid == os.getgid():
+            groupData = grp.getgrnam(g.gr_name)
+            break
+    else:
+        pytest.skip("Unable to get group data for patching.")
 
-        for g in grp.getgrall():
-            if g.gr_gid == os.getgid():
-                groupData = grp.getgrnam(g.gr_name)
-                break
-        else:
-            pytest.skip("Unable to get group data for patching.")
+    for u in pwd.getpwall():
+        if u.pw_uid == os.getuid():
+            userData = pwd.getpwnam(u.pw_name)
+            break
+    else:
+        pytest.skip("Unable to get user data for mocking.")
 
-        for u in pwd.getpwall():
-            if u.pw_uid == os.getuid():
-                userData = pwd.getpwnam(u.pw_name)
-                break
-        else:
-            pytest.skip("Unable to get user data for mocking.")
-
-        with patchAddress(fqdn=fakeFQDN):
-            with mock.patch('OPSI.Util.Product.grp.getgrnam', lambda x: groupData):
-                with mock.patch('OPSI.Util.Product.pwd.getpwnam', lambda x: userData):
-                    yield DepotserverBackend(extendedConfigDataBackend)
+    with patchAddress(fqdn=fakeFQDN):
+        with mock.patch('OPSI.Util.Product.grp.getgrnam', lambda x: groupData):
+            with mock.patch('OPSI.Util.Product.pwd.getpwnam', lambda x: userData):
+                yield DepotserverBackend(extendedConfigDataBackend)
 
 
 @pytest.mark.requiresModulesFile  # because of SQLite...
