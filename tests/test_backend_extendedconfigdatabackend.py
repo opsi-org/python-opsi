@@ -409,7 +409,17 @@ def testGetIdentsWithWildcardFilter(extendedConfigDataBackend):
     assert 'client100.test.invalid' in ids
 
 
-def testBackend_getInterface(extendedConfigDataBackend):
+@pytest.mark.parametrize("methodSignature", (
+    {'name': 'backend_getInterface', 'args': ['self'], 'params': [], 'defaults': None, 'varargs': None, 'keywords': None},
+    {'name': 'backend_getOptions', 'args': ['self'], 'params': [], 'defaults': None, 'varargs': None, 'keywords': None},
+    {'name': 'backend_info', 'args': ['self'], 'params': [], 'defaults': None, 'varargs': None, 'keywords': None},
+    {'name': 'configState_getObjects', 'args': ['self', 'attributes'], 'params': ['*attributes', '**filter'], 'defaults': ([],), 'varargs': None, 'keywords': 'filter'},
+    {'name': 'config_getIdents', 'args': ['self', 'returnType'], 'params': ['*returnType', '**filter'], 'defaults': ('unicode',), 'varargs': None, 'keywords': 'filter'},
+    {'name': 'host_getObjects', 'args': ['self', 'attributes'], 'params': ['*attributes', '**filter'], 'defaults': ([],), 'varargs': None, 'keywords': 'filter'},
+    {'name': 'productOnClient_getObjects', 'args': ['self', 'attributes'], 'params': ['*attributes', '**filter'], 'defaults': ([],), 'varargs': None, 'keywords': 'filter'},
+    {'name': 'productPropertyState_getObjects', 'args': ['self', 'attributes'], 'params': ['*attributes', '**filter'], 'defaults': ([],), 'varargs': None, 'keywords': 'filter'},
+))
+def testBackend_getInterface(extendedConfigDataBackend, methodSignature):
     """
     Testing the behaviour of backend_getInterface.
 
@@ -425,39 +435,12 @@ def testBackend_getInterface(extendedConfigDataBackend):
         except AttributeError:
             pass
 
-    expected = [
-        {'name': 'backend_getInterface', 'args': ['self'], 'params': [], 'defaults': None, 'varargs': None, 'keywords': None},
-        {'name': 'backend_getOptions', 'args': ['self'], 'params': [], 'defaults': None, 'varargs': None, 'keywords': None},
-        {'name': 'backend_info', 'args': ['self'], 'params': [], 'defaults': None, 'varargs': None, 'keywords': None},
-        {'name': 'configState_getObjects', 'args': ['self', 'attributes'], 'params': ['*attributes', '**filter'], 'defaults': ([],), 'varargs': None, 'keywords': 'filter'},
-        {'name': 'config_getIdents', 'args': ['self', 'returnType'], 'params': ['*returnType', '**filter'], 'defaults': ('unicode',), 'varargs': None, 'keywords': 'filter'},
-        {'name': 'host_getObjects', 'args': ['self', 'attributes'], 'params': ['*attributes', '**filter'], 'defaults': ([],), 'varargs': None, 'keywords': 'filter'},
-        {'name': 'productOnClient_getObjects', 'args': ['self', 'attributes'], 'params': ['*attributes', '**filter'], 'defaults': ([],), 'varargs': None, 'keywords': 'filter'},
-        {'name': 'productPropertyState_getObjects', 'args': ['self', 'attributes'], 'params': ['*attributes', '**filter'], 'defaults': ([],), 'varargs': None, 'keywords': 'filter'},
-    ]
-
-    results = extendedConfigDataBackend.backend_getInterface()
-    for selection in expected:
-        for result in results:
-            if result['name'] == selection['name']:
-                print('Checking {0}'.format(selection['name']))
-                for parameter in ('args', 'params', 'defaults', 'varargs', 'keywords'):
-                    print('Now checking parameter {0!r}, expecting {1!r}'.format(parameter, selection[parameter]))
-                    singleResult = result[parameter]
-                    if isinstance(singleResult, (list, tuple)):
-                        # We do check the content of the result
-                        # because JSONRPC-Backends can only work
-                        # with JSON and therefore not with tuples
-                        assert len(singleResult) == len(selection[parameter])
-
-                        for exp, res in izip(singleResult, selection[parameter]):
-                            assert exp == res
-                    else:
-                        assert singleResult == selection[parameter]
-
-                break  # We found what we are looking for.
-        else:
-            pytest.fail("Expected method {0!r} not found".format(selection['name']))
+    for result in extendedConfigDataBackend.backend_getInterface():
+        if result['name'] == methodSignature['name']:
+            assert result == methodSignature
+            break
+    else:
+        pytest.fail("Expected method {0!r} not found".format(methodSignature['name']))
 
 
 @pytest.mark.requiresModulesFile
