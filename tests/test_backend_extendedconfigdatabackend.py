@@ -398,28 +398,8 @@ def testGettingIdentsDoesNotRaiseAnException(extendedConfigDataBackend, objectTy
 
 
 def testGetIdentsWithWildcardFilter(extendedConfigDataBackend):
-    extendedConfigDataBackend.host_createOpsiDepotserver(
-        id='depot100.test.invalid',
-        opsiHostKey='123456789012345678901234567890aa',
-        depotLocalUrl='file:///opt/pcbin/install',
-        depotRemoteUrl='smb://depot3.uib.local/opt_pcbin/install',
-        repositoryLocalUrl='file:///var/lib/opsi/products',
-        repositoryRemoteUrl='webdavs://depot3.uib.local:4447/products',
-        description='A depot',
-        notes='Depot 100',
-        hardwareAddress=None,
-        ipAddress=None,
-        networkAddress='192.168.100.0/24',
-        maxBandwidth=0)
-    extendedConfigDataBackend.host_createOpsiClient(
-        id='client100.test.invalid',
-        opsiHostKey=None,
-        description='Client 100',
-        notes='No notes',
-        hardwareAddress='00:00:01:01:02:02',
-        ipAddress='192.168.0.200',
-        created=None,
-        lastSeen=None)
+    extendedConfigDataBackend.host_createOpsiDepotserver(id='depot100.test.invalid')
+    extendedConfigDataBackend.host_createOpsiClient(id='client100.test.invalid')
     clients = getClients()
     extendedConfigDataBackend.host_createObjects(clients)
 
