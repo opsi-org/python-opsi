@@ -376,18 +376,22 @@ def test_ldapSearchFilter(extendedConfigDataBackend):
     'productPropertyState',
 ))
 @pytest.mark.requiresModulesFile  # because of SQL / fillBackend...
-def test_gettingIdentsDoesNotRaiseAnException(extendedConfigDataBackend, objectType, returnType, klass):
+def testGettingIdentsDoesNotRaiseAnException(extendedConfigDataBackend, objectType, returnType, klass):
     fillBackend(extendedConfigDataBackend)
 
     methodOptions = {}
     if returnType is not None:
         methodOptions['returnType'] = returnType
 
+    getObjects = getattr(extendedConfigDataBackend, objectType + '_getObjects')
+    objectCount = len(getObjects())
+
     methodName = objectType + '_getIdents'
     method = getattr(extendedConfigDataBackend, methodName)
 
     result = method(**methodOptions)
     assert result
+    assert objectCount == len(result)
 
     for obj in result:
         assert isinstance(obj, klass)
