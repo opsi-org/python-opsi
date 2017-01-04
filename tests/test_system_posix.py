@@ -243,7 +243,6 @@ def testReadingPartitionTableOnHPProliantDisksTest():
 	with mock.patch('OPSI.System.Posix.execute', mock.Mock(return_value=outputFromSfdiskGeometry)):
 		with mock.patch('OPSI.System.Posix.isXenialSfdiskVersion', mock.Mock(return_value=True)):
 			with mock.patch('os.path.exists', mock.Mock(return_value=True)):
-				# Making sure that we do not run into a timeout.
 				d._parsePartitionTable(outputFromSfdiskListing)
 
 		assert '/fakedev/cciss/c0d0' == d.device
@@ -317,7 +316,6 @@ def testReadingPartitionTableOnHPProliantDisksWithOldSfdiskVersion():
 
 	with mock.patch('OPSI.System.Posix.isXenialSfdiskVersion', mock.Mock(return_value=False)):
 		with mock.patch('os.path.exists', mock.Mock(return_value=True)):
-			# Making sure that we do not run into a timeout.
 			d._parsePartitionTable(outputFromSfdiskListing)
 
 	assert '/fakedev/cciss/c0d0' == d.device
