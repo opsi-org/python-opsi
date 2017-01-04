@@ -367,6 +367,7 @@ def test_ldapSearchFilter(extendedConfigDataBackend):
 @pytest.mark.parametrize("returnType, klass", ((None, object), ('tuple', tuple), ('list', list), ('dict', dict)))
 @pytest.mark.parametrize("objectType", (
     'config',
+    'host',
     'group',
     'objectToGroup',
     'product',
