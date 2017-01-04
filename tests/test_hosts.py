@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -25,8 +24,12 @@ Testing the functionality of working with hosts.
 
 from __future__ import absolute_import
 
+import itertools
 import socket
+
 from OPSI.Object import OpsiClient, OpsiConfigserver, OpsiDepotserver
+
+import pytest
 
 
 def getClients():
@@ -339,76 +342,38 @@ def testDeletingAllHosts(extendedConfigDataBackend):
     assert len(hosts) <= 1
 
 
-def testGettingHostIdents(extendedConfigDataBackend):
-    clients = getClients()
+def testHost_GetIdents(extendedConfigDataBackend):
     configserver1 = getConfigServer()
     depots = getDepotServers()
+    clients = getClients()
 
-    extendedConfigDataBackend.host_createObjects(clients)
-    extendedConfigDataBackend.host_createObjects(depots)
     extendedConfigDataBackend.host_createObjects(configserver1)
-    extendedConfigDataBackend.host_createOpsiClient(
-        id='client100.test.invalid',
-        opsiHostKey=None,
-        description='Client 100',
-        notes='No notes',
-        hardwareAddress='00:00:01:01:02:02',
-        ipAddress='192.168.0.200',
-        created=None,
-        lastSeen=None
-    )
-    extendedConfigDataBackend.host_createOpsiDepotserver(
-        id='depot100.test.invalid',
-        opsiHostKey='123456789012345678901234567890aa',
-        depotLocalUrl='file:///opt/pcbin/install',
-        depotRemoteUrl='smb://depot3.uib.local/opt_pcbin/install',
-        repositoryLocalUrl='file:///var/lib/opsi/products',
-        repositoryRemoteUrl='webdavs://depot3.uib.local:4447/products',
-        description='A depot',
-        notes='Depot 100',
-        hardwareAddress=None,
-        ipAddress=None,
-        networkAddress='192.168.100.0/24',
-        maxBandwidth=0
-    )
+    extendedConfigDataBackend.host_createObjects(depots)
+    extendedConfigDataBackend.host_createObjects(clients)
+    extendedConfigDataBackend.host_createOpsiClient(id='client100.test.invalid')
+    extendedConfigDataBackend.host_createOpsiDepotserver(id='depot100.test.invalid')
 
-    selfIdents = []
-    for host in clients:
-        selfIdents.append(host.getIdent(returnType='dict'))
-    for host in depots:
-        selfIdents.append(host.getIdent(returnType='dict'))
-    selfIdents.append(configserver1.getIdent(returnType='dict'))
-
-    selfIdents.append({'id': 'depot100.test.invalid'})
-    selfIdents.append({'id': 'client100.test.invalid'})
-
-    # TODO: split this into multiple tests
+    knownIdents = [host.getIdent(returnType='dict') for host in itertools.chain(clients, depots, [configserver1])]
+    knownIdents.append({'id': 'depot100.test.invalid'})
+    knownIdents.append({'id': 'client100.test.invalid'})
+    knownIdents = set(selfIdent['id'] for selfIdent in knownIdents)
 
     ids = extendedConfigDataBackend.host_getIdents()
-    assert len(ids) == len(
-        selfIdents), u"got: '%s', expected: '%s'" % (ids, len(selfIdents))
+    assert len(ids) == len(knownIdents)
     for ident in ids:
-        assert any(ident == selfIdent['id'] for selfIdent in selfIdents), u"'%s' not in '%s'" % (ident, selfIdents)
-
-    ids = extendedConfigDataBackend.host_getIdents(id='*100*')
-    assert len(ids) == 2, u"got: '%s', expected: '%s'" % (ids, 2)
-    for ident in ids:
-        assert any(ident == selfIdent['id'] for selfIdent in selfIdents), u"'%s' not in '%s'" % (ident, selfIdents)
+        assert ident in knownIdents
 
     ids = extendedConfigDataBackend.host_getIdents(returnType='tuple')
-    assert len(ids) == len(
-        selfIdents), u"got: '%s', expected: '%s'" % (ids, len(selfIdents))
+    assert len(ids) == len(knownIdents)
     for ident in ids:
-        assert any(ident[0] == selfIdent['id'] for selfIdent in selfIdents), u"'%s' not in '%s'" % (ident, selfIdents)
+        assert ident[0] in knownIdents
 
     ids = extendedConfigDataBackend.host_getIdents(returnType='list')
-    assert len(ids) == len(
-        selfIdents), u"got: '%s', expected: '%s'" % (ids, len(selfIdents))
+    assert len(ids) == len(knownIdents)
     for ident in ids:
-        assert any(ident[0] == selfIdent['id'] for selfIdent in selfIdents), u"'%s' not in '%s'" % (ident, selfIdents)
+        assert ident[0] in knownIdents
 
     ids = extendedConfigDataBackend.host_getIdents(returnType='dict')
-    assert len(ids) == len(
-        selfIdents), u"got: '%s', expected: '%s'" % (ids, len(selfIdents))
+    assert len(ids) == len(knownIdents)
     for ident in ids:
-        assert any(ident['id'] == selfIdent['id'] for selfIdent in selfIdents), u"'%s' not in '%s'" % (ident, selfIdents)
+        assert ident['id'] in knownIdents
