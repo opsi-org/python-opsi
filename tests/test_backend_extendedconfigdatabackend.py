@@ -257,7 +257,7 @@ def testHost_createClient(extendedConfigDataBackend):
     assert client.lastSeen
 
 
-def testHost_getIdents(extendedConfigDataBackend):
+def testConfigState_getIdents(extendedConfigDataBackend):
     extendedConfigDataBackend.host_createOpsiDepotserver(
         id='depot100.test.invalid',
         opsiHostKey='123456789012345678901234567890aa',
