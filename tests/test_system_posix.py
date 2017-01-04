@@ -607,31 +607,6 @@ class GetSambaServiceNameTestCase(unittest.TestCase):
 			Posix.getServiceNames(_serviceStatusOutput=output)
 		)
 
-	def testParsingOpenSuse131(self):
-		output = [
-			'getty@tty1.service                                                           loaded active running Getty on tty1',
-			'lvm2-lvmetad.service                                                         loaded active running LVM2 metadata daemon',
-			'rc-local.service                                                             loaded active exited  /etc/init.d/boot.local Compatibility',
-			'SuSEfirewall2.service                                                        loaded active exited  SuSEfirewall2 phase 2',
-			'SuSEfirewall2_init.service                                                   loaded active exited  SuSEfirewall2 phase 1',
-			'systemd-fsck@dev-disk-by\x2did-ata\x2dQEMU_HARDDISK_QM00005\x2dpart1.service loaded active exited  File System Check on /dev/disk/by-id/ata-QEMU_HARDDISK_QM00005-part1',
-			'systemd-random-seed.service                                                  loaded active exited  Load/Save Random Seed',
-			'user@0.service                                                               loaded active running User Manager for 0',
-			'user@993.service                                                             loaded active running User Manager for 993',
-		]
-
-		self.assertEquals(
-			set(
-				[
-					"getty@tty1", "lvm2-lvmetad", "rc-local", "SuSEfirewall2",
-					"SuSEfirewall2_init",
-					"systemd-fsck@dev-disk-by\x2did-ata\x2dQEMU_HARDDISK_QM00005\x2dpart1",
-					"systemd-random-seed", "user@0", "user@993"
-				]
-			),
-			Posix.getServiceNames(_serviceStatusOutput=output)
-		)
-
 
 def testParsingSystemdOutputFromCentOS7():
 	output = [
