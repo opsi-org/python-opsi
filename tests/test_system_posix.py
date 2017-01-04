@@ -415,7 +415,7 @@ def testReadingPartitionTableFromOldSfdiskVersion():
 	assert 63 == d.sectors
 	assert 8225280 == d.bytesPerCylinder
 
-	self.assertTrue(len(d.partitions) > 0)
+	assert len(d.partitions) > 0
 
 	outputFromSecondSfdiskListing = [
 		"",
@@ -431,12 +431,10 @@ def testReadingPartitionTableFromOldSfdiskVersion():
 	with mock.patch('OPSI.System.Posix.isXenialSfdiskVersion', mock.Mock(return_value=False)):
 		d._parseSectorData(outputFromSecondSfdiskListing)
 
-	self.assertTrue(len(d.partitions) > 0, "We should have partitions even after the second parsing.")
-
 	assert 512 == d.bytesPerSector
 	assert 78165360 == d.totalSectors
-
-	self.assertTrue(4, len(d.partitions))
+	assert len(d.partitions) > 0
+	assert 4 == len(d.partitions)
 
 	expected = {
 		'fs': u'ntfs',
