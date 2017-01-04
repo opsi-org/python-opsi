@@ -432,7 +432,7 @@ def testReadingPartitionTableFromOldSfdiskVersion():
 	assert 512 == d.bytesPerSector
 	assert 78165360 == d.totalSectors
 	assert len(d.partitions) > 0
-	assert 4 == len(d.partitions)
+	assert 2 == len(d.partitions)
 
 	expected = {
 		'fs': u'ntfs',
