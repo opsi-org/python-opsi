@@ -2354,7 +2354,7 @@ class SQLBackend(ConfigDataBackend):
 
 		hwIdswhere = u' or '.join(
 			[
-				u'`hardware_id` = {0}'.format(hardwareId) for hardwareId in \
+				u'`hardware_id` = {0}'.format(hardwareId) for hardwareId in
 				self._getHardwareIds(auditHardware)
 			]
 		)
