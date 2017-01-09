@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2006-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -67,8 +67,7 @@ class ProductPackageFile(object):
 		if not os.path.exists(self.packageFile):
 			raise Exception(u"Package file '%s' not found" % self.packageFile)
 
-		if not tempDir:
-			tempDir = DEFAULT_TMP_DIR
+		tempDir = tempDir or DEFAULT_TMP_DIR
 		self.tempDir = os.path.abspath(forceFilename(tempDir))
 
 		if not os.path.isdir(self.tempDir):
@@ -445,8 +444,7 @@ class ProductPackageSource(object):
 		if not os.path.isdir(self.packageSourceDir):
 			raise Exception(u"Package source directory '%s' not found" % self.packageSourceDir)
 
-		if not tempDir:
-			tempDir = DEFAULT_TMP_DIR
+		tempDir = tempDir or DEFAULT_TMP_DIR
 		self.tempDir = os.path.abspath(forceFilename(tempDir))
 		if not os.path.isdir(self.tempDir):
 			raise Exception(u"Temporary directory '%s' not found" % self.tempDir)
