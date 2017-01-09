@@ -52,9 +52,9 @@ def testGettingSSLContextWithListOfAcceptedCiphers(tempCertPath, cipherList):
 
 def testCreatingSSLContextRequiresCertificatesToBePresent(tempCertPath):
     with pytest.raises(OSError):
-        sslContext = SSLContext(tempCertPath, None)
+        sslContext = SSLContext(tempCertPath, '')
         sslContext.getContext()
 
     with pytest.raises(OSError):
-        sslContext = SSLContext(None, tempCertPath)
+        sslContext = SSLContext('', tempCertPath)
         sslContext.getContext()
