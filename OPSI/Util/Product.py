@@ -509,11 +509,11 @@ class ProductPackageSource(object):
 			shutil.rmtree(self.tmpPackDir)
 		os.mkdir(self.tmpPackDir)
 
-		try:
-			archives = []
-			diskusage = 0
-			dirs = [u'CLIENT_DATA', u'SERVER_DATA', u'OPSI']
+		archives = []
+		diskusage = 0
+		dirs = [u'CLIENT_DATA', u'SERVER_DATA', u'OPSI']
 
+		try:
 			if self.customName:
 				found = False
 				for i, currentDir in enumerate(dirs):
