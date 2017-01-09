@@ -2341,16 +2341,16 @@ class SQLBackend(ConfigDataBackend):
 
 		del auditHardwareOnHost['hardwareClass']
 
-		filter = {}
+		hardwareFilter = {}
 		for (attribute, value) in auditHardwareOnHost.iteritems():
 			if value is None:
-				filter[attribute] = [None]
+				hardwareFilter[attribute] = [None]
 			elif isinstance(value, unicode):
-				filter[attribute] = self._sql.escapeAsterisk(value)
+				hardwareFilter[attribute] = self._sql.escapeAsterisk(value)
 			else:
-				filter[attribute] = value
+				hardwareFilter[attribute] = value
 
-		where = self._filterToSql(filter)
+		where = self._filterToSql(hardwareFilter)
 
 		hwIdswhere = u' or '.join(
 			[
