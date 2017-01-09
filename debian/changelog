@@ -4,8 +4,10 @@ python-opsi (4.1.1.2-1) UNRELEASED; urgency=medium
   * Removed various obsolete modules.
   * OPSI.Util.Task.Rights: removed opsi-deploy-client-agent-default and
     opsi-deploy-client-agent-old from the list of known executables.
+  * PackageControlFile: no more support for opsi3 compatible packages.
+  * Removed support for incremental packages.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 13 Dec 2016 15:40:21 +0100
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 09 Jan 2017 15:38:26 +0100
 
 python-opsi (4.1.1.1-1) experimental; urgency=medium
 
