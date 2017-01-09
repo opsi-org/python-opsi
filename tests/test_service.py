@@ -40,7 +40,7 @@ def testGettingSSLContext(tempCertPath):
 
 
 @pytest.mark.parametrize("cipherList", (
-    None
+    None,
 ))
 def testGettingSSLContextWithListOfAcceptedCiphers(tempCertPath, cipherList):
     sslContext = SSLContext(tempCertPath, tempCertPath, cipherList)
