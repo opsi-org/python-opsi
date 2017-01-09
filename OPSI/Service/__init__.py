@@ -35,9 +35,10 @@ logger = Logger()
 
 
 class SSLContext(object):
-	def __init__(self, sslServerKeyFile, sslServerCertFile):
+	def __init__(self, sslServerKeyFile, sslServerCertFile, acceptedCiphers=None):
 		self._sslServerKeyFile = sslServerKeyFile
 		self._sslServerCertFile = sslServerCertFile
+		self._acceptedCiphers = acceptedCiphers
 
 	def getContext(self):
 		''' Create an SSL context. '''
@@ -52,6 +53,10 @@ class SSLContext(object):
 		context = SSL.Context(SSL.SSLv23_METHOD)
 		context.use_privatekey_file(self._sslServerKeyFile)
 		context.use_certificate_file(self._sslServerCertFile)
+
+		if self._acceptedCiphers:
+			context.set_cipher_list(self._acceptedCiphers)
+
 		return context
 
 

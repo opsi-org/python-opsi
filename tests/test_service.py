@@ -36,3 +36,14 @@ def testGettingSSLContext(tempCertPath):
     context = sslContext.getContext()
 
     assert isinstance(context, Context)
+
+
+@pytest.mark.parametrize("cipherList", (
+    None
+))
+def testGettingSSLContextWithListOfAcceptedCiphers(tempCertPath, cipherList):
+    sslContext = SSLContext(tempCertPath, tempCertPath, cipherList)
+    context = sslContext.getContext()
+
+    if cipherList:
+        assert context.get_cipher_list() == cipherList
