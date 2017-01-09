@@ -48,3 +48,13 @@ def testGettingSSLContextWithListOfAcceptedCiphers(tempCertPath, cipherList):
 
     if cipherList:
         assert context.get_cipher_list() == cipherList
+
+
+def testCreatingSSLContextRequiresCertificatesToBePresent(tempCertPath):
+    with pytest.raises(OSError):
+        sslContext = SSLContext(tempCertPath, None)
+        sslContext.getContext()
+
+    with pytest.raises(OSError):
+        sslContext = SSLContext(None, tempCertPath)
+        sslContext.getContext()
