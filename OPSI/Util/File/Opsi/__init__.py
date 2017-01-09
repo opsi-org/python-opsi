@@ -767,7 +767,8 @@ class PackageControlFile(TextFile):
 		for packageDependency in forceDictList(packageDependencies):
 			if not packageDependency.get('package'):
 				raise ValueError(u"No package given: %s" % packageDependency)
-			if packageDependency.get('version') in (None, ''):
+
+			if not packageDependency.get('version'):
 				packageDependency['version'] = None
 				packageDependency['condition'] = None
 			else:
