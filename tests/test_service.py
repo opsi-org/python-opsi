@@ -24,6 +24,7 @@ Testing service components.
 
 from __future__ import absolute_import
 
+import pytest
 from OpenSSL.SSL import Context
 
 from OPSI.Service import SSLContext
