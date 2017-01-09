@@ -774,8 +774,9 @@ class PackageControlFile(TextFile):
 			else:
 				if not packageDependency.get('condition'):
 					packageDependency['condition'] = u'='
-				if not packageDependency['condition'] in (u'=', u'<', u'<=', u'>', u'>='):
-					raise Exception(u"Bad condition string '%s' in package dependency" % packageDependency['condition'])
+				if packageDependency['condition'] not in (u'=', u'<', u'<=', u'>', u'>='):
+					raise ValueError(u"Bad condition string '%s' in package dependency" % packageDependency['condition'])
+
 			self._packageDependencies.append(packageDependency)
 
 	@requiresParsing
