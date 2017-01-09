@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2010-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2010-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -222,13 +222,10 @@ class DepotserverPackageManager(object):
 				for line in ppf.runPreinst(({'DEPOT_ID': depotId})):
 					logger.info(u"[preinst] {0}", line)
 
-				logger.notice(u"Unpacking package files")
-				if ppf.packageControlFile.getIncrementalPackage():
-					logger.info(u"Incremental package, not deleting old client-data files")
-				else:
-					logger.info(u"Deleting old client-data dir")
-					ppf.deleteProductClientDataDir()
+				logger.info(u"Deleting old client-data dir")
+				ppf.deleteProductClientDataDir()
 
+				logger.notice(u"Unpacking package files")
 				ppf.extractData()
 
 				logger.info(u"Updating product dependencies of product %s" % product)

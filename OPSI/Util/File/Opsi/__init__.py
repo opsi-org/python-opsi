@@ -4,7 +4,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2006-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -386,7 +386,6 @@ class PackageControlFile(TextFile):
 		self._productDependencies = []
 		self._productProperties = []
 		self._packageDependencies = []
-		self._incrementalPackage = False
 
 	def parse(self, lines=None):
 		if lines:
@@ -400,7 +399,6 @@ class PackageControlFile(TextFile):
 		self._productDependencies = []
 		self._productProperties = []
 		self._packageDependencies = []
-		self._incrementalPackage = False
 
 		productAttributes = set([
 			'id', 'type', 'name', 'description', 'advice', 'version',
@@ -462,14 +460,14 @@ class PackageControlFile(TextFile):
 					key = match.group(1).lower()
 					value = match.group(2).strip()
 
-			if sectionType == 'package' and key in ('version', 'depends', 'incremental'):
+			if sectionType == 'package':
 				option = key
 				if key == 'version':
 					value = forceUnicodeLower(value)
 				elif key == 'depends':
 					value = forceUnicodeLower(value)
-				elif key == 'incremental':
-					value = forceBool(value)
+				else:  # Unsupported key
+					continue
 
 			elif sectionType == 'product' and key in productAttributes:
 				option = key
@@ -638,8 +636,6 @@ class PackageControlFile(TextFile):
 					else:
 						version = None
 					self._packageDependencies.append({'package': package, 'condition': condition, 'version': version})
-			elif option == 'incremental':
-				self._incrementalPackage = forceBool(value)
 
 		# Create Product object
 		product = self._sections['product'][0]
@@ -778,13 +774,6 @@ class PackageControlFile(TextFile):
 
 			self._packageDependencies.append(packageDependency)
 
-	@requiresParsing
-	def getIncrementalPackage(self):
-		return self._incrementalPackage
-
-	def setIncrementalPackage(self, incremental):
-		self._incrementalPackage = forceBool(incremental)
-
 	def generate(self):
 		if not self._product:
 			raise Exception(u"Got no data to write")
@@ -803,7 +792,6 @@ class PackageControlFile(TextFile):
 				depends += u' (%s %s)' % (packageDependency['condition'], packageDependency['version'])
 
 		self._lines.append(u'depends: %s' % depends)
-		self._lines.append(u'incremental: %s' % self._incrementalPackage)
 		self._lines.append(u'')
 
 		self._lines.append(u'[Product]')
