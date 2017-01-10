@@ -57,7 +57,7 @@ is set.
 		'''
 		Get an SSL context.
 
-		:returntype: OpenSSL.SSL.Context
+		:rtype: OpenSSL.SSL.Context
 		'''
 
 		# Test if server certificate and key file exist.
