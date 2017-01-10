@@ -32,18 +32,11 @@ from OPSI.Service import SSLContext
 from .test_util import tempCertPath  # Fixture
 
 
-def testGettingSSLContext(tempCertPath):
-    sslContext = SSLContext(tempCertPath, tempCertPath)
-    context = sslContext.getContext()
-
-    assert isinstance(context, Context)
-
-
 @pytest.mark.parametrize("cipherList", (
     None,
     'TLSv1+HIGH:!SSLv2:RC4+MEDIUM:!aNULL:!eNULL:!3DES:@STRENGTH',
 ))
-def testGettingSSLContextWithListOfAcceptedCiphers(tempCertPath, cipherList):
+def testGettingSSLContext(tempCertPath, cipherList):
     sslContext = SSLContext(tempCertPath, tempCertPath, cipherList)
     context = sslContext.getContext()
 
