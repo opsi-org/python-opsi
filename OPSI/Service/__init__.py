@@ -55,7 +55,7 @@ is set.
 
 	def getContext(self):
 		'''
-		Create an SSL context.
+		Get an SSL context.
 
 		:returntype: OpenSSL.SSL.Context
 		'''
