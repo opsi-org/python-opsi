@@ -121,14 +121,15 @@ def getBackendMethodPrefix(klass):
 
 def decodeIdent(klass, hash):
 	try:
-		if hash['ident']:
-			if isinstance(hash['ident'], dict):
-				ident = hash['ident']
+		identFromHash = hash['ident']
+		if identFromHash:
+			if isinstance(identFromHash, dict):
+				ident = identFromHash
 			else:
-				if isinstance(hash['ident'], (str, unicode)):
-					identValues = hash['ident'].split(klass.identSeparator)
-				elif isinstance(hash['ident'], (tuple, list)):
-					identValues = hash['ident']
+				if isinstance(identFromHash, (str, unicode)):
+					identValues = identFromHash.split(klass.identSeparator)
+				elif isinstance(identFromHash, (tuple, list)):
+					identValues = identFromHash
 				else:
 					identValues = []
 
