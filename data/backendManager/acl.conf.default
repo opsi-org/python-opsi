@@ -32,6 +32,7 @@
 #    host_getObjects : sys_group(group1,attributes(!opsiHostKey))
 #       allow partial access to host objects to members of system group "group1". Members are allowed to read all object attributes except "opsiHostKey"
 
+backend_deleteBase     : sys_group(opsiadmin)
 backend_.*             : all
 hostControl.*          : sys_group(opsiadmin); opsi_depotserver
 host_get.*             : sys_group(opsiadmin); opsi_depotserver; self; opsi_client(attributes(!opsiHostKey,!description,!lastSeen,!notes,!hardwareAddress,!inventoryNumber))
