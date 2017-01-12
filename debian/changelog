@@ -1,3 +1,9 @@
+python-opsi (4.0.7.28-4) stable; urgency=medium
+
+  * Updated acl.conf to restrict access to hostControl(Safe)-methods.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 12 Jan 2017 11:21:53 +0100
+
 python-opsi (4.0.7.28-3) stable; urgency=medium
 
   * Updated translations for hwaudit.
