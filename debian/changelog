@@ -1,3 +1,9 @@
+python-opsi (4.0.7.28-5) stable; urgency=medium
+
+  * Updated acl.conf to restrict backend deletion to administrators.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 13 Jan 2017 09:48:38 +0100
+
 python-opsi (4.0.7.28-4) stable; urgency=medium
 
   * Updated acl.conf to restrict access to hostControl(Safe)-methods.
