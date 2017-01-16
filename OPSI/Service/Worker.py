@@ -262,10 +262,10 @@ class WorkerOpsi:
 		return deferred
 
 	def _getSessionHandler(self):
-		if hasattr(self.service, '_getSessionHandler'):
+		try:
 			return self.service._getSessionHandler()
-
-		return None
+		except AttributeError:  # no attribtue _getSessionHandler
+			return None
 
 	def _delayResult(self, seconds, result):
 		class DelayResult:
