@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2006-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -35,12 +35,30 @@ logger = Logger()
 
 
 class SSLContext(object):
-	def __init__(self, sslServerKeyFile, sslServerCertFile):
+	def __init__(self, sslServerKeyFile, sslServerCertFile, acceptedCiphers=''):
+		"""
+		Create a context for the usage of SSL in twisted.
+
+		:param sslServerCertFile: Path to the certificate file.
+		:type sslServerCertFile: str
+		:param sslServerKeyFile: Path to the key file.
+		:type sslServerKeyFile: str
+		:param acceptedCiphers: A string defining what ciphers should \
+be accepted. Please refer to the OpenSSL documentation on how such a \
+string should be composed. No limitation will be done if an empty value \
+is set.
+		:type acceptedCiphers: str
+		"""
 		self._sslServerKeyFile = sslServerKeyFile
 		self._sslServerCertFile = sslServerCertFile
+		self._acceptedCiphers = acceptedCiphers
 
 	def getContext(self):
-		''' Create an SSL context. '''
+		'''
+		Get an SSL context.
+
+		:rtype: OpenSSL.SSL.Context
+		'''
 
 		# Test if server certificate and key file exist.
 		if not os.path.isfile(self._sslServerKeyFile):
@@ -52,6 +70,10 @@ class SSLContext(object):
 		context = SSL.Context(SSL.SSLv23_METHOD)
 		context.use_privatekey_file(self._sslServerKeyFile)
 		context.use_certificate_file(self._sslServerCertFile)
+
+		if self._acceptedCiphers:
+			context.set_cipher_list(self._acceptedCiphers)
+
 		return context
 
 

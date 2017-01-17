@@ -117,12 +117,24 @@ class ProductPackageFile(object):
 				logger.info("Deleting client data dir '%s'" % clientDataDir)
 				removeDirectory(clientDataDir)
 
-	def install(self, clientDataDir):
+	def install(self, clientDataDir, suppressPackageContentFileGeneration=False):
+		"""
+		Install a package.
+
+		This runs the preinst-script, extracts the data, creates a
+		package content file, sets the rights on extracted files, runs
+		the postinst and removes temporary files created during the
+		installation.
+
+		Setting `suppressPackageContentFileGeneration` to `True` will
+		suppress the creation of the package content file.
+		"""
 		self.setClientDataDir(clientDataDir)
 		self.getMetaData()
 		self.runPreinst()
 		self.extractData()
-		self.createPackageContentFile()
+		if not suppressPackageContentFileGeneration:
+			self.createPackageContentFile()
 		self.setAccessRights()
 		self.runPostinst()
 		self.cleanup()
@@ -310,7 +322,6 @@ class ProductPackageFile(object):
 			return self.clientDataFiles
 
 		self.clientDataFiles = findFiles(self.getProductClientDataDir())
-		self.clientDataFiles.sort()
 		return self.clientDataFiles
 
 	def setAccessRights(self):
@@ -386,12 +397,18 @@ class ProductPackageFile(object):
 			packageContentFile = PackageContentFile(packageContentFile)
 			packageContentFile.setProductClientDataDir(productClientDataDir)
 			cdf = self.getClientDataFiles()
-			if packageContentFilename in cdf:
+			try:
+				# The package content file will be re-written and
+				# then the hash will be different so we need to remove
+				# this before the generation.
 				cdf.remove(packageContentFilename)
-			packageContentFile.setClientDataFiles(self.getClientDataFiles())
+			except ValueError:
+				pass  # not in list
+			packageContentFile.setClientDataFiles(cdf)
 			packageContentFile.generate()
-			if packageContentFilename not in self.clientDataFiles:
-				self.clientDataFiles.append(packageContentFilename)
+
+			cdf.append(packageContentFilename)
+			self.clientDataFiles = cdf
 			logger.debug(u"Finished creating package content file")
 		except Exception as e:
 			logger.logException(e)
