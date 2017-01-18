@@ -6,6 +6,7 @@ python-opsi (4.1.1.2-1) UNRELEASED; urgency=medium
     opsi-deploy-client-agent-old from the list of known executables.
   * PackageControlFile: no more support for opsi3 compatible packages.
   * Removed support for incremental packages.
+  * 70_dynamic_depot.conf: Removed unused getBytes.
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 09 Jan 2017 15:38:26 +0100
 
