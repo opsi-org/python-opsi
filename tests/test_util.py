@@ -30,9 +30,9 @@ import re
 import os
 import os.path
 import shutil
-import sys
 from collections import defaultdict
 from contextlib import contextmanager
+from itertools import combinations_with_replacement
 
 from OPSI.Object import LocalbootProduct, OpsiClient
 from OPSI.Util import (chunk, compareVersions, decryptWithPrivateKeyFromPEMFile,
@@ -47,20 +47,6 @@ from .helpers import (fakeGlobalConf, patchAddress, patchEnvironmentVariables,
 	workInTemporaryDirectory)
 
 import pytest
-
-try:
-	from itertools import combinations_with_replacement
-except ImportError:  # Python 2.6...
-	# We define our own fallback by copying what is written in the
-	# documentation at https://docs.python.org/2.7/library/itertools.html#itertools.combinations_with_replacement
-	from itertools import product
-
-	def combinations_with_replacement(iterable, r):
-		pool = tuple(iterable)
-		n = len(pool)
-		for indices in product(range(n), repeat=r):
-			if sorted(indices) == list(indices):
-				yield tuple(pool[i] for i in indices)
 
 
 @pytest.mark.parametrize("ip, network", [
@@ -647,7 +633,6 @@ def testSerialisingList():
 	assert u'["a", "b", "c", 4, 5]' == output
 
 
-@pytest.mark.skipif(sys.version_info < (2, 7), reason="Python 2.6 is unprecise with floats")
 def testSerialisingListWithFLoat():
 	inputValues = ['a', 'b', 'c', 4, 5.6]
 	output = toJson(inputValues)
@@ -661,7 +646,6 @@ def testSerialisingListInList():
 	assert u'["a", "b", "c", [4, 5, ["f"]]]' == toJson(inputValues)
 
 
-@pytest.mark.skipif(sys.version_info < (2, 7), reason="Python 2.6 is unprecise with floats")
 def testSerialisingListInListWithFloat():
 	inputValues = ['a', 'b', 'c', [4, 5.6, ['f']]]
 	assert u'["a", "b", "c", [4, 5.6, ["f"]]]' == toJson(inputValues)
@@ -672,7 +656,6 @@ def testSerialisingSetInList():
 	assert u'["a", "b", ["c"], 4, 5]' == toJson(inputValues)
 
 
-@pytest.mark.skipif(sys.version_info < (2, 7), reason="Python 2.6 is unprecise with floats")
 def testSerialisingSetInListWithFloat():
 	inputValues = ['a', 'b', set('c'), 4, 5.6]
 	assert u'["a", "b", ["c"], 4, 5.6]' == toJson(inputValues)
@@ -688,7 +671,6 @@ def testSerialisingDictsInList():
 	assert u'[{"a": "b", "c": 1}, {"a": "b", "c": 1}]' == output
 
 
-@pytest.mark.skipif(sys.version_info < (2, 7), reason="Python 2.6 is unprecise with floats")
 def testSerialisingDictsInListWithFloat():
 	inputValues = [
 		{'a': 'b', 'c': 1, 'e': 2.3},
@@ -704,10 +686,8 @@ def testSerialisingDict():
 	assert u'{"a": "b", "c": 1, "e": 2}' == toJson(inputValues)
 	assert inputValues == fromJson(toJson(inputValues))
 
-	if sys.version_info >= (2, 7):
-		# 2.6 does display 5.6 something like this: 5.599999999999991
-		inputValues = {'a': 'b', 'c': 1, 'e': 2.3}
-		assert u'{"a": "b", "c": 1, "e": 2.3}' == toJson(inputValues)
+	inputValues = {'a': 'b', 'c': 1, 'e': 2.3}
+	assert u'{"a": "b", "c": 1, "e": 2.3}' == toJson(inputValues)
 
 
 def testUnserialisableThingsFail():

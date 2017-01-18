@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2015-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2015-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -27,7 +27,6 @@ from __future__ import absolute_import
 import gzip
 import pytest
 import zlib
-from contextlib import closing  # Needed for Python 2.6
 
 try:
 	from cStringIO import StringIO
@@ -167,7 +166,7 @@ def testCompressingResponseDataWithGzip(enableRFCConformHeaders):
 
 	sdata = result.stream.read()
 
-	with closing(gzip.GzipFile(fileobj=StringIO(sdata), mode="r")) as gzipfile:
+	with gzip.GzipFile(fileobj=StringIO(sdata), mode="r") as gzipfile:
 		data = gzipfile.read()
 
 	assert 'null' == data

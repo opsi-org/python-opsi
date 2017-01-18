@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This module is part of the desktop management solution opsi
@@ -48,11 +47,6 @@ from Crypto.Cipher import Blowfish
 from hashlib import md5
 from itertools import islice
 
-try:
-	import argparse
-except ImportError:
-	import _argparse as argparse
-
 from OPSI.Logger import Logger
 from OPSI.Types import (forceBool, forceFilename, forceFqdn, forceInt,
 						forceIPAddress, forceNetworkAddress, forceUnicode)
@@ -60,7 +54,7 @@ from OPSI.Types import (forceBool, forceFilename, forceFqdn, forceInt,
 __version__ = '4.1.1'
 __all__ = [
 	'BLOWFISH_IV', 'OPSI_GLOBAL_CONF', 'PickleString',
-	'RANDOM_DEVICE', 'argparse', 'blowfishDecrypt', 'blowfishEncrypt',
+	'RANDOM_DEVICE', 'blowfishDecrypt', 'blowfishEncrypt',
 	'chunk', 'compareVersions', 'decryptWithPrivateKeyFromPEMFile',
 	'deserialize', 'encryptWithPublicKeyFromX509CertificatePEMFile',
 	'findFiles', 'formatFileSize', 'fromJson', 'generateOpsiHostKey',

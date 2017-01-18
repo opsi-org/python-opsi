@@ -7,7 +7,7 @@
 #
 Name:           python-opsi
 BuildRequires:  python-devel gettext-devel python-setuptools
-Requires:       python >= 2.6 python-twisted-web >= 8.2 python-twisted-conch >= 8.2 python-magic python-sqlalchemy iproute duplicity lshw python-ldaptor
+Requires:       python >= 2.7 python-twisted-web >= 8.2 python-twisted-conch >= 8.2 python-magic python-sqlalchemy iproute duplicity lshw python-ldaptor
 
 # Dependencies for twisted are a mess because most lack needed packages.
 # We try to avoid problems with this:
