@@ -1,11 +1,10 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This module is part of the desktop management solution opsi
 # Based on urllib3
 # (open pc server integration) http://www.opsi.org
 # Copyright (C) 2010 Andrey Petrov
-# Copyright (C) 2010-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2010-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -43,7 +42,6 @@ import socket
 import time
 import zlib
 import urlparse
-from contextlib import closing  # Needed for Python 2.6
 from contextlib import contextmanager
 from io import BytesIO
 
@@ -733,14 +731,14 @@ def gzipEncode(data, level=1):
 		data = data.encode('utf-8')
 
 	inmemoryFile = BytesIO()
-	with closing(gzip.GzipFile(fileobj=inmemoryFile, mode="w", compresslevel=level)) as gzipfile:
+	with gzip.GzipFile(fileobj=inmemoryFile, mode="w", compresslevel=level) as gzipfile:
 		gzipfile.write(data)
 
 	return inmemoryFile.getvalue()
 
 
 def gzipDecode(data):
-	with closing(gzip.GzipFile(fileobj=StringIO(data), mode="r")) as gzipfile:
+	with gzip.GzipFile(fileobj=StringIO(data), mode="r") as gzipfile:
 		uncompressedData = gzipfile.read()
 
 	return forceUnicode(uncompressedData)

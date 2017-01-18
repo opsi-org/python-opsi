@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2014-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -26,21 +25,13 @@ Helpers for testing opsi.
 import os
 import shutil
 import tempfile
+import unittest  # will be importet from other test modules!
 from contextlib import contextmanager
 
 try:
     import unittest.mock as mock
 except ImportError:
     import mock
-
-import unittest
-if 'SkipTest' not in dir(unittest):
-    try:
-        import unittest2 as unittest
-    except ImportError:
-        print("Your are missing a recent enough version of unittest. "
-              "Please install the unittest2 package.")
-        raise ImportError("Your unittest module is too old.")
 
 
 @contextmanager

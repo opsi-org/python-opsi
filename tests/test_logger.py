@@ -161,12 +161,6 @@ def testLoggingFromWarningsModule(logger):
 	assert value.startswith("[{0:d}]".format(OPSI.Logger.LOG_WARNING))
 	assert "UserWarning: usermessage" in value
 
-	if sys.version_info < (2, 7):
-		# Changed in version 2.7: DeprecationWarning is ignored by default.
-		# Source: https://docs.python.org/2.7/library/warnings.html#warning-categories
-		assert "DeprecationWarning: message" in value
-		assert "DeprecationWarning: another message" in value
-
 
 @pytest.mark.parametrize("message, logLevel", [
 	("my password", OPSI.Logger.LOG_CONFIDENTIAL),
