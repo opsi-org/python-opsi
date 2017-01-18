@@ -7,6 +7,7 @@ python-opsi (4.1.1.2-1) UNRELEASED; urgency=medium
   * PackageControlFile: no more support for opsi3 compatible packages.
   * Removed support for incremental packages.
   * Minimum required Python version is now 2.7.
+  * 70_dynamic_depot.conf: Removed unused getBytes.
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 09 Jan 2017 15:38:26 +0100
 
