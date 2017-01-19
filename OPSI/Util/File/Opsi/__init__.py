@@ -1,4 +1,3 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 # This module is part of the desktop management solution opsi
@@ -225,7 +224,7 @@ class BackendDispatchConfigFile(ConfigFile):
 		"""
 		Returns the dispatch config entries with RegEx and corresponding backends.
 
-		:returntype: [['regex', ['backend1', 'backend2',]]]
+		:returntype: [('regex', ['backend1', 'backend2', ...]),]
 		"""
 		if lines:
 			self._lines = forceUnicodeList(lines)
@@ -243,7 +242,7 @@ class BackendDispatchConfigFile(ConfigFile):
 			method = match.group(1).strip()
 			backends = [entry.strip() for entry
 						in match.group(2).strip(',').split(',')]
-			dispatch.append([method, backends])
+			dispatch.append((method, backends))
 		self._parsed = True
 
 		return dispatch
