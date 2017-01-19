@@ -76,7 +76,7 @@ class BackendDispatcherWithBackendTestCase(unittest.TestCase, FileBackendMixin):
         self.tearDownBackend()
 
     def testLoadingDispatchConfig(self):
-        dispatchConfig = [[u'.*', [u'file']]]
+        dispatchConfig = [(u'.*', (u'file', ))]
 
         dispatcher = BackendDispatcher(
             dispatchConfigFile=self._fileBackendConfig['dispatchConfig'],

@@ -73,7 +73,7 @@ this does not work
 	dispatchConfig.parse(lines=exampleConfig.split('\n'))
 
 
-def testBackendDispatchConfigFileBackendsCanBeEmpty():
+def testBackendDispatchConfigFileBackendsWillNotBeEmpty():
 	exampleConfig = '''
 no_backends_follow:\t
 empty_backends:\t, ,
@@ -85,7 +85,7 @@ empty_backends:\t, ,
 	assert 1 == len(result)
 	regex, backends = result[0]
 	assert 'empty_backends' == regex
-	assert [u''] == backends
+	assert not backends
 
 
 @pytest.fixture
