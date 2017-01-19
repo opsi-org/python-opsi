@@ -40,7 +40,7 @@ import pytest
     {'dispatchConfigfile': ''},
     {'dispatchConfigfile': 'nope'},
     {'dispatchConfig': ''},
-    {'dispatchConfig': [[u'.*', [u'file']]]},
+    {'dispatchConfig': [(u'.*', (u'file',))]},
 ])
 def testBackendCreationFailsIfConfigMissing(kwargs):
     with pytest.raises(BackendConfigurationError):
