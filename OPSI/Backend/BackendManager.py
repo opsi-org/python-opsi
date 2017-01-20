@@ -355,8 +355,11 @@ class BackendDispatcher(Backend):
 			raise BackendConfigurationError(u"Backend config dir '%s' not found" % self._backendConfigDir)
 
 		collectedBackends = set()
-		for _, backends in self._dispatchConfig:
+		for pattern, backends in self._dispatchConfig:
 			for backend in backends:
+				if not backend:
+					raise BackendConfigurationError(u"Bad dispatcher config: {0!r} has empty target backend: {1!r}".format(pattern, backends))
+
 				collectedBackends.add(backend)
 
 		for backend in collectedBackends:
