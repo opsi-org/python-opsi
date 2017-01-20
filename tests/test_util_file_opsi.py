@@ -73,7 +73,7 @@ this does not work
 	dispatchConfig.parse(lines=exampleConfig.split('\n'))
 
 
-def testBackendDispatchConfigFileBackendsWillNotBeEmpty():
+def testBackendDispatchConfigFileBackendsCanBeEmpty():
 	exampleConfig = '''
 no_backends_follow:\t
 empty_backends:\t, ,
