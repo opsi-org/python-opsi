@@ -60,6 +60,7 @@ class HostControlSafeBackend(ExtendedBackend):
 		self._resolveHostAddress = False
 		self._maxConnections = 50
 		self._broadcastAddresses = ["255.255.255.255"]
+		self._wakeOnLanTargetPort = 12287
 
 		# Parse arguments
 		for (option, value) in kwargs.items():
@@ -74,6 +75,8 @@ class HostControlSafeBackend(ExtendedBackend):
 				self._maxConnections = forceInt(value)
 			elif option == 'broadcastaddresses':
 				self._broadcastAddresses = forceUnicodeList(value)
+			elif option == 'wakeonlantargetport':
+				self._wakeOnLanTargetPort = forceInt(value)
 
 		if (self._maxConnections < 1):
 			self._maxConnections = 1
@@ -198,7 +201,7 @@ class HostControlSafeBackend(ExtendedBackend):
 					# Broadcast it to the LAN.
 					with closing(socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)) as sock:
 						sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, True)
-						sock.sendto(send_data, (broadcastAddress, 12287))
+						sock.sendto(send_data, (broadcastAddress, self._wakeOnLanTargetPort))
 				result[host.id] = {"result": "sent", "error": None}
 			except Exception as e:
 				logger.logException(e, LOG_DEBUG)
