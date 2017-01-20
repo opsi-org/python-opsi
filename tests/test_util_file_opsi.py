@@ -85,7 +85,7 @@ empty_backends:\t, ,
 	assert 1 == len(result)
 	regex, backends = result[0]
 	assert 'empty_backends' == regex
-	assert not backends
+	assert tuple() == backends
 
 
 @pytest.fixture
