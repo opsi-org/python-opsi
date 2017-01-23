@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2014-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -214,7 +214,14 @@ def testAddingUCSSpecificConfigs(extendedConfigDataBackend, runningOnUCS):
 
     assert ('clientconfig.depot.user' in configIdents) == runningOnUCS
 
-    # TODO: check the returned depot user
+    if runningOnUCS:
+        configs = extendedConfigDataBackend.config_getHashes(id='clientconfig.depot.user')
+        assert len(configs) == 1
+        config = configs[0]
+
+        assert len(config['defaultValues']) == 1
+        defaultValues = config['defaultValues'][0]
+        assert 'pcpatch' in defaultValues
 
 
 def testAddingConfigsBasedOnConfigServer(extendedConfigDataBackend):
