@@ -279,7 +279,6 @@ def getProductDepdencies(products):
 def getProductProperties(products):
     product1, _, product3 = products[:3]
 
-    # TODO: turn this into tests?
     productProperty1 = UnicodeProductProperty(
         productId=product1.id,
         productVersion=product1.productVersion,
@@ -292,7 +291,6 @@ def getProductProperties(products):
         multiValue=True
     )
 
-    # TODO: turn this into tests?
     productProperty2 = BoolProductProperty(
         productId=product1.id,
         productVersion=product1.productVersion,
@@ -494,7 +492,6 @@ def getProductPropertyStates(productProperties, depotServer, clients):
     depotserver1, depotserver2 = depotServer[:2]
     client1, client2 = clients[:2]
 
-    # TODO: test?
     productPropertyState1 = ProductPropertyState(
         productId=productProperty1.getProductId(),
         propertyId=productProperty1.getPropertyId(),
@@ -502,7 +499,6 @@ def getProductPropertyStates(productProperties, depotServer, clients):
         values='unicode-depot-default'
     )
 
-    # TODO: test?
     productPropertyState2 = ProductPropertyState(
         productId=productProperty2.getProductId(),
         propertyId=productProperty2.getPropertyId(),
@@ -510,7 +506,6 @@ def getProductPropertyStates(productProperties, depotServer, clients):
         values=[True]
     )
 
-    # TODO: test?
     productPropertyState3 = ProductPropertyState(
         productId=productProperty2.getProductId(),
         propertyId=productProperty2.getPropertyId(),
@@ -518,7 +513,6 @@ def getProductPropertyStates(productProperties, depotServer, clients):
         values=False
     )
 
-    # TODO: test?
     productPropertyState4 = ProductPropertyState(
         productId=productProperty1.getProductId(),
         propertyId=productProperty1.getPropertyId(),
@@ -526,7 +520,6 @@ def getProductPropertyStates(productProperties, depotServer, clients):
         values='unicode1'
     )
 
-    # TODO: test?
     productPropertyState5 = ProductPropertyState(
         productId=productProperty2.getProductId(),
         propertyId=productProperty2.getPropertyId(),
@@ -534,7 +527,6 @@ def getProductPropertyStates(productProperties, depotServer, clients):
         values=[False]
     )
 
-    # TODO: test?
     productPropertyState6 = ProductPropertyState(
         productId=productProperty2.getProductId(),
         propertyId=productProperty2.getPropertyId(),
