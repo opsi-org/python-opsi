@@ -54,15 +54,14 @@ __all__ = [
 	'args', 'forceActionProgress', 'forceActionRequest',
 	'forceActionRequestList', 'forceActionResult', 'forceArchitecture',
 	'forceArchitectureList', 'forceAuditState', 'forceBool', 'forceBoolList',
-	'forceBootConfigurationPriority', 'forceConfigId', 'forceDict',
-	'forceDictList', 'forceDomain', 'forceEmailAddress', 'forceFilename',
-	'forceFloat', 'forceFqdn', 'forceGroupId', 'forceGroupIdList',
-	'forceGroupType', 'forceGroupTypeList', 'forceHardwareAddress',
-	'forceHardwareDeviceId', 'forceHardwareVendorId', 'forceHostAddress',
-	'forceHostId', 'forceHostIdList', 'forceHostname', 'forceIPAddress',
-	'forceInstallationStatus', 'forceInt', 'forceIntList', 'forceIpAddress',
-	'forceLanguageCode', 'forceLanguageCodeList', 'forceLicenseContractId',
-	'forceLicenseContractIdList', 'forceLicensePoolId',
+	'forceConfigId', 'forceDict', 'forceDictList', 'forceDomain',
+	'forceEmailAddress', 'forceFilename', 'forceFloat', 'forceFqdn',
+	'forceGroupId', 'forceGroupIdList', 'forceGroupType', 'forceGroupTypeList',
+	'forceHardwareAddress', 'forceHardwareDeviceId', 'forceHardwareVendorId',
+	'forceHostAddress', 'forceHostId', 'forceHostIdList', 'forceHostname',
+	'forceIPAddress', 'forceInstallationStatus', 'forceInt', 'forceIntList',
+	'forceIpAddress', 'forceLanguageCode', 'forceLanguageCodeList',
+	'forceLicenseContractId', 'forceLicenseContractIdList', 'forceLicensePoolId',
 	'forceLicensePoolIdList', 'forceList', 'forceNetmask',
 	'forceNetworkAddress', 'forceObjectClass', 'forceObjectClassList',
 	'forceObjectId', 'forceObjectIdList', 'forceOct', 'forceOpsiHostKey',
@@ -469,16 +468,6 @@ def forceProductPriority(var):
 	var = forceInt(var)
 	if var < -100:
 		var = -100
-	elif var > 100:
-		var = 100
-
-	return var
-
-
-def forceBootConfigurationPriority(var):
-	var = forceInt(var)
-	if var < 0:
-		var = 0
 	elif var > 100:
 		var = 100
 

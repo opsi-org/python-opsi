@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -458,7 +457,7 @@ def updateMySQLBackend(backendConfigFile=u'/etc/opsi/backends/mysql.conf',
 					mysql.execute(u"alter table %s MODIFY COLUMN `%s` VARCHAR(255);" % (tableName, fieldName))
 
 	# Changing description fields to type TEXT
-	for tableName in (u"PRODUCT_PROPERTY", u"BOOT_CONFIGURATION"):
+	for tableName in (u"PRODUCT_PROPERTY", ):
 		logger.notice(u"Updating field 'description' on table {name}".format(name=tableName))
 		fieldName = u"description"
 		mysql.execute(
