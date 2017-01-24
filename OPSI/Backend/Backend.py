@@ -177,6 +177,9 @@ class DeferredCall(object):
 
 
 class Backend:
+	"""
+	Base backend.
+	"""
 
 	matchCache = {}
 
@@ -342,6 +345,15 @@ This defaults to ``self``.
 		return self._options
 
 	def backend_getInterface(self):
+		"""
+		Returns what methods are available and the signatures they use.
+
+		These methods are represented as a dict with the following keys: \
+		*name*, *params*, *args*, *varargs*, *keywords*, *defaults*.
+
+
+		:returntype: [{},]
+		"""
 		methods = {}
 		for methodName, function in inspect.getmembers(self, inspect.ismethod):
 			if methodName.startswith('_'):
@@ -454,6 +466,12 @@ This defaults to ``self``.
 		)
 
 	def backend_exit(self):
+		"""
+		Exit the backend.
+
+		This method should be used to close connections or clean up \
+		used resources.
+		"""
 		pass
 
 	def __repr__(self):
