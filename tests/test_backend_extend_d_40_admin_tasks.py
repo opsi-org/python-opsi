@@ -414,6 +414,7 @@ def testSetupWhereInstalled(backendManager):
     assert 1 == len(pocFailed)
     pocFailed = pocFailed[0]
     assert "setup" != pocFailed.actionRequest
+    assert 'successful' == poc.actionResult
 
 
 def testSetupWhereNotInstalledFailsWithoutExistingProductId(backendManager):
@@ -557,3 +558,4 @@ def testSetupWhereFailed(backendManager):
     assert 1 == len(clientIDs)
     poc = backend.productOnClient_getObjects(productId=product.id, clientId=client_with_failed_product.id)[0]
     assert "setup" == poc.actionRequest
+    assert 'failed' == poc.actionResult
