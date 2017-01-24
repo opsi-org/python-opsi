@@ -494,6 +494,9 @@ def updateMySQLBackend(backendConfigFile=u'/etc/opsi/backends/mysql.conf',
 
 	_fixLengthOfLicenseKeys(mysql)
 
+	if 'BOOT_CONFIGURATION' in tables:
+		_dropTableBootconfiguration(mysql)
+
 	mysqlBackend = MySQLBackend(**config)
 	mysqlBackend.backend_createBase()
 	mysqlBackend.backend_exit()
@@ -542,3 +545,7 @@ def getTableColumns(database, tableName):
 	TableColumn = namedtuple("TableColumn", ["name", "type"])
 	return [TableColumn(column['Field'], column['Type']) for column
 			in database.getSet(u'SHOW COLUMNS FROM `{0}`;'.format(tableName))]
+
+
+def _dropTableBootconfiguration(database):
+	database.execute(u"drop table BOOT_CONFIGURATION;")
