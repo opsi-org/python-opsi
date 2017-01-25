@@ -9,6 +9,14 @@ python-opsi (4.1.1.2-1) UNRELEASED; urgency=medium
   * Minimum required Python version is now 2.7.
   * 70_dynamic_depot.conf: Removed unused getBytes.
   * Removed 30_configed.conf.
+  * 20_legacy.conf: Removed various methods only returning a
+    NotImplementedError: setNetworkConfigValue, deleteNetworkConfig,
+    setPXEBootConfiguration, unsetPXEBootConfiguration,
+    softwareInformationToProductInstallationStatus,
+    filterHostsByHardwareInformation, generateOpsiHostKey,
+    createServerProduct, getServerProductIds_list,
+    getUninstalledProductIds_list, getDefaultNetBootProductId,
+    deleteProductProperty, deleteProductProperties
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 09 Jan 2017 15:38:26 +0100
 
