@@ -17,6 +17,10 @@ python-opsi (4.1.1.2-1) UNRELEASED; urgency=medium
     createServerProduct, getServerProductIds_list,
     getUninstalledProductIds_list, getDefaultNetBootProductId,
     deleteProductProperty, deleteProductProperties
+  * 20_legacy.conf: getHostId now raises a ValueError if no hostname
+    is given.
+  * 20_legacy.conf: getOpsiHostKey now raises a ValueError if no hostId
+    is given.
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 09 Jan 2017 15:38:26 +0100
 
