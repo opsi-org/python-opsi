@@ -4,7 +4,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -102,7 +102,7 @@ def getArgAndCallString(method):
 	Inspects `method` to gain information about the method signature.
 
 	:type method: func
-	:returntype: (str, str)
+	:rtype: (str, str)
 	"""
 	argString = []
 	callString = []
@@ -218,7 +218,7 @@ This defaults to ``self``.
 		"""
 		Checks if the opsi object hash matches the filter.
 
-		:returntype: bool
+		:rtype: bool
 		"""
 		for attribute, value in objHash.iteritems():
 			if not filter.get(attribute):
@@ -314,7 +314,7 @@ This defaults to ``self``.
 		"""
 		Get the current backend options.
 
-		:returntype: dict
+		:rtype: dict
 		"""
 		return self._options
 
@@ -358,7 +358,7 @@ This defaults to ``self``.
 		"""
 		Get info about the used opsi version and the licensed modules.
 
-		:returntype: dict
+		:rtype: dict
 		"""
 		modules = {}
 		helpermodules = {}
@@ -506,7 +506,7 @@ class ExtendedBackend(Backend):
 		"""
 		Get options from the current and the extended backend.
 
-		:returntype: dict
+		:rtype: dict
 		"""
 		options = Backend.backend_getOptions(self)
 		if self._backend:
@@ -735,7 +735,7 @@ Currently supported: *bootimage*, *clientconnect*, *instlog* or *opsiconfd*.
 		:return: Dict with the keys *password* and *rsaPrivateKey*. \
 If this is called with an valid hostId the data will be encrypted with \
 the opsi host key.
-		:returntype: dict
+		:rtype: dict
 		"""
 		username = forceUnicodeLower(username)
 		if hostId:
