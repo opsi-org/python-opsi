@@ -21,8 +21,10 @@ python-opsi (4.1.1.2-1) UNRELEASED; urgency=medium
     is given.
   * 20_legacy.conf: getOpsiHostKey now raises a ValueError if no hostId
     is given.
+  * Remove unused BootConfiguration objects and SQL tables. If the table
+    'BOOT_CONFIGURATION' exists updateMySQLBackend will drop that table.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 09 Jan 2017 15:38:26 +0100
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 27 Jan 2017 15:39:42 +0100
 
 python-opsi (4.1.1.1-1) experimental; urgency=medium
 
