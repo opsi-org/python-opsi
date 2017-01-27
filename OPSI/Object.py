@@ -34,7 +34,7 @@ from OPSI.Logger import Logger
 from OPSI.Types import BackendBadValueError, BackendConfigurationError
 from OPSI.Types import (forceActionProgress, forceActionRequest,
 	forceActionResult, forceArchitecture, forceAuditState, forceBool,
-	forceBoolList, forceBootConfigurationPriority, forceConfigId, forceDict,
+	forceBoolList, forceConfigId, forceDict,
 	forceFilename, forceFloat, forceGroupId, forceGroupType,
 	forceHardwareAddress, forceHardwareDeviceId, forceHardwareVendorId,
 	forceHostId, forceInstallationStatus, forceInt, forceIPAddress,
@@ -50,16 +50,15 @@ from OPSI.Util import fromJson, toJson, generateOpsiHostKey, timestamp
 __all__ = [
 	'AuditHardware', 'AuditHardwareOnHost', 'AuditSoftware',
 	'AuditSoftwareOnClient', 'AuditSoftwareToLicensePool', 'BaseObject',
-	'BoolConfig', 'BoolProductProperty', 'BootConfiguration',
-	'ConcurrentSoftwareLicense', 'Config', 'ConfigState', 'Entity', 'Group',
-	'Host', 'HostGroup', 'LicenseContract', 'LicenseOnClient', 'LicensePool',
-	'LocalbootProduct', 'Logger', 'NetbootProduct', 'OEMSoftwareLicense',
-	'Object', 'ObjectToGroup', 'OpsiClient', 'OpsiConfigserver',
-	'OpsiDepotserver', 'Product', 'ProductDependency', 'ProductGroup',
-	'ProductOnClient', 'ProductOnDepot', 'ProductProperty',
-	'ProductPropertyState', 'Relationship', 'RetailSoftwareLicense',
-	'SoftwareLicense', 'SoftwareLicenseToLicensePool', 'UnicodeConfig',
-	'UnicodeProductProperty', 'VolumeSoftwareLicense',
+	'BoolConfig', 'BoolProductProperty', 'ConcurrentSoftwareLicense',
+	'Config', 'ConfigState', 'Entity', 'Group', 'Host', 'HostGroup',
+	'LicenseContract', 'LicenseOnClient', 'LicensePool', 'LocalbootProduct',
+	'Logger', 'NetbootProduct', 'OEMSoftwareLicense', 'Object', 'ObjectToGroup',
+	'OpsiClient', 'OpsiConfigserver', 'OpsiDepotserver', 'Product',
+	'ProductDependency', 'ProductGroup', 'ProductOnClient', 'ProductOnDepot',
+	'ProductProperty', 'ProductPropertyState', 'Relationship',
+	'RetailSoftwareLicense', 'SoftwareLicense', 'SoftwareLicenseToLicensePool',
+	'UnicodeConfig', 'UnicodeProductProperty', 'VolumeSoftwareLicense',
 	'decodeIdent', 'getBackendMethodPrefix', 'getForeignIdAttributes',
 	'getIdentAttributes', 'getPossibleClassAttributes',
 	'mandatoryConstructorArgs', 'objectsDiffer'
@@ -3446,167 +3445,4 @@ class AuditHardwareOnHost(Relationship):
 			additional=u', '.join(additional)
 		)
 
-
 Relationship.subClasses['AuditHardwareOnHost'] = AuditHardwareOnHost
-
-
-class BootConfiguration(Relationship):
-	subClasses = {}
-	backendMethodPrefix = 'bootConfiguration'
-
-	def __init__(self, name, clientId, priority=None, description=None,
-				netbootProductId=None, pxeTemplate=None, options=None,
-				disk=None, partition=None, active=None, deleteAfter=None,
-				deactivateAfter=None, accessCount=None, osName=None):
-		self.priority = None
-		self.description = None
-		self.netbootProductId = None
-		self.pxeTemplate = None
-		self.options = None
-		self.disk = None
-		self.partition = None
-		self.active = None
-		self.deleteAfter = None
-		self.deactivateAfter = None
-		self.accessCount = None
-		self.osName = None
-		self.setName(name)
-		self.setClientId(clientId)
-
-		if priority is not None:
-			self.setPriority(priority)
-		if description is not None:
-			self.setDescription(description)
-		if netbootProductId is not None:
-			self.setNetbootProductId(netbootProductId)
-		if pxeTemplate is not None:
-			self.setPxeTemplate(pxeTemplate)
-		if options is not None:
-			self.setOptions(options)
-		if disk is not None:
-			self.setDisk(disk)
-		if partition is not None:
-			self.setPartition(partition)
-		if active is not None:
-			self.setActive(active)
-		if deleteAfter is not None:
-			self.setDeleteAfter(deleteAfter)
-		if deactivateAfter is not None:
-			self.setDeactivateAfter(deactivateAfter)
-		if accessCount is not None:
-			self.setAccessCount(accessCount)
-		if osName is not None:
-			self.setOsName(osName)
-
-	def setDefaults(self):
-		Relationship.setDefaults(self)
-		if self.priority is None:
-			self.setPriority(0)
-		if self.description is None:
-			self.setDescription(u"")
-		if self.accessCount is None:
-			self.setAccessCount(0)
-
-	def getName(self):
-		return self.name
-
-	def setName(self, name):
-		self.name = forceUnicode(name)
-
-	def getClientId(self):
-		return self.clientId
-
-	def setClientId(self, clientId):
-		self.clientId = forceHostId(clientId)
-
-	def getPriority(self):
-		return self.priority
-
-	def setPriority(self, priority):
-		self.priority = forceBootConfigurationPriority(priority)
-
-	def getDescription(self):
-		return self.description
-
-	def setDescription(self, description):
-		self.description = forceUnicode(description)
-
-	def getNetbootProductId(self):
-		return self.netbootProductId
-
-	def setNetbootProductId(self, netbootProductId):
-		self.netbootProductId = forceProductId(netbootProductId)
-
-	def getPxeTemplate(self):
-		return self.pxeTemplate
-
-	def setPxeTemplate(self, pxeTemplate):
-		self.pxeTemplate = forceUnicode(pxeTemplate)
-
-	def getOptions(self):
-		return self.options
-
-	def setOptions(self, options):
-		self.options = forceDict(options)
-
-	def getDisk(self):
-		return self.disk
-
-	def setDisk(self, disk):
-		self.disk = forceInt(disk)
-
-	def getPartition(self):
-		return self.partition
-
-	def setPartition(self, partition):
-		self.partition = forceInt(partition)
-
-	def getActive(self):
-		return self.active
-
-	def setActive(self, active):
-		self.active = forceBool(active)
-
-	def getDeleteAfter(self):
-		return self.deleteAfter
-
-	def setDeleteAfter(self, deleteAfter):
-		self.deleteAfter = forceInt(deleteAfter)
-
-	def getDeactivateAfter(self):
-		return self.deactivateAfter
-
-	def setDeactivateAfter(self, deactivateAfter):
-		self.deactivateAfter = forceInt(deactivateAfter)
-
-	def getAccessCount(self):
-		return self.accessCount
-
-	def setAccessCount(self, accessCount):
-		self.accessCount = forceInt(accessCount)
-
-	def getOsName(self):
-		return self.osName
-
-	def setOsName(self, osName):
-		self.osName = forceUnicode(osName)
-
-	@staticmethod
-	def fromHash(hash):
-		try:
-			hash['type']
-		except KeyError:
-			hash['type'] = 'BootConfiguration'
-
-		return Relationship.fromHash(hash)
-
-	@staticmethod
-	def fromJson(jsonString):
-		return fromJson(jsonString, 'BootConfiguration')
-
-	def __unicode__(self):
-		return u"<{klass}(name={name!r}, clientId={cid!r}, priority={prio:d}>".format(
-			klass=self.getType(), name=self.name,
-			cid=self.clientId, prio=self.priority)
-
-Relationship.subClasses['BootConfiguration'] = BootConfiguration
