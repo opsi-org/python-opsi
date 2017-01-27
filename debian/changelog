@@ -23,8 +23,9 @@ python-opsi (4.1.1.2-1) UNRELEASED; urgency=medium
     is given.
   * Remove unused BootConfiguration objects and SQL tables. If the table
     'BOOT_CONFIGURATION' exists updateMySQLBackend will drop that table.
+  * BackendDispatchConfigFile.parse will now return a list of tuples.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 27 Jan 2017 15:39:42 +0100
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 27 Jan 2017 15:42:15 +0100
 
 python-opsi (4.1.1.1-1) experimental; urgency=medium
 
