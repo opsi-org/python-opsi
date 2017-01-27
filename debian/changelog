@@ -1,3 +1,11 @@
+python-opsi (4.0.7.34-1) stable; urgency=medium
+
+  * 40_admin_tasks.conf: New method setupWhereFailed.
+  * 40_admin_tasks.conf: setupWhereFailed and setupWhereInstalled do not
+    alter the actionResult anymore.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 27 Jan 2017 10:30:16 +0100
+
 python-opsi (4.0.7.33-1) experimental; urgency=medium
 
   * OPSI.Service.SSLContext: new parameter acceptedCiphers to limit the
