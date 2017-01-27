@@ -1,4 +1,4 @@
-python-opsi (4.1.1.2-1) UNRELEASED; urgency=medium
+python-opsi (4.1.1.2-1) experimental; urgency=medium
 
   * OPSI.Backend.Backend got new context manager temporaryBackendOptions.
   * Removed various obsolete modules.
