@@ -125,12 +125,14 @@ def decodeIdent(klass, hash):
 			if isinstance(identFromHash, dict):
 				ident = identFromHash
 			else:
-				if isinstance(identFromHash, (str, unicode)):
+				try:
+					# String or Unicode
 					identValues = identFromHash.split(klass.identSeparator)
-				elif isinstance(identFromHash, (tuple, list)):
-					identValues = identFromHash
-				else:
-					identValues = []
+				except AttributeError:
+					if isinstance(identFromHash, (tuple, list)):
+						identValues = identFromHash
+					else:
+						identValues = []
 
 				args = mandatoryConstructorArgs(klass)
 				if len(identValues) == len(args):
