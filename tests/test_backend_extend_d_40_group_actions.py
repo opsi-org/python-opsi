@@ -27,11 +27,10 @@ This tests what usually is found under
 :license: GNU Affero General Public License version 3
 """
 
-from __future__ import absolute_import
-
 import pytest
 
-from OPSI.Object import HostGroup, OpsiClient, LocalbootProduct, ObjectToGroup, ProductOnDepot, OpsiDepotserver
+from OPSI.Object import (HostGroup, LocalbootProduct, ProductOnDepot,
+    ObjectToGroup, OpsiClient, OpsiDepotserver)
 from OPSI.Types import BackendMissingDataError
 
 
