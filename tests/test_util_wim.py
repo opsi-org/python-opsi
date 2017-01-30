@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2016 uib GmbH <info@uib.de>
+# Copyright (C) 2016-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -26,8 +25,9 @@ Testing working with WIM files.
 from __future__ import absolute_import
 
 import os.path
-import unittest
 from contextlib import contextmanager
+
+import pytest
 
 from OPSI.Util.WIM import getImageInformation, parseWIM
 
@@ -42,57 +42,56 @@ def fakeWIMEnvironment(tempDir=None):
             pass
 
         exampleData = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                    'testdata', 'wimlib.example')
+                                   'testdata', 'wimlib.example')
 
         with mock.patch('OPSI.Util.WIM.which', lambda x: '/usr/bin/echo'):
             with mock.patch('OPSI.Util.WIM.execute', lambda x: open(exampleData, 'r').read().split('\n')):
                 yield fakeWimPath
 
 
-class ReadingWIMTestCase(unittest.TestCase):
-    def testParsingWithoutFileFails(self):
-        self.assertRaises(OSError, parseWIM, 'not_here.wim')
-
-    def testParsingWIMReturnNoInformationFails(self):
-        with fakeWIMEnvironment() as fakeWimPath:
-            with mock.patch('OPSI.Util.WIM.execute', lambda x: ['']):
-                self.assertRaises(ValueError, parseWIM, fakeWimPath)
-
-    def testParsingWIM(self):
-        with fakeWIMEnvironment() as fakeWimPath:
-            imageData = {
-                'Windows 7 STARTERN': (set(['de-DE']), 'de-DE'),
-                'Windows 7 HOMEBASICN': (set(['de-DE']), 'de-DE'),
-                'Windows 7 HOMEPREMIUMN': (set(['de-DE']), 'de-DE'),
-                'Windows 7 PROFESSIONALN': (set(['de-DE']), 'de-DE'),
-                'Windows 7 ULTIMATEN': (set(['de-DE']), 'de-DE'),
-            }
-
-            for image in parseWIM(fakeWimPath):
-                assert image.name in imageData
-
-                assert image.languages == imageData[image.name][0]
-                assert image.default_language == imageData[image.name][1]
-
-                del imageData[image.name]
-
-            self.assertFalse(imageData, "Missed reading info for {0}".format(imageData.keys()))
-
-    def testReadingImageInformation(self):
-        with fakeWIMEnvironment() as wimPath:
-            infos = getImageInformation(wimPath)
-
-            firstInfo = next(infos)
-            self.assertTrue(firstInfo)
-
-            next(infos)
-            next(infos)
-            next(infos)
-            next(infos)
-
-            # Only five infos in example.
-            self.assertRaises(StopIteration, next, infos)
+@pytest.fixture
+def fakeWimPath():
+    with fakeWIMEnvironment() as fakeWimPath:
+        yield fakeWimPath
 
 
-if __name__ == '__main__':
-    unittest.main()
+def testParsingNonExistingWimFileFails():
+    with pytest.raises(OSError):
+        parseWIM('not_here.wim')
+
+
+def testParsingWIMReturnNoInformationFails(fakeWimPath):
+    with mock.patch('OPSI.Util.WIM.execute', lambda x: ['']):
+        with pytest.raises(ValueError):
+            parseWIM(fakeWimPath)
+
+
+def testParsingWIM(fakeWimPath):
+    imageData = {
+        'Windows 7 STARTERN': (set(['de-DE']), 'de-DE'),
+        'Windows 7 HOMEBASICN': (set(['de-DE']), 'de-DE'),
+        'Windows 7 HOMEPREMIUMN': (set(['de-DE']), 'de-DE'),
+        'Windows 7 PROFESSIONALN': (set(['de-DE']), 'de-DE'),
+        'Windows 7 ULTIMATEN': (set(['de-DE']), 'de-DE'),
+    }
+
+    for image in parseWIM(fakeWimPath):
+        assert image.name in imageData
+
+        assert image.languages == imageData[image.name][0]
+        assert image.default_language == imageData[image.name][1]
+
+        del imageData[image.name]
+
+    assert not imageData, "Missed reading info for {0}".format(imageData.keys())
+
+
+def testReadingImageInformationFromWim(fakeWimPath):
+    infos = getImageInformation(fakeWimPath)
+
+    for _ in range(5):
+        info = next(infos)
+        assert info
+
+    with pytest.raises(StopIteration):  # Only five infos in example.
+        next(infos)
