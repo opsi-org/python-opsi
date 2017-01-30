@@ -30,99 +30,58 @@ This tests what usually is found under
 from __future__ import absolute_import
 
 import pytest
-import unittest
 
 from OPSI.Object import HostGroup, OpsiClient, LocalbootProduct, ObjectToGroup, ProductOnDepot, OpsiDepotserver
 from OPSI.Types import BackendMissingDataError
-from .Backends.File import FileBackendBackendManagerMixin
 
 
-class GroupActionsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
-    """
-    Testing the group actions.
-    """
-    def setUp(self):
-        self.setUpBackend()
+def testSetProductActionRequestForHostGroup(backendManager):
+    testGroup = HostGroup(id='host_group_1')
 
-    def tearDown(self):
-        self.tearDownBackend()
+    client1 = OpsiClient(id='client1.test.invalid')
+    client2 = OpsiClient(id='client2.test.invalid')
 
-    def testSetProductActionRequestForHostGroup(self):
-        testGroup = HostGroup(
-            id='host_group_1',
-            description='Group 1',
-            notes='First group',
-            parentGroupId=None
-        )
+    client1ToGroup = ObjectToGroup(testGroup.getType(), testGroup.id, client1.id)
+    client2ToGroup = ObjectToGroup(testGroup.getType(), testGroup.id, client2.id)
 
-        client1 = OpsiClient(
-            id='client1.test.invalid',
-        )
+    depot = OpsiDepotserver(id='depotserver1.test.invalid')
 
-        client2 = OpsiClient(
-            id='client2.test.invalid',
-        )
+    product2 = LocalbootProduct(
+        id='product2',
+        name=u'Product 2',
+        productVersion='2.0',
+        packageVersion='test',
+        setupScript="setup.ins",
+    )
 
-        product2 = LocalbootProduct(
-            id='product2',
-            name=u'Product 2',
-            productVersion='2.0',
-            packageVersion='test',
-            setupScript="setup.ins",
-        )
+    prodOnDepot = ProductOnDepot(
+        productId=product2.getId(),
+        productType=product2.getType(),
+        productVersion=product2.getProductVersion(),
+        packageVersion=product2.getPackageVersion(),
+        depotId=depot.getId()
+    )
 
-        client1ToGroup = ObjectToGroup(testGroup.getType(), testGroup.id, client1.id)
-        client2ToGroup = ObjectToGroup(testGroup.getType(), testGroup.id, client2.id)
+    backendManager.host_insertObject(client1)
+    backendManager.host_insertObject(client2)
+    backendManager.host_insertObject(depot)
+    backendManager.group_insertObject(testGroup)
+    backendManager.objectToGroup_createObjects([client1ToGroup, client2ToGroup])
+    backendManager.config_create(u'clientconfig.depot.id')
+    backendManager.configState_create(u'clientconfig.depot.id', client1.getId(), values=[depot.getId()])
+    backendManager.configState_create(u'clientconfig.depot.id', client2.getId(), values=[depot.getId()])
+    backendManager.product_insertObject(product2)
+    backendManager.productOnDepot_insertObject(prodOnDepot)
 
-        depot = OpsiDepotserver(
-            id='depotserver1.test.invalid',
-            opsiHostKey='19012334567845645678901232789012',
-            depotLocalUrl='file:///opt/pcbin/install',
-            depotRemoteUrl='smb://depotserver1.test.invalid/opt_pcbin/install',
-            repositoryLocalUrl='file:///var/lib/opsi/repository',
-            repositoryRemoteUrl='webdavs://depotserver1.test.invalid:4447/repository',
-            description='A depot',
-            notes='D€pot 1',
-            hardwareAddress=None,
-            ipAddress=None,
-            inventoryNumber='00000000002',
-            networkAddress='192.168.2.0/24',
-            maxBandwidth=10000
-        )
+    backendManager.setProductActionRequestForHostGroup('host_group_1', 'product2', 'setup')
 
-        prodOnDepot = ProductOnDepot(
-            productId=product2.getId(),
-            productType=product2.getType(),
-            productVersion=product2.getProductVersion(),
-            packageVersion=product2.getPackageVersion(),
-            depotId=depot.getId(),
-            locked=False
-        )
+    pocs = backendManager.productOnClient_getObjects()
+    assert pocs
+    assert len(pocs) == 2
 
-        self.backend.host_insertObject(client1)
-        self.backend.host_insertObject(client2)
-        self.backend.host_insertObject(depot)
-        self.backend.group_insertObject(testGroup)
-        self.backend.objectToGroup_createObjects([client1ToGroup, client2ToGroup])
-        self.backend.config_create(u'clientconfig.depot.id')
-        self.backend.configState_create(u'clientconfig.depot.id', client1.getId(), values=[depot.getId()])
-        self.backend.configState_create(u'clientconfig.depot.id', client2.getId(), values=[depot.getId()])
-        self.backend.product_insertObject(product2)
-        self.backend.productOnDepot_insertObject(prodOnDepot)
-
-        self.assertFalse(self.backend.productOnClient_getObjects())
-        self.assertTrue(self.backend.objectToGroup_getObjects(groupType="HostGroup"))
-
-        self.backend.setProductActionRequestForHostGroup('host_group_1', 'product2', 'setup')
-
-        pocs = self.backend.productOnClient_getObjects()
-        self.assertTrue(pocs)
-
-        self.assertEquals(2, len(self.backend.productOnClient_getObjects()))
-
-        for poc in self.backend.productOnClient_getObjects():
-            self.assertEquals(poc.productId, product2.getId())
-            self.assertTrue(poc.clientId in (client1.id, client2.id))
+    for poc in backendManager.productOnClient_getObjects():
+        assert poc.productId == product2.getId()
+        assert poc.clientId in (client1.id, client2.id)
 
 
 def testGroupnameExists(backendManager):
