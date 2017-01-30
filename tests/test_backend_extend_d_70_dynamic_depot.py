@@ -21,6 +21,13 @@ Tests for the dynamically loaded dynamic depot extensions.
 This tests what usually is found under
 ``/etc/opsi/backendManager/extend.de/70_dynamic_depot.conf``.
 
+The dynamic depot selection is dynamically loaded onto to the backend
+and the user usually selects one of the offered variants.
+The code is listet as cleartext because the client makes a call to the
+webservice, receives the code and then makes a runnable version of it
+through ``exec``.
+
+
 .. versionadded:: 4.0.4.6
 
 :author: Niko Wenselowski <n.wenselowski@uib.de>
@@ -30,13 +37,48 @@ This tests what usually is found under
 from __future__ import absolute_import, print_function
 
 import random
-import unittest
+import pytest
 
 from OPSI.Logger import Logger
-from .Backends.File import FileBackendBackendManagerMixin
 
 # Logger is needed because the functions expect a global "logger"
 logger = Logger()
+
+
+@pytest.fixture(params=[
+	'getDepotSelectionAlgorithm',  # must always return a working algo
+	'getDepotSelectionAlgorithmByLatency',
+	'getDepotSelectionAlgorithmByMasterDepotAndLatency',
+	'getDepotSelectionAlgorithmByNetworkAddress'
+])
+def depotSelectionAlgorythm(request, backendManager):
+	"""
+	All possible algorythms.
+	"""
+	algorythm = getattr(backendManager, request.param)
+	return algorythm()
+
+
+@pytest.fixture
+def depotSelectionAlgorithmByLatency(backendManager):
+	algo = backendManager.getDepotSelectionAlgorithmByLatency()
+	algo = patchPingFunctionalityInAlgorythm(algo)
+
+	try:
+		yield algo
+	except Exception:
+		showAlgoWithLineNumbers(algo)
+
+
+@pytest.fixture
+def depotSelectionAlgorithmByMasterDepotAndLatency(backendManager):
+	algo = backendManager.getDepotSelectionAlgorithmByMasterDepotAndLatency()
+	algo = patchPingFunctionalityInAlgorythm(algo)
+
+	try:
+		yield algo
+	except Exception:
+		showAlgoWithLineNumbers(algo)
 
 
 def patchPingFunctionalityInAlgorythm(algorythm):
@@ -72,98 +114,49 @@ class FakeDepot(object):
 		return "<FakeDepot({id}, latency={latency}, masterDepotId={masterDepotId})>".format(**self.__dict__)
 
 
-class DynamicDepotTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
+def testDepotSelectionAlgorythmIsExecutable(depotSelectionAlgorythm):
 	"""
-	Testing the dynamic depot selection.
-
-	The dynamic depot selection is dynamically loaded onto to the
-	backend and the user usually selects one of the offered variants.
-	The code is listet as cleartext because the client makes a call
-	to the webservice, receives the code and then makes a runnable
-	version of it via ``exec``.
+	Executing the default configuration should never fail.
 	"""
-	def setUp(self):
-		self.setUpBackend()
-
-		self.masterDepot = FakeDepot('clients.master.depot')
-
-	def tearDown(self):
-		self.tearDownBackend()
-
-		del self.masterDepot
-
-	def getAlgorythm(self):
-		return self.backend.getDepotSelectionAlgorithm()
-
-	def testAlgorythmIsExecutable(self):
-		"""
-		Executing the default configuration should never fail.
-		"""
-		algo = self.getAlgorythm()
-		showAlgoWithLineNumbers(algo)
-		exec(algo)
-
-	def testAlgorythmReturnsMasterDepotIfNoAlternativesAreGiven(self):
-		exec(self.getAlgorythm())
-		self.assertEqual(self.masterDepot, selectDepot({}, self.masterDepot))
+	exec(depotSelectionAlgorythm)
 
 
-class DepotSelectionByLatencyTestCase(DynamicDepotTestCase):
-	def getAlgorythm(self):
-		algo = self.backend.getDepotSelectionAlgorithmByLatency()
-		algo = patchPingFunctionalityInAlgorythm(algo)
+def testDepotSelectionAlgorythmReturnsMasterDepotIfNoAlternativesAreGiven(depotSelectionAlgorythm):
+	exec(depotSelectionAlgorythm)
 
-		showAlgoWithLineNumbers(algo)
-
-		return algo
-
-	def testDepotSelectionAlgorithmByLowestLatency(self):
-		exec(self.getAlgorythm())
-
-		lowLatencyRepo = FakeDepot('x.y.z', latency=1.5)
-		alternativeDepots = [FakeDepot('a'), lowLatencyRepo, FakeDepot('b', latency=5)]
-		random.shuffle(alternativeDepots)
-		self.assertEqual(lowLatencyRepo, selectDepot({}, self.masterDepot, alternativeDepots))
-
-	def testThatDepotsWithoutLatencyArentUsed(self):
-		exec(self.getAlgorythm())
-
-		highLatencyRepo = FakeDepot('a', latency=10)
-		alternativeDepots = [highLatencyRepo]
-		random.shuffle(alternativeDepots)
-		self.assertEqual(highLatencyRepo, selectDepot({}, FakeDepot('m', latency=None), alternativeDepots))
+	masterDepot = FakeDepot('clients.master.depot')
+	assert masterDepot == selectDepot({}, masterDepot)
 
 
-class DepotSelectionByMasterDepotAndLatencyTestCase(DynamicDepotTestCase):
-	def getAlgorythm(self):
-		algo = self.backend.getDepotSelectionAlgorithmByMasterDepotAndLatency()
-		algo = patchPingFunctionalityInAlgorythm(algo)
+def testDepotSelectionAlgorithmByLowestLatency(depotSelectionAlgorithmByLatency):
+	exec(depotSelectionAlgorithmByLatency)
 
-		showAlgoWithLineNumbers(algo)
-
-		return algo
-
-	def testDepotSelectionAlgorithmByMasterDepotAndLatency(self):
-		wantedRepo = FakeDepot('our.wanted.repo', latency=1, masterDepotId='clients.master.depot')
-		alternativeDepots = [
-			FakeDepot('another.master', latency=0.5),
-			FakeDepot('sub.for.another.master', latency=0.4, masterDepotId='another.master'),
-			wantedRepo,
-			FakeDepot('slower.repo.with.right.master', latency=1.5, masterDepotId='clients.master.depot')
-		]
-		random.shuffle(alternativeDepots)
-
-		exec(self.getAlgorythm())
-		self.assertEqual(wantedRepo, selectDepot({}, self.masterDepot, alternativeDepots))
+	masterDepot = FakeDepot('clients.master.depot')
+	lowLatencyRepo = FakeDepot('x.y.z', latency=1.5)
+	alternativeDepots = [FakeDepot('a'), lowLatencyRepo, FakeDepot('b', latency=5)]
+	random.shuffle(alternativeDepots)
+	assert lowLatencyRepo == selectDepot({}, masterDepot, alternativeDepots)
 
 
-class DepotSelectionByNetworkAddressTestCase(DynamicDepotTestCase):
-	# TODO: functional test
-	def getAlgorythm(self):
-		algo = self.backend.getDepotSelectionAlgorithmByNetworkAddress()
-		showAlgoWithLineNumbers(algo)
-		return algo
+def testDepotSelectionByLatencyIgnoresDepotsWithoutLatency(depotSelectionAlgorithmByLatency):
+	exec(depotSelectionAlgorithmByLatency)
+
+	highLatencyRepo = FakeDepot('a', latency=10)
+	alternativeDepots = [highLatencyRepo]
+	random.shuffle(alternativeDepots)
+	assert highLatencyRepo == selectDepot({}, FakeDepot('m', latency=None), alternativeDepots)
 
 
-if __name__ == '__main__':
-	unittest.main()
+def testDepotSelectionAlgorithmByMasterDepotAndLatency(depotSelectionAlgorithmByMasterDepotAndLatency):
+	masterDepot = FakeDepot('clients.master.depot')
+	wantedRepo = FakeDepot('our.wanted.repo', latency=1, masterDepotId='clients.master.depot')
+	alternativeDepots = [
+		FakeDepot('another.master', latency=0.5),
+		FakeDepot('sub.for.another.master', latency=0.4, masterDepotId='another.master'),
+		wantedRepo,
+		FakeDepot('slower.repo.with.right.master', latency=1.5, masterDepotId='clients.master.depot')
+	]
+	random.shuffle(alternativeDepots)
+
+	exec(depotSelectionAlgorithmByMasterDepotAndLatency)
+	assert wantedRepo == selectDepot({}, masterDepot, alternativeDepots)
