@@ -1,8 +1,7 @@
-#!/usr/bin/env python
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -38,6 +37,28 @@ from .Backends.File import FileBackendBackendManagerMixin
 
 # Logger is needed because the functions expect a global "logger"
 logger = Logger()
+
+
+def patchPingFunctionalityInAlgorythm(algorythm):
+	testPingFunction = "ping = lambda host: host.latency"
+	testUrlsplitFunction = "urlsplit = lambda host: (None, host, None, None, None, None)"
+
+	algorythm = algorythm.replace("from OPSI.Util.Ping import ping", testPingFunction)
+	algorythm = algorythm.replace("from OPSI.Util.HTTP import urlsplit", testUrlsplitFunction)
+
+	for replacedPart in ("from OPSI.Util.Ping import ping", "from OPSI.Util.HTTP import urlsplit"):
+		if replacedPart in algorythm:
+			raise RuntimeError("Replacing {0} failed.".format(replacedPart))
+
+	return algorythm
+
+
+def showAlgoWithLineNumbers(algo):
+	"""
+	Prints the given algorythm with line numbers preceding each line.
+	"""
+	for number, line in enumerate(algo.split('\n')):
+		print("{num}: {line}".format(num=number, line=line))
 
 
 class FakeDepot(object):
@@ -79,41 +100,20 @@ class DynamicDepotTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
 		Executing the default configuration should never fail.
 		"""
 		algo = self.getAlgorythm()
-		self.showAlgoWithLineNumbers(algo)
+		showAlgoWithLineNumbers(algo)
 		exec(algo)
 
 	def testAlgorythmReturnsMasterDepotIfNoAlternativesAreGiven(self):
 		exec(self.getAlgorythm())
 		self.assertEqual(self.masterDepot, selectDepot({}, self.masterDepot))
 
-	@staticmethod
-	def showAlgoWithLineNumbers(algo):
-		"""
-		Prints the given algorythm with line numbers preceding each line.
-		"""
-		for number, line in enumerate(algo.split('\n')):
-			print("{num}: {line}".format(num=number, line=line))
-
-	def patchPingFunctionalityInAlgorythm(self, algorythm):
-		testPingFunction = "ping = lambda host: host.latency"
-		testUrlsplitFunction = "urlsplit = lambda host: (None, host, None, None, None, None)"
-
-		algorythm = algorythm.replace("from OPSI.Util.Ping import ping", testPingFunction)
-		algorythm = algorythm.replace("from OPSI.Util.HTTP import urlsplit", testUrlsplitFunction)
-
-		for replacedPart in ("from OPSI.Util.Ping import ping", "from OPSI.Util.HTTP import urlsplit"):
-			if replacedPart in algorythm:
-				self.fail("Replacing {0} failed.".format(replacedPart))
-
-		return algorythm
-
 
 class DepotSelectionByLatencyTestCase(DynamicDepotTestCase):
 	def getAlgorythm(self):
 		algo = self.backend.getDepotSelectionAlgorithmByLatency()
-		algo = self.patchPingFunctionalityInAlgorythm(algo)
+		algo = patchPingFunctionalityInAlgorythm(algo)
 
-		self.showAlgoWithLineNumbers(algo)
+		showAlgoWithLineNumbers(algo)
 
 		return algo
 
@@ -137,9 +137,9 @@ class DepotSelectionByLatencyTestCase(DynamicDepotTestCase):
 class DepotSelectionByMasterDepotAndLatencyTestCase(DynamicDepotTestCase):
 	def getAlgorythm(self):
 		algo = self.backend.getDepotSelectionAlgorithmByMasterDepotAndLatency()
-		algo = self.patchPingFunctionalityInAlgorythm(algo)
+		algo = patchPingFunctionalityInAlgorythm(algo)
 
-		self.showAlgoWithLineNumbers(algo)
+		showAlgoWithLineNumbers(algo)
 
 		return algo
 
@@ -161,7 +161,7 @@ class DepotSelectionByNetworkAddressTestCase(DynamicDepotTestCase):
 	# TODO: functional test
 	def getAlgorythm(self):
 		algo = self.backend.getDepotSelectionAlgorithmByNetworkAddress()
-		self.showAlgoWithLineNumbers(algo)
+		showAlgoWithLineNumbers(algo)
 		return algo
 
 
