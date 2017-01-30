@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2010-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2010-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -43,8 +42,8 @@ except ImportError:
 
 from OPSI.Logger import Logger, LOG_DEBUG
 from OPSI.Types import BackendMissingDataError
-from OPSI.Types import (forceBool, forceHostId, forceHostIdList, forceInt,
-						forceIpAddress, forceList, forceUnicode,
+from OPSI.Types import (forceBool, forceDict, forceHostId, forceHostIdList,
+						forceInt, forceIpAddress, forceList, forceUnicode,
 						forceUnicodeList)
 from OPSI.Backend.Backend import ExtendedBackend
 from OPSI.Util import fromJson, toJson
@@ -161,8 +160,7 @@ class HostControlBackend(ExtendedBackend):
 		self._hostReachableTimeout = 3
 		self._resolveHostAddress = False
 		self._maxConnections = 50
-		self._broadcastAddresses = ["255.255.255.255"]
-		self._wakeOnLanTargetPort = 12287
+		self._broadcastAddresses = {"255.255.255.255": 12287}
 
 		self._parseArguments(kwargs)
 
@@ -190,9 +188,20 @@ class HostControlBackend(ExtendedBackend):
 			elif option == 'maxconnections':
 				self._maxConnections = forceInt(value)
 			elif option == 'broadcastaddresses':
-				self._broadcastAddresses = forceUnicodeList(value)
-			elif option == 'wakeonlantargetport':
-				self._wakeOnLanTargetPort = forceInt(value)
+				try:
+					self._broadcastAddresses = forceDict(value)
+				except ValueError:
+					# This is an old-style configuraton. Old default
+					# port was 12287 so we assume this as the default
+					# and convert everything to the new format.
+					self._broadcastAddresses = {bcAddress: [12287] for bcAddress in forceUnicodeList(value)}
+					logger.warning(
+						"Your hostcontrol backend configuration uses the old "
+						"format for broadcast addresses. The new format "
+						"allows to also set a list of ports to send the "
+						"broadcast to.\nPlease use this new "
+						"value in the future: {0!r}", self._broadcastAddresses
+					)
 
 	def _getHostAddress(self, host):
 		address = None
@@ -300,12 +309,15 @@ class HostControlBackend(ExtendedBackend):
 						send_data,
 						struct.pack('B', int(data[i: i + 2], 16))])
 
-				for broadcastAddress in self._broadcastAddresses:
-					logger.debug(u"Sending data to network broadcast %s [%s]" % (broadcastAddress, data))
-					# Broadcast it to the LAN.
-					with closing(socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)) as sock:
-						sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, True)
-						sock.sendto(send_data, (broadcastAddress, self._wakeOnLanTargetPort))
+				for broadcastAddress, targetPorts in self._broadcastAddresses.items():
+					logger.debug(u"Sending data to network broadcast {0} {1}", broadcastAddress, data)
+
+					for port in targetPorts:
+						logger.debug("Broadcasting to port {0!r}", port)
+						with closing(socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)) as sock:
+							sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, True)
+							sock.sendto(send_data, (broadcastAddress, port))
+
 				result[host.id] = {"result": "sent", "error": None}
 			except Exception as e:
 				logger.logException(e, LOG_DEBUG)
