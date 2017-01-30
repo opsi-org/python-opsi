@@ -113,6 +113,18 @@ def testCorrectingProductIdLength(mysqlBackendConfig, mySQLBackendConfigFile):
             assertColumnIsVarchar(db, tableName, 'productId', 255)
 
 
+def testDropTableBootConfiguration(mysqlBackendConfig, mySQLBackendConfigFile):
+    """
+    Test if the BOOT_CONFIGURATION table gets dropped with an update.
+    """
+    with cleanDatabase(MySQL(**mysqlBackendConfig)) as db:
+        createRequiredTables(db)
+
+        updateMySQLBackend(backendConfigFile=mySQLBackendConfigFile)
+
+        assert 'BOOT_CONFIGURATION' not in getTableNames(db)
+
+
 def createRequiredTables(database):
     table = u'''CREATE TABLE `LICENSE_POOL` (
             `licensePoolId` VARCHAR(100) NOT NULL,

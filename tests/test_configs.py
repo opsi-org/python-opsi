@@ -80,35 +80,30 @@ def getConfigStates(configs, clients, depotserver):
     client1, client2, _, _, client5, client6, client7 = clients[:7]
     depotserver2 = depotserver[1]
 
-    # TODO: turn this into tests?
     configState1 = ConfigState(
         configId=config1.getId(),
         objectId=client1.getId(),
         values=['w']
     )
 
-    # TODO: turn this into tests?
     configState2 = ConfigState(
         configId=config2.getId(),
         objectId=client1.getId(),
         values=[False]
     )
 
-    # TODO: turn this into tests?
     configState3 = ConfigState(
         configId=config2.getId(),
         objectId=client2.getId(),
         values=[False]
     )
 
-    # TODO: turn this into tests?
     configState4 = ConfigState(
         configId=config6.getId(),
         objectId=client2.getId(),
         values=["-------- test --------\n4: %4\n1: %1\n2: %2\n5: %5"]
     )
 
-    # TODO: turn this into tests?
     configState5 = ConfigState(
         configId=config4.getId(),
         objectId=client5.getId(),

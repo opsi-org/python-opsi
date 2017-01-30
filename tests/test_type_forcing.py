@@ -1,8 +1,7 @@
-#!/usr/bin/env python
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -22,107 +21,80 @@ Testing type forcing methods.
 :author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
 """
-
 import datetime
 import time
-import unittest
-
-from OPSI.Object import OpsiClient, Host, ProductOnClient
-from OPSI.Types import (forceObjectClass, forceUnicode, forceUnicodeList,
-	forceList, forceBool, forceBoolList, forceInt, forceOct, forceIPAddress,
-	forceOpsiTimestamp, forceHardwareAddress, forceHostId, forceNetworkAddress,
-	forceUrl, forceProductId, forcePackageVersion,forceFilename, forceTime,
-	forceProductVersion, forceOpsiHostKey,forceInstallationStatus,
-	forceActionRequest, forceActionProgress,forceLanguageCode, forceIntList,
-	forceArchitecture, forceEmailAddress, forceUnicodeLowerList,
-	forceProductType, forceDict, forceUniqueList, args, forceFqdn,
-	forceGroupType, forceFloat)
 
 import pytest
 
-
-class ForceObjectClassJSONTestCase(unittest.TestCase):
-	def setUp(self):
-		self.object = OpsiClient(
-			id='test1.test.invalid',
-			description='Test client 1',
-			notes='Notes ...',
-			hardwareAddress='00:01:02:03:04:05',
-			ipAddress='192.168.1.100',
-			lastSeen='2009-01-01 00:00:00',
-			opsiHostKey='45656789789012789012345612340123'
-		)
-
-		self.json = self.object.toJson()
-
-	def tearDown(self):
-		del self.json
-		del self.object
-
-	def testForceObjectClassToHostFromJSON(self):
-		self.assertTrue(isinstance(forceObjectClass(self.json, Host), Host))
-
-	def testForceObjectClassToOpsiClientFromJSON(self):
-		self.assertTrue(isinstance(forceObjectClass(self.json, OpsiClient), OpsiClient))
-
-	def testForcingObjectClassFromJSON(self):
-		json = {
-			"clientId": "dolly.janus.vater",
-			"actionRequest": "setup",
-			"productType": "LocalbootProduct",
-			"type": "ProductOnClient",
-			"productId": "hoer_auf_deinen_vater"
-		}
-
-		poc = forceObjectClass(json, ProductOnClient)
-
-		self.assertTrue(isinstance(poc, ProductOnClient))
-
-	def testForcingObjectClassFromJSONHasGoodErrorDescription(self):
-		incompleteJson = {
-			"clientId": "Nellie*",
-			"actionRequest": "setup",
-			"productType": "LocalbootProduct",
-			"type": "ProductOnClient"
-		}
-
-		try:
-			forceObjectClass(incompleteJson, ProductOnClient)
-			self.fail("No error from incomplete json.")
-		except ValueError as error:
-			self.assertTrue("Missing required argument(s): 'productId'" in str(error))
-
-		incompleteJson['type'] = "NotValid"
-		try:
-			forceObjectClass(incompleteJson, ProductOnClient)
-			self.fail("No error from invalid type.")
-		except ValueError as error:
-			self.assertTrue("Invalild object type: NotValid" in str(error))
+from OPSI.Object import OpsiClient, Host, ProductOnClient
+from OPSI.Types import (args, forceActionRequest, forceActionProgress,
+	forceArchitecture, forceBool, forceDict, forceBoolList, forceEmailAddress,
+	forceFilename, forceFloat, forceFqdn, forceGroupType, forceHardwareAddress,
+	forceHostId, forceInstallationStatus, forceInt, forceIntList, forceIPAddress,
+	forceNetworkAddress, forceLanguageCode, forceList, forceObjectClass,
+	forceOct, forceOpsiHostKey, forceOpsiTimestamp,	forcePackageVersion,
+	forceProductId, forceProductType, forceProductVersion, forceTime,
+	forceUnicode, forceUnicodeList, forceUnicodeLowerList, forceUniqueList,
+	forceUrl)
 
 
-class ForceObjectClassHashTestCase(unittest.TestCase):
-	def setUp(self):
-		self.object = OpsiClient(
-			id='test1.test.invalid',
-			description='Test client 1',
-			notes='Notes ...',
-			hardwareAddress='00:01:02:03:04:05',
-			ipAddress='192.168.1.100',
-			lastSeen='2009-01-01 00:00:00',
-			opsiHostKey='45656789789012789012345612340123'
-		)
+@pytest.fixture
+def opsiClient():
+	return OpsiClient(
+		id='test1.test.invalid',
+		description='Test client 1',
+		notes='Notes ...',
+		hardwareAddress='00:01:02:03:04:05',
+		ipAddress='192.168.1.100',
+		lastSeen='2009-01-01 00:00:00',
+		opsiHostKey='45656789789012789012345612340123'
+	)
 
-		self.hash = self.object.toHash()
 
-	def tearDown(self):
-		del self.hash
-		del self.object
+@pytest.mark.parametrize("klass", [Host, OpsiClient])
+def testForceObjectClassToHostFromJSON(opsiClient, klass):
+	assert isinstance(forceObjectClass(opsiClient.toJson(), klass), klass)
 
-	def testForceObjectClassToHostFromHash(self):
-		self.assertTrue(isinstance(forceObjectClass(self.hash, Host), Host))
 
-	def testForceObjectClassToOpsiClientFromHash(self):
-		self.assertTrue(isinstance(forceObjectClass(self.hash, OpsiClient), OpsiClient))
+def testForcingObjectClassFromProductOnClientJSON():
+	json = {
+		"clientId": "dolly.janus.vater",
+		"actionRequest": "setup",
+		"productType": "LocalbootProduct",
+		"type": "ProductOnClient",
+		"productId": "hoer_auf_deinen_vater"
+	}
+
+	poc = forceObjectClass(json, ProductOnClient)
+
+	assert isinstance(poc, ProductOnClient)
+
+
+def testForcingObjectClassFromJSONHasGoodErrorDescription():
+	incompleteJson = {
+		"clientId": "Nellie*",
+		"actionRequest": "setup",
+		"productType": "LocalbootProduct",
+		"type": "ProductOnClient"
+	}
+
+	try:
+		forceObjectClass(incompleteJson, ProductOnClient)
+		pytest.fail("No error from incomplete json.")
+	except ValueError as error:
+		assert "Missing required argument(s): 'productId'" in str(error)
+
+	incompleteJson['type'] = "NotValid"
+	try:
+		forceObjectClass(incompleteJson, ProductOnClient)
+		pytest.fail("No error from invalid type.")
+	except ValueError as error:
+		assert "Invalild object type: NotValid" in str(error)
+
+
+@pytest.mark.parametrize("klass", [Host, OpsiClient])
+def testForceObjectClassFromHash(opsiClient, klass):
+	assert isinstance(forceObjectClass(opsiClient.toHash(), klass), klass)
 
 
 def funkyGenerator():
@@ -157,158 +129,139 @@ def testForceListConvertingSet():
 		assert element in resultList
 
 
-class ForceUnicodeTestCase(unittest.TestCase):
-	def testForcingResultsInUnicode(self):
-		self.assertTrue(isinstance(forceUnicode('x'), unicode))
+def testForceUnicodeResultsInUnicode():
+	assert isinstance(forceUnicode('x'), unicode)
 
 
-class ForceUnicodeListTestCase(unittest.TestCase):
-	def testForcingResultsInUnicode(self):
-		for i in forceUnicodeList([None, 1, 'x', u'y']):
-			self.assertTrue(isinstance(i, unicode))
+def testForceUnicodeListResultsInListOfUnicode():
+	returned = forceUnicodeList([None, 1, 'x', u'y'])
+	assert isinstance(returned, list)
+
+	for i in returned:
+		assert isinstance(i, unicode)
 
 
-class ForceUnicodeLowerListTestCase(unittest.TestCase):
-	def testForcingResultsInLowercase(self):
-		self.assertEqual(forceUnicodeLowerList(['X', u'YES']), ['x', 'yes'])
-
-	def testForcingResultsInUnicode(self):
-		for i in forceUnicodeLowerList([None, 1, 'X', u'y']):
-			self.assertTrue(isinstance(i, unicode))
+def testForceUnicodeLowerListResultsInLowercase():
+	assert forceUnicodeLowerList(['X', u'YES']) == ['x', 'yes']
 
 
-class ForceBoolTestCase(unittest.TestCase):
-	"""
-	Testing if forceBool works. Always should work case-insensitive.
-	"""
-	def testOnOff(self):
-		self.assertTrue(forceBool('on'))
-		self.assertFalse(forceBool('OFF'))
-
-	def testYesNo(self):
-		self.assertTrue(forceBool('YeS'))
-		self.assertFalse(forceBool('no'))
-
-	def testOneZero(self):
-		self.assertTrue(forceBool(1))
-		self.assertTrue(forceBool('1'))
-		self.assertFalse(forceBool(0))
-		self.assertFalse(forceBool('0'))
-
-	def testXMarksTheSpot(self):
-		self.assertTrue(forceBool(u'x'))
-
-	def testBoolTypes(self):
-		self.assertTrue(forceBool(True))
-		self.assertFalse(forceBool(False))
-
-	def testTrueAndFalseAsStrings(self):
-		self.assertTrue(forceBool("TRUE"))
-		self.assertTrue(forceBool("true"))  # JSON style
-		self.assertFalse(forceBool("FALSE"))
-		self.assertFalse(forceBool("false"))  # JSON style
-
-class ForceBoolListTestCase(unittest.TestCase):
-	def testPositiveList(self):
-		for i in forceBoolList([1, 'yes', 'on', '1', True]):
-			self.assertTrue(i)
-
-	def testMethod(self):
-		for i in forceBoolList([None, 'no', 'false', '0', False]):
-			self.assertFalse(i)
+def testForceUnicodeLowerListResultsInUnicode():
+	for i in forceUnicodeLowerList([None, 1, 'X', u'y']):
+		assert isinstance(i, unicode)
 
 
-class ForceIntTestCase(unittest.TestCase):
-	def testWithString(self):
-		self.assertEquals(forceInt('100'), 100)
-
-	def testWithNegativeValueInString(self):
-		self.assertEquals(forceInt('-100'), -100)
-
-	def testWithLongValue(self):
-		self.assertEquals(forceInt(long(1000000000000000)), 1000000000000000)
-
-	def testRaisingValueError(self):
-		self.assertRaises(ValueError, forceInt, 'abc')
+@pytest.mark.parametrize("value", ("on", "oN", 'YeS', 1, '1', 'x', True, 'true', 'TRUE'))
+def testForceBoolWithTrueValues(value):
+	assert forceBool(value) is True
 
 
-class ForceIntListTestCase(unittest.TestCase):
-	def testForcing(self):
-		self.assertEquals(forceIntList(['100', 1, u'2']), [100, 1 , 2])
+@pytest.mark.parametrize("value", ("off", "oFF", 'no', 0, '0', False, 'false', 'FALSE'))
+def testForceBoolWithFalsyValues(value):
+	assert forceBool(value) is False
 
 
-class ForceOctTestCase(unittest.TestCase):
-	def testForcingDoesNotChangeValue(self):
-		self.assertEquals(forceOct(0o666), 0o666)
-		self.assertEquals(forceOct(0o750), 0o750)
-
-	def testForcingString(self):
-		self.assertEquals(forceOct('666'), 0o666)
-
-	def testForcingStringWithLeadingZero(self):
-		self.assertEquals(forceOct('0666'), 0o666)
-
-	def testRaisingErrors(self):
-		self.assertRaises(ValueError, forceOct, 'abc')
-		self.assertRaises(ValueError, forceOct, '8')
+def testForceBoolWithPositiveList():
+	for i in forceBoolList([1, 'yes', 'on', '1', True]):
+		assert i is True
 
 
-class ForceOpsiTimeStampTestCase(unittest.TestCase):
-	def testForcingReturnsString(self):
-		self.assertEquals(forceOpsiTimestamp('20000202111213'), u'2000-02-02 11:12:13')
-
-	def testResultIsUnicode(self):
-		self.assertTrue(isinstance(forceOpsiTimestamp('2000-02-02 11:12:13'), unicode))
-
-	def testRaisingErrorsOnWrongInput(self):
-		self.assertRaises(ValueError, forceOpsiTimestamp, 'abc')
-
-	def testForcingWithAnEmptyValue(self):
-		self.assertEqual(forceOpsiTimestamp(None), '0000-00-00 00:00:00')
-
-	def testForcingWithDatetime(self):
-		self.assertEqual(forceOpsiTimestamp(datetime.datetime(2013, 9, 11, 10, 54, 23)), '2013-09-11 10:54:23')
-		self.assertEqual(forceOpsiTimestamp(datetime.datetime(2013, 9, 11, 10, 54, 23, 123123)), '2013-09-11 10:54:23')
-
-	def testForcingEmptyValue(self):
-		self.assertEquals(u'0000-00-00 00:00:00', forceOpsiTimestamp(None))
-		self.assertEquals(u'0000-00-00 00:00:00', forceOpsiTimestamp(0))
-		self.assertEquals(u'0000-00-00 00:00:00', forceOpsiTimestamp(''))
+def testForceBoolWithNegativeList():
+	for i in forceBoolList([None, 'no', 'false', '0', False]):
+		assert i is False
 
 
-class ForceHostIdTestCase(unittest.TestCase):
-	def testForcingWithValidId(self):
-		self.assertEquals(forceHostId(u'client.test.invalid'), u'client.test.invalid')
-		self.assertTrue(forceHostId(u'client.test.invalid'), u'client.test.invalid')
-
-	def testInvalidHOstIdsRaiseExceptions(self):
-		self.assertRaises(ValueError, forceHostId, 'abc')
-		self.assertRaises(ValueError, forceHostId, 'abc.def')
-		self.assertRaises(ValueError, forceHostId, '.test.invalid')
-		self.assertRaises(ValueError, forceHostId, 'abc.uib.x')
+@pytest.mark.parametrize("value, expected", (
+	('100', 100),
+	('-100', -100),
+	(long(1000000000000000), 1000000000000000)
+))
+def testForceInt(value, expected):
+	assert expected == forceInt(value)
 
 
-class ForceHardwareAddressTestCase(unittest.TestCase):
-	def testForcingReturnsAddressSeperatedByColons(self):
-		self.assertEquals(forceHardwareAddress('12345678ABCD'), u'12:34:56:78:ab:cd')
-		self.assertEquals(forceHardwareAddress('12:34:56:78:ab:cd'), u'12:34:56:78:ab:cd')
+@pytest.mark.parametrize("value", ("abc", ))
+def testForceIntRaisesValueErrorIfNoConversionPossible(value):
+	with pytest.raises(ValueError):
+		forceInt(value)
 
-	def testForcingReturnsLowercaseLetters(self):
-		self.assertEquals(forceHardwareAddress('12-34-56-78-Ab-cD'), u'12:34:56:78:ab:cd')
-		self.assertEquals(forceHardwareAddress('12-34-56:78AB-CD'), u'12:34:56:78:ab:cd')
 
-	def testForcingResultsInUnicode(self):
-		self.assertTrue(isinstance(forceHardwareAddress('12345678ABCD'), unicode))
+def testForceIntList():
+	assert [100, 1, 2] == forceIntList(['100', 1, u'2'])
 
-	def testForcingInvalidAddressesRaiseExceptions(self):
-		self.assertRaises(ValueError, forceHardwareAddress, '12345678abc')
-		self.assertRaises(ValueError, forceHardwareAddress, '12345678abcdef')
-		self.assertRaises(ValueError, forceHardwareAddress, '1-2-3-4-5-6-7')
-		self.assertRaises(ValueError, forceHardwareAddress, None)
-		self.assertRaises(ValueError, forceHardwareAddress, True)
 
-	def testForcingEmptyStringReturnsEmptyString(self):
-		self.assertEquals("", forceHardwareAddress(""))
+@pytest.mark.parametrize("value, expected", (
+	(0o750, 0o750),
+	(0o666, 0o666),
+	('666', 0o666),
+	('0666', 0o666),
+))
+def testForceOct(value, expected):
+	assert expected == forceOct(value)
+
+
+@pytest.mark.parametrize("value", ('abc', '8'))
+def testForceOctRaisingErrorsOnInvalidValue(value):
+	with pytest.raises(ValueError):
+		forceOct(value)
+
+
+@pytest.mark.parametrize("value, expected", (
+	('20000202111213', u'2000-02-02 11:12:13'),
+	(None, '0000-00-00 00:00:00'),
+	(0, u'0000-00-00 00:00:00'),
+	('', u'0000-00-00 00:00:00'),
+	(datetime.datetime(2013, 9, 11, 10, 54, 23), '2013-09-11 10:54:23'),
+	(datetime.datetime(2013, 9, 11, 10, 54, 23, 123123), '2013-09-11 10:54:23'),
+))
+def testForceOpsiTimestamp(value, expected):
+	result = forceOpsiTimestamp(value)
+	assert expected == result
+	assert isinstance(result, unicode)
+
+
+@pytest.mark.parametrize("value", ('abc', '8'))
+def testForceOpsiTimestampRaisesErrorsOnWrongInput(value):
+	with pytest.raises(ValueError):
+		forceOpsiTimestamp(value)
+
+
+@pytest.mark.parametrize("hostId, expected", (
+	(u'client.test.invalid', u'client.test.invalid'),
+	(u'CLIENT.test.invalid', u'client.test.invalid')
+))
+def testForceHostId(hostId, expected):
+		assert expected == forceHostId(u'client.test.invalid')
+
+
+@pytest.mark.parametrize("hostId", ('abc', '8', 'abc.def', '.test.invalid', 'abc.uib.x'))
+def testForceHostIdRaisesExceptionIfInvalid(hostId):
+	with pytest.raises(ValueError):
+		forceHostId(hostId)
+
+
+@pytest.mark.parametrize("address, expected", (
+	('12345678ABCD', u'12:34:56:78:ab:cd'),
+	('12:34:56:78:ab:cd', u'12:34:56:78:ab:cd'),
+	('12-34-56-78-Ab-cD', u'12:34:56:78:ab:cd'),
+	('12-34-56:78AB-CD', u'12:34:56:78:ab:cd'),
+	('', ''),
+))
+def testForcingReturnsAddressSeperatedByColons(address, expected):
+	result = forceHardwareAddress(address)
+	assert expected == result
+	assert isinstance(result, unicode)
+
+
+@pytest.mark.parametrize("address", (
+	'12345678abc',
+	'12345678abcdef',
+	'1-2-3-4-5-6-7',
+	None,
+	True,
+))
+def testForcingInvalidAddressesRaiseExceptions(address):
+	with pytest.raises(ValueError):
+		forceHardwareAddress(address)
 
 
 @pytest.mark.parametrize("input, expected", [
@@ -335,198 +288,255 @@ def testForceIPAddressFailsOnInvalidInput(malformed_input):
 		forceIPAddress(input)
 
 
-class ForceNetworkAddressTestCase(unittest.TestCase):
-	def testForcing(self):
-		self.assertEquals(forceNetworkAddress('192.168.0.0/16'), u'192.168.0.0/16')
-
-	def testForcingReturnsUnicode(self):
-		self.assertTrue(isinstance(forceNetworkAddress('10.10.10.10/32'), unicode))
-
-	def testForcingWithInvalidAddressesRaisesExceptions(self):
-		self.assertRaises(ValueError, forceNetworkAddress, '192.168.101.1')
-		self.assertRaises(ValueError, forceNetworkAddress, '192.1.1.1/40')
-		self.assertRaises(ValueError, forceNetworkAddress, None)
-		self.assertRaises(ValueError, forceNetworkAddress, True)
-		self.assertRaises(ValueError, forceNetworkAddress, '10.10.1/24')
-		self.assertRaises(ValueError, forceNetworkAddress, 'a.2.3.4/0')
+@pytest.mark.parametrize("address, expected", (
+	('192.168.0.0/16', u'192.168.0.0/16'),
+	('10.10.10.10/32', u'10.10.10.10/32'),
+))
+def testforceNetworkAddress(address, expected):
+	result = forceNetworkAddress(address)
+	assert expected == result
+	assert isinstance(result, unicode)
 
 
-class ForceUrlTestCase(unittest.TestCase):
-	def testForcing(self):
-		self.assertTrue(forceUrl('file:///'), 'file:///')
-		self.assertTrue(forceUrl('file:///path/to/file'), 'file:///path/to/file')
-		self.assertTrue(forceUrl('smb://server/path'), 'smb://server/path')
-		self.assertTrue(forceUrl('https://x:y@server.domain.tld:4447/resource'), 'https://x:y@server.domain.tld:4447/resource')
-
-	def testForcingReturnsUnicode(self):
-		self.assertTrue(isinstance(forceUrl('file:///'), unicode))
-		self.assertTrue(isinstance(forceUrl('file:///path/to/file'), unicode))
-		self.assertTrue(isinstance(forceUrl('smb://server/path'), unicode))
-		self.assertTrue(isinstance(forceUrl('https://x:y@server.domain.tld:4447/resource'), unicode))
-
-	def testForcingWithInvalidURLsRaisesExceptions(self):
-		self.assertRaises(ValueError, forceUrl, 'abc')
-		self.assertRaises(ValueError, forceUrl, '/abc')
-		self.assertRaises(ValueError, forceUrl, 'http//server')
-		self.assertRaises(ValueError, forceUrl, 1)
-		self.assertRaises(ValueError, forceUrl, True)
-		self.assertRaises(ValueError, forceUrl, None)
-
-	def testForcingDoesNotForceLowercase(self):
-		"""
-		URLs must not be force lowercase because they could include an
-		username / password combination for an proxy.
-		"""
-		self.assertTrue(forceUrl('https://X:YY12ZZ@SERVER.DOMAIN.TLD:4447/resource'), 'https://X:YY12ZZ@SERVER.DOMAIN.TLD:4447/resource')
-		self.assertTrue(forceUrl('https://X:Y@server.domain.tld:4447/resource'), 'https://X:Y@server.domain.tld:4447/resource')
+@pytest.mark.parametrize("address", (
+	'192.168.101.1',
+	'192.1.1.1/40',
+	None,
+	True,
+	'10.10.1/24',
+	'a.2.3.4/0',
+))
+def testForceNetworkAddressWithInvalidAddressesRaisesExceptions(address):
+	with pytest.raises(ValueError):
+		forceNetworkAddress(address)
 
 
-class ForceOpsiHostKeyTestCase(unittest.TestCase):
-	def testForcingReturnsLowercase(self):
-		self.assertEquals(forceOpsiHostKey('abCdeF78901234567890123456789012'), 'abcdef78901234567890123456789012')
-
-	def testForcingReturnsUnicode(self):
-		self.assertTrue(isinstance(forceOpsiHostKey('12345678901234567890123456789012'), unicode))
-
-	def testForcingWithInvalidHostKeysRaisesExceptions(self):
-		self.assertRaises(ValueError, forceOpsiHostKey, 'abCdeF7890123456789012345678901')
-		self.assertRaises(ValueError, forceOpsiHostKey, 'abCdeF78901234567890123456789012b')
-		self.assertRaises(ValueError, forceOpsiHostKey, 'GbCdeF78901234567890123456789012')
-
-
-class ForceProductVersionTestCase(unittest.TestCase):
-	def testForcing(self):
-		forceProductVersion('1.0') == '1.0'
-
-	def testForcingReturnsUnicode(self):
-		self.assertTrue(isinstance(forceProductVersion('1.0'), unicode))
-
-	def testProductVersionDoesNotContainUppercase(self):
-		self.assertRaises(ValueError, forceProductVersion, 'A1.0')
+@pytest.mark.parametrize("url, expected", (
+	('file:///', 'file:///'),
+	('file:///path/to/file', 'file:///path/to/file'),
+	('smb://server/path', 'smb://server/path'),
+	('https://x:y@server.domain.tld:4447/resource', 'https://x:y@server.domain.tld:4447/resource'),
+))
+def testForceUrl(url, expected):
+	result = forceUrl(url)
+	assert expected == result
+	assert isinstance(result, unicode)
 
 
-class ForcePackageVersionTestCase(unittest.TestCase):
-	def testMethod(self):
-		self.assertEquals(forcePackageVersion(1), '1')
-
-	def testForcingReturnsUnicode(self):
-		self.assertTrue(isinstance(forcePackageVersion('8'), unicode))
-
-	def testPackageVersionDoesNotContainUppercase(self):
-		self.assertRaises(ValueError, forcePackageVersion, 'A')
-
-
-class ForceProductIdTestCase(unittest.TestCase):
-	def testMethod(self):
-		self.assertEquals(forceProductId('testProduct1'), 'testproduct1')
-
-	def testForcingReturnsUnicode(self):
-		self.assertTrue(isinstance(forceProductId('test-Product-1'), unicode))
-
-	def testForcingWithInvalidProductIdRaisesExceptions(self):
-		self.assertRaises(ValueError, forceProductId, u'äöü')
-		self.assertRaises(ValueError, forceProductId, 'product test')
+@pytest.mark.parametrize("url, expected", (
+	('https://X:YY12ZZ@SERVER.DOMAIN.TLD:4447/resource', 'https://X:YY12ZZ@SERVER.DOMAIN.TLD:4447/resource'),
+	('https://X:Y@server.domain.tld:4447/resource', 'https://X:Y@server.domain.tld:4447/resource'),
+))
+def testForceUrlDoesNotForceLowercase(url, expected):
+	"""
+	Complete URLs must not be forced to lowercase because they could \
+	include an username / password combination for an proxy.
+	"""
+	assert expected == forceUrl(url)
 
 
-class ForceFilenameTestCase(unittest.TestCase):
-	def testForcingReturnsUnicode(self):
-		self.assertTrue(isinstance(forceFilename('/tmp/test.txt'), unicode))
-
-	def testForcingFilename(self):
-		self.assertEquals(forceFilename('c:\\tmp\\test.txt'), u'c:\\tmp\\test.txt')
-
-
-class ForceInstallationStatusTestCase(unittest.TestCase):
-	def testForcingAcceptsOnlyValidStatus(self):
-		self.assertEquals(forceInstallationStatus('installed'), 'installed')
-		self.assertEquals(forceInstallationStatus('not_installed'), 'not_installed')
-
-	def testForcingReturnsUnicode(self):
-		self.assertTrue(isinstance(forceInstallationStatus('installed'), unicode))
-		self.assertTrue(isinstance(forceInstallationStatus('not_installed'), unicode))
-
-	def testForcingWithInvalidStatusRaisesExceptions(self):
-		self.assertRaises(ValueError, forceInstallationStatus, 'none')
-		self.assertRaises(ValueError, forceInstallationStatus, 'abc')
+@pytest.mark.parametrize("url", (
+	'abc',
+	'/abc',
+	'http//server',
+	1,
+	True,
+	None,
+))
+def testForceUrlWithInvalidURLsRaisesExceptions(url):
+	with pytest.raises(ValueError):
+		forceUrl(url)
 
 
-class ForceActionRequestTestCase(unittest.TestCase):
-	def testForcingWithInvalidStatusRaisesExceptions(self):
-		self.assertRaises(ValueError, forceActionRequest, 'installed')
-
-	def testForcingReturnsUnicode(self):
-		self.assertTrue(isinstance(forceActionRequest('setup'), unicode))
-
-	def testForcingReturnsLowercase(self):
-		self.assertEquals(forceActionRequest('setup'), str('setup').lower())
-		self.assertEquals(forceActionRequest('uninstall'), str('uninstall').lower())
-		self.assertEquals(forceActionRequest('update'), str('update').lower())
-		self.assertEquals(forceActionRequest('once'), str('once').lower())
-		self.assertEquals(forceActionRequest('always'), str('always').lower())
-		self.assertEquals(forceActionRequest('none'), str('none').lower())
-		self.assertEquals(forceActionRequest(None), str(None).lower())
-
-	def testForcingUndefinedReturnsNone(self):
-		self.assertEquals(None, forceActionRequest("undefined"))
+@pytest.mark.parametrize("hostKey", (
+	'abcdef78901234567890123456789012',
+))
+def testForceOpsiHostKey(hostKey):
+	result = forceOpsiHostKey(hostKey)
+	assert hostKey.lower() == result
+	assert isinstance(result, unicode)
 
 
-class ForceActionProgressTestCase(unittest.TestCase):
-	def testForcingReturnsUnicode(self):
-		self.assertTrue(isinstance(forceActionProgress('installing 50%'), unicode))
-
-	def testForcing(self):
-		self.assertEquals(forceActionProgress('installing 50%'), u'installing 50%')
-
-
-class ForceLanguageCodeTestCase(unittest.TestCase):
-	def testCasingGetsAdjusted(self):
-		self.assertEquals(forceLanguageCode('xx-xxxx-xx'), u'xx-Xxxx-XX')
-		self.assertEquals(forceLanguageCode('yy_yy'), u'yy-YY')
-		self.assertEquals(forceLanguageCode('zz_ZZZZ'), u'zz-Zzzz')
-
-	def testForcing(self):
-		self.assertEquals(forceLanguageCode('dE'), u'de')
-		self.assertEquals(forceLanguageCode('en-us'), u'en-US')
-
-	def testForcingWithWrongCodeSetupRaisesExceptions(self):
-		self.assertRaises(ValueError, forceLanguageCode, 'de-DEU')
+@pytest.mark.parametrize("hostKey", (
+	'abCdeF7890123456789012345678901',  # too short
+	'abCdeF78901234567890123456789012b',  # too long
+	'GbCdeF78901234567890123456789012',
+))
+def testForceOpsiHostKeyWithInvalidHostKeysRaisesExceptions(hostKey):
+	with pytest.raises(ValueError):
+		forceOpsiHostKey(hostKey)
 
 
-class ForceArchitectureTestCase(unittest.TestCase):
-	def testForcingReturnsLowercase(self):
-		self.assertEquals(forceArchitecture('X86'), u'x86')
-		self.assertEquals(forceArchitecture('X64'), u'x64')
+@pytest.mark.parametrize("version, expected", (
+	('1.0', '1.0'),
+))
+def testForceProductVersion(version, expected):
+	result = forceProductVersion(version)
+	assert expected == result
+	assert isinstance(result, unicode)
 
 
-class ForceTimeTestCase(unittest.TestCase):
-	def testForcingFailsWithInvalidTime(self):
-		self.assertRaises(ValueError, forceTime, 'Hello World!')
-
-	def testForcingWorksWithVariousTypes(self):
-		self.assertTrue(isinstance(forceTime(time.time()), time.struct_time))
-		self.assertTrue(isinstance(forceTime(time.localtime()), time.struct_time))
-		self.assertTrue(isinstance(forceTime(datetime.datetime.now()), time.struct_time))
+@pytest.mark.parametrize("version", ('A1.0', ))
+def testProductVersionDoesNotContainUppercase(version):
+	with pytest.raises(ValueError):
+		forceProductVersion(version)
 
 
-class ForceEmailAddressTestCase(unittest.TestCase):
-	def testForcingRequiresValidMailAddress(self):
-		self.assertRaises(ValueError, forceEmailAddress, 'infouib.de')
+@pytest.mark.parametrize("version, expected", (
+	(1, '1'),
+	(8, '8')
+))
+def testForcePackageVersion(version, expected):
+	result = forcePackageVersion(version)
+	assert expected == result
+	assert isinstance(result, unicode)
 
-	def testForcing(self):
-		self.assertEquals(forceEmailAddress('info@uib.de'), u'info@uib.de')
+
+@pytest.mark.parametrize("version", ('A', ))
+def testPackageVersionDoesNotAcceptUppercase(version):
+	with pytest.raises(ValueError):
+		forcePackageVersion(version)
 
 
-class ForceProductTypeTestCase(unittest.TestCase):
-	def testRaisingExceptionOnUnknownType(self):
-		self.assertRaises(ValueError, forceProductType, 'TrolololoProduct')
+@pytest.mark.parametrize("productId, expectedProductId", (
+	('testProduct1', 'testproduct1'),
+))
+def testForceProductId(productId, expectedProductId):
+	result = forceProductId(productId)
+	assert expectedProductId == result
+	assert isinstance(result, unicode)
 
-	def testForcingToLocalbootProduct(self):
-		self.assertEquals(forceProductType('LocalBootProduct'), 'LocalbootProduct')
-		self.assertEquals(forceProductType('LOCALBOOT'), 'LocalbootProduct')
 
-	def testForcingToNetbootProduct(self):
-		self.assertEquals(forceProductType('NetbOOtProduct'), 'NetbootProduct')
-		self.assertEquals(forceProductType('nETbOOT'), 'NetbootProduct')
+@pytest.mark.parametrize("productId", (u'äöü', 'product test'))
+def testForceProductIdWithInvalidProductIdRaisesExceptions(productId):
+	with pytest.raises(ValueError):
+		forceProductId(productId)
+
+
+@pytest.mark.parametrize("path, expected", (
+	('c:\\tmp\\test.txt', u'c:\\tmp\\test.txt'),
+))
+def testforceFilename(path, expected):
+	result = forceFilename(path)
+	assert expected == result
+	assert isinstance(expected, unicode)
+
+
+@pytest.mark.parametrize("status", ('installed', 'not_installed', 'unknown'))
+def testForceInstallationStatus(status):
+	result = forceInstallationStatus(status)
+	assert result == status
+	assert isinstance(result, unicode)
+
+
+@pytest.mark.parametrize("status", ('none', 'abc'))
+def testforceInstallationStatusWithInvalidStatusRaisesExceptions(status):
+	with pytest.raises(ValueError):
+		forceInstallationStatus(status)
+
+
+def testForceUnicodeWithInvalidStatusRaisesExceptions():
+	with pytest.raises(ValueError):
+		forceActionRequest('installed')
+
+
+@pytest.mark.parametrize("actionRequest", (
+	'setup',
+	'uninstall',
+	'update',
+	'once',
+	'always',
+	'none',
+	None
+))
+def testForceActionRequest(actionRequest):
+	returned = forceActionRequest(actionRequest)
+	assert returned == str(actionRequest).lower()
+	assert isinstance(returned, unicode)
+
+
+def testforceActionRequestReturnsNoneOnUndefined():
+	assert forceActionRequest("undefined") is None
+
+
+def testForceActionProgress():
+	returned = forceActionProgress('installing 50%')
+	assert returned == u'installing 50%'
+	assert isinstance(returned, unicode)
+
+
+@pytest.mark.parametrize("code, expected", (
+	('xx-xxxx-xx', u'xx-Xxxx-XX'),
+	('yy_yy', u'yy-YY'),
+	('zz_ZZZZ', u'zz-Zzzz'),
+))
+def testForceLanguageCodeNormalisesCasing(code, expected):
+	assert expected == forceLanguageCode(code)
+
+
+@pytest.mark.parametrize("code, expected", (
+	('dE', u'de'),
+	('en-us', u'en-US')
+))
+def testForceLanguageCode(code, expected):
+	assert forceLanguageCode('dE') == u'de'
+	assert forceLanguageCode('en-us') == u'en-US'
+
+
+def testForceLanguageCodeRaisesExceptionOnInvalidCode():
+	with pytest.raises(ValueError):
+		forceLanguageCode('de-DEU')
+
+
+@pytest.mark.parametrize("architecture, expected", (
+	('X86', u'x86'),
+	('X64', u'x64'),
+))
+def testForcingReturnsLowercase(architecture, expected):
+	assert expected == forceArchitecture(architecture)
+
+
+def testForceTimeFailsIfNoTimeGiven():
+	with pytest.raises(ValueError):
+		forceTime('Hello World!')
+
+
+@pytest.mark.parametrize("timeInfo", (
+	time.time(),
+	time.localtime(),
+	datetime.datetime.now(),
+))
+def testForceTimeReturnsTimeStruct(timeInfo):
+	assert isinstance(forceTime(timeInfo), time.struct_time)
+
+
+@pytest.mark.parametrize("invalidMailAddress", ('infouib.de',))
+def testForceEmailAddressRaisesAnExceptionOnInvalidMailAddress(invalidMailAddress):
+	with pytest.raises(ValueError):
+		forceEmailAddress(invalidMailAddress)
+
+
+@pytest.mark.parametrize("address, expected", (
+	(u'info@uib.de', 'info@uib.de'),
+))
+def testForceEmailAddress(address, expected):
+	assert expected == forceEmailAddress(address)
+
+
+@pytest.mark.parametrize("invalidType", ('TrolololoProduct', None))
+def testforceProductTypeRaisesExceptionOnUnknownType(invalidType):
+	with pytest.raises(ValueError):
+		forceProductType(invalidType)
+
+
+@pytest.mark.parametrize("inputString", ('LocalBootProduct', 'LOCALBOOT'))
+def testforceProductTypeToLocalbootProduct(inputString):
+	assert 'LocalbootProduct' == forceProductType(inputString)
+
+
+@pytest.mark.parametrize("inputString", ('NetbOOtProduct', 'nETbOOT'))
+def testforceProductTypeToNetbootProduct(inputString):
+	assert 'NetbootProduct' == forceProductType(inputString)
 
 
 @pytest.mark.parametrize("input, expected", [
@@ -536,58 +546,62 @@ class ForceProductTypeTestCase(unittest.TestCase):
 def testForceDictReturnsDict(input, expected):
 	assert forceDict(input) == expected
 
+
 @pytest.mark.parametrize("input", ['asdg', ['asdfg', 'asd']])
 def testForceDictFailsIfConversionImpossible(input):
 	with pytest.raises(ValueError):
 		forceDict(input)
 
 
-class ForceUniqueListTestCase(unittest.TestCase):
-	def testAfterForcingItemsInListAreUnique(self):
-		self.assertEqual([1], forceUniqueList([1,1]))
-		self.assertEqual([1,2,3], forceUniqueList((1,2,2,3)))
+@pytest.mark.parametrize("expected, before", (
+	([1], [1, 1]),
+	([1, 2, 3], (1, 2, 2, 3)),
+))
+def testAfterForcingItemsInListAreUnique(before, expected):
+	assert expected == forceUniqueList(before)
 
-	def testForcingDoesNotChangeOrder(self):
-		self.assertEqual([2,1,3,5,4], forceUniqueList([2,2,1,3,5,4,1]))
+
+def testForceUniqueListDoesNotChangeOrder():
+	assert [2, 1, 3, 5, 4] == forceUniqueList([2, 2, 1, 3, 5, 4, 1])
 
 
-class ArgsDecoratorTestCase(unittest.TestCase):
-	def testDecoratorArgumentsDefaultToNone(self):
+def testArgsDecoratorArgumentsDefaultToNone():
 
-		@args("somearg", "someOtherArg")
-		class SomeClass(object):
-			def __init__(self, **kwargs):
-				pass
+	@args("somearg", "someOtherArg")
+	class SomeClass(object):
+		def __init__(self, **kwargs):
+			pass
 
-		someObj = SomeClass()
+	someObj = SomeClass()
 
-		self.assertEquals(None, someObj.somearg)
-		self.assertEquals(None, someObj.someOtherArg)
+	assert someObj.somearg is None
+	assert someObj.someOtherArg is None
 
-	def testDecoratorTakesKeywordArguments(self):
 
-		@args("somearg", someOtherArg=forceInt)
-		class SomeOtherClass(object):
-			def __init__(self, **kwargs):
-				pass
+def testArgsDecoratorTakesKeywordArguments():
 
-		someOtherObj = SomeOtherClass(someOtherArg="5")
+	@args("somearg", someOtherArg=forceInt)
+	class SomeOtherClass(object):
+		def __init__(self, **kwargs):
+			pass
 
-		self.assertEquals(None, someOtherObj.somearg, "Expected somearg to be None, but got %s instead" % someOtherObj.somearg)
-		self.assertEquals(5, someOtherObj.someOtherArg, "Expected someOtherArg to be %d, but got %s instead." %(5, someOtherObj.someOtherArg))
+	someOtherObj = SomeOtherClass(someOtherArg="5")
 
-	def testDecoratorCreatesPrivateArgs(self):
+	assert someOtherObj.somearg is None
+	assert 5 == someOtherObj.someOtherArg
 
-		@args("_somearg", "_someOtherArg")
-		class SomeClass(object):
-			def __init__(self, **kwargs):
-				pass
 
-		someObj = SomeClass(somearg=5)
+def testArgsDecoratorCreatesPrivateArgs():
 
-		self.assertEquals(5, someObj._somearg, "Expected somearg to be %d, but got %s instead" % (5, someObj._somearg))
-		self.assertEquals(None, someObj._someOtherArg, "Expected someOtherArg to be None, but got %s instead" % someObj._someOtherArg)
+	@args("_somearg", "_someOtherArg")
+	class SomeClass(object):
+		def __init__(self, **kwargs):
+			pass
 
+	someObj = SomeClass(somearg=5)
+
+	assert 5 == someObj._somearg
+	assert someObj._someOtherArg is None
 
 
 def testForceFqdnRemovesTrailingDot():
@@ -644,7 +658,3 @@ def testForceFloat(input, expected):
 def testForceFloatFailsWithInvalidInput(invalidInput):
 	with pytest.raises(ValueError):
 		forceFloat(invalidInput)
-
-
-if __name__ == '__main__':
-	unittest.main()

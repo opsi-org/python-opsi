@@ -40,7 +40,7 @@ import pytest
     {'dispatchConfigfile': ''},
     {'dispatchConfigfile': 'nope'},
     {'dispatchConfig': ''},
-    {'dispatchConfig': [[u'.*', [u'file']]]},
+    {'dispatchConfig': [(u'.*', (u'file',))]},
 ])
 def testBackendCreationFailsIfConfigMissing(kwargs):
     with pytest.raises(BackendConfigurationError):
@@ -76,7 +76,7 @@ class BackendDispatcherWithBackendTestCase(unittest.TestCase, FileBackendMixin):
         self.tearDownBackend()
 
     def testLoadingDispatchConfig(self):
-        dispatchConfig = [[u'.*', [u'file']]]
+        dispatchConfig = [(u'.*', (u'file', ))]
 
         dispatcher = BackendDispatcher(
             dispatchConfigFile=self._fileBackendConfig['dispatchConfig'],

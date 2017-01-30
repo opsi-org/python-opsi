@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -34,6 +33,8 @@ from OPSI.Types import (forceHardwareDeviceId, forceHardwareVendorId,
 						forceLicenseContractId, forceSoftwareLicenseId,
 						forceLicensePoolId)
 from OPSI.Util.Task.ConfigureBackend import getBackendConfiguration
+
+__all__ = ('disableForeignKeyChecks', 'getTableColumns', 'updateMySQLBackend')
 
 logger = Logger()
 
@@ -458,7 +459,7 @@ def updateMySQLBackend(backendConfigFile=u'/etc/opsi/backends/mysql.conf',
 					mysql.execute(u"alter table %s MODIFY COLUMN `%s` VARCHAR(255);" % (tableName, fieldName))
 
 	# Changing description fields to type TEXT
-	for tableName in (u"PRODUCT_PROPERTY", u"BOOT_CONFIGURATION"):
+	for tableName in (u"PRODUCT_PROPERTY", ):
 		logger.notice(u"Updating field 'description' on table {name}".format(name=tableName))
 		fieldName = u"description"
 		mysql.execute(
@@ -494,6 +495,9 @@ def updateMySQLBackend(backendConfigFile=u'/etc/opsi/backends/mysql.conf',
 				mysql.execute(u"ALTER TABLE `{table}` MODIFY COLUMN `hostId` VARCHAR(255) NOT NULL;".format(table=tablename))
 
 	_fixLengthOfLicenseKeys(mysql)
+
+	if 'BOOT_CONFIGURATION' in tables:
+		_dropTableBootconfiguration(mysql)
 
 	mysqlBackend = MySQLBackend(**config)
 	mysqlBackend.backend_createBase()
@@ -543,3 +547,7 @@ def getTableColumns(database, tableName):
 	TableColumn = namedtuple("TableColumn", ["name", "type"])
 	return [TableColumn(column['Field'], column['Type']) for column
 			in database.getSet(u'SHOW COLUMNS FROM `{0}`;'.format(tableName))]
+
+
+def _dropTableBootconfiguration(database):
+	database.execute(u"drop table BOOT_CONFIGURATION;")
