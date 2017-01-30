@@ -45,6 +45,54 @@ from OPSI.Logger import Logger
 logger = Logger()
 
 
+def testDepotSelectionAlgorythmIsExecutable(depotSelectionAlgorythm):
+	"""
+	Executing the default configuration should never fail.
+	"""
+	exec(depotSelectionAlgorythm)
+
+
+def testDepotSelectionAlgorythmReturnsMasterDepotIfNoAlternativesAreGiven(depotSelectionAlgorythm):
+	exec(depotSelectionAlgorythm)
+
+	masterDepot = FakeDepot('clients.master.depot')
+	assert masterDepot == selectDepot({}, masterDepot)
+
+
+def testDepotSelectionAlgorithmByLowestLatency(depotSelectionAlgorithmByLatency):
+	exec(depotSelectionAlgorithmByLatency)
+
+	masterDepot = FakeDepot('clients.master.depot')
+	lowLatencyRepo = FakeDepot('x.y.z', latency=1.5)
+	alternativeDepots = [FakeDepot('a'), lowLatencyRepo, FakeDepot('b', latency=5)]
+	random.shuffle(alternativeDepots)
+	assert lowLatencyRepo == selectDepot({}, masterDepot, alternativeDepots)
+
+
+def testDepotSelectionByLatencyIgnoresDepotsWithoutLatency(depotSelectionAlgorithmByLatency):
+	exec(depotSelectionAlgorithmByLatency)
+
+	highLatencyRepo = FakeDepot('a', latency=10)
+	alternativeDepots = [highLatencyRepo]
+	random.shuffle(alternativeDepots)
+	assert highLatencyRepo == selectDepot({}, FakeDepot('m', latency=None), alternativeDepots)
+
+
+def testDepotSelectionAlgorithmByMasterDepotAndLatency(depotSelectionAlgorithmByMasterDepotAndLatency):
+	masterDepot = FakeDepot('clients.master.depot')
+	wantedRepo = FakeDepot('our.wanted.repo', latency=1, masterDepotId='clients.master.depot')
+	alternativeDepots = [
+		FakeDepot('another.master', latency=0.5),
+		FakeDepot('sub.for.another.master', latency=0.4, masterDepotId='another.master'),
+		wantedRepo,
+		FakeDepot('slower.repo.with.right.master', latency=1.5, masterDepotId='clients.master.depot')
+	]
+	random.shuffle(alternativeDepots)
+
+	exec(depotSelectionAlgorithmByMasterDepotAndLatency)
+	assert wantedRepo == selectDepot({}, masterDepot, alternativeDepots)
+
+
 @pytest.fixture(params=[
 	'getDepotSelectionAlgorithm',  # must always return a working algo
 	'getDepotSelectionAlgorithmByLatency',
@@ -113,50 +161,3 @@ class FakeDepot(object):
 	def __repr__(self):
 		return "<FakeDepot({id}, latency={latency}, masterDepotId={masterDepotId})>".format(**self.__dict__)
 
-
-def testDepotSelectionAlgorythmIsExecutable(depotSelectionAlgorythm):
-	"""
-	Executing the default configuration should never fail.
-	"""
-	exec(depotSelectionAlgorythm)
-
-
-def testDepotSelectionAlgorythmReturnsMasterDepotIfNoAlternativesAreGiven(depotSelectionAlgorythm):
-	exec(depotSelectionAlgorythm)
-
-	masterDepot = FakeDepot('clients.master.depot')
-	assert masterDepot == selectDepot({}, masterDepot)
-
-
-def testDepotSelectionAlgorithmByLowestLatency(depotSelectionAlgorithmByLatency):
-	exec(depotSelectionAlgorithmByLatency)
-
-	masterDepot = FakeDepot('clients.master.depot')
-	lowLatencyRepo = FakeDepot('x.y.z', latency=1.5)
-	alternativeDepots = [FakeDepot('a'), lowLatencyRepo, FakeDepot('b', latency=5)]
-	random.shuffle(alternativeDepots)
-	assert lowLatencyRepo == selectDepot({}, masterDepot, alternativeDepots)
-
-
-def testDepotSelectionByLatencyIgnoresDepotsWithoutLatency(depotSelectionAlgorithmByLatency):
-	exec(depotSelectionAlgorithmByLatency)
-
-	highLatencyRepo = FakeDepot('a', latency=10)
-	alternativeDepots = [highLatencyRepo]
-	random.shuffle(alternativeDepots)
-	assert highLatencyRepo == selectDepot({}, FakeDepot('m', latency=None), alternativeDepots)
-
-
-def testDepotSelectionAlgorithmByMasterDepotAndLatency(depotSelectionAlgorithmByMasterDepotAndLatency):
-	masterDepot = FakeDepot('clients.master.depot')
-	wantedRepo = FakeDepot('our.wanted.repo', latency=1, masterDepotId='clients.master.depot')
-	alternativeDepots = [
-		FakeDepot('another.master', latency=0.5),
-		FakeDepot('sub.for.another.master', latency=0.4, masterDepotId='another.master'),
-		wantedRepo,
-		FakeDepot('slower.repo.with.right.master', latency=1.5, masterDepotId='clients.master.depot')
-	]
-	random.shuffle(alternativeDepots)
-
-	exec(depotSelectionAlgorithmByMasterDepotAndLatency)
-	assert wantedRepo == selectDepot({}, masterDepot, alternativeDepots)
