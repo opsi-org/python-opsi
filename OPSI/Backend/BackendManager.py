@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2006-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -950,7 +949,7 @@ class BackendAccessControl(object):
 				if acl.get('allowAttributes'):
 					attributesToAdd = acl['allowAttributes']
 				elif acl.get('denyAttributes'):
-					attributesToAdd = (attribute for attribute in objHash.keys()
+					attributesToAdd = (attribute for attribute in objHash
 										if attribute not in acl['denyAttributes'])
 				else:
 					attributesToAdd = objHash.keys()

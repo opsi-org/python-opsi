@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This module is part of the desktop management solution opsi
@@ -152,7 +151,7 @@ class SQLBackendObjectModificationTracker(BackendModificationListener):
 
 	def _createTables(self):
 		tables = self._sql.getTables()
-		if 'OBJECT_MODIFICATION_TRACKER' not in tables.keys():
+		if 'OBJECT_MODIFICATION_TRACKER' not in tables:
 			logger.debug(u'Creating table OBJECT_MODIFICATION_TRACKER')
 			table = u'''CREATE TABLE `OBJECT_MODIFICATION_TRACKER` (
 					`id` integer NOT NULL ''' + self._sql.AUTOINCREMENT + ''',
@@ -1236,7 +1235,7 @@ class SQLBackend(ConfigDataBackend):
 		for module in mks:
 			if module in ('valid', 'signature'):
 				continue
-			if helpermodules.has_key(module):
+			if module in helpermodules:
 				val = helpermodules[module]
 				if int(val) > 0:
 					modules[module] = True
@@ -1784,7 +1783,7 @@ class SQLBackend(ConfigDataBackend):
 			if module in ('valid', 'signature'):
 				continue
 
-			if helpermodules.has_key(module):
+			if module in helpermodules:
 				val = helpermodules[module]
 				if int(val) > 0:
 					modules[module] = True
@@ -1850,7 +1849,7 @@ class SQLBackend(ConfigDataBackend):
 		licensePools = []
 		(attributes, filter) = self._adjustAttributes(LicensePool, attributes, filter)
 
-		if filter.has_key('productIds'):
+		if 'productIds' in filter:
 			if filter['productIds']:
 				licensePoolIds = filter.get('licensePoolId')
 				filter['licensePoolId'] = []

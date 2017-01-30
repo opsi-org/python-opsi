@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2006-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -993,7 +992,7 @@ class WebDAVRepository(HTTPRepository):
 		if not source.endswith('/'):
 			source += '/'
 
-		if recursive and self._contentCache.has_key(source):
+		if recursive and source in self._contentCache:
 			if time.time() - self._contentCache[source]['time'] > 60:
 				del self._contentCache[source]
 			else:
@@ -1240,7 +1239,7 @@ class DepotToLocalDirectorySychronizer(object):
 			relSource = s.split(u'/', 1)[1]
 			if relSource == self._productId + u'.files':
 				continue
-			if not self._fileInfo.has_key(relSource):
+			if relSource not in self._fileInfo:
 				continue
 			if f['type'] == 'dir':
 				self._synchronizeDirectories(s, d, progressSubject)
