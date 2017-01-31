@@ -67,7 +67,7 @@ def _configureHostcontrolBackend(backend, kwargs):
 	:type backend: HostControlBackend or HostControlSafeBackend
 	:type kwargs: dict
 	"""
-	for (option, value) in kwargs.items():
+	for option, value in kwargs.items():
 		option = option.lower()
 		if option == 'opsiclientdport':
 			backend._opsiclientdPort = forceInt(value)
