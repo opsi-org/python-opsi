@@ -62,6 +62,7 @@ def _configureHostcontrolBackend(backend, kwargs):
 	Keys in `kwargs` will be treated as lowercase.
 	Supported keys are 'broadcastaddresses', 'hostrpctimeout', \
 'maxconnections' opsiclientdport' and 'resolvehostaddress'.
+	Unrecognized options will be ignored.
 
 	:type backend: HostControlBackend or HostControlSafeBackend
 	:type kwargs: dict
