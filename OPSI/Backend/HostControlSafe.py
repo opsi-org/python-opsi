@@ -32,10 +32,11 @@ from contextlib import closing
 
 from OPSI.Logger import LOG_DEBUG, Logger
 from OPSI.Types import BackendMissingDataError
-from OPSI.Types import (forceBool, forceDict, forceHostIdList, forceInt,
-	forceList, forceUnicode, forceUnicodeList)
+from OPSI.Types import (forceHostIdList, forceInt,
+	forceList, forceUnicode)
 from OPSI.Backend.Backend import ExtendedBackend
 from OPSI.Backend.HostControl import RpcThread, ConnectionThread
+from OPSI.Backend.HostControl import _configureHostcontrolBackend
 
 __all__ = ['HostControlSafeBackend']
 
@@ -60,35 +61,7 @@ class HostControlSafeBackend(ExtendedBackend):
 		self._maxConnections = 50
 		self._broadcastAddresses = {"255.255.255.255": [12287]}
 
-		# Parse arguments
-		for (option, value) in kwargs.items():
-			option = option.lower()
-			if option == 'opsiclientdport':
-				self._opsiclientdPort = forceInt(value)
-			elif option == 'hostrpctimeout':
-				self._hostRpcTimeout = forceInt(value)
-			elif option == 'resolvehostaddress':
-				self._resolveHostAddress = forceBool(value)
-			elif option == 'maxconnections':
-				self._maxConnections = forceInt(value)
-			elif option == 'broadcastaddresses':
-				try:
-					self._broadcastAddresses = forceDict(value)
-				except ValueError:
-					# This is an old-style configuraton. Old default
-					# port was 12287 so we assume this as the default
-					# and convert everything to the new format.
-					self._broadcastAddresses = {bcAddress: [12287] for bcAddress in forceUnicodeList(value)}
-					logger.warning(
-						"Your hostcontrol backend configuration uses the old "
-						"format for broadcast addresses. The new format "
-						"allows to also set a list of ports to send the "
-						"broadcast to.\nPlease use this new "
-						"value in the future: {0!r}", self._broadcastAddresses
-					)
-
-		if (self._maxConnections < 1):
-			self._maxConnections = 1
+		_configureHostcontrolBackend(self, kwargs)
 
 	def __repr__(self):
 		try:

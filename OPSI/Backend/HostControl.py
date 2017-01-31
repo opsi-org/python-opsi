@@ -55,6 +55,47 @@ __all__ = ['RpcThread', 'ConnectionThread', 'HostControlBackend']
 logger = Logger()
 
 
+def _configureHostcontrolBackend(backend, kwargs):
+	"""
+	Configure `backend` to the values given in `kwargs`.
+
+	Keys in `kwargs` will be treated as lowercase.
+	Supported keys are 'broadcastaddresses', 'hostrpctimeout', \
+'maxconnections' opsiclientdport' and 'resolvehostaddress'.
+
+	:type backend: HostControlBackend or HostControlSafeBackend
+	:type kwargs: dict
+	"""
+	for (option, value) in kwargs.items():
+		option = option.lower()
+		if option == 'opsiclientdport':
+			backend._opsiclientdPort = forceInt(value)
+		elif option == 'hostrpctimeout':
+			backend._hostRpcTimeout = forceInt(value)
+		elif option == 'resolvehostaddress':
+			backend._resolveHostAddress = forceBool(value)
+		elif option == 'maxconnections':
+			backend._maxConnections = forceInt(value)
+		elif option == 'broadcastaddresses':
+			try:
+				backend._broadcastAddresses = forceDict(value)
+			except ValueError:
+				# This is an old-style configuraton. Old default
+				# port was 12287 so we assume this as the default
+				# and convert everything to the new format.
+				backend._broadcastAddresses = {bcAddress: [12287] for bcAddress in forceUnicodeList(value)}
+				logger.warning(
+					"Your hostcontrol backend configuration uses the old "
+					"format for broadcast addresses. The new format "
+					"allows to also set a list of ports to send the "
+					"broadcast to.\nPlease use this new "
+					"value in the future: {0!r}", backend._broadcastAddresses
+				)
+
+	if backend._maxConnections < 1:
+		backend._maxConnections = 1
+
+
 class RpcThread(KillableThread):
 	def __init__(self, hostControlBackend, hostId, address, username, password, method, params=[]):
 		KillableThread.__init__(self)
@@ -162,10 +203,7 @@ class HostControlBackend(ExtendedBackend):
 		self._maxConnections = 50
 		self._broadcastAddresses = {"255.255.255.255": [12287]}
 
-		self._parseArguments(kwargs)
-
-		if self._maxConnections < 1:
-			self._maxConnections = 1
+		_configureHostcontrolBackend(self, kwargs)
 
 	def __repr__(self):
 		try:
@@ -175,33 +213,6 @@ class HostControlBackend(ExtendedBackend):
 		except AttributeError:
 			# Can happen during initialisation
 			return u'<{0}()>'.format(self.__class__.__name__)
-
-	def _parseArguments(self, kwargs):
-		for (option, value) in kwargs.items():
-			option = option.lower()
-			if option == 'opsiclientdport':
-				self._opsiclientdPort = forceInt(value)
-			elif option == 'hostrpctimeout':
-				self._hostRpcTimeout = forceInt(value)
-			elif option == 'resolvehostaddress':
-				self._resolveHostAddress = forceBool(value)
-			elif option == 'maxconnections':
-				self._maxConnections = forceInt(value)
-			elif option == 'broadcastaddresses':
-				try:
-					self._broadcastAddresses = forceDict(value)
-				except ValueError:
-					# This is an old-style configuraton. Old default
-					# port was 12287 so we assume this as the default
-					# and convert everything to the new format.
-					self._broadcastAddresses = {bcAddress: [12287] for bcAddress in forceUnicodeList(value)}
-					logger.warning(
-						"Your hostcontrol backend configuration uses the old "
-						"format for broadcast addresses. The new format "
-						"allows to also set a list of ports to send the "
-						"broadcast to.\nPlease use this new "
-						"value in the future: {0!r}", self._broadcastAddresses
-					)
 
 	def _getHostAddress(self, host):
 		address = None
