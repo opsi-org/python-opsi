@@ -59,7 +59,7 @@ class HostControlSafeBackend(ExtendedBackend):
 		self._hostReachableTimeout = 3
 		self._resolveHostAddress = False
 		self._maxConnections = 50
-		self._broadcastAddresses = {"255.255.255.255": [12287]}
+		self._broadcastAddresses = {"255.255.255.255": (12287, )}
 
 		_configureHostcontrolBackend(self, kwargs)
 

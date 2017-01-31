@@ -84,7 +84,7 @@ def _configureHostcontrolBackend(backend, kwargs):
 				# This is an old-style configuraton. Old default
 				# port was 12287 so we assume this as the default
 				# and convert everything to the new format.
-				backend._broadcastAddresses = {bcAddress: [12287] for bcAddress in forceUnicodeList(value)}
+				backend._broadcastAddresses = {bcAddress: (12287, ) for bcAddress in forceUnicodeList(value)}
 				logger.warning(
 					"Your hostcontrol backend configuration uses the old "
 					"format for broadcast addresses. The new format "
@@ -92,6 +92,11 @@ def _configureHostcontrolBackend(backend, kwargs):
 					"broadcast to.\nPlease use this new "
 					"value in the future: {0!r}", backend._broadcastAddresses
 				)
+
+			newAddresses = {bcAddress: tuple(forceInt(port) for port in ports)
+							for bcAddress, ports
+							in backend._broadcastAddresses.items()}
+			backend._broadcastAddresses = newAddresses
 
 	if backend._maxConnections < 1:
 		backend._maxConnections = 1
@@ -202,7 +207,7 @@ class HostControlBackend(ExtendedBackend):
 		self._hostReachableTimeout = 3
 		self._resolveHostAddress = False
 		self._maxConnections = 50
-		self._broadcastAddresses = {"255.255.255.255": [12287]}
+		self._broadcastAddresses = {"255.255.255.255": (12287, )}
 
 		_configureHostcontrolBackend(self, kwargs)
 
