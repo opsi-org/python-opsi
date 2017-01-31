@@ -336,9 +336,9 @@ class HostControlBackend(ExtendedBackend):
 							sock.sendto(send_data, (broadcastAddress, port))
 
 				result[host.id] = {"result": "sent", "error": None}
-			except Exception as e:
-				logger.logException(e, LOG_DEBUG)
-				result[host.id] = {"result": None, "error": forceUnicode(e)}
+			except Exception as error:
+				logger.logException(error, LOG_DEBUG)
+				result[host.id] = {"result": None, "error": forceUnicode(error)}
 		return result
 
 	def hostControl_shutdown(self, hostIds=[]):
