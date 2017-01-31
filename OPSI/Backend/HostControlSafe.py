@@ -167,15 +167,13 @@ class HostControlSafeBackend(ExtendedBackend):
 					raise BackendMissingDataError(u"Failed to get hardware address for host '%s'" % host.id)
 
 				mac = host.hardwareAddress.replace(':', '')
-
-				# Pad the synchronization stream.
-				data = ''.join(['FFFFFFFFFFFF', mac * 16])
-				send_data = ''
+				data = ''.join(['FFFFFFFFFFFF', mac * 16])  # Pad the synchronization stream.
 
 				# Split up the hex values and pack.
+				payload = ''
 				for i in range(0, len(data), 2):
-					send_data = ''.join([
-						send_data,
+					payload = ''.join([
+						payload,
 						struct.pack('B', int(data[i:i + 2], 16))])
 
 				for broadcastAddress, targetPorts in self._broadcastAddresses.items():
@@ -185,7 +183,7 @@ class HostControlSafeBackend(ExtendedBackend):
 						logger.debug("Broadcasting to port {0!r}", port)
 						with closing(socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)) as sock:
 							sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, True)
-							sock.sendto(send_data, (broadcastAddress, port))
+							sock.sendto(payload, (broadcastAddress, port))
 
 				result[host.id] = {"result": "sent", "error": None}
 			except Exception as error:
