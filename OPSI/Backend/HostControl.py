@@ -324,7 +324,7 @@ class HostControlBackend(ExtendedBackend):
 				for i in range(0, len(data), 2):
 					send_data = ''.join([
 						send_data,
-						struct.pack('B', int(data[i: i + 2], 16))])
+						struct.pack('B', int(data[i:i + 2], 16))])
 
 				for broadcastAddress, targetPorts in self._broadcastAddresses.items():
 					logger.debug(u"Sending data to network broadcast {0} [{1}]", broadcastAddress, data)
