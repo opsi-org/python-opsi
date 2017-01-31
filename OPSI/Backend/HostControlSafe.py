@@ -179,7 +179,7 @@ class HostControlSafeBackend(ExtendedBackend):
 						struct.pack('B', int(data[i: i + 2], 16)) ])
 
 				for broadcastAddress, targetPorts in self._broadcastAddresses.items():
-					logger.debug(u"Sending data to network broadcast {0} {1}", broadcastAddress, data)
+					logger.debug(u"Sending data to network broadcast {0} [{1}]", broadcastAddress, data)
 
 					for port in targetPorts:
 						logger.debug("Broadcasting to port {0!r}", port)
