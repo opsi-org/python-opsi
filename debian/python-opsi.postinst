@@ -20,16 +20,16 @@ case "$1" in
 			fi
 		fi
 
+		if [ -z "`getent group opsiadmin`" ]; then
+			groupadd opsiadmin
+		fi
+
 		if [ -z "`getent passwd pcpatch`" ]; then
 			useradd --system -g $fileadmingroup -d /var/lib/opsi -s /bin/bash pcpatch
 		fi
 
 		if [ -z "`getent passwd opsiconfd`" ]; then
 			useradd --system -g $fileadmingroup -d /var/lib/opsi -s /bin/bash opsiconfd
-		fi
-
-		if [ -z "`getent group opsiadmin`" ]; then
-			groupadd opsiadmin
 		fi
 
 		chown -R root:$fileadmingroup /etc/opsi/backendManager
