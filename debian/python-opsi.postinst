@@ -24,7 +24,7 @@ case "$1" in
 			groupadd opsiadmin
 		fi
 
-		if which ucr >/dev/null 2>/dev/null; then
+		if ! which ucr >/dev/null 2>/dev/null; then
 			# On UCS we do not want to add the users as this is done
 			# in the join script of opsi4ucs.
 			if [ -z "`getent passwd pcpatch`" ]; then
