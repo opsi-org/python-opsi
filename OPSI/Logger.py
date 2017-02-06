@@ -476,8 +476,12 @@ will disable logging to a file.
 			if logFile == linkFile:
 				raise ValueError(u'logFile and linkFile are the same file!')
 
-			if os.path.exists(linkFile):
+			try:
 				os.unlink(linkFile)
+			except OSError as oserr:
+				if oserr.errno != 2:  # 2 = File not found
+					self.debug2(u"Failed to remove link {0!r}: {1}", linkFile, oserr)
+
 			os.symlink(logFile, linkFile)
 		except Exception as error:
 			self.error(u"Failed to create symlink from '%s' to '%s': %s" % (logFile, linkFile, error))
