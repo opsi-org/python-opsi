@@ -466,7 +466,7 @@ will disable logging to a file.
 			logFile = self.__logFile
 
 		if not logFile:
-			self.error(u"Cannot create symlink '%s': log-file unknown" % linkFile)
+			self.error(u"Cannot create symlink {0!r}: log-file unknown", linkFile)
 			return
 
 		if not os.path.isabs(linkFile):
@@ -484,7 +484,7 @@ will disable logging to a file.
 
 			os.symlink(logFile, linkFile)
 		except Exception as error:
-			self.error(u"Failed to create symlink from '%s' to '%s': %s" % (logFile, linkFile, error))
+			self.error(u"Failed to create symlink from {0!r} to {1!r}: {2}", logFile, linkFile, error)
 
 	def setFileLevel(self, level=LOG_NONE):
 		''' Maximum level of messages to appear in logfile
