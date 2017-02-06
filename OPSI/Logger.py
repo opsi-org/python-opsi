@@ -474,7 +474,7 @@ will disable logging to a file.
 
 		try:
 			if logFile == linkFile:
-				raise Exception(u'logFile and linkFile are the same file!')
+				raise ValueError(u'logFile and linkFile are the same file!')
 
 			if os.path.exists(linkFile):
 				os.unlink(linkFile)
