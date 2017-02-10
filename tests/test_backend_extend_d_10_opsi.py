@@ -352,6 +352,60 @@ def testSetProductActionRequestWithDependenciesWithOnce(backendManager):
 	assert depOnce.actionRequest == 'once'
 	assert depSetup.actionRequest == 'setup'
 
+def testSetProductActionRequestWithDependenciesUpdateOnlyNeededObjects(backendManager):
+	client, depot = createClientAndDepot(backendManager)
+
+	expectedModificationTime = '2017-02-07 08:50:21'
+
+	masterProduct = LocalbootProduct('master', '3', '1.0')
+	prodWithSetup = LocalbootProduct('reiter', '1.0', '1.0')
+	prodWithNoDep = LocalbootProduct('nicht_anfassen', '1.0', '1.0')
+	backendManager.product_createObjects([masterProduct, prodWithNoDep, prodWithSetup])
+
+	prodSetupDependency = ProductDependency(
+		productId=masterProduct.id,
+		productVersion=masterProduct.productVersion,
+		packageVersion=masterProduct.packageVersion,
+		productAction='setup',
+		requiredProductId=prodWithSetup.id,
+		requiredAction='setup',
+		requirementType='after',
+	)
+	backendManager.productDependency_createObjects([prodSetupDependency])
+
+	for prod in (masterProduct, prodWithNoDep, prodWithSetup):
+		pod = ProductOnDepot(
+			productId=prod.id,
+			productType=prod.getType(),
+			productVersion=prod.productVersion,
+			packageVersion=prod.packageVersion,
+			depotId=depot.id,
+		)
+		backendManager.productOnDepot_createObjects([pod])
+
+	poc = ProductOnClient(
+			clientId=client.id,
+			productId=prodWithNoDep.id,
+			productType=prodWithNoDep.getType(),
+			productVersion=prodWithNoDep.productVersion,
+			packageVersion=prodWithNoDep.packageVersion,
+			installationStatus='installed',
+			actionRequest=None,
+			modificationTime = expectedModificationTime,
+			actionResult='successful'
+		)
+
+	backendManager.productOnClient_createObjects([poc])
+
+	backendManager.setProductActionRequestWithDependencies(masterProduct.id, 'backend-test-1.vmnat.local', "setup")
+
+	productsOnClient = backendManager.productOnClient_getObjects()
+	assert 3 == len(productsOnClient)
+
+	for poc in productsOnClient:
+		if poc.productId == 'nicht_anfassen':
+			assert not poc.modificationTime == expectedModificationTime
+
 @pytest.mark.parametrize("sortalgorithm", [None, 'algorithm1', 'algorithm2', 'unknown-algo'])
 def testGetProductOrdering(prefilledBackendManager, sortalgorithm):
 	ordering = prefilledBackendManager.getProductOrdering('depotserver1.some.test', sortalgorithm)
