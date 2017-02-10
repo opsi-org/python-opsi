@@ -1,3 +1,9 @@
+python-opsi (4.0.7.35-1) stable; urgency=medium
+
+  * 10_opsi.conf: setProductActionRequestWithDependencies fix.
+
+ -- Erol Ueluekmen <e.ueluekmen@uib.de>  Fri, 10 Feb 2017 16:01:16 +0100
+
 python-opsi (4.0.7.34-3) experimental; urgency=medium
 
   * Negate check for UCS to make it work as intended.
