@@ -1,3 +1,15 @@
+python-opsi (4.0.7.34-3) experimental; urgency=medium
+
+  * Negate check for UCS to make it work as intended.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 02 Feb 2017 14:11:32 +0100
+
+python-opsi (4.0.7.34-2) experimental; urgency=medium
+
+  * Do not add users on UCS.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 01 Feb 2017 16:12:25 +0100
+
 python-opsi (4.0.7.34-1) stable; urgency=medium
 
   * 40_admin_tasks.conf: New method setupWhereFailed.
