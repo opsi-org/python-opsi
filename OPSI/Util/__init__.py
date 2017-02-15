@@ -617,7 +617,7 @@ def blowfishDecrypt(key, crypt):
 		return unicode(cleartext, 'utf-8')
 	except Exception as e:
 		logger.error(e)
-		raise BlowfishError(u"Failed to decrypt")
+		raise BlowfishError(u"Failed to convert decrypted text to unicode.")
 
 
 def encryptWithPublicKeyFromX509CertificatePEMFile(data, filename):
