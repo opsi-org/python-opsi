@@ -1012,3 +1012,10 @@ def testBlowfishEncryptionFailures(randomText, blowfishKey):
 
     with pytest.raises(BlowfishError):
         blowfishDecrypt(blowfishKey + 'f00b4', encodedText)
+
+
+def testBlowfishEncryptionFailsWithNoKey(randomText, blowfishKey):
+    encodedText = blowfishEncrypt(blowfishKey, randomText)
+
+    with pytest.raises(BlowfishError):
+        blowfishDecrypt(None, encodedText)

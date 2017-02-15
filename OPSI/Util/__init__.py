@@ -53,7 +53,7 @@ try:
 except ImportError:
 	import _argparse as argparse
 
-from OPSI.Logger import Logger
+from OPSI.Logger import Logger, LOG_DEBUG
 from OPSI.Types import (forceBool, forceFilename, forceFqdn, forceInt,
 						forceIPAddress, forceNetworkAddress, forceUnicode)
 
@@ -586,7 +586,12 @@ def blowfishEncrypt(key, cleartext):
 		raise BlowfishError(u"Failed to hex decode key '%s'" % key)
 
 	blowfish = Blowfish.new(key, Blowfish.MODE_CBC, BLOWFISH_IV)
-	crypt = blowfish.encrypt(cleartext)
+	try:
+		crypt = blowfish.encrypt(cleartext)
+	except Exception as encryptError:
+		logger.logException(encryptError, LOG_DEBUG)
+		raise BlowfishError(u"Failed to encrypt")
+
 	return unicode(crypt.encode("hex"))
 
 
@@ -608,7 +613,12 @@ def blowfishDecrypt(key, crypt):
 
 	crypt = crypt.decode("hex")
 	blowfish = Blowfish.new(key, Blowfish.MODE_CBC, BLOWFISH_IV)
-	cleartext = blowfish.decrypt(crypt)
+	try:
+		cleartext = blowfish.decrypt(crypt)
+	except Exception as decryptError:
+		logger.logException(decryptError, LOG_DEBUG)
+		raise BlowfishError(u"Failed to decrypt")
+
 	# Remove possible \0-chars
 	if cleartext.find('\0') != -1:
 		cleartext = cleartext[:cleartext.find('\0')]
