@@ -994,21 +994,21 @@ def testEncryptingAndDecryptingTextWithCertificate(tempCertPath, randomText):
     assert decryptedText == randomText
 
 
-@pytest.mark.parametrize("text", [u'this is some random string we want to test'])
-@pytest.mark.parametrize("key", [u'575bf0d0b557dd9184ae41e7ff58ead0'])
-def testBlowfishEncryption(text, key):
-    encodedText = blowfishEncrypt(key, text)
-    assert encodedText != text
-
-    decodedText = blowfishDecrypt(key, encodedText)
-    assert text == decodedText
+@pytest.fixture(params=['575bf0d0b557dd9184ae41e7ff58ead0'])
+def blowfishKey(request):
+    return request.param
 
 
-@pytest.mark.parametrize("text", [u'this is some random string we want to test'])
-@pytest.mark.parametrize("key", [u'575bf0d0b557dd9184ae41e7ff58ead0'])
-def testBlowfishEncryptionFailures(text, key):
-    encodedText = blowfishEncrypt(key, text)
-    assert encodedText != text
+def testBlowfishEncryption(randomText, blowfishKey):
+    encodedText = blowfishEncrypt(blowfishKey, randomText)
+    assert encodedText != randomText
+
+    decodedText = blowfishDecrypt(blowfishKey, encodedText)
+    assert randomText == decodedText
+
+
+def testBlowfishEncryptionFailures(randomText, blowfishKey):
+    encodedText = blowfishEncrypt(blowfishKey, randomText)
 
     with pytest.raises(BlowfishError):
-        blowfishDecrypt(key + 'f00b4', encodedText)
+        blowfishDecrypt(blowfishKey + 'f00b4', encodedText)
