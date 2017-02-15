@@ -36,7 +36,8 @@ from collections import defaultdict
 from contextlib import contextmanager
 
 from OPSI.Object import LocalbootProduct, OpsiClient
-from OPSI.Util import (chunk, compareVersions, decryptWithPrivateKeyFromPEMFile,
+from OPSI.Util import (blowfishDecrypt, blowfishEncrypt, chunk, compareVersions,
+    decryptWithPrivateKeyFromPEMFile,
     encryptWithPublicKeyFromX509CertificatePEMFile, findFiles, flattenSequence,
     formatFileSize, fromJson, generateOpsiHostKey, getfqdn, getGlobalConfig,
     ipAddressInNetwork, isRegularExpressionPattern, librsyncDeltaFile,
@@ -990,3 +991,13 @@ def testEncryptingAndDecryptingTextWithCertificate(tempCertPath, randomText):
 
     decryptedText = decryptWithPrivateKeyFromPEMFile(encryptedText, tempCertPath)
     assert decryptedText == randomText
+
+
+@pytest.mark.parametrize("text", [u'this is some random string we want to test'])
+@pytest.mark.parametrize("key", [u'575bf0d0b557dd9184ae41e7ff58ead0'])
+def testBlowfishEncryption(text, key):
+    encodedText = blowfishEncrypt(key, text)
+    assert encodedText != text
+
+    decodedText = blowfishDecrypt(key, encodedText)
+    assert text == decodedText
