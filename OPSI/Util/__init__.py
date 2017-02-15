@@ -566,8 +566,13 @@ def removeUnit(x):
 
 
 def blowfishEncrypt(key, cleartext):
-	"Takes cleartext string, returns hex-encoded, blowfish-encrypted string"
+	"""
+	Takes `cleartext` string, returns hex-encoded,
+	blowfish-encrypted string.
 
+	:raises BlowfishError: In case things go wrong.
+	:rtype: unicode
+	"""
 	cleartext = forceUnicode(cleartext).encode('utf-8')
 	key = forceUnicode(key)
 
@@ -586,7 +591,13 @@ def blowfishEncrypt(key, cleartext):
 
 
 def blowfishDecrypt(key, crypt):
-	"Takes hex-encoded, blowfish-encrypted string, returns cleartext string"
+	"""
+	Takes hex-encoded, blowfish-encrypted string,
+	returns cleartext string.
+
+	:raises BlowfishError: In case things go wrong.
+	:rtype: unicode
+	"""
 
 	key = forceUnicode(key)
 	crypt = forceUnicode(crypt)
