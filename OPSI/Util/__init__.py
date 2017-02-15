@@ -79,6 +79,14 @@ _ACCEPTED_CHARACTERS = (
 )
 
 
+class CryptoError(ValueError):
+	pass
+
+
+class BlowfishError(CryptoError):
+	pass
+
+
 class PickleString(str):
 
 	def __getstate__(self):
@@ -570,7 +578,7 @@ def blowfishEncrypt(key, cleartext):
 	try:
 		key = key.decode("hex")
 	except TypeError:
-		raise Exception(u"Failed to hex decode key '%s'" % key)
+		raise BlowfishError(u"Failed to hex decode key '%s'" % key)
 
 	blowfish = Blowfish.new(key, Blowfish.MODE_CBC, BLOWFISH_IV)
 	crypt = blowfish.encrypt(cleartext)
@@ -585,7 +593,8 @@ def blowfishDecrypt(key, crypt):
 	try:
 		key = key.decode("hex")
 	except TypeError as e:
-		raise Exception(u"Failed to hex decode key '%s'" % key)
+		raise BlowfishError(u"Failed to hex decode key '%s'" % key)
+
 	crypt = crypt.decode("hex")
 	blowfish = Blowfish.new(key, Blowfish.MODE_CBC, BLOWFISH_IV)
 	cleartext = blowfish.decrypt(crypt)
@@ -597,7 +606,7 @@ def blowfishDecrypt(key, crypt):
 		return unicode(cleartext, 'utf-8')
 	except Exception as e:
 		logger.error(e)
-		raise Exception(u"Failed to decrypt")
+		raise BlowfishError(u"Failed to decrypt")
 
 
 def encryptWithPublicKeyFromX509CertificatePEMFile(data, filename):

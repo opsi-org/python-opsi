@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -43,6 +43,7 @@ from OPSI.Util import (blowfishDecrypt, blowfishEncrypt, chunk, compareVersions,
     ipAddressInNetwork, isRegularExpressionPattern, librsyncDeltaFile,
     librsyncSignature, librsyncPatchFile, md5sum, objectToBeautifiedText,
     objectToHtml, randomString, removeUnit, toJson)
+from OPSI.Util import BlowfishError
 from OPSI.Util.Task.Certificate import createCertificate
 
 from .helpers import (fakeGlobalConf, patchAddress, patchEnvironmentVariables,
@@ -1001,3 +1002,13 @@ def testBlowfishEncryption(text, key):
 
     decodedText = blowfishDecrypt(key, encodedText)
     assert text == decodedText
+
+
+@pytest.mark.parametrize("text", [u'this is some random string we want to test'])
+@pytest.mark.parametrize("key", [u'575bf0d0b557dd9184ae41e7ff58ead0'])
+def testBlowfishEncryptionFailures(text, key):
+    encodedText = blowfishEncrypt(key, text)
+    assert encodedText != text
+
+    with pytest.raises(BlowfishError):
+        blowfishDecrypt(key + 'f00b4', encodedText)
