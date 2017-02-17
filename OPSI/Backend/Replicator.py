@@ -34,7 +34,7 @@ from OPSI.Object import *
 from OPSI.Types import forceBool, forceHostId, forceList
 from OPSI.Util.Message import ProgressSubject
 
-__all__ = ['BackendReplicator']
+__all__ = ('BackendReplicator', )
 
 logger = Logger()
 

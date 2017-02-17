@@ -60,10 +60,10 @@ elif os.name == 'nt':
 	import win32net
 	import win32security
 
-__all__ = [
+__all__ = (
 	'BackendManager', 'BackendDispatcher', 'BackendExtender',
 	'BackendAccessControl', 'backendManagerFactory'
-]
+)
 
 logger = Logger()
 

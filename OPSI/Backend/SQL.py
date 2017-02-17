@@ -54,10 +54,10 @@ from OPSI.Object import (AuditHardware, AuditHardwareOnHost, AuditSoftware,
 from OPSI.Backend.Backend import BackendModificationListener, ConfigDataBackend
 from OPSI.Util import timestamp
 
-__all__ = [
+__all__ = (
 	'timeQuery', 'onlyAllowSelect', 'SQL', 'SQLBackend',
 	'SQLBackendObjectModificationTracker'
-]
+)
 
 logger = Logger()
 

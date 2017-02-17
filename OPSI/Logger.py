@@ -54,7 +54,7 @@ try:
 except ImportError:
 	syslog = None
 
-__all__ = [
+__all__ = (
 	'COLORS_AVAILABLE', 'COLOR_BLACK', 'COLOR_BLUE', 'COLOR_CYAN',
 	'COLOR_GREEN', 'COLOR_LIGHT_BLACK', 'COLOR_LIGHT_BLUE', 'COLOR_LIGHT_CYAN',
 	'COLOR_LIGHT_GREEN', 'COLOR_LIGHT_MAGENTA', 'COLOR_LIGHT_RED',
@@ -65,7 +65,7 @@ __all__ = [
 	'LOG_CRITICAL', 'LOG_DEBUG', 'LOG_DEBUG2', 'LOG_ERROR', 'LOG_ESSENTIAL',
 	'LOG_INFO', 'LOG_NONE', 'LOG_NOTICE', 'LOG_WARNING', 'Logger',
 	'NOTICE_COLOR', 'WARNING_COLOR'
-]
+)
 
 if sys.version_info > (3, ):
 	# Python 3
