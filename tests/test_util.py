@@ -35,12 +35,14 @@ from contextlib import contextmanager
 from itertools import combinations_with_replacement
 
 from OPSI.Object import LocalbootProduct, OpsiClient
-from OPSI.Util import (chunk, compareVersions, decryptWithPrivateKeyFromPEMFile,
+from OPSI.Util import (blowfishDecrypt, blowfishEncrypt, chunk, compareVersions,
+	decryptWithPrivateKeyFromPEMFile,
 	encryptWithPublicKeyFromX509CertificatePEMFile, findFiles, formatFileSize,
 	fromJson, generateOpsiHostKey, getfqdn, getGlobalConfig, ipAddressInNetwork,
 	isRegularExpressionPattern, librsyncDeltaFile, librsyncSignature,
 	librsyncPatchFile, md5sum, objectToBeautifiedText, objectToHtml,
 	randomString, removeUnit, toJson)
+from OPSI.Util import BlowfishError
 from OPSI.Util.Task.Certificate import createCertificate
 
 from .helpers import (fakeGlobalConf, patchAddress, patchEnvironmentVariables,
@@ -869,3 +871,30 @@ def testEncryptingAndDecryptingTextWithCertificate(tempCertPath, randomText):
 
 	decryptedText = decryptWithPrivateKeyFromPEMFile(encryptedText, tempCertPath)
 	assert decryptedText == randomText
+
+
+@pytest.fixture(params=['575bf0d0b557dd9184ae41e7ff58ead0'])
+def blowfishKey(request):
+	return request.param
+
+
+def testBlowfishEncryption(randomText, blowfishKey):
+	encodedText = blowfishEncrypt(blowfishKey, randomText)
+	assert encodedText != randomText
+
+	decodedText = blowfishDecrypt(blowfishKey, encodedText)
+	assert randomText == decodedText
+
+
+def testBlowfishEncryptionFailures(randomText, blowfishKey):
+	encodedText = blowfishEncrypt(blowfishKey, randomText)
+
+	with pytest.raises(BlowfishError):
+		blowfishDecrypt(blowfishKey + 'f00b4', encodedText)
+
+
+def testBlowfishEncryptionFailsWithNoKey(randomText, blowfishKey):
+	encodedText = blowfishEncrypt(blowfishKey, randomText)
+
+	with pytest.raises(BlowfishError):
+		blowfishDecrypt(None, encodedText)
