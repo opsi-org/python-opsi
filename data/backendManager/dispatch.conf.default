@@ -35,6 +35,7 @@
 #       .*                 : file
 #
 #
+#    Typical configuration on a depot server.
 #    jsonrpc, opsipxeconfd and dhcpd backend:
 #       backend_.*         : jsonrpc, opsipxeconfd, dhcpd
 #       .*                 : jsonrpc
