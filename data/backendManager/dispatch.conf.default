@@ -28,7 +28,6 @@
 #
 #
 #    file and opsipxeconfd dhcpd backend (in case of ext. dhcp)
-#
 #       backend_.*         : file, opsipxeconfd
 #       host_.*            : file, opsipxeconfd
 #       productOnClient_.* : file, opsipxeconfd
