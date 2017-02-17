@@ -11,6 +11,14 @@
 # For every method executed on backend dispatcher the first matching regular expression will be decisive.
 #
 # Typical configurations:
+#    mysql, opsipxeconfd and dhcpd backend:
+#       backend_.*         : mysql, opsipxeconfd, dhcpd
+#       host_.*            : mysql, opsipxeconfd, dhcpd
+#       productOnClient_.* : mysql, opsipxeconfd
+#       configState_.*     : mysql, opsipxeconfd
+#       .*                 : mysql
+#
+#
 #    file, opsipxeconfd and dhcpd backend:
 #       backend_.*         : file, opsipxeconfd, dhcpd
 #       host_.*            : file, opsipxeconfd, dhcpd
