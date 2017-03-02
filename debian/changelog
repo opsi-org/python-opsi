@@ -1,3 +1,11 @@
+python-opsi (4.0.7.37-1) stable; urgency=medium
+
+  * 20_legacy.conf: Removed methods getPcpatchRSAPrivateKey and
+    setPcpatchPassword. Please use the opsi-admin task setPcpatchPassword
+    for setting the password instead.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 02 Mar 2017 11:23:49 +0100
+
 python-opsi (4.0.7.36-1) stable; urgency=medium
 
   * OPSI.Util: the methods for blowfish encryption / decryption now raise
