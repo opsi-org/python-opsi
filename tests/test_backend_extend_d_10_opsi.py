@@ -1,8 +1,8 @@
-#!/usr/bin/env python
-#-*- coding: utf-8 -*-
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -226,6 +226,7 @@ def testSetProductActionRequestWithDependenciesWithDependencyRequestingAction(ba
 	assert productThatShouldBeSetup.productId == 'javavm'
 	assert productThatShouldBeSetup.actionRequest == 'setup'
 
+
 @pytest.mark.parametrize("installationStatus", ["installed", "unknown", "not_installed", None])
 def testSetProductActionRequestWithDependenciesWithDependencyRequiredInstallationStatus(backendManager, installationStatus):
 	client, depot = createClientAndDepot(backendManager)
@@ -289,7 +290,7 @@ def testSetProductActionRequestWithDependenciesWithDependencyRequiredInstallatio
 
 	assert productThatShouldBeInstalled.productId == 'javavm'
 	if installationStatus == 'installed':
-	    assert not productThatShouldBeInstalled.actionRequest == 'setup'
+		assert productThatShouldBeInstalled.actionRequest != 'setup'
 
 
 def testSetProductActionRequestWithDependenciesWithOnce(backendManager):
