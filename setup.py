@@ -56,6 +56,7 @@ data_files = [
 			'data/backendManager/extend.d/10_opsi.conf',
 			'data/backendManager/extend.d/10_wim.conf',
 			'data/backendManager/extend.d/20_legacy.conf',
+			'data/backendManager/extend.d/30_sshcommands.conf',
 			'data/backendManager/extend.d/40_groupActions.conf',
 			'data/backendManager/extend.d/40_admin_tasks.conf',
 			'data/backendManager/extend.d/70_dynamic_depot.conf',
@@ -79,7 +80,14 @@ data_files = [
 		'/etc/opsi/',
 		[
 			'data/version',
+			'data/server_commands_default.conf',
 			'data/opsi.conf'
+		]
+	),
+	(
+		'/var/lib/opsi/config/',
+		[
+			'data/server_commands_custom.conf' 
 		]
 	),
 	(

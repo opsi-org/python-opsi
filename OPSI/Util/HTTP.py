@@ -628,7 +628,6 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 		"""
 		Return a fresh HTTPSConnection.
 		"""
-
 		if self.proxyURL:
 			headers = {}
 			try:
