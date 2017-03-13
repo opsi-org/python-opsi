@@ -29,7 +29,8 @@ import socket
 
 import pytest
 
-from OPSI.Object import OpsiClient, OpsiConfigserver, OpsiDepotserver
+from OPSI.Object import (HostGroup, ObjectToGroup, OpsiClient, OpsiConfigserver,
+    OpsiDepotserver)
 from OPSI.Types import BackendError, BackendMissingDataError
 
 
@@ -464,9 +465,13 @@ def testRenamingOpsiClientFailsIfOldClientMissing(extendedConfigDataBackend):
 def testRenamingOpsiClient(extendedConfigDataBackend):
     backend = extendedConfigDataBackend
 
-    host = OpsiClient(id='maskless.test.invalid')
-
+    host = OpsiClient(id='jacket.test.invalid')
     backend.host_insertObject(host)
+
+    protagonists = HostGroup("protagonists")
+    backend.group_insertObject(protagonists)
+
+    backend.objectToGroup_insertObject(ObjectToGroup(protagonists.getType(), protagonists.id, host.id))
 
     oldId = host.id
     newId = 'richard.test.invalid'
@@ -475,3 +480,12 @@ def testRenamingOpsiClient(extendedConfigDataBackend):
 
     assert not backend.host_getObjects(id=oldId)
     assert backend.host_getObjects(id=newId)
+
+    # We want to make sure that the membership of groups does get
+    # changed aswell.
+    assert not backend.objectToGroup_getObjects(objectId=oldId)
+    memberships = backend.objectToGroup_getObjects(objectId=newId)
+    assert memberships
+    membership = memberships[0]
+    assert membership.objectId == newId
+    assert membership.groupId == protagonists.id
