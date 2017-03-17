@@ -116,7 +116,7 @@ else
 fi
 
 if [ -z "`getent passwd pcpatch`" ]; then
-	useradd --system -g $fileadmingroup -d /var/lib/opsi -s /bin/bash pcpatch
+	useradd --system -g $fileadmingroup -d /var/lib/opsi -s /bin/false pcpatch
 fi
 
 if [ -z "`getent passwd opsiconfd`" ]; then
