@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2006-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -504,7 +503,7 @@ will disable logging to a file.
 				self.debug(u"Deleting config of object 0x%x" % id(object))
 				del self.__objectConfig[id(object)]
 
-			for objectId in self.__objectConfig.keys():
+			for objectId in self.__objectConfig:
 				self.debug2(u"Got special config for object 0x%x" % objectId)
 
 		threadId = unicode(thread.get_ident())
@@ -512,7 +511,7 @@ will disable logging to a file.
 			self.debug(u"Deleting config of thread %s" % threadId)
 			del self.__threadConfig[threadId]
 
-		for threadId in self.__threadConfig.keys():
+		for threadId in self.__threadConfig:
 			self.debug2(u"Got special config for thread %s" % threadId)
 
 	def _setThreadConfig(self, key, value):
