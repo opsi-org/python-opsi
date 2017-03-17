@@ -460,7 +460,8 @@ class JSONRPCBackend(Backend):
 								break
 					except Exception as error:
 						logger.info(forceUnicode(error))
-			except (OpsiAuthenticationError, OpsiTimeoutError, OpsiServiceVerificationError, socket.error):
+			except (OpsiAuthenticationError, OpsiTimeoutError, OpsiServiceVerificationError, socket.error) as connectionError:
+				logger.debug(u"Failed to connect: {0}", connectionError)
 				raise
 
 			self._createInstanceMethods(modules, realmodules, mysqlBackend)
