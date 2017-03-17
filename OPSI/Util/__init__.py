@@ -47,11 +47,10 @@ from Crypto.Cipher import Blowfish
 from hashlib import md5
 from itertools import islice
 
-from OPSI.Logger import Logger
+from OPSI.Logger import Logger, LOG_DEBUG
 from OPSI.Types import (forceBool, forceFilename, forceFqdn, forceInt,
 						forceIPAddress, forceNetworkAddress, forceUnicode)
 
-__version__ = '4.1.1'
 __all__ = [
 	'BLOWFISH_IV', 'OPSI_GLOBAL_CONF', 'PickleString',
 	'RANDOM_DEVICE', 'blowfishDecrypt', 'blowfishEncrypt',
@@ -83,6 +82,14 @@ _ACCEPTED_CHARACTERS = (
 	"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	"0123456789"
 )
+
+
+class CryptoError(ValueError):
+	pass
+
+
+class BlowfishError(CryptoError):
+	pass
 
 
 class PickleString(str):
@@ -518,8 +525,13 @@ def removeUnit(x):
 
 
 def blowfishEncrypt(key, cleartext):
-	"Takes cleartext string, returns hex-encoded, blowfish-encrypted string"
+	"""
+	Takes `cleartext` string, returns hex-encoded,
+	blowfish-encrypted string.
 
+	:raises BlowfishError: In case things go wrong.
+	:rtype: unicode
+	"""
 	cleartext = forceUnicode(cleartext).encode('utf-8')
 	key = forceUnicode(key)
 
@@ -530,25 +542,42 @@ def blowfishEncrypt(key, cleartext):
 	try:
 		key = key.decode("hex")
 	except TypeError:
-		raise Exception(u"Failed to hex decode key '%s'" % key)
+		raise BlowfishError(u"Failed to hex decode key '%s'" % key)
 
 	blowfish = Blowfish.new(key, Blowfish.MODE_CBC, BLOWFISH_IV)
-	crypt = blowfish.encrypt(cleartext)
+	try:
+		crypt = blowfish.encrypt(cleartext)
+	except Exception as encryptError:
+		logger.logException(encryptError, LOG_DEBUG)
+		raise BlowfishError(u"Failed to encrypt")
+
 	return unicode(crypt.encode("hex"))
 
 
 def blowfishDecrypt(key, crypt):
-	"Takes hex-encoded, blowfish-encrypted string, returns cleartext string"
+	"""
+	Takes hex-encoded, blowfish-encrypted string,
+	returns cleartext string.
+
+	:raises BlowfishError: In case things go wrong.
+	:rtype: unicode
+	"""
 
 	key = forceUnicode(key)
 	crypt = forceUnicode(crypt)
 	try:
 		key = key.decode("hex")
 	except TypeError as e:
-		raise Exception(u"Failed to hex decode key '%s'" % key)
+		raise BlowfishError(u"Failed to hex decode key '%s'" % key)
+
 	crypt = crypt.decode("hex")
 	blowfish = Blowfish.new(key, Blowfish.MODE_CBC, BLOWFISH_IV)
-	cleartext = blowfish.decrypt(crypt)
+	try:
+		cleartext = blowfish.decrypt(crypt)
+	except Exception as decryptError:
+		logger.logException(decryptError, LOG_DEBUG)
+		raise BlowfishError(u"Failed to decrypt")
+
 	# Remove possible \0-chars
 	if cleartext.find('\0') != -1:
 		cleartext = cleartext[:cleartext.find('\0')]
@@ -557,7 +586,7 @@ def blowfishDecrypt(key, crypt):
 		return unicode(cleartext, 'utf-8')
 	except Exception as e:
 		logger.error(e)
-		raise Exception(u"Failed to decrypt")
+		raise BlowfishError(u"Failed to convert decrypted text to unicode.")
 
 
 def encryptWithPublicKeyFromX509CertificatePEMFile(data, filename):

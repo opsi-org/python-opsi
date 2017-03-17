@@ -970,7 +970,7 @@ class OpsiConfFile(IniFile):
 	@requiresParsing
 	def getOpsiFileAdminGroup(self):
 		if not self._opsiConfig.get("groups", {}).get("fileadmingroup", ""):
-			return "pcpatch"
+			return u"pcpatch"
 		else:
 			return self._opsiConfig["groups"]["fileadmingroup"]
 

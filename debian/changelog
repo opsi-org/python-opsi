@@ -51,6 +51,39 @@ python-opsi (4.1.1.1-1) experimental; urgency=medium
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 04 Oct 2016 16:15:11 +0200
 
+python-opsi (4.0.7.37-1) stable; urgency=medium
+
+  * 20_legacy.conf: Removed methods getPcpatchRSAPrivateKey and
+    setPcpatchPassword. Please use the opsi-admin task setPcpatchPassword
+    for setting the password instead.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 02 Mar 2017 11:23:49 +0100
+
+python-opsi (4.0.7.36-1) stable; urgency=medium
+
+  * OPSI.Util: the methods for blowfish encryption / decryption now raise
+    a BlowfishError if things fail.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 16 Feb 2017 15:11:25 +0100
+
+python-opsi (4.0.7.35-1) stable; urgency=medium
+
+  * 10_opsi.conf: setProductActionRequestWithDependencies fix.
+
+ -- Erol Ueluekmen <e.ueluekmen@uib.de>  Fri, 10 Feb 2017 16:01:16 +0100
+
+python-opsi (4.0.7.34-3) experimental; urgency=medium
+
+  * Negate check for UCS to make it work as intended.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 02 Feb 2017 14:11:32 +0100
+
+python-opsi (4.0.7.34-2) experimental; urgency=medium
+
+  * Do not add users on UCS.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 01 Feb 2017 16:12:25 +0100
+
 python-opsi (4.0.7.34-1) stable; urgency=medium
 
   * 40_admin_tasks.conf: New method setupWhereFailed.
