@@ -331,7 +331,7 @@ class SystemSpecificHook(object):
 
 def addSystemHook(hook):
 	global hooks
-	if not hook in hooks:
+	if hook not in hooks:
 		hooks.append(hook)
 
 
