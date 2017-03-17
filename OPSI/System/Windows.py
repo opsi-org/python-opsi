@@ -66,7 +66,7 @@ from OPSI.Logger import Logger
 from OPSI.Types import (forceBool, forceDict, forceInt, forceUnicode,
 	forceUnicodeList, forceUnicodeLower, forceFilename, forceList)
 
-__all__ = [
+__all__ = (
 	'HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE', 'hooks', 'SystemSpecificHook',
 	'addSystemHook', 'removeSystemHook', 'getArchitecture', 'getOpsiHotfixName',
 	'getHostname', 'getFQDN', 'getFileVersionInfo', 'getProgramFilesDir',
@@ -86,7 +86,7 @@ __all__ = [
 	'runCommandInSession', 'createUser', 'deleteUser', 'existsUser',
 	'getUserSidFromHandle', 'getUserSid', 'getAdminGroupName',
 	'setLocalSystemTime', 'Impersonate'
-]
+)
 
 logger = Logger()
 hooks = []

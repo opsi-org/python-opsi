@@ -992,7 +992,7 @@ class WebDAVRepository(HTTPRepository):
 		if not source.endswith('/'):
 			source += '/'
 
-		if recursive and self._contentCache.has_key(source):
+		if recursive and source in self._contentCache:
 			if time.time() - self._contentCache[source]['time'] > 60:
 				del self._contentCache[source]
 			else:
@@ -1239,7 +1239,7 @@ class DepotToLocalDirectorySychronizer(object):
 			relSource = s.split(u'/', 1)[1]
 			if relSource == self._productId + u'.files':
 				continue
-			if not self._fileInfo.has_key(relSource):
+			if relSource not in self._fileInfo:
 				continue
 			if f['type'] == 'dir':
 				self._synchronizeDirectories(s, d, progressSubject)
@@ -1340,8 +1340,11 @@ class DepotToLocalDirectorySychronizer(object):
 
 				size = 0
 				for value in self._fileInfo.values():
-					if 'size' in value:
+					try:
 						size += int(value['size'])
+					except KeyError:
+						pass
+
 				productProgressSubject.setMessage(_(u"Synchronizing product %s (%.2f kByte)") % (self._productId, (size / 1024)))
 				productProgressSubject.setEnd(size)
 				productProgressSubject.setEndChangable(False)

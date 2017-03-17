@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2006-2008, 2015 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2017 uib GmbH <info@uib.de>
 # All rights reserved.
 
 # This program is free software: you can redistribute it and/or modify
@@ -90,10 +89,16 @@ class MessageSubject(Subject):
 	def __init__(self, id, type=u'', title=u'', **args):
 		Subject.__init__(self, id, type, title, **args)
 		self.reset()
-		if args.has_key('message'):
-			self._message  = forceUnicode(args['message'])
-		if args.has_key('severity'):
+		try:
+			self._message = forceUnicode(args['message'])
+		except KeyError:
+			pass
+
+		try:
 			self._severity = forceInt(args['severity'])
+		except KeyError:
+			pass
+
 		logger.debug(u"MessageSubject '%s' created" % self._id)
 
 	def reset(self):
@@ -128,14 +133,26 @@ class ChoiceSubject(MessageSubject):
 		MessageSubject.__init__(self, id, type, title, **args)
 		self.reset()
 		self._callbacks = []
-		if 'multiValue' in args:
+		try:
 			self._multiValue = forceBool(args['multiValue'])
-		if 'choices' in args:
+		except KeyError:
+			pass
+
+		try:
 			self._choices = forceUnicodeList(args['choices'])
-		if 'selectedIndexes' in args:
+		except KeyError:
+			pass
+
+		try:
 			self._selectedIndexes = forceIntList(args['selectedIndexes'])
-		if 'callbacks' in args:
+		except KeyError:
+			pass
+
+		try:
 			self._callbacks = args['callbacks']
+		except KeyError:
+			pass
+
 		logger.debug(u"ChoiceSubject '%s' created" % self._id)
 
 	def reset(self):
@@ -203,25 +220,53 @@ class ProgressSubject(MessageSubject):
 		self.reset()
 		self._fireAlways = True
 		self._endChangable = True
-		if args.has_key('end'):
+		try:
 			self._end = forceInt(args['end'])
-			if (self._end < 0): self._end = 0
-		if args.has_key('percent'):
+			if self._end < 0:
+				self._end = 0
+		except KeyError:
+			pass
+
+		try:
 			self._percent = args['percent']
-		if args.has_key('state'):
+		except KeyError:
+			pass
+
+		try:
 			self._state = args['state']
-		if args.has_key('timeStarted'):
+		except KeyError:
+			pass
+
+		try:
 			self._timeStarted = args['timeStarted']
-		if args.has_key('timeSpend'):
+		except KeyError:
+			pass
+
+		try:
 			self._timeSpend = args['timeSpend']
-		if args.has_key('timeLeft'):
+		except KeyError:
+			pass
+
+		try:
 			self._timeLeft = args['timeLeft']
-		if args.has_key('timeFired'):
+		except KeyError:
+			pass
+
+		try:
 			self._timeFired = args['timeFired']
-		if args.has_key('speed'):
+		except KeyError:
+			pass
+
+		try:
 			self._speed = args['speed']
-		if args.has_key('fireAlways'):
+		except KeyError:
+			pass
+
+		try:
 			self._fireAlways = forceBool(args['fireAlways'])
+		except KeyError:
+			pass
+
 		logger.debug(u"ProgressSubject '%s' created" % self._id)
 
 	def reset(self):

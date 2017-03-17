@@ -116,7 +116,7 @@ else
 fi
 
 if [ -z "`getent passwd pcpatch`" ]; then
-	useradd --system -g $fileadmingroup -d /var/lib/opsi -s /bin/bash pcpatch
+	useradd --system -g $fileadmingroup -d /var/lib/opsi -s /bin/false pcpatch
 fi
 
 if [ -z "`getent passwd opsiconfd`" ]; then
@@ -144,8 +144,8 @@ test -e /etc/opsi/passwd || touch /etc/opsi/passwd
 chown root:$fileadmingroup /etc/opsi/passwd
 chmod 660 /etc/opsi/passwd
 
-[ -e "/etc/opsi/backendManager/acl.conf" ]      || ln -s /etc/opsi/backendManager/acl.conf.default      /etc/opsi/backendManager/acl.conf
-[ -e "/etc/opsi/backendManager/dispatch.conf" ] || ln -s /etc/opsi/backendManager/dispatch.conf.default /etc/opsi/backendManager/dispatch.conf
+[ -e "/etc/opsi/backendManager/acl.conf" ]      || cp /etc/opsi/backendManager/acl.conf.default      /etc/opsi/backendManager/acl.conf
+[ -e "/etc/opsi/backendManager/dispatch.conf" ] || cp /etc/opsi/backendManager/dispatch.conf.default /etc/opsi/backendManager/dispatch.conf
 
 # ===[ files ]======================================
 %files -f INSTALLED_FILES
@@ -161,7 +161,7 @@ chmod 660 /etc/opsi/passwd
 %config(noreplace) /etc/opsi/backends/mysql.conf
 %config(noreplace) /etc/opsi/backends/opsipxeconfd.conf
 %config /etc/opsi/backendManager/acl.conf.default
-%config(noreplace) /etc/opsi/backendManager/dispatch.conf.default
+%config /etc/opsi/backendManager/dispatch.conf.default
 %config /etc/opsi/backendManager/extend.d/10_opsi.conf
 %config /etc/opsi/backendManager/extend.d/10_wim.conf
 %config /etc/opsi/backendManager/extend.d/20_legacy.conf

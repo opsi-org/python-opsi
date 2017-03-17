@@ -38,7 +38,7 @@ from OPSI.Types import (forceBool, forceHostIdList, forceInt, forceList,
 from OPSI.Backend.Backend import ExtendedBackend
 from OPSI.Backend.HostControl import RpcThread, ConnectionThread
 
-__all__ = ['HostControlSafeBackend']
+__all__ = ('HostControlSafeBackend', )
 
 logger = Logger()
 

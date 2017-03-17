@@ -56,7 +56,7 @@ from OPSI.Types import OpsiVersionError
 from OPSI.Object import *
 from OPSI.Util import objectToBeautifiedText, removeUnit
 
-__all__ = [
+__all__ = (
 	'Distribution', 'Harddisk', 'NetworkPerformanceCounter', 'SysInfo',
 	'SystemSpecificHook', 'addSystemHook', 'auditHardware', 'daemonize',
 	'execute', 'getActiveConsoleSessionId', 'getActiveSessionId',
@@ -71,7 +71,7 @@ __all__ = [
 	'isUCS', 'isUbuntu', 'isXenialSfdiskVersion', 'locateDHCPDConfig',
 	'locateDHCPDInit', 'mount', 'reboot', 'removeSystemHook',
 	'runCommandInSession', 'setLocalSystemTime', 'shutdown', 'umount', 'which'
-]
+)
 
 logger = Logger()
 

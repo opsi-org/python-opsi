@@ -39,7 +39,7 @@ import types
 
 from OPSI.Logger import Logger
 
-__all__ = [
+__all__ = (
 	'BackendAuthenticationError', 'BackendBadValueError',
 	'BackendConfigurationError', 'BackendError', 'BackendIOError',
 	'BackendMissingDataError', 'BackendModuleDisabledError',
@@ -74,7 +74,7 @@ __all__ = [
 	'forceSoftwareLicenseIdList', 'forceTime', 'forceUnicode',
 	'forceUnicodeList', 'forceUnicodeLower', 'forceUnicodeLowerList',
 	'forceUnicodeUpper', 'forceUniqueList', 'forceUnsignedInt', 'forceUrl'
-]
+)
 
 encoding = sys.getfilesystemencoding()
 logger = Logger()
