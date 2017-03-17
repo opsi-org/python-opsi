@@ -47,7 +47,8 @@ from OPSI.Backend.Backend import ConfigDataBackend
 from OPSI.Backend.SQL import (onlyAllowSelect, SQL, SQLBackend,
 	SQLBackendObjectModificationTracker)
 
-__all__ = ['ConnectionPool', 'MySQL', 'MySQLBackend', 'MySQLBackendObjectModificationTracker']
+__all__ = ('ConnectionPool', 'MySQL', 'MySQLBackend',
+	'MySQLBackendObjectModificationTracker')
 
 logger = Logger()
 

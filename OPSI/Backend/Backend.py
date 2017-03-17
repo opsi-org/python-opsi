@@ -66,12 +66,12 @@ if os.name == 'posix':
 			from OPSI.ldaptor.protocols import pureldap
 			from OPSI.ldaptor import ldapfilter
 
-__all__ = [
+__all__ = (
 	'getArgAndCallString', 'temporaryBackendOptions',
 	'DeferredCall', 'Backend', 'ExtendedBackend', 'ConfigDataBackend',
 	'ExtendedConfigDataBackend',
 	'ModificationTrackingBackend', 'BackendModificationListener'
-]
+)
 
 OPSI_VERSION_FILE = u'/etc/opsi/version'
 OPSI_MODULES_FILE = u'/etc/opsi/modules'

@@ -47,7 +47,7 @@ from OPSI.Types import (forceActionProgress, forceActionRequest,
 	forceUnicodeList, forceUnicodeLower, forceUnsignedInt, forceUrl)
 from OPSI.Util import fromJson, toJson, generateOpsiHostKey, timestamp
 
-__all__ = [
+__all__ = (
 	'AuditHardware', 'AuditHardwareOnHost', 'AuditSoftware',
 	'AuditSoftwareOnClient', 'AuditSoftwareToLicensePool', 'BaseObject',
 	'BoolConfig', 'BoolProductProperty', 'ConcurrentSoftwareLicense',
@@ -62,7 +62,7 @@ __all__ = [
 	'decodeIdent', 'getBackendMethodPrefix', 'getForeignIdAttributes',
 	'getIdentAttributes', 'getPossibleClassAttributes',
 	'mandatoryConstructorArgs', 'objectsDiffer'
-]
+)
 
 logger = Logger()
 _MANDATORY_CONSTRUCTOR_ARGS_CACHE = {}

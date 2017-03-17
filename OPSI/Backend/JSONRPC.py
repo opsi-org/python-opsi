@@ -51,7 +51,7 @@ from OPSI.Backend.Backend import Backend, DeferredCall
 from OPSI.Util import serialize, deserialize
 from OPSI.Util.HTTP import urlsplit, getSharedConnectionPool, deflateEncode, deflateDecode, gzipDecode
 
-__all__ = ['JSONRPC', 'JSONRPCThread', 'RpcQueue', 'JSONRPCBackend']
+__all__ = ('JSONRPC', 'JSONRPCThread', 'RpcQueue', 'JSONRPCBackend')
 
 logger = Logger()
 
