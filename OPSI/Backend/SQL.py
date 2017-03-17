@@ -1847,7 +1847,6 @@ class SQLBackend(ConfigDataBackend):
 
 		ConfigDataBackend.licensePool_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting licensePools, filter: %s" % filter)
-		licensePools = []
 		(attributes, filter) = self._adjustAttributes(LicensePool, attributes, filter)
 
 		if filter.has_key('productIds'):
@@ -1860,6 +1859,7 @@ class SQLBackend(ConfigDataBackend):
 					return []
 			del filter['productIds']
 
+		licensePools = []
 		attrs = [attr for attr in attributes if attr != 'productIds']
 		for res in self._sql.getSet(self._createQuery('LICENSE_POOL', attrs, filter)):
 			res['productIds'] = []
