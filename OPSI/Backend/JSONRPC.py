@@ -4,7 +4,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2010-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2010-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -72,11 +72,6 @@ class JSONRPC(DeferredCall):
 		self.process()
 
 	def getRpc(self):
-		if self.jsonrpcBackend.isLegacyOpsi():
-			for i, param in enumerate(self.params):
-				if param == '__UNDEF__':
-					self.params[i] = None
-
 		return {
 			"id": self.id,
 			"method": self.method,
@@ -276,7 +271,6 @@ class JSONRPCBackend(Backend):
 		self._socketTimeout = None
 		self._connectTimeout = 30
 		self._connectionPoolSize = 1
-		self._legacyOpsi = False
 		self._interface = None
 		self._rpcId = 0
 		self._rpcIdLock = threading.Lock()
@@ -386,10 +380,7 @@ class JSONRPCBackend(Backend):
 		res = None
 		if self._connected:
 			try:
-				if self._legacyOpsi:
-					res = self._jsonRPC('exit', retry=False)
-				else:
-					res = self._jsonRPC('backend_exit', retry=False)
+				res = self._jsonRPC('backend_exit', retry=False)
 			except Exception:
 				pass
 		if self._rpcQueue:
@@ -401,9 +392,6 @@ class JSONRPCBackend(Backend):
 			raise Exception(u'Not connected')
 
 		if enableAsync:
-			if self.isLegacyOpsi():
-				logger.error(u"Refusing to set async because we are connected to legacy opsi service")
-				return
 			self.startRpcQueue()
 			self._async = True
 		else:
@@ -415,10 +403,6 @@ class JSONRPCBackend(Backend):
 			raise Exception(u'Not connected')
 
 		deflate = forceBool(deflate)
-		if deflate and self.isLegacyOpsi():
-			logger.error(u"Refusing to set deflate because we are connected to legacy opsi service")
-			return
-
 		if deflate and self._wrongHTTPHeaders:
 			logger.error(u"Refusing to set deflate because opsi service answers with wrong HTTP header contents.")
 			return
@@ -478,19 +462,8 @@ class JSONRPCBackend(Backend):
 						logger.info(forceUnicode(error))
 			except (OpsiAuthenticationError, OpsiTimeoutError, OpsiServiceVerificationError, socket.error):
 				raise
-			except Exception as error:
-				logger.debug(u"backend_getInterface failed: {0}", forceUnicode(error))
-				logger.debug(u"trying getPossibleMethods_listOfHashes")
-				self._interface = self._jsonRPC(u'getPossibleMethods_listOfHashes')
-				logger.info(u"Legacy opsi")
-				self._legacyOpsi = True
-				self._deflate = False
-				self._jsonRPC(u'authenticated', retry=False)
 
-			if self._legacyOpsi:
-				self._createInstanceMethods34()
-			else:
-				self._createInstanceMethods(modules, realmodules, mysqlBackend)
+			self._createInstanceMethods(modules, realmodules, mysqlBackend)
 
 			self._connected = True
 			logger.info(u"{0}: Connected to service", self)
@@ -524,44 +497,8 @@ class JSONRPCBackend(Backend):
 		if not self._password and password:
 			self._password = password
 
-	def isOpsi35(self):
-		return not self._legacyOpsi
-
-	def isOpsi4(self):
-		return not self._legacyOpsi
-
-	def isLegacyOpsi(self):
-		return self._legacyOpsi
-
 	def jsonrpc_getSessionId(self):
 		return self._sessionId
-
-	def _createInstanceMethods34(self):
-		for method in self._interface:
-			# Create instance method
-			params = ['self']
-			params.extend(method.get('params', []))
-			paramsWithDefaults = list(params)
-			for index, param in enumerate(params):
-				if param.startswith('*'):
-					newParameter = param[1:]
-					params[index] = newParameter
-					paramsWithDefaults[index] = '{0}="__UNDEF__"'.format(newParameter)
-
-			logger.debug2("Creating instance method '%s'" % method['name'])
-
-			if len(params) == 2:
-				methodCode = ('def %s(%s):\n  if type(%s) == list: %s = [ %s ]\n  return self._jsonRPC(method = "%s", params = [%s])'
-					% (method['name'], ', '.join(paramsWithDefaults), params[1], params[1], params[1], method['name'], ', '.join(params[1:])))
-				logger.debug2(methodCode)
-				exec(methodCode)
-			else:
-				methodCode = ('def %s(%s): return self._jsonRPC(method = "%s", params = [%s])'
-					% (method['name'], ', '.join(paramsWithDefaults), method['name'], ', '.join(params[1:])))
-				logger.debug2(methodCode)
-				exec(methodCode)
-
-			setattr(self.__class__, method['name'], types.UnboundMethodType(eval(method['name']), None, self.__class__))
 
 	def _createInstanceMethods(self, modules=None, realmodules={}, mysqlBackend=False):
 		licenseManagementModule = True
