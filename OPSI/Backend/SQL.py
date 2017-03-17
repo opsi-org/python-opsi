@@ -1852,9 +1852,14 @@ class SQLBackend(ConfigDataBackend):
 		if filter.has_key('productIds'):
 			if filter['productIds']:
 				licensePoolIds = filter.get('licensePoolId')
-				filter['licensePoolId'] = []
-				for res in self._sql.getSet(self._createQuery('PRODUCT_ID_TO_LICENSE_POOL', ['licensePoolId'], {'licensePoolId': licensePoolIds, 'productId': filter['productIds']})):
-					filter['licensePoolId'].append(res['licensePoolId'])
+				query = self._createQuery(
+					'PRODUCT_ID_TO_LICENSE_POOL',
+					['licensePoolId'],
+					{'licensePoolId': licensePoolIds, 'productId': filter['productIds']}
+				)
+
+				filter['licensePoolId'] = [res['licensePoolId'] for res in self._sql.getSet(query)]
+
 				if not filter['licensePoolId']:
 					return []
 			del filter['productIds']
