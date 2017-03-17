@@ -53,8 +53,8 @@ case "$1" in
 		chown root:$fileadmingroup /etc/opsi/passwd
 		chmod 660 /etc/opsi/passwd
 
-		[ -e "/etc/opsi/backendManager/acl.conf" ]      || ln -s /etc/opsi/backendManager/acl.conf.default      /etc/opsi/backendManager/acl.conf
-		[ -e "/etc/opsi/backendManager/dispatch.conf" ] || ln -s /etc/opsi/backendManager/dispatch.conf.default /etc/opsi/backendManager/dispatch.conf
+		[ -e "/etc/opsi/backendManager/acl.conf" ]      || cp /etc/opsi/backendManager/acl.conf.default      /etc/opsi/backendManager/acl.conf
+		[ -e "/etc/opsi/backendManager/dispatch.conf" ] || cp /etc/opsi/backendManager/dispatch.conf.default /etc/opsi/backendManager/dispatch.conf
 
 		update-python-modules python-ldaptor.public >/dev/null 2>/dev/null || true
 		update-python-modules -p >/dev/null 2>/dev/null || true

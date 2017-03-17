@@ -170,17 +170,21 @@ If not given will use a default.
 	cert.get_subject().O = certparams['organization']
 	cert.get_subject().CN = certparams['commonName']
 
-	if 'organizationalUnit' in certparams:
+	try:
 		if certparams['organizationalUnit']:
 			cert.get_subject().OU = certparams['organizationalUnit']
 		else:
 			del certparams['organizationalUnit']
+	except KeyError:
+		pass
 
-	if 'emailAddress' in certparams:
+	try:
 		if certparams['emailAddress']:
 			cert.get_subject().emailAddress = certparams['emailAddress']
 		else:
 			del certparams['emailAddress']
+	except KeyError:
+		pass
 
 	LOGGER.notice("Generating new Serialnumber")
 	# As described in RFC5280 this value is required and must be a

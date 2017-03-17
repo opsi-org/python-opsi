@@ -349,10 +349,13 @@ class ChangelogFile(TextFile):
 
 					(maintainer, date) = line[3:].strip().split(u'  ', 1)
 					email = u''
-					if '<' in maintainer:
+					try:
 						(maintainer, email) = maintainer.split(u'<', 1)
 						maintainer = maintainer.strip()
 						email = email.strip().replace(u'<', u'').replace(u'>', u'')
+					except ValueError:
+						pass
+
 					currentEntry['maintainerName'] = maintainer
 					currentEntry['maintainerEmail'] = email
 					if u'+' in date:
@@ -1093,10 +1096,10 @@ class TxtSetupOemFile(ConfigFile):
 				optionName = None
 				(componentId, value) = line.split('=', 1)
 				componentId = componentId.strip()
-				if u',' in value:
+				try:
 					(description, optionName) = value.split(',', 1)
 					optionName = optionName.strip()
-				else:
+				except ValueError:
 					description = value
 				description = description.strip()
 				if description.startswith(u'"') and description.endswith(u'"'):

@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This module is part of the desktop management solution opsi
@@ -66,12 +65,12 @@ if os.name == 'posix':
 			from OPSI.ldaptor.protocols import pureldap
 			from OPSI.ldaptor import ldapfilter
 
-__all__ = [
+__all__ = (
 	'getArgAndCallString', 'temporaryBackendOptions',
 	'DeferredCall', 'Backend', 'ExtendedBackend', 'ConfigDataBackend',
 	'ExtendedConfigDataBackend',
 	'ModificationTrackingBackend', 'BackendModificationListener'
-]
+)
 
 OPSI_VERSION_FILE = u'/etc/opsi/version'
 OPSI_MODULES_FILE = u'/etc/opsi/modules'
@@ -2941,11 +2940,11 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		productOnDepots = forceObjectClassList(productOnDepots, ProductOnDepot)
 		products = {}
 		for productOnDepot in productOnDepots:
-			if not products.has_key(productOnDepot.productId):
+			if productOnDepot.productId not in products:
 				products[productOnDepot.productId] = {}
-			if not products[productOnDepot.productId].has_key(productOnDepot.productVersion):
+			if productOnDepot.productVersion not in products[productOnDepot.productId]:
 				products[productOnDepot.productId][productOnDepot.productVersion] = []
-			if not productOnDepot.packageVersion in products[productOnDepot.productId][productOnDepot.productVersion]:
+			if productOnDepot.packageVersion not in products[productOnDepot.productId][productOnDepot.productVersion]:
 				products[productOnDepot.productId][productOnDepot.productVersion].append(productOnDepot.packageVersion)
 
 		ret = self._backend.productOnDepot_deleteObjects(productOnDepots)
@@ -3170,15 +3169,14 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			# Get depot to client assignment
 			depotToClients = {}
 			for clientToDepot in self.configState_getClientToDepotserver(clientIds=clientIds):
-				if not depotToClients.has_key(clientToDepot['depotId']):
+				if clientToDepot['depotId'] not in depotToClients:
 					depotToClients[clientToDepot['depotId']] = []
 				depotToClients[clientToDepot['depotId']].append(clientToDepot['clientId'])
 			logger.debug(u"   * got depotToClients")
 
-
 			productOnDepots = {}
 			# Get product on depots which match the filter
-			for depotId in depotToClients.keys():
+			for depotId in depotToClients:
 				productOnDepots[depotId] = self._backend.productOnDepot_getObjects(
 					depotId=depotId,
 					productId=pocFilter.get('productId'),
@@ -3204,7 +3202,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			for (depotId, depotClientIds) in depotToClients.items():
 				for clientId in depotClientIds:
 					for pod in productOnDepots[depotId]:
-						if not pocByClientIdAndProductId[clientId].has_key(pod.productId):
+						if pod.productId not in pocByClientIdAndProductId[clientId]:
 							logger.debug(u"      - creating default productOnClient for clientId '%s', productId '%s'" % (clientId, pod.productId))
 							poc = ProductOnClient(
 									productId=pod.productId,

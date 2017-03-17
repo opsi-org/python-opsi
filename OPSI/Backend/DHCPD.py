@@ -41,7 +41,7 @@ from OPSI.Types import BackendIOError, BackendBadValueError, BackendMissingDataE
 from OPSI.Util.File import DHCPDConfFile
 from OPSI.Util import getfqdn
 
-__all__ = ['DHCPDBackend']
+__all__ = ('DHCPDBackend', )
 
 logger = Logger()
 

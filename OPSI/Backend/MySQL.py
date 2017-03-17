@@ -1,9 +1,8 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
-# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
 # All rights reserved.
 
 # This program is free software: you can redistribute it and/or modify
@@ -47,7 +46,8 @@ from OPSI.Backend.Backend import ConfigDataBackend
 from OPSI.Backend.SQL import (onlyAllowSelect, SQL, SQLBackend,
 	SQLBackendObjectModificationTracker)
 
-__all__ = ['ConnectionPool', 'MySQL', 'MySQLBackend', 'MySQLBackendObjectModificationTracker']
+__all__ = ('ConnectionPool', 'MySQL', 'MySQLBackend',
+	'MySQLBackendObjectModificationTracker')
 
 logger = Logger()
 
@@ -507,7 +507,7 @@ class MySQLBackend(SQLBackend):
 				if module in ('valid', 'signature'):
 					continue
 
-				if helpermodules.has_key(module):
+				if module in helpermodules:
 					val = helpermodules[module]
 					if int(val) > 0:
 						modules[module] = True
