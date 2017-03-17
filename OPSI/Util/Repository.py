@@ -1340,8 +1340,11 @@ class DepotToLocalDirectorySychronizer(object):
 
 				size = 0
 				for value in self._fileInfo.values():
-					if 'size' in value:
+					try:
 						size += int(value['size'])
+					except KeyError:
+						pass
+
 				productProgressSubject.setMessage(_(u"Synchronizing product %s (%.2f kByte)") % (self._productId, (size / 1024)))
 				productProgressSubject.setEnd(size)
 				productProgressSubject.setEndChangable(False)

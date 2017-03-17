@@ -939,9 +939,11 @@ class BackendAccessControl(object):
 				if acl.get('type') == 'self':
 					objectId = None
 					for identifier in ('id', 'objectId', 'hostId', 'clientId', 'depotId', 'serverId'):
-						if identifier in objHash:
+						try:
 							objectId = objHash[identifier]
 							break
+						except KeyError:
+							pass
 
 					if not objectId or objectId != self._username:
 						continue

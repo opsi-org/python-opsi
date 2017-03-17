@@ -133,14 +133,26 @@ class ChoiceSubject(MessageSubject):
 		MessageSubject.__init__(self, id, type, title, **args)
 		self.reset()
 		self._callbacks = []
-		if 'multiValue' in args:
+		try:
 			self._multiValue = forceBool(args['multiValue'])
-		if 'choices' in args:
+		except KeyError:
+			pass
+
+		try:
 			self._choices = forceUnicodeList(args['choices'])
-		if 'selectedIndexes' in args:
+		except KeyError:
+			pass
+
+		try:
 			self._selectedIndexes = forceIntList(args['selectedIndexes'])
-		if 'callbacks' in args:
+		except KeyError:
+			pass
+
+		try:
 			self._callbacks = args['callbacks']
+		except KeyError:
+			pass
+
 		logger.debug(u"ChoiceSubject '%s' created" % self._id)
 
 	def reset(self):

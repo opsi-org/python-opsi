@@ -1121,7 +1121,7 @@ class SQLBackend(ConfigDataBackend):
 		configs = []
 		(attributes, filter) = self._adjustAttributes(Config, attributes, filter)
 
-		if 'defaultValues' in filter:
+		try:
 			if filter['defaultValues']:
 				configIds = filter.get('configId')
 				filter['configId'] = [res['configId'] for res in
@@ -1138,8 +1138,10 @@ class SQLBackend(ConfigDataBackend):
 					return []
 
 			del filter['defaultValues']
+		except KeyError:
+			pass
 
-		if 'possibleValues' in filter:
+		try:
 			if filter['possibleValues']:
 				configIds = filter.get('configId')
 				filter['configId'] = [res['configId'] for res in
@@ -1156,11 +1158,16 @@ class SQLBackend(ConfigDataBackend):
 					return []
 
 			del filter['possibleValues']
+		except KeyError:
+			pass
+
+		readValues = not attributes or 'possibleValues' in attributes or 'defaultValues' in attributes
+
 		attrs = [attr for attr in attributes if attr not in ('defaultValues', 'possibleValues')]
 		for res in self._sql.getSet(self._createQuery('CONFIG', attrs, filter)):
 			res['possibleValues'] = []
 			res['defaultValues'] = []
-			if not attributes or 'possibleValues' in attributes or 'defaultValues' in attributes:
+			if readValues:
 				for res2 in self._sql.getSet(u"select * from CONFIG_VALUE where `configId` = '%s'" % res['configId']):
 					res['possibleValues'].append(res2['value'])
 					if res2['isDefault']:
@@ -1209,9 +1216,13 @@ class SQLBackend(ConfigDataBackend):
 
 		configStates = []
 		for res in self._sql.getSet(self._createQuery('CONFIG_STATE', attributes, filter)):
-			if 'values' in res:
+			try:
 				res['values'] = json.loads(res['values'])
+			except KeyError:
+				pass
+
 			configStates.append(ConfigState.fromHash(res))
+
 		return configStates
 
 	def configState_deleteObjects(self, configStates):
@@ -1850,7 +1861,7 @@ class SQLBackend(ConfigDataBackend):
 		licensePools = []
 		(attributes, filter) = self._adjustAttributes(LicensePool, attributes, filter)
 
-		if 'productIds' in filter:
+		try:
 			if filter['productIds']:
 				licensePoolIds = filter.get('licensePoolId')
 				filter['licensePoolId'] = []
@@ -1858,12 +1869,17 @@ class SQLBackend(ConfigDataBackend):
 					filter['licensePoolId'].append(res['licensePoolId'])
 				if not filter['licensePoolId']:
 					return []
+
 			del filter['productIds']
+		except KeyError:
+			pass
+
+		readProductIds = not attributes or 'productIds' in attributes
 
 		attrs = [attr for attr in attributes if attr != 'productIds']
 		for res in self._sql.getSet(self._createQuery('LICENSE_POOL', attrs, filter)):
 			res['productIds'] = []
-			if not attributes or 'productIds' in attributes:
+			if readProductIds:
 				for res2 in self._sql.getSet(u"select * from PRODUCT_ID_TO_LICENSE_POOL where `licensePoolId` = '%s'" % res['licensePoolId']):
 					res['productIds'].append(res2['productId'])
 			self._adjustResult(LicensePool, res)
@@ -2202,8 +2218,10 @@ class SQLBackend(ConfigDataBackend):
 			except KeyError:
 				pass  # not there - everything okay.
 
-		if 'hardwareClass' in attributes:
+		try:
 			attributes.remove('hardwareClass')
+		except ValueError:
+			pass
 
 		for attribute in attributes:
 			if attribute not in filter:
