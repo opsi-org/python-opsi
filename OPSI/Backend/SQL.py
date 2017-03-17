@@ -1295,16 +1295,21 @@ class SQLBackend(ConfigDataBackend):
 		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.product_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting products, filter: %s" % filter)
-		products = []
 		(attributes, filter) = self._adjustAttributes(Product, attributes, filter)
+
+		readWindowsSoftwareIDs = not attributes or 'windowsSoftwareIds' in attributes
+		products = []
 		for res in self._sql.getSet(self._createQuery('PRODUCT', attributes, filter)):
 			res['windowsSoftwareIds'] = []
 			res['productClassIds'] = []
-			if not attributes or 'windowsSoftwareIds' in attributes:
+			if readWindowsSoftwareIDs:
 				for res2 in self._sql.getSet(u"select * from WINDOWS_SOFTWARE_ID_TO_PRODUCT where `productId` = '%s'" % res['productId']):
 					res['windowsSoftwareIds'].append(res2['windowsSoftwareId'])
+
 			if not attributes or 'productClassIds' in attributes:
+				# TODO: is this missing an query?
 				pass
+
 			self._adjustResult(Product, res)
 			products.append(Product.fromHash(res))
 		return products
