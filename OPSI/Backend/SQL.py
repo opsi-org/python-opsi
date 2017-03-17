@@ -1205,8 +1205,9 @@ class SQLBackend(ConfigDataBackend):
 		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.configState_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting configStates, filter: %s" % filter)
-		configStates = []
 		(attributes, filter) = self._adjustAttributes(ConfigState, attributes, filter)
+
+		configStates = []
 		for res in self._sql.getSet(self._createQuery('CONFIG_STATE', attributes, filter)):
 			if 'values' in res:
 				res['values'] = json.loads(res['values'])
