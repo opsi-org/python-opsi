@@ -1,3 +1,11 @@
+python-opsi (4.1.1.2-1ubuntu1) UNRELEASED; urgency=medium
+
+  * Small refactorings in SQL backend.
+  * Cleaned up OPSI.Util.Repository.
+  * 20_legacy.conf: Various cleanups and adaption of code style.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 17 Mar 2017 16:10:09 +0100
+
 python-opsi (4.1.1.2-1) experimental; urgency=medium
 
   * OPSI.Backend.Backend got new context manager temporaryBackendOptions.
