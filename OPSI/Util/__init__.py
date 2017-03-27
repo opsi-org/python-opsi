@@ -507,7 +507,7 @@ def removeUnit(x):
 	elif unit.lower().endswith('b'):
 		mult = 1024
 		unit = unit[:-1]
-	elif unit.lower().endswith('s') or unit.lower().endswith('v'):
+	elif unit.lower().endswith(('s', 'v')):
 		unit = unit[:-1]
 
 	if unit.endswith('n'):

@@ -577,7 +577,7 @@ class PackageControlFile(TextFile):
 					   (sectionType == 'productproperty' and option == 'values') or \
 					   (sectionType == 'windows' and option == 'softwareids'):
 						try:
-							if not value.strip().startswith('{') and not value.strip().startswith('['):
+							if not value.strip().startswith(('{', '[')):
 								raise Exception(u'Not trying to read json string because value does not start with { or [')
 							value = fromJson(value.strip())
 							# Remove duplicates

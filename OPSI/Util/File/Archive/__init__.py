@@ -4,7 +4,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2006-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -486,9 +486,9 @@ def Archive(filename, format=None, compression=None, progressSubject=None):
 			Class = TarArchive
 		elif 'cpio archive' in fileType.lower():
 			Class = CpioArchive
-		elif filename.lower().endswith('tar') or filename.lower().endswith('tar.gz'):
+		elif filename.lower().endswith(('tar', 'tar.gz')):
 			Class = TarArchive
-		elif filename.lower().endswith('cpio') or filename.lower().endswith('cpio.gz'):
+		elif filename.lower().endswith(('cpio', 'cpio.gz')):
 			Class = CpioArchive
 
 	if not Class:

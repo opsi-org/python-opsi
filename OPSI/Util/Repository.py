@@ -506,11 +506,11 @@ class Repository:
 
 			copySrcContent = False
 
-			if source.endswith('/*.*') or source.endswith('\\*.*'):
+			if source.endswith(('/*.*', '\\*.*')):
 				source = source[:-4]
 				copySrcContent = True
 
-			elif source.endswith('/*') or source.endswith('\\*'):
+			elif source.endswith(('/*', '\\*')):
 				source = source[:-2]
 				copySrcContent = True
 
