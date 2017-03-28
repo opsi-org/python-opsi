@@ -1,3 +1,10 @@
+python-opsi (4.0.7.38-1) UNRELEASED; urgency=medium
+
+  * 10_opsi.conf: Do not pass invalid parameter in deleteProductDependency.
+  * Added SSH extension.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 28 Mar 2017 14:25:05 +0200
+
 python-opsi (4.0.7.37-1) stable; urgency=medium
 
   * 20_legacy.conf: Removed methods getPcpatchRSAPrivateKey and
