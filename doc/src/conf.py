@@ -312,7 +312,8 @@ def run_apidoc(_):
 
     cur_dir = os.path.abspath(os.path.dirname(__file__))
     output_path = cur_dir
-    apidoc_main(['--separate', '--output-dir', output_path, 'OPSI/'])
+    module_path = os.path.abspath(os.path.join(cur_dir, '..', '..', 'OPSI/'))
+    apidoc_main(['--separate', '--output-dir', output_path, module_path])
 
 
 def setup(app):
