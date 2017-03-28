@@ -293,3 +293,19 @@ epub_copyright = u'2013-{year}, uib GmbH'.format(year=datetime.datetime.now().ye
 
 # Allow duplicate toc entries.
 #epub_tocdup = True
+
+
+# Generate api documentation.
+# This is required to have all the docs on readthedocs.org
+# Taken from https://github.com/rtfd/readthedocs.org/issues/1139
+def run_apidoc(_):
+    from sphinx.apidoc import main as apidoc_main
+
+    cur_dir = os.path.abspath(os.path.dirname(__file__))
+    module = '.'
+    output_path = os.path.join(cur_dir, 'source')
+    apidoc_main(['-e', '-o', output_path, module, '--force'])
+
+
+def setup(app):
+    app.connect('builder-inited', run_apidoc)
