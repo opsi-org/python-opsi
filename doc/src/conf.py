@@ -20,6 +20,15 @@ import os
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
+try:
+    import duplicity
+except ImportError:
+    # duplicity could not be imported but we require it to render the
+    # docs properly.
+    # Fake it till you make it.
+    import mock
+    sys.modules['duplicity'] = mock.Mock()
+
 # -- General configuration -----------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
