@@ -1,5 +1,7 @@
 # python-opsi
 
+[![Documentation Status](https://readthedocs.org/projects/python-opsi/badge/?version=stable)](http://python-opsi.readthedocs.io/?badge=stable)
+
 This is the Python library behind the client management-tool [opsi](http://www.opsi.org/).
 
 
