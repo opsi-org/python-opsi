@@ -1,0 +1,27 @@
+[Package]
+depends:
+incremental: False
+
+[Product]
+type: localboot
+id: noversionshere
+name: Missing product version should not crash opsi-makeproductfile
+description:
+advice:
+priority: 0
+licenseRequired: False
+productClasses:
+setupScript:
+uninstallScript:
+updateScript:
+alwaysScript:
+onceScript:
+customScript:
+userLoginScript:
+
+[Changelog]
+prod-redmine-725 (1.0-1) testing; urgency=low
+
+  * Initial package
+
+ -- Foo <foo@bar.baz>  Wed, 29 Mar 2017 17:59:42 +0000
