@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2006-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -54,7 +54,7 @@ try:
 except ImportError:
 	syslog = None
 
-__version__ = '4.0.7.6'
+__version__ = '4.0.7.38'
 
 if sys.version_info > (3, ):
 	# Python 3
