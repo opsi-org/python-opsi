@@ -456,10 +456,10 @@ class MySQL(SQL):
 		logger.debug(u"Current tables:")
 		for i in self.getSet(u'SHOW TABLES;'):
 			tableName = i.values()[0]
-			logger.debug2(u" [ %s ]" % tableName)
+			logger.debug2(u" [ {0} ]", tableName)
 			tables[tableName] = []
 			for j in self.getSet(u'SHOW COLUMNS FROM `%s`' % tableName):
-				logger.debug2(u"      %s" % j)
+				logger.debug2(u"      {0}", j)
 				tables[tableName].append(j['Field'])
 		return tables
 
