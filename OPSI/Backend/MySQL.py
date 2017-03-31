@@ -457,10 +457,8 @@ class MySQL(SQL):
 		for i in self.getSet(u'SHOW TABLES;'):
 			tableName = i.values()[0]
 			logger.debug2(u" [ {0} ]", tableName)
-			tables[tableName] = []
-			for j in self.getSet(u'SHOW COLUMNS FROM `%s`' % tableName):
-				logger.debug2(u"      {0}", j)
-				tables[tableName].append(j['Field'])
+			tables[tableName] = [j['Field'] for j in self.getSet(u'SHOW COLUMNS FROM `%s`' % tableName)]
+			logger.debug2("Fields in {0}: {1}", tableName, tables[tableName])
 		return tables
 
 	def getTableCreationOptions(self, table):
