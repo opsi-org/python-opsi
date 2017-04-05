@@ -4,7 +4,7 @@
 # This file is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2010-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2010-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -73,6 +73,7 @@ data_files = [
 			'data/backendManager/extend.d/10_opsi.conf',
 			'data/backendManager/extend.d/10_wim.conf',
 			'data/backendManager/extend.d/20_legacy.conf',
+			'data/backendManager/extend.d/30_sshcommands.conf',
 			'data/backendManager/extend.d/40_groupActions.conf',
 			'data/backendManager/extend.d/40_admin_tasks.conf',
 			'data/backendManager/extend.d/70_dynamic_depot.conf',
@@ -95,6 +96,7 @@ data_files = [
 		'/etc/opsi/',
 		[
 			'data/version',
+			'data/server_commands_default.conf',
 			'data/opsi.conf'
 		]
 	),
@@ -112,7 +114,13 @@ data_files = [
 			'data/hwaudit/locales/fr_FR',
 			'data/hwaudit/locales/ru_RU',
 		]
-	)
+	),
+	(
+		'/var/lib/opsi/',
+		[
+			'data/server_commands_custom.conf'
+		]
+	),
 ]
 
 for language in LANGUAGES:
