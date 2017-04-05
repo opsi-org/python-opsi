@@ -462,7 +462,7 @@ class MySQL(SQL):
 		return tables
 
 	def getTableCreationOptions(self, table):
-		if table in ('SOFTWARE', 'SOFTWARE_CONFIG') or table.startswith('HARDWARE_DEVICE_') or table.startswith('HARDWARE_CONFIG_'):
+		if table in ('SOFTWARE', 'SOFTWARE_CONFIG') or table.startswith(('HARDWARE_DEVICE_', 'HARDWARE_CONFIG_')):
 			return u'ENGINE=MyISAM DEFAULT CHARSET utf8 COLLATE utf8_general_ci;'
 		return u'ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci'
 

@@ -756,7 +756,7 @@ def mount(dev, mountpoint, **options):
 			else:
 				raise Exception("Dynamic mountpoint detection could not find a a free mountpoint!")
 
-	if dev.lower().startswith('smb://') or dev.lower().startswith('cifs://'):
+	if dev.lower().startswith(('smb://', 'cifs://')):
 		match = re.search('^(smb|cifs)://([^/]+\/.+)$', dev, re.IGNORECASE)
 		if match:
 			parts = match.group(2).split('/')
