@@ -1,3 +1,13 @@
+python-opsi (4.0.7.38-1) stable; urgency=medium
+
+  * 10_opsi.conf: Do not pass invalid parameter in deleteProductDependency.
+  * Added SSH extension.
+  * OPSI.Logger: Show no message if unlinking a non-existing file fails.
+  * OPSI.Util.File.Opsi.PackageControlFile: if no version for package or
+    product are given assume defaults.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 30 Mar 2017 10:47:13 +0200
+
 python-opsi (4.0.7.37-1) stable; urgency=medium
 
   * 20_legacy.conf: Removed methods getPcpatchRSAPrivateKey and

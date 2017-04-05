@@ -136,6 +136,11 @@ chmod 660 /etc/opsi/backends/*.conf
 chown root:$fileadmingroup /etc/opsi/opsi.conf
 chmod 660 /etc/opsi/opsi.conf
 
+chown opsiconfd:opsiadmin /etc/opsi/server_commands_default.conf
+chown opsiconfd:opsiadmin /var/lib/opsi/server_commands_custom.conf
+chmod 440 /etc/opsi/server_commands_default.conf
+chmod 660 /var/lib/opsi/server_commands_custom.conf
+
 test -e /etc/opsi/pckeys || touch /etc/opsi/pckeys
 chown root:$fileadmingroup /etc/opsi/pckeys
 chmod 660 /etc/opsi/pckeys
@@ -157,6 +162,8 @@ chmod 660 /etc/opsi/passwd
 %config(noreplace) /etc/opsi/backends/dhcpd.conf
 %config(noreplace) /etc/opsi/backends/file.conf
 %config(noreplace) /etc/opsi/backends/hostcontrol.conf
+%config(noreplace) /etc/opsi/server_commands_default.conf
+%config(noreplace) /var/lib/opsi/server_commands_custom.conf
 %config(noreplace) /etc/opsi/backends/jsonrpc.conf
 %config(noreplace) /etc/opsi/backends/mysql.conf
 %config(noreplace) /etc/opsi/backends/multiplex.conf
@@ -166,6 +173,7 @@ chmod 660 /etc/opsi/passwd
 %config /etc/opsi/backendManager/extend.d/10_opsi.conf
 %config /etc/opsi/backendManager/extend.d/10_wim.conf
 %config /etc/opsi/backendManager/extend.d/20_legacy.conf
+%config /etc/opsi/backendManager/extend.d/30_sshcommands.conf
 %config /etc/opsi/backendManager/extend.d/40_groupActions.conf
 %config /etc/opsi/backendManager/extend.d/40_admin_tasks.conf
 %config /etc/opsi/backendManager/extend.d/70_wan.conf

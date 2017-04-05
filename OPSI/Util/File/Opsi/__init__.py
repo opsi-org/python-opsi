@@ -62,7 +62,7 @@ if os.name == 'posix':
 	import pwd
 	from OPSI.System.Posix import SysInfo
 
-__version__ = '4.0.7.27'
+__version__ = '4.0.7.38'
 
 logger = Logger()
 
@@ -648,11 +648,20 @@ class PackageControlFile(TextFile):
 		else:
 			raise Exception(u"Error in control file '%s': unknown product type '%s'" % (self._filename, product.get('type')))
 
+		productVersion = product.get('version')
+		if not productVersion:
+			logger.warning("No product version given! Assuming 1.0.")
+			productVersion = 1.0
+		packageVersion = self._sections.get('package', [{}])[0].get('version') or product.get('packageversion')
+		if not packageVersion:
+			logger.warning("No package version given! Assuming 1.")
+			packageVersion = 1
+
 		self._product = Class(
 			id=product.get('id'),
 			name=product.get('name'),
-			productVersion=product.get('version'),
-			packageVersion=self._sections.get('package', [{}])[0].get('version') or product.get('packageversion'),
+			productVersion=productVersion,
+			packageVersion=packageVersion,
 			licenseRequired=product.get('licenserequired'),
 			setupScript=product.get('setupscript'),
 			uninstallScript=product.get('uninstallscript'),
