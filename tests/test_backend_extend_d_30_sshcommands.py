@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -154,8 +154,6 @@ def testSSHCommandCreation(backendManager, val, expected_result):
 
 
 def compareLists(list1, list2):
-	print(list1)
-	print(list2)
 	assert len(list1) == len(list2)
 	for dictcom in list2:
 		assert dictcom in list1
@@ -266,7 +264,6 @@ class SSHCommandsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
 			self.backend.SSHCommand_createObject(self.com1_full["menuText"], self.com1_full["commands"])
 			com1_new_full = self.com1_full
 			com1_new_full = self.setNewSSHCommand(com1_new_full, [u'MyNewTestCom'], 10, True, u'MyNewTooltipText', u'myParent')
-			print(com1_new_full)
 			return_command = self.backend.SSHCommand_updateObject(
 				self.com1_full["menuText"],
 				com1_new_full["commands"],
