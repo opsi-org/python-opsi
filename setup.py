@@ -85,12 +85,6 @@ data_files = [
 		]
 	),
 	(
-		'/var/lib/opsi/config/',
-		[
-			'data/server_commands_custom.conf'
-		]
-	),
-	(
 		'/etc/opsi/hwaudit/',
 		['data/hwaudit/opsihwaudit.conf']
 	),
@@ -104,7 +98,13 @@ data_files = [
 			'data/hwaudit/locales/fr_FR',
 			'data/hwaudit/locales/ru_RU',
 		]
-	)
+	),
+	(
+		'/var/lib/opsi/',
+		[
+			'data/server_commands_custom.conf'
+		]
+	),
 ]
 
 for language in LANGUAGES:
