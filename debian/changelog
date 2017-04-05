@@ -1,4 +1,4 @@
-python-opsi (4.0.7.38-1) UNRELEASED; urgency=medium
+python-opsi (4.0.7.38-1) stable; urgency=medium
 
   * 10_opsi.conf: Do not pass invalid parameter in deleteProductDependency.
   * Added SSH extension.
