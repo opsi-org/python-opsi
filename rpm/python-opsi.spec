@@ -37,10 +37,10 @@ Url:            http://www.opsi.org
 License:        AGPL-3.0+
 Group:          Productivity/Networking/Opsi
 AutoReqProv:    on
-Version:        4.0.7.32
+Version:        4.0.7.35
 Release:        1
 Summary:        Python library for the client management solution opsi
-Source:         python-opsi_4.0.7.32-1.tar.gz
+Source:         python-opsi_4.0.7.35-1.tar.gz
 #Source2:        setup.py
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 # python noarch modules are only working on openSUSE 11.2 or higher
@@ -116,7 +116,7 @@ else
 fi
 
 if [ -z "`getent passwd pcpatch`" ]; then
-	useradd --system -g $fileadmingroup -d /var/lib/opsi -s /bin/bash pcpatch
+	useradd --system -g $fileadmingroup -d /var/lib/opsi -s /bin/false pcpatch
 fi
 
 if [ -z "`getent passwd opsiconfd`" ]; then
@@ -136,6 +136,11 @@ chmod 660 /etc/opsi/backends/*.conf
 chown root:$fileadmingroup /etc/opsi/opsi.conf
 chmod 660 /etc/opsi/opsi.conf
 
+chown opsiconfd:opsiadmin /etc/opsi/server_commands_default.conf
+chown opsiconfd:opsiadmin /var/lib/opsi/server_commands_custom.conf
+chmod 440 /etc/opsi/server_commands_default.conf
+chmod 660 /var/lib/opsi/server_commands_custom.conf
+
 test -e /etc/opsi/pckeys || touch /etc/opsi/pckeys
 chown root:$fileadmingroup /etc/opsi/pckeys
 chmod 660 /etc/opsi/pckeys
@@ -144,8 +149,8 @@ test -e /etc/opsi/passwd || touch /etc/opsi/passwd
 chown root:$fileadmingroup /etc/opsi/passwd
 chmod 660 /etc/opsi/passwd
 
-[ -e "/etc/opsi/backendManager/acl.conf" ]      || ln -s /etc/opsi/backendManager/acl.conf.default      /etc/opsi/backendManager/acl.conf
-[ -e "/etc/opsi/backendManager/dispatch.conf" ] || ln -s /etc/opsi/backendManager/dispatch.conf.default /etc/opsi/backendManager/dispatch.conf
+[ -e "/etc/opsi/backendManager/acl.conf" ]      || cp /etc/opsi/backendManager/acl.conf.default      /etc/opsi/backendManager/acl.conf
+[ -e "/etc/opsi/backendManager/dispatch.conf" ] || cp /etc/opsi/backendManager/dispatch.conf.default /etc/opsi/backendManager/dispatch.conf
 
 # ===[ files ]======================================
 %files -f INSTALLED_FILES
@@ -157,14 +162,17 @@ chmod 660 /etc/opsi/passwd
 %config(noreplace) /etc/opsi/backends/dhcpd.conf
 %config(noreplace) /etc/opsi/backends/file.conf
 %config(noreplace) /etc/opsi/backends/hostcontrol.conf
+%config(noreplace) /etc/opsi/server_commands_default.conf
+%config(noreplace) /var/lib/opsi/server_commands_custom.conf
 %config(noreplace) /etc/opsi/backends/jsonrpc.conf
 %config(noreplace) /etc/opsi/backends/mysql.conf
 %config(noreplace) /etc/opsi/backends/opsipxeconfd.conf
 %config /etc/opsi/backendManager/acl.conf.default
-%config(noreplace) /etc/opsi/backendManager/dispatch.conf.default
+%config /etc/opsi/backendManager/dispatch.conf.default
 %config /etc/opsi/backendManager/extend.d/10_opsi.conf
 %config /etc/opsi/backendManager/extend.d/10_wim.conf
 %config /etc/opsi/backendManager/extend.d/20_legacy.conf
+%config /etc/opsi/backendManager/extend.d/30_sshcommands.conf
 %config /etc/opsi/backendManager/extend.d/40_groupActions.conf
 %config /etc/opsi/backendManager/extend.d/40_admin_tasks.conf
 %config /etc/opsi/backendManager/extend.d/70_wan.conf

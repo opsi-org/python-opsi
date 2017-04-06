@@ -56,7 +56,7 @@ from OPSI.Types import OpsiVersionError
 from OPSI.Object import *
 from OPSI.Util import objectToBeautifiedText, removeUnit
 
-__all__ = [
+__all__ = (
 	'Distribution', 'Harddisk', 'NetworkPerformanceCounter', 'SysInfo',
 	'SystemSpecificHook', 'addSystemHook', 'auditHardware', 'daemonize',
 	'execute', 'getActiveConsoleSessionId', 'getActiveSessionId',
@@ -71,7 +71,7 @@ __all__ = [
 	'isUCS', 'isUbuntu', 'isXenialSfdiskVersion', 'locateDHCPDConfig',
 	'locateDHCPDInit', 'mount', 'reboot', 'removeSystemHook',
 	'runCommandInSession', 'setLocalSystemTime', 'shutdown', 'umount', 'which'
-]
+)
 
 logger = Logger()
 
@@ -331,7 +331,7 @@ class SystemSpecificHook(object):
 
 def addSystemHook(hook):
 	global hooks
-	if not hook in hooks:
+	if hook not in hooks:
 		hooks.append(hook)
 
 
@@ -996,7 +996,7 @@ def mount(dev, mountpoint, **options):
 	fs = u''
 
 	credentialsFiles = []
-	if dev.lower().startswith('smb://') or dev.lower().startswith('cifs://'):
+	if dev.lower().startswith(('smb://', 'cifs://')):
 		match = re.search('^(smb|cifs)://([^/]+\/.+)$', dev, re.IGNORECASE)
 		if match:
 			fs = u'-t cifs'
@@ -1032,11 +1032,7 @@ def mount(dev, mountpoint, **options):
 		else:
 			raise Exception(u"Bad smb/cifs uri '%s'" % dev)
 
-	elif (dev.lower().startswith('webdav://')
-		or dev.lower().startswith('webdavs://')
-		or dev.lower().startswith('http://')
-		or dev.lower().startswith('https://')):
-
+	elif dev.lower().startswith(('webdav://', 'webdavs://', 'http://', 'https://')):
 		# We need enough free space in /var/cache/davfs2
 		# Maximum transfer file size <= free space in /var/cache/davfs2
 		match = re.search('^(http|webdav)(s*)(://[^/]+\/.+)$', dev, re.IGNORECASE)
@@ -2142,13 +2138,13 @@ class Harddisk:
 			start = start.replace(u' ', u'')
 			end = end.replace(u' ', u'')
 
-			if start.endswith(u'm') or start.endswith(u'mb'):
+			if start.endswith((u'm', u'mb')):
 				match = re.search('^(\d+)\D', start)
 				if self.blockAlignment:
 					start = int(round((int(match.group(1)) * 1024 * 1024) / self.bytesPerSector))
 				else:
 					start = int(round((int(match.group(1)) * 1024 * 1024) / self.bytesPerCylinder))
-			elif start.endswith(u'g') or start.endswith(u'gb'):
+			elif start.endswith((u'g', u'gb')):
 				match = re.search('^(\d+)\D', start)
 				if self.blockAlignment:
 					start = int(round((int(match.group(1)) * 1024 * 1024 * 1024) / self.bytesPerSector))
@@ -2176,13 +2172,13 @@ class Harddisk:
 				if self.blockAlignment:
 					start = int(round(((float(start) * self.bytesPerCylinder) / self.bytesPerSector)))
 
-			if end.endswith(u'm') or end.endswith(u'mb'):
+			if end.endswith((u'm', u'mb')):
 				match = re.search('^(\d+)\D', end)
 				if self.blockAlignment:
 					end = int(round((int(match.group(1)) * 1024 * 1024) / self.bytesPerSector))
 				else:
 					end = int(round((int(match.group(1)) * 1024 * 1024) / self.bytesPerCylinder))
-			elif end.endswith(u'g') or end.endswith(u'gb'):
+			elif end.endswith((u'g', u'gb')):
 				match = re.search('^(\d+)\D', end)
 				if self.blockAlignment:
 					end = int(round((int(match.group(1)) * 1024 * 1024 * 1024) / self.bytesPerSector))
@@ -2540,7 +2536,7 @@ class Harddisk:
 					timeout = 0
 
 					b = inp.splitlines()
-					if inp.endswith(u'\n') or inp.endswith(u'\r'):
+					if inp.endswith((u'\n', u'\r')):
 						b.append(u'')
 
 					buf = [buf[-1] + b[0]] + b[1:]
@@ -2560,7 +2556,7 @@ class Harddisk:
 							if match:
 								rate = match.group(2)
 								unit = match.group(3)
-								if unit.startswith("G") or unit.startswith("g"):
+								if unit.startswith(("G", "g")):
 									rate = float(rate) * 1024
 									unit = 'MB/min'
 								saveImageResult = {
@@ -2714,7 +2710,7 @@ class Harddisk:
 						timeout = 0
 
 						b = inp.splitlines()
-						if inp.endswith(u'\n') or inp.endswith(u'\r'):
+						if inp.endswith((u'\n', u'\r')):
 							b.append(u'')
 
 						buf = [buf[-1] + b[0]] + b[1:]
@@ -2792,7 +2788,7 @@ class Harddisk:
 						timeout = 0
 
 						b = inp.splitlines()
-						if inp.endswith(u'\n') or inp.endswith(u'\r'):
+						if inp.endswith((u'\n', u'\r')):
 							b.append(u'')
 
 						buf = [buf[-1] + b[0]] + b[1:]

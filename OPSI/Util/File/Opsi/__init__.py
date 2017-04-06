@@ -577,7 +577,7 @@ class PackageControlFile(TextFile):
 					   (sectionType == 'productproperty' and option == 'values') or \
 					   (sectionType == 'windows' and option == 'softwareids'):
 						try:
-							if not value.strip().startswith('{') and not value.strip().startswith('['):
+							if not value.strip().startswith(('{', '[')):
 								raise Exception(u'Not trying to read json string because value does not start with { or [')
 							value = fromJson(value.strip())
 							# Remove duplicates
@@ -650,11 +650,20 @@ class PackageControlFile(TextFile):
 		else:
 			raise Exception(u"Error in control file '%s': unknown product type '%s'" % (self._filename, product.get('type')))
 
+		productVersion = product.get('version')
+		if not productVersion:
+			logger.warning("No product version given! Assuming 1.0.")
+			productVersion = 1.0
+		packageVersion = self._sections.get('package', [{}])[0].get('version') or product.get('packageversion')
+		if not packageVersion:
+			logger.warning("No package version given! Assuming 1.")
+			packageVersion = 1
+
 		self._product = Class(
 			id=product.get('id'),
 			name=product.get('name'),
-			productVersion=product.get('version'),
-			packageVersion=self._sections.get('package', [{}])[0].get('version') or product.get('packageversion'),
+			productVersion=productVersion,
+			packageVersion=packageVersion,
 			licenseRequired=product.get('licenserequired'),
 			setupScript=product.get('setupscript'),
 			uninstallScript=product.get('uninstallscript'),
@@ -970,7 +979,7 @@ class OpsiConfFile(IniFile):
 	@requiresParsing
 	def getOpsiFileAdminGroup(self):
 		if not self._opsiConfig.get("groups", {}).get("fileadmingroup", ""):
-			return "pcpatch"
+			return u"pcpatch"
 		else:
 			return self._opsiConfig["groups"]["fileadmingroup"]
 

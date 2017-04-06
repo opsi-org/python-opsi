@@ -1,9 +1,8 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
-# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
 # All rights reserved.
 
 # This program is free software: you can redistribute it and/or modify
@@ -47,7 +46,8 @@ from OPSI.Backend.Backend import ConfigDataBackend
 from OPSI.Backend.SQL import (onlyAllowSelect, SQL, SQLBackend,
 	SQLBackendObjectModificationTracker)
 
-__all__ = ['ConnectionPool', 'MySQL', 'MySQLBackend', 'MySQLBackendObjectModificationTracker']
+__all__ = ('ConnectionPool', 'MySQL', 'MySQLBackend',
+	'MySQLBackendObjectModificationTracker')
 
 logger = Logger()
 
@@ -456,15 +456,13 @@ class MySQL(SQL):
 		logger.debug(u"Current tables:")
 		for i in self.getSet(u'SHOW TABLES;'):
 			tableName = i.values()[0]
-			logger.debug2(u" [ %s ]" % tableName)
-			tables[tableName] = []
-			for j in self.getSet(u'SHOW COLUMNS FROM `%s`' % tableName):
-				logger.debug2(u"      %s" % j)
-				tables[tableName].append(j['Field'])
+			logger.debug2(u" [ {0} ]", tableName)
+			tables[tableName] = [j['Field'] for j in self.getSet(u'SHOW COLUMNS FROM `%s`' % tableName)]
+			logger.debug2("Fields in {0}: {1}", tableName, tables[tableName])
 		return tables
 
 	def getTableCreationOptions(self, table):
-		if table in ('SOFTWARE', 'SOFTWARE_CONFIG') or table.startswith('HARDWARE_DEVICE_') or table.startswith('HARDWARE_CONFIG_'):
+		if table in ('SOFTWARE', 'SOFTWARE_CONFIG') or table.startswith(('HARDWARE_DEVICE_', 'HARDWARE_CONFIG_')):
 			return u'ENGINE=MyISAM DEFAULT CHARSET utf8 COLLATE utf8_general_ci;'
 		return u'ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci'
 
@@ -507,7 +505,7 @@ class MySQLBackend(SQLBackend):
 				if module in ('valid', 'signature'):
 					continue
 
-				if helpermodules.has_key(module):
+				if module in helpermodules:
 					val = helpermodules[module]
 					if int(val) > 0:
 						modules[module] = True

@@ -4,7 +4,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2006-2016 uib GmbH - http://www.uib.de/
+# Copyright (C) 2006-2017 uib GmbH - http://www.uib.de/
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -349,10 +349,13 @@ class ChangelogFile(TextFile):
 
 					(maintainer, date) = line[3:].strip().split(u'  ', 1)
 					email = u''
-					if '<' in maintainer:
+					try:
 						(maintainer, email) = maintainer.split(u'<', 1)
 						maintainer = maintainer.strip()
 						email = email.strip().replace(u'<', u'').replace(u'>', u'')
+					except ValueError:
+						pass
+
 					currentEntry['maintainerName'] = maintainer
 					currentEntry['maintainerEmail'] = email
 					if u'+' in date:
@@ -1093,10 +1096,10 @@ class TxtSetupOemFile(ConfigFile):
 				optionName = None
 				(componentId, value) = line.split('=', 1)
 				componentId = componentId.strip()
-				if u',' in value:
+				try:
 					(description, optionName) = value.split(',', 1)
 					optionName = optionName.strip()
-				else:
+				except ValueError:
 					description = value
 				description = description.strip()
 				if description.startswith(u'"') and description.endswith(u'"'):
@@ -1454,29 +1457,19 @@ class DHCPDConf_Option(DHCPDConf_Component):
 			self.value = [self.value]
 
 	def asText(self):
+		quotedOptions = (
+			u'-name', u'-domain', u'-identifier', u'-search',
+			u'merit-dump', u'nds-context', u'netbios-scope', u'nwip-domain',
+			u'nwip-suboptions', u'nis-domain', u'nisplus-domain', u'root-path',
+			u'uap-servers', u'user-class', u'vendor-encapsulated-options',
+			u'circuit-id', u'remote-id', u'fqdn.fqdn', u'ddns-rev-domainname'
+		)
+
 		text = []
 		for value in self.value:
 			if (re.match('.*[\'/\\\].*', value) or
 				re.match('^\w+\.\w+$', value) or
-				self.key.endswith(u'-name') or
-				self.key.endswith(u'-domain') or
-				self.key.endswith(u'-identifier') or
-				self.key.endswith(u'-search') or
-				self.key.endswith(u'merit-dump') or
-				self.key.endswith(u'nds-context') or
-				self.key.endswith(u'netbios-scope') or
-				self.key.endswith(u'nwip-domain') or
-				self.key.endswith(u'nwip-suboptions') or
-				self.key.endswith(u'nis-domain') or
-				self.key.endswith(u'nisplus-domain') or
-				self.key.endswith(u'root-path') or
-				self.key.endswith(u'uap-servers') or
-				self.key.endswith(u'user-class') or
-				self.key.endswith(u'vendor-encapsulated-options') or
-				self.key.endswith(u'circuit-id') or
-				self.key.endswith(u'remote-id') or
-				self.key.endswith(u'fqdn.fqdn') or
-				self.key.endswith(u'ddns-rev-domainname')):
+				self.key.endswith(quotedOptions)):
 
 				text.append(u'"%s"' % value)
 			else:

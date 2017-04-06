@@ -36,7 +36,7 @@ from OPSI.Util import getfqdn
 
 LOGGER = Logger()
 
-__all__ = ['getImageInformation', 'parseWIM', 'writeImageInformation']
+__all__ = ('getImageInformation', 'parseWIM', 'writeImageInformation')
 
 
 def parseWIM(wimPath):

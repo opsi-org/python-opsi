@@ -47,7 +47,7 @@ from OPSI.Types import (forceActionProgress, forceActionRequest,
 	forceUnicodeList, forceUnicodeLower, forceUnsignedInt, forceUrl)
 from OPSI.Util import fromJson, toJson, generateOpsiHostKey, timestamp
 
-__all__ = [
+__all__ = (
 	'AuditHardware', 'AuditHardwareOnHost', 'AuditSoftware',
 	'AuditSoftwareOnClient', 'AuditSoftwareToLicensePool', 'BaseObject',
 	'BoolConfig', 'BoolProductProperty', 'ConcurrentSoftwareLicense',
@@ -62,7 +62,7 @@ __all__ = [
 	'decodeIdent', 'getBackendMethodPrefix', 'getForeignIdAttributes',
 	'getIdentAttributes', 'getPossibleClassAttributes',
 	'mandatoryConstructorArgs', 'objectsDiffer'
-]
+)
 
 logger = Logger()
 _MANDATORY_CONSTRUCTOR_ARGS_CACHE = {}
@@ -321,8 +321,10 @@ class Entity(BaseObject):
 		kwargs = {}
 		decodeIdent(Class, hash)
 		for varname in Class.__init__.func_code.co_varnames[1:]:
-			if varname in hash:
+			try:
 				kwargs[varname] = hash[varname]
+			except KeyError:
+				pass
 
 		try:
 			return Class(**kwargs)
@@ -381,8 +383,10 @@ class Relationship(BaseObject):
 		kwargs = {}
 		decodeIdent(Class, hash)
 		for varname in Class.__init__.func_code.co_varnames[1:]:
-			if varname in hash:
+			try:
 				kwargs[varname] = hash[varname]
+			except KeyError:
+				pass
 
 		try:
 			return Class(**kwargs)
@@ -3088,10 +3092,11 @@ class AuditHardware(Entity):
 		self.setHardwareClass(hardwareClass)
 		for attribute in self.hardwareAttributes.get(hardwareClass, {}):
 			if attribute not in kwargs:
-				if attribute.lower() in kwargs:
-					kwargs[attribute] = kwargs[attribute.lower()]
-					del kwargs[attribute.lower()]
-				else:
+				lowAttr = attribute.lower()
+				try:
+					kwargs[attribute] = kwargs[lowAttr]
+					del kwargs[lowAttr]
+				except KeyError:
 					kwargs[attribute] = None
 
 		if self.hardwareAttributes.get(hardwareClass):
@@ -3259,10 +3264,10 @@ class AuditHardwareOnHost(Relationship):
 		for attribute in self.hardwareAttributes.get(hardwareClass, {}):
 			if attribute not in kwargs:
 				lowerAttribute = attribute.lower()
-				if lowerAttribute in kwargs:
+				try:
 					kwargs[attribute] = kwargs[lowerAttribute]
 					del kwargs[lowerAttribute]
-				else:
+				except KeyError:
 					kwargs[attribute] = None
 
 		if self.hardwareAttributes.get(hardwareClass):

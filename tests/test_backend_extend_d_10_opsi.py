@@ -1,8 +1,8 @@
-#!/usr/bin/env python
-#-*- coding: utf-8 -*-
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -226,6 +226,7 @@ def testSetProductActionRequestWithDependenciesWithDependencyRequestingAction(ba
 	assert productThatShouldBeSetup.productId == 'javavm'
 	assert productThatShouldBeSetup.actionRequest == 'setup'
 
+
 @pytest.mark.parametrize("installationStatus", ["installed", "unknown", "not_installed", None])
 def testSetProductActionRequestWithDependenciesWithDependencyRequiredInstallationStatus(backendManager, installationStatus):
 	client, depot = createClientAndDepot(backendManager)
@@ -289,7 +290,7 @@ def testSetProductActionRequestWithDependenciesWithDependencyRequiredInstallatio
 
 	assert productThatShouldBeInstalled.productId == 'javavm'
 	if installationStatus == 'installed':
-	    assert not productThatShouldBeInstalled.actionRequest == 'setup'
+		assert productThatShouldBeInstalled.actionRequest != 'setup'
 
 
 def testSetProductActionRequestWithDependenciesWithOnce(backendManager):
@@ -351,6 +352,61 @@ def testSetProductActionRequestWithDependenciesWithOnce(backendManager):
 
 	assert depOnce.actionRequest == 'once'
 	assert depSetup.actionRequest == 'setup'
+
+
+def testSetProductActionRequestWithDependenciesUpdateOnlyNeededObjects(backendManager):
+	client, depot = createClientAndDepot(backendManager)
+
+	expectedModificationTime = '2017-02-07 08:50:21'
+
+	masterProduct = LocalbootProduct('master', '3', '1.0')
+	prodWithSetup = LocalbootProduct('reiter', '1.0', '1.0')
+	prodWithNoDep = LocalbootProduct('nicht_anfassen', '1.0', '1.0')
+	backendManager.product_createObjects([masterProduct, prodWithNoDep, prodWithSetup])
+
+	prodSetupDependency = ProductDependency(
+		productId=masterProduct.id,
+		productVersion=masterProduct.productVersion,
+		packageVersion=masterProduct.packageVersion,
+		productAction='setup',
+		requiredProductId=prodWithSetup.id,
+		requiredAction='setup',
+		requirementType='after',
+	)
+	backendManager.productDependency_createObjects([prodSetupDependency])
+
+	for prod in (masterProduct, prodWithNoDep, prodWithSetup):
+		pod = ProductOnDepot(
+			productId=prod.id,
+			productType=prod.getType(),
+			productVersion=prod.productVersion,
+			packageVersion=prod.packageVersion,
+			depotId=depot.id,
+		)
+		backendManager.productOnDepot_createObjects([pod])
+
+	poc = ProductOnClient(
+			clientId=client.id,
+			productId=prodWithNoDep.id,
+			productType=prodWithNoDep.getType(),
+			productVersion=prodWithNoDep.productVersion,
+			packageVersion=prodWithNoDep.packageVersion,
+			installationStatus='installed',
+			actionRequest=None,
+			modificationTime=expectedModificationTime,
+			actionResult='successful'
+		)
+
+	backendManager.productOnClient_createObjects([poc])
+
+	backendManager.setProductActionRequestWithDependencies(masterProduct.id, 'backend-test-1.vmnat.local', "setup")
+
+	productsOnClient = backendManager.productOnClient_getObjects()
+	assert 3 == len(productsOnClient)
+
+	for poc in productsOnClient:
+		if poc.productId == 'nicht_anfassen':
+			assert not poc.modificationTime == expectedModificationTime
 
 
 @pytest.mark.parametrize("sortalgorithm", [None, 'algorithm1', 'algorithm2', 'unknown-algo'])

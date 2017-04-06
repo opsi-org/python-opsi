@@ -561,7 +561,6 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 		"""
 		Return a fresh HTTPSConnection.
 		"""
-
 		if self.proxyURL:
 			headers = {}
 			try:
@@ -677,10 +676,12 @@ def getSharedConnectionPool(scheme, host, port, **kw):
 	host = forceUnicode(host)
 	port = forceInt(port)
 	curl = False
-	if 'preferCurl' in kw:
+	try:
 		if kw['preferCurl'] and pycurl is not None:
 			curl = True
 		del kw['preferCurl']
+	except KeyError:
+		pass
 
 	global connectionPools
 	if curl:

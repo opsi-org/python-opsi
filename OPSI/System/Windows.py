@@ -6,7 +6,7 @@ opsi python library - Windows
 This module is part of the desktop management solution opsi
 (open pc server integration) http://www.opsi.org
 
-Copyright (C) 2013-2016 uib GmbH
+Copyright (C) 2013-2017 uib GmbH
 
 http://www.uib.de/
 
@@ -66,7 +66,7 @@ from OPSI.Logger import Logger
 from OPSI.Types import (forceBool, forceDict, forceInt, forceUnicode,
 	forceUnicodeList, forceUnicodeLower, forceFilename, forceList)
 
-__all__ = [
+__all__ = (
 	'HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE', 'hooks', 'SystemSpecificHook',
 	'addSystemHook', 'removeSystemHook', 'getArchitecture', 'getOpsiHotfixName',
 	'getHostname', 'getFQDN', 'getFileVersionInfo', 'getProgramFilesDir',
@@ -86,7 +86,7 @@ __all__ = [
 	'runCommandInSession', 'createUser', 'deleteUser', 'existsUser',
 	'getUserSidFromHandle', 'getUserSid', 'getAdminGroupName',
 	'setLocalSystemTime', 'Impersonate'
-]
+)
 
 logger = Logger()
 hooks = []
@@ -159,7 +159,7 @@ class SystemSpecificHook(object):
 
 def addSystemHook(hook):
 	global hooks
-	if not hook in hooks:
+	if hook not in hooks:
 		hooks.append(hook)
 
 
@@ -756,7 +756,7 @@ def mount(dev, mountpoint, **options):
 			else:
 				raise Exception("Dynamic mountpoint detection could not find a a free mountpoint!")
 
-	if dev.lower().startswith('smb://') or dev.lower().startswith('cifs://'):
+	if dev.lower().startswith(('smb://', 'cifs://')):
 		match = re.search('^(smb|cifs)://([^/]+\/.+)$', dev, re.IGNORECASE)
 		if match:
 			parts = match.group(2).split('/')

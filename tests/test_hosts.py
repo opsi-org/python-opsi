@@ -27,9 +27,11 @@ from __future__ import absolute_import
 import itertools
 import socket
 
-from OPSI.Object import OpsiClient, OpsiConfigserver, OpsiDepotserver
-
 import pytest
+
+from OPSI.Object import (HostGroup, ObjectToGroup, OpsiClient, OpsiConfigserver,
+    OpsiDepotserver)
+from OPSI.Types import BackendError, BackendMissingDataError
 
 
 def getClients():
@@ -377,3 +379,50 @@ def testHost_GetIdents(extendedConfigDataBackend):
     assert len(ids) == len(knownIdents)
     for ident in ids:
         assert ident['id'] in knownIdents
+
+
+def testRenamingOpsiClientFailsIfNewIdAlreadyExisting(extendedConfigDataBackend):
+    backend = extendedConfigDataBackend
+
+    host = OpsiClient(id='old.test.invalid')
+    anotherHost = OpsiClient(id='new.test.invalid')
+
+    backend.host_insertObject(host)
+    backend.host_insertObject(anotherHost)
+
+    with pytest.raises(BackendError):
+        backend.host_renameOpsiClient(host.id, anotherHost.id)
+
+
+def testRenamingOpsiClientFailsIfOldClientMissing(extendedConfigDataBackend):
+    with pytest.raises(BackendMissingDataError):
+        extendedConfigDataBackend.host_renameOpsiClient('nonexisting.test.invalid', 'new.test.invalid')
+
+
+def testRenamingOpsiClient(extendedConfigDataBackend):
+    backend = extendedConfigDataBackend
+
+    host = OpsiClient(id='jacket.test.invalid')
+    backend.host_insertObject(host)
+
+    protagonists = HostGroup("protagonists")
+    backend.group_insertObject(protagonists)
+
+    backend.objectToGroup_insertObject(ObjectToGroup(protagonists.getType(), protagonists.id, host.id))
+
+    oldId = host.id
+    newId = 'richard.test.invalid'
+
+    backend.host_renameOpsiClient(oldId, newId)
+
+    assert not backend.host_getObjects(id=oldId)
+    assert backend.host_getObjects(id=newId)
+
+    # We want to make sure that the membership of groups does get
+    # changed aswell.
+    assert not backend.objectToGroup_getObjects(objectId=oldId)
+    memberships = backend.objectToGroup_getObjects(objectId=newId)
+    assert memberships
+    membership = memberships[0]
+    assert membership.objectId == newId
+    assert membership.groupId == protagonists.id

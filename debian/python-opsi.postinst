@@ -20,16 +20,20 @@ case "$1" in
 			fi
 		fi
 
-		if [ -z "`getent passwd pcpatch`" ]; then
-			useradd --system -g $fileadmingroup -d /var/lib/opsi -s /bin/bash pcpatch
-		fi
-
-		if [ -z "`getent passwd opsiconfd`" ]; then
-			useradd --system -g $fileadmingroup -d /var/lib/opsi -s /bin/bash opsiconfd
-		fi
-
 		if [ -z "`getent group opsiadmin`" ]; then
 			groupadd opsiadmin
+		fi
+
+		if ! which ucr >/dev/null 2>/dev/null; then
+			# On UCS we do not want to add the users as this is done
+			# in the join script of opsi4ucs.
+			if [ -z "`getent passwd pcpatch`" ]; then
+				useradd --system -g $fileadmingroup -d /var/lib/opsi -s /bin/false pcpatch
+			fi
+
+			if [ -z "`getent passwd opsiconfd`" ]; then
+				useradd --system -g $fileadmingroup -d /var/lib/opsi -s /bin/bash opsiconfd
+			fi
 		fi
 
 		chown -R root:$fileadmingroup /etc/opsi/backendManager
@@ -41,6 +45,11 @@ case "$1" in
 		chown root:$fileadmingroup /etc/opsi/opsi.conf
 		chmod 660 /etc/opsi/opsi.conf
 
+		chown opsiconfd:opsiadmin /etc/opsi/server_commands_default.conf
+		chown opsiconfd:opsiadmin /var/lib/opsi/server_commands_custom.conf
+		chmod 440 /etc/opsi/server_commands_default.conf
+		chmod 660 /var/lib/opsi/server_commands_custom.conf
+
 		test -e /etc/opsi/pckeys || touch /etc/opsi/pckeys
 		chown root:$fileadmingroup /etc/opsi/pckeys
 		chmod 660 /etc/opsi/pckeys
@@ -49,8 +58,8 @@ case "$1" in
 		chown root:$fileadmingroup /etc/opsi/passwd
 		chmod 660 /etc/opsi/passwd
 
-		[ -e "/etc/opsi/backendManager/acl.conf" ]      || ln -s /etc/opsi/backendManager/acl.conf.default      /etc/opsi/backendManager/acl.conf
-		[ -e "/etc/opsi/backendManager/dispatch.conf" ] || ln -s /etc/opsi/backendManager/dispatch.conf.default /etc/opsi/backendManager/dispatch.conf
+		[ -e "/etc/opsi/backendManager/acl.conf" ]      || cp /etc/opsi/backendManager/acl.conf.default      /etc/opsi/backendManager/acl.conf
+		[ -e "/etc/opsi/backendManager/dispatch.conf" ] || cp /etc/opsi/backendManager/dispatch.conf.default /etc/opsi/backendManager/dispatch.conf
 
 		update-python-modules python-ldaptor.public >/dev/null 2>/dev/null || true
 		update-python-modules -p >/dev/null 2>/dev/null || true

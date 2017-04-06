@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2015-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2015-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -29,7 +29,12 @@ that were written for opsi 3.
 :license: GNU Affero General Public License version 3
 """
 
+from __future__ import absolute_import
+
 import pytest
+
+from OPSI.Object import LocalbootProduct, ProductDependency, ProductOnDepot
+from .test_hosts import getDepotServers
 
 
 def testGetGeneralConfigValueFailsWithInvalidObjectId(backendManager):
@@ -133,3 +138,41 @@ def testMassFilling(backendManager, config):
     backendManager.setGeneralConfig(config)
 
     assert config == backendManager.getGeneralConfig_hash()
+
+
+def testDeleteProductDependency(backendManager):
+    firstProduct = LocalbootProduct('prod', '1.0', '1.0')
+    secondProduct = LocalbootProduct('dependency', '1.0', '1.0')
+    backendManager.product_insertObject(firstProduct)
+    backendManager.product_insertObject(secondProduct)
+
+    prodDependency = ProductDependency(
+        productId=firstProduct.id,
+        productVersion=firstProduct.productVersion,
+        packageVersion=firstProduct.packageVersion,
+        productAction='setup',
+        requiredProductId=secondProduct.id,
+        requiredAction='setup',
+        requirementType='after'
+    )
+    backendManager.productDependency_insertObject(prodDependency)
+
+    depots = getDepotServers()
+    depot = depots[0]
+    backendManager.host_insertObject(depot)
+
+    productOnDepot = ProductOnDepot(
+        productId=firstProduct.getId(),
+        productType=firstProduct.getType(),
+        productVersion=firstProduct.getProductVersion(),
+        packageVersion=firstProduct.getPackageVersion(),
+        depotId=depot.id,
+        locked=False
+    )
+    backendManager.productOnDepot_createObjects([productOnDepot])
+
+    assert backendManager.productDependency_getObjects()
+
+    backendManager.deleteProductDependency(firstProduct.id, "", secondProduct.id, requiredProductClassId="unusedParam", requirementType="unused")
+
+    assert not backendManager.productDependency_getObjects()

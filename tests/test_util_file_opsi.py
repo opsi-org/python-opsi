@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -137,3 +137,16 @@ def testParsingControlFileWithGermanUmlautsInDescription(opsiControlFilePath):
 
 	product = p.getProduct()
 	assert u'Startet die Druckerwarteschlange auf dem Client neu / oder überhaupt.' == product.description
+
+
+def testProductControlFileWithoutVersionUsesDefaults():
+	filename = os.path.join(
+		os.path.dirname(__file__),
+		'testdata', 'util', 'file', 'opsi', 'control_without_versions')
+
+	pcf = PackageControlFile(filename)
+
+	product = pcf.getProduct()
+
+	assert '1' == product.packageVersion
+	assert '1.0' == product.productVersion

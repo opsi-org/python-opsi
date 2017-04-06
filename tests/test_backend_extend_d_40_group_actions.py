@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2014-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -28,174 +27,137 @@ This tests what usually is found under
 :license: GNU Affero General Public License version 3
 """
 
-from __future__ import absolute_import
+import pytest
 
-import unittest
+from OPSI.Object import (HostGroup, LocalbootProduct, ProductOnDepot,
+    ObjectToGroup, OpsiClient, OpsiDepotserver)
+from OPSI.Types import BackendMissingDataError
 
-from OPSI.Object import HostGroup, OpsiClient, LocalbootProduct, ObjectToGroup, ProductOnDepot, OpsiDepotserver
-from .Backends.File import FileBackendBackendManagerMixin
+
+def testSetProductActionRequestForHostGroup(backendManager):
+    testGroup = HostGroup(id='host_group_1')
+
+    client1 = OpsiClient(id='client1.test.invalid')
+    client2 = OpsiClient(id='client2.test.invalid')
+
+    client1ToGroup = ObjectToGroup(testGroup.getType(), testGroup.id, client1.id)
+    client2ToGroup = ObjectToGroup(testGroup.getType(), testGroup.id, client2.id)
+
+    depot = OpsiDepotserver(id='depotserver1.test.invalid')
+
+    product2 = LocalbootProduct(
+        id='product2',
+        name=u'Product 2',
+        productVersion='2.0',
+        packageVersion='test',
+        setupScript="setup.ins",
+    )
+
+    prodOnDepot = ProductOnDepot(
+        productId=product2.getId(),
+        productType=product2.getType(),
+        productVersion=product2.getProductVersion(),
+        packageVersion=product2.getPackageVersion(),
+        depotId=depot.getId()
+    )
+
+    backendManager.host_insertObject(client1)
+    backendManager.host_insertObject(client2)
+    backendManager.host_insertObject(depot)
+    backendManager.group_insertObject(testGroup)
+    backendManager.objectToGroup_createObjects([client1ToGroup, client2ToGroup])
+    backendManager.config_create(u'clientconfig.depot.id')
+    backendManager.configState_create(u'clientconfig.depot.id', client1.getId(), values=[depot.getId()])
+    backendManager.configState_create(u'clientconfig.depot.id', client2.getId(), values=[depot.getId()])
+    backendManager.product_insertObject(product2)
+    backendManager.productOnDepot_insertObject(prodOnDepot)
+
+    backendManager.setProductActionRequestForHostGroup('host_group_1', 'product2', 'setup')
+
+    pocs = backendManager.productOnClient_getObjects()
+    assert pocs
+    assert len(pocs) == 2
+
+    for poc in backendManager.productOnClient_getObjects():
+        assert poc.productId == product2.getId()
+        assert poc.clientId in (client1.id, client2.id)
 
 
-class GroupActionsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
+def testGroupnameExists(backendManager):
+    testGroup, _ = fillBackendForRenaming(backendManager)
+
+    assert backendManager.groupname_exists(testGroup.id)
+    assert not backendManager.groupname_exists(u'testgruppe')
+
+
+def testRenamingGroupToAlreadyExistingGroupFails(backendManager):
+    testGroup, _ = fillBackendForRenaming(backendManager)
+
+    newGroup = HostGroup(id='new_group_1')
+    backendManager.group_insertObject(newGroup)
+
+    with pytest.raises(Exception):
+        backendManager.group_rename(testGroup.id, newGroup.id)
+
+
+def testRenamingNonexistingGroupFails(backendManager):
+    with pytest.raises(BackendMissingDataError):
+        backendManager.group_rename(u'notExisting', 'newGroupId')
+
+
+def testRenamingKeepsSettingsOfOldGroup(backendManager):
     """
-    Testing the group actions.
+    After a rename non-key attributes of the new object must be the same.
     """
-    def setUp(self):
-        self.setUpBackend()
+    testGroup, _ = fillBackendForRenaming(backendManager)
+    newGroupId = 'new_group_1'
 
-    def tearDown(self):
-        self.tearDownBackend()
+    backendManager.group_rename(testGroup.id, newGroupId)
 
-    def testSetProductActionRequestForHostGroup(self):
-        testGroup = HostGroup(
-            id='host_group_1',
-            description='Group 1',
-            notes='First group',
-            parentGroupId=None
-        )
+    group = backendManager.group_getObjects(id=newGroupId)[0]
+    assert group.id == 'new_group_1'
+    assert group.description == testGroup.description
+    assert group.notes == testGroup.notes
+    assert group.parentGroupId == testGroup.parentGroupId
 
-        client1 = OpsiClient(
-            id='client1.test.invalid',
-        )
-
-        client2 = OpsiClient(
-            id='client2.test.invalid',
-        )
-
-        product2 = LocalbootProduct(
-            id='product2',
-            name=u'Product 2',
-            productVersion='2.0',
-            packageVersion='test',
-            setupScript="setup.ins",
-        )
-
-        client1ToGroup = ObjectToGroup(testGroup.getType(), testGroup.id, client1.id)
-        client2ToGroup = ObjectToGroup(testGroup.getType(), testGroup.id, client2.id)
-
-        depot = OpsiDepotserver(
-            id='depotserver1.test.invalid',
-            opsiHostKey='19012334567845645678901232789012',
-            depotLocalUrl='file:///opt/pcbin/install',
-            depotRemoteUrl='smb://depotserver1.test.invalid/opt_pcbin/install',
-            repositoryLocalUrl='file:///var/lib/opsi/repository',
-            repositoryRemoteUrl='webdavs://depotserver1.test.invalid:4447/repository',
-            description='A depot',
-            notes='D€pot 1',
-            hardwareAddress=None,
-            ipAddress=None,
-            inventoryNumber='00000000002',
-            networkAddress='192.168.2.0/24',
-            maxBandwidth=10000
-        )
-
-        prodOnDepot = ProductOnDepot(
-            productId=product2.getId(),
-            productType=product2.getType(),
-            productVersion=product2.getProductVersion(),
-            packageVersion=product2.getPackageVersion(),
-            depotId=depot.getId(),
-            locked=False
-        )
-
-        self.backend.host_insertObject(client1)
-        self.backend.host_insertObject(client2)
-        self.backend.host_insertObject(depot)
-        self.backend.group_insertObject(testGroup)
-        self.backend.objectToGroup_createObjects([client1ToGroup, client2ToGroup])
-        self.backend.config_create(u'clientconfig.depot.id')
-        self.backend.configState_create(u'clientconfig.depot.id', client1.getId(), values=[depot.getId()])
-        self.backend.configState_create(u'clientconfig.depot.id', client2.getId(), values=[depot.getId()])
-        self.backend.product_insertObject(product2)
-        self.backend.productOnDepot_insertObject(prodOnDepot)
-
-        self.assertFalse(self.backend.productOnClient_getObjects())
-        self.assertTrue(self.backend.objectToGroup_getObjects(groupType="HostGroup"))
-
-        self.backend.setProductActionRequestForHostGroup('host_group_1', 'product2', 'setup')
-
-        pocs = self.backend.productOnClient_getObjects()
-        self.assertTrue(pocs)
-
-        self.assertEquals(2, len(self.backend.productOnClient_getObjects()))
-
-        for poc in self.backend.productOnClient_getObjects():
-            self.assertEquals(poc.productId, product2.getId())
-            self.assertTrue(poc.clientId in (client1.id, client2.id))
+    assert not backendManager.groupname_exists(testGroup.id)
 
 
-class GroupRenamingTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
-    """
-    Testing the group actions.
-    """
-    def setUp(self):
-        self.setUpBackend()
-        self.testGroup = HostGroup(
-            id='host_group_1',
-            description='Group 1',
-            notes='First group',
-            parentGroupId=None
-        )
-        self.testGroup2 = HostGroup(
-            id='new_group_1',
-            description='Group 1',
-            notes='First group',
-            parentGroupId=None
-        )
+def testGroupRenameUpdatesObjectToGroups(backendManager):
+    testGroup, clients = fillBackendForRenaming(backendManager)
+    client1, client2 = clients[:2]
+    newGroupId = 'new_group_1'
 
-        self.client1 = OpsiClient(
-            id='client1.test.invalid',
-        )
+    backendManager.group_rename(testGroup.id, newGroupId)
 
-        self.client2 = OpsiClient(
-            id='client2.test.invalid',
-        )
+    objTpGrp_client1 = backendManager.objectToGroup_getObjects(objectId=client1.id)[0]
+    assert objTpGrp_client1.groupId == newGroupId
 
-        client1ToGroup = ObjectToGroup(self.testGroup.getType(), self.testGroup.id, self.client1.id)
-        client2ToGroup = ObjectToGroup(self.testGroup.getType(), self.testGroup.id, self.client2.id)
+    objTpGrp_client2 = backendManager.objectToGroup_getObjects(objectId=client2.id)[0]
+    assert objTpGrp_client2.groupId == newGroupId
 
-        self.backend.host_insertObject(self.client1)
-        self.backend.host_insertObject(self.client2)
-        self.backend.group_insertObject(self.testGroup)
-        self.backend.objectToGroup_createObjects([client1ToGroup, client2ToGroup])
-
-    def tearDown(self):
-        self.tearDownBackend()
-
-    def testGroupnameExists(self):
-        self.assertTrue(self.backend.groupname_exists(self.testGroup.id))
-        self.assertFalse(self.backend.groupname_exists(u'testgruppe'))
-
-    def testAlreadyExistingGroup(self):
-        self.assertRaises(Exception, self.backend.group_rename, self.testGroup.id, self.testGroup.id)
-        self.assertRaises(Exception, self.backend.group_rename, u'notExisting', self.testGroup.id)
-
-    def testCreateNewDeleteOldGroup(self):
-        self.backend.group_rename(self.testGroup.id, self.testGroup2.id)
-
-        group = self.backend.group_getObjects(id=self.testGroup2.id)[0]
-        self.assertEquals(group.description, self.testGroup.description)
-        self.assertEquals(group.notes, self.testGroup.notes)
-        self.assertEquals(group.parentGroupId, self.testGroup.parentGroupId)
-
-        self.assertFalse(self.backend.groupname_exists(self.testGroup.id))
-
-    def testObjectToGroupsHaveNewGroupIds(self):
-        self.backend.group_rename(self.testGroup.id, self.testGroup2.id)
-
-        objTpGrp_client1 = self.backend.objectToGroup_getObjects(objectId=self.client1.id)[0]
-        self.assertEquals(objTpGrp_client1.groupId, self.testGroup2.id)
-
-        objTpGrp_client2 = self.backend.objectToGroup_getObjects(objectId=self.client2.id)[0]
-        self.assertEquals(objTpGrp_client2.groupId, self.testGroup2.id)
-
-    def testObjectToGroupsHaveNotOldGroupIds(self):
-        self.backend.group_rename(self.testGroup.id, self.testGroup2.id)
-
-        objsToGrp = self.backend.objectToGroup_getObjects()
-        for obj in objsToGrp:
-            self.assertNotEqual(obj.groupId, self.testGroup.id)
+    objsToGrp = backendManager.objectToGroup_getObjects()
+    # Removal of old group ID
+    assert not any(obj.groupId == testGroup.id for obj in objsToGrp)
+    # Existance of new group ID
+    assert any(obj.groupId == newGroupId for obj in objsToGrp)
 
 
-if __name__ == '__main__':
-    unittest.main()
+def fillBackendForRenaming(backend):
+    group = HostGroup(id='host_group_1')
+
+    client1 = OpsiClient(id='client1.test.invalid')
+    client2 = OpsiClient(id='client2.test.invalid')
+
+    client1ToGroup = ObjectToGroup(group.getType(), group.id, client1.id)
+    client2ToGroup = ObjectToGroup(group.getType(), group.id, client2.id)
+
+    backend.host_insertObject(client1)
+    backend.host_insertObject(client2)
+    backend.group_insertObject(group)
+    backend.objectToGroup_createObjects([client1ToGroup, client2ToGroup])
+
+    return (
+        group,
+        (client1, client2)
+    )
