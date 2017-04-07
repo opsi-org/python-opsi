@@ -1205,11 +1205,11 @@ def getBlockDeviceContollerInfo(device, lshwoutput=None):
 
 	# emulated storage controller dirty-hack, for outputs like:
 	# ...
-	# /0/100/1f.2               storage        82801JD/DO (ICH10 Family) SATA AHCI Controller [8086:3A02] (Posix.py|741)
-	# /0/100/1f.3               bus            82801JD/DO (ICH10 Family) SMBus Controller [8086:3A60] (Posix.py|741)
-	# /0/1          scsi0       storage         (Posix.py|741)
-	# /0/1/0.0.0    /dev/sda    disk           500GB ST3500418AS (Posix.py|741)
-	# /0/1/0.0.0/1  /dev/sda1   volume         465GiB Windows FAT volume (Posix.py|741)
+	# /0/100/1f.2               storage        82801JD/DO (ICH10 Family) SATA AHCI Controller [8086:3A02]
+	# /0/100/1f.3               bus            82801JD/DO (ICH10 Family) SMBus Controller [8086:3A60]
+	# /0/1          scsi0       storage
+	# /0/1/0.0.0    /dev/sda    disk           500GB ST3500418AS
+	# /0/1/0.0.0/1  /dev/sda1   volume         465GiB Windows FAT volume
 	# ...
 	# In this case return the first AHCI controller, that will be found
 	storageControllers = {}
