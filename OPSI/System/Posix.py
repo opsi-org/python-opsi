@@ -36,7 +36,6 @@ import fcntl
 import locale
 import os
 import platform
-import posix
 import re
 import socket
 import sys
@@ -1347,12 +1346,12 @@ class Harddisk:
 			)
 
 	def getSignature(self):
-		hd = posix.open(str(self.device), posix.O_RDONLY)
+		hd = os.open(str(self.device), os.O_RDONLY)
 		try:
-			posix.lseek(hd, 440, 0)
-			x = posix.read(hd, 4)
+			os.lseek(hd, 440, 0)
+			x = os.read(hd, 4)
 		finally:
-			posix.close(hd)
+			os.close(hd)
 
 		logger.debug(u"Read signature from device '%s': %s,%s,%s,%s" \
 				% (self.device, ord(x[0]), ord(x[1]), ord(x[2]), ord(x[3])))
@@ -2058,10 +2057,10 @@ class Harddisk:
 			x[2] = int((sector & 0x00FF0000) >> 16)
 			x[3] = int((sector & 0xFFFFFFFF) >> 24)
 
-			hd = posix.open(self.getPartition(partition)['device'], posix.O_RDONLY)
+			hd = os.open(self.getPartition(partition)['device'], os.O_RDONLY)
 			try:
-				posix.lseek(hd, 0x1c, 0)
-				start = posix.read(hd, 4)
+				os.lseek(hd, 0x1c, 0)
+				start = os.read(hd, 4)
 				logger.debug(
 					u"NTFS Boot Record currently using {0} {1} {2} {3} "
 					u"as partition start sector".format(
@@ -2069,22 +2068,22 @@ class Harddisk:
 						hex(ord(start[2])), hex(ord(start[3])))
 				)
 			finally:
-				posix.close(hd)
+				os.close(hd)
 
 			logger.debug(u"Manipulating NTFS Boot Record!")
-			hd = posix.open(self.getPartition(partition)['device'], posix.O_WRONLY)
+			hd = os.open(self.getPartition(partition)['device'], os.O_WRONLY)
 			logger.info(u"Writing new value %s %s %s %s at 0x1c" % (hex(x[0]), hex(x[1]), hex(x[2]), hex(x[3])))
 			try:
-				posix.lseek(hd, 0x1c, 0)
+				os.lseek(hd, 0x1c, 0)
 				for i in x:
-					posix.write(hd, chr(i))
+					os.write(hd, chr(i))
 			finally:
-				posix.close(hd)
+				os.close(hd)
 
-			hd = posix.open(self.getPartition(partition)['device'], posix.O_RDONLY)
+			hd = os.open(self.getPartition(partition)['device'], os.O_RDONLY)
 			try:
-				posix.lseek(hd, 0x1c, 0)
-				start = posix.read(hd, 4)
+				os.lseek(hd, 0x1c, 0)
+				start = os.read(hd, 4)
 				logger.debug(
 					u"NTFS Boot Record now using {0} {1} {2} {3} as partition "
 					u"start sector".format(
@@ -2092,7 +2091,7 @@ class Harddisk:
 						hex(ord(start[2])), hex(ord(start[3])))
 				)
 			finally:
-				posix.close(hd)
+				os.close(hd)
 		except Exception as e:
 			for hook in hooks:
 				hook.error_Harddisk_setNTFSPartitionStartSector(self, partition, sector, e)
