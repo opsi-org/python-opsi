@@ -1893,8 +1893,9 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			return (result, objectClass, objectFilter)
 
 		result = [v[0] for v in handleFilter(parsedFilter)[0].get('identValues', [])]
+		result.sort()
 		logger.info(u"=== Search done, result: %s" % result)
-		return sorted(result)
+		return result
 
 	def host_getIdents(self, returnType='unicode', **filter):
 		return [host.getIdent(returnType) for host in self.host_getObjects(attributes=['id'], **filter)]
