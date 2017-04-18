@@ -267,11 +267,11 @@ def testConfigsAreOnlyAddedOnce(extendedConfigDataBackend):
     confData.initializeConfigs(backend=extendedConfigDataBackend, pathToSMBConf=sambaTestConfig)
 
     configIdentsFirst = extendedConfigDataBackend.config_getIdents(returnType='unicode')
-    configIdentsFirst = configIdentsFirst.sort()
+    configIdentsFirst.sort()
 
     confData.initializeConfigs(backend=extendedConfigDataBackend, pathToSMBConf=sambaTestConfig)
     configIdentsSecond = extendedConfigDataBackend.config_getIdents(returnType='unicode')
-    configIdentsSecond = configIdentsSecond.sort()
+    configIdentsSecond.sort()
 
     assert configIdentsFirst == configIdentsSecond
     assert len(configIdentsSecond) == len(set(configIdentsSecond))
