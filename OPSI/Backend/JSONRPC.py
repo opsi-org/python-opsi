@@ -423,21 +423,6 @@ class JSONRPCBackend(Backend):
 		asyncStatus = self._async
 		self._async = False
 
-		if self._deflate:
-			logger.debug(u"Testing if deflated communication works...")
-			previousLogLevel = logger.getConsoleLevel()
-			logger.setConsoleLevel(LOG_NONE)
-			try:
-				self._jsonRPC(u'backend_info')
-				logger.debug(u"Deflated communication works!")
-			except Exception as error:
-				logger.setConsoleLevel(previousLogLevel)
-				logger.debug(u"Caught {0!r}", error)
-				logger.debug(u"Disabling deflate...")
-				self._deflate = False
-			finally:
-				logger.setConsoleLevel(previousLogLevel)
-
 		try:
 			try:
 				self._interface = self._jsonRPC(u'backend_getInterface')
