@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2015-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2015-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -67,18 +66,6 @@ def testProcessingResponseWithEncodedContent(jsonRpcBackend, encodingFunction, c
     response = FakeResponse(
         data=encodingFunction(text),
         header={'content-encoding': contentEncoding}
-    )
-
-    assert text == jsonRpcBackend._processResponse(response)
-
-
-@pytest.mark.parametrize("contentType, encodingFunction", [
-    ('gzip-application/json', deflateEncode),
-])
-def testProcessingResponseBackwardsCompatible(jsonRpcBackend, encodingFunction, contentType, text):
-    response = FakeResponse(
-        data=encodingFunction(text),
-        header={'content-type': contentType}
     )
 
     assert text == jsonRpcBackend._processResponse(response)
