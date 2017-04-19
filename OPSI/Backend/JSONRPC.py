@@ -49,7 +49,8 @@ from OPSI.Types import (OpsiAuthenticationError, OpsiServiceVerificationError,
 						OpsiTimeoutError)
 from OPSI.Backend.Backend import Backend, DeferredCall
 from OPSI.Util import serialize, deserialize
-from OPSI.Util.HTTP import urlsplit, getSharedConnectionPool, deflateEncode, deflateDecode, gzipDecode
+from OPSI.Util.HTTP import getSharedConnectionPool, urlsplit
+from OPSI.Util.HTTP import deflateEncode, deflateDecode, gzipDecode
 
 __all__ = ('JSONRPC', 'JSONRPCThread', 'RpcQueue', 'JSONRPCBackend')
 
