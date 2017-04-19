@@ -283,7 +283,6 @@ class JSONRPCBackend(Backend):
 		self._verifyServerCert = False
 		self._verifyServerCertByCa = False
 		self._verifyByCaCertsFile = None
-		self._wrongHTTPHeaders = None
 		self._proxyURL = None
 
 		if not self._username:
@@ -402,12 +401,7 @@ class JSONRPCBackend(Backend):
 		if not self._connected:
 			raise Exception(u'Not connected')
 
-		deflate = forceBool(deflate)
-		if deflate and self._wrongHTTPHeaders:
-			logger.error(u"Refusing to set deflate because opsi service answers with wrong HTTP header contents.")
-			return
-
-		self._deflate = deflate
+		self._deflate = forceBool(deflate)
 
 	def getDeflate(self):
 		return self._deflate
@@ -647,22 +641,11 @@ class JSONRPCBackend(Backend):
 			if sessionId != self._sessionId:
 				self._sessionId = sessionId
 
-		contentType = response.getheader('content-type', '')
 		contentEncoding = response.getheader('content-encoding', '').lower()
-		logger.debug(u"Content-Type: {0}, Content-Encoding: {1}", contentType, contentEncoding)
+		logger.debug2(u"Content-Encoding: {1}", contentEncoding)
 
 		response = response.data
-		if contentType.lower().startswith('gzip'):
-			# To stay compatible with old versions of the opsiconfd
-			# we try to decompress the response with deflate even
-			# though gzip was stated.
-			# Content-type was usually gzip-application/json
-			logger.debug(u"Expecting deflated data from server (backwards compatible)")
-			response = deflateDecode(response)
-
-			if self._wrongHTTPHeaders is None:
-				self._wrongHTTPHeaders = True
-		elif contentEncoding == 'gzip':
+		if contentEncoding == 'gzip':
 			logger.debug(u"Expecting gzip'ed data from server")
 			response = gzipDecode(response)
 		elif contentEncoding == "deflate":
