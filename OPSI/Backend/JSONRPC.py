@@ -42,7 +42,7 @@ from twisted.conch.ssh import keys
 from sys import version_info
 
 from OPSI import __version__
-from OPSI.Logger import Logger, LOG_INFO, LOG_NONE
+from OPSI.Logger import Logger, LOG_INFO
 from OPSI.Types import (forceBool, forceFilename, forceFloat, forceInt,
 						forceList, forceUnicode)
 from OPSI.Types import (OpsiAuthenticationError, OpsiServiceVerificationError,
