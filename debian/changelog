@@ -1,3 +1,10 @@
+python-opsi (4.0.7.38-3) stable; urgency=medium
+
+  * Do not deploy empty file fore custom ssh command config but instead
+    create that file in the postinst if not existing.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 20 Apr 2017 17:09:02 +0200
+
 python-opsi (4.0.7.38-2) stable; urgency=medium
 
   * Reverted the prevention of creating users on UCS.

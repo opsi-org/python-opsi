@@ -99,12 +99,6 @@ data_files = [
 			'data/hwaudit/locales/ru_RU',
 		]
 	),
-	(
-		'/var/lib/opsi/',
-		[
-			'data/server_commands_custom.conf'
-		]
-	),
 ]
 
 for language in LANGUAGES:
