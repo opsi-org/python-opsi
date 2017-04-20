@@ -136,11 +136,6 @@ chmod 660 /etc/opsi/backends/*.conf
 chown root:$fileadmingroup /etc/opsi/opsi.conf
 chmod 660 /etc/opsi/opsi.conf
 
-chown opsiconfd:opsiadmin /etc/opsi/server_commands_default.conf
-chown opsiconfd:opsiadmin /var/lib/opsi/server_commands_custom.conf
-chmod 440 /etc/opsi/server_commands_default.conf
-chmod 660 /var/lib/opsi/server_commands_custom.conf
-
 test -e /etc/opsi/pckeys || touch /etc/opsi/pckeys
 chown root:$fileadmingroup /etc/opsi/pckeys
 chmod 660 /etc/opsi/pckeys
@@ -152,6 +147,13 @@ chmod 660 /etc/opsi/passwd
 [ -e "/etc/opsi/backendManager/acl.conf" ]      || ln -s /etc/opsi/backendManager/acl.conf.default      /etc/opsi/backendManager/acl.conf
 [ -e "/etc/opsi/backendManager/dispatch.conf" ] || ln -s /etc/opsi/backendManager/dispatch.conf.default /etc/opsi/backendManager/dispatch.conf
 
+# Processing files for the SSH extension
+test -e /var/lib/opsi/server_commands_custom.conf || touch /var/lib/opsi/server_commands_custom.conf
+chown opsiconfd:opsiadmin /etc/opsi/server_commands_default.conf
+chown opsiconfd:opsiadmin /var/lib/opsi/server_commands_custom.conf
+chmod 440 /etc/opsi/server_commands_default.conf
+chmod 660 /var/lib/opsi/server_commands_custom.conf
+
 # ===[ files ]======================================
 %files -f INSTALLED_FILES
 
@@ -162,8 +164,6 @@ chmod 660 /etc/opsi/passwd
 %config(noreplace) /etc/opsi/backends/dhcpd.conf
 %config(noreplace) /etc/opsi/backends/file.conf
 %config(noreplace) /etc/opsi/backends/hostcontrol.conf
-%config(noreplace) /etc/opsi/server_commands_default.conf
-%config(noreplace) /var/lib/opsi/server_commands_custom.conf
 %config(noreplace) /etc/opsi/backends/jsonrpc.conf
 %config(noreplace) /etc/opsi/backends/mysql.conf
 %config(noreplace) /etc/opsi/backends/multiplex.conf
@@ -185,6 +185,7 @@ chmod 660 /etc/opsi/passwd
 %config /etc/opsi/hwaudit/locales/es_ES
 %config /etc/opsi/hwaudit/locales/fr_FR
 %config /etc/opsi/hwaudit/locales/ru_RU
+%config(noreplace) /etc/opsi/server_commands_default.conf
 
 # directories
 #%dir /var/lib/opsi
