@@ -148,11 +148,8 @@ chmod 660 /etc/opsi/passwd
 [ -e "/etc/opsi/backendManager/dispatch.conf" ] || ln -s /etc/opsi/backendManager/dispatch.conf.default /etc/opsi/backendManager/dispatch.conf
 
 # Processing files for the SSH extension
-test -e /var/lib/opsi/server_commands_custom.conf || touch /var/lib/opsi/server_commands_custom.conf
 chown opsiconfd:opsiadmin /etc/opsi/server_commands_default.conf
-chown opsiconfd:opsiadmin /var/lib/opsi/server_commands_custom.conf
 chmod 440 /etc/opsi/server_commands_default.conf
-chmod 660 /var/lib/opsi/server_commands_custom.conf
 
 # ===[ files ]======================================
 %files -f INSTALLED_FILES
