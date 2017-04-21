@@ -239,6 +239,45 @@ def modifySSHCommand(command, commandList, position, needsSudo, tooltipText, par
 	return command
 
 
+@pytest.fixture
+def backendWithEmptyCommandFile(backendManager):
+	with workWithEmptyCommandFile(backendManager._backend):
+		yield backendManager
+
+
+def testGettingACommand(backendWithEmptyCommandFile):
+	backend = backendWithEmptyCommandFile
+
+	commands = getTestCommands()
+	firstCommand = commands[0]
+
+	assert backend.SSHCommand_getObjects() == [], "first return of SSHCommand_getObjects should be an empty list"
+	result = backend.SSHCommand_createObjects([firstCommand.shortCommand])
+
+	commandWithDefaults = getTestCommandWithDefault(firstCommand.fullCommand)
+	compareLists(result, [commandWithDefaults])
+
+
+def testUpdatingACommand(backendWithEmptyCommandFile):
+	backend = backendWithEmptyCommandFile
+
+	commands = getTestCommands()
+	firstCommand = commands[0]
+
+	assert backend.SSHCommand_getObjects() == [], "first return of SSHCommand_getObjects should be an empty list"
+	backend.SSHCommand_createObject(firstCommand.fullCommand["menuText"], firstCommand.fullCommand["commands"])
+	com1_new_full = firstCommand.fullCommand
+	com1_new_full = modifySSHCommand(com1_new_full, [u'MyNewTestCom'], 10, True, u'MyNewTooltipText', u'myParent')
+	return_command = backend.SSHCommand_updateObject(
+		firstCommand.fullCommand["menuText"],
+		com1_new_full["commands"],
+		com1_new_full["position"],
+		com1_new_full["needSudo"],
+		com1_new_full["tooltipText"],
+		com1_new_full["parentMenuText"]
+	)
+
+	compareLists(return_command, [com1_new_full])
 
 
 class SSHCommandsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
@@ -258,29 +297,6 @@ class SSHCommandsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
 
 	def tearDown(self):
 		self.tearDownBackend()
-
-	def testGetCommand(self):
-		with workWithEmptyCommandFile(self.backend._backend):
-			self.assertEqual(self.backend.SSHCommand_getObjects(), [], "first return of SSHCommand_getObjects should be an empty list")
-			result = self.backend.SSHCommand_createObjects([self.com1_min])
-			compareLists(result, [self.com1_withDefaults])
-
-	def testUpdateCommand(self):
-		with workWithEmptyCommandFile(self.backend._backend):
-			self.assertEqual(self.backend.SSHCommand_getObjects(), [], "first return of SSHCommand_getObjects should be an empty list")
-			self.backend.SSHCommand_createObject(self.com1_full["menuText"], self.com1_full["commands"])
-			com1_new_full = self.com1_full
-			com1_new_full = modifySSHCommand(com1_new_full, [u'MyNewTestCom'], 10, True, u'MyNewTooltipText', u'myParent')
-			return_command = self.backend.SSHCommand_updateObject(
-				self.com1_full["menuText"],
-				com1_new_full["commands"],
-				com1_new_full["position"],
-				com1_new_full["needSudo"],
-				com1_new_full["tooltipText"],
-				com1_new_full["parentMenuText"]
-			)
-
-			compareLists(return_command, [com1_new_full])
 
 	def testUpdateCommands(self):
 		with workWithEmptyCommandFile(self.backend._backend):
