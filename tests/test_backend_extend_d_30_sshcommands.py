@@ -29,9 +29,13 @@ import json
 import unittest
 import pytest
 from contextlib import contextmanager
+from collections import namedtuple
 
 from .Backends.File import FileBackendBackendManagerMixin
 from .helpers import workInTemporaryDirectory, mock
+
+
+CommandCollection = namedtuple("CommandCollection", "shortCommand fullCommand")
 
 
 @contextmanager
@@ -73,7 +77,7 @@ def getTestCommands():
 	(com1, com1_full) = getTestCommand(u'utestmenu1', u'UTestMenu1', [u'test 1'], 5, True,  u'Test Tooltip1', u'Test Parent1')
 	(com2, com2_full) = getTestCommand(u'utestmenu2', u'UTestMenu2', [u'test 2'], 52, True,  u'Test Tooltip2', u'Test Parent2')
 	(com3, com3_full) = getTestCommand(u'utestmenu3', u'UTestMenu3', [u'test 3'], 53, True,  u'Test Tooltip3', u'Test Parent3')
-	return (com1, com1_full), (com2, com2_full), (com3, com3_full)
+	return CommandCollection(com1, com1_full), CommandCollection(com2, com2_full), CommandCollection(com3, com3_full)
 
 
 def getTestCommand(commandId, menuText, commands, position, needSudo, tooltipText, parentMenuText):
