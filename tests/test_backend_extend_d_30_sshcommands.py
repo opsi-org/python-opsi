@@ -72,18 +72,18 @@ def workWithBrokenCommandFile(backend):
 
 
 def getTestCommands():
-	(com1, com1_full) = getTestCommand(u'utestmenu1', u'UTestMenu1', [u'test 1'], 5, True,  u'Test Tooltip1', u'Test Parent1')
-	(com2, com2_full) = getTestCommand(u'utestmenu2', u'UTestMenu2', [u'test 2'], 52, True,  u'Test Tooltip2', u'Test Parent2')
-	(com3, com3_full) = getTestCommand(u'utestmenu3', u'UTestMenu3', [u'test 3'], 53, True,  u'Test Tooltip3', u'Test Parent3')
-	return CommandCollection(com1, com1_full), CommandCollection(com2, com2_full), CommandCollection(com3, com3_full)
+	first = getTestCommand(u'utestmenu1', u'UTestMenu1', [u'test 1'], 5, True,  u'Test Tooltip1', u'Test Parent1')
+	second = getTestCommand(u'utestmenu2', u'UTestMenu2', [u'test 2'], 52, True,  u'Test Tooltip2', u'Test Parent2')
+	third = getTestCommand(u'utestmenu3', u'UTestMenu3', [u'test 3'], 53, True,  u'Test Tooltip3', u'Test Parent3')
+	return first, second, third
 
 
 def getTestCommand(commandId, menuText, commands, position, needSudo, tooltipText, parentMenuText):
-	this = {
+	minimal = {
 		u'menuText': menuText,
 		u'commands': commands
 	}
-	thisfull = {
+	full = {
 		u'id': commandId,
 		u'menuText': menuText,
 		u'commands': commands,
@@ -92,26 +92,24 @@ def getTestCommand(commandId, menuText, commands, position, needSudo, tooltipTex
 		u'tooltipText': tooltipText,
 		u'parentMenuText': parentMenuText
 	}
-	return (this, thisfull)
+	return CommandCollection(minimal, full)
 
 
 def getTestOneCommand(mid, menuText, commands, position, needSudo, tooltipText, parentMenuText):
-	(_, thisfull) = getTestCommand(mid, menuText, commands, position, needSudo, tooltipText, parentMenuText)
-	return thisfull
+	commandcollection = getTestCommand(mid, menuText, commands, position, needSudo, tooltipText, parentMenuText)
+	return commandcollection.full
 
 
 def getTestCommandWithDefault(existingCommand):
-	com = {
+	return {
 		u'needSudo': False,
 		u'position': 0,
 		u'tooltipText': u'',
-		u'parentMenuText': None
+		u'parentMenuText': None,
+		u'id': existingCommand["id"],
+		u'menuText': existingCommand[u'menuText'],
+		u'commands': existingCommand[u'commands'],
 	}
-
-	com[u'id'] = existingCommand["id"]
-	com[u'menuText'] = existingCommand[u'menuText']
-	com[u'commands'] = existingCommand[u'commands']
-	return com
 
 
 def getSSHCommandCreationParameter():
@@ -243,11 +241,28 @@ def backendWithEmptyCommandFile(backendManager):
 		yield backendManager
 
 
-def testGettingCommand(backendWithEmptyCommandFile):
-	backend = backendWithEmptyCommandFile
+@pytest.fixture
+def testCommands():
+	return getTestCommands()
 
-	commands = getTestCommands()
-	firstCommand = commands[0]
+
+@pytest.fixture
+def firstCommand(testCommands):
+	return testCommands[0]
+
+
+@pytest.fixture
+def secondCommand(testCommands):
+	return testCommands[1]
+
+
+@pytest.fixture
+def thirdCommand(testCommands):
+	return testCommands[2]
+
+
+def testGettingCommand(backendWithEmptyCommandFile, firstCommand):
+	backend = backendWithEmptyCommandFile
 
 	assert backend.SSHCommand_getObjects() == [], "first return of SSHCommand_getObjects should be an empty list"
 	result = backend.SSHCommand_createObjects([firstCommand.minimal])
@@ -256,11 +271,8 @@ def testGettingCommand(backendWithEmptyCommandFile):
 	compareLists(result, [commandWithDefaults])
 
 
-def testUpdatingSingleCommand(backendWithEmptyCommandFile):
+def testUpdatingSingleCommand(backendWithEmptyCommandFile, firstCommand):
 	backend = backendWithEmptyCommandFile
-
-	commands = getTestCommands()
-	firstCommand = commands[0]
 
 	assert backend.SSHCommand_getObjects() == [], "first return of SSHCommand_getObjects should be an empty list"
 	backend.SSHCommand_createObject(firstCommand.full["menuText"], firstCommand.full["commands"])
@@ -278,28 +290,23 @@ def testUpdatingSingleCommand(backendWithEmptyCommandFile):
 	compareLists(return_command, [com1_new_full])
 
 
-def testUpdatingMultipleCommands(backendWithEmptyCommandFile):
+def testUpdatingMultipleCommands(backendWithEmptyCommandFile, firstCommand, secondCommand, thirdCommand):
 	backend = backendWithEmptyCommandFile
 
-	firstCommand, secondCommand, thirdCommand = getTestCommands()
+	com123_new_full = [
+		modifySSHCommand(firstCommand.full, [u'MyNewTestCom1'], 11, True, u'MyNewTooltipText1', u'myParent1'),
+		modifySSHCommand(secondCommand.full, [u'MyNewTestCom2'], 12, False, u'MyNewTooltipText2', u'myParent2'),
+		modifySSHCommand(thirdCommand.full, [u'MyNewTestCom3'], 13, False, u'MyNewTooltipText3', u'myParent3')
+	]
 
-	com123_new_full = [firstCommand.full, secondCommand.full, thirdCommand.full]
-	com123_new_full[0] = modifySSHCommand(com123_new_full[0], [u'MyNewTestCom1'], 11, True, u'MyNewTooltipText1', u'myParent1')
-	com123_new_full[1] = modifySSHCommand(com123_new_full[1], [u'MyNewTestCom2'], 12, False, u'MyNewTooltipText2', u'myParent2')
-	com123_new_full[2] = modifySSHCommand(com123_new_full[2], [u'MyNewTestCom3'], 13, False, u'MyNewTooltipText3', u'myParent3')
 	assert backend.SSHCommand_getObjects() == [], "first return of SSHCommand_getObjects should be an empty list"
 	backend.SSHCommand_createObjects([firstCommand.minimal, secondCommand.minimal])
 	return_command = backend.SSHCommand_updateObjects(com123_new_full)
 	compareLists(return_command, com123_new_full)
 
 
-def testDeletingCommand(backendWithEmptyCommandFile):
+def testDeletingCommand(backendWithEmptyCommandFile, firstCommand, secondCommand):
 	backend = backendWithEmptyCommandFile
-
-	commands = getTestCommands()
-	firstCommand = commands[0]
-	secondCommand = commands[1]
-
 	firstCommandWithDefaults = getTestCommandWithDefault(firstCommand.full)
 
 	assert backend.SSHCommand_getObjects() == [], "first return of SSHCommand_getObjects should be an empty list"
@@ -307,10 +314,8 @@ def testDeletingCommand(backendWithEmptyCommandFile):
 	compareLists(backend.SSHCommand_deleteObject(secondCommand.minimal["menuText"]), [firstCommandWithDefaults])
 
 
-def testDeletingCommands(backendManager):
+def testDeletingCommands(backendManager, firstCommand, secondCommand, thirdCommand):
 	backend = backendManager
-
-	firstCommand, secondCommand, thirdCommand = getTestCommands()
 	thirdCommandWithDefaults = getTestCommandWithDefault(thirdCommand.full)
 
 	with workWithEmptyCommandFile(backend._backend):
