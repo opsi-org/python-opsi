@@ -181,7 +181,7 @@ def getSSHCommandCreationExceptionsParameter():
 @pytest.mark.parametrize("commandlist", getSSHCommandCreationExceptionsParameter())
 def testSSHCommandCreationExceptions(backendManager,  commandlist):
 	with workWithEmptyCommandFile(backendManager):
-		with pytest.raises(Exception):
+		with pytest.raises(ValueError):
 			if commandlist:
 				command = commandlist[0]
 				backendManager.SSHCommand_createObject(
