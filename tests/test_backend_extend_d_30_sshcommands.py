@@ -76,26 +76,19 @@ def getTestCommands():
 	return (com1, com1_full), (com2, com2_full), (com3, com3_full)
 
 
-def getTestCommand(mid, menuText, commands, position, needSudo, tooltipText, parentMenuText):
-	thisid = mid
-	thismenuText = menuText
-	thiscommands = commands
-	thisposition = position
-	thisneedSudo = needSudo
-	thistooltipText = tooltipText
-	thisparentMenuText = parentMenuText
+def getTestCommand(commandId, menuText, commands, position, needSudo, tooltipText, parentMenuText):
 	this = {
-		u'menuText': thismenuText,
-		u'commands': thiscommands
+		u'menuText': menuText,
+		u'commands': commands
 	}
 	thisfull = {
-		u'id': thisid,
-		u'menuText': thismenuText,
-		u'commands': thiscommands,
-		u'needSudo': thisneedSudo,
-		u'position': thisposition,
-		u'tooltipText': thistooltipText,
-		u'parentMenuText': thisparentMenuText
+		u'id': commandId,
+		u'menuText': menuText,
+		u'commands': commands,
+		u'needSudo': needSudo,
+		u'position': position,
+		u'tooltipText': tooltipText,
+		u'parentMenuText': parentMenuText
 	}
 	return (this, thisfull)
 
@@ -105,7 +98,7 @@ def getTestOneCommand(mid, menuText, commands, position, needSudo, tooltipText, 
 	return thisfull
 
 
-def getTestCommandWithDefault(existingcom):
+def getTestCommandWithDefault(existingCommand):
 	com = {
 		u'needSudo': False,
 		u'position': 0,
@@ -113,9 +106,9 @@ def getTestCommandWithDefault(existingcom):
 		u'parentMenuText': None
 	}
 
-	com[u'id'] = existingcom["id"]
-	com[u'menuText'] = existingcom[u'menuText']
-	com[u'commands'] = existingcom[u'commands']
+	com[u'id'] = existingCommand["id"]
+	com[u'menuText'] = existingCommand[u'menuText']
+	com[u'commands'] = existingCommand[u'commands']
 	return com
 
 
@@ -240,6 +233,8 @@ def modifySSHCommand(command, commandList, position, needsSudo, tooltipText, par
 	command["tooltipText"] = tooltipText
 	command["parentMenuText"] = parentMenuText
 	return command
+
+
 
 
 class SSHCommandsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
