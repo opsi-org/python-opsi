@@ -113,11 +113,11 @@ def getTestCommandWithDefault(existingCommand):
 
 
 def getSSHCommandCreationParameter():
-	(com1_min, com1_full), (com2_min, com2_full), (com3_min, com3_full) = getTestCommands()
+	first, second, third = getTestCommands()
 	return [
-		[[com1_min], [getTestCommandWithDefault(com1_full)]],
-		[[com1_min, com2_min], [getTestCommandWithDefault(com1_full), getTestCommandWithDefault(com2_full)]],
-		[[com1_min, com2_min, com3_min], [getTestCommandWithDefault(com1_full), getTestCommandWithDefault(com2_full), getTestCommandWithDefault(com1_full)]],
+		[[first.minimal], [getTestCommandWithDefault(first.full)]],
+		[[first.minimal, second.minimal], [getTestCommandWithDefault(first.full), getTestCommandWithDefault(second.full)]],
+		[[first.minimal, second.minimal, third.minimal], [getTestCommandWithDefault(first.full), getTestCommandWithDefault(second.full), getTestCommandWithDefault(first.full)]],
 	]
 
 
