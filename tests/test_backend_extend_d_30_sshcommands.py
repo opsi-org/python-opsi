@@ -63,10 +63,10 @@ def workWithBrokenCommandFile(backend):
 		with open(filename, "w") as f:
 			json.dump(element, f)
 
-		with mock.patch.object(backend, '_getSSHCommandCustomFilename', return_value=filename):
-			with mock.patch.object(backend, '_getSSHCommandFilenames', return_value=[filename]):
-				with mock.patch.object(backend, '_isBuiltIn', return_value=False):
-					yield
+		with mock.patch.object(backend._backend, '_getSSHCommandCustomFilename', return_value=filename):
+			with mock.patch.object(backend._backend, '_getSSHCommandFilenames', return_value=[filename]):
+				with mock.patch.object(backend._backend, '_isBuiltIn', return_value=False):
+					yield backend
 
 
 def getTestCommands():
@@ -222,6 +222,26 @@ def testSSHCommandUpdateExceptions(backendManager,  commandlist):
 			backendManager.SSHCommand_updateObjects(commandlist)
 
 
+@pytest.fixture
+def backendWithBrokenCommandFile(backendManager):
+	with workWithBrokenCommandFile(backendManager) as backend:
+		yield backend
+
+
+def testBrokenCommandFileRaisesException(backendWithBrokenCommandFile):
+	with pytest.raises(Exception):
+		backendWithBrokenCommandFile.SSHCommand_deleteObjects()
+
+
+def modifySSHCommand(command, commandList, position, needsSudo, tooltipText, parentMenuText):
+	command["commands"] = commandList
+	command["position"] = position
+	command["needSudo"] = needsSudo
+	command["tooltipText"] = tooltipText
+	command["parentMenuText"] = parentMenuText
+	return command
+
+
 class SSHCommandsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
 	"""
 	Testing the crud methods for json commands .
@@ -240,30 +260,18 @@ class SSHCommandsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
 	def tearDown(self):
 		self.tearDownBackend()
 
-	def testExceptionGetCommand(self):
-		with workWithBrokenCommandFile(self.backend._backend):
-			self.assertRaises(Exception, self.backend.SSHCommand_deleteObjects)
-
 	def testGetCommand(self):
 		with workWithEmptyCommandFile(self.backend._backend):
 			self.assertEqual(self.backend.SSHCommand_getObjects(), [], "first return of SSHCommand_getObjects should be an empty list")
 			result = self.backend.SSHCommand_createObjects([self.com1_min])
 			compareLists(result, [self.com1_withDefaults])
 
-	def setNewSSHCommand(self, c, com, p, ns, ttt, pmt):
-		c["commands"] = com
-		c["position"] = p
-		c["needSudo"] = ns
-		c["tooltipText"] = ttt
-		c["parentMenuText"] = pmt
-		return c
-
 	def testUpdateCommand(self):
 		with workWithEmptyCommandFile(self.backend._backend):
 			self.assertEqual(self.backend.SSHCommand_getObjects(), [], "first return of SSHCommand_getObjects should be an empty list")
 			self.backend.SSHCommand_createObject(self.com1_full["menuText"], self.com1_full["commands"])
 			com1_new_full = self.com1_full
-			com1_new_full = self.setNewSSHCommand(com1_new_full, [u'MyNewTestCom'], 10, True, u'MyNewTooltipText', u'myParent')
+			com1_new_full = modifySSHCommand(com1_new_full, [u'MyNewTestCom'], 10, True, u'MyNewTooltipText', u'myParent')
 			return_command = self.backend.SSHCommand_updateObject(
 				self.com1_full["menuText"],
 				com1_new_full["commands"],
@@ -278,9 +286,9 @@ class SSHCommandsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
 	def testUpdateCommands(self):
 		with workWithEmptyCommandFile(self.backend._backend):
 			com123_new_full = [self.com1_full, self.com2_full, self.com3_full]
-			com123_new_full[0] = self.setNewSSHCommand(com123_new_full[0], [u'MyNewTestCom1'], 11, True, u'MyNewTooltipText1', u'myParent1')
-			com123_new_full[1] = self.setNewSSHCommand(com123_new_full[1], [u'MyNewTestCom2'], 12, False, u'MyNewTooltipText2', u'myParent2')
-			com123_new_full[2] = self.setNewSSHCommand(com123_new_full[2], [u'MyNewTestCom3'], 13, False, u'MyNewTooltipText3', u'myParent3')
+			com123_new_full[0] = modifySSHCommand(com123_new_full[0], [u'MyNewTestCom1'], 11, True, u'MyNewTooltipText1', u'myParent1')
+			com123_new_full[1] = modifySSHCommand(com123_new_full[1], [u'MyNewTestCom2'], 12, False, u'MyNewTooltipText2', u'myParent2')
+			com123_new_full[2] = modifySSHCommand(com123_new_full[2], [u'MyNewTestCom3'], 13, False, u'MyNewTooltipText3', u'myParent3')
 			self.assertEqual(self.backend.SSHCommand_getObjects(), [], "first return of SSHCommand_getObjects should be an empty list")
 			self.backend.SSHCommand_createObjects([self.com1_min, self.com2_min])
 			return_command = self.backend.SSHCommand_updateObjects(com123_new_full)
