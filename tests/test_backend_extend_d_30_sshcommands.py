@@ -33,7 +33,7 @@ from collections import namedtuple
 from .helpers import workInTemporaryDirectory, mock
 
 
-CommandCollection = namedtuple("CommandCollection", "shortCommand fullCommand")
+CommandCollection = namedtuple("CommandCollection", "minimal full")
 
 
 @contextmanager
@@ -250,9 +250,9 @@ def testGettingCommand(backendWithEmptyCommandFile):
 	firstCommand = commands[0]
 
 	assert backend.SSHCommand_getObjects() == [], "first return of SSHCommand_getObjects should be an empty list"
-	result = backend.SSHCommand_createObjects([firstCommand.shortCommand])
+	result = backend.SSHCommand_createObjects([firstCommand.minimal])
 
-	commandWithDefaults = getTestCommandWithDefault(firstCommand.fullCommand)
+	commandWithDefaults = getTestCommandWithDefault(firstCommand.full)
 	compareLists(result, [commandWithDefaults])
 
 
@@ -263,11 +263,11 @@ def testUpdatingSingleCommand(backendWithEmptyCommandFile):
 	firstCommand = commands[0]
 
 	assert backend.SSHCommand_getObjects() == [], "first return of SSHCommand_getObjects should be an empty list"
-	backend.SSHCommand_createObject(firstCommand.fullCommand["menuText"], firstCommand.fullCommand["commands"])
-	com1_new_full = firstCommand.fullCommand
+	backend.SSHCommand_createObject(firstCommand.full["menuText"], firstCommand.full["commands"])
+	com1_new_full = firstCommand.full
 	com1_new_full = modifySSHCommand(com1_new_full, [u'MyNewTestCom'], 10, True, u'MyNewTooltipText', u'myParent')
 	return_command = backend.SSHCommand_updateObject(
-		firstCommand.fullCommand["menuText"],
+		firstCommand.full["menuText"],
 		com1_new_full["commands"],
 		com1_new_full["position"],
 		com1_new_full["needSudo"],
@@ -283,12 +283,12 @@ def testUpdatingMultipleCommands(backendWithEmptyCommandFile):
 
 	firstCommand, secondCommand, thirdCommand = getTestCommands()
 
-	com123_new_full = [firstCommand.fullCommand, secondCommand.fullCommand, thirdCommand.fullCommand]
+	com123_new_full = [firstCommand.full, secondCommand.full, thirdCommand.full]
 	com123_new_full[0] = modifySSHCommand(com123_new_full[0], [u'MyNewTestCom1'], 11, True, u'MyNewTooltipText1', u'myParent1')
 	com123_new_full[1] = modifySSHCommand(com123_new_full[1], [u'MyNewTestCom2'], 12, False, u'MyNewTooltipText2', u'myParent2')
 	com123_new_full[2] = modifySSHCommand(com123_new_full[2], [u'MyNewTestCom3'], 13, False, u'MyNewTooltipText3', u'myParent3')
 	assert backend.SSHCommand_getObjects() == [], "first return of SSHCommand_getObjects should be an empty list"
-	backend.SSHCommand_createObjects([firstCommand.shortCommand, secondCommand.shortCommand])
+	backend.SSHCommand_createObjects([firstCommand.minimal, secondCommand.minimal])
 	return_command = backend.SSHCommand_updateObjects(com123_new_full)
 	compareLists(return_command, com123_new_full)
 
@@ -300,25 +300,25 @@ def testDeletingCommand(backendWithEmptyCommandFile):
 	firstCommand = commands[0]
 	secondCommand = commands[1]
 
-	firstCommandWithDefaults = getTestCommandWithDefault(firstCommand.fullCommand)
+	firstCommandWithDefaults = getTestCommandWithDefault(firstCommand.full)
 
 	assert backend.SSHCommand_getObjects() == [], "first return of SSHCommand_getObjects should be an empty list"
-	backend.SSHCommand_createObjects([firstCommand.shortCommand, secondCommand.shortCommand])
-	compareLists(backend.SSHCommand_deleteObject(secondCommand.shortCommand["menuText"]), [firstCommandWithDefaults])
+	backend.SSHCommand_createObjects([firstCommand.minimal, secondCommand.minimal])
+	compareLists(backend.SSHCommand_deleteObject(secondCommand.minimal["menuText"]), [firstCommandWithDefaults])
 
 
 def testDeletingCommands(backendManager):
 	backend = backendManager
 
 	firstCommand, secondCommand, thirdCommand = getTestCommands()
-	thirdCommandWithDefaults = getTestCommandWithDefault(thirdCommand.fullCommand)
+	thirdCommandWithDefaults = getTestCommandWithDefault(thirdCommand.full)
 
 	with workWithEmptyCommandFile(backend._backend):
 		assert backend.SSHCommand_getObjects() == [], "first return of SSHCommand_getObjects should be an empty list"
-		backend.SSHCommand_createObjects([firstCommand.shortCommand, secondCommand.shortCommand, thirdCommand.shortCommand])
-		compareLists(backend.SSHCommand_deleteObjects([firstCommand.shortCommand["menuText"], secondCommand.shortCommand["menuText"], thirdCommand.shortCommand["menuText"]]), [])
+		backend.SSHCommand_createObjects([firstCommand.minimal, secondCommand.minimal, thirdCommand.minimal])
+		compareLists(backend.SSHCommand_deleteObjects([firstCommand.minimal["menuText"], secondCommand.minimal["menuText"], thirdCommand.minimal["menuText"]]), [])
 
 	with workWithEmptyCommandFile(backend._backend):
 		assert backend.SSHCommand_getObjects() == [], "first return of SSHCommand_getObjects should be an empty list"
-		backend.SSHCommand_createObjects([firstCommand.shortCommand, secondCommand.shortCommand, thirdCommand.shortCommand])
-		compareLists(backend.SSHCommand_deleteObjects([firstCommand.shortCommand["menuText"], secondCommand.shortCommand["menuText"]]), [thirdCommandWithDefaults])
+		backend.SSHCommand_createObjects([firstCommand.minimal, secondCommand.minimal, thirdCommand.minimal])
+		compareLists(backend.SSHCommand_deleteObjects([firstCommand.minimal["menuText"], secondCommand.minimal["menuText"]]), [thirdCommandWithDefaults])
