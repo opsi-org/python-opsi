@@ -40,8 +40,10 @@ CommandCollection = namedtuple("CommandCollection", "minimal full")
 def workWithEmptyCommandFile(backend):
 	with workInTemporaryDirectory():
 		filename = u'test_file.conf'
+
 		with open(filename, "w"):
 			pass
+
 		with mock.patch.object(backend._backend, '_getSSHCommandCustomFilename', return_value=filename):
 			with mock.patch.object(backend._backend, '_getSSHCommandFilenames', return_value=[filename]):
 				with mock.patch.object(backend._backend, '_isBuiltIn', return_value=False):
@@ -51,7 +53,6 @@ def workWithEmptyCommandFile(backend):
 @contextmanager
 def workWithBrokenCommandFile(backend):
 	with workInTemporaryDirectory():
-		filename = u'test_file.conf'
 		element = {
 			"id": "rechte_setzen",
 			"menuText : Rechte setzen": "",  # <-- This is broken
@@ -61,6 +62,8 @@ def workWithBrokenCommandFile(backend):
 			"tooltipText": "Rechte mittels opsi-set-rights setzen",
 			"parentMenuText": "opsi"
 		}
+
+		filename = u'test_file.conf'
 
 		with open(filename, "w") as f:
 			json.dump(element, f)
@@ -133,6 +136,7 @@ def testSSHCommandCreations(backendManager, val, expected_result):
 def testSSHCommandCreation(backendManager, val, expected_result):
 	with workWithEmptyCommandFile(backendManager):
 		assert backendManager.SSHCommand_getObjects() == [], "first return of SSHCommand_getObjects should be an empty list"
+
 		for command in val:
 			result = backendManager.SSHCommand_createObject(
 				command.get("menuText"),
@@ -188,6 +192,7 @@ def testSSHCommandCreationExceptions(backendManager,  commandlist):
 					command.get("tooltipText"),
 					command.get("parentMenuText")
 				)
+
 			backendManager.SSHCommand_createObjects(commandlist)
 
 
@@ -214,6 +219,7 @@ def testSSHCommandUpdateExceptions(backendManager,  commandlist):
 					command.get("tooltipText", None),
 					command.get("parentMenuText", None)
 				)
+
 			backendManager.SSHCommand_updateObjects(commandlist)
 
 
