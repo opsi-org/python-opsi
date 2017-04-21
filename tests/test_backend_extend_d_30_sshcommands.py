@@ -42,9 +42,9 @@ def workWithEmptyCommandFile(backend):
 		filename = u'test_file.conf'
 		with open(filename, "w"):
 			pass
-		with mock.patch.object(backend, '_getSSHCommandCustomFilename', return_value=filename):
-			with mock.patch.object(backend, '_getSSHCommandFilenames', return_value=[filename]):
-				with mock.patch.object(backend, '_isBuiltIn', return_value=False):
+		with mock.patch.object(backend._backend, '_getSSHCommandCustomFilename', return_value=filename):
+			with mock.patch.object(backend._backend, '_getSSHCommandFilenames', return_value=[filename]):
+				with mock.patch.object(backend._backend, '_isBuiltIn', return_value=False):
 					yield
 
 
@@ -68,7 +68,7 @@ def workWithBrokenCommandFile(backend):
 		with mock.patch.object(backend._backend, '_getSSHCommandCustomFilename', return_value=filename):
 			with mock.patch.object(backend._backend, '_getSSHCommandFilenames', return_value=[filename]):
 				with mock.patch.object(backend._backend, '_isBuiltIn', return_value=False):
-					yield backend
+					yield
 
 
 def getTestCommands():
@@ -123,7 +123,7 @@ def getSSHCommandCreationParameter():
 
 @pytest.mark.parametrize("val,expected_result", getSSHCommandCreationParameter())
 def testSSHCommandCreations(backendManager, val, expected_result):
-	with workWithEmptyCommandFile(backendManager._backend):
+	with workWithEmptyCommandFile(backendManager):
 		assert backendManager.SSHCommand_getObjects() == [], "first return of SSHCommand_getObjects should be an empty list"
 		result = backendManager.SSHCommand_createObjects(val)
 		compareLists(result, expected_result)
@@ -131,7 +131,7 @@ def testSSHCommandCreations(backendManager, val, expected_result):
 
 @pytest.mark.parametrize("val,expected_result", getSSHCommandCreationParameter())
 def testSSHCommandCreation(backendManager, val, expected_result):
-	with workWithEmptyCommandFile(backendManager._backend):
+	with workWithEmptyCommandFile(backendManager):
 		assert backendManager.SSHCommand_getObjects() == [], "first return of SSHCommand_getObjects should be an empty list"
 		for command in val:
 			result = backendManager.SSHCommand_createObject(
@@ -176,7 +176,7 @@ def getSSHCommandCreationExceptionsParameter():
 
 @pytest.mark.parametrize("commandlist", getSSHCommandCreationExceptionsParameter())
 def testSSHCommandCreationExceptions(backendManager,  commandlist):
-	with workWithEmptyCommandFile(backendManager._backend):
+	with workWithEmptyCommandFile(backendManager):
 		with pytest.raises(Exception):
 			if commandlist:
 				command = commandlist[0]
@@ -202,7 +202,7 @@ def getSSHCommandUpdateExceptionsParameter():
 
 @pytest.mark.parametrize("commandlist", getSSHCommandCreationExceptionsParameter())
 def testSSHCommandUpdateExceptions(backendManager,  commandlist):
-	with workWithEmptyCommandFile(backendManager._backend):
+	with workWithEmptyCommandFile(backendManager):
 		with pytest.raises(Exception):
 			if commandlist:
 				command = commandlist[0]
@@ -239,7 +239,7 @@ def modifySSHCommand(command, commandList, position, needsSudo, tooltipText, par
 
 @pytest.fixture
 def backendWithEmptyCommandFile(backendManager):
-	with workWithEmptyCommandFile(backendManager._backend):
+	with workWithEmptyCommandFile(backendManager):
 		yield backendManager
 
 
@@ -320,12 +320,12 @@ def testDeletingCommands(backendManager, firstCommand, secondCommand, thirdComma
 	backend = backendManager
 	thirdCommandWithDefaults = getTestCommandWithDefault(thirdCommand.full)
 
-	with workWithEmptyCommandFile(backend._backend):
+	with workWithEmptyCommandFile(backend):
 		assert backend.SSHCommand_getObjects() == [], "first return of SSHCommand_getObjects should be an empty list"
 		backend.SSHCommand_createObjects([firstCommand.minimal, secondCommand.minimal, thirdCommand.minimal])
 		compareLists(backend.SSHCommand_deleteObjects([firstCommand.minimal["menuText"], secondCommand.minimal["menuText"], thirdCommand.minimal["menuText"]]), [])
 
-	with workWithEmptyCommandFile(backend._backend):
+	with workWithEmptyCommandFile(backend):
 		assert backend.SSHCommand_getObjects() == [], "first return of SSHCommand_getObjects should be an empty list"
 		backend.SSHCommand_createObjects([firstCommand.minimal, secondCommand.minimal, thirdCommand.minimal])
 		compareLists(backend.SSHCommand_deleteObjects([firstCommand.minimal["menuText"], secondCommand.minimal["menuText"]]), [thirdCommandWithDefaults])
