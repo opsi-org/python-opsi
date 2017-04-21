@@ -133,8 +133,7 @@ def testSSHCommandCreations(backendManager, val, expected_result):
 def testSSHCommandCreation(backendManager, val, expected_result):
 	with workWithEmptyCommandFile(backendManager._backend):
 		assert backendManager.SSHCommand_getObjects() == [], "first return of SSHCommand_getObjects should be an empty list"
-		for x in range(0, len(val)):
-			command = val[x]
+		for command in val:
 			result = backendManager.SSHCommand_createObject(
 				command.get("menuText"),
 				command.get("commands"),
