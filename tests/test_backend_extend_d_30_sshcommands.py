@@ -142,22 +142,25 @@ def testSSHCommandCreation(backendManager, val, expected_result):
 				command.get("tooltipText"),
 				command.get("parentMenuText")
 			)
+
 		compareLists(result, expected_result)
 
 
 def compareLists(list1, list2):
 	assert len(list1) == len(list2)
+
 	for dictcom in list2:
 		assert dictcom in list1
+
 	for dictcom in list2:
-		my_item = next((item for item in list1 if item["menuText"] == dictcom["menuText"]), None)
-		assert dictcom["menuText"] == my_item["menuText"]
-		assert dictcom["id"] == my_item["id"]
-		assert dictcom["commands"] == my_item["commands"]
-		assert dictcom["position"] == my_item["position"]
-		assert dictcom["needSudo"] == my_item["needSudo"]
-		assert dictcom["tooltipText"] == my_item["tooltipText"]
-		assert dictcom["parentMenuText"] == my_item["parentMenuText"]
+		commandFrom1 = next((item for item in list1 if item["menuText"] == dictcom["menuText"]), None)
+		assert dictcom["menuText"] == commandFrom1["menuText"]
+		assert dictcom["id"] == commandFrom1["id"]
+		assert dictcom["commands"] == commandFrom1["commands"]
+		assert dictcom["position"] == commandFrom1["position"]
+		assert dictcom["needSudo"] == commandFrom1["needSudo"]
+		assert dictcom["tooltipText"] == commandFrom1["tooltipText"]
+		assert dictcom["parentMenuText"] == commandFrom1["parentMenuText"]
 
 
 def getSSHCommandCreationExceptionsParameter():
