@@ -178,7 +178,7 @@ def getSSHCommandCreationExceptionsParameter():
 def testSSHCommandCreationExceptions(backendManager,  commandlist):
 	with workWithEmptyCommandFile(backendManager._backend):
 		with pytest.raises(Exception):
-			if len(commandlist) <= 1:
+			if commandlist:
 				command = commandlist[0]
 				backendManager.SSHCommand_createObject(
 					command.get("menuText"),
@@ -204,7 +204,7 @@ def getSSHCommandUpdateExceptionsParameter():
 def testSSHCommandUpdateExceptions(backendManager,  commandlist):
 	with workWithEmptyCommandFile(backendManager._backend):
 		with pytest.raises(Exception):
-			if len(commandlist) <= 1:
+			if commandlist:
 				command = commandlist[0]
 				backendManager.SSHCommand_updateObject(
 					command.get("menuText", None),
