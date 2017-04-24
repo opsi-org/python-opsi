@@ -36,7 +36,6 @@ import fcntl
 import locale
 import os
 import platform
-import posix
 import re
 import socket
 import sys
@@ -1205,11 +1204,11 @@ def getBlockDeviceContollerInfo(device, lshwoutput=None):
 
 	# emulated storage controller dirty-hack, for outputs like:
 	# ...
-	# /0/100/1f.2               storage        82801JD/DO (ICH10 Family) SATA AHCI Controller [8086:3A02] (Posix.py|741)
-	# /0/100/1f.3               bus            82801JD/DO (ICH10 Family) SMBus Controller [8086:3A60] (Posix.py|741)
-	# /0/1          scsi0       storage         (Posix.py|741)
-	# /0/1/0.0.0    /dev/sda    disk           500GB ST3500418AS (Posix.py|741)
-	# /0/1/0.0.0/1  /dev/sda1   volume         465GiB Windows FAT volume (Posix.py|741)
+	# /0/100/1f.2               storage        82801JD/DO (ICH10 Family) SATA AHCI Controller [8086:3A02]
+	# /0/100/1f.3               bus            82801JD/DO (ICH10 Family) SMBus Controller [8086:3A60]
+	# /0/1          scsi0       storage
+	# /0/1/0.0.0    /dev/sda    disk           500GB ST3500418AS
+	# /0/1/0.0.0/1  /dev/sda1   volume         465GiB Windows FAT volume
 	# ...
 	# In this case return the first AHCI controller, that will be found
 	storageControllers = {}
@@ -1348,10 +1347,12 @@ class Harddisk:
 			)
 
 	def getSignature(self):
-		hd = posix.open(str(self.device), posix.O_RDONLY)
-		posix.lseek(hd, 440, 0)
-		x = posix.read(hd, 4)
-		posix.close(hd)
+		hd = os.open(str(self.device), os.O_RDONLY)
+		try:
+			os.lseek(hd, 440, 0)
+			x = os.read(hd, 4)
+		finally:
+			os.close(hd)
 
 		logger.debug(u"Read signature from device '%s': %s,%s,%s,%s" \
 				% (self.device, ord(x[0]), ord(x[1]), ord(x[2]), ord(x[3])))
@@ -2057,35 +2058,41 @@ class Harddisk:
 			x[2] = int((sector & 0x00FF0000) >> 16)
 			x[3] = int((sector & 0xFFFFFFFF) >> 24)
 
-			hd = posix.open(self.getPartition(partition)['device'], posix.O_RDONLY)
-			posix.lseek(hd, 0x1c, 0)
-			start = posix.read(hd, 4)
-			logger.debug(
-				u"NTFS Boot Record currently using {0} {1} {2} {3} "
-				u"as partition start sector".format(
-					hex(ord(start[0])), hex(ord(start[1])),
-					hex(ord(start[2])), hex(ord(start[3])))
-			)
-			posix.close(hd)
+			hd = os.open(self.getPartition(partition)['device'], os.O_RDONLY)
+			try:
+				os.lseek(hd, 0x1c, 0)
+				start = os.read(hd, 4)
+				logger.debug(
+					u"NTFS Boot Record currently using {0} {1} {2} {3} "
+					u"as partition start sector".format(
+						hex(ord(start[0])), hex(ord(start[1])),
+						hex(ord(start[2])), hex(ord(start[3])))
+				)
+			finally:
+				os.close(hd)
 
 			logger.debug(u"Manipulating NTFS Boot Record!")
-			hd = posix.open(self.getPartition(partition)['device'], posix.O_WRONLY)
+			hd = os.open(self.getPartition(partition)['device'], os.O_WRONLY)
 			logger.info(u"Writing new value %s %s %s %s at 0x1c" % (hex(x[0]), hex(x[1]), hex(x[2]), hex(x[3])))
-			posix.lseek(hd, 0x1c, 0)
-			for i in x:
-				posix.write(hd, chr(i))
-			posix.close(hd)
+			try:
+				os.lseek(hd, 0x1c, 0)
+				for i in x:
+					os.write(hd, chr(i))
+			finally:
+				os.close(hd)
 
-			hd = posix.open(self.getPartition(partition)['device'], posix.O_RDONLY)
-			posix.lseek(hd, 0x1c, 0)
-			start = posix.read(hd, 4)
-			logger.debug(
-				u"NTFS Boot Record now using {0} {1} {2} {3} as partition "
-				u"start sector".format(
-					hex(ord(start[0])), hex(ord(start[1])),
-					hex(ord(start[2])), hex(ord(start[3])))
-			)
-			posix.close(hd)
+			hd = os.open(self.getPartition(partition)['device'], os.O_RDONLY)
+			try:
+				os.lseek(hd, 0x1c, 0)
+				start = os.read(hd, 4)
+				logger.debug(
+					u"NTFS Boot Record now using {0} {1} {2} {3} as partition "
+					u"start sector".format(
+						hex(ord(start[0])), hex(ord(start[1])),
+						hex(ord(start[2])), hex(ord(start[3])))
+				)
+			finally:
+				os.close(hd)
 		except Exception as e:
 			for hook in hooks:
 				hook.error_Harddisk_setNTFSPartitionStartSector(self, partition, sector, e)
