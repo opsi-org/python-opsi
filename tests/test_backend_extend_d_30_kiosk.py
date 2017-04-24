@@ -24,9 +24,42 @@ Tests for the kiosk client method.
 
 import pytest
 
+from OPSI.Object import ConfigState, OpsiClient, OpsiDepotserver, UnicodeConfig
 from OPSI.Types import BackendMissingDataError
 
 
 def testGettingInfoForNonExistingClient(backendManager):
     with pytest.raises(BackendMissingDataError):
         backendManager.getKioskProductInfosForClient('foo.bar.baz')
+
+# TODO: set custom configState for the client with different products in group.
+# TODO: check what happens if client is on different depot.
+def testGettingEmptyInfo(backendManager):
+    client = OpsiClient(id='foo.test.invalid')
+    depot = OpsiDepotserver(id='depotserver1.test.invalid')
+    backendManager.host_createObjects([client, depot])
+
+    basicConfigs = [
+        UnicodeConfig(
+            id=u'software-on-demand.product-group-ids',
+            defaultValues=["software-on-demand"],
+            multiValue=True,
+        ),
+        UnicodeConfig(
+            id=u'clientconfig.depot.id',
+            description=u'Depotserver to use',
+            possibleValues=[],
+            defaultValues=[depot.id]
+        ),
+    ]
+    backendManager.config_createObjects(basicConfigs)
+
+    clientDepotMappingConfigState = ConfigState(
+        configId=u'clientconfig.depot.id',
+        objectId=client.id,
+        values=depot.id
+    )
+
+    backendManager.configState_createObjects(clientDepotMappingConfigState)
+
+    assert [] == backendManager.getKioskProductInfosForClient(client.id)
