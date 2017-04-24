@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2010-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2010-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -34,10 +33,10 @@ import threading
 import OPSI.System as System
 from OPSI.Backend.Backend import OPSI_GLOBAL_CONF, ConfigDataBackend
 from OPSI.Backend.JSONRPC import JSONRPCBackend
+from OPSI.Exceptions import BackendIOError, BackendBadValueError, BackendMissingDataError
 from OPSI.Logger import Logger
 from OPSI.Object import OpsiClient, Host
 from OPSI.Types import forceBool, forceDict, forceHostId, forceObjectClass, forceUnicode
-from OPSI.Types import BackendIOError, BackendBadValueError, BackendMissingDataError
 from OPSI.Util.File import DHCPDConfFile
 from OPSI.Util import getfqdn
 

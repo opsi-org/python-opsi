@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2006-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -36,11 +36,12 @@ import sys
 import termios
 from contextlib import closing
 
-from OPSI.Types import (forceList, forceUnicode, OpsiBackupFileError,
-	OpsiBackupBackendNotFound, OpsiError)
+from OPSI.Exceptions import (OpsiBackupFileError, OpsiBackupBackendNotFound,
+	OpsiError)
 from OPSI.Logger import Logger, LOG_DEBUG
-from OPSI.Util.File.Opsi import OpsiBackupArchive
 from OPSI.System.Posix import SysInfo
+from OPSI.Types import forceList, forceUnicode
+from OPSI.Util.File.Opsi import OpsiBackupArchive
 
 logger = Logger()
 

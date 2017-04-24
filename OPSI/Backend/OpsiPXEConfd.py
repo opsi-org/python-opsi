@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2010-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2010-2017 uib GmbH <info@uib.de>
 # All rights reserved.
 
 # This program is free software: you can redistribute it and/or modify
@@ -31,10 +30,10 @@ import threading
 import time
 from contextlib import closing, contextmanager
 
+from OPSI.Exceptions import BackendMissingDataError
 from OPSI.Logger import Logger
 from OPSI.Object import OpsiClient
 from OPSI.Types import forceInt, forceUnicode, forceHostId
-from OPSI.Types import BackendMissingDataError
 from OPSI.Backend.Backend import OPSI_GLOBAL_CONF, ConfigDataBackend
 from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Util import getfqdn

@@ -44,6 +44,7 @@ from OPSI.Backend.Depotserver import DepotserverBackend
 from OPSI.Backend.HostControl import HostControlBackend
 from OPSI.Backend.HostControlSafe import HostControlSafeBackend
 from OPSI.Backend.JSONRPC import JSONRPCBackend
+from OPSI.Exceptions import *  # this is needed for dynamic extension loading
 from OPSI.Logger import Logger, LOG_INFO
 from OPSI.Object import BaseObject, mandatoryConstructorArgs
 from OPSI.Object import *  # this is needed for dynamic extension loading

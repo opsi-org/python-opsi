@@ -34,7 +34,7 @@ import OPSI.Backend.BackendManager as bm
 import OPSI.System.Posix as Posix
 from OPSI.Object import UnicodeConfig, BoolConfig
 from OPSI.Logger import Logger
-from OPSI.Types import BackendMissingDataError
+from OPSI.Exceptions import BackendMissingDataError
 
 LOGGER = Logger()
 SMB_CONF = u'/etc/samba/smb.conf'

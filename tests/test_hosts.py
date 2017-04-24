@@ -29,9 +29,9 @@ import socket
 
 import pytest
 
+from OPSI.Exceptions import BackendError, BackendMissingDataError
 from OPSI.Object import (HostGroup, ObjectToGroup, OpsiClient, OpsiConfigserver,
     OpsiDepotserver)
-from OPSI.Types import BackendError, BackendMissingDataError
 
 
 def getClients():

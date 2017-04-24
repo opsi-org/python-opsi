@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 # This module is part of the desktop management solution opsi
@@ -47,12 +46,12 @@ import copy as pycopy
 from itertools import islice
 from signal import SIGKILL
 
+from OPSI.Exceptions import OpsiVersionError
 from OPSI.Logger import Logger, LOG_NONE
 from OPSI.Types import (forceDomain, forceInt, forceBool, forceUnicode,
 	forceFilename, forceHostname, forceHostId, forceNetmask, forceIpAddress,
 	forceIPAddress, forceHardwareVendorId, forceHardwareAddress,
 	forceHardwareDeviceId, forceUnicodeLower)
-from OPSI.Types import OpsiVersionError
 from OPSI.Object import *
 from OPSI.Util import objectToBeautifiedText, removeUnit
 

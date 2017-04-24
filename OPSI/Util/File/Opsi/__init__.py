@@ -43,12 +43,13 @@ from hashlib import sha1
 from subprocess import Popen, PIPE, STDOUT
 
 import OPSI.System
+from OPSI.Exceptions import (BackendBadValueError, OpsiBackupBackendNotFound,
+	OpsiBackupFileError, OpsiBackupFileNotFound)
 from OPSI.Logger import Logger
 from OPSI.Object import BoolProductProperty, LocalbootProduct, NetbootProduct, Product, ProductDependency, ProductProperty, UnicodeProductProperty
-from OPSI.Types import (BackendBadValueError, OpsiBackupBackendNotFound,
-	OpsiBackupFileError, OpsiBackupFileNotFound, forceActionRequest, forceBool,
-	forceDictList, forceFilename, forceHostId, forceInstallationStatus,
-	forceList, forceObjectClass, forceObjectClassList, forceOpsiHostKey,
+from OPSI.Types import (forceActionRequest, forceBool, forceDictList,
+	forceFilename, forceHostId, forceInstallationStatus, forceList,
+	forceObjectClass, forceObjectClassList, forceOpsiHostKey,
 	forcePackageVersion, forceProductId, forceProductPriority,
 	forceProductPropertyType, forceProductType, forceProductVersion,
 	forceRequirementType, forceUnicode, forceUnicodeList, forceUnicodeLower)

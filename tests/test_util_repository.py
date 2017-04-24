@@ -27,7 +27,7 @@ from __future__ import absolute_import
 import os
 import pytest
 
-from OPSI.Types import RepositoryError
+from OPSI.Exceptions import RepositoryError
 from OPSI.Util.Repository import FileRepository, getRepository
 
 

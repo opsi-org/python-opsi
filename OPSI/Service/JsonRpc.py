@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2010-2016 uib GmbH
+# Copyright (C) 2010-2017 uib GmbH
 
 # http://www.uib.de/
 
@@ -37,9 +37,10 @@ import sys
 import time
 import traceback
 
-from OPSI.Util import deserialize
+from OPSI.Exceptions import OpsiRpcError
 from OPSI.Logger import Logger, LOG_INFO
-from OPSI.Types import forceUnicode, OpsiRpcError
+from OPSI.Types import forceUnicode
+from OPSI.Util import deserialize
 
 
 logger = Logger()

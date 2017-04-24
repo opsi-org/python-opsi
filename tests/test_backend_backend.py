@@ -28,7 +28,7 @@ import os.path
 
 from OPSI.Backend.Backend import temporaryBackendOptions
 from OPSI.Backend.Backend import Backend, ExtendedBackend
-from OPSI.Types import BackendError, BackendMissingDataError
+from OPSI.Exceptions import BackendError, BackendMissingDataError
 from OPSI.Util import randomString
 from .test_hosts import getConfigServer
 

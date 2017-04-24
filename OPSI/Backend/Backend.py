@@ -46,8 +46,8 @@ from contextlib import contextmanager
 from hashlib import md5
 from twisted.conch.ssh import keys
 
+from OPSI.Exceptions import *  # this is needed for dynamic loading
 from OPSI.Logger import Logger
-from OPSI.Types import BackendError, BackendBadValueError
 from OPSI.Types import *  # this is needed for dynamic loading
 from OPSI.Object import *  # this is needed for dynamic loading
 from OPSI.Util import (blowfishEncrypt, blowfishDecrypt, compareVersions,

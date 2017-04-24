@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This module is part of the desktop management solution opsi
@@ -42,11 +41,11 @@ from twisted.conch.ssh import keys
 from sys import version_info
 
 from OPSI import __version__
+from OPSI.Exceptions import (OpsiAuthenticationError,
+	OpsiServiceVerificationError, OpsiTimeoutError)
 from OPSI.Logger import Logger, LOG_INFO, LOG_NONE
 from OPSI.Types import (forceBool, forceFilename, forceFloat, forceInt,
 						forceList, forceUnicode)
-from OPSI.Types import (OpsiAuthenticationError, OpsiServiceVerificationError,
-						OpsiTimeoutError)
 from OPSI.Backend.Backend import Backend, DeferredCall
 from OPSI.Util import serialize, deserialize
 from OPSI.Util.HTTP import urlsplit, getSharedConnectionPool, deflateEncode, deflateDecode, gzipDecode

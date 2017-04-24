@@ -29,7 +29,7 @@ import os
 import pytest
 
 from OPSI.Backend.BackendManager import BackendDispatcher
-from OPSI.Types import BackendConfigurationError
+from OPSI.Exceptions import BackendConfigurationError
 
 from .Backends.File import getFileBackend
 from .conftest import _backendBase

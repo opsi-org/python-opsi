@@ -38,11 +38,11 @@ from datetime import datetime
 from hashlib import md5
 from twisted.conch.ssh import keys
 
+from OPSI.Exceptions import (BackendConfigurationError,
+	BackendReferentialIntegrityError, BackendModuleDisabledError)
 from OPSI.Logger import Logger
 from OPSI.Types import (forceBool, forceUnicodeLower, forceOpsiTimestamp,
 	forceList, forceUnicode, forceUnicodeList, forceDict, forceObjectClassList)
-from OPSI.Types import (BackendConfigurationError,
-	BackendReferentialIntegrityError, BackendModuleDisabledError)
 from OPSI.Object import (AuditHardware, AuditHardwareOnHost, AuditSoftware,
 	AuditSoftwareOnClient, AuditSoftwareToLicensePool, Config, ConfigState,
 	Entity, Group, Host, HostGroup, LicenseContract, LicenseOnClient,
