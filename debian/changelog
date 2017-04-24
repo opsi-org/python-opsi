@@ -79,6 +79,26 @@ python-opsi (4.1.1.1-1) experimental; urgency=medium
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 04 Oct 2016 16:15:11 +0200
 
+python-opsi (4.0.7.38-4) stable; urgency=medium
+
+  * Drop creating the custom ssh command file in the postinst.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 20 Apr 2017 19:29:11 +0200
+
+python-opsi (4.0.7.38-3) stable; urgency=medium
+
+  * Do not deploy empty file for custom ssh command config but instead
+    create that file in the postinst if not existing.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 20 Apr 2017 17:09:02 +0200
+
+python-opsi (4.0.7.38-2) stable; urgency=medium
+
+  * Reverted the prevention of creating users on UCS.
+  * SSH extension: emptied file with default commands for safety reasons.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 20 Apr 2017 12:52:51 +0200
+
 python-opsi (4.0.7.38-1) stable; urgency=medium
 
   * 10_opsi.conf: Do not pass invalid parameter in deleteProductDependency.
