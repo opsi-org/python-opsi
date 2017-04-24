@@ -51,6 +51,11 @@ __all__ = ('ConnectionPool', 'MySQL', 'MySQLBackend',
 
 logger = Logger()
 
+MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE = 2006
+# 2006: 'MySQL server has gone away'
+DEADLOCK_FOUND_WHEN_TRYING_TO_GET_LOCK_ERROR_CODE = 1213
+# 1213: 'Deadlock found when trying to get lock; try restarting transaction'
+
 
 class ConnectionPool(object):
 	# Storage for the instance reference
@@ -239,8 +244,7 @@ class MySQL(SQL):
 				self.execute(query, conn, cursor)
 			except Exception as e:
 				logger.debug(u"Execute error: %s" % e)
-				if e[0] != 2006:
-					# 2006: MySQL server has gone away
+				if e[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
 					raise
 
 				self._createConnectionPool()
@@ -264,8 +268,7 @@ class MySQL(SQL):
 				self.execute(query, conn, cursor)
 			except Exception as e:
 				logger.debug(u"Execute error: %s" % e)
-				if e[0] != 2006:
-					# 2006: MySQL server has gone away
+				if e[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
 					raise
 				self._createConnectionPool()
 				(conn, cursor) = self.connect(cursorType=MySQLdb.cursors.Cursor)
@@ -294,8 +297,7 @@ class MySQL(SQL):
 				self.execute(query, conn, cursor)
 			except Exception as e:
 				logger.debug(u"Execute error: {0!r}", e)
-				if e[0] != 2006:
-					# 2006: MySQL server has gone away
+				if e[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
 					raise
 				self._createConnectionPool()
 				(conn, cursor) = self.connect()
@@ -344,8 +346,7 @@ class MySQL(SQL):
 				self.execute(query, conn, cursor)
 			except Exception as e:
 				logger.debug(u"Execute error: {0!r}", e)
-				if e[0] != 2006:
-					# 2006: MySQL server has gone away
+				if e[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
 					raise
 				self._createConnectionPool()
 				(conn, cursor) = self.connect()
@@ -389,8 +390,7 @@ class MySQL(SQL):
 				self.execute(query, conn, cursor)
 			except Exception as e:
 				logger.debug(u"Execute error: {0!r}", e)
-				if e[0] != 2006:
-					# 2006: MySQL server has gone away
+				if e[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
 					raise
 				self._createConnectionPool()
 				(conn, cursor) = self.connect()
@@ -416,8 +416,7 @@ class MySQL(SQL):
 				self.execute(query, conn, cursor)
 			except Exception as e:
 				logger.debug(u"Execute error: {0}", e)
-				if e[0] != 2006:
-					# 2006: MySQL server has gone away
+				if e[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
 					raise
 
 				self._createConnectionPool()
@@ -691,8 +690,7 @@ class MySQLBackend(SQLBackend):
 						myTransactionSuccess = True
 					except Exception as e:
 						logger.debug(u"Execute error: %s" % e)
-						if e.args[0] == 1213:
-							# 1213: 'Deadlock found when trying to get lock; try restarting transaction'
+						if e.args[0] == DEADLOCK_FOUND_WHEN_TRYING_TO_GET_LOCK_ERROR_CODE:
 							# 1213: May be table locked because of concurrent access - retrying
 							myTransactionSuccess = False
 							if myRetryTransactionCounter >= myMaxRetryTransaction:
