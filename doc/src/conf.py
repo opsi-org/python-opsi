@@ -40,7 +40,7 @@ extensions = [
     'sphinx.ext.autodoc',
     # 'sphinx.ext.graphviz',  # Provides support for .dot files.
     # 'sphinx.ext.todo',  # Enabling to do lists.
-    'sphinx.ext.viewcode',  # Creating pages for the source code.
+    # 'sphinx.ext.viewcode',  # Creating pages for the source code.
 ]
 
 # Add any paths that contain templates here, relative to this directory.
