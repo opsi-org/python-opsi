@@ -175,6 +175,7 @@ chmod 440 /etc/opsi/server_commands_default.conf
 %config /etc/opsi/backendManager/extend.d/40_admin_tasks.conf
 %config /etc/opsi/backendManager/extend.d/70_wan.conf
 %config /etc/opsi/backendManager/extend.d/70_dynamic_depot.conf
+%config /etc/opsi/backendManager/extend.d/80_kiosk.conf
 %config /etc/opsi/hwaudit/opsihwaudit.conf
 %config /etc/opsi/hwaudit/locales/de_DE
 %config /etc/opsi/hwaudit/locales/da_DA
