@@ -862,6 +862,9 @@ class SQLBackend(ConfigDataBackend):
 
 		self._createAuditHardwareTables()
 
+		if 'OPSI_SCHEMA' not in existingTables:
+			self._createSchemaVersionTable()
+
 	def _createTableHost(self):
 		logger.debug(u'Creating table HOST')
 		table = u'''CREATE TABLE `HOST` (
@@ -1013,6 +1016,16 @@ class SQLBackend(ConfigDataBackend):
 			if hardwareConfigValuesProcessed or not hardwareConfigTableExists:
 				logger.debug(hardwareConfigTable)
 				self._sql.execute(hardwareConfigTable)
+
+	def _createSchemaVersionTable(self):
+		logger.debug("Creating 'OPSI_SCHEMA' table.")
+		table = u'''CREATE TABLE `OPSI_SCHEMA` (
+			`schemaVersion` integer NOT NULL,
+			`createdOn` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00'
+		) {0};
+		'''.format(self._sql.getTableCreationOptions('OPSI_SCHEMA'))
+		logger.debug(table)
+		self._sql.execute(table)
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Hosts

@@ -250,3 +250,21 @@ def assertColumnIsVarchar(database, tableName, columnName, length):
             break
     else:
         raise ValueError("Missing column '{1}' in table {0!r}".format(tableName, columnName))
+
+
+def testInsertingSchemaNumber(mysqlBackendConfig, mySQLBackendConfigFile):
+    with cleanDatabase(MySQL(**mysqlBackendConfig)) as db:
+        createRequiredTables(db)
+
+        updateMySQLBackend(backendConfigFile=mySQLBackendConfigFile)
+
+        assert 'OPSI_SCHEMA' in getTableNames(db)
+
+        for column in getTableColumns(db, 'OPSI_SCHEMA'):
+            name = column.name
+            if name == 'schemaVersion':
+                assert column.type.lower().startswith('int')
+            elif name == 'createdOn':
+                assert column.type.lower().startswith('timestamp')
+            else:
+                raise Exception("Unexpected column!")
