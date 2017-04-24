@@ -50,7 +50,7 @@ def testReadingLogFailsIfTypeUnknown(logBackend):
 		logBackend.log_read('unknowntype')
 
 
-@pytest.mark.parametrize("logType", ['bootimage', 'clientconnect', 'instlog', 'userlogin'])
+@pytest.mark.parametrize("logType", ['bootimage', 'clientconnect', 'instlog', 'userlogin', 'winpe'])
 def testReadingLogRequiresObjectId(logBackend, logType):
 	with pytest.raises(BackendBadValueError):
 		logBackend.log_read(logType)
@@ -85,7 +85,8 @@ def testOnlyValidLogTypesAreWritten(logBackend):
 	'clientconnect',
 	'instlog',
 	'opsiconfd',
-	'userlogin'
+	'userlogin',
+	'winpe',
 ])
 def testWritingLogRequiresValidObjectId(logBackend, logType, objectId):
 	logBackend.log_write(logType, 'logdata', objectId)
@@ -98,7 +99,7 @@ def testWritingAndThenReadingDataFromLog(logBackend):
 
 
 @pytest.mark.parametrize("logType", [
-	'bootimage', 'clientconnect', 'instlog', 'opsiconfd', 'userlogin'
+	'bootimage', 'clientconnect', 'instlog', 'opsiconfd', 'userlogin', 'winpe'
 ])
 def testWritingLogCreatesFile(patchLogDir, logType):
 	cdb = OPSI.Backend.Backend.ConfigDataBackend()

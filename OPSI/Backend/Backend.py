@@ -83,6 +83,7 @@ LOG_TYPES = {  # key = logtype, value = requires objectId for read
 	'instlog': True,
 	'opsiconfd': False,
 	'userlogin': True,
+	'winpe': True,
 }
 
 logger = Logger()
