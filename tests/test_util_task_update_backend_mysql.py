@@ -40,7 +40,7 @@ import pytest
 
 @contextmanager
 def cleanDatabase(database):
-    def cleanDatabase():
+    def dropAllTables():
         with disableForeignKeyChecks(database):
             for tableName in getTableNames(database):
                 try:
@@ -48,11 +48,11 @@ def cleanDatabase(database):
                 except Exception as error:
                     print("Failed to drop {0}: {1}".format(tableName, error))
 
-    cleanDatabase()
+    dropAllTables()
     try:
         yield database
     finally:
-        cleanDatabase()
+        dropAllTables()
 
 
 @pytest.fixture
