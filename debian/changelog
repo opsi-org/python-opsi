@@ -79,6 +79,30 @@ python-opsi (4.1.1.1-1) experimental; urgency=medium
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 04 Oct 2016 16:15:11 +0200
 
+python-opsi (4.0.7.39-1) stable; urgency=medium
+
+  * Added 30_kiosk.conf for the new kiosk client.
+  * 30_sshcommands.conf: Internal refactoring.
+  * 30_sshcommands.conf: Removed getSSHCommand.
+    Use SSHCommand_getObject instead.
+  * 30_sshcommands.conf: Removed getSSHCommands.
+    Use SSHCommand_getObjects instead.
+  * 30_sshcommands.conf: Removed createSSHCommands.
+    Use SSHCommand_createObjects instead.
+  * 30_sshcommands.conf: Removed createSSHCommand.
+    Use SSHCommand_createObject instead.
+  * 30_sshcommands.conf: Removed updateSSHCommand.
+    Use SSHCommand_updateObject instead.
+  * 30_sshcommands.conf: Removed updateSSHCommands.
+    Use SSHCommand_updateObjects instead.
+  * 30_sshcommands.conf: Removed deleteSSHCommands.
+    Use SSHCommand_deleteObjects instead.
+  * 30_sshcommands.conf: Removed deleteSSHCommand.
+    Use SSHCommand_deleteObject instead.
+  * 40_admin_tasks.conf: Updated docstring of getClientsWithOutdatedProduct.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 24 Apr 2017 17:46:09 +0200
+
 python-opsi (4.0.7.38-4) stable; urgency=medium
 
   * Drop creating the custom ssh command file in the postinst.
