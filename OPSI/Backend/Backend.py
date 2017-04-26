@@ -2486,8 +2486,6 @@ into the IDs of these depots are to be found in the list behind \
 		:returntype: [{"depotId": str, "alternativeDepotIds": [str, ], "clientId": str},]
 		"""
 		depotIds = forceHostIdList(depotIds)
-		clientIds = forceHostIdList(clientIds)
-		masterOnly = forceBool(masterOnly)
 		productIds = forceProductIdList(productIds)
 
 		depotIds = self.host_getIdents(type='OpsiDepotserver', id=depotIds)
@@ -2495,6 +2493,7 @@ into the IDs of these depots are to be found in the list behind \
 			return []
 		depotIds = set(depotIds)
 
+		clientIds = forceHostIdList(clientIds)
 		clientIds = self.host_getIdents(type='OpsiClient', id=clientIds)
 		if not clientIds:
 			return []
@@ -2524,7 +2523,7 @@ into the IDs of these depots are to be found in the list behind \
 		finally:
 			self.backend_setOptions({'addConfigStateDefaults': addConfigStateDefaults})
 
-		if masterOnly:
+		if forceBool(masterOnly):
 			return result
 
 		productOnDepotsByDepotIdAndProductId = {}
