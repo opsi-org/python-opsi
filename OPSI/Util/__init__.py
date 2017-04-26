@@ -809,8 +809,9 @@ def getGlobalConfig(name, configFile=OPSI_GLOBAL_CONF):
 		with codecs.open(configFile, 'r', 'utf8') as config:
 			for line in config:
 				line = line.strip()
-				if not line or line.startswith(('#', ';')) or '=' not in line:
+				if '=' not in line or line.startswith(('#', ';')):
 					continue
+
 				(key, value) = line.split('=', 1)
 				if key.strip().lower() == name.lower():
 					return value.strip()
