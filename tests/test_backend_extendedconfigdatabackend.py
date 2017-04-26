@@ -93,7 +93,7 @@ def test_configState_getClientToDepotserver(extendedConfigDataBackend):
             assert productOnDepot in expectedProducts
 
     for clientToDepot in clientToDepots:
-       assert clientToDepot['depotId'] in [ds.id for ds in depotservers]
+        assert clientToDepot['depotId'] in [ds.id for ds in depotservers]
 
 
 @pytest.mark.requiresModulesFile
