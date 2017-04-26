@@ -2505,10 +2505,14 @@ into the IDs of these depots are to be found in the list behind \
 			logger.debug(u"Calling backend_setOptions on {0}", self)
 			self.backend_setOptions({'addConfigStateDefaults': True})
 			for configState in self.configState_getObjects(configId=u'clientconfig.depot.id', objectId=clientIds):
-				if not configState.values or not configState.values[0]:
+				try:
+					depotId = configState.values[0]
+					if not depotId:
+						raise IndexError("Missing value")
+				except IndexError:
 					logger.error(u"No depot server configured for client '%s'" % configState.objectId)
 					continue
-				depotId = configState.values[0]
+
 				if depotId not in depotIds:
 					continue
 				usedDepotIds.add(depotId)
