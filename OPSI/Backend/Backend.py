@@ -2510,7 +2510,7 @@ into the IDs of these depots are to be found in the list behind \
 					if not depotId:
 						raise IndexError("Missing value")
 				except IndexError:
-					logger.error(u"No depot server configured for client '%s'" % configState.objectId)
+					logger.error(u"No depot server configured for client {0!r}", configState.objectId)
 					continue
 
 				if depotId not in depotIds:
