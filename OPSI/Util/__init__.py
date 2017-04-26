@@ -780,9 +780,11 @@ def getfqdn(name='', conf=None):
 	the specified configuration file.
 	"""
 	if not name:
-		env = os.environ.copy()
-		if "OPSI_HOSTNAME" in env:
-			return forceFqdn(env["OPSI_HOSTNAME"])
+		try:
+			return forceFqdn(os.environ["OPSI_HOSTNAME"])
+		except KeyError:
+			# not set in environment.
+			pass
 
 		if conf is not None:
 			hostname = getGlobalConfig('hostname', conf)
