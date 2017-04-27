@@ -651,4 +651,5 @@ def getTableColumns(database, tableName):
 
 
 def _dropTableBootconfiguration(database):
+	logger.notice(u"Dropping table BOOT_CONFIGURATION.")
 	database.execute(u"drop table BOOT_CONFIGURATION;")
