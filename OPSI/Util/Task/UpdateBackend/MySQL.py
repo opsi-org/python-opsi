@@ -80,8 +80,72 @@ read from `backendConfigFile`.
 			pass
 
 		schemaVersion = readSchemaVersion(mysql)
-		assert schemaVersion == 0
 
+		_processOpsi40migrations(mysql)
+
+	if schemaVersion < 1:
+		with updateSchemaVersion(mysql, version=1):
+			_dropTableBootconfiguration(mysql)
+
+	mysqlBackend = MySQLBackend(**config)
+	mysqlBackend.backend_createBase()
+	mysqlBackend.backend_exit()
+
+
+def readSchemaVersion(database):
+	"""
+	Read the version of the schema from the database.
+
+	:raises DatabaseMigrationNotFinishedError: In case a migration was \
+started but never ended.
+	:returns: The version of the schema. `None` if no info is found.
+	:returntype: int or None
+	"""
+	try:
+		for result in database.getSet(u"SELECT `version`, `updateStarted`, `updateEnded` FROM OPSI_SCHEMA ORDER BY `version` DESC;"):
+			version = result['version']
+			start = datetime.strptime(result['updateStarted'], '%Y-%m-%d %H:%M:%S')
+			assert start
+
+			try:
+				end = datetime.strptime(result['updateEnded'], '%Y-%m-%d %H:%M:%S')
+				assert end
+			except (AssertionError, ValueError):
+				raise DatabaseMigrationNotFinishedError(
+					"Migration to version {version} started at {start} "
+					"but no end time found.".format(version=version, start=start)
+				)
+
+			break
+		else:
+			raise RuntimeError("No schema version read!")
+	except DatabaseMigrationNotFinishedError as dbmnfe:
+		logger.warning("Migration probably gone wrong: {0}", dbmnfe)
+		raise dbmnfe
+	except Exception as versionLookupError:
+		logger.warning("Reading database schema version failed: {0}", versionLookupError)
+		version = None
+
+	return version
+
+
+@contextmanager
+def updateSchemaVersion(database, version):
+	query = "INSERT INTO OPSI_SCHEMA(`version`) VALUES({version});".format(version=version)
+	database.execute(query)
+	yield
+	query = "UPDATE OPSI_SCHEMA SET `updateEnded` = CURRENT_TIMESTAMP WHERE VERSION = {version};".format(version=version)
+	database.execute(query)
+
+
+def _processOpsi40migrations(mysql):
+	"""
+	Process migrations done before opsi 4.1.
+
+	Some of these migrations are used to update an opsi 3 database to
+	opsi 4 while some other adjust existing tables to what was required
+	during that time.
+	"""
 	tables = {}
 	logger.debug(u"Current tables:")
 	for i in mysql.getSet(u'SHOW TABLES;'):
@@ -527,59 +591,6 @@ read from `backendConfigFile`.
 				mysql.execute(u"ALTER TABLE `{table}` MODIFY COLUMN `hostId` VARCHAR(255) NOT NULL;".format(table=tablename))
 
 	_fixLengthOfLicenseKeys(mysql)
-
-	if 'BOOT_CONFIGURATION' in tables:
-		_dropTableBootconfiguration(mysql)
-
-	mysqlBackend = MySQLBackend(**config)
-	mysqlBackend.backend_createBase()
-	mysqlBackend.backend_exit()
-
-
-def readSchemaVersion(database):
-	"""
-	Read the version of the schema from the database.
-
-	:raises DatabaseMigrationNotFinishedError: In case a migration was \
-started but never ended.
-	:returns: The version of the schema. `None` if no info is found.
-	:returntype: int or None
-	"""
-	try:
-		for result in database.getSet(u"SELECT `version`, `updateStarted`, `updateEnded` FROM OPSI_SCHEMA ORDER BY `version` DESC;"):
-			version = result['version']
-			start = datetime.strptime(result['updateStarted'], '%Y-%m-%d %H:%M:%S')
-			assert start
-
-			try:
-				end = datetime.strptime(result['updateEnded'], '%Y-%m-%d %H:%M:%S')
-				assert end
-			except (AssertionError, ValueError):
-				raise DatabaseMigrationNotFinishedError(
-					"Migration to version {version} started at {start} "
-					"but no end time found.".format(version=version, start=start)
-				)
-
-			break
-		else:
-			raise RuntimeError("No schema version read!")
-	except DatabaseMigrationNotFinishedError as dbmnfe:
-		logger.warning("Migration probably gone wrong: {0}", dbmnfe)
-		raise dbmnfe
-	except Exception as versionLookupError:
-		logger.warning("Reading database schema version failed: {0}", versionLookupError)
-		version = None
-
-	return version
-
-
-@contextmanager
-def updateSchemaVersion(database, version):
-	query = "INSERT INTO OPSI_SCHEMA(`version`) VALUES({version});".format(version=version)
-	database.execute(query)
-	yield
-	query = "UPDATE OPSI_SCHEMA SET `updateEnded` = CURRENT_TIMESTAMP WHERE VERSION = {version};".format(version=version)
-	database.execute(query)
 
 
 @contextmanager
