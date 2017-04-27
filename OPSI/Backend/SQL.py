@@ -76,6 +76,19 @@ def onlyAllowSelect(query):
 		raise ValueError('Only queries to SELECT data are allowed.')
 
 
+def createSchemaVersionTable(database):
+	logger.debug("Creating 'OPSI_SCHEMA' table.")
+	table = u'''CREATE TABLE `OPSI_SCHEMA` (
+		`version` integer NOT NULL,
+		`updateStarted` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		`updateEnded` TIMESTAMP,
+		PRIMARY KEY (`version`)
+	) {0};
+	'''.format(database.getTableCreationOptions('OPSI_SCHEMA'))
+	logger.debug(table)
+	database.execute(table)
+
+
 class SQL(object):
 
 	AUTOINCREMENT = 'AUTO_INCREMENT'
@@ -863,7 +876,7 @@ class SQLBackend(ConfigDataBackend):
 		self._createAuditHardwareTables()
 
 		if 'OPSI_SCHEMA' not in existingTables:
-			self._createSchemaVersionTable()
+			createSchemaVersionTable(self._sql)
 
 	def _createTableHost(self):
 		logger.debug(u'Creating table HOST')
@@ -1016,16 +1029,6 @@ class SQLBackend(ConfigDataBackend):
 			if hardwareConfigValuesProcessed or not hardwareConfigTableExists:
 				logger.debug(hardwareConfigTable)
 				self._sql.execute(hardwareConfigTable)
-
-	def _createSchemaVersionTable(self):
-		logger.debug("Creating 'OPSI_SCHEMA' table.")
-		table = u'''CREATE TABLE `OPSI_SCHEMA` (
-			`schemaVersion` integer NOT NULL,
-			`createdOn` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00'
-		) {0};
-		'''.format(self._sql.getTableCreationOptions('OPSI_SCHEMA'))
-		logger.debug(table)
-		self._sql.execute(table)
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Hosts
