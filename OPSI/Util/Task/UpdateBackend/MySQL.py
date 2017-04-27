@@ -39,7 +39,8 @@ from OPSI.Types import (forceHardwareDeviceId, forceHardwareVendorId,
 						forceLicensePoolId)
 from OPSI.Util.Task.ConfigureBackend import getBackendConfiguration
 
-__all__ = ('disableForeignKeyChecks', 'getTableColumns', 'updateMySQLBackend')
+__all__ = ('DatabaseMigrationNotFinishedError',
+	'disableForeignKeyChecks', 'getTableColumns', 'updateMySQLBackend')
 
 logger = Logger()
 
