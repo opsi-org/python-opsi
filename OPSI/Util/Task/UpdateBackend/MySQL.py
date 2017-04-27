@@ -18,6 +18,9 @@
 """
 Functionality to update an MySQL backend.
 
+This module handles the database migrations for opsi.
+Usually the function :py:func:updateMySQLBackend: is called from opsi-setup
+
 .. versionadded:: 4.0.6.1
 
 :author: Niko Wenselowski <n.wenselowski@uib.de>
@@ -39,8 +42,20 @@ __all__ = ('disableForeignKeyChecks', 'getTableColumns', 'updateMySQLBackend')
 logger = Logger()
 
 
-def updateMySQLBackend(backendConfigFile=u'/etc/opsi/backends/mysql.conf',
-						additionalBackendConfiguration={}):
+def updateMySQLBackend(
+		backendConfigFile=u'/etc/opsi/backends/mysql.conf',
+		additionalBackendConfiguration={}):
+	"""
+	Applies migrations to the MySQL backend.
+
+	:param backendConfigFile: Path to the file where the backend \
+configuration is read from.
+	:type backendConfigFile: str
+	:param additionalBackendConfiguration: Additional / different \
+settings for the backend that will extend / override the configuration \
+read from `backendConfigFile`.
+	:type additionalBackendConfiguration: dict
+	"""
 
 	config = getBackendConfiguration(backendConfigFile)
 	config.update(additionalBackendConfiguration)
