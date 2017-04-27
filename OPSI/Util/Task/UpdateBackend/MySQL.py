@@ -29,6 +29,7 @@ Usually the function :py:func:updateMySQLBackend: is called from opsi-setup
 
 from collections import namedtuple
 from contextlib import contextmanager
+from datetime import datetime
 
 from OPSI.Backend.SQL import createSchemaVersionTable
 from OPSI.Backend.MySQL import MySQL, MySQLBackend
@@ -41,6 +42,10 @@ from OPSI.Util.Task.ConfigureBackend import getBackendConfiguration
 __all__ = ('disableForeignKeyChecks', 'getTableColumns', 'updateMySQLBackend')
 
 logger = Logger()
+
+
+class DatabaseMigrationNotFinishedError(ValueError):
+	pass
 
 
 def updateMySQLBackend(
@@ -535,16 +540,32 @@ def readSchemaVersion(database):
 	"""
 	Read the version of the schema from the database.
 
+	:raises DatabaseMigrationNotFinishedError: In case a migration was \
+started but never ended.
 	:returns: The version of the schema. `None` if no info is found.
 	:returntype: int or None
 	"""
 	try:
-		for result in database.getSet(u"SELECT `version` FROM OPSI_SCHEMA;"):
+		for result in database.getSet(u"SELECT `version`, `updateStarted`, `updateEnded` FROM OPSI_SCHEMA;"):
 			version = result['version']
-			# TODO: check if update finished
+			start = datetime.strptime(result['updateStarted'], '%Y-%m-%d %H:%M:%S')
+			assert start
+
+			try:
+				end = datetime.strptime(result['updateEnded'], '%Y-%m-%d %H:%M:%S')
+				assert end
+			except (AssertionError, ValueError):
+				raise DatabaseMigrationNotFinishedError(
+					"Migration to version {version} started at {start} "
+					"but no end time found.".format(version=version, start=start)
+				)
+
 			break
 		else:
 			raise RuntimeError("No schema version read!")
+	except DatabaseMigrationNotFinishedError as dbmnfe:
+		logger.warning("Migration probably gone wrong: {0}", dbmnfe)
+		raise dbmnfe
 	except Exception as versionLookupError:
 		logger.warning("Reading database schema version failed: {0}", versionLookupError)
 		version = None
@@ -557,9 +578,8 @@ def updateSchemaVersion(database, version):
 	query = "INSERT INTO OPSI_SCHEMA(`version`) VALUES({version});".format(version=version)
 	database.execute(query)
 	yield
-	# TODO: update entry
-	# query = "INSERT INTO OPSI_SCHEMA(`schemaVersion`) VALUES({version});".format(version=version)
-	# database.execute(query)
+	query = "UPDATE OPSI_SCHEMA SET `updateEnded` = CURRENT_TIMESTAMP WHERE VERSION = {version};".format(version=version)
+	database.execute(query)
 
 
 @contextmanager
