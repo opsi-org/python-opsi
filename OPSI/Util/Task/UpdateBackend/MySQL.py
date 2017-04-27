@@ -39,13 +39,16 @@ from OPSI.Types import (forceHardwareDeviceId, forceHardwareVendorId,
 						forceLicensePoolId)
 from OPSI.Util.Task.ConfigureBackend import getBackendConfiguration
 
-__all__ = ('DatabaseMigrationNotFinishedError',
+__all__ = ('DatabaseMigrationUnfinishedError',
 	'disableForeignKeyChecks', 'getTableColumns', 'updateMySQLBackend')
 
 logger = Logger()
 
 
-class DatabaseMigrationNotFinishedError(ValueError):
+class DatabaseMigrationUnfinishedError(ValueError):
+	"""
+	This error indicates an unfinished database migration.
+	"""
 	pass
 
 
@@ -112,7 +115,7 @@ started but never ended.
 				end = datetime.strptime(result['updateEnded'], '%Y-%m-%d %H:%M:%S')
 				assert end
 			except (AssertionError, ValueError):
-				raise DatabaseMigrationNotFinishedError(
+				raise DatabaseMigrationUnfinishedError(
 					"Migration to version {version} started at {start} "
 					"but no end time found.".format(version=version, start=start)
 				)
@@ -120,7 +123,7 @@ started but never ended.
 			break
 		else:
 			raise RuntimeError("No schema version read!")
-	except DatabaseMigrationNotFinishedError as dbmnfe:
+	except DatabaseMigrationUnfinishedError as dbmnfe:
 		logger.warning("Migration probably gone wrong: {0}", dbmnfe)
 		raise dbmnfe
 	except Exception as versionLookupError:
