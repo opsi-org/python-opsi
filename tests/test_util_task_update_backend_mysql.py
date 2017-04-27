@@ -30,8 +30,9 @@ from contextlib import contextmanager
 
 from OPSI.Backend.MySQL import MySQL
 from OPSI.Backend.SQL import createSchemaVersionTable
-from OPSI.Util.Task.UpdateBackend.MySQL import (disableForeignKeyChecks,
-    getTableColumns, readSchemaVersion, updateMySQLBackend, updateSchemaVersion)
+from OPSI.Util.Task.UpdateBackend.MySQL import (DatabaseMigrationNotFinishedError,
+    disableForeignKeyChecks, getTableColumns, readSchemaVersion,
+    updateMySQLBackend, updateSchemaVersion)
 from OPSI.Util.Task.ConfigureBackend import updateConfigFile
 
 from .Backends.MySQL import MySQLconfiguration
@@ -326,3 +327,17 @@ def testReadingSchemaVersionOnlyReturnsNewestValue(mysqlBackendConfig, mySQLBack
             pass
 
         assert readSchemaVersion(db) == 15
+
+
+def testReadingSchemaVersionFailsOnUnfinishedUpdate(mysqlBackendConfig, mySQLBackendConfigFile):
+    with cleanDatabase(MySQL(**mysqlBackendConfig)) as db:
+        createSchemaVersionTable(db)
+
+        try:
+            with updateSchemaVersion(db, version=1):
+                raise RuntimeError("For testing.")
+        except RuntimeError:
+            pass
+
+        with pytest.raises(DatabaseMigrationNotFinishedError):
+            readSchemaVersion(db)
