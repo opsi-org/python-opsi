@@ -313,7 +313,7 @@ def testReadingSchemaVersionOnlyReturnsNewestValue(mysqlBackendConfig, mySQLBack
         createSchemaVersionTable(db)
 
         with updateSchemaVersion(db, version=1):
-                pass
+            pass
 
         with updateSchemaVersion(db, version=15):
             pass
@@ -323,6 +323,6 @@ def testReadingSchemaVersionOnlyReturnsNewestValue(mysqlBackendConfig, mySQLBack
                 pass
 
         with updateSchemaVersion(db, version=3):
-                pass
+            pass
 
         assert readSchemaVersion(db) == 15
