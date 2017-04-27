@@ -546,7 +546,7 @@ started but never ended.
 	:returntype: int or None
 	"""
 	try:
-		for result in database.getSet(u"SELECT `version`, `updateStarted`, `updateEnded` FROM OPSI_SCHEMA;"):
+		for result in database.getSet(u"SELECT `version`, `updateStarted`, `updateEnded` FROM OPSI_SCHEMA ORDER BY `version` DESC;"):
 			version = result['version']
 			start = datetime.strptime(result['updateStarted'], '%Y-%m-%d %H:%M:%S')
 			assert start

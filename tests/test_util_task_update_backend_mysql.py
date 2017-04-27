@@ -306,3 +306,23 @@ def testUpdatingSchemaVersion(mysqlBackendConfig, mySQLBackendConfigFile):
 
         version = readSchemaVersion(db)
         assert version == 2
+
+
+def testReadingSchemaVersionOnlyReturnsNewestValue(mysqlBackendConfig, mySQLBackendConfigFile):
+    with cleanDatabase(MySQL(**mysqlBackendConfig)) as db:
+        createSchemaVersionTable(db)
+
+        with updateSchemaVersion(db, version=1):
+                pass
+
+        with updateSchemaVersion(db, version=15):
+            pass
+
+        for number in range(1, 4):
+            with updateSchemaVersion(db, version=number * 2):
+                pass
+
+        with updateSchemaVersion(db, version=3):
+                pass
+
+        assert readSchemaVersion(db) == 15
