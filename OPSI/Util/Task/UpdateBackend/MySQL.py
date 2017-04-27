@@ -180,7 +180,7 @@ read from `backendConfigFile`.
 
 	for key in tables.keys():
 		if key.startswith(u'HARDWARE_DEVICE'):
-			if not 'vendorId' in tables[key]:
+			if 'vendorId' not in tables[key]:
 				continue
 
 			logger.notice(u"Updating database table %s" % key)
@@ -188,7 +188,7 @@ read from `backendConfigFile`.
 				mysql.execute(u"update %s set `vendorId`=NULL where `vendorId`='%s';" % (key, vendorId))
 
 			for attr in ('vendorId', 'deviceId', 'subsystemVendorId', 'subsystemDeviceId'):
-				if not attr in tables[key]:
+				if attr not in tables[key]:
 					continue
 				mysql.execute(u"update %s set `%s`=NULL where `%s`='';" % (key, attr, attr))
 				mysql.execute(u"update %s set `%s`=NULL where `%s`='None';" % (key, attr, attr))
@@ -280,9 +280,9 @@ read from `backendConfigFile`.
 
 			update = u"update SOFTWARE set"
 			update += u"  `type`='AuditSoftware'"
-			update += u", `windowsSoftwareId`='%s'"     % res['softwareId'].replace("'", "\\'")
+			update += u", `windowsSoftwareId`='%s'" % res['softwareId'].replace("'", "\\'")
 			if res['displayName'] is not None:
-				update += u", `windowsDisplayName`='%s'"    % res['displayName'].replace("'", "\\'")
+				update += u", `windowsDisplayName`='%s'" % res['displayName'].replace("'", "\\'")
 			if res['displayVersion'] is not None:
 				update += u", `windowsDisplayVersion`='%s'" % res['displayVersion'].replace("'", "\\'")
 			update += u", `architecture`='x86'"
@@ -394,7 +394,6 @@ read from `backendConfigFile`.
 
 		mysql.execute(u"drop table WINDOWS_SOFTWARE_ID_TO_LICENSE_POOL;")
 
-
 	for res in mysql.getSet(u"SELECT * FROM `LICENSE_CONTRACT`"):
 		if res['licenseContractId'] != forceLicenseContractId(res['licenseContractId']):
 			deleteLicenseContractId = res['licenseContractId']
@@ -460,7 +459,7 @@ read from `backendConfigFile`.
 				for i in data[tab]:
 					mysql.insert(tab, i)
 
-	#Increase productId Fields on existing database:
+	# Increase productId Fields on existing database:
 	with disableForeignKeyChecks(mysql):
 		logger.notice(u"Updating productId Columns")
 		for line in mysql.getSet(u"SHOW TABLES;"):
