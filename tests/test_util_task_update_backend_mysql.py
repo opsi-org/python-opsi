@@ -29,8 +29,9 @@ import os
 from contextlib import contextmanager
 
 from OPSI.Backend.MySQL import MySQL
+from OPSI.Backend.SQL import createSchemaVersionTable
 from OPSI.Util.Task.UpdateBackend.MySQL import (disableForeignKeyChecks,
-    getTableColumns, updateMySQLBackend)
+    getTableColumns, readSchemaVersion, updateMySQLBackend, updateSchemaVersion)
 from OPSI.Util.Task.ConfigureBackend import updateConfigFile
 
 from .Backends.MySQL import MySQLconfiguration
@@ -42,11 +43,20 @@ import pytest
 def cleanDatabase(database):
     def dropAllTables():
         with disableForeignKeyChecks(database):
+            tablesToDropAgain = set()
             for tableName in getTableNames(database):
                 try:
                     database.execute(u'DROP TABLE `{0}`;'.format(tableName))
                 except Exception as error:
                     print("Failed to drop {0}: {1}".format(tableName, error))
+                    tablesToDropAgain.add(tableName)
+
+            for tableName in tablesToDropAgain:
+                try:
+                    database.execute(u'DROP TABLE `{0}`;'.format(tableName))
+                except Exception as error:
+                    print("Failed to drop {0} a second time: {1}".format(tableName, error))
+                    raise error
 
     dropAllTables()
     try:
@@ -262,9 +272,37 @@ def testInsertingSchemaNumber(mysqlBackendConfig, mySQLBackendConfigFile):
 
         for column in getTableColumns(db, 'OPSI_SCHEMA'):
             name = column.name
-            if name == 'schemaVersion':
+            if name == 'version':
                 assert column.type.lower().startswith('int')
-            elif name == 'createdOn':
+            elif name == 'updateStarted':
+                assert column.type.lower().startswith('timestamp')
+            elif name == 'updateEnded':
                 assert column.type.lower().startswith('timestamp')
             else:
                 raise Exception("Unexpected column!")
+
+
+def testReadingSchemaVersionIfTableIsMissing(mysqlBackendConfig, mySQLBackendConfigFile):
+    with cleanDatabase(MySQL(**mysqlBackendConfig)) as db:
+        assert readSchemaVersion(db) is None
+
+
+def testReadingSchemaVersionFromEmptyTable(mysqlBackendConfig, mySQLBackendConfigFile):
+    with cleanDatabase(MySQL(**mysqlBackendConfig)) as db:
+        createSchemaVersionTable(db)
+
+        assert readSchemaVersion(db) is None
+
+
+def testUpdatingSchemaVersion(mysqlBackendConfig, mySQLBackendConfigFile):
+    with cleanDatabase(MySQL(**mysqlBackendConfig)) as db:
+        createSchemaVersionTable(db)
+
+        version = readSchemaVersion(db)
+        assert version is None
+
+        with updateSchemaVersion(db, version=2):
+            pass  # NOOP
+
+        version = readSchemaVersion(db)
+        assert version == 2

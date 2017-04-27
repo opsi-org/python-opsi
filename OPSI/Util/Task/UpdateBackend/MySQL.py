@@ -30,6 +30,7 @@ Usually the function :py:func:updateMySQLBackend: is called from opsi-setup
 from collections import namedtuple
 from contextlib import contextmanager
 
+from OPSI.Backend.SQL import createSchemaVersionTable
 from OPSI.Backend.MySQL import MySQL, MySQLBackend
 from OPSI.Logger import Logger
 from OPSI.Types import (forceHardwareDeviceId, forceHardwareVendorId,
@@ -63,6 +64,18 @@ read from `backendConfigFile`.
 
 	logger.notice(u"Connection to database '%s' on '%s' as user '%s'" % (config['database'], config['address'], config['username']))
 	mysql = MySQL(**config)
+
+	schemaVersion = readSchemaVersion(mysql)
+	logger.debug("Found database schema version {0}", schemaVersion)
+
+	if schemaVersion is None:
+		logger.notice("Missing information about database schema. Creating...")
+		createSchemaVersionTable(mysql)
+		with updateSchemaVersion(mysql, version=0):
+			pass
+
+		schemaVersion = readSchemaVersion(mysql)
+		assert schemaVersion == 0
 
 	tables = {}
 	logger.debug(u"Current tables:")
@@ -516,6 +529,37 @@ read from `backendConfigFile`.
 	mysqlBackend = MySQLBackend(**config)
 	mysqlBackend.backend_createBase()
 	mysqlBackend.backend_exit()
+
+
+def readSchemaVersion(database):
+	"""
+	Read the version of the schema from the database.
+
+	:returns: The version of the schema. `None` if no info is found.
+	:returntype: int or None
+	"""
+	try:
+		for result in database.getSet(u"SELECT `version` FROM OPSI_SCHEMA;"):
+			version = result['version']
+			# TODO: check if update finished
+			break
+		else:
+			raise RuntimeError("No schema version read!")
+	except Exception as versionLookupError:
+		logger.warning("Reading database schema version failed: {0}", versionLookupError)
+		version = None
+
+	return version
+
+
+@contextmanager
+def updateSchemaVersion(database, version):
+	query = "INSERT INTO OPSI_SCHEMA(`version`) VALUES({version});".format(version=version)
+	database.execute(query)
+	yield
+	# TODO: update entry
+	# query = "INSERT INTO OPSI_SCHEMA(`schemaVersion`) VALUES({version});".format(version=version)
+	# database.execute(query)
 
 
 @contextmanager
