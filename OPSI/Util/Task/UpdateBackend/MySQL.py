@@ -135,6 +135,14 @@ started but never ended.
 
 @contextmanager
 def updateSchemaVersion(database, version):
+	"""
+	Update the schema information to the given version.
+
+	This is to be used as a context manager and will mark the start
+	time of the update aswell as the end time.
+	If during the operation something happens there will be no
+	information about the end time written to the database.
+	"""
 	query = "INSERT INTO OPSI_SCHEMA(`version`) VALUES({version});".format(version=version)
 	database.execute(query)
 	yield
