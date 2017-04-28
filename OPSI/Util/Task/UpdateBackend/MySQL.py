@@ -152,6 +152,10 @@ def updateSchemaVersion(database, version):
 	query = "INSERT INTO OPSI_SCHEMA(`version`) VALUES({version});".format(version=version)
 	database.execute(query)
 	yield
+	_finishSchemaVersionUpdate(database, version)
+
+
+def _finishSchemaVersionUpdate(database, version):
 	query = "UPDATE OPSI_SCHEMA SET `updateEnded` = CURRENT_TIMESTAMP WHERE VERSION = {version};".format(version=version)
 	database.execute(query)
 
