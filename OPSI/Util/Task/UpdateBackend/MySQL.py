@@ -31,7 +31,7 @@ from collections import namedtuple
 from contextlib import contextmanager
 from datetime import datetime
 
-from OPSI.Backend.SQL import createSchemaVersionTable
+from OPSI.Backend.SQL import DATABASE_SCHEMA_VERSION, createSchemaVersionTable
 from OPSI.Backend.MySQL import MySQL, MySQLBackend
 from OPSI.Logger import Logger
 from OPSI.Types import (forceHardwareDeviceId, forceHardwareVendorId,
@@ -91,9 +91,15 @@ read from `backendConfigFile`.
 		with updateSchemaVersion(mysql, version=1):
 			_dropTableBootconfiguration(mysql)
 
-	mysqlBackend = MySQLBackend(**config)
-	mysqlBackend.backend_createBase()
-	mysqlBackend.backend_exit()
+	logger.debug("Expected database schema version: {0}", DATABASE_SCHEMA_VERSION)
+	if not readSchemaVersion(mysql) == DATABASE_SCHEMA_VERSION:
+		raise RuntimeError("Not all migrations have been run!")
+
+	with MySQLBackend(**config) as mysqlBackend:
+		# We do this to make sure all tables that are currently
+		# non-existing will be created. That creation will give them
+		# the currently wanted schema.
+		mysqlBackend.backend_createBase()
 
 
 def readSchemaVersion(database):

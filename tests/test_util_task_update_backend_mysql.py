@@ -28,8 +28,8 @@ import os
 
 from contextlib import contextmanager
 
-from OPSI.Backend.MySQL import MySQL
-from OPSI.Backend.SQL import createSchemaVersionTable
+from OPSI.Backend.MySQL import MySQL, MySQLBackend
+from OPSI.Backend.SQL import DATABASE_SCHEMA_VERSION, createSchemaVersionTable
 from OPSI.Util.Task.UpdateBackend.MySQL import (DatabaseMigrationUnfinishedError,
     disableForeignKeyChecks, getTableColumns, readSchemaVersion,
     updateMySQLBackend, updateSchemaVersion)
@@ -341,3 +341,24 @@ def testReadingSchemaVersionFailsOnUnfinishedUpdate(mysqlBackendConfig, mySQLBac
 
         with pytest.raises(DatabaseMigrationUnfinishedError):
             readSchemaVersion(db)
+
+
+def testUpdatingCurrentBackendDoesBreakNothing(mysqlBackendConfig, mySQLBackendConfigFile):
+    with cleanDatabase(MySQL(**mysqlBackendConfig)):
+        with MySQLBackend(**mysqlBackendConfig) as freshBackend:
+            freshBackend.backend_createBase()
+
+        updateMySQLBackend(backendConfigFile=mySQLBackendConfigFile)
+        # Updating again. Should break nothing.
+        updateMySQLBackend(backendConfigFile=mySQLBackendConfigFile)
+
+        with MySQLBackend(**mysqlBackendConfig) as anotherBackend:
+            # We want to have the latest schema version
+            assert DATABASE_SCHEMA_VERSION == readSchemaVersion(anotherBackend._sql)
+
+
+def testCreatingBackendSetsTheLatestSchemaVersion(mysqlBackendConfig, mySQLBackendConfigFile):
+    with cleanDatabase(MySQL(**mysqlBackendConfig)) as db:
+        with MySQLBackend(**mysqlBackendConfig) as freshBackend:
+            freshBackend.backend_createBase()
+            assert readSchemaVersion(db) == DATABASE_SCHEMA_VERSION

@@ -58,6 +58,8 @@ __all__ = (
 	'SQLBackendObjectModificationTracker'
 )
 
+DATABASE_SCHEMA_VERSION = 1
+
 logger = Logger()
 
 
@@ -877,6 +879,17 @@ class SQLBackend(ConfigDataBackend):
 
 		if 'OPSI_SCHEMA' not in existingTables:
 			createSchemaVersionTable(self._sql)
+
+			# To avoid updates to an up-to-date database schema
+			# we insert the current version into to database
+			# right away.
+			# If a change to the schema is done adjust this!
+			schemaVersion = 1
+			query = """
+				INSERT INTO OPSI_SCHEMA (`version`, `updateEnded`)
+				VALUES({version}, CURRENT_TIMESTAMP);
+			""".format(version=schemaVersion)
+			self._sql.execute(query)
 
 	def _createTableHost(self):
 		logger.debug(u'Creating table HOST')
