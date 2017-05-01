@@ -139,6 +139,14 @@ object instance from it
 
 
 def serialize(obj):
+	"""
+	Serialize `obj`.
+
+	It will turn an object into a JSON-compatible format - consisting \
+of strings, dicts, lists or numbers.
+
+	:return: a JSON-compatible serialisation of the input.
+	"""
 	newObj = None
 	if isinstance(obj, (unicode, str)):
 		return obj
