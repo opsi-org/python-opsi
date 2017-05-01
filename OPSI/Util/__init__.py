@@ -146,21 +146,19 @@ of strings, dicts, lists or numbers.
 
 	:return: a JSON-compatible serialisation of the input.
 	"""
-	newObj = None
 	if isinstance(obj, (unicode, str)):
 		return obj
 	elif hasattr(obj, 'serialize'):
-		newObj = obj.serialize()
+		return obj.serialize()
 	elif isinstance(obj, (list, set, types.GeneratorType)):
-		newObj = [serialize(tempObject) for tempObject in obj]
+		return [serialize(tempObject) for tempObject in obj]
 	elif isinstance(obj, dict):
 		newObj = {}
 		for key, value in obj.items():
 			newObj[key] = serialize(value)
+		return newObj
 	else:
 		return obj
-
-	return newObj
 
 
 def formatFileSize(sizeInBytes):
