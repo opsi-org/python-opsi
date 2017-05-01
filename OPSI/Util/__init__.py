@@ -102,6 +102,20 @@ class PickleString(str):
 
 
 def deserialize(obj, preventObjectCreation=False):
+	"""
+	Deserialization of `obj`.
+
+	This function will deserialize objects.
+	In case `obj` is a list contained elements are deserialized.
+	In case `obj` is a dict the values are deserialized.
+
+	In case `obj` is a dict and holds a key *type* and \
+`preventObjectCreation` is `True` it will be tried to create an OPSI \
+object instance from it
+
+	:type obj: object
+	:type preventObjectCreation: bool
+	"""
 	newObj = None
 	if not preventObjectCreation and isinstance(obj, dict) and 'type' in obj:
 		try:
