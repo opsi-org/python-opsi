@@ -105,12 +105,13 @@ def deserialize(obj, preventObjectCreation=False):
 	"""
 	Deserialization of `obj`.
 
-	This function will deserialize objects.
+	This function will deserialize objects from JSON into opsi \
+compatible objects.
 	In case `obj` is a list contained elements are deserialized.
 	In case `obj` is a dict the values are deserialized.
 
 	In case `obj` is a dict and holds a key *type* and \
-`preventObjectCreation` is `True` it will be tried to create an OPSI \
+`preventObjectCreation` is `True` it will be tried to create an opsi \
 object instance from it
 
 	:type obj: object
