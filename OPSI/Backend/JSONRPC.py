@@ -42,14 +42,15 @@ from twisted.conch.ssh import keys
 from sys import version_info
 
 from OPSI import __version__
-from OPSI.Logger import Logger, LOG_INFO, LOG_NONE
+from OPSI.Logger import Logger, LOG_INFO
 from OPSI.Types import (forceBool, forceFilename, forceFloat, forceInt,
 						forceList, forceUnicode)
 from OPSI.Types import (OpsiAuthenticationError, OpsiServiceVerificationError,
 						OpsiTimeoutError)
 from OPSI.Backend.Backend import Backend, DeferredCall
 from OPSI.Util import serialize, deserialize
-from OPSI.Util.HTTP import urlsplit, getSharedConnectionPool, deflateEncode, deflateDecode, gzipDecode
+from OPSI.Util.HTTP import getSharedConnectionPool, urlsplit
+from OPSI.Util.HTTP import deflateEncode, deflateDecode, gzipDecode
 
 __all__ = ('JSONRPC', 'JSONRPCThread', 'RpcQueue', 'JSONRPCBackend')
 
@@ -283,7 +284,6 @@ class JSONRPCBackend(Backend):
 		self._verifyServerCert = False
 		self._verifyServerCertByCa = False
 		self._verifyByCaCertsFile = None
-		self._wrongHTTPHeaders = None
 		self._proxyURL = None
 
 		if not self._username:
@@ -402,12 +402,7 @@ class JSONRPCBackend(Backend):
 		if not self._connected:
 			raise Exception(u'Not connected')
 
-		deflate = forceBool(deflate)
-		if deflate and self._wrongHTTPHeaders:
-			logger.error(u"Refusing to set deflate because opsi service answers with wrong HTTP header contents.")
-			return
-
-		self._deflate = deflate
+		self._deflate = forceBool(deflate)
 
 	def getDeflate(self):
 		return self._deflate
@@ -422,21 +417,6 @@ class JSONRPCBackend(Backend):
 
 		asyncStatus = self._async
 		self._async = False
-
-		if self._deflate:
-			logger.debug(u"Testing if deflated communication works...")
-			previousLogLevel = logger.getConsoleLevel()
-			logger.setConsoleLevel(LOG_NONE)
-			try:
-				self._jsonRPC(u'backend_info')
-				logger.debug(u"Deflated communication works!")
-			except Exception as error:
-				logger.setConsoleLevel(previousLogLevel)
-				logger.debug(u"Caught {0!r}", error)
-				logger.debug(u"Disabling deflate...")
-				self._deflate = False
-			finally:
-				logger.setConsoleLevel(previousLogLevel)
 
 		try:
 			try:
@@ -662,22 +642,11 @@ class JSONRPCBackend(Backend):
 			if sessionId != self._sessionId:
 				self._sessionId = sessionId
 
-		contentType = response.getheader('content-type', '')
 		contentEncoding = response.getheader('content-encoding', '').lower()
-		logger.debug(u"Content-Type: {0}, Content-Encoding: {1}", contentType, contentEncoding)
+		logger.debug2(u"Content-Encoding: {1}", contentEncoding)
 
 		response = response.data
-		if contentType.lower().startswith('gzip'):
-			# To stay compatible with old versions of the opsiconfd
-			# we try to decompress the response with deflate even
-			# though gzip was stated.
-			# Content-type was usually gzip-application/json
-			logger.debug(u"Expecting deflated data from server (backwards compatible)")
-			response = deflateDecode(response)
-
-			if self._wrongHTTPHeaders is None:
-				self._wrongHTTPHeaders = True
-		elif contentEncoding == 'gzip':
+		if contentEncoding == 'gzip':
 			logger.debug(u"Expecting gzip'ed data from server")
 			response = gzipDecode(response)
 		elif contentEncoding == "deflate":
