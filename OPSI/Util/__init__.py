@@ -117,25 +117,24 @@ object instance from it
 	:type obj: object
 	:type preventObjectCreation: bool
 	"""
-	newObj = None
-	if not preventObjectCreation and isinstance(obj, dict) and 'type' in obj:
-		try:
-			import OPSI.Object
-			c = eval('OPSI.Object.%s' % obj['type'])
-			newObj = c.fromHash(obj)
-		except Exception as error:
-			logger.debug(u"Failed to get object from dict {0!r}: {1}", obj, forceUnicode(error))
-			return obj
-	elif isinstance(obj, list):
-		newObj = [deserialize(tempObject, preventObjectCreation=preventObjectCreation) for tempObject in obj]
+	if isinstance(obj, list):
+		return [deserialize(element, preventObjectCreation=preventObjectCreation) for element in obj]
 	elif isinstance(obj, dict):
-		newObj = {}
-		for (key, value) in obj.items():
-			newObj[key] = deserialize(value, preventObjectCreation=preventObjectCreation)
+		if not preventObjectCreation and 'type' in obj:
+			import OPSI.Object
+			try:
+				objectClass = eval('OPSI.Object.%s' % obj['type'])
+				return objectClass.fromHash(obj)
+			except Exception as error:
+				logger.debug(u"Failed to get object from dict {0!r}: {1}", obj, forceUnicode(error))
+				return obj
+		else:
+			newObj = {}
+			for (key, value) in obj.items():
+				newObj[key] = deserialize(value, preventObjectCreation=preventObjectCreation)
+			return newObj
 	else:
 		return obj
-
-	return newObj
 
 
 def serialize(obj):
