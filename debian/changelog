@@ -1,3 +1,10 @@
+python-opsi (4.0.7.40-1) stable; urgency=medium
+
+  * 30_kiosk.conf: getKioskProductInfosForClient does only return a product
+    once even if they are in multiple groups.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 03 May 2017 14:18:09 +0200
+
 python-opsi (4.0.7.39-1) stable; urgency=medium
 
   * Added 30_kiosk.conf for the new kiosk client.

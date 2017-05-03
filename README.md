@@ -21,10 +21,10 @@ First we create the API documentation from the Python files:
 ``sphinx-apidoc --separate --output-dir=doc/src OPSI/``
 
 After that we can build the documentation:
-``sphinx-build -b html -d doc/_build/doctrees doc/src/ doc/html/``
+``sphinx-build -b html -d doc/_build/doctrees doc/src/ doc/python-opsi/``
 
 
-After that you will find the documentation in the folder ``doc/html``.
+After that you will find the documentation in the folder ``doc/python-opsi``.
 
 ## Requirements
 
