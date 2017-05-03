@@ -1,8 +1,7 @@
-#!/usr/bin/env python
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -25,13 +24,18 @@ Testing DHCPD Backend.
 
 from __future__ import absolute_import
 
+from collections import namedtuple
+
 from OPSI.Backend.DHCPD import DHCPDBackend
 from OPSI.Object import OpsiClient
 from OPSI.Types import BackendIOError
 
-from .test_util_file_dhcpdconf import dhcpdConf
+from .helpers import mock
+from .test_util_file_dhcpdconf import dhcpdConf  # fixture
 
 import pytest
+
+ClientConfig = namedtuple("ClientConfig", "hostname oldMAC newMAC additionalConfig")
 
 
 @pytest.fixture
@@ -73,17 +77,26 @@ def testAddingHostsToBackend(dhcpdBackend):
     )
 
 
-def testUpdatingHostWhereAddressCantBeResolvedFails(dhcpdBackend):
+def testUpdatingHostWhereAddressCantBeResolvedFails(dhcpBackendWithoutLookup):
     client = OpsiClient(
         id='unknown-client.test.invalid',
         hardwareAddress='00:99:88:77:77:21'
     )
 
     with pytest.raises(BackendIOError):
-        dhcpdBackend.host_insertObject(client)
+        dhcpBackendWithoutLookup.host_insertObject(client)
 
 
-def testUpdatingHostTriggersChangeInDHCPDConfiguration(dhcpdBackend):
+@pytest.fixture
+def dhcpBackendWithoutLookup(dhcpdBackend):
+    def failingLookup(_):
+        raise Exception("Lookup disabled")
+
+    with mock.patch('socket.gethostbyname', failingLookup):
+        yield dhcpdBackend
+
+
+def testUpdatingHostTriggersChangeInDHCPDConfiguration(dhcpBackendWithoutLookup):
     """
     Updating hosts should trigger an update in the DHCP config.
 
@@ -102,41 +115,43 @@ def testUpdatingHostTriggersChangeInDHCPDConfiguration(dhcpdBackend):
         if caseInSensitive:
             elem = elem.lower()
 
-        with open(dhcpdBackend._dhcpdConfFile._filename) as config:
-            for line in config:
-                if caseInSensitive:
-                    line = line.lower()
+        if caseInSensitive:
+            lineConversion = lambda line: line.lower()
+        else:
+            lineConversion = lambda line: line
 
-                if elem in line:
-                    return True
+        with open(backend._dhcpdConfFile._filename) as config:
+            return any(elem in lineConversion(line) for line in config)
 
-        return False
+    backend = dhcpBackendWithoutLookup
 
     configs = (
-        ('client4hostFile', '00:99:88:77:77:11', '00:99:88:77:77:12', {'ipAddress': '192.168.99.104'}),
-        ('client4hostFile', '00:99:88:77:77:21', '00:99:88:77:77:22', {})
+        ClientConfig('client4hostFile', '00:99:88:77:77:11', '00:99:88:77:77:12', {'ipAddress': '192.168.99.104'}),
+        ClientConfig('client4hostFile', '00:99:88:77:77:21', '00:99:88:77:77:22', {})
     )
 
-    showMissingInfo = lambda x: "Expected {term} to be in DHCPD config {file}".format(
-        term=x,
-        file=dhcpdBackend._dhcpdConfFile._filename
-    )
+    def getMissingInfo(term):
+        return "Expected {term!r} to be in DHCPD config {file}".format(
+            term=term,
+            file=backend._dhcpdConfFile._filename
+        )
 
-    for (hostname, oldMAC, newMAC, additionalClientConfig) in configs:
-        clientConfig = {
-            'id': '{0}.some.network'.format(hostname),
-            'hardwareAddress': oldMAC,
+    for clientConfig in configs:
+        # (hostname, oldMAC, newMAC, additionalClientConfig)
+        clientParameters = {
+            'id': '{0}.somenetwork.test'.format(clientConfig.hostname),
+            'hardwareAddress': clientConfig.oldMAC,
         }
-        clientConfig.update(additionalClientConfig)
+        clientParameters.update(clientConfig.additionalConfig)
 
-        client = OpsiClient(**clientConfig)
-        dhcpdBackend.host_insertObject(client)
+        client = OpsiClient(**clientParameters)
+        backend.host_insertObject(client)
 
-        assert isElementInConfigFile(hostname.lower()), showMissingInfo(client.id)
-        assert isMacAddressInConfigFile(oldMAC), showMissingInfo(oldMAC)
+        assert isElementInConfigFile(clientConfig.hostname.lower()), getMissingInfo(client.id)
+        assert isMacAddressInConfigFile(clientConfig.oldMAC), getMissingInfo(clientConfig.oldMAC)
 
-        client.hardwareAddress = newMAC
-        dhcpdBackend.host_updateObject(client)
+        client.hardwareAddress = clientConfig.newMAC
+        backend.host_updateObject(client)
 
-        assert isMacAddressInConfigFile(newMAC), showMissingInfo(newMAC)
-        assert not isMacAddressInConfigFile(oldMAC)
+        assert isMacAddressInConfigFile(clientConfig.newMAC), getMissingInfo(clientConfig.newMAC)
+        assert not isMacAddressInConfigFile(clientConfig.oldMAC)
