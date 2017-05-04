@@ -146,6 +146,8 @@ class SessionHandler(object):
 
 		:param ip: Limit the returned values to sessions coming from this IP.
 		:type ip: str
+		:returns: a dict where the uid of the session is the key and \
+the value holds the sesion.
 		:returntype: {str: Session}
 		"""
 		if not ip:
