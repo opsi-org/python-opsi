@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2006-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -142,10 +141,17 @@ class SessionHandler(object):
 		self.deleteAllSessions()
 
 	def getSessions(self, ip=None):
+		"""
+		Get the sessions handled by this handler.
+
+		:param ip: Limit the returned values to sessions coming from this IP.
+		:type ip: str
+		:returntype: {str: Session}
+		"""
 		if not ip:
 			return self.sessions
 
-		return [session for session in self.sessions.values() if session.ip == ip]
+		return {uid: session for uid, session in self.sessions.items() if session.ip == ip}
 
 	def getSession(self, uid=None, ip=None):
 		if uid:
@@ -164,12 +170,12 @@ class SessionHandler(object):
 		if ip and self.maxSessionsPerIp > 0:
 			sessions = self.getSessions(ip)
 			if len(sessions) >= self.maxSessionsPerIp:
-				logger.error(u"Session limit for ip '%s' reached" % ip)
-				for session in sessions:
+				logger.warning(u"Session limit for ip '%s' reached" % ip)
+				for uid, session in sessions.items():
 					if session.usageCount > 0:
 						continue
 					logger.info(u"Deleting unused session")
-					self.deleteSession(session.uid)
+					self.deleteSession(uid)
 
 				if len(self.getSessions(ip)) >= self.maxSessionsPerIp:
 					raise OpsiAuthenticationError(u"Session limit for ip '%s' reached" % ip)
