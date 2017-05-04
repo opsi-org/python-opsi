@@ -47,6 +47,15 @@ def session():
 		testSession.sessionTimer = None
 
 
+@pytest.fixture
+def sessionHandler():
+	handler = SessionHandler()
+	try:
+		yield handler
+	finally:
+		handler.deleteAllSessions()
+
+
 class FakeSessionHandler(object):
 	def sessionExpired(self, session):
 		pass
@@ -113,17 +122,16 @@ def testHandlerCreatesAndExpiresSessions():
 	assert 0 == len(handler.sessions)
 
 
-def testDeletingAllSessions():
-	handler = SessionHandler()
-	assert not handler.sessions
+def testDeletingAllSessions(sessionHandler):
+	assert not sessionHandler.sessions
 
 	for _ in range(10):
-		handler.createSession()
+		sessionHandler.createSession()
 
-	assert 10 == len(handler.sessions)
+	assert 10 == len(sessionHandler.sessions)
 
-	handler.deleteAllSessions()
-	assert 0 == len(handler.sessions)
+	sessionHandler.deleteAllSessions()
+	assert 0 == len(sessionHandler.sessions)
 
 
 def testSessionHandlerDeletingSessionInUse():
@@ -140,9 +148,8 @@ def testSessionHandlerDeletingSessionInUse():
 	assert 0 == len(handler.sessions)
 
 
-def testDeletingNonExistingSessionMustNotFail():
-	handler = SessionHandler()
-	handler.deleteSession('iAmNotHere')
+def testDeletingNonExistingSessionMustNotFail(sessionHandler):
+	sessionHandler.deleteSession('iAmNotHere')
 
 
 @pytest.mark.parametrize("sessionCount", [256])
@@ -188,43 +195,38 @@ def testGetSessionsByIP():
 		handler.getSession(ip='12.34.56.78')
 
 
-def testGettingSession():
-	handler = SessionHandler()
-	session = handler.getSession()
+def testGettingSession(sessionHandler):
+	session = sessionHandler.getSession()
 
 	assert session.usageCount == 1
 
 
-def testGettingSessionByUID():
-	handler = SessionHandler()
-	session = handler.getSession(uid='testUID12345')
+def testGettingSessionByUID(sessionHandler):
+	session = sessionHandler.getSession(uid='testUID12345')
 
 	assert session.usageCount == 1
 
 
-def testGettingSessionByUIDAndReuse():
-	handler = SessionHandler()
-	firstSession = handler.getSession(uid='testUID12345')
+def testGettingSessionByUIDAndReuse(sessionHandler):
+	firstSession = sessionHandler.getSession(uid='testUID12345')
 
 	assert firstSession.usageCount == 1
 
-	secondSession = handler.getSession(uid=firstSession.uid)
+	secondSession = sessionHandler.getSession(uid=firstSession.uid)
 	assert secondSession.usageCount == 2
 
 	assert firstSession == secondSession
 
 
-def testGettingNewSessionDoesNotSetUid():
-	handler = SessionHandler()
-	session = handler.getSession(uid='testUID12345')
+def testGettingNewSessionDoesNotSetUid(sessionHandler):
+	session = sessionHandler.getSession(uid='testUID12345')
 
 	assert session.uid != 'testUID12345'
 
 
-def testGettingNewSessionDoesIgnoreSessionMarkedForDeletion():
-	handler = SessionHandler()
-	session = handler.getSession()
+def testGettingNewSessionDoesIgnoreSessionMarkedForDeletion(sessionHandler):
+	session = sessionHandler.getSession()
 	session.setMarkedForDeletion()
 
-	secondSession = handler.getSession(uid=session.uid)
+	secondSession = sessionHandler.getSession(uid=session.uid)
 	assert secondSession != session
