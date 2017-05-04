@@ -178,24 +178,26 @@ def testCreatingAndExpiringManySessions(sessionCount):
 
 
 def testGetSessionsByIP():
-	handler = SessionHandler("testapp", maxSessionsPerIp=2)
+	handler = SessionHandler("testapp", maxSessionsPerIp=1)
+	testIP = '12.34.56.78'
 
-	assert {} == handler.getSessions()
+	try:
+		assert {} == handler.getSessions()
 
-	session = handler.getSession(ip='12.34.56.78')
-	assert {session.uid: session} == handler.getSessions()
+		session = handler.getSession(ip=testIP)
+		session.ip = testIP
+		assert {session.uid: session} == handler.getSessions()
 
-	for _ in range(12):
-		session = handler.createSession()
+		for _ in range(3):
+			handler.getSession()
 
-	assert len(handler.getSessions()) == 13
-	assert {session.uid: session} == handler.getSessions(ip='12.34.56.78')
+		assert len(handler.getSessions()) == 4
+		assert {session.uid: session} == handler.getSessions(ip=testIP)
 
-	newSession = handler.getSession(ip='12.34.56.78')
-	assert newSession.ip == '12.34.56.78'
-
-	with pytest.raises(OpsiAuthenticationError):
-		handler.getSession(ip='12.34.56.78')
+		with pytest.raises(OpsiAuthenticationError):
+			handler.getSession(ip=testIP)
+	finally:
+		handler.deleteAllSessions()
 
 
 def testGettingSession(sessionHandler):
