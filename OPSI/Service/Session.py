@@ -173,11 +173,11 @@ the value holds the sesion.
 			sessions = self.getSessions(ip)
 			if len(sessions) >= self.maxSessionsPerIp:
 				logger.warning(u"Session limit for ip '%s' reached" % ip)
-				for uid, session in sessions.items():
+				for sessionUid, session in sessions.items():
 					if session.usageCount > 0:
 						continue
 					logger.info(u"Deleting unused session")
-					self.deleteSession(uid)
+					self.deleteSession(sessionUid)
 
 				if len(self.getSessions(ip)) >= self.maxSessionsPerIp:
 					raise OpsiAuthenticationError(u"Session limit for ip '%s' reached" % ip)
