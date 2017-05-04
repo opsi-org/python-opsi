@@ -165,13 +165,16 @@ def testCreatingAndExpiringManySessions(sessionCount):
 		sessionDeletionTimeout=23
 	)
 
-	for _ in range(sessionCount):
-		handler.createSession()
+	try:
+		for _ in range(sessionCount):
+			handler.createSession()
 
-	for _ in range(deletion_time_in_sec + 1):
-		time.sleep(1)
+		for _ in range(deletion_time_in_sec + 1):
+			time.sleep(1)
 
-	assert {} == handler.getSessions()
+		assert {} == handler.getSessions()
+	finally:
+		handler.deleteAllSessions()
 
 
 def testGetSessionsByIP():
