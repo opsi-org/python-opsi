@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2015-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2015-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -26,6 +25,7 @@ Testing session and sessionhandler.
 import time
 
 from OPSI.Service.Session import Session, SessionHandler
+from OPSI.Types import OpsiAuthenticationError
 
 import pytest
 
@@ -165,6 +165,27 @@ def testCreatingAndExpiringManySessions(sessionCount):
 		time.sleep(1)
 
 	assert {} == handler.getSessions()
+
+
+def testGetSessionsByIP():
+	handler = SessionHandler("testapp", maxSessionsPerIp=2)
+
+	assert {} == handler.getSessions()
+
+	session = handler.getSession(ip='12.34.56.78')
+	assert {session.uid: session} == handler.getSessions()
+
+	for _ in range(12):
+		session = handler.createSession()
+
+	assert len(handler.getSessions()) == 13
+	assert {session.uid: session} == handler.getSessions(ip='12.34.56.78')
+
+	newSession = handler.getSession(ip='12.34.56.78')
+	assert newSession.ip == '12.34.56.78'
+
+	with pytest.raises(OpsiAuthenticationError):
+		handler.getSession(ip='12.34.56.78')
 
 
 def testGettingSession():
