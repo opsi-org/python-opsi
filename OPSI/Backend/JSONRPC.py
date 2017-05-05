@@ -4,7 +4,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2010-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2010-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -42,16 +42,17 @@ from twisted.conch.ssh import keys
 from sys import version_info
 
 from OPSI import __version__
-from OPSI.Logger import Logger, LOG_INFO, LOG_NONE
+from OPSI.Logger import Logger, LOG_INFO
 from OPSI.Types import (forceBool, forceFilename, forceFloat, forceInt,
 						forceList, forceUnicode)
 from OPSI.Types import (OpsiAuthenticationError, OpsiServiceVerificationError,
 						OpsiTimeoutError)
 from OPSI.Backend.Backend import Backend, DeferredCall
 from OPSI.Util import serialize, deserialize
-from OPSI.Util.HTTP import urlsplit, getSharedConnectionPool, deflateEncode, deflateDecode, gzipDecode
+from OPSI.Util.HTTP import getSharedConnectionPool, urlsplit
+from OPSI.Util.HTTP import deflateEncode, deflateDecode, gzipDecode
 
-__all__ = ['JSONRPC', 'JSONRPCThread', 'RpcQueue', 'JSONRPCBackend']
+__all__ = ('JSONRPC', 'JSONRPCThread', 'RpcQueue', 'JSONRPCBackend')
 
 logger = Logger()
 
@@ -72,11 +73,6 @@ class JSONRPC(DeferredCall):
 		self.process()
 
 	def getRpc(self):
-		if self.jsonrpcBackend.isLegacyOpsi():
-			for i, param in enumerate(self.params):
-				if param == '__UNDEF__':
-					self.params[i] = None
-
 		return {
 			"id": self.id,
 			"method": self.method,
@@ -276,7 +272,6 @@ class JSONRPCBackend(Backend):
 		self._socketTimeout = None
 		self._connectTimeout = 30
 		self._connectionPoolSize = 1
-		self._legacyOpsi = False
 		self._interface = None
 		self._rpcId = 0
 		self._rpcIdLock = threading.Lock()
@@ -289,7 +284,6 @@ class JSONRPCBackend(Backend):
 		self._verifyServerCert = False
 		self._verifyServerCertByCa = False
 		self._verifyByCaCertsFile = None
-		self._wrongHTTPHeaders = None
 		self._proxyURL = None
 
 		if not self._username:
@@ -386,10 +380,7 @@ class JSONRPCBackend(Backend):
 		res = None
 		if self._connected:
 			try:
-				if self._legacyOpsi:
-					res = self._jsonRPC('exit', retry=False)
-				else:
-					res = self._jsonRPC('backend_exit', retry=False)
+				res = self._jsonRPC('backend_exit', retry=False)
 			except Exception:
 				pass
 		if self._rpcQueue:
@@ -401,9 +392,6 @@ class JSONRPCBackend(Backend):
 			raise Exception(u'Not connected')
 
 		if enableAsync:
-			if self.isLegacyOpsi():
-				logger.error(u"Refusing to set async because we are connected to legacy opsi service")
-				return
 			self.startRpcQueue()
 			self._async = True
 		else:
@@ -414,16 +402,7 @@ class JSONRPCBackend(Backend):
 		if not self._connected:
 			raise Exception(u'Not connected')
 
-		deflate = forceBool(deflate)
-		if deflate and self.isLegacyOpsi():
-			logger.error(u"Refusing to set deflate because we are connected to legacy opsi service")
-			return
-
-		if deflate and self._wrongHTTPHeaders:
-			logger.error(u"Refusing to set deflate because opsi service answers with wrong HTTP header contents.")
-			return
-
-		self._deflate = deflate
+		self._deflate = forceBool(deflate)
 
 	def getDeflate(self):
 		return self._deflate
@@ -438,21 +417,6 @@ class JSONRPCBackend(Backend):
 
 		asyncStatus = self._async
 		self._async = False
-
-		if self._deflate:
-			logger.debug(u"Testing if deflated communication works...")
-			previousLogLevel = logger.getConsoleLevel()
-			logger.setConsoleLevel(LOG_NONE)
-			try:
-				self._jsonRPC(u'backend_info')
-				logger.debug(u"Deflated communication works!")
-			except Exception as error:
-				logger.setConsoleLevel(previousLogLevel)
-				logger.debug(u"Caught {0!r}", error)
-				logger.debug(u"Disabling deflate...")
-				self._deflate = False
-			finally:
-				logger.setConsoleLevel(previousLogLevel)
 
 		try:
 			try:
@@ -476,21 +440,11 @@ class JSONRPCBackend(Backend):
 								break
 					except Exception as error:
 						logger.info(forceUnicode(error))
-			except (OpsiAuthenticationError, OpsiTimeoutError, OpsiServiceVerificationError, socket.error):
+			except (OpsiAuthenticationError, OpsiTimeoutError, OpsiServiceVerificationError, socket.error) as connectionError:
+				logger.debug(u"Failed to connect: {0}", connectionError)
 				raise
-			except Exception as error:
-				logger.debug(u"backend_getInterface failed: {0}", forceUnicode(error))
-				logger.debug(u"trying getPossibleMethods_listOfHashes")
-				self._interface = self._jsonRPC(u'getPossibleMethods_listOfHashes')
-				logger.info(u"Legacy opsi")
-				self._legacyOpsi = True
-				self._deflate = False
-				self._jsonRPC(u'authenticated', retry=False)
 
-			if self._legacyOpsi:
-				self._createInstanceMethods34()
-			else:
-				self._createInstanceMethods(modules, realmodules, mysqlBackend)
+			self._createInstanceMethods(modules, realmodules, mysqlBackend)
 
 			self._connected = True
 			logger.info(u"{0}: Connected to service", self)
@@ -524,44 +478,8 @@ class JSONRPCBackend(Backend):
 		if not self._password and password:
 			self._password = password
 
-	def isOpsi35(self):
-		return not self._legacyOpsi
-
-	def isOpsi4(self):
-		return not self._legacyOpsi
-
-	def isLegacyOpsi(self):
-		return self._legacyOpsi
-
 	def jsonrpc_getSessionId(self):
 		return self._sessionId
-
-	def _createInstanceMethods34(self):
-		for method in self._interface:
-			# Create instance method
-			params = ['self']
-			params.extend(method.get('params', []))
-			paramsWithDefaults = list(params)
-			for index, param in enumerate(params):
-				if param.startswith('*'):
-					newParameter = param[1:]
-					params[index] = newParameter
-					paramsWithDefaults[index] = '{0}="__UNDEF__"'.format(newParameter)
-
-			logger.debug2("Creating instance method '%s'" % method['name'])
-
-			if len(params) == 2:
-				methodCode = ('def %s(%s):\n  if type(%s) == list: %s = [ %s ]\n  return self._jsonRPC(method = "%s", params = [%s])'
-					% (method['name'], ', '.join(paramsWithDefaults), params[1], params[1], params[1], method['name'], ', '.join(params[1:])))
-				logger.debug2(methodCode)
-				exec(methodCode)
-			else:
-				methodCode = ('def %s(%s): return self._jsonRPC(method = "%s", params = [%s])'
-					% (method['name'], ', '.join(paramsWithDefaults), method['name'], ', '.join(params[1:])))
-				logger.debug2(methodCode)
-				exec(methodCode)
-
-			setattr(self.__class__, method['name'], types.UnboundMethodType(eval(method['name']), None, self.__class__))
 
 	def _createInstanceMethods(self, modules=None, realmodules={}, mysqlBackend=False):
 		licenseManagementModule = True
@@ -724,22 +642,11 @@ class JSONRPCBackend(Backend):
 			if sessionId != self._sessionId:
 				self._sessionId = sessionId
 
-		contentType = response.getheader('content-type', '')
 		contentEncoding = response.getheader('content-encoding', '').lower()
-		logger.debug(u"Content-Type: {0}, Content-Encoding: {1}", contentType, contentEncoding)
+		logger.debug2(u"Content-Encoding: {1}", contentEncoding)
 
 		response = response.data
-		if contentType.lower().startswith('gzip'):
-			# To stay compatible with old versions of the opsiconfd
-			# we try to decompress the response with deflate even
-			# though gzip was stated.
-			# Content-type was usually gzip-application/json
-			logger.debug(u"Expecting deflated data from server (backwards compatible)")
-			response = deflateDecode(response)
-
-			if self._wrongHTTPHeaders is None:
-				self._wrongHTTPHeaders = True
-		elif contentEncoding == 'gzip':
+		if contentEncoding == 'gzip':
 			logger.debug(u"Expecting gzip'ed data from server")
 			response = gzipDecode(response)
 		elif contentEncoding == "deflate":

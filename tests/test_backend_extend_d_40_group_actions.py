@@ -93,12 +93,7 @@ def testGroupnameExists(backendManager):
 def testRenamingGroupToAlreadyExistingGroupFails(backendManager):
     testGroup, _ = fillBackendForRenaming(backendManager)
 
-    newGroup = HostGroup(
-        id='new_group_1',
-        description='Group 1',
-        notes='First group',
-        parentGroupId=None
-    )
+    newGroup = HostGroup(id='new_group_1')
     backendManager.group_insertObject(newGroup)
 
     with pytest.raises(Exception):
@@ -149,12 +144,7 @@ def testGroupRenameUpdatesObjectToGroups(backendManager):
 
 
 def fillBackendForRenaming(backend):
-    group = HostGroup(
-        id='host_group_1',
-        description='Group 1',
-        notes='First group',
-        parentGroupId=None
-    )
+    group = HostGroup(id='host_group_1')
 
     client1 = OpsiClient(id='client1.test.invalid')
     client2 = OpsiClient(id='client2.test.invalid')

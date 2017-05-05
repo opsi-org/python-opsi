@@ -4,7 +4,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 #
-# Copyright (C) 2006-2010, 2013-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2010, 2013-2017 uib GmbH <info@uib.de>
 # All rights reserved.
 #
 # This program is free software: you can redistribute it and/or modify
@@ -461,7 +461,7 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 		if vendorFromHost and modelFromHost:
 			vendordirectories = listdir(rulesdir)
 			if vendorFromHost not in vendordirectories:
-				if vendorFromHost.endswith(".") or vendorFromHost.endswith(" "):
+				if vendorFromHost.endswith((".", " ")):
 					vendorFromHost = "%s_" % vendorFromHost[:-1]
 
 			for vendordirectory in vendordirectories:
@@ -470,7 +470,7 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 					if skuFromHost and skuFromHost in modelFromHost:
 						skuLabel = "(%s)" % skuFromHost
 					if modelFromHost not in modeldirectories:
-						if modelFromHost.endswith(".") or modelFromHost.endswith(" "):
+						if modelFromHost.endswith((".", " ")):
 							modelFromHost = "%s_" % modelFromHost[:-1]
 					for modeldirectory in modeldirectories:
 						if modeldirectory.lower() == modelFromHost.lower():
@@ -495,14 +495,14 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 		if vendorFromHost and productFromHost:
 			vendordirectories = listdir(rulesdir)
 			if vendorFromHost not in vendordirectories:
-				if vendorFromHost.endswith(".") or vendorFromHost.endswith(" "):
+				if vendorFromHost.endswith((".", " ")):
 					vendorFromHost = "%s_" % vendorFromHost[:-1]
 
 			for vendordirectory in vendordirectories:
 				if vendordirectory.lower() == vendorFromHost.lower():
 					productdirectories = listdir(os.path.join(rulesdir, vendordirectory))
 					if productFromHost not in productdirectories:
-						if productFromHost.endswith(".") or productFromHost.endswith(" "):
+						if productFromHost.endswith((".", " ")):
 							productFromHost = "%s_" % productFromHost[:-1]
 
 					for productdirectory in productdirectories:

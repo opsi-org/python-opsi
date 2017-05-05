@@ -25,14 +25,14 @@ Testing BackendDispatcher.
 from __future__ import absolute_import
 
 import os
-import unittest
+
+import pytest
 
 from OPSI.Backend.BackendManager import BackendDispatcher
 from OPSI.Types import BackendConfigurationError
 
-from .Backends.File import FileBackendMixin
-
-import pytest
+from .Backends.File import getFileBackend
+from .conftest import _backendBase
 
 
 @pytest.mark.parametrize("kwargs", [
@@ -62,34 +62,42 @@ def testLoadingDispatchConfigFailsIfBackendConfigWithoutConfigs(create_folder, t
         )
 
 
-class BackendDispatcherWithBackendTestCase(unittest.TestCase, FileBackendMixin):
-    """
-    Testing the BackendDispatcher with files on the disk.
+def testDispatchingMethodAndReceivingResults(dispatcher):
+    assert [] == dispatcher.host_getObjects()
 
-    This will create files that look like an actual backend to simulate
-    correct loading of backend information.
-    """
-    def setUp(self):
-        self.setUpBackend()
 
-    def tearDown(self):
-        self.tearDownBackend()
+def testLoadingDispatchConfig(dispatcher):
+    assert 'file' in dispatcher.dispatcher_getBackendNames()
+    assert [(u'.*', (u'file', ))] == dispatcher.dispatcher_getConfig()
 
-    def testLoadingDispatchConfig(self):
-        dispatchConfig = [(u'.*', (u'file', ))]
 
-        dispatcher = BackendDispatcher(
-            dispatchConfigFile=self._fileBackendConfig['dispatchConfig'],
-            backendConfigDir=os.path.join(self._fileTempDir, 'etc', 'opsi', 'backends')
-        )
+@pytest.fixture
+def dispatcherBackend(tempDir):
+    "A file backend for dispatching"
+    with getFileBackend(tempDir) as backend:
+        with _backendBase(backend):
+            yield backend
 
-        assert 'file' in dispatcher.dispatcher_getBackendNames()
-        assert dispatchConfig == dispatcher.dispatcher_getConfig()
 
-    def testDispatchingMethodAndReceivingResults(self):
-        dispatcher = BackendDispatcher(
-            dispatchConfigFile=self._fileBackendConfig['dispatchConfig'],
-            backendConfigDir=os.path.join(self._fileTempDir, 'etc', 'opsi', 'backends')
-        )
+@pytest.fixture
+def dispatcher(dispatcherBackend, tempDir):
+    "a BackendDispatcher running on a file backend."
 
-        assert [] == dispatcher.host_getObjects()
+    dispatchConfigPath = _patchDispatchConfigForFileBackend(tempDir)
+
+    yield BackendDispatcher(
+        dispatchConfigFile=dispatchConfigPath,
+        backendConfigDir=os.path.join(tempDir, 'etc', 'opsi', 'backends')
+    )
+
+
+def _patchDispatchConfigForFileBackend(targetDirectory):
+    configDir = os.path.join(targetDirectory, 'etc', 'opsi', 'backendManager')
+    dispatchConfigPath = os.path.join(configDir, 'dispatch.conf')
+
+    with open(dispatchConfigPath, 'w') as dpconf:
+        dpconf.write("""
+.* : file
+""")
+
+    return dispatchConfigPath

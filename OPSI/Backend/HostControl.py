@@ -50,7 +50,7 @@ from OPSI.Util import fromJson, toJson
 from OPSI.Util.Thread import KillableThread
 from OPSI.Util.HTTP import closingConnection, non_blocking_connect_https
 
-__all__ = ['RpcThread', 'ConnectionThread', 'HostControlBackend']
+__all__ = ('RpcThread', 'ConnectionThread', 'HostControlBackend')
 
 logger = Logger()
 

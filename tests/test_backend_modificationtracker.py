@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2015-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2015-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -64,16 +64,7 @@ def backendAndTracker(request):
 def testTrackingOfInsertObject(backendAndTracker):
     backend, tracker = backendAndTracker
 
-    host = OpsiClient(
-        id='client1.test.invalid',
-        description='Test client 1',
-        notes='Notes ...',
-        hardwareAddress='00:01:02:03:04:05',
-        ipAddress='192.168.1.100',
-        lastSeen='2009-01-01 00:00:00',
-        opsiHostKey='45656789789012789012345612340123',
-        inventoryNumber="$$4"
-    )
+    host = OpsiClient(id='client1.test.invalid')
     backend.host_insertObject(host)
 
     modifications = tracker.getModifications()
@@ -87,16 +78,7 @@ def testTrackingOfInsertObject(backendAndTracker):
 def testTrackingOfUpdatingObject(backendAndTracker):
     backend, tracker = backendAndTracker
 
-    host = OpsiClient(
-        id='client1.test.invalid',
-        description='Test client 1',
-        notes='Notes ...',
-        hardwareAddress='00:01:02:03:04:05',
-        ipAddress='192.168.1.100',
-        lastSeen='2009-01-01 00:00:00',
-        opsiHostKey='45656789789012789012345612340123',
-        inventoryNumber="$$4"
-    )
+    host = OpsiClient(id='client1.test.invalid')
 
     backend.host_insertObject(host)
     tracker.clearModifications()
@@ -113,16 +95,7 @@ def testTrackingOfUpdatingObject(backendAndTracker):
 def testTrackingOfDeletingObject(backendAndTracker):
     backend, tracker = backendAndTracker
 
-    host = OpsiClient(
-        id='client1.test.invalid',
-        description='Test client 1',
-        notes='Notes ...',
-        hardwareAddress='00:01:02:03:04:05',
-        ipAddress='192.168.1.100',
-        lastSeen='2009-01-01 00:00:00',
-        opsiHostKey='45656789789012789012345612340123',
-        inventoryNumber="$$4"
-    )
+    host = OpsiClient(id='client1.test.invalid')
 
     backend.host_insertObject(host)
     tracker.clearModifications()

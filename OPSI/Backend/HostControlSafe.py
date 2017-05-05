@@ -38,7 +38,7 @@ from OPSI.Backend.Backend import ExtendedBackend
 from OPSI.Backend.HostControl import RpcThread, ConnectionThread
 from OPSI.Backend.HostControl import _configureHostcontrolBackend
 
-__all__ = ['HostControlSafeBackend']
+__all__ = ('HostControlSafeBackend', )
 
 logger = Logger()
 

@@ -36,7 +36,6 @@ import fcntl
 import locale
 import os
 import platform
-import posix
 import re
 import socket
 import sys
@@ -56,7 +55,7 @@ from OPSI.Types import OpsiVersionError
 from OPSI.Object import *
 from OPSI.Util import objectToBeautifiedText, removeUnit
 
-__all__ = [
+__all__ = (
 	'Distribution', 'Harddisk', 'NetworkPerformanceCounter', 'SysInfo',
 	'SystemSpecificHook', 'addSystemHook', 'auditHardware', 'daemonize',
 	'execute', 'getActiveConsoleSessionId', 'getActiveSessionId',
@@ -71,7 +70,7 @@ __all__ = [
 	'isUCS', 'isUbuntu', 'isXenialSfdiskVersion', 'locateDHCPDConfig',
 	'locateDHCPDInit', 'mount', 'reboot', 'removeSystemHook',
 	'runCommandInSession', 'setLocalSystemTime', 'shutdown', 'umount', 'which'
-]
+)
 
 logger = Logger()
 
@@ -331,7 +330,7 @@ class SystemSpecificHook(object):
 
 def addSystemHook(hook):
 	global hooks
-	if not hook in hooks:
+	if hook not in hooks:
 		hooks.append(hook)
 
 
@@ -996,7 +995,7 @@ def mount(dev, mountpoint, **options):
 	fs = u''
 
 	credentialsFiles = []
-	if dev.lower().startswith('smb://') or dev.lower().startswith('cifs://'):
+	if dev.lower().startswith(('smb://', 'cifs://')):
 		match = re.search('^(smb|cifs)://([^/]+\/.+)$', dev, re.IGNORECASE)
 		if match:
 			fs = u'-t cifs'
@@ -1032,11 +1031,7 @@ def mount(dev, mountpoint, **options):
 		else:
 			raise Exception(u"Bad smb/cifs uri '%s'" % dev)
 
-	elif (dev.lower().startswith('webdav://')
-		or dev.lower().startswith('webdavs://')
-		or dev.lower().startswith('http://')
-		or dev.lower().startswith('https://')):
-
+	elif dev.lower().startswith(('webdav://', 'webdavs://', 'http://', 'https://')):
 		# We need enough free space in /var/cache/davfs2
 		# Maximum transfer file size <= free space in /var/cache/davfs2
 		match = re.search('^(http|webdav)(s*)(://[^/]+\/.+)$', dev, re.IGNORECASE)
@@ -1209,17 +1204,18 @@ def getBlockDeviceContollerInfo(device, lshwoutput=None):
 
 	# emulated storage controller dirty-hack, for outputs like:
 	# ...
-	# /0/100/1f.2               storage        82801JD/DO (ICH10 Family) SATA AHCI Controller [8086:3A02] (Posix.py|741)
-	# /0/100/1f.3               bus            82801JD/DO (ICH10 Family) SMBus Controller [8086:3A60] (Posix.py|741)
-	# /0/1          scsi0       storage         (Posix.py|741)
-	# /0/1/0.0.0    /dev/sda    disk           500GB ST3500418AS (Posix.py|741)
-	# /0/1/0.0.0/1  /dev/sda1   volume         465GiB Windows FAT volume (Posix.py|741)
+	# /0/100/1f.2               storage        82801JD/DO (ICH10 Family) SATA AHCI Controller [8086:3A02]
+	# /0/100/1f.3               bus            82801JD/DO (ICH10 Family) SMBus Controller [8086:3A60]
+	# /0/1          scsi0       storage
+	# /0/1/0.0.0    /dev/sda    disk           500GB ST3500418AS
+	# /0/1/0.0.0/1  /dev/sda1   volume         465GiB Windows FAT volume
 	# ...
 	# In this case return the first AHCI controller, that will be found
 	storageControllers = {}
 
+	storagePattern = re.compile('^(/\S+)\s+storage\s+(\S+.*[Aa][Hh][Cc][Ii].*)\s\[([a-fA-F0-9]{1,4})\:([a-fA-F0-9]{1,4})\]$')
 	for line in lines:
-		match = re.search('^(/\S+)\s+storage\s+(\S+.*[Aa][Hh][Cc][Ii].*)\s\[([a-fA-F0-9]{1,4})\:([a-fA-F0-9]{1,4})\]$', line)
+		match = storagePattern.search(line)
 		if match:
 			vendorId = match.group(3)
 			while len(vendorId) < 4:
@@ -1351,10 +1347,12 @@ class Harddisk:
 			)
 
 	def getSignature(self):
-		hd = posix.open(str(self.device), posix.O_RDONLY)
-		posix.lseek(hd, 440, 0)
-		x = posix.read(hd, 4)
-		posix.close(hd)
+		hd = os.open(str(self.device), os.O_RDONLY)
+		try:
+			os.lseek(hd, 440, 0)
+			x = os.read(hd, 4)
+		finally:
+			os.close(hd)
 
 		logger.debug(u"Read signature from device '%s': %s,%s,%s,%s" \
 				% (self.device, ord(x[0]), ord(x[1]), ord(x[2]), ord(x[3])))
@@ -2060,35 +2058,41 @@ class Harddisk:
 			x[2] = int((sector & 0x00FF0000) >> 16)
 			x[3] = int((sector & 0xFFFFFFFF) >> 24)
 
-			hd = posix.open(self.getPartition(partition)['device'], posix.O_RDONLY)
-			posix.lseek(hd, 0x1c, 0)
-			start = posix.read(hd, 4)
-			logger.debug(
-				u"NTFS Boot Record currently using {0} {1} {2} {3} "
-				u"as partition start sector".format(
-					hex(ord(start[0])), hex(ord(start[1])),
-					hex(ord(start[2])), hex(ord(start[3])))
-			)
-			posix.close(hd)
+			hd = os.open(self.getPartition(partition)['device'], os.O_RDONLY)
+			try:
+				os.lseek(hd, 0x1c, 0)
+				start = os.read(hd, 4)
+				logger.debug(
+					u"NTFS Boot Record currently using {0} {1} {2} {3} "
+					u"as partition start sector".format(
+						hex(ord(start[0])), hex(ord(start[1])),
+						hex(ord(start[2])), hex(ord(start[3])))
+				)
+			finally:
+				os.close(hd)
 
 			logger.debug(u"Manipulating NTFS Boot Record!")
-			hd = posix.open(self.getPartition(partition)['device'], posix.O_WRONLY)
+			hd = os.open(self.getPartition(partition)['device'], os.O_WRONLY)
 			logger.info(u"Writing new value %s %s %s %s at 0x1c" % (hex(x[0]), hex(x[1]), hex(x[2]), hex(x[3])))
-			posix.lseek(hd, 0x1c, 0)
-			for i in x:
-				posix.write(hd, chr(i))
-			posix.close(hd)
+			try:
+				os.lseek(hd, 0x1c, 0)
+				for i in x:
+					os.write(hd, chr(i))
+			finally:
+				os.close(hd)
 
-			hd = posix.open(self.getPartition(partition)['device'], posix.O_RDONLY)
-			posix.lseek(hd, 0x1c, 0)
-			start = posix.read(hd, 4)
-			logger.debug(
-				u"NTFS Boot Record now using {0} {1} {2} {3} as partition "
-				u"start sector".format(
-					hex(ord(start[0])), hex(ord(start[1])),
-					hex(ord(start[2])), hex(ord(start[3])))
-			)
-			posix.close(hd)
+			hd = os.open(self.getPartition(partition)['device'], os.O_RDONLY)
+			try:
+				os.lseek(hd, 0x1c, 0)
+				start = os.read(hd, 4)
+				logger.debug(
+					u"NTFS Boot Record now using {0} {1} {2} {3} as partition "
+					u"start sector".format(
+						hex(ord(start[0])), hex(ord(start[1])),
+						hex(ord(start[2])), hex(ord(start[3])))
+				)
+			finally:
+				os.close(hd)
 		except Exception as e:
 			for hook in hooks:
 				hook.error_Harddisk_setNTFSPartitionStartSector(self, partition, sector, e)
@@ -2142,13 +2146,13 @@ class Harddisk:
 			start = start.replace(u' ', u'')
 			end = end.replace(u' ', u'')
 
-			if start.endswith(u'm') or start.endswith(u'mb'):
+			if start.endswith((u'm', u'mb')):
 				match = re.search('^(\d+)\D', start)
 				if self.blockAlignment:
 					start = int(round((int(match.group(1)) * 1024 * 1024) / self.bytesPerSector))
 				else:
 					start = int(round((int(match.group(1)) * 1024 * 1024) / self.bytesPerCylinder))
-			elif start.endswith(u'g') or start.endswith(u'gb'):
+			elif start.endswith((u'g', u'gb')):
 				match = re.search('^(\d+)\D', start)
 				if self.blockAlignment:
 					start = int(round((int(match.group(1)) * 1024 * 1024 * 1024) / self.bytesPerSector))
@@ -2176,13 +2180,13 @@ class Harddisk:
 				if self.blockAlignment:
 					start = int(round(((float(start) * self.bytesPerCylinder) / self.bytesPerSector)))
 
-			if end.endswith(u'm') or end.endswith(u'mb'):
+			if end.endswith((u'm', u'mb')):
 				match = re.search('^(\d+)\D', end)
 				if self.blockAlignment:
 					end = int(round((int(match.group(1)) * 1024 * 1024) / self.bytesPerSector))
 				else:
 					end = int(round((int(match.group(1)) * 1024 * 1024) / self.bytesPerCylinder))
-			elif end.endswith(u'g') or end.endswith(u'gb'):
+			elif end.endswith((u'g', u'gb')):
 				match = re.search('^(\d+)\D', end)
 				if self.blockAlignment:
 					end = int(round((int(match.group(1)) * 1024 * 1024 * 1024) / self.bytesPerSector))
@@ -2540,7 +2544,7 @@ class Harddisk:
 					timeout = 0
 
 					b = inp.splitlines()
-					if inp.endswith(u'\n') or inp.endswith(u'\r'):
+					if inp.endswith((u'\n', u'\r')):
 						b.append(u'')
 
 					buf = [buf[-1] + b[0]] + b[1:]
@@ -2560,7 +2564,7 @@ class Harddisk:
 							if match:
 								rate = match.group(2)
 								unit = match.group(3)
-								if unit.startswith("G") or unit.startswith("g"):
+								if unit.startswith(("G", "g")):
 									rate = float(rate) * 1024
 									unit = 'MB/min'
 								saveImageResult = {
@@ -2714,7 +2718,7 @@ class Harddisk:
 						timeout = 0
 
 						b = inp.splitlines()
-						if inp.endswith(u'\n') or inp.endswith(u'\r'):
+						if inp.endswith((u'\n', u'\r')):
 							b.append(u'')
 
 						buf = [buf[-1] + b[0]] + b[1:]
@@ -2792,7 +2796,7 @@ class Harddisk:
 						timeout = 0
 
 						b = inp.splitlines()
-						if inp.endswith(u'\n') or inp.endswith(u'\r'):
+						if inp.endswith((u'\n', u'\r')):
 							b.append(u'')
 
 						buf = [buf[-1] + b[0]] + b[1:]

@@ -217,7 +217,7 @@ class ProductPackageFile(object):
 
 			metadataArchives = []
 			for f in os.listdir(metaDataTmpDir):
-				if not f.endswith(u'.cpio.gz') and not f.endswith(u'.tar.gz') and not f.endswith(u'.cpio') and not f.endswith(u'.tar'):
+				if not f.endswith((u'.cpio.gz', u'.tar.gz', u'.cpio', u'.tar')):
 					logger.warning(u"Unknown content in archive: %s" % f)
 					continue
 				logger.debug(u"Metadata archive found: %s" % f)
@@ -270,7 +270,7 @@ class ProductPackageFile(object):
 				if f.startswith('OPSI'):
 					continue
 
-				if not f.endswith(u'.cpio.gz') and not f.endswith(u'.tar.gz') and not f.endswith(u'.cpio') and not f.endswith(u'.tar'):
+				if not f.endswith((u'.cpio.gz', u'.tar.gz', u'.cpio', u'.tar')):
 					logger.warning(u"Unknown content in archive: %s" % f)
 					continue
 
