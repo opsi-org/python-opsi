@@ -314,7 +314,7 @@ def objectToBash(obj, bashVars=None, level=0):
 	if level > 0:
 		varName = 'RESULT%d' % level
 
-	if not bashVars.get(varName):
+	if varName not in bashVars:
 		bashVars[varName] = u''
 
 	if hasattr(obj, 'serialize'):
