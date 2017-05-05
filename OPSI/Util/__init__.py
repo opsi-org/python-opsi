@@ -320,7 +320,6 @@ def objectToBash(obj, bashVars=None, level=0):
 		bashVars[varName] += u'(\n'
 		for i in range( len(obj) ):
 			if isinstance(obj[i], (dict, list)):
-				hashFound = True
 				level += 1
 				objectToBash(obj[i], bashVars, level)
 				bashVars[varName] += u'RESULT%d=${RESULT%d[*]}' % (level, level)
@@ -334,16 +333,14 @@ def objectToBash(obj, bashVars=None, level=0):
 			bashVars[varName] += '%s=' % key
 			if isinstance(value, (dict, list)):
 				level += 1
-				v = objectToBash(value, bashVars, level)
+				objectToBash(value, bashVars, level)
 				bashVars[varName] += u'${RESULT%d[*]}' % level
 			else:
 				objectToBash(value, bashVars, level)
 			bashVars[varName] += u'\n'
 		bashVars[varName] = bashVars[varName][:-1] + u'\n)'
-
 	elif obj is None:
 		bashVars[varName] += u'""'
-
 	else:
 		bashVars[varName] += u'"%s"' % forceUnicode(obj)
 
