@@ -750,7 +750,7 @@ class NotificationClientFactory(ClientFactory):
 			time.sleep(0.1)
 			timeout += 0.1
 		if (timeout >= self._timeout):
-			raise Exception(u"execute timed out after %d seconds" % self._timeout)
+			raise RuntimeError(u"execute timed out after %d seconds" % self._timeout)
 
 		rpc = {'id': None, "method": method, "params": params }
 		self.sendLine(json.dumps(rpc))

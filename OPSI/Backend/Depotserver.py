@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
@@ -31,8 +30,9 @@ from OPSI.Logger import Logger, LOG_DEBUG
 from OPSI.Types import (forceBool, forceDict, forceFilename, forceHostId,
 	forceUnicode, forceUnicodeLower)
 from OPSI.Types import forceProductId as forceProductIdFunc
-from OPSI.Types import (BackendIOError, BackendError, BackendTemporaryError,
-	BackendMissingDataError, BackendBadValueError)
+from OPSI.Types import (BackendBadValueError, BackendConfigurationError,
+	BackendError, BackendIOError, BackendMissingDataError,
+	BackendTemporaryError, BackendUnaccomplishableError)
 from OPSI.Object import ProductOnDepot, ProductPropertyState
 from OPSI.Backend.Backend import LOG_DIR, OPSI_GLOBAL_CONF, ExtendedBackend
 from OPSI.System import getDiskSpaceUsage
@@ -125,7 +125,7 @@ class DepotserverBackend(ExtendedBackend):
 
 	def depot_createMd5SumFile(self, filename, md5sumFilename):
 		if not os.path.exists(filename):
-			raise Exception(u"File not found: %s" % filename)
+			raise BackendIOError(u"File not found: %s" % filename)
 		logger.info(u"Creating md5sum file '%s'" % md5sumFilename)
 		md5 = md5sum(filename)
 		with open(md5sumFilename, 'w') as md5file:
@@ -133,7 +133,7 @@ class DepotserverBackend(ExtendedBackend):
 
 	def depot_createZsyncFile(self, filename, zsyncFilename):
 		if not os.path.exists(filename):
-			raise Exception(u"File not found: %s" % filename)
+			raise BackendIOError(u"File not found: %s" % filename)
 		logger.info(u"Creating zsync file '%s'" % zsyncFilename)
 		zsyncFile = ZsyncFile(zsyncFilename)
 		zsyncFile.generate(filename)
@@ -142,7 +142,7 @@ class DepotserverBackend(ExtendedBackend):
 class DepotserverPackageManager(object):
 	def __init__(self, depotBackend):
 		if not isinstance(depotBackend, DepotserverBackend):
-			raise Exception(u"DepotserverPackageManager needs instance of DepotserverBackend as backend, got %s" % depotBackend.__class__.__name__)
+			raise BackendC(u"DepotserverPackageManager needs instance of DepotserverBackend as backend, got %s" % depotBackend.__class__.__name__)
 		self._depotBackend = depotBackend
 		logger.setLogFile(self._depotBackend._packageLog, object=self)
 
@@ -335,9 +335,9 @@ class DepotserverPackageManager(object):
 					if productPropertyState.propertyId in propertyDefaultValues:
 						try:
 							productPropertyState.setValues(propertyDefaultValues[productPropertyState.propertyId])
-						except Exception as e:
+						except Exception as installationError:
 							logger.error(u"Failed to set default values to %s for productPropertyState %s: %s" \
-									% (propertyDefaultValues[productPropertyState.propertyId], productPropertyState, e) )
+									% (propertyDefaultValues[productPropertyState.propertyId], productPropertyState, installationError) )
 				self._depotBackend._context.productPropertyState_createObjects(productPropertyStates)
 
 				logger.notice(u"Running postinst script")
@@ -437,9 +437,9 @@ class DepotserverPackageManager(object):
 					logger.error("Cleanup failed: {0!r}", cleanupError)
 
 				raise installingPackageError
-		except Exception as e:
-			logger.logException(e)
-			raise BackendError(u"Failed to install package '%s' on depot '%s': %s" % (filename, depotId, e))
+		except Exception as installationError:
+			logger.logException(installationError)
+			raise BackendError(u"Failed to install package '%s' on depot '%s': %s" % (filename, depotId, installationError))
 
 	def uninstallPackage(self, productId, force=False, deleteFiles=True):
 		depotId = self._depotBackend._depotId
@@ -487,7 +487,7 @@ class DepotserverPackageManager(object):
 		for dependency in productPackageFile.packageControlFile.getPackageDependencies():
 			productOnDepots = self._depotBackend._context.productOnDepot_getObjects(depotId=self._depotBackend._depotId, productId=dependency['package'])
 			if not productOnDepots:
-				raise Exception(u"Dependent package '%s' not installed" % dependency['package'])
+				raise BackendUnaccomplishableError(u"Dependent package '%s' not installed" % dependency['package'])
 
 			if not dependency['version']:
 				logger.info(u"Fulfilled product dependency '%s'" % dependency)
@@ -499,4 +499,4 @@ class DepotserverPackageManager(object):
 			if compareVersions(availableVersion, dependency['condition'], dependency['version']):
 				logger.info(u"Fulfilled package dependency %s (available version: %s)" % (dependency, availableVersion))
 			else:
-				raise Exception(u"Unfulfilled package dependency %s (available version: %s)" % (dependency, availableVersion))
+				raise BackendUnaccomplishableError(u"Unfulfilled package dependency %s (available version: %s)" % (dependency, availableVersion))

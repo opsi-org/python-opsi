@@ -199,7 +199,7 @@ def librsyncSignature(filename, base64Encoded=True):
 
 				return sig
 	except Exception as e:
-		raise Exception(u"Failed to get librsync signature: %s" % forceUnicode(e))
+		raise RuntimeError(u"Failed to get librsync signature: %s" % forceUnicode(e))
 
 
 def librsyncPatchFile(oldfile, deltafile, newfile):
@@ -222,7 +222,7 @@ def librsyncPatchFile(oldfile, deltafile, newfile):
 							data = pf.read(bufsize)
 							nf.write(data)
 	except Exception as e:
-		raise Exception(u"Failed to patch file: %s" % forceUnicode(e))
+		raise RuntimeError(u"Failed to patch file: %s" % forceUnicode(e))
 
 
 def librsyncDeltaFile(filename, signature, deltafile):
@@ -236,7 +236,7 @@ def librsyncDeltaFile(filename, signature, deltafile):
 						data = ldf.read(bufsize)
 						df.write(data)
 	except Exception as e:
-		raise Exception(u"Failed to write delta file: %s" % forceUnicode(e))
+		raise RuntimeError(u"Failed to write delta file: %s" % forceUnicode(e))
 
 
 def md5sum(filename):
@@ -256,8 +256,7 @@ def randomString(length, characters=_ACCEPTED_CHARACTERS):
 
 	:param characters: The characters to choose from. This defaults to 0-9a-Z.
 	"""
-	string = [random.choice(characters) for _ in range(length)]
-	return forceUnicode(u''.join(string))
+	return forceUnicode(u''.join(random.choice(characters) for _ in range(length)))
 
 
 def generateOpsiHostKey(forcePython=False):
@@ -418,7 +417,7 @@ def compareVersions(v1, condition, v2):
 
 		match = re.search('^\s*([\w\.]+)-*([\w\.]*)\s*$', versionString)
 		if not match:
-			raise Exception(u"Bad version string '%s'" % versionString)
+			raise ValueError(u"Bad version string '%s'" % versionString)
 
 		productVersion = match.group(1)
 		if match.group(2):
@@ -433,7 +432,7 @@ def compareVersions(v1, condition, v2):
 	if not condition:
 		condition = u'=='
 	if condition not in (u'==', u'=', u'<', u'<=', u'>', u'>='):
-		raise Exception(u"Bad condition '%s'" % condition)
+		raise ValueError(u"Bad condition '%s'" % condition)
 	if condition == u'=':
 		condition = u'=='
 

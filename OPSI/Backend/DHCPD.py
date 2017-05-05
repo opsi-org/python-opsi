@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2010-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2010-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -37,7 +36,9 @@ from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Logger import Logger
 from OPSI.Object import OpsiClient, Host
 from OPSI.Types import forceBool, forceDict, forceHostId, forceObjectClass, forceUnicode
-from OPSI.Types import BackendIOError, BackendBadValueError, BackendMissingDataError
+from OPSI.Types import (BackendIOError, BackendBadValueError,
+	BackendMissingDataError, BackendUnableToConnectError,
+	BackendUnaccomplishableError)
 from OPSI.Util.File import DHCPDConfFile
 from OPSI.Util import getfqdn
 
@@ -115,7 +116,7 @@ class DHCPDBackend(ConfigDataBackend):
 						result = System.execute(self._reloadConfigCommand)
 						for line in result:
 							if 'error' in line:
-								raise Exception(u'\n'.join(result))
+								raise RuntimeError(u'\n'.join(result))
 					except Exception as error:
 						logger.critical(u"Failed to restart dhcpd: {0}".format(error))
 
@@ -145,7 +146,7 @@ class DHCPDBackend(ConfigDataBackend):
 					password=self._opsiHostKey
 				)
 			except Exception as error:
-				raise Exception(u"Failed to connect to depot '%s': %s" % (depotId, error))
+				raise BackendUnableToConnectError(u"Failed to connect to depot '%s': %s" % (depotId, error))
 
 			return self._depotConnections[depotId]
 
@@ -156,7 +157,7 @@ class DHCPDBackend(ConfigDataBackend):
 		except IndexError:
 			configs = self._context.config_getObjects(id=u'clientconfig.depot.id')  # pylint: disable=maybe-no-member
 			if not configs or not configs[0].defaultValues:
-				raise Exception(u"Failed to get depotserver for client '%s', config 'clientconfig.depot.id' not set and no defaults found" % clientId)
+				raise BackendUnaccomplishableError(u"Failed to get depotserver for client '%s', config 'clientconfig.depot.id' not set and no defaults found" % clientId)
 			depotId = configs[0].defaultValues[0]
 
 		return depotId
@@ -304,7 +305,7 @@ class DHCPDBackend(ConfigDataBackend):
 				errors.append(forceUnicode(error))
 
 		if errors:
-			raise Exception(u', '.join(errors))
+			raise RuntimeError(u', '.join(errors))
 
 	def configState_insertObject(self, configState):
 		if configState.configId != 'clientconfig.depot.id':

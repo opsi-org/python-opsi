@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -32,7 +31,7 @@ import struct
 from contextlib import closing
 
 from OPSI.Logger import LOG_DEBUG, Logger
-from OPSI.Types import BackendMissingDataError
+from OPSI.Types import BackendMissingDataError, BackendUnaccomplishableError
 from OPSI.Types import (forceBool, forceHostIdList, forceInt, forceList,
 	forceUnicode, forceUnicodeList)
 from OPSI.Backend.Backend import ExtendedBackend
@@ -101,9 +100,11 @@ class HostControlSafeBackend(ExtendedBackend):
 			try:
 				address = socket.gethostbyname(host.id)
 			except socket.error:
-				raise Exception(u"Failed to resolve ip address for host '%s'" % host.id)
+				raise BackendUnaccomplishableError(u"Failed to resolve ip address for host '%s'" % host.id)
+
 		if not address:
-			raise Exception(u"Failed to get ip address for host '%s'" % host.id)
+			raise BackendUnaccomplishableError(u"Failed to get ip address for host '%s'" % host.id)
+
 		return address
 
 	def _opsiclientdRpc(self, hostIds, method, params=[], timeout=None):

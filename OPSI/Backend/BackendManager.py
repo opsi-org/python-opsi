@@ -465,7 +465,7 @@ class BackendExtender(ExtendedBackend):
 	def __init__(self, backend, **kwargs):
 		if not isinstance(backend, ExtendedBackend) and not isinstance(backend, BackendDispatcher):
 			if not isinstance(backend, BackendAccessControl) or (not isinstance(backend._backend, ExtendedBackend) and not isinstance(backend._backend, BackendDispatcher)):
-				raise Exception("BackendExtender needs instance of ExtendedBackend or BackendDispatcher as backend, got %s" % backend.__class__.__name__)
+				raise TypeError("BackendExtender needs instance of ExtendedBackend or BackendDispatcher as backend, got %s" % backend.__class__.__name__)
 
 		ExtendedBackend.__init__(self, backend, overwrite=kwargs.get('overwrite', True))
 
@@ -508,7 +508,7 @@ class BackendExtender(ExtendedBackend):
 						execfile(confFile)
 					except Exception as execError:
 						logger.logException(execError)
-						raise Exception(u"Error reading file {0!r}: {1}".format(confFile, execError))
+						raise RuntimeError(u"Error reading file {0!r}: {1}".format(confFile, execError))
 
 					for key, val in locals().items():
 						if isinstance(val, types.FunctionType):   # TODO: find a better way
@@ -584,16 +584,16 @@ class BackendAccessControl(object):
 					host = self._context.host_getObjects(id=self._username)
 				except AttributeError as aerr:
 					logger.debug(u"{0!r}", aerr)
-					raise Exception(u"Passed backend has no method 'host_getObjects', cannot authenticate host '%s'" % self._username)
+					raise BackendUnaccomplishableError(u"Passed backend has no method 'host_getObjects', cannot authenticate host '%s'" % self._username)
 
 				try:
 					self._host = host[0]
 				except IndexError as ierr:
 					logger.debug(u"{0!r}", ierr)
-					raise Exception(u"Host '%s' not found in backend %s" % (self._username, self._context))
+					raise BackendMissingDataError(u"Host '%s' not found in backend %s" % (self._username, self._context))
 
 				if not self._host.opsiHostKey:
-					raise Exception(u"OpsiHostKey not found for host '%s'" % self._username)
+					raise BackendMissingDataError(u"OpsiHostKey not found for host '%s'" % self._username)
 
 				logger.confidential(u"Client {0!r}, key sent {1!r}, key stored {2!r}", self._username, self._password, self._host.opsiHostKey)
 
@@ -637,14 +637,14 @@ class BackendAccessControl(object):
 	def __loadACLFile(self):
 		try:
 			if not self._aclFile:
-				raise Exception(u"No acl file defined")
+				raise BackendConfigurationError(u"No acl file defined")
 			if not os.path.exists(self._aclFile):
-				raise Exception(u"Acl file '%s' not found" % self._aclFile)
+				raise BackendIOError(u"Acl file '%s' not found" % self._aclFile)
 			self._acl = BackendACLFile(self._aclFile).parse()
 			logger.debug(u"Read acl from file {0!r}: {1!r}", self._aclFile, self._acl)
-		except Exception as e:
-			logger.logException(e)
-			raise BackendConfigurationError(u"Failed to load acl file '%s': %s" % (self._aclFile, e))
+		except Exception as error:
+			logger.logException(error)
+			raise BackendConfigurationError(u"Failed to load acl file '%s': %s" % (self._aclFile, error))
 
 	def _createInstanceMethods(self):
 		protectedMethods = set()

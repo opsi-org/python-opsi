@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2010-2016 uib GmbH
+# Copyright (C) 2010-2017 uib GmbH
 
 # http://www.uib.de/
 
@@ -39,7 +39,7 @@ import traceback
 
 from OPSI.Util import deserialize
 from OPSI.Logger import Logger, LOG_INFO
-from OPSI.Types import forceUnicode, OpsiRpcError
+from OPSI.Types import forceUnicode, OpsiBadRpcError, OpsiRpcError
 
 
 logger = Logger()
@@ -62,9 +62,9 @@ class JsonRpc(object):
 		self.traceback = None
 
 		if not self.tid:
-			raise Exception(u"No transaction id ((t)id) found in rpc")
+			raise OpsiBadRpcError(u"No transaction id ((t)id) found in rpc")
 		if not self.method:
-			raise Exception(u"No method found in rpc")
+			raise OpsiBadRpcError(u"No method found in rpc")
 
 	def isStarted(self):
 		return bool(self.started)
@@ -108,7 +108,7 @@ class JsonRpc(object):
 				if len(params) >= parameterCount:
 					kwargs = params.pop(-1)
 					if not isinstance(kwargs, dict):
-						raise Exception(u"kwargs param is not a dict: %s" % params[-1])
+						raise TypeError(u"kwargs param is not a dict: %s" % params[-1])
 
 					for (key, value) in kwargs.items():
 						keywords[str(key)] = deserialize(value)

@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 # This module is part of the desktop management solution opsi
@@ -55,7 +54,7 @@ def searchWindowsDrivers(driverDir, auditHardwares, messageSubject=None, srcRepo
 	listdir = os.listdir
 	if srcRepository:
 		if not isinstance(srcRepository, Repository):
-			raise Exception(u"Not a repository: %s" % srcRepository)
+			raise TypeError(u"Not a repository: %s" % srcRepository)
 		exists = srcRepository.exists
 		listdir = srcRepository.listdir
 
@@ -154,7 +153,7 @@ def integrateWindowsDrivers(driverSourceDirectories, driverDestinationDirectory,
 	copy = System.copy
 	if srcRepository:
 		if not isinstance(srcRepository, Repository):
-			raise Exception(u"Not a repository: %s" % srcRepository)
+			raise TypeError(u"Not a repository: %s" % srcRepository)
 		exists = srcRepository.exists
 		copy = srcRepository.copy
 
@@ -429,7 +428,7 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 	listdir = os.listdir
 	if srcRepository:
 		if not isinstance(srcRepository, Repository):
-			raise Exception(u"Not a repository: %s" % srcRepository)
+			raise TypeError(u"Not a repository: %s" % srcRepository)
 		exists = srcRepository.exists
 		listdir = srcRepository.listdir
 
@@ -560,7 +559,7 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 def getOemPnpDriversPath(driverDirectory, target, separator=u';', prePath=u'', postPath=u''):
 	logger.info(u"Generating oemPnpDriversPath")
 	if not driverDirectory.startswith(target):
-		raise Exception(u"Driver directory '%s' not on target '%s'" % (driverDirectory, target))
+		raise TypeError(u"Driver directory '%s' not on target '%s'" % (driverDirectory, target))
 
 	relPath = driverDirectory[len(target):]
 	while relPath.startswith(os.sep):
