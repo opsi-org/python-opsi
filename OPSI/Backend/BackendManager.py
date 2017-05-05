@@ -35,6 +35,7 @@ import re
 import socket
 import sys
 import types
+from contextlib import closing
 
 from OPSI.Backend.Backend import (Backend, ConfigDataBackend,
 	ExtendedBackend, ExtendedConfigDataBackend,
@@ -72,17 +73,15 @@ except ImportError:
 	DISTRIBUTOR = 'unknown'
 
 try:
-	f = os.popen('lsb_release -d 2>&1 /dev/null')
-	DISTRIBUTION = f.read().split(':')[1].strip()
-	f.close()
+	with closing(os.popen('lsb_release -d 2>&1 /dev/null')) as f:
+		DISTRIBUTION = f.read().split(':')[1].strip()
 except Exception as error:
 	logger.debug("Reading Distribution failed: {0}".format(error))
 	DISTRIBUTION = 'unknown'
 
 try:
-	f = os.popen('lsb_release -r 2>&1 /dev/null')
-	DISTRELEASE = f.read().split(':')[1].strip()
-	f.close()
+	with closing(os.popen('lsb_release -r 2>&1 /dev/null')) as f:
+		DISTRELEASE = f.read().split(':')[1].strip()
 except Exception as error:
 	logger.debug("Reading release failed: {0}".format(error))
 	DISTRELEASE = 'unknown'
