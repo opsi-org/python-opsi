@@ -36,19 +36,17 @@ import socket
 import sys
 import types
 
-from OPSI.Backend.Backend import (Backend, BackendModificationListener,
-	ConfigDataBackend, ExtendedBackend, ExtendedConfigDataBackend,
-	ModificationTrackingBackend,
+from OPSI.Backend.Backend import (Backend, ConfigDataBackend,
+	ExtendedBackend, ExtendedConfigDataBackend,
 	getArgAndCallString)
 from OPSI.Backend.Depotserver import DepotserverBackend
 from OPSI.Backend.HostControl import HostControlBackend
 from OPSI.Backend.HostControlSafe import HostControlSafeBackend
-from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Logger import Logger, LOG_INFO
 from OPSI.Object import BaseObject, mandatoryConstructorArgs
 from OPSI.Object import *  # this is needed for dynamic extension loading
 from OPSI.Types import *  # this is needed for dynamic extension loading
-from OPSI.Util import objectToBeautifiedText, getfqdn
+from OPSI.Util import objectToBeautifiedText, getfqdn  # used in extensions
 from OPSI.Util.File.Opsi import BackendACLFile, BackendDispatchConfigFile, OpsiConfFile
 
 if os.name == 'posix':
