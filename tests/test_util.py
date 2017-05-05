@@ -139,17 +139,7 @@ def testObjectToHtmlOutputIsAsExpected():
 	assert expected == objectToHtml(product)
 
 
-@pytest.mark.parametrize("count", [1024, 10240])
-def testObjectToBeautifiedTextWorkingWithManyObjects(count):
-	obj = [
-		ProductFactory.generateLocalbootProduct(i)
-		for i in range(count)
-	]
-
-	objectToBeautifiedText(obj)
-
-
-@pytest.mark.parametrize("objectCount", [128, 1024, 10240])
+@pytest.mark.parametrize("objectCount", [1, 10240])
 def testObjectToBeautifiedTextWorksWithGenerators(objectCount):
 	generator = (
 		ProductFactory.generateLocalbootProduct(i)
@@ -162,12 +152,13 @@ def testObjectToBeautifiedTextWorksWithGenerators(objectCount):
 	assert text.strip().endswith(']')
 
 
-def testObjectToBeautifiedTextGeneratesValidJSON():
-	objectsIn = [ProductFactory.generateLocalbootProduct(i) for i in range(2)]
+@pytest.mark.parametrize("objectCount", [1, 10240])
+def testObjectToBeautifiedTextGeneratesValidJSON(objectCount):
+	objectsIn = [ProductFactory.generateLocalbootProduct(i) for i in range(objectCount)]
 	text = objectToBeautifiedText(objectsIn)
 
 	objects = fromJson(text)
-	assert 2 == len(objects)
+	assert objectCount == len(objects)
 	for obj in objects:
 		assert isinstance(obj, LocalbootProduct)
 
@@ -900,7 +891,7 @@ def testBlowfishEncryptionFailsWithNoKey(randomText, blowfishKey):
 		blowfishDecrypt(None, encodedText)
 
 
-@pytest.mark.parametrize("objectCount", [128, 1024, 10240])
+@pytest.mark.parametrize("objectCount", [1, 10240])
 def testObjectToBashWorksWithGenerators(objectCount):
 	generator = (
 		ProductFactory.generateLocalbootProduct(i)
