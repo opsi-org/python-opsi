@@ -318,13 +318,13 @@ def objectToBash(obj, bashVars=None, level=0):
 
 	if isinstance(obj, (list, set)):
 		bashVars[varName] += u'(\n'
-		for i in range( len(obj) ):
-			if isinstance(obj[i], (dict, list)):
+		for element in obj:
+			if isinstance(element, (dict, list)):
 				level += 1
-				objectToBash(obj[i], bashVars, level)
+				objectToBash(element, bashVars, level)
 				bashVars[varName] += u'RESULT%d=${RESULT%d[*]}' % (level, level)
 			else:
-				objectToBash(obj[i], bashVars, level)
+				objectToBash(element, bashVars, level)
 			bashVars[varName] += u'\n'
 		bashVars[varName] = bashVars[varName][:-1] + u'\n)'
 	elif isinstance(obj, dict):
