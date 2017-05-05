@@ -28,7 +28,7 @@ import os.path
 
 from OPSI.Backend.Backend import temporaryBackendOptions
 from OPSI.Backend.Backend import Backend, ExtendedBackend
-from OPSI.Types import BackendError, BackendMissingDataError
+from OPSI.Types import BackendMissingDataError
 from OPSI.Util import randomString
 from .test_hosts import getConfigServer
 
@@ -107,11 +107,6 @@ def testBackend_info(configDataBackend):
     assert 'opsiVersion' in info
     assert 'modules' in info
     assert 'realmodules' in info
-
-
-def testBackend_getSharedAlgorithmThrowsExceptionIfAlgoUnknown(configDataBackend):
-    with pytest.raises(BackendError):
-        configDataBackend.backend_getSharedAlgorithm("foo")
 
 
 def testBackendCanBeUsedAsContextManager():

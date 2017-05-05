@@ -457,13 +457,6 @@ This defaults to ``self``.
 			"realmodules": helpermodules
 		}
 
-	def backend_getSharedAlgorithm(self, function):
-		raise BackendError(
-			u"This function has been removed. "
-			u"If you rely on this feature please get in touch with us "
-			u"on the forums - https://forum.opsi.org/"
-		)
-
 	def backend_exit(self):
 		"""
 		Exit the backend.
