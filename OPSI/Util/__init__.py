@@ -309,9 +309,8 @@ def objectToBash(obj, bashVars=None, level=0):
 
 	if level == 0:
 		obj = serialize(obj)
-
-	varName = 'RESULT'
-	if level > 0:
+		varName = 'RESULT'
+	else:
 		varName = 'RESULT%d' % level
 
 	if varName not in bashVars:
