@@ -329,7 +329,7 @@ def objectToBash(obj, bashVars=None, level=0):
 			else:
 				objectToBash(element, bashVars, level)
 			bashVars[varName] += u'\n'
-		bashVars[varName] = bashVars[varName][:-1] + u'\n)'
+		bashVars[varName] += u')'
 	elif isinstance(obj, dict):
 		bashVars[varName] += u'(\n'
 		for (key, value) in obj.items():
@@ -341,7 +341,7 @@ def objectToBash(obj, bashVars=None, level=0):
 			else:
 				objectToBash(value, bashVars, level)
 			bashVars[varName] += u'\n'
-		bashVars[varName] = bashVars[varName][:-1] + u'\n)'
+		bashVars[varName] += u')'
 	elif obj is None:
 		bashVars[varName] += u'""'
 	else:
