@@ -298,7 +298,11 @@ def objectToBeautifiedText(obj):
 
 def objectToBash(obj, bashVars=None, level=0):
 	"""
+	Converts `obj` into bash-compatible format.
+
 	:type bashVars: dict
+	:type level: int
+	:returntype: dict
 	"""
 	if bashVars is None:
 		bashVars = {}
