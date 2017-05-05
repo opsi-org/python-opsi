@@ -314,38 +314,46 @@ def objectToBash(obj, bashVars=None, level=0):
 		varName = 'RESULT%d' % level
 
 	if varName not in bashVars:
-		bashVars[varName] = u''
+		firstAccess = True
+		bashVars[varName] = []
+	else:
+		firstAccess = False
 
 	if hasattr(obj, 'serialize'):
 		obj = obj.serialize()
 
+	append = bashVars[varName].append
+
 	if isinstance(obj, (list, set)):
-		bashVars[varName] += u'(\n'
+		append(u'(\n')
 		for element in obj:
 			if isinstance(element, (dict, list)):
 				level += 1
 				objectToBash(element, bashVars, level)
-				bashVars[varName] += u'RESULT%d=${RESULT%d[*]}' % (level, level)
+				append(u'RESULT%d=${RESULT%d[*]}' % (level, level))
 			else:
 				objectToBash(element, bashVars, level)
-			bashVars[varName] += u'\n'
-		bashVars[varName] += u')'
+			append(u'\n')
+		append(u')')
 	elif isinstance(obj, dict):
-		bashVars[varName] += u'(\n'
+		append(u'(\n')
 		for (key, value) in obj.items():
-			bashVars[varName] += '%s=' % key
+			append('%s=' % key)
 			if isinstance(value, (dict, list)):
 				level += 1
 				objectToBash(value, bashVars, level)
-				bashVars[varName] += u'${RESULT%d[*]}' % level
+				append(u'${RESULT%d[*]}')
 			else:
 				objectToBash(value, bashVars, level)
-			bashVars[varName] += u'\n'
-		bashVars[varName] += u')'
+			append(u'\n')
+		append(u')')
 	elif obj is None:
-		bashVars[varName] += u'""'
+		append(u'""')
 	else:
-		bashVars[varName] += u'"%s"' % forceUnicode(obj)
+		append(u'"%s"' % forceUnicode(obj))
+
+	if firstAccess:
+		bashVars[varName] = u''.join(bashVars[varName])
 
 	return bashVars
 
