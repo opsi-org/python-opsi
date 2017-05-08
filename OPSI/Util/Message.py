@@ -588,6 +588,7 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 		if not clients:
 			logger.debug(u"cannot send notification '%s', no client connected" % name)
 			return
+
 		logger.debug(u"sending notification '%s' to clients" % name)
 		for client in clients:
 			# json-rpc: notifications have id null
