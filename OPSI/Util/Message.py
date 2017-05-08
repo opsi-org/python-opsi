@@ -570,9 +570,7 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 
 	def subjectsChanged(self, subjects):
 		logger.debug(u"subjectsChanged: subjects %s" % subjects)
-		param = []
-		for subject in subjects:
-			param.append(subject.serializable())
+		param = [subject.serializable() for subject in subjects]
 		self.notify(name=u"subjectsChanged", params=[param])
 
 	def requestEndConnections(self, clientIds=[]):
