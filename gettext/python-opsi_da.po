@@ -1,20 +1,20 @@
 # SOME DESCRIPTIVE TITLE.
 # Copyright (C) YEAR ORGANIZATION
-#
+# 
 # Translators:
+# Lars Juul <lju@eucl.dk>, 2016
 msgid ""
 msgstr ""
 "Project-Id-Version: opsi.org\n"
 "POT-Creation-Date: 2016-08-24 17:11+CEST\n"
-"PO-Revision-Date: 2015-02-25 15:11+0000\n"
-"Last-Translator: Niko Wenselowski\n"
-"Language-Team: Danish (http://www.transifex.com/opsi-org/opsiorg/language/"
-"da/)\n"
-"Language: da\n"
+"PO-Revision-Date: 2016-11-17 15:41+0000\n"
+"Last-Translator: Lars Juul <lju@eucl.dk>\n"
+"Language-Team: Danish (http://www.transifex.com/opsi-org/opsiorg/language/da/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: ENCODING\n"
 "Generated-By: pygettext.py 1.5\n"
+"Language: da\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 #: ../OPSI/UI.py:114 ../OPSI/UI.py:117 ../OPSI/UI.py:138 ../OPSI/UI.py:141
@@ -24,7 +24,6 @@ msgid "OK"
 msgstr "OK"
 
 #: ../OPSI/UI.py:114 ../OPSI/UI.py:244
-#, fuzzy
 msgid "An error occurred"
 msgstr "En fejl opstod"
 

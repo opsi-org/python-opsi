@@ -445,16 +445,17 @@ def updateMySQLBackend(backendConfigFile=u'/etc/opsi/backends/mysql.conf',
 					mysql.insert(tab, i)
 
 	#Increase productId Fields on existing database:
-	logger.notice(u"Updating productId Columns")
-	for line in mysql.getSet(u"SHOW TABLES;"):
-		tableName = line.values()[0]
-		logger.debug(u" [ %s ]" % tableName)
-		for column in mysql.getSet(u'SHOW COLUMNS FROM `%s`;' % tableName):
-			fieldName = column['Field']
-			fieldType = column['Type']
-			if "productid" in fieldName.lower() and fieldType != "varchar(255)":
-				logger.debug("ALTER TABLE for Table: '%s' and Column: '%s'" % (tableName, fieldName))
-				mysql.execute(u"alter table %s MODIFY COLUMN `%s` VARCHAR(255);" % (tableName, fieldName))
+	with disableForeignKeyChecks(mysql):
+		logger.notice(u"Updating productId Columns")
+		for line in mysql.getSet(u"SHOW TABLES;"):
+			tableName = line.values()[0]
+			logger.debug(u" [ %s ]" % tableName)
+			for column in mysql.getSet(u'SHOW COLUMNS FROM `%s`;' % tableName):
+				fieldName = column['Field']
+				fieldType = column['Type']
+				if "productid" in fieldName.lower() and fieldType != "varchar(255)":
+					logger.debug("ALTER TABLE for Table: '%s' and Column: '%s'" % (tableName, fieldName))
+					mysql.execute(u"alter table %s MODIFY COLUMN `%s` VARCHAR(255);" % (tableName, fieldName))
 
 	# Changing description fields to type TEXT
 	for tableName in (u"PRODUCT_PROPERTY", u"BOOT_CONFIGURATION"):

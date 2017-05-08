@@ -31,6 +31,7 @@ Functions and classes for the use with a POSIX operating system.
 """
 
 import codecs
+import datetime
 import fcntl
 import locale
 import os
@@ -55,7 +56,7 @@ from OPSI.Types import OpsiVersionError
 from OPSI.Object import *
 from OPSI.Util import objectToBeautifiedText, removeUnit
 
-__version__ = '4.0.7.20'
+__version__ = '4.0.7.31'
 
 logger = Logger()
 
@@ -381,7 +382,7 @@ def getEthernetDevices():
 				continue
 
 			device = line.split(':')[0].strip()
-			if device.startswith(('eth', 'ens', 'eno', 'tr', 'br', 'enp')):
+			if device.startswith(('eth', 'ens', 'eno', 'tr', 'br', 'enp', 'enx')):
 				logger.info(u"Found ethernet device: '{0}'".format(device))
 				devices.append(device)
 
@@ -661,11 +662,9 @@ def reboot(wait=10):
 	try:
 		wait = forceInt(wait)
 		if wait > 0:
-			execute(u'%s %d; %s -r now' % (which('sleep'), wait, which('shutdown')), nowait=True)
+			execute(u'%s %d; %s -r -t 1' % (which('sleep'), wait, which('shutdown')), nowait=True)
 		else:
-			execute(u'%s -r now' % which('shutdown'), nowait=True)
-		execute(u'%s 1' % (which('sleep')), nowait=True)
-		execute(u'%s -p' % (which('reboot')), nowait=True)
+			execute(u'%s -r -t 1' % which('shutdown'), nowait=True)
 	except Exception as e:
 		for hook in hooks:
 			hook.error_reboot(wait, e)
@@ -1115,7 +1114,10 @@ def umount(devOrMountpoint):
 
 
 def getBlockDeviceBusType(device):
-	# Returns either 'IDE', 'SCSI', 'SATA', 'RAID' or None (not found)
+	"""
+	:return: 'IDE', 'SCSI', 'SATA', 'RAID' or None (not found)
+	:returntype: str or None
+	"""
 	device = forceFilename(device)
 
 	(devs, type) = ([], None)
@@ -1139,7 +1141,7 @@ def getBlockDeviceBusType(device):
 			else:
 				devs = [match.group(1)]
 
-			devs = [currentDev.strip() for currentDiv in devs]
+			devs = [currentDev.strip() for currentDev in devs]
 
 		match = re.search('^\s+Attached to:\s+[^\(]+\((\S+)\s*', line)
 		if match:
@@ -3970,4 +3972,3 @@ def setLocalSystemTime(timestring):
 		subprocess.call([systemTime])
 	except Exception as error:
 			logger.error(u"Failed to set System Time: %s" % error)
-

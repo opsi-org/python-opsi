@@ -4,7 +4,7 @@
 # This file is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2010-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2010-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -31,7 +31,7 @@ from setuptools import setup, find_packages
 import codecs
 import os
 
-LANGUAGES = ['da', 'de', 'es', 'fr', 'it', 'ru', 'en', 'pl']
+LANGUAGES = ['da', 'de', 'es', 'en', 'fr', 'it', 'pl', 'ru']
 
 with codecs.open(os.path.join("debian", "changelog"), 'r', 'utf-8') as changelog:
 	VERSION = changelog.readline().split('(')[1].split('-')[0]
@@ -56,6 +56,8 @@ data_files = [
 			'data/backendManager/extend.d/10_opsi.conf',
 			'data/backendManager/extend.d/10_wim.conf',
 			'data/backendManager/extend.d/20_legacy.conf',
+			'data/backendManager/extend.d/30_kiosk.conf',
+			'data/backendManager/extend.d/30_sshcommands.conf',
 			'data/backendManager/extend.d/40_groupActions.conf',
 			'data/backendManager/extend.d/40_admin_tasks.conf',
 			'data/backendManager/extend.d/70_dynamic_depot.conf',
@@ -79,6 +81,7 @@ data_files = [
 		'/etc/opsi/',
 		[
 			'data/version',
+			'data/server_commands_default.conf',
 			'data/opsi.conf'
 		]
 	),
@@ -89,12 +92,14 @@ data_files = [
 	(
 		'/etc/opsi/hwaudit/locales',
 		[
+			'data/hwaudit/locales/da_DA',
 			'data/hwaudit/locales/de_DE',
 			'data/hwaudit/locales/en_US',
+			'data/hwaudit/locales/es_ES',
 			'data/hwaudit/locales/fr_FR',
-			'data/hwaudit/locales/da_DA',
+			'data/hwaudit/locales/ru_RU',
 		]
-	)
+	),
 ]
 
 for language in LANGUAGES:

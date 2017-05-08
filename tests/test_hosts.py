@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -26,7 +26,12 @@ Testing the functionality of working with hosts.
 from __future__ import absolute_import
 
 import socket
-from OPSI.Object import OpsiClient, OpsiConfigserver, OpsiDepotserver
+
+import pytest
+
+from OPSI.Object import (HostGroup, ObjectToGroup, OpsiClient, OpsiConfigserver,
+    OpsiDepotserver)
+from OPSI.Types import BackendError, BackendMissingDataError
 
 
 def getClients():
@@ -437,3 +442,50 @@ def testGettingHostIdents(extendedConfigDataBackend):
                 found = True
                 break
         assert found, u"'%s' not in '%s'" % (ident, selfIdents)
+
+
+def testRenamingOpsiClientFailsIfNewIdAlreadyExisting(extendedConfigDataBackend):
+    backend = extendedConfigDataBackend
+
+    host = OpsiClient(id='old.test.invalid')
+    anotherHost = OpsiClient(id='new.test.invalid')
+
+    backend.host_insertObject(host)
+    backend.host_insertObject(anotherHost)
+
+    with pytest.raises(BackendError):
+        backend.host_renameOpsiClient(host.id, anotherHost.id)
+
+
+def testRenamingOpsiClientFailsIfOldClientMissing(extendedConfigDataBackend):
+    with pytest.raises(BackendMissingDataError):
+        extendedConfigDataBackend.host_renameOpsiClient('nonexisting.test.invalid', 'new.test.invalid')
+
+
+def testRenamingOpsiClient(extendedConfigDataBackend):
+    backend = extendedConfigDataBackend
+
+    host = OpsiClient(id='jacket.test.invalid')
+    backend.host_insertObject(host)
+
+    protagonists = HostGroup("protagonists")
+    backend.group_insertObject(protagonists)
+
+    backend.objectToGroup_insertObject(ObjectToGroup(protagonists.getType(), protagonists.id, host.id))
+
+    oldId = host.id
+    newId = 'richard.test.invalid'
+
+    backend.host_renameOpsiClient(oldId, newId)
+
+    assert not backend.host_getObjects(id=oldId)
+    assert backend.host_getObjects(id=newId)
+
+    # We want to make sure that the membership of groups does get
+    # changed aswell.
+    assert not backend.objectToGroup_getObjects(objectId=oldId)
+    memberships = backend.objectToGroup_getObjects(objectId=newId)
+    assert memberships
+    membership = memberships[0]
+    assert membership.objectId == newId
+    assert membership.groupId == protagonists.id

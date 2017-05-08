@@ -27,7 +27,6 @@ import os
 import shutil
 import tempfile
 from contextlib import contextmanager
-from functools import wraps
 
 try:
     import unittest.mock as mock
@@ -165,23 +164,6 @@ hostname = {0}
         yield configPath
 
 
-# TODO: make it possible to require specific parts of the modules file to be enabled
-# TODO: changing this into taking parameters requires a class :<
-def requiresModulesFile(function):
-    """
-    This decorator will skip tests if no modules file is found.
-    """
-    @wraps(function)
-    def wrapped_function(*args, **kwargs):
-        modulesFile = os.path.join('/etc', 'opsi', 'modules')
-        if not os.path.exists(modulesFile):
-            raise unittest.SkipTest("This test requires a modules file!")
-
-        return function(*args, **kwargs)
-
-    return wrapped_function
-
-
 @contextmanager
 def showLogs(logLevel=7, color=True):
     """
@@ -200,3 +182,9 @@ def showLogs(logLevel=7, color=True):
         yield logger
     finally:
         logger.setConsoleLevel(logLevelBefore)
+
+
+@contextmanager
+def cleanMandatoryConstructorArgsCache():
+    with mock.patch('OPSI.Object._MANDATORY_CONSTRUCTOR_ARGS_CACHE', {}):
+        yield

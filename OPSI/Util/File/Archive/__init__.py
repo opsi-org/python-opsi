@@ -37,6 +37,7 @@ import os
 import re
 import subprocess
 import time
+from contextlib import closing
 
 if os.name == 'posix':
 	import fcntl
@@ -48,7 +49,7 @@ from OPSI import System
 from OPSI.Types import forceBool, forceFilename, forceUnicodeList, forceUnicodeLower
 from OPSI.Util import compareVersions
 
-__version__ = "4.0.6.1"
+__version__ = "4.0.7.22"
 
 logger = Logger()
 
@@ -63,11 +64,9 @@ def getFileType(filename):
 		raise NotImplementedError(u"getFileType() not implemented on windows")
 
 	filename = forceFilename(filename)
-	ms = magic.open(magic.MAGIC_NONE)
-	ms.load()
-	fileType = ms.file(filename)
-	ms.close()
-	return fileType
+	with closing(magic.open(magic.MAGIC_SYMLINK)) as ms:
+		ms.load()
+		return ms.file(filename)
 
 
 class BaseArchive(object):

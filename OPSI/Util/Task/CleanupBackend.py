@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -306,21 +306,22 @@ def cleanUpProducts(backend):
 	"""
 	productIdents = set()
 	for productOnDepot in backend.productOnDepot_getObjects():
-		productIdent = ";".join([productOnDepot.productId,
-			productOnDepot.productVersion, productOnDepot.packageVersion]
-		)
+		productIdent = ";".join((
+			productOnDepot.productId,
+			productOnDepot.productVersion,
+			productOnDepot.packageVersion
+		))
 		productIdents.add(productIdent)
 
 	deleteProducts = []
 	for product in backend.product_getObjects():
 		if product.getIdent(returnType='unicode') not in productIdents:
-			LOGGER.info(u"Marking unreferenced product {0} for deletion".format(product))
+			LOGGER.info(u"Marking unreferenced product {0} for deletion", product)
 			deleteProducts.append(product)
 
-	if deleteProducts:
-		for products in chunk(deleteProducts, _CHUNK_SIZE):
-			LOGGER.debug(u"Deleting products: {0!r}".format(products))
-			backend.product_deleteObjects(products)
+	for products in chunk(deleteProducts, _CHUNK_SIZE):
+		LOGGER.debug(u"Deleting products: {0!r}", products)
+		backend.product_deleteObjects(products)
 
 
 def cleanUpProductOnDepots(backend, depotIds, existingProductIdents):

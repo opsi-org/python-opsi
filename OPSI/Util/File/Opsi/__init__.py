@@ -1,34 +1,31 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+
+# This module is part of the desktop management solution opsi
+# (open pc server integration) http://www.opsi.org
+
+# Copyright (C) 2006-2017 uib GmbH <info@uib.de>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-opsi python library - File.Opsi
+Utilites to handle files specific to opsi.
 
-This module is part of the desktop management solution opsi
-(open pc server integration) http://www.opsi.org
-
-Copyright (C) 2006-2016 uib GmbH
-
-http://www.uib.de/
-
-All rights reserved.
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License version 2 as
-published by the Free Software Foundation.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 :copyright: uib GmbH <info@uib.de>
 :author: Jan Schneider <j.schneider@uib.de>
 :author: Niko Wenselowski <n.wenselowski@uib.de>
-:license: GNU General Public License version 2
+:license: GNU Affero General Public License version 3
 """
 
 import bz2
@@ -46,31 +43,26 @@ from contextlib import closing
 from hashlib import sha1
 from subprocess import Popen, PIPE, STDOUT
 
-if os.name == 'posix':
-	import fcntl
-	import grp
-	import pwd
-	from OPSI.System.Posix import SysInfo
-elif os.name == 'nt':
-	import win32con
-	import win32file
-	import pywintypes
-
 import OPSI.System
 from OPSI.Logger import Logger
 from OPSI.Object import BoolProductProperty, LocalbootProduct, NetbootProduct, Product, ProductDependency, ProductProperty, UnicodeProductProperty
 from OPSI.Types import (BackendBadValueError, OpsiBackupBackendNotFound,
 	OpsiBackupFileError, OpsiBackupFileNotFound, forceActionRequest, forceBool,
 	forceDictList, forceFilename, forceHostId, forceInstallationStatus,
-	forceInt, forceList, forceObjectClass, forceObjectClassList,
-	forceOpsiHostKey, forcePackageVersion, forceProductId,
-	forceProductPriority, forceProductPropertyType, forceProductType,
-	forceProductVersion, forceRequirementType, forceUnicode, forceUnicodeList,
-	forceUnicodeLower)
+	forceList, forceObjectClass, forceObjectClassList, forceOpsiHostKey,
+	forcePackageVersion, forceProductId, forceProductPriority,
+	forceProductPropertyType, forceProductType, forceProductVersion,
+	forceRequirementType, forceUnicode, forceUnicodeList, forceUnicodeLower)
 from OPSI.Util.File import ConfigFile, IniFile, TextFile, requiresParsing
 from OPSI.Util import md5sum, toJson, fromJson
 
-__version__ = '4.0.7.1'
+if os.name == 'posix':
+	import fcntl
+	import grp
+	import pwd
+	from OPSI.System.Posix import SysInfo
+
+__version__ = '4.0.7.38'
 
 logger = Logger()
 
@@ -306,9 +298,9 @@ class PackageContentFile(TextFile):
 
 		fileInfo = {}
 		for line in self._lines:
-			(type, tmp) = line.strip().split(None, 1)
-			filename = u''
+			(entryType, tmp) = line.strip().split(None, 1)
 
+			filename = u''
 			for i, currentElement in enumerate(tmp):
 				if currentElement == u"'":
 					if i > 0:
@@ -333,11 +325,13 @@ class PackageContentFile(TextFile):
 				if len(parts) > 1:
 					tmp = parts[1]
 
-			if type == 'f':
+			if entryType == 'f':
 				md5 = tmp
-			elif type == 'l':
+			elif entryType == 'l':
 				target = tmp[1:-1].replace(u'\\\'', u'\'')
-			fileInfo[filename] = {'type': type, 'size': int(size), 'md5sum': md5, 'target': target}
+
+			fileInfo[filename] = {'type': entryType, 'size': int(size), 'md5sum': md5, 'target': target}
+
 		self._parsed = True
 		return fileInfo
 
@@ -345,37 +339,36 @@ class PackageContentFile(TextFile):
 		self._lines = []
 		for filename in self._clientDataFiles:
 			try:
-				#if (filename == self.clientDataDir):
-				#	continue
-				type = u'f'
 				md5 = u''
-				target = u''
 				size = 0
+				target = None
+
 				path = os.path.join(self._productClientDataDir, filename)
 				if os.path.islink(path):
-					type = u'l'
+					elementType = u'l'
 					target = os.path.realpath(path)
 					if target.startswith(self._productClientDataDir):
 						target = target[len(self._productClientDataDir):]
 					else:
 						if os.path.isdir(path):
-							type = u'd'
+							elementType = u'd'
 						else:
 							# link target not in client data dir => treat as file
-							type = u'f'
+							elementType = u'f'
 							size = os.path.getsize(target)
 							md5 = md5sum(target)
 							target = u''
 				elif os.path.isdir(path):
-					type = u'd'
+					elementType = u'd'
 				else:
+					elementType = u'f'
 					size = os.path.getsize(path)
 					md5 = md5sum(path)
 
-				if target:
-					self._lines.append("%s '%s' %s '%s'" % (type, filename.replace(u'\'', u'\\\''), size, target.replace(u'\'', u'\\\'')))
+				if target is not None:
+					self._lines.append("%s '%s' %s '%s'" % (elementType, filename.replace(u'\'', u'\\\''), size, target.replace(u'\'', u'\\\'')))
 				else:
-					self._lines.append("%s '%s' %s %s" % (type, filename.replace(u'\'', u'\\\''), size, md5))
+					self._lines.append("%s '%s' %s %s" % (elementType, filename.replace(u'\'', u'\\\''), size, md5))
 			except Exception as error:
 				logger.logException(error)
 
@@ -655,11 +648,20 @@ class PackageControlFile(TextFile):
 		else:
 			raise Exception(u"Error in control file '%s': unknown product type '%s'" % (self._filename, product.get('type')))
 
+		productVersion = product.get('version')
+		if not productVersion:
+			logger.warning("No product version given! Assuming 1.0.")
+			productVersion = 1.0
+		packageVersion = self._sections.get('package', [{}])[0].get('version') or product.get('packageversion')
+		if not packageVersion:
+			logger.warning("No package version given! Assuming 1.")
+			packageVersion = 1
+
 		self._product = Class(
 			id=product.get('id'),
 			name=product.get('name'),
-			productVersion=product.get('version'),
-			packageVersion=self._sections.get('package', [{}])[0].get('version') or product.get('packageversion'),
+			productVersion=productVersion,
+			packageVersion=packageVersion,
 			licenseRequired=product.get('licenserequired'),
 			setupScript=product.get('setupscript'),
 			uninstallScript=product.get('uninstallscript'),
@@ -1164,6 +1166,10 @@ class OpsiBackupArchive(tarfile.TarFile):
 			for entry in os.listdir(path):
 				self._addContent(os.path.join(path, entry), sub=sub)
 		else:
+			if not os.path.exists(path):
+				logger.info(u"{0} does not exist. Skipping.", path)
+				return
+
 			checksum = sha1()
 
 			with open(path) as f:
@@ -1330,7 +1336,9 @@ class OpsiBackupArchive(tarfile.TarFile):
 			if not auto or backend["dispatch"]:
 				if not backend["dispatch"]:
 					logger.warning("Backing up backend %s although it's currently not in use." % backend["name"])
-				self._addContent(backend["config"]['dhcpdConfigFile'], sub=(os.path.dirname(backend["config"]['dhcpdConfigFile']), "BACKENDS/DHCP/%s" % backend["name"]))
+
+				dhcpdConfigFile = backend["config"]['dhcpdConfigFile']
+				self._addContent(dhcpdConfigFile, sub=(os.path.dirname(dhcpdConfigFile), "BACKENDS/DHCP/%s" % backend["name"]))
 
 	def hasDHCPBackend(self, name=None):
 		return self._hasBackend("DHCP", name=name)

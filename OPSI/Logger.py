@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2006-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -54,7 +54,7 @@ try:
 except ImportError:
 	syslog = None
 
-__version__ = '4.0.7.6'
+__version__ = '4.0.7.38'
 
 if sys.version_info > (3, ):
 	# Python 3
@@ -466,7 +466,7 @@ will disable logging to a file.
 			logFile = self.__logFile
 
 		if not logFile:
-			self.error(u"Cannot create symlink '%s': log-file unknown" % linkFile)
+			self.error(u"Cannot create symlink {0!r}: log-file unknown", linkFile)
 			return
 
 		if not os.path.isabs(linkFile):
@@ -474,13 +474,17 @@ will disable logging to a file.
 
 		try:
 			if logFile == linkFile:
-				raise Exception(u'logFile and linkFile are the same file!')
+				raise ValueError(u'logFile and linkFile are the same file!')
 
-			if os.path.exists(linkFile):
+			try:
 				os.unlink(linkFile)
+			except OSError as oserr:
+				if oserr.errno != 2:  # 2 = File not found
+					self.debug2(u"Failed to remove link {0!r}: {1}", linkFile, oserr)
+
 			os.symlink(logFile, linkFile)
 		except Exception as error:
-			self.error(u"Failed to create symlink from '%s' to '%s': %s" % (logFile, linkFile, error))
+			self.error(u"Failed to create symlink from {0!r} to {1!r}: {2}", logFile, linkFile, error)
 
 	def setFileLevel(self, level=LOG_NONE):
 		''' Maximum level of messages to appear in logfile
