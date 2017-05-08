@@ -305,19 +305,19 @@ class ProgressSubject(MessageSubject):
 
 	def setState(self, state):
 		state = forceInt(state)
-		if (state <= 0):
+		if state <= 0:
 			state = 0
 			self._percent = 0
-		if (state > self._end):
+		if state > self._end:
 			state = self._end
 			self._percent = 100
 		self._state = state
 
 		now = int(time.time())
-		if self._fireAlways or (self._timeFired != now) or (self._state == self._end) or (self._state == 0):
-			if (self._state == 0):
+		if self._fireAlways or (self._timeFired != now) or (self._state in (0, self._end)):
+			if self._state == 0:
 				self._percent = 0
-			elif (self._end == 0):
+			elif self._end == 0:
 				self._percent = 100
 			else:
 				self._percent = float(100)*(float(self._state) / float(self._end))
@@ -325,9 +325,9 @@ class ProgressSubject(MessageSubject):
 			self._timeSpend = now - self._timeStarted
 			if self._timeSpend:
 				self._speed = int(float(self._state)/float(self._timeSpend))
-				if (self._speed < 0):
+				if self._speed < 0:
 					self._speed = 0
-				elif (self._speed > 0):
+				elif self._speed > 0:
 					self._timeLeft = int(((float(self._timeLeft)*2.0) + (float(self._end)-float(self._state))/float(self._speed))/3.0)
 
 			self._timeFired = now
@@ -508,7 +508,7 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 			id = rpc['id']
 			params = rpc['params']
 
-			if (method == 'setSelectedIndexes'):
+			if method == 'setSelectedIndexes':
 				subjectId = params[0]
 				selectedIndexes = params[1]
 				for subject in self.getSubjects():
@@ -517,7 +517,7 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 					result = subject.setSelectedIndexes(selectedIndexes)
 					break
 
-			elif (method == 'selectChoice'):
+			elif method == 'selectChoice':
 				logger.debug(u"selectChoice(%s)" % unicode(params)[1:-1])
 				subjectId = params[0]
 				for subject in self.getSubjects():
@@ -642,7 +642,7 @@ class NotificationServer(threading.Thread, SubjectsObserver):
 	def run(self):
 		logger.info(u"Notification server starting")
 		try:
-			if (self._address == '0.0.0.0'):
+			if self._address == '0.0.0.0':
 				self._server = reactor.listenTCP(self._port, self._factory)
 			else:
 				self._server = reactor.listenTCP(self._port, self._factory, interface=self._address)
@@ -670,10 +670,11 @@ class NotificationServer(threading.Thread, SubjectsObserver):
 			if isinstance(result, defer.Deferred):
 				result.addCallback(self._stopListeningCompleted)
 				timeout = 3.0
-				while self._listening and (timeout > 0):
+				while self._listening and timeout > 0:
 					time.sleep(0.1)
 					timeout -= 0.1
-				if (timeout == 0):
+
+				if timeout == 0:
 					logger.warning(u"Timed out while waiting for stop listening")
 			self._listening = False
 		if stopReactor and reactor and reactor.running:
@@ -733,7 +734,7 @@ class NotificationClientFactory(ClientFactory):
 				# Notification
 				method = rpc['method']
 				params = rpc['params']
-				if (method == 'endConnection'):
+				if method == 'endConnection':
 					logger.info(u"Server requested connection end")
 					if not params or not params[0] or not self._notificationClient.getId() or self._notificationClient.getId() in forceList(params[0]):
 						self._notificationClient.endConnectionRequested()
@@ -754,7 +755,8 @@ class NotificationClientFactory(ClientFactory):
 		while not self.isReady() and (timeout < self._timeout):
 			time.sleep(0.1)
 			timeout += 0.1
-		if (timeout >= self._timeout):
+
+		if timeout >= self._timeout:
 			raise Exception(u"execute timed out after %d seconds" % self._timeout)
 
 		rpc = {'id': None, "method": method, "params": params}
