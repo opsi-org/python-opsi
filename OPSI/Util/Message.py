@@ -550,7 +550,7 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 			logger.info(u"Unknown subject %s passed to choicesChanged, automatically adding subject" % subject)
 			self.addSubject(subject)
 		logger.debug(u"choicesChanged: subject id '%s', choices %s" % (subject.getId(), choices))
-		self.notify( name = u"choicesChanged", params = [ subject.serializable(), choices ] )
+		self.notify(name=u"choicesChanged", params=[subject.serializable(), choices])
 
 	def progressChanged(self, subject, state, percent, timeSpend, timeLeft, speed):
 		if not subject in self.getSubjects():
@@ -558,7 +558,7 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 			self.addSubject(subject)
 		logger.debug(u"progressChanged: subject id '%s', state %s, percent %s, timeSpend %s, timeLeft %s, speed %s" \
 			% (subject.getId(), state, percent, timeSpend, timeLeft, speed))
-		self.notify( name = u"progressChanged", params = [ subject.serializable(), state, percent, timeSpend, timeLeft, speed ] )
+		self.notify(name=u"progressChanged", params=[subject.serializable(), state, percent, timeSpend, timeLeft, speed])
 
 	def endChanged(self, subject, end):
 		if not subject in self.getSubjects():
@@ -566,21 +566,21 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 			self.addSubject(subject)
 		logger.debug(u"endChanged: subject id '%s', end %s" \
 			% (subject.getId(), end))
-		self.notify( name = u"endChanged", params = [ subject.serializable(), end ] )
+		self.notify(name=u"endChanged", params=[subject.serializable(), end])
 
 	def subjectsChanged(self, subjects):
 		logger.debug(u"subjectsChanged: subjects %s" % subjects)
 		param = []
 		for subject in subjects:
 			param.append(subject.serializable())
-		self.notify( name = u"subjectsChanged", params = [ param ] )
+		self.notify(name=u"subjectsChanged", params=[param])
 
 	def requestEndConnections(self, clientIds=[]):
 		if not self.clients:
 			return
-		self.notify( name = u"endConnection", params = [ clientIds ] )
+		self.notify(name=u"endConnection", params=[clientIds])
 
-	def notify(self, name, params, clients = []):
+	def notify(self, name, params, clients=[]):
 		if not isinstance(params, list):
 			params = [params]
 		if not clients:
@@ -593,7 +593,7 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 		logger.debug(u"sending notification '%s' to clients" % name)
 		for client in clients:
 			# json-rpc: notifications have id null
-			jsonString = json.dumps( {"id": None, "method": name, "params": params } )
+			jsonString = json.dumps({"id": None, "method": name, "params": params})
 			if isinstance(jsonString, unicode):
 				jsonString = jsonString.encode('utf-8')
 			client.sendLine(jsonString)
