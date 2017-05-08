@@ -142,7 +142,7 @@ class DepotserverBackend(ExtendedBackend):
 class DepotserverPackageManager(object):
 	def __init__(self, depotBackend):
 		if not isinstance(depotBackend, DepotserverBackend):
-			raise BackendC(u"DepotserverPackageManager needs instance of DepotserverBackend as backend, got %s" % depotBackend.__class__.__name__)
+			raise BackendConfigurationError(u"DepotserverPackageManager needs instance of DepotserverBackend as backend, got %s" % depotBackend.__class__.__name__)
 		self._depotBackend = depotBackend
 		logger.setLogFile(self._depotBackend._packageLog, object=self)
 
