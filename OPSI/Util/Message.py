@@ -125,14 +125,14 @@ class MessageSubject(Subject):
 		return self._severity
 
 	def _notifyMessageChanged(self):
-		for o in self._observers:
-			o.messageChanged(self, self._message)
+		for observer in self._observers:
+			observer.messageChanged(self, self._message)
 
 	def serializable(self):
-		s = Subject.serializable(self)
-		s['message'] = self.getMessage()
-		s['severity'] = self.getSeverity()
-		return s
+		subject = Subject.serializable(self)
+		subject['message'] = self.getMessage()
+		subject['severity'] = self.getSeverity()
+		return subject
 
 
 class ChoiceSubject(MessageSubject):
@@ -207,18 +207,18 @@ class ChoiceSubject(MessageSubject):
 		self._callbacks = callbacks
 
 	def _notifySelectedIndexesChanged(self):
-		for o in self._observers:
-			o.selectedIndexesChanged(self, self._selectedIndexes)
+		for observer in self._observers:
+			observer.selectedIndexesChanged(self, self._selectedIndexes)
 
 	def _notifyChoicesChanged(self):
-		for o in self._observers:
-			o.choicesChanged(self, self._choices)
+		for observer in self._observers:
+			observer.choicesChanged(self, self._choices)
 
 	def serializable(self):
-		s = MessageSubject.serializable(self)
-		s['choices'] = self.getChoices()
-		s['selectedIndexes'] = self.getSelectedIndexes()
-		return s
+		subject = MessageSubject.serializable(self)
+		subject['choices'] = self.getChoices()
+		subject['selectedIndexes'] = self.getSelectedIndexes()
+		return subject
 
 
 class ProgressSubject(MessageSubject):
@@ -355,22 +355,22 @@ class ProgressSubject(MessageSubject):
 		return self._speed
 
 	def _notifyProgressChanged(self):
-		for o in self._observers:
-			o.progressChanged(self, self._state, self._percent, self._timeSpend, self._timeLeft, self._speed)
+		for observer in self._observers:
+			observer.progressChanged(self, self._state, self._percent, self._timeSpend, self._timeLeft, self._speed)
 
 	def _notifyEndChanged(self):
-		for o in self._observers:
-			o.endChanged(self, self._end)
+		for observer in self._observers:
+			observer.endChanged(self, self._end)
 
 	def serializable(self):
-		s = MessageSubject.serializable(self)
-		s['end'] = self.getEnd()
-		s['state'] = self.getState()
-		s['percent'] = self.getPercent()
-		s['timeSpend'] = self.getTimeSpend()
-		s['timeLeft'] = self.getTimeLeft()
-		s['speed'] = self.getSpeed()
-		return s
+		subject = MessageSubject.serializable(self)
+		subject['end'] = self.getEnd()
+		subject['state'] = self.getState()
+		subject['percent'] = self.getPercent()
+		subject['timeSpend'] = self.getTimeSpend()
+		subject['timeLeft'] = self.getTimeLeft()
+		subject['speed'] = self.getSpeed()
+		return subject
 
 
 class MessageObserver(object):
