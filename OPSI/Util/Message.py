@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2006-2008, 2015-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2008, 2015-2017 uib GmbH <info@uib.de>
 # All rights reserved.
 
 # This program is free software: you can redistribute it and/or modify
@@ -517,8 +516,8 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 
 			else:
 				raise ValueError(u"unknown method '%s'" % method)
-		except Exception as e:
-			logger.error(u"Failed to execute rpc: %s" % e)
+		except Exception as error:
+			logger.error(u"Failed to execute rpc: %s" % error)
 
 	def messageChanged(self, subject, message):
 		if subject not in self.getSubjects():
@@ -641,9 +640,9 @@ class NotificationServer(threading.Thread, SubjectsObserver):
 			if not reactor.running:
 				logger.info(u"Starting reactor")
 				reactor.run(installSignalHandlers=0)
-		except Exception as e:
-			self._error = forceUnicode(e)
-			logger.logException(e)
+		except Exception as error:
+			self._error = forceUnicode(error)
+			logger.logException(error)
 
 	def _stopListeningCompleted(self, result):
 		self._listening = False
@@ -669,8 +668,8 @@ class NotificationServer(threading.Thread, SubjectsObserver):
 		if stopReactor and reactor and reactor.running:
 			try:
 				reactor.stop()
-			except Exception as e:
-				logger.error(u"Failed to stop reactor: %s" % e)
+			except Exception as error:
+				logger.error(u"Failed to stop reactor: %s" % error)
 		logger.info(u"Notification server stopped")
 
 
@@ -730,8 +729,8 @@ class NotificationClientFactory(ClientFactory):
 				else:
 					logger.debug("self._observer.%s(*params)" % method)
 					eval("self._observer.%s(*params)" % method)
-		except Exception as e:
-			logger.error(e)
+		except Exception as error:
+			logger.error(error)
 
 	def execute(self, method, params):
 		logger.debug(u"executing method '%s', params %s" % (method, params))
@@ -777,8 +776,8 @@ class NotificationClient(threading.Thread):
 		for endConnectionRequestedCallback in self._endConnectionRequestedCallbacks:
 			try:
 				endConnectionRequestedCallback()
-			except Exception as e:
-				logger.error(e)
+			except Exception as error:
+				logger.error(error)
 
 	def getFactory(self):
 		return self._factory
@@ -790,8 +789,8 @@ class NotificationClient(threading.Thread):
 			reactor.connectTCP(self._address, self._port, self._factory)
 			if not reactor.running:
 				reactor.run(installSignalHandlers=0)
-		except Exception as e:
-			logger.logException(e)
+		except Exception as error:
+			logger.logException(error)
 
 	def stop(self, stopReactor=True):
 		if self._client:
