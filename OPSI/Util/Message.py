@@ -553,7 +553,7 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 		self.notify(name=u"choicesChanged", params=[subject.serializable(), choices])
 
 	def progressChanged(self, subject, state, percent, timeSpend, timeLeft, speed):
-		if not subject in self.getSubjects():
+		if subject not in self.getSubjects():
 			logger.info(u"Unknown subject %s passed to progressChanged, automatically adding subject" % subject)
 			self.addSubject(subject)
 		logger.debug(u"progressChanged: subject id '%s', state %s, percent %s, timeSpend %s, timeLeft %s, speed %s" \
@@ -561,7 +561,7 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 		self.notify(name=u"progressChanged", params=[subject.serializable(), state, percent, timeSpend, timeLeft, speed])
 
 	def endChanged(self, subject, end):
-		if not subject in self.getSubjects():
+		if subject not in self.getSubjects():
 			logger.info(u"Unknown subject %s passed to endChanged, automatically adding subject" % subject)
 			self.addSubject(subject)
 		logger.debug(u"endChanged: subject id '%s', end %s" \
