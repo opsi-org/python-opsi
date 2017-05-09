@@ -1,3 +1,11 @@
+python-opsi (4.1.1.5-1) UNRELEASED; urgency=medium
+
+  * OPSI.Util.objectToBash: refactored function.
+  * ConfigDataBackend: log_read and log_write now accept logType 'winpe'.
+  * Removed deprecated method backend_getSharedAlgorithm.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 09 May 2017 18:27:09 +0200
+
 python-opsi (4.1.1.4-1) testing; urgency=medium
 
   * OPSI.Backend.MySQL: Providing known error codes as constants.
