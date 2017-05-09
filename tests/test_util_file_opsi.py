@@ -150,3 +150,22 @@ def testProductControlFileWithoutVersionUsesDefaults():
 
 	assert '1' == product.packageVersion
 	assert '1.0' == product.productVersion
+
+
+def testParsingProductControlFileContainingPropertyWithEmptyValues():
+	pcfPath = os.path.join(
+		os.path.dirname(__file__),
+		'testdata', 'util', 'file', 'opsi', 'control_with_empty_property_values')
+
+	pcf = PackageControlFile(pcfPath)
+
+	properties = pcf.getProductProperties()
+	assert len(properties) == 1
+
+	testProperty = properties[0]
+	assert testProperty.propertyId == 'important'
+	assert testProperty.possibleValues == []
+	assert testProperty.defaultValues == []
+	assert testProperty.multiValue is False
+	assert testProperty.editable is True
+	assert testProperty.description == "Nothing is important."
