@@ -298,54 +298,62 @@ def objectToBeautifiedText(obj):
 
 def objectToBash(obj, bashVars=None, level=0):
 	"""
+	Converts `obj` into bash-compatible format.
+
 	:type bashVars: dict
+	:type level: int
+	:returntype: dict
 	"""
 	if bashVars is None:
 		bashVars = {}
 
 	if level == 0:
 		obj = serialize(obj)
-
-	varName = 'RESULT'
-	if level > 0:
+		varName = 'RESULT'
+	else:
 		varName = 'RESULT%d' % level
 
-	if not bashVars.get(varName):
-		bashVars[varName] = u''
+	if varName not in bashVars:
+		firstAccess = True
+		bashVars[varName] = []
+	else:
+		firstAccess = False
 
 	if hasattr(obj, 'serialize'):
 		obj = obj.serialize()
 
+	append = bashVars[varName].append
+
 	if isinstance(obj, (list, set)):
-		bashVars[varName] += u'(\n'
-		for i in range( len(obj) ):
-			if isinstance(obj[i], (dict, list)):
-				hashFound = True
+		append(u'(\n')
+		for element in obj:
+			if isinstance(element, (dict, list)):
 				level += 1
-				objectToBash(obj[i], bashVars, level)
-				bashVars[varName] += u'RESULT%d=${RESULT%d[*]}' % (level, level)
+				objectToBash(element, bashVars, level)
+				append(u'RESULT%d=${RESULT%d[*]}' % (level, level))
 			else:
-				objectToBash(obj[i], bashVars, level)
-			bashVars[varName] += u'\n'
-		bashVars[varName] = bashVars[varName][:-1] + u'\n)'
+				objectToBash(element, bashVars, level)
+			append(u'\n')
+		append(u')')
 	elif isinstance(obj, dict):
-		bashVars[varName] += u'(\n'
+		append(u'(\n')
 		for (key, value) in obj.items():
-			bashVars[varName] += '%s=' % key
+			append('%s=' % key)
 			if isinstance(value, (dict, list)):
 				level += 1
-				v = objectToBash(value, bashVars, level)
-				bashVars[varName] += u'${RESULT%d[*]}' % level
+				objectToBash(value, bashVars, level)
+				append(u'${RESULT%d[*]}')
 			else:
 				objectToBash(value, bashVars, level)
-			bashVars[varName] += u'\n'
-		bashVars[varName] = bashVars[varName][:-1] + u'\n)'
-
+			append(u'\n')
+		append(u')')
 	elif obj is None:
-		bashVars[varName] += u'""'
-
+		append(u'""')
 	else:
-		bashVars[varName] += u'"%s"' % forceUnicode(obj)
+		append(u'"%s"' % forceUnicode(obj))
+
+	if firstAccess:
+		bashVars[varName] = u''.join(bashVars[varName])
 
 	return bashVars
 
