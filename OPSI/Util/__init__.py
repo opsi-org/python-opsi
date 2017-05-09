@@ -811,9 +811,11 @@ def getfqdn(name='', conf=None):
 	the specified configuration file.
 	"""
 	if not name:
-		env = os.environ.copy()
-		if "OPSI_HOSTNAME" in env:
-			return forceFqdn(env["OPSI_HOSTNAME"])
+		try:
+			return forceFqdn(os.environ["OPSI_HOSTNAME"])
+		except KeyError:
+			# not set in environment.
+			pass
 
 		if conf is not None:
 			hostname = getGlobalConfig('hostname', conf)
@@ -838,8 +840,9 @@ def getGlobalConfig(name, configFile=OPSI_GLOBAL_CONF):
 		with codecs.open(configFile, 'r', 'utf8') as config:
 			for line in config:
 				line = line.strip()
-				if not line or line.startswith(('#', ';')) or '=' not in line:
+				if '=' not in line or line.startswith(('#', ';')):
 					continue
+
 				(key, value) = line.split('=', 1)
 				if key.strip().lower() == name.lower():
 					return value.strip()
