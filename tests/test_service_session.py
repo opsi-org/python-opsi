@@ -47,6 +47,11 @@ def session():
 		testSession.sessionTimer = None
 
 
+class FakeSessionHandler(object):
+	def sessionExpired(self, session):
+		pass
+
+
 @pytest.fixture
 def sessionHandler():
 	handler = SessionHandler()
@@ -54,11 +59,6 @@ def sessionHandler():
 		yield handler
 	finally:
 		handler.deleteAllSessions()
-
-
-class FakeSessionHandler(object):
-	def sessionExpired(self, session):
-		pass
 
 
 def testSessionUsageCount(session):
