@@ -32,10 +32,10 @@ from contextlib import closing
 
 from OPSI.Logger import LOG_DEBUG, Logger
 from OPSI.Types import BackendMissingDataError, BackendUnaccomplishableError
-from OPSI.Types import (forceBool, forceHostIdList, forceInt, forceList,
-	forceUnicode, forceUnicodeList)
+from OPSI.Types import (forceHostIdList, forceInt, forceList, forceUnicode)
 from OPSI.Backend.Backend import ExtendedBackend
 from OPSI.Backend.HostControl import RpcThread, ConnectionThread
+from OPSI.Backend.HostControl import _configureHostcontrolBackend
 
 __all__ = ('HostControlSafeBackend', )
 
@@ -58,24 +58,9 @@ class HostControlSafeBackend(ExtendedBackend):
 		self._hostReachableTimeout = 3
 		self._resolveHostAddress = False
 		self._maxConnections = 50
-		self._broadcastAddresses = ["255.255.255.255"]
+		self._broadcastAddresses = {"255.255.255.255": (7, 9, 12287)}
 
-		# Parse arguments
-		for (option, value) in kwargs.items():
-			option = option.lower()
-			if option == 'opsiclientdport':
-				self._opsiclientdPort = forceInt(value)
-			elif option == 'hostrpctimeout':
-				self._hostRpcTimeout = forceInt(value)
-			elif option == 'resolvehostaddress':
-				self._resolveHostAddress = forceBool(value)
-			elif option == 'maxconnections':
-				self._maxConnections = forceInt(value)
-			elif option == 'broadcastaddresses':
-				self._broadcastAddresses = forceUnicodeList(value)
-
-		if (self._maxConnections < 1):
-			self._maxConnections = 1
+		_configureHostcontrolBackend(self, kwargs)
 
 	def __repr__(self):
 		try:
@@ -183,27 +168,28 @@ class HostControlSafeBackend(ExtendedBackend):
 					raise BackendMissingDataError(u"Failed to get hardware address for host '%s'" % host.id)
 
 				mac = host.hardwareAddress.replace(':', '')
-
-				# Pad the synchronization stream.
-				data = ''.join(['FFFFFFFFFFFF', mac * 16])
-				send_data = ''
+				data = ''.join(['FFFFFFFFFFFF', mac * 16])  # Pad the synchronization stream.
 
 				# Split up the hex values and pack.
+				payload = ''
 				for i in range(0, len(data), 2):
-					send_data = ''.join([
-						send_data,
-						struct.pack('B', int(data[i: i + 2], 16)) ])
+					payload = ''.join([
+						payload,
+						struct.pack('B', int(data[i:i + 2], 16))])
 
-				for broadcastAddress in self._broadcastAddresses:
-					logger.debug(u"Sending data to network broadcast %s [%s]" % (broadcastAddress, data))
-					# Broadcast it to the LAN.
-					with closing(socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)) as sock:
-						sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, True)
-						sock.sendto(send_data, (broadcastAddress, 12287))
+				for broadcastAddress, targetPorts in self._broadcastAddresses.items():
+					logger.debug(u"Sending data to network broadcast {0} [{1}]", broadcastAddress, data)
+
+					for port in targetPorts:
+						logger.debug("Broadcasting to port {0!r}", port)
+						with closing(socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)) as sock:
+							sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, True)
+							sock.sendto(payload, (broadcastAddress, port))
+
 				result[host.id] = {"result": "sent", "error": None}
-			except Exception as e:
-				logger.logException(e, LOG_DEBUG)
-				result[host.id] = {"result": None, "error": forceUnicode(e)}
+			except Exception as error:
+				logger.logException(error, LOG_DEBUG)
+				result[host.id] = {"result": None, "error": forceUnicode(error)}
 		return result
 
 	def hostControlSafe_shutdown(self, hostIds=[]):
