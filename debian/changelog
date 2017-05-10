@@ -3,6 +3,9 @@ python-opsi (4.1.1.5-1) UNRELEASED; urgency=medium
   * OPSI.Util.objectToBash: refactored function.
   * ConfigDataBackend: log_read and log_write now accept logType 'winpe'.
   * Removed deprecated method backend_getSharedAlgorithm.
+  * OPSI.Util.getfqdn: small internal refactoring.
+  * OPSI.Service.Session: SessionHandler.getSessions now always returns
+    a dict.
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 09 May 2017 18:27:09 +0200
 
