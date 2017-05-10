@@ -27,7 +27,9 @@ import os
 
 import pytest
 
+from OPSI.Util import toJson
 from OPSI.Util.File.Opsi import BackendDispatchConfigFile, OpsiConfFile, PackageControlFile
+from .helpers import createTemporaryTestfile
 
 
 def testReadingAllUsedBackends():
@@ -150,3 +152,49 @@ def testProductControlFileWithoutVersionUsesDefaults():
 
 	assert '1' == product.packageVersion
 	assert '1.0' == product.productVersion
+
+
+@pytest.fixture
+def controlFileWithEmptyValues():
+	filePath = os.path.join(
+		os.path.dirname(__file__),
+		'testdata', 'util', 'file', 'opsi', 'control_with_empty_property_values')
+
+	with createTemporaryTestfile(filePath) as newFilePath:
+		yield newFilePath
+
+
+def testParsingProductControlFileContainingPropertyWithEmptyValues(controlFileWithEmptyValues):
+	pcf = PackageControlFile(controlFileWithEmptyValues)
+
+	properties = pcf.getProductProperties()
+	assert len(properties) == 1
+
+	testProperty = properties[0]
+	assert testProperty.propertyId == 'important'
+	assert testProperty.possibleValues == []
+	assert testProperty.defaultValues == []
+	assert testProperty.multiValue is False
+	assert testProperty.editable is True
+	assert testProperty.description == "Nothing is important."
+
+
+def testGeneratingProductControlFileContainingPropertyWithEmptyValues(controlFileWithEmptyValues):
+	pcf = PackageControlFile(controlFileWithEmptyValues)
+	pcf.parse()
+	pcf.generate()
+	pcf.generate()  # should destroy nothing
+	pcf.close()
+	del pcf
+
+	pcf = PackageControlFile(controlFileWithEmptyValues)
+	properties = pcf.getProductProperties()
+	assert len(properties) == 1
+
+	testProperty = properties[0]
+	assert testProperty.propertyId == 'important'
+	assert testProperty.possibleValues == []
+	assert testProperty.defaultValues == []
+	assert testProperty.multiValue is False
+	assert testProperty.editable is True
+	assert testProperty.description == "Nothing is important."

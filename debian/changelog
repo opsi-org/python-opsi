@@ -1,3 +1,27 @@
+python-opsi (4.1.1.5-1) testing; urgency=medium
+
+  * OPSI.Util.objectToBash: refactored function.
+  * ConfigDataBackend: log_read and log_write now accept logType 'winpe'.
+  * Removed deprecated method backend_getSharedAlgorithm.
+  * OPSI.Util.getfqdn: small internal refactoring.
+  * OPSI.Service.Session: SessionHandler.getSessions now always returns
+    a dict.
+  * Refactored configState_getClientToDepotserver to work faster.
+  * Improved speed of OPSI.Object.decodeIdent if the hash contains no
+    key 'ident'.
+  * 10_opsi.conf: Dropped the deprecated 'force' parameter from
+    setProductActionRequestWithDependencies.
+  * Instead of a plain Exception we now raise more specific exceptions in
+    many places.
+  * OPSI.Util.File.Opsi.PackageControlFile now supports product properties
+    with empty lists as default or possible values. Regenerating a control
+    file will not drop that empty lists anymore.
+  * The ports used for Wake-on-LAN in the HostControl(Safe) backend can now
+    be configured on a per-broadcast-addresse-basis in hostcontrol.conf.
+  * Refactorings in OPSI.Util.Message.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 10 May 2017 14:32:20 +0200
+
 python-opsi (4.1.1.4-1) testing; urgency=medium
 
   * OPSI.Backend.MySQL: Providing known error codes as constants.

@@ -199,7 +199,7 @@ def librsyncSignature(filename, base64Encoded=True):
 
 				return sig
 	except Exception as e:
-		raise Exception(u"Failed to get librsync signature: %s" % forceUnicode(e))
+		raise RuntimeError(u"Failed to get librsync signature: %s" % forceUnicode(e))
 
 
 def librsyncPatchFile(oldfile, deltafile, newfile):
@@ -222,7 +222,7 @@ def librsyncPatchFile(oldfile, deltafile, newfile):
 							data = pf.read(bufsize)
 							nf.write(data)
 	except Exception as e:
-		raise Exception(u"Failed to patch file: %s" % forceUnicode(e))
+		raise RuntimeError(u"Failed to patch file: %s" % forceUnicode(e))
 
 
 def librsyncDeltaFile(filename, signature, deltafile):
@@ -236,7 +236,7 @@ def librsyncDeltaFile(filename, signature, deltafile):
 						data = ldf.read(bufsize)
 						df.write(data)
 	except Exception as e:
-		raise Exception(u"Failed to write delta file: %s" % forceUnicode(e))
+		raise RuntimeError(u"Failed to write delta file: %s" % forceUnicode(e))
 
 
 def md5sum(filename):
@@ -256,8 +256,7 @@ def randomString(length, characters=_ACCEPTED_CHARACTERS):
 
 	:param characters: The characters to choose from. This defaults to 0-9a-Z.
 	"""
-	string = [random.choice(characters) for _ in range(length)]
-	return forceUnicode(u''.join(string))
+	return forceUnicode(u''.join(random.choice(characters) for _ in range(length)))
 
 
 def generateOpsiHostKey(forcePython=False):
@@ -298,54 +297,62 @@ def objectToBeautifiedText(obj):
 
 def objectToBash(obj, bashVars=None, level=0):
 	"""
+	Converts `obj` into bash-compatible format.
+
 	:type bashVars: dict
+	:type level: int
+	:returntype: dict
 	"""
 	if bashVars is None:
 		bashVars = {}
 
 	if level == 0:
 		obj = serialize(obj)
-
-	varName = 'RESULT'
-	if level > 0:
+		varName = 'RESULT'
+	else:
 		varName = 'RESULT%d' % level
 
-	if not bashVars.get(varName):
-		bashVars[varName] = u''
+	if varName not in bashVars:
+		firstAccess = True
+		bashVars[varName] = []
+	else:
+		firstAccess = False
 
 	if hasattr(obj, 'serialize'):
 		obj = obj.serialize()
 
+	append = bashVars[varName].append
+
 	if isinstance(obj, (list, set)):
-		bashVars[varName] += u'(\n'
-		for i in range( len(obj) ):
-			if isinstance(obj[i], (dict, list)):
-				hashFound = True
+		append(u'(\n')
+		for element in obj:
+			if isinstance(element, (dict, list)):
 				level += 1
-				objectToBash(obj[i], bashVars, level)
-				bashVars[varName] += u'RESULT%d=${RESULT%d[*]}' % (level, level)
+				objectToBash(element, bashVars, level)
+				append(u'RESULT%d=${RESULT%d[*]}' % (level, level))
 			else:
-				objectToBash(obj[i], bashVars, level)
-			bashVars[varName] += u'\n'
-		bashVars[varName] = bashVars[varName][:-1] + u'\n)'
+				objectToBash(element, bashVars, level)
+			append(u'\n')
+		append(u')')
 	elif isinstance(obj, dict):
-		bashVars[varName] += u'(\n'
+		append(u'(\n')
 		for (key, value) in obj.items():
-			bashVars[varName] += '%s=' % key
+			append('%s=' % key)
 			if isinstance(value, (dict, list)):
 				level += 1
-				v = objectToBash(value, bashVars, level)
-				bashVars[varName] += u'${RESULT%d[*]}' % level
+				objectToBash(value, bashVars, level)
+				append(u'${RESULT%d[*]}')
 			else:
 				objectToBash(value, bashVars, level)
-			bashVars[varName] += u'\n'
-		bashVars[varName] = bashVars[varName][:-1] + u'\n)'
-
+			append(u'\n')
+		append(u')')
 	elif obj is None:
-		bashVars[varName] += u'""'
-
+		append(u'""')
 	else:
-		bashVars[varName] += u'"%s"' % forceUnicode(obj)
+		append(u'"%s"' % forceUnicode(obj))
+
+	if firstAccess:
+		bashVars[varName] = u''.join(bashVars[varName])
 
 	return bashVars
 
@@ -418,7 +425,7 @@ def compareVersions(v1, condition, v2):
 
 		match = re.search('^\s*([\w\.]+)-*([\w\.]*)\s*$', versionString)
 		if not match:
-			raise Exception(u"Bad version string '%s'" % versionString)
+			raise ValueError(u"Bad version string '%s'" % versionString)
 
 		productVersion = match.group(1)
 		if match.group(2):
@@ -433,7 +440,7 @@ def compareVersions(v1, condition, v2):
 	if not condition:
 		condition = u'=='
 	if condition not in (u'==', u'=', u'<', u'<=', u'>', u'>='):
-		raise Exception(u"Bad condition '%s'" % condition)
+		raise ValueError(u"Bad condition '%s'" % condition)
 	if condition == u'=':
 		condition = u'=='
 
@@ -803,9 +810,11 @@ def getfqdn(name='', conf=None):
 	the specified configuration file.
 	"""
 	if not name:
-		env = os.environ.copy()
-		if "OPSI_HOSTNAME" in env:
-			return forceFqdn(env["OPSI_HOSTNAME"])
+		try:
+			return forceFqdn(os.environ["OPSI_HOSTNAME"])
+		except KeyError:
+			# not set in environment.
+			pass
 
 		if conf is not None:
 			hostname = getGlobalConfig('hostname', conf)
@@ -830,8 +839,9 @@ def getGlobalConfig(name, configFile=OPSI_GLOBAL_CONF):
 		with codecs.open(configFile, 'r', 'utf8') as config:
 			for line in config:
 				line = line.strip()
-				if not line or line.startswith(('#', ';')) or '=' not in line:
+				if '=' not in line or line.startswith(('#', ';')):
 					continue
+
 				(key, value) = line.split('=', 1)
 				if key.strip().lower() == name.lower():
 					return value.strip()

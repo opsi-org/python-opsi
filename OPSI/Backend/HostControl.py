@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2010-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2010-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -42,9 +41,9 @@ except ImportError:
 	from http.client import HTTPSConnection
 
 from OPSI.Logger import Logger, LOG_DEBUG
-from OPSI.Types import BackendMissingDataError
-from OPSI.Types import (forceBool, forceHostId, forceHostIdList, forceInt,
-						forceIpAddress, forceList, forceUnicode,
+from OPSI.Types import BackendMissingDataError, BackendUnaccomplishableError
+from OPSI.Types import (forceBool, forceDict, forceHostId, forceHostIdList,
+						forceInt, forceIpAddress, forceList, forceUnicode,
 						forceUnicodeList)
 from OPSI.Backend.Backend import ExtendedBackend
 from OPSI.Util import fromJson, toJson
@@ -54,6 +53,53 @@ from OPSI.Util.HTTP import closingConnection, non_blocking_connect_https
 __all__ = ('RpcThread', 'ConnectionThread', 'HostControlBackend')
 
 logger = Logger()
+
+
+def _configureHostcontrolBackend(backend, kwargs):
+	"""
+	Configure `backend` to the values given in `kwargs`.
+
+	Keys in `kwargs` will be treated as lowercase.
+	Supported keys are 'broadcastaddresses', 'hostrpctimeout', \
+'maxconnections' opsiclientdport' and 'resolvehostaddress'.
+	Unrecognized options will be ignored.
+
+	:type backend: HostControlBackend or HostControlSafeBackend
+	:type kwargs: dict
+	"""
+	for option, value in kwargs.items():
+		option = option.lower()
+		if option == 'opsiclientdport':
+			backend._opsiclientdPort = forceInt(value)
+		elif option == 'hostrpctimeout':
+			backend._hostRpcTimeout = forceInt(value)
+		elif option == 'resolvehostaddress':
+			backend._resolveHostAddress = forceBool(value)
+		elif option == 'maxconnections':
+			backend._maxConnections = forceInt(value)
+		elif option == 'broadcastaddresses':
+			try:
+				backend._broadcastAddresses = forceDict(value)
+			except ValueError:
+				# This is an old-style configuraton. Old default
+				# port was 12287 so we assume this as the default
+				# and convert everything to the new format.
+				backend._broadcastAddresses = {bcAddress: (12287, ) for bcAddress in forceUnicodeList(value)}
+				logger.warning(
+					"Your hostcontrol backend configuration uses the old "
+					"format for broadcast addresses. The new format "
+					"allows to also set a list of ports to send the "
+					"broadcast to.\nPlease use this new "
+					"value in the future: {0!r}", backend._broadcastAddresses
+				)
+
+			newAddresses = {bcAddress: tuple(forceInt(port) for port in ports)
+							for bcAddress, ports
+							in backend._broadcastAddresses.items()}
+			backend._broadcastAddresses = newAddresses
+
+	if backend._maxConnections < 1:
+		backend._maxConnections = 1
 
 
 class RpcThread(KillableThread):
@@ -161,12 +207,9 @@ class HostControlBackend(ExtendedBackend):
 		self._hostReachableTimeout = 3
 		self._resolveHostAddress = False
 		self._maxConnections = 50
-		self._broadcastAddresses = ["255.255.255.255"]
+		self._broadcastAddresses = {"255.255.255.255": (7, 9, 12287)}
 
-		self._parseArguments(kwargs)
-
-		if self._maxConnections < 1:
-			self._maxConnections = 1
+		_configureHostcontrolBackend(self, kwargs)
 
 	def __repr__(self):
 		try:
@@ -176,20 +219,6 @@ class HostControlBackend(ExtendedBackend):
 		except AttributeError:
 			# Can happen during initialisation
 			return u'<{0}()>'.format(self.__class__.__name__)
-
-	def _parseArguments(self, kwargs):
-		for (option, value) in kwargs.items():
-			option = option.lower()
-			if option == 'opsiclientdport':
-				self._opsiclientdPort = forceInt(value)
-			elif option == 'hostrpctimeout':
-				self._hostRpcTimeout = forceInt(value)
-			elif option == 'resolvehostaddress':
-				self._resolveHostAddress = forceBool(value)
-			elif option == 'maxconnections':
-				self._maxConnections = forceInt(value)
-			elif option == 'broadcastaddresses':
-				self._broadcastAddresses = forceUnicodeList(value)
 
 	def _getHostAddress(self, host):
 		address = None
@@ -204,9 +233,9 @@ class HostControlBackend(ExtendedBackend):
 			try:
 				address = socket.gethostbyname(host.id)
 			except socket.error:
-				raise Exception(u"Failed to resolve ip address for host '%s'" % host.id)
+				raise BackendUnaccomplishableError(u"Failed to resolve ip address for host '%s'" % host.id)
 		if not address:
-			raise Exception(u"Failed to get ip address for host '%s'" % host.id)
+			raise BackendUnaccomplishableError(u"Failed to get ip address for host '%s'" % host.id)
 		return address
 
 	def _opsiclientdRpc(self, hostIds, method, params=[], timeout=None):
@@ -286,27 +315,28 @@ class HostControlBackend(ExtendedBackend):
 					raise BackendMissingDataError(u"Failed to get hardware address for host '%s'" % host.id)
 
 				mac = host.hardwareAddress.replace(':', '')
-
-				# Pad the synchronization stream.
-				data = ''.join(['FFFFFFFFFFFF', mac * 16])
-				send_data = ''
+				data = ''.join(['FFFFFFFFFFFF', mac * 16])  # Pad the synchronization stream.
 
 				# Split up the hex values and pack.
+				payload = ''
 				for i in range(0, len(data), 2):
-					send_data = ''.join([
-						send_data,
-						struct.pack('B', int(data[i: i + 2], 16))])
+					payload = ''.join([
+						payload,
+						struct.pack('B', int(data[i:i + 2], 16))])
 
-				for broadcastAddress in self._broadcastAddresses:
-					logger.debug(u"Sending data to network broadcast %s [%s]" % (broadcastAddress, data))
-					# Broadcast it to the LAN.
-					with closing(socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)) as sock:
-						sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, True)
-						sock.sendto(send_data, (broadcastAddress, 12287))
+				for broadcastAddress, targetPorts in self._broadcastAddresses.items():
+					logger.debug(u"Sending data to network broadcast {0} [{1}]", broadcastAddress, data)
+
+					for port in targetPorts:
+						logger.debug("Broadcasting to port {0!r}", port)
+						with closing(socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)) as sock:
+							sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, True)
+							sock.sendto(payload, (broadcastAddress, port))
+
 				result[host.id] = {"result": "sent", "error": None}
-			except Exception as e:
-				logger.logException(e, LOG_DEBUG)
-				result[host.id] = {"result": None, "error": forceUnicode(e)}
+			except Exception as error:
+				logger.logException(error, LOG_DEBUG)
+				result[host.id] = {"result": None, "error": forceUnicode(error)}
 		return result
 
 	def hostControl_shutdown(self, hostIds=[]):

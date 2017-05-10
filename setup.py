@@ -37,7 +37,7 @@ with codecs.open(os.path.join("debian", "changelog"), 'r', 'utf-8') as changelog
 	VERSION = changelog.readline().split('(')[1].split('-')[0]
 
 if not VERSION:
-	raise Exception(u"Failed to get version info")
+	raise ValueError(u"Failed to get version info")
 
 with open("data/version", "w") as versionFile:
 	versionFile.write(VERSION)

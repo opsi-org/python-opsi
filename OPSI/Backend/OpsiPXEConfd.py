@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2010-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2010-2017 uib GmbH <info@uib.de>
 # All rights reserved.
 
 # This program is free software: you can redistribute it and/or modify
@@ -34,7 +33,8 @@ from contextlib import closing, contextmanager
 from OPSI.Logger import Logger
 from OPSI.Object import OpsiClient
 from OPSI.Types import forceInt, forceUnicode, forceHostId
-from OPSI.Types import BackendMissingDataError
+from OPSI.Types import (BackendMissingDataError, BackendUnableToConnectError,
+	BackendUnaccomplishableError)
 from OPSI.Backend.Backend import OPSI_GLOBAL_CONF, ConfigDataBackend
 from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Util import getfqdn
@@ -58,10 +58,10 @@ class ServerConnection:
 				for part in iter(lambda: unixSocket.recv(4096), ''):
 					result += forceUnicode(part)
 			except Exception as error:
-				raise Exception(u"Failed to receive: %s" % error)
+				raise RuntimeError(u"Failed to receive: %s" % error)
 
 		if result.startswith(u'(ERROR)'):
-			raise Exception(u"Command '%s' failed: %s" % (cmd, result))
+			raise RuntimeError(u"Command '%s' failed: %s" % (cmd, result))
 
 		return result
 
@@ -76,7 +76,7 @@ def createUnixSocket(port, timeout=5.0):
 			unixSocket.connect(port)
 			yield unixSocket
 	except Exception as error:
-		raise Exception(u"Failed to connect to socket '%s': %s" % (port, error))
+		raise RuntimeError(u"Failed to connect to socket '%s': %s" % (port, error))
 
 
 class OpsiPXEConfdBackend(ConfigDataBackend):
@@ -123,7 +123,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 					password=self._opsiHostKey
 				)
 			except Exception as error:
-				raise Exception(u"Failed to connect to depot '%s': %s" % (depotId, error))
+				raise BackendUnableToConnectError(u"Failed to connect to depot '%s': %s" % (depotId, error))
 
 			return self._depotConnections[depotId]
 
@@ -134,7 +134,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 		else:
 			configs = self._context.config_getObjects(id=u'clientconfig.depot.id')  # pylint: disable=maybe-no-member
 			if not configs or not configs[0].defaultValues:
-				raise Exception(u"Failed to get depotserver for client '%s', config 'clientconfig.depot.id' not set and no defaults found" % clientId)
+				raise BackendUnaccomplishableError(u"Failed to get depotserver for client '%s', config 'clientconfig.depot.id' not set and no defaults found" % clientId)
 			depotId = configs[0].defaultValues[0]
 		return depotId
 
@@ -241,7 +241,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 				errors.append(forceUnicode(error))
 
 		if errors:
-			raise Exception(u', '.join(errors))
+			raise RuntimeError(u', '.join(errors))
 
 	def configState_insertObject(self, configState):
 		if configState.configId != 'clientconfig.depot.id':
@@ -267,4 +267,4 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 				errors.append(forceUnicode(error))
 
 		if errors:
-			raise Exception(u', '.join(errors))
+			raise RuntimeError(u', '.join(errors))
