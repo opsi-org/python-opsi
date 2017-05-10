@@ -2463,9 +2463,28 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		)
 
 	def configState_getClientToDepotserver(self, depotIds=[], clientIds=[], masterOnly=True, productIds=[]):
+		"""
+		Get a mapping of client and depots.
+
+		:param depotIds: Limit the search to the specified depot ids. \
+If nothing is given all depots are taken into account.
+		:type depotIds: [str, ]
+		:param clientIds: Limit the search to the specified client ids. \
+If nothing is given all depots are taken into account.
+		:type clientIds: [str, ]
+		:param masterOnly: If this is set to `True` only master depots \
+are taken into account.
+		:type masterOnly: bool
+		:param productIds: Limit the data to the specified products if \
+alternative depots are to be taken into account.
+		:type productIds: [str,]
+		:return: A list of dicts containing the keys `depotId` and \
+`clientId` that belong to each other. If alternative depots are taken \
+into the IDs of these depots are to be found in the list behind \
+`alternativeDepotIds`. The key does always exist but may be empty.
+		:returntype: [{"depotId": str, "alternativeDepotIds": [str, ], "clientId": str},]
+		"""
 		depotIds = forceHostIdList(depotIds)
-		clientIds = forceHostIdList(clientIds)
-		masterOnly = forceBool(masterOnly)
 		productIds = forceProductIdList(productIds)
 
 		depotIds = self.host_getIdents(type='OpsiDepotserver', id=depotIds)
@@ -2473,6 +2492,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			return []
 		depotIds = set(depotIds)
 
+		clientIds = forceHostIdList(clientIds)
 		clientIds = self.host_getIdents(type='OpsiClient', id=clientIds)
 		if not clientIds:
 			return []
@@ -2484,10 +2504,14 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			logger.debug(u"Calling backend_setOptions on {0}", self)
 			self.backend_setOptions({'addConfigStateDefaults': True})
 			for configState in self.configState_getObjects(configId=u'clientconfig.depot.id', objectId=clientIds):
-				if not configState.values or not configState.values[0]:
-					logger.error(u"No depot server configured for client '%s'" % configState.objectId)
+				try:
+					depotId = configState.values[0]
+					if not depotId:
+						raise IndexError("Missing value")
+				except IndexError:
+					logger.error(u"No depot server configured for client {0!r}", configState.objectId)
 					continue
-				depotId = configState.values[0]
+
 				if depotId not in depotIds:
 					continue
 				usedDepotIds.add(depotId)
@@ -2502,7 +2526,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		finally:
 			self.backend_setOptions({'addConfigStateDefaults': addConfigStateDefaults})
 
-		if masterOnly:
+		if forceBool(masterOnly):
 			return result
 
 		productOnDepotsByDepotIdAndProductId = {}
