@@ -525,7 +525,6 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 						continue
 					result = subject.selectChoice()
 					break
-
 			else:
 				raise ValueError(u"unknown method '%s'" % method)
 		except Exception as error:
