@@ -96,8 +96,8 @@ class HostControlSafeBackend(ExtendedBackend):
 		if not hostIds:
 			raise BackendMissingDataError(u"No matching host ids found")
 		hostIds = forceHostIdList(hostIds)
-		method  = forceUnicode(method)
-		params  = forceList(params)
+		method = forceUnicode(method)
+		params = forceList(params)
 		if not timeout:
 			timeout = self._hostRpcTimeout
 		timeout = forceInt(timeout)
@@ -109,13 +109,15 @@ class HostControlSafeBackend(ExtendedBackend):
 				address = self._getHostAddress(host)
 				rpcts.append(
 					RpcThread(
-						hostControlBackend = self,
-						hostId   = host.id,
-						address  = address,
-						username = u'',
-						password = host.opsiHostKey,
-						method   = method,
-						params   = params))
+						hostControlBackend=self,
+						hostId=host.id,
+						address=address,
+						username=u'',
+						password=host.opsiHostKey,
+						method=method,
+						params=params
+					)
+				)
 			except Exception as e:
 				result[host.id] = {"result": None, "error": forceUnicode(e)}
 
@@ -274,7 +276,7 @@ class HostControlSafeBackend(ExtendedBackend):
 						runningThreads += 1
 				else:
 					timeRunning = time.time() - thread.started
-					if (timeRunning >= timeout +5):
+					if timeRunning >= timeout + 5:
 						# thread still alive 5 seconds after timeout => kill
 						logger.error(u"Reachable check to host %s address %s timed out after %0.2f  seconds, terminating" % (thread.hostId, thread.address, timeRunning))
 						result[thread.hostId] = False
@@ -295,4 +297,4 @@ class HostControlSafeBackend(ExtendedBackend):
 			raise BackendMissingDataError(u"No matching host ids found")
 		command = forceUnicode(command)
 		hostIds = self._context.host_getIdents(id=hostIds, returnType='unicode')  # pylint: disable=maybe-no-member
-		return self._opsiclientdRpc(hostIds=hostIds, method='execute', params=[command,waitForEnding,captureStderr,encoding,timeout])
+		return self._opsiclientdRpc(hostIds=hostIds, method='execute', params=[command, waitForEnding, captureStderr, encoding, timeout])
