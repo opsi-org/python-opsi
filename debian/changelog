@@ -6,8 +6,15 @@ python-opsi (4.1.1.5-1) UNRELEASED; urgency=medium
   * OPSI.Util.getfqdn: small internal refactoring.
   * OPSI.Service.Session: SessionHandler.getSessions now always returns
     a dict.
+  * Refactored configState_getClientToDepotserver to work faster.
+  * Improved speed of OPSI.Object.decodeIdent if the hash contains no
+    key 'ident'.
+  * 10_opsi.conf: Dropped the deprecated 'force' parameter from
+    setProductActionRequestWithDependencies.
+  * Instead of a plain Exception we now raise more specific exceptions in
+    many places.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 09 May 2017 18:27:09 +0200
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 10 May 2017 11:23:01 +0200
 
 python-opsi (4.1.1.4-1) testing; urgency=medium
 
