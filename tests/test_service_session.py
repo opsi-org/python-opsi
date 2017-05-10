@@ -23,6 +23,7 @@ Testing session and sessionhandler.
 """
 
 import time
+from contextlib import contextmanager
 
 from OPSI.Service.Session import Session, SessionHandler
 from OPSI.Types import OpsiAuthenticationError
@@ -54,7 +55,12 @@ class FakeSessionHandler(object):
 
 @pytest.fixture
 def sessionHandler():
-	handler = SessionHandler()
+	with deleteSessionsAfterContext(SessionHandler()) as handler:
+		yield handler
+
+
+@contextmanager
+def deleteSessionsAfterContext(handler):
 	try:
 		yield handler
 	finally:
