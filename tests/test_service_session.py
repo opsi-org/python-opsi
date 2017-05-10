@@ -108,24 +108,26 @@ def testDeletedSessionsAreMadeInvalid(session):
 
 def testSessionHandlerInitialisation():
 	handler = SessionHandler("testapp", 10, maxSessionsPerIp=4, sessionDeletionTimeout=23)
-	assert "testapp" == handler.sessionName
-	assert 10 == handler.sessionMaxInactiveInterval
-	assert 4 == handler.maxSessionsPerIp
-	assert 23 == handler.sessionDeletionTimeout
+	with deleteSessionsAfterContext(handler) as handler:
+		assert "testapp" == handler.sessionName
+		assert 10 == handler.sessionMaxInactiveInterval
+		assert 4 == handler.maxSessionsPerIp
+		assert 23 == handler.sessionDeletionTimeout
 
-	assert not handler.sessions
+		assert not handler.sessions
 
 
 def testHandlerCreatesAndExpiresSessions():
 	handler = SessionHandler(sessionDeletionTimeout=2)
-	assert not handler.sessions
+	with deleteSessionsAfterContext(handler) as handler:
+		assert not handler.sessions
 
-	session = handler.createSession()
-	assert 1 == len(handler.sessions)
-	assert handler == session.sessionHandler
+		session = handler.createSession()
+		assert 1 == len(handler.sessions)
+		assert handler == session.sessionHandler
 
-	session.expire()
-	assert 0 == len(handler.sessions)
+		session.expire()
+		assert 0 == len(handler.sessions)
 
 
 def testDeletingAllSessions(sessionHandler):
@@ -142,16 +144,17 @@ def testDeletingAllSessions(sessionHandler):
 
 def testSessionHandlerDeletingSessionInUse():
 	handler = SessionHandler(sessionDeletionTimeout=2)
-	assert not handler.sessions
+	with deleteSessionsAfterContext(handler) as handler:
+		assert not handler.sessions
 
-	session = handler.createSession()
-	assert 1 == len(handler.sessions)
+		session = handler.createSession()
+		assert 1 == len(handler.sessions)
 
-	session.increaseUsageCount()
-	session.increaseUsageCount()
-	session.expire()
+		session.increaseUsageCount()
+		session.increaseUsageCount()
+		session.expire()
 
-	assert 0 == len(handler.sessions)
+		assert 0 == len(handler.sessions)
 
 
 def testDeletingNonExistingSessionMustNotFail(sessionHandler):
@@ -171,7 +174,7 @@ def testCreatingAndExpiringManySessions(sessionCount):
 		sessionDeletionTimeout=23
 	)
 
-	try:
+	with deleteSessionsAfterContext(handler) as handler:
 		for _ in range(sessionCount):
 			handler.createSession()
 
@@ -179,15 +182,13 @@ def testCreatingAndExpiringManySessions(sessionCount):
 			time.sleep(1)
 
 		assert {} == handler.getSessions()
-	finally:
-		handler.deleteAllSessions()
 
 
 def testGetSessionsByIP():
 	handler = SessionHandler("testapp", maxSessionsPerIp=1)
 	testIP = '12.34.56.78'
 
-	try:
+	with deleteSessionsAfterContext(handler) as handler:
 		assert {} == handler.getSessions()
 
 		session = handler.getSession(ip=testIP)
@@ -202,8 +203,6 @@ def testGetSessionsByIP():
 
 		with pytest.raises(OpsiAuthenticationError):
 			handler.getSession(ip=testIP)
-	finally:
-		handler.deleteAllSessions()
 
 
 def testGettingSession(sessionHandler):
