@@ -1,0 +1,38 @@
+[Package]
+version: 1
+depends:
+incremental: False
+
+[Product]
+type: localboot
+id: emptypropertyvalues
+name: Empty Property Values
+description:
+advice:
+version: 4.1
+priority: 0
+licenseRequired: False
+productClasses:
+setupScript: setup.ins
+uninstallScript:
+updateScript:
+alwaysScript:
+onceScript:
+customScript:
+userLoginScript:
+
+[ProductProperty]
+type: unicode
+name: important
+multivalue: False
+editable: True
+description: Nothing is important.
+values: []
+default: []
+
+[Changelog]
+emptypropertyvalues (4.1-1) testing; urgency=low
+
+  * Initial package
+
+ -- Jon <jon@somberlain.invalid>  Tue, 16 Aug 2006 15:56:24 +0000

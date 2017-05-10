@@ -887,9 +887,9 @@ class PackageControlFile(TextFile):
 						for l in descLines[1:]:
 							self._lines.append(u' %s' % l)
 
-			if not isinstance(productProperty, BoolProductProperty) and productProperty.getPossibleValues():
+			if not isinstance(productProperty, BoolProductProperty) and productProperty.getPossibleValues() is not None:
 				self._lines.append(u'values: %s' % toJson(productProperty.getPossibleValues()))
-			if productProperty.getDefaultValues():
+			if productProperty.getDefaultValues() is not None:
 				if isinstance(productProperty, BoolProductProperty):
 					self._lines.append(u'default: %s' % productProperty.getDefaultValues()[0])
 				else:
