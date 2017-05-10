@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) - http://www.opsi.org
 
-# Copyright (C) 2006-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -120,27 +120,26 @@ def getBackendMethodPrefix(klass):
 
 def decodeIdent(klass, hash):
 	try:
-		identFromHash = hash['ident']
-		if identFromHash:
-			if isinstance(identFromHash, dict):
-				ident = identFromHash
-			else:
-				if isinstance(identFromHash, (str, unicode)):
-					identValues = identFromHash.split(klass.identSeparator)
-				elif isinstance(identFromHash, (tuple, list)):
+		identFromHash = hash.pop('ident')
+	except KeyError:  # No 'ident' in hash. Can happen.
+		return hash
+
+	if identFromHash:
+		try:
+			hash.update(identFromHash)
+		except (TypeError, ValueError):  # identFromHash is no dict
+			try:
+				identValues = identFromHash.split(klass.identSeparator)
+			except AttributeError:  # neither string nor unicode
+				if isinstance(identFromHash, (tuple, list)):
 					identValues = identFromHash
 				else:
 					identValues = []
 
-				args = mandatoryConstructorArgs(klass)
-				if len(identValues) == len(args):
-					ident = dict(zip(args, identValues))
-
-			del hash['ident']
+			args = mandatoryConstructorArgs(klass)
+			assert len(identValues) == len(args), "ident has unexpected length."
+			ident = dict(zip(args, identValues))
 			hash.update(ident)
-	except KeyError:
-		# No 'ident' in hash. Can happen.
-		pass
 
 	return hash
 
