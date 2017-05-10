@@ -13,8 +13,11 @@ python-opsi (4.1.1.5-1) UNRELEASED; urgency=medium
     setProductActionRequestWithDependencies.
   * Instead of a plain Exception we now raise more specific exceptions in
     many places.
+  * OPSI.Util.File.Opsi.PackageControlFile now supports product properties
+    with empty lists as default or possible values. Regenerating a control
+    file will not drop that empty lists anymore.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 10 May 2017 11:23:01 +0200
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 10 May 2017 11:38:01 +0200
 
 python-opsi (4.1.1.4-1) testing; urgency=medium
 
