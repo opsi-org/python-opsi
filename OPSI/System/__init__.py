@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
@@ -259,7 +258,7 @@ def copy(src, dst, progressSubject=None):
 			copySrcContent = True
 
 		if copySrcContent and not os.path.isdir(src):
-			raise Exception(u"Source directory '%s' not found" % src)
+			raise IOError(u"Source directory '%s' not found" % src)
 
 		logger.info(u"Copying from '%s' to '%s'" % (src, dst))
 		(count, size) = (0, 0)

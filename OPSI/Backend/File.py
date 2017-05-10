@@ -34,7 +34,7 @@ import shutil
 
 from OPSI.Backend.Backend import OPSI_GLOBAL_CONF, ConfigDataBackend
 from OPSI.Logger import Logger
-from OPSI.Types import BackendIOError
+from OPSI.Types import BackendError, BackendIOError, BackendUnaccomplishableError
 from OPSI.Types import (forceBool, forceHostId, forceFilename, forceList,
 						forceObjectClass, forceObjectClassList, forceProductId,
 						forceUnicode, forceUnicodeList)
@@ -342,14 +342,14 @@ class FileBackend(ConfigDataBackend):
 				elif objType == 'HostGroup' or (objType == 'Group' and ident.get('type', '') == 'HostGroup'):
 					filename = os.path.join(self.__clientGroupsFile)
 				else:
-					raise Exception(u"Unable to determine config file for object type '%s' and ident %s" % (objType, ident))
+					raise BackendUnaccomplishableError(u"Unable to determine config file for object type '%s' and ident %s" % (objType, ident))
 			elif objType == 'ObjectToGroup':
 				if ident.get('groupType') in ('ProductGroup',):
 					filename = os.path.join(self.__productGroupsFile)
 				elif ident.get('groupType') in ('HostGroup',):
 					filename = os.path.join(self.__clientGroupsFile)
 				else:
-					raise Exception(u"Unable to determine config file for object type '%s' and ident %s" % (objType, ident))
+					raise BackendUnaccomplishableError(u"Unable to determine config file for object type '%s' and ident %s" % (objType, ident))
 
 		elif fileType == 'pro':
 			pVer = u'_' + ident['productVersion'] + u'-' + ident['packageVersion']
@@ -383,13 +383,13 @@ class FileBackend(ConfigDataBackend):
 				filename = os.path.join(self.__auditDir, ident['hostId'] + u'.hw')
 
 		if filename is None:
-			raise Exception(u"No config-file returned! objType '%s', ident '%s', fileType '%s'" % (objType, ident, fileType))
+			raise BackendError(u"No config-file returned! objType '%s', ident '%s', fileType '%s'" % (objType, ident, fileType))
 
 		if objType in ('ConfigState', 'ProductOnDepot', 'ProductOnClient', 'ProductPropertyState'):
 			if os.path.isfile(filename):
 				return filename
 			else:
-				raise Exception(u"%s needs existing file '%s' ident '%s', fileType '%s'" % (objType, filename, ident, fileType))
+				raise BackendIOError(u"%s needs existing file '%s' ident '%s', fileType '%s'" % (objType, filename, ident, fileType))
 		else:
 			logger.debug2(u"Returning config file '%s'" % (filename))
 			return filename
@@ -749,7 +749,7 @@ class FileBackend(ConfigDataBackend):
 				return []
 
 		if objType not in self._mappings:
-			raise Exception(u"Mapping not found for object type '%s'" % objType)
+			raise BackendUnaccomplishableError(u"Mapping not found for object type '%s'" % objType)
 
 		logger.debug2(u"Now reading '%s' with:" % (objType))
 		logger.debug2(u"   Attributes: '%s'" % (attributes))
@@ -839,7 +839,7 @@ class FileBackend(ConfigDataBackend):
 							if objType == 'ProductOnClient' and section.endswith('_product_states'):
 								index = value.find(':')  # pylint: disable=maybe-no-member
 								if index == -1:
-									raise Exception(u"No ':' found in section '%s' in option '%s' in '%s'" % (section, option, filename))
+									raise BackendBadValueError(u"No ':' found in section '%s' in option '%s' in '%s'" % (section, option, filename))
 
 								if attribute == 'installationStatus':
 									value = value[:index]
@@ -898,10 +898,10 @@ class FileBackend(ConfigDataBackend):
 
 		if objType == 'OpsiConfigserver':
 			if self.__serverId != obj.getId():
-				raise Exception(u"Filebackend can only handle this config server '%s', not '%s'" % (self.__serverId, obj.getId()))
+				raise BackendUnaccomplishableError(u"Filebackend can only handle this config server '%s', not '%s'" % (self.__serverId, obj.getId()))
 
 		if objType not in self._mappings:
-			raise Exception(u"Mapping not found for object type '%s'" % objType)
+			raise BackendUnaccomplishableError(u"Mapping not found for object type '%s'" % objType)
 
 		mappings = {}
 		for mapping in self._mappings[objType]:
@@ -1626,7 +1626,8 @@ class FileBackend(ConfigDataBackend):
 					ini.set(section, key, self.__escape(value))
 				iniFile.generate(ini)
 				return
-		raise Exception(u"AuditSoftware %s not found" % auditSoftware)
+
+		raise BackendMissingDataError(u"AuditSoftware %s not found" % auditSoftware)
 
 	def auditSoftware_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.auditSoftware_getObjects(self, attributes=[], **filter)
@@ -1786,7 +1787,8 @@ class FileBackend(ConfigDataBackend):
 					ini.set(section, key, self.__escape(value))
 				iniFile.generate(ini)
 				return
-		raise Exception(u"auditSoftwareOnClient %s not found" % auditSoftwareOnClient)
+
+		raise BackendMissingDataError(u"auditSoftwareOnClient %s not found" % auditSoftwareOnClient)
 
 	def auditSoftwareOnClient_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.auditSoftwareOnClient_getObjects(self, attributes=[], **filter)
@@ -1971,11 +1973,11 @@ class FileBackend(ConfigDataBackend):
 
 	def __doAuditHardwareObj(self, auditHardwareObj, mode):
 		if mode not in ('insert', 'update', 'delete'):
-			raise Exception(u"Unknown mode: %s" % mode)
+			raise ValueError(u"Unknown mode: %s" % mode)
 
 		objType = auditHardwareObj.getType()
 		if objType not in ('AuditHardware', 'AuditHardwareOnHost'):
-			raise Exception(u"Unknown type: %s" % objType)
+			raise TypeError(u"Unknown type: %s" % objType)
 
 		filename = self._getConfigFile(objType, auditHardwareObj.getIdent(returnType='dict'), 'hw')
 		self._touch(filename)

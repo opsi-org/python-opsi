@@ -41,8 +41,8 @@ from twisted.conch.ssh import keys
 from OPSI.Logger import Logger
 from OPSI.Types import (forceBool, forceUnicodeLower, forceOpsiTimestamp,
 	forceList, forceUnicode, forceUnicodeList, forceDict, forceObjectClassList)
-from OPSI.Types import (BackendConfigurationError,
-	BackendReferentialIntegrityError, BackendModuleDisabledError)
+from OPSI.Types import (BackendConfigurationError, BackendMissingDataError,
+	BackendModuleDisabledError, BackendReferentialIntegrityError)
 from OPSI.Object import (AuditHardware, AuditHardwareOnHost, AuditSoftware,
 	AuditSoftwareOnClient, AuditSoftwareToLicensePool, Config, ConfigState,
 	Entity, Group, Host, HostGroup, LicenseContract, LicenseOnClient,
@@ -171,7 +171,7 @@ class SQLBackendObjectModificationTracker(BackendModificationListener):
 	def _trackModification(self, command, obj):
 		command = forceUnicodeLower(command)
 		if command not in ('insert', 'update', 'delete'):
-			raise Exception(u"Unhandled command {0!r}".format(command))
+			raise ValueError(u"Unhandled command {0!r}".format(command))
 
 		data = {
 			'command': command,
@@ -2194,7 +2194,7 @@ class SQLBackend(ConfigDataBackend):
 				filter[attribute] = [None]
 
 		if not self.auditHardware_getObjects(**filter):
-			raise Exception(u"AuditHardware '%s' not found" % auditHardware.getIdent())
+			raise BackendMissingDataError(u"AuditHardware '%s' not found" % auditHardware.getIdent())
 
 	def auditHardware_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.auditHardware_getObjects(self, attributes=[], **filter)

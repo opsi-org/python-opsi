@@ -98,7 +98,7 @@ try:
 				DEFAULT_MAX_LOGFILE_SIZE = logSize
 				break
 		else:
-			raise Exception("No custom setting found.")
+			raise ValueError("No custom setting found.")
 except Exception as error:
 	logger.debug("Failed to set MAX LOG SIZE from config: {0}".format(error))
 	DEFAULT_MAX_LOGFILE_SIZE = 5000000
@@ -309,7 +309,7 @@ This defaults to ``self``.
 					# No match, we can stop further checks.
 					return False
 			except Exception as err:
-				raise Exception(
+				raise BackendError(
 					u"Testing match of filter {0!r} of attribute {1!r} with "
 					u"value {2!r} failed: {error}".format(
 						filter[attribute], attribute, value, error=err
@@ -423,13 +423,13 @@ This defaults to ``self``.
 
 			if not modules.get('signature'):
 				modules = {'valid': False}
-				raise Exception(u"Signature not found")
+				raise ValueError(u"Signature not found")
 			if not modules.get('customer'):
 				modules = {'valid': False}
-				raise Exception(u"Customer not found")
+				raise ValueError(u"Customer not found")
 			if (modules.get('expires', '') != 'never') and (time.mktime(time.strptime(modules.get('expires', '2000-01-01'), "%Y-%m-%d")) - time.time() <= 0):
 				modules = {'valid': False}
-				raise Exception(u"Signature expired")
+				raise ValueError(u"Signature expired")
 			publicKey = keys.Key.fromString(data=base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
 			data = u''
 			mks = modules.keys()
