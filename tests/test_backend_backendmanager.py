@@ -132,7 +132,7 @@ def testBackendManagerMethods(backendManager):
     for objectToGroup in objectToGroups:
         assert objectToGroup.objectId in clients
 
-    bm.deleteGroup(groupId=groupId)
+    bm.group_delete(id=groupId)
     assert 0 == len(bm.group_getObjects(id=groupId))
 
     ipAddress = bm.getIpAddress(hostId=client1.id)
@@ -171,7 +171,7 @@ def testBackendManagerMethods(backendManager):
     # serverIds = bm.host_getIdents(type='OpsiConfigserver')
     # self.assertTrue(serverId not in serverIds)
 
-    bm.deleteClient(clientId)
+    bm.host_delete(id=clientId)
     assert clientId not in bm.host_getIdents(type='OpsiClient')
 
     lastSeen = '2009-01-01 00:00:00'
@@ -220,7 +220,7 @@ def testBackendManagerMethods(backendManager):
     depot = bm.getDepot_hash(depotId)
     assert depot['depotRemoteUrl'] == depotRemoteUrl
 
-    bm.deleteDepot(depotId)
+    bm.host_delete(id=depotId)
     depotIds = bm.getDepotIds_list()
     assert depotId not in depotIds
 
