@@ -181,7 +181,10 @@ def testBackendManagerMethods(backendManager):
 
     host = bm.getHost_hash(hostId=client1.id)
     serverIds = bm.getServerIds_list()
+    assert isinstance(serverIds, list)
+    assert serverIds
     serverId = bm.getServerId(clientId=client1.id)
+    assert serverId.endswith(domain)
 
     depotName = origDepotserver1.id.split('.', 1)[0]
     depotRemoteUrl = 'smb://{0}/xyz'.format(depotName)
