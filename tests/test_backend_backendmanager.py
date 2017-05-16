@@ -138,7 +138,7 @@ def testBackendManagerMethods(backendManager):
     ipAddress = bm.getIpAddress(hostId=client1.id)
     assert ipAddress == client1.ipAddress
 
-    serverName, domain = getLocalFQDN().split('.', 1)
+    _, domain = getLocalFQDN().split('.', 1)
 
     clientName = 'test-client'
     clientId = bm.createClient(
