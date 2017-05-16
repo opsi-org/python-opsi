@@ -157,12 +157,10 @@ def testBackendManagerMethods(backendManager):
     bm.host_delete(id=clientId)
     assert clientId not in bm.host_getIdents(type='OpsiClient')
 
-    lastSeen = '2009-01-01 00:00:00'
     description = 'Updated description'
     notes = 'Updated notes'
     opsiHostKey = '00000000001111111111222222222233'
     mac = '00:01:02:03:40:12'
-    bm.setHostLastSeen(hostId=client1.id, timestamp=lastSeen)
     bm.setHostDescription(hostId=client1.id, description=description)
     bm.setHostNotes(hostId=client1.id, notes=notes)
     bm.setOpsiHostKey(hostId=client1.id, opsiHostKey=opsiHostKey)
@@ -170,7 +168,6 @@ def testBackendManagerMethods(backendManager):
 
     host = bm.host_getObjects(id=client1.id)[0]
 
-    assert lastSeen == host.lastSeen
     assert description == host.description
     assert notes == host.notes
     assert opsiHostKey == host.opsiHostKey
