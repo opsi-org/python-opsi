@@ -1020,9 +1020,10 @@ depot where the method is.
 		for (productId, versions) in productByIdAndVersion.items():
 			allProductVersionsWillBeDeleted = True
 			for product in self._context.product_getObjects(attributes=['id', 'productVersion', 'packageVersion'], id=productId):  # pylint: disable=maybe-no-member
-				if not product.packageVersion in versions.get(product.productVersion, []):
+				if product.packageVersion not in versions.get(product.productVersion, []):
 					allProductVersionsWillBeDeleted = False
 					break
+
 			if not allProductVersionsWillBeDeleted:
 				continue
 
