@@ -139,16 +139,6 @@ def testBackendManagerMethods(backendManager):
     assert ipAddress == client1.ipAddress
 
     serverName, domain = getLocalFQDN().split('.', 1)
-    serverId = bm.createServer(
-        serverName=serverName,
-        domain=domain,
-        description='Some description',
-        notes=None
-    )
-    assert serverId == serverName + '.' + domain
-
-    serverIds = bm.host_getIdents(type='OpsiConfigserver')
-    assert serverId in serverIds
 
     clientName = 'test-client'
     clientId = bm.createClient(
@@ -163,13 +153,6 @@ def testBackendManagerMethods(backendManager):
 
     clientIds = bm.host_getIdents(type='OpsiClient')
     assert clientId in clientIds
-
-    # This will not work with the file backend because it will not
-    # delete any host with the id == local FQDN.
-    # TODO: if running with different backend, please enable
-    # bm.deleteServer(serverId)
-    # serverIds = bm.host_getIdents(type='OpsiConfigserver')
-    # self.assertTrue(serverId not in serverIds)
 
     bm.host_delete(id=clientId)
     assert clientId not in bm.host_getIdents(type='OpsiClient')
