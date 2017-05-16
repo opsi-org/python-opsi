@@ -36,7 +36,7 @@ from OPSI.Types import forceBool, forceFilename, forceUnicode
 from OPSI.Types import BackendBadValueError
 from OPSI.Backend.SQL import SQL, SQLBackend, SQLBackendObjectModificationTracker
 
-__all__ = ['SQLite', 'SQLiteBackend', 'SQLiteObjectBackendModificationTracker']
+__all__ = ('SQLite', 'SQLiteBackend', 'SQLiteObjectBackendModificationTracker')
 
 logger = Logger()
 

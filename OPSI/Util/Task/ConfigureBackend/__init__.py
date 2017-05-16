@@ -117,7 +117,7 @@ def _getSysConfig():
 		fqdn = getfqdn(conf=OPSI_GLOBAL_CONF)
 		sysConfig['fqdn'] = forceHostId(fqdn)
 	except Exception as exc:
-		raise Exception(
+		raise RuntimeError(
 			u"Failed to get fully qualified domain name: {0}".format(exc)
 		)
 
@@ -139,7 +139,7 @@ def _getSysConfig():
 				break
 
 	if not sysConfig['ipAddress']:
-		raise Exception(
+		raise RuntimeError(
 			u"Failed to get a valid ip address for fqdn '{0}'".format(fqdn)
 		)
 

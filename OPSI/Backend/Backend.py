@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This module is part of the desktop management solution opsi
@@ -66,12 +65,12 @@ if os.name == 'posix':
 			from OPSI.ldaptor.protocols import pureldap
 			from OPSI.ldaptor import ldapfilter
 
-__all__ = [
+__all__ = (
 	'getArgAndCallString', 'temporaryBackendOptions',
 	'DeferredCall', 'Backend', 'ExtendedBackend', 'ConfigDataBackend',
 	'ExtendedConfigDataBackend',
 	'ModificationTrackingBackend', 'BackendModificationListener'
-]
+)
 
 OPSI_VERSION_FILE = u'/etc/opsi/version'
 OPSI_MODULES_FILE = u'/etc/opsi/modules'
@@ -84,6 +83,7 @@ LOG_TYPES = {  # key = logtype, value = requires objectId for read
 	'instlog': True,
 	'opsiconfd': False,
 	'userlogin': True,
+	'winpe': True,
 }
 
 logger = Logger()
@@ -98,7 +98,7 @@ try:
 				DEFAULT_MAX_LOGFILE_SIZE = logSize
 				break
 		else:
-			raise Exception("No custom setting found.")
+			raise ValueError("No custom setting found.")
 except Exception as error:
 	logger.debug("Failed to set MAX LOG SIZE from config: {0}".format(error))
 	DEFAULT_MAX_LOGFILE_SIZE = 5000000
@@ -309,7 +309,7 @@ This defaults to ``self``.
 					# No match, we can stop further checks.
 					return False
 			except Exception as err:
-				raise Exception(
+				raise BackendError(
 					u"Testing match of filter {0!r} of attribute {1!r} with "
 					u"value {2!r} failed: {error}".format(
 						filter[attribute], attribute, value, error=err
@@ -423,13 +423,13 @@ This defaults to ``self``.
 
 			if not modules.get('signature'):
 				modules = {'valid': False}
-				raise Exception(u"Signature not found")
+				raise ValueError(u"Signature not found")
 			if not modules.get('customer'):
 				modules = {'valid': False}
-				raise Exception(u"Customer not found")
+				raise ValueError(u"Customer not found")
 			if (modules.get('expires', '') != 'never') and (time.mktime(time.strptime(modules.get('expires', '2000-01-01'), "%Y-%m-%d")) - time.time() <= 0):
 				modules = {'valid': False}
-				raise Exception(u"Signature expired")
+				raise ValueError(u"Signature expired")
 			publicKey = keys.Key.fromString(data=base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
 			data = u''
 			mks = modules.keys()
@@ -457,13 +457,6 @@ This defaults to ``self``.
 			"modules": modules,
 			"realmodules": helpermodules
 		}
-
-	def backend_getSharedAlgorithm(self, function):
-		raise BackendError(
-			u"This function has been removed. "
-			u"If you rely on this feature please get in touch with us "
-			u"on the forums - https://forum.opsi.org/"
-		)
 
 	def backend_exit(self):
 		"""
@@ -1894,8 +1887,9 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			return (result, objectClass, objectFilter)
 
 		result = [v[0] for v in handleFilter(parsedFilter)[0].get('identValues', [])]
+		result.sort()
 		logger.info(u"=== Search done, result: %s" % result)
-		return sorted(result)
+		return result
 
 	def host_getIdents(self, returnType='unicode', **filter):
 		return [host.getIdent(returnType) for host in self.host_getObjects(attributes=['id'], **filter)]
@@ -2469,9 +2463,28 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		)
 
 	def configState_getClientToDepotserver(self, depotIds=[], clientIds=[], masterOnly=True, productIds=[]):
+		"""
+		Get a mapping of client and depots.
+
+		:param depotIds: Limit the search to the specified depot ids. \
+If nothing is given all depots are taken into account.
+		:type depotIds: [str, ]
+		:param clientIds: Limit the search to the specified client ids. \
+If nothing is given all depots are taken into account.
+		:type clientIds: [str, ]
+		:param masterOnly: If this is set to `True` only master depots \
+are taken into account.
+		:type masterOnly: bool
+		:param productIds: Limit the data to the specified products if \
+alternative depots are to be taken into account.
+		:type productIds: [str,]
+		:return: A list of dicts containing the keys `depotId` and \
+`clientId` that belong to each other. If alternative depots are taken \
+into the IDs of these depots are to be found in the list behind \
+`alternativeDepotIds`. The key does always exist but may be empty.
+		:returntype: [{"depotId": str, "alternativeDepotIds": [str, ], "clientId": str},]
+		"""
 		depotIds = forceHostIdList(depotIds)
-		clientIds = forceHostIdList(clientIds)
-		masterOnly = forceBool(masterOnly)
 		productIds = forceProductIdList(productIds)
 
 		depotIds = self.host_getIdents(type='OpsiDepotserver', id=depotIds)
@@ -2479,6 +2492,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			return []
 		depotIds = set(depotIds)
 
+		clientIds = forceHostIdList(clientIds)
 		clientIds = self.host_getIdents(type='OpsiClient', id=clientIds)
 		if not clientIds:
 			return []
@@ -2490,10 +2504,14 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			logger.debug(u"Calling backend_setOptions on {0}", self)
 			self.backend_setOptions({'addConfigStateDefaults': True})
 			for configState in self.configState_getObjects(configId=u'clientconfig.depot.id', objectId=clientIds):
-				if not configState.values or not configState.values[0]:
-					logger.error(u"No depot server configured for client '%s'" % configState.objectId)
+				try:
+					depotId = configState.values[0]
+					if not depotId:
+						raise IndexError("Missing value")
+				except IndexError:
+					logger.error(u"No depot server configured for client {0!r}", configState.objectId)
 					continue
-				depotId = configState.values[0]
+
 				if depotId not in depotIds:
 					continue
 				usedDepotIds.add(depotId)
@@ -2508,7 +2526,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		finally:
 			self.backend_setOptions({'addConfigStateDefaults': addConfigStateDefaults})
 
-		if masterOnly:
+		if forceBool(masterOnly):
 			return result
 
 		productOnDepotsByDepotIdAndProductId = {}
@@ -2941,11 +2959,11 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		productOnDepots = forceObjectClassList(productOnDepots, ProductOnDepot)
 		products = {}
 		for productOnDepot in productOnDepots:
-			if not products.has_key(productOnDepot.productId):
+			if productOnDepot.productId not in products:
 				products[productOnDepot.productId] = {}
-			if not products[productOnDepot.productId].has_key(productOnDepot.productVersion):
+			if productOnDepot.productVersion not in products[productOnDepot.productId]:
 				products[productOnDepot.productId][productOnDepot.productVersion] = []
-			if not productOnDepot.packageVersion in products[productOnDepot.productId][productOnDepot.productVersion]:
+			if productOnDepot.packageVersion not in products[productOnDepot.productId][productOnDepot.productVersion]:
 				products[productOnDepot.productId][productOnDepot.productVersion].append(productOnDepot.packageVersion)
 
 		ret = self._backend.productOnDepot_deleteObjects(productOnDepots)
@@ -3170,15 +3188,14 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			# Get depot to client assignment
 			depotToClients = {}
 			for clientToDepot in self.configState_getClientToDepotserver(clientIds=clientIds):
-				if not depotToClients.has_key(clientToDepot['depotId']):
+				if clientToDepot['depotId'] not in depotToClients:
 					depotToClients[clientToDepot['depotId']] = []
 				depotToClients[clientToDepot['depotId']].append(clientToDepot['clientId'])
 			logger.debug(u"   * got depotToClients")
 
-
 			productOnDepots = {}
 			# Get product on depots which match the filter
-			for depotId in depotToClients.keys():
+			for depotId in depotToClients:
 				productOnDepots[depotId] = self._backend.productOnDepot_getObjects(
 					depotId=depotId,
 					productId=pocFilter.get('productId'),
@@ -3204,7 +3221,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			for (depotId, depotClientIds) in depotToClients.items():
 				for clientId in depotClientIds:
 					for pod in productOnDepots[depotId]:
-						if not pocByClientIdAndProductId[clientId].has_key(pod.productId):
+						if pod.productId not in pocByClientIdAndProductId[clientId]:
 							logger.debug(u"      - creating default productOnClient for clientId '%s', productId '%s'" % (clientId, pod.productId))
 							poc = ProductOnClient(
 									productId=pod.productId,

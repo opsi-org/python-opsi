@@ -458,7 +458,7 @@ class Repository:
 				if c['name'] == filename:
 					info = c
 					return info
-			raise Exception(u'File not found')
+			raise IOError(u'File not found')
 		except Exception as error:
 			raise RepositoryError(u"Failed to get file info for '%s': %s" % (source, error))
 
@@ -506,16 +506,16 @@ class Repository:
 
 			copySrcContent = False
 
-			if source.endswith('/*.*') or source.endswith('\\*.*'):
+			if source.endswith(('/*.*', '\\*.*')):
 				source = source[:-4]
 				copySrcContent = True
 
-			elif source.endswith('/*') or source.endswith('\\*'):
+			elif source.endswith(('/*', '\\*')):
 				source = source[:-2]
 				copySrcContent = True
 
 			if copySrcContent and not self.isdir(source):
-				raise Exception(u"Source directory '%s' not found" % source)
+				raise IOError(u"Source directory '%s' not found" % source)
 
 			logger.info(u"Copying from '%s' to '%s'" % (source, destination))
 
@@ -563,7 +563,7 @@ class Repository:
 				if not os.path.exists(destination):
 					os.makedirs(destination)
 				elif os.path.isfile(destination):
-					raise Exception(u"Cannot copy directory '%s' into file '%s'" % (source, destination))
+					raise IOError(u"Cannot copy directory '%s' into file '%s'" % (source, destination))
 				elif os.path.isdir(destination):
 					if not copySrcContent:
 						destination = os.path.join(destination, info['name'])
@@ -575,7 +575,7 @@ class Repository:
 						path.extend(c['path'].split('/'))
 						targetDir = os.path.join(*path)
 						if not targetDir:
-							raise Exception(u"Bad target directory '%s'" % targetDir)
+							raise RuntimeError(u"Bad target directory '%s'" % targetDir)
 						if not os.path.isdir(targetDir):
 							os.makedirs(targetDir)
 					elif c.get('type') == 'file':
@@ -594,7 +594,7 @@ class Repository:
 						path.extend(c['path'].split('/')[:-1])
 						targetDir = os.path.join(*path)
 						if not targetDir:
-							raise Exception(u"Bad target directory '%s'" % targetDir)
+							raise RuntimeError(u"Bad target directory '%s'" % targetDir)
 						if targetDir and not os.path.isdir(targetDir):
 							os.makedirs(targetDir)
 						self.download(u'/'.join((source, c['path'])), os.path.join(targetDir, c['name']), currentProgressSubject)
@@ -602,7 +602,7 @@ class Repository:
 						if overallProgressSubject:
 							overallProgressSubject.addToState(c['size'])
 			else:
-				raise Exception(u"Failed to copy: unknown source type '%s'" % source)
+				raise RuntimeError(u"Failed to copy: unknown source type '%s'" % source)
 			logger.info(u'Copy done')
 			if overallProgressSubject:
 				overallProgressSubject.setState(size)
@@ -672,7 +672,7 @@ class FileRepository(Repository):
 				'size': long(0)
 			}
 			if not os.path.exists(source):
-				raise Exception(u'File not found')
+				raise IOError(u'File not found')
 			if os.path.isdir(source):
 				info['type'] = 'dir'
 			if os.path.isfile(source):
@@ -939,7 +939,7 @@ class HTTPRepository(Repository):
 					httplib_response = conn.getresponse()
 					self._processResponseHeaders(httplib_response)
 					if httplib_response.status not in (responsecode.OK, responsecode.PARTIAL_CONTENT):
-						raise Exception(httplib_response.status)
+						raise RuntimeError(httplib_response.status)
 					size = forceInt(httplib_response.getheader('content-length', 0))
 					logger.debug(u"Length of binary data to download: %d bytes" % size)
 
@@ -992,7 +992,7 @@ class WebDAVRepository(HTTPRepository):
 		if not source.endswith('/'):
 			source += '/'
 
-		if recursive and self._contentCache.has_key(source):
+		if recursive and source in self._contentCache:
 			if time.time() - self._contentCache[source]['time'] > 60:
 				del self._contentCache[source]
 			else:
@@ -1089,7 +1089,7 @@ class WebDAVRepository(HTTPRepository):
 
 			self._processResponseHeaders(response)
 			if response.status not in (responsecode.CREATED, responsecode.NO_CONTENT):
-				raise Exception(response.status)
+				raise RuntimeError(response.status)
 		except Exception as error:
 			logger.logException(error)
 			if conn:
@@ -1239,7 +1239,7 @@ class DepotToLocalDirectorySychronizer(object):
 			relSource = s.split(u'/', 1)[1]
 			if relSource == self._productId + u'.files':
 				continue
-			if not self._fileInfo.has_key(relSource):
+			if relSource not in self._fileInfo:
 				continue
 			if f['type'] == 'dir':
 				self._synchronizeDirectories(s, d, progressSubject)
@@ -1304,7 +1304,7 @@ class DepotToLocalDirectorySychronizer(object):
 				if md5s != self._fileInfo[relSource]['md5sum']:
 					error = u"Failed to download '%s': MD5sum mismatch (local:%s != remote:%s)" % (f['name'], md5s, self._fileInfo[relSource]['md5sum'])
 					logger.error(error)
-					raise Exception(error)
+					raise RuntimeError(error)
 
 	def synchronize(self, productProgressObserver=None, overallProgressObserver=None):
 		if not self._productIds:
@@ -1340,8 +1340,11 @@ class DepotToLocalDirectorySychronizer(object):
 
 				size = 0
 				for value in self._fileInfo.values():
-					if 'size' in value:
+					try:
 						size += int(value['size'])
+					except KeyError:
+						pass
+
 				productProgressSubject.setMessage(_(u"Synchronizing product %s (%.2f kByte)") % (self._productId, (size / 1024)))
 				productProgressSubject.setEnd(size)
 				productProgressSubject.setEndChangable(False)

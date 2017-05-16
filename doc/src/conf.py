@@ -20,6 +20,15 @@ import os
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
+try:
+    import duplicity
+except ImportError:
+    # duplicity could not be imported but we require it to render the
+    # docs properly.
+    # Fake it till you make it.
+    import mock
+    sys.modules['duplicity'] = mock.Mock()
+
 # -- General configuration -----------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
@@ -31,7 +40,7 @@ extensions = [
     'sphinx.ext.autodoc',
     # 'sphinx.ext.graphviz',  # Provides support for .dot files.
     # 'sphinx.ext.todo',  # Enabling to do lists.
-    'sphinx.ext.viewcode',  # Creating pages for the source code.
+    # 'sphinx.ext.viewcode',  # Creating pages for the source code.
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -293,3 +302,19 @@ epub_copyright = u'2013-{year}, uib GmbH'.format(year=datetime.datetime.now().ye
 
 # Allow duplicate toc entries.
 #epub_tocdup = True
+
+
+# Generate api documentation.
+# This is required to have all the docs on readthedocs.org
+# Taken from https://github.com/rtfd/readthedocs.org/issues/1139
+def run_apidoc(_):
+    from sphinx.apidoc import main as apidoc_main
+
+    cur_dir = os.path.abspath(os.path.dirname(__file__))
+    output_path = cur_dir
+    module_path = os.path.abspath(os.path.join(cur_dir, '..', '..', 'OPSI/'))
+    apidoc_main(['--separate', '--output-dir', output_path, module_path])
+
+
+def setup(app):
+    app.connect('builder-inited', run_apidoc)

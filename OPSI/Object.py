@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) - http://www.opsi.org
 
-# Copyright (C) 2006-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -47,7 +47,7 @@ from OPSI.Types import (forceActionProgress, forceActionRequest,
 	forceUnicodeList, forceUnicodeLower, forceUnsignedInt, forceUrl)
 from OPSI.Util import fromJson, toJson, generateOpsiHostKey, timestamp
 
-__all__ = [
+__all__ = (
 	'AuditHardware', 'AuditHardwareOnHost', 'AuditSoftware',
 	'AuditSoftwareOnClient', 'AuditSoftwareToLicensePool', 'BaseObject',
 	'BoolConfig', 'BoolProductProperty', 'ConcurrentSoftwareLicense',
@@ -62,7 +62,7 @@ __all__ = [
 	'decodeIdent', 'getBackendMethodPrefix', 'getForeignIdAttributes',
 	'getIdentAttributes', 'getPossibleClassAttributes',
 	'mandatoryConstructorArgs', 'objectsDiffer'
-]
+)
 
 logger = Logger()
 _MANDATORY_CONSTRUCTOR_ARGS_CACHE = {}
@@ -120,27 +120,26 @@ def getBackendMethodPrefix(klass):
 
 def decodeIdent(klass, hash):
 	try:
-		identFromHash = hash['ident']
-		if identFromHash:
-			if isinstance(identFromHash, dict):
-				ident = identFromHash
-			else:
-				if isinstance(identFromHash, (str, unicode)):
-					identValues = identFromHash.split(klass.identSeparator)
-				elif isinstance(identFromHash, (tuple, list)):
+		identFromHash = hash.pop('ident')
+	except KeyError:  # No 'ident' in hash. Can happen.
+		return hash
+
+	if identFromHash:
+		try:
+			hash.update(identFromHash)
+		except (TypeError, ValueError):  # identFromHash is no dict
+			try:
+				identValues = identFromHash.split(klass.identSeparator)
+			except AttributeError:  # neither string nor unicode
+				if isinstance(identFromHash, (tuple, list)):
 					identValues = identFromHash
 				else:
 					identValues = []
 
-				args = mandatoryConstructorArgs(klass)
-				if len(identValues) == len(args):
-					ident = dict(zip(args, identValues))
-
-			del hash['ident']
+			args = mandatoryConstructorArgs(klass)
+			assert len(identValues) == len(args), "ident has unexpected length."
+			ident = dict(zip(args, identValues))
 			hash.update(ident)
-	except KeyError:
-		# No 'ident' in hash. Can happen.
-		pass
 
 	return hash
 
@@ -244,7 +243,7 @@ class BaseObject(object):
 
 	def update(self, updateObject, updateWithNoneValues=True):
 		if not issubclass(updateObject.__class__, self.__class__):
-			raise Exception(u"Cannot update instance of %s with instance of %s" % (self.__class__.__name__, updateObject.__class__.__name__))
+			raise TypeError(u"Cannot update instance of %s with instance of %s" % (self.__class__.__name__, updateObject.__class__.__name__))
 		hash = updateObject.toHash()
 
 		try:
@@ -322,8 +321,10 @@ class Entity(BaseObject):
 		kwargs = {}
 		decodeIdent(Class, hash)
 		for varname in Class.__init__.func_code.co_varnames[1:]:
-			if varname in hash:
+			try:
 				kwargs[varname] = hash[varname]
+			except KeyError:
+				pass
 
 		try:
 			return Class(**kwargs)
@@ -382,8 +383,10 @@ class Relationship(BaseObject):
 		kwargs = {}
 		decodeIdent(Class, hash)
 		for varname in Class.__init__.func_code.co_varnames[1:]:
-			if varname in hash:
+			try:
 				kwargs[varname] = hash[varname]
+			except KeyError:
+				pass
 
 		try:
 			return Class(**kwargs)
@@ -3089,10 +3092,11 @@ class AuditHardware(Entity):
 		self.setHardwareClass(hardwareClass)
 		for attribute in self.hardwareAttributes.get(hardwareClass, {}):
 			if attribute not in kwargs:
-				if attribute.lower() in kwargs:
-					kwargs[attribute] = kwargs[attribute.lower()]
-					del kwargs[attribute.lower()]
-				else:
+				lowAttr = attribute.lower()
+				try:
+					kwargs[attribute] = kwargs[lowAttr]
+					del kwargs[lowAttr]
+				except KeyError:
 					kwargs[attribute] = None
 
 		if self.hardwareAttributes.get(hardwareClass):
@@ -3260,10 +3264,10 @@ class AuditHardwareOnHost(Relationship):
 		for attribute in self.hardwareAttributes.get(hardwareClass, {}):
 			if attribute not in kwargs:
 				lowerAttribute = attribute.lower()
-				if lowerAttribute in kwargs:
+				try:
 					kwargs[attribute] = kwargs[lowerAttribute]
 					del kwargs[lowerAttribute]
-				else:
+				except KeyError:
 					kwargs[attribute] = None
 
 		if self.hardwareAttributes.get(hardwareClass):

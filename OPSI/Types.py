@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
@@ -39,13 +38,14 @@ import types
 
 from OPSI.Logger import Logger
 
-__all__ = [
+__all__ = (
 	'BackendAuthenticationError', 'BackendBadValueError',
 	'BackendConfigurationError', 'BackendError', 'BackendIOError',
 	'BackendMissingDataError', 'BackendModuleDisabledError',
 	'BackendPermissionDeniedError', 'BackendReferentialIntegrityError',
-	'BackendTemporaryError', 'BackendUnaccomplishableError',
-	'CanceledException', 'LicenseConfigurationError', 'LicenseMissingError',
+	'BackendTemporaryError', 'BackendUnableToConnectError',
+	'BackendUnaccomplishableError',	'CanceledException',
+	'LicenseConfigurationError', 'LicenseMissingError',
 	'OpsiAuthenticationError', 'OpsiBackupBackendNotFound',
 	'OpsiBackupFileError', 'OpsiBackupFileNotFound', 'OpsiBadRpcError',
 	'OpsiConnectionError', 'OpsiError', 'OpsiProductOrderingError',
@@ -74,7 +74,7 @@ __all__ = [
 	'forceSoftwareLicenseIdList', 'forceTime', 'forceUnicode',
 	'forceUnicodeList', 'forceUnicodeLower', 'forceUnicodeLowerList',
 	'forceUnicodeUpper', 'forceUniqueList', 'forceUnsignedInt', 'forceUrl'
-]
+)
 
 encoding = sys.getfilesystemencoding()
 logger = Logger()
@@ -882,6 +882,11 @@ class BackendError(OpsiError):
 
 class BackendIOError(OpsiError):
 	""" Exception raised if there is a read or write error in the backend. """
+	ExceptionShortDescription = u"Backend I/O error"
+
+
+class BackendUnableToConnectError(BackendIOError):
+	"Exception raised if no connection can be established in the backend."
 	ExceptionShortDescription = u"Backend I/O error"
 
 

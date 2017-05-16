@@ -24,16 +24,12 @@ case "$1" in
 			groupadd opsiadmin
 		fi
 
-		if ! which ucr >/dev/null 2>/dev/null; then
-			# On UCS we do not want to add the users as this is done
-			# in the join script of opsi4ucs.
-			if [ -z "`getent passwd pcpatch`" ]; then
-				useradd --system -g $fileadmingroup -d /var/lib/opsi -s /bin/bash pcpatch
-			fi
+		if [ -z "`getent passwd pcpatch`" ]; then
+			useradd --system -g $fileadmingroup -d /var/lib/opsi -s /bin/bash pcpatch
+		fi
 
-			if [ -z "`getent passwd opsiconfd`" ]; then
-				useradd --system -g $fileadmingroup -d /var/lib/opsi -s /bin/bash opsiconfd
-			fi
+		if [ -z "`getent passwd opsiconfd`" ]; then
+			useradd --system -g $fileadmingroup -d /var/lib/opsi -s /bin/bash opsiconfd
 		fi
 
 		chown -R root:$fileadmingroup /etc/opsi/backendManager
@@ -53,8 +49,12 @@ case "$1" in
 		chown root:$fileadmingroup /etc/opsi/passwd
 		chmod 660 /etc/opsi/passwd
 
-		[ -e "/etc/opsi/backendManager/acl.conf" ]      || ln -s /etc/opsi/backendManager/acl.conf.default      /etc/opsi/backendManager/acl.conf
-		[ -e "/etc/opsi/backendManager/dispatch.conf" ] || ln -s /etc/opsi/backendManager/dispatch.conf.default /etc/opsi/backendManager/dispatch.conf
+		[ -e "/etc/opsi/backendManager/acl.conf" ]      || cp /etc/opsi/backendManager/acl.conf.default      /etc/opsi/backendManager/acl.conf
+		[ -e "/etc/opsi/backendManager/dispatch.conf" ] || cp /etc/opsi/backendManager/dispatch.conf.default /etc/opsi/backendManager/dispatch.conf
+
+		# Processing files for the SSH extension
+		chown opsiconfd:opsiadmin /etc/opsi/server_commands_default.conf
+		chmod 440 /etc/opsi/server_commands_default.conf
 
 		update-python-modules python-ldaptor.public >/dev/null 2>/dev/null || true
 		update-python-modules -p >/dev/null 2>/dev/null || true

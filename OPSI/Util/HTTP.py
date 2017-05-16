@@ -57,7 +57,8 @@ import ssl as ssl_module
 from OpenSSL import crypto
 
 from OPSI.Types import forceBool, forceFilename, forceInt, forceUnicode, forceUnicodeLower
-from OPSI.Types import OpsiTimeoutError, OpsiServiceVerificationError
+from OPSI.Types import (OpsiAuthenticationError, OpsiTimeoutError,
+	OpsiServiceVerificationError)
 from OPSI.Logger import LOG_DEBUG, LOG_INFO, Logger
 from OPSI.Util import encryptWithPublicKeyFromX509CertificatePEMFile, randomString
 
@@ -260,7 +261,7 @@ class HTTPConnectionPool(object):
 
 				if self.verifyServerCertByCa:
 					if not self.caCertFile:
-						raise Exception(u"Server certificate verfication by CA enabled but no CA cert file given")
+						raise ValueError(u"Server certificate verfication by CA enabled but no CA cert file given")
 					logger.info(u"Server certificate verfication by CA file '%s' enabled for host '%s'" % (self.caCertFile, self.host))
 				else:
 					self.verifyServerCert = forceBool(verifyServerCert)
@@ -268,7 +269,7 @@ class HTTPConnectionPool(object):
 						self.serverCertFile = forceFilename(serverCertFile)
 					if self.verifyServerCert:
 						if not self.serverCertFile:
-							raise Exception(u"Server verfication enabled but no server cert file given")
+							raise ValueError(u"Server verfication enabled but no server cert file given")
 						logger.info(u"Server verfication by server certificate enabled for host '%s'" % self.host)
 		self.adjustSize(maxsize)
 
@@ -296,7 +297,7 @@ class HTTPConnectionPool(object):
 
 	def adjustSize(self, maxsize):
 		if maxsize < 1:
-			raise Exception(u"Connection pool size %d is invalid" % maxsize)
+			raise ValueError(u"Connection pool size %d is invalid" % maxsize)
 		self.maxsize = forceInt(maxsize)
 		self.delPool()
 		self.pool = Queue(self.maxsize)
@@ -476,9 +477,9 @@ class HTTPConnectionPool(object):
 				try:
 					key = response.getheader('x-opsi-service-verification-key', None)
 					if not key:
-						raise Exception(u"HTTP header 'X-opsi-service-verification-key' missing")
+						raise ValueError(u"HTTP header 'X-opsi-service-verification-key' missing")
 					if key.strip() != randomKey.strip():
-						raise Exception(u"opsi-service-verification-key '%s' != '%s'" % (key, randomKey))
+						raise OpsiAuthenticationError(u"opsi-service-verification-key '%s' != '%s'" % (key, randomKey))
 					self.serverVerified = True
 					logger.notice(u"Service verified by opsi-service-verification-key")
 				except Exception as error:
@@ -561,7 +562,6 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 		"""
 		Return a fresh HTTPSConnection.
 		"""
-
 		if self.proxyURL:
 			headers = {}
 			try:
@@ -677,10 +677,12 @@ def getSharedConnectionPool(scheme, host, port, **kw):
 	host = forceUnicode(host)
 	port = forceInt(port)
 	curl = False
-	if 'preferCurl' in kw:
+	try:
 		if kw['preferCurl'] and pycurl is not None:
 			curl = True
 		del kw['preferCurl']
+	except KeyError:
+		pass
 
 	global connectionPools
 	if curl:

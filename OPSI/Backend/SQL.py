@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This module is part of the desktop management solution opsi
@@ -42,8 +41,8 @@ from twisted.conch.ssh import keys
 from OPSI.Logger import Logger
 from OPSI.Types import (forceBool, forceUnicodeLower, forceOpsiTimestamp,
 	forceList, forceUnicode, forceUnicodeList, forceDict, forceObjectClassList)
-from OPSI.Types import (BackendConfigurationError,
-	BackendReferentialIntegrityError, BackendModuleDisabledError)
+from OPSI.Types import (BackendConfigurationError, BackendMissingDataError,
+	BackendModuleDisabledError, BackendReferentialIntegrityError)
 from OPSI.Object import (AuditHardware, AuditHardwareOnHost, AuditSoftware,
 	AuditSoftwareOnClient, AuditSoftwareToLicensePool, Config, ConfigState,
 	Entity, Group, Host, HostGroup, LicenseContract, LicenseOnClient,
@@ -54,10 +53,10 @@ from OPSI.Object import (AuditHardware, AuditHardwareOnHost, AuditSoftware,
 from OPSI.Backend.Backend import BackendModificationListener, ConfigDataBackend
 from OPSI.Util import timestamp
 
-__all__ = [
+__all__ = (
 	'timeQuery', 'onlyAllowSelect', 'SQL', 'SQLBackend',
 	'SQLBackendObjectModificationTracker'
-]
+)
 
 logger = Logger()
 
@@ -152,7 +151,7 @@ class SQLBackendObjectModificationTracker(BackendModificationListener):
 
 	def _createTables(self):
 		tables = self._sql.getTables()
-		if 'OBJECT_MODIFICATION_TRACKER' not in tables.keys():
+		if 'OBJECT_MODIFICATION_TRACKER' not in tables:
 			logger.debug(u'Creating table OBJECT_MODIFICATION_TRACKER')
 			table = u'''CREATE TABLE `OBJECT_MODIFICATION_TRACKER` (
 					`id` integer NOT NULL ''' + self._sql.AUTOINCREMENT + ''',
@@ -172,7 +171,7 @@ class SQLBackendObjectModificationTracker(BackendModificationListener):
 	def _trackModification(self, command, obj):
 		command = forceUnicodeLower(command)
 		if command not in ('insert', 'update', 'delete'):
-			raise Exception(u"Unhandled command {0!r}".format(command))
+			raise ValueError(u"Unhandled command {0!r}".format(command))
 
 		data = {
 			'command': command,
@@ -1122,7 +1121,7 @@ class SQLBackend(ConfigDataBackend):
 		configs = []
 		(attributes, filter) = self._adjustAttributes(Config, attributes, filter)
 
-		if 'defaultValues' in filter:
+		try:
 			if filter['defaultValues']:
 				configIds = filter.get('configId')
 				filter['configId'] = [res['configId'] for res in
@@ -1139,8 +1138,10 @@ class SQLBackend(ConfigDataBackend):
 					return []
 
 			del filter['defaultValues']
+		except KeyError:
+			pass
 
-		if 'possibleValues' in filter:
+		try:
 			if filter['possibleValues']:
 				configIds = filter.get('configId')
 				filter['configId'] = [res['configId'] for res in
@@ -1157,11 +1158,16 @@ class SQLBackend(ConfigDataBackend):
 					return []
 
 			del filter['possibleValues']
+		except KeyError:
+			pass
+
+		readValues = not attributes or 'possibleValues' in attributes or 'defaultValues' in attributes
+
 		attrs = [attr for attr in attributes if attr not in ('defaultValues', 'possibleValues')]
 		for res in self._sql.getSet(self._createQuery('CONFIG', attrs, filter)):
 			res['possibleValues'] = []
 			res['defaultValues'] = []
-			if not attributes or 'possibleValues' in attributes or 'defaultValues' in attributes:
+			if readValues:
 				for res2 in self._sql.getSet(u"select * from CONFIG_VALUE where `configId` = '%s'" % res['configId']):
 					res['possibleValues'].append(res2['value'])
 					if res2['isDefault']:
@@ -1206,12 +1212,17 @@ class SQLBackend(ConfigDataBackend):
 		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.configState_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting configStates, filter: %s" % filter)
-		configStates = []
 		(attributes, filter) = self._adjustAttributes(ConfigState, attributes, filter)
+
+		configStates = []
 		for res in self._sql.getSet(self._createQuery('CONFIG_STATE', attributes, filter)):
-			if 'values' in res:
+			try:
 				res['values'] = json.loads(res['values'])
+			except KeyError:
+				pass
+
 			configStates.append(ConfigState.fromHash(res))
+
 		return configStates
 
 	def configState_deleteObjects(self, configStates):
@@ -1236,7 +1247,7 @@ class SQLBackend(ConfigDataBackend):
 		for module in mks:
 			if module in ('valid', 'signature'):
 				continue
-			if helpermodules.has_key(module):
+			if module in helpermodules:
 				val = helpermodules[module]
 				if int(val) > 0:
 					modules[module] = True
@@ -1295,16 +1306,21 @@ class SQLBackend(ConfigDataBackend):
 		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.product_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting products, filter: %s" % filter)
-		products = []
 		(attributes, filter) = self._adjustAttributes(Product, attributes, filter)
+
+		readWindowsSoftwareIDs = not attributes or 'windowsSoftwareIds' in attributes
+		products = []
 		for res in self._sql.getSet(self._createQuery('PRODUCT', attributes, filter)):
 			res['windowsSoftwareIds'] = []
 			res['productClassIds'] = []
-			if not attributes or 'windowsSoftwareIds' in attributes:
+			if readWindowsSoftwareIDs:
 				for res2 in self._sql.getSet(u"select * from WINDOWS_SOFTWARE_ID_TO_PRODUCT where `productId` = '%s'" % res['productId']):
 					res['windowsSoftwareIds'].append(res2['windowsSoftwareId'])
+
 			if not attributes or 'productClassIds' in attributes:
+				# TODO: is this missing an query?
 				pass
+
 			self._adjustResult(Product, res)
 			products.append(Product.fromHash(res))
 		return products
@@ -1784,7 +1800,7 @@ class SQLBackend(ConfigDataBackend):
 			if module in ('valid', 'signature'):
 				continue
 
-			if helpermodules.has_key(module):
+			if module in helpermodules:
 				val = helpermodules[module]
 				if int(val) > 0:
 					modules[module] = True
@@ -1847,23 +1863,33 @@ class SQLBackend(ConfigDataBackend):
 
 		ConfigDataBackend.licensePool_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting licensePools, filter: %s" % filter)
-		licensePools = []
 		(attributes, filter) = self._adjustAttributes(LicensePool, attributes, filter)
 
-		if filter.has_key('productIds'):
+		try:
 			if filter['productIds']:
 				licensePoolIds = filter.get('licensePoolId')
-				filter['licensePoolId'] = []
-				for res in self._sql.getSet(self._createQuery('PRODUCT_ID_TO_LICENSE_POOL', ['licensePoolId'], {'licensePoolId': licensePoolIds, 'productId': filter['productIds']})):
-					filter['licensePoolId'].append(res['licensePoolId'])
+				query = self._createQuery(
+					'PRODUCT_ID_TO_LICENSE_POOL',
+					['licensePoolId'],
+					{'licensePoolId': licensePoolIds, 'productId': filter['productIds']}
+				)
+
+				filter['licensePoolId'] = [res['licensePoolId'] for res in self._sql.getSet(query)]
+
 				if not filter['licensePoolId']:
 					return []
-			del filter['productIds']
 
+			del filter['productIds']
+		except KeyError:
+			pass
+
+		readProductIds = not attributes or 'productIds' in attributes
+
+		licensePools = []
 		attrs = [attr for attr in attributes if attr != 'productIds']
 		for res in self._sql.getSet(self._createQuery('LICENSE_POOL', attrs, filter)):
 			res['productIds'] = []
-			if not attributes or 'productIds' in attributes:
+			if readProductIds:
 				for res2 in self._sql.getSet(u"select * from PRODUCT_ID_TO_LICENSE_POOL where `licensePoolId` = '%s'" % res['licensePoolId']):
 					res['productIds'].append(res2['productId'])
 			self._adjustResult(LicensePool, res)
@@ -2168,7 +2194,7 @@ class SQLBackend(ConfigDataBackend):
 				filter[attribute] = [None]
 
 		if not self.auditHardware_getObjects(**filter):
-			raise Exception(u"AuditHardware '%s' not found" % auditHardware.getIdent())
+			raise BackendMissingDataError(u"AuditHardware '%s' not found" % auditHardware.getIdent())
 
 	def auditHardware_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.auditHardware_getObjects(self, attributes=[], **filter)
@@ -2202,8 +2228,10 @@ class SQLBackend(ConfigDataBackend):
 			except KeyError:
 				pass  # not there - everything okay.
 
-		if 'hardwareClass' in attributes:
+		try:
 			attributes.remove('hardwareClass')
+		except ValueError:
+			pass
 
 		for attribute in attributes:
 			if attribute not in filter:

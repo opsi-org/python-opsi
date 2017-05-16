@@ -267,11 +267,11 @@ def testConfigsAreOnlyAddedOnce(extendedConfigDataBackend):
     confData.initializeConfigs(backend=extendedConfigDataBackend, pathToSMBConf=sambaTestConfig)
 
     configIdentsFirst = extendedConfigDataBackend.config_getIdents(returnType='unicode')
-    configIdentsFirst = sorted(configIdentsFirst)
+    configIdentsFirst.sort()
 
     confData.initializeConfigs(backend=extendedConfigDataBackend, pathToSMBConf=sambaTestConfig)
     configIdentsSecond = extendedConfigDataBackend.config_getIdents(returnType='unicode')
-    configIdentsSecond = sorted(configIdentsSecond)
+    configIdentsSecond.sort()
 
     assert configIdentsFirst == configIdentsSecond
     assert len(configIdentsSecond) == len(set(configIdentsSecond))
@@ -287,3 +287,4 @@ def testReadingDomainFromUCRReturnEmptyStringOnProblem():
     failingWhich = mock.Mock(side_effect=CommandNotFoundException('Whoops.'))
     with mock.patch('OPSI.Util.Task.ConfigureBackend.ConfigurationData.Posix.which', failingWhich):
         assert '' == confData.readWindowsDomainFromUCR()
+

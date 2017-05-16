@@ -1,10 +1,9 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2010-2016 uib GmbH
+# Copyright (C) 2010-2017 uib GmbH
 
 # http://www.uib.de/
 
@@ -556,9 +555,9 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 		if not self.query:
 			return result
 		if not self._callInstance:
-			raise Exception(u"Call instance not defined in %s" % self)
+			raise RuntimeError(u"Call instance not defined in %s" % self)
 		if not self._callInterface:
-			raise Exception(u"Call interface not defined in %s" % self)
+			raise RuntimeError(u"Call interface not defined in %s" % self)
 
 		try:
 			rpcs = fromJson(self.query, preventObjectCreation=True)
