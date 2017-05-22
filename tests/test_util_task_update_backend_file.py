@@ -22,8 +22,24 @@ Testing the update of the MySQL backend from an older version.
 :license: GNU Affero General Public License version 3
 """
 
+from __future__ import absolute_import
+
+import os.path
+
 from OPSI.Util.Task.UpdateBackend.File import updateFileBackend
 
+from .Backends.File import getFileBackend
 
-def testUpdatingFileBackend():
-    raise NotImplementedError("Need to implement this.")
+import pytest
+
+
+@pytest.fixture
+def fileBackend(tempDir):
+    with getFileBackend(path=tempDir) as backend:
+        yield backend
+
+
+def testUpdatingFileBackend(fileBackend, tempDir):
+    config = os.path.join(tempDir, 'etc', 'opsi', 'backends', 'file.conf')
+
+    updateFileBackend(config)
