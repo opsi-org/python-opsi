@@ -24,9 +24,11 @@ Testing the update of the MySQL backend from an older version.
 
 from __future__ import absolute_import
 
+import json
 import os.path
 
-from OPSI.Util.Task.UpdateBackend.File import updateFileBackend
+from OPSI.Util.Task.UpdateBackend.File import (updateFileBackend,
+    readBackendVersion, getVersionFilePath, _readVersionFile)
 
 from .Backends.File import getFileBackend
 
@@ -43,3 +45,40 @@ def testUpdatingFileBackend(fileBackend, tempDir):
     config = os.path.join(tempDir, 'etc', 'opsi', 'backends', 'file.conf')
 
     updateFileBackend(config)
+
+
+def testReadingSchemaVersionFromMissingFile(tempDir):
+    assert readBackendVersion(os.path.join(tempDir, 'missingbasedir')) is None
+
+
+@pytest.fixture
+def baseDirectory(tempDir):
+    newDir = os.path.join(tempDir, 'config')
+    os.makedirs(newDir)
+    yield newDir
+
+
+@pytest.fixture
+def writtenConfig(baseDirectory):
+    configFile = getVersionFilePath(baseDirectory)
+    config = {
+        0:
+            {
+                "start": 1495529319.022833,
+                "end": 1495529341.870662,
+            }
+    }
+    with open(configFile, 'w') as f:
+        json.dump(config, f)
+
+    yield config
+
+
+def testReadingSchemaVersionLowLevel(baseDirectory, writtenConfig):
+    assert writtenConfig == _readVersionFile(baseDirectory)
+
+
+def testReadingSchemaVersion(baseDirectory, writtenConfig):
+    version = readBackendVersion(baseDirectory)
+    assert version is not None
+    assert version == max(writtenConfig.keys())
