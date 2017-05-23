@@ -97,7 +97,7 @@ read from `backendConfigFile`.
 
 	logger.debug("Expected database schema version: {0}", DATABASE_SCHEMA_VERSION)
 	if not readSchemaVersion(mysql) == DATABASE_SCHEMA_VERSION:
-		raise RuntimeError("Not all migrations have been run!")
+		raise BackendUpdateError("Not all migrations have been run!")
 
 	with MySQLBackend(**config) as mysqlBackend:
 		# We do this to make sure all tables that are currently
