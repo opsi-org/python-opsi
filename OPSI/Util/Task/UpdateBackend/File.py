@@ -87,9 +87,11 @@ read from `backendConfigFile`.
 
 def readBackendVersion(baseDirectory):
 	"""
-	Read the version of the schema from the database.
+	Read the backend version from `baseDirectory`.
 
-	:raises DatabaseMigrationNotFinishedError: In case a migration was \
+	:param baseDirectory: The base directory of the backend.
+	:type baseDirectory: str
+	:raises FileBackendUpdateError: In case a migration was \
 started but never ended.
 	:returns: The version of the schema. `None` if no info is found.
 	:returntype: int or None
@@ -111,19 +113,19 @@ started but never ended.
 	return maximumVersion
 
 
-def getVersionFilePath(baseDirectory):
-	return os.path.join(os.path.dirname(baseDirectory), u'config', u'schema.json')
-
-
 @contextmanager
 def updateBackendVersion(baseDirectory, version):
 	"""
-	Update the schema information to the given version.
+	Update the backend version to the given `version`
 
 	This is to be used as a context manager and will mark the start
 	time of the update aswell as the end time.
 	If during the operation something happens there will be no
 	information about the end time written to the database.
+	:param baseDirectory: The base directory of the backend.
+	:type baseDirectory: str
+	:param version: The version to update to.
+	:type version: int
 	"""
 	versionInfo = _readVersionFile(baseDirectory)
 
@@ -138,6 +140,16 @@ def updateBackendVersion(baseDirectory, version):
 
 
 def _readVersionFile(baseDirectory):
+	"""
+	Read the version information from the file in `baseDirectory`.
+
+	:param baseDirectory: The base directory of the backend.
+	:type baseDirectory: str
+	:return: The complete backend information. The key is the version,
+the value is a dict with two keys: `start` holds information about the
+time the update was started and `end` about the time the update finished.
+	:returntype: {int: {str: float}}
+	"""
 	schemaConfigFile = getVersionFilePath(baseDirectory)
 
 	try:
@@ -153,7 +165,26 @@ def _readVersionFile(baseDirectory):
 	return versionInfo
 
 
+def getVersionFilePath(baseDirectory):
+	"""
+	Returns the path to the file containing version information.
+
+	:param baseDirectory: The base directory of the backend.
+	:type baseDirectory: str
+	:returntype: str
+	"""
+	return os.path.join(os.path.dirname(baseDirectory), u'config', u'schema.json')
+
+
 def _writeVersionFile(baseDirectory, versionInfo):
+	"""
+	Write the version information to the file in `baseDirectory`.
+
+	:param baseDirectory: The base directory of the backend.
+	:type baseDirectory: str
+	:param versionInfo: Versioning information.
+	:type versionInfo: {int: {str: float}}
+	"""
 	schemaConfigFile = getVersionFilePath(baseDirectory)
 
 	with open(schemaConfigFile, 'w') as f:
