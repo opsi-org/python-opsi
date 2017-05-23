@@ -25,6 +25,8 @@ Usually the function :py:func:updateFileBackend: is called from opsi-setup
 :license: GNU Affero General Public License version 3
 """
 
+from __future__ import absolute_import
+
 import json
 import os.path
 import time
@@ -33,14 +35,16 @@ from contextlib import contextmanager
 from OPSI.Logger import Logger
 from OPSI.Util.Task.ConfigureBackend import getBackendConfiguration
 
+from . import BackendUpdateError
+
 __all__ = ('BackendUpdateUnfinishedError', 'updateFileBackend')
 
 logger = Logger()
 
 
-class BackendUpdateUnfinishedError(ValueError):
+class FileBackendUpdateError(BackendUpdateError):
     """
-    This error indicates an unfinished file backend migration.
+    Something went wrong during the update of the file-based backend.
     """
     pass
 
@@ -97,10 +101,10 @@ started but never ended.
 
     for version, info in schemaConfig.items():
         if 'start' not in info:
-            raise BackendUpdateUnfinishedError("Update {0} gone wrong: start time missing.".format(version))
+            raise FileBackendUpdateError("Update {0} gone wrong: start time missing.".format(version))
 
         if 'end' not in info:
-            raise BackendUpdateUnfinishedError("Update {0} gone wrong: end time missing.".format(version))
+            raise FileBackendUpdateError("Update {0} gone wrong: end time missing.".format(version))
 
     maximumVersion = max(schemaConfig)
 
@@ -124,7 +128,7 @@ def updateBackendVersion(baseDirectory, version):
     versionInfo = _readVersionFile(baseDirectory)
 
     if version in versionInfo:
-        raise BackendUpdateUnfinishedError("Update for {0} already applied!.".format(version))
+        raise FileBackendUpdateError("Update for {0} already applied!.".format(version))
 
     versionInfo[version] = {"start": time.time()}
     _writeVersionFile(baseDirectory, versionInfo)

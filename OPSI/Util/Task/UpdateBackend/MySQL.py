@@ -27,6 +27,8 @@ Usually the function :py:func:updateMySQLBackend: is called from opsi-setup
 :license: GNU Affero General Public License version 3
 """
 
+from __future__ import absolute_import
+
 from collections import namedtuple
 from contextlib import contextmanager
 from datetime import datetime
@@ -39,13 +41,15 @@ from OPSI.Types import (forceHardwareDeviceId, forceHardwareVendorId,
 						forceLicensePoolId)
 from OPSI.Util.Task.ConfigureBackend import getBackendConfiguration
 
+from . import BackendUpdateError
+
 __all__ = ('DatabaseMigrationUnfinishedError',
 	'disableForeignKeyChecks', 'getTableColumns', 'updateMySQLBackend')
 
 logger = Logger()
 
 
-class DatabaseMigrationUnfinishedError(ValueError):
+class DatabaseMigrationUnfinishedError(BackendUpdateError):
 	"""
 	This error indicates an unfinished database migration.
 	"""
