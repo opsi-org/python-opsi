@@ -26,6 +26,6 @@ Functionality to update OPSI backends.
 """
 
 
-class BackendUpdateError(ValueError):
+class BackendUpdateError(RuntimeError):
     "This error indicates a problem during a backend update."
     pass
