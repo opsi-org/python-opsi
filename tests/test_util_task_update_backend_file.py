@@ -27,8 +27,9 @@ from __future__ import absolute_import
 import json
 import os.path
 
-from OPSI.Util.Task.UpdateBackend.File import (updateFileBackend,
-    readBackendVersion, getVersionFilePath, _readVersionFile)
+from OPSI.Util.Task.UpdateBackend.File import (BackendUpdateUnfinishedError,
+    updateFileBackend, readBackendVersion, getVersionFilePath,
+    _readVersionFile,_writeVersionFile, updateBackendVersion)
 
 from .Backends.File import getFileBackend
 
@@ -66,7 +67,12 @@ def writtenConfig(baseDirectory):
             {
                 "start": 1495529319.022833,
                 "end": 1495529341.870662,
-            }
+            },
+        1:
+            {
+                "start": 1495539432.271123,
+                "end": 1495539478.045244
+            },
     }
     with open(configFile, 'w') as f:
         json.dump(config, f)
@@ -82,3 +88,27 @@ def testReadingSchemaVersion(baseDirectory, writtenConfig):
     version = readBackendVersion(baseDirectory)
     assert version is not None
     assert version == max(writtenConfig.keys())
+    assert version > 0
+
+
+@pytest.mark.parametrize("config", [
+    {0: {"start": 1495529319.022833}},  # missing end
+    {0: {}}  # missing start
+])
+def testRaisingExceptionOnUnfinishedUpdate(baseDirectory, config):
+    configFile = getVersionFilePath(baseDirectory)
+
+    with open(configFile, 'w') as f:
+        json.dump(config, f)
+
+    with pytest.raises(BackendUpdateUnfinishedError):
+        readBackendVersion(baseDirectory)
+
+
+def testApplyingTheSameUpdateMultipleTimesFails(baseDirectory):
+    with updateBackendVersion(baseDirectory, 1):
+        pass
+
+    with pytest.raises(BackendUpdateUnfinishedError):
+        with updateBackendVersion(baseDirectory, 1):
+            pass
