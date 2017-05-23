@@ -27,9 +27,11 @@ from __future__ import absolute_import
 import json
 import os.path
 
-from OPSI.Util.Task.UpdateBackend.File import (BackendUpdateUnfinishedError,
-    updateFileBackend, readBackendVersion, getVersionFilePath,
-    _readVersionFile,_writeVersionFile, updateBackendVersion)
+from OPSI.Util.Task.UpdateBackend.File import (
+    BackendUpdateUnfinishedError,
+    getVersionFilePath, readBackendVersion, _readVersionFile,
+    updateBackendVersion, updateFileBackend
+)
 
 from .Backends.File import getFileBackend
 
