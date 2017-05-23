@@ -43,118 +43,118 @@ LOGGER = Logger()
 
 
 class FileBackendUpdateError(BackendUpdateError):
-    """
-    Something went wrong during the update of the file-based backend.
-    """
-    pass
+	"""
+	Something went wrong during the update of the file-based backend.
+	"""
+	pass
 
 
 def updateFileBackend(
-        backendConfigFile=u'/etc/opsi/backends/file.conf',
-        additionalBackendConfiguration={}):
-    """
-    Applies migrations to the file-based backend.
+		backendConfigFile=u'/etc/opsi/backends/file.conf',
+		additionalBackendConfiguration={}):
+	"""
+	Applies migrations to the file-based backend.
 
-    :param backendConfigFile: Path to the file where the backend \
+	:param backendConfigFile: Path to the file where the backend \
 configuration is read from.
-    :type backendConfigFile: str
-    :param additionalBackendConfiguration: Additional / different \
+	:type backendConfigFile: str
+	:param additionalBackendConfiguration: Additional / different \
 settings for the backend that will extend / override the configuration \
 read from `backendConfigFile`.
-    :type additionalBackendConfiguration: dict
-    """
+	:type additionalBackendConfiguration: dict
+	"""
 
-    config = getBackendConfiguration(backendConfigFile)
-    config.update(additionalBackendConfiguration)
-    LOGGER.info(u"Current file backend config: {0}", config)
+	config = getBackendConfiguration(backendConfigFile)
+	config.update(additionalBackendConfiguration)
+	LOGGER.info(u"Current file backend config: {0}", config)
 
-    baseDirectory = config['baseDir']
-    schemaVersion = readBackendVersion(baseDirectory)
+	baseDirectory = config['baseDir']
+	schemaVersion = readBackendVersion(baseDirectory)
 
-    if schemaVersion is None:
-        LOGGER.notice("Missing information about file backend version. Creating...")
-        with updateBackendVersion(baseDirectory, 0):
-            LOGGER.info("Creating...")
-        LOGGER.notice("Created information about file backend version.")
+	if schemaVersion is None:
+		LOGGER.notice("Missing information about file backend version. Creating...")
+		with updateBackendVersion(baseDirectory, 0):
+			LOGGER.info("Creating...")
+		LOGGER.notice("Created information about file backend version.")
 
-        schemaVersion = readBackendVersion(baseDirectory)
-        assert schemaVersion == 0
+		schemaVersion = readBackendVersion(baseDirectory)
+		assert schemaVersion == 0
 
-    # Placeholder to see the usage for the first update :)
-    # if schemaVersion < 1:
-    #     print("Update goes here")
+	# Placeholder to see the usage for the first update :)
+	# if schemaVersion < 1:
+	#     print("Update goes here")
 
 
 def readBackendVersion(baseDirectory):
-    """
-    Read the version of the schema from the database.
+	"""
+	Read the version of the schema from the database.
 
-    :raises DatabaseMigrationNotFinishedError: In case a migration was \
+	:raises DatabaseMigrationNotFinishedError: In case a migration was \
 started but never ended.
-    :returns: The version of the schema. `None` if no info is found.
-    :returntype: int or None
-    """
-    schemaConfig = _readVersionFile(baseDirectory)
-    if not schemaConfig:
-        # We got an empty version -> no version read.
-        return None
+	:returns: The version of the schema. `None` if no info is found.
+	:returntype: int or None
+	"""
+	schemaConfig = _readVersionFile(baseDirectory)
+	if not schemaConfig:
+		# We got an empty version -> no version read.
+		return None
 
-    for version, info in schemaConfig.items():
-        if 'start' not in info:
-            raise FileBackendUpdateError("Update {0} gone wrong: start time missing.".format(version))
+	for version, info in schemaConfig.items():
+		if 'start' not in info:
+			raise FileBackendUpdateError("Update {0} gone wrong: start time missing.".format(version))
 
-        if 'end' not in info:
-            raise FileBackendUpdateError("Update {0} gone wrong: end time missing.".format(version))
+		if 'end' not in info:
+			raise FileBackendUpdateError("Update {0} gone wrong: end time missing.".format(version))
 
-    maximumVersion = max(schemaConfig)
+	maximumVersion = max(schemaConfig)
 
-    return maximumVersion
+	return maximumVersion
 
 
 def getVersionFilePath(baseDirectory):
-    return os.path.join(os.path.dirname(baseDirectory), u'config', u'schema.json')
+	return os.path.join(os.path.dirname(baseDirectory), u'config', u'schema.json')
 
 
 @contextmanager
 def updateBackendVersion(baseDirectory, version):
-    """
-    Update the schema information to the given version.
+	"""
+	Update the schema information to the given version.
 
-    This is to be used as a context manager and will mark the start
-    time of the update aswell as the end time.
-    If during the operation something happens there will be no
-    information about the end time written to the database.
-    """
-    versionInfo = _readVersionFile(baseDirectory)
+	This is to be used as a context manager and will mark the start
+	time of the update aswell as the end time.
+	If during the operation something happens there will be no
+	information about the end time written to the database.
+	"""
+	versionInfo = _readVersionFile(baseDirectory)
 
-    if version in versionInfo:
-        raise FileBackendUpdateError("Update for {0} already applied!.".format(version))
+	if version in versionInfo:
+		raise FileBackendUpdateError("Update for {0} already applied!.".format(version))
 
-    versionInfo[version] = {"start": time.time()}
-    _writeVersionFile(baseDirectory, versionInfo)
-    yield
-    versionInfo[version]["end"] = time.time()
-    _writeVersionFile(baseDirectory, versionInfo)
+	versionInfo[version] = {"start": time.time()}
+	_writeVersionFile(baseDirectory, versionInfo)
+	yield
+	versionInfo[version]["end"] = time.time()
+	_writeVersionFile(baseDirectory, versionInfo)
 
 
 def _readVersionFile(baseDirectory):
-    schemaConfigFile = getVersionFilePath(baseDirectory)
+	schemaConfigFile = getVersionFilePath(baseDirectory)
 
-    try:
-        with open(schemaConfigFile) as f:
-            versionInfo = json.load(f)
-    except IOError:
-        return {}
+	try:
+		with open(schemaConfigFile) as f:
+			versionInfo = json.load(f)
+	except IOError:
+		return {}
 
-    for key, value in versionInfo.items():
-        versionInfo[int(key)] = value
-        del versionInfo[key]
+	for key, value in versionInfo.items():
+		versionInfo[int(key)] = value
+		del versionInfo[key]
 
-    return versionInfo
+	return versionInfo
 
 
 def _writeVersionFile(baseDirectory, versionInfo):
-    schemaConfigFile = getVersionFilePath(baseDirectory)
+	schemaConfigFile = getVersionFilePath(baseDirectory)
 
-    with open(schemaConfigFile, 'w') as f:
-        json.dump(versionInfo, f)
+	with open(schemaConfigFile, 'w') as f:
+		json.dump(versionInfo, f)
