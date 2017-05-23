@@ -39,7 +39,7 @@ from . import BackendUpdateError
 
 __all__ = ('BackendUpdateUnfinishedError', 'updateFileBackend')
 
-logger = Logger()
+LOGGER = Logger()
 
 
 class FileBackendUpdateError(BackendUpdateError):
@@ -66,16 +66,16 @@ read from `backendConfigFile`.
 
     config = getBackendConfiguration(backendConfigFile)
     config.update(additionalBackendConfiguration)
-    logger.info(u"Current file backend config: {0}", config)
+    LOGGER.info(u"Current file backend config: {0}", config)
 
     baseDirectory = config['baseDir']
     schemaVersion = readBackendVersion(baseDirectory)
 
     if schemaVersion is None:
-        logger.notice("Missing information about file backend version. Creating...")
+        LOGGER.notice("Missing information about file backend version. Creating...")
         with updateBackendVersion(baseDirectory, 0):
-            logger.info("Creating...")
-        logger.notice("Created information about file backend version.")
+            LOGGER.info("Creating...")
+        LOGGER.notice("Created information about file backend version.")
 
         schemaVersion = readBackendVersion(baseDirectory)
         assert schemaVersion == 0
