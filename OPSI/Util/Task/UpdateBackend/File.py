@@ -124,7 +124,7 @@ def updateBackendVersion(baseDirectory, version):
     versionInfo = _readVersionFile(baseDirectory)
 
     if version in versionInfo:
-        raise RuntimeError("Update for {0} already applied!.".format(version))
+        raise BackendUpdateUnfinishedError("Update for {0} already applied!.".format(version))
 
     versionInfo[version] = {"start": time.time()}
     _writeVersionFile(baseDirectory, versionInfo)
