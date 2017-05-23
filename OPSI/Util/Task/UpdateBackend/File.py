@@ -123,7 +123,6 @@ def updateBackendVersion(baseDirectory, version):
     """
     versionInfo = _readVersionFile(baseDirectory)
 
-    assert version not in versionInfo
     if version in versionInfo:
         raise RuntimeError("Update for {0} already applied!.".format(version))
 
