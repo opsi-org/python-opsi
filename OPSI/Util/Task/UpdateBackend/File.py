@@ -153,8 +153,8 @@ time the update was started and `end` about the time the update finished.
 	schemaConfigFile = getVersionFilePath(baseDirectory)
 
 	try:
-		with open(schemaConfigFile) as f:
-			versionInfo = json.load(f)
+		with open(schemaConfigFile) as source:
+			versionInfo = json.load(source)
 	except IOError:
 		return {}
 
@@ -187,5 +187,5 @@ def _writeVersionFile(baseDirectory, versionInfo):
 	"""
 	schemaConfigFile = getVersionFilePath(baseDirectory)
 
-	with open(schemaConfigFile, 'w') as f:
-		json.dump(versionInfo, f)
+	with open(schemaConfigFile, 'w') as destination:
+		json.dump(versionInfo, destination)
