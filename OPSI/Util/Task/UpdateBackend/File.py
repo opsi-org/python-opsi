@@ -33,7 +33,7 @@ from contextlib import contextmanager
 from OPSI.Logger import Logger
 from OPSI.Util.Task.ConfigureBackend import getBackendConfiguration
 
-__all__ = ('updateFileBackend', )
+__all__ = ('BackendUpdateUnfinishedError', 'updateFileBackend')
 
 logger = Logger()
 
