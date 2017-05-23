@@ -36,15 +36,18 @@ from datetime import datetime
 from OPSI.Backend.SQL import DATABASE_SCHEMA_VERSION, createSchemaVersionTable
 from OPSI.Backend.MySQL import MySQL, MySQLBackend
 from OPSI.Logger import Logger
-from OPSI.Types import (forceHardwareDeviceId, forceHardwareVendorId,
-						forceLicenseContractId, forceSoftwareLicenseId,
-						forceLicensePoolId)
+from OPSI.Types import (
+	forceHardwareDeviceId, forceHardwareVendorId, forceLicenseContractId,
+	forceSoftwareLicenseId, forceLicensePoolId
+)
 from OPSI.Util.Task.ConfigureBackend import getBackendConfiguration
 
 from . import BackendUpdateError
 
-__all__ = ('DatabaseMigrationUnfinishedError',
-	'disableForeignKeyChecks', 'getTableColumns', 'updateMySQLBackend')
+__all__ = (
+	'DatabaseMigrationUnfinishedError',
+	'disableForeignKeyChecks', 'getTableColumns', 'updateMySQLBackend'
+)
 
 logger = Logger()
 
