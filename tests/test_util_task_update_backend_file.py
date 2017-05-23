@@ -27,15 +27,14 @@ from __future__ import absolute_import
 import json
 import os.path
 
-from OPSI.Util.Task.UpdateBackend.File import (
-    BackendUpdateUnfinishedError,
-    getVersionFilePath, readBackendVersion, _readVersionFile,
-    updateBackendVersion, updateFileBackend
-)
-
 from .Backends.File import getFileBackend
 
 import pytest
+from OPSI.Util.Task.UpdateBackend.File import (
+    FileBackendUpdateError,
+    getVersionFilePath, readBackendVersion, _readVersionFile,
+    updateBackendVersion, updateFileBackend
+)
 
 
 @pytest.fixture
@@ -103,7 +102,7 @@ def testRaisingExceptionOnUnfinishedUpdate(baseDirectory, config):
     with open(configFile, 'w') as f:
         json.dump(config, f)
 
-    with pytest.raises(BackendUpdateUnfinishedError):
+    with pytest.raises(FileBackendUpdateError):
         readBackendVersion(baseDirectory)
 
 
@@ -111,6 +110,6 @@ def testApplyingTheSameUpdateMultipleTimesFails(baseDirectory):
     with updateBackendVersion(baseDirectory, 1):
         pass
 
-    with pytest.raises(BackendUpdateUnfinishedError):
+    with pytest.raises(FileBackendUpdateError):
         with updateBackendVersion(baseDirectory, 1):
             pass
