@@ -103,6 +103,12 @@ python-opsi (4.1.1.1-1) experimental; urgency=medium
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 04 Oct 2016 16:15:11 +0200
 
+python-opsi (4.0.7.41-1) stable; urgency=medium
+
+  * 30_kiosk.conf: Improved speed of getKioskProductInfosForClient.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 24 May 2017 16:02:20 +0200
+
 python-opsi (4.0.7.40-1) stable; urgency=medium
 
   * 30_kiosk.conf: getKioskProductInfosForClient does only return a product
