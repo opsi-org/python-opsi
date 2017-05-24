@@ -2,11 +2,5 @@
 
 WITH_PYTHON2 = $(shell test -f /usr/bin/dh_python2 && echo "--with python2")
 
-ifeq (,$(findstring $(shell lsb_release -cs),"lenny lucid"))
-override_dh_auto_install:
-	dh_auto_install
-	sed -i 's#/etc/dhcp3/dhcpd.conf#/etc/dhcp/dhcpd.conf#;s#dhcp3-server#isc-dhcp-server#' debian/python-opsi/etc/opsi/backends/dhcpd.conf
-endif
-
 %:
 	dh $@ ${WITH_PYTHON2}
