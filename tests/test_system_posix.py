@@ -506,40 +506,6 @@ def testGetServiceNameParsingServiceOnDebian():
 	assert expectedServices == Posix.getServiceNames(_serviceStatusOutput=commandOutput)
 
 
-def testGetServiceNameParsingServiceOnRHEL6():
-	output = [
-		'atd (PID  1439) wird ausgeführt ...',
-		'dhcpd wurde beendet',
-		'Tabelle: filter',
-		'Chain INPUT (policy ACCEPT)',
-		'num  target     prot opt source               destination         ',
-		'1    ACCEPT     all      ::/0                 ::/0                state RELATED,ESTABLISHED ',
-		'2    ACCEPT     icmpv6    ::/0                 ::/0                ',
-		'3    ACCEPT     all      ::/0                 ::/0                ',
-		'4    ACCEPT     tcp      ::/0                 ::/0                state NEW tcp dpt:22 ',
-		'5    REJECT     all      ::/0                 ::/0                reject-with icmp6-adm-prohibited ',
-		'',
-		'Chain FORWARD (policy ACCEPT)',
-		'num  target     prot opt source               destination         ',
-		'1    REJECT     all      ::/0                 ::/0                reject-with icmp6-adm-prohibited ',
-		'',
-		'Chain OUTPUT (policy ACCEPT)',
-		'num  target     prot opt source               destination         ',
-		'',
-		'iptables: Firewall läuft nicht. ',
-		'lvmetad wurde beendet',
-		'Netconsole-Modul nicht geladen',
-		'Konfigurierte Geräte:',
-		'lo eth0',
-		'Derzeit aktive Geräte:',
-		'lo eth0',
-		'nmbd wurde beendet',
-		'Checking opsi config service... (running).',
-	]
-
-	assert set(["atd", "dhcpd", "lvmetad", "nmbd"]) == Posix.getServiceNames(_serviceStatusOutput=output)
-
-
 def testGetServiceNameParsingFromSystemd():
 	output = [
 		'iprdump.service - LSB: Start the ipr dump daemon',

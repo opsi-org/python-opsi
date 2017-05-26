@@ -3830,8 +3830,6 @@ Used for testing.
 
 	patterns = [
 		'\[.*\]\s+(?P<servicename>.+)',  # Debian
-		'(?P<servicename>.+) \(PID',  # RHEL 6
-		'(?P<servicename>.+) w',  # RHEL 6, part 2
 		r'(?P<servicename>([\w-]|@)+)\.service',  # systemd-based
 	]
 	patterns = [re.compile(pattern) for pattern in patterns]
