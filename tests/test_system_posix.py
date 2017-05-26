@@ -493,19 +493,6 @@ def testGetSambaServiceNameGettingFoundSambaServiceName(expectedName, services):
 		assert expectedName == Posix.getSambaServiceName()
 
 
-def testGetServiceNameParsingServiceOnDebian():
-	commandOutput = [
-		' [ ? ]  alsa-utils',
-		' [ - ]  anacron',
-		' [ + ]  atd',
-		' [ ? ]  bootmisc.sh',
-		' [ - ]  x11-common',
-	]
-
-	expectedServices = set(["alsa-utils", "anacron", "atd", "bootmisc.sh", "x11-common"])
-	assert expectedServices == Posix.getServiceNames(_serviceStatusOutput=commandOutput)
-
-
 def testGetServiceNameParsingFromSystemd():
 	output = [
 		'iprdump.service - LSB: Start the ipr dump daemon',
