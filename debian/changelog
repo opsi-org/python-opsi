@@ -1,3 +1,26 @@
+python-opsi (4.1.1.6-1) UNRELEASED; urgency=medium
+
+  * 20_legacy.conf: Various refactorings to make it easier to maintain.
+  * 20_legacy.conf: Removed method deleteGroup. Use group_delete instead.
+  * 20_legacy.conf: Removed method createServer.
+  * 20_legacy.conf: Removed method deleteClient. Use host_delete instead.
+  * 20_legacy.conf: Removed method deleteDepot. Use host_delete instead.
+  * 20_legacy.conf: Removed method setHostLastSeen.
+  * 20_legacy.conf: Removed method deleteProductDependency.
+  * 20_legacy.conf: Removed method deleteOpsiBase.
+  * 20_legacy.conf: Removed method createOpsiBase.
+  * 30_kiosk.conf: Relying on dict comprehensions.
+  * Debian packaging: Remove workarounds for Debian 7 and Ubuntu 12.04.
+  * Method backend_info will now use the version from OPSI.__version__.
+  * Certificates created with OPSI.Util.Task.createCertificate will use
+    sha512 instead of sha1.
+  * acl.conf.default: Limit access to getData / getRawData to administrative
+    users.
+  * Remove support for RHEL / CentOS 6.
+  * Remove modules for obsolete opsiconfd supervisor.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 26 May 2017 09:23:29 +0200
+
 python-opsi (4.1.1.5-1) testing; urgency=medium
 
   * OPSI.Util.objectToBash: refactored function.
