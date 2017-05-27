@@ -198,3 +198,35 @@ def testGeneratingProductControlFileContainingPropertyWithEmptyValues(controlFil
 	assert testProperty.multiValue is False
 	assert testProperty.editable is True
 	assert testProperty.description == "Nothing is important."
+
+
+@pytest.fixture
+def specialCharacterControlFile():
+	filePath = os.path.join(
+		os.path.dirname(__file__),
+		'testdata', 'util', 'file', 'opsi',
+		'control_with_special_characters_in_property')
+
+	with createTemporaryTestfile(filePath) as newFilePath:
+		yield newFilePath
+
+
+def testGeneratingProductControlFileContainingSpecialCharactersInProperty(specialCharacterControlFile):
+	pcf = PackageControlFile(controlFileWithEmptyValues)
+	pcf.parse()
+	pcf.generate()
+	pcf.generate()  # should destroy nothing
+	pcf.close()
+	del pcf
+
+	pcf = PackageControlFile(controlFileWithEmptyValues)
+	properties = pcf.getProductProperties()
+	assert len(properties) == 1
+
+	testProperty = properties[0]
+	assert testProperty.propertyId == 'target_path'
+	assert testProperty.possibleValues == ["C:\\temp\\my_target"]
+	assert testProperty.defaultValues == ["C:\\temp\\my_target"]
+	assert testProperty.multiValue is False
+	assert testProperty.editable is True
+	assert testProperty.description == "The target path"
