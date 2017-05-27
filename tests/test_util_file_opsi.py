@@ -212,14 +212,14 @@ def specialCharacterControlFile():
 
 
 def testGeneratingProductControlFileContainingSpecialCharactersInProperty(specialCharacterControlFile):
-	pcf = PackageControlFile(controlFileWithEmptyValues)
+	pcf = PackageControlFile(specialCharacterControlFile)
 	pcf.parse()
 	pcf.generate()
 	pcf.generate()  # should destroy nothing
 	pcf.close()
 	del pcf
 
-	pcf = PackageControlFile(controlFileWithEmptyValues)
+	pcf = PackageControlFile(specialCharacterControlFile)
 	properties = pcf.getProductProperties()
 	assert len(properties) == 1
 
