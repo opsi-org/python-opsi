@@ -30,11 +30,18 @@ description: The target path
 values: ["C:\\temp\\my_target"]
 default: ["C:\\temp\\my_target"]
 
+[ProductProperty]
+type: unicode
+name: adminaccounts
+multivalue: False
+editable: True
+description: Windows account(s) to provision as administrators.
+values: ["Administrator", "domain.local\Administrator", "BUILTIN\ADMINISTRATORS"]
+default: ["Administrator"]
+
 [Changelog]
 prod-1750 (1.0-1) testing; urgency=low
 
   * Initial package
 
- -- nw <nw@uib.de>  Sat, 27 May 2017 18:38:48 +0000
-
-
+ -- Test User <unknown@example.test>  Sat, 27 May 2017 18:38:48 +0000

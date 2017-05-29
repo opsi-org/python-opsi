@@ -220,12 +220,24 @@ def testGeneratingProductControlFileContainingSpecialCharactersInProperty(specia
 
 	pcf = PackageControlFile(specialCharacterControlFile)
 	properties = pcf.getProductProperties()
-	assert len(properties) == 1
+	assert len(properties) == 2
 
-	testProperty = properties[0]
+	if properties[0].propertyId == 'target_path':
+		testProperty = properties.pop(0)
+	else:
+		testProperty = properties.pop()
+
 	assert testProperty.propertyId == 'target_path'
 	assert testProperty.possibleValues == ["C:\\temp\\my_target"]
 	assert testProperty.defaultValues == ["C:\\temp\\my_target"]
 	assert testProperty.multiValue is False
 	assert testProperty.editable is True
 	assert testProperty.description == "The target path"
+
+	testProperty = properties.pop()
+	assert testProperty.propertyId == 'adminaccounts'
+	assert testProperty.possibleValues == ["Administrator", "domain.local\\Administrator", "BUILTIN\\ADMINISTRATORS"]
+	assert testProperty.defaultValues == ["Administrator"]
+	assert testProperty.multiValue is False
+	assert testProperty.editable is True
+	assert testProperty.description == "Windows account(s) to provision as administrators."
