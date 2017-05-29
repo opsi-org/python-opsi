@@ -228,16 +228,16 @@ def testGeneratingProductControlFileContainingSpecialCharactersInProperty(specia
 		testProperty = properties.pop()
 
 	assert testProperty.propertyId == 'target_path'
-	assert testProperty.possibleValues == ["C:\\temp\\my_target"]
-	assert testProperty.defaultValues == ["C:\\temp\\my_target"]
+	assert testProperty.description == "The target path"
 	assert testProperty.multiValue is False
 	assert testProperty.editable is True
-	assert testProperty.description == "The target path"
+	assert testProperty.possibleValues == ["C:\\temp\\my_target"]
+	assert testProperty.defaultValues == ["C:\\temp\\my_target"]
 
 	testProperty = properties.pop()
 	assert testProperty.propertyId == 'adminaccounts'
-	assert testProperty.possibleValues == ["Administrator", "domain.local\\Administrator", "BUILTIN\\ADMINISTRATORS"]
-	assert testProperty.defaultValues == ["Administrator"]
+	assert testProperty.description == "Windows account(s) to provision as administrators."
 	assert testProperty.multiValue is False
 	assert testProperty.editable is True
-	assert testProperty.description == "Windows account(s) to provision as administrators."
+	assert testProperty.defaultValues == ["Administrator"]
+	assert set(testProperty.possibleValues) == set(["Administrator", "domain.local\\Administrator", "BUILTIN\\ADMINISTRATORS"])
