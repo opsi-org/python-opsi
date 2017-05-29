@@ -27,7 +27,6 @@ import os
 
 import pytest
 
-from OPSI.Util import toJson
 from OPSI.Util.File.Opsi import BackendDispatchConfigFile, OpsiConfFile, PackageControlFile
 from .helpers import createTemporaryTestfile
 
