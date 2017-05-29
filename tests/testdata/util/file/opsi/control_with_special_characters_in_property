@@ -36,7 +36,7 @@ name: adminaccounts
 multivalue: False
 editable: True
 description: Windows account(s) to provision as administrators.
-values: ["Administrator", "domain.local\Administrator", "BUILTIN\ADMINISTRATORS"]
+values: ["Administrator", "domain.local\\Administrator", "BUILTIN\\ADMINISTRATORS"]
 default: ["Administrator"]
 
 [Changelog]
