@@ -1,4 +1,4 @@
-python-opsi (4.1.1.6-1) UNRELEASED; urgency=medium
+python-opsi (4.1.1.6-1) testing; urgency=medium
 
   * 20_legacy.conf: Various refactorings to make it easier to maintain.
   * 20_legacy.conf: Removed method deleteGroup. Use group_delete instead.
