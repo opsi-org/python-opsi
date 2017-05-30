@@ -18,8 +18,11 @@ python-opsi (4.1.1.6-1) UNRELEASED; urgency=medium
     users.
   * Remove support for RHEL / CentOS 6.
   * Remove modules for obsolete opsiconfd supervisor.
+  * New module OPSI.Util.Task.UpdateBackend.File.
+  * OPSI.Util.Task.UpdateBackend: Added check for the used schema version
+    of the backend.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 26 May 2017 09:23:29 +0200
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 30 May 2017 10:56:02 +0200
 
 python-opsi (4.1.1.5-1) testing; urgency=medium
 
