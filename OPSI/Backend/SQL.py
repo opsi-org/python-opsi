@@ -2348,7 +2348,10 @@ class SQLBackend(ConfigDataBackend):
 		)
 
 		if not hwIdswhere:
-			raise BackendReferentialIntegrityError(u"Hardware device %s not found" % auditHardware)
+			logger.debug("Building unique constraing impossible!")
+			logger.debug("auditHardware: {0!r}", auditHardware)
+			logger.debug("auditHardwareOnHost: {0!r}", auditHardwareOnHost)
+			raise BackendReferentialIntegrityError(u"Hardware device {0!r} not found".format(auditHardware))
 
 		return ' and '.join(
 			(
