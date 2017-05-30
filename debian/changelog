@@ -21,8 +21,10 @@ python-opsi (4.1.1.6-1) UNRELEASED; urgency=medium
   * New module OPSI.Util.Task.UpdateBackend.File.
   * OPSI.Util.Task.UpdateBackend: Added check for the used schema version
     of the backend.
+  * Removed usage of the file /etc/opsi/version. It is safer to read the
+    version from OPSI.__version__.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 30 May 2017 10:56:02 +0200
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 30 May 2017 13:58:35 +0200
 
 python-opsi (4.1.1.5-1) testing; urgency=medium
 
