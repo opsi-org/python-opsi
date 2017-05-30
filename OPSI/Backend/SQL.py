@@ -58,6 +58,8 @@ __all__ = (
 	'SQLBackendObjectModificationTracker'
 )
 
+DATABASE_SCHEMA_VERSION = 1
+
 logger = Logger()
 
 
@@ -74,6 +76,19 @@ def timeQuery(query):
 def onlyAllowSelect(query):
 	if not forceUnicodeLower(query).strip().startswith('select'):
 		raise ValueError('Only queries to SELECT data are allowed.')
+
+
+def createSchemaVersionTable(database):
+	logger.debug("Creating 'OPSI_SCHEMA' table.")
+	table = u'''CREATE TABLE `OPSI_SCHEMA` (
+		`version` integer NOT NULL,
+		`updateStarted` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		`updateEnded` TIMESTAMP,
+		PRIMARY KEY (`version`)
+	) {0};
+	'''.format(database.getTableCreationOptions('OPSI_SCHEMA'))
+	logger.debug(table)
+	database.execute(table)
 
 
 class SQL(object):
@@ -861,6 +876,20 @@ class SQLBackend(ConfigDataBackend):
 			self._sql.execute('CREATE INDEX `index_software_config_nvsla` on `SOFTWARE_CONFIG` (`name`, `version`, `subVersion`, `language`, `architecture`);')
 
 		self._createAuditHardwareTables()
+
+		if 'OPSI_SCHEMA' not in existingTables:
+			createSchemaVersionTable(self._sql)
+
+			# To avoid updates to an up-to-date database schema
+			# we insert the current version into to database
+			# right away.
+			# If a change to the schema is done adjust this!
+			schemaVersion = 1
+			query = """
+				INSERT INTO OPSI_SCHEMA (`version`, `updateEnded`)
+				VALUES({version}, CURRENT_TIMESTAMP);
+			""".format(version=schemaVersion)
+			self._sql.execute(query)
 
 	def _createTableHost(self):
 		logger.debug(u'Creating table HOST')
