@@ -39,9 +39,6 @@ with codecs.open(os.path.join("debian", "changelog"), 'r', 'utf-8') as changelog
 if not VERSION:
 	raise ValueError(u"Failed to get version info")
 
-with open("data/version", "w") as versionFile:
-	versionFile.write(VERSION)
-
 # Always set __version__ in OPSI.__init__.py to the version found in
 # the changelog to make sure the version is always up-to-date
 # and nobody needs to manually update it.
@@ -96,7 +93,6 @@ data_files = [
 	(
 		'/etc/opsi/',
 		[
-			'data/version',
 			'data/server_commands_default.conf',
 			'data/opsi.conf'
 		]
