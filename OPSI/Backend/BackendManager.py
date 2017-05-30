@@ -536,12 +536,8 @@ class BackendAccessControl(object):
 			self._pamService = 'opsi-auth'
 		elif 'suse' in DISTRIBUTOR.lower():
 			self._pamService = 'sshd'
-		elif 'centos' in DISTRIBUTOR.lower() or 'scientific' in DISTRIBUTOR.lower():
+		elif 'centos' in DISTRIBUTOR.lower() or 'redhat' in DISTRIBUTOR.lower():
 			self._pamService = 'system-auth'
-		elif 'redhat' in DISTRIBUTOR.lower():
-			self._pamService = 'system-auth'
-			if DISTRELEASE.startswith('6.'):
-				self._pamService = 'password-auth'
 
 		for (option, value) in kwargs.items():
 			option = option.lower()
