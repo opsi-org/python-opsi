@@ -46,6 +46,7 @@ from contextlib import contextmanager
 from hashlib import md5
 from twisted.conch.ssh import keys
 
+from OPSI import __version__ as LIBRARY_VERSION
 from OPSI.Logger import Logger
 from OPSI.Types import BackendError, BackendBadValueError
 from OPSI.Types import *  # this is needed for dynamic loading
@@ -72,7 +73,6 @@ __all__ = (
 	'ModificationTrackingBackend', 'BackendModificationListener'
 )
 
-OPSI_VERSION_FILE = u'/etc/opsi/version'
 OPSI_MODULES_FILE = u'/etc/opsi/modules'
 OPSI_PASSWD_FILE = u'/etc/opsi/passwd'
 OPSI_GLOBAL_CONF = u'/etc/opsi/global.conf'
@@ -198,8 +198,8 @@ This defaults to ``self``.
 		self._username = None
 		self._password = None
 		self._context = self
+		self._opsiVersion = LIBRARY_VERSION
 
-		self._opsiVersionFile = OPSI_VERSION_FILE
 		self._opsiModulesFile = OPSI_MODULES_FILE
 
 		for (option, value) in kwargs.items():
@@ -215,16 +215,7 @@ This defaults to ``self``.
 				logger.info(u"Backend context was set to %s" % self._context)
 			elif option == 'opsimodulesfile':
 				self._opsiModulesFile = forceFilename(value)
-			elif option == 'opsiversionfile':
-				self._opsiVersionFile = forceFilename(value)
 		self._options = {}
-
-		try:
-			with codecs.open(self._opsiVersionFile, 'r', 'utf-8') as f:
-				self._opsiVersion = f.readline().strip()
-		except Exception as error:
-			logger.error(u"Failed to read version info from file {0!r}: {1}".format(self._opsiVersionFile, error))
-			self._opsiVersion = 'unknown'
 
 	def __enter__(self):
 		return self

@@ -79,13 +79,6 @@ except Exception as error:
 	logger.debug("Reading Distribution failed: {0}".format(error))
 	DISTRIBUTION = 'unknown'
 
-try:
-	with closing(os.popen('lsb_release -r 2>&1 /dev/null')) as f:
-		DISTRELEASE = f.read().split(':')[1].strip()
-except Exception as error:
-	logger.debug("Reading release failed: {0}".format(error))
-	DISTRELEASE = 'unknown'
-
 
 class BackendManager(ExtendedBackend):
 	"""
@@ -540,8 +533,6 @@ class BackendAccessControl(object):
 			self._pamService = 'system-auth'
 		elif 'redhat' in DISTRIBUTOR.lower():
 			self._pamService = 'system-auth'
-			if DISTRELEASE.startswith('6.'):
-				self._pamService = 'password-auth'
 
 		for (option, value) in kwargs.items():
 			option = option.lower()

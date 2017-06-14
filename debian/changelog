@@ -1,3 +1,31 @@
+python-opsi (4.1.1.6-1) testing; urgency=medium
+
+  * 20_legacy.conf: Various refactorings to make it easier to maintain.
+  * 20_legacy.conf: Removed method deleteGroup. Use group_delete instead.
+  * 20_legacy.conf: Removed method createServer.
+  * 20_legacy.conf: Removed method deleteClient. Use host_delete instead.
+  * 20_legacy.conf: Removed method deleteDepot. Use host_delete instead.
+  * 20_legacy.conf: Removed method setHostLastSeen.
+  * 20_legacy.conf: Removed method deleteProductDependency.
+  * 20_legacy.conf: Removed method deleteOpsiBase.
+  * 20_legacy.conf: Removed method createOpsiBase.
+  * 30_kiosk.conf: Relying on dict comprehensions.
+  * Debian packaging: Remove workarounds for Debian 7 and Ubuntu 12.04.
+  * Method backend_info will now use the version from OPSI.__version__.
+  * Certificates created with OPSI.Util.Task.createCertificate will use
+    sha512 instead of sha1.
+  * acl.conf.default: Limit access to getData / getRawData to administrative
+    users.
+  * Remove support for RHEL / CentOS 6.
+  * Remove modules for obsolete opsiconfd supervisor.
+  * New module OPSI.Util.Task.UpdateBackend.File.
+  * OPSI.Util.Task.UpdateBackend: Added check for the used schema version
+    of the backend.
+  * Removed usage of the file /etc/opsi/version. It is safer to read the
+    version from OPSI.__version__.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 30 May 2017 13:58:35 +0200
+
 python-opsi (4.1.1.5-1) testing; urgency=medium
 
   * OPSI.Util.objectToBash: refactored function.
@@ -102,6 +130,12 @@ python-opsi (4.1.1.1-1) experimental; urgency=medium
     into OPSI/__init__.py to always show the current version.
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 04 Oct 2016 16:15:11 +0200
+
+python-opsi (4.0.7.41-1) stable; urgency=medium
+
+  * 30_kiosk.conf: Improved speed of getKioskProductInfosForClient.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 24 May 2017 16:02:20 +0200
 
 python-opsi (4.0.7.40-1) stable; urgency=medium
 

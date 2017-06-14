@@ -3800,9 +3800,7 @@ def getServiceNames(_serviceStatusOutput=None):
 	"""
 	Get the names of services on the system.
 
-	This script tries to pull the information from ``systemctl`` if
-	present. If ``systemctl`` is not present it will fall back to use
-	``service``.
+	This script tries to pull the information from ``systemctl``.
 
 	:param _serviceStatusOutput: The output of `service --status-all`.\
 Used for testing.
@@ -3811,39 +3809,19 @@ Used for testing.
 
 	.. versionadded:: 4.0.5.11
 
-
-	.. note:
-
-	  RHEL / CentOS 7 will display insufficent information when using
-	  the ``service``-command and we work around this preferring ``systemctl``.
-
-
-	.. note::
-
-	  Does not work on Suse Linux Enterprise Server (SLES) 11SP3.
+	.. versionchanged:: 4.1.1.6
+		Only supporting systemd now.
 	"""
 	if not _serviceStatusOutput:
-		try:
-			_serviceStatusOutput = execute(u"{0} list-unit-files".format(which("systemctl")))
-		except Exception:
-			_serviceStatusOutput = execute(u"{0} --status-all".format(which("service")))
+		_serviceStatusOutput = execute(u"{0} list-unit-files".format(which("systemctl")))
 
-	patterns = [
-		'\[.*\]\s+(?P<servicename>.+)',  # Debian
-		'(?P<servicename>.+) \(PID',  # RHEL 6
-		'(?P<servicename>.+) w',  # RHEL 6, part 2
-		r'(?P<servicename>([\w-]|@)+)\.service',  # systemd-based
-	]
-	patterns = [re.compile(pattern) for pattern in patterns]
-
+	pattern = re.compile(r'(?P<servicename>([\w-]|@)+)\.service')
 	services = set()
 
 	for line in _serviceStatusOutput:
-		for pattern in patterns:
-			match = pattern.search(line.strip())
-			if match:
-				services.add(match.group('servicename').strip())
-				break
+		match = pattern.search(line.strip())
+		if match:
+			services.add(match.group('servicename').strip())
 
 	logger.debug(u"Found the following services: {0}".format(services))
 	return services
