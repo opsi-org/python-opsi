@@ -151,6 +151,9 @@ chmod 660 /etc/opsi/passwd
 chown opsiconfd:opsiadmin /etc/opsi/server_commands_default.conf
 chmod 440 /etc/opsi/server_commands_default.conf
 
+# Removing files dating before opsi 4.1
+rm /etc/opsi/version || true
+
 # ===[ files ]======================================
 %files -f INSTALLED_FILES
 
