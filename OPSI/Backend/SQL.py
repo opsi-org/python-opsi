@@ -1429,29 +1429,30 @@ class SQLBackend(ConfigDataBackend):
 	def productProperty_getObjects(self, attributes=[], **filter):
 		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.productProperty_getObjects(self, attributes=[], **filter)
-		logger.info(u"Getting product properties, filter: %s" % filter)
-		productProperties = []
+		logger.info(u"Getting product properties, filter: {0}", filter)
 		(attributes, filter) = self._adjustAttributes(ProductProperty, attributes, filter)
-		for res in self._sql.getSet(self._createQuery('PRODUCT_PROPERTY', attributes, filter)):
-			res['possibleValues'] = []
-			res['defaultValues'] = []
-			if not attributes or 'possibleValues' in attributes or 'defaultValues' in attributes:
-				for res2 in self._sql.getSet(
-					u"select * from PRODUCT_PROPERTY_VALUE where "
-					u"`propertyId` = '{0}' AND `productId` = '{1}' AND "
-					u"`productVersion` = '{2}' AND "
-					u"`packageVersion` = '{3}'".format(
-						res['propertyId'],
-						res['productId'],
-						res['productVersion'],
-						res['packageVersion']
-					)):
 
-					res['possibleValues'].append(res2['value'])
-					if res2['isDefault']:
-						res['defaultValues'].append(res2['value'])
+		readValues = not attributes or 'possibleValues' in attributes or 'defaultValues' in attributes
 
-			productProperties.append(ProductProperty.fromHash(res))
+		query = self._createQuery('PRODUCT_PROPERTY', attributes, filter)
+		productProperties = []
+		for productProperty in self._sql.getSet(query):
+			productProperty['possibleValues'] = []
+			productProperty['defaultValues'] = []
+			if readValues:
+				valueQuery = u"""select value, isDefault
+from PRODUCT_PROPERTY_VALUE
+where `propertyId` = '{propertyId}'
+AND `productId` = '{productId}'
+AND `productVersion` = '{productVersion}'
+AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
+
+				for propertyValues in self._sql.getSet(valueQuery):
+					productProperty['possibleValues'].append(propertyValues['value'])
+					if propertyValues['isDefault']:
+						productProperty['defaultValues'].append(propertyValues['value'])
+
+			productProperties.append(ProductProperty.fromHash(productProperty))
 
 		return productProperties
 
