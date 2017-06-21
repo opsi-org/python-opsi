@@ -2146,12 +2146,12 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			if productProperty.possibleValues and id in productProperty.possibleValues:
 				productProperty.possibleValues.remove(id)
 				productProperty.possibleValues.append(newId)
-				if not productProperty in modifiedProductProperties:
+				if productProperty not in modifiedProductProperties:
 					modifiedProductProperties.append(productProperty)
 			if productProperty.defaultValues and id in productProperty.defaultValues:
 				productProperty.defaultValues.remove(id)
 				productProperty.defaultValues.append(newId)
-				if not productProperty in modifiedProductProperties:
+				if productProperty not in modifiedProductProperties:
 					modifiedProductProperties.append(productProperty)
 		if modifiedProductProperties:
 			self.productProperty_updateObjects(modifiedProductProperties)
@@ -2169,12 +2169,12 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			if config.possibleValues and id in config.possibleValues:
 				config.possibleValues.remove(id)
 				config.possibleValues.append(newId)
-				if not config in modifiedConfigs:
+				if config not in modifiedConfigs:
 					modifiedConfigs.append(config)
 			if config.defaultValues and id in config.defaultValues:
 				config.defaultValues.remove(id)
 				config.defaultValues.append(newId)
-				if not config in modifiedConfigs:
+				if config not in modifiedConfigs:
 					modifiedConfigs.append(config)
 		if modifiedConfigs:
 			self.config_updateObjects(modifiedConfigs)
@@ -3398,7 +3398,7 @@ into the IDs of these depots are to be found in the list behind \
 			depotFilter['objectId'] = depotId
 			for pps in self._backend.productPropertyState_getObjects(attributes, **depotFilter):
 				for clientId in clientIds:
-					if not pps.propertyId in ppss.get(clientId, {}).get(pps.productId, []):
+					if pps.propertyId not in ppss.get(clientId, {}).get(pps.productId, []):
 						# Product property for client does not exist => add default (values of depot)
 						productPropertyStates.append(
 							ProductPropertyState(
