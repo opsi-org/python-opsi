@@ -33,8 +33,9 @@ import re
 import shutil
 
 from OPSI.Backend.Backend import OPSI_GLOBAL_CONF, ConfigDataBackend
+from OPSI.Exceptions import (BackendBadValueError, BackendConfigurationError,
+	BackendError, BackendIOError, BackendUnaccomplishableError)
 from OPSI.Logger import Logger
-from OPSI.Types import BackendError, BackendIOError, BackendUnaccomplishableError
 from OPSI.Types import (forceBool, forceHostId, forceFilename, forceList,
 						forceObjectClass, forceObjectClassList, forceProductId,
 						forceUnicode, forceUnicodeList)
@@ -42,7 +43,6 @@ from OPSI.Util import toJson, fromJson, getfqdn
 from OPSI.Util.File import IniFile, LockableFile
 from OPSI.Util.File.Opsi import OpsiConfFile, HostKeyFile, PackageControlFile
 from OPSI.Object import *  # needed for calls to "eval"
-from OPSI.Types import BackendBadValueError, BackendConfigurationError
 
 __all__ = ('FileBackend', )
 

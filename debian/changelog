@@ -1,3 +1,14 @@
+python-opsi (4.1.1.7-1) testing; urgency=medium
+
+  * Exceptions have been moved from OPSI.Types to OPSI.Exceptions.
+  * Remove leftover for Scientific Linux support.
+  * Re-classified log-messages regarding the (un)installation of packages.
+  * Post-installation /etc/opsi/version will be removed.
+  * SQL backend: speed up retrieval of ProductProperty objects.
+  * Various refactorings regarding (de)serialization.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 21 Jun 2017 15:48:26 +0200
+
 python-opsi (4.1.1.6-1) testing; urgency=medium
 
   * 20_legacy.conf: Various refactorings to make it easier to maintain.

@@ -33,12 +33,12 @@ import threading
 import OPSI.System as System
 from OPSI.Backend.Backend import OPSI_GLOBAL_CONF, ConfigDataBackend
 from OPSI.Backend.JSONRPC import JSONRPCBackend
+from OPSI.Exceptions import (BackendIOError, BackendBadValueError,
+	BackendMissingDataError, BackendUnableToConnectError,
+	BackendUnaccomplishableError)
 from OPSI.Logger import Logger
 from OPSI.Object import OpsiClient, Host
 from OPSI.Types import forceBool, forceDict, forceHostId, forceObjectClass, forceUnicode
-from OPSI.Types import (BackendIOError, BackendBadValueError,
-	BackendMissingDataError, BackendUnableToConnectError,
-	BackendUnaccomplishableError)
 from OPSI.Util.File import DHCPDConfFile
 from OPSI.Util import getfqdn
 

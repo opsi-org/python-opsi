@@ -31,7 +31,7 @@ As an example this contains classes for hosts, products, configurations.
 import inspect
 
 from OPSI.Logger import Logger
-from OPSI.Types import BackendBadValueError, BackendConfigurationError
+from OPSI.Exceptions import BackendBadValueError, BackendConfigurationError
 from OPSI.Types import (forceActionProgress, forceActionRequest,
 	forceActionResult, forceArchitecture, forceAuditState, forceBool,
 	forceBoolList, forceConfigId, forceDict,
@@ -138,8 +138,7 @@ def decodeIdent(klass, hash):
 
 			args = mandatoryConstructorArgs(klass)
 			assert len(identValues) == len(args), "ident has unexpected length."
-			ident = dict(zip(args, identValues))
-			hash.update(ident)
+			hash.update({k: v for k, v in zip(args, identValues)})
 
 	return hash
 
@@ -185,6 +184,18 @@ def objectsDiffer(obj1, obj2, excludeAttributes=None):
 			if value1 != value2:
 				return True
 	return False
+
+
+def toStr(value):
+	"""
+	Converts `value` into a str if it is a unicode.
+
+	:returntype: str
+	"""
+	if isinstance(value, unicode):
+		return str(value)
+	else:
+		return value
 
 
 class BaseObject(object):
@@ -3194,14 +3205,12 @@ class AuditHardware(Entity):
 
 	@staticmethod
 	def fromHash(hash):
-		initHash = {}
-		for (key, value) in hash.items():
-			if key == 'type':
-				continue
+		initHash = {
+			toStr(key): value
+			for key, value in hash.items()
+			if key != 'type'
+		}
 
-			if isinstance(key, unicode):
-				key = str(key)
-			initHash[key] = value
 		return AuditHardware(**initHash)
 
 	@staticmethod
@@ -3418,15 +3427,12 @@ class AuditHardwareOnHost(Relationship):
 
 	@staticmethod
 	def fromHash(hash):
-		initHash = {}
-		for (key, value) in hash.items():
-			if key == 'type':
-				continue
+		initHash = {
+			toStr(key): value
+			for key, value in hash.items()
+			if key != 'type'
+		}
 
-			if isinstance(key, unicode):
-				key = str(key)
-
-			initHash[key] = value
 		return AuditHardwareOnHost(**initHash)
 
 	@staticmethod

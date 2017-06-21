@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
@@ -26,11 +25,11 @@ Testing the functionality of working with products.
 from __future__ import absolute_import, print_function
 
 from OPSI.Backend.Backend import temporaryBackendOptions
+from OPSI.Exceptions import BackendBadValueError
 from OPSI.Object import (BoolProductProperty, LocalbootProduct, NetbootProduct,
     OpsiClient, OpsiDepotserver, Product, ProductDependency, ProductOnClient,
     ProductOnDepot, ProductPropertyState, UnicodeConfig, UnicodeProductProperty)
 from OPSI.Types import forceHostId
-from OPSI.Types import BackendBadValueError
 from OPSI.Util import getfqdn
 
 from .test_hosts import getClients, getConfigServer, getDepotServers
@@ -684,15 +683,15 @@ def testGettingProductProperties(extendedConfigDataBackend):
     assert len(productProperties) == len(prodPropertiesOrig)
 
     for productProperty in productProperties:
-        for p in prodPropertiesOrig:
-            if (productProperty.productId == p.productId and
-                productProperty.propertyId == p.propertyId and
-                productProperty.productVersion == p.productVersion and
-                productProperty.packageVersion == p.packageVersion):
+        for originalProperty in prodPropertiesOrig:
+            if (productProperty.productId == originalProperty.productId and
+                productProperty.propertyId == originalProperty.propertyId and
+                productProperty.productVersion == originalProperty.productVersion and
+                productProperty.packageVersion == originalProperty.packageVersion):
 
                 productProperty = productProperty.toHash()
-                p = p.toHash()
-                for (attribute, value) in p.items():
+                originalProperty = originalProperty.toHash()
+                for (attribute, value) in originalProperty.items():
                     if value is not None:
                         if isinstance(value, list):
                             for v in value:

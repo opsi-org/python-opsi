@@ -38,11 +38,11 @@ from datetime import datetime
 from hashlib import md5
 from twisted.conch.ssh import keys
 
+from OPSI.Exceptions import (BackendConfigurationError, BackendMissingDataError,
+	BackendModuleDisabledError, BackendReferentialIntegrityError)
 from OPSI.Logger import Logger
 from OPSI.Types import (forceBool, forceUnicodeLower, forceOpsiTimestamp,
 	forceList, forceUnicode, forceUnicodeList, forceDict, forceObjectClassList)
-from OPSI.Types import (BackendConfigurationError, BackendMissingDataError,
-	BackendModuleDisabledError, BackendReferentialIntegrityError)
 from OPSI.Object import (AuditHardware, AuditHardwareOnHost, AuditSoftware,
 	AuditSoftwareOnClient, AuditSoftwareToLicensePool, Config, ConfigState,
 	Entity, Group, Host, HostGroup, LicenseContract, LicenseOnClient,
@@ -58,7 +58,7 @@ __all__ = (
 	'SQLBackendObjectModificationTracker'
 )
 
-DATABASE_SCHEMA_VERSION = 1
+DATABASE_SCHEMA_VERSION = 2
 
 logger = Logger()
 
@@ -629,6 +629,7 @@ class SQLBackend(ConfigDataBackend):
 				''' % self._sql.getTableCreationOptions('PRODUCT_PROPERTY_VALUE')
 			logger.debug(table)
 			self._sql.execute(table)
+			self._sql.execute('CREATE INDEX `index_product_property_value` on `PRODUCT_PROPERTY_VALUE` (`productId`, `propertyId`, `productVersion`, `packageVersion`);')
 
 		if 'PRODUCT_DEPENDENCY' not in existingTables:
 			logger.debug(u'Creating table PRODUCT_DEPENDENCY')
@@ -880,15 +881,10 @@ class SQLBackend(ConfigDataBackend):
 		if 'OPSI_SCHEMA' not in existingTables:
 			createSchemaVersionTable(self._sql)
 
-			# To avoid updates to an up-to-date database schema
-			# we insert the current version into to database
-			# right away.
-			# If a change to the schema is done adjust this!
-			schemaVersion = 1
 			query = """
 				INSERT INTO OPSI_SCHEMA (`version`, `updateEnded`)
 				VALUES({version}, CURRENT_TIMESTAMP);
-			""".format(version=schemaVersion)
+			""".format(version=DATABASE_SCHEMA_VERSION)
 			self._sql.execute(query)
 
 	def _createTableHost(self):
@@ -1429,29 +1425,30 @@ class SQLBackend(ConfigDataBackend):
 	def productProperty_getObjects(self, attributes=[], **filter):
 		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.productProperty_getObjects(self, attributes=[], **filter)
-		logger.info(u"Getting product properties, filter: %s" % filter)
-		productProperties = []
+		logger.info(u"Getting product properties, filter: {0}", filter)
 		(attributes, filter) = self._adjustAttributes(ProductProperty, attributes, filter)
-		for res in self._sql.getSet(self._createQuery('PRODUCT_PROPERTY', attributes, filter)):
-			res['possibleValues'] = []
-			res['defaultValues'] = []
-			if not attributes or 'possibleValues' in attributes or 'defaultValues' in attributes:
-				for res2 in self._sql.getSet(
-					u"select * from PRODUCT_PROPERTY_VALUE where "
-					u"`propertyId` = '{0}' AND `productId` = '{1}' AND "
-					u"`productVersion` = '{2}' AND "
-					u"`packageVersion` = '{3}'".format(
-						res['propertyId'],
-						res['productId'],
-						res['productVersion'],
-						res['packageVersion']
-					)):
 
-					res['possibleValues'].append(res2['value'])
-					if res2['isDefault']:
-						res['defaultValues'].append(res2['value'])
+		readValues = not attributes or 'possibleValues' in attributes or 'defaultValues' in attributes
 
-			productProperties.append(ProductProperty.fromHash(res))
+		query = self._createQuery('PRODUCT_PROPERTY', attributes, filter)
+		productProperties = []
+		for productProperty in self._sql.getSet(query):
+			productProperty['possibleValues'] = []
+			productProperty['defaultValues'] = []
+			if readValues:
+				valueQuery = u"""select value, isDefault
+from PRODUCT_PROPERTY_VALUE
+where `propertyId` = '{propertyId}'
+AND `productId` = '{productId}'
+AND `productVersion` = '{productVersion}'
+AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
+
+				for propertyValues in self._sql.getSet(valueQuery):
+					productProperty['possibleValues'].append(propertyValues['value'])
+					if propertyValues['isDefault']:
+						productProperty['defaultValues'].append(propertyValues['value'])
+
+			productProperties.append(ProductProperty.fromHash(productProperty))
 
 		return productProperties
 
@@ -2404,11 +2401,11 @@ class SQLBackend(ConfigDataBackend):
 	def _auditHardwareOnHostObjectToDatabaseHash(self, auditHardwareOnHost):
 		(auditHardware, auditHardwareOnHost) = self._extractAuditHardwareHash(auditHardwareOnHost)
 
-		data = {}
-		for (attribute, value) in auditHardwareOnHost.items():
-			if attribute in ('hardwareClass', 'type'):
-				continue
-			data[attribute] = value
+		data = {
+			attribute: value
+			for attribute, value in auditHardwareOnHost.items()
+			if attribute not in ('hardwareClass', 'type')
+		}
 
 		for (key, value) in auditHardware.items():
 			if value is None:

@@ -26,7 +26,7 @@ import time
 from contextlib import contextmanager
 
 from OPSI.Service.Session import Session, SessionHandler
-from OPSI.Types import OpsiAuthenticationError
+from OPSI.Exceptions import OpsiAuthenticationError
 
 import pytest
 

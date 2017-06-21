@@ -29,8 +29,8 @@ from collections import namedtuple
 import pytest
 
 from OPSI.Backend.DHCPD import DHCPDBackend
+from OPSI.Exceptions import BackendIOError
 from OPSI.Object import OpsiClient
-from OPSI.Types import BackendIOError
 
 from .helpers import mock
 from .test_util_file_dhcpdconf import dhcpdConf  # test fixture

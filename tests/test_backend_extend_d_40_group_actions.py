@@ -29,9 +29,9 @@ This tests what usually is found under
 
 import pytest
 
+from OPSI.Exceptions import BackendMissingDataError
 from OPSI.Object import (HostGroup, LocalbootProduct, ProductOnDepot,
     ObjectToGroup, OpsiClient, OpsiDepotserver)
-from OPSI.Types import BackendMissingDataError
 
 
 def testSetProductActionRequestForHostGroup(backendManager):

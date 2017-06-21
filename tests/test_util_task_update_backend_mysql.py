@@ -244,6 +244,42 @@ def createRequiredTables(database):
     ) %s;
     ''' % database.getTableCreationOptions('SOFTWARE_CONFIG'))
 
+    database.execute(u'''CREATE TABLE `PRODUCT` (
+            `productId` varchar(255) NOT NULL,
+            `productVersion` varchar(32) NOT NULL,
+            `packageVersion` varchar(16) NOT NULL,
+            `type` varchar(32) NOT NULL,
+            `name` varchar(128) NOT NULL,
+            `licenseRequired` varchar(50),
+            `setupScript` varchar(50),
+            `uninstallScript` varchar(50),
+            `updateScript` varchar(50),
+            `alwaysScript` varchar(50),
+            `onceScript` varchar(50),
+            `customScript` varchar(50),
+            `userLoginScript` varchar(50),
+            `priority` integer,
+            `description` TEXT,
+            `advice` TEXT,
+            `pxeConfigTemplate` varchar(50),
+            `changelog` TEXT,
+            PRIMARY KEY (`productId`, `productVersion`, `packageVersion`)
+        ) %s;
+        ''' % database.getTableCreationOptions('PRODUCT'))
+    database.execute('CREATE INDEX `index_product_type` on `PRODUCT` (`type`);')
+
+    database.execute(u'''CREATE TABLE `PRODUCT_PROPERTY_VALUE` (
+        `product_property_id` integer NOT NULL ''' + database.AUTOINCREMENT + ''',
+        `productId` varchar(255) NOT NULL,
+        `productVersion` varchar(32) NOT NULL,
+        `packageVersion` varchar(16) NOT NULL,
+        `propertyId` varchar(200) NOT NULL,
+        `value` text,
+        `isDefault` bool,
+        PRIMARY KEY (`product_property_id`),
+        FOREIGN KEY (`productId`, `productVersion`, `packageVersion`, `propertyId`) REFERENCES `PRODUCT_PROPERTY` (`productId`, `productVersion`, `packageVersion`, `propertyId`)
+    ) %s; ''' % database.getTableCreationOptions('PRODUCT_PROPERTY_VALUE'))
+
 
 def getTableNames(database):
     return set(i.values()[0] for i in database.getSet(u'SHOW TABLES;'))
@@ -362,3 +398,15 @@ def testCreatingBackendSetsTheLatestSchemaVersion(mysqlBackendConfig, mySQLBacke
         with MySQLBackend(**mysqlBackendConfig) as freshBackend:
             freshBackend.backend_createBase()
             assert readSchemaVersion(db) == DATABASE_SCHEMA_VERSION
+
+
+def testAddingIndexToProductPropertyValues(mysqlBackendConfig, mySQLBackendConfigFile):
+    with cleanDatabase(MySQL(**mysqlBackendConfig)) as db:
+        createRequiredTables(db)
+
+        updateMySQLBackend(backendConfigFile=mySQLBackendConfigFile)
+        # Just making sure nothing breaks because checking if the right
+        # index exists in mysql comes near totally senseless torture.
+
+        # Calling the update procedure a second time must not fail.
+        updateMySQLBackend(backendConfigFile=mySQLBackendConfigFile)

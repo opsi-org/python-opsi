@@ -43,6 +43,7 @@ from OPSI.Backend.Backend import (Backend, ConfigDataBackend,
 from OPSI.Backend.Depotserver import DepotserverBackend
 from OPSI.Backend.HostControl import HostControlBackend
 from OPSI.Backend.HostControlSafe import HostControlSafeBackend
+from OPSI.Exceptions import *  # this is needed for dynamic extension loading
 from OPSI.Logger import Logger, LOG_INFO
 from OPSI.Object import BaseObject, mandatoryConstructorArgs
 from OPSI.Object import *  # this is needed for dynamic extension loading
@@ -529,9 +530,7 @@ class BackendAccessControl(object):
 			self._pamService = 'opsi-auth'
 		elif 'suse' in DISTRIBUTOR.lower():
 			self._pamService = 'sshd'
-		elif 'centos' in DISTRIBUTOR.lower() or 'scientific' in DISTRIBUTOR.lower():
-			self._pamService = 'system-auth'
-		elif 'redhat' in DISTRIBUTOR.lower():
+		elif 'centos' in DISTRIBUTOR.lower() or 'redhat' in DISTRIBUTOR.lower():
 			self._pamService = 'system-auth'
 
 		for (option, value) in kwargs.items():

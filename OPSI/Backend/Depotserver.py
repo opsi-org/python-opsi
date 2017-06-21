@@ -26,13 +26,13 @@ Depotserver backend.
 
 import os
 
+from OPSI.Exceptions import (BackendBadValueError, BackendConfigurationError,
+	BackendError, BackendIOError, BackendMissingDataError,
+	BackendTemporaryError, BackendUnaccomplishableError)
 from OPSI.Logger import Logger, LOG_DEBUG
 from OPSI.Types import (forceBool, forceDict, forceFilename, forceHostId,
 	forceUnicode, forceUnicodeLower)
 from OPSI.Types import forceProductId as forceProductIdFunc
-from OPSI.Types import (BackendBadValueError, BackendConfigurationError,
-	BackendError, BackendIOError, BackendMissingDataError,
-	BackendTemporaryError, BackendUnaccomplishableError)
 from OPSI.Object import ProductOnDepot, ProductPropertyState
 from OPSI.Backend.Backend import LOG_DIR, OPSI_GLOBAL_CONF, ExtendedBackend
 from OPSI.System import getDiskSpaceUsage
@@ -148,7 +148,7 @@ class DepotserverPackageManager(object):
 
 	def installPackage(self, filename, force=False, propertyDefaultValues={}, tempDir=None, forceProductId=None, suppressPackageContentFileGeneration=False):
 		depotId = self._depotBackend._depotId
-		logger.notice(u"=================================================================================================")
+		logger.info(u"=================================================================================================")
 		if forceProductId:
 			forceProductId = forceProductIdFunc(forceProductId)
 			logger.notice(u"Installing package file '{filename}' as '{productId}' on depot '{depotId}'",
@@ -192,13 +192,13 @@ class DepotserverPackageManager(object):
 			try:
 				product = ppf.packageControlFile.getProduct()
 				if forceProductId:
-					logger.notice(u"Forcing product id '{0}'", forceProductId)
+					logger.info(u"Forcing product id '{0}'", forceProductId)
 					product.setId(forceProductId)
 					ppf.packageControlFile.setProduct(product)
 
 				productId = product.getId()
 
-				logger.notice(u"Creating product in backend")
+				logger.info(u"Creating product in backend")
 				self._depotBackend._context.product_createObjects(product)
 
 				logger.notice(u"Locking product '%s' on depot '%s'" % (product.getId(), depotId))
@@ -219,17 +219,17 @@ class DepotserverPackageManager(object):
 				logger.info(u"Creating product on depot %s" % productOnDepot)
 				self._depotBackend._context.productOnDepot_createObjects(productOnDepot)
 
-				logger.notice(u"Checking package dependencies")
+				logger.info(u"Checking package dependencies")
 				self.checkDependencies(ppf)
 
-				logger.notice(u"Running preinst script")
+				logger.info(u"Running preinst script")
 				for line in ppf.runPreinst(({'DEPOT_ID': depotId})):
 					logger.info(u"[preinst] {0}", line)
 
 				logger.info(u"Deleting old client-data dir")
 				ppf.deleteProductClientDataDir()
 
-				logger.notice(u"Unpacking package files")
+				logger.info(u"Unpacking package files")
 				ppf.extractData()
 
 				logger.info(u"Updating product dependencies of product %s" % product)
@@ -319,7 +319,7 @@ class DepotserverPackageManager(object):
 				if productPropertyStatesToDelete:
 					self._depotBackend._context.productPropertyState_deleteObjects(productPropertyStatesToDelete)
 
-				logger.notice(u"Setting product property states in backend")
+				logger.info(u"Setting product property states in backend")
 				productPropertyStates = []
 				for productProperty in productProperties:
 					productPropertyStates.append(
@@ -340,7 +340,7 @@ class DepotserverPackageManager(object):
 									% (propertyDefaultValues[productPropertyState.propertyId], productPropertyState, installationError) )
 				self._depotBackend._context.productPropertyState_createObjects(productPropertyStates)
 
-				logger.notice(u"Running postinst script")
+				logger.info(u"Running postinst script")
 				for line in ppf.runPostinst({'DEPOT_ID': depotId}):
 					logger.info(u"[postinst] {0}", line)
 
@@ -443,7 +443,7 @@ class DepotserverPackageManager(object):
 
 	def uninstallPackage(self, productId, force=False, deleteFiles=True):
 		depotId = self._depotBackend._depotId
-		logger.notice(u"=================================================================================================")
+		logger.info(u"=================================================================================================")
 		logger.notice(u"Uninstalling product '%s' on depot '%s'" % (productId, depotId))
 		try:
 			productId = forceProductIdFunc(productId)

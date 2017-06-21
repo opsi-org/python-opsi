@@ -26,7 +26,7 @@ import pytest
 
 from OPSI.Object import (LocalbootProduct, ObjectToGroup, OpsiClient,
     OpsiDepotserver, ProductGroup, ProductOnDepot, UnicodeConfig)
-from OPSI.Types import BackendMissingDataError
+from OPSI.Exceptions import BackendMissingDataError
 
 
 def testGettingInfoForNonExistingClient(backendManager):

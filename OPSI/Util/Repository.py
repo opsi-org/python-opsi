@@ -42,9 +42,9 @@ from OPSI.web2 import responsecode
 from OPSI.web2.dav import davxml
 
 from OPSI import __version__
+from OPSI.Exceptions import RepositoryError
 from OPSI.Logger import LOG_INFO, Logger
 from OPSI.System import mount, umount
-from OPSI.Types import RepositoryError
 from OPSI.Types import forceBool, forceFilename, forceInt, forceUnicode, forceUnicodeList
 from OPSI.Util.Message import ProgressSubject
 from OPSI.Util import md5sum, randomString
