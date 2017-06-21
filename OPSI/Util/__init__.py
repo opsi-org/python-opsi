@@ -129,10 +129,10 @@ object instance from it
 				logger.debug(u"Failed to get object from dict {0!r}: {1}", obj, forceUnicode(error))
 				return obj
 		else:
-			newObj = {}
-			for (key, value) in obj.items():
-				newObj[key] = deserialize(value, preventObjectCreation=preventObjectCreation)
-			return newObj
+			return {
+				key: deserialize(value, preventObjectCreation=preventObjectCreation)
+				for key, value in obj.items()
+			}
 	else:
 		return obj
 
@@ -153,10 +153,7 @@ of strings, dicts, lists or numbers.
 	elif isinstance(obj, (list, set, types.GeneratorType)):
 		return [serialize(tempObject) for tempObject in obj]
 	elif isinstance(obj, dict):
-		newObj = {}
-		for key, value in obj.items():
-			newObj[key] = serialize(value)
-		return newObj
+		return {key: serialize(value) for key, value in obj.items()}
 	else:
 		return obj
 
