@@ -58,7 +58,7 @@ __all__ = (
 	'SQLBackendObjectModificationTracker'
 )
 
-DATABASE_SCHEMA_VERSION = 1
+DATABASE_SCHEMA_VERSION = 2
 
 logger = Logger()
 
@@ -629,6 +629,7 @@ class SQLBackend(ConfigDataBackend):
 				''' % self._sql.getTableCreationOptions('PRODUCT_PROPERTY_VALUE')
 			logger.debug(table)
 			self._sql.execute(table)
+			self._sql.execute('CREATE INDEX `index_product_property_value` on `PRODUCT_PROPERTY_VALUE` (`productId`, `propertyId`, `productVersion`, `packageVersion`);')
 
 		if 'PRODUCT_DEPENDENCY' not in existingTables:
 			logger.debug(u'Creating table PRODUCT_DEPENDENCY')

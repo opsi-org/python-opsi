@@ -98,6 +98,10 @@ read from `backendConfigFile`.
 		with updateSchemaVersion(mysql, version=1):
 			_dropTableBootconfiguration(mysql)
 
+	if schemaVersion < 2:
+		with updateSchemaVersion(mysql, version=2):
+			_addIndexOnProductPropertyValues(mysql)
+
 	LOGGER.debug("Expected database schema version: {0}", DATABASE_SCHEMA_VERSION)
 	if not readSchemaVersion(mysql) == DATABASE_SCHEMA_VERSION:
 		raise BackendUpdateError("Not all migrations have been run!")
@@ -670,3 +674,11 @@ def getTableColumns(database, tableName):
 def _dropTableBootconfiguration(database):
 	LOGGER.notice(u"Dropping table BOOT_CONFIGURATION.")
 	database.execute(u"drop table BOOT_CONFIGURATION;")
+
+
+def _addIndexOnProductPropertyValues(database):
+	LOGGER.notice("Adding index on table PRODUCT_PROPERTY_VALUE.")
+	database.execute('''
+		CREATE INDEX `index_product_property_value` on
+		`PRODUCT_PROPERTY_VALUE`
+		(`productId`, `propertyId`, `productVersion`, `packageVersion`);''')
