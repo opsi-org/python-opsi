@@ -3144,11 +3144,15 @@ into the IDs of these depots are to be found in the list behind \
 			# Do not filter out ProductOnClients on the basis of these attributes in this case
 			# If filter is kept unchanged we cannot distinguish between "missing" and "filtered" ProductOnClients
 			# We also need to know installationStatus and actionRequest of every product to create sequence
-			pocFilter = {}
-			for (key, value) in filter.items():
-				if key in ('installationStatus', 'actionRequest', 'productVersion', 'packageVersion', 'modificationTime', 'targetState', 'lastAction', 'actionProgress', 'actionResult'):
-					continue
-				pocFilter[key] = value
+			unwantedKeys = set((
+				'installationStatus', 'actionRequest', 'productVersion',
+				'packageVersion', 'modificationTime', 'targetState',
+				'lastAction', 'actionProgress', 'actionResult'
+			))
+			pocFilter = {
+				key: value for (key, value) in filter.items()
+				if key not in unwantedKeys
+			}
 
 		if (self._options['addProductOnClientDefaults'] or self._options['processProductOnClientSequence']) and attributes:
 			# In this case we definetly need to add the following attributes
@@ -4306,16 +4310,18 @@ into the IDs of these depots are to be found in the list behind \
 		return []
 
 	def auditHardwareOnHost_updateObjects(self, auditHardwareOnHosts):
-		for auditHardwareOnHost in forceObjectClassList(auditHardwareOnHosts, AuditHardwareOnHost):
-			filter = {}
-			for (attribute, value) in auditHardwareOnHost.toHash().items():
-				if attribute in ('firstseen', 'lastseen', 'state'):
-					continue
+		def getNoneAsListOrValue(value):
+			if value is None:
+				return [None]
+			else:
+				return value
 
-				if value is None:
-					filter[attribute] = [None]
-				else:
-					filter[attribute] = value
+		for auditHardwareOnHost in forceObjectClassList(auditHardwareOnHosts, AuditHardwareOnHost):
+			filter = {
+				attribute: getNoneAsListOrValue(value)
+				for (attribute, value) in auditHardwareOnHost.toHash().items()
+				if attribute not in ('firstseen', 'lastseen', 'state')
+			}
 
 			if self.auditHardwareOnHost_getObjects(attributes=['hostId'], **filter):
 				self.auditHardwareOnHost_updateObject(auditHardwareOnHost)

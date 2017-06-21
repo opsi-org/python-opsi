@@ -2401,11 +2401,11 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 	def _auditHardwareOnHostObjectToDatabaseHash(self, auditHardwareOnHost):
 		(auditHardware, auditHardwareOnHost) = self._extractAuditHardwareHash(auditHardwareOnHost)
 
-		data = {}
-		for (attribute, value) in auditHardwareOnHost.items():
-			if attribute in ('hardwareClass', 'type'):
-				continue
-			data[attribute] = value
+		data = {
+			attribute: value
+			for attribute, value in auditHardwareOnHost.items()
+			if attribute not in ('hardwareClass', 'type')
+		}
 
 		for (key, value) in auditHardware.items():
 			if value is None:

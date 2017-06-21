@@ -117,25 +117,24 @@ object instance from it
 	:type obj: object
 	:type preventObjectCreation: bool
 	"""
-	newObj = None
-	if not preventObjectCreation and isinstance(obj, dict) and 'type' in obj:
-		try:
-			import OPSI.Object
-			c = eval('OPSI.Object.%s' % obj['type'])
-			newObj = c.fromHash(obj)
-		except Exception as error:
-			logger.debug(u"Failed to get object from dict {0!r}: {1}", obj, forceUnicode(error))
-			return obj
-	elif isinstance(obj, list):
-		newObj = [deserialize(tempObject, preventObjectCreation=preventObjectCreation) for tempObject in obj]
+	if isinstance(obj, list):
+		return [deserialize(element, preventObjectCreation=preventObjectCreation) for element in obj]
 	elif isinstance(obj, dict):
-		newObj = {}
-		for (key, value) in obj.items():
-			newObj[key] = deserialize(value, preventObjectCreation=preventObjectCreation)
+		if not preventObjectCreation and 'type' in obj:
+			import OPSI.Object
+			try:
+				objectClass = eval('OPSI.Object.%s' % obj['type'])
+				return objectClass.fromHash(obj)
+			except Exception as error:
+				logger.debug(u"Failed to get object from dict {0!r}: {1}", obj, forceUnicode(error))
+				return obj
+		else:
+			return {
+				key: deserialize(value, preventObjectCreation=preventObjectCreation)
+				for key, value in obj.items()
+			}
 	else:
 		return obj
-
-	return newObj
 
 
 def serialize(obj):
@@ -147,21 +146,16 @@ of strings, dicts, lists or numbers.
 
 	:return: a JSON-compatible serialisation of the input.
 	"""
-	newObj = None
 	if isinstance(obj, (unicode, str)):
 		return obj
 	elif hasattr(obj, 'serialize'):
-		newObj = obj.serialize()
+		return obj.serialize()
 	elif isinstance(obj, (list, set, types.GeneratorType)):
-		newObj = [serialize(tempObject) for tempObject in obj]
+		return [serialize(tempObject) for tempObject in obj]
 	elif isinstance(obj, dict):
-		newObj = {}
-		for key, value in obj.items():
-			newObj[key] = serialize(value)
+		return {key: serialize(value) for key, value in obj.items()}
 	else:
 		return obj
-
-	return newObj
 
 
 def formatFileSize(sizeInBytes):
