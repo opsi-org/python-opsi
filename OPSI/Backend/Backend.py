@@ -3591,7 +3591,6 @@ into the IDs of these depots are to be found in the list behind \
 			)
 		)
 
-
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   LicenseContracts                                                                          -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -4042,7 +4041,6 @@ into the IDs of these depots are to be found in the list behind \
 
 		return result
 
-
 	def auditSoftware_create(self, name, version, subVersion, language, architecture, windowsSoftwareId=None, windowsDisplayName=None, windowsDisplayVersion=None, installSize=None):
 		hash = locals()
 		del hash['self']
@@ -4155,7 +4153,6 @@ into the IDs of these depots are to be found in the list behind \
 				licensePoolId=licensePoolId
 			)
 		)
-
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   AuditSoftwareOnClients                                                                    -
