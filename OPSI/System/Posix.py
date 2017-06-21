@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 # This module is part of the desktop management solution opsi
@@ -36,7 +35,6 @@ import fcntl
 import locale
 import os
 import platform
-import posix
 import re
 import socket
 import sys
@@ -354,9 +352,10 @@ def getFQDN():
 
 def getKernelParams():
 	"""
-	Reads the kernel cmdline and returns a dict
-	containing all key=value pairs.
-	keys are converted to lower case
+	Reads the kernel cmdline and returns a dict containing all key=value pairs.
+	Keys are converted to lower case.
+
+	:returntype: dict
 	"""
 	cmdline = ''
 	try:
@@ -366,7 +365,7 @@ def getKernelParams():
 
 		cmdline = cmdline.strip()
 	except IOError as e:
-		raise Exception(u"Error reading '/proc/cmdline': %s" % e)
+		raise IOError(u"Error reading '/proc/cmdline': %s" % e)
 
 	params = {}
 	for option in cmdline.split():
@@ -415,7 +414,7 @@ def getNetworkInterfaces():
 
 def getNetworkDeviceConfig(device):
 	if not device:
-		raise Exception(u"No device given")
+		raise ValueError(u"No device given")
 
 	result = {
 		'device': device,
@@ -580,7 +579,7 @@ keys are: ``ip``, ``netmask``, ``bootserver``, ``nextserver``, \
 	:returntype: dict
 	"""
 	if not device:
-		raise Exception(u"No device given")
+		raise ValueError(u"No device given")
 
 	if not leasesFile:
 		if os.path.exists(DHCLIENT_LEASES_FILE_OLD):
@@ -839,7 +838,7 @@ output will be returned.
 						chunk = proc.stderr.read()
 						if len(chunk) > 0:
 							if exitOnStderr:
-								raise Exception(u"Command '%s' failed: %s" % (cmd, chunk))
+								raise RuntimeError(u"Command '%s' failed: %s" % (cmd, chunk))
 							data += chunk
 					except IOError as e:
 						if e.errno != 11:
@@ -847,7 +846,7 @@ output will be returned.
 
 				if timeout > 0 and (time.time() - startTime >= timeout):
 					_terminateProcess(proc)
-					raise Exception(u"Command '%s' timed out atfer %d seconds" % (cmd, (time.time() - startTime)))
+					raise RuntimeError(u"Command '%s' timed out atfer %d seconds" % (cmd, (time.time() - startTime)))
 
 				time.sleep(0.001)
 
@@ -863,7 +862,7 @@ output will be returned.
 
 	except (os.error, IOError) as e:
 		# Some error occurred during execution
-		raise Exception(u"Command '%s' failed:\n%s" % (cmd, e))
+		raise RuntimeError(u"Command '%s' failed:\n%s" % (cmd, e))
 
 	logger.debug(u"Exit code: %s" % exitCode)
 	if exitCode:
@@ -872,7 +871,7 @@ output will be returned.
 		elif isinstance(ignoreExitCode, (list, tuple, set)) and exitCode in ignoreExitCode:
 			pass
 		else:
-			raise Exception(u"Command '%s' failed (%s):\n%s" % (cmd, exitCode, u'\n'.join(result)))
+			raise RuntimeError(u"Command '%s' failed (%s):\n%s" % (cmd, exitCode, u'\n'.join(result)))
 	return result
 
 
@@ -941,7 +940,7 @@ def getHarddisks(data=None):
 					hd = Harddisk("/dev/cciss/%s" % dev)
 					disks.append(hd)
 			if len(disks) <= 0:
-				raise Exception(u'No harddisks found!')
+				raise RuntimeError(u'No harddisks found!')
 			return disks
 		else:
 			if isXenialSfdiskVersion():
@@ -968,7 +967,7 @@ def getHarddisks(data=None):
 		disks.append(hd)
 
 	if len(disks) <= 0:
-		raise Exception(u'No harddisks found!')
+		raise RuntimeError(u'No harddisks found!')
 
 	return disks
 
@@ -1030,7 +1029,7 @@ def mount(dev, mountpoint, **options):
 			del options['username']
 			del options['password']
 		else:
-			raise Exception(u"Bad smb/cifs uri '%s'" % dev)
+			raise ValueError(u"Bad smb/cifs uri '%s'" % dev)
 
 	elif dev.lower().startswith(('webdav://', 'webdavs://', 'http://', 'https://')):
 		# We need enough free space in /var/cache/davfs2
@@ -1040,7 +1039,7 @@ def mount(dev, mountpoint, **options):
 			fs = u'-t davfs'
 			dev = u'http' + match.group(2) + match.group(3)
 		else:
-			raise Exception(u"Bad webdav url '%s'" % dev)
+			raise ValueError(u"Bad webdav url '%s'" % dev)
 
 		if 'username' not in options:
 			options['username'] = u''
@@ -1087,7 +1086,7 @@ def mount(dev, mountpoint, **options):
 		dev = dev[7:]
 
 	else:
-		raise Exception(u"Cannot mount unknown fs type '%s'" % dev)
+		raise ValueError(u"Cannot mount unknown fs type '%s'" % dev)
 
 	mountOptions = []
 	for (key, value) in options.items():
@@ -1107,7 +1106,7 @@ def mount(dev, mountpoint, **options):
 		execute(u"%s %s %s %s %s" % (which('mount'), fs, optString, dev, mountpoint))
 	except Exception as e:
 		logger.error(u"Failed to mount '%s': %s" % (dev, e))
-		raise Exception(u"Failed to mount '%s': %s" % (dev, e))
+		raise RuntimeError(u"Failed to mount '%s': %s" % (dev, e))
 	finally:
 		for f in credentialsFiles:
 			os.remove(f)
@@ -1118,7 +1117,7 @@ def umount(devOrMountpoint):
 		execute(u"%s %s" % (which('umount'), devOrMountpoint))
 	except Exception as e:
 		logger.error(u"Failed to umount '%s': %s" % (devOrMountpoint, e))
-		raise Exception(u"Failed to umount '%s': %s" % (devOrMountpoint, e))
+		raise RuntimeError(u"Failed to umount '%s': %s" % (devOrMountpoint, e))
 
 
 def getBlockDeviceBusType(device):
@@ -1205,11 +1204,11 @@ def getBlockDeviceContollerInfo(device, lshwoutput=None):
 
 	# emulated storage controller dirty-hack, for outputs like:
 	# ...
-	# /0/100/1f.2               storage        82801JD/DO (ICH10 Family) SATA AHCI Controller [8086:3A02] (Posix.py|741)
-	# /0/100/1f.3               bus            82801JD/DO (ICH10 Family) SMBus Controller [8086:3A60] (Posix.py|741)
-	# /0/1          scsi0       storage         (Posix.py|741)
-	# /0/1/0.0.0    /dev/sda    disk           500GB ST3500418AS (Posix.py|741)
-	# /0/1/0.0.0/1  /dev/sda1   volume         465GiB Windows FAT volume (Posix.py|741)
+	# /0/100/1f.2               storage        82801JD/DO (ICH10 Family) SATA AHCI Controller [8086:3A02]
+	# /0/100/1f.3               bus            82801JD/DO (ICH10 Family) SMBus Controller [8086:3A60]
+	# /0/1          scsi0       storage
+	# /0/1/0.0.0    /dev/sda    disk           500GB ST3500418AS
+	# /0/1/0.0.0/1  /dev/sda1   volume         465GiB Windows FAT volume
 	# ...
 	# In this case return the first AHCI controller, that will be found
 	storageControllers = {}
@@ -1328,7 +1327,7 @@ class Harddisk:
 					logger.info(u"Special device (cciss) detected")
 					devicename = "!".join(deviceparts[1:])
 					if not os.path.exists('/sys/block/{0}/queue/rotational'.format(devicename)):
-						raise Exception("rotational file '/sys/block/{0}/queue/rotational' not found!".format(devicename))
+						raise IOError("rotational file '/sys/block/{0}/queue/rotational' not found!".format(devicename))
 				else:
 					logger.error(u"Unknown device, fallback to default: rotational")
 					return
@@ -1348,10 +1347,12 @@ class Harddisk:
 			)
 
 	def getSignature(self):
-		hd = posix.open(str(self.device), posix.O_RDONLY)
-		posix.lseek(hd, 440, 0)
-		x = posix.read(hd, 4)
-		posix.close(hd)
+		hd = os.open(str(self.device), os.O_RDONLY)
+		try:
+			os.lseek(hd, 440, 0)
+			x = os.read(hd, 4)
+		finally:
+			os.close(hd)
 
 		logger.debug(u"Read signature from device '%s': %s,%s,%s,%s" \
 				% (self.device, ord(x[0]), ord(x[1]), ord(x[2]), ord(x[3])))
@@ -1366,7 +1367,7 @@ class Harddisk:
 	def setDiskLabelType(self, label):
 		label = forceUnicodeLower(label)
 		if label not in (u"bsd", u"gpt", u"loop", u"mac", u"mips", u"msdos", u"pc98", u"sun"):
-			raise Exception(u"Unknown disk label '%s'" % label)
+			raise ValueError(u"Unknown disk label '%s'" % label)
 		self.label = label
 
 	def setPartitionId(self, partition, id):
@@ -1377,7 +1378,7 @@ class Harddisk:
 			id = forceUnicodeLower(id)
 
 			if (partition < 1) or (partition > 4):
-				raise Exception(u"Partition has to be int value between 1 and 4")
+				raise ValueError(u"Partition has to be int value between 1 and 4")
 
 			if not re.search('^[a-f0-9]{2}$', id):
 				if id in (u'linux', u'ext2', u'ext3', u'ext4', u'xfs', u'reiserfs', u'reiser4'):
@@ -1389,7 +1390,7 @@ class Harddisk:
 				elif id == u'ntfs':
 					id = u'07'
 				else:
-					raise Exception(u"Partition type '%s' not supported!" % id)
+					raise ValueError(u"Partition type '%s' not supported!" % id)
 			id = eval('0x' + id)
 			offset = 0x1be + (partition-1) * 16 + 4
 			with open(self.device, 'rb+') as f:
@@ -1410,7 +1411,7 @@ class Harddisk:
 			partition = forceInt(partition)
 			bootable = forceBool(bootable)
 			if (partition < 1) or (partition > 4):
-				raise Exception("Partition has to be int value between 1 and 4")
+				raise ValueError("Partition has to be int value between 1 and 4")
 
 			offset = 0x1be + (partition-1)*16 + 4
 			with open(self.device, 'rb+') as f:
@@ -1502,7 +1503,7 @@ class Harddisk:
 					for line in geometryOutput:
 						match = re.search('\s+(\d+)\s+cylinders,\s+(\d+)\s+heads,\s+(\d+)\s+sectors', line)
 						if not match:
-							raise Exception(u"Unable to get geometry for disk '%s'" % self.device)
+							raise RuntimeError(u"Unable to get geometry for disk '%s'" % self.device)
 						self.cylinders = forceInt(match.group(1))
 						self.heads = forceInt(match.group(2))
 						self.sectors = forceInt(match.group(3))
@@ -1510,7 +1511,7 @@ class Harddisk:
 				else:
 					match = re.search('\s+(\d+)\s+cylinders,\s+(\d+)\s+heads,\s+(\d+)\s+sectors', line)
 					if not match:
-						raise Exception(u"Unable to get geometry for disk '%s'" % self.device)
+						raise RuntimeError(u"Unable to get geometry for disk '%s'" % self.device)
 
 					self.cylinders = forceInt(match.group(1))
 					self.heads = forceInt(match.group(2))
@@ -1525,7 +1526,7 @@ class Harddisk:
 					match = re.search('cylinders\s+of\s+(\d+)\s+bytes', line)
 
 				if not match:
-					raise Exception(u"Unable to get bytes/cylinder for disk '%s'" % self.device)
+					raise RuntimeError(u"Unable to get bytes/cylinder for disk '%s'" % self.device)
 				self.bytesPerCylinder = forceInt(match.group(1))
 				self.totalCylinders = int(self.size / self.bytesPerCylinder)
 				logger.info(u"Total cylinders of disk '%s': %d, %d bytes per cylinder" % (self.device, self.totalCylinders, self.bytesPerCylinder))
@@ -1535,12 +1536,12 @@ class Harddisk:
 					match = re.search('(%sp*)(\d+)\s+(\**)\s*(\d+)[\+\-]*\s+(\d*)[\+\-]*\s+(\d+)[\+\-]*\s+(\d+)[\+\-]*.?\d*\S+\s+(\S+)\s*(.*)' % self.device, line)
 
 					if not match:
-						raise Exception(u"Unable to read partition table of disk '%s'" % self.device)
+						raise RuntimeError(u"Unable to read partition table of disk '%s'" % self.device)
 				else:
 					match = re.search('(%sp*)(\d+)\s+(\**)\s*(\d+)[\+\-]*\s+(\d*)[\+\-]*\s+(\d+)[\+\-]*\s+(\d+)[\+\-]*\s+(\S+)\s+(.*)' % self.device, line)
 
 					if not match:
-						raise Exception(u"Unable to read partition table of disk '%s'" % self.device)
+						raise RuntimeError(u"Unable to read partition table of disk '%s'" % self.device)
 
 				if match.group(5):
 					boot = False
@@ -1632,7 +1633,7 @@ class Harddisk:
 				else:
 					match = re.search('%sp*(\d+)\s+(\**)\s*(\d+)[\+\-]*\s+(\d*)[\+\-]*\s+(\d+)[\+\-]*\s+(\S+)\s+(.*)' % self.device, line)
 				if not match:
-					raise Exception(u"Unable to read partition table (sectors) of disk '%s'" % self.device)
+					raise RuntimeError(u"Unable to read partition table (sectors) of disk '%s'" % self.device)
 
 				if match.group(4):
 					for p, partition in enumerate(self.partitions):
@@ -1660,7 +1661,7 @@ class Harddisk:
 				else:
 					match = re.search('sectors\s+of\s+(\d+)\s+bytes', line)
 				if not match:
-					raise Exception(u"Unable to get bytes/sector for disk '%s'" % self.device)
+					raise RuntimeError(u"Unable to get bytes/sector for disk '%s'" % self.device)
 				self.bytesPerSector = forceInt(match.group(1))
 				self.totalSectors = int(self.size / self.bytesPerSector)
 				logger.info(u"Total sectors of disk '%s': %d, %d bytes per cylinder" % (self.device, self.totalSectors, self.bytesPerSector))
@@ -1811,7 +1812,7 @@ class Harddisk:
 			logger.debug(u"Exit code: %s" % ret)
 
 			if ret:
-				raise Exception(u"Command '%s' failed: %s" % (cmd, error))
+				raise RuntimeError(u"Command '%s' failed: %s" % (cmd, error))
 
 		except Exception as e:
 			for hook in hooks:
@@ -1834,7 +1835,7 @@ class Harddisk:
 		try:
 			partition = forceInt(partition)
 			if not infile:
-				raise Exception(u"No input file given")
+				raise ValueError(u"No input file given")
 			infile = forceFilename(infile)
 
 			xfermax = 0
@@ -1869,7 +1870,7 @@ class Harddisk:
 						done = True
 
 				elif timeout >= 10:
-					raise Exception(u"Failed (timed out)")
+					raise RuntimeError(u"Failed (timed out)")
 
 				else:
 					timeout += 1
@@ -1967,7 +1968,7 @@ class Harddisk:
 					os.unsetenv("LD_PRELOAD")
 			except Exception as e:
 				logger.error(u"Failed to write mbr: %s" % e)
-				raise Exception(u"Failed to write mbr: %s" % e)
+				raise RuntimeError(u"Failed to write mbr: %s" % e)
 		except Exception as e:
 			for hook in hooks:
 				hook.error_Harddisk_writeMasterBootRecord(self, system, e)
@@ -2017,10 +2018,10 @@ class Harddisk:
 				if self.ldPreload:
 					os.unsetenv("LD_PRELOAD")
 				if u'successfully' not in result[0]:
-					raise Exception(result)
+					raise RuntimeError(result)
 			except Exception as e:
 				logger.error(u"Cannot write partition boot record: %s" % e)
-				raise Exception(u"Cannot write partition boot record: %s" % e)
+				raise RuntimeError(u"Cannot write partition boot record: %s" % e)
 		except Exception as e:
 			for hook in hooks:
 				hook.error_Harddisk_writePartitionBootRecord(self, partition, fsType, e)
@@ -2041,7 +2042,7 @@ class Harddisk:
 				if not sector:
 					err = u"Failed to get partition start sector of partition '%s'" % (self.getPartition(partition)['device'])
 					logger.error(err)
-					raise Exception(err)
+					raise RuntimeError(err)
 
 			logger.info(
 				u"Setting Partition start sector to {0} in NTFS boot record "
@@ -2057,35 +2058,41 @@ class Harddisk:
 			x[2] = int((sector & 0x00FF0000) >> 16)
 			x[3] = int((sector & 0xFFFFFFFF) >> 24)
 
-			hd = posix.open(self.getPartition(partition)['device'], posix.O_RDONLY)
-			posix.lseek(hd, 0x1c, 0)
-			start = posix.read(hd, 4)
-			logger.debug(
-				u"NTFS Boot Record currently using {0} {1} {2} {3} "
-				u"as partition start sector".format(
-					hex(ord(start[0])), hex(ord(start[1])),
-					hex(ord(start[2])), hex(ord(start[3])))
-			)
-			posix.close(hd)
+			hd = os.open(self.getPartition(partition)['device'], os.O_RDONLY)
+			try:
+				os.lseek(hd, 0x1c, 0)
+				start = os.read(hd, 4)
+				logger.debug(
+					u"NTFS Boot Record currently using {0} {1} {2} {3} "
+					u"as partition start sector".format(
+						hex(ord(start[0])), hex(ord(start[1])),
+						hex(ord(start[2])), hex(ord(start[3])))
+				)
+			finally:
+				os.close(hd)
 
 			logger.debug(u"Manipulating NTFS Boot Record!")
-			hd = posix.open(self.getPartition(partition)['device'], posix.O_WRONLY)
+			hd = os.open(self.getPartition(partition)['device'], os.O_WRONLY)
 			logger.info(u"Writing new value %s %s %s %s at 0x1c" % (hex(x[0]), hex(x[1]), hex(x[2]), hex(x[3])))
-			posix.lseek(hd, 0x1c, 0)
-			for i in x:
-				posix.write(hd, chr(i))
-			posix.close(hd)
+			try:
+				os.lseek(hd, 0x1c, 0)
+				for i in x:
+					os.write(hd, chr(i))
+			finally:
+				os.close(hd)
 
-			hd = posix.open(self.getPartition(partition)['device'], posix.O_RDONLY)
-			posix.lseek(hd, 0x1c, 0)
-			start = posix.read(hd, 4)
-			logger.debug(
-				u"NTFS Boot Record now using {0} {1} {2} {3} as partition "
-				u"start sector".format(
-					hex(ord(start[0])), hex(ord(start[1])),
-					hex(ord(start[2])), hex(ord(start[3])))
-			)
-			posix.close(hd)
+			hd = os.open(self.getPartition(partition)['device'], os.O_RDONLY)
+			try:
+				os.lseek(hd, 0x1c, 0)
+				start = os.read(hd, 4)
+				logger.debug(
+					u"NTFS Boot Record now using {0} {1} {2} {3} as partition "
+					u"start sector".format(
+						hex(ord(start[0])), hex(ord(start[1])),
+						hex(ord(start[2])), hex(ord(start[3])))
+				)
+			finally:
+				os.close(hd)
 		except Exception as e:
 			for hook in hooks:
 				hook.error_Harddisk_setNTFSPartitionStartSector(self, partition, sector, e)
@@ -2102,7 +2109,7 @@ class Harddisk:
 		for part in self.partitions:
 			if part['number'] == number:
 				return part
-		raise Exception(u'Partition %s does not exist' % number)
+		raise ValueError(u'Partition %s does not exist' % number)
 
 	def createPartition(self, start, end, fs, type=u'primary', boot=False, lba=False, number=None):
 		for hook in hooks:
@@ -2128,10 +2135,10 @@ class Harddisk:
 				elif fs == u'ntfs':
 					partId = u'7'
 				else:
-					raise Exception("Filesystem '%s' not supported!" % fs)
+					raise ValueError("Filesystem '%s' not supported!" % fs)
 
 			if type != u'primary':
-				raise Exception("Type '%s' not supported!" % type)
+				raise ValueError("Type '%s' not supported!" % type)
 
 			unit = 'cyl'
 			if self.blockAlignment:
@@ -2277,7 +2284,7 @@ class Harddisk:
 							% (self.device, number, type, fs, start, end))
 
 				if number < 1 or number > 4:
-					raise Exception(u'Cannot create partition %s' % number)
+					raise ValueError(u'Cannot create partition %s' % number)
 
 				self.partitions.append(
 					{
@@ -2299,7 +2306,7 @@ class Harddisk:
 							% (self.device, number, type, fs, start, end))
 
 				if number < 1 or number > 4:
-					raise Exception(u'Cannot create partition %s' % number)
+					raise ValueError(u'Cannot create partition %s' % number)
 
 				self.partitions.append(
 					{
@@ -2409,7 +2416,7 @@ class Harddisk:
 			fs = forceUnicodeLower(fs)
 
 			if fs not in (u'fat32', u'ntfs', u'linux-swap', u'ext2', u'ext3', u'ext4', u'reiserfs', u'reiser4', u'xfs'):
-				raise Exception(u"Creation of filesystem '%s' not supported!" % fs)
+				raise ValueError(u"Creation of filesystem '%s' not supported!" % fs)
 
 			logger.info(u"Creating filesystem '%s' on '%s'." % (fs, self.getPartition(partition)['device']))
 
@@ -2463,7 +2470,7 @@ class Harddisk:
 				fs = self.getPartition(partition)['fs']
 			fs = forceUnicodeLower(fs)
 			if fs not in (u'ntfs',):
-				raise Exception(u"Resizing of filesystem '%s' not supported!" % fs)
+				raise ValueError(u"Resizing of filesystem '%s' not supported!" % fs)
 
 			if size <= 0:
 				if bytesPerSector > 0 and self.blockAlignment:
@@ -2472,7 +2479,7 @@ class Harddisk:
 					size = self.getPartition(partition)['size'] - 10*1024*1024
 
 			if size <= 0:
-				raise Exception(u"New filesystem size of %0.2f MB is not possible!" % (float(size)/(1024*1024)))
+				raise ValueError(u"New filesystem size of %0.2f MB is not possible!" % (float(size)/(1024*1024)))
 
 			if self.ldPreload:
 				os.putenv("LD_PRELOAD", self.ldPreload)
@@ -2503,7 +2510,7 @@ class Harddisk:
 
 			part = self.getPartition(partition)
 			if not part:
-				raise Exception(u'Partition %s does not exist' % partition)
+				raise ValueError(u'Partition %s does not exist' % partition)
 
 			if self.ldPreload:
 				os.putenv("LD_PRELOAD", self.ldPreload)
@@ -2549,7 +2556,7 @@ class Harddisk:
 							pass
 
 						if u'Partclone fail' in currentBuffer:
-							raise Exception(u"Failed: %s" % '\n'.join(buf))
+							raise RuntimeError(u"Failed: %s" % '\n'.join(buf))
 						if u'Partclone successfully' in currentBuffer:
 							done = True
 						if u'Total Time' in currentBuffer:
@@ -2594,7 +2601,7 @@ class Harddisk:
 					lastMsg = buf[-2]
 					buf[:-1] = []
 				elif timeout >= 100:
-					raise Exception(u"Failed: %s" % lastMsg)
+					raise RuntimeError(u"Failed: %s" % lastMsg)
 				else:
 					timeout += 1
 					continue
@@ -2680,7 +2687,7 @@ class Harddisk:
 				raise
 
 			if imageType not in (u'ntfsclone', u'partclone'):
-				raise Exception(u"Unknown image type.")
+				raise ValueError(u"Unknown image type.")
 
 			if self.ldPreload:
 				os.putenv("LD_PRELOAD", self.ldPreload)
@@ -2723,7 +2730,7 @@ class Harddisk:
 								pass
 
 							if u'Partclone fail' in currentBuffer:
-								raise Exception(u"Failed: %s" % '\n'.join(buf))
+								raise RuntimeError(u"Failed: %s" % '\n'.join(buf))
 							if u'Partclone successfully' in currentBuffer:
 								done = True
 							if not started:
@@ -2755,7 +2762,7 @@ class Harddisk:
 					elif timeout >= 100:
 						if progressSubject:
 							progressSubject.setMessage(u"Failed: %s" % lastMsg)
-						raise Exception(u"Failed: %s" % lastMsg)
+						raise RuntimeError(u"Failed: %s" % lastMsg)
 					else:
 						timeout += 1
 						continue
@@ -2814,7 +2821,7 @@ class Harddisk:
 					elif timeout >= 100:
 						if progressSubject:
 							progressSubject.setMessage(u"Failed: %s" % lastMsg)
-						raise Exception(u"Failed: %s" % lastMsg)
+						raise RuntimeError(u"Failed: %s" % lastMsg)
 					else:
 						timeout += 1
 						continue
@@ -3605,7 +3612,7 @@ def daemonize():
 			# Parent exits
 			sys.exit(0)
 	except OSError as e:
-		raise Exception(u"First fork failed: %e" % e)
+		raise RuntimeError(u"First fork failed: %e" % e)
 
 	# Do not hinder umounts
 	os.chdir("/")
@@ -3618,7 +3625,7 @@ def daemonize():
 		if pid > 0:
 			sys.exit(0)
 	except OSError as e:
-		raise Exception(u"Second fork failed: %e" % e)
+		raise RuntimeError(u"Second fork failed: %e" % e)
 
 	logger.setConsoleLevel(LOG_NONE)
 
@@ -3793,9 +3800,7 @@ def getServiceNames(_serviceStatusOutput=None):
 	"""
 	Get the names of services on the system.
 
-	This script tries to pull the information from ``systemctl`` if
-	present. If ``systemctl`` is not present it will fall back to use
-	``service``.
+	This script tries to pull the information from ``systemctl``.
 
 	:param _serviceStatusOutput: The output of `service --status-all`.\
 Used for testing.
@@ -3804,39 +3809,19 @@ Used for testing.
 
 	.. versionadded:: 4.0.5.11
 
-
-	.. note:
-
-	  RHEL / CentOS 7 will display insufficent information when using
-	  the ``service``-command and we work around this preferring ``systemctl``.
-
-
-	.. note::
-
-	  Does not work on Suse Linux Enterprise Server (SLES) 11SP3.
+	.. versionchanged:: 4.1.1.6
+		Only supporting systemd now.
 	"""
 	if not _serviceStatusOutput:
-		try:
-			_serviceStatusOutput = execute(u"{0} list-unit-files".format(which("systemctl")))
-		except Exception:
-			_serviceStatusOutput = execute(u"{0} --status-all".format(which("service")))
+		_serviceStatusOutput = execute(u"{0} list-unit-files".format(which("systemctl")))
 
-	patterns = [
-		'\[.*\]\s+(?P<servicename>.+)',  # Debian
-		'(?P<servicename>.+) \(PID',  # RHEL 6
-		'(?P<servicename>.+) w',  # RHEL 6, part 2
-		r'(?P<servicename>([\w-]|@)+)\.service',  # systemd-based
-	]
-	patterns = [re.compile(pattern) for pattern in patterns]
-
+	pattern = re.compile(r'(?P<servicename>([\w-]|@)+)\.service')
 	services = set()
 
 	for line in _serviceStatusOutput:
-		for pattern in patterns:
-			match = pattern.search(line.strip())
-			if match:
-				services.add(match.group('servicename').strip())
-				break
+		match = pattern.search(line.strip())
+		if match:
+			services.add(match.group('servicename').strip())
 
 	logger.debug(u"Found the following services: {0}".format(services))
 	return services
@@ -3932,7 +3917,7 @@ until the execution of the process is terminated.
 		if timeoutSeconds:
 			if timeRunning >= timeoutSeconds:
 				_terminateProcess(process)
-				raise Exception(u"Timed out after {0} seconds while waiting for process {1}".format(timeRunning, process.pid))
+				raise RuntimeError(u"Timed out after {0} seconds while waiting for process {1}".format(timeRunning, process.pid))
 
 			timeRunning += sleepDuration
 		time.sleep(sleepDuration)
@@ -3965,7 +3950,7 @@ def setLocalSystemTime(timestring):
 	http://docs.activestate.com/activepython/2.5/pywin32/win32api__SetSystemTime_meth.html
 	"""
 	if not timestring:
-		raise Exception(u"Invalid timestring given. It should be in format like: '2014-07-15 13:20:24.085661'")
+		raise ValueError(u"Invalid timestring given. It should be in format like: '2014-07-15 13:20:24.085661'")
 
 	try:
 		dt = datetime.datetime.strptime(timestring, '%Y-%m-%d %H:%M:%S.%f')

@@ -40,8 +40,8 @@ from OPSI.Util import (blowfishDecrypt, blowfishEncrypt, chunk, compareVersions,
 	encryptWithPublicKeyFromX509CertificatePEMFile, findFiles, formatFileSize,
 	fromJson, generateOpsiHostKey, getfqdn, getGlobalConfig, ipAddressInNetwork,
 	isRegularExpressionPattern, librsyncDeltaFile, librsyncSignature,
-	librsyncPatchFile, md5sum, objectToBeautifiedText, objectToHtml,
-	randomString, removeUnit, toJson)
+	librsyncPatchFile, md5sum, objectToBash, objectToBeautifiedText,
+	objectToHtml, randomString, removeUnit, toJson)
 from OPSI.Util import BlowfishError
 from OPSI.Util.Task.Certificate import createCertificate
 
@@ -139,17 +139,7 @@ def testObjectToHtmlOutputIsAsExpected():
 	assert expected == objectToHtml(product)
 
 
-@pytest.mark.parametrize("count", [1024, 10240])
-def testObjectToBeautifiedTextWorkingWithManyObjects(count):
-	obj = [
-		ProductFactory.generateLocalbootProduct(i)
-		for i in range(count)
-	]
-
-	objectToBeautifiedText(obj)
-
-
-@pytest.mark.parametrize("objectCount", [128, 1024, 10240])
+@pytest.mark.parametrize("objectCount", [1, 10240])
 def testObjectToBeautifiedTextWorksWithGenerators(objectCount):
 	generator = (
 		ProductFactory.generateLocalbootProduct(i)
@@ -162,12 +152,13 @@ def testObjectToBeautifiedTextWorksWithGenerators(objectCount):
 	assert text.strip().endswith(']')
 
 
-def testObjectToBeautifiedTextGeneratesValidJSON():
-	objectsIn = [ProductFactory.generateLocalbootProduct(i) for i in range(2)]
+@pytest.mark.parametrize("objectCount", [1, 10240])
+def testObjectToBeautifiedTextGeneratesValidJSON(objectCount):
+	objectsIn = [ProductFactory.generateLocalbootProduct(i) for i in range(objectCount)]
 	text = objectToBeautifiedText(objectsIn)
 
 	objects = fromJson(text)
-	assert 2 == len(objects)
+	assert objectCount == len(objects)
 	for obj in objects:
 		assert isinstance(obj, LocalbootProduct)
 
@@ -193,7 +184,7 @@ def testCheckingOutput():
 
 	expected = u'[\n    {\n        "onceScript": "once.ins", \n        "windowsSoftwareIds": null, \n        "description": "asdf", \n        "advice": "lolnope", \n        "alwaysScript": "always.ins", \n        "updateScript": "update.ins", \n        "productClassIds": null, \n        "id": "htmltestproduct", \n        "licenseRequired": false, \n        "ident": "htmltestproduct;3.1;1", \n        "name": "Product HTML Test", \n        "changelog": null, \n        "customScript": null, \n        "uninstallScript": "uninstall.ins", \n        "userLoginScript": null, \n        "priority": 0, \n        "productVersion": "3.1", \n        "packageVersion": "1", \n        "type": "LocalbootProduct", \n        "setupScript": "setup.ins"\n    }, \n    {\n        "onceScript": "once.ins", \n        "windowsSoftwareIds": null, \n        "description": "asdf", \n        "advice": "lolnope", \n        "alwaysScript": "always.ins", \n        "updateScript": "update.ins", \n        "productClassIds": null, \n        "id": "htmltestproduct", \n        "licenseRequired": false, \n        "ident": "htmltestproduct;3.1;1", \n        "name": "Product HTML Test", \n        "changelog": null, \n        "customScript": null, \n        "uninstallScript": "uninstall.ins", \n        "userLoginScript": null, \n        "priority": 0, \n        "productVersion": "3.1", \n        "packageVersion": "1", \n        "type": "LocalbootProduct", \n        "setupScript": "setup.ins"\n    }\n]'
 
-	assert expected, objectToBeautifiedText([product == product])
+	assert expected == objectToBeautifiedText([product, product])
 
 
 def testFormattingEmptyList():
@@ -202,7 +193,7 @@ def testFormattingEmptyList():
 
 def testFormattingListOfEmptyLists():
 	expected = '[\n    [], \n    []\n]'
-	assert expected, objectToBeautifiedText([[] == []])
+	assert expected == objectToBeautifiedText([[], []])
 
 
 def testFormattingEmptyDict():
@@ -898,3 +889,52 @@ def testBlowfishEncryptionFailsWithNoKey(randomText, blowfishKey):
 
 	with pytest.raises(BlowfishError):
 		blowfishDecrypt(None, encodedText)
+
+
+@pytest.mark.parametrize("objectCount", [1, 10240])
+def testObjectToBashWorksWithGenerators(objectCount):
+	generator = (
+		ProductFactory.generateLocalbootProduct(i)
+		for i in range(objectCount)
+	)
+
+	result = objectToBash(generator)
+
+	assert isinstance(result, dict)
+	assert len(result) == objectCount + 1
+
+	for index in range(1, objectCount + 1):  # to not start at 0
+		resultVar = 'RESULT{0}'.format(index)
+		assert resultVar in result
+		assert resultVar in result['RESULT']
+
+
+def testObjectToBashOutput():
+	product = LocalbootProduct(
+		id='htmltestproduct',
+		productVersion='3.1',
+		packageVersion='1',
+		name='Product HTML Test',
+		licenseRequired=False,
+		setupScript='setup.ins',
+		uninstallScript='uninstall.ins',
+		updateScript='update.ins',
+		alwaysScript='always.ins',
+		onceScript='once.ins',
+		priority=0,
+		description="asdf",
+		advice="lolnope",
+		changelog=None,
+		windowsSoftwareIds=None
+	)
+
+	expected = {
+		'RESULT': u'(\nRESULT1=${RESULT1[*]}\nRESULT2=${RESULT2[*]}\n)',
+		'RESULT1': u'(\nonceScript="once.ins"\nwindowsSoftwareIds=""\ndescription="asdf"\nadvice="lolnope"\nalwaysScript="always.ins"\nupdateScript="update.ins"\nproductClassIds=""\nid="htmltestproduct"\nlicenseRequired="False"\nident="htmltestproduct;3.1;1"\nname="Product HTML Test"\nchangelog=""\ncustomScript=""\nuninstallScript="uninstall.ins"\nuserLoginScript=""\npriority="0"\nproductVersion="3.1"\npackageVersion="1"\ntype="LocalbootProduct"\nsetupScript="setup.ins"\n)',
+		'RESULT2': u'(\nonceScript="once.ins"\nwindowsSoftwareIds=""\ndescription="asdf"\nadvice="lolnope"\nalwaysScript="always.ins"\nupdateScript="update.ins"\nproductClassIds=""\nid="htmltestproduct"\nlicenseRequired="False"\nident="htmltestproduct;3.1;1"\nname="Product HTML Test"\nchangelog=""\ncustomScript=""\nuninstallScript="uninstall.ins"\nuserLoginScript=""\npriority="0"\nproductVersion="3.1"\npackageVersion="1"\ntype="LocalbootProduct"\nsetupScript="setup.ins"\n)',
+	}
+
+	result = objectToBash([product, product])
+
+	assert expected == result
+	assert result['RESULT1'] == result['RESULT2']

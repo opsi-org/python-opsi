@@ -18,52 +18,178 @@
 """
 Functionality to update an MySQL backend.
 
+This module handles the database migrations for opsi.
+Usually the function :py:func:updateMySQLBackend: is called from opsi-setup
+
 .. versionadded:: 4.0.6.1
 
 :author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
 """
 
+from __future__ import absolute_import
+
 from collections import namedtuple
 from contextlib import contextmanager
+from datetime import datetime
 
+from OPSI.Backend.SQL import DATABASE_SCHEMA_VERSION, createSchemaVersionTable
 from OPSI.Backend.MySQL import MySQL, MySQLBackend
 from OPSI.Logger import Logger
-from OPSI.Types import (forceHardwareDeviceId, forceHardwareVendorId,
-						forceLicenseContractId, forceSoftwareLicenseId,
-						forceLicensePoolId)
+from OPSI.Types import (
+	forceHardwareDeviceId, forceHardwareVendorId, forceLicenseContractId,
+	forceSoftwareLicenseId, forceLicensePoolId
+)
 from OPSI.Util.Task.ConfigureBackend import getBackendConfiguration
 
-__all__ = ('disableForeignKeyChecks', 'getTableColumns', 'updateMySQLBackend')
+from . import BackendUpdateError
 
-logger = Logger()
+__all__ = (
+	'DatabaseMigrationUnfinishedError',
+	'disableForeignKeyChecks', 'getTableColumns', 'updateMySQLBackend'
+)
+
+LOGGER = Logger()
 
 
-def updateMySQLBackend(backendConfigFile=u'/etc/opsi/backends/mysql.conf',
-						additionalBackendConfiguration={}):
+class DatabaseMigrationUnfinishedError(BackendUpdateError):
+	"""
+	This error indicates an unfinished database migration.
+	"""
+	pass
+
+
+def updateMySQLBackend(
+		backendConfigFile=u'/etc/opsi/backends/mysql.conf',
+		additionalBackendConfiguration={}):
+	"""
+	Applies migrations to the MySQL backend.
+
+	:param backendConfigFile: Path to the file where the backend \
+configuration is read from.
+	:type backendConfigFile: str
+	:param additionalBackendConfiguration: Additional / different \
+settings for the backend that will extend / override the configuration \
+read from `backendConfigFile`.
+	:type additionalBackendConfiguration: dict
+	"""
 
 	config = getBackendConfiguration(backendConfigFile)
 	config.update(additionalBackendConfiguration)
-	logger.info(u"Current mysql backend config: %s" % config)
+	LOGGER.info(u"Current mysql backend config: %s" % config)
 
-	logger.notice(u"Connection to database '%s' on '%s' as user '%s'" % (config['database'], config['address'], config['username']))
+	LOGGER.notice(u"Connection to database '%s' on '%s' as user '%s'" % (config['database'], config['address'], config['username']))
 	mysql = MySQL(**config)
 
+	schemaVersion = readSchemaVersion(mysql)
+	LOGGER.debug("Found database schema version {0}", schemaVersion)
+
+	if schemaVersion is None:
+		LOGGER.notice("Missing information about database schema. Creating...")
+		createSchemaVersionTable(mysql)
+		with updateSchemaVersion(mysql, version=0):
+			pass
+
+		schemaVersion = readSchemaVersion(mysql)
+
+		_processOpsi40migrations(mysql)
+
+	if schemaVersion < 1:
+		with updateSchemaVersion(mysql, version=1):
+			_dropTableBootconfiguration(mysql)
+
+	LOGGER.debug("Expected database schema version: {0}", DATABASE_SCHEMA_VERSION)
+	if not readSchemaVersion(mysql) == DATABASE_SCHEMA_VERSION:
+		raise BackendUpdateError("Not all migrations have been run!")
+
+	with MySQLBackend(**config) as mysqlBackend:
+		# We do this to make sure all tables that are currently
+		# non-existing will be created. That creation will give them
+		# the currently wanted schema.
+		mysqlBackend.backend_createBase()
+
+
+def readSchemaVersion(database):
+	"""
+	Read the version of the schema from the database.
+
+	:raises DatabaseMigrationNotFinishedError: In case a migration was \
+started but never ended.
+	:returns: The version of the schema. `None` if no info is found.
+	:returntype: int or None
+	"""
+	try:
+		for result in database.getSet(u"SELECT `version`, `updateStarted`, `updateEnded` FROM OPSI_SCHEMA ORDER BY `version` DESC;"):
+			version = result['version']
+			start = datetime.strptime(result['updateStarted'], '%Y-%m-%d %H:%M:%S')
+			assert start
+
+			try:
+				end = datetime.strptime(result['updateEnded'], '%Y-%m-%d %H:%M:%S')
+				assert end
+			except (AssertionError, ValueError):
+				raise DatabaseMigrationUnfinishedError(
+					"Migration to version {version} started at {start} "
+					"but no end time found.".format(version=version, start=start)
+				)
+
+			break
+		else:
+			raise RuntimeError("No schema version read!")
+	except DatabaseMigrationUnfinishedError as dbmnfe:
+		LOGGER.warning("Migration probably gone wrong: {0}", dbmnfe)
+		raise dbmnfe
+	except Exception as versionLookupError:
+		LOGGER.warning("Reading database schema version failed: {0}", versionLookupError)
+		version = None
+
+	return version
+
+
+@contextmanager
+def updateSchemaVersion(database, version):
+	"""
+	Update the schema information to the given version.
+
+	This is to be used as a context manager and will mark the start
+	time of the update aswell as the end time.
+	If during the operation something happens there will be no
+	information about the end time written to the database.
+	"""
+	query = "INSERT INTO OPSI_SCHEMA(`version`) VALUES({version});".format(version=version)
+	database.execute(query)
+	yield
+	_finishSchemaVersionUpdate(database, version)
+
+
+def _finishSchemaVersionUpdate(database, version):
+	query = "UPDATE OPSI_SCHEMA SET `updateEnded` = CURRENT_TIMESTAMP WHERE VERSION = {version};".format(version=version)
+	database.execute(query)
+
+
+def _processOpsi40migrations(mysql):
+	"""
+	Process migrations done before opsi 4.1.
+
+	Some of these migrations are used to update an opsi 3 database to
+	opsi 4 while some other adjust existing tables to what was required
+	during that time.
+	"""
 	tables = {}
-	logger.debug(u"Current tables:")
+	LOGGER.debug(u"Current tables:")
 	for i in mysql.getSet(u'SHOW TABLES;'):
 		tableName = i.values()[0]
-		logger.debug(u" [ %s ]" % tableName)
+		LOGGER.debug(u" [ %s ]" % tableName)
 		tables[tableName] = []
 		mysql.execute("alter table `%s` convert to charset utf8 collate utf8_general_ci;" % tableName)
 		for j in mysql.getSet(u'SHOW COLUMNS FROM `%s`' % tableName):
-			logger.debug(u"      %s" % j)
+			LOGGER.debug(u"      %s" % j)
 			tables[tableName].append(j['Field'])
 
 	if 'HOST' in tables and 'host_id' in tables['HOST']:
-		logger.notice(u"Updating database table HOST from opsi 3.3 to 3.4")
+		LOGGER.notice(u"Updating database table HOST from opsi 3.3 to 3.4")
 		# SOFTWARE_CONFIG
-		logger.notice(u"Updating table SOFTWARE_CONFIG")
+		LOGGER.notice(u"Updating table SOFTWARE_CONFIG")
 		mysql.execute(u"alter table SOFTWARE_CONFIG add `hostId` varchar(50) NOT NULL;")
 		mysql.execute(u"alter table SOFTWARE_CONFIG add `softwareId` varchar(100) NOT NULL;")
 		for res in mysql.getSet(u"SELECT hostId,host_id FROM `HOST` WHERE `hostId` != ''"):
@@ -78,7 +204,7 @@ def updateMySQLBackend(backendConfigFile=u'/etc/opsi/backends/mysql.conf',
 	for key in tables:
 		# HARDWARE_CONFIG
 		if key.startswith(u'HARDWARE_CONFIG') and 'host_id' in tables[key]:
-			logger.notice(u"Updating database table %s from opsi 3.3 to 3.4" % key)
+			LOGGER.notice(u"Updating database table %s from opsi 3.3 to 3.4" % key)
 			mysql.execute(u"alter table %s add `hostId` varchar(50) NOT NULL;" % key)
 			for res in mysql.getSet(u"SELECT hostId,host_id FROM `HOST` WHERE `hostId` != ''"):
 				mysql.execute(u"update %s set `hostId` = '%s' where `host_id` = %s;" % (key, res['hostId'].replace("'", "\\'"), res['host_id']))
@@ -87,9 +213,9 @@ def updateMySQLBackend(backendConfigFile=u'/etc/opsi/backends/mysql.conf',
 			mysql.execute(u"alter table %s ENGINE = InnoDB;" % key)
 
 	if 'HARDWARE_INFO' in tables and 'host_id' in tables['HARDWARE_INFO']:
-		logger.notice(u"Updating database table HARDWARE_INFO from opsi 3.3 to 3.4")
+		LOGGER.notice(u"Updating database table HARDWARE_INFO from opsi 3.3 to 3.4")
 		# HARDWARE_INFO
-		logger.notice(u"Updating table HARDWARE_INFO")
+		LOGGER.notice(u"Updating table HARDWARE_INFO")
 		mysql.execute(u"alter table HARDWARE_INFO add `hostId` varchar(50) NOT NULL;")
 		for res in mysql.getSet(u"SELECT hostId,host_id FROM `HOST` WHERE `hostId` != ''"):
 			mysql.execute(u"update HARDWARE_INFO set `hostId` = '%s' where `host_id` = %s;" % (res['hostId'].replace("'", "\\'"), res['host_id']))
@@ -98,18 +224,18 @@ def updateMySQLBackend(backendConfigFile=u'/etc/opsi/backends/mysql.conf',
 		mysql.execute(u"alter table HARDWARE_INFO ENGINE = InnoDB;")
 
 	if 'SOFTWARE' in tables and 'software_id' in tables['SOFTWARE']:
-		logger.notice(u"Updating database table SOFTWARE from opsi 3.3 to 3.4")
+		LOGGER.notice(u"Updating database table SOFTWARE from opsi 3.3 to 3.4")
 		# SOFTWARE
-		logger.notice(u"Updating table SOFTWARE")
+		LOGGER.notice(u"Updating table SOFTWARE")
 		# remove duplicates
 		mysql.execute("delete S1 from SOFTWARE S1, SOFTWARE S2 where S1.softwareId=S2.softwareId and S1.software_id > S2.software_id")
 		mysql.execute(u"alter table SOFTWARE drop `software_id`;")
 		mysql.execute(u"alter table SOFTWARE add primary key (`softwareId`);")
 
 	if 'HOST' in tables and 'host_id' in tables['HOST']:
-		logger.notice(u"Updating database table HOST from opsi 3.3 to 3.4")
+		LOGGER.notice(u"Updating database table HOST from opsi 3.3 to 3.4")
 		# HOST
-		logger.notice(u"Updating table HOST")
+		LOGGER.notice(u"Updating table HOST")
 		# remove duplicates
 		mysql.execute("delete H1 from HOST H1, HOST H2 where H1.hostId=H2.hostId and H1.host_id > H2.host_id")
 		mysql.execute(u"alter table HOST drop `host_id`;")
@@ -125,19 +251,19 @@ def updateMySQLBackend(backendConfigFile=u'/etc/opsi/backends/mysql.conf',
 		mysql.execute(u"update HOST set `type` = 'OPSI_CLIENT' where `hostId` != '';")
 
 	tables = {}
-	logger.debug(u"Current tables:")
+	LOGGER.debug(u"Current tables:")
 	for i in mysql.getSet(u'SHOW TABLES;'):
 		tableName = i.values()[0]
-		logger.debug(u" [ %s ]" % tableName)
+		LOGGER.debug(u" [ %s ]" % tableName)
 		tables[tableName] = []
 		for j in mysql.getSet(u'SHOW COLUMNS FROM `%s`' % tableName):
-			logger.debug(u"      %s" % j)
+			LOGGER.debug(u"      %s" % j)
 			tables[tableName].append(j['Field'])
 
 	if 'HOST' in tables and 'depotLocalUrl' not in tables['HOST']:
-		logger.notice(u"Updating database table HOST from opsi 3.4 to 4.0")
+		LOGGER.notice(u"Updating database table HOST from opsi 3.4 to 4.0")
 		# HOST
-		logger.notice(u"Updating table HOST")
+		LOGGER.notice(u"Updating table HOST")
 		mysql.execute(u"alter table HOST modify `hostId` varchar(255) NOT NULL;")
 		mysql.execute(u"alter table HOST modify `type` varchar(30);")
 
@@ -165,15 +291,15 @@ def updateMySQLBackend(backendConfigFile=u'/etc/opsi/backends/mysql.conf',
 
 	for key in tables.keys():
 		if key.startswith(u'HARDWARE_DEVICE'):
-			if not 'vendorId' in tables[key]:
+			if 'vendorId' not in tables[key]:
 				continue
 
-			logger.notice(u"Updating database table %s" % key)
+			LOGGER.notice(u"Updating database table %s" % key)
 			for vendorId in ('NDIS', 'SSTP', 'AGIL', 'L2TP', 'PPTP', 'PPPO', 'PTIM'):
 				mysql.execute(u"update %s set `vendorId`=NULL where `vendorId`='%s';" % (key, vendorId))
 
 			for attr in ('vendorId', 'deviceId', 'subsystemVendorId', 'subsystemDeviceId'):
-				if not attr in tables[key]:
+				if attr not in tables[key]:
 					continue
 				mysql.execute(u"update %s set `%s`=NULL where `%s`='';" % (key, attr, attr))
 				mysql.execute(u"update %s set `%s`=NULL where `%s`='None';" % (key, attr, attr))
@@ -183,33 +309,33 @@ def updateMySQLBackend(backendConfigFile=u'/etc/opsi/backends/mysql.conf',
 					try:
 						forceHardwareVendorId(res['vendorId'])
 					except Exception:
-						logger.warning(u"Dropping bad vendorId '%s'" % res['vendorId'])
+						LOGGER.warning(u"Dropping bad vendorId '%s'" % res['vendorId'])
 						mysql.execute(u"update %s set `vendorId`=NULL where `vendorId`='%s';" % (key, res['vendorId']))
 
 				if res.get('subsystemVendorId'):
 					try:
 						forceHardwareVendorId(res['subsystemVendorId'])
 					except Exception:
-						logger.warning(u"Dropping bad subsystemVendorId id '%s'" % res['subsystemVendorId'])
+						LOGGER.warning(u"Dropping bad subsystemVendorId id '%s'" % res['subsystemVendorId'])
 						mysql.execute(u"update %s set `subsystemVendorId`=NULL where `subsystemVendorId`='%s';" % (key, res['subsystemVendorId']))
 
 				if res.get('deviceId'):
 					try:
 						forceHardwareDeviceId(res['deviceId'])
 					except Exception:
-						logger.warning(u"Dropping bad deviceId '%s'" % res['deviceId'])
+						LOGGER.warning(u"Dropping bad deviceId '%s'" % res['deviceId'])
 						mysql.execute(u"update %s set `deviceId`=NULL where `deviceId`='%s';" % (key, res['deviceId']))
 
 				if res.get('subsystemDeviceId'):
 					try:
 						forceHardwareDeviceId(res['subsystemDeviceId'])
 					except Exception:
-						logger.warning(u"Dropping bad subsystemDeviceId '%s'" % res['subsystemDeviceId'])
+						LOGGER.warning(u"Dropping bad subsystemDeviceId '%s'" % res['subsystemDeviceId'])
 						mysql.execute(u"update %s set `subsystemDeviceId`=NULL where `subsystemDeviceId`='%s';" % (key, res['subsystemDeviceId']))
 
 		# HARDWARE_CONFIG
 		if key.startswith(u'HARDWARE_CONFIG') and 'audit_lastseen' in tables[key]:
-			logger.notice(u"Updating database table %s from opsi 3.4 to 4.0" % key)
+			LOGGER.notice(u"Updating database table %s from opsi 3.4 to 4.0" % key)
 
 			mysql.execute(u"alter table %s change `audit_firstseen` `firstseen` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00';" % key)
 			mysql.execute(u"alter table %s change `audit_lastseen` `lastseen` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00';" % key)
@@ -217,7 +343,7 @@ def updateMySQLBackend(backendConfigFile=u'/etc/opsi/backends/mysql.conf',
 
 	if 'LICENSE_USED_BY_HOST' in tables:
 		# LICENSE_ON_CLIENT
-		logger.notice(u"Updating table LICENSE_USED_BY_HOST to LICENSE_ON_CLIENT")
+		LOGGER.notice(u"Updating table LICENSE_USED_BY_HOST to LICENSE_ON_CLIENT")
 		mysql.execute(u'''CREATE TABLE `LICENSE_ON_CLIENT` (
 					`license_on_client_id` int NOT NULL AUTO_INCREMENT,
 					PRIMARY KEY( `license_on_client_id` ),
@@ -235,9 +361,9 @@ def updateMySQLBackend(backendConfigFile=u'/etc/opsi/backends/mysql.conf',
 		mysql.execute(u"drop table LICENSE_USED_BY_HOST")
 
 	if 'SOFTWARE' in tables and 'name' not in tables['SOFTWARE']:
-		logger.notice(u"Updating database table SOFTWARE from opsi 3.4 to 4.0")
+		LOGGER.notice(u"Updating database table SOFTWARE from opsi 3.4 to 4.0")
 		# SOFTWARE
-		logger.notice(u"Updating table SOFTWARE")
+		LOGGER.notice(u"Updating table SOFTWARE")
 		mysql.execute(u"alter table SOFTWARE add `name` varchar(100) NOT NULL;")
 		mysql.execute(u"alter table SOFTWARE add `version` varchar(100) NOT NULL;")
 		mysql.execute(u"alter table SOFTWARE add `subVersion` varchar(100) NOT NULL;")
@@ -259,15 +385,15 @@ def updateMySQLBackend(backendConfigFile=u'/etc/opsi/backends/mysql.conf',
 
 			res2 = mysql.getSet(u"SELECT * FROM `SOFTWARE` where `name` = '%s' and version ='%s'" % (name, version))
 			if res2:
-				logger.warning(u"Skipping duplicate: %s" % res2)
+				LOGGER.warning(u"Skipping duplicate: %s" % res2)
 				mysql.execute(u"DELETE FROM `SOFTWARE` where `softwareId` = '%s'" % res['softwareId'].replace("'", "\\'"))
 				continue
 
 			update = u"update SOFTWARE set"
 			update += u"  `type`='AuditSoftware'"
-			update += u", `windowsSoftwareId`='%s'"     % res['softwareId'].replace("'", "\\'")
+			update += u", `windowsSoftwareId`='%s'" % res['softwareId'].replace("'", "\\'")
 			if res['displayName'] is not None:
-				update += u", `windowsDisplayName`='%s'"    % res['displayName'].replace("'", "\\'")
+				update += u", `windowsDisplayName`='%s'" % res['displayName'].replace("'", "\\'")
 			if res['displayVersion'] is not None:
 				update += u", `windowsDisplayVersion`='%s'" % res['displayVersion'].replace("'", "\\'")
 			update += u", `architecture`='x86'"
@@ -290,9 +416,9 @@ def updateMySQLBackend(backendConfigFile=u'/etc/opsi/backends/mysql.conf',
 		mysql.execute(u"alter table SOFTWARE add INDEX( `type` );")
 
 	if 'SOFTWARE_CONFIG' in tables and 'clientId' not in tables['SOFTWARE_CONFIG']:
-		logger.notice(u"Updating database table SOFTWARE_CONFIG from opsi 3.4 to 4.0")
+		LOGGER.notice(u"Updating database table SOFTWARE_CONFIG from opsi 3.4 to 4.0")
 		# SOFTWARE_CONFIG
-		logger.notice(u"Updating table SOFTWARE_CONFIG")
+		LOGGER.notice(u"Updating table SOFTWARE_CONFIG")
 
 		mysql.execute(u"alter table SOFTWARE_CONFIG 	change `hostId` `clientId` varchar(255) NOT NULL, \
 				add `name` varchar(100) NOT NULL, \
@@ -319,7 +445,7 @@ def updateMySQLBackend(backendConfigFile=u'/etc/opsi/backends/mysql.conf',
 		mysql.execute(u"alter table SOFTWARE_CONFIG drop `softwareId`;")
 
 	if 'LICENSE_CONTRACT' in tables and 'type' not in tables['LICENSE_CONTRACT']:
-		logger.notice(u"Updating database table LICENSE_CONTRACT from opsi 3.4 to 4.0")
+		LOGGER.notice(u"Updating database table LICENSE_CONTRACT from opsi 3.4 to 4.0")
 		# LICENSE_CONTRACT
 		mysql.execute(u"alter table LICENSE_CONTRACT add `type` varchar(30) NOT NULL;")
 		mysql.execute(u"alter table LICENSE_CONTRACT add `description` varchar(100) NOT NULL;")
@@ -331,7 +457,7 @@ def updateMySQLBackend(backendConfigFile=u'/etc/opsi/backends/mysql.conf',
 		mysql.execute(u"alter table LICENSE_CONTRACT add INDEX( `type` );")
 
 	if 'SOFTWARE_LICENSE' in tables and 'type' not in tables['SOFTWARE_LICENSE']:
-		logger.notice(u"Updating database table SOFTWARE_LICENSE from opsi 3.4 to 4.0")
+		LOGGER.notice(u"Updating database table SOFTWARE_LICENSE from opsi 3.4 to 4.0")
 		# SOFTWARE_LICENSE
 		mysql.execute(u"alter table SOFTWARE_LICENSE add `type` varchar(30) NOT NULL;")
 		mysql.execute(u"alter table SOFTWARE_LICENSE modify `expirationDate` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00';")
@@ -346,7 +472,7 @@ def updateMySQLBackend(backendConfigFile=u'/etc/opsi/backends/mysql.conf',
 		mysql.execute(u"alter table SOFTWARE_LICENSE add INDEX( `boundToHost` );")
 
 	if 'LICENSE_POOL' in tables and 'type' not in tables['LICENSE_POOL']:
-		logger.notice(u"Updating database table LICENSE_POOL from opsi 3.4 to 4.0")
+		LOGGER.notice(u"Updating database table LICENSE_POOL from opsi 3.4 to 4.0")
 		# LICENSE_POOL
 		mysql.execute(u"alter table LICENSE_POOL add `type` varchar(30) NOT NULL;")
 		mysql.execute(u"update LICENSE_POOL set `type`='LicensePool' where 1=1")
@@ -355,7 +481,7 @@ def updateMySQLBackend(backendConfigFile=u'/etc/opsi/backends/mysql.conf',
 
 	if 'WINDOWS_SOFTWARE_ID_TO_LICENSE_POOL' in tables:
 		# AUDIT_SOFTWARE_TO_LICENSE_POOL
-		logger.notice(u"Updating table WINDOWS_SOFTWARE_ID_TO_LICENSE_POOL to AUDIT_SOFTWARE_TO_LICENSE_POOL")
+		LOGGER.notice(u"Updating table WINDOWS_SOFTWARE_ID_TO_LICENSE_POOL to AUDIT_SOFTWARE_TO_LICENSE_POOL")
 
 		mysql.execute(u'''CREATE TABLE `AUDIT_SOFTWARE_TO_LICENSE_POOL` (
 					`licensePoolId` VARCHAR(100) NOT NULL,
@@ -379,12 +505,11 @@ def updateMySQLBackend(backendConfigFile=u'/etc/opsi/backends/mysql.conf',
 
 		mysql.execute(u"drop table WINDOWS_SOFTWARE_ID_TO_LICENSE_POOL;")
 
-
 	for res in mysql.getSet(u"SELECT * FROM `LICENSE_CONTRACT`"):
 		if res['licenseContractId'] != forceLicenseContractId(res['licenseContractId']):
 			deleteLicenseContractId = res['licenseContractId']
 			res['licenseContractId'] = forceLicenseContractId(res['licenseContractId'])
-			logger.warning(u"Changing license contract id '%s' to '%s'" % (deleteLicenseContractId, res['licenseContractId']))
+			LOGGER.warning(u"Changing license contract id '%s' to '%s'" % (deleteLicenseContractId, res['licenseContractId']))
 
 			data = {
 				'SOFTWARE_LICENSE': [],
@@ -409,7 +534,7 @@ def updateMySQLBackend(backendConfigFile=u'/etc/opsi/backends/mysql.conf',
 		if (res['licensePoolId'] != res['licensePoolId'].strip()) or (res['licensePoolId'] != forceLicensePoolId(res['licensePoolId'])):
 			deleteLicensePoolId = res['licensePoolId']
 			res['licensePoolId'] = forceLicensePoolId(res['licensePoolId'].strip())
-			logger.warning(u"Changing license pool id '%s' to '%s'" % (deleteLicensePoolId, res['licensePoolId']))
+			LOGGER.warning(u"Changing license pool id '%s' to '%s'" % (deleteLicensePoolId, res['licensePoolId']))
 
 			data = {}
 			for tab in ('AUDIT_SOFTWARE_TO_LICENSE_POOL', 'PRODUCT_ID_TO_LICENSE_POOL', 'LICENSE_ON_CLIENT', 'SOFTWARE_LICENSE_TO_LICENSE_POOL'):
@@ -429,7 +554,7 @@ def updateMySQLBackend(backendConfigFile=u'/etc/opsi/backends/mysql.conf',
 		if (res['softwareLicenseId'] != res['softwareLicenseId'].strip()) or (res['softwareLicenseId'] != forceSoftwareLicenseId(res['softwareLicenseId'])):
 			deleteSoftwareLicenseId = res['softwareLicenseId']
 			res['softwareLicenseId'] = forceSoftwareLicenseId(res['softwareLicenseId'].strip())
-			logger.warning(u"Changing software license id '%s' to '%s'" % (deleteSoftwareLicenseId, res['softwareLicenseId']))
+			LOGGER.warning(u"Changing software license id '%s' to '%s'" % (deleteSoftwareLicenseId, res['softwareLicenseId']))
 
 			data = {}
 			for tab in ('LICENSE_ON_CLIENT', 'SOFTWARE_LICENSE_TO_LICENSE_POOL'):
@@ -445,22 +570,22 @@ def updateMySQLBackend(backendConfigFile=u'/etc/opsi/backends/mysql.conf',
 				for i in data[tab]:
 					mysql.insert(tab, i)
 
-	#Increase productId Fields on existing database:
+	# Increase productId Fields on existing database:
 	with disableForeignKeyChecks(mysql):
-		logger.notice(u"Updating productId Columns")
+		LOGGER.notice(u"Updating productId Columns")
 		for line in mysql.getSet(u"SHOW TABLES;"):
 			tableName = line.values()[0]
-			logger.debug(u" [ %s ]" % tableName)
+			LOGGER.debug(u" [ %s ]" % tableName)
 			for column in mysql.getSet(u'SHOW COLUMNS FROM `%s`;' % tableName):
 				fieldName = column['Field']
 				fieldType = column['Type']
 				if "productid" in fieldName.lower() and fieldType != "varchar(255)":
-					logger.debug("ALTER TABLE for Table: '%s' and Column: '%s'" % (tableName, fieldName))
+					LOGGER.debug("ALTER TABLE for Table: '%s' and Column: '%s'" % (tableName, fieldName))
 					mysql.execute(u"alter table %s MODIFY COLUMN `%s` VARCHAR(255);" % (tableName, fieldName))
 
 	# Changing description fields to type TEXT
 	for tableName in (u"PRODUCT_PROPERTY", ):
-		logger.notice(u"Updating field 'description' on table {name}".format(name=tableName))
+		LOGGER.notice(u"Updating field 'description' on table {name}".format(name=tableName))
 		fieldName = u"description"
 		mysql.execute(
 			u"alter table {name} MODIFY COLUMN `{column}` TEXT;".format(
@@ -471,7 +596,7 @@ def updateMySQLBackend(backendConfigFile=u'/etc/opsi/backends/mysql.conf',
 
 	# Fixing unwanted MySQL defaults:
 	if 'HOST' in tables:
-		logger.notice(u"Fixing DEFAULT for colum 'created' on table HOST")
+		LOGGER.notice(u"Fixing DEFAULT for colum 'created' on table HOST")
 		mysql.execute(u"alter table HOST modify `created` TIMESTAMP DEFAULT CURRENT_TIMESTAMP;")
 
 	# Changing the length of too small hostId / depotId column
@@ -488,20 +613,13 @@ def updateMySQLBackend(backendConfigFile=u'/etc/opsi/backends/mysql.conf',
 	with disableForeignKeyChecks(mysql):
 		for tablename in tables.keys():
 			if tablename == 'PRODUCT_ON_DEPOT' and tableNeedsHostIDLengthFix(tablename, columnName="depotId"):
-				logger.notice(u"Fixing length of 'depotId' column on {table}".format(table=tablename))
+				LOGGER.notice(u"Fixing length of 'depotId' column on {table}".format(table=tablename))
 				mysql.execute(u"ALTER TABLE `PRODUCT_ON_DEPOT` MODIFY COLUMN `depotId` VARCHAR(255) NOT NULL;")
 			elif tablename.startswith(u'HARDWARE_CONFIG') and tableNeedsHostIDLengthFix(tablename):
-				logger.notice(u"Fixing length of 'hostId' column on {table}".format(table=tablename))
+				LOGGER.notice(u"Fixing length of 'hostId' column on {table}".format(table=tablename))
 				mysql.execute(u"ALTER TABLE `{table}` MODIFY COLUMN `hostId` VARCHAR(255) NOT NULL;".format(table=tablename))
 
 	_fixLengthOfLicenseKeys(mysql)
-
-	if 'BOOT_CONFIGURATION' in tables:
-		_dropTableBootconfiguration(mysql)
-
-	mysqlBackend = MySQLBackend(**config)
-	mysqlBackend.backend_createBase()
-	mysqlBackend.backend_exit()
 
 
 @contextmanager
@@ -514,12 +632,12 @@ def disableForeignKeyChecks(database):
 	It will set this per session, not global.
 	"""
 	database.execute('SET FOREIGN_KEY_CHECKS=0;')
-	logger.debug("Disabled FOREIGN_KEY_CHECKS for session.")
+	LOGGER.debug("Disabled FOREIGN_KEY_CHECKS for session.")
 	try:
 		yield
 	finally:
 		database.execute('SET FOREIGN_KEY_CHECKS=1;')
-		logger.debug("Enabled FOREIGN_KEY_CHECKS for session.")
+		LOGGER.debug("Enabled FOREIGN_KEY_CHECKS for session.")
 
 
 def _fixLengthOfLicenseKeys(database):
@@ -539,7 +657,7 @@ def _fixLengthOfLicenseKeys(database):
 				length = int(length[:-1])
 
 				if length != 1024:
-					logger.notice(u"Fixing length of 'licenseKey' column on table {0!r}".format(table))
+					LOGGER.notice(u"Fixing length of 'licenseKey' column on table {0!r}".format(table))
 					database.execute(u"ALTER TABLE `{0}` MODIFY COLUMN `licenseKey` VARCHAR(1024);".format(table))
 
 
@@ -550,4 +668,5 @@ def getTableColumns(database, tableName):
 
 
 def _dropTableBootconfiguration(database):
+	LOGGER.notice(u"Dropping table BOOT_CONFIGURATION.")
 	database.execute(u"drop table BOOT_CONFIGURATION;")

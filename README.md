@@ -21,10 +21,10 @@ First we create the API documentation from the Python files:
 ``sphinx-apidoc --separate --output-dir=doc/src OPSI/``
 
 After that we can build the documentation:
-``sphinx-build -b html -d doc/_build/doctrees doc/src/ doc/html/``
+``sphinx-build -b html -d doc/_build/doctrees doc/src/ doc/python-opsi/``
 
 
-After that you will find the documentation in the folder ``doc/html``.
+After that you will find the documentation in the folder ``doc/python-opsi``.
 
 ## Requirements
 
@@ -86,6 +86,27 @@ Requirements for the tests can be found in ``requirements-qa.txt``.
 They can be installed with the following command:
 ``pip install -r requirements-qa.txt``
 
+### Configuring database for test
+
+Testing the MySQL backend requires a license file for most of the tests.
+
+To run tests with MySQL as a backend you need to install and configure
+your MySQL server first.
+You then need to create a user and database for the tests.
+Please follow the corresponding guides of your distribution and/or MySQL
+to do so.
+
+**Warning:** The tests will drop every table on the configured database
+so make sure you are not running things against your production database!
+
+It is possible to let opsi create a database for you by running `opsi-setup --configure-mysql` and then re-use the configuration from `/etc/opsi/backends/mysql.conf`.
+
+To configure the tests copy the example configuration to `tests/Backends/config.py`:
+
+``cp tests/Backends/config.py.example tests/Backends/config.py``
+
+In this file fill the dict `MySQLconfiguration` with the settings for your test database.
+If your are reusing the values from `/etc/opsi/backends/mysql.conf` you can copy the content of `config` to it.
 
 ### Running
 

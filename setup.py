@@ -37,10 +37,7 @@ with codecs.open(os.path.join("debian", "changelog"), 'r', 'utf-8') as changelog
 	VERSION = changelog.readline().split('(')[1].split('-')[0]
 
 if not VERSION:
-	raise Exception(u"Failed to get version info")
-
-with open("data/version", "w") as versionFile:
-	versionFile.write(VERSION)
+	raise ValueError(u"Failed to get version info")
 
 # Always set __version__ in OPSI.__init__.py to the version found in
 # the changelog to make sure the version is always up-to-date
@@ -73,6 +70,7 @@ data_files = [
 			'data/backendManager/extend.d/10_opsi.conf',
 			'data/backendManager/extend.d/10_wim.conf',
 			'data/backendManager/extend.d/20_legacy.conf',
+			'data/backendManager/extend.d/30_kiosk.conf',
 			'data/backendManager/extend.d/30_sshcommands.conf',
 			'data/backendManager/extend.d/40_groupActions.conf',
 			'data/backendManager/extend.d/40_admin_tasks.conf',
@@ -95,7 +93,6 @@ data_files = [
 	(
 		'/etc/opsi/',
 		[
-			'data/version',
 			'data/server_commands_default.conf',
 			'data/opsi.conf'
 		]
@@ -113,12 +110,6 @@ data_files = [
 			'data/hwaudit/locales/es_ES',
 			'data/hwaudit/locales/fr_FR',
 			'data/hwaudit/locales/ru_RU',
-		]
-	),
-	(
-		'/var/lib/opsi/',
-		[
-			'data/server_commands_custom.conf'
 		]
 	),
 ]

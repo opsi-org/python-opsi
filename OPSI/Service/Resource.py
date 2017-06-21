@@ -1,10 +1,9 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2006-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -65,7 +64,7 @@ class ResourceOpsi(resource.Resource):
 		try:
 			logger.debug2(u"{0}.renderHTTP()", self.__class__.__name__)
 			if not self.WorkerClass:
-				raise Exception(u"No worker class defined in resource %s" % self.__class__.__name__)
+				raise RuntimeError(u"No worker class defined in resource %s" % self.__class__.__name__)
 			worker = self.WorkerClass(self._service, request, self)
 			return worker.process()
 		except Exception as exc:
