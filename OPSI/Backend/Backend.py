@@ -46,6 +46,7 @@ from contextlib import contextmanager
 from hashlib import md5
 from twisted.conch.ssh import keys
 
+from OPSI import __version__ as LIBRARY_VERSION
 from OPSI.Logger import Logger
 from OPSI.Types import BackendError, BackendBadValueError
 from OPSI.Types import *  # this is needed for dynamic loading
@@ -72,7 +73,6 @@ __all__ = (
 	'ModificationTrackingBackend', 'BackendModificationListener'
 )
 
-OPSI_VERSION_FILE = u'/etc/opsi/version'
 OPSI_MODULES_FILE = u'/etc/opsi/modules'
 OPSI_PASSWD_FILE = u'/etc/opsi/passwd'
 OPSI_GLOBAL_CONF = u'/etc/opsi/global.conf'
@@ -198,8 +198,8 @@ This defaults to ``self``.
 		self._username = None
 		self._password = None
 		self._context = self
+		self._opsiVersion = LIBRARY_VERSION
 
-		self._opsiVersionFile = OPSI_VERSION_FILE
 		self._opsiModulesFile = OPSI_MODULES_FILE
 
 		for (option, value) in kwargs.items():
@@ -215,16 +215,7 @@ This defaults to ``self``.
 				logger.info(u"Backend context was set to %s" % self._context)
 			elif option == 'opsimodulesfile':
 				self._opsiModulesFile = forceFilename(value)
-			elif option == 'opsiversionfile':
-				self._opsiVersionFile = forceFilename(value)
 		self._options = {}
-
-		try:
-			with codecs.open(self._opsiVersionFile, 'r', 'utf-8') as f:
-				self._opsiVersion = f.readline().strip()
-		except Exception as error:
-			logger.error(u"Failed to read version info from file {0!r}: {1}".format(self._opsiVersionFile, error))
-			self._opsiVersion = 'unknown'
 
 	def __enter__(self):
 		return self
@@ -2155,12 +2146,12 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			if productProperty.possibleValues and id in productProperty.possibleValues:
 				productProperty.possibleValues.remove(id)
 				productProperty.possibleValues.append(newId)
-				if not productProperty in modifiedProductProperties:
+				if productProperty not in modifiedProductProperties:
 					modifiedProductProperties.append(productProperty)
 			if productProperty.defaultValues and id in productProperty.defaultValues:
 				productProperty.defaultValues.remove(id)
 				productProperty.defaultValues.append(newId)
-				if not productProperty in modifiedProductProperties:
+				if productProperty not in modifiedProductProperties:
 					modifiedProductProperties.append(productProperty)
 		if modifiedProductProperties:
 			self.productProperty_updateObjects(modifiedProductProperties)
@@ -2178,12 +2169,12 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			if config.possibleValues and id in config.possibleValues:
 				config.possibleValues.remove(id)
 				config.possibleValues.append(newId)
-				if not config in modifiedConfigs:
+				if config not in modifiedConfigs:
 					modifiedConfigs.append(config)
 			if config.defaultValues and id in config.defaultValues:
 				config.defaultValues.remove(id)
 				config.defaultValues.append(newId)
-				if not config in modifiedConfigs:
+				if config not in modifiedConfigs:
 					modifiedConfigs.append(config)
 		if modifiedConfigs:
 			self.config_updateObjects(modifiedConfigs)
@@ -3407,7 +3398,7 @@ into the IDs of these depots are to be found in the list behind \
 			depotFilter['objectId'] = depotId
 			for pps in self._backend.productPropertyState_getObjects(attributes, **depotFilter):
 				for clientId in clientIds:
-					if not pps.propertyId in ppss.get(clientId, {}).get(pps.productId, []):
+					if pps.propertyId not in ppss.get(clientId, {}).get(pps.productId, []):
 						# Product property for client does not exist => add default (values of depot)
 						productPropertyStates.append(
 							ProductPropertyState(
@@ -3599,7 +3590,6 @@ into the IDs of these depots are to be found in the list behind \
 				objectId=objectId
 			)
 		)
-
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   LicenseContracts                                                                          -
@@ -4051,7 +4041,6 @@ into the IDs of these depots are to be found in the list behind \
 
 		return result
 
-
 	def auditSoftware_create(self, name, version, subVersion, language, architecture, windowsSoftwareId=None, windowsDisplayName=None, windowsDisplayVersion=None, installSize=None):
 		hash = locals()
 		del hash['self']
@@ -4164,7 +4153,6 @@ into the IDs of these depots are to be found in the list behind \
 				licensePoolId=licensePoolId
 			)
 		)
-
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   AuditSoftwareOnClients                                                                    -
