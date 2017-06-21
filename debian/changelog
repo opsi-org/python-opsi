@@ -1,4 +1,4 @@
-python-opsi (4.1.1.7-1) UNRELEASED; urgency=medium
+python-opsi (4.1.1.7-1) testing; urgency=medium
 
   * Exceptions have been moved from OPSI.Types to OPSI.Exceptions.
   * Remove leftover for Scientific Linux support.
