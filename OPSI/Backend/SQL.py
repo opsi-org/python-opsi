@@ -38,8 +38,8 @@ from datetime import datetime
 from hashlib import md5
 from twisted.conch.ssh import keys
 
-from OPSI.Exceptions import (BackendConfigurationError,
-	BackendReferentialIntegrityError, BackendModuleDisabledError)
+from OPSI.Exceptions import (BackendConfigurationError, BackendMissingDataError,
+	BackendModuleDisabledError, BackendReferentialIntegrityError)
 from OPSI.Logger import Logger
 from OPSI.Types import (forceBool, forceUnicodeLower, forceOpsiTimestamp,
 	forceList, forceUnicode, forceUnicodeList, forceDict, forceObjectClassList)
@@ -58,6 +58,8 @@ __all__ = (
 	'SQLBackendObjectModificationTracker'
 )
 
+DATABASE_SCHEMA_VERSION = 1
+
 logger = Logger()
 
 
@@ -74,6 +76,19 @@ def timeQuery(query):
 def onlyAllowSelect(query):
 	if not forceUnicodeLower(query).strip().startswith('select'):
 		raise ValueError('Only queries to SELECT data are allowed.')
+
+
+def createSchemaVersionTable(database):
+	logger.debug("Creating 'OPSI_SCHEMA' table.")
+	table = u'''CREATE TABLE `OPSI_SCHEMA` (
+		`version` integer NOT NULL,
+		`updateStarted` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		`updateEnded` TIMESTAMP,
+		PRIMARY KEY (`version`)
+	) {0};
+	'''.format(database.getTableCreationOptions('OPSI_SCHEMA'))
+	logger.debug(table)
+	database.execute(table)
 
 
 class SQL(object):
@@ -171,7 +186,7 @@ class SQLBackendObjectModificationTracker(BackendModificationListener):
 	def _trackModification(self, command, obj):
 		command = forceUnicodeLower(command)
 		if command not in ('insert', 'update', 'delete'):
-			raise Exception(u"Unhandled command {0!r}".format(command))
+			raise ValueError(u"Unhandled command {0!r}".format(command))
 
 		data = {
 			'command': command,
@@ -861,6 +876,20 @@ class SQLBackend(ConfigDataBackend):
 			self._sql.execute('CREATE INDEX `index_software_config_nvsla` on `SOFTWARE_CONFIG` (`name`, `version`, `subVersion`, `language`, `architecture`);')
 
 		self._createAuditHardwareTables()
+
+		if 'OPSI_SCHEMA' not in existingTables:
+			createSchemaVersionTable(self._sql)
+
+			# To avoid updates to an up-to-date database schema
+			# we insert the current version into to database
+			# right away.
+			# If a change to the schema is done adjust this!
+			schemaVersion = 1
+			query = """
+				INSERT INTO OPSI_SCHEMA (`version`, `updateEnded`)
+				VALUES({version}, CURRENT_TIMESTAMP);
+			""".format(version=schemaVersion)
+			self._sql.execute(query)
 
 	def _createTableHost(self):
 		logger.debug(u'Creating table HOST')
@@ -2194,7 +2223,7 @@ class SQLBackend(ConfigDataBackend):
 				filter[attribute] = [None]
 
 		if not self.auditHardware_getObjects(**filter):
-			raise Exception(u"AuditHardware '%s' not found" % auditHardware.getIdent())
+			raise BackendMissingDataError(u"AuditHardware '%s' not found" % auditHardware.getIdent())
 
 	def auditHardware_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.auditHardware_getObjects(self, attributes=[], **filter)

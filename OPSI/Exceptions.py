@@ -33,7 +33,8 @@ __all__ = (
 	'BackendConfigurationError', 'BackendError', 'BackendIOError',
 	'BackendMissingDataError', 'BackendModuleDisabledError',
 	'BackendPermissionDeniedError', 'BackendReferentialIntegrityError',
-	'BackendTemporaryError', 'BackendUnaccomplishableError',
+	'BackendTemporaryError', 'BackendUnableToConnectError',
+	'BackendUnaccomplishableError',
 	'CanceledException', 'LicenseConfigurationError', 'LicenseMissingError',
 	'OpsiAuthenticationError', 'OpsiBackupBackendNotFound',
 	'OpsiBackupFileError', 'OpsiBackupFileNotFound', 'OpsiBadRpcError',
@@ -159,6 +160,11 @@ class BackendError(OpsiError):
 
 class BackendIOError(OpsiError):
 	""" Exception raised if there is a read or write error in the backend. """
+	ExceptionShortDescription = u"Backend I/O error"
+
+
+class BackendUnableToConnectError(BackendIOError):
+	"Exception raised if no connection can be established in the backend."
 	ExceptionShortDescription = u"Backend I/O error"
 
 

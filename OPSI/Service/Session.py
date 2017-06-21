@@ -142,10 +142,19 @@ class SessionHandler(object):
 		self.deleteAllSessions()
 
 	def getSessions(self, ip=None):
+		"""
+		Get the sessions handled by this handler.
+
+		:param ip: Limit the returned values to sessions coming from this IP.
+		:type ip: str
+		:returns: a dict where the uid of the session is the key and \
+the value holds the sesion.
+		:returntype: {str: Session}
+		"""
 		if not ip:
 			return self.sessions
 
-		return [session for session in self.sessions.values() if session.ip == ip]
+		return {uid: session for uid, session in self.sessions.items() if session.ip == ip}
 
 	def getSession(self, uid=None, ip=None):
 		if uid:
@@ -164,12 +173,12 @@ class SessionHandler(object):
 		if ip and self.maxSessionsPerIp > 0:
 			sessions = self.getSessions(ip)
 			if len(sessions) >= self.maxSessionsPerIp:
-				logger.error(u"Session limit for ip '%s' reached" % ip)
-				for session in sessions:
+				logger.warning(u"Session limit for ip '%s' reached" % ip)
+				for sessionUid, session in sessions.items():
 					if session.usageCount > 0:
 						continue
 					logger.info(u"Deleting unused session")
-					self.deleteSession(session.uid)
+					self.deleteSession(sessionUid)
 
 				if len(self.getSessions(ip)) >= self.maxSessionsPerIp:
 					raise OpsiAuthenticationError(u"Session limit for ip '%s' reached" % ip)

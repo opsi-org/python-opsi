@@ -41,14 +41,16 @@ from twisted.conch.ssh import keys
 from sys import version_info
 
 from OPSI import __version__
-from OPSI.Exceptions import (OpsiAuthenticationError,
-	OpsiServiceVerificationError, OpsiTimeoutError)
-from OPSI.Logger import Logger, LOG_INFO, LOG_NONE
+from OPSI.Exceptions import (BackendBadValueError,
+	OpsiAuthenticationError, OpsiConnectionError, OpsiError,
+	OpsiServiceVerificationError, OpsiRpcError, OpsiTimeoutError)
+from OPSI.Logger import Logger, LOG_INFO
 from OPSI.Types import (forceBool, forceFilename, forceFloat, forceInt,
 						forceList, forceUnicode)
 from OPSI.Backend.Backend import Backend, DeferredCall
 from OPSI.Util import serialize, deserialize
-from OPSI.Util.HTTP import urlsplit, getSharedConnectionPool, deflateEncode, deflateDecode, gzipDecode
+from OPSI.Util.HTTP import getSharedConnectionPool, urlsplit
+from OPSI.Util.HTTP import deflateEncode, deflateDecode, gzipDecode
 
 __all__ = ('JSONRPC', 'JSONRPCThread', 'RpcQueue', 'JSONRPCBackend')
 
@@ -93,11 +95,11 @@ class JSONRPC(DeferredCall):
 							message = message[index + 1:].lstrip()
 						exception = exceptionClass(u'%s (error on server)' % message)
 					except Exception:
-						exception = Exception(message)
+						exception = OpsiRpcError(message)
 
 					raise exception
 
-				raise Exception(u'{0} (error on server)'.format(error))
+				raise OpsiRpcError(u'{0} (error on server)'.format(error))
 
 			self.result = deserialize(
 				result.get('result'),
@@ -209,7 +211,7 @@ class RpcQueue(threading.Thread):
 				if not baseUrl:
 					baseUrl = jsonrpc.baseUrl
 				elif baseUrl != jsonrpc.baseUrl:
-					raise Exception(u"Can't execute jsonrpcs with different base urls at once: (%s != %s)" % (baseUrl, jsonrpc.baseUrl))
+					raise OpsiRpcError(u"Can't execute jsonrpcs with different base urls at once: (%s != %s)" % (baseUrl, jsonrpc.baseUrl))
 				rpc.append(jsonrpc.getRpc())
 			rpc = json.dumps(rpc)
 			logger.debug2(u"jsonrpc: %s" % rpc)
@@ -219,7 +221,7 @@ class RpcQueue(threading.Thread):
 			try:
 				response = forceList(json.loads(response))
 			except Exception as error:
-				raise Exception(u"Failed to json decode response %s: %s" % (response, error))
+				raise OpsiRpcError(u"Failed to json decode response %s: %s" % (response, error))
 
 			for resp in response:
 				try:
@@ -235,7 +237,7 @@ class RpcQueue(threading.Thread):
 				try:
 					jsonrpc.processResult(resp)
 				except Exception as error:
-					raise Exception(u"Failed to process response %s with jsonrpc %s: %s" % (resp, jsonrpc, error))
+					raise RuntimeError(u"Failed to process response %s with jsonrpc %s: %s" % (resp, jsonrpc, error))
 		except Exception as error:
 			if not isExit:
 				logger.logException(error)
@@ -282,7 +284,6 @@ class JSONRPCBackend(Backend):
 		self._verifyServerCert = False
 		self._verifyServerCertByCa = False
 		self._verifyByCaCertsFile = None
-		self._wrongHTTPHeaders = None
 		self._proxyURL = None
 
 		if not self._username:
@@ -388,7 +389,7 @@ class JSONRPCBackend(Backend):
 
 	def setAsync(self, enableAsync):
 		if not self._connected:
-			raise Exception(u'Not connected')
+			raise OpsiConnectionError(u'Not connected')
 
 		if enableAsync:
 			self.startRpcQueue()
@@ -399,14 +400,9 @@ class JSONRPCBackend(Backend):
 
 	def setDeflate(self, deflate):
 		if not self._connected:
-			raise Exception(u'Not connected')
+			raise OpsiConnectionError(u'Not connected')
 
-		deflate = forceBool(deflate)
-		if deflate and self._wrongHTTPHeaders:
-			logger.error(u"Refusing to set deflate because opsi service answers with wrong HTTP header contents.")
-			return
-
-		self._deflate = deflate
+		self._deflate = forceBool(deflate)
 
 	def getDeflate(self):
 		return self._deflate
@@ -421,21 +417,6 @@ class JSONRPCBackend(Backend):
 
 		asyncStatus = self._async
 		self._async = False
-
-		if self._deflate:
-			logger.debug(u"Testing if deflated communication works...")
-			previousLogLevel = logger.getConsoleLevel()
-			logger.setConsoleLevel(LOG_NONE)
-			try:
-				self._jsonRPC(u'backend_info')
-				logger.debug(u"Deflated communication works!")
-			except Exception as error:
-				logger.setConsoleLevel(previousLogLevel)
-				logger.debug(u"Caught {0!r}", error)
-				logger.debug(u"Disabling deflate...")
-				self._deflate = False
-			finally:
-				logger.setConsoleLevel(previousLogLevel)
 
 		try:
 			try:
@@ -481,7 +462,7 @@ class JSONRPCBackend(Backend):
 		(scheme, host, port, baseurl, username, password) = urlsplit(address)
 		if scheme:
 			if scheme not in ('http', 'https'):
-				raise Exception(u"Protocol %s not supported" % scheme)
+				raise ValueError(u"Protocol %s not supported" % scheme)
 			self._protocol = scheme
 		self._host = host
 		if port:
@@ -507,17 +488,17 @@ class JSONRPCBackend(Backend):
 			if not modules.get('customer'):
 				logger.notice(u"Disabling mysql backend and license management module: no customer in modules file")
 				if mysqlBackend:
-					raise Exception(u"MySQL backend in use but not licensed")
+					raise OpsiError(u"MySQL backend in use but not licensed")
 
 			elif not modules.get('valid'):
 				logger.notice(u"Disabling mysql backend and license management module: modules file invalid")
 				if mysqlBackend:
-					raise Exception(u"MySQL backend in use but not licensed")
+					raise OpsiError(u"MySQL backend in use but not licensed")
 
 			elif (modules.get('expires', '') != 'never') and (time.mktime(time.strptime(modules.get('expires', '2000-01-01'), "%Y-%m-%d")) - time.time() <= 0):
 				logger.notice(u"Disabling mysql backend and license management module: modules file expired")
 				if mysqlBackend:
-					raise Exception(u"MySQL backend in use but not licensed")
+					raise OpsiError(u"MySQL backend in use but not licensed")
 			else:
 				logger.info(u"Verifying modules file signature")
 				publicKey = keys.Key.fromString(data=base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
@@ -542,7 +523,7 @@ class JSONRPCBackend(Backend):
 				if not bool(publicKey.verify(md5(data).digest(), [long(modules['signature'])])):
 					logger.error(u"Disabling mysql backend and license management module: modules file invalid")
 					if mysqlBackend:
-						raise Exception(u"MySQL backend in use but not licensed")
+						raise OpsiError(u"MySQL backend in use but not licensed")
 				else:
 					logger.notice(u"Modules file signature verified (customer: %s)" % modules.get('customer'))
 
@@ -550,7 +531,7 @@ class JSONRPCBackend(Backend):
 						licenseManagementModule = True
 
 					if mysqlBackend and not modules.get('mysql_backend'):
-						raise Exception(u"MySQL backend in use but not licensed")
+						raise OpsiError(u"MySQL backend in use but not licensed")
 
 		for method in self._interface:
 			try:
@@ -661,22 +642,11 @@ class JSONRPCBackend(Backend):
 			if sessionId != self._sessionId:
 				self._sessionId = sessionId
 
-		contentType = response.getheader('content-type', '')
 		contentEncoding = response.getheader('content-encoding', '').lower()
-		logger.debug(u"Content-Type: {0}, Content-Encoding: {1}", contentType, contentEncoding)
+		logger.debug2(u"Content-Encoding: {1}", contentEncoding)
 
 		response = response.data
-		if contentType.lower().startswith('gzip'):
-			# To stay compatible with old versions of the opsiconfd
-			# we try to decompress the response with deflate even
-			# though gzip was stated.
-			# Content-type was usually gzip-application/json
-			logger.debug(u"Expecting deflated data from server (backwards compatible)")
-			response = deflateDecode(response)
-
-			if self._wrongHTTPHeaders is None:
-				self._wrongHTTPHeaders = True
-		elif contentEncoding == 'gzip':
+		if contentEncoding == 'gzip':
 			logger.debug(u"Expecting gzip'ed data from server")
 			response = gzipDecode(response)
 		elif contentEncoding == "deflate":

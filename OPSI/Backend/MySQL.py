@@ -39,7 +39,8 @@ from MySQLdb.converters import conversions
 from sqlalchemy import pool
 from twisted.conch.ssh import keys
 
-from OPSI.Exceptions import BackendIOError, BackendBadValueError
+from OPSI.Exceptions import (BackendIOError, BackendBadValueError,
+	BackendUnableToConnectError)
 from OPSI.Logger import Logger
 from OPSI.Types import forceInt, forceUnicode
 from OPSI.Backend.Backend import ConfigDataBackend
@@ -50,6 +51,11 @@ __all__ = ('ConnectionPool', 'MySQL', 'MySQLBackend',
 	'MySQLBackendObjectModificationTracker')
 
 logger = Logger()
+
+MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE = 2006
+# 2006: 'MySQL server has gone away'
+DEADLOCK_FOUND_WHEN_TRYING_TO_GET_LOCK_ERROR_CODE = 1213
+# 1213: 'Deadlock found when trying to get lock; try restarting transaction'
 
 
 class ConnectionPool(object):
@@ -183,44 +189,51 @@ class MySQL(SQL):
 			self._transactionLock.release()
 
 	def connect(self, cursorType=None):
-		myConnectionSuccess = False
-		myMaxRetryConnection = 10
-		myRetryConnectionCounter = 0
+		"""
+		Connect to the MySQL server.
+		If `cursorType` is given this type will be used as the cursor.
 
-		if not cursorType:
-			cursorType = MySQLdb.cursors.DictCursor
+		Establishing a connection will be tried multiple times.
+		If no connection can be made during this an exception will be
+		raised.
 
-		while (not myConnectionSuccess) and (myRetryConnectionCounter < myMaxRetryConnection):
+		:param cursorType: The class of the cursor to use. \
+Defaults to :py:class:MySQLdb.cursors.DictCursor:.
+		:raises BackendUnableToConnectError: In case no connection can be established.
+		:return: The connection and the corresponding cursor.
+		"""
+		retryLimit = 10
+
+		cursorType = cursorType or MySQLdb.cursors.DictCursor
+
+		for retryCount in range(retryLimit):
 			try:
-				if myRetryConnectionCounter > 0:
+				if retryCount > 0:
 					self._createConnectionPool()
-				logger.debug(u"Connecting to connection pool")
+				logger.debug2(u"Connecting to connection pool")
 				self._transactionLock.acquire()
-				logger.debug(u"Got thread lock")
-				logger.debug(u"Connection pool status: %s" % self._pool.status())
+				logger.debug2(u"Got thread lock")
+				logger.debug2(u"Connection pool status: {0}", self._pool.status())
 				conn = self._pool.connect()
 				conn.autocommit(False)
 				cursor = conn.cursor(cursorType)
-				myConnectionSuccess = True
-
-			except Exception as e:
-				logger.debug(u"Execute error: %s" % e)
-				if e.args[0] == 2006:
-					# 2006: 'MySQL server has gone away'
-					myConnectionSuccess = False
-					if myRetryConnectionCounter >= myMaxRetryConnection:
-						logger.error(u'MySQL server has gone away (Code 2006) - giving up after %d retries' % myRetryConnectionCounter)
-						raise
-					else:
-						logger.notice(u'MySQL server has gone away (Code 2006) - restarting Connection: retry %s' % myRetryConnectionCounter)
-						myRetryConnectionCounter = myRetryConnectionCounter + 1
-						self._transactionLock.release()
-						logger.debug(u"Thread lock released")
-						time.sleep(0.1)
-				else:
-					logger.error(u'Unknown DB Error: %s' % str(e))
+				break
+			except Exception as connectionError:
+				logger.debug(u"MySQL connection error: {0!r}", connectionError)
+				errorCode = connectionError.args[0]
+				if errorCode == MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
+					logger.notice(u'MySQL server has gone away (Code {1}) - restarting connection: retry #{0}', retryCount, errorCode)
 					self._transactionLock.release()
+					logger.debug2(u"Thread lock released")
+					time.sleep(0.1)
+				else:
+					logger.error(u'Unexpected database error: {0}', connectionError)
+					self._transactionLock.release()
+					logger.debug2(u"Thread lock released")
 					raise
+		else:
+			raise BackendUnableToConnectError(u"Unable to connnect to mysql server. Giving up after {0} retries!".format(retryLimit))
+
 		return (conn, cursor)
 
 	def close(self, conn, cursor):
@@ -239,8 +252,7 @@ class MySQL(SQL):
 				self.execute(query, conn, cursor)
 			except Exception as e:
 				logger.debug(u"Execute error: %s" % e)
-				if e[0] != 2006:
-					# 2006: MySQL server has gone away
+				if e[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
 					raise
 
 				self._createConnectionPool()
@@ -264,8 +276,7 @@ class MySQL(SQL):
 				self.execute(query, conn, cursor)
 			except Exception as e:
 				logger.debug(u"Execute error: %s" % e)
-				if e[0] != 2006:
-					# 2006: MySQL server has gone away
+				if e[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
 					raise
 				self._createConnectionPool()
 				(conn, cursor) = self.connect(cursorType=MySQLdb.cursors.Cursor)
@@ -294,8 +305,7 @@ class MySQL(SQL):
 				self.execute(query, conn, cursor)
 			except Exception as e:
 				logger.debug(u"Execute error: {0!r}", e)
-				if e[0] != 2006:
-					# 2006: MySQL server has gone away
+				if e[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
 					raise
 				self._createConnectionPool()
 				(conn, cursor) = self.connect()
@@ -344,8 +354,7 @@ class MySQL(SQL):
 				self.execute(query, conn, cursor)
 			except Exception as e:
 				logger.debug(u"Execute error: {0!r}", e)
-				if e[0] != 2006:
-					# 2006: MySQL server has gone away
+				if e[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
 					raise
 				self._createConnectionPool()
 				(conn, cursor) = self.connect()
@@ -389,8 +398,7 @@ class MySQL(SQL):
 				self.execute(query, conn, cursor)
 			except Exception as e:
 				logger.debug(u"Execute error: {0!r}", e)
-				if e[0] != 2006:
-					# 2006: MySQL server has gone away
+				if e[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
 					raise
 				self._createConnectionPool()
 				(conn, cursor) = self.connect()
@@ -416,8 +424,7 @@ class MySQL(SQL):
 				self.execute(query, conn, cursor)
 			except Exception as e:
 				logger.debug(u"Execute error: {0}", e)
-				if e[0] != 2006:
-					# 2006: MySQL server has gone away
+				if e[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
 					raise
 
 				self._createConnectionPool()
@@ -691,8 +698,7 @@ class MySQLBackend(SQLBackend):
 						myTransactionSuccess = True
 					except Exception as e:
 						logger.debug(u"Execute error: %s" % e)
-						if e.args[0] == 1213:
-							# 1213: 'Deadlock found when trying to get lock; try restarting transaction'
+						if e.args[0] == DEADLOCK_FOUND_WHEN_TRYING_TO_GET_LOCK_ERROR_CODE:
 							# 1213: May be table locked because of concurrent access - retrying
 							myTransactionSuccess = False
 							if myRetryTransactionCounter >= myMaxRetryTransaction:

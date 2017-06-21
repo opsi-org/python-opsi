@@ -145,7 +145,7 @@ class BackendACLFile(ConfigFile):
 		for line in ConfigFile.parse(self):
 			match = re.search(self.aclEntryRegex, line)
 			if not match:
-				raise Exception(u"Found bad formatted line '%s' in acl file '%s'" % (line, self._filename))
+				raise ValueError(u"Found bad formatted line '%s' in acl file '%s'" % (line, self._filename))
 			method = match.group(1).strip()
 			acl.append([method, []])
 			for entry in match.group(2).split(';'):
@@ -155,16 +155,16 @@ class BackendACLFile(ConfigFile):
 				if entry.find('(') != -1:
 					(aclType, aclTypeParams) = entry.split('(', 1)
 					if aclTypeParams[-1] != ')':
-						raise Exception(u"Bad formatted acl entry '%s': trailing ')' missing" % entry)
+						raise ValueError(u"Bad formatted acl entry '%s': trailing ')' missing" % entry)
 					aclType = aclType.strip()
 					aclTypeParams = aclTypeParams[:-1]
 
 				if aclType not in ('all', 'self', 'opsi_depotserver', 'opsi_client', 'sys_group', 'sys_user'):
-					raise Exception(u"Unhandled acl type: '%s'" % aclType)
+					raise ValueError(u"Unhandled acl type: '%s'" % aclType)
 				entry = {'type': aclType, 'allowAttributes': [], 'denyAttributes': [], 'ids': []}
 				if not aclTypeParams:
 					if aclType in ('sys_group', 'sys_user'):
-						raise Exception(u"Bad formatted acl type '%s': no params given" % aclType)
+						raise ValueError(u"Bad formatted acl type '%s': no params given" % aclType)
 				else:
 					aclTypeParam = u''
 					aclTypeParamValues = [u'']
@@ -172,11 +172,11 @@ class BackendACLFile(ConfigFile):
 					for i, c in enumerate(aclTypeParams):
 						if c == '(':
 							if inAclTypeParamValues:
-								raise Exception(u"Bad formatted acl type params '%s'" % aclTypeParams)
+								raise ValueError(u"Bad formatted acl type params '%s'" % aclTypeParams)
 							inAclTypeParamValues = True
 						elif c == ')':
 							if not inAclTypeParamValues or not aclTypeParam:
-								raise Exception(u"Bad formatted acl type params '%s'" % aclTypeParams)
+								raise ValueError(u"Bad formatted acl type params '%s'" % aclTypeParams)
 							inAclTypeParamValues = False
 						elif c != ',' or i == len(aclTypeParams) - 1:
 							if inAclTypeParamValues:
@@ -187,7 +187,7 @@ class BackendACLFile(ConfigFile):
 						if c == ',' or i == len(aclTypeParams) - 1:
 							if inAclTypeParamValues:
 								if i == len(aclTypeParams) - 1:
-									raise Exception(u"Bad formatted acl type params '%s'" % aclTypeParams)
+									raise ValueError(u"Bad formatted acl type params '%s'" % aclTypeParams)
 								aclTypeParamValues.append(u'')
 							else:
 								aclTypeParam = aclTypeParam.strip()
@@ -209,7 +209,7 @@ class BackendACLFile(ConfigFile):
 								elif aclType in ('sys_group', 'sys_user', 'opsi_depotserver', 'opsi_client'):
 									entry['ids'].append(aclTypeParam.strip())
 								else:
-									raise Exception(u"Unhandled acl type param '%s' for acl type '%s'" % (aclTypeParam, aclType))
+									raise ValueError(u"Unhandled acl type param '%s' for acl type '%s'" % (aclTypeParam, aclType))
 								aclTypeParam = u''
 								aclTypeParamValues = [u'']
 
@@ -434,7 +434,7 @@ class PackageControlFile(TextFile):
 			if match:
 				sectionType = match.group(1).strip().lower()
 				if sectionType not in ('package', 'product', 'windows', 'productdependency', 'productproperty', 'changelog'):
-					raise Exception(u"Parse error in line %s: unknown section '%s'" % (lineNum, sectionType))
+					raise ValueError(u"Parse error in line %s: unknown section '%s'" % (lineNum, sectionType))
 				if sectionType == 'changelog':
 					self._sections[sectionType] = u''
 				else:
@@ -445,7 +445,7 @@ class PackageControlFile(TextFile):
 				continue
 
 			elif not sectionType and line:
-				raise Exception(u"Parse error in line %s: not in a section" % lineNum)
+				raise ValueError(u"Parse error in line %s: not in a section" % lineNum)
 
 			if sectionType == 'changelog':
 				if self._sections[sectionType]:
@@ -556,7 +556,7 @@ class PackageControlFile(TextFile):
 				value = forceUnicode(line)
 
 			if not option:
-				raise Exception(u"Parse error in line '%s': no option / bad option defined" % lineNum)
+				raise ValueError(u"Parse error in line '%s': no option / bad option defined" % lineNum)
 
 			if option not in self._sections[sectionType][-1]:
 				self._sections[sectionType][-1][option] = value
@@ -579,7 +579,7 @@ class PackageControlFile(TextFile):
 					   (sectionType == 'windows' and option == 'softwareids'):
 						try:
 							if not value.strip().startswith(('{', '[')):
-								raise Exception(u'Not trying to read json string because value does not start with { or [')
+								raise ValueError(u'Not trying to read json string because value does not start with { or [')
 							value = fromJson(value.strip())
 							# Remove duplicates
 							# TODO: use set
@@ -613,7 +613,7 @@ class PackageControlFile(TextFile):
 					self._sections[sectionType][i][option] = value
 
 		if not self._sections.get('product'):
-			raise Exception(u"Error in control file '%s': 'product' section not found" % self._filename)
+			raise ValueError(u"Error in control file '%s': 'product' section not found" % self._filename)
 
 		# Get package info
 		for (option, value) in self._sections.get('package', [{}])[0].items():
@@ -621,7 +621,7 @@ class PackageControlFile(TextFile):
 				for dep in value:
 					match = re.search('^\s*([^\(]+)\s*\(*\s*([^\)]*)\s*\)*', dep)
 					if not match.group(1):
-						raise Exception(u"Bad package dependency '%s' in control file" % dep)
+						raise ValueError(u"Bad package dependency '%s' in control file" % dep)
 
 					package = match.group(1).strip()
 					version = match.group(2)
@@ -629,13 +629,13 @@ class PackageControlFile(TextFile):
 					if version:
 						match = re.search('^\s*([<>]?=?)\s*([\w\.]+-*[\w\.]*)\s*$', version)
 						if not match:
-							raise Exception(u"Bad version string '%s' in package dependency" % version)
+							raise ValueError(u"Bad version string '%s' in package dependency" % version)
 
 						condition = match.group(1)
 						if not condition:
 							condition = u'='
 						if condition not in (u'=', u'<', u'<=', u'>', u'>='):
-							raise Exception(u"Bad condition string '%s' in package dependency" % condition)
+							raise ValueError(u"Bad condition string '%s' in package dependency" % condition)
 						version = match.group(2)
 					else:
 						version = None
@@ -649,7 +649,7 @@ class PackageControlFile(TextFile):
 		elif product.get('type') == 'LocalbootProduct':
 			Class = LocalbootProduct
 		else:
-			raise Exception(u"Error in control file '%s': unknown product type '%s'" % (self._filename, product.get('type')))
+			raise ValueError(u"Error in control file '%s': unknown product type '%s'" % (self._filename, product.get('type')))
 
 		productVersion = product.get('version')
 		if not productVersion:
@@ -713,7 +713,7 @@ class PackageControlFile(TextFile):
 			elif productProperty.get('type', '').lower() in ('boolproductproperty', 'bool'):
 				Class = BoolProductProperty
 			else:
-				raise Exception(u"Error in control file '%s': unknown product property type '%s'" % (self._filename, productProperty.get('type')))
+				raise ValueError(u"Error in control file '%s': unknown product property type '%s'" % (self._filename, productProperty.get('type')))
 			self._productProperties.append(
 				Class(
 					productId=self._product.getId(),
@@ -789,7 +789,7 @@ class PackageControlFile(TextFile):
 
 	def generate(self):
 		if not self._product:
-			raise Exception(u"Got no data to write")
+			raise ValueError(u"Got no data to write")
 
 		logger.info(u"Writing opsi package control file '%s'" % self._filename)
 
@@ -814,7 +814,7 @@ class PackageControlFile(TextFile):
 		elif productType == 'NetbootProduct':
 			productType = 'netboot'
 		else:
-			raise Exception(u"Unhandled product type '%s'" % productType)
+			raise ValueError(u"Unhandled product type '%s'" % productType)
 
 		self._lines.append(u'type: %s' % productType)
 		self._lines.append(u'id: %s' % self._product.getId())
@@ -888,9 +888,9 @@ class PackageControlFile(TextFile):
 						for l in descLines[1:]:
 							self._lines.append(u' %s' % l)
 
-			if not isinstance(productProperty, BoolProductProperty) and productProperty.getPossibleValues():
+			if not isinstance(productProperty, BoolProductProperty) and productProperty.getPossibleValues() is not None:
 				self._lines.append(u'values: %s' % toJson(productProperty.getPossibleValues()))
-			if productProperty.getDefaultValues():
+			if productProperty.getDefaultValues() is not None:
 				if isinstance(productProperty, BoolProductProperty):
 					self._lines.append(u'default: %s' % productProperty.getDefaultValues()[0])
 				else:

@@ -36,6 +36,7 @@ from OPSI.Exceptions import (BackendError, OpsiError, OpsiProductOrderingError,
     BackendBadValueError, BackendMissingDataError, BackendAuthenticationError,
     BackendPermissionDeniedError, BackendTemporaryError,
     BackendUnaccomplishableError, BackendModuleDisabledError,
+    BackendUnableToConnectError,
     LicenseConfigurationError, LicenseMissingError, RepositoryError)
 
 

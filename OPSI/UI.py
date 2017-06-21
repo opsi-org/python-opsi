@@ -1,4 +1,3 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
 opsi python library - UI
@@ -6,7 +5,7 @@ opsi python library - UI
 This module is part of the desktop management solution opsi
 (open pc server integration) http://www.opsi.org
 
-Copyright (C) 2010-2016 uib GmbH
+Copyright (C) 2010-2017 uib GmbH
 
 http://www.uib.de/
 
@@ -194,7 +193,7 @@ class SnackUI(UI):
 		self._screen = SnackScreen()
 		if (self._screen.width < 40) or (self._screen.height < 24):
 			self.exit()
-			raise Exception(u'Display to small (at least 24 lines by 40 columns needed)')
+			raise RuntimeError(u'Display to small (at least 24 lines by 40 columns needed)')
 		self.messageBox = None
 		self._screen.pushHelpLine(u"")
 

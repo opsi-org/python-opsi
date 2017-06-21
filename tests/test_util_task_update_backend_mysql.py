@@ -28,9 +28,11 @@ import os
 
 from contextlib import contextmanager
 
-from OPSI.Backend.MySQL import MySQL
-from OPSI.Util.Task.UpdateBackend.MySQL import (disableForeignKeyChecks,
-    getTableColumns, updateMySQLBackend)
+from OPSI.Backend.MySQL import MySQL, MySQLBackend
+from OPSI.Backend.SQL import DATABASE_SCHEMA_VERSION, createSchemaVersionTable
+from OPSI.Util.Task.UpdateBackend.MySQL import (DatabaseMigrationUnfinishedError,
+    disableForeignKeyChecks, getTableColumns, readSchemaVersion,
+    updateMySQLBackend, updateSchemaVersion)
 from OPSI.Util.Task.ConfigureBackend import updateConfigFile
 
 from .Backends.MySQL import MySQLconfiguration
@@ -40,19 +42,28 @@ import pytest
 
 @contextmanager
 def cleanDatabase(database):
-    def cleanDatabase():
+    def dropAllTables():
         with disableForeignKeyChecks(database):
+            tablesToDropAgain = set()
             for tableName in getTableNames(database):
                 try:
                     database.execute(u'DROP TABLE `{0}`;'.format(tableName))
                 except Exception as error:
                     print("Failed to drop {0}: {1}".format(tableName, error))
+                    tablesToDropAgain.add(tableName)
 
-    cleanDatabase()
+            for tableName in tablesToDropAgain:
+                try:
+                    database.execute(u'DROP TABLE `{0}`;'.format(tableName))
+                except Exception as error:
+                    print("Failed to drop {0} a second time: {1}".format(tableName, error))
+                    raise error
+
+    dropAllTables()
     try:
         yield database
     finally:
-        cleanDatabase()
+        dropAllTables()
 
 
 @pytest.fixture
@@ -250,3 +261,104 @@ def assertColumnIsVarchar(database, tableName, columnName, length):
             break
     else:
         raise ValueError("Missing column '{1}' in table {0!r}".format(tableName, columnName))
+
+
+def testInsertingSchemaNumber(mysqlBackendConfig, mySQLBackendConfigFile):
+    with cleanDatabase(MySQL(**mysqlBackendConfig)) as db:
+        createRequiredTables(db)
+
+        updateMySQLBackend(backendConfigFile=mySQLBackendConfigFile)
+
+        assert 'OPSI_SCHEMA' in getTableNames(db)
+
+        for column in getTableColumns(db, 'OPSI_SCHEMA'):
+            name = column.name
+            if name == 'version':
+                assert column.type.lower().startswith('int')
+            elif name == 'updateStarted':
+                assert column.type.lower().startswith('timestamp')
+            elif name == 'updateEnded':
+                assert column.type.lower().startswith('timestamp')
+            else:
+                raise Exception("Unexpected column!")
+
+
+def testReadingSchemaVersionIfTableIsMissing(mysqlBackendConfig, mySQLBackendConfigFile):
+    with cleanDatabase(MySQL(**mysqlBackendConfig)) as db:
+        assert readSchemaVersion(db) is None
+
+
+def testReadingSchemaVersionFromEmptyTable(mysqlBackendConfig, mySQLBackendConfigFile):
+    with cleanDatabase(MySQL(**mysqlBackendConfig)) as db:
+        createSchemaVersionTable(db)
+
+        assert readSchemaVersion(db) is None
+
+
+def testUpdatingSchemaVersion(mysqlBackendConfig, mySQLBackendConfigFile):
+    with cleanDatabase(MySQL(**mysqlBackendConfig)) as db:
+        createSchemaVersionTable(db)
+
+        version = readSchemaVersion(db)
+        assert version is None
+
+        with updateSchemaVersion(db, version=2):
+            pass  # NOOP
+
+        version = readSchemaVersion(db)
+        assert version == 2
+
+
+def testReadingSchemaVersionOnlyReturnsNewestValue(mysqlBackendConfig, mySQLBackendConfigFile):
+    with cleanDatabase(MySQL(**mysqlBackendConfig)) as db:
+        createSchemaVersionTable(db)
+
+        with updateSchemaVersion(db, version=1):
+            pass
+
+        with updateSchemaVersion(db, version=15):
+            pass
+
+        for number in range(1, 4):
+            with updateSchemaVersion(db, version=number * 2):
+                pass
+
+        with updateSchemaVersion(db, version=3):
+            pass
+
+        assert readSchemaVersion(db) == 15
+
+
+def testReadingSchemaVersionFailsOnUnfinishedUpdate(mysqlBackendConfig, mySQLBackendConfigFile):
+    with cleanDatabase(MySQL(**mysqlBackendConfig)) as db:
+        createSchemaVersionTable(db)
+
+        try:
+            with updateSchemaVersion(db, version=1):
+                raise RuntimeError("For testing.")
+        except RuntimeError:
+            pass
+
+        with pytest.raises(DatabaseMigrationUnfinishedError):
+            readSchemaVersion(db)
+
+
+def testUpdatingCurrentBackendDoesBreakNothing(mysqlBackendConfig, mySQLBackendConfigFile):
+    with cleanDatabase(MySQL(**mysqlBackendConfig)):
+        with MySQLBackend(**mysqlBackendConfig) as freshBackend:
+            freshBackend.backend_createBase()
+
+        updateMySQLBackend(backendConfigFile=mySQLBackendConfigFile)
+        # Updating again. Should break nothing.
+        updateMySQLBackend(backendConfigFile=mySQLBackendConfigFile)
+
+        with MySQLBackend(**mysqlBackendConfig) as anotherBackend:
+            # We want to have the latest schema version
+            assert DATABASE_SCHEMA_VERSION == readSchemaVersion(anotherBackend._sql)
+
+
+def testCreatingBackendSetsTheLatestSchemaVersion(mysqlBackendConfig, mySQLBackendConfigFile):
+    with cleanDatabase(MySQL(**mysqlBackendConfig)) as db:
+        with MySQLBackend(**mysqlBackendConfig) as freshBackend:
+            freshBackend.backend_createBase()
+            assert readSchemaVersion(db) == DATABASE_SCHEMA_VERSION
