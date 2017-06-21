@@ -138,8 +138,7 @@ def decodeIdent(klass, hash):
 
 			args = mandatoryConstructorArgs(klass)
 			assert len(identValues) == len(args), "ident has unexpected length."
-			ident = dict(zip(args, identValues))
-			hash.update(ident)
+			hash.update({k: v for k, v in zip(args, identValues)})
 
 	return hash
 
