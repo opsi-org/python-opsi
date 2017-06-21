@@ -98,7 +98,7 @@ class ProductPackageFile(object):
 		return os.path.join(self.clientDataDir, productId)
 
 	def uninstall(self):
-		logger.notice(u"Uninstalling package")
+		logger.info(u"Uninstalling package")
 		self.deleteProductClientDataDir()
 		logger.debug(u"Finished uninstalling package")
 
@@ -139,8 +139,10 @@ class ProductPackageFile(object):
 		self.cleanup()
 
 	def unpackSource(self, destinationDir=u'.', newProductId=None, progressSubject=None):
-		logger.notice(u"Extracting package source from '%s'" % self.packageFile)
-		if progressSubject: progressSubject.setMessage(_(u"Extracting package source from '%s'") % self.packageFile)
+		logger.info(u"Extracting package source from '%s'" % self.packageFile)
+		if progressSubject:
+			progressSubject.setMessage(_(u"Extracting package source from '%s'") % self.packageFile)
+
 		try:
 			destinationDir = forceFilename(destinationDir)
 			if newProductId:
@@ -202,7 +204,9 @@ class ProductPackageFile(object):
 		if self.packageControlFile:
 			# Already done
 			return
-		logger.notice(u"Getting meta data from package '%s'" % self.packageFile)
+
+		logger.info(u"Getting meta data from package '%s'" % self.packageFile)
+
 		try:
 			if not os.path.exists(self.tmpUnpackDir):
 				os.mkdir(self.tmpUnpackDir)
@@ -248,7 +252,8 @@ class ProductPackageFile(object):
 		return self.packageControlFile
 
 	def extractData(self):
-		logger.notice(u"Extracting data from package '%s'" % self.packageFile)
+		logger.info(u"Extracting data from package '%s'" % self.packageFile)
+
 		try:
 			if not self.packageControlFile:
 				raise ValueError(u"Metadata not present")
@@ -324,7 +329,8 @@ class ProductPackageFile(object):
 		return self.clientDataFiles
 
 	def setAccessRights(self):
-		logger.notice(u"Setting access rights of client-data files")
+		logger.info(u"Setting access rights of client-data files")
+
 		if os.name != 'posix':
 			raise NotImplementedError(u"setAccessRights not implemented on windows")
 
@@ -380,7 +386,8 @@ class ProductPackageFile(object):
 			raise RuntimeError(u"Failed to set access rights of client-data files of package '%s': %s" % (self.packageFile, e))
 
 	def createPackageContentFile(self):
-		logger.notice(u"Creating package content file")
+		logger.info(u"Creating package content file")
+
 		try:
 			if not self.packageControlFile:
 				raise ValueError(u"Metadata not present")
@@ -415,7 +422,8 @@ class ProductPackageFile(object):
 			raise RuntimeError(u"Failed to create package content file of package '%s': %s" % (self.packageFile, e))
 
 	def _runPackageScript(self, scriptName, env={}):
-		logger.notice(u"Running package script '%s'" % scriptName)
+		logger.info(u"Running package script '%s'" % scriptName)
+
 		try:
 			if not self.packageControlFile:
 				raise ValueError(u"Metadata not present")
