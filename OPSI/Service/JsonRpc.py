@@ -37,9 +37,10 @@ import sys
 import time
 import traceback
 
-from OPSI.Util import deserialize
+from OPSI.Exceptions import OpsiBadRpcError, OpsiRpcError
 from OPSI.Logger import Logger, LOG_INFO
-from OPSI.Types import forceUnicode, OpsiBadRpcError, OpsiRpcError
+from OPSI.Types import forceUnicode
+from OPSI.Util import deserialize
 
 
 logger = Logger()

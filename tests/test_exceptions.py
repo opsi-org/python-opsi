@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
@@ -29,7 +28,7 @@ import time
 
 import pytest
 
-from OPSI.Types import (BackendError, OpsiError, OpsiProductOrderingError,
+from OPSI.Exceptions import (BackendError, OpsiError, OpsiProductOrderingError,
     OpsiBackupFileError, OpsiBackupFileNotFound, OpsiBackupBackendNotFound,
     OpsiAuthenticationError, OpsiServiceVerificationError, OpsiBadRpcError,
     OpsiRpcError, OpsiConnectionError, OpsiTimeoutError, OpsiVersionError,

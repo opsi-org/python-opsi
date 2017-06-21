@@ -31,7 +31,7 @@ As an example this contains classes for hosts, products, configurations.
 import inspect
 
 from OPSI.Logger import Logger
-from OPSI.Types import BackendBadValueError, BackendConfigurationError
+from OPSI.Exceptions import BackendBadValueError, BackendConfigurationError
 from OPSI.Types import (forceActionProgress, forceActionRequest,
 	forceActionResult, forceArchitecture, forceAuditState, forceBool,
 	forceBoolList, forceConfigId, forceDict,

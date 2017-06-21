@@ -31,7 +31,8 @@ Sessions do timeout after a specified time.
 import time
 import threading
 
-from OPSI.Types import OpsiAuthenticationError, forceInt, forceUnicode
+from OPSI.Exceptions import OpsiAuthenticationError
+from OPSI.Types import forceInt, forceUnicode
 from OPSI.Logger import Logger
 from OPSI.Util import randomString
 

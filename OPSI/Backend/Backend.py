@@ -48,7 +48,7 @@ from twisted.conch.ssh import keys
 
 from OPSI import __version__ as LIBRARY_VERSION
 from OPSI.Logger import Logger
-from OPSI.Types import BackendError, BackendBadValueError
+from OPSI.Exceptions import *  # this is needed for dynamic loading
 from OPSI.Types import *  # this is needed for dynamic loading
 from OPSI.Object import *  # this is needed for dynamic loading
 from OPSI.Util import (blowfishEncrypt, blowfishDecrypt, compareVersions,

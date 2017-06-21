@@ -39,9 +39,9 @@ import threading
 import time
 from itertools import islice
 
+from OPSI.Exceptions import BackendBadValueError, BackendMissingDataError
 from OPSI.Logger import Logger
-from OPSI.Types import (BackendBadValueError, BackendMissingDataError,
-	forceArchitecture, forceBool, forceDict,
+from OPSI.Types import (forceArchitecture, forceBool, forceDict,
 	forceEmailAddress, forceFilename, forceHardwareAddress,
 	forceHardwareDeviceId, forceHardwareVendorId, forceHostname, forceInt,
 	forceIPAddress, forceList, forceOct, forceProductId, forceTime,

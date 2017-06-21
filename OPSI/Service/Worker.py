@@ -39,9 +39,9 @@ from twisted.python import failure
 
 from OPSI.web2 import responsecode, http_headers, http, stream
 
+from OPSI.Exceptions import OpsiAuthenticationError, OpsiBadRpcError
 from OPSI.Logger import Logger, LOG_ERROR, LOG_INFO
-from OPSI.Types import (forceUnicode, forceList, OpsiBadRpcError,
-						OpsiAuthenticationError)
+from OPSI.Types import forceUnicode, forceList
 from OPSI.Util import objectToHtml, toJson, fromJson, serialize
 from OPSI.Util.HTTP import deflateEncode, deflateDecode, gzipEncode, gzipDecode
 from OPSI.Service.JsonRpc import JsonRpc

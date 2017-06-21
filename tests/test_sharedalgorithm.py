@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -26,9 +25,9 @@ Testing OPSI.SharedAlgorithm
 
 from __future__ import absolute_import, print_function
 
-from OPSI.Object import LocalbootProduct, ProductDependency
 from OPSI import SharedAlgorithm
-from OPSI.Types import OpsiProductOrderingError
+from OPSI.Exceptions import OpsiProductOrderingError
+from OPSI.Object import LocalbootProduct, ProductDependency
 from OPSI.Types import forceUnicode
 
 import pytest

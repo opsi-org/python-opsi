@@ -29,8 +29,8 @@ import pytest
 import shutil
 from contextlib import closing, contextmanager
 
+from OPSI.Exceptions import OpsiBackupBackendNotFound
 from OPSI.System import which
-from OPSI.Types import OpsiBackupBackendNotFound
 from OPSI.Util.File.Opsi import OpsiBackupFileError, OpsiBackupArchive
 from OPSI.Util import md5sum, randomString
 

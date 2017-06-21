@@ -27,7 +27,7 @@ from __future__ import absolute_import
 import os
 
 import OPSI.Backend.Backend
-from OPSI.Types import BackendBadValueError
+from OPSI.Exceptions import BackendBadValueError
 
 from .helpers import mock
 

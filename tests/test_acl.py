@@ -26,8 +26,9 @@ from __future__ import absolute_import
 
 import os
 
-import OPSI.Types
 import OPSI.Object
+from OPSI.Exceptions import BackendPermissionDeniedError
+from OPSI.Types import forceHostId
 from OPSI.Util import getfqdn
 from OPSI.Util.File.Opsi import BackendACLFile
 from OPSI.Backend.BackendManager import BackendAccessControl
@@ -84,7 +85,7 @@ def testAllowingMethodsForSpecificClient(extendedConfigDataBackend):
 
     backendAccessControl.host_getObjects()
 
-    with pytest.raises(OPSI.Types.BackendPermissionDeniedError):
+    with pytest.raises(BackendPermissionDeniedError):
         backendAccessControl.config_getObjects()
 
 
@@ -172,7 +173,7 @@ def testDenyingAccessToOtherObjects(extendedConfigDataBackend):
     """
     backend = extendedConfigDataBackend
 
-    serverFqdn = OPSI.Types.forceHostId(getfqdn())  # using local FQDN
+    serverFqdn = forceHostId(getfqdn())  # using local FQDN
     depotserver1 = {
         "isMasterDepot": True,
         "type": "OpsiConfigserver",
@@ -247,9 +248,9 @@ def testGettingFullAccess(extendedConfigDataBackend):
                 ['.*',
                     [
                         {'type': u'opsi_depotserver', 'ids': [], 'denyAttributes': [], 'allowAttributes': []}
+                    ]
                 ]
             ]
-        ]
     )
 
     hosts = backend.host_getObjects()
@@ -276,9 +277,9 @@ def testOnlyAccessingSelfIsPossible(extendedConfigDataBackend):
                 ['.*',
                     [
                         {'type': u'self', 'ids': [], 'denyAttributes': [], 'allowAttributes': []}
+                    ]
                 ]
             ]
-        ]
     )
 
     hosts = backend.host_getObjects()
@@ -300,9 +301,9 @@ def testDenyingAccessToSpecifiedAttributes(extendedConfigDataBackend):
                 ['.*',
                     [
                         {'type': u'opsi_depotserver', 'ids': [], 'denyAttributes': denyAttributes, 'allowAttributes': []}
+                    ]
                 ]
             ]
-        ]
     )
 
     hosts = backend.host_getObjects()
@@ -329,9 +330,9 @@ def testGettingAccessAndOnlyAllowingSomeAttributes(extendedConfigDataBackend):
                 ['.*',
                     [
                         {'type': u'opsi_depotserver', 'ids': [], 'denyAttributes': [], 'allowAttributes': allowAttributes}
+                    ]
                 ]
             ]
-        ]
     )
 
     hosts = backend.host_getObjects()
@@ -359,9 +360,9 @@ def testGettingAccessButDenyingAttributesOnSelf(extendedConfigDataBackend):
                     [
                         {'type': u'opsi_depotserver', 'ids': [], 'denyAttributes': denyAttributes, 'allowAttributes': []},
                         {'type': u'self', 'ids': [], 'denyAttributes': [], 'allowAttributes': []}
+                    ]
                 ]
             ]
-        ]
     )
 
     hosts = backend.host_getObjects()
@@ -398,9 +399,9 @@ def testAccessingSelfProductOnClients(extendedConfigDataBackend):
                 ['.*',
                     [
                         {'type': u'self', 'ids': [], 'denyAttributes': [], 'allowAttributes': []}
+                    ]
                 ]
             ]
-        ]
     )
 
     productOnClients = backend.productOnClient_getObjects()
