@@ -34,7 +34,7 @@ from collections import defaultdict
 from contextlib import contextmanager
 from itertools import combinations_with_replacement
 
-from OPSI.Object import LocalbootProduct, OpsiClient
+from OPSI.Object import ConfigState, LocalbootProduct, OpsiClient
 from OPSI.Util import (blowfishDecrypt, blowfishEncrypt, chunk, compareVersions,
 	decryptWithPrivateKeyFromPEMFile,
 	encryptWithPublicKeyFromX509CertificatePEMFile, findFiles, formatFileSize,
@@ -938,3 +938,36 @@ def testObjectToBashOutput():
 
 	assert expected == result
 	assert result['RESULT1'] == result['RESULT2']
+
+
+def testObjectToBashOnConfigStates():
+	states = [
+		ConfigState(
+			configId=u'foo.bar.baz',
+			objectId=u'client1.invalid.test',
+			values=[u'']
+		),
+		ConfigState(
+			configId=u'drive.slow',
+			objectId=u'client2.invalid.test',
+			values=[False])
+	]
+
+	result = objectToBash(states)
+
+	print(result)
+
+	# Why 2?
+	# One for the general index.
+	# Another one for the values of drive.slow.
+	expectedLength = len(states) + 2
+
+	assert len(result) == expectedLength
+
+	for value in result.values():
+		assert isinstance(value, (str, unicode))
+
+	for index in range(1, len(states) + 1):  # exclude ref to values of drive.slow
+		resultVar = 'RESULT{0}'.format(index)
+		assert resultVar in result
+		assert resultVar in result['RESULT']
