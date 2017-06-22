@@ -335,7 +335,7 @@ def objectToBash(obj, bashVars=None, level=0):
 			if isinstance(value, (dict, list)):
 				level += 1
 				objectToBash(value, bashVars, level)
-				append(u'${RESULT%d[*]}')
+				append(u'${RESULT%d[*]}' % level)
 			else:
 				objectToBash(value, bashVars, level)
 			append(u'\n')
