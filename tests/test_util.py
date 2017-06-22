@@ -908,6 +908,9 @@ def testObjectToBashWorksWithGenerators(objectCount):
 		assert resultVar in result
 		assert resultVar in result['RESULT']
 
+	for value in result.values():
+		assert isinstance(value, (str, unicode))
+
 
 def testObjectToBashOutput():
 	product = LocalbootProduct(
