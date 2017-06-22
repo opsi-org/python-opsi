@@ -1,3 +1,11 @@
+python-opsi (4.1.1.8-1) testing; urgency=medium
+
+  * Fix a bug in OPSI.Util.objectToBash leading to an AttributeError.
+  * Fix a bug in OPSI.Util.objectToBash where the reference to an result
+    was incomplete.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 22 Jun 2017 16:06:21 +0200
+
 python-opsi (4.1.1.7-1) testing; urgency=medium
 
   * Exceptions have been moved from OPSI.Types to OPSI.Exceptions.
