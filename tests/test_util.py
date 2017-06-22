@@ -958,8 +958,6 @@ def testObjectToBashOnConfigStates():
 
 	result = objectToBash(states)
 
-	print(result)
-
 	# Why 2?
 	# One for the general index.
 	# Another one for the values of drive.slow.
