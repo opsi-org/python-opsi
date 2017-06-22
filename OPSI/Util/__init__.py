@@ -303,19 +303,20 @@ def objectToBash(obj, bashVars=None, level=0):
 	if level == 0:
 		obj = serialize(obj)
 		varName = 'RESULT'
+		compress = True
 	else:
 		varName = 'RESULT%d' % level
-
-	if varName not in bashVars:
-		firstAccess = True
-		bashVars[varName] = []
-	else:
-		firstAccess = False
+		compress = False
 
 	if hasattr(obj, 'serialize'):
 		obj = obj.serialize()
 
-	append = bashVars[varName].append
+	try:
+		append = bashVars[varName].append
+	except KeyError:
+		emptyList = []
+		bashVars[varName] = emptyList
+		append = emptyList.append
 
 	if isinstance(obj, (list, set)):
 		append(u'(\n')
@@ -335,7 +336,7 @@ def objectToBash(obj, bashVars=None, level=0):
 			if isinstance(value, (dict, list)):
 				level += 1
 				objectToBash(value, bashVars, level)
-				append(u'${RESULT%d[*]}')
+				append(u'${RESULT%d[*]}' % level)
 			else:
 				objectToBash(value, bashVars, level)
 			append(u'\n')
@@ -345,8 +346,9 @@ def objectToBash(obj, bashVars=None, level=0):
 	else:
 		append(u'"%s"' % forceUnicode(obj))
 
-	if firstAccess:
-		bashVars[varName] = u''.join(bashVars[varName])
+	if compress:
+		for key, value in bashVars.items():
+			bashVars[key] = u''.join(value)
 
 	return bashVars
 
