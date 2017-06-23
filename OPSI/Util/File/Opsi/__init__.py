@@ -1048,7 +1048,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 		tarfile.TarFile.__init__(self, name, self.mode, fileobj=fileobj, **kwargs)
 
 		if self.mode.startswith("w"):
-			if self.sysinfo is None:
+			if not self.sysinfo:
 				self.sysinfo = self._probeSysInfo()
 		else:
 			self.sysinfo = self._readSysInfo()
