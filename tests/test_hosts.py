@@ -159,34 +159,35 @@ def test_getHostsHostOnBackend(extendedConfigDataBackend):
 
 
 def test_verifyHosts(extendedConfigDataBackend):
+
+    def nullifyUncomparableValues(hostDict):
+        keys = (
+            'lastSeen', 'created', 'inventoryNumber', 'notes', 'opsiHostKey',
+            'isMasterDepot'
+        )
+        for key in keys:
+            hostDict[key] = None
+
     clients = getClients()
+    hostsOriginal = {client.id: client for client in clients}
     configServer = getConfigServer()
+    hostsOriginal.update({configServer.id: configServer})
     depots = getDepotServers()
-    hostsOriginal = list(clients) + [configServer] + list(depots)
-    extendedConfigDataBackend.host_createObjects(hostsOriginal)
+    hostsOriginal.update({depot.id: depot for depot in depots})
+    extendedConfigDataBackend.host_createObjects(hostsOriginal.values())
 
     hosts = extendedConfigDataBackend.host_getObjects()
     assert hosts
     for host in hosts:
         assert host.getOpsiHostKey() is not None
 
-        for h in hostsOriginal:
-            if host.id == h.id:
-                h1 = h.toHash()
-                h2 = host.toHash()
-                h1['lastSeen'] = None
-                h2['lastSeen'] = None
-                h1['created'] = None
-                h2['created'] = None
-                h1['inventoryNumber'] = None
-                h2['inventoryNumber'] = None
-                h1['notes'] = None
-                h2['notes'] = None
-                h1['opsiHostKey'] = None
-                h2['opsiHostKey'] = None
-                h1['isMasterDepot'] = None
-                h2['isMasterDepot'] = None
-                assert h1 == h2
+        h = hostsOriginal[host.id]
+        h1 = h.toHash()
+        h2 = host.toHash()
+        nullifyUncomparableValues(h1)
+        nullifyUncomparableValues(h2)
+
+        assert h1 == h2
 
 
 def test_createDepotserverOnBackend(extendedConfigDataBackend):
