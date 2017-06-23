@@ -198,22 +198,21 @@ def getOpsiBackupArchive(name=None, mode=None, tempdir=None, keepArchive=False, 
                 dispatchConfig = fakeDispatchConfig(baseDir, dataBackend)
 
                 with mock.patch('OPSI.Util.File.Opsi.OpsiBackupArchive.DISPATCH_CONF', dispatchConfig):
-                    with mock.patch('OPSI.System.Posix.SysInfo.opsiVersion', '1.2.3'):
-                        archive = OpsiBackupArchive(name=name, mode=mode, tempdir=tempDir)
+                    archive = OpsiBackupArchive(name=name, mode=mode, tempdir=tempDir)
+                    try:
+                        yield archive
+                    finally:
                         try:
-                            yield archive
-                        finally:
-                            try:
-                                archive.close()
-                            except IOError:
-                                # Archive is probably already closed
-                                pass
+                            archive.close()
+                        except IOError:
+                            # Archive is probably already closed
+                            pass
 
-                            if not keepArchive:
-                                try:
-                                    os.remove(archive.name)
-                                except OSError:
-                                    pass
+                        if not keepArchive:
+                            try:
+                                os.remove(archive.name)
+                            except OSError:
+                                pass
 
 
 def fakeDHCPDBackendConfig(baseDir, backendDir):
