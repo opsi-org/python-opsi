@@ -1109,8 +1109,9 @@ class OpsiBackupArchive(tarfile.TarFile):
 		return os.path.join(self.tempdir, self._generateArchiveName(suffix=suffix))
 
 	def _generateArchiveName(self, suffix=None):
-		t = datetime.datetime.now()
-		name = "%s_%s_%s.tar" % (self.sysinfo['hostname'], self.sysinfo['opsiVersion'], str(t).replace(" ", "_").replace(":", "-"))
+		currentTime = datetime.datetime.now()
+		timestamp = str(currentTime).replace(" ", "_").replace(":", "-")
+		name = "{hostname}_{opsiVersion}_{timestamp}.tar".format(timestamp=timestamp, **self.sysinfo)
 		if suffix:
 			name += ".%s" % suffix
 		return name
