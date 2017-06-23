@@ -134,7 +134,7 @@ def getDepotServers():
         repositoryLocalUrl='file:///var/lib/opsi/repository',
         repositoryRemoteUrl='webdavs://depotserver2.test.invalid:4447/repository',
         description='Second depot',
-        notes='no notes here',
+        notes=None,  # no notes here
         hardwareAddress='00:01:09:07:11:aa',
         ipAddress='192.168.10.1',
         inventoryNumber='',
