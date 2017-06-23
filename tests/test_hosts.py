@@ -90,7 +90,7 @@ def getClients():
 def getConfigServer():
     serverId = socket.getfqdn()
     if serverId.count('.') < 2:
-        raise Exception(u"Failed to get fqdn: %s" % serverId)
+        raise RuntimeError(u"Failed to get fqdn: %s" % serverId)
 
     return OpsiConfigserver(
             id=serverId,
