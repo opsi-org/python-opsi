@@ -115,10 +115,10 @@ on to. Defaults to ``Logger.error``.
 		backend.backend_createBase()
 	except MySQLdb.OperationalError as exc:
 		if exc[0] == INVALID_DEFAULT_VALUE:
-				errorFunction(
-						u"It seems you have the MySQL strict mode enabled. Please read the opsi handbook.\n"
-						u"{error}".format(error=exc)
-				)
+			errorFunction(
+					u"It seems you have the MySQL strict mode enabled. Please read the opsi handbook.\n"
+					u"{error}".format(error=exc)
+			)
 
 		raise exc
 
