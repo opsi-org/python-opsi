@@ -34,6 +34,14 @@ from OPSI.Object import (HostGroup, ObjectToGroup, OpsiClient, OpsiConfigserver,
     OpsiDepotserver)
 
 
+def getLocalHostFqdn():
+    fqdn = socket.getfqdn()
+    if fqdn.count('.') < 2:
+        raise RuntimeError(u"Failed to get fqdn: %s" % fqdn)
+
+    return fqdn
+
+
 def getClients():
     client1 = OpsiClient(
         id='client1.test.invalid',
@@ -88,9 +96,7 @@ def getClients():
 
 
 def getConfigServer():
-    serverId = socket.getfqdn()
-    if serverId.count('.') < 2:
-        raise RuntimeError(u"Failed to get fqdn: %s" % serverId)
+    serverId = getLocalHostFqdn()
 
     return OpsiConfigserver(
             id=serverId,
