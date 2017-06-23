@@ -1899,7 +1899,7 @@ class Harddisk:
 				progressSubject.setState(100)
 			time.sleep(3)
 			if handle:
-				handle.close
+				handle.close()
 		except Exception as e:
 			for hook in hooks:
 				hook.error_Harddisk_fill(self, partition, infile, progressSubject, e)
