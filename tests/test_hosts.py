@@ -95,9 +95,8 @@ def getConfigServer():
     return OpsiConfigserver(
             id=serverId,
             opsiHostKey='71234545689056789012123678901234',
-            depotLocalUrl='file:///opt/pcbin/install',
-            depotRemoteUrl=u'smb://%s/opt_pcbin/install' % serverId.split(
-                '.')[0],
+            depotLocalUrl='file:///var/lib/opsi/depot',
+            depotRemoteUrl=u'smb://%s/opsi_depot' % serverId.split('.')[0],
             repositoryLocalUrl='file:///var/lib/opsi/repository',
             repositoryRemoteUrl=u'webdavs://%s:4447/repository' % serverId,
             description='The configserver',
@@ -114,8 +113,8 @@ def getDepotServers():
     depotserver1 = OpsiDepotserver(
         id='depotserver1.uib.local',
         opsiHostKey='19012334567845645678901232789012',
-        depotLocalUrl='file:///opt/pcbin/install',
-        depotRemoteUrl='smb://depotserver1.test.invalid/opt_pcbin/install',
+        depotLocalUrl='file:///var/lib/opsi/depot',
+        depotRemoteUrl='smb://depotserver1.test.invalid/opsi_depot',
         repositoryLocalUrl='file:///var/lib/opsi/repository',
         repositoryRemoteUrl='webdavs://depotserver1.test.invalid:4447/repository',
         description='A depot',
@@ -130,8 +129,8 @@ def getDepotServers():
     depotserver2 = OpsiDepotserver(
         id='depotserver2.test.invalid',
         opsiHostKey='93aa22f38a678c64ef678a012d2e82f2',
-        depotLocalUrl='file:///opt/pcbin/install',
-        depotRemoteUrl='smb://depotserver2.test.invalid/opt_pcbin',
+        depotLocalUrl='file:///var/lib/opsi/depot',
+        depotRemoteUrl='smb://depotserver2.test.invalid/opsi_depot',
         repositoryLocalUrl='file:///var/lib/opsi/repository',
         repositoryRemoteUrl='webdavs://depotserver2.test.invalid:4447/repository',
         description='Second depot',
