@@ -43,6 +43,7 @@ from hashlib import sha1
 from subprocess import Popen, PIPE, STDOUT
 
 import OPSI.System
+from OPSI import __version__ as LIBRARY_VERSION
 from OPSI.Exceptions import (BackendBadValueError, OpsiBackupBackendNotFound,
 	OpsiBackupFileError, OpsiBackupFileNotFound)
 from OPSI.Logger import Logger
@@ -1117,15 +1118,16 @@ class OpsiBackupArchive(tarfile.TarFile):
 	@staticmethod
 	def _probeSysInfo():
 		sysinfo = SysInfo()
-		sysInfoDict = {}
-		sysInfoDict["hostname"] = sysinfo.hostname
-		sysInfoDict["fqdn"] = sysinfo.fqdn
-		sysInfoDict["domainname"] = sysinfo.domainname
-		sysInfoDict["distribution"] = sysinfo.distribution
-		sysInfoDict["sysVersion"] = sysinfo.sysVersion
-		sysInfoDict["distributionId"] = sysinfo.distributionId
-		sysInfoDict["opsiVersion"] = sysinfo.opsiVersion
-		return sysInfoDict
+
+		return {
+			"hostname": sysinfo.hostname,
+			"fqdn": sysinfo.fqdn,
+			"domainname": sysinfo.domainname,
+			"distribution": sysinfo.distribution,
+			"sysVersion": sysinfo.sysVersion,
+			"distributionId": sysinfo.distributionId,
+			"opsiVersion": LIBRARY_VERSION
+		}
 
 	def _readSysInfo(self):
 		sysInfo = {}
