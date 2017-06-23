@@ -99,20 +99,20 @@ def getConfigServer():
     serverId = getLocalHostFqdn()
 
     return OpsiConfigserver(
-            id=serverId,
-            opsiHostKey='71234545689056789012123678901234',
-            depotLocalUrl='file:///var/lib/opsi/depot',
-            depotRemoteUrl=u'smb://%s/opsi_depot' % serverId.split('.')[0],
-            repositoryLocalUrl='file:///var/lib/opsi/repository',
-            repositoryRemoteUrl=u'webdavs://%s:4447/repository' % serverId,
-            description='The configserver',
-            notes='Config 1',
-            hardwareAddress=None,
-            ipAddress=None,
-            inventoryNumber='00000000001',
-            networkAddress='192.168.1.0/24',
-            maxBandwidth=10000
-        )
+        id=serverId,
+        opsiHostKey='71234545689056789012123678901234',
+        depotLocalUrl='file:///var/lib/opsi/depot',
+        depotRemoteUrl=u'smb://%s/opsi_depot' % serverId.split('.')[0],
+        repositoryLocalUrl='file:///var/lib/opsi/repository',
+        repositoryRemoteUrl=u'webdavs://%s:4447/repository' % serverId,
+        description='The configserver',
+        notes='Config 1',
+        hardwareAddress=None,
+        ipAddress=None,
+        inventoryNumber='00000000001',
+        networkAddress='192.168.1.0/24',
+        maxBandwidth=10000
+    )
 
 
 def getDepotServers():
