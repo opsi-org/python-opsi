@@ -58,7 +58,7 @@ __all__ = (
 	'SQLBackendObjectModificationTracker'
 )
 
-DATABASE_SCHEMA_VERSION = 2
+DATABASE_SCHEMA_VERSION = 3
 
 logger = Logger()
 
