@@ -1128,22 +1128,22 @@ class OpsiBackupArchive(tarfile.TarFile):
 		return sysInfoDict
 
 	def _readSysInfo(self):
-		map = {}
+		sysInfo = {}
 		with closing(self.extractfile("%s/sysinfo" % self.CONTROL_DIR)) as fp:
 			for line in fp.readlines():
 				key, value = line.split(":")
-				map[key.strip()] = value.strip()
+				sysInfo[key.strip()] = value.strip()
 
-		return map
+		return sysInfo
 
 	def _readChecksumFile(self):
-		map = {}
+		checksums = {}
 		with closing(self.extractfile("%s/checksums" % self.CONTROL_DIR)) as fp:
 			for line in fp.readlines():
 				key, value = line.split(" ", 1)
-				map[value.strip()] = key.strip()
+				checksums[value.strip()] = key.strip()
 
-		return map
+		return checksums
 
 	def _addContent(self, path, sub=()):
 		dest = path
