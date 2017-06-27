@@ -451,7 +451,8 @@ class NetworkPerformanceCounterWMI(threading.Thread):
 		try:
 			interface = self.interface
 			self._running = True
-			import pythoncom, wmi
+			import pythoncom
+			import wmi
 			pythoncom.CoInitialize()
 			self.wmi = wmi.WMI()
 			bestRatio = 0.0

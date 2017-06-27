@@ -86,10 +86,9 @@ python setup.py install --prefix=%{_prefix} --root=$RPM_BUILD_ROOT --record=INST
 %endif
 
 %if 0%{?rhel_version} || 0%{?centos_version}
-sed -i 's#/etc/dhcp3/dhcpd.conf#/etc/dhcp/dhcpd.conf#' $RPM_BUILD_ROOT/etc/opsi/backends/dhcpd.conf
-sed -i 's#dhcp3-server#dhcpd#' $RPM_BUILD_ROOT/etc/opsi/backends/dhcpd.conf
+sed -i 's#isc-dhcp-server#dhcpd#' $RPM_BUILD_ROOT/etc/opsi/backends/dhcpd.conf
 %else
-sed -i 's#/etc/dhcp3/dhcpd.conf#/etc/dhcpd.conf#;s#dhcp3-server#dhcpd#' $RPM_BUILD_ROOT/etc/opsi/backends/dhcpd.conf
+sed -i 's#/etc/dhcp/dhcpd.conf#/etc/dhcpd.conf#;s#isc-dhcp-server#dhcpd#' $RPM_BUILD_ROOT/etc/opsi/backends/dhcpd.conf
 %endif
 
 %if 0%{?suse_version} == 1110 || 0%{?suse_version} == 1315

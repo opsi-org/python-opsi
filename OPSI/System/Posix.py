@@ -45,7 +45,6 @@ import copy as pycopy
 from itertools import islice
 from signal import SIGKILL
 
-from OPSI.Exceptions import OpsiVersionError
 from OPSI.Logger import Logger, LOG_NONE
 from OPSI.Types import (forceDomain, forceInt, forceBool, forceUnicode,
 	forceFilename, forceHostname, forceHostId, forceNetmask, forceIpAddress,
@@ -1899,7 +1898,7 @@ class Harddisk:
 				progressSubject.setState(100)
 			time.sleep(3)
 			if handle:
-				handle.close
+				handle.close()
 		except Exception as e:
 			for hook in hooks:
 				hook.error_Harddisk_fill(self, partition, infile, progressSubject, e)
@@ -3039,16 +3038,6 @@ class SysInfo(object):
 	def subnet(self):
 		return u".".join(u"%d" % (int(self.ipAddress.split(u'.')[i]) & int(self.netmask.split(u'.')[i])) for i in range(len(self.ipAddress.split('.'))))
 
-	@property
-	def opsiVersion(self):
-		try:
-			with open("/etc/opsi/version") as versionFile:
-				version = versionFile.read()
-
-			return version.strip()
-		except Exception:
-			raise OpsiVersionError("Unable to determine opsi version")
-
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # -                                       HARDWARE INVENTORY                                          -
@@ -3958,4 +3947,4 @@ def setLocalSystemTime(timestring):
 		systemTime = 'date --set="%s-%s-%s %s:%s:%s.%s"' % (dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second, dt.microsecond)
 		subprocess.call([systemTime])
 	except Exception as error:
-			logger.error(u"Failed to set System Time: %s" % error)
+		logger.error(u"Failed to set System Time: %s" % error)
