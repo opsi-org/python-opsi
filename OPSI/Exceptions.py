@@ -40,7 +40,7 @@ __all__ = (
 	'OpsiBackupFileError', 'OpsiBackupFileNotFound', 'OpsiBadRpcError',
 	'OpsiConnectionError', 'OpsiError', 'OpsiProductOrderingError',
 	'OpsiRpcError', 'OpsiServiceVerificationError', 'OpsiTimeoutError',
-	'OpsiVersionError', 'RepositoryError',
+	'RepositoryError',
 )
 
 
@@ -147,10 +147,6 @@ class OpsiProductOrderingError(OpsiError):
 				return u"{0}: {1}".format(self.ExceptionShortDescription, self._message)
 		else:
 			return forceUnicode(self.ExceptionShortDescription)
-
-
-class OpsiVersionError(OpsiError):
-	ExceptionShortDescription = u"Opsi version error"
 
 
 class BackendError(OpsiError):

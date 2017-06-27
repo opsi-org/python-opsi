@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -66,13 +66,12 @@ def testGettingArchive():
     fakeBackendDir = os.path.join(os.path.dirname(__file__), '..', 'data', 'backends')
     fakeBackendDir = os.path.normpath(fakeBackendDir)
 
-    with mock.patch('OPSI.System.Posix.SysInfo.opsiVersion', '1.2.3'):
-        with mock.patch('OPSI.Util.Task.Backup.OpsiBackupArchive.BACKEND_CONF_DIR', fakeBackendDir):
-            backup = OpsiBackup()
-            archive = backup._getArchive('r')
+    with mock.patch('OPSI.Util.Task.Backup.OpsiBackupArchive.BACKEND_CONF_DIR', fakeBackendDir):
+        backup = OpsiBackup()
+        archive = backup._getArchive('r')
 
-            assert os.path.exists(archive.name), "No archive created."
-            os.remove(archive.name)
+        assert os.path.exists(archive.name), "No archive created."
+        os.remove(archive.name)
 
 
 def testCreatingArchive():
@@ -98,16 +97,15 @@ def testCreatingArchive():
                 config['baseDir'] = configDir
                 updateConfigFile(configPath, config)
 
-            with mock.patch('OPSI.System.Posix.SysInfo.opsiVersion'):
-                with mock.patch('OPSI.Util.Task.Backup.OpsiBackupArchive.CONF_DIR', os.path.dirname(__file__)):
-                    with mock.patch('OPSI.Util.Task.Backup.OpsiBackupArchive.BACKEND_CONF_DIR', fakeBackendDir):
-                        backup = OpsiBackup()
-                        backup.create()
+            with mock.patch('OPSI.Util.Task.Backup.OpsiBackupArchive.CONF_DIR', os.path.dirname(__file__)):
+                with mock.patch('OPSI.Util.Task.Backup.OpsiBackupArchive.BACKEND_CONF_DIR', fakeBackendDir):
+                    backup = OpsiBackup()
+                    backup.create()
 
-                        dirListing = os.listdir(tempDir)
-                        try:
-                            dirListing.remove('.coverage')
-                        except ValueError:
-                            pass
+                    dirListing = os.listdir(tempDir)
+                    try:
+                        dirListing.remove('.coverage')
+                    except ValueError:
+                        pass
 
-                        assert len(dirListing) == 1
+                    assert len(dirListing) == 1

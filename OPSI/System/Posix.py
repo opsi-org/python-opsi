@@ -45,7 +45,6 @@ import copy as pycopy
 from itertools import islice
 from signal import SIGKILL
 
-from OPSI.Exceptions import OpsiVersionError
 from OPSI.Logger import Logger, LOG_NONE
 from OPSI.Types import (forceDomain, forceInt, forceBool, forceUnicode,
 	forceFilename, forceHostname, forceHostId, forceNetmask, forceIpAddress,
@@ -3038,16 +3037,6 @@ class SysInfo(object):
 	@property
 	def subnet(self):
 		return u".".join(u"%d" % (int(self.ipAddress.split(u'.')[i]) & int(self.netmask.split(u'.')[i])) for i in range(len(self.ipAddress.split('.'))))
-
-	@property
-	def opsiVersion(self):
-		try:
-			with open("/etc/opsi/version") as versionFile:
-				version = versionFile.read()
-
-			return version.strip()
-		except Exception:
-			raise OpsiVersionError("Unable to determine opsi version")
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

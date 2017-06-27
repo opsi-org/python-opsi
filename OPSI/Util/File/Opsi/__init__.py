@@ -43,6 +43,7 @@ from hashlib import sha1
 from subprocess import Popen, PIPE, STDOUT
 
 import OPSI.System
+from OPSI import __version__ as LIBRARY_VERSION
 from OPSI.Exceptions import (BackendBadValueError, OpsiBackupBackendNotFound,
 	OpsiBackupFileError, OpsiBackupFileNotFound)
 from OPSI.Logger import Logger
@@ -1047,7 +1048,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 		tarfile.TarFile.__init__(self, name, self.mode, fileobj=fileobj, **kwargs)
 
 		if self.mode.startswith("w"):
-			if self.sysinfo is None:
+			if not self.sysinfo:
 				self.sysinfo = self._probeSysInfo()
 		else:
 			self.sysinfo = self._readSysInfo()
@@ -1108,8 +1109,9 @@ class OpsiBackupArchive(tarfile.TarFile):
 		return os.path.join(self.tempdir, self._generateArchiveName(suffix=suffix))
 
 	def _generateArchiveName(self, suffix=None):
-		t = datetime.datetime.now()
-		name = "%s_%s_%s.tar" % (self.sysinfo['hostname'], self.sysinfo['opsiVersion'], str(t).replace(" ", "_").replace(":", "-"))
+		currentTime = datetime.datetime.now()
+		timestamp = str(currentTime).replace(" ", "_").replace(":", "-")
+		name = "{hostname}_{opsiVersion}_{timestamp}.tar".format(timestamp=timestamp, **self.sysinfo)
 		if suffix:
 			name += ".%s" % suffix
 		return name
@@ -1117,33 +1119,34 @@ class OpsiBackupArchive(tarfile.TarFile):
 	@staticmethod
 	def _probeSysInfo():
 		sysinfo = SysInfo()
-		sysInfoDict = {}
-		sysInfoDict["hostname"] = sysinfo.hostname
-		sysInfoDict["fqdn"] = sysinfo.fqdn
-		sysInfoDict["domainname"] = sysinfo.domainname
-		sysInfoDict["distribution"] = sysinfo.distribution
-		sysInfoDict["sysVersion"] = sysinfo.sysVersion
-		sysInfoDict["distributionId"] = sysinfo.distributionId
-		sysInfoDict["opsiVersion"] = sysinfo.opsiVersion
-		return sysInfoDict
+
+		return {
+			"hostname": sysinfo.hostname,
+			"fqdn": sysinfo.fqdn,
+			"domainname": sysinfo.domainname,
+			"distribution": sysinfo.distribution,
+			"sysVersion": sysinfo.sysVersion,
+			"distributionId": sysinfo.distributionId,
+			"opsiVersion": LIBRARY_VERSION
+		}
 
 	def _readSysInfo(self):
-		map = {}
+		sysInfo = {}
 		with closing(self.extractfile("%s/sysinfo" % self.CONTROL_DIR)) as fp:
 			for line in fp.readlines():
 				key, value = line.split(":")
-				map[key.strip()] = value.strip()
+				sysInfo[key.strip()] = value.strip()
 
-		return map
+		return sysInfo
 
 	def _readChecksumFile(self):
-		map = {}
+		checksums = {}
 		with closing(self.extractfile("%s/checksums" % self.CONTROL_DIR)) as fp:
 			for line in fp.readlines():
 				key, value = line.split(" ", 1)
-				map[value.strip()] = key.strip()
+				checksums[value.strip()] = key.strip()
 
-		return map
+		return checksums
 
 	def _addContent(self, path, sub=()):
 		dest = path
