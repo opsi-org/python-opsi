@@ -1,3 +1,9 @@
+python-opsi (4.1.1.9-1) UNRELEASED; urgency=medium
+
+  * Remove obsolete reference to /etc/opsi/version when restoring a backup.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 27 Jun 2017 14:58:31 +0200
+
 python-opsi (4.1.1.8-1) testing; urgency=medium
 
   * Fix a bug in OPSI.Util.objectToBash leading to an AttributeError.
