@@ -27,8 +27,56 @@ This holds backend-independent migrations.
 :license: GNU Affero General Public License version 3
 """
 
+from OPSI.Logger import Logger
+
 __all__ = ('updateBackendData', )
 
 
+LOGGER = Logger()
+
+
 def updateBackendData(backend):
-	pass
+	setDefaultWorkbenchLocation(backend)
+
+
+def setDefaultWorkbenchLocation(backend):
+	"""
+	Set the possibly missing workbench location on the server.
+
+	The value is regarded as missing if it is not set to None.
+	`workbenchLocalUrl` will be set to `file:///var/lib/opsi/workbench`.
+	`workbenchRemoteUrl` will use the same value for the depot address
+	that is set in `depotRemoteUrl` and then will point to the samba
+	share _opsi_workbench_.
+	"""
+	servers = backend.host_getObjects(type=["OpsiDepotserver", "OpsiConfigserver"])
+
+	changedServers = set()
+	for server in servers:
+		if server.getWorkbenchLocalUrl() is None:
+			defaultLocalWorkbenchPath = u'file:///var/lib/opsi/workbench'
+			LOGGER.notice("Setting missing value for workbenchLocalUrl on {} to {}", server.id, defaultLocalWorkbenchPath)
+			server.setWorkbenchLocalUrl(defaultLocalWorkbenchPath)
+			changedServers.add(server)
+
+		if server.getWorkbenchRemoteUrl() is None:
+			depotAddress = _getServerAddress(server.depotRemoteUrl)
+			remoteWorkbenchPath = u'smb://{}/opsi_workbench'.format(depotAddress)
+			LOGGER.notice("Setting missing value for workbenchRemoteUrl on {} to {}", server.id, remoteWorkbenchPath)
+			server.setWorkbenchRemoteUrl(remoteWorkbenchPath)
+			changedServers.add(server)
+
+	if changedServers:
+		backend.host_updateObjects(changedServers)
+
+
+def _getServerAddress(depotRemoteUrl):
+	"""
+	Get the address of the server from the `depotRemoteUrl`.
+
+	:param depotRemoteUrl: the depotRemoteUrl of an OpsiDepotserver
+	:type depotRemoteUrl: str
+	:returntype: str
+	"""
+	_, addressAndPath = depotRemoteUrl.split(':')
+	return addressAndPath.split('/')[2]

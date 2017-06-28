@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-Testing the update of the MySQL backend from an older version.
+Testing the update of configuration data.
 
 :author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
@@ -31,34 +31,51 @@ from .test_hosts import getLocalHostFqdn
 
 
 def testUpdateBackendData(backendManager):
-    addServers(backendManager)
-    updateBackendData(backendManager)
+	def getDepotAddress(address):
+		_, addressAndPath = address.split(':')
+		return addressAndPath.split('/')[2]
 
-    servers = backendManager.host_getObjects(type=["OpsiDepotserver", "OpsiConfigserver"])
-    assert servers, "No servers found in backend."
+	addServers(backendManager)
+	updateBackendData(backendManager)
 
-    for server in servers:
-        assert server.workbenchLocalUrl
-        assert server.workbenchRemoteUrl
+	servers = backendManager.host_getObjects(type=["OpsiDepotserver", "OpsiConfigserver"])
+	assert servers, "No servers found in backend."
 
-        # TODO: check if the right value for each distribution is inserted
+	for server in servers:
+		assert server.workbenchLocalUrl == 'file:///var/lib/opsi/workbench'
+
+		depotAddress = getDepotAddress(server.depotRemoteUrl)
+		expectedAddress = 'smb://' + depotAddress + '/opsi_workbench'
+		assert expectedAddress == server.workbenchRemoteUrl
 
 
 def addServers(backend):
-    localHostFqdn = getLocalHostFqdn()
-    configServer = OpsiConfigserver(id=localHostFqdn)
-    backend.host_createObjects([configServer])
+	localHostFqdn = getLocalHostFqdn()
+	configServer = OpsiConfigserver(
+		id=localHostFqdn,
+		depotRemoteUrl='smb://192.168.123.1/opsi_depot'
+	)
+	backend.host_createObjects([configServer])
 
-    _, domain = localHostFqdn.split('.', 1)
+	_, domain = localHostFqdn.split('.', 1)
 
-    depots = [
-        OpsiDepotserver(id='depot{n}.{domain}'.format(n=index, domain=domain))
-        for index in range(10)
-    ]
-    backend.host_createObjects(depots)
+	def getDepotRemoteUrl(index):
+		if index % 2 == 0:
+			return 'smb://192.168.123.{}/opsi_depot'.format(index)
+		else:
+			return 'smb://somename/opsi_depot'
 
-    clients = [
-        OpsiClient(id='client{n}.{domain}'.format(n=index, domain=domain))
-        for index in range(10)
-    ]
-    backend.host_createObjects(clients)
+	depots = [
+		OpsiDepotserver(
+			id='depot{n}.{domain}'.format(n=index, domain=domain),
+			depotRemoteUrl=getDepotRemoteUrl(index)
+		)
+		for index in range(10)
+	]
+	backend.host_createObjects(depots)
+
+	clients = [
+		OpsiClient(id='client{n}.{domain}'.format(n=index, domain=domain))
+		for index in range(10)
+	]
+	backend.host_createObjects(clients)
