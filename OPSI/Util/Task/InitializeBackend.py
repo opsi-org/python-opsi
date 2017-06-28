@@ -39,6 +39,7 @@ from OPSI.Object import OpsiConfigserver
 from OPSI.Types import forceList, forceHostId
 from OPSI.Util import getfqdn
 from OPSI.Util.Task.ConfigureBackend.ConfigurationData import initializeConfigs
+from OPSI.Util.Task.Rights import setPasswdRights
 from OPSI.Util.Task.Samba import SMB_CONF
 
 OPSI_GLOBAL_CONF = u'/etc/opsi/global.conf'
