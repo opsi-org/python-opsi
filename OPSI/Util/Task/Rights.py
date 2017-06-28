@@ -93,17 +93,6 @@ KNOWN_EXECUTABLES = frozenset((
 Rights = namedtuple("Rights", ["uid", "gid", "files", "directories", "correctLinks"])
 
 
-# TODO: use OPSI.System.Posix.Sysconfig for a more standardized approach
-def getLocalFQDN():
-	try:
-		fqdn = getfqdn(conf=OPSI_GLOBAL_CONF)
-		return forceHostId(fqdn)
-	except Exception as error:
-		raise RuntimeError(
-			u"Failed to get fully qualified domain name: {0}".format(error)
-		)
-
-
 def setRights(path=u'/'):
 	LOGGER.debug(u"Setting rights on {0!r}", path)
 	LOGGER.debug("euid is {0}", os.geteuid())
@@ -300,6 +289,17 @@ def getLocalDepot():
 		return depot[0]
 	except IndexError:
 		raise BackendMissingDataError("No depots found!")
+
+
+# TODO: use OPSI.System.Posix.Sysconfig for a more standardized approach
+def getLocalFQDN():
+	try:
+		fqdn = getfqdn(conf=OPSI_GLOBAL_CONF)
+		return forceHostId(fqdn)
+	except Exception as error:
+		raise RuntimeError(
+			u"Failed to get fully qualified domain name: {0}".format(error)
+		)
 
 
 def getWebserverRepositoryPath():
