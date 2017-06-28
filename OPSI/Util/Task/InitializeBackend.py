@@ -64,79 +64,81 @@ def initializeBackends():
     )
     backend.backend_createBase()
 
+    sysConfig = getSysConfig()
+
     logger.notice(u"Try to find a Configserver.")
     configServer = backend.host_getObjects(type='OpsiConfigserver')
-    if not configServer and not backend.host_getIdents(type='OpsiConfigserver', id=getSysConfig()['fqdn']):
-        depot = backend.host_getObjects(type='OpsiDepotserver', id=getSysConfig()['fqdn'])
+    if not configServer and not backend.host_getIdents(type='OpsiConfigserver', id=sysConfig['fqdn']):
+        depot = backend.host_getObjects(type='OpsiDepotserver', id=sysConfig['fqdn'])
         if not depot:
-            logger.notice(u"Creating config server '%s'" % getSysConfig()['fqdn'])
+            logger.notice(u"Creating config server '%s'" % sysConfig['fqdn'])
             depotLocalUrl = u'file:///var/lib/opsi/depot'
-            depotRemoteUrl = u'smb://%s/opsi_depot' % getSysConfig()['hostname']
+            depotRemoteUrl = u'smb://%s/opsi_depot' % sysConfig['hostname']
 
             backend.host_createOpsiConfigserver(
-                id=getSysConfig()['fqdn'],
+                id=sysConfig['fqdn'],
                 opsiHostKey=None,
                 depotLocalUrl=depotLocalUrl,
                 depotRemoteUrl=depotRemoteUrl,
-                depotWebdavUrl=u'webdavs://%s:4447/depot' % getSysConfig()['fqdn'],
+                depotWebdavUrl=u'webdavs://%s:4447/depot' % sysConfig['fqdn'],
                 # TODO: ip here?
                 repositoryLocalUrl=u'file:///var/lib/opsi/repository',
-                repositoryRemoteUrl=u'webdavs://%s:4447/repository' % getSysConfig()['fqdn'],
+                repositoryRemoteUrl=u'webdavs://%s:4447/repository' % sysConfig['fqdn'],
                 description=None,
                 notes=None,
-                hardwareAddress=getSysConfig()['hardwareAddress'],
-                ipAddress=getSysConfig()['ipAddress'],
+                hardwareAddress=sysConfig['hardwareAddress'],
+                ipAddress=sysConfig['ipAddress'],
                 inventoryNumber=None,
-                networkAddress=u'%s/%s' % (getSysConfig()['subnet'], getSysConfig()['netmask']),
+                networkAddress=u'%s/%s' % (sysConfig['subnet'], sysConfig['netmask']),
                 maxBandwidth=0,
                 isMasterDepot=True,
                 masterDepotId=None,
                 # TODO: add workbench here
             )
-            configServer = backend.host_getObjects(type='OpsiConfigserver', id=getSysConfig()['fqdn'])
+            configServer = backend.host_getObjects(type='OpsiConfigserver', id=sysConfig['fqdn'])
         else:
-            logger.notice(u"Converting depot server '%s' to config server" % getSysConfig()['fqdn'])
+            logger.notice(u"Converting depot server '%s' to config server" % sysConfig['fqdn'])
             configServer = OpsiConfigserver.fromHash(depot[0].toHash())
             backend.host_createObjects(configServer)
 
             # list expected in further processing
             configServer = [configServer]
     else:
-        depot = backend.host_getObjects(type='OpsiDepotserver', id=getSysConfig()['fqdn'])
+        depot = backend.host_getObjects(type='OpsiDepotserver', id=sysConfig['fqdn'])
         if not depot:
-            logger.notice(u"Creating depot server '%s'" % getSysConfig()['fqdn'])
+            logger.notice(u"Creating depot server '%s'" % sysConfig['fqdn'])
             depotLocalUrl = u'file:///var/lib/opsi/depot'
-            depotRemoteUrl = u'smb://%s/opsi_depot' % getSysConfig()['hostname']  # TODO: ip?
+            depotRemoteUrl = u'smb://%s/opsi_depot' % sysConfig['hostname']  # TODO: ip?
 
             backend.host_createOpsiDepotserver(
-                id=getSysConfig()['fqdn'],
+                id=sysConfig['fqdn'],
                 opsiHostKey=None,
                 depotLocalUrl=depotLocalUrl,
                 depotRemoteUrl=depotRemoteUrl,
-                depotWebdavUrl=u'webdavs://%s:4447/depot' % getSysConfig()['fqdn'],
+                depotWebdavUrl=u'webdavs://%s:4447/depot' % sysConfig['fqdn'],
                 repositoryLocalUrl=u'file:///var/lib/opsi/repository',
-                repositoryRemoteUrl=u'webdavs://%s:4447/repository' % getSysConfig()['fqdn'],
+                repositoryRemoteUrl=u'webdavs://%s:4447/repository' % sysConfig['fqdn'],
                 description=None,
                 notes=None,
-                hardwareAddress=getSysConfig()['hardwareAddress'],
-                ipAddress=getSysConfig()['ipAddress'],
+                hardwareAddress=sysConfig['hardwareAddress'],
+                ipAddress=sysConfig['ipAddress'],
                 inventoryNumber=None,
-                networkAddress=u'%s/%s' % (getSysConfig()['subnet'], getSysConfig()['netmask']),
+                networkAddress=u'%s/%s' % (sysConfig['subnet'], sysConfig['netmask']),
                 maxBandwidth=0,
                 isMasterDepot=True,
                 masterDepotId=None,
             )
 
     if configServer:
-        if configServer[0].id == getSysConfig()['fqdn']:
+        if configServer[0].id == sysConfig['fqdn']:
             configServer = backend.host_getObjects(type='OpsiConfigserver')
             if not configServer:
-                raise Exception(u"Config server '%s' not found" % getSysConfig()['fqdn'])
+                raise Exception(u"Config server '%s' not found" % sysConfig['fqdn'])
             configServer = configServer[0]
-            if getSysConfig()['ipAddress']:
-                configServer.setIpAddress(getSysConfig()['ipAddress'])
-            if getSysConfig()['hardwareAddress']:
-                configServer.setHardwareAddress(getSysConfig()['hardwareAddress'])
+            if sysConfig['ipAddress']:
+                configServer.setIpAddress(sysConfig['ipAddress'])
+            if sysConfig['hardwareAddress']:
+                configServer.setHardwareAddress(sysConfig['hardwareAddress'])
 
             # make sure the config server is present in all backends or we get reference error later on
             backend.host_insertObject(configServer)
