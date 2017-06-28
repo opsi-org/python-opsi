@@ -44,6 +44,12 @@ except Exception:
 
 
 def configureSamba(config=SMB_CONF):
+	"""
+	Configure the Samba configuration to include the required shares.
+
+	:param config: The path to the Samba configuration file.
+	:type config: str
+	"""
 	logger.notice(u"Configuring samba")
 	lines = _readConfig(config)
 	newlines = _processConfig(lines)
@@ -211,6 +217,12 @@ def _processConfig(lines):
 
 
 def isSamba4():
+	"""
+	Check if the current system uses samba 4.
+
+	:return: True if running Samba 4. False otherwise.
+	:rtype: bool
+	"""
 	samba4 = False
 
 	try:
