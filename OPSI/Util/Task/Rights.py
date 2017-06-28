@@ -246,8 +246,15 @@ def getDepotDirectory(path):
 
 
 def getDepotUrl():
-	depot = getLocalDepot()
+	"""
+	Get the url of the local depot.
 
+	:raises BackendConfigurationError: If no backend initialisation is possible.
+	:raises BackendMissingDataError: If no depot is found.
+	:return: The url of the local depot.
+	:rtype: str
+	"""
+	depot = getLocalDepot()
 	return depot.getDepotLocalUrl()
 
 
