@@ -32,6 +32,8 @@ from OPSI.Logger import Logger
 from OPSI.System import execute, which
 from OPSI.System.Posix import getSambaServiceName
 
+__all__ = ('configureSamba', 'isSamba4')
+
 logger = Logger()
 
 SMB_CONF = u'/etc/samba/smb.conf'
