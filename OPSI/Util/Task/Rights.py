@@ -214,7 +214,7 @@ def getWorkbenchDirectory():
 	"""
 	Get the path of the local workbench.
 
-	:return: Path of the local workbench.
+	:return: Path of the local workbench without protocol.
 	:rtype: str
 	:raises BackendConfigurationError: If no backend initialisation is possible.
 	:raises BackendMissingDataError: If no depot is found.
@@ -226,7 +226,7 @@ def getWorkbenchDirectory():
 	if not (workbenchUrl and workbenchUrl.startswith('file:///')):
 		raise ValueError(u"Bad workbench local url: {0!r}".format(workbenchUrl))
 
-	workbenchPath = workbenchUrl[7:]  # removing protocoll prefix
+	workbenchPath = workbenchUrl[7:]  # removing protocol prefix
 	return workbenchPath
 
 
