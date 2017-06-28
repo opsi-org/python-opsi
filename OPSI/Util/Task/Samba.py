@@ -184,6 +184,12 @@ def _processConfig(lines):
 				# Removing trailing slash
 				workbenchDirectory = workbenchDirectory[:-1]
 
+			try:
+				os.mkdir(workbenchDirectory)
+				logger.notice(u"Created missing workbench directory {0}", workbenchDirectory)
+			except OSError as mkdirErr:
+				logger.debug2(u"Did not create workbench {}: {!r}", workbenchDirectory, mkdirErr)
+
 			logger.notice(u"   Adding share [opsi_workbench]")
 			newlines.append(u"[opsi_workbench]\n")
 			newlines.append(u"   available = yes\n")
