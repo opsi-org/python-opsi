@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2015-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2015-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -43,6 +43,15 @@ except Exception:
 	FILE_ADMIN_GROUP = u'pcpatch'
 
 
+def configureSamba(config=SMB_CONF):
+	logger.notice(u"Configuring samba")
+	lines = _readConfig(config)
+	newlines = _processConfig(lines)
+	if lines != newlines:
+		_writeConfig(newlines, config)
+		logger.notice(u"Samba configuration finished. You may want to restart your Samba daemon.")
+
+
 def getDistribution():
 	try:
 		readDistri = os.popen('lsb_release -d 2>/dev/null')
@@ -53,21 +62,6 @@ def getDistribution():
 		distribution = ''
 
 	return distribution
-
-
-def isSamba4():
-	samba4 = False
-
-	try:
-		smbd = which('smbd')
-		result = execute('%s -V 2>/dev/null' % smbd)
-		for line in result:
-			if line.lower().startswith("version"):
-				samba4 = line.split()[1].startswith('4')
-	except Exception as error:
-		logger.debug('Getting Samba Version failed due to: {0}', error)
-
-	return samba4
 
 
 def _readConfig(config):
@@ -216,6 +210,21 @@ def _processConfig(lines):
 	return newlines
 
 
+def isSamba4():
+	samba4 = False
+
+	try:
+		smbd = which('smbd')
+		result = execute('%s -V 2>/dev/null' % smbd)
+		for line in result:
+			if line.lower().startswith("version"):
+				samba4 = line.split()[1].startswith('4')
+	except Exception as error:
+		logger.debug('Getting Samba Version failed due to: {0}', error)
+
+	return samba4
+
+
 def _writeConfig(newlines, config):
 	logger.notice(u"   Creating backup of %s" % config)
 	shutil.copy(config, config + u'.' + time.strftime("%Y-%m-%d_%H:%M"))
@@ -229,12 +238,3 @@ def _writeConfig(newlines, config):
 		execute(u'%s reload' % u'service {name}'.format(name=Posix.getSambaServiceName(default="smbd")))
 	except Exception as error:
 		logger.warning(error)
-
-
-def configureSamba(config=SMB_CONF):
-	logger.notice(u"Configuring samba")
-	lines = _readConfig(config)
-	newlines = _processConfig(lines)
-	if lines != newlines:
-		_writeConfig(newlines, config)
-		logger.notice(u"Samba configuration finished. You may want to restart your Samba daemon.")
