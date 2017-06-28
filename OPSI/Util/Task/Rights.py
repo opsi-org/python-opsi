@@ -227,7 +227,7 @@ def getDepotDirectory(path):
 	try:
 		depotUrl = getDepotUrl()
 		if not depotUrl.startswith('file:///'):
-			raise ValueError(u"Bad repository local url {0!r}".format(depotUrl))
+			raise ValueError(u"Bad repository local url: {0!r}".format(depotUrl))
 
 		depotDir = depotUrl[7:]
 		_CACHED_DEPOT_DIRECTORY = depotDir
