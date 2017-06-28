@@ -62,7 +62,7 @@ import re
 from collections import namedtuple
 
 from OPSI.Backend.Backend import OPSI_GLOBAL_CONF
-from OPSI.Exceptions import BackendMissingDataError
+from OPSI.Exceptions import BackendConfigurationError, BackendMissingDataError
 from OPSI.Logger import LOG_DEBUG, Logger
 from OPSI.Types import forceHostId
 from OPSI.Util import findFiles, getfqdn
@@ -186,7 +186,12 @@ def getDirectoriesAndExpectedRights(path):
 	yield u'/etc/opsi', Rights(opsiconfdUid, adminGroupGid, 0o660, 0o770, True)
 	yield u'/var/log/opsi', Rights(opsiconfdUid, adminGroupGid, 0o660, 0o770, True)
 	yield u'/var/lib/opsi', Rights(opsiconfdUid, fileAdminGroupGid, 0o660, 0o770, False)
-	yield getWorkbenchDirectory(), Rights(-1, fileAdminGroupGid, 0o660, 0o2770, False)
+
+	try:
+		yield getWorkbenchDirectory(), Rights(-1, fileAdminGroupGid, 0o660, 0o2770, False)
+	except (ValueError, BackendConfigurationError, BackendMissingDataError) as workbenchLookupError:
+		LOGGER.warning("Unable to get path of workbench directory: {}", workbenchLookupError)
+
 	yield getPxeDirectory(), Rights(opsiconfdUid, fileAdminGroupGid, 0o664, 0o775, False)
 
 	depotDir = getDepotDirectory(path)
@@ -206,10 +211,23 @@ def getDirectoriesAndExpectedRights(path):
 
 
 def getWorkbenchDirectory():
-	if isSLES() or isOpenSUSELeap():
-		return u'/var/lib/opsi/workbench'
-	else:
-		return u'/home/opsiproducts'
+	"""
+	Get the path of the local workbench.
+
+	:return: Path of the local workbench.
+	:rtype: str
+	:raises BackendConfigurationError: If no backend initialisation is possible.
+	:raises BackendMissingDataError: If no depot is found.
+	:raises ValueError: If the workbench local url does not use `file` protocoll.
+	"""
+	depot = getLocalDepot()
+
+	workbenchUrl = depot.getWorkbenchLocalUrl()
+	if not (workbenchUrl and workbenchUrl.startswith('file:///')):
+		raise ValueError(u"Bad workbench local url: {0!r}".format(workbenchUrl))
+
+	workbenchPath = workbenchUrl[7:]  # removing protocoll prefix
+	return workbenchPath
 
 
 def getPxeDirectory():
