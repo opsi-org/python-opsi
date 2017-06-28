@@ -72,13 +72,12 @@ def initializeBackends():
         depot = backend.host_getObjects(type='OpsiDepotserver', id=sysConfig['fqdn'])
         if not depot:
             logger.notice(u"Creating config server '%s'" % sysConfig['fqdn'])
-            depotLocalUrl = u'file:///var/lib/opsi/depot'
             depotRemoteUrl = u'smb://%s/opsi_depot' % sysConfig['hostname']
 
             backend.host_createOpsiConfigserver(
                 id=sysConfig['fqdn'],
                 opsiHostKey=None,
-                depotLocalUrl=depotLocalUrl,
+                depotLocalUrl=u'file:///var/lib/opsi/depot',
                 depotRemoteUrl=depotRemoteUrl,
                 depotWebdavUrl=u'webdavs://%s:4447/depot' % sysConfig['fqdn'],
                 # TODO: ip here?
@@ -107,13 +106,12 @@ def initializeBackends():
         depot = backend.host_getObjects(type='OpsiDepotserver', id=sysConfig['fqdn'])
         if not depot:
             logger.notice(u"Creating depot server '%s'" % sysConfig['fqdn'])
-            depotLocalUrl = u'file:///var/lib/opsi/depot'
             depotRemoteUrl = u'smb://%s/opsi_depot' % sysConfig['hostname']  # TODO: ip?
 
             backend.host_createOpsiDepotserver(
                 id=sysConfig['fqdn'],
                 opsiHostKey=None,
-                depotLocalUrl=depotLocalUrl,
+                depotLocalUrl=u'file:///var/lib/opsi/depot',
                 depotRemoteUrl=depotRemoteUrl,
                 depotWebdavUrl=u'webdavs://%s:4447/depot' % sysConfig['fqdn'],
                 repositoryLocalUrl=u'file:///var/lib/opsi/repository',
