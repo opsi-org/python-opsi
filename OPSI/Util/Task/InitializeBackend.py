@@ -32,7 +32,6 @@ This holds backend-independent migrations.
 
 import codecs
 import os.path
-import re
 import socket
 from OPSI.Logger import Logger
 from OPSI.Object import OpsiConfigserver
@@ -41,7 +40,6 @@ from OPSI.Types import forceList, forceHostId
 from OPSI.Util import getfqdn
 from OPSI.Util.Task.ConfigureBackend.ConfigurationData import initializeConfigs
 from OPSI.Util.Task.Rights import setPasswdRights
-from OPSI.Util.Task.Samba import SMB_CONF
 
 OPSI_GLOBAL_CONF = u'/etc/opsi/global.conf'
 
@@ -161,22 +159,17 @@ def initializeBackends():
 
 def getSysConfig(ipAddress=None):
 	sysConfig = {}
-	sysConfig['distributor'] = getDistributor()
-	sysConfig['distribution'] = getDistribution()
-
-	if not sysConfig['distributor'] or not sysConfig['distribution']:
-		logger.warning(u"Failed to get distributor/distribution")
 
 	logger.notice(u"Getting current system config")
 	if ipAddress:
 		sysConfig['ipAddress'] = ipAddress
+
 	try:
 		sysConfig['fqdn'] = forceHostId(getfqdn(conf=OPSI_GLOBAL_CONF))
 	except:
 		raise Exception(u"Failed to get fully qualified domain name, got '%s'" % getfqdn(conf=OPSI_GLOBAL_CONF))
 
 	sysConfig['hostname'] = sysConfig['fqdn'].split(u'.')[0]
-	sysConfig['domain'] = u'.'.join(sysConfig['fqdn'].split(u'.')[1:])
 	if 'ipAddress' not in sysConfig:
 		sysConfig['ipAddress'] = socket.gethostbyname(sysConfig['fqdn'])
 		if sysConfig['ipAddress'].split(u'.')[0] in ('127', '169'):
@@ -210,49 +203,12 @@ def getSysConfig(ipAddress=None):
 		sysConfig['subnet'] += u'%d' % (int(sysConfig['ipAddress'].split(u'.')[i]) & int(sysConfig['netmask'].split(u'.')[i]))
 		sysConfig['broadcast'] += u'%d' % (int(sysConfig['ipAddress'].split(u'.')[i]) | int(sysConfig['netmask'].split(u'.')[i]) ^ 255)
 
-	sysConfig['winDomain'] = u''
-	if os.path.exists(SMB_CONF):
-		f = codecs.open(SMB_CONF, 'r', 'utf-8')
-		for line in f.readlines():
-			match = re.search('^\s*workgroup\s*=\s*(\S+)\s*$', line)
-			if match:
-				sysConfig['winDomain'] = match.group(1).upper()
-				break
-		f.close()
-
 	logger.notice(u"System information:")
-	logger.notice(u"   distributor  : %s" % sysConfig['distributor'])
-	logger.notice(u"   distribution : %s" % sysConfig['distribution'])
 	logger.notice(u"   ip address   : %s" % sysConfig['ipAddress'])
 	logger.notice(u"   netmask      : %s" % sysConfig['netmask'])
 	logger.notice(u"   subnet       : %s" % sysConfig['subnet'])
 	logger.notice(u"   broadcast    : %s" % sysConfig['broadcast'])
 	logger.notice(u"   fqdn         : %s" % sysConfig['fqdn'])
 	logger.notice(u"   hostname     : %s" % sysConfig['hostname'])
-	logger.notice(u"   domain       : %s" % sysConfig['domain'])
-	logger.notice(u"   win domain   : %s" % sysConfig['winDomain'])
 
 	return sysConfig
-
-
-# TODO: use Classes in Posix.py
-def getDistributor():
-	distributor = ''
-	try:
-		f = os.popen('lsb_release -i 2>/dev/null')
-		distributor = f.read().split(':')[1].strip()
-		f.close()
-	except:
-		pass
-	return distributor
-
-
-def getDistribution():
-	distribution = ''
-	try:
-		f = os.popen('lsb_release -d 2>/dev/null')
-		distribution = f.read().split(':')[1].strip()
-		f.close()
-	except:
-		pass
-	return distribution
