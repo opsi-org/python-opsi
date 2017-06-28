@@ -205,10 +205,10 @@ def getSysConfig(ipAddress=None):
         if sysConfig['broadcast']:
             sysConfig['broadcast'] += u'.'
         if sysConfig['subnet']:
-            sysConfig['subnet']    += u'.'
+            sysConfig['subnet'] += u'.'
 
-        sysConfig['subnet'] += u'%d' % ( int(sysConfig['ipAddress'].split(u'.')[i]) & int(sysConfig['netmask'].split(u'.')[i]) )
-        sysConfig['broadcast'] += u'%d' % ( int(sysConfig['ipAddress'].split(u'.')[i]) | int(sysConfig['netmask'].split(u'.')[i]) ^ 255 )
+        sysConfig['subnet'] += u'%d' % (int(sysConfig['ipAddress'].split(u'.')[i]) & int(sysConfig['netmask'].split(u'.')[i]))
+        sysConfig['broadcast'] += u'%d' % (int(sysConfig['ipAddress'].split(u'.')[i]) | int(sysConfig['netmask'].split(u'.')[i]) ^ 255)
 
     sysConfig['winDomain'] = u''
     if os.path.exists(SMB_CONF):
