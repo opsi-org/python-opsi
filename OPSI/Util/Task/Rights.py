@@ -93,6 +93,18 @@ KNOWN_EXECUTABLES = frozenset((
 Rights = namedtuple("Rights", ["uid", "gid", "files", "directories", "correctLinks"])
 
 
+def setPasswdRights():
+	"""
+	Setting correct permissions on ``/etc/opsi/passwd``.
+	"""
+	targetFile = u'/etc/opsi/passwd'
+	logger.notice(u"Setting rights on {0}", targetFile)
+	opsiconfdUid = pwd.getpwnam(_OPSICONFD_USER)[2]
+	adminGroupGid = grp.getgrnam(_ADMIN_GROUP)[2]
+	os.chown(targetFile, opsiconfdUid, adminGroupGid)
+	os.chmod(targetFile, 0o660)
+
+
 def setRights(path=u'/'):
 	LOGGER.debug(u"Setting rights on {0!r}", path)
 	LOGGER.debug("euid is {0}", os.geteuid())
