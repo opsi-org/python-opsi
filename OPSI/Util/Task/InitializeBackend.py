@@ -36,6 +36,7 @@ import re
 import socket
 from OPSI.Logger import Logger
 from OPSI.Object import OpsiConfigserver
+from OPSI.System.Posix import getEthernetDevices, getNetworkDeviceConfig
 from OPSI.Types import forceList, forceHostId
 from OPSI.Util import getfqdn
 from OPSI.Util.Task.ConfigureBackend.ConfigurationData import initializeConfigs
