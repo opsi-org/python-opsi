@@ -262,13 +262,19 @@ def getLocalDepot():
 	"""
 	Get the local depot from the backend.
 
+	:raises BackendConfigurationError: If no backend initialisation is possible.
+	:raises BackendMissingDataError: If no depot is found.
 	:return: The local depot.
 	:rtype: OpsiDepotserver
-	:raises BackendMissingDataError: If no depot is found.
 	"""
 	from OPSI.Backend.BackendManager import BackendManager
 
-	backend = BackendManager()
+	try:
+		backend = BackendManager()
+	except Exception as err:
+		LOGGER.warning("Has the backend been initialized?")
+		raise BackendConfigurationError("Unable to instantiate a backend: {}".format(err))
+
 	depot = backend.host_getObjects(type='OpsiDepotserver', id=getLocalFQDN())
 	backend.backend_exit()
 
