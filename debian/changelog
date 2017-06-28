@@ -3029,7 +3029,6 @@ python-opsi (0.91-1) unstable; urgency=low
 
  -- Jan Schneider <j.schneider@uib.de>  Tue, 13 Feb 2007 8:56:44 +0200
 
-
 python-opsi (0.9-1) unstable; urgency=low
 
   * Initial Release.
