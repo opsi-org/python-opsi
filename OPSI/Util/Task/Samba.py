@@ -28,9 +28,9 @@ import os
 import shutil
 import time
 
-import OPSI.System.Posix as Posix
 from OPSI.Logger import Logger
 from OPSI.System import execute, which
+from OPSI.System.Posix import getSambaServiceName
 
 logger = Logger()
 
@@ -247,6 +247,6 @@ def _writeConfig(newlines, config):
 
 	logger.notice(u"   Reloading samba")
 	try:
-		execute(u'%s reload' % u'service {name}'.format(name=Posix.getSambaServiceName(default="smbd")))
+		execute(u'%s reload' % u'service {name}'.format(name=getSambaServiceName(default="smbd")))
 	except Exception as error:
 		logger.warning(error)
