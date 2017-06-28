@@ -4,7 +4,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2014-2016 uib GmbH - http://www.uib.de/
+# Copyright (C) 2014-2017 uib GmbH - http://www.uib.de/
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -62,6 +62,7 @@ import re
 from collections import namedtuple
 
 from OPSI.Backend.Backend import OPSI_GLOBAL_CONF
+from OPSI.Exceptions import BackendMissingDataError
 from OPSI.Logger import LOG_DEBUG, Logger
 from OPSI.Types import forceHostId
 from OPSI.Util import findFiles, getfqdn
@@ -245,6 +246,19 @@ def getDepotDirectory(path):
 
 
 def getDepotUrl():
+	depot = getLocalDepot()
+
+	return depot.getDepotLocalUrl()
+
+
+def getLocalDepot():
+	"""
+	Get the local depot from the backend.
+
+	:return: The local depot.
+	:rtype: OpsiDepotserver
+	:raises BackendMissingDataError: If no depot is found.
+	"""
 	from OPSI.Backend.BackendManager import BackendManager
 
 	backend = BackendManager()
@@ -252,11 +266,9 @@ def getDepotUrl():
 	backend.backend_exit()
 
 	try:
-		depot = depot[0]
+		return depot[0]
 	except IndexError:
-		raise ValueError("No depots found!")
-
-	return depot.getDepotLocalUrl()
+		raise BackendMissingDataError("No depots found!")
 
 
 def getWebserverRepositoryPath():
