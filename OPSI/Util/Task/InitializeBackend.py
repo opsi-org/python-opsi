@@ -108,7 +108,7 @@ def initializeBackends():
             depotLocalUrl = u'file:///var/lib/opsi/depot'
             depotRemoteUrl = u'smb://%s/opsi_depot' % getSysConfig()['hostname']  # TODO: ip?
 
-            depotServer = backend.host_createOpsiDepotserver(
+            backend.host_createOpsiDepotserver(
                 id=getSysConfig()['fqdn'],
                 opsiHostKey=None,
                 depotLocalUrl=depotLocalUrl,
