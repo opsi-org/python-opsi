@@ -484,3 +484,12 @@ def testWorkbenchAddressAtDepotsInJson(extendedConfigDataBackend, workbenchConfi
     serverDict = serverFromBackend.toHash()
     assert serverDict['workbenchLocalUrl'] == localWorkbenchPath
     assert serverDict['workbenchRemoteUrl'] == remoteWorkbenchPath
+
+
+def testWorkbenchAddressHasNoDefault(extendedConfigDataBackend, localHostFqdn):
+    server = OpsiConfigserver(id=localHostFqdn)
+    extendedConfigDataBackend.host_insertObject(server)
+
+    serverFromBackend = extendedConfigDataBackend.host_getObjects(id=server.id)[0]
+    assert serverFromBackend.workbenchLocalUrl is None
+    assert serverFromBackend.workbenchRemoteUrl is None
