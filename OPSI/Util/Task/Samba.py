@@ -31,6 +31,7 @@ import time
 from OPSI.Logger import Logger
 from OPSI.System import execute, which
 from OPSI.System.Posix import getSambaServiceName
+from OPSI.Util.Task.Rights import getWorkbenchDirectory
 
 __all__ = ('configureSamba', 'isSamba4')
 
@@ -58,18 +59,6 @@ def configureSamba(config=SMB_CONF):
 	if lines != newlines:
 		_writeConfig(newlines, config)
 		logger.notice(u"Samba configuration finished. You may want to restart your Samba daemon.")
-
-
-def getDistribution():
-	try:
-		readDistri = os.popen('lsb_release -d 2>/dev/null')
-		distribution = readDistri.read().split(':')[1].strip()
-		readDistri.close()
-	except Exception as error:
-		logger.debug('Getting Distibution failed due to: %s' % error)
-		distribution = ''
-
-	return distribution
 
 
 def _readConfig(config):
@@ -184,20 +173,27 @@ def _processConfig(lines):
 			os.mkdir("/var/lib/opsi/ntfs-images")
 
 	if not workbenchShareFound:
-		logger.notice(u"   Adding share [opsi_workbench]")
-		newlines.append(u"[opsi_workbench]\n")
-		newlines.append(u"   available = yes\n")
-		newlines.append(u"   comment = opsi workbench\n")
-		if 'suse linux enterprise server' in getDistribution().lower():
-			newlines.append(u"   path = /var/lib/opsi/workbench\n")
-		else:
-			newlines.append(u"   path = /home/opsiproducts\n")
+		try:
+			workbenchDirectory = getWorkbenchDirectory()
+		except Exception as error:
+			logger.warning("Failed to read the location of the workbench: {0}", error)
+			workbenchDirectory = None
 
-		newlines.append(u"   writeable = yes\n")
-		newlines.append(u"   invalid users = root\n")
-		newlines.append(u"   create mask = 0660\n")
-		newlines.append(u"   directory mask = 0770\n")
-		newlines.append(u"\n")
+		if workbenchDirectory:
+			if workbenchDirectory.endswith('/'):
+				# Removing trailing slash
+				workbenchDirectory = workbenchDirectory[:-1]
+
+			logger.notice(u"   Adding share [opsi_workbench]")
+			newlines.append(u"[opsi_workbench]\n")
+			newlines.append(u"   available = yes\n")
+			newlines.append(u"   comment = opsi workbench\n")
+			newlines.append(u"   path = {0}\n".format(workbenchDirectory))
+			newlines.append(u"   writeable = yes\n")
+			newlines.append(u"   invalid users = root\n")
+			newlines.append(u"   create mask = 0660\n")
+			newlines.append(u"   directory mask = 0770\n")
+			newlines.append(u"\n")
 
 	if not repositoryFound:
 		logger.notice(u"  Adding share [opsi_repository]")
