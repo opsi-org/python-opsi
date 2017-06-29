@@ -47,11 +47,13 @@ from hashlib import md5
 from twisted.conch.ssh import keys
 
 from OPSI import __version__ as LIBRARY_VERSION
+from OPSI.Config import OPSI_GLOBAL_CONF
 from OPSI.Logger import Logger
 from OPSI.Exceptions import *  # this is needed for dynamic loading
 from OPSI.Types import *  # this is needed for dynamic loading
 from OPSI.Object import *  # this is needed for dynamic loading
-from OPSI.Util import (blowfishEncrypt, blowfishDecrypt, compareVersions,
+from OPSI.Util import (
+	blowfishEncrypt, blowfishDecrypt, compareVersions,
 	getfqdn, removeUnit, timestamp)
 from OPSI.Util.File import ConfigFile
 import OPSI.SharedAlgorithm
@@ -75,7 +77,6 @@ __all__ = (
 
 OPSI_MODULES_FILE = u'/etc/opsi/modules'
 OPSI_PASSWD_FILE = u'/etc/opsi/passwd'
-OPSI_GLOBAL_CONF = u'/etc/opsi/global.conf'
 LOG_DIR = u'/var/log/opsi'
 LOG_TYPES = {  # key = logtype, value = requires objectId for read
 	'bootimage': True,

@@ -32,7 +32,8 @@ import pwd
 import re
 import shutil
 
-from OPSI.Backend.Backend import OPSI_GLOBAL_CONF, ConfigDataBackend
+from OPSI.Backend.Backend import ConfigDataBackend
+from OPSI.Config import OPSI_GLOBAL_CONF
 from OPSI.Exceptions import (BackendBadValueError, BackendConfigurationError,
 	BackendError, BackendIOError, BackendUnaccomplishableError)
 from OPSI.Logger import Logger

@@ -31,7 +31,7 @@ import re
 import socket
 import sys
 
-from OPSI.Backend.Backend import OPSI_GLOBAL_CONF
+from OPSI.Config import OPSI_GLOBAL_CONF
 from OPSI.Logger import Logger
 from OPSI.System import getEthernetDevices, getNetworkDeviceConfig
 from OPSI.Types import forceHostId

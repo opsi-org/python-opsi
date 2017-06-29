@@ -22,7 +22,9 @@ Testing opsi config module.
 :license: GNU Affero General Public License version 3
 """
 
-from OPSI.Config import FILE_ADMIN_GROUP, OPSI_ADMIN_GROUP, DEFAULT_DEPOT_USER
+from OPSI.Config import (
+    DEFAULT_DEPOT_USER, FILE_ADMIN_GROUP, OPSI_ADMIN_GROUP,
+    OPSI_GLOBAL_CONF)
 
 import pytest
 
@@ -30,7 +32,8 @@ import pytest
 @pytest.mark.parametrize("value", [
     FILE_ADMIN_GROUP,
     OPSI_ADMIN_GROUP,
-    DEFAULT_DEPOT_USER
+    DEFAULT_DEPOT_USER,
+    OPSI_GLOBAL_CONF,
 ])
 def testValueIsSet(value):
     assert value is not None

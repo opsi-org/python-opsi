@@ -60,15 +60,16 @@ import pwd
 import re
 from collections import namedtuple
 
-from OPSI.Backend.Backend import OPSI_GLOBAL_CONF
 from OPSI.Config import (
 	FILE_ADMIN_GROUP as _FILE_ADMIN_GROUP,
 	OPSI_ADMIN_GROUP as _ADMIN_GROUP,
-	DEFAULT_DEPOT_USER as _CLIENT_USER)
+	DEFAULT_DEPOT_USER as _CLIENT_USER,
+	OPSI_GLOBAL_CONF)
 from OPSI.Logger import LOG_DEBUG, Logger
 from OPSI.Types import forceHostId
 from OPSI.Util import findFiles, getfqdn
-from OPSI.System.Posix import (isCentOS, isDebian, isOpenSUSE, isRHEL, isSLES,
+from OPSI.System.Posix import (
+	isCentOS, isDebian, isOpenSUSE, isRHEL, isSLES,
 	isUbuntu, isUCS, isOpenSUSELeap)
 
 LOGGER = Logger()
