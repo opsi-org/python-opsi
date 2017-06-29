@@ -33,10 +33,10 @@ Doing so might result in unforseen problems and is strongly discouraged!
 """
 
 try:
-    from OPSI.Util.File.Opsi import OpsiConfFile
-    FILE_ADMIN_GROUP = OpsiConfFile().getOpsiFileAdminGroup()
+	from OPSI.Util.File.Opsi import OpsiConfFile
+	FILE_ADMIN_GROUP = OpsiConfFile().getOpsiFileAdminGroup()
 except Exception:
-    FILE_ADMIN_GROUP = u'pcpatch'
+	FILE_ADMIN_GROUP = u'pcpatch'
 
 # Group used to identify members whits administrative rights in opsi
 OPSI_ADMIN_GROUP = u'opsiadmin'
