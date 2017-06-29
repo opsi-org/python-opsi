@@ -32,12 +32,10 @@ This holds backend-independent migrations.
 
 import codecs
 import os.path
-import socket
 from OPSI.Logger import Logger
 from OPSI.Object import OpsiConfigserver
-from OPSI.System.Posix import getEthernetDevices, getNetworkDeviceConfig
-from OPSI.Types import forceList, forceHostId
-from OPSI.Util import getfqdn
+from OPSI.System.Posix import getLocalFqdn, getNetworkConfiguration
+from OPSI.Types import forceList
 from OPSI.Util.Task.ConfigureBackend.ConfigurationData import initializeConfigs
 from OPSI.Util.Task.Rights import setPasswdRights
 
@@ -47,7 +45,7 @@ OPSI_GLOBAL_CONF = u'/etc/opsi/global.conf'
 logger = Logger()
 
 
-def initializeBackends():
+def initializeBackends(ipAddress=None):
 	if not os.path.exists(u'/etc/opsi/passwd'):
 		with codecs.open(u'/etc/opsi/passwd', 'w', 'utf-8'):
 			pass
@@ -62,8 +60,8 @@ def initializeBackends():
 	)
 	backend.backend_createBase()
 
-	sysConfig = getSysConfig()
-	fqdn = sysConfig['fqdn']
+	networkConfig = getNetworkConfiguration(ipAddress)
+	fqdn = getLocalFqdn()
 	hostname = fqdn.split(u'.')[0]
 
 	logger.notice(u"Try to find a Configserver.")
@@ -85,10 +83,10 @@ def initializeBackends():
 				repositoryRemoteUrl=u'webdavs://%s:4447/repository' % fqdn,
 				description=None,
 				notes=None,
-				hardwareAddress=sysConfig['hardwareAddress'],
-				ipAddress=sysConfig['ipAddress'],
+				hardwareAddress=networkConfig['hardwareAddress'],
+				ipAddress=networkConfig['ipAddress'],
 				inventoryNumber=None,
-				networkAddress=u'%s/%s' % (sysConfig['subnet'], sysConfig['netmask']),
+				networkAddress=u'%s/%s' % (networkConfig['subnet'], networkConfig['netmask']),
 				maxBandwidth=0,
 				isMasterDepot=True,
 				masterDepotId=None,
@@ -118,10 +116,10 @@ def initializeBackends():
 				repositoryRemoteUrl=u'webdavs://%s:4447/repository' % fqdn,
 				description=None,
 				notes=None,
-				hardwareAddress=sysConfig['hardwareAddress'],
-				ipAddress=sysConfig['ipAddress'],
+				hardwareAddress=networkConfig['hardwareAddress'],
+				ipAddress=networkConfig['ipAddress'],
 				inventoryNumber=None,
-				networkAddress=u'%s/%s' % (sysConfig['subnet'], sysConfig['netmask']),
+				networkAddress=u'%s/%s' % (networkConfig['subnet'], networkConfig['netmask']),
 				maxBandwidth=0,
 				isMasterDepot=True,
 				masterDepotId=None,
@@ -133,10 +131,10 @@ def initializeBackends():
 			if not configServer:
 				raise Exception(u"Config server '%s' not found" % fqdn)
 			configServer = configServer[0]
-			if sysConfig['ipAddress']:
-				configServer.setIpAddress(sysConfig['ipAddress'])
-			if sysConfig['hardwareAddress']:
-				configServer.setHardwareAddress(sysConfig['hardwareAddress'])
+			if networkConfig['ipAddress']:
+				configServer.setIpAddress(networkConfig['ipAddress'])
+			if networkConfig['hardwareAddress']:
+				configServer.setHardwareAddress(networkConfig['hardwareAddress'])
 
 			# make sure the config server is present in all backends or we get reference error later on
 			backend.host_insertObject(configServer)
@@ -157,60 +155,3 @@ def initializeBackends():
 			logger.warning(u"Failed to create depot directory '%s': %s" % (depotDir, error))
 
 	# TODO: create workbench directory
-
-
-def getSysConfig(ipAddress=None):
-	sysConfig = {}
-
-	logger.notice(u"Getting current system config")
-	if ipAddress:
-		sysConfig['ipAddress'] = ipAddress
-
-	try:
-		sysConfig['fqdn'] = forceHostId(getfqdn(conf=OPSI_GLOBAL_CONF))
-	except:
-		raise Exception(u"Failed to get fully qualified domain name, got '%s'" % getfqdn(conf=OPSI_GLOBAL_CONF))
-
-	sysConfig['hostname'] = sysConfig['fqdn'].split(u'.')[0]
-	if 'ipAddress' not in sysConfig:
-		sysConfig['ipAddress'] = socket.gethostbyname(sysConfig['fqdn'])
-		if sysConfig['ipAddress'].split(u'.')[0] in ('127', '169'):
-			sysConfig['ipAddress'] = None
-	sysConfig['hardwareAddress'] = None
-
-	for device in getEthernetDevices():
-		devconf = getNetworkDeviceConfig(device)
-		if devconf['ipAddress'] and devconf['ipAddress'].split(u'.')[0] not in ('127', '169'):
-			if not sysConfig['ipAddress']:
-				sysConfig['ipAddress'] = devconf['ipAddress']
-			if (sysConfig['ipAddress'] == devconf['ipAddress']):
-				sysConfig['netmask'] = devconf['netmask']
-				sysConfig['hardwareAddress'] = devconf['hardwareAddress']
-				break
-
-	if not sysConfig['ipAddress']:
-		raise Exception(u"Failed to get a valid ip address for fqdn '%s'" % sysConfig['fqdn'])
-
-	if not sysConfig.get('netmask'):
-		sysConfig['netmask'] = u'255.255.255.0'
-
-	sysConfig['broadcast'] = u''
-	sysConfig['subnet'] = u''
-	for i in range(4):
-		if sysConfig['broadcast']:
-			sysConfig['broadcast'] += u'.'
-		if sysConfig['subnet']:
-			sysConfig['subnet'] += u'.'
-
-		sysConfig['subnet'] += u'%d' % (int(sysConfig['ipAddress'].split(u'.')[i]) & int(sysConfig['netmask'].split(u'.')[i]))
-		sysConfig['broadcast'] += u'%d' % (int(sysConfig['ipAddress'].split(u'.')[i]) | int(sysConfig['netmask'].split(u'.')[i]) ^ 255)
-
-	logger.notice(u"System information:")
-	logger.notice(u"   ip address   : %s" % sysConfig['ipAddress'])
-	logger.notice(u"   netmask      : %s" % sysConfig['netmask'])
-	logger.notice(u"   subnet       : %s" % sysConfig['subnet'])
-	logger.notice(u"   broadcast    : %s" % sysConfig['broadcast'])
-	logger.notice(u"   fqdn         : %s" % sysConfig['fqdn'])
-	logger.notice(u"   hostname     : %s" % sysConfig['hostname'])
-
-	return sysConfig

@@ -663,9 +663,76 @@ def ifconfig(device, address, netmask=None):
 	execute(cmd)
 
 
+def getLocalFqdn():
+	fqdn = getfqdn(conf=OPSI_GLOBAL_CONF)
+	try:
+		return forceHostId(fqdn)
+	except ValueError:
+		raise ValueError(u"Failed to get fully qualified domain name. Value '{0}' is invalid.".format(fqdn))
+
+
+def getNetworkConfiguration(ipAddress=None):
+	"""
+	Get the network configuration for the local host.
+
+	The returned dict will contain the keys 'ipAddress',
+	'hardwareAddress', 'netmask', 'broadcast' and 'subnet'.
+
+	:param ipAddress: Force the function to work with the given IP address.
+	:type ipAddress: str
+	:returns: Network configuration for the local host.
+	:rtype: dict
+	"""
+	networkConfig = {}
+
+	if ipAddress:
+		networkConfig['ipAddress'] = ipAddress
+	else:
+		fqdn = getLocalFqdn()
+		networkConfig['ipAddress'] = socket.gethostbyname(fqdn)
+		if networkConfig['ipAddress'].split(u'.')[0] in ('127', '169'):
+			networkConfig['ipAddress'] = None
+
+	networkConfig['hardwareAddress'] = None
+	for device in getEthernetDevices():
+		devconf = getNetworkDeviceConfig(device)
+		if devconf['ipAddress'] and devconf['ipAddress'].split(u'.')[0] not in ('127', '169'):
+			if not networkConfig['ipAddress']:
+				networkConfig['ipAddress'] = devconf['ipAddress']
+			if (networkConfig['ipAddress'] == devconf['ipAddress']):
+				networkConfig['netmask'] = devconf['netmask']
+				networkConfig['hardwareAddress'] = devconf['hardwareAddress']
+				break
+
+	if not networkConfig['ipAddress']:
+		try:
+			logger.debug2("FQDN is: {0!r}", fqdn)
+		except NameError:
+			fqdn = getLocalFqdn()
+
+		raise ValueError(u"Failed to get a valid ip address for fqdn '%s'" % fqdn)
+
+	if not networkConfig.get('netmask'):
+		networkConfig['netmask'] = u'255.255.255.0'
+
+	networkConfig['broadcast'] = u''
+	networkConfig['subnet'] = u''
+	for i in range(4):
+		if networkConfig['broadcast']:
+			networkConfig['broadcast'] += u'.'
+		if networkConfig['subnet']:
+			networkConfig['subnet'] += u'.'
+
+		networkConfig['subnet'] += u'%d' % (int(networkConfig['ipAddress'].split(u'.')[i]) & int(networkConfig['netmask'].split(u'.')[i]))
+		networkConfig['broadcast'] += u'%d' % (int(networkConfig['ipAddress'].split(u'.')[i]) | int(networkConfig['netmask'].split(u'.')[i]) ^ 255)
+
+	return networkConfig
+
+
 def getSystemProxySetting():
-	#TODO Have to be implemented for posix machines
+	# TODO: Has to be implemented for posix machines
 	logger.notice(u'Not Implemented yet')
+
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # -                                   SESSION / DESKTOP HANDLING                                      -
