@@ -28,6 +28,7 @@ This holds backend-independent migrations.
 """
 
 from OPSI.Logger import Logger
+from OPSI.System.Posix import isOpenSUSE, isSLES
 
 __all__ = ('updateBackendData', )
 
@@ -44,19 +45,26 @@ def setDefaultWorkbenchLocation(backend):
 	Set the possibly missing workbench location on the server.
 
 	The value is regarded as missing if it is not set to None.
-	`workbenchLocalUrl` will be set to `file:///var/lib/opsi/workbench`.
+	`workbenchLocalUrl` will be set to `file:///var/lib/opsi/workbench`
+	on SUSE system and to `file:///home/opsiproducts` on others.
 	`workbenchRemoteUrl` will use the same value for the depot address
 	that is set in `depotRemoteUrl` and then will point to the samba
 	share _opsi_workbench_.
 	"""
 	servers = backend.host_getObjects(type=["OpsiDepotserver", "OpsiConfigserver"])
 
+	if isSLES() or isOpenSUSE():
+		# On Suse
+		localWorkbenchPath = u'file:///var/lib/opsi/workbench'
+	else:
+		# On non-SUSE systems the path was usually /home/opsiproducts
+		localWorkbenchPath = u'file:///home/opsiproducts'
+
 	changedServers = set()
 	for server in servers:
 		if server.getWorkbenchLocalUrl() is None:
-			defaultLocalWorkbenchPath = u'file:///var/lib/opsi/workbench'
-			LOGGER.notice("Setting missing value for workbenchLocalUrl on {} to {}", server.id, defaultLocalWorkbenchPath)
-			server.setWorkbenchLocalUrl(defaultLocalWorkbenchPath)
+			LOGGER.notice("Setting missing value for workbenchLocalUrl on {} to {}", server.id, localWorkbenchPath)
+			server.setWorkbenchLocalUrl(localWorkbenchPath)
 			changedServers.add(server)
 
 		if server.getWorkbenchRemoteUrl() is None:

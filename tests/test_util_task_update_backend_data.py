@@ -24,25 +24,34 @@ Testing the update of configuration data.
 
 from __future__ import absolute_import
 
+import pytest
+
 from OPSI.Object import OpsiClient, OpsiDepotserver, OpsiConfigserver
 from OPSI.Util.Task.UpdateBackend.ConfigurationData import updateBackendData
 
 from .test_hosts import getLocalHostFqdn
+from .helpers import mock
 
 
-def testUpdateBackendData(backendManager):
+@pytest.mark.parametrize("onSuse, expectedLocalPath", (
+	(True, 'file:///var/lib/opsi/workbench'),
+	(False, 'file:///home/opsiproducts'),
+))
+def testUpdateBackendData(backendManager, onSuse, expectedLocalPath):
 	def getDepotAddress(address):
 		_, addressAndPath = address.split(':')
 		return addressAndPath.split('/')[2]
 
 	addServers(backendManager)
-	updateBackendData(backendManager)
+	with mock.patch('OPSI.Util.Task.UpdateBackend.ConfigurationData.isOpenSUSE', lambda: onSuse):
+		with mock.patch('OPSI.Util.Task.UpdateBackend.ConfigurationData.isSLES', lambda: onSuse):
+			updateBackendData(backendManager)
 
 	servers = backendManager.host_getObjects(type=["OpsiDepotserver", "OpsiConfigserver"])
 	assert servers, "No servers found in backend."
 
 	for server in servers:
-		assert server.workbenchLocalUrl == 'file:///var/lib/opsi/workbench'
+		assert server.workbenchLocalUrl == expectedLocalPath
 
 		depotAddress = getDepotAddress(server.depotRemoteUrl)
 		expectedAddress = 'smb://' + depotAddress + '/opsi_workbench'
