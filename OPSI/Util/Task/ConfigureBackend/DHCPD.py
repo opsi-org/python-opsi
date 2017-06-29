@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2015-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2015-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -35,6 +35,7 @@ import time
 
 from . import _getSysConfig as getSysConfig
 
+from OPSI.Config import OPSI_ADMIN_GROUP as ADMIN_GROUP
 from OPSI.Logger import Logger
 from OPSI.System import execute
 from OPSI.System.Posix import getDHCPDRestartCommand, locateDHCPDConfig
@@ -44,7 +45,6 @@ from OPSI.Util.Task.Sudoers import patchSudoersFileToAllowRestartingDHCPD
 
 DHCPD_CONF = locateDHCPDConfig(default=u'/etc/dhcp3/dhcpd.conf')
 OPSICONFD_USER = u'opsiconfd'
-ADMIN_GROUP = u'opsiadmin'
 
 logger = Logger()
 

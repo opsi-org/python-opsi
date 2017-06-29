@@ -43,6 +43,7 @@ from OPSI.Backend.Backend import (Backend, ConfigDataBackend,
 from OPSI.Backend.Depotserver import DepotserverBackend
 from OPSI.Backend.HostControl import HostControlBackend
 from OPSI.Backend.HostControlSafe import HostControlSafeBackend
+from OPSI.Config import OPSI_ADMIN_GROUP
 from OPSI.Exceptions import *  # this is needed for dynamic extension loading
 from OPSI.Logger import Logger, LOG_INFO
 from OPSI.Object import BaseObject, mandatoryConstructorArgs
@@ -603,7 +604,7 @@ class BackendAccessControl(object):
 		self._authenticated = True
 
 		if not self._acl:
-			self._acl = [['.*', [{'type': u'sys_group', 'ids': [u'opsiadmin'], 'denyAttributes': [], 'allowAttributes': []}]]]
+			self._acl = [['.*', [{'type': u'sys_group', 'ids': [OPSI_ADMIN_GROUP], 'denyAttributes': [], 'allowAttributes': []}]]]
 
 		# Pre-compiling regex patterns for speedup.
 		for i, (pattern, acl) in enumerate(self._acl):
@@ -613,7 +614,7 @@ class BackendAccessControl(object):
 		return self._authenticated
 
 	def accessControl_userIsAdmin(self):
-		return self._isMemberOfGroup('opsiadmin') or self._isOpsiDepotserver()
+		return self._isMemberOfGroup(OPSI_ADMIN_GROUP) or self._isOpsiDepotserver()
 
 	def accessControl_userIsReadOnlyUser(self):
 		readOnlyGroups = OpsiConfFile().getOpsiGroups('readonly')
