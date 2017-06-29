@@ -175,7 +175,11 @@ def _setupDepotDirectory():
 			LOGGER.warning(u"Failed to create depot directory '{0}': {1}", depotDir, error)
 
 	if os.path.exists("/opt/pcbin/install"):
-		LOGGER.warning(u"You have an old depot configuration. Using /opt/pcbin/install is depracted, please use /var/lib/opsi/depot instead.")
+		LOGGER.warning(
+			u"You have an old depot directory present. "
+			u"Using /opt/pcbin/install is depracted, "
+			u"please use /var/lib/opsi/depot instead."
+		)
 
 
 def _setupWorkbenchDirectory():
