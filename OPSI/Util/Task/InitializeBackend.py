@@ -78,6 +78,8 @@ def initializeBackends(ipAddress=None):
 				# TODO: ip here?
 				repositoryLocalUrl=u'file:///var/lib/opsi/repository',
 				repositoryRemoteUrl=u'webdavs://%s:4447/repository' % fqdn,
+				workbenchLocalUrl=u'file:///var/lib/opsi/workbench',
+				workbenchRemoteUrl=u'smb://{}/opsi_workbench'.format(hostname),
 				description=None,
 				notes=None,
 				hardwareAddress=networkConfig['hardwareAddress'],
@@ -87,7 +89,6 @@ def initializeBackends(ipAddress=None):
 				maxBandwidth=0,
 				isMasterDepot=True,
 				masterDepotId=None,
-				# TODO: add workbench here
 			)
 			configServer = backend.host_getObjects(type='OpsiConfigserver', id=fqdn)
 		else:
@@ -111,6 +112,8 @@ def initializeBackends(ipAddress=None):
 				depotWebdavUrl=u'webdavs://%s:4447/depot' % fqdn,
 				repositoryLocalUrl=u'file:///var/lib/opsi/repository',
 				repositoryRemoteUrl=u'webdavs://%s:4447/repository' % fqdn,
+				workbenchLocalUrl=u'file:///var/lib/opsi/workbench',
+				workbenchRemoteUrl=u'smb://{}/opsi_workbench'.format(hostname),
 				description=None,
 				notes=None,
 				hardwareAddress=networkConfig['hardwareAddress'],
