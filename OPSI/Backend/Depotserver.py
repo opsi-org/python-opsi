@@ -486,7 +486,7 @@ class DepotserverPackageManager(object):
 					raise BackendBadValueError(u"Value '%s' not allowed for depot local url (has to start with 'file:///')" % depot.depotLocalUrl)
 
 				for f in os.listdir(depot.depotLocalUrl[7:]):
-					if (f.lower() == productId.lower()):
+					if f.lower() == productId.lower():
 						clientDataDir = os.path.join(depot.depotLocalUrl[7:], f)
 						logger.info("Deleting client data dir '%s'" % clientDataDir)
 						removeDirectory(clientDataDir)

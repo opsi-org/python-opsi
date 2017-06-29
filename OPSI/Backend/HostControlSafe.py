@@ -135,13 +135,13 @@ class HostControlSafeBackend(ExtendedBackend):
 					runningThreads -= 1
 					continue
 				if not rpct.started:
-					if (runningThreads < self._maxConnections):
+					if runningThreads < self._maxConnections:
 						logger.debug(u"Starting rpc to host %s" % rpct.hostId)
 						rpct.start()
 						runningThreads += 1
 				else:
 					timeRunning = time.time() - rpct.started
-					if (timeRunning >= timeout + 5):
+					if timeRunning >= timeout + 5:
 						# thread still alive 5 seconds after timeout => kill
 						logger.error(u"Rpc to host %s (address: %s) timed out after %0.2f seconds, terminating" % (rpct.hostId, rpct.address, timeRunning))
 						result[rpct.hostId] = {"result": None, "error": u"timed out after %0.2f seconds" % timeRunning}
@@ -270,7 +270,7 @@ class HostControlSafeBackend(ExtendedBackend):
 					runningThreads -= 1
 					continue
 				if not thread.started:
-					if (runningThreads < self._maxConnections):
+					if runningThreads < self._maxConnections:
 						logger.debug(u"Trying to check host reachable %s" % thread.hostId)
 						thread.start()
 						runningThreads += 1
