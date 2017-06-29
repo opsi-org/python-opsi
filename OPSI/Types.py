@@ -529,7 +529,7 @@ def forceObjectClass(var, objectClass):
 
 	if isinstance(var, dict):
 		if 'type' not in var:
-			raise ValueError(u"Key 'type' missing in hash '%s'" % var)
+			raise ValueError(u"Key 'type' missing in hash {0!r}".format(var))
 
 		import OPSI.Object
 		try:

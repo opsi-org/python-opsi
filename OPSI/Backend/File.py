@@ -33,12 +33,13 @@ import re
 import shutil
 
 from OPSI.Backend.Backend import OPSI_GLOBAL_CONF, ConfigDataBackend
-from OPSI.Exceptions import (BackendBadValueError, BackendConfigurationError,
-	BackendError, BackendIOError, BackendUnaccomplishableError)
+from OPSI.Exceptions import (
+	BackendBadValueError, BackendConfigurationError, BackendError,
+	BackendIOError, BackendUnaccomplishableError)
 from OPSI.Logger import Logger
-from OPSI.Types import (forceBool, forceHostId, forceFilename, forceList,
-						forceObjectClass, forceObjectClassList, forceProductId,
-						forceUnicode, forceUnicodeList)
+from OPSI.Types import (
+	forceBool, forceHostId, forceFilename, forceList, forceObjectClass,
+	forceObjectClassList, forceProductId, forceUnicode, forceUnicodeList)
 from OPSI.Util import toJson, fromJson, getfqdn
 from OPSI.Util.File import IniFile, LockableFile
 from OPSI.Util.File.Opsi import OpsiConfFile, HostKeyFile, PackageControlFile
@@ -151,7 +152,9 @@ class FileBackend(ConfigDataBackend):
 				{'fileType': 'ini', 'attribute': 'depotLocalUrl', 'section': 'depotshare', 'option': 'localurl', 'json': False},
 				{'fileType': 'ini', 'attribute': 'repositoryRemoteUrl', 'section': 'repository', 'option': 'remoteurl', 'json': False},
 				{'fileType': 'ini', 'attribute': 'repositoryLocalUrl', 'section': 'repository', 'option': 'localurl', 'json': False},
-				{'fileType': 'ini', 'attribute': 'maxBandwidth', 'section': 'repository', 'option': 'maxbandwidth', 'json': False}
+				{'fileType': 'ini', 'attribute': 'maxBandwidth', 'section': 'repository', 'option': 'maxbandwidth', 'json': False},
+				{'fileType': 'ini', 'attribute': 'workbenchLocalUrl', 'section': 'workbench', 'option': 'localurl', 'json': False},
+				{'fileType': 'ini', 'attribute': 'workbenchRemoteUrl', 'section': 'workbench', 'option': 'remoteurl', 'json': False},
 			],
 			'ConfigState': [
 				{'fileType': 'ini', 'attribute': 'values', 'section': 'generalconfig', 'option': '<configId>', 'json': True}
@@ -709,8 +712,11 @@ class FileBackend(ConfigDataBackend):
 			logger.debug2(u"Returning idents without filter.")
 			return objIdents
 
-		return [ident for ident in objIdents
-				if self._objectHashMatches(ident, **filter)]
+		return [
+			ident
+			for ident in objIdents
+			if self._objectHashMatches(ident, **filter)
+		]
 
 	@staticmethod
 	def _adaptObjectHashAttributes(objHash, ident, attributes):

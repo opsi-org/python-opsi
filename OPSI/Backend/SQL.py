@@ -58,7 +58,7 @@ __all__ = (
 	'SQLBackendObjectModificationTracker'
 )
 
-DATABASE_SCHEMA_VERSION = 2
+DATABASE_SCHEMA_VERSION = 3
 
 logger = Logger()
 
@@ -910,6 +910,8 @@ class SQLBackend(ConfigDataBackend):
 				`networkAddress` varchar(31),
 				`isMasterDepot` bool,
 				`masterDepotId` varchar(255),
+				`workbenchLocalUrl` varchar(128),
+				`workbenchRemoteUrl` varchar(255),
 				PRIMARY KEY (`hostId`)
 			) {0};'''.format(self._sql.getTableCreationOptions('HOST'))
 		logger.debug(table)

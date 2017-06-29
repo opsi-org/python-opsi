@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2014-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -32,8 +32,6 @@ import OPSI.Util.Task.ConfigureBackend as backendUtils
 from OPSI.Backend.MySQL import MySQLBackend
 from OPSI.Logger import Logger
 
-_getSysConfig = backendUtils._getSysConfig
-
 DATABASE_EXISTS_ERROR_CODE = 1007
 ACCESS_DENIED_ERROR_CODE = 1044
 INVALID_DEFAULT_VALUE = 1067
@@ -44,7 +42,8 @@ class DatabaseConnectionFailedException(Exception):
 	pass
 
 
-def configureMySQLBackend(dbAdminUser, dbAdminPass,
+def configureMySQLBackend(
+	dbAdminUser, dbAdminPass,
 	config=None,
 	systemConfiguration=None,
 	additionalBackendConfig=None,
@@ -125,7 +124,8 @@ on to. Defaults to ``Logger.error``.
 	notificationFunction(u"Finished initializing mysql backend.")
 
 
-def initializeDatabase(dbAdminUser, dbAdminPass, config,
+def initializeDatabase(
+	dbAdminUser, dbAdminPass, config,
 	systemConfig=None, notificationFunction=None, errorFunction=None):
 	"""
 	Create a database and grant the OPSI user the needed rights on it.
@@ -168,7 +168,7 @@ def initializeDatabase(dbAdminUser, dbAdminPass, config,
 		errorFunction = LOGGER.error
 
 	if systemConfig is None:
-		systemConfig = _getSysConfig()
+		systemConfig = backendUtils._getSysConfig()
 
 	# Connect to database host
 	notificationFunction(u"Connecting to host '{0[address]}' as user "

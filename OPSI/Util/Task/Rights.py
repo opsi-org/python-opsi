@@ -1,10 +1,9 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2014-2016 uib GmbH - http://www.uib.de/
+# Copyright (C) 2014-2017 uib GmbH - http://www.uib.de/
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -62,12 +61,15 @@ import re
 from collections import namedtuple
 
 from OPSI.Backend.Backend import OPSI_GLOBAL_CONF
+from OPSI.Exceptions import BackendConfigurationError, BackendMissingDataError
 from OPSI.Logger import LOG_DEBUG, Logger
 from OPSI.Types import forceHostId
 from OPSI.Util import findFiles, getfqdn
 from OPSI.Util.File.Opsi import OpsiConfFile
 from OPSI.System.Posix import (isCentOS, isDebian, isOpenSUSE, isRHEL, isSLES,
 	isUbuntu, isUCS, isOpenSUSELeap)
+
+__all__ = ('setRights', 'setPasswdRights')
 
 LOGGER = Logger()
 
@@ -92,15 +94,16 @@ KNOWN_EXECUTABLES = frozenset((
 Rights = namedtuple("Rights", ["uid", "gid", "files", "directories", "correctLinks"])
 
 
-# TODO: use OPSI.System.Posix.Sysconfig for a more standardized approach
-def getLocalFQDN():
-	try:
-		fqdn = getfqdn(conf=OPSI_GLOBAL_CONF)
-		return forceHostId(fqdn)
-	except Exception as error:
-		raise RuntimeError(
-			u"Failed to get fully qualified domain name: {0}".format(error)
-		)
+def setPasswdRights():
+	"""
+	Setting correct permissions on ``/etc/opsi/passwd``.
+	"""
+	targetFile = u'/etc/opsi/passwd'
+	logger.notice(u"Setting rights on {0}", targetFile)
+	opsiconfdUid = pwd.getpwnam(_OPSICONFD_USER)[2]
+	adminGroupGid = grp.getgrnam(_ADMIN_GROUP)[2]
+	os.chown(targetFile, opsiconfdUid, adminGroupGid)
+	os.chmod(targetFile, 0o660)
 
 
 def setRights(path=u'/'):
@@ -185,7 +188,12 @@ def getDirectoriesAndExpectedRights(path):
 	yield u'/etc/opsi', Rights(opsiconfdUid, adminGroupGid, 0o660, 0o770, True)
 	yield u'/var/log/opsi', Rights(opsiconfdUid, adminGroupGid, 0o660, 0o770, True)
 	yield u'/var/lib/opsi', Rights(opsiconfdUid, fileAdminGroupGid, 0o660, 0o770, False)
-	yield getWorkbenchDirectory(), Rights(-1, fileAdminGroupGid, 0o660, 0o2770, False)
+
+	try:
+		yield getWorkbenchDirectory(), Rights(-1, fileAdminGroupGid, 0o660, 0o2770, False)
+	except (ValueError, BackendConfigurationError, BackendMissingDataError) as workbenchLookupError:
+		LOGGER.warning("Unable to get path of workbench directory: {}", workbenchLookupError)
+
 	yield getPxeDirectory(), Rights(opsiconfdUid, fileAdminGroupGid, 0o664, 0o775, False)
 
 	depotDir = getDepotDirectory(path)
@@ -205,10 +213,23 @@ def getDirectoriesAndExpectedRights(path):
 
 
 def getWorkbenchDirectory():
-	if isSLES() or isOpenSUSELeap():
-		return u'/var/lib/opsi/workbench'
-	else:
-		return u'/home/opsiproducts'
+	"""
+	Get the path of the local workbench.
+
+	:return: Path of the local workbench without protocol.
+	:rtype: str
+	:raises BackendConfigurationError: If no backend initialisation is possible.
+	:raises BackendMissingDataError: If no depot is found.
+	:raises ValueError: If the workbench local url does not use `file` protocoll.
+	"""
+	depot = getLocalDepot()
+
+	workbenchUrl = depot.getWorkbenchLocalUrl()
+	if not (workbenchUrl and workbenchUrl.startswith('file:///')):
+		raise ValueError(u"Bad workbench local url: {0!r}".format(workbenchUrl))
+
+	workbenchPath = workbenchUrl[7:]  # removing protocol prefix
+	return workbenchPath
 
 
 def getPxeDirectory():
@@ -226,7 +247,7 @@ def getDepotDirectory(path):
 	try:
 		depotUrl = getDepotUrl()
 		if not depotUrl.startswith('file:///'):
-			raise ValueError(u"Bad repository local url {0!r}".format(depotUrl))
+			raise ValueError(u"Bad repository local url: {0!r}".format(depotUrl))
 
 		depotDir = depotUrl[7:]
 		_CACHED_DEPOT_DIRECTORY = depotDir
@@ -245,18 +266,53 @@ def getDepotDirectory(path):
 
 
 def getDepotUrl():
+	"""
+	Get the url of the local depot.
+
+	:raises BackendConfigurationError: If no backend initialisation is possible.
+	:raises BackendMissingDataError: If no depot is found.
+	:return: The url of the local depot.
+	:rtype: str
+	"""
+	depot = getLocalDepot()
+	return depot.getDepotLocalUrl()
+
+
+def getLocalDepot():
+	"""
+	Get the local depot from the backend.
+
+	:raises BackendConfigurationError: If no backend initialisation is possible.
+	:raises BackendMissingDataError: If no depot is found.
+	:return: The local depot.
+	:rtype: OpsiDepotserver
+	"""
 	from OPSI.Backend.BackendManager import BackendManager
 
-	backend = BackendManager()
+	try:
+		backend = BackendManager()
+	except Exception as err:
+		LOGGER.warning("Has the backend been initialized?")
+		raise BackendConfigurationError("Unable to instantiate a backend: {}".format(err))
+
 	depot = backend.host_getObjects(type='OpsiDepotserver', id=getLocalFQDN())
 	backend.backend_exit()
 
 	try:
-		depot = depot[0]
+		return depot[0]
 	except IndexError:
-		raise ValueError("No depots found!")
+		raise BackendMissingDataError("No depots found!")
 
-	return depot.getDepotLocalUrl()
+
+# TODO: use OPSI.System.Posix.Sysconfig for a more standardized approach
+def getLocalFQDN():
+	try:
+		fqdn = getfqdn(conf=OPSI_GLOBAL_CONF)
+		return forceHostId(fqdn)
+	except Exception as error:
+		raise RuntimeError(
+			u"Failed to get fully qualified domain name: {0}".format(error)
+		)
 
 
 def getWebserverRepositoryPath():

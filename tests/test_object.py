@@ -43,7 +43,8 @@ def testGetPossibleClassAttributes():
             'oneTimePassword', 'isMasterDepot', 'id', 'lastSeen',
             'maxBandwidth', 'hardwareAddress', 'networkAddress',
             'repositoryLocalUrl', 'opsiHostKey', 'ipAddress',
-            'depotWebdavUrl', 'depotRemoteUrl', 'type'
+            'depotWebdavUrl', 'depotRemoteUrl', 'type',
+            'workbenchRemoteUrl', 'workbenchLocalUrl'
         ]
     )
 

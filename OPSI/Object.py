@@ -630,15 +630,19 @@ class OpsiDepotserver(Host):
 	subClasses = {}
 	foreignIdAttributes = Host.foreignIdAttributes + ['depotId']
 
-	def __init__(self, id, opsiHostKey=None, depotLocalUrl=None,
-				depotRemoteUrl=None, depotWebdavUrl=None,
-				repositoryLocalUrl=None, repositoryRemoteUrl=None,
-				description=None, notes=None, hardwareAddress=None,
-				ipAddress=None, inventoryNumber=None, networkAddress=None,
-				maxBandwidth=None, isMasterDepot=None, masterDepotId=None):
+	def __init__(
+		self, id, opsiHostKey=None, depotLocalUrl=None,
+		depotRemoteUrl=None, depotWebdavUrl=None,
+		repositoryLocalUrl=None, repositoryRemoteUrl=None,
+		description=None, notes=None, hardwareAddress=None,
+		ipAddress=None, inventoryNumber=None, networkAddress=None,
+		maxBandwidth=None, isMasterDepot=None, masterDepotId=None,
+		workbenchLocalUrl=None, workbenchRemoteUrl=None):
 
-		Host.__init__(self, id, description, notes, hardwareAddress, ipAddress,
+		Host.__init__(
+			self, id, description, notes, hardwareAddress, ipAddress,
 			inventoryNumber)
+
 		self.opsiHostKey = None
 		self.depotLocalUrl = None
 		self.depotRemoteUrl = None
@@ -649,6 +653,8 @@ class OpsiDepotserver(Host):
 		self.maxBandwidth = None
 		self.isMasterDepot = None
 		self.masterDepotId = None
+		self.workbenchLocalUrl = None
+		self.workbenchRemoteUrl = None
 
 		if opsiHostKey is not None:
 			self.setOpsiHostKey(opsiHostKey)
@@ -670,6 +676,10 @@ class OpsiDepotserver(Host):
 			self.setIsMasterDepot(isMasterDepot)
 		if masterDepotId is not None:
 			self.setMasterDepotId(masterDepotId)
+		if workbenchLocalUrl is not None:
+			self.setWorkbenchLocalUrl(workbenchLocalUrl)
+		if workbenchRemoteUrl is not None:
+			self.setWorkbenchRemoteUrl(workbenchRemoteUrl)
 
 	def setDefaults(self):
 		Host.setDefaults(self)
@@ -738,6 +748,18 @@ class OpsiDepotserver(Host):
 	def getMasterDepotId(self):
 		return self.masterDepotId
 
+	def setWorkbenchLocalUrl(self, value):
+		self.workbenchLocalUrl = forceUrl(value)
+
+	def getWorkbenchLocalUrl(self):
+		return self.workbenchLocalUrl
+
+	def setWorkbenchRemoteUrl(self, value):
+		self.workbenchRemoteUrl = forceUrl(value)
+
+	def getWorkbenchRemoteUrl(self):
+		return self.workbenchRemoteUrl
+
 	@staticmethod
 	def fromHash(hash):
 		try:
@@ -766,17 +788,21 @@ class OpsiConfigserver(OpsiDepotserver):
 	subClasses = {}
 	foreignIdAttributes = OpsiDepotserver.foreignIdAttributes + ['serverId']
 
-	def __init__(self, id, opsiHostKey=None, depotLocalUrl=None,
-				depotRemoteUrl=None, depotWebdavUrl=None,
-				repositoryLocalUrl=None, repositoryRemoteUrl=None,
-				description=None, notes=None, hardwareAddress=None,
-				ipAddress=None, inventoryNumber=None, networkAddress=None,
-				maxBandwidth=None, isMasterDepot=None, masterDepotId=None):
-		OpsiDepotserver.__init__(self, id, opsiHostKey, depotLocalUrl,
+	def __init__(
+		self, id, opsiHostKey=None, depotLocalUrl=None,
+		depotRemoteUrl=None, depotWebdavUrl=None,
+		repositoryLocalUrl=None, repositoryRemoteUrl=None,
+		description=None, notes=None, hardwareAddress=None,
+		ipAddress=None, inventoryNumber=None, networkAddress=None,
+		maxBandwidth=None, isMasterDepot=None, masterDepotId=None,
+		workbenchLocalUrl=None, workbenchRemoteUrl=None):
+		OpsiDepotserver.__init__(
+			self, id, opsiHostKey, depotLocalUrl,
 			depotRemoteUrl, depotWebdavUrl, repositoryLocalUrl,
 			repositoryRemoteUrl, description, notes, hardwareAddress,
 			ipAddress, inventoryNumber, networkAddress, maxBandwidth,
-			isMasterDepot, masterDepotId)
+			isMasterDepot, masterDepotId,
+			workbenchLocalUrl, workbenchRemoteUrl)
 
 	def setDefaults(self):
 		if self.isMasterDepot is None:
