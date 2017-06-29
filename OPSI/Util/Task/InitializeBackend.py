@@ -44,7 +44,6 @@ OPSI_GLOBAL_CONF = u'/etc/opsi/global.conf'
 LOGGER = Logger()
 
 
-
 def initializeBackends(ipAddress=None):
 	"""
 	Initial backend setup based on the current configuration.
