@@ -18,6 +18,12 @@
 """
 Various important configuration values.
 
+This module should be used to refer to often used values in a consistent
+way instead of hardcoding the values.
+
+If new values are added they must be added that the module stays
+functional independen of the current underlying system.
+
 :copyright:	uib GmbH <info@uib.de>
 :author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
