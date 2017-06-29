@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 
-# This module is part of the desktop management solution opsi
-# (open pc server integration) http://www.opsi.org
-# Copyright (C) 2006-2017 uib GmbH <info@uib.de>
+# This file is part of python-opsi.
+# Copyright (C) 2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -17,8 +16,26 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-Backends.
+Testing opsi config module.
 
-:author: Jan Schneider <j.schneider@uib.de>
+:author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
 """
+
+from OPSI.Config import (
+    DEFAULT_DEPOT_USER, FILE_ADMIN_GROUP, OPSI_ADMIN_GROUP,
+    OPSI_GLOBAL_CONF, OPSICONFD_USER)
+
+import pytest
+
+
+@pytest.mark.parametrize("value", [
+    FILE_ADMIN_GROUP,
+    OPSI_ADMIN_GROUP,
+    DEFAULT_DEPOT_USER,
+    OPSI_GLOBAL_CONF,
+    OPSICONFD_USER,
+])
+def testValueIsSet(value):
+    assert value is not None
+    assert value

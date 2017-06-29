@@ -32,17 +32,18 @@ import pwd
 import re
 import shutil
 
-from OPSI.Backend.Backend import OPSI_GLOBAL_CONF, ConfigDataBackend
+from OPSI.Backend.Backend import ConfigDataBackend
+from OPSI.Config import OPSI_GLOBAL_CONF, OPSICONFD_USER, FILE_ADMIN_GROUP
 from OPSI.Exceptions import (
-	BackendBadValueError, BackendConfigurationError, BackendError,
-	BackendIOError, BackendUnaccomplishableError)
+	BackendBadValueError, BackendConfigurationError,
+	BackendError, BackendIOError, BackendUnaccomplishableError)
 from OPSI.Logger import Logger
 from OPSI.Types import (
 	forceBool, forceHostId, forceFilename, forceList, forceObjectClass,
 	forceObjectClassList, forceProductId, forceUnicode, forceUnicodeList)
 from OPSI.Util import toJson, fromJson, getfqdn
 from OPSI.Util.File import IniFile, LockableFile
-from OPSI.Util.File.Opsi import OpsiConfFile, HostKeyFile, PackageControlFile
+from OPSI.Util.File.Opsi import HostKeyFile, PackageControlFile
 from OPSI.Object import *  # needed for calls to "eval"
 
 __all__ = ('FileBackend', )
@@ -62,40 +63,33 @@ class FileBackend(ConfigDataBackend):
 		self.__baseDir = u'/var/lib/opsi/config'
 		self.__hostKeyFile = u'/etc/opsi/pckeys'
 
-		self.__fileUser = u'opsiconfd'
-		self.__fileGroup = u'pcpatch'
+		self.__fileUser = OPSICONFD_USER
+		self.__fileGroup = FILE_ADMIN_GROUP
 		self.__fileMode = 0o660
-		self.__dirGroup = u'pcpatch'
-		self.__dirUser = u'opsiconfd'
+		self.__dirGroup = FILE_ADMIN_GROUP
+		self.__dirUser = OPSICONFD_USER
 		self.__dirMode = 0o770
-
-		try:
-			self.__fileGroup = OpsiConfFile().getOpsiFileAdminGroup()
-			self.__dirGroup = OpsiConfFile().getOpsiFileAdminGroup()
-		except Exception:
-			self.__fileGroup = u'pcpatch'
-			self.__dirGroup = u'pcpatch'
 
 		# Parse arguments
 		logger.debug2('kwargs are: {0}'.format(kwargs))
 		for (option, value) in kwargs.items():
 			option = option.lower()
 			if option == 'basedir':
-				self.__baseDir = forceFilename(value)
 				logger.debug2('Setting __basedir to "{0}"'.format(value))
+				self.__baseDir = forceFilename(value)
 			elif option == 'hostkeyfile':
-				self.__hostKeyFile = forceFilename(value)
 				logger.debug2('Setting __hostKeyFile to "{0}"'.format(value))
+				self.__hostKeyFile = forceFilename(value)
 			elif option in ('filegroupname', ):
-				self.__fileGroup = forceUnicode(value)
 				logger.debug2('Setting __fileGroup to "{0}"'.format(value))
-				self.__dirGroup = forceUnicode(value)
+				self.__fileGroup = forceUnicode(value)
 				logger.debug2('Setting __dirGroup to "{0}"'.format(value))
+				self.__dirGroup = forceUnicode(value)
 			elif option in ('fileusername', ):
-				self.__fileUser = forceUnicode(value)
 				logger.debug2('Setting __fileUser to "{0}"'.format(value))
-				self.__dirUser = forceUnicode(value)
+				self.__fileUser = forceUnicode(value)
 				logger.debug2('Setting __dirUser to "{0}"'.format(value))
+				self.__dirUser = forceUnicode(value)
 
 		self.__fileUid = pwd.getpwnam(self.__fileUser)[2]
 		self.__fileGid = grp.getgrnam(self.__fileGroup)[2]

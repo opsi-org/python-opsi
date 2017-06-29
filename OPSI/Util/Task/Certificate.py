@@ -37,12 +37,12 @@ import shutil
 from OpenSSL import crypto, rand
 from tempfile import NamedTemporaryFile
 
+from OPSI.Config import OPSI_GLOBAL_CONF
 from OPSI.Logger import Logger
 from OPSI.System import which, execute
 from OPSI.Types import forceHostId, forceInt
 from OPSI.Util import getfqdn
 
-OPSI_GLOBAL_CONF = u'/etc/opsi/global.conf'
 OPSICONFD_CERTFILE = u'/etc/opsi/opsiconfd.pem'
 DEFAULT_CERTIFICATE_PARAMETERS = {
 	"country": "DE",

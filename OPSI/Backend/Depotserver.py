@@ -26,18 +26,22 @@ Depotserver backend.
 
 import os
 
-from OPSI.Exceptions import (BackendBadValueError, BackendConfigurationError,
+from OPSI.Config import OPSI_GLOBAL_CONF
+from OPSI.Exceptions import (
+	BackendBadValueError, BackendConfigurationError,
 	BackendError, BackendIOError, BackendMissingDataError,
 	BackendTemporaryError, BackendUnaccomplishableError)
 from OPSI.Logger import Logger, LOG_DEBUG
-from OPSI.Types import (forceBool, forceDict, forceFilename, forceHostId,
+from OPSI.Types import (
+	forceBool, forceDict, forceFilename, forceHostId,
 	forceUnicode, forceUnicodeLower)
 from OPSI.Types import forceProductId as forceProductIdFunc
 from OPSI.Object import ProductOnDepot, ProductPropertyState
-from OPSI.Backend.Backend import LOG_DIR, OPSI_GLOBAL_CONF, ExtendedBackend
+from OPSI.Backend.Backend import LOG_DIR, ExtendedBackend
 from OPSI.System import getDiskSpaceUsage
 from OPSI.Util.Product import ProductPackageFile
-from OPSI.Util import (compareVersions, getfqdn, md5sum, librsyncSignature,
+from OPSI.Util import (
+	compareVersions, getfqdn, md5sum, librsyncSignature,
 	librsyncPatchFile, librsyncDeltaFile, removeDirectory)
 from OPSI.Util.File import ZsyncFile
 

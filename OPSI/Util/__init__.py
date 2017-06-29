@@ -47,12 +47,13 @@ from Crypto.Cipher import Blowfish
 from hashlib import md5
 from itertools import islice
 
+from OPSI.Config import OPSI_GLOBAL_CONF
 from OPSI.Logger import Logger, LOG_DEBUG
 from OPSI.Types import (forceBool, forceFilename, forceFqdn, forceInt,
 						forceIPAddress, forceNetworkAddress, forceUnicode)
 
 __all__ = (
-	'BLOWFISH_IV', 'OPSI_GLOBAL_CONF', 'PickleString',
+	'BLOWFISH_IV', 'PickleString',
 	'RANDOM_DEVICE', 'blowfishDecrypt', 'blowfishEncrypt',
 	'chunk', 'compareVersions', 'decryptWithPrivateKeyFromPEMFile',
 	'deserialize', 'encryptWithPublicKeyFromX509CertificatePEMFile',
@@ -75,7 +76,6 @@ elif os.name == 'nt':
 		logger.error(u"Failed to import librsync: %s" % e)
 
 BLOWFISH_IV = 'OPSI1234'
-OPSI_GLOBAL_CONF = u'/etc/opsi/global.conf'
 RANDOM_DEVICE = u'/dev/urandom'
 _ACCEPTED_CHARACTERS = (
 	"abcdefghijklmnopqrstuvwxyz"

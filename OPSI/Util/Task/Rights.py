@@ -60,30 +60,27 @@ import pwd
 import re
 from collections import namedtuple
 
-from OPSI.Backend.Backend import OPSI_GLOBAL_CONF
+from OPSI.Config import (
+	FILE_ADMIN_GROUP as _FILE_ADMIN_GROUP,
+	OPSI_ADMIN_GROUP as _ADMIN_GROUP,
+	DEFAULT_DEPOT_USER as _CLIENT_USER,
+	OPSI_GLOBAL_CONF,
+	OPSICONFD_USER as _OPSICONFD_USER)
 from OPSI.Exceptions import BackendConfigurationError, BackendMissingDataError
 from OPSI.Logger import LOG_DEBUG, Logger
 from OPSI.Types import forceHostId
 from OPSI.Util import findFiles, getfqdn
-from OPSI.Util.File.Opsi import OpsiConfFile
-from OPSI.System.Posix import (isCentOS, isDebian, isOpenSUSE, isRHEL, isSLES,
+from OPSI.System.Posix import (
+	isCentOS, isDebian, isOpenSUSE, isRHEL, isSLES,
 	isUbuntu, isUCS, isOpenSUSELeap)
 
 __all__ = ('setRights', 'setPasswdRights')
 
 LOGGER = Logger()
 
-_OPSICONFD_USER = u'opsiconfd'
-_ADMIN_GROUP = u'opsiadmin'
-_CLIENT_USER = u'pcpatch'
 _POSSIBLE_DEPOT_DIRECTORIES = (u'/var/lib/opsi/depot/', u'/opt/pcbin/install/')
 _CACHED_DEPOT_DIRECTORY = None
 _HAS_ROOT_RIGHTS = os.geteuid() == 0
-
-try:
-	_FILE_ADMIN_GROUP = OpsiConfFile().getOpsiFileAdminGroup()
-except Exception:
-	_FILE_ADMIN_GROUP = u'pcpatch'
 
 KNOWN_EXECUTABLES = frozenset((
 	u'create_driver_links.py', u'opsi-deploy-client-agent',

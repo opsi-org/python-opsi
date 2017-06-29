@@ -32,6 +32,7 @@ import pwd
 import shutil
 import time
 
+from OPSI.Config import OPSI_ADMIN_GROUP as ADMIN_GROUP, OPSICONFD_USER
 from OPSI.Logger import Logger
 from OPSI.System import execute
 from OPSI.System.Posix import getDHCPDRestartCommand, locateDHCPDConfig
@@ -41,8 +42,6 @@ from OPSI.Util.File import DHCPDConfFile, DHCPDConf_Block, DHCPDConf_Parameter
 from OPSI.Util.Task.Sudoers import patchSudoersFileToAllowRestartingDHCPD
 
 DHCPD_CONF = locateDHCPDConfig(default=u'/etc/dhcp3/dhcpd.conf')
-OPSICONFD_USER = u'opsiconfd'
-ADMIN_GROUP = u'opsiadmin'
 
 logger = Logger()
 

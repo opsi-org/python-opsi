@@ -28,6 +28,7 @@ import os
 import shutil
 import time
 
+from OPSI.Config import FILE_ADMIN_GROUP
 from OPSI.Logger import Logger
 from OPSI.System import execute, which
 from OPSI.System.Posix import getSambaServiceName
@@ -38,12 +39,6 @@ __all__ = ('configureSamba', 'isSamba4')
 logger = Logger()
 
 SMB_CONF = u'/etc/samba/smb.conf'
-
-try:
-	from OPSI.Util.File.Opsi import OpsiConfFile
-	FILE_ADMIN_GROUP = OpsiConfFile().getOpsiFileAdminGroup()
-except Exception:
-	FILE_ADMIN_GROUP = u'pcpatch'
 
 
 def configureSamba(config=SMB_CONF):

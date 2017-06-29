@@ -31,7 +31,8 @@ import socket
 import threading
 
 import OPSI.System as System
-from OPSI.Backend.Backend import OPSI_GLOBAL_CONF, ConfigDataBackend
+from OPSI.Config import OPSI_GLOBAL_CONF
+from OPSI.Backend.Backend import ConfigDataBackend
 from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Exceptions import (BackendIOError, BackendBadValueError,
 	BackendMissingDataError, BackendUnableToConnectError,

@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2014-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -35,9 +34,9 @@ import OPSI.System.Posix as Posix
 from OPSI.Object import UnicodeConfig, BoolConfig
 from OPSI.Logger import Logger
 from OPSI.Exceptions import BackendMissingDataError
+from OPSI.Util.Task.Samba import SMB_CONF
 
 LOGGER = Logger()
-SMB_CONF = u'/etc/samba/smb.conf'
 
 SimpleBoolConfig = namedtuple('SimpleBoolConfig', ['id', 'description', 'value'])
 SimpleUnicodeConfig = namedtuple('SimpleUnicodeConfig', ['id', 'description', 'values'])
