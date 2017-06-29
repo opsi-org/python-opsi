@@ -683,7 +683,9 @@ def getNetworkConfiguration(ipAddress=None):
 	:returns: Network configuration for the local host.
 	:rtype: dict
 	"""
-	networkConfig = {}
+	networkConfig = {
+		'hardwareAddress': None
+	}
 
 	if ipAddress:
 		networkConfig['ipAddress'] = ipAddress
@@ -693,7 +695,6 @@ def getNetworkConfiguration(ipAddress=None):
 		if networkConfig['ipAddress'].split(u'.')[0] in ('127', '169'):
 			networkConfig['ipAddress'] = None
 
-	networkConfig['hardwareAddress'] = None
 	for device in getEthernetDevices():
 		devconf = getNetworkDeviceConfig(device)
 		if devconf['ipAddress'] and devconf['ipAddress'].split(u'.')[0] not in ('127', '169'):
