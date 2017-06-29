@@ -52,7 +52,7 @@ from OPSI.Types import (forceDomain, forceInt, forceBool, forceUnicode,
 	forceIPAddress, forceHardwareVendorId, forceHardwareAddress,
 	forceHardwareDeviceId, forceUnicodeLower)
 from OPSI.Object import *
-from OPSI.Util import objectToBeautifiedText, removeUnit
+from OPSI.Util import getfqdn, objectToBeautifiedText, removeUnit
 
 __all__ = (
 	'Distribution', 'Harddisk', 'NetworkPerformanceCounter', 'SysInfo',
