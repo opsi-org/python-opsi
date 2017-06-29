@@ -24,6 +24,9 @@ way instead of hardcoding the values.
 If new values are added they must be added that the module stays
 functional independen of the current underlying system.
 
+These values are not intended to be changed on-the-fly!
+Doing so might result in unforseen problems and is strongly discouraged!
+
 :copyright:	uib GmbH <info@uib.de>
 :author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
@@ -35,9 +38,14 @@ try:
 except Exception:
     FILE_ADMIN_GROUP = u'pcpatch'
 
+# Group used to identify members whits administrative rights in opsi
 OPSI_ADMIN_GROUP = u'opsiadmin'
+
+# Default user when accessing the opsi depot
 DEFAULT_DEPOT_USER = u'pcpatch'
 
+# Path to global opsi configuration file
 OPSI_GLOBAL_CONF = u'/etc/opsi/global.conf'
 
+# User that is running opsiconfd.
 OPSICONFD_USER = u'opsiconfd'
