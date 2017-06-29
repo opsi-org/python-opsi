@@ -157,8 +157,8 @@ def distributionRequiresNoTtyPatch():
 
 	.. versionadded:: 4.0.4.3
 
-	:returntype: bool
+	:rtype: bool
 	"""
-	distributor = Distribution().distributor
-	distributor = distributor.lower()
-	return ('redhat' in distributor or 'centos' in distributor or 'sme' in distributor)
+	distributor = Distribution().distributor.lower()
+
+	return bool('redhat' in distributor or 'centos' in distributor)
