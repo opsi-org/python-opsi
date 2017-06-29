@@ -165,7 +165,7 @@ def _setupDepotDirectory():
 	if not os.path.exists(depotDir):
 		try:
 			os.mkdir(depotDir)
-		except Exception as error:
+		except OSError as error:
 			logger.warning(u"Failed to create depot directory '%s': %s" % (depotDir, error))
 
 	if os.path.exists("/opt/pcbin/install"):
