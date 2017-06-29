@@ -450,7 +450,7 @@ class SQLBackend(ConfigDataBackend):
 				else:
 					yield u"`{0}` = '{1}'".format(arg, self._sql.escapeApostrophe(self._sql.escapeBackslash(value)))
 
-			if isinstance(object, HostGroup) or isinstance(object, ProductGroup):
+			if isinstance(object, (HostGroup, ProductGroup)):
 				yield u"`type` = '{0}'".format(object.getType())
 
 		return ' and '.join(createCondition())

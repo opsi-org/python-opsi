@@ -832,7 +832,7 @@ class FileBackend(ConfigDataBackend):
 							value = cp.get(section, option)
 							if m.get('json'):
 								value = fromJson(value)
-							elif isinstance(value, str) or isinstance(value, unicode):
+							elif isinstance(value, (str, unicode)):
 								value = self.__unescape(value)
 
 							# invalid values will throw exceptions later
@@ -1009,7 +1009,7 @@ class FileBackend(ConfigDataBackend):
 						if value is not None:
 							if attributeMapping.get('json'):
 								value = toJson(value)
-							elif isinstance(value, str) or isinstance(value, unicode):
+							elif isinstance(value, (str, unicode)):
 								value = self.__escape(value)
 
 							cp.set(section, option, value)
