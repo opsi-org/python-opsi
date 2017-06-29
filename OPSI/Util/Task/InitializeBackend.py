@@ -64,6 +64,7 @@ def initializeBackends():
 
 	sysConfig = getSysConfig()
 	fqdn = sysConfig['fqdn']
+	hostname = fqdn.split(u'.')[0]
 
 	logger.notice(u"Try to find a Configserver.")
 	configServer = backend.host_getObjects(type='OpsiConfigserver')
@@ -71,7 +72,7 @@ def initializeBackends():
 		depot = backend.host_getObjects(type='OpsiDepotserver', id=fqdn)
 		if not depot:
 			logger.notice(u"Creating config server '%s'" % fqdn)
-			depotRemoteUrl = u'smb://%s/opsi_depot' % sysConfig['hostname']
+			depotRemoteUrl = u'smb://%s/opsi_depot' % hostname
 
 			backend.host_createOpsiConfigserver(
 				id=fqdn,
@@ -105,7 +106,7 @@ def initializeBackends():
 		depot = backend.host_getObjects(type='OpsiDepotserver', id=fqdn)
 		if not depot:
 			logger.notice(u"Creating depot server '%s'" % fqdn)
-			depotRemoteUrl = u'smb://%s/opsi_depot' % sysConfig['hostname']  # TODO: ip?
+			depotRemoteUrl = u'smb://%s/opsi_depot' % hostname  # TODO: ip?
 
 			backend.host_createOpsiDepotserver(
 				id=fqdn,
