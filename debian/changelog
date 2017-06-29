@@ -5,6 +5,12 @@ python-opsi (4.1.1.9-1ubuntu1) UNRELEASED; urgency=medium
   * New extension: 45_deprecated.conf. Methods in that extension will issue a
     warning when called. Calls to these functions should be replaced in the used clients as these functions will be removed in the future.
     Currently containing the functions isLegacyOpsi, isOpsi35 and isOpsi4.
+  * Make it possible to configure the location of the workbench on
+    OpsiDepotserver.
+  * New module OPSI.Util.Task.InitializeBackend for backend setup.
+  * New module OPSI.Util.Task.UpdateBackend.ConfigurationData for updating
+    the configuration data in an existing backend.
+  * New module OPSI.Config.
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 29 Jun 2017 16:52:29 +0200
 
