@@ -1,3 +1,13 @@
+python-opsi (4.1.1.9-1ubuntu1) UNRELEASED; urgency=medium
+
+  * acl.conf.default: restricted the access to user_getCredentials and
+    user_setCredentials.
+  * New extension: 45_deprecated.conf. Methods in that extension will issue a
+    warning when called. Calls to these functions should be replaced in the used clients as these functions will be removed in the future.
+    Currently containing the functions isLegacyOpsi, isOpsi35 and isOpsi4.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 29 Jun 2017 16:52:29 +0200
+
 python-opsi (4.1.1.9-1) testing; urgency=medium
 
   * Remove obsolete reference to /etc/opsi/version when restoring a backup.
