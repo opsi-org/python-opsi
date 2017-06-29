@@ -49,6 +49,9 @@ def initializeBackends(ipAddress=None):
 	"""
 	Initial backend setup based on the current configuration.
 
+	This will create required folders aswell as set up the current
+	backend for use with opsi.
+
 	:param ipAddress: Force the function to work with the given IP address.
 	:type ipAddress: str
 	"""
