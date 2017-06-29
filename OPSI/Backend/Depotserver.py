@@ -340,8 +340,12 @@ class DepotserverPackageManager(object):
 						try:
 							productPropertyState.setValues(propertyDefaultValues[productPropertyState.propertyId])
 						except Exception as installationError:
-							logger.error(u"Failed to set default values to %s for productPropertyState %s: %s" \
-									% (propertyDefaultValues[productPropertyState.propertyId], productPropertyState, installationError) )
+							logger.error(
+								u"Failed to set default values to {0} for productPropertyState {1}: {2}",
+								propertyDefaultValues[productPropertyState.propertyId],
+								productPropertyState,
+								installationError
+							)
 				self._depotBackend._context.productPropertyState_createObjects(productPropertyStates)
 
 				logger.info(u"Running postinst script")
@@ -356,8 +360,13 @@ class DepotserverPackageManager(object):
 				ppf.setAccessRights()
 				ppf.cleanup()
 
-				logger.notice(u"Unlocking product '%s_%s-%s' on depot '%s'" \
-							% (productOnDepot.getProductId(), productOnDepot.getProductVersion(), productOnDepot.getPackageVersion(), depotId))
+				logger.notice(
+					u"Unlocking product '{0}_{1}-{2}' on depot '{3}'",
+					productOnDepot.getProductId(),
+					productOnDepot.getProductVersion(),
+					productOnDepot.getPackageVersion(),
+					depotId
+				)
 				productOnDepot.setLocked(False)
 				self._depotBackend._context.productOnDepot_updateObject(productOnDepot)
 
