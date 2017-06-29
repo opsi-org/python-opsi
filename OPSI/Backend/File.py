@@ -81,21 +81,21 @@ class FileBackend(ConfigDataBackend):
 		for (option, value) in kwargs.items():
 			option = option.lower()
 			if option == 'basedir':
-				self.__baseDir = forceFilename(value)
 				logger.debug2('Setting __basedir to "{0}"'.format(value))
+				self.__baseDir = forceFilename(value)
 			elif option == 'hostkeyfile':
-				self.__hostKeyFile = forceFilename(value)
 				logger.debug2('Setting __hostKeyFile to "{0}"'.format(value))
+				self.__hostKeyFile = forceFilename(value)
 			elif option in ('filegroupname', ):
-				self.__fileGroup = forceUnicode(value)
 				logger.debug2('Setting __fileGroup to "{0}"'.format(value))
-				self.__dirGroup = forceUnicode(value)
+				self.__fileGroup = forceUnicode(value)
 				logger.debug2('Setting __dirGroup to "{0}"'.format(value))
+				self.__dirGroup = forceUnicode(value)
 			elif option in ('fileusername', ):
-				self.__fileUser = forceUnicode(value)
 				logger.debug2('Setting __fileUser to "{0}"'.format(value))
-				self.__dirUser = forceUnicode(value)
+				self.__fileUser = forceUnicode(value)
 				logger.debug2('Setting __dirUser to "{0}"'.format(value))
+				self.__dirUser = forceUnicode(value)
 
 		self.__fileUid = pwd.getpwnam(self.__fileUser)[2]
 		self.__fileGid = grp.getgrnam(self.__fileGroup)[2]
