@@ -695,8 +695,10 @@ def getNetworkConfiguration(ipAddress=None):
 	else:
 		fqdn = getLocalFqdn()
 		networkConfig['ipAddress'] = socket.gethostbyname(fqdn)
-		if networkConfig['ipAddress'].split(u'.')[0] in ('127', '169'):
-			networkConfig['ipAddress'] = None
+
+	if networkConfig['ipAddress'].split(u'.')[0] in ('127', '169'):
+		logger.info("Not using IP {0} because of restricted network block.", networkConfig['ipAddress'])
+		networkConfig['ipAddress'] = None
 
 	for device in getEthernetDevices():
 		devconf = getNetworkDeviceConfig(device)
