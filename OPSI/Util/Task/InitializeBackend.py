@@ -41,8 +41,8 @@ from OPSI.Util.Task.Rights import setPasswdRights
 
 OPSI_GLOBAL_CONF = u'/etc/opsi/global.conf'
 
+LOGGER = Logger()
 
-logger = Logger()
 
 
 def initializeBackends(ipAddress=None):
@@ -61,12 +61,12 @@ def initializeBackends(ipAddress=None):
 	fqdn = getLocalFqdn()
 	hostname = fqdn.split(u'.')[0]
 
-	logger.notice(u"Try to find a Configserver.")
+	LOGGER.notice(u"Try to find a Configserver.")
 	configServer = backend.host_getObjects(type='OpsiConfigserver')
 	if not configServer and not backend.host_getIdents(type='OpsiConfigserver', id=fqdn):
 		depot = backend.host_getObjects(type='OpsiDepotserver', id=fqdn)
 		if not depot:
-			logger.notice(u"Creating config server '%s'" % fqdn)
+			LOGGER.notice(u"Creating config server '%s'" % fqdn)
 
 			backend.host_createOpsiConfigserver(
 				id=fqdn,
@@ -90,7 +90,7 @@ def initializeBackends(ipAddress=None):
 			)
 			configServer = backend.host_getObjects(type='OpsiConfigserver', id=fqdn)
 		else:
-			logger.notice(u"Converting depot server '%s' to config server" % fqdn)
+			LOGGER.notice(u"Converting depot server '%s' to config server" % fqdn)
 			configServer = OpsiConfigserver.fromHash(depot[0].toHash())
 			backend.host_createObjects(configServer)
 
@@ -99,7 +99,7 @@ def initializeBackends(ipAddress=None):
 	else:
 		depot = backend.host_getObjects(type='OpsiDepotserver', id=fqdn)
 		if not depot:
-			logger.notice(u"Creating depot server '%s'" % fqdn)
+			LOGGER.notice(u"Creating depot server '%s'" % fqdn)
 
 			backend.host_createOpsiDepotserver(
 				id=fqdn,
@@ -166,10 +166,10 @@ def _setupDepotDirectory():
 		try:
 			os.mkdir(depotDir)
 		except OSError as error:
-			logger.warning(u"Failed to create depot directory '%s': %s" % (depotDir, error))
+			LOGGER.warning(u"Failed to create depot directory '%s': %s" % (depotDir, error))
 
 	if os.path.exists("/opt/pcbin/install"):
-		logger.warning(u"You have an old depot configuration. Using /opt/pcbin/install is depracted, please use /var/lib/opsi/depot instead.")
+		LOGGER.warning(u"You have an old depot configuration. Using /opt/pcbin/install is depracted, please use /var/lib/opsi/depot instead.")
 
 
 def _setupWorkbenchDirectory():
@@ -182,4 +182,4 @@ def _setupWorkbenchDirectory():
 		os.mkdir('/var/lib/opsi/workbench')
 	except OSError as error:
 		if error.errno != 17:  # 17 is File exists
-			logger.warning("Failed to create workbench directory: {0}", error)
+			LOGGER.warning("Failed to create workbench directory: {0}", error)
