@@ -35,8 +35,8 @@ import shutil
 from OPSI.Backend.Backend import ConfigDataBackend
 from OPSI.Config import OPSI_GLOBAL_CONF, OPSICONFD_USER, FILE_ADMIN_GROUP
 from OPSI.Exceptions import (
-	BackendBadValueError, BackendConfigurationError,
-	BackendError, BackendIOError, BackendUnaccomplishableError)
+	BackendBadValueError, BackendConfigurationError, BackendError,
+	BackendIOError, BackendMissingDataError, BackendUnaccomplishableError)
 from OPSI.Logger import Logger
 from OPSI.Types import (
 	forceBool, forceHostId, forceFilename, forceList, forceObjectClass,
