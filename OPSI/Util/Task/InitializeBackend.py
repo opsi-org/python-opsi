@@ -63,24 +63,25 @@ def initializeBackends():
 	backend.backend_createBase()
 
 	sysConfig = getSysConfig()
+	fqdn = sysConfig['fqdn']
 
 	logger.notice(u"Try to find a Configserver.")
 	configServer = backend.host_getObjects(type='OpsiConfigserver')
-	if not configServer and not backend.host_getIdents(type='OpsiConfigserver', id=sysConfig['fqdn']):
-		depot = backend.host_getObjects(type='OpsiDepotserver', id=sysConfig['fqdn'])
+	if not configServer and not backend.host_getIdents(type='OpsiConfigserver', id=fqdn):
+		depot = backend.host_getObjects(type='OpsiDepotserver', id=fqdn)
 		if not depot:
-			logger.notice(u"Creating config server '%s'" % sysConfig['fqdn'])
+			logger.notice(u"Creating config server '%s'" % fqdn)
 			depotRemoteUrl = u'smb://%s/opsi_depot' % sysConfig['hostname']
 
 			backend.host_createOpsiConfigserver(
-				id=sysConfig['fqdn'],
+				id=fqdn,
 				opsiHostKey=None,
 				depotLocalUrl=u'file:///var/lib/opsi/depot',
 				depotRemoteUrl=depotRemoteUrl,
-				depotWebdavUrl=u'webdavs://%s:4447/depot' % sysConfig['fqdn'],
+				depotWebdavUrl=u'webdavs://%s:4447/depot' % fqdn,
 				# TODO: ip here?
 				repositoryLocalUrl=u'file:///var/lib/opsi/repository',
-				repositoryRemoteUrl=u'webdavs://%s:4447/repository' % sysConfig['fqdn'],
+				repositoryRemoteUrl=u'webdavs://%s:4447/repository' % fqdn,
 				description=None,
 				notes=None,
 				hardwareAddress=sysConfig['hardwareAddress'],
@@ -92,28 +93,28 @@ def initializeBackends():
 				masterDepotId=None,
 				# TODO: add workbench here
 			)
-			configServer = backend.host_getObjects(type='OpsiConfigserver', id=sysConfig['fqdn'])
+			configServer = backend.host_getObjects(type='OpsiConfigserver', id=fqdn)
 		else:
-			logger.notice(u"Converting depot server '%s' to config server" % sysConfig['fqdn'])
+			logger.notice(u"Converting depot server '%s' to config server" % fqdn)
 			configServer = OpsiConfigserver.fromHash(depot[0].toHash())
 			backend.host_createObjects(configServer)
 
 			# list expected in further processing
 			configServer = [configServer]
 	else:
-		depot = backend.host_getObjects(type='OpsiDepotserver', id=sysConfig['fqdn'])
+		depot = backend.host_getObjects(type='OpsiDepotserver', id=fqdn)
 		if not depot:
-			logger.notice(u"Creating depot server '%s'" % sysConfig['fqdn'])
+			logger.notice(u"Creating depot server '%s'" % fqdn)
 			depotRemoteUrl = u'smb://%s/opsi_depot' % sysConfig['hostname']  # TODO: ip?
 
 			backend.host_createOpsiDepotserver(
-				id=sysConfig['fqdn'],
+				id=fqdn,
 				opsiHostKey=None,
 				depotLocalUrl=u'file:///var/lib/opsi/depot',
 				depotRemoteUrl=depotRemoteUrl,
-				depotWebdavUrl=u'webdavs://%s:4447/depot' % sysConfig['fqdn'],
+				depotWebdavUrl=u'webdavs://%s:4447/depot' % fqdn,
 				repositoryLocalUrl=u'file:///var/lib/opsi/repository',
-				repositoryRemoteUrl=u'webdavs://%s:4447/repository' % sysConfig['fqdn'],
+				repositoryRemoteUrl=u'webdavs://%s:4447/repository' % fqdn,
 				description=None,
 				notes=None,
 				hardwareAddress=sysConfig['hardwareAddress'],
@@ -126,10 +127,10 @@ def initializeBackends():
 			)
 
 	if configServer:
-		if configServer[0].id == sysConfig['fqdn']:
+		if configServer[0].id == fqdn:
 			configServer = backend.host_getObjects(type='OpsiConfigserver')
 			if not configServer:
-				raise Exception(u"Config server '%s' not found" % sysConfig['fqdn'])
+				raise Exception(u"Config server '%s' not found" % fqdn)
 			configServer = configServer[0]
 			if sysConfig['ipAddress']:
 				configServer.setIpAddress(sysConfig['ipAddress'])
