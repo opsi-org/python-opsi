@@ -46,6 +46,12 @@ LOGGER = Logger()
 
 
 def initializeBackends(ipAddress=None):
+	"""
+	Initial backend setup based on the current configuration.
+
+	:param ipAddress: Force the function to work with the given IP address.
+	:type ipAddress: str
+	"""
 	_setupPasswdFile()
 
 	from OPSI.Backend.BackendManager import BackendManager
