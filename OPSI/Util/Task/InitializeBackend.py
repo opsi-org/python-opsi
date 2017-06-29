@@ -46,10 +46,7 @@ logger = Logger()
 
 
 def initializeBackends(ipAddress=None):
-	if not os.path.exists(u'/etc/opsi/passwd'):
-		with codecs.open(u'/etc/opsi/passwd', 'w', 'utf-8'):
-			pass
-		setPasswdRights()
+	_setupPasswdFile()
 
 	from OPSI.Backend.BackendManager import BackendManager
 	backend = BackendManager(
@@ -145,6 +142,18 @@ def initializeBackends(ipAddress=None):
 	initializeConfigs(backend=backend, configServer=configServer)
 	backend.backend_exit()
 
+	_setupDepotDirectory()
+	# TODO: create workbench directory
+
+
+def _setupPasswdFile():
+	if not os.path.exists(u'/etc/opsi/passwd'):
+		with codecs.open(u'/etc/opsi/passwd', 'w', 'utf-8'):
+			pass
+		setPasswdRights()
+
+
+def _setupDepotDirectory():
 	depotDir = '/var/lib/opsi/depot'
 	if not os.path.exists(depotDir):
 		try:
@@ -153,5 +162,3 @@ def initializeBackends(ipAddress=None):
 				logger.warning(u"You have an old depot configuration. Using /opt/pcbin/install is depracted, please use /var/lib/opsi/depot instead.")
 		except Exception as error:
 			logger.warning(u"Failed to create depot directory '%s': %s" % (depotDir, error))
-
-	# TODO: create workbench directory
