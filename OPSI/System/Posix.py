@@ -45,6 +45,7 @@ import copy as pycopy
 from itertools import islice
 from signal import SIGKILL
 
+from OPSI.Config import OPSI_GLOBAL_CONF
 from OPSI.Logger import Logger, LOG_NONE
 from OPSI.Types import (forceDomain, forceInt, forceBool, forceUnicode,
 	forceFilename, forceHostname, forceHostId, forceNetmask, forceIpAddress,
@@ -78,7 +79,6 @@ BIN_WHICH = '/usr/bin/which'
 WHICH_CACHE = {}
 DHCLIENT_LEASES_FILE = '/var/lib/dhcp/dhclient.leases'
 DHCLIENT_LEASES_FILE_OLD = '/var/lib/dhcp3/dhclient.leases'
-OPSI_GLOBAL_CONF = u'/etc/opsi/global.conf'
 
 hooks = []
 x86_64 = False

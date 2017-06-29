@@ -39,8 +39,6 @@ from OPSI.Types import forceList
 from OPSI.Util.Task.ConfigureBackend.ConfigurationData import initializeConfigs
 from OPSI.Util.Task.Rights import setPasswdRights
 
-OPSI_GLOBAL_CONF = u'/etc/opsi/global.conf'
-
 LOGGER = Logger()
 
 
