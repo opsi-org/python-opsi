@@ -147,6 +147,9 @@ def initializeBackends(ipAddress=None):
 
 
 def _setupPasswdFile():
+	"""
+	Set up the opsi passwd file and set the correct rights.
+	"""
 	if not os.path.exists(u'/etc/opsi/passwd'):
 		with codecs.open(u'/etc/opsi/passwd', 'w', 'utf-8'):
 			pass
@@ -154,6 +157,9 @@ def _setupPasswdFile():
 
 
 def _setupDepotDirectory():
+	"""
+	Set up the directory for the depot.
+	"""
 	depotDir = '/var/lib/opsi/depot'
 	if not os.path.exists(depotDir):
 		try:
@@ -165,6 +171,11 @@ def _setupDepotDirectory():
 
 
 def _setupWorkbenchDirectory():
+	"""
+	Set up the directory for the workbench in case it is missing.
+
+	The path is `/var/lib/opsi/workbench`.
+	"""
 	try:
 		os.mkdir('/var/lib/opsi/workbench')
 	except OSError as error:
