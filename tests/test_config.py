@@ -24,7 +24,7 @@ Testing opsi config module.
 
 from OPSI.Config import (
     DEFAULT_DEPOT_USER, FILE_ADMIN_GROUP, OPSI_ADMIN_GROUP,
-    OPSI_GLOBAL_CONF)
+    OPSI_GLOBAL_CONF, OPSICONFD_USER)
 
 import pytest
 
@@ -34,6 +34,7 @@ import pytest
     OPSI_ADMIN_GROUP,
     DEFAULT_DEPOT_USER,
     OPSI_GLOBAL_CONF,
+    OPSICONFD_USER,
 ])
 def testValueIsSet(value):
     assert value is not None
