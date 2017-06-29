@@ -143,7 +143,7 @@ def initializeBackends(ipAddress=None):
 	backend.backend_exit()
 
 	_setupDepotDirectory()
-	# TODO: create workbench directory
+	_setupWorkbenchDirectory()
 
 
 def _setupPasswdFile():
@@ -162,3 +162,11 @@ def _setupDepotDirectory():
 				logger.warning(u"You have an old depot configuration. Using /opt/pcbin/install is depracted, please use /var/lib/opsi/depot instead.")
 		except Exception as error:
 			logger.warning(u"Failed to create depot directory '%s': %s" % (depotDir, error))
+
+
+def _setupWorkbenchDirectory():
+	try:
+		os.mkdir('/var/lib/opsi/workbench')
+	except OSError as error:
+		if error.errno != 17:  # 17 is File exists
+			logger.warning("Failed to create workbench directory: {0}", error)
