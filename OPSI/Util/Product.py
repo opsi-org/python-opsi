@@ -28,7 +28,9 @@ import os
 import re
 import shutil
 
-from OPSI.Config import FILE_ADMIN_GROUP as DEFAULT_CLIENT_DATA_GROUP
+from OPSI.Config import (
+	FILE_ADMIN_GROUP as DEFAULT_CLIENT_DATA_GROUP,
+	OPSICONFD_USER as DEFAULT_CLIENT_DATA_USER)
 from OPSI.Logger import Logger, LOG_INFO, LOG_ERROR
 from OPSI.Util.File.Opsi import PackageControlFile, PackageContentFile
 from OPSI.Util.File.Archive import Archive
@@ -42,7 +44,6 @@ if os.name == 'posix':
 	import grp
 
 DEFAULT_TMP_DIR = u'/tmp'
-DEFAULT_CLIENT_DATA_USER = u'opsiconfd'
 EXCLUDE_DIRS_ON_PACK = u'(^\.svn$)|(^\.git$)'
 EXCLUDE_FILES_ON_PACK = u'~$'
 PACKAGE_SCRIPT_TIMEOUT = 600

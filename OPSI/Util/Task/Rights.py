@@ -64,7 +64,8 @@ from OPSI.Config import (
 	FILE_ADMIN_GROUP as _FILE_ADMIN_GROUP,
 	OPSI_ADMIN_GROUP as _ADMIN_GROUP,
 	DEFAULT_DEPOT_USER as _CLIENT_USER,
-	OPSI_GLOBAL_CONF)
+	OPSI_GLOBAL_CONF,
+	OPSICONFD_USER as _OPSICONFD_USER)
 from OPSI.Logger import LOG_DEBUG, Logger
 from OPSI.Types import forceHostId
 from OPSI.Util import findFiles, getfqdn
@@ -74,7 +75,6 @@ from OPSI.System.Posix import (
 
 LOGGER = Logger()
 
-_OPSICONFD_USER = u'opsiconfd'
 _POSSIBLE_DEPOT_DIRECTORIES = (u'/var/lib/opsi/depot/', u'/opt/pcbin/install/')
 _CACHED_DEPOT_DIRECTORY = None
 _HAS_ROOT_RIGHTS = os.geteuid() == 0
