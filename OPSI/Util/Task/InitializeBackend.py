@@ -153,6 +153,7 @@ def _setupPasswdFile():
 	if not os.path.exists(u'/etc/opsi/passwd'):
 		with codecs.open(u'/etc/opsi/passwd', 'w', 'utf-8'):
 			pass
+
 		setPasswdRights()
 
 
