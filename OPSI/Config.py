@@ -39,3 +39,5 @@ OPSI_ADMIN_GROUP = u'opsiadmin'
 DEFAULT_DEPOT_USER = u'pcpatch'
 
 OPSI_GLOBAL_CONF = u'/etc/opsi/global.conf'
+
+OPSICONFD_USER = u'opsiconfd'

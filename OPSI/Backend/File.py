@@ -33,16 +33,17 @@ import re
 import shutil
 
 from OPSI.Backend.Backend import ConfigDataBackend
-from OPSI.Config import OPSI_GLOBAL_CONF
-from OPSI.Exceptions import (BackendBadValueError, BackendConfigurationError,
+from OPSI.Config import OPSI_GLOBAL_CONF, OPSICONFD_USER, FILE_ADMIN_GROUP
+from OPSI.Exceptions import (
+	BackendBadValueError, BackendConfigurationError,
 	BackendError, BackendIOError, BackendUnaccomplishableError)
 from OPSI.Logger import Logger
-from OPSI.Types import (forceBool, forceHostId, forceFilename, forceList,
-						forceObjectClass, forceObjectClassList, forceProductId,
-						forceUnicode, forceUnicodeList)
+from OPSI.Types import (
+	forceBool, forceHostId, forceFilename, forceList, forceObjectClass,
+	forceObjectClassList, forceProductId, forceUnicode, forceUnicodeList)
 from OPSI.Util import toJson, fromJson, getfqdn
 from OPSI.Util.File import IniFile, LockableFile
-from OPSI.Util.File.Opsi import OpsiConfFile, HostKeyFile, PackageControlFile
+from OPSI.Util.File.Opsi import HostKeyFile, PackageControlFile
 from OPSI.Object import *  # needed for calls to "eval"
 
 __all__ = ('FileBackend', )
@@ -62,19 +63,12 @@ class FileBackend(ConfigDataBackend):
 		self.__baseDir = u'/var/lib/opsi/config'
 		self.__hostKeyFile = u'/etc/opsi/pckeys'
 
-		self.__fileUser = u'opsiconfd'
-		self.__fileGroup = u'pcpatch'
+		self.__fileUser = OPSICONFD_USER
+		self.__fileGroup = FILE_ADMIN_GROUP
 		self.__fileMode = 0o660
-		self.__dirGroup = u'pcpatch'
-		self.__dirUser = u'opsiconfd'
+		self.__dirGroup = FILE_ADMIN_GROUP
+		self.__dirUser = OPSICONFD_USER
 		self.__dirMode = 0o770
-
-		try:
-			self.__fileGroup = OpsiConfFile().getOpsiFileAdminGroup()
-			self.__dirGroup = OpsiConfFile().getOpsiFileAdminGroup()
-		except Exception:
-			self.__fileGroup = u'pcpatch'
-			self.__dirGroup = u'pcpatch'
 
 		# Parse arguments
 		logger.debug2('kwargs are: {0}'.format(kwargs))
