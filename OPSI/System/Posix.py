@@ -79,6 +79,7 @@ BIN_WHICH = '/usr/bin/which'
 WHICH_CACHE = {}
 DHCLIENT_LEASES_FILE = '/var/lib/dhcp/dhclient.leases'
 DHCLIENT_LEASES_FILE_OLD = '/var/lib/dhcp3/dhclient.leases'
+OPSI_GLOBAL_CONF = u'/etc/opsi/global.conf'
 
 hooks = []
 x86_64 = False
