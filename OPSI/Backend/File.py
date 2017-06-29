@@ -1106,7 +1106,7 @@ class FileBackend(ConfigDataBackend):
 				iniFile = IniFile(filename=filename, ignoreCase=False)
 				cp = iniFile.parse()
 				for obj in objList:
-					if not (obj.getObjectId() == os.path.basename(filename)[:-4]):
+					if obj.getObjectId() != os.path.basename(filename)[:-4]:
 						continue
 
 					logger.debug(u"Deleting %s: '%s'" % (obj.getType(), obj.getIdent()))
