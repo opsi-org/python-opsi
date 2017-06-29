@@ -96,7 +96,7 @@ def setPasswdRights():
 	Setting correct permissions on ``/etc/opsi/passwd``.
 	"""
 	targetFile = u'/etc/opsi/passwd'
-	logger.notice(u"Setting rights on {0}", targetFile)
+	LOGGER.notice(u"Setting rights on {0}", targetFile)
 	opsiconfdUid = pwd.getpwnam(_OPSICONFD_USER)[2]
 	adminGroupGid = grp.getgrnam(_ADMIN_GROUP)[2]
 	os.chown(targetFile, opsiconfdUid, adminGroupGid)
