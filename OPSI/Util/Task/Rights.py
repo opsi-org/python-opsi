@@ -1,4 +1,3 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 # This module is part of the desktop management solution opsi
@@ -70,6 +69,8 @@ from OPSI.Util.File.Opsi import OpsiConfFile
 from OPSI.System.Posix import (isCentOS, isDebian, isOpenSUSE, isRHEL, isSLES,
 	isUbuntu, isUCS, isOpenSUSELeap)
 
+__all__ = ('setRights', 'setPasswdRights')
+
 LOGGER = Logger()
 
 _OPSICONFD_USER = u'opsiconfd'
@@ -93,15 +94,16 @@ KNOWN_EXECUTABLES = frozenset((
 Rights = namedtuple("Rights", ["uid", "gid", "files", "directories", "correctLinks"])
 
 
-# TODO: use OPSI.System.Posix.Sysconfig for a more standardized approach
-def getLocalFQDN():
-	try:
-		fqdn = getfqdn(conf=OPSI_GLOBAL_CONF)
-		return forceHostId(fqdn)
-	except Exception as error:
-		raise RuntimeError(
-			u"Failed to get fully qualified domain name: {0}".format(error)
-		)
+def setPasswdRights():
+	"""
+	Setting correct permissions on ``/etc/opsi/passwd``.
+	"""
+	targetFile = u'/etc/opsi/passwd'
+	logger.notice(u"Setting rights on {0}", targetFile)
+	opsiconfdUid = pwd.getpwnam(_OPSICONFD_USER)[2]
+	adminGroupGid = grp.getgrnam(_ADMIN_GROUP)[2]
+	os.chown(targetFile, opsiconfdUid, adminGroupGid)
+	os.chmod(targetFile, 0o660)
 
 
 def setRights(path=u'/'):
@@ -300,6 +302,17 @@ def getLocalDepot():
 		return depot[0]
 	except IndexError:
 		raise BackendMissingDataError("No depots found!")
+
+
+# TODO: use OPSI.System.Posix.Sysconfig for a more standardized approach
+def getLocalFQDN():
+	try:
+		fqdn = getfqdn(conf=OPSI_GLOBAL_CONF)
+		return forceHostId(fqdn)
+	except Exception as error:
+		raise RuntimeError(
+			u"Failed to get fully qualified domain name: {0}".format(error)
+		)
 
 
 def getWebserverRepositoryPath():

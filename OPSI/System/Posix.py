@@ -52,7 +52,7 @@ from OPSI.Types import (forceDomain, forceInt, forceBool, forceUnicode,
 	forceIPAddress, forceHardwareVendorId, forceHardwareAddress,
 	forceHardwareDeviceId, forceUnicodeLower)
 from OPSI.Object import *
-from OPSI.Util import objectToBeautifiedText, removeUnit
+from OPSI.Util import getfqdn, objectToBeautifiedText, removeUnit
 
 __all__ = (
 	'Distribution', 'Harddisk', 'NetworkPerformanceCounter', 'SysInfo',
@@ -79,6 +79,7 @@ BIN_WHICH = '/usr/bin/which'
 WHICH_CACHE = {}
 DHCLIENT_LEASES_FILE = '/var/lib/dhcp/dhclient.leases'
 DHCLIENT_LEASES_FILE_OLD = '/var/lib/dhcp3/dhclient.leases'
+OPSI_GLOBAL_CONF = u'/etc/opsi/global.conf'
 
 hooks = []
 x86_64 = False
@@ -663,9 +664,80 @@ def ifconfig(device, address, netmask=None):
 	execute(cmd)
 
 
+def getLocalFqdn():
+	fqdn = getfqdn(conf=OPSI_GLOBAL_CONF)
+	try:
+		return forceHostId(fqdn)
+	except ValueError:
+		raise ValueError(u"Failed to get fully qualified domain name. Value '{0}' is invalid.".format(fqdn))
+
+
+def getNetworkConfiguration(ipAddress=None):
+	"""
+	Get the network configuration for the local host.
+
+	The returned dict will contain the keys 'ipAddress',
+	'hardwareAddress', 'netmask', 'broadcast' and 'subnet'.
+
+	:param ipAddress: Force the function to work with the given IP address.
+	:type ipAddress: str
+	:returns: Network configuration for the local host.
+	:rtype: dict
+	"""
+	networkConfig = {
+		'hardwareAddress': None,
+		'broadcast': u'',
+		'subnet': u''
+	}
+
+	if ipAddress:
+		networkConfig['ipAddress'] = ipAddress
+	else:
+		fqdn = getLocalFqdn()
+		networkConfig['ipAddress'] = socket.gethostbyname(fqdn)
+
+	if networkConfig['ipAddress'].split(u'.')[0] in ('127', '169'):
+		logger.info("Not using IP {0} because of restricted network block.", networkConfig['ipAddress'])
+		networkConfig['ipAddress'] = None
+
+	for device in getEthernetDevices():
+		devconf = getNetworkDeviceConfig(device)
+		if devconf['ipAddress'] and devconf['ipAddress'].split(u'.')[0] not in ('127', '169'):
+			if not networkConfig['ipAddress']:
+				networkConfig['ipAddress'] = devconf['ipAddress']
+
+			if networkConfig['ipAddress'] == devconf['ipAddress']:
+				networkConfig['netmask'] = devconf['netmask']
+				networkConfig['hardwareAddress'] = devconf['hardwareAddress']
+				break
+
+	if not networkConfig['ipAddress']:
+		try:
+			logger.debug2("FQDN is: {0!r}", fqdn)
+		except NameError:
+			fqdn = getLocalFqdn()
+
+		raise ValueError(u"Failed to get a valid ip address for fqdn '%s'" % fqdn)
+
+	if not networkConfig.get('netmask'):
+		networkConfig['netmask'] = u'255.255.255.0'
+
+	for i in range(4):
+		if networkConfig['broadcast']:
+			networkConfig['broadcast'] += u'.'
+		if networkConfig['subnet']:
+			networkConfig['subnet'] += u'.'
+
+		networkConfig['subnet'] += u'%d' % (int(networkConfig['ipAddress'].split(u'.')[i]) & int(networkConfig['netmask'].split(u'.')[i]))
+		networkConfig['broadcast'] += u'%d' % (int(networkConfig['ipAddress'].split(u'.')[i]) | int(networkConfig['netmask'].split(u'.')[i]) ^ 255)
+
+	return networkConfig
+
+
 def getSystemProxySetting():
-	#TODO Have to be implemented for posix machines
+	# TODO: Has to be implemented for posix machines
 	logger.notice(u'Not Implemented yet')
+
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # -                                   SESSION / DESKTOP HANDLING                                      -

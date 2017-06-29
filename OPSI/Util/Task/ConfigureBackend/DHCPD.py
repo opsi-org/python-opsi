@@ -1,8 +1,7 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2015-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2015-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -33,11 +32,10 @@ import pwd
 import shutil
 import time
 
-from . import _getSysConfig as getSysConfig
-
 from OPSI.Logger import Logger
 from OPSI.System import execute
 from OPSI.System.Posix import getDHCPDRestartCommand, locateDHCPDConfig
+from OPSI.System.Posix import getNetworkConfiguration
 from OPSI.System.Posix import isCentOS, isSLES, isRHEL
 from OPSI.Util.File import DHCPDConfFile, DHCPDConf_Block, DHCPDConf_Parameter
 from OPSI.Util.Task.Sudoers import patchSudoersFileToAllowRestartingDHCPD
@@ -54,7 +52,7 @@ def configureDHCPD(configFile=DHCPD_CONF):
 		logger.warning("Can't find an dhcpd.conf. Aborting configuration.")
 		return
 
-	sysConfig = getSysConfig()
+	sysConfig = getNetworkConfiguration()
 	logger.notice(u"Configuring dhcpd")
 
 	dhcpdConf = DHCPDConfFile(configFile)
@@ -103,7 +101,7 @@ def configureDHCPD(configFile=DHCPD_CONF):
 
 		for group in subnet.getBlocks('group'):
 			logger.info(u"    Configuring group")
-			params = group.getParameters_hash(inherit='global')#
+			params = group.getParameters_hash(inherit='global')
 
 			if params.get('next-server'):
 				logger.info(u"      next-server already set")
