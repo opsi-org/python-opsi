@@ -36,4 +36,4 @@ except Exception:
     FILE_ADMIN_GROUP = u'pcpatch'
 
 OPSI_ADMIN_GROUP = u'opsiadmin'
-CLIENT_USER = u'pcpatch'
+DEFAULT_DEPOT_USER = u'pcpatch'
