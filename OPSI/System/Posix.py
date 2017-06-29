@@ -703,7 +703,8 @@ def getNetworkConfiguration(ipAddress=None):
 		if devconf['ipAddress'] and devconf['ipAddress'].split(u'.')[0] not in ('127', '169'):
 			if not networkConfig['ipAddress']:
 				networkConfig['ipAddress'] = devconf['ipAddress']
-			if (networkConfig['ipAddress'] == devconf['ipAddress']):
+
+			if networkConfig['ipAddress'] == devconf['ipAddress']:
 				networkConfig['netmask'] = devconf['netmask']
 				networkConfig['hardwareAddress'] = devconf['hardwareAddress']
 				break
