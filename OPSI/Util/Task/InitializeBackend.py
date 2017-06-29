@@ -168,11 +168,11 @@ def _setupDepotDirectory():
 	Set up the directory for the depot.
 	"""
 	depotDir = '/var/lib/opsi/depot'
-	if not os.path.exists(depotDir):
-		try:
-			os.mkdir(depotDir)
-		except OSError as error:
-			LOGGER.warning(u"Failed to create depot directory '%s': %s" % (depotDir, error))
+	try:
+		os.mkdir(depotDir)
+	except OSError as error:
+		if error.errno != 17:  # 17 is File exists
+			LOGGER.warning(u"Failed to create depot directory '{0}': {1}", depotDir, error)
 
 	if os.path.exists("/opt/pcbin/install"):
 		LOGGER.warning(u"You have an old depot configuration. Using /opt/pcbin/install is depracted, please use /var/lib/opsi/depot instead.")
