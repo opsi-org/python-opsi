@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2015-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2015-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -29,18 +29,13 @@ import shutil
 import time
 
 import OPSI.System.Posix as Posix
+from OPSI.Config import FILE_ADMIN_GROUP
 from OPSI.Logger import Logger
 from OPSI.System import execute, which
 
 logger = Logger()
 
 SMB_CONF = u'/etc/samba/smb.conf'
-
-try:
-	from OPSI.Util.File.Opsi import OpsiConfFile
-	FILE_ADMIN_GROUP = OpsiConfFile().getOpsiFileAdminGroup()
-except Exception:
-	FILE_ADMIN_GROUP = u'pcpatch'
 
 
 def getDistribution():

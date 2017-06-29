@@ -29,3 +29,5 @@ try:
 except Exception:
     FILE_ADMIN_GROUP = u'pcpatch'
 
+OPSI_ADMIN_GROUP = u'opsiadmin'
+CLIENT_USER = u'pcpatch'

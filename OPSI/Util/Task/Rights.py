@@ -1,10 +1,9 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2014-2016 uib GmbH - http://www.uib.de/
+# Copyright (C) 2014-2017 uib GmbH - http://www.uib.de/
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -62,26 +61,23 @@ import re
 from collections import namedtuple
 
 from OPSI.Backend.Backend import OPSI_GLOBAL_CONF
+from OPSI.Config import (
+	FILE_ADMIN_GROUP as _FILE_ADMIN_GROUP,
+	OPSI_ADMIN_GROUP as _ADMIN_GROUP,
+	CLIENT_USER as _CLIENT_USER)
 from OPSI.Logger import LOG_DEBUG, Logger
 from OPSI.Types import forceHostId
 from OPSI.Util import findFiles, getfqdn
-from OPSI.Util.File.Opsi import OpsiConfFile
 from OPSI.System.Posix import (isCentOS, isDebian, isOpenSUSE, isRHEL, isSLES,
 	isUbuntu, isUCS, isOpenSUSELeap)
 
 LOGGER = Logger()
 
 _OPSICONFD_USER = u'opsiconfd'
-_ADMIN_GROUP = u'opsiadmin'
-_CLIENT_USER = u'pcpatch'
 _POSSIBLE_DEPOT_DIRECTORIES = (u'/var/lib/opsi/depot/', u'/opt/pcbin/install/')
 _CACHED_DEPOT_DIRECTORY = None
 _HAS_ROOT_RIGHTS = os.geteuid() == 0
 
-try:
-	_FILE_ADMIN_GROUP = OpsiConfFile().getOpsiFileAdminGroup()
-except Exception:
-	_FILE_ADMIN_GROUP = u'pcpatch'
 
 KNOWN_EXECUTABLES = frozenset((
 	u'create_driver_links.py', u'opsi-deploy-client-agent',

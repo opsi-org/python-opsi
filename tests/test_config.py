@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -22,12 +22,16 @@ Testing opsi config module.
 :license: GNU Affero General Public License version 3
 """
 
-from OPSI.Config import FILE_ADMIN_GROUP
+from OPSI.Config import FILE_ADMIN_GROUP, OPSI_ADMIN_GROUP, CLIENT_USER
 
 import pytest
 
 
-@pytest.mark.parametrize("value", [FILE_ADMIN_GROUP, ])
+@pytest.mark.parametrize("value", [
+    FILE_ADMIN_GROUP,
+    OPSI_ADMIN_GROUP,
+    CLIENT_USER
+])
 def testValueIsSet(value):
     assert value is not None
     assert value
