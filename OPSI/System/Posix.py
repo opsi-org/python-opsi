@@ -685,7 +685,9 @@ def getNetworkConfiguration(ipAddress=None):
 	:rtype: dict
 	"""
 	networkConfig = {
-		'hardwareAddress': None
+		'hardwareAddress': None,
+		'broadcast': u'',
+		'subnet': u''
 	}
 
 	if ipAddress:
@@ -717,8 +719,6 @@ def getNetworkConfiguration(ipAddress=None):
 	if not networkConfig.get('netmask'):
 		networkConfig['netmask'] = u'255.255.255.0'
 
-	networkConfig['broadcast'] = u''
-	networkConfig['subnet'] = u''
 	for i in range(4):
 		if networkConfig['broadcast']:
 			networkConfig['broadcast'] += u'.'
