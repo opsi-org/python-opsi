@@ -101,7 +101,7 @@ def configureDHCPD(configFile=DHCPD_CONF):
 
 		for group in subnet.getBlocks('group'):
 			logger.info(u"    Configuring group")
-			params = group.getParameters_hash(inherit='global')#
+			params = group.getParameters_hash(inherit='global')
 
 			if params.get('next-server'):
 				logger.info(u"      next-server already set")
