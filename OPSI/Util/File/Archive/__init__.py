@@ -24,7 +24,7 @@ This include functionality for using Tar-Files and their compression.
 
 
 .. versionadded:: 4.0.5.1
-   Control the usage of pigz via ``PIGZ_ENABLED``
+	Control the usage of pigz via ``PIGZ_ENABLED``
 
 :copyright: uib GmbH <info@uib.de>
 :author: Jan Schneider <j.schneider@uib.de>

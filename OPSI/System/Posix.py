@@ -568,7 +568,7 @@ def getDHCPResult(device, leasesFile=None):
 	to read the values from pump.
 
 	.. versionchanged:: 4.0.5.1
-	   Added parameter *leasesFile*.
+		Added parameter *leasesFile*.
 
 	:param leasesFile: The file to read the leases from. If this is not \
 given known places for this file will be tried.
@@ -3940,8 +3940,8 @@ def getActiveConsoleSessionId():
 
 	.. warning::
 
-	   This is currently only faked to have the function available for
-	   the opsi-linux-client-agent!
+		This is currently only faked to have the function available for
+		the opsi-linux-client-agent!
 
 	"""
 	# TODO: real implementation possible?
