@@ -1715,13 +1715,12 @@ class Harddisk:
 							self.partitions[p] = partition
 							logger.debug(
 								u"Partition sector values =>>> number: %s, "
-								u"start: %s sec, end: %s sec, size: %s sec " \
-								% (
+								u"start: %s sec, end: %s sec, size: %s sec " % (
 									partition['number'],
 									partition['secStart'],
 									partition['secEnd'],
 									partition['secSize']
-							   )
+								)
 							)
 							break
 
@@ -1747,25 +1746,34 @@ class Harddisk:
 				try:
 					part = self.getPartition(p + 1)
 					if self.blockAlignment:
-						logger.debug(u"   number: %s, start: %s MB (%s sec), end: %s MB (%s sec), size: %s MB (%s sec), " \
-								% (part['number'],
-									(part['start']/(1000*1000)), part['secStart'],
-									(part['end']/(1000*1000)), part['secEnd'],
-									(part['size']/(1000*1000)), part['secSize']) \
-								+ "type: %s, fs: %s, boot: %s" \
-								% (part['type'], part['fs'], part['boot']))
+						logger.debug(
+							u"   number: %s, start: %s MB (%s sec), "
+							u"end: %s MB (%s sec), size: %s MB (%s sec), "
+							u"type: %s, fs: %s, boot: %s" % (
+								part['number'], (part['start'] / (1000 * 1000)),
+								part['secStart'], (part['end'] / (1000 * 1000)),
+								part['secEnd'], (part['size'] / (1000 * 1000)),
+								part['secSize'], part['type'], part['fs'],
+								part['boot']
+							)
+						)
 
 						cmd += u'%s,%s,%s' % (part['secStart'], part['secSize'], part['type'])
 					else:
-						logger.debug(u"   number: %s, start: %s MB (%s cyl), end: %s MB (%s cyl), size: %s MB (%s cyl), " \
-									% (part['number'],
-										(part['start']/(1000*1000)), part['cylStart'],
-										(part['end']/(1000*1000)), part['cylEnd'],
-										(part['size']/(1000*1000)), part['cylSize']) \
-									+ "type: %s, fs: %s, boot: %s" \
-									% (part['type'], part['fs'], part['boot']))
+						logger.debug(
+							u"   number: %s, start: %s MB (%s cyl), "
+							u"end: %s MB (%s cyl), size: %s MB (%s cyl), "
+							u"type: %s, fs: %s, boot: %s" % (
+								part['number'], (part['start'] / (1000 * 1000)),
+								part['cylStart'], (part['end'] / (1000 * 1000)),
+								part['cylEnd'], (part['size'] / (1000 * 1000)),
+								part['cylSize'], part['type'], part['fs'],
+								part['boot']
+							)
+						)
 
 						cmd += u'%s,%s,%s' % (part['cylStart'], part['cylSize'], part['type'])
+
 					if part['boot']:
 						cmd += u',*'
 				except Exception as e:
