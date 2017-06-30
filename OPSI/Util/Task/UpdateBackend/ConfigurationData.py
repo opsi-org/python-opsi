@@ -68,7 +68,7 @@ def setDefaultWorkbenchLocation(backend):
 			changedServers.add(server)
 
 		if server.getWorkbenchRemoteUrl() is None:
-			depotAddress = _getServerAddress(server.depotRemoteUrl)
+			depotAddress = getServerAddress(server.depotRemoteUrl)
 			remoteWorkbenchPath = u'smb://{}/opsi_workbench'.format(depotAddress)
 			LOGGER.notice("Setting missing value for workbenchRemoteUrl on {} to {}", server.id, remoteWorkbenchPath)
 			server.setWorkbenchRemoteUrl(remoteWorkbenchPath)
@@ -78,7 +78,7 @@ def setDefaultWorkbenchLocation(backend):
 		backend.host_updateObjects(changedServers)
 
 
-def _getServerAddress(depotRemoteUrl):
+def getServerAddress(depotRemoteUrl):
 	"""
 	Get the address of the server from the `depotRemoteUrl`.
 
