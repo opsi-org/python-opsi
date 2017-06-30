@@ -65,7 +65,6 @@ def initializeBackends(ipAddress=None):
 
 	networkConfig = getNetworkConfiguration(ipAddress)
 	fqdn = getLocalFqdn()
-	hostname = fqdn.split(u'.')[0]
 
 	LOGGER.notice(u"Try to find a Configserver.")
 	configServer = backend.host_getObjects(type='OpsiConfigserver')
@@ -87,27 +86,8 @@ def initializeBackends(ipAddress=None):
 		depot = backend.host_getObjects(type='OpsiDepotserver', id=fqdn)
 		if not depot:
 			LOGGER.notice(u"Creating depot server '%s'" % fqdn)
-
-			backend.host_createOpsiDepotserver(
-				id=fqdn,
-				opsiHostKey=None,
-				depotLocalUrl=u'file:///var/lib/opsi/depot',
-				depotRemoteUrl=u'smb://%s/opsi_depot' % hostname,
-				depotWebdavUrl=u'webdavs://%s:4447/depot' % fqdn,
-				repositoryLocalUrl=u'file:///var/lib/opsi/repository',
-				repositoryRemoteUrl=u'webdavs://%s:4447/repository' % fqdn,
-				workbenchLocalUrl=u'file:///var/lib/opsi/workbench',
-				workbenchRemoteUrl=u'smb://{}/opsi_workbench'.format(hostname),
-				description=None,
-				notes=None,
-				hardwareAddress=networkConfig['hardwareAddress'],
-				ipAddress=networkConfig['ipAddress'],
-				inventoryNumber=None,
-				networkAddress=u'{subnet}/{netmask}'.format(**networkConfig),
-				maxBandwidth=0,
-				isMasterDepot=True,
-				masterDepotId=None,
-			)
+			serverConfig = _getServerConfig(fqdn, networkConfig)
+			backend.host_createOpsiDepotserver(**serverConfig)
 
 	if configServer:
 		if configServer[0].id == fqdn:
