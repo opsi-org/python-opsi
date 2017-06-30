@@ -73,27 +73,8 @@ def initializeBackends(ipAddress=None):
 		depot = backend.host_getObjects(type='OpsiDepotserver', id=fqdn)
 		if not depot:
 			LOGGER.notice(u"Creating config server '%s'" % fqdn)
-
-			backend.host_createOpsiConfigserver(
-				id=fqdn,
-				opsiHostKey=None,
-				depotLocalUrl=u'file:///var/lib/opsi/depot',
-				depotRemoteUrl=u'smb://%s/opsi_depot' % hostname,
-				depotWebdavUrl=u'webdavs://%s:4447/depot' % fqdn,
-				repositoryLocalUrl=u'file:///var/lib/opsi/repository',
-				repositoryRemoteUrl=u'webdavs://%s:4447/repository' % fqdn,
-				workbenchLocalUrl=u'file:///var/lib/opsi/workbench',
-				workbenchRemoteUrl=u'smb://{}/opsi_workbench'.format(hostname),
-				description=None,
-				notes=None,
-				hardwareAddress=networkConfig['hardwareAddress'],
-				ipAddress=networkConfig['ipAddress'],
-				inventoryNumber=None,
-				networkAddress=u'{subnet}/{netmask}'.format(**networkConfig),
-				maxBandwidth=0,
-				isMasterDepot=True,
-				masterDepotId=None,
-			)
+			serverConfig = _getServerConfig(fqdn, networkConfig)
+			backend.host_createOpsiConfigserver(**serverConfig)
 			configServer = backend.host_getObjects(type='OpsiConfigserver', id=fqdn)
 		else:
 			LOGGER.notice(u"Converting depot server '%s' to config server" % fqdn)
@@ -161,6 +142,41 @@ def _setupPasswdFile():
 			pass
 
 		setPasswdRights()
+
+
+def _getServerConfig(fqdn, networkConfig):
+	"""
+	Prepare the configuration of the local server.
+
+	:param networkConfig: Network configuration for the local host.
+	:type networkConfig: dict
+	:rtype: dict
+	"""
+	hostname = fqdn.split(u'.')[0]
+
+	config = dict(
+		id=fqdn,
+		opsiHostKey=None,
+		depotLocalUrl=u'file:///var/lib/opsi/depot',
+		depotRemoteUrl=u'smb://%s/opsi_depot' % hostname,
+		depotWebdavUrl=u'webdavs://%s:4447/depot' % fqdn,
+		repositoryLocalUrl=u'file:///var/lib/opsi/repository',
+		repositoryRemoteUrl=u'webdavs://%s:4447/repository' % fqdn,
+		workbenchLocalUrl=u'file:///var/lib/opsi/workbench',
+		workbenchRemoteUrl=u'smb://{}/opsi_workbench'.format(hostname),
+		description=None,
+		notes=None,
+		hardwareAddress=networkConfig['hardwareAddress'],
+		ipAddress=networkConfig['ipAddress'],
+		inventoryNumber=None,
+		networkAddress=u'{subnet}/{netmask}'.format(**networkConfig),
+		maxBandwidth=0,
+		isMasterDepot=True,
+		masterDepotId=None,
+	)
+
+	LOGGER.debug("Server configuration is: {0!r}", config)
+	return config
 
 
 def _setupDepotDirectory():
