@@ -885,14 +885,15 @@ class BackendAccessControl(object):
 		logger.debug(u"Filtering params: {0}", params)
 		for (key, value) in params.items():
 			valueList = forceList(value)
-			if len(valueList) == 0:
+			if not valueList:
 				continue
+
 			if issubclass(valueList[0].__class__, BaseObject) or isinstance(valueList[0], dict):
 				valueList = self._filterObjects(valueList, acls, exceptionOnTruncate=False)
 				if isinstance(value, list):
 					params[key] = valueList
 				else:
-					if len(valueList) > 0:
+					if valueList:
 						params[key] = valueList[0]
 					else:
 						del params[key]
@@ -906,7 +907,7 @@ class BackendAccessControl(object):
 				if isinstance(result, list):
 					return resultList
 				else:
-					if len(resultList) > 0:
+					if resultList:
 						return resultList[0]
 					else:
 						return None
