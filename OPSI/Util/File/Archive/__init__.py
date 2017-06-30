@@ -92,7 +92,8 @@ class BaseArchive(object):
 	def _extract(self, command, fileCount):
 		try:
 			logger.info(u"Executing: %s" % command)
-			proc = subprocess.Popen(command,
+			proc = subprocess.Popen(
+				command,
 				shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
 			)
 
