@@ -41,6 +41,8 @@ auditSoftware_delete.* : sys_group(opsiadmin); opsi_depotserver
 auditSoftware_.*       : sys_group(opsiadmin); opsi_depotserver; opsi_client
 auditHardware_delete.* : sys_group(opsiadmin); opsi_depotserver
 auditHardware_.*       : sys_group(opsiadmin); opsi_depotserver; opsi_client
+user_setCredentials    : sys_group(opsiadmin); opsi_depotserver
+user_getCredentials    : opsi_depotserver; opsi_client
 .*_get.*               : sys_group(opsiadmin); opsi_depotserver; opsi_client
 get(Raw){0,1}Data      : sys_group(opsiadmin); opsi_depotserver
 .*                     : sys_group(opsiadmin); opsi_depotserver; self

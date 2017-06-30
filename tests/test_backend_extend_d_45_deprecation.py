@@ -1,7 +1,8 @@
+#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2015-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -16,15 +17,25 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-Functionality to update OPSI backends.
+Tests for the dynamically loaded legacy extensions.
 
-.. versionadded:: 4.0.6.1
+This tests what usually is found under
+``/etc/opsi/backendManager/extend.de/45_deprecated.conf``.
+
+These extension shows methods that will be removed in the future.
 
 :author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
 """
 
 
-class BackendUpdateError(RuntimeError):
-	"This error indicates a problem during a backend update."
-	pass
+def testIsLegacyOpsi(backendManager):
+    assert backendManager.isLegacyOpsi() is False
+
+
+def testIsOpsi35(backendManager):
+    assert backendManager.isOpsi35() is False
+
+
+def testIsOpsi4(backendManager):
+    assert backendManager.isOpsi4() is True

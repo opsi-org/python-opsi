@@ -40,16 +40,11 @@ import codecs
 import shutil
 import time
 
+from OPSI.Config import FILE_ADMIN_GROUP
 from OPSI.Logger import Logger
 from OPSI.System.Posix import Distribution, which
 
 LOGGER = Logger()
-
-try:
-	from OPSI.Util.File.Opsi import OpsiConfFile
-	FILE_ADMIN_GROUP = OpsiConfFile().getOpsiFileAdminGroup()
-except Exception:
-	FILE_ADMIN_GROUP = u'pcpatch'
 
 SUDOERS_FILE = u'/etc/sudoers'
 _NO_TTY_REQUIRED_DEFAULT = u"Defaults:opsiconfd !requiretty"
@@ -162,8 +157,8 @@ def distributionRequiresNoTtyPatch():
 
 	.. versionadded:: 4.0.4.3
 
-	:returntype: bool
+	:rtype: bool
 	"""
-	distributor = Distribution().distributor
-	distributor = distributor.lower()
-	return ('redhat' in distributor or 'centos' in distributor or 'sme' in distributor)
+	distributor = Distribution().distributor.lower()
+
+	return bool('redhat' in distributor or 'centos' in distributor)

@@ -1093,8 +1093,8 @@ def getUserSessionIds(username, winApiBugCommand = None, onlyNewestId = None):
 		#     (not domain or (session.get('WTSDomainName') and (session.get('WTSDomainName').lower() == domain.lower()))) ):
 		# 	sessionIds.append(session.get('WTSSessionId'))
 		# 	logger.debug(u"   Found session id of user '%s': %s" % (username, session.get('WTSSessionId')))
-		if ( session.get('UserName') and (session.get('UserName').lower() == username.lower()) and \
-		     (not domain or (session.get('LogonDomain') and (session.get('LogonDomain').lower() == domain.lower()))) ):
+		if (session.get('UserName') and (session.get('UserName').lower() == username.lower()) and
+			(not domain or (session.get('LogonDomain') and (session.get('LogonDomain').lower() == domain.lower())))):
 			sessionIds.append(forceInt(session.get('Session')))
 			if onlyNewestId:
 				try:

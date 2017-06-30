@@ -24,7 +24,7 @@ This include functionality for using Tar-Files and their compression.
 
 
 .. versionadded:: 4.0.5.1
-   Control the usage of pigz via ``PIGZ_ENABLED``
+	Control the usage of pigz via ``PIGZ_ENABLED``
 
 :copyright: uib GmbH <info@uib.de>
 :author: Jan Schneider <j.schneider@uib.de>
@@ -92,7 +92,8 @@ class BaseArchive(object):
 	def _extract(self, command, fileCount):
 		try:
 			logger.info(u"Executing: %s" % command)
-			proc = subprocess.Popen(command,
+			proc = subprocess.Popen(
+				command,
 				shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
 			)
 

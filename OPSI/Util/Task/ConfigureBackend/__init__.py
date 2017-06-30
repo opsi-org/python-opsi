@@ -1,8 +1,7 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -31,11 +30,11 @@ import re
 import socket
 import sys
 
-from OPSI.Backend.Backend import OPSI_GLOBAL_CONF
 from OPSI.Logger import Logger
-from OPSI.System import getEthernetDevices, getNetworkDeviceConfig
-from OPSI.Types import forceHostId
-from OPSI.Util import getfqdn, objectToBeautifiedText
+from OPSI.System.Posix import getNetworkConfiguration, getLocalFqdn
+from OPSI.Util import objectToBeautifiedText
+
+__all__ = ('getBackendConfiguration', 'updateConfigFile')
 
 LOGGER = Logger()
 
@@ -109,53 +108,13 @@ def _getSysConfig():
 	Should be used as **fallback only**!
 	"""
 	LOGGER.notice(u"Getting current system config")
+	fqdn = getLocalFqdn()
 	sysConfig = {
-		'hardwareAddress': None,
+		'fqdn': fqdn,
+		'hostname': fqdn.split(u'.')[0]
 	}
 
-	try:
-		fqdn = getfqdn(conf=OPSI_GLOBAL_CONF)
-		sysConfig['fqdn'] = forceHostId(fqdn)
-	except Exception as exc:
-		raise RuntimeError(
-			u"Failed to get fully qualified domain name: {0}".format(exc)
-		)
-
-	sysConfig['hostname'] = fqdn.split(u'.')[0]
-	sysConfig['ipAddress'] = socket.gethostbyname(fqdn)
-
-	if sysConfig['ipAddress'].split(u'.')[0] in ('127', '169'):
-		sysConfig['ipAddress'] = None
-
-	for device in getEthernetDevices():
-		devconf = getNetworkDeviceConfig(device)
-		if devconf['ipAddress'] and devconf['ipAddress'].split(u'.')[0] not in ('127', '169'):
-			if not sysConfig['ipAddress']:
-				sysConfig['ipAddress'] = devconf['ipAddress']
-
-			if sysConfig['ipAddress'] == devconf['ipAddress']:
-				sysConfig['netmask'] = devconf['netmask']
-				sysConfig['hardwareAddress'] = devconf['hardwareAddress']
-				break
-
-	if not sysConfig['ipAddress']:
-		raise RuntimeError(
-			u"Failed to get a valid ip address for fqdn '{0}'".format(fqdn)
-		)
-
-	if not sysConfig.get('netmask'):
-		sysConfig['netmask'] = u'255.255.255.0'
-
-	sysConfig['broadcast'] = u''
-	sysConfig['subnet'] = u''
-	for i in range(4):
-		if sysConfig['broadcast']:
-			sysConfig['broadcast'] += u'.'
-		if sysConfig['subnet']:
-			sysConfig['subnet'] += u'.'
-
-		sysConfig['subnet'] += u'%d' % (int(sysConfig['ipAddress'].split(u'.')[i]) & int(sysConfig['netmask'].split(u'.')[i]))
-		sysConfig['broadcast'] += u'%d' % (int(sysConfig['ipAddress'].split(u'.')[i]) | int(sysConfig['netmask'].split(u'.')[i]) ^ 255)
+	sysConfig.update(getNetworkConfiguration())
 
 	LOGGER.notice(u"System information:")
 	LOGGER.notice(u"   ip address   : %s" % sysConfig['ipAddress'])

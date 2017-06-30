@@ -102,6 +102,10 @@ read from `backendConfigFile`.
 		with updateSchemaVersion(mysql, version=2):
 			_addIndexOnProductPropertyValues(mysql)
 
+	if schemaVersion < 3:
+		with updateSchemaVersion(mysql, version=3):
+			_addWorkbenchAttributesToHosts(mysql)
+
 	LOGGER.debug("Expected database schema version: {0}", DATABASE_SCHEMA_VERSION)
 	if not readSchemaVersion(mysql) == DATABASE_SCHEMA_VERSION:
 		raise BackendUpdateError("Not all migrations have been run!")
@@ -682,3 +686,11 @@ def _addIndexOnProductPropertyValues(database):
 		CREATE INDEX `index_product_property_value` on
 		`PRODUCT_PROPERTY_VALUE`
 		(`productId`, `propertyId`, `productVersion`, `packageVersion`);''')
+
+
+def _addWorkbenchAttributesToHosts(database):
+	LOGGER.notice("Adding column 'workbenchLocalUrl' on table HOST.")
+	database.execute('ALTER TABLE `HOST` add `workbenchLocalUrl` varchar(128);')
+
+	LOGGER.notice("Adding column 'workbenchRemoteUrl' on table HOST.")
+	database.execute('ALTER TABLE `HOST` add `workbenchRemoteUrl` varchar(255);')

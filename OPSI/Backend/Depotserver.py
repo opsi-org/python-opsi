@@ -26,18 +26,22 @@ Depotserver backend.
 
 import os
 
-from OPSI.Exceptions import (BackendBadValueError, BackendConfigurationError,
+from OPSI.Config import OPSI_GLOBAL_CONF
+from OPSI.Exceptions import (
+	BackendBadValueError, BackendConfigurationError,
 	BackendError, BackendIOError, BackendMissingDataError,
 	BackendTemporaryError, BackendUnaccomplishableError)
 from OPSI.Logger import Logger, LOG_DEBUG
-from OPSI.Types import (forceBool, forceDict, forceFilename, forceHostId,
+from OPSI.Types import (
+	forceBool, forceDict, forceFilename, forceHostId,
 	forceUnicode, forceUnicodeLower)
 from OPSI.Types import forceProductId as forceProductIdFunc
 from OPSI.Object import ProductOnDepot, ProductPropertyState
-from OPSI.Backend.Backend import LOG_DIR, OPSI_GLOBAL_CONF, ExtendedBackend
+from OPSI.Backend.Backend import LOG_DIR, ExtendedBackend
 from OPSI.System import getDiskSpaceUsage
 from OPSI.Util.Product import ProductPackageFile
-from OPSI.Util import (compareVersions, getfqdn, md5sum, librsyncSignature,
+from OPSI.Util import (
+	compareVersions, getfqdn, md5sum, librsyncSignature,
 	librsyncPatchFile, librsyncDeltaFile, removeDirectory)
 from OPSI.Util.File import ZsyncFile
 
@@ -336,8 +340,12 @@ class DepotserverPackageManager(object):
 						try:
 							productPropertyState.setValues(propertyDefaultValues[productPropertyState.propertyId])
 						except Exception as installationError:
-							logger.error(u"Failed to set default values to %s for productPropertyState %s: %s" \
-									% (propertyDefaultValues[productPropertyState.propertyId], productPropertyState, installationError) )
+							logger.error(
+								u"Failed to set default values to {0} for productPropertyState {1}: {2}",
+								propertyDefaultValues[productPropertyState.propertyId],
+								productPropertyState,
+								installationError
+							)
 				self._depotBackend._context.productPropertyState_createObjects(productPropertyStates)
 
 				logger.info(u"Running postinst script")
@@ -352,8 +360,13 @@ class DepotserverPackageManager(object):
 				ppf.setAccessRights()
 				ppf.cleanup()
 
-				logger.notice(u"Unlocking product '%s_%s-%s' on depot '%s'" \
-							% (productOnDepot.getProductId(), productOnDepot.getProductVersion(), productOnDepot.getPackageVersion(), depotId))
+				logger.notice(
+					u"Unlocking product '{0}_{1}-{2}' on depot '{3}'",
+					productOnDepot.getProductId(),
+					productOnDepot.getProductVersion(),
+					productOnDepot.getPackageVersion(),
+					depotId
+				)
 				productOnDepot.setLocked(False)
 				self._depotBackend._context.productOnDepot_updateObject(productOnDepot)
 
@@ -473,7 +486,7 @@ class DepotserverPackageManager(object):
 					raise BackendBadValueError(u"Value '%s' not allowed for depot local url (has to start with 'file:///')" % depot.depotLocalUrl)
 
 				for f in os.listdir(depot.depotLocalUrl[7:]):
-					if (f.lower() == productId.lower()):
+					if f.lower() == productId.lower():
 						clientDataDir = os.path.join(depot.depotLocalUrl[7:], f)
 						logger.info("Deleting client data dir '%s'" % clientDataDir)
 						removeDirectory(clientDataDir)

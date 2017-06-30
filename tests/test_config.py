@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -16,15 +16,26 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-Functionality to update OPSI backends.
-
-.. versionadded:: 4.0.6.1
+Testing opsi config module.
 
 :author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
 """
 
+from OPSI.Config import (
+    DEFAULT_DEPOT_USER, FILE_ADMIN_GROUP, OPSI_ADMIN_GROUP,
+    OPSI_GLOBAL_CONF, OPSICONFD_USER)
 
-class BackendUpdateError(RuntimeError):
-	"This error indicates a problem during a backend update."
-	pass
+import pytest
+
+
+@pytest.mark.parametrize("value", [
+    FILE_ADMIN_GROUP,
+    OPSI_ADMIN_GROUP,
+    DEFAULT_DEPOT_USER,
+    OPSI_GLOBAL_CONF,
+    OPSICONFD_USER,
+])
+def testValueIsSet(value):
+    assert value is not None
+    assert value

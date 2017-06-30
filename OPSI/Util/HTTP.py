@@ -24,8 +24,8 @@ opsi python library - HTTP
 
 .. versionadded:: 4.0.6.9
 
-  Added functions :py:func:`deflateEncode`, :py:func:`deflateDecode`,
-  :py:func:`gzipEncode` and :py:func:`gzipDecode`.
+	Added functions :py:func:`deflateEncode`, :py:func:`deflateDecode`,
+	:py:func:`gzipEncode` and :py:func:`gzipDecode`.
 
 
 :author: Jan Schneider <j.schneider@uib.de>

@@ -79,44 +79,18 @@ def testReadingSambaConfig(tempDir):
 	assert config == result
 
 
-def testConfigureSamba4OnSLES():
-
-	def fakeDistribution():
-		return 'suse linux enterprise server'
-
-	with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda: True):
-		with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
-			with mock.patch('OPSI.Util.Task.Samba.getDistribution', fakeDistribution):
-				newlines = Samba._processConfig([])
-
-	assert any('path = /var/lib/opsi/workbench' in line for line in newlines)
-
-
-def testConfigureSamba3OnSLES():
-
-	def fakeDistribution():
-		return 'suse linux enterprise server'
-
-	with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda: False):
-		with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
-			with mock.patch('OPSI.Util.Task.Samba.getDistribution', fakeDistribution):
-				newlines = Samba._processConfig([])
-
-	assert any('path = /var/lib/opsi/workbench' in line for line in newlines)
-
-
 @pytest.mark.parametrize("isSamba4", [True, False])
-def testConfigureSambaOnUbuntu(isSamba4):
-
-	def fakeDistribution():
-		return 'Ubuntu 14.04.2 LTS'
-
+@pytest.mark.parametrize("workbenchPath", ['/home/opsiproducts', '/var/lib/opsi/workbench/'])
+def testConfigureSambaOnUbuntu(isSamba4, workbenchPath):
 	with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda: isSamba4):
 		with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
-			with mock.patch('OPSI.Util.Task.Samba.getDistribution', fakeDistribution):
+			with mock.patch('OPSI.Util.Task.Samba.getWorkbenchDirectory', lambda: workbenchPath):
 				result = Samba._processConfig([])
 
-	assert any('/home/opsiproducts' in line for line in result)
+	if workbenchPath.endswith('/'):
+		workbenchPath = workbenchPath[:-1]
+
+	assert any('path = {}'.format(workbenchPath) in line for line in result)
 
 
 @pytest.mark.parametrize("isSamba4", [True, False])
@@ -132,7 +106,7 @@ def testSambaConfigureSamba4Share(isSamba4):
 
 	with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda: isSamba4):
 		with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
-			with mock.patch('OPSI.Util.Task.Samba.getDistribution', lambda: ''):
+			with mock.patch('OPSI.Util.Task.Samba.getWorkbenchDirectory', lambda: '/var/lib/opsi/workbench/'):
 				result = Samba._processConfig(config)
 
 	assert any(line.strip() for line in result)
@@ -140,10 +114,6 @@ def testSambaConfigureSamba4Share(isSamba4):
 
 @pytest.mark.parametrize("isSamba4", [True, False])
 def testConfigureSambaOnSLESWithFilledConfig(isSamba4):
-
-	def fakeDistribution():
-		return 'suse linux enterprise server'
-
 	config = [
 		u"[opt_pcbin]\n",
 		u"[opsi_depot]\n",
@@ -155,7 +125,7 @@ def testConfigureSambaOnSLESWithFilledConfig(isSamba4):
 
 	with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda: isSamba4):
 		with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
-			with mock.patch('OPSI.Util.Task.Samba.getDistribution', fakeDistribution):
+			with mock.patch('OPSI.Util.Task.Samba.getWorkbenchDirectory', lambda: '/var/lib/opsi/workbench/'):
 				result = Samba._processConfig(config)
 
 	assert any(line.strip() for line in result)

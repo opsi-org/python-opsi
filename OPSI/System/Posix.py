@@ -45,13 +45,14 @@ import copy as pycopy
 from itertools import islice
 from signal import SIGKILL
 
+from OPSI.Config import OPSI_GLOBAL_CONF
 from OPSI.Logger import Logger, LOG_NONE
 from OPSI.Types import (forceDomain, forceInt, forceBool, forceUnicode,
 	forceFilename, forceHostname, forceHostId, forceNetmask, forceIpAddress,
 	forceIPAddress, forceHardwareVendorId, forceHardwareAddress,
 	forceHardwareDeviceId, forceUnicodeLower)
 from OPSI.Object import *
-from OPSI.Util import objectToBeautifiedText, removeUnit
+from OPSI.Util import getfqdn, objectToBeautifiedText, removeUnit
 
 __all__ = (
 	'Distribution', 'Harddisk', 'NetworkPerformanceCounter', 'SysInfo',
@@ -567,7 +568,7 @@ def getDHCPResult(device, leasesFile=None):
 	to read the values from pump.
 
 	.. versionchanged:: 4.0.5.1
-	   Added parameter *leasesFile*.
+		Added parameter *leasesFile*.
 
 	:param leasesFile: The file to read the leases from. If this is not \
 given known places for this file will be tried.
@@ -662,9 +663,80 @@ def ifconfig(device, address, netmask=None):
 	execute(cmd)
 
 
+def getLocalFqdn():
+	fqdn = getfqdn(conf=OPSI_GLOBAL_CONF)
+	try:
+		return forceHostId(fqdn)
+	except ValueError:
+		raise ValueError(u"Failed to get fully qualified domain name. Value '{0}' is invalid.".format(fqdn))
+
+
+def getNetworkConfiguration(ipAddress=None):
+	"""
+	Get the network configuration for the local host.
+
+	The returned dict will contain the keys 'ipAddress',
+	'hardwareAddress', 'netmask', 'broadcast' and 'subnet'.
+
+	:param ipAddress: Force the function to work with the given IP address.
+	:type ipAddress: str
+	:returns: Network configuration for the local host.
+	:rtype: dict
+	"""
+	networkConfig = {
+		'hardwareAddress': None,
+		'broadcast': u'',
+		'subnet': u''
+	}
+
+	if ipAddress:
+		networkConfig['ipAddress'] = ipAddress
+	else:
+		fqdn = getLocalFqdn()
+		networkConfig['ipAddress'] = socket.gethostbyname(fqdn)
+
+	if networkConfig['ipAddress'].split(u'.')[0] in ('127', '169'):
+		logger.info("Not using IP {0} because of restricted network block.", networkConfig['ipAddress'])
+		networkConfig['ipAddress'] = None
+
+	for device in getEthernetDevices():
+		devconf = getNetworkDeviceConfig(device)
+		if devconf['ipAddress'] and devconf['ipAddress'].split(u'.')[0] not in ('127', '169'):
+			if not networkConfig['ipAddress']:
+				networkConfig['ipAddress'] = devconf['ipAddress']
+
+			if networkConfig['ipAddress'] == devconf['ipAddress']:
+				networkConfig['netmask'] = devconf['netmask']
+				networkConfig['hardwareAddress'] = devconf['hardwareAddress']
+				break
+
+	if not networkConfig['ipAddress']:
+		try:
+			logger.debug2("FQDN is: {0!r}", fqdn)
+		except NameError:
+			fqdn = getLocalFqdn()
+
+		raise ValueError(u"Failed to get a valid ip address for fqdn '%s'" % fqdn)
+
+	if not networkConfig.get('netmask'):
+		networkConfig['netmask'] = u'255.255.255.0'
+
+	for i in range(4):
+		if networkConfig['broadcast']:
+			networkConfig['broadcast'] += u'.'
+		if networkConfig['subnet']:
+			networkConfig['subnet'] += u'.'
+
+		networkConfig['subnet'] += u'%d' % (int(networkConfig['ipAddress'].split(u'.')[i]) & int(networkConfig['netmask'].split(u'.')[i]))
+		networkConfig['broadcast'] += u'%d' % (int(networkConfig['ipAddress'].split(u'.')[i]) | int(networkConfig['netmask'].split(u'.')[i]) ^ 255)
+
+	return networkConfig
+
+
 def getSystemProxySetting():
-	#TODO Have to be implemented for posix machines
+	# TODO: Has to be implemented for posix machines
 	logger.notice(u'Not Implemented yet')
+
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # -                                   SESSION / DESKTOP HANDLING                                      -
@@ -1643,13 +1715,12 @@ class Harddisk:
 							self.partitions[p] = partition
 							logger.debug(
 								u"Partition sector values =>>> number: %s, "
-								u"start: %s sec, end: %s sec, size: %s sec " \
-								% (
+								u"start: %s sec, end: %s sec, size: %s sec " % (
 									partition['number'],
 									partition['secStart'],
 									partition['secEnd'],
 									partition['secSize']
-							   )
+								)
 							)
 							break
 
@@ -1675,25 +1746,34 @@ class Harddisk:
 				try:
 					part = self.getPartition(p + 1)
 					if self.blockAlignment:
-						logger.debug(u"   number: %s, start: %s MB (%s sec), end: %s MB (%s sec), size: %s MB (%s sec), " \
-								% (part['number'],
-									(part['start']/(1000*1000)), part['secStart'],
-									(part['end']/(1000*1000)), part['secEnd'],
-									(part['size']/(1000*1000)), part['secSize']) \
-								+ "type: %s, fs: %s, boot: %s" \
-								% (part['type'], part['fs'], part['boot']))
+						logger.debug(
+							u"   number: %s, start: %s MB (%s sec), "
+							u"end: %s MB (%s sec), size: %s MB (%s sec), "
+							u"type: %s, fs: %s, boot: %s" % (
+								part['number'], (part['start'] / (1000 * 1000)),
+								part['secStart'], (part['end'] / (1000 * 1000)),
+								part['secEnd'], (part['size'] / (1000 * 1000)),
+								part['secSize'], part['type'], part['fs'],
+								part['boot']
+							)
+						)
 
 						cmd += u'%s,%s,%s' % (part['secStart'], part['secSize'], part['type'])
 					else:
-						logger.debug(u"   number: %s, start: %s MB (%s cyl), end: %s MB (%s cyl), size: %s MB (%s cyl), " \
-									% (part['number'],
-										(part['start']/(1000*1000)), part['cylStart'],
-										(part['end']/(1000*1000)), part['cylEnd'],
-										(part['size']/(1000*1000)), part['cylSize']) \
-									+ "type: %s, fs: %s, boot: %s" \
-									% (part['type'], part['fs'], part['boot']))
+						logger.debug(
+							u"   number: %s, start: %s MB (%s cyl), "
+							u"end: %s MB (%s cyl), size: %s MB (%s cyl), "
+							u"type: %s, fs: %s, boot: %s" % (
+								part['number'], (part['start'] / (1000 * 1000)),
+								part['cylStart'], (part['end'] / (1000 * 1000)),
+								part['cylEnd'], (part['size'] / (1000 * 1000)),
+								part['cylSize'], part['type'], part['fs'],
+								part['boot']
+							)
+						)
 
 						cmd += u'%s,%s,%s' % (part['cylStart'], part['cylSize'], part['type'])
+
 					if part['boot']:
 						cmd += u',*'
 				except Exception as e:
@@ -3860,8 +3940,8 @@ def getActiveConsoleSessionId():
 
 	.. warning::
 
-	   This is currently only faked to have the function available for
-	   the opsi-linux-client-agent!
+		This is currently only faked to have the function available for
+		the opsi-linux-client-agent!
 
 	"""
 	# TODO: real implementation possible?

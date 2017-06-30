@@ -58,7 +58,7 @@ __all__ = (
 	'SQLBackendObjectModificationTracker'
 )
 
-DATABASE_SCHEMA_VERSION = 2
+DATABASE_SCHEMA_VERSION = 3
 
 logger = Logger()
 
@@ -450,7 +450,7 @@ class SQLBackend(ConfigDataBackend):
 				else:
 					yield u"`{0}` = '{1}'".format(arg, self._sql.escapeApostrophe(self._sql.escapeBackslash(value)))
 
-			if isinstance(object, HostGroup) or isinstance(object, ProductGroup):
+			if isinstance(object, (HostGroup, ProductGroup)):
 				yield u"`type` = '{0}'".format(object.getType())
 
 		return ' and '.join(createCondition())
@@ -910,6 +910,8 @@ class SQLBackend(ConfigDataBackend):
 				`networkAddress` varchar(31),
 				`isMasterDepot` bool,
 				`masterDepotId` varchar(255),
+				`workbenchLocalUrl` varchar(128),
+				`workbenchRemoteUrl` varchar(255),
 				PRIMARY KEY (`hostId`)
 			) {0};'''.format(self._sql.getTableCreationOptions('HOST'))
 		logger.debug(table)

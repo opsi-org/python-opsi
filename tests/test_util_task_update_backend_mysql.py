@@ -30,7 +30,8 @@ from contextlib import contextmanager
 
 from OPSI.Backend.MySQL import MySQL, MySQLBackend
 from OPSI.Backend.SQL import DATABASE_SCHEMA_VERSION, createSchemaVersionTable
-from OPSI.Util.Task.UpdateBackend.MySQL import (DatabaseMigrationUnfinishedError,
+from OPSI.Util.Task.UpdateBackend.MySQL import (
+    DatabaseMigrationUnfinishedError,
     disableForeignKeyChecks, getTableColumns, readSchemaVersion,
     updateMySQLBackend, updateSchemaVersion)
 from OPSI.Util.Task.ConfigureBackend import updateConfigFile
@@ -83,6 +84,13 @@ def mySQLBackendConfigFile(mysqlBackendConfig, tempDir):
     updateConfigFile(configFile, mysqlBackendConfig)
 
     yield configFile
+
+
+def getColumnLength(columnType):
+    _, currentLength = columnType.split('(')
+    currentLength = int(currentLength[:-1])
+
+    return currentLength
 
 
 def testCorrectingLicenseOnClientLicenseKeyLength(mysqlBackendConfig, mySQLBackendConfigFile):
@@ -280,6 +288,37 @@ def createRequiredTables(database):
         FOREIGN KEY (`productId`, `productVersion`, `packageVersion`, `propertyId`) REFERENCES `PRODUCT_PROPERTY` (`productId`, `productVersion`, `packageVersion`, `propertyId`)
     ) %s; ''' % database.getTableCreationOptions('PRODUCT_PROPERTY_VALUE'))
 
+    createOpsi40HostTable(database)
+
+
+def createOpsi40HostTable(database):
+    "Creates a table for hosts as seen in opsi 4.0."
+
+    query = u'''CREATE TABLE `HOST` (
+        `hostId` varchar(255) NOT NULL,
+        `type` varchar(30),
+        `description` varchar(100),
+        `notes` varchar(500),
+        `hardwareAddress` varchar(17),
+        `ipAddress` varchar(15),
+        `inventoryNumber` varchar(30),
+        `created` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        `lastSeen` TIMESTAMP,
+        `opsiHostKey` varchar(32),
+        `oneTimePassword` varchar(32),
+        `maxBandwidth` integer,
+        `depotLocalUrl` varchar(128),
+        `depotRemoteUrl` varchar(255),
+        `depotWebdavUrl` varchar(255),
+        `repositoryLocalUrl` varchar(128),
+        `repositoryRemoteUrl` varchar(255),
+        `networkAddress` varchar(31),
+        `isMasterDepot` bool,
+        `masterDepotId` varchar(255),
+        PRIMARY KEY (`hostId`)
+    ) %s;''' % database.getTableCreationOptions('HOST')
+    database.execute(query)
+
 
 def getTableNames(database):
     return set(i.values()[0] for i in database.getSet(u'SHOW TABLES;'))
@@ -289,11 +328,7 @@ def assertColumnIsVarchar(database, tableName, columnName, length):
     for column in getTableColumns(database, tableName):
         if column.name.lower() == columnName.lower():
             assert column.type.lower().startswith('varchar(')
-
-            _, currentLength = column.type.split('(')
-            currentLength = int(currentLength[:-1])
-
-            assert currentLength == length
+            assert getColumnLength(column.type) == length
             break
     else:
         raise ValueError("Missing column '{1}' in table {0!r}".format(tableName, columnName))
@@ -410,3 +445,26 @@ def testAddingIndexToProductPropertyValues(mysqlBackendConfig, mySQLBackendConfi
 
         # Calling the update procedure a second time must not fail.
         updateMySQLBackend(backendConfigFile=mySQLBackendConfigFile)
+
+
+def testAddingWorkbenchAttributesToHost(mysqlBackendConfig, mySQLBackendConfigFile):
+    with cleanDatabase(MySQL(**mysqlBackendConfig)) as db:
+        createRequiredTables(db)
+
+        updateMySQLBackend(backendConfigFile=mySQLBackendConfigFile)
+
+        changesFound = 0
+        for column in getTableColumns(db, 'HOST'):
+            if column.name == 'workbenchLocalUrl':
+                assert column.type.lower().startswith('varchar(')
+                assert getColumnLength(column.type) == 128
+                changesFound += 1
+            elif column.name == 'workbenchRemoteUrl':
+                assert column.type.lower().startswith('varchar(')
+                assert getColumnLength(column.type) == 255
+                changesFound += 1
+
+            if changesFound == 2:
+                break
+
+        assert changesFound == 2

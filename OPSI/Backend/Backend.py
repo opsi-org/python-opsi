@@ -47,11 +47,13 @@ from hashlib import md5
 from twisted.conch.ssh import keys
 
 from OPSI import __version__ as LIBRARY_VERSION
+from OPSI.Config import OPSI_GLOBAL_CONF
 from OPSI.Logger import Logger
 from OPSI.Exceptions import *  # this is needed for dynamic loading
 from OPSI.Types import *  # this is needed for dynamic loading
 from OPSI.Object import *  # this is needed for dynamic loading
-from OPSI.Util import (blowfishEncrypt, blowfishDecrypt, compareVersions,
+from OPSI.Util import (
+	blowfishEncrypt, blowfishDecrypt, compareVersions,
 	getfqdn, removeUnit, timestamp)
 from OPSI.Util.File import ConfigFile
 import OPSI.SharedAlgorithm
@@ -75,7 +77,6 @@ __all__ = (
 
 OPSI_MODULES_FILE = u'/etc/opsi/modules'
 OPSI_PASSWD_FILE = u'/etc/opsi/passwd'
-OPSI_GLOBAL_CONF = u'/etc/opsi/global.conf'
 LOG_DIR = u'/var/log/opsi'
 LOG_TYPES = {  # key = logtype, value = requires objectId for read
 	'bootimage': True,
@@ -676,7 +677,7 @@ overwrite the log.
 
 				amountToReadFromLog = self._maxLogfileSize - len(data)
 
-				if 0 < amountToReadFromLog and amountToReadFromLog < currentLogSize:
+				if amountToReadFromLog > 0 and amountToReadFromLog < currentLogSize:
 					with codecs.open(logFile, 'r', 'utf-8', 'replace') as log:
 						log.seek(currentLogSize - amountToReadFromLog)
 						data = log.read() + data
@@ -2250,14 +2251,26 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		del hash['self']
 		return self.host_createObjects(OpsiClient.fromHash(hash))
 
-	def host_createOpsiDepotserver(self, id, opsiHostKey=None, depotLocalUrl=None, depotRemoteUrl=None, depotWebdavUrl=None, repositoryLocalUrl=None, repositoryRemoteUrl=None,
-					description=None, notes=None, hardwareAddress=None, ipAddress=None, inventoryNumber=None, networkAddress=None, maxBandwidth=None, isMasterDepot=None, masterDepotId=None):
+	def host_createOpsiDepotserver(
+			self, id,
+			opsiHostKey=None, depotLocalUrl=None, depotRemoteUrl=None,
+			depotWebdavUrl=None, repositoryLocalUrl=None,
+			repositoryRemoteUrl=None, description=None, notes=None,
+			hardwareAddress=None, ipAddress=None, inventoryNumber=None,
+			networkAddress=None, maxBandwidth=None, isMasterDepot=None,
+			masterDepotId=None, workbenchLocalUrl=None, workbenchRemoteUrl=None):
 		hash = locals()
 		del hash['self']
 		return self.host_createObjects(OpsiDepotserver.fromHash(hash))
 
-	def host_createOpsiConfigserver(self, id, opsiHostKey=None, depotLocalUrl=None, depotRemoteUrl=None, depotWebdavUrl=None, repositoryLocalUrl=None, repositoryRemoteUrl=None,
-					description=None, notes=None, hardwareAddress=None, ipAddress=None, inventoryNumber=None, networkAddress=None, maxBandwidth=None, isMasterDepot=None, masterDepotId=None):
+	def host_createOpsiConfigserver(
+			self, id,
+			opsiHostKey=None, depotLocalUrl=None, depotRemoteUrl=None,
+			depotWebdavUrl=None, repositoryLocalUrl=None,
+			repositoryRemoteUrl=None, description=None, notes=None,
+			hardwareAddress=None, ipAddress=None, inventoryNumber=None,
+			networkAddress=None, maxBandwidth=None, isMasterDepot=None,
+			masterDepotId=None, workbenchLocalUrl=None, workbenchRemoteUrl=None):
 		hash = locals()
 		del hash['self']
 		return self.host_createObjects(OpsiConfigserver.fromHash(hash))

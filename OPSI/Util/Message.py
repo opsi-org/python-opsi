@@ -185,7 +185,7 @@ class ChoiceSubject(MessageSubject):
 
 	def setChoices(self, choices):
 		self._choices = forceUnicodeList(choices)
-		if len(self._choices) > 0 and not self._selectedIndexes:
+		if self._choices and not self._selectedIndexes:
 			self._selectedIndexes = [0]
 		self._notifyChoicesChanged()
 

@@ -23,7 +23,7 @@ Algorithms to get a product order for an installation.
 
 .. versionchanged:: 4.0.7.1
 
-   Refactored algorithm 1.
+	Refactored algorithm 1.
 
 
 :author: Niko Wenselowski <n.wenselowski@uib.de>
