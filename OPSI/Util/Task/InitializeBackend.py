@@ -34,7 +34,7 @@ import codecs
 import os.path
 from OPSI.Logger import Logger
 from OPSI.Object import OpsiConfigserver
-from OPSI.System.Posix import getLocalFqdn, getNetworkConfiguration
+from OPSI.System.Posix import getLocalFqdn, getNetworkConfiguration, isUCS
 from OPSI.Types import forceList
 from OPSI.Util.Task.ConfigureBackend.ConfigurationData import initializeConfigs
 from OPSI.Util.Task.Rights import setPasswdRights
@@ -133,18 +133,23 @@ def _getServerConfig(fqdn, networkConfig):
 	:type networkConfig: dict
 	:rtype: dict
 	"""
-	hostname = fqdn.split(u'.')[0]
+	if isUCS():
+		LOGGER.info("Detected UCS - relying on working DNS.")
+		address = fqdn
+	else:
+		LOGGER.info("Configuring server for use with IP.")
+		address = networkConfig['ipAddress']
 
 	config = dict(
 		id=fqdn,
 		opsiHostKey=None,
 		depotLocalUrl=u'file:///var/lib/opsi/depot',
-		depotRemoteUrl=u'smb://%s/opsi_depot' % hostname,
-		depotWebdavUrl=u'webdavs://%s:4447/depot' % fqdn,
+		depotRemoteUrl=u'smb://%s/opsi_depot' % address,
+		depotWebdavUrl=u'webdavs://%s:4447/depot' % address,
 		repositoryLocalUrl=u'file:///var/lib/opsi/repository',
-		repositoryRemoteUrl=u'webdavs://%s:4447/repository' % fqdn,
+		repositoryRemoteUrl=u'webdavs://%s:4447/repository' % address,
 		workbenchLocalUrl=u'file:///var/lib/opsi/workbench',
-		workbenchRemoteUrl=u'smb://{}/opsi_workbench'.format(hostname),
+		workbenchRemoteUrl=u'smb://{}/opsi_workbench'.format(address),
 		description=None,
 		notes=None,
 		hardwareAddress=networkConfig['hardwareAddress'],
