@@ -91,10 +91,11 @@ def initializeBackends(ipAddress=None):
 
 	if configServer:
 		if configServer[0].id == fqdn:
-			configServer = backend.host_getObjects(type='OpsiConfigserver')
-			if not configServer:
+			try:
+				configServer = backend.host_getObjects(type='OpsiConfigserver')[0]
+			except IndexError:
 				raise Exception(u"Config server '%s' not found" % fqdn)
-			configServer = configServer[0]
+
 			if networkConfig['ipAddress']:
 				configServer.setIpAddress(networkConfig['ipAddress'])
 			if networkConfig['hardwareAddress']:
