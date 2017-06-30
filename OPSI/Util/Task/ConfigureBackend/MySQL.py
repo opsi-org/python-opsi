@@ -115,8 +115,9 @@ on to. Defaults to ``Logger.error``.
 	except MySQLdb.OperationalError as exc:
 		if exc[0] == INVALID_DEFAULT_VALUE:
 			errorFunction(
-					u"It seems you have the MySQL strict mode enabled. Please read the opsi handbook.\n"
-					u"{error}".format(error=exc)
+				u"It seems you have the MySQL strict mode enabled. "
+				u"Please read the opsi handbook.\n"
+				u"{error}".format(error=exc)
 			)
 
 		raise exc
@@ -145,8 +146,10 @@ def initializeDatabase(
 			raise DatabaseConnectionFailedException(error)
 
 	def createUser(host):
-		notificationFunction(u"Creating user '{username}' and granting"
-							u" all rights on '{database}'".format(**config))
+		notificationFunction(
+			u"Creating user '{username}' and granting"
+			u" all rights on '{database}'".format(**config)
+		)
 		db.query(u'USE {database};'.format(**config))
 		db.query(
 			(
@@ -171,13 +174,15 @@ def initializeDatabase(
 		systemConfig = backendUtils._getSysConfig()
 
 	# Connect to database host
-	notificationFunction(u"Connecting to host '{0[address]}' as user "
-						u"'{username}'".format(config, username=dbAdminUser))
+	notificationFunction(
+		u"Connecting to host '{0[address]}' as user '{username}'".format(
+			config, username=dbAdminUser
+		)
+	)
 	with connectAsDBA() as db:
-		notificationFunction(u"Successfully connected to host '{0[address]}'"
-							u" as user '{username}'".format(config,
-															username=dbAdminUser
-			)
+		notificationFunction(
+			u"Successfully connected to host '{0[address]}'"
+			u" as user '{username}'".format(config, username=dbAdminUser)
 		)
 
 		# Create opsi database and user
@@ -193,8 +198,7 @@ def initializeDatabase(
 				raise error
 		notificationFunction(u"Database '{database}' created".format(**config))
 
-		if config['address'] in ("localhost", "127.0.0.1",
-								systemConfig['hostname'], systemConfig['fqdn']):
+		if config['address'] in ("localhost", "127.0.0.1", systemConfig['hostname'], systemConfig['fqdn']):
 			createUser("localhost")
 			if config['address'] not in ("localhost", "127.0.0.1"):
 				createUser(config['address'])
