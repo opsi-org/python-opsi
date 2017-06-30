@@ -677,7 +677,7 @@ overwrite the log.
 
 				amountToReadFromLog = self._maxLogfileSize - len(data)
 
-				if 0 < amountToReadFromLog and amountToReadFromLog < currentLogSize:
+				if amountToReadFromLog > 0 and amountToReadFromLog < currentLogSize:
 					with codecs.open(logFile, 'r', 'utf-8', 'replace') as log:
 						log.seek(currentLogSize - amountToReadFromLog)
 						data = log.read() + data
