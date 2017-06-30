@@ -1,4 +1,4 @@
-python-opsi (4.1.1.9-1ubuntu1) UNRELEASED; urgency=medium
+python-opsi (4.1.1.10-1) testing; urgency=medium
 
   * acl.conf.default: restricted the access to user_getCredentials and
     user_setCredentials.
@@ -11,8 +11,10 @@ python-opsi (4.1.1.9-1ubuntu1) UNRELEASED; urgency=medium
   * New module OPSI.Util.Task.UpdateBackend.ConfigurationData for updating
     the configuration data in an existing backend.
   * New module OPSI.Config.
+  * initializeBackends will set up new servers with remote URLs using IP
+    except for UCS where FQDN is used by default.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 29 Jun 2017 16:52:29 +0200
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 30 Jun 2017 12:01:29 +0200
 
 python-opsi (4.1.1.9-1) testing; urgency=medium
 
