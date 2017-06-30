@@ -64,15 +64,13 @@ from OPSI.Config import (
 	FILE_ADMIN_GROUP as _FILE_ADMIN_GROUP,
 	OPSI_ADMIN_GROUP as _ADMIN_GROUP,
 	DEFAULT_DEPOT_USER as _CLIENT_USER,
-	OPSI_GLOBAL_CONF,
 	OPSICONFD_USER as _OPSICONFD_USER)
 from OPSI.Exceptions import BackendConfigurationError, BackendMissingDataError
 from OPSI.Logger import LOG_DEBUG, Logger
-from OPSI.Types import forceHostId
-from OPSI.Util import findFiles, getfqdn
+from OPSI.Util import findFiles
 from OPSI.System.Posix import (
-	isCentOS, isDebian, isOpenSUSE, isRHEL, isSLES,
-	isUbuntu, isUCS, isOpenSUSELeap)
+	getLocalFqdn as getLocalFQDN, isCentOS, isDebian, isOpenSUSE, isRHEL, isSLES, isUbuntu,
+	isUCS, isOpenSUSELeap)
 
 __all__ = ('setRights', 'setPasswdRights')
 
@@ -299,17 +297,6 @@ def getLocalDepot():
 		return depot[0]
 	except IndexError:
 		raise BackendMissingDataError("No depots found!")
-
-
-# TODO: use OPSI.System.Posix.Sysconfig for a more standardized approach
-def getLocalFQDN():
-	try:
-		fqdn = getfqdn(conf=OPSI_GLOBAL_CONF)
-		return forceHostId(fqdn)
-	except Exception as error:
-		raise RuntimeError(
-			u"Failed to get fully qualified domain name: {0}".format(error)
-		)
 
 
 def getWebserverRepositoryPath():
