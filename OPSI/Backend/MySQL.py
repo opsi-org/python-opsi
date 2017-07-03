@@ -39,16 +39,18 @@ from MySQLdb.converters import conversions
 from sqlalchemy import pool
 from twisted.conch.ssh import keys
 
-from OPSI.Exceptions import (BackendIOError, BackendBadValueError,
-	BackendUnableToConnectError)
+from OPSI.Exceptions import (
+	BackendIOError, BackendBadValueError, BackendUnableToConnectError)
 from OPSI.Logger import Logger
 from OPSI.Types import forceInt, forceUnicode
 from OPSI.Backend.Backend import ConfigDataBackend
-from OPSI.Backend.SQL import (onlyAllowSelect, SQL, SQLBackend,
-	SQLBackendObjectModificationTracker)
+from OPSI.Backend.SQL import (
+	onlyAllowSelect, SQL, SQLBackend, SQLBackendObjectModificationTracker)
 
-__all__ = ('ConnectionPool', 'MySQL', 'MySQLBackend',
-	'MySQLBackendObjectModificationTracker')
+__all__ = (
+	'ConnectionPool', 'MySQL', 'MySQLBackend',
+	'MySQLBackendObjectModificationTracker'
+)
 
 logger = Logger()
 
