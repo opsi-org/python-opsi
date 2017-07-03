@@ -685,7 +685,7 @@ class MySQLBackend(SQLBackend):
 						self._sql.doCommit = False
 						conn.begin()
 						logger.debug2(u'Start Transaction: insert to ppv %d' % myRetryTransactionCounter)
-						if not self._sql.getRow(myPPVselect , conn, cursor):
+						if not self._sql.getRow(myPPVselect, conn, cursor):
 							# self._sql.doCommit = True
 							logger.debug2(u'doCommit set to true')
 							self._sql.insert('PRODUCT_PROPERTY_VALUE', {
@@ -719,7 +719,7 @@ class MySQLBackend(SQLBackend):
 			finally:
 				self._sql.doCommit = True
 				logger.debug2(u'doCommit set to true')
-		self._sql.close(conn,cursor)
+		self._sql.close(conn, cursor)
 
 		def productProperty_updateObject(self, productProperty):
 			self._requiresEnabledSQLBackendModule()
