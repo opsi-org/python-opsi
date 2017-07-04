@@ -287,4 +287,3 @@ def testReadingDomainFromUCRReturnEmptyStringOnProblem():
     failingWhich = mock.Mock(side_effect=CommandNotFoundException('Whoops.'))
     with mock.patch('OPSI.Util.Task.ConfigureBackend.ConfigurationData.Posix.which', failingWhich):
         assert '' == confData.readWindowsDomainFromUCR()
-
