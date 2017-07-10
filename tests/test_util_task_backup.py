@@ -39,10 +39,12 @@ def testVerifySysConfigDoesNotFailBecauseWhitespaceAtEnd():
     backup = OpsiBackup()
 
     archive = {
-        'distribution': 'SUSE Linux Enterprise Server'
+        'distribution': 'SUSE Linux Enterprise Server',
+        'sysVersion': '(12, 0)',
     }
     system = {
-        "distribution": 'SUSE Linux Enterprise Server '  # note the extra space
+        "distribution": 'SUSE Linux Enterprise Server ',  # note the extra space
+        'sysVersion': (12, 0),
     }
 
     assert {} == backup.getDifferencesInSysConfig(archive, sysInfo=system)

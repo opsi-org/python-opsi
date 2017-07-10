@@ -229,14 +229,15 @@ If this is `None` information will be read from the current system.
 			sysInfo = OpsiBackupArchive.getSysInfo()
 
 		differences = {}
-		for key, value in archiveSysInfo.iteritems():
+		for key, value in archiveSysInfo.items():
 			try:
-				sysValue = sysInfo[key]
+				sysValue = str(sysInfo[key])
 			except KeyError:
 				logger.debug('Missing value for {key!r} in system!', key=key)
 				differences[key] = value
 				continue
 
+			logger.debug("Comparing {0!r} (archive) with {1!r} (system)...", value, sysValue)
 			if sysValue.strip() != value.strip():
 				logger.debug(
 					'Found difference (System != Archive) at {key!r}: {0!r} vs. {1!r}',
