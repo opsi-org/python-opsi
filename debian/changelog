@@ -1,3 +1,10 @@
+python-opsi (4.1.1.12-1) testing; urgency=medium
+
+  * OpsiBackup: Fix bug where differences between the archive and the current
+    system are detected but there are none.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 10 Jul 2017 13:53:23 +0200
+
 python-opsi (4.1.1.11-2) testing; urgency=medium
 
   * dispatch.conf.default now uses a default setup that makes use of file

@@ -110,7 +110,7 @@ def createArchive(tempDir, **kwargs):
                 },
             }
 
-        with mock.patch('OPSI.Util.File.Opsi.OpsiBackupArchive._probeSysInfo', returnExampleSysconfig):
+        with mock.patch('OPSI.Util.File.Opsi.OpsiBackupArchive.getSysInfo', returnExampleSysconfig):
             with mock.patch('OPSI.Util.File.Opsi.OpsiBackupArchive._readBackendConfiguration', returnExampleBackendConfiguration):
                 print('Detected missing version file. Patchiiiing.')
                 archive = OpsiBackupArchive(**kwargs)
