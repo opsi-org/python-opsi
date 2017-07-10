@@ -237,6 +237,7 @@ If this is `None` information will be read from the current system.
 				differences[key] = value
 				continue
 
+			logger.debug("Comparing {0!r} (archive) with {1!r} (system)...", value, sysValue)
 			if sysValue.strip() != value.strip():
 				logger.debug(
 					'Found difference (System != Archive) at {key!r}: {0!r} vs. {1!r}',
