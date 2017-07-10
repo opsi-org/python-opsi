@@ -229,7 +229,7 @@ If this is `None` information will be read from the current system.
 			sysInfo = OpsiBackupArchive.getSysInfo()
 
 		differences = {}
-		for key, value in archiveSysInfo.iteritems():
+		for key, value in archiveSysInfo.items():
 			try:
 				sysValue = sysInfo[key]
 			except KeyError:
