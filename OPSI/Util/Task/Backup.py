@@ -36,10 +36,9 @@ import sys
 import termios
 from contextlib import closing
 
-from OPSI.Exceptions import (OpsiBackupFileError, OpsiBackupBackendNotFound,
-	OpsiError)
+from OPSI.Exceptions import (
+	OpsiBackupFileError, OpsiBackupBackendNotFound, OpsiError)
 from OPSI.Logger import Logger, LOG_DEBUG
-from OPSI.System.Posix import SysInfo
 from OPSI.Types import forceList, forceUnicode
 from OPSI.Util.File.Opsi import OpsiBackupArchive
 
@@ -207,31 +206,37 @@ class OpsiBackup(object):
 				fcntl.fcntl(fd, fcntl.F_SETFL, oldflags)
 
 		try:
-			if self._getDifferencesInSysConfig(archive.sysinfo, SysInfo()):
+			if self.getDifferencesInSysConfig(archive.sysinfo):
 				return ask(WARNING_DIFF)
 		except OpsiError as error:
 			return ask(WARNING_SYSCONFIG % unicode(error))
 
 		return True
 
-	def _getDifferencesInSysConfig(self, archiveSysInfo, sysInfo=None):
+	@staticmethod
+	def getDifferencesInSysConfig(archiveSysInfo, sysInfo=None):
 		"""
 		Checks system informations for differences and returns the findings.
 
 		:param archiveSysInfo: The information from the archive.
 		:type archiveSysInfo: dict
-		:param sysInfo: The information from the system. Defaults to SysInfo().
-		:type sysInfo: OPSI.System.Posix.SysInfo
+		:param sysInfo: The information from the system. \
+If this is `None` information will be read from the current system.
+		:type sysInfo: dict
 		"""
 		if sysInfo is None:
-			sysInfo = SysInfo()
+			logger.debug("Reading system information...")
+			sysInfo = OpsiBackupArchive.getSysInfo()
 
-		archiveInfo = archiveSysInfo
+		differences = {}
+		for key, value in archiveSysInfo.iteritems():
+			try:
+				sysValue = sysInfo[key]
+			except KeyError:
+				logger.debug('Missing value for {key!r} in system!', key=key)
+				differences[key] = value
+				continue
 
-		diff = {}
-
-		for key, value in archiveInfo.iteritems():
-			sysValue = str(getattr(sysInfo, key, None))
 			if sysValue.strip() != value.strip():
 				logger.debug(
 					'Found difference (System != Archive) at {key!r}: {0!r} vs. {1!r}',
@@ -239,9 +244,9 @@ class OpsiBackup(object):
 					value,
 					key=key
 				)
-				diff[key] = value
+				differences[key] = value
 
-		return diff
+		return differences
 
 	def restore(self, file, mode="raw", backends=[], configuration=True, force=False, **kwargs):
 		if not backends:
