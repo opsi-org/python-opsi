@@ -1,5 +1,5 @@
-#!/usr/bin/env python
-#-*- coding: utf-8 -*-
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
 # Copyright (C) 2013-2015 uib GmbH <info@uib.de>
@@ -27,7 +27,12 @@ from __future__ import absolute_import
 import os
 import unittest
 
-from OPSI.Util.File.Opsi import BackendDispatchConfigFile, OpsiConfFile, PackageControlFile
+from OPSI.Util import findFiles
+from OPSI.Util.File.Opsi import (
+	BackendDispatchConfigFile, OpsiConfFile, PackageContentFile,
+	PackageControlFile)
+
+from .helpers import workInTemporaryDirectory
 
 
 class BackendDispatchConfigFileTestCase(unittest.TestCase):
@@ -147,3 +152,40 @@ class OpsiControlFileTestCase(unittest.TestCase):
 			u'Startet die Druckerwarteschlange auf dem Client neu / oder überhaupt.',
 			product.description
 		)
+
+
+def testPackageControlFileCreation():
+	with workInTemporaryDirectory() as tempDir:
+		fillDirectory(tempDir)
+		clientDataFiles = findFiles(tempDir)
+
+		filename = os.path.join(tempDir, 'test.files')
+		contentFile = PackageContentFile(filename)
+		contentFile.setProductClientDataDir(tempDir)
+		contentFile.setClientDataFiles(clientDataFiles)
+		contentFile.generate()
+
+		assert os.path.exists(filename)
+		assert os.path.getsize(filename) > 10
+
+
+def fillDirectory(directory):
+	assert os.path.exists(directory)
+
+	with open(os.path.join(directory, 'simplefile'), 'w') as fileHandle:
+		fileHandle.write('I am an very simple file\nFor real!')
+
+	subDir = os.path.join(directory, 'subdir')
+	os.mkdir(subDir)
+
+	with open(os.path.join(subDir, 'fileinsub1'), 'w') as fileHandle:
+		fileHandle.write('Subby one')
+
+	with open(os.path.join(subDir, 'fileinsub2'), 'w') as fileHandle:
+		fileHandle.write('Subby two')
+
+	subSubDir = os.path.join(subDir, 'sub1')
+	os.mkdir(subSubDir)
+
+	with open(os.path.join(subSubDir, 'simplefile'), 'w') as fileHandle:
+		fileHandle.write('Sub in a sub.\nThanks, no cheese!')
