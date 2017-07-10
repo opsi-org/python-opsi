@@ -226,11 +226,10 @@ class OpsiBackup(object):
 		if sysInfo is None:
 			sysInfo = SysInfo()
 
-		archiveInfo = archiveSysInfo
 
 		diff = {}
 
-		for key, value in archiveInfo.iteritems():
+		for key, value in archiveSysInfo.iteritems():
 			sysValue = str(getattr(sysInfo, key, None))
 			if sysValue.strip() != value.strip():
 				logger.debug(
