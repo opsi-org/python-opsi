@@ -1,3 +1,10 @@
+python-opsi (4.1.1.13-1) testing; urgency=medium
+
+  * OpsiBackup: Fix a bug where an attempt may be made to compare
+    uncomparable types.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 10 Jul 2017 17:57:43 +0200
+
 python-opsi (4.1.1.12-1) testing; urgency=medium
 
   * OpsiBackup: Fix bug where differences between the archive and the current
