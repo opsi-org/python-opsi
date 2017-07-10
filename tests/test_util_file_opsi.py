@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -27,7 +27,7 @@ from __future__ import absolute_import
 import os
 import unittest
 
-from OPSI.Util import findFiles
+from OPSI.Util import findFiles, md5sum
 from OPSI.Util.File.Opsi import (
 	BackendDispatchConfigFile, OpsiConfFile, PackageContentFile,
 	PackageControlFile)
@@ -156,7 +156,7 @@ class OpsiControlFileTestCase(unittest.TestCase):
 
 def testPackageControlFileCreation():
 	with workInTemporaryDirectory() as tempDir:
-		fillDirectory(tempDir)
+		content = fillDirectory(tempDir)
 		clientDataFiles = findFiles(tempDir)
 
 		filename = os.path.join(tempDir, 'test.files')
@@ -166,26 +166,58 @@ def testPackageControlFileCreation():
 		contentFile.generate()
 
 		assert os.path.exists(filename)
-		assert os.path.getsize(filename) > 10
+		assert os.path.getsize(filename) > 10, 'Generated file is empty!'
+
+		with open(filename) as generatedFile:
+			for line in generatedFile:
+				try:
+					entry, path, size = line.split(' ', 2)
+
+					path = path.strip("'")
+					assert entry == content[path]
+
+					if entry == 'd':
+						assert int(size.strip()) == 0
+					elif entry == 'f':
+						size, hashSum = size.split(' ', 1)
+
+						size = int(size)
+						assert os.path.getsize(path) == size
+
+						hashSum = hashSum.strip()
+						assert md5sum(path) == hashSum
+					else:
+						raise RuntimeError("Unexpected type {0!r}".format(entry))
+				except Exception:
+					print("Processing line {0!r} failed".format(line))
+					raise
 
 
 def fillDirectory(directory):
 	assert os.path.exists(directory)
 
-	with open(os.path.join(directory, 'simplefile'), 'w') as fileHandle:
-		fileHandle.write('I am an very simple file\nFor real!')
+	directories = [
+		('subdir', ),
+		('subdir', 'sub1'),
+	]
 
-	subDir = os.path.join(directory, 'subdir')
-	os.mkdir(subDir)
+	files = [
+		(('simplefile', ), 'I am an very simple file\nFor real!'),
+		(('subdir', 'fileinsub1'), 'Subby one'),
+		(('subdir', 'fileinsub2'), 'Subby two'),
+		(('subdir', 'sub1', 'simplefile2'), 'Sub in a sub.\nThanks, no cheese!'),
+	]
 
-	with open(os.path.join(subDir, 'fileinsub1'), 'w') as fileHandle:
-		fileHandle.write('Subby one')
+	content = {}
 
-	with open(os.path.join(subDir, 'fileinsub2'), 'w') as fileHandle:
-		fileHandle.write('Subby two')
+	for dirPath in directories:
+		os.mkdir(os.path.join(directory, *dirPath))
+		content[os.path.join(*dirPath)] = 'd'
 
-	subSubDir = os.path.join(subDir, 'sub1')
-	os.mkdir(subSubDir)
+	for filePath, text in files:
+		with open(os.path.join(directory, *filePath), 'w') as fileHandle:
+			fileHandle.write(text)
 
-	with open(os.path.join(subSubDir, 'simplefile'), 'w') as fileHandle:
-		fileHandle.write('Sub in a sub.\nThanks, no cheese!')
+		content[os.path.join(*filePath)] = 'f'
+
+	return content
