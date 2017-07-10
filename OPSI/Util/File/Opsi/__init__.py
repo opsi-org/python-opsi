@@ -1026,7 +1026,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 			assert compression in ("gz", "bz2")
 
 		if name is None:
-			self.sysinfo = self._probeSysInfo()
+			self.sysinfo = self.getSysInfo()
 			name = self._generateNewArchive(suffix=compression)
 			self.mode = 'w'
 		elif not os.path.exists(name):
@@ -1049,7 +1049,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 
 		if self.mode.startswith("w"):
 			if not self.sysinfo:
-				self.sysinfo = self._probeSysInfo()
+				self.sysinfo = self.getSysInfo()
 		else:
 			self.sysinfo = self._readSysInfo()
 			self._filemap = self._readChecksumFile()
@@ -1117,7 +1117,15 @@ class OpsiBackupArchive(tarfile.TarFile):
 		return name
 
 	@staticmethod
-	def _probeSysInfo():
+	def getSysInfo():
+		"""
+		Get the current system information as a dict.
+
+		System information is hostname, domainname, FQDN, distribution,
+		system version, distribution ID and the version of opsi in use.
+
+		:rtype: dict
+		"""
 		sysinfo = SysInfo()
 
 		return {
