@@ -231,7 +231,7 @@ If this is `None` information will be read from the current system.
 		differences = {}
 		for key, value in archiveSysInfo.items():
 			try:
-				sysValue = sysInfo[key]
+				sysValue = str(sysInfo[key])
 			except KeyError:
 				logger.debug('Missing value for {key!r} in system!', key=key)
 				differences[key] = value
