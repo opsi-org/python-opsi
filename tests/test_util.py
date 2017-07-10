@@ -397,6 +397,7 @@ def testFormatFileSize(testInput, expected):
 
 @pytest.mark.parametrize("testFile, expectedHash", [
     (os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'dhcpd', 'dhcpd_1.conf'), '5f345ca76574c528903c1022b05acb4c'),
+    (os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'dhcpd', 'link_to_dhcpd1_1.conf'), '5f345ca76574c528903c1022b05acb4c'),
 ])
 def testCreatingMd5sum(testFile, expectedHash):
     assert expectedHash == md5sum(testFile)
