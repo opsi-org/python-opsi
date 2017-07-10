@@ -174,7 +174,7 @@ def testPackageControlFileCreation():
 					entry, path, size = line.split(' ', 2)
 
 					path = path.strip("'")
-					assert entry == content[path]
+					assert entry == content.pop(path), "Type mismatch!"
 
 					if entry == 'd':
 						assert int(size.strip()) == 0
@@ -191,6 +191,8 @@ def testPackageControlFileCreation():
 				except Exception:
 					print("Processing line {0!r} failed".format(line))
 					raise
+
+		assert not content, "Files not listed in content file: {0}".format(', '.join(content))
 
 
 def fillDirectory(directory):
