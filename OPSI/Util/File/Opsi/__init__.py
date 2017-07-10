@@ -6,7 +6,7 @@ opsi python library - File.Opsi
 This module is part of the desktop management solution opsi
 (open pc server integration) http://www.opsi.org
 
-Copyright (C) 2006-2016 uib GmbH
+Copyright (C) 2006-2017 uib GmbH
 
 http://www.uib.de/
 
@@ -358,6 +358,13 @@ class PackageContentFile(TextFile):
 					if target.startswith(self._productClientDataDir):
 						target = target[len(self._productClientDataDir):]
 					else:
+						logger.debug2(
+							"{0!r} links to {1} which is outside the client "
+							"data directory. Not handling as a link.",
+							path,
+							target
+						)
+
 						if os.path.isdir(path):
 							type = u'd'
 						else:
