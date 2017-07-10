@@ -186,6 +186,14 @@ def testPackageControlFileCreation():
 
 						hashSum = hashSum.strip()
 						assert md5sum(path) == hashSum
+					elif entry == 'l':
+						size, target = size.split(' ', 1)
+
+						assert int(size) == 0
+
+						target = target.strip()
+						target = target.strip("'")
+						assert target
 					else:
 						raise RuntimeError("Unexpected type {0!r}".format(entry))
 				except Exception:
@@ -210,6 +218,11 @@ def fillDirectory(directory):
 		(('subdir', 'sub1', 'simplefile2'), 'Sub in a sub.\nThanks, no cheese!'),
 	]
 
+	links = [
+		(('simplefile', ), ('simplelink', )),
+		(('subdir', 'sub1', 'simplefile2'), ('goingdown', )),
+	]
+
 	content = {}
 
 	for dirPath in directories:
@@ -221,5 +234,9 @@ def fillDirectory(directory):
 			fileHandle.write(text)
 
 		content[os.path.join(*filePath)] = 'f'
+
+	for source, name in links:
+		os.symlink(os.path.join(directory, *source), os.path.join(directory, *name))
+		content[os.path.join(*name)] = 'l'
 
 	return content
