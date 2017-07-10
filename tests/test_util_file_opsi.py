@@ -155,52 +155,66 @@ class OpsiControlFileTestCase(unittest.TestCase):
 
 
 def testPackageControlFileCreation():
-	with workInTemporaryDirectory() as tempDir:
-		content = fillDirectory(tempDir)
-		clientDataFiles = findFiles(tempDir)
+	with workInTemporaryDirectory() as anotherDirectory:
+		with workInTemporaryDirectory() as tempDir:
+			content = fillDirectory(tempDir)
 
-		filename = os.path.join(tempDir, 'test.files')
-		contentFile = PackageContentFile(filename)
-		contentFile.setProductClientDataDir(tempDir)
-		contentFile.setClientDataFiles(clientDataFiles)
-		contentFile.generate()
+			for filename in (f for f, t in content.items() if t == 'f'):
+				outsideFile = os.path.join(anotherDirectory, 'joan')
+				with open(outsideFile, 'w') as externalFile:
+					externalFile.write("Watson, are you here?")
 
-		assert os.path.exists(filename)
-		assert os.path.getsize(filename) > 10, 'Generated file is empty!'
+				os.symlink(outsideFile, os.path.join(tempDir, 'jlink'))
+				content['jlink'] = 'f'
+				break
 
-		with open(filename) as generatedFile:
-			for line in generatedFile:
-				try:
-					entry, path, size = line.split(' ', 2)
+			clientDataFiles = findFiles(tempDir)
 
-					path = path.strip("'")
-					assert entry == content.pop(path), "Type mismatch!"
+			filename = os.path.join(tempDir, 'test.files')
+			contentFile = PackageContentFile(filename)
+			contentFile.setProductClientDataDir(tempDir)
+			contentFile.setClientDataFiles(clientDataFiles)
+			contentFile.generate()
 
-					if entry == 'd':
-						assert int(size.strip()) == 0
-					elif entry == 'f':
-						size, hashSum = size.split(' ', 1)
+			assert os.path.exists(filename)
+			assert os.path.getsize(filename) > 10, 'Generated file is empty!'
 
-						size = int(size)
-						assert os.path.getsize(path) == size
+			with open(filename) as generatedFile:
+				for line in generatedFile:
+					try:
+						entry, path, size = line.split(' ', 2)
 
-						hashSum = hashSum.strip()
-						assert md5sum(path) == hashSum
-					elif entry == 'l':
-						size, target = size.split(' ', 1)
+						path = path.strip("'")
+						assert entry == content.pop(path), "Type mismatch!"
 
-						assert int(size) == 0
+						if path == 'jlink':
+							assert entry == 'f'
 
-						target = target.strip()
-						target = target.strip("'")
-						assert target
-					else:
-						raise RuntimeError("Unexpected type {0!r}".format(entry))
-				except Exception:
-					print("Processing line {0!r} failed".format(line))
-					raise
+						if entry == 'd':
+							assert int(size.strip()) == 0
+						elif entry == 'f':
+							size, hashSum = size.split(' ', 1)
 
-		assert not content, "Files not listed in content file: {0}".format(', '.join(content))
+							size = int(size)
+							assert os.path.getsize(path) == size
+
+							hashSum = hashSum.strip()
+							assert md5sum(path) == hashSum
+						elif entry == 'l':
+							size, target = size.split(' ', 1)
+
+							assert int(size) == 0
+
+							target = target.strip()
+							target = target.strip("'")
+							assert target
+						else:
+							raise RuntimeError("Unexpected type {0!r}".format(entry))
+					except Exception:
+						print("Processing line {0!r} failed".format(line))
+						raise
+
+			assert not content, "Files not listed in content file: {0}".format(', '.join(content))
 
 
 def fillDirectory(directory):
