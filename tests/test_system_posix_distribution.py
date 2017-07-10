@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
@@ -28,12 +27,13 @@ from OPSI.System.Posix import Distribution
 import pytest
 
 
+# The first tuple is retrieved by running platform.linux_distribution()
+# on the corresponding version.
 DISTRI_INFOS = [
     # TODO: add Debian 8
     # TODO: add CentOS 7
     (('Red Hat Enterprise Linux Server', '7.0', 'Maipo'), (7, 0)),
-    (('Ubuntu', '12.04', 'precise'), (12, 4)),
-    # TODO: add current Ubuntu: 16.04
+    (('Ubuntu', '16.04', 'xenial'), (16, 4)),
     # TODO: add UCS 4.x
     # TODO: add SLES12
     # TODO: add OpenSUSE Leap
