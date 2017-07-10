@@ -207,7 +207,7 @@ class OpsiBackup(object):
 				fcntl.fcntl(fd, fcntl.F_SETFL, oldflags)
 
 		try:
-			if self._getDifferencesInSysConfig(archive.sysinfo, SysInfo()):
+			if self._getDifferencesInSysConfig(archive.sysinfo):
 				return ask(WARNING_DIFF)
 		except OpsiError as error:
 			return ask(WARNING_SYSCONFIG % unicode(error))
