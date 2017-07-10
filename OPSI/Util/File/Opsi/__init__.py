@@ -44,14 +44,15 @@ from subprocess import Popen, PIPE, STDOUT
 
 import OPSI.System
 from OPSI import __version__ as LIBRARY_VERSION
-from OPSI.Exceptions import (BackendBadValueError, OpsiBackupBackendNotFound,
-	OpsiBackupFileError, OpsiBackupFileNotFound)
+from OPSI.Exceptions import (
+	BackendBadValueError, OpsiBackupBackendNotFound, OpsiBackupFileError,
+	OpsiBackupFileNotFound)
 from OPSI.Logger import Logger
 from OPSI.Object import BoolProductProperty, LocalbootProduct, NetbootProduct, Product, ProductDependency, ProductProperty, UnicodeProductProperty
-from OPSI.Types import (forceActionRequest, forceBool, forceDictList,
-	forceFilename, forceHostId, forceInstallationStatus, forceList,
-	forceObjectClass, forceObjectClassList, forceOpsiHostKey,
-	forcePackageVersion, forceProductId, forceProductPriority,
+from OPSI.Types import (
+	forceActionRequest, forceBool, forceDictList, forceFilename, forceHostId,
+	forceInstallationStatus, forceList, forceObjectClass, forceObjectClassList,
+	forceOpsiHostKey, forcePackageVersion, forceProductId, forceProductPriority,
 	forceProductPropertyType, forceProductType, forceProductVersion,
 	forceRequirementType, forceUnicode, forceUnicodeList, forceUnicodeLower)
 from OPSI.Util.File import ConfigFile, IniFile, TextFile, requiresParsing
