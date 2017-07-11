@@ -364,17 +364,17 @@ class PackageContentFile(TextFile):
 		self._lines = []
 		for filename in self._clientDataFiles:
 			try:
-				type = u'f'
-				md5 = u''
-				target = u''
+				additional = ''
 				size = 0
+
 				path = os.path.join(self._productClientDataDir, filename)
 				if os.path.islink(path):
 					logger.debug2("Processing link {0!r}", path)
-					type = u'l'
+					entryType = u'l'
 					target = os.path.realpath(path)
 					if target.startswith(self._productClientDataDir):
 						target = target[len(self._productClientDataDir):]
+						additional = '{0}'.format(target.replace(u'\'', u'\\\''))
 					else:
 						logger.debug2(
 							"Link {0!r} links to {1!r} which is outside the client "
@@ -385,26 +385,24 @@ class PackageContentFile(TextFile):
 
 						if os.path.isdir(path):
 							logger.debug2("Handling link {0!r} as directory", path)
-							type = u'd'
+							entryType = u'd'
 						else:
 							# link target not in client data dir => treat as file
 							logger.debug2("Handling link {0!r} as file", path)
-							type = u'f'
+							entryType = u'f'
 							size = os.path.getsize(target)
-							md5 = md5sum(target)
-							target = u''
+							additional = md5sum(target)
+
 				elif os.path.isdir(path):
 					logger.debug2("Processing directory {0!r}", path)
-					type = u'd'
+					entryType = u'd'
 				else:
 					logger.debug2("Processing file {0!r}", path)
+					entryType = u'f'
 					size = os.path.getsize(path)
-					md5 = md5sum(path)
+					additional = md5sum(path)
 
-				if target:
-					self._lines.append("%s '%s' %s '%s'" % (type, filename.replace(u'\'', u'\\\''), size, target.replace(u'\'', u'\\\'')))
-				else:
-					self._lines.append("%s '%s' %s %s" % (type, filename.replace(u'\'', u'\\\''), size, md5))
+				self._lines.append("%s '%s' %s %s" % (entryType, filename.replace(u'\'', u'\\\''), size, additional))
 			except Exception as error:
 				logger.logException(error)
 
