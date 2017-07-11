@@ -370,29 +370,34 @@ class PackageContentFile(TextFile):
 				size = 0
 				path = os.path.join(self._productClientDataDir, filename)
 				if os.path.islink(path):
+					logger.debug2("Processing link {0!r}", path)
 					type = u'l'
 					target = os.path.realpath(path)
 					if target.startswith(self._productClientDataDir):
 						target = target[len(self._productClientDataDir):]
 					else:
 						logger.debug2(
-							"{0!r} links to {1} which is outside the client "
+							"Link {0!r} links to {1!r} which is outside the client "
 							"data directory. Not handling as a link.",
 							path,
 							target
 						)
 
 						if os.path.isdir(path):
+							logger.debug2("Handling link {0!r} as directory", path)
 							type = u'd'
 						else:
 							# link target not in client data dir => treat as file
+							logger.debug2("Handling link {0!r} as file", path)
 							type = u'f'
 							size = os.path.getsize(target)
 							md5 = md5sum(target)
 							target = u''
 				elif os.path.isdir(path):
+					logger.debug2("Processing directory {0!r}", path)
 					type = u'd'
 				else:
+					logger.debug2("Processing file {0!r}", path)
 					size = os.path.getsize(path)
 					md5 = md5sum(path)
 
