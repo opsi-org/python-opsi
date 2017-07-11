@@ -275,6 +275,25 @@ class BackendDispatchConfigFile(ConfigFile):
 
 
 class PackageContentFile(TextFile):
+	"""
+	This files holds information about contents of a package.
+
+	Clients using the WAN extension will rely on this file and the
+	information it provides as part of the file caching mechanism.
+
+	The generated file lists for each file, folder or link in the
+	package the type, the path to the element and its size.
+	Directories will be represented with type `d`, the path to the
+	directory and size `0`.
+	Files will be represented with type `f`, the filesize in bytes, and
+	in addition the md5 hash of the file.
+	Links will be represented with type `l`, the path to the link,
+	size `0` and in addition after the size the path to the target will
+	be shown in single quotes.
+	If the link target is outside of `productClientDataDir` the	element
+	will be treated like a regular file or directory - whatever	the
+	target is.
+	"""
 	def __init__(self, filename, lockFailTimeout=2000):
 		TextFile.__init__(self, filename, lockFailTimeout)
 		self._parsed = False
