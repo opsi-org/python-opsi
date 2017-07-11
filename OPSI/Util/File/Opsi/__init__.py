@@ -361,46 +361,47 @@ class PackageContentFile(TextFile):
 		return fileInfo
 
 	def generate(self):
+		def handleDirectory(path):
+			return 'd', 0, ''
+
+		def handleFile(path):
+			return 'f', os.path.getsize(path), md5sum(path)
+
+		def handleLink(path):
+			target = os.path.realpath(path)
+			if target.startswith(self._productClientDataDir):
+				target = target[len(self._productClientDataDir):]
+				additional = '{0}'.format(target.replace(u'\'', u'\\\''))
+				return 'l', 0, additional
+			else:
+				logger.debug2(
+					"Link {0!r} links to {1!r} which is outside the client "
+					"data directory. Not handling as a link.",
+					path,
+					target
+				)
+
+				if os.path.isdir(path):
+					logger.debug2("Handling link {0!r} as directory", path)
+					return handleDirectory(path)
+				else:
+					# link target not in client data dir => treat as file
+					logger.debug2("Handling link {0!r} as file", path)
+					return handleFile(target)
+
 		self._lines = []
 		for filename in self._clientDataFiles:
 			try:
-				additional = ''
-				size = 0
-
 				path = os.path.join(self._productClientDataDir, filename)
 				if os.path.islink(path):
 					logger.debug2("Processing link {0!r}", path)
-					entryType = u'l'
-					target = os.path.realpath(path)
-					if target.startswith(self._productClientDataDir):
-						target = target[len(self._productClientDataDir):]
-						additional = '{0}'.format(target.replace(u'\'', u'\\\''))
-					else:
-						logger.debug2(
-							"Link {0!r} links to {1!r} which is outside the client "
-							"data directory. Not handling as a link.",
-							path,
-							target
-						)
-
-						if os.path.isdir(path):
-							logger.debug2("Handling link {0!r} as directory", path)
-							entryType = u'd'
-						else:
-							# link target not in client data dir => treat as file
-							logger.debug2("Handling link {0!r} as file", path)
-							entryType = u'f'
-							size = os.path.getsize(target)
-							additional = md5sum(target)
-
+					entryType, size, additional = handleLink(path)
 				elif os.path.isdir(path):
 					logger.debug2("Processing directory {0!r}", path)
-					entryType = u'd'
+					entryType, size, additional = handleDirectory(path)
 				else:
 					logger.debug2("Processing file {0!r}", path)
-					entryType = u'f'
-					size = os.path.getsize(path)
-					additional = md5sum(path)
+					entryType, size, additional = handleFile(path)
 
 				self._lines.append("%s '%s' %s %s" % (entryType, filename.replace(u'\'', u'\\\''), size, additional))
 			except Exception as error:
