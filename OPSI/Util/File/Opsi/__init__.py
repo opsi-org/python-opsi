@@ -364,8 +364,6 @@ class PackageContentFile(TextFile):
 		self._lines = []
 		for filename in self._clientDataFiles:
 			try:
-				#if (filename == self.clientDataDir):
-				#	continue
 				type = u'f'
 				md5 = u''
 				target = u''
