@@ -362,12 +362,15 @@ class PackageContentFile(TextFile):
 
 	def generate(self):
 		def handleDirectory(path):
+			logger.debug2("Processing {0!r} as directory", path)
 			return 'd', 0, ''
 
 		def handleFile(path):
+			logger.debug2("Processing {0!r} as file", path)
 			return 'f', os.path.getsize(path), md5sum(path)
 
 		def handleLink(path):
+			logger.debug2("Processing {0!r} as link", path)
 			target = os.path.realpath(path)
 			if target.startswith(self._productClientDataDir):
 				target = target[len(self._productClientDataDir):]
@@ -386,7 +389,7 @@ class PackageContentFile(TextFile):
 					return handleDirectory(path)
 				else:
 					# link target not in client data dir => treat as file
-					logger.debug2("Handling link {0!r} as file", path)
+					logger.debug2("Handling link {0!r} as file", target)
 					return handleFile(target)
 
 		self._lines = []
@@ -394,13 +397,10 @@ class PackageContentFile(TextFile):
 			try:
 				path = os.path.join(self._productClientDataDir, filename)
 				if os.path.islink(path):
-					logger.debug2("Processing link {0!r}", path)
 					entryType, size, additional = handleLink(path)
 				elif os.path.isdir(path):
-					logger.debug2("Processing directory {0!r}", path)
 					entryType, size, additional = handleDirectory(path)
 				else:
-					logger.debug2("Processing file {0!r}", path)
 					entryType, size, additional = handleFile(path)
 
 				self._lines.append("%s '%s' %s %s" % (entryType, filename.replace(u'\'', u'\\\''), size, additional))
