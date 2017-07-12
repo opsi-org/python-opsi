@@ -280,3 +280,57 @@ def fillDirectory(directory):
 		content[os.path.join(*name)] = 'l'
 
 	return content
+
+
+def testParsingPackageContentFile(outsideFile):
+	with workInTemporaryDirectory() as tempDir:
+		content = fillDirectory(tempDir)
+
+		outsideLink = 'jlink'
+		assert outsideLink not in content
+		for filename in (f for f, t in content.items() if t == 'f'):
+			os.symlink(outsideFile, os.path.join(tempDir, outsideLink))
+			content[outsideLink] = 'f'
+			break
+
+		filename = os.path.join(tempDir, 'test.files')
+		contentFile = PackageContentFile(filename)
+		contentFile.setProductClientDataDir(tempDir)
+		clientDataFiles = findFiles(tempDir)
+		contentFile.setClientDataFiles(clientDataFiles)
+		contentFile.generate()
+		del contentFile
+
+		# Checking the parsing feature of PackageContentFile
+		readContentFile = PackageContentFile(filename)
+		contents = readContentFile.parse()
+		assert len(contents) == len(content)
+
+		for filename, entry in contents.items():
+			assert filename
+			assert not filename.startswith("'")
+			assert not filename.endswith("'")
+
+			entryType = entry['type']
+			assert entryType == content[filename]
+
+			if entryType == 'd':
+				assert entry['size'] == 0
+				assert entry['md5sum'] == ''
+				assert entry['target'] == ''
+			elif entryType == 'f':
+				assert entry['size'] > 0
+				hashSum = entry['md5sum']
+				assert hashSum
+				assert not hashSum.startswith("'")
+				assert not hashSum.endswith("'")
+				assert entry['target'] == ''
+			elif entryType == 'l':
+				assert entry['size'] == 0
+				assert not entry['md5sum']
+				target = entry['target']
+				assert target
+				assert not target.startswith("'")
+				assert not target.endswith("'")
+			else:
+				raise RuntimeError("Unexpected type in {0!r}".format(entry))
