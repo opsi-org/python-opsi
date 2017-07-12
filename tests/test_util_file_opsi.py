@@ -166,7 +166,7 @@ def testProductControlFileWithoutVersionUsesDefaults():
 	assert '1.0' == product.productVersion
 
 
-def testPackageControlFileCreation():
+def testPackageContentFileCreation():
 	with workInTemporaryDirectory() as anotherDirectory:
 		with workInTemporaryDirectory() as tempDir:
 			content = fillDirectory(tempDir)
