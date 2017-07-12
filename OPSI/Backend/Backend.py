@@ -442,7 +442,7 @@ This defaults to ``self``.
 				data += u'%s = %s\r\n' % (module.lower().strip(), val)
 			modules['valid'] = bool(publicKey.verify(md5(data).digest(), [long(modules['signature'])]))
 		except Exception as error:
-			logger.warning(u"Failed to read opsi modules file '%s': %s" % (self._opsiModulesFile, error))
+			logger.info(u"Failed to read opsi modules file '%s': %s" % (self._opsiModulesFile, error))
 
 		return {
 			"opsiVersion": self._opsiVersion,
