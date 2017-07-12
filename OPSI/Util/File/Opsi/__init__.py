@@ -357,7 +357,7 @@ class PackageContentFile(TextFile):
 							elementType = u'f'
 							size = os.path.getsize(target)
 							md5 = md5sum(target)
-							target = u''
+							target = None
 				elif os.path.isdir(path):
 					elementType = u'd'
 				else:

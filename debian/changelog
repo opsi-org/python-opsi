@@ -1,3 +1,11 @@
+python-opsi (4.0.7.42-1) stable; urgency=medium
+
+  * Fixed a bug in the package content file generation where a link that
+    linked to a destination outside of the client data directory did not
+    have the hash of the link destination included.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 12 Jul 2017 10:55:49 +0200
+
 python-opsi (4.0.7.41-1) stable; urgency=medium
 
   * 30_kiosk.conf: Improved speed of getKioskProductInfosForClient.
