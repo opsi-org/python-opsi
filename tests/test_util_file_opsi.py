@@ -191,6 +191,8 @@ def testPackageContentFileCreation():
 			assert os.path.exists(filename)
 			assert os.path.getsize(filename) > 10, 'Generated file is empty!'
 
+			# Manual parsing of the file contents to ensure that the
+			# format matches our requirements.
 			with open(filename) as generatedFile:
 				for line in generatedFile:
 					try:
