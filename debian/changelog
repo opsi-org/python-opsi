@@ -1,3 +1,14 @@
+python-opsi (4.1.1.14-1) testing; urgency=medium
+
+  * OPSI.Util.File.Opsi.PackageContentFile.generate has been refactored to
+    be easier to maintain.
+  * OPSI.Backend.Backend: backend_info will log informations about a
+    possibly missing modules file as info instead of warning.
+  * postinst: only remove /etc/opsi/version if this file exists
+  * Debian packaging: Remove leftover from python-support.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 13 Jul 2017 15:17:49 +0200
+
 python-opsi (4.1.1.13-1) testing; urgency=medium
 
   * OpsiBackup: Fix a bug where an attempt may be made to compare
