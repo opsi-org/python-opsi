@@ -278,15 +278,16 @@ class PackageContentFile(TextFile):
 	The generated file lists for each file, folder or link in the
 	package the type, the path to the element and its size.
 	Directories will be represented with type `d`, the path to the
-	directory and size `0`.
-	Files will be represented with type `f`, the filesize in bytes, and
-	in addition the md5 hash of the file.
-	Links will be represented with type `l`, the path to the link,
-	size `0` and in addition after the size the path to the target will
-	be shown in single quotes.
-	If the link target is outside of `productClientDataDir` the	element
-	will be treated like a regular file or directory - whatever	the
-	target is.
+	directory in singlq quotes and size `0`.
+	Files will be represented with type `f`, relative path to the file
+	in single quotes, the filesize in bytes and in addition the md5 hash
+	of the file.
+	Links will be represented with type `l`, relative path to the link
+	in single quotes, size `0` and in addition the path to the
+	destination in single quotes.
+	If the link destination is outside of `productClientDataDir` the
+	element	will be treated like a regular file or directory - whatever
+	the destination is.
 	"""
 	def __init__(self, filename, lockFailTimeout=2000):
 		TextFile.__init__(self, filename, lockFailTimeout)
