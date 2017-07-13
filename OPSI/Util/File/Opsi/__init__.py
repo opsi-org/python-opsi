@@ -375,8 +375,8 @@ class PackageContentFile(TextFile):
 				return 'l', 0, additional
 			else:
 				logger.debug2(
-					"Link {0!r} links to {1!r} which is outside the client "
-					"data directory. Not handling as a link.",
+					"Link {0!r} links to {1!r} which is outside the "
+					"client data directory. Not handling as a link.",
 					path,
 					target
 				)
