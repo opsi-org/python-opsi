@@ -72,8 +72,9 @@ data_files = [
 			'data/backendManager/extend.d/20_legacy.conf',
 			'data/backendManager/extend.d/30_kiosk.conf',
 			'data/backendManager/extend.d/30_sshcommands.conf',
-			'data/backendManager/extend.d/40_groupActions.conf',
 			'data/backendManager/extend.d/40_admin_tasks.conf',
+			'data/backendManager/extend.d/40_groupActions.conf',
+			'data/backendManager/extend.d/45_deprecated.conf',
 			'data/backendManager/extend.d/70_dynamic_depot.conf',
 			'data/backendManager/extend.d/70_wan.conf',
 		]
