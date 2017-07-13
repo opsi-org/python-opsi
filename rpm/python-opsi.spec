@@ -150,7 +150,7 @@ chown opsiconfd:opsiadmin /etc/opsi/server_commands_default.conf
 chmod 440 /etc/opsi/server_commands_default.conf
 
 # Removing files dating before opsi 4.1
-test -e /etc/opsi/version && rm /etc/opsi/version
+test -e /etc/opsi/version && (rm /etc/opsi/version || echo "Failed to remove /etc/opsi/version")
 
 # ===[ files ]======================================
 %files -f INSTALLED_FILES
