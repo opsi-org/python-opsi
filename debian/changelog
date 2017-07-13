@@ -1,3 +1,12 @@
+python-opsi (4.1.1.14-3) testing; urgency=medium
+
+  * Listing 45_deprecated.conf for rollout.
+  * Debian: Removed leftovers from the pre-systemd-era.
+  * postinst: Another change at removing /etc/opsi/version to make SLES
+    happy.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 13 Jul 2017 16:03:00 +0200
+
 python-opsi (4.1.1.14-2) testing; urgency=medium
 
   * RPM: Removed leftovers from the pre-systemd-era.
