@@ -1,3 +1,11 @@
+python-opsi (4.1.1.14-2) testing; urgency=medium
+
+  * RPM: Removed leftovers from the pre-systemd-era.
+  * postinst: Making sure that a failed attempt at removing /etc/opsi/version
+    does not crash the postinst.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 13 Jul 2017 15:47:25 +0200
+
 python-opsi (4.1.1.14-1) testing; urgency=medium
 
   * OPSI.Util.File.Opsi.PackageContentFile.generate has been refactored to
