@@ -58,9 +58,6 @@ case "$1" in
 
 		# Removing files dating before opsi 4.1
 		test -e /etc/opsi/version && rm /etc/opsi/version
-
-		update-python-modules python-ldaptor.public >/dev/null 2>/dev/null || true
-		update-python-modules -p >/dev/null 2>/dev/null || true
 	;;
 
 	abort-upgrade|abort-remove|abort-deconfigure)
