@@ -256,7 +256,16 @@ def outsideFile():
 		yield outsideFile
 
 
-def testPackageContentFileCreation(outsideFile):
+@pytest.fixture
+def outsideDir():
+	with workInTemporaryDirectory() as tmpDir:
+		dirPath = os.path.join(tmpDir, 'dirOutside')
+		os.mkdir(dirPath)
+
+		yield dirPath
+
+
+def testPackageContentFileCreation(outsideFile, outsideDir):
 	with workInTemporaryDirectory() as tempDir:
 		content = fillDirectory(tempDir)
 
@@ -265,6 +274,13 @@ def testPackageContentFileCreation(outsideFile):
 		for filename in (f for f, t in content.items() if t == 'f'):
 			os.symlink(outsideFile, os.path.join(tempDir, outsideLink))
 			content[outsideLink] = 'f'
+			break
+
+		outsideDirLink = 'dlink'
+		assert outsideDirLink not in content
+		for dirname in (f for f, t in content.items() if t == 'd'):
+			os.symlink(outsideDir, os.path.join(tempDir, outsideDirLink))
+			content[outsideDirLink] = 'd'
 			break
 
 		clientDataFiles = findFiles(tempDir)
@@ -290,6 +306,8 @@ def testPackageContentFileCreation(outsideFile):
 
 					if path == outsideLink:
 						assert entry == 'f'
+					elif path == outsideDirLink:
+						assert entry == 'd'
 
 					if entry == 'd':
 						assert int(size.strip()) == 0
@@ -360,7 +378,7 @@ def fillDirectory(directory):
 	return content
 
 
-def testParsingPackageContentFile(outsideFile):
+def testParsingPackageContentFile(outsideFile, outsideDir):
 	with workInTemporaryDirectory() as tempDir:
 		content = fillDirectory(tempDir)
 
@@ -369,6 +387,13 @@ def testParsingPackageContentFile(outsideFile):
 		for filename in (f for f, t in content.items() if t == 'f'):
 			os.symlink(outsideFile, os.path.join(tempDir, outsideLink))
 			content[outsideLink] = 'f'
+			break
+
+		outsideDirLink = 'dlink'
+		assert outsideDirLink not in content
+		for dirname in (f for f, t in content.items() if t == 'd'):
+			os.symlink(outsideDir, os.path.join(tempDir, outsideDirLink))
+			content[outsideDirLink] = 'd'
 			break
 
 		filename = os.path.join(tempDir, 'test.files')
