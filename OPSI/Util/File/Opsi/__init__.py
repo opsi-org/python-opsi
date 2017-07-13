@@ -358,6 +358,10 @@ class PackageContentFile(TextFile):
 		return fileInfo
 
 	def generate(self):
+		def maskQuoteChars(string):
+			"Prefixes single quotes in string with a single backslash."
+			return string.replace(u'\'', u'\\\'')
+
 		def handleDirectory(path):
 			logger.debug2("Processing {0!r} as directory", path)
 			return 'd', 0, ''
@@ -371,8 +375,7 @@ class PackageContentFile(TextFile):
 			target = os.path.realpath(path)
 			if target.startswith(self._productClientDataDir):
 				target = target[len(self._productClientDataDir):]
-				additional = "'{0}'".format(target.replace(u'\'', u'\\\''))
-				return 'l', 0, additional
+				return 'l', 0, "'%s'" % maskQuoteChars(target)
 			else:
 				logger.debug2(
 					"Link {0!r} links to {1!r} which is outside the "
@@ -400,7 +403,7 @@ class PackageContentFile(TextFile):
 				else:
 					entryType, size, additional = handleFile(path)
 
-				self._lines.append("%s '%s' %s %s" % (entryType, filename.replace(u'\'', u'\\\''), size, additional))
+				self._lines.append("%s '%s' %s %s" % (entryType, maskQuoteChars(filename), size, additional))
 			except Exception as error:
 				logger.logException(error)
 
