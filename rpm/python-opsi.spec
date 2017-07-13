@@ -186,19 +186,6 @@ test -e /etc/opsi/version && (rm /etc/opsi/version || echo "Failed to remove /et
 %config /etc/opsi/hwaudit/locales/ru_RU
 %config(noreplace) /etc/opsi/server_commands_default.conf
 
-# directories
-#%dir /var/lib/opsi
-#%dir /usr/share/opsi
-#%dir /usr/share/python-support/python-opsi/OPSI
-#%dir /usr/share/python-support/python-opsi/OPSI/Backend
-#%dir /usr/share/python-support/python-opsi/OPSI/System
-#%dir /usr/share/python-support/python-opsi/OPSI/Util/File/Archive
-#%dir /usr/share/python-support/python-opsi/OPSI/Util/File/Opsi
-#%dir /etc/opsi/backendManager/extend.d
-#%dir /etc/opsi/backendManager/extend.d/configed
-#%dir /etc/opsi/backends
-#%dir /etc/opsi/hwaudit/locales
-
 %if 0%{?rhel_version} || 0%{?centos_version} || 0%{?fedora_version}
 %define python_sitearch %(%{__python} -c 'from distutils import sysconfig; print sysconfig.get_python_lib()')
 %{python_sitearch}/OPSI/*
