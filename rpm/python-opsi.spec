@@ -172,8 +172,9 @@ test -e /etc/opsi/version && (rm /etc/opsi/version || echo "Failed to remove /et
 %config /etc/opsi/backendManager/extend.d/20_legacy.conf
 %config /etc/opsi/backendManager/extend.d/30_kiosk.conf
 %config /etc/opsi/backendManager/extend.d/30_sshcommands.conf
-%config /etc/opsi/backendManager/extend.d/40_groupActions.conf
 %config /etc/opsi/backendManager/extend.d/40_admin_tasks.conf
+%config /etc/opsi/backendManager/extend.d/40_groupActions.conf
+%config /etc/opsi/backendManager/extend.d/45_deprecated.conf
 %config /etc/opsi/backendManager/extend.d/70_wan.conf
 %config /etc/opsi/backendManager/extend.d/70_dynamic_depot.conf
 %config /etc/opsi/hwaudit/opsihwaudit.conf
