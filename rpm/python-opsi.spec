@@ -167,6 +167,8 @@ fi
 %config(noreplace) /etc/opsi/backends/jsonrpc.conf
 %config(noreplace) /etc/opsi/backends/mysql.conf
 %config(noreplace) /etc/opsi/backends/opsipxeconfd.conf
+%config(noreplace) /etc/opsi/backends/sqlite.conf
+%config /etc/opsi/opsi.conf
 %config /etc/opsi/backendManager/acl.conf.default
 %config /etc/opsi/backendManager/dispatch.conf.default
 %config /etc/opsi/backendManager/extend.d/10_opsi.conf
