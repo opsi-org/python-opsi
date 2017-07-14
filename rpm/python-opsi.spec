@@ -76,7 +76,6 @@ python setup.py build
 
 # ===[ install ]====================================
 %install
-mkdir -p $RPM_BUILD_ROOT/etc/opsi/systemdTemplates
 
 # install python files and record installed files in INSTALLED_FILES
 %if 0%{?suse_version}
@@ -151,7 +150,9 @@ chown opsiconfd:opsiadmin /etc/opsi/server_commands_default.conf
 chmod 440 /etc/opsi/server_commands_default.conf
 
 # Removing files dating before opsi 4.1
-test -e /etc/opsi/version && rm /etc/opsi/version
+if [ -e "/etc/opsi/version" ]; then
+	rm "/etc/opsi/version" || echo "Failed to remove /etc/opsi/version"
+fi
 
 # ===[ files ]======================================
 %files -f INSTALLED_FILES
@@ -173,8 +174,9 @@ test -e /etc/opsi/version && rm /etc/opsi/version
 %config /etc/opsi/backendManager/extend.d/20_legacy.conf
 %config /etc/opsi/backendManager/extend.d/30_kiosk.conf
 %config /etc/opsi/backendManager/extend.d/30_sshcommands.conf
-%config /etc/opsi/backendManager/extend.d/40_groupActions.conf
 %config /etc/opsi/backendManager/extend.d/40_admin_tasks.conf
+%config /etc/opsi/backendManager/extend.d/40_groupActions.conf
+%config /etc/opsi/backendManager/extend.d/45_deprecated.conf
 %config /etc/opsi/backendManager/extend.d/70_wan.conf
 %config /etc/opsi/backendManager/extend.d/70_dynamic_depot.conf
 %config /etc/opsi/hwaudit/opsihwaudit.conf
@@ -185,20 +187,6 @@ test -e /etc/opsi/version && rm /etc/opsi/version
 %config /etc/opsi/hwaudit/locales/fr_FR
 %config /etc/opsi/hwaudit/locales/ru_RU
 %config(noreplace) /etc/opsi/server_commands_default.conf
-
-# directories
-#%dir /var/lib/opsi
-#%dir /usr/share/opsi
-#%dir /usr/share/python-support/python-opsi/OPSI
-#%dir /usr/share/python-support/python-opsi/OPSI/Backend
-#%dir /usr/share/python-support/python-opsi/OPSI/System
-#%dir /usr/share/python-support/python-opsi/OPSI/Util/File/Archive
-#%dir /usr/share/python-support/python-opsi/OPSI/Util/File/Opsi
-#%dir /etc/opsi/backendManager/extend.d
-#%dir /etc/opsi/backendManager/extend.d/configed
-#%dir /etc/opsi/backends
-#%dir /etc/opsi/hwaudit/locales
-%dir /etc/opsi/systemdTemplates
 
 %if 0%{?rhel_version} || 0%{?centos_version} || 0%{?fedora_version}
 %define python_sitearch %(%{__python} -c 'from distutils import sysconfig; print sysconfig.get_python_lib()')

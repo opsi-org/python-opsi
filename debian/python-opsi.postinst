@@ -57,7 +57,9 @@ case "$1" in
 		chmod 440 /etc/opsi/server_commands_default.conf
 
 		# Removing files dating before opsi 4.1
-		test -e /etc/opsi/version && rm /etc/opsi/version
+		if [ -e "/etc/opsi/version" ]; then
+			rm "/etc/opsi/version" || echo "Failed to remove /etc/opsi/version"
+		fi
 	;;
 
 	abort-upgrade|abort-remove|abort-deconfigure)
