@@ -58,7 +58,8 @@ BuildRequires:  gettext-runtime
 
 # ===[ description ]================================
 %description
-This package contains the opsi python library.
+This package contains the python library that is used by various
+components of the client management solution opsi.
 
 # ===[ debug_package ]==============================
 %debug_package
