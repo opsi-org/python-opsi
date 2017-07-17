@@ -26,6 +26,14 @@ from OPSI.Object import OpsiClient
 
 
 def testHardwareAuditAcceptingHugeMemoryClockSpeeds(hardwareAuditBackendWithHistory):
+	"""
+	Testing that the backend accepts a memory speed larger than the size
+	of an signed int in MySQL.
+
+	Datatype sizes are:
+	* signed INT from -2147483648 to 2147483647
+	* signed BIGINT from -9223372036854775808 to 9223372036854775807
+	"""
 	backend = hardwareAuditBackendWithHistory
 
 	client = OpsiClient(id='foo.bar.invalid')
