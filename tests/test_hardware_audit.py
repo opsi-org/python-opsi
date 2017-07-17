@@ -25,7 +25,7 @@ Testing hardware audit behaviour.
 from OPSI.Object import OpsiClient
 
 
-def testHardwareAuditNotFailingWithBackendReferentialError(hardwareAuditBackendWithHistory):
+def testHardwareAuditAcceptingHungeMemoryClockSpeeds(hardwareAuditBackendWithHistory):
 	backend = hardwareAuditBackendWithHistory
 
 	client = OpsiClient(id='foo.bar.invalid')
