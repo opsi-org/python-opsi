@@ -1,3 +1,9 @@
+python-opsi (4.0.7.43-1) stable; urgency=medium
+
+  * opsihwaudit.conf: Memory clock speed is now handled as a bigint.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 17 Jul 2017 17:35:54 +0200
+
 python-opsi (4.0.7.42-1) stable; urgency=medium
 
   * Fixed a bug in the package content file generation where a link that

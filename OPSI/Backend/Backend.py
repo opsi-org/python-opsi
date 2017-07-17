@@ -4296,8 +4296,9 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 
 	def auditHardwareOnHost_updateObjects(self, auditHardwareOnHosts):
 		for auditHardwareOnHost in forceObjectClassList(auditHardwareOnHosts, AuditHardwareOnHost):
+			objectHash = auditHardwareOnHost.toHash()
 			filter = {}
-			for (attribute, value) in auditHardwareOnHost.toHash().items():
+			for (attribute, value) in objectHash.items():
 				if attribute in ('firstseen', 'lastseen', 'state'):
 					continue
 
@@ -4307,6 +4308,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 					filter[attribute] = value
 
 			if self.auditHardwareOnHost_getObjects(attributes=['hostId'], **filter):
+				logger.debug2(u"Updating existing AuditHardwareOnHost {0!r}", objectHash)
 				self.auditHardwareOnHost_updateObject(auditHardwareOnHost)
 			else:
 				logger.info(u"AuditHardwareOnHost %s does not exist, creating" % auditHardwareOnHost)
