@@ -26,6 +26,8 @@ from __future__ import absolute_import
 import os
 import unittest
 
+import pytest
+
 from OPSI.Util import findFiles, md5sum
 from OPSI.Util.File.Opsi import (
 	BackendDispatchConfigFile, OpsiConfFile, PackageContentFile,
@@ -166,70 +168,79 @@ def testProductControlFileWithoutVersionUsesDefaults():
 	assert '1.0' == product.productVersion
 
 
-def testPackageControlFileCreation():
+@pytest.fixture
+def outsideFile():
 	with workInTemporaryDirectory() as anotherDirectory:
-		with workInTemporaryDirectory() as tempDir:
-			content = fillDirectory(tempDir)
+		outsideFile = os.path.join(anotherDirectory, 'joan')
+		with open(outsideFile, 'w') as externalFile:
+			externalFile.write("Watson, are you here?")
 
-			for filename in (f for f, t in content.items() if t == 'f'):
-				outsideFile = os.path.join(anotherDirectory, 'joan')
-				with open(outsideFile, 'w') as externalFile:
-					externalFile.write("Watson, are you here?")
+		yield outsideFile
 
-				os.symlink(outsideFile, os.path.join(tempDir, 'jlink'))
-				content['jlink'] = 'f'
-				break
 
-			clientDataFiles = findFiles(tempDir)
+def testPackageContentFileCreation(outsideFile):
+	with workInTemporaryDirectory() as tempDir:
+		content = fillDirectory(tempDir)
 
-			filename = os.path.join(tempDir, 'test.files')
-			contentFile = PackageContentFile(filename)
-			contentFile.setProductClientDataDir(tempDir)
-			contentFile.setClientDataFiles(clientDataFiles)
-			contentFile.generate()
+		outsideLink = 'jlink'
+		assert outsideLink not in content
+		for filename in (f for f, t in content.items() if t == 'f'):
+			os.symlink(outsideFile, os.path.join(tempDir, outsideLink))
+			content[outsideLink] = 'f'
+			break
 
-			assert os.path.exists(filename)
-			assert os.path.getsize(filename) > 10, 'Generated file is empty!'
+		clientDataFiles = findFiles(tempDir)
 
-			with open(filename) as generatedFile:
-				for line in generatedFile:
-					try:
-						entry, path, size = line.split(' ', 2)
+		filename = os.path.join(tempDir, 'test.files')
+		contentFile = PackageContentFile(filename)
+		contentFile.setProductClientDataDir(tempDir)
+		contentFile.setClientDataFiles(clientDataFiles)
+		contentFile.generate()
 
-						path = path.strip("'")
-						assert entry == content.pop(path), "Type mismatch!"
+		assert os.path.exists(filename)
+		assert os.path.getsize(filename) > 10, 'Generated file is empty!'
 
-						if path == 'jlink':
-							assert entry == 'f'
+		# Manual parsing of the file contents to ensure that the
+		# format matches our requirements.
+		with open(filename) as generatedFile:
+			for line in generatedFile:
+				try:
+					entry, path, size = line.split(' ', 2)
 
-						if entry == 'd':
-							assert int(size.strip()) == 0
-						elif entry == 'f':
-							size, hashSum = size.split(' ', 1)
+					path = path.strip("'")
+					assert entry == content.pop(path), "Type mismatch!"
 
-							assert os.path.getsize(path) == int(size)
+					if path == outsideLink:
+						assert entry == 'f'
 
-							assert not hashSum.startswith("'")
-							assert not hashSum.endswith("'")
-							hashSum = hashSum.strip()
-							assert md5sum(path) == hashSum
-						elif entry == 'l':
-							size, target = size.split(' ', 1)
+					if entry == 'd':
+						assert int(size.strip()) == 0
+					elif entry == 'f':
+						size, hashSum = size.split(' ', 1)
 
-							assert int(size) == 0
+						assert os.path.getsize(path) == int(size)
 
-							target = target.strip()
-							assert target.startswith("'")
-							assert target.endswith("'")
-							target = target.strip("'")
-							assert target
-						else:
-							raise RuntimeError("Unexpected type {0!r}".format(entry))
-					except Exception:
-						print("Processing line {0!r} failed".format(line))
-						raise
+						assert not hashSum.startswith("'")
+						assert not hashSum.endswith("'")
+						hashSum = hashSum.strip()
+						assert md5sum(path) == hashSum
+					elif entry == 'l':
+						size, target = size.split(' ', 1)
 
-			assert not content, "Files not listed in content file: {0}".format(', '.join(content))
+						assert int(size) == 0
+
+						target = target.strip()
+						assert target.startswith("'")
+						assert target.endswith("'")
+						target = target.strip("'")
+						assert target
+					else:
+						raise RuntimeError("Unexpected type {0!r}".format(entry))
+				except Exception:
+					print("Processing line {0!r} failed".format(line))
+					raise
+
+		assert not content, "Files not listed in content file: {0}".format(', '.join(content))
 
 
 def fillDirectory(directory):
@@ -269,3 +280,57 @@ def fillDirectory(directory):
 		content[os.path.join(*name)] = 'l'
 
 	return content
+
+
+def testParsingPackageContentFile(outsideFile):
+	with workInTemporaryDirectory() as tempDir:
+		content = fillDirectory(tempDir)
+
+		outsideLink = 'jlink'
+		assert outsideLink not in content
+		for filename in (f for f, t in content.items() if t == 'f'):
+			os.symlink(outsideFile, os.path.join(tempDir, outsideLink))
+			content[outsideLink] = 'f'
+			break
+
+		filename = os.path.join(tempDir, 'test.files')
+		contentFile = PackageContentFile(filename)
+		contentFile.setProductClientDataDir(tempDir)
+		clientDataFiles = findFiles(tempDir)
+		contentFile.setClientDataFiles(clientDataFiles)
+		contentFile.generate()
+		del contentFile
+
+		# Checking the parsing feature of PackageContentFile
+		readContentFile = PackageContentFile(filename)
+		contents = readContentFile.parse()
+		assert len(contents) == len(content)
+
+		for filename, entry in contents.items():
+			assert filename
+			assert not filename.startswith("'")
+			assert not filename.endswith("'")
+
+			entryType = entry['type']
+			assert entryType == content[filename]
+
+			if entryType == 'd':
+				assert entry['size'] == 0
+				assert entry['md5sum'] == ''
+				assert entry['target'] == ''
+			elif entryType == 'f':
+				assert entry['size'] > 0
+				hashSum = entry['md5sum']
+				assert hashSum
+				assert not hashSum.startswith("'")
+				assert not hashSum.endswith("'")
+				assert entry['target'] == ''
+			elif entryType == 'l':
+				assert entry['size'] == 0
+				assert not entry['md5sum']
+				target = entry['target']
+				assert target
+				assert not target.startswith("'")
+				assert not target.endswith("'")
+			else:
+				raise RuntimeError("Unexpected type in {0!r}".format(entry))
