@@ -289,7 +289,7 @@ def testSetProductActionRequestWithDependenciesWithDependencyRequiredInstallatio
 
 	assert productThatShouldBeInstalled.productId == 'javavm'
 	if installationStatus == 'installed':
-	    assert not productThatShouldBeInstalled.actionRequest == 'setup'
+		assert not productThatShouldBeInstalled.actionRequest == 'setup'
 
 
 def testSetProductActionRequestWithDependenciesWithOnce(backendManager):
