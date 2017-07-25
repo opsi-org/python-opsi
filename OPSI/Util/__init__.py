@@ -478,30 +478,30 @@ def compareVersions(v1, condition, v2):
 		v2p = second.split(u'.')
 		makeEqualLength(v1p, v2p)
 
-		for i in range(len(v1p)):
-			while (len(v1p[i]) > 0) or (len(v2p[i]) > 0):
+		for value, otherValue in zip(v1p, v2p):
+			while value or otherValue:
 				cv1 = u''
 				cv2 = u''
 
-				match = re.search('^(\d+)(\D*.*)$', v1p[i])
+				match = re.search('^(\d+)(\D*.*)$', value)
 				if match:
 					cv1 = int(match.group(1))
-					v1p[i] = match.group(2)
+					value = match.group(2)
 				else:
-					match = re.search('^(\D+)(\d*.*)$', v1p[i])
+					match = re.search('^(\D+)(\d*.*)$', value)
 					if match:
 						cv1 = match.group(1)
-						v1p[i] = match.group(2)
+						value = match.group(2)
 
-				match = re.search('^(\d+)(\D*.*)$', v2p[i])
+				match = re.search('^(\d+)(\D*.*)$', otherValue)
 				if match:
 					cv2 = int(match.group(1))
-					v2p[i] = match.group(2)
+					otherValue = match.group(2)
 				else:
-					match = re.search('^(\D+)(\d*.*)$', v2p[i])
+					match = re.search('^(\D+)(\d*.*)$', otherValue)
 					if match:
 						cv2 = match.group(1)
-						v2p[i] = match.group(2)
+						otherValue = match.group(2)
 
 				if cv1 == u'':
 					cv1 = chr(1)
