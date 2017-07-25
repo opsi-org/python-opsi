@@ -518,8 +518,8 @@ def compareVersions(v1, condition, v2):
 					cv2 = u"'%s'" % cv2
 
 				logger.debug2(u"Is {0!r} {1} {2!r}?", cv1, condition, cv2)
-				b = eval(u"%s %s %s" % (cv1, condition, cv2))
-				if not b:
+				conditionFulfilled = eval(u"%s %s %s" % (cv1, condition, cv2))
+				if not conditionFulfilled:
 					logger.debug(u"Unfulfilled condition: {0} {1} {2}", version, condition, otherVersion)
 					return False
 				else:
