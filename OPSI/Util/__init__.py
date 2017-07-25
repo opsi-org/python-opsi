@@ -522,9 +522,9 @@ def compareVersions(v1, condition, v2):
 				if not conditionFulfilled:
 					logger.debug(u"Unfulfilled condition: {0} {1} {2}", version, condition, otherVersion)
 					return False
-				else:
-					logger.debug(u"Fulfilled condition: {0} {1} {2}", version, condition, otherVersion)
-					return True
+
+				logger.debug(u"Fulfilled condition: {0} {1} {2}", version, condition, otherVersion)
+				return True
 
 	if u'=' not in condition:
 		logger.debug(u"Unfulfilled condition: {0} {1} {2}", version, condition, otherVersion)
