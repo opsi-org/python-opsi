@@ -410,6 +410,20 @@ def replaceSpecialHTMLCharacters(text):
 
 
 def compareVersions(v1, condition, v2):
+	"""
+	Compare the versions `v1` and `v2` with the given `condition`.
+
+	`condition` may be one of `==`, `<`, `<=`, `>`, `>=`.
+
+	Versions will be made the same length by appending '.0' until they
+	match.
+	If `1.0.0` and `2` are compared the latter will be viewed as `2.0.0`.
+	If a version contains a `~` that character and everything following
+	it will not be taken into account.
+
+	:rtype: bool
+	:return: If the comparison matches this will return True.
+	"""
 	def removePartAfterWave(versionString):
 		if "~" in versionString:
 			return versionString[:versionString.find("~")]
