@@ -237,7 +237,7 @@ If not given will use a default.
 		randfile.write(randomBytes)
 
 		execute(
-			u"{command} gendh -rand {tempfile} 512 >> {target}".format(
+			u"{command} dhparam -rand {tempfile} 512 >> {target}".format(
 				command=which("openssl"), tempfile=randfile.name, target=path
 			)
 		)
