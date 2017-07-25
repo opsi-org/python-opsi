@@ -464,7 +464,7 @@ def testComparingWithoutGivingOperatorDefaultsToEqual(v1, operator, v2):
 	assert compareVersions(v1, operator, v2)
 
 
-def testComparingWithOneEqualitySignWork():
+def testComparingWithOnlyOneEqualitySign():
 	assert compareVersions('1.0', '=', '1.0')
 
 
