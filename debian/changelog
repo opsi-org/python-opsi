@@ -1,3 +1,9 @@
+python-opsi (4.0.7.43-2) stable; urgency=medium
+
+  * Debian packaging: Depending on net-tools for ifconfig.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 25 Jul 2017 09:19:10 +0200
+
 python-opsi (4.0.7.43-1) stable; urgency=medium
 
   * opsihwaudit.conf: Memory clock speed is now handled as a bigint.
