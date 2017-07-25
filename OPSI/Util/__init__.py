@@ -424,6 +424,7 @@ def compareVersions(v1, condition, v2):
 	If a version contains a `~` that character and everything following
 	it will not be taken into account.
 
+	:raises ValueError: If invalid value for version or condition if given.
 	:rtype: bool
 	:return: If the comparison matches this will return True.
 	"""
