@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -237,7 +237,7 @@ If not given will use a default.
 		randfile.write(randomBytes)
 
 		execute(
-			u"{command} gendh -rand {tempfile} 512 >> {target}".format(
+			u"{command} dhparam -rand {tempfile} 512 >> {target}".format(
 				command=which("openssl"), tempfile=randfile.name, target=path
 			)
 		)
