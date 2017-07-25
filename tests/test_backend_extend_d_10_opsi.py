@@ -1,8 +1,7 @@
-#!/usr/bin/env python
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -165,7 +164,8 @@ setup even if they are already installed on a client.
 
 
 @pytest.mark.parametrize("installationStatus", ["installed", "unknown", "not_installed", None])
-def testSetProductActionRequestWithDependenciesWithDependencyRequestingAction(backendManager, installationStatus):
+@pytest.mark.parametrize("actionRequest", ["setup"])
+def testSetProductActionRequestWithDependenciesWithDependencyRequestingAction(backendManager, installationStatus, actionRequest):
 	client, depot = createClientAndDepot(backendManager)
 
 	jedit = LocalbootProduct('jedit', '1.0', '1.0')
@@ -211,7 +211,7 @@ def testSetProductActionRequestWithDependenciesWithDependencyRequestingAction(ba
 
 		backendManager.productOnClient_createObjects([poc])
 
-	backendManager.setProductActionRequestWithDependencies('jedit', client.id, "setup")
+	backendManager.setProductActionRequestWithDependencies('jedit', client.id, actionRequest)
 
 	productsOnClient = backendManager.productOnClient_getObjects()
 	assert 2 == len(productsOnClient)
@@ -224,10 +224,12 @@ def testSetProductActionRequestWithDependenciesWithDependencyRequestingAction(ba
 		raise ValueError('Could not find a product "{0}" on the client.'.format('already_installed'))
 
 	assert productThatShouldBeSetup.productId == 'javavm'
-	assert productThatShouldBeSetup.actionRequest == 'setup'
+	assert productThatShouldBeSetup.actionRequest == actionRequest
+
 
 @pytest.mark.parametrize("installationStatus", ["installed", "unknown", "not_installed", None])
-def testSetProductActionRequestWithDependenciesWithDependencyRequiredInstallationStatus(backendManager, installationStatus):
+@pytest.mark.parametrize("actionRequest", ["setup"])
+def testSetProductActionRequestWithDependenciesWithDependencyRequiredInstallationStatus(backendManager, installationStatus, actionRequest):
 	client, depot = createClientAndDepot(backendManager)
 
 	jedit = LocalbootProduct('jedit', '1.0', '1.0')
@@ -275,7 +277,7 @@ def testSetProductActionRequestWithDependenciesWithDependencyRequiredInstallatio
 
 		backendManager.productOnClient_createObjects([poc])
 
-	backendManager.setProductActionRequestWithDependencies('jedit', client.id, "setup")
+	backendManager.setProductActionRequestWithDependencies('jedit', client.id, actionRequest)
 
 	productsOnClient = backendManager.productOnClient_getObjects()
 	assert 2 == len(productsOnClient)
@@ -289,7 +291,7 @@ def testSetProductActionRequestWithDependenciesWithDependencyRequiredInstallatio
 
 	assert productThatShouldBeInstalled.productId == 'javavm'
 	if installationStatus == 'installed':
-	    assert not productThatShouldBeInstalled.actionRequest == 'setup'
+		assert not productThatShouldBeInstalled.actionRequest == 'setup'
 
 
 def testSetProductActionRequestWithDependenciesWithOnce(backendManager):
@@ -352,6 +354,7 @@ def testSetProductActionRequestWithDependenciesWithOnce(backendManager):
 	assert depOnce.actionRequest == 'once'
 	assert depSetup.actionRequest == 'setup'
 
+
 def testSetProductActionRequestWithDependenciesUpdateOnlyNeededObjects(backendManager):
 	client, depot = createClientAndDepot(backendManager)
 
@@ -391,7 +394,7 @@ def testSetProductActionRequestWithDependenciesUpdateOnlyNeededObjects(backendMa
 			packageVersion=prodWithNoDep.packageVersion,
 			installationStatus='installed',
 			actionRequest=None,
-			modificationTime = expectedModificationTime,
+			modificationTime=expectedModificationTime,
 			actionResult='successful'
 		)
 
@@ -405,6 +408,7 @@ def testSetProductActionRequestWithDependenciesUpdateOnlyNeededObjects(backendMa
 	for poc in productsOnClient:
 		if poc.productId == 'nicht_anfassen':
 			assert not poc.modificationTime == expectedModificationTime
+
 
 @pytest.mark.parametrize("sortalgorithm", [None, 'algorithm1', 'algorithm2', 'unknown-algo'])
 def testGetProductOrdering(prefilledBackendManager, sortalgorithm):
