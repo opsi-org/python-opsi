@@ -474,11 +474,11 @@ def compareVersions(v1, condition, v2):
 
 	for first, second in comparisons:
 		logger.debug2("Comparing {0!r} with {1!r}...", first, second)
-		v1p = first.split(u'.')
-		v2p = second.split(u'.')
-		makeEqualLength(v1p, v2p)
+		firstParts = first.split(u'.')
+		secondParts = second.split(u'.')
+		makeEqualLength(firstParts, secondParts)
 
-		for value, otherValue in zip(v1p, v2p):
+		for value, otherValue in zip(firstParts, secondParts):
 			while value or otherValue:
 				cv1 = u''
 				cv2 = u''
