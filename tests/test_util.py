@@ -473,7 +473,7 @@ def testComparingWithOnlyOneEqualitySign():
 
 @pytest.mark.parametrize("operator", ['asdf', '+-', '<>', '!='])
 def testUsingUnknownOperatorFails(operator):
-	with pytest.raises(Exception):
+	with pytest.raises(ValueError):
 		compareVersions('1', operator, '2')
 
 
@@ -490,7 +490,7 @@ def testIgnoringVersionsWithWaveInThem(v1, operator, v2):
 	('1.2.3-4', '==', 'abc-1.2.3-4')
 ])
 def testUsingInvalidVersionStringsFails(v1, operator, v2):
-	with pytest.raises(Exception):
+	with pytest.raises(ValueError):
 		compareVersions(v1, operator, v2)
 
 
