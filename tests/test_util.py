@@ -505,6 +505,7 @@ def testComparingWorksWithLettersInVersionString(v1, operator, v2):
 @pytest.mark.parametrize("v1, operator, v2", [
 	('1.1.0.1', '>', '1.1'),
 	('1.1', '<', '1.1.0.1'),
+	('1.1', '==', '1.1.0.0'),
 ])
 def testComparisonsWithDifferntDepthsAreMadeTheSameDepth(v1, operator, v2):
 	assert compareVersions(v1, operator, v2)
