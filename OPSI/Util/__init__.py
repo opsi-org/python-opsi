@@ -42,6 +42,7 @@ import socket
 import struct
 import time
 import types
+from collections import namedtuple
 from contextlib import closing
 from Crypto.Cipher import Blowfish
 from hashlib import md5
@@ -82,6 +83,8 @@ _ACCEPTED_CHARACTERS = (
 	"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	"0123456789"
 )
+
+Version = namedtuple('Version', 'product package')
 
 
 class CryptoError(ValueError):
@@ -441,11 +444,14 @@ def compareVersions(v1, condition, v2):
 		if match.group(2):
 			packageVersion = match.group(2)
 
-		return (productVersion, packageVersion)
+		return Version(productVersion, packageVersion)
 
 	def makeEqualLength(first, second):
 		while len(first) < len(second):
 			first.append(u'0')
+
+		while len(second) < len(first):
+			second.append(u'0')
 
 	if not condition:
 		condition = u'=='
@@ -457,14 +463,21 @@ def compareVersions(v1, condition, v2):
 	v1 = removePartAfterWave(forceUnicode(v1))
 	v2 = removePartAfterWave(forceUnicode(v2))
 
-	(v1ProductVersion, v1PackageVersion) = splitProductAndPackageVersion(v1)
-	(v2ProductVersion, v2PackageVersion) = splitProductAndPackageVersion(v2)
+	version = splitProductAndPackageVersion(v1)
+	otherVersion = splitProductAndPackageVersion(v2)
+	logger.debug2("Versions: {0!r}, {1!r}", version, otherVersion)
 
-	for (v1, v2) in ( (v1ProductVersion, v2ProductVersion), (v1PackageVersion, v2PackageVersion) ):
-		v1p = v1.split(u'.')
-		v2p = v2.split(u'.')
+	comparisons = (
+		(version.product, otherVersion.product),
+		(version.package, otherVersion.package)
+	)
+
+	for first, second in comparisons:
+		logger.debug2("Comparing {0!r} with {1!r}...", first, second)
+		v1p = first.split(u'.')
+		v2p = second.split(u'.')
 		makeEqualLength(v1p, v2p)
-		makeEqualLength(v2p, v1p)
+
 		for i in range(len(v1p)):
 			while (len(v1p[i]) > 0) or (len(v2p[i]) > 0):
 				cv1 = u''
@@ -494,8 +507,9 @@ def compareVersions(v1, condition, v2):
 					cv1 = chr(1)
 				if cv2 == u'':
 					cv2 = chr(1)
+
 				if cv1 == cv2:
-					logger.debug2(u"%s == %s => continue" % (cv1, cv2))
+					logger.debug2(u"{0!r} == {1!r} => continue", cv1, cv2)
 					continue
 
 				if not isinstance(cv1, int):
@@ -503,24 +517,20 @@ def compareVersions(v1, condition, v2):
 				if not isinstance(cv2, int):
 					cv2 = u"'%s'" % cv2
 
+				logger.debug2(u"Is {0!r} {1} {2!r}?", cv1, condition, cv2)
 				b = eval(u"%s %s %s" % (cv1, condition, cv2))
-				logger.debug2(u"%s(%s) %s %s(%s) => %s | '%s' '%s'" % (type(cv1), cv1, condition, type(cv2), cv2, b, v1p[i], v2p[i]) )
 				if not b:
-					logger.debug(u"Unfulfilled condition: %s-%s %s %s-%s" \
-						% (v1ProductVersion, v1PackageVersion, condition, v2ProductVersion, v2PackageVersion ))
+					logger.debug(u"Unfulfilled condition: {0} {1} {2}", version, condition, otherVersion)
 					return False
 				else:
-					logger.debug(u"Fulfilled condition: %s-%s %s %s-%s" \
-						% (v1ProductVersion, v1PackageVersion, condition, v2ProductVersion, v2PackageVersion ))
+					logger.debug(u"Fulfilled condition: {0} {1} {2}", version, condition, otherVersion)
 					return True
 
 	if u'=' not in condition:
-		logger.debug(u"Unfulfilled condition: %s-%s %s %s-%s" \
-			% (v1ProductVersion, v1PackageVersion, condition, v2ProductVersion, v2PackageVersion ))
+		logger.debug(u"Unfulfilled condition: {0} {1} {2}", version, condition, otherVersion)
 		return False
 
-	logger.debug(u"Fulfilled condition: %s-%s %s %s-%s" \
-		% (v1ProductVersion, v1PackageVersion, condition, v2ProductVersion, v2PackageVersion ))
+	logger.debug(u"Fulfilled condition: {0} {1} {2}", version, condition, otherVersion)
 	return True
 
 
