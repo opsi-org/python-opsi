@@ -450,13 +450,13 @@ def testLibrsyncPatchFileAvoidsPatchingSameFile(old, delta, new):
 
 
 @pytest.mark.parametrize("first, operator, second", [
-    ('1.0', '<', '2.0'),
-    pytest.mark.xfail(('1.0', '>', '2.0')),
-    pytest.mark.xfail(('1.0', '>', '1.0')),
-    pytest.mark.xfail(('1.2.3.5', '>', '2.2.3.5')),
+	('1.0', '<', '2.0'),
+	pytest.mark.xfail(('1.0', '>', '2.0')),
+	pytest.mark.xfail(('1.0', '>', '1.0')),
+	pytest.mark.xfail(('1.2.3.5', '>', '2.2.3.5')),
 ])
 def testComparingVersionsOfSameSize(first, operator, second):
-    assert compareVersions(first, operator, second)
+	assert compareVersions(first, operator, second)
 
 
 @pytest.mark.parametrize("v1, operator, v2", [
