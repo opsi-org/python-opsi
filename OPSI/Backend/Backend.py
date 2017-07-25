@@ -693,7 +693,8 @@ overwrite the log.
 Currently supported: *bootimage*, *clientconnect*, *instlog* or *opsiconfd*.
 		:type data: Unicode
 		:param objectId: Specialising of ``logType``
-		:param maxSize: Limit for the amount of returned characters.
+		:param maxSize: Limit for the amount of returned characters. \
+Setting this to `0` disables limiting.
 		"""
 		logType = forceUnicode(logType)
 
