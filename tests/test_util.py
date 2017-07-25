@@ -453,6 +453,7 @@ def testComparingVersionsOfSameSize():
     assert compareVersions('1.0', '<', '2.0')
     assert not compareVersions('1.0', '>', '2.0')
     assert not compareVersions('1.0', '>', '1.0')
+    assert not compareVersions('1.2.3.5', '>', '2.2.3.5')
 
 
 @pytest.mark.parametrize("v1, operator, v2", [
