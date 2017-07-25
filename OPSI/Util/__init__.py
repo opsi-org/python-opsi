@@ -454,6 +454,17 @@ def compareVersions(v1, condition, v2):
 		while len(second) < len(first):
 			second.append(u'0')
 
+	def splitValue(value):
+		match = re.search('^(\d+)(\D*.*)$', value)
+		if match:
+			return int(match.group(1)), match.group(2)
+		else:
+			match = re.search('^(\D+)(\d*.*)$', value)
+			if match:
+				return match.group(1), match.group(2)
+
+		return u'', value
+
 	if not condition:
 		condition = u'=='
 	if condition not in (u'==', u'=', u'<', u'<=', u'>', u'>='):
@@ -481,28 +492,8 @@ def compareVersions(v1, condition, v2):
 
 		for value, otherValue in zip(firstParts, secondParts):
 			while value or otherValue:
-				cv1 = u''
-				cv2 = u''
-
-				match = re.search('^(\d+)(\D*.*)$', value)
-				if match:
-					cv1 = int(match.group(1))
-					value = match.group(2)
-				else:
-					match = re.search('^(\D+)(\d*.*)$', value)
-					if match:
-						cv1 = match.group(1)
-						value = match.group(2)
-
-				match = re.search('^(\d+)(\D*.*)$', otherValue)
-				if match:
-					cv2 = int(match.group(1))
-					otherValue = match.group(2)
-				else:
-					match = re.search('^(\D+)(\d*.*)$', otherValue)
-					if match:
-						cv2 = match.group(1)
-						otherValue = match.group(2)
+				cv1, value = splitValue(value)
+				cv2, otherValue = splitValue(otherValue)
 
 				if cv1 == u'':
 					cv1 = chr(1)
