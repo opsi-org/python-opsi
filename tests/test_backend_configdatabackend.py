@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2015-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2015-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -172,13 +171,15 @@ def testWritingAndReadingLogWithoutLimits(patchLogDir):
 
 
 def testTruncatingOldDataWhenAppending(patchLogDir):
-	cdb = OPSI.Backend.Backend.ConfigDataBackend(maxLogSize=15)
+	limit = 15
+	cdb = OPSI.Backend.Backend.ConfigDataBackend(maxLogSize=limit)
 
 	objId = 'foo.bar.baz'
 	cdb.log_write('opsiconfd', u'data1data2data3data4data5', objectId=objId)
 	cdb.log_write('opsiconfd', u'data6', objectId=objId, append=True)
 
 	assert 'data4data5data6' == cdb.log_read('opsiconfd', objectId=objId)
+	assert len(cdb.log_read('opsiconfd', objectId=objId)) == limit
 
 
 def testOverwritingOldDataInAppendMode(patchLogDir):
