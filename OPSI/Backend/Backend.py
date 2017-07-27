@@ -675,6 +675,14 @@ overwrite the log.
 
 	@staticmethod
 	def _truncateLogData(data, maxSize):
+		"""
+		Truncating `data` to not be longer than `maxSize` bytes.
+
+		:param data: Text
+		:type data: str
+		:param maxSize: The maximum size that is allowed in bytes.
+		:type maxSize: int
+		"""
 		maxSize = forceInt(maxSize)
 		dataLength = len(data.encode('utf-8'))
 		if dataLength > maxSize:
