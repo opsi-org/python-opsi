@@ -527,6 +527,14 @@ def compareVersions(v1, condition, v2):
 
 unitRegex = re.compile('^(\d+\.*\d*)\s*([\w]{0,4})$')
 def removeUnit(x):
+	'''
+	Take a string representing a byte-based size and return the
+	value in bytes.
+
+	:param x: str
+	:returns: `x` in bytes.
+	:rtype: int or float
+	'''
 	x = forceUnicode(x)
 	match = unitRegex.search(x)
 	if not match:
