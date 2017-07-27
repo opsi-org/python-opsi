@@ -261,7 +261,7 @@ def testLimitingTheReadTextInSize(patchLogDir, longText, sizeLimit):
 	cdb = OPSI.Backend.Backend.ConfigDataBackend(maxLogSize=limit)
 
 	objId = 'foo.bar.baz'
-	cdb.log_write('instlog', '\n'.join((longText, longText)), objectId=objId)
+	cdb.log_write('instlog', longText, objectId=objId)
 	textFromBackend = cdb.log_read('instlog', objectId=objId, maxSize=limit)
 
 	assert len(textFromBackend.encode('utf-8')) < limit
