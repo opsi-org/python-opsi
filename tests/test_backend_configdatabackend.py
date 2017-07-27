@@ -231,7 +231,7 @@ def testOverwritingOldDataInAppendModeWithNewlines(patchLogDir):
 	assert 'data5\n' == cdb.log_read('opsiconfd', objectId=objId, maxSize=0)
 
 
-@pytest.fixture(scope="session", params=['8kb', '32kb'])
+@pytest.fixture(scope="session", params=['2kb', '4kb'])
 def longText(request):
 	"""
 	Create a long text roughly about the given size.
@@ -255,7 +255,7 @@ def longText(request):
 	return u''.join(text)
 
 
-@pytest.mark.parametrize("sizeLimit", ['4kb', '32kb', '64kb'])
+@pytest.mark.parametrize("sizeLimit", ['1kb', '2kb', '8kb'])
 def testLimitingTheReadTextInSize(patchLogDir, longText, sizeLimit):
 	limit = removeUnit(sizeLimit)
 	cdb = OPSI.Backend.Backend.ConfigDataBackend(maxLogSize=limit)
