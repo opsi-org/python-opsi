@@ -65,7 +65,7 @@ from OPSI.Util import (blowfishEncrypt, blowfishDecrypt, compareVersions,
 from OPSI.Util.File import ConfigFile
 import OPSI.SharedAlgorithm
 
-__version__ = '4.0.7.28'
+__version__ = '4.0.7.45'
 
 logger = Logger()
 OPSI_VERSION_FILE = u'/etc/opsi/version'
@@ -675,8 +675,16 @@ overwrite the log.
 
 	@staticmethod
 	def _truncateLogData(data, maxSize):
+		"""
+		Truncating `data` to not be longer than `maxSize` bytes.
+
+		:param data: Text
+		:type data: str
+		:param maxSize: The maximum size that is allowed in bytes.
+		:type maxSize: int
+		"""
 		maxSize = forceInt(maxSize)
-		dataLength = len(data)
+		dataLength = len(data.encode('utf-8'))
 		if dataLength > maxSize:
 			start = data.find('\n', dataLength - maxSize)
 			if start == -1:
@@ -693,7 +701,7 @@ overwrite the log.
 Currently supported: *bootimage*, *clientconnect*, *instlog* or *opsiconfd*.
 		:type data: Unicode
 		:param objectId: Specialising of ``logType``
-		:param maxSize: Limit for the amount of returned characters. \
+		:param maxSize: Limit for the size of returned characters in bytes. \
 Setting this to `0` disables limiting.
 		"""
 		logType = forceUnicode(logType)

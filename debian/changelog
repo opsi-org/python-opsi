@@ -1,7 +1,16 @@
+python-opsi (4.0.7.45-1) stable; urgency=medium
+
+  * 10_opsi.conf: setProductActionRequestWithDependencies will relay a call
+    with actionRequest = 'none' to setProductActionRequest.
+  * OPSI.Backend.Backend.ConfigDataBackend: improved log truncation when
+    processing unicode characters that use more than one byte.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 27 Jul 2017 14:02:39 +0200
+
 python-opsi (4.0.7.44-1) experimental; urgency=medium
 
   * OPSI.Util.Task.Certificate: replaced gendh with dhparam
-  * merged #2509
+  * OPSI.Util.Task.Rights: Default access rights for workbench set to 664.
 
  -- Mathias Radtke <m.radtke@uib.de>  Tue, 25 Jul 2017 14:28:31 +0200
 
