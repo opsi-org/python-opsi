@@ -231,7 +231,7 @@ def testOverwritingOldDataInAppendModeWithNewlines(patchLogDir):
 	assert 'data5\n' == cdb.log_read('opsiconfd', objectId=objId, maxSize=0)
 
 
-@pytest.fixture(scope="session", params=['32kb', '128kb'])
+@pytest.fixture(scope="session", params=['8kb', '32kb'])
 def longText(request):
 	"""
 	Create a long text roughly about the given size.
@@ -255,13 +255,13 @@ def longText(request):
 	return u''.join(text)
 
 
-@pytest.mark.parametrize("sizeLimit", [removeUnit('24kb'), removeUnit('128kb'), removeUnit('256kb')])
+@pytest.mark.parametrize("sizeLimit", ['4kb', '32kb', '64kb'])
 def testLimitingTheReadTextInSize(patchLogDir, longText, sizeLimit):
-	text = longText
-	cdb = OPSI.Backend.Backend.ConfigDataBackend(maxLogSize=sizeLimit)
+	limit = removeUnit(sizeLimit)
+	cdb = OPSI.Backend.Backend.ConfigDataBackend(maxLogSize=limit)
 
 	objId = 'foo.bar.baz'
-	cdb.log_write('instlog', text + text, objectId=objId)
-	textFromBackend = cdb.log_read('instlog', objectId=objId, maxSize=sizeLimit)
+	cdb.log_write('instlog', '\n'.join((longText, longText)), objectId=objId)
+	textFromBackend = cdb.log_read('instlog', objectId=objId, maxSize=limit)
 
-	assert len(textFromBackend.encode('utf-8')) < sizeLimit
+	assert len(textFromBackend.encode('utf-8')) < limit
