@@ -1,7 +1,7 @@
 python-opsi (4.0.7.44-1) experimental; urgency=medium
 
   * OPSI.Util.Task.Certificate: replaced gendh with dhparam
-  * merged #2509
+  * OPSI.Util.Task.Rights: Default access rights for workbench set to 664.
 
  -- Mathias Radtke <m.radtke@uib.de>  Tue, 25 Jul 2017 14:28:31 +0200
 
