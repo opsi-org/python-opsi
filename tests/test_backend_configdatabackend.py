@@ -235,6 +235,8 @@ def testOverwritingOldDataInAppendModeWithNewlines(patchLogDir):
 def longText(request):
 	"""
 	Create a long text roughly about the given size.
+	The text will include unicode characters using more than one byte per
+	character.
 	The text will not be longer than the given size but may be a few bytes short.
 	"""
 	size = removeUnit(request.param)
@@ -257,6 +259,12 @@ def longText(request):
 
 @pytest.mark.parametrize("sizeLimit", ['1kb', '2kb', '8kb'])
 def testLimitingTheReadTextInSize(patchLogDir, longText, sizeLimit):
+	"""
+	Limiting text must work with all unicode characters.
+
+	The text may include unicode characters using more than one byte.
+	This must not hinder the text limitation.
+	"""
 	limit = removeUnit(sizeLimit)
 	cdb = OPSI.Backend.Backend.ConfigDataBackend(maxLogSize=limit)
 
