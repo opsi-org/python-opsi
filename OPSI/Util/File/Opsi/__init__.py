@@ -39,6 +39,7 @@ import socket
 import StringIO
 from contextlib import closing
 from hashlib import sha1
+from operator import itemgetter
 from subprocess import Popen, PIPE, STDOUT
 
 import OPSI.System
@@ -100,8 +101,9 @@ class HostKeyFile(ConfigFile):
 
 	def generate(self):
 		self._lines = [
-			u'{0}:{1}'.format(hostId, self._opsiHostKeys[hostId])
-			for hostId in sorted(self._opsiHostKeys.keys())
+			u'%s:%s' % (hostId, hostkey)
+			for hostId, hostkey
+			in sorted(self._opsiHostKeys.items(), key=itemgetter(1))
 		]
 
 		self.open('w')
