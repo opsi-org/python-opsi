@@ -532,7 +532,7 @@ class MySQLBackend(SQLBackend):
 			if not bool(publicKey.verify(md5(data).digest(), [long(modules['signature'])])):
 				logger.error(u"Disabling mysql backend and license management module: modules file invalid")
 			else:
-				logger.notice(u"Modules file signature verified (customer: %s)" % modules.get('customer'))
+				logger.info(u"Modules file signature verified (customer: %s)" % modules.get('customer'))
 
 				if modules.get('license_management'):
 					self._licenseManagementModule = True

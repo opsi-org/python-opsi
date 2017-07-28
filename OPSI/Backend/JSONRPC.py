@@ -525,7 +525,7 @@ class JSONRPCBackend(Backend):
 					if mysqlBackend:
 						raise OpsiError(u"MySQL backend in use but not licensed")
 				else:
-					logger.notice(u"Modules file signature verified (customer: %s)" % modules.get('customer'))
+					logger.info(u"Modules file signature verified (customer: %s)" % modules.get('customer'))
 
 					if modules.get('license_management'):
 						licenseManagementModule = True
