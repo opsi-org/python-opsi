@@ -28,6 +28,7 @@ import os
 
 import OPSI.Backend.Backend
 from OPSI.Exceptions import BackendBadValueError
+from OPSI.Util import removeUnit
 
 from .helpers import mock
 
@@ -171,13 +172,15 @@ def testWritingAndReadingLogWithoutLimits(patchLogDir):
 
 
 def testTruncatingOldDataWhenAppending(patchLogDir):
-	cdb = OPSI.Backend.Backend.ConfigDataBackend(maxLogSize=15)
+	limit = 15
+	cdb = OPSI.Backend.Backend.ConfigDataBackend(maxLogSize=limit)
 
 	objId = 'foo.bar.baz'
 	cdb.log_write('opsiconfd', u'data1data2data3data4data5', objectId=objId)
 	cdb.log_write('opsiconfd', u'data6', objectId=objId, append=True)
 
 	assert 'data4data5data6' == cdb.log_read('opsiconfd', objectId=objId)
+	assert len(cdb.log_read('opsiconfd', objectId=objId)) == limit
 
 
 def testOverwritingOldDataInAppendMode(patchLogDir):
@@ -226,3 +229,47 @@ def testOverwritingOldDataInAppendModeWithNewlines(patchLogDir):
 
 	assert 'data5\n' == cdb.log_read('opsiconfd', objectId=objId)
 	assert 'data5\n' == cdb.log_read('opsiconfd', objectId=objId, maxSize=0)
+
+
+@pytest.fixture(scope="session", params=['2kb', '4kb'])
+def longText(request):
+	"""
+	Create a long text roughly about the given size.
+	The text will include unicode characters using more than one byte per
+	character.
+	The text will not be longer than the given size but may be a few bytes short.
+	"""
+	size = removeUnit(request.param)
+
+	text = []
+	i = 0
+	length = 0
+	while length <= size:
+		snippet = u'This is line {0} - we have some more text with special unicode: üöä \n'.format(i)
+		curLenght = len(snippet.encode('utf-8'))
+		if curLenght + length > size:
+			break
+
+		length += curLenght
+		text.append(snippet)
+		i += 1
+
+	return u''.join(text)
+
+
+@pytest.mark.parametrize("sizeLimit", ['1kb', '2kb', '8kb'])
+def testLimitingTheReadTextInSize(patchLogDir, longText, sizeLimit):
+	"""
+	Limiting text must work with all unicode characters.
+
+	The text may include unicode characters using more than one byte.
+	This must not hinder the text limitation.
+	"""
+	limit = removeUnit(sizeLimit)
+	cdb = OPSI.Backend.Backend.ConfigDataBackend(maxLogSize=limit)
+
+	objId = 'foo.bar.baz'
+	cdb.log_write('instlog', longText, objectId=objId)
+	textFromBackend = cdb.log_read('instlog', objectId=objId, maxSize=limit)
+
+	assert len(textFromBackend.encode('utf-8')) < limit

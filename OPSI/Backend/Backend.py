@@ -698,8 +698,16 @@ overwrite the log.
 
 	@staticmethod
 	def _truncateLogData(data, maxSize):
+		"""
+		Truncating `data` to not be longer than `maxSize` bytes.
+
+		:param data: Text
+		:type data: str
+		:param maxSize: The maximum size that is allowed in bytes.
+		:type maxSize: int
+		"""
 		maxSize = forceInt(maxSize)
-		dataLength = len(data)
+		dataLength = len(data.encode('utf-8'))
 		if dataLength > maxSize:
 			start = data.find('\n', dataLength - maxSize)
 			if start == -1:
@@ -716,7 +724,8 @@ overwrite the log.
 Currently supported: *bootimage*, *clientconnect*, *instlog* or *opsiconfd*.
 		:type data: Unicode
 		:param objectId: Specialising of ``logType``
-		:param maxSize: Limit for the amount of returned characters.
+		:param maxSize: Limit for the size of returned characters in bytes. \
+Setting this to `0` disables limiting.
 		"""
 		logType = forceUnicode(logType)
 
@@ -4337,6 +4346,7 @@ into the IDs of these depots are to be found in the list behind \
 			}
 
 			if self.auditHardwareOnHost_getObjects(attributes=['hostId'], **filter):
+				logger.debug2(u"Updating existing AuditHardwareOnHost {0!r}", objectHash)
 				self.auditHardwareOnHost_updateObject(auditHardwareOnHost)
 			else:
 				logger.info(u"AuditHardwareOnHost %s does not exist, creating" % auditHardwareOnHost)

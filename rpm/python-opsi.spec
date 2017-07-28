@@ -37,10 +37,10 @@ Url:            http://www.opsi.org
 License:        AGPL-3.0+
 Group:          Productivity/Networking/Opsi
 AutoReqProv:    on
-Version:        4.0.7.35
+Version:        4.0.7.44
 Release:        1
 Summary:        Python library for the client management solution opsi
-Source:         python-opsi_4.0.7.35-1.tar.gz
+Source:         python-opsi_4.0.7.44-1.tar.gz
 #Source2:        setup.py
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 # python noarch modules are only working on openSUSE 11.2 or higher
@@ -58,7 +58,8 @@ BuildRequires:  gettext-runtime
 
 # ===[ description ]================================
 %description
-This package contains the opsi python library.
+This package contains the python library that is used by various
+components of the client management solution opsi.
 
 # ===[ debug_package ]==============================
 %debug_package
@@ -167,6 +168,8 @@ fi
 %config(noreplace) /etc/opsi/backends/jsonrpc.conf
 %config(noreplace) /etc/opsi/backends/mysql.conf
 %config(noreplace) /etc/opsi/backends/opsipxeconfd.conf
+%config(noreplace) /etc/opsi/backends/sqlite.conf
+%config /etc/opsi/opsi.conf
 %config /etc/opsi/backendManager/acl.conf.default
 %config /etc/opsi/backendManager/dispatch.conf.default
 %config /etc/opsi/backendManager/extend.d/10_opsi.conf

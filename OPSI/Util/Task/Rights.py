@@ -185,7 +185,7 @@ def getDirectoriesAndExpectedRights(path):
 	yield u'/var/lib/opsi', Rights(opsiconfdUid, fileAdminGroupGid, 0o660, 0o770, False)
 
 	try:
-		yield getWorkbenchDirectory(), Rights(-1, fileAdminGroupGid, 0o660, 0o2770, False)
+		yield getWorkbenchDirectory(), Rights(-1, fileAdminGroupGid, 0o664, 0o2770, False)
 	except (ValueError, BackendConfigurationError, BackendMissingDataError) as workbenchLookupError:
 		LOGGER.warning("Unable to get path of workbench directory: {}", workbenchLookupError)
 
