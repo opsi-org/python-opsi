@@ -559,6 +559,8 @@ def testRemoveUnitDoesNotFailWithoutUnit(value, expected):
 	('2.4MB', 2516582.4),  # (2048 * 1.2) * 1024),
 	('3GB', 3221225472),
 	('4Kb', 4096),
+	('1Kb', 1024),
+	('0.5Kb', 512),
 ])
 def testRemovingUnitFromValue(value, expected):
 		assert expected == removeUnit(value)

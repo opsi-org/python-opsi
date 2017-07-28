@@ -77,6 +77,7 @@ elif os.name == 'nt':
 
 BLOWFISH_IV = 'OPSI1234'
 RANDOM_DEVICE = u'/dev/urandom'
+UNIT_REGEX = re.compile('^(\d+\.*\d*)\s*([\w]{0,4})$')
 _ACCEPTED_CHARACTERS = (
 	"abcdefghijklmnopqrstuvwxyz"
 	"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -510,10 +511,17 @@ def compareVersions(v1, condition, v2):
 	return True
 
 
-unitRegex = re.compile('^(\d+\.*\d*)\s*([\w]{0,4})$')
 def removeUnit(x):
+	'''
+	Take a string representing a byte-based size and return the
+	value in bytes.
+
+	:param x: str
+	:returns: `x` in bytes.
+	:rtype: int or float
+	'''
 	x = forceUnicode(x)
-	match = unitRegex.search(x)
+	match = UNIT_REGEX.search(x)
 	if not match:
 		return x
 

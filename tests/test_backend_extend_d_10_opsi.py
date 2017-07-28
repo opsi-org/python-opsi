@@ -164,7 +164,8 @@ setup even if they are already installed on a client.
 
 
 @pytest.mark.parametrize("installationStatus", ["installed", "unknown", "not_installed", None])
-def testSetProductActionRequestWithDependenciesWithDependencyRequestingAction(backendManager, installationStatus):
+@pytest.mark.parametrize("actionRequest", ["setup"])
+def testSetProductActionRequestWithDependenciesWithDependencyRequestingAction(backendManager, installationStatus, actionRequest):
 	client, depot = createClientAndDepot(backendManager)
 
 	jedit = LocalbootProduct('jedit', '1.0', '1.0')
@@ -210,7 +211,7 @@ def testSetProductActionRequestWithDependenciesWithDependencyRequestingAction(ba
 
 		backendManager.productOnClient_createObjects([poc])
 
-	backendManager.setProductActionRequestWithDependencies('jedit', client.id, "setup")
+	backendManager.setProductActionRequestWithDependencies('jedit', client.id, actionRequest)
 
 	productsOnClient = backendManager.productOnClient_getObjects()
 	assert 2 == len(productsOnClient)
@@ -223,11 +224,12 @@ def testSetProductActionRequestWithDependenciesWithDependencyRequestingAction(ba
 		raise ValueError('Could not find a product "{0}" on the client.'.format('already_installed'))
 
 	assert productThatShouldBeSetup.productId == 'javavm'
-	assert productThatShouldBeSetup.actionRequest == 'setup'
+	assert productThatShouldBeSetup.actionRequest == actionRequest
 
 
 @pytest.mark.parametrize("installationStatus", ["installed", "unknown", "not_installed", None])
-def testSetProductActionRequestWithDependenciesWithDependencyRequiredInstallationStatus(backendManager, installationStatus):
+@pytest.mark.parametrize("actionRequest", ["setup"])
+def testSetProductActionRequestWithDependenciesWithDependencyRequiredInstallationStatus(backendManager, installationStatus, actionRequest):
 	client, depot = createClientAndDepot(backendManager)
 
 	jedit = LocalbootProduct('jedit', '1.0', '1.0')
@@ -275,7 +277,7 @@ def testSetProductActionRequestWithDependenciesWithDependencyRequiredInstallatio
 
 		backendManager.productOnClient_createObjects([poc])
 
-	backendManager.setProductActionRequestWithDependencies('jedit', client.id, "setup")
+	backendManager.setProductActionRequestWithDependencies('jedit', client.id, actionRequest)
 
 	productsOnClient = backendManager.productOnClient_getObjects()
 	assert 2 == len(productsOnClient)
@@ -289,7 +291,7 @@ def testSetProductActionRequestWithDependenciesWithDependencyRequiredInstallatio
 
 	assert productThatShouldBeInstalled.productId == 'javavm'
 	if installationStatus == 'installed':
-		assert productThatShouldBeInstalled.actionRequest != 'setup'
+		assert not productThatShouldBeInstalled.actionRequest == 'setup'
 
 
 def testSetProductActionRequestWithDependenciesWithOnce(backendManager):
