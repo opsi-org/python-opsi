@@ -25,10 +25,11 @@ from __future__ import absolute_import
 
 import os
 import pytest
+import random
 
 from OPSI.Util import findFiles, md5sum
 from OPSI.Util.File.Opsi import (
-	BackendDispatchConfigFile, OpsiConfFile, PackageContentFile,
+	BackendDispatchConfigFile, HostKeyFile, OpsiConfFile, PackageContentFile,
 	PackageControlFile)
 
 from .helpers import createTemporaryTestfile, workInTemporaryDirectory
@@ -437,3 +438,60 @@ def testParsingPackageContentFile(outsideFile, outsideDir):
 				assert not target.endswith("'")
 			else:
 				raise RuntimeError("Unexpected type in {0!r}".format(entry))
+
+
+@pytest.fixture
+def emptyFile():
+	with workInTemporaryDirectory() as tempDir:
+
+		path = os.path.join(tempDir, 'empty')
+		with open(path, 'w'):
+			pass
+
+		yield path
+
+
+def testHostKeyFileUsage(emptyFile):
+	hkf = HostKeyFile(emptyFile)
+
+	hostId = 'client.domain.test'
+	assert hkf.getOpsiHostKey(hostId) is None  # unknown entry
+
+	password = 'deadbeef1c0ff3300deadbeef1c0ff33'  # 32 chars
+	hkf.setOpsiHostKey(hostId, password)
+	assert hkf.getOpsiHostKey(hostId) == password
+
+
+@pytest.fixture(
+	params=[50, 500, 5000],
+	scope='session'
+)
+def hostKeyEntries(request):
+	def generatePassword(number):
+		pw = 'deadbeef1c0ff3300deadbeef1c0ff33{0}'.format(number)
+		return pw[-32:]  # We need to have 32 characters in length
+
+	entries = [
+		('client{0}.domain.test'.format(i), generatePassword(i))
+		for i in range(request.param)
+	]
+	random.shuffle(entries)
+
+	return entries
+
+
+def testHostKeyFileGeneration(emptyFile, hostKeyEntries):
+	hkf = HostKeyFile(emptyFile)
+	for id, password in hostKeyEntries:
+		print(len(password))
+		hkf.setOpsiHostKey(id, password)
+	hkf.generate()
+
+	foundKeys = 0
+	with open(emptyFile) as f:
+		for line in f:
+			assert line
+
+			foundKeys += 1
+
+	assert foundKeys == len(hostKeyEntries)
