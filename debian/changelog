@@ -2,8 +2,11 @@ python-opsi (4.1.1.15-1) UNRELEASED; urgency=medium
 
   * Improved rpm packaging.
   * Refactored OPSI.Util.compareVersions.
+  * Refactored OPSI.Util.File.Opsi.HostKeyFile for faster writing.
+  * OPSI.Util.File.Opsi.HostKeyFile: Do not crash when reading file with
+    invalid format.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 28 Jul 2017 11:59:10 +0200
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 28 Jul 2017 15:20:43 +0200
 
 python-opsi (4.1.1.14-3) testing; urgency=medium
 
