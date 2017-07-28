@@ -25,9 +25,9 @@ This tests what usually is found under
 :license: GNU Affero General Public License version 3
 """
 
-from OPSI.Object import (OpsiClient, LocalbootProduct, ProductOnClient,
-						 ProductDependency, OpsiDepotserver, ProductOnDepot,
-						 UnicodeConfig, ConfigState)
+from OPSI.Object import (
+	OpsiClient, LocalbootProduct, ProductOnClient, ProductDependency,
+	OpsiDepotserver, ProductOnDepot, UnicodeConfig, ConfigState)
 
 import pytest
 
