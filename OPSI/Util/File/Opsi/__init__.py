@@ -44,8 +44,7 @@ from subprocess import Popen, PIPE, STDOUT
 import OPSI.System
 from OPSI import __version__ as LIBRARY_VERSION
 from OPSI.Exceptions import (
-	BackendBadValueError, OpsiBackupBackendNotFound, OpsiBackupFileError,
-	OpsiBackupFileNotFound)
+	OpsiBackupBackendNotFound, OpsiBackupFileError,	OpsiBackupFileNotFound)
 from OPSI.Logger import Logger
 from OPSI.Object import BoolProductProperty, LocalbootProduct, NetbootProduct, Product, ProductDependency, ProductProperty, UnicodeProductProperty
 from OPSI.Types import (
@@ -79,20 +78,23 @@ class HostKeyFile(ConfigFile):
 			self._lines = forceUnicodeList(lines)
 		else:
 			self.readlines()
+
 		self._parsed = False
 		for line in ConfigFile.parse(self):
 			match = self.lineRegex.search(line)
 			if not match:
 				logger.error(u"Found bad formatted line '%s' in pckey file '%s'" % (line, self._filename))
 				continue
+
 			try:
 				hostId = forceHostId(match.group(1))
 				opsiHostKey = forceOpsiHostKey(match.group(2))
 				if hostId in self._opsiHostKeys:
 					logger.error(u"Found duplicate host '%s' in pckey file '%s'" % (hostId, self._filename))
 				self._opsiHostKeys[hostId] = opsiHostKey
-			except BackendBadValueError as error:
+			except ValueError as error:
 				logger.error(u"Found bad formatted line '%s' in pckey file '%s': %s" % (line, self._filename, error))
+
 		self._parsed = True
 		return self._opsiHostKeys
 
