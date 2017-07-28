@@ -486,11 +486,40 @@ def testHostKeyFileGeneration(emptyFile, hostKeyEntries):
 		hkf.setOpsiHostKey(hostId, password)
 	hkf.generate()
 
+	hosts = dict(hostKeyEntries)
+
 	foundKeys = 0
 	with open(emptyFile) as f:
 		for line in f:
-			assert line
-
+			line = line.strip()
+			hostId, pw = line.split(':')
+			assert hostId
+			assert pw
+			assert hosts[hostId] == pw
 			foundKeys += 1
 
 	assert foundKeys == len(hostKeyEntries)
+
+
+def testHostKeyFileParsing(emptyFile, hostKeyEntries):
+	with open(emptyFile, 'w') as f:
+		for hostId, password in hostKeyEntries:
+			f.write('%s:%s\n' % (hostId, password))
+
+	hkf = HostKeyFile(emptyFile)
+	for hostId, password in hostKeyEntries:
+		assert hkf.getOpsiHostKey(hostId) == password
+
+
+def testHostKeyFileParsingSkippingInvalidEntries(emptyFile, hostKeyEntries):
+	with open(emptyFile, 'w') as f:
+		for hostId, password in hostKeyEntries:
+			f.write('%s:%s\n' % (hostId, password))
+
+		f.write('%s:%s\n' % (hostId, password))  # duplicate entry
+		f.write('nohostid:%s\n' % password)  # Invalid password
+		f.write('%s:nopw\n' % hostId)  # Invalid host Id
+		f.write(':\n')  # no content
+
+	hkf = HostKeyFile(emptyFile)
+	hkf.parse()
