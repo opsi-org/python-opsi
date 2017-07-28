@@ -1,3 +1,10 @@
+python-opsi (4.1.1.15-1) UNRELEASED; urgency=medium
+
+  * Improved rpm packaging.
+  * Refactored OPSI.Util.compareVersions.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 28 Jul 2017 11:59:10 +0200
+
 python-opsi (4.1.1.14-3) testing; urgency=medium
 
   * Listing 45_deprecated.conf for rollout.
