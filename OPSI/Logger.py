@@ -381,21 +381,42 @@ class LoggerImplementation:
 		return self.__loggerSubject
 
 	def setColor(self, color):
-		''' Enable or disable ansi color output '''
+		'''
+		Enable or disable ansi color output in all outputs.
+
+		If `color` is `True`, then output will be colored.
+
+		:type color: bool
+		'''
 		self.__fileColor = self.__consoleColor = color
 
 	def setFileColor(self, color):
-		''' Enable or disable ansi color output '''
+		'''
+		Enable or disable ANSI color output for files.
+
+		If `color` is `True`, then output will be colored.
+
+		:type color: bool
+		'''
 		self.__fileColor = color
 
 	def setConsoleColor(self, color):
-		''' Enable or disable ansi color output '''
+		'''
+		Enable or disable ANSI color output for console.
+
+		If `color` is `True`, then output will be colored.
+
+		:type color: bool
+		'''
 		self.__consoleColor = color
 
 	def setSyslogLevel(self, level=LOG_NONE):
-		''' Maximum level of messages to log by syslog.
-		Set LOG_NONE to disable syslog (default)'''
+		'''
+		Maximum level of messages to log by syslog.
 
+		Set `level` to LOG_NONE to disable syslog (default).
+		:type level: int
+		'''
 		level = self._sanitizeLogLevel(level)
 
 		self.__syslogLevel = level
@@ -417,8 +438,13 @@ class LoggerImplementation:
 		self.__messageSubjectLevel = self._sanitizeLogLevel(level)
 
 	def setConsoleLevel(self, level=LOG_NONE):
-		''' Maximum level of messages to print to stderr
-		Set LOG_NONE to disable output to stderr (default)'''
+		'''
+		Maximum level of messages to print to stderr.
+
+		Set `level` to LOG_NONE to disable output to stderr (default).
+
+		:type level: int
+		'''
 		self.__consoleLevel = self._sanitizeLogLevel(level)
 
 	@staticmethod
@@ -497,8 +523,13 @@ will disable logging to a file.
 			self.error(u"Failed to create symlink from {0!r} to {1!r}: {2}", logFile, linkFile, error)
 
 	def setFileLevel(self, level=LOG_NONE):
-		''' Maximum level of messages to appear in logfile
-		Set LOG_NONE to disable output to logfile (default)'''
+		'''
+		Maximum level of messages to appear in logfile.
+
+		Set `level` to LOG_NONE to disable output to logfile (default).
+
+		:type level: int
+		'''
 		self.__fileLevel = self._sanitizeLogLevel(level)
 
 	def exit(self, object=None):

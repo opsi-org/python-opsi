@@ -29,28 +29,25 @@ import shutil
 import sys
 
 from OPSI.Util.Task.Backup import OpsiBackup
-from OPSI.Util.Task.ConfigureBackend import (getBackendConfiguration,
-    updateConfigFile)
+from OPSI.Util.Task.ConfigureBackend import (
+    getBackendConfiguration, updateConfigFile)
 
 from .helpers import mock, workInTemporaryDirectory
 
 
 def testVerifySysConfigDoesNotFailBecauseWhitespaceAtEnd():
-    class FakeSysInfo(object):
-        def __init__(self, **kwargs):
-            for key, value in kwargs.items():
-                setattr(self, key, value)
-
     backup = OpsiBackup()
 
     archive = {
-        'distribution': 'SUSE Linux Enterprise Server'
+        'distribution': 'SUSE Linux Enterprise Server',
+        'sysVersion': '(12, 0)',
     }
-    system = FakeSysInfo(
-        distribution='SUSE Linux Enterprise Server '
-    )
+    system = {
+        "distribution": 'SUSE Linux Enterprise Server ',  # note the extra space
+        'sysVersion': (12, 0),
+    }
 
-    assert {} == backup._getDifferencesInSysConfig(archive, sysInfo=system)
+    assert {} == backup.getDifferencesInSysConfig(archive, sysInfo=system)
 
 
 def testPatchingStdout():

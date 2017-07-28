@@ -3,4 +3,3 @@ etc/opsi/backendManager/extend.d
 etc/opsi/backendManager/extend.d/configed
 etc/opsi/backends
 etc/opsi/hwaudit/locales
-etc/opsi/systemdTemplates

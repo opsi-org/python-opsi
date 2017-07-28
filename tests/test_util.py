@@ -35,7 +35,8 @@ from contextlib import contextmanager
 from itertools import combinations_with_replacement
 
 from OPSI.Object import ConfigState, LocalbootProduct, OpsiClient
-from OPSI.Util import (blowfishDecrypt, blowfishEncrypt, chunk, compareVersions,
+from OPSI.Util import (
+	blowfishDecrypt, blowfishEncrypt, chunk, compareVersions,
 	decryptWithPrivateKeyFromPEMFile,
 	encryptWithPublicKeyFromX509CertificatePEMFile, findFiles, formatFileSize,
 	fromJson, generateOpsiHostKey, getfqdn, getGlobalConfig, ipAddressInNetwork,
@@ -45,7 +46,8 @@ from OPSI.Util import (blowfishDecrypt, blowfishEncrypt, chunk, compareVersions,
 from OPSI.Util import BlowfishError
 from OPSI.Util.Task.Certificate import createCertificate
 
-from .helpers import (fakeGlobalConf, patchAddress, patchEnvironmentVariables,
+from .helpers import (
+	fakeGlobalConf, patchAddress, patchEnvironmentVariables,
 	workInTemporaryDirectory)
 
 import pytest
@@ -271,8 +273,9 @@ def testFormatFileSize(testInput, expected):
 @pytest.fixture(
 	params=[
 		(os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'dhcpd', 'dhcpd_1.conf'), '5f345ca76574c528903c1022b05acb4c'),
+		(os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'dhcpd', 'link_to_dhcpd1_1.conf'), '5f345ca76574c528903c1022b05acb4c'),
 	],
-	ids=['dhcpd_1.conf']
+	ids=['dhcpd_1.conf', 'link_to_dhcpd1_1.conf']
 )
 def fileAndHash(request):
 	yield request.param

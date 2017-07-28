@@ -2,7 +2,6 @@
 
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
-
 # Copyright (C) 2006-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
@@ -45,14 +44,15 @@ from subprocess import Popen, PIPE, STDOUT
 
 import OPSI.System
 from OPSI import __version__ as LIBRARY_VERSION
-from OPSI.Exceptions import (BackendBadValueError, OpsiBackupBackendNotFound,
-	OpsiBackupFileError, OpsiBackupFileNotFound)
+from OPSI.Exceptions import (
+	BackendBadValueError, OpsiBackupBackendNotFound, OpsiBackupFileError,
+	OpsiBackupFileNotFound)
 from OPSI.Logger import Logger
 from OPSI.Object import BoolProductProperty, LocalbootProduct, NetbootProduct, Product, ProductDependency, ProductProperty, UnicodeProductProperty
-from OPSI.Types import (forceActionRequest, forceBool, forceDictList,
-	forceFilename, forceHostId, forceInstallationStatus, forceList,
-	forceObjectClass, forceObjectClassList, forceOpsiHostKey,
-	forcePackageVersion, forceProductId, forceProductPriority,
+from OPSI.Types import (
+	forceActionRequest, forceBool, forceDictList, forceFilename, forceHostId,
+	forceInstallationStatus, forceList, forceObjectClass, forceObjectClassList,
+	forceOpsiHostKey, forcePackageVersion, forceProductId, forceProductPriority,
 	forceProductPropertyType, forceProductType, forceProductVersion,
 	forceRequirementType, forceUnicode, forceUnicodeList, forceUnicodeLower)
 from OPSI.Util.File import ConfigFile, IniFile, TextFile, requiresParsing
@@ -80,20 +80,23 @@ class HostKeyFile(ConfigFile):
 			self._lines = forceUnicodeList(lines)
 		else:
 			self.readlines()
+
 		self._parsed = False
 		for line in ConfigFile.parse(self):
 			match = self.lineRegex.search(line)
 			if not match:
 				logger.error(u"Found bad formatted line '%s' in pckey file '%s'" % (line, self._filename))
 				continue
+
 			try:
 				hostId = forceHostId(match.group(1))
 				opsiHostKey = forceOpsiHostKey(match.group(2))
 				if hostId in self._opsiHostKeys:
 					logger.error(u"Found duplicate host '%s' in pckey file '%s'" % (hostId, self._filename))
 				self._opsiHostKeys[hostId] = opsiHostKey
-			except BackendBadValueError as error:
+			except ValueError as error:
 				logger.error(u"Found bad formatted line '%s' in pckey file '%s': %s" % (line, self._filename, error))
+
 		self._parsed = True
 		return self._opsiHostKeys
 
@@ -271,6 +274,26 @@ class BackendDispatchConfigFile(ConfigFile):
 
 
 class PackageContentFile(TextFile):
+	"""
+	This files holds information about contents of a package.
+
+	Clients using the WAN extension will rely on this file and the
+	information it provides as part of the file caching mechanism.
+
+	The generated file lists for each file, folder or link in the
+	package the type, the path to the element and its size.
+	Directories will be represented with type `d`, the path to the
+	directory in singlq quotes and size `0`.
+	Files will be represented with type `f`, relative path to the file
+	in single quotes, the filesize in bytes and in addition the md5 hash
+	of the file.
+	Links will be represented with type `l`, relative path to the link
+	in single quotes, size `0` and in addition the path to the
+	destination in single quotes.
+	If the link destination is outside of `productClientDataDir` the
+	element	will be treated like a regular file or directory - whatever
+	the destination is.
+	"""
 	def __init__(self, filename, lockFailTimeout=2000):
 		TextFile.__init__(self, filename, lockFailTimeout)
 		self._parsed = False
@@ -340,39 +363,52 @@ class PackageContentFile(TextFile):
 		return fileInfo
 
 	def generate(self):
+		def maskQuoteChars(string):
+			"Prefixes single quotes in string with a single backslash."
+			return string.replace(u'\'', u'\\\'')
+
+		def handleDirectory(path):
+			logger.debug2("Processing {0!r} as directory", path)
+			return 'd', 0, ''
+
+		def handleFile(path):
+			logger.debug2("Processing {0!r} as file", path)
+			return 'f', os.path.getsize(path), md5sum(path)
+
+		def handleLink(path):
+			logger.debug2("Processing {0!r} as link", path)
+			target = os.path.realpath(path)
+			if target.startswith(self._productClientDataDir):
+				target = target[len(self._productClientDataDir):]
+				return 'l', 0, "'%s'" % maskQuoteChars(target)
+			else:
+				logger.debug2(
+					"Link {0!r} links to {1!r} which is outside the "
+					"client data directory. Not handling as a link.",
+					path,
+					target
+				)
+
+				if os.path.isdir(path):
+					logger.debug2("Handling link {0!r} as directory", path)
+					return handleDirectory(path)
+				else:
+					# link target not in client data dir => treat as file
+					logger.debug2("Handling link {0!r} as file", target)
+					return handleFile(target)
+
 		self._lines = []
 		for filename in self._clientDataFiles:
 			try:
-				md5 = u''
-				size = 0
-				target = None
-
 				path = os.path.join(self._productClientDataDir, filename)
 				if os.path.islink(path):
-					elementType = u'l'
-					target = os.path.realpath(path)
-					if target.startswith(self._productClientDataDir):
-						target = target[len(self._productClientDataDir):]
-					else:
-						if os.path.isdir(path):
-							elementType = u'd'
-						else:
-							# link target not in client data dir => treat as file
-							elementType = u'f'
-							size = os.path.getsize(target)
-							md5 = md5sum(target)
-							target = u''
+					entryType, size, additional = handleLink(path)
 				elif os.path.isdir(path):
-					elementType = u'd'
+					entryType, size, additional = handleDirectory(path)
 				else:
-					elementType = u'f'
-					size = os.path.getsize(path)
-					md5 = md5sum(path)
+					entryType, size, additional = handleFile(path)
 
-				if target is not None:
-					self._lines.append("%s '%s' %s '%s'" % (elementType, filename.replace(u'\'', u'\\\''), size, target.replace(u'\'', u'\\\'')))
-				else:
-					self._lines.append("%s '%s' %s %s" % (elementType, filename.replace(u'\'', u'\\\''), size, md5))
+				self._lines.append("%s '%s' %s %s" % (entryType, maskQuoteChars(filename), size, additional))
 			except Exception as error:
 				logger.logException(error)
 
@@ -1030,7 +1066,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 			assert compression in ("gz", "bz2")
 
 		if name is None:
-			self.sysinfo = self._probeSysInfo()
+			self.sysinfo = self.getSysInfo()
 			name = self._generateNewArchive(suffix=compression)
 			self.mode = 'w'
 		elif not os.path.exists(name):
@@ -1053,7 +1089,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 
 		if self.mode.startswith("w"):
 			if not self.sysinfo:
-				self.sysinfo = self._probeSysInfo()
+				self.sysinfo = self.getSysInfo()
 		else:
 			self.sysinfo = self._readSysInfo()
 			self._filemap = self._readChecksumFile()
@@ -1121,7 +1157,15 @@ class OpsiBackupArchive(tarfile.TarFile):
 		return name
 
 	@staticmethod
-	def _probeSysInfo():
+	def getSysInfo():
+		"""
+		Get the current system information as a dict.
+
+		System information is hostname, domainname, FQDN, distribution,
+		system version, distribution ID and the version of opsi in use.
+
+		:rtype: dict
+		"""
 		sysinfo = SysInfo()
 
 		return {

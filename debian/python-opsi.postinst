@@ -57,10 +57,9 @@ case "$1" in
 		chmod 440 /etc/opsi/server_commands_default.conf
 
 		# Removing files dating before opsi 4.1
-		rm /etc/opsi/version || true
-
-		update-python-modules python-ldaptor.public >/dev/null 2>/dev/null || true
-		update-python-modules -p >/dev/null 2>/dev/null || true
+		if [ -e "/etc/opsi/version" ]; then
+			rm "/etc/opsi/version" || echo "Failed to remove /etc/opsi/version"
+		fi
 	;;
 
 	abort-upgrade|abort-remove|abort-deconfigure)
