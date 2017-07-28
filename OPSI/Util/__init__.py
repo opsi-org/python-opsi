@@ -42,6 +42,7 @@ import socket
 import struct
 import time
 import types
+from collections import namedtuple
 from contextlib import closing
 from Crypto.Cipher import Blowfish
 from hashlib import md5
@@ -83,6 +84,8 @@ _ACCEPTED_CHARACTERS = (
 	"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	"0123456789"
 )
+
+Version = namedtuple('Version', 'product package')
 
 
 class CryptoError(ValueError):
@@ -411,6 +414,21 @@ def replaceSpecialHTMLCharacters(text):
 
 
 def compareVersions(v1, condition, v2):
+	"""
+	Compare the versions `v1` and `v2` with the given `condition`.
+
+	`condition` may be one of `==`, `<`, `<=`, `>`, `>=`.
+
+	Versions will be made the same length by appending '.0' until they
+	match.
+	If `1.0.0` and `2` are compared the latter will be viewed as `2.0.0`.
+	If a version contains a `~` that character and everything following
+	it will not be taken into account.
+
+	:raises ValueError: If invalid value for version or condition if given.
+	:rtype: bool
+	:return: If the comparison matches this will return True.
+	"""
 	def removePartAfterWave(versionString):
 		if "~" in versionString:
 			return versionString[:versionString.find("~")]
@@ -428,11 +446,25 @@ def compareVersions(v1, condition, v2):
 		if match.group(2):
 			packageVersion = match.group(2)
 
-		return (productVersion, packageVersion)
+		return Version(productVersion, packageVersion)
 
 	def makeEqualLength(first, second):
 		while len(first) < len(second):
 			first.append(u'0')
+
+		while len(second) < len(first):
+			second.append(u'0')
+
+	def splitValue(value):
+		match = re.search('^(\d+)(\D*.*)$', value)
+		if match:
+			return int(match.group(1)), match.group(2)
+		else:
+			match = re.search('^(\D+)(\d*.*)$', value)
+			if match:
+				return match.group(1), match.group(2)
+
+		return u'', value
 
 	if not condition:
 		condition = u'=='
@@ -444,45 +476,33 @@ def compareVersions(v1, condition, v2):
 	v1 = removePartAfterWave(forceUnicode(v1))
 	v2 = removePartAfterWave(forceUnicode(v2))
 
-	(v1ProductVersion, v1PackageVersion) = splitProductAndPackageVersion(v1)
-	(v2ProductVersion, v2PackageVersion) = splitProductAndPackageVersion(v2)
+	version = splitProductAndPackageVersion(v1)
+	otherVersion = splitProductAndPackageVersion(v2)
+	logger.debug2("Versions: {0!r}, {1!r}", version, otherVersion)
 
-	for (v1, v2) in ( (v1ProductVersion, v2ProductVersion), (v1PackageVersion, v2PackageVersion) ):
-		v1p = v1.split(u'.')
-		v2p = v2.split(u'.')
-		makeEqualLength(v1p, v2p)
-		makeEqualLength(v2p, v1p)
-		for i in range(len(v1p)):
-			while (len(v1p[i]) > 0) or (len(v2p[i]) > 0):
-				cv1 = u''
-				cv2 = u''
+	comparisons = (
+		(version.product, otherVersion.product),
+		(version.package, otherVersion.package)
+	)
 
-				match = re.search('^(\d+)(\D*.*)$', v1p[i])
-				if match:
-					cv1 = int(match.group(1))
-					v1p[i] = match.group(2)
-				else:
-					match = re.search('^(\D+)(\d*.*)$', v1p[i])
-					if match:
-						cv1 = match.group(1)
-						v1p[i] = match.group(2)
+	for first, second in comparisons:
+		logger.debug2("Comparing {0!r} with {1!r}...", first, second)
+		firstParts = first.split(u'.')
+		secondParts = second.split(u'.')
+		makeEqualLength(firstParts, secondParts)
 
-				match = re.search('^(\d+)(\D*.*)$', v2p[i])
-				if match:
-					cv2 = int(match.group(1))
-					v2p[i] = match.group(2)
-				else:
-					match = re.search('^(\D+)(\d*.*)$', v2p[i])
-					if match:
-						cv2 = match.group(1)
-						v2p[i] = match.group(2)
+		for value, otherValue in zip(firstParts, secondParts):
+			while value or otherValue:
+				cv1, value = splitValue(value)
+				cv2, otherValue = splitValue(otherValue)
 
 				if cv1 == u'':
 					cv1 = chr(1)
 				if cv2 == u'':
 					cv2 = chr(1)
+
 				if cv1 == cv2:
-					logger.debug2(u"%s == %s => continue" % (cv1, cv2))
+					logger.debug2(u"{0!r} == {1!r} => continue", cv1, cv2)
 					continue
 
 				if not isinstance(cv1, int):
@@ -490,24 +510,20 @@ def compareVersions(v1, condition, v2):
 				if not isinstance(cv2, int):
 					cv2 = u"'%s'" % cv2
 
-				b = eval(u"%s %s %s" % (cv1, condition, cv2))
-				logger.debug2(u"%s(%s) %s %s(%s) => %s | '%s' '%s'" % (type(cv1), cv1, condition, type(cv2), cv2, b, v1p[i], v2p[i]) )
-				if not b:
-					logger.debug(u"Unfulfilled condition: %s-%s %s %s-%s" \
-						% (v1ProductVersion, v1PackageVersion, condition, v2ProductVersion, v2PackageVersion ))
+				logger.debug2(u"Is {0!r} {1} {2!r}?", cv1, condition, cv2)
+				conditionFulfilled = eval(u"%s %s %s" % (cv1, condition, cv2))
+				if not conditionFulfilled:
+					logger.debug(u"Unfulfilled condition: {0} {1} {2}", version, condition, otherVersion)
 					return False
-				else:
-					logger.debug(u"Fulfilled condition: %s-%s %s %s-%s" \
-						% (v1ProductVersion, v1PackageVersion, condition, v2ProductVersion, v2PackageVersion ))
-					return True
+
+				logger.debug(u"Fulfilled condition: {0} {1} {2}", version, condition, otherVersion)
+				return True
 
 	if u'=' not in condition:
-		logger.debug(u"Unfulfilled condition: %s-%s %s %s-%s" \
-			% (v1ProductVersion, v1PackageVersion, condition, v2ProductVersion, v2PackageVersion ))
+		logger.debug(u"Unfulfilled condition: {0} {1} {2}", version, condition, otherVersion)
 		return False
 
-	logger.debug(u"Fulfilled condition: %s-%s %s %s-%s" \
-		% (v1ProductVersion, v1PackageVersion, condition, v2ProductVersion, v2PackageVersion ))
+	logger.debug(u"Fulfilled condition: {0} {1} {2}", version, condition, otherVersion)
 	return True
 
 
