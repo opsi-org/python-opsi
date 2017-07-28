@@ -44,8 +44,7 @@ from subprocess import Popen, PIPE, STDOUT
 import OPSI.System
 from OPSI import __version__ as LIBRARY_VERSION
 from OPSI.Exceptions import (
-	BackendBadValueError, OpsiBackupBackendNotFound, OpsiBackupFileError,
-	OpsiBackupFileNotFound)
+	OpsiBackupBackendNotFound, OpsiBackupFileError,	OpsiBackupFileNotFound)
 from OPSI.Logger import Logger
 from OPSI.Object import BoolProductProperty, LocalbootProduct, NetbootProduct, Product, ProductDependency, ProductProperty, UnicodeProductProperty
 from OPSI.Types import (
