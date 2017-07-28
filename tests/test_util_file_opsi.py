@@ -482,9 +482,8 @@ def hostKeyEntries(request):
 
 def testHostKeyFileGeneration(emptyFile, hostKeyEntries):
 	hkf = HostKeyFile(emptyFile)
-	for id, password in hostKeyEntries:
-		print(len(password))
-		hkf.setOpsiHostKey(id, password)
+	for hostId, password in hostKeyEntries:
+		hkf.setOpsiHostKey(hostId, password)
 	hkf.generate()
 
 	foundKeys = 0
