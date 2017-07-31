@@ -55,6 +55,7 @@ from OPSI.Object import *
 from OPSI.Util import getfqdn, objectToBeautifiedText, removeUnit
 
 __all__ = (
+	'CommandNotFoundException',
 	'Distribution', 'Harddisk', 'NetworkPerformanceCounter', 'SysInfo',
 	'SystemSpecificHook', 'addSystemHook', 'auditHardware', 'daemonize',
 	'execute', 'getActiveConsoleSessionId', 'getActiveSessionId',
