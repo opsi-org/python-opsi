@@ -2,12 +2,12 @@
 # Copyright (C) YEAR ORGANIZATION
 # 
 # Translators:
-# Martin Scalese <m.scalese@uib.de>, 2015
+# Martin Scalese <m.scalese@uib.de>, 2015,2017
 msgid ""
 msgstr ""
 "Project-Id-Version: opsi.org\n"
-"POT-Creation-Date: 2015-02-02 10:44+CET\n"
-"PO-Revision-Date: 2015-08-11 13:49+0000\n"
+"POT-Creation-Date: 2016-08-24 17:11+CEST\n"
+"PO-Revision-Date: 2017-08-07 11:20+0000\n"
 "Last-Translator: Martin Scalese <m.scalese@uib.de>\n"
 "Language-Team: Spanish (http://www.transifex.com/opsi-org/opsiorg/language/es/)\n"
 "MIME-Version: 1.0\n"
@@ -19,13 +19,13 @@ msgstr ""
 
 #: ../OPSI/UI.py:114 ../OPSI/UI.py:117 ../OPSI/UI.py:138 ../OPSI/UI.py:141
 #: ../OPSI/UI.py:144 ../OPSI/UI.py:147 ../OPSI/UI.py:244 ../OPSI/UI.py:283
-#: ../OPSI/UI.py:396 ../OPSI/UI.py:472 ../OPSI/UI.py:580 ../OPSI/UI.py:680
+#: ../OPSI/UI.py:396 ../OPSI/UI.py:472 ../OPSI/UI.py:579 ../OPSI/UI.py:679
 msgid "OK"
 msgstr "OK"
 
 #: ../OPSI/UI.py:114 ../OPSI/UI.py:244
-msgid "An error occured"
-msgstr "Un error ha ocurrido"
+msgid "An error occurred"
+msgstr "Un error ocurrió"
 
 #: ../OPSI/UI.py:117 ../OPSI/UI.py:283
 msgid "Message"
@@ -44,7 +44,7 @@ msgid "Text"
 msgstr "Texto"
 
 #: ../OPSI/UI.py:138 ../OPSI/UI.py:141 ../OPSI/UI.py:144 ../OPSI/UI.py:147
-#: ../OPSI/UI.py:396 ../OPSI/UI.py:472 ../OPSI/UI.py:580 ../OPSI/UI.py:680
+#: ../OPSI/UI.py:396 ../OPSI/UI.py:472 ../OPSI/UI.py:579 ../OPSI/UI.py:679
 msgid "Cancel"
 msgstr "Cancelar"
 
@@ -56,16 +56,16 @@ msgstr "Por favor introduzca el texto"
 msgid "Please select"
 msgstr "Por favor seleccione"
 
-#: ../OPSI/UI.py:144 ../OPSI/UI.py:580
+#: ../OPSI/UI.py:144 ../OPSI/UI.py:579
 msgid "Please fill in"
 msgstr "Por favor rellene el campo"
 
-#: ../OPSI/UI.py:147 ../OPSI/UI.py:680
+#: ../OPSI/UI.py:147 ../OPSI/UI.py:679
 msgid "Question"
 msgstr "Pregunta"
 
-#: ../OPSI/UI.py:152 ../OPSI/UI.py:169 ../OPSI/UI.py:184 ../OPSI/UI.py:734
-#: ../OPSI/UI.py:834 ../OPSI/UI.py:899
+#: ../OPSI/UI.py:152 ../OPSI/UI.py:169 ../OPSI/UI.py:184 ../OPSI/UI.py:733
+#: ../OPSI/UI.py:833 ../OPSI/UI.py:898
 msgid "Title"
 msgstr "Titulo"
 
@@ -73,10 +73,10 @@ msgstr "Titulo"
 msgid "<F12> %s | <Space> select | <Up/Down> scroll text"
 msgstr "<F12> %s | <Espacio> seleccionar | <Up/Down> desplazarse en el texto"
 
-#: ../OPSI/UI.py:451 ../OPSI/UI.py:553 ../OPSI/UI.py:652 ../OPSI/UI.py:712
+#: ../OPSI/UI.py:451 ../OPSI/UI.py:552 ../OPSI/UI.py:651 ../OPSI/UI.py:711
 msgid "<ESC> %s | <F12> %s | <Tab> move cursor | <Space> select"
 msgstr "<ESC> %s | <F12> %s | <Tab> mover el cursor | <Espacio> seleccionar"
 
-#: ../OPSI/UI.py:453 ../OPSI/UI.py:555 ../OPSI/UI.py:654 ../OPSI/UI.py:714
+#: ../OPSI/UI.py:453 ../OPSI/UI.py:554 ../OPSI/UI.py:653 ../OPSI/UI.py:713
 msgid " | <Up/Down> scroll text"
 msgstr " | <Up/Down> desplazarse en el texto"
