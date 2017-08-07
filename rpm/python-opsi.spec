@@ -182,6 +182,7 @@ chmod 440 /etc/opsi/server_commands_default.conf
 %config /etc/opsi/hwaudit/locales/en_US
 %config /etc/opsi/hwaudit/locales/es_ES
 %config /etc/opsi/hwaudit/locales/fr_FR
+%config /etc/opsi/hwaudit/locales/nl_NL
 %config /etc/opsi/hwaudit/locales/ru_RU
 %config(noreplace) /etc/opsi/server_commands_default.conf
 

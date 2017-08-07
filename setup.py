@@ -31,7 +31,7 @@ from setuptools import setup, find_packages
 import codecs
 import os
 
-LANGUAGES = ['da', 'de', 'es', 'en', 'fr', 'it', 'pl', 'ru']
+LANGUAGES = ['da', 'de', 'es', 'en', 'fr', 'it', 'nl', 'pl', 'ru']
 
 with codecs.open(os.path.join("debian", "changelog"), 'r', 'utf-8') as changelog:
 	VERSION = changelog.readline().split('(')[1].split('-')[0]
@@ -97,6 +97,7 @@ data_files = [
 			'data/hwaudit/locales/en_US',
 			'data/hwaudit/locales/es_ES',
 			'data/hwaudit/locales/fr_FR',
+			'data/hwaudit/locales/nl_NL',
 			'data/hwaudit/locales/ru_RU',
 		]
 	),
