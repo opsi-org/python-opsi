@@ -480,15 +480,20 @@ def testRenamingDepotServer(extendedConfigDataBackend, newId='hello.world.test')
 
     depots = getDepotServers()
     backend.host_createObjects(depots)
+    oldServer = random.choice(depots)
 
-    # TODO: add productOnDepots
+    products = list(getLocalbootProducts()) + [getNetbootProduct()]
+    backend.product_createObjects(products)
+    originalProductsOnDepots = getProductsOnDepot(products, oldServer, depots)
+    backend.productOnDepot_createObjects(originalProductsOnDepots)
+    productsOnOldDepot = backend.productOnDepot_getObjects(depotId=oldServer.id)
+
     # TODO: add productProperties
     # TODO: add productPropertyStates
     # TODO: add Configs
     # TODO: add ConfigStates
     # TODO: add sub-depots
 
-    oldServer = random.choice(depots)
     backend.host_renameOpsiDepotserver(oldServer.id, newId)
 
     assert not backend.host_getObjects(id=oldServer.id)
@@ -496,9 +501,12 @@ def testRenamingDepotServer(extendedConfigDataBackend, newId='hello.world.test')
     newServer = backend.host_getObjects(id=newId)[0]
     assert newServer.id == newId
     assert newServer.getType() == "OpsiDepotserver"
-
     # TODO: check depot attributes for changed hostname - #3034
-    # TODO: test productOnDepots
+
+    assert not backend.productOnDepot_getObjects(depotId=oldServer.id)
+    productsOnNewDepot = backend.productOnDepot_getObjects(depotId=newId)
+    assert len(productsOnOldDepot) == len(productsOnNewDepot)
+
     # TODO: test productProperties
     # TODO: test productPropertyStates
     # TODO: test Configs
