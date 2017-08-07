@@ -491,7 +491,16 @@ def testRenamingDepotServer(extendedConfigDataBackend, newId='hello.world.test')
     # TODO: add productProperties
     # TODO: add productPropertyStates
 
-    configs = getConfigs()
+    testConfig = UnicodeConfig(
+        id=u'test.config.rename',
+        description=u'Testing value rename',
+        possibleValues=['random value', oldServer.id, 'another value'],
+        defaultValues=[oldServer.id],
+        editable=True,
+        multiValue=False
+    )
+    configs = list(getConfigs())
+    configs.append(testConfig)
     backend.config_createObjects(configs)
     oldConfigs = backend.config_getObjects()
 
@@ -522,9 +531,19 @@ def testRenamingDepotServer(extendedConfigDataBackend, newId='hello.world.test')
 
     newConfigs = backend.config_getObjects()
     assert len(oldConfigs) == len(newConfigs)
+    configTested = False
     for config in newConfigs:
         assert oldServer.id not in config.possibleValues
         assert oldServer.id not in config.defaultValues
+
+        if config.id == testConfig.id:
+            assert newId in config.possibleValues
+            assert len(testConfig.possibleValues) == len(config.possibleValues)
+            assert newId in config.defaultValues
+            assert len(testConfig.defaultValues) == len(config.defaultValues)
+            configTested = True
+
+    assert configTested, "Did not encounter special config {0}".format(testConfig.id)
 
     # TODO: test ConfigStates
 
