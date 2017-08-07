@@ -29,7 +29,7 @@ import random
 from OPSI.Backend.Backend import temporaryBackendOptions
 from OPSI.Exceptions import BackendError, BackendMissingDataError
 from OPSI.Object import (
-    LocalbootProduct, OpsiClient, OpsiDepotserver, ProductOnClient,
+    ConfigState, LocalbootProduct, OpsiClient, OpsiDepotserver, ProductOnClient,
     ProductOnDepot, UnicodeConfig)
 from OPSI.Util.Task.ConfigureBackend.ConfigurationData import initializeConfigs
 
@@ -504,7 +504,16 @@ def testRenamingDepotServer(extendedConfigDataBackend, newId='hello.world.test')
     backend.config_createObjects(configs)
     oldConfigs = backend.config_getObjects()
 
-    # TODO: add ConfigStates
+    testConfigState = ConfigState(
+        configId=testConfig.id,
+        objectId=oldServer.id,
+        values=["broken glass", oldServer.id, "red"]
+    )
+    manyDepots = depots * 4
+    configStates = list(getConfigStates(configs, manyDepots[:7], [None, oldServer]))
+    configStates.append(testConfigState)
+    backend.configState_createObjects(configStates)
+    oldConfigStates = backend.configState_getObjects()
 
     secondaryDepot = OpsiDepotserver(
         id='sub-{0}'.format(oldServer.id),
@@ -545,7 +554,18 @@ def testRenamingDepotServer(extendedConfigDataBackend, newId='hello.world.test')
 
     assert configTested, "Did not encounter special config {0}".format(testConfig.id)
 
-    # TODO: test ConfigStates
+    newConfigStates = backend.configState_getObjects()
+    assert len(oldConfigStates) == len(newConfigStates)
+    configStateTested = False
+    for configState in newConfigStates:
+        assert oldServer.id not in configState.values
+        assert configState.objectId != oldServer.id
+
+        if configState.configId == testConfigState.configId:
+            assert configState.objectId == newId
+            configStateTested = True
+
+    assert configStateTested, "Reference to ID not changed"
 
     newSecondaryDepot = backend.host_getObjects(id=secondaryDepot.id)[0]
     assert newSecondaryDepot.isMasterDepot is False
