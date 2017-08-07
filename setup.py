@@ -97,6 +97,7 @@ data_files = [
 			'data/hwaudit/locales/en_US',
 			'data/hwaudit/locales/es_ES',
 			'data/hwaudit/locales/fr_FR',
+			'data/hwaudit/locales/nl_NL',
 			'data/hwaudit/locales/ru_RU',
 		]
 	),
