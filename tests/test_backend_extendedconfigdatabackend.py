@@ -26,14 +26,13 @@ from __future__ import absolute_import, print_function
 
 import random
 
-from OPSI.Backend.Backend import (
-    temporaryBackendOptions, ExtendedConfigDataBackend)
+from OPSI.Backend.Backend import temporaryBackendOptions
+from OPSI.Exceptions import BackendError, BackendMissingDataError
 from OPSI.Object import (
     LocalbootProduct, OpsiClient, OpsiDepotserver, ProductOnClient,
     ProductOnDepot, UnicodeConfig)
 from OPSI.Util.Task.ConfigureBackend.ConfigurationData import initializeConfigs
 
-from .helpers import patchAddress
 from .test_backend_replicator import fillBackend
 from .test_configs import getConfigs, getConfigStates
 from .test_hosts import getClients, getConfigServer, getDepotServers
@@ -503,3 +502,24 @@ def testRenamingDepotServer(extendedConfigDataBackend, newId='hello.world.test')
     # TODO: test Configs
     # TODO: test ConfigStates
     # TODO: test sub-depots
+
+
+def testRenamingDepotServerFailsIfOldServerMissing(extendedConfigDataBackend, newId='hello.world.test'):
+    with pytest.raises(BackendMissingDataError):
+        extendedConfigDataBackend.host_renameOpsiDepotserver("not.here.invalid", "foo.bar.baz")
+
+
+@pytest.mark.requiresModulesFile  # File backend can't handle foreign depotserver
+def testRenamingDepotServerFailsIfNewIdAlreadyExisting(extendedConfigDataBackend, newId='hello.world.test'):
+    backend = extendedConfigDataBackend
+    depots = getDepotServers()
+    backend.host_createObjects(depots)
+
+    assert len(depots) >= 2, "Requiring at least two depots for this test."
+    oldServer = random.choice(depots)
+    newServer = random.choice(depots)
+    while newServer == oldServer:
+        newServer = random.choice(depots)
+
+    with pytest.raises(BackendError):
+        backend.host_renameOpsiDepotserver(oldServer.id, newServer.id)
