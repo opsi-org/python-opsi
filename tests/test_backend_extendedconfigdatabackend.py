@@ -496,7 +496,13 @@ def testRenamingDepotServer(extendedConfigDataBackend, newId='hello.world.test')
     oldConfigs = backend.config_getObjects()
 
     # TODO: add ConfigStates
-    # TODO: add sub-depots
+
+    subDepot = OpsiDepotserver(
+        id='sub-{0}'.format(oldServer.id),
+        isMasterDepot=False,
+        masterDepotId=oldServer.id
+    )
+    backend.host_createObjects(subDepot)
 
     backend.host_renameOpsiDepotserver(oldServer.id, newId)
 
@@ -521,7 +527,10 @@ def testRenamingDepotServer(extendedConfigDataBackend, newId='hello.world.test')
         assert oldServer.id not in config.defaultValues
 
     # TODO: test ConfigStates
-    # TODO: test sub-depots
+
+    newSubDepot = backend.host_getObjects(id=subDepot.id)[0]
+    assert newSubDepot.isMasterDepot is False
+    assert newSubDepot.masterDepotId == newId
 
 
 def testRenamingDepotServerFailsIfOldServerMissing(extendedConfigDataBackend, newId='hello.world.test'):
