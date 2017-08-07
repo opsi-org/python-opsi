@@ -491,6 +491,8 @@ def testRenamingDepotServer(extendedConfigDataBackend, newId='hello.world.test')
     oldServer = random.choice(depots)
     backend.host_renameOpsiDepotserver(oldServer.id, newId)
 
+    assert not backend.host_getObjects(id=oldServer.id)
+
     newServer = backend.host_getObjects(id=newId)[0]
     assert newServer.id == newId
     assert newServer.getType() == "OpsiDepotserver"
