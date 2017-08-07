@@ -24,17 +24,22 @@ Testing extended backends features
 
 from __future__ import absolute_import, print_function
 
-from itertools import izip
+import random
 
-from OPSI.Backend.Backend import temporaryBackendOptions
-from OPSI.Object import (LocalbootProduct, OpsiClient, OpsiDepotserver,
-    ProductOnClient, ProductOnDepot, UnicodeConfig)
+from OPSI.Backend.Backend import (
+    temporaryBackendOptions, ExtendedConfigDataBackend)
+from OPSI.Object import (
+    LocalbootProduct, OpsiClient, OpsiDepotserver, ProductOnClient,
+    ProductOnDepot, UnicodeConfig)
+from OPSI.Util.Task.ConfigureBackend.ConfigurationData import initializeConfigs
 
+from .helpers import patchAddress
 from .test_backend_replicator import fillBackend
 from .test_configs import getConfigs, getConfigStates
-from .test_hosts import getClients, getDepotServers
-from .test_products import (getLocalbootProducts, getNetbootProduct,
-    getProductsOnClients, getProductsOnDepot)
+from .test_hosts import getClients, getConfigServer, getDepotServers
+from .test_products import (
+    getLocalbootProducts, getNetbootProduct, getProductsOnClients,
+    getProductsOnDepot)
 
 import pytest
 
@@ -464,3 +469,37 @@ def testSearchingForIdents(extendedConfigDataBackend, query):
 
     result = extendedConfigDataBackend.backend_searchIdents(query)
     assert result
+
+
+@pytest.mark.requiresModulesFile  # File backend can't handle foreign depotserver
+def testRenamingDepotServer(extendedConfigDataBackend, newId='hello.world.test'):
+    backend = extendedConfigDataBackend
+    configServer = getConfigServer()
+
+    backend.host_createObjects(configServer)
+    initializeConfigs(backend)
+
+    depots = getDepotServers()
+    backend.host_createObjects(depots)
+
+    # TODO: add productOnDepots
+    # TODO: add productProperties
+    # TODO: add productPropertyStates
+    # TODO: add Configs
+    # TODO: add ConfigStates
+    # TODO: add sub-depots
+
+    oldServer = random.choice(depots)
+    backend.host_renameOpsiDepotserver(oldServer.id, newId)
+
+    newServer = backend.host_getObjects(id=newId)[0]
+    assert newServer.id == newId
+    assert newServer.getType() == "OpsiDepotserver"
+
+    # TODO: check depot attributes for changed hostname - #3034
+    # TODO: test productOnDepots
+    # TODO: test productProperties
+    # TODO: test productPropertyStates
+    # TODO: test Configs
+    # TODO: test ConfigStates
+    # TODO: test sub-depots
