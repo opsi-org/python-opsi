@@ -2,19 +2,20 @@
 # Copyright (C) YEAR ORGANIZATION
 # 
 # Translators:
-# Martin Scalese <m.scalese@uib.de>, 2015,2017
+# Peter De Ridder <peter.deridder@digipolis.be>, 2017
+# Selina Oudermans <selina.oudermans@digipolis.be>, 2017
 msgid ""
 msgstr ""
 "Project-Id-Version: opsi.org\n"
 "POT-Creation-Date: 2016-08-24 17:11+CEST\n"
 "PO-Revision-Date: 2017-08-07 11:20+0000\n"
-"Last-Translator: Martin Scalese <m.scalese@uib.de>\n"
-"Language-Team: Spanish (http://www.transifex.com/opsi-org/opsiorg/language/es/)\n"
+"Last-Translator: Peter De Ridder <peter.deridder@digipolis.be>\n"
+"Language-Team: Dutch (http://www.transifex.com/opsi-org/opsiorg/language/nl/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: ENCODING\n"
 "Generated-By: pygettext.py 1.5\n"
-"Language: es\n"
+"Language: nl\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 #: ../OPSI/UI.py:114 ../OPSI/UI.py:117 ../OPSI/UI.py:138 ../OPSI/UI.py:141
@@ -25,58 +26,58 @@ msgstr "OK"
 
 #: ../OPSI/UI.py:114 ../OPSI/UI.py:244
 msgid "An error occurred"
-msgstr "Un error ocurrió"
+msgstr "Er is een fout opgetreden"
 
 #: ../OPSI/UI.py:117 ../OPSI/UI.py:283
 msgid "Message"
-msgstr "Mensaje"
+msgstr "Bericht"
 
 #: ../OPSI/UI.py:120 ../OPSI/UI.py:126 ../OPSI/UI.py:322 ../OPSI/UI.py:352
 msgid "Progress"
-msgstr "Progreso"
+msgstr "Voortgang"
 
 #: ../OPSI/UI.py:123 ../OPSI/UI.py:129 ../OPSI/UI.py:337 ../OPSI/UI.py:367
 msgid "Copy progress"
-msgstr "Progreso de copia"
+msgstr "Voortgang van kopiëren"
 
 #: ../OPSI/UI.py:132 ../OPSI/UI.py:382
 msgid "Text"
-msgstr "Texto"
+msgstr "Tekst"
 
 #: ../OPSI/UI.py:138 ../OPSI/UI.py:141 ../OPSI/UI.py:144 ../OPSI/UI.py:147
 #: ../OPSI/UI.py:396 ../OPSI/UI.py:472 ../OPSI/UI.py:579 ../OPSI/UI.py:679
 msgid "Cancel"
-msgstr "Cancelar"
+msgstr "Annuleren"
 
 #: ../OPSI/UI.py:138 ../OPSI/UI.py:396
 msgid "Please type text"
-msgstr "Por favor introduzca el texto"
+msgstr "Type de tekst"
 
 #: ../OPSI/UI.py:141 ../OPSI/UI.py:472
 msgid "Please select"
-msgstr "Por favor seleccione"
+msgstr "Selecteer"
 
 #: ../OPSI/UI.py:144 ../OPSI/UI.py:579
 msgid "Please fill in"
-msgstr "Por favor rellene el campo"
+msgstr "Vul dit in"
 
 #: ../OPSI/UI.py:147 ../OPSI/UI.py:679
 msgid "Question"
-msgstr "Pregunta"
+msgstr "Vraag"
 
 #: ../OPSI/UI.py:152 ../OPSI/UI.py:169 ../OPSI/UI.py:184 ../OPSI/UI.py:733
 #: ../OPSI/UI.py:833 ../OPSI/UI.py:898
 msgid "Title"
-msgstr "Titulo"
+msgstr "Titel"
 
 #: ../OPSI/UI.py:275 ../OPSI/UI.py:314
 msgid "<F12> %s | <Space> select | <Up/Down> scroll text"
-msgstr "<F12> %s | <Espacio> seleccionar | <Up/Down> desplazarse en el texto"
+msgstr "<F12> %s | <Space> selecteer | <Up/Down> scroll text"
 
 #: ../OPSI/UI.py:451 ../OPSI/UI.py:552 ../OPSI/UI.py:651 ../OPSI/UI.py:711
 msgid "<ESC> %s | <F12> %s | <Tab> move cursor | <Space> select"
-msgstr "<ESC> %s | <F12> %s | <Tab> mover el cursor | <Espacio> seleccionar"
+msgstr "<ESC> %s | <F12> %s | <Tab> verplaats cursor | <Space> selecteer"
 
 #: ../OPSI/UI.py:453 ../OPSI/UI.py:554 ../OPSI/UI.py:653 ../OPSI/UI.py:713
 msgid " | <Up/Down> scroll text"
-msgstr " | <Up/Down> desplazarse en el texto"
+msgstr "| <Up/Down> scroll text"
