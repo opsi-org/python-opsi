@@ -29,8 +29,9 @@ import random
 from OPSI.Backend.Backend import temporaryBackendOptions
 from OPSI.Exceptions import BackendError, BackendMissingDataError
 from OPSI.Object import (
-    ConfigState, LocalbootProduct, OpsiClient, OpsiDepotserver, ProductOnClient,
-    ProductOnDepot, UnicodeConfig)
+    BoolProductProperty, ConfigState, LocalbootProduct, OpsiClient,
+    OpsiDepotserver, ProductOnClient, ProductOnDepot, UnicodeConfig,
+    UnicodeProductProperty)
 from OPSI.Util.Task.ConfigureBackend.ConfigurationData import initializeConfigs
 
 from .test_backend_replicator import fillBackend
@@ -488,7 +489,40 @@ def testRenamingDepotServer(extendedConfigDataBackend, newId='hello.world.test')
     backend.productOnDepot_createObjects(originalProductsOnDepots)
     productsOnOldDepot = backend.productOnDepot_getObjects(depotId=oldServer.id)
 
-    # TODO: add productProperties
+    product1 = products[0]
+    specialProperty = UnicodeProductProperty(
+        productId=product1.id,
+        productVersion=product1.productVersion,
+        packageVersion=product1.packageVersion,
+        propertyId="changeMe",
+        possibleValues=['foo', oldServer.id, 'baz'],
+        defaultValues=['foo', oldServer.id],
+        editable=False,
+        multiValue=True
+    )
+    properties = [
+        UnicodeProductProperty(
+            productId=product1.id,
+            productVersion=product1.productVersion,
+            packageVersion=product1.packageVersion,
+            propertyId="irrelevant1",
+            possibleValues=['foo', 'bar', 'baz'],
+            defaultValues=['foo'],
+            editable=True,
+            multiValue=True
+        ),
+        BoolProductProperty(
+            productId=product1.id,
+            productVersion=product1.productVersion,
+            packageVersion=product1.packageVersion,
+            propertyId="irrelevant2",
+            defaultValues=True
+        ),
+        specialProperty,
+    ]
+    backend.productProperty_createObjects(properties)
+    oldProperties = backend.productProperty_getObjects()
+
     # TODO: add productPropertyStates
 
     testConfig = UnicodeConfig(
@@ -556,7 +590,20 @@ def testRenamingDepotServer(extendedConfigDataBackend, newId='hello.world.test')
     productsOnNewDepot = backend.productOnDepot_getObjects(depotId=newId)
     assert len(productsOnOldDepot) == len(productsOnNewDepot)
 
-    # TODO: test productProperties
+    newProperties = backend.productProperty_getObjects()
+    assert len(newProperties) == len(oldProperties)
+    specialPropertyChecked = False
+    for productProperty in newProperties:
+        if productProperty.propertyId == specialProperty.propertyId:
+            assert oldServer.id not in productProperty.possibleValues
+            assert newId in productProperty.possibleValues
+
+            assert oldServer.id not in productProperty.defaultValues
+            assert newId in productProperty.defaultValues
+            specialPropertyChecked = True
+
+    assert specialPropertyChecked, "Missing property {0}".format(specialProperty.propertyId)
+
     # TODO: test productPropertyStates
 
     newConfigs = backend.config_getObjects()
