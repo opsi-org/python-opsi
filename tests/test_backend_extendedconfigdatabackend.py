@@ -470,7 +470,7 @@ def testSearchingForIdents(extendedConfigDataBackend, query):
     assert result
 
 
-@pytest.mark.requiresModulesFile  # File backend can't handle foreign depotserver
+@pytest.mark.requiresModulesFile  # SQLite needs a license
 def testRenamingDepotServer(extendedConfigDataBackend, newId='hello.world.test'):
     backend = extendedConfigDataBackend
     configServer = getConfigServer()
