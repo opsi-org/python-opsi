@@ -514,6 +514,7 @@ def testRenamingDepotServer(extendedConfigDataBackend, newId='hello.world.test')
     configStates.append(testConfigState)
     backend.configState_createObjects(configStates)
     oldConfigStates = backend.configState_getObjects()
+    configStatesFromDifferentObjects = [cs for cs in oldConfigStates if not cs.objectId == oldServer.id]
 
     secondaryDepot = OpsiDepotserver(
         id='sub-{0}'.format(oldServer.id),
@@ -556,6 +557,9 @@ def testRenamingDepotServer(extendedConfigDataBackend, newId='hello.world.test')
 
     newConfigStates = backend.configState_getObjects()
     assert len(oldConfigStates) == len(newConfigStates)
+    newConfigStatesFromDifferentObjects = [cs for cs in newConfigStates if not cs.objectId == newId]
+    assert len(configStatesFromDifferentObjects) == len(newConfigStatesFromDifferentObjects)
+
     configStateTested = False
     for configState in newConfigStates:
         assert oldServer.id not in configState.values
