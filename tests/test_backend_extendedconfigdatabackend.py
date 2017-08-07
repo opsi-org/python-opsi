@@ -490,7 +490,11 @@ def testRenamingDepotServer(extendedConfigDataBackend, newId='hello.world.test')
 
     # TODO: add productProperties
     # TODO: add productPropertyStates
-    # TODO: add Configs
+
+    configs = getConfigs()
+    backend.config_createObjects(configs)
+    oldConfigs = backend.config_getObjects()
+
     # TODO: add ConfigStates
     # TODO: add sub-depots
 
@@ -509,7 +513,13 @@ def testRenamingDepotServer(extendedConfigDataBackend, newId='hello.world.test')
 
     # TODO: test productProperties
     # TODO: test productPropertyStates
-    # TODO: test Configs
+
+    newConfigs = backend.config_getObjects()
+    assert len(oldConfigs) == len(newConfigs)
+    for config in newConfigs:
+        assert oldServer.id not in config.possibleValues
+        assert oldServer.id not in config.defaultValues
+
     # TODO: test ConfigStates
     # TODO: test sub-depots
 
