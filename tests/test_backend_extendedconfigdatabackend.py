@@ -39,7 +39,7 @@ from .test_configs import getConfigs, getConfigStates
 from .test_hosts import getClients, getConfigServer, getDepotServers
 from .test_products import (
     getLocalbootProducts, getNetbootProduct, getProductsOnClients,
-    getProductsOnDepot)
+    getProductsOnDepot, getProductPropertyStates)
 
 import pytest
 
@@ -523,7 +523,10 @@ def testRenamingDepotServer(extendedConfigDataBackend, newId='hello.world.test')
     backend.productProperty_createObjects(properties)
     oldProperties = backend.productProperty_getObjects()
 
-    # TODO: add productPropertyStates
+    productPropertyStates = getProductPropertyStates(properties, depots, depots)
+    backend.productPropertyState_createObjects(productPropertyStates)
+    oldProductPropertyStates = backend.productPropertyState_getObjects()
+    # TODO: add special productPropertyState with old ID in value
 
     testConfig = UnicodeConfig(
         id=u'test.config.rename',
@@ -604,7 +607,9 @@ def testRenamingDepotServer(extendedConfigDataBackend, newId='hello.world.test')
 
     assert specialPropertyChecked, "Missing property {0}".format(specialProperty.propertyId)
 
-    # TODO: test productPropertyStates
+    newProductPropertyStates = backend.productPropertyState_getObjects()
+    assert len(oldProductPropertyStates) == len(newProductPropertyStates)
+    # TODO: improve test of productPropertyStates
 
     newConfigs = backend.config_getObjects()
     assert len(oldConfigs) == len(newConfigs)
