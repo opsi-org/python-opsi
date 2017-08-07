@@ -501,6 +501,26 @@ def testRenamingDepotServer(extendedConfigDataBackend, newId='hello.world.test')
     )
     configs = list(getConfigs())
     configs.append(testConfig)
+    configs.append(
+        UnicodeConfig(
+            id=u'clientconfig.depot.id',  # get's special treatment
+            description=u'ID of the opsi depot to use',
+            possibleValues=[configServer.id, oldServer.id],
+            defaultValues=[configServer.id],
+            editable=True,
+            multiValue=False
+        )
+    )
+    configs.append(
+        UnicodeConfig(
+            id=u'clientconfig.configserver.url',  # get's special treatment
+            description=u'URL(s) of opsi config service(s) to use',
+            possibleValues=[u'https://%s:4447/rpc' % server for server in (configServer.id, oldServer.id)],
+            defaultValues=[u'https://%s:4447/rpc' % configServer.id],
+            editable=True,
+            multiValue=True
+        )
+    )
     backend.config_createObjects(configs)
     oldConfigs = backend.config_getObjects()
 
@@ -548,12 +568,28 @@ def testRenamingDepotServer(extendedConfigDataBackend, newId='hello.world.test')
 
         if config.id == testConfig.id:
             assert newId in config.possibleValues
-            assert len(testConfig.possibleValues) == len(config.possibleValues)
             assert newId in config.defaultValues
+            assert len(testConfig.possibleValues) == len(config.possibleValues)
             assert len(testConfig.defaultValues) == len(config.defaultValues)
-            configTested = True
+            configTested += 1
+        elif config.id == 'clientconfig.configserver.url':
+            # TODO: this could be relevant for #1571
+            # print(oldServer.id)
+            # print(newId)
+            # print(config.possibleValues)
+            # assert any(newId in value for value in config.possibleValues)
+            assert newId not in config.defaultValues[0]
+            assert 2 == len(config.possibleValues)
+            assert 1 == len(config.defaultValues)
+            configTested += 1
+        elif config.id == 'clientconfig.depot.id':
+            assert newId in config.possibleValues
+            assert newId not in config.defaultValues[0]
+            assert 2 == len(config.possibleValues)
+            assert 1 == len(config.defaultValues)
+            configTested += 1
 
-    assert configTested, "Did not encounter special config {0}".format(testConfig.id)
+    assert 3 == configTested, "Did not encounter special config {0}".format(testConfig.id)
 
     newConfigStates = backend.configState_getObjects()
     assert len(oldConfigStates) == len(newConfigStates)
