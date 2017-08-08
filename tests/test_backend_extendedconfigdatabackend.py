@@ -30,8 +30,8 @@ from OPSI.Backend.Backend import temporaryBackendOptions
 from OPSI.Exceptions import BackendError, BackendMissingDataError
 from OPSI.Object import (
     BoolProductProperty, ConfigState, LocalbootProduct, OpsiClient,
-    OpsiDepotserver, ProductOnClient, ProductOnDepot, UnicodeConfig,
-    UnicodeProductProperty)
+    OpsiDepotserver, ProductOnClient, ProductOnDepot, ProductPropertyState,
+    UnicodeConfig, UnicodeProductProperty)
 from OPSI.Util.Task.ConfigureBackend.ConfigurationData import initializeConfigs
 
 from .test_backend_replicator import fillBackend
@@ -505,7 +505,7 @@ def testRenamingDepotServer(extendedConfigDataBackend, newId='hello.world.test')
             productId=product1.id,
             productVersion=product1.productVersion,
             packageVersion=product1.packageVersion,
-            propertyId="irrelevant1",
+            propertyId="overridden",
             possibleValues=['foo', 'bar', 'baz'],
             defaultValues=['foo'],
             editable=True,
@@ -523,9 +523,17 @@ def testRenamingDepotServer(extendedConfigDataBackend, newId='hello.world.test')
     backend.productProperty_createObjects(properties)
     oldProperties = backend.productProperty_getObjects()
 
-    productPropertyStates = getProductPropertyStates(properties, depots, depots)
+    specialProdPropertyState = ProductPropertyState(
+        productId=product1.id,
+        propertyId=properties[0].propertyId,
+        objectId=oldServer.id,
+        values=[oldServer.id]
+    )
+    productPropertyStates = list(getProductPropertyStates(properties, depots, depots))
+    productPropertyStates.append(specialProdPropertyState)
     backend.productPropertyState_createObjects(productPropertyStates)
     oldProductPropertyStates = backend.productPropertyState_getObjects()
+
     # TODO: add special productPropertyState with old ID in value
 
     testConfig = UnicodeConfig(
