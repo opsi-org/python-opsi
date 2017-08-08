@@ -2131,35 +2131,35 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		if softwareLicenses:
 			self.softwareLicense_createObjects(softwareLicenses)
 
-	def host_renameOpsiDepotserver(self, id, newId):
-		id = forceHostId(id)
+	def host_renameOpsiDepotserver(self, oldId, newId):
+		oldId = forceHostId(oldId)
 		newId = forceHostId(newId)
-		oldHostname = id.split('.')[0]
+		oldHostname = oldId.split('.')[0]
 		newHostname = newId.split('.')[0]
 
-		depots = self._backend.host_getObjects(type='OpsiDepotserver', id=id)
+		depots = self._backend.host_getObjects(type='OpsiDepotserver', id=oldId)
 		try:
 			depot = depots[0]
 		except IndexError:
-			raise BackendMissingDataError(u"Cannot rename: depot '%s' not found" % id)
+			raise BackendMissingDataError(u"Cannot rename: depot '%s' not found" % oldId)
 
 		if self._backend.host_getObjects(id=newId):
 			raise BackendError(u"Cannot rename: host '%s' already exists" % newId)
 
 		productOnDepots = []
-		for productOnDepot in self._backend.productOnDepot_getObjects(depotId=id):
+		for productOnDepot in self._backend.productOnDepot_getObjects(depotId=oldId):
 			productOnDepot.setDepotId(newId)
 			productOnDepots.append(productOnDepot)
 
 		modifiedProductProperties = []
 		for productProperty in self._backend.productProperty_getObjects():
-			if productProperty.possibleValues and id in productProperty.possibleValues:
-				productProperty.possibleValues.remove(id)
+			if productProperty.possibleValues and oldId in productProperty.possibleValues:
+				productProperty.possibleValues.remove(oldId)
 				productProperty.possibleValues.append(newId)
 				if productProperty not in modifiedProductProperties:
 					modifiedProductProperties.append(productProperty)
-			if productProperty.defaultValues and id in productProperty.defaultValues:
-				productProperty.defaultValues.remove(id)
+			if productProperty.defaultValues and oldId in productProperty.defaultValues:
+				productProperty.defaultValues.remove(oldId)
 				productProperty.defaultValues.append(newId)
 				if productProperty not in modifiedProductProperties:
 					modifiedProductProperties.append(productProperty)
@@ -2167,22 +2167,22 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			self.productProperty_updateObjects(modifiedProductProperties)
 
 		productPropertyStates = []
-		for productPropertyState in self._backend.productPropertyState_getObjects(objectId=id):
+		for productPropertyState in self._backend.productPropertyState_getObjects(objectId=oldId):
 			productPropertyState.setObjectId(newId)
-			if productPropertyState.values and id in productPropertyState.values:
-				productPropertyState.values.remove(id)
+			if productPropertyState.values and oldId in productPropertyState.values:
+				productPropertyState.values.remove(oldId)
 				productPropertyState.values.append(newId)
 			productPropertyStates.append(productPropertyState)
 
 		modifiedConfigs = []
 		for config in self._backend.config_getObjects():
-			if config.possibleValues and id in config.possibleValues:
-				config.possibleValues.remove(id)
+			if config.possibleValues and oldId in config.possibleValues:
+				config.possibleValues.remove(oldId)
 				config.possibleValues.append(newId)
 				if config not in modifiedConfigs:
 					modifiedConfigs.append(config)
-			if config.defaultValues and id in config.defaultValues:
-				config.defaultValues.remove(id)
+			if config.defaultValues and oldId in config.defaultValues:
+				config.defaultValues.remove(oldId)
 				config.defaultValues.append(newId)
 				if config not in modifiedConfigs:
 					modifiedConfigs.append(config)
@@ -2190,10 +2190,10 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			self.config_updateObjects(modifiedConfigs)
 
 		configStates = []
-		for configState in self._backend.configState_getObjects(objectId=id):
+		for configState in self._backend.configState_getObjects(objectId=oldId):
 			configState.setObjectId(newId)
-			if configState.values and id in configState.values:
-				configState.values.remove(id)
+			if configState.values and oldId in configState.values:
+				configState.values.remove(oldId)
 				configState.values.append(newId)
 			configStates.append(configState)
 
@@ -2201,7 +2201,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		self._backend.host_deleteObjects([depot])
 
 		def changeAddress(value):
-			newValue = value.replace(id, newId)
+			newValue = value.replace(oldId, newId)
 			newValue = newValue.replace(oldHostname, newHostname)
 			logger.debug("Changed {0!r} to {1!r}", value, newValue)
 			return newValue
@@ -2229,8 +2229,8 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			if config.defaultValues:
 				changed = False
 				for i, value in enumerate(config.defaultValues):
-					if id in value:
-						config.defaultValues[i] = value.replace(id, newId)
+					if oldId in value:
+						config.defaultValues[i] = value.replace(oldId, newId)
 						changed = True
 
 				if changed:
@@ -2244,8 +2244,8 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			if configState.values:
 				changed = False
 				for i, value in enumerate(configState.values):
-					if id in value:
-						configState.values[i] = value.replace(id, newId)
+					if oldId in value:
+						configState.values[i] = value.replace(oldId, newId)
 						changed = True
 
 				if changed:
@@ -2256,7 +2256,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 
 		modifiedDepots = []
 		for depot in self._backend.host_getObjects(type='OpsiDepotserver'):
-			if depot.masterDepotId and (depot.masterDepotId == id):
+			if depot.masterDepotId and (depot.masterDepotId == oldId):
 				depot.masterDepotId = newId
 				modifiedDepots.append(depot)
 
