@@ -480,6 +480,7 @@ def testRenamingDepotServer(extendedConfigDataBackend, address='fqdn', newId='he
     initializeConfigs(backend)
 
     # TODO: add test variant that uses the hostname or IP in the addresses
+    # TODO: relevant for #3034?
     if address != 'fqdn':
         raise RuntimeError("Unsupported address type")
     address = 'toberenamed.domain.test'
@@ -487,7 +488,6 @@ def testRenamingDepotServer(extendedConfigDataBackend, address='fqdn', newId='he
     depots = list(getDepotServers())
     oldServer = OpsiDepotserver(
         id='toberenamed.domain.test',
-        # opsiHostKey='19012334567845645678901232789012',
         depotLocalUrl='file:///var/lib/opsi/depot',
         depotRemoteUrl='smb://{address}/opsi_depot'.format(address=address),
         depotWebdavUrl=u'webdavs://{address}:4447/depot'.format(address=address),
@@ -615,8 +615,7 @@ def testRenamingDepotServer(extendedConfigDataBackend, address='fqdn', newId='he
     assert newServer.depotRemoteUrl == u'smb://%s/opsi_depot' % newId
     assert newServer.depotWebdavUrl == u'webdavs://%s:4447/depot' % newId
     assert newServer.repositoryRemoteUrl == u'webdavs://%s:4447/repository' % newId
-    # assert newServer.workbenchRemoteUrl == u'smb://{}/opsi_workbench'.format(newId)
-    # TODO: check depot attributes for changed hostname - #3034
+    assert newServer.workbenchRemoteUrl == u'smb://{}/opsi_workbench'.format(newId)
 
     assert not backend.productOnDepot_getObjects(depotId=oldServer.id)
     productsOnNewDepot = backend.productOnDepot_getObjects(depotId=newId)

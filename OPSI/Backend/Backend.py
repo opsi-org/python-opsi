@@ -2207,6 +2207,8 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			depot.setDepotRemoteUrl(depot.depotRemoteUrl.replace(id, newId).replace(oldHostname, newHostname))
 		if depot.depotWebdavUrl:
 			depot.setDepotWebdavUrl(depot.depotWebdavUrl.replace(id, newId).replace(oldHostname, newHostname))
+		if depot.workbenchRemoteUrl:
+			depot.setWorkbenchRemoteUrl(depot.workbenchRemoteUrl.replace(id, newId).replace(oldHostname, newHostname))
 		self.host_createObjects([depot])
 
 		if productOnDepots:
