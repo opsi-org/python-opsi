@@ -472,7 +472,8 @@ def testSearchingForIdents(extendedConfigDataBackend, query):
 
 
 @pytest.mark.requiresModulesFile  # SQLite needs a license
-def testRenamingDepotServer(extendedConfigDataBackend, address='fqdn', newId='hello.world.test'):
+@pytest.mark.parametrize("addressType", ['fqdn'])
+def testRenamingDepotServer(extendedConfigDataBackend, addressType, newId='hello.world.test'):
     backend = extendedConfigDataBackend
     configServer = getConfigServer()
 
@@ -481,7 +482,7 @@ def testRenamingDepotServer(extendedConfigDataBackend, address='fqdn', newId='he
 
     # TODO: add test variant that uses the hostname or IP in the addresses
     # TODO: relevant for #3034?
-    if address != 'fqdn':
+    if addressType != 'fqdn':
         raise RuntimeError("Unsupported address type")
     address = 'toberenamed.domain.test'
 
@@ -654,14 +655,15 @@ def testRenamingDepotServer(extendedConfigDataBackend, address='fqdn', newId='he
             assert len(testConfig.defaultValues) == len(config.defaultValues)
             configsTested += 1
         elif config.id == 'clientconfig.configserver.url':
-            # TODO: this could be relevant for #1571
-            # print(oldServer.id)
-            # print(newId)
-            # print(config.possibleValues)
-            # assert any(newId in value for value in config.possibleValues)
-            assert newId not in config.defaultValues[0]
-            assert 2 == len(config.possibleValues)
             assert 1 == len(config.defaultValues)
+            assert newId not in config.defaultValues[0]  # Default is config server
+            assert 2 == len(config.possibleValues)
+
+            # TODO: this could be relevant for #1571
+            if addressType == 'fqdn':
+                assert any(newId in value for value in config.possibleValues)
+            else:
+                raise RuntimeError("Missing check for address type {0!r}".format(addressType))
             configsTested += 1
         elif config.id == 'clientconfig.depot.id':
             assert newId in config.possibleValues
