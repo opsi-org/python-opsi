@@ -123,6 +123,7 @@ def getDepotServers():
         opsiHostKey='19012334567845645678901232789012',
         depotLocalUrl='file:///var/lib/opsi/depot',
         depotRemoteUrl='smb://depotserver1.test.invalid/opsi_depot',
+        depotWebdavUrl=u'webdavs://depotserver1.test.invalid:4447/depot',
         repositoryLocalUrl='file:///var/lib/opsi/repository',
         repositoryRemoteUrl='webdavs://depotserver1.test.invalid:4447/repository',
         workbenchLocalUrl='file:///var/lib/opsi/workbench',

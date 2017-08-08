@@ -24,17 +24,22 @@ Testing extended backends features
 
 from __future__ import absolute_import, print_function
 
-from itertools import izip
+import random
 
 from OPSI.Backend.Backend import temporaryBackendOptions
-from OPSI.Object import (LocalbootProduct, OpsiClient, OpsiDepotserver,
-    ProductOnClient, ProductOnDepot, UnicodeConfig)
+from OPSI.Exceptions import BackendError, BackendMissingDataError
+from OPSI.Object import (
+    BoolProductProperty, ConfigState, LocalbootProduct, OpsiClient,
+    OpsiDepotserver, ProductOnClient, ProductOnDepot, ProductPropertyState,
+    UnicodeConfig, UnicodeProductProperty)
+from OPSI.Util.Task.ConfigureBackend.ConfigurationData import initializeConfigs
 
 from .test_backend_replicator import fillBackend
 from .test_configs import getConfigs, getConfigStates
-from .test_hosts import getClients, getDepotServers
-from .test_products import (getLocalbootProducts, getNetbootProduct,
-    getProductsOnClients, getProductsOnDepot)
+from .test_hosts import getClients, getConfigServer, getDepotServers
+from .test_products import (
+    getLocalbootProducts, getNetbootProduct, getProductsOnClients,
+    getProductsOnDepot, getProductPropertyStates)
 
 import pytest
 
@@ -464,3 +469,247 @@ def testSearchingForIdents(extendedConfigDataBackend, query):
 
     result = extendedConfigDataBackend.backend_searchIdents(query)
     assert result
+
+
+@pytest.mark.requiresModulesFile  # SQLite needs a license
+def testRenamingDepotServer(extendedConfigDataBackend, address='fqdn', newId='hello.world.test'):
+    backend = extendedConfigDataBackend
+    configServer = getConfigServer()
+
+    backend.host_createObjects(configServer)
+    initializeConfigs(backend)
+
+    # TODO: add test variant that uses the hostname or IP in the addresses
+    if address != 'fqdn':
+        raise RuntimeError("Unsupported address type")
+    address = 'toberenamed.domain.test'
+
+    depots = list(getDepotServers())
+    oldServer = OpsiDepotserver(
+        id='toberenamed.domain.test',
+        # opsiHostKey='19012334567845645678901232789012',
+        depotLocalUrl='file:///var/lib/opsi/depot',
+        depotRemoteUrl='smb://{address}/opsi_depot'.format(address=address),
+        depotWebdavUrl=u'webdavs://{address}:4447/depot'.format(address=address),
+        repositoryLocalUrl='file:///var/lib/opsi/repository',
+        repositoryRemoteUrl='webdavs://{address}:4447/repository'.format(address=address),
+        workbenchLocalUrl='file:///var/lib/opsi/workbench',
+        workbenchRemoteUrl=u'smb://{address}/opsi_workbench'.format(address=address),
+    )
+    depots.append(oldServer)
+    backend.host_createObjects(depots)
+
+    products = list(getLocalbootProducts()) + [getNetbootProduct()]
+    backend.product_createObjects(products)
+    originalProductsOnDepots = getProductsOnDepot(products, oldServer, depots)
+    backend.productOnDepot_createObjects(originalProductsOnDepots)
+    productsOnOldDepot = backend.productOnDepot_getObjects(depotId=oldServer.id)
+
+    product1 = products[0]
+    specialProperty = UnicodeProductProperty(
+        productId=product1.id,
+        productVersion=product1.productVersion,
+        packageVersion=product1.packageVersion,
+        propertyId="changeMe",
+        possibleValues=['foo', oldServer.id, 'baz'],
+        defaultValues=['foo', oldServer.id],
+        editable=False,
+        multiValue=True
+    )
+    properties = [
+        UnicodeProductProperty(
+            productId=product1.id,
+            productVersion=product1.productVersion,
+            packageVersion=product1.packageVersion,
+            propertyId="overridden",
+            possibleValues=['foo', 'bar', 'baz'],
+            defaultValues=['foo'],
+            editable=True,
+            multiValue=True
+        ),
+        BoolProductProperty(
+            productId=product1.id,
+            productVersion=product1.productVersion,
+            packageVersion=product1.packageVersion,
+            propertyId="irrelevant2",
+            defaultValues=True
+        ),
+        specialProperty,
+    ]
+    backend.productProperty_createObjects(properties)
+    oldProperties = backend.productProperty_getObjects()
+
+    specialProdPropertyState = ProductPropertyState(
+        productId=product1.id,
+        propertyId=properties[0].propertyId,
+        objectId=oldServer.id,
+        values=[oldServer.id]
+    )
+    productPropertyStates = list(getProductPropertyStates(properties, depots, depots))
+    productPropertyStates.append(specialProdPropertyState)
+    backend.productPropertyState_createObjects(productPropertyStates)
+    oldProductPropertyStates = backend.productPropertyState_getObjects()
+
+    testConfig = UnicodeConfig(
+        id=u'test.config.rename',
+        description=u'Testing value rename',
+        possibleValues=['random value', oldServer.id, 'another value'],
+        defaultValues=[oldServer.id],
+        editable=True,
+        multiValue=False
+    )
+    configs = list(getConfigs())
+    configs.append(testConfig)
+    configs.append(
+        UnicodeConfig(
+            id=u'clientconfig.depot.id',  # get's special treatment
+            description=u'ID of the opsi depot to use',
+            possibleValues=[configServer.id, oldServer.id],
+            defaultValues=[oldServer.id],
+            editable=True,
+            multiValue=False
+        )
+    )
+    configs.append(
+        UnicodeConfig(
+            id=u'clientconfig.configserver.url',  # get's special treatment
+            description=u'URL(s) of opsi config service(s) to use',
+            possibleValues=[u'https://%s:4447/rpc' % server for server in (configServer.id, oldServer.id)],
+            defaultValues=[u'https://%s:4447/rpc' % configServer.id],
+            editable=True,
+            multiValue=True
+        )
+    )
+    backend.config_createObjects(configs)
+    oldConfigs = backend.config_getObjects()
+
+    testConfigState = ConfigState(
+        configId=testConfig.id,
+        objectId=oldServer.id,
+        values=["broken glass", oldServer.id, "red"]
+    )
+    manyDepots = depots * 4
+    configStates = list(getConfigStates(configs, manyDepots[:7], [None, oldServer]))
+    configStates.append(testConfigState)
+    backend.configState_createObjects(configStates)
+    oldConfigStates = backend.configState_getObjects()
+    configStatesFromDifferentObjects = [cs for cs in oldConfigStates if not cs.objectId == oldServer.id]
+
+    secondaryDepot = OpsiDepotserver(
+        id='sub-{0}'.format(oldServer.id),
+        isMasterDepot=False,
+        masterDepotId=oldServer.id
+    )
+    backend.host_createObjects(secondaryDepot)
+
+    backend.host_renameOpsiDepotserver(oldServer.id, newId)
+
+    assert not backend.host_getObjects(id=oldServer.id)
+
+    newServer = backend.host_getObjects(id=newId)[0]
+    assert newServer.id == newId
+    assert newServer.getType() == "OpsiDepotserver"
+    assert newServer.depotLocalUrl == 'file:///var/lib/opsi/depot'
+    assert newServer.repositoryLocalUrl == 'file:///var/lib/opsi/repository'
+    assert newServer.workbenchLocalUrl == 'file:///var/lib/opsi/workbench'
+    assert newServer.depotRemoteUrl == u'smb://%s/opsi_depot' % newId
+    assert newServer.depotWebdavUrl == u'webdavs://%s:4447/depot' % newId
+    assert newServer.repositoryRemoteUrl == u'webdavs://%s:4447/repository' % newId
+    # assert newServer.workbenchRemoteUrl == u'smb://{}/opsi_workbench'.format(newId)
+    # TODO: check depot attributes for changed hostname - #3034
+
+    assert not backend.productOnDepot_getObjects(depotId=oldServer.id)
+    productsOnNewDepot = backend.productOnDepot_getObjects(depotId=newId)
+    assert len(productsOnOldDepot) == len(productsOnNewDepot)
+
+    newProperties = backend.productProperty_getObjects()
+    assert len(newProperties) == len(oldProperties)
+    specialPropertyChecked = False
+    for productProperty in newProperties:
+        if productProperty.propertyId == specialProperty.propertyId:
+            assert oldServer.id not in productProperty.possibleValues
+            assert newId in productProperty.possibleValues
+
+            assert oldServer.id not in productProperty.defaultValues
+            assert newId in productProperty.defaultValues
+            specialPropertyChecked = True
+
+    assert specialPropertyChecked, "Missing property {0}".format(specialProperty.propertyId)
+
+    newProductPropertyStates = backend.productPropertyState_getObjects()
+    assert len(oldProductPropertyStates) == len(newProductPropertyStates)
+    assert not any(pps.objectId == oldServer.id for pps in newProductPropertyStates)
+    assert not any(oldServer.id in pps.values for pps in newProductPropertyStates)
+
+    newConfigs = backend.config_getObjects()
+    assert len(oldConfigs) == len(newConfigs)
+    configsTested = 0
+    for config in newConfigs:
+        assert oldServer.id not in config.possibleValues
+        assert oldServer.id not in config.defaultValues
+
+        if config.id == testConfig.id:
+            assert newId in config.possibleValues
+            assert newId in config.defaultValues
+            assert len(testConfig.possibleValues) == len(config.possibleValues)
+            assert len(testConfig.defaultValues) == len(config.defaultValues)
+            configsTested += 1
+        elif config.id == 'clientconfig.configserver.url':
+            # TODO: this could be relevant for #1571
+            # print(oldServer.id)
+            # print(newId)
+            # print(config.possibleValues)
+            # assert any(newId in value for value in config.possibleValues)
+            assert newId not in config.defaultValues[0]
+            assert 2 == len(config.possibleValues)
+            assert 1 == len(config.defaultValues)
+            configsTested += 1
+        elif config.id == 'clientconfig.depot.id':
+            assert newId in config.possibleValues
+            assert oldServer.id not in config.possibleValues
+            assert 2 == len(config.possibleValues)
+            assert [newId] == config.defaultValues
+            configsTested += 1
+
+    assert 3 == configsTested
+
+    newConfigStates = backend.configState_getObjects()
+    assert len(oldConfigStates) == len(newConfigStates)
+    newConfigStatesFromDifferentObjects = [cs for cs in newConfigStates if not cs.objectId == newId]
+    assert len(configStatesFromDifferentObjects) == len(newConfigStatesFromDifferentObjects)
+
+    configStateTested = False
+    for configState in newConfigStates:
+        assert oldServer.id not in configState.values
+        assert configState.objectId != oldServer.id
+
+        if configState.configId == testConfigState.configId:
+            assert configState.objectId == newId
+            configStateTested = True
+
+    assert configStateTested, "Reference to ID not changed"
+
+    newSecondaryDepot = backend.host_getObjects(id=secondaryDepot.id)[0]
+    assert newSecondaryDepot.isMasterDepot is False
+    assert newSecondaryDepot.masterDepotId == newId
+
+
+def testRenamingDepotServerFailsIfOldServerMissing(extendedConfigDataBackend, newId='hello.world.test'):
+    with pytest.raises(BackendMissingDataError):
+        extendedConfigDataBackend.host_renameOpsiDepotserver("not.here.invalid", "foo.bar.baz")
+
+
+@pytest.mark.requiresModulesFile  # File backend can't handle foreign depotserver
+def testRenamingDepotServerFailsIfNewIdAlreadyExisting(extendedConfigDataBackend, newId='hello.world.test'):
+    backend = extendedConfigDataBackend
+    depots = getDepotServers()
+    backend.host_createObjects(depots)
+
+    assert len(depots) >= 2, "Requiring at least two depots for this test."
+    oldServer = random.choice(depots)
+    newServer = random.choice(depots)
+    while newServer == oldServer:
+        newServer = random.choice(depots)
+
+    with pytest.raises(BackendError):
+        backend.host_renameOpsiDepotserver(oldServer.id, newServer.id)
