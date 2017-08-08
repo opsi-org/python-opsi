@@ -644,7 +644,7 @@ def testRenamingDepotServer(extendedConfigDataBackend, newId='hello.world.test')
             configTested += 1
         elif config.id == 'clientconfig.depot.id':
             assert newId in config.possibleValues
-            assert newId not in config.defaultValues[0]
+            assert newId not in config.defaultValues  # TODO: add test where this is changed
             assert 2 == len(config.possibleValues)
             assert 1 == len(config.defaultValues)
             configTested += 1
