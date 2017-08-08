@@ -2200,15 +2200,21 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		logger.info(u"Deleting depot '%s'" % depot)
 		self._backend.host_deleteObjects([depot])
 
+		def changeAddress(value):
+			newValue = value.replace(id, newId)
+			newValue = newValue.replace(oldHostname, newHostname)
+			logger.debug("Changed {0!r} to {1!r}", value, newValue)
+			return newValue
+
 		depot.setId(newId)
 		if depot.repositoryRemoteUrl:
-			depot.setRepositoryRemoteUrl(depot.repositoryRemoteUrl.replace(id, newId).replace(oldHostname, newHostname))
+			depot.setRepositoryRemoteUrl(changeAddress(depot.repositoryRemoteUrl))
 		if depot.depotRemoteUrl:
-			depot.setDepotRemoteUrl(depot.depotRemoteUrl.replace(id, newId).replace(oldHostname, newHostname))
+			depot.setDepotRemoteUrl(changeAddress(depot.depotRemoteUrl))
 		if depot.depotWebdavUrl:
-			depot.setDepotWebdavUrl(depot.depotWebdavUrl.replace(id, newId).replace(oldHostname, newHostname))
+			depot.setDepotWebdavUrl(changeAddress(depot.depotWebdavUrl))
 		if depot.workbenchRemoteUrl:
-			depot.setWorkbenchRemoteUrl(depot.workbenchRemoteUrl.replace(id, newId).replace(oldHostname, newHostname))
+			depot.setWorkbenchRemoteUrl(changeAddress(depot.workbenchRemoteUrl))
 		self.host_createObjects([depot])
 
 		if productOnDepots:
