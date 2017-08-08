@@ -2060,13 +2060,13 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		id = forceHostId(id)
 		newId = forceHostId(newId)
 		clients = self._backend.host_getObjects(type='OpsiClient', id=id)
-		if not clients:
+		try:
+			client = clients[0]
+		except IndexError:
 			raise BackendMissingDataError(u"Cannot rename: client '%s' not found" % id)
 
 		if self._backend.host_getObjects(id=newId):
 			raise BackendError(u"Cannot rename: host '%s' already exists" % newId)
-
-		client = clients[0]
 
 		objectToGroups = []
 		for objectToGroup in self._backend.objectToGroup_getObjects(groupType='HostGroup', objectId=client.id):
