@@ -2138,13 +2138,13 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		newHostname = newId.split('.')[0]
 
 		depots = self._backend.host_getObjects(type='OpsiDepotserver', id=id)
-		if not depots:
+		try:
+			depot = depots[0]
+		except IndexError:
 			raise BackendMissingDataError(u"Cannot rename: depot '%s' not found" % id)
+
 		if self._backend.host_getObjects(id=newId):
 			raise BackendError(u"Cannot rename: host '%s' already exists" % newId)
-
-		depot = depots[0]
-		isConfigServer = bool(self.host_getIdents(type='OpsiConfigserver', id=id))
 
 		productOnDepots = []
 		for productOnDepot in self._backend.productOnDepot_getObjects(depotId=id):
