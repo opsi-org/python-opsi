@@ -534,8 +534,6 @@ def testRenamingDepotServer(extendedConfigDataBackend, newId='hello.world.test')
     backend.productPropertyState_createObjects(productPropertyStates)
     oldProductPropertyStates = backend.productPropertyState_getObjects()
 
-    # TODO: add special productPropertyState with old ID in value
-
     testConfig = UnicodeConfig(
         id=u'test.config.rename',
         description=u'Testing value rename',
@@ -617,7 +615,8 @@ def testRenamingDepotServer(extendedConfigDataBackend, newId='hello.world.test')
 
     newProductPropertyStates = backend.productPropertyState_getObjects()
     assert len(oldProductPropertyStates) == len(newProductPropertyStates)
-    # TODO: improve test of productPropertyStates
+    assert not any(pps.objectId == oldServer.id for pps in newProductPropertyStates)
+    assert not any(oldServer.id in pps.values for pps in newProductPropertyStates)
 
     newConfigs = backend.config_getObjects()
     assert len(oldConfigs) == len(newConfigs)
