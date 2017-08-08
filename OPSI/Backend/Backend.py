@@ -2215,7 +2215,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			replaceServerId(configState.values)
 			configStates.append(configState)
 
-		logger.info(u"Deleting depot '%s'" % depot)
+		logger.info(u"Deleting depot {0}", depot)
 		self._backend.host_deleteObjects([depot])
 
 		def changeAddress(value):
