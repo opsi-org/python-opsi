@@ -2158,6 +2158,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		if self._backend.host_getObjects(id=newId):
 			raise BackendError(u"Cannot rename: host '%s' already exists" % newId)
 
+		logger.info("Processing ProductOnDepots...")
 		productOnDepots = []
 		for productOnDepot in self._backend.productOnDepot_getObjects(depotId=oldId):
 			productOnDepot.setDepotId(newId)
@@ -2181,6 +2182,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			except (ValueError, AttributeError):
 				return False
 
+		logger.info("Processing ProductProperties...")
 		modifiedProductProperties = []
 		for productProperty in self._backend.productProperty_getObjects():
 			changed = replaceServerId(productProperty.possibleValues)
@@ -2190,14 +2192,17 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 				modifiedProductProperties.append(productProperty)
 
 		if modifiedProductProperties:
+			logger.info("Updating ProductProperties...")
 			self.productProperty_updateObjects(modifiedProductProperties)
 
+		logger.info("Processing ProductPropertyStates...")
 		productPropertyStates = []
 		for productPropertyState in self._backend.productPropertyState_getObjects(objectId=oldId):
 			productPropertyState.setObjectId(newId)
 			replaceServerId(productPropertyState.values)
 			productPropertyStates.append(productPropertyState)
 
+		logger.info("Processing Configs...")
 		modifiedConfigs = []
 		for config in self._backend.config_getObjects():
 			changed = replaceServerId(config.possibleValues)
@@ -2207,8 +2212,10 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 				modifiedConfigs.append(config)
 
 		if modifiedConfigs:
+			logger.info("Updating Configs...")
 			self.config_updateObjects(modifiedConfigs)
 
+		logger.info("Processing ConfigStates...")
 		configStates = []
 		for configState in self._backend.configState_getObjects(objectId=oldId):
 			configState.setObjectId(newId)
@@ -2224,6 +2231,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			logger.debug("Changed {0!r} to {1!r}", value, newValue)
 			return newValue
 
+		logger.info("Updating depot and it's urls...")
 		depot.setId(newId)
 		if depot.repositoryRemoteUrl:
 			depot.setRepositoryRemoteUrl(changeAddress(depot.repositoryRemoteUrl))
@@ -2236,12 +2244,16 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		self.host_createObjects([depot])
 
 		if productOnDepots:
+			logger.info("Updating ProductOnDepots...")
 			self.productOnDepot_createObjects(productOnDepots)
 		if productPropertyStates:
+			logger.info("Updating ProductPropertyStates...")
 			self.productPropertyState_createObjects(productPropertyStates)
 		if configStates:
+			logger.info("Updating ConfigStates...")
 			self.configState_createObjects(configStates)
 
+		logger.info("Processing depot assignment configs...")
 		updateConfigs = []
 		for config in self._backend.config_getObjects(id=['clientconfig.configserver.url', 'clientconfig.depot.id']):
 			if config.defaultValues:
@@ -2255,8 +2267,10 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 					updateConfigs.append(config)
 
 		if updateConfigs:
+			logger.info("Processing depot assignment configs...")
 			self.config_updateObjects(updateConfigs)
 
+		logger.info("Processing depot assignment config states...")
 		updateConfigStates = []
 		for configState in self._backend.configState_getObjects(configId=['clientconfig.configserver.url', 'clientconfig.depot.id']):
 			if configState.values:
@@ -2270,8 +2284,10 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 					updateConfigStates.append(configState)
 
 		if updateConfigStates:
+			logger.info("Updating depot assignment config states...")
 			self.configState_updateObjects(updateConfigStates)
 
+		logger.info("Processing depots...")
 		modifiedDepots = []
 		for depot in self._backend.host_getObjects(type='OpsiDepotserver'):
 			if depot.masterDepotId and (depot.masterDepotId == oldId):
@@ -2279,6 +2295,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 				modifiedDepots.append(depot)
 
 		if modifiedDepots:
+			logger.info("Updating depots...")
 			self.host_updateObjects(modifiedDepots)
 
 	def host_createOpsiClient(self, id, opsiHostKey=None, description=None, notes=None, hardwareAddress=None, ipAddress=None, inventoryNumber=None, oneTimePassword=None, created=None, lastSeen=None):
