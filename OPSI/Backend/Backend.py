@@ -2153,16 +2153,21 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 
 		modifiedProductProperties = []
 		for productProperty in self._backend.productProperty_getObjects():
+			changed = False
+
 			if productProperty.possibleValues and oldId in productProperty.possibleValues:
 				productProperty.possibleValues.remove(oldId)
 				productProperty.possibleValues.append(newId)
-				if productProperty not in modifiedProductProperties:
-					modifiedProductProperties.append(productProperty)
+				changed = True
+
 			if productProperty.defaultValues and oldId in productProperty.defaultValues:
 				productProperty.defaultValues.remove(oldId)
 				productProperty.defaultValues.append(newId)
-				if productProperty not in modifiedProductProperties:
-					modifiedProductProperties.append(productProperty)
+				changed = True
+
+			if changed:
+				modifiedProductProperties.append(productProperty)
+
 		if modifiedProductProperties:
 			self.productProperty_updateObjects(modifiedProductProperties)
 
@@ -2176,16 +2181,21 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 
 		modifiedConfigs = []
 		for config in self._backend.config_getObjects():
+			changed = False
+
 			if config.possibleValues and oldId in config.possibleValues:
 				config.possibleValues.remove(oldId)
 				config.possibleValues.append(newId)
-				if config not in modifiedConfigs:
-					modifiedConfigs.append(config)
+				changed = True
+
 			if config.defaultValues and oldId in config.defaultValues:
 				config.defaultValues.remove(oldId)
 				config.defaultValues.append(newId)
-				if config not in modifiedConfigs:
-					modifiedConfigs.append(config)
+				changed = True
+
+			if changed:
+				modifiedConfigs.append(config)
+
 		if modifiedConfigs:
 			self.config_updateObjects(modifiedConfigs)
 
