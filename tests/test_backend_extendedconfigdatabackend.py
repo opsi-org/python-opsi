@@ -472,16 +472,32 @@ def testSearchingForIdents(extendedConfigDataBackend, query):
 
 
 @pytest.mark.requiresModulesFile  # SQLite needs a license
-def testRenamingDepotServer(extendedConfigDataBackend, newId='hello.world.test'):
+def testRenamingDepotServer(extendedConfigDataBackend, address='fqdn', newId='hello.world.test'):
     backend = extendedConfigDataBackend
     configServer = getConfigServer()
 
     backend.host_createObjects(configServer)
     initializeConfigs(backend)
 
-    depots = getDepotServers()
+    # TODO: add test variant that uses the hostname or IP in the addresses
+    if address != 'fqdn':
+        raise RuntimeError("Unsupported address type")
+    address = 'toberenamed.domain.test'
+
+    depots = list(getDepotServers())
+    oldServer = OpsiDepotserver(
+        id='toberenamed.domain.test',
+        # opsiHostKey='19012334567845645678901232789012',
+        depotLocalUrl='file:///var/lib/opsi/depot',
+        depotRemoteUrl='smb://{address}/opsi_depot'.format(address=address),
+        depotWebdavUrl=u'webdavs://{address}:4447/depot'.format(address=address),
+        repositoryLocalUrl='file:///var/lib/opsi/repository',
+        repositoryRemoteUrl='webdavs://{address}:4447/repository'.format(address=address),
+        workbenchLocalUrl='file:///var/lib/opsi/workbench',
+        workbenchRemoteUrl=u'smb://{address}/opsi_workbench'.format(address=address),
+    )
+    depots.append(oldServer)
     backend.host_createObjects(depots)
-    oldServer = random.choice(depots)
 
     products = list(getLocalbootProducts()) + [getNetbootProduct()]
     backend.product_createObjects(products)
@@ -593,6 +609,13 @@ def testRenamingDepotServer(extendedConfigDataBackend, newId='hello.world.test')
     newServer = backend.host_getObjects(id=newId)[0]
     assert newServer.id == newId
     assert newServer.getType() == "OpsiDepotserver"
+    assert newServer.depotLocalUrl == 'file:///var/lib/opsi/depot'
+    assert newServer.repositoryLocalUrl == 'file:///var/lib/opsi/repository'
+    assert newServer.workbenchLocalUrl == 'file:///var/lib/opsi/workbench'
+    assert newServer.depotRemoteUrl == u'smb://%s/opsi_depot' % newId
+    assert newServer.depotWebdavUrl == u'webdavs://%s:4447/depot' % newId
+    assert newServer.repositoryRemoteUrl == u'webdavs://%s:4447/repository' % newId
+    # assert newServer.workbenchRemoteUrl == u'smb://{}/opsi_workbench'.format(newId)
     # TODO: check depot attributes for changed hostname - #3034
 
     assert not backend.productOnDepot_getObjects(depotId=oldServer.id)
