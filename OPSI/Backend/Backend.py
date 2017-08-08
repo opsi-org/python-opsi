@@ -2132,6 +2132,18 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			self.softwareLicense_createObjects(softwareLicenses)
 
 	def host_renameOpsiDepotserver(self, oldId, newId):
+		"""
+		Rename OpsiDepotserver with id `oldId` to `newId`.
+
+		References to the old id will be changed aswell.
+
+		:raises BackendMissingDataError: If no depot `oldId` is found.
+		:raises BackendError: If depot `newId` already exists.
+		:param oldId: ID of the server to change.
+		:type oldId: str
+		:param oldId: New ID.
+		:type newId: str
+		"""
 		oldId = forceHostId(oldId)
 		newId = forceHostId(newId)
 		oldHostname = oldId.split('.')[0]
