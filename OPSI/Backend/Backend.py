@@ -2158,6 +2158,8 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		if self._backend.host_getObjects(id=newId):
 			raise BackendError(u"Cannot rename: host '%s' already exists" % newId)
 
+		logger.info("Renaming depot {0} to {1}", oldId, newId)
+
 		logger.info("Processing ProductOnDepots...")
 		productOnDepots = []
 		for productOnDepot in self._backend.productOnDepot_getObjects(depotId=oldId):
