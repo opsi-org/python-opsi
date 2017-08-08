@@ -2151,19 +2151,28 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			productOnDepot.setDepotId(newId)
 			productOnDepots.append(productOnDepot)
 
+		def replaceServerId(someList):
+			"""
+			Replaces occurrences of `oldId` with `newId` in `someList`.
+
+			If someList is the wrong type or no change was made `False`
+			will be returned.
+
+			:type someList: list
+			:returns: `True` if a change was made.
+			:rtype: bool
+			"""
+			try:
+				someList.remove(oldId)
+				someList.append(newId)
+				return True
+			except (ValueError, AttributeError):
+				return False
+
 		modifiedProductProperties = []
 		for productProperty in self._backend.productProperty_getObjects():
-			changed = False
-
-			if productProperty.possibleValues and oldId in productProperty.possibleValues:
-				productProperty.possibleValues.remove(oldId)
-				productProperty.possibleValues.append(newId)
-				changed = True
-
-			if productProperty.defaultValues and oldId in productProperty.defaultValues:
-				productProperty.defaultValues.remove(oldId)
-				productProperty.defaultValues.append(newId)
-				changed = True
+			changed = replaceServerId(productProperty.possibleValues)
+			changed = replaceServerId(productProperty.defaultValues) or changed
 
 			if changed:
 				modifiedProductProperties.append(productProperty)
@@ -2174,24 +2183,13 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		productPropertyStates = []
 		for productPropertyState in self._backend.productPropertyState_getObjects(objectId=oldId):
 			productPropertyState.setObjectId(newId)
-			if productPropertyState.values and oldId in productPropertyState.values:
-				productPropertyState.values.remove(oldId)
-				productPropertyState.values.append(newId)
+			replaceServerId(productPropertyState.values)
 			productPropertyStates.append(productPropertyState)
 
 		modifiedConfigs = []
 		for config in self._backend.config_getObjects():
-			changed = False
-
-			if config.possibleValues and oldId in config.possibleValues:
-				config.possibleValues.remove(oldId)
-				config.possibleValues.append(newId)
-				changed = True
-
-			if config.defaultValues and oldId in config.defaultValues:
-				config.defaultValues.remove(oldId)
-				config.defaultValues.append(newId)
-				changed = True
+			changed = replaceServerId(config.possibleValues)
+			changed = replaceServerId(config.defaultValues) or changed
 
 			if changed:
 				modifiedConfigs.append(config)
@@ -2202,9 +2200,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		configStates = []
 		for configState in self._backend.configState_getObjects(objectId=oldId):
 			configState.setObjectId(newId)
-			if configState.values and oldId in configState.values:
-				configState.values.remove(oldId)
-				configState.values.append(newId)
+			replaceServerId(configState.values)
 			configStates.append(configState)
 
 		logger.info(u"Deleting depot '%s'" % depot)
