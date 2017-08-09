@@ -2291,15 +2291,8 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		logger.info("Processing depot assignment config states...")
 		updateConfigStates = []
 		for configState in self._backend.configState_getObjects(configId=['clientconfig.configserver.url', 'clientconfig.depot.id']):
-			if configState.values:
-				changed = False
-				for i, value in enumerate(configState.values):
-					if oldId in value:
-						configState.values[i] = value.replace(oldId, newId)
-						changed = True
-
-				if changed:
-					updateConfigStates.append(configState)
+			if replaceOldAddress(configState.values):
+				updateConfigStates.append(configState)
 
 		if updateConfigStates:
 			logger.info("Updating depot assignment config states...")
