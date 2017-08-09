@@ -2255,18 +2255,34 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			logger.info("Updating ConfigStates...")
 			self.configState_createObjects(configStates)
 
+		def replaceOldAddress(values):
+			"""
+			Searches for old address in elements of `values` and
+			replaces it with the new address.
+
+			:type values: list
+			:returns: `True` if an item was changed, `False` otherwise.
+			:rtype: bool
+			"""
+			changed = False
+			try:
+				for i, value in enumerate(values):
+					if oldId in value:
+						values[i] = value.replace(oldId, newId)
+						changed = True
+			except TypeError:  # values probably None
+				pass
+
+			return changed
+
 		logger.info("Processing depot assignment configs...")
 		updateConfigs = []
 		for config in self._backend.config_getObjects(id=['clientconfig.configserver.url', 'clientconfig.depot.id']):
-			if config.defaultValues:
-				changed = False
-				for i, value in enumerate(config.defaultValues):
-					if oldId in value:
-						config.defaultValues[i] = value.replace(oldId, newId)
-						changed = True
+			changed = replaceOldAddress(config.defaultValues)
+			changed = replaceOldAddress(config.possibleValues) or changed
 
-				if changed:
-					updateConfigs.append(config)
+			if changed:
+				updateConfigs.append(config)
 
 		if updateConfigs:
 			logger.info("Processing depot assignment configs...")
