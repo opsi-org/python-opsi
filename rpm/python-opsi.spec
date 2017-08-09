@@ -53,6 +53,11 @@ BuildRequires:  gettext
 %else
 BuildRequires:  gettext-runtime
 %endif
+%if 0%{?leap_version} == 420300
+# Workaround for missing dependency at python-cryptography
+# See https://bugzilla.opensuse.org/show_bug.cgi?id=1052927
+Requires: python-setuptools
+%endif
 
 %define toplevel_dir %{name}-%{version}
 
