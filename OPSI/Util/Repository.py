@@ -850,7 +850,7 @@ class HTTPRepository(Repository):
 
 		(scheme, host, port, baseurl, username, password) = urlsplit(self._url)
 
-		if not scheme in ('http', 'https', 'webdav', 'webdavs'):
+		if scheme not in ('http', 'https', 'webdav', 'webdavs'):
 			raise RepositoryError(u"Bad http url: '%s'" % self._url)
 		self._protocol = scheme
 		if port:
