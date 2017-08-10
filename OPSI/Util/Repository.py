@@ -755,7 +755,8 @@ class FileRepository(Repository):
 
 		logger.debug(u"Length of binary data to download: %d bytes" % size)
 
-		if progressSubject: progressSubject.setEnd(size)
+		if progressSubject:
+			progressSubject.setEnd(size)
 
 		try:
 			with open(source, 'rb') as src:
@@ -786,7 +787,8 @@ class FileRepository(Repository):
 		size = fs[stat.ST_SIZE]
 		logger.debug(u"Length of binary data to upload: %d" % size)
 
-		if progressSubject: progressSubject.setEnd(size)
+		if progressSubject:
+			progressSubject.setEnd(size)
 
 		try:
 			with open(source, 'rb') as src:
@@ -1281,7 +1283,6 @@ class DepotToLocalDirectorySychronizer(object):
 						logger.debug(u"Destination file '%s' already exists (size: %s, md5sum: %s)" % (d, size, md5s))
 						localSize = os.path.getsize(d)
 						if (localSize == size) and (md5s == self._fileInfo[relSource]['md5sum']):
-							#if progressSubject: progressSubject.addToState(size)
 							continue
 
 				if progressSubject:
@@ -1415,70 +1416,8 @@ class DepotToLocalDirectorySychronizer(object):
 				raise
 
 			overallProgressSubject.addToState(1)
-			if productProgressObserver: productProgressSubject.detachObserver(productProgressObserver)
+			if productProgressObserver:
+				productProgressSubject.detachObserver(productProgressObserver)
 
-		if overallProgressObserver: overallProgressSubject.detachObserver(overallProgressObserver)
-
-
-#class ProductSynchronizer(object):
-#	def __init__(self, configService, depotId, destinationDirectory, productIds=[], maxBandwidth=0, dynamicBandwidth=False):
-#		self._configService        = configService
-#		self._depotId              = depotId
-#		self._destinationDirectory = destinationDirectory
-#		self._productIds           = productIds
-#		self._maxBandwidth         = maxBandwidth
-#		self._dynamicBandwidth     = dynamicBandwidth
-#
-#	def synchronize(self):
-#		try:
-#			depot = self._configService.host_getObjects(id = self._depotId)[0]
-#		except Exception, e:
-#			raise Exception(u"Failed to get info for depot '%s': %s" % (self._depotId, e))
-#		depot.depotWebdavUrl
-#
-#		for productId in self._productIds:
-#			logger.notice(u"Syncing product %s from depot %s to local directory %s" \
-#						% (productId, self._sourceDepot, self._destinationDirectory))
-#
-#			productDestinationDirectory = os.path.join(self._destinationDirectory, productId)
-#			if not os.path.isdir(productDestinationDirectory):
-#				os.mkdir(productDestinationDirectory)
-#
-#			logger.info(u"Downloading package content file")
-#			packageContentFile = os.path.join(productDestinationDirectory, u'%s.files' % self._productId)
-#			self._sourceDepot.download(u'%s/%s.files' % (self._productId, self._productId), packageContentFile)
-#			self._fileInfo = PackageContentFile(packageContentFile).parse()
-#
-#			bytes = 0
-#			for value in self._fileInfo.values():
-#				if value.has_key('size'):
-#					bytes += int(value['size'])
-#			productProgressSubject.setMessage( _(u"Synchronizing product %s (%.2f kByte)") % (self._productId, (bytes/1024)) )
-#			productProgressSubject.setEnd(bytes)
-
-
-#class OpsiDepot(object):
-#	def __init__(self, serviceUrl, depotId, username, password):
-#		from OPSI.Backend.JSONRPC import JSONRPCBackend
-#
-#		self._configService = JSONRPCBackend(address = serviceUrl, username = username, password = password, connectOnInit = True)
-#		self._depotId = depotId
-#		try:
-#			self._depot = self._configService.host_getObjects(id = self._depotId)[0]
-#			self._depotLocalDir = self._depot.depotLocalUrl.replace('file://', '')
-#		except Exception, e:
-#			raise Exception(u"Failed to get info for depot '%s': %s" % (self._depotId, e))
-#		self._repository = getRepository(url = self._depot.depotWebdavUrl, username = username, password = password)
-#
-#	def __getattr__(self, name):
-#		if hasattr(self._repository, name):
-#			return getattr(self._repository, name)
-#		return self.__dict__[name]
-#
-#	def download(self, source, destination, progressSubject=None, rangeStart=-1, rangeEnd=-1):
-#		if os.path.exists(destination):
-#			depotLocalFile = self._depotLocalDir + source
-#			print self._configService.depot_librsyncSignature(depotLocalFile)
-#		else:
-#			return self._repository.download(source = source, destination = destination, progressSubject = progressSubject, rangeStart = rangeStart)
-#
+		if overallProgressObserver:
+			overallProgressSubject.detachObserver(overallProgressObserver)
