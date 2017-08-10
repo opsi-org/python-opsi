@@ -81,7 +81,7 @@ def parseFilename(filename):
 	:raises ValueError: If processing a filename not ending with `.opsi`.
 	:returns: Information about the file based on the filename.
 	:rtype: namedtuple with attributes `productId`, `productVersion`, \
-`packageVersion`, `custom`.
+`packageVersion`, `customId`.
 	"""
 	if not filename.endswith('.opsi'):
 		raise ValueError("Not handling non .opsi filename.")
