@@ -425,6 +425,20 @@ class Repository:
 		return path
 
 	def content(self, source='', recursive=False):
+		"""
+		List the content of the repository.
+
+		The returned entries are a dict with the following keys:
+		`name`, `size`, `path` and `type`.
+		`name` is the name of file or folder.
+		`path` is the relative path.
+		`type` is either 'file' or 'dir'.
+
+		:param recursive: Recursive listing?
+		:type recursive: bool
+		:returns: Content of the repository.
+		:rtype: [dict, ]
+		"""
 		raise RepositoryError(u"Not implemented")
 
 	def listdir(self, source=''):
