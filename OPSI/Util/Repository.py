@@ -249,125 +249,125 @@ class Repository:
 			return
 
 		now = time.time()
-		if hasattr(self, '_lastLimitCalcTime'):
-			delta = now - self._lastLimitCalcTime
-			self._lastLimitCalcTime = time.time()
-			newBufferSize = self._bufferSize
-			bwlimit = 0.0
-			if self._dynamicBandwidth and self._networkPerformanceCounter:
-				bwlimit = self._dynamicBandwidthLimit
-				totalNetworkUsage = self._getNetworkUsage()
-				if totalNetworkUsage > 0:
-					if not self._dynamicBandwidthLimit:
-						self._networkBandwidth = totalNetworkUsage
-					if not hasattr(self, '_networkUsageData'):
-						self._networkUsageData = []
-					usage = (float(self._averageSpeed) / float(totalNetworkUsage)) * 1.03
-					if usage > 1:
-						usage = 1.0
+		bwlimit = 0.0
+		if self._dynamicBandwidth and self._networkPerformanceCounter:
+			bwlimit = self._dynamicBandwidthLimit
+			totalNetworkUsage = self._getNetworkUsage()
+			if totalNetworkUsage > 0:
+				if not self._dynamicBandwidthLimit:
+					self._networkBandwidth = totalNetworkUsage
 
+				usage = (float(self._averageSpeed) / float(totalNetworkUsage)) * 1.03
+				if usage > 1:
+					usage = 1.0
+
+				try:
 					self._networkUsageData.append([now, usage])
-					if self._networkUsageData and (now - self._networkUsageData[0][0]) >= 5:
-						usage = 0.0
-						count = 0.0
-						index = -1
+				except AttributeError:
+					self._networkUsageData = [[now, usage]]
 
-						for i, element in enumerate(self._networkUsageData):
-							if now - element[0] <= 5:
-								if index == -1:
-									index = i
+				if self._networkUsageData and (now - self._networkUsageData[0][0]) >= 5:
+					usage = 0.0
+					count = 0.0
+					index = -1
 
-							if now - element[0] <= 2.0:
-								usage += element[1]
-								count += 1.0
+					for i, element in enumerate(self._networkUsageData):
+						if now - element[0] <= 5:
+							if index == -1:
+								index = i
 
-						if count > 0:
-							usage = float(usage) / float(count)
-							logger.debug(u"Current network usage %0.2f kByte/s, last measured network bandwidth %0.2f kByte/s, usage: %0.5f, dynamic limit: %0.2f kByte/s"
-									% ((float(totalNetworkUsage) / 1024), (float(self._networkBandwidth) / 1024), usage, float(bwlimit) / 1024))
+						if now - element[0] <= 2.0:
+							usage += element[1]
+							count += 1.0
 
-							if index > 1:
-								self._networkUsageData = self._networkUsageData[index-1:]
-							if self._dynamicBandwidthLimit:
-								if usage >= self._dynamicBandwidthThresholdNoLimit:
-									logger.info(u"No other traffic detected, resetting dynamically limited bandwidth, using 100%")
-									bwlimit = self._dynamicBandwidthLimit = 0.0
-									self._networkUsageData = []
-									self._fireEvent('dynamicBandwidthLimitChanged', self._dynamicBandwidthLimit)
-							else:
-								if usage <= self._dynamicBandwidthThresholdLimit:
-									if self._averageSpeed < 20000:
-										self._dynamicBandwidthLimit = bwlimit = 0.0
-										logger.debug(u"Other traffic detected, not limiting traffic because average speed is only %0.2f kByte/s" % (float(self._averageSpeed) / 1024))
+					if count > 0:
+						usage = float(usage) / float(count)
+						logger.debug(u"Current network usage %0.2f kByte/s, last measured network bandwidth %0.2f kByte/s, usage: %0.5f, dynamic limit: %0.2f kByte/s"
+								% ((float(totalNetworkUsage) / 1024), (float(self._networkBandwidth) / 1024), usage, float(bwlimit) / 1024))
+
+						if index > 1:
+							self._networkUsageData = self._networkUsageData[index-1:]
+
+						if self._dynamicBandwidthLimit:
+							if usage >= self._dynamicBandwidthThresholdNoLimit:
+								logger.info(u"No other traffic detected, resetting dynamically limited bandwidth, using 100%")
+								bwlimit = self._dynamicBandwidthLimit = 0.0
+								self._networkUsageData = []
+								self._fireEvent('dynamicBandwidthLimitChanged', self._dynamicBandwidthLimit)
+						else:
+							if usage <= self._dynamicBandwidthThresholdLimit:
+								if self._averageSpeed < 20000:
+									self._dynamicBandwidthLimit = bwlimit = 0.0
+									logger.debug(u"Other traffic detected, not limiting traffic because average speed is only %0.2f kByte/s" % (float(self._averageSpeed) / 1024))
+								else:
+									self._dynamicBandwidthLimit = bwlimit = self._averageSpeed * self._dynamicBandwidthLimitRate
+									if self._dynamicBandwidthLimit < 10000:
+										self._dynamicBandwidthLimit = bwlimit = 10000
+										logger.info(u"Other traffic detected, dynamically limiting bandwidth to minimum of %0.2f kByte/s" % (float(bwlimit) / 1024))
 									else:
-										self._dynamicBandwidthLimit = bwlimit = self._averageSpeed*self._dynamicBandwidthLimitRate
-										if self._dynamicBandwidthLimit < 10000:
-											self._dynamicBandwidthLimit = bwlimit = 10000
-											logger.info(u"Other traffic detected, dynamically limiting bandwidth to minimum of %0.2f kByte/s" % (float(bwlimit) / 1024))
-										else:
-											logger.info(u"Other traffic detected, dynamically limiting bandwidth to %0.1f%% of last average to %0.2f kByte/s" \
-												% (float(self._dynamicBandwidthLimitRate) * 100, float(bwlimit) / 1024))
-										self._fireEvent('dynamicBandwidthLimitChanged', self._dynamicBandwidthLimit)
-									self._networkUsageData = []
+										logger.info(u"Other traffic detected, dynamically limiting bandwidth to %0.1f%% of last average to %0.2f kByte/s" \
+											% (float(self._dynamicBandwidthLimitRate) * 100, float(bwlimit) / 1024))
+									self._fireEvent('dynamicBandwidthLimitChanged', self._dynamicBandwidthLimit)
+								self._networkUsageData = []
 
-			if self._maxBandwidth and (bwlimit == 0 or bwlimit > self._maxBandwidth):
-				bwlimit = float(self._maxBandwidth)
+		if self._maxBandwidth and (bwlimit == 0 or bwlimit > self._maxBandwidth):
+			bwlimit = float(self._maxBandwidth)
 
-			speed = float(self._currentSpeed)
-			if bwlimit > 0 and speed > 0:
-				factor = 1.0
-				if speed > bwlimit:
-					# Too fast
-					factor = float(speed) / float(bwlimit)
-					logger.debug(u"Transfer speed %0.2f kByte/s is to fast, limit: %0.2f kByte/s, factor: %0.5f" \
-						% ((speed / 1024), (bwlimit / 1024), factor))
+		speed = float(self._currentSpeed)
+		if bwlimit > 0 and speed > 0:
+			factor = 1.0
+			if speed > bwlimit:
+				# Too fast
+				factor = float(speed) / float(bwlimit)
+				logger.debug(u"Transfer speed %0.2f kByte/s is to fast, limit: %0.2f kByte/s, factor: %0.5f" \
+					% ((speed / 1024), (bwlimit / 1024), factor))
 
-					if factor < 1.001:
-						bandwidthSleepTime = self._bandwidthSleepTime + (0.00007 * factor)
-					elif factor < 1.01:
-						bandwidthSleepTime = self._bandwidthSleepTime + (0.0007 * factor)
-					else:
-						bandwidthSleepTime = self._bandwidthSleepTime + (0.007 * factor)
-					self._bandwidthSleepTime = (bandwidthSleepTime + self._bandwidthSleepTime) / 2
+				if factor < 1.001:
+					bandwidthSleepTime = self._bandwidthSleepTime + (0.00007 * factor)
+				elif factor < 1.01:
+					bandwidthSleepTime = self._bandwidthSleepTime + (0.0007 * factor)
 				else:
-					# Too slow
-					factor = float(bwlimit) / float(speed)
-					logger.debug(u"Transfer speed %0.2f kByte/s is to slow, limit: %0.2f kByte/s, factor: %0.5f" \
-						% ((speed / 1024), (bwlimit / 1024), factor))
-
-					if factor < 1.001:
-						bandwidthSleepTime = self._bandwidthSleepTime - (0.00006 * factor)
-					elif factor < 1.01:
-						bandwidthSleepTime = self._bandwidthSleepTime - (0.0006 * factor)
-					else:
-						bandwidthSleepTime = self._bandwidthSleepTime - (0.006 * factor)
-					self._bandwidthSleepTime = (bandwidthSleepTime + self._bandwidthSleepTime) / 2
-
-				if factor > 2:
-					self._networkUsageData = []
-
-				if self._bandwidthSleepTime <= 0.0:
-					self._bandwidthSleepTime = 0.000001
-
-				if self._bandwidthSleepTime <= 0.2:
-					self._bufferSize = int(float(self._bufferSize) * 1.03)
-					self._networkUsageData = []
-				elif self._bandwidthSleepTime > 0.3:
-					self._bufferSize = int(float(self._bufferSize) / 1.1)
-					self._bandwidthSleepTime = 0.3
-					self._networkUsageData = []
-
-				if self._bufferSize > 262144:
-					self._bufferSize = 262144
-				elif self._bufferSize < 1:
-					self._bufferSize = 1
-				logger.debug(u"Transfer speed %0.2f kByte/s, limit: %0.2f kByte/s, sleep time: %0.6f, buffer size: %s" \
-					% (speed / 1024, bwlimit / 1024, self._bandwidthSleepTime, self._bufferSize))
+					bandwidthSleepTime = self._bandwidthSleepTime + (0.007 * factor)
+				self._bandwidthSleepTime = (bandwidthSleepTime + self._bandwidthSleepTime) / 2
 			else:
+				# Too slow
+				factor = float(bwlimit) / float(speed)
+				logger.debug(u"Transfer speed %0.2f kByte/s is to slow, limit: %0.2f kByte/s, factor: %0.5f" \
+					% ((speed / 1024), (bwlimit / 1024), factor))
+
+				if factor < 1.001:
+					bandwidthSleepTime = self._bandwidthSleepTime - (0.00006 * factor)
+				elif factor < 1.01:
+					bandwidthSleepTime = self._bandwidthSleepTime - (0.0006 * factor)
+				else:
+					bandwidthSleepTime = self._bandwidthSleepTime - (0.006 * factor)
+				self._bandwidthSleepTime = (bandwidthSleepTime + self._bandwidthSleepTime) / 2
+
+			if factor > 2:
+				self._networkUsageData = []
+
+			if self._bandwidthSleepTime <= 0.0:
 				self._bandwidthSleepTime = 0.000001
-				self._bufferSize = 16384
+
+			if self._bandwidthSleepTime <= 0.2:
+				self._bufferSize = int(float(self._bufferSize) * 1.03)
+				self._networkUsageData = []
+			elif self._bandwidthSleepTime > 0.3:
+				self._bufferSize = int(float(self._bufferSize) / 1.1)
+				self._bandwidthSleepTime = 0.3
+				self._networkUsageData = []
+
+			if self._bufferSize > 262144:
+				self._bufferSize = 262144
+			elif self._bufferSize < 1:
+				self._bufferSize = 1
+
+			logger.debug(u"Transfer speed %0.2f kByte/s, limit: %0.2f kByte/s, sleep time: %0.6f, buffer size: %s" \
+				% (speed / 1024, bwlimit / 1024, self._bandwidthSleepTime, self._bufferSize))
 		else:
-			self._lastLimitCalcTime = time.time()
+			self._bandwidthSleepTime = 0.000001
+			self._bufferSize = 16384
+
 		time.sleep(self._bandwidthSleepTime)
 
 	def _transfer(self, transferDirection, src, dst, progressSubject=None, bytes=-1):
