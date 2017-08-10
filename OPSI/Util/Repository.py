@@ -705,17 +705,21 @@ class FileRepository(Repository):
 
 	def content(self, source='', recursive=False):
 		source = self._preProcessPath(source)
-
-		content = []
 		srcLen = len(source)
+		content = []
+
 		def _recurse(path, content):
 			path = os.path.abspath(forceFilename(path))
 			for entry in os.listdir(path):
 				try:
-					info = {'name': entry, 'size': long(0), 'type': 'file'}
+					info = {
+						'name': entry,
+						'size': 0,
+						'type': 'file'
+					}
+
 					entry = os.path.join(path, entry)
 					info['path'] = entry[srcLen:]
-					size = 0
 					if os.path.islink(entry) and not os.path.isdir(entry):
 						pass
 					elif os.path.isfile(entry):
@@ -728,7 +732,9 @@ class FileRepository(Repository):
 							_recurse(path=entry, content=content)
 				except Exception as error:
 					logger.error(error)
+
 			return content
+
 		return _recurse(path=source, content=content)
 
 	def download(self, source, destination, progressSubject=None, startByteNumber=-1, endByteNumber=-1):
@@ -1008,8 +1014,6 @@ class WebDAVRepository(HTTPRepository):
 			else:
 				return self._contentCache[source]['content']
 
-		content = []
-
 		headers = self._headers()
 		depth = '1'
 		if recursive:
@@ -1031,18 +1035,25 @@ class WebDAVRepository(HTTPRepository):
 		if not msr.root_element.children[0].childOfType(davxml.PropertyStatus).childOfType(davxml.PropertyContainer).childOfType(davxml.ResourceType).children:
 			raise RepositoryError(u"Not a directory: '%s'" % source)
 
+		content = []
 		srcLen = len(source)
 		for child in msr.root_element.children[1:]:
 			pContainer = child.childOfType(davxml.PropertyStatus).childOfType(davxml.PropertyContainer)
-			info = {'size': long(0), 'type': 'file'}
-			info['path'] = unicode(urllib.unquote(child.childOfType(davxml.HRef).children[0].data[srcLen:]), encoding)
-			info['name'] = unicode(pContainer.childOfType(davxml.DisplayName).children[0].data, encoding)
+			info = {
+				'size': 0,
+				'type': 'file',
+				'path': unicode(urllib.unquote(child.childOfType(davxml.HRef).children[0].data[srcLen:]), encoding),
+				'name': unicode(pContainer.childOfType(davxml.DisplayName).children[0].data, encoding),
+			}
+
 			if str(pContainer.childOfType(davxml.GETContentLength)) != 'None':
 				info['size'] = long(str(pContainer.childOfType(davxml.GETContentLength)))
+
 			if pContainer.childOfType(davxml.ResourceType).children:
 				info['type'] = 'dir'
 				if info['path'].endswith('/'):
 					info['path'] = info['path'][:-1]
+
 			content.append(info)
 
 		if recursive:
@@ -1050,6 +1061,7 @@ class WebDAVRepository(HTTPRepository):
 				'time': time.time(),
 				'content': content
 			}
+
 		return content
 
 	def upload(self, source, destination, progressSubject=None):
