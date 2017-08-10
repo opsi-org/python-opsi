@@ -169,7 +169,8 @@ class Repository:
 	def addHook(self, hook):
 		if not isinstance(hook, RepositoryHook):
 			raise ValueError(u"Not a RepositoryHook: %s" % hook)
-		if not hook in self._hooks:
+
+		if hook not in self._hooks:
 			self._hooks.append(hook)
 
 	def removeHook(self, hook):
