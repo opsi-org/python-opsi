@@ -67,36 +67,27 @@ __version__ = '4.0.7.46'
 logger = Logger()
 
 
-FileInfo = namedtuple('FileInfo', 'productId productVersion packageVersion customId')
+FileInfo = namedtuple('FileInfo', 'productId version')
 
 
 def parseFilename(filename):
 	"""
 	Parse the filename of a '.opsi' file for meta information.
 
-	The information retrieved resembles product Id, product Version,
-	package Version and custom identifier.
-	If no custom identifier is found this will be `None`.
-
 	:raises ValueError: If processing a filename not ending with `.opsi`.
 	:returns: Information about the file based on the filename.
-	:rtype: namedtuple with attributes `productId`, `productVersion`, \
-`packageVersion`, `customId`.
+	:rtype: namedtuple with attributes `productId`, `version`.
 	"""
 	if not filename.endswith('.opsi'):
 		raise ValueError("Not handling non .opsi filename.")
 
 	parts = filename[:-5]  # removing .opsi
-	try:
-		parts, custom = parts.rsplit('~', 1)
-	except ValueError:
-		custom = None
-		parts = parts
+	parts = parts.split('_')
 
-	parts, packageVersion = parts.rsplit('-', 1)
-	productId, productVersion = parts.rsplit('_', 1)
+	productId = '_'.join(parts[:-1])
+	version = '_'.join(parts[-1:])
 
-	return FileInfo(productId, productVersion, packageVersion, custom)
+	return FileInfo(productId, version)
 
 
 class HostKeyFile(ConfigFile):
