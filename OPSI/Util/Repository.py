@@ -597,7 +597,7 @@ class Repository:
 							if c['size'] > 1024 * 1024:
 								sizeString = "%0.2f MByte" % (float(c['size']) / (1024 * 1024))
 							elif c['size'] > 1024:
-								sizeString = "%0.2f kByte" % (float(c['size'])/ 1024)
+								sizeString = "%0.2f kByte" % (float(c['size']) / 1024)
 							overallProgressSubject.setMessage(u"[%s/%s] %s (%s)" \
 									% (countLenFormat % fileCount, totalFiles, c['name'], sizeString))
 						path = [destination]
@@ -862,7 +862,7 @@ class HTTPRepository(Repository):
 			logger.addConfidentialString(self._password)
 
 		auth = u'%s:%s' % (self._username, self._password)
-		self._auth = 'Basic '+ base64.b64encode(auth.encode('latin-1'))
+		self._auth = 'Basic ' + base64.b64encode(auth.encode('latin-1'))
 
 		self._connectionPool = getSharedConnectionPool(
 			scheme=self._protocol,
@@ -936,7 +936,7 @@ class HTTPRepository(Repository):
 					headers['range'] = 'bytes=%s-%s' % (sbn, ebn)
 				if self._proxy:
 					conn.putrequest('GET', source, skip_host=True)
-					conn.putheader('Host', "%s:%s" % (self._host,self._port))
+					conn.putheader('Host', "%s:%s" % (self._host, self._port))
 				else:
 					conn.putrequest('GET', source)
 				for key, value in headers.items():
