@@ -176,8 +176,11 @@ class Repository:
 	def removeHook(self, hook):
 		if not isinstance(hook, RepositoryHook):
 			raise ValueError(u"Not a RepositoryHook: %s" % hook)
-		if hook in self._hooks:
+
+		try:
 			self._hooks.remove(hook)
+		except ValueError:  # element not in list
+			pass
 
 	def attachObserver(self, observer):
 		if observer not in self._observers:
