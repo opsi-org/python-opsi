@@ -215,12 +215,16 @@ class Repository:
 
 	def _calcSpeed(self, read):
 		now = time.time()
-		if not hasattr(self, '_lastSpeedCalcBytes'):
-			self._lastSpeedCalcBytes = 0
-		if not hasattr(self, '_lastAverageSpeedCalcBytes'):
-			self._lastAverageSpeedCalcBytes = 0
-		self._lastSpeedCalcBytes += read
-		self._lastAverageSpeedCalcBytes += read
+
+		try:
+			self._lastSpeedCalcBytes += read
+		except AttributeError:
+			self._lastSpeedCalcBytes = read
+
+		try:
+			self._lastAverageSpeedCalcBytes += read
+		except AttributeError:
+			self._lastAverageSpeedCalcBytes = read
 
 		if self._lastSpeedCalcTime is not None:
 			delta = now - self._lastSpeedCalcTime
@@ -228,15 +232,16 @@ class Repository:
 				self._currentSpeed = float(self._lastSpeedCalcBytes) / float(delta)
 				self._lastSpeedCalcBytes = 0
 
-		if not hasattr(self, '_lastAverageSpeedCalcTime'):
-			self._lastAverageSpeedCalcTime = now
-			self._averageSpeed = self._currentSpeed
-		else:
+		try:
 			delta = now - self._lastAverageSpeedCalcTime
 			if delta > 1:
 				self._averageSpeed = float(self._lastAverageSpeedCalcBytes) / float(delta)
 				self._lastAverageSpeedCalcBytes = 0
 				self._lastAverageSpeedCalcTime = now
+		except AttributeError:
+			self._lastAverageSpeedCalcTime = now
+			self._averageSpeed = self._currentSpeed
+
 		self._lastSpeedCalcTime = now
 
 	def _bandwidthLimit(self):
