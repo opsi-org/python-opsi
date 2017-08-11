@@ -56,8 +56,8 @@ import pytest
 @pytest.mark.parametrize("ip, network", [
 	('10.10.1.1', '10.10.0.0/16'),
 	('10.10.1.1', '10.10.0.0/23'),
-	pytest.mark.xfail(('10.10.1.1', '10.10.0.0/24')),
-	pytest.mark.xfail(('10.10.1.1', '10.10.0.0/25')),
+	pytest.param('10.10.1.1', '10.10.0.0/24', marks=pytest.mark.xfail),
+	pytest.param('10.10.1.1', '10.10.0.0/25', marks=pytest.mark.xfail),
 ])
 def testNetworkWithSlashInNotation(ip, network):
 	assert ipAddressInNetwork(ip, network)
@@ -451,9 +451,9 @@ def testLibrsyncPatchFileAvoidsPatchingSameFile(old, delta, new):
 
 @pytest.mark.parametrize("first, operator, second", [
 	('1.0', '<', '2.0'),
-	pytest.mark.xfail(('1.0', '>', '2.0')),
-	pytest.mark.xfail(('1.0', '>', '1.0')),
-	pytest.mark.xfail(('1.2.3.5', '>', '2.2.3.5')),
+	pytest.param('1.0', '>', '2.0', marks=pytest.mark.xfail),
+	pytest.param('1.0', '>', '1.0', marks=pytest.mark.xfail),
+	pytest.param('1.2.3.5', '>', '2.2.3.5', marks=pytest.mark.xfail),
 ])
 def testComparingVersionsOfSameSize(first, operator, second):
 	assert compareVersions(first, operator, second)
@@ -461,7 +461,7 @@ def testComparingVersionsOfSameSize(first, operator, second):
 
 @pytest.mark.parametrize("v1, operator, v2", [
 	('1.0', '', '1.0'),
-	pytest.mark.xfail(('1', '', '2')),
+	pytest.param('1', '', '2', marks=pytest.mark.xfail),
 ])
 def testComparingWithoutGivingOperatorDefaultsToEqual(v1, operator, v2):
 	assert compareVersions(v1, operator, v2)
@@ -546,8 +546,8 @@ def testGetGlobalConfigExitsGracefullyIfFileIsMissing(globalConfigTestFile):
 
 @pytest.mark.parametrize("value", [
 	re.compile("ABC"),
-	pytest.mark.xfail("no pattern"),
-	pytest.mark.xfail("SRE_Pattern"),
+	pytest.param("no pattern", marks=pytest.mark.xfail),
+	pytest.param("SRE_Pattern", marks=pytest.mark.xfail),
 ])
 def testIfObjectIsRegExObject(value):
 	assert isRegularExpressionPattern(value)

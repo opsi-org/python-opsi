@@ -38,9 +38,9 @@ import pytest
 
 @pytest.mark.parametrize("text", [
 	'.svn',
-	pytest.mark.xfail('.svnotmatching'),
+	pytest.param('.svnotmatching', marks=pytest.mark.xfail),
 	'.git',
-	pytest.mark.xfail('.gitignore'),
+	pytest.param('.gitignore', marks=pytest.mark.xfail),
 ])
 def testDirectoryExclusion(text):
 	assert re.match(Product.EXCLUDE_DIRS_ON_PACK, text)

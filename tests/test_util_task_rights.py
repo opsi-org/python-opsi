@@ -108,7 +108,7 @@ def testGettingDirectories(patchUserInfo, depotDirectory):
 
 @pytest.mark.parametrize("testDir", [
     '/opt/pcbin/install/foo',
-    pytest.mark.xfail('/tmp'),
+    pytest.param('/tmp', marks=pytest.mark.xfail),
 ])
 def testOptPcbinGetRelevantIfInParameter(emptyDepotDirectoryCache, depotDirectory, testDir):
     directories = getDepotDirectory(testDir)
@@ -244,7 +244,7 @@ def testGettingDirectoriesAndRights(patchUserInfo):
     assert rights.correctLinks
 
 
-@pytest.mark.parametrize("directoryExists", [True, pytest.mark.xfail(False)])
+@pytest.mark.parametrize("directoryExists", [True, pytest.param(False, marks=pytest.mark.xfail)])
 @pytest.mark.parametrize("dir, function", [
     ('/var/www/html/opsi', 'isCentOS'),
     ('/var/www/html/opsi', 'isDebian'),
@@ -269,7 +269,7 @@ def testGettingWebserverRepositoryPath(dir, function, directoryExists):
     ('isSLES', 'wwwrun', 'www'),
     ('isUbuntu', 'www-data', 'www-data'),
     ('isUCS', 'www-data', 'www-data'),
-    pytest.mark.xfail(('forceHostId', '', '')),
+    pytest.param('forceHostId', '', '', marks=pytest.mark.xfail),
 ])
 def testGettingWebserverUsernameAndGroupname(function, username, groupname):
     with disableOSChecks(OS_CHECK_FUNCTIONS[:]):
