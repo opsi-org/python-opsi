@@ -106,7 +106,7 @@ def testReadingWindowsDomainFromSambaConfig():
     u'software-on-demand.product-group-ids',
     u'product_sort_algorithm',
     u'clientconfig.dhcpd.filename',
-    pytest.mark.xfail(u'software-on-demand.show-details', strict=True),
+    pytest.param(u'software-on-demand.show-details', marks=pytest.mark.xfail),
     u'opsiclientd.event_user_login.active',
     u'opsiclientd.event_user_login.action_processor_command',
 ])

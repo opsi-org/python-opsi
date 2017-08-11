@@ -78,8 +78,8 @@ def testOnlyValidLogTypesAreWritten(logBackend):
 @pytest.mark.parametrize("objectId", [
 	'foo.bar.baz',
 	'opsiconfd',
-	pytest.mark.xfail(''),
-	pytest.mark.xfail(None),
+	pytest.param('', marks=pytest.mark.xfail),
+	pytest.param(None, marks=pytest.mark.xfail),
 ])
 @pytest.mark.parametrize("logType", [
 	'bootimage',

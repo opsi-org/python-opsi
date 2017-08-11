@@ -282,9 +282,9 @@ def testReadingDevicesContents(filename):
 
 
 @pytest.mark.parametrize("filename", [
-    pytest.mark.xfail('txtsetupoem_testdata_1.oem'),
+    pytest.param('txtsetupoem_testdata_1.oem', marks=pytest.mark.xfail),
     'txtsetupoem_testdata_2.oem',
-    pytest.mark.xfail('txtsetupoem_testdata_3.oem'),
+    pytest.param('txtsetupoem_testdata_3.oem', marks=pytest.mark.xfail),
     'txtsetupoem_testdata_4.oem',
     'txtsetupoem_testdata_5.oem',
     'txtsetupoem_testdata_6.oem',
