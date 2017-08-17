@@ -1,4 +1,3 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 # This module is part of the desktop management solution opsi
@@ -39,6 +38,7 @@ import tempfile
 import shutil
 import socket
 import StringIO
+from collections import namedtuple
 from contextlib import closing
 from hashlib import sha1
 from subprocess import Popen, PIPE, STDOUT
@@ -62,9 +62,32 @@ if os.name == 'posix':
 	import pwd
 	from OPSI.System.Posix import SysInfo
 
-__version__ = '4.0.7.38'
+__version__ = '4.0.7.46'
 
 logger = Logger()
+
+
+FileInfo = namedtuple('FileInfo', 'productId version')
+
+
+def parseFilename(filename):
+	"""
+	Parse the filename of a '.opsi' file for meta information.
+
+	:raises ValueError: If processing a filename not ending with `.opsi`.
+	:returns: Information about the file based on the filename.
+	:rtype: namedtuple with attributes `productId`, `version`.
+	"""
+	if not filename.endswith('.opsi'):
+		raise ValueError("Not handling non .opsi filename.")
+
+	parts = filename[:-5]  # removing .opsi
+	parts = parts.split('_')
+
+	productId = '_'.join(parts[:-1])
+	version = '_'.join(parts[-1:])
+
+	return FileInfo(productId, version)
 
 
 class HostKeyFile(ConfigFile):
