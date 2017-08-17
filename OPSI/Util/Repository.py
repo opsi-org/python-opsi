@@ -53,7 +53,7 @@ from OPSI.Util.HTTP import getSharedConnectionPool, urlsplit, HTTPResponse
 if os.name == 'nt':
 	from OPSI.System.Windows import getFreeDrive
 
-__version__ = '4.0.7.1'
+__version__ = '4.0.7.46'
 
 logger = Logger()
 
