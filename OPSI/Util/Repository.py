@@ -772,7 +772,7 @@ class FileRepository(Repository):
 				else:
 					dstWriteMode = 'wb'
 
-				with open(destination, 'wb') as dst:
+				with open(destination, dstWriteMode) as dst:
 					self._transferDown(src, dst, progressSubject, bytes=bytes)
 		except Exception as error:
 			raise RepositoryError(u"Failed to download '%s' to '%s': %s" \
