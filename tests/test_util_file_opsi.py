@@ -339,8 +339,11 @@ def testParsingPackageContentFile(outsideFile):
 
 @pytest.mark.parametrize("filename, expected", [
 	('sap_7.40.8-3.opsi', FileInfo('sap', '7.40.8-3')),
+	('sap_7.40.8-3.opsi.md5', FileInfo('sap', '7.40.8-3')),
+	('sap_7.40.8-3.opsi.zsync', FileInfo('sap', '7.40.8-3')),
 	('sap_dev_bex_7.40.8-3.opsi', FileInfo('sap_dev_bex', '7.40.8-3')),
 	('firefox_52.3.0esror55.0-2~fra3264.opsi', FileInfo('firefox', '52.3.0esror55.0-2~fra3264')),
+	('README.txt', None),
 ])
 def testParsingFile(filename, expected):
 	assert expected == parseFilename(filename)
