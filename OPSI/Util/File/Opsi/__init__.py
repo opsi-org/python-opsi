@@ -62,7 +62,7 @@ if os.name == 'posix':
 	import pwd
 	from OPSI.System.Posix import SysInfo
 
-__version__ = '4.0.7.46'
+__version__ = '4.0.7.47'
 
 logger = Logger()
 
@@ -75,17 +75,18 @@ def parseFilename(filename):
 	Parse the filename of a '.opsi' file for meta information.
 
 	:raises ValueError: If processing a filename not ending with `.opsi`.
-	:returns: Information about the file based on the filename.
+	:returns: Information about the file based on the filename. \
+If no information can be extracted returns None.
 	:rtype: namedtuple with attributes `productId`, `version`.
 	"""
-	if not filename.endswith('.opsi'):
-		raise ValueError("Not handling non .opsi filename.")
-
-	parts = filename[:-5]  # removing .opsi
+	parts = filename.rsplit('.opsi', 1)[0]
 	parts = parts.split('_')
 
 	productId = '_'.join(parts[:-1])
 	version = '_'.join(parts[-1:])
+
+	if not (productId and version):
+		return None
 
 	return FileInfo(productId, version)
 
