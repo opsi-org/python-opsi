@@ -842,7 +842,6 @@ def getActiveSessionIds(winApiBugCommand = None):
 	else:
 		for s in win32security.LsaEnumerateLogonSessions():
 			sessionData = win32security.LsaGetLogonSessionData(s)
-			logger.debug("Session found with name: '%s'" % sessionData['UserName'])
 			if not forceInt(sessionData['LogonType']) in (2, 10) or sessionData['LogonDomain'] in invalidLogonDomains:
 				continue
 			sessionId = forceInt(sessionData['Session'])
