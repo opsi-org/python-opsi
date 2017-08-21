@@ -6,6 +6,7 @@
 .pydevproject
 *.egg-info
 *.sublime-*
+*.idea/
 tests/Backends/config.py
 
 # QA files:

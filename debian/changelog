@@ -1,3 +1,10 @@
+python-opsi (4.0.7.48-1) stable; urgency=medium
+
+  * System.Windows.getActiveSessionIds fix for nt6
+  * hostControl: Implementation for modified opsiclientd controlserver port over configState
+
+ -- Erol Ueluekmen <e.ueluekmen@uib.de>  Mon, 21 Aug 2017 16:07:09 +0200
+
 python-opsi (4.0.7.47-1) stable; urgency=medium
 
   * Changed OPSI.Util.File.Opsi.parseFilename to be able to handle files

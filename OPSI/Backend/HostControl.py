@@ -57,7 +57,7 @@ logger = Logger()
 
 
 class RpcThread(KillableThread):
-	def __init__(self, hostControlBackend, hostId, address, username, password, method, params=[]):
+	def __init__(self, hostControlBackend, hostId, address, username, password, method, params=[], hostPort=0):
 		KillableThread.__init__(self)
 		self.hostControlBackend = hostControlBackend
 		self.hostId = forceHostId(hostId)
@@ -70,6 +70,10 @@ class RpcThread(KillableThread):
 		self.result = None
 		self.started = 0
 		self.ended = 0
+		if hostPort:
+			self.hostPort = forceInt(hostPort)
+		else:
+			self.hostPort = self.hostControlBackend._opsiclientdPort
 
 	def run(self):
 		self.started = time.time()
@@ -88,7 +92,7 @@ class RpcThread(KillableThread):
 
 			connection = HTTPSConnection(
 				host=self.address,
-				port=self.hostControlBackend._opsiclientdPort,
+				port=self.hostPort,
 				timeout=timeout
 			)
 			with closingConnection(connection) as connection:
@@ -223,11 +227,21 @@ class HostControlBackend(ExtendedBackend):
 		rpcts = []
 		for host in self._context.host_getObjects(id=hostIds):  # pylint: disable=maybe-no-member
 			try:
+				try:
+					port = None
+					configState = self._context.configState_getObjects(configId="opsiclientd.control_server.port", objectId=host.id)
+					if configState:
+						logger.notice("Custom Port for opsiclientd found %s" % type(int(configState[0].values[0])))
+						port = int(configState[0].values[0])
+				except Exception as e:
+					logger.critical("Exception: %s" % e)
+					pass
 				address = self._getHostAddress(host)
 				rpcts.append(
 					RpcThread(
 						hostControlBackend=self,
 						hostId=host.id,
+						hostPort=port,
 						address=address,
 						username=u'',
 						password=host.opsiHostKey,
