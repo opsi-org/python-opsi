@@ -273,3 +273,16 @@ def testLimitingTheReadTextInSize(patchLogDir, longText, sizeLimit):
 	textFromBackend = cdb.log_read('instlog', objectId=objId, maxSize=limit)
 
 	assert len(textFromBackend.encode('utf-8')) < limit
+
+
+def testGettingSystemConfig(configDataBackend):
+	sysConfig = configDataBackend.backend_getSystemConfiguration()
+
+	assert 'log' in sysConfig
+
+	logSizeLimit = sysConfig['log']['size_limit']
+	logSizeLimit = int(logSizeLimit)
+	assert logSizeLimit is not None
+
+	for expectedLogType in ('bootimage', 'clientconnect', 'instlog', 'opsiconfd', 'userlogin', 'winpe'):
+		assert expectedLogType in sysConfig['log']['types']

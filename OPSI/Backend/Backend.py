@@ -623,6 +623,29 @@ containing the localisation of the hardware audit.
 		"""
 		pass
 
+	def backend_getSystemConfiguration(self):
+		"""
+		Returns current system configuration.
+
+		This holds information about server-side settings that may be
+		relevant for clients.
+
+		Under the key `log` information about log settings will be
+		returned in form of a dict.
+		In it under `size_limit` you will find the amount of bytes
+		currently allowed as maximum log size.
+		Under `types` you will find a list with currently supported log
+		types.
+
+		:rtype: dict
+		"""
+		return {
+			"log": {
+				"size_limit": DEFAULT_MAX_LOGFILE_SIZE,
+				"types": [logType for logType in LOG_TYPES]
+			}
+		}
+
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Logs                                                                                      -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
