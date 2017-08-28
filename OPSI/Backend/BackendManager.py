@@ -37,8 +37,8 @@ import sys
 import types
 from contextlib import closing
 
-from OPSI.Backend.Backend import (Backend, ConfigDataBackend,
-	ExtendedBackend, ExtendedConfigDataBackend,
+from OPSI.Backend.Backend import (
+	Backend, ConfigDataBackend, ExtendedBackend, ExtendedConfigDataBackend,
 	getArgAndCallString)
 from OPSI.Backend.Depotserver import DepotserverBackend
 from OPSI.Backend.HostControl import HostControlBackend
@@ -372,11 +372,11 @@ class BackendDispatcher(Backend):
 			backendInstance = None
 			l["config"]["context"] = self
 			b = __import__(l['module'], globals(), locals(), "%sBackend" % l['module'], -1)
-			self._backends[backend]["instance"] = getattr(b, "%sBackend"%l['module'])(**l['config'])
+			self._backends[backend]["instance"] = getattr(b, "%sBackend" % l['module'])(**l['config'])
 
 	def _createInstanceMethods(self):
 		logger.debug(u"BackendDispatcher is creating instance methods")
-		for Class in (ConfigDataBackend, ):  #  Also apply to ExtendedConfigDataBackend?
+		for Class in (ConfigDataBackend, ):  # Also apply to ExtendedConfigDataBackend?
 			for methodName, functionRef in inspect.getmembers(Class, inspect.ismethod):
 				if methodName.startswith('_'):
 					# Not a public method
@@ -489,7 +489,8 @@ class BackendExtender(ExtendedBackend):
 				return
 
 			try:
-				confFiles = (os.path.join(self._extensionConfigDir, filename)
+				confFiles = (
+					os.path.join(self._extensionConfigDir, filename)
 					for filename in sorted(os.listdir(self._extensionConfigDir))
 					if filename.endswith('.conf')
 				)
@@ -940,8 +941,10 @@ class BackendAccessControl(object):
 				if acl.get('allowAttributes'):
 					attributesToAdd = acl['allowAttributes']
 				elif acl.get('denyAttributes'):
-					attributesToAdd = (attribute for attribute in objHash
-										if attribute not in acl['denyAttributes'])
+					attributesToAdd = (
+						attribute for attribute in objHash
+						if attribute not in acl['denyAttributes']
+					)
 				else:
 					attributesToAdd = objHash.keys()
 
