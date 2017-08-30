@@ -3,12 +3,13 @@
 # 
 # Translators:
 # Alexander Savchenko, 2014
+# Вячеслав Сухарников, 2016-2017
 msgid ""
 msgstr ""
 "Project-Id-Version: opsi.org\n"
-"POT-Creation-Date: 2015-02-02 10:44+CET\n"
-"PO-Revision-Date: 2015-08-31 17:25+0000\n"
-"Last-Translator: Alexander Savchenko\n"
+"POT-Creation-Date: 2016-08-24 17:11+CEST\n"
+"PO-Revision-Date: 2017-08-07 11:20+0000\n"
+"Last-Translator: Вячеслав Сухарников\n"
 "Language-Team: Russian (http://www.transifex.com/opsi-org/opsiorg/language/ru/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -19,12 +20,12 @@ msgstr ""
 
 #: ../OPSI/UI.py:114 ../OPSI/UI.py:117 ../OPSI/UI.py:138 ../OPSI/UI.py:141
 #: ../OPSI/UI.py:144 ../OPSI/UI.py:147 ../OPSI/UI.py:244 ../OPSI/UI.py:283
-#: ../OPSI/UI.py:396 ../OPSI/UI.py:472 ../OPSI/UI.py:580 ../OPSI/UI.py:680
+#: ../OPSI/UI.py:396 ../OPSI/UI.py:472 ../OPSI/UI.py:579 ../OPSI/UI.py:679
 msgid "OK"
-msgstr ""
+msgstr "ОК"
 
 #: ../OPSI/UI.py:114 ../OPSI/UI.py:244
-msgid "An error occured"
+msgid "An error occurred"
 msgstr "Произошла ошибка"
 
 #: ../OPSI/UI.py:117 ../OPSI/UI.py:283
@@ -33,50 +34,50 @@ msgstr "Сообщение"
 
 #: ../OPSI/UI.py:120 ../OPSI/UI.py:126 ../OPSI/UI.py:322 ../OPSI/UI.py:352
 msgid "Progress"
-msgstr ""
+msgstr "Выполняется"
 
 #: ../OPSI/UI.py:123 ../OPSI/UI.py:129 ../OPSI/UI.py:337 ../OPSI/UI.py:367
 msgid "Copy progress"
-msgstr ""
+msgstr "Копируется"
 
 #: ../OPSI/UI.py:132 ../OPSI/UI.py:382
 msgid "Text"
-msgstr ""
+msgstr "Текст"
 
 #: ../OPSI/UI.py:138 ../OPSI/UI.py:141 ../OPSI/UI.py:144 ../OPSI/UI.py:147
-#: ../OPSI/UI.py:396 ../OPSI/UI.py:472 ../OPSI/UI.py:580 ../OPSI/UI.py:680
+#: ../OPSI/UI.py:396 ../OPSI/UI.py:472 ../OPSI/UI.py:579 ../OPSI/UI.py:679
 msgid "Cancel"
 msgstr "Отменить"
 
 #: ../OPSI/UI.py:138 ../OPSI/UI.py:396
 msgid "Please type text"
-msgstr ""
+msgstr "Пожалуйста, введите текст"
 
 #: ../OPSI/UI.py:141 ../OPSI/UI.py:472
 msgid "Please select"
-msgstr ""
+msgstr "Пожалуйста, выберите"
 
-#: ../OPSI/UI.py:144 ../OPSI/UI.py:580
+#: ../OPSI/UI.py:144 ../OPSI/UI.py:579
 msgid "Please fill in"
-msgstr ""
+msgstr "Пожалуйста, заполните"
 
-#: ../OPSI/UI.py:147 ../OPSI/UI.py:680
+#: ../OPSI/UI.py:147 ../OPSI/UI.py:679
 msgid "Question"
-msgstr ""
+msgstr "Вопрос"
 
-#: ../OPSI/UI.py:152 ../OPSI/UI.py:169 ../OPSI/UI.py:184 ../OPSI/UI.py:734
-#: ../OPSI/UI.py:834 ../OPSI/UI.py:899
+#: ../OPSI/UI.py:152 ../OPSI/UI.py:169 ../OPSI/UI.py:184 ../OPSI/UI.py:733
+#: ../OPSI/UI.py:833 ../OPSI/UI.py:898
 msgid "Title"
-msgstr ""
+msgstr "Заголовок"
 
 #: ../OPSI/UI.py:275 ../OPSI/UI.py:314
 msgid "<F12> %s | <Space> select | <Up/Down> scroll text"
-msgstr ""
+msgstr "<F12> %s | <Space> выбрать | <Up/Down> листать текст"
 
-#: ../OPSI/UI.py:451 ../OPSI/UI.py:553 ../OPSI/UI.py:652 ../OPSI/UI.py:712
+#: ../OPSI/UI.py:451 ../OPSI/UI.py:552 ../OPSI/UI.py:651 ../OPSI/UI.py:711
 msgid "<ESC> %s | <F12> %s | <Tab> move cursor | <Space> select"
-msgstr ""
+msgstr "<ESC> %s | <F12> %s | <Tab> переместить курсор | <Space> выбрать"
 
-#: ../OPSI/UI.py:453 ../OPSI/UI.py:555 ../OPSI/UI.py:654 ../OPSI/UI.py:714
+#: ../OPSI/UI.py:453 ../OPSI/UI.py:554 ../OPSI/UI.py:653 ../OPSI/UI.py:713
 msgid " | <Up/Down> scroll text"
-msgstr ""
+msgstr " | <Up/Down> листать текст"

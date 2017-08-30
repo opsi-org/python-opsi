@@ -736,6 +736,7 @@ class BackendAccessControl(object):
 
 				return response
 
+		logger.debug2(u"Attempting PAM authentication as user {0!r}...", self._username)
 		try:
 			# Create instance
 			auth = PAM.pam()
@@ -753,11 +754,13 @@ class BackendAccessControl(object):
 				pass
 			auth.authenticate()
 			auth.acct_mgmt()
+			logger.debug2("PAM authentication successful.")
 
 			if self._forceGroups is not None:
 				self._userGroups = set(self._forceGroups)
 				logger.info(u"Forced groups for user '%s': %s" % (self._username, self._userGroups))
 			else:
+				logger.debug("Reading groups of user...")
 				primaryGroup = forceUnicode(grp.getgrgid(pwd.getpwnam(self._username)[3])[0])
 				logger.debug(u"Primary group of user {0!r} is {1!r}", self._username, primaryGroup)
 

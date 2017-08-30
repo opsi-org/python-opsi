@@ -29,8 +29,9 @@ import random
 
 from OPSI.Util import findFiles, md5sum
 from OPSI.Util.File.Opsi import (
-	BackendDispatchConfigFile, HostKeyFile, OpsiConfFile, PackageContentFile,
-	PackageControlFile)
+	BackendDispatchConfigFile, FileInfo, HostKeyFile, OpsiConfFile,
+	PackageContentFile, PackageControlFile, parseFilename,
+)
 
 from .helpers import createTemporaryTestfile, workInTemporaryDirectory
 
@@ -523,3 +524,15 @@ def testHostKeyFileParsingSkippingInvalidEntries(emptyFile, hostKeyEntries):
 
 	hkf = HostKeyFile(emptyFile)
 	hkf.parse()
+
+
+@pytest.mark.parametrize("filename, expected", [
+	('sap_7.40.8-3.opsi', FileInfo('sap', '7.40.8-3')),
+	('sap_7.40.8-3.opsi.md5', FileInfo('sap', '7.40.8-3')),
+	('sap_7.40.8-3.opsi.zsync', FileInfo('sap', '7.40.8-3')),
+	('sap_dev_bex_7.40.8-3.opsi', FileInfo('sap_dev_bex', '7.40.8-3')),
+	('firefox_52.3.0esror55.0-2~fra3264.opsi', FileInfo('firefox', '52.3.0esror55.0-2~fra3264')),
+	('README.txt', None),
+])
+def testParsingFile(filename, expected):
+	assert expected == parseFilename(filename)

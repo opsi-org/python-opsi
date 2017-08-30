@@ -53,6 +53,11 @@ BuildRequires:  gettext
 %else
 BuildRequires:  gettext-runtime
 %endif
+%if 0%{?leap_version} == 420300
+# Workaround for missing dependency at python-cryptography
+# See https://bugzilla.opensuse.org/show_bug.cgi?id=1052927
+Requires: python-setuptools
+%endif
 
 %define toplevel_dir %{name}-%{version}
 
@@ -188,6 +193,7 @@ fi
 %config /etc/opsi/hwaudit/locales/en_US
 %config /etc/opsi/hwaudit/locales/es_ES
 %config /etc/opsi/hwaudit/locales/fr_FR
+%config /etc/opsi/hwaudit/locales/nl_NL
 %config /etc/opsi/hwaudit/locales/ru_RU
 %config(noreplace) /etc/opsi/server_commands_default.conf
 
