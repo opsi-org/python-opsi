@@ -472,7 +472,8 @@ def testSearchingForIdents(extendedConfigDataBackend, query):
 
 
 @pytest.mark.requiresModulesFile  # SQLite needs a license
-def testRenamingDepotServer(extendedConfigDataBackend, address='fqdn', newId='hello.world.test'):
+@pytest.mark.parametrize("addressType", ['fqdn'])
+def testRenamingDepotServer(extendedConfigDataBackend, addressType, newId='hello.world.test'):
     backend = extendedConfigDataBackend
     configServer = getConfigServer()
 
@@ -480,14 +481,14 @@ def testRenamingDepotServer(extendedConfigDataBackend, address='fqdn', newId='he
     initializeConfigs(backend)
 
     # TODO: add test variant that uses the hostname or IP in the addresses
-    if address != 'fqdn':
+    # TODO: relevant for #3034?
+    if addressType != 'fqdn':
         raise RuntimeError("Unsupported address type")
     address = 'toberenamed.domain.test'
 
     depots = list(getDepotServers())
     oldServer = OpsiDepotserver(
         id='toberenamed.domain.test',
-        # opsiHostKey='19012334567845645678901232789012',
         depotLocalUrl='file:///var/lib/opsi/depot',
         depotRemoteUrl='smb://{address}/opsi_depot'.format(address=address),
         depotWebdavUrl=u'webdavs://{address}:4447/depot'.format(address=address),
@@ -615,8 +616,7 @@ def testRenamingDepotServer(extendedConfigDataBackend, address='fqdn', newId='he
     assert newServer.depotRemoteUrl == u'smb://%s/opsi_depot' % newId
     assert newServer.depotWebdavUrl == u'webdavs://%s:4447/depot' % newId
     assert newServer.repositoryRemoteUrl == u'webdavs://%s:4447/repository' % newId
-    # assert newServer.workbenchRemoteUrl == u'smb://{}/opsi_workbench'.format(newId)
-    # TODO: check depot attributes for changed hostname - #3034
+    assert newServer.workbenchRemoteUrl == u'smb://{}/opsi_workbench'.format(newId)
 
     assert not backend.productOnDepot_getObjects(depotId=oldServer.id)
     productsOnNewDepot = backend.productOnDepot_getObjects(depotId=newId)
@@ -655,14 +655,15 @@ def testRenamingDepotServer(extendedConfigDataBackend, address='fqdn', newId='he
             assert len(testConfig.defaultValues) == len(config.defaultValues)
             configsTested += 1
         elif config.id == 'clientconfig.configserver.url':
-            # TODO: this could be relevant for #1571
-            # print(oldServer.id)
-            # print(newId)
-            # print(config.possibleValues)
-            # assert any(newId in value for value in config.possibleValues)
-            assert newId not in config.defaultValues[0]
-            assert 2 == len(config.possibleValues)
             assert 1 == len(config.defaultValues)
+            assert newId not in config.defaultValues[0]  # Default is config server
+            assert 2 == len(config.possibleValues)
+
+            # TODO: this could be relevant for #1571
+            if addressType == 'fqdn':
+                assert any(newId in value for value in config.possibleValues)
+            else:
+                raise RuntimeError("Missing check for address type {0!r}".format(addressType))
             configsTested += 1
         elif config.id == 'clientconfig.depot.id':
             assert newId in config.possibleValues
