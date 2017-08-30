@@ -623,6 +623,29 @@ containing the localisation of the hardware audit.
 		"""
 		pass
 
+	def backend_getSystemConfiguration(self):
+		"""
+		Returns current system configuration.
+
+		This holds information about server-side settings that may be
+		relevant for clients.
+
+		Under the key `log` information about log settings will be
+		returned in form of a dict.
+		In it under `size_limit` you will find the amount of bytes
+		currently allowed as maximum log size.
+		Under `types` you will find a list with currently supported log
+		types.
+
+		:rtype: dict
+		"""
+		return {
+			"log": {
+				"size_limit": DEFAULT_MAX_LOGFILE_SIZE,
+				"types": [logType for logType in LOG_TYPES]
+			}
+		}
+
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Logs                                                                                      -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2059,200 +2082,274 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 	def host_renameOpsiClient(self, id, newId):
 		id = forceHostId(id)
 		newId = forceHostId(newId)
+
+		logger.info(u"Renaming client {0} to {1}...", id, newId)
+
 		clients = self._backend.host_getObjects(type='OpsiClient', id=id)
-		if not clients:
+		try:
+			client = clients[0]
+		except IndexError:
 			raise BackendMissingDataError(u"Cannot rename: client '%s' not found" % id)
 
 		if self._backend.host_getObjects(id=newId):
 			raise BackendError(u"Cannot rename: host '%s' already exists" % newId)
 
-		client = clients[0]
-
+		logger.info("Processing group mappings...")
 		objectToGroups = []
 		for objectToGroup in self._backend.objectToGroup_getObjects(groupType='HostGroup', objectId=client.id):
 			objectToGroup.setObjectId(newId)
 			objectToGroups.append(objectToGroup)
 
+		logger.info("Processing products on client...")
 		productOnClients = []
 		for productOnClient in self._backend.productOnClient_getObjects(clientId=client.id):
 			productOnClient.setClientId(newId)
 			productOnClients.append(productOnClient)
 
+		logger.info("Processing product property states...")
 		productPropertyStates = []
 		for productPropertyState in self._backend.productPropertyState_getObjects(objectId=client.id):
 			productPropertyState.setObjectId(newId)
 			productPropertyStates.append(productPropertyState)
 
+		logger.info("Processing config states...")
 		configStates = []
 		for configState in self._backend.configState_getObjects(objectId=client.id):
 			configState.setObjectId(newId)
 			configStates.append(configState)
 
+		logger.info("Processing software audit data...")
 		auditSoftwareOnClients = []
 		for auditSoftwareOnClient in self._backend.auditSoftwareOnClient_getObjects(clientId=client.id):
 			auditSoftwareOnClient.setClientId(newId)
 			auditSoftwareOnClients.append(auditSoftwareOnClient)
 
+		logger.info("Processing hardware audit data...")
 		auditHardwareOnHosts = []
 		for auditHardwareOnHost in self._backend.auditHardwareOnHost_getObjects(hostId=client.id):
 			auditHardwareOnHost.setHostId(newId)
 			auditHardwareOnHosts.append(auditHardwareOnHost)
 
+		logger.info("Processing license data...")
 		licenseOnClients = []
 		for licenseOnClient in self._backend.licenseOnClient_getObjects(clientId=client.id):
 			licenseOnClient.setClientId(newId)
 			licenseOnClients.append(licenseOnClient)
 
+		logger.info("Processing software licenses...")
 		softwareLicenses = []
 		for softwareLicense in self._backend.softwareLicense_getObjects(boundToHost=client.id):
 			softwareLicense.setBoundToHost(newId)
 			softwareLicenses.append(softwareLicense)
 
-		logger.info(u"Deleting client '%s'" % client)
+		logger.debug(u"Deleting client {0!r}", client)
 		self._backend.host_deleteObjects([client])
 
+		logger.info(u"Updating client {0}...", client.id)
 		client.setId(newId)
 		self.host_createObjects([client])
 
 		if objectToGroups:
+			logger.info(u"Updating group mappings...")
 			self.objectToGroup_createObjects(objectToGroups)
 		if productOnClients:
+			logger.info("Updating products on client...")
 			self.productOnClient_createObjects(productOnClients)
 		if productPropertyStates:
+			logger.info("Updating product property states...")
 			self.productPropertyState_createObjects(productPropertyStates)
 		if configStates:
+			logger.info("Updating config states...")
 			self.configState_createObjects(configStates)
 		if auditSoftwareOnClients:
+			logger.info("Updating software audit data...")
 			self.auditSoftwareOnClient_createObjects(auditSoftwareOnClients)
 		if auditHardwareOnHosts:
+			logger.info("Updating hardware audit data...")
 			self.auditHardwareOnHost_createObjects(auditHardwareOnHosts)
 		if licenseOnClients:
+			logger.info("Updating license data...")
 			self.licenseOnClient_createObjects(licenseOnClients)
 		if softwareLicenses:
+			logger.info("Updating software licenses...")
 			self.softwareLicense_createObjects(softwareLicenses)
 
-	def host_renameOpsiDepotserver(self, id, newId):
-		id = forceHostId(id)
+	def host_renameOpsiDepotserver(self, oldId, newId):
+		"""
+		Rename OpsiDepotserver with id `oldId` to `newId`.
+
+		References to the old id will be changed aswell.
+
+		:raises BackendMissingDataError: If no depot `oldId` is found.
+		:raises BackendError: If depot `newId` already exists.
+		:param oldId: ID of the server to change.
+		:type oldId: str
+		:param oldId: New ID.
+		:type newId: str
+		"""
+		oldId = forceHostId(oldId)
 		newId = forceHostId(newId)
-		oldHostname = id.split('.')[0]
+		oldHostname = oldId.split('.')[0]
 		newHostname = newId.split('.')[0]
 
-		depots = self._backend.host_getObjects(type='OpsiDepotserver', id=id)
-		if not depots:
-			raise BackendMissingDataError(u"Cannot rename: depot '%s' not found" % id)
+		depots = self._backend.host_getObjects(type='OpsiDepotserver', id=oldId)
+		try:
+			depot = depots[0]
+		except IndexError:
+			raise BackendMissingDataError(u"Cannot rename: depot '%s' not found" % oldId)
+
 		if self._backend.host_getObjects(id=newId):
 			raise BackendError(u"Cannot rename: host '%s' already exists" % newId)
 
-		depot = depots[0]
-		isConfigServer = bool(self.host_getIdents(type='OpsiConfigserver', id=id))
+		logger.info("Renaming depot {0} to {1}", oldId, newId)
 
+		logger.info("Processing ProductOnDepots...")
 		productOnDepots = []
-		for productOnDepot in self._backend.productOnDepot_getObjects(depotId=id):
+		for productOnDepot in self._backend.productOnDepot_getObjects(depotId=oldId):
 			productOnDepot.setDepotId(newId)
 			productOnDepots.append(productOnDepot)
 
+		def replaceServerId(someList):
+			"""
+			Replaces occurrences of `oldId` with `newId` in `someList`.
+
+			If someList is the wrong type or no change was made `False`
+			will be returned.
+
+			:type someList: list
+			:returns: `True` if a change was made.
+			:rtype: bool
+			"""
+			try:
+				someList.remove(oldId)
+				someList.append(newId)
+				return True
+			except (ValueError, AttributeError):
+				return False
+
+		logger.info("Processing ProductProperties...")
 		modifiedProductProperties = []
 		for productProperty in self._backend.productProperty_getObjects():
-			if productProperty.possibleValues and id in productProperty.possibleValues:
-				productProperty.possibleValues.remove(id)
-				productProperty.possibleValues.append(newId)
-				if productProperty not in modifiedProductProperties:
-					modifiedProductProperties.append(productProperty)
-			if productProperty.defaultValues and id in productProperty.defaultValues:
-				productProperty.defaultValues.remove(id)
-				productProperty.defaultValues.append(newId)
-				if productProperty not in modifiedProductProperties:
-					modifiedProductProperties.append(productProperty)
+			changed = replaceServerId(productProperty.possibleValues)
+			changed = replaceServerId(productProperty.defaultValues) or changed
+
+			if changed:
+				modifiedProductProperties.append(productProperty)
+
 		if modifiedProductProperties:
+			logger.info("Updating ProductProperties...")
 			self.productProperty_updateObjects(modifiedProductProperties)
 
+		logger.info("Processing ProductPropertyStates...")
 		productPropertyStates = []
-		for productPropertyState in self._backend.productPropertyState_getObjects(objectId=id):
+		for productPropertyState in self._backend.productPropertyState_getObjects(objectId=oldId):
 			productPropertyState.setObjectId(newId)
-			if productPropertyState.values and id in productPropertyState.values:
-				productPropertyState.values.remove(id)
-				productPropertyState.values.append(newId)
+			replaceServerId(productPropertyState.values)
 			productPropertyStates.append(productPropertyState)
 
+		logger.info("Processing Configs...")
 		modifiedConfigs = []
 		for config in self._backend.config_getObjects():
-			if config.possibleValues and id in config.possibleValues:
-				config.possibleValues.remove(id)
-				config.possibleValues.append(newId)
-				if config not in modifiedConfigs:
-					modifiedConfigs.append(config)
-			if config.defaultValues and id in config.defaultValues:
-				config.defaultValues.remove(id)
-				config.defaultValues.append(newId)
-				if config not in modifiedConfigs:
-					modifiedConfigs.append(config)
+			changed = replaceServerId(config.possibleValues)
+			changed = replaceServerId(config.defaultValues) or changed
+
+			if changed:
+				modifiedConfigs.append(config)
+
 		if modifiedConfigs:
+			logger.info("Updating Configs...")
 			self.config_updateObjects(modifiedConfigs)
 
+		logger.info("Processing ConfigStates...")
 		configStates = []
-		for configState in self._backend.configState_getObjects(objectId=id):
+		for configState in self._backend.configState_getObjects(objectId=oldId):
 			configState.setObjectId(newId)
-			if configState.values and id in configState.values:
-				configState.values.remove(id)
-				configState.values.append(newId)
+			replaceServerId(configState.values)
 			configStates.append(configState)
 
-		logger.info(u"Deleting depot '%s'" % depot)
+		logger.info(u"Deleting depot {0}", depot)
 		self._backend.host_deleteObjects([depot])
 
+		def changeAddress(value):
+			newValue = value.replace(oldId, newId)
+			newValue = newValue.replace(oldHostname, newHostname)
+			logger.debug("Changed {0!r} to {1!r}", value, newValue)
+			return newValue
+
+		logger.info("Updating depot and it's urls...")
 		depot.setId(newId)
 		if depot.repositoryRemoteUrl:
-			depot.setRepositoryRemoteUrl(depot.repositoryRemoteUrl.replace(id, newId).replace(oldHostname, newHostname))
+			depot.setRepositoryRemoteUrl(changeAddress(depot.repositoryRemoteUrl))
 		if depot.depotRemoteUrl:
-			depot.setDepotRemoteUrl(depot.depotRemoteUrl.replace(id, newId).replace(oldHostname, newHostname))
+			depot.setDepotRemoteUrl(changeAddress(depot.depotRemoteUrl))
 		if depot.depotWebdavUrl:
-			depot.setDepotWebdavUrl(depot.depotWebdavUrl.replace(id, newId).replace(oldHostname, newHostname))
+			depot.setDepotWebdavUrl(changeAddress(depot.depotWebdavUrl))
+		if depot.workbenchRemoteUrl:
+			depot.setWorkbenchRemoteUrl(changeAddress(depot.workbenchRemoteUrl))
 		self.host_createObjects([depot])
 
 		if productOnDepots:
+			logger.info("Updating ProductOnDepots...")
 			self.productOnDepot_createObjects(productOnDepots)
 		if productPropertyStates:
+			logger.info("Updating ProductPropertyStates...")
 			self.productPropertyState_createObjects(productPropertyStates)
 		if configStates:
+			logger.info("Updating ConfigStates...")
 			self.configState_createObjects(configStates)
 
+		def replaceOldAddress(values):
+			"""
+			Searches for old address in elements of `values` and
+			replaces it with the new address.
+
+			:type values: list
+			:returns: `True` if an item was changed, `False` otherwise.
+			:rtype: bool
+			"""
+			changed = False
+			try:
+				for i, value in enumerate(values):
+					if oldId in value:
+						values[i] = value.replace(oldId, newId)
+						changed = True
+			except TypeError:  # values probably None
+				pass
+
+			return changed
+
+		logger.info("Processing depot assignment configs...")
 		updateConfigs = []
 		for config in self._backend.config_getObjects(id=['clientconfig.configserver.url', 'clientconfig.depot.id']):
-			if config.defaultValues:
-				changed = False
-				for i, value in enumerate(config.defaultValues):
-					if id in value:
-						config.defaultValues[i] = value.replace(id, newId)
-						changed = True
+			changed = replaceOldAddress(config.defaultValues)
+			changed = replaceOldAddress(config.possibleValues) or changed
 
-				if changed:
-					updateConfigs.append(config)
+			if changed:
+				updateConfigs.append(config)
 
 		if updateConfigs:
+			logger.info("Processing depot assignment configs...")
 			self.config_updateObjects(updateConfigs)
 
+		logger.info("Processing depot assignment config states...")
 		updateConfigStates = []
 		for configState in self._backend.configState_getObjects(configId=['clientconfig.configserver.url', 'clientconfig.depot.id']):
-			if configState.values:
-				changed = False
-				for i, value in enumerate(configState.values):
-					if id in value:
-						configState.values[i] = value.replace(id, newId)
-						changed = True
-
-				if changed:
-					updateConfigStates.append(configState)
+			if replaceOldAddress(configState.values):
+				updateConfigStates.append(configState)
 
 		if updateConfigStates:
+			logger.info("Updating depot assignment config states...")
 			self.configState_updateObjects(updateConfigStates)
 
+		logger.info("Processing depots...")
 		modifiedDepots = []
 		for depot in self._backend.host_getObjects(type='OpsiDepotserver'):
-			if depot.masterDepotId and (depot.masterDepotId == id):
+			if depot.masterDepotId and (depot.masterDepotId == oldId):
 				depot.masterDepotId = newId
 				modifiedDepots.append(depot)
 
 		if modifiedDepots:
+			logger.info("Updating depots...")
 			self.host_updateObjects(modifiedDepots)
 
 	def host_createOpsiClient(self, id, opsiHostKey=None, description=None, notes=None, hardwareAddress=None, ipAddress=None, inventoryNumber=None, oneTimePassword=None, created=None, lastSeen=None):

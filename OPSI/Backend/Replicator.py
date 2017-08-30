@@ -358,7 +358,7 @@ class BackendReplicator(object):
 						# Missing the method - need to use extended backend
 						renamingBackend = self._extendedWriteBackend
 
-					renamingBackend.host_renameOpsiDepotserver(id=self.__oldServerId, newId=self.__newServerId)
+					renamingBackend.host_renameOpsiDepotserver(oldId=self.__oldServerId, newId=self.__newServerId)
 
 					newDepots = []
 					for depot in renamingBackend.host_getObjects(type='OpsiDepotserver'):

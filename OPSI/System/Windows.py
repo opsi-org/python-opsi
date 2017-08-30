@@ -849,6 +849,7 @@ def getActiveDesktopName():
 def getActiveSessionIds(winApiBugCommand = None):
 	sessionIds = []
 	logger.debug(u"Getting active sessions")
+	invalidLogonDomains = ["Window Manager", "Font Driver Host"]
 	if sys.getwindowsversion()[0] == 5 and getArchitecture() == "x64":
 		logger.debug(u"Using Workarround for problems with buggy winapi from nt5 x64")
 		try:
@@ -861,7 +862,7 @@ def getActiveSessionIds(winApiBugCommand = None):
 	else:
 		for s in win32security.LsaEnumerateLogonSessions():
 			sessionData = win32security.LsaGetLogonSessionData(s)
-			if forceInt(sessionData['LogonType']) not in (2, 10) or sessionData['LogonDomain'] == u'Window Manager':
+			if forceInt(sessionData['LogonType']) not in (2, 10) or sessionData['LogonDomain'] in invalidLogonDomains:
 				continue
 			sessionId = forceInt(sessionData['Session'])
 			if (sessionId == 0) and (sys.getwindowsversion()[0] >= 6):
@@ -875,6 +876,7 @@ def getActiveSessionIds(winApiBugCommand = None):
 
 def getActiveSessionId(verifyProcessRunning = "winlogon.exe", winApiBugCommand = None):
 	logger.debug("Getting ActiveSessionId")
+	invalidLogonDomains = ["Window Manager", "Font Driver Host"]
 	defaultSessionId = getActiveConsoleSessionId()
 	if (sys.getwindowsversion()[0] >= 6) and (defaultSessionId == 0):
 		defaultSessionId = 1
@@ -917,7 +919,7 @@ def getActiveSessionId(verifyProcessRunning = "winlogon.exe", winApiBugCommand =
 	else:
 		for s in win32security.LsaEnumerateLogonSessions():
 			sessionData = win32security.LsaGetLogonSessionData(s)
-			if forceInt(sessionData['LogonType']) not in (2, 10) or sessionData['LogonDomain'] == u'Window Manager':
+			if forceInt(sessionData['LogonType']) not in (2, 10) or sessionData['LogonDomain'] in invalidLogonDomains:
 				continue
 			sessionId = forceInt(sessionData['Session'])
 			if (sessionId == 0) and (sys.getwindowsversion()[0] >= 6):
