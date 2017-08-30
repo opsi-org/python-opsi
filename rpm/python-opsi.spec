@@ -6,8 +6,18 @@
 # package are under the same license as the package itself.
 #
 Name:           python-opsi
-BuildRequires:  python-devel gettext-devel python-setuptools
-Requires:       python >= 2.7 python-twisted-web >= 8.2 python-twisted-conch >= 8.2 python-magic python-sqlalchemy iproute duplicity lshw python-ldaptor
+BuildRequires:  gettext-devel
+BuildRequires:  python-devel
+BuildRequires:  python-setuptools
+Requires:       duplicity
+Requires:       iproute
+Requires:       lshw
+Requires:       python >= 2.7
+Requires:       python-ldaptor
+Requires:       python-magic
+Requires:       python-sqlalchemy
+Requires:       python-twisted-web >= 8.2
+Requires:       python-twisted-conch >= 8.2
 
 # Dependencies for twisted are a mess because most lack needed packages.
 # We try to avoid problems with this:
@@ -19,17 +29,29 @@ Requires:       pwdutils
 %{py_requires}
 %endif
 %if 0%{?rhel_version} || 0%{?centos_version} || 0%{?fedora_version}
-Requires:       m2crypto python-ctypes pyOpenSSL newt-python python-twisted >= 8.2 PyPAM MySQL-python
+Requires:       m2crypto
+Requires:       MySQL-python
+Requires:       newt-python
+Requires:       pyOpenSSL
+Requires:       PyPAM
+Requires:       python-ctypes
+Requires:       python-twisted >= 8.2
 %if 0%{?rhel_version} >= 700 || 0%{?centos_version} >= 700
 # To have ifconfig available
-Requires:	net-tools
+Requires:       net-tools
 %endif
 %else
-Requires:       python-m2crypto python-openssl lsb-release python-newt python-pam python-mysql
+Requires:       lsb-release
+Requires:       python-m2crypto
+Requires:       python-mysql
+Requires:       python-newt
+Requires:       python-openssl
+Requires:       python-pam
 %endif
 %if 0%{?suse_version}
 # Needed for working python-magic
-Requires:       libmagic1 python-pycrypto
+Requires:       libmagic1
+Requires:       python-pycrypto
 %else
 Requires:	python-crypto
 %endif
