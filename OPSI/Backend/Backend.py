@@ -2059,76 +2059,96 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 	def host_renameOpsiClient(self, id, newId):
 		id = forceHostId(id)
 		newId = forceHostId(newId)
+
+		logger.info(u"Renaming client {0} to {1}...", id, newId)
+
 		clients = self._backend.host_getObjects(type='OpsiClient', id=id)
-		if not clients:
+		try:
+			client = clients[0]
+		except IndexError:
 			raise BackendMissingDataError(u"Cannot rename: client '%s' not found" % id)
 
 		if self._backend.host_getObjects(id=newId):
 			raise BackendError(u"Cannot rename: host '%s' already exists" % newId)
 
-		client = clients[0]
-
+		logger.info("Processing group mappings...")
 		objectToGroups = []
 		for objectToGroup in self._backend.objectToGroup_getObjects(groupType='HostGroup', objectId=client.id):
 			objectToGroup.setObjectId(newId)
 			objectToGroups.append(objectToGroup)
 
+		logger.info("Processing products on client...")
 		productOnClients = []
 		for productOnClient in self._backend.productOnClient_getObjects(clientId=client.id):
 			productOnClient.setClientId(newId)
 			productOnClients.append(productOnClient)
 
+		logger.info("Processing product property states...")
 		productPropertyStates = []
 		for productPropertyState in self._backend.productPropertyState_getObjects(objectId=client.id):
 			productPropertyState.setObjectId(newId)
 			productPropertyStates.append(productPropertyState)
 
+		logger.info("Processing config states...")
 		configStates = []
 		for configState in self._backend.configState_getObjects(objectId=client.id):
 			configState.setObjectId(newId)
 			configStates.append(configState)
 
+		logger.info("Processing software audit data...")
 		auditSoftwareOnClients = []
 		for auditSoftwareOnClient in self._backend.auditSoftwareOnClient_getObjects(clientId=client.id):
 			auditSoftwareOnClient.setClientId(newId)
 			auditSoftwareOnClients.append(auditSoftwareOnClient)
 
+		logger.info("Processing hardware audit data...")
 		auditHardwareOnHosts = []
 		for auditHardwareOnHost in self._backend.auditHardwareOnHost_getObjects(hostId=client.id):
 			auditHardwareOnHost.setHostId(newId)
 			auditHardwareOnHosts.append(auditHardwareOnHost)
 
+		logger.info("Processing license data...")
 		licenseOnClients = []
 		for licenseOnClient in self._backend.licenseOnClient_getObjects(clientId=client.id):
 			licenseOnClient.setClientId(newId)
 			licenseOnClients.append(licenseOnClient)
 
+		logger.info("Processing software licenses...")
 		softwareLicenses = []
 		for softwareLicense in self._backend.softwareLicense_getObjects(boundToHost=client.id):
 			softwareLicense.setBoundToHost(newId)
 			softwareLicenses.append(softwareLicense)
 
-		logger.info(u"Deleting client '%s'" % client)
+		logger.debug(u"Deleting client {0!r}", client)
 		self._backend.host_deleteObjects([client])
 
+		logger.info(u"Updating client {0}...", client.id)
 		client.setId(newId)
 		self.host_createObjects([client])
 
 		if objectToGroups:
+			logger.info(u"Updating group mappings...")
 			self.objectToGroup_createObjects(objectToGroups)
 		if productOnClients:
+			logger.info("Updating products on client...")
 			self.productOnClient_createObjects(productOnClients)
 		if productPropertyStates:
+			logger.info("Updating product property states...")
 			self.productPropertyState_createObjects(productPropertyStates)
 		if configStates:
+			logger.info("Updating config states...")
 			self.configState_createObjects(configStates)
 		if auditSoftwareOnClients:
+			logger.info("Updating software audit data...")
 			self.auditSoftwareOnClient_createObjects(auditSoftwareOnClients)
 		if auditHardwareOnHosts:
+			logger.info("Updating hardware audit data...")
 			self.auditHardwareOnHost_createObjects(auditHardwareOnHosts)
 		if licenseOnClients:
+			logger.info("Updating license data...")
 			self.licenseOnClient_createObjects(licenseOnClients)
 		if softwareLicenses:
+			logger.info("Updating software licenses...")
 			self.softwareLicense_createObjects(softwareLicenses)
 
 	def host_renameOpsiDepotserver(self, id, newId):
