@@ -1,4 +1,4 @@
-python-opsi (4.1.1.17-1) UNRELEASED; urgency=medium
+python-opsi (4.1.1.17-1) stable; urgency=medium
 
   * Added logging to host_renameOpsiClient.
   * host_renameOpsiDepotserver will now also change the workbenchRemoteUrl.
