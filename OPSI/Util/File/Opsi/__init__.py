@@ -74,7 +74,6 @@ def parseFilename(filename):
 	"""
 	Parse the filename of a '.opsi' file for meta information.
 
-	:raises ValueError: If processing a filename not ending with `.opsi`.
 	:returns: Information about the file based on the filename. \
 If no information can be extracted returns None.
 	:rtype: namedtuple with attributes `productId`, `version`.
