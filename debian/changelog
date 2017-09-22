@@ -1,3 +1,9 @@
+python-opsi (4.0.7.49-1) experimental; urgency=medium
+
+  * fixed OpenSUSE Leap 42.3 opsi_workbench share
+
+ -- Mathias Radtke <m.radtke@uib.de>  Fri, 22 Sep 2017 10:54:06 +0200
+
 python-opsi (4.0.7.48-1) stable; urgency=medium
 
   * System.Windows.getActiveSessionIds fix for nt6
