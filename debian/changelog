@@ -1,3 +1,9 @@
+python-opsi (4.0.7.50-1) experimental; urgency=medium
+
+  * Corrected failing Samba tests
+
+ -- Mathias Radtke <m.radtke@uib.de>  Fri, 22 Sep 2017 12:22:40 +0200
+
 python-opsi (4.0.7.49-1) experimental; urgency=medium
 
   * fixed OpenSUSE Leap opsi_workbench share directory
