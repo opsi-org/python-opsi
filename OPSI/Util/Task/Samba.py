@@ -186,7 +186,7 @@ def _processConfig(lines):
 		newlines.append(u"[opsi_workbench]\n")
 		newlines.append(u"   available = yes\n")
 		newlines.append(u"   comment = opsi workbench\n")
-		if 'suse linux enterprise server' in getDistribution().lower():
+		if ('suse linux enterprise server' in getDistribution().lower()) or ('opensuse leap 42.3' in getDistribution().lower()):
 			newlines.append(u"   path = /var/lib/opsi/workbench\n")
 		else:
 			newlines.append(u"   path = /home/opsiproducts\n")
