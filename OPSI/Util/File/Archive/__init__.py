@@ -436,7 +436,7 @@ class CpioArchive(BaseArchive, PigzMixin):
 			curDir = os.path.abspath(os.getcwd())
 			os.chdir(targetPath)
 			try:
-				command = u'%s "%s" | %s --quiet -idumv %s' % (cat, self._filename, System.which('cpio'), include)
+				command = u'%s "%s" | %s --quiet -idumv --no-preserve-owner %s' % (cat, self._filename, System.which('cpio'), include)
 				self._extract(command, fileCount)
 			finally:
 				os.chdir(curDir)
