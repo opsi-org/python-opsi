@@ -51,10 +51,10 @@ def testCheckForSamba4DependsOnVersion(versionString, isSamba4):
 
 
 def testReadingEmptySambaConfig(tempDir):
-	PathToSmbConf = os.path.join(tempDir, 'SMB_CONF')
-	with open(PathToSmbConf, 'w'):
+	pathToSmbConf = os.path.join(tempDir, 'SMB_CONF')
+	with open(pathToSmbConf, 'w'):
 		pass
-	result = Samba._readConfig(PathToSmbConf)
+	result = Samba._readConfig(pathToSmbConf)
 
 	assert [] == result
 
@@ -69,12 +69,12 @@ def testReadingSambaConfig(tempDir):
 		u"[opsi_repository]\n",
 	]
 
-	PathToSmbConf = os.path.join(tempDir, 'SMB_CONF')
-	with open(PathToSmbConf, 'w') as fakeSambaConfig:
+	pathToSmbConf = os.path.join(tempDir, 'SMB_CONF')
+	with open(pathToSmbConf, 'w') as fakeSambaConfig:
 		for line in config:
 			fakeSambaConfig.write(line)
 
-	result = Samba._readConfig(PathToSmbConf)
+	result = Samba._readConfig(pathToSmbConf)
 
 	assert config == result
 
@@ -168,15 +168,15 @@ def testCorrectOpsiDepotShareWithoutSamba4Fix():
 		with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
 			result = Samba._processConfig(config)
 
-	opsi_depot = False
+	opsiDepotFound = False
 	for line in result:
 		if line.strip():
 			if '[opsi_depot]' in line:
-				opsi_depot = True
-			elif opsi_depot and 'admin users' in line:
+				opsiDepotFound = True
+			elif opsiDepotFound and 'admin users' in line:
 				break
-			elif opsi_depot and line.startswith('['):
-				opsi_depot = False
+			elif opsiDepotFound and line.startswith('['):
+				opsiDepotFound = False
 				break
 	else:
 		assert False, 'Did not find "admin users" in opsi_depot share'
@@ -261,12 +261,12 @@ def testProcessConfigAddsMissingRepositoryShare():
 
 
 def testWritingEmptySambaConfig(tempDir):
-	PathToSmbConf = os.path.join(tempDir, 'SMB_CONF')
-	with open(PathToSmbConf, 'w'):
+	pathToSmbConf = os.path.join(tempDir, 'SMB_CONF')
+	with open(pathToSmbConf, 'w'):
 		pass
 
-	Samba._writeConfig([], PathToSmbConf)
-	with open(PathToSmbConf, 'r') as readConfig:
+	Samba._writeConfig([], pathToSmbConf)
+	with open(pathToSmbConf, 'r') as readConfig:
 		result = readConfig.readlines()
 
 	assert [] == result
@@ -282,12 +282,12 @@ def testWritingSambaConfig(tempDir):
 		u"[opsi_repository]\n",
 	]
 
-	PathToSmbConf = os.path.join(tempDir, 'SMB_CONF')
-	with open(PathToSmbConf, 'w'):
+	pathToSmbConf = os.path.join(tempDir, 'SMB_CONF')
+	with open(pathToSmbConf, 'w'):
 		pass
 
-	Samba._writeConfig(config, PathToSmbConf)
-	with open(PathToSmbConf, 'r') as readConfig:
+	Samba._writeConfig(config, pathToSmbConf)
+	with open(pathToSmbConf, 'r') as readConfig:
 		result = readConfig.readlines()
 
 	assert config == result
