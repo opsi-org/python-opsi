@@ -50,6 +50,22 @@ def pathToSmbConf(tempDir):
 	return pathToSmbConf
 
 
+@pytest.fixture
+def disableDirCreation():
+	def printMessage(path):
+		print("Would create {0!r}".format(path))
+
+	with mock.patch('OPSI.Util.Task.Samba.os.mkdir', printMessage):
+		yield
+
+
+@pytest.fixture(params=['/home/opsiproducts', '/var/lib/opsi/workbench/'])
+def workbenchPath(request):
+	path = request.param
+	with mock.patch('OPSI.Util.Task.Samba.getWorkbenchDirectory', lambda: path):
+		yield path
+
+
 @pytest.mark.parametrize("emptyoutput", [None, []])
 def testCheckForSambaVersionWithoutSMBD(emptyoutput):
 	with mock.patch('OPSI.Util.Task.Samba.execute', lambda cmd: emptyoutput):
@@ -88,11 +104,8 @@ def testReadingSambaConfig(pathToSmbConf):
 	assert config == Samba._readConfig(pathToSmbConf)
 
 
-@pytest.mark.parametrize("workbenchPath", ['/home/opsiproducts', '/var/lib/opsi/workbench/'])
-def testConfigureSambaOnUbuntu(isSamba4, workbenchPath):
-	with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
-		with mock.patch('OPSI.Util.Task.Samba.getWorkbenchDirectory', lambda: workbenchPath):
-			result = Samba._processConfig([])
+def testConfigureSambaOnUbuntu(isSamba4, workbenchPath, disableDirCreation):
+	result = Samba._processConfig([])
 
 	if workbenchPath.endswith('/'):
 		workbenchPath = workbenchPath[:-1]
@@ -100,7 +113,7 @@ def testConfigureSambaOnUbuntu(isSamba4, workbenchPath):
 	assert any('path = {}'.format(workbenchPath) in line for line in result)
 
 
-def testSambaConfigureSamba4Share(isSamba4):
+def testSambaConfigureSamba4Share(isSamba4, workbenchPath, disableDirCreation):
 	config = [
 		u"[opt_pcbin]\n",
 		u"[opsi_depot]\n",
@@ -110,14 +123,12 @@ def testSambaConfigureSamba4Share(isSamba4):
 		u"[opsi_repository]\n",
 	]
 
-	with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
-		with mock.patch('OPSI.Util.Task.Samba.getWorkbenchDirectory', lambda: '/var/lib/opsi/workbench/'):
-			result = Samba._processConfig(config)
+	result = Samba._processConfig(config)
 
 	assert any(line.strip() for line in result)
 
 
-def testAdminUsersAreAddedToExistingOpsiDepotShare(isSamba4):
+def testAdminUsersAreAddedToExistingOpsiDepotShare(isSamba4, disableDirCreation):
 	config = [
 		u"[opsi_depot]\n",
 		u"   available = yes\n",
@@ -131,13 +142,12 @@ def testAdminUsersAreAddedToExistingOpsiDepotShare(isSamba4):
 	]
 
 	with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda: True):
-		with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
-			result = Samba._processConfig(config)
+		result = Samba._processConfig(config)
 
 	assert any('admin users' in line for line in result), 'Missing Admin Users in Share opsi_depot'
 
 
-def testCorrectOpsiDepotShareWithoutFixForSamba4():
+def testCorrectOpsiDepotShareWithoutFixForSamba4(disableDirCreation):
 	config = [
 		u"[opsi_depot]\n",
 		u"   available = yes\n",
@@ -151,8 +161,7 @@ def testCorrectOpsiDepotShareWithoutFixForSamba4():
 	]
 
 	with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda: True):
-		with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
-			result = Samba._processConfig(config)
+		result = Samba._processConfig(config)
 
 	opsiDepotFound = False
 	for line in result:
@@ -168,7 +177,7 @@ def testCorrectOpsiDepotShareWithoutFixForSamba4():
 		raise RuntimeError('Did not find "admin users" in opsi_depot share')
 
 
-def testCorrectOpsiDepotShareWithSamba4Fix():
+def testCorrectOpsiDepotShareWithSamba4Fix(disableDirCreation):
 	config = [
 		u"[opt_pcbin]\n",
 		u"[opsi_depot]\n",
@@ -188,11 +197,10 @@ def testCorrectOpsiDepotShareWithSamba4Fix():
 	]
 
 	with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda: True):
-		with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
-			assert config == Samba._processConfig(config)
+		assert config == Samba._processConfig(config)
 
 
-def testProcessConfigDoesNotRemoveComment(isSamba4):
+def testProcessConfigDoesNotRemoveComment(isSamba4, disableDirCreation):
 	config = [
 		u"; load opsi shares\n",
 		u"include = /etc/samba/share.conf\n",
@@ -204,13 +212,12 @@ def testProcessConfigDoesNotRemoveComment(isSamba4):
 		u"[opsi_repository]\n",
 	]
 
-	with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
-		result = Samba._processConfig(config)
+	result = Samba._processConfig(config)
 
 	assert any('; load opsi shares' in line for line in result)
 
 
-def testProcessConfigAddsMissingRepositoryShare(isSamba4):
+def testProcessConfigAddsMissingRepositoryShare(isSamba4, disableDirCreation):
 	config = [
 		u"; load opsi shares\n",
 		u"include = /etc/samba/share.conf\n",
@@ -221,8 +228,7 @@ def testProcessConfigAddsMissingRepositoryShare(isSamba4):
 		u"[opsi_workbench]\n",
 	]
 
-	with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
-		result = Samba._processConfig(config)
+	result = Samba._processConfig(config)
 
 	repository = False
 	pathFound = False
