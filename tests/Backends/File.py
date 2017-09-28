@@ -104,11 +104,9 @@ config = {{
         self._fileBackendConfig['dispatchConfig'] = dispatchConfigPath
 
         with open(dispatchConfigPath, 'w') as dpconf:
-            dpconf.write(
-"""
+            dpconf.write("""
 .* : file
-"""
-)
+""")
 
     def tearDownBackend(self):
         self.backend.backend_deleteBase()
