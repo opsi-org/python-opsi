@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
@@ -29,44 +28,37 @@ from __future__ import absolute_import
 import pytest
 
 from OPSI.Object import NetbootProduct, ProductOnDepot, UnicodeProductProperty
-from .Backends.File import FileBackendBackendManagerMixin
 from .test_hosts import getConfigServer
-from .test_util_wim import fakeWIMEnvironment
-from .helpers import getLocalFQDN, mock, patchAddress, patchEnvironmentVariables, unittest
+from .test_util_wim import fakeWimPath  # required fixture
+from .helpers import getLocalFQDN, mock, patchAddress, patchEnvironmentVariables
 
 
-class WimFunctionsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
+def testUpdatingWim(backendManager, fakeWimPath):
+    backend = backendManager
+    localFqdn = getLocalFQDN()
 
-    def setUp(self):
-        self.setUpBackend()
+    with patchAddress(fqdn=localFqdn):
+        with patchEnvironmentVariables(OPSI_HOSTNAME=localFqdn):
+            fillBackend(backend)
 
-    def tearDown(self):
-        self.tearDownBackend()
+            with mock.patch('OPSI.Util.WIM.os.path.exists', lambda path: True):
+                backend.updateWIMConfig('testwindows')
 
-    def testUpdatingWim(self):
-        with patchAddress(fqdn=getLocalFQDN()):
-            with patchEnvironmentVariables(OPSI_HOSTNAME=getLocalFQDN()):
-                with fakeWIMEnvironment(self._fileTempDir):
-                    fillBackend(self.backend)
+            imagename = backend.productProperty_getObjects(propertyId="imagename", productId='testwindows')
+            imagename = imagename[0]
 
-                    with mock.patch('OPSI.Util.WIM.os.path.exists', lambda path: True):
-                        self.backend.updateWIMConfig('testwindows')
+            possibleImageNames = set([
+                u'Windows 7 HOMEBASICN', u'Windows 7 HOMEPREMIUMN',
+                u'Windows 7 PROFESSIONALN', u'Windows 7 STARTERN',
+                u'Windows 7 ULTIMATEN'
+            ])
+            assert possibleImageNames == set(imagename.possibleValues)
+            assert imagename.defaultValues[0] in imagename.possibleValues
 
-                    imagename = self.backend.productProperty_getObjects(propertyId="imagename", productId='testwindows')
-                    imagename = imagename[0]
-
-                    possibleImageNames = set([
-                        u'Windows 7 HOMEBASICN', u'Windows 7 HOMEPREMIUMN',
-                        u'Windows 7 PROFESSIONALN', u'Windows 7 STARTERN',
-                        u'Windows 7 ULTIMATEN'
-                    ])
-                    assert possibleImageNames == set(imagename.possibleValues)
-                    assert imagename.defaultValues[0] in imagename.possibleValues
-
-                    language = self.backend.productProperty_getObjects(propertyId="system_language", productId='testwindows')
-                    language = language[0]
-                    assert ['de-DE'] == language.defaultValues
-                    assert ['de-DE'] == language.possibleValues
+            language = backend.productProperty_getObjects(propertyId="system_language", productId='testwindows')
+            language = language[0]
+            assert ['de-DE'] == language.defaultValues
+            assert ['de-DE'] == language.possibleValues
 
 
 @pytest.mark.parametrize("objectId", ['', None])
@@ -119,7 +111,3 @@ def fillBackend(backend):
     )
     backend.productProperty_insertObject(imagenameProductProperty)
     backend.productProperty_insertObject(systemLanguageProductProperty)
-
-
-if __name__ == '__main__':
-    unittest.main()
