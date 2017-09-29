@@ -131,7 +131,7 @@ def testDepotPathMayWillBeReturned(depotDirectory):
     assert depotDir == '/var/lib/opsi/depot'
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def currentUserId():
     yield os.getuid()
 
@@ -160,7 +160,7 @@ def nonRootUserId():
         return -1
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def currentGroupId():
     yield os.getgid()
 
