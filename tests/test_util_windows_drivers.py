@@ -63,12 +63,12 @@ def destinationDir(tempDir):
 	yield os.path.join(tempDir, "destination")
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def hostId():
 	yield "test.domain.local"
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def hardwareClass():
 	yield "COMPUTER_SYSTEM"
 

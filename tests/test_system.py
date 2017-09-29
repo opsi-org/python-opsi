@@ -40,12 +40,12 @@ def progressSubject(request):
 	yield request.param
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def exampleFilenames():
 	return ('file1', 'file2', 'file3')
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def exampleDirectories():
 	return ('dir1', 'dir2', 'dir3')
 

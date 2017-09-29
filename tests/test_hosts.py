@@ -441,17 +441,17 @@ def testRenamingOpsiClient(extendedConfigDataBackend):
     assert membership.groupId == protagonists.id
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def localHostFqdn():
     return getLocalHostFqdn()
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def localWorkbenchPath():
     return 'file:///var/lib/opsi/workbench'
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def remoteWorkbenchPath(localHostFqdn):
     return u'smb://%s/opsi_workbench' % localHostFqdn.split('.')[0]
 
