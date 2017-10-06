@@ -123,6 +123,8 @@ sed -i 's#/etc/dhcp/dhcpd.conf#/etc/dhcpd.conf#;s#isc-dhcp-server#dhcpd#' $RPM_B
 	sed -i 's#linux/pxelinux.0#opsi/pxelinux.0#' $RPM_BUILD_ROOT/etc/opsi/backends/dhcpd.conf
 %endif
 
+mkdir -p $RPM_BUILD_ROOT/etc/opsi/modules.d
+
 # ===[ clean ]======================================
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -218,6 +220,8 @@ fi
 %config /etc/opsi/hwaudit/locales/nl_NL
 %config /etc/opsi/hwaudit/locales/ru_RU
 %config(noreplace) /etc/opsi/server_commands_default.conf
+
+%dir /etc/opsi/modules.d
 
 %if 0%{?rhel_version} || 0%{?centos_version} || 0%{?fedora_version}
 %define python_sitearch %(%{__python} -c 'from distutils import sysconfig; print sysconfig.get_python_lib()')
