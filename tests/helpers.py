@@ -25,7 +25,6 @@ Helpers for testing opsi.
 import os
 import shutil
 import tempfile
-import unittest  # will be importet from other test modules!
 from contextlib import contextmanager
 
 try:
