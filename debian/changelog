@@ -1145,7 +1145,7 @@ python-opsi (4.0.6.2-1) experimental; urgency=low
 
 python-opsi (4.0.6.1-1) experimental; urgency=low
 
-  * OPSI.Util.Repository: correctly set number of retries for dynamic bandwith
+  * OPSI.Util.Repository: correctly set number of retries for dynamic bandwidth
   * setup.py: Exclude test folders.
   * objectToBeautifiedText: indent with only four spaces
   * OPSI/Object.py overhauled module
