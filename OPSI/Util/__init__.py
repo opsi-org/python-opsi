@@ -152,14 +152,16 @@ of strings, dicts, lists or numbers.
 	"""
 	if isinstance(obj, (unicode, str)):
 		return obj
-	elif hasattr(obj, 'serialize'):
+
+	try:
 		return obj.serialize()
-	elif isinstance(obj, (list, set, types.GeneratorType)):
-		return [serialize(tempObject) for tempObject in obj]
-	elif isinstance(obj, dict):
-		return {key: serialize(value) for key, value in obj.items()}
-	else:
-		return obj
+	except AttributeError:
+		if isinstance(obj, (list, set, types.GeneratorType)):
+			return [serialize(tempObject) for tempObject in obj]
+		elif isinstance(obj, dict):
+			return {key: serialize(value) for key, value in obj.items()}
+
+	return obj
 
 
 def formatFileSize(sizeInBytes):
@@ -312,8 +314,10 @@ def objectToBash(obj, bashVars=None, level=0):
 		varName = 'RESULT%d' % level
 		compress = False
 
-	if hasattr(obj, 'serialize'):
+	try:
 		obj = obj.serialize()
+	except AttributeError:
+		pass
 
 	try:
 		append = bashVars[varName].append
