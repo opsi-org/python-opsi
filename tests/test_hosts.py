@@ -497,7 +497,7 @@ def testWorkbenchAddressHasNoDefault(extendedConfigDataBackend, localHostFqdn):
     assert serverFromBackend.workbenchRemoteUrl is None
 
 
-@pytest.mark.hostTypes("hostClass", [OpsiClient, OpsiDepotserver])
+@pytest.mark.parametrize("hostClass", [OpsiClient, OpsiDepotserver])
 @pytest.mark.parametrize("length", [30])
 def testInventoryNumberOnHosts(configDataBackend, hostClass, length):
     inventoryNumber = randomString(length)
