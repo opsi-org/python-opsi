@@ -1,3 +1,11 @@
+python-opsi (4.1.1.20-1) stable; urgency=medium
+
+  * Moved function getGlobalConfig from OPSI.Util to OPSI.Util.Config.
+  * Calling OPSI.Util.getfqdn without explicit parameter as this resembles
+    the default behaviour.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 06 Nov 2017 15:02:03 +0100
+
 python-opsi (4.1.1.19-1) stable; urgency=medium
 
   * spec: added python-setuptools workaround for sles12 + Leap

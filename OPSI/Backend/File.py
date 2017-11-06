@@ -33,7 +33,7 @@ import re
 import shutil
 
 from OPSI.Backend.Backend import ConfigDataBackend
-from OPSI.Config import OPSI_GLOBAL_CONF, OPSICONFD_USER, FILE_ADMIN_GROUP
+from OPSI.Config import OPSICONFD_USER, FILE_ADMIN_GROUP
 from OPSI.Exceptions import (
 	BackendBadValueError, BackendConfigurationError, BackendError,
 	BackendIOError, BackendMissingDataError, BackendUnaccomplishableError)
@@ -108,7 +108,7 @@ class FileBackend(ConfigDataBackend):
 		self.__defaultClientTemplateName = u'pcproto'
 		self.__defaultClientTemplatePath = os.path.join(self.__clientTemplateDir, u'{0}.ini'.format(self.__defaultClientTemplateName))
 
-		self.__serverId = forceHostId(getfqdn(conf=OPSI_GLOBAL_CONF))
+		self.__serverId = forceHostId(getfqdn())
 		self._placeholderRegex = re.compile('^(.*)<([^>]+)>(.*)$')
 
 		self._mappings = {

@@ -45,7 +45,6 @@ import copy as pycopy
 from itertools import islice
 from signal import SIGKILL
 
-from OPSI.Config import OPSI_GLOBAL_CONF
 from OPSI.Logger import Logger, LOG_NONE
 from OPSI.Types import (forceDomain, forceInt, forceBool, forceUnicode,
 	forceFilename, forceHostname, forceHostId, forceNetmask, forceIpAddress,
@@ -665,7 +664,7 @@ def ifconfig(device, address, netmask=None):
 
 
 def getLocalFqdn():
-	fqdn = getfqdn(conf=OPSI_GLOBAL_CONF)
+	fqdn = getfqdn()
 	try:
 		return forceHostId(fqdn)
 	except ValueError:

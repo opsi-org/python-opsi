@@ -32,7 +32,6 @@ or to JSON, working with librsync and more.
 """
 
 import base64
-import codecs
 import json
 import os
 import random
@@ -48,7 +47,6 @@ from Crypto.Cipher import Blowfish
 from hashlib import md5
 from itertools import islice
 
-from OPSI.Config import OPSI_GLOBAL_CONF
 from OPSI.Logger import Logger, LOG_DEBUG
 from OPSI.Types import (forceBool, forceFilename, forceFqdn, forceInt,
 						forceIPAddress, forceNetworkAddress, forceUnicode)
@@ -59,10 +57,10 @@ __all__ = (
 	'chunk', 'compareVersions', 'decryptWithPrivateKeyFromPEMFile',
 	'deserialize', 'encryptWithPublicKeyFromX509CertificatePEMFile',
 	'findFiles', 'formatFileSize', 'fromJson', 'generateOpsiHostKey',
-	'getGlobalConfig', 'getfqdn', 'ipAddressInNetwork',
-	'isRegularExpressionPattern', 'librsyncDeltaFile', 'librsyncPatchFile',
-	'librsyncSignature', 'md5sum', 'objectToBash', 'objectToBeautifiedText',
-	'objectToHtml', 'randomString', 'removeDirectory', 'removeUnit',
+	'getfqdn', 'ipAddressInNetwork', 'isRegularExpressionPattern',
+	'librsyncDeltaFile', 'librsyncPatchFile', 'librsyncSignature',
+	'md5sum', 'objectToBash', 'objectToBeautifiedText', 'objectToHtml',
+	'randomString', 'removeDirectory', 'removeUnit',
 	'replaceSpecialHTMLCharacters', 'serialize', 'timestamp', 'toJson'
 )
 
@@ -836,6 +834,9 @@ def getfqdn(name='', conf=None):
 			# not set in environment.
 			pass
 
+		# lazy import to avoid circular dependency
+		from OPSI.Util.Config import getGlobalConfig
+
 		if conf is not None:
 			hostname = getGlobalConfig('hostname', conf)
 		else:
@@ -845,27 +846,6 @@ def getfqdn(name='', conf=None):
 			return forceFqdn(hostname)
 
 	return forceFqdn(socket.getfqdn(name))
-
-
-def getGlobalConfig(name, configFile=OPSI_GLOBAL_CONF):
-	"""
-	Reads the value of ``name`` from the global configuration.
-
-	:param configFile: The path of the config file.
-	:type configFile: str
-	"""
-	name = forceUnicode(name)
-	if os.path.exists(configFile):
-		with codecs.open(configFile, 'r', 'utf8') as config:
-			for line in config:
-				line = line.strip()
-				if '=' not in line or line.startswith(('#', ';')):
-					continue
-
-				(key, value) = line.split('=', 1)
-				if key.strip().lower() == name.lower():
-					return value.strip()
-	return None
 
 
 def removeDirectory(directory):
