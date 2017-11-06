@@ -39,11 +39,12 @@ from OPSI.Util import (
 	blowfishDecrypt, blowfishEncrypt, chunk, compareVersions,
 	decryptWithPrivateKeyFromPEMFile,
 	encryptWithPublicKeyFromX509CertificatePEMFile, findFiles, formatFileSize,
-	fromJson, generateOpsiHostKey, getfqdn, getGlobalConfig, ipAddressInNetwork,
+	fromJson, generateOpsiHostKey, getfqdn, ipAddressInNetwork,
 	isRegularExpressionPattern, librsyncDeltaFile, librsyncSignature,
 	librsyncPatchFile, md5sum, objectToBash, objectToBeautifiedText,
 	objectToHtml, randomString, removeUnit, toJson)
 from OPSI.Util import BlowfishError
+from OPSI.Util.Config import getGlobalConfig
 from OPSI.Util.Task.Certificate import createCertificate
 
 from .helpers import (

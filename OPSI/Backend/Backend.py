@@ -47,7 +47,6 @@ from hashlib import md5
 from twisted.conch.ssh import keys
 
 from OPSI import __version__ as LIBRARY_VERSION
-from OPSI.Config import OPSI_GLOBAL_CONF
 from OPSI.Logger import Logger
 from OPSI.Exceptions import *  # this is needed for dynamic loading
 from OPSI.Types import *  # this is needed for dynamic loading
@@ -584,7 +583,7 @@ containing the localisation of the hardware audit.
 				logger.info(u'Logsize limited to: {0}'.format(self._maxLogfileSize))
 
 		if not self._depotId:
-			self._depotId = getfqdn(conf=OPSI_GLOBAL_CONF)
+			self._depotId = getfqdn()
 		self._depotId = forceHostId(self._depotId)
 
 		self._options['additionalReferentialIntegrityChecks'] = True

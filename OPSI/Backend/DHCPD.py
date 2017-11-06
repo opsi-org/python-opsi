@@ -31,7 +31,6 @@ import socket
 import threading
 
 import OPSI.System as System
-from OPSI.Config import OPSI_GLOBAL_CONF
 from OPSI.Backend.Backend import ConfigDataBackend
 from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Exceptions import (BackendIOError, BackendBadValueError,
@@ -62,7 +61,7 @@ class DHCPDBackend(ConfigDataBackend):
 
 		self._fixedAddressFormat = u'IP'
 		self._defaultClientParameters = {
-			'next-server': socket.gethostbyname(getfqdn(conf=OPSI_GLOBAL_CONF)),
+			'next-server': socket.gethostbyname(getfqdn()),
 			'filename': u'linux/pxelinux.0'
 		}
 		self._dhcpdOnDepot = False
@@ -91,7 +90,7 @@ class DHCPDBackend(ConfigDataBackend):
 		self._reloadEvent.set()
 		self._reloadLock = threading.Lock()
 		self._reloadThread = None
-		self._depotId = forceHostId(getfqdn(conf=OPSI_GLOBAL_CONF))
+		self._depotId = forceHostId(getfqdn())
 		self._opsiHostKey = None
 		self._depotConnections = {}
 

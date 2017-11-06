@@ -36,7 +36,6 @@ import shutil
 from OpenSSL import crypto, rand
 from tempfile import NamedTemporaryFile
 
-from OPSI.Config import OPSI_GLOBAL_CONF
 from OPSI.Logger import Logger
 from OPSI.System import which, execute
 from OPSI.Types import forceHostId, forceInt
@@ -49,7 +48,7 @@ DEFAULT_CERTIFICATE_PARAMETERS = {
 	"locality": "Mainz",
 	"organization": "uib gmbh",
 	"organizationalUnit": "",
-	"commonName": forceHostId(getfqdn(conf=OPSI_GLOBAL_CONF)),
+	"commonName": forceHostId(getfqdn()),
 	"emailAddress": "",
 	"expires": 2,
 }
@@ -151,7 +150,7 @@ If not given will use a default.
 			u"No valid expiration date given. Must be an integer."
 		)
 
-	if certparams["commonName"] != forceHostId(getfqdn(conf=OPSI_GLOBAL_CONF)):
+	if certparams["commonName"] != forceHostId(getfqdn()):
 		raise CertificateCreationError(
 			u"commonName must be the FQDN of the local server"
 		)
