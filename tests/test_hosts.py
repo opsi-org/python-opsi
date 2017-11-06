@@ -32,6 +32,7 @@ import pytest
 from OPSI.Exceptions import BackendError, BackendMissingDataError
 from OPSI.Object import (HostGroup, ObjectToGroup, OpsiClient, OpsiConfigserver,
     OpsiDepotserver)
+from OPSI.Util import randomString
 
 
 def getLocalHostFqdn():
@@ -494,3 +495,20 @@ def testWorkbenchAddressHasNoDefault(extendedConfigDataBackend, localHostFqdn):
     serverFromBackend = extendedConfigDataBackend.host_getObjects(id=server.id)[0]
     assert serverFromBackend.workbenchLocalUrl is None
     assert serverFromBackend.workbenchRemoteUrl is None
+
+
+@pytest.mark.hostTypes("hostClass", [OpsiClient, OpsiDepotserver])
+@pytest.mark.parametrize("length", [30])
+def testInventoryNumberOnHosts(configDataBackend, hostClass, length):
+    inventoryNumber = randomString(length)
+
+    host = hostClass(id='testhost.some.test')
+    host.setInventoryNumber(inventoryNumber)
+
+    backend = configDataBackend
+    backend.host_insertObject(host)
+
+    hostFromBackend = backend.host_getObjects(id=host.id)[0]
+
+    assert hostFromBackend.inventoryNumber == inventoryNumber
+    assert hostFromBackend.getInventoryNumber() == inventoryNumber
