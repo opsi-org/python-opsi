@@ -671,11 +671,11 @@ class MySQLBackend(SQLBackend):
 				`architecture` varchar(3) NOT NULL,
 				`uninstallString` varchar(200),
 				`binaryName` varchar(100),
-				`firstseen` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
-				`lastseen` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
+				`firstseen` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				`lastseen` TIMESTAMP NOT NULL DEFAULT '1970-01-01 00:00:00',
 				`state` TINYINT NOT NULL,
 				`usageFrequency` integer NOT NULL DEFAULT -1,
-				`lastUsed` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
+				`lastUsed` TIMESTAMP NOT NULL DEFAULT '1970-01-01 00:00:00',
 				`licenseKey` VARCHAR(1024),
 				PRIMARY KEY (`config_id`)
 			) %s;
