@@ -608,7 +608,7 @@ containing the localisation of the hardware audit.
 		Write log data into the corresponding log file.
 
 		:param logType: Type of log. \
-Currently supported: *bootimage*, *clientconnect*, *instlog* or *opsiconfd*.
+Currently supported: *bootimage*, *clientconnect*, *instlog*, *opsiconfd* or *userlogin*.
 		:param data: Log content
 		:type data: Unicode
 		:param objectId: Specialising of ``logType``
@@ -698,7 +698,7 @@ overwrite the log.
 		Return the content of a log.
 
 		:param logType: Type of log. \
-Currently supported: *bootimage*, *clientconnect*, *instlog* or *opsiconfd*.
+Currently supported: *bootimage*, *clientconnect*, *instlog*, *opsiconfd* or *userlogin*.
 		:type data: Unicode
 		:param objectId: Specialising of ``logType``
 		:param maxSize: Limit for the size of returned characters in bytes. \
