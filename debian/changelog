@@ -1,3 +1,9 @@
+python-opsi (4.1.1.20-2) stable; urgency=medium
+
+  * Creating empty directory /etc/opsi/modules.d/
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 22 Nov 2017 13:04:26 +0100
+
 python-opsi (4.1.1.20-1) stable; urgency=medium
 
   * Moved function getGlobalConfig from OPSI.Util to OPSI.Util.Config.
