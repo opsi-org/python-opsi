@@ -258,7 +258,7 @@ def _processOpsi40migrations(mysql):
 		mysql.execute(u"alter table HOST add `description` varchar(100);")
 		mysql.execute(u"alter table HOST add `notes` varchar(500);")
 		mysql.execute(u"alter table HOST add `hardwareAddress` varchar(17);")
-		mysql.execute(u"alter table HOST add `lastSeen` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00';")
+		mysql.execute(u"alter table HOST add `lastSeen` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;")
 		mysql.execute(u"alter table HOST DEFAULT CHARACTER set utf8;")
 		mysql.execute(u"alter table HOST ENGINE = InnoDB;")
 
@@ -351,8 +351,8 @@ def _processOpsi40migrations(mysql):
 		if key.startswith(u'HARDWARE_CONFIG') and 'audit_lastseen' in tables[key]:
 			LOGGER.info(u"Updating database table %s from opsi 3.4 to 4.0" % key)
 
-			mysql.execute(u"alter table %s change `audit_firstseen` `firstseen` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00';" % key)
-			mysql.execute(u"alter table %s change `audit_lastseen` `lastseen` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00';" % key)
+			mysql.execute(u"alter table %s change `audit_firstseen` `firstseen` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;" % key)
+			mysql.execute(u"alter table %s change `audit_lastseen` `lastseen` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;" % key)
 			mysql.execute(u"alter table %s change `audit_state` `state` TINYINT NOT NULL;" % key)
 
 	if 'LICENSE_USED_BY_HOST' in tables:
@@ -442,8 +442,8 @@ def _processOpsi40migrations(mysql):
 				add `architecture` varchar(3) NOT NULL, \
 				add `uninstallString` varchar(200), \
 				add `binaryName` varchar(100), \
-				change `audit_firstseen` `firstseen` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00', \
-				change `audit_lastseen` `lastseen` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00', \
+				change `audit_firstseen` `firstseen` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, \
+				change `audit_lastseen` `lastseen` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, \
 				change `audit_state` `state` TINYINT NOT NULL, \
 				add `licenseKey` varchar(100), \
 				add INDEX( `clientId` ), \
@@ -463,9 +463,9 @@ def _processOpsi40migrations(mysql):
 		# LICENSE_CONTRACT
 		mysql.execute(u"alter table LICENSE_CONTRACT add `type` varchar(30) NOT NULL;")
 		mysql.execute(u"alter table LICENSE_CONTRACT add `description` varchar(100) NOT NULL;")
-		mysql.execute(u"alter table LICENSE_CONTRACT modify `conclusionDate` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00';")
-		mysql.execute(u"alter table LICENSE_CONTRACT modify `notificationDate` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00';")
-		mysql.execute(u"alter table LICENSE_CONTRACT modify `expirationDate` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00';")
+		mysql.execute(u"alter table LICENSE_CONTRACT modify `conclusionDate` TIMESTAMP NOT NULL DEFAULT '1970-01-01 00:00:01';")
+		mysql.execute(u"alter table LICENSE_CONTRACT modify `notificationDate` TIMESTAMP NOT NULL DEFAULT '1970-01-01 00:00:01';")
+		mysql.execute(u"alter table LICENSE_CONTRACT modify `expirationDate` TIMESTAMP NOT NULL DEFAULT '1970-01-01 00:00:01';")
 		mysql.execute(u"update LICENSE_CONTRACT set `type`='LicenseContract' where 1=1")
 
 		mysql.execute(u"alter table LICENSE_CONTRACT add INDEX( `type` );")
@@ -474,7 +474,7 @@ def _processOpsi40migrations(mysql):
 		LOGGER.info(u"Updating database table SOFTWARE_LICENSE from opsi 3.4 to 4.0")
 		# SOFTWARE_LICENSE
 		mysql.execute(u"alter table SOFTWARE_LICENSE add `type` varchar(30) NOT NULL;")
-		mysql.execute(u"alter table SOFTWARE_LICENSE modify `expirationDate` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00';")
+		mysql.execute(u"alter table SOFTWARE_LICENSE modify `expirationDate` TIMESTAMP NOT NULL DEFAULT '1970-01-01 00:00:01';")
 		mysql.execute(u"alter table SOFTWARE_LICENSE modify `boundToHost` varchar(255);")
 		mysql.execute(u"update SOFTWARE_LICENSE set `type`='RetailSoftwareLicense' where `licenseType`='RETAIL'")
 		mysql.execute(u"update SOFTWARE_LICENSE set `type`='OEMSoftwareLicense' where `licenseType`='OEM'")

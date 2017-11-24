@@ -81,8 +81,8 @@ def createSchemaVersionTable(database):
 	logger.debug("Creating 'OPSI_SCHEMA' table.")
 	table = u'''CREATE TABLE `OPSI_SCHEMA` (
 		`version` integer NOT NULL,
-		`updateStarted` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-		`updateEnded` TIMESTAMP,
+		`updateStarted` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		`updateEnded` TIMESTAMP NULL DEFAULT NULL,
 		PRIMARY KEY (`version`)
 	) {0};
 	'''.format(database.getTableCreationOptions('OPSI_SCHEMA'))
@@ -738,9 +738,9 @@ class SQLBackend(ConfigDataBackend):
 					`description` varchar(100),
 					`notes` varchar(1000),
 					`partner` varchar(100),
-					`conclusionDate` TIMESTAMP NOT NULL DEFAULT '1970-01-01 00:00:00',
-					`notificationDate` TIMESTAMP NOT NULL DEFAULT '1970-01-01 00:00:00',
-					`expirationDate` TIMESTAMP NOT NULL DEFAULT '1970-01-01 00:00:00',
+					`conclusionDate` TIMESTAMP NOT NULL DEFAULT '2001-01-01 01:02:03',
+					`notificationDate` TIMESTAMP NOT NULL DEFAULT '2001-01-01 01:02:03',
+					`expirationDate` TIMESTAMP NOT NULL DEFAULT '2001-01-01 01:02:03',
 					PRIMARY KEY (`licenseContractId`)
 				) %s;
 				''' % self._sql.getTableCreationOptions('LICENSE_CONTRACT')
@@ -756,7 +756,7 @@ class SQLBackend(ConfigDataBackend):
 					`type` varchar(30) NOT NULL,
 					`boundToHost` varchar(255),
 					`maxInstallations` integer,
-					`expirationDate` TIMESTAMP NOT NULL DEFAULT '1970-01-01 00:00:00',
+					`expirationDate` TIMESTAMP NULL DEFAULT NULL,
 					PRIMARY KEY (`softwareLicenseId`),
 					FOREIGN KEY (`licenseContractId`) REFERENCES `LICENSE_CONTRACT` (`licenseContractId`)
 				) %s;
@@ -884,8 +884,8 @@ class SQLBackend(ConfigDataBackend):
 				`hardwareAddress` varchar(17),
 				`ipAddress` varchar(15),
 				`inventoryNumber` varchar(64),
-				`created` TIMESTAMP,
-				`lastSeen` TIMESTAMP,
+				`created` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+				`lastSeen` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 				`opsiHostKey` varchar(32),
 				`oneTimePassword` varchar(32),
 				`maxBandwidth` integer,
