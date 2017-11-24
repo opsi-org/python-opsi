@@ -463,9 +463,9 @@ def _processOpsi40migrations(mysql):
 		# LICENSE_CONTRACT
 		mysql.execute(u"alter table LICENSE_CONTRACT add `type` varchar(30) NOT NULL;")
 		mysql.execute(u"alter table LICENSE_CONTRACT add `description` varchar(100) NOT NULL;")
-		mysql.execute(u"alter table LICENSE_CONTRACT modify `conclusionDate` TIMESTAMP NOT NULL DEFAULT '1970-01-01 00:00:01';")
-		mysql.execute(u"alter table LICENSE_CONTRACT modify `notificationDate` TIMESTAMP NOT NULL DEFAULT '1970-01-01 00:00:01';")
-		mysql.execute(u"alter table LICENSE_CONTRACT modify `expirationDate` TIMESTAMP NOT NULL DEFAULT '1970-01-01 00:00:01';")
+		mysql.execute(u"alter table LICENSE_CONTRACT modify `conclusionDate` TIMESTAMP NULL DEFAULT NULL;")
+		mysql.execute(u"alter table LICENSE_CONTRACT modify `notificationDate` TIMESTAMP NULL DEFAULT NULL;")
+		mysql.execute(u"alter table LICENSE_CONTRACT modify `expirationDate` TIMESTAMP NULL DEFAULT NULL;")
 		mysql.execute(u"update LICENSE_CONTRACT set `type`='LicenseContract' where 1=1")
 
 		mysql.execute(u"alter table LICENSE_CONTRACT add INDEX( `type` );")
