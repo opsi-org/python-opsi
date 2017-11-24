@@ -738,9 +738,9 @@ class SQLBackend(ConfigDataBackend):
 					`description` varchar(100),
 					`notes` varchar(1000),
 					`partner` varchar(100),
-					`conclusionDate` TIMESTAMP NOT NULL DEFAULT '2001-01-01 01:02:03',
-					`notificationDate` TIMESTAMP NOT NULL DEFAULT '2001-01-01 01:02:03',
-					`expirationDate` TIMESTAMP NOT NULL DEFAULT '2001-01-01 01:02:03',
+					`conclusionDate` TIMESTAMP NULL DEFAULT NULL,
+					`notificationDate` TIMESTAMP NULL DEFAULT NULL,
+					`expirationDate` TIMESTAMP NULL DEFAULT NULL,
 					PRIMARY KEY (`licenseContractId`)
 				) %s;
 				''' % self._sql.getTableCreationOptions('LICENSE_CONTRACT')
