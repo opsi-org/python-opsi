@@ -1,3 +1,9 @@
+python-opsi (4.1.1.21-1) stable; urgency=medium
+
+  * Fix problem when updating hardware audit data.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 27 Nov 2017 18:02:31 +0100
+
 python-opsi (4.1.1.20-2) stable; urgency=medium
 
   * Creating empty directory /etc/opsi/modules.d/
