@@ -153,17 +153,18 @@ class MySQL(SQL):
 					conv = dict(conversions)
 					conv[FIELD_TYPE.DATETIME] = str
 					conv[FIELD_TYPE.TIMESTAMP] = str
+
 					self._pool = ConnectionPool(
-							host=self._address,
-							user=self._username,
-							passwd=self._password,
-							db=self._database,
-							use_unicode=True,
-							charset=self._databaseCharset,
-							pool_size=self._connectionPoolSize,
-							max_overflow=self._connectionPoolMaxOverflow,
-							timeout=self._connectionPoolTimeout,
-							conv=conv
+						host=self._address,
+						user=self._username,
+						passwd=self._password,
+						db=self._database,
+						use_unicode=True,
+						charset=self._databaseCharset,
+						pool_size=self._connectionPoolSize,
+						max_overflow=self._connectionPoolMaxOverflow,
+						timeout=self._connectionPoolTimeout,
+						conv=conv
 					)
 				except Exception as error:
 					logger.logException(error)
