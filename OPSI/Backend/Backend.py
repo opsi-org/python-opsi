@@ -4442,7 +4442,7 @@ into the IDs of these depots are to be found in the list behind \
 			}
 
 			if self.auditHardwareOnHost_getObjects(attributes=['hostId'], **filter):
-				logger.debug2(u"Updating existing AuditHardwareOnHost {0!r}", objectHash)
+				logger.debug2(u"Updating existing AuditHardwareOnHost {0!r}", auditHardwareOnHost)
 				self.auditHardwareOnHost_updateObject(auditHardwareOnHost)
 			else:
 				logger.info(u"AuditHardwareOnHost %s does not exist, creating" % auditHardwareOnHost)
