@@ -147,9 +147,10 @@ class MySQL(SQL):
 		self._transactionLock.acquire(False)
 		try:
 			for tryNumber in (1, 2):
+				if self._pool:
+					return
+
 				try:
-					if self._pool:
-						self._pool.destroy()
 					conv = dict(conversions)
 					conv[FIELD_TYPE.DATETIME] = str
 					conv[FIELD_TYPE.TIMESTAMP] = str
