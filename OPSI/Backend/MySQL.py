@@ -3,7 +3,7 @@
 
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
-# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
 # All rights reserved.
 
 # This program is free software: you can redistribute it and/or modify
@@ -144,8 +144,7 @@ class MySQL(SQL):
 
 	def _createConnectionPool(self):
 		logger.debug2(u"Creating connection pool")
-		self._transactionLock.acquire(False)
-		try:
+		with self._transactionLock:
 			for tryNumber in (1, 2):
 				if self._pool:
 					return
@@ -181,8 +180,6 @@ class MySQL(SQL):
 						continue
 
 					raise BackendIOError(u"Failed to connect to database '%s' address '%s': %s" % (self._database, self._address, error))
-		finally:
-			self._transactionLock.release()
 
 	def connect(self, cursorType=None):
 		myConnectionSuccess = False
