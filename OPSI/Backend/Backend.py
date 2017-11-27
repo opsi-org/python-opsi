@@ -3085,12 +3085,12 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		except IndexError:
 			defaults = []
 
-		if "product_on_client" in defaults or "algorithm1" in defaults:
-			logger.info("Generating productOnClient sequence with algorithm 1")
-			generateProductOnClientSequence = OPSI.SharedAlgorithm.generateProductOnClientSequence_algorithm1
-		else:
+		if "algorithm2" in defaults:
 			logger.info("Generating productOnClient sequence with algorithm 2")
 			generateProductOnClientSequence = OPSI.SharedAlgorithm.generateProductOnClientSequence_algorithm2
+		else:
+			logger.info("Generating productOnClient sequence with algorithm 1")
+			generateProductOnClientSequence = OPSI.SharedAlgorithm.generateProductOnClientSequence_algorithm1
 
 		return self._productOnClient_processWithFunction(productOnClients, generateProductOnClientSequence)
 
