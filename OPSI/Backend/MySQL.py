@@ -103,6 +103,8 @@ class MySQL(SQL):
 	ESCAPED_ASTERISK = "\\*"
 	doCommit = True
 
+	_transactionLock = threading.Lock()
+
 	def __init__(self, **kwargs):
 		self._address = u'localhost'
 		self._username = u'opsi'
@@ -133,9 +135,7 @@ class MySQL(SQL):
 			elif option == 'connectionpooltimeout':
 				self._connectionPoolTimeout = forceInt(value)
 
-		self._transactionLock = threading.Lock()
 		self._pool = None
-
 		self._createConnectionPool()
 		logger.debug(u'MySQL created: %s' % self)
 
