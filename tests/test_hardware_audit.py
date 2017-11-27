@@ -62,3 +62,31 @@ def testHardwareAuditAcceptingHugeMemoryClockSpeeds(hardwareAuditBackendWithHist
 			"dataWidth": 64
 		},
 	])
+
+
+def testUpdatingAuditHardware(hardwareAuditBackendWithHistory):
+	backend = hardwareAuditBackendWithHistory
+
+	client = OpsiClient(id='foo.bar.invalid')
+	backend.host_insertObject(client)
+
+	ahoh = {
+		"hostId": client.id,
+		"vendor": "Micron",
+		"description": "Physikalischer Speicher",
+		"tag": "Physical Memory 0",
+		"speed": 2400000000,
+		"hardwareClass": "MEMORY_MODULE",
+		"formFactor": "SODIMM",
+		"capacity": "8589934592",
+		"name": "DIMM 1",
+		"serialNumber": "15E64109",
+		"memoryType": "Unknown",
+		"model": None,
+		"type": "AuditHardwareOnHost",
+		"deviceLocator": "DIMM 1",
+		"dataWidth": 64
+	}
+
+	backend.auditHardwareOnHost_createObjects([ahoh])
+	backend.auditHardwareOnHost_updateObjects([ahoh])
