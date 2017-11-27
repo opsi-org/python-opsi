@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -25,7 +25,6 @@ SQLite backend.
 :license: GNU Affero GPL version 3
 """
 
-import threading
 from itertools import izip
 
 from apsw import (SQLITE_OPEN_CREATE, SQLITE_CONFIG_MULTITHREAD,
@@ -63,7 +62,6 @@ class SQLite(SQL):
 
 		self._connection = None
 		self._cursor = None
-		self._transactionLock = threading.Lock()
 		logger.debug(u'SQLite created: %s' % self)
 
 	def connect(self):
