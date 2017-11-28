@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2006-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -62,7 +61,7 @@ elif os.name == 'nt':
 	import win32net
 	import win32security
 
-__version__ = '4.0.7.4'
+__version__ = '4.0.7.46'
 
 logger = Logger()
 
@@ -810,6 +809,7 @@ class BackendAccessControl(object):
 
 				return response
 
+		logger.debug2(u"Attempting PAM authentication as user {0!r}...", self._username)
 		try:
 			# Create instance
 			auth = PAM.pam()
@@ -827,11 +827,13 @@ class BackendAccessControl(object):
 				pass
 			auth.authenticate()
 			auth.acct_mgmt()
+			logger.debug2("PAM authentication successful.")
 
 			if self._forceGroups is not None:
 				self._userGroups = set(self._forceGroups)
 				logger.info(u"Forced groups for user '%s': %s" % (self._username, self._userGroups))
 			else:
+				logger.debug("Reading groups of user...")
 				primaryGroup = forceUnicode(grp.getgrgid(pwd.getpwnam(self._username)[3])[0])
 				logger.debug(u"Primary group of user {0!r} is {1!r}", self._username, primaryGroup)
 

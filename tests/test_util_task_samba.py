@@ -114,12 +114,9 @@ class SambaProcessConfigTest(unittest.TestCase):
 
 	def testSambaConfigureSuseSamba4(self):
 
-		def fakeDistribution():
-			return 'suse linux enterprise server'
-
 		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda:True):
 			with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
-				with mock.patch('OPSI.Util.Task.Samba.getDistribution', fakeDistribution):
+				with mock.patch('OPSI.Util.Task.Samba.Posix.isSLES', lambda:True):
 					newlines = Samba._processConfig([])
 
 		suse = False
@@ -131,12 +128,9 @@ class SambaProcessConfigTest(unittest.TestCase):
 
 	def testSambaConfigureSuseNoSamba4(self):
 
-		def fakeDistribution():
-			return 'suse linux enterprise server'
-
 		with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda:False):
 			with mock.patch('OPSI.Util.Task.Samba.os.mkdir'):
-				with mock.patch('OPSI.Util.Task.Samba.getDistribution', fakeDistribution):
+				with mock.patch('OPSI.Util.Task.Samba.Posix.isSLES', lambda:True):
 					newlines = Samba._processConfig([])
 
 		suse = False

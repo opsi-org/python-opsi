@@ -1,3 +1,40 @@
+python-opsi (4.0.7.50-1) experimental; urgency=medium
+
+  * Corrected failing Samba tests
+
+ -- Mathias Radtke <m.radtke@uib.de>  Fri, 22 Sep 2017 12:22:40 +0200
+
+python-opsi (4.0.7.49-1) experimental; urgency=medium
+
+  * fixed OpenSUSE Leap opsi_workbench share directory
+  * Catching missing server_commands_custom.conf error
+
+ -- Mathias Radtke <m.radtke@uib.de>  Fri, 22 Sep 2017 10:54:06 +0200
+
+python-opsi (4.0.7.48-1) stable; urgency=medium
+
+  * System.Windows.getActiveSessionIds fix for nt6
+  * hostControl: Implementation for modified opsiclientd controlserver port over configState
+
+ -- Erol Ueluekmen <e.ueluekmen@uib.de>  Mon, 21 Aug 2017 16:07:09 +0200
+
+python-opsi (4.0.7.47-1) stable; urgency=medium
+
+  * Changed OPSI.Util.File.Opsi.parseFilename to be able to handle files
+    not ending in .opsi.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 18 Aug 2017 17:06:35 +0200
+
+python-opsi (4.0.7.46-1) stable; urgency=medium
+
+  * Added function OPSI.Util.File.Opsi.parseFilename.
+  * OPSI.Util.Repository.FileRepository: Fix bug where instead of appending
+    a file it was newly written.
+  * OPSI.Backend.BackendManager.BackendAccessControl: Added logmessages
+    to make it easier to follow PAM authentication.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 17 Aug 2017 12:28:47 +0200
+
 python-opsi (4.0.7.45-3) stable; urgency=medium
 
   * openSuse 42.3: We depend on python-setuptools because python-cryptography
@@ -1108,7 +1145,7 @@ python-opsi (4.0.6.2-1) experimental; urgency=low
 
 python-opsi (4.0.6.1-1) experimental; urgency=low
 
-  * OPSI.Util.Repository: correctly set number of retries for dynamic bandwith
+  * OPSI.Util.Repository: correctly set number of retries for dynamic bandwidth
   * setup.py: Exclude test folders.
   * objectToBeautifiedText: indent with only four spaces
   * OPSI/Object.py overhauled module
