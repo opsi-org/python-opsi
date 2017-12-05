@@ -127,6 +127,27 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 
 			return self._depotConnections[depotId]
 
+	def _getScalabilityDepotConnection(self, depot, port):
+		try:
+			return self._depotConnections[depot]
+		except KeyError:
+			if not self._opsiHostKey:
+				depots = self._context.host_getObjects(type="OpsiConfigserver")  # pylint: disable=maybe-no-member
+				if not depots or not depots[0].getOpsiHostKey():
+					raise BackendMissingDataError(u"Failed to get opsi host key for depot '%s'" % self._depotId)
+				self._opsiHostKey = depots[0].getOpsiHostKey()
+
+			try:
+				self._depotConnections[depot] = JSONRPCBackend(
+					address=u'https://%s:%s/rpc/backend/%s' % (depot, port, self._name),
+					username=self._depotId,
+					password=self._opsiHostKey
+				)
+			except Exception as error:
+				raise BackendUnableToConnectError(u"Failed to connect to depot '%s': %s" % (depot, error))
+
+			return self._depotConnections[depot]
+
 	def _getResponsibleDepotId(self, clientId):
 		configStates = self._context.configState_getObjects(configId=u'clientconfig.depot.id', objectId=clientId)  # pylint: disable=maybe-no-member
 		if configStates and configStates[0].values:
@@ -152,7 +173,10 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 	def _updateByProductOnClient(self, productOnClient):
 		if not self._pxeBootConfigurationUpdateNeeded(productOnClient):
 			return
-
+		if ':' in self._port:
+			depot = self._port.split(":")[0]
+			port = self._port.split(":")[1]
+			return self._getScalabilityDepotConnection(depot, port).opsipxeconfd_updatePXEBootConfiguration(productOnClient.clientId)
 		depotId = self._getResponsibleDepotId(productOnClient.clientId)
 		if depotId != self._depotId:
 			logger.info(u"Not responsible for client '%s', forwarding request to depot '%s'" % (productOnClient.clientId, depotId))
