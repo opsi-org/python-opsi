@@ -1,4 +1,4 @@
-python-opsi (4.0.7.51-1) UNRELEASED; urgency=medium
+python-opsi (4.0.7.51-1) stable; urgency=medium
 
   * Fixed typo in documentation.
   * Updated documentation of log_read / log_write.
