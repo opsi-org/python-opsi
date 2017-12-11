@@ -3080,12 +3080,17 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 
 	def productOnClient_generateSequence(self, productOnClients):
 		configs = self._context.config_getObjects(id="product_sort_algorithm")  # pylint: disable=maybe-no-member
-		if configs and ("product_on_client" in configs[0].getDefaultValues() or "algorithm1" in configs[0].getDefaultValues()):
-			logger.info("Generating productOnClient sequence with algorithm 1")
-			generateProductOnClientSequence = OPSI.SharedAlgorithm.generateProductOnClientSequence_algorithm1
-		else:
+		try:
+			defaults = configs[0].getDefaultValues()
+		except IndexError:
+			defaults = []
+
+		if "algorithm2" in defaults:
 			logger.info("Generating productOnClient sequence with algorithm 2")
 			generateProductOnClientSequence = OPSI.SharedAlgorithm.generateProductOnClientSequence_algorithm2
+		else:
+			logger.info("Generating productOnClient sequence with algorithm 1")
+			generateProductOnClientSequence = OPSI.SharedAlgorithm.generateProductOnClientSequence_algorithm1
 
 		return self._productOnClient_processWithFunction(productOnClients, generateProductOnClientSequence)
 
