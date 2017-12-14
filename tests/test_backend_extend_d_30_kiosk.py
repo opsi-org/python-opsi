@@ -196,4 +196,4 @@ def testGettingKioskInfoFromDifferentDepot(backendManager, client, depot, anothe
     for result in results:
         assert result['productId'] in expectedProducts
 
-    # assert len(results) == 5
+    assert len(results) == 5
