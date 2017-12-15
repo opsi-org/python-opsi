@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2015-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2015-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -224,12 +224,6 @@ def _writeConfig(newlines, config):
 	with codecs.open(config, 'w', 'utf-8') as writeConf:
 		writeConf.writelines(newlines)
 
-	logger.notice(u"   Reloading samba")
-	try:
-		execute(u'%s reload' % u'service {name}'.format(name=Posix.getSambaServiceName(default="smbd")))
-	except Exception as error:
-		logger.warning(error)
-
 
 def configureSamba(config=SMB_CONF):
 	logger.notice(u"Configuring samba")
@@ -237,4 +231,13 @@ def configureSamba(config=SMB_CONF):
 	newlines = _processConfig(lines)
 	if lines != newlines:
 		_writeConfig(newlines, config)
+		_reloadSamba()
 		logger.notice(u"Samba configuration finished. You may want to restart your Samba daemon.")
+
+
+def _reloadSamba():
+	logger.notice(u"   Reloading samba")
+	try:
+		execute(u'service {name} reload'.format(name=Posix.getSambaServiceName(default="smbd")))
+	except Exception as error:
+		logger.warning(error)
