@@ -36,8 +36,6 @@ def testGettingInfoForNonExistingClient(backendManager):
 
 
 # TODO: set custom configState for the client with different products in group.
-# TODO: check that everything works if the client is assigned to different depots.
-# TODO: check what happens if client is on different depot.
 def testGettingEmptyInfo(backendManager, client, depot):
     backendManager.host_createObjects([client, depot])
 
