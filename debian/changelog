@@ -1,3 +1,14 @@
+python-opsi (4.0.7.52-1) stable; urgency=medium
+
+  * OPSI.Util.Task.Samba: _writeConfig does not reload Samba. This is
+    now a separate function _reloadSamba.
+  * 30_kiosk.conf: Fix bug in getKioskProductInfosForClient where product
+    missing on depot will result in a KeyError.
+    This limits the available products to those present on the depot of
+    the client.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 15 Dec 2017 10:13:19 +0100
+
 python-opsi (4.0.7.51-1) stable; urgency=medium
 
   * Fixed typo in documentation.
