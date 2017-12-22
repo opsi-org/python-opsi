@@ -33,7 +33,10 @@ from __future__ import absolute_import
 
 import pytest
 
-from OPSI.Object import LocalbootProduct, ProductDependency, ProductOnDepot
+from OPSI.Object import (
+    LocalbootProduct, OpsiClient, ProductDependency, ProductOnDepot,
+    UnicodeProductProperty)
+from OPSI.Types import BackendReferentialIntegrityError
 from .test_hosts import getDepotServers
 
 
@@ -176,3 +179,79 @@ def testDeleteProductDependency(backendManager):
     backendManager.deleteProductDependency(firstProduct.id, "", secondProduct.id, requiredProductClassId="unusedParam", requirementType="unused")
 
     assert not backendManager.productDependency_getObjects()
+
+
+def testSetProductPropertyWithoutSideEffects(backendManager):
+    product = LocalbootProduct('aboabo', '1.0', '2')
+    backendManager.product_insertObject(product)
+
+    testprop = UnicodeProductProperty(
+        productId=product.id,
+        productVersion=product.productVersion,
+        packageVersion=product.packageVersion,
+        propertyId=u"changeMe",
+        possibleValues=["True", "NO NO NO"],
+        defaultValues=["NOT YOUR IMAGE"],
+        editable=True,
+        multiValue=False
+    )
+    backendManager.productProperty_insertObject(testprop)
+    untouchable = UnicodeProductProperty(
+        productId=product.id,
+        productVersion=product.productVersion,
+        packageVersion=product.packageVersion,
+        propertyId=u"changeMe",
+        possibleValues=["True", "False"],
+        defaultValues=["False"],
+        editable=True,
+        multiValue=False
+    )
+    backendManager.productProperty_insertObject(untouchable)
+
+    backendManager.setProductProperty(product.id, testprop.propertyId, 'aboh')
+    # TODO: test property of different type
+    # TODO: test with and without object id
+    # TODO: check property values
+    # TODO: check what happened to the untouchable property
+
+    result = backendManager.productProperty_getObjects(propertyId=testprop.propertyId)
+    assert len(result) == 1
+    result = result[0]
+    assert result.getDefaultValues() is not None
+
+
+@pytest.mark.parametrize("productExists", [True, False], ids=["product exists", "product missing"])
+@pytest.mark.parametrize("propertyExists", [True, False], ids=["property exists", "property missing"])
+@pytest.mark.parametrize("clientExists", [True, False], ids=["client exists", "client missing"])
+def testSetProductPropertyHandlingMissingObjects(backendManager, productExists, propertyExists, clientExists):
+    expectedProperties = 0
+
+    if productExists:
+        product = LocalbootProduct('existence', '1.0', '1')
+        backendManager.product_insertObject(product)
+
+        if propertyExists:
+            testprop = UnicodeProductProperty(
+                productId=product.id,
+                productVersion=product.productVersion,
+                packageVersion=product.packageVersion,
+                propertyId=u"changer",
+                possibleValues=["True", "False"],
+                defaultValues=["False"],
+                editable=True,
+                multiValue=False
+            )
+            backendManager.productProperty_insertObject(testprop)
+
+            expectedProperties += 1
+
+    backendManager.setProductProperty('existence', 'nothere', False)
+    assert len(backendManager.productProperty_getObjects()) == expectedProperties
+
+    if clientExists:
+        client = OpsiClient('testclient.domain.invalid')
+        backendManager.host_insertObject(client)
+
+    with pytest.raises(BackendReferentialIntegrityError):
+        backendManager.setProductProperty('existence', 'nothere', False, 'testclient.domain.invalid')
+    assert len(backendManager.productProperty_getObjects()) == expectedProperties
