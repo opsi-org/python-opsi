@@ -145,10 +145,10 @@ class MySQL(SQL):
 	def _createConnectionPool(self):
 		logger.debug2(u"Creating connection pool")
 		with self._transactionLock:
-			for tryNumber in (1, 2):
-				if self._pool:
-					return
+			if self._pool is not None:
+				return
 
+			for tryNumber in (1, 2):
 				try:
 					conv = dict(conversions)
 					conv[FIELD_TYPE.DATETIME] = str
@@ -166,6 +166,7 @@ class MySQL(SQL):
 						timeout=self._connectionPoolTimeout,
 						conv=conv
 					)
+					break
 				except Exception as error:
 					logger.logException(error)
 
