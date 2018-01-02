@@ -3,7 +3,7 @@
 
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
-# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2018 uib GmbH <info@uib.de>
 # All rights reserved.
 
 # This program is free software: you can redistribute it and/or modify
@@ -201,12 +201,10 @@ class MySQL(SQL):
 				conn.autocommit(False)
 				cursor = conn.cursor(cursorType)
 				myConnectionSuccess = True
-
 			except Exception as e:
 				logger.debug(u"Execute error: %s" % e)
 				if e.args[0] == 2006:
 					# 2006: 'MySQL server has gone away'
-					myConnectionSuccess = False
 					if myRetryConnectionCounter >= myMaxRetryConnection:
 						logger.error(u'MySQL server has gone away (Code 2006) - giving up after %d retries' % myRetryConnectionCounter)
 						raise
