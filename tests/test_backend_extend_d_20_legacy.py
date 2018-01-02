@@ -34,8 +34,8 @@ from __future__ import absolute_import
 import pytest
 
 from OPSI.Object import (
-    LocalbootProduct, OpsiClient, ProductDependency, ProductOnDepot,
-    UnicodeProductProperty)
+    BoolProductProperty, LocalbootProduct, OpsiClient, ProductDependency,
+    ProductOnDepot, UnicodeProductProperty)
 from OPSI.Types import BackendReferentialIntegrityError
 from .test_hosts import getDepotServers
 
@@ -217,6 +217,7 @@ def testSetProductPropertyWithoutSideEffects(backendManager):
     result = backendManager.productProperty_getObjects(propertyId=testprop.propertyId)
     assert len(result) == 1
     result = result[0]
+    assert isinstance(result, UnicodeProductProperty)
     assert result.getDefaultValues() is not None
 
 
@@ -255,3 +256,35 @@ def testSetProductPropertyHandlingMissingObjects(backendManager, productExists, 
     with pytest.raises(BackendReferentialIntegrityError):
         backendManager.setProductProperty('existence', 'nothere', False, 'testclient.domain.invalid')
     assert len(backendManager.productProperty_getObjects()) == expectedProperties
+
+
+def testSetProductPropertyHandlingBoolProductProperties(backendManager):
+    product = LocalbootProduct('testproduct', '1.0', '2')
+    backendManager.product_insertObject(product)
+
+    testprop = BoolProductProperty(
+        productId=product.id,
+        productVersion=product.productVersion,
+        packageVersion=product.packageVersion,
+        propertyId=u"changeMe",
+        defaultValues=[False]
+    )
+    backendManager.productProperty_insertObject(testprop)
+
+    client = OpsiClient('testclient.domain.invalid')
+    backendManager.host_insertObject(client)
+
+    backendManager.setProductProperty(product.id, testprop.propertyId, True, client.id)
+
+    result = backendManager.productProperty_getObjects(propertyId=testprop.propertyId)
+    assert len(result) == 1
+    result = result[0]
+    assert isinstance(result, BoolProductProperty)
+    assert result.getPossibleValues() == [False, True]
+    assert result.getDefaultValues() == [False]
+
+    result = backendManager.productPropertyState_getObjects()
+    assert len(result) == 1
+    result = result[0]
+
+    assert result.getValues() == [True]
