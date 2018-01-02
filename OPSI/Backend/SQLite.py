@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -27,15 +27,16 @@ SQLite backend.
 
 from itertools import izip
 
-from apsw import (SQLITE_OPEN_CREATE, SQLITE_CONFIG_MULTITHREAD,
-				  SQLITE_OPEN_READWRITE, Connection)
+from apsw import (
+	SQLITE_OPEN_CREATE, SQLITE_CONFIG_MULTITHREAD, SQLITE_OPEN_READWRITE,
+	Connection)
 
 from OPSI.Logger import Logger
 from OPSI.Types import forceBool, forceFilename, forceUnicode
 from OPSI.Types import BackendBadValueError
 from OPSI.Backend.SQL import SQL, SQLBackend, SQLBackendObjectModificationTracker
 
-__version__ = '4.0.7.26'
+__version__ = '4.0.7.53'
 
 logger = Logger()
 
