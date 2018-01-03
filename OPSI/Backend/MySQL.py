@@ -71,9 +71,10 @@ class ConnectionPool(object):
 				except KeyError:
 					pass
 
-			def creator():
+			def getConnection():
 				return MySQLdb.connect(**kwargs)
-			ConnectionPool.__instance = pool.QueuePool(creator, **poolArgs)
+
+			ConnectionPool.__instance = pool.QueuePool(getConnection, **poolArgs)
 			con = ConnectionPool.__instance.connect()
 			con.autocommit(False)
 			con.close()
