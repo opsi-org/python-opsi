@@ -258,7 +258,6 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 					# 2006: MySQL server has gone away
 					raise
 
-				self._createConnectionPool()
 				(conn, cursor) = self.connect()
 				self.execute(query, conn, cursor)
 
@@ -282,7 +281,7 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 				if e[0] != 2006:
 					# 2006: MySQL server has gone away
 					raise
-				self._createConnectionPool()
+
 				(conn, cursor) = self.connect(cursorType=MySQLdb.cursors.Cursor)
 				self.execute(query, conn, cursor)
 
@@ -312,7 +311,7 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 				if e[0] != 2006:
 					# 2006: MySQL server has gone away
 					raise
-				self._createConnectionPool()
+
 				(conn, cursor) = self.connect()
 				self.execute(query, conn, cursor)
 			row = cursor.fetchone()
@@ -362,7 +361,7 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 				if e[0] != 2006:
 					# 2006: MySQL server has gone away
 					raise
-				self._createConnectionPool()
+
 				(conn, cursor) = self.connect()
 				self.execute(query, conn, cursor)
 			result = cursor.lastrowid
@@ -407,7 +406,7 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 				if e[0] != 2006:
 					# 2006: MySQL server has gone away
 					raise
-				self._createConnectionPool()
+
 				(conn, cursor) = self.connect()
 				self.execute(query, conn, cursor)
 			result = cursor.rowcount
@@ -435,7 +434,6 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 					# 2006: MySQL server has gone away
 					raise
 
-				self._createConnectionPool()
 				conn, cursor = self.connect()
 				self.execute(query, conn, cursor)
 
