@@ -183,42 +183,59 @@ class MySQL(SQL):
 					raise BackendIOError(u"Failed to connect to database '%s' address '%s': %s" % (self._database, self._address, error))
 
 	def connect(self, cursorType=None):
-		myConnectionSuccess = False
-		myMaxRetryConnection = 10
-		myRetryConnectionCounter = 0
+		"""
+		Connect to the MySQL server.
+		If `cursorType` is given this type will be used as the cursor.
 
-		if not cursorType:
-			cursorType = MySQLdb.cursors.DictCursor
+		Establishing a connection will be tried multiple times.
+		If no connection can be made during this an exception will be
+		raised.
 
-		while (not myConnectionSuccess) and (myRetryConnectionCounter < myMaxRetryConnection):
+		:param cursorType: The class of the cursor to use. \
+Defaults to :py:class:MySQLdb.cursors.DictCursor:.
+		:raises BackendIOError: In case no connection can be established.
+		:return: The connection and the corresponding cursor.
+		"""
+		retryLimit = 10
+
+		cursorType = cursorType or MySQLdb.cursors.DictCursor
+
+		for retryCount in range(retryLimit):
 			try:
-				if myRetryConnectionCounter > 0:
-					self._createConnectionPool()
-				logger.debug(u"Connecting to connection pool")
+				# We create an connection pool in any case.
+				# If a pool exists the function will return very fast.
+				self._createConnectionPool()
+
+				logger.debug2(u"Connecting to connection pool")
 				self._transactionLock.acquire()
-				logger.debug(u"Got thread lock")
-				logger.debug(u"Connection pool status: %s" % self._pool.status())
+				logger.debug(u"Connection pool status: {0}", self._pool.status())
 				conn = self._pool.connect()
 				conn.autocommit(False)
 				cursor = conn.cursor(cursorType)
-				myConnectionSuccess = True
-			except Exception as e:
-				logger.debug(u"Execute error: %s" % e)
-				if e.args[0] == 2006:
+				break
+			except Exception as connectionError:
+				logger.debug(u"MySQL connection error: {0!r}", connectionError)
+				errorCode = connectionError.args[0]
+				self._transactionLock.release()
+				logger.debug2(u"Lock released")
+
+				if errorCode == 2006:
 					# 2006: 'MySQL server has gone away'
-					if myRetryConnectionCounter >= myMaxRetryConnection:
-						logger.error(u'MySQL server has gone away (Code 2006) - giving up after %d retries' % myRetryConnectionCounter)
-						raise
-					else:
-						logger.notice(u'MySQL server has gone away (Code 2006) - restarting Connection: retry %s' % myRetryConnectionCounter)
-						myRetryConnectionCounter = myRetryConnectionCounter + 1
-						self._transactionLock.release()
-						logger.debug(u"Thread lock released")
-						time.sleep(0.1)
+					logger.notice(u'MySQL server has gone away (Code {1}) - restarting connection: retry #{0}', retryCount, errorCode)
+					time.sleep(0.1)
 				else:
-					logger.error(u'Unknown DB Error: %s' % str(e))
-					self._transactionLock.release()
+					logger.error(u'Unexpected database error: {0}', connectionError)
 					raise
+		else:
+			logger.debug2("Destroying connection pool.")
+			self._pool.destroy()
+			self._pool = None
+
+			self._transactionLock.release()
+			logger.debug2(u"Lock released")
+
+			raise BackendIOError(u"Unable to connnect to mysql server. Giving up after {0} retries!".format(retryLimit))
+
 		return (conn, cursor)
 
 	def close(self, conn, cursor):
