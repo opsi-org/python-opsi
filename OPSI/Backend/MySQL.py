@@ -148,12 +148,12 @@ class MySQL(SQL):
 			if self._pool is not None:
 				return
 
+			conv = dict(conversions)
+			conv[FIELD_TYPE.DATETIME] = str
+			conv[FIELD_TYPE.TIMESTAMP] = str
+
 			for tryNumber in (1, 2):
 				try:
-					conv = dict(conversions)
-					conv[FIELD_TYPE.DATETIME] = str
-					conv[FIELD_TYPE.TIMESTAMP] = str
-
 					self._pool = ConnectionPool(
 						host=self._address,
 						user=self._username,
