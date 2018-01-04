@@ -1,3 +1,9 @@
+python-opsi (4.1.1.22-1) testing; urgency=medium
+
+  * Based on python-opsi 4.0.7.53-1.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 04 Jan 2018 15:37:42 +0100
+
 python-opsi (4.1.1.21-1) stable; urgency=medium
 
   * Fix problem when updating hardware audit data.
@@ -290,6 +296,35 @@ python-opsi (4.1.1.1-1) experimental; urgency=medium
     into OPSI/__init__.py to always show the current version.
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 04 Oct 2016 16:15:11 +0200
+
+python-opsi (4.0.7.53-1) testing; urgency=medium
+
+  * OPSI.Backend.MySQL: Fix a bug in the handling of the connection pool
+    that would lead to opening too many connections to the mysql server.
+  * OPSI.Backend.MySQL: Correctly defining a special version of
+    productProperty_updateObject.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 04 Jan 2018 15:05:09 +0100
+
+python-opsi (4.0.7.52-1) stable; urgency=medium
+
+  * OPSI.Util.Task.Samba: _writeConfig does not reload Samba. This is
+    now a separate function _reloadSamba.
+  * 30_kiosk.conf: Fix bug in getKioskProductInfosForClient where product
+    missing on depot will result in a KeyError.
+    This limits the available products to those present on the depot of
+    the client.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 15 Dec 2017 10:13:19 +0100
+
+python-opsi (4.0.7.51-1) stable; urgency=medium
+
+  * Fixed typo in documentation.
+  * Updated documentation of log_read / log_write.
+  * Refactored reading of the used algorithm to make sure algorithm1 is used
+    whenever an invalid value is encountered.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 11 Dec 2017 16:47:58 +0100
 
 python-opsi (4.0.7.50-1) experimental; urgency=medium
 
@@ -1438,7 +1473,7 @@ python-opsi (4.0.6.2-1) experimental; urgency=low
 
 python-opsi (4.0.6.1-1) experimental; urgency=low
 
-  * OPSI.Util.Repository: correctly set number of retries for dynamic bandwith
+  * OPSI.Util.Repository: correctly set number of retries for dynamic bandwidth
   * setup.py: Exclude test folders.
   * objectToBeautifiedText: indent with only four spaces
   * OPSI/Object.py overhauled module
