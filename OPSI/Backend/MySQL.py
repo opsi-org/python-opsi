@@ -189,7 +189,7 @@ class MySQL(SQL):
 							time.sleep(0.1)
 						continue
 
-					raise BackendIOError(u"Failed to connect to database '%s' address '%s': %s" % (self._database, self._address, error))
+					raise BackendUnableToConnectError(u"Failed to connect to database '%s' address '%s': %s" % (self._database, self._address, error))
 
 	def connect(self, cursorType=None):
 		"""
