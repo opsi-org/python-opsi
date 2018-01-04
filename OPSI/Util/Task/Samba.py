@@ -53,6 +53,7 @@ def configureSamba(config=SMB_CONF):
 	newlines = _processConfig(lines)
 	if lines != newlines:
 		_writeConfig(newlines, config)
+		_reloadSamba()
 		logger.notice(u"Samba configuration finished. You may want to restart your Samba daemon.")
 
 
@@ -244,8 +245,10 @@ def _writeConfig(newlines, config):
 	with codecs.open(config, 'w', 'utf-8') as writeConf:
 		writeConf.writelines(newlines)
 
+
+def _reloadSamba():
 	logger.notice(u"   Reloading samba")
 	try:
-		execute(u'%s reload' % u'service {name}'.format(name=getSambaServiceName(default="smbd")))
+		execute(u'service {name} reload'.format(name=getSambaServiceName(default="smbd")))
 	except Exception as error:
 		logger.warning(error)

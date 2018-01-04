@@ -653,7 +653,7 @@ containing the localisation of the hardware audit.
 		Write log data into the corresponding log file.
 
 		:param logType: Type of log. \
-Currently supported: *bootimage*, *clientconnect*, *instlog* or *opsiconfd*.
+Currently supported: *bootimage*, *clientconnect*, *instlog*, *opsiconfd* or *userlogin*.
 		:param data: Log content
 		:type data: Unicode
 		:param objectId: Specialising of ``logType``
@@ -743,7 +743,7 @@ overwrite the log.
 		Return the content of a log.
 
 		:param logType: Type of log. \
-Currently supported: *bootimage*, *clientconnect*, *instlog* or *opsiconfd*.
+Currently supported: *bootimage*, *clientconnect*, *instlog*, *opsiconfd* or *userlogin*.
 		:type data: Unicode
 		:param objectId: Specialising of ``logType``
 		:param maxSize: Limit for the size of returned characters in bytes. \
@@ -3204,12 +3204,17 @@ into the IDs of these depots are to be found in the list behind \
 
 	def productOnClient_generateSequence(self, productOnClients):
 		configs = self._context.config_getObjects(id="product_sort_algorithm")  # pylint: disable=maybe-no-member
-		if configs and ("product_on_client" in configs[0].getDefaultValues() or "algorithm1" in configs[0].getDefaultValues()):
-			logger.info("Generating productOnClient sequence with algorithm 1")
-			generateProductOnClientSequence = OPSI.SharedAlgorithm.generateProductOnClientSequence_algorithm1
-		else:
+		try:
+			defaults = configs[0].getDefaultValues()
+		except IndexError:
+			defaults = []
+
+		if "algorithm2" in defaults:
 			logger.info("Generating productOnClient sequence with algorithm 2")
 			generateProductOnClientSequence = OPSI.SharedAlgorithm.generateProductOnClientSequence_algorithm2
+		else:
+			logger.info("Generating productOnClient sequence with algorithm 1")
+			generateProductOnClientSequence = OPSI.SharedAlgorithm.generateProductOnClientSequence_algorithm1
 
 		return self._productOnClient_processWithFunction(productOnClients, generateProductOnClientSequence)
 
