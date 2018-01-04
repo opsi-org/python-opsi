@@ -3,7 +3,7 @@
 
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
-# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2018 uib GmbH <info@uib.de>
 # All rights reserved.
 
 # This program is free software: you can redistribute it and/or modify
@@ -713,56 +713,56 @@ class MySQLBackend(SQLBackend):
 				logger.debug2(u'doCommit set to true')
 		self._sql.close(conn,cursor)
 
-		def productProperty_updateObject(self, productProperty):
-			self._requiresEnabledSQLBackendModule()
-			ConfigDataBackend.productProperty_updateObject(self, productProperty)
-			data = self._objectToDatabaseHash(productProperty)
-			where = self._uniqueCondition(productProperty)
-			possibleValues = data['possibleValues']
-			defaultValues = data['defaultValues']
-			if possibleValues is None:
-				possibleValues = []
-			if defaultValues is None:
-				defaultValues = []
-			del data['possibleValues']
-			del data['defaultValues']
-			self._sql.update('PRODUCT_PROPERTY', where, data)
+	def productProperty_updateObject(self, productProperty):
+		self._requiresEnabledSQLBackendModule()
+		ConfigDataBackend.productProperty_updateObject(self, productProperty)
+		data = self._objectToDatabaseHash(productProperty)
+		where = self._uniqueCondition(productProperty)
+		possibleValues = data['possibleValues']
+		defaultValues = data['defaultValues']
+		if possibleValues is None:
+			possibleValues = []
+		if defaultValues is None:
+			defaultValues = []
+		del data['possibleValues']
+		del data['defaultValues']
+		self._sql.update('PRODUCT_PROPERTY', where, data)
 
-			if possibleValues is not None:
-				self._sql.delete('PRODUCT_PROPERTY_VALUE', where)
+		if possibleValues is not None:
+			self._sql.delete('PRODUCT_PROPERTY_VALUE', where)
 
-			for value in possibleValues:
-				try:
-					self._sql.doCommit = False
-					logger.debug2(u'doCommit set to false')
-					valuesExist = self._sql.getRow(
-						u"select * from PRODUCT_PROPERTY_VALUE where "
-						u"`propertyId` = '{0}' AND `productId` = '{1}' AND "
-						u"`productVersion` = '{2}' AND `packageVersion` = '{3}' "
-						u"AND `value` = '{4}' AND `isDefault` = {5}".format(
-							data['propertyId'],
-							data['productId'],
-							str(data['productVersion']),
-							str(data['packageVersion']),
-							value,
-							str(value in defaultValues)
-						)
+		for value in possibleValues:
+			try:
+				self._sql.doCommit = False
+				logger.debug2(u'doCommit set to false')
+				valuesExist = self._sql.getRow(
+					u"select * from PRODUCT_PROPERTY_VALUE where "
+					u"`propertyId` = '{0}' AND `productId` = '{1}' AND "
+					u"`productVersion` = '{2}' AND `packageVersion` = '{3}' "
+					u"AND `value` = '{4}' AND `isDefault` = {5}".format(
+						data['propertyId'],
+						data['productId'],
+						str(data['productVersion']),
+						str(data['packageVersion']),
+						value,
+						str(value in defaultValues)
 					)
-					if not valuesExist:
-						self._sql.doCommit = True
-						logger.debug2(u'doCommit set to true')
-						self._sql.insert('PRODUCT_PROPERTY_VALUE', {
-							'productId': data['productId'],
-							'productVersion': data['productVersion'],
-							'packageVersion': data['packageVersion'],
-							'propertyId': data['propertyId'],
-							'value': value,
-							'isDefault': (value in defaultValues)
-							}
-						)
-				finally:
+				)
+				if not valuesExist:
 					self._sql.doCommit = True
 					logger.debug2(u'doCommit set to true')
+					self._sql.insert('PRODUCT_PROPERTY_VALUE', {
+						'productId': data['productId'],
+						'productVersion': data['productVersion'],
+						'packageVersion': data['packageVersion'],
+						'propertyId': data['propertyId'],
+						'value': value,
+						'isDefault': (value in defaultValues)
+						}
+					)
+			finally:
+				self._sql.doCommit = True
+				logger.debug2(u'doCommit set to true')
 
 
 class MySQLBackendObjectModificationTracker(SQLBackendObjectModificationTracker):
