@@ -711,7 +711,7 @@ class MySQLBackend(SQLBackend):
 			finally:
 				self._sql.doCommit = True
 				logger.debug2(u'doCommit set to true')
-		self._sql.close(conn,cursor)
+		self._sql.close(conn, cursor)
 
 	def productProperty_updateObject(self, productProperty):
 		self._requiresEnabledSQLBackendModule()
