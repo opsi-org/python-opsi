@@ -3,7 +3,7 @@
 
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
-# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2018 uib GmbH <info@uib.de>
 # All rights reserved.
 
 # This program is free software: you can redistribute it and/or modify
@@ -71,9 +71,10 @@ class ConnectionPool(object):
 				except KeyError:
 					pass
 
-			def creator():
+			def getConnection():
 				return MySQLdb.connect(**kwargs)
-			ConnectionPool.__instance = pool.QueuePool(creator, **poolArgs)
+
+			ConnectionPool.__instance = pool.QueuePool(getConnection, **poolArgs)
 			con = ConnectionPool.__instance.connect()
 			con.autocommit(False)
 			con.close()
@@ -102,6 +103,8 @@ class MySQL(SQL):
 	ESCAPED_APOSTROPHE = "\\\'"
 	ESCAPED_ASTERISK = "\\*"
 	doCommit = True
+
+	_transactionLock = threading.Lock()
 
 	def __init__(self, **kwargs):
 		self._address = u'localhost'
@@ -133,9 +136,7 @@ class MySQL(SQL):
 			elif option == 'connectionpooltimeout':
 				self._connectionPoolTimeout = forceInt(value)
 
-		self._transactionLock = threading.Lock()
 		self._pool = None
-
 		self._createConnectionPool()
 		logger.debug(u'MySQL created: %s' % self)
 
@@ -144,27 +145,29 @@ class MySQL(SQL):
 
 	def _createConnectionPool(self):
 		logger.debug2(u"Creating connection pool")
-		self._transactionLock.acquire(False)
-		try:
+		with self._transactionLock:
+			if self._pool is not None:
+				return
+
+			conv = dict(conversions)
+			conv[FIELD_TYPE.DATETIME] = str
+			conv[FIELD_TYPE.TIMESTAMP] = str
+
 			for tryNumber in (1, 2):
 				try:
-					if self._pool:
-						self._pool.destroy()
-					conv = dict(conversions)
-					conv[FIELD_TYPE.DATETIME] = str
-					conv[FIELD_TYPE.TIMESTAMP] = str
 					self._pool = ConnectionPool(
-							host=self._address,
-							user=self._username,
-							passwd=self._password,
-							db=self._database,
-							use_unicode=True,
-							charset=self._databaseCharset,
-							pool_size=self._connectionPoolSize,
-							max_overflow=self._connectionPoolMaxOverflow,
-							timeout=self._connectionPoolTimeout,
-							conv=conv
+						host=self._address,
+						user=self._username,
+						passwd=self._password,
+						db=self._database,
+						use_unicode=True,
+						charset=self._databaseCharset,
+						pool_size=self._connectionPoolSize,
+						max_overflow=self._connectionPoolMaxOverflow,
+						timeout=self._connectionPoolTimeout,
+						conv=conv
 					)
+					break
 				except Exception as error:
 					logger.logException(error)
 
@@ -179,48 +182,61 @@ class MySQL(SQL):
 						continue
 
 					raise BackendIOError(u"Failed to connect to database '%s' address '%s': %s" % (self._database, self._address, error))
-		finally:
-			self._transactionLock.release()
 
 	def connect(self, cursorType=None):
-		myConnectionSuccess = False
-		myMaxRetryConnection = 10
-		myRetryConnectionCounter = 0
+		"""
+		Connect to the MySQL server.
+		If `cursorType` is given this type will be used as the cursor.
 
-		if not cursorType:
-			cursorType = MySQLdb.cursors.DictCursor
+		Establishing a connection will be tried multiple times.
+		If no connection can be made during this an exception will be
+		raised.
 
-		while (not myConnectionSuccess) and (myRetryConnectionCounter < myMaxRetryConnection):
+		:param cursorType: The class of the cursor to use. \
+Defaults to :py:class:MySQLdb.cursors.DictCursor:.
+		:raises BackendIOError: In case no connection can be established.
+		:return: The connection and the corresponding cursor.
+		"""
+		retryLimit = 10
+
+		cursorType = cursorType or MySQLdb.cursors.DictCursor
+
+		for retryCount in range(retryLimit):
 			try:
-				if myRetryConnectionCounter > 0:
-					self._createConnectionPool()
-				logger.debug(u"Connecting to connection pool")
+				# We create an connection pool in any case.
+				# If a pool exists the function will return very fast.
+				self._createConnectionPool()
+
+				logger.debug2(u"Connecting to connection pool")
 				self._transactionLock.acquire()
-				logger.debug(u"Got thread lock")
-				logger.debug(u"Connection pool status: %s" % self._pool.status())
+				logger.debug(u"Connection pool status: {0}", self._pool.status())
 				conn = self._pool.connect()
 				conn.autocommit(False)
 				cursor = conn.cursor(cursorType)
-				myConnectionSuccess = True
+				break
+			except Exception as connectionError:
+				logger.debug(u"MySQL connection error: {0!r}", connectionError)
+				errorCode = connectionError.args[0]
+				self._transactionLock.release()
+				logger.debug2(u"Lock released")
 
-			except Exception as e:
-				logger.debug(u"Execute error: %s" % e)
-				if e.args[0] == 2006:
+				if errorCode == 2006:
 					# 2006: 'MySQL server has gone away'
-					myConnectionSuccess = False
-					if myRetryConnectionCounter >= myMaxRetryConnection:
-						logger.error(u'MySQL server has gone away (Code 2006) - giving up after %d retries' % myRetryConnectionCounter)
-						raise
-					else:
-						logger.notice(u'MySQL server has gone away (Code 2006) - restarting Connection: retry %s' % myRetryConnectionCounter)
-						myRetryConnectionCounter = myRetryConnectionCounter + 1
-						self._transactionLock.release()
-						logger.debug(u"Thread lock released")
-						time.sleep(0.1)
+					logger.notice(u'MySQL server has gone away (Code {1}) - restarting connection: retry #{0}', retryCount, errorCode)
+					time.sleep(0.1)
 				else:
-					logger.error(u'Unknown DB Error: %s' % str(e))
-					self._transactionLock.release()
+					logger.error(u'Unexpected database error: {0}', connectionError)
 					raise
+		else:
+			logger.debug2("Destroying connection pool.")
+			self._pool.destroy()
+			self._pool = None
+
+			self._transactionLock.release()
+			logger.debug2(u"Lock released")
+
+			raise BackendIOError(u"Unable to connnect to mysql server. Giving up after {0} retries!".format(retryLimit))
+
 		return (conn, cursor)
 
 	def close(self, conn, cursor):
@@ -243,7 +259,6 @@ class MySQL(SQL):
 					# 2006: MySQL server has gone away
 					raise
 
-				self._createConnectionPool()
 				(conn, cursor) = self.connect()
 				self.execute(query, conn, cursor)
 
@@ -267,7 +282,7 @@ class MySQL(SQL):
 				if e[0] != 2006:
 					# 2006: MySQL server has gone away
 					raise
-				self._createConnectionPool()
+
 				(conn, cursor) = self.connect(cursorType=MySQLdb.cursors.Cursor)
 				self.execute(query, conn, cursor)
 
@@ -297,7 +312,7 @@ class MySQL(SQL):
 				if e[0] != 2006:
 					# 2006: MySQL server has gone away
 					raise
-				self._createConnectionPool()
+
 				(conn, cursor) = self.connect()
 				self.execute(query, conn, cursor)
 			row = cursor.fetchone()
@@ -347,7 +362,7 @@ class MySQL(SQL):
 				if e[0] != 2006:
 					# 2006: MySQL server has gone away
 					raise
-				self._createConnectionPool()
+
 				(conn, cursor) = self.connect()
 				self.execute(query, conn, cursor)
 			result = cursor.lastrowid
@@ -392,7 +407,7 @@ class MySQL(SQL):
 				if e[0] != 2006:
 					# 2006: MySQL server has gone away
 					raise
-				self._createConnectionPool()
+
 				(conn, cursor) = self.connect()
 				self.execute(query, conn, cursor)
 			result = cursor.rowcount
@@ -420,7 +435,6 @@ class MySQL(SQL):
 					# 2006: MySQL server has gone away
 					raise
 
-				self._createConnectionPool()
 				conn, cursor = self.connect()
 				self.execute(query, conn, cursor)
 
@@ -676,7 +690,7 @@ class MySQLBackend(SQLBackend):
 						self._sql.doCommit = False
 						conn.begin()
 						logger.debug2(u'Start Transaction: insert to ppv %d' % myRetryTransactionCounter)
-						if not self._sql.getRow(myPPVselect , conn, cursor):
+						if not self._sql.getRow(myPPVselect, conn, cursor):
 							# self._sql.doCommit = True
 							logger.debug2(u'doCommit set to true')
 							self._sql.insert('PRODUCT_PROPERTY_VALUE', {
@@ -711,58 +725,58 @@ class MySQLBackend(SQLBackend):
 			finally:
 				self._sql.doCommit = True
 				logger.debug2(u'doCommit set to true')
-		self._sql.close(conn,cursor)
+		self._sql.close(conn, cursor)
 
-		def productProperty_updateObject(self, productProperty):
-			self._requiresEnabledSQLBackendModule()
-			ConfigDataBackend.productProperty_updateObject(self, productProperty)
-			data = self._objectToDatabaseHash(productProperty)
-			where = self._uniqueCondition(productProperty)
-			possibleValues = data['possibleValues']
-			defaultValues = data['defaultValues']
-			if possibleValues is None:
-				possibleValues = []
-			if defaultValues is None:
-				defaultValues = []
-			del data['possibleValues']
-			del data['defaultValues']
-			self._sql.update('PRODUCT_PROPERTY', where, data)
+	def productProperty_updateObject(self, productProperty):
+		self._requiresEnabledSQLBackendModule()
+		ConfigDataBackend.productProperty_updateObject(self, productProperty)
+		data = self._objectToDatabaseHash(productProperty)
+		where = self._uniqueCondition(productProperty)
+		possibleValues = data['possibleValues']
+		defaultValues = data['defaultValues']
+		if possibleValues is None:
+			possibleValues = []
+		if defaultValues is None:
+			defaultValues = []
+		del data['possibleValues']
+		del data['defaultValues']
+		self._sql.update('PRODUCT_PROPERTY', where, data)
 
-			if possibleValues is not None:
-				self._sql.delete('PRODUCT_PROPERTY_VALUE', where)
+		if possibleValues is not None:
+			self._sql.delete('PRODUCT_PROPERTY_VALUE', where)
 
-			for value in possibleValues:
-				try:
-					self._sql.doCommit = False
-					logger.debug2(u'doCommit set to false')
-					valuesExist = self._sql.getRow(
-						u"select * from PRODUCT_PROPERTY_VALUE where "
-						u"`propertyId` = '{0}' AND `productId` = '{1}' AND "
-						u"`productVersion` = '{2}' AND `packageVersion` = '{3}' "
-						u"AND `value` = '{4}' AND `isDefault` = {5}".format(
-							data['propertyId'],
-							data['productId'],
-							str(data['productVersion']),
-							str(data['packageVersion']),
-							value,
-							str(value in defaultValues)
-						)
+		for value in possibleValues:
+			try:
+				self._sql.doCommit = False
+				logger.debug2(u'doCommit set to false')
+				valuesExist = self._sql.getRow(
+					u"select * from PRODUCT_PROPERTY_VALUE where "
+					u"`propertyId` = '{0}' AND `productId` = '{1}' AND "
+					u"`productVersion` = '{2}' AND `packageVersion` = '{3}' "
+					u"AND `value` = '{4}' AND `isDefault` = {5}".format(
+						data['propertyId'],
+						data['productId'],
+						str(data['productVersion']),
+						str(data['packageVersion']),
+						value,
+						str(value in defaultValues)
 					)
-					if not valuesExist:
-						self._sql.doCommit = True
-						logger.debug2(u'doCommit set to true')
-						self._sql.insert('PRODUCT_PROPERTY_VALUE', {
-							'productId': data['productId'],
-							'productVersion': data['productVersion'],
-							'packageVersion': data['packageVersion'],
-							'propertyId': data['propertyId'],
-							'value': value,
-							'isDefault': (value in defaultValues)
-							}
-						)
-				finally:
+				)
+				if not valuesExist:
 					self._sql.doCommit = True
 					logger.debug2(u'doCommit set to true')
+					self._sql.insert('PRODUCT_PROPERTY_VALUE', {
+						'productId': data['productId'],
+						'productVersion': data['productVersion'],
+						'packageVersion': data['packageVersion'],
+						'propertyId': data['propertyId'],
+						'value': value,
+						'isDefault': (value in defaultValues)
+						}
+					)
+			finally:
+				self._sql.doCommit = True
+				logger.debug2(u'doCommit set to true')
 
 
 class MySQLBackendObjectModificationTracker(SQLBackendObjectModificationTracker):
