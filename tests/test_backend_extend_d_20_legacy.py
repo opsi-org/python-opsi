@@ -33,8 +33,8 @@ from __future__ import absolute_import
 import pytest
 
 from OPSI.Object import (
-    BoolProductProperty, LocalbootProduct, OpsiClient, OpsiConfigserver,
-    OpsiDepotserver, ProductDependency, ProductOnDepot, ProductPropertyState,
+    BoolProductProperty, LocalbootProduct, OpsiClient, OpsiDepotserver,
+    ProductDependency, ProductOnDepot, ProductPropertyState,
     UnicodeProductProperty)
 from OPSI.Types import BackendReferentialIntegrityError
 from .test_hosts import getConfigServer, getDepotServers
