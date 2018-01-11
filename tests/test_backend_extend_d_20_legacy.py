@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2015-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2015-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -34,10 +33,11 @@ from __future__ import absolute_import
 import pytest
 
 from OPSI.Object import (
-    BoolProductProperty, LocalbootProduct, OpsiClient, ProductDependency,
-    ProductOnDepot, ProductPropertyState, UnicodeProductProperty)
+    BoolProductProperty, LocalbootProduct, OpsiClient, OpsiConfigserver,
+    OpsiDepotserver, ProductDependency, ProductOnDepot, ProductPropertyState,
+    UnicodeProductProperty)
 from OPSI.Types import BackendReferentialIntegrityError
-from .test_hosts import getDepotServers
+from .test_hosts import getConfigServer, getDepotServers
 
 
 def testGetGeneralConfigValueFailsWithInvalidObjectId(backendManager):
@@ -182,7 +182,8 @@ def testDeleteProductDependency(backendManager):
     assert not backendManager.productDependency_getObjects()
 
 
-def testSetProductPropertyWithoutSideEffects(backendManager):
+@pytest.mark.parametrize("createDepotState", [True, False])
+def testSetProductPropertyWithoutSideEffects(backendManager, createDepotState):
     product = LocalbootProduct('aboabo', '1.0', '2')
     backendManager.product_insertObject(product)
 
@@ -209,6 +210,22 @@ def testSetProductPropertyWithoutSideEffects(backendManager):
     backendManager.productProperty_insertObject(testprop)
     backendManager.productProperty_insertObject(untouchable)
 
+    configserver = getConfigServer()
+    depot = OpsiDepotserver('biscuit.some.test')
+    backendManager.host_insertObject(configserver)
+    backendManager.host_insertObject(depot)
+
+    expectedStates = 0
+    if createDepotState:
+        depotProdState = ProductPropertyState(
+            productId=product.id,
+            propertyId=testprop.propertyId,
+            objectId=depot.id,
+            values=testprop.getDefaultValues()
+        )
+        backendManager.productPropertyState_insertObject(depotProdState)
+        expectedStates += 1
+
     backendManager.setProductProperty(product.id, testprop.propertyId, 'Starfish')
 
     results = backendManager.productProperty_getObjects()
@@ -227,8 +244,15 @@ def testSetProductPropertyWithoutSideEffects(backendManager):
         else:
             raise ValueError("Unexpected property: {0!r}".format(result))
 
-    # TODO: add depots and check again
-    assert not backendManager.productPropertyState_getObjects()
+    states = backendManager.productPropertyState_getObjects()
+    assert len(states) == expectedStates
+
+    if createDepotState:
+        pps = states.pop()
+        assert pps.productId == product.id
+        assert pps.propertyId == testprop.propertyId
+        assert pps.objectId == depot.id
+        assert pps.values == ['Starfish']
 
 
 @pytest.mark.parametrize("productExists", [True, False], ids=["product exists", "product missing"])
