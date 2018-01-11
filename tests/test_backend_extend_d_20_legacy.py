@@ -196,30 +196,39 @@ def testSetProductPropertyWithoutSideEffects(backendManager):
         editable=True,
         multiValue=False
     )
-    backendManager.productProperty_insertObject(testprop)
     untouchable = UnicodeProductProperty(
         productId=product.id,
         productVersion=product.productVersion,
         packageVersion=product.packageVersion,
-        propertyId=u"changeMe",
-        possibleValues=["True", "False"],
-        defaultValues=["False"],
+        propertyId=u"ucanttouchthis",
+        possibleValues=["Chocolate", "Starfish"],
+        defaultValues=["Chocolate"],
         editable=True,
         multiValue=False
     )
+    backendManager.productProperty_insertObject(testprop)
     backendManager.productProperty_insertObject(untouchable)
 
-    backendManager.setProductProperty(product.id, testprop.propertyId, 'aboh')
-    # TODO: test property of different type
-    # TODO: test with and without object id
-    # TODO: check property values
-    # TODO: check what happened to the untouchable property
+    backendManager.setProductProperty(product.id, testprop.propertyId, 'Starfish')
 
-    result = backendManager.productProperty_getObjects(propertyId=testprop.propertyId)
-    assert len(result) == 1
-    result = result[0]
-    assert isinstance(result, UnicodeProductProperty)
-    assert result.getDefaultValues() is not None
+    results = backendManager.productProperty_getObjects()
+    assert len(results) == 2
+
+    for result in results:
+        print("Checking {0!r}".format(result))
+        assert isinstance(result, UnicodeProductProperty)
+
+        if result.propertyId == untouchable.propertyId:
+            assert result.getDefaultValues() == untouchable.getDefaultValues()
+            assert result.getPossibleValues() == untouchable.getPossibleValues()
+        elif result.propertyId == testprop.propertyId:
+            assert result.getDefaultValues() == testprop.getDefaultValues()
+            assert result.getPossibleValues() == testprop.getPossibleValues()
+        else:
+            raise ValueError("Unexpected property: {0!r}".format(result))
+
+    # TODO: add depots and check again
+    assert not backendManager.productPropertyState_getObjects()
 
 
 @pytest.mark.parametrize("productExists", [True, False], ids=["product exists", "product missing"])
