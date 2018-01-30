@@ -163,6 +163,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 
 	def opsipxeconfd_updatePXEBootConfiguration(self, clientId):
 		clientId = forceHostId(clientId)
+		logger.debug("Updating PXE boot config of {!r}", clientId)
 
 		with self._updateThreadsLock:
 			if clientId not in self._updateThreads:
