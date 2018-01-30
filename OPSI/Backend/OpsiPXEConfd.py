@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2010-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2010-2018 uib GmbH <info@uib.de>
 # All rights reserved.
 
 # This program is free software: you can redistribute it and/or modify
@@ -56,6 +56,7 @@ class ServerConnection:
 			result = ''
 			try:
 				for part in iter(lambda: unixSocket.recv(4096), ''):
+					logger.debug("Received {!r}", part)
 					result += forceUnicode(part)
 			except Exception as error:
 				raise RuntimeError(u"Failed to receive: %s" % error)
