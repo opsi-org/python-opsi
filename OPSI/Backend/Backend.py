@@ -2390,7 +2390,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		return isDefault
 
 	def _configState_checkValid(self, configState):
-                if isInstance(configState, dict):
+                if isinstance(configState, dict):
                     configState = ConfigState.fromHash(configState)
 		if configState.configId == 'clientconfig.depot.id':
 			if not configState.values or not configState.values[0]:

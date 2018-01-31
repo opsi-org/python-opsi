@@ -116,4 +116,4 @@ def testBackend_getSharedAlgorithmThrowsExceptionIfAlgoUnknown(configDataBackend
 def testBackend__configState_insterValidObject(configDataBackend):
     backend = configDataBackend
     testDict = {'configId':'license-management.use', 'objectId':'testclient.test', 'values':'true', 'type':'ConfigState'}
-    backend.configState_insertObject(myDict)
+    backend.configState_insertObject(testDict)
