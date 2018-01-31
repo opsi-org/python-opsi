@@ -2390,6 +2390,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		return isDefault
 
 	def _configState_checkValid(self, configState):
+                configState = ConfigState.fromHash(configState)
 		if configState.configId == 'clientconfig.depot.id':
 			if not configState.values or not configState.values[0]:
 				raise ValueError(u"No valid depot id given")
