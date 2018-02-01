@@ -152,8 +152,17 @@ class MySQL(SQL):
 
 	def _createConnectionPool(self):
 		logger.debug2(u"Creating connection pool")
+
+		if self._pool is not None:
+			logger.debug2(u"Connection pool exists - fast exit.")
+			return
+
+		logger.debug2(u"Waiting for transaction lock...")
 		with self._transactionLock:
+			logger.debug2(u"Got transaction lock...")
+
 			if self._pool is not None:
+				logger.debug2(u"Connection pool has been created while waiting for lock - fast exit.")
 				return
 
 			conv = dict(conversions)
@@ -174,6 +183,7 @@ class MySQL(SQL):
 						timeout=self._connectionPoolTimeout,
 						conv=conv
 					)
+					logger.debug2("Created connection pool {0}", self._pool)
 					break
 				except Exception as error:
 					logger.logException(error)
@@ -208,12 +218,12 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 
 		cursorType = cursorType or MySQLdb.cursors.DictCursor
 
+		# We create an connection pool in any case.
+		# If a pool exists the function will return very fast.
+		self._createConnectionPool()
+
 		for retryCount in range(retryLimit):
 			try:
-				# We create an connection pool in any case.
-				# If a pool exists the function will return very fast.
-				self._createConnectionPool()
-
 				logger.debug2(u"Connecting to connection pool")
 				self._transactionLock.acquire()
 				logger.debug2(u"Connection pool status: {0}", self._pool.status())
