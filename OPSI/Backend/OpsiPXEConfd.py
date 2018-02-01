@@ -260,9 +260,9 @@ class UpdateThread(threading.Thread):
 			try:
 				logger.info(u"Updating pxe boot configuration for client '%s'" % self._clientId)
 				sc = ServerConnection(self._opsiPXEConfdBackend._port, self._opsiPXEConfdBackend._timeout)
-				logger.info(u"Sending command '%s'" % self._command)
+				logger.debug(u"Sending command '%s'" % self._command)
 				result = sc.sendCommand(self._command)
-				logger.info(u"Got result '%s'" % result)
+				logger.debug(u"Got result '%s'" % result)
 			except Exception as error:
 				logger.critical(u"Failed to update PXE boot configuration for client '%s': %s" % (self._clientId, error))
 
