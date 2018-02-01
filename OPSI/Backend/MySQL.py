@@ -201,12 +201,12 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 
 		cursorType = cursorType or MySQLdb.cursors.DictCursor
 
+		# We create an connection pool in any case.
+		# If a pool exists the function will return very fast.
+		self._createConnectionPool()
+
 		for retryCount in range(retryLimit):
 			try:
-				# We create an connection pool in any case.
-				# If a pool exists the function will return very fast.
-				self._createConnectionPool()
-
 				logger.debug2(u"Connecting to connection pool")
 				self._transactionLock.acquire()
 				logger.debug(u"Connection pool status: {0}", self._pool.status())
