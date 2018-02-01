@@ -297,6 +297,12 @@ python-opsi (4.1.1.1-1) experimental; urgency=medium
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 04 Oct 2016 16:15:11 +0200
 
+python-opsi (4.0.7.54-1) stable; urgency=medium
+
+  * OPSI.Backend.MySQL: Avoid possible deadlock situation.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 01 Feb 2018 15:27:03 +0100
+
 python-opsi (4.0.7.53-1) testing; urgency=medium
 
   * OPSI.Backend.MySQL: Fix a bug in the handling of the connection pool
