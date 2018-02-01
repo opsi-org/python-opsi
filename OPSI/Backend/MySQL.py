@@ -47,7 +47,7 @@ from OPSI.Backend.Backend import ConfigDataBackend
 from OPSI.Backend.SQL import (onlyAllowSelect, SQL, SQLBackend,
 	SQLBackendObjectModificationTracker)
 
-__version__ = '4.0.6.29'
+__version__ = '4.0.7.54'
 
 logger = Logger()
 
