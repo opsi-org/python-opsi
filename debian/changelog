@@ -1,3 +1,9 @@
+python-opsi (4.1.1.23-1) UNRELEASED; urgency=medium
+
+  * OPSI.Backend.OpsiPXEConfd: The error marker is now a constant.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 01 Feb 2018 16:19:32 +0100
+
 python-opsi (4.1.1.22-1) testing; urgency=medium
 
   * Based on python-opsi 4.0.7.53-1.
