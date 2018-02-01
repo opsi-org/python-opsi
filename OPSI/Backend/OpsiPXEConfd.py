@@ -56,7 +56,7 @@ class ServerConnection:
 			result = ''
 			try:
 				for part in iter(lambda: unixSocket.recv(4096), ''):
-					logger.debug("Received {!r}", part)
+					logger.debug2("Received {!r}", part)
 					result += forceUnicode(part)
 			except Exception as error:
 				raise RuntimeError(u"Failed to receive: %s" % error)
