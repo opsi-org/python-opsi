@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2010-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2010-2018 uib GmbH <info@uib.de>
 # All rights reserved.
 
 # This program is free software: you can redistribute it and/or modify
@@ -41,6 +41,8 @@ from OPSI.Util import getfqdn
 
 __all__ = ('ServerConnection', 'OpsiPXEConfdBackend', 'createUnixSocket')
 
+ERROR_MARKER = u'(ERROR)'
+
 logger = Logger()
 
 
@@ -60,7 +62,7 @@ class ServerConnection:
 			except Exception as error:
 				raise RuntimeError(u"Failed to receive: %s" % error)
 
-		if result.startswith(u'(ERROR)'):
+		if result.startswith(ERROR_MARKER):
 			raise RuntimeError(u"Command '%s' failed: %s" % (cmd, result))
 
 		return result
