@@ -69,7 +69,7 @@ class ServerConnection:
 
 @contextmanager
 def createUnixSocket(port, timeout=5.0):
-	logger.notice(u"Creating unix socket '%s'" % port)
+	logger.notice(u"Creating unix socket {!r}", port)
 	_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
 	_socket.settimeout(timeout)
 	try:
@@ -156,7 +156,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 
 		depotId = self._getResponsibleDepotId(productOnClient.clientId)
 		if depotId != self._depotId:
-			logger.info(u"Not responsible for client '%s', forwarding request to depot '%s'" % (productOnClient.clientId, depotId))
+			logger.info(u"Not responsible for client '{}', forwarding request to depot {!r}", productOnClient.clientId, depotId)
 			return self._getDepotConnection(depotId).opsipxeconfd_updatePXEBootConfiguration(productOnClient.clientId)
 
 		self.opsipxeconfd_updatePXEBootConfiguration(productOnClient.clientId)
@@ -258,13 +258,13 @@ class UpdateThread(threading.Thread):
 
 		with self._opsiPXEConfdBackend._updateThreadsLock:
 			try:
-				logger.info(u"Updating pxe boot configuration for client '%s'" % self._clientId)
+				logger.info(u"Updating pxe boot configuration for client '{}'", self._clientId)
 				sc = ServerConnection(self._opsiPXEConfdBackend._port, self._opsiPXEConfdBackend._timeout)
-				logger.debug(u"Sending command '%s'" % self._command)
+				logger.debug(u"Sending command {!r}", self._command)
 				result = sc.sendCommand(self._command)
-				logger.debug(u"Got result '%s'" % result)
+				logger.debug(u"Got result {!r}", result)
 			except Exception as error:
-				logger.critical(u"Failed to update PXE boot configuration for client '%s': %s" % (self._clientId, error))
+				logger.critical(u"Failed to update PXE boot configuration for client '{}': {}", self._clientId, error)
 
 			del self._opsiPXEConfdBackend._updateThreads[self._clientId]
 
