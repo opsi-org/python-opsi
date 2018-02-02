@@ -114,7 +114,8 @@ def testBackend_getSharedAlgorithmThrowsExceptionIfAlgoUnknown(configDataBackend
     with pytest.raises(BackendError):
         configDataBackend.backend_getSharedAlgorithm("foo")
 
-def testBackend__configStateCheckWorksWithDict(configDataBackend):
+
+def testConfigStateCheckWorksWithInsertedDict(configDataBackend):
     backend = configDataBackend
     client = OpsiClient(id='client.test.invalid')
     backend.host_insertObject(client)
