@@ -28,6 +28,7 @@ from __future__ import absolute_import
 import os.path
 
 from OPSI.Backend.Backend import ExtendedBackend
+from OPSI.Object import OpsiClient
 from OPSI.Types import BackendError, BackendMissingDataError
 from OPSI.Util import randomString
 from .test_hosts import getConfigServer
@@ -115,7 +116,9 @@ def testBackend_getSharedAlgorithmThrowsExceptionIfAlgoUnknown(configDataBackend
 
 def testBackend__configState_insterValidObject(configDataBackend):
     backend = configDataBackend
+    client = OpsiClient(id='client.test.invalid')
+    backend.host_insertObject(client)
     myConfig = {'defaultValues': 'false', 'editable': 'false', 'type': 'BoolConfig', 'id': 'license-management.use'}
     backend.config_insertObject(myConfig)
-    testDict = {'configId':'license-management.use', 'objectId':'testclient.test', 'values':'true', 'type':'ConfigState'}
+    testDict = {'configId':'license-management.use', 'objectId':'client.test.invalid', 'values':'true', 'type':'ConfigState'}
     backend.configState_insertObject(testDict)
