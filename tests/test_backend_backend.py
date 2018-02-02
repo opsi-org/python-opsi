@@ -28,7 +28,7 @@ from __future__ import absolute_import
 import os.path
 
 from OPSI.Backend.Backend import ExtendedBackend
-from OPSI.Object import OpsiClient
+from OPSI.Object import BoolConfig, OpsiClient
 from OPSI.Types import BackendError, BackendMissingDataError
 from OPSI.Util import randomString
 from .test_hosts import getConfigServer
@@ -119,7 +119,7 @@ def testConfigStateCheckWorksWithInsertedDict(configDataBackend):
     backend = configDataBackend
     client = OpsiClient(id='client.test.invalid')
     backend.host_insertObject(client)
-    config = {'defaultValues': 'false', 'editable': 'false', 'type': 'BoolConfig', 'id': 'license-management.use'}
+    config = BoolConfig('license-managment.use')
     backend.config_insertObject(config)
-    configState = {'configId': 'license-management.use', 'objectId': 'client.test.invalid', 'values': 'true', 'type': 'ConfigState'}
+    configState = {'configId': config.id, 'objectId': client.id, 'values': 'true', 'type': 'ConfigState'}
     backend.configState_insertObject(configState)
