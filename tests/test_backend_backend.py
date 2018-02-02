@@ -123,3 +123,22 @@ def testConfigStateCheckWorksWithInsertedDict(extendedConfigDataBackend):
     backend.config_insertObject(config)
     configState = {'configId': config.id, 'objectId': client.id, 'values': 'true', 'type': 'ConfigState'}
     backend.configState_insertObject(configState)
+
+
+def testConfigStateCheckWorksWithUpdatedDict(extendedConfigDataBackend):
+    backend = extendedConfigDataBackend
+    client = OpsiClient('client.test.invalid')
+    backend.host_insertObject(client)
+    config = BoolConfig('license-managment.use')
+    backend.config_insertObject(config)
+
+    configState = {
+        'configId': config.id,
+        'objectId': client.id,
+        'values': True,
+        'type': 'ConfigState'
+    }
+    backend.configState_insertObject(configState)
+
+    configState['values'] = False
+    backend.configState_updateObject(configState)
