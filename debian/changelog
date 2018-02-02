@@ -303,6 +303,13 @@ python-opsi (4.1.1.1-1) experimental; urgency=medium
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 04 Oct 2016 16:15:11 +0200
 
+python-opsi (4.0.7.55-1) stable; urgency=medium
+
+  * OPSI.Backend.Backend: configState_insertObject and configState_updateObject
+    do not fail anymore when called with a dict as parameter.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 02 Feb 2018 14:32:28 +0100
+
 python-opsi (4.0.7.54-1) stable; urgency=medium
 
   * OPSI.Backend.MySQL: Avoid possible deadlock situation.
