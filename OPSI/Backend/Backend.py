@@ -2390,9 +2390,6 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		return isDefault
 
 	def _configState_checkValid(self, configState):
-                if isinstance(configState, dict):
-                    configState = ConfigState.fromHash(configState)
- 
 		if configState.configId == 'clientconfig.depot.id':
 			if not configState.values or not configState.values[0]:
 				raise ValueError(u"No valid depot id given")
@@ -2405,6 +2402,8 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			# Do not insert configStates which match the default
 			logger.debug(u"Not inserting configState {0!r}, because it does not differ from defaults", configState)
 			return
+
+		configState = forceObjectClass(configState, ConfigState)
 		self._configState_checkValid(configState)
 		self._backend.configState_insertObject(configState)
 
@@ -2413,6 +2412,8 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			# Do not update configStates which match the default
 			logger.debug(u"Deleting configState {0!r}, because it does not differ from defaults", configState)
 			return self._backend.configState_deleteObjects(configState)
+
+		configState = forceObjectClass(configState, ConfigState)
 		self._configState_checkValid(configState)
 		self._backend.configState_updateObject(configState)
 
