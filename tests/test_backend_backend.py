@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -28,7 +28,7 @@ from __future__ import absolute_import
 import os.path
 
 from OPSI.Backend.Backend import ExtendedBackend
-from OPSI.Object import BoolConfig, OpsiClient
+from OPSI.Object import BoolConfig, OpsiClient, UnicodeConfig
 from OPSI.Types import BackendError, BackendMissingDataError
 from OPSI.Util import randomString
 from .test_hosts import getConfigServer
@@ -142,3 +142,32 @@ def testConfigStateCheckWorksWithUpdatedDict(extendedConfigDataBackend):
 
     configState['values'] = False
     backend.configState_updateObject(configState)
+
+
+@pytest.mark.parametrize("configValue", ['nofqdn', None, 'non.existing.depot'])
+def testConfigStateCheckFailsOnInvalidDepotSettings(extendedConfigDataBackend, configValue):
+    backend = extendedConfigDataBackend
+    client = OpsiClient(id='client.test.invalid')
+    backend.host_insertObject(client)
+
+    configServer = getConfigServer()
+    backend.host_insertObject(configServer)
+
+    config = UnicodeConfig(
+        id=u'clientconfig.depot.id',
+        description=u'ID of the opsi depot to use',
+        possibleValues=[configServer.getId()],
+        defaultValues=[configServer.getId()],
+        editable=True,
+        multiValue=False
+    )
+
+    backend.config_insertObject(config)
+    configState = {
+        'configId': config.id,
+        'objectId': client.id,
+        'values': configValue,
+        'type': 'ConfigState'
+    }
+    with pytest.raises(ValueError):
+        backend.configState_insertObject(configState)
