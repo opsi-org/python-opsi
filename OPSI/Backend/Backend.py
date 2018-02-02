@@ -4,7 +4,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -65,7 +65,7 @@ from OPSI.Util import (blowfishEncrypt, blowfishDecrypt, compareVersions,
 from OPSI.Util.File import ConfigFile
 import OPSI.SharedAlgorithm
 
-__version__ = '4.0.7.45'
+__version__ = '4.0.7.55'
 
 logger = Logger()
 OPSI_VERSION_FILE = u'/etc/opsi/version'
@@ -2402,6 +2402,8 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			# Do not insert configStates which match the default
 			logger.debug(u"Not inserting configState {0!r}, because it does not differ from defaults", configState)
 			return
+
+		configState = forceObjectClass(configState, ConfigState)
 		self._configState_checkValid(configState)
 		self._backend.configState_insertObject(configState)
 
@@ -2410,6 +2412,8 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			# Do not update configStates which match the default
 			logger.debug(u"Deleting configState {0!r}, because it does not differ from defaults", configState)
 			return self._backend.configState_deleteObjects(configState)
+
+		configState = forceObjectClass(configState, ConfigState)
 		self._configState_checkValid(configState)
 		self._backend.configState_updateObject(configState)
 
