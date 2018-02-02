@@ -114,11 +114,11 @@ def testBackend_getSharedAlgorithmThrowsExceptionIfAlgoUnknown(configDataBackend
     with pytest.raises(BackendError):
         configDataBackend.backend_getSharedAlgorithm("foo")
 
-def testBackend__configState_insterValidObject(configDataBackend):
+def testBackend__configStateCheckWorksWithDict(configDataBackend):
     backend = configDataBackend
     client = OpsiClient(id='client.test.invalid')
     backend.host_insertObject(client)
-    myConfig = {'defaultValues': 'false', 'editable': 'false', 'type': 'BoolConfig', 'id': 'license-management.use'}
-    backend.config_insertObject(myConfig)
-    testDict = {'configId':'license-management.use', 'objectId':'client.test.invalid', 'values':'true', 'type':'ConfigState'}
-    backend.configState_insertObject(testDict)
+    config = {'defaultValues': 'false', 'editable': 'false', 'type': 'BoolConfig', 'id': 'license-management.use'}
+    backend.config_insertObject(config)
+    configState = {'configId': 'license-management.use', 'objectId': 'client.test.invalid', 'values': 'true', 'type': 'ConfigState'}
+    backend.configState_insertObject(configState)
