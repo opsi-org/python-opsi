@@ -115,8 +115,8 @@ def testBackend_getSharedAlgorithmThrowsExceptionIfAlgoUnknown(configDataBackend
         configDataBackend.backend_getSharedAlgorithm("foo")
 
 
-def testConfigStateCheckWorksWithInsertedDict(configDataBackend):
-    backend = configDataBackend
+def testConfigStateCheckWorksWithInsertedDict(extendedConfigDataBackend):
+    backend = extendedConfigDataBackend
     client = OpsiClient(id='client.test.invalid')
     backend.host_insertObject(client)
     config = BoolConfig('license-managment.use')
