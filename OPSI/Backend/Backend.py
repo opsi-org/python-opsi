@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -653,7 +653,7 @@ containing the localisation of the hardware audit.
 		Write log data into the corresponding log file.
 
 		:param logType: Type of log. \
-Currently supported: *bootimage*, *clientconnect*, *instlog* or *opsiconfd*.
+Currently supported: *bootimage*, *clientconnect*, *instlog*, *opsiconfd* or *userlogin*.
 		:param data: Log content
 		:type data: Unicode
 		:param objectId: Specialising of ``logType``
@@ -743,7 +743,7 @@ overwrite the log.
 		Return the content of a log.
 
 		:param logType: Type of log. \
-Currently supported: *bootimage*, *clientconnect*, *instlog* or *opsiconfd*.
+Currently supported: *bootimage*, *clientconnect*, *instlog*, *opsiconfd* or *userlogin*.
 		:type data: Unicode
 		:param objectId: Specialising of ``logType``
 		:param maxSize: Limit for the size of returned characters in bytes. \
@@ -2502,6 +2502,8 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			# Do not insert configStates which match the default
 			logger.debug(u"Not inserting configState {0!r}, because it does not differ from defaults", configState)
 			return
+
+		configState = forceObjectClass(configState, ConfigState)
 		self._configState_checkValid(configState)
 		self._backend.configState_insertObject(configState)
 
@@ -2510,6 +2512,8 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			# Do not update configStates which match the default
 			logger.debug(u"Deleting configState {0!r}, because it does not differ from defaults", configState)
 			return self._backend.configState_deleteObjects(configState)
+
+		configState = forceObjectClass(configState, ConfigState)
 		self._configState_checkValid(configState)
 		self._backend.configState_updateObject(configState)
 
@@ -3204,12 +3208,17 @@ into the IDs of these depots are to be found in the list behind \
 
 	def productOnClient_generateSequence(self, productOnClients):
 		configs = self._context.config_getObjects(id="product_sort_algorithm")  # pylint: disable=maybe-no-member
-		if configs and ("product_on_client" in configs[0].getDefaultValues() or "algorithm1" in configs[0].getDefaultValues()):
-			logger.info("Generating productOnClient sequence with algorithm 1")
-			generateProductOnClientSequence = OPSI.SharedAlgorithm.generateProductOnClientSequence_algorithm1
-		else:
+		try:
+			defaults = configs[0].getDefaultValues()
+		except IndexError:
+			defaults = []
+
+		if "algorithm2" in defaults:
 			logger.info("Generating productOnClient sequence with algorithm 2")
 			generateProductOnClientSequence = OPSI.SharedAlgorithm.generateProductOnClientSequence_algorithm2
+		else:
+			logger.info("Generating productOnClient sequence with algorithm 1")
+			generateProductOnClientSequence = OPSI.SharedAlgorithm.generateProductOnClientSequence_algorithm1
 
 		return self._productOnClient_processWithFunction(productOnClients, generateProductOnClientSequence)
 
