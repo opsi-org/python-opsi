@@ -129,6 +129,23 @@ mkdir -p $RPM_BUILD_ROOT/etc/opsi/modules.d
 %clean
 rm -rf $RPM_BUILD_ROOT
 
+# ===[ pre ]========================================
+%pre
+if [ -L "/etc/opsi/backendManager/dispatch.conf" ]; then
+	dispatchConfTarget=$(readlink -f /etc/opsi/backendManager/dispatch.conf)
+	if [ $dispatchConfTarget != "/etc/opsi/backendManager/dispatch.conf" ]; then
+		rm /etc/opsi/backendManager/dispatch.conf
+		cp $dispatchConfTarget /etc/opsi/backendManager/dispatch.conf
+	fi
+fi
+if [ -L "/etc/opsi/backendManager/acl.conf" ]; then
+	aclConfTarget=$(readlink -f /etc/opsi/backendManager/acl.conf)
+	if [ $aclConfTarget != "/etc/opsi/backendManager/acl.conf" ]; then
+		rm /etc/opsi/backendManager/acl.conf
+		cp $aclConfTarget /etc/opsi/backendManager/acl.conf
+	fi
+fi
+
 # ===[ post ]=======================================
 %post
 fileadmingroup=$(grep "fileadmingroup" /etc/opsi/opsi.conf | cut -d "=" -f 2 | sed 's/\s*//g')
@@ -172,8 +189,8 @@ test -e /etc/opsi/passwd || touch /etc/opsi/passwd
 chown root:$fileadmingroup /etc/opsi/passwd
 chmod 660 /etc/opsi/passwd
 
-[ -e "/etc/opsi/backendManager/acl.conf" ]      || cp /etc/opsi/backendManager/acl.conf.default      /etc/opsi/backendManager/acl.conf
-[ -e "/etc/opsi/backendManager/dispatch.conf" ] || cp /etc/opsi/backendManager/dispatch.conf.default /etc/opsi/backendManager/dispatch.conf
+[ -e "/etc/opsi/backendManager/acl.conf" ]      || cp /etc/opsi/backendManager/acl.conf.example      /etc/opsi/backendManager/acl.conf
+[ -e "/etc/opsi/backendManager/dispatch.conf" ] || cp /etc/opsi/backendManager/dispatch.conf.example /etc/opsi/backendManager/dispatch.conf
 
 # Processing files for the SSH extension
 chown opsiconfd:opsiadmin /etc/opsi/server_commands_default.conf
@@ -182,6 +199,14 @@ chmod 440 /etc/opsi/server_commands_default.conf
 # Removing files dating before opsi 4.1
 if [ -e "/etc/opsi/version" ]; then
 	rm "/etc/opsi/version" || echo "Failed to remove /etc/opsi/version"
+fi
+
+if [ -e "/etc/opsi/backendManager/dispatch.conf.default" ]; then
+	rm "/etc/opsi/backendManager/dispatch.conf.default"
+fi
+
+if [ -e "/etc/opsi/backendManager/acl.conf.default" ]; then
+	rm "/etc/opsi/backendManager/acl.conf.default"
 fi
 
 # ===[ files ]======================================
@@ -199,8 +224,8 @@ fi
 %config(noreplace) /etc/opsi/backends/opsipxeconfd.conf
 %config(noreplace) /etc/opsi/backends/sqlite.conf
 %config /etc/opsi/opsi.conf
-%config /etc/opsi/backendManager/acl.conf.default
-%config /etc/opsi/backendManager/dispatch.conf.default
+%config /etc/opsi/backendManager/acl.conf.example
+%config /etc/opsi/backendManager/dispatch.conf.example
 %config /etc/opsi/backendManager/extend.d/10_opsi.conf
 %config /etc/opsi/backendManager/extend.d/10_wim.conf
 %config /etc/opsi/backendManager/extend.d/20_legacy.conf

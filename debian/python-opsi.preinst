@@ -1,7 +1,7 @@
 #! /bin/bash -e
 
 # = = = = = = = = = = = = = = = = = = = = = = =
-# =     Copyright (C) 2010-2017 uib GmbH      =
+# =     Copyright (C) 2010-2018 uib GmbH      =
 # =           http://www.uib.de               =
 # =          All rights reserved.             =
 # = = = = = = = = = = = = = = = = = = = = = = =
@@ -22,9 +22,17 @@ case "$1" in
         cp $aclConfTarget /etc/opsi/backendManager/acl.conf
       fi
     fi
+    if [ -e "/etc/opsi/backendManager/dispatch.conf.default" ]; then
+    	rm "/etc/opsi/backendManager/dispatch.conf.default"
+    fi
+
+    if [ -e "/etc/opsi/backendManager/acl.conf.default" ]; then
+    	rm "/etc/opsi/backendManager/acl.conf.default"
+    fi
+
 	;;
 
-	abort-upgrade|abort-remove|abort-deconfigure)
+	abort-upgrade)
 	;;
 
 	*)
