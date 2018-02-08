@@ -49,8 +49,8 @@ case "$1" in
 		chown root:$fileadmingroup /etc/opsi/passwd
 		chmod 660 /etc/opsi/passwd
 
-		[ -e "/etc/opsi/backendManager/acl.conf" ]      || cp /etc/opsi/backendManager/acl.conf.default      /etc/opsi/backendManager/acl.conf
-		[ -e "/etc/opsi/backendManager/dispatch.conf" ] || cp /etc/opsi/backendManager/dispatch.conf.default /etc/opsi/backendManager/dispatch.conf
+		[ -e "/etc/opsi/backendManager/acl.conf" ]      || cp /etc/opsi/backendManager/acl.conf.example      /etc/opsi/backendManager/acl.conf
+		[ -e "/etc/opsi/backendManager/dispatch.conf" ] || cp /etc/opsi/backendManager/dispatch.conf.example /etc/opsi/backendManager/dispatch.conf
 
 		# Processing files for the SSH extension
 		chown opsiconfd:opsiadmin /etc/opsi/server_commands_default.conf
