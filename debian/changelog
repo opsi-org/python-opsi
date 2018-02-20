@@ -320,6 +320,13 @@ python-opsi (4.1.1.1-1) experimental; urgency=medium
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 04 Oct 2016 16:15:11 +0200
 
+python-opsi (4.0.7.56-1) testing; urgency=medium
+
+  * OPSI.Backend.MySQL: Creation of connection pool will wait for the lock
+    in a non-blocking fashion.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 20 Feb 2018 13:34:45 +0100
+
 python-opsi (4.0.7.55-1) stable; urgency=medium
 
   * OPSI.Backend.Backend: configState_insertObject and configState_updateObject
