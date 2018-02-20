@@ -104,6 +104,7 @@ class MySQL(SQL):
 	ESCAPED_ASTERISK = "\\*"
 	doCommit = True
 
+	_POOL_LOCK = threading.Lock()
 
 	def __init__(self, **kwargs):
 		self._address = u'localhost'
@@ -150,8 +151,9 @@ class MySQL(SQL):
 			logger.debug2(u"Connection pool exists - fast exit.")
 			return
 
-		logger.debug2(u"Waiting for transaction lock...")
-		with self._transactionLock:
+		logger.debug2(u"Waiting for transaction lock for pool...")
+		self._POOL_LOCK.acquire(False)  # non-blocking
+		try:
 			logger.debug2(u"Got transaction lock...")
 
 			if self._pool is not None:
@@ -192,6 +194,8 @@ class MySQL(SQL):
 						continue
 
 					raise BackendIOError(u"Failed to connect to database '%s' address '%s': %s" % (self._database, self._address, error))
+		finally:
+			self._POOL_LOCK.release()
 
 	def connect(self, cursorType=None):
 		"""
