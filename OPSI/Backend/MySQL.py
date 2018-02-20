@@ -151,10 +151,10 @@ class MySQL(SQL):
 			logger.debug2(u"Connection pool exists - fast exit.")
 			return
 
-		logger.debug2(u"Waiting for transaction lock for pool...")
+		logger.debug2(u"Waiting for pool lock...")
 		self._POOL_LOCK.acquire(False)  # non-blocking
 		try:
-			logger.debug2(u"Got transaction lock...")
+			logger.debug2(u"Got pool lock...")
 
 			if self._pool is not None:
 				logger.debug2(u"Connection pool has been created while waiting for lock - fast exit.")
@@ -195,6 +195,7 @@ class MySQL(SQL):
 
 					raise BackendIOError(u"Failed to connect to database '%s' address '%s': %s" % (self._database, self._address, error))
 		finally:
+			logger.debug2(u"Releasing pool lock...")
 			self._POOL_LOCK.release()
 
 	def connect(self, cursorType=None):
