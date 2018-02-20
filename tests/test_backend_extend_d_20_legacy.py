@@ -260,9 +260,10 @@ def testSetProductPropertyWithoutSideEffects(backendManager, createDepotState):
 @pytest.mark.parametrize("clientExists", [True, False], ids=["client exists", "client missing"])
 def testSetProductPropertyHandlingMissingObjects(backendManager, productExists, propertyExists, clientExists):
     expectedProperties = 0
+    productId = 'existence'
 
     if productExists:
-        product = LocalbootProduct('existence', '1.0', '1')
+        product = LocalbootProduct(productId, '1.0', '1')
         backendManager.product_insertObject(product)
 
         if propertyExists:
@@ -280,7 +281,12 @@ def testSetProductPropertyHandlingMissingObjects(backendManager, productExists, 
 
             expectedProperties += 1
 
-    backendManager.setProductProperty('existence', 'nothere', False)
+    try:
+        backendManager.setProductProperty(productId, 'nothere', False)
+    except ValueError:
+        if (not productExists) or (not propertyExists):
+            pass
+
     assert len(backendManager.productProperty_getObjects()) == expectedProperties
 
     if clientExists:
