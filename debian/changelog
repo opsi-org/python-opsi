@@ -1,3 +1,9 @@
+python-opsi (4.1.1.26-1) stable; urgency=medium
+
+  * Based on python-opsi 4.0.7.56-1.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 20 Feb 2018 14:13:35 +0100
+
 python-opsi (4.1.1.25-1) stable; urgency=medium
 
   * Move targetfile to the name of link if dispatch.conf and acl.conf
