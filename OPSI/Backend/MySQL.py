@@ -47,7 +47,7 @@ from OPSI.Backend.Backend import ConfigDataBackend
 from OPSI.Backend.SQL import (onlyAllowSelect, SQL, SQLBackend,
 	SQLBackendObjectModificationTracker)
 
-__version__ = '4.0.7.54'
+__version__ = '4.0.7.56'
 
 logger = Logger()
 
@@ -104,7 +104,7 @@ class MySQL(SQL):
 	ESCAPED_ASTERISK = "\\*"
 	doCommit = True
 
-	_transactionLock = threading.Lock()
+	_POOL_LOCK = threading.Lock()
 
 	def __init__(self, **kwargs):
 		self._address = u'localhost'
@@ -136,6 +136,7 @@ class MySQL(SQL):
 			elif option == 'connectionpooltimeout':
 				self._connectionPoolTimeout = forceInt(value)
 
+		self._transactionLock = threading.Lock()
 		self._pool = None
 		self._createConnectionPool()
 		logger.debug(u'MySQL created: %s' % self)
@@ -150,9 +151,10 @@ class MySQL(SQL):
 			logger.debug2(u"Connection pool exists - fast exit.")
 			return
 
-		logger.debug2(u"Waiting for transaction lock...")
-		with self._transactionLock:
-			logger.debug2(u"Got transaction lock...")
+		logger.debug2(u"Waiting for pool lock...")
+		self._POOL_LOCK.acquire(False)  # non-blocking
+		try:
+			logger.debug2(u"Got pool lock...")
 
 			if self._pool is not None:
 				logger.debug2(u"Connection pool has been created while waiting for lock - fast exit.")
@@ -192,6 +194,9 @@ class MySQL(SQL):
 						continue
 
 					raise BackendIOError(u"Failed to connect to database '%s' address '%s': %s" % (self._database, self._address, error))
+		finally:
+			logger.debug2(u"Releasing pool lock...")
+			self._POOL_LOCK.release()
 
 	def connect(self, cursorType=None):
 		"""
