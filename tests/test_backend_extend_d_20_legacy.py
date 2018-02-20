@@ -36,7 +36,6 @@ from OPSI.Object import (
     BoolProductProperty, LocalbootProduct, OpsiClient, OpsiDepotserver,
     ProductDependency, ProductOnDepot, ProductPropertyState,
     UnicodeProductProperty)
-from OPSI.Types import BackendReferentialIntegrityError
 from .test_hosts import getConfigServer, getDepotServers
 
 
