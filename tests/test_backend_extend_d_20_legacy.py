@@ -293,8 +293,8 @@ def testSetProductPropertyHandlingMissingObjects(backendManager, productExists, 
         client = OpsiClient('testclient.domain.invalid')
         backendManager.host_insertObject(client)
 
-    with pytest.raises(BackendReferentialIntegrityError):
-        backendManager.setProductProperty('existence', 'nothere', False, 'testclient.domain.invalid')
+    with pytest.raises(ValueError):
+        backendManager.setProductProperty(productId, 'nothere', False, 'testclient.domain.invalid')
     assert len(backendManager.productProperty_getObjects()) == expectedProperties
 
 
