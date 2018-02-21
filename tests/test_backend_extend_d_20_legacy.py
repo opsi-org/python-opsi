@@ -397,3 +397,26 @@ def testSetProductPropertyNotConcatenatingStrings(backendManager):
             assert result.getValues() == ["1"]
         else:
             raise ValueError("Unexpected property state: {0!r}".format(result))
+
+
+def testSetProductPropertyFailingIfMultivalueIsFalse(backendManager):
+    product = LocalbootProduct('testproduct', '1.0', '2')
+    backendManager.product_insertObject(product)
+
+    testprop = UnicodeProductProperty(
+        productId=product.id,
+        productVersion=product.productVersion,
+        packageVersion=product.packageVersion,
+        propertyId=u"rebootflag",
+        possibleValues=["0", "1", "2", "3"],
+        defaultValues=["0"],
+        editable=False,
+        multiValue=False
+    )
+    backendManager.productProperty_insertObject(testprop)
+
+    client = OpsiClient('testclient.domain.invalid')
+    backendManager.host_insertObject(client)
+
+    with pytest.raises(ValueError):
+        backendManager.setProductProperty(product.id, testprop.propertyId, ["1", "2"], client.id)
