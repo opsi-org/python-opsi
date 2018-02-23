@@ -334,6 +334,13 @@ python-opsi (4.1.1.1-1) experimental; urgency=medium
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 04 Oct 2016 16:15:11 +0200
 
+python-opsi (4.0.7.57-1) testing; urgency=medium
+
+  * OPSI.Backend.MySQL: In case the MySQL server goes away during the
+    execution of a query the retry will not deadlock.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 23 Feb 2018 12:58:25 +0100
+
 python-opsi (4.0.7.56-1) testing; urgency=medium
 
   * OPSI.Backend.MySQL: Creation of connection pool will wait for the lock

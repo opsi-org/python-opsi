@@ -280,6 +280,7 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 				if e[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
 					raise
 
+				self.close(conn, cursor)
 				(conn, cursor) = self.connect()
 				self.execute(query, conn, cursor)
 
@@ -303,6 +304,7 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 				if e[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
 					raise
 
+				self.close(conn, cursor)
 				(conn, cursor) = self.connect(cursorType=MySQLdb.cursors.Cursor)
 				self.execute(query, conn, cursor)
 
@@ -323,6 +325,7 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 			closeConnection = False
 		else:
 			(conn, cursor) = self.connect()
+
 		row = {}
 		try:
 			try:
@@ -332,8 +335,10 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 				if e[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
 					raise
 
+				self.close(conn, cursor)
 				(conn, cursor) = self.connect()
 				self.execute(query, conn, cursor)
+
 			row = cursor.fetchone()
 			if not row:
 				logger.debug(u"No result for query {0!r}", query)
@@ -352,6 +357,7 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 			closeConnection = False
 		else:
 			(conn, cursor) = self.connect()
+
 		result = -1
 		try:
 			colNames = []
@@ -381,6 +387,7 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 				if e[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
 					raise
 
+				self.close(conn, cursor)
 				(conn, cursor) = self.connect()
 				self.execute(query, conn, cursor)
 			result = cursor.lastrowid
@@ -425,6 +432,7 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 				if e[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
 					raise
 
+				self.close(conn, cursor)
 				(conn, cursor) = self.connect()
 				self.execute(query, conn, cursor)
 			result = cursor.rowcount
@@ -451,6 +459,7 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 				if e[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
 					raise
 
+				self.close(conn, cursor)
 				conn, cursor = self.connect()
 				self.execute(query, conn, cursor)
 
