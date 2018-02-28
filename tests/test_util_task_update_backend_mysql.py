@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2016 uib GmbH <info@uib.de>
+# Copyright (C) 2016-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -29,32 +28,43 @@ import os
 
 from contextlib import contextmanager
 
-from OPSI.Backend.MySQL import MySQL
-from OPSI.Util.Task.UpdateBackend.MySQL import (disableForeignKeyChecks,
-    getTableColumns, updateMySQLBackend)
+from OPSI.Backend.MySQL import MySQL, MySQLBackend
+from OPSI.Backend.SQL import DATABASE_SCHEMA_VERSION, createSchemaVersionTable
+from OPSI.Util.Task.UpdateBackend.MySQL import (
+    DatabaseMigrationUnfinishedError,
+    disableForeignKeyChecks, getTableColumns, readSchemaVersion,
+    updateMySQLBackend, updateSchemaVersion)
 from OPSI.Util.Task.ConfigureBackend import updateConfigFile
 
 from .Backends.MySQL import MySQLconfiguration
-from .helpers import workInTemporaryDirectory
 
 import pytest
 
 
 @contextmanager
 def cleanDatabase(database):
-    def cleanDatabase():
+    def dropAllTables():
         with disableForeignKeyChecks(database):
+            tablesToDropAgain = set()
             for tableName in getTableNames(database):
                 try:
                     database.execute(u'DROP TABLE `{0}`;'.format(tableName))
                 except Exception as error:
                     print("Failed to drop {0}: {1}".format(tableName, error))
+                    tablesToDropAgain.add(tableName)
 
-    cleanDatabase()
+            for tableName in tablesToDropAgain:
+                try:
+                    database.execute(u'DROP TABLE `{0}`;'.format(tableName))
+                except Exception as error:
+                    print("Failed to drop {0} a second time: {1}".format(tableName, error))
+                    raise error
+
+    dropAllTables()
     try:
         yield database
     finally:
-        cleanDatabase()
+        dropAllTables()
 
 
 @pytest.fixture
@@ -66,15 +76,21 @@ def mysqlBackendConfig():
 
 
 @pytest.fixture
-def mySQLBackendConfigFile(mysqlBackendConfig):
-    with workInTemporaryDirectory() as tempDir:
-        configFile = os.path.join(tempDir, 'asdf')
-        with open(configFile, 'w'):
-            pass
+def mySQLBackendConfigFile(mysqlBackendConfig, tempDir):
+    configFile = os.path.join(tempDir, 'asdf')
+    with open(configFile, 'w'):
+        pass
 
-        updateConfigFile(configFile, mysqlBackendConfig)
+    updateConfigFile(configFile, mysqlBackendConfig)
 
-        yield configFile
+    yield configFile
+
+
+def getColumnLength(columnType):
+    _, currentLength = columnType.split('(')
+    currentLength = int(currentLength[:-1])
+
+    return currentLength
 
 
 def testCorrectingLicenseOnClientLicenseKeyLength(mysqlBackendConfig, mySQLBackendConfigFile):
@@ -114,6 +130,18 @@ def testCorrectingProductIdLength(mysqlBackendConfig, mySQLBackendConfigFile):
             assert tableName in getTableNames(db)
 
             assertColumnIsVarchar(db, tableName, 'productId', 255)
+
+
+def testDropTableBootConfiguration(mysqlBackendConfig, mySQLBackendConfigFile):
+    """
+    Test if the BOOT_CONFIGURATION table gets dropped with an update.
+    """
+    with cleanDatabase(MySQL(**mysqlBackendConfig)) as db:
+        createRequiredTables(db)
+
+        updateMySQLBackend(backendConfigFile=mySQLBackendConfigFile)
+
+        assert 'BOOT_CONFIGURATION' not in getTableNames(db)
 
 
 def createRequiredTables(database):
@@ -224,6 +252,73 @@ def createRequiredTables(database):
     ) %s;
     ''' % database.getTableCreationOptions('SOFTWARE_CONFIG'))
 
+    database.execute(u'''CREATE TABLE `PRODUCT` (
+            `productId` varchar(255) NOT NULL,
+            `productVersion` varchar(32) NOT NULL,
+            `packageVersion` varchar(16) NOT NULL,
+            `type` varchar(32) NOT NULL,
+            `name` varchar(128) NOT NULL,
+            `licenseRequired` varchar(50),
+            `setupScript` varchar(50),
+            `uninstallScript` varchar(50),
+            `updateScript` varchar(50),
+            `alwaysScript` varchar(50),
+            `onceScript` varchar(50),
+            `customScript` varchar(50),
+            `userLoginScript` varchar(50),
+            `priority` integer,
+            `description` TEXT,
+            `advice` TEXT,
+            `pxeConfigTemplate` varchar(50),
+            `changelog` TEXT,
+            PRIMARY KEY (`productId`, `productVersion`, `packageVersion`)
+        ) %s;
+        ''' % database.getTableCreationOptions('PRODUCT'))
+    database.execute('CREATE INDEX `index_product_type` on `PRODUCT` (`type`);')
+
+    database.execute(u'''CREATE TABLE `PRODUCT_PROPERTY_VALUE` (
+        `product_property_id` integer NOT NULL ''' + database.AUTOINCREMENT + ''',
+        `productId` varchar(255) NOT NULL,
+        `productVersion` varchar(32) NOT NULL,
+        `packageVersion` varchar(16) NOT NULL,
+        `propertyId` varchar(200) NOT NULL,
+        `value` text,
+        `isDefault` bool,
+        PRIMARY KEY (`product_property_id`),
+        FOREIGN KEY (`productId`, `productVersion`, `packageVersion`, `propertyId`) REFERENCES `PRODUCT_PROPERTY` (`productId`, `productVersion`, `packageVersion`, `propertyId`)
+    ) %s; ''' % database.getTableCreationOptions('PRODUCT_PROPERTY_VALUE'))
+
+    createOpsi40HostTable(database)
+
+
+def createOpsi40HostTable(database):
+    "Creates a table for hosts as seen in opsi 4.0."
+
+    query = u'''CREATE TABLE `HOST` (
+        `hostId` varchar(255) NOT NULL,
+        `type` varchar(30),
+        `description` varchar(100),
+        `notes` varchar(500),
+        `hardwareAddress` varchar(17),
+        `ipAddress` varchar(15),
+        `inventoryNumber` varchar(30),
+        `created` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        `lastSeen` TIMESTAMP,
+        `opsiHostKey` varchar(32),
+        `oneTimePassword` varchar(32),
+        `maxBandwidth` integer,
+        `depotLocalUrl` varchar(128),
+        `depotRemoteUrl` varchar(255),
+        `depotWebdavUrl` varchar(255),
+        `repositoryLocalUrl` varchar(128),
+        `repositoryRemoteUrl` varchar(255),
+        `networkAddress` varchar(31),
+        `isMasterDepot` bool,
+        `masterDepotId` varchar(255),
+        PRIMARY KEY (`hostId`)
+    ) %s;''' % database.getTableCreationOptions('HOST')
+    database.execute(query)
+
 
 def getTableNames(database):
     return set(i.values()[0] for i in database.getSet(u'SHOW TABLES;'))
@@ -233,11 +328,143 @@ def assertColumnIsVarchar(database, tableName, columnName, length):
     for column in getTableColumns(database, tableName):
         if column.name.lower() == columnName.lower():
             assert column.type.lower().startswith('varchar(')
-
-            _, currentLength = column.type.split('(')
-            currentLength = int(currentLength[:-1])
-
-            assert currentLength == length
+            assert getColumnLength(column.type) == length
             break
     else:
         raise ValueError("Missing column '{1}' in table {0!r}".format(tableName, columnName))
+
+
+def testInsertingSchemaNumber(mysqlBackendConfig, mySQLBackendConfigFile):
+    with cleanDatabase(MySQL(**mysqlBackendConfig)) as db:
+        createRequiredTables(db)
+
+        updateMySQLBackend(backendConfigFile=mySQLBackendConfigFile)
+
+        assert 'OPSI_SCHEMA' in getTableNames(db)
+
+        for column in getTableColumns(db, 'OPSI_SCHEMA'):
+            name = column.name
+            if name == 'version':
+                assert column.type.lower().startswith('int')
+            elif name == 'updateStarted':
+                assert column.type.lower().startswith('timestamp')
+            elif name == 'updateEnded':
+                assert column.type.lower().startswith('timestamp')
+            else:
+                raise Exception("Unexpected column!")
+
+
+def testReadingSchemaVersionIfTableIsMissing(mysqlBackendConfig, mySQLBackendConfigFile):
+    with cleanDatabase(MySQL(**mysqlBackendConfig)) as db:
+        assert readSchemaVersion(db) is None
+
+
+def testReadingSchemaVersionFromEmptyTable(mysqlBackendConfig, mySQLBackendConfigFile):
+    with cleanDatabase(MySQL(**mysqlBackendConfig)) as db:
+        createSchemaVersionTable(db)
+
+        assert readSchemaVersion(db) is None
+
+
+def testUpdatingSchemaVersion(mysqlBackendConfig, mySQLBackendConfigFile):
+    with cleanDatabase(MySQL(**mysqlBackendConfig)) as db:
+        createSchemaVersionTable(db)
+
+        version = readSchemaVersion(db)
+        assert version is None
+
+        with updateSchemaVersion(db, version=2):
+            pass  # NOOP
+
+        version = readSchemaVersion(db)
+        assert version == 2
+
+
+def testReadingSchemaVersionOnlyReturnsNewestValue(mysqlBackendConfig, mySQLBackendConfigFile):
+    with cleanDatabase(MySQL(**mysqlBackendConfig)) as db:
+        createSchemaVersionTable(db)
+
+        with updateSchemaVersion(db, version=1):
+            pass
+
+        with updateSchemaVersion(db, version=15):
+            pass
+
+        for number in range(1, 4):
+            with updateSchemaVersion(db, version=number * 2):
+                pass
+
+        with updateSchemaVersion(db, version=3):
+            pass
+
+        assert readSchemaVersion(db) == 15
+
+
+def testReadingSchemaVersionFailsOnUnfinishedUpdate(mysqlBackendConfig, mySQLBackendConfigFile):
+    with cleanDatabase(MySQL(**mysqlBackendConfig)) as db:
+        createSchemaVersionTable(db)
+
+        try:
+            with updateSchemaVersion(db, version=1):
+                raise RuntimeError("For testing.")
+        except RuntimeError:
+            pass
+
+        with pytest.raises(DatabaseMigrationUnfinishedError):
+            readSchemaVersion(db)
+
+
+def testUpdatingCurrentBackendDoesBreakNothing(mysqlBackendConfig, mySQLBackendConfigFile):
+    with cleanDatabase(MySQL(**mysqlBackendConfig)):
+        with MySQLBackend(**mysqlBackendConfig) as freshBackend:
+            freshBackend.backend_createBase()
+
+        updateMySQLBackend(backendConfigFile=mySQLBackendConfigFile)
+        # Updating again. Should break nothing.
+        updateMySQLBackend(backendConfigFile=mySQLBackendConfigFile)
+
+        with MySQLBackend(**mysqlBackendConfig) as anotherBackend:
+            # We want to have the latest schema version
+            assert DATABASE_SCHEMA_VERSION == readSchemaVersion(anotherBackend._sql)
+
+
+def testCreatingBackendSetsTheLatestSchemaVersion(mysqlBackendConfig, mySQLBackendConfigFile):
+    with cleanDatabase(MySQL(**mysqlBackendConfig)) as db:
+        with MySQLBackend(**mysqlBackendConfig) as freshBackend:
+            freshBackend.backend_createBase()
+            assert readSchemaVersion(db) == DATABASE_SCHEMA_VERSION
+
+
+def testAddingIndexToProductPropertyValues(mysqlBackendConfig, mySQLBackendConfigFile):
+    with cleanDatabase(MySQL(**mysqlBackendConfig)) as db:
+        createRequiredTables(db)
+
+        updateMySQLBackend(backendConfigFile=mySQLBackendConfigFile)
+        # Just making sure nothing breaks because checking if the right
+        # index exists in mysql comes near totally senseless torture.
+
+        # Calling the update procedure a second time must not fail.
+        updateMySQLBackend(backendConfigFile=mySQLBackendConfigFile)
+
+
+def testAddingWorkbenchAttributesToHost(mysqlBackendConfig, mySQLBackendConfigFile):
+    with cleanDatabase(MySQL(**mysqlBackendConfig)) as db:
+        createRequiredTables(db)
+
+        updateMySQLBackend(backendConfigFile=mySQLBackendConfigFile)
+
+        changesFound = 0
+        for column in getTableColumns(db, 'HOST'):
+            if column.name == 'workbenchLocalUrl':
+                assert column.type.lower().startswith('varchar(')
+                assert getColumnLength(column.type) == 128
+                changesFound += 1
+            elif column.name == 'workbenchRemoteUrl':
+                assert column.type.lower().startswith('varchar(')
+                assert getColumnLength(column.type) == 255
+                changesFound += 1
+
+            if changesFound == 2:
+                break
+
+        assert changesFound == 2

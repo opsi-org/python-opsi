@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2010-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2010-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -24,7 +23,7 @@ Algorithms to get a product order for an installation.
 
 .. versionchanged:: 4.0.7.1
 
-   Refactored algorithm 1.
+	Refactored algorithm 1.
 
 
 :author: Niko Wenselowski <n.wenselowski@uib.de>
@@ -37,10 +36,8 @@ from collections import defaultdict
 
 from OPSI.Logger import Logger
 from OPSI.Object import ProductOnClient
-from OPSI.Types import OpsiProductOrderingError, BackendUnaccomplishableError
+from OPSI.Exceptions import OpsiProductOrderingError, BackendUnaccomplishableError
 from OPSI.Types import forceInt, forceBool
-
-__version__ = '4.0.7.3'
 
 logger = Logger()
 
@@ -625,27 +622,27 @@ def modifySortingClassesForAlgorithm1(products, setupRequirements):
 		logger.debug2(u"we are about to correct level {0}...", px)
 		if not fLevel2Prodlist[px]:
 			logger.debug2(u"no elements in this level")
-			pass
-		else:
-			for posti in fLevel2Prodlist[px]:
-				logger.debug2(u"posti {0}", posti)
-				if posti.id in requsByPosterior:
-					removeRequs = []
-					for requ in requsByPosterior[posti.id]:
-						if requ[0] not in fId2Prod:
-							logger.notice(u"product {0!r} should be arranged before product {1!r} but is not available", requ[0], requ[1])
-							removeRequs.append(requ)
-						else:
-							if fId2Prod[requ[0]].revisedPriority < px:
-								logger.notice(
-									u"product {0} must be pushed upwards from level {1} to level {2}, the level of {3}, to meet the requirement first {0}, later {4}",
-									requ[0], fId2Prod[requ[0]].revisedPriority, px, posti.id, requ[1]
-								)
-								fId2Prod[requ[0]].revisedPriority = px
-								recursionNecessary = True
+			continue
 
-					for requ in removeRequs:
-						requsByPosterior[posti.id].remove(requ)
+		for posti in fLevel2Prodlist[px]:
+			logger.debug2(u"posti {0}", posti)
+			if posti.id in requsByPosterior:
+				removeRequs = []
+				for requ in requsByPosterior[posti.id]:
+					if requ[0] not in fId2Prod:
+						logger.notice(u"product {0!r} should be arranged before product {1!r} but is not available", requ[0], requ[1])
+						removeRequs.append(requ)
+					else:
+						if fId2Prod[requ[0]].revisedPriority < px:
+							logger.notice(
+								u"product {0} must be pushed upwards from level {1} to level {2}, the level of {3}, to meet the requirement first {0}, later {4}",
+								requ[0], fId2Prod[requ[0]].revisedPriority, px, posti.id, requ[1]
+							)
+							fId2Prod[requ[0]].revisedPriority = px
+							recursionNecessary = True
+
+				for requ in removeRequs:
+					requsByPosterior[posti.id].remove(requ)
 
 	return recursionNecessary
 

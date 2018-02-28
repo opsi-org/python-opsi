@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
@@ -42,7 +41,6 @@ from OPSI.System import which, execute
 from OPSI.Types import forceHostId, forceInt
 from OPSI.Util import getfqdn
 
-OPSI_GLOBAL_CONF = u'/etc/opsi/global.conf'
 OPSICONFD_CERTFILE = u'/etc/opsi/opsiconfd.pem'
 DEFAULT_CERTIFICATE_PARAMETERS = {
 	"country": "DE",
@@ -50,7 +48,7 @@ DEFAULT_CERTIFICATE_PARAMETERS = {
 	"locality": "Mainz",
 	"organization": "uib gmbh",
 	"organizationalUnit": "",
-	"commonName": forceHostId(getfqdn(conf=OPSI_GLOBAL_CONF)),
+	"commonName": forceHostId(getfqdn()),
 	"emailAddress": "",
 	"expires": 2,
 }
@@ -152,7 +150,7 @@ If not given will use a default.
 			u"No valid expiration date given. Must be an integer."
 		)
 
-	if certparams["commonName"] != forceHostId(getfqdn(conf=OPSI_GLOBAL_CONF)):
+	if certparams["commonName"] != forceHostId(getfqdn()):
 		raise CertificateCreationError(
 			u"commonName must be the FQDN of the local server"
 		)
@@ -170,17 +168,21 @@ If not given will use a default.
 	cert.get_subject().O = certparams['organization']
 	cert.get_subject().CN = certparams['commonName']
 
-	if 'organizationalUnit' in certparams:
+	try:
 		if certparams['organizationalUnit']:
 			cert.get_subject().OU = certparams['organizationalUnit']
 		else:
 			del certparams['organizationalUnit']
+	except KeyError:
+		pass
 
-	if 'emailAddress' in certparams:
+	try:
 		if certparams['emailAddress']:
 			cert.get_subject().emailAddress = certparams['emailAddress']
 		else:
 			del certparams['emailAddress']
+	except KeyError:
+		pass
 
 	LOGGER.notice("Generating new Serialnumber")
 	# As described in RFC5280 this value is required and must be a
@@ -211,7 +213,7 @@ If not given will use a default.
 	cert.set_version(2)
 
 	LOGGER.notice(u"Signing Certificate")
-	cert.sign(k, str('sha1'))
+	cert.sign(k, str('sha512'))
 
 	certcontext = "".join(
 		(

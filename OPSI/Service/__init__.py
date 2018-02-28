@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
@@ -82,7 +81,7 @@ class OpsiService(object):
 		self._sessionHandler = None
 
 	def _getSessionHandler(self):
-		if not self._sessionHandler:
+		if self._sessionHandler is None:
 			self._sessionHandler = SessionHandler()
 		return self._sessionHandler
 

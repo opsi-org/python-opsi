@@ -2,7 +2,6 @@
 
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
-
 # Copyright (C) 2006-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
@@ -41,16 +40,19 @@ import StringIO
 from collections import namedtuple
 from contextlib import closing
 from hashlib import sha1
+from operator import itemgetter
 from subprocess import Popen, PIPE, STDOUT
 
 import OPSI.System
+from OPSI import __version__ as LIBRARY_VERSION
+from OPSI.Exceptions import (
+	OpsiBackupBackendNotFound, OpsiBackupFileError,	OpsiBackupFileNotFound)
 from OPSI.Logger import Logger
 from OPSI.Object import BoolProductProperty, LocalbootProduct, NetbootProduct, Product, ProductDependency, ProductProperty, UnicodeProductProperty
-from OPSI.Types import (BackendBadValueError, OpsiBackupBackendNotFound,
-	OpsiBackupFileError, OpsiBackupFileNotFound, forceActionRequest, forceBool,
-	forceDictList, forceFilename, forceHostId, forceInstallationStatus,
-	forceList, forceObjectClass, forceObjectClassList, forceOpsiHostKey,
-	forcePackageVersion, forceProductId, forceProductPriority,
+from OPSI.Types import (
+	forceActionRequest, forceBool, forceDictList, forceFilename, forceHostId,
+	forceInstallationStatus, forceList, forceObjectClass, forceObjectClassList,
+	forceOpsiHostKey, forcePackageVersion, forceProductId, forceProductPriority,
 	forceProductPropertyType, forceProductType, forceProductVersion,
 	forceRequirementType, forceUnicode, forceUnicodeList, forceUnicodeLower)
 from OPSI.Util.File import ConfigFile, IniFile, TextFile, requiresParsing
@@ -61,8 +63,6 @@ if os.name == 'posix':
 	import grp
 	import pwd
 	from OPSI.System.Posix import SysInfo
-
-__version__ = '4.0.7.47'
 
 logger = Logger()
 
@@ -103,26 +103,32 @@ class HostKeyFile(ConfigFile):
 			self._lines = forceUnicodeList(lines)
 		else:
 			self.readlines()
+
 		self._parsed = False
 		for line in ConfigFile.parse(self):
 			match = self.lineRegex.search(line)
 			if not match:
 				logger.error(u"Found bad formatted line '%s' in pckey file '%s'" % (line, self._filename))
 				continue
+
 			try:
 				hostId = forceHostId(match.group(1))
 				opsiHostKey = forceOpsiHostKey(match.group(2))
 				if hostId in self._opsiHostKeys:
 					logger.error(u"Found duplicate host '%s' in pckey file '%s'" % (hostId, self._filename))
 				self._opsiHostKeys[hostId] = opsiHostKey
-			except BackendBadValueError as error:
+			except ValueError as error:
 				logger.error(u"Found bad formatted line '%s' in pckey file '%s': %s" % (line, self._filename, error))
+
 		self._parsed = True
 		return self._opsiHostKeys
 
 	def generate(self):
-		self._lines = [u'{0}:{1}'.format(hostId, self._opsiHostKeys[hostId])
-			for hostId in sorted(self._opsiHostKeys.keys())]
+		self._lines = [
+			u'%s:%s' % (hostId, hostkey)
+			for hostId, hostkey
+			in sorted(self._opsiHostKeys.items(), key=itemgetter(1))
+		]
 
 		self.open('w')
 		self.writelines()
@@ -170,7 +176,7 @@ class BackendACLFile(ConfigFile):
 		for line in ConfigFile.parse(self):
 			match = re.search(self.aclEntryRegex, line)
 			if not match:
-				raise Exception(u"Found bad formatted line '%s' in acl file '%s'" % (line, self._filename))
+				raise ValueError(u"Found bad formatted line '%s' in acl file '%s'" % (line, self._filename))
 			method = match.group(1).strip()
 			acl.append([method, []])
 			for entry in match.group(2).split(';'):
@@ -180,16 +186,16 @@ class BackendACLFile(ConfigFile):
 				if entry.find('(') != -1:
 					(aclType, aclTypeParams) = entry.split('(', 1)
 					if aclTypeParams[-1] != ')':
-						raise Exception(u"Bad formatted acl entry '%s': trailing ')' missing" % entry)
+						raise ValueError(u"Bad formatted acl entry '%s': trailing ')' missing" % entry)
 					aclType = aclType.strip()
 					aclTypeParams = aclTypeParams[:-1]
 
 				if aclType not in ('all', 'self', 'opsi_depotserver', 'opsi_client', 'sys_group', 'sys_user'):
-					raise Exception(u"Unhandled acl type: '%s'" % aclType)
+					raise ValueError(u"Unhandled acl type: '%s'" % aclType)
 				entry = {'type': aclType, 'allowAttributes': [], 'denyAttributes': [], 'ids': []}
 				if not aclTypeParams:
 					if aclType in ('sys_group', 'sys_user'):
-						raise Exception(u"Bad formatted acl type '%s': no params given" % aclType)
+						raise ValueError(u"Bad formatted acl type '%s': no params given" % aclType)
 				else:
 					aclTypeParam = u''
 					aclTypeParamValues = [u'']
@@ -197,11 +203,11 @@ class BackendACLFile(ConfigFile):
 					for i, c in enumerate(aclTypeParams):
 						if c == '(':
 							if inAclTypeParamValues:
-								raise Exception(u"Bad formatted acl type params '%s'" % aclTypeParams)
+								raise ValueError(u"Bad formatted acl type params '%s'" % aclTypeParams)
 							inAclTypeParamValues = True
 						elif c == ')':
 							if not inAclTypeParamValues or not aclTypeParam:
-								raise Exception(u"Bad formatted acl type params '%s'" % aclTypeParams)
+								raise ValueError(u"Bad formatted acl type params '%s'" % aclTypeParams)
 							inAclTypeParamValues = False
 						elif c != ',' or i == len(aclTypeParams) - 1:
 							if inAclTypeParamValues:
@@ -212,7 +218,7 @@ class BackendACLFile(ConfigFile):
 						if c == ',' or i == len(aclTypeParams) - 1:
 							if inAclTypeParamValues:
 								if i == len(aclTypeParams) - 1:
-									raise Exception(u"Bad formatted acl type params '%s'" % aclTypeParams)
+									raise ValueError(u"Bad formatted acl type params '%s'" % aclTypeParams)
 								aclTypeParamValues.append(u'')
 							else:
 								aclTypeParam = aclTypeParam.strip()
@@ -234,7 +240,7 @@ class BackendACLFile(ConfigFile):
 								elif aclType in ('sys_group', 'sys_user', 'opsi_depotserver', 'opsi_client'):
 									entry['ids'].append(aclTypeParam.strip())
 								else:
-									raise Exception(u"Unhandled acl type param '%s' for acl type '%s'" % (aclTypeParam, aclType))
+									raise ValueError(u"Unhandled acl type param '%s' for acl type '%s'" % (aclTypeParam, aclType))
 								aclTypeParam = u''
 								aclTypeParamValues = [u'']
 
@@ -250,7 +256,7 @@ class BackendDispatchConfigFile(ConfigFile):
 		"""
 		Returns the dispatch config entries with RegEx and corresponding backends.
 
-		:returntype: [['regex', ['backend1', 'backend2',]]]
+		:returntype: [('regex', ('backend1', 'backend2', ...)),]
 		"""
 		if lines:
 			self._lines = forceUnicodeList(lines)
@@ -266,9 +272,10 @@ class BackendDispatchConfigFile(ConfigFile):
 				continue
 
 			method = match.group(1).strip()
-			backends = [entry.strip() for entry
-						in match.group(2).strip(',').split(',')]
-			dispatch.append([method, backends])
+			backends = (entry.strip() for entry in match.group(2).strip(',').split(','))
+			backends = tuple(backend for backend in backends if backend)
+
+			dispatch.append((method, backends))
 		self._parsed = True
 
 		return dispatch
@@ -290,6 +297,26 @@ class BackendDispatchConfigFile(ConfigFile):
 
 
 class PackageContentFile(TextFile):
+	"""
+	This files holds information about contents of a package.
+
+	Clients using the WAN extension will rely on this file and the
+	information it provides as part of the file caching mechanism.
+
+	The generated file lists for each file, folder or link in the
+	package the type, the path to the element and its size.
+	Directories will be represented with type `d`, the path to the
+	directory in singlq quotes and size `0`.
+	Files will be represented with type `f`, relative path to the file
+	in single quotes, the filesize in bytes and in addition the md5 hash
+	of the file.
+	Links will be represented with type `l`, relative path to the link
+	in single quotes, size `0` and in addition the path to the
+	destination in single quotes.
+	If the link destination is outside of `productClientDataDir` the
+	element	will be treated like a regular file or directory - whatever
+	the destination is.
+	"""
 	def __init__(self, filename, lockFailTimeout=2000):
 		TextFile.__init__(self, filename, lockFailTimeout)
 		self._parsed = False
@@ -359,39 +386,52 @@ class PackageContentFile(TextFile):
 		return fileInfo
 
 	def generate(self):
+		def maskQuoteChars(string):
+			"Prefixes single quotes in string with a single backslash."
+			return string.replace(u'\'', u'\\\'')
+
+		def handleDirectory(path):
+			logger.debug2("Processing {0!r} as directory", path)
+			return 'd', 0, ''
+
+		def handleFile(path):
+			logger.debug2("Processing {0!r} as file", path)
+			return 'f', os.path.getsize(path), md5sum(path)
+
+		def handleLink(path):
+			logger.debug2("Processing {0!r} as link", path)
+			target = os.path.realpath(path)
+			if target.startswith(self._productClientDataDir):
+				target = target[len(self._productClientDataDir):]
+				return 'l', 0, "'%s'" % maskQuoteChars(target)
+			else:
+				logger.debug2(
+					"Link {0!r} links to {1!r} which is outside the "
+					"client data directory. Not handling as a link.",
+					path,
+					target
+				)
+
+				if os.path.isdir(path):
+					logger.debug2("Handling link {0!r} as directory", path)
+					return handleDirectory(path)
+				else:
+					# link target not in client data dir => treat as file
+					logger.debug2("Handling link {0!r} as file", target)
+					return handleFile(target)
+
 		self._lines = []
 		for filename in self._clientDataFiles:
 			try:
-				md5 = u''
-				size = 0
-				target = None
-
 				path = os.path.join(self._productClientDataDir, filename)
 				if os.path.islink(path):
-					elementType = u'l'
-					target = os.path.realpath(path)
-					if target.startswith(self._productClientDataDir):
-						target = target[len(self._productClientDataDir):]
-					else:
-						if os.path.isdir(path):
-							elementType = u'd'
-						else:
-							# link target not in client data dir => treat as file
-							elementType = u'f'
-							size = os.path.getsize(target)
-							md5 = md5sum(target)
-							target = None
+					entryType, size, additional = handleLink(path)
 				elif os.path.isdir(path):
-					elementType = u'd'
+					entryType, size, additional = handleDirectory(path)
 				else:
-					elementType = u'f'
-					size = os.path.getsize(path)
-					md5 = md5sum(path)
+					entryType, size, additional = handleFile(path)
 
-				if target is not None:
-					self._lines.append("%s '%s' %s '%s'" % (elementType, filename.replace(u'\'', u'\\\''), size, target.replace(u'\'', u'\\\'')))
-				else:
-					self._lines.append("%s '%s' %s %s" % (elementType, filename.replace(u'\'', u'\\\''), size, md5))
+				self._lines.append("%s '%s' %s %s" % (entryType, maskQuoteChars(filename), size, additional))
 			except Exception as error:
 				logger.logException(error)
 
@@ -406,7 +446,7 @@ class PackageControlFile(TextFile):
 	valueContinuationRegex = re.compile('^\s(.*)$')
 	optionRegex = re.compile('^([^\:]+)\s*\:\s*(.*)$')
 
-	def __init__(self, filename, lockFailTimeout=2000, opsi3compatible=False):
+	def __init__(self, filename, lockFailTimeout=2000):
 		TextFile.__init__(self, filename, lockFailTimeout)
 		self._parsed = False
 		self._sections = {}
@@ -414,8 +454,6 @@ class PackageControlFile(TextFile):
 		self._productDependencies = []
 		self._productProperties = []
 		self._packageDependencies = []
-		self._incrementalPackage = False
-		self._opsi3compatible = forceBool(opsi3compatible)
 
 	def parse(self, lines=None):
 		if lines:
@@ -429,7 +467,23 @@ class PackageControlFile(TextFile):
 		self._productDependencies = []
 		self._productProperties = []
 		self._packageDependencies = []
-		self._incrementalPackage = False
+
+		productAttributes = set([
+			'id', 'type', 'name', 'description', 'advice', 'version',
+			'packageversion', 'priority', 'licenserequired', 'productclasses',
+			'pxeconfigtemplate', 'setupscript', 'uninstallscript',
+			'updatescript', 'alwaysscript', 'oncescript', 'customscript',
+			'userloginscript'
+		])
+		dependencyAttributes = set([
+			'action', 'requiredproduct', 'requiredproductversion',
+			'requiredpackageversion', 'requiredclass', 'requiredstatus',
+			'requiredaction', 'requirementtype'
+		])
+		propertyAttributes = set([
+			'type', 'name', 'default', 'values', 'description', 'editable',
+			'multivalue'
+		])
 
 		sectionType = None
 		option = None
@@ -444,7 +498,7 @@ class PackageControlFile(TextFile):
 			if match:
 				sectionType = match.group(1).strip().lower()
 				if sectionType not in ('package', 'product', 'windows', 'productdependency', 'productproperty', 'changelog'):
-					raise Exception(u"Parse error in line %s: unknown section '%s'" % (lineNum, sectionType))
+					raise ValueError(u"Parse error in line %s: unknown section '%s'" % (lineNum, sectionType))
 				if sectionType == 'changelog':
 					self._sections[sectionType] = u''
 				else:
@@ -455,7 +509,7 @@ class PackageControlFile(TextFile):
 				continue
 
 			elif not sectionType and line:
-				raise Exception(u"Parse error in line %s: not in a section" % lineNum)
+				raise ValueError(u"Parse error in line %s: not in a section" % lineNum)
 
 			if sectionType == 'changelog':
 				if self._sections[sectionType]:
@@ -472,24 +526,18 @@ class PackageControlFile(TextFile):
 				match = self.optionRegex.search(line)
 				if match:
 					key = match.group(1).lower()
-					#value = match.group(2).lstrip()
 					value = match.group(2).strip()
 
-			if sectionType == 'package' and key in ('version', 'depends', 'incremental'):
+			if sectionType == 'package':
 				option = key
 				if key == 'version':
 					value = forceUnicodeLower(value)
 				elif key == 'depends':
 					value = forceUnicodeLower(value)
-				elif key == 'incremental':
-					value = forceBool(value)
+				else:  # Unsupported key
+					continue
 
-			elif (sectionType == 'product' and key in \
-					('id', 'type', 'name', 'description', 'advice',
-					 'version', 'packageversion', 'priority',
-					 'licenserequired', 'productclasses', 'pxeconfigtemplate',
-					 'setupscript', 'uninstallscript', 'updatescript',
-					 'alwaysscript', 'oncescript', 'customscript', 'userloginscript')):
+			elif sectionType == 'product' and key in productAttributes:
 				option = key
 				if key == 'id':
 					value = forceProductId(value)
@@ -532,9 +580,7 @@ class PackageControlFile(TextFile):
 				option = key
 				value = forceUnicodeLower(value)
 
-			elif (sectionType == 'productdependency' and key in \
-					('action', 'requiredproduct', 'requiredproductversion', 'requiredpackageversion',
-					 'requiredclass', 'requiredstatus', 'requiredaction', 'requirementtype')):
+			elif sectionType == 'productdependency' and key in dependencyAttributes:
 				option = key
 				if key == 'action':
 					value = forceActionRequest(value)
@@ -553,7 +599,7 @@ class PackageControlFile(TextFile):
 				elif key == 'requirementtype':
 					value = forceRequirementType(value)
 
-			elif sectionType == 'productproperty' and key in ('type', 'name', 'default', 'values', 'description', 'editable', 'multivalue'):
+			elif sectionType == 'productproperty' and key in propertyAttributes:
 				option = key
 				if key == 'type':
 					value = forceProductPropertyType(value)
@@ -574,9 +620,9 @@ class PackageControlFile(TextFile):
 				value = forceUnicode(line)
 
 			if not option:
-				raise Exception(u"Parse error in line '%s': no option / bad option defined" % lineNum)
+				raise ValueError(u"Parse error in line '%s': no option / bad option defined" % lineNum)
 
-			if not self._sections[sectionType][-1].has_key(option):
+			if option not in self._sections[sectionType][-1]:
 				self._sections[sectionType][-1][option] = value
 			else:
 				if isinstance(self._sections[sectionType][-1][option], unicode):
@@ -590,14 +636,14 @@ class PackageControlFile(TextFile):
 
 			for i, currentSection in enumerate(secs):
 				for (option, value) in currentSection.items():
-					if (sectionType == 'product' and option == 'productclasses') or \
-					   (sectionType == 'package' and option == 'depends') or \
-					   (sectionType == 'productproperty' and option == 'default') or \
-					   (sectionType == 'productproperty' and option == 'values') or \
-					   (sectionType == 'windows' and option == 'softwareids'):
+					if ((sectionType == 'product' and option == 'productclasses') or
+						(sectionType == 'package' and option == 'depends') or
+						(sectionType == 'productproperty' and option == 'default') or
+						(sectionType == 'productproperty' and option == 'values') or
+						(sectionType == 'windows' and option == 'softwareids')):
 						try:
-							if not value.strip().startswith('{') and not value.strip().startswith('['):
-								raise Exception(u'Not trying to read json string because value does not start with { or [')
+							if not value.strip().startswith(('{', '[')):
+								raise ValueError(u'Not trying to read json string because value does not start with { or [')
 							value = fromJson(value.strip())
 							# Remove duplicates
 							# TODO: use set
@@ -631,7 +677,7 @@ class PackageControlFile(TextFile):
 					self._sections[sectionType][i][option] = value
 
 		if not self._sections.get('product'):
-			raise Exception(u"Error in control file '%s': 'product' section not found" % self._filename)
+			raise ValueError(u"Error in control file '%s': 'product' section not found" % self._filename)
 
 		# Get package info
 		for (option, value) in self._sections.get('package', [{}])[0].items():
@@ -639,7 +685,7 @@ class PackageControlFile(TextFile):
 				for dep in value:
 					match = re.search('^\s*([^\(]+)\s*\(*\s*([^\)]*)\s*\)*', dep)
 					if not match.group(1):
-						raise Exception(u"Bad package dependency '%s' in control file" % dep)
+						raise ValueError(u"Bad package dependency '%s' in control file" % dep)
 
 					package = match.group(1).strip()
 					version = match.group(2)
@@ -647,19 +693,17 @@ class PackageControlFile(TextFile):
 					if version:
 						match = re.search('^\s*([<>]?=?)\s*([\w\.]+-*[\w\.]*)\s*$', version)
 						if not match:
-							raise Exception(u"Bad version string '%s' in package dependency" % version)
+							raise ValueError(u"Bad version string '%s' in package dependency" % version)
 
 						condition = match.group(1)
 						if not condition:
 							condition = u'='
 						if condition not in (u'=', u'<', u'<=', u'>', u'>='):
-							raise Exception(u"Bad condition string '%s' in package dependency" % condition)
+							raise ValueError(u"Bad condition string '%s' in package dependency" % condition)
 						version = match.group(2)
 					else:
 						version = None
 					self._packageDependencies.append({'package': package, 'condition': condition, 'version': version})
-			elif option == 'incremental':
-				self._incrementalPackage = forceBool(value)
 
 		# Create Product object
 		product = self._sections['product'][0]
@@ -669,7 +713,7 @@ class PackageControlFile(TextFile):
 		elif product.get('type') == 'LocalbootProduct':
 			Class = LocalbootProduct
 		else:
-			raise Exception(u"Error in control file '%s': unknown product type '%s'" % (self._filename, product.get('type')))
+			raise ValueError(u"Error in control file '%s': unknown product type '%s'" % (self._filename, product.get('type')))
 
 		productVersion = product.get('version')
 		if not productVersion:
@@ -733,7 +777,7 @@ class PackageControlFile(TextFile):
 			elif productProperty.get('type', '').lower() in ('boolproductproperty', 'bool'):
 				Class = BoolProductProperty
 			else:
-				raise Exception(u"Error in control file '%s': unknown product property type '%s'" % (self._filename, productProperty.get('type')))
+				raise ValueError(u"Error in control file '%s': unknown product property type '%s'" % (self._filename, productProperty.get('type')))
 			self._productProperties.append(
 				Class(
 					productId=self._product.getId(),
@@ -795,26 +839,21 @@ class PackageControlFile(TextFile):
 		for packageDependency in forceDictList(packageDependencies):
 			if not packageDependency.get('package'):
 				raise ValueError(u"No package given: %s" % packageDependency)
-			if packageDependency.get('version') in (None, ''):
+
+			if not packageDependency.get('version'):
 				packageDependency['version'] = None
 				packageDependency['condition'] = None
 			else:
 				if not packageDependency.get('condition'):
 					packageDependency['condition'] = u'='
-				if not packageDependency['condition'] in (u'=', u'<', u'<=', u'>', u'>='):
-					raise Exception(u"Bad condition string '%s' in package dependency" % packageDependency['condition'])
+				if packageDependency['condition'] not in (u'=', u'<', u'<=', u'>', u'>='):
+					raise ValueError(u"Bad condition string '%s' in package dependency" % packageDependency['condition'])
+
 			self._packageDependencies.append(packageDependency)
-
-	@requiresParsing
-	def getIncrementalPackage(self):
-		return self._incrementalPackage
-
-	def setIncrementalPackage(self, incremental):
-		self._incrementalPackage = forceBool(incremental)
 
 	def generate(self):
 		if not self._product:
-			raise Exception(u"Got no data to write")
+			raise ValueError(u"Got no data to write")
 
 		logger.info(u"Writing opsi package control file '%s'" % self._filename)
 
@@ -822,13 +861,14 @@ class PackageControlFile(TextFile):
 		self._lines.append(u'version: %s' % self._product.getPackageVersion())
 		depends = u''
 		for packageDependency in self._packageDependencies:
-			if depends: depends += u', '
+			if depends:
+				depends += u', '
+
 			depends += packageDependency['package']
 			if packageDependency['version']:
 				depends += u' (%s %s)' % (packageDependency['condition'], packageDependency['version'])
 
 		self._lines.append(u'depends: %s' % depends)
-		self._lines.append(u'incremental: %s' % self._incrementalPackage)
 		self._lines.append(u'')
 
 		self._lines.append(u'[Product]')
@@ -838,7 +878,7 @@ class PackageControlFile(TextFile):
 		elif productType == 'NetbootProduct':
 			productType = 'netboot'
 		else:
-			raise Exception(u"Unhandled product type '%s'" % productType)
+			raise ValueError(u"Unhandled product type '%s'" % productType)
 
 		self._lines.append(u'type: %s' % productType)
 		self._lines.append(u'id: %s' % self._product.getId())
@@ -855,16 +895,15 @@ class PackageControlFile(TextFile):
 		self._lines.append(u'priority: %s' % self._product.getPriority())
 		self._lines.append(u'licenseRequired: %s' % self._product.getLicenseRequired())
 		if self._product.getProductClassIds() is not None:
-			self._lines.append(u'productClasses: %s'  % u', '.join(self._product.getProductClassIds()))
+			self._lines.append(u'productClasses: %s' % u', '.join(self._product.getProductClassIds()))
 		self._lines.append(u'setupScript: %s' % self._product.getSetupScript())
 		self._lines.append(u'uninstallScript: %s' % self._product.getUninstallScript())
 		self._lines.append(u'updateScript: %s' % self._product.getUpdateScript())
 		self._lines.append(u'alwaysScript: %s' % self._product.getAlwaysScript())
 		self._lines.append(u'onceScript: %s' % self._product.getOnceScript())
-		if not self._opsi3compatible:
-			self._lines.append(u'customScript: %s' % self._product.getCustomScript())
-			if isinstance(self._product, LocalbootProduct):
-				self._lines.append(u'userLoginScript: %s' % self._product.getUserLoginScript())
+		self._lines.append(u'customScript: %s' % self._product.getCustomScript())
+		if isinstance(self._product, LocalbootProduct):
+			self._lines.append(u'userLoginScript: %s' % self._product.getUserLoginScript())
 		if isinstance(self._product, NetbootProduct):
 			pxeConfigTemplate = self._product.getPxeConfigTemplate()
 			if not pxeConfigTemplate:
@@ -882,11 +921,9 @@ class PackageControlFile(TextFile):
 			self._lines.append(u'action: %s' % dependency.getProductAction())
 			if dependency.getRequiredProductId():
 				self._lines.append(u'requiredProduct: %s' % dependency.getRequiredProductId())
-			#if dependency.requiredProductClassId:
-			#	self._lines.append( u'requiredClass: %s'   % dependency.requiredProductClassId )
-			if not self._opsi3compatible and dependency.getRequiredProductVersion():
+			if dependency.getRequiredProductVersion():
 				self._lines.append(u'requiredProductVersion: %s' % dependency.getRequiredProductVersion())
-			if not self._opsi3compatible and dependency.getRequiredPackageVersion():
+			if dependency.getRequiredPackageVersion():
 				self._lines.append(u'requiredPackageVersion: %s' % dependency.getRequiredPackageVersion())
 			if dependency.getRequiredAction():
 				self._lines.append(u'requiredAction: %s' % dependency.getRequiredAction())
@@ -901,10 +938,9 @@ class PackageControlFile(TextFile):
 			productPropertyType = 'unicode'
 			if isinstance(productProperty, BoolProductProperty):
 				productPropertyType = 'bool'
-			if not self._opsi3compatible:
-				self._lines.append(u'type: %s' % productPropertyType)
+			self._lines.append(u'type: %s' % productPropertyType)
 			self._lines.append(u'name: %s' % productProperty.getPropertyId())
-			if not self._opsi3compatible and not isinstance(productProperty, BoolProductProperty):
+			if not isinstance(productProperty, BoolProductProperty):
 				self._lines.append(u'multivalue: %s' % productProperty.getMultiValue())
 				self._lines.append(u'editable: %s' % productProperty.getEditable())
 			if productProperty.getDescription():
@@ -915,22 +951,17 @@ class PackageControlFile(TextFile):
 					if len(descLines) > 1:
 						for l in descLines[1:]:
 							self._lines.append(u' %s' % l)
-			if self._opsi3compatible:
-				if productProperty.getPossibleValues() and not productProperty.getEditable():
-					self._lines.append(u'values: %s' % u', '.join(forceUnicodeList(productProperty.getPossibleValues())))
-				if productProperty.getDefaultValues():
-					self._lines.append(u'default: %s' % u', '.join(forceUnicodeList(productProperty.getDefaultValues())))
-			else:
-				if not isinstance(productProperty, BoolProductProperty) and productProperty.getPossibleValues():
-					self._lines.append(u'values: %s' % toJson(productProperty.getPossibleValues()))
-				if productProperty.getDefaultValues():
-					if isinstance(productProperty, BoolProductProperty):
-						self._lines.append(u'default: %s' % productProperty.getDefaultValues()[0])
-					else:
-						self._lines.append(u'default: %s' % toJson(productProperty.getDefaultValues()))
+
+			if not isinstance(productProperty, BoolProductProperty) and productProperty.getPossibleValues() is not None:
+				self._lines.append(u'values: %s' % toJson(productProperty.getPossibleValues()))
+			if productProperty.getDefaultValues() is not None:
+				if isinstance(productProperty, BoolProductProperty):
+					self._lines.append(u'default: %s' % productProperty.getDefaultValues()[0])
+				else:
+					self._lines.append(u'default: %s' % toJson(productProperty.getDefaultValues()))
 			self._lines.append(u'')
 
-		if not self._opsi3compatible and self._product.getChangelog():
+		if self._product.getChangelog():
 			self._lines.append(u'[Changelog]')
 			self._lines.extend(self._product.getChangelog().split('\n'))
 
@@ -947,7 +978,7 @@ class OpsiConfFile(IniFile):
 	def __init__(self, filename=u'/etc/opsi/opsi.conf', lockFailTimeout=2000):
 		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars=[';', '#'])
 		self._parsed = False
-		self._sections = False
+		self._sections = {}
 		self._opsiGroups = {}
 
 	def parse(self, lines=None):
@@ -1013,7 +1044,7 @@ class OpsiConfFile(IniFile):
 	@requiresParsing
 	def getOpsiFileAdminGroup(self):
 		if not self._opsiConfig.get("groups", {}).get("fileadmingroup", ""):
-			return "pcpatch"
+			return u"pcpatch"
 		else:
 			return self._opsiConfig["groups"]["fileadmingroup"]
 
@@ -1058,7 +1089,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 			assert compression in ("gz", "bz2")
 
 		if name is None:
-			self.sysinfo = self._probeSysInfo()
+			self.sysinfo = self.getSysInfo()
 			name = self._generateNewArchive(suffix=compression)
 			self.mode = 'w'
 		elif not os.path.exists(name):
@@ -1080,8 +1111,8 @@ class OpsiBackupArchive(tarfile.TarFile):
 		tarfile.TarFile.__init__(self, name, self.mode, fileobj=fileobj, **kwargs)
 
 		if self.mode.startswith("w"):
-			if self.sysinfo is None:
-				self.sysinfo = self._probeSysInfo()
+			if not self.sysinfo:
+				self.sysinfo = self.getSysInfo()
 		else:
 			self.sysinfo = self._readSysInfo()
 			self._filemap = self._readChecksumFile()
@@ -1129,7 +1160,6 @@ class OpsiBackupArchive(tarfile.TarFile):
 
 		return backends
 
-
 	def _getBackends(self, type=None):
 		if not self._backends:
 			self._backends = self._readBackendConfiguration()
@@ -1142,42 +1172,52 @@ class OpsiBackupArchive(tarfile.TarFile):
 		return os.path.join(self.tempdir, self._generateArchiveName(suffix=suffix))
 
 	def _generateArchiveName(self, suffix=None):
-		t = datetime.datetime.now()
-		name = "%s_%s_%s.tar" % (self.sysinfo['hostname'], self.sysinfo['opsiVersion'], str(t).replace(" ", "_").replace(":", "-"))
+		currentTime = datetime.datetime.now()
+		timestamp = str(currentTime).replace(" ", "_").replace(":", "-")
+		name = "{hostname}_{opsiVersion}_{timestamp}.tar".format(timestamp=timestamp, **self.sysinfo)
 		if suffix:
 			name += ".%s" % suffix
 		return name
 
 	@staticmethod
-	def _probeSysInfo():
+	def getSysInfo():
+		"""
+		Get the current system information as a dict.
+
+		System information is hostname, domainname, FQDN, distribution,
+		system version, distribution ID and the version of opsi in use.
+
+		:rtype: dict
+		"""
 		sysinfo = SysInfo()
-		sysInfoDict = {}
-		sysInfoDict["hostname"] = sysinfo.hostname
-		sysInfoDict["fqdn"] = sysinfo.fqdn
-		sysInfoDict["domainname"] = sysinfo.domainname
-		sysInfoDict["distribution"] = sysinfo.distribution
-		sysInfoDict["sysVersion"] = sysinfo.sysVersion
-		sysInfoDict["distributionId"] = sysinfo.distributionId
-		sysInfoDict["opsiVersion"] = sysinfo.opsiVersion
-		return sysInfoDict
+
+		return {
+			"hostname": sysinfo.hostname,
+			"fqdn": sysinfo.fqdn,
+			"domainname": sysinfo.domainname,
+			"distribution": sysinfo.distribution,
+			"sysVersion": sysinfo.sysVersion,
+			"distributionId": sysinfo.distributionId,
+			"opsiVersion": LIBRARY_VERSION
+		}
 
 	def _readSysInfo(self):
-		map = {}
+		sysInfo = {}
 		with closing(self.extractfile("%s/sysinfo" % self.CONTROL_DIR)) as fp:
 			for line in fp.readlines():
 				key, value = line.split(":")
-				map[key.strip()] = value.strip()
+				sysInfo[key.strip()] = value.strip()
 
-		return map
+		return sysInfo
 
 	def _readChecksumFile(self):
-		map = {}
+		checksums = {}
 		with closing(self.extractfile("%s/checksums" % self.CONTROL_DIR)) as fp:
 			for line in fp.readlines():
 				key, value = line.split(" ", 1)
-				map[value.strip()] = key.strip()
+				checksums[value.strip()] = key.strip()
 
-		return map
+		return checksums
 
 	def _addContent(self, path, sub=()):
 		dest = path
@@ -1219,7 +1259,8 @@ class OpsiBackupArchive(tarfile.TarFile):
 		string = StringIO.StringIO()
 
 		for key, value in self.sysinfo.iteritems():
-			string.write("%s: %s\n" %(key, value))
+			string.write("%s: %s\n" % (key, value))
+
 		string.seek(0)
 		info = tarfile.TarInfo(name="%s/sysinfo" % self.CONTROL_DIR)
 		info.size = len(string.buf)
@@ -1379,7 +1420,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 					os.remove(file)
 
 				for member in members:
-					if member.name.startswith(os.path.join(self.CONTENT_DIR, "BACKENDS/DHCP/%s" %backend["name"])):
+					if member.name.startswith(os.path.join(self.CONTENT_DIR, "BACKENDS/DHCP/%s" % backend["name"])):
 						self._extractFile(member, backend["config"]['dhcpdConfigFile'])
 
 	def hasMySQLBackend(self, name=None):
@@ -1410,7 +1451,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 					p = Popen(cmd, stdout=PIPE, stderr=PIPE)
 
 					flags = fcntl.fcntl(p.stderr, fcntl.F_GETFL)
-					fcntl.fcntl(p.stderr, fcntl.F_SETFL, flags| os.O_NONBLOCK)
+					fcntl.fcntl(p.stderr, fcntl.F_SETFL, flags | os.O_NONBLOCK)
 
 					out = p.stdout.readline()
 
@@ -1428,7 +1469,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 							currentError = p.stderr.readline().strip()
 							if currentError:
 								lastErrors.append(currentError)
-								if not "Warning: Using a password on the command line interface can be insecure." in currentError:
+								if "Warning: Using a password on the command line interface can be insecure." not in currentError:
 									collectedErrors.append(currentError)
 						except Exception:
 							continue
@@ -1451,7 +1492,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 					if p.returncode not in (0, None):
 						raise OpsiBackupFileError(u"MySQL dump failed for backend %s: %s" % (backend["name"], u"".join(collectedErrors)))
 
-					self._addContent(name, (name, "BACKENDS/MYSQL/%s/database.sql" %backend["name"]))
+					self._addContent(name, (name, "BACKENDS/MYSQL/%s/database.sql" % backend["name"]))
 				finally:
 					os.close(fd)
 					os.remove(name)
@@ -1471,7 +1512,6 @@ class OpsiBackupArchive(tarfile.TarFile):
 							self._extractFile(member, name)
 
 					cmd = [OPSI.System.which("mysql")]
-					#cmd.append("--max_allowed_packet=%s" % os.path.getsize(name))
 					cmd.append("--host=%s" % backend["config"]["address"])
 					cmd.append("--user=%s" % backend["config"]["username"])
 					cmd.append("--password=%s" % backend["config"]["password"])
@@ -1493,13 +1533,3 @@ class OpsiBackupArchive(tarfile.TarFile):
 				finally:
 					os.close(fd)
 					os.remove(name)
-
-	def hasLDAPBackend(self):
-		#TODO: LDAP-Backend will not be supported in future version. Mark deprecated.
-		return False
-
-	def backupLDAPBackend(self):
-		raise NotImplementedError("LDAP backend backups are not supported yet.")
-
-	def backupUniventionBackend(self):
-		raise NotImplementedError("Univention backend backups are not supported yet.")

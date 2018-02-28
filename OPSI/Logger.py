@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
@@ -54,7 +53,18 @@ try:
 except ImportError:
 	syslog = None
 
-__version__ = '4.0.7.38'
+__all__ = (
+	'COLORS_AVAILABLE', 'COLOR_BLACK', 'COLOR_BLUE', 'COLOR_CYAN',
+	'COLOR_GREEN', 'COLOR_LIGHT_BLACK', 'COLOR_LIGHT_BLUE', 'COLOR_LIGHT_CYAN',
+	'COLOR_LIGHT_GREEN', 'COLOR_LIGHT_MAGENTA', 'COLOR_LIGHT_RED',
+	'COLOR_LIGHT_WHITE', 'COLOR_LIGHT_YELLOW', 'COLOR_MAGENTA', 'COLOR_NORMAL',
+	'COLOR_RED', 'COLOR_WHITE', 'COLOR_YELLOW', 'COMMENT_COLOR',
+	'CONFIDENTIAL_COLOR', 'CRITICAL_COLOR', 'DEBUG_COLOR', 'ERROR_COLOR',
+	'ESSENTIAL_COLOR', 'INFO_COLOR', 'LOG_COMMENT', 'LOG_CONFIDENTIAL',
+	'LOG_CRITICAL', 'LOG_DEBUG', 'LOG_DEBUG2', 'LOG_ERROR', 'LOG_ESSENTIAL',
+	'LOG_INFO', 'LOG_NONE', 'LOG_NOTICE', 'LOG_WARNING', 'Logger',
+	'NOTICE_COLOR', 'WARNING_COLOR'
+)
 
 if sys.version_info > (3, ):
 	# Python 3
@@ -371,21 +381,42 @@ class LoggerImplementation:
 		return self.__loggerSubject
 
 	def setColor(self, color):
-		''' Enable or disable ansi color output '''
+		'''
+		Enable or disable ansi color output in all outputs.
+
+		If `color` is `True`, then output will be colored.
+
+		:type color: bool
+		'''
 		self.__fileColor = self.__consoleColor = color
 
 	def setFileColor(self, color):
-		''' Enable or disable ansi color output '''
+		'''
+		Enable or disable ANSI color output for files.
+
+		If `color` is `True`, then output will be colored.
+
+		:type color: bool
+		'''
 		self.__fileColor = color
 
 	def setConsoleColor(self, color):
-		''' Enable or disable ansi color output '''
+		'''
+		Enable or disable ANSI color output for console.
+
+		If `color` is `True`, then output will be colored.
+
+		:type color: bool
+		'''
 		self.__consoleColor = color
 
 	def setSyslogLevel(self, level=LOG_NONE):
-		''' Maximum level of messages to log by syslog.
-		Set LOG_NONE to disable syslog (default)'''
+		'''
+		Maximum level of messages to log by syslog.
 
+		Set `level` to LOG_NONE to disable syslog (default).
+		:type level: int
+		'''
 		level = self._sanitizeLogLevel(level)
 
 		self.__syslogLevel = level
@@ -407,8 +438,13 @@ class LoggerImplementation:
 		self.__messageSubjectLevel = self._sanitizeLogLevel(level)
 
 	def setConsoleLevel(self, level=LOG_NONE):
-		''' Maximum level of messages to print to stderr
-		Set LOG_NONE to disable output to stderr (default)'''
+		'''
+		Maximum level of messages to print to stderr.
+
+		Set `level` to LOG_NONE to disable output to stderr (default).
+
+		:type level: int
+		'''
 		self.__consoleLevel = self._sanitizeLogLevel(level)
 
 	@staticmethod
@@ -487,8 +523,13 @@ will disable logging to a file.
 			self.error(u"Failed to create symlink from {0!r} to {1!r}: {2}", logFile, linkFile, error)
 
 	def setFileLevel(self, level=LOG_NONE):
-		''' Maximum level of messages to appear in logfile
-		Set LOG_NONE to disable output to logfile (default)'''
+		'''
+		Maximum level of messages to appear in logfile.
+
+		Set `level` to LOG_NONE to disable output to logfile (default).
+
+		:type level: int
+		'''
 		self.__fileLevel = self._sanitizeLogLevel(level)
 
 	def exit(self, object=None):
@@ -497,7 +538,7 @@ will disable logging to a file.
 				self.debug(u"Deleting config of object 0x%x" % id(object))
 				del self.__objectConfig[id(object)]
 
-			for objectId in self.__objectConfig.keys():
+			for objectId in self.__objectConfig:
 				self.debug2(u"Got special config for object 0x%x" % objectId)
 
 		threadId = unicode(thread.get_ident())
@@ -505,7 +546,7 @@ will disable logging to a file.
 			self.debug(u"Deleting config of thread %s" % threadId)
 			del self.__threadConfig[threadId]
 
-		for threadId in self.__threadConfig.keys():
+		for threadId in self.__threadConfig:
 			self.debug2(u"Got special config for thread %s" % threadId)
 
 	def _setThreadConfig(self, key, value):

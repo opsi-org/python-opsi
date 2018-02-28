@@ -1,4 +1,3 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 # This module is part of the desktop management solution opsi
@@ -36,7 +35,7 @@ from OPSI.Util import getfqdn
 
 LOGGER = Logger()
 
-__all__ = ['getImageInformation', 'parseWIM', 'writeImageInformation']
+__all__ = ('getImageInformation', 'parseWIM', 'writeImageInformation')
 
 
 def parseWIM(wimPath):

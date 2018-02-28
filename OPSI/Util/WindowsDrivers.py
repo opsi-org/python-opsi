@@ -1,10 +1,9 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 #
-# Copyright (C) 2006-2010, 2013-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2010, 2013-2017 uib GmbH <info@uib.de>
 # All rights reserved.
 #
 # This program is free software: you can redistribute it and/or modify
@@ -41,8 +40,6 @@ from OPSI.Util import findFiles
 from OPSI.Util.File import InfFile, TxtSetupOemFile
 from OPSI.Util.Repository import Repository
 
-__version__ = '4.0.6.15'
-
 logger = Logger()
 
 
@@ -57,7 +54,7 @@ def searchWindowsDrivers(driverDir, auditHardwares, messageSubject=None, srcRepo
 	listdir = os.listdir
 	if srcRepository:
 		if not isinstance(srcRepository, Repository):
-			raise Exception(u"Not a repository: %s" % srcRepository)
+			raise TypeError(u"Not a repository: %s" % srcRepository)
 		exists = srcRepository.exists
 		listdir = srcRepository.listdir
 
@@ -156,7 +153,7 @@ def integrateWindowsDrivers(driverSourceDirectories, driverDestinationDirectory,
 	copy = System.copy
 	if srcRepository:
 		if not isinstance(srcRepository, Repository):
-			raise Exception(u"Not a repository: %s" % srcRepository)
+			raise TypeError(u"Not a repository: %s" % srcRepository)
 		exists = srcRepository.exists
 		copy = srcRepository.copy
 
@@ -431,7 +428,7 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 	listdir = os.listdir
 	if srcRepository:
 		if not isinstance(srcRepository, Repository):
-			raise Exception(u"Not a repository: %s" % srcRepository)
+			raise TypeError(u"Not a repository: %s" % srcRepository)
 		exists = srcRepository.exists
 		listdir = srcRepository.listdir
 
@@ -463,7 +460,7 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 		if vendorFromHost and modelFromHost:
 			vendordirectories = listdir(rulesdir)
 			if vendorFromHost not in vendordirectories:
-				if vendorFromHost.endswith(".") or vendorFromHost.endswith(" "):
+				if vendorFromHost.endswith((".", " ")):
 					vendorFromHost = "%s_" % vendorFromHost[:-1]
 
 			for vendordirectory in vendordirectories:
@@ -472,7 +469,7 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 					if skuFromHost and skuFromHost in modelFromHost:
 						skuLabel = "(%s)" % skuFromHost
 					if modelFromHost not in modeldirectories:
-						if modelFromHost.endswith(".") or modelFromHost.endswith(" "):
+						if modelFromHost.endswith((".", " ")):
 							modelFromHost = "%s_" % modelFromHost[:-1]
 					for modeldirectory in modeldirectories:
 						if modeldirectory.lower() == modelFromHost.lower():
@@ -497,14 +494,14 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 		if vendorFromHost and productFromHost:
 			vendordirectories = listdir(rulesdir)
 			if vendorFromHost not in vendordirectories:
-				if vendorFromHost.endswith(".") or vendorFromHost.endswith(" "):
+				if vendorFromHost.endswith((".", " ")):
 					vendorFromHost = "%s_" % vendorFromHost[:-1]
 
 			for vendordirectory in vendordirectories:
 				if vendordirectory.lower() == vendorFromHost.lower():
 					productdirectories = listdir(os.path.join(rulesdir, vendordirectory))
 					if productFromHost not in productdirectories:
-						if productFromHost.endswith(".") or productFromHost.endswith(" "):
+						if productFromHost.endswith((".", " ")):
 							productFromHost = "%s_" % productFromHost[:-1]
 
 					for productdirectory in productdirectories:
@@ -562,7 +559,7 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 def getOemPnpDriversPath(driverDirectory, target, separator=u';', prePath=u'', postPath=u''):
 	logger.info(u"Generating oemPnpDriversPath")
 	if not driverDirectory.startswith(target):
-		raise Exception(u"Driver directory '%s' not on target '%s'" % (driverDirectory, target))
+		raise TypeError(u"Driver directory '%s' not on target '%s'" % (driverDirectory, target))
 
 	relPath = driverDirectory[len(target):]
 	while relPath.startswith(os.sep):

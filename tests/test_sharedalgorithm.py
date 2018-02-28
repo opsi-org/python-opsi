@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -26,11 +25,9 @@ Testing OPSI.SharedAlgorithm
 
 from __future__ import absolute_import, print_function
 
-from .helpers import showLogs, unittest
-
-from OPSI.Object import LocalbootProduct, ProductDependency
 from OPSI import SharedAlgorithm
-from OPSI.Types import OpsiProductOrderingError
+from OPSI.Exceptions import OpsiProductOrderingError
+from OPSI.Object import LocalbootProduct, ProductDependency
 from OPSI.Types import forceUnicode
 
 import pytest
@@ -428,9 +425,8 @@ def testSortingWithOverlappingDependencies(sortFunction, expectedOrder):
 	dependencies, products = getDependenciesWithCrossingPriority()
 	print("Products: {0}".format(products))
 	print("Deps: {0}".format(dependencies))
-	sortedProductList = sortFunction(products, dependencies)
-	print(u"produced sorted list : %s " % sortedProductList)
 
+	sortedProductList = sortFunction(products, dependencies)
 	assert sortedProductList == expectedOrder
 
 
@@ -488,9 +484,7 @@ def testAlgorithm1SortingWithDifferentPriorities():
 
 	results = SharedAlgorithm.generateProductSequence_algorithm1([msServicePack, msHotFix], [productDep])
 
-	print(u"Results are: {0}".format(results))
 	first, second = results
-
 	assert msServicePack.id == first
 	assert msHotFix.id == second
 
@@ -522,8 +516,6 @@ def testAlgorithm1SortingWithAfterSetupDependency():
 
 	results = SharedAlgorithm.generateProductSequence_algorithm1([winDomain, renameClient], [productDep])
 
-	print(u"Results are: {0}".format(results))
 	first, second = results
-
 	assert renameClient.id == first
 	assert winDomain.id == second

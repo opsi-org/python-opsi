@@ -1,8 +1,7 @@
-#!/usr/bin/env python
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -29,94 +28,81 @@ import os
 import shutil
 import sys
 
-from .helpers import mock, unittest, workInTemporaryDirectory
-
 from OPSI.Util.Task.Backup import OpsiBackup
-from OPSI.Util.Task.ConfigureBackend import (getBackendConfiguration,
-    updateConfigFile)
+from OPSI.Util.Task.ConfigureBackend import (
+    getBackendConfiguration, updateConfigFile)
+
+from .helpers import mock, workInTemporaryDirectory
 
 
-class BackupTestCase(unittest.TestCase):
-    def testVerifySysConfigDoesNotFailBecauseWhitespaceAtEnd(self):
-        class FakeSysInfo(object):
-            def __init__(self, **kwargs):
-                for key, value in kwargs.items():
-                    setattr(self, key, value)
+def testVerifySysConfigDoesNotFailBecauseWhitespaceAtEnd():
+    backup = OpsiBackup()
 
+    archive = {
+        'distribution': 'SUSE Linux Enterprise Server',
+        'sysVersion': '(12, 0)',
+    }
+    system = {
+        "distribution": 'SUSE Linux Enterprise Server ',  # note the extra space
+        'sysVersion': (12, 0),
+    }
+
+    assert {} == backup.getDifferencesInSysConfig(archive, sysInfo=system)
+
+
+def testPatchingStdout():
+    fake = 'fake'
+    backup = OpsiBackup(stdout=fake)
+    assert fake == backup.stdout
+
+    newBackup = OpsiBackup()
+    assert sys.stdout == newBackup.stdout
+
+
+def testGettingArchive():
+    fakeBackendDir = os.path.join(os.path.dirname(__file__), '..', 'data', 'backends')
+    fakeBackendDir = os.path.normpath(fakeBackendDir)
+
+    with mock.patch('OPSI.Util.Task.Backup.OpsiBackupArchive.BACKEND_CONF_DIR', fakeBackendDir):
         backup = OpsiBackup()
+        archive = backup._getArchive('r')
 
-        archive = {
-            'distribution': 'SUSE Linux Enterprise Server'
-        }
-        system = FakeSysInfo(
-            distribution='SUSE Linux Enterprise Server '
-        )
-
-        self.assertEquals(
-            {},
-            backup._getDifferencesInSysConfig(
-                archive,
-                sysInfo=system
-            )
-        )
-
-    def testPatchingStdout(self):
-        fake = 'fake'
-        backup = OpsiBackup(stdout=fake)
-        self.assertEquals(fake, backup.stdout)
-
-        newBackup = OpsiBackup()
-        self.assertEquals(sys.stdout, newBackup.stdout)
-
-    def testGettingArchive(self):
-        fakeBackendDir = os.path.join(os.path.dirname(__file__), '..', 'data', 'backends')
-        fakeBackendDir = os.path.normpath(fakeBackendDir)
-
-        with mock.patch('OPSI.System.Posix.SysInfo.opsiVersion', '1.2.3'):
-            with mock.patch('OPSI.Util.Task.Backup.OpsiBackupArchive.BACKEND_CONF_DIR', fakeBackendDir):
-                backup = OpsiBackup()
-                archive = backup._getArchive('r')
-
-                self.assertTrue(os.path.exists(archive.name), "No archive created.")
-                os.remove(archive.name)
-
-    def testCreatingArchive(self):
-        with workInTemporaryDirectory() as backendDir:
-            with workInTemporaryDirectory() as tempDir:
-                self.assertEquals(len(os.listdir(tempDir)), 0, "Directory not empty")
-
-                configDir = os.path.join(backendDir, 'config')
-                os.mkdir(configDir)
-
-                sourceBackendDir = os.path.join(os.path.dirname(__file__), '..', 'data', 'backends')
-                sourceBackendDir = os.path.normpath(sourceBackendDir)
-                fakeBackendDir = os.path.join(backendDir, 'backends')
-
-                shutil.copytree(sourceBackendDir, fakeBackendDir)
-
-                for filename in os.listdir(fakeBackendDir):
-                    if 'file' not in filename or not filename.endswith('.conf'):
-                        continue
-
-                    configPath = os.path.join(fakeBackendDir, filename)
-                    config = getBackendConfiguration(configPath)
-                    config['baseDir'] = configDir
-                    updateConfigFile(configPath, config)
-
-                with mock.patch('OPSI.System.Posix.SysInfo.opsiVersion'):
-                    with mock.patch('OPSI.Util.Task.Backup.OpsiBackupArchive.CONF_DIR', os.path.dirname(__file__)):
-                        with mock.patch('OPSI.Util.Task.Backup.OpsiBackupArchive.BACKEND_CONF_DIR', fakeBackendDir):
-                            backup = OpsiBackup()
-                            backup._create()
-
-                            dirListing = os.listdir(tempDir)
-                            try:
-                                dirListing.remove('.coverage')
-                            except ValueError:
-                                pass
-
-                            self.assertEquals(len(dirListing), 1)
+        assert os.path.exists(archive.name), "No archive created."
+        os.remove(archive.name)
 
 
-if __name__ == '__main__':
-    unittest.main()
+def testCreatingArchive():
+    with workInTemporaryDirectory() as backendDir:
+        with workInTemporaryDirectory() as tempDir:
+            assert 0 == len(os.listdir(tempDir)), "Directory not empty"
+
+            configDir = os.path.join(backendDir, 'config')
+            os.mkdir(configDir)
+
+            sourceBackendDir = os.path.join(os.path.dirname(__file__), '..', 'data', 'backends')
+            sourceBackendDir = os.path.normpath(sourceBackendDir)
+            fakeBackendDir = os.path.join(backendDir, 'backends')
+
+            shutil.copytree(sourceBackendDir, fakeBackendDir)
+
+            for filename in os.listdir(fakeBackendDir):
+                if 'file' not in filename or not filename.endswith('.conf'):
+                    continue
+
+                configPath = os.path.join(fakeBackendDir, filename)
+                config = getBackendConfiguration(configPath)
+                config['baseDir'] = configDir
+                updateConfigFile(configPath, config)
+
+            with mock.patch('OPSI.Util.Task.Backup.OpsiBackupArchive.CONF_DIR', os.path.dirname(__file__)):
+                with mock.patch('OPSI.Util.Task.Backup.OpsiBackupArchive.BACKEND_CONF_DIR', fakeBackendDir):
+                    backup = OpsiBackup()
+                    backup.create()
+
+                    dirListing = os.listdir(tempDir)
+                    try:
+                        dirListing.remove('.coverage')
+                    except ValueError:
+                        pass
+
+                    assert len(dirListing) == 1

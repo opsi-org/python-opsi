@@ -1,8 +1,7 @@
-#!/usr/bin/env python
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -33,7 +32,6 @@ import tempfile
 from contextlib import contextmanager
 
 from OPSI.Backend.Backend import ExtendedConfigDataBackend
-from OPSI.Backend.BackendManager import BackendManager
 from OPSI.Backend.File import FileBackend
 
 from . import BackendMixin
@@ -106,11 +104,9 @@ config = {{
         self._fileBackendConfig['dispatchConfig'] = dispatchConfigPath
 
         with open(dispatchConfigPath, 'w') as dpconf:
-            dpconf.write(
-"""
+            dpconf.write("""
 .* : file
-"""
-)
+""")
 
     def tearDownBackend(self):
         self.backend.backend_deleteBase()
@@ -121,20 +117,6 @@ config = {{
             pass
 
         del self.backend
-
-
-class FileBackendBackendManagerMixin(FileBackendMixin):
-    def setUpBackend(self):
-        self._fileBackendConfig = {}
-        self._fileTempDir = self._copyOriginalBackendToTemporaryLocation()
-
-        self.backend = BackendManager(
-            backend='file',
-            backendconfigdir=os.path.join(self._fileTempDir, self.BACKEND_SUBFOLDER, 'backends'),
-            extensionconfigdir=os.path.join(self._fileTempDir, self.BACKEND_SUBFOLDER, 'backendManager', 'extend.d')
-        )
-
-        self.backend.backend_createBase()
 
 
 @contextmanager

@@ -1,10 +1,9 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2006-2016 uib GmbH - http://www.uib.de/
+# Copyright (C) 2006-2017 uib GmbH - http://www.uib.de/
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -40,9 +39,9 @@ import threading
 import time
 from itertools import islice
 
+from OPSI.Exceptions import BackendBadValueError, BackendMissingDataError
 from OPSI.Logger import Logger
-from OPSI.Types import (BackendBadValueError, BackendMissingDataError,
-	forceArchitecture, forceBool, forceDict,
+from OPSI.Types import (forceArchitecture, forceBool, forceDict,
 	forceEmailAddress, forceFilename, forceHardwareAddress,
 	forceHardwareDeviceId, forceHardwareVendorId, forceHostname, forceInt,
 	forceIPAddress, forceList, forceOct, forceProductId, forceTime,
@@ -58,8 +57,6 @@ elif os.name == 'nt':
 	import win32con
 	import win32file
 	import pywintypes
-
-__version__ = "4.0.7.1"
 
 logger = Logger()
 
@@ -108,7 +105,7 @@ class File(object):
 			try:
 				uid = pwd.getpwnam(user)[2]
 			except KeyError:
-				raise Exception(u"Unknown user '%s'" % user)
+				raise ValueError(u"Unknown user '%s'" % user)
 
 		gid = -1
 		if isinstance(group, int):
@@ -118,7 +115,7 @@ class File(object):
 			try:
 				gid = grp.getgrnam(group)[2]
 			except KeyError:
-				raise Exception(u"Unknown group '%s'" % group)
+				raise ValueError(u"Unknown group '%s'" % group)
 
 		os.chown(self._filename, uid, gid)
 
@@ -345,16 +342,19 @@ class ChangelogFile(TextFile):
 
 				if line.startswith(' --'):
 					if '  ' not in line:
-						raise Exception(u"maintainer must be separated from date using two spaces")
+						raise ValueError(u"maintainer must be separated from date using two spaces")
 					if not currentEntry or currentEntry['date']:
-						raise Exception(u"found trailer out of release")
+						raise ValueError(u"found trailer out of release")
 
 					(maintainer, date) = line[3:].strip().split(u'  ', 1)
 					email = u''
-					if '<' in maintainer:
+					try:
 						(maintainer, email) = maintainer.split(u'<', 1)
 						maintainer = maintainer.strip()
 						email = email.strip().replace(u'<', u'').replace(u'>', u'')
+					except ValueError:
+						pass
+
 					currentEntry['maintainerName'] = maintainer
 					currentEntry['maintainerEmail'] = email
 					if u'+' in date:
@@ -375,11 +375,11 @@ class ChangelogFile(TextFile):
 
 				else:
 					if not currentEntry and line.strip():
-						raise Exception(u"text not in release")
+						raise ValueError(u"text not in release")
 					if currentEntry:
 						currentEntry['changelog'].append(line.rstrip())
-			except Exception as e:
-				raise Exception(u"Parse error in line %d: %s" % (lineNum, e))
+			except Exception as error:
+				raise ValueError(u"Parse error in line %d: %s" % (lineNum, error))
 		if currentEntry:
 			self.addEntry(currentEntry)
 		self._parsed = True
@@ -391,7 +391,7 @@ class ChangelogFile(TextFile):
 		locale.setlocale(locale.LC_ALL, 'C')
 		try:
 			if not self._entries:
-				raise Exception(u"No entries to write")
+				raise ValueError(u"No entries to write")
 			self._lines = []
 			for entry in self._entries:
 				self._lines.append(u'%s (%s) %s; urgency=%s' % (entry['package'], entry['version'], entry['release'], entry['urgency']))
@@ -590,7 +590,7 @@ class IniFile(ConfigFile):
 		try:
 			self._configParser.readfp(StringIO.StringIO(u'\r\n'.join(lines)))
 		except Exception as e:
-			raise Exception(u"Failed to parse ini file '%s': %s" % (self._filename, e))
+			raise RuntimeError(u"Failed to parse ini file '%s': %s" % (self._filename, e))
 
 		logger.debug(u"Finished reading file after %0.3f seconds" % (time.time() - start))
 
@@ -603,7 +603,7 @@ class IniFile(ConfigFile):
 		self._configParser = configParser
 
 		if not self._configParser:
-			raise Exception(u"Got no data to write")
+			raise ValueError(u"Got no data to write")
 
 		sectionSequence = []
 		optionSequence = {}
@@ -717,10 +717,7 @@ class InfFile(ConfigFile):
 			else:
 				newLines.append(line)
 
-			if line.endswith(u'\\'):
-				appendNext = True
-			else:
-				appendNext = False
+			appendNext = line.endswith(u'\\')
 		lines = newLines
 
 		# Get strings
@@ -752,11 +749,9 @@ class InfFile(ConfigFile):
 			match = re.search(self.sectionRegex, line)
 			if match:
 				section = match.group(1)
-				if section.lower().startswith(u'sourcedisksnames'):
-					sectionFound = True
-				else:
-					sectionFound = False
+				sectionFound = section.lower().startswith(u'sourcedisksnames')
 				continue
+
 			if sectionFound:
 				if '=' not in line:
 					continue
@@ -914,11 +909,11 @@ class PciidsFile(ConfigFile):
 
 				if line.startswith(u'\t'):
 					if not currentVendorId or currentVendorId not in self._devices:
-						raise Exception(u"Parse error in file '%s': %s" % (self._filename, line))
+						raise ValueError(u"Parse error in file '%s': %s" % (self._filename, line))
 
 					if line.startswith(u'\t\t'):
 						if not currentDeviceId or currentVendorId not in self._subDevices or currentDeviceId not in self._subDevices[currentVendorId]:
-							raise Exception(u"Parse error in file '%s': %s" % (self._filename, line))
+							raise ValueError(u"Parse error in file '%s': %s" % (self._filename, line))
 						(subVendorId, subDeviceId, subName) = line.lstrip().split(None, 2)
 						subVendorId = forceHardwareVendorId(subVendorId)
 						subDeviceId = forceHardwareDeviceId(subDeviceId)
@@ -1003,7 +998,7 @@ class TxtSetupOemFile(ConfigFile):
 				device = d
 				break
 		if not device:
-			raise Exception(u"Device '%s:%s' not found in txtsetup.oem file '%s'" % (vendorId, deviceId, self._filename))
+			raise ValueError(u"Device '%s:%s' not found in txtsetup.oem file '%s'" % (vendorId, deviceId, self._filename))
 		return device
 
 	def getFilesForDevice(self, vendorId, deviceId, deviceType=None, fileTypes=[], architecture='x86'):
@@ -1025,7 +1020,7 @@ class TxtSetupOemFile(ConfigFile):
 			if fileTypes and f['fileType'] not in fileTypes:
 				continue
 			if f['diskName'] not in diskDriverDirs:
-				raise Exception(u"Driver disk for file %s not found in txtsetup.oem file '%s'" % (f, self._filename))
+				raise ValueError(u"Driver disk for file %s not found in txtsetup.oem file '%s'" % (f, self._filename))
 			files.append(os.path.join(diskDriverDirs[f['diskName']], f['filename']))
 		return files
 
@@ -1041,7 +1036,7 @@ class TxtSetupOemFile(ConfigFile):
 		for componentOptions in self._componentOptions:
 			if componentOptions['componentName'].lower() == device['componentName'].lower() and componentOptions["componentId"].lower() == device['componentId'].lower():
 				return componentOptions
-		raise Exception(u"Component options for device %s not found in txtsetup.oem file '%s'" % (device, self._filename))
+		raise ValueError(u"Component options for device %s not found in txtsetup.oem file '%s'" % (device, self._filename))
 
 	@requiresParsing
 	def applyWorkarounds(self):
@@ -1100,10 +1095,10 @@ class TxtSetupOemFile(ConfigFile):
 				optionName = None
 				(componentId, value) = line.split('=', 1)
 				componentId = componentId.strip()
-				if u',' in value:
+				try:
 					(description, optionName) = value.split(',', 1)
 					optionName = optionName.strip()
-				else:
+				except ValueError:
 					description = value
 				description = description.strip()
 				if description.startswith(u'"') and description.endswith(u'"'):
@@ -1185,7 +1180,7 @@ class TxtSetupOemFile(ConfigFile):
 					self._serviceNames.append(serviceName)
 
 		if not self._devices:
-			raise Exception(u"No devices found in txtsetup file '%s'" % self._filename)
+			raise ValueError(u"No devices found in txtsetup file '%s'" % self._filename)
 
 		logger.info(u"Found services: %s" % self._serviceNames)
 		logger.debug(u"Found devices: %s" % self._devices)
@@ -1222,7 +1217,7 @@ class TxtSetupOemFile(ConfigFile):
 					}
 				)
 		if not self._driverDisks:
-			raise Exception(u"No driver disks found in txtsetup file '%s'" % self._filename)
+			raise ValueError(u"No driver disks found in txtsetup file '%s'" % self._filename)
 		logger.info(u"Found driver disks: %s" % self._driverDisks)
 
 		# Search for files
@@ -1369,12 +1364,11 @@ class ZsyncFile(LockableFile):
 		self._parsed = False
 
 		with open(self._filename, 'rb') as f:
-			while True:
-				line = f.readline().strip()
-				if not line:
-					break
+			for line in iter(lambda: f.readline().strip(), ''):
 				key, value = line.split(':', 1)
 				self._header[key.strip()] = value.strip()
+
+			# Header and data are divided by an empty line
 			self._data = f.read()
 
 		self._parsed = True
@@ -1462,29 +1456,19 @@ class DHCPDConf_Option(DHCPDConf_Component):
 			self.value = [self.value]
 
 	def asText(self):
+		quotedOptions = (
+			u'-name', u'-domain', u'-identifier', u'-search',
+			u'merit-dump', u'nds-context', u'netbios-scope', u'nwip-domain',
+			u'nwip-suboptions', u'nis-domain', u'nisplus-domain', u'root-path',
+			u'uap-servers', u'user-class', u'vendor-encapsulated-options',
+			u'circuit-id', u'remote-id', u'fqdn.fqdn', u'ddns-rev-domainname'
+		)
+
 		text = []
 		for value in self.value:
 			if (re.match('.*[\'/\\\].*', value) or
 				re.match('^\w+\.\w+$', value) or
-				self.key.endswith(u'-name') or
-				self.key.endswith(u'-domain') or
-				self.key.endswith(u'-identifier') or
-				self.key.endswith(u'-search') or
-				self.key.endswith(u'merit-dump') or
-				self.key.endswith(u'nds-context') or
-				self.key.endswith(u'netbios-scope') or
-				self.key.endswith(u'nwip-domain') or
-				self.key.endswith(u'nwip-suboptions') or
-				self.key.endswith(u'nis-domain') or
-				self.key.endswith(u'nisplus-domain') or
-				self.key.endswith(u'root-path') or
-				self.key.endswith(u'uap-servers') or
-				self.key.endswith(u'user-class') or
-				self.key.endswith(u'vendor-encapsulated-options') or
-				self.key.endswith(u'circuit-id') or
-				self.key.endswith(u'remote-id') or
-				self.key.endswith(u'fqdn.fqdn') or
-				self.key.endswith(u'ddns-rev-domainname')):
+				self.key.endswith(quotedOptions)):
 
 				text.append(u'"%s"' % value)
 			else:
@@ -1720,7 +1704,7 @@ class DHCPDConfFile(TextFile):
 
 	def generate(self):
 		if not self._globalBlock:
-			raise Exception(u"Got no data to write")
+			raise ValueError(u"Got no data to write")
 
 		self.open('w')
 		self.write(self._globalBlock.asText())

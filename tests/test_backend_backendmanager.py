@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -29,7 +28,7 @@ import os
 
 from OPSI.Backend.BackendManager import BackendManager, ConfigDataBackend
 
-from .helpers import getLocalFQDN, workInTemporaryDirectory
+from .helpers import getLocalFQDN
 from .Backends.File import getFileBackend
 from .test_configs import getConfigs
 from .test_groups import fillBackendWithGroups
@@ -45,19 +44,17 @@ def testBackendManagerDispatchesCallsToExtensionClass():
     These calls should not fail.
     """
     class TestClass(object):
-        def testMethod(self, y):
-            print("Working test.")
-            print('Argument: {0}'.format(y))
-            print('This is me: {0}'.format(self))
+        def methodOnBackend(self, y):
+            assert y == 'yyyyyyyy'
 
-        def testMethod2(self):
-            print('Getting all that shiny options...')
-            print(self.backend_getOptions())
+        def checkIfOptionsExist(self):
+            options = self.backend_getOptions()
+            assert options
 
     cdb = ConfigDataBackend()
     bm = BackendManager(backend=cdb, extensionClass=TestClass)
-    bm.testMethod('yyyyyyyy')
-    bm.testMethod2()
+    bm.methodOnBackend('yyyyyyyy')
+    bm.checkIfOptionsExist()
 
 
 def testBackendManagerMethods(backendManager):
@@ -135,23 +132,13 @@ def testBackendManagerMethods(backendManager):
     for objectToGroup in objectToGroups:
         assert objectToGroup.objectId in clients
 
-    bm.deleteGroup(groupId=groupId)
+    bm.group_delete(id=groupId)
     assert 0 == len(bm.group_getObjects(id=groupId))
 
     ipAddress = bm.getIpAddress(hostId=client1.id)
     assert ipAddress == client1.ipAddress
 
-    serverName, domain = getLocalFQDN().split('.', 1)
-    serverId = bm.createServer(
-        serverName=serverName,
-        domain=domain,
-        description='Some description',
-        notes=None
-    )
-    assert serverId == serverName + '.' + domain
-
-    serverIds = bm.host_getIdents(type='OpsiConfigserver')
-    assert serverId in serverIds
+    _, domain = getLocalFQDN().split('.', 1)
 
     clientName = 'test-client'
     clientId = bm.createClient(
@@ -167,22 +154,13 @@ def testBackendManagerMethods(backendManager):
     clientIds = bm.host_getIdents(type='OpsiClient')
     assert clientId in clientIds
 
-    # This will not work with the file backend because it will not
-    # delete any host with the id == local FQDN.
-    # TODO: if running with different backend, please enable
-    # bm.deleteServer(serverId)
-    # serverIds = bm.host_getIdents(type='OpsiConfigserver')
-    # self.assertTrue(serverId not in serverIds)
-
-    bm.deleteClient(clientId)
+    bm.host_delete(id=clientId)
     assert clientId not in bm.host_getIdents(type='OpsiClient')
 
-    lastSeen = '2009-01-01 00:00:00'
     description = 'Updated description'
     notes = 'Updated notes'
     opsiHostKey = '00000000001111111111222222222233'
     mac = '00:01:02:03:40:12'
-    bm.setHostLastSeen(hostId=client1.id, timestamp=lastSeen)
     bm.setHostDescription(hostId=client1.id, description=description)
     bm.setHostNotes(hostId=client1.id, notes=notes)
     bm.setOpsiHostKey(hostId=client1.id, opsiHostKey=opsiHostKey)
@@ -190,7 +168,6 @@ def testBackendManagerMethods(backendManager):
 
     host = bm.host_getObjects(id=client1.id)[0]
 
-    assert lastSeen == host.lastSeen
     assert description == host.description
     assert notes == host.notes
     assert opsiHostKey == host.opsiHostKey
@@ -201,7 +178,10 @@ def testBackendManagerMethods(backendManager):
 
     host = bm.getHost_hash(hostId=client1.id)
     serverIds = bm.getServerIds_list()
+    assert isinstance(serverIds, list)
+    assert serverIds
     serverId = bm.getServerId(clientId=client1.id)
+    assert serverId.endswith(domain)
 
     depotName = origDepotserver1.id.split('.', 1)[0]
     depotRemoteUrl = 'smb://{0}/xyz'.format(depotName)
@@ -223,7 +203,7 @@ def testBackendManagerMethods(backendManager):
     depot = bm.getDepot_hash(depotId)
     assert depot['depotRemoteUrl'] == depotRemoteUrl
 
-    bm.deleteDepot(depotId)
+    bm.host_delete(id=depotId)
     depotIds = bm.getDepotIds_list()
     assert depotId not in depotIds
 
@@ -360,44 +340,43 @@ def testGettingBackendManagerWithDefaultConfig():
             pytest.skip("Missing {0}".format(path))
 
     backend = BackendManager()
-    print(backend.backend_info())
+    assert backend.backend_info()
 
 
-def testGettingBackendManagerWithCustomConfig():
-    with workInTemporaryDirectory() as tempDir:
-        backendsDir = os.path.join(tempDir, 'backendsss')
-        bmDir = os.path.join(tempDir, 'bm')
-        dispatchConfig = os.path.join(bmDir, 'dispatch.conf')
-        extensionDir = os.path.join(bmDir, 'extension')
+def testGettingBackendManagerWithCustomConfig(tempDir):
+    backendsDir = os.path.join(tempDir, 'backendsss')
+    bmDir = os.path.join(tempDir, 'bm')
+    dispatchConfig = os.path.join(bmDir, 'dispatch.conf')
+    extensionDir = os.path.join(bmDir, 'extension')
 
-        os.mkdir(bmDir)
-        os.mkdir(extensionDir)
-        os.mkdir(backendsDir)
+    os.mkdir(bmDir)
+    os.mkdir(extensionDir)
+    os.mkdir(backendsDir)
 
-        with open(dispatchConfig, 'w') as dpconf:
-            dpconf.write("""
+    with open(dispatchConfig, 'w') as dpconf:
+        dpconf.write("""
 .* : file
 """)
 
-        kwargs = {
-            "dispatchConfigFile": dispatchConfig,
-            "backendConfigDir": backendsDir,
-            "extensionConfigDir": extensionDir,
-        }
+    kwargs = {
+        "dispatchConfigFile": dispatchConfig,
+        "backendConfigDir": backendsDir,
+        "extensionConfigDir": extensionDir,
+    }
 
-        with getFileBackend(path=tempDir):
-            # We need to make sure there is a file.conf for the backend.
-            os.link(
-                os.path.join(tempDir, 'etc', 'opsi', 'backends', 'file.conf'),
-                os.path.join(backendsDir, 'file.conf')
-            )
+    with getFileBackend(path=tempDir):
+        # We need to make sure there is a file.conf for the backend.
+        os.link(
+            os.path.join(tempDir, 'etc', 'opsi', 'backends', 'file.conf'),
+            os.path.join(backendsDir, 'file.conf')
+        )
 
-        backend = BackendManager(**kwargs)
-        print(backend.backend_info())
+    backend = BackendManager(**kwargs)
+    assert backend.backend_info()
 
 
 def testBackendManagerCanAccessExtensions(backendManager):
-    print(backendManager)
-    print(backendManager.backend_info())
+    assert backendManager.backend_info()
 
-    print(backendManager.getServerIds_list())
+    # This may be empty but the call must not fail.
+    backendManager.getServerIds_list()

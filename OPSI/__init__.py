@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2006-2015 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -25,3 +24,5 @@ This module is part of the desktop management solution opsi
 :copyright: uib GmbH <info@uib.de>
 :license: GNU Affero General Public License version 3
 """
+
+__version__ = '4.1.1.2'

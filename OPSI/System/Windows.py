@@ -1,4 +1,3 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
 opsi python library - Windows
@@ -6,7 +5,7 @@ opsi python library - Windows
 This module is part of the desktop management solution opsi
 (open pc server integration) http://www.opsi.org
 
-Copyright (C) 2013-2016 uib GmbH
+Copyright (C) 2013-2017 uib GmbH
 
 http://www.uib.de/
 
@@ -42,7 +41,6 @@ import time
 
 # Win32 imports
 import _winreg
-import msvcrt
 import ntsecuritycon
 import pywintypes
 import win32api
@@ -54,7 +52,6 @@ import win32net
 import win32netcon
 import win32pdh
 import win32pdhutil
-import win32pipe
 import win32process
 import win32profile
 import win32security
@@ -64,10 +61,31 @@ import win32wnet
 from ctypes import *
 from datetime import datetime
 
-from OPSI.Logger import *
-from OPSI.Types import *
+from OPSI.Logger import Logger
+from OPSI.Types import (forceBool, forceDict, forceInt, forceUnicode,
+	forceUnicodeList, forceUnicodeLower, forceFilename, forceList)
 
-__version__ = '4.0.6.30'
+__all__ = (
+	'HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE', 'hooks', 'SystemSpecificHook',
+	'addSystemHook', 'removeSystemHook', 'getArchitecture', 'getOpsiHotfixName',
+	'getHostname', 'getFQDN', 'getFileVersionInfo', 'getProgramFilesDir',
+	'getSystemDrive', 'getNetworkInterfaces', 'getDefaultNetworkInterfaceName',
+	'getSystemProxySetting', 'NetworkPerformanceCounter',
+	'NetworkPerformanceCounterWMI', 'NetworkPerformanceCounterPDH',
+	'copyACL', 'adjustPrivilege', 'getRegistryValue', 'setRegistryValue',
+	'createRegistryKey', 'getFreeDrive', 'getDiskSpaceUsage', 'mount', 'umount',
+	'getActiveConsoleSessionId', 'getActiveDesktopName', 'getActiveSessionIds',
+	'getActiveSessionId', 'getSessionInformation',
+	'getActiveSessionInformation', 'getUserSessionIds', 'logoffCurrentUser',
+	'lockWorkstation', 'reboot', 'shutdown', 'abortShutdown',
+	'createWindowStation', 'createDesktop', 'getDesktops', 'switchDesktop',
+	'addUserToDesktop', 'addUserToWindowStation', 'which', 'execute', 'getPids',
+	'getPid', 'getProcessName', 'getProcessHandle', 'getProcessWindowHandles',
+	'closeProcessWindows', 'terminateProcess', 'getUserToken',
+	'runCommandInSession', 'createUser', 'deleteUser', 'existsUser',
+	'getUserSidFromHandle', 'getUserSid', 'getAdminGroupName',
+	'setLocalSystemTime', 'Impersonate'
+)
 
 logger = Logger()
 hooks = []
@@ -140,7 +158,7 @@ class SystemSpecificHook(object):
 
 def addSystemHook(hook):
 	global hooks
-	if not hook in hooks:
+	if hook not in hooks:
 		hooks.append(hook)
 
 
@@ -317,7 +335,7 @@ def getNetworkInterfaces():
 		return adapterList
 	except Exception as e:
 		logger.logException(e)
-		raise Exception(u"Failed to get network interfaces: %s" % forceUnicode(e))
+		raise RuntimeError(u"Failed to get network interfaces: %s" % forceUnicode(e))
 
 
 def getDefaultNetworkInterfaceName():
@@ -351,7 +369,7 @@ class NetworkPerformanceCounter(threading.Thread):
 		windll.iphlpapi.GetIfTable(byref(iftable), byref(iftable_size), 0)
 		bestRatio = 0.0
 		if (iftable.dwNumEntries <= 0):
-			raise Exception(u"No network interfaces found while searching for interface '%s'" % interface)
+			raise RuntimeError(u"No network interfaces found while searching for interface '%s'" % interface)
 
 		for i in range(iftable.dwNumEntries):
 			ratio = difflib.SequenceMatcher(None, iftable.table[i].bDescr, interface).ratio()
@@ -360,7 +378,7 @@ class NetworkPerformanceCounter(threading.Thread):
 				bestRatio = ratio
 				self.interface = iftable.table[i].bDescr
 		if not self.interface:
-			raise Exception(u"Network interface '%s' not found" % interface)
+			raise ValueError(u"Network interface '%s' not found" % interface)
 
 		logger.info(u"NetworkPerformanceCounter: using interface '%s' match ratio (%s)" % (self.interface, bestRatio))
 		self.start()
@@ -433,7 +451,8 @@ class NetworkPerformanceCounterWMI(threading.Thread):
 		try:
 			interface = self.interface
 			self._running = True
-			import pythoncom, wmi
+			import pythoncom
+			import wmi
 			pythoncom.CoInitialize()
 			self.wmi = wmi.WMI()
 			bestRatio = 0.0
@@ -530,7 +549,7 @@ class NetworkPerformanceCounterPDH(threading.Thread):
 		try:
 			self._inCounterHandle = win32pdh.AddCounter(self._queryHandle, self.bytesInPerSecondCounter)
 		except Exception as e:
-			raise Exception(u"Failed to add inCounterHandle %s->%s: %s" % (
+			raise RuntimeError(u"Failed to add inCounterHandle %s->%s: %s" % (
 				win32pdhutil.find_pdh_counter_localized_name('Network Interface'),
 				win32pdhutil.find_pdh_counter_localized_name('Bytes In/sec'),
 				e
@@ -538,7 +557,7 @@ class NetworkPerformanceCounterPDH(threading.Thread):
 		try:
 			self._outCounterHandle = win32pdh.AddCounter(self._queryHandle, self.bytesOutPerSecondCounter)
 		except Exception as e:
-			raise Exception(u"Failed to add outCounterHandle %s->%s: %s" % (
+			raise RuntimeError(u"Failed to add outCounterHandle %s->%s: %s" % (
 				win32pdhutil.find_pdh_counter_localized_name('Network Interface'),
 				win32pdhutil.find_pdh_counter_localized_name('Bytes Sent/sec'),
 				e
@@ -653,18 +672,19 @@ def createRegistryKey(key, subKey):
 # -                                            FILESYSTEMS                                            -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-def getFreeDrive(startLetter = 'a'):
+def getFreeDrive(startLetter='a'):
 	startLetter = forceUnicodeLower(startLetter)
 	startLetterSeen = False
-	for letter in ('a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z'):
-		if (startLetter == letter):
+	for letter in 'abcdefghijklmnopqrstuvwxyz':
+		if startLetter == letter:
 			startLetterSeen = True
 		if not startLetterSeen:
 			continue
 		letter += ':'
-		if (win32file.GetDriveType(letter) == 1):
+		if win32file.GetDriveType(letter) == 1:
 			return letter
-	raise Exception(u'No free drive available')
+
+	raise RuntimeError(u'No free drive available')
 
 
 def getDiskSpaceUsage(path):
@@ -735,27 +755,27 @@ def mount(dev, mountpoint, **options):
 					logger.info(u"Using the free mountpoint '{0}'".format(mountpoint))
 					break
 			else:
-				raise Exception("Dynamic mountpoint detection could not find a a free mountpoint!")
+				raise RuntimeError("Dynamic mountpoint detection could not find a a free mountpoint!")
 
-	if dev.lower().startswith('smb://') or dev.lower().startswith('cifs://'):
+	if dev.lower().startswith(('smb://', 'cifs://')):
 		match = re.search('^(smb|cifs)://([^/]+\/.+)$', dev, re.IGNORECASE)
 		if match:
 			parts = match.group(2).split('/')
 			dev = u'\\\\%s\\%s' % (parts[0], parts[1])
 
-			if not 'username' in options:
+			if 'username' not in options:
 				options['username'] = None
 
 			elif options['username'] and (options['username'].find(u'\\') != -1):
 				options['domain'] = options['username'].split(u'\\')[0]
 				options['username'] = options['username'].split(u'\\')[-1]
 
-			if not 'password' in options:
-				options['password'] = None
-			else:
+			try:
 				logger.addConfidentialString(options['password'])
+			except KeyError:
+				options['password'] = None
 
-			if not 'domain' in options:
+			if 'domain' not in options:
 				options['domain'] = getHostname()
 			username = None
 			if options['username']:
@@ -786,12 +806,12 @@ def mount(dev, mountpoint, **options):
 
 			except Exception as e:
 				logger.error(u"Failed to mount '%s': %s" % (dev, forceUnicode(e)))
-				raise Exception(u"Failed to mount '%s': %s" % (dev, forceUnicode(e)))
+				raise RuntimeError(u"Failed to mount '%s': %s" % (dev, forceUnicode(e)))
 		else:
-			raise Exception(u"Bad smb/cifs uri '%s'" % dev)
+			raise ValueError(u"Bad smb/cifs uri '%s'" % dev)
 
 	else:
-		raise Exception(u"Cannot mount unknown fs type '%s'" % dev)
+		raise ValueError(u"Cannot mount unknown fs type '%s'" % dev)
 
 
 def umount(mountpoint):
@@ -807,7 +827,7 @@ def umount(mountpoint):
 
 	except Exception as e:
 		logger.error(u"Failed to umount '%s': %s" % (mountpoint, forceUnicode(e)))
-		raise Exception (u"Failed to umount '%s': %s" % (mountpoint, forceUnicode(e)))
+		raise RuntimeError(u"Failed to umount '%s': %s" % (mountpoint, forceUnicode(e)))
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -842,14 +862,14 @@ def getActiveSessionIds(winApiBugCommand = None):
 	else:
 		for s in win32security.LsaEnumerateLogonSessions():
 			sessionData = win32security.LsaGetLogonSessionData(s)
-			if not forceInt(sessionData['LogonType']) in (2, 10) or sessionData['LogonDomain'] in invalidLogonDomains:
+			if forceInt(sessionData['LogonType']) not in (2, 10) or sessionData['LogonDomain'] in invalidLogonDomains:
 				continue
 			sessionId = forceInt(sessionData['Session'])
 			if (sessionId == 0) and (sys.getwindowsversion()[0] >= 6):
 				# Service session
 				continue
 			logger.debug(u"   Found session: %s" % sessionData)
-			if not sessionId in sessionIds:
+			if sessionId not in sessionIds:
 				sessionIds.append(sessionId)
 	return sessionIds
 
@@ -899,7 +919,7 @@ def getActiveSessionId(verifyProcessRunning = "winlogon.exe", winApiBugCommand =
 	else:
 		for s in win32security.LsaEnumerateLogonSessions():
 			sessionData = win32security.LsaGetLogonSessionData(s)
-			if not forceInt(sessionData['LogonType']) in (2, 10) or sessionData['LogonDomain'] in invalidLogonDomains:
+			if forceInt(sessionData['LogonType']) not in (2, 10) or sessionData['LogonDomain'] in invalidLogonDomains:
 				continue
 			sessionId = forceInt(sessionData['Session'])
 			if (sessionId == 0) and (sys.getwindowsversion()[0] >= 6):
@@ -911,7 +931,7 @@ def getActiveSessionId(verifyProcessRunning = "winlogon.exe", winApiBugCommand =
 			if verifyProcessRunning and not getPids(verifyProcessRunning, sessionId = sessionId):
 				continue
 
-			if not sessionId in sessionIds:
+			if sessionId not in sessionIds:
 				sessionIds.append(sessionId)
 			if newest:
 				try:
@@ -1075,8 +1095,8 @@ def getUserSessionIds(username, winApiBugCommand = None, onlyNewestId = None):
 		#     (not domain or (session.get('WTSDomainName') and (session.get('WTSDomainName').lower() == domain.lower()))) ):
 		# 	sessionIds.append(session.get('WTSSessionId'))
 		# 	logger.debug(u"   Found session id of user '%s': %s" % (username, session.get('WTSSessionId')))
-		if ( session.get('UserName') and (session.get('UserName').lower() == username.lower()) and \
-		     (not domain or (session.get('LogonDomain') and (session.get('LogonDomain').lower() == domain.lower()))) ):
+		if (session.get('UserName') and (session.get('UserName').lower() == username.lower()) and
+			(not domain or (session.get('LogonDomain') and (session.get('LogonDomain').lower() == domain.lower())))):
 			sessionIds.append(forceInt(session.get('Session')))
 			if onlyNewestId:
 				try:
@@ -1115,7 +1135,7 @@ def logoffCurrentUser():
 	if (sys.getwindowsversion()[0] == 5):
 		if (sys.getwindowsversion()[1] == 0):
 			# NT5.0: win2k
-			raise NotImplemented(u"Not available on win2k")
+			raise NotImplementedError(u"Not available on win2k")
 		else:
 			# NT5.1: XP
 			command = u'logoff.exe'
@@ -1123,7 +1143,7 @@ def logoffCurrentUser():
 		# NT6: Vista, Win7
 		command = u'shutdown.exe /l'
 	else:
-		raise Exception(u"Operating system not supported")
+		raise RuntimeError(u"Operating system not supported")
 	runCommandInSession(
 		command=command,
 		sessionId=getActiveSessionId(),
@@ -1570,15 +1590,15 @@ def getUserToken(sessionId=None, duplicateFrom=u"winlogon.exe"):
 	if sessionId is None or (sessionId < 0):
 		sessionId = getActiveSessionId()
 
-	pid = getPid(process = duplicateFrom, sessionId = sessionId)
+	pid = getPid(process=duplicateFrom, sessionId=sessionId)
 	if not pid:
-		raise Exception(u"Failed to get user token, pid of '%s' not found in session '%s'" % (duplicateFrom, sessionId))
+		raise RuntimeError(u"Failed to get user token, pid of '%s' not found in session '%s'" % (duplicateFrom, sessionId))
 	hProcess = win32api.OpenProcess(win32con.MAXIMUM_ALLOWED, False, pid)
 	hPToken = win32security.OpenProcessToken(
 		hProcess,
-		win32con.TOKEN_ADJUST_PRIVILEGES|win32con.TOKEN_QUERY|\
-		win32con.TOKEN_DUPLICATE|win32con.TOKEN_ASSIGN_PRIMARY|\
-		win32con.TOKEN_READ|win32con.TOKEN_WRITE
+		win32con.TOKEN_ADJUST_PRIVILEGES | win32con.TOKEN_QUERY |
+		win32con.TOKEN_DUPLICATE | win32con.TOKEN_ASSIGN_PRIMARY |
+		win32con.TOKEN_READ | win32con.TOKEN_WRITE
 	)
 
 	id = win32security.LookupPrivilegeValue(None, win32security.SE_DEBUG_NAME)
@@ -1598,6 +1618,7 @@ def getUserToken(sessionId=None, duplicateFrom=u"winlogon.exe"):
 	win32security.AdjustTokenPrivileges(hUserTokenDup, 0, newPrivileges)
 
 	return hUserTokenDup
+
 
 def runCommandInSession(command, sessionId=None, desktop=u"default", duplicateFrom=u"winlogon.exe", waitForProcessEnding=True, timeoutSeconds=0):
 	command = forceUnicode(command)
@@ -1640,10 +1661,10 @@ def runCommandInSession(command, sessionId=None, desktop=u"default", duplicateFr
 	logger.info(u"Waiting for process ending: %d (timeout: %d seconds)" % (dwProcessId, timeoutSeconds))
 	t = 0.0
 	while win32event.WaitForSingleObject(hProcess, timeoutSeconds):
-		if (timeoutSeconds > 0):
-			if (t >= timeoutSeconds):
-				terminateProcess(processId = dwProcessId)
-				raise Exception(u"Timed out after %s seconds while waiting for process %d" % (t, dwProcessId))
+		if timeoutSeconds > 0:
+			if t >= timeoutSeconds:
+				terminateProcess(processId=dwProcessId)
+				raise RuntimeError(u"Timed out after %s seconds while waiting for process %d" % (t, dwProcessId))
 			t += 0.1
 		time.sleep(0.1)
 	exitCode = win32process.GetExitCodeProcess(hProcess)
@@ -1756,6 +1777,7 @@ def getAdminGroupName():
 	logger.info(u"Admin group name is '%s'" % groupName)
 	return groupName
 
+
 def setLocalSystemTime(timestring):
 	"""
 	Method sets the local systemtime
@@ -1779,7 +1801,7 @@ def setLocalSystemTime(timestring):
 	http://docs.activestate.com/activepython/2.5/pywin32/win32api__SetSystemTime_meth.html
 	"""
 	if not timestring:
-		raise Exception(u"Invalid timestring given. It should be in format like: '2014-07-15 13:20:24.085661'")
+		raise ValueError(u"Invalid timestring given. It should be in format like: '2014-07-15 13:20:24.085661'")
 
 	try:
 		dt = datetime.datetime.strptime(timestring, '%Y-%m-%d %H:%M:%S.%f')
@@ -1789,12 +1811,10 @@ def setLocalSystemTime(timestring):
 		logger.error(u"Failed to set System Time: '%s'" % e)
 
 
-
-
 class Impersonate:
 	def __init__(self, username=u"", password=u"", userToken=None, desktop=u"default"):
 		if not username and not userToken:
-			raise Exception(u"Neither username nor user token given")
+			raise ValueError(u"Neither username nor user token given")
 		# if username and not existsUser(username):
 		# 	raise Exception("User '%s' does not exist" % username)
 		self.domain = getHostname()
@@ -1859,7 +1879,7 @@ class Impersonate:
 				logger.debug(u"Process window station set")
 
 				self.newDesktop = None
-				if not self.desktop in ('default', 'winlogon'):
+				if self.desktop not in ('default', 'winlogon'):
 					logger.info(u"Creating new desktop '%s'" % self.desktop)
 					try:
 						self.newDesktop = createDesktop(self.desktop)
@@ -1934,10 +1954,10 @@ class Impersonate:
 		logger.info(u"Waiting for process ending: %d (timeout: %d seconds)" % (dwProcessId, timeoutSeconds))
 		t = 0.0
 		while win32event.WaitForSingleObject(hProcess, timeoutSeconds):
-			if (timeoutSeconds > 0):
-				if (t >= timeoutSeconds):
-					terminateProcess(processId = dwProcessId)
-					raise Exception(u"Timed out after %s seconds while waiting for process %d" % (t, dwProcessId))
+			if timeoutSeconds > 0:
+				if t >= timeoutSeconds:
+					terminateProcess(processId=dwProcessId)
+					raise RuntimeError(u"Timed out after %s seconds while waiting for process %d" % (t, dwProcessId))
 				t += 0.1
 			time.sleep(0.1)
 		exitCode = win32process.GetExitCodeProcess(hProcess)

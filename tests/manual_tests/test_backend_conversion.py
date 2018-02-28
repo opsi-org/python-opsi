@@ -62,14 +62,7 @@ def main():
 			assert len(oneIdents) == len(twoIdents)
 
 			for oneIdent in oneIdents:
-				isSameIdent = False
-				for twoIdent in twoIdents:
-					if oneIdent == twoIdent:
-						isSameIdent = True
-						break
-
-				logger.warning(u"assert oneIdent '%s' is in twoIdents: '%s'" % (oneIdent, isSameIdent))
-				assert isSameIdent
+				assert any(oneIdent == twoIdent for twoIdent in twoIdents)
 
 	#convert fileBackend -> mysqlBackend
 	mysqlBackend.host_createObjects(                  fileBackend.host_getObjects()                 )

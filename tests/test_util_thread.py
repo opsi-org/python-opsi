@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2010-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2010-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -30,8 +30,8 @@ import threading
 from collections import namedtuple
 from contextlib import contextmanager
 
-from OPSI.Util.Thread import ThreadPoolException, getGlobalThreadPool, ThreadPool
-from OPSI.Util.Thread import KillableThread
+from OPSI.Util.Thread import ThreadPoolException
+from OPSI.Util.Thread import getGlobalThreadPool, ThreadPool, KillableThread
 
 import pytest
 
@@ -94,7 +94,6 @@ def testThreadPoolWorkerHandlingCallbackWithException(threadPool):
     r = result[0]
     assert r.success is False
     assert r.returned is None
-    print(repr(r.errors))
     assert r.errors is not None
     assert "TestException" in r.errors
 
@@ -233,14 +232,16 @@ def testGetGlobalThreadPoolReturnsTheSamePool():
     pool1 = getGlobalThreadPool()
     pool2 = getGlobalThreadPool()
 
-    assert isinstance(pool1, ThreadPool)
-    assert isinstance(pool2, ThreadPool)
-    assert pool1 is pool2
+    try:
+        assert isinstance(pool1, ThreadPool)
+        assert isinstance(pool2, ThreadPool)
+        assert pool1 is pool2
 
-    pool2.adjustSize(5)
-    assert 5 == pool1.size
-
-    pool1.stop()  # without this running threads will prevent test from stopping
+        pool2.adjustSize(5)
+        assert 5 == pool1.size
+    finally:
+        # without this running threads will prevent test from stopping
+        pool1.stop()
 
 
 @pytest.mark.xfail(strict=False)  # This test is not stable.

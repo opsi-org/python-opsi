@@ -1,10 +1,9 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2006-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -23,13 +22,14 @@ Working with archives.
 
 This include functionality for using Tar-Files and their compression.
 
+
+.. versionadded:: 4.0.5.1
+	Control the usage of pigz via ``PIGZ_ENABLED``
+
 :copyright: uib GmbH <info@uib.de>
 :author: Jan Schneider <j.schneider@uib.de>
 :author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
-
-.. versionadded:: 4.0.5.1
-   Control the usage of pigz via ``PIGZ_ENABLED``
 """
 
 import locale
@@ -39,17 +39,15 @@ import subprocess
 import time
 from contextlib import closing
 
-if os.name == 'posix':
-	import fcntl
-	import magic
-
 import OPSI.Util.File.Opsi
 from OPSI.Logger import Logger
 from OPSI import System
 from OPSI.Types import forceBool, forceFilename, forceUnicodeList, forceUnicodeLower
 from OPSI.Util import compareVersions
 
-__version__ = "4.0.7.22"
+if os.name == 'posix':
+	import fcntl
+	import magic
 
 logger = Logger()
 
@@ -76,8 +74,8 @@ class BaseArchive(object):
 		self._compression = None
 		if compression:
 			compression = forceUnicodeLower(compression)
-			if not compression in ('gzip', 'bzip2'):
-				raise Exception(u"Compression '%s' not supported" % compression)
+			if compression not in ('gzip', 'bzip2'):
+				raise ValueError(u"Compression '%s' not supported" % compression)
 			self._compression = compression
 		elif os.path.exists(self._filename):
 			fileType = getFileType(self._filename)
@@ -94,7 +92,8 @@ class BaseArchive(object):
 	def _extract(self, command, fileCount):
 		try:
 			logger.info(u"Executing: %s" % command)
-			proc = subprocess.Popen(command,
+			proc = subprocess.Popen(
+				command,
 				shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
 			)
 
@@ -140,7 +139,7 @@ class BaseArchive(object):
 			if ret != 0:
 				error = error.decode(encoding, 'replace')
 				logger.error(error)
-				raise Exception(u"Command '%s' failed with code %s: %s" % (command, ret, error))
+				raise RuntimeError(u"Command '%s' failed with code %s: %s" % (command, ret, error))
 
 			if self._progressSubject:
 				self._progressSubject.setState(fileCount)
@@ -153,7 +152,7 @@ class BaseArchive(object):
 		try:
 			baseDir = os.path.abspath(forceFilename(baseDir))
 			if not os.path.isdir(baseDir):
-				raise Exception(u"Base dir '%s' not found" % baseDir)
+				raise IOError(u"Base dir '%s' not found" % baseDir)
 			os.chdir(baseDir)
 
 			logger.info(u"Executing: %s" % command)
@@ -181,7 +180,7 @@ class BaseArchive(object):
 				if not filename:
 					continue
 				if not os.path.exists(filename):
-					raise Exception(u"File '%s' not found" % filename)
+					raise IOError(u"File '%s' not found" % filename)
 				# python 2.6:
 				if filename.startswith(baseDir):
 					#f = os.path.relpath(f, baseDir)
@@ -235,7 +234,7 @@ class BaseArchive(object):
 			if ret != 0:
 				error = error.decode(encoding, 'replace')
 				logger.error(error)
-				raise Exception(u"Command '%s' failed with code %s: %s" % (command, ret, error))
+				raise RuntimeError(u"Command '%s' failed with code %s: %s" % (command, ret, error))
 			if self._progressSubject:
 				self._progressSubject.setState(len(fileList))
 		finally:
@@ -280,7 +279,7 @@ class TarArchive(BaseArchive, PigzMixin):
 	def content(self):
 		try:
 			if not os.path.exists(self._filename):
-				raise Exception(u"Archive file not found: '%s'" % self._filename)
+				raise IOError(u"Archive file not found: '%s'" % self._filename)
 			names = []
 			options = u''
 			if self._compression == 'gzip':
@@ -297,7 +296,7 @@ class TarArchive(BaseArchive, PigzMixin):
 
 			return names
 		except Exception as e:
-			raise Exception(u"Failed to get archive content '%s': %s" % (self._filename, e))
+			raise RuntimeError(u"Failed to get archive content '%s': %s" % (self._filename, e))
 
 	def extract(self, targetPath='.', patterns=[]):
 		try:
@@ -307,7 +306,7 @@ class TarArchive(BaseArchive, PigzMixin):
 				try:
 					os.mkdir(targetPath)
 				except Exception as e:
-					raise Exception(u"Failed to create target dir '%s': %s" % (targetPath, e))
+					raise IOError(u"Failed to create target dir '%s': %s" % (targetPath, e))
 
 			options = u''
 			if self._compression == 'gzip':
@@ -332,7 +331,7 @@ class TarArchive(BaseArchive, PigzMixin):
 								break
 							fileCount += 1
 						except Exception as e:
-							raise Exception(u"Bad pattern '%s': %s" % (pattern, e))
+							raise ValueError(u"Bad pattern '%s': %s" % (pattern, e))
 
 				if match:
 					fileCount += 1
@@ -342,7 +341,7 @@ class TarArchive(BaseArchive, PigzMixin):
 			command = u'%s %s --directory "%s" --extract --verbose --file "%s"' % (System.which('tar'), options, targetPath, self._filename)
 			self._extract(command, fileCount)
 		except Exception as e:
-			raise Exception(u"Failed to extract archive '%s': %s" % (self._filename, e))
+			raise RuntimeError(u"Failed to extract archive '%s': %s" % (self._filename, e))
 
 	def create(self, fileList, baseDir='.', dereference=False):
 		try:
@@ -351,7 +350,7 @@ class TarArchive(BaseArchive, PigzMixin):
 			dereference = forceBool(dereference)
 
 			if not os.path.isdir(baseDir):
-				raise Exception(u"Base dir '%s' not found" % baseDir)
+				raise IOError(u"Base dir '%s' not found" % baseDir)
 
 			command = u'%s --no-recursion --verbose --create --files-from -' % System.which('tar')
 			if dereference:
@@ -367,7 +366,7 @@ class TarArchive(BaseArchive, PigzMixin):
 
 			self._create(fileList, baseDir, command)
 		except Exception as e:
-			raise Exception(u"Failed to create archive '%s': %s" % (self._filename, e))
+			raise RuntimeError(u"Failed to create archive '%s': %s" % (self._filename, e))
 
 
 class CpioArchive(BaseArchive, PigzMixin):
@@ -377,7 +376,7 @@ class CpioArchive(BaseArchive, PigzMixin):
 	def content(self):
 		try:
 			if not os.path.exists(self._filename):
-				raise Exception(u"Archive file not found: '%s'" % self._filename)
+				raise IOError(u"Archive file not found: '%s'" % self._filename)
 
 			cat = System.which('cat')
 			if self._compression == 'gzip':
@@ -392,7 +391,7 @@ class CpioArchive(BaseArchive, PigzMixin):
 					System.execute(u'{cat} "{filename}" | {cpio} --quiet -it'.format(cat=cat, filename=self._filename, cpio=System.which('cpio')))
 					if line]
 		except Exception as e:
-			raise Exception(u"Failed to get archive content '%s': %s" % (self._filename, e))
+			raise RuntimeError(u"Failed to get archive content '%s': %s" % (self._filename, e))
 
 	def extract(self, targetPath='.', patterns=[]):
 		try:
@@ -402,7 +401,7 @@ class CpioArchive(BaseArchive, PigzMixin):
 				try:
 					os.mkdir(targetPath)
 				except Exception as e:
-					raise Exception(u"Failed to create target dir '%s': %s" % (targetPath, e))
+					raise IOError(u"Failed to create target dir '%s': %s" % (targetPath, e))
 
 			cat = System.which('cat')
 			if self._compression == 'gzip':
@@ -427,7 +426,7 @@ class CpioArchive(BaseArchive, PigzMixin):
 								break
 							fileCount += 1
 						except Exception as e:
-							raise Exception(u"Bad pattern '%s': %s" % (pattern, e))
+							raise ValueError(u"Bad pattern '%s': %s" % (pattern, e))
 				if match:
 					fileCount += 1
 
@@ -441,7 +440,7 @@ class CpioArchive(BaseArchive, PigzMixin):
 			finally:
 				os.chdir(curDir)
 		except Exception as e:
-			raise Exception(u"Failed to extract archive '%s': %s" % (self._filename, e))
+			raise RuntimeError(u"Failed to extract archive '%s': %s" % (self._filename, e))
 
 	def create(self, fileList, baseDir='.', dereference=False):
 		try:
@@ -450,7 +449,7 @@ class CpioArchive(BaseArchive, PigzMixin):
 			dereference = forceBool(dereference)
 
 			if not os.path.isdir(baseDir):
-				raise Exception(u"Base dir '%s' not found" % baseDir)
+				raise IOError(u"Base dir '%s' not found" % baseDir)
 
 			command = u'%s --quiet -v -o -H crc' % System.which('cpio')
 			if dereference:
@@ -466,7 +465,7 @@ class CpioArchive(BaseArchive, PigzMixin):
 
 			self._create(fileList, baseDir, command)
 		except Exception as e:
-			raise Exception(u"Failed to create archive '%s': %s" % (self._filename, e))
+			raise RuntimeError(u"Failed to create archive '%s': %s" % (self._filename, e))
 
 
 def Archive(filename, format=None, compression=None, progressSubject=None):
@@ -479,7 +478,7 @@ def Archive(filename, format=None, compression=None, progressSubject=None):
 		elif format == 'cpio':
 			Class = CpioArchive
 		else:
-			raise Exception(u"Unsupported format '%s'" % format)
+			raise ValueError(u"Unsupported format '%s'" % format)
 
 	elif os.path.exists(filename):
 		fileType = getFileType(filename)
@@ -487,12 +486,12 @@ def Archive(filename, format=None, compression=None, progressSubject=None):
 			Class = TarArchive
 		elif 'cpio archive' in fileType.lower():
 			Class = CpioArchive
-		elif filename.lower().endswith('tar') or filename.lower().endswith('tar.gz'):
+		elif filename.lower().endswith(('tar', 'tar.gz')):
 			Class = TarArchive
-		elif filename.lower().endswith('cpio') or filename.lower().endswith('cpio.gz'):
+		elif filename.lower().endswith(('cpio', 'cpio.gz')):
 			Class = CpioArchive
 
 	if not Class:
-		raise Exception(u"Failed to guess archive type of '%s'" % filename)
+		raise RuntimeError(u"Failed to guess archive type of '%s'" % filename)
 
 	return Class(filename=filename, compression=compression, progressSubject=progressSubject)

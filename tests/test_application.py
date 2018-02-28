@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2015-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2015-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -29,18 +28,21 @@ This is based on work by Christian Kampka.
 from __future__ import absolute_import, print_function
 
 import os
+import pytest
 import sys
 
 from OPSI.Application import Application, ProfileRunner, CProfileRunner
 
-from .helpers import unittest, workInTemporaryDirectory
-
 try:
 	import pstats
 except ImportError:
-	# Probably on Debian 6.
 	print("Could not import 'pstats'. Please run: apt-get install python-profiler")
 	pstats = None
+
+
+@pytest.fixture
+def temporaryProfileFile(tempDir):
+	yield os.path.join(tempDir, "profile")
 
 
 class MockApp(object):
@@ -70,109 +72,98 @@ class FakeApplication(Application):
 		return MockApp()
 
 
-class ApplicationTests(unittest.TestCase):
+def testSetupShutdown():
+	"""
+	First we should do a setup and the last thing should be shutdown.
+	"""
+	a = FakeApplication({})
 
-	def testSetupShutdown(self):
-		"""
-		First we should do a setup and the last thing should be shutdown.
-		"""
-		a = FakeApplication({})
+	class MockRunner(object):
+		def run(self):
+			a.steps.append("run")
 
-		class MockRunner(object):
-			def run(self):
-				a.steps.append("run")
+	a._runner = MockRunner()
+	a.run()
 
-		a._runner = MockRunner()
-		a.run()
+	assert ["setup", "run", "shutdown"] == a.steps
 
-		self.assertEquals(["setup", "run", "shutdown"], a.steps)
 
-	@unittest.skipIf(pstats is None, "Missing pstats module")
-	def testProfiler(self):
-		with workInTemporaryDirectory() as tempDir:
-			path = os.path.join(tempDir, "profile")
+@pytest.mark.skipif(pstats is None, reason="Missing pstats module")
+def testProfiler(temporaryProfileFile):
+	config = {
+		"profile": temporaryProfileFile,
+		"profiler": "profiler"
+	}
 
-			config = {
-				"profile": path,
-				"profiler": "profiler"
-			}
+	a = FakeApplication(config)
+	a.run()
+	assert a._app.ran
 
-			a = FakeApplication(config)
+	with open(temporaryProfileFile) as f:
+		data = f.read()
+
+	assert "MockApp.run" in data
+	assert "function calls" in data
+
+
+@pytest.mark.skipif(pstats is None, reason="Missing pstats module")
+def testCProfiler(temporaryProfileFile):
+	config = {
+		"profile": temporaryProfileFile,
+		"profiler": "cProfiler"
+	}
+
+	a = FakeApplication(config)
+	a.run()
+	assert a._app.ran
+
+	with open(temporaryProfileFile) as f:
+		data = f.read()
+
+	assert "run" in data
+	assert "function calls" in data
+
+
+def testReactingToMissingProfiler(temporaryProfileFile):
+	mods = sys.modules.copy()
+	try:
+		sys.modules["cProfile"] = None
+
+		config = {
+			"profile": temporaryProfileFile,
+			"profiler": "cProfiler"
+		}
+
+		a = FakeApplication(config)
+
+		with pytest.raises(ImportError):
 			a.run()
-			self.assertTrue(a._app.ran)
+	finally:
+		sys.modules.clear()
+		sys.modules.update(mods)
 
-			with open(path) as f:
-				data = f.read()
 
-		self.assertIn("MockApp.run", data)
-		self.assertIn("function calls", data)
+def testUnknownProfiler(temporaryProfileFile):
+	config = {
+		"profile": temporaryProfileFile,
+		"profiler": "foobar"
+	}
 
-	@unittest.skipIf(pstats is None, "Missing pstats module")
-	def testCProfiler(self):
-		with workInTemporaryDirectory() as tempDir:
-			path = os.path.join(tempDir, "profile")
+	with pytest.raises(NotImplementedError):
+		FakeApplication(config)
 
-			config = {
-				"profile": path,
-				"profiler": "cProfiler"
-			}
 
-			a = FakeApplication(config)
-			a.run()
-			self.assertTrue(a._app.ran)
+def testDefaultProfiler(temporaryProfileFile):
+	config = {"profile": temporaryProfileFile}
+	a = FakeApplication(config)
+	assert a._runner.__class__ == ProfileRunner
 
-			with open(path) as f:
-				data = f.read()
 
-		self.assertIn("run", data)
-		self.assertIn("function calls", data)
+def testCaseInsensitiveProfilerName(temporaryProfileFile):
+	config = {
+		"profile": temporaryProfileFile,
+		"profiler": "cPrOfIlEr"
+	}
 
-	def testReactingToMissingProfiler(self):
-		mods = sys.modules.copy()
-		try:
-			with workInTemporaryDirectory() as tempDir:
-				path = os.path.join(tempDir, "profile")
-
-				sys.modules["cProfile"] = None
-
-				config = {
-					"profile": path,
-					"profiler": "cProfiler"
-				}
-
-				a = FakeApplication(config)
-
-				self.assertRaises(ImportError, a.run)
-		finally:
-			sys.modules.clear()
-			sys.modules.update(mods)
-
-	def testUnknownProfiler(self):
-		with workInTemporaryDirectory() as tempDir:
-			path = os.path.join(tempDir, "profile")
-
-			config = {
-				"profile": path,
-				"profiler": "foobar"
-			}
-
-			self.assertRaises(NotImplementedError, FakeApplication, config)
-
-	def testDefaultProfiler(self):
-		with workInTemporaryDirectory() as tempDir:
-			path = os.path.join(tempDir, "profile")
-			config = {"profile": path}
-			a = FakeApplication(config)
-			self.assertEquals(a._runner.__class__, ProfileRunner)
-
-	def testCaseInsensitiveProfilerName(self):
-		with workInTemporaryDirectory() as tempDir:
-			path = os.path.join(tempDir, "profile")
-
-			config = {
-				"profile": path,
-				"profiler": "cPrOfIlEr"
-			}
-
-			a = FakeApplication(config)
-			self.assertEquals(a._runner.__class__, CProfileRunner)
+	a = FakeApplication(config)
+	assert a._runner.__class__ == CProfileRunner

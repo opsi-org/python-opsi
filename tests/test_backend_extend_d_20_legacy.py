@@ -33,9 +33,6 @@ from __future__ import absolute_import
 
 import pytest
 
-from OPSI.Object import LocalbootProduct, ProductDependency, ProductOnDepot
-from .test_hosts import getDepotServers
-
 
 def testGetGeneralConfigValueFailsWithInvalidObjectId(backendManager):
     with pytest.raises(ValueError):
@@ -47,7 +44,7 @@ def testGetGeneralConfig(backendManager):
     Calling the function with some valid FQDN must not fail.
     """
     values = backendManager.getGeneralConfig_hash('some.client.fqdn')
-    print(values)
+    assert not values
 
 
 def testSetGeneralConfigValue(backendManager):
@@ -138,41 +135,3 @@ def testMassFilling(backendManager, config):
     backendManager.setGeneralConfig(config)
 
     assert config == backendManager.getGeneralConfig_hash()
-
-
-def testDeleteProductDependency(backendManager):
-    firstProduct = LocalbootProduct('prod', '1.0', '1.0')
-    secondProduct = LocalbootProduct('dependency', '1.0', '1.0')
-    backendManager.product_insertObject(firstProduct)
-    backendManager.product_insertObject(secondProduct)
-
-    prodDependency = ProductDependency(
-        productId=firstProduct.id,
-        productVersion=firstProduct.productVersion,
-        packageVersion=firstProduct.packageVersion,
-        productAction='setup',
-        requiredProductId=secondProduct.id,
-        requiredAction='setup',
-        requirementType='after'
-    )
-    backendManager.productDependency_insertObject(prodDependency)
-
-    depots = getDepotServers()
-    depot = depots[0]
-    backendManager.host_insertObject(depot)
-
-    productOnDepot = ProductOnDepot(
-        productId=firstProduct.getId(),
-        productType=firstProduct.getType(),
-        productVersion=firstProduct.getProductVersion(),
-        packageVersion=firstProduct.getPackageVersion(),
-        depotId=depot.id,
-        locked=False
-    )
-    backendManager.productOnDepot_createObjects([productOnDepot])
-
-    assert backendManager.productDependency_getObjects()
-
-    backendManager.deleteProductDependency(firstProduct.id, "", secondProduct.id, requiredProductClassId="unusedParam", requirementType="unused")
-
-    assert not backendManager.productDependency_getObjects()

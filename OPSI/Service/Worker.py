@@ -1,10 +1,9 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2010-2016 uib GmbH
+# Copyright (C) 2010-2017 uib GmbH
 
 # http://www.uib.de/
 
@@ -40,9 +39,9 @@ from twisted.python import failure
 
 from OPSI.web2 import responsecode, http_headers, http, stream
 
+from OPSI.Exceptions import OpsiAuthenticationError, OpsiBadRpcError
 from OPSI.Logger import Logger, LOG_ERROR, LOG_INFO
-from OPSI.Types import (forceUnicode, forceList, OpsiBadRpcError,
-						OpsiAuthenticationError)
+from OPSI.Types import forceUnicode, forceList
 from OPSI.Util import objectToHtml, toJson, fromJson, serialize
 from OPSI.Util.HTTP import deflateEncode, deflateDecode, gzipEncode, gzipDecode
 from OPSI.Service.JsonRpc import JsonRpc
@@ -262,10 +261,10 @@ class WorkerOpsi:
 		return deferred
 
 	def _getSessionHandler(self):
-		if hasattr(self.service, '_getSessionHandler'):
+		try:
 			return self.service._getSessionHandler()
-
-		return None
+		except AttributeError:  # no attribtue _getSessionHandler
+			return None
 
 	def _delayResult(self, seconds, result):
 		class DelayResult:
@@ -556,9 +555,9 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 		if not self.query:
 			return result
 		if not self._callInstance:
-			raise Exception(u"Call instance not defined in %s" % self)
+			raise RuntimeError(u"Call instance not defined in %s" % self)
 		if not self._callInterface:
-			raise Exception(u"Call interface not defined in %s" % self)
+			raise RuntimeError(u"Call interface not defined in %s" % self)
 
 		try:
 			rpcs = fromJson(self.query, preventObjectCreation=True)

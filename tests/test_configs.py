@@ -80,35 +80,30 @@ def getConfigStates(configs, clients, depotserver):
     client1, client2, _, _, client5, client6, client7 = clients[:7]
     depotserver2 = depotserver[1]
 
-    # TODO: turn this into tests?
     configState1 = ConfigState(
         configId=config1.getId(),
         objectId=client1.getId(),
         values=['w']
     )
 
-    # TODO: turn this into tests?
     configState2 = ConfigState(
         configId=config2.getId(),
         objectId=client1.getId(),
         values=[False]
     )
 
-    # TODO: turn this into tests?
     configState3 = ConfigState(
         configId=config2.getId(),
         objectId=client2.getId(),
         values=[False]
     )
 
-    # TODO: turn this into tests?
     configState4 = ConfigState(
         configId=config6.getId(),
         objectId=client2.getId(),
         values=["-------- test --------\n4: %4\n1: %1\n2: %2\n5: %5"]
     )
 
-    # TODO: turn this into tests?
     configState5 = ConfigState(
         configId=config4.getId(),
         objectId=client5.getId(),
@@ -496,13 +491,7 @@ def testGettingConfigIdents(extendedConfigDataBackend):
     assert len(ids) == len(selfIdents)
 
     for ident in ids:
-        found = False
-        for selfIdent in selfIdents:
-            if ident == selfIdent['id']:
-                found = True
-                break
-
-        assert found, u"'%s' not in '%s'" % (ident, selfIdents)
+        assert any(ident == selfIdent['id'] for selfIdent in selfIdents), u"'%s' not in '%s'" % (ident, selfIdents)
 
 
 def testGetConfigStateIdents(extendedConfigDataBackend):
@@ -523,10 +512,5 @@ def testGetConfigStateIdents(extendedConfigDataBackend):
 
     for ident in ids:
         i = ident.split(';')
-        found = False
-        for selfIdent in selfIdents:
-            if (i[0] == selfIdent['configId']) and (i[1] == selfIdent['objectId']):
-                found = True
-                break
 
-        assert found, u"'%s' not in '%s'" % (ident, selfIdents)
+        assert any(((i[0] == selfIdent['configId']) and (i[1] == selfIdent['objectId'])) for selfIdent in selfIdents), u"'%s' not in '%s'" % (ident, selfIdents)

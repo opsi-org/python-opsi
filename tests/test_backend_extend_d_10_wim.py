@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2016 uib GmbH <info@uib.de>
+# Copyright (C) 2016-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -26,52 +25,51 @@ This tests what usually is found under
 
 from __future__ import absolute_import
 
+import pytest
+
 from OPSI.Object import NetbootProduct, ProductOnDepot, UnicodeProductProperty
-from .Backends.File import FileBackendBackendManagerMixin
 from .test_hosts import getConfigServer
-from .test_util_wim import fakeWIMEnvironment
-from .helpers import getLocalFQDN, mock, patchAddress, patchEnvironmentVariables, unittest
+from .test_util_wim import fakeWimPath  # required fixture
+from .helpers import getLocalFQDN, mock, patchAddress, patchEnvironmentVariables
 
 
-class WimFunctionsTestCase(unittest.TestCase, FileBackendBackendManagerMixin):
+def testUpdatingWim(backendManager, fakeWimPath):
+    backend = backendManager
+    localFqdn = getLocalFQDN()
 
-    def setUp(self):
-        self.setUpBackend()
+    with patchAddress(fqdn=localFqdn):
+        with patchEnvironmentVariables(OPSI_HOSTNAME=localFqdn):
+            fillBackend(backend)
 
-    def tearDown(self):
-        self.tearDownBackend()
+            with mock.patch('OPSI.Util.WIM.os.path.exists', lambda path: True):
+                backend.updateWIMConfig('testwindows')
 
-    def testUpdatingWimFailsWithInvalidObjectId(self):
-        self.assertRaises(ValueError, self.backend.updateWIMConfig, '')
-        self.assertRaises(ValueError, self.backend.updateWIMConfig, None)
+            imagename = backend.productProperty_getObjects(propertyId="imagename", productId='testwindows')
+            imagename = imagename[0]
 
-    def testUpdatingWimFailsWithInvalidProductId(self):
-        self.assertRaises(OSError, self.backend.updateWIMConfigFromPath, '', '')
+            possibleImageNames = set([
+                u'Windows 7 HOMEBASICN', u'Windows 7 HOMEPREMIUMN',
+                u'Windows 7 PROFESSIONALN', u'Windows 7 STARTERN',
+                u'Windows 7 ULTIMATEN'
+            ])
+            assert possibleImageNames == set(imagename.possibleValues)
+            assert imagename.defaultValues[0] in imagename.possibleValues
 
-    def testUpdatingWim(self):
-        with patchAddress(fqdn=getLocalFQDN()):
-            with patchEnvironmentVariables(OPSI_HOSTNAME=getLocalFQDN()):
-                with fakeWIMEnvironment(self._fileTempDir):
-                    fillBackend(self.backend)
+            language = backend.productProperty_getObjects(propertyId="system_language", productId='testwindows')
+            language = language[0]
+            assert ['de-DE'] == language.defaultValues
+            assert ['de-DE'] == language.possibleValues
 
-                    with mock.patch('OPSI.Util.WIM.os.path.exists', lambda _: True):
-                        self.backend.updateWIMConfig('testwindows')
 
-                    imagename = self.backend.productProperty_getObjects(propertyId="imagename", productId='testwindows')
-                    imagename = imagename[0]
+@pytest.mark.parametrize("objectId", ['', None])
+def testUpdatingWimFailsWithInvalidObjectId(backendManager, objectId):
+    with pytest.raises(ValueError):
+        backendManager.updateWIMConfig(objectId)
 
-                    possibleImageNames = set([
-                        u'Windows 7 HOMEBASICN', u'Windows 7 HOMEPREMIUMN',
-                        u'Windows 7 PROFESSIONALN', u'Windows 7 STARTERN',
-                        u'Windows 7 ULTIMATEN'
-                    ])
-                    self.assertEquals(possibleImageNames, set(imagename.possibleValues))
-                    self.assertTrue(imagename.defaultValues[0] in imagename.possibleValues)
 
-                    language = self.backend.productProperty_getObjects(propertyId="system_language", productId='testwindows')
-                    language = language[0]
-                    self.assertTrue(set(['de-DE']), language.defaultValues)
-                    self.assertTrue(set(['de-DE']), language.possibleValues)
+def testUpdatingWimFailsWithInvalidProductId(backendManager):
+    with pytest.raises(OSError):
+        backendManager.updateWIMConfigFromPath('', '')
 
 
 def fillBackend(backend):
@@ -113,7 +111,3 @@ def fillBackend(backend):
     )
     backend.productProperty_insertObject(imagenameProductProperty)
     backend.productProperty_insertObject(systemLanguageProductProperty)
-
-
-if __name__ == '__main__':
-    unittest.main()

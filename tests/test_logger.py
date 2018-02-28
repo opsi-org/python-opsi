@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2015-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2015-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -23,7 +22,7 @@ Testing our logger.
 :license: GNU Affero General Public License version 3
 """
 
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 
 import os
 import sys
@@ -34,7 +33,7 @@ from io import BytesIO as StringIO
 import OPSI.Logger
 import pytest
 
-from .helpers import cd, mock, workInTemporaryDirectory, showLogs
+from .helpers import cd, mock, showLogs
 
 
 # Log level that will result in log output.
@@ -162,12 +161,6 @@ def testLoggingFromWarningsModule(logger):
 	assert value.startswith("[{0:d}]".format(OPSI.Logger.LOG_WARNING))
 	assert "UserWarning: usermessage" in value
 
-	if sys.version_info < (2, 7):
-		# Changed in version 2.7: DeprecationWarning is ignored by default.
-		# Source: https://docs.python.org/2.7/library/warnings.html#warning-categories
-		assert "DeprecationWarning: message" in value
-		assert "DeprecationWarning: another message" in value
-
 
 @pytest.mark.parametrize("message, logLevel", [
 	("my password", OPSI.Logger.LOG_CONFIDENTIAL),
@@ -246,19 +239,18 @@ def testSettingConfidentialStrings(logger):
 	assert "So schnell, so weit" in value
 
 
-def testChangingDirectoriesDoesNotChangePathOfLog(logger):
-	with workInTemporaryDirectory():
-		logger.setLogFile('test.log')
-		logger.setFileLevel(OPSI.Logger.LOG_DEBUG)
-		logger.warning('abc')
+def testChangingDirectoriesDoesNotChangePathOfLog(logger, tempDir):
+	logger.setLogFile('test.log')
+	logger.setFileLevel(OPSI.Logger.LOG_DEBUG)
+	logger.warning('abc')
 
-		assert os.path.exists('test.log')
+	assert os.path.exists('test.log')
 
-		os.mkdir('subdir')
-		with cd('subdir'):
-			assert not os.path.exists('test.log')
-			logger.warning('def')
-			assert not os.path.exists('test.log')
+	os.mkdir('subdir')
+	with cd('subdir'):
+		assert not os.path.exists('test.log')
+		logger.warning('def')
+		assert not os.path.exists('test.log')
 
 
 def testSettingLogPathToNone(logger):
@@ -290,7 +282,7 @@ def testLoggingTracebacks():
 		if not values[-1]:  # removing last, empty line
 			values = values[:-1]
 
-		print(repr(values))
+		print("Traceback is: {0!r}".format(values))
 
 		assert len(values) > 1
 		assert "traceback" in values[0].lower()
@@ -336,8 +328,7 @@ def testLogTracebackCanFail():
 
 	messages = messageBuffer.getvalue()
 
-	print("Messages: {0!r}".format(messages))
-	assert 'Failed to log traceback for' in messages
+	assert 'Failed to log traceback for ' in messages
 	assert repr(objectWithoutTraceback) in messages
 	assert 'object has no attribute' in messages
 
@@ -363,7 +354,6 @@ def testLoggerDoesFormattingIfMessageWillGetLogged(loglevel, function_name):
 
 	messages = messageBuffer.getvalue()
 
-	print("Messages: {0!r}".format(messages))
 	assert 'This 1.0 must be shown here: many kwargs' in messages
 
 
@@ -395,8 +385,6 @@ def testLoggerDoesNotShowSecretWordBeginningWithCapitalisedF(loglevel, replaceme
 	message = ''.join(messageBuffer.getvalue())
 	assert message
 	assert not message.startswith('%')
-
-	print("Message: {0!r}".format(message))
 
 	assert secretWord not in message
 	assert secretWord[1:] not in message

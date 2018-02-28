@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2014-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -27,58 +26,55 @@ from __future__ import absolute_import
 
 import mock
 import os
-import unittest
 
 import pytest
 
 from OPSI.Util.File.Archive import getFileType, Archive, PigzMixin, TarArchive
 
-from .helpers import workInTemporaryDirectory
+
+def testArchiveFactoryRaisesExceptionOnUnknownFormat():
+    with pytest.raises(Exception):
+        Archive('no_filename', format='unknown')
 
 
-class ArchiveFactoryTestCase(unittest.TestCase):
-    def testUnknownFormatsRaiseException(self):
-        self.assertRaises(Exception, Archive, 'no_filename', format='unknown')
-
-    def testGivingKnownFormatsDoesNotRaiseException(self):
-        Archive('no_file', format='tar')
-        Archive('no_file', format='cpio')
-
-    def testRaisingExceptionIfFiletypeCanNotBeDetermined(self):
-        # Checking if the filetype for this python file can be guessed.
-        self.assertRaises(Exception, Archive, __file__)
+@pytest.mark.parametrize("fileFormat", ["tar", "cpio"])
+def testCreatingArchive(fileFormat):
+    Archive('no_file', format=fileFormat)
 
 
-class TarArchiveTestCase(unittest.TestCase):
-    def test_pigz_detection(self):
-        self.assertEqual(PigzMixin.is_pigz_available(),
-            TarArchive.is_pigz_available())
+def testRaisingExceptionIfFiletypeCanNotBeDetermined():
+    with pytest.raises(Exception):
+        Archive(__file__)
 
 
-class PigzMixinAppliedTestCase(unittest.TestCase):
-    def setUp(self):
-        class DumbArchive(PigzMixin):
-            pass
+def testPigzDetectionOnTarArchive():
+    assert PigzMixin.is_pigz_available() == TarArchive.is_pigz_available()
 
-        self.test_object = DumbArchive()
 
-    def tearDown(self):
-        del self.test_object
+@pytest.fixture
+def dumbArchive():
+    class DumbArchive(PigzMixin):
+        pass
 
-    def test_having_mixin_methods(self):
-        self.assertTrue(hasattr(self.test_object, 'pigz_detected'))
-        self.assertTrue(hasattr(self.test_object, 'is_pigz_available'))
+    yield DumbArchive()
 
-    def test_mixin_methods_work(self):
-        self.assertEqual(PigzMixin.is_pigz_available(), self.test_object.pigz_detected)
-        self.assertEqual(PigzMixin.is_pigz_available(), self.test_object.is_pigz_available())
 
-    def testDisablingPigz(self):
-        """
-        Disabling the usage of pigz by setting PIGZ_ENABLED to False.
-        """
-        with mock.patch('OPSI.Util.File.Archive.PIGZ_ENABLED', False):
-            self.assertEqual(False, self.test_object.is_pigz_available())
+def testPigzMixinProvidesMethods(dumbArchive):
+    assert hasattr(dumbArchive, 'pigz_detected')
+    assert hasattr(dumbArchive, 'is_pigz_available')
+
+
+def testPigzMixinMethods(dumbArchive):
+    assert PigzMixin.is_pigz_available() == dumbArchive.pigz_detected
+    assert PigzMixin.is_pigz_available() == dumbArchive.is_pigz_available()
+
+
+def testDisablingPigz(dumbArchive):
+    """
+    Disabling the usage of pigz by setting PIGZ_ENABLED to False.
+    """
+    with mock.patch('OPSI.Util.File.Archive.PIGZ_ENABLED', False):
+        assert dumbArchive.is_pigz_available() is False
 
 
 @pytest.fixture(params=[('Python', __file__)])
@@ -92,14 +88,10 @@ def testGetFileType(filenameAndExpectedType):
     assert expectedType.lower() in getFileType(filename).lower()
 
 
-def testGetFileTypeFollowsSymlink(filenameAndExpectedType):
+def testGetFileTypeFollowsSymlink(filenameAndExpectedType, tempDir):
     expectedType, filename = filenameAndExpectedType
-    with workInTemporaryDirectory() as tempDir:
-        linkFile = os.path.join(tempDir, 'mylink')
-        os.symlink(filename, linkFile)
 
-        assert expectedType.lower() in getFileType(linkFile).lower()
+    linkFile = os.path.join(tempDir, 'mylink')
+    os.symlink(filename, linkFile)
 
-
-if __name__ == '__main__':
-    unittest.main()
+    assert expectedType.lower() in getFileType(linkFile).lower()
