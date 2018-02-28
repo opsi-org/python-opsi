@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This module is part of the desktop management solution opsi
@@ -25,8 +24,8 @@ opsi python library - HTTP
 
 .. versionadded:: 4.0.6.9
 
-  Added functions :py:func:`deflateEncode`, :py:func:`deflateDecode`,
-  :py:func:`gzipEncode` and :py:func:`gzipDecode`.
+	Added functions :py:func:`deflateEncode`, :py:func:`deflateDecode`,
+	:py:func:`gzipEncode` and :py:func:`gzipDecode`.
 
 
 :author: Jan Schneider <j.schneider@uib.de>
@@ -38,13 +37,11 @@ opsi python library - HTTP
 import base64
 import gzip
 import os
-import random
 import re
 import socket
 import time
 import zlib
 import urlparse
-from contextlib import closing  # Needed for Python 2.6
 from contextlib import contextmanager
 from io import BytesIO
 
@@ -59,8 +56,9 @@ from socket import error as SocketError, timeout as SocketTimeout
 import ssl as ssl_module
 from OpenSSL import crypto
 
+from OPSI.Exceptions import (OpsiAuthenticationError, OpsiTimeoutError,
+	OpsiServiceVerificationError)
 from OPSI.Types import forceBool, forceFilename, forceInt, forceUnicode, forceUnicodeLower
-from OPSI.Types import OpsiTimeoutError, OpsiServiceVerificationError
 from OPSI.Logger import LOG_DEBUG, LOG_INFO, Logger
 from OPSI.Util import encryptWithPublicKeyFromX509CertificatePEMFile, randomString
 
@@ -82,71 +80,6 @@ try:
 	ssl_module._create_default_https_context = ssl_module._create_unverified_context
 except AttributeError:
 	pass
-
-
-def hybi10Encode(data):
-	# Code stolen from http://lemmingzshadow.net/files/2011/09/Connection.php.txt
-	frame = [0x81]
-	mask = [
-		random.randint(0, 255), random.randint(0, 255),
-		random.randint(0, 255), random.randint(0, 255)
-	]
-	dataLength = len(data)
-
-	if dataLength <= 125:
-		frame.append(dataLength + 128)
-	else:
-		frame.append(254)
-		frame.append(dataLength >> 8)
-		frame.append(dataLength & 0xff)
-
-	frame.extend(mask)
-	for i, currentData in enumerate(data):
-		frame.append(ord(currentData) ^ mask[i % 4])
-
-	encodedData = ''
-	for currentFrame in frame:
-		encodedData += chr(currentFrame)
-	return encodedData
-
-
-def hybi10Decode(data):
-	if len(data.strip()) < 2:
-		return ''
-	# Code stolen from http://lemmingzshadow.net/files/2011/09/Connection.php.txt
-	mask = ''
-	codedData = ''
-	decodedData = ''
-	secondByte = bin(ord(data[1]))[2:]
-	masked = False
-	dataLength = ord(data[1])
-
-	if secondByte[0] == '1':
-		masked = True
-		dataLength = ord(data[1]) & 127
-
-	if masked:
-		if dataLength == 126:
-			mask = data[4:8]
-			codedData = data[8:]
-		elif dataLength == 127:
-			mask = data[10:14]
-			codedData = data[14:]
-		else:
-			mask = data[2:6]
-			codedData = data[6:]
-
-		for i, currentData in enumerate(codedData):
-			decodedData += chr(ord(currentData) ^ ord(mask[i % 4]))
-	else:
-		if dataLength == 126:
-			decodedData = data[4:]
-		elif dataLength == 127:
-			decodedData = data[10:]
-		else:
-			decodedData = data[2:]
-
-	return decodedData
 
 
 def non_blocking_connect_http(self, connectTimeout=0):
@@ -198,7 +131,7 @@ def getPeerCertificate(httpsConnectionOrSSLSocket, asPEM=True):
 
 		return crypto.dump_certificate(crypto.FILETYPE_PEM, cert)
 	except Exception as error:
-		logger.debug2(u"Failed to get peer cert: %s" % error)
+		logger.debug2(u"Failed to get peer cert: {0}", error)
 		return None
 
 
@@ -328,7 +261,7 @@ class HTTPConnectionPool(object):
 
 				if self.verifyServerCertByCa:
 					if not self.caCertFile:
-						raise Exception(u"Server certificate verfication by CA enabled but no CA cert file given")
+						raise ValueError(u"Server certificate verfication by CA enabled but no CA cert file given")
 					logger.info(u"Server certificate verfication by CA file '%s' enabled for host '%s'" % (self.caCertFile, self.host))
 				else:
 					self.verifyServerCert = forceBool(verifyServerCert)
@@ -336,7 +269,7 @@ class HTTPConnectionPool(object):
 						self.serverCertFile = forceFilename(serverCertFile)
 					if self.verifyServerCert:
 						if not self.serverCertFile:
-							raise Exception(u"Server verfication enabled but no server cert file given")
+							raise ValueError(u"Server verfication enabled but no server cert file given")
 						logger.info(u"Server verfication by server certificate enabled for host '%s'" % self.host)
 		self.adjustSize(maxsize)
 
@@ -364,12 +297,13 @@ class HTTPConnectionPool(object):
 
 	def adjustSize(self, maxsize):
 		if maxsize < 1:
-			raise Exception(u"Connection pool size %d is invalid" % maxsize)
+			raise ValueError(u"Connection pool size %d is invalid" % maxsize)
 		self.maxsize = forceInt(maxsize)
 		self.delPool()
 		self.pool = Queue(self.maxsize)
 		# Fill the queue up so that doing get() on it will block properly
-		[self.pool.put(None) for i in xrange(self.maxsize)]
+		for _ in range(self.maxsize):
+			self.pool.put(None)
 
 	def __del__(self):
 		self.delPool()
@@ -543,9 +477,9 @@ class HTTPConnectionPool(object):
 				try:
 					key = response.getheader('x-opsi-service-verification-key', None)
 					if not key:
-						raise Exception(u"HTTP header 'X-opsi-service-verification-key' missing")
+						raise ValueError(u"HTTP header 'X-opsi-service-verification-key' missing")
 					if key.strip() != randomKey.strip():
-						raise Exception(u"opsi-service-verification-key '%s' != '%s'" % (key, randomKey))
+						raise OpsiAuthenticationError(u"opsi-service-verification-key '%s' != '%s'" % (key, randomKey))
 					self.serverVerified = True
 					logger.notice(u"Service verified by opsi-service-verification-key")
 				except Exception as error:
@@ -743,10 +677,12 @@ def getSharedConnectionPool(scheme, host, port, **kw):
 	host = forceUnicode(host)
 	port = forceInt(port)
 	curl = False
-	if 'preferCurl' in kw:
+	try:
 		if kw['preferCurl'] and pycurl is not None:
 			curl = True
 		del kw['preferCurl']
+	except KeyError:
+		pass
 
 	global connectionPools
 	if curl:
@@ -797,14 +733,14 @@ def gzipEncode(data, level=1):
 		data = data.encode('utf-8')
 
 	inmemoryFile = BytesIO()
-	with closing(gzip.GzipFile(fileobj=inmemoryFile, mode="w", compresslevel=level)) as gzipfile:
+	with gzip.GzipFile(fileobj=inmemoryFile, mode="w", compresslevel=level) as gzipfile:
 		gzipfile.write(data)
 
 	return inmemoryFile.getvalue()
 
 
 def gzipDecode(data):
-	with closing(gzip.GzipFile(fileobj=StringIO(data), mode="r")) as gzipfile:
+	with gzip.GzipFile(fileobj=StringIO(data), mode="r") as gzipfile:
 		uncompressedData = gzipfile.read()
 
 	return forceUnicode(uncompressedData)

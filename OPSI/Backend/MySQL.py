@@ -1,4 +1,3 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 # This module is part of the desktop management solution opsi
@@ -40,16 +39,24 @@ from MySQLdb.converters import conversions
 from sqlalchemy import pool
 from twisted.conch.ssh import keys
 
+from OPSI.Exceptions import BackendBadValueError, BackendUnableToConnectError
 from OPSI.Logger import Logger
-from OPSI.Types import BackendIOError, BackendBadValueError
 from OPSI.Types import forceInt, forceUnicode
 from OPSI.Backend.Backend import ConfigDataBackend
-from OPSI.Backend.SQL import (onlyAllowSelect, SQL, SQLBackend,
-	SQLBackendObjectModificationTracker)
+from OPSI.Backend.SQL import (
+	onlyAllowSelect, SQL, SQLBackend, SQLBackendObjectModificationTracker)
 
-__version__ = '4.0.7.56'
+__all__ = (
+	'ConnectionPool', 'MySQL', 'MySQLBackend',
+	'MySQLBackendObjectModificationTracker'
+)
 
 logger = Logger()
+
+MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE = 2006
+# 2006: 'MySQL server has gone away'
+DEADLOCK_FOUND_WHEN_TRYING_TO_GET_LOCK_ERROR_CODE = 1213
+# 1213: 'Deadlock found when trying to get lock; try restarting transaction'
 
 
 class ConnectionPool(object):
@@ -193,7 +200,7 @@ class MySQL(SQL):
 							time.sleep(0.1)
 						continue
 
-					raise BackendIOError(u"Failed to connect to database '%s' address '%s': %s" % (self._database, self._address, error))
+					raise BackendUnableToConnectError(u"Failed to connect to database '%s' address '%s': %s" % (self._database, self._address, error))
 		finally:
 			logger.debug2(u"Releasing pool lock...")
 			self._POOL_LOCK.release()
@@ -209,7 +216,7 @@ class MySQL(SQL):
 
 		:param cursorType: The class of the cursor to use. \
 Defaults to :py:class:MySQLdb.cursors.DictCursor:.
-		:raises BackendIOError: In case no connection can be established.
+		:raises BackendUnableToConnectError: In case no connection can be established.
 		:return: The connection and the corresponding cursor.
 		"""
 		retryLimit = 10
@@ -224,7 +231,7 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 			try:
 				logger.debug2(u"Connecting to connection pool")
 				self._transactionLock.acquire()
-				logger.debug(u"Connection pool status: {0}", self._pool.status())
+				logger.debug2(u"Connection pool status: {0}", self._pool.status())
 				conn = self._pool.connect()
 				conn.autocommit(False)
 				cursor = conn.cursor(cursorType)
@@ -232,11 +239,11 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 			except Exception as connectionError:
 				logger.debug(u"MySQL connection error: {0!r}", connectionError)
 				errorCode = connectionError.args[0]
+
 				self._transactionLock.release()
 				logger.debug2(u"Lock released")
 
-				if errorCode == 2006:
-					# 2006: 'MySQL server has gone away'
+				if errorCode == MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
 					logger.notice(u'MySQL server has gone away (Code {1}) - restarting connection: retry #{0}', retryCount, errorCode)
 					time.sleep(0.1)
 				else:
@@ -250,7 +257,7 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 			self._transactionLock.release()
 			logger.debug2(u"Lock released")
 
-			raise BackendIOError(u"Unable to connnect to mysql server. Giving up after {0} retries!".format(retryLimit))
+			raise BackendUnableToConnectError(u"Unable to connnect to mysql server. Giving up after {0} retries!".format(retryLimit))
 
 		return (conn, cursor)
 
@@ -270,8 +277,7 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 				self.execute(query, conn, cursor)
 			except Exception as e:
 				logger.debug(u"Execute error: %s" % e)
-				if e[0] != 2006:
-					# 2006: MySQL server has gone away
+				if e[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
 					raise
 
 				self.close(conn, cursor)
@@ -295,8 +301,7 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 				self.execute(query, conn, cursor)
 			except Exception as e:
 				logger.debug(u"Execute error: %s" % e)
-				if e[0] != 2006:
-					# 2006: MySQL server has gone away
+				if e[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
 					raise
 
 				self.close(conn, cursor)
@@ -327,8 +332,7 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 				self.execute(query, conn, cursor)
 			except Exception as e:
 				logger.debug(u"Execute error: {0!r}", e)
-				if e[0] != 2006:
-					# 2006: MySQL server has gone away
+				if e[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
 					raise
 
 				self.close(conn, cursor)
@@ -380,8 +384,7 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 				self.execute(query, conn, cursor)
 			except Exception as e:
 				logger.debug(u"Execute error: {0!r}", e)
-				if e[0] != 2006:
-					# 2006: MySQL server has gone away
+				if e[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
 					raise
 
 				self.close(conn, cursor)
@@ -426,8 +429,7 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 				self.execute(query, conn, cursor)
 			except Exception as e:
 				logger.debug(u"Execute error: {0!r}", e)
-				if e[0] != 2006:
-					# 2006: MySQL server has gone away
+				if e[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
 					raise
 
 				self.close(conn, cursor)
@@ -454,8 +456,7 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 				self.execute(query, conn, cursor)
 			except Exception as e:
 				logger.debug(u"Execute error: {0}", e)
-				if e[0] != 2006:
-					# 2006: MySQL server has gone away
+				if e[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
 					raise
 
 				self.close(conn, cursor)
@@ -494,15 +495,13 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 		logger.debug(u"Current tables:")
 		for i in self.getSet(u'SHOW TABLES;'):
 			tableName = i.values()[0]
-			logger.debug2(u" [ %s ]" % tableName)
-			tables[tableName] = []
-			for j in self.getSet(u'SHOW COLUMNS FROM `%s`' % tableName):
-				logger.debug2(u"      %s" % j)
-				tables[tableName].append(j['Field'])
+			logger.debug2(u" [ {0} ]", tableName)
+			tables[tableName] = [j['Field'] for j in self.getSet(u'SHOW COLUMNS FROM `%s`' % tableName)]
+			logger.debug2("Fields in {0}: {1}", tableName, tables[tableName])
 		return tables
 
 	def getTableCreationOptions(self, table):
-		if table in ('SOFTWARE', 'SOFTWARE_CONFIG') or table.startswith('HARDWARE_DEVICE_') or table.startswith('HARDWARE_CONFIG_'):
+		if table in ('SOFTWARE', 'SOFTWARE_CONFIG') or table.startswith(('HARDWARE_DEVICE_', 'HARDWARE_CONFIG_')):
 			return u'ENGINE=MyISAM DEFAULT CHARSET utf8 COLLATE utf8_general_ci;'
 		return u'ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci'
 
@@ -526,18 +525,20 @@ class MySQLBackend(SQLBackend):
 		modules = backendinfo['modules']
 		helpermodules = backendinfo['realmodules']
 
-		if not modules.get('customer'):
-			logger.notice(u"Disabling mysql backend and license management module: no customer in modules file")
-
+		if not all(key in modules for key in ('expires', 'customer')):
+			logger.info(
+				"Missing important information about modules. "
+				"Probably no modules file installed."
+			)
+		elif not modules.get('customer'):
+			logger.error(u"Disabling mysql backend and license management module: no customer in modules file")
 		elif not modules.get('valid'):
-			logger.notice(u"Disabling mysql backend and license management module: modules file invalid")
-
+			logger.error(u"Disabling mysql backend and license management module: modules file invalid")
 		elif (modules.get('expires', '') != 'never') and (time.mktime(time.strptime(modules.get('expires', '2000-01-01'), "%Y-%m-%d")) - time.time() <= 0):
-			logger.notice(u"Disabling mysql backend and license management module: modules file expired")
-
+			logger.error(u"Disabling mysql backend and license management module: modules file expired")
 		else:
 			logger.info(u"Verifying modules file signature")
-			publicKey = keys.Key.fromString(data = base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
+			publicKey = keys.Key.fromString(data=base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
 			data = u''
 			mks = modules.keys()
 			mks.sort()
@@ -545,20 +546,23 @@ class MySQLBackend(SQLBackend):
 				if module in ('valid', 'signature'):
 					continue
 
-				if helpermodules.has_key(module):
+				if module in helpermodules:
 					val = helpermodules[module]
 					if int(val) > 0:
 						modules[module] = True
 				else:
 					val = modules[module]
-					if (val == False): val = 'no'
-					if (val == True):  val = 'yes'
+					if val is False:
+						val = 'no'
+					if val is True:
+						val = 'yes'
 
 				data += u'%s = %s\r\n' % (module.lower().strip(), val)
-			if not bool(publicKey.verify(md5(data).digest(), [ long(modules['signature']) ])):
+
+			if not bool(publicKey.verify(md5(data).digest(), [long(modules['signature'])])):
 				logger.error(u"Disabling mysql backend and license management module: modules file invalid")
 			else:
-				logger.notice(u"Modules file signature verified (customer: %s)" % modules.get('customer'))
+				logger.info(u"Modules file signature verified (customer: %s)" % modules.get('customer'))
 
 				if modules.get('license_management'):
 					self._licenseManagementModule = True
@@ -606,6 +610,8 @@ class MySQLBackend(SQLBackend):
 				`networkAddress` varchar(31),
 				`isMasterDepot` bool,
 				`masterDepotId` varchar(255),
+				`workbenchLocalUrl` varchar(128),
+				`workbenchRemoteUrl` varchar(255),
 				PRIMARY KEY (`hostId`)
 			) %s;''' % self._sql.getTableCreationOptions('HOST')
 		logger.debug(table)
@@ -731,8 +737,7 @@ class MySQLBackend(SQLBackend):
 						myTransactionSuccess = True
 					except Exception as e:
 						logger.debug(u"Execute error: %s" % e)
-						if e.args[0] == 1213:
-							# 1213: 'Deadlock found when trying to get lock; try restarting transaction'
+						if e.args[0] == DEADLOCK_FOUND_WHEN_TRYING_TO_GET_LOCK_ERROR_CODE:
 							# 1213: May be table locked because of concurrent access - retrying
 							myTransactionSuccess = False
 							if myRetryTransactionCounter >= myMaxRetryTransaction:

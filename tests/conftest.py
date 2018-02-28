@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2016 uib GmbH <info@uib.de>
+# Copyright (C) 2016-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -124,7 +123,7 @@ def replicationDestinationBackend(request):
 
 
 @pytest.fixture
-def backendManager(_serverBackend):
+def backendManager(_serverBackend, tempDir):
     """
     Returns an `OPSI.Backend.BackendManager.BackendManager` for testing.
 
@@ -132,13 +131,21 @@ def backendManager(_serverBackend):
     """
     defaultConfigDir = _getOriginalBackendLocation()
 
-    with workInTemporaryDirectory() as tempDir:
-        shutil.copytree(defaultConfigDir, os.path.join(tempDir, 'etc', 'opsi'))
+    shutil.copytree(defaultConfigDir, os.path.join(tempDir, 'etc', 'opsi'))
 
-        yield BackendManager(
-            backend=_serverBackend,
-            extensionconfigdir=os.path.join(tempDir, 'etc', 'opsi', 'backendManager', 'extend.d')
-        )
+    yield BackendManager(
+        backend=_serverBackend,
+        extensionconfigdir=os.path.join(tempDir, 'etc', 'opsi', 'backendManager', 'extend.d')
+    )
+
+
+@pytest.fixture
+def tempDir():
+    '''
+    Switch to a temporary directory.
+    '''
+    with workInTemporaryDirectory() as tDir:
+        yield tDir
 
 
 @pytest.fixture

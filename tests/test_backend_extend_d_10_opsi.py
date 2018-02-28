@@ -25,9 +25,9 @@ This tests what usually is found under
 :license: GNU Affero General Public License version 3
 """
 
-from OPSI.Object import (OpsiClient, LocalbootProduct, ProductOnClient,
-						 ProductDependency, OpsiDepotserver, ProductOnDepot,
-						 UnicodeConfig, ConfigState)
+from OPSI.Object import (
+	OpsiClient, LocalbootProduct, ProductOnClient, ProductDependency,
+	OpsiDepotserver, ProductOnDepot, UnicodeConfig, ConfigState)
 
 import pytest
 
@@ -387,27 +387,27 @@ def testSetProductActionRequestWithDependenciesUpdateOnlyNeededObjects(backendMa
 		backendManager.productOnDepot_createObjects([pod])
 
 	poc = ProductOnClient(
-			clientId=client.id,
-			productId=prodWithNoDep.id,
-			productType=prodWithNoDep.getType(),
-			productVersion=prodWithNoDep.productVersion,
-			packageVersion=prodWithNoDep.packageVersion,
-			installationStatus='installed',
-			actionRequest=None,
-			modificationTime=expectedModificationTime,
-			actionResult='successful'
-		)
+		clientId=client.id,
+		productId=prodWithNoDep.id,
+		productType=prodWithNoDep.getType(),
+		productVersion=prodWithNoDep.productVersion,
+		packageVersion=prodWithNoDep.packageVersion,
+		installationStatus='installed',
+		actionRequest=None,
+		modificationTime=expectedModificationTime,
+		actionResult='successful'
+	)
 
 	backendManager.productOnClient_createObjects([poc])
 
-	backendManager.setProductActionRequestWithDependencies(masterProduct.id, 'backend-test-1.vmnat.local', "setup")
+	backendManager.setProductActionRequestWithDependencies(masterProduct.id, client.id, "setup")
 
 	productsOnClient = backendManager.productOnClient_getObjects()
 	assert 3 == len(productsOnClient)
 
 	for poc in productsOnClient:
 		if poc.productId == 'nicht_anfassen':
-			assert not poc.modificationTime == expectedModificationTime
+			assert poc.modificationTime != expectedModificationTime
 
 
 @pytest.mark.parametrize("sortalgorithm", [None, 'algorithm1', 'algorithm2', 'unknown-algo'])

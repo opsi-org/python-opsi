@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
@@ -17,7 +16,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-Testing basic backends.
+Testing basic backend functionality.
 
 :author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
@@ -27,12 +26,12 @@ from __future__ import absolute_import
 
 import os.path
 
-from OPSI.Backend.Backend import ExtendedBackend
+from OPSI.Backend.Backend import temporaryBackendOptions
+from OPSI.Backend.Backend import Backend, ExtendedBackend
+from OPSI.Exceptions import BackendMissingDataError
 from OPSI.Object import BoolConfig, OpsiClient, UnicodeConfig
-from OPSI.Types import BackendError, BackendMissingDataError
 from OPSI.Util import randomString
 from .test_hosts import getConfigServer
-from .helpers import workInTemporaryDirectory
 
 import pytest
 
@@ -64,12 +63,14 @@ def testOverWritingOldCredentials(fakeCredentialsBackend):
     assert 'itworks' == credentials['password']
 
 
-def testWorkingWithManyCredentials(fakeCredentialsBackend):
+@pytest.mark.parametrize("number", [128])
+def testWorkingWithManyCredentials(fakeCredentialsBackend, number):
     backend = fakeCredentialsBackend
 
-    for _ in range(100):
+    for _ in range(number):
         backend.user_setCredentials(username=randomString(12),
                                     password=randomString(12))
+
     backend.user_setCredentials(username="hans", password='bla')
 
     credentials = backend.user_getCredentials(username="hans")
@@ -85,21 +86,20 @@ def testSettingUserCredentialsWithoutDepot(fakeCredentialsBackend):
 
 
 @pytest.fixture
-def fakeCredentialsBackend(configDataBackend):
+def fakeCredentialsBackend(configDataBackend, tempDir):
     backend = configDataBackend
     backend.host_insertObject(getConfigServer())  # Required for file backend.
 
-    with workInTemporaryDirectory() as tempDir:
-        credFile = os.path.join(tempDir, 'credentials')
-        with open(credFile, 'w'):
-            pass
+    credFile = os.path.join(tempDir, 'credentials')
+    with open(credFile, 'w'):
+        pass
 
-        originalFile = backend._opsiPasswdFile
-        backend._opsiPasswdFile = credFile
-        try:
-            yield backend
-        finally:
-            backend._opsiPasswdFile = originalFile
+    originalFile = backend._opsiPasswdFile
+    backend._opsiPasswdFile = credFile
+    try:
+        yield backend
+    finally:
+        backend._opsiPasswdFile = originalFile
 
 
 def testBackend_info(configDataBackend):
@@ -110,9 +110,38 @@ def testBackend_info(configDataBackend):
     assert 'realmodules' in info
 
 
-def testBackend_getSharedAlgorithmThrowsExceptionIfAlgoUnknown(configDataBackend):
-    with pytest.raises(BackendError):
-        configDataBackend.backend_getSharedAlgorithm("foo")
+def testBackendCanBeUsedAsContextManager():
+    with Backend() as backend:
+        assert backend.backend_info()
+
+
+@pytest.mark.parametrize("option", [
+    'addProductOnClientDefaults',
+    'returnObjectsOnUpdateAndCreate'
+])
+def testSettingTemporaryBackendOptions(extendedConfigDataBackend, option):
+    optionDefaults = {
+        'addProductOnClientDefaults': False,
+        'addProductPropertyStateDefaults': False,
+        'addConfigStateDefaults': False,
+        'deleteConfigStateIfDefault': False,
+        'returnObjectsOnUpdateAndCreate': False,
+        'addDependentProductOnClients': False,
+        'processProductOnClientSequence': False
+    }
+
+    tempOptions = {
+        option: True
+    }
+
+    with temporaryBackendOptions(extendedConfigDataBackend, **tempOptions):
+        currentOptions = extendedConfigDataBackend.backend_getOptions()
+        for key, value in optionDefaults.items():
+            if key == option:
+                assert currentOptions[key] == True
+                continue
+
+            assert currentOptions[key] == False
 
 
 def testConfigStateCheckWorksWithInsertedDict(extendedConfigDataBackend):

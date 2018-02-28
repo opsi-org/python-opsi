@@ -30,28 +30,27 @@ need to set up you backends, ACL, multiplexing etc. yourself.
 """
 
 import inspect
-import new
 import os
 import re
 import socket
 import sys
 import types
+from contextlib import closing
 
-from OPSI.Backend.Backend import (Backend, BackendModificationListener,
-	ConfigDataBackend, ExtendedBackend, ExtendedConfigDataBackend,
-	ModificationTrackingBackend,
+from OPSI.Backend.Backend import (
+	Backend, ConfigDataBackend, ExtendedBackend, ExtendedConfigDataBackend,
 	getArgAndCallString)
 from OPSI.Backend.Depotserver import DepotserverBackend
 from OPSI.Backend.HostControl import HostControlBackend
 from OPSI.Backend.HostControlSafe import HostControlSafeBackend
-from OPSI.Backend.JSONRPC import JSONRPCBackend
+from OPSI.Config import OPSI_ADMIN_GROUP
+from OPSI.Exceptions import *  # this is needed for dynamic extension loading
 from OPSI.Logger import Logger, LOG_INFO
 from OPSI.Object import BaseObject, mandatoryConstructorArgs
 from OPSI.Object import *  # this is needed for dynamic extension loading
 from OPSI.Types import *  # this is needed for dynamic extension loading
-from OPSI.Util import objectToBeautifiedText, getfqdn
+from OPSI.Util import objectToBeautifiedText, getfqdn  # used in extensions
 from OPSI.Util.File.Opsi import BackendACLFile, BackendDispatchConfigFile, OpsiConfFile
-from OPSI.Util.MessageBus import MessageBusClient
 
 if os.name == 'posix':
 	import grp
@@ -61,7 +60,10 @@ elif os.name == 'nt':
 	import win32net
 	import win32security
 
-__version__ = '4.0.7.46'
+__all__ = (
+	'BackendManager', 'BackendDispatcher', 'BackendExtender',
+	'BackendAccessControl', 'backendManagerFactory'
+)
 
 logger = Logger()
 
@@ -73,68 +75,11 @@ except ImportError:
 	DISTRIBUTOR = 'unknown'
 
 try:
-	f = os.popen('lsb_release -d 2>&1 /dev/null')
-	DISTRIBUTION = f.read().split(':')[1].strip()
-	f.close()
+	with closing(os.popen('lsb_release -d 2>&1 /dev/null')) as f:
+		DISTRIBUTION = f.read().split(':')[1].strip()
 except Exception as error:
 	logger.debug("Reading Distribution failed: {0}".format(error))
 	DISTRIBUTION = 'unknown'
-
-try:
-	f = os.popen('lsb_release -r 2>&1 /dev/null')
-	DISTRELEASE = f.read().split(':')[1].strip()
-	f.close()
-except Exception as error:
-	logger.debug("Reading release failed: {0}".format(error))
-	DISTRELEASE = 'unknown'
-
-
-class MessageBusNotifier(BackendModificationListener):
-	def __init__(self, startReactor=True):
-		self._startReactor = startReactor
-		BackendModificationListener.__init__(self)
-		self._messageBusClient = MessageBusClient()
-		self._messageBusClient.start(self._startReactor)
-
-	def objectInserted(self, backend, obj):
-		self._messageBusClient.waitInitialized(5)
-		if not self._messageBusClient.isInitialized():
-			logger.error(u"Cannot notify: message bus not initialized")
-			return
-
-		try:
-			self._messageBusClient.notifyObjectCreated(obj)
-		except Exception as e:
-			logger.logException(e)
-
-	def objectUpdated(self, backend, obj):
-		self._messageBusClient.waitInitialized(5)
-		if not self._messageBusClient.isInitialized():
-			logger.error(u"Cannot notify: message bus not initialized")
-			return
-		try:
-			self._messageBusClient.notifyObjectUpdated(obj)
-		except Exception as e:
-			logger.logException(e)
-
-	def objectsDeleted(self, backend, objs):
-		self._messageBusClient.waitInitialized(5)
-		if not self._messageBusClient.isInitialized():
-			logger.error(u"Cannot notify: message bus not initialized")
-			return
-		for obj in objs:
-			try:
-				self._messageBusClient.notifyObjectDeleted(obj)
-			except Exception as e:
-				logger.logException(e)
-
-	def backendModified(self, backend):
-		pass
-
-	def stop(self):
-		logger.info(u"Stopping message bus client")
-		self._messageBusClient.stop(stopReactor=self._startReactor)
-		self._messageBusClient.join(5)
 
 
 class BackendManager(ExtendedBackend):
@@ -185,7 +130,6 @@ class BackendManager(ExtendedBackend):
 		self._options = {}
 		self._overwrite = True
 		self._context = self
-		self._messageBusNotifier = None
 
 		Backend.__init__(self, **kwargs)
 
@@ -199,7 +143,6 @@ class BackendManager(ExtendedBackend):
 		depotBackend = False
 		hostControlBackend = False
 		hostControlSafeBackend = False
-		messageBusNotifier = False
 		startReactor = True
 		loadBackend = None
 
@@ -246,8 +189,6 @@ class BackendManager(ExtendedBackend):
 				extend = forceBool(value)
 			elif option in ('acl', 'aclfile') and value:
 				accessControl = True
-			elif option == 'messagebusnotifier' and value:
-				messageBusNotifier = True
 			elif option == 'startreactor' and value is False:
 				startReactor = False
 
@@ -264,12 +205,6 @@ class BackendManager(ExtendedBackend):
 			self._backend = BackendDispatcher(context=self, **kwargs)
 			# self._backend is now a BackendDispatcher which is a ConfigDataBackend
 
-		if messageBusNotifier:
-			logger.info(u"* BackendManager is creating ModificationTrackingBackend and MessageBusNotifier")
-			self._backend = ModificationTrackingBackend(self._backend)
-			self._messageBusNotifier = MessageBusNotifier(startReactor)
-			self._backend.addBackendChangeListener(self._messageBusNotifier)
-
 		if extend or depotBackend:
 			logger.info(u"* BackendManager is creating ExtendedConfigDataBackend")
 			# DepotserverBackend/BackendExtender need ExtendedConfigDataBackend backend
@@ -282,20 +217,20 @@ class BackendManager(ExtendedBackend):
 
 		if hostControlBackend:
 			logger.info(u"* BackendManager is creating HostControlBackend")
-			hcc = {}
 			try:
 				hcc = self.__loadBackendConfig('hostcontrol')['config']
 			except Exception as e:
 				logger.error(e)
+				hcc = {}
 			self._backend = HostControlBackend(self._backend, **hcc)
 
 		if hostControlSafeBackend:
 			logger.info(u"* BackendManager is creating HostControlBackend")
-			hcc = {}
 			try:
 				hcc = self.__loadBackendConfig('hostcontrol')['config']
 			except Exception as e:
 				logger.error(e)
+				hcc = {}
 			self._backend = HostControlSafeBackend(self._backend, **hcc)
 
 		if accessControl:
@@ -334,11 +269,6 @@ class BackendManager(ExtendedBackend):
 		config['config']['name'] = name
 		exec(u'from %s import %sBackend' % (config['module'], config['module']))
 		return eval(u'%sBackend(**config["config"])' % config['module'])
-
-	def backend_exit(self):
-		ExtendedBackend.backend_exit(self)
-		if self._messageBusNotifier:
-			self._messageBusNotifier.stop()
 
 
 class BackendDispatcher(Backend):
@@ -409,21 +339,21 @@ class BackendDispatcher(Backend):
 			raise BackendConfigurationError(u"Failed to load dispatch config file '%s': %s" % (self._dispatchConfigFile, e))
 
 	def __loadBackends(self):
-		backends = set()
 		if not self._backendConfigDir:
 			raise BackendConfigurationError(u"Backend config dir not given")
 
 		if not os.path.exists(self._backendConfigDir):
 			raise BackendConfigurationError(u"Backend config dir '%s' not found" % self._backendConfigDir)
 
-		for regex, backend in self._dispatchConfig:
-			for value in forceList(backend):
-				if not value:
-					raise BackendConfigurationError(u"Bad dispatcher config: {0!r} has empty target backend: {1!r}".format(regex, backend))
+		collectedBackends = set()
+		for pattern, backends in self._dispatchConfig:
+			for backend in backends:
+				if not backend:
+					raise BackendConfigurationError(u"Bad dispatcher config: {0!r} has empty target backend: {1!r}".format(pattern, backends))
 
-				backends.add(value)
+				collectedBackends.add(backend)
 
-		for backend in backends:
+		for backend in collectedBackends:
 			self._backends[backend] = {}
 			backendConfigFile = os.path.join(self._backendConfigDir, '%s.conf' % backend)
 			if not os.path.exists(backendConfigFile):
@@ -442,11 +372,11 @@ class BackendDispatcher(Backend):
 			backendInstance = None
 			l["config"]["context"] = self
 			b = __import__(l['module'], globals(), locals(), "%sBackend" % l['module'], -1)
-			self._backends[backend]["instance"] = getattr(b, "%sBackend"%l['module'])(**l['config'])
+			self._backends[backend]["instance"] = getattr(b, "%sBackend" % l['module'])(**l['config'])
 
 	def _createInstanceMethods(self):
 		logger.debug(u"BackendDispatcher is creating instance methods")
-		for Class in (ConfigDataBackend, ):  #  Also apply to ExtendedConfigDataBackend?
+		for Class in (ConfigDataBackend, ):  # Also apply to ExtendedConfigDataBackend?
 			for methodName, functionRef in inspect.getmembers(Class, inspect.ismethod):
 				if methodName.startswith('_'):
 					# Not a public method
@@ -476,7 +406,7 @@ class BackendDispatcher(Backend):
 				argString, callString = getArgAndCallString(functionRef)
 
 				exec(u'def %s(self, %s): return self._dispatchMethod(%s, "%s", %s)' % (methodName, argString, methodBackends, methodName, callString))
-				setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
+				setattr(self, methodName, types.MethodType(eval(methodName), self))
 
 	def _dispatchMethod(self, methodBackends, methodName, **kwargs):
 		logger.debug(u"Dispatching method {0!r} to backends: {1}", methodName, methodBackends)
@@ -527,7 +457,7 @@ class BackendExtender(ExtendedBackend):
 	def __init__(self, backend, **kwargs):
 		if not isinstance(backend, ExtendedBackend) and not isinstance(backend, BackendDispatcher):
 			if not isinstance(backend, BackendAccessControl) or (not isinstance(backend._backend, ExtendedBackend) and not isinstance(backend._backend, BackendDispatcher)):
-				raise Exception("BackendExtender needs instance of ExtendedBackend or BackendDispatcher as backend, got %s" % backend.__class__.__name__)
+				raise TypeError("BackendExtender needs instance of ExtendedBackend or BackendDispatcher as backend, got %s" % backend.__class__.__name__)
 
 		ExtendedBackend.__init__(self, backend, overwrite=kwargs.get('overwrite', True))
 
@@ -549,8 +479,8 @@ class BackendExtender(ExtendedBackend):
 				if methodName.startswith('_'):
 					continue
 				logger.debug2(u"Extending {0} with instancemethod: {1!r}", self._backend.__class__.__name__, methodName)
-				new_function = new.function(functionRef.func_code, functionRef.func_globals, functionRef.func_code.co_name)
-				new_method = new.instancemethod(new_function, self, self.__class__)
+				new_function = types.FunctionType(functionRef.func_code, functionRef.func_globals, functionRef.func_code.co_name)
+				new_method = types.MethodType(new_function, self)
 				setattr(self, methodName, new_method)
 
 		if self._extensionConfigDir:
@@ -559,7 +489,8 @@ class BackendExtender(ExtendedBackend):
 				return
 
 			try:
-				confFiles = (os.path.join(self._extensionConfigDir, filename)
+				confFiles = (
+					os.path.join(self._extensionConfigDir, filename)
 					for filename in sorted(os.listdir(self._extensionConfigDir))
 					if filename.endswith('.conf')
 				)
@@ -570,12 +501,12 @@ class BackendExtender(ExtendedBackend):
 						execfile(confFile)
 					except Exception as execError:
 						logger.logException(execError)
-						raise Exception(u"Error reading file {0!r}: {1}".format(confFile, execError))
+						raise RuntimeError(u"Error reading file {0!r}: {1}".format(confFile, execError))
 
 					for key, val in locals().items():
 						if isinstance(val, types.FunctionType):   # TODO: find a better way
 							logger.debug2(u"Extending %s with instancemethod: '%s'" % (self._backend.__class__.__name__, key))
-							setattr(self, key, new.instancemethod(val, self, self.__class__))
+							setattr(self, key, types.MethodType(val, self))
 			except Exception as error:
 				raise BackendConfigurationError(u"Failed to read extensions from '%s': %s" % (self._extensionConfigDir, error))
 
@@ -601,12 +532,8 @@ class BackendAccessControl(object):
 			self._pamService = 'opsi-auth'
 		elif 'suse' in DISTRIBUTOR.lower():
 			self._pamService = 'sshd'
-		elif 'centos' in DISTRIBUTOR.lower() or 'scientific' in DISTRIBUTOR.lower():
+		elif 'centos' in DISTRIBUTOR.lower() or 'redhat' in DISTRIBUTOR.lower():
 			self._pamService = 'system-auth'
-		elif 'redhat' in DISTRIBUTOR.lower():
-			self._pamService = 'system-auth'
-			if DISTRELEASE.startswith('6.'):
-				self._pamService = 'password-auth'
 
 		for (option, value) in kwargs.items():
 			option = option.lower()
@@ -646,16 +573,16 @@ class BackendAccessControl(object):
 					host = self._context.host_getObjects(id=self._username)
 				except AttributeError as aerr:
 					logger.debug(u"{0!r}", aerr)
-					raise Exception(u"Passed backend has no method 'host_getObjects', cannot authenticate host '%s'" % self._username)
+					raise BackendUnaccomplishableError(u"Passed backend has no method 'host_getObjects', cannot authenticate host '%s'" % self._username)
 
 				try:
 					self._host = host[0]
 				except IndexError as ierr:
 					logger.debug(u"{0!r}", ierr)
-					raise Exception(u"Host '%s' not found in backend %s" % (self._username, self._context))
+					raise BackendMissingDataError(u"Host '%s' not found in backend %s" % (self._username, self._context))
 
 				if not self._host.opsiHostKey:
-					raise Exception(u"OpsiHostKey not found for host '%s'" % self._username)
+					raise BackendMissingDataError(u"OpsiHostKey not found for host '%s'" % self._username)
 
 				logger.confidential(u"Client {0!r}, key sent {1!r}, key stored {2!r}", self._username, self._password, self._host.opsiHostKey)
 
@@ -678,7 +605,7 @@ class BackendAccessControl(object):
 		self._authenticated = True
 
 		if not self._acl:
-			self._acl = [['.*', [{'type': u'sys_group', 'ids': [u'opsiadmin'], 'denyAttributes': [], 'allowAttributes': []}]]]
+			self._acl = [['.*', [{'type': u'sys_group', 'ids': [OPSI_ADMIN_GROUP], 'denyAttributes': [], 'allowAttributes': []}]]]
 
 		# Pre-compiling regex patterns for speedup.
 		for i, (pattern, acl) in enumerate(self._acl):
@@ -688,7 +615,7 @@ class BackendAccessControl(object):
 		return self._authenticated
 
 	def accessControl_userIsAdmin(self):
-		return self._isMemberOfGroup('opsiadmin') or self._isOpsiDepotserver()
+		return self._isMemberOfGroup(OPSI_ADMIN_GROUP) or self._isOpsiDepotserver()
 
 	def accessControl_userIsReadOnlyUser(self):
 		readOnlyGroups = OpsiConfFile().getOpsiGroups('readonly')
@@ -699,14 +626,14 @@ class BackendAccessControl(object):
 	def __loadACLFile(self):
 		try:
 			if not self._aclFile:
-				raise Exception(u"No acl file defined")
+				raise BackendConfigurationError(u"No acl file defined")
 			if not os.path.exists(self._aclFile):
-				raise Exception(u"Acl file '%s' not found" % self._aclFile)
+				raise BackendIOError(u"Acl file '%s' not found" % self._aclFile)
 			self._acl = BackendACLFile(self._aclFile).parse()
 			logger.debug(u"Read acl from file {0!r}: {1!r}", self._aclFile, self._acl)
-		except Exception as e:
-			logger.logException(e)
-			raise BackendConfigurationError(u"Failed to load acl file '%s': %s" % (self._aclFile, e))
+		except Exception as error:
+			logger.logException(error)
+			raise BackendConfigurationError(u"Failed to load acl file '%s': %s" % (self._aclFile, error))
 
 	def _createInstanceMethods(self):
 		protectedMethods = set()
@@ -729,7 +656,7 @@ class BackendAccessControl(object):
 				logger.debug2(u"Not protecting %s method '%s'" % (Class.__name__, methodName))
 				exec(u'def %s(self, %s): return self._executeMethod("%s", %s)' % (methodName, argString, methodName, callString))
 
-			setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
+			setattr(self, methodName, types.MethodType(eval(methodName), self))
 
 	def _authenticateUser(self):
 		'''
@@ -962,14 +889,15 @@ class BackendAccessControl(object):
 		logger.debug(u"Filtering params: {0}", params)
 		for (key, value) in params.items():
 			valueList = forceList(value)
-			if len(valueList) == 0:
+			if not valueList:
 				continue
+
 			if issubclass(valueList[0].__class__, BaseObject) or isinstance(valueList[0], dict):
 				valueList = self._filterObjects(valueList, acls, exceptionOnTruncate=False)
 				if isinstance(value, list):
 					params[key] = valueList
 				else:
-					if len(valueList) > 0:
+					if valueList:
 						params[key] = valueList[0]
 					else:
 						del params[key]
@@ -983,7 +911,7 @@ class BackendAccessControl(object):
 				if isinstance(result, list):
 					return resultList
 				else:
-					if len(resultList) > 0:
+					if resultList:
 						return resultList[0]
 					else:
 						return None
@@ -1004,19 +932,27 @@ class BackendAccessControl(object):
 				if acl.get('type') == 'self':
 					objectId = None
 					for identifier in ('id', 'objectId', 'hostId', 'clientId', 'depotId', 'serverId'):
-						if identifier in objHash:
+						try:
 							objectId = objHash[identifier]
 							break
+						except KeyError:
+							pass
 
 					if not objectId or objectId != self._username:
 						continue
 
 				if acl.get('allowAttributes'):
-					[allowedAttributes.add(attribute) for attribute in acl['allowAttributes']]
+					attributesToAdd = acl['allowAttributes']
 				elif acl.get('denyAttributes'):
-					[allowedAttributes.add(attribute) for attribute in objHash.keys() if attribute not in acl['denyAttributes']]
+					attributesToAdd = (
+						attribute for attribute in objHash
+						if attribute not in acl['denyAttributes']
+					)
 				else:
-					[allowedAttributes.add(attribute) for attribute in objHash.keys()]
+					attributesToAdd = objHash.keys()
+
+				for attribute in attributesToAdd:
+					allowedAttributes.add(attribute)
 
 			if not allowedAttributes:
 				continue
@@ -1024,8 +960,8 @@ class BackendAccessControl(object):
 			if not isDict:
 				allowedAttributes.add('type')
 
-				[allowedAttributes.add(attribute) for attribute
-				in mandatoryConstructorArgs(obj.__class__)]
+				for attribute in mandatoryConstructorArgs(obj.__class__):
+					allowedAttributes.add(attribute)
 
 			for key in objHash.keys():
 				if key not in allowedAttributes:

@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2006-2008, 2015 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2017 uib GmbH <info@uib.de>
 # All rights reserved.
 
 # This program is free software: you can redistribute it and/or modify
@@ -37,8 +36,6 @@ from OPSI.Logger import Logger
 from OPSI.Types import (forceBool, forceInt, forceIntList, forceIpAddress,
 	forceList, forceUnicode, forceUnicodeList)
 
-__version__ = '4.0.6.29'
-
 logger = Logger()
 
 
@@ -68,7 +65,7 @@ class Subject(object):
 		self._title = forceUnicode(title)
 
 	def attachObserver(self, observer):
-		if not observer in self._observers:
+		if observer not in self._observers:
 			self._observers.append(observer)
 
 	def detachObserver(self, observer):
@@ -76,7 +73,12 @@ class Subject(object):
 			self._observers.remove(observer)
 
 	def serializable(self):
-		return { "id": self.getId(), "type": self.getType(), "title": self.getTitle(), "class": self.getClass() }
+		return {
+			"id": self.getId(),
+			"type": self.getType(),
+			"title": self.getTitle(),
+			"class": self.getClass()
+		}
 
 	def __unicode__(self):
 		return u'<%s type: %s, id: %s>' % (self.__class__.__name__, self._type, self._id)
@@ -92,19 +94,25 @@ class MessageSubject(Subject):
 	def __init__(self, id, type=u'', title=u'', **args):
 		Subject.__init__(self, id, type, title, **args)
 		self.reset()
-		if args.has_key('message'):
-			self._message  = forceUnicode(args['message'])
-		if args.has_key('severity'):
+		try:
+			self._message = forceUnicode(args['message'])
+		except KeyError:
+			pass  # no matching key
+
+		try:
 			self._severity = forceInt(args['severity'])
-		logger.debug(u"MessageSubject '%s' created" % self._id)
+		except KeyError:
+			pass  # no matching key
+
+		logger.debug(u"MessageSubject {0!r} created", self._id)
 
 	def reset(self):
 		Subject.reset(self)
-		self._message  = u''
+		self._message = u''
 		self._severity = 0
 
-	def setMessage(self, message, severity = 0):
-		self._message  = forceUnicode(message)
+	def setMessage(self, message, severity=0):
+		self._message = forceUnicode(message)
 		self._severity = forceInt(severity)
 		self._notifyMessageChanged()
 
@@ -115,14 +123,14 @@ class MessageSubject(Subject):
 		return self._severity
 
 	def _notifyMessageChanged(self):
-		for o in self._observers:
-			o.messageChanged(self, self._message)
+		for observer in self._observers:
+			observer.messageChanged(self, self._message)
 
 	def serializable(self):
-		s = Subject.serializable(self)
-		s['message'] = self.getMessage()
-		s['severity'] = self.getSeverity()
-		return s
+		subject = Subject.serializable(self)
+		subject['message'] = self.getMessage()
+		subject['severity'] = self.getSeverity()
+		return subject
 
 
 class ChoiceSubject(MessageSubject):
@@ -130,14 +138,26 @@ class ChoiceSubject(MessageSubject):
 		MessageSubject.__init__(self, id, type, title, **args)
 		self.reset()
 		self._callbacks = []
-		if 'multiValue' in args:
+		try:
 			self._multiValue = forceBool(args['multiValue'])
-		if 'choices' in args:
+		except KeyError:
+			pass
+
+		try:
 			self._choices = forceUnicodeList(args['choices'])
-		if 'selectedIndexes' in args:
+		except KeyError:
+			pass
+
+		try:
 			self._selectedIndexes = forceIntList(args['selectedIndexes'])
-		if 'callbacks' in args:
+		except KeyError:
+			pass
+
+		try:
 			self._callbacks = args['callbacks']
+		except KeyError:
+			pass
+
 		logger.debug(u"ChoiceSubject '%s' created" % self._id)
 
 	def reset(self):
@@ -165,7 +185,7 @@ class ChoiceSubject(MessageSubject):
 
 	def setChoices(self, choices):
 		self._choices = forceUnicodeList(choices)
-		if len(self._choices) > 0 and not self._selectedIndexes:
+		if self._choices and not self._selectedIndexes:
 			self._selectedIndexes = [0]
 		self._notifyChoicesChanged()
 
@@ -185,18 +205,18 @@ class ChoiceSubject(MessageSubject):
 		self._callbacks = callbacks
 
 	def _notifySelectedIndexesChanged(self):
-		for o in self._observers:
-			o.selectedIndexesChanged(self, self._selectedIndexes)
+		for observer in self._observers:
+			observer.selectedIndexesChanged(self, self._selectedIndexes)
 
 	def _notifyChoicesChanged(self):
-		for o in self._observers:
-			o.choicesChanged(self, self._choices)
+		for observer in self._observers:
+			observer.choicesChanged(self, self._choices)
 
 	def serializable(self):
-		s = MessageSubject.serializable(self)
-		s['choices'] = self.getChoices()
-		s['selectedIndexes'] = self.getSelectedIndexes()
-		return s
+		subject = MessageSubject.serializable(self)
+		subject['choices'] = self.getChoices()
+		subject['selectedIndexes'] = self.getSelectedIndexes()
+		return subject
 
 
 class ProgressSubject(MessageSubject):
@@ -205,26 +225,54 @@ class ProgressSubject(MessageSubject):
 		self.reset()
 		self._fireAlways = True
 		self._endChangable = True
-		if args.has_key('end'):
+		try:
 			self._end = forceInt(args['end'])
-			if (self._end < 0): self._end = 0
-		if args.has_key('percent'):
+			if self._end < 0:
+				self._end = 0
+		except KeyError:
+			pass
+
+		try:
 			self._percent = args['percent']
-		if args.has_key('state'):
+		except KeyError:
+			pass
+
+		try:
 			self._state = args['state']
-		if args.has_key('timeStarted'):
+		except KeyError:
+			pass
+
+		try:
 			self._timeStarted = args['timeStarted']
-		if args.has_key('timeSpend'):
+		except KeyError:
+			pass
+
+		try:
 			self._timeSpend = args['timeSpend']
-		if args.has_key('timeLeft'):
+		except KeyError:
+			pass
+
+		try:
 			self._timeLeft = args['timeLeft']
-		if args.has_key('timeFired'):
+		except KeyError:
+			pass
+
+		try:
 			self._timeFired = args['timeFired']
-		if args.has_key('speed'):
+		except KeyError:
+			pass
+
+		try:
 			self._speed = args['speed']
-		if args.has_key('fireAlways'):
+		except KeyError:
+			pass
+
+		try:
 			self._fireAlways = forceBool(args['fireAlways'])
-		logger.debug(u"ProgressSubject '%s' created" % self._id)
+		except KeyError:
+			pass
+
+		logger.debug(u"ProgressSubject {0!r} created", self._id)
 
 	def reset(self):
 		MessageSubject.reset(self)
@@ -246,39 +294,39 @@ class ProgressSubject(MessageSubject):
 	def setEnd(self, end):
 		if not self._endChangable:
 			return
+
 		self._end = forceInt(end)
-		if (self._end < 0):
+		if self._end < 0:
 			self._end = 0
 		self.setState(self._state)
 		self._notifyEndChanged()
 
 	def setState(self, state):
 		state = forceInt(state)
-		if (state <= 0):
+		if state <= 0:
 			state = 0
 			self._percent = 0
-		if (state > self._end):
+		if state > self._end:
 			state = self._end
 			self._percent = 100
 		self._state = state
 
 		now = int(time.time())
-		if self._fireAlways or (self._timeFired != now) or (self._state == self._end) or (self._state == 0):
-			if (self._state == 0):
+		if self._fireAlways or (self._timeFired != now) or (self._state in (0, self._end)):
+			if self._state == 0:
 				self._percent = 0
-			elif (self._end == 0):
+			elif self._end == 0:
 				self._percent = 100
 			else:
-				self._percent = float(100)*(float(self._state) / float(self._end))
+				self._percent = float(100) * (float(self._state) / float(self._end))
 
 			self._timeSpend = now - self._timeStarted
 			if self._timeSpend:
-				self._speed = int(float(self._state)/float(self._timeSpend))
-				if (self._speed < 0):
+				self._speed = int(float(self._state) / float(self._timeSpend))
+				if self._speed < 0:
 					self._speed = 0
-				elif (self._speed > 0):
-					self._timeLeft = int(((float(self._timeLeft)*2.0) + (float(self._end)-float(self._state))/float(self._speed))/3.0)
-					#self._timeLeft = int((float(self._end)-float(self._state))/float(self._speed))
+				elif self._speed > 0:
+					self._timeLeft = int(((float(self._timeLeft) * 2.0) + (float(self._end) - float(self._state)) / float(self._speed)) / 3.0)
 
 			self._timeFired = now
 			self._notifyProgressChanged()
@@ -305,22 +353,22 @@ class ProgressSubject(MessageSubject):
 		return self._speed
 
 	def _notifyProgressChanged(self):
-		for o in self._observers:
-			o.progressChanged(self, self._state, self._percent, self._timeSpend, self._timeLeft, self._speed)
+		for observer in self._observers:
+			observer.progressChanged(self, self._state, self._percent, self._timeSpend, self._timeLeft, self._speed)
 
 	def _notifyEndChanged(self):
-		for o in self._observers:
-			o.endChanged(self, self._end)
+		for observer in self._observers:
+			observer.endChanged(self, self._end)
 
 	def serializable(self):
-		s = MessageSubject.serializable(self)
-		s['end']          = self.getEnd()
-		s['state']        = self.getState()
-		s['percent']      = self.getPercent()
-		s['timeSpend']    = self.getTimeSpend()
-		s['timeLeft']     = self.getTimeLeft()
-		s['speed']        = self.getSpeed()
-		return s
+		subject = MessageSubject.serializable(self)
+		subject['end'] = self.getEnd()
+		subject['state'] = self.getState()
+		subject['percent'] = self.getPercent()
+		subject['timeSpend'] = self.getTimeSpend()
+		subject['timeLeft'] = self.getTimeLeft()
+		subject['speed'] = self.getSpeed()
+		return subject
 
 
 class MessageObserver(object):
@@ -366,7 +414,7 @@ class SubjectsObserver(ChoiceObserver, ProgressObserver):
 		self.subjectsChanged(self._subjects)
 
 	def addSubject(self, subject):
-		if not subject in self._subjects:
+		if subject not in self._subjects:
 			self._subjects.append(subject)
 			subject.attachObserver(self)
 		self.subjectsChanged(self._subjects)
@@ -392,7 +440,7 @@ class MessageSubjectProxy(ProgressSubject, ProgressObserver, ChoiceSubject, Choi
 		ProgressObserver.__init__(self)
 
 	def messageChanged(self, subject, message):
-		self.setMessage(message, severity = subject.getSeverity())
+		self.setMessage(message, severity=subject.getSeverity())
 
 	def selectedIndexesChanged(self, subject, selectedIndexes):
 		self.setSelectedIndexes(selectedIndexes)
@@ -432,9 +480,9 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 	protocol = NotificationServerProtocol
 
 	def __init__(self):
-		self.clients   = []
+		self.clients = []
 		self._subjects = []
-		self._rpcs     = {}
+		self._rpcs = {}
 
 	def connectionCount(self):
 		return len(self.clients)
@@ -458,7 +506,7 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 			id = rpc['id']
 			params = rpc['params']
 
-			if (method == 'setSelectedIndexes'):
+			if method == 'setSelectedIndexes':
 				subjectId = params[0]
 				selectedIndexes = params[1]
 				for subject in self.getSubjects():
@@ -467,7 +515,7 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 					result = subject.setSelectedIndexes(selectedIndexes)
 					break
 
-			elif (method == 'selectChoice'):
+			elif method == 'selectChoice':
 				logger.debug(u"selectChoice(%s)" % unicode(params)[1:-1])
 				subjectId = params[0]
 				for subject in self.getSubjects():
@@ -475,62 +523,59 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 						continue
 					result = subject.selectChoice()
 					break
-
 			else:
 				raise ValueError(u"unknown method '%s'" % method)
-		except Exception as e:
-			logger.error(u"Failed to execute rpc: %s" % e)
+		except Exception as error:
+			logger.error(u"Failed to execute rpc: %s" % error)
 
 	def messageChanged(self, subject, message):
-		if not subject in self.getSubjects():
+		if subject not in self.getSubjects():
 			logger.info(u"Unknown subject %s passed to messageChanged, automatically adding subject" % subject)
 			self.addSubject(subject)
 		logger.debug(u"messageChanged: subject id '%s', message '%s'" % (subject.getId(), message))
-		self.notify( name = u"messageChanged", params = [subject.serializable(), message] )
+		self.notify(name=u"messageChanged", params=[subject.serializable(), message])
 
 	def selectedIndexesChanged(self, subject, selectedIndexes):
-		if not subject in self.getSubjects():
+		if subject not in self.getSubjects():
 			logger.info(u"Unknown subject %s passed to selectedIndexesChanged, automatically adding subject" % subject)
 			self.addSubject(subject)
 		logger.debug(u"selectedIndexesChanged: subject id '%s', selectedIndexes %s" % (subject.getId(), selectedIndexes))
-		self.notify( name = u"selectedIndexesChanged", params = [ subject.serializable(), selectedIndexes ] )
+		self.notify(name=u"selectedIndexesChanged", params=[subject.serializable(), selectedIndexes])
 
 	def choicesChanged(self, subject, choices):
-		if not subject in self.getSubjects():
+		if subject not in self.getSubjects():
 			logger.info(u"Unknown subject %s passed to choicesChanged, automatically adding subject" % subject)
 			self.addSubject(subject)
 		logger.debug(u"choicesChanged: subject id '%s', choices %s" % (subject.getId(), choices))
-		self.notify( name = u"choicesChanged", params = [ subject.serializable(), choices ] )
+		self.notify(name=u"choicesChanged", params=[subject.serializable(), choices])
 
 	def progressChanged(self, subject, state, percent, timeSpend, timeLeft, speed):
-		if not subject in self.getSubjects():
+		if subject not in self.getSubjects():
 			logger.info(u"Unknown subject %s passed to progressChanged, automatically adding subject" % subject)
 			self.addSubject(subject)
 		logger.debug(u"progressChanged: subject id '%s', state %s, percent %s, timeSpend %s, timeLeft %s, speed %s" \
 			% (subject.getId(), state, percent, timeSpend, timeLeft, speed))
-		self.notify( name = u"progressChanged", params = [ subject.serializable(), state, percent, timeSpend, timeLeft, speed ] )
+		self.notify(name=u"progressChanged", params=[subject.serializable(), state, percent, timeSpend, timeLeft, speed])
 
 	def endChanged(self, subject, end):
-		if not subject in self.getSubjects():
+		if subject not in self.getSubjects():
 			logger.info(u"Unknown subject %s passed to endChanged, automatically adding subject" % subject)
 			self.addSubject(subject)
 		logger.debug(u"endChanged: subject id '%s', end %s" \
 			% (subject.getId(), end))
-		self.notify( name = u"endChanged", params = [ subject.serializable(), end ] )
+		self.notify(name=u"endChanged", params=[subject.serializable(), end])
 
 	def subjectsChanged(self, subjects):
 		logger.debug(u"subjectsChanged: subjects %s" % subjects)
-		param = []
-		for subject in subjects:
-			param.append(subject.serializable())
-		self.notify( name = u"subjectsChanged", params = [ param ] )
+		param = [subject.serializable() for subject in subjects]
+		self.notify(name=u"subjectsChanged", params=[param])
 
 	def requestEndConnections(self, clientIds=[]):
 		if not self.clients:
 			return
-		self.notify( name = u"endConnection", params = [ clientIds ] )
+		self.notify(name=u"endConnection", params=[clientIds])
 
-	def notify(self, name, params, clients = []):
+	def notify(self, name, params, clients=[]):
 		if not isinstance(params, list):
 			params = [params]
 		if not clients:
@@ -540,10 +585,11 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 		if not clients:
 			logger.debug(u"cannot send notification '%s', no client connected" % name)
 			return
+
 		logger.debug(u"sending notification '%s' to clients" % name)
 		for client in clients:
 			# json-rpc: notifications have id null
-			jsonString = json.dumps( {"id": None, "method": name, "params": params } )
+			jsonString = json.dumps({"id": None, "method": name, "params": params})
 			if isinstance(jsonString, unicode):
 				jsonString = jsonString.encode('utf-8')
 			client.sendLine(jsonString)
@@ -593,18 +639,18 @@ class NotificationServer(threading.Thread, SubjectsObserver):
 	def run(self):
 		logger.info(u"Notification server starting")
 		try:
-			if (self._address == '0.0.0.0'):
+			if self._address == '0.0.0.0':
 				self._server = reactor.listenTCP(self._port, self._factory)
 			else:
-				self._server = reactor.listenTCP(self._port, self._factory, interface = self._address)
+				self._server = reactor.listenTCP(self._port, self._factory, interface=self._address)
 
 			self._listening = True
 			if not reactor.running:
 				logger.info(u"Starting reactor")
 				reactor.run(installSignalHandlers=0)
-		except Exception as e:
-			self._error = forceUnicode(e)
-			logger.logException(e)
+		except Exception as error:
+			self._error = forceUnicode(error)
+			logger.logException(error)
 
 	def _stopListeningCompleted(self, result):
 		self._listening = False
@@ -617,22 +663,22 @@ class NotificationServer(threading.Thread, SubjectsObserver):
 			timeout -= 0.1
 
 		if self._server:
-			#self._server.loseConnection()
 			result = self._server.stopListening()
 			if isinstance(result, defer.Deferred):
 				result.addCallback(self._stopListeningCompleted)
 				timeout = 3.0
-				while self._listening and (timeout > 0):
+				while self._listening and timeout > 0:
 					time.sleep(0.1)
 					timeout -= 0.1
-				if (timeout == 0):
+
+				if timeout == 0:
 					logger.warning(u"Timed out while waiting for stop listening")
 			self._listening = False
 		if stopReactor and reactor and reactor.running:
 			try:
 				reactor.stop()
-			except Exception as e:
-				logger.error(u"Failed to stop reactor: %s" % e)
+			except Exception as error:
+				logger.error(u"Failed to stop reactor: %s" % error)
 		logger.info(u"Notification server stopped")
 
 
@@ -666,7 +712,7 @@ class NotificationClientFactory(ClientFactory):
 		self._client = client
 
 	def isReady(self):
-		return (self._client != None)
+		return self._client is not None
 
 	def sendLine(self, line):
 		logger.debug(u"sending line '%s'" % line)
@@ -685,15 +731,15 @@ class NotificationClientFactory(ClientFactory):
 				# Notification
 				method = rpc['method']
 				params = rpc['params']
-				if (method == 'endConnection'):
+				if method == 'endConnection':
 					logger.info(u"Server requested connection end")
 					if not params or not params[0] or not self._notificationClient.getId() or self._notificationClient.getId() in forceList(params[0]):
 						self._notificationClient.endConnectionRequested()
 				else:
-					logger.debug( "self._observer.%s(*params)" % method )
-					eval( "self._observer.%s(*params)" % method )
-		except Exception as e:
-			logger.error(e)
+					logger.debug("self._observer.%s(*params)" % method)
+					eval("self._observer.%s(*params)" % method)
+		except Exception as error:
+			logger.error(error)
 
 	def execute(self, method, params):
 		logger.debug(u"executing method '%s', params %s" % (method, params))
@@ -706,15 +752,15 @@ class NotificationClientFactory(ClientFactory):
 		while not self.isReady() and (timeout < self._timeout):
 			time.sleep(0.1)
 			timeout += 0.1
-		if (timeout >= self._timeout):
-			raise Exception(u"execute timed out after %d seconds" % self._timeout)
+		if timeout >= self._timeout:
+			raise RuntimeError(u"execute timed out after %d seconds" % self._timeout)
 
-		rpc = {'id': None, "method": method, "params": params }
+		rpc = {'id': None, "method": method, "params": params}
 		self.sendLine(json.dumps(rpc))
 
 
 class NotificationClient(threading.Thread):
-	def __init__(self, address, port, observer, clientId = None):
+	def __init__(self, address, port, observer, clientId=None):
 		threading.Thread.__init__(self)
 		self._address = address
 		self._port = port
@@ -728,7 +774,7 @@ class NotificationClient(threading.Thread):
 		return self._id
 
 	def addEndConnectionRequestedCallback(self, endConnectionRequestedCallback):
-		if not endConnectionRequestedCallback in self._endConnectionRequestedCallbacks:
+		if endConnectionRequestedCallback not in self._endConnectionRequestedCallbacks:
 			self._endConnectionRequestedCallbacks.append(endConnectionRequestedCallback)
 
 	def removeEndConnectionRequestedCallback(self, endConnectionRequestedCallback):
@@ -739,8 +785,8 @@ class NotificationClient(threading.Thread):
 		for endConnectionRequestedCallback in self._endConnectionRequestedCallbacks:
 			try:
 				endConnectionRequestedCallback()
-			except Exception as e:
-				logger.error(e)
+			except Exception as error:
+				logger.error(error)
 
 	def getFactory(self):
 		return self._factory
@@ -752,8 +798,8 @@ class NotificationClient(threading.Thread):
 			reactor.connectTCP(self._address, self._port, self._factory)
 			if not reactor.running:
 				reactor.run(installSignalHandlers=0)
-		except Exception as e:
-			logger.logException(e)
+		except Exception as error:
+			logger.logException(error)
 
 	def stop(self, stopReactor=True):
 		if self._client:
@@ -762,7 +808,7 @@ class NotificationClient(threading.Thread):
 			reactor.stop()
 
 	def setSelectedIndexes(self, subjectId, selectedIndexes):
-		self._factory.execute(method = 'setSelectedIndexes', params = [ subjectId, selectedIndexes ])
+		self._factory.execute(method='setSelectedIndexes', params=[subjectId, selectedIndexes])
 
 	def selectChoice(self, subjectId):
-		self._factory.execute(method = 'selectChoice', params = [ subjectId ])
+		self._factory.execute(method='selectChoice', params=[subjectId])

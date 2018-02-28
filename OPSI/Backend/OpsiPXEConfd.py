@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2010-2014 uib GmbH <info@uib.de>
+# Copyright (C) 2010-2018 uib GmbH <info@uib.de>
 # All rights reserved.
 
 # This program is free software: you can redistribute it and/or modify
@@ -29,16 +28,20 @@ OpsiPXEConfd-Backend
 import socket
 import threading
 import time
+from contextlib import closing, contextmanager
 
+from OPSI.Backend.Backend import ConfigDataBackend
+from OPSI.Backend.JSONRPC import JSONRPCBackend
+from OPSI.Exceptions import (BackendMissingDataError, BackendUnableToConnectError,
+	BackendUnaccomplishableError)
 from OPSI.Logger import Logger
 from OPSI.Object import OpsiClient
 from OPSI.Types import forceInt, forceUnicode, forceHostId
-from OPSI.Types import BackendMissingDataError
-from OPSI.Backend.Backend import OPSI_GLOBAL_CONF, ConfigDataBackend
-from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Util import getfqdn
 
-__version__ = '4.0.6.3'
+__all__ = ('ServerConnection', 'OpsiPXEConfdBackend', 'createUnixSocket')
+
+ERROR_MARKER = u'(ERROR)'
 
 logger = Logger()
 
@@ -48,27 +51,35 @@ class ServerConnection:
 		self.port = port
 		self.timeout = forceInt(timeout)
 
-	def createUnixSocket(self):
-		logger.notice(u"Creating unix socket '%s'" % self.port)
-		self._socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-		self._socket.settimeout(self.timeout)
-		try:
-			self._socket.connect(self.port)
-		except Exception as exc:
-			raise Exception(u"Failed to connect to socket '%s': %s" % (self.port, exc))
-
 	def sendCommand(self, cmd):
-		self.createUnixSocket()
-		self._socket.send(forceUnicode(cmd).encode('utf-8'))
-		result = None
-		try:
-			result = forceUnicode(self._socket.recv(4096))
-		except Exception as exc:
-			raise Exception(u"Failed to receive: %s" % exc)
-		self._socket.close()
-		if result.startswith(u'(ERROR)'):
-			raise Exception(u"Command '%s' failed: %s" % (cmd, result))
+		with createUnixSocket(self.port, timeout=self.timeout) as unixSocket:
+			unixSocket.send(forceUnicode(cmd).encode('utf-8'))
+
+			result = ''
+			try:
+				for part in iter(lambda: unixSocket.recv(4096), ''):
+					logger.debug2("Received {!r}", part)
+					result += forceUnicode(part)
+			except Exception as error:
+				raise RuntimeError(u"Failed to receive: %s" % error)
+
+		if result.startswith(ERROR_MARKER):
+			raise RuntimeError(u"Command '%s' failed: %s" % (cmd, result))
+
 		return result
+
+
+@contextmanager
+def createUnixSocket(port, timeout=5.0):
+	logger.notice(u"Creating unix socket {!r}", port)
+	_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+	_socket.settimeout(timeout)
+	try:
+		with closing(_socket) as unixSocket:
+			unixSocket.connect(port)
+			yield unixSocket
+	except Exception as error:
+		raise RuntimeError(u"Failed to connect to socket '%s': %s" % (port, error))
 
 
 class OpsiPXEConfdBackend(ConfigDataBackend):
@@ -79,7 +90,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 		self._name = 'opsipxeconfd'
 		self._port = u'/var/run/opsipxeconfd/opsipxeconfd.socket'
 		self._timeout = 10
-		self._depotId = forceHostId(getfqdn(conf=OPSI_GLOBAL_CONF))
+		self._depotId = forceHostId(getfqdn())
 		self._opsiHostKey = None
 		self._depotConnections = {}
 		self._updateThreads = {}
@@ -99,7 +110,9 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 		if depotId == self._depotId:
 			return self
 
-		if depotId not in self._depotConnections:
+		try:
+			return self._depotConnections[depotId]
+		except KeyError:
 			if not self._opsiHostKey:
 				depots = self._context.host_getObjects(id=self._depotId)  # pylint: disable=maybe-no-member
 				if not depots or not depots[0].getOpsiHostKey():
@@ -113,9 +126,9 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 					password=self._opsiHostKey
 				)
 			except Exception as error:
-				raise Exception(u"Failed to connect to depot '%s': %s" % (depotId, error))
+				raise BackendUnableToConnectError(u"Failed to connect to depot '%s': %s" % (depotId, error))
 
-		return self._depotConnections[depotId]
+			return self._depotConnections[depotId]
 
 	def _getResponsibleDepotId(self, clientId):
 		configStates = self._context.configState_getObjects(configId=u'clientconfig.depot.id', objectId=clientId)  # pylint: disable=maybe-no-member
@@ -124,7 +137,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 		else:
 			configs = self._context.config_getObjects(id=u'clientconfig.depot.id')  # pylint: disable=maybe-no-member
 			if not configs or not configs[0].defaultValues:
-				raise Exception(u"Failed to get depotserver for client '%s', config 'clientconfig.depot.id' not set and no defaults found" % clientId)
+				raise BackendUnaccomplishableError(u"Failed to get depotserver for client '%s', config 'clientconfig.depot.id' not set and no defaults found" % clientId)
 			depotId = configs[0].defaultValues[0]
 		return depotId
 
@@ -145,50 +158,18 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 
 		depotId = self._getResponsibleDepotId(productOnClient.clientId)
 		if depotId != self._depotId:
-			logger.info(u"Not responsible for client '%s', forwarding request to depot '%s'" % (productOnClient.clientId, depotId))
+			logger.info(u"Not responsible for client '{}', forwarding request to depot {!r}", productOnClient.clientId, depotId)
 			return self._getDepotConnection(depotId).opsipxeconfd_updatePXEBootConfiguration(productOnClient.clientId)
 
 		self.opsipxeconfd_updatePXEBootConfiguration(productOnClient.clientId)
 
 	def opsipxeconfd_updatePXEBootConfiguration(self, clientId):
 		clientId = forceHostId(clientId)
+		logger.debug("Updating PXE boot config of {!r}", clientId)
 
 		with self._updateThreadsLock:
 			if clientId not in self._updateThreads:
 				command = u'update %s' % clientId
-
-				class UpdateThread(threading.Thread):
-					def __init__(self, opsiPXEConfdBackend, clientId, command):
-						threading.Thread.__init__(self)
-						self._opsiPXEConfdBackend = opsiPXEConfdBackend
-						self._clientId = clientId
-						self._command = command
-						self._updateEvent = threading.Event()
-						self._delay = 3.0
-
-					def run(self):
-						while self._delay > 0:
-							try:
-								time.sleep(0.2)
-							except Exception:
-								pass
-							self._delay -= 0.2
-
-						with self._opsiPXEConfdBackend._updateThreadsLock:
-							try:
-								logger.info(u"Updating pxe boot configuration for client '%s'" % self._clientId)
-								sc = ServerConnection(self._opsiPXEConfdBackend._port, self._opsiPXEConfdBackend._timeout)
-								logger.info(u"Sending command '%s'" % self._command)
-								result = sc.sendCommand(self._command)
-								logger.info(u"Got result '%s'" % result)
-							except Exception as error:
-								logger.critical(u"Failed to update PXE boot configuration for client '%s': %s" % (self._clientId, error))
-
-							del self._opsiPXEConfdBackend._updateThreads[self._clientId]
-
-					def delay(self):
-						self._delay = 3.0
-
 				updater = UpdateThread(self, clientId, command)
 				self._updateThreads[clientId] = updater
 				updater.start()
@@ -231,7 +212,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 				errors.append(forceUnicode(error))
 
 		if errors:
-			raise Exception(u', '.join(errors))
+			raise RuntimeError(u', '.join(errors))
 
 	def configState_insertObject(self, configState):
 		if configState.configId != 'clientconfig.depot.id':
@@ -257,4 +238,38 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 				errors.append(forceUnicode(error))
 
 		if errors:
-			raise Exception(u', '.join(errors))
+			raise RuntimeError(u', '.join(errors))
+
+
+class UpdateThread(threading.Thread):
+	_DEFAULT_DELAY = 3.0
+
+	def __init__(self, opsiPXEConfdBackend, clientId, command):
+		threading.Thread.__init__(self)
+		self._opsiPXEConfdBackend = opsiPXEConfdBackend
+		self._clientId = clientId
+		self._command = command
+		self._delay = self._DEFAULT_DELAY
+
+	def run(self):
+		logger.debug("UpdateThread {} waiting until delay is done...", self.name)
+		delayReduction = 0.2
+		while self._delay > 0:
+			time.sleep(delayReduction)
+			self._delay -= delayReduction
+
+		with self._opsiPXEConfdBackend._updateThreadsLock:
+			try:
+				logger.info(u"Updating pxe boot configuration for client '{}'", self._clientId)
+				sc = ServerConnection(self._opsiPXEConfdBackend._port, self._opsiPXEConfdBackend._timeout)
+				logger.debug(u"Sending command {!r}", self._command)
+				result = sc.sendCommand(self._command)
+				logger.debug(u"Got result {!r}", result)
+			except Exception as error:
+				logger.critical(u"Failed to update PXE boot configuration for client '{}': {}", self._clientId, error)
+
+			del self._opsiPXEConfdBackend._updateThreads[self._clientId]
+
+	def delay(self):
+		self._delay = self._DEFAULT_DELAY
+		logger.debug("Resetted delay for UpdateThread {}", self.name)

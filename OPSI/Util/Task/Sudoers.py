@@ -1,8 +1,7 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -41,18 +40,11 @@ import codecs
 import shutil
 import time
 
+from OPSI.Config import FILE_ADMIN_GROUP
 from OPSI.Logger import Logger
 from OPSI.System.Posix import Distribution, which
 
-__version__ = '4.0.6.6'
-
 LOGGER = Logger()
-
-try:
-	from OPSI.Util.File.Opsi import OpsiConfFile
-	FILE_ADMIN_GROUP = OpsiConfFile().getOpsiFileAdminGroup()
-except Exception:
-	FILE_ADMIN_GROUP = u'pcpatch'
 
 SUDOERS_FILE = u'/etc/sudoers'
 _NO_TTY_REQUIRED_DEFAULT = u"Defaults:opsiconfd !requiretty"
@@ -165,9 +157,8 @@ def distributionRequiresNoTtyPatch():
 
 	.. versionadded:: 4.0.4.3
 
-	:returntype: bool
+	:rtype: bool
 	"""
-	distributor = Distribution().distributor
-	distributor = distributor.lower()
-	return ('scientificsl' in distributor or 'redhat' in distributor
-			or 'centos' in distributor or 'sme' in distributor)
+	distributor = Distribution().distributor.lower()
+
+	return bool('redhat' in distributor or 'centos' in distributor)

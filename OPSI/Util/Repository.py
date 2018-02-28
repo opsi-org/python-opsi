@@ -41,9 +41,10 @@ import urllib
 from OPSI.web2 import responsecode
 from OPSI.web2.dav import davxml
 
+from OPSI import __version__
+from OPSI.Exceptions import RepositoryError
 from OPSI.Logger import LOG_INFO, Logger
 from OPSI.System import mount, umount
-from OPSI.Types import RepositoryError
 from OPSI.Types import forceBool, forceFilename, forceInt, forceUnicode, forceUnicodeList
 from OPSI.Util.Message import ProgressSubject
 from OPSI.Util import md5sum, randomString
@@ -52,8 +53,6 @@ from OPSI.Util.HTTP import getSharedConnectionPool, urlsplit, HTTPResponse
 
 if os.name == 'nt':
 	from OPSI.System.Windows import getFreeDrive
-
-__version__ = '4.0.7.46'
 
 logger = Logger()
 
@@ -169,14 +168,18 @@ class Repository:
 	def addHook(self, hook):
 		if not isinstance(hook, RepositoryHook):
 			raise ValueError(u"Not a RepositoryHook: %s" % hook)
-		if not hook in self._hooks:
+
+		if hook not in self._hooks:
 			self._hooks.append(hook)
 
 	def removeHook(self, hook):
 		if not isinstance(hook, RepositoryHook):
 			raise ValueError(u"Not a RepositoryHook: %s" % hook)
-		if hook in self._hooks:
+
+		try:
 			self._hooks.remove(hook)
+		except ValueError:  # element not in list
+			pass
 
 	def attachObserver(self, observer):
 		if observer not in self._observers:
@@ -211,12 +214,16 @@ class Repository:
 
 	def _calcSpeed(self, read):
 		now = time.time()
-		if not hasattr(self, '_lastSpeedCalcBytes'):
-			self._lastSpeedCalcBytes = 0
-		if not hasattr(self, '_lastAverageSpeedCalcBytes'):
-			self._lastAverageSpeedCalcBytes = 0
-		self._lastSpeedCalcBytes += read
-		self._lastAverageSpeedCalcBytes += read
+
+		try:
+			self._lastSpeedCalcBytes += read
+		except AttributeError:
+			self._lastSpeedCalcBytes = read
+
+		try:
+			self._lastAverageSpeedCalcBytes += read
+		except AttributeError:
+			self._lastAverageSpeedCalcBytes = read
 
 		if self._lastSpeedCalcTime is not None:
 			delta = now - self._lastSpeedCalcTime
@@ -224,15 +231,16 @@ class Repository:
 				self._currentSpeed = float(self._lastSpeedCalcBytes) / float(delta)
 				self._lastSpeedCalcBytes = 0
 
-		if not hasattr(self, '_lastAverageSpeedCalcTime'):
-			self._lastAverageSpeedCalcTime = now
-			self._averageSpeed = self._currentSpeed
-		else:
+		try:
 			delta = now - self._lastAverageSpeedCalcTime
 			if delta > 1:
 				self._averageSpeed = float(self._lastAverageSpeedCalcBytes) / float(delta)
 				self._lastAverageSpeedCalcBytes = 0
 				self._lastAverageSpeedCalcTime = now
+		except AttributeError:
+			self._lastAverageSpeedCalcTime = now
+			self._averageSpeed = self._currentSpeed
+
 		self._lastSpeedCalcTime = now
 
 	def _bandwidthLimit(self):
@@ -240,125 +248,125 @@ class Repository:
 			return
 
 		now = time.time()
-		if hasattr(self, '_lastLimitCalcTime'):
-			delta = now - self._lastLimitCalcTime
-			self._lastLimitCalcTime = time.time()
-			newBufferSize = self._bufferSize
-			bwlimit = 0.0
-			if self._dynamicBandwidth and self._networkPerformanceCounter:
-				bwlimit = self._dynamicBandwidthLimit
-				totalNetworkUsage = self._getNetworkUsage()
-				if totalNetworkUsage > 0:
-					if not self._dynamicBandwidthLimit:
-						self._networkBandwidth = totalNetworkUsage
-					if not hasattr(self, '_networkUsageData'):
-						self._networkUsageData = []
-					usage = (float(self._averageSpeed) / float(totalNetworkUsage)) * 1.03
-					if usage > 1:
-						usage = 1.0
+		bwlimit = 0.0
+		if self._dynamicBandwidth and self._networkPerformanceCounter:
+			bwlimit = self._dynamicBandwidthLimit
+			totalNetworkUsage = self._getNetworkUsage()
+			if totalNetworkUsage > 0:
+				if not self._dynamicBandwidthLimit:
+					self._networkBandwidth = totalNetworkUsage
 
+				usage = (float(self._averageSpeed) / float(totalNetworkUsage)) * 1.03
+				if usage > 1:
+					usage = 1.0
+
+				try:
 					self._networkUsageData.append([now, usage])
-					if self._networkUsageData and (now - self._networkUsageData[0][0]) >= 5:
-						usage = 0.0
-						count = 0.0
-						index = -1
+				except AttributeError:
+					self._networkUsageData = [[now, usage]]
 
-						for i, element in enumerate(self._networkUsageData):
-							if now - element[0] <= 5:
-								if index == -1:
-									index = i
+				if self._networkUsageData and (now - self._networkUsageData[0][0]) >= 5:
+					usage = 0.0
+					count = 0.0
+					index = -1
 
-							if now - element[0] <= 2.0:
-								usage += element[1]
-								count += 1.0
+					for i, element in enumerate(self._networkUsageData):
+						if now - element[0] <= 5:
+							if index == -1:
+								index = i
 
-						if count > 0:
-							usage = float(usage) / float(count)
-							logger.debug(u"Current network usage %0.2f kByte/s, last measured network bandwidth %0.2f kByte/s, usage: %0.5f, dynamic limit: %0.2f kByte/s"
-									% ((float(totalNetworkUsage) / 1024), (float(self._networkBandwidth) / 1024), usage, float(bwlimit) / 1024))
+						if now - element[0] <= 2.0:
+							usage += element[1]
+							count += 1.0
 
-							if index > 1:
-								self._networkUsageData = self._networkUsageData[index-1:]
-							if self._dynamicBandwidthLimit:
-								if usage >= self._dynamicBandwidthThresholdNoLimit:
-									logger.info(u"No other traffic detected, resetting dynamically limited bandwidth, using 100%")
-									bwlimit = self._dynamicBandwidthLimit = 0.0
-									self._networkUsageData = []
-									self._fireEvent('dynamicBandwidthLimitChanged', self._dynamicBandwidthLimit)
-							else:
-								if usage <= self._dynamicBandwidthThresholdLimit:
-									if self._averageSpeed < 20000:
-										self._dynamicBandwidthLimit = bwlimit = 0.0
-										logger.debug(u"Other traffic detected, not limiting traffic because average speed is only %0.2f kByte/s" % (float(self._averageSpeed) / 1024))
+					if count > 0:
+						usage = float(usage) / float(count)
+						logger.debug(u"Current network usage %0.2f kByte/s, last measured network bandwidth %0.2f kByte/s, usage: %0.5f, dynamic limit: %0.2f kByte/s"
+								% ((float(totalNetworkUsage) / 1024), (float(self._networkBandwidth) / 1024), usage, float(bwlimit) / 1024))
+
+						if index > 1:
+							self._networkUsageData = self._networkUsageData[index-1:]
+
+						if self._dynamicBandwidthLimit:
+							if usage >= self._dynamicBandwidthThresholdNoLimit:
+								logger.info(u"No other traffic detected, resetting dynamically limited bandwidth, using 100%")
+								bwlimit = self._dynamicBandwidthLimit = 0.0
+								self._networkUsageData = []
+								self._fireEvent('dynamicBandwidthLimitChanged', self._dynamicBandwidthLimit)
+						else:
+							if usage <= self._dynamicBandwidthThresholdLimit:
+								if self._averageSpeed < 20000:
+									self._dynamicBandwidthLimit = bwlimit = 0.0
+									logger.debug(u"Other traffic detected, not limiting traffic because average speed is only %0.2f kByte/s" % (float(self._averageSpeed) / 1024))
+								else:
+									self._dynamicBandwidthLimit = bwlimit = self._averageSpeed * self._dynamicBandwidthLimitRate
+									if self._dynamicBandwidthLimit < 10000:
+										self._dynamicBandwidthLimit = bwlimit = 10000
+										logger.info(u"Other traffic detected, dynamically limiting bandwidth to minimum of %0.2f kByte/s" % (float(bwlimit) / 1024))
 									else:
-										self._dynamicBandwidthLimit = bwlimit = self._averageSpeed*self._dynamicBandwidthLimitRate
-										if self._dynamicBandwidthLimit < 10000:
-											self._dynamicBandwidthLimit = bwlimit = 10000
-											logger.info(u"Other traffic detected, dynamically limiting bandwidth to minimum of %0.2f kByte/s" % (float(bwlimit) / 1024))
-										else:
-											logger.info(u"Other traffic detected, dynamically limiting bandwidth to %0.1f%% of last average to %0.2f kByte/s" \
-												% (float(self._dynamicBandwidthLimitRate) * 100, float(bwlimit) / 1024))
-										self._fireEvent('dynamicBandwidthLimitChanged', self._dynamicBandwidthLimit)
-									self._networkUsageData = []
+										logger.info(u"Other traffic detected, dynamically limiting bandwidth to %0.1f%% of last average to %0.2f kByte/s" \
+											% (float(self._dynamicBandwidthLimitRate) * 100, float(bwlimit) / 1024))
+									self._fireEvent('dynamicBandwidthLimitChanged', self._dynamicBandwidthLimit)
+								self._networkUsageData = []
 
-			if self._maxBandwidth and (bwlimit == 0 or bwlimit > self._maxBandwidth):
-				bwlimit = float(self._maxBandwidth)
+		if self._maxBandwidth and (bwlimit == 0 or bwlimit > self._maxBandwidth):
+			bwlimit = float(self._maxBandwidth)
 
-			speed = float(self._currentSpeed)
-			if bwlimit > 0 and speed > 0:
-				factor = 1.0
-				if speed > bwlimit:
-					# Too fast
-					factor = float(speed) / float(bwlimit)
-					logger.debug(u"Transfer speed %0.2f kByte/s is to fast, limit: %0.2f kByte/s, factor: %0.5f" \
-						% ((speed / 1024), (bwlimit / 1024), factor))
+		speed = float(self._currentSpeed)
+		if bwlimit > 0 and speed > 0:
+			factor = 1.0
+			if speed > bwlimit:
+				# Too fast
+				factor = float(speed) / float(bwlimit)
+				logger.debug(u"Transfer speed %0.2f kByte/s is to fast, limit: %0.2f kByte/s, factor: %0.5f" \
+					% ((speed / 1024), (bwlimit / 1024), factor))
 
-					if factor < 1.001:
-						bandwidthSleepTime = self._bandwidthSleepTime + (0.00007 * factor)
-					elif factor < 1.01:
-						bandwidthSleepTime = self._bandwidthSleepTime + (0.0007 * factor)
-					else:
-						bandwidthSleepTime = self._bandwidthSleepTime + (0.007 * factor)
-					self._bandwidthSleepTime = (bandwidthSleepTime + self._bandwidthSleepTime) / 2
+				if factor < 1.001:
+					bandwidthSleepTime = self._bandwidthSleepTime + (0.00007 * factor)
+				elif factor < 1.01:
+					bandwidthSleepTime = self._bandwidthSleepTime + (0.0007 * factor)
 				else:
-					# Too slow
-					factor = float(bwlimit) / float(speed)
-					logger.debug(u"Transfer speed %0.2f kByte/s is to slow, limit: %0.2f kByte/s, factor: %0.5f" \
-						% ((speed / 1024), (bwlimit / 1024), factor))
-
-					if factor < 1.001:
-						bandwidthSleepTime = self._bandwidthSleepTime - (0.00006 * factor)
-					elif factor < 1.01:
-						bandwidthSleepTime = self._bandwidthSleepTime - (0.0006 * factor)
-					else:
-						bandwidthSleepTime = self._bandwidthSleepTime - (0.006 * factor)
-					self._bandwidthSleepTime = (bandwidthSleepTime + self._bandwidthSleepTime) / 2
-
-				if factor > 2:
-					self._networkUsageData = []
-
-				if self._bandwidthSleepTime <= 0.0:
-					self._bandwidthSleepTime = 0.000001
-
-				if self._bandwidthSleepTime <= 0.2:
-					self._bufferSize = int(float(self._bufferSize) * 1.03)
-					self._networkUsageData = []
-				elif self._bandwidthSleepTime > 0.3:
-					self._bufferSize = int(float(self._bufferSize) / 1.1)
-					self._bandwidthSleepTime = 0.3
-					self._networkUsageData = []
-
-				if self._bufferSize > 262144:
-					self._bufferSize = 262144
-				elif self._bufferSize < 1:
-					self._bufferSize = 1
-				logger.debug(u"Transfer speed %0.2f kByte/s, limit: %0.2f kByte/s, sleep time: %0.6f, buffer size: %s" \
-					% (speed / 1024, bwlimit / 1024, self._bandwidthSleepTime, self._bufferSize))
+					bandwidthSleepTime = self._bandwidthSleepTime + (0.007 * factor)
+				self._bandwidthSleepTime = (bandwidthSleepTime + self._bandwidthSleepTime) / 2
 			else:
+				# Too slow
+				factor = float(bwlimit) / float(speed)
+				logger.debug(u"Transfer speed %0.2f kByte/s is to slow, limit: %0.2f kByte/s, factor: %0.5f" \
+					% ((speed / 1024), (bwlimit / 1024), factor))
+
+				if factor < 1.001:
+					bandwidthSleepTime = self._bandwidthSleepTime - (0.00006 * factor)
+				elif factor < 1.01:
+					bandwidthSleepTime = self._bandwidthSleepTime - (0.0006 * factor)
+				else:
+					bandwidthSleepTime = self._bandwidthSleepTime - (0.006 * factor)
+				self._bandwidthSleepTime = (bandwidthSleepTime + self._bandwidthSleepTime) / 2
+
+			if factor > 2:
+				self._networkUsageData = []
+
+			if self._bandwidthSleepTime <= 0.0:
 				self._bandwidthSleepTime = 0.000001
-				self._bufferSize = 16384
+
+			if self._bandwidthSleepTime <= 0.2:
+				self._bufferSize = int(float(self._bufferSize) * 1.03)
+				self._networkUsageData = []
+			elif self._bandwidthSleepTime > 0.3:
+				self._bufferSize = int(float(self._bufferSize) / 1.1)
+				self._bandwidthSleepTime = 0.3
+				self._networkUsageData = []
+
+			if self._bufferSize > 262144:
+				self._bufferSize = 262144
+			elif self._bufferSize < 1:
+				self._bufferSize = 1
+
+			logger.debug(u"Transfer speed %0.2f kByte/s, limit: %0.2f kByte/s, sleep time: %0.6f, buffer size: %s" \
+				% (speed / 1024, bwlimit / 1024, self._bandwidthSleepTime, self._bufferSize))
 		else:
-			self._lastLimitCalcTime = time.time()
+			self._bandwidthSleepTime = 0.000001
+			self._bufferSize = 16384
+
 		time.sleep(self._bandwidthSleepTime)
 
 	def _transfer(self, transferDirection, src, dst, progressSubject=None, bytes=-1):
@@ -473,7 +481,7 @@ class Repository:
 				if c['name'] == filename:
 					info = c
 					return info
-			raise Exception(u'File not found')
+			raise IOError(u'File not found')
 		except Exception as error:
 			raise RepositoryError(u"Failed to get file info for '%s': %s" % (source, error))
 
@@ -521,16 +529,16 @@ class Repository:
 
 			copySrcContent = False
 
-			if source.endswith('/*.*') or source.endswith('\\*.*'):
+			if source.endswith(('/*.*', '\\*.*')):
 				source = source[:-4]
 				copySrcContent = True
 
-			elif source.endswith('/*') or source.endswith('\\*'):
+			elif source.endswith(('/*', '\\*')):
 				source = source[:-2]
 				copySrcContent = True
 
 			if copySrcContent and not self.isdir(source):
-				raise Exception(u"Source directory '%s' not found" % source)
+				raise IOError(u"Source directory '%s' not found" % source)
 
 			logger.info(u"Copying from '%s' to '%s'" % (source, destination))
 
@@ -578,7 +586,7 @@ class Repository:
 				if not os.path.exists(destination):
 					os.makedirs(destination)
 				elif os.path.isfile(destination):
-					raise Exception(u"Cannot copy directory '%s' into file '%s'" % (source, destination))
+					raise IOError(u"Cannot copy directory '%s' into file '%s'" % (source, destination))
 				elif os.path.isdir(destination):
 					if not copySrcContent:
 						destination = os.path.join(destination, info['name'])
@@ -590,7 +598,7 @@ class Repository:
 						path.extend(c['path'].split('/'))
 						targetDir = os.path.join(*path)
 						if not targetDir:
-							raise Exception(u"Bad target directory '%s'" % targetDir)
+							raise RuntimeError(u"Bad target directory '%s'" % targetDir)
 						if not os.path.isdir(targetDir):
 							os.makedirs(targetDir)
 					elif c.get('type') == 'file':
@@ -602,14 +610,14 @@ class Repository:
 							if c['size'] > 1024 * 1024:
 								sizeString = "%0.2f MByte" % (float(c['size']) / (1024 * 1024))
 							elif c['size'] > 1024:
-								sizeString = "%0.2f kByte" % (float(c['size'])/ 1024)
+								sizeString = "%0.2f kByte" % (float(c['size']) / 1024)
 							overallProgressSubject.setMessage(u"[%s/%s] %s (%s)" \
 									% (countLenFormat % fileCount, totalFiles, c['name'], sizeString))
 						path = [destination]
 						path.extend(c['path'].split('/')[:-1])
 						targetDir = os.path.join(*path)
 						if not targetDir:
-							raise Exception(u"Bad target directory '%s'" % targetDir)
+							raise RuntimeError(u"Bad target directory '%s'" % targetDir)
 						if targetDir and not os.path.isdir(targetDir):
 							os.makedirs(targetDir)
 						self.download(u'/'.join((source, c['path'])), os.path.join(targetDir, c['name']), currentProgressSubject)
@@ -617,7 +625,7 @@ class Repository:
 						if overallProgressSubject:
 							overallProgressSubject.addToState(c['size'])
 			else:
-				raise Exception(u"Failed to copy: unknown source type '%s'" % source)
+				raise RuntimeError(u"Failed to copy: unknown source type '%s'" % source)
 			logger.info(u'Copy done')
 			if overallProgressSubject:
 				overallProgressSubject.setState(size)
@@ -687,7 +695,7 @@ class FileRepository(Repository):
 				'size': long(0)
 			}
 			if not os.path.exists(source):
-				raise Exception(u'File not found')
+				raise IOError(u'File not found')
 			if os.path.isdir(source):
 				info['type'] = 'dir'
 			if os.path.isfile(source):
@@ -710,17 +718,21 @@ class FileRepository(Repository):
 
 	def content(self, source='', recursive=False):
 		source = self._preProcessPath(source)
-
-		content = []
 		srcLen = len(source)
+		content = []
+
 		def _recurse(path, content):
 			path = os.path.abspath(forceFilename(path))
 			for entry in os.listdir(path):
 				try:
-					info = {'name': entry, 'size': long(0), 'type': 'file'}
+					info = {
+						'name': entry,
+						'size': 0,
+						'type': 'file'
+					}
+
 					entry = os.path.join(path, entry)
 					info['path'] = entry[srcLen:]
-					size = 0
 					if os.path.islink(entry) and not os.path.isdir(entry):
 						pass
 					elif os.path.isfile(entry):
@@ -733,7 +745,9 @@ class FileRepository(Repository):
 							_recurse(path=entry, content=content)
 				except Exception as error:
 					logger.error(error)
+
 			return content
+
 		return _recurse(path=source, content=content)
 
 	def download(self, source, destination, progressSubject=None, startByteNumber=-1, endByteNumber=-1):
@@ -754,7 +768,8 @@ class FileRepository(Repository):
 
 		logger.debug(u"Length of binary data to download: %d bytes" % size)
 
-		if progressSubject: progressSubject.setEnd(size)
+		if progressSubject:
+			progressSubject.setEnd(size)
 
 		try:
 			with open(source, 'rb') as src:
@@ -785,7 +800,8 @@ class FileRepository(Repository):
 		size = fs[stat.ST_SIZE]
 		logger.debug(u"Length of binary data to upload: %d" % size)
 
-		if progressSubject: progressSubject.setEnd(size)
+		if progressSubject:
+			progressSubject.setEnd(size)
 
 		try:
 			with open(source, 'rb') as src:
@@ -847,7 +863,7 @@ class HTTPRepository(Repository):
 
 		(scheme, host, port, baseurl, username, password) = urlsplit(self._url)
 
-		if not scheme in ('http', 'https', 'webdav', 'webdavs'):
+		if scheme not in ('http', 'https', 'webdav', 'webdavs'):
 			raise RepositoryError(u"Bad http url: '%s'" % self._url)
 		self._protocol = scheme
 		if port:
@@ -867,7 +883,7 @@ class HTTPRepository(Repository):
 			logger.addConfidentialString(self._password)
 
 		auth = u'%s:%s' % (self._username, self._password)
-		self._auth = 'Basic '+ base64.b64encode(auth.encode('latin-1'))
+		self._auth = 'Basic ' + base64.b64encode(auth.encode('latin-1'))
 
 		self._connectionPool = getSharedConnectionPool(
 			scheme=self._protocol,
@@ -941,7 +957,7 @@ class HTTPRepository(Repository):
 					headers['range'] = 'bytes=%s-%s' % (sbn, ebn)
 				if self._proxy:
 					conn.putrequest('GET', source, skip_host=True)
-					conn.putheader('Host', "%s:%s" % (self._host,self._port))
+					conn.putheader('Host', "%s:%s" % (self._host, self._port))
 				else:
 					conn.putrequest('GET', source)
 				for key, value in headers.items():
@@ -954,7 +970,7 @@ class HTTPRepository(Repository):
 					httplib_response = conn.getresponse()
 					self._processResponseHeaders(httplib_response)
 					if httplib_response.status not in (responsecode.OK, responsecode.PARTIAL_CONTENT):
-						raise Exception(httplib_response.status)
+						raise RuntimeError(httplib_response.status)
 					size = forceInt(httplib_response.getheader('content-length', 0))
 					logger.debug(u"Length of binary data to download: %d bytes" % size)
 
@@ -1007,13 +1023,11 @@ class WebDAVRepository(HTTPRepository):
 		if not source.endswith('/'):
 			source += '/'
 
-		if recursive and self._contentCache.has_key(source):
+		if recursive and source in self._contentCache:
 			if time.time() - self._contentCache[source]['time'] > 60:
 				del self._contentCache[source]
 			else:
 				return self._contentCache[source]['content']
-
-		content = []
 
 		headers = self._headers()
 		depth = '1'
@@ -1036,18 +1050,25 @@ class WebDAVRepository(HTTPRepository):
 		if not msr.root_element.children[0].childOfType(davxml.PropertyStatus).childOfType(davxml.PropertyContainer).childOfType(davxml.ResourceType).children:
 			raise RepositoryError(u"Not a directory: '%s'" % source)
 
+		content = []
 		srcLen = len(source)
 		for child in msr.root_element.children[1:]:
 			pContainer = child.childOfType(davxml.PropertyStatus).childOfType(davxml.PropertyContainer)
-			info = {'size': long(0), 'type': 'file'}
-			info['path'] = unicode(urllib.unquote(child.childOfType(davxml.HRef).children[0].data[srcLen:]), encoding)
-			info['name'] = unicode(pContainer.childOfType(davxml.DisplayName).children[0].data, encoding)
+			info = {
+				'size': 0,
+				'type': 'file',
+				'path': unicode(urllib.unquote(child.childOfType(davxml.HRef).children[0].data[srcLen:]), encoding),
+				'name': unicode(pContainer.childOfType(davxml.DisplayName).children[0].data, encoding),
+			}
+
 			if str(pContainer.childOfType(davxml.GETContentLength)) != 'None':
 				info['size'] = long(str(pContainer.childOfType(davxml.GETContentLength)))
+
 			if pContainer.childOfType(davxml.ResourceType).children:
 				info['type'] = 'dir'
 				if info['path'].endswith('/'):
 					info['path'] = info['path'][:-1]
+
 			content.append(info)
 
 		if recursive:
@@ -1055,6 +1076,7 @@ class WebDAVRepository(HTTPRepository):
 				'time': time.time(),
 				'content': content
 			}
+
 		return content
 
 	def upload(self, source, destination, progressSubject=None):
@@ -1104,7 +1126,7 @@ class WebDAVRepository(HTTPRepository):
 
 			self._processResponseHeaders(response)
 			if response.status not in (responsecode.CREATED, responsecode.NO_CONTENT):
-				raise Exception(response.status)
+				raise RuntimeError(response.status)
 		except Exception as error:
 			logger.logException(error)
 			if conn:
@@ -1254,7 +1276,7 @@ class DepotToLocalDirectorySychronizer(object):
 			relSource = s.split(u'/', 1)[1]
 			if relSource == self._productId + u'.files':
 				continue
-			if not self._fileInfo.has_key(relSource):
+			if relSource not in self._fileInfo:
 				continue
 			if f['type'] == 'dir':
 				self._synchronizeDirectories(s, d, progressSubject)
@@ -1274,7 +1296,6 @@ class DepotToLocalDirectorySychronizer(object):
 						logger.debug(u"Destination file '%s' already exists (size: %s, md5sum: %s)" % (d, size, md5s))
 						localSize = os.path.getsize(d)
 						if (localSize == size) and (md5s == self._fileInfo[relSource]['md5sum']):
-							#if progressSubject: progressSubject.addToState(size)
 							continue
 
 				if progressSubject:
@@ -1319,7 +1340,7 @@ class DepotToLocalDirectorySychronizer(object):
 				if md5s != self._fileInfo[relSource]['md5sum']:
 					error = u"Failed to download '%s': MD5sum mismatch (local:%s != remote:%s)" % (f['name'], md5s, self._fileInfo[relSource]['md5sum'])
 					logger.error(error)
-					raise Exception(error)
+					raise RuntimeError(error)
 
 	def synchronize(self, productProgressObserver=None, overallProgressObserver=None):
 		if not self._productIds:
@@ -1355,8 +1376,11 @@ class DepotToLocalDirectorySychronizer(object):
 
 				size = 0
 				for value in self._fileInfo.values():
-					if 'size' in value:
+					try:
 						size += int(value['size'])
+					except KeyError:
+						pass
+
 				productProgressSubject.setMessage(_(u"Synchronizing product %s (%.2f kByte)") % (self._productId, (size / 1024)))
 				productProgressSubject.setEnd(size)
 				productProgressSubject.setEndChangable(False)
@@ -1408,70 +1432,9 @@ class DepotToLocalDirectorySychronizer(object):
 				raise
 
 			overallProgressSubject.addToState(1)
-			if productProgressObserver: productProgressSubject.detachObserver(productProgressObserver)
 
-		if overallProgressObserver: overallProgressSubject.detachObserver(overallProgressObserver)
+			if productProgressObserver:
+				productProgressSubject.detachObserver(productProgressObserver)
 
-
-#class ProductSynchronizer(object):
-#	def __init__(self, configService, depotId, destinationDirectory, productIds=[], maxBandwidth=0, dynamicBandwidth=False):
-#		self._configService        = configService
-#		self._depotId              = depotId
-#		self._destinationDirectory = destinationDirectory
-#		self._productIds           = productIds
-#		self._maxBandwidth         = maxBandwidth
-#		self._dynamicBandwidth     = dynamicBandwidth
-#
-#	def synchronize(self):
-#		try:
-#			depot = self._configService.host_getObjects(id = self._depotId)[0]
-#		except Exception, e:
-#			raise Exception(u"Failed to get info for depot '%s': %s" % (self._depotId, e))
-#		depot.depotWebdavUrl
-#
-#		for productId in self._productIds:
-#			logger.notice(u"Syncing product %s from depot %s to local directory %s" \
-#						% (productId, self._sourceDepot, self._destinationDirectory))
-#
-#			productDestinationDirectory = os.path.join(self._destinationDirectory, productId)
-#			if not os.path.isdir(productDestinationDirectory):
-#				os.mkdir(productDestinationDirectory)
-#
-#			logger.info(u"Downloading package content file")
-#			packageContentFile = os.path.join(productDestinationDirectory, u'%s.files' % self._productId)
-#			self._sourceDepot.download(u'%s/%s.files' % (self._productId, self._productId), packageContentFile)
-#			self._fileInfo = PackageContentFile(packageContentFile).parse()
-#
-#			bytes = 0
-#			for value in self._fileInfo.values():
-#				if value.has_key('size'):
-#					bytes += int(value['size'])
-#			productProgressSubject.setMessage( _(u"Synchronizing product %s (%.2f kByte)") % (self._productId, (bytes/1024)) )
-#			productProgressSubject.setEnd(bytes)
-
-
-#class OpsiDepot(object):
-#	def __init__(self, serviceUrl, depotId, username, password):
-#		from OPSI.Backend.JSONRPC import JSONRPCBackend
-#
-#		self._configService = JSONRPCBackend(address = serviceUrl, username = username, password = password, connectOnInit = True)
-#		self._depotId = depotId
-#		try:
-#			self._depot = self._configService.host_getObjects(id = self._depotId)[0]
-#			self._depotLocalDir = self._depot.depotLocalUrl.replace('file://', '')
-#		except Exception, e:
-#			raise Exception(u"Failed to get info for depot '%s': %s" % (self._depotId, e))
-#		self._repository = getRepository(url = self._depot.depotWebdavUrl, username = username, password = password)
-#
-#	def __getattr__(self, name):
-#		if hasattr(self._repository, name):
-#			return getattr(self._repository, name)
-#		return self.__dict__[name]
-#
-#	def download(self, source, destination, progressSubject=None, rangeStart=-1, rangeEnd=-1):
-#		if os.path.exists(destination):
-#			depotLocalFile = self._depotLocalDir + source
-#			print self._configService.depot_librsyncSignature(depotLocalFile)
-#		else:
-#			return self._repository.download(source = source, destination = destination, progressSubject = progressSubject, rangeStart = rangeStart)
-#
+		if overallProgressObserver:
+			overallProgressSubject.detachObserver(overallProgressObserver)

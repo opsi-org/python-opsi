@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
@@ -31,12 +30,12 @@ from apsw import (
 	SQLITE_OPEN_CREATE, SQLITE_CONFIG_MULTITHREAD, SQLITE_OPEN_READWRITE,
 	Connection)
 
+from OPSI.Exceptions import BackendBadValueError
 from OPSI.Logger import Logger
 from OPSI.Types import forceBool, forceFilename, forceUnicode
-from OPSI.Types import BackendBadValueError
 from OPSI.Backend.SQL import SQL, SQLBackend, SQLBackendObjectModificationTracker
 
-__version__ = '4.0.7.53'
+__all__ = ('SQLite', 'SQLiteBackend', 'SQLiteObjectBackendModificationTracker')
 
 logger = Logger()
 

@@ -1,5 +1,5 @@
-#!/usr/bin/env python
-#-*- coding: utf-8 -*-
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
 # Copyright (C) 2013-2016 uib GmbH <info@uib.de>
@@ -23,7 +23,7 @@ Backend mixin for testing software / hardware audit functionality.
 :license: GNU Affero General Public License version 3
 """
 
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import
 
 from OPSI.Object import (AuditSoftware, AuditSoftwareOnClient,
     AuditHardware, AuditHardwareOnHost, AuditSoftwareToLicensePool)

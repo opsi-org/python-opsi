@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2015-2016  uib GmbH <info@uib.de>
+# Copyright (C) 2015-2017  uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -36,7 +35,8 @@ def compressionLevel(request):
 
 @pytest.fixture(
     params=[u"Mötörheäd!", "Das ist ein Test und so."],
-    ids=["unicode", "str"]
+    ids=["unicode", "str"],
+    scope="session"
 )
 def text(request):
     yield request.param
@@ -46,7 +46,8 @@ def text(request):
     (gzipEncode, gzipDecode),
     (deflateEncode, deflateDecode)
 ],
-    ids=["gzip", "deflate"]
+    ids=["gzip", "deflate"],
+    scope="session",
 )
 def compressionFunctions(request):
     yield request.param

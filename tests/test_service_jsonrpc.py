@@ -1,8 +1,8 @@
 #! /usr/bin/env python
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2016 uib GmbH <info@uib.de>
+# Copyright (C) 2016-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -31,14 +31,14 @@ from .helpers import mock
 
 @pytest.mark.parametrize("invalidRpcInfo", [
 	None,
-    {},
-    {"id": 0},
-    {"tid": 0},
-    {"id": 1},
-    {"id": 1, "method": ""},
-    {"id": 1, "method": None},
-    {"id": 1, "method": 0},
-    {"id": 1, "method": False},
+	{},
+	{"id": 0},
+	{"tid": 0},
+	{"id": 1},
+	{"id": 1, "method": ""},
+	{"id": 1, "method": None},
+	{"id": 1, "method": 0},
+	{"id": 1, "method": False},
 ])
 def testJsonRpcRequiresTransactionId(invalidRpcInfo):
 	with pytest.raises(Exception):  # TODO: better Exception class
@@ -98,7 +98,6 @@ def testExecutingMethodOnInstance():
 	assert not j.exception
 
 	response = j.getResponse()
-	print(response)
 	assert response
 
 	assert response['id'] == 42

@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -29,14 +28,15 @@ import time
 
 import pytest
 
-from OPSI.Types import (BackendError, OpsiError, OpsiProductOrderingError,
+from OPSI.Exceptions import (BackendError, OpsiError, OpsiProductOrderingError,
     OpsiBackupFileError, OpsiBackupFileNotFound, OpsiBackupBackendNotFound,
     OpsiAuthenticationError, OpsiServiceVerificationError, OpsiBadRpcError,
-    OpsiRpcError, OpsiConnectionError, OpsiTimeoutError, OpsiVersionError,
+    OpsiRpcError, OpsiConnectionError, OpsiTimeoutError,
     BackendIOError, BackendConfigurationError, BackendReferentialIntegrityError,
     BackendBadValueError, BackendMissingDataError, BackendAuthenticationError,
     BackendPermissionDeniedError, BackendTemporaryError,
     BackendUnaccomplishableError, BackendModuleDisabledError,
+    BackendUnableToConnectError,
     LicenseConfigurationError, LicenseMissingError, RepositoryError)
 
 
@@ -46,7 +46,7 @@ from OPSI.Types import (BackendError, OpsiError, OpsiProductOrderingError,
         OpsiBackupFileError, OpsiBackupFileNotFound,
         OpsiBackupBackendNotFound, OpsiAuthenticationError,
         OpsiServiceVerificationError, OpsiBadRpcError, OpsiRpcError,
-        OpsiConnectionError, OpsiTimeoutError, OpsiVersionError,
+        OpsiConnectionError, OpsiTimeoutError,
         BackendIOError, BackendConfigurationError,
         BackendReferentialIntegrityError, BackendBadValueError,
         BackendMissingDataError, BackendAuthenticationError,

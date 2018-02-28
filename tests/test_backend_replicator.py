@@ -25,7 +25,6 @@ Testing backend replication.
 
 from __future__ import absolute_import
 
-import os
 import sys
 
 import pytest
@@ -90,7 +89,7 @@ def checkBackendDataIsEqual(first, second, checkAuditData=True):
     compareResultsFromBackendMethod(first, second, 'licenseOnClient_getObjects')
     compareResultsFromBackendMethod(first, second, 'auditSoftwareToLicensePool_getObjects')
 
-    if checkAuditData and sys.version_info >= (2, 7):
+    if checkAuditData:
         compareResultsFromBackendMethod(first, second, 'auditHardware_getObjects')
         compareResultsFromBackendMethod(first, second, 'auditSoftware_getObjects')
         compareResultsFromBackendMethod(first, second, 'auditHardwareOnHost_getObjects')

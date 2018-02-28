@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
@@ -27,21 +26,25 @@ Depotserver backend.
 
 import os
 
+from OPSI.Exceptions import (
+	BackendBadValueError, BackendConfigurationError,
+	BackendError, BackendIOError, BackendMissingDataError,
+	BackendTemporaryError, BackendUnaccomplishableError)
 from OPSI.Logger import Logger, LOG_DEBUG
-from OPSI.Types import (forceBool, forceDict, forceFilename, forceHostId,
+from OPSI.Types import (
+	forceBool, forceDict, forceFilename, forceHostId,
 	forceUnicode, forceUnicodeLower)
 from OPSI.Types import forceProductId as forceProductIdFunc
-from OPSI.Types import (BackendIOError, BackendError, BackendTemporaryError,
-	BackendMissingDataError, BackendBadValueError)
 from OPSI.Object import ProductOnDepot, ProductPropertyState
-from OPSI.Backend.Backend import LOG_DIR, OPSI_GLOBAL_CONF, ExtendedBackend
+from OPSI.Backend.Backend import LOG_DIR, ExtendedBackend
 from OPSI.System import getDiskSpaceUsage
 from OPSI.Util.Product import ProductPackageFile
-from OPSI.Util import (compareVersions, getfqdn, md5sum, librsyncSignature,
+from OPSI.Util import (
+	compareVersions, getfqdn, md5sum, librsyncSignature,
 	librsyncPatchFile, librsyncDeltaFile, removeDirectory)
 from OPSI.Util.File import ZsyncFile
 
-__version__ = '4.0.7.25'
+__all__ = ('DepotserverBackend', 'DepotserverPackageManager')
 
 logger = Logger()
 
@@ -55,7 +58,7 @@ class DepotserverBackend(ExtendedBackend):
 		self._packageLog = os.path.join(LOG_DIR, 'package.log')
 		self._sshRSAPublicKeyFile = u'/etc/ssh/ssh_host_rsa_key.pub'
 
-		self._depotId = forceHostId(getfqdn(conf=OPSI_GLOBAL_CONF))
+		self._depotId = forceHostId(getfqdn())
 		if not self._context.host_getIdents(id=self._depotId):  # pylint: disable=maybe-no-member
 			raise BackendMissingDataError(u"Depot '%s' not found in backend" % self._depotId)
 		self._packageManager = DepotserverPackageManager(self)
@@ -64,13 +67,27 @@ class DepotserverBackend(ExtendedBackend):
 		with open(self._sshRSAPublicKeyFile, 'r') as publicKey:
 			return forceUnicode(publicKey.read())
 
-	def depot_getMD5Sum(self, filename):
+	def depot_getMD5Sum(self, filename, forceCalculation=False):
+		checksum = None
 		try:
-			res = md5sum(filename)
-			logger.info(u"MD5sum of file '%s' is '%s'" % (filename, res))
-			return res
-		except Exception as e:
-			raise BackendIOError(u"Failed to get md5sum: %s" % e)
+			if not forceBool(forceCalculation):
+				hashFile = filename + '.md5'
+
+				try:
+					with open(hashFile) as fileHandle:
+						checksum = fileHandle.read()
+
+					logger.info(u"Using pre-calculated MD5sum from '{0}'.", hashFile)
+				except (OSError, IOError):
+					pass
+
+			if not checksum:
+				checksum = md5sum(filename)
+
+			logger.info(u"MD5sum of file '{0}' is '{1}'", filename, checksum)
+			return checksum
+		except Exception as error:
+			raise BackendIOError(u"Failed to get md5sum: %s" % error)
 
 	def depot_librsyncSignature(self, filename):
 		try:
@@ -111,7 +128,7 @@ class DepotserverBackend(ExtendedBackend):
 
 	def depot_createMd5SumFile(self, filename, md5sumFilename):
 		if not os.path.exists(filename):
-			raise Exception(u"File not found: %s" % filename)
+			raise BackendIOError(u"File not found: %s" % filename)
 		logger.info(u"Creating md5sum file '%s'" % md5sumFilename)
 		md5 = md5sum(filename)
 		with open(md5sumFilename, 'w') as md5file:
@@ -119,7 +136,7 @@ class DepotserverBackend(ExtendedBackend):
 
 	def depot_createZsyncFile(self, filename, zsyncFilename):
 		if not os.path.exists(filename):
-			raise Exception(u"File not found: %s" % filename)
+			raise BackendIOError(u"File not found: %s" % filename)
 		logger.info(u"Creating zsync file '%s'" % zsyncFilename)
 		zsyncFile = ZsyncFile(zsyncFilename)
 		zsyncFile.generate(filename)
@@ -128,13 +145,13 @@ class DepotserverBackend(ExtendedBackend):
 class DepotserverPackageManager(object):
 	def __init__(self, depotBackend):
 		if not isinstance(depotBackend, DepotserverBackend):
-			raise Exception(u"DepotserverPackageManager needs instance of DepotserverBackend as backend, got %s" % depotBackend.__class__.__name__)
+			raise BackendConfigurationError(u"DepotserverPackageManager needs instance of DepotserverBackend as backend, got %s" % depotBackend.__class__.__name__)
 		self._depotBackend = depotBackend
 		logger.setLogFile(self._depotBackend._packageLog, object=self)
 
 	def installPackage(self, filename, force=False, propertyDefaultValues={}, tempDir=None, forceProductId=None, suppressPackageContentFileGeneration=False):
 		depotId = self._depotBackend._depotId
-		logger.notice(u"=================================================================================================")
+		logger.info(u"=================================================================================================")
 		if forceProductId:
 			forceProductId = forceProductIdFunc(forceProductId)
 			logger.notice(u"Installing package file '{filename}' as '{productId}' on depot '{depotId}'",
@@ -178,13 +195,13 @@ class DepotserverPackageManager(object):
 			try:
 				product = ppf.packageControlFile.getProduct()
 				if forceProductId:
-					logger.notice(u"Forcing product id '{0}'", forceProductId)
+					logger.info(u"Forcing product id '{0}'", forceProductId)
 					product.setId(forceProductId)
 					ppf.packageControlFile.setProduct(product)
 
 				productId = product.getId()
 
-				logger.notice(u"Creating product in backend")
+				logger.info(u"Creating product in backend")
 				self._depotBackend._context.product_createObjects(product)
 
 				logger.notice(u"Locking product '%s' on depot '%s'" % (product.getId(), depotId))
@@ -205,20 +222,17 @@ class DepotserverPackageManager(object):
 				logger.info(u"Creating product on depot %s" % productOnDepot)
 				self._depotBackend._context.productOnDepot_createObjects(productOnDepot)
 
-				logger.notice(u"Checking package dependencies")
+				logger.info(u"Checking package dependencies")
 				self.checkDependencies(ppf)
 
-				logger.notice(u"Running preinst script")
+				logger.info(u"Running preinst script")
 				for line in ppf.runPreinst(({'DEPOT_ID': depotId})):
 					logger.info(u"[preinst] {0}", line)
 
-				logger.notice(u"Unpacking package files")
-				if ppf.packageControlFile.getIncrementalPackage():
-					logger.info(u"Incremental package, not deleting old client-data files")
-				else:
-					logger.info(u"Deleting old client-data dir")
-					ppf.deleteProductClientDataDir()
+				logger.info(u"Deleting old client-data dir")
+				ppf.deleteProductClientDataDir()
 
+				logger.info(u"Unpacking package files")
 				ppf.extractData()
 
 				logger.info(u"Updating product dependencies of product %s" % product)
@@ -308,7 +322,7 @@ class DepotserverPackageManager(object):
 				if productPropertyStatesToDelete:
 					self._depotBackend._context.productPropertyState_deleteObjects(productPropertyStatesToDelete)
 
-				logger.notice(u"Setting product property states in backend")
+				logger.info(u"Setting product property states in backend")
 				productPropertyStates = []
 				for productProperty in productProperties:
 					productPropertyStates.append(
@@ -324,12 +338,16 @@ class DepotserverPackageManager(object):
 					if productPropertyState.propertyId in propertyDefaultValues:
 						try:
 							productPropertyState.setValues(propertyDefaultValues[productPropertyState.propertyId])
-						except Exception as e:
-							logger.error(u"Failed to set default values to %s for productPropertyState %s: %s" \
-									% (propertyDefaultValues[productPropertyState.propertyId], productPropertyState, e) )
+						except Exception as installationError:
+							logger.error(
+								u"Failed to set default values to {0} for productPropertyState {1}: {2}",
+								propertyDefaultValues[productPropertyState.propertyId],
+								productPropertyState,
+								installationError
+							)
 				self._depotBackend._context.productPropertyState_createObjects(productPropertyStates)
 
-				logger.notice(u"Running postinst script")
+				logger.info(u"Running postinst script")
 				for line in ppf.runPostinst({'DEPOT_ID': depotId}):
 					logger.info(u"[postinst] {0}", line)
 
@@ -341,8 +359,13 @@ class DepotserverPackageManager(object):
 				ppf.setAccessRights()
 				ppf.cleanup()
 
-				logger.notice(u"Unlocking product '%s_%s-%s' on depot '%s'" \
-							% (productOnDepot.getProductId(), productOnDepot.getProductVersion(), productOnDepot.getPackageVersion(), depotId))
+				logger.notice(
+					u"Unlocking product '{0}_{1}-{2}' on depot '{3}'",
+					productOnDepot.getProductId(),
+					productOnDepot.getProductVersion(),
+					productOnDepot.getPackageVersion(),
+					depotId
+				)
 				productOnDepot.setLocked(False)
 				self._depotBackend._context.productOnDepot_updateObject(productOnDepot)
 
@@ -426,13 +449,13 @@ class DepotserverPackageManager(object):
 					logger.error("Cleanup failed: {0!r}", cleanupError)
 
 				raise installingPackageError
-		except Exception as e:
-			logger.logException(e)
-			raise BackendError(u"Failed to install package '%s' on depot '%s': %s" % (filename, depotId, e))
+		except Exception as installationError:
+			logger.logException(installationError)
+			raise BackendError(u"Failed to install package '%s' on depot '%s': %s" % (filename, depotId, installationError))
 
 	def uninstallPackage(self, productId, force=False, deleteFiles=True):
 		depotId = self._depotBackend._depotId
-		logger.notice(u"=================================================================================================")
+		logger.info(u"=================================================================================================")
 		logger.notice(u"Uninstalling product '%s' on depot '%s'" % (productId, depotId))
 		try:
 			productId = forceProductIdFunc(productId)
@@ -462,7 +485,7 @@ class DepotserverPackageManager(object):
 					raise BackendBadValueError(u"Value '%s' not allowed for depot local url (has to start with 'file:///')" % depot.depotLocalUrl)
 
 				for f in os.listdir(depot.depotLocalUrl[7:]):
-					if (f.lower() == productId.lower()):
+					if f.lower() == productId.lower():
 						clientDataDir = os.path.join(depot.depotLocalUrl[7:], f)
 						logger.info("Deleting client data dir '%s'" % clientDataDir)
 						removeDirectory(clientDataDir)
@@ -476,7 +499,7 @@ class DepotserverPackageManager(object):
 		for dependency in productPackageFile.packageControlFile.getPackageDependencies():
 			productOnDepots = self._depotBackend._context.productOnDepot_getObjects(depotId=self._depotBackend._depotId, productId=dependency['package'])
 			if not productOnDepots:
-				raise Exception(u"Dependent package '%s' not installed" % dependency['package'])
+				raise BackendUnaccomplishableError(u"Dependent package '%s' not installed" % dependency['package'])
 
 			if not dependency['version']:
 				logger.info(u"Fulfilled product dependency '%s'" % dependency)
@@ -488,4 +511,4 @@ class DepotserverPackageManager(object):
 			if compareVersions(availableVersion, dependency['condition'], dependency['version']):
 				logger.info(u"Fulfilled package dependency %s (available version: %s)" % (dependency, availableVersion))
 			else:
-				raise Exception(u"Unfulfilled package dependency %s (available version: %s)" % (dependency, availableVersion))
+				raise BackendUnaccomplishableError(u"Unfulfilled package dependency %s (available version: %s)" % (dependency, availableVersion))

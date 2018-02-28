@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This module is part of the desktop management solution opsi
@@ -36,15 +35,27 @@ import collections
 import copy as pycopy
 import inspect
 import json
-import new
 import os
 import random
 import re
 import threading
 import time
+import types
 import warnings
+from contextlib import contextmanager
 from hashlib import md5
 from twisted.conch.ssh import keys
+
+from OPSI import __version__ as LIBRARY_VERSION
+from OPSI.Logger import Logger
+from OPSI.Exceptions import *  # this is needed for dynamic loading
+from OPSI.Types import *  # this is needed for dynamic loading
+from OPSI.Object import *  # this is needed for dynamic loading
+from OPSI.Util import (
+	blowfishEncrypt, blowfishDecrypt, compareVersions,
+	getfqdn, removeUnit, timestamp)
+from OPSI.Util.File import ConfigFile
+import OPSI.SharedAlgorithm
 
 if os.name == 'posix':
 	with warnings.catch_warnings():
@@ -56,22 +67,15 @@ if os.name == 'posix':
 			from OPSI.ldaptor.protocols import pureldap
 			from OPSI.ldaptor import ldapfilter
 
-from OPSI.Logger import Logger
-from OPSI.Types import BackendError, BackendBadValueError
-from OPSI.Types import *  # this is needed for dynamic loading
-from OPSI.Object import *  # this is needed for dynamic loading
-from OPSI.Util import (blowfishEncrypt, blowfishDecrypt, compareVersions,
-	getfqdn, removeUnit, timestamp)
-from OPSI.Util.File import ConfigFile
-import OPSI.SharedAlgorithm
+__all__ = (
+	'getArgAndCallString', 'temporaryBackendOptions',
+	'DeferredCall', 'Backend', 'ExtendedBackend', 'ConfigDataBackend',
+	'ExtendedConfigDataBackend',
+	'ModificationTrackingBackend', 'BackendModificationListener'
+)
 
-__version__ = '4.0.7.55'
-
-logger = Logger()
-OPSI_VERSION_FILE = u'/etc/opsi/version'
 OPSI_MODULES_FILE = u'/etc/opsi/modules'
 OPSI_PASSWD_FILE = u'/etc/opsi/passwd'
-OPSI_GLOBAL_CONF = u'/etc/opsi/global.conf'
 LOG_DIR = u'/var/log/opsi'
 LOG_TYPES = {  # key = logtype, value = requires objectId for read
 	'bootimage': True,
@@ -79,7 +83,10 @@ LOG_TYPES = {  # key = logtype, value = requires objectId for read
 	'instlog': True,
 	'opsiconfd': False,
 	'userlogin': True,
+	'winpe': True,
 }
+
+logger = Logger()
 
 try:
 	with open(os.path.join('/etc', 'opsi', 'opsiconfd.conf')) as config:
@@ -91,7 +98,7 @@ try:
 				DEFAULT_MAX_LOGFILE_SIZE = logSize
 				break
 		else:
-			raise Exception("No custom setting found.")
+			raise ValueError("No custom setting found.")
 except Exception as error:
 	logger.debug("Failed to set MAX LOG SIZE from config: {0}".format(error))
 	DEFAULT_MAX_LOGFILE_SIZE = 5000000
@@ -133,6 +140,16 @@ def getArgAndCallString(method):
 	return (u', '.join(argString), u', '.join(callString))
 
 
+@contextmanager
+def temporaryBackendOptions(backend, **options):
+	oldOptions = backend.backend_getOptions()
+	try:
+		backend.backend_setOptions(options)
+		yield
+	finally:
+		backend.backend_setOptions(oldOptions)
+
+
 class DeferredCall(object):
 	def __init__(self, callback=None):
 		self.error = None
@@ -160,6 +177,9 @@ class DeferredCall(object):
 
 
 class Backend:
+	"""
+	Base backend.
+	"""
 
 	matchCache = {}
 
@@ -178,8 +198,8 @@ This defaults to ``self``.
 		self._username = None
 		self._password = None
 		self._context = self
+		self._opsiVersion = LIBRARY_VERSION
 
-		self._opsiVersionFile = OPSI_VERSION_FILE
 		self._opsiModulesFile = OPSI_MODULES_FILE
 
 		for (option, value) in kwargs.items():
@@ -195,16 +215,13 @@ This defaults to ``self``.
 				logger.info(u"Backend context was set to %s" % self._context)
 			elif option == 'opsimodulesfile':
 				self._opsiModulesFile = forceFilename(value)
-			elif option == 'opsiversionfile':
-				self._opsiVersionFile = forceFilename(value)
 		self._options = {}
 
-		try:
-			with codecs.open(self._opsiVersionFile, 'r', 'utf-8') as f:
-				self._opsiVersion = f.readline().strip()
-		except Exception as error:
-			logger.error(u"Failed to read version info from file {0!r}: {1}".format(self._opsiVersionFile, error))
-			self._opsiVersion = 'unknown'
+	def __enter__(self):
+		return self
+
+	def __exit__(self, exc_type, exc_value, traceback):
+		self.backend_exit()
 
 	def _setContext(self, context):
 		"""Setting the context backend."""
@@ -283,7 +300,7 @@ This defaults to ``self``.
 					# No match, we can stop further checks.
 					return False
 			except Exception as err:
-				raise Exception(
+				raise BackendError(
 					u"Testing match of filter {0!r} of attribute {1!r} with "
 					u"value {2!r} failed: {error}".format(
 						filter[attribute], attribute, value, error=err
@@ -319,6 +336,15 @@ This defaults to ``self``.
 		return self._options
 
 	def backend_getInterface(self):
+		"""
+		Returns what methods are available and the signatures they use.
+
+		These methods are represented as a dict with the following keys: \
+		*name*, *params*, *args*, *varargs*, *keywords*, *defaults*.
+
+
+		:returntype: [{},]
+		"""
 		methods = {}
 		for methodName, function in inspect.getmembers(self, inspect.ismethod):
 			if methodName.startswith('_'):
@@ -326,12 +352,9 @@ This defaults to ``self``.
 				continue
 
 			args, varargs, keywords, defaults = inspect.getargspec(function)
-			if args:
-				params = [arg for arg in forceList(args) if arg != 'self']
-			else:
-				params = []
+			params = [arg for arg in args if arg != 'self']
 
-			if defaults is not None and len(defaults) > 0:
+			if defaults is not None:
 				offset = len(params) - len(defaults)
 				for i in xrange(len(defaults)):
 					index = offset + i
@@ -360,44 +383,44 @@ This defaults to ``self``.
 
 		:rtype: dict
 		"""
-		modules = {}
+		modules = {'valid': False}
 		helpermodules = {}
+
 		try:
-			modules['valid'] = False
-			f = codecs.open(self._opsiModulesFile, 'r', 'utf-8')
-			for line in f.readlines():
-				line = line.strip()
-				if '=' not in line:
-					logger.error(u"Found bad line '%s' in modules file '%s'" % (line, self._opsiModulesFile))
-					continue
-				(module, state) = line.split('=', 1)
-				module = module.strip().lower()
-				state = state.strip()
-				if module in ('signature', 'customer', 'expires'):
-					modules[module] = state
-					continue
-				state = state.lower()
-				if state not in ('yes', 'no'):
-					try:
-						helpermodules[module] = state
-						state = int(state)
-					except ValueError:
+			with codecs.open(self._opsiModulesFile, 'r', 'utf-8') as modulesFile:
+				for line in modulesFile:
+					line = line.strip()
+					if '=' not in line:
 						logger.error(u"Found bad line '%s' in modules file '%s'" % (line, self._opsiModulesFile))
 						continue
-				if isinstance(state, int):
-					modules[module] = (state > 0)
-				else:
-					modules[module] = (state == 'yes')
-			f.close()
+					(module, state) = line.split('=', 1)
+					module = module.strip().lower()
+					state = state.strip()
+					if module in ('signature', 'customer', 'expires'):
+						modules[module] = state
+						continue
+					state = state.lower()
+					if state not in ('yes', 'no'):
+						try:
+							helpermodules[module] = state
+							state = int(state)
+						except ValueError:
+							logger.error(u"Found bad line '%s' in modules file '%s'" % (line, self._opsiModulesFile))
+							continue
+					if isinstance(state, int):
+						modules[module] = (state > 0)
+					else:
+						modules[module] = (state == 'yes')
+
 			if not modules.get('signature'):
 				modules = {'valid': False}
-				raise Exception(u"Signature not found")
+				raise ValueError(u"Signature not found")
 			if not modules.get('customer'):
 				modules = {'valid': False}
-				raise Exception(u"Customer not found")
+				raise ValueError(u"Customer not found")
 			if (modules.get('expires', '') != 'never') and (time.mktime(time.strptime(modules.get('expires', '2000-01-01'), "%Y-%m-%d")) - time.time() <= 0):
 				modules = {'valid': False}
-				raise Exception(u"Signature expired")
+				raise ValueError(u"Signature expired")
 			publicKey = keys.Key.fromString(data=base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
 			data = u''
 			mks = modules.keys()
@@ -417,8 +440,8 @@ This defaults to ``self``.
 
 				data += u'%s = %s\r\n' % (module.lower().strip(), val)
 			modules['valid'] = bool(publicKey.verify(md5(data).digest(), [long(modules['signature'])]))
-		except Exception as e:
-			logger.warning(u"Failed to read opsi modules file '%s': %s" % (self._opsiModulesFile, e))
+		except Exception as error:
+			logger.info(u"Failed to read opsi modules file '%s': %s" % (self._opsiModulesFile, error))
 
 		return {
 			"opsiVersion": self._opsiVersion,
@@ -426,14 +449,13 @@ This defaults to ``self``.
 			"realmodules": helpermodules
 		}
 
-	def backend_getSharedAlgorithm(self, function):
-		raise BackendError(
-			u"This function has been removed. "
-			u"If you rely on this feature please get in touch with us "
-			u"on the forums - https://forum.opsi.org/"
-		)
-
 	def backend_exit(self):
+		"""
+		Exit the backend.
+
+		This method should be used to close connections or clean up \
+		used resources.
+		"""
 		pass
 
 	def __repr__(self):
@@ -480,7 +502,7 @@ class ExtendedBackend(Backend):
 			argString, callString = getArgAndCallString(functionRef)
 
 			exec(u'def %s(self, %s): return self._executeMethod("%s", %s)' % (methodName, argString, methodName, callString))
-			setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
+			setattr(self, methodName, types.MethodType(eval(methodName), self))
 
 	def _executeMethod(self, methodName, **kwargs):
 		logger.debug(u"ExtendedBackend {0!r}: executing {1!r} on backend {2!r}", self, methodName, self._backend)
@@ -561,7 +583,7 @@ containing the localisation of the hardware audit.
 				logger.info(u'Logsize limited to: {0}'.format(self._maxLogfileSize))
 
 		if not self._depotId:
-			self._depotId = getfqdn(conf=OPSI_GLOBAL_CONF)
+			self._depotId = getfqdn()
 		self._depotId = forceHostId(self._depotId)
 
 		self._options['additionalReferentialIntegrityChecks'] = True
@@ -599,6 +621,29 @@ containing the localisation of the hardware audit.
 *backend_createBase*.
 		"""
 		pass
+
+	def backend_getSystemConfiguration(self):
+		"""
+		Returns current system configuration.
+
+		This holds information about server-side settings that may be
+		relevant for clients.
+
+		Under the key `log` information about log settings will be
+		returned in form of a dict.
+		In it under `size_limit` you will find the amount of bytes
+		currently allowed as maximum log size.
+		Under `types` you will find a list with currently supported log
+		types.
+
+		:rtype: dict
+		"""
+		return {
+			"log": {
+				"size_limit": DEFAULT_MAX_LOGFILE_SIZE,
+				"types": [logType for logType in LOG_TYPES]
+			}
+		}
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Logs                                                                                      -
@@ -654,7 +699,7 @@ overwrite the log.
 
 				amountToReadFromLog = self._maxLogfileSize - len(data)
 
-				if 0 < amountToReadFromLog and amountToReadFromLog < currentLogSize:
+				if amountToReadFromLog > 0 and amountToReadFromLog < currentLogSize:
 					with codecs.open(logFile, 'r', 'utf-8', 'replace') as log:
 						log.seek(currentLogSize - amountToReadFromLog)
 						data = log.read() + data
@@ -873,14 +918,6 @@ depot where the method is.
 			)
 
 			if isinstance(host, OpsiClient):
-				# Remove boot configurations
-				self._context.bootConfiguration_deleteObjects(  # pylint: disable=maybe-no-member
-					self._context.bootConfiguration_getObjects(  # pylint: disable=maybe-no-member
-						name=[],
-						clientId=host.id
-					)
-				)
-
 				# Remove audit softwares
 				self._context.auditSoftwareOnClient_deleteObjects(  # pylint: disable=maybe-no-member
 					self._context.auditSoftwareOnClient_getObjects(  # pylint: disable=maybe-no-member
@@ -1006,9 +1043,10 @@ depot where the method is.
 		for (productId, versions) in productByIdAndVersion.items():
 			allProductVersionsWillBeDeleted = True
 			for product in self._context.product_getObjects(attributes=['id', 'productVersion', 'packageVersion'], id=productId):  # pylint: disable=maybe-no-member
-				if not product.packageVersion in versions.get(product.productVersion, []):
+				if product.packageVersion not in versions.get(product.productVersion, []):
 					allProductVersionsWillBeDeleted = False
 					break
+
 			if not allProductVersionsWillBeDeleted:
 				continue
 
@@ -1230,13 +1268,12 @@ depot where the method is.
 		return []
 
 	def group_deleteObjects(self, groups):
-		[self._context.objectToGroup_deleteObjects(  # pylint: disable=maybe-no-member
-			self._context.objectToGroup_getObjects(  # pylint: disable=maybe-no-member
+		for group in forceObjectClassList(groups, Group):
+			matchingMappings = self._context.objectToGroup_getObjects(
 				groupType=group.getType(),
 				groupId=group.id
 			)
-		) for group in forceObjectClassList(groups, Group)]
-
+			self._context.objectToGroup_deleteObjects(matchingMappings)
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ObjectToGroups                                                                            -
@@ -1602,25 +1639,6 @@ depot where the method is.
 		pass
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	# -   BootConfigurations                                                                        -
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def bootConfiguration_insertObject(self, bootConfiguration):
-		bootConfiguration = forceObjectClass(bootConfiguration, BootConfiguration)
-		bootConfiguration.setDefaults()  # pylint: disable=maybe-no-member
-
-	def bootConfiguration_updateObject(self, bootConfiguration):
-		bootConfiguration = forceObjectClass(bootConfiguration, BootConfiguration)
-
-	def bootConfiguration_getHashes(self, attributes=[], **filter):
-		return [obj.toHash() for obj in self.bootConfiguration_getObjects(attributes, **filter)]
-
-	def bootConfiguration_getObjects(self, attributes=[], **filter):
-		return []
-
-	def bootConfiguration_deleteObjects(self, bootConfigurations):
-		pass
-
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   direct access                                                                            -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def getData(self, query):
@@ -1762,7 +1780,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			elif operator == 'AND':
 				alreadyAddedValues = set()
 				for value in values2:
-					if not value in values1 or value in alreadyAddedValues:
+					if value not in values1 or value in alreadyAddedValues:
 						continue
 					alreadyAddedValues.add(value)
 					result['identValues'].append([value])
@@ -1850,7 +1868,6 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 							objectFilterNew[str(key)] = value
 						objectFilter = objectFilterNew
 
-						logger.debug(u"Executing: this.%s_getIdents(returnType = 'list', %s)" % (getBackendMethodPrefix(oc), objectFilter))
 						addProductOnClientDefaults = self._options.get('addProductOnClientDefaults', False)
 						addConfigStateDefaults = self._options.get('addConfigStateDefaults', False)
 						addProductPropertyStateDefaults = self._options.get('addProductPropertyStateDefaults', False)
@@ -1860,6 +1877,8 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 							self._options['addConfigStateDefaults'] = True
 						elif objectClass == 'ProductPropertyState':
 							self._options['addProductPropertyStateDefaults'] = True
+
+						logger.debug(u"Executing: this.%s_getIdents(returnType = 'list', %s)" % (getBackendMethodPrefix(oc), objectFilter))
 						try:
 							res = {
 								"objectClass": objectClass,
@@ -1892,8 +1911,9 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			return (result, objectClass, objectFilter)
 
 		result = [v[0] for v in handleFilter(parsedFilter)[0].get('identValues', [])]
+		result.sort()
 		logger.info(u"=== Search done, result: %s" % result)
-		return sorted(result)
+		return result
 
 	def host_getIdents(self, returnType='unicode', **filter):
 		return [host.getIdent(returnType) for host in self.host_getObjects(attributes=['id'], **filter)]
@@ -1992,13 +2012,6 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 				)
 		]
 
-	def bootConfiguration_getIdents(self, returnType='unicode', **filter):
-		return [bootConfiguration.getIdent(returnType) for bootConfiguration
-				in self.bootConfiguration_getObjects(
-					attributes=['name', 'clientId'], **filter
-				)
-		]
-
 	def auditSoftware_getIdents(self, returnType='unicode', **filter):
 		return [auditSoftware.getIdent(returnType) for auditSoftware in
 				self.auditSoftware_getObjects(
@@ -2057,7 +2070,8 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 				self._backend.host_insertObject(host)
 
 		hostList = forceObjectClassList(hosts, Host)
-		[updateOrInsert(host) for host in hostList]
+		for host in hostList:
+			updateOrInsert(host)
 
 		if self._options['returnObjectsOnUpdateAndCreate']:
 			return self._backend.host_getObjects(id=[host.id for host in hostList])
@@ -2067,200 +2081,274 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 	def host_renameOpsiClient(self, id, newId):
 		id = forceHostId(id)
 		newId = forceHostId(newId)
+
+		logger.info(u"Renaming client {0} to {1}...", id, newId)
+
 		clients = self._backend.host_getObjects(type='OpsiClient', id=id)
-		if not clients:
+		try:
+			client = clients[0]
+		except IndexError:
 			raise BackendMissingDataError(u"Cannot rename: client '%s' not found" % id)
 
 		if self._backend.host_getObjects(id=newId):
 			raise BackendError(u"Cannot rename: host '%s' already exists" % newId)
 
-		client = clients[0]
-
+		logger.info("Processing group mappings...")
 		objectToGroups = []
 		for objectToGroup in self._backend.objectToGroup_getObjects(groupType='HostGroup', objectId=client.id):
 			objectToGroup.setObjectId(newId)
 			objectToGroups.append(objectToGroup)
 
+		logger.info("Processing products on client...")
 		productOnClients = []
 		for productOnClient in self._backend.productOnClient_getObjects(clientId=client.id):
 			productOnClient.setClientId(newId)
 			productOnClients.append(productOnClient)
 
+		logger.info("Processing product property states...")
 		productPropertyStates = []
 		for productPropertyState in self._backend.productPropertyState_getObjects(objectId=client.id):
 			productPropertyState.setObjectId(newId)
 			productPropertyStates.append(productPropertyState)
 
+		logger.info("Processing config states...")
 		configStates = []
 		for configState in self._backend.configState_getObjects(objectId=client.id):
 			configState.setObjectId(newId)
 			configStates.append(configState)
 
+		logger.info("Processing software audit data...")
 		auditSoftwareOnClients = []
 		for auditSoftwareOnClient in self._backend.auditSoftwareOnClient_getObjects(clientId=client.id):
 			auditSoftwareOnClient.setClientId(newId)
 			auditSoftwareOnClients.append(auditSoftwareOnClient)
 
+		logger.info("Processing hardware audit data...")
 		auditHardwareOnHosts = []
 		for auditHardwareOnHost in self._backend.auditHardwareOnHost_getObjects(hostId=client.id):
 			auditHardwareOnHost.setHostId(newId)
 			auditHardwareOnHosts.append(auditHardwareOnHost)
 
+		logger.info("Processing license data...")
 		licenseOnClients = []
 		for licenseOnClient in self._backend.licenseOnClient_getObjects(clientId=client.id):
 			licenseOnClient.setClientId(newId)
 			licenseOnClients.append(licenseOnClient)
 
+		logger.info("Processing software licenses...")
 		softwareLicenses = []
 		for softwareLicense in self._backend.softwareLicense_getObjects(boundToHost=client.id):
 			softwareLicense.setBoundToHost(newId)
 			softwareLicenses.append(softwareLicense)
 
-		logger.info(u"Deleting client '%s'" % client)
+		logger.debug(u"Deleting client {0!r}", client)
 		self._backend.host_deleteObjects([client])
 
+		logger.info(u"Updating client {0}...", client.id)
 		client.setId(newId)
 		self.host_createObjects([client])
 
 		if objectToGroups:
+			logger.info(u"Updating group mappings...")
 			self.objectToGroup_createObjects(objectToGroups)
 		if productOnClients:
+			logger.info("Updating products on client...")
 			self.productOnClient_createObjects(productOnClients)
 		if productPropertyStates:
+			logger.info("Updating product property states...")
 			self.productPropertyState_createObjects(productPropertyStates)
 		if configStates:
+			logger.info("Updating config states...")
 			self.configState_createObjects(configStates)
 		if auditSoftwareOnClients:
+			logger.info("Updating software audit data...")
 			self.auditSoftwareOnClient_createObjects(auditSoftwareOnClients)
 		if auditHardwareOnHosts:
+			logger.info("Updating hardware audit data...")
 			self.auditHardwareOnHost_createObjects(auditHardwareOnHosts)
 		if licenseOnClients:
+			logger.info("Updating license data...")
 			self.licenseOnClient_createObjects(licenseOnClients)
 		if softwareLicenses:
+			logger.info("Updating software licenses...")
 			self.softwareLicense_createObjects(softwareLicenses)
 
-	def host_renameOpsiDepotserver(self, id, newId):
-		id = forceHostId(id)
+	def host_renameOpsiDepotserver(self, oldId, newId):
+		"""
+		Rename OpsiDepotserver with id `oldId` to `newId`.
+
+		References to the old id will be changed aswell.
+
+		:raises BackendMissingDataError: If no depot `oldId` is found.
+		:raises BackendError: If depot `newId` already exists.
+		:param oldId: ID of the server to change.
+		:type oldId: str
+		:param oldId: New ID.
+		:type newId: str
+		"""
+		oldId = forceHostId(oldId)
 		newId = forceHostId(newId)
-		oldHostname = id.split('.')[0]
+		oldHostname = oldId.split('.')[0]
 		newHostname = newId.split('.')[0]
 
-		depots = self._backend.host_getObjects(type='OpsiDepotserver', id=id)
-		if not depots:
-			raise BackendMissingDataError(u"Cannot rename: depot '%s' not found" % id)
+		depots = self._backend.host_getObjects(type='OpsiDepotserver', id=oldId)
+		try:
+			depot = depots[0]
+		except IndexError:
+			raise BackendMissingDataError(u"Cannot rename: depot '%s' not found" % oldId)
+
 		if self._backend.host_getObjects(id=newId):
 			raise BackendError(u"Cannot rename: host '%s' already exists" % newId)
 
-		depot = depots[0]
-		isConfigServer = bool(self.host_getIdents(type='OpsiConfigserver', id=id))
+		logger.info("Renaming depot {0} to {1}", oldId, newId)
 
+		logger.info("Processing ProductOnDepots...")
 		productOnDepots = []
-		for productOnDepot in self._backend.productOnDepot_getObjects(depotId=id):
+		for productOnDepot in self._backend.productOnDepot_getObjects(depotId=oldId):
 			productOnDepot.setDepotId(newId)
 			productOnDepots.append(productOnDepot)
 
+		def replaceServerId(someList):
+			"""
+			Replaces occurrences of `oldId` with `newId` in `someList`.
+
+			If someList is the wrong type or no change was made `False`
+			will be returned.
+
+			:type someList: list
+			:returns: `True` if a change was made.
+			:rtype: bool
+			"""
+			try:
+				someList.remove(oldId)
+				someList.append(newId)
+				return True
+			except (ValueError, AttributeError):
+				return False
+
+		logger.info("Processing ProductProperties...")
 		modifiedProductProperties = []
 		for productProperty in self._backend.productProperty_getObjects():
-			if productProperty.possibleValues and id in productProperty.possibleValues:
-				productProperty.possibleValues.remove(id)
-				productProperty.possibleValues.append(newId)
-				if not productProperty in modifiedProductProperties:
-					modifiedProductProperties.append(productProperty)
-			if productProperty.defaultValues and id in productProperty.defaultValues:
-				productProperty.defaultValues.remove(id)
-				productProperty.defaultValues.append(newId)
-				if not productProperty in modifiedProductProperties:
-					modifiedProductProperties.append(productProperty)
+			changed = replaceServerId(productProperty.possibleValues)
+			changed = replaceServerId(productProperty.defaultValues) or changed
+
+			if changed:
+				modifiedProductProperties.append(productProperty)
+
 		if modifiedProductProperties:
+			logger.info("Updating ProductProperties...")
 			self.productProperty_updateObjects(modifiedProductProperties)
 
+		logger.info("Processing ProductPropertyStates...")
 		productPropertyStates = []
-		for productPropertyState in self._backend.productPropertyState_getObjects(objectId=id):
+		for productPropertyState in self._backend.productPropertyState_getObjects(objectId=oldId):
 			productPropertyState.setObjectId(newId)
-			if productPropertyState.values and id in productPropertyState.values:
-				productPropertyState.values.remove(id)
-				productPropertyState.values.append(newId)
+			replaceServerId(productPropertyState.values)
 			productPropertyStates.append(productPropertyState)
 
+		logger.info("Processing Configs...")
 		modifiedConfigs = []
 		for config in self._backend.config_getObjects():
-			if config.possibleValues and id in config.possibleValues:
-				config.possibleValues.remove(id)
-				config.possibleValues.append(newId)
-				if not config in modifiedConfigs:
-					modifiedConfigs.append(config)
-			if config.defaultValues and id in config.defaultValues:
-				config.defaultValues.remove(id)
-				config.defaultValues.append(newId)
-				if not config in modifiedConfigs:
-					modifiedConfigs.append(config)
+			changed = replaceServerId(config.possibleValues)
+			changed = replaceServerId(config.defaultValues) or changed
+
+			if changed:
+				modifiedConfigs.append(config)
+
 		if modifiedConfigs:
+			logger.info("Updating Configs...")
 			self.config_updateObjects(modifiedConfigs)
 
+		logger.info("Processing ConfigStates...")
 		configStates = []
-		for configState in self._backend.configState_getObjects(objectId=id):
+		for configState in self._backend.configState_getObjects(objectId=oldId):
 			configState.setObjectId(newId)
-			if configState.values and id in configState.values:
-				configState.values.remove(id)
-				configState.values.append(newId)
+			replaceServerId(configState.values)
 			configStates.append(configState)
 
-		logger.info(u"Deleting depot '%s'" % depot)
+		logger.info(u"Deleting depot {0}", depot)
 		self._backend.host_deleteObjects([depot])
 
+		def changeAddress(value):
+			newValue = value.replace(oldId, newId)
+			newValue = newValue.replace(oldHostname, newHostname)
+			logger.debug("Changed {0!r} to {1!r}", value, newValue)
+			return newValue
+
+		logger.info("Updating depot and it's urls...")
 		depot.setId(newId)
 		if depot.repositoryRemoteUrl:
-			depot.setRepositoryRemoteUrl(depot.repositoryRemoteUrl.replace(id, newId).replace(oldHostname, newHostname))
+			depot.setRepositoryRemoteUrl(changeAddress(depot.repositoryRemoteUrl))
 		if depot.depotRemoteUrl:
-			depot.setDepotRemoteUrl(depot.depotRemoteUrl.replace(id, newId).replace(oldHostname, newHostname))
+			depot.setDepotRemoteUrl(changeAddress(depot.depotRemoteUrl))
 		if depot.depotWebdavUrl:
-			depot.setDepotWebdavUrl(depot.depotWebdavUrl.replace(id, newId).replace(oldHostname, newHostname))
+			depot.setDepotWebdavUrl(changeAddress(depot.depotWebdavUrl))
+		if depot.workbenchRemoteUrl:
+			depot.setWorkbenchRemoteUrl(changeAddress(depot.workbenchRemoteUrl))
 		self.host_createObjects([depot])
 
 		if productOnDepots:
+			logger.info("Updating ProductOnDepots...")
 			self.productOnDepot_createObjects(productOnDepots)
 		if productPropertyStates:
+			logger.info("Updating ProductPropertyStates...")
 			self.productPropertyState_createObjects(productPropertyStates)
 		if configStates:
+			logger.info("Updating ConfigStates...")
 			self.configState_createObjects(configStates)
 
+		def replaceOldAddress(values):
+			"""
+			Searches for old address in elements of `values` and
+			replaces it with the new address.
+
+			:type values: list
+			:returns: `True` if an item was changed, `False` otherwise.
+			:rtype: bool
+			"""
+			changed = False
+			try:
+				for i, value in enumerate(values):
+					if oldId in value:
+						values[i] = value.replace(oldId, newId)
+						changed = True
+			except TypeError:  # values probably None
+				pass
+
+			return changed
+
+		logger.info("Processing depot assignment configs...")
 		updateConfigs = []
 		for config in self._backend.config_getObjects(id=['clientconfig.configserver.url', 'clientconfig.depot.id']):
-			if config.defaultValues:
-				changed = False
-				for i, value in enumerate(config.defaultValues):
-					if id in value:
-						config.defaultValues[i] = value.replace(id, newId)
-						changed = True
+			changed = replaceOldAddress(config.defaultValues)
+			changed = replaceOldAddress(config.possibleValues) or changed
 
-				if changed:
-					updateConfigs.append(config)
+			if changed:
+				updateConfigs.append(config)
 
 		if updateConfigs:
+			logger.info("Processing depot assignment configs...")
 			self.config_updateObjects(updateConfigs)
 
+		logger.info("Processing depot assignment config states...")
 		updateConfigStates = []
 		for configState in self._backend.configState_getObjects(configId=['clientconfig.configserver.url', 'clientconfig.depot.id']):
-			if configState.values:
-				changed = False
-				for i, value in enumerate(configState.values):
-					if id in value:
-						configState.values[i] = value.replace(id, newId)
-						changed = True
-
-				if changed:
-					updateConfigStates.append(configState)
+			if replaceOldAddress(configState.values):
+				updateConfigStates.append(configState)
 
 		if updateConfigStates:
+			logger.info("Updating depot assignment config states...")
 			self.configState_updateObjects(updateConfigStates)
 
+		logger.info("Processing depots...")
 		modifiedDepots = []
 		for depot in self._backend.host_getObjects(type='OpsiDepotserver'):
-			if depot.masterDepotId and (depot.masterDepotId == id):
+			if depot.masterDepotId and (depot.masterDepotId == oldId):
 				depot.masterDepotId = newId
 				modifiedDepots.append(depot)
 
 		if modifiedDepots:
+			logger.info("Updating depots...")
 			self.host_updateObjects(modifiedDepots)
 
 	def host_createOpsiClient(self, id, opsiHostKey=None, description=None, notes=None, hardwareAddress=None, ipAddress=None, inventoryNumber=None, oneTimePassword=None, created=None, lastSeen=None):
@@ -2268,14 +2356,26 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		del hash['self']
 		return self.host_createObjects(OpsiClient.fromHash(hash))
 
-	def host_createOpsiDepotserver(self, id, opsiHostKey=None, depotLocalUrl=None, depotRemoteUrl=None, depotWebdavUrl=None, repositoryLocalUrl=None, repositoryRemoteUrl=None,
-					description=None, notes=None, hardwareAddress=None, ipAddress=None, inventoryNumber=None, networkAddress=None, maxBandwidth=None, isMasterDepot=None, masterDepotId=None):
+	def host_createOpsiDepotserver(
+			self, id,
+			opsiHostKey=None, depotLocalUrl=None, depotRemoteUrl=None,
+			depotWebdavUrl=None, repositoryLocalUrl=None,
+			repositoryRemoteUrl=None, description=None, notes=None,
+			hardwareAddress=None, ipAddress=None, inventoryNumber=None,
+			networkAddress=None, maxBandwidth=None, isMasterDepot=None,
+			masterDepotId=None, workbenchLocalUrl=None, workbenchRemoteUrl=None):
 		hash = locals()
 		del hash['self']
 		return self.host_createObjects(OpsiDepotserver.fromHash(hash))
 
-	def host_createOpsiConfigserver(self, id, opsiHostKey=None, depotLocalUrl=None, depotRemoteUrl=None, depotWebdavUrl=None, repositoryLocalUrl=None, repositoryRemoteUrl=None,
-					description=None, notes=None, hardwareAddress=None, ipAddress=None, inventoryNumber=None, networkAddress=None, maxBandwidth=None, isMasterDepot=None, masterDepotId=None):
+	def host_createOpsiConfigserver(
+			self, id,
+			opsiHostKey=None, depotLocalUrl=None, depotRemoteUrl=None,
+			depotWebdavUrl=None, repositoryLocalUrl=None,
+			repositoryRemoteUrl=None, description=None, notes=None,
+			hardwareAddress=None, ipAddress=None, inventoryNumber=None,
+			networkAddress=None, maxBandwidth=None, isMasterDepot=None,
+			masterDepotId=None, workbenchLocalUrl=None, workbenchRemoteUrl=None):
 		hash = locals()
 		del hash['self']
 		return self.host_createObjects(OpsiConfigserver.fromHash(hash))
@@ -2477,9 +2577,28 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		)
 
 	def configState_getClientToDepotserver(self, depotIds=[], clientIds=[], masterOnly=True, productIds=[]):
+		"""
+		Get a mapping of client and depots.
+
+		:param depotIds: Limit the search to the specified depot ids. \
+If nothing is given all depots are taken into account.
+		:type depotIds: [str, ]
+		:param clientIds: Limit the search to the specified client ids. \
+If nothing is given all depots are taken into account.
+		:type clientIds: [str, ]
+		:param masterOnly: If this is set to `True` only master depots \
+are taken into account.
+		:type masterOnly: bool
+		:param productIds: Limit the data to the specified products if \
+alternative depots are to be taken into account.
+		:type productIds: [str,]
+		:return: A list of dicts containing the keys `depotId` and \
+`clientId` that belong to each other. If alternative depots are taken \
+into the IDs of these depots are to be found in the list behind \
+`alternativeDepotIds`. The key does always exist but may be empty.
+		:returntype: [{"depotId": str, "alternativeDepotIds": [str, ], "clientId": str},]
+		"""
 		depotIds = forceHostIdList(depotIds)
-		clientIds = forceHostIdList(clientIds)
-		masterOnly = forceBool(masterOnly)
 		productIds = forceProductIdList(productIds)
 
 		depotIds = self.host_getIdents(type='OpsiDepotserver', id=depotIds)
@@ -2487,6 +2606,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			return []
 		depotIds = set(depotIds)
 
+		clientIds = forceHostIdList(clientIds)
 		clientIds = self.host_getIdents(type='OpsiClient', id=clientIds)
 		if not clientIds:
 			return []
@@ -2498,10 +2618,14 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			logger.debug(u"Calling backend_setOptions on {0}", self)
 			self.backend_setOptions({'addConfigStateDefaults': True})
 			for configState in self.configState_getObjects(configId=u'clientconfig.depot.id', objectId=clientIds):
-				if not configState.values or not configState.values[0]:
-					logger.error(u"No depot server configured for client '%s'" % configState.objectId)
+				try:
+					depotId = configState.values[0]
+					if not depotId:
+						raise IndexError("Missing value")
+				except IndexError:
+					logger.error(u"No depot server configured for client {0!r}", configState.objectId)
 					continue
-				depotId = configState.values[0]
+
 				if depotId not in depotIds:
 					continue
 				usedDepotIds.add(depotId)
@@ -2516,7 +2640,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		finally:
 			self.backend_setOptions({'addConfigStateDefaults': addConfigStateDefaults})
 
-		if masterOnly:
+		if forceBool(masterOnly):
 			return result
 
 		productOnDepotsByDepotIdAndProductId = {}
@@ -2949,11 +3073,11 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		productOnDepots = forceObjectClassList(productOnDepots, ProductOnDepot)
 		products = {}
 		for productOnDepot in productOnDepots:
-			if not products.has_key(productOnDepot.productId):
+			if productOnDepot.productId not in products:
 				products[productOnDepot.productId] = {}
-			if not products[productOnDepot.productId].has_key(productOnDepot.productVersion):
+			if productOnDepot.productVersion not in products[productOnDepot.productId]:
 				products[productOnDepot.productId][productOnDepot.productVersion] = []
-			if not productOnDepot.packageVersion in products[productOnDepot.productId][productOnDepot.productVersion]:
+			if productOnDepot.packageVersion not in products[productOnDepot.productId][productOnDepot.productVersion]:
 				products[productOnDepot.productId][productOnDepot.productVersion].append(productOnDepot.packageVersion)
 
 		ret = self._backend.productOnDepot_deleteObjects(productOnDepots)
@@ -3147,21 +3271,25 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			# Do not filter out ProductOnClients on the basis of these attributes in this case
 			# If filter is kept unchanged we cannot distinguish between "missing" and "filtered" ProductOnClients
 			# We also need to know installationStatus and actionRequest of every product to create sequence
-			pocFilter = {}
-			for (key, value) in filter.items():
-				if key in ('installationStatus', 'actionRequest', 'productVersion', 'packageVersion', 'modificationTime', 'targetState', 'lastAction', 'actionProgress', 'actionResult'):
-					continue
-				pocFilter[key] = value
+			unwantedKeys = set((
+				'installationStatus', 'actionRequest', 'productVersion',
+				'packageVersion', 'modificationTime', 'targetState',
+				'lastAction', 'actionProgress', 'actionResult'
+			))
+			pocFilter = {
+				key: value for (key, value) in filter.items()
+				if key not in unwantedKeys
+			}
 
 		if (self._options['addProductOnClientDefaults'] or self._options['processProductOnClientSequence']) and attributes:
 			# In this case we definetly need to add the following attributes
-			if not 'installationStatus' in pocAttributes:
+			if 'installationStatus' not in pocAttributes:
 				pocAttributes.append('installationStatus')
-			if not 'actionRequest' in pocAttributes:
+			if 'actionRequest' not in pocAttributes:
 				pocAttributes.append('actionRequest')
-			if not 'productVersion' in pocAttributes:
+			if 'productVersion' not in pocAttributes:
 				pocAttributes.append('productVersion')
-			if not 'packageVersion' in pocAttributes:
+			if 'packageVersion' not in pocAttributes:
 				pocAttributes.append('packageVersion')
 
 		# Get product states from backend
@@ -3183,15 +3311,14 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			# Get depot to client assignment
 			depotToClients = {}
 			for clientToDepot in self.configState_getClientToDepotserver(clientIds=clientIds):
-				if not depotToClients.has_key(clientToDepot['depotId']):
+				if clientToDepot['depotId'] not in depotToClients:
 					depotToClients[clientToDepot['depotId']] = []
 				depotToClients[clientToDepot['depotId']].append(clientToDepot['clientId'])
 			logger.debug(u"   * got depotToClients")
 
-
 			productOnDepots = {}
 			# Get product on depots which match the filter
-			for depotId in depotToClients.keys():
+			for depotId in depotToClients:
 				productOnDepots[depotId] = self._backend.productOnDepot_getObjects(
 					depotId=depotId,
 					productId=pocFilter.get('productId'),
@@ -3217,7 +3344,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			for (depotId, depotClientIds) in depotToClients.items():
 				for clientId in depotClientIds:
 					for pod in productOnDepots[depotId]:
-						if not pocByClientIdAndProductId[clientId].has_key(pod.productId):
+						if pod.productId not in pocByClientIdAndProductId[clientId]:
 							logger.debug(u"      - creating default productOnClient for clientId '%s', productId '%s'" % (clientId, pod.productId))
 							poc = ProductOnClient(
 									productId=pod.productId,
@@ -3402,7 +3529,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			depotFilter['objectId'] = depotId
 			for pps in self._backend.productPropertyState_getObjects(attributes, **depotFilter):
 				for clientId in clientIds:
-					if not pps.propertyId in ppss.get(clientId, {}).get(pps.productId, []):
+					if pps.propertyId not in ppss.get(clientId, {}).get(pps.productId, []):
 						# Product property for client does not exist => add default (values of depot)
 						productPropertyStates.append(
 							ProductPropertyState(
@@ -3594,7 +3721,6 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 				objectId=objectId
 			)
 		)
-
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   LicenseContracts                                                                          -
@@ -4046,7 +4172,6 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 
 		return result
 
-
 	def auditSoftware_create(self, name, version, subVersion, language, architecture, windowsSoftwareId=None, windowsDisplayName=None, windowsDisplayVersion=None, installSize=None):
 		hash = locals()
 		del hash['self']
@@ -4159,7 +4284,6 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 				licensePoolId=licensePoolId
 			)
 		)
-
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   AuditSoftwareOnClients                                                                    -
@@ -4313,20 +4437,21 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		return []
 
 	def auditHardwareOnHost_updateObjects(self, auditHardwareOnHosts):
-		for auditHardwareOnHost in forceObjectClassList(auditHardwareOnHosts, AuditHardwareOnHost):
-			objectHash = auditHardwareOnHost.toHash()
-			filter = {}
-			for (attribute, value) in objectHash.items():
-				if attribute in ('firstseen', 'lastseen', 'state'):
-					continue
+		def getNoneAsListOrValue(value):
+			if value is None:
+				return [None]
+			else:
+				return value
 
-				if value is None:
-					filter[attribute] = [None]
-				else:
-					filter[attribute] = value
+		for auditHardwareOnHost in forceObjectClassList(auditHardwareOnHosts, AuditHardwareOnHost):
+			filter = {
+				attribute: getNoneAsListOrValue(value)
+				for (attribute, value) in auditHardwareOnHost.toHash().items()
+				if attribute not in ('firstseen', 'lastseen', 'state')
+			}
 
 			if self.auditHardwareOnHost_getObjects(attributes=['hostId'], **filter):
-				logger.debug2(u"Updating existing AuditHardwareOnHost {0!r}", objectHash)
+				logger.debug2(u"Updating existing AuditHardwareOnHost {0!r}", auditHardwareOnHost)
 				self.auditHardwareOnHost_updateObject(auditHardwareOnHost)
 			else:
 				logger.info(u"AuditHardwareOnHost %s does not exist, creating" % auditHardwareOnHost)
@@ -4374,68 +4499,6 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		for ahoh in self.auditHardwareOnHost_getObjects(hostId=hostId, state=1):
 			ahoh.setState(0)
 			self._backend.auditHardwareOnHost_updateObject(ahoh)
-
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	# -   BootConfigurations                                                                        -
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def bootConfiguration_createObjects(self, bootConfigurations):
-		returnObjects = self._options['returnObjectsOnUpdateAndCreate']
-
-		result = []
-		for bootConfiguration in forceObjectClassList(bootConfigurations, BootConfiguration):
-			logger.info(u"Creating bootConfiguration %s" % bootConfiguration)
-			self._backend.bootConfiguration_insertObject(bootConfiguration)
-
-			if returnObjects:
-				result.extend(
-					self._backend.bootConfiguration_getObjects(
-						name=bootConfiguration.name,
-						clientId=bootConfiguration.clientId
-					)
-				)
-
-		return result
-
-	def bootConfiguration_updateObjects(self, bootConfigurations):
-		returnObjects = self._options['returnObjectsOnUpdateAndCreate']
-
-		result = []
-		bootConfigurations = forceObjectClassList(bootConfigurations, BootConfiguration)
-		for bootConfiguration in bootConfigurations:
-			logger.info(u"Updating bootConfiguration '%s'" % bootConfiguration)
-			if self.bootConfiguration_getIdents(name=bootConfiguration.name, clientId=bootConfiguration.clientId):
-				self._backend.bootConfiguration_updateObject(bootConfiguration)
-			else:
-				logger.info(u"BootConfiguration %s does not exist, creating" % bootConfiguration)
-				self._backend.bootConfiguration_insertObject(bootConfiguration)
-
-			if returnObjects:
-				result.extend(
-					self._backend.bootConfiguration_getObjects(
-						name=bootConfiguration.name,
-						clientId=bootConfiguration.clientId
-					)
-				)
-
-		return result
-
-	def bootConfiguration_create(self, name, clientId, priority=None, description=None, netbootProductId=None, pxeTemplate=None, options=None, disk=None, partition=None, active=None, deleteAfter=None, deactivateAfter=None, accessCount=None, osName=None):
-		hash = locals()
-		del hash['self']
-		return self.bootConfiguration_createObjects(BootConfiguration.fromHash(hash))
-
-	def bootConfiguration_delete(self, name, clientId):
-		if name is None:
-			name = []
-		if clientId is None:
-			clientId = []
-
-		return self._backend.bootConfiguration_deleteObjects(
-			self._backend.bootConfiguration_getObjects(
-				name=name,
-				clientId=clientId
-			)
-		)
 
 
 class ModificationTrackingBackend(ExtendedBackend):

@@ -30,39 +30,38 @@ import os
 import pytest
 from OPSI.Backend.Depotserver import DepotserverBackend
 
-from .helpers import mock, patchAddress, workInTemporaryDirectory
+from .helpers import mock, patchAddress
+from .test_util import fileAndHash  # test fixture
 
 
 @pytest.fixture
-def depotserverBackend(extendedConfigDataBackend):
+def depotserverBackend(extendedConfigDataBackend, tempDir):
     fakeFQDN = "depotserver.test.invalid"
 
     extendedConfigDataBackend.host_createOpsiDepotserver(fakeFQDN)
 
     depot = extendedConfigDataBackend.host_getObjects(id=fakeFQDN)[0]
+    depot.depotLocalUrl = 'file://' + tempDir
+    extendedConfigDataBackend.host_updateObject(depot)
 
-    with workInTemporaryDirectory() as tempDir:
-        depot.depotLocalUrl = 'file://' + tempDir
-        extendedConfigDataBackend.host_updateObject(depot)
+    for g in grp.getgrall():
+        if g.gr_gid == os.getgid():
+            groupData = grp.getgrnam(g.gr_name)
+            break
+    else:
+        pytest.skip("Unable to get group data for patching.")
 
-        for g in grp.getgrall():
-            if g.gr_gid == os.getgid():
-                groupData = grp.getgrnam(g.gr_name)
-                break
-        else:
-            pytest.skip("Unable to get group data for patching.")
+    for u in pwd.getpwall():
+        if u.pw_uid == os.getuid():
+            userData = pwd.getpwnam(u.pw_name)
+            break
+    else:
+        pytest.skip("Unable to get user data for mocking.")
 
-        for u in pwd.getpwall():
-            if u.pw_uid == os.getuid():
-                userData = pwd.getpwnam(u.pw_name)
-                break
-        else:
-            pytest.skip("Unable to get user data for mocking.")
-
-        with patchAddress(fqdn=fakeFQDN):
-            with mock.patch('OPSI.Util.Product.grp.getgrnam', lambda x: groupData):
-                with mock.patch('OPSI.Util.Product.pwd.getpwnam', lambda x: userData):
-                    yield DepotserverBackend(extendedConfigDataBackend)
+    with patchAddress(fqdn=fakeFQDN):
+        with mock.patch('OPSI.Util.Product.grp.getgrnam', lambda x: groupData):
+            with mock.patch('OPSI.Util.Product.pwd.getpwnam', lambda x: userData):
+                yield DepotserverBackend(extendedConfigDataBackend)
 
 
 @pytest.mark.requiresModulesFile  # because of SQLite...
@@ -123,6 +122,12 @@ def testInstallingPackageOnDepotserverWithForcedProductId(depotserverBackend):
 
     assert prodProperty.productVersion == product.productVersion
     assert prodProperty.packageVersion == product.packageVersion
+
+
+@pytest.mark.requiresModulesFile  # because of SQLite...
+def testReadingMd5sum(depotserverBackend, fileAndHash):
+    filename, expectedHash = fileAndHash
+    assert expectedHash == depotserverBackend.depot_getMD5Sum(filename)
 
 
 @pytest.mark.requiresModulesFile  # because of SQLite...
