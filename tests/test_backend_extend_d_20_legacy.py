@@ -36,6 +36,7 @@ from OPSI.Object import (
     BoolProductProperty, LocalbootProduct, OpsiClient, OpsiDepotserver,
     ProductDependency, ProductOnDepot, ProductPropertyState,
     UnicodeProductProperty)
+from OPSI.Types import BackendMissingDataError
 from .test_hosts import getConfigServer, getDepotServers
 
 
@@ -280,11 +281,8 @@ def testSetProductPropertyHandlingMissingObjects(backendManager, productExists, 
 
             expectedProperties += 1
 
-    try:
+    with pytest.raises(BackendMissingDataError):
         backendManager.setProductProperty(productId, 'nothere', False)
-    except ValueError:
-        if (not productExists) or (not propertyExists):
-            pass
 
     assert len(backendManager.productProperty_getObjects()) == expectedProperties
 
@@ -292,8 +290,9 @@ def testSetProductPropertyHandlingMissingObjects(backendManager, productExists, 
         client = OpsiClient('testclient.domain.invalid')
         backendManager.host_insertObject(client)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(BackendMissingDataError):
         backendManager.setProductProperty(productId, 'nothere', False, 'testclient.domain.invalid')
+
     assert len(backendManager.productProperty_getObjects()) == expectedProperties
 
 
