@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2016 uib GmbH <info@uib.de>
+# Copyright (C) 2016-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -27,34 +27,14 @@ from __future__ import absolute_import
 
 import os
 
-from contextlib import contextmanager
-
 from OPSI.Backend.MySQL import MySQL
-from OPSI.Util.Task.UpdateBackend.MySQL import (disableForeignKeyChecks,
-    getTableColumns, updateMySQLBackend)
+from OPSI.Util.Task.UpdateBackend.MySQL import getTableColumns, updateMySQLBackend
 from OPSI.Util.Task.ConfigureBackend import updateConfigFile
 
-from .Backends.MySQL import MySQLconfiguration
+from .Backends.MySQL import MySQLconfiguration, getTableNames, cleanDatabase
 from .helpers import workInTemporaryDirectory
 
 import pytest
-
-
-@contextmanager
-def cleanDatabase(database):
-    def cleanDatabase():
-        with disableForeignKeyChecks(database):
-            for tableName in getTableNames(database):
-                try:
-                    database.execute(u'DROP TABLE `{0}`;'.format(tableName))
-                except Exception as error:
-                    print("Failed to drop {0}: {1}".format(tableName, error))
-
-    cleanDatabase()
-    try:
-        yield database
-    finally:
-        cleanDatabase()
 
 
 @pytest.fixture
@@ -223,10 +203,6 @@ def createRequiredTables(database):
         PRIMARY KEY (`config_id`)
     ) %s;
     ''' % database.getTableCreationOptions('SOFTWARE_CONFIG'))
-
-
-def getTableNames(database):
-    return set(i.values()[0] for i in database.getSet(u'SHOW TABLES;'))
 
 
 def assertColumnIsVarchar(database, tableName, columnName, length):
