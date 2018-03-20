@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2013-2016 uib GmbH
+# Copyright (C) 2013-2018 uib GmbH
 #
 # http://www.uib.de/
 #
@@ -25,7 +25,9 @@ from contextlib import contextmanager
 
 import pytest
 
-from OPSI.Backend.MySQL import MySQLBackend, MySQLBackendObjectModificationTracker
+from OPSI.Backend.MySQL import (
+    MySQL, MySQLBackend, MySQLBackendObjectModificationTracker)
+from OPSI.Util.Task.UpdateBackend.MySQL import disableForeignKeyChecks
 
 try:
     from .config import MySQLconfiguration
@@ -41,7 +43,8 @@ def getMySQLBackend(**backendOptions):
     optionsForBackend = MySQLconfiguration
     optionsForBackend.update(backendOptions)
 
-    yield MySQLBackend(**optionsForBackend)
+    with cleanDatabase(MySQL(**optionsForBackend)):
+        yield MySQLBackend(**optionsForBackend)
 
 
 @contextmanager
@@ -50,3 +53,33 @@ def getMySQLModificationTracker():
         pytest.skip('no MySQL backend configuration given.')
 
     yield MySQLBackendObjectModificationTracker(**MySQLconfiguration)
+
+
+@contextmanager
+def cleanDatabase(database):
+    def dropAllTables(database):
+        with disableForeignKeyChecks(database):
+            tablesToDropAgain = set()
+            for tableName in getTableNames(database):
+                try:
+                    database.execute(u'DROP TABLE `{0}`;'.format(tableName))
+                except Exception as error:
+                    print("Failed to drop {0}: {1}".format(tableName, error))
+                    tablesToDropAgain.add(tableName)
+
+            for tableName in tablesToDropAgain:
+                try:
+                    database.execute(u'DROP TABLE `{0}`;'.format(tableName))
+                except Exception as error:
+                    print("Failed to drop {0} a second time: {1}".format(tableName, error))
+                    raise error
+
+    dropAllTables(database)
+    try:
+        yield database
+    finally:
+        dropAllTables(database)
+
+
+def getTableNames(database):
+    return set(i.values()[0] for i in database.getSet(u'SHOW TABLES;'))
