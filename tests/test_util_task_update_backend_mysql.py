@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2016-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2016-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -26,45 +26,16 @@ from __future__ import absolute_import
 
 import os
 
-from contextlib import contextmanager
-
 from OPSI.Backend.MySQL import MySQL, MySQLBackend
 from OPSI.Backend.SQL import DATABASE_SCHEMA_VERSION, createSchemaVersionTable
 from OPSI.Util.Task.UpdateBackend.MySQL import (
     DatabaseMigrationUnfinishedError,
-    disableForeignKeyChecks, getTableColumns, readSchemaVersion,
-    updateMySQLBackend, updateSchemaVersion)
+    getTableColumns, readSchemaVersion, updateMySQLBackend, updateSchemaVersion)
 from OPSI.Util.Task.ConfigureBackend import updateConfigFile
 
-from .Backends.MySQL import MySQLconfiguration
+from .Backends.MySQL import MySQLconfiguration, getTableNames, cleanDatabase
 
 import pytest
-
-
-@contextmanager
-def cleanDatabase(database):
-    def dropAllTables():
-        with disableForeignKeyChecks(database):
-            tablesToDropAgain = set()
-            for tableName in getTableNames(database):
-                try:
-                    database.execute(u'DROP TABLE `{0}`;'.format(tableName))
-                except Exception as error:
-                    print("Failed to drop {0}: {1}".format(tableName, error))
-                    tablesToDropAgain.add(tableName)
-
-            for tableName in tablesToDropAgain:
-                try:
-                    database.execute(u'DROP TABLE `{0}`;'.format(tableName))
-                except Exception as error:
-                    print("Failed to drop {0} a second time: {1}".format(tableName, error))
-                    raise error
-
-    dropAllTables()
-    try:
-        yield database
-    finally:
-        dropAllTables()
 
 
 @pytest.fixture
@@ -318,10 +289,6 @@ def createOpsi40HostTable(database):
         PRIMARY KEY (`hostId`)
     ) %s;''' % database.getTableCreationOptions('HOST')
     database.execute(query)
-
-
-def getTableNames(database):
-    return set(i.values()[0] for i in database.getSet(u'SHOW TABLES;'))
 
 
 def assertColumnIsVarchar(database, tableName, columnName, length):
