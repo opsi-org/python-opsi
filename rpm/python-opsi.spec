@@ -125,6 +125,10 @@ sed -i 's#/etc/dhcp/dhcpd.conf#/etc/dhcpd.conf#;s#isc-dhcp-server#dhcpd#' $RPM_B
 
 mkdir -p $RPM_BUILD_ROOT/etc/opsi/modules.d
 
+# Configed SSH extension
+mkdir -p $RPM_BUILD_ROOT/var/lib/opsi/
+touch $RPM_BUILD_ROOT/var/lib/opsi/server_commands_custom.conf
+
 # ===[ clean ]======================================
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -197,7 +201,6 @@ chown opsiconfd:opsiadmin /etc/opsi/server_commands_default.conf
 chmod 440 /etc/opsi/server_commands_default.conf
 
 # Processing user-editable file for the SSH extension
-test -e /var/lib/opsi/server_commands_custom.conf || touch /var/lib/opsi/server_commands_custom.conf
 chown opsiconfd:opsiadmin /var/lib/opsi/server_commands_custom.conf
 chmod 660 /var/lib/opsi/server_commands_custom.conf
 
@@ -250,8 +253,10 @@ fi
 %config /etc/opsi/hwaudit/locales/nl_NL
 %config /etc/opsi/hwaudit/locales/ru_RU
 %config(noreplace) /etc/opsi/server_commands_default.conf
+%config(noreplace) /var/lib/opsi/server_commands_custom.conf
 
 %dir /etc/opsi/modules.d
+%dir /var/lib/opsi/
 
 %if 0%{?rhel_version} || 0%{?centos_version} || 0%{?fedora_version}
 %define python_sitearch %(%{__python} -c 'from distutils import sysconfig; print sysconfig.get_python_lib()')
