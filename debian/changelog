@@ -353,6 +353,12 @@ python-opsi (4.1.1.1-1) experimental; urgency=medium
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 04 Oct 2016 16:15:11 +0200
 
+python-opsi (4.0.7.59-1) testing; urgency=medium
+
+  * 10_wim.conf: updateWIMConfig checks for install.wim and install.esd.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 21 Mar 2018 15:16:25 +0100
+
 python-opsi (4.0.7.58-1) testing; urgency=medium
 
   * 20_legacy.conf: setProductProperty does not make a string out of lists
