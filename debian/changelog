@@ -1,3 +1,10 @@
+python-opsi (4.1.1.31-1) testing; urgency=medium
+
+  * Creating /var/lib/opsi/server_commands_custom.conf if missing and
+    setting the appropriate access rights during postinst.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 21 Mar 2018 15:22:50 +0100
+
 python-opsi (4.1.1.30-1) testing; urgency=medium
 
   * Based on python-opsi 4.0.7.58.
