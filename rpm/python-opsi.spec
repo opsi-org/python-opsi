@@ -196,6 +196,11 @@ chmod 660 /etc/opsi/passwd
 chown opsiconfd:opsiadmin /etc/opsi/server_commands_default.conf
 chmod 440 /etc/opsi/server_commands_default.conf
 
+# Processing user-editable file for the SSH extension
+test -e /var/lib/opsi/server_commands_custom.conf || touch /var/lib/opsi/server_commands_custom.conf
+chown opsiconfd:opsiadmin /var/lib/opsi/server_commands_custom.conf
+chmod 660 /var/lib/opsi/server_commands_custom.conf
+
 # Removing files dating before opsi 4.1
 if [ -e "/etc/opsi/version" ]; then
 	rm "/etc/opsi/version" || echo "Failed to remove /etc/opsi/version"
