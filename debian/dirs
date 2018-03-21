@@ -4,3 +4,4 @@ etc/opsi/backends
 etc/opsi/hwaudit/locales
 etc/opsi/modules.d
 usr/share/opsi
+var/lib/opsi/
