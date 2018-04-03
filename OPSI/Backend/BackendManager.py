@@ -225,7 +225,7 @@ class BackendManager(ExtendedBackend):
 			self._backend = HostControlBackend(self._backend, **hcc)
 
 		if hostControlSafeBackend:
-			logger.info(u"* BackendManager is creating HostControlBackend")
+			logger.info(u"* BackendManager is creating HostControlSafeBackend")
 			try:
 				hcc = self.__loadBackendConfig('hostcontrol')['config']
 			except Exception as e:
