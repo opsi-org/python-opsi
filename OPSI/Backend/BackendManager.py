@@ -219,8 +219,11 @@ class BackendManager(ExtendedBackend):
 			logger.info(u"* BackendManager is creating HostControlBackend")
 			try:
 				hcc = self.__loadBackendConfig('hostcontrol')['config']
-			except Exception as e:
-				logger.error(e)
+			except Exception as backendConfigLoadError:
+				logger.error(
+					"Failed to load configuration for HostControlBackend: {}",
+					backendConfigLoadError
+				)
 				hcc = {}
 			self._backend = HostControlBackend(self._backend, **hcc)
 
@@ -228,8 +231,11 @@ class BackendManager(ExtendedBackend):
 			logger.info(u"* BackendManager is creating HostControlSafeBackend")
 			try:
 				hcc = self.__loadBackendConfig('hostcontrol')['config']
-			except Exception as e:
-				logger.error(e)
+			except Exception as backendConfigLoadError:
+				logger.error(
+					"Failed to load configuration for HostControlSafeBackend: {}",
+					backendConfigLoadError
+				)
 				hcc = {}
 			self._backend = HostControlSafeBackend(self._backend, **hcc)
 
