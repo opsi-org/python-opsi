@@ -1,3 +1,10 @@
+python-opsi (4.1.1.32-1) stable; urgency=medium
+
+  * BackendManager logs easier to spot warning if loading the configuration
+    for HostControlBackend or HostControlSafeBackend fails.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 09 Apr 2018 10:03:28 +0200
+
 python-opsi (4.1.1.31-1) testing; urgency=medium
 
   * Creating /var/lib/opsi/server_commands_custom.conf if missing and
