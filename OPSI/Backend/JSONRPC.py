@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2010-2019 uib GmbH <info@uib.de>
+# Copyright (C) 2010-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -36,7 +36,8 @@ import time
 import threading
 import types
 from hashlib import md5
-from Queue import Queue, Empty
+from queue import Queue, Empty
+from twisted.conch.ssh import keys
 from sys import version_info
 
 from OPSI import __version__
@@ -49,13 +50,9 @@ from OPSI.Types import (
 from OPSI.Backend.Backend import Backend, DeferredCall
 from OPSI.Util import serialize, deserialize
 from OPSI.Util.HTTP import getSharedConnectionPool, urlsplit
-from OPSI.Util.HTTP import deflateEncode, deflateDecode, gzipEncode, gzipDecode
-from OPSI.Util import getPublicKey
+from OPSI.Util.HTTP import deflateEncode, deflateDecode, gzipDecode
 
 __all__ = ('JSONRPC', 'JSONRPCThread', 'RpcQueue', 'JSONRPCBackend')
-
-_DEFLATE_COMPRESSION = 'deflate'
-_GZIP_COMPRESSION = 'gzip'
 
 logger = Logger()
 
@@ -255,38 +252,26 @@ class RpcQueue(threading.Thread):
 
 class JSONRPCBackend(Backend):
 
-	_DEFAULT_HTTP_PORT = 4444
-	_DEFAULT_HTTPS_PORT = 4447
-
 	def __init__(self, address, **kwargs):
-		"""
-		Backend for JSON-RPC access to another opsi service.
-
-		:param compression: Specify compression usage. Can be a boolean \
-or the strings 'gzip' or 'deflate' in case a specific compression is desired.
-		:type compression: bool or str
-		:param deflate: Specify if deflate compression should be used for requests. \
-Deprecated: Use keyword 'compression' instead.
-		:type deflate: bool
-		"""
-
 		self._name = 'jsonrpc'
 
 		Backend.__init__(self, **kwargs)
 
-		self._application = 'opsi-JSONRPCBackend/%s' % __version__
+		self._application = 'opsi jsonrpc module version %s' % __version__
 		self._sessionId = None
-		self._compression = False
+		self._deflate = False
 		self._connectOnInit = True
 		self._connected = False
 		self._retryTime = 5
+		self._defaultHttpPort = 4444
+		self._defaultHttpsPort = 4447
 		self._host = None
 		self._port = None
 		self._baseUrl = u'/rpc'
 		self._protocol = 'https'
 		self._socketTimeout = None
 		self._connectTimeout = 30
-		self._connectionPoolSize = 2
+		self._connectionPoolSize = 1
 		self._interface = None
 		self._rpcId = 0
 		self._rpcIdLock = threading.Lock()
@@ -314,12 +299,7 @@ Deprecated: Use keyword 'compression' instead.
 			elif option == 'sessionid':
 				self._sessionId = str(value)
 			elif option == 'deflate':
-				if forceBool(value):
-					self.setCompression('deflate')
-				else:
-					self.setCompression(False)
-			elif option == 'compression':
-				self._compression = self._parseCompressionValue(value)
+				self._deflate = forceBool(value)
 			elif option == 'connectoninit':
 				self._connectOnInit = forceBool(value)
 			elif option == 'connecttimeout' and value is not None:
@@ -397,13 +377,15 @@ Deprecated: Use keyword 'compression' instead.
 		return self._connectionPool.getPeerCertificate(asPem)
 
 	def backend_exit(self):
+		res = None
 		if self._connected:
 			try:
-				self._jsonRPC('backend_exit', retry=False)
+				res = self._jsonRPC('backend_exit', retry=False)
 			except Exception:
 				pass
-
-		self.stopRpcQueue()
+		if self._rpcQueue:
+			self._rpcQueue.stop()
+		return res
 
 	def setAsync(self, enableAsync):
 		if not self._connected:
@@ -416,61 +398,14 @@ Deprecated: Use keyword 'compression' instead.
 			self._async = False
 			self.stopRpcQueue()
 
-	def setCompression(self, compression):
-		"""
-		Set the compression to use.
-
-		:param compression: `True` to enable compression, `False` to disable. \
-To specify the use of a specific compression supply either 'gzip' or 'deflate'.
-		"""
-		self._compression = self._parseCompressionValue(compression)
-
-	@staticmethod
-	def _parseCompressionValue(compression):
-		if isinstance(compression, bool):
-			return compression
-		else:
-			value = forceUnicode(compression)
-			value = value.strip()
-			value = value.lower()
-
-			if value in ('true', 'false'):
-				return forceBool(value)
-			elif value == 'gzip':
-				return _GZIP_COMPRESSION
-			elif value == 'deflate':
-				return _DEFLATE_COMPRESSION
-			else:
-				return False
-
-	def isCompressionUsed(self):
-		"""
-		Is compression used?
-
-		:rtype: bool
-		"""
-		return bool(self._compression)
-
 	def setDeflate(self, deflate):
 		if not self._connected:
 			raise OpsiConnectionError(u'Not connected')
 
-		logger.warning(
-			"Call to deprecated method 'setDeflate'. "
-			"This method will be removed in the future. "
-			"Please use the method 'setCompression' instead."
-		)
-
-		if forceBool(deflate):
-			self.setCompression('deflate')
-		else:
-			self.setCompression(False)
+		self._deflate = forceBool(deflate)
 
 	def getDeflate(self):
-		if isinstance(self._compression, bool):
-			return False
-
-		return _DEFLATE_COMPRESSION == self._compression
+		return self._deflate
 
 	def isConnected(self):
 		return self._connected
@@ -529,16 +464,13 @@ To specify the use of a specific compression supply either 'gzip' or 'deflate'.
 			if scheme not in ('http', 'https'):
 				raise ValueError(u"Protocol %s not supported" % scheme)
 			self._protocol = scheme
-
 		self._host = host
-
 		if port:
 			self._port = port
 		elif self._protocol == 'https':
-			self._port = self._DEFAULT_HTTPS_PORT
+			self._port = self._defaultHttpsPort
 		else:
-			self._port = self._DEFAULT_HTTP_PORT
-
+			self._port = self._defaultHttpPort
 		if baseurl and (baseurl != '/'):
 			self._baseUrl = baseurl
 		if not self._username and username:
@@ -569,7 +501,7 @@ To specify the use of a specific compression supply either 'gzip' or 'deflate'.
 					raise OpsiError(u"MySQL backend in use but not licensed")
 			else:
 				logger.info(u"Verifying modules file signature")
-				publicKey = getPublicKey(data=base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP'))
+				publicKey = keys.Key.fromString(data=base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
 				data = u''
 				mks = modules.keys()
 				mks.sort()
@@ -676,18 +608,8 @@ To specify the use of a specific compression supply either 'gzip' or 'deflate'.
 
 		logger.debug2(u"Request to host {0!r}, baseUrl: {1!r}, query: {2!r}".format(self._host, baseUrl, data))
 
-		if self._compression is True or self._compression == _GZIP_COMPRESSION:
-			logger.debug2(u"Compressing data with gzip")
-			headers['Content-Encoding'] = 'gzip'
-
-			data = gzipEncode(data)
-			# Fix for python 2.7
-			# http://bugs.python.org/issue12398
-			if version_info >= (2, 7):
-				data = bytearray(data)
-			logger.debug2(u"Data compressed.")
-		elif self._compression == _DEFLATE_COMPRESSION:
-			logger.debug2(u"Compressing data with deflate")
+		if self._deflate:
+			logger.debug2(u"Compressing data")
 			headers['Content-Encoding'] = 'deflate'
 
 			data = deflateEncode(data)
@@ -712,31 +634,16 @@ To specify the use of a specific compression supply either 'gzip' or 'deflate'.
 
 	def _processResponse(self, response):
 		logger.debug2("Processing response...")
-		self._readSessionId(response)
-
-		response = self._decompressResponse(response)
-		logger.debug2(u"Response is: {0!r}", response)
-		return response
-
-	def _readSessionId(self, response):
-		"""
-		Reads the session ID from the response and saves it for future use.
-		"""
+		# Get cookie from header
 		cookie = response.getheader('set-cookie', None)
-
 		if cookie:
 			# Store sessionId cookie
 			sessionId = cookie.split(';')[0].strip()
 			if sessionId != self._sessionId:
 				self._sessionId = sessionId
 
-	@staticmethod
-	def _decompressResponse(response):
-		"""
-		Decompress the body of the response based on it's encoding.
-		"""
-		contentEncoding = response.getheader('Content-Encoding', '').lower()
-		logger.debug2(u"Content-Encoding: {}", contentEncoding)
+		contentEncoding = response.getheader('content-encoding', '').lower()
+		logger.debug2(u"Content-Encoding: {1}", contentEncoding)
 
 		response = response.data
 		if contentEncoding == 'gzip':
@@ -757,6 +664,6 @@ To specify the use of a specific compression supply either 'gzip' or 'deflate'.
 
 	def __repr__(self):
 		if self._name:
-			return u'<{0}(address={1!r}, host={2!r}, compression={3!r})>'.format(self.__class__.__name__, self._name, self._host, self._compression)
+			return u'<{0}(address={1!r}, host={2!r}, deflate={3!r})>'.format(self.__class__.__name__, self._name, self._host, self._deflate)
 		else:
-			return u'<{0}(host={1!r}, compression={2!r})>'.format(self.__class__.__name__, self._host, self._compression)
+			return u'<{0}(host={1!r}, deflate={2!r})>'.format(self.__class__.__name__, self._host, self._deflate)

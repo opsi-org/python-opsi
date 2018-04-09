@@ -4,7 +4,7 @@
 # Based on urllib3
 # (open pc server integration) http://www.opsi.org
 # Copyright (C) 2010 Andrey Petrov
-# Copyright (C) 2010-2019 uib GmbH <info@uib.de>
+# Copyright (C) 2010-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -38,23 +38,17 @@ import base64
 import gzip
 import os
 import re
+import ssl as ssl_module
 import socket
 import time
 import zlib
-import urlparse
 from contextlib import contextmanager
-from io import BytesIO
-from collections import MutableMapping
-
-try:
-	from cStringIO import StringIO
-except ImportError:
-	from io import StringIO
-
-from Queue import Queue, Empty, Full
+from io import BytesIO, StringIO
+from queue import Queue, Empty, Full
 from httplib import HTTPConnection, HTTPSConnection, HTTPException
 from socket import error as SocketError, timeout as SocketTimeout
-import ssl as ssl_module
+from urllib.parse import urlparse
+
 from OpenSSL import crypto
 
 from OPSI.Exceptions import (OpsiAuthenticationError, OpsiTimeoutError,
@@ -67,6 +61,10 @@ logger = Logger()
 
 connectionPools = {}
 totalRequests = 0
+
+# This could be an import - but support for pycurl is currently not fully implrement
+pycurl = None
+
 
 try:
 	# We are running a new version of Python that implements PEP 476:
@@ -119,11 +117,8 @@ def getPeerCertificate(httpsConnectionOrSSLSocket, asPEM=True):
 	logger.debug2("Trying to get peer cert...")
 	sock = httpsConnectionOrSSLSocket
 	try:
-		sock = sock.sock
-	except AttributeError:
-		pass
-
-	try:
+		if hasattr(sock, 'sock'):
+			sock = sock.sock
 		cert = crypto.load_certificate(crypto.FILETYPE_ASN1, sock.getpeercert(binary_form=True))
 
 		if not asPEM:
@@ -156,9 +151,9 @@ class HTTPResponse(object):
 
 	Similar to httplib's HTTPResponse but the data is pre-loaded.
 	"""
-	def __init__(self, data='', headers=None, status=0, version=0, reason=None, strict=0):
+	def __init__(self, data='', headers={}, status=0, version=0, reason=None, strict=0):
 		self.data = data
-		self.headers = HTTPHeaders(headers or {})
+		self.headers = headers
 		self.status = status
 		self.version = version
 		self.reason = reason
@@ -166,6 +161,33 @@ class HTTPResponse(object):
 
 	def addData(self, data):
 		self.data += data
+
+	def curlHeader(self, header):
+		header = header.strip()
+		if header.upper().startswith('HTTP'):
+			try:
+				(version, status, reason) = header.split(None, 2)
+				self.version = 9
+				if version == 'HTTP/1.0':
+					self.version = 10
+				elif version.startswith('HTTP/1.'):
+					self.version = 11
+				self.status = int(status.strip())
+				self.reason = reason.strip()
+			except Exception:
+				pass
+		elif header.count(':') > 0:
+			(key, value) = header.split(':', 1)
+			key = key.lower().strip()
+			value = value.strip()
+			if key == 'content-length':
+				try:
+					value = int(value)
+					if value < 0:
+						value = 0
+				except Exception:
+					return
+			self.headers[key] = value
 
 	@staticmethod
 	def from_httplib(r):
@@ -179,7 +201,7 @@ class HTTPResponse(object):
 		logger.debug2("Creating HTTPResponse from httplib...")
 		return HTTPResponse(
 			data=r.read(),
-			headers=HTTPHeaders(r.getheaders()),
+			headers=dict(r.getheaders()),
 			status=r.status,
 			version=r.version,
 			reason=r.reason,
@@ -192,57 +214,6 @@ class HTTPResponse(object):
 
 	def getheader(self, name, default=None):
 		return self.headers.get(name, default)
-
-
-class HTTPHeaders(MutableMapping):
-	"""
-	A dictionary that maintains ``Http-Header-Case`` for all keys.
-
-	Heavily influeced by HTTPHeaders from tornado.
-	"""
-
-	def __init__(self, *args, **kwargs):
-		self._dict = {}
-		self.update(*args, **kwargs)
-
-	def __setitem__(self, name, value):
-		key = self.normalizeKey(name)
-		self._dict[key] = value
-
-	def __getitem__(self, name):
-		key = self.normalizeKey(name)
-		return self._dict[key]
-
-	def __delitem__(self, name):
-		key = self.normalizeKey(name)
-		del self._dict[key]
-
-	def __len__(self):
-		return len(self._dict)
-
-	def __iter__(self):
-		return iter(self._dict)
-
-	@staticmethod
-	def normalizeKey(key):
-		return "-".join([w.capitalize() for w in key.split("-")])
-
-	def copy(self):
-		# defined in dict but not in MutableMapping.
-		return HTTPHeaders(self)
-
-	# Use our overridden copy method for the copy.copy module.
-	# This makes shallow copies one level deeper, but preserves
-	# the appearance that HTTPHeaders is a single container.
-	__copy__ = copy
-
-	def __str__(self):
-		return "\n".join("%s: %s" % (name, value) for name, value in self.items())
-
-	__unicode__ = __str__  # lazy
-
-	def __repr__(self):
-		return "{}({!r})".format(self.__class__.__name__, self._dict)
 
 
 class HTTPConnectionPool(object):
@@ -340,7 +311,7 @@ class HTTPConnectionPool(object):
 		if self.proxyURL:
 			headers = {}
 			try:
-				url = urlparse.urlparse(self.proxyURL)
+				url = urlparse(self.proxyURL)
 				if url.password:
 					logger.setConfidentialStrings(url.password)
 				logger.debug(u"Starting new HTTP connection (%d) to %s:%d over proxy-url %s" % (self.num_connections, self.host, self.port, self.proxyURL))
@@ -586,11 +557,10 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 		"""
 		Return a fresh HTTPSConnection.
 		"""
-		self.num_connections += 1
 		if self.proxyURL:
 			headers = {}
 			try:
-				url = urlparse.urlparse(self.proxyURL)
+				url = urlparse(self.proxyURL)
 				if url.password:
 					logger.setConfidentialString(url.password)
 				logger.debug(u"Starting new HTTPS connection (%d) to %s:%d over proxy-url %s" % (self.num_connections, self.host, self.port, self.proxyURL))
@@ -625,6 +595,7 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 				logger.debug(u"Verification failed: {0!r}", error)
 				raise OpsiServiceVerificationError(forceUnicode(error))
 
+		self.num_connections += 1
 		self.peerCertificate = getPeerCertificate(conn, asPEM=True)
 		if self.verifyServerCertByCa:
 			logger.debug("Attempting to verify server cert by CA...")
@@ -632,7 +603,7 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 				if self.peerCertificate:
 					commonName = crypto.load_certificate(crypto.FILETYPE_PEM, self.peerCertificate).get_subject().commonName
 					host = self.host
-					if re.search(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$', host):
+					if re.search('^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$', host):
 						fqdn = socket.getfqdn(host)
 						if fqdn == host:
 							raise OpsiServiceVerificationError(u"Failed to get fqdn for ip %s" % host)
@@ -700,15 +671,31 @@ def getSharedConnectionPool(scheme, host, port, **kw):
 	scheme = forceUnicodeLower(scheme)
 	host = forceUnicode(host)
 	port = forceInt(port)
+	curl = False
+	try:
+		if kw['preferCurl'] and pycurl is not None:
+			curl = True
+		del kw['preferCurl']
+	except KeyError:
+		pass
 
-	poolKey = u'httplib:%s:%d' % (host, port)
 	global connectionPools
+	if curl:
+		poolKey = u'curl:%s:%d' % (host, port)
+	else:
+		poolKey = u'httplib:%s:%d' % (host, port)
 
 	if poolKey not in connectionPools:
 		if scheme in ('https', 'webdavs'):
-			connectionPools[poolKey] = HTTPSConnectionPool(host, port=port, **kw)
+			if curl:
+				connectionPools[poolKey] = CurlHTTPSConnectionPool(host, port=port, **kw)
+			else:
+				connectionPools[poolKey] = HTTPSConnectionPool(host, port=port, **kw)
 		else:
-			connectionPools[poolKey] = HTTPConnectionPool(host, port=port, **kw)
+			if curl:
+				connectionPools[poolKey] = CurlHTTPConnectionPool(host, port=port, **kw)
+			else:
+				connectionPools[poolKey] = HTTPConnectionPool(host, port=port, **kw)
 	else:
 		connectionPools[poolKey].increaseUsageCount()
 		maxsize = kw.get('maxsize', 0)

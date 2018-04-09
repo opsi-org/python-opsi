@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2006-2020 uib GmbH - http://www.uib.de/
+# Copyright (C) 2006-2018 uib GmbH - http://www.uib.de/
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -25,29 +25,27 @@ parsing files for information.
 
 :author: Jan Schneider <j.schneider@uib.de>
 :author: Niko Wenselowski <n.wenselowski@uib.de>
-:author: Erol Ueluekmen <e.ueluekmen@uib.de>
 :license: GNU Affero General Public License version 3
 """
 
 import codecs
-import ConfigParser
 import functools
 import locale
 import os
 import re
-import StringIO
 import threading
 import time
+from configparser import RawConfigParser, SafeConfigParser
+from io import StringIO
 from itertools import islice
 
 from OPSI.Exceptions import BackendBadValueError, BackendMissingDataError
 from OPSI.Logger import Logger
-from OPSI.Types import (
-	forceArchitecture, forceBool, forceDict, forceEmailAddress, forceFilename,
-	forceHardwareAddress, forceHardwareDeviceId, forceHardwareVendorId,
-	forceHostname, forceInt, forceIPAddress, forceList, forceOct,
-	forceProductId, forceTime, forceUnicode, forceUnicodeList,
-	forceUnicodeLower, forceUnicodeLowerList)
+from OPSI.Types import (forceArchitecture, forceBool, forceDict,
+	forceEmailAddress, forceFilename, forceHardwareAddress,
+	forceHardwareDeviceId, forceHardwareVendorId, forceHostname, forceInt,
+	forceIPAddress, forceList, forceOct, forceProductId, forceTime,
+	forceUnicode, forceUnicodeList, forceUnicodeLower, forceUnicodeLowerList)
 from OPSI.System import which, execute
 from OPSI.Util import ipAddressInNetwork
 
@@ -299,10 +297,6 @@ class TextFile(LockableFile):
 
 class ChangelogFile(TextFile):
 	'''
-	Files containing changelogs.
-
-	These follow the Debian style changelogs:
-
 	package (version) distribution(s); urgency=urgency
 		[optional blank line(s), stripped]
 	  * change details
@@ -312,8 +306,7 @@ class ChangelogFile(TextFile):
 		  [optional blank line(s), stripped]
 	[one space]-- maintainer name <email address>[two spaces]date
 	'''
-
-	releaseLineRegex = re.compile(r'^\s*(\S+)\s+\(([^\)]+)\)\s+([^;]+);\s+urgency=(\S+)\s*$')
+	releaseLineRegex = re.compile('^\s*(\S+)\s+\(([^\)]+)\)\s+([^\;]+)\;\s+urgency\=(\S+)\s*$')
 
 	def __init__(self, filename, lockFailTimeout=2000):
 		TextFile.__init__(self, filename, lockFailTimeout)
@@ -504,8 +497,7 @@ class ConfigFile(TextFile):
 
 
 class IniFile(ConfigFile):
-
-	optionMatch = re.compile(r'^([^:=]+)\s*([:=].*)$')
+	optionMatch = re.compile('^([^\:\=]+)\s*([\:\=].*)$')
 
 	def __init__(self, filename, lockFailTimeout=2000, ignoreCase=True, raw=True):
 		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars=[';', '#'])
@@ -591,12 +583,12 @@ class IniFile(ConfigFile):
 			lines.append(line)
 		self._configParser = None
 		if self._raw:
-			self._configParser = ConfigParser.RawConfigParser()
+			self._configParser = RawConfigParser()
 		else:
-			self._configParser = ConfigParser.SafeConfigParser()
+			self._configParser = SafeConfigParser()
 
 		try:
-			self._configParser.readfp(StringIO.StringIO(u'\r\n'.join(lines)))
+			self._configParser.readfp(StringIO(u'\r\n'.join(lines)))
 		except Exception as e:
 			raise RuntimeError(u"Failed to parse ini file '%s': %s" % (self._filename, e))
 
@@ -672,14 +664,13 @@ class IniFile(ConfigFile):
 
 
 class InfFile(ConfigFile):
-
-	sectionRegex = re.compile(r'\[\s*([^\]]+)\s*\]')
-	pciDeviceRegex = re.compile(r'VEN_([\da-fA-F]+)&DEV_([\da-fA-F]+)', re.IGNORECASE)
-	hdaudioDeviceRegex = re.compile(r'HDAUDIO\\.*VEN_([\da-fA-F]+)&DEV_([\da-fA-F]+)', re.IGNORECASE)
-	usbDeviceRegex = re.compile(r'USB.*VID_([\da-fA-F]+)&PID_([\da-fA-F]+)', re.IGNORECASE)
-	acpiDeviceRegex = re.compile(r'ACPI\\(\S+)_-_(\S+)', re.IGNORECASE)
-	varRegex = re.compile(r'\%([^\%]+)\%')
-	classRegex = re.compile(r'class\s*=')
+	sectionRegex = re.compile('\[\s*([^\]]+)\s*\]')
+	pciDeviceRegex = re.compile('VEN_([\da-fA-F]+)&DEV_([\da-fA-F]+)', re.IGNORECASE)
+	hdaudioDeviceRegex = re.compile('HDAUDIO\\\.*VEN_([\da-fA-F]+)&DEV_([\da-fA-F]+)', re.IGNORECASE)
+	usbDeviceRegex = re.compile('USB.*VID_([\da-fA-F]+)&PID_([\da-fA-F]+)', re.IGNORECASE)
+	acpiDeviceRegex = re.compile('ACPI\\\(\S+)_-_(\S+)', re.IGNORECASE)
+	varRegex = re.compile('\%([^\%]+)\%')
+	classRegex = re.compile('class\s*=')
 
 	def __init__(self, filename, lockFailTimeout=2000):
 		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars=[';', '#'])
@@ -809,12 +800,6 @@ class InfFile(ConfigFile):
 					return False
 			return True
 
-		regexAndType = (
-			(self.hdaudioDeviceRegex, u'HDAUDIO'),
-			(self.pciDeviceRegex, u'PCI'),
-			(self.usbDeviceRegex, u'USB'),
-			(self.acpiDeviceRegex, u'ACPI'),
-		)
 		found = set()
 		section = ''
 		sectionsParsed = []
@@ -832,36 +817,42 @@ class InfFile(ConfigFile):
 						try:
 							if '=' not in line or ',' not in line:
 								continue
-
 							devString = line.split(u'=')[1].split(u',')[1].strip()
 							logger.debug2(u"      - Processing device string: %s" % devString)
-
-							for regex, deviceType in regexAndType:
-								match = regex.search(devString)
-								if match:
-									break
-							else:  # No match found
-								deviceType = ''  # reset the device type
-
+							type = ''
+							match = re.search(self.hdaudioDeviceRegex, devString)
 							if match:
-								logger.debug2(u"         - Device type is %s" % deviceType)
-								if deviceType == u'ACPI':
+								type = u'HDAUDIO'
+							else:
+								match = re.search(self.pciDeviceRegex, devString)
+								if match:
+									type = u'PCI'
+								else:
+									match = re.search(self.usbDeviceRegex, devString)
+									if match:
+										type = u'USB'
+									else:
+										match = re.search(self.acpiDeviceRegex, devString)
+										if match:
+											type = u'ACPI'
+							if match:
+								logger.debug2(u"         - Device type is %s" % type)
+								if type == u'ACPI':
 									vendor = match.group(1)
 									device = match.group(2)
 								else:
 									vendor = forceHardwareVendorId(match.group(1))
 									device = forceHardwareDeviceId(match.group(2))
-
 								if u"%s:%s" % (vendor, device) not in found:
-									logger.debug2(u"         - Found %s device: %s:%s" % (deviceType, vendor, device))
-									found.add(u"%s:%s:%s" % (deviceType, vendor, device))
+									logger.debug2(u"         - Found %s device: %s:%s" % (type, vendor, device))
+									found.add(u"%s:%s:%s" % (type, vendor, device))
 									self._devices.append(
 										{
 											'path': path,
 											'class': deviceClass,
 											'vendor': vendor,
 											'device': device,
-											'type': deviceType
+											'type': type
 										}
 									)
 						except IndexError:
@@ -951,19 +942,17 @@ class PciidsFile(ConfigFile):
 				logger.error(e)
 		self._parsed = True
 
-
 UsbidsFile = PciidsFile
 
 
 class TxtSetupOemFile(ConfigFile):
-
-	sectionRegex = re.compile(r'\[\s*([^\]]+)\s*\]')
-	pciDeviceRegex = re.compile(r'VEN_([\da-fA-F]+)(&DEV_([\da-fA-F]+))?(\S*)\s*$')
-	usbDeviceRegex = re.compile(r'USB.*VID_([\da-fA-F]+)(&PID_([\da-fA-F]+))?(\S*)\s*$', re.IGNORECASE)
-	filesRegex = re.compile(r'^files\.(computer|display|keyboard|mouse|scsi)\.(.+)$', re.IGNORECASE)
-	configsRegex = re.compile(r'^config\.(.+)$', re.IGNORECASE)
-	hardwareIdsRegex = re.compile(r'^hardwareids\.(computer|display|keyboard|mouse|scsi)\.(.+)$', re.IGNORECASE)
-	dllEntryRegex = re.compile(r'^(dll\s*\=\s*)(\S+.*)$', re.IGNORECASE)
+	sectionRegex = re.compile('\[\s*([^\]]+)\s*\]')
+	pciDeviceRegex = re.compile('VEN_([\da-fA-F]+)(&DEV_([\da-fA-F]+))?(\S*)\s*$')
+	usbDeviceRegex = re.compile('USB.*VID_([\da-fA-F]+)(&PID_([\da-fA-F]+))?(\S*)\s*$', re.IGNORECASE)
+	filesRegex = re.compile('^files\.(computer|display|keyboard|mouse|scsi)\.(.+)$', re.IGNORECASE)
+	configsRegex = re.compile('^config\.(.+)$', re.IGNORECASE)
+	hardwareIdsRegex = re.compile('^hardwareids\.(computer|display|keyboard|mouse|scsi)\.(.+)$', re.IGNORECASE)
+	dllEntryRegex = re.compile('^(dll\s*\=\s*)(\S+.*)$', re.IGNORECASE)
 
 	def __init__(self, filename, lockFailTimeout=2000):
 		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars=[';', '#'])
@@ -1156,7 +1145,7 @@ class TxtSetupOemFile(ConfigFile):
 			componentId = match.group(2)
 			logger.info(u"Found hardwareIds section '%s', component name '%s', component id '%s'" % (section, componentName, componentId))
 			for line in lines:
-				if not re.search(r'[iI][dD]\s*=', line):
+				if not re.search('[iI][dD]\s*=', line):
 					continue
 				(device, serviceName) = line.split(u'=', 1)[1].strip().split(u',', 1)
 				device = device.strip()
@@ -1447,8 +1436,8 @@ class DHCPDConf_Parameter(DHCPDConf_Component):
 			else:
 				value = u'off'
 		elif (self.key in (u'filename', u'ddns-domainname') or
-				re.match(r".*['/\\].*", value) or
-				re.match(r'^\w+\.\w+$', value) or
+				re.match('.*[\'/\\\].*', value) or
+				re.match('^\w+\.\w+$', value) or
 				self.key.endswith(u'-name')):
 
 			value = u'"%s"' % value
@@ -1477,8 +1466,8 @@ class DHCPDConf_Option(DHCPDConf_Component):
 
 		text = []
 		for value in self.value:
-			if (re.match(r".*['/\\].*", value) or
-				re.match(r"^\w+\.\w+$", value) or
+			if (re.match('.*[\'/\\\].*', value) or
+				re.match('^\w+\.\w+$', value) or
 				self.key.endswith(quotedOptions)):
 
 				text.append(u'"%s"' % value)
@@ -1671,14 +1660,13 @@ class DHCPDConfFile(TextFile):
 		self._currentToken = None
 		self._currentIndex = -1
 		self._data = u''
+		self._currentBlock = self._globalBlock = DHCPDConf_GlobalBlock()
 		self._parsed = False
 
 		if lines:
 			self._lines = forceUnicodeList(lines)
 		else:
 			self.readlines()
-
-		self._currentBlock = self._globalBlock = DHCPDConf_GlobalBlock()
 		self._globalBlock.endLine = len(self._lines)
 
 		minIndex = 0
@@ -1691,7 +1679,6 @@ class DHCPDConfFile(TextFile):
 				if not self._data.strip():
 					self._parse_emptyline()
 				continue
-
 			for token in ('#', ';', '{', '}'):
 				index = self._data.find(token)
 				if (index != -1) and (index >= minIndex) and ((self._currentIndex == -1) or (index < self._currentIndex)):
@@ -1699,14 +1686,11 @@ class DHCPDConfFile(TextFile):
 						continue
 					self._currentToken = token
 					self._currentIndex = index
-					break
-
 			if not self._currentToken:
 				minIndex = len(self._data)
 				if not self._getNewData():
 					break
 				continue
-
 			minIndex = 0
 			if self._currentToken == '#':
 				self._parse_comment()
@@ -1716,7 +1700,6 @@ class DHCPDConfFile(TextFile):
 				self._parse_lbracket()
 			elif self._currentToken == '}':
 				self._parse_rbracket()
-
 		self._parsed = True
 
 	def generate(self):
@@ -1915,8 +1898,7 @@ class DHCPDConfFile(TextFile):
 		data = self._data[:self._currentIndex]
 		self._data = self._data[self._currentIndex + 1:]
 
-		splittedData = data.split()
-		key = splittedData[0]
+		key = data.split()[0]
 		if key != 'option':
 			# Parameter
 			value = u' '.join(data.split()[1:]).strip()
@@ -1934,8 +1916,10 @@ class DHCPDConfFile(TextFile):
 			return
 
 		# Option
-		key = splittedData[1]
-		value = u' '.join(splittedData[2:]).strip()
+		key = data.split()[1]
+		value = u' '.join(data.split()[2:]).strip()
+		if len(value) > 1 and value.startswith('"') and value.endswith('"'):
+			value = value[1:-1]
 		values = []
 		quote = u''
 		current = []
@@ -1954,7 +1938,7 @@ class DHCPDConfFile(TextFile):
 					current.append(l)
 				else:
 					quote = u"'"
-			elif re.search(r'\s', l):
+			elif re.search('\s', l):
 				current.append(l)
 			elif l == u',':
 				if quote:
@@ -1985,12 +1969,11 @@ class DHCPDConfFile(TextFile):
 		# Split the block definition at whitespace
 		# The first value is the block type
 		# Example: subnet 194.31.185.0 netmask 255.255.255.0 => type is subnet
-		splittedData = data.split()
 		block = DHCPDConf_Block(
 			startLine=self._currentLine,
 			parentBlock=self._currentBlock,
-			type=splittedData[0].strip(),
-			settings=splittedData
+			type=data.split()[0].strip(),
+			settings=data.split()
 		)
 		self._currentBlock.addComponent(block)
 		self._currentBlock = block

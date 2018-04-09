@@ -24,8 +24,6 @@ SQLite backend.
 :license: GNU Affero GPL version 3
 """
 
-from itertools import izip
-
 from apsw import (
 	SQLITE_OPEN_CREATE, SQLITE_CONFIG_MULTITHREAD, SQLITE_OPEN_READWRITE,
 	Connection)
@@ -77,7 +75,7 @@ class SQLite(SQL):
 			if not self._cursor:
 				def rowtrace(cursor, row):
 					valueSet = {}
-					for rowDescription, current in izip(cursor.getdescription(), row):
+					for rowDescription, current in zip(cursor.getdescription(), row):
 						valueSet[rowDescription[0]] = current
 
 					return valueSet
