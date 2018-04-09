@@ -218,26 +218,26 @@ class BackendManager(ExtendedBackend):
 		if hostControlBackend:
 			logger.info(u"* BackendManager is creating HostControlBackend")
 			try:
-				hcc = self.__loadBackendConfig('hostcontrol')['config']
+				hostControlBackendConfig = self.__loadBackendConfig('hostcontrol')['config']
 			except Exception as backendConfigLoadError:
 				logger.error(
 					"Failed to load configuration for HostControlBackend: {}",
 					backendConfigLoadError
 				)
-				hcc = {}
-			self._backend = HostControlBackend(self._backend, **hcc)
+				hostControlBackendConfig = {}
+			self._backend = HostControlBackend(self._backend, **hostControlBackendConfig)
 
 		if hostControlSafeBackend:
 			logger.info(u"* BackendManager is creating HostControlSafeBackend")
 			try:
-				hcc = self.__loadBackendConfig('hostcontrol')['config']
+				hostControlSafeBackendConfig = self.__loadBackendConfig('hostcontrol')['config']
 			except Exception as backendConfigLoadError:
 				logger.error(
 					"Failed to load configuration for HostControlSafeBackend: {}",
 					backendConfigLoadError
 				)
-				hcc = {}
-			self._backend = HostControlSafeBackend(self._backend, **hcc)
+				hostControlSafeBackendConfig = {}
+			self._backend = HostControlSafeBackend(self._backend, **hostControlSafeBackendConfig)
 
 		if accessControl:
 			logger.info(u"* BackendManager is creating BackendAccessControl")
