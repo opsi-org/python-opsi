@@ -91,8 +91,9 @@ class SQLite(SQL):
 					self._cursor.execute('PRAGMA encoding="UTF-8"')
 				self._cursor.setrowtrace(rowtrace)
 			return (self._connection, self._cursor)
-		except Exception:
-			raise
+		except Exception as connectionError:
+			logger.warning("Problem connecting to SQLite databse: {!r}", connectionError)
+			raise connectionError
 
 	def close(self, conn, cursor):
 		pass
