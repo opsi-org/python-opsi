@@ -4,7 +4,7 @@ libmagic
 ldaptor
 pam
 pyOpenSSL
-MySQL-python
+mysqlclient
 SQLAlchemy
 M2Crypto
 pyasn1
