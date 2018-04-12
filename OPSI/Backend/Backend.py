@@ -1827,7 +1827,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			elif isinstance(f, pureldap.LDAPFilter_present):
 				objectFilter = {f.value: '*'}
 
-			elif isinstance(f, pureldap.LDAPFilter_and) or isinstance(f, pureldap.LDAPFilter_or):
+			elif isinstance(f, (pureldap.LDAPFilter_and, pureldap.LDAPFilter_or)):
 				operator = None
 				if isinstance(f, pureldap.LDAPFilter_and):
 					operator = 'AND'
