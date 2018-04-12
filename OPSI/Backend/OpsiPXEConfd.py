@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2010-2014 uib GmbH <info@uib.de>
+# Copyright (C) 2010-2018 uib GmbH <info@uib.de>
 # All rights reserved.
 
 # This program is free software: you can redistribute it and/or modify
@@ -29,6 +29,7 @@ OpsiPXEConfd-Backend
 import socket
 import threading
 import time
+from contextlib import closing
 
 from OPSI.Logger import Logger
 from OPSI.Object import OpsiClient
@@ -38,7 +39,7 @@ from OPSI.Backend.Backend import OPSI_GLOBAL_CONF, ConfigDataBackend
 from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Util import getfqdn
 
-__version__ = '4.0.6.3'
+__version__ = '4.0.7.61'
 
 logger = Logger()
 
@@ -59,15 +60,18 @@ class ServerConnection:
 
 	def sendCommand(self, cmd):
 		self.createUnixSocket()
-		self._socket.send(forceUnicode(cmd).encode('utf-8'))
-		result = None
-		try:
-			result = forceUnicode(self._socket.recv(4096))
-		except Exception as exc:
-			raise Exception(u"Failed to receive: %s" % exc)
-		self._socket.close()
+
+		with closing(self._socket):
+			self._socket.send(forceUnicode(cmd).encode('utf-8'))
+
+			try:
+				result = forceUnicode(self._socket.recv(4096))
+			except Exception as exc:
+				raise Exception(u"Failed to receive: %s" % exc)
+
 		if result.startswith(u'(ERROR)'):
 			raise Exception(u"Command '%s' failed: %s" % (cmd, result))
+
 		return result
 
 
