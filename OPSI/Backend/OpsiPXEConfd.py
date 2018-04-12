@@ -241,10 +241,7 @@ class UpdateThread(threading.Thread):
 
 	def run(self):
 		while self._delay > 0:
-			try:
-				time.sleep(0.2)
-			except Exception:
-				pass
+			time.sleep(0.2)
 			self._delay -= 0.2
 
 		with self._opsiPXEConfdBackend._updateThreadsLock:
