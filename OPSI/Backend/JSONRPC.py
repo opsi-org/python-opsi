@@ -4,7 +4,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2010-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2010-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -50,7 +50,7 @@ from OPSI.Backend.Backend import Backend, DeferredCall
 from OPSI.Util import serialize, deserialize
 from OPSI.Util.HTTP import urlsplit, getSharedConnectionPool, deflateEncode, deflateDecode, gzipDecode
 
-__version__ = '4.0.7.28'
+__version__ = '4.0.7.60'
 
 logger = Logger()
 
@@ -350,7 +350,7 @@ class JSONRPCBackend(Backend):
 			connectTimeout=self._connectTimeout,
 			retryTime=self._retryTime,
 			maxsize=self._connectionPoolSize,
-			block=True,
+			block=False,
 			verifyServerCert=self._verifyServerCert,
 			serverCertFile=self._serverCertFile,
 			caCertFile=self._caCertFile,
