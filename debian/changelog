@@ -367,6 +367,12 @@ python-opsi (4.1.1.1-1) experimental; urgency=medium
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 04 Oct 2016 16:15:11 +0200
 
+python-opsi (4.0.7.60-1) experimental; urgency=medium
+
+  * JSONRPCBackend: Do not block when retrieving connections.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 12 Apr 2018 12:12:15 +0200
+
 python-opsi (4.0.7.59-1) testing; urgency=medium
 
   * 10_wim.conf: updateWIMConfig checks for install.wim and install.esd.
