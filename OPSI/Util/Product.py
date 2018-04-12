@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2006-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -428,7 +428,7 @@ class ProductPackageFile(object):
 
 			script = os.path.join(self.tmpUnpackDir, u'OPSI', scriptName)
 			if not os.path.exists(script):
-				logger.info(u"Package script '%s' not found" % scriptName)  # better this way
+				logger.info(u"Package script '%s' not found" % scriptName)
 				return []
 
 			logger.notice(u"Running package script '%s'" % scriptName)
