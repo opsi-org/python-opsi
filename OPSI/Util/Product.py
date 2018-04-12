@@ -418,8 +418,7 @@ class ProductPackageFile(object):
 			raise RuntimeError(u"Failed to create package content file of package '%s': %s" % (self.packageFile, e))
 
 	def _runPackageScript(self, scriptName, env={}):
-		logger.info(u"Running package script '%s'" % scriptName)
-
+		logger.info(u"Attempt to run package script {0!r}", scriptName)
 		try:
 			if not self.packageControlFile:
 				raise ValueError(u"Metadata not present")
@@ -429,9 +428,10 @@ class ProductPackageFile(object):
 
 			script = os.path.join(self.tmpUnpackDir, u'OPSI', scriptName)
 			if not os.path.exists(script):
-				logger.warning(u"Package script '%s' not found" % scriptName)
+				logger.info(u"Package script '%s' not found" % scriptName)  # better this way
 				return []
 
+			logger.notice(u"Running package script '%s'" % scriptName)
 			os.chmod(script, 0o700)
 
 			os.putenv('PRODUCT_ID', self.packageControlFile.getProduct().getId())
