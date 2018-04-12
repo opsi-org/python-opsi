@@ -1,3 +1,10 @@
+python-opsi (4.1.1.33-1) UNRELEASED; urgency=medium
+
+  * Changed loglevel for execution of a package script (preinst / postinst).
+  * Small internal refactorings.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 12 Apr 2018 13:28:51 +0200
+
 python-opsi (4.1.1.32-1) stable; urgency=medium
 
   * BackendManager logs easier to spot warning if loading the configuration
