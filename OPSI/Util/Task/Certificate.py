@@ -33,8 +33,9 @@ between servers and clients.
 import os
 import random
 import shutil
-from OpenSSL import crypto
 from tempfile import NamedTemporaryFile
+
+from OpenSSL import crypto
 
 from OPSI.Logger import Logger
 from OPSI.System import which, execute
