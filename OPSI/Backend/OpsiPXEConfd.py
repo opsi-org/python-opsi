@@ -256,8 +256,8 @@ class UpdateThread(threading.Thread):
 				logger.info(u"Got result '%s'" % result)
 			except Exception as error:
 				logger.critical(u"Failed to update PXE boot configuration for client '%s': %s" % (self._clientId, error))
-
-			del self._opsiPXEConfdBackend._updateThreads[self._clientId]
+			finally:
+				del self._opsiPXEConfdBackend._updateThreads[self._clientId]
 
 	def delay(self):
 		self._delay = 3.0
