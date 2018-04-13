@@ -393,8 +393,7 @@ class JSONRPCBackend(Backend):
 			except Exception:
 				pass
 
-		if self._rpcQueue:
-			self._rpcQueue.stop()
+		self.stopRpcQueue()
 
 	def setAsync(self, async):
 		if not self._connected:
