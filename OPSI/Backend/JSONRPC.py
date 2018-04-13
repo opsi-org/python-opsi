@@ -377,15 +377,13 @@ class JSONRPCBackend(Backend):
 		return self._connectionPool.getPeerCertificate(asPem)
 
 	def backend_exit(self):
-		res = None
 		if self._connected:
 			try:
-				res = self._jsonRPC('backend_exit', retry=False)
+				self._jsonRPC('backend_exit', retry=False)
 			except Exception:
 				pass
-		if self._rpcQueue:
-			self._rpcQueue.stop()
-		return res
+
+		self.stopRpcQueue()
 
 	def setAsync(self, enableAsync):
 		if not self._connected:
