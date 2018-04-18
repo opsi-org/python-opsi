@@ -1,3 +1,10 @@
+python-opsi (4.0.7.62-1) testing; urgency=medium
+
+  * JSONRPCBackend: Block again when retrieving connections.
+  * JSONRPCBackend: Defalult connection pool size is 2.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 18 Apr 2018 10:35:24 +0200
+
 python-opsi (4.0.7.61-1) testing; urgency=medium
 
   * OpsiPXEConfd backend: Reliably close socket.
