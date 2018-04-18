@@ -271,7 +271,7 @@ class JSONRPCBackend(Backend):
 		self._protocol = 'https'
 		self._socketTimeout = None
 		self._connectTimeout = 30
-		self._connectionPoolSize = 1
+		self._connectionPoolSize = 2
 		self._interface = None
 		self._rpcId = 0
 		self._rpcIdLock = threading.Lock()
@@ -343,7 +343,7 @@ class JSONRPCBackend(Backend):
 			connectTimeout=self._connectTimeout,
 			retryTime=self._retryTime,
 			maxsize=self._connectionPoolSize,
-			block=False,
+			block=True,
 			verifyServerCert=self._verifyServerCert,
 			serverCertFile=self._serverCertFile,
 			caCertFile=self._caCertFile,
