@@ -50,7 +50,7 @@ from OPSI.Backend.Backend import Backend, DeferredCall
 from OPSI.Util import serialize, deserialize
 from OPSI.Util.HTTP import urlsplit, getSharedConnectionPool, deflateEncode, deflateDecode, gzipDecode
 
-__version__ = '4.0.7.60'
+__version__ = '4.0.7.62'
 
 logger = Logger()
 
@@ -276,7 +276,7 @@ class JSONRPCBackend(Backend):
 		self._protocol = 'https'
 		self._socketTimeout = None
 		self._connectTimeout = 30
-		self._connectionPoolSize = 1
+		self._connectionPoolSize = 2
 		self._legacyOpsi = False
 		self._interface = None
 		self._rpcId = 0
@@ -350,7 +350,7 @@ class JSONRPCBackend(Backend):
 			connectTimeout=self._connectTimeout,
 			retryTime=self._retryTime,
 			maxsize=self._connectionPoolSize,
-			block=False,
+			block=True,
 			verifyServerCert=self._verifyServerCert,
 			serverCertFile=self._serverCertFile,
 			caCertFile=self._caCertFile,
