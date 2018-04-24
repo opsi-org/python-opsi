@@ -1,3 +1,10 @@
+python-opsi (4.1.1.34-1) testing; urgency=medium
+
+  * OpsiPXEConfdBackend.configState_deleteObjects: Make sure that only one
+    update of the PXE config is triggered per host.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 24 Apr 2018 18:15:31 +0200
+
 python-opsi (4.1.1.33-1) experimental; urgency=medium
 
   * Changed loglevel for execution of a package script (preinst / postinst).
