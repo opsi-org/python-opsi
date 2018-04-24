@@ -226,13 +226,14 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 		self.opsipxeconfd_updatePXEBootConfiguration(configState.objectId)
 
 	def configState_deleteObjects(self, configStates):
-		errors = []
-		for configState in configStates:
-			if configState.configId != 'clientconfig.depot.id':
-				continue
+		hosts = set(configState.objectId for configState
+					in configStates
+					if configState.configId == 'clientconfig.depot.id')
 
+		errors = []
+		for host in hosts:
 			try:
-				self.opsipxeconfd_updatePXEBootConfiguration(configState.objectId)
+				self.opsipxeconfd_updatePXEBootConfiguration(host)
 			except Exception as error:
 				errors.append(forceUnicode(error))
 
