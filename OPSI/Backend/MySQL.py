@@ -759,14 +759,9 @@ class MySQLBackend(SQLBackend):
 		ConfigDataBackend.productProperty_updateObject(self, productProperty)
 		data = self._objectToDatabaseHash(productProperty)
 		where = self._uniqueCondition(productProperty)
-		possibleValues = data['possibleValues']
-		defaultValues = data['defaultValues']
-		if possibleValues is None:
-			possibleValues = []
-		if defaultValues is None:
-			defaultValues = []
-		del data['possibleValues']
-		del data['defaultValues']
+		possibleValues = data.pop('possibleValues') or []
+		defaultValues = data.pop('defaultValues') or []
+
 		self._sql.update('PRODUCT_PROPERTY', where, data)
 
 		try:
