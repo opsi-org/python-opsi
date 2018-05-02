@@ -674,79 +674,78 @@ class MySQLBackend(SQLBackend):
 				logger.error(errorMessage)
 				raise BackendUnaccomplishableError(errorMessage)
 
-		(conn, cursor) = self._sql.connect()
-		for value in possibleValues:
-			try:
-				# transform arguments for sql
-				# from uniqueCondition
-				if value in defaultValues:
-					myPPVdefault = u"`isDefault` = 1"
-				else:
-					myPPVdefault = u"`isDefault` = 0"
-
-				if isinstance(value, bool):
-					if value:
-						myPPVvalue = u"`value` = 1"
+		with closingConnectionAndCursor(self._sql) as (conn, cursor):
+			for value in possibleValues:
+				try:
+					# transform arguments for sql
+					# from uniqueCondition
+					if value in defaultValues:
+						myPPVdefault = u"`isDefault` = 1"
 					else:
-						myPPVvalue = u"`value` = 0"
-				elif isinstance(value, (float, long, int)):
-					myPPVvalue = u"`value` = %s" % (value)
-				else:
-					myPPVvalue = u"`value` = '%s'" % (self._sql.escapeApostrophe(self._sql.escapeBackslash(value)))
-				myPPVselect = (
-					u"select * from PRODUCT_PROPERTY_VALUE where "
-					u"`propertyId` = '{0}' AND `productId` = '{1}' AND "
-					u"`productVersion` = '{2}' AND "
-					u"`packageVersion` = '{3}' AND {4} AND {5}".format(
-						data['propertyId'],
-						data['productId'],
-						str(data['productVersion']),
-						str(data['packageVersion']),
-						myPPVvalue,
-						myPPVdefault
+						myPPVdefault = u"`isDefault` = 0"
+
+					if isinstance(value, bool):
+						if value:
+							myPPVvalue = u"`value` = 1"
+						else:
+							myPPVvalue = u"`value` = 0"
+					elif isinstance(value, (float, long, int)):
+						myPPVvalue = u"`value` = %s" % (value)
+					else:
+						myPPVvalue = u"`value` = '%s'" % (self._sql.escapeApostrophe(self._sql.escapeBackslash(value)))
+					myPPVselect = (
+						u"select * from PRODUCT_PROPERTY_VALUE where "
+						u"`propertyId` = '{0}' AND `productId` = '{1}' AND "
+						u"`productVersion` = '{2}' AND "
+						u"`packageVersion` = '{3}' AND {4} AND {5}".format(
+							data['propertyId'],
+							data['productId'],
+							str(data['productVersion']),
+							str(data['packageVersion']),
+							myPPVvalue,
+							myPPVdefault
+						)
 					)
-				)
 
-				retries = 10
-				for retry in range(retries):
-					try:
-						# transaction
-						cursor.execute("SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE")
-						self._sql.doCommit = False
-						conn.begin()
-						logger.debug2(u'Start Transaction: insert to ppv #{}', retry)
-						if not self._sql.getRow(myPPVselect, conn, cursor):
-							self._sql.insert('PRODUCT_PROPERTY_VALUE', {
-								'productId': data['productId'],
-								'productVersion': data['productVersion'],
-								'packageVersion': data['packageVersion'],
-								'propertyId': data['propertyId'],
-								'value': value,
-								'isDefault': bool(value in defaultValues)
-								}, conn, cursor)
-							conn.commit()
-						else:
-							conn.rollback()
-						break
-					except Exception as insertError:
-						logger.debug(u"Execute error: {!r}", insertError)
-						if deleteError.args[0] == DEADLOCK_FOUND_WHEN_TRYING_TO_GET_LOCK_ERROR_CODE:
-							# 1213: May be table locked because of concurrent access - retrying
-							logger.notice(u'Table locked (Code 2013) - restarting Transaction')
-							time.sleep(0.1)
-						else:
-							logger.error(u'Unknown DB Error: {!r}', insertError)
-							raise
-				else:
-					errorMessage = u'Table locked (Code 2013) - giving up after {} retries'.format(retries)
-					logger.error(errorMessage)
-					raise BackendUnaccomplishableError(errorMessage)
+					retries = 10
+					for retry in range(retries):
+						try:
+							# transaction
+							cursor.execute("SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE")
+							self._sql.doCommit = False
+							conn.begin()
+							logger.debug2(u'Start Transaction: insert to ppv #{}', retry)
+							if not self._sql.getRow(myPPVselect, conn, cursor):
+								self._sql.insert('PRODUCT_PROPERTY_VALUE', {
+									'productId': data['productId'],
+									'productVersion': data['productVersion'],
+									'packageVersion': data['packageVersion'],
+									'propertyId': data['propertyId'],
+									'value': value,
+									'isDefault': bool(value in defaultValues)
+									}, conn, cursor)
+								conn.commit()
+							else:
+								conn.rollback()
+							break
+						except Exception as insertError:
+							logger.debug(u"Execute error: {!r}", insertError)
+							if deleteError.args[0] == DEADLOCK_FOUND_WHEN_TRYING_TO_GET_LOCK_ERROR_CODE:
+								# 1213: May be table locked because of concurrent access - retrying
+								logger.notice(u'Table locked (Code 2013) - restarting Transaction')
+								time.sleep(0.1)
+							else:
+								logger.error(u'Unknown DB Error: {!r}', insertError)
+								raise
+					else:
+						errorMessage = u'Table locked (Code 2013) - giving up after {} retries'.format(retries)
+						logger.error(errorMessage)
+						raise BackendUnaccomplishableError(errorMessage)
 
-				logger.debug2(u'End Transaction')
-			finally:
-				self._sql.doCommit = True
-				logger.debug2(u'doCommit set to true')
-		self._sql.close(conn, cursor)
+					logger.debug2(u'End Transaction')
+				finally:
+					self._sql.doCommit = True
+					logger.debug2(u'doCommit set to true')
 
 	def productProperty_updateObject(self, productProperty):
 		self._requiresEnabledSQLBackendModule()
