@@ -67,7 +67,7 @@ def closingConnectionAndCursor(sqlInstance):
 	try:
 		yield (connection, cursor)
 	finally:
-			sqlInstance.close(connection, cursor)
+		sqlInstance.close(connection, cursor)
 
 
 def disableCommitting(sqlInstance):
