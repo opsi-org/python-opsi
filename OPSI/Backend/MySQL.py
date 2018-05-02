@@ -624,14 +624,8 @@ class MySQLBackend(SQLBackend):
 		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.productProperty_insertObject(self, productProperty)
 		data = self._objectToDatabaseHash(productProperty)
-		possibleValues = data['possibleValues']
-		defaultValues = data['defaultValues']
-		if possibleValues is None:
-			possibleValues = []
-		if defaultValues is None:
-			defaultValues = []
-		del data['possibleValues']
-		del data['defaultValues']
+		possibleValues = data.pop('possibleValues') or []
+		defaultValues = data.pop('defaultValues') or []
 
 		where = self._uniqueCondition(productProperty)
 		if self._sql.getRow('select * from `PRODUCT_PROPERTY` where %s' % where):
