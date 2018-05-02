@@ -1,3 +1,9 @@
+python-opsi (4.1.1.35-1) testing; urgency=medium
+
+  * Based on python-opsi 4.0.7.63.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 02 May 2018 17:45:26 +0200
+
 python-opsi (4.1.1.34-1) testing; urgency=medium
 
   * OpsiPXEConfdBackend.configState_deleteObjects: Make sure that only one
@@ -381,6 +387,13 @@ python-opsi (4.1.1.1-1) experimental; urgency=medium
     into OPSI/__init__.py to always show the current version.
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 04 Oct 2016 16:15:11 +0200
+
+python-opsi (4.0.7.63-1) testing; urgency=medium
+
+  * OpsiPXEConfd: Only relay updates to the depot if the action request is
+    setup, always or once.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 02 May 2018 16:40:36 +0200
 
 python-opsi (4.0.7.62-1) testing; urgency=medium
 
