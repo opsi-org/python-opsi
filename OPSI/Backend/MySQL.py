@@ -658,9 +658,7 @@ class MySQLBackend(SQLBackend):
 					myTransactionSuccess = True
 				except Exception as e:
 					logger.debug(u"Execute error: %s" % e)
-					if e.args[0] == 1213:
-						# 1213: 'Deadlock found when trying to get lock; try restarting transaction'
-						# 1213: May be table locked because of concurrent access - retrying
+					if e.args[0] == DEADLOCK_FOUND_WHEN_TRYING_TO_GET_LOCK_ERROR_CODE:
 						myTransactionSuccess = False
 						if myRetryTransactionCounter >= myMaxRetryTransaction:
 							logger.error(u'Table locked (Code 2013) - giving up after %d retries' % myRetryTransactionCounter)
