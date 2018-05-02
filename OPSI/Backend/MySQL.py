@@ -656,9 +656,9 @@ class MySQLBackend(SQLBackend):
 					self._sql.delete('PRODUCT_PROPERTY_VALUE', where, conn, cursor)
 					conn.commit()
 					myTransactionSuccess = True
-				except Exception as e:
-					logger.debug(u"Execute error: %s" % e)
-					if e.args[0] == DEADLOCK_FOUND_WHEN_TRYING_TO_GET_LOCK_ERROR_CODE:
+				except Exception as deleteError:
+					logger.debug(u"Execute error: %s" % deleteError)
+					if deleteError.args[0] == DEADLOCK_FOUND_WHEN_TRYING_TO_GET_LOCK_ERROR_CODE:
 						myTransactionSuccess = False
 						if myRetryTransactionCounter >= myMaxRetryTransaction:
 							logger.error(u'Table locked (Code 2013) - giving up after %d retries' % myRetryTransactionCounter)
@@ -667,7 +667,7 @@ class MySQLBackend(SQLBackend):
 							logger.notice(u'Table locked (Code 2013) - restarting Transaction')
 							time.sleep(0.1)
 					else:
-						logger.error(u'Unknown DB Error: %s' % str(e))
+						logger.error(u'Unknown DB Error: %s' % str(deleteError))
 						raise
 
 				logger.debug2(u'End Transaction')
@@ -733,9 +733,9 @@ class MySQLBackend(SQLBackend):
 						else:
 							conn.rollback()
 						myTransactionSuccess = True
-					except Exception as e:
-						logger.debug(u"Execute error: %s" % e)
-						if e.args[0] == DEADLOCK_FOUND_WHEN_TRYING_TO_GET_LOCK_ERROR_CODE:
+					except Exception as insertError:
+						logger.debug(u"Execute error: %s" % insertError)
+						if deleteError.args[0] == DEADLOCK_FOUND_WHEN_TRYING_TO_GET_LOCK_ERROR_CODE:
 							# 1213: May be table locked because of concurrent access - retrying
 							myTransactionSuccess = False
 							if myRetryTransactionCounter >= myMaxRetryTransaction:
@@ -745,7 +745,7 @@ class MySQLBackend(SQLBackend):
 								logger.notice(u'Table locked (Code 2013) - restarting Transaction')
 								time.sleep(0.1)
 						else:
-							logger.error(u'Unknown DB Error: %s' % str(e))
+							logger.error(u'Unknown DB Error: %s' % str(insertError))
 							raise
 
 				logger.debug2(u'End Transaction')
