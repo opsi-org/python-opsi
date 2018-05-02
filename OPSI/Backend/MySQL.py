@@ -706,17 +706,15 @@ class MySQLBackend(SQLBackend):
 						myPPVdefault
 					)
 				)
-				myTransactionSuccess = False
-				myMaxRetryTransaction = 10
-				myRetryTransactionCounter = 0
-				while (not myTransactionSuccess) and (myRetryTransactionCounter < myMaxRetryTransaction):
+
+				retries = 10
+				for retry in range(retries):
 					try:
-						myRetryTransactionCounter += 1
 						# transaction
 						cursor.execute("SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE")
 						self._sql.doCommit = False
 						conn.begin()
-						logger.debug2(u'Start Transaction: insert to ppv #{}', myRetryTransactionCounter)
+						logger.debug2(u'Start Transaction: insert to ppv #{}', retry)
 						if not self._sql.getRow(myPPVselect, conn, cursor):
 							self._sql.insert('PRODUCT_PROPERTY_VALUE', {
 								'productId': data['productId'],
@@ -729,21 +727,20 @@ class MySQLBackend(SQLBackend):
 							conn.commit()
 						else:
 							conn.rollback()
-						myTransactionSuccess = True
+						break
 					except Exception as insertError:
 						logger.debug(u"Execute error: {!r}", insertError)
 						if deleteError.args[0] == DEADLOCK_FOUND_WHEN_TRYING_TO_GET_LOCK_ERROR_CODE:
 							# 1213: May be table locked because of concurrent access - retrying
-							myTransactionSuccess = False
-							if myRetryTransactionCounter >= myMaxRetryTransaction:
-								logger.error(u'Table locked (Code 2013) - giving up after {} retries', myRetryTransactionCounter)
-								raise
-							else:
-								logger.notice(u'Table locked (Code 2013) - restarting Transaction')
-								time.sleep(0.1)
+							logger.notice(u'Table locked (Code 2013) - restarting Transaction')
+							time.sleep(0.1)
 						else:
 							logger.error(u'Unknown DB Error: {!r}', insertError)
 							raise
+				else:
+					errorMessage = u'Table locked (Code 2013) - giving up after {} retries'.format(retries)
+					logger.error(errorMessage)
+					raise BackendUnaccomplishableError(errorMessage)
 
 				logger.debug2(u'End Transaction')
 			finally:
