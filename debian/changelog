@@ -1,3 +1,9 @@
+python-opsi (4.1.1.35-1) testing; urgency=medium
+
+  * Based on python-opsi 4.0.7.63.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 02 May 2018 17:45:26 +0200
+
 python-opsi (4.1.1.34-1) testing; urgency=medium
 
   * OpsiPXEConfdBackend.configState_deleteObjects: Make sure that only one
