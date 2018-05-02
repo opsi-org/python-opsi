@@ -645,23 +645,23 @@ class MySQLBackend(SQLBackend):
 					cursor.execute("SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE")
 					self._sql.doCommit = False
 					conn.begin()
-					logger.debug2(u'Start Transaction: delete from ppv %d' % myRetryTransactionCounter)
+					logger.debug2(u'Start Transaction: delete from ppv #{}', myRetryTransactionCounter)
 
 					self._sql.delete('PRODUCT_PROPERTY_VALUE', where, conn, cursor)
 					conn.commit()
 					myTransactionSuccess = True
 				except Exception as deleteError:
-					logger.debug(u"Execute error: %s" % deleteError)
+					logger.debug(u"Execute error: {}", deleteError)
 					if deleteError.args[0] == DEADLOCK_FOUND_WHEN_TRYING_TO_GET_LOCK_ERROR_CODE:
 						myTransactionSuccess = False
 						if myRetryTransactionCounter >= myMaxRetryTransaction:
-							logger.error(u'Table locked (Code 2013) - giving up after %d retries' % myRetryTransactionCounter)
+							logger.error(u'Table locked (Code 2013) - giving up after {} retries', myRetryTransactionCounter)
 							raise
 						else:
 							logger.notice(u'Table locked (Code 2013) - restarting Transaction')
 							time.sleep(0.1)
 					else:
-						logger.error(u'Unknown DB Error: %s' % str(deleteError))
+						logger.error(u'Unknown DB Error: {}', deleteError)
 						raise
 
 				logger.debug2(u'End Transaction')
@@ -711,7 +711,7 @@ class MySQLBackend(SQLBackend):
 						cursor.execute("SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE")
 						self._sql.doCommit = False
 						conn.begin()
-						logger.debug2(u'Start Transaction: insert to ppv %d' % myRetryTransactionCounter)
+						logger.debug2(u'Start Transaction: insert to ppv #{}', myRetryTransactionCounter)
 						if not self._sql.getRow(myPPVselect, conn, cursor):
 							# self._sql.doCommit = True
 							logger.debug2(u'doCommit set to true')
@@ -728,18 +728,18 @@ class MySQLBackend(SQLBackend):
 							conn.rollback()
 						myTransactionSuccess = True
 					except Exception as insertError:
-						logger.debug(u"Execute error: %s" % insertError)
+						logger.debug(u"Execute error: {!r}", insertError)
 						if deleteError.args[0] == DEADLOCK_FOUND_WHEN_TRYING_TO_GET_LOCK_ERROR_CODE:
 							# 1213: May be table locked because of concurrent access - retrying
 							myTransactionSuccess = False
 							if myRetryTransactionCounter >= myMaxRetryTransaction:
-								logger.error(u'Table locked (Code 2013) - giving up after %d retries' % myRetryTransactionCounter)
+								logger.error(u'Table locked (Code 2013) - giving up after {} retries', myRetryTransactionCounter)
 								raise
 							else:
 								logger.notice(u'Table locked (Code 2013) - restarting Transaction')
 								time.sleep(0.1)
 						else:
-							logger.error(u'Unknown DB Error: %s' % str(insertError))
+							logger.error(u'Unknown DB Error: {!r}', insertError)
 							raise
 
 				logger.debug2(u'End Transaction')
