@@ -70,6 +70,16 @@ def closingConnectionAndCursor(sqlInstance):
 			sqlInstance.close(connection, cursor)
 
 
+def disableCommitting(sqlInstance):
+	sqlInstance.doCommit = False
+	logger.debug2(u'doCommit set to False')
+	try:
+		yield
+	finally:
+		sqlInstance.doCommit = True
+		logger.debug2(u'doCommit set to true')
+
+
 class ConnectionPool(object):
 	# Storage for the instance reference
 	__instance = None
@@ -765,9 +775,7 @@ class MySQLBackend(SQLBackend):
 			logger.debug2(u"Failed to delete from PRODUCT_PROPERTY_VALUE: {}", delError)
 
 		for value in possibleValues:
-			try:
-				self._sql.doCommit = False
-				logger.debug2(u'doCommit set to False')
+			with disableCommitting(self._sql):
 				valuesExist = self._sql.getRow(
 					u"select * from PRODUCT_PROPERTY_VALUE where "
 					u"`propertyId` = '{0}' AND `productId` = '{1}' AND "
@@ -781,6 +789,7 @@ class MySQLBackend(SQLBackend):
 						str(value in defaultValues)
 					)
 				)
+
 				if not valuesExist:
 					self._sql.doCommit = True
 					logger.debug2(u'doCommit set to True')
@@ -793,9 +802,6 @@ class MySQLBackend(SQLBackend):
 						'isDefault': bool(value in defaultValues)
 						}
 					)
-			finally:
-				self._sql.doCommit = True
-				logger.debug2(u'doCommit set to True')
 
 
 class MySQLBackendObjectModificationTracker(SQLBackendObjectModificationTracker):
