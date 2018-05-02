@@ -70,6 +70,7 @@ def closingConnectionAndCursor(sqlInstance):
 		sqlInstance.close(connection, cursor)
 
 
+@contextmanager
 def disableCommitting(sqlInstance):
 	sqlInstance.doCommit = False
 	logger.debug2(u'doCommit set to False')
