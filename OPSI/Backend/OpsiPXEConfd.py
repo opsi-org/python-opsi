@@ -161,7 +161,8 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 				)
 				return
 
-			self._getDepotConnection(depotId).opsipxeconfd_updatePXEBootConfiguration(productOnClient.clientId)
+			depot = self._getDepotConnection(depotId)
+			depot.opsipxeconfd_updatePXEBootConfiguration(productOnClient.clientId)
 		else:
 			self.opsipxeconfd_updatePXEBootConfiguration(productOnClient.clientId)
 
