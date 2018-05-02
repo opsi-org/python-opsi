@@ -769,8 +769,10 @@ class MySQLBackend(SQLBackend):
 		del data['defaultValues']
 		self._sql.update('PRODUCT_PROPERTY', where, data)
 
-		if possibleValues is not None:
+		try:
 			self._sql.delete('PRODUCT_PROPERTY_VALUE', where)
+		except Exception as delError:
+			logger.debug2(u"Failed to delete from PRODUCT_PROPERTY_VALUE: {}", delError)
 
 		for value in possibleValues:
 			try:
