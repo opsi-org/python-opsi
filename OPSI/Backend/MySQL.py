@@ -719,7 +719,7 @@ class MySQLBackend(SQLBackend):
 								'packageVersion': data['packageVersion'],
 								'propertyId': data['propertyId'],
 								'value': value,
-								'isDefault': (value in defaultValues)
+								'isDefault': bool(value in defaultValues)
 								}, conn, cursor)
 							conn.commit()
 						else:
