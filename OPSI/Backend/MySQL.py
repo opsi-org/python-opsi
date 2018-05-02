@@ -713,8 +713,6 @@ class MySQLBackend(SQLBackend):
 						conn.begin()
 						logger.debug2(u'Start Transaction: insert to ppv #{}', myRetryTransactionCounter)
 						if not self._sql.getRow(myPPVselect, conn, cursor):
-							# self._sql.doCommit = True
-							logger.debug2(u'doCommit set to true')
 							self._sql.insert('PRODUCT_PROPERTY_VALUE', {
 								'productId': data['productId'],
 								'productVersion': data['productVersion'],
