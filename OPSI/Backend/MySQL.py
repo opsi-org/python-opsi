@@ -651,6 +651,7 @@ class MySQLBackend(SQLBackend):
 					# transaction
 					cursor.execute("SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE")
 					self._sql.doCommit = False
+					logger.debug2(u'doCommit set to False')
 					conn.begin()
 					logger.debug2(u'Start Transaction: delete from ppv #{}', retry)
 
@@ -713,6 +714,7 @@ class MySQLBackend(SQLBackend):
 							# transaction
 							cursor.execute("SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE")
 							self._sql.doCommit = False
+							logger.debug2(u'doCommit set to False')
 							conn.begin()
 							logger.debug2(u'Start Transaction: insert to ppv #{}', retry)
 							if not self._sql.getRow(myPPVselect, conn, cursor):
@@ -765,7 +767,7 @@ class MySQLBackend(SQLBackend):
 		for value in possibleValues:
 			try:
 				self._sql.doCommit = False
-				logger.debug2(u'doCommit set to false')
+				logger.debug2(u'doCommit set to False')
 				valuesExist = self._sql.getRow(
 					u"select * from PRODUCT_PROPERTY_VALUE where "
 					u"`propertyId` = '{0}' AND `productId` = '{1}' AND "
@@ -781,7 +783,7 @@ class MySQLBackend(SQLBackend):
 				)
 				if not valuesExist:
 					self._sql.doCommit = True
-					logger.debug2(u'doCommit set to true')
+					logger.debug2(u'doCommit set to True')
 					self._sql.insert('PRODUCT_PROPERTY_VALUE', {
 						'productId': data['productId'],
 						'productVersion': data['productVersion'],
@@ -793,7 +795,7 @@ class MySQLBackend(SQLBackend):
 					)
 			finally:
 				self._sql.doCommit = True
-				logger.debug2(u'doCommit set to true')
+				logger.debug2(u'doCommit set to True')
 
 
 class MySQLBackendObjectModificationTracker(SQLBackendObjectModificationTracker):
