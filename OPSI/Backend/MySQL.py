@@ -31,6 +31,7 @@ import base64
 import warnings
 import time
 import threading
+from contextlib import contextmanager
 from hashlib import md5
 
 import MySQLdb
@@ -39,7 +40,8 @@ from MySQLdb.converters import conversions
 from sqlalchemy import pool
 from twisted.conch.ssh import keys
 
-from OPSI.Exceptions import BackendBadValueError, BackendUnableToConnectError
+from OPSI.Exceptions import (BackendBadValueError, BackendUnableToConnectError,
+	BackendUnaccomplishableError)
 from OPSI.Logger import Logger
 from OPSI.Types import forceInt, forceUnicode
 from OPSI.Backend.Backend import ConfigDataBackend
@@ -57,6 +59,15 @@ MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE = 2006
 # 2006: 'MySQL server has gone away'
 DEADLOCK_FOUND_WHEN_TRYING_TO_GET_LOCK_ERROR_CODE = 1213
 # 1213: 'Deadlock found when trying to get lock; try restarting transaction'
+
+
+@contextmanager
+def closingConnectionAndCursor(sqlInstance):
+	(connection, cursor) = sqlInstance.connect()
+	try:
+		yield (connection, cursor)
+	finally:
+			sqlInstance.close(connection, cursor)
 
 
 class ConnectionPool(object):
@@ -633,41 +644,35 @@ class MySQLBackend(SQLBackend):
 		else:
 			self._sql.insert('PRODUCT_PROPERTY', data)
 
-		if possibleValues is not None:
-			(conn, cursor) = self._sql.connect()
-			myTransactionSuccess = False
-			myMaxRetryTransaction = 10
-			myRetryTransactionCounter = 0
-			while (not myTransactionSuccess) and (myRetryTransactionCounter < myMaxRetryTransaction):
+		with closingConnectionAndCursor(self._sql) as (conn, cursor):
+			retries = 10
+			for retry in range(retries):
 				try:
-					myRetryTransactionCounter += 1
 					# transaction
 					cursor.execute("SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE")
 					self._sql.doCommit = False
 					conn.begin()
-					logger.debug2(u'Start Transaction: delete from ppv #{}', myRetryTransactionCounter)
+					logger.debug2(u'Start Transaction: delete from ppv #{}', retry)
 
 					self._sql.delete('PRODUCT_PROPERTY_VALUE', where, conn, cursor)
 					conn.commit()
-					myTransactionSuccess = True
+					break
 				except Exception as deleteError:
 					logger.debug(u"Execute error: {}", deleteError)
 					if deleteError.args[0] == DEADLOCK_FOUND_WHEN_TRYING_TO_GET_LOCK_ERROR_CODE:
-						myTransactionSuccess = False
-						if myRetryTransactionCounter >= myMaxRetryTransaction:
-							logger.error(u'Table locked (Code 2013) - giving up after {} retries', myRetryTransactionCounter)
-							raise
-						else:
-							logger.notice(u'Table locked (Code 2013) - restarting Transaction')
-							time.sleep(0.1)
+						logger.debug(u'Table locked (Code 2013) - restarting Transaction')
+						time.sleep(0.1)
 					else:
-						logger.error(u'Unknown DB Error: {}', deleteError)
+						logger.error(u'Unknown DB Error: {!r}', deleteError)
 						raise
-
-				logger.debug2(u'End Transaction')
-				self._sql.doCommit = True
-				logger.debug2(u'doCommit set to true')
-			self._sql.close(conn, cursor)
+				finally:
+					logger.debug2(u'End Transaction')
+					self._sql.doCommit = True
+					logger.debug2(u'doCommit set to true')
+			else:
+				errorMessage = u'Table locked (Code 2013) - giving up after {} retries'.format(retries)
+				logger.error(errorMessage)
+				raise BackendUnaccomplishableError(errorMessage)
 
 		(conn, cursor) = self._sql.connect()
 		for value in possibleValues:
