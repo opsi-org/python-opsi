@@ -1,3 +1,9 @@
+python-opsi (4.1.1.35-2) testing; urgency=medium
+
+  * Debian: depend on iproute or iproute2.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 04 May 2018 14:26:40 +0200
+
 python-opsi (4.1.1.35-1) testing; urgency=medium
 
   * Based on python-opsi 4.0.7.63.
