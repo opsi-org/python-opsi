@@ -275,7 +275,7 @@ def createRequiredTables(database):
     database.execute(u'''CREATE TABLE `OBJECT_TO_GROUP` (
         `object_to_group_id` integer NOT NULL ''' + database.AUTOINCREMENT + ''',
         `groupType` varchar(30) NOT NULL,
-        `groupId` varchar(255) NOT NULL,
+        `groupId` varchar(100) NOT NULL,
         `objectId` varchar(255) NOT NULL,
         PRIMARY KEY (`object_to_group_id`),
         FOREIGN KEY (`groupType`, `groupId`) REFERENCES `GROUP` (`type`, `groupId`)
