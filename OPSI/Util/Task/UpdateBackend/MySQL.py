@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -105,6 +105,10 @@ read from `backendConfigFile`.
 	if schemaVersion < 3:
 		with updateSchemaVersion(mysql, version=3):
 			_addWorkbenchAttributesToHosts(mysql)
+
+	if schemaVersion < 4:
+		with updateSchemaVersion(mysql, version=4):
+			_adjustLengthOfGroupId(mysql)
 
 	LOGGER.debug("Expected database schema version: {0}", DATABASE_SCHEMA_VERSION)
 	if not readSchemaVersion(mysql) == DATABASE_SCHEMA_VERSION:
@@ -694,3 +698,11 @@ def _addWorkbenchAttributesToHosts(database):
 
 	LOGGER.notice("Adding column 'workbenchRemoteUrl' on table HOST.")
 	database.execute('ALTER TABLE `HOST` add `workbenchRemoteUrl` varchar(255);')
+
+
+def _adjustLengthOfGroupId(database):
+	LOGGER.notice("Correcting length of column 'groupId' on table OBJECT_TO_GROUP")
+	database.execute(
+		'ALTER TABLE `OBJECT_TO_GROUP` '
+		'MODIFY COLUMN `groupId` varchar(255) NOT NULL;'
+	)
