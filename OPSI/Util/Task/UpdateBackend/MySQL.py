@@ -88,11 +88,9 @@ read from `backendConfigFile`.
 		LOGGER.notice("Missing information about database schema. Creating...")
 		createSchemaVersionTable(mysql)
 		with updateSchemaVersion(mysql, version=0):
-			pass
+			_processOpsi40migrations(mysql)
 
 		schemaVersion = readSchemaVersion(mysql)
-
-		_processOpsi40migrations(mysql)
 
 	migrations = [
 		_dropTableBootconfiguration,
