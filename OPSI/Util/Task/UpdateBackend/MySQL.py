@@ -94,21 +94,17 @@ read from `backendConfigFile`.
 
 		_processOpsi40migrations(mysql)
 
-	if schemaVersion < 1:
-		with updateSchemaVersion(mysql, version=1):
-			_dropTableBootconfiguration(mysql)
+	migrations = [
+		_dropTableBootconfiguration,
+		_addIndexOnProductPropertyValues,
+		_addWorkbenchAttributesToHosts,
+		_adjustLengthOfGroupId,
+	]
 
-	if schemaVersion < 2:
-		with updateSchemaVersion(mysql, version=2):
-			_addIndexOnProductPropertyValues(mysql)
-
-	if schemaVersion < 3:
-		with updateSchemaVersion(mysql, version=3):
-			_addWorkbenchAttributesToHosts(mysql)
-
-	if schemaVersion < 4:
-		with updateSchemaVersion(mysql, version=4):
-			_adjustLengthOfGroupId(mysql)
+	for newSchemaVersion, migration in enumerate(migrations, start=1):
+		if schemaVersion < newSchemaVersion:
+			with updateSchemaVersion(mysql, version=newSchemaVersion):
+				migration(mysql)
 
 	LOGGER.debug("Expected database schema version: {0}", DATABASE_SCHEMA_VERSION)
 	if not readSchemaVersion(mysql) == DATABASE_SCHEMA_VERSION:
