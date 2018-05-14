@@ -92,6 +92,10 @@ read from `backendConfigFile`.
 
 		schemaVersion = readSchemaVersion(mysql)
 
+	# The migrations that follow are each a function that will take the
+	# established database connection as first parameter.
+	# Do not change the order of the migrations once released, because
+	# this may lead to hard-to-debug inconsistent version numbers.
 	migrations = [
 		_dropTableBootconfiguration,
 		_addIndexOnProductPropertyValues,
