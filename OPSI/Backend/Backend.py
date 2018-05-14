@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -47,7 +47,6 @@ from hashlib import md5
 from twisted.conch.ssh import keys
 
 from OPSI import __version__ as LIBRARY_VERSION
-from OPSI.Config import OPSI_GLOBAL_CONF
 from OPSI.Logger import Logger
 from OPSI.Exceptions import *  # this is needed for dynamic loading
 from OPSI.Types import *  # this is needed for dynamic loading
@@ -584,7 +583,7 @@ containing the localisation of the hardware audit.
 				logger.info(u'Logsize limited to: {0}'.format(self._maxLogfileSize))
 
 		if not self._depotId:
-			self._depotId = getfqdn(conf=OPSI_GLOBAL_CONF)
+			self._depotId = getfqdn()
 		self._depotId = forceHostId(self._depotId)
 
 		self._options['additionalReferentialIntegrityChecks'] = True
@@ -654,7 +653,7 @@ containing the localisation of the hardware audit.
 		Write log data into the corresponding log file.
 
 		:param logType: Type of log. \
-Currently supported: *bootimage*, *clientconnect*, *instlog* or *opsiconfd*.
+Currently supported: *bootimage*, *clientconnect*, *instlog*, *opsiconfd* or *userlogin*.
 		:param data: Log content
 		:type data: Unicode
 		:param objectId: Specialising of ``logType``
@@ -744,7 +743,7 @@ overwrite the log.
 		Return the content of a log.
 
 		:param logType: Type of log. \
-Currently supported: *bootimage*, *clientconnect*, *instlog* or *opsiconfd*.
+Currently supported: *bootimage*, *clientconnect*, *instlog*, *opsiconfd* or *userlogin*.
 		:type data: Unicode
 		:param objectId: Specialising of ``logType``
 		:param maxSize: Limit for the size of returned characters in bytes. \
@@ -1828,7 +1827,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			elif isinstance(f, pureldap.LDAPFilter_present):
 				objectFilter = {f.value: '*'}
 
-			elif isinstance(f, pureldap.LDAPFilter_and) or isinstance(f, pureldap.LDAPFilter_or):
+			elif isinstance(f, (pureldap.LDAPFilter_and, pureldap.LDAPFilter_or)):
 				operator = None
 				if isinstance(f, pureldap.LDAPFilter_and):
 					operator = 'AND'
@@ -2503,6 +2502,8 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			# Do not insert configStates which match the default
 			logger.debug(u"Not inserting configState {0!r}, because it does not differ from defaults", configState)
 			return
+
+		configState = forceObjectClass(configState, ConfigState)
 		self._configState_checkValid(configState)
 		self._backend.configState_insertObject(configState)
 
@@ -2511,6 +2512,8 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			# Do not update configStates which match the default
 			logger.debug(u"Deleting configState {0!r}, because it does not differ from defaults", configState)
 			return self._backend.configState_deleteObjects(configState)
+
+		configState = forceObjectClass(configState, ConfigState)
 		self._configState_checkValid(configState)
 		self._backend.configState_updateObject(configState)
 
@@ -3205,12 +3208,17 @@ into the IDs of these depots are to be found in the list behind \
 
 	def productOnClient_generateSequence(self, productOnClients):
 		configs = self._context.config_getObjects(id="product_sort_algorithm")  # pylint: disable=maybe-no-member
-		if configs and ("product_on_client" in configs[0].getDefaultValues() or "algorithm1" in configs[0].getDefaultValues()):
-			logger.info("Generating productOnClient sequence with algorithm 1")
-			generateProductOnClientSequence = OPSI.SharedAlgorithm.generateProductOnClientSequence_algorithm1
-		else:
+		try:
+			defaults = configs[0].getDefaultValues()
+		except IndexError:
+			defaults = []
+
+		if "algorithm2" in defaults:
 			logger.info("Generating productOnClient sequence with algorithm 2")
 			generateProductOnClientSequence = OPSI.SharedAlgorithm.generateProductOnClientSequence_algorithm2
+		else:
+			logger.info("Generating productOnClient sequence with algorithm 1")
+			generateProductOnClientSequence = OPSI.SharedAlgorithm.generateProductOnClientSequence_algorithm1
 
 		return self._productOnClient_processWithFunction(productOnClients, generateProductOnClientSequence)
 
@@ -4443,7 +4451,7 @@ into the IDs of these depots are to be found in the list behind \
 			}
 
 			if self.auditHardwareOnHost_getObjects(attributes=['hostId'], **filter):
-				logger.debug2(u"Updating existing AuditHardwareOnHost {0!r}", objectHash)
+				logger.debug2(u"Updating existing AuditHardwareOnHost {0!r}", auditHardwareOnHost)
 				self.auditHardwareOnHost_updateObject(auditHardwareOnHost)
 			else:
 				logger.info(u"AuditHardwareOnHost %s does not exist, creating" % auditHardwareOnHost)

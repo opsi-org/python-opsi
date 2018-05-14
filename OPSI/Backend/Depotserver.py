@@ -26,7 +26,6 @@ Depotserver backend.
 
 import os
 
-from OPSI.Config import OPSI_GLOBAL_CONF
 from OPSI.Exceptions import (
 	BackendBadValueError, BackendConfigurationError,
 	BackendError, BackendIOError, BackendMissingDataError,
@@ -59,7 +58,7 @@ class DepotserverBackend(ExtendedBackend):
 		self._packageLog = os.path.join(LOG_DIR, 'package.log')
 		self._sshRSAPublicKeyFile = u'/etc/ssh/ssh_host_rsa_key.pub'
 
-		self._depotId = forceHostId(getfqdn(conf=OPSI_GLOBAL_CONF))
+		self._depotId = forceHostId(getfqdn())
 		if not self._context.host_getIdents(id=self._depotId):  # pylint: disable=maybe-no-member
 			raise BackendMissingDataError(u"Depot '%s' not found in backend" % self._depotId)
 		self._packageManager = DepotserverPackageManager(self)

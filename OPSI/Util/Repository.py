@@ -96,7 +96,7 @@ class RepositoryObserver(object):
 class Repository:
 	def __init__(self, url, **kwargs):
 		'''
-		maxBandwith must be in byte/s
+		maxBandwidth must be in byte/s
 		'''
 		self._url = forceUnicode(url)
 		self._path = u''
@@ -139,7 +139,7 @@ class Repository:
 						break
 					except Exception as counterInitError:
 						exception = forceUnicode(counterInitError)
-						logger.debug("Setting dynamic bandwith failed, waiting 5 sec and trying again.")
+						logger.debug("Setting dynamic bandwidth failed, waiting 5 sec and trying again.")
 						retry += 1
 						time.sleep(5)
 

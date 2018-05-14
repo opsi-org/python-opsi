@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -33,10 +33,10 @@ between servers and clients.
 import os
 import random
 import shutil
-from OpenSSL import crypto, rand
 from tempfile import NamedTemporaryFile
 
-from OPSI.Config import OPSI_GLOBAL_CONF
+from OpenSSL import crypto
+
 from OPSI.Logger import Logger
 from OPSI.System import which, execute
 from OPSI.Types import forceHostId, forceInt
@@ -49,7 +49,7 @@ DEFAULT_CERTIFICATE_PARAMETERS = {
 	"locality": "Mainz",
 	"organization": "uib gmbh",
 	"organizationalUnit": "",
-	"commonName": forceHostId(getfqdn(conf=OPSI_GLOBAL_CONF)),
+	"commonName": forceHostId(getfqdn()),
 	"emailAddress": "",
 	"expires": 2,
 }
@@ -151,7 +151,7 @@ If not given will use a default.
 			u"No valid expiration date given. Must be an integer."
 		)
 
-	if certparams["commonName"] != forceHostId(getfqdn(conf=OPSI_GLOBAL_CONF)):
+	if certparams["commonName"] != forceHostId(getfqdn()):
 		raise CertificateCreationError(
 			u"commonName must be the FQDN of the local server"
 		)
@@ -229,14 +229,7 @@ If not given will use a default.
 
 	with NamedTemporaryFile(mode="wt") as randfile:
 		LOGGER.notice(u"Generating and filling new randomize string")
-		try:
-			randomBytes = rand.bytes(512)
-		except AttributeError as error:
-			LOGGER.debug(u"Getting rand.bytes failed: {0}".format(error))
-			LOGGER.debug(u"Using workaround with random.getrandbits")
-			# SLES11SP3 ships a version so old that rand.bytes does not
-			# even exist yet. As a workaround we use plain old random
-			randomBytes = str(bytearray(random.getrandbits(8) for _ in range(512)))
+		randomBytes = os.urandom(512)
 		randfile.write(randomBytes)
 
 		execute(

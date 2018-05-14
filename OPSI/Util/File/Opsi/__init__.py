@@ -978,7 +978,7 @@ class OpsiConfFile(IniFile):
 	def __init__(self, filename=u'/etc/opsi/opsi.conf', lockFailTimeout=2000):
 		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars=[';', '#'])
 		self._parsed = False
-		self._sections = False
+		self._sections = {}
 		self._opsiGroups = {}
 
 	def parse(self, lines=None):
