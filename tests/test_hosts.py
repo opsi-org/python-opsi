@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -497,11 +497,17 @@ def testWorkbenchAddressHasNoDefault(extendedConfigDataBackend, localHostFqdn):
     assert serverFromBackend.workbenchRemoteUrl is None
 
 
-@pytest.mark.parametrize("hostClass", [OpsiClient, OpsiDepotserver])
-@pytest.mark.parametrize("length", [30])
-def testInventoryNumberOnHosts(configDataBackend, hostClass, length):
-    inventoryNumber = randomString(length)
+@pytest.fixture(
+    scope="session",
+    params=[30, 64],
+    ids=['inventoryNumber-30', 'inventoryNumber-64']
+)
+def inventoryNumber(request):
+    return randomString(request.param)
 
+
+@pytest.mark.parametrize("hostClass", [OpsiClient, OpsiDepotserver])
+def testInventoryNumberOnHosts(configDataBackend, hostClass, inventoryNumber):
     host = hostClass(id='testhost.some.test')
     host.setInventoryNumber(inventoryNumber)
 
