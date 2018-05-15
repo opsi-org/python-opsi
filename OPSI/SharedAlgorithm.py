@@ -146,7 +146,7 @@ def addActionRequest(productOnClientByProductId, productId, productDependenciesB
 		logger.info(u"   => adding action {0!r} for product {1!r}", requiredAction, dependency.requiredProductId)
 
 		if dependency.requiredProductId in addedInfo:
-			logger.warning(u"   => Product dependency loop detected, skipping")
+			logger.warning(u"   => Product dependency loop including product {} detected, skipping", productId)
 			logger.debug(
 				u"Circular dependency at {2}. Processed product: {0}"
 				u"addedInfo: {1}",
