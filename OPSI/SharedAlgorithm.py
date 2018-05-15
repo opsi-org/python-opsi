@@ -780,7 +780,7 @@ def generateProductSequenceFromRequPairs_algorithm2(availableProducts, setupRequ
 
 		logger.debug(u"sortedList algo2 {0!r}", sortedList)
 	except OpsiProductOrderingError as error:
-		logger.error(u"algo2 outer catched OpsiProductOrderingError: {0}", error)
+		logger.error(u"algo2 outer caught OpsiProductOrderingError: {0}", error)
 		raise error
 
 	return sortedList
