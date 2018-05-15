@@ -406,7 +406,8 @@ class OrderBuild(object):
 		self.errorFound = False
 		self.allFulfilled = False
 
-		assert isinstance(requs, Requirements), "not Requirements"
+		assert isinstance(requs, Requirements), "Expected instance of Requirements"
+
 		self.requs = requs
 		self.indexIsAmongPosteriors = []
 		j = 0
