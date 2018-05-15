@@ -37,7 +37,7 @@ from OPSI.Exceptions import (BackendMissingDataError, BackendUnableToConnectErro
 	BackendUnaccomplishableError)
 from OPSI.Logger import Logger
 from OPSI.Object import OpsiClient
-from OPSI.Types import forceInt, forceUnicode, forceHostId
+from OPSI.Types import forceInt, forceUnicode, forceUnicodeList, forceHostId
 from OPSI.Util import getfqdn
 
 __all__ = ('ServerConnection', 'OpsiPXEConfdBackend', 'createUnixSocket')
@@ -156,12 +156,16 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 	def _collectDataForUpdate(self, clientId, productOnClient):
 		data = {}
 		try:
-			#propertyStateDefault = self._context.backend_getOptions()['addProductPropertyStateDefaults']
-			#configStateDefault = self._context.backend_getOptions()['addConfigStateDefaults']
-			#self._context.backend_setOptions({'addProductPropertyStateDefaults': True, 'addConfigStateDefaults': True})
+			logger.notice("Loading Data")
+			logger.notice(">>>>>>>> data: '%s'" % data)
+			backendOptions = self._context.backend_getOptions()
+			propertyStateDefault = backendOptions.get('addProductPropertyStateDefaults', False)
+			configStateDefault = backendOptions.get('addConfigStateDefaults', False)
+			self._context.backend_setOptions({'addProductPropertyStateDefaults': True, 'addConfigStateDefaults': True})
 			data["clientId"] = clientId
 
 			data["host"] = self._context.host_getObjects(id=clientId)[0].toHash()
+
 			data["productOnClient"] = productOnClient.toHash()
 			data["depotId"] = self._getResponsibleDepotId(productOnClient.clientId)
 			data["productOnDepot"] = self._context.productOnDepot_getObjects(
@@ -169,20 +173,22 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 				productId=productOnClient.productId,
 				depotId=data["depotId"]
 			)[0].toHash()
+			print(">>>>>>>> productOnClient: '%s'" % productOnClient.toHash())
 			data["product"] = self._context.product_getObjects(
 				type=u'NetbootProduct',
 				id=productOnClient.productId,
 				productVersion=productOnClient.productVersion,
 				packageVersion=productOnClient.packageVersion)[0].toHash()
+			print(">>>>>>>>>>>>>>")
 			data["configStates"] = self._context.configState_getObjects(configId=["opsi-linux-bootimage.append",
 			"clientconfig.dhcpd.filename","clientconfig.configserver.url"], objectId=clientId)
 			productPropertyStates = {}
 			for pps in self._context.productPropertyState_getObjects(objectId=clientId, productId=productOnClient.productId):
 				productPropertyStates[pps.propertyId] = u','.join(forceUnicodeList(pps.getValues()))
 			data["productPropertyStates"] = productPropertyStates
-			#backendOption = self._context.backend_setOptions({
-			#						'addProductPropertyStateDefaults': propertyStateDefault,
-			#						'addConfigStateDefaults': configStateDefault})
+			backendOption = self._context.backend_setOptions({
+									'addProductPropertyStateDefaults': propertyStateDefault,
+									'addConfigStateDefaults': configStateDefault})
 			backendinfo = self._context.backend_info()
 			backendinfo["hostCount"] = len(self._context.host_getObjects(type='OpsiClient'))
 			data["backendinfo"] = backendinfo
