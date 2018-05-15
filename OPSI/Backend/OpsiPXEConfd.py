@@ -25,6 +25,7 @@ OpsiPXEConfd-Backend
 :license: GNU Affero General Public License version 3
 """
 
+import cPickle
 import socket
 import threading
 import time
@@ -152,11 +153,53 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 
 		return True
 
+	def _collectDataForUpdate(self, clientId, productOnClient):
+		data = {}
+		try:
+			#propertyStateDefault = self._context.backend_getOptions()['addProductPropertyStateDefaults']
+			#configStateDefault = self._context.backend_getOptions()['addConfigStateDefaults']
+			#self._context.backend_setOptions({'addProductPropertyStateDefaults': True, 'addConfigStateDefaults': True})
+			data["clientId"] = clientId
+
+			data["host"] = self._context.host_getObjects(id=clientId)[0].toHash()
+			data["productOnClient"] = productOnClient.toHash()
+			data["depotId"] = self._getResponsibleDepotId(productOnClient.clientId)
+			data["productOnDepot"] = self._context.productOnDepot_getObjects(
+				productType=u'NetbootProduct',
+				productId=productOnClient.productId,
+				depotId=data["depotId"]
+			)[0].toHash()
+			data["product"] = self._context.product_getObjects(
+				type=u'NetbootProduct',
+				id=productOnClient.productId,
+				productVersion=productOnClient.productVersion,
+				packageVersion=productOnClient.packageVersion)[0].toHash()
+			data["configStates"] = self._context.configState_getObjects(configId=["opsi-linux-bootimage.append",
+			"clientconfig.dhcpd.filename","clientconfig.configserver.url"], objectId=clientId)
+			productPropertyStates = {}
+			for pps in self._context.productPropertyState_getObjects(objectId=clientId, productId=productOnClient.productId):
+				productPropertyStates[pps.propertyId] = u','.join(forceUnicodeList(pps.getValues()))
+			data["productPropertyStates"] = productPropertyStates
+			#backendOption = self._context.backend_setOptions({
+			#						'addProductPropertyStateDefaults': propertyStateDefault,
+			#						'addConfigStateDefaults': configStateDefault})
+			backendinfo = self._context.backend_info()
+			backendinfo["hostCount"] = len(self._context.host_getObjects(type='OpsiClient'))
+			data["backendinfo"] = backendinfo
+		except Exception as e:
+			logger.critical("Error by loading data '%s'" % e)
+		finally:
+			return data
+
+
 	def _updateByProductOnClient(self, productOnClient):
 		if not self._pxeBootConfigurationUpdateNeeded(productOnClient):
 			return
 
-		depotId = self._getResponsibleDepotId(productOnClient.clientId)
+		data = self._collectDataForUpdate(productOnClient.clientId, productOnClient)
+		logger.info(">>>>> %s" % data)
+
+		depotId = data.get("depotId", self._getResponsibleDepotId(productOnClient.clientId))
 		if depotId != self._depotId:
 			logger.info(u"Not responsible for client '{}', forwarding request to depot {!r}", productOnClient.clientId, depotId)
 
@@ -171,17 +214,18 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 				return
 
 			depot = self._getDepotConnection(depotId)
-			depot.opsipxeconfd_updatePXEBootConfiguration(productOnClient.clientId)
+			depot.opsipxeconfd_updatePXEBootConfiguration(productOnClient.clientId, data)
 		else:
-			self.opsipxeconfd_updatePXEBootConfiguration(productOnClient.clientId)
+			self.opsipxeconfd_updatePXEBootConfiguration(productOnClient.clientId, data)
 
-	def opsipxeconfd_updatePXEBootConfiguration(self, clientId):
+	def opsipxeconfd_updatePXEBootConfiguration(self, clientId, data={}):
 		clientId = forceHostId(clientId)
 		logger.debug("Updating PXE boot config of {!r}", clientId)
 
 		with self._updateThreadsLock:
 			if clientId not in self._updateThreads:
-				updater = UpdateThread(self, clientId, u'update %s' % clientId)
+				cPickle.dump(data, open("/tmp/%s" % clientId, "wb"), -1)
+				updater = UpdateThread(self, clientId, u'update %s' % (clientId))
 				self._updateThreads[clientId] = updater
 				updater.start()
 			else:
