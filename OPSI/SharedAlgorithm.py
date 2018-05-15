@@ -143,7 +143,6 @@ def addActionRequest(productOnClientByProductId, productId, productDependenciesB
 				actionRequest
 			)
 			continue
-		logger.info(u"   => adding action {0!r} for product {1!r}", requiredAction, dependency.requiredProductId)
 
 		if dependency.requiredProductId in addedInfo:
 			logger.warning(u"   => Product dependency loop including product {} detected, skipping", productId)
@@ -155,6 +154,8 @@ def addActionRequest(productOnClientByProductId, productId, productDependenciesB
 				dependency.requiredProductId
 			)
 			continue
+
+		logger.info(u"   => adding action {0!r} for product {1!r}", requiredAction, dependency.requiredProductId)
 
 		if dependency.requiredProductId not in productOnClientByProductId:
 			productOnClientByProductId[dependency.requiredProductId] = ProductOnClient(
