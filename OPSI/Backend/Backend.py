@@ -379,7 +379,7 @@ This defaults to ``self``.
 
 	def backend_getInterface(self):
 		"""
-		Returns what methods are available and the signatures they use.
+		Returns what public methods are available and the signatures they use.
 
 		These methods are represented as a dict with the following keys: \
 		*name*, *params*, *args*, *varargs*, *keywords*, *defaults*.
