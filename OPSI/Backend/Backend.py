@@ -68,7 +68,7 @@ if os.name == 'posix':
 			from OPSI.ldaptor import ldapfilter
 
 __all__ = (
-	'getArgAndCallString', 'temporaryBackendOptions',
+	'describeInterface', 'getArgAndCallString', 'temporaryBackendOptions',
 	'DeferredCall', 'Backend', 'ExtendedBackend', 'ConfigDataBackend',
 	'ExtendedConfigDataBackend',
 	'ModificationTrackingBackend', 'BackendModificationListener'
@@ -102,6 +102,48 @@ try:
 except Exception as error:
 	logger.debug("Failed to set MAX LOG SIZE from config: {0}".format(error))
 	DEFAULT_MAX_LOGFILE_SIZE = 5000000
+
+
+def describeInterface(instance):
+	"""
+	Describes what public methods are available and the signatures they use.
+
+	These methods are represented as a dict with the following keys: \
+	*name*, *params*, *args*, *varargs*, *keywords*, *defaults*.
+
+	:returntype: [{},]
+	"""
+	methods = {}
+	for methodName, function in inspect.getmembers(instance, inspect.ismethod):
+		if methodName.startswith('_'):
+			# protected / private
+			continue
+
+		args, varargs, keywords, defaults = inspect.getargspec(function)
+		params = [arg for arg in args if arg != 'self']
+
+		if defaults is not None:
+			offset = len(params) - len(defaults)
+			for i in xrange(len(defaults)):
+				index = offset + i
+				params[index] = '*{0}'.format(params[index])
+
+		for (index, element) in enumerate((varargs, keywords), start=1):
+			if element:
+				stars = '*' * index
+				params.extend(['{0}{1}'.format(stars, arg) for arg in forceList(element)])
+
+		logger.debug2(u"{0} interface method: name {1!r}, params {2}", instance.__class__.__name__, methodName, params)
+		methods[methodName] = {
+			'name': methodName,
+			'params': params,
+			'args': args,
+			'varargs': varargs,
+			'keywords': keywords,
+			'defaults': defaults
+		}
+
+	return [methods[name] for name in sorted(methods.keys())]
 
 
 def getArgAndCallString(method):
@@ -345,37 +387,7 @@ This defaults to ``self``.
 
 		:returntype: [{},]
 		"""
-		methods = {}
-		for methodName, function in inspect.getmembers(self, inspect.ismethod):
-			if methodName.startswith('_'):
-				# protected / private
-				continue
-
-			args, varargs, keywords, defaults = inspect.getargspec(function)
-			params = [arg for arg in args if arg != 'self']
-
-			if defaults is not None:
-				offset = len(params) - len(defaults)
-				for i in xrange(len(defaults)):
-					index = offset + i
-					params[index] = '*{0}'.format(params[index])
-
-			for (index, element) in enumerate((varargs, keywords), start=1):
-				if element:
-					stars = '*' * index
-					params.extend(['{0}{1}'.format(stars, arg) for arg in forceList(element)])
-
-			logger.debug2(u"{0} interface method: name {1!r}, params {2}", self.__class__.__name__, methodName, params)
-			methods[methodName] = {
-				'name': methodName,
-				'params': params,
-				'args': args,
-				'varargs': varargs,
-				'keywords': keywords,
-				'defaults': defaults
-			}
-
-		return [methods[name] for name in sorted(methods.keys())]
+		return describeInterface(self)
 
 	def backend_info(self):
 		"""
