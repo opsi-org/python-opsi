@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2010-2017 uib GmbH
+# Copyright (C) 2010-2018 uib GmbH
 
 # http://www.uib.de/
 
@@ -64,6 +64,7 @@ class JsonRpc(object):
 
 		if not self.tid:
 			raise OpsiBadRpcError(u"No transaction id ((t)id) found in rpc")
+
 		if not self.method:
 			raise OpsiBadRpcError(u"No method found in rpc")
 
@@ -76,11 +77,13 @@ class JsonRpc(object):
 	def getMethodName(self):
 		if self.action:
 			return u'%s_%s' % (self.action, self.method)
+
 		return self.method
 
 	def getDuration(self):
 		if not self.started or not self.ended:
 			return None
+
 		return round(self.ended - self.started, 3)
 
 	def execute(self, result=None):
