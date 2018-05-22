@@ -92,12 +92,13 @@ class JsonRpc(object):
 		self.started = time.time()
 
 		try:
-			methodInterface = None
 			methodName = self.getMethodName()
 			for m in self._interface:
 				if methodName == m['name']:
 					methodInterface = m
 					break
+			else:
+				methodInterface = None
 
 			if not methodInterface:
 				raise OpsiRpcError(u"Method '%s' is not valid" % methodName)
