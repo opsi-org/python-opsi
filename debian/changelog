@@ -1,3 +1,19 @@
+python-opsi (4.1.1.36-1) testing; urgency=medium
+
+  * OPSI.Util.Message has received an __all__.
+  * OPSI.Backend.SQL: The length of column `groupId` in table `OBJECT_TO_GROUP`
+    is now the same as defined in the table `GROUP`.
+  * Refactored processing of backend migrations for MySQL backend.
+  * OPSI.SharedAlgorithm: Changed classification of many log messages to
+    have fewer log entries in non-debug levels.
+  * OPSI.Backend.Backend: added new method 'describeInterface' to describe
+    the public interface of an instance.
+  * OPSI.Service.JsonRpc: Only one lookup of the method name during execution.
+  * 10_opsi.conf: setProductActionRequestWithDependencies will relay
+    requests for a netboot product to setProductActionRequest.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 22 May 2018 15:10:02 +0200
+
 python-opsi (4.1.1.35-2) testing; urgency=medium
 
   * Debian: depend on iproute or iproute2.
@@ -393,6 +409,13 @@ python-opsi (4.1.1.1-1) experimental; urgency=medium
     into OPSI/__init__.py to always show the current version.
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 04 Oct 2016 16:15:11 +0200
+
+python-opsi (4.0.7.64-1) testing; urgency=medium
+
+  * 10_opsi.conf: setProductActionRequestWithDependencies will relay
+    requests for a netboot product to setProductActionRequest.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 22 May 2018 15:32:58 +0200
 
 python-opsi (4.0.7.63-1) testing; urgency=medium
 
