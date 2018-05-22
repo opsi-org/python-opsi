@@ -128,7 +128,7 @@ def describeInterface(instance):
 				index = offset + i
 				params[index] = '*{0}'.format(params[index])
 
-		for (index, element) in enumerate((varargs, keywords), start=1):
+		for index, element in enumerate((varargs, keywords), start=1):
 			if element:
 				stars = '*' * index
 				params.extend(['{0}{1}'.format(stars, arg) for arg in forceList(element)])
