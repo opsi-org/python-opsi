@@ -6,6 +6,9 @@ python-opsi (4.1.1.35-2ubuntu1) UNRELEASED; urgency=medium
   * Refactored processing of backend migrations for MySQL backend.
   * OPSI.SharedAlgorithm: Changed classification of many log messages to
     have fewer log entries in non-debug levels.
+  * OPSI.Backend.Backend: added new method 'describeInterface' to describe
+    the public interface of an instance.
+  * OPSI.Service.JsonRpc: Only one lookup of the method name during execution.
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 22 May 2018 15:10:02 +0200
 
