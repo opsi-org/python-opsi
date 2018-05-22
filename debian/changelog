@@ -1,4 +1,4 @@
-python-opsi (4.1.1.35-2ubuntu1) UNRELEASED; urgency=medium
+python-opsi (4.1.1.36-1) testing; urgency=medium
 
   * OPSI.Util.Message has received an __all__.
   * OPSI.Backend.SQL: The length of column `groupId` in table `OBJECT_TO_GROUP`
