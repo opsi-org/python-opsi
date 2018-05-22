@@ -58,7 +58,7 @@ __all__ = (
 	'SQLBackendObjectModificationTracker'
 )
 
-DATABASE_SCHEMA_VERSION = 3
+DATABASE_SCHEMA_VERSION = 4
 
 logger = Logger()
 
@@ -710,7 +710,7 @@ class SQLBackend(ConfigDataBackend):
 			table = u'''CREATE TABLE `OBJECT_TO_GROUP` (
 					`object_to_group_id` integer NOT NULL ''' + self._sql.AUTOINCREMENT + ''',
 					`groupType` varchar(30) NOT NULL,
-					`groupId` varchar(100) NOT NULL,
+					`groupId` varchar(255) NOT NULL,
 					`objectId` varchar(255) NOT NULL,
 					PRIMARY KEY (`object_to_group_id`),
 					FOREIGN KEY (`groupType`, `groupId`) REFERENCES `GROUP` (`type`, `groupId`)
