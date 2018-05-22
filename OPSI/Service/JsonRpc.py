@@ -93,13 +93,14 @@ class JsonRpc(object):
 
 		try:
 			methodInterface = None
+			methodName = self.getMethodName()
 			for m in self._interface:
-				if self.getMethodName() == m['name']:
+				if methodName == m['name']:
 					methodInterface = m
 					break
 
 			if not methodInterface:
-				raise OpsiRpcError(u"Method '%s' is not valid" % self.getMethodName())
+				raise OpsiRpcError(u"Method '%s' is not valid" % methodName)
 
 			keywords = {}
 			if methodInterface['keywords']:
@@ -128,13 +129,13 @@ class JsonRpc(object):
 			if len(pString) > 200:
 				pString = u'{0}...'.format(pString[:200])
 
-			logger.notice(u"-----> Executing: %s(%s)" % (self.getMethodName(), pString))
+			logger.notice(u"-----> Executing: %s(%s)" % (methodName, pString))
 
 			instance = self._instance
 			if keywords:
-				self.result = eval("instance.%s(*params, **keywords)" % self.getMethodName())
+				self.result = eval("instance.%s(*params, **keywords)" % methodName)
 			else:
-				self.result = eval("instance.%s(*params)" % self.getMethodName())
+				self.result = eval("instance.%s(*params)" % methodName)
 
 			logger.info(u'Got result')
 			logger.debug2("RPC ID {0}: {1!r}", self.tid, self.result)
