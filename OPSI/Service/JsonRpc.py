@@ -93,9 +93,9 @@ class JsonRpc(object):
 
 		try:
 			methodName = self.getMethodName()
-			for m in self._interface:
-				if methodName == m['name']:
-					methodInterface = m
+			for method in self._interface:
+				if methodName == method['name']:
+					methodInterface = method
 					break
 			else:
 				methodInterface = None
