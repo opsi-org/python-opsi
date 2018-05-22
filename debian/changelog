@@ -1,3 +1,10 @@
+python-opsi (4.0.7.64-1) testing; urgency=medium
+
+  * 10_opsi.conf: setProductActionRequestWithDependencies will relay
+    requests for a netboot product to setProductActionRequest.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 22 May 2018 15:32:58 +0200
+
 python-opsi (4.0.7.63-1) testing; urgency=medium
 
   * OpsiPXEConfd: Only relay updates to the depot if the action request is
