@@ -27,7 +27,9 @@ OpsiPXEConfd-Backend
 
 import codecs
 import json
+import os.path
 import socket
+import tempfile
 import threading
 import time
 from contextlib import closing, contextmanager
@@ -82,6 +84,10 @@ def createUnixSocket(port, timeout=5.0):
 			yield unixSocket
 	except Exception as error:
 		raise RuntimeError(u"Failed to connect to socket '%s': %s" % (port, error))
+
+
+def getClientDataPath(clientId):
+	return os.path.join(tempfile.gettempdir(), clientId)
 
 
 class OpsiPXEConfdBackend(ConfigDataBackend):
@@ -258,7 +264,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 		logger.debug("Updating PXE boot config of {!r}", clientId)
 
 		if data:
-			destinationFile = "/tmp/%s" % clientId
+			destinationFile = getClientDataPath(clientId)
 			logger.debug2("Writing data to {}: {!r}", destinationFile, data)
 			with codecs.open(destinationFile, "w", 'utf-8') as outfile:
 				json.dump(data, outfile)
