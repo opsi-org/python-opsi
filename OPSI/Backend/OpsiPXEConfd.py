@@ -260,7 +260,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 		if data:
 			destinationFile = "/tmp/%s" % clientId
 			logger.debug2("Writing data to {}: {!r}", destinationFile, data)
-			with codecs.open(destinationFile, "wb", 'utf-8') as outfile:
+			with codecs.open(destinationFile, "w", 'utf-8') as outfile:
 				json.dump(data, outfile)
 
 		with self._updateThreadsLock:
