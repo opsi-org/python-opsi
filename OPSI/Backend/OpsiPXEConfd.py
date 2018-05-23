@@ -38,7 +38,7 @@ from OPSI.Exceptions import (BackendMissingDataError, BackendUnableToConnectErro
 	BackendUnaccomplishableError)
 from OPSI.Logger import Logger
 from OPSI.Object import OpsiClient
-from OPSI.Types import forceInt, forceUnicode, forceHostId
+from OPSI.Types import forceHostId, forceInt, forceUnicode, forceUnicodeList
 from OPSI.Util import getfqdn, serialize
 
 __all__ = ('ServerConnection', 'OpsiPXEConfdBackend', 'createUnixSocket')
@@ -186,7 +186,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 				)
 
 				productPropertyStates = {
-					pps.propertyId: pps.getValues()
+					pps.propertyId: u','.join(forceUnicodeList(pps.getValues()))
 					for pps
 					in self._context.productPropertyState_getObjects(
 						objectId=clientId,
