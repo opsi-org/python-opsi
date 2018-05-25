@@ -90,7 +90,11 @@ def getClientDataPath(clientId):
 	if os.path.exists('/var/run/opsipxeconfd'):
 		directory = '/var/run/opsipxeconfd'
 	else:
-		directory = tempfile.gettempdir()
+		directory = os.path.join(tempfile.gettempdir(), '.opsipxeconfd')
+		try:
+			os.makedirs(directory)
+		except OSError:
+			pass  # directory exists
 
 	return os.path.join(directory, clientId)
 
