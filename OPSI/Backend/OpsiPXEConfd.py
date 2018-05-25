@@ -87,7 +87,12 @@ def createUnixSocket(port, timeout=5.0):
 
 
 def getClientDataPath(clientId):
-	return os.path.join(tempfile.gettempdir(), clientId)
+	if os.path.exists('/var/run/opsipxeconfd'):
+		directory = '/var/run/opsipxeconfd'
+	else:
+		directory = tempfile.gettempdir()
+
+	return os.path.join(directory, clientId)
 
 
 class OpsiPXEConfdBackend(ConfigDataBackend):
