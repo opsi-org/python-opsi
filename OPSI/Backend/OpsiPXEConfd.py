@@ -283,7 +283,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 			logger.debug2("Writing data to {}: {!r}", destinationFile, data)
 			with codecs.open(destinationFile, "w", 'utf-8') as outfile:
 				json.dump(data, outfile)
-			os.chmod(destinationFile, 640)
+			os.chmod(destinationFile, 0o640)
 
 		with self._updateThreadsLock:
 			if clientId not in self._updateThreads:
