@@ -169,7 +169,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 		}
 
 		try:
-			with temporaryBackendOptions(self._context, tmpBackendConfig):
+			with temporaryBackendOptions(self._context, **tmpBackendConfig):
 				productOnDepot = self._context.productOnDepot_getObjects(
 					productType=u'NetbootProduct',
 					productId=productOnClient.productId,
