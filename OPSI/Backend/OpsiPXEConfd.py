@@ -180,7 +180,8 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 					type=u'NetbootProduct',
 					id=productOnClient.productId,
 					productVersion=productOnClient.productVersion,
-					packageVersion=productOnClient.packageVersion)[0].toHash()
+					packageVersion=productOnClient.packageVersion
+				)[0]
 
 				configStates = self._context.configState_getObjects(
 					configId=[
