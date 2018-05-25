@@ -177,6 +177,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 				)[0]
 
 				product = self._context.product_getObjects(
+					attributes=['id'],
 					type=u'NetbootProduct',
 					id=productOnClient.productId,
 					productVersion=productOnClient.productVersion,
@@ -201,13 +202,18 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 					)
 				}
 
+				host = self._context.host_getObjects(
+					attributes=["hardwareAddress", "opsiHostKey", "ipAddress"],
+					id=clientId
+				)[0]
+
 				backendinfo = self._context.backend_info()
 				backendinfo["hostCount"] = len(self._context.host_getObjects(type='OpsiClient'))
 
 				data = {
 					"clientId": clientId,
 					"backendinfo": backendinfo,
-					"host": self._context.host_getObjects(id=clientId)[0],
+					"host": host,
 					"productOnClient": productOnClient,
 					"depotId": depotId,
 					"productOnDepot": productOnDepot,
