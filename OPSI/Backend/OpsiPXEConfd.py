@@ -38,7 +38,7 @@ from OPSI.Backend.Backend import temporaryBackendOptions, ConfigDataBackend
 from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Exceptions import (BackendMissingDataError, BackendUnableToConnectError,
 	BackendUnaccomplishableError)
-from OPSI.Logger import Logger
+from OPSI.Logger import LOG_DEBUG, Logger
 from OPSI.Object import OpsiClient
 from OPSI.Types import forceHostId, forceInt, forceUnicode, forceUnicodeList
 from OPSI.Util import getfqdn, serialize
@@ -281,9 +281,13 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 		if data:
 			destinationFile = getClientDataPath(clientId)
 			logger.debug2("Writing data to {}: {!r}", destinationFile, data)
-			with codecs.open(destinationFile, "w", 'utf-8') as outfile:
-				json.dump(data, outfile)
-			os.chmod(destinationFile, 0o640)
+			try:
+				with codecs.open(destinationFile, "w", 'utf-8') as outfile:
+					json.dump(data, outfile)
+				os.chmod(destinationFile, 0o640)
+			except (OSError, IOError) as dataFileError:
+				logger.logException(dataFileError, logLevel=LOG_DEBUG)
+				logger.debug("Writing data file {!r} failed: {!r}", destinationFile, dataFileError)
 
 		with self._updateThreadsLock:
 			if clientId not in self._updateThreads:
