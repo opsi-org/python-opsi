@@ -117,7 +117,12 @@ def testBackendCanBeUsedAsContextManager():
 
 @pytest.mark.parametrize("option", [
     'addProductOnClientDefaults',
-    'returnObjectsOnUpdateAndCreate'
+    'addProductPropertyStateDefaults',
+    'addConfigStateDefaults',
+    'deleteConfigStateIfDefault',
+    'returnObjectsOnUpdateAndCreate',
+    'addDependentProductOnClients',
+    'processProductOnClientSequence',
 ])
 def testSettingTemporaryBackendOptions(extendedConfigDataBackend, option):
     optionDefaults = {
