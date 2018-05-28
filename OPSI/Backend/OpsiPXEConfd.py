@@ -25,20 +25,23 @@ OpsiPXEConfd-Backend
 :license: GNU Affero General Public License version 3
 """
 
-import cPickle
+import codecs
+import json
+import os.path
 import socket
+import tempfile
 import threading
 import time
 from contextlib import closing, contextmanager
 
-from OPSI.Backend.Backend import ConfigDataBackend
+from OPSI.Backend.Backend import temporaryBackendOptions, ConfigDataBackend
 from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Exceptions import (BackendMissingDataError, BackendUnableToConnectError,
 	BackendUnaccomplishableError)
-from OPSI.Logger import Logger
+from OPSI.Logger import LOG_DEBUG, Logger
 from OPSI.Object import OpsiClient
-from OPSI.Types import forceInt, forceUnicode, forceUnicodeList, forceHostId
-from OPSI.Util import getfqdn
+from OPSI.Types import forceHostId, forceInt, forceUnicode, forceUnicodeList
+from OPSI.Util import getfqdn, serialize
 
 __all__ = ('ServerConnection', 'OpsiPXEConfdBackend', 'createUnixSocket')
 
@@ -81,6 +84,19 @@ def createUnixSocket(port, timeout=5.0):
 			yield unixSocket
 	except Exception as error:
 		raise RuntimeError(u"Failed to connect to socket '%s': %s" % (port, error))
+
+
+def getClientDataPath(clientId):
+	if os.path.exists('/var/run/opsipxeconfd'):
+		directory = '/var/run/opsipxeconfd'
+	else:
+		directory = os.path.join(tempfile.gettempdir(), '.opsipxeconfd')
+		try:
+			os.makedirs(directory)
+		except OSError:
+			pass  # directory exists
+
+	return os.path.join(directory, clientId)
 
 
 class OpsiPXEConfdBackend(ConfigDataBackend):
@@ -153,59 +169,81 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 
 		return True
 
-	def _collectDataForUpdate(self, clientId, productOnClient):
-		data = {}
+	def _collectDataForUpdate(self, productOnClient, depotId):
+		logger.debug("Collecting data for opsipxeconfd...")
+		clientId = productOnClient.clientId
+		tmpBackendConfig = {
+			'addProductPropertyStateDefaults': True,
+			'addConfigStateDefaults': True
+		}
+
 		try:
-			logger.notice("Loading Data")
-			logger.notice(">>>>>>>> data: '%s'" % data)
-			backendOptions = self._context.backend_getOptions()
-			propertyStateDefault = backendOptions.get('addProductPropertyStateDefaults', False)
-			configStateDefault = backendOptions.get('addConfigStateDefaults', False)
-			self._context.backend_setOptions({'addProductPropertyStateDefaults': True, 'addConfigStateDefaults': True})
-			data["clientId"] = clientId
+			with temporaryBackendOptions(self._context, **tmpBackendConfig):
+				productOnDepot = self._context.productOnDepot_getObjects(
+					productType=u'NetbootProduct',
+					productId=productOnClient.productId,
+					depotId=depotId
+				)[0]
 
-			data["host"] = self._context.host_getObjects(id=clientId)[0].toHash()
+				product = self._context.product_getObjects(
+					attributes=['id'],
+					type=u'NetbootProduct',
+					id=productOnClient.productId,
+					productVersion=productOnClient.productVersion,
+					packageVersion=productOnClient.packageVersion
+				)[0]
 
-			data["productOnClient"] = productOnClient.toHash()
-			data["depotId"] = self._getResponsibleDepotId(productOnClient.clientId)
-			data["productOnDepot"] = self._context.productOnDepot_getObjects(
-				productType=u'NetbootProduct',
-				productId=productOnClient.productId,
-				depotId=data["depotId"]
-			)[0].toHash()
-			print(">>>>>>>> productOnClient: '%s'" % productOnClient.toHash())
-			data["product"] = self._context.product_getObjects(
-				type=u'NetbootProduct',
-				id=productOnClient.productId,
-				productVersion=productOnClient.productVersion,
-				packageVersion=productOnClient.packageVersion)[0].toHash()
-			print(">>>>>>>>>>>>>>")
-			data["configStates"] = self._context.configState_getObjects(configId=["opsi-linux-bootimage.append",
-			"clientconfig.dhcpd.filename","clientconfig.configserver.url"], objectId=clientId)
-			productPropertyStates = {}
-			for pps in self._context.productPropertyState_getObjects(objectId=clientId, productId=productOnClient.productId):
-				productPropertyStates[pps.propertyId] = u','.join(forceUnicodeList(pps.getValues()))
-			data["productPropertyStates"] = productPropertyStates
-			backendOption = self._context.backend_setOptions({
-									'addProductPropertyStateDefaults': propertyStateDefault,
-									'addConfigStateDefaults': configStateDefault})
-			backendinfo = self._context.backend_info()
-			backendinfo["hostCount"] = len(self._context.host_getObjects(type='OpsiClient'))
-			data["backendinfo"] = backendinfo
-		except Exception as e:
-			logger.critical("Error by loading data '%s'" % e)
-		finally:
-			return data
+				configStates = self._context.configState_getObjects(
+					configId=[
+						"opsi-linux-bootimage.append",
+						"clientconfig.dhcpd.filename",
+						"clientconfig.configserver.url"
+					],
+					objectId=clientId
+				)
 
+				productPropertyStates = {
+					pps.propertyId: u','.join(forceUnicodeList(pps.getValues()))
+					for pps
+					in self._context.productPropertyState_getObjects(
+						objectId=clientId,
+						productId=productOnClient.productId
+					)
+				}
+
+				host = self._context.host_getObjects(
+					attributes=["hardwareAddress", "opsiHostKey", "ipAddress"],
+					id=clientId
+				)[0]
+
+				backendinfo = self._context.backend_info()
+				backendinfo["hostCount"] = len(self._context.host_getObjects(attributes=['id'], type='OpsiClient'))
+
+				data = {
+					"backendinfo": backendinfo,
+					"host": host,
+					"productOnClient": productOnClient,
+					"depotId": depotId,
+					"productOnDepot": productOnDepot,
+					"product": product,
+					"configStates": configStates,
+					"productPropertyStates": productPropertyStates
+				}
+
+			data = serialize(data)
+			logger.debug("Collected data for opsipxeconfd: {!r}", data)
+		except Exception as collectError:
+			logger.logException(collectError)
+			logger.warning("Failed to collect data: {}", collectError)
+			data = {}
+
+		return data
 
 	def _updateByProductOnClient(self, productOnClient):
 		if not self._pxeBootConfigurationUpdateNeeded(productOnClient):
 			return
 
-		data = self._collectDataForUpdate(productOnClient.clientId, productOnClient)
-		logger.info(">>>>> %s" % data)
-
-		depotId = data.get("depotId", self._getResponsibleDepotId(productOnClient.clientId))
+		depotId = self._getResponsibleDepotId(productOnClient.clientId)
 		if depotId != self._depotId:
 			logger.info(u"Not responsible for client '{}', forwarding request to depot {!r}", productOnClient.clientId, depotId)
 
@@ -219,18 +257,40 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 				)
 				return
 
-			depot = self._getDepotConnection(depotId)
-			depot.opsipxeconfd_updatePXEBootConfiguration(productOnClient.clientId, data)
+			destination = self._getDepotConnection(depotId)
 		else:
-			self.opsipxeconfd_updatePXEBootConfiguration(productOnClient.clientId, data)
+			destination = self
 
-	def opsipxeconfd_updatePXEBootConfiguration(self, clientId, data={}):
+		data = self._collectDataForUpdate(productOnClient, depotId)
+		destination.opsipxeconfd_updatePXEBootConfiguration(productOnClient.clientId, data)
+
+	def opsipxeconfd_updatePXEBootConfiguration(self, clientId, data=None):
+		"""
+		Update the boot configuration of a specific client.
+		This method will relay calls to opsipxeconfd who does the handling.
+
+		:param clientId: The ID whose boot configuration should be updated.
+		:type clientId: str
+		:param data: Precollected data for opsipxeconfd.
+		:type data: dict
+		"""
+
 		clientId = forceHostId(clientId)
 		logger.debug("Updating PXE boot config of {!r}", clientId)
 
+		if data:
+			destinationFile = getClientDataPath(clientId)
+			logger.debug2("Writing data to {}: {!r}", destinationFile, data)
+			try:
+				with codecs.open(destinationFile, "w", 'utf-8') as outfile:
+					json.dump(data, outfile)
+				os.chmod(destinationFile, 0o640)
+			except (OSError, IOError) as dataFileError:
+				logger.logException(dataFileError, logLevel=LOG_DEBUG)
+				logger.debug("Writing data file {!r} failed: {!r}", destinationFile, dataFileError)
+
 		with self._updateThreadsLock:
 			if clientId not in self._updateThreads:
-				cPickle.dump(data, open("/tmp/%s" % clientId, "wb"), -1)
 				updater = UpdateThread(self, clientId, u'update %s' % (clientId))
 				self._updateThreads[clientId] = updater
 				updater.start()
