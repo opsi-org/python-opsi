@@ -136,6 +136,7 @@ def testSettingTemporaryBackendOptions(extendedConfigDataBackend, option):
 
     with temporaryBackendOptions(extendedConfigDataBackend, **tempOptions):
         currentOptions = extendedConfigDataBackend.backend_getOptions()
+        assert currentOptions
         for key, value in optionDefaults.items():
             if key == option:
                 assert currentOptions[key] == True
