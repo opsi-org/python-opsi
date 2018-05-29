@@ -288,7 +288,8 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 			else:
 				self._updateThreads[clientId].delay()
 
-	def _cacheOpsiPXEConfdData(self, clientId, data):
+	@staticmethod
+	def _cacheOpsiPXEConfdData(clientId, data):
 		"""
 		Save data used by opsipxeconfd to a cache file.
 
