@@ -220,7 +220,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 				backendinfo["hostCount"] = len(self._context.host_getObjects(attributes=['id'], type='OpsiClient'))
 
 				data = {
-					"backendinfo": backendinfo,
+					"backendInfo": backendinfo,
 					"host": host,
 					"productOnClient": productOnClient,
 					"depotId": depotId,
