@@ -151,10 +151,11 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 		if depotId != self._depotId:
 			logger.info(u"Not responsible for client '{}', forwarding request to depot '{}'", productOnClient.clientId, depotId)
 
-			depot = self._getDepotConnection(depotId)
-			depot.opsipxeconfd_updatePXEBootConfiguration(productOnClient.clientId)
+			destination = self._getDepotConnection(depotId)
 		else:
-			self.opsipxeconfd_updatePXEBootConfiguration(productOnClient.clientId)
+			destination = self
+
+		destination.opsipxeconfd_updatePXEBootConfiguration(productOnClient.clientId)
 
 	def opsipxeconfd_updatePXEBootConfiguration(self, clientId):
 		clientId = forceHostId(clientId)
