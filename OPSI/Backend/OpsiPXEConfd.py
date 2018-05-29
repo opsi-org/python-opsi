@@ -329,17 +329,6 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 		depotId = self._getResponsibleDepotId(productOnClient.clientId)
 		if depotId != self._depotId:
 			logger.info(u"Not responsible for client '{}', forwarding request to depot {!r}", productOnClient.clientId, depotId)
-
-			if productOnClient.actionRequest not in ("setup", "always", "once"):
-				logger.debug(
-					u"Not dispatching action request update for product "
-					u"{0!r} on client {1!r} to depot {2!r}.",
-					productOnClient.productId,
-					productOnClient.clientId,
-					depotId
-				)
-				return
-
 			destination = self._getDepotConnection(depotId)
 		else:
 			destination = self
