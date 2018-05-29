@@ -1,3 +1,9 @@
+python-opsi (4.1.1.37-1) stable; urgency=medium
+
+  * Based on python-opsi 4.0.7.65.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 29 May 2018 13:23:17 +0200
+
 python-opsi (4.1.1.36-1) testing; urgency=medium
 
   * OPSI.Util.Message has received an __all__.
@@ -409,6 +415,14 @@ python-opsi (4.1.1.1-1) experimental; urgency=medium
     into OPSI/__init__.py to always show the current version.
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 04 Oct 2016 16:15:11 +0200
+
+python-opsi (4.0.7.65-1) stable; urgency=medium
+
+  * Reverted changes made in 4.0.7.63.
+    This means all updates will be relayed to the depot again regardless
+    of the set action request.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 29 May 2018 12:56:42 +0200
 
 python-opsi (4.0.7.64-1) testing; urgency=medium
 
