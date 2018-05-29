@@ -34,12 +34,12 @@ import threading
 import time
 from contextlib import closing, contextmanager
 
-from OPSI.Backend.Backend import temporaryBackendOptions, ConfigDataBackend
+from OPSI.Backend.Backend import ConfigDataBackend
 from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Exceptions import (BackendMissingDataError, BackendUnableToConnectError,
 	BackendUnaccomplishableError)
 from OPSI.Logger import LOG_DEBUG, Logger
-from OPSI.Object import OpsiClient
+from OPSI.Object import ConfigState, OpsiClient, ProductPropertyState
 from OPSI.Types import forceHostId, forceInt, forceUnicode, forceUnicodeList
 from OPSI.Util import getfqdn, serialize
 
@@ -172,72 +172,155 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 	def _collectDataForUpdate(self, productOnClient, depotId):
 		logger.debug("Collecting data for opsipxeconfd...")
 		clientId = productOnClient.clientId
-		tmpBackendConfig = {
-			'addProductPropertyStateDefaults': True,
-			'addConfigStateDefaults': True
-		}
 
 		try:
-			with temporaryBackendOptions(self._context, **tmpBackendConfig):
+			try:
+				host = self._context.host_getObjects(
+					attributes=["hardwareAddress", "opsiHostKey", "ipAddress"],
+					id=clientId
+				)[0]
+			except IndexError:
+				logger.debug("No matching host found - fast exit.")
+				return serialize({"host": None, "productOnClient": []})
+
+			productOnClients = self._context.productOnClient_getObjects(
+				productType=u'NetbootProduct',
+				clientId=clientId,
+				actionRequest=['setup', 'uninstall', 'update', 'always', 'once', 'custom']
+			)
+			try:
+				productOnClient = productOnClients[0]
+			except IndexError:
+				logger.debug("No productOnClient found - fast exit.")
+				return serialize({"host": host, "productOnClient": []})
+
+			try:
 				productOnDepot = self._context.productOnDepot_getObjects(
 					productType=u'NetbootProduct',
 					productId=productOnClient.productId,
 					depotId=depotId
 				)[0]
-
-				product = self._context.product_getObjects(
-					attributes=['id'],
-					type=u'NetbootProduct',
-					id=productOnClient.productId,
-					productVersion=productOnClient.productVersion,
-					packageVersion=productOnClient.packageVersion
-				)[0]
-
-				configStates = self._context.configState_getObjects(
-					configId=[
-						"opsi-linux-bootimage.append",
-						"clientconfig.dhcpd.filename",
-						"clientconfig.configserver.url"
-					],
-					objectId=clientId
-				)
-
-				productPropertyStates = {
-					pps.propertyId: u','.join(forceUnicodeList(pps.getValues()))
-					for pps
-					in self._context.productPropertyState_getObjects(
-						objectId=clientId,
-						productId=productOnClient.productId
-					)
-				}
-
-				host = self._context.host_getObjects(
-					attributes=["hardwareAddress", "opsiHostKey", "ipAddress"],
-					id=clientId
-				)[0]
-
-				backendinfo = self._context.backend_info()
-				backendinfo["hostCount"] = len(self._context.host_getObjects(attributes=['id'], type='OpsiClient'))
-
-				data = {
-					"backendInfo": backendinfo,
+			except IndexError:
+				logger.debug("No productOnDepot found - fast exit.")
+				return serialize({
 					"host": host,
 					"productOnClient": productOnClient,
-					"depotId": depotId,
-					"productOnDepot": productOnDepot,
-					"product": product,
-					"configStates": configStates,
-					"productPropertyStates": productPropertyStates
-				}
+					"productOnDepot": None
+				})
+
+			product = self._context.product_getObjects(
+				attributes=['id'],
+				type=u'NetbootProduct',
+				id=productOnClient.productId,
+				productVersion=productOnClient.productVersion,
+				packageVersion=productOnClient.packageVersion
+			)[0]
+
+			for configState in self._collectConfigStates(clientId):
+				if configState.configId == u"clientconfig.configserver.url":
+					serviceAddress = configState.getValues()[0]
+				elif configState.configId == u'opsi-linux-bootimage.append':
+					bootimageAppend = configState
+				elif configState.configId == u"clientconfig.dhcpd.filename":
+					eliloMode = None
+					value = configState.getValues()[0]
+					if 'elilo' in value:
+						if 'x86' in value:
+							eliloMode = 'x86'
+						else:
+							eliloMode = 'x64'
+
+			productPropertyStates = self._collectProductPropertyStates(
+				clientId,
+				productOnClient.productId,
+				depotId
+			)
+			logger.debug("Collected product property states: {}", productPropertyStates)
+
+			backendinfo = self._context.backend_info()
+			backendinfo["hostCount"] = len(self._context.host_getObjects(attributes=['id'], type='OpsiClient'))
+
+			data = {
+				"backendInfo": backendinfo,
+				"host": host,
+				"productOnClient": productOnClient,
+				"depotId": depotId,
+				"productOnDepot": productOnDepot,
+				"elilo": eliloMode,
+				"serviceAddress": serviceAddress,
+				"product": product,
+				"bootimageAppend": bootimageAppend,
+				"productPropertyStates": productPropertyStates
+			}
 
 			data = serialize(data)
 			logger.debug("Collected data for opsipxeconfd: {!r}", data)
 		except Exception as collectError:
 			logger.logException(collectError)
-			logger.warning("Failed to collect data: {}", collectError)
+			logger.warning("Failed to collect data for opsipxeconfd: {}", collectError)
 			data = {}
 
 		return data
+
+	def _collectConfigStates(self, clientId):
+		configIds = [
+			'opsi-linux-bootimage.append',
+			"clientconfig.configserver.url",
+			"clientconfig.dhcpd.filename",
+		]
+
+		configStates = self._context.configState_getObjects(
+			objectId=clientId,
+			configId=configIds
+		)
+
+		if len(configIds) == len(configStates):
+			# We have a value set for each of our configIds - exiting.
+			return configStates
+
+		existingConfigStateIds = set(cs.configId for cs in configStates)
+		missingConfigStateIds = set(configIds) - existingConfigStateIds
+
+		# Create missing config states
+		for config in self._context.config_getObjects(id=missingConfigStateIds):
+			logger.debug(u"Got default values for {0!r}: {1}", config.id, config.defaultValues)
+			# Config state does not exist for client => create default
+			cf = ConfigState(
+				configId=config.id,
+				objectId=clientId,
+				values=config.defaultValues
+			)
+			cf.setGeneratedDefault(True)
+			configStates.append(cf)
+
+		return configStates
+
+	def _collectProductPropertyStates(self, clientId, productId, depotId):
+		productPropertyStates = self._context.productPropertyState_getObjects(
+			objectId=clientId,
+			productId=productId
+		)
+
+		existingPropertyStatePropertyIds = set(pps.propertyId for pps in productPropertyStates)
+
+		# Create missing product property states
+		for pps in self._context.productPropertyState_getObjects(productId=productId, objectId=depotId):
+			if pps.propertyId not in existingPropertyStatePropertyIds:
+				# Product property for client does not exist => add default (values of depot)
+				productPropertyStates.append(
+					ProductPropertyState(
+						productId=pps.productId,
+						propertyId=pps.propertyId,
+						objectId=clientId,
+						values=pps.values
+					)
+				)
+
+		return {
+			pps.propertyId: u','.join(forceUnicodeList(pps.getValues()))
+			for pps
+			in productPropertyStates
+		}
 
 	def _updateByProductOnClient(self, productOnClient):
 		if not self._pxeBootConfigurationUpdateNeeded(productOnClient):
