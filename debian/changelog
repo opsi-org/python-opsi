@@ -1,3 +1,11 @@
+python-opsi (4.0.7.65-1) stable; urgency=medium
+
+  * Reverted changes made in 4.0.7.63.
+    This means all updates will be relayed to the depot again regardless
+    of the set action request.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 29 May 2018 12:56:42 +0200
+
 python-opsi (4.0.7.64-1) testing; urgency=medium
 
   * 10_opsi.conf: setProductActionRequestWithDependencies will relay
