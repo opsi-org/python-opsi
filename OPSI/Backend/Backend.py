@@ -1700,7 +1700,6 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			raise BackendBadValueError(u"Failed to parse filter '%s'" % filter)
 		logger.debug(u"Parsed search filter: {0!r}", parsedFilter)
 
-
 		def combineResults(result1, result2, operator):
 			if not result1:
 				return result2
@@ -2625,10 +2624,7 @@ into the IDs of these depots are to be found in the list behind \
 
 		usedDepotIds = set()
 		result = []
-		addConfigStateDefaults = self.backend_getOptions().get('addConfigStateDefaults', False)
-		try:
-			logger.debug(u"Calling backend_setOptions on {0}", self)
-			self.backend_setOptions({'addConfigStateDefaults': True})
+		with temporaryBackendOptions(self, addConfigStateDefaults=True):
 			for configState in self.configState_getObjects(configId=u'clientconfig.depot.id', objectId=clientIds):
 				try:
 					depotId = configState.values[0]
@@ -2649,8 +2645,6 @@ into the IDs of these depots are to be found in the list behind \
 						'alternativeDepotIds': []
 					}
 				)
-		finally:
-			self.backend_setOptions({'addConfigStateDefaults': addConfigStateDefaults})
 
 		if forceBool(masterOnly):
 			return result
