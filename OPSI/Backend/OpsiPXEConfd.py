@@ -269,9 +269,9 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 		Update the boot configuration of a specific client.
 		This method will relay calls to opsipxeconfd who does the handling.
 
-		:param clientId: The ID whose boot configuration should be updated.
+		:param clientId: The client whose boot configuration should be updated.
 		:type clientId: str
-		:param data: Precollected data for opsipxeconfd.
+		:param data: Collected data for opsipxeconfd.
 		:type data: dict
 		"""
 
