@@ -274,20 +274,11 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 		:param data: Collected data for opsipxeconfd.
 		:type data: dict
 		"""
-
 		clientId = forceHostId(clientId)
 		logger.debug("Updating PXE boot config of {!r}", clientId)
 
 		if data:
-			destinationFile = getClientDataPath(clientId)
-			logger.debug2("Writing data to {}: {!r}", destinationFile, data)
-			try:
-				with codecs.open(destinationFile, "w", 'utf-8') as outfile:
-					json.dump(data, outfile)
-				os.chmod(destinationFile, 0o640)
-			except (OSError, IOError) as dataFileError:
-				logger.logException(dataFileError, logLevel=LOG_DEBUG)
-				logger.debug("Writing data file {!r} failed: {!r}", destinationFile, dataFileError)
+			self._cacheOpsiPXEConfdData(clientId, data)
 
 		with self._updateThreadsLock:
 			if clientId not in self._updateThreads:
@@ -296,6 +287,25 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 				updater.start()
 			else:
 				self._updateThreads[clientId].delay()
+
+	def _cacheOpsiPXEConfdData(self, clientId, data):
+		"""
+		Save data used by opsipxeconfd to a cache file.
+
+		:param clientId: The client for whom this data is.
+		:type clientId: str
+		:param data: Collected data for opsipxeconfd.
+		:type data: dict
+		"""
+		destinationFile = getClientDataPath(clientId)
+		logger.debug2("Writing data to {}: {!r}", destinationFile, data)
+		try:
+			with codecs.open(destinationFile, "w", 'utf-8') as outfile:
+				json.dump(data, outfile)
+			os.chmod(destinationFile, 0o640)
+		except (OSError, IOError) as dataFileError:
+			logger.logException(dataFileError, logLevel=LOG_DEBUG)
+			logger.debug("Writing data file {!r} failed: {!r}", destinationFile, dataFileError)
 
 	def backend_exit(self):
 		for connection in self._depotConnections.values():
