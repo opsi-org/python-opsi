@@ -39,7 +39,7 @@ from OPSI.Backend.Backend import OPSI_GLOBAL_CONF, ConfigDataBackend
 from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Util import getfqdn
 
-__version__ = '4.0.7.63'
+__version__ = '4.0.7.65'
 
 logger = Logger()
 
@@ -149,22 +149,13 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 
 		depotId = self._getResponsibleDepotId(productOnClient.clientId)
 		if depotId != self._depotId:
-			logger.info(u"Not responsible for client '%s', forwarding request to depot '%s'" % (productOnClient.clientId, depotId))
+			logger.info(u"Not responsible for client '{}', forwarding request to depot '{}'", productOnClient.clientId, depotId)
 
-			if productOnClient.actionRequest not in ("setup", "always", "once"):
-				logger.debug(
-					u"Not dispatching action request update for product "
-					u"{0!r} on client {1!r} to depot {2!r}.",
-					productOnClient.productId,
-					productOnClient.clientId,
-					depotId
-				)
-				return
-
-			depot = self._getDepotConnection(depotId)
-			depot.opsipxeconfd_updatePXEBootConfiguration(productOnClient.clientId)
+			destination = self._getDepotConnection(depotId)
 		else:
-			self.opsipxeconfd_updatePXEBootConfiguration(productOnClient.clientId)
+			destination = self
+
+		destination.opsipxeconfd_updatePXEBootConfiguration(productOnClient.clientId)
 
 	def opsipxeconfd_updatePXEBootConfiguration(self, clientId):
 		clientId = forceHostId(clientId)
