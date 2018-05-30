@@ -444,13 +444,18 @@ class BackupArchiveTest(unittest.TestCase):
 
                 for backend in archive._getBackends("file"):
                     baseDir = backend["config"]["baseDir"]
-
                     oldContent = getFolderContent(baseDir)
+
+                    keyFile = backend["config"]["hostKeyFile"]
+                    self.assertTrue(os.path.exists(keyFile))
 
                     archive.backupFileBackend()
                     archive.close()
 
+                    # Delete data that should be backed up.
                     shutil.rmtree(baseDir, ignore_errors=True)
+                    if baseDir not in keyFile:
+                        os.remove(keyFile)
                     os.mkdir(baseDir)
 
                 self.assertTrue(oldContent)
@@ -458,6 +463,9 @@ class BackupArchiveTest(unittest.TestCase):
                 with getOpsiBackupArchive(name=archive.name, mode="r", tempdir=tempDir) as backup:
                     backup.restoreFileBackend()
                     newContent = getFolderContent(baseDir)
+
+                    newKeyFile = backend["config"]["hostKeyFile"]
+                    self.assertTrue(os.path.exists(newKeyFile))
 
                 self.assertEquals(oldContent, newContent)
 
