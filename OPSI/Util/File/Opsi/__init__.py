@@ -1373,8 +1373,6 @@ element of the tuple is replace with the second element.
 								os.makedirs(dest, mode=member.mode)
 								os.chown(dest, pwd.getpwnam(member.uname)[2], grp.getgrnam(member.gname)[2])
 					elif member.name.startswith(hostKeyBackupPath):
-						dest = member.name.replace(backendBackupPath, baseDir)
-
 						assert member.isfile(), "No directory expected."
 						hostKeyFile = backend["config"]["hostKeyFile"]
 						self._extractFile(member, hostKeyFile)
