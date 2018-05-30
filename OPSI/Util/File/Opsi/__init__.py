@@ -1346,19 +1346,25 @@ element of the tuple is replace with the second element.
 				baseDir = backend["config"]["baseDir"]
 				self._addContent(baseDir, sub=(baseDir, "BACKENDS/FILE/%s" % backend["name"]))
 
+				hostKeyFile = backend["config"]["hostKeyFile"]
+				if baseDir not in os.path.dirname(hostKeyFile):
+					# File resides outside of baseDir
+					self._addContent(hostKeyFile, sub=(os.path.dirname(hostKeyFile), "BACKENDS/FILE_HOSTKEYS/%s" % backend["name"]))
+
 	def restoreFileBackend(self, auto=False):
 		if not self.hasFileBackend():
 			raise OpsiBackupBackendNotFound("No File Backend found in backup archive")
 
 		for backend in self._getBackends("file"):
 			if not auto or backend["dispatch"]:
+				backendBackupPath = os.path.join(self.CONTENT_DIR, "BACKENDS/FILE/%s" % backend["name"])
+				hostKeyBackupPath = os.path.join(self.CONTENT_DIR, "BACKENDS/FILE_HOSTKEYS/%s" % backend["name"])
 				baseDir = backend["config"]["baseDir"]
 
 				members = self.getmembers()
-
 				for member in members:
-					if member.name.startswith(os.path.join(self.CONTENT_DIR, "BACKENDS/FILE/%s" % backend["name"])):
-						dest = member.name.replace(os.path.join(self.CONTENT_DIR, "BACKENDS/FILE/%s" % backend["name"]), baseDir)
+					if member.name.startswith(backendBackupPath):
+						dest = member.name.replace(backendBackupPath, baseDir)
 
 						if member.isfile():
 							self._extractFile(member, dest)
@@ -1366,6 +1372,12 @@ element of the tuple is replace with the second element.
 							if not os.path.exists(dest):
 								os.makedirs(dest, mode=member.mode)
 								os.chown(dest, pwd.getpwnam(member.uname)[2], grp.getgrnam(member.gname)[2])
+					elif member.name.startswith(hostKeyBackupPath):
+						dest = member.name.replace(backendBackupPath, baseDir)
+
+						assert member.isfile(), "No directory expected."
+						hostKeyFile = backend["config"]["hostKeyFile"]
+						self._extractFile(member, hostKeyFile)
 
 	def backupDHCPBackend(self, auto=False):
 		for backend in self._getBackends("dhcpd"):
