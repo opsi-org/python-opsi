@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2006-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -1179,11 +1179,24 @@ class OpsiBackupArchive(tarfile.TarFile):
 
 		return map
 
-	def _addContent(self, path, sub=()):
+	def _addContent(self, path, sub=None):
+		"""
+		Add content to an backup.
+
+		Content can be a file or directory.
+		In case of a directory it will be added with all of its content.
+
+		:param path: Path to the content to add.
+		:type path: str
+		:param sub: If given `path` will be alterd so that the first \
+element of the tuple is replace with the second element.
+		:type sub: tuple(str, str) or None
+		"""
 		dest = path
 		if sub:
 			dest = dest.replace(sub[0], sub[1])
 		dest = os.path.join(self.CONTENT_DIR, dest)
+
 		if os.path.isdir(path):
 			self.add(path, dest, recursive=False)
 			for entry in os.listdir(path):
