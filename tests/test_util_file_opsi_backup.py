@@ -456,6 +456,7 @@ class BackupArchiveTest(unittest.TestCase):
                     shutil.rmtree(baseDir, ignore_errors=True)
                     if baseDir not in keyFile:
                         os.remove(keyFile)
+                    self.assertFalse(os.path.exists(keyFile))
                     os.mkdir(baseDir)
 
                 self.assertTrue(oldContent)
