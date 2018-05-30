@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2014-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -191,8 +191,8 @@ def getOpsiBackupArchive(name=None, mode=None, tempdir=None, keepArchive=False, 
             with mock.patch('OPSI.Util.File.Opsi.OpsiBackupArchive.BACKEND_CONF_DIR', backendDir):
                 fakeDHCPDBackendConfig(baseDir, backendDir)
                 if dataBackend == 'file':
-                    backendDataDir = fakeFileBackendConfig(baseDir, backendDir)
-                    fillFileBackendWithFakeFiles(backendDataDir)
+                    backendDataDir, hostKeyFile = fakeFileBackendConfig(baseDir, backendDir)
+                    fillFileBackendWithFakeFiles(backendDataDir, hostKeyFile)
                 elif "mysql" == dataBackend:
                     mySQLConnectionConfig = fakeMySQLBackend(backendDir)
                     fillMySQLBackend(mySQLConnectionConfig)
@@ -275,10 +275,13 @@ config = {{
 }}
 """.format(configDataFolder, keyFile))
 
-    return configDataFolder
+    return configDataFolder, keyFile
 
 
-def fillFileBackendWithFakeFiles(backendDir):
+def fillFileBackendWithFakeFiles(backendDir, hostKeyFile):
+    with open(hostKeyFile, 'w') as keyFile:
+        keyFile.write('abc:123\n')
+
     requiredFolders = (u'clients', u'depots', u'products', u'audit', u'templates')
     for folder in requiredFolders:
         try:
