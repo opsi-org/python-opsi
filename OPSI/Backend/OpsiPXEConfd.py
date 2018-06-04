@@ -209,7 +209,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 				})
 
 			product = self._context.product_getObjects(
-				attributes=['id'],
+				attributes=['id', 'pxeConfigTemplate'],
 				type=u'NetbootProduct',
 				id=productOnClient.productId,
 				productVersion=productOnClient.productVersion,
