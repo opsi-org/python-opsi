@@ -374,7 +374,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 		logger.debug2("Writing data to {}: {!r}", destinationFile, data)
 		try:
 			with codecs.open(destinationFile, "w", 'utf-8') as outfile:
-				json.dump(data, outfile)
+				json.dump(serialize(data), outfile)
 			os.chmod(destinationFile, 0o640)
 		except (OSError, IOError) as dataFileError:
 			logger.logException(dataFileError, logLevel=LOG_DEBUG)
