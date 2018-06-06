@@ -248,7 +248,7 @@ class BackendManager(ExtendedBackend):
         config['config']['name'] = name
         moduleName = config['module']
         backendClassName = '%sBackend' % config['module']
-        exec(u'from %s import %s' % (moduleName, backendClassName))
+        exec(u'from OPSI.Backend.%s import %s' % (moduleName, backendClassName))
         return eval(u'%s(**config["config"])' % backendClassName)
 
 
