@@ -41,13 +41,14 @@ from sys import version_info
 from twisted.conch.ssh import keys
 
 from OPSI import __version__
+from OPSI.Backend.Base import Backend
+from OPSI.Backend.Backend import DeferredCall
 from OPSI.Exceptions import (
 	OpsiAuthenticationError, OpsiConnectionError, OpsiError,
 	OpsiServiceVerificationError, OpsiRpcError, OpsiTimeoutError)
 from OPSI.Logger import Logger, LOG_INFO
 from OPSI.Types import (
 	forceBool, forceFilename, forceFloat, forceInt, forceList, forceUnicode)
-from OPSI.Backend.Backend import Backend, DeferredCall
 from OPSI.Util import serialize, deserialize
 from OPSI.Util.HTTP import getSharedConnectionPool, urlsplit
 from OPSI.Util.HTTP import deflateEncode, deflateDecode, gzipDecode

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2010-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2010-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -40,15 +40,15 @@ except ImportError:
 	# Python 3 compatibility
 	from http.client import HTTPSConnection
 
+from OPSI.Backend.Base import ExtendedBackend
 from OPSI.Exceptions import BackendMissingDataError, BackendUnaccomplishableError
 from OPSI.Logger import Logger, LOG_DEBUG
 from OPSI.Types import (forceBool, forceDict, forceHostId, forceHostIdList,
 						forceInt, forceIpAddress, forceList, forceUnicode,
 						forceUnicodeList)
-from OPSI.Backend.Backend import ExtendedBackend
 from OPSI.Util import fromJson, toJson
-from OPSI.Util.Thread import KillableThread
 from OPSI.Util.HTTP import closingConnection, non_blocking_connect_https
+from OPSI.Util.Thread import KillableThread
 
 __all__ = ('RpcThread', 'ConnectionThread', 'HostControlBackend')
 

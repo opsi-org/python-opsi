@@ -30,7 +30,7 @@ import threading
 import time
 from contextlib import closing, contextmanager
 
-from OPSI.Backend.Backend import ConfigDataBackend
+from OPSI.Backend.Base import ConfigDataBackend
 from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Exceptions import (BackendMissingDataError, BackendUnableToConnectError,
 	BackendUnaccomplishableError)

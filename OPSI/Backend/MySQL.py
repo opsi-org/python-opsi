@@ -39,12 +39,12 @@ from MySQLdb.converters import conversions
 from sqlalchemy import pool
 from twisted.conch.ssh import keys
 
+from OPSI.Backend.Base import ConfigDataBackend
+from OPSI.Backend.SQL import (
+	onlyAllowSelect, SQL, SQLBackend, SQLBackendObjectModificationTracker)
 from OPSI.Exceptions import BackendBadValueError, BackendUnableToConnectError
 from OPSI.Logger import Logger
 from OPSI.Types import forceInt, forceUnicode
-from OPSI.Backend.Backend import ConfigDataBackend
-from OPSI.Backend.SQL import (
-	onlyAllowSelect, SQL, SQLBackend, SQLBackendObjectModificationTracker)
 
 __all__ = (
 	'ConnectionPool', 'MySQL', 'MySQLBackend',
