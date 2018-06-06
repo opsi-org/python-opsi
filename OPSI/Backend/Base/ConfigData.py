@@ -45,6 +45,7 @@ from OPSI.Types import (
     forceFilename, forceHostId, forceInt, forceLanguageCode, forceObjectClass,
     forceObjectClassList, forceObjectId, forceUnicodeList, forceUnicodeLower)
 from OPSI.Object import (
+    getPossibleClassAttributes,
     AuditSoftware, AuditSoftwareOnClient, AuditHardware, AuditHardwareOnHost,
     Config, ConfigState, Group, Host, LicenseContract, LicenseOnClient,
     LicensePool, ObjectToGroup, Product, ProductDependency, ProductOnDepot,
