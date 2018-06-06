@@ -18,9 +18,9 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-Basic backend.
+Extended backends.
 
-This holds the basic backend classes.
+They provide extended functionality.
 
 :copyright: uib GmbH <info@uib.de>
 :author: Jan Schneider <j.schneider@uib.de>
