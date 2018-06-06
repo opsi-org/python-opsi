@@ -40,6 +40,7 @@ from hashlib import md5
 from twisted.conch.ssh import keys
 
 from OPSI import __version__ as LIBRARY_VERSION
+from OPSI.Exceptions import BackendError
 from OPSI.Logger import Logger
 from OPSI.Object import *  # this is needed for dynamic loading
 from OPSI.Types import (forceDict, forceFilename, forceList, forceUnicode,
