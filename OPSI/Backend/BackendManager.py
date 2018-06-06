@@ -250,8 +250,10 @@ class BackendManager(ExtendedBackend):
 		if not isinstance(config['config'], dict):
 			raise BackendConfigurationError(u"Bad type for config var in backend config file '%s', has to be dict" % backendConfigFile)
 		config['config']['name'] = name
-		exec(u'from %s import %sBackend' % (config['module'], config['module']))
-		return eval(u'%sBackend(**config["config"])' % config['module'])
+		moduleName = config['module']
+		backendClassName = '%sBackend' % config['module']
+		exec(u'from %s import %s' % (moduleName, backendClassName))
+		return eval(u'%s(**config["config"])' % backendClassName)
 
 
 def backendManagerFactory(user, password, dispatchConfigFile, backendConfigDir,
