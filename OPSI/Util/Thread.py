@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2010-2016 uib GmbH - http://www.uib.de/
+# Copyright (C) 2010-2018 uib GmbH - http://www.uib.de/
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -30,7 +30,7 @@ opsi python library - Thread
 import threading
 import inspect
 import ctypes
-from Queue import Queue, Empty
+from queue import Queue, Empty
 
 from OPSI.Logger import Logger
 

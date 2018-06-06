@@ -38,22 +38,17 @@ import base64
 import gzip
 import os
 import re
+import ssl as ssl_module
 import socket
 import time
 import zlib
-import urlparse
 from contextlib import contextmanager
-from io import BytesIO
-
-try:
-	from cStringIO import StringIO
-except ImportError:
-	from io import StringIO
-
-from Queue import Queue, Empty, Full
+from io import BytesIO, StringIO
+from queue import Queue, Empty, Full
 from httplib import HTTPConnection, HTTPSConnection, HTTPException
 from socket import error as SocketError, timeout as SocketTimeout
-import ssl as ssl_module
+from urllib.parse import urlparse
+
 from OpenSSL import crypto
 
 from OPSI.Exceptions import (OpsiAuthenticationError, OpsiTimeoutError,
@@ -312,7 +307,7 @@ class HTTPConnectionPool(object):
 		if self.proxyURL:
 			headers = {}
 			try:
-				url = urlparse.urlparse(self.proxyURL)
+				url = urlparse(self.proxyURL)
 				if url.password:
 					logger.setConfidentialStrings(url.password)
 				logger.debug(u"Starting new HTTP connection (%d) to %s:%d over proxy-url %s" % (self.num_connections, self.host, self.port, self.proxyURL))
@@ -562,7 +557,7 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 		if self.proxyURL:
 			headers = {}
 			try:
-				url = urlparse.urlparse(self.proxyURL)
+				url = urlparse(self.proxyURL)
 				if url.password:
 					logger.setConfidentialString(url.password)
 				logger.debug(u"Starting new HTTPS connection (%d) to %s:%d over proxy-url %s" % (self.num_connections, self.host, self.port, self.proxyURL))

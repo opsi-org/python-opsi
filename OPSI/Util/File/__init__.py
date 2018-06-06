@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2006-2017 uib GmbH - http://www.uib.de/
+# Copyright (C) 2006-2018 uib GmbH - http://www.uib.de/
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -29,14 +29,14 @@ parsing files for information.
 """
 
 import codecs
-import ConfigParser
 import functools
 import locale
 import os
 import re
-import StringIO
 import threading
 import time
+from configparser import RawConfigParser, SafeConfigParser
+from io import StringIO
 from itertools import islice
 
 from OPSI.Exceptions import BackendBadValueError, BackendMissingDataError
@@ -583,12 +583,12 @@ class IniFile(ConfigFile):
 			lines.append(line)
 		self._configParser = None
 		if self._raw:
-			self._configParser = ConfigParser.RawConfigParser()
+			self._configParser = RawConfigParser()
 		else:
-			self._configParser = ConfigParser.SafeConfigParser()
+			self._configParser = SafeConfigParser()
 
 		try:
-			self._configParser.readfp(StringIO.StringIO(u'\r\n'.join(lines)))
+			self._configParser.readfp(StringIO(u'\r\n'.join(lines)))
 		except Exception as e:
 			raise RuntimeError(u"Failed to parse ini file '%s': %s" % (self._filename, e))
 

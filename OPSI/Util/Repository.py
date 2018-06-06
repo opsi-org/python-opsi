@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2006-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -30,13 +30,14 @@ Functionality to work with opsi repositories.
 """
 
 import base64
-import httplib
 import os
 import re
 import shutil
 import stat
 import time
 import urllib
+
+from http.client import HTTPConnection, HTTPSConnection, HTTPResponse
 
 from OPSI.web2 import responsecode
 from OPSI.web2.dav import davxml
@@ -49,7 +50,8 @@ from OPSI.Types import forceBool, forceFilename, forceInt, forceUnicode, forceUn
 from OPSI.Util.Message import ProgressSubject
 from OPSI.Util import md5sum, randomString
 from OPSI.Util.File.Opsi import PackageContentFile
-from OPSI.Util.HTTP import getSharedConnectionPool, urlsplit, HTTPResponse
+from OPSI.Util.HTTP import getSharedConnectionPool, urlsplit
+from OPSI.Util.HTTP import HTTPResponse as OpsiHTTPResponse
 
 if os.name == 'nt':
 	from OPSI.System.Windows import getFreeDrive
@@ -377,7 +379,7 @@ class Repository:
 			transferStartTime = time.time()
 			buf = True
 
-			if isinstance(src, httplib.HTTPResponse) or hasattr(src, 'length'):
+			if isinstance(src, HTTPResponse) or hasattr(src, 'length'):
 				fileSize = src.length
 			else:
 				fileSize = os.path.getsize(src.name)
@@ -404,7 +406,7 @@ class Repository:
 						buf = buf[:bytes-self._bytesTransfered]
 						read = len(buf)
 					self._bytesTransfered += read
-					if isinstance(dst, (httplib.HTTPConnection, httplib.HTTPSConnection)):
+					if isinstance(dst, (HTTPConnection, HTTPSConnection)):
 						dst.send(buf)
 					else:
 						dst.write(buf)
@@ -991,7 +993,7 @@ class HTTPRepository(Repository):
 						raise
 					logger.info(u"Error '%s' occurred while downloading, retrying" % error)
 					continue
-				response = HTTPResponse.from_httplib(httplib_response)
+				response = OpsiHTTPResponse.from_httplib(httplib_response)
 				conn = None
 				self._connectionPool.endConnection(conn)
 				break
@@ -1119,7 +1121,7 @@ class WebDAVRepository(HTTPRepository):
 						raise
 					logger.info(u"Error '%s' occurred while uploading, retrying" % error)
 					continue
-				response = HTTPResponse.from_httplib(httplib_response)
+				response = OpsiHTTPResponse.from_httplib(httplib_response)
 				conn = None
 				self._connectionPool.endConnection(conn)
 				break

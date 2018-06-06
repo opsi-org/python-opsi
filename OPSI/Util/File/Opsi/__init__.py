@@ -2,7 +2,7 @@
 
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
-# Copyright (C) 2006-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -36,10 +36,10 @@ import tarfile
 import tempfile
 import shutil
 import socket
-import StringIO
 from collections import namedtuple
 from contextlib import closing
 from hashlib import sha1
+from io import StringIO
 from operator import itemgetter
 from subprocess import Popen, PIPE, STDOUT
 
@@ -1246,7 +1246,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 			self.add(path, dest)
 
 	def _addChecksumFile(self):
-		string = StringIO.StringIO()
+		string = StringIO()
 		for path, checksum in self._filemap.iteritems():
 			string.write("%s %s\n" % (checksum, path))
 		string.seek(0)
@@ -1256,7 +1256,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 		self.addfile(info, string)
 
 	def _addSysInfoFile(self):
-		string = StringIO.StringIO()
+		string = StringIO()
 
 		for key, value in self.sysinfo.iteritems():
 			string.write("%s: %s\n" % (key, value))
@@ -1517,7 +1517,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 					cmd.append("--password=%s" % backend["config"]["password"])
 					cmd.append(backend["config"]["database"])
 
-					output = StringIO.StringIO()
+					output = StringIO()
 
 					p = Popen(cmd, stdin=fd, stdout=PIPE, stderr=STDOUT)
 
