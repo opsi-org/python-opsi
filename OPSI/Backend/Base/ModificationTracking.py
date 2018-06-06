@@ -28,10 +28,7 @@ Backend that tracks modifications.
 """
 
 from OPSI.Logger import Logger
-from OPSI.Util import (
-    blowfishEncrypt, blowfishDecrypt, compareVersions,
-    getfqdn, removeUnit, timestamp)
-
+from .Extended import ExtendedBackend
 
 __all__ = (
     'ModificationTrackingBackend', 'BackendModificationListener'
