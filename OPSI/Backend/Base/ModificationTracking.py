@@ -31,7 +31,7 @@ from OPSI.Logger import Logger
 from .Extended import ExtendedBackend
 
 __all__ = (
-    'ModificationTrackingBackend', 'BackendModificationListener'
+	'ModificationTrackingBackend', 'BackendModificationListener'
 )
 
 logger = Logger()
@@ -39,67 +39,67 @@ logger = Logger()
 
 class ModificationTrackingBackend(ExtendedBackend):
 
-    def __init__(self, backend, overwrite=True):
-        ExtendedBackend.__init__(self, backend, overwrite=overwrite)
-        self._createInstanceMethods()
-        self._backendChangeListeners = []
+	def __init__(self, backend, overwrite=True):
+		ExtendedBackend.__init__(self, backend, overwrite=overwrite)
+		self._createInstanceMethods()
+		self._backendChangeListeners = []
 
-    def addBackendChangeListener(self, backendChangeListener):
-        if backendChangeListener in self._backendChangeListeners:
-            return
-        self._backendChangeListeners.append(backendChangeListener)
+	def addBackendChangeListener(self, backendChangeListener):
+		if backendChangeListener in self._backendChangeListeners:
+			return
+		self._backendChangeListeners.append(backendChangeListener)
 
-    def removeBackendChangeListener(self, backendChangeListener):
-        if backendChangeListener not in self._backendChangeListeners:
-            return
-        self._backendChangeListeners.remove(backendChangeListener)
+	def removeBackendChangeListener(self, backendChangeListener):
+		if backendChangeListener not in self._backendChangeListeners:
+			return
+		self._backendChangeListeners.remove(backendChangeListener)
 
-    def _fireEvent(self, event, *args):
-        for bcl in self._backendChangeListeners:
-            try:
-                meth = getattr(bcl, event)
-                meth(self, *args)
-            except Exception as e:
-                logger.error(e)
+	def _fireEvent(self, event, *args):
+		for bcl in self._backendChangeListeners:
+			try:
+				meth = getattr(bcl, event)
+				meth(self, *args)
+			except Exception as e:
+				logger.error(e)
 
-    def _executeMethod(self, methodName, **kwargs):
-        logger.debug(
-            u"ModificationTrackingBackend {0}: executing {1!r} on backend {2}",
-            self,
-            methodName,
-            self._backend
-        )
-        meth = getattr(self._backend, methodName)
-        result = meth(**kwargs)
-        action = None
-        if '_' in methodName:
-            action = methodName.split('_', 1)[1]
+	def _executeMethod(self, methodName, **kwargs):
+		logger.debug(
+			u"ModificationTrackingBackend {0}: executing {1!r} on backend {2}",
+			self,
+			methodName,
+			self._backend
+		)
+		meth = getattr(self._backend, methodName)
+		result = meth(**kwargs)
+		action = None
+		if '_' in methodName:
+			action = methodName.split('_', 1)[1]
 
-        if action in ('insertObject', 'updateObject', 'deleteObjects'):
-            if action == 'insertObject':
-                self._fireEvent('objectInserted', kwargs.values()[0])
-            elif action == 'updateObject':
-                self._fireEvent('objectUpdated', kwargs.values()[0])
-            elif action == 'deleteObjects':
-                self._fireEvent('objectsDeleted', kwargs.values()[0])
-            self._fireEvent('backendModified')
+		if action in ('insertObject', 'updateObject', 'deleteObjects'):
+			if action == 'insertObject':
+				self._fireEvent('objectInserted', kwargs.values()[0])
+			elif action == 'updateObject':
+				self._fireEvent('objectUpdated', kwargs.values()[0])
+			elif action == 'deleteObjects':
+				self._fireEvent('objectsDeleted', kwargs.values()[0])
+			self._fireEvent('backendModified')
 
-        return result
+		return result
 
 
 class BackendModificationListener(object):
-    def objectInserted(self, backend, obj):
-        # Should return immediately!
-        pass
+	def objectInserted(self, backend, obj):
+		# Should return immediately!
+		pass
 
-    def objectUpdated(self, backend, obj):
-        # Should return immediately!
-        pass
+	def objectUpdated(self, backend, obj):
+		# Should return immediately!
+		pass
 
-    def objectsDeleted(self, backend, objs):
-        # Should return immediately!
-        pass
+	def objectsDeleted(self, backend, objs):
+		# Should return immediately!
+		pass
 
-    def backendModified(self, backend):
-        # Should return immediately!
-        pass
+	def backendModified(self, backend):
+		# Should return immediately!
+		pass
