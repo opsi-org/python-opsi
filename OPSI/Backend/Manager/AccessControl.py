@@ -41,7 +41,9 @@ from OPSI.Exceptions import (
     BackendMissingDataError, BackendPermissionDeniedError,
     BackendUnaccomplishableError)
 from OPSI.Logger import Logger, LOG_INFO
-from OPSI.Object import BaseObject, mandatoryConstructorArgs
+from OPSI.Object import (
+    mandatoryConstructorArgs,
+    BaseObject, OpsiClient, OpsiDepotserver)
 from OPSI.Types import forceBool, forceList, forceUnicode, forceUnicodeList
 from OPSI.Util.File.Opsi import BackendACLFile, OpsiConfFile
 
