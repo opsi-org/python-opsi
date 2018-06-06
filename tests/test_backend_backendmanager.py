@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2019 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -26,7 +26,8 @@ from __future__ import absolute_import, print_function
 
 import os
 
-from OPSI.Backend.BackendManager import BackendManager, ConfigDataBackend
+from OPSI.Backend.BackendManager import BackendManager
+from OPSI.Backend.Base import ConfigDataBackend
 
 from .helpers import getLocalFQDN
 from .Backends.File import getFileBackend
@@ -380,12 +381,3 @@ def testBackendManagerCanAccessExtensions(backendManager):
 
     # This may be empty but the call must not fail.
     backendManager.getServerIds_list()
-
-
-def testBackendManagerGettingOptionsReturnsCopy(backendManager):
-    options = backendManager.backend_getOptions()
-    options['foo'] = True
-
-    newOptions = backendManager.backend_getOptions()
-    assert newOptions
-    assert 'foo' not in newOptions
