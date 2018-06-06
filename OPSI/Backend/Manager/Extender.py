@@ -16,12 +16,10 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-BackendManager.
+Backend Extender.
 
-If you want to work with an opsi backend in i.e. a script a
-BackendManager instance should be your first choice.
-A BackendManager instance does the heavy lifting for you so you don't
-need to set up you backends, ACL, multiplexing etc. yourself.
+Reads the backend extensions and allows for them to be used like normal
+methods in a backend context.
 
 :copyright: uib GmbH <info@uib.de>
 :author: Jan Schneider <j.schneider@uib.de>
@@ -37,7 +35,10 @@ import types
 
 from OPSI.Backend.Base import ExtendedBackend
 from OPSI.Exceptions import BackendConfigurationError
+from OPSI.Exceptions import *  # this is needed for dynamic extension loading
 from OPSI.Logger import Logger
+from OPSI.Object import *  # this is needed for dynamic extension loading
+from OPSI.Types import *  # this is needed for dynamic extension loading
 
 from .AccessControl import BackendAccessControl
 from .Dispatcher import BackendDispatcher

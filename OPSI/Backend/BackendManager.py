@@ -41,10 +41,7 @@ from OPSI.Backend.Base import (
 from OPSI.Backend.Depotserver import DepotserverBackend
 from OPSI.Backend.HostControl import HostControlBackend
 from OPSI.Backend.HostControlSafe import HostControlSafeBackend
-from OPSI.Exceptions import *  # this is needed for dynamic extension loading
 from OPSI.Logger import Logger
-from OPSI.Object import *  # this is needed for dynamic extension loading
-from OPSI.Types import *  # this is needed for dynamic extension loading
 from OPSI.Util import objectToBeautifiedText, getfqdn  # used in extensions
 
 from .Manager.AccessControl import BackendAccessControl
