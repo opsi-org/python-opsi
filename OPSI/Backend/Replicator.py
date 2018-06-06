@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2010-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2010-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -27,7 +27,7 @@ The replicator allows replication from one backend into another.
 :license: GNU Affero General Public License version 3
 """
 
-from OPSI.Backend.Backend import ExtendedConfigDataBackend
+from OPSI.Backend.Base import ExtendedConfigDataBackend
 from OPSI.Logger import LOG_DEBUG, Logger
 from OPSI.Object import *
 from OPSI.Types import forceBool, forceHostId, forceList

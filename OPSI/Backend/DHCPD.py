@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2010-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2010-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -31,7 +31,7 @@ import socket
 import threading
 
 import OPSI.System as System
-from OPSI.Backend.Backend import ConfigDataBackend
+from OPSI.Backend.Base import ConfigDataBackend
 from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Exceptions import (BackendIOError, BackendBadValueError,
 	BackendMissingDataError, BackendUnableToConnectError,

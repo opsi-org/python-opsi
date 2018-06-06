@@ -62,10 +62,6 @@ logger = Logger()
 connectionPools = {}
 totalRequests = 0
 
-# This could be an import - but support for pycurl is currently not fully implrement
-pycurl = None
-
-
 try:
 	# We are running a new version of Python that implements PEP 476:
 	# https://www.python.org/dev/peps/pep-0476/
@@ -557,6 +553,7 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 		"""
 		Return a fresh HTTPSConnection.
 		"""
+		self.num_connections += 1
 		if self.proxyURL:
 			headers = {}
 			try:
@@ -595,7 +592,6 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 				logger.debug(u"Verification failed: {0!r}", error)
 				raise OpsiServiceVerificationError(forceUnicode(error))
 
-		self.num_connections += 1
 		self.peerCertificate = getPeerCertificate(conn, asPEM=True)
 		if self.verifyServerCertByCa:
 			logger.debug("Attempting to verify server cert by CA...")
@@ -671,31 +667,15 @@ def getSharedConnectionPool(scheme, host, port, **kw):
 	scheme = forceUnicodeLower(scheme)
 	host = forceUnicode(host)
 	port = forceInt(port)
-	curl = False
-	try:
-		if kw['preferCurl'] and pycurl is not None:
-			curl = True
-		del kw['preferCurl']
-	except KeyError:
-		pass
 
+	poolKey = u'httplib:%s:%d' % (host, port)
 	global connectionPools
-	if curl:
-		poolKey = u'curl:%s:%d' % (host, port)
-	else:
-		poolKey = u'httplib:%s:%d' % (host, port)
 
 	if poolKey not in connectionPools:
 		if scheme in ('https', 'webdavs'):
-			if curl:
-				connectionPools[poolKey] = CurlHTTPSConnectionPool(host, port=port, **kw)
-			else:
-				connectionPools[poolKey] = HTTPSConnectionPool(host, port=port, **kw)
+			connectionPools[poolKey] = HTTPSConnectionPool(host, port=port, **kw)
 		else:
-			if curl:
-				connectionPools[poolKey] = CurlHTTPConnectionPool(host, port=port, **kw)
-			else:
-				connectionPools[poolKey] = HTTPConnectionPool(host, port=port, **kw)
+			connectionPools[poolKey] = HTTPConnectionPool(host, port=port, **kw)
 	else:
 		connectionPools[poolKey].increaseUsageCount()
 		maxsize = kw.get('maxsize', 0)

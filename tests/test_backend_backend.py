@@ -117,7 +117,12 @@ def testBackendCanBeUsedAsContextManager():
 
 @pytest.mark.parametrize("option", [
     'addProductOnClientDefaults',
-    'returnObjectsOnUpdateAndCreate'
+    'addProductPropertyStateDefaults',
+    'addConfigStateDefaults',
+    'deleteConfigStateIfDefault',
+    'returnObjectsOnUpdateAndCreate',
+    'addDependentProductOnClients',
+    'processProductOnClientSequence',
 ])
 def testSettingTemporaryBackendOptions(extendedConfigDataBackend, option):
     optionDefaults = {
@@ -136,12 +141,48 @@ def testSettingTemporaryBackendOptions(extendedConfigDataBackend, option):
 
     with temporaryBackendOptions(extendedConfigDataBackend, **tempOptions):
         currentOptions = extendedConfigDataBackend.backend_getOptions()
+        assert currentOptions
         for key, value in optionDefaults.items():
             if key == option:
                 assert currentOptions[key] == True
                 continue
 
             assert currentOptions[key] == False
+
+
+def testSettingMultipleTemporaryBackendOptions(extendedConfigDataBackend):
+    tempOptions = {
+        'addProductOnClientDefaults': True,
+        'addProductPropertyStateDefaults': True,
+        'addConfigStateDefaults': True,
+    }
+
+    preOptions = extendedConfigDataBackend.backend_getOptions()
+    assert preOptions
+    for key, value in preOptions.items():
+        try:
+            assert value != tempOptions[key]
+        except KeyError:
+            continue
+
+    # this is the same as:
+    # with temporaryBackendOptions(extendedConfigDataBackend,
+    #                              addProductOnClientDefaults=True,
+    #                              addProductPropertyStateDefaults=True,
+    #                              addConfigStateDefaults=True):
+    with temporaryBackendOptions(extendedConfigDataBackend, **tempOptions):
+        currentOptions = extendedConfigDataBackend.backend_getOptions()
+        assert currentOptions
+
+        testedOptions = set()
+        for key, value in currentOptions.items():
+            try:
+                assert value == tempOptions[key]
+                testedOptions.add(key)
+            except KeyError:
+                continue
+
+        assert set(tempOptions.keys()) == testedOptions
 
 
 def testConfigStateCheckWorksWithInsertedDict(extendedConfigDataBackend):

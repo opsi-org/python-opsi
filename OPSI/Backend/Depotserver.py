@@ -26,6 +26,8 @@ Depotserver backend.
 
 import os
 
+from OPSI.Backend.Base import ExtendedBackend
+from OPSI.Backend.Base.ConfigData import LOG_DIR
 from OPSI.Exceptions import (
 	BackendBadValueError, BackendConfigurationError,
 	BackendError, BackendIOError, BackendMissingDataError,
@@ -36,7 +38,6 @@ from OPSI.Types import (
 	forceUnicode, forceUnicodeLower)
 from OPSI.Types import forceProductId as forceProductIdFunc
 from OPSI.Object import ProductOnDepot, ProductPropertyState
-from OPSI.Backend.Backend import LOG_DIR, ExtendedBackend
 from OPSI.System import getDiskSpaceUsage
 from OPSI.Util.Product import ProductPackageFile
 from OPSI.Util import (

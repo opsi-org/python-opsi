@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# This file is part of python-opsi.
-# Copyright (C) 2006-2018 uib GmbH <info@uib.de>
+# This module is part of the desktop management solution opsi
+# (open pc server integration) http://www.opsi.org
+# Copyright (C) 2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -16,27 +17,24 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-BackendManager.
+Backends.
 
-If you want to work with an opsi backend in i.e. a script a
-BackendManager instance should be your first choice.
-A BackendManager instance does the heavy lifting for you so you don't
-need to set up you backends, ACL, multiplexing etc. yourself.
-
-:copyright: uib GmbH <info@uib.de>
-:author: Jan Schneider <j.schneider@uib.de>
 :author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
 """
 
 from __future__ import absolute_import
 
-from .Manager._Manager import BackendManager, backendManagerFactory
-from .Manager.AccessControl import BackendAccessControl
-from .Manager.Dispatcher import BackendDispatcher
-from .Manager.Extender import BackendExtender
+from .Backend import describeInterface, Backend
+from .ConfigData import ConfigDataBackend
+from .Extended import (
+	getArgAndCallString, ExtendedBackend, ExtendedConfigDataBackend)
+from .ModificationTracking import (
+	ModificationTrackingBackend, BackendModificationListener)
 
 __all__ = (
-	'BackendManager', 'BackendDispatcher', 'BackendExtender',
-	'BackendAccessControl', 'backendManagerFactory'
+	'describeInterface', 'getArgAndCallString',
+	'Backend', 'ExtendedBackend', 'ConfigDataBackend',
+	'ExtendedConfigDataBackend',
+	'ModificationTrackingBackend', 'BackendModificationListener'
 )

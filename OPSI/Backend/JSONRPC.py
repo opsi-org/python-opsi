@@ -36,18 +36,19 @@ import time
 import threading
 import types
 from hashlib import md5
-from queue import Queue, Empty
-from twisted.conch.ssh import keys
+from Queue import Queue, Empty
 from sys import version_info
+from twisted.conch.ssh import keys
 
 from OPSI import __version__
+from OPSI.Backend.Base import Backend
+from OPSI.Backend.Backend import DeferredCall
 from OPSI.Exceptions import (
 	OpsiAuthenticationError, OpsiConnectionError, OpsiError,
 	OpsiServiceVerificationError, OpsiRpcError, OpsiTimeoutError)
 from OPSI.Logger import Logger, LOG_INFO
 from OPSI.Types import (
 	forceBool, forceFilename, forceFloat, forceInt, forceList, forceUnicode)
-from OPSI.Backend.Backend import Backend, DeferredCall
 from OPSI.Util import serialize, deserialize
 from OPSI.Util.HTTP import getSharedConnectionPool, urlsplit
 from OPSI.Util.HTTP import deflateEncode, deflateDecode, gzipDecode
@@ -271,7 +272,7 @@ class JSONRPCBackend(Backend):
 		self._protocol = 'https'
 		self._socketTimeout = None
 		self._connectTimeout = 30
-		self._connectionPoolSize = 1
+		self._connectionPoolSize = 2
 		self._interface = None
 		self._rpcId = 0
 		self._rpcIdLock = threading.Lock()
@@ -377,15 +378,13 @@ class JSONRPCBackend(Backend):
 		return self._connectionPool.getPeerCertificate(asPem)
 
 	def backend_exit(self):
-		res = None
 		if self._connected:
 			try:
-				res = self._jsonRPC('backend_exit', retry=False)
+				self._jsonRPC('backend_exit', retry=False)
 			except Exception:
 				pass
-		if self._rpcQueue:
-			self._rpcQueue.stop()
-		return res
+
+		self.stopRpcQueue()
 
 	def setAsync(self, enableAsync):
 		if not self._connected:

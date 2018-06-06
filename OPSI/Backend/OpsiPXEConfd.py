@@ -30,7 +30,7 @@ import threading
 import time
 from contextlib import closing, contextmanager
 
-from OPSI.Backend.Backend import ConfigDataBackend
+from OPSI.Backend.Base import ConfigDataBackend
 from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Exceptions import (BackendMissingDataError, BackendUnableToConnectError,
 	BackendUnaccomplishableError)
@@ -158,10 +158,13 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 
 		depotId = self._getResponsibleDepotId(productOnClient.clientId)
 		if depotId != self._depotId:
-			logger.info(u"Not responsible for client '{}', forwarding request to depot {!r}", productOnClient.clientId, depotId)
-			return self._getDepotConnection(depotId).opsipxeconfd_updatePXEBootConfiguration(productOnClient.clientId)
+			logger.info(u"Not responsible for client '{}', forwarding request to depot '{}'", productOnClient.clientId, depotId)
 
-		self.opsipxeconfd_updatePXEBootConfiguration(productOnClient.clientId)
+			destination = self._getDepotConnection(depotId)
+		else:
+			destination = self
+
+		destination.opsipxeconfd_updatePXEBootConfiguration(productOnClient.clientId)
 
 	def opsipxeconfd_updatePXEBootConfiguration(self, clientId):
 		clientId = forceHostId(clientId)
@@ -169,8 +172,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 
 		with self._updateThreadsLock:
 			if clientId not in self._updateThreads:
-				command = u'update %s' % clientId
-				updater = UpdateThread(self, clientId, command)
+				updater = UpdateThread(self, clientId, u'update %s' % clientId)
 				self._updateThreads[clientId] = updater
 				updater.start()
 			else:
@@ -227,13 +229,14 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 		self.opsipxeconfd_updatePXEBootConfiguration(configState.objectId)
 
 	def configState_deleteObjects(self, configStates):
-		errors = []
-		for configState in configStates:
-			if configState.configId != 'clientconfig.depot.id':
-				continue
+		hosts = set(configState.objectId for configState
+					in configStates
+					if configState.configId == 'clientconfig.depot.id')
 
+		errors = []
+		for host in hosts:
 			try:
-				self.opsipxeconfd_updatePXEBootConfiguration(configState.objectId)
+				self.opsipxeconfd_updatePXEBootConfiguration(host)
 			except Exception as error:
 				errors.append(forceUnicode(error))
 
@@ -267,8 +270,8 @@ class UpdateThread(threading.Thread):
 				logger.debug(u"Got result {!r}", result)
 			except Exception as error:
 				logger.critical(u"Failed to update PXE boot configuration for client '{}': {}", self._clientId, error)
-
-			del self._opsiPXEConfdBackend._updateThreads[self._clientId]
+			finally:
+				del self._opsiPXEConfdBackend._updateThreads[self._clientId]
 
 	def delay(self):
 		self._delay = self._DEFAULT_DELAY

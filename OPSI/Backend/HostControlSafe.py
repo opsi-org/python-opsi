@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -30,12 +30,12 @@ import struct
 
 from contextlib import closing
 
+from OPSI.Backend.Base import ExtendedBackend
+from OPSI.Backend.HostControl import RpcThread, ConnectionThread
+from OPSI.Backend.HostControl import _configureHostcontrolBackend
 from OPSI.Exceptions import BackendMissingDataError, BackendUnaccomplishableError
 from OPSI.Logger import LOG_DEBUG, Logger
 from OPSI.Types import (forceHostIdList, forceInt, forceList, forceUnicode)
-from OPSI.Backend.Backend import ExtendedBackend
-from OPSI.Backend.HostControl import RpcThread, ConnectionThread
-from OPSI.Backend.HostControl import _configureHostcontrolBackend
 
 __all__ = ('HostControlSafeBackend', )
 
