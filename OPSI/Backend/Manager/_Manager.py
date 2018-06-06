@@ -36,6 +36,10 @@ import re
 import socket
 import sys
 
+from OPSI.Backend.Base import Backend, ExtendedBackend, ExtendedConfigDataBackend
+from OPSI.Backend.Depotserver import DepotserverBackend
+from OPSI.Backend.HostControl import HostControlBackend
+from OPSI.Backend.HostControlSafe import HostControlSafeBackend
 from OPSI.Exceptions import BackendConfigurationError
 from OPSI.Logger import Logger
 from OPSI.Types import forceBool
@@ -43,12 +47,6 @@ from OPSI.Types import forceBool
 from .AccessControl import BackendAccessControl
 from .Dispatcher import BackendDispatcher
 from .Extender import BackendExtender
-
-from ..Backend.Base import Backend, ExtendedBackend, ExtendedConfigDataBackend
-from ..Backend.Depotserver import DepotserverBackend
-from ..Backend.HostControl import HostControlBackend
-from ..Backend.HostControlSafe import HostControlSafeBackend
-
 
 __all__ = ('BackendManager', 'backendManagerFactory')
 
