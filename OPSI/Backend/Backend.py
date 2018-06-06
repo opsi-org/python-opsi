@@ -53,6 +53,7 @@ from OPSI.Util import (
 from OPSI.Util.File import ConfigFile
 import OPSI.SharedAlgorithm
 
+from .Base import describeInterface, Backend
 from .Base import ModificationTrackingBackend, BackendModificationListener
 
 if os.name == 'posix':
