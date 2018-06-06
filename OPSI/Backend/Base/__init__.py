@@ -33,8 +33,8 @@ from .ModificationTracking import (
     ModificationTrackingBackend, BackendModificationListener)
 
 __all__ = (
-    'describeInterface', 'getArgAndCallString', 'temporaryBackendOptions',
-    'DeferredCall', 'Backend', 'ExtendedBackend', 'ConfigDataBackend',
+    'describeInterface', 'getArgAndCallString',
+    'Backend', 'ExtendedBackend', 'ConfigDataBackend',
     'ExtendedConfigDataBackend',
     'ModificationTrackingBackend', 'BackendModificationListener'
 )
