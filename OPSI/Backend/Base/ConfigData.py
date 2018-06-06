@@ -42,9 +42,9 @@ from OPSI.Exceptions import (
     BackendBadValueError, BackendMissingDataError,
     BackendReferentialIntegrityError)
 from OPSI.Types import (
-    forceFilename, forceHostId, forceInt, forceLanguageCode, forceObjectClass,
-    forceObjectClassList, forceObjectId, forceUnicode, forceUnicodeList,
-    forceUnicodeLower)
+    forceBool, forceFilename, forceHostId, forceInt, forceLanguageCode,
+    forceObjectClass, forceObjectClassList, forceObjectId, forceUnicode,
+    forceUnicodeList, forceUnicodeLower)
 from OPSI.Object import (
     getPossibleClassAttributes,
     AuditSoftware, AuditSoftwareOnClient, AuditSoftwareToLicensePool,
