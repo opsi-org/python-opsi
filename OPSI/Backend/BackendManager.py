@@ -42,7 +42,6 @@ from OPSI.Backend.Depotserver import DepotserverBackend
 from OPSI.Backend.HostControl import HostControlBackend
 from OPSI.Backend.HostControlSafe import HostControlSafeBackend
 from OPSI.Logger import Logger
-from OPSI.Util import objectToBeautifiedText, getfqdn  # used in extensions
 
 from .Manager.AccessControl import BackendAccessControl
 from .Manager.Dispatcher import BackendDispatcher
