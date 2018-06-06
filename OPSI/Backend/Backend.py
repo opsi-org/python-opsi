@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2013-2019 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -29,6 +29,8 @@ This holds the basic backend classes.
 :license: GNU Affero General Public License version 3
 """
 
+from __future__ import absolute_import
+
 import base64
 import codecs
 import collections
@@ -40,10 +42,11 @@ import random
 import re
 import threading
 import time
+import types
 import warnings
 from contextlib import contextmanager
 from hashlib import md5
-from types import MethodType
+from twisted.conch.ssh import keys
 
 from OPSI import __version__ as LIBRARY_VERSION
 from OPSI.Logger import Logger
@@ -52,9 +55,11 @@ from OPSI.Types import *  # this is needed for dynamic loading
 from OPSI.Object import *  # this is needed for dynamic loading
 from OPSI.Util import (
 	blowfishEncrypt, blowfishDecrypt, compareVersions,
-	getfqdn, getPublicKey, removeUnit, timestamp)
+	getfqdn, removeUnit, timestamp)
 from OPSI.Util.File import ConfigFile
 import OPSI.SharedAlgorithm
+
+from .Base import ModificationTrackingBackend, BackendModificationListener
 
 if os.name == 'posix':
 	with warnings.catch_warnings():
@@ -110,7 +115,7 @@ def describeInterface(instance):
 	These methods are represented as a dict with the following keys: \
 	*name*, *params*, *args*, *varargs*, *keywords*, *defaults*.
 
-	:rtype: [{},]
+	:returntype: [{},]
 	"""
 	methods = {}
 	for methodName, function in inspect.getmembers(instance, inspect.ismethod):
@@ -314,7 +319,7 @@ This defaults to ``self``.
 						elif isinstance(value, (float, long, int)) or re.search('^\s*([>=<]+)\s*([\d\.]+)', forceUnicode(filterValue)):
 							operator = '=='
 							v = forceUnicode(filterValue)
-							match = re.search(r'^\s*([>=<]+)\s*([\d.]+)', filterValue)
+							match = re.search('^\s*([>=<]+)\s*([\d\.]+)', filterValue)
 							if match:
 								operator = match.group(1)  # pylint: disable=maybe-no-member
 								v = match.group(2)  # pylint: disable=maybe-no-member
@@ -328,7 +333,7 @@ This defaults to ``self``.
 
 							continue
 
-						if '*' in filterValue and re.search(r'^%s$' % filterValue.replace('*', '.*'), value):
+						if '*' in filterValue and re.search('^%s$' % filterValue.replace('*', '.*'), value):
 							matched = True
 							break
 
@@ -372,11 +377,9 @@ This defaults to ``self``.
 		"""
 		Get the current backend options.
 
-		To alter these options make use of `backend_setOptions`.
-
 		:rtype: dict
 		"""
-		return self._options.copy()  # Do not return a reference
+		return self._options
 
 	def backend_getInterface(self):
 		"""
@@ -386,7 +389,7 @@ This defaults to ``self``.
 		*name*, *params*, *args*, *varargs*, *keywords*, *defaults*.
 
 
-		:rtype: [{},]
+		:returntype: [{},]
 		"""
 		return describeInterface(self)
 
@@ -434,7 +437,7 @@ This defaults to ``self``.
 			if (modules.get('expires', '') != 'never') and (time.mktime(time.strptime(modules.get('expires', '2000-01-01'), "%Y-%m-%d")) - time.time() <= 0):
 				modules = {'valid': False}
 				raise ValueError(u"Signature expired")
-			publicKey = getPublicKey(data=base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP'))
+			publicKey = keys.Key.fromString(data=base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
 			data = u''
 			mks = modules.keys()
 			mks.sort()
@@ -499,8 +502,7 @@ class ExtendedBackend(Backend):
 
 	def _createInstanceMethods(self):
 		logger.debug(u"%s is creating instance methods" % self.__class__.__name__)
-		for _, functionRef in inspect.getmembers(self._backend, inspect.ismethod):
-			methodName = functionRef.__name__
+		for methodName, functionRef in inspect.getmembers(self._backend, inspect.ismethod):
 			if methodName.startswith('_'):
 				# Not a public method
 				continue
@@ -516,7 +518,7 @@ class ExtendedBackend(Backend):
 			argString, callString = getArgAndCallString(functionRef)
 
 			exec(u'def %s(self, %s): return self._executeMethod("%s", %s)' % (methodName, argString, methodName, callString))
-			setattr(self, methodName, MethodType(eval(methodName), self))
+			setattr(self, methodName, types.MethodType(eval(methodName), self))
 
 	def _executeMethod(self, methodName, **kwargs):
 		logger.debug(u"ExtendedBackend {0!r}: executing {1!r} on backend {2!r}", self, methodName, self._backend)
@@ -812,7 +814,7 @@ the opsi host key.
 		result = {'password': u'', 'rsaPrivateKey': u''}
 
 		cf = ConfigFile(filename=self._opsiPasswdFile)
-		lineRegex = re.compile(r'^\s*([^:]+)\s*:\s*(\S+)\s*$')
+		lineRegex = re.compile('^\s*([^:]+)\s*:\s*(\S+)\s*$')
 		for line in cf.parse():
 			match = lineRegex.search(line)
 			if match is None:
@@ -872,7 +874,7 @@ depot where the method is.
 		encodedPassword = blowfishEncrypt(depot.opsiHostKey, password)
 
 		cf = ConfigFile(filename=self._opsiPasswdFile)
-		lineRegex = re.compile(r'^\s*([^:]+)\s*:\s*(\S+)\s*$')
+		lineRegex = re.compile('^\s*([^:]+)\s*:\s*(\S+)\s*$')
 		lines = []
 		if os.path.exists(self._opsiPasswdFile):
 			for line in cf.readlines():
@@ -1694,7 +1696,6 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		return u"<{0}(configDataBackend={1!r})>".format(self.__class__.__name__, self._backend)
 
 	def backend_searchIdents(self, filter):
-		logger.warning("The method 'backend_searchIdents' has been deprecated and will be removed in the future.")
 		logger.info(u"=== Starting search, filter: %s" % filter)
 		try:
 			parsedFilter = ldapfilter.parseFilter(filter)
@@ -1702,6 +1703,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			logger.debug(u"Failed to parse filter {0!r}: {1}", filter, e)
 			raise BackendBadValueError(u"Failed to parse filter '%s'" % filter)
 		logger.debug(u"Parsed search filter: {0!r}", parsedFilter)
+
 
 		def combineResults(result1, result2, operator):
 			if not result1:
@@ -2627,7 +2629,10 @@ into the IDs of these depots are to be found in the list behind \
 
 		usedDepotIds = set()
 		result = []
-		with temporaryBackendOptions(self, addConfigStateDefaults=True):
+		addConfigStateDefaults = self.backend_getOptions().get('addConfigStateDefaults', False)
+		try:
+			logger.debug(u"Calling backend_setOptions on {0}", self)
+			self.backend_setOptions({'addConfigStateDefaults': True})
 			for configState in self.configState_getObjects(configId=u'clientconfig.depot.id', objectId=clientIds):
 				try:
 					depotId = configState.values[0]
@@ -2648,6 +2653,8 @@ into the IDs of these depots are to be found in the list behind \
 						'alternativeDepotIds': []
 					}
 				)
+		finally:
+			self.backend_setOptions({'addConfigStateDefaults': addConfigStateDefaults})
 
 		if forceBool(masterOnly):
 			return result
@@ -4508,69 +4515,3 @@ into the IDs of these depots are to be found in the list behind \
 		for ahoh in self.auditHardwareOnHost_getObjects(hostId=hostId, state=1):
 			ahoh.setState(0)
 			self._backend.auditHardwareOnHost_updateObject(ahoh)
-
-
-class ModificationTrackingBackend(ExtendedBackend):
-
-	def __init__(self, backend, overwrite=True):
-		ExtendedBackend.__init__(self, backend, overwrite=overwrite)
-		self._createInstanceMethods()
-		self._backendChangeListeners = []
-
-	def addBackendChangeListener(self, backendChangeListener):
-		if backendChangeListener in self._backendChangeListeners:
-			return
-		self._backendChangeListeners.append(backendChangeListener)
-
-	def removeBackendChangeListener(self, backendChangeListener):
-		if backendChangeListener not in self._backendChangeListeners:
-			return
-		self._backendChangeListeners.remove(backendChangeListener)
-
-	def _fireEvent(self, event, *args):
-		for bcl in self._backendChangeListeners:
-			try:
-				meth = getattr(bcl, event)
-				meth(self, *args)
-			except Exception as e:
-				logger.error(e)
-
-	def _executeMethod(self, methodName, **kwargs):
-		logger.debug(u"ModificationTrackingBackend {0}: executing {1!r} on backend {2}".format(self, methodName, self._backend))
-		meth = getattr(self._backend, methodName)
-		result = meth(**kwargs)
-
-		try:
-			action = methodName.split('_', 1)[1]
-		except IndexError:
-			# split failed
-			return result
-
-		if action in ('insertObject', 'updateObject', 'deleteObjects'):
-			if action == 'insertObject':
-				self._fireEvent('objectInserted', kwargs.values()[0])
-			elif action == 'updateObject':
-				self._fireEvent('objectUpdated', kwargs.values()[0])
-			elif action == 'deleteObjects':
-				self._fireEvent('objectsDeleted', kwargs.values()[0])
-			self._fireEvent('backendModified')
-
-		return result
-
-
-class BackendModificationListener(object):
-	def objectInserted(self, backend, obj):
-		# Should return immediately!
-		pass
-
-	def objectUpdated(self, backend, obj):
-		# Should return immediately!
-		pass
-
-	def objectsDeleted(self, backend, objs):
-		# Should return immediately!
-		pass
-
-	def backendModified(self, backend):
-		# Should return immediately!
-		pass
