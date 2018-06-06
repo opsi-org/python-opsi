@@ -2,7 +2,7 @@
 
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
-# Copyright (C) 2013-2019 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2018 uib GmbH <info@uib.de>
 # All rights reserved.
 
 # This program is free software: you can redistribute it and/or modify
@@ -31,22 +31,20 @@ import base64
 import warnings
 import time
 import threading
-from contextlib import contextmanager
 from hashlib import md5
 
 import MySQLdb
 from MySQLdb.constants import FIELD_TYPE
 from MySQLdb.converters import conversions
 from sqlalchemy import pool
+from twisted.conch.ssh import keys
 
-from OPSI.Exceptions import (BackendBadValueError, BackendUnableToConnectError,
-	BackendUnaccomplishableError)
-from OPSI.Logger import Logger
-from OPSI.Types import forceInt, forceUnicode
-from OPSI.Backend.Backend import ConfigDataBackend
+from OPSI.Backend.Base import ConfigDataBackend
 from OPSI.Backend.SQL import (
 	onlyAllowSelect, SQL, SQLBackend, SQLBackendObjectModificationTracker)
-from OPSI.Util import getPublicKey
+from OPSI.Exceptions import BackendBadValueError, BackendUnableToConnectError
+from OPSI.Logger import Logger
+from OPSI.Types import forceInt, forceUnicode
 
 __all__ = (
 	'ConnectionPool', 'MySQL', 'MySQLBackend',
@@ -61,31 +59,6 @@ DEADLOCK_FOUND_WHEN_TRYING_TO_GET_LOCK_ERROR_CODE = 1213
 # 1213: 'Deadlock found when trying to get lock; try restarting transaction'
 
 
-@contextmanager
-def closingConnectionAndCursor(sqlInstance):
-	(connection, cursor) = sqlInstance.connect()
-	try:
-		yield (connection, cursor)
-	finally:
-		sqlInstance.close(connection, cursor)
-
-
-@contextmanager
-def disableAutoCommit(sqlInstance):
-	"""
-	Disable automatic committing.
-
-	:type sqlInstance: MySQL
-	"""
-	sqlInstance.autoCommit = False
-	logger.debug2(u'autoCommit set to False')
-	try:
-		yield
-	finally:
-		sqlInstance.autoCommit = True
-		logger.debug2(u'autoCommit set to true')
-
-
 class ConnectionPool(object):
 	# Storage for the instance reference
 	__instance = None
@@ -98,9 +71,10 @@ class ConnectionPool(object):
 			logger.debug(u"Creating ConnectionPool instance")
 			# Create and remember instance
 			poolArgs = {}
-			for key in ('pool_size', 'max_overflow', 'timeout', 'recycle'):
+			for key in ('pool_size', 'max_overflow', 'timeout'):
 				try:
-					poolArgs[key] = kwargs.pop(key)
+					poolArgs[key] = kwargs[key]
+					del kwargs[key]
 				except KeyError:
 					pass
 
@@ -135,6 +109,7 @@ class MySQL(SQL):
 	ESCAPED_BACKSLASH = "\\\\"
 	ESCAPED_APOSTROPHE = "\\\'"
 	ESCAPED_ASTERISK = "\\*"
+	doCommit = True
 
 	_POOL_LOCK = threading.Lock()
 
@@ -147,8 +122,6 @@ class MySQL(SQL):
 		self._connectionPoolSize = 20
 		self._connectionPoolMaxOverflow = 10
 		self._connectionPoolTimeout = 30
-		self._connectionPoolRecyclingSeconds = -1
-		self.autoCommit = True
 
 		# Parse arguments
 		for (option, value) in kwargs.items():
@@ -169,8 +142,6 @@ class MySQL(SQL):
 				self._connectionPoolMaxOverflow = forceInt(value)
 			elif option == 'connectionpooltimeout':
 				self._connectionPoolTimeout = forceInt(value)
-			elif option == 'connectionpoolrecycling':
-				self._connectionPoolRecyclingSeconds = forceInt(value)
 
 		self._transactionLock = threading.Lock()
 		self._pool = None
@@ -212,8 +183,7 @@ class MySQL(SQL):
 						pool_size=self._connectionPoolSize,
 						max_overflow=self._connectionPoolMaxOverflow,
 						timeout=self._connectionPoolTimeout,
-						conv=conv,
-						recycle=self._connectionPoolRecyclingSeconds,
+						conv=conv
 					)
 					logger.debug2("Created connection pool {0}", self._pool)
 					break
@@ -306,7 +276,7 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 			try:
 				self.execute(query, conn, cursor)
 			except Exception as e:
-				logger.debug(u"Execute error: {!r}", e)
+				logger.debug(u"Execute error: %s" % e)
 				if e[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
 					raise
 
@@ -512,7 +482,7 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 			query = forceUnicode(query)
 			logger.debug2(u"SQL query: {0}", query)
 			res = cursor.execute(query)
-			if self.autoCommit:
+			if self.doCommit:
 				conn.commit()
 		finally:
 			if needClose:
@@ -520,22 +490,14 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 		return res
 
 	def getTables(self):
-		"""
-		Get what tables are present in the database.
-
-		Table names will always be uppercased.
-
-		:returns: A dict with the tablename as key and the field names as value.
-		:rtype: dict
-		"""
+		# Hardware audit database
 		tables = {}
-		logger.debug2(u"Current tables:")
+		logger.debug(u"Current tables:")
 		for i in self.getSet(u'SHOW TABLES;'):
-			tableName = i.values()[0].upper()
+			tableName = i.values()[0]
 			logger.debug2(u" [ {0} ]", tableName)
-			fields = [j['Field'] for j in self.getSet(u'SHOW COLUMNS FROM `%s`' % tableName)]
-			tables[tableName] = fields
-			logger.debug2("Fields in {0}: {1}", tableName, fields)
+			tables[tableName] = [j['Field'] for j in self.getSet(u'SHOW COLUMNS FROM `%s`' % tableName)]
+			logger.debug2("Fields in {0}: {1}", tableName, tables[tableName])
 		return tables
 
 	def getTableCreationOptions(self, table):
@@ -576,7 +538,7 @@ class MySQLBackend(SQLBackend):
 			logger.error(u"Disabling mysql backend and license management module: modules file expired")
 		else:
 			logger.info(u"Verifying modules file signature")
-			publicKey = getPublicKey(data=base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP'))
+			publicKey = keys.Key.fromString(data=base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
 			data = u''
 			mks = modules.keys()
 			mks.sort()
@@ -634,9 +596,9 @@ class MySQLBackend(SQLBackend):
 				`notes` varchar(500),
 				`hardwareAddress` varchar(17),
 				`ipAddress` varchar(15),
-				`inventoryNumber` varchar(64),
+				`inventoryNumber` varchar(30),
 				`created` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-				`lastSeen` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+				`lastSeen` TIMESTAMP,
 				`opsiHostKey` varchar(32),
 				`oneTimePassword` varchar(32),
 				`maxBandwidth` integer,
@@ -656,43 +618,20 @@ class MySQLBackend(SQLBackend):
 		self._sql.execute(table)
 		self._sql.execute('CREATE INDEX `index_host_type` on `HOST` (`type`);')
 
-	def _createTableSoftwareConfig(self):
-		logger.debug(u'Creating table SOFTWARE_CONFIG')
-		# We want the primary key config_id to be of a bigint as
-		# regular int has been proven to be too small on some
-		# installations.
-		table = u'''CREATE TABLE `SOFTWARE_CONFIG` (
-				`config_id` bigint NOT NULL ''' + self._sql.AUTOINCREMENT + ''',
-				`clientId` varchar(255) NOT NULL,
-				`name` varchar(100) NOT NULL,
-				`version` varchar(100) NOT NULL,
-				`subVersion` varchar(100) NOT NULL,
-				`language` varchar(10) NOT NULL,
-				`architecture` varchar(3) NOT NULL,
-				`uninstallString` varchar(200),
-				`binaryName` varchar(100),
-				`firstseen` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-				`lastseen` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-				`state` TINYINT NOT NULL,
-				`usageFrequency` integer NOT NULL DEFAULT -1,
-				`lastUsed` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-				`licenseKey` VARCHAR(1024),
-				PRIMARY KEY (`config_id`)
-			) %s;
-			''' % self._sql.getTableCreationOptions('SOFTWARE_CONFIG')
-		logger.debug(table)
-		self._sql.execute(table)
-		self._sql.execute('CREATE INDEX `index_software_config_clientId` on `SOFTWARE_CONFIG` (`clientId`);')
-		self._sql.execute('CREATE INDEX `index_software_config_nvsla` on `SOFTWARE_CONFIG` (`name`, `version`, `subVersion`, `language`, `architecture`);')
-
 	# Overwriting productProperty_insertObject and
 	# productProperty_updateObject to implement Transaction
 	def productProperty_insertObject(self, productProperty):
 		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.productProperty_insertObject(self, productProperty)
 		data = self._objectToDatabaseHash(productProperty)
-		possibleValues = data.pop('possibleValues') or []
-		defaultValues = data.pop('defaultValues') or []
+		possibleValues = data['possibleValues']
+		defaultValues = data['defaultValues']
+		if possibleValues is None:
+			possibleValues = []
+		if defaultValues is None:
+			defaultValues = []
+		del data['possibleValues']
+		del data['defaultValues']
 
 		where = self._uniqueCondition(productProperty)
 		if self._sql.getRow('select * from `PRODUCT_PROPERTY` where %s' % where):
@@ -700,40 +639,47 @@ class MySQLBackend(SQLBackend):
 		else:
 			self._sql.insert('PRODUCT_PROPERTY', data)
 
-		with closingConnectionAndCursor(self._sql) as (conn, cursor):
-			retries = 10
-			for retry in range(retries):
+		if possibleValues is not None:
+			(conn, cursor) = self._sql.connect()
+			myTransactionSuccess = False
+			myMaxRetryTransaction = 10
+			myRetryTransactionCounter = 0
+			while (not myTransactionSuccess) and (myRetryTransactionCounter < myMaxRetryTransaction):
 				try:
+					myRetryTransactionCounter += 1
 					# transaction
 					cursor.execute("SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE")
-					with disableAutoCommit(self._sql):
-						logger.debug2(u'Start Transaction: delete from ppv #{}', retry)
-						conn.begin()
-						self._sql.delete('PRODUCT_PROPERTY_VALUE', where, conn, cursor)
-						conn.commit()
-						logger.debug2(u'End Transaction')
-						break
-				except Exception as deleteError:
-					logger.debug(u"Execute error: {}", deleteError)
-					if deleteError.args[0] == DEADLOCK_FOUND_WHEN_TRYING_TO_GET_LOCK_ERROR_CODE:
-						logger.debug(
-							u'Table locked (Code {}) - restarting Transaction',
-							DEADLOCK_FOUND_WHEN_TRYING_TO_GET_LOCK_ERROR_CODE
-						)
-						time.sleep(0.1)
-					else:
-						logger.error(u'Unknown DB Error: {!r}', deleteError)
-						raise
-			else:
-				errorMessage = u'Table locked (Code {}) - giving up after {} retries'.format(
-					DEADLOCK_FOUND_WHEN_TRYING_TO_GET_LOCK_ERROR_CODE,
-					retries
-				)
-				logger.error(errorMessage)
-				raise BackendUnaccomplishableError(errorMessage)
+					self._sql.doCommit = False
+					conn.begin()
+					logger.debug2(u'Start Transaction: delete from ppv %d' % myRetryTransactionCounter)
 
-		with closingConnectionAndCursor(self._sql) as (conn, cursor):
-			for value in possibleValues:
+					self._sql.delete('PRODUCT_PROPERTY_VALUE', where, conn, cursor)
+					conn.commit()
+					myTransactionSuccess = True
+				except Exception as e:
+					logger.debug(u"Execute error: %s" % e)
+					if e.args[0] == 1213:
+						# 1213: 'Deadlock found when trying to get lock; try restarting transaction'
+						# 1213: May be table locked because of concurrent access - retrying
+						myTransactionSuccess = False
+						if myRetryTransactionCounter >= myMaxRetryTransaction:
+							logger.error(u'Table locked (Code 2013) - giving up after %d retries' % myRetryTransactionCounter)
+							raise
+						else:
+							logger.notice(u'Table locked (Code 2013) - restarting Transaction')
+							time.sleep(0.1)
+					else:
+						logger.error(u'Unknown DB Error: %s' % str(e))
+						raise
+
+				logger.debug2(u'End Transaction')
+				self._sql.doCommit = True
+				logger.debug2(u'doCommit set to true')
+			self._sql.close(conn, cursor)
+
+		(conn, cursor) = self._sql.connect()
+		for value in possibleValues:
+			try:
 				# transform arguments for sql
 				# from uniqueCondition
 				if value in defaultValues:
@@ -763,67 +709,75 @@ class MySQLBackend(SQLBackend):
 						myPPVdefault
 					)
 				)
-
-				retries = 10
-				for retry in range(retries):
+				myTransactionSuccess = False
+				myMaxRetryTransaction = 10
+				myRetryTransactionCounter = 0
+				while (not myTransactionSuccess) and (myRetryTransactionCounter < myMaxRetryTransaction):
 					try:
+						myRetryTransactionCounter += 1
 						# transaction
 						cursor.execute("SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE")
-						with disableAutoCommit(self._sql):
-							logger.debug2(u'Start Transaction: insert to ppv #{}', retry)
-							conn.begin()
-							if not self._sql.getRow(myPPVselect, conn, cursor):
-								self._sql.insert('PRODUCT_PROPERTY_VALUE', {
-									'productId': data['productId'],
-									'productVersion': data['productVersion'],
-									'packageVersion': data['packageVersion'],
-									'propertyId': data['propertyId'],
-									'value': value,
-									'isDefault': bool(value in defaultValues)
-									}, conn, cursor)
-								conn.commit()
-							else:
-								conn.rollback()
-							logger.debug2(u'End Transaction')
-							break
-					except Exception as insertError:
-						logger.debug(u"Execute error: {!r}", insertError)
-						if insertError.args[0] == DEADLOCK_FOUND_WHEN_TRYING_TO_GET_LOCK_ERROR_CODE:
-							# 1213: May be table locked because of concurrent access - retrying
-							logger.notice(
-								u'Table locked (Code {}) - restarting Transaction'.format(
-									DEADLOCK_FOUND_WHEN_TRYING_TO_GET_LOCK_ERROR_CODE
-								)
-							)
-							time.sleep(0.1)
+						self._sql.doCommit = False
+						conn.begin()
+						logger.debug2(u'Start Transaction: insert to ppv %d' % myRetryTransactionCounter)
+						if not self._sql.getRow(myPPVselect, conn, cursor):
+							# self._sql.doCommit = True
+							logger.debug2(u'doCommit set to true')
+							self._sql.insert('PRODUCT_PROPERTY_VALUE', {
+								'productId': data['productId'],
+								'productVersion': data['productVersion'],
+								'packageVersion': data['packageVersion'],
+								'propertyId': data['propertyId'],
+								'value': value,
+								'isDefault': (value in defaultValues)
+								}, conn, cursor)
+							conn.commit()
 						else:
-							logger.error(u'Unknown DB Error: {!r}', insertError)
+							conn.rollback()
+						myTransactionSuccess = True
+					except Exception as e:
+						logger.debug(u"Execute error: %s" % e)
+						if e.args[0] == DEADLOCK_FOUND_WHEN_TRYING_TO_GET_LOCK_ERROR_CODE:
+							# 1213: May be table locked because of concurrent access - retrying
+							myTransactionSuccess = False
+							if myRetryTransactionCounter >= myMaxRetryTransaction:
+								logger.error(u'Table locked (Code 2013) - giving up after %d retries' % myRetryTransactionCounter)
+								raise
+							else:
+								logger.notice(u'Table locked (Code 2013) - restarting Transaction')
+								time.sleep(0.1)
+						else:
+							logger.error(u'Unknown DB Error: %s' % str(e))
 							raise
-				else:
-					errorMessage = u'Table locked (Code {}) - giving up after {} retries'.format(
-						DEADLOCK_FOUND_WHEN_TRYING_TO_GET_LOCK_ERROR_CODE,
-						retries
-					)
-					logger.error(errorMessage)
-					raise BackendUnaccomplishableError(errorMessage)
+
+				logger.debug2(u'End Transaction')
+			finally:
+				self._sql.doCommit = True
+				logger.debug2(u'doCommit set to true')
+		self._sql.close(conn, cursor)
 
 	def productProperty_updateObject(self, productProperty):
 		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.productProperty_updateObject(self, productProperty)
 		data = self._objectToDatabaseHash(productProperty)
 		where = self._uniqueCondition(productProperty)
-		possibleValues = data.pop('possibleValues') or []
-		defaultValues = data.pop('defaultValues') or []
-
+		possibleValues = data['possibleValues']
+		defaultValues = data['defaultValues']
+		if possibleValues is None:
+			possibleValues = []
+		if defaultValues is None:
+			defaultValues = []
+		del data['possibleValues']
+		del data['defaultValues']
 		self._sql.update('PRODUCT_PROPERTY', where, data)
 
-		try:
+		if possibleValues is not None:
 			self._sql.delete('PRODUCT_PROPERTY_VALUE', where)
-		except Exception as delError:
-			logger.debug2(u"Failed to delete from PRODUCT_PROPERTY_VALUE: {}", delError)
 
 		for value in possibleValues:
-			with disableAutoCommit(self._sql):
+			try:
+				self._sql.doCommit = False
+				logger.debug2(u'doCommit set to false')
 				valuesExist = self._sql.getRow(
 					u"select * from PRODUCT_PROPERTY_VALUE where "
 					u"`propertyId` = '{0}' AND `productId` = '{1}' AND "
@@ -837,19 +791,21 @@ class MySQLBackend(SQLBackend):
 						str(value in defaultValues)
 					)
 				)
-
 				if not valuesExist:
-					self._sql.autoCommit = True
-					logger.debug2(u'autoCommit set to True')
+					self._sql.doCommit = True
+					logger.debug2(u'doCommit set to true')
 					self._sql.insert('PRODUCT_PROPERTY_VALUE', {
 						'productId': data['productId'],
 						'productVersion': data['productVersion'],
 						'packageVersion': data['packageVersion'],
 						'propertyId': data['propertyId'],
 						'value': value,
-						'isDefault': bool(value in defaultValues)
+						'isDefault': (value in defaultValues)
 						}
 					)
+			finally:
+				self._sql.doCommit = True
+				logger.debug2(u'doCommit set to true')
 
 
 class MySQLBackendObjectModificationTracker(SQLBackendObjectModificationTracker):

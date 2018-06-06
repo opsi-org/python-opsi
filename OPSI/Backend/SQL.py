@@ -2,7 +2,7 @@
 
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
-# Copyright (C) 2013-2019 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -36,7 +36,9 @@ import time
 from contextlib import contextmanager
 from datetime import datetime
 from hashlib import md5
+from twisted.conch.ssh import keys
 
+from OPSI.Backend.Base import BackendModificationListener, ConfigDataBackend
 from OPSI.Exceptions import (BackendConfigurationError, BackendMissingDataError,
 	BackendModuleDisabledError, BackendReferentialIntegrityError)
 from OPSI.Logger import Logger
@@ -48,16 +50,15 @@ from OPSI.Object import (AuditHardware, AuditHardwareOnHost, AuditSoftware,
 	LicensePool, ObjectToGroup, Product, ProductDependency, ProductGroup,
 	ProductOnClient, ProductOnDepot, ProductProperty, ProductPropertyState,
 	Relationship, SoftwareLicense, SoftwareLicenseToLicensePool,
-	mandatoryConstructorArgs, getPossibleClassAttributes)
-from OPSI.Backend.Backend import BackendModificationListener, ConfigDataBackend
-from OPSI.Util import timestamp, getPublicKey
+	mandatoryConstructorArgs)
+from OPSI.Util import timestamp
 
 __all__ = (
 	'timeQuery', 'onlyAllowSelect', 'SQL', 'SQLBackend',
 	'SQLBackendObjectModificationTracker'
 )
 
-DATABASE_SCHEMA_VERSION = 6
+DATABASE_SCHEMA_VERSION = 4
 
 logger = Logger()
 
@@ -81,8 +82,8 @@ def createSchemaVersionTable(database):
 	logger.debug("Creating 'OPSI_SCHEMA' table.")
 	table = u'''CREATE TABLE `OPSI_SCHEMA` (
 		`version` integer NOT NULL,
-		`updateStarted` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-		`updateEnded` TIMESTAMP NULL DEFAULT NULL,
+		`updateStarted` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		`updateEnded` TIMESTAMP,
 		PRIMARY KEY (`version`)
 	) {0};
 	'''.format(database.getTableCreationOptions('OPSI_SCHEMA'))
@@ -99,6 +100,7 @@ class SQL(object):
 	ESCAPED_UNDERSCORE = "\\_"
 	ESCAPED_PERCENT = "\\%"
 	ESCAPED_ASTERISK = "\\*"
+	doCommit = True
 
 	def __init__(self, **kwargs):
 		pass
@@ -222,7 +224,7 @@ class SQLBackendObjectModificationTracker(BackendModificationListener):
 
 class SQLBackend(ConfigDataBackend):
 
-	_OPERATOR_IN_CONDITION_PATTERN = re.compile(r'^\s*([>=<]+)\s*(\d\.?\d*)')
+	_OPERATOR_IN_CONDITION_PATTERN = re.compile('^\s*([>=<]+)\s*(\d\.?\d*)')
 
 	def __init__(self, **kwargs):
 		self._name = 'sql'
@@ -317,43 +319,41 @@ class SQLBackend(ConfigDataBackend):
 		return query
 
 	def _adjustAttributes(self, objectClass, attributes, filter):
-		possibleAttributes = getPossibleClassAttributes(objectClass)
-		
-		newAttributes = []
 		if attributes:
 			newAttributes = forceUnicodeList(attributes)
-			for attr in newAttributes:
-				if attr not in possibleAttributes:
-					raise ValueError("Invalid attribute '%s'" % str(attr))
-		
-		newFilter = {}
-		if filter:
-			newFilter = forceDict(filter)
-			for attr in filter:
-				if attr not in possibleAttributes:
-					raise ValueError("Invalid attribute '%s' in filter" % str(attr))
-		
+		else:
+			newAttributes = []
+
+		newFilter = forceDict(filter)
 		objectId = self._objectAttributeToDatabaseAttribute(objectClass, 'id')
 
-		if 'id' in newFilter:
+		try:
 			newFilter[objectId] = newFilter['id']
 			del newFilter['id']
-		
-		if 'id' in newAttributes:
+		except KeyError:
+			# No key 'id' - everything okay
+			pass
+
+		try:
 			newAttributes.remove('id')
 			newAttributes.append(objectId)
-		
-		if 'type' in newFilter:
-			for oc in forceList(newFilter['type']):
+		except ValueError:
+			# No element 'id' - everything okay
+			pass
+
+		try:
+			for oc in forceList(filter['type']):
 				if objectClass.__name__ == oc:
-					newFilter['type'] = forceList(newFilter['type']).append(list(objectClass.subClasses.values()))
-					break
-		
+					newFilter['type'] = forceList(filter['type']).append(objectClass.subClasses.values())
+		except KeyError:
+			# No key 'type' - everything okay
+			pass
+
 		if newAttributes:
 			if issubclass(objectClass, Entity) and 'type' not in newAttributes:
 				newAttributes.append('type')
 			objectClasses = [objectClass]
-			objectClasses.extend(list(objectClass.subClasses.values()))
+			objectClasses.extend(objectClass.subClasses.values())
 			for oc in objectClasses:
 				for arg in mandatoryConstructorArgs(oc):
 					if arg == 'id':
@@ -386,21 +386,9 @@ class SQLBackend(ConfigDataBackend):
 		if issubclass(object.__class__, Product):
 			try:
 				# Truncating a possibly too long changelog entry
-				# This takes into account that unicode characters may be
-				# composed of multiple bytes by encoding, stripping and
-				# decoding them.
-				changelog = hash['changelog']
-				changelog = changelog.encode('utf-8')
-				changelog = changelog[:65534]
-				hash['changelog'] = changelog.decode('utf-8')
+				hash['changelog'] = hash['changelog'][:65534]
 			except (KeyError, TypeError):
 				pass  # Either not present in hash or set to None
-			except UnicodeError:
-				# Encoding problem. We truncate anyway and remove some
-				# buffer characters for possible unicode characters.
-				# Since encoding is attempted after we have read the
-				# has we can assume that the key is present.
-				hash['changelog'] = hash['changelog'][:65000]
 
 		if issubclass(object.__class__, Relationship):
 			try:
@@ -443,7 +431,7 @@ class SQLBackend(ConfigDataBackend):
 		Objects must have an attribute named like the parameter.
 
 		:param object: The object to create an condition for.
-		:rtype: str
+		:returntype: str
 		"""
 		def createCondition():
 			for argument in mandatoryConstructorArgs(object.__class__):
@@ -740,9 +728,9 @@ class SQLBackend(ConfigDataBackend):
 					`description` varchar(100),
 					`notes` varchar(1000),
 					`partner` varchar(100),
-					`conclusionDate` TIMESTAMP NULL DEFAULT NULL,
-					`notificationDate` TIMESTAMP NULL DEFAULT NULL,
-					`expirationDate` TIMESTAMP NULL DEFAULT NULL,
+					`conclusionDate` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
+					`notificationDate` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
+					`expirationDate` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
 					PRIMARY KEY (`licenseContractId`)
 				) %s;
 				''' % self._sql.getTableCreationOptions('LICENSE_CONTRACT')
@@ -758,7 +746,7 @@ class SQLBackend(ConfigDataBackend):
 					`type` varchar(30) NOT NULL,
 					`boundToHost` varchar(255),
 					`maxInstallations` integer,
-					`expirationDate` TIMESTAMP NULL DEFAULT NULL,
+					`expirationDate` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
 					PRIMARY KEY (`softwareLicenseId`),
 					FOREIGN KEY (`licenseContractId`) REFERENCES `LICENSE_CONTRACT` (`licenseContractId`)
 				) %s;
@@ -863,7 +851,30 @@ class SQLBackend(ConfigDataBackend):
 			self._sql.execute('CREATE INDEX `index_software_type` on `SOFTWARE` (`type`);')
 
 		if 'SOFTWARE_CONFIG' not in existingTables:
-			self._createTableSoftwareConfig()
+			logger.debug(u'Creating table SOFTWARE_CONFIG')
+			table = u'''CREATE TABLE `SOFTWARE_CONFIG` (
+					`config_id` integer NOT NULL ''' + self._sql.AUTOINCREMENT + ''',
+					`clientId` varchar(255) NOT NULL,
+					`name` varchar(100) NOT NULL,
+					`version` varchar(100) NOT NULL,
+					`subVersion` varchar(100) NOT NULL,
+					`language` varchar(10) NOT NULL,
+					`architecture` varchar(3) NOT NULL,
+					`uninstallString` varchar(200),
+					`binaryName` varchar(100),
+					`firstseen` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
+					`lastseen` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
+					`state` TINYINT NOT NULL,
+					`usageFrequency` integer NOT NULL DEFAULT -1,
+					`lastUsed` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
+					`licenseKey` VARCHAR(1024),
+					PRIMARY KEY (`config_id`)
+				) %s;
+				''' % self._sql.getTableCreationOptions('SOFTWARE_CONFIG')
+			logger.debug(table)
+			self._sql.execute(table)
+			self._sql.execute('CREATE INDEX `index_software_config_clientId` on `SOFTWARE_CONFIG` (`clientId`);')
+			self._sql.execute('CREATE INDEX `index_software_config_nvsla` on `SOFTWARE_CONFIG` (`name`, `version`, `subVersion`, `language`, `architecture`);')
 
 		self._createAuditHardwareTables()
 
@@ -885,9 +896,9 @@ class SQLBackend(ConfigDataBackend):
 				`notes` varchar(500),
 				`hardwareAddress` varchar(17),
 				`ipAddress` varchar(15),
-				`inventoryNumber` varchar(64),
-				`created` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-				`lastSeen` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+				`inventoryNumber` varchar(30),
+				`created` TIMESTAMP,
+				`lastSeen` TIMESTAMP,
 				`opsiHostKey` varchar(32),
 				`oneTimePassword` varchar(32),
 				`maxBandwidth` integer,
@@ -906,32 +917,6 @@ class SQLBackend(ConfigDataBackend):
 		logger.debug(table)
 		self._sql.execute(table)
 		self._sql.execute('CREATE INDEX `index_host_type` on `HOST` (`type`);')
-
-	def _createTableSoftwareConfig(self):
-		logger.debug(u'Creating table SOFTWARE_CONFIG')
-		table = u'''CREATE TABLE `SOFTWARE_CONFIG` (
-				`config_id` integer NOT NULL ''' + self._sql.AUTOINCREMENT + ''',
-				`clientId` varchar(255) NOT NULL,
-				`name` varchar(100) NOT NULL,
-				`version` varchar(100) NOT NULL,
-				`subVersion` varchar(100) NOT NULL,
-				`language` varchar(10) NOT NULL,
-				`architecture` varchar(3) NOT NULL,
-				`uninstallString` varchar(200),
-				`binaryName` varchar(100),
-				`firstseen` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-				`lastseen` TIMESTAMP NOT NULL DEFAULT '1970-01-01 00:00:00',
-				`state` TINYINT NOT NULL,
-				`usageFrequency` integer NOT NULL DEFAULT -1,
-				`lastUsed` TIMESTAMP NOT NULL DEFAULT '1970-01-01 00:00:00',
-				`licenseKey` VARCHAR(1024),
-				PRIMARY KEY (`config_id`)
-			) %s;
-			''' % self._sql.getTableCreationOptions('SOFTWARE_CONFIG')
-		logger.debug(table)
-		self._sql.execute(table)
-		self._sql.execute('CREATE INDEX `index_software_config_clientId` on `SOFTWARE_CONFIG` (`clientId`);')
-		self._sql.execute('CREATE INDEX `index_software_config_nvsla` on `SOFTWARE_CONFIG` (`name`, `version`, `subVersion`, `language`, `architecture`);')
 
 	def _createAuditHardwareTables(self):
 		tables = self._sql.getTables()
@@ -968,8 +953,8 @@ class SQLBackend(ConfigDataBackend):
 					u'`config_id` INTEGER NOT NULL {autoincrement},\n'
 					u'`hostId` varchar(255) NOT NULL,\n'
 					u'`hardware_id` INTEGER NOT NULL,\n'
-					u'`firstseen` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,\n'
-					u'`lastseen` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,\n'
+					u'`firstseen` TIMESTAMP NOT NULL DEFAULT \'0000-00-00 00:00:00\',\n'
+					u'`lastseen` TIMESTAMP NOT NULL DEFAULT \'0000-00-00 00:00:00\',\n'
 					u'`state` TINYINT NOT NULL,\n'.format(
 						name=hardwareConfigTableName,
 						autoincrement=self._sql.AUTOINCREMENT
@@ -1284,7 +1269,7 @@ class SQLBackend(ConfigDataBackend):
 		modules = backendinfo['modules']
 		helpermodules = backendinfo['realmodules']
 
-		publicKey = getPublicKey(data=base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP'))
+		publicKey = keys.Key.fromString(data=base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
 		data = u''; mks = modules.keys(); mks.sort()
 		for module in mks:
 			if module in ('valid', 'signature'):
@@ -1837,7 +1822,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 		modules = backendinfo['modules']
 		helpermodules = backendinfo['realmodules']
 
-		publicKey = getPublicKey(data=base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP'))
+		publicKey = keys.Key.fromString(data=base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
 		data = u''; mks = modules.keys(); mks.sort()
 		for module in mks:
 			if module in ('valid', 'signature'):
@@ -2170,19 +2155,15 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 	# -   AuditHardwares
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def _uniqueAuditHardwareCondition(self, auditHardware):
-		try:
+		if hasattr(auditHardware, 'toHash'):
 			auditHardware = auditHardware.toHash()
-		except AttributeError:
-			pass
 
 		def createCondition():
-			listWithNone = [None]
-
 			for attribute, value in auditHardware.items():
 				if attribute in ('hardwareClass', 'type'):
 					continue
 
-				if value is None or value == listWithNone:
+				if value is None or value == [None]:
 					yield u"`{0}` is NULL".format(attribute)
 				elif isinstance(value, (float, long, int, bool)):
 					yield u"`{0}` = {1}".format(attribute, value)
@@ -2469,7 +2450,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 		hardwareClass = filter.get('hardwareClass')
 		if hardwareClass not in ([], None):
 			for hwc in forceUnicodeList(hardwareClass):
-				regex = re.compile(r'^%s$' % hwc.replace('*', '.*'))
+				regex = re.compile(u'^{0}$'.format(hwc.replace('*', '.*')))
 				keys = (key for key in self._auditHardwareConfig if regex.search(key))
 				for key in keys:
 					hardwareClasses.add(key)

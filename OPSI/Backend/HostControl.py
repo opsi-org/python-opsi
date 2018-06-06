@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2010-2019 uib GmbH <info@uib.de>
+# Copyright (C) 2010-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -40,16 +40,15 @@ except ImportError:
 	# Python 3 compatibility
 	from http.client import HTTPSConnection
 
-from OPSI import __version__
+from OPSI.Backend.Base import ExtendedBackend
 from OPSI.Exceptions import BackendMissingDataError, BackendUnaccomplishableError
 from OPSI.Logger import Logger, LOG_DEBUG
 from OPSI.Types import (forceBool, forceDict, forceHostId, forceHostIdList,
 						forceInt, forceIpAddress, forceList, forceUnicode,
 						forceUnicodeList)
-from OPSI.Backend.Backend import ExtendedBackend
 from OPSI.Util import fromJson, toJson
-from OPSI.Util.Thread import KillableThread
 from OPSI.Util.HTTP import closingConnection, non_blocking_connect_https
+from OPSI.Util.Thread import KillableThread
 
 __all__ = ('RpcThread', 'ConnectionThread', 'HostControlBackend')
 
@@ -104,9 +103,6 @@ def _configureHostcontrolBackend(backend, kwargs):
 
 
 class RpcThread(KillableThread):
-
-	_USER_AGENT = 'opsi-RpcThread/{}'.format(__version__)
-
 	def __init__(self, hostControlBackend, hostId, address, username, password, method, params=[], hostPort=0):
 		KillableThread.__init__(self)
 		self.hostControlBackend = hostControlBackend
@@ -148,7 +144,6 @@ class RpcThread(KillableThread):
 			with closingConnection(connection) as connection:
 				non_blocking_connect_https(connection, timeout)
 				connection.putrequest('POST', '/opsiclientd')
-				connection.putheader('User-Agent', self._USER_AGENT)
 				connection.putheader('content-type', 'application/json')
 				connection.putheader('content-length', str(len(query)))
 				auth = u'{0}:{1}'.format(self.username, self.password)
@@ -261,16 +256,15 @@ class HostControlBackend(ExtendedBackend):
 		rpcts = []
 		for host in self._context.host_getObjects(id=hostIds):  # pylint: disable=maybe-no-member
 			try:
-				port = None
 				try:
+					port = None
 					configState = self._context.configState_getObjects(configId="opsiclientd.control_server.port", objectId=host.id)
-					port = int(configState[0].values[0])
-					logger.info("Using port {} for opsiclientd at {}", port, host.id)
-				except IndexError:
-					pass  # No values found
-				except Exception as portError:
-					logger.warning("Failed to read custom opsiclientd port for {}: {!r}", host.id, portError)
-
+					if configState:
+						logger.notice("Custom Port for opsiclientd found %s" % type(int(configState[0].values[0])))
+						port = int(configState[0].values[0])
+				except Exception as e:
+					logger.critical("Exception: %s" % e)
+					pass
 				address = self._getHostAddress(host)
 				rpcts.append(
 					RpcThread(
