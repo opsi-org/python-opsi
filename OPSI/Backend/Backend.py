@@ -29,6 +29,8 @@ This holds the basic backend classes.
 :license: GNU Affero General Public License version 3
 """
 
+from __future__ import absolute_import
+
 import base64
 import codecs
 import collections
@@ -56,6 +58,8 @@ from OPSI.Util import (
 	getfqdn, removeUnit, timestamp)
 from OPSI.Util.File import ConfigFile
 import OPSI.SharedAlgorithm
+
+from .Base import ModificationTrackingBackend, BackendModificationListener
 
 if os.name == 'posix':
 	with warnings.catch_warnings():
@@ -4511,66 +4515,3 @@ into the IDs of these depots are to be found in the list behind \
 		for ahoh in self.auditHardwareOnHost_getObjects(hostId=hostId, state=1):
 			ahoh.setState(0)
 			self._backend.auditHardwareOnHost_updateObject(ahoh)
-
-
-class ModificationTrackingBackend(ExtendedBackend):
-
-	def __init__(self, backend, overwrite=True):
-		ExtendedBackend.__init__(self, backend, overwrite=overwrite)
-		self._createInstanceMethods()
-		self._backendChangeListeners = []
-
-	def addBackendChangeListener(self, backendChangeListener):
-		if backendChangeListener in self._backendChangeListeners:
-			return
-		self._backendChangeListeners.append(backendChangeListener)
-
-	def removeBackendChangeListener(self, backendChangeListener):
-		if backendChangeListener not in self._backendChangeListeners:
-			return
-		self._backendChangeListeners.remove(backendChangeListener)
-
-	def _fireEvent(self, event, *args):
-		for bcl in self._backendChangeListeners:
-			try:
-				meth = getattr(bcl, event)
-				meth(self, *args)
-			except Exception as e:
-				logger.error(e)
-
-	def _executeMethod(self, methodName, **kwargs):
-		logger.debug(u"ModificationTrackingBackend {0}: executing {1!r} on backend {2}".format(self, methodName, self._backend))
-		meth = getattr(self._backend, methodName)
-		result = meth(**kwargs)
-		action = None
-		if '_' in methodName:
-			action = methodName.split('_', 1)[1]
-
-		if action in ('insertObject', 'updateObject', 'deleteObjects'):
-			if action == 'insertObject':
-				self._fireEvent('objectInserted', kwargs.values()[0])
-			elif action == 'updateObject':
-				self._fireEvent('objectUpdated', kwargs.values()[0])
-			elif action == 'deleteObjects':
-				self._fireEvent('objectsDeleted', kwargs.values()[0])
-			self._fireEvent('backendModified')
-
-		return result
-
-
-class BackendModificationListener(object):
-	def objectInserted(self, backend, obj):
-		# Should return immediately!
-		pass
-
-	def objectUpdated(self, backend, obj):
-		# Should return immediately!
-		pass
-
-	def objectsDeleted(self, backend, objs):
-		# Should return immediately!
-		pass
-
-	def backendModified(self, backend):
-		# Should return immediately!
-		pass
