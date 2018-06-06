@@ -63,7 +63,12 @@ class ModificationTrackingBackend(ExtendedBackend):
                 logger.error(e)
 
     def _executeMethod(self, methodName, **kwargs):
-        logger.debug(u"ModificationTrackingBackend {0}: executing {1!r} on backend {2}".format(self, methodName, self._backend))
+        logger.debug(
+            u"ModificationTrackingBackend {0}: executing {1!r} on backend {2}",
+            self,
+            methodName,
+            self._backend
+        )
         meth = getattr(self._backend, methodName)
         result = meth(**kwargs)
         action = None
