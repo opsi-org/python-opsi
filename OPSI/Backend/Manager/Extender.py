@@ -39,6 +39,7 @@ from OPSI.Exceptions import *  # this is needed for dynamic extension loading
 from OPSI.Logger import Logger
 from OPSI.Object import *  # this is needed for dynamic extension loading
 from OPSI.Types import *  # this is needed for dynamic extension loading
+from OPSI.Util import objectToBeautifiedText, getfqdn  # used in extensions
 
 from .AccessControl import BackendAccessControl
 from .Dispatcher import BackendDispatcher
