@@ -26,8 +26,11 @@ Backends.
 from __future__ import absolute_import
 
 from .Backend import describeInterface, Backend
-from .Extended import getArgAndCallString, ExtendedBackend, ExtendedConfigDataBackend
-from .ModificationTracking import ModificationTrackingBackend, BackendModificationListener
+from .ConfigData import ConfigDataBackend
+from .Extended import (
+    getArgAndCallString, ExtendedBackend, ExtendedConfigDataBackend)
+from .ModificationTracking import (
+    ModificationTrackingBackend, BackendModificationListener)
 
 __all__ = (
     'describeInterface', 'getArgAndCallString', 'temporaryBackendOptions',
