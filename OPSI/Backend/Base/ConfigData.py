@@ -43,14 +43,16 @@ from OPSI.Exceptions import (
     BackendReferentialIntegrityError)
 from OPSI.Types import (
     forceFilename, forceHostId, forceInt, forceLanguageCode, forceObjectClass,
-    forceObjectClassList, forceObjectId, forceUnicodeList, forceUnicodeLower)
+    forceObjectClassList, forceObjectId, forceUnicode, forceUnicodeList,
+    forceUnicodeLower)
 from OPSI.Object import (
     getPossibleClassAttributes,
-    AuditSoftware, AuditSoftwareOnClient, AuditHardware, AuditHardwareOnHost,
-    Config, ConfigState, Group, Host, LicenseContract, LicenseOnClient,
-    LicensePool, ObjectToGroup, OpsiClient, OpsiDepotserver, Product,
-    ProductDependency, ProductOnDepot, ProductOnClient, ProductProperty,
-    ProductPropertyState, SoftwareLicense, SoftwareLicenseToLicensePool)
+    AuditSoftware, AuditSoftwareOnClient, AuditSoftwareToLicensePool,
+    AuditHardware, AuditHardwareOnHost, Config, ConfigState, Group, Host,
+    LicenseContract, LicenseOnClient, LicensePool, ObjectToGroup, OpsiClient,
+    OpsiDepotserver, Product, ProductDependency, ProductOnDepot,
+    ProductOnClient, ProductProperty, ProductPropertyState, SoftwareLicense,
+    SoftwareLicenseToLicensePool)
 from OPSI.Util import blowfishEncrypt, blowfishDecrypt, getfqdn, removeUnit
 from OPSI.Util.File import ConfigFile
 
