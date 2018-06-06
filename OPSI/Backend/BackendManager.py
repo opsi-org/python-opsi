@@ -41,7 +41,9 @@ from OPSI.Backend.Base import (
 from OPSI.Backend.Depotserver import DepotserverBackend
 from OPSI.Backend.HostControl import HostControlBackend
 from OPSI.Backend.HostControlSafe import HostControlSafeBackend
+from OPSI.Exceptions import BackendConfigurationError
 from OPSI.Logger import Logger
+from OPSI.Types import forceBool
 
 from .Manager.AccessControl import BackendAccessControl
 from .Manager.Dispatcher import BackendDispatcher
