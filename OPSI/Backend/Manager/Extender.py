@@ -50,58 +50,58 @@ logger = Logger()
 
 
 class BackendExtender(ExtendedBackend):
-    def __init__(self, backend, **kwargs):
-        if not isinstance(backend, ExtendedBackend) and not isinstance(backend, BackendDispatcher):
-            if not isinstance(backend, BackendAccessControl) or (not isinstance(backend._backend, ExtendedBackend) and not isinstance(backend._backend, BackendDispatcher)):
-                raise TypeError("BackendExtender needs instance of ExtendedBackend or BackendDispatcher as backend, got %s" % backend.__class__.__name__)
+	def __init__(self, backend, **kwargs):
+		if not isinstance(backend, ExtendedBackend) and not isinstance(backend, BackendDispatcher):
+			if not isinstance(backend, BackendAccessControl) or (not isinstance(backend._backend, ExtendedBackend) and not isinstance(backend._backend, BackendDispatcher)):
+				raise TypeError("BackendExtender needs instance of ExtendedBackend or BackendDispatcher as backend, got %s" % backend.__class__.__name__)
 
-        ExtendedBackend.__init__(self, backend, overwrite=kwargs.get('overwrite', True))
+		ExtendedBackend.__init__(self, backend, overwrite=kwargs.get('overwrite', True))
 
-        self._extensionConfigDir = None
-        self._extensionClass = None
+		self._extensionConfigDir = None
+		self._extensionClass = None
 
-        for (option, value) in kwargs.items():
-            option = option.lower()
-            if option == 'extensionconfigdir':
-                self._extensionConfigDir = value
-            elif option == 'extensionclass':
-                self._extensionClass = value
+		for (option, value) in kwargs.items():
+			option = option.lower()
+			if option == 'extensionconfigdir':
+				self._extensionConfigDir = value
+			elif option == 'extensionclass':
+				self._extensionClass = value
 
-        self.__createExtensions()
+		self.__createExtensions()
 
-    def __createExtensions(self):
-        if self._extensionClass:
-            for methodName, functionRef in inspect.getmembers(self._extensionClass, inspect.ismethod):
-                if methodName.startswith('_'):
-                    continue
-                logger.debug2(u"Extending {0} with instancemethod: {1!r}", self._backend.__class__.__name__, methodName)
-                new_function = types.FunctionType(functionRef.func_code, functionRef.func_globals, functionRef.func_code.co_name)
-                new_method = types.MethodType(new_function, self)
-                setattr(self, methodName, new_method)
+	def __createExtensions(self):
+		if self._extensionClass:
+			for methodName, functionRef in inspect.getmembers(self._extensionClass, inspect.ismethod):
+				if methodName.startswith('_'):
+					continue
+				logger.debug2(u"Extending {0} with instancemethod: {1!r}", self._backend.__class__.__name__, methodName)
+				new_function = types.FunctionType(functionRef.func_code, functionRef.func_globals, functionRef.func_code.co_name)
+				new_method = types.MethodType(new_function, self)
+				setattr(self, methodName, new_method)
 
-        if self._extensionConfigDir:
-            if not os.path.exists(self._extensionConfigDir):
-                logger.error(u"No extensions loaded: extension directory {0!r} does not exist".format(self._extensionConfigDir))
-                return
+		if self._extensionConfigDir:
+			if not os.path.exists(self._extensionConfigDir):
+				logger.error(u"No extensions loaded: extension directory {0!r} does not exist".format(self._extensionConfigDir))
+				return
 
-            try:
-                confFiles = (
-                    os.path.join(self._extensionConfigDir, filename)
-                    for filename in sorted(os.listdir(self._extensionConfigDir))
-                    if filename.endswith('.conf')
-                )
+			try:
+				confFiles = (
+					os.path.join(self._extensionConfigDir, filename)
+					for filename in sorted(os.listdir(self._extensionConfigDir))
+					if filename.endswith('.conf')
+				)
 
-                for confFile in confFiles:
-                    try:
-                        logger.info(u"Reading config file '%s'" % confFile)
-                        execfile(confFile)
-                    except Exception as execError:
-                        logger.logException(execError)
-                        raise RuntimeError(u"Error reading file {0!r}: {1}".format(confFile, execError))
+				for confFile in confFiles:
+					try:
+						logger.info(u"Reading config file '%s'" % confFile)
+						execfile(confFile)
+					except Exception as execError:
+						logger.logException(execError)
+						raise RuntimeError(u"Error reading file {0!r}: {1}".format(confFile, execError))
 
-                    for key, val in locals().items():
-                        if isinstance(val, types.FunctionType):   # TODO: find a better way
-                            logger.debug2(u"Extending %s with instancemethod: '%s'" % (self._backend.__class__.__name__, key))
-                            setattr(self, key, types.MethodType(val, self))
-            except Exception as error:
-                raise BackendConfigurationError(u"Failed to read extensions from '%s': %s" % (self._extensionConfigDir, error))
+					for key, val in locals().items():
+						if isinstance(val, types.FunctionType):   # TODO: find a better way
+							logger.debug2(u"Extending %s with instancemethod: '%s'" % (self._backend.__class__.__name__, key))
+							setattr(self, key, types.MethodType(val, self))
+			except Exception as error:
+				raise BackendConfigurationError(u"Failed to read extensions from '%s': %s" % (self._extensionConfigDir, error))
