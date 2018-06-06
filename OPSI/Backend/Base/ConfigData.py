@@ -48,9 +48,9 @@ from OPSI.Object import (
     getPossibleClassAttributes,
     AuditSoftware, AuditSoftwareOnClient, AuditHardware, AuditHardwareOnHost,
     Config, ConfigState, Group, Host, LicenseContract, LicenseOnClient,
-    LicensePool, ObjectToGroup, Product, ProductDependency, ProductOnDepot,
-    ProductOnClient, ProductProperty, ProductPropertyState, SoftwareLicense,
-    SoftwareLicenseToLicensePool)
+    LicensePool, ObjectToGroup, OpsiClient, OpsiDepotserver, Product,
+    ProductDependency, ProductOnDepot, ProductOnClient, ProductProperty,
+    ProductPropertyState, SoftwareLicense, SoftwareLicenseToLicensePool)
 from OPSI.Util import blowfishEncrypt, blowfishDecrypt, getfqdn, removeUnit
 from OPSI.Util.File import ConfigFile
 
