@@ -25,6 +25,7 @@ Backends.
 
 from __future__ import absolute_import
 
+from .Backend import describeInterface, Backend
 from .ModificationTracking import ModificationTrackingBackend, BackendModificationListener
 
 __all__ = (
