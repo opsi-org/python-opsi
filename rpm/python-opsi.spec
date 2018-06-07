@@ -33,7 +33,7 @@ Requires:       m2crypto
 Requires:       MySQL-python
 Requires:       newt-python
 Requires:       pyOpenSSL
-Requires:       PyPAM
+Requires:       python3-pam
 Requires:       python-ctypes
 Requires:       python-twisted >= 8.2
 %if 0%{?rhel_version} >= 700 || 0%{?centos_version} >= 700
@@ -46,7 +46,7 @@ Requires:       python-m2crypto
 Requires:       python-mysql
 Requires:       python-newt
 Requires:       python-openssl
-Requires:       python-pam
+Requires:       python3-pam
 %endif
 %if 0%{?suse_version}
 # Needed for working python-magic

@@ -2,7 +2,7 @@ pycrypto
 twisted
 libmagic
 ldaptor
-pam
+python-pam
 pyOpenSSL
 mysqlclient
 SQLAlchemy
