@@ -643,10 +643,8 @@ def testLongProductName(extendedConfigDataBackend):
     assert newName == backendProduct.name
 
 
-@pytest.mark.requiresModulesFile  # because of SQLite backend...
-def testLongChangelogOnProductCanBeHandled(extendedConfigDataBackend):
-    product = LocalbootProduct(id='freiheit', productVersion=1, packageVersion=1)
-
+@pytest.fixture(scope='session')
+def asciiChangelog():
     changelog = '''opsi-winst/opsi-script (4.11.5.13) stable; urgency=low
 
 * do not try to run non existing external sub sections
@@ -658,8 +656,15 @@ def testLongChangelogOnProductCanBeHandled(extendedConfigDataBackend):
     changelog = changelog * 555
 
     assert len(changelog.strip()) > 65535  # Limit for `TEXT` in MySQL / MariaDB
-    product.setChangelog(changelog)
-    assert product.getChangelog() == changelog
+
+    return asciiChangelog
+
+
+@pytest.mark.requiresModulesFile  # because of SQLite backend...
+def testLongChangelogOnProductCanBeHandled(extendedConfigDataBackend, asciiChangelog):
+    product = LocalbootProduct(id='freiheit', productVersion=1, packageVersion=1)
+    product.setChangelog(asciiChangelog)
+    assert product.getChangelog() == asciiChangelog
 
     extendedConfigDataBackend.product_createObjects(product)
 
@@ -669,13 +674,11 @@ def testLongChangelogOnProductCanBeHandled(extendedConfigDataBackend):
     assert len(changelogFromBackend) > 1
     assert len(changelogFromBackend) > 63000  # Leaving some room...
 
-    assert changelog[:2048] == changelogFromBackend[:2048]
+    assert asciiChangelog[:2048] == changelogFromBackend[:2048]
 
 
-@pytest.mark.requiresModulesFile  # because of SQLite backend...
-def testLongUnicodeChangelogOnProductCanBeHandled(extendedConfigDataBackend):
-    product = LocalbootProduct(id='freiheit', productVersion=1, packageVersion=1)
-
+@pytest.fixture(scope='session')
+def unicodeChangelog():
     changelog = u'''opsi-winst/opsi-script (4.11.5.13) stable; urgency=low
 
 * do not try to run non existing external sub sections
@@ -688,8 +691,15 @@ def testLongUnicodeChangelogOnProductCanBeHandled(extendedConfigDataBackend):
     changelog = changelog * 555
 
     assert len(changelog.strip()) > 65535  # Limit for `TEXT` in MySQL / MariaDB
-    product.setChangelog(changelog)
-    assert product.getChangelog() == changelog
+
+    return changelog
+
+
+@pytest.mark.requiresModulesFile  # because of SQLite backend...
+def testLongUnicodeChangelogOnProductCanBeHandled(extendedConfigDataBackend, unicodeChangelog):
+    product = LocalbootProduct(id='freiheit', productVersion=1, packageVersion=1)
+    product.setChangelog(unicodeChangelog)
+    assert product.getChangelog() == unicodeChangelog
 
     extendedConfigDataBackend.product_createObjects(product)
 
@@ -699,7 +709,7 @@ def testLongUnicodeChangelogOnProductCanBeHandled(extendedConfigDataBackend):
     assert len(changelogFromBackend) > 1
     assert len(changelogFromBackend) > 63000  # Leaving some room...
 
-    assert changelog[:2048] == changelogFromBackend[:2048]
+    assert unicodeChangelog[:2048] == changelogFromBackend[:2048]
 
 
 @pytest.mark.requiresModulesFile  # because of SQLite backend...
