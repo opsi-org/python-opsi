@@ -643,40 +643,14 @@ def testLongProductName(extendedConfigDataBackend):
     assert newName == backendProduct.name
 
 
-@pytest.mark.requiresModulesFile  # because of SQLite backend...
-def testLongChangelogOnProductCanBeHandled(extendedConfigDataBackend):
-    product = LocalbootProduct(id='freiheit', productVersion=1, packageVersion=1)
-
-    changelog = '''opsi-winst/opsi-script (4.11.5.13) stable; urgency=low
-
-* do not try to run non existing external sub sections
-
--- Detlef Oertel <d.oertel@uib.de>  Thu,  21 Aug 2015:15:00:00 +0200
-
-'''
-
-    changelog = changelog * 555
-
-    assert len(changelog.strip()) > 65535  # Limit for `TEXT` in MySQL / MariaDB
-    product.setChangelog(changelog)
-    assert product.getChangelog() == changelog
-
-    extendedConfigDataBackend.product_createObjects(product)
-
-    productFromBackend = extendedConfigDataBackend.product_getObjects(id=product.id)[0]
-    changelogFromBackend = productFromBackend.getChangelog()
-
-    assert len(changelogFromBackend) > 1
-    assert len(changelogFromBackend) > 63000  # Leaving some room...
-
-    assert changelog[:2048] == changelogFromBackend[:2048]
-
-
-@pytest.mark.requiresModulesFile  # because of SQLite backend...
-def testLongUnicodeChangelogOnProductCanBeHandled(extendedConfigDataBackend):
-    product = LocalbootProduct(id='freiheit', productVersion=1, packageVersion=1)
-
-    changelog = u'''opsi-winst/opsi-script (4.11.5.13) stable; urgency=low
+@pytest.fixture(
+    scope='session',
+    params=[False, True],
+    ids=['ascii', 'unicode'])
+def changelog(request):
+    if request.param:
+        # unicode
+        changelog = u'''opsi-winst/opsi-script (4.11.5.13) stable; urgency=low
 
 * do not try to run non existing external sub sections
 * Jetzt ausf\xfchren oder sp\xe4ter
@@ -684,10 +658,26 @@ def testLongUnicodeChangelogOnProductCanBeHandled(extendedConfigDataBackend):
 -- Detlef Oertel <d.oertel@uib.de>  Thu,  21 Aug 2015:15:00:00 +0200
 
 '''
+    else:
+        # ASCII
+        changelog = '''opsi-winst/opsi-script (4.11.5.13) stable; urgency=low
+
+* do not try to run non existing external sub sections
+
+-- Detlef Oertel <d.oertel@uib.de>  Thu,  21 Aug 2015:15:00:00 +0200
+
+'''
 
     changelog = changelog * 555
 
     assert len(changelog.strip()) > 65535  # Limit for `TEXT` in MySQL / MariaDB
+
+    return changelog
+
+
+@pytest.mark.requiresModulesFile  # because of SQLite backend...
+def testLongChangelogOnProductCanBeHandled(extendedConfigDataBackend, changelog):
+    product = LocalbootProduct(id='freiheit', productVersion=1, packageVersion=1)
     product.setChangelog(changelog)
     assert product.getChangelog() == changelog
 
