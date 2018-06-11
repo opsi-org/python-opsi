@@ -4542,9 +4542,12 @@ class ModificationTrackingBackend(ExtendedBackend):
 		logger.debug(u"ModificationTrackingBackend {0}: executing {1!r} on backend {2}".format(self, methodName, self._backend))
 		meth = getattr(self._backend, methodName)
 		result = meth(**kwargs)
-		action = None
-		if '_' in methodName:
+
+		try:
 			action = methodName.split('_', 1)[1]
+		except IndexError:
+			# split failed
+			return result
 
 		if action in ('insertObject', 'updateObject', 'deleteObjects'):
 			if action == 'insertObject':
