@@ -2167,8 +2167,10 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 	# -   AuditHardwares
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def _uniqueAuditHardwareCondition(self, auditHardware):
-		if hasattr(auditHardware, 'toHash'):
+		try:
 			auditHardware = auditHardware.toHash()
+		except AttributeError:
+			pass
 
 		def createCondition():
 			for attribute, value in auditHardware.items():
