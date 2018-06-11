@@ -101,6 +101,7 @@ read from `backendConfigFile`.
 		_addIndexOnProductPropertyValues,
 		_addWorkbenchAttributesToHosts,
 		_adjustLengthOfGroupId,
+		_increaseInventoryNumberLength,
 	]
 
 	for newSchemaVersion, migration in enumerate(migrations, start=1):
@@ -705,4 +706,12 @@ def _adjustLengthOfGroupId(database):
 	database.execute(
 		'ALTER TABLE `OBJECT_TO_GROUP` '
 		'MODIFY COLUMN `groupId` varchar(255) NOT NULL;'
+	)
+
+
+def _increaseInventoryNumberLength(database):
+	LOGGER.info("Correcting length of column 'groupId' on table OBJECT_TO_GROUP")
+	database.execute(
+		'ALTER TABLE `HOST` '
+		'MODIFY COLUMN `inventoryNumber` varchar(64) NOT NULL;'
 	)
