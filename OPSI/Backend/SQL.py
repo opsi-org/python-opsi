@@ -2173,11 +2173,13 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 			pass
 
 		def createCondition():
+			listWithNone = [None]
+
 			for attribute, value in auditHardware.items():
 				if attribute in ('hardwareClass', 'type'):
 					continue
 
-				if value is None or value == [None]:
+				if value is None or value == listWithNone:
 					yield u"`{0}` is NULL".format(attribute)
 				elif isinstance(value, (float, long, int, bool)):
 					yield u"`{0}` = {1}".format(attribute, value)
