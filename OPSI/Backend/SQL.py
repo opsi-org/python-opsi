@@ -58,7 +58,7 @@ __all__ = (
 	'SQLBackendObjectModificationTracker'
 )
 
-DATABASE_SCHEMA_VERSION = 4
+DATABASE_SCHEMA_VERSION = 5
 
 logger = Logger()
 
@@ -908,7 +908,7 @@ class SQLBackend(ConfigDataBackend):
 				`notes` varchar(500),
 				`hardwareAddress` varchar(17),
 				`ipAddress` varchar(15),
-				`inventoryNumber` varchar(30),
+				`inventoryNumber` varchar(64),
 				`created` TIMESTAMP,
 				`lastSeen` TIMESTAMP,
 				`opsiHostKey` varchar(32),
@@ -2167,15 +2167,19 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 	# -   AuditHardwares
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def _uniqueAuditHardwareCondition(self, auditHardware):
-		if hasattr(auditHardware, 'toHash'):
+		try:
 			auditHardware = auditHardware.toHash()
+		except AttributeError:
+			pass
 
 		def createCondition():
+			listWithNone = [None]
+
 			for attribute, value in auditHardware.items():
 				if attribute in ('hardwareClass', 'type'):
 					continue
 
-				if value is None or value == [None]:
+				if value is None or value == listWithNone:
 					yield u"`{0}` is NULL".format(attribute)
 				elif isinstance(value, (float, long, int, bool)):
 					yield u"`{0}` = {1}".format(attribute, value)
