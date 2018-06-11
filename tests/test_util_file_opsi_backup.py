@@ -60,7 +60,7 @@ def createArchive(tempDir, **kwargs):
         def returnExampleSysconfig(unused):
             exampleSysConfig = {
                 'hostname': u'debian6',
-                            'sysVersion': (6, 0, 9),
+                'sysVersion': (6, 0, 9),
                 'domainname': u'test.invalid',
                 'distributionId': '',
                 'fqdn': u'debian6.test.invalid',
