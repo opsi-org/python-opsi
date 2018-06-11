@@ -58,7 +58,7 @@ __all__ = (
 	'SQLBackendObjectModificationTracker'
 )
 
-DATABASE_SCHEMA_VERSION = 4
+DATABASE_SCHEMA_VERSION = 5
 
 logger = Logger()
 
@@ -908,7 +908,7 @@ class SQLBackend(ConfigDataBackend):
 				`notes` varchar(500),
 				`hardwareAddress` varchar(17),
 				`ipAddress` varchar(15),
-				`inventoryNumber` varchar(30),
+				`inventoryNumber` varchar(64),
 				`created` TIMESTAMP,
 				`lastSeen` TIMESTAMP,
 				`opsiHostKey` varchar(32),
