@@ -223,12 +223,20 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 					bootimageAppend = configState
 				elif configState.configId == u"clientconfig.dhcpd.filename":
 					eliloMode = None
-					value = configState.getValues()[0]
-					if 'elilo' in value:
-						if 'x86' in value:
-							eliloMode = 'x86'
-						else:
-							eliloMode = 'x64'
+
+					try:
+						value = configState.getValues()[0]
+						if 'elilo' in value:
+							if 'x86' in value:
+								eliloMode = 'x86'
+							else:
+								eliloMode = 'x64'
+					except IndexError:
+						# If we land here there is no default value set
+						# and no items are present.
+						pass
+					except Exception as eliloError:
+						logger.debug("Failed to detect elilo setting for {}: {}", clientId, eliloError)
 
 			productPropertyStates = self._collectProductPropertyStates(
 				clientId,
