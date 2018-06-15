@@ -354,7 +354,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 
 		with self._updateThreadsLock:
 			if clientId not in self._updateThreads:
-				updater = UpdateThread(self, clientId, u'update %s' % (clientId))
+				updater = UpdateThread(self, clientId, u'update %s' % clientId)
 				self._updateThreads[clientId] = updater
 				updater.start()
 			else:
