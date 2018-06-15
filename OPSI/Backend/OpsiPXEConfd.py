@@ -36,8 +36,8 @@ from contextlib import closing, contextmanager
 
 from OPSI.Backend.Backend import ConfigDataBackend
 from OPSI.Backend.JSONRPC import JSONRPCBackend
-from OPSI.Exceptions import (BackendMissingDataError, BackendUnableToConnectError,
-	BackendUnaccomplishableError)
+from OPSI.Exceptions import (BackendMissingDataError,
+	BackendUnableToConnectError, BackendUnaccomplishableError)
 from OPSI.Logger import LOG_DEBUG, Logger
 from OPSI.Object import ConfigState, OpsiClient, ProductPropertyState
 from OPSI.Types import forceHostId, forceInt, forceUnicode, forceUnicodeList
