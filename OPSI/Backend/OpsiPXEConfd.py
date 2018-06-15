@@ -262,10 +262,10 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 			}
 
 			data = serialize(data)
-			logger.debug("Collected data for opsipxeconfd: {!r}", data)
+			logger.debug("Collected data of for opsipxeconfd: {!r}", clientId, data)
 		except Exception as collectError:
 			logger.logException(collectError)
-			logger.warning("Failed to collect data for opsipxeconfd: {}", collectError)
+			logger.warning("Failed to collect data of {} for opsipxeconfd: {}", clientId, collectError)
 			data = {}
 
 		return data
