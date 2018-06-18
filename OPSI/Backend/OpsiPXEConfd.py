@@ -216,14 +216,13 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 				packageVersion=productOnClient.packageVersion
 			)[0]
 
+			eliloMode = None
 			for configState in self._collectConfigStates(clientId):
 				if configState.configId == u"clientconfig.configserver.url":
 					serviceAddress = configState.getValues()[0]
 				elif configState.configId == u'opsi-linux-bootimage.append':
 					bootimageAppend = configState
 				elif configState.configId == u"clientconfig.dhcpd.filename":
-					eliloMode = None
-
 					try:
 						value = configState.getValues()[0]
 						if 'elilo' in value:
