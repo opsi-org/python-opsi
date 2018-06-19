@@ -24,7 +24,7 @@ Testing opsipxeconfd backend.
 
 from __future__ import absolute_import
 
-from OPSI.Backend.OpsiPXEConfd import OpsiPXEConfdBackend, getClientDataPath
+from OPSI.Backend.OpsiPXEConfd import OpsiPXEConfdBackend, getClientCacheFilePath
 
 from .helpers import patchAddress
 
@@ -37,7 +37,7 @@ def testInitialisation():
 def testGetClientCachePath():
     clientId = 'foo.bar.baz'
 
-    path = getClientDataPath(clientId)
+    path = getClientCacheFilePath(clientId)
 
     assert clientId in path
     assert path.endswith('.json')

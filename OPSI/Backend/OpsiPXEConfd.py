@@ -87,7 +87,7 @@ def createUnixSocket(port, timeout=5.0):
 		raise RuntimeError(u"Failed to connect to socket '%s': %s" % (port, error))
 
 
-def getClientDataPath(clientId):
+def getClientCacheFilePath(clientId):
 	if os.path.exists('/var/run/opsipxeconfd'):
 		directory = '/var/run/opsipxeconfd'
 	else:
@@ -383,7 +383,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 		:rtype: str
 		:returns: The path of the cache file. None if no file could be written.
 		"""
-		destinationFile = getClientDataPath(clientId)
+		destinationFile = getClientCacheFilePath(clientId)
 		logger.debug2("Writing data to {}: {!r}", destinationFile, data)
 		try:
 			with codecs.open(destinationFile, "w", 'utf-8') as outfile:
