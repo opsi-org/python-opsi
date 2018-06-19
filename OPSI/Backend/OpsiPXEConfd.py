@@ -392,7 +392,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 			return destinationFile
 		except (OSError, IOError) as dataFileError:
 			logger.logException(dataFileError, logLevel=LOG_DEBUG)
-			logger.debug("Writing data file {!r} failed: {!r}", destinationFile, dataFileError)
+			logger.debug("Writing cache file {!r} failed: {!r}", destinationFile, dataFileError)
 
 	def backend_exit(self):
 		for connection in self._depotConnections.values():
