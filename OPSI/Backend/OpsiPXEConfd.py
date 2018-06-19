@@ -96,7 +96,7 @@ def getClientDataPath(clientId):
 		except OSError:
 			pass  # directory exists
 
-	return os.path.join(directory, clientId)
+	return os.path.join(directory, clientId + '.json')
 
 
 class OpsiPXEConfdBackend(ConfigDataBackend):
