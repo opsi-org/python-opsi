@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2017 uib GmbH <info@uib.de>
+# Copyright (C) 2017-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -24,7 +24,7 @@ Testing opsipxeconfd backend.
 
 from __future__ import absolute_import
 
-from OPSI.Backend.OpsiPXEConfd import OpsiPXEConfdBackend
+from OPSI.Backend.OpsiPXEConfd import OpsiPXEConfdBackend, getClientDataPath
 
 from .helpers import patchAddress
 
@@ -32,3 +32,12 @@ from .helpers import patchAddress
 def testInitialisation():
     with patchAddress():
         OpsiPXEConfdBackend()
+
+
+def testGetClientCachePath():
+    clientId = 'foo.bar.baz'
+
+    path = getClientDataPath(clientId)
+
+    assert clientId in path
+    assert path.endswith('.json')
