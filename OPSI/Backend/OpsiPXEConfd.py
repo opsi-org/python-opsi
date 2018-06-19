@@ -33,6 +33,7 @@ import tempfile
 import threading
 import time
 from contextlib import closing, contextmanager
+from pipes import quote
 
 from OPSI.Backend.Backend import ConfigDataBackend
 from OPSI.Backend.JSONRPC import JSONRPCBackend
@@ -356,12 +357,15 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 		clientId = forceHostId(clientId)
 		logger.debug("Updating PXE boot config of {!r}", clientId)
 
+		command = 'update {}'.format(clientId)
 		if data:
-			self._cacheOpsiPXEConfdData(clientId, data)
+			cacheFilePath = self._cacheOpsiPXEConfdData(clientId, data)
+			if cacheFilePath:
+				command = 'update {} {}'.format(clientId, quote(cacheFilePath))
 
 		with self._updateThreadsLock:
 			if clientId not in self._updateThreads:
-				updater = UpdateThread(self, clientId, u'update %s' % clientId)
+				updater = UpdateThread(self, clientId, command)
 				self._updateThreads[clientId] = updater
 				updater.start()
 			else:
@@ -376,6 +380,8 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 		:type clientId: str
 		:param data: Collected data for opsipxeconfd.
 		:type data: dict
+		:rtype: str
+		:returns: The path of the cache file. None if no file could be written.
 		"""
 		destinationFile = getClientDataPath(clientId)
 		logger.debug2("Writing data to {}: {!r}", destinationFile, data)
@@ -383,9 +389,10 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 			with codecs.open(destinationFile, "w", 'utf-8') as outfile:
 				json.dump(serialize(data), outfile)
 			os.chmod(destinationFile, 0o640)
+			return destinationFile
 		except (OSError, IOError) as dataFileError:
 			logger.logException(dataFileError, logLevel=LOG_DEBUG)
-			logger.debug("Writing data file {!r} failed: {!r}", destinationFile, dataFileError)
+			logger.debug("Writing cache file {!r} failed: {!r}", destinationFile, dataFileError)
 
 	def backend_exit(self):
 		for connection in self._depotConnections.values():
