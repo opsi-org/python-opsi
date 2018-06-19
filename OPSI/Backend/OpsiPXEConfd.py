@@ -334,7 +334,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 		if not self._pxeBootConfigurationUpdateNeeded(productOnClient):
 			return
 
-		destinationSupportsData = True
+		destinationSupportsCachedData = True
 		depotId = self._getResponsibleDepotId(productOnClient.clientId)
 		if depotId != self._depotId:
 			logger.info(u"Not responsible for client '{}', forwarding request to depot {!r}", productOnClient.clientId, depotId)
@@ -343,14 +343,14 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 			for method in destination.backend_getInterface():
 				if method['name'] == 'opsipxeconfd_updatePXEBootConfiguration':
 					if len(method['params']) < 2:
-						destinationSupportsData = False
+						destinationSupportsCachedData = False
 						logger.debug("Depot {} does not support receiving cached data.", depotId)
 
 					break
 		else:
 			destination = self
 
-		if destinationSupportsData:
+		if destinationSupportsCachedData:
 			data = self._collectDataForUpdate(productOnClient, depotId)
 			destination.opsipxeconfd_updatePXEBootConfiguration(productOnClient.clientId, data)
 		else:
