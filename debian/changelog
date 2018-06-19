@@ -1,3 +1,10 @@
+python-opsi (4.1.1.40-1) testing; urgency=medium
+
+  * OpsiPXEConfd backend: improve performance by precollecting the
+    required data that then can be used by opsipxeconfd.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 19 Jun 2018 14:38:25 +0200
+
 python-opsi (4.1.1.39-1) stable; urgency=medium
 
   * SQL-based backends: Increased length of inventoryNumber of a host to 64
