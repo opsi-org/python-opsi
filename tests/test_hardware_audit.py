@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2017 uib GmbH <info@uib.de>
+# Copyright (C) 2017-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -46,19 +46,14 @@ def testHardwareAuditAcceptingHugeMemoryClockSpeeds(hardwareAuditBackendWithHist
 			"vendor": "Micron",
 			"description": "Physikalischer Speicher",
 			"tag": "Physical Memory 0",
-			"speed": 2400000000,
 			"hardwareClass": "MEMORY_MODULE",
 			"formFactor": "SODIMM",
 			"capacity": "8589934592",
 			"name": "DIMM 1",
 			"serialNumber": "15E64109",
-			"state": None,
 			"memoryType": "Unknown",
-			"lastseen": None,
-			"model": None,
 			"type": "AuditHardwareOnHost",
 			"deviceLocator": "DIMM 1",
-			"firstseen": None,
 			"dataWidth": 64
 		},
 	])
@@ -82,7 +77,6 @@ def testUpdatingAuditHardware(hardwareAuditBackendWithHistory):
 		"name": "DIMM 1",
 		"serialNumber": "15E64109",
 		"memoryType": "Unknown",
-		"model": None,
 		"type": "AuditHardwareOnHost",
 		"deviceLocator": "DIMM 1",
 		"dataWidth": 64
