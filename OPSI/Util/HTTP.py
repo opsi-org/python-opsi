@@ -45,7 +45,7 @@ import zlib
 from contextlib import contextmanager
 from io import BytesIO, StringIO
 from queue import Queue, Empty, Full
-from httplib import HTTPConnection, HTTPSConnection, HTTPException
+from http.client import HTTPConnection, HTTPSConnection, HTTPException
 from socket import error as SocketError, timeout as SocketTimeout
 from urllib.parse import urlparse
 
