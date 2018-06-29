@@ -173,7 +173,7 @@ def testForceBoolWithNegativeList():
 @pytest.mark.parametrize("value, expected", (
 	('100', 100),
 	('-100', -100),
-	(long(1000000000000000), 1000000000000000)
+	(int(1000000000000000), 1000000000000000)
 ))
 def testForceInt(value, expected):
 	assert expected == forceInt(value)
