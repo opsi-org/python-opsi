@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2006-2019 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2018 uib GmbH <info@uib.de>
 # http://www.uib.de/
 
 # This program is free software: you can redistribute it and/or modify
@@ -42,13 +42,9 @@ import struct
 import time
 import types
 from collections import namedtuple
-from contextlib import closing
+from Crypto.Cipher import Blowfish
 from hashlib import md5
 from itertools import islice
-
-from Crypto.Cipher import Blowfish
-from Crypto.PublicKey import RSA
-from Crypto.Util.number import bytes_to_long
 
 from OPSI.Logger import Logger, LOG_DEBUG
 from OPSI.Types import (forceBool, forceFilename, forceFqdn, forceInt,
@@ -61,7 +57,6 @@ __all__ = (
 	'deserialize', 'encryptWithPublicKeyFromX509CertificatePEMFile',
 	'findFiles', 'formatFileSize', 'fromJson', 'generateOpsiHostKey',
 	'getfqdn', 'ipAddressInNetwork', 'isRegularExpressionPattern',
-	'librsyncDeltaFile', 'librsyncPatchFile', 'librsyncSignature',
 	'md5sum', 'objectToBash', 'objectToBeautifiedText', 'objectToHtml',
 	'randomString', 'removeDirectory', 'removeUnit',
 	'replaceSpecialHTMLCharacters', 'serialize', 'timestamp', 'toJson'
@@ -69,17 +64,9 @@ __all__ = (
 
 logger = Logger()
 
-if os.name == 'posix':
-	from duplicity import librsync
-elif os.name == 'nt':
-	try:
-		import librsync
-	except Exception as e:
-		logger.error(u"Failed to import librsync: %s" % e)
-
 BLOWFISH_IV = 'OPSI1234'
 RANDOM_DEVICE = u'/dev/urandom'
-UNIT_REGEX = re.compile(r'^(\d+\.*\d*)\s*(\w{0,4})$')
+UNIT_REGEX = re.compile('^(\d+\.*\d*)\s*([\w]{0,4})$')
 _ACCEPTED_CHARACTERS = (
 	"abcdefghijklmnopqrstuvwxyz"
 	"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -153,16 +140,14 @@ of strings, dicts, lists or numbers.
 	"""
 	if isinstance(obj, (unicode, str)):
 		return obj
-
-	try:
+	elif hasattr(obj, 'serialize'):
 		return obj.serialize()
-	except AttributeError:
-		if isinstance(obj, (list, set, types.GeneratorType)):
-			return [serialize(tempObject) for tempObject in obj]
-		elif isinstance(obj, dict):
-			return {key: serialize(value) for key, value in obj.items()}
-
-	return obj
+	elif isinstance(obj, (list, set, types.GeneratorType)):
+		return [serialize(tempObject) for tempObject in obj]
+	elif isinstance(obj, dict):
+		return {key: serialize(value) for key, value in obj.items()}
+	else:
+		return obj
 
 
 def formatFileSize(sizeInBytes):
@@ -187,77 +172,6 @@ def fromJson(obj, objectType=None, preventObjectCreation=False):
 
 def toJson(obj, ensureAscii=False):
 	return json.dumps(serialize(obj), ensure_ascii=ensureAscii)
-
-
-def librsyncSignature(filename, base64Encoded=True):
-	filename = forceFilename(filename)
-	try:
-		with open(filename, 'rb') as f:
-			with closing(librsync.SigFile(f)) as sf:
-				sig = sf.read()
-
-				if base64Encoded:
-					sig = base64.encodestring(sig)
-
-				return sig
-	except Exception as sigError:
-		raise RuntimeError(
-			u"Failed to get librsync signature from %s: %s" % (
-				filename,
-				forceUnicode(sigError)
-			)
-		)
-
-
-def librsyncPatchFile(oldfile, deltafile, newfile):
-	logger.debug(u"Librsync patch: old file {!r}, delta file {!r}, new file {!r}", oldfile, deltafile, newfile)
-
-	oldfile = forceFilename(oldfile)
-	newfile = forceFilename(newfile)
-	deltafile = forceFilename(deltafile)
-
-	if oldfile == newfile:
-		raise ValueError(u"Oldfile and newfile are the same file")
-	if deltafile == newfile:
-		raise ValueError(u"deltafile and newfile are the same file")
-	if deltafile == oldfile:
-		raise ValueError(u"oldfile and deltafile are the same file")
-
-	bufsize = 1024 * 1024
-	try:
-		with open(oldfile, "rb") as of:
-			with open(deltafile, "rb") as df:
-				with open(newfile, "wb") as nf:
-					with closing(librsync.PatchedFile(of, df)) as pf:
-						data = True
-						while data:
-							data = pf.read(bufsize)
-							nf.write(data)
-	except Exception as patchError:
-		logger.debug(
-			"Patching {!r} with delta {!r} into {!r} failed: {}",
-			oldfile, deltafile, newfile, patchError
-		)
-		raise RuntimeError(u"Failed to patch file %s: %s" % (oldfile, forceUnicode(patchError)))
-
-
-def librsyncDeltaFile(filename, signature, deltafile):
-	bufsize = 1024 * 1024
-	filename = forceFilename(filename)
-	deltafile = forceFilename(deltafile)
-	logger.debug("Creating deltafile {!r} on base of {!r}", deltafile, filename)
-	try:
-		with open(filename, "rb") as f:
-			with open(deltafile, "wb") as df:
-				with closing(librsync.DeltaFile(signature, f)) as ldf:
-					data = True
-					while data:
-						data = ldf.read(bufsize)
-						df.write(data)
-	except Exception as e:
-		raise RuntimeError(
-			u"Failed to write delta file %s: %s" % (deltafile, forceUnicode(e))
-		)
 
 
 def md5sum(filename):
@@ -322,7 +236,7 @@ def objectToBash(obj, bashVars=None, level=0):
 
 	:type bashVars: dict
 	:type level: int
-	:rtype: dict
+	:returntype: dict
 	"""
 	if bashVars is None:
 		bashVars = {}
@@ -335,10 +249,8 @@ def objectToBash(obj, bashVars=None, level=0):
 		varName = 'RESULT%d' % level
 		compress = False
 
-	try:
+	if hasattr(obj, 'serialize'):
 		obj = obj.serialize()
-	except AttributeError:
-		pass
 
 	try:
 		append = bashVars[varName].append
@@ -438,17 +350,6 @@ def replaceSpecialHTMLCharacters(text):
 		.replace(u'\n', u'<br />\n')
 
 
-def combineVersions(obj):
-	"""
-	Returns the combination of product and package version.
-
-	:type obj: Product, ProductOnClient, ProductOnDepot
-	:return: The version.
-	:rtype: str
-	"""
-	return '{0.productVersion}-{0.packageVersion}'.format(obj)
-
-
 def compareVersions(v1, condition, v2):
 	"""
 	Compare the versions `v1` and `v2` with the given `condition`.
@@ -474,7 +375,7 @@ def compareVersions(v1, condition, v2):
 	def splitProductAndPackageVersion(versionString):
 		productVersion = packageVersion = u'0'
 
-		match = re.search(r'^\s*([\w.]+)-*([\w.]*)\s*$', versionString)
+		match = re.search('^\s*([\w\.]+)-*([\w\.]*)\s*$', versionString)
 		if not match:
 			raise ValueError(u"Bad version string '%s'" % versionString)
 
@@ -492,11 +393,11 @@ def compareVersions(v1, condition, v2):
 			second.append(u'0')
 
 	def splitValue(value):
-		match = re.search(r'^(\d+)(\D*.*)$', value)
+		match = re.search('^(\d+)(\D*.*)$', value)
 		if match:
 			return int(match.group(1)), match.group(2)
 		else:
-			match = re.search(r'^(\D+)(\d*.*)$', value)
+			match = re.search('^(\D+)(\d*.*)$', value)
 			if match:
 				return match.group(1), match.group(2)
 
@@ -924,16 +825,3 @@ def chunk(iterable, size):
 	"""
 	it = iter(iterable)
 	return iter(lambda: tuple(islice(it, size)), ())
-
-
-def getPublicKey(data):
-	# Key type can be found in 4:11.
-	rest = data[11:]
-	count = 0
-	mp = []
-	for _ in range(2):
-		length = struct.unpack('>L', rest[count:count + 4])[0]
-		mp.append(bytes_to_long(rest[count + 4:count + 4 + length]))
-		count += 4 + length
-
-	return RSA.construct((mp[1], mp[0]))
