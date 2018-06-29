@@ -49,8 +49,8 @@ from OPSI.Util.File.Opsi import BackendACLFile, OpsiConfFile
 
 if os.name == 'posix':
 	import grp
-	import PAM
 	import pwd
+	import pam
 elif os.name == 'nt':
 	import win32net
 	import win32security
@@ -281,11 +281,11 @@ class BackendAccessControl(object):
 				response = []
 				for (query, qtype) in query_list:
 					logger.debug(u"PAM conversation: query {0!r}, type {1!r}", query, qtype)
-					if qtype == PAM.PAM_PROMPT_ECHO_ON:
+					if qtype == pam.PAM_PROMPT_ECHO_ON:
 						response.append((self.user, 0))
-					elif qtype == PAM.PAM_PROMPT_ECHO_OFF:
+					elif qtype == pam.PAM_PROMPT_ECHO_OFF:
 						response.append((self.password, 0))
-					elif qtype in (PAM.PAM_ERROR_MSG, PAM.PAM_TEXT_INFO):
+					elif qtype in (pam.PAM_ERROR_MSG, pam.PAM_TEXT_INFO):
 						response.append(('', 0))
 					else:
 						return None
@@ -295,10 +295,10 @@ class BackendAccessControl(object):
 		logger.debug2(u"Attempting PAM authentication as user {0!r}...", self._username)
 		try:
 			# Create instance
-			auth = PAM.pam()
+			auth = pam.pam()
 			auth.start(self._pamService)
 			# Authenticate
-			auth.set_item(PAM.PAM_CONV, AuthConv(self._username, self._password))
+			auth.set_item(pam.PamConv, AuthConv(self._username, self._password))
 			# Set the tty
 			# Workaround for:
 			#   If running as daemon without a tty the following error
