@@ -2,7 +2,7 @@ pycrypto
 twisted
 filemagic
 git+https://github.com/twisted/ldaptor.git
-python-pampy
+python-pam
 pyOpenSSL
 mysqlclient
 SQLAlchemy
