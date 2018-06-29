@@ -299,15 +299,6 @@ class BackendAccessControl(object):
 			auth.start(self._pamService)
 			# Authenticate
 			auth.set_item(pam.PamConv, AuthConv(self._username, self._password))
-			# Set the tty
-			# Workaround for:
-			#   If running as daemon without a tty the following error
-			#   occurs with older versions of pam:
-			#      pam_access: couldn't get the tty name
-			try:
-				auth.set_item(PAM.PAM_TTY, '/dev/null')
-			except Exception:
-				pass
 			auth.authenticate()
 			auth.acct_mgmt()
 			logger.debug2("PAM authentication successful.")
