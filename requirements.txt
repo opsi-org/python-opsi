@@ -1,6 +1,6 @@
 pycrypto
 twisted
-libmagic
+filemagic
 git+https://github.com/twisted/ldaptor.git
 pam
 pyOpenSSL
