@@ -30,7 +30,7 @@ import os.path
 import shutil
 from itertools import combinations_with_replacement
 
-from OPSI.Util import librsyncDeltaFile, librsyncSignature, librsyncPatchFile
+from OPSI.Util.Sync import librsyncDeltaFile, librsyncSignature, librsyncPatchFile
 
 import pytest
 
