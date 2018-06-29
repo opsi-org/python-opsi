@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2006-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2018 uib GmbH <info@uib.de>
 # http://www.uib.de/
 
 # This program is free software: you can redistribute it and/or modify
@@ -42,7 +42,6 @@ import struct
 import time
 import types
 from collections import namedtuple
-from contextlib import closing
 from Crypto.Cipher import Blowfish
 from hashlib import md5
 from itertools import islice
@@ -58,21 +57,12 @@ __all__ = (
 	'deserialize', 'encryptWithPublicKeyFromX509CertificatePEMFile',
 	'findFiles', 'formatFileSize', 'fromJson', 'generateOpsiHostKey',
 	'getfqdn', 'ipAddressInNetwork', 'isRegularExpressionPattern',
-	'librsyncDeltaFile', 'librsyncPatchFile', 'librsyncSignature',
 	'md5sum', 'objectToBash', 'objectToBeautifiedText', 'objectToHtml',
 	'randomString', 'removeDirectory', 'removeUnit',
 	'replaceSpecialHTMLCharacters', 'serialize', 'timestamp', 'toJson'
 )
 
 logger = Logger()
-
-if os.name == 'posix':
-	from duplicity import librsync
-elif os.name == 'nt':
-	try:
-		import librsync
-	except Exception as e:
-		logger.error(u"Failed to import librsync: %s" % e)
 
 BLOWFISH_IV = 'OPSI1234'
 RANDOM_DEVICE = u'/dev/urandom'
@@ -182,57 +172,6 @@ def fromJson(obj, objectType=None, preventObjectCreation=False):
 
 def toJson(obj, ensureAscii=False):
 	return json.dumps(serialize(obj), ensure_ascii=ensureAscii)
-
-
-def librsyncSignature(filename, base64Encoded=True):
-	try:
-		with open(filename, 'rb') as f:
-			with closing(librsync.SigFile(f)) as sf:
-				sig = sf.read()
-
-				if base64Encoded:
-					sig = base64.encodestring(sig)
-
-				return sig
-	except Exception as e:
-		raise RuntimeError(u"Failed to get librsync signature: %s" % forceUnicode(e))
-
-
-def librsyncPatchFile(oldfile, deltafile, newfile):
-	logger.debug(u"Librsync : %s, %s, %s" % (oldfile, deltafile, newfile))
-	if oldfile == newfile:
-		raise ValueError(u"Oldfile and newfile are the same file")
-	if deltafile == newfile:
-		raise ValueError(u"deltafile and newfile are the same file")
-	if deltafile == oldfile:
-		raise ValueError(u"oldfile and deltafile are the same file")
-
-	bufsize = 1024 * 1024
-	try:
-		with open(oldfile, "rb") as of:
-			with open(deltafile, "rb") as df:
-				with open(newfile, "wb") as nf:
-					with closing(librsync.PatchedFile(of, df)) as pf:
-						data = True
-						while data:
-							data = pf.read(bufsize)
-							nf.write(data)
-	except Exception as e:
-		raise RuntimeError(u"Failed to patch file: %s" % forceUnicode(e))
-
-
-def librsyncDeltaFile(filename, signature, deltafile):
-	bufsize = 1024 * 1024
-	try:
-		with open(filename, "rb") as f:
-			with open(deltafile, "wb") as df:
-				with closing(librsync.DeltaFile(signature, f)) as ldf:
-					data = True
-					while data:
-						data = ldf.read(bufsize)
-						df.write(data)
-	except Exception as e:
-		raise RuntimeError(u"Failed to write delta file: %s" % forceUnicode(e))
 
 
 def md5sum(filename):
