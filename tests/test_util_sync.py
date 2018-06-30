@@ -29,8 +29,13 @@ import os
 import os.path
 import shutil
 from itertools import combinations_with_replacement
+import pytest
 
-from OPSI.Util.Sync import librsyncDeltaFile, librsyncSignature, librsyncPatchFile
+try:
+    from OPSI.Util.Sync import librsyncDeltaFile, librsyncSignature, librsyncPatchFile
+except ImportError:
+    pytest.skip("Importing sync module failed.")
+
 
 import pytest
 
