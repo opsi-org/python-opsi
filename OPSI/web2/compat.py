@@ -1,9 +1,9 @@
-from __future__ import generators
 
-from urllib import string
 from urllib.parse import quote
 
-import UserDict, math, time
+import UserDict
+import math
+import time
 from io import StringIO
 
 from OPSI.web2 import http_headers, iweb, stream, responsecode
@@ -300,7 +300,8 @@ class OldRequestAdapter(pb.Copyable, components.Componentized, object):
             self.isSecure() and 's' or '',
             self.getRequestHostname(),
             hostport,
-            string.join(self.prepath, '/')), "/:")
+            self.prepath.join('/')
+            ), "/:")
 
 #     def URLPath(self):
 #         from twisted.python import urlpath
@@ -329,14 +330,14 @@ class OldRequestAdapter(pb.Copyable, components.Componentized, object):
         """
         return self.appRootURL
 
-    
+
     session = None
 
     def getSession(self, sessionInterface = None):
         # Session management
         if not self.session:
             # FIXME: make sitepath be something
-            cookiename = string.join(['TWISTED_SESSION'] + self.sitepath, "_")
+            cookiename = (['TWISTED_SESSION'] + self.sitepath).join("_")
             sessionCookie = self.getCookie(cookiename)
             if sessionCookie:
                 try:
