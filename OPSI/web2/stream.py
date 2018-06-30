@@ -165,8 +165,9 @@ def mmapwrapper(*args, **kwargs):
         raise mmap.error("mmap: Python sucks and does not support offset.")
     return mmap.mmap(*args, **kwargs)
 
+
+@implementer(ISendfileableStream)
 class FileStream(SimpleStream):
-    implements(ISendfileableStream)
     """A stream that reads data from a file. File must be a normal
     file that supports seek, (e.g. not a pipe or device or socket)."""
     # 65K, minus some slack
@@ -278,13 +279,13 @@ components.registerAdapter(MemoryStream, types.BufferType, IByteStream)
 ####    CompoundStream    ####
 ##############################
 
+@implementer(IByteStream, ISendfileableStream)
 class CompoundStream(object):
     """A stream which is composed of many other streams.
 
     Call addStream to add substreams.
     """
-    
-    implements(IByteStream, ISendfileableStream)
+
     deferred = None
     length = 0
     
@@ -602,12 +603,13 @@ class PostTruncaterStream(object):
 ########################################
 #### ProducerStream/StreamProducer  ####
 ########################################
-            
+
+
+@implementer(IByteStream, ti_interfaces.IConsumer)
 class ProducerStream(object):
     """Turns producers into a IByteStream.
     Thus, implements IConsumer and IByteStream."""
 
-    implements(IByteStream, ti_interfaces.IConsumer)
     length = None
     closed = False
     failed = False
@@ -705,10 +707,11 @@ class ProducerStream(object):
 
     def unregisterProducer(self):
         self.producer = None
-        
+
+
+@implementer(ti_interfaces.IPushProducer)
 class StreamProducer(object):
     """A push producer which gets its data by reading a stream."""
-    implements(ti_interfaces.IPushProducer)
 
     deferred = None
     finishedCallback = None
