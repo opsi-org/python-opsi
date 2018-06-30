@@ -30,10 +30,10 @@ IPushProducer, which will write to a consumer. The second is a
 consumer which is a stream, so that other producers can write to it.
 """
 
-
-
-import copy, os, types, sys
+import copy
 import io
+import os
+import sys
 from zope.interface import Interface, Attribute
 from zope.interface.declarations import implementer
 from twisted.internet.defer import Deferred
