@@ -157,7 +157,7 @@ This defaults to ``self``.
 
 		:rtype: bool
 		"""
-		for attribute, value in objHash.iteritems():
+		for attribute, value in objHash.items():
 			if not filter.get(attribute):
 				continue
 			matched = False

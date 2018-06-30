@@ -739,7 +739,7 @@ def args(*vars, **typeVars):
 				else:
 					ka[var] = None
 
-			for key, value in ka.iteritems():
+			for key, value in ka.items():
 				if getattr(obj, key, None) is None:
 					setattr(obj, key, value)
 

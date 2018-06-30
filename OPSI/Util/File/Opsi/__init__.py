@@ -1247,7 +1247,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 
 	def _addChecksumFile(self):
 		string = StringIO()
-		for path, checksum in self._filemap.iteritems():
+		for path, checksum in self._filemap.items():
 			string.write("%s %s\n" % (checksum, path))
 		string.seek(0)
 		info = tarfile.TarInfo(name="%s/checksums" % self.CONTROL_DIR)
@@ -1258,7 +1258,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 	def _addSysInfoFile(self):
 		string = StringIO()
 
-		for key, value in self.sysinfo.iteritems():
+		for key, value in self.sysinfo.items():
 			string.write("%s: %s\n" % (key, value))
 
 		string.seek(0)

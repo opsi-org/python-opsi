@@ -2271,7 +2271,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 		results = []
 		for hardwareClass in hardwareClasses:
 			classFilter = {}
-			for (attribute, value) in filter.iteritems():
+			for (attribute, value) in filter.items():
 				valueInfo = self._auditHardwareConfig[hardwareClass].get(attribute)
 				if not valueInfo:
 					logger.debug(u"Skipping hardwareClass '%s', because of missing info for attribute '%s'" % (hardwareClass, attribute))
@@ -2303,7 +2303,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 						pass
 
 					res['hardwareClass'] = hardwareClass
-					for (attribute, valueInfo) in self._auditHardwareConfig[hardwareClass].iteritems():
+					for (attribute, valueInfo) in self._auditHardwareConfig[hardwareClass].items():
 						try:
 							if valueInfo['Scope'] == 'i':
 								continue
@@ -2373,7 +2373,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 		del auditHardwareOnHost['hardwareClass']
 
 		hardwareFilter = {}
-		for (attribute, value) in auditHardwareOnHost.iteritems():
+		for (attribute, value) in auditHardwareOnHost.items():
 			if value is None:
 				hardwareFilter[attribute] = [None]
 			elif isinstance(value, unicode):
@@ -2476,7 +2476,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 			auditHardwareFilter = {}
 			classFilter = {}
 			skipHardwareClass = False
-			for attribute, value in filter.iteritems():
+			for attribute, value in filter.items():
 				valueInfo = None
 				if attribute not in ('hostId', 'state', 'firstseen', 'lastseen'):
 					valueInfo = self._auditHardwareConfig[hardwareClass].get(attribute)
