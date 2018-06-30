@@ -1,11 +1,8 @@
-
-from __future__ import nested_scopes
-
-import time, sys
-
-from zope.interface import implements
+import time
+import sys
 
 from twisted.trial import unittest
+from zope.interface.declarations import implementer
 from OPSI.web2 import http, http_headers, responsecode, error, iweb, stream
 from OPSI.web2 import channel
 
@@ -27,7 +24,7 @@ class PreconditionTestCase(unittest.TestCase):
 
         try:
             http.checkPreconditions(request, response, **kw)
-        except http.HTTPError, e:
+        except http.HTTPError as e:
             preconditionsPass = False
             self.assertEquals(e.response.code, expectedCode)
         self.assertEquals(preconditionsPass, expectedResult)
@@ -288,9 +285,8 @@ class IfRangeTestCase(unittest.TestCase):
         self.assertEquals(http.checkIfRange(request, response), False)
 
 
-
+@implementer(interfaces.IProducer)
 class LoopbackRelay(loopback.LoopbackRelay):
-    implements(interfaces.IProducer)
 
     def pauseProducing(self):
         self.paused = True
@@ -324,8 +320,9 @@ class TestRequest(http.Request):
     def connectionLost(self, reason):
         self.cmds.append(('connectionLost', reason))
 
+
+@implementer(iweb.IResponse)
 class TestResponse(object):
-    implements(iweb.IResponse)
 
     code = responsecode.OK
     headers = None

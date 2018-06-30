@@ -74,7 +74,7 @@ class HeaderHandler(object):
                 header = p(header)
                 # if isinstance(h, types.GeneratorType):
                 #     h=list(h)
-        except ValueError,v:
+        except ValueError as v:
             # print v
             header=None
 
@@ -297,9 +297,9 @@ def tokenize(header, foldCase=True):
         cur = cur+1
 
     if qpair:
-        raise ValueError, "Missing character after '\\'"
+        raise ValueError("Missing character after '\\'")
     if quoted:
-        raise ValueError, "Missing end quote"
+        raise ValueError("Missing end quote")
 
     if start != cur:
         if foldCase:
@@ -349,7 +349,7 @@ def filterTokens(seq):
 ##### parser utilities:
 def checkSingleToken(tokens):
     if len(tokens) != 1:
-        raise ValueError, "Expected single token, not %s." % (tokens,)
+        raise ValueError("Expected single token, not %s." % tokens)
     return tokens[0]
 
 def parseKeyValue(val):
@@ -357,7 +357,7 @@ def parseKeyValue(val):
         return val[0],None
     elif len(val) == 3 and val[1] == Token('='):
         return val[0],val[2]
-    raise ValueError, "Expected key or key=value, but got %s." % (val,)
+    raise ValueError("Expected key or key=value, but got %s." % val)
 
 def parseArgs(field):
     args=split(field, Token(';'))
@@ -457,7 +457,7 @@ def parseAccept(field):
     type,args = parseArgs(field)
 
     if len(type) != 3 or type[1] != Token('/'):
-        raise ValueError, "MIME Type "+str(type)+" invalid."
+        raise ValueError("MIME Type "+str(type)+" invalid.")
 
     # okay, this spec is screwy. A 'q' parameter is used as the separator
     # between MIME parameters and (as yet undefined) additional HTTP
@@ -520,7 +520,7 @@ def parseContentType(header):
     type,args = parseArgs(header)
 
     if len(type) != 3 or type[1] != Token('/'):
-        raise ValueError, "MIME Type "+str(type)+" invalid."
+        raise ValueError("MIME Type "+str(type)+" invalid.")
 
     args = [(kv[0].lower(), kv[1]) for kv in args]
 
@@ -529,7 +529,7 @@ def parseContentType(header):
 def parseContentMD5(header):
     try:
         return base64.decodestring(header)
-    except Exception,e:
+    except Exception as e:
         raise ValueError(e)
 
 def parseContentRange(header):
@@ -717,7 +717,7 @@ def parseCacheControl(kv):
             v = [field.strip().lower() for field in v.split(',')]
     return k, v
 
-def generateCacheControl((k, v)):
+def generateCacheControl(k, v):
     if v is None:
         return str(k)
     else:
@@ -1293,7 +1293,7 @@ class Headers(object):
     def hasHeader(self, name):
         """Does a header with the given name exist?"""
         name=name.lower()
-        return self._raw_headers.has_key(name)
+        return name in self._raw_headers
 
     def getRawHeaders(self, name, default=None):
         """Returns a list of headers matching the given name as the raw string given."""

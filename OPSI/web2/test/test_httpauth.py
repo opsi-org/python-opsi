@@ -2,11 +2,12 @@ import md5
 from twisted.internet import address
 from twisted.trial import unittest
 from twisted.cred import error
+from twisted.cred import portal, checkers
+from zope.interface.declarations import implementer
 from OPSI.web2 import http, responsecode
 from OPSI.web2.auth import basic, digest, wrapper
 from OPSI.web2.auth.interfaces import IAuthenticatedRequest, IHTTPUser
 from OPSI.web2.test.test_server import SimpleRequest
-
 from OPSI.web2.test import test_server
 
 import base64
@@ -429,15 +430,11 @@ class DigestAuthTestCase(unittest.TestCase):
                 )
 
 
-from zope.interface import implements
-from twisted.cred import portal, checkers
-
+@implementer(IHTTPUser)
 class TestHTTPUser(object):
     """
     Test avatar implementation for http auth with cred
     """
-    implements(IHTTPUser)
-
     username = None
 
     def __init__(self, username):
@@ -448,12 +445,11 @@ class TestHTTPUser(object):
         self.username = username
 
 
+@implementer(portal.IRealm)
 class TestAuthRealm(object):
     """
     Test realm that supports the IHTTPUser interface
     """
-
-    implements(portal.IRealm)
 
     def requestAvatar(self, avatarId, mind, *interfaces):
         if IHTTPUser in interfaces:

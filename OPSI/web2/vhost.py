@@ -7,12 +7,12 @@
 
 # System Imports
 import urlparse
-from zope.interface import implements
-import urllib 
+import urllib
 import warnings
 
 from twisted.internet import address
 from twisted.python import log
+from zope.interface.declarations import implementer
 
 # Sibling Imports
 from OPSI.web2 import resource
@@ -85,6 +85,7 @@ class NameVirtualHost(resource.Resource):
         return self.hosts.get(host, self.default), segments
 
 
+@implementer(iweb.IResource)
 class AutoVHostURIRewrite(object):
     """
     I do request mangling to insure that children know what host they are being
@@ -111,13 +112,12 @@ class AutoVHostURIRewrite(object):
 
             RequestHeader set X-App-Scheme https
     """
-    implements(iweb.IResource)
 
     def __init__(self, resource, sendsRealHost=False):
         """
         @param resource: The resource to serve after mutating the request.
         @type resource: L{OPSI.web2.iweb.IResource}
-        
+
         @param sendsRealHost: If True then the proxy will be expected to send the
             HTTP 'Host' header that was sent by the requesting client.
         @type sendsRealHost: C{bool}
@@ -162,17 +162,19 @@ class AutoVHostURIRewrite(object):
             scheme = scheme[0]
         else:
             scheme='http'
-        
+
         req.host, req.port = http.splitHostPort(scheme, host)
         req.scheme = scheme
-        
+
         req.remoteAddr = address.IPv4Address('TCP', remote_ip, 0)
-            
+
         req.prepath = app_location[1:].split('/')[:-1]
         req.path = '/'+('/'.join([urllib.quote(s, '') for s in (req.prepath + segments)]))
-        
+
         return self.resource, segments
-        
+
+
+@implementer(iweb.IResource)
 class VHostURIRewrite(object):
     """
     I do request mangling to insure that children know what host they are being
@@ -199,27 +201,25 @@ class VHostURIRewrite(object):
         uri must be a fully specified uri complete with scheme://hostname/path/
     """
 
-    implements(iweb.IResource)
-
     def __init__(self, uri, resource):
         """
-        @param uri: The URI to be used for mutating the request.  This MUST 
+        @param uri: The URI to be used for mutating the request.  This MUST
             include scheme://hostname/path.
         @type uri: C{str}
-        
+
         @param resource: The resource to serve after mutating the request.
         @type resource: L{OPSI.web2.iweb.IResource}
         """
 
         self.resource = resource
-        
+
         (self.scheme, self.host, self.path,
          params, querystring, fragment) = urlparse.urlparse(uri)
         if params or querystring or fragment:
             raise ValueError("Must not specify params, query args, or fragment to VHostURIRewrite")
         self.path = map(urllib.unquote, self.path[1:].split('/'))[:-1]
         self.host, self.port = http.splitHostPort(self.scheme, self.host)
-        
+
     def renderHTTP(self, req):
         return http.Response(responsecode.NOT_FOUND)
 

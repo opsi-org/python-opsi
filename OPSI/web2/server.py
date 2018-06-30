@@ -8,15 +8,13 @@ infrastructure.
 """
 
 # System Imports
-import cStringIO as StringIO
-
 import cgi, time, urlparse
 from urllib import quote, unquote
 from urlparse import urlsplit
 
 import weakref
 
-from zope.interface import implements
+from zope.interface.declarations import implementer
 # Twisted Imports
 from twisted.internet import defer
 from twisted.python import log, failure
@@ -108,23 +106,24 @@ class StopTraversal(object):
     pass
 
 
+@implementer(iweb.IRequest)
 class Request(http.Request):
     """
     vars:
     site
 
     remoteAddr
-    
+
     scheme
     host
     port
     path
     params
     querystring
-    
+
     args
     files
-    
+
     prepath
     postpath
 
@@ -135,13 +134,12 @@ class Request(http.Request):
                 {'foo': ['bar', 'baz'], 'quux': ['spam']}.
 
     """
-    implements(iweb.IRequest)
-    
+
     site = None
     _initialprepath = None
     responseFilters = [rangefilter, preconditionfilter,
                        error.defaultErrorHandler, defaultHeadersFilter]
-    
+
     def __init__(self, *args, **kw):
         if kw.has_key('site'):
             self.site = kw['site']

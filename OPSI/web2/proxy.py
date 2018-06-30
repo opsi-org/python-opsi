@@ -24,7 +24,8 @@ ReverseProxy is used on the server end.
 from OPSI.web2 import http
 from twisted.internet import reactor, protocol
 from OPSI.web2 import resource, server
-from zope.interface import implements, Interface
+from zope.interface import Interface
+from zope.interface.declarations import implementer
 
 # system imports
 import urlparse
@@ -161,8 +162,9 @@ class IConnector(Interface):
     def connect(factory):
         """connect ClientFactory"""
 
+
+@implementer(IConnector)
 class TCPConnector:
-    implements(IConnector)
     def __init__(self, host, port):
         self.host = host
         self.name = host
@@ -171,8 +173,8 @@ class TCPConnector:
         reactor.connectTCP(self.host, self.port, factory)
 
 
+@implementer(IConnector)
 class UNIXConnector:
-    implements(IConnector)
     name = 'n/a'
     def __init__(self, socket):
         self.socket = socket
@@ -183,6 +185,8 @@ class UNIXConnector:
 def ReverseProxyResource(host, port, path):
     return ReverseProxyResourceConnector(TCPConnector(host, port), path)
 
+
+@implementer(resource.IResource)
 class ReverseProxyResourceConnector:
     """Resource that renders the results gotten from another server
 
@@ -190,7 +194,6 @@ class ReverseProxyResourceConnector:
     to a different server.
     """
     isLeaf = True
-    implements(resource.IResource)
 
     def __init__(self, connector, path):
         self.connector = connector
