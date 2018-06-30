@@ -30,19 +30,19 @@ This module provides XML utilities for use with WebDAV.
 See RFC 2518: http://www.ietf.org/rfc/rfc2518.txt (WebDAV)
 """
 
+import io as StringIO
+import xml.dom.minidom
+import xml.sax
+
+from OPSI.web2.dav.element.base import WebDAVElement, WebDAVUnknownElement, PCDATAElement
+from OPSI.web2.dav.element.util import PrintXML
+
 __all__ = [
     "registerElement",
     "registerElements",
     "lookupElement",
     "WebDAVDocument",
 ]
-
-import cStringIO as StringIO
-import xml.dom.minidom
-import xml.sax
-
-from OPSI.web2.dav.element.base import WebDAVElement, WebDAVUnknownElement, PCDATAElement
-from OPSI.web2.dav.element.util import PrintXML
 
 ##
 # Parsing

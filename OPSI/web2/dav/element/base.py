@@ -31,6 +31,16 @@ This module provides XML utilities for use with WebDAV.
 See RFC 2518: http://www.ietf.org/rfc/rfc2518.txt (WebDAV)
 """
 
+import string
+import io as StringIO
+import xml.dom.minidom
+
+import datetime
+
+from twisted.python import log
+from OPSI.web2.http_headers import parseDateTime
+from OPSI.web2.dav.element.util import PrintXML, decodeXMLName
+
 __all__ = [
     "dav_namespace",
     "twisted_dav_namespace",
@@ -44,16 +54,6 @@ __all__ = [
     "WebDAVDateTimeElement",
     "DateTimeHeaderElement",
 ]
-
-import string
-import cStringIO as StringIO
-import xml.dom.minidom
-
-import datetime
-
-from twisted.python import log
-from OPSI.web2.http_headers import parseDateTime
-from OPSI.web2.dav.element.util import PrintXML, decodeXMLName
 
 ##
 # Base XML elements
