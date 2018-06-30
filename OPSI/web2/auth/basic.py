@@ -3,14 +3,14 @@
 from twisted.cred import credentials, error
 from OPSI.web2.auth.interfaces import ICredentialFactory
 
-from zope.interface import implements
+from zope.interface.declarations import implementer
 
+
+@implementer(ICredentialFactory)
 class BasicCredentialFactory(object):
     """
     Credential Factory for HTTP Basic Authentication
     """
-
-    implements(ICredentialFactory)
 
     scheme = 'basic'
 

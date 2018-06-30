@@ -1,5 +1,4 @@
 import os
-from zope.interface import implements
 
 from twisted.python import usage, reflect
 from twisted.application import internet, service, strports

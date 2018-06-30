@@ -3,7 +3,8 @@
 """
 Wrapper Resources for rfc2617 HTTP Auth.
 """
-from zope.interface import implements, directlyProvides
+from zope.interface import directlyProvides
+from zope.interface.declarations import implementer
 from twisted.cred import error, credentials
 from twisted.python import failure
 from OPSI.web2 import responsecode
@@ -35,13 +36,12 @@ class UnauthorizedResponse(http.StatusResponse):
         self.headers.setHeader('www-authenticate', authHeaders)
 
 
+@implementer(iweb.IResource)
 class HTTPAuthResource(object):
     """I wrap a resource to prevent it being accessed unless the authentication
        can be completed using the credential factory, portal, and interfaces
        specified.
     """
-
-    implements(iweb.IResource)
 
     def __init__(self, wrappedResource, credentialFactories,
                  portal, interfaces):

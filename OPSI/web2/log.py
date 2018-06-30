@@ -8,18 +8,20 @@ import time
 from twisted.python import log as tlog
 from twisted.internet import defer
 from OPSI.web2 import iweb, stream, resource
-from zope.interface import implements, Attribute, Interface
+from zope.interface import Attribute, Interface
+from zope.interface.declarations import implementer
 
+
+@implementer(stream.IByteStream)
 class _LogByteCounter(object):
-    implements(stream.IByteStream)
-    
+
     def __init__(self, stream, done):
         self.stream=stream
         self.done=done
         self.len=0
-        
+
     length=property(lambda self: self.stream.length)
-    
+
     def _callback(self, data):
         if data is None:
             if self.done:
@@ -28,48 +30,48 @@ class _LogByteCounter(object):
         else:
             self.len += len(data)
         return data
-    
+
     def read(self):
         data = self.stream.read()
         if isinstance(data, defer.Deferred):
             return data.addCallback(self._callback)
         return self._callback(data)
-    
+
     def close(self):
         if self.done:
             done=self.done; self.done=None
             done(False, self.len)
         self.stream.close()
 
-    
+
 class ILogInfo(Interface):
     """Auxilliary information about the response useful for logging."""
-    
+
     bytesSent=Attribute("Number of bytes sent.")
     responseCompleted=Attribute("Whether or not the response was completed.")
     secondsTaken=Attribute("Number of seconds taken to serve the request.")
     startTime=Attribute("Time at which the request started")
 
-    
+
+@implementer(ILogInfo)
 class LogInfo(object):
-    implements(ILogInfo)
 
     responseCompleted=None
     secondsTaken=None
     bytesSent=None
     startTime=None
 
-    
+
 def logFilter(request, response, startTime=None):
     if startTime is None:
         startTime = time.time()
-        
+
     def _log(success, length):
         loginfo=LogInfo()
         loginfo.bytesSent=length
         loginfo.responseCompleted=success
         loginfo.secondsTaken=time.time()-startTime
-        
+
         tlog.msg(interface=iweb.IRequest, request=request, response=response,
                  loginfo=loginfo)
         # Or just...

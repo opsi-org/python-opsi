@@ -1,11 +1,11 @@
 from __future__ import generators
 
 import re
-from zope.interface import implements
 import urllib
 import tempfile
 from io import StringIO
 
+from zope.interface.declarations import implementer
 from twisted.internet import defer
 from OPSI.web2.stream import IStream, FileStream, BufferedStream, readStream
 from OPSI.web2.stream import generatorToStream, readAndDiscard
@@ -137,26 +137,28 @@ class _BoundaryWatchingStream(object):
             self.deferred = None
             deferred.errback(err)
         return err
-    
+
     def close(self):
         # Assume error will be raised again and handled by MMS?
         readAndDiscard(self).addErrback(lambda _: None)
-        
+
+
+@implementer(IStream)
 class MultipartMimeStream(object):
-    implements(IStream)
+
     def __init__(self, stream, boundary):
         self.stream = BufferedStream(stream)
         self.boundary = "--"+boundary
         self.first = True
-        
+
     def read(self):
         """
         Return a deferred which will fire with a tuple of:
         (fieldname, filename, ctype, dataStream)
         or None when all done.
-        
+
         Format errors will be sent to the errback.
-        
+
         Returns None when all done.
 
         IMPORTANT: you *must* exhaust dataStream returned by this call

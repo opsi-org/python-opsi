@@ -5,7 +5,6 @@
 #   * Handle scgi server death, half way through a resonse.
 
 
-from zope.interface import implements
 from twisted.internet import defer, protocol, reactor
 from twisted.protocols import basic
 from OPSI.web2 import http, iweb, resource, responsecode, stream, twcgi

@@ -10,12 +10,13 @@ from twisted.internet import defer, address
 from twisted.python import components
 from twisted.spread import pb
 
-from zope.interface import implements
+from zope.interface.declarations import implementer
+
 
 class HeaderAdapter(UserDict.DictMixin):
     def __init__(self, headers):
         self._headers = headers
-        
+
     def __getitem__(self, name):
         raw = self._headers.getRawHeaders(name)
         if raw is None:
@@ -59,11 +60,12 @@ def _addressToTuple(addr):
     else:
         return tuple(addr)
 
+
+@implementer(iweb.IOldRequest)
 class OldRequestAdapter(pb.Copyable, components.Componentized, object):
     """Adapt old requests to new request
     """
-    implements(iweb.IOldRequest)
-    
+
     def _getFrom(where, name):
         def _get(self):
             return getattr(getattr(self, where), name)
@@ -350,13 +352,13 @@ class OldRequestAdapter(pb.Copyable, components.Componentized, object):
         return self.session
 
 
+@implementer(iweb.IResource)
 class OldNevowResourceAdapter(object):
-    implements(iweb.IResource)
-    
+
     def __init__(self, original):
         # Can't use self.__original= because of __setattr__.
         self.__dict__['_OldNevowResourceAdapter__original']=original
-        
+
     def __getattr__(self, name):
         return getattr(self.__original, name)
 
@@ -401,8 +403,8 @@ class OldNevowResourceAdapter(object):
         oldRequest.finish()
 
 
+@implementer(iweb.IOldNevowResource)
 class OldResourceAdapter(object):
-    implements(iweb.IOldNevowResource)
 
     def __init__(self, original):
         self.original = original

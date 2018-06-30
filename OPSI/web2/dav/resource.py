@@ -34,9 +34,9 @@ __all__ = [
 
 import urllib
 
-from zope.interface import implements
 from twisted.python import log
 from twisted.internet.defer import maybeDeferred, succeed
+from zope.interface.declarations import implementer
 from OPSI.web2 import responsecode
 from OPSI.web2.dav import davxml
 from OPSI.web2.dav.davxml import dav_namespace, lookupElement
@@ -383,8 +383,9 @@ class DAVPropertyMixIn (MetaDataMixin):
         else:
             return super(DAVPropertyMixIn, self).displayName()
 
+
+@implementer(IDAVResource)
 class DAVResource (DAVPropertyMixIn, StaticRenderMixin):
-    implements(IDAVResource)
 
     ##
     # DAV

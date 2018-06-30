@@ -28,7 +28,7 @@ WebDAV ACL resources.
 
 __all__ = ["DAVPrincipalResource"]
 
-from zope.interface import implements
+from zope.interface.declarations import implementer
 from twisted.internet.defer import maybeDeferred
 from OPSI.web2.dav import davxml
 from OPSI.web2.dav.davxml import dav_namespace
@@ -36,12 +36,12 @@ from OPSI.web2.dav.idav import IDAVPrincipalResource
 from OPSI.web2.dav.resource import DAVLeafResource
 from OPSI.web2.dav.util import unimplemented
 
+
+@implementer(IDAVPrincipalResource)
 class DAVPrincipalResource (DAVLeafResource):
     """
     Resource representing a WebDAV principal.  (RFC 3744, section 2)
     """
-    implements(IDAVPrincipalResource)
-
     ##
     # WebDAV
     ##

@@ -1,4 +1,4 @@
-from zope.interface import implements
+from zope.interface.declarations import implementer
 
 from twisted.internet import defer, protocol
 from twisted.protocols import basic, policies
@@ -181,34 +181,33 @@ class HTTPClientChannelRequest(httpchan.HTTPParser):
         self.stream.finish()
 
 
+@implementer(interfaces.IHTTPClientManager)
 class EmptyHTTPClientManager(object):
-    """A dummy HTTPClientManager.  It doesn't do any client management, and is 
+    """A dummy HTTPClientManager.  It doesn't do any client management, and is
     meant to be used only when creating an HTTPClientProtocol directly.
     """
 
-    implements(interfaces.IHTTPClientManager)
-
     def clientBusy(self, proto):
         pass
-    
+
     def clientIdle(self, proto):
         pass
 
     def clientPipelining(self, proto):
         pass
-    
+
     def clientGone(self, proto):
         pass
-    
+
 
 class HTTPClientProtocol(basic.LineReceiver, policies.TimeoutMixin, object):
     """A HTTP 1.1 Client with request pipelining support."""
-    
+
     chanRequest = None
     maxHeaderLength = 10240
     firstLine = 1
     readPersistent = PERSIST_NO_PIPELINE
-    
+
     # inputTimeOut should be pending whenever a complete request has
     # been written but the complete response has not yet been
     # received, and be reset every time data is received.

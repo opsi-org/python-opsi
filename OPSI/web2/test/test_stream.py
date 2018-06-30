@@ -3,7 +3,8 @@ import tempfile, operator, sys, os
 from twisted.trial import unittest
 from twisted.internet import reactor, defer, interfaces
 from twisted.python import log
-from zope.interface import Interface, Attribute, implements
+from zope.interface import Interface, Attribute
+from zope.interface.declarations import implementer
 
 from twisted.python.util import sibpath
 from OPSI.web2 import stream
@@ -268,17 +269,18 @@ class TestBufferedStream(unittest.TestCase):
         """
         self.assertEqual(str(self.s.read()), self.data)
 
+
+@implementer(stream.IStream, stream.IByteStream)
 class TestStreamer:
-    implements(stream.IStream, stream.IByteStream)
 
     length = None
 
     readCalled=0
     closeCalled=0
-    
+
     def __init__(self, list):
         self.list = list
-        
+
     def read(self):
         self.readCalled+=1
         if self.list:

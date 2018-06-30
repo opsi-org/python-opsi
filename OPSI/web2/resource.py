@@ -7,7 +7,7 @@ I hold the lowest-level L{Resource} class and related mix-in classes.
 """
 
 # System Imports
-from zope.interface import implements
+from zope.interface.declarations import implementer
 
 from OPSI.web2 import iweb, http, server, responsecode
 
@@ -136,15 +136,16 @@ class RenderMixin(object):
         """
         raise NotImplementedError("Subclass must implement render method.")
 
+
+@implementer(iweb.IResource)
 class Resource(RenderMixin):
     """
     An L{iweb.IResource} implementation with some convenient mechanisms for
     locating children.
     """
-    implements(iweb.IResource)
 
     addSlash = False
-    
+
     def locateChild(self, request, segments):
         """
         Locates a child resource of this resource.
@@ -215,21 +216,23 @@ class PostableResource(Resource):
         """
         return server.parsePOSTData(request).addCallback(
             lambda res: self.render(request))
-        
+
+
+@implementer(iweb.IResource)
 class LeafResource(RenderMixin):
     """
     A L{Resource} with no children.
     """
-    implements(iweb.IResource)
 
     def locateChild(self, request, segments):
         return self, server.StopTraversal
 
+
+@implementer(iweb.IResource)
 class RedirectResource(LeafResource):
     """
     A L{LeafResource} which always performs a redirect.
     """
-    implements(iweb.IResource)
 
     def __init__(self, *args, **kwargs):
         """
@@ -244,14 +247,15 @@ class RedirectResource(LeafResource):
     def renderHTTP(self, request):
         return http.RedirectResponse(request.unparseURL(*self._args, **self._kwargs))
 
+
+@implementer(iweb.IResource)
 class WrapperResource(object):
     """
     An L{iweb.IResource} implementation which wraps a L{RenderMixin} instance
     and provides a hook in which a subclass can implement logic that is called
     before request processing on the contained L{Resource}.
     """
-    implements(iweb.IResource)
-    
+
     def __init__(self, resource):
         self.resource=resource
 

@@ -21,7 +21,8 @@ from OPSI.web2 import http, iweb, stream, responsecode, server, dirlist
 # Twisted Imports
 from twisted.python import filepath
 from twisted.internet.defer import maybeDeferred
-from zope.interface import implements
+from zope.interface.declarations import implementer
+
 
 class MetaDataMixin(object):
     """
@@ -158,6 +159,7 @@ class Data(resource.Resource):
             stream=self.data)
 
 
+@implementer(iweb.IResource)
 class File(StaticRenderMixin):
     """
     File is a resource that represents a plain non-interpreted file
@@ -175,7 +177,6 @@ class File(StaticRenderMixin):
     listing of the /tmp/ directory, and http://server/FILE/foo/bar.html will
     return the contents of /tmp/foo/bar.html .
     """
-    implements(iweb.IResource)
 
     def _getContentTypes(self):
         if not hasattr(File, "_sharedContentTypes"):
