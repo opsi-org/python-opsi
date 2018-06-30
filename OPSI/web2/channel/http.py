@@ -1,7 +1,7 @@
 import warnings
 import socket
 from io import StringIO
-from zope.interface import implements
+from zope.interface.declarations import implementer
 
 from twisted.python import log
 from twisted.internet import interfaces, protocol, reactor
@@ -600,7 +600,9 @@ class HTTPChannelRequest(HTTPParser):
             self.producer = None
         if self.request:
             self.request.connectionLost(reason)
-    
+
+
+@implementer(interfaces.IHalfCloseableProtocol)
 class HTTPChannel(basic.LineReceiver, policies.TimeoutMixin, object):
     """A receiver for HTTP requests. Handles splitting up the connection
     for the multiple HTTPChannelRequests that may be in progress on this
@@ -616,11 +618,9 @@ class HTTPChannel(basic.LineReceiver, policies.TimeoutMixin, object):
     the client.
 
     """
-    
-    implements(interfaces.IHalfCloseableProtocol)
-    
+
     ## Configuration parameters. Set in instances or subclasses.
-    
+
     # How many simultaneous requests to handle.
     maxPipeline = 4
 

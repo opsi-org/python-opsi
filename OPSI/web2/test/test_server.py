@@ -2,7 +2,7 @@
 A test harness for the OPSI.web2 server.
 """
 
-from zope.interface import implements
+from zope.interface.declarations import implementer
 
 from twisted.python import components
 from OPSI.web2 import http, http_headers, iweb, server
@@ -21,7 +21,7 @@ class NotResource(object):
     """
 
 
-
+@implementer(iweb.IResource)
 class ResourceAdapter(object):
     """
     Adapter to IResource.
@@ -30,7 +30,6 @@ class ResourceAdapter(object):
     L{AdaptionTestCase.test_registered} can test that such an adapter will
     be used.
     """
-    implements(iweb.IResource)
 
     def __init__(self, original):
         pass
@@ -51,7 +50,7 @@ class NotOldResource(object):
     """
 
 
-
+@implementer(iweb.IOldNevowResource)
 class OldResourceAdapter(object):
     """
     Adapter to IOldNevowResource.
@@ -60,7 +59,6 @@ class OldResourceAdapter(object):
     that L{AdaptionTestCase.test_transitive} can test that such an adapter
     will be used to allow the initial input to be adapted to IResource.
     """
-    implements(iweb.IOldNevowResource)
 
     def __init__(self, original):
         pass
@@ -94,8 +92,10 @@ class AdaptionTestCase(unittest.TestCase):
         Test that the adaption to IResource of an object which provides
         IResource returns the same object.
         """
+        @implementer(iweb.IResource)
         class Resource(object):
-            implements(iweb.IResource)
+            pass
+
         resource = Resource()
         self.assertIdentical(iweb.IResource(resource), resource)
 
@@ -114,8 +114,9 @@ class AdaptionTestCase(unittest.TestCase):
         Test that providers of L{IOldNevowResource} can be adapted to
         IResource automatically.
         """
+        @implementer(iweb.IOldNevowResource)
         class OldResource(object):
-            implements(iweb.IOldNevowResource)
+            pass
         oldResource = OldResource()
         resource = iweb.IResource(oldResource)
         self.failUnless(isinstance(resource, compat.OldNevowResourceAdapter))
@@ -164,13 +165,12 @@ class SimpleRequest(server.Request):
         return response
 
 
+@implementer(iweb.IChanRequest)
 class TestChanRequest:
-    implements(iweb.IChanRequest)
 
     hostInfo = address.IPv4Address('TCP', 'host', 80), False
     remoteHost = address.IPv4Address('TCP', 'remotehost', 34567)
 
-    
     def __init__(self, site, method, prepath, uri, length=None,
                  headers=None, version=(1,1), content=None):
         self.site = site
