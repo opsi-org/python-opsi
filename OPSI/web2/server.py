@@ -8,8 +8,6 @@ infrastructure.
 """
 
 # System Imports
-import cStringIO as StringIO
-
 import cgi, time, urlparse
 from urllib import quote, unquote
 from urlparse import urlsplit
