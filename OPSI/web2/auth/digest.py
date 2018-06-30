@@ -5,6 +5,10 @@ Implementation of RFC2617: HTTP Digest Authentication
 
 http://www.faqs.org/rfcs/rfc2617.html
 """
+import md5
+import random
+import sha
+import sys
 import time
 
 from twisted.cred import credentials, error
@@ -12,9 +16,6 @@ from zope.interface import Interface
 from zope.interface.declarations import implementer
 
 from OPSI.web2.auth.interfaces import ICredentialFactory
-
-import md5, sha
-import random, sys
 
 # The digest math
 
