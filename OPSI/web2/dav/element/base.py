@@ -93,7 +93,7 @@ class WebDAVElement (object):
 
         my_children = []
 
-        allowPCDATA = self.allowed_children.has_key(PCDATAElement)
+        allowPCDATA = PCDATAElement in self.allowed_children
 
         for child in children:
             if child is None:
