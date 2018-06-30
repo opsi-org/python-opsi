@@ -1,19 +1,20 @@
 import warnings
 import os
 import urllib
-from zope.interface import implements
+from zope.interface.declarations import implementer
 
 from twisted.internet import protocol, address
 from twisted.internet import reactor, interfaces
 from OPSI.web2 import http, http_headers, server, responsecode
 
+
+@implementer(interfaces.IHalfCloseableProtocol)
 class BaseCGIChannelRequest(protocol.Protocol):
-    implements(interfaces.IHalfCloseableProtocol)
-    
+
     finished = False
     requestFactory = http.Request
     request = None
-    
+
     def makeRequest(self, vars):
         headers = http_headers.Headers()
         http_vers = http.parseVersion(vars['SERVER_PROTOCOL'])

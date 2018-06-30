@@ -36,7 +36,7 @@ import time
 import threading
 import types
 from hashlib import md5
-from Queue import Queue, Empty
+from queue import Queue, Empty
 from sys import version_info
 from twisted.conch.ssh import keys
 

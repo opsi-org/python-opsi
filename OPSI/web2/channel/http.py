@@ -1,7 +1,7 @@
 import warnings
 import socket
-from cStringIO import StringIO
-from zope.interface import implements
+from io import StringIO
+from zope.interface.declarations import implementer
 
 from twisted.python import log
 from twisted.internet import interfaces, protocol, reactor
@@ -553,7 +553,7 @@ class HTTPChannelRequest(HTTPParser):
         This method is not intended for users.
         """
         if not self.queued:
-            raise RuntimeError, "noLongerQueued() got called unnecessarily."
+            raise RuntimeError("noLongerQueued() got called unnecessarily.")
 
         self.queued = 0
 
@@ -578,8 +578,8 @@ class HTTPChannelRequest(HTTPParser):
         """
         
         if self.producer:
-            raise ValueError, "registering producer %s before previous one (%s) was unregistered" % (producer, self.producer)
-        
+            raise ValueError("registering producer %s before previous one (%s) was unregistered" % (producer, self.producer))
+
         self.producer = producer
         
         if self.queued:
@@ -600,7 +600,9 @@ class HTTPChannelRequest(HTTPParser):
             self.producer = None
         if self.request:
             self.request.connectionLost(reason)
-    
+
+
+@implementer(interfaces.IHalfCloseableProtocol)
 class HTTPChannel(basic.LineReceiver, policies.TimeoutMixin, object):
     """A receiver for HTTP requests. Handles splitting up the connection
     for the multiple HTTPChannelRequests that may be in progress on this
@@ -616,11 +618,9 @@ class HTTPChannel(basic.LineReceiver, policies.TimeoutMixin, object):
     the client.
 
     """
-    
-    implements(interfaces.IHalfCloseableProtocol)
-    
+
     ## Configuration parameters. Set in instances or subclasses.
-    
+
     # How many simultaneous requests to handle.
     maxPipeline = 4
 

@@ -1,8 +1,8 @@
 pycrypto
 twisted
-libmagic
-ldaptor
-pam
+filemagic
+git+https://github.com/twisted/ldaptor.git
+python-pam
 pyOpenSSL
 mysqlclient
 SQLAlchemy
