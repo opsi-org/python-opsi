@@ -1,7 +1,7 @@
 
 from urllib.parse import quote
 
-import UserDict
+import collections
 import math
 import time
 from io import StringIO
@@ -14,7 +14,7 @@ from twisted.spread import pb
 from zope.interface.declarations import implementer
 
 
-class HeaderAdapter(UserDict.DictMixin):
+class HeaderAdapter(collections.MutableMapping):
     def __init__(self, headers):
         self._headers = headers
 
