@@ -553,7 +553,7 @@ class HTTPChannelRequest(HTTPParser):
         This method is not intended for users.
         """
         if not self.queued:
-            raise RuntimeError, "noLongerQueued() got called unnecessarily."
+            raise RuntimeError("noLongerQueued() got called unnecessarily.")
 
         self.queued = 0
 
@@ -578,8 +578,8 @@ class HTTPChannelRequest(HTTPParser):
         """
         
         if self.producer:
-            raise ValueError, "registering producer %s before previous one (%s) was unregistered" % (producer, self.producer)
-        
+            raise ValueError("registering producer %s before previous one (%s) was unregistered" % (producer, self.producer))
+
         self.producer = producer
         
         if self.queued:

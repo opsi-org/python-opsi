@@ -183,7 +183,7 @@ class WSGIHandler(object):
             finally:
                 exc_info = None
         elif self.response is not None:
-            raise AlreadyStartedResponse, 'startWSGIResponse(%r)' % status
+            raise AlreadyStartedResponse('startWSGIResponse(%r)' % status)
         status = int(status.split(' ')[0])
         self.response = http.Response(status)
         for key, value in response_headers:
