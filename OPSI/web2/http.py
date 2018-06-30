@@ -28,6 +28,8 @@ from OPSI.web2 import iweb
 from OPSI.web2 import stream
 from OPSI.web2.stream import IByteStream
 
+unicode = str  # Easy Python 3 compatibility
+
 defaultPortForScheme = {'http': 80, 'https':443, 'ftp':21}
 
 def splitHostPort(scheme, hostport):

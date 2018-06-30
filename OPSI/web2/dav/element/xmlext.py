@@ -21,6 +21,9 @@ import re
 from xml.dom import Node
 from xml.dom import XML_NAMESPACE, XMLNS_NAMESPACE, DOMException
 
+
+unicode = str  # For easy Python 3 support.
+
 def Print(root, stream=sys.stdout, encoding='UTF-8'):
     if not hasattr(root, "nodeType"):
         return
