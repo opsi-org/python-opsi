@@ -55,6 +55,8 @@ __all__ = [
     "DateTimeHeaderElement",
 ]
 
+unicode = str  # Easy Python 3 compatibility
+
 ##
 # Base XML elements
 ##
