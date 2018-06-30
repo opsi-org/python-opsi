@@ -33,6 +33,7 @@ consumer which is a stream, so that other producers can write to it.
 
 
 import copy, os, types, sys
+import io
 from zope.interface import Interface, Attribute
 from zope.interface.declarations import implementer
 from twisted.internet.defer import Deferred
@@ -235,7 +236,8 @@ class FileStream(SimpleStream):
         self.f = None
         SimpleStream.close(self)
 
-components.registerAdapter(FileStream, file, IByteStream)
+# Okay, this is hacky...
+components.registerAdapter(FileStream, io.IOBase, IByteStream)
 
 ##############################
 ####     MemoryStream     ####
