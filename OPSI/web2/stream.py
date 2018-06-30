@@ -275,7 +275,7 @@ class MemoryStream(SimpleStream):
         SimpleStream.close(self)
 
 components.registerAdapter(MemoryStream, str, IByteStream)
-components.registerAdapter(MemoryStream, types.BufferType, IByteStream)
+components.registerAdapter(MemoryStream, memoryview, IByteStream)
 
 ##############################
 ####    CompoundStream    ####
