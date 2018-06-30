@@ -403,7 +403,7 @@ class File(StaticRenderMixin):
 
         try:
             f = self.fp.open()
-        except IOError, e:
+        except IOError as e:
             import errno
             if e[0] == errno.EACCES:
                 return responsecode.FORBIDDEN
@@ -493,7 +493,7 @@ class FileSaver(resource.PostableResource):
                         try:
                             outname = self.writeFile(*finfo)
                             content.append("Saved file %s<br />" % outname)
-                        except IOError, err:
+                        except IOError as err:
                             content.append(str(err) + "<br />")
                 else:
                     content.append("%s is not a valid field" % fieldName)
