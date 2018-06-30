@@ -1,6 +1,6 @@
 import warnings
 import socket
-from cStringIO import StringIO
+from io import StringIO
 from zope.interface import implements
 
 from twisted.python import log

@@ -4,12 +4,13 @@ import re
 from zope.interface import implements
 import urllib
 import tempfile
+from io import StringIO
 
 from twisted.internet import defer
 from OPSI.web2.stream import IStream, FileStream, BufferedStream, readStream
 from OPSI.web2.stream import generatorToStream, readAndDiscard
 from OPSI.web2 import http_headers
-from cStringIO import StringIO
+
 
 ###################################
 #####  Multipart MIME Reader  #####

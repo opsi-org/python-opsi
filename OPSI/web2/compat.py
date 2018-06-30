@@ -3,7 +3,7 @@ from __future__ import generators
 from urllib import quote, string
 
 import UserDict, math, time
-from cStringIO import StringIO
+from io import StringIO
 
 from OPSI.web2 import http_headers, iweb, stream, responsecode
 from twisted.internet import defer, address
