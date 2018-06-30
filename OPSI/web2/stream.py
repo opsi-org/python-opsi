@@ -33,7 +33,8 @@ consumer which is a stream, so that other producers can write to it.
 from __future__ import generators
 
 import copy, os, types, sys
-from zope.interface import Interface, Attribute, implements
+from zope.interface import Interface, Attribute
+from zope.interface.declarations import implementer
 from twisted.internet.defer import Deferred
 from twisted.internet import interfaces as ti_interfaces, defer, reactor, protocol, error as ti_error
 from twisted.python import components, log
@@ -109,12 +110,13 @@ class ISendfileableStream(Interface):
 
         If sendfile == True, returns either the above, or a SendfileBuffer.
         """
-        
+
+
+@implementer(IByteStream)
 class SimpleStream(object):
     """Superclass of simple streams with a single buffer and a offset and length
     into that buffer."""
-    implements(IByteStream)
-    
+
     length = None
     start = None
     
