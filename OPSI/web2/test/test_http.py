@@ -1,9 +1,5 @@
-
-from __future__ import nested_scopes
-
-import time, sys
-
-from zope.interface import implements
+import time
+import sys
 
 from twisted.trial import unittest
 from zope.interface.declarations import implementer
