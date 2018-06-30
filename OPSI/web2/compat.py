@@ -1,6 +1,7 @@
 from __future__ import generators
 
-from urllib import quote, string
+from urllib import string
+from urllib.parse import quote
 
 import UserDict, math, time
 from io import StringIO
