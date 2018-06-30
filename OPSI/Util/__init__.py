@@ -138,7 +138,7 @@ of strings, dicts, lists or numbers.
 
 	:return: a JSON-compatible serialisation of the input.
 	"""
-	if isinstance(obj, (unicode, str)):
+	if isinstance(obj, str):
 		return obj
 	elif hasattr(obj, 'serialize'):
 		return obj.serialize()
@@ -208,7 +208,7 @@ def generateOpsiHostKey(forcePython=False):
 		with open(RANDOM_DEVICE) as r:
 			key = r.read(16)
 		logger.debug("Random device closed")
-		key = unicode(key.encode("hex"))
+		key = str(key.encode("hex"))
 	else:
 		logger.debug(u"Using python random module to generate opsi host key")
 		key = randomString(32, "0123456789abcdef")
@@ -329,7 +329,7 @@ def objectToHtml(obj, level=0):
 	elif obj is None:
 		append('null')
 	else:
-		if isinstance(obj, (str, unicode)):  # TODO: watch out for Python 3
+		if isinstance(obj, str):
 			append(replaceSpecialHTMLCharacters(obj).join((u'"', u'"')))
 		else:
 			append(replaceSpecialHTMLCharacters(obj))
@@ -538,7 +538,7 @@ def blowfishEncrypt(key, cleartext):
 		logger.logException(encryptError, LOG_DEBUG)
 		raise BlowfishError(u"Failed to encrypt")
 
-	return unicode(crypt.encode("hex"))
+	return str(crypt.encode("hex"))
 
 
 def blowfishDecrypt(key, crypt):
@@ -570,7 +570,7 @@ def blowfishDecrypt(key, crypt):
 		cleartext = cleartext[:cleartext.find('\0')]
 
 	try:
-		return unicode(cleartext, 'utf-8')
+		return str(cleartext, 'utf-8')
 	except Exception as e:
 		logger.error(e)
 		raise BlowfishError(u"Failed to convert decrypted text to unicode.")
@@ -651,9 +651,6 @@ def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeD
 
 	files = []
 	for entry in listdir(directory):
-		if isinstance(entry, str):  # TODO how to handle this with Python 3?
-			logger.error(u"Bad filename '%s' found in directory '%s', skipping entry!" % (unicode(entry, 'ascii', 'replace'), directory))
-			continue
 		pp = os.path.join(prefix, entry)
 		dp = os.path.join(directory, entry)
 		isLink = False
