@@ -290,7 +290,7 @@ def fillFileBackendWithFakeFiles(backendDir):
     )
     for targetFile in exampleFiles:
         try:
-            with open(targetFile, 'wx'):
+            with open(targetFile, 'x'):
                 pass
         except IOError as error:
             if error.errno != 17:  # 17 is File exists
@@ -365,7 +365,7 @@ def fakeDispatchConfig(baseDir, dataBackend="file"):
     dispatchConfig = os.path.join(baseDir, "backendManager", "dispatch.conf")
 
     try:
-        with open(dispatchConfig, 'wx') as dispatchFile:
+        with open(dispatchConfig, 'x') as dispatchFile:
             dispatchFile.write("""
 backend_.*         : {0}, opsipxeconfd, dhcpd
 host_.*            : {0}, opsipxeconfd, dhcpd

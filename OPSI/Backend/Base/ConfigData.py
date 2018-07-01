@@ -257,7 +257,7 @@ overwrite the log.
 
 			if limitFileSize:
 				try:
-					with open(logFile, 'wx'):
+					with open(logFile, 'x'):
 						pass
 
 					# If we got here the file was created by us and we
