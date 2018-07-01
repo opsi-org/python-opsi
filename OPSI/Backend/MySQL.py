@@ -371,7 +371,7 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 						values.append(u"1")
 					else:
 						values.append(u"0")
-				elif isinstance(value, (float, long, int)):
+				elif isinstance(value, (float, int)):
 					values.append(u"{0}".format(value))
 				elif isinstance(value, str):
 					values.append(u"\'{0}\'".format(self.escapeApostrophe(self.escapeBackslash(value.decode("utf-8")))))
@@ -414,7 +414,7 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 						value = u"1"
 					else:
 						value = u"0"
-				elif isinstance(value, (float, long, int)):
+				elif isinstance(value, (float, int)):
 					value = u"%s" % value
 				elif isinstance(value, str):
 					value = u"\'{0}\'".format(self.escapeApostrophe(self.escapeBackslash(value.decode("utf-8"))))
@@ -559,7 +559,7 @@ class MySQLBackend(SQLBackend):
 
 				data += u'%s = %s\r\n' % (module.lower().strip(), val)
 
-			if not bool(publicKey.verify(md5(data).digest(), [long(modules['signature'])])):
+			if not bool(publicKey.verify(md5(data).digest(), [int(modules['signature'])])):
 				logger.error(u"Disabling mysql backend and license management module: modules file invalid")
 			else:
 				logger.info(u"Modules file signature verified (customer: %s)" % modules.get('customer'))
@@ -692,7 +692,7 @@ class MySQLBackend(SQLBackend):
 						myPPVvalue = u"`value` = 1"
 					else:
 						myPPVvalue = u"`value` = 0"
-				elif isinstance(value, (float, long, int)):
+				elif isinstance(value, (float, int)):
 					myPPVvalue = u"`value` = %s" % (value)
 				else:
 					myPPVvalue = u"`value` = '%s'" % (self._sql.escapeApostrophe(self._sql.escapeBackslash(value)))

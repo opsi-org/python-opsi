@@ -694,7 +694,7 @@ class FileRepository(Repository):
 				'name': os.path.basename(source),
 				'path': source[len(self._path)+1:],
 				'type': 'file',
-				'size': long(0)
+				'size': 0
 			}
 			if not os.path.exists(source):
 				raise IOError(u'File not found')
@@ -1064,7 +1064,7 @@ class WebDAVRepository(HTTPRepository):
 			}
 
 			if str(pContainer.childOfType(davxml.GETContentLength)) != 'None':
-				info['size'] = long(str(pContainer.childOfType(davxml.GETContentLength)))
+				info['size'] = int(str(pContainer.childOfType(davxml.GETContentLength)))
 
 			if pContainer.childOfType(davxml.ResourceType).children:
 				info['type'] = 'dir'

@@ -188,14 +188,14 @@ class OldRequestAdapter(pb.Copyable, components.Componentized, object):
         """Set an outgoing HTTP header.
         """
         self.response.headers.setRawHeaders(name, [value])
-        
+
     def setResponseCode(self, code, message=None):
         # message ignored
         self.response.code = code
 
     def setLastModified(self, when):
         # Never returns CACHED -- can it and still be compliant?
-        when = long(math.ceil(when))
+        when = int(math.ceil(when))
         self.response.headers.setHeader('last-modified', when)
         return None
 

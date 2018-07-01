@@ -85,15 +85,15 @@ class U32:
     v = 0L
 
     def __init__(self, value = 0):
-        self.v = C + norm(abs(long(value)))
+        self.v = C + norm(abs(int(value)))
 
     def set(self, value = 0):
-        self.v = C + norm(abs(long(value)))
+        self.v = C + norm(abs(int(value)))
 
     def __repr__(self):
         return hex(norm(self.v))
 
-    def __long__(self): return long(norm(self.v))
+    def __long__(self): return int(norm(self.v))
     def __int__(self): return int(norm(self.v))
     def __chr__(self): return chr(norm(self.v))
 
