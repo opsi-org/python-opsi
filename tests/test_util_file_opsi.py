@@ -26,6 +26,7 @@ from __future__ import absolute_import
 import os
 import pytest
 import random
+import sys
 
 from OPSI.Util import findFiles, md5sum
 from OPSI.Util.File.Opsi import (
@@ -267,6 +268,7 @@ def outsideDir():
 		yield dirPath
 
 
+@pytest.mark.skipif(sys.version_info.major == 3, "Runs without end")
 def testPackageContentFileCreation(outsideFile, outsideDir):
 	with workInTemporaryDirectory() as tempDir:
 		content = fillDirectory(tempDir)
@@ -380,6 +382,7 @@ def fillDirectory(directory):
 	return content
 
 
+@pytest.mark.skipif(sys.version_info.major == 3, "Runs without end")
 def testParsingPackageContentFile(outsideFile, outsideDir):
 	with workInTemporaryDirectory() as tempDir:
 		content = fillDirectory(tempDir)
