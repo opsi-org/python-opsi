@@ -85,8 +85,6 @@ def getArgAndCallString(method):
 			default = argDefaults[len(argDefaults) - len(args) + args.index(element)]
 			if isinstance(default, str):
 				default = u"'{0}'".format(default)
-			elif isinstance(default, unicode):
-				default = u"u'{0}'".format(default)
 
 			argString.append(u'='.join((element, unicode(default))))
 		else:
