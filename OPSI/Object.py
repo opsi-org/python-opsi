@@ -258,7 +258,7 @@ class BaseObject(object):
 		self.__dict__.update(hash)
 
 	def getType(self):
-		return unicode(self.__class__.__name__)
+		return self.__class__.__name__
 
 	def setGeneratedDefault(self, flag=True):
 		self._isGeneratedDefault = forceBool(flag)
