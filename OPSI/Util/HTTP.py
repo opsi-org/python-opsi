@@ -694,8 +694,6 @@ def destroyPool(pool):
 
 
 def deflateEncode(data, level=1):
-	if isinstance(data, unicode):
-		data = data.encode('utf-8')
 	return zlib.compress(data, level)
 
 
@@ -704,9 +702,6 @@ def deflateDecode(data):
 
 
 def gzipEncode(data, level=1):
-	if isinstance(data, unicode):
-		data = data.encode('utf-8')
-
 	inmemoryFile = BytesIO()
 	with gzip.GzipFile(fileobj=inmemoryFile, mode="w", compresslevel=level) as gzipfile:
 		gzipfile.write(data)
