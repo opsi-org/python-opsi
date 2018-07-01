@@ -920,7 +920,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 	def config_createObjects(self, configs):
 		forcedConfigs = forceObjectClassList(configs, Config)
 		for config in forcedConfigs:
-			logger.info(u"Creating config '%s'" % config)
+			logger.info(u"Creating config '{}'", config)
 			self._backend.config_insertObject(config)
 
 		if self._options['returnObjectsOnUpdateAndCreate']:
