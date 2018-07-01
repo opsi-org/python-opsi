@@ -185,18 +185,6 @@ def objectsDiffer(obj1, obj2, excludeAttributes=None):
 	return False
 
 
-def toStr(value):
-	"""
-	Converts `value` into a str if it is a unicode.
-
-	:returntype: str
-	"""
-	if isinstance(value, unicode):
-		return str(value)
-	else:
-		return value
-
-
 class BaseObject(object):
 	subClasses = {}
 	identSeparator = u';'
@@ -3231,7 +3219,7 @@ class AuditHardware(Entity):
 	@staticmethod
 	def fromHash(hash):
 		initHash = {
-			toStr(key): value
+			key: value
 			for key, value in hash.items()
 			if key != 'type'
 		}
@@ -3453,7 +3441,7 @@ class AuditHardwareOnHost(Relationship):
 	@staticmethod
 	def fromHash(hash):
 		initHash = {
-			toStr(key): value
+			key: value
 			for key, value in hash.items()
 			if key != 'type'
 		}
