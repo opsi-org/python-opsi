@@ -83,7 +83,7 @@ subnet 192.168.0.0 netmask 255.255.0.0 {
 
 def testConfiguringDHCPDBackendWithEmptyFile(tempDir):
     filename = 'dhcpd_test.conf'
-    with open(filename, 'wx'):
+    with open(filename, 'x'):
         pass
 
     oldHash = md5sum(filename)
@@ -98,7 +98,7 @@ def testConfiguringDHCPDBackendWithEmptyFile(tempDir):
 
 def testConfiguringPatchesDHCPDBackendConfig(tempDir):
     filename = 'dhcpd_test.conf'
-    with open(filename, 'wx'):
+    with open(filename, 'x'):
         pass
 
     funcMock = mock.Mock()
