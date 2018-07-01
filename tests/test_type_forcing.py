@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -130,7 +130,7 @@ def testForceListConvertingSet():
 
 
 def testForceUnicodeResultsInUnicode():
-	assert isinstance(forceUnicode('x'), unicode)
+	assert isinstance(forceUnicode('x'), str)
 
 
 def testForceUnicodeListResultsInListOfUnicode():
@@ -138,7 +138,7 @@ def testForceUnicodeListResultsInListOfUnicode():
 	assert isinstance(returned, list)
 
 	for i in returned:
-		assert isinstance(i, unicode)
+		assert isinstance(i, str)
 
 
 def testForceUnicodeLowerListResultsInLowercase():
@@ -147,7 +147,7 @@ def testForceUnicodeLowerListResultsInLowercase():
 
 def testForceUnicodeLowerListResultsInUnicode():
 	for i in forceUnicodeLowerList([None, 1, 'X', u'y']):
-		assert isinstance(i, unicode)
+		assert isinstance(i, str)
 
 
 @pytest.mark.parametrize("value", ("on", "oN", 'YeS', 1, '1', 'x', True, 'true', 'TRUE'))
@@ -216,7 +216,7 @@ def testForceOctRaisingErrorsOnInvalidValue(value):
 def testForceOpsiTimestamp(value, expected):
 	result = forceOpsiTimestamp(value)
 	assert expected == result
-	assert isinstance(result, unicode)
+	assert isinstance(result, str)
 
 
 @pytest.mark.parametrize("value", ('abc', '8'))
@@ -249,7 +249,7 @@ def testForceHostIdRaisesExceptionIfInvalid(hostId):
 def testForcingReturnsAddressSeperatedByColons(address, expected):
 	result = forceHardwareAddress(address)
 	assert expected == result
-	assert isinstance(result, unicode)
+	assert isinstance(result, str)
 
 
 @pytest.mark.parametrize("address", (
@@ -272,7 +272,7 @@ def testForcingInvalidAddressesRaiseExceptions(address):
 def testForceIPAddress(input, expected):
 	output = forceIPAddress(input)
 	assert expected == output
-	assert isinstance(output, unicode)
+	assert isinstance(output, str)
 
 
 @pytest.mark.parametrize("malformed_input", [
@@ -295,7 +295,7 @@ def testForceIPAddressFailsOnInvalidInput(malformed_input):
 def testforceNetworkAddress(address, expected):
 	result = forceNetworkAddress(address)
 	assert expected == result
-	assert isinstance(result, unicode)
+	assert isinstance(result, str)
 
 
 @pytest.mark.parametrize("address", (
@@ -320,7 +320,7 @@ def testForceNetworkAddressWithInvalidAddressesRaisesExceptions(address):
 def testForceUrl(url, expected):
 	result = forceUrl(url)
 	assert expected == result
-	assert isinstance(result, unicode)
+	assert isinstance(result, str)
 
 
 @pytest.mark.parametrize("url, expected", (
@@ -354,7 +354,7 @@ def testForceUrlWithInvalidURLsRaisesExceptions(url):
 def testForceOpsiHostKey(hostKey):
 	result = forceOpsiHostKey(hostKey)
 	assert hostKey.lower() == result
-	assert isinstance(result, unicode)
+	assert isinstance(result, str)
 
 
 @pytest.mark.parametrize("hostKey", (
@@ -373,7 +373,7 @@ def testForceOpsiHostKeyWithInvalidHostKeysRaisesExceptions(hostKey):
 def testForceProductVersion(version, expected):
 	result = forceProductVersion(version)
 	assert expected == result
-	assert isinstance(result, unicode)
+	assert isinstance(result, str)
 
 
 @pytest.mark.parametrize("version", ('A1.0', ))
@@ -389,7 +389,7 @@ def testProductVersionDoesNotContainUppercase(version):
 def testForcePackageVersion(version, expected):
 	result = forcePackageVersion(version)
 	assert expected == result
-	assert isinstance(result, unicode)
+	assert isinstance(result, str)
 
 
 @pytest.mark.parametrize("version", ('A', ))
@@ -404,7 +404,7 @@ def testPackageVersionDoesNotAcceptUppercase(version):
 def testForceProductId(productId, expectedProductId):
 	result = forceProductId(productId)
 	assert expectedProductId == result
-	assert isinstance(result, unicode)
+	assert isinstance(result, str)
 
 
 @pytest.mark.parametrize("productId", (u'äöü', 'product test'))
@@ -419,14 +419,14 @@ def testForceProductIdWithInvalidProductIdRaisesExceptions(productId):
 def testforceFilename(path, expected):
 	result = forceFilename(path)
 	assert expected == result
-	assert isinstance(expected, unicode)
+	assert isinstance(expected, str)
 
 
 @pytest.mark.parametrize("status", ('installed', 'not_installed', 'unknown'))
 def testForceInstallationStatus(status):
 	result = forceInstallationStatus(status)
 	assert result == status
-	assert isinstance(result, unicode)
+	assert isinstance(result, str)
 
 
 @pytest.mark.parametrize("status", ('none', 'abc'))
@@ -452,7 +452,7 @@ def testForceUnicodeWithInvalidStatusRaisesExceptions():
 def testForceActionRequest(actionRequest):
 	returned = forceActionRequest(actionRequest)
 	assert returned == str(actionRequest).lower()
-	assert isinstance(returned, unicode)
+	assert isinstance(returned, str)
 
 
 def testforceActionRequestReturnsNoneOnUndefined():
@@ -462,7 +462,7 @@ def testforceActionRequestReturnsNoneOnUndefined():
 def testForceActionProgress():
 	returned = forceActionProgress('installing 50%')
 	assert returned == u'installing 50%'
-	assert isinstance(returned, unicode)
+	assert isinstance(returned, str)
 
 
 @pytest.mark.parametrize("code, expected", (
