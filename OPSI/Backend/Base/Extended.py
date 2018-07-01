@@ -88,7 +88,7 @@ def getArgAndCallString(method):
 			elif isinstance(default, bytes):
 				default = u"b'{0}'".format(default)
 
-			argString.append(u'='.join((element, unicode(default))))
+			argString.append(u'='.join((element, str(default))))
 		else:
 			argString.append(element)
 
