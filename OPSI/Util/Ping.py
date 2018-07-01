@@ -222,7 +222,7 @@ def verbose_ping(dest_addr, timeout = 2, count = 4):
 	Send >count< ping to >dest_addr< with the given >timeout< and display
 	the result.
 	"""
-	for i in xrange(count):
+	for i in range(count):
 		print "ping %s..." % dest_addr,
 		try:
 			delay  =  ping(dest_addr, timeout)

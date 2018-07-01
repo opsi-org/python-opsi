@@ -749,7 +749,7 @@ def mount(dev, mountpoint, **options):
 				u"mountpoint.".format(mountpoint)
 			)
 
-			for i in xrange(ord('c'), ord('z')):
+			for i in range(ord('c'), ord('z')):
 				mountpoint = forceUnicode(chr(i))
 				if mountpoint not in usedDriveletters:
 					logger.info(u"Using the free mountpoint '{0}'".format(mountpoint))

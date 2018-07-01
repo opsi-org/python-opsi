@@ -74,7 +74,7 @@ def describeInterface(instance):
 
 		if defaults is not None:
 			offset = len(params) - len(defaults)
-			for i in xrange(len(defaults)):
+			for i in range(len(defaults)):
 				index = offset + i
 				params[index] = '*{0}'.format(params[index])
 

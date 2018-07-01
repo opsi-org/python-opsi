@@ -331,7 +331,7 @@ class Request(http.Request):
 
         if updatepaths:
             # We found a Resource... update the request.prepath and postpath
-            for x in xrange(len(path) - len(newpath)):
+            for x in range(len(path) - len(newpath)):
                 self.prepath.append(self.postpath.pop(0))
 
         child = self._getChild(None, newres, newpath, updatepaths=updatepaths)
