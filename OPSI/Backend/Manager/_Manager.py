@@ -135,7 +135,7 @@ class BackendManager(ExtendedBackend):
 			elif option == 'password':
 				password = value
 			elif option == 'backend':
-				if isinstance(value, (str, unicode)):
+				if isinstance(value, str):
 					loadBackend = value
 				else:
 					self._backend = value
