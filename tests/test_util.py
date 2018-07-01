@@ -816,7 +816,7 @@ def testObjectToBashWorksWithGenerators(objectCount):
 		assert resultVar in result['RESULT']
 
 	for value in result.values():
-		assert isinstance(value, (str, unicode))
+		assert isinstance(value, str)
 
 
 def testObjectToBashOutput():
@@ -873,7 +873,7 @@ def testObjectToBashOnConfigStates():
 	assert len(result) == expectedLength
 
 	for value in result.values():
-		assert isinstance(value, (str, unicode))
+		assert isinstance(value, str)
 
 	for index in range(1, len(states) + 1):  # exclude ref to values of drive.slow
 		resultVar = 'RESULT{0}'.format(index)
