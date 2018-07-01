@@ -190,7 +190,7 @@ This defaults to ``self``.
 							continue
 						elif value is None or isinstance(value, bool):
 							continue
-						elif isinstance(value, (float, long, int)) or re.search('^\s*([>=<]+)\s*([\d\.]+)', forceUnicode(filterValue)):
+						elif isinstance(value, (float, int)) or re.search('^\s*([>=<]+)\s*([\d\.]+)', forceUnicode(filterValue)):
 							operator = '=='
 							v = forceUnicode(filterValue)
 							match = re.search('^\s*([>=<]+)\s*([\d\.]+)', filterValue)
@@ -329,7 +329,7 @@ This defaults to ``self``.
 						val = 'yes'
 
 				data += u'%s = %s\r\n' % (module.lower().strip(), val)
-			modules['valid'] = bool(publicKey.verify(md5(data).digest(), [long(modules['signature'])]))
+			modules['valid'] = bool(publicKey.verify(md5(data).digest(), [int(modules['signature'])]))
 		except Exception as error:
 			logger.info(u"Failed to read opsi modules file '%s': %s" % (self._opsiModulesFile, error))
 

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2019 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -24,19 +24,13 @@ Various unittests to test functionality of python-opsi.
 :license: GNU Affero General Public License version 3
 """
 
-from __future__ import absolute_import
-
+import mock
 import os
 import pytest
 import sys
 from contextlib import contextmanager
 
 import OPSI.System.Posix as Posix
-
-from .helpers import mock
-
-if sys.version_info > (3, ):
-	long = int
 
 
 def testGetBlockDeviceContollerInfo():
@@ -58,8 +52,8 @@ def testGetBlockDeviceContollerInfo():
 	assert '3A02' == deviceInfo['deviceId']
 
 
-@pytest.mark.parametrize("testdata, expectedIds", [
-	([
+def testGetActiveSessionIds():
+	testdata = [
 		'wenselowski tty4         2014-05-20 13:54   .         24093',
 		'wenselowski pts/0        2014-05-20 09:45 01:10       15884 (:0.0)',
 		'wenselowski pts/1        2014-05-20 12:58 00:46       14849 (:0.0)',
@@ -70,10 +64,10 @@ def testGetBlockDeviceContollerInfo():
 		'wenselowski pts/8        2014-05-20 10:50 00:16       27443 (:0.0)',
 		'wenselowski pts/9        2014-05-20 13:27   .         18172 (:0.0)',
 		'wenselowski pts/10       2014-05-20 13:42 00:02       21605 (:0.0)',
-	], [24093, 15884, 14849, 15401, 15688, 20496, 25574, 27443, 18172, 21605]),
-	(['root     pts/2        Oct 10 09:32 00:02       19391 (192.168.2.5)'], [19391])
-])
-def testGetActiveSessionIds(testdata, expectedIds):
+	]
+
+	expectedIds = [24093, 15884, 14849, 15401, 15688, 20496, 25574, 27443, 18172, 21605]
+
 	assert expectedIds == Posix.getActiveSessionIds(data=testdata)
 
 
@@ -209,6 +203,16 @@ def testHardwareExtendedInventoryReturnsSafelyWithoutConfig(hardwareConfigAndHar
 	assert {} == Posix.hardwareExtendedInventory({}, hardwareInfo)
 
 
+@pytest.mark.parametrize("versionString, isUbuntuXenial", [
+	('sfdisk von util-linux 2.27.1', True),
+	('sfdisk von util-linux 2.20.1', False)
+])
+def testGettingSfdiskVersion(versionString, isUbuntuXenial):
+	with mock.patch('OPSI.System.Posix.execute', mock.Mock(return_value=[versionString])):
+		with mock.patch('OPSI.System.Posix.which', mock.Mock(return_value='/sbin/sfdisk')):
+			assert Posix.isXenialSfdiskVersion() == isUbuntuXenial
+
+
 @pytest.mark.skipif(True, reason="temporarily disabled")
 def testReadingPartitionTableOnHPProliantDisksTest():
 	"Testing the behaviour of Disk objects on HP Proliant Hardware."
@@ -234,8 +238,9 @@ def testReadingPartitionTableOnHPProliantDisksTest():
 		d = Posix.Harddisk('/fakedev/cciss/c0d0')
 
 	with mock.patch('OPSI.System.Posix.execute', mock.Mock(return_value=outputFromSfdiskGeometry)):
-		with mock.patch('os.path.exists', mock.Mock(return_value=True)):
-			d._parsePartitionTable(outputFromSfdiskListing)
+		with mock.patch('OPSI.System.Posix.isXenialSfdiskVersion', mock.Mock(return_value=True)):
+			with mock.patch('os.path.exists', mock.Mock(return_value=True)):
+				d._parsePartitionTable(outputFromSfdiskListing)
 
 		assert '/fakedev/cciss/c0d0' == d.device
 		assert 76602 == d.cylinders
@@ -262,7 +267,8 @@ def testReadingPartitionTableOnHPProliantDisksTest():
 	]
 
 	with mock.patch('OPSI.System.Posix.execute', mock.Mock(return_value=blkidOutput)):
-		d._parseSectorData(outputFromSecondSfdiskListing)
+		with mock.patch('OPSI.System.Posix.isXenialSfdiskVersion', mock.Mock(return_value=True)):
+			d._parseSectorData(outputFromSecondSfdiskListing)
 
 	assert len(d.partitions) > 0
 	assert 1 == len(d.partitions)
@@ -274,9 +280,9 @@ def testReadingPartitionTableOnHPProliantDisksTest():
 		'secStart': 2048,
 		'secSize': 625072816,
 		'device': u'/fakedev/cciss/c0d0p1',
-		'size': long(69177999360),
+		'size': 69177999360,
 		'cylStart': 0,
-		'end': long(69182177280),
+		'end': 69182177280,
 		'secEnd': 135114751,
 		'boot': False,
 		'start': 0,
@@ -284,6 +290,182 @@ def testReadingPartitionTableOnHPProliantDisksTest():
 		'type': u'HPFS/NTFS'
 	}
 	assert first_partition_expected == d.partitions[0]
+
+
+def testReadingPartitionTableOnHPProliantDisksWithOldSfdiskVersion():
+	"Testing the behaviour of Disk objects on HP Proliant Hardware with an old version of sfdisk."
+	outputFromSfdiskListing = [
+		"",
+		"Disk /fakedev/cciss/c0d0: 17562 cylinders, 255 heads, 32 sectors/track",
+		"Units = cylinders of 4177920 bytes, blocks of 1024 bytes, counting from 0",
+		"",
+		"   Device             Boot  Start     End   #cyls    #blocks Id  System",
+		"/fakedev/cciss/c0d0p1          0+  16558-  16558- 67556352    7  HPFS/NTFS",
+		"/fakedev/cciss/c0d0p2   *  16558+  17561    1004- 4095584    c  W95 FAT32 (LBA)",
+		"/fakedev/cciss/c0d0p3          0       -       0 0    0  Empty",
+		"/fakedev/cciss/c0d0p4          0       -       0 0    0  Empty",
+	]
+
+	with mock.patch('OPSI.System.Posix.execute'):
+		d = Posix.Harddisk('/fakedev/cciss/c0d0')
+
+	d.partitions = []  # Make sure no parsing happened before
+
+	with mock.patch('OPSI.System.Posix.isXenialSfdiskVersion', mock.Mock(return_value=False)):
+		with mock.patch('os.path.exists', mock.Mock(return_value=True)):
+			d._parsePartitionTable(outputFromSfdiskListing)
+
+	assert '/fakedev/cciss/c0d0' == d.device
+	assert 17562 == d.cylinders
+	assert 255 == d.heads
+	assert 32 == d.sectors
+	assert 4177920 == d.bytesPerCylinder
+
+	assert len(d.partitions) > 0
+
+	outputFromSecondSfdiskListing = [
+		"",
+		"Disk /fakedev/cciss/c0d0: 17562 cylinders, 255 heads, 32 sectors/track",
+		"Units = sectors of 512 bytes, counting from 0",
+		"",
+		"              Device  Boot    Start       End #sectors  Id System",
+		"/fakedev/cciss/c0d0p1          2048 135114751 135112704  7  HPFS/NTFS",
+		"/fakedev/cciss/c0d0p2   * 135114752 143305919 8191168    c  W95 FAT32 (LBA)",
+		"/fakedev/cciss/c0d0p3             0         - 0          0  Empty",
+		"/fakedev/cciss/c0d0p4             0         - 0          0  Empty",
+	]
+
+	with mock.patch('OPSI.System.Posix.isXenialSfdiskVersion', mock.Mock(return_value=False)):
+		d._parseSectorData(outputFromSecondSfdiskListing)
+
+	assert len(d.partitions) > 0
+	assert 2 == len(d.partitions)
+
+	first_partition_expected = {
+		'fs': u'ntfs',
+		'cylSize': 16558,
+		'number': 1,
+		'secStart': 2048,
+		'secSize': 135112704,
+		'device': u'/fakedev/cciss/c0d0p1',
+		'size': 69177999360,
+		'cylStart': 0,
+		'end': 69182177280,
+		'secEnd': 135114751,
+		'boot': False,
+		'start': 0,
+		'cylEnd': 16558,
+		'type': u'7'
+	}
+	assert first_partition_expected == d.partitions[0]
+
+	last_partition_expected = {
+		'fs': u'fat32',
+		'cylSize': 1004,
+		'number': 2,
+		'secStart': 135114752,
+		'secSize': 8191168,
+		'device': u'/fakedev/cciss/c0d0p2',
+		'size': 4194631680,
+		'cylStart': 16558,
+		'end': 73372631040,
+		'secEnd': 143305919,
+		'boot': True,
+		'start': 69177999360,
+		'cylEnd': 17561,
+		'type': u'c'
+	}
+	assert last_partition_expected == d.partitions[-1]
+
+
+def testReadingPartitionTableFromOldSfdiskVersion():
+	# TODO: proper name plz
+	# TODO: is this still relevant?
+	outputFromSfdiskListing = [
+		" ",
+		" Disk /fakedev/sdb: 4865 cylinders, 255 heads, 63 sectors/track",
+		" Units = cylinders of 8225280 bytes, blocks of 1024 bytes, counting from 0",
+		" ",
+		"    Device     Boot  Start     End   #cyls   #blocks   Id  System",
+		" /fakedev/sdb1   *      0+   4228-   4229-  33961984    7  HPFS/NTFS",
+		" /fakedev/sdb2       4355+   4865-    511-   4096696    c  W95 FAT32 (LBA)",
+		" /fakedev/sdb3          0       -       0          0    0  Empty",
+		" /fakedev/sdb4          0       -       0          0    0  Empty",
+	]
+
+	with mock.patch('OPSI.System.Posix.execute'):
+		d = Posix.Harddisk('/fakedev/sdb')
+
+	d.size = 39082680 * 1024  # Faking this
+	d.partitions = []  # Make sure no parsing happened before
+
+	with mock.patch('OPSI.System.Posix.isXenialSfdiskVersion', mock.Mock(return_value=False)):
+		with mock.patch('os.path.exists', mock.Mock(return_value=True)):
+			# Making sure that we do not run into a timeout.
+			d._parsePartitionTable(outputFromSfdiskListing)
+
+	assert '/fakedev/sdb' == d.device
+	assert 4865 == d.cylinders
+	assert 255 == d.heads
+	assert 63 == d.sectors
+	assert 8225280 == d.bytesPerCylinder
+
+	assert len(d.partitions) > 0
+
+	outputFromSecondSfdiskListing = [
+		"",
+		"Disk /fakedev/sdb: 4865 cylinders, 255 heads, 63 sectors/track",
+		"Units = sectors of 512 bytes, counting from 0",
+		"",
+		"   Device Boot    Start       End   #sectors  Id  System",
+		"/fakedev/sdb1   *      2048  67926015   67923968   7  HPFS/NTFS",
+		"/fakedev/sdb2      69971968  78165359    8193392   c  W95 FAT32 (LBA)",
+		"/fakedev/sdb3             0         -          0   0  Empty",
+		"/fakedev/sdb4             0         -          0   0  Empty",
+	]
+	with mock.patch('OPSI.System.Posix.isXenialSfdiskVersion', mock.Mock(return_value=False)):
+		d._parseSectorData(outputFromSecondSfdiskListing)
+
+	assert 512 == d.bytesPerSector
+	assert 78165360 == d.totalSectors
+	assert len(d.partitions) > 0
+	assert 2 == len(d.partitions)
+
+	expected = {
+		'fs': u'ntfs',
+		'cylSize': 4229,
+		'number': 1,
+		'secStart': 2048,
+		'secSize': 67923968,
+		'device': u'/fakedev/sdb1',
+		'size': 34784709120,
+		'cylStart': 0,
+		'end': 34784709120,
+		'secEnd': 67926015,
+		'boot': True,
+		'start': 0,
+		'cylEnd': 4228,
+		'type': u'7'
+	}
+	assert expected == d.partitions[0]
+
+	expected_last_partition = {
+		'fs': u'fat32',
+		'cylSize': 511,
+		'number': 2,
+		'secStart': 69971968,
+		'secSize': 8193392,
+		'device': u'/fakedev/sdb2',
+		'size': long(4203118080),
+		'cylStart': 4355,
+		'end': long(40024212480),
+		'secEnd': 78165359,
+		'boot': False,
+		'start': long(35821094400),
+		'cylEnd': 4865,
+		'type': u'c'
+	}
+	assert expected_last_partition == d.partitions[-1]
 
 
 def testGetSambaServiceNameGettingDefaultIfNothingElseParsed():
@@ -304,9 +486,8 @@ def testGetSambaServiceNameFailsIfNoServiceFound(values):
 	("samba", set(["abc", "samba", "def"])),
 ))
 def testGetSambaServiceNameGettingFoundSambaServiceName(expectedName, services):
-	with mock.patch('OPSI.System.Posix._SAMBA_SERVICE_NAME', None):
-		with mock.patch('OPSI.System.Posix.getServiceNames',  mock.Mock(return_value=services)):
-			assert expectedName == Posix.getSambaServiceName()
+	with mock.patch('OPSI.System.Posix.getServiceNames',  mock.Mock(return_value=services)):
+		assert expectedName == Posix.getSambaServiceName()
 
 
 def testGetServiceNameParsingFromSystemd():
@@ -389,15 +570,7 @@ def testGetNetworkDeviceConfigFromNoDeviceRaisesAnException():
 		Posix.getNetworkDeviceConfig(None)
 
 
-@pytest.mark.parametrize("key, expectedValue", [
-	('device', 'eth0'),
-	('hardwareAddress', u'00:15:5d:01:15:1b'),
-	('gateway', None),
-	('broadcast', u"172.26.255.255"),
-	('ipAddress', u"172.26.2.25"),
-	('netmask', u"255.255.0.0"),
-])
-def testGetNetworkDeviceConfigFromNewIfconfigOutput(key, expectedValue):
+def testGetNetworkDeviceConfigFromNewIfconfigOutput():
 	"""
 	Testing output from new version of ifconfig.
 
@@ -424,22 +597,24 @@ def testGetNetworkDeviceConfigFromNewIfconfigOutput(key, expectedValue):
 		with mock.patch('OPSI.System.Posix.which', lambda cmd: cmd):
 			config = Posix.getNetworkDeviceConfig('eth0')
 
+	expectedConfig = {
+		'device': 'eth0',
+		'hardwareAddress': u'00:15:5d:01:15:1b',
+		'gateway': None,
+		'broadcast': u"172.26.255.255",
+		'ipAddress': u"172.26.2.25",
+		'netmask': u"255.255.0.0",
+	}
+
 	# The following values must but may not have a value.
 	assert 'vendorId' in config
 	assert 'deviceId' in config
 
-	assert expectedValue == config[key]
+	for key in expectedConfig:
+		assert expectedConfig[key] == config[key], 'Key {key} differs: {0} vs. {1}'.format(expectedConfig[key], config[key], key=key)
 
 
-@pytest.mark.parametrize("key, expectedValue", [
-	('device', 'eth0'),
-	('gateway', None),
-	('hardwareAddress', u'54:52:00:63:99:b3'),
-	('broadcast', u"192.168.255.255"),
-	('ipAddress', u"192.168.1.14"),
-	('netmask', u"255.255.0.0"),
-])
-def testGetNetworkDeviceConfigFromOldIfconfigOutput(key, expectedValue):
+def testGetNetworkDeviceConfigFromOldIfconfigOutput():
 	def fakeExecute(command):
 		if command.startswith('ifconfig'):
 			return [
@@ -461,80 +636,21 @@ def testGetNetworkDeviceConfigFromOldIfconfigOutput(key, expectedValue):
 		with mock.patch('OPSI.System.Posix.which', lambda cmd: cmd):
 			config = Posix.getNetworkDeviceConfig('eth0')
 
-	# The following values must exist but may not have a value.
-	assert 'vendorId' in config
-	assert 'deviceId' in config
-
-	assert expectedValue == config[key]
-
-
-@pytest.mark.parametrize("key, expectedValue", [
-	('device', 'ens18'),
-	('gateway', None),
-	('hardwareAddress', u'46:70:a9:6e:f7:60'),
-	('broadcast', u"192.168.20.255"),
-	('ipAddress', u"192.168.20.41"),
-	('netmask', u"255.255.255.0"),
-])
-def testGetNetworkDeviceConfigWithIp(key, expectedValue):
-	def fakeExecute(command):
-		if command.startswith('ip -j address show'):
-			return [
-				'[{',
-				'        "addr_info": [{},{}]',
-				'    },{',
-				'        "ifindex": 2,',
-				'        "ifname": "ens18",',
-				'        "flags": ["BROADCAST","MULTICAST","UP","LOWER_UP"],',
-				'        "mtu": 1500,',
-				'        "qdisc": "fq_codel",',
-				'        "operstate": "UP",',
-				'        "group": "default",',
-				'        "txqlen": 1000,',
-				'        "link_type": "ether",',
-				'        "address": "46:70:a9:6e:f7:60",',
-				'        "broadcast": "ff:ff:ff:ff:ff:ff",',
-				'        "addr_info": [{',
-				'                "family": "inet",',
-				'                "local": "192.168.20.41",',
-				'                "prefixlen": 24,',
-				'                "broadcast": "192.168.20.255",',
-				'                "scope": "global",',
-				'                "secondary": true,',
-				'                "label": "ens18",',
-				'                "valid_life_time": 4294967295,',
-				'                "preferred_life_time": 4294967295',
-				'            },{',
-				'                "family": "inet6",',
-				'                "local": "fe80::443f:a9ff:fe6e:f790",',
-				'                "prefixlen": 64,',
-				'                "scope": "link",',
-				'                "valid_life_time": 4294967295,',
-				'                "preferred_life_time": 4294967295',
-				'            }]',
-				'    }',
-				']'
-			]
-		elif command.startswith('ip route'):
-			return []
-		else:
-			raise Exception("Ooops, unexpected code.")
-
-	def whichOnlyIp(command):
-		if command == 'ifconfig':
-			raise Posix.CommandNotFoundException("ifconfig not present in this test")
-
-		return command
-
-	with mock.patch('OPSI.System.Posix.execute', fakeExecute):
-		with mock.patch('OPSI.System.Posix.which', whichOnlyIp):
-			config = Posix.getNetworkDeviceConfig('ens18')
+	expectedConfig = {
+		'device': 'eth0',
+		'gateway': None,
+		'hardwareAddress': u'54:52:00:63:99:b3',
+		'broadcast': u"192.168.255.255",
+		'ipAddress': u"192.168.1.14",
+		'netmask': u"255.255.0.0",
+	}
 
 	# The following values must exist but may not have a value.
 	assert 'vendorId' in config
 	assert 'deviceId' in config
 
-	assert expectedValue == config[key]
+	for key in expectedConfig:
+		assert expectedConfig[key] == config[key], 'Key {key} differs: {0} vs. {1}'.format(expectedConfig[key], config[key], key=key)
 
 
 def testGetEthernetDevicesOnDebianWheezy():

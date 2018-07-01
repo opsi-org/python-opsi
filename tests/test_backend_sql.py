@@ -35,9 +35,6 @@ import OPSI.Object as ob
 from .helpers import cleanMandatoryConstructorArgsCache as cmcac
 from .helpers import createTemporaryTestfile
 
-if sys.version_info > (3, ):
-    long = int
-
 
 @pytest.fixture
 def sqlBackendWithoutConnection():
@@ -100,7 +97,7 @@ def testCreatingFilterAddsMultipleValuesWithAnAnd(sqlBackendWithoutConnection):
 @pytest.mark.parametrize("result, filterExpression", [
     ('(`a` = 1)', {'a': 1}),
     ('(`b` = 2.3)', {'b': 2.3}),
-    ('(`c` = 4)', {'c': long(4)}),
+    ('(`c` = 4)', {'c': 4}),
 ])
 def testCreatingFilterForNumberRepresentation(sqlBackendWithoutConnection, result, filterExpression):
     assert result == sqlBackendWithoutConnection._filterToSql(filterExpression)
@@ -265,7 +262,7 @@ def testCreatingQueryWithVariousTypes(sqlBackendWithoutConnection):
     testDict = {
         "int": 1,
         "float": 2.3,
-        "long": long(4),
+        "long": 4,
         "bool_true": True,
         "bool_false": False,
         "string": "caramba",

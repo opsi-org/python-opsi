@@ -133,7 +133,7 @@ class MD4Type:
         ilen = U32(len(buf))
         #print (ilen)
 
-        if (long(self.len1 + (ilen << 3)) < long(self.len1)):
+        if (int(self.len1 + (ilen << 3)) < int(self.len1)):
             self.len2 = self.len2 + U32(1)
 
         self.len1 = self.len1 + (ilen << 3)
@@ -143,8 +143,8 @@ class MD4Type:
 
         L = U32(0)
         bufpos = 0
-        while (long(ilen) > 0):
-            if (64 - long(self.count)) < long(ilen): L = U32(64 - long(self.count))
+        while (int(ilen) > 0):
+            if (64 - int(self.count)) < int(ilen): L = U32(64 - int(self.count))
             else: L = ilen
             for i in range(int(L)): self.buf[i + int(self.count)] = buf[i + bufpos]
             self.count = self.count + L
@@ -152,7 +152,7 @@ class MD4Type:
             bufpos = bufpos + int(L)
 
             #print self.count, L, ilen
-            if (long(self.count) == 64L):
+            if (int(self.count) == 64L):
                 self.count = U32(0L)
                 X = []
                 i = 0
@@ -235,8 +235,8 @@ class MD4Type:
 
         oldlen1 = temp.len1
         oldlen2 = temp.len2
-        if (56 <= long(self.count)): padlen = U32(56 - long(self.count) + 64)
-        else: padlen = U32(56 - long(self.count))
+        if (56 <= int(self.count)): padlen = U32(56 - int(self.count) + 64)
+        else: padlen = U32(56 - int(self.count))
         #print int(padlen)
         temp.update(int_array2str(padding[:int(padlen)]))
         #print temp

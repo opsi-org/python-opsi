@@ -276,7 +276,7 @@ class SQLBackend(ConfigDataBackend):
 						yield u"`{0}` = 1".format(key)
 					else:
 						yield u"`{0}` = 0".format(key)
-				elif isinstance(value, (float, long, int)):
+				elif isinstance(value, (float, int)):
 					yield u"`{0}` = {1}".format(key, value)
 				elif value is None:
 					yield u"`{0}` is NULL".format(key)
@@ -445,7 +445,7 @@ class SQLBackend(ConfigDataBackend):
 						yield u"`{0}` = 1".format(arg)
 					else:
 						yield u"`{0}` = 0".format(arg)
-				elif isinstance(value, (float, long, int)):
+				elif isinstance(value, (float, int)):
 					yield u"`{0}` = {1}".format(arg, value)
 				else:
 					yield u"`{0}` = '{1}'".format(arg, self._sql.escapeApostrophe(self._sql.escapeBackslash(value)))
@@ -1285,7 +1285,7 @@ class SQLBackend(ConfigDataBackend):
 				elif val == True:
 					val = 'yes'
 			data += u'%s = %s\r\n' % (module.lower().strip(), val)
-		if not bool(publicKey.verify(md5(data).digest(), [long(modules['signature'])])):
+		if not bool(publicKey.verify(md5(data).digest(), [int(modules['signature'])])):
 			logger.error(u"Failed to verify modules signature")
 			return
 
@@ -1840,7 +1840,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 					val = 'yes'
 
 			data += u'%s = %s\r\n' % (module.lower().strip(), val)
-		if not bool(publicKey.verify(md5(data).digest(), [long(modules['signature'])])):
+		if not bool(publicKey.verify(md5(data).digest(), [int(modules['signature'])])):
 			logger.error(u"Failed to verify modules signature")
 			return
 
@@ -2165,7 +2165,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 
 				if value is None or value == [None]:
 					yield u"`{0}` is NULL".format(attribute)
-				elif isinstance(value, (float, long, int, bool)):
+				elif isinstance(value, (float, int, bool)):
 					yield u"`{0}` = {1}".format(attribute, value)
 				else:
 					yield u"`{0}` = '{1}'".format(attribute, self._sql.escapeApostrophe(self._sql.escapeBackslash(value)))

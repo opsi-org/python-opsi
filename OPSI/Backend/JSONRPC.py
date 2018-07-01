@@ -519,7 +519,7 @@ class JSONRPCBackend(Backend):
 						if val is True:
 							val = 'yes'
 					data += u'%s = %s\r\n' % (module.lower().strip(), val)
-				if not bool(publicKey.verify(md5(data).digest(), [long(modules['signature'])])):
+				if not bool(publicKey.verify(md5(data).digest(), [int(modules['signature'])])):
 					logger.error(u"Disabling mysql backend and license management module: modules file invalid")
 					if mysqlBackend:
 						raise OpsiError(u"MySQL backend in use but not licensed")
