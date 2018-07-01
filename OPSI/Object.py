@@ -318,7 +318,7 @@ class Entity(BaseObject):
 		Class = eval(hash['type'])
 		kwargs = {}
 		decodeIdent(Class, hash)
-		for varname in Class.__init__.func_code.co_varnames[1:]:
+		for varname in Class.__init__.__code__.co_varnames[1:]:
 			try:
 				kwargs[varname] = hash[varname]
 			except KeyError:
@@ -380,7 +380,7 @@ class Relationship(BaseObject):
 		Class = eval(hash['type'])
 		kwargs = {}
 		decodeIdent(Class, hash)
-		for varname in Class.__init__.func_code.co_varnames[1:]:
+		for varname in Class.__init__.__code__.co_varnames[1:]:
 			try:
 				kwargs[varname] = hash[varname]
 			except KeyError:
