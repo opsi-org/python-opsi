@@ -255,8 +255,10 @@ def testRandomStringHasExpectedLength(length):
 	{"forcePython": True},
 	{"forcePython": False}
 ])
-def testGenerateOpsiHostKeyIs32CharsLong(kwargs):
-	assert 32 == len(generateOpsiHostKey(kwargs))
+def testGeneratingOpsiHostKey(kwargs):
+	key = generateOpsiHostKey(kwargs)
+	assert 32 == len(key)
+	assert isinstance(key, str)
 
 
 @pytest.mark.parametrize("testInput, expected", [
