@@ -129,12 +129,14 @@ def testForceListConvertingSet():
 		assert element in resultList
 
 
-@pytest.mark.parametrize("value", [
-	'x',
-	b'bff69c0d457adb884dafbe8b55a56258',
+@pytest.mark.parametrize("value, expected", [
+	('x', 'x'),
+	(b'bff69c0d457adb884dafbe8b55a56258', 'bff69c0d457adb884dafbe8b55a56258')
 ])
-def testForceUnicodeResultsInUnicode(value):
-	assert isinstance(forceUnicode(value), str)
+def testForceUnicodeResultsInUnicode(value, expected):
+	result = forceUnicode(value)
+	assert isinstance(result, str)
+	assert result == expected
 
 
 def testForceUnicodeListResultsInListOfUnicode():
