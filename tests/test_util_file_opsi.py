@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -268,7 +268,7 @@ def outsideDir():
 		yield dirPath
 
 
-@pytest.mark.skipif(sys.version_info.major == 3, "Runs without end")
+@pytest.mark.endless
 def testPackageContentFileCreation(outsideFile, outsideDir):
 	with workInTemporaryDirectory() as tempDir:
 		content = fillDirectory(tempDir)
@@ -382,7 +382,7 @@ def fillDirectory(directory):
 	return content
 
 
-@pytest.mark.skipif(sys.version_info.major == 3, "Runs without end")
+@pytest.mark.endless
 def testParsingPackageContentFile(outsideFile, outsideDir):
 	with workInTemporaryDirectory() as tempDir:
 		content = fillDirectory(tempDir)
