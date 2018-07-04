@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -50,11 +50,11 @@ please pass them here. If this is None defaults will be used.
 	"""
 	if customGlobals is None:
 		customGlobals = {
-			'socket': socket,
+			'config': {},  # Will be filled after loading
+			'module': '',  # Will be filled after loading
 			'os': os,
+			'socket': socket,
 			'sys': sys,
-			'module': '',
-			'config': {}
 		}
 
 	LOGGER.info(u"Loading backend config '{0}'".format(backendConfigFile))
