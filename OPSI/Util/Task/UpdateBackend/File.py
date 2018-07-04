@@ -158,15 +158,11 @@ time the update was started and `end` about the time the update finished.
 	except IOError:
 		return {}
 
-	toDelete = set()
+	newVersionInfo = {}
 	for key, value in versionInfo.items():
-		versionInfo[int(key)] = value
-		toDelete.add(key)
+		newVersionInfo[int(key)] = value
 
-	for key in toDelete:
-		del versionInfo[key]
-
-	return versionInfo
+	return newVersionInfo
 
 
 def getVersionFilePath(baseDirectory):
