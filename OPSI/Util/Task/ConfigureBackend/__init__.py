@@ -39,17 +39,17 @@ __all__ = ('getBackendConfiguration', 'updateConfigFile')
 LOGGER = Logger()
 
 
-def getBackendConfiguration(backendConfigFile, customLocals=None):
+def getBackendConfiguration(backendConfigFile, customGlobals=None):
 	"""
 	Reads the backend configuration from the given file.
 
 	:param backendConfigFile: Path to the backend configuration file.
-	:param customLocals: If special locals are needed for the config file \
+	:param customGlobals: If special locals are needed for the config file \
 please pass them here. If this is None defaults will be used.
-	:type customLocals: dict
+	:type customGlobals: dict
 	"""
-	if customLocals is None:
-		customLocals = {
+	if customGlobals is None:
+		customGlobals = {
 			'socket': socket,
 			'os': os,
 			'sys': sys,
@@ -58,8 +58,8 @@ please pass them here. If this is None defaults will be used.
 		}
 
 	LOGGER.info(u"Loading backend config '{0}'".format(backendConfigFile))
-	execfile(backendConfigFile, customLocals)
-	config = customLocals['config']
+	execfile(backendConfigFile, customGlobals)
+	config = customGlobals['config']
 	LOGGER.debug(u"Current backend config: %s" % config)
 
 	return config
