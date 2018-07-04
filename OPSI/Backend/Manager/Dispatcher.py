@@ -272,7 +272,8 @@ class BackendExtender(ExtendedBackend):
 				for confFile in confFiles:
 					try:
 						logger.info(u"Reading config file '%s'" % confFile)
-						execfile(confFile)
+						with open(confFile) as confFileHandle:
+							exec(confFileHandle.read())
 					except Exception as execError:
 						logger.logException(execError)
 						raise RuntimeError(u"Error reading file {0!r}: {1}".format(confFile, execError))

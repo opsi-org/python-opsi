@@ -1148,7 +1148,9 @@ class OpsiBackupArchive(tarfile.TarFile):
 				backendGlobals = {'config': {}, 'module': '', 'socket': socket}
 				backendFile = os.path.join(self.BACKEND_CONF_DIR, entry)
 				try:
-					execfile(backendFile, backendGlobals)
+					with open(backendFile) as confFile:
+						exec(confFile.read(), backendGlobals)
+
 					backends[name] = {
 						"name": name,
 						"config": backendGlobals["config"],
