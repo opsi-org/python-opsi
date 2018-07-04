@@ -718,9 +718,13 @@ class FileBackend(ConfigDataBackend):
 		if not attributes:
 			return objHash
 
+		toDelete = set()
 		for attribute in objHash.keys():
 			if attribute not in attributes and attribute not in ident:
-				del objHash[attribute]
+				toDelete.add(attribute)
+
+		for attribute in toDelete:
+			del objHash[attribute]
 
 		return objHash
 
