@@ -50,6 +50,11 @@ from OPSI.Logger import Logger, LOG_DEBUG
 from OPSI.Types import (forceBool, forceFilename, forceFqdn, forceInt,
 						forceIPAddress, forceNetworkAddress, forceUnicode)
 
+try:
+	import secrets  # Since Python 3.6
+except ImportError:
+	secrets = None
+
 __all__ = (
 	'BLOWFISH_IV', 'PickleString',
 	'RANDOM_DEVICE', 'blowfishDecrypt', 'blowfishEncrypt',
@@ -200,11 +205,15 @@ def generateOpsiHostKey(forcePython=False):
 	"""
 	Generates an random opsi host key.
 
-	This will try to make use of an existing random device.
+	On Python 3.5 or lower this will try to make use of an existing
+	random device.
 	As a fallback the generation is done in plain Python.
 
 	:param forcePython: Force the usage of Python for host key generation.
 	"""
+	if secrets:
+		return secrets.token_hex(32)
+
 	if os.name == 'posix' and not forcePython:
 		logger.debug(u"Opening random device '%s' to generate opsi host key" % RANDOM_DEVICE)
 		with open(RANDOM_DEVICE, 'rb') as r:
