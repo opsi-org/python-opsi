@@ -475,6 +475,7 @@ def testBackupHasFileBackend(tempDir):
         assert backup.hasFileBackend()
 
 
+@pytest.mark.endless
 def testBackupDHCPBackend(tempDir):
     with getOpsiBackupArchive(tempdir=tempDir, keepArchive=True) as archive:
         with pytest.raises(OpsiBackupBackendNotFound):
