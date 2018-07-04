@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2017 uib GmbH <info@uib.de>
+# Copyright (C) 2017-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -158,8 +158,11 @@ time the update was started and `end` about the time the update finished.
 	except IOError:
 		return {}
 
+	toDelete = set()
 	for key, value in versionInfo.items():
 		versionInfo[int(key)] = value
+
+	for key in toDelete:
 		del versionInfo[key]
 
 	return versionInfo
