@@ -470,3 +470,18 @@ def testCorrectingObjectToGroupGroupIdFieldLength(mysqlBackendConfig, mySQLBacke
                 assert column.type.lower().startswith('varchar(')
                 assert getColumnLength(column.type) == 255
                 break
+
+
+def testIncreasingInventoryNumberFieldLength(mysqlBackendConfig, mySQLBackendConfigFile):
+    with cleanDatabase(MySQL(**mysqlBackendConfig)) as db:
+        createRequiredTables(db)
+
+        updateMySQLBackend(backendConfigFile=mySQLBackendConfigFile)
+
+        for column in getTableColumns(db, 'HOST'):
+            if column.name == 'inventoryNumber':
+                assert column.type.lower().startswith('varchar(')
+                assert getColumnLength(column.type) == 64
+                break
+        else:
+            raise RuntimeError("Expected to find matching column.")
