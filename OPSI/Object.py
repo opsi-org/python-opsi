@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) - http://www.opsi.org
 
-# Copyright (C) 2006-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -284,7 +284,7 @@ class BaseObject(object):
 	def __ne__(self, other):
 		return not self.__eq__(other)
 
-	def __unicode__(self):
+	def __str__(self):
 		additionalAttributes = []
 		for attr in self.getIdentAttributes():
 			try:
@@ -294,9 +294,6 @@ class BaseObject(object):
 				pass
 
 		return u"<{0}({1})>".format(self.getType(), ', '.join(additionalAttributes))
-
-	def __str__(self):
-		return self.__unicode__().encode("ascii", "replace")
 
 	def __repr__(self):
 		return self.__str__()
