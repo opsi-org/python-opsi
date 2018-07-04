@@ -626,7 +626,7 @@ class PackageControlFile(TextFile):
 			if option not in self._sections[sectionType][-1]:
 				self._sections[sectionType][-1][option] = value
 			else:
-				if isinstance(self._sections[sectionType][-1][option], unicode):
+				if isinstance(self._sections[sectionType][-1][option], str):
 					if not self._sections[sectionType][-1][option].endswith('\n'):
 						self._sections[sectionType][-1][option] += u'\n'
 					self._sections[sectionType][-1][option] += value.lstrip()
@@ -672,7 +672,7 @@ class PackageControlFile(TextFile):
 									tmp.append(v)
 							value = tmp
 
-					if isinstance(value, unicode):
+					if isinstance(value, str):
 						value = value.rstrip()
 
 					self._sections[sectionType][i][option] = value
