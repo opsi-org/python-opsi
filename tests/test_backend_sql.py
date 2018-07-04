@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2014-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -87,7 +87,10 @@ def testBoolValueRepresentation(sqlBackendWithoutConnection, expectedConversion,
 
 
 def testCreateFilterForMultipleBools(sqlBackendWithoutConnection):
-    assert u'(`a` = 1) and (`b` = 0)' == sqlBackendWithoutConnection._filterToSql({'a': True, 'b': False})
+    condition = sqlBackendWithoutConnection._filterToSql({'a': True, 'b': False})
+    first, second = condition.split(' and ', 1)
+
+    assert (first == '(`a` = 1)' and second == '(`b` = 0)') or (second == '(`a` = 1)' first == '(`b` = 0)')
 
 
 def testCreatingFilterAddsMultipleValuesWithAnAnd(sqlBackendWithoutConnection):
