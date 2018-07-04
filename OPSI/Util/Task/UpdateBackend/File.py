@@ -161,6 +161,7 @@ time the update was started and `end` about the time the update finished.
 	toDelete = set()
 	for key, value in versionInfo.items():
 		versionInfo[int(key)] = value
+		toDelete.add(key)
 
 	for key in toDelete:
 		del versionInfo[key]
