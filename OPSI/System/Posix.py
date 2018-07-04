@@ -3207,8 +3207,6 @@ def hardwareExtendedInventory(config, opsiValues={}, progressSubject=None):
 						pythonline = pythonline.replace("#%s#" % srcfields, "'%s'" % attr)
 						result = eval(pythonline)
 
-					if isinstance(result, unicode):
-						result = result.encode('utf-8')
 					if opsiName not in opsiValues:
 						opsiValues[opsiName].append({})
 					for i in range(len(opsiValues[opsiName])):
