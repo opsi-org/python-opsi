@@ -117,10 +117,14 @@ def forceUnicode(var):
 		return var
 	elif isinstance(var, _STRING_TYPE):
 		return unicode(var, 'utf-8', 'replace')
-	elif isinstance(var, bytes):
-		return var.decode()
 	elif (os.name == 'nt') and isinstance(var, WindowsError):
 		return u"[Error %s] %s" % (var.args[0], var.args[1].decode(encoding))
+
+	try:
+		if isinstance(var, bytes):
+			return var.decode()
+	except Exception:
+		pass
 
 	try:
 		return var.__unicode__()
