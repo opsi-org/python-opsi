@@ -127,6 +127,7 @@ class BackendManager(ExtendedBackend):
 			}
 			logger.debug("No config given, using {0!r}".format(kwargs))
 
+		argumentToDelete = set()
 		for (option, value) in kwargs.items():
 			option = option.lower()
 			if option == 'username':
@@ -138,7 +139,7 @@ class BackendManager(ExtendedBackend):
 					loadBackend = value
 				else:
 					self._backend = value
-				del kwargs[option]
+				argumentToDelete.add(option)
 			elif option == 'backendconfigdir':
 				self._backendConfigDir = value
 			elif option in ('dispatchconfig', 'dispatchconfigfile') and value:
@@ -161,6 +162,9 @@ class BackendManager(ExtendedBackend):
 				accessControl = True
 			elif option == 'startreactor' and value is False:
 				startReactor = False
+
+		for argument in argumentToDelete:
+			del kwargs[argument]
 
 		if loadBackend:
 			logger.info(u"* BackendManager is loading backend '%s'" % loadBackend)
