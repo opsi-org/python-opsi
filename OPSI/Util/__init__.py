@@ -209,6 +209,7 @@ def generateOpsiHostKey(forcePython=False):
 	As a fallback the generation is done in plain Python.
 
 	:param forcePython: Force the usage of Python for host key generation.
+	:rtype: str
 	"""
 	if secrets:
 		return secrets.token_hex(32)
@@ -219,6 +220,7 @@ def generateOpsiHostKey(forcePython=False):
 			key = r.read(16)
 		logger.debug2("Random device closed")
 		key = binascii.hexlify(key)
+		key = key.decode()
 	else:
 		logger.debug(u"Using python random module to generate opsi host key")
 		key = randomString(32, "0123456789abcdef")
