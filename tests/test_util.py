@@ -28,7 +28,6 @@ import random
 import re
 import os
 import os.path
-import sys
 from collections import defaultdict
 from contextlib import contextmanager
 
