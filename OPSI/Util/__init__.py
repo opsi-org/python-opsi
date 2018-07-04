@@ -207,7 +207,7 @@ def generateOpsiHostKey(forcePython=False):
 	"""
 	if os.name == 'posix' and not forcePython:
 		logger.debug(u"Opening random device '%s' to generate opsi host key" % RANDOM_DEVICE)
-		with open(RANDOM_DEVICE) as r:
+		with open(RANDOM_DEVICE, 'rb') as r:
 			key = r.read(16)
 		logger.debug("Random device closed")
 		key = str(key.encode("hex"))
