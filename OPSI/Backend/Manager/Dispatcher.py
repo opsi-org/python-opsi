@@ -29,8 +29,6 @@ from __future__ import absolute_import
 import inspect
 import os
 import re
-import socket
-import sys
 import types
 
 from OPSI.Backend.Base import (
@@ -41,6 +39,7 @@ from OPSI.Types import forceList
 from OPSI.Util.File.Opsi import BackendDispatchConfigFile
 
 from .AccessControl import BackendAccessControl
+from .Config import loadBackendConfig
 
 __all__ = ('BackendDispatcher', )
 
@@ -132,11 +131,8 @@ class BackendDispatcher(Backend):
 		for backend in collectedBackends:
 			self._backends[backend] = {}
 			backendConfigFile = os.path.join(self._backendConfigDir, '%s.conf' % backend)
-			if not os.path.exists(backendConfigFile):
-				raise BackendConfigurationError(u"Backend config file '%s' not found" % backendConfigFile)
-			l = {'socket': socket, 'os': os, 'sys': sys, 'module': '', 'config': {}}
 			logger.info(u"Loading backend config '%s'" % backendConfigFile)
-			execfile(backendConfigFile, l)
+			l = loadBackendConfig(backendConfigFile)
 			if not l['module']:
 				raise BackendConfigurationError(u"No module defined in backend config file '%s'" % backendConfigFile)
 			if l['module'] in self._dispatchIgnoreModules:
@@ -276,7 +272,8 @@ class BackendExtender(ExtendedBackend):
 				for confFile in confFiles:
 					try:
 						logger.info(u"Reading config file '%s'" % confFile)
-						execfile(confFile)
+						with open(confFile) as confFileHandle:
+							exec(confFileHandle.read())
 					except Exception as execError:
 						logger.logException(execError)
 						raise RuntimeError(u"Error reading file {0!r}: {1}".format(confFile, execError))

@@ -113,8 +113,11 @@ def getPeerCertificate(httpsConnectionOrSSLSocket, asPEM=True):
 	logger.debug2("Trying to get peer cert...")
 	sock = httpsConnectionOrSSLSocket
 	try:
-		if hasattr(sock, 'sock'):
-			sock = sock.sock
+		sock = sock.sock
+	except AttributeError:
+		pass
+
+	try:
 		cert = crypto.load_certificate(crypto.FILETYPE_ASN1, sock.getpeercert(binary_form=True))
 
 		if not asPEM:

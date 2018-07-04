@@ -33,8 +33,6 @@ from __future__ import absolute_import
 
 import os
 import re
-import socket
-import sys
 
 from OPSI.Backend.Base import Backend, ExtendedBackend, ExtendedConfigDataBackend
 from OPSI.Backend.Depotserver import DepotserverBackend
@@ -45,6 +43,7 @@ from OPSI.Logger import Logger
 from OPSI.Types import forceBool
 
 from .AccessControl import BackendAccessControl
+from .Config import loadBackendConfig
 from .Dispatcher import BackendDispatcher
 from .Extender import BackendExtender
 
@@ -229,12 +228,7 @@ class BackendManager(ExtendedBackend):
 			raise ValueError(u"Bad backend config name '%s'" % name)
 		name = name.lower()
 		backendConfigFile = os.path.join(self._backendConfigDir, '%s.conf' % name)
-		if not os.path.exists(backendConfigFile):
-			raise BackendConfigurationError(u"Backend config file '%s' not found" % backendConfigFile)
-
-		l = {'socket': socket, 'os': os, 'sys': sys, 'module': '', 'config': {}}
-		execfile(backendConfigFile, l)
-		return l
+		return loadBackendConfig(backendConfigFile)
 
 	def __loadBackend(self, name):
 		config = self.__loadBackendConfig(name)
