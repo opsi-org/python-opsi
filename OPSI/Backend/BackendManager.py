@@ -260,7 +260,6 @@ class BackendManager(ExtendedBackend):
 		backendConfigFile = os.path.join(self._backendConfigDir, '%s.conf' % name)
 		if not os.path.exists(backendConfigFile):
 			raise BackendConfigurationError(u"Backend config file '%s' not found" % backendConfigFile)
-
 		l = {'socket': socket, 'os': os, 'sys': sys, 'module': '', 'config': {}}
 		execfile(backendConfigFile, l)
 		return l
