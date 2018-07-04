@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2017-2019 uib GmbH <info@uib.de>
+# Copyright (C) 2017-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -94,7 +94,7 @@ def readBackendVersion(baseDirectory):
 	:raises FileBackendUpdateError: In case a migration was \
 started but never ended.
 	:returns: The version of the schema. `None` if no info is found.
-	:rtype: int or None
+	:returntype: int or None
 	"""
 	schemaConfig = _readVersionFile(baseDirectory)
 	if not schemaConfig:
@@ -148,7 +148,7 @@ def _readVersionFile(baseDirectory):
 	:return: The complete backend information. The key is the version,
 the value is a dict with two keys: `start` holds information about the
 time the update was started and `end` about the time the update finished.
-	:rtype: {int: {str: float}}
+	:returntype: {int: {str: float}}
 	"""
 	schemaConfigFile = getVersionFilePath(baseDirectory)
 
@@ -158,8 +158,11 @@ time the update was started and `end` about the time the update finished.
 	except IOError:
 		return {}
 
+	toDelete = set()
 	for key, value in versionInfo.items():
 		versionInfo[int(key)] = value
+
+	for key in toDelete:
 		del versionInfo[key]
 
 	return versionInfo
@@ -171,7 +174,7 @@ def getVersionFilePath(baseDirectory):
 
 	:param baseDirectory: The base directory of the backend.
 	:type baseDirectory: str
-	:rtype: str
+	:returntype: str
 	"""
 	return os.path.join(os.path.dirname(baseDirectory), u'config', u'schema.json')
 
