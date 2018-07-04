@@ -58,7 +58,9 @@ please pass them here. If this is None defaults will be used.
 		}
 
 	LOGGER.info(u"Loading backend config '{0}'", backendConfigFile)
-	execfile(backendConfigFile, customGlobals)
+	with open(backendConfigFile) as configFile:
+		exec(configFile.read(), customGlobals)
+
 	config = customGlobals['config']
 	LOGGER.debug(u"Current backend config: {!r}", config)
 

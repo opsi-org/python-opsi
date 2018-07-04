@@ -47,5 +47,8 @@ def loadBackendConfig(path):
         'socket': socket,
         'sys': sys,
     }
-    execfile(path, moduleGlobals)
+
+    with open(path) as configFile:
+        exec(configFile.read(), moduleGlobals)
+
     return moduleGlobals
