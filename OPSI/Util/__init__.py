@@ -216,10 +216,10 @@ def generateOpsiHostKey(forcePython=False):
 		return secrets.token_hex(32)
 
 	if os.name == 'posix' and not forcePython:
-		logger.debug(u"Opening random device '%s' to generate opsi host key" % RANDOM_DEVICE)
+		logger.debug2(u"Opening random device {!r} to generate opsi host key", RANDOM_DEVICE)
 		with open(RANDOM_DEVICE, 'rb') as r:
 			key = r.read(16)
-		logger.debug("Random device closed")
+		logger.debug2("Random device closed")
 		key = binascii.hexlify(key)
 	else:
 		logger.debug(u"Using python random module to generate opsi host key")
