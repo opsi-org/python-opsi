@@ -58,7 +58,7 @@ __all__ = (
 	'SQLBackendObjectModificationTracker'
 )
 
-DATABASE_SCHEMA_VERSION = 4
+DATABASE_SCHEMA_VERSION = 5
 
 logger = Logger()
 
@@ -386,9 +386,21 @@ class SQLBackend(ConfigDataBackend):
 		if issubclass(object.__class__, Product):
 			try:
 				# Truncating a possibly too long changelog entry
-				hash['changelog'] = hash['changelog'][:65534]
+				# This takes into account that unicode characters may be
+				# composed of multiple bytes by encoding, stripping and
+				# decoding them.
+				changelog = hash['changelog']
+				changelog = changelog.encode('utf-8')
+				changelog = changelog[:65534]
+				hash['changelog'] = changelog.decode('utf-8')
 			except (KeyError, TypeError):
 				pass  # Either not present in hash or set to None
+			except UnicodeError:
+				# Encoding problem. We truncate anyway and remove some
+				# buffer characters for possible unicode characters.
+				# Since encoding is attempted after we have read the
+				# has we can assume that the key is present.
+				hash['changelog'] = hash['changelog'][:65000]
 
 		if issubclass(object.__class__, Relationship):
 			try:
@@ -896,7 +908,7 @@ class SQLBackend(ConfigDataBackend):
 				`notes` varchar(500),
 				`hardwareAddress` varchar(17),
 				`ipAddress` varchar(15),
-				`inventoryNumber` varchar(30),
+				`inventoryNumber` varchar(64),
 				`created` TIMESTAMP,
 				`lastSeen` TIMESTAMP,
 				`opsiHostKey` varchar(32),
@@ -2155,15 +2167,19 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 	# -   AuditHardwares
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def _uniqueAuditHardwareCondition(self, auditHardware):
-		if hasattr(auditHardware, 'toHash'):
+		try:
 			auditHardware = auditHardware.toHash()
+		except AttributeError:
+			pass
 
 		def createCondition():
+			listWithNone = [None]
+
 			for attribute, value in auditHardware.items():
 				if attribute in ('hardwareClass', 'type'):
 					continue
 
-				if value is None or value == [None]:
+				if value is None or value == listWithNone:
 					yield u"`{0}` is NULL".format(attribute)
 				elif isinstance(value, (float, int, bool)):
 					yield u"`{0}` = {1}".format(attribute, value)
