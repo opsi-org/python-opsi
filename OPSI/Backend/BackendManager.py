@@ -363,8 +363,8 @@ class BackendDispatcher(Backend):
 			backendConfigFile = os.path.join(self._backendConfigDir, '%s.conf' % backend)
 			if not os.path.exists(backendConfigFile):
 				raise BackendConfigurationError(u"Backend config file '%s' not found" % backendConfigFile)
-			l = {'socket': socket, 'os': os, 'sys': sys, 'module': '', 'config': {}}
 			logger.info(u"Loading backend config '%s'" % backendConfigFile)
+			l = {'socket': socket, 'os': os, 'sys': sys, 'module': '', 'config': {}}
 			execfile(backendConfigFile, l)
 			if not l['module']:
 				raise BackendConfigurationError(u"No module defined in backend config file '%s'" % backendConfigFile)
