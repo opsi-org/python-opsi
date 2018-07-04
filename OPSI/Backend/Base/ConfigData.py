@@ -1151,7 +1151,9 @@ depot where the method is.
 
 		classes = []
 		try:
-			execfile(self._auditHardwareConfigFile)
+			with open(self._auditHardwareConfigFile) as hwcFile:
+				exec(hwcFile.read())
+
 			for i, currentClassConfig in enumerate(OPSI_HARDWARE_CLASSES):
 				opsiClass = currentClassConfig['Class']['Opsi']
 				if currentClassConfig['Class']['Type'] == 'STRUCTURAL':
