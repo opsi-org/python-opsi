@@ -32,6 +32,7 @@ or to JSON, working with librsync and more.
 """
 
 import base64
+import binascii
 import json
 import os
 import random
@@ -219,7 +220,7 @@ def generateOpsiHostKey(forcePython=False):
 		with open(RANDOM_DEVICE, 'rb') as r:
 			key = r.read(16)
 		logger.debug("Random device closed")
-		key = str(key.encode("hex"))
+		key = binascii.hexlify(key)
 	else:
 		logger.debug(u"Using python random module to generate opsi host key")
 		key = randomString(32, "0123456789abcdef")
