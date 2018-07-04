@@ -46,18 +46,18 @@ def librsyncTestfile():
     )
 
 
-@pytest.mark.skipif(importFailed)
+@pytest.mark.skipif(importFailed, reason="Import failed.")
 def testLibrsyncSignatureBase64Encoded(librsyncTestfile):
     assert 'cnMBNgAACAAAAAAI/6410IBmvH1GKbBN\n' == librsyncSignature(librsyncTestfile)
 
 
-@pytest.mark.skipif(importFailed)
+@pytest.mark.skipif(importFailed, reason="Import failed.")
 def testLibrsyncSignatureCreation(librsyncTestfile):
     signature = librsyncSignature(librsyncTestfile, base64Encoded=False)
     assert 'rs\x016\x00\x00\x08\x00\x00\x00\x00\x08\xff\xae5\xd0\x80f\xbc}F)\xb0M' == signature
 
 
-@pytest.mark.skipif(importFailed)
+@pytest.mark.skipif(importFailed, reason="Import failed.")
 def testLibrsyncDeltaFileCreation(librsyncTestfile, tempDir):
     signature = librsyncSignature(librsyncTestfile, base64Encoded=False)
     deltafile = os.path.join(tempDir, 'delta')
@@ -70,7 +70,7 @@ def testLibrsyncDeltaFileCreation(librsyncTestfile, tempDir):
         assert expectedDelta == f.read()
 
 
-@pytest.mark.skipif(importFailed)
+@pytest.mark.skipif(importFailed, reason="Import failed.")
 def testLibrsyncPatchFileDoesNotAlterIfUnneeded(librsyncTestfile, tempDir):
     baseFile = librsyncTestfile
     signature = librsyncSignature(baseFile, False)
@@ -92,7 +92,7 @@ def testLibrsyncPatchFileDoesNotAlterIfUnneeded(librsyncTestfile, tempDir):
             assert baseF.readlines() == newF.readlines()
 
 
-@pytest.mark.skipif(importFailed)
+@pytest.mark.skipif(importFailed, reason="Import failed.")
 def testLibrsyncPatchFileCreatesNewFileBasedOnDelta(librsyncTestfile, tempDir):
     baseFile = librsyncTestfile
     signature = librsyncSignature(baseFile, False)
@@ -145,7 +145,7 @@ def testLibrsyncPatchFileCreatesNewFileBasedOnDelta(librsyncTestfile, tempDir):
         assert any(additionalText in line for line in newF2)
 
 
-@pytest.mark.skipif(importFailed)
+@pytest.mark.skipif(importFailed, reason="Import failed.")
 @pytest.mark.parametrize("old, delta, new", list(combinations_with_replacement(('foo', 'bar'), 3)))
 def testLibrsyncPatchFileAvoidsPatchingSameFile(old, delta, new):
     with pytest.raises(ValueError):
