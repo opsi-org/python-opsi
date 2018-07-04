@@ -371,7 +371,8 @@ def forceUrl(var):
 def forceOpsiHostKey(var):
 	var = forceUnicodeLower(var)
 	if not re.search(_OPSI_HOST_KEY_REGEX, var):
-		raise ValueError(u"Bad opsi host key: '%s'" % var)
+		raise ValueError(u"Bad opsi host key: {!r}".format(var))
+
 	return var
 
 
