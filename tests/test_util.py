@@ -282,8 +282,8 @@ def testFormatFileSize(testInput, expected):
 def fileAndHash(request):
 	yield request.param
 
-# TODO: this runs without end under Python 3. Fix it.
-@pytest.mark.skipif(sys.version_info.major == 3, "Runs endless under Python 3.")
+
+@pytest.mark.endless
 def testCreatingMd5sum(fileAndHash):
 	testFile, expectedHash = fileAndHash
 	assert expectedHash == md5sum(testFile)
