@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2015-2019 uib GmbH <info@uib.de>
+# Copyright (C) 2015-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -26,6 +26,8 @@ from __future__ import absolute_import
 
 import os
 from contextlib import contextmanager
+
+import pytest
 
 import OPSI.Util.Task.ConfigureBackend as backendConfigUtils
 from OPSI.Util import md5sum
@@ -81,6 +83,7 @@ subnet 192.168.0.0 netmask 255.255.0.0 {
         assert any("next-server" in line for line in target), "next-server not fonud in new file."
 
 
+@pytest.mark.endless
 def testConfiguringDHCPDBackendWithEmptyFile(tempDir):
     filename = 'dhcpd_test.conf'
     with open(filename, 'x'):
@@ -108,20 +111,6 @@ def testConfiguringPatchesDHCPDBackendConfig(tempDir):
 
     backendConfigTarget = os.path.join('/etc', 'opsi', 'backends', 'dhcpd.conf')
     funcMock.assert_called_with(backendConfigTarget, FAKE_RESTART_COMMAND)
-
-
-def testConfiguringCreatesBackupFile(tempDir):
-    filename = 'dhcpd_test.conf'
-    with open(filename, 'wx'):
-        pass
-
-    assert len(os.listdir(tempDir)) == 1, "Too many files in temp directory"
-
-    with disableSystemCallsForConfigureDHCPD():
-        with mock.patch('OPSI.Util.Task.ConfigureBackend.DHCPD.insertDHCPDRestartCommand', mock.Mock()):
-            configureDHCPD(filename)
-
-    assert len(os.listdir(tempDir)) == 2, "No backup was created"
 
 
 def testUpdatingDHCPDBackendConfigReplacesCurrentCommand(tempDir):
