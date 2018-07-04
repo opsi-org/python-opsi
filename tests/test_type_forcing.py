@@ -131,8 +131,7 @@ def testForceListConvertingSet():
 
 @pytest.mark.parametrize("value", [
 	'x',
-	u'x',
-	b'bff69c0d457adb884dafbe8b55a56258'
+	b'bff69c0d457adb884dafbe8b55a56258',
 ])
 def testForceUnicodeResultsInUnicode(value):
 	assert isinstance(forceUnicode(value), str)
