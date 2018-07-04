@@ -112,6 +112,7 @@ def funkyGenerator():
 	(('x', 'a'), ['x', 'a']),
 	(['x', 'a'], ['x', 'a']),
 	(funkyGenerator(), ['y', 'u', 'so', 'funky']),
+	(dict(a=1).values(), [1]),
 ])
 def testForceList(input, expected):
 	result = forceList(input)
