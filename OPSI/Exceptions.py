@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2017 uib GmbH <info@uib.de>
+# Copyright (C) 2017-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -53,7 +53,7 @@ class OpsiError(Exception):
 	def __init__(self, message=''):
 		self._message = forceUnicode(message)
 
-	def __unicode__(self):
+	def __str__(self):
 		if self._message:
 			return u"%s: %s" % (self.ExceptionShortDescription, self._message)
 		else:
@@ -70,8 +70,7 @@ class OpsiError(Exception):
 		else:
 			return text.encode('utf-8')
 
-	__str__ = __repr__
-	complete_message = __unicode__
+	complete_message = __str__
 
 	def message():
 		def get(self):
@@ -139,7 +138,7 @@ class OpsiProductOrderingError(OpsiError):
 		else:
 			return text.encode('utf-8')
 
-	def __unicode__(self):
+	def __str__(self):
 		if self._message:
 			if self.problematicRequirements:
 				return u"{0}: {1} ({2})".format(self.ExceptionShortDescription, self._message, self.problematicRequirements)
