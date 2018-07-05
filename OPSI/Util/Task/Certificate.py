@@ -216,7 +216,7 @@ If not given will use a default.
 	LOGGER.notice(u"Signing Certificate")
 	cert.sign(k, 'sha512')
 
-	certcontext = "".join(
+	certcontext = b"".join(
 		(
 			crypto.dump_certificate(crypto.FILETYPE_PEM, cert),
 			crypto.dump_privatekey(crypto.FILETYPE_PEM, k)
