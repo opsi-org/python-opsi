@@ -757,7 +757,7 @@ class OpsiDepotserver(Host):
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'OpsiDepotserver')
 
-	def __unicode__(self):
+	def __str__(self):
 		additionalInfos = [u"id={0!r}".format(self.id)]
 		if self.isMasterDepot:
 			additionalInfos.append(u'isMasterDepot={0!r}'.format(self.isMasterDepot))
@@ -920,7 +920,7 @@ class Config(Entity):
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'Config')
 
-	def __unicode__(self):
+	def __str__(self):
 		return (
 			u"<{klass}(id={id!r}, description={description!r}, "
 			u"possibleValues={possibleValues!r}, defaultValues={defaults!r}, "
@@ -1015,7 +1015,7 @@ class BoolConfig(Config):
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'BoolConfig')
 
-	def __unicode__(self):
+	def __str__(self):
 		return (
 			u"<{klass}(id={id!r}, description={description!r}, "
 			u"defaultValues={defaults!r})>".format(
@@ -1078,7 +1078,7 @@ class ConfigState(Relationship):
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'ConfigState')
 
-	def __unicode__(self):
+	def __str__(self):
 		return u"<{0}(configId={1!r}, objectId={2!r}, values={3!r})>".format(self.getType(), self.configId, self.objectId, self.values)
 
 Relationship.subClasses['ConfigState'] = ConfigState
@@ -1301,7 +1301,7 @@ class Product(Entity):
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'Product')
 
-	def __unicode__(self):
+	def __str__(self):
 		return (
 			u"<{0}(id={1!r}, name={2!r}, productVersion={3!r}, "
 			u"packageVersion={4!r})>".format(
@@ -1521,7 +1521,7 @@ class ProductProperty(Entity):
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'ProductProperty')
 
-	def __unicode__(self):
+	def __str__(self):
 		def getAttributes():
 			yield 'productId={0!r}'.format(self.productId)
 			yield 'productVersion={0!r}'.format(self.productVersion)
@@ -1640,7 +1640,7 @@ class BoolProductProperty(ProductProperty):
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'BoolProductProperty')
 
-	def __unicode__(self):
+	def __str__(self):
 		def getAttributes():
 			yield 'productId={0!r}'.format(self.productId)
 			yield 'productVersion={0!r}'.format(self.productVersion)
@@ -1767,7 +1767,7 @@ class ProductDependency(Relationship):
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'ProductDependency')
 
-	def __unicode__(self):
+	def __str__(self):
 		return (u"<{klass}(productId={prodId!r}, productVersion={prodVer!r}, "
 				u"packageVersion={packVer!r}, productAction={prodAct!r}, "
 				u"requiredProductId={reqProdId!r}>".format(
@@ -1995,7 +1995,7 @@ class ProductOnClient(Relationship):
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'ProductOnClient')
 
-	def __unicode__(self):
+	def __str__(self):
 		return (u"<{klass}(clientId={clientId!r}, productId={prodId!r}, "
 				u"installationStatus={status!r}, actionRequest={actReq!r})>".format(
 					klass=self.getType(), clientId=self.clientId,
@@ -2061,7 +2061,7 @@ class ProductPropertyState(Relationship):
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'ProductPropertyState')
 
-	def __unicode__(self):
+	def __str__(self):
 		def getAttributes():
 			yield 'productId={0!r}'.format(self.productId)
 			yield 'propertyId={0!r}'.format(self.propertyId)
@@ -2117,7 +2117,7 @@ class Group(Object):
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'Group')
 
-	def __unicode__(self):
+	def __str__(self):
 		return (u"<{klass}(id={id!r}, parentGroupId={parentId!r}>".format(
 				klass=self.getType(), id=self.id, parentId=self.parentGroupId))
 
@@ -2319,7 +2319,7 @@ class LicenseContract(Entity):
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'LicenseContract')
 
-	def __unicode__(self):
+	def __str__(self):
 		infos = [u"id={0!r}".format(self.id)]
 
 		if self.description:
@@ -2408,7 +2408,7 @@ class SoftwareLicense(Entity):
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'SoftwareLicense')
 
-	def __unicode__(self):
+	def __str__(self):
 		infos = [
 			u"id='{0}'".format(self.id),
 			u"licenseContractId='{0}'".format(self.licenseContractId)
@@ -2601,7 +2601,7 @@ class LicensePool(Entity):
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'LicensePool')
 
-	def __unicode__(self):
+	def __str__(self):
 		infos = [u"id={0!r}".format(self.id)]
 
 		if self.description:
@@ -2688,7 +2688,7 @@ class AuditSoftwareToLicensePool(Relationship):
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'AuditSoftwareToLicensePool')
 
-	def __unicode__(self):
+	def __str__(self):
 		infos = [u"name={0}".format(self.name)]
 
 		if self.version:
@@ -3227,7 +3227,7 @@ class AuditHardware(Entity):
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'AuditHardware')
 
-	def __unicode__(self):
+	def __str__(self):
 		infos = []
 		hardwareClass = self.getHardwareClass()
 		if hardwareClass:
@@ -3449,7 +3449,7 @@ class AuditHardwareOnHost(Relationship):
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'AuditHardwareOnHost')
 
-	def __unicode__(self):
+	def __str__(self):
 		additional = [u"hostId={0!r}".format(self.hostId)]
 		hardwareClass = self.getHardwareClass()
 		if hardwareClass:
