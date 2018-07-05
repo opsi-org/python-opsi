@@ -8,10 +8,10 @@
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-# 
+#
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -30,16 +30,6 @@ This API is considered private to static.py and is therefore subject to
 change.
 """
 
-__all__ = [
-    "allDataFromStream",
-    "davXMLFromStream",
-    "noDataFromStream",
-    "normalizeURL",
-    "joinURL",
-    "parentForURL",
-    "bindMethods",
-]
-
 import urllib
 from urlparse import urlsplit, urlunsplit
 import posixpath # Careful; this module is not documented as public API
@@ -50,6 +40,17 @@ from twisted.internet.defer import succeed
 from OPSI.web2.stream import readStream
 
 from OPSI.web2.dav import davxml
+
+__all__ = [
+    "allDataFromStream",
+    "davXMLFromStream",
+    "noDataFromStream",
+    "normalizeURL",
+    "joinURL",
+    "parentForURL",
+    "bindMethods",
+]
+
 
 ##
 # Reading request body
