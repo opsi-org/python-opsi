@@ -697,11 +697,11 @@ def destroyPool(pool):
 
 
 def deflateEncode(data, level=1):
-	return zlib.compress(data, level)
+	return zlib.compress(data.encode(), level)
 
 
 def deflateDecode(data):
-	return forceUnicode(zlib.decompress(data))
+	return zlib.decompress(data).decode()
 
 
 def gzipEncode(data, level=1):
