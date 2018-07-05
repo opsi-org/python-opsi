@@ -520,7 +520,7 @@ def forceObjectClass(var, objectClass):
 			if issubclass(c, objectClass):
 				var = c.fromHash(var)
 		except AttributeError as error:
-			if "'module' object has no attribute " in str(error):
+			if "module 'OPSI.Object' has no attribute" in str(error):
 				error = ValueError("Invalild object type: {0}".format(var['type']))
 
 			exception = error
