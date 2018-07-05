@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2006-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -65,16 +65,6 @@ __all__ = (
 	'LOG_INFO', 'LOG_NONE', 'LOG_NOTICE', 'LOG_WARNING', 'Logger',
 	'NOTICE_COLOR', 'WARNING_COLOR'
 )
-
-if sys.version_info > (3, ):
-	# Python 3
-	unicode = str
-	_STRING_TYPE = str
-	_UNICODE_TYPE = str
-else:
-	# Python 2
-	_STRING_TYPE = str
-	_UNICODE_TYPE = unicode
 
 # Loglevels
 LOG_CONFIDENTIAL = 9
@@ -173,32 +163,26 @@ _showwarning = warnings.showwarning
 
 
 def forceUnicode(var):
-	if isinstance(var, _UNICODE_TYPE):
+	if isinstance(var, str):
 		return var
-	elif isinstance(var, _STRING_TYPE):
-		return unicode(var, 'utf-8', 'replace')
-	elif os.name == 'nt' and isinstance(var, WindowsError):
+	elif (os.name == 'nt') and isinstance(var, WindowsError):
 		return u"[Error %s] %s" % (var.args[0], var.args[1].decode(encoding))
 
 	try:
-		return var.__unicode__()
-	except Exception:
-		pass
-
-	try:
-		return unicode(var)
+		if isinstance(var, bytes):
+			return var.decode()
 	except Exception:
 		pass
 
 	try:
 		var = var.__repr__()
-		if isinstance(var, _UNICODE_TYPE):
+		if isinstance(var, str):
 			return var
-		return unicode(var, 'utf-8', 'replace')
+		return str(var, 'utf-8', 'replace')
 	except Exception:
 		pass
 
-	return unicode(var)
+	return str(var)
 
 
 class LoggerSubject:
@@ -541,7 +525,7 @@ will disable logging to a file.
 			for objectId in self.__objectConfig:
 				self.debug2(u"Got special config for object 0x%x" % objectId)
 
-		threadId = unicode(thread.get_ident())
+		threadId = thread.get_ident()
 		if threadId in self.__threadConfig:
 			self.debug(u"Deleting config of thread %s" % threadId)
 			del self.__threadConfig[threadId]
@@ -550,7 +534,7 @@ will disable logging to a file.
 			self.debug2(u"Got special config for thread %s" % threadId)
 
 	def _setThreadConfig(self, key, value):
-		threadId = unicode(thread.get_ident())
+		threadId = thread.get_ident()
 
 		try:
 			self.__threadConfig[threadId][key] = value
@@ -558,7 +542,7 @@ will disable logging to a file.
 			self.__threadConfig[threadId] = {key: value}
 
 	def _getThreadConfig(self, key=None):
-		threadId = unicode(thread.get_ident())
+		threadId = thread.get_ident()
 		if threadId not in self.__threadConfig:
 			return None
 
@@ -601,7 +585,7 @@ False suppresses exceptions.
 			return
 
 		def formatMessage(unformattedMessage, removeConfidential=False):
-			tempMessage = unicode(unformattedMessage)
+			tempMessage = str(unformattedMessage)
 			tempMessage = tempMessage.replace(u'%M', message)
 
 			if removeConfidential:
@@ -610,7 +594,7 @@ False suppresses exceptions.
 
 			tempMessage = tempMessage.replace(u'%D', datetime)
 			tempMessage = tempMessage.replace(u'%T', threadId)
-			tempMessage = tempMessage.replace(u'%l', unicode(level))
+			tempMessage = tempMessage.replace(u'%l', str(level))
 			tempMessage = tempMessage.replace(u'%L', levelname)
 			tempMessage = tempMessage.replace(u'%C', componentname)
 			tempMessage = tempMessage.replace(u'%F', filename)
@@ -618,11 +602,8 @@ False suppresses exceptions.
 			return tempMessage
 
 		try:
-			if not isinstance(message, unicode):
-				if not isinstance(message, str):
-					message = unicode(message)
-				else:
-					message = unicode(message, 'utf-8', 'replace')
+			if not isinstance(message, str):
+				message = str(message, 'utf-8', 'replace')
 
 			try:
 				message = message.format(*formatArgs, **formatKwargs)
@@ -634,8 +615,8 @@ False suppresses exceptions.
 					raise e
 
 			componentname = self.__componentName
-			datetime = unicode(time.strftime(u"%b %d %H:%M:%S", time.localtime()), 'utf-8', 'replace')
-			threadId = unicode(thread.get_ident())
+			datetime = str(time.strftime(u"%b %d %H:%M:%S", time.localtime()), 'utf-8', 'replace')
+			threadId = thread.get_ident()
 			specialConfig = None
 
 			try:
@@ -645,8 +626,8 @@ False suppresses exceptions.
 				color = COLOR_NORMAL
 
 			try:
-				filename = unicode(os.path.basename(sys._getframe(2).f_code.co_filename))
-				linenumber = unicode(sys._getframe(2).f_lineno)
+				filename = str(os.path.basename(sys._getframe(2).f_code.co_filename))
+				linenumber = str(sys._getframe(2).f_lineno)
 
 				specialConfig = self._getThreadConfig()
 				if not specialConfig and self.__objectConfig:
