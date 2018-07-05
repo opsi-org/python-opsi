@@ -697,14 +697,36 @@ def destroyPool(pool):
 
 
 def deflateEncode(data, level=1):
+	"""
+	Compress data with deflate.
+
+	:type data: str
+	:type level: int
+	:param level: Compression level
+	:rtype: bytes
+	"""
 	return zlib.compress(data.encode(), level)
 
 
 def deflateDecode(data):
+	"""
+	Decompress data with deflate.
+
+	:type data: bytes
+	:rtype: str
+	"""
 	return zlib.decompress(data).decode()
 
 
 def gzipEncode(data, level=1):
+	"""
+	Compress data with gzip.
+
+	:type data: str
+	:type level: int
+	:param level: Compression level
+	:rtype: bytes
+	"""
 	inmemoryFile = BytesIO()
 	with gzip.GzipFile(fileobj=inmemoryFile, mode="w", compresslevel=level) as gzipfile:
 		gzipfile.write(data.encode())
@@ -713,6 +735,12 @@ def gzipEncode(data, level=1):
 
 
 def gzipDecode(data):
+	"""
+	Decompress data with gzip.
+
+	:type data: bytes
+	:rtype: str
+	"""
 	with gzip.GzipFile(fileobj=BytesIO(data), mode="r") as gzipfile:
 		uncompressedData = gzipfile.read()
 
