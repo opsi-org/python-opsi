@@ -26,6 +26,7 @@ Dispatching backend calls to multiple backends.
 
 from __future__ import absolute_import
 
+import importlib
 import inspect
 import os
 import re
@@ -141,11 +142,10 @@ class BackendDispatcher(Backend):
 				continue
 			if not isinstance(l['config'], dict):
 				raise BackendConfigurationError(u"Bad type for config var in backend config file '%s', has to be dict" % backendConfigFile)
-			backendInstance = None
 			l["config"]["context"] = self
 			moduleName = 'OPSI.Backend.%s' % l['module']
 			backendClassName = "%sBackend" % l['module']
-			b = __import__(moduleName, globals(), locals(), backendClassName, -1)
+			b = importlib.import_module(moduleName)
 			self._backends[backend]["instance"] = getattr(b, backendClassName)(**l['config'])
 
 	def _createInstanceMethods(self):
