@@ -1251,7 +1251,7 @@ element of the tuple is replace with the second element.
 
 			checksum = sha1()
 
-			with open(path) as f:
+			with open(path, 'rb') as f:
 				chunk = True
 				while chunk:
 					chunk = f.read()
