@@ -1664,7 +1664,7 @@ into the IDs of these depots are to be found in the list behind \
 			productIds.add(poc.productId)
 
 		depotToClients = {}
-		for clientToDepot in self.configState_getClientToDepotserver(clientIds=productOnClientsByClient.keys()):
+		for clientToDepot in self.configState_getClientToDepotserver(clientIds=(clientId for clientId in productOnClientsByClient)):
 			try:
 				depotToClients[clientToDepot['depotId']].append(clientToDepot['clientId'])
 			except KeyError:
