@@ -110,12 +110,27 @@ def testCreatingFilterForStringValue(sqlBackendWithoutConnection):
     assert "(`a` = 'b')" == sqlBackendWithoutConnection._filterToSql({'a': "b"})
 
 
-@pytest.mark.parametrize("expected, filterExpression", [
-    ('(`a` = 1 or `a` = 2)', {'a': [1, 2]}),
-    ('(`a` = 1 or `a` = 2) and (`b` = 0)', {'a': [1, 2], 'b': False})
-])
-def testCreatingFilterWithListOfValuesCreatesAnOrExpression(sqlBackendWithoutConnection, expected, filterExpression):
-    assert expected == sqlBackendWithoutConnection._filterToSql(filterExpression)
+def testCreatingFilterWithListOfValuesCreatesAnOrExpression(sqlBackendWithoutConnection):
+    assert '(`a` = 1 or `a` = 2)' == sqlBackendWithoutConnection._filterToSql({'a': [1, 2]})
+
+
+def testCreatingFilterWithMultipleParameters(sqlBackendWithoutConnection):
+    # Expected is something like: '(`a` = 1 or `a` = 2) and (`b` = 0)'
+    result = sqlBackendWithoutConnection._filterToSql({'a': [1, 2], 'b': False})
+
+    first, second = result.split(' and ')
+
+    def testOrCondition(condition):
+        ffirst, fsecond = condition.split(' or ')
+        assert ffirst == '(`a` = 1'
+        assert fsecond == '`a` = 2)'
+
+    if second == '(`b` = 0)':
+        testOrCondition(first)
+    elif first == '(`b` = 0)':
+        testOrCondition(second)
+    else:
+        raise RuntimeError("We should never get here!")
 
 
 def testCreatingFilterWithWildcard(sqlBackendWithoutConnection):
