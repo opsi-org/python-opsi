@@ -92,18 +92,6 @@ _LICENSE_POOL_ID_REGEX = re.compile('^[a-z0-9][a-z0-9-_\. :]*$')
 _LANGUAGE_CODE_REGEX = re.compile('^([a-z]{2,3})[-_]?([a-z]{4})?[-_]?([a-z]{2})?$')
 _ARCHITECTURE_REGEX = re.compile('^(x86|x64)$')
 
-if sys.version_info > (3, ):
-	# Python 3
-	unicode = str
-	_STRING_TYPE = str
-	_UNICODE_TYPE = str
-	_STRING_TYPES = (str, )
-else:
-	# Python 2
-	_STRING_TYPE = str
-	_UNICODE_TYPE = unicode
-	_STRING_TYPES = (str, unicode)
-
 
 def forceList(var):
 	if not isinstance(var, (set, list, tuple, types.GeneratorType)):
@@ -113,10 +101,8 @@ def forceList(var):
 
 
 def forceUnicode(var):
-	if isinstance(var, _UNICODE_TYPE):
+	if isinstance(var, str):
 		return var
-	elif isinstance(var, _STRING_TYPE):
-		return unicode(var, 'utf-8', 'replace')
 	elif (os.name == 'nt') and isinstance(var, WindowsError):
 		return u"[Error %s] %s" % (var.args[0], var.args[1].decode(encoding))
 
@@ -127,24 +113,14 @@ def forceUnicode(var):
 		pass
 
 	try:
-		return var.__unicode__()
-	except Exception:
-		pass
-
-	try:
-		return unicode(var)
-	except Exception:
-		pass
-
-	try:
 		var = var.__repr__()
-		if isinstance(var, _UNICODE_TYPE):
+		if isinstance(var, str):
 			return var
-		return unicode(var, 'utf-8', 'replace')
+		return str(var, 'utf-8', 'replace')
 	except Exception:
 		pass
 
-	return unicode(var)
+	return str(var)
 
 
 def forceUnicodeLower(var):
@@ -170,7 +146,7 @@ def forceUnicodeLowerList(var):
 def forceBool(var):
 	if isinstance(var, bool):
 		return var
-	elif isinstance(var, _STRING_TYPES):
+	elif isinstance(var, str):
 		if len(var) <= 5:  # longest word is 5 characters ("false")
 			lowValue = var.lower()
 			if lowValue in ('true', 'yes', 'on', '1'):
@@ -366,7 +342,7 @@ def forceUrl(var):
 	"""
 	Forces ``var`` to be an valid URL.
 
-	:rtype: unicode
+	:rtype: str
 	"""
 	var = forceUnicode(var)
 	if not _URL_REGEX.search(var):
@@ -524,7 +500,7 @@ def forceObjectClass(var, objectClass):
 		return var
 
 	exception = None
-	if isinstance(var, _STRING_TYPES) and var.lstrip().startswith('{'):
+	if isinstance(var, str) and var.lstrip().startswith('{'):
 		from OPSI.Util import fromJson
 
 		try:
