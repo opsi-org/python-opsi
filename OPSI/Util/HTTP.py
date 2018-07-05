@@ -707,7 +707,7 @@ def deflateDecode(data):
 def gzipEncode(data, level=1):
 	inmemoryFile = BytesIO()
 	with gzip.GzipFile(fileobj=inmemoryFile, mode="w", compresslevel=level) as gzipfile:
-		gzipfile.write(data)
+		gzipfile.write(data.encode())
 
 	return inmemoryFile.getvalue()
 
@@ -716,7 +716,7 @@ def gzipDecode(data):
 	with gzip.GzipFile(fileobj=StringIO(data), mode="r") as gzipfile:
 		uncompressedData = gzipfile.read()
 
-	return forceUnicode(uncompressedData)
+	return forceUnicode(uncompressedData.decode())
 
 
 @contextmanager
