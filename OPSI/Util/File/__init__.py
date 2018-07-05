@@ -1406,12 +1406,9 @@ class DHCPDConf_Component(object):
 	def asText(self):
 		return self.getShifting()
 
-	def __unicode__(self):
+	def __str__(self):
 		return u'<{0}({1:d}, {2})>'.format(
 			self.__class__.__name__, self.startLine, self.endLine)
-
-	def __str__(self):
-		return self.__unicode__().encode("ascii", "replace")
 
 	def __repr__(self):
 		return self.__str__()

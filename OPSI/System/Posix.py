@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 #
-# Copyright (C) 2006-2010, 2013-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2018 uib GmbH <info@uib.de>
 # All rights reserved.
 #
 # This program is free software: you can redistribute it and/or modify
@@ -3045,9 +3045,6 @@ class Distribution(object):
 
 	def __str__(self):
 		return ("%s %s %s" % (self.distribution, self._version, self.id)).strip()
-
-	def __unicode__(self):
-		return unicode(self.__str__())
 
 	def __repr__(self):
 		return (u"Distribution(distribution_information=({distro!r}, "

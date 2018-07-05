@@ -89,11 +89,8 @@ class Subject(object):
 			"class": self.getClass()
 		}
 
-	def __unicode__(self):
-		return u'<%s type: %s, id: %s>' % (self.__class__.__name__, self._type, self._id)
-
 	def __str__(self):
-		return self.__unicode__().encode("ascii", "replace")
+		return u'<%s type: %s, id: %s>' % (self.__class__.__name__, self._type, self._id)
 
 	def __repr__(self):
 		return self.__str__()

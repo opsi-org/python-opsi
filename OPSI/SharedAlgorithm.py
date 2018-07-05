@@ -210,11 +210,8 @@ class XClassifiedProduct(object):
 		self.revisedPriority = product.priority  # start value which may be modified
 		self.product = product  # keep pointer to the original standard product structure
 
-	def __unicode__(self):
-		return u'<{classname}(productId={0!r}, priority={1}, revisedPriority={2})>'.format(self.id, self.priority, self.revisedPriority, classname=self.__class__.__name__)
-
 	def __str__(self):
-		return self.__unicode__().encode("ascii", "replace")
+		return u'<{classname}(productId={0!r}, priority={1}, revisedPriority={2})>'.format(self.id, self.priority, self.revisedPriority, classname=self.__class__.__name__)
 
 	def __repr__(self):
 		return self.__str__()
@@ -231,11 +228,8 @@ class OrderRequirement(object):
 		self.posterior = forceInt(posterior)
 		self.fulfilled = forceBool(fulfilled)
 
-	def __unicode__(self):
-		return u"<OrderRequirement(prior={0.prior!r}, posterior={0.posterior!r}, fulfilled={0.fulfilled!r}>".format(self)
-
 	def __str__(self):
-		return self.__unicode__().encode("ascii", "replace")
+		return u"<OrderRequirement(prior={0.prior!r}, posterior={0.posterior!r}, fulfilled={0.fulfilled!r}>".format(self)
 
 	def __repr__(self):
 		return self.__str__()

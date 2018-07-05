@@ -158,11 +158,8 @@ class Repository:
 	def setMaxBandwidth(self, maxBandwidth):
 		self.setBandwidth(dynamicBandwidth=self._dynamicBandwidth, maxBandwidth=maxBandwidth)
 
-	def __unicode__(self):
-		return u"<{0}({1!r})>".format(self.__class__.__name__, self._url)
-
 	def __str__(self):
-		return self.__unicode__().encode("ascii", "replace")
+		return u"<{0}({1!r})>".format(self.__class__.__name__, self._url)
 
 	def __repr__(self):
 		return self.__str__()
