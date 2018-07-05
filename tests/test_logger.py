@@ -25,7 +25,6 @@ Testing our logger.
 from __future__ import absolute_import, print_function
 
 import os
-import sys
 import warnings
 from contextlib import contextmanager
 from io import StringIO
