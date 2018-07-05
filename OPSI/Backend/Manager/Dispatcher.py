@@ -142,7 +142,6 @@ class BackendDispatcher(Backend):
 				continue
 			if not isinstance(l['config'], dict):
 				raise BackendConfigurationError(u"Bad type for config var in backend config file '%s', has to be dict" % backendConfigFile)
-			backendInstance = None
 			l["config"]["context"] = self
 			moduleName = 'OPSI.Backend.%s' % l['module']
 			backendClassName = "%sBackend" % l['module']
