@@ -191,7 +191,7 @@ def testFormattingEmptyList():
 
 
 def testFormattingListOfEmptyLists():
-	expected = '[\n    [], \n    []\n]'
+	expected = '[\n    [],\n    []\n]'
 	assert expected == objectToBeautifiedText([[], []])
 
 
