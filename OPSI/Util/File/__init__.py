@@ -1422,7 +1422,7 @@ class DHCPDConf_Parameter(DHCPDConf_Component):
 		DHCPDConf_Component.__init__(self, startLine, parentBlock)
 		self.key = key
 		self.value = value
-		if isinstance(self.value, (unicode, str)):
+		if isinstance(self.value, str):
 			if self.value.lower() in (u'yes', u'true', u'on'):
 				self.value = True
 			elif self.value.lower() in (u'no', u'false', u'off'):
