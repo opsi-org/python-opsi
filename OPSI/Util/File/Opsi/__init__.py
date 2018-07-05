@@ -1263,11 +1263,13 @@ element of the tuple is replace with the second element.
 
 	def _addChecksumFile(self):
 		string = StringIO()
+		size = 0
 		for path, checksum in self._filemap.items():
-			string.write("%s %s\n" % (checksum, path))
+			size += string.write("%s %s\n" % (checksum, path))
 		string.seek(0)
+
 		info = tarfile.TarInfo(name="%s/checksums" % self.CONTROL_DIR)
-		info.size = len(string.buf)
+		info.size = size
 
 		self.addfile(info, string)
 
