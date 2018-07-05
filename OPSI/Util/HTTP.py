@@ -713,7 +713,7 @@ def gzipEncode(data, level=1):
 
 
 def gzipDecode(data):
-	with gzip.GzipFile(fileobj=StringIO(data), mode="r") as gzipfile:
+	with gzip.GzipFile(fileobj=BytesIO(data), mode="r") as gzipfile:
 		uncompressedData = gzipfile.read()
 
 	return forceUnicode(uncompressedData.decode())
