@@ -82,7 +82,7 @@ def testForcingObjectClassFromJSONHasGoodErrorDescription():
 		forceObjectClass(incompleteJson, ProductOnClient)
 		pytest.fail("No error from incomplete json.")
 	except ValueError as error:
-		assert "Missing required argument(s): 'productId'" in str(error)
+		assert "missing 1 required positional argument: 'productId'" in str(error)
 
 	incompleteJson['type'] = "NotValid"
 	try:
