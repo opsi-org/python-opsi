@@ -1271,7 +1271,7 @@ element of the tuple is replace with the second element.
 		info = tarfile.TarInfo(name="%s/checksums" % self.CONTROL_DIR)
 		info.size = size
 
-		self.addfile(info, string)
+		self.addfile(info, string.encode())
 
 	def _addSysInfoFile(self):
 		string = StringIO()
