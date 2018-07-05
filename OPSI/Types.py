@@ -194,7 +194,8 @@ def forceOct(var):
 			elif i == 0 and x != '0':
 				octValue += '0'
 			octValue += str(x)
-		octValue = eval(octValue)
+
+		octValue = eval('0o' + octValue)
 		return octValue
 	except Exception as error:
 		raise ValueError(u"Bad oct value {0!r}: {1}".format(var, error))
