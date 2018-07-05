@@ -90,7 +90,7 @@ def testCreateFilterForMultipleBools(sqlBackendWithoutConnection):
     condition = sqlBackendWithoutConnection._filterToSql({'a': True, 'b': False})
     first, second = condition.split(' and ', 1)
 
-    assert (first == '(`a` = 1)' and second == '(`b` = 0)') or (second == '(`a` = 1)' first == '(`b` = 0)')
+    assert (first == '(`a` = 1)' and second == '(`b` = 0)') or (second == '(`a` = 1)' and first == '(`b` = 0)')
 
 
 def testCreatingFilterAddsMultipleValuesWithAnAnd(sqlBackendWithoutConnection):
