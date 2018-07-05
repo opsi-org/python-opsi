@@ -3,6 +3,7 @@
 from collections import defaultdict
 import SharedAlgorithm
 
+
 class Product(object):
 	"""
 	has String member id, int members priority, revisedPriority
@@ -13,13 +14,9 @@ class Product(object):
 		self.priority = priority
 		self.revisedPriority = priority
 
-	def __unicode__(self):
+	def __str__(self):
 		#return (u"productId=" + self.productId + u", " + u"p0riority=" + self.priority)
 		return (u'productId={0}, priority={1}, revisedPriority={2}'.format(self.id, self.priority,self.revisedPriority))
-
-	def __str__(self):
-		return self.__unicode__().encode("ascii", "replace")
-
 
 
 def produceRequirements(productDependencies):
