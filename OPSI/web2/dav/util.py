@@ -30,6 +30,7 @@ This API is considered private to static.py and is therefore subject to
 change.
 """
 
+import importlib
 import urllib
 from urlparse import urlsplit, urlunsplit
 import posixpath # Careful; this module is not documented as public API
@@ -187,10 +188,11 @@ def bindMethods(module, clazz, prefixes=("preconditions_", "http_", "report_")):
     """
     for submodule_name in module.__all__:
         try:
-            __import__(module.__name__ + "." + submodule_name)
+            importlib.import_module(module.__name__ + "." + submodule_name)
         except ImportError:
             log.err("Unable to import module %s" % (module.__name__ + "." + submodule_name,))
             Failure().raiseException()
+
         submodule = getattr(module, submodule_name)
         for method_name in submodule.__all__:
             for prefix in prefixes:
