@@ -26,6 +26,7 @@ Dispatching backend calls to multiple backends.
 
 from __future__ import absolute_import
 
+import importlib
 import inspect
 import os
 import re
@@ -145,7 +146,7 @@ class BackendDispatcher(Backend):
 			l["config"]["context"] = self
 			moduleName = 'OPSI.Backend.%s' % l['module']
 			backendClassName = "%sBackend" % l['module']
-			b = __import__(moduleName, globals(), locals(), backendClassName, -1)
+			b = importlib.import_module(moduleName)
 			self._backends[backend]["instance"] = getattr(b, backendClassName)(**l['config'])
 
 	def _createInstanceMethods(self):
