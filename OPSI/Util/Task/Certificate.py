@@ -214,7 +214,7 @@ If not given will use a default.
 	cert.set_version(2)
 
 	LOGGER.notice(u"Signing Certificate")
-	cert.sign(k, str('sha512'))
+	cert.sign(k, 'sha512')
 
 	certcontext = "".join(
 		(
