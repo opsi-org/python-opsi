@@ -456,12 +456,12 @@ def testReadingPartitionTableFromOldSfdiskVersion():
 		'secStart': 69971968,
 		'secSize': 8193392,
 		'device': u'/fakedev/sdb2',
-		'size': long(4203118080),
+		'size': 4203118080,
 		'cylStart': 4355,
-		'end': long(40024212480),
+		'end': 40024212480,
 		'secEnd': 78165359,
 		'boot': False,
-		'start': long(35821094400),
+		'start': 35821094400,
 		'cylEnd': 4865,
 		'type': u'c'
 	}
