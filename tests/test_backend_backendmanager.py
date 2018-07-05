@@ -95,11 +95,11 @@ def testBackendManagerMethods(backendManager):
     }
     bm.setGeneralConfig(config=generalConfig, objectId=None)
 
-    key = generalConfig.keys()[0]
+    key = 'test-key-1'
     value = bm.getGeneralConfigValue(key=key, objectId=client1.id)
     assert value == generalConfig[key]
 
-    anotherKey = generalConfig.keys()[1]
+    anotherKey = 'test-key-2'
     bm.setGeneralConfigValue(anotherKey, client1.id, objectId=client1.id)
     bm.setGeneralConfigValue(anotherKey, 'changed', objectId=None)
     assert 'changed' == bm.getGeneralConfigValue(key=anotherKey, objectId=None)
