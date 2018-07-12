@@ -242,10 +242,10 @@ class BaseObject(object):
 	def update(self, updateObject, updateWithNoneValues=True):
 		if not issubclass(updateObject.__class__, self.__class__):
 			raise TypeError(u"Cannot update instance of %s with instance of %s" % (self.__class__.__name__, updateObject.__class__.__name__))
-		hash = updateObject.toHash()
+		objectHash = updateObject.toHash()
 
 		try:
-			del hash['type']
+			del objectHash['type']
 		except KeyError:
 			# No key "type", everything fine.
 			pass
@@ -253,14 +253,14 @@ class BaseObject(object):
 		if not updateWithNoneValues:
 			toDelete = set(
 				key for (key, value)
-				in hash.items()
+				in objectHash.items()
 				if value is None
 			)
 
 			for key in toDelete:
-				del hash[key]
+				del objectHash[key]
 
-		self.__dict__.update(hash)
+		self.__dict__.update(objectHash)
 
 	def getType(self):
 		return self.__class__.__name__
@@ -272,9 +272,9 @@ class BaseObject(object):
 		return self._isGeneratedDefault
 
 	def toHash(self):
-		hash = dict(self.__dict__)
-		hash['type'] = self.getType()
-		return hash
+		objectHash = dict(self.__dict__)
+		objectHash['type'] = self.getType()
+		return objectHash
 
 	def toJson(self):
 		return toJson(self)
