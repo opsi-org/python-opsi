@@ -589,7 +589,15 @@ def testSerialisingDictsInList():
 	]
 	output = toJson(inputValues)
 
-	assert u'[{"a": "b", "c": 1}, {"a": "b", "c": 1}]' == output
+	assert output.startswith('[{')
+	assert output.endswith('}]')
+	assert output.count(':') == 4  # 2 dicts * 2 values
+	assert output.count(',') == 3
+	assert output.count('"c": 1') == 2
+	assert output.count('"a": "b"') == 2
+	assert output.count('}, {') == 1
+
+	assert inputValues == fromJson(output)
 
 
 def testSerialisingDictsInListWithFloat():
