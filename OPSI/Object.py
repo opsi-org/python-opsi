@@ -3155,7 +3155,7 @@ class AuditHardware(Entity):
 				else:
 					raise BackendConfigurationError(u"Attribute '%s' of hardware class '%s' has unknown type '%s'" % (attribute, hardwareClass, type))
 
-			for key in attributeToDelete:
+			for attribute in attributeToDelete:
 				del kwargs[attribute]
 		else:
 			newKwargs = {}
