@@ -864,7 +864,7 @@ output will be returned.
 				return (subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=None)).stdout
 
 		else:
-			data = ''
+			data = b''
 			stderr = None
 			if captureStderr:
 				stderr = subprocess.PIPE
