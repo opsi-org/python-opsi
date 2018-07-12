@@ -549,7 +549,7 @@ def blowfishEncrypt(key, cleartext):
 		logger.logException(encryptError, LOG_DEBUG)
 		raise BlowfishError(u"Failed to encrypt")
 
-	return str(crypt.encode("hex"))
+	return crypt.hex()
 
 
 def blowfishDecrypt(key, crypt):
