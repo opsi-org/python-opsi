@@ -225,7 +225,7 @@ If not given will use a default.
 
 	LOGGER.notice(u"Beginning to write certificate.")
 	with open(path, "wt") as certfile:
-		certfile.write(certcontext)
+		certfile.write(certcontext.decode())
 
 	with NamedTemporaryFile(mode="wt") as randfile:
 		LOGGER.notice(u"Generating and filling new randomize string")
