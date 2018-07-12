@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2010-2017 uib GmbH
+# Copyright (C) 2010-2018 uib GmbH
 
 # http://www.uib.de/
 
@@ -635,22 +635,22 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 				result.headers.setHeader('content-encoding', [encoding])
 				result.headers.setHeader('content-type', http_headers.MimeType("gzip-application", "json", {"charset": "utf-8"}))
 				logger.debug(u"Sending deflated data (backwards compatible - with content-encoding {0!r})", encoding)
-				result.stream = stream.IByteStream(deflateEncode(toJson(response).encode('utf-8')))
+				result.stream = stream.IByteStream(deflateEncode(toJson(response)))
 			else:
 				logger.debug(u"Sending plain data")
-				result.stream = stream.IByteStream(toJson(response).encode('utf-8'))
+				result.stream = stream.IByteStream(toJson(response))
 		elif encoding == "deflate":
 			result.headers.setHeader('content-encoding', [encoding])
 
 			logger.debug(u"Sending deflated data")
-			result.stream = stream.IByteStream(deflateEncode(toJson(response).encode('utf-8')))
+			result.stream = stream.IByteStream(deflateEncode(toJson(response)))
 		elif encoding == "gzip":
 			result.headers.setHeader('content-encoding', [encoding])
 
 			logger.debug(u"Sending gzip compressed data")
-			result.stream = stream.IByteStream(gzipEncode(toJson(response).encode('utf-8')))
+			result.stream = stream.IByteStream(gzipEncode(toJson(response)))
 		else:
-			result.stream = stream.IByteStream(toJson(response).encode('utf-8'))
+			result.stream = stream.IByteStream(toJson(response))
 
 		return result
 
