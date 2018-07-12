@@ -542,11 +542,6 @@ def blowfishEncrypt(key, cleartext):
 		# Fill up with \0 until length is a mutiple of 8
 		cleartext += chr(0)
 
-	try:
-		key = key.hex()
-	except TypeError:
-		raise BlowfishError(u"Failed to hex decode key '%s'" % key)
-
 	blowfish = Blowfish.new(key, Blowfish.MODE_CBC, BLOWFISH_IV)
 	try:
 		crypt = blowfish.encrypt(cleartext)
