@@ -1275,15 +1275,15 @@ element of the tuple is replace with the second element.
 
 	def _addSysInfoFile(self):
 		string = StringIO()
-
+		size = 0
 		for key, value in self.sysinfo.items():
-			string.write("%s: %s\n" % (key, value))
-
+			size += string.write("%s: %s\n" % (key, value))
 		string.seek(0)
-		info = tarfile.TarInfo(name="%s/sysinfo" % self.CONTROL_DIR)
-		info.size = len(string.buf)
 
-		self.addfile(info, string)
+		info = tarfile.TarInfo(name="%s/sysinfo" % self.CONTROL_DIR)
+		info.size = size
+
+		self.addfile(info, BytesIO(string.getvalue().encode()))
 
 	def verify(self):
 		if self.mode.startswith("w"):
