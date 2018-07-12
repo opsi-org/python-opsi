@@ -535,12 +535,12 @@ def blowfishEncrypt(key, cleartext):
 	:raises BlowfishError: In case things go wrong.
 	:rtype: unicode
 	"""
-	cleartext = forceUnicode(cleartext).encode('utf-8')
+	cleartext = forceUnicode(cleartext)
 	key = forceUnicode(key)
 
 	while len(cleartext) % 8 != 0:
 		# Fill up with \0 until length is a mutiple of 8
-		cleartext += chr(0)
+		cleartext += chr(0).encode()
 
 	try:
 		key = key.decode("hex")
