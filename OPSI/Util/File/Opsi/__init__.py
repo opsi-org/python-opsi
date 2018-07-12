@@ -39,7 +39,7 @@ import socket
 from collections import namedtuple
 from contextlib import closing
 from hashlib import sha1
-from io import StringIO
+from io import BytesIO, StringIO
 from operator import itemgetter
 from subprocess import Popen, PIPE, STDOUT
 
@@ -1207,8 +1207,8 @@ class OpsiBackupArchive(tarfile.TarFile):
 	def _readSysInfo(self):
 		sysInfo = {}
 		with closing(self.extractfile("%s/sysinfo" % self.CONTROL_DIR)) as fp:
-			for line in fp.readlines():
-				key, value = line.split(":")
+			for line in fp:
+				key, value = line.decode().split(":")
 				sysInfo[key.strip()] = value.strip()
 
 		return sysInfo
@@ -1216,8 +1216,8 @@ class OpsiBackupArchive(tarfile.TarFile):
 	def _readChecksumFile(self):
 		checksums = {}
 		with closing(self.extractfile("%s/checksums" % self.CONTROL_DIR)) as fp:
-			for line in fp.readlines():
-				key, value = line.split(" ", 1)
+			for line in fp:
+				key, value = line.decode().split(" ", 1)
 				checksums[value.strip()] = key.strip()
 
 		return checksums
@@ -1263,25 +1263,27 @@ element of the tuple is replace with the second element.
 
 	def _addChecksumFile(self):
 		string = StringIO()
+		size = 0
 		for path, checksum in self._filemap.items():
-			string.write("%s %s\n" % (checksum, path))
+			size += string.write("%s %s\n" % (checksum, path))
 		string.seek(0)
-		info = tarfile.TarInfo(name="%s/checksums" % self.CONTROL_DIR)
-		info.size = len(string.buf)
 
-		self.addfile(info, string)
+		info = tarfile.TarInfo(name="%s/checksums" % self.CONTROL_DIR)
+		info.size = size
+
+		self.addfile(info, BytesIO(string.getvalue().encode()))
 
 	def _addSysInfoFile(self):
 		string = StringIO()
-
+		size = 0
 		for key, value in self.sysinfo.items():
-			string.write("%s: %s\n" % (key, value))
-
+			size += string.write("%s: %s\n" % (key, value))
 		string.seek(0)
-		info = tarfile.TarInfo(name="%s/sysinfo" % self.CONTROL_DIR)
-		info.size = len(string.buf)
 
-		self.addfile(info, string)
+		info = tarfile.TarInfo(name="%s/sysinfo" % self.CONTROL_DIR)
+		info.size = size
+
+		self.addfile(info, BytesIO(string.getvalue().encode()))
 
 	def verify(self):
 		if self.mode.startswith("w"):
