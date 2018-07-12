@@ -232,7 +232,7 @@ If not given will use a default.
 	with open(path, "wt") as certfile:
 		certfile.write(certcontext.decode())
 
-	with NamedTemporaryFile(mode="wt") as randfile:
+	with NamedTemporaryFile(mode="wb") as randfile:
 		LOGGER.notice(u"Generating and filling new randomize string")
 		randfile.write(randomBytes(512))
 
