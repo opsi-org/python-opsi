@@ -251,9 +251,14 @@ class BaseObject(object):
 			pass
 
 		if not updateWithNoneValues:
-			for (key, value) in hash.items():
-				if value is None:
-					del hash[key]
+			toDelete = set(
+				key for (key, value)
+				in hash.items()
+				if value is None
+			)
+
+			for key in toDelete:
+				del hash[key]
 
 		self.__dict__.update(hash)
 
