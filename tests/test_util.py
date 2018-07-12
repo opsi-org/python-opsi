@@ -209,7 +209,26 @@ def testFormattingDefaultDict():
 	normal = objectToBeautifiedText(normalDict)
 	default = objectToBeautifiedText(defaultDict)
 
-	assert normal == default
+	expected = [
+		(u'lastStateChange', u''),
+		(u'actionRequest', u'none'),
+		(u'productVersion', u''),
+		(u'productActionProgress', u''),
+		(u'packageVersion', u''),
+		(u'installationStatus', u'not_installed'),
+		(u'productId', u'thunderbird')
+	]
+
+	for index, result in enumerate((normal, default)):
+		print("Check #{}: {}".format(index, result))
+
+		assert result.startswith('{')
+		assert result.endswith('{')
+		assert result.count(':') == 8
+		assert result.count(',') == 7
+
+		for key, value in expected:
+			assert '"{}": "{}"'.format(key, value) in result
 
 
 def testWorkingWithSet():
