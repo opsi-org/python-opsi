@@ -607,7 +607,20 @@ def testSerialisingDictsInListWithFloat():
 	]
 	output = toJson(inputValues)
 
-	assert u'[{"a": "b", "c": 1, "e": 2.3}, {"i": 4, "k": 5.6, "g": "h"}]' == output
+	assert output.startswith('[{')
+	assert output.endswith('}]')
+	assert output.count(':') == 6  # 2 dicts * 3 values
+	assert output.count(',') == 5
+	assert output.count('}, {') == 1
+
+	for d in inputValues:
+		for key, value in d.items():
+			if isinstance(value, str):
+				assert '"{}": "{}"'.format(key, value) in output
+			else:
+				assert '"{}": {}'.format(key, value) in output
+
+	assert inputValues == fromJson(output)
 
 
 @pytest.mark.parametrize("inputValues", [
