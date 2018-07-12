@@ -924,7 +924,7 @@ output will be returned.
 					line = line.decode(encoding, 'replace')
 					if i == len(lines) - 1 and not line:
 						break
-					logger.debug(u'>>> %s' % line)
+					logger.debug(u'>>> {}', line)
 					result.append(line)
 
 	except (os.error, IOError) as e:
