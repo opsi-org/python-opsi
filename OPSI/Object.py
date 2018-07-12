@@ -3215,10 +3215,10 @@ class AuditHardware(Entity):
 		return self.hardwareClass
 
 	def getIdentAttributes(self):
-		attributes = self.hardwareAttributes.get(self.hardwareClass, {}).keys()
+		attributes = list(self.hardwareAttributes.get(self.hardwareClass, {}).keys())
 		attributes.sort()
 		attributes.insert(0, 'hardwareClass')
-		return attributes
+		return tuple(attributes)
 
 	def serialize(self):
 		return self.toHash()
@@ -3436,11 +3436,11 @@ class AuditHardwareOnHost(Relationship):
 		return AuditHardware.fromHash(auditHardwareHash)
 
 	def getIdentAttributes(self):
-		attributes = self.hardwareAttributes.get(self.hardwareClass, {}).keys()
+		attributes = list(self.hardwareAttributes.get(self.hardwareClass, {}).keys())
 		attributes.sort()
 		attributes.insert(0, 'hostId')
 		attributes.insert(0, 'hardwareClass')
-		return attributes
+		return tuple(attributes)
 
 	def serialize(self):
 		return self.toHash()
