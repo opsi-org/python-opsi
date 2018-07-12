@@ -39,7 +39,7 @@ import socket
 from collections import namedtuple
 from contextlib import closing
 from hashlib import sha1
-from io import StringIO
+from io import BytesIO, StringIO
 from operator import itemgetter
 from subprocess import Popen, PIPE, STDOUT
 
@@ -1271,7 +1271,7 @@ element of the tuple is replace with the second element.
 		info = tarfile.TarInfo(name="%s/checksums" % self.CONTROL_DIR)
 		info.size = size
 
-		self.addfile(info, string)
+		self.addfile(info, BytesIO(string.getvalue().encode()))
 
 	def _addSysInfoFile(self):
 		string = StringIO()
