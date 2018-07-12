@@ -226,6 +226,7 @@ def testFormattingDefaultDict():
 		assert result.endswith('{')
 		assert result.count(':') == 8
 		assert result.count(',') == 7
+		assert result.count('\n') == 9
 
 		for key, value in expected:
 			assert '"{}": "{}"'.format(key, value) in result
