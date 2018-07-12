@@ -532,8 +532,10 @@ def blowfishEncrypt(key, cleartext):
 	Takes `cleartext` string, returns hex-encoded,
 	blowfish-encrypted string.
 
+	:type key: str
+	:type cleartext: str
 	:raises BlowfishError: In case things go wrong.
-	:rtype: unicode
+	:rtype: str
 	"""
 	cleartext = forceUnicode(cleartext)
 	key = forceUnicode(key).encode()
@@ -557,8 +559,11 @@ def blowfishDecrypt(key, crypt):
 	Takes hex-encoded, blowfish-encrypted string,
 	returns cleartext string.
 
+	:type key: str
+	:param crypt: The encrypted text as hex.
+	:type crypt: str
 	:raises BlowfishError: In case things go wrong.
-	:rtype: unicode
+	:rtype: str
 	"""
 	key = forceUnicode(key).encode()
 	crypt = bytes.fromhex(crypt)
