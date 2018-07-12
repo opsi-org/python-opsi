@@ -610,7 +610,7 @@ def testSerialisingDict(inputValues):
 	result = toJson(inputValues)
 
 	assert result.startswith('{')
-	assert result.startswith('}')
+	assert result.endswith('}')
 	assert result.count(':') == 3
 	assert result.count(',') == 2
 	for key, value in inputValues.items():
