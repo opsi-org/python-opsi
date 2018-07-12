@@ -1216,7 +1216,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 	def _readChecksumFile(self):
 		checksums = {}
 		with closing(self.extractfile("%s/checksums" % self.CONTROL_DIR)) as fp:
-			for line in fp.readlines():
+			for line in fp:
 				key, value = line.split(" ", 1)
 				checksums[value.strip()] = key.strip()
 
