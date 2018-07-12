@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -669,7 +669,7 @@ def testGetEthernetDevicesOnDebianWheezy():
 
 		yield output()
 
-	with mock.patch('__builtin__.open', fakeReader):
+	with mock.patch('Posix.open', fakeReader):
 		devices = Posix.getEthernetDevices()
 		assert 2 == len(devices)
 		assert 'br0' in devices
@@ -696,7 +696,7 @@ def testReadingUnpredictableNetworkInterfaceNames():
 
 		yield output()
 
-	with mock.patch('__builtin__.open', fakeReader):
+	with mock.patch('Posix.open', fakeReader):
 		devices = Posix.getEthernetDevices()
 		assert 1 == len(devices)
 		assert 'ens18' in devices
