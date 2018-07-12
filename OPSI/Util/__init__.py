@@ -572,7 +572,7 @@ def blowfishDecrypt(key, crypt):
 
 	# Remove possible \0-chars
 	if cleartext.find(b'\0') != -1:
-		cleartext = cleartext[:cleartext.find('\0')]
+		cleartext = cleartext[:cleartext.find(b'\0')]
 
 	try:
 		return str(cleartext, 'utf-8')
