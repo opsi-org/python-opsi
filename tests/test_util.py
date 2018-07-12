@@ -223,7 +223,7 @@ def testFormattingDefaultDict():
 		print("Check #{}: {}".format(index, result))
 
 		assert result.startswith('{')
-		assert result.endswith('{')
+		assert result.endswith('}')
 		assert result.count(':') == 8
 		assert result.count(',') == 7
 		assert result.count('\n') == 9
