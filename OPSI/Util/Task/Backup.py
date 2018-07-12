@@ -139,7 +139,7 @@ class OpsiBackup(object):
 
 			filename = archive.name.split(os.sep)[-1]
 			if not destination:
-				destination = os.getcwdu()
+				destination = os.getcwd()
 
 			if os.path.isdir(destination):
 				destination = os.path.join(destination, filename)
