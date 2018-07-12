@@ -877,10 +877,6 @@ output will be returned.
 			)
 
 			if not encoding:
-				encoding = proc.stdin.encoding
-				if encoding == 'ascii':
-					encoding = 'utf-8'
-			if not encoding:
 				encoding = locale.getpreferredencoding()
 				if encoding == 'ascii':
 					encoding = 'utf-8'
