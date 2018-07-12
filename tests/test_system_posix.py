@@ -27,7 +27,6 @@ Various unittests to test functionality of python-opsi.
 import mock
 import os
 import pytest
-import sys
 from contextlib import contextmanager
 
 import OPSI.System.Posix as Posix
