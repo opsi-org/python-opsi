@@ -894,7 +894,7 @@ output will be returned.
 				ret = proc.poll()
 				try:
 					chunk = proc.stdout.read()
-					if len(chunk) > 0:
+					if chunk:
 						data += chunk
 				except IOError as e:
 					if e.errno != 11:
@@ -903,7 +903,7 @@ output will be returned.
 				if captureStderr:
 					try:
 						chunk = proc.stderr.read()
-						if len(chunk) > 0:
+						if chunk:
 							if exitOnStderr:
 								raise RuntimeError(u"Command '%s' failed: %s" % (cmd, chunk))
 							data += chunk
