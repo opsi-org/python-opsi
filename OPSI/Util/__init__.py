@@ -575,7 +575,7 @@ def blowfishDecrypt(key, crypt):
 		cleartext = cleartext[:cleartext.find(b'\0')]
 
 	try:
-		return str(cleartext, 'utf-8')
+		return cleartext.decode()
 	except Exception as e:
 		logger.error(e)
 		raise BlowfishError(u"Failed to convert decrypted text to unicode.")
