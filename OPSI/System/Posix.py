@@ -919,7 +919,7 @@ output will be returned.
 
 			exitCode = ret
 			if data:
-				lines = data.split('\n')
+				lines = data.split(b'\n')
 				for i, line in enumerate(lines):
 					line = line.decode(encoding, 'replace')
 					if i == len(lines) - 1 and not line:
