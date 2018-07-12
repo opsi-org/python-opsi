@@ -532,20 +532,17 @@ def blowfishEncrypt(key, cleartext):
 	Takes `cleartext` string, returns hex-encoded,
 	blowfish-encrypted string.
 
+	:type key: str
+	:type cleartext: str
 	:raises BlowfishError: In case things go wrong.
-	:rtype: unicode
+	:rtype: str
 	"""
-	cleartext = forceUnicode(cleartext).encode('utf-8')
-	key = forceUnicode(key)
+	cleartext = forceUnicode(cleartext)
+	key = forceUnicode(key).encode()
 
 	while len(cleartext) % 8 != 0:
 		# Fill up with \0 until length is a mutiple of 8
 		cleartext += chr(0)
-
-	try:
-		key = key.decode("hex")
-	except TypeError:
-		raise BlowfishError(u"Failed to hex decode key '%s'" % key)
 
 	blowfish = Blowfish.new(key, Blowfish.MODE_CBC, BLOWFISH_IV)
 	try:
@@ -554,7 +551,7 @@ def blowfishEncrypt(key, cleartext):
 		logger.logException(encryptError, LOG_DEBUG)
 		raise BlowfishError(u"Failed to encrypt")
 
-	return str(crypt.encode("hex"))
+	return crypt.hex()
 
 
 def blowfishDecrypt(key, crypt):
@@ -562,18 +559,15 @@ def blowfishDecrypt(key, crypt):
 	Takes hex-encoded, blowfish-encrypted string,
 	returns cleartext string.
 
+	:type key: str
+	:param crypt: The encrypted text as hex.
+	:type crypt: str
 	:raises BlowfishError: In case things go wrong.
-	:rtype: unicode
+	:rtype: str
 	"""
+	key = forceUnicode(key).encode()
+	crypt = bytes.fromhex(crypt)
 
-	key = forceUnicode(key)
-	crypt = forceUnicode(crypt)
-	try:
-		key = key.decode("hex")
-	except TypeError as e:
-		raise BlowfishError(u"Failed to hex decode key '%s'" % key)
-
-	crypt = crypt.decode("hex")
 	blowfish = Blowfish.new(key, Blowfish.MODE_CBC, BLOWFISH_IV)
 	try:
 		cleartext = blowfish.decrypt(crypt)
@@ -582,11 +576,11 @@ def blowfishDecrypt(key, crypt):
 		raise BlowfishError(u"Failed to decrypt")
 
 	# Remove possible \0-chars
-	if cleartext.find('\0') != -1:
-		cleartext = cleartext[:cleartext.find('\0')]
+	if b'\0' in cleartext:
+		cleartext = cleartext[:cleartext.find(b'\0')]
 
 	try:
-		return str(cleartext, 'utf-8')
+		return cleartext.decode()
 	except Exception as e:
 		logger.error(e)
 		raise BlowfishError(u"Failed to convert decrypted text to unicode.")
