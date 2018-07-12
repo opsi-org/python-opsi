@@ -560,15 +560,9 @@ def blowfishDecrypt(key, crypt):
 	:raises BlowfishError: In case things go wrong.
 	:rtype: unicode
 	"""
+	key = forceUnicode(key).encode()
+	crypt = bytes.fromhex(crypt)
 
-	key = forceUnicode(key)
-	crypt = forceUnicode(crypt)
-	try:
-		key = key.decode("hex")
-	except TypeError as e:
-		raise BlowfishError(u"Failed to hex decode key '%s'" % key)
-
-	crypt = crypt.decode("hex")
 	blowfish = Blowfish.new(key, Blowfish.MODE_CBC, BLOWFISH_IV)
 	try:
 		cleartext = blowfish.decrypt(crypt)
