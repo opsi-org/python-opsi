@@ -42,6 +42,11 @@ from OPSI.System import which, execute
 from OPSI.Types import forceHostId, forceInt
 from OPSI.Util import getfqdn
 
+try:
+	import secrets
+except ImportError:
+	secrets = None
+
 OPSICONFD_CERTFILE = u'/etc/opsi/opsiconfd.pem'
 DEFAULT_CERTIFICATE_PARAMETERS = {
 	"country": "DE",
@@ -229,8 +234,7 @@ If not given will use a default.
 
 	with NamedTemporaryFile(mode="wt") as randfile:
 		LOGGER.notice(u"Generating and filling new randomize string")
-		randomBytes = os.urandom(512)
-		randfile.write(randomBytes)
+		randfile.write(randomBytes(512))
 
 		execute(
 			u"{command} dhparam -rand {tempfile} 512 >> {target}".format(
@@ -239,6 +243,18 @@ If not given will use a default.
 		)
 
 	LOGGER.notice(u'Certificate creation done.')
+
+
+def randomBytes(length):
+	"""
+	Return _length_ random bytes.
+
+	:rtype: bytes
+	"""
+	if secrets:
+		return secrets.token_bytes(512)
+	else:
+		return os.urandom(512)
 
 
 def loadConfigurationFromCertificate(path=None):
