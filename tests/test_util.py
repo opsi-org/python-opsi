@@ -602,13 +602,24 @@ def testSerialisingDictsInListWithFloat():
 	assert u'[{"a": "b", "c": 1, "e": 2.3}, {"i": 4, "k": 5.6, "g": "h"}]' == output
 
 
-def testSerialisingDict():
-	inputValues = {'a': 'b', 'c': 1, 'e': 2}
-	assert u'{"a": "b", "c": 1, "e": 2}' == toJson(inputValues)
-	assert inputValues == fromJson(toJson(inputValues))
+@pytest.mark.parametrize("inputValues", [
+	{'a': 'b', 'c': 1, 'e': 2},
+	{'a': 'b', 'c': 1, 'e': 2.3}
+	])
+def testSerialisingDict(inputValues):
+	result = toJson(inputValues)
 
-	inputValues = {'a': 'b', 'c': 1, 'e': 2.3}
-	assert u'{"a": "b", "c": 1, "e": 2.3}' == toJson(inputValues)
+	assert result.startswith('{')
+	assert result.startswith('}')
+	assert result.count(':') == 3
+	assert result.count(',') == 2
+	for key, value in inputValues.items():
+		if isinstance(value, str):
+			assert '"{}": "{}"'.format(key, value) in result
+		else:
+			assert '"{}": {}'.format(key, value) in result
+
+	assert inputValues == fromJson(result)
 
 
 def testUnserialisableThingsFail():
