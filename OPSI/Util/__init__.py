@@ -540,7 +540,7 @@ def blowfishEncrypt(key, cleartext):
 
 	while len(cleartext) % 8 != 0:
 		# Fill up with \0 until length is a mutiple of 8
-		cleartext += chr(0).encode()
+		cleartext += chr(0)
 
 	try:
 		key = key.decode("hex")
