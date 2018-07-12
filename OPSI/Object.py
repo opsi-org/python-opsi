@@ -3121,10 +3121,11 @@ class AuditHardware(Entity):
 					kwargs[attribute] = None
 
 		if self.hardwareAttributes.get(hardwareClass):
+			attributeToDelete = set()
 			for (attribute, value) in kwargs.items():
 				attrType = self.hardwareAttributes[hardwareClass].get(attribute)
 				if not attrType:
-					del kwargs[attribute]
+					attributeToDelete.add(attribute)
 					continue
 				if value is None:
 					continue
@@ -3153,10 +3154,19 @@ class AuditHardware(Entity):
 						kwargs[attribute] = None
 				else:
 					raise BackendConfigurationError(u"Attribute '%s' of hardware class '%s' has unknown type '%s'" % (attribute, hardwareClass, type))
+
+			for key in attributeToDelete:
+				del kwargs[attribute]
 		else:
+			newKwargs = {}
 			for (attribute, value) in kwargs.items():
 				if isinstance(value, str):
-					kwargs[attribute] = forceUnicode(value).strip()
+					newKwargs[attribute] = forceUnicode(value).strip()
+				else:
+					newKwargs[attribute] = value
+
+			kwargs = newKwargs
+			del newKwargs
 
 		self.__dict__.update(kwargs)
 
