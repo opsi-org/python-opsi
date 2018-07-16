@@ -1,3 +1,9 @@
+python-opsi (4.1.1.40-2) stable; urgency=medium
+
+  * Postinst: Making sure that /etc/opsi/server_commands_default.conf exists. 
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 16 Jul 2018 12:18:52 +0200
+
 python-opsi (4.1.1.40-1) testing; urgency=medium
 
   * OpsiPXEConfd backend: improve performance by precollecting the
