@@ -150,6 +150,22 @@ class DepotserverPackageManager(object):
 		logger.setLogFile(self._depotBackend._packageLog, object=self)
 
 	def installPackage(self, filename, force=False, propertyDefaultValues={}, tempDir=None, forceProductId=None, suppressPackageContentFileGeneration=False):
+
+		def cleanUpProducts(backend, productId):
+			productIdents = set()
+			for productOnDepot in backend.productOnDepot_getObjects(productId=productId):
+				productIdent = u"%s;%s;%s" % (productOnDepot.productId, productOnDepot.productVersion, productOnDepot.packageVersion)
+				productIdents.add(productIdent)
+
+			deleteProducts = set(
+				product
+				for product in backend.product_getObjects(id=productId)
+				if product.getIdent(returnType='unicode') not in productIdents
+			)
+
+			if deleteProducts:
+				backend.product_deleteObjects(deleteProducts)
+
 		depotId = self._depotBackend._depotId
 		logger.info(u"=================================================================================================")
 		if forceProductId:
@@ -373,19 +389,7 @@ class DepotserverPackageManager(object):
 				productOnDepot.setLocked(False)
 				self._depotBackend._context.productOnDepot_updateObject(productOnDepot)
 
-				# Clean up products
-				productIdents = set()
-				for productOnDepot in self._depotBackend._context.productOnDepot_getObjects(productId=productOnDepot.productId):
-					productIdent = u"%s;%s;%s" % (productOnDepot.productId, productOnDepot.productVersion, productOnDepot.packageVersion)
-					productIdents.add(productIdent)
-
-				deleteProducts = []
-				for product in self._depotBackend._context.product_getObjects(id=productOnDepot.productId):
-					if product.getIdent(returnType='unicode') not in productIdents:
-						deleteProducts.append(product)
-
-				if deleteProducts:
-					self._depotBackend._context.product_deleteObjects(deleteProducts)
+				cleanUpProducts(self._depotBackend._context, productOnDepot.productId)
 
 				# Clean up productPropertyStates
 				productPropertiesToCleanup = {}
