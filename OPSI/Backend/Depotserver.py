@@ -259,10 +259,12 @@ class DepotserverPackageManager(object):
 			if not os.access(filename, os.R_OK):
 				raise BackendIOError(u"Read access denied for package file '%s'" % filename)
 
-			depots = self._depotBackend._context.host_getObjects(id=depotId)
-			if not depots:
+			try:
+				depots = self._depotBackend._context.host_getObjects(id=depotId)
+				depot = depots[0]
+				del depots
+			except IndexError:
 				raise BackendMissingDataError(u"Depot '%s' not found in backend" % depotId)
-			depot = depots[0]
 
 			depotLocalUrl = depot.getDepotLocalUrl()
 			if not depotLocalUrl.startswith(u'file:///'):
