@@ -388,7 +388,7 @@ class CpioArchive(BaseArchive, PigzMixin):
 				cat = System.which('bzcat')
 
 			return [unicode(line) for line in
-					System.execute(u'{cat} "{filename}" | {cpio} --quiet --extract --list --no-preserve-owner'.format(cat=cat, filename=self._filename, cpio=System.which('cpio')))
+					System.execute(u'{cat} "{filename}" | {cpio} --quiet --extract --list'.format(cat=cat, filename=self._filename, cpio=System.which('cpio')))
 					if line]
 		except Exception as e:
 			raise RuntimeError(u"Failed to get archive content '%s': %s" % (self._filename, e))
@@ -435,7 +435,7 @@ class CpioArchive(BaseArchive, PigzMixin):
 			curDir = os.path.abspath(os.getcwd())
 			os.chdir(targetPath)
 			try:
-				command = u'%s "%s" | %s --quiet --extract --make-directories --unconditional --preserve-modification-time --verbose %s' % (cat, self._filename, System.which('cpio'), include)
+				command = u'%s "%s" | %s --quiet --extract --make-directories --unconditional --preserve-modification-time --verbose --no-preserve-owner %s' % (cat, self._filename, System.which('cpio'), include)
 				self._extract(command, fileCount)
 			finally:
 				os.chdir(curDir)
