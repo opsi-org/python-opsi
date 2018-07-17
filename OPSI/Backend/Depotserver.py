@@ -207,10 +207,12 @@ class DepotserverPackageManager(object):
 									if forceUnicodeLower(possibleValue) == forceUnicodeLower(value):
 										newValue = possibleValue
 										break
-								if newValue:
+
+								if newValue is not None:
 									newValues.append(newValue)
 									changed = True
 									continue
+
 							changed = True
 
 						if changed:
