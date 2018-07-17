@@ -166,6 +166,67 @@ class DepotserverPackageManager(object):
 			if deleteProducts:
 				backend.product_deleteObjects(deleteProducts)
 
+		def cleanUpProductPropertyStates(backend, productProperties, depotId, productOnDepot):
+			productPropertiesToCleanup = {}
+			for productProperty in productProperties:
+				if productProperty.editable or not productProperty.possibleValues:
+					continue
+				productPropertiesToCleanup[productProperty.propertyId] = productProperty
+
+			if productPropertiesToCleanup:
+				clientIds = set(
+					clientToDepot['clientId']
+					for clientToDepot in backend.configState_getClientToDepotserver(depotIds=depotId)
+				)
+
+				if clientIds:
+					deleteProductPropertyStates = []
+					updateProductPropertyStates = []
+					states = backend.productPropertyState_getObjects(
+						objectId=clientIds,
+						productId=productOnDepot.getProductId(),
+						propertyId=list(productPropertiesToCleanup.keys())
+					)
+
+					for productPropertyState in states:
+						changed = False
+						newValues = []
+						for v in productPropertyState.values:
+							productProperty = productPropertiesToCleanup[productPropertyState.propertyId]
+							if v in productProperty.possibleValues:
+								newValues.append(v)
+								continue
+
+							if productProperty.getType() == 'BoolProductProperty' and forceBool(v) in productProperty.possibleValues:
+								newValues.append(forceBool(v))
+								changed = True
+								continue
+							elif productProperty.getType() == 'UnicodeProductProperty':
+								newValue = None
+								for pv in productProperty.possibleValues:
+									if forceUnicodeLower(pv) == forceUnicodeLower(v):
+										newValue = pv
+										break
+								if newValue:
+									newValues.append(newValue)
+									changed = True
+									continue
+							changed = True
+
+						if changed:
+							if not newValues:
+								logger.debug(u"Properties changed: marking productPropertyState {0} for deletion", productPropertyState)
+								deleteProductPropertyStates.append(productPropertyState)
+							else:
+								productPropertyState.setValues(newValues)
+								logger.debug(u"Properties changed: marking productPropertyState {0} for update", productPropertyState)
+								updateProductPropertyStates.append(productPropertyState)
+
+					if deleteProductPropertyStates:
+						backend.productPropertyState_deleteObjects(deleteProductPropertyStates)
+					if updateProductPropertyStates:
+						backend.productPropertyState_updateObjects(updateProductPropertyStates)
+
 		depotId = self._depotBackend._depotId
 		logger.info(u"=================================================================================================")
 		if forceProductId:
@@ -390,64 +451,9 @@ class DepotserverPackageManager(object):
 				self._depotBackend._context.productOnDepot_updateObject(productOnDepot)
 
 				cleanUpProducts(self._depotBackend._context, productOnDepot.productId)
-
-				# Clean up productPropertyStates
-				productPropertiesToCleanup = {}
-				for productProperty in productProperties:
-					if productProperty.editable or not productProperty.possibleValues:
-						continue
-					productPropertiesToCleanup[productProperty.propertyId] = productProperty
-
-				if productPropertiesToCleanup:
-					clientIds = []
-					for clientToDepot in self._depotBackend._context.configState_getClientToDepotserver(depotIds=depotId):
-						if clientToDepot['clientId'] not in clientIds:
-							clientIds.append(clientToDepot['clientId'])
-
-					if clientIds:
-						deleteProductPropertyStates = []
-						updateProductPropertyStates = []
-						for productPropertyState in self._depotBackend._context.productPropertyState_getObjects(
-										objectId=clientIds,
-										productId=productOnDepot.getProductId(),
-										propertyId=productPropertiesToCleanup.keys()):
-							changed = False
-							newValues = []
-							for v in productPropertyState.values:
-								productProperty = productPropertiesToCleanup[productPropertyState.propertyId]
-								if v in productProperty.possibleValues:
-									newValues.append(v)
-									continue
-
-								if productProperty.getType() == 'BoolProductProperty' and forceBool(v) in productProperty.possibleValues:
-									newValues.append(forceBool(v))
-									changed = True
-									continue
-								elif productProperty.getType() == 'UnicodeProductProperty':
-									newValue = None
-									for pv in productProperty.possibleValues:
-										if forceUnicodeLower(pv) == forceUnicodeLower(v):
-											newValue = pv
-											break
-									if newValue:
-										newValues.append(newValue)
-										changed = True
-										continue
-								changed = True
-
-							if changed:
-								if not newValues:
-									logger.debug(u"Properties changed: marking productPropertyState %s for deletion" % productPropertyState)
-									deleteProductPropertyStates.append(productPropertyState)
-								else:
-									productPropertyState.setValues(newValues)
-									logger.debug(u"Properties changed: marking productPropertyState %s for update" % productPropertyState)
-									updateProductPropertyStates.append(productPropertyState)
-
-						if deleteProductPropertyStates:
-							self._depotBackend._context.productPropertyState_deleteObjects(deleteProductPropertyStates)
-						if updateProductPropertyStates:
-							self._depotBackend._context.productPropertyState_updateObjects(updateProductPropertyStates)
+				cleanUpProductPropertyStates(
+					self._depotBackend._context, productProperties, depotId,
+					productOnDepot)
 			except Exception as installingPackageError:
 				logger.debug(u"Failed to install the package :(")
 				logger.logException(installingPackageError, logLevel=LOG_DEBUG)
