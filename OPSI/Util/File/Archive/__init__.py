@@ -381,7 +381,7 @@ class CpioArchive(BaseArchive, PigzMixin):
 			cat = System.which('cat')
 			if self._compression == 'gzip':
 				if self.pigz_detected:
-					cat = u'{pigz} -cd'.format(pigz=System.which('pigz'))
+					cat = u'{pigz} --create --diff'.format(pigz=System.which('pigz'))
 				else:
 					cat = System.which('zcat')
 			elif self._compression == 'bzip2':
@@ -406,7 +406,7 @@ class CpioArchive(BaseArchive, PigzMixin):
 			cat = System.which('cat')
 			if self._compression == 'gzip':
 				if self.pigz_detected:
-					cat = u'%s -cd' % (System.which('pigz'), )
+					cat = u'%s --create --diff' % (System.which('pigz'), )
 				else:
 					cat = System.which('zcat')
 			elif self._compression == 'bzip2':
@@ -435,7 +435,7 @@ class CpioArchive(BaseArchive, PigzMixin):
 			curDir = os.path.abspath(os.getcwd())
 			os.chdir(targetPath)
 			try:
-				command = u'%s "%s" | %s --quiet -idumv %s' % (cat, self._filename, System.which('cpio'), include)
+				command = u'%s "%s" | %s --quiet --extract --make-directories --unconditional --preserve-modification-time --verbose %s' % (cat, self._filename, System.which('cpio'), include)
 				self._extract(command, fileCount)
 			finally:
 				os.chdir(curDir)
@@ -451,7 +451,7 @@ class CpioArchive(BaseArchive, PigzMixin):
 			if not os.path.isdir(baseDir):
 				raise IOError(u"Base dir '%s' not found" % baseDir)
 
-			command = u'%s --quiet -v -o -H crc' % System.which('cpio')
+			command = u'%s --create --quiet --verbose --format crc' % System.which('cpio')
 			if dereference:
 				command += ' --dereference'
 			if self._compression == 'gzip':
