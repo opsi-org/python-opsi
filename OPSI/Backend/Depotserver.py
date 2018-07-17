@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2010-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2010-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -154,11 +154,15 @@ class DepotserverPackageManager(object):
 		logger.info(u"=================================================================================================")
 		if forceProductId:
 			forceProductId = forceProductIdFunc(forceProductId)
-			logger.notice(u"Installing package file '{filename}' as '{productId}' on depot '{depotId}'",
+			logger.notice(
+				u"Installing package file '{filename}' as '{productId}' on depot '{depotId}'",
 				filename=filename, depotId=depotId, productId=forceProductId
 			)
 		else:
-			logger.notice(u"Installing package file '%s' on depot '%s'" % (filename, depotId))
+			logger.notice(
+				u"Installing package file '{filename}' on depot '{depotId}'",
+				filename=filename, depotId=depotId
+			)
 
 		try:
 			filename = forceFilename(filename)
