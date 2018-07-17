@@ -26,6 +26,8 @@ Depotserver backend.
 
 import os
 
+from contextlib import contextmanager
+
 from OPSI.Exceptions import (
 	BackendBadValueError, BackendConfigurationError,
 	BackendError, BackendIOError, BackendMissingDataError,
@@ -150,6 +152,44 @@ class DepotserverPackageManager(object):
 		logger.setLogFile(self._depotBackend._packageLog, object=self)
 
 	def installPackage(self, filename, force=False, propertyDefaultValues={}, tempDir=None, forceProductId=None, suppressPackageContentFileGeneration=False):
+
+		@contextmanager
+		def lockProduct(backend, product, depotId, forceInstallation):
+			logger.notice(u"Locking product '{0}' on depot '{1}'", product.getId(), depotId)
+			productOnDepot = ProductOnDepot(
+				productId=productId,
+				productType=product.getType(),
+				productVersion=product.getProductVersion(),
+				packageVersion=product.getPackageVersion(),
+				depotId=depotId,
+				locked=True
+			)
+
+			productOnDepots = backend.productOnDepot_getObjects(depotId=depotId, productId=productId)
+			try:
+				if productOnDepots[0].getLocked():
+					logger.notice(u"Product {0} currently locked on depot '{1}'", productId, depotId)
+					if not forceInstallation:
+						raise BackendTemporaryError(u"Product currently locked on depot '%s'" % depotId)
+					logger.warning(u"Installation of locked product forced")
+			except IndexError:
+				pass
+
+			logger.info(u"Creating product on depot {0}", productOnDepot)
+			backend.productOnDepot_createObjects(productOnDepot)
+
+			try:
+				yield productOnDepot
+			finally:
+				logger.notice(
+					u"Unlocking product '{0}_{1}-{2}' on depot '{3}'",
+					productOnDepot.getProductId(),
+					productOnDepot.getProductVersion(),
+					productOnDepot.getPackageVersion(),
+					depotId
+				)
+				productOnDepot.setLocked(False)
+				self._depotBackend._context.productOnDepot_updateObject(productOnDepot)
 
 		def cleanUpProducts(backend, productId):
 			productIdents = set()
@@ -289,170 +329,143 @@ class DepotserverPackageManager(object):
 				logger.info(u"Creating product in backend")
 				self._depotBackend._context.product_createObjects(product)
 
-				logger.notice(u"Locking product '%s' on depot '%s'" % (product.getId(), depotId))
-				productOnDepot = ProductOnDepot(
-					productId=productId,
-					productType=product.getType(),
-					productVersion=product.getProductVersion(),
-					packageVersion=product.getPackageVersion(),
-					depotId=depotId,
-					locked=True
-				)
-				productOnDepots = self._depotBackend._context.productOnDepot_getObjects(depotId=depotId, productId=productId)
-				if productOnDepots and productOnDepots[0].getLocked():
-					logger.notice(u"Product currently locked on depot '%s'" % depotId)
-					if not force:
-						raise BackendTemporaryError(u"Product currently locked on depot '%s'" % depotId)
-					logger.warning(u"Installation of locked product forced")
-				logger.info(u"Creating product on depot %s" % productOnDepot)
-				self._depotBackend._context.productOnDepot_createObjects(productOnDepot)
+				with lockProduct(self._depotBackend._context, productId, depotId, force) as productOnDepot:
+					logger.info(u"Checking package dependencies")
+					self.checkDependencies(ppf)
 
-				logger.info(u"Checking package dependencies")
-				self.checkDependencies(ppf)
+					logger.info(u"Running preinst script")
+					for line in ppf.runPreinst(({'DEPOT_ID': depotId})):
+						logger.info(u"[preinst] {0}", line)
 
-				logger.info(u"Running preinst script")
-				for line in ppf.runPreinst(({'DEPOT_ID': depotId})):
-					logger.info(u"[preinst] {0}", line)
+					logger.info(u"Deleting old client-data dir")
+					ppf.deleteProductClientDataDir()
 
-				logger.info(u"Deleting old client-data dir")
-				ppf.deleteProductClientDataDir()
+					logger.info(u"Unpacking package files")
+					ppf.extractData()
 
-				logger.info(u"Unpacking package files")
-				ppf.extractData()
+					logger.info(u"Updating product dependencies of product %s" % product)
+					currentProductDependencies = {}
+					productDependencies = []
+					for productDependency in self._depotBackend._context.productDependency_getObjects(
+								productId=productId,
+								productVersion=product.getProductVersion(),
+								packageVersion=product.getPackageVersion()):
+						ident = productDependency.getIdent(returnType='unicode')
+						currentProductDependencies[ident] = productDependency
 
-				logger.info(u"Updating product dependencies of product %s" % product)
-				currentProductDependencies = {}
-				productDependencies = []
-				for productDependency in self._depotBackend._context.productDependency_getObjects(
+					for productDependency in ppf.packageControlFile.getProductDependencies():
+						if forceProductId:
+							productDependency.productId = productId
+
+						ident = productDependency.getIdent(returnType='unicode')
+						try:
+							del currentProductDependencies[ident]
+						except KeyError:
+							pass  # Dependency does currently not exist.
+						productDependencies.append(productDependency)
+
+					self._depotBackend._context.productDependency_createObjects(productDependencies)
+					if currentProductDependencies:
+						self._depotBackend._context.productDependency_deleteObjects(
+							currentProductDependencies.values()
+						)
+
+					logger.info(u"Updating product properties of product %s" % product)
+					currentProductProperties = {}
+					productProperties = []
+					for productProperty in self._depotBackend._context.productProperty_getObjects(
+								productId=productId,
+								productVersion=product.getProductVersion(),
+								packageVersion=product.getPackageVersion()):
+						ident = productProperty.getIdent(returnType='unicode')
+						currentProductProperties[ident] = productProperty
+
+					for productProperty in ppf.packageControlFile.getProductProperties():
+						if forceProductId:
+							productProperty.productId = productId
+
+						ident = productProperty.getIdent(returnType='unicode')
+						try:
+							del currentProductProperties[ident]
+						except KeyError:
+							pass  # Property not found - everyhing okay
+						productProperties.append(productProperty)
+					self._depotBackend._context.productProperty_createObjects(productProperties)
+
+					for productProperty in productProperties:
+						# Adjust property default values
+						if productProperty.editable or not productProperty.possibleValues:
+							continue
+						newValues = []
+						for v in propertyDefaultValues.get(productProperty.propertyId, []):
+							if v in productProperty.possibleValues:
+								newValues.append(v)
+
+						if not newValues and productProperty.defaultValues:
+							newValues = productProperty.defaultValues
+						propertyDefaultValues[productProperty.propertyId] = newValues
+
+					if currentProductProperties.values():
+						self._depotBackend._context.productProperty_deleteObjects(
+							currentProductProperties.values()
+						)
+
+					logger.info(u"Deleting product property states of product %s on depot '%s'" % (productId, depotId))
+					self._depotBackend._context.productPropertyState_deleteObjects(
+						self._depotBackend._context.productPropertyState_getObjects(
 							productId=productId,
-							productVersion=product.getProductVersion(),
-							packageVersion=product.getPackageVersion()):
-					ident = productDependency.getIdent(returnType='unicode')
-					currentProductDependencies[ident] = productDependency
-
-				for productDependency in ppf.packageControlFile.getProductDependencies():
-					if forceProductId:
-						productDependency.productId = productId
-
-					ident = productDependency.getIdent(returnType='unicode')
-					try:
-						del currentProductDependencies[ident]
-					except KeyError:
-						pass  # Dependency does currently not exist.
-					productDependencies.append(productDependency)
-
-				self._depotBackend._context.productDependency_createObjects(productDependencies)
-				if currentProductDependencies:
-					self._depotBackend._context.productDependency_deleteObjects(
-						currentProductDependencies.values()
-					)
-
-				logger.info(u"Updating product properties of product %s" % product)
-				currentProductProperties = {}
-				productProperties = []
-				for productProperty in self._depotBackend._context.productProperty_getObjects(
-							productId=productId,
-							productVersion=product.getProductVersion(),
-							packageVersion=product.getPackageVersion()):
-					ident = productProperty.getIdent(returnType='unicode')
-					currentProductProperties[ident] = productProperty
-
-				for productProperty in ppf.packageControlFile.getProductProperties():
-					if forceProductId:
-						productProperty.productId = productId
-
-					ident = productProperty.getIdent(returnType='unicode')
-					try:
-						del currentProductProperties[ident]
-					except KeyError:
-						pass  # Property not found - everyhing okay
-					productProperties.append(productProperty)
-				self._depotBackend._context.productProperty_createObjects(productProperties)
-
-				for productProperty in productProperties:
-					# Adjust property default values
-					if productProperty.editable or not productProperty.possibleValues:
-						continue
-					newValues = []
-					for v in propertyDefaultValues.get(productProperty.propertyId, []):
-						if v in productProperty.possibleValues:
-							newValues.append(v)
-
-					if not newValues and productProperty.defaultValues:
-						newValues = productProperty.defaultValues
-					propertyDefaultValues[productProperty.propertyId] = newValues
-
-				if currentProductProperties.values():
-					self._depotBackend._context.productProperty_deleteObjects(
-						currentProductProperties.values()
-					)
-
-				logger.info(u"Deleting product property states of product %s on depot '%s'" % (productId, depotId))
-				self._depotBackend._context.productPropertyState_deleteObjects(
-					self._depotBackend._context.productPropertyState_getObjects(
-						productId=productId,
-						objectId=depotId
-					)
-				)
-
-				logger.info(u"Deleting not needed property states of product %s" % productId)
-				productPropertyStates = self._depotBackend._context.productPropertyState_getObjects(productId=productId)
-				baseProperties = self._depotBackend._context.productProperty_getObjects(productId=productId)
-
-				productPropertyIds = None
-				productPropertyStatesToDelete = None
-				productPropertyIds = [productProperty.propertyId for productProperty in baseProperties]
-				productPropertyStatesToDelete = [ppState for ppState in productPropertyStates if ppState.propertyId not in productPropertyIds]
-				logger.debug(u"Following productPropertyStates are marked to delete: '%s'" % productPropertyStatesToDelete)
-				if productPropertyStatesToDelete:
-					self._depotBackend._context.productPropertyState_deleteObjects(productPropertyStatesToDelete)
-
-				logger.info(u"Setting product property states in backend")
-				productPropertyStates = []
-				for productProperty in productProperties:
-					productPropertyStates.append(
-						ProductPropertyState(
-							productId=productId,
-							propertyId=productProperty.propertyId,
-							objectId=depotId,
-							values=productProperty.defaultValues
+							objectId=depotId
 						)
 					)
 
-				for productPropertyState in productPropertyStates:
-					if productPropertyState.propertyId in propertyDefaultValues:
-						try:
-							productPropertyState.setValues(propertyDefaultValues[productPropertyState.propertyId])
-						except Exception as installationError:
-							logger.error(
-								u"Failed to set default values to {0} for productPropertyState {1}: {2}",
-								propertyDefaultValues[productPropertyState.propertyId],
-								productPropertyState,
-								installationError
+					logger.info(u"Deleting not needed property states of product %s" % productId)
+					productPropertyStates = self._depotBackend._context.productPropertyState_getObjects(productId=productId)
+					baseProperties = self._depotBackend._context.productProperty_getObjects(productId=productId)
+
+					productPropertyIds = None
+					productPropertyStatesToDelete = None
+					productPropertyIds = [productProperty.propertyId for productProperty in baseProperties]
+					productPropertyStatesToDelete = [ppState for ppState in productPropertyStates if ppState.propertyId not in productPropertyIds]
+					logger.debug(u"Following productPropertyStates are marked to delete: '%s'" % productPropertyStatesToDelete)
+					if productPropertyStatesToDelete:
+						self._depotBackend._context.productPropertyState_deleteObjects(productPropertyStatesToDelete)
+
+					logger.info(u"Setting product property states in backend")
+					productPropertyStates = []
+					for productProperty in productProperties:
+						productPropertyStates.append(
+							ProductPropertyState(
+								productId=productId,
+								propertyId=productProperty.propertyId,
+								objectId=depotId,
+								values=productProperty.defaultValues
 							)
-				self._depotBackend._context.productPropertyState_createObjects(productPropertyStates)
+						)
 
-				logger.info(u"Running postinst script")
-				for line in ppf.runPostinst({'DEPOT_ID': depotId}):
-					logger.info(u"[postinst] {0}", line)
+					for productPropertyState in productPropertyStates:
+						if productPropertyState.propertyId in propertyDefaultValues:
+							try:
+								productPropertyState.setValues(propertyDefaultValues[productPropertyState.propertyId])
+							except Exception as installationError:
+								logger.error(
+									u"Failed to set default values to {0} for productPropertyState {1}: {2}",
+									propertyDefaultValues[productPropertyState.propertyId],
+									productPropertyState,
+									installationError
+								)
+					self._depotBackend._context.productPropertyState_createObjects(productPropertyStates)
 
-				if not suppressPackageContentFileGeneration:
-					ppf.createPackageContentFile()
-				else:
-					logger.debug("Suppressed generation of package content file.")
+					logger.info(u"Running postinst script")
+					for line in ppf.runPostinst({'DEPOT_ID': depotId}):
+						logger.info(u"[postinst] {0}", line)
 
-				ppf.setAccessRights()
-				ppf.cleanup()
+					if not suppressPackageContentFileGeneration:
+						ppf.createPackageContentFile()
+					else:
+						logger.debug("Suppressed generation of package content file.")
 
-				logger.notice(
-					u"Unlocking product '{0}_{1}-{2}' on depot '{3}'",
-					productOnDepot.getProductId(),
-					productOnDepot.getProductVersion(),
-					productOnDepot.getPackageVersion(),
-					depotId
-				)
-				productOnDepot.setLocked(False)
-				self._depotBackend._context.productOnDepot_updateObject(productOnDepot)
+					ppf.setAccessRights()
+					ppf.cleanup()
 
 				cleanUpProducts(self._depotBackend._context, productOnDepot.productId)
 				cleanUpProductPropertyStates(
