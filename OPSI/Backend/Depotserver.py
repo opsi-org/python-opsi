@@ -191,21 +191,21 @@ class DepotserverPackageManager(object):
 					for productPropertyState in states:
 						changed = False
 						newValues = []
-						for v in productPropertyState.values:
+						for value in productPropertyState.values:
 							productProperty = productPropertiesToCleanup[productPropertyState.propertyId]
-							if v in productProperty.possibleValues:
-								newValues.append(v)
+							if value in productProperty.possibleValues:
+								newValues.append(value)
 								continue
 
-							if productProperty.getType() == 'BoolProductProperty' and forceBool(v) in productProperty.possibleValues:
-								newValues.append(forceBool(v))
+							if productProperty.getType() == 'BoolProductProperty' and forceBool(value) in productProperty.possibleValues:
+								newValues.append(forceBool(value))
 								changed = True
 								continue
 							elif productProperty.getType() == 'UnicodeProductProperty':
 								newValue = None
-								for pv in productProperty.possibleValues:
-									if forceUnicodeLower(pv) == forceUnicodeLower(v):
-										newValue = pv
+								for possibleValue in productProperty.possibleValues:
+									if forceUnicodeLower(possibleValue) == forceUnicodeLower(value):
+										newValue = possibleValue
 										break
 								if newValue:
 									newValues.append(newValue)
