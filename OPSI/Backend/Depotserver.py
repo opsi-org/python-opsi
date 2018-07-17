@@ -172,7 +172,7 @@ class DepotserverPackageManager(object):
 			ppf.getMetaData()
 
 			try:
-				yield
+				yield ppf
 				ppf.setAccessRights()
 			finally:
 				try:
