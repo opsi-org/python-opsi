@@ -183,6 +183,7 @@ class DepotserverPackageManager(object):
 		@contextmanager
 		def lockProduct(backend, product, depotId, forceInstallation):
 			logger.notice(u"Locking product '{0}' on depot '{1}'", product.getId(), depotId)
+			productId = product.getId()
 			productOnDepot = ProductOnDepot(
 				productId=productId,
 				productType=product.getType(),
@@ -353,7 +354,7 @@ class DepotserverPackageManager(object):
 					logger.info(u"Creating product in backend")
 					self._depotBackend._context.product_createObjects(product)
 
-					with lockProduct(self._depotBackend._context, productId, depotId, force) as productOnDepot:
+					with lockProduct(self._depotBackend._context, product, depotId, force) as productOnDepot:
 						logger.info(u"Checking package dependencies")
 						self.checkDependencies(ppf)
 
