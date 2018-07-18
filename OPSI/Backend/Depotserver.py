@@ -367,7 +367,6 @@ class DepotserverPackageManager(object):
 
 							logger.info(u"Updating product dependencies of product %s" % product)
 							currentProductDependencies = {}
-							productDependencies = []
 							for productDependency in self._depotBackend._context.productDependency_getObjects(
 										productId=productId,
 										productVersion=product.getProductVersion(),
@@ -375,6 +374,7 @@ class DepotserverPackageManager(object):
 								ident = productDependency.getIdent(returnType='unicode')
 								currentProductDependencies[ident] = productDependency
 
+							productDependencies = []
 							for productDependency in ppf.packageControlFile.getProductDependencies():
 								if forceProductId:
 									productDependency.productId = productId
