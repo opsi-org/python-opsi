@@ -418,11 +418,12 @@ class DepotserverPackageManager(object):
 								# Adjust property default values
 								if productProperty.editable or not productProperty.possibleValues:
 									continue
-								newValues = []
-								for v in propertyDefaultValues.get(productProperty.propertyId, []):
-									if v in productProperty.possibleValues:
-										newValues.append(v)
 
+								newValues = [
+									value
+									for value in propertyDefaultValues.get(productProperty.propertyId, [])
+									if value in productProperty.possibleValues
+								]
 								if not newValues and productProperty.defaultValues:
 									newValues = productProperty.defaultValues
 								propertyDefaultValues[productProperty.propertyId] = newValues
@@ -453,16 +454,14 @@ class DepotserverPackageManager(object):
 								self._depotBackend._context.productPropertyState_deleteObjects(productPropertyStatesToDelete)
 
 							logger.info(u"Setting product property states in backend")
-							productPropertyStates = []
-							for productProperty in productProperties:
-								productPropertyStates.append(
-									ProductPropertyState(
-										productId=productId,
-										propertyId=productProperty.propertyId,
-										objectId=depotId,
-										values=productProperty.defaultValues
-									)
-								)
+							productPropertyStates = [
+								ProductPropertyState(
+									productId=productId,
+									propertyId=productProperty.propertyId,
+									objectId=depotId,
+									values=productProperty.defaultValues
+								) for productProperty in productProperties
+							]
 
 							for productPropertyState in productPropertyStates:
 								if productPropertyState.propertyId in propertyDefaultValues:
