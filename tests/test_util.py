@@ -892,7 +892,9 @@ def testObjectToBashOutput():
 
 	result = objectToBash([product, product])
 
-	assert expected == result
+	assert set(result.keys()) == set(expected.keys())
+	assert expected['RESULT'] == result['RESULT']
+
 	assert result['RESULT1'] == result['RESULT2']
 
 
