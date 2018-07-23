@@ -615,7 +615,7 @@ False suppresses exceptions.
 					raise e
 
 			componentname = self.__componentName
-			datetime = str(time.strftime(u"%b %d %H:%M:%S", time.localtime()), 'utf-8', 'replace')
+			datetime = time.strftime(u"%b %d %H:%M:%S", time.localtime())
 			threadId = thread.get_ident()
 			specialConfig = None
 
