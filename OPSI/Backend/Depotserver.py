@@ -486,7 +486,7 @@ class DepotserverPackageManager(object):
 				cleanUpProducts(dataBackend, productOnDepot.productId)
 				cleanUpProductPropertyStates(dataBackend, productProperties, depotId, productOnDepot)
 			except Exception as installingPackageError:
-				logger.debug(u"Failed to install the package :(")
+				logger.debug(u"Failed to install the package {!r}", filename)
 				logger.logException(installingPackageError, logLevel=LOG_DEBUG)
 				raise installingPackageError
 		except Exception as installationError:
