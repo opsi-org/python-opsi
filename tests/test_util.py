@@ -209,17 +209,14 @@ def testObjectToBeautifiedText():
 	assert expected == objectToBeautifiedText([product, product])
 
 
-def testObjectToBeautifiedTextFormattingEmptyList():
-	assert '[]' == objectToBeautifiedText([])
+@pytest.mark.parametrize("value, expected", [
+	([], '[]'),
+	([[], []], '[\n    [],\n    []\n]'),
+	({},'{}'),
 
-
-def testObjectToBeautifiedTextFormattingListOfEmptyLists():
-	expected = '[\n    [],\n    []\n]'
-	assert expected == objectToBeautifiedText([[], []])
-
-
-def testObjectToBeautifiedTextFormattingEmptyDict():
-	assert '{}' == objectToBeautifiedText({})
+])
+def testObjectToBeautifiedTextEmptyObjects(expected, value):
+	assert expected == objectToBeautifiedText(value)
 
 
 def testObjectToBeautifiedTextFormattingDefaultDict():
