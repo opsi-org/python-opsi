@@ -69,6 +69,12 @@ def testIpAddressInNetworkWithFullNetmask():
 
 
 def generateLocalbootProducts(amount):
+	"""
+	Generates `amount` random LocalbootProducts.
+
+	:rtype: LocalbootProduct
+	"""
+
 	productVersions = ('1.0', '2', 'xxx', '3.1', '4')
 	packageVersions = ('1', '2', 'y', '3', '10', 11, 22)
 	licenseRequirements = (None, True, False)
