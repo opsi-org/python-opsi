@@ -676,19 +676,11 @@ False suppresses exceptions.
 				else:
 					fh = sys.stderr
 
-				try:
-					fhEncoding = fh.encoding
-				except Exception:
-					fhEncoding = None
-
-				if fhEncoding is None:
-					fhEncoding = locale.getpreferredencoding()
-
 				if self.__consoleColor:
 					m = u"%s%s%s\n" % (color, m, COLOR_NORMAL)
 				else:
 					m = u"%s\n" % m
-				fh.write(m.encode(fhEncoding, 'backslashreplace'))
+				fh.write(m)
 
 			if level <= self.__fileLevel:
 				# Log to file
