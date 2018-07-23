@@ -151,7 +151,7 @@ class BackendDispatcher(Backend):
 	def _createInstanceMethods(self):
 		logger.debug(u"BackendDispatcher is creating instance methods")
 		for Class in (ConfigDataBackend, ):  # Also apply to ExtendedConfigDataBackend?
-			for methodName, functionRef in inspect.getmembers(Class, inspect.ismethod):
+			for methodName, functionRef in inspect.getmembers(Class, inspect.isfunction):
 				if methodName.startswith('_'):
 					# Not a public method
 					continue
