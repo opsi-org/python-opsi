@@ -213,7 +213,7 @@ def testObjectToBeautifiedText():
 		if value is None:
 			fValue = 'null'
 		elif isinstance(value, bool):
-			fValue = '"{}"'.format(str(value).lower())
+			fValue = '{}'.format(str(value).lower())
 		elif isinstance(value, int):
 			fValue = '{}'.format(value)
 		else:
