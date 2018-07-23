@@ -897,6 +897,33 @@ def testObjectToBashOutput():
 
 	assert result['RESULT1'] == result['RESULT2']
 
+	singleResult = result['RESULT1']
+	assert singleResult.startswith('(\n')
+	assert singleResult.endswith('\n)')
+	assert singleResult.count('\n') == 21
+
+	# The order may not necessarily be the same so we check every value
+	assert 'onceScript="once.ins"' in singleResult
+	assert 'windowsSoftwareIds=""' in singleResult
+	assert 'description="asdf"' in singleResult
+	assert 'advice="lolnope"' in singleResult
+	assert 'alwaysScript="always.ins"' in singleResult
+	assert 'updateScript="update.ins"' in singleResult
+	assert 'productClassIds=""' in singleResult
+	assert 'id="htmltestproduct"' in singleResult
+	assert 'licenseRequired="False"' in singleResult
+	assert 'ident="htmltestproduct;3.1;1"' in singleResult
+	assert 'name="Product HTML Test"' in singleResult
+	assert 'changelog=""' in singleResult
+	assert 'customScript=""' in singleResult
+	assert 'uninstallScript="uninstall.ins"' in singleResult
+	assert 'userLoginScript=""' in singleResult
+	assert 'priority="0"' in singleResult
+	assert 'productVersion="3.1"' in singleResult
+	assert 'packageVersion="1"' in singleResult
+	assert 'type="LocalbootProduct"' in singleResult
+	assert 'setupScript="setup.ins"' in singleResult
+
 
 def testObjectToBashOnConfigStates():
 	states = [
