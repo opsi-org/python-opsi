@@ -140,26 +140,27 @@ def testObjectToHtmlOutputIsAsExpected():
 	assert result.startswith('{<div style="padding-left: 3em;">')
 	assert result.endswith('</div>}')
 	assert result.count('\n') == 19
+	assert result.count(',<br />') == 19
 
-	assert '<font class="json_key">"onceScript"</font>: "once.ins",<br />' in result
-	assert '<font class="json_key">"windowsSoftwareIds"</font>: null,<br />' in result
-	assert '<font class="json_key">"description"</font>: "asdf",<br />' in result
-	assert '<font class="json_key">"advice"</font>: "lolnope",<br />' in result
-	assert '<font class="json_key">"alwaysScript"</font>: "always.ins",<br />' in result
-	assert '<font class="json_key">"updateScript"</font>: "update.ins",<br />' in result
-	assert '<font class="json_key">"productClassIds"</font>: null,<br />' in result
-	assert '<font class="json_key">"id"</font>: "htmltestproduct",<br />' in result
-	assert '<font class="json_key">"licenseRequired"</font>: false,<br />' in result
-	assert '<font class="json_key">"ident"</font>: "htmltestproduct;3.1;1",<br />' in result
-	assert '<font class="json_key">"name"</font>: "Product&nbsp;HTML&nbsp;Test",<br />' in result
-	assert '<font class="json_key">"changelog"</font>: null,<br />' in result
-	assert '<font class="json_key">"customScript"</font>: null,<br />' in result
-	assert '<font class="json_key">"uninstallScript"</font>: "uninstall.ins",<br />' in result
-	assert '<font class="json_key">"userLoginScript"</font>: null,<br />' in result
-	assert '<font class="json_key">"priority"</font>: 0,<br />' in result
-	assert '<font class="json_key">"productVersion"</font>: "3.1",<br />' in result
-	assert '<font class="json_key">"packageVersion"</font>: "1",<br />' in result
-	assert '<font class="json_key">"type"</font>: "LocalbootProduct",<br />' in result
+	assert '<font class="json_key">"onceScript"</font>: "once.ins"' in result
+	assert '<font class="json_key">"windowsSoftwareIds"</font>: null' in result
+	assert '<font class="json_key">"description"</font>: "asdf"' in result
+	assert '<font class="json_key">"advice"</font>: "lolnope"' in result
+	assert '<font class="json_key">"alwaysScript"</font>: "always.ins"' in result
+	assert '<font class="json_key">"updateScript"</font>: "update.ins"' in result
+	assert '<font class="json_key">"productClassIds"</font>: null' in result
+	assert '<font class="json_key">"id"</font>: "htmltestproduct"' in result
+	assert '<font class="json_key">"licenseRequired"</font>: false' in result
+	assert '<font class="json_key">"ident"</font>: "htmltestproduct;3.1;1"' in result
+	assert '<font class="json_key">"name"</font>: "Product&nbsp;HTML&nbsp;Test"' in result
+	assert '<font class="json_key">"changelog"</font>: null' in result
+	assert '<font class="json_key">"customScript"</font>: null' in result
+	assert '<font class="json_key">"uninstallScript"</font>: "uninstall.ins"' in result
+	assert '<font class="json_key">"userLoginScript"</font>: null' in result
+	assert '<font class="json_key">"priority"</font>: 0' in result
+	assert '<font class="json_key">"productVersion"</font>: "3.1"' in result
+	assert '<font class="json_key">"packageVersion"</font>: "1"' in result
+	assert '<font class="json_key">"type"</font>: "LocalbootProduct"' in result
 	assert '<font class="json_key">"setupScript"</font>: "setup.ins"' in result
 
 
