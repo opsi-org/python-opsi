@@ -616,7 +616,7 @@ False suppresses exceptions.
 
 			componentname = self.__componentName
 			datetime = time.strftime(u"%b %d %H:%M:%S", time.localtime())
-			threadId = thread.get_ident()
+			threadId = str(thread.get_ident())
 			specialConfig = None
 
 			try:
