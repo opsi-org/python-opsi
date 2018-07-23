@@ -217,7 +217,7 @@ def testObjectToBeautifiedText():
 		else:
 			fValue = '"{}"'.format(value)
 
-		formattedStr = '"{}": {}, \n'.format(key, fValue)
+		formattedStr = '"{}": {},\n'.format(key, fValue)
 		assert result.count(formattedStr) == 2
 
 
