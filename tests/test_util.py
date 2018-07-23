@@ -185,7 +185,7 @@ def testObjectToBeautifiedTextGeneratesValidJSON(objectCount):
 		assert isinstance(obj, LocalbootProduct)
 
 
-def testCheckingOutput():
+def testObjectToBeautifiedText():
 	product = LocalbootProduct(
 		id='htmltestproduct',
 		productVersion='3.1',
@@ -209,20 +209,20 @@ def testCheckingOutput():
 	assert expected == objectToBeautifiedText([product, product])
 
 
-def testFormattingEmptyList():
+def testObjectToBeautifiedTextFormattingEmptyList():
 	assert '[]' == objectToBeautifiedText([])
 
 
-def testFormattingListOfEmptyLists():
+def testObjectToBeautifiedTextFormattingListOfEmptyLists():
 	expected = '[\n    [],\n    []\n]'
 	assert expected == objectToBeautifiedText([[], []])
 
 
-def testFormattingEmptyDict():
+def testObjectToBeautifiedTextFormattingEmptyDict():
 	assert '{}' == objectToBeautifiedText({})
 
 
-def testFormattingDefaultDict():
+def testObjectToBeautifiedTextFormattingDefaultDict():
 	normalDict = {u'lastStateChange': u'', u'actionRequest': u'none', u'productVersion': u'', u'productActionProgress': u'', u'packageVersion': u'', u'installationStatus': u'not_installed', u'productId': u'thunderbird'}
 	defaultDict = defaultdict(lambda x: u'')
 
@@ -255,7 +255,7 @@ def testFormattingDefaultDict():
 			assert '"{}": "{}"'.format(key, value) in result
 
 
-def testWorkingWithSet():
+def testObjectToBeautifiedTextWorkingWithSet():
 	# Exactly one product because set is unordered.
 	obj = set([
 		LocalbootProduct(
