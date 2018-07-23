@@ -204,9 +204,23 @@ def testObjectToBeautifiedText():
 		windowsSoftwareIds=None
 	)
 
-	expected = u'[\n    {\n        "onceScript": "once.ins", \n        "windowsSoftwareIds": null, \n        "description": "asdf", \n        "advice": "lolnope", \n        "alwaysScript": "always.ins", \n        "updateScript": "update.ins", \n        "productClassIds": null, \n        "id": "htmltestproduct", \n        "licenseRequired": false, \n        "ident": "htmltestproduct;3.1;1", \n        "name": "Product HTML Test", \n        "changelog": null, \n        "customScript": null, \n        "uninstallScript": "uninstall.ins", \n        "userLoginScript": null, \n        "priority": 0, \n        "productVersion": "3.1", \n        "packageVersion": "1", \n        "type": "LocalbootProduct", \n        "setupScript": "setup.ins"\n    }, \n    {\n        "onceScript": "once.ins", \n        "windowsSoftwareIds": null, \n        "description": "asdf", \n        "advice": "lolnope", \n        "alwaysScript": "always.ins", \n        "updateScript": "update.ins", \n        "productClassIds": null, \n        "id": "htmltestproduct", \n        "licenseRequired": false, \n        "ident": "htmltestproduct;3.1;1", \n        "name": "Product HTML Test", \n        "changelog": null, \n        "customScript": null, \n        "uninstallScript": "uninstall.ins", \n        "userLoginScript": null, \n        "priority": 0, \n        "productVersion": "3.1", \n        "packageVersion": "1", \n        "type": "LocalbootProduct", \n        "setupScript": "setup.ins"\n    }\n]'
+	result = objectToBeautifiedText([product, product])
+	assert result.startswith('[\n    {\n        ')
+	assert result.endswith('\n    }\n]')
+	assert result.count('\n') == 45
 
-	assert expected == objectToBeautifiedText([product, product])
+	for key, value in product.toHash().items():
+		print("Checking {}")
+
+		if value is None:
+			fValue = 'null'
+		elif isinstance(value, int):
+			fValue = '{}'.format(value)
+		else:
+			fValue = '"{}"'.format(value)
+
+		formattedStr = '"{}": {}, \n'.format(key, value)
+		assert result.count(formattedStr) == 2
 
 
 @pytest.mark.parametrize("value, expected", [
