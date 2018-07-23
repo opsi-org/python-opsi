@@ -342,6 +342,8 @@ class DepotserverPackageManager(object):
 				raise BackendIOError(u"Read access denied for package file '%s'" % filename)
 
 			try:
+				dataBackend = self._depotBackend._context
+
 				with productPackageFile(filename, tempDir, depotId) as ppf:
 					product = ppf.packageControlFile.getProduct()
 					if forceProductId:
@@ -352,9 +354,9 @@ class DepotserverPackageManager(object):
 					productId = product.getId()
 
 					logger.info(u"Creating product in backend")
-					self._depotBackend._context.product_createObjects(product)
+					dataBackend.product_createObjects(product)
 
-					with lockProduct(self._depotBackend._context, product, depotId, force) as productOnDepot:
+					with lockProduct(dataBackend, product, depotId, force) as productOnDepot:
 						logger.info(u"Checking package dependencies")
 						self.checkDependencies(ppf)
 
@@ -367,7 +369,7 @@ class DepotserverPackageManager(object):
 
 							logger.info(u"Updating product dependencies of product %s" % product)
 							currentProductDependencies = {}
-							for productDependency in self._depotBackend._context.productDependency_getObjects(
+							for productDependency in dataBackend.productDependency_getObjects(
 										productId=productId,
 										productVersion=product.getProductVersion(),
 										packageVersion=product.getPackageVersion()):
@@ -386,16 +388,16 @@ class DepotserverPackageManager(object):
 									pass  # Dependency does currently not exist.
 								productDependencies.append(productDependency)
 
-							self._depotBackend._context.productDependency_createObjects(productDependencies)
+							dataBackend.productDependency_createObjects(productDependencies)
 							if currentProductDependencies:
-								self._depotBackend._context.productDependency_deleteObjects(
+								dataBackend.productDependency_deleteObjects(
 									currentProductDependencies.values()
 								)
 
 							logger.info(u"Updating product properties of product %s" % product)
 							currentProductProperties = {}
 							productProperties = []
-							for productProperty in self._depotBackend._context.productProperty_getObjects(
+							for productProperty in dataBackend.productProperty_getObjects(
 										productId=productId,
 										productVersion=product.getProductVersion(),
 										packageVersion=product.getPackageVersion()):
@@ -412,7 +414,7 @@ class DepotserverPackageManager(object):
 								except KeyError:
 									pass  # Property not found - everyhing okay
 								productProperties.append(productProperty)
-							self._depotBackend._context.productProperty_createObjects(productProperties)
+							dataBackend.productProperty_createObjects(productProperties)
 
 							for productProperty in productProperties:
 								# Adjust property default values
@@ -429,21 +431,21 @@ class DepotserverPackageManager(object):
 								propertyDefaultValues[productProperty.propertyId] = newValues
 
 							if currentProductProperties.values():
-								self._depotBackend._context.productProperty_deleteObjects(
+								dataBackend.productProperty_deleteObjects(
 									currentProductProperties.values()
 								)
 
 							logger.info(u"Deleting product property states of product %s on depot '%s'" % (productId, depotId))
-							self._depotBackend._context.productPropertyState_deleteObjects(
-								self._depotBackend._context.productPropertyState_getObjects(
+							dataBackend.productPropertyState_deleteObjects(
+								dataBackend.productPropertyState_getObjects(
 									productId=productId,
 									objectId=depotId
 								)
 							)
 
 							logger.info(u"Deleting not needed property states of product %s" % productId)
-							productPropertyStates = self._depotBackend._context.productPropertyState_getObjects(productId=productId)
-							baseProperties = self._depotBackend._context.productProperty_getObjects(productId=productId)
+							productPropertyStates = dataBackend.productPropertyState_getObjects(productId=productId)
+							baseProperties = dataBackend.productProperty_getObjects(productId=productId)
 
 							productPropertyIds = None
 							productPropertyStatesToDelete = None
@@ -451,7 +453,7 @@ class DepotserverPackageManager(object):
 							productPropertyStatesToDelete = [ppState for ppState in productPropertyStates if ppState.propertyId not in productPropertyIds]
 							logger.debug(u"Following productPropertyStates are marked to delete: '%s'" % productPropertyStatesToDelete)
 							if productPropertyStatesToDelete:
-								self._depotBackend._context.productPropertyState_deleteObjects(productPropertyStatesToDelete)
+								dataBackend.productPropertyState_deleteObjects(productPropertyStatesToDelete)
 
 							logger.info(u"Setting product property states in backend")
 							productPropertyStates = [
@@ -474,17 +476,15 @@ class DepotserverPackageManager(object):
 											productPropertyState,
 											installationError
 										)
-							self._depotBackend._context.productPropertyState_createObjects(productPropertyStates)
+							dataBackend.productPropertyState_createObjects(productPropertyStates)
 
 						if not suppressPackageContentFileGeneration:
 							ppf.createPackageContentFile()
 						else:
 							logger.debug("Suppressed generation of package content file.")
 
-				cleanUpProducts(self._depotBackend._context, productOnDepot.productId)
-				cleanUpProductPropertyStates(
-					self._depotBackend._context, productProperties, depotId,
-					productOnDepot)
+				cleanUpProducts(dataBackend, productOnDepot.productId)
+				cleanUpProductPropertyStates(dataBackend, productProperties, depotId, productOnDepot)
 			except Exception as installingPackageError:
 				logger.debug(u"Failed to install the package :(")
 				logger.logException(installingPackageError, logLevel=LOG_DEBUG)
