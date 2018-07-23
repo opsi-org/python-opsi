@@ -68,7 +68,7 @@ def testIpAddressInNetworkWithFullNetmask():
 	assert ipAddressInNetwork('10.10.1.1', '10.10.0.0/255.240.0.0')
 
 
-class ProductFactory(object):
+def generateLocalbootProducts(amount):
 	productVersions = ('1.0', '2', 'xxx', '3.1', '4')
 	packageVersions = ('1', '2', 'y', '3', '10', 11, 22)
 	licenseRequirements = (None, True, False)
@@ -81,22 +81,21 @@ class ProductFactory(object):
 	descriptions = ['Test product', 'Some product', '--------', '', None]
 	advices = ('Nothing', 'Be careful', '--------', '', None)
 
-	@classmethod
-	def generateLocalbootProduct(self, index=0):
-		return LocalbootProduct(
+	for index in range(amount):
+		yield LocalbootProduct(
 			id='product{0}'.format(index),
-			productVersion=random.choice(self.productVersions),
-			packageVersion=random.choice(self.packageVersions),
+			productVersion=random.choice(productVersions),
+			packageVersion=random.choice(packageVersions),
 			name='Product {0}'.format(index),
-			licenseRequired=random.choice(self.licenseRequirements),
-			setupScript=random.choice(self.setupScripts),
-			uninstallScript=random.choice(self.uninstallScripts),
-			updateScript=random.choice(self.updateScripts),
-			alwaysScript=random.choice(self.alwaysScripts),
-			onceScript=random.choice(self.onceScripts),
-			priority=random.choice(self.priorities),
-			description=random.choice(self.descriptions),
-			advice=random.choice(self.advices),
+			licenseRequired=random.choice(licenseRequirements),
+			setupScript=random.choice(setupScripts),
+			uninstallScript=random.choice(uninstallScripts),
+			updateScript=random.choice(updateScripts),
+			alwaysScript=random.choice(alwaysScripts),
+			onceScript=random.choice(onceScripts),
+			priority=random.choice(priorities),
+			description=random.choice(descriptions),
+			advice=random.choice(advices),
 			changelog=None,
 			windowsSoftwareIds=None
 		)
@@ -104,12 +103,7 @@ class ProductFactory(object):
 
 @pytest.mark.parametrize("objectCount", [128, 1024])
 def testObjectToHtmlProcessesGenerators(objectCount):
-	generator = (
-		ProductFactory.generateLocalbootProduct(i)
-		for i in range(objectCount)
-	)
-
-	text = objectToHtml(generator)
+	text = objectToHtml(generateLocalbootProducts(objectCount))
 
 	assert text.lstrip().startswith('[')
 	assert text.rstrip().endswith(']')
@@ -140,10 +134,7 @@ def testObjectToHtmlOutputIsAsExpected():
 
 @pytest.mark.parametrize("objectCount", [1, 10240])
 def testObjectToBeautifiedTextWorksWithGenerators(objectCount):
-	generator = (
-		ProductFactory.generateLocalbootProduct(i)
-		for i in range(objectCount)
-	)
+	generator = generateLocalbootProducts(objectCount)
 
 	text = objectToBeautifiedText(generator)
 
@@ -153,7 +144,7 @@ def testObjectToBeautifiedTextWorksWithGenerators(objectCount):
 
 @pytest.mark.parametrize("objectCount", [1, 10240])
 def testObjectToBeautifiedTextGeneratesValidJSON(objectCount):
-	objectsIn = [ProductFactory.generateLocalbootProduct(i) for i in range(objectCount)]
+	objectsIn = list(generateLocalbootProducts(objectCount))
 	text = objectToBeautifiedText(objectsIn)
 
 	objects = fromJson(text)
@@ -853,11 +844,7 @@ def testBlowfishEncryptionFailsWithNoKey(randomText, blowfishKey):
 
 @pytest.mark.parametrize("objectCount", [1, 10240])
 def testObjectToBashWorksWithGenerators(objectCount):
-	generator = (
-		ProductFactory.generateLocalbootProduct(i)
-		for i in range(objectCount)
-	)
-
+	generator = generateLocalbootProducts(objectCount)
 	result = objectToBash(generator)
 
 	assert isinstance(result, dict)
