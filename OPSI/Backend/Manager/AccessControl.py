@@ -194,11 +194,11 @@ class BackendAccessControl(object):
 	def _createInstanceMethods(self):
 		protectedMethods = set()
 		for Class in (ExtendedConfigDataBackend, ConfigDataBackend, DepotserverBackend, HostControlBackend, HostControlSafeBackend):
-			methodnames = (name for name, _ in inspect.getmembers(Class, inspect.ismethod) if not name.startswith('_'))
+			methodnames = (name for name, _ in inspect.getmembers(Class, inspect.isfunction) if not name.startswith('_'))
 			for methodName in methodnames:
 				protectedMethods.add(methodName)
 
-		for methodName, functionRef in inspect.getmembers(self._backend, inspect.ismethod):
+		for methodName, functionRef in inspect.getmembers(self._backend, inspect.isfunction):
 			if methodName.startswith('_'):
 				# Not a public method
 				continue

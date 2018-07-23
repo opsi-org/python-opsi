@@ -122,7 +122,7 @@ class ExtendedBackend(Backend):
 
 	def _createInstanceMethods(self):
 		logger.debug(u"%s is creating instance methods" % self.__class__.__name__)
-		for methodName, functionRef in inspect.getmembers(self._backend, inspect.ismethod):
+		for methodName, functionRef in inspect.getmembers(self._backend, inspect.isfunction):
 			if methodName.startswith('_'):
 				# Not a public method
 				continue
