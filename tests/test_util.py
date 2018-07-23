@@ -210,7 +210,7 @@ def testObjectToBeautifiedText():
 	assert result.count('\n') == 45
 
 	for key, value in product.toHash().items():
-		print("Checking {}")
+		print("Checking {} ({!r})".format(key, value))
 
 		if value is None:
 			fValue = 'null'
