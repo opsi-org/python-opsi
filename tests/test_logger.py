@@ -318,7 +318,7 @@ def testLoggingTraceBacksFromInsideAFunction():
 		assert "line" in values[1].lower()
 		assert "file" in values[1].lower()
 		assert __file__ in values[1]
-		assert failyMcFailFace.func_name in values[2]
+		assert failyMcFailFace.__name__ in values[2]
 		assert "Something bad happened" in values[-1]
 
 
