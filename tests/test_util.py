@@ -135,7 +135,32 @@ def testObjectToHtmlOutputIsAsExpected():
 	)
 
 	expected = u'{<div style="padding-left: 3em;"><font class="json_key">"onceScript"</font>: "once.ins",<br />\n<font class="json_key">"windowsSoftwareIds"</font>: null,<br />\n<font class="json_key">"description"</font>: "asdf",<br />\n<font class="json_key">"advice"</font>: "lolnope",<br />\n<font class="json_key">"alwaysScript"</font>: "always.ins",<br />\n<font class="json_key">"updateScript"</font>: "update.ins",<br />\n<font class="json_key">"productClassIds"</font>: null,<br />\n<font class="json_key">"id"</font>: "htmltestproduct",<br />\n<font class="json_key">"licenseRequired"</font>: false,<br />\n<font class="json_key">"ident"</font>: "htmltestproduct;3.1;1",<br />\n<font class="json_key">"name"</font>: "Product&nbsp;HTML&nbsp;Test",<br />\n<font class="json_key">"changelog"</font>: null,<br />\n<font class="json_key">"customScript"</font>: null,<br />\n<font class="json_key">"uninstallScript"</font>: "uninstall.ins",<br />\n<font class="json_key">"userLoginScript"</font>: null,<br />\n<font class="json_key">"priority"</font>: 0,<br />\n<font class="json_key">"productVersion"</font>: "3.1",<br />\n<font class="json_key">"packageVersion"</font>: "1",<br />\n<font class="json_key">"type"</font>: "LocalbootProduct",<br />\n<font class="json_key">"setupScript"</font>: "setup.ins"</div>}'
-	assert expected == objectToHtml(product)
+
+	result = objectToHtml(product)
+	assert result.startswith('{<div style="padding-left: 3em;">')
+	assert result.endswith('</div>}')
+	assert result.count('\n') == 19
+
+	assert '<font class="json_key">"onceScript"</font>: "once.ins",<br />' in result
+	assert '<font class="json_key">"windowsSoftwareIds"</font>: null,<br />' in result
+	assert '<font class="json_key">"description"</font>: "asdf",<br />' in result
+	assert '<font class="json_key">"advice"</font>: "lolnope",<br />' in result
+	assert '<font class="json_key">"alwaysScript"</font>: "always.ins",<br />' in result
+	assert '<font class="json_key">"updateScript"</font>: "update.ins",<br />' in result
+	assert '<font class="json_key">"productClassIds"</font>: null,<br />' in result
+	assert '<font class="json_key">"id"</font>: "htmltestproduct",<br />' in result
+	assert '<font class="json_key">"licenseRequired"</font>: false,<br />' in result
+	assert '<font class="json_key">"ident"</font>: "htmltestproduct;3.1;1",<br />' in result
+	assert '<font class="json_key">"name"</font>: "Product&nbsp;HTML&nbsp;Test",<br />' in result
+	assert '<font class="json_key">"changelog"</font>: null,<br />' in result
+	assert '<font class="json_key">"customScript"</font>: null,<br />' in result
+	assert '<font class="json_key">"uninstallScript"</font>: "uninstall.ins",<br />' in result
+	assert '<font class="json_key">"userLoginScript"</font>: null,<br />' in result
+	assert '<font class="json_key">"priority"</font>: 0,<br />' in result
+	assert '<font class="json_key">"productVersion"</font>: "3.1",<br />' in result
+	assert '<font class="json_key">"packageVersion"</font>: "1",<br />' in result
+	assert '<font class="json_key">"type"</font>: "LocalbootProduct",<br />' in result
+	assert '<font class="json_key">"setupScript"</font>: "setup.ins"' in result
 
 
 @pytest.mark.parametrize("objectCount", [1, 10240])
