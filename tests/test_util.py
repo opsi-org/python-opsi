@@ -220,7 +220,8 @@ def testObjectToBeautifiedText():
 			fValue = '"{}"'.format(value)
 
 		formattedStr = '"{}": {},\n'.format(key, fValue)
-		assert result.count(formattedStr) == 2
+		assert formattedStr in result
+		assert result.count(formattedStr) == 2  # We have two objects
 
 
 @pytest.mark.parametrize("value, expected", [
