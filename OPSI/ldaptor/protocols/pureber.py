@@ -33,6 +33,7 @@
 
 
 import string
+from collections import UserList
 
 # xxxxxxxx
 # |/|\.../
@@ -70,7 +71,6 @@ class UnknownBERTag(Exception):
         return "BERDecoderContext has no tag 0x%02x: %s" \
                % (self.tag, self.context)
 
-import UserList
 
 def berDecodeLength(m, offset=0):
     """
@@ -107,7 +107,7 @@ def int2ber(i, signed=True):
 
 def ber2int(e, signed=True):
     need(e, 1)
-    v=0L+ord(e[0])
+    v=0+ord(e[0])
     if v&0x80 and signed:
         v=v-256
     for i in range(1, len(e)):
@@ -156,7 +156,7 @@ class BERExceptionInsufficientData(Exception): pass
 def need(buf, n):
     d=n-len(buf)
     if d>0:
-        raise BERExceptionInsufficientData, d
+        raise BERExceptionInsufficientData(d)
 
 class BERInteger(BERBase):
     tag = 0x02
@@ -279,7 +279,7 @@ class BERBoolean(BERBase):
 class BEREnumerated(BERInteger):
     tag = 0x0a
 
-class BERSequence(BERStructured, UserList.UserList):
+class BERSequence(BERStructured, UserList):
     # TODO __getslice__ calls __init__ with no args.
     tag = 0x10
 
@@ -291,7 +291,7 @@ class BERSequence(BERStructured, UserList.UserList):
 
     def __init__(self, value=None, tag=None):
         BERStructured.__init__(self, tag)
-        UserList.UserList.__init__(self)
+        UserList.__init__(self)
         assert value is not None
         self[:]=value
 
@@ -375,7 +375,7 @@ def berDecodeObject(context, m):
             return (r, 1+lenlen+length)
         else:
             #raise UnknownBERTag, (i, context)
-            print str(UnknownBERTag(i, context)) #TODO
+            print(str(UnknownBERTag(i, context))) #TODO
             return (None, 1+lenlen+length)
     return (None, 0)
 
