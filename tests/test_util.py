@@ -268,30 +268,48 @@ def testObjectToBeautifiedTextFormattingDefaultDict():
 
 
 def testObjectToBeautifiedTextWorkingWithSet():
+	product = LocalbootProduct(
+		id='htmltestproduct',
+		productVersion='3.1',
+		packageVersion='1',
+		name='Product HTML Test',
+		licenseRequired=False,
+		setupScript='setup.ins',
+		uninstallScript='uninstall.ins',
+		updateScript='update.ins',
+		alwaysScript='always.ins',
+		onceScript='once.ins',
+		priority=0,
+		description="asdf",
+		advice="lolnope",
+		changelog=None,
+		windowsSoftwareIds=None
+	)
+
 	# Exactly one product because set is unordered.
-	obj = set([
-		LocalbootProduct(
-			id='htmltestproduct',
-			productVersion='3.1',
-			packageVersion='1',
-			name='Product HTML Test',
-			licenseRequired=False,
-			setupScript='setup.ins',
-			uninstallScript='uninstall.ins',
-			updateScript='update.ins',
-			alwaysScript='always.ins',
-			onceScript='once.ins',
-			priority=0,
-			description="asdf",
-			advice="lolnope",
-			changelog=None,
-			windowsSoftwareIds=None
-		)
-	])
+	obj = set([product])
 
-	expected = u'[\n    {\n        "onceScript": "once.ins", \n        "windowsSoftwareIds": null, \n        "description": "asdf", \n        "advice": "lolnope", \n        "alwaysScript": "always.ins", \n        "updateScript": "update.ins", \n        "productClassIds": null, \n        "id": "htmltestproduct", \n        "licenseRequired": false, \n        "ident": "htmltestproduct;3.1;1", \n        "name": "Product HTML Test", \n        "changelog": null, \n        "customScript": null, \n        "uninstallScript": "uninstall.ins", \n        "userLoginScript": null, \n        "priority": 0, \n        "productVersion": "3.1", \n        "packageVersion": "1", \n        "type": "LocalbootProduct", \n        "setupScript": "setup.ins"\n    }\n]'
+	result = objectToBeautifiedText(obj)
+	assert result.startswith('[\n    {\n        ')
+	assert result.endswith('\n    }\n]')
+	assert result.count(':') == 20
+	assert result.count(',') == 19
+	assert result.count('\n') == 23
 
-	assert expected == objectToBeautifiedText(obj)
+	for key, value in product.toHash().items():
+		print("Checking {} ({!r})".format(key, value))
+
+		if value is None:
+			fValue = 'null'
+		elif isinstance(value, bool):
+			fValue = '{}'.format(str(value).lower())
+		elif isinstance(value, int):
+			fValue = '{}'.format(value)
+		else:
+			fValue = '"{}"'.format(value)
+
+		formattedStr = '"{}": {}'.format(key, fValue)
+		assert formattedStr in result
 
 
 def testRandomStringBuildsStringOutOfGivenCharacters():
