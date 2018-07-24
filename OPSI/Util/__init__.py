@@ -594,7 +594,7 @@ def encryptWithPublicKeyFromX509CertificatePEMFile(data, filename):
 	padding = M2Crypto.RSA.pkcs1_oaep_padding
 
 	def encrypt():
-		for parts in chunk(data, size=32):
+		for parts in chunk(data.encode(), size=32):
 			yield rsa.public_encrypt(data=b''.join(parts), padding=padding)
 
 	return b''.join(encrypt())
