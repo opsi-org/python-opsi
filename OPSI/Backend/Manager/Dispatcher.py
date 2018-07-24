@@ -253,7 +253,7 @@ class BackendExtender(ExtendedBackend):
 				if methodName.startswith('_'):
 					continue
 				logger.debug2(u"Extending {0} with instancemethod: {1!r}", self._backend.__class__.__name__, methodName)
-				new_function = types.FunctionType(functionRef.__code__, functionRef.__globals__, functionRef.__code__.__name__)
+				new_function = types.FunctionType(functionRef.__code__, functionRef.__globals__, functionRef.__name__)
 				new_method = types.MethodType(new_function, self)
 				setattr(self, methodName, new_method)
 
