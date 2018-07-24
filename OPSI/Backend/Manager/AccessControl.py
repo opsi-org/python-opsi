@@ -434,7 +434,7 @@ class BackendAccessControl(object):
 
 	def _filterParams(self, params, acls):
 		logger.debug(u"Filtering params: {0}", params)
-		for (key, value) in params.items():
+		for (key, value) in tuple(params.items()):
 			valueList = forceList(value)
 			if not valueList:
 				continue
@@ -510,11 +510,15 @@ class BackendAccessControl(object):
 				for attribute in mandatoryConstructorArgs(obj.__class__):
 					allowedAttributes.add(attribute)
 
+			keysToDelete = set()
 			for key in objHash.keys():
 				if key not in allowedAttributes:
 					if exceptionOnTruncate:
 						raise BackendPermissionDeniedError(u"Access to attribute '%s' denied" % key)
-					del objHash[key]
+					keysToDelete.add(key)
+
+			for key in keysToDelete:
+				del objHash[key]
 
 			if isDict:
 				newObjects.append(objHash)
