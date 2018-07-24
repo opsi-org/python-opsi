@@ -286,6 +286,19 @@ class BaseObject(object):
 			return False
 		return self.getIdent() == other.getIdent()
 
+	def __hash__(self):
+		def getIdentvalue(attribute):
+			try:
+				value = getattr(self, attribute)
+				if value is None:
+					value = u''
+				return value
+			except AttributeError:
+				return u''
+
+		identValues = tuple(getIdentvalue(attribute) for attribute in self.getIdentAttributes())
+		return hash(identValues)
+
 	def __ne__(self, other):
 		return not self.__eq__(other)
 
