@@ -595,9 +595,9 @@ def encryptWithPublicKeyFromX509CertificatePEMFile(data, filename):
 
 	def encrypt():
 		for parts in chunk(data, size=32):
-			yield rsa.public_encrypt(data=''.join(parts), padding=padding)
+			yield rsa.public_encrypt(data=b''.join(parts), padding=padding)
 
-	return ''.join(encrypt())
+	return b''.join(encrypt())
 
 
 def decryptWithPrivateKeyFromPEMFile(data, filename):
@@ -608,7 +608,7 @@ def decryptWithPrivateKeyFromPEMFile(data, filename):
 
 	def decrypt():
 		for parts in chunk(data, size=256):
-			decr = privateKey.private_decrypt(data=''.join(parts), padding=padding)
+			decr = privateKey.private_decrypt(data=b''.join(parts), padding=padding)
 
 			for x in decr:
 				if x not in ('\x00', '\0'):
