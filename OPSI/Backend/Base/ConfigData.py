@@ -424,10 +424,11 @@ depot where the method is.
 		username = forceUnicodeLower(username)
 		password = forceUnicode(password)
 
-		depot = self._context.host_getObjects(id=self._depotId)  # pylint: disable=maybe-no-member
-		if not depot:
+		try:
+			depot = self._context.host_getObjects(id=self._depotId)  # pylint: disable=maybe-no-member
+			depot = depot[0]
+		except IndexError:
 			raise BackendMissingDataError(u"Depot {0!r} not found in backend {1}".format(self._depotId, self._context))
-		depot = depot[0]
 
 		encodedPassword = blowfishEncrypt(depot.opsiHostKey, password)
 
