@@ -198,7 +198,7 @@ class BackendAccessControl(object):
 			for methodName in methodnames:
 				protectedMethods.add(methodName)
 
-		for methodName, functionRef in inspect.getmembers(self._backend, inspect.isfunction):
+		for methodName, functionRef in inspect.getmembers(self._backend, inspect.ismethod):
 			if methodName.startswith('_'):
 				# Not a public method
 				continue
