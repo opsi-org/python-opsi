@@ -1365,7 +1365,8 @@ class ZsyncFile(LockableFile):
 
 		with open(self._filename, 'rb') as f:
 			for line in iter(lambda: f.readline().strip(), ''):
-				key, value = line.split(b':', 1)
+				strLine = line.decode()
+				key, value = strLine.split(':', 1)
 				self._header[key.strip()] = value.strip()
 
 			# Header and data are divided by an empty line
@@ -1382,7 +1383,8 @@ class ZsyncFile(LockableFile):
 			for key, value in self._header.items():
 				if key.lower() == 'mtime':
 					continue
-				f.write('%s: %s\n' % (key, value))
+				headerData = '%s: %s\n' % (key, value)
+				f.write(headerData.encode())
 			f.write('\n')
 			f.write(self._data)
 
