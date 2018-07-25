@@ -1364,7 +1364,7 @@ class ZsyncFile(LockableFile):
 		self._parsed = False
 
 		with open(self._filename, 'rb') as f:
-			for line in iter(lambda: f.readline().strip(), ''):
+			for line in iter(lambda: f.readline().strip(), b''):
 				strLine = line.decode()
 				key, value = strLine.split(':', 1)
 				self._header[key.strip()] = value.strip()
