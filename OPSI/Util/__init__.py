@@ -594,8 +594,9 @@ def encryptWithPublicKeyFromX509CertificatePEMFile(data, filename):
 	padding = M2Crypto.RSA.pkcs1_oaep_padding
 
 	def encrypt():
-		for parts in chunk(data.encode(), size=32):
-			yield rsa.public_encrypt(data=b''.join(parts), padding=padding)
+		for parts in chunk(data, size=32):
+			partedText = ''.join(parts)
+			yield rsa.public_encrypt(data=partedText.encode(), padding=padding)
 
 	return b''.join(encrypt())
 
@@ -608,14 +609,12 @@ def decryptWithPrivateKeyFromPEMFile(data, filename):
 
 	def decrypt():
 		for parts in chunk(data, size=256):
-			decr = privateKey.private_decrypt(data=b''.join(parts), padding=padding)
+			newBytes = bytearray(parts)
+			decr = privateKey.private_decrypt(data=bytes(newBytes), padding=padding)
+			yield decr
 
-			for x in decr:
-				if x not in ('\x00', '\0'):
-					# Avoid any nullbytes
-					yield x
+	return (b''.join(decrypt())).decode()
 
-	return ''.join(decrypt())
 
 
 def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeDir=None, includeFile=None, returnDirs=True, returnLinks=True, followLinks=False, repository=None):
