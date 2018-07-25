@@ -32,6 +32,9 @@ class HeaderAdapter(collections.MutableMapping):
             raise KeyError(name)
         self._headers.removeHeader(name)
 
+    def items(self):
+        return [(k, ', '.join(v)) for k, v in self._headers.getAllRawHeaders()]
+
     def iteritems(self):
         for k,v in self._headers.getAllRawHeaders():
             yield k, ', '.join(v)
