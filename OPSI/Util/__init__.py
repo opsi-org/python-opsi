@@ -587,6 +587,14 @@ def blowfishDecrypt(key, crypt):
 
 
 def encryptWithPublicKeyFromX509CertificatePEMFile(data, filename):
+	"""
+	Encrypt the data by using the certificate.
+
+	:type data: str
+	:type filename: str
+	:param filename: The path to the certificate to use.
+	:rtype: bytes
+	"""
 	import M2Crypto
 
 	cert = M2Crypto.X509.load_cert(filename)
@@ -602,6 +610,14 @@ def encryptWithPublicKeyFromX509CertificatePEMFile(data, filename):
 
 
 def decryptWithPrivateKeyFromPEMFile(data, filename):
+	"""
+	Decrypt the data by using the certificate.
+
+	:type data: bytes
+	:type filename: str
+	:param filename: The path to the certificate to use.
+	:rtype: str
+	"""
 	import M2Crypto
 
 	privateKey = M2Crypto.RSA.load_key(filename)
