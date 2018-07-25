@@ -28,6 +28,7 @@ parsing files for information.
 :license: GNU Affero General Public License version 3
 """
 
+import builtins
 import codecs
 import functools
 import locale
@@ -134,7 +135,7 @@ class File(object):
 			self.chmod(mode)
 
 	def open(self, mode='r'):
-		self._fileHandle = __builtins__['open'](self._filename, mode)
+		self._fileHandle = builtins.open(self._filename, mode)
 		return self._fileHandle
 
 	def close(self):
@@ -193,7 +194,7 @@ class LockableFile(File):
 		if encoding:
 			self._fileHandle = codecs.open(self._filename, mode, encoding, errors)
 		else:
-			self._fileHandle = __builtins__['open'](self._filename, mode)
+			self._fileHandle = builtins.open(self._filename, mode)
 		self._lockFile(mode)
 		if truncate:
 			self._fileHandle.seek(0)
