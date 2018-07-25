@@ -236,3 +236,7 @@ def pytest_runtest_setup(item):
     if envmarker is not None:
         if sys.version_info.major == 3:
             pytest.skip("{0} runs endless under Python 3.".format(item.name))
+
+    envmarker = item.get_marker("obsolete")
+    if envmarker is not None:
+        pytest.skip("{0} uses tech that will likely be obsolete in the future".format(item.name))
