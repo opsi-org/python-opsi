@@ -16,7 +16,7 @@
 
 """LDAP protocol message conversion; no application logic here."""
 
-from pureber import *
+from .pureber import *
 
 next_ldap_message_id=1
 def alloc_ldap_message_id():
@@ -745,31 +745,34 @@ class LDAPSearchResultEntry(LDAPProtocolResponse, BERSequence):
         self.attributes=attributes
 
     def __str__(self):
+        def generateSequence(arg):
+            attr, li = arg
+            return BERSequence([BEROctetString(attr),
+                                BERSet(map(BEROctetString, li))])
+
         return str(BERSequence([
             BEROctetString(self.objectName),
-            BERSequence(map(lambda (attr,li):
-                            BERSequence([BEROctetString(attr),
-                                         BERSet(map(BEROctetString,
-                                                    li))]),
+            BERSequence(map(generateSequence,
                             self.attributes)),
             ], tag=self.tag))
 
     def __repr__(self):
+        def generateAttributes(arg):
+            a, l = arg
+            return (str(a), map(lambda i, l=l: str(i), l))
+
+
         if self.tag==self.__class__.tag:
             return self.__class__.__name__\
                    +"(objectName=%s, attributes=%s"\
                    %(repr(str(self.objectName)),
-                     repr(map(lambda (a,l):
-                              (str(a),
-                               map(lambda i, l=l: str(i), l)),
+                     repr(map(generateAttributes,
                               self.attributes)))
         else:
             return self.__class__.__name__\
                    +"(objectName=%s, attributes=%s, tag=%d"\
                    %(repr(str(self.objectName)),
-                     repr(map(lambda (a,l):
-                              (str(a),
-                               map(lambda i, l=l: str(i), l)),
+                     repr(map(generateAttributes,
                               self.attributes)),
                      self.tag)
 

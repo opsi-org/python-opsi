@@ -68,7 +68,13 @@ def testIpAddressInNetworkWithFullNetmask():
 	assert ipAddressInNetwork('10.10.1.1', '10.10.0.0/255.240.0.0')
 
 
-class ProductFactory(object):
+def generateLocalbootProducts(amount):
+	"""
+	Generates `amount` random LocalbootProducts.
+
+	:rtype: LocalbootProduct
+	"""
+
 	productVersions = ('1.0', '2', 'xxx', '3.1', '4')
 	packageVersions = ('1', '2', 'y', '3', '10', 11, 22)
 	licenseRequirements = (None, True, False)
@@ -81,22 +87,21 @@ class ProductFactory(object):
 	descriptions = ['Test product', 'Some product', '--------', '', None]
 	advices = ('Nothing', 'Be careful', '--------', '', None)
 
-	@classmethod
-	def generateLocalbootProduct(self, index=0):
-		return LocalbootProduct(
+	for index in range(amount):
+		yield LocalbootProduct(
 			id='product{0}'.format(index),
-			productVersion=random.choice(self.productVersions),
-			packageVersion=random.choice(self.packageVersions),
+			productVersion=random.choice(productVersions),
+			packageVersion=random.choice(packageVersions),
 			name='Product {0}'.format(index),
-			licenseRequired=random.choice(self.licenseRequirements),
-			setupScript=random.choice(self.setupScripts),
-			uninstallScript=random.choice(self.uninstallScripts),
-			updateScript=random.choice(self.updateScripts),
-			alwaysScript=random.choice(self.alwaysScripts),
-			onceScript=random.choice(self.onceScripts),
-			priority=random.choice(self.priorities),
-			description=random.choice(self.descriptions),
-			advice=random.choice(self.advices),
+			licenseRequired=random.choice(licenseRequirements),
+			setupScript=random.choice(setupScripts),
+			uninstallScript=random.choice(uninstallScripts),
+			updateScript=random.choice(updateScripts),
+			alwaysScript=random.choice(alwaysScripts),
+			onceScript=random.choice(onceScripts),
+			priority=random.choice(priorities),
+			description=random.choice(descriptions),
+			advice=random.choice(advices),
 			changelog=None,
 			windowsSoftwareIds=None
 		)
@@ -104,12 +109,7 @@ class ProductFactory(object):
 
 @pytest.mark.parametrize("objectCount", [128, 1024])
 def testObjectToHtmlProcessesGenerators(objectCount):
-	generator = (
-		ProductFactory.generateLocalbootProduct(i)
-		for i in range(objectCount)
-	)
-
-	text = objectToHtml(generator)
+	text = objectToHtml(generateLocalbootProducts(objectCount))
 
 	assert text.lstrip().startswith('[')
 	assert text.rstrip().endswith(']')
@@ -134,16 +134,37 @@ def testObjectToHtmlOutputIsAsExpected():
 		windowsSoftwareIds=None
 	)
 
-	expected = u'{<div style="padding-left: 3em;"><font class="json_key">"onceScript"</font>: "once.ins",<br />\n<font class="json_key">"windowsSoftwareIds"</font>: null,<br />\n<font class="json_key">"description"</font>: "asdf",<br />\n<font class="json_key">"advice"</font>: "lolnope",<br />\n<font class="json_key">"alwaysScript"</font>: "always.ins",<br />\n<font class="json_key">"updateScript"</font>: "update.ins",<br />\n<font class="json_key">"productClassIds"</font>: null,<br />\n<font class="json_key">"id"</font>: "htmltestproduct",<br />\n<font class="json_key">"licenseRequired"</font>: false,<br />\n<font class="json_key">"ident"</font>: "htmltestproduct;3.1;1",<br />\n<font class="json_key">"name"</font>: "Product&nbsp;HTML&nbsp;Test",<br />\n<font class="json_key">"changelog"</font>: null,<br />\n<font class="json_key">"customScript"</font>: null,<br />\n<font class="json_key">"uninstallScript"</font>: "uninstall.ins",<br />\n<font class="json_key">"userLoginScript"</font>: null,<br />\n<font class="json_key">"priority"</font>: 0,<br />\n<font class="json_key">"productVersion"</font>: "3.1",<br />\n<font class="json_key">"packageVersion"</font>: "1",<br />\n<font class="json_key">"type"</font>: "LocalbootProduct",<br />\n<font class="json_key">"setupScript"</font>: "setup.ins"</div>}'
-	assert expected == objectToHtml(product)
+	result = objectToHtml(product)
+	assert result.startswith('{<div style="padding-left: 3em;">')
+	assert result.endswith('</div>}')
+	assert result.count('\n') == 19
+	assert result.count(',<br />') == 19
+
+	assert '<font class="json_key">"onceScript"</font>: "once.ins"' in result
+	assert '<font class="json_key">"windowsSoftwareIds"</font>: null' in result
+	assert '<font class="json_key">"description"</font>: "asdf"' in result
+	assert '<font class="json_key">"advice"</font>: "lolnope"' in result
+	assert '<font class="json_key">"alwaysScript"</font>: "always.ins"' in result
+	assert '<font class="json_key">"updateScript"</font>: "update.ins"' in result
+	assert '<font class="json_key">"productClassIds"</font>: null' in result
+	assert '<font class="json_key">"id"</font>: "htmltestproduct"' in result
+	assert '<font class="json_key">"licenseRequired"</font>: false' in result
+	assert '<font class="json_key">"ident"</font>: "htmltestproduct;3.1;1"' in result
+	assert '<font class="json_key">"name"</font>: "Product&nbsp;HTML&nbsp;Test"' in result
+	assert '<font class="json_key">"changelog"</font>: null' in result
+	assert '<font class="json_key">"customScript"</font>: null' in result
+	assert '<font class="json_key">"uninstallScript"</font>: "uninstall.ins"' in result
+	assert '<font class="json_key">"userLoginScript"</font>: null' in result
+	assert '<font class="json_key">"priority"</font>: 0' in result
+	assert '<font class="json_key">"productVersion"</font>: "3.1"' in result
+	assert '<font class="json_key">"packageVersion"</font>: "1"' in result
+	assert '<font class="json_key">"type"</font>: "LocalbootProduct"' in result
+	assert '<font class="json_key">"setupScript"</font>: "setup.ins"' in result
 
 
 @pytest.mark.parametrize("objectCount", [1, 10240])
 def testObjectToBeautifiedTextWorksWithGenerators(objectCount):
-	generator = (
-		ProductFactory.generateLocalbootProduct(i)
-		for i in range(objectCount)
-	)
+	generator = generateLocalbootProducts(objectCount)
 
 	text = objectToBeautifiedText(generator)
 
@@ -153,7 +174,7 @@ def testObjectToBeautifiedTextWorksWithGenerators(objectCount):
 
 @pytest.mark.parametrize("objectCount", [1, 10240])
 def testObjectToBeautifiedTextGeneratesValidJSON(objectCount):
-	objectsIn = [ProductFactory.generateLocalbootProduct(i) for i in range(objectCount)]
+	objectsIn = list(generateLocalbootProducts(objectCount))
 	text = objectToBeautifiedText(objectsIn)
 
 	objects = fromJson(text)
@@ -162,7 +183,7 @@ def testObjectToBeautifiedTextGeneratesValidJSON(objectCount):
 		assert isinstance(obj, LocalbootProduct)
 
 
-def testCheckingOutput():
+def testObjectToBeautifiedText():
 	product = LocalbootProduct(
 		id='htmltestproduct',
 		productVersion='3.1',
@@ -181,25 +202,39 @@ def testCheckingOutput():
 		windowsSoftwareIds=None
 	)
 
-	expected = u'[\n    {\n        "onceScript": "once.ins", \n        "windowsSoftwareIds": null, \n        "description": "asdf", \n        "advice": "lolnope", \n        "alwaysScript": "always.ins", \n        "updateScript": "update.ins", \n        "productClassIds": null, \n        "id": "htmltestproduct", \n        "licenseRequired": false, \n        "ident": "htmltestproduct;3.1;1", \n        "name": "Product HTML Test", \n        "changelog": null, \n        "customScript": null, \n        "uninstallScript": "uninstall.ins", \n        "userLoginScript": null, \n        "priority": 0, \n        "productVersion": "3.1", \n        "packageVersion": "1", \n        "type": "LocalbootProduct", \n        "setupScript": "setup.ins"\n    }, \n    {\n        "onceScript": "once.ins", \n        "windowsSoftwareIds": null, \n        "description": "asdf", \n        "advice": "lolnope", \n        "alwaysScript": "always.ins", \n        "updateScript": "update.ins", \n        "productClassIds": null, \n        "id": "htmltestproduct", \n        "licenseRequired": false, \n        "ident": "htmltestproduct;3.1;1", \n        "name": "Product HTML Test", \n        "changelog": null, \n        "customScript": null, \n        "uninstallScript": "uninstall.ins", \n        "userLoginScript": null, \n        "priority": 0, \n        "productVersion": "3.1", \n        "packageVersion": "1", \n        "type": "LocalbootProduct", \n        "setupScript": "setup.ins"\n    }\n]'
+	result = objectToBeautifiedText([product, product])
+	assert result.startswith('[\n    {\n        ')
+	assert result.endswith('\n    }\n]')
+	assert result.count('\n') == 45
 
-	assert expected == objectToBeautifiedText([product, product])
+	for key, value in product.toHash().items():
+		print("Checking {} ({!r})".format(key, value))
+
+		if value is None:
+			fValue = 'null'
+		elif isinstance(value, bool):
+			fValue = '{}'.format(str(value).lower())
+		elif isinstance(value, int):
+			fValue = '{}'.format(value)
+		else:
+			fValue = '"{}"'.format(value)
+
+		formattedStr = '"{}": {}'.format(key, fValue)
+		assert formattedStr in result
+		assert result.count(formattedStr) == 2  # We have two objects
 
 
-def testFormattingEmptyList():
-	assert '[]' == objectToBeautifiedText([])
+@pytest.mark.parametrize("value, expected", [
+	([], '[]'),
+	([[], []], '[\n    [],\n    []\n]'),
+	({},'{}'),
+
+])
+def testObjectToBeautifiedTextEmptyObjects(expected, value):
+	assert expected == objectToBeautifiedText(value)
 
 
-def testFormattingListOfEmptyLists():
-	expected = '[\n    [],\n    []\n]'
-	assert expected == objectToBeautifiedText([[], []])
-
-
-def testFormattingEmptyDict():
-	assert '{}' == objectToBeautifiedText({})
-
-
-def testFormattingDefaultDict():
+def testObjectToBeautifiedTextFormattingDefaultDict():
 	normalDict = {u'lastStateChange': u'', u'actionRequest': u'none', u'productVersion': u'', u'productActionProgress': u'', u'packageVersion': u'', u'installationStatus': u'not_installed', u'productId': u'thunderbird'}
 	defaultDict = defaultdict(lambda x: u'')
 
@@ -209,34 +244,72 @@ def testFormattingDefaultDict():
 	normal = objectToBeautifiedText(normalDict)
 	default = objectToBeautifiedText(defaultDict)
 
-	assert normal == default
+	expected = [
+		(u'lastStateChange', u''),
+		(u'actionRequest', u'none'),
+		(u'productVersion', u''),
+		(u'productActionProgress', u''),
+		(u'packageVersion', u''),
+		(u'installationStatus', u'not_installed'),
+		(u'productId', u'thunderbird')
+	]
+
+	for index, result in enumerate((normal, default)):
+		print("Check #{}: {}".format(index, result))
+
+		assert result.startswith('{')
+		assert result.endswith('}')
+		assert result.count(':') == len(expected)
+		assert result.count(',') == len(expected) - 1
+		assert result.count('\n') == len(expected) + 1
+
+		for key, value in expected:
+			assert '"{}": "{}"'.format(key, value) in result
 
 
-def testWorkingWithSet():
+def testObjectToBeautifiedTextWorkingWithSet():
+	product = LocalbootProduct(
+		id='htmltestproduct',
+		productVersion='3.1',
+		packageVersion='1',
+		name='Product HTML Test',
+		licenseRequired=False,
+		setupScript='setup.ins',
+		uninstallScript='uninstall.ins',
+		updateScript='update.ins',
+		alwaysScript='always.ins',
+		onceScript='once.ins',
+		priority=0,
+		description="asdf",
+		advice="lolnope",
+		changelog=None,
+		windowsSoftwareIds=None
+	)
+
 	# Exactly one product because set is unordered.
-	obj = set([
-		LocalbootProduct(
-			id='htmltestproduct',
-			productVersion='3.1',
-			packageVersion='1',
-			name='Product HTML Test',
-			licenseRequired=False,
-			setupScript='setup.ins',
-			uninstallScript='uninstall.ins',
-			updateScript='update.ins',
-			alwaysScript='always.ins',
-			onceScript='once.ins',
-			priority=0,
-			description="asdf",
-			advice="lolnope",
-			changelog=None,
-			windowsSoftwareIds=None
-		)
-	])
+	obj = set([product])
 
-	expected = u'[\n    {\n        "onceScript": "once.ins", \n        "windowsSoftwareIds": null, \n        "description": "asdf", \n        "advice": "lolnope", \n        "alwaysScript": "always.ins", \n        "updateScript": "update.ins", \n        "productClassIds": null, \n        "id": "htmltestproduct", \n        "licenseRequired": false, \n        "ident": "htmltestproduct;3.1;1", \n        "name": "Product HTML Test", \n        "changelog": null, \n        "customScript": null, \n        "uninstallScript": "uninstall.ins", \n        "userLoginScript": null, \n        "priority": 0, \n        "productVersion": "3.1", \n        "packageVersion": "1", \n        "type": "LocalbootProduct", \n        "setupScript": "setup.ins"\n    }\n]'
+	result = objectToBeautifiedText(obj)
+	assert result.startswith('[\n    {\n        ')
+	assert result.endswith('\n    }\n]')
+	assert result.count(':') == 20
+	assert result.count(',') == 19
+	assert result.count('\n') == 23
 
-	assert expected == objectToBeautifiedText(obj)
+	for key, value in product.toHash().items():
+		print("Checking {} ({!r})".format(key, value))
+
+		if value is None:
+			fValue = 'null'
+		elif isinstance(value, bool):
+			fValue = '{}'.format(str(value).lower())
+		elif isinstance(value, int):
+			fValue = '{}'.format(value)
+		else:
+			fValue = '"{}"'.format(value)
+
+		formattedStr = '"{}": {}'.format(key, fValue)
+		assert formattedStr in result
 
 
 def testRandomStringBuildsStringOutOfGivenCharacters():
@@ -569,7 +642,15 @@ def testSerialisingDictsInList():
 	]
 	output = toJson(inputValues)
 
-	assert u'[{"a": "b", "c": 1}, {"a": "b", "c": 1}]' == output
+	assert output.startswith('[{')
+	assert output.endswith('}]')
+	assert output.count(':') == 4  # 2 dicts * 2 values
+	assert output.count(',') == 3
+	assert output.count('"c": 1') == 2
+	assert output.count('"a": "b"') == 2
+	assert output.count('}, {') == 1
+
+	assert inputValues == fromJson(output)
 
 
 def testSerialisingDictsInListWithFloat():
@@ -579,16 +660,40 @@ def testSerialisingDictsInListWithFloat():
 	]
 	output = toJson(inputValues)
 
-	assert u'[{"a": "b", "c": 1, "e": 2.3}, {"i": 4, "k": 5.6, "g": "h"}]' == output
+	assert output.startswith('[{')
+	assert output.endswith('}]')
+	assert output.count(':') == 6  # 2 dicts * 3 values
+	assert output.count(',') == 5
+	assert output.count('}, {') == 1
+
+	for d in inputValues:
+		for key, value in d.items():
+			if isinstance(value, str):
+				assert '"{}": "{}"'.format(key, value) in output
+			else:
+				assert '"{}": {}'.format(key, value) in output
+
+	assert inputValues == fromJson(output)
 
 
-def testSerialisingDict():
-	inputValues = {'a': 'b', 'c': 1, 'e': 2}
-	assert u'{"a": "b", "c": 1, "e": 2}' == toJson(inputValues)
-	assert inputValues == fromJson(toJson(inputValues))
+@pytest.mark.parametrize("inputValues", [
+	{'a': 'b', 'c': 1, 'e': 2},
+	{'a': 'b', 'c': 1, 'e': 2.3}
+	])
+def testSerialisingDict(inputValues):
+	result = toJson(inputValues)
 
-	inputValues = {'a': 'b', 'c': 1, 'e': 2.3}
-	assert u'{"a": "b", "c": 1, "e": 2.3}' == toJson(inputValues)
+	assert result.startswith('{')
+	assert result.endswith('}')
+	assert result.count(':') == 3
+	assert result.count(',') == 2
+	for key, value in inputValues.items():
+		if isinstance(value, str):
+			assert '"{}": "{}"'.format(key, value) in result
+		else:
+			assert '"{}": {}'.format(key, value) in result
+
+	assert inputValues == fromJson(result)
 
 
 def testUnserialisableThingsFail():
@@ -801,11 +906,7 @@ def testBlowfishEncryptionFailsWithNoKey(randomText, blowfishKey):
 
 @pytest.mark.parametrize("objectCount", [1, 10240])
 def testObjectToBashWorksWithGenerators(objectCount):
-	generator = (
-		ProductFactory.generateLocalbootProduct(i)
-		for i in range(objectCount)
-	)
-
+	generator = generateLocalbootProducts(objectCount)
 	result = objectToBash(generator)
 
 	assert isinstance(result, dict)
@@ -847,8 +948,37 @@ def testObjectToBashOutput():
 
 	result = objectToBash([product, product])
 
-	assert expected == result
+	assert set(result.keys()) == set(expected.keys())
+	assert expected['RESULT'] == result['RESULT']
+
 	assert result['RESULT1'] == result['RESULT2']
+
+	singleResult = result['RESULT1']
+	assert singleResult.startswith('(\n')
+	assert singleResult.endswith('\n)')
+	assert singleResult.count('\n') == 21
+
+	# The order may not necessarily be the same so we check every value
+	assert 'onceScript="once.ins"\n' in singleResult
+	assert 'windowsSoftwareIds=""\n' in singleResult
+	assert 'description="asdf"\n' in singleResult
+	assert 'advice="lolnope"\n' in singleResult
+	assert 'alwaysScript="always.ins"\n' in singleResult
+	assert 'updateScript="update.ins"\n' in singleResult
+	assert 'productClassIds=""\n' in singleResult
+	assert 'id="htmltestproduct"\n' in singleResult
+	assert 'licenseRequired="False"\n' in singleResult
+	assert 'ident="htmltestproduct;3.1;1"\n' in singleResult
+	assert 'name="Product HTML Test"\n' in singleResult
+	assert 'changelog=""\n' in singleResult
+	assert 'customScript=""\n' in singleResult
+	assert 'uninstallScript="uninstall.ins"\n' in singleResult
+	assert 'userLoginScript=""\n' in singleResult
+	assert 'priority="0"\n' in singleResult
+	assert 'productVersion="3.1"\n' in singleResult
+	assert 'packageVersion="1"\n' in singleResult
+	assert 'type="LocalbootProduct"\n' in singleResult
+	assert 'setupScript="setup.ins"\n' in singleResult
 
 
 def testObjectToBashOnConfigStates():

@@ -615,8 +615,8 @@ False suppresses exceptions.
 					raise e
 
 			componentname = self.__componentName
-			datetime = str(time.strftime(u"%b %d %H:%M:%S", time.localtime()), 'utf-8', 'replace')
-			threadId = thread.get_ident()
+			datetime = time.strftime(u"%b %d %H:%M:%S", time.localtime())
+			threadId = str(thread.get_ident())
 			specialConfig = None
 
 			try:
@@ -676,19 +676,11 @@ False suppresses exceptions.
 				else:
 					fh = sys.stderr
 
-				try:
-					fhEncoding = fh.encoding
-				except Exception:
-					fhEncoding = None
-
-				if fhEncoding is None:
-					fhEncoding = locale.getpreferredencoding()
-
 				if self.__consoleColor:
 					m = u"%s%s%s\n" % (color, m, COLOR_NORMAL)
 				else:
 					m = u"%s\n" % m
-				fh.write(m.encode(fhEncoding, 'backslashreplace'))
+				fh.write(m)
 
 			if level <= self.__fileLevel:
 				# Log to file

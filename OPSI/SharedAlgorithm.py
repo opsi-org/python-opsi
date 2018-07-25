@@ -193,7 +193,7 @@ def addDependentProductOnClients(productOnClients, availableProducts, productDep
 		logger.debug(u"Adding dependent productOnClients for client {0!r}", clientId)
 
 		addedInfo = {}
-		for productId in productOnClientByProductId.keys():
+		for productId in tuple(productOnClientByProductId.keys()):
 			addActionRequest(productOnClientByProductId, productId, productDependenciesByProductId, availableProductsByProductId, addedInfo)
 
 	return productOnClientByProductId.values()

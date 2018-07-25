@@ -183,10 +183,9 @@ toplevel.setName('toplevel')
 def parseFilter(s):
     try:
         x=toplevel.parseString(s)
-    except ParseException, e:
-        raise InvalidLDAPFilter, (e.msg,
-                                  e.loc,
-                                  e.line)
+    except ParseException as e:
+        raise InvalidLDAPFilter(e.msg, e.loc, e.line)
+
     assert len(x)==1
     return x[0]
 
@@ -223,10 +222,9 @@ maybeSubString = (maybeSubString_simple
 def parseMaybeSubstring(attrType, s):
     try:
         x=maybeSubString.parseString(s)
-    except ParseException, e:
-        raise InvalidLDAPFilter, (e.msg,
-                                  e.loc,
-                                  e.line)
+    except ParseException as e:
+        raise InvalidLDAPFilter(e.msg, e.loc, e.line)
+
     assert len(x)==1
     fn = x[0]
     return fn(attrType)
@@ -234,5 +232,5 @@ def parseMaybeSubstring(attrType, s):
 if __name__=='__main__':
     import sys
     for filt in sys.argv[1:]:
-        print repr(parseFilter(filt))
-        print
+        print(repr(parseFilter(filt)))
+        print("")

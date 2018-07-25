@@ -194,7 +194,7 @@ class BackendAccessControl(object):
 	def _createInstanceMethods(self):
 		protectedMethods = set()
 		for Class in (ExtendedConfigDataBackend, ConfigDataBackend, DepotserverBackend, HostControlBackend, HostControlSafeBackend):
-			methodnames = (name for name, _ in inspect.getmembers(Class, inspect.ismethod) if not name.startswith('_'))
+			methodnames = (name for name, _ in inspect.getmembers(Class, inspect.isfunction) if not name.startswith('_'))
 			for methodName in methodnames:
 				protectedMethods.add(methodName)
 
@@ -434,7 +434,7 @@ class BackendAccessControl(object):
 
 	def _filterParams(self, params, acls):
 		logger.debug(u"Filtering params: {0}", params)
-		for (key, value) in params.items():
+		for (key, value) in tuple(params.items()):
 			valueList = forceList(value)
 			if not valueList:
 				continue
@@ -510,11 +510,15 @@ class BackendAccessControl(object):
 				for attribute in mandatoryConstructorArgs(obj.__class__):
 					allowedAttributes.add(attribute)
 
+			keysToDelete = set()
 			for key in objHash.keys():
 				if key not in allowedAttributes:
 					if exceptionOnTruncate:
 						raise BackendPermissionDeniedError(u"Access to attribute '%s' denied" % key)
-					del objHash[key]
+					keysToDelete.add(key)
+
+			for key in keysToDelete:
+				del objHash[key]
 
 			if isDict:
 				newObjects.append(objHash)

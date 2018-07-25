@@ -271,11 +271,14 @@ def testCallingLogMethods(logger):
 
 def testLoggingTracebacks():
 	with showLogs() as logger:
+		message = "Foooock"
+		error = RuntimeError(message)
+
 		with catchMessages() as messageBuffer:
 			try:
-				raise RuntimeError("Foooock")
-			except Exception as e:
-				logger.logException(e)
+				raise error
+			except Exception as logMe:
+				logger.logException(logMe)
 
 		values = messageBuffer.getvalue().split('\n')
 		if not values[-1]:  # removing last, empty line
@@ -288,8 +291,8 @@ def testLoggingTracebacks():
 		assert "line" in values[1].lower()
 		assert "file" in values[1].lower()
 		assert __file__ in values[1]
-		assert "Foooock" in values[-1]
-		assert '==>>> Fooo' in values[-1]  # startswith does not work because of colors...
+		assert message in values[-1]
+		assert '==>>> {!r}'.format(error) in values[-1]  # startswith does not work because of colors...
 
 
 def testLoggingTraceBacksFromInsideAFunction():
@@ -315,7 +318,7 @@ def testLoggingTraceBacksFromInsideAFunction():
 		assert "line" in values[1].lower()
 		assert "file" in values[1].lower()
 		assert __file__ in values[1]
-		assert failyMcFailFace.func_name in values[2]
+		assert failyMcFailFace.__name__ in values[2]
 		assert "Something bad happened" in values[-1]
 
 

@@ -81,7 +81,7 @@ def testSettingUserCredentialsWithoutDepot(fakeCredentialsBackend):
     backend = fakeCredentialsBackend
     backend.host_deleteObjects(backend.host_getObjects())
 
-    with pytest.raises(Exception):
+    with pytest.raises(BackendMissingDataError):
         backend.user_setCredentials("hans", '')
 
 
