@@ -1385,7 +1385,7 @@ class ZsyncFile(LockableFile):
 					continue
 				headerData = '%s: %s\n' % (key, value)
 				f.write(headerData.encode())
-			f.write('\n')
+			f.write('\n'.encode())
 			f.write(self._data)
 
 
