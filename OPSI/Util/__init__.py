@@ -587,6 +587,14 @@ def blowfishDecrypt(key, crypt):
 
 
 def encryptWithPublicKeyFromX509CertificatePEMFile(data, filename):
+	"""
+	Encrypt the data by using the certificate.
+
+	:type data: str
+	:type filename: str
+	:param filename: The path to the certificate to use.
+	:rtype: bytes
+	"""
 	import M2Crypto
 
 	cert = M2Crypto.X509.load_cert(filename)
@@ -595,12 +603,21 @@ def encryptWithPublicKeyFromX509CertificatePEMFile(data, filename):
 
 	def encrypt():
 		for parts in chunk(data, size=32):
-			yield rsa.public_encrypt(data=''.join(parts), padding=padding)
+			partedText = ''.join(parts)
+			yield rsa.public_encrypt(data=partedText.encode(), padding=padding)
 
-	return ''.join(encrypt())
+	return b''.join(encrypt())
 
 
 def decryptWithPrivateKeyFromPEMFile(data, filename):
+	"""
+	Decrypt the data by using the certificate.
+
+	:type data: bytes
+	:type filename: str
+	:param filename: The path to the certificate to use.
+	:rtype: str
+	"""
 	import M2Crypto
 
 	privateKey = M2Crypto.RSA.load_key(filename)
@@ -608,14 +625,12 @@ def decryptWithPrivateKeyFromPEMFile(data, filename):
 
 	def decrypt():
 		for parts in chunk(data, size=256):
-			decr = privateKey.private_decrypt(data=''.join(parts), padding=padding)
+			newBytes = bytearray(parts)
+			decr = privateKey.private_decrypt(data=bytes(newBytes), padding=padding)
+			yield decr
 
-			for x in decr:
-				if x not in ('\x00', '\0'):
-					# Avoid any nullbytes
-					yield x
+	return (b''.join(decrypt())).decode()
 
-	return ''.join(decrypt())
 
 
 def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeDir=None, includeFile=None, returnDirs=True, returnLinks=True, followLinks=False, repository=None):
