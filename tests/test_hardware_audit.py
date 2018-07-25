@@ -46,6 +46,7 @@ def testHardwareAuditAcceptingHugeMemoryClockSpeeds(hardwareAuditBackendWithHist
 			"vendor": "Micron",
 			"description": "Physikalischer Speicher",
 			"tag": "Physical Memory 0",
+			"speed": 2400000000,
 			"hardwareClass": "MEMORY_MODULE",
 			"formFactor": "SODIMM",
 			"capacity": "8589934592",
