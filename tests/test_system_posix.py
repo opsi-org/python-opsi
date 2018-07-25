@@ -668,7 +668,7 @@ def testGetEthernetDevicesOnDebianWheezy():
 
 		yield output()
 
-	with mock.patch('Posix.open', fakeReader):
+	with mock.patch('OPSI.System.Posix.open', fakeReader):
 		devices = Posix.getEthernetDevices()
 		assert 2 == len(devices)
 		assert 'br0' in devices
@@ -695,7 +695,7 @@ def testReadingUnpredictableNetworkInterfaceNames():
 
 		yield output()
 
-	with mock.patch('Posix.open', fakeReader):
+	with mock.patch('OPSI.System.Posix.open', fakeReader):
 		devices = Posix.getEthernetDevices()
 		assert 1 == len(devices)
 		assert 'ens18' in devices
