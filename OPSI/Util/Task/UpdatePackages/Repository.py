@@ -33,69 +33,69 @@ from OPSI.Types import forceBool, forceUnicode, forceUnicodeList
 
 
 def getRepoConfigs(repoDir):
-    try:
-        for entry in os.listdir(repoDir):
-            filePath = os.path.join(repoDir, entry)
-            if entry.endswith('.repo') and os.path.isfile(filePath):
-                yield filePath
-    except OSError as oserr:
-        logger.warning("Problem listing {0}: {1}".format(repoDir, oserr))
+	try:
+		for entry in os.listdir(repoDir):
+			filePath = os.path.join(repoDir, entry)
+			if entry.endswith('.repo') and os.path.isfile(filePath):
+				yield filePath
+	except OSError as oserr:
+		logger.warning("Problem listing {0}: {1}".format(repoDir, oserr))
 
 
 class ProductRepositoryInfo(object):
-    def __init__(self, name, baseUrl, dirs=[], username=u"", password=u"", opsiDepotId=None, autoInstall=False, autoUpdate=True, autoSetup=False, proxy=None, excludes=[], includes=[], active=False):
-        self.name = forceUnicode(name)
-        self.baseUrl = forceUnicode(baseUrl)
-        self.dirs = forceUnicodeList(dirs)
-        self.excludes = excludes
-        self.includes = includes
-        self.username = forceUnicode(username)
-        self.password = forceUnicode(password)
-        self.autoInstall = autoInstall
-        self.autoUpdate = autoUpdate
-        self.autoSetup = autoSetup
-        self.opsiDepotId = opsiDepotId
-        self.onlyDownload = None
-        self.inheritProductProperties = None
-        self.description = ''
-        self.active = forceBool(active)
+	def __init__(self, name, baseUrl, dirs=[], username=u"", password=u"", opsiDepotId=None, autoInstall=False, autoUpdate=True, autoSetup=False, proxy=None, excludes=[], includes=[], active=False):
+		self.name = forceUnicode(name)
+		self.baseUrl = forceUnicode(baseUrl)
+		self.dirs = forceUnicodeList(dirs)
+		self.excludes = excludes
+		self.includes = includes
+		self.username = forceUnicode(username)
+		self.password = forceUnicode(password)
+		self.autoInstall = autoInstall
+		self.autoUpdate = autoUpdate
+		self.autoSetup = autoSetup
+		self.opsiDepotId = opsiDepotId
+		self.onlyDownload = None
+		self.inheritProductProperties = None
+		self.description = ''
+		self.active = forceBool(active)
 
-        self.proxy = None
-        if proxy:
-            self.proxy = proxy
-        if self.baseUrl.startswith('webdav'):
-            self.baseUrl = u'http%s' % self.baseUrl[6:]
+		self.proxy = None
+		if proxy:
+			self.proxy = proxy
+		if self.baseUrl.startswith('webdav'):
+			self.baseUrl = u'http%s' % self.baseUrl[6:]
 
-    def getDownloadUrls(self):
-        urls = set()
-        for directory in self.dirs:
-            if directory in (u'', u'/', u'.'):
-                url = self.baseUrl
-            else:
-                url = u'%s/%s' % (self.baseUrl, directory)
+	def getDownloadUrls(self):
+		urls = set()
+		for directory in self.dirs:
+			if directory in (u'', u'/', u'.'):
+				url = self.baseUrl
+			else:
+				url = u'%s/%s' % (self.baseUrl, directory)
 
-            urls.add(url)
+			urls.add(url)
 
-        return urls
+		return urls
 
 
 class LinksExtractor(htmllib.HTMLParser):
-    def __init__(self, formatter):
-        htmllib.HTMLParser.__init__(self, formatter)
-        self.links = set()
+	def __init__(self, formatter):
+		htmllib.HTMLParser.__init__(self, formatter)
+		self.links = set()
 
-    def start_a(self, attrs):
-        if len(attrs) > 0:
-            for attr in attrs:
-                if attr[0] != "href":
-                    continue
+	def start_a(self, attrs):
+		if len(attrs) > 0:
+			for attr in attrs:
+				if attr[0] != "href":
+					continue
 
-                link = attr[1]
-                if link.startswith('/'):
-                    # Fix for IIS repos
-                    link = link[1:]
+				link = attr[1]
+				if link.startswith('/'):
+					# Fix for IIS repos
+					link = link[1:]
 
-                self.links.add(link)
+				self.links.add(link)
 
-    def getLinks(self):
-        return self.links
+	def getLinks(self):
+		return self.links

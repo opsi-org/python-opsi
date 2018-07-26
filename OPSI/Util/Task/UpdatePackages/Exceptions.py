@@ -26,8 +26,8 @@ Exceptions used in updating packages.
 """
 
 class ConfigurationError(ValueError):
-    pass
+	pass
 
 
 class MissingConfigurationValueError(ConfigurationError):
-    pass
+	pass
