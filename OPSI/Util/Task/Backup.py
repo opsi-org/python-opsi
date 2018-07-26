@@ -271,21 +271,22 @@ class OpsiBackup(object):
 					functions.append(lambda x: archive.restoreConfiguration())
 
 				if mode == "raw":
+					backendMapping = {
+						"file": (archive.hasFileBackend, archive.restoreFileBackend),
+						"mysql": (archive.hasMySQLBackend, archive.restoreMySQLBackend),
+						"dhcp": (archive.hasDHCPBackend, archive.restoreDHCPBackend),
+					}
+
 					for backend in backends:
-						if backend in ("file", "all", "auto"):
-							if not archive.hasFileBackend() and not force and not auto:
-								raise OpsiBackupFileError(u"Backup file does not contain file backend data.")
-							functions.append(archive.restoreFileBackend)
 
-						if backend in ("mysql", "all", "auto"):
-							if not archive.hasMySQLBackend() and not force and not auto:
-								raise OpsiBackupFileError(u"Backup file does not contain mysql backend data.")
-							functions.append(archive.restoreMySQLBackend)
+						for name, functions in backendMapping.items():
+							dataExists, restoreData = functions
 
-						if backend in ("dhcp", "all", "auto"):
-							if not archive.hasDHCPBackend() and not force and not auto:
-								raise OpsiBackupFileError(u"Backup file does not contain DHCP backup data.")
-							functions.append(archive.restoreDHCPBackend)
+							if backend in (name, "all", "auto"):
+								if not dataExists() and not force and not auto:
+									raise OpsiBackupFileError(u"Backup file does not contain {0} backend data.".format(name))
+
+								functions.append(restoreData)
 
 				try:
 					for restoreFunction in functions:
