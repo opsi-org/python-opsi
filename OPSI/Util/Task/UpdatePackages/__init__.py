@@ -24,10 +24,3 @@ Utilities for updating packages on a opsi server.
 :author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
 """
-
-class ConfigurationError(ValueError):
-    pass
-
-
-class MissingConfigurationValueError(ConfigurationError):
-    pass
