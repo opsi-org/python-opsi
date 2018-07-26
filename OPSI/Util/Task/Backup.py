@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2006-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -287,11 +287,15 @@ class OpsiBackup(object):
 
 				try:
 					for restoreFunction in functions:
-						logger.debug2(u"Running restoration function %s" % repr(restoreFunction))
-						restoreFunction(auto)
-				except OpsiBackupBackendNotFound as error:
-					if not auto:
-						raise error
+						logger.debug2(u"Running restoration function {0!r}", restoreFunction)
+						try:
+							restoreFunction(auto)
+						except OpsiBackupBackendNotFound as error:
+							logger.logException(error, LOG_DEBUG)
+							logger.debug("Restoring with {0!r} failed: {1}", restoreFunction, error)
+
+							if not auto:
+								raise error
 				except Exception as error:
 					logger.error(u"Failed to restore data from archive %s: %s. Aborting." % (archive.name, error))
 					logger.logException(error, LOG_DEBUG)
