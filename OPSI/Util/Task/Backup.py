@@ -258,46 +258,49 @@ class OpsiBackup(object):
 		with closing(self._getArchive(file=file[0], mode="r")) as archive:
 			self._verify(archive.name)
 
-			functions = []
-
 			if force or self._verifySysconfig(archive):
 				logger.notice(u"Restoring data from backup archive %s." % archive.name)
 
+				functions = []
 				if configuration:
 					if not archive.hasConfiguration() and not force:
 						raise OpsiBackupFileError(u"Backup file does not contain configuration data.")
 
-					logger.debug(u"Restoring opsi configuration.")
+					logger.debug(u"Adding restore of opsi configuration.")
 					functions.append(lambda x: archive.restoreConfiguration())
 
 				if mode == "raw":
+					backendMapping = {
+						"file": (archive.hasFileBackend, archive.restoreFileBackend),
+						"mysql": (archive.hasMySQLBackend, archive.restoreMySQLBackend),
+						"dhcp": (archive.hasDHCPBackend, archive.restoreDHCPBackend),
+					}
+
 					for backend in backends:
-						if backend in ("file", "all", "auto"):
-							if not archive.hasFileBackend() and not force and not auto:
-								raise OpsiBackupFileError(u"Backup file does not contain file backend data.")
-							functions.append(archive.restoreFileBackend)
+						for name, handlingFunctions in backendMapping.items():
+							if backend in (name, "all", "auto"):
+								dataExists, restoreData = handlingFunctions
 
-						if backend in ("mysql", "all", "auto"):
-							if not archive.hasMySQLBackend() and not force and not auto:
-								raise OpsiBackupFileError(u"Backup file does not contain mysql backend data.")
-							functions.append(archive.restoreMySQLBackend)
+								if not dataExists() and not force:
+									if auto:
+										logger.debug(u"No backend data for {0} - skipping.", name)
+										continue  # Don't attempt to restore.
+									else:
+										raise OpsiBackupFileError(u"Backup file does not contain {0} backend data.".format(name))
 
-						if backend in ("dhcp", "all", "auto"):
-							if not archive.hasDHCPBackend() and not force and not auto:
-								raise OpsiBackupFileError(u"Backup file does not contain DHCP backup data.")
-							functions.append(archive.restoreDHCPBackend)
+								logger.debug(u"Adding restore of {0} backend.", name)
+								functions.append(restoreData)
 
 				try:
 					for restoreFunction in functions:
 						logger.debug2(u"Running restoration function {0!r}", restoreFunction)
-						try:
-							restoreFunction(auto)
-						except OpsiBackupBackendNotFound as error:
-							logger.logException(error, LOG_DEBUG)
-							logger.debug("Restoring with {0!r} failed: {1}", restoreFunction, error)
+						restoreFunction(auto)
+				except OpsiBackupBackendNotFound as error:
+					logger.logException(error, LOG_DEBUG)
+					logger.debug("Restoring with {0!r} failed: {1}", restoreFunction, error)
 
-							if not auto:
-								raise error
+					if not auto:
+						raise error
 				except Exception as error:
 					logger.logException(error, LOG_DEBUG)
 					logger.error(u"Failed to restore data from archive %s: %s. Aborting." % (archive.name, error))
