@@ -26,21 +26,21 @@ Components for updating packages.
 """
 
 import formatter
-import operator
 import os
-import re
+import os.path
 import socket
-import sys
 import time
 import urllib
 import urllib2
 
+from OPSI import System
+from OPSI.Backend.BackendManager import BackendManager
+from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Logger import LOG_DEBUG, Logger
 from OPSI.Object import NetbootProduct, ProductOnClient
 from OPSI.Types import (
 	forceBool, forceEmailAddress, forceFilename, forceHostAddress,
-	forceHostId, forceInt, forceProductId, forceUnicode, forceUnicodeList,
-	forceUrl)
+	forceHostId, forceInt, forceProductId, forceUnicode, forceUrl)
 from OPSI.Util import compareVersions, formatFileSize, getfqdn, md5sum
 from OPSI.Util.File import IniFile, ZsyncFile
 from OPSI.Util.File.Opsi import parseFilename
@@ -49,9 +49,6 @@ from OPSI.Util.Task.Rights import setRights
 from OPSI.Util.Task.UpdatePackages.Exceptions import ConfigurationError, MissingConfigurationValueError
 from OPSI.Util.Task.UpdatePackages.Notifier import EmailNotifier
 from OPSI.Util.Task.UpdatePackages.Repository import getRepoConfigs, LinksExtractor, ProductRepositoryInfo
-from OPSI import System
-from OPSI.Backend.BackendManager import BackendManager
-from OPSI.Backend.JSONRPC import JSONRPCBackend
 
 logger = Logger()
 
