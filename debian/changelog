@@ -1,3 +1,9 @@
+python-opsi (4.1.1.41-1) stable; urgency=medium
+
+  * Based on python-opsi 4.0.7.68.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 26 Jul 2018 15:10:44 +0200
+
 python-opsi (4.1.1.40-2) stable; urgency=medium
 
   * Postinst: Making sure that /etc/opsi/server_commands_default.conf exists.
