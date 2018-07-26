@@ -50,6 +50,8 @@ from OPSI.Util.Task.UpdatePackages.Exceptions import ConfigurationError, Missing
 from OPSI.Util.Task.UpdatePackages.Notifier import EmailNotifier
 from OPSI.Util.Task.UpdatePackages.Repository import getRepoConfigs, LinksExtractor, ProductRepositoryInfo
 
+__all__ = ('OpsiPackageUpdater', )
+
 logger = Logger()
 
 

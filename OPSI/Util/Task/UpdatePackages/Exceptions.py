@@ -25,6 +25,9 @@ Exceptions used in updating packages.
 :license: GNU Affero General Public License version 3
 """
 
+__all__ = ('ConfigurationError', 'MissingConfigurationValueError')
+
+
 class ConfigurationError(ValueError):
 	pass
 

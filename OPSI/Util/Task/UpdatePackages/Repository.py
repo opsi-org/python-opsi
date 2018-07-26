@@ -32,6 +32,8 @@ import htmllib
 from OPSI.Logger import Logger
 from OPSI.Types import forceBool, forceUnicode, forceUnicodeList
 
+__all__ = ('getRepoConfigs', 'LinksExtractor', 'ProductRepositoryInfo')
+
 logger = Logger()
 
 

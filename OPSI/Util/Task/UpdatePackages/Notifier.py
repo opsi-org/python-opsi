@@ -32,6 +32,8 @@ import time
 from OPSI.Logger import Logger
 from OPSI.Types import forceInt, forceUnicode, forceUnicodeList
 
+__all__ = ('EmailNotifier', )
+
 logger = Logger()
 
 
