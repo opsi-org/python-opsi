@@ -266,7 +266,7 @@ class OpsiBackup(object):
 					if not archive.hasConfiguration() and not force:
 						raise OpsiBackupFileError(u"Backup file does not contain configuration data.")
 
-					logger.debug(u"Restoring opsi configuration.")
+					logger.debug(u"Adding restore of opsi configuration.")
 					functions.append(lambda x: archive.restoreConfiguration())
 
 				if mode == "raw":
