@@ -29,16 +29,19 @@ from __future__ import absolute_import
 from OPSI.Util.Task.UpdatePackages import OpsiPackageUpdater
 from OPSI.Util.Task.UpdatePackages.Config import DEFAULT_CONFIG
 
+from .helpers import workInTemporaryDirectory
+
 
 def testListingLocalPackages():
-    config = DEFAULT_CONFIG.copy()
-    config['packageDir'] = '/var/lib/opsi/products'
+    with workInTemporaryDirectory() as tempDir:
+        config = DEFAULT_CONFIG.copy()
+        config['packageDir'] = tempDir
 
-    packageUpdater = OpsiPackageUpdater()
+        packageUpdater = OpsiPackageUpdater(config)
 
-    # TODO: create directory with packages
-    # TODO: let there be non .opsi-files in there
+        # TODO: create directory with packages
+        # TODO: let there be non .opsi-files in there
 
-    localPackages = packageUpdater.getLocalPackages()
+        localPackages = packageUpdater.getLocalPackages()
 
-    # TODO: check for local packages
+        # TODO: check for local packages
