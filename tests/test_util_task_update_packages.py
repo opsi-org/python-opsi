@@ -24,6 +24,8 @@ Testing the opsi-package-updater functionality.
 :license: GNU Affero General Public License version 3
 """
 
+from __future__ import absolute_import
+
 from OPSI.Util.Task.UpdatePackages import OpsiPackageUpdater
 from OPSI.Util.Task.UpdatePackages.Config import DEFAULT_CONFIG
 
