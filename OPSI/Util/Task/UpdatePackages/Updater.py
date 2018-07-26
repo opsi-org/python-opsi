@@ -25,6 +25,8 @@ Components for updating packages.
 :license: GNU Affero General Public License version 3
 """
 
+from __future__ import absolute_import
+
 import formatter
 import os
 import os.path
@@ -32,6 +34,10 @@ import socket
 import time
 import urllib
 import urllib2
+
+from .Exceptions import ConfigurationError, MissingConfigurationValueError
+from .Notifier import EmailNotifier
+from .Repository import getRepoConfigs, LinksExtractor, ProductRepositoryInfo
 
 from OPSI import System
 from OPSI.Backend.BackendManager import BackendManager
@@ -46,9 +52,6 @@ from OPSI.Util.File import IniFile, ZsyncFile
 from OPSI.Util.File.Opsi import parseFilename
 from OPSI.Util.Product import ProductPackageFile
 from OPSI.Util.Task.Rights import setRights
-from OPSI.Util.Task.UpdatePackages.Exceptions import ConfigurationError, MissingConfigurationValueError
-from OPSI.Util.Task.UpdatePackages.Notifier import EmailNotifier
-from OPSI.Util.Task.UpdatePackages.Repository import getRepoConfigs, LinksExtractor, ProductRepositoryInfo
 
 __all__ = ('OpsiPackageUpdater', )
 
