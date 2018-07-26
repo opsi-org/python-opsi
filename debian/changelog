@@ -1,3 +1,11 @@
+python-opsi (4.0.7.68-1) stable; urgency=medium
+
+  * OpsiBackup: Internal refactorings for restore handling.
+  * OpsiBackup: Fix restore when backends are "auto" and the backup
+    does not contain data for a backend.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 26 Jul 2018 14:25:19 +0200
+
 python-opsi (4.0.7.67-1) stable; urgency=medium
 
   * OpsiBackup: File backend: improve handling of hostkeys file.
