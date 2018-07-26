@@ -43,5 +43,6 @@ def testListingLocalPackages():
         # TODO: let there be non .opsi-files in there
 
         localPackages = packageUpdater.getLocalPackages()
+        assert not localPackages
 
         # TODO: check for local packages
