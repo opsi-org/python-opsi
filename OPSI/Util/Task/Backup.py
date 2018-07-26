@@ -258,11 +258,10 @@ class OpsiBackup(object):
 		with closing(self._getArchive(file=file[0], mode="r")) as archive:
 			self._verify(archive.name)
 
-			functions = []
-
 			if force or self._verifySysconfig(archive):
 				logger.notice(u"Restoring data from backup archive %s." % archive.name)
 
+				functions = []
 				if configuration:
 					if not archive.hasConfiguration() and not force:
 						raise OpsiBackupFileError(u"Backup file does not contain configuration data.")
