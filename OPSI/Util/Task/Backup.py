@@ -277,14 +277,18 @@ class OpsiBackup(object):
 					}
 
 					for backend in backends:
-
-						for name, functions in backendMapping.items():
-							dataExists, restoreData = functions
-
+						for name, handlingFunctions in backendMapping.items():
 							if backend in (name, "all", "auto"):
-								if not dataExists() and not force and not auto:
-									raise OpsiBackupFileError(u"Backup file does not contain {0} backend data.".format(name))
+								dataExists, restoreData = handlingFunctions
 
+								if not dataExists() and not force:
+									if auto:
+										logger.debug(u"No backend data for {0} - skipping.", name)
+										continue  # Don't attempt to restore.
+									else:
+										raise OpsiBackupFileError(u"Backup file does not contain {0} backend data.".format(name))
+
+								logger.debug(u"Adding restore of {0} backend.", name)
 								functions.append(restoreData)
 
 				try:
