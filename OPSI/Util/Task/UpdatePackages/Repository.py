@@ -29,7 +29,10 @@ import os
 import os.path
 import htmllib
 
+from OPSI.Logger import Logger
 from OPSI.Types import forceBool, forceUnicode, forceUnicodeList
+
+logger = Logger()
 
 
 def getRepoConfigs(repoDir):
