@@ -253,6 +253,8 @@ class OpsiBackup(object):
 
 		auto = "auto" in backends
 
+		logger.debug("Backends for restore: {}", backends)
+
 		with closing(self._getArchive(file=file[0], mode="r")) as archive:
 			self._verify(archive.name)
 
