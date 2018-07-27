@@ -1016,37 +1016,10 @@ class OpsiPackageUpdater(object):
 		return newestPackages
 
 	def getLocalPackages(self):
-		logger.info(u"Getting info for local packages in '%s'" % self.config["packageDir"])
-		packages = []
-		for filename in os.listdir(self.config["packageDir"]):
-			if not filename.endswith('.opsi'):
-				continue
-
-			packageFile = os.path.join(self.config["packageDir"], filename)
-			logger.info(u"Found local package '%s'" % packageFile)
-			try:
-				productId, version = parseFilename(filename)
-				checkSumFile = filename + '.md5'
-				if not self.config['forceChecksumCalculation'] and os.path.exists(checkSumFile):
-					logger.debug("Reading existing checksum from {0}", checkSumFile)
-					with open(checkSumFile) as hashFile:
-						packageMd5 = hashFile.read().strip()
-				else:
-					logger.debug("Calculating checksum for {0}", packageFile)
-					packageMd5 = md5sum(packageFile)
-
-				packageInfo = {
-					"productId": forceProductId(productId),
-					"version": version,
-					"packageFile": packageFile,
-					"filename": filename,
-					"md5sum": packageMd5
-				}
-				logger.debug(u"Local package info: %s" % packageInfo)
-				packages.append(packageInfo)
-			except Exception as exc:
-				logger.error("Failed to process file '%s': %s" % (filename, exc))
-		return packages
+		return getLocalPackages(
+			self.config["packageDir"],
+			forceChecksumCalculation=self.config['forceChecksumCalculation']
+		)
 
 	def getInstalledProducts(self):
 		logger.info(u"Getting installed products")
@@ -1192,3 +1165,55 @@ class OpsiPackageUpdater(object):
 			logger.warning("Problems processing repository {name}: {errors}", name=repository.name, errors='; '.join(str(e) for e in errors))
 
 		return packages
+
+
+def getLocalPackages(self, packageDirectory, forceChecksumCalculation=False):
+	"""
+	Show what packages are available in the given `packageDirectory`.
+
+	This function will not traverse into any subdirectories.
+
+	:param packageDirectory: The directory whose packages should be listed.
+	:type packageDirectory: str
+	:param forceChecksumCalculation: If this is `False` an existing \
+`.md5` of a package will be used. If this is `True` then the checksum \
+will be calculated for each package independent of the possible \
+existance of a corresponding `.md5` file.
+	:returns: Information about the found opsi packages. For each \
+package there will be the following information: _productId_, \
+_version_, _packageFile_ (complete path), _filename_ and _md5sum_.
+	:rtype: [{}]
+	"""
+	logger.info(u"Getting info for local packages in '%s'" % packageDirectory)
+
+	packages = []
+	for filename in os.listdir(packageDirectory):
+		if not filename.endswith('.opsi'):
+			continue
+
+		packageFile = os.path.join(packageDirectory, filename)
+		logger.info(u"Found local package '%s'" % packageFile)
+		try:
+			productId, version = parseFilename(filename)
+			checkSumFile = filename + '.md5'
+			if not forceChecksumCalculation and os.path.exists(checkSumFile):
+				logger.debug("Reading existing checksum from {0}", checkSumFile)
+				with open(checkSumFile) as hashFile:
+					packageMd5 = hashFile.read().strip()
+			else:
+				logger.debug("Calculating checksum for {0}", packageFile)
+				packageMd5 = md5sum(packageFile)
+
+			packageInfo = {
+				"productId": forceProductId(productId),
+				"version": version,
+				"packageFile": packageFile,
+				"filename": filename,
+				"md5sum": packageMd5
+			}
+			logger.debug(u"Local package info: %s" % packageInfo)
+			packages.append(packageInfo)
+		except Exception as exc:
+			logger.error("Failed to process file '%s': %s" % (filename, exc))
+
+	return packages
