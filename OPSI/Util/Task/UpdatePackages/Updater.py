@@ -1167,7 +1167,7 @@ class OpsiPackageUpdater(object):
 		return packages
 
 
-def getLocalPackages(self, packageDirectory, forceChecksumCalculation=False):
+def getLocalPackages(packageDirectory, forceChecksumCalculation=False):
 	"""
 	Show what packages are available in the given `packageDirectory`.
 
