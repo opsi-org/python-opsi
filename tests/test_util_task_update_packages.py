@@ -52,16 +52,21 @@ def testListingLocalPackages(packageUpdaterClass):
         with open(configFile, 'w'):
             pass
 
+        filenames = [
+            'not.tobefound.opsi.nono',
+            'thingy_1.2-3.opsi', 'thingy_1.2-3.opsi.md5'
+        ]
+
+        with open(os.path.join(filenames), 'w'):
+            pass
+
         config = DEFAULT_CONFIG.copy()
         config['packageDir'] = tempDir
         config['configFile'] = configFile
 
         packageUpdater = packageUpdaterClass(config)
-
-        # TODO: create directory with packages
-        # TODO: let there be non .opsi-files in there
-
         localPackages = packageUpdater.getLocalPackages()
-        assert not localPackages
+        print(localPackages)
+        assert len(localPackages) == 1
 
         # TODO: check for local packages
