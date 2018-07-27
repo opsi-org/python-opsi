@@ -136,7 +136,7 @@ class OpsiPackageUpdater(object):
 		try:
 			logger.info(u"Reading config file '%s'" % self.config["configFile"])
 			if not os.path.isfile(self.config["configFile"]):
-				raise OSError(u"File not found")
+				raise OSError(u"Configuration file {!r} not found".format(self.config["configFile"]))
 
 			self.config['repositories'] = []
 
