@@ -38,35 +38,47 @@ from .test_hosts import getConfigServer
 
 @pytest.fixture
 def packageUpdaterClass(backendManager):
-    configServer = getConfigServer()
-    backendManager.host_insertObject(configServer)
+	configServer = getConfigServer()
+	backendManager.host_insertObject(configServer)
 
-    klass = OpsiPackageUpdater
-    with mock.patch.object(klass, 'getConfigBackend', return_value=backendManager):
-        yield klass
+	klass = OpsiPackageUpdater
+	with mock.patch.object(klass, 'getConfigBackend', return_value=backendManager):
+		yield klass
 
 
 def testListingLocalPackages(packageUpdaterClass):
-    with workInTemporaryDirectory() as tempDir:
-        configFile = os.path.join(tempDir, 'emptyconfig.conf')
-        with open(configFile, 'w'):
-            pass
+	with workInTemporaryDirectory() as tempDir:
+		configFile = os.path.join(tempDir, 'emptyconfig.conf')
+		with open(configFile, 'w'):
+			pass
 
-        filenames = [
-            'not.tobefound.opsi.nono',
-            'thingy_1.2-3.opsi', 'thingy_1.2-3.opsi.md5'
-        ]
+		filenames = [
+			'not.tobefound.opsi.nono',
+			'thingy_1.2-3.opsi', 'thingy_1.2-3.opsi.md5'
+		]
 
-        with open(os.path.join(filenames), 'w'):
-            pass
+		for filename in filenames:
+			with open(os.path.join(tempDir, filenames), 'w'):
+				pass
 
-        config = DEFAULT_CONFIG.copy()
-        config['packageDir'] = tempDir
-        config['configFile'] = configFile
+		config = DEFAULT_CONFIG.copy()
+		config['packageDir'] = tempDir
+		config['configFile'] = configFile
 
-        packageUpdater = packageUpdaterClass(config)
-        localPackages = packageUpdater.getLocalPackages()
-        print(localPackages)
-        assert len(localPackages) == 1
+		packageUpdater = packageUpdaterClass(config)
+		localPackages = packageUpdater.getLocalPackages()
+		print(localPackages)
+		packageInfo = localPackages.pop()
+		assert not localPackages, "There should only be one package!"
 
-        # TODO: check for local packages
+		expectedInfo = {
+			"productId": "thingy",
+			"version": "1.2-3",
+			"packageFile": os.path.join(tempDir, 'thingy_1.2-3.opsi'),
+			"filename": "thingy_1.2-3.opsi",
+			"md5sum": None
+		}
+
+		assert set(packageInfo.keys()) == set(expectedInfo.keys())
+
+		# TODO: check for local packages
