@@ -31,7 +31,7 @@ import pytest
 from OPSI.Util.Task.UpdatePackages import OpsiPackageUpdater
 from OPSI.Util.Task.UpdatePackages.Config import DEFAULT_CONFIG
 
-from .helpers import workInTemporaryDirectory
+from .helpers import mock, workInTemporaryDirectory
 
 
 @pytest.fixture
