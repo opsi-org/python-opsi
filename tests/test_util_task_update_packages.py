@@ -26,6 +26,7 @@ Testing the opsi-package-updater functionality.
 
 from __future__ import absolute_import
 
+import os.path
 import pytest
 
 from OPSI.Util.Task.UpdatePackages import OpsiPackageUpdater
@@ -47,8 +48,13 @@ def packageUpdaterClass(backendManager):
 
 def testListingLocalPackages(packageUpdaterClass):
     with workInTemporaryDirectory() as tempDir:
+        configFile = os.path.join(tempDir, 'emptyconfig.conf')
+        with open(configFile, 'w'):
+            pass
+
         config = DEFAULT_CONFIG.copy()
         config['packageDir'] = tempDir
+        config['configFile'] = configFile
 
         packageUpdater = packageUpdaterClass(config)
 
