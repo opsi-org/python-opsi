@@ -58,7 +58,7 @@ def testListingLocalPackages(packageUpdaterClass):
 		]
 
 		for filename in filenames:
-			with open(os.path.join(tempDir, filenames), 'w'):
+			with open(os.path.join(tempDir, filename), 'w'):
 				pass
 
 		config = DEFAULT_CONFIG.copy()
