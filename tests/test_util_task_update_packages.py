@@ -65,7 +65,6 @@ def testListingLocalPackages(packageUpdaterClass):
 
 		packageUpdater = packageUpdaterClass(config)
 		localPackages = packageUpdater.getLocalPackages()
-		print(localPackages)
 		packageInfo = localPackages.pop()
 		assert not localPackages, "There should only be one package!"
 
@@ -78,5 +77,8 @@ def testListingLocalPackages(packageUpdaterClass):
 		}
 
 		assert set(packageInfo.keys()) == set(expectedInfo.keys())
+		assert packageInfo['md5sum']  # We want any value
 
-		# TODO: check for local packages
+		del expectedInfo['md5sum']  # Not comparing this
+		for key, expectedValue in expectedInfo.items():
+			assert packageInfo[key] == expectedValue
