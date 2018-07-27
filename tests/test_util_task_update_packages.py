@@ -26,18 +26,27 @@ Testing the opsi-package-updater functionality.
 
 from __future__ import absolute_import
 
+import pytest
+
 from OPSI.Util.Task.UpdatePackages import OpsiPackageUpdater
 from OPSI.Util.Task.UpdatePackages.Config import DEFAULT_CONFIG
 
 from .helpers import workInTemporaryDirectory
 
 
-def testListingLocalPackages():
+@pytest.fixture
+def packageUpdaterClass(backendManager):
+    klass = OpsiPackageUpdater
+    with mock.patch.object(klass, 'getConfigBackend', return_value=backendManager):
+        yield klass
+
+
+def testListingLocalPackages(packageUpdaterClass):
     with workInTemporaryDirectory() as tempDir:
         config = DEFAULT_CONFIG.copy()
         config['packageDir'] = tempDir
 
-        packageUpdater = OpsiPackageUpdater(config)
+        packageUpdater = packageUpdaterClass(config)
 
         # TODO: create directory with packages
         # TODO: let there be non .opsi-files in there
