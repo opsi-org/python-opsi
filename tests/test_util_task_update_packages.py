@@ -52,7 +52,7 @@ def testListingLocalPackages(packageUpdaterClass):
 
 		filenames = [
 			'not.tobefound.opsi.nono',
-			'thingy_1.2-3.opsi', 'thingy_1.2-3.opsi.md5'
+			'thingy_1.2-3.opsi', 'thingy_1.2-3.opsi.no'
 		]
 
 		for filename in filenames:
