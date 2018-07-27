@@ -32,10 +32,14 @@ from OPSI.Util.Task.UpdatePackages import OpsiPackageUpdater
 from OPSI.Util.Task.UpdatePackages.Config import DEFAULT_CONFIG
 
 from .helpers import mock, workInTemporaryDirectory
+from .test_hosts import getConfigServer
 
 
 @pytest.fixture
 def packageUpdaterClass(backendManager):
+    configServer = getConfigServer()
+    backendManager.host_insertObject(configServer)
+
     klass = OpsiPackageUpdater
     with mock.patch.object(klass, 'getConfigBackend', return_value=backendManager):
         yield klass
