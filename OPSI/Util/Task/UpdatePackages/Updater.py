@@ -18,7 +18,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-Components for updating packages.
+Component for handling packages updates.
 
 :copyright: uib GmbH <info@uib.de>
 :author: Niko Wenselowski <n.wenselowski@uib.de>
