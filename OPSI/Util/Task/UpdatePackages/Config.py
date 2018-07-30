@@ -27,7 +27,9 @@ Configuration.
 
 import os
 import os.path
+
 from OPSI import __version__
+from OPSI.Logger import Logger
 
 __all__ = ('DEFAULT_CONFIG', 'getRepoConfigs')
 
@@ -61,6 +63,8 @@ DEFAULT_CONFIG = {
 	"forceChecksumCalculation": False,
 	"forceDownload": False,
 }
+
+logger = Logger()
 
 
 def getRepoConfigs(repoDir):
