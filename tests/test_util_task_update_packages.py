@@ -100,6 +100,6 @@ def testParsingConfigFile(exampleConfigPath):
 
 		packageUpdater = packageUpdaterClass(config)
 
-		print(repr(packageUpdater.config))
+		print(packageUpdater.config)
 		assert packageUpdater.config
 		assert not packageUpdater.config['repositories']
