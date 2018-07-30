@@ -92,7 +92,7 @@ def exampleConfigPath():
 	)
 
 
-def testParsingConfigFile(exampleConfigPath):
+def testParsingConfigFile(exampleConfigPath, packageUpdaterClass):
 	with workInTemporaryDirectory() as tempDir:
 		config = DEFAULT_CONFIG.copy()
 		config['packageDir'] = tempDir
