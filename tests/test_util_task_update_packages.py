@@ -82,3 +82,24 @@ def testListingLocalPackages(packageUpdaterClass):
 		del expectedInfo['md5sum']  # Not comparing this
 		for key, expectedValue in expectedInfo.items():
 			assert packageInfo[key] == expectedValue
+
+
+@pytest.fixture
+def exampleConfigPath():
+	return os.path.join(
+		os.path.dirname(__file__), 'testdata', 'util', 'task',
+		'updatePackages', 'example_updater.conf'
+	)
+
+
+def testParsingConfigFile(exampleConfigPath):
+	with workInTemporaryDirectory() as tempDir:
+		config = DEFAULT_CONFIG.copy()
+		config['packageDir'] = tempDir
+		config['configFile'] = exampleConfigPath
+
+		packageUpdater = packageUpdaterClass(config)
+
+		print(repr(packageUpdater.config))
+		assert packageUpdater.config
+		assert not packageUpdater.config['repositories']
