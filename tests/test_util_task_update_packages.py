@@ -94,12 +94,38 @@ def exampleConfigPath():
 
 def testParsingConfigFile(exampleConfigPath, packageUpdaterClass):
 	with workInTemporaryDirectory() as tempDir:
-		config = DEFAULT_CONFIG.copy()
-		config['packageDir'] = tempDir
-		config['configFile'] = exampleConfigPath
+		preparedConfig = DEFAULT_CONFIG.copy()
+		preparedConfig['packageDir'] = tempDir
+		preparedConfig['configFile'] = exampleConfigPath
 
-		packageUpdater = packageUpdaterClass(config)
+		packageUpdater = packageUpdaterClass(preparedConfig)
+		config = packageUpdater.config
 
-		print(packageUpdater.config)
-		assert packageUpdater.config
-		assert not packageUpdater.config['repositories']
+		assert config
+		assert not config['repositories']
+
+		assert config['packageDir'] == '/var/lib/opsi/repository'
+		assert config['tempdir'] == '/tmp'
+		assert config['repositoryConfigDir'] = '/etc/opsi/package-updater.repos.d/'
+
+		# e-mail notification settings
+		assert config['notification'] == False
+		assert config['smtphost'] == 'smtp'
+		assert config['smtpport'] == 25
+		assert config['smtpuser'] == DEFAULT_CONFIG['smtpuser']
+		assert config['smtppassword'] == DEFAULT_CONFIG['smtppassword']
+		assert config['use_starttls'] == False
+		assert config['sender'] == 'opsi-package-updater@localhost'
+		assert config['receivers'] == ['root@localhost', 'anotheruser@localhost']
+		assert config['subject'] == 'opsi-package-updater example config'
+
+		# Automatic installation settings
+		assert config['installationWindowStartTime'] == '01:23'
+		assert config['installationWindowEndTime'] == '04:56'
+		assert config['installationWindowExceptions'] == ['firstProduct', 'second-product']
+
+		# Wake-On-LAN settings
+		assert config['wolAction'] == False
+		assert config['wolActionExcludeProductIds'] == ['this', 'that']
+		assert config['wolShutdownWanted'] == True
+		assert config['wolStartGap'] == 10
