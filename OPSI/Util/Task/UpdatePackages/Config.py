@@ -27,6 +27,8 @@ Configuration.
 
 from OPSI import __version__
 
+__all__ = ('DEFAULT_CONFIG', 'getRepoConfigs')
+
 DEFAULT_CONFIG = {
 	"userAgent": 'opsi package updater %s' % __version__,
 	"packageDir": '/var/lib/opsi/products',
@@ -57,3 +59,13 @@ DEFAULT_CONFIG = {
 	"forceChecksumCalculation": False,
 	"forceDownload": False,
 }
+
+
+def getRepoConfigs(repoDir):
+	try:
+		for entry in os.listdir(repoDir):
+			filePath = os.path.join(repoDir, entry)
+			if entry.endswith('.repo') and os.path.isfile(filePath):
+				yield filePath
+	except OSError as oserr:
+		logger.warning("Problem listing {0}: {1}".format(repoDir, oserr))

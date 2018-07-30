@@ -35,9 +35,10 @@ import time
 import urllib
 import urllib2
 
+from .Config import getRepoConfigs
 from .Exceptions import ConfigurationError, MissingConfigurationValueError
 from .Notifier import EmailNotifier
-from .Repository import getRepoConfigs, LinksExtractor, ProductRepositoryInfo
+from .Repository import LinksExtractor, ProductRepositoryInfo
 
 from OPSI import System
 from OPSI.Backend.BackendManager import BackendManager
