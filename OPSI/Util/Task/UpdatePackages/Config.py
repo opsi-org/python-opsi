@@ -25,6 +25,8 @@ Configuration.
 :license: GNU Affero General Public License version 3
 """
 
+import os
+import os.path
 from OPSI import __version__
 
 __all__ = ('DEFAULT_CONFIG', 'getRepoConfigs')
