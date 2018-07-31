@@ -37,7 +37,7 @@ import urllib2
 
 from .Config import ConfigurationParser
 from .Notifier import EmailNotifier
-from .Repository import LinksExtractor, ProductRepositoryInfo
+from .Repository import LinksExtractor
 
 from OPSI import System
 from OPSI.Backend.BackendManager import BackendManager
