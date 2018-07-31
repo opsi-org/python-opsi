@@ -204,7 +204,7 @@ overriden based on values in configuration file.
 
 				elif section.lower().startswith('repository'):
 					try:
-						repository = self._getRepository(configIni, section, config['forceRepositoryActivation'], config['repositoryName'])
+						repository = self._getRepository(configIni, section, config['forceRepositoryActivation'], config['repositoryName'], config['installAllAvailable'])
 						config['repositories'].append(repository)
 					except MissingConfigurationValueError as mcverr:
 						logger.debug(u"Configuration for {section} incomplete: {error}", error=mcverr, section=section)
