@@ -297,8 +297,7 @@ class OpsiPackageUpdater(object):
 				elif tdiff(self.config['installationWindowStartTime'], self.config['installationWindowEndTime']) >= tdiff(self.config['installationWindowStartTime'], now):
 					logger.notice(u"We are inside the installation time window, installing products and setting actions")
 				else:
-					logger.notice(u"We are outside installation time window, not installing products except for product ids %s" \
-							% self.config['installationWindowExceptions'])
+					logger.notice(u"We are outside installation time window, not installing products except for product ids %s" % self.config['installationWindowExceptions'])
 					insideInstallWindow = False
 
 				sequence = []
@@ -536,8 +535,13 @@ class OpsiPackageUpdater(object):
 				for product in installedProducts:
 					if product['productId'] == availablePackage['productId']:
 						logger.debug(u"Product '%s' is installed" % availablePackage['productId'])
-						logger.debug(u"Available product version is '%s', installed product version is '%s-%s'" \
-							% (availablePackage['version'], product['productVersion'], product['packageVersion']))
+						logger.debug(
+							u"Available product version is '%s', installed product version is '%s-%s'" % (
+								availablePackage['version'],
+								product['productVersion'],
+								product['packageVersion']
+							)
+						)
 						break
 
 				downloadNeeded = True
@@ -559,8 +563,12 @@ class OpsiPackageUpdater(object):
 					if notifier:
 						notifier.appendLine(message)
 				elif not downloadNeeded:
-					logger.info(u"%s - download of package is not required: found local package %s with matching md5sum" \
-								% (availablePackage["filename"], localPackageFound['filename']))
+					logger.info(
+						u"%s - download of package is not required: found local package %s with matching md5sum" % (
+							availablePackage["filename"],
+							localPackageFound['filename']
+						)
+					)
 				elif localPackageFound:
 					message = u"{filename} - download of package is required: found local package {0} which differs from available".format(localPackageFound['filename'], **availablePackage)
 					logger.notice(message)
