@@ -308,7 +308,7 @@ class OpsiPackageUpdater(object):
 					sequence.append(package['productId'])
 
 				for package in newPackages:
-					if not package['productId'] in sequence:
+					if package['productId'] not in sequence:
 						continue
 					packageFile = os.path.join(self.config["packageDir"], package["filename"])
 					productId = package['productId']
