@@ -65,15 +65,6 @@ def cd(path):
         os.chdir(old_dir)
 
 
-def copyTestfileToTemporaryFolder(filename):
-    temporary_folder = tempfile.mkdtemp()
-    shutil.copy(filename, temporary_folder)
-
-    (_, new_filename) = os.path.split(filename)
-
-    return os.path.join(temporary_folder, new_filename)
-
-
 @contextmanager
 def createTemporaryTestfile(original, tempDir=None):
     '''Copy `original` to a temporary directory and \
