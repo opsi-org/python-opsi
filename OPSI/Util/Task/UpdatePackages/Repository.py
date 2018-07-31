@@ -25,26 +25,14 @@ Handling repositories.
 :license: GNU Affero General Public License version 3
 """
 
-import os
-import os.path
 import htmllib
 
 from OPSI.Logger import Logger
 from OPSI.Types import forceBool, forceUnicode, forceUnicodeList
 
-__all__ = ('getRepoConfigs', 'LinksExtractor', 'ProductRepositoryInfo')
+__all__ = ('LinksExtractor', 'ProductRepositoryInfo')
 
 logger = Logger()
-
-
-def getRepoConfigs(repoDir):
-	try:
-		for entry in os.listdir(repoDir):
-			filePath = os.path.join(repoDir, entry)
-			if entry.endswith('.repo') and os.path.isfile(filePath):
-				yield filePath
-	except OSError as oserr:
-		logger.warning("Problem listing {0}: {1}".format(repoDir, oserr))
 
 
 class ProductRepositoryInfo(object):

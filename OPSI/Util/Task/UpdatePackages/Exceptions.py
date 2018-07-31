@@ -25,7 +25,12 @@ Exceptions used in updating packages.
 :license: GNU Affero General Public License version 3
 """
 
-__all__ = ('ConfigurationError', 'MissingConfigurationValueError')
+from OPSI.Exceptions import OpsiError
+
+__all__ = (
+    'ConfigurationError', 'MissingConfigurationValueError',
+    'RequiringBackendError'
+)
 
 
 class ConfigurationError(ValueError):
@@ -34,3 +39,7 @@ class ConfigurationError(ValueError):
 
 class MissingConfigurationValueError(ConfigurationError):
 	pass
+
+
+class RequiringBackendError(OpsiError):
+    pass
