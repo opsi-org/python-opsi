@@ -30,7 +30,7 @@ import pytest
 from OPSI.Util.Task.UpdatePackages import OpsiPackageUpdater
 from OPSI.Util.Task.UpdatePackages.Config import DEFAULT_CONFIG
 
-from .helpers import mock, workInTemporaryDirectory, copyTestfileToTemporaryFolder
+from .helpers import mock, createTemporaryTestfile, workInTemporaryDirectory
 from .test_hosts import getConfigServer
 
 
@@ -90,7 +90,8 @@ def exampleConfigPath():
 		os.path.dirname(__file__), 'testdata', 'util', 'task',
 		'updatePackages', 'example_updater.conf'
 	)
-	return copyTestfileToTemporaryFolder(filePath)
+	with createTemporaryTestfile(filePath) as newPath:
+		yield newPath
 
 
 def patchConfigFile(filename, **values):
