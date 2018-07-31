@@ -93,7 +93,8 @@ def testParsingWIM(fakeWimPath):
 def testReadingImageInformationFromWim(fakeWimPath):
     infos = getImageInformation(fakeWimPath)
 
-    for _ in range(5):
+    for index in range(5):
+        print("Check #{}...".format(index))
         info = next(infos)
         assert info
 
