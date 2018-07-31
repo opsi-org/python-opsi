@@ -75,9 +75,9 @@ yield the path to the new file.
     with workInTemporaryDirectory(tempDir) as targetDir:
         shutil.copy(original, targetDir)
 
-        (_, new_filename) = os.path.split(original)
+        filename = os.path.basename(original)
 
-        yield os.path.join(targetDir, new_filename)
+        yield os.path.join(targetDir, filename)
 
 
 def getLocalFQDN():
