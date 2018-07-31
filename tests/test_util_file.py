@@ -177,33 +177,6 @@ def testTxtSetupOemFileApplyingWorkaroundsChangesContents(txtSetupOemFileInTempD
     assert before != after
 
 
-class CopySetupOemFileTestsMixin(object):
-    TEST_DATA_FOLDER = os.path.join(
-        os.path.dirname(__file__), 'testdata', 'util', 'file',
-    )
-    ORIGINAL_SETUP_FILE = None
-
-    @classmethod
-    def setUpClass(self):
-        oemSetupFile = copyTestfileToTemporaryFolder(
-            os.path.join(self.TEST_DATA_FOLDER, self.ORIGINAL_SETUP_FILE)
-        )
-
-        self.txtSetupOemFile = TxtSetupOemFile(oemSetupFile)
-        self.txtSetupOemFile.parse()
-
-    @classmethod
-    def tearDownClass(self):
-        testDirectory = os.path.dirname(self.txtSetupOemFile.getFilename())
-        if os.path.normpath(self.TEST_DATA_FOLDER) != os.path.normpath(testDirectory):
-            try:
-                shutil.rmtree(testDirectory)
-            except OSError:
-                pass
-
-        del self.txtSetupOemFile
-
-
 @pytest.mark.parametrize("filename, vendorId, deviceId", [
     ('txtsetupoem_testdata_1.oem', '10DE', '07F6'),
     ('txtsetupoem_testdata_3.oem', '10DE', '07F6'),
