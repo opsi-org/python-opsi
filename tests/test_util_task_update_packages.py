@@ -121,7 +121,7 @@ def testParsingConfigFile(exampleConfigPath, packageUpdaterClass):
 		repoPath = os.path.join(tempDir, 'repos.d')
 		os.mkdir(repoPath)
 
-		patchConfigFile(filename, packageDir=tempDir, repositoryConfigDir=repoPath)
+		patchConfigFile(exampleConfigPath, packageDir=tempDir, repositoryConfigDir=repoPath)
 
 		packageUpdater = packageUpdaterClass(preparedConfig)
 		config = packageUpdater.config
@@ -129,9 +129,9 @@ def testParsingConfigFile(exampleConfigPath, packageUpdaterClass):
 		assert config
 		assert not config['repositories']
 
-		assert config['packageDir'] == '/var/lib/opsi/repository'
+		assert config['packageDir'] == tempDir
 		assert config['tempdir'] == '/tmp'
-		assert config['repositoryConfigDir'] == '/etc/opsi/package-updater.repos.d/'
+		assert config['repositoryConfigDir'] == repoPath
 
 		# e-mail notification settings
 		assert config['notification'] == False
