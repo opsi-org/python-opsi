@@ -129,7 +129,7 @@ def testParsingConfigFile(exampleConfigPath, packageUpdaterClass):
 
 		assert config['packageDir'] == '/var/lib/opsi/repository'
 		assert config['tempdir'] == '/tmp'
-		assert config['repositoryConfigDir'] = '/etc/opsi/package-updater.repos.d/'
+		assert config['repositoryConfigDir'] == '/etc/opsi/package-updater.repos.d/'
 
 		# e-mail notification settings
 		assert config['notification'] == False
