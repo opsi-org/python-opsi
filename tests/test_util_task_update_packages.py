@@ -31,7 +31,7 @@ import pytest
 
 from OPSI.Util.Task.UpdatePackages import OpsiPackageUpdater
 from OPSI.Util.Task.UpdatePackages.Config import DEFAULT_CONFIG
-from OPSI.Util.Task.UpdatePackages.Config import ProductRepositoryInfo
+from OPSI.Util.Task.UpdatePackages.ProductRepositoryInfo import ProductRepositoryInfo
 
 from .helpers import mock, createTemporaryTestfile, workInTemporaryDirectory
 from .test_hosts import getConfigServer
