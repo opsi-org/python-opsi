@@ -214,7 +214,7 @@ def generateOpsiHostKey(forcePython=False):
 	:rtype: str
 	"""
 	if secrets:
-		return secrets.token_hex(32)
+		return secrets.token_hex(16)
 
 	if os.name == 'posix' and not forcePython:
 		logger.debug2(u"Opening random device {!r} to generate opsi host key", RANDOM_DEVICE)
