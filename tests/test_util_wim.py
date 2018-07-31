@@ -45,8 +45,9 @@ def fakeWIMEnvironment(tempDir=None):
                                    'testdata', 'wimlib.example')
 
         def fakeReturningOutput(_unused):
-            with open(exampleData, 'r') as f:
-                return f.readlines()
+            with open(exampleData, 'rt', encoding='utf-8') as f:
+                content = f.read()
+                return content.split('\n')
 
         with mock.patch('OPSI.Util.WIM.which', lambda x: '/usr/bin/echo'):
             with mock.patch('OPSI.Util.WIM.execute', fakeReturningOutput):
@@ -93,7 +94,8 @@ def testParsingWIM(fakeWimPath):
 def testReadingImageInformationFromWim(fakeWimPath):
     infos = getImageInformation(fakeWimPath)
 
-    for _ in range(5):
+    for index in range(5):
+        print("Check #{}...".format(index))
         info = next(infos)
         assert info
 
