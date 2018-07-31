@@ -31,6 +31,7 @@ import pytest
 
 from OPSI.Util.Task.UpdatePackages import OpsiPackageUpdater
 from OPSI.Util.Task.UpdatePackages.Config import DEFAULT_CONFIG
+from OPSI.Util.Task.UpdatePackages.Config import ProductRepositoryInfo
 
 from .helpers import mock, createTemporaryTestfile, workInTemporaryDirectory
 from .test_hosts import getConfigServer
@@ -131,7 +132,9 @@ def testParsingConfigFile(exampleConfigPath, packageUpdaterClass):
 
 		assert config
 		assert config['repositories']
-		print(config['repositories'])
+		assert len(config['repositories']) == 3
+		for repo in config['repositories']:
+			assert isinstance(repo, ProductRepositoryInfo)
 
 		assert config['packageDir'] == tempDir
 		assert config['tempdir'] == '/tmp'
