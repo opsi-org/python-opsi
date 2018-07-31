@@ -119,10 +119,10 @@ overriden based on values in configuration file.
 
 		try:
 			iniFile = IniFile(filename=self.configFile, raw=True)
-			config = iniFile.parse()
-			for section in config.sections():
+			configIni = iniFile.parse()
+			for section in configIni.sections():
 				if section.lower() == 'general':
-					for (option, value) in config.items(section):
+					for (option, value) in configIni.items(section):
 						if option.lower() == 'packagedir':
 							config["packageDir"] = forceFilename(value.strip())
 						elif option.lower() == 'logfile':
@@ -138,7 +138,7 @@ overriden based on values in configuration file.
 							config["repositoryConfigDir"] = value.strip()
 
 				elif section.lower() == 'notification':
-					for (option, value) in config.items(section):
+					for (option, value) in configIni.items(section):
 						if option.lower() == 'active':
 							config["notification"] = forceBool(value)
 						elif option.lower() == 'smtphost':
@@ -162,7 +162,7 @@ overriden based on values in configuration file.
 								config["receivers"].append(forceEmailAddress(receiver))
 
 				elif section.lower() == 'wol':
-					for (option, value) in config.items(section):
+					for (option, value) in configIni.items(section):
 						if option.lower() == 'active':
 							config["wolAction"] = forceBool(value.strip())
 						elif option.lower() == 'excludeproductids':
@@ -178,7 +178,7 @@ overriden based on values in configuration file.
 								config["wolStartGap"] = 0
 
 				elif section.lower() == 'installation':
-					for (option, value) in config.items(section):
+					for (option, value) in configIni.items(section):
 						if option.lower() == 'windowstart':
 							if not value.strip():
 								continue
@@ -199,7 +199,7 @@ overriden based on values in configuration file.
 
 				elif section.lower().startswith('repository'):
 					try:
-						repository = self._getRepository(config, section, config['forceRepositoryActivation'], config['repositoryName'])
+						repository = self._getRepository(configIni, section, config['forceRepositoryActivation'], config['repositoryName'])
 						config['repositories'].append(repository)
 					except MissingConfigurationValueError as mcverr:
 						logger.debug(u"Configuration for {section} incomplete: {error}", error=mcverr, section=section)
@@ -216,13 +216,13 @@ overriden based on values in configuration file.
 			iniFile = IniFile(filename=configFile, raw=True)
 
 			try:
-				config = iniFile.parse()
-				for section in config.sections():
+				repoConfig = iniFile.parse()
+				for section in repoConfig.sections():
 					if not section.lower().startswith('repository'):
 						continue
 
 					try:
-						repository = self._getRepository(config, section, config['forceRepositoryActivation'], config['repositoryName'], config['installAllAvailable'])
+						repository = self._getRepository(repoConfig, section, config['forceRepositoryActivation'], config['repositoryName'], config['installAllAvailable'])
 						config['repositories'].append(repository)
 					except MissingConfigurationValueError as mcverr:
 						logger.debug(u"Configuration for {section} in {filename} incomplete: {error}", error=mcverr, section=section, filename=configFile)
