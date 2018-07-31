@@ -234,10 +234,8 @@ overriden based on values in configuration file.
 					except ConfigurationError as cerr:
 						logger.error(u"Configuration problem in {section} in {filename}: {error}", error=cerr, section=section, filename=configFile)
 					except Exception as err:
-						print(err)
 						logger.error(u"Can't load repository from {section} in {filename}: {error}", error=err, section=section, filename=configFile)
 			except Exception as error:
-				print(error)
 				logger.error("Unable to load repositories from {filename}: {error}", filename=configFile, error=error)
 
 		return config
