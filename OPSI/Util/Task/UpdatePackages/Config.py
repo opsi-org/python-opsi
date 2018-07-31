@@ -237,6 +237,8 @@ overriden based on values in configuration file.
 			except Exception as error:
 				logger.error("Unable to load repositories from {filename}: {error}", filename=configFile, error=error)
 
+		return config
+
 	def _getRepository(self, config, section, forceRepositoryActivation=False, repositoryName=None, installAllAvailable=False):
 		active = False
 		baseUrl = None
