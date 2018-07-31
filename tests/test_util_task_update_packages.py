@@ -92,11 +92,34 @@ def exampleConfigPath():
 	)
 
 
+def patchConfigFile(filename, **values):
+	with open(filename) as configFile:
+		lines = configFile.readlines()
+
+	newLines = []
+	for line in lines:
+		for key, value in values.items():
+			if line.startswith(key):
+				newLines.append('{} = {}\n'.format(key, value))
+				break
+		else:
+			newLines.append(line)
+
+	with open(filename, 'w') as configFile:
+		for line in newLines:
+			configFile.write(line)
+
+
 def testParsingConfigFile(exampleConfigPath, packageUpdaterClass):
 	with workInTemporaryDirectory() as tempDir:
 		preparedConfig = DEFAULT_CONFIG.copy()
 		preparedConfig['packageDir'] = tempDir
 		preparedConfig['configFile'] = exampleConfigPath
+
+		repoPath = os.path.join(tempDir, 'repos.d')
+		os.mkdir(repoPath)
+
+		patchConfigFile(filename, packageDir=tempDir, repositoryConfigDir=repoPath)
 
 		packageUpdater = packageUpdaterClass(preparedConfig)
 		config = packageUpdater.config
