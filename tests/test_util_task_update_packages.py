@@ -97,24 +97,6 @@ def exampleConfigPath():
 		yield newPath
 
 
-def patchConfigFile(filename, **values):
-	with open(filename) as configFile:
-		lines = configFile.readlines()
-
-	newLines = []
-	for line in lines:
-		for key, value in values.items():
-			if line.startswith(key):
-				newLines.append('{} = {}\n'.format(key, value))
-				break
-		else:
-			newLines.append(line)
-
-	with open(filename, 'w') as configFile:
-		for line in newLines:
-			configFile.write(line)
-
-
 def testParsingConfigFile(exampleConfigPath, packageUpdaterClass):
 	with workInTemporaryDirectory() as tempDir:
 		preparedConfig = DEFAULT_CONFIG.copy()
@@ -161,6 +143,24 @@ def testParsingConfigFile(exampleConfigPath, packageUpdaterClass):
 		assert config['wolActionExcludeProductIds'] == ['this', 'that']
 		assert config['wolShutdownWanted'] == True
 		assert config['wolStartGap'] == 10
+
+
+def patchConfigFile(filename, **values):
+	with open(filename) as configFile:
+		lines = configFile.readlines()
+
+	newLines = []
+	for line in lines:
+		for key, value in values.items():
+			if line.startswith(key):
+				newLines.append('{} = {}\n'.format(key, value))
+				break
+		else:
+			newLines.append(line)
+
+	with open(filename, 'w') as configFile:
+		for line in newLines:
+			configFile.write(line)
 
 
 def copyExampleRepoConfigs(targetDir):
