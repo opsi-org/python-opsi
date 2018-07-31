@@ -30,7 +30,7 @@ from contextlib import contextmanager
 
 from OPSI.Util.File import IniFile, InfFile, TxtSetupOemFile, ZsyncFile
 
-from .helpers import copyTestfileToTemporaryFolder, workInTemporaryDirectory
+from .helpers import createTemporaryTestfile, workInTemporaryDirectory
 
 import pytest
 
@@ -96,12 +96,7 @@ def txtSetupOemFileInTempDirectory(txtSetupOemFilePath):
 
 @contextmanager
 def getTempTxtSetupOemFileFromPath(filePath):
-    with workInTemporaryDirectory() as tempDir:
-        shutil.copy(filePath, tempDir)
-
-        filename = os.path.basename(filePath)
-
-        newPath = os.path.join(tempDir, filename)
+    with createTemporaryTestfile(filePath) as newPath:
         yield TxtSetupOemFile(newPath)
 
 
