@@ -25,6 +25,8 @@ Testing the opsi-package-updater functionality.
 from __future__ import absolute_import
 
 import os.path
+import shutil
+
 import pytest
 
 from OPSI.Util.Task.UpdatePackages import OpsiPackageUpdater
@@ -122,12 +124,14 @@ def testParsingConfigFile(exampleConfigPath, packageUpdaterClass):
 		os.mkdir(repoPath)
 
 		patchConfigFile(exampleConfigPath, packageDir=tempDir, repositoryConfigDir=repoPath)
+		copyExampleRepoConfigs(repoPath)
 
 		packageUpdater = packageUpdaterClass(preparedConfig)
 		config = packageUpdater.config
 
 		assert config
-		assert not config['repositories']
+		assert config['repositories']
+		print(config['repositories'])
 
 		assert config['packageDir'] == tempDir
 		assert config['tempdir'] == '/tmp'
@@ -154,3 +158,12 @@ def testParsingConfigFile(exampleConfigPath, packageUpdaterClass):
 		assert config['wolActionExcludeProductIds'] == ['this', 'that']
 		assert config['wolShutdownWanted'] == True
 		assert config['wolStartGap'] == 10
+
+
+def copyExampleRepoConfigs(targetDir):
+	for filename in ('experimental.repo', ):
+		filePath = os.path.join(
+			os.path.dirname(__file__), 'testdata', 'util', 'task',
+			'updatePackages', filename
+		)
+		shutil.copy(filePath, targetDir)
