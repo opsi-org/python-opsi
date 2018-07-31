@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2016-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2016-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -44,8 +44,12 @@ def fakeWIMEnvironment(tempDir=None):
         exampleData = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                    'testdata', 'wimlib.example')
 
+        def fakeReturningOutput(_unused):
+            with open(exampleData, 'r') as f:
+                return f.readlines()
+
         with mock.patch('OPSI.Util.WIM.which', lambda x: '/usr/bin/echo'):
-            with mock.patch('OPSI.Util.WIM.execute', lambda x: open(exampleData, 'r').read().split('\n')):
+            with mock.patch('OPSI.Util.WIM.execute', fakeReturningOutput):
                 yield fakeWimPath
 
 
