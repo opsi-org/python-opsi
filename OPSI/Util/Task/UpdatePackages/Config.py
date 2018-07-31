@@ -36,6 +36,7 @@ import re
 
 from .Exceptions import (ConfigurationError, MissingConfigurationValueError,
 	RequiringBackendError)
+from .Repository import ProductRepositoryInfo
 
 from OPSI import __version__
 from OPSI.Logger import Logger
