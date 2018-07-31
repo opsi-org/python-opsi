@@ -147,7 +147,7 @@ def testParsingConfigFile(exampleConfigPath, packageUpdaterClass):
 		# Automatic installation settings
 		assert config['installationWindowStartTime'] == '01:23'
 		assert config['installationWindowEndTime'] == '04:56'
-		assert config['installationWindowExceptions'] == ['firstProduct', 'second-product']
+		assert config['installationWindowExceptions'] == [u'firstproduct', u'second-product']
 
 		# Wake-On-LAN settings
 		assert config['wolAction'] == False
