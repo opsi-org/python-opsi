@@ -46,7 +46,8 @@ def fakeWIMEnvironment(tempDir=None):
 
         def fakeReturningOutput(_unused):
             with open(exampleData, 'rt', encoding='utf-8') as f:
-                return f.readlines()
+                content = f.read()
+                return content.split('\n')
 
         with mock.patch('OPSI.Util.WIM.which', lambda x: '/usr/bin/echo'):
             with mock.patch('OPSI.Util.WIM.execute', fakeReturningOutput):
