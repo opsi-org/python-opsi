@@ -20,6 +20,8 @@
 """
 Configuration.
 
+Attention: socket.defaulttimeout may be changed per config file setting.
+
 :copyright: uib GmbH <info@uib.de>
 :author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
@@ -29,6 +31,7 @@ from __future__ import absolute_import
 
 import os
 import os.path
+import socket
 import re
 
 from .Exceptions import (ConfigurationError, MissingConfigurationValueError,
@@ -131,6 +134,7 @@ overriden based on values in configuration file.
 						elif option.lower() == 'loglevel':
 							logger.setFileLevel(forceInt(value.strip()))
 						elif option.lower() == 'timeout':
+							# TODO: find a better way!
 							socket.setdefaulttimeout(float(value.strip()))
 						elif option.lower() == 'tempdir':
 							config["tempdir"] = value.strip()
