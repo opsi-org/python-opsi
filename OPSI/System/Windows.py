@@ -856,7 +856,7 @@ def getActiveSessionIds(winApiBugCommand = None):
 			result = execute(winApiBugCommand, shell=False)
 			sessionIds = forceList(eval(result[0]))
 			logger.debug(u"   Found sessionIds: %s" % sessionIds)
-		except Exception,e:
+		except Exception as e:
 			logger.debug("Working directory: '%s', scriptdirectory: '%s'" % (os.getcwd(),sys.path[0]))
 			logger.logException(e)
 	else:
@@ -913,7 +913,7 @@ def getActiveSessionId(verifyProcessRunning = "winlogon.exe", winApiBugCommand =
 							newest = sessionData
 				else:
 					newest = sessionData
-		except Exception,e:
+		except Exception as e:
 			logger.debug("Working directory: '%s', scriptdirectory: '%s'" % (os.getcwd(),sys.path[0]))
 			logger.logException(e)
 	else:
@@ -1005,7 +1005,7 @@ def getSessionInformation(sessionId, winApiBugCommand = None):
 					pass
 				logger.debug(u"   Found session: %s" % sessionData)
 				return sessionData
-		except Exception,e:
+		except Exception as e:
 			logger.debug("Working directory: '%s', scriptdirectory: '%s'" % (os.getcwd(),sys.path[0]))
 			logger.logException(e)
 	newest = None
