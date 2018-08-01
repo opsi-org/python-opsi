@@ -187,7 +187,7 @@ def md5sum(filename):
 	md5object = md5()
 
 	with open(filename, 'rb') as fileToHash:
-		for data in iter(lambda: fileToHash.read(524288), ''):
+		for data in iter(lambda: fileToHash.read(524288), b''):
 			md5object.update(data)
 
 	return md5object.hexdigest()
