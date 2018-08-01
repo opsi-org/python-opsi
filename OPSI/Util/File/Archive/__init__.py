@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2006-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -291,7 +291,7 @@ class TarArchive(BaseArchive, PigzMixin):
 
 			for line in System.execute(u'%s %s --list --file "%s"' % (System.which('tar'), options, self._filename)):
 				if line:
-					names.append(unicode(line))
+					names.append(line)
 
 			return names
 		except Exception as e:
@@ -386,7 +386,7 @@ class CpioArchive(BaseArchive, PigzMixin):
 			elif self._compression == 'bzip2':
 				cat = System.which('bzcat')
 
-			return [unicode(line) for line in
+			return [line for line in
 					System.execute(u'{cat} "{filename}" | {cpio} --quiet -it'.format(cat=cat, filename=self._filename, cpio=System.which('cpio')))
 					if line]
 		except Exception as e:
