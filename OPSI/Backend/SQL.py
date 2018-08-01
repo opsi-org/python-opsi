@@ -2451,11 +2451,15 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 		logger.info(u"Updating auditHardwareOnHost: %s" % auditHardwareOnHost)
 		data = auditHardwareOnHost.toHash()
 		update = {}
+		toDelete = set()
 		for (attribute, value) in data.items():
 			if attribute in ('state', 'lastseen', 'firstseen'):
 				if value is not None:
 					update[attribute] = value
-				del data[attribute]
+				toDelete.add(attribute)
+
+		for key in toDelete:
+			del data[key]
 
 		if update:
 			where = self._uniqueAuditHardwareOnHostCondition(data)
