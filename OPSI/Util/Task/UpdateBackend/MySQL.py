@@ -191,13 +191,13 @@ def _processOpsi40migrations(mysql):
 	tables = {}
 	LOGGER.debug(u"Current tables:")
 	for i in mysql.getSet(u'SHOW TABLES;'):
-		tableName = i.values()[0]
-		LOGGER.debug(u" [ %s ]" % tableName)
-		tables[tableName] = []
-		mysql.execute("alter table `%s` convert to charset utf8 collate utf8_general_ci;" % tableName)
-		for j in mysql.getSet(u'SHOW COLUMNS FROM `%s`' % tableName):
-			LOGGER.debug(u"      %s" % j)
-			tables[tableName].append(j['Field'])
+		for tableName in i.values():
+			LOGGER.debug(u" [ %s ]" % tableName)
+			tables[tableName] = []
+			mysql.execute("alter table `%s` convert to charset utf8 collate utf8_general_ci;" % tableName)
+			for j in mysql.getSet(u'SHOW COLUMNS FROM `%s`' % tableName):
+				LOGGER.debug(u"      %s" % j)
+				tables[tableName].append(j['Field'])
 
 	if 'HOST' in tables and 'host_id' in tables['HOST']:
 		LOGGER.info(u"Updating database table HOST from opsi 3.3 to 3.4")
