@@ -96,10 +96,6 @@ class BaseArchive(object):
 				shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
 			)
 
-			encoding = proc.stdout.encoding
-			if not encoding:
-				encoding = locale.getpreferredencoding()
-
 			flags = fcntl.fcntl(proc.stdout, fcntl.F_GETFL)
 			fcntl.fcntl(proc.stdout, fcntl.F_SETFL, flags | os.O_NONBLOCK)
 			flags = fcntl.fcntl(proc.stderr, fcntl.F_GETFL)
@@ -136,7 +132,6 @@ class BaseArchive(object):
 			logger.info(u"Exit code: %s" % ret)
 
 			if ret != 0:
-				error = error.decode(encoding, 'replace')
 				logger.error(error)
 				raise RuntimeError(u"Command '%s' failed with code %s: %s" % (command, ret, error))
 
@@ -160,10 +155,6 @@ class BaseArchive(object):
 				stderr=subprocess.PIPE
 			)
 
-			encoding = proc.stdin.encoding
-			if not encoding:
-				encoding = locale.getpreferredencoding()
-
 			flags = fcntl.fcntl(proc.stdout, fcntl.F_GETFL)
 			fcntl.fcntl(proc.stdout, fcntl.F_SETFL, flags | os.O_NONBLOCK)
 			flags = fcntl.fcntl(proc.stderr, fcntl.F_GETFL)
@@ -173,6 +164,7 @@ class BaseArchive(object):
 				self._progressSubject.setEnd(len(fileList))
 				self._progressSubject.setState(0)
 
+			encoding = locale.getpreferredencoding()
 			error = ''
 			ret = None
 			for filename in fileList:
