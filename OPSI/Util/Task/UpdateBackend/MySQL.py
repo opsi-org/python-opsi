@@ -266,12 +266,12 @@ def _processOpsi40migrations(mysql):
 	tables = {}
 	LOGGER.debug(u"Current tables:")
 	for i in mysql.getSet(u'SHOW TABLES;'):
-		tableName = i.values()[0]
-		LOGGER.debug(u" [ %s ]" % tableName)
-		tables[tableName] = []
-		for j in mysql.getSet(u'SHOW COLUMNS FROM `%s`' % tableName):
-			LOGGER.debug(u"      %s" % j)
-			tables[tableName].append(j['Field'])
+		for tableName in i.values():
+			LOGGER.debug(u" [ %s ]" % tableName)
+			tables[tableName] = []
+			for j in mysql.getSet(u'SHOW COLUMNS FROM `%s`' % tableName):
+				LOGGER.debug(u"      %s" % j)
+				tables[tableName].append(j['Field'])
 
 	if 'HOST' in tables and 'depotLocalUrl' not in tables['HOST']:
 		LOGGER.info(u"Updating database table HOST from opsi 3.4 to 4.0")
@@ -587,14 +587,14 @@ def _processOpsi40migrations(mysql):
 	with disableForeignKeyChecks(mysql):
 		LOGGER.info(u"Updating productId Columns")
 		for line in mysql.getSet(u"SHOW TABLES;"):
-			tableName = line.values()[0]
-			LOGGER.debug(u" [ %s ]" % tableName)
-			for column in mysql.getSet(u'SHOW COLUMNS FROM `%s`;' % tableName):
-				fieldName = column['Field']
-				fieldType = column['Type']
-				if "productid" in fieldName.lower() and fieldType != "varchar(255)":
-					LOGGER.debug("ALTER TABLE for Table: '%s' and Column: '%s'" % (tableName, fieldName))
-					mysql.execute(u"alter table %s MODIFY COLUMN `%s` VARCHAR(255);" % (tableName, fieldName))
+			for tableName in line.values():
+				LOGGER.debug(u" [ %s ]" % tableName)
+				for column in mysql.getSet(u'SHOW COLUMNS FROM `%s`;' % tableName):
+					fieldName = column['Field']
+					fieldType = column['Type']
+					if "productid" in fieldName.lower() and fieldType != "varchar(255)":
+						LOGGER.debug("ALTER TABLE for Table: '%s' and Column: '%s'" % (tableName, fieldName))
+						mysql.execute(u"alter table %s MODIFY COLUMN `%s` VARCHAR(255);" % (tableName, fieldName))
 
 	# Changing description fields to type TEXT
 	for tableName in (u"PRODUCT_PROPERTY", ):
