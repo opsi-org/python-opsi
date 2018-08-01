@@ -50,6 +50,7 @@ def testDepotSelectionAlgorythmIsExecutable(depotSelectionAlgorythm):
 	Executing the default configuration should never fail.
 	"""
 	exec(depotSelectionAlgorythm)
+	print(selectDepot)
 
 
 def testDepotSelectionAlgorythmReturnsMasterDepotIfNoAlternativesAreGiven(depotSelectionAlgorythm):
