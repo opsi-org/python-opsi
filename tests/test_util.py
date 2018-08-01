@@ -357,7 +357,6 @@ def fileAndHash(request):
 	yield request.param
 
 
-@pytest.mark.endless
 def testCreatingMd5sum(fileAndHash):
 	testFile, expectedHash = fileAndHash
 	assert expectedHash == md5sum(testFile)
