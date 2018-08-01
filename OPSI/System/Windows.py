@@ -178,6 +178,7 @@ def getArchitecture():
 			return u'x86'
 	except Exception as e:
 		logger.error("Error by determining OS-Architecture: '{0}'; returning default: 'x86'".format(e))
+		return u'x86'
 
 
 def getOpsiHotfixName(helper=None):
