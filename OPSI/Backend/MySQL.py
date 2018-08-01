@@ -417,7 +417,7 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 				elif isinstance(value, (float, int)):
 					value = u"%s" % value
 				elif isinstance(value, str):
-					value = u"\'{0}\'".format(self.escapeApostrophe(self.escapeBackslash(value"utf-8")))
+					value = u"\'{0}\'".format(self.escapeApostrophe(self.escapeBackslash(value)))
 				else:
 					value = u"\'{0}\'".format(self.escapeApostrophe(self.escapeBackslash(value)))
 
