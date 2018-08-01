@@ -2197,7 +2197,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 		for (attribute, value) in auditHardware.items():
 			if value is None:
 				auditHardware[attribute] = [None]
-			elif isinstance(value, unicode):
+			elif isinstance(value, str):
 				auditHardware[attribute] = self._sql.escapeAsterisk(value)
 
 		logger.debug(u"Getting hardware ids, filter {0}", auditHardware)
@@ -2214,7 +2214,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 		for attribute, value in hardwareHash.items():
 			if value is None:
 				filter[attribute] = [None]
-			elif isinstance(value, unicode):
+			elif isinstance(value, str):
 				filter[attribute] = self._sql.escapeAsterisk(value)
 			else:
 				filter[attribute] = value
@@ -2392,7 +2392,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 		for (attribute, value) in auditHardwareOnHost.items():
 			if value is None:
 				hardwareFilter[attribute] = [None]
-			elif isinstance(value, unicode):
+			elif isinstance(value, str):
 				hardwareFilter[attribute] = self._sql.escapeAsterisk(value)
 			else:
 				hardwareFilter[attribute] = value
