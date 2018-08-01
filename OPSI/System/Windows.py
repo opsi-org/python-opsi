@@ -40,7 +40,7 @@ import threading
 import time
 
 # Win32 imports
-import _winreg
+import winreg
 import ntsecuritycon
 import pywintypes
 import win32api
@@ -90,8 +90,8 @@ __all__ = (
 logger = Logger()
 hooks = []
 
-HKEY_CURRENT_USER = _winreg.HKEY_CURRENT_USER
-HKEY_LOCAL_MACHINE = _winreg.HKEY_LOCAL_MACHINE
+HKEY_CURRENT_USER = winreg.HKEY_CURRENT_USER
+HKEY_LOCAL_MACHINE = winreg.HKEY_LOCAL_MACHINE
 
 TH32CS_SNAPPROCESS = 0x00000002
 MAX_INTERFACE_NAME_LEN = 256
@@ -645,27 +645,27 @@ def adjustPrivilege(priv, enable = 1):
 # -                                             REGISTRY                                              -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 def getRegistryValue(key, subKey, valueName, reflection=True):
-	hkey = _winreg.OpenKey(key, subKey)
+	hkey = winreg.OpenKey(key, subKey)
 	if not reflection and (getArchitecture() == 'x64'):
-		_winreg.DisableReflectionKey(hkey)
-	(value, type) = _winreg.QueryValueEx(hkey, valueName)
+		winreg.DisableReflectionKey(hkey)
+	(value, type) = winreg.QueryValueEx(hkey, valueName)
 	if (getArchitecture() == 'x64') and not reflection:
-		if _winreg.QueryReflectionKey(hkey):
-			_winreg.EnableReflectionKey(hkey)
+		if winreg.QueryReflectionKey(hkey):
+			winreg.EnableReflectionKey(hkey)
 	return value
 
 
 def setRegistryValue(key, subKey, valueName, value):
-	_winreg.CreateKey(key, subKey)
-	hkey = _winreg.OpenKey(key, subKey, 0, _winreg.KEY_WRITE)
+	winreg.CreateKey(key, subKey)
+	hkey = winreg.OpenKey(key, subKey, 0, winreg.KEY_WRITE)
 	if isinstance(value, int):
-		_winreg.SetValueEx(hkey, valueName, 0, _winreg.REG_DWORD, value)
+		winreg.SetValueEx(hkey, valueName, 0, winreg.REG_DWORD, value)
 	else:
-		_winreg.SetValueEx(hkey, valueName, 0, _winreg.REG_SZ, value)
+		winreg.SetValueEx(hkey, valueName, 0, winreg.REG_SZ, value)
 
 
 def createRegistryKey(key, subKey):
-	_winreg.CreateKey(key, subKey)
+	winreg.CreateKey(key, subKey)
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
