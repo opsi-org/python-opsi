@@ -88,4 +88,4 @@ def cleanDatabase(database):
 
 
 def getTableNames(database):
-    return set(i.values()[0] for i in database.getSet(u'SHOW TABLES;'))
+    return set(tuple(i.values())[0] for i in database.getSet(u'SHOW TABLES;'))
