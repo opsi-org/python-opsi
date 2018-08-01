@@ -381,7 +381,7 @@ class CpioArchive(BaseArchive, PigzMixin):
 			cat = System.which('cat')
 			if self._compression == 'gzip':
 				if self.pigz_detected:
-					cat = u'{pigz} --create --diff'.format(pigz=System.which('pigz'))
+					cat = u'{pigz} --stdout --diff'.format(pigz=System.which('pigz'))
 				else:
 					cat = System.which('zcat')
 			elif self._compression == 'bzip2':
@@ -406,7 +406,7 @@ class CpioArchive(BaseArchive, PigzMixin):
 			cat = System.which('cat')
 			if self._compression == 'gzip':
 				if self.pigz_detected:
-					cat = u'%s --create --diff' % (System.which('pigz'), )
+					cat = u'%s --stdout --diff' % (System.which('pigz'), )
 				else:
 					cat = System.which('zcat')
 			elif self._compression == 'bzip2':
