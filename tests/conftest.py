@@ -240,3 +240,7 @@ def pytest_runtest_setup(item):
     envmarker = item.get_marker("obsolete")
     if envmarker is not None:
         pytest.skip("{0} uses tech that will likely be obsolete in the future".format(item.name))
+
+    envmarker = item.get_marker("fixlater")
+    if envmarker is not None:
+        pytest.skip("{0} will be fixed later".format(item.name))
