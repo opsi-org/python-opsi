@@ -494,10 +494,11 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 		tables = {}
 		logger.debug(u"Current tables:")
 		for i in self.getSet(u'SHOW TABLES;'):
-			tableName = i.values()[0]
-			logger.debug2(u" [ {0} ]", tableName)
-			tables[tableName] = [j['Field'] for j in self.getSet(u'SHOW COLUMNS FROM `%s`' % tableName)]
-			logger.debug2("Fields in {0}: {1}", tableName, tables[tableName])
+			for tableName in i.values():
+				logger.debug2(u" [ {0} ]", tableName)
+				tables[tableName] = [j['Field'] for j in self.getSet(u'SHOW COLUMNS FROM `%s`' % tableName)]
+				logger.debug2("Fields in {0}: {1}", tableName, tables[tableName])
+
 		return tables
 
 	def getTableCreationOptions(self, table):
