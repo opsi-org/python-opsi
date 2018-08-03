@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2006-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -381,14 +381,14 @@ class CpioArchive(BaseArchive, PigzMixin):
 			cat = System.which('cat')
 			if self._compression == 'gzip':
 				if self.pigz_detected:
-					cat = u'{pigz} -cd'.format(pigz=System.which('pigz'))
+					cat = u'{pigz} --stdout --decompress'.format(pigz=System.which('pigz'))
 				else:
 					cat = System.which('zcat')
 			elif self._compression == 'bzip2':
 				cat = System.which('bzcat')
 
 			return [unicode(line) for line in
-					System.execute(u'{cat} "{filename}" | {cpio} --quiet -it'.format(cat=cat, filename=self._filename, cpio=System.which('cpio')))
+					System.execute(u'{cat} "{filename}" | {cpio} --quiet --extract --list'.format(cat=cat, filename=self._filename, cpio=System.which('cpio')))
 					if line]
 		except Exception as e:
 			raise RuntimeError(u"Failed to get archive content '%s': %s" % (self._filename, e))
@@ -406,7 +406,7 @@ class CpioArchive(BaseArchive, PigzMixin):
 			cat = System.which('cat')
 			if self._compression == 'gzip':
 				if self.pigz_detected:
-					cat = u'%s -cd' % (System.which('pigz'), )
+					cat = u'%s --stdout --decompress' % (System.which('pigz'), )
 				else:
 					cat = System.which('zcat')
 			elif self._compression == 'bzip2':
@@ -435,7 +435,7 @@ class CpioArchive(BaseArchive, PigzMixin):
 			curDir = os.path.abspath(os.getcwd())
 			os.chdir(targetPath)
 			try:
-				command = u'%s "%s" | %s --quiet -idumv %s' % (cat, self._filename, System.which('cpio'), include)
+				command = u'%s "%s" | %s --quiet --extract --make-directories --unconditional --preserve-modification-time --verbose --no-preserve-owner %s' % (cat, self._filename, System.which('cpio'), include)
 				self._extract(command, fileCount)
 			finally:
 				os.chdir(curDir)
@@ -451,7 +451,7 @@ class CpioArchive(BaseArchive, PigzMixin):
 			if not os.path.isdir(baseDir):
 				raise IOError(u"Base dir '%s' not found" % baseDir)
 
-			command = u'%s --quiet -v -o -H crc' % System.which('cpio')
+			command = u'%s --create --quiet --verbose --format crc' % System.which('cpio')
 			if dereference:
 				command += ' --dereference'
 			if self._compression == 'gzip':
