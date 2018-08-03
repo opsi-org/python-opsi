@@ -2,7 +2,7 @@
 
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
-# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -58,7 +58,7 @@ __all__ = (
 	'SQLBackendObjectModificationTracker'
 )
 
-DATABASE_SCHEMA_VERSION = 3
+DATABASE_SCHEMA_VERSION = 5
 
 logger = Logger()
 
@@ -385,9 +385,21 @@ class SQLBackend(ConfigDataBackend):
 		if issubclass(object.__class__, Product):
 			try:
 				# Truncating a possibly too long changelog entry
-				hash['changelog'] = hash['changelog'][:65534]
+				# This takes into account that unicode characters may be
+				# composed of multiple bytes by encoding, stripping and
+				# decoding them.
+				changelog = hash['changelog']
+				changelog = changelog.encode('utf-8')
+				changelog = changelog[:65534]
+				hash['changelog'] = changelog.decode('utf-8')
 			except (KeyError, TypeError):
 				pass  # Either not present in hash or set to None
+			except UnicodeError:
+				# Encoding problem. We truncate anyway and remove some
+				# buffer characters for possible unicode characters.
+				# Since encoding is attempted after we have read the
+				# has we can assume that the key is present.
+				hash['changelog'] = hash['changelog'][:65000]
 
 		if issubclass(object.__class__, Relationship):
 			try:
@@ -709,7 +721,7 @@ class SQLBackend(ConfigDataBackend):
 			table = u'''CREATE TABLE `OBJECT_TO_GROUP` (
 					`object_to_group_id` integer NOT NULL ''' + self._sql.AUTOINCREMENT + ''',
 					`groupType` varchar(30) NOT NULL,
-					`groupId` varchar(100) NOT NULL,
+					`groupId` varchar(255) NOT NULL,
 					`objectId` varchar(255) NOT NULL,
 					PRIMARY KEY (`object_to_group_id`),
 					FOREIGN KEY (`groupType`, `groupId`) REFERENCES `GROUP` (`type`, `groupId`)
@@ -895,7 +907,7 @@ class SQLBackend(ConfigDataBackend):
 				`notes` varchar(500),
 				`hardwareAddress` varchar(17),
 				`ipAddress` varchar(15),
-				`inventoryNumber` varchar(30),
+				`inventoryNumber` varchar(64),
 				`created` TIMESTAMP,
 				`lastSeen` TIMESTAMP,
 				`opsiHostKey` varchar(32),
@@ -2154,15 +2166,19 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 	# -   AuditHardwares
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def _uniqueAuditHardwareCondition(self, auditHardware):
-		if hasattr(auditHardware, 'toHash'):
+		try:
 			auditHardware = auditHardware.toHash()
+		except AttributeError:
+			pass
 
 		def createCondition():
+			listWithNone = [None]
+
 			for attribute, value in auditHardware.items():
 				if attribute in ('hardwareClass', 'type'):
 					continue
 
-				if value is None or value == [None]:
+				if value is None or value == listWithNone:
 					yield u"`{0}` is NULL".format(attribute)
 				elif isinstance(value, (float, long, int, bool)):
 					yield u"`{0}` = {1}".format(attribute, value)

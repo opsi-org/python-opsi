@@ -80,8 +80,11 @@ def searchWindowsDrivers(driverDir, auditHardwares, messageSubject=None, srcRepo
 			continue
 
 		name = u'unknown'
-		if hasattr(auditHardware, 'name') and auditHardware.name:
-			name = auditHardware.name.replace(u'/', u'_')
+		try:
+			if auditHardware.name:
+				name = auditHardware.name.replace(u'/', u'_')
+		except AttributeError:
+			pass
 
 		logger.info(u"Searching driver for %s '%s', id '%s:%s'" % (hwClass, name, auditHardware.vendorId, auditHardware.deviceId))
 		if messageSubject:
@@ -287,10 +290,16 @@ def integrateWindowsHardwareDrivers(driverSourceDirectory, driverDestinationDire
 			driverDirectories.append(driver['directory'])
 
 		name = u'[%s:%s]' % (driver['vendorId'], driver['deviceId'])
-		if hasattr(driver['hardwareInfo'], 'vendor'):
+		try:
 			name += u' %s' % driver['hardwareInfo'].vendor
-		if hasattr(driver['hardwareInfo'], 'name'):
+		except AttributeError:
+			pass
+
+		try:
 			name += u' : %s' % driver['hardwareInfo'].name
+		except AttributeError:
+			pass
+
 		logger.notice(u"Integrating driver for device %s" % name)
 		if messageSubject:
 			messageSubject.setMessage(u"Integrating driver for device %s" % name)

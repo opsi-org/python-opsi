@@ -68,7 +68,7 @@ if os.name == 'posix':
 			from OPSI.ldaptor import ldapfilter
 
 __all__ = (
-	'getArgAndCallString', 'temporaryBackendOptions',
+	'describeInterface', 'getArgAndCallString', 'temporaryBackendOptions',
 	'DeferredCall', 'Backend', 'ExtendedBackend', 'ConfigDataBackend',
 	'ExtendedConfigDataBackend',
 	'ModificationTrackingBackend', 'BackendModificationListener'
@@ -102,6 +102,48 @@ try:
 except Exception as error:
 	logger.debug("Failed to set MAX LOG SIZE from config: {0}".format(error))
 	DEFAULT_MAX_LOGFILE_SIZE = 5000000
+
+
+def describeInterface(instance):
+	"""
+	Describes what public methods are available and the signatures they use.
+
+	These methods are represented as a dict with the following keys: \
+	*name*, *params*, *args*, *varargs*, *keywords*, *defaults*.
+
+	:returntype: [{},]
+	"""
+	methods = {}
+	for methodName, function in inspect.getmembers(instance, inspect.ismethod):
+		if methodName.startswith('_'):
+			# protected / private
+			continue
+
+		args, varargs, keywords, defaults = inspect.getargspec(function)
+		params = [arg for arg in args if arg != 'self']
+
+		if defaults is not None:
+			offset = len(params) - len(defaults)
+			for i in xrange(len(defaults)):
+				index = offset + i
+				params[index] = '*{0}'.format(params[index])
+
+		for index, element in enumerate((varargs, keywords), start=1):
+			if element:
+				stars = '*' * index
+				params.extend(['{0}{1}'.format(stars, arg) for arg in forceList(element)])
+
+		logger.debug2(u"{0} interface method: name {1!r}, params {2}", instance.__class__.__name__, methodName, params)
+		methods[methodName] = {
+			'name': methodName,
+			'params': params,
+			'args': args,
+			'varargs': varargs,
+			'keywords': keywords,
+			'defaults': defaults
+		}
+
+	return [methods[name] for name in sorted(methods.keys())]
 
 
 def getArgAndCallString(method):
@@ -337,7 +379,7 @@ This defaults to ``self``.
 
 	def backend_getInterface(self):
 		"""
-		Returns what methods are available and the signatures they use.
+		Returns what public methods are available and the signatures they use.
 
 		These methods are represented as a dict with the following keys: \
 		*name*, *params*, *args*, *varargs*, *keywords*, *defaults*.
@@ -345,37 +387,7 @@ This defaults to ``self``.
 
 		:returntype: [{},]
 		"""
-		methods = {}
-		for methodName, function in inspect.getmembers(self, inspect.ismethod):
-			if methodName.startswith('_'):
-				# protected / private
-				continue
-
-			args, varargs, keywords, defaults = inspect.getargspec(function)
-			params = [arg for arg in args if arg != 'self']
-
-			if defaults is not None:
-				offset = len(params) - len(defaults)
-				for i in xrange(len(defaults)):
-					index = offset + i
-					params[index] = '*{0}'.format(params[index])
-
-			for (index, element) in enumerate((varargs, keywords), start=1):
-				if element:
-					stars = '*' * index
-					params.extend(['{0}{1}'.format(stars, arg) for arg in forceList(element)])
-
-			logger.debug2(u"{0} interface method: name {1!r}, params {2}", self.__class__.__name__, methodName, params)
-			methods[methodName] = {
-				'name': methodName,
-				'params': params,
-				'args': args,
-				'varargs': varargs,
-				'keywords': keywords,
-				'defaults': defaults
-			}
-
-		return [methods[name] for name in sorted(methods.keys())]
+		return describeInterface(self)
 
 	def backend_info(self):
 		"""
@@ -1688,7 +1700,6 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			raise BackendBadValueError(u"Failed to parse filter '%s'" % filter)
 		logger.debug(u"Parsed search filter: {0!r}", parsedFilter)
 
-
 		def combineResults(result1, result2, operator):
 			if not result1:
 				return result2
@@ -2613,10 +2624,7 @@ into the IDs of these depots are to be found in the list behind \
 
 		usedDepotIds = set()
 		result = []
-		addConfigStateDefaults = self.backend_getOptions().get('addConfigStateDefaults', False)
-		try:
-			logger.debug(u"Calling backend_setOptions on {0}", self)
-			self.backend_setOptions({'addConfigStateDefaults': True})
+		with temporaryBackendOptions(self, addConfigStateDefaults=True):
 			for configState in self.configState_getObjects(configId=u'clientconfig.depot.id', objectId=clientIds):
 				try:
 					depotId = configState.values[0]
@@ -2637,8 +2645,6 @@ into the IDs of these depots are to be found in the list behind \
 						'alternativeDepotIds': []
 					}
 				)
-		finally:
-			self.backend_setOptions({'addConfigStateDefaults': addConfigStateDefaults})
 
 		if forceBool(masterOnly):
 			return result
@@ -4530,9 +4536,12 @@ class ModificationTrackingBackend(ExtendedBackend):
 		logger.debug(u"ModificationTrackingBackend {0}: executing {1!r} on backend {2}".format(self, methodName, self._backend))
 		meth = getattr(self._backend, methodName)
 		result = meth(**kwargs)
-		action = None
-		if '_' in methodName:
+
+		try:
 			action = methodName.split('_', 1)[1]
+		except IndexError:
+			# split failed
+			return result
 
 		if action in ('insertObject', 'updateObject', 'deleteObjects'):
 			if action == 'insertObject':

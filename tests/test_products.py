@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2014-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -643,11 +643,24 @@ def testLongProductName(extendedConfigDataBackend):
     assert newName == backendProduct.name
 
 
-@pytest.mark.requiresModulesFile  # because of SQLite backend...
-def testLongChangelogOnProductCanBeHandled(extendedConfigDataBackend):
-    product = LocalbootProduct(id='freiheit', productVersion=1, packageVersion=1)
+@pytest.fixture(
+    scope='session',
+    params=[False, True],
+    ids=['ascii', 'unicode'])
+def changelog(request):
+    if request.param:
+        # unicode
+        changelog = u'''opsi-winst/opsi-script (4.11.5.13) stable; urgency=low
 
-    changelog = '''opsi-winst/opsi-script (4.11.5.13) stable; urgency=low
+* do not try to run non existing external sub sections
+* Jetzt ausf\xfchren oder sp\xe4ter
+
+-- Detlef Oertel <d.oertel@uib.de>  Thu,  21 Aug 2015:15:00:00 +0200
+
+'''
+    else:
+        # ASCII
+        changelog = '''opsi-winst/opsi-script (4.11.5.13) stable; urgency=low
 
 * do not try to run non existing external sub sections
 
@@ -658,6 +671,13 @@ def testLongChangelogOnProductCanBeHandled(extendedConfigDataBackend):
     changelog = changelog * 555
 
     assert len(changelog.strip()) > 65535  # Limit for `TEXT` in MySQL / MariaDB
+
+    return changelog
+
+
+@pytest.mark.requiresModulesFile  # because of SQLite backend...
+def testLongChangelogOnProductCanBeHandled(extendedConfigDataBackend, changelog):
+    product = LocalbootProduct(id='freiheit', productVersion=1, packageVersion=1)
     product.setChangelog(changelog)
     assert product.getChangelog() == changelog
 

@@ -1,3 +1,71 @@
+python-opsi (4.1.1.41-1) stable; urgency=medium
+
+  * Based on python-opsi 4.0.7.68.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 26 Jul 2018 15:10:44 +0200
+
+python-opsi (4.1.1.40-2) stable; urgency=medium
+
+  * Postinst: Making sure that /etc/opsi/server_commands_default.conf exists.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 16 Jul 2018 12:18:52 +0200
+
+python-opsi (4.1.1.40-1) testing; urgency=medium
+
+  * OpsiPXEConfd backend: improve performance by precollecting the
+    required data that then can be used by opsipxeconfd.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 19 Jun 2018 14:38:25 +0200
+
+python-opsi (4.1.1.39-1) stable; urgency=medium
+
+  * SQL-based backends: Increased length of inventoryNumber of a host to 64
+    characters.
+  * OPSI.Backend.Backend.ModificationTrackingBackend: small speedup.
+  * Various small internal refactorings.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 11 Jun 2018 11:44:15 +0200
+
+python-opsi (4.1.1.38-1) stable; urgency=medium
+
+  * Based on python-opsi 4.0.7.66.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 07 Jun 2018 22:35:19 +0200
+
+python-opsi (4.1.1.37-1) stable; urgency=medium
+
+  * Based on python-opsi 4.0.7.65.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 29 May 2018 13:23:17 +0200
+
+python-opsi (4.1.1.36-1) testing; urgency=medium
+
+  * OPSI.Util.Message has received an __all__.
+  * OPSI.Backend.SQL: The length of column `groupId` in table `OBJECT_TO_GROUP`
+    is now the same as defined in the table `GROUP`.
+  * Refactored processing of backend migrations for MySQL backend.
+  * OPSI.SharedAlgorithm: Changed classification of many log messages to
+    have fewer log entries in non-debug levels.
+  * OPSI.Backend.Backend: added new method 'describeInterface' to describe
+    the public interface of an instance.
+  * OPSI.Service.JsonRpc: Only one lookup of the method name during execution.
+  * 10_opsi.conf: setProductActionRequestWithDependencies will relay
+    requests for a netboot product to setProductActionRequest.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 22 May 2018 15:10:02 +0200
+
+python-opsi (4.1.1.35-2) testing; urgency=medium
+
+  * Debian: depend on iproute or iproute2.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 04 May 2018 14:26:40 +0200
+
+python-opsi (4.1.1.35-1) testing; urgency=medium
+
+  * Based on python-opsi 4.0.7.63.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 02 May 2018 17:45:26 +0200
+
 python-opsi (4.1.1.34-1) testing; urgency=medium
 
   * OpsiPXEConfdBackend.configState_deleteObjects: Make sure that only one
@@ -381,6 +449,51 @@ python-opsi (4.1.1.1-1) experimental; urgency=medium
     into OPSI/__init__.py to always show the current version.
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 04 Oct 2016 16:15:11 +0200
+
+python-opsi (4.0.7.68-1) stable; urgency=medium
+
+  * OpsiBackup: Internal refactorings for restore handling.
+  * OpsiBackup: Fix restore when backends are "auto" and the backup
+    does not contain data for a backend.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 26 Jul 2018 14:25:19 +0200
+
+python-opsi (4.0.7.67-1) stable; urgency=medium
+
+  * OpsiBackup: File backend: improve handling of hostkeys file.
+    Most noticable the restore will restore the file to the path
+    configured in the backup.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 11 Jun 2018 09:51:42 +0200
+
+python-opsi (4.0.7.66-1) stable; urgency=medium
+
+  * MySQL-Backend: Improve handling of very large changelogs containing
+    unicode characters.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 07 Jun 2018 22:07:32 +0200
+
+python-opsi (4.0.7.65-1) stable; urgency=medium
+
+  * Reverted changes made in 4.0.7.63.
+    This means all updates will be relayed to the depot again regardless
+    of the set action request.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 29 May 2018 12:56:42 +0200
+
+python-opsi (4.0.7.64-1) testing; urgency=medium
+
+  * 10_opsi.conf: setProductActionRequestWithDependencies will relay
+    requests for a netboot product to setProductActionRequest.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 22 May 2018 15:32:58 +0200
+
+python-opsi (4.0.7.63-1) testing; urgency=medium
+
+  * OpsiPXEConfd: Only relay updates to the depot if the action request is
+    setup, always or once.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 02 May 2018 16:40:36 +0200
 
 python-opsi (4.0.7.62-1) testing; urgency=medium
 

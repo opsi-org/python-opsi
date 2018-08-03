@@ -65,15 +65,6 @@ def cd(path):
         os.chdir(old_dir)
 
 
-def copyTestfileToTemporaryFolder(filename):
-    temporary_folder = tempfile.mkdtemp()
-    shutil.copy(filename, temporary_folder)
-
-    (_, new_filename) = os.path.split(filename)
-
-    return os.path.join(temporary_folder, new_filename)
-
-
 @contextmanager
 def createTemporaryTestfile(original, tempDir=None):
     '''Copy `original` to a temporary directory and \
@@ -84,9 +75,9 @@ yield the path to the new file.
     with workInTemporaryDirectory(tempDir) as targetDir:
         shutil.copy(original, targetDir)
 
-        (_, new_filename) = os.path.split(original)
+        filename = os.path.basename(original)
 
-        yield os.path.join(targetDir, new_filename)
+        yield os.path.join(targetDir, filename)
 
 
 def getLocalFQDN():

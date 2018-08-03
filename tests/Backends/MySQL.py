@@ -34,6 +34,7 @@ try:
 except ImportError:
     MySQLconfiguration = None
 
+UNKNOWN_TABLE_ERROR_CODE = 1051
 
 @contextmanager
 def getMySQLBackend(**backendOptions):
@@ -71,6 +72,10 @@ def cleanDatabase(database):
                 try:
                     database.execute(u'DROP TABLE `{0}`;'.format(tableName))
                 except Exception as error:
+                    errorCode = error.args[0]
+                    if errorCode == UNKNOWN_TABLE_ERROR_CODE:
+                        continue
+
                     print("Failed to drop {0} a second time: {1}".format(tableName, error))
                     raise error
 
