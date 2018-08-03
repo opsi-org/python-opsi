@@ -100,7 +100,6 @@ class SQL(object):
 	ESCAPED_UNDERSCORE = "\\_"
 	ESCAPED_PERCENT = "\\%"
 	ESCAPED_ASTERISK = "\\*"
-	doCommit = True
 
 	def __init__(self, **kwargs):
 		pass
