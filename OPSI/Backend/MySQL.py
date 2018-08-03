@@ -744,8 +744,8 @@ class MySQLBackend(SQLBackend):
 								conn.commit()
 							else:
 								conn.rollback()
-							break
 							logger.debug2(u'End Transaction')
+							break
 					except Exception as insertError:
 						logger.debug(u"Execute error: {!r}", insertError)
 						if deleteError.args[0] == DEADLOCK_FOUND_WHEN_TRYING_TO_GET_LOCK_ERROR_CODE:
