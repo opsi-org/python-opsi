@@ -72,13 +72,13 @@ def closingConnectionAndCursor(sqlInstance):
 
 @contextmanager
 def disableCommitting(sqlInstance):
-	sqlInstance.doCommit = False
-	logger.debug2(u'doCommit set to False')
+	sqlInstance.autoCommit = False
+	logger.debug2(u'autoCommit set to False')
 	try:
 		yield
 	finally:
-		sqlInstance.doCommit = True
-		logger.debug2(u'doCommit set to true')
+		sqlInstance.autoCommit = True
+		logger.debug2(u'autoCommit set to true')
 
 
 class ConnectionPool(object):
@@ -143,7 +143,7 @@ class MySQL(SQL):
 		self._connectionPoolSize = 20
 		self._connectionPoolMaxOverflow = 10
 		self._connectionPoolTimeout = 30
-		self.doCommit = True
+		self.autoCommit = True
 
 		# Parse arguments
 		for (option, value) in kwargs.items():
@@ -504,7 +504,7 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 			query = forceUnicode(query)
 			logger.debug2(u"SQL query: {0}", query)
 			res = cursor.execute(query)
-			if self.doCommit:
+			if self.autoCommit:
 				conn.commit()
 		finally:
 			if needClose:
@@ -781,8 +781,8 @@ class MySQLBackend(SQLBackend):
 				)
 
 				if not valuesExist:
-					self._sql.doCommit = True
-					logger.debug2(u'doCommit set to True')
+					self._sql.autoCommit = True
+					logger.debug2(u'autoCommit set to True')
 					self._sql.insert('PRODUCT_PROPERTY_VALUE', {
 						'productId': data['productId'],
 						'productVersion': data['productVersion'],
