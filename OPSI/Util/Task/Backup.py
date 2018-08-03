@@ -168,7 +168,7 @@ class OpsiBackup(object):
 				logger.info(u"Verifying archive {0}", fileName)
 				try:
 					archive.verify()
-					logger.notice(u"Archive is OK.")
+					logger.notice(u"Archive {} is OK.", fileName)
 				except OpsiBackupFileError as error:
 					logger.error(error)
 					result = 1
