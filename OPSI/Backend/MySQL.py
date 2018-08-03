@@ -77,7 +77,6 @@ def disableAutoCommit(sqlInstance):
 
 	:type sqlInstance: MySQL
 	"""
-
 	sqlInstance.autoCommit = False
 	logger.debug2(u'autoCommit set to False')
 	try:
