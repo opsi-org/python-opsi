@@ -71,7 +71,13 @@ def closingConnectionAndCursor(sqlInstance):
 
 
 @contextmanager
-def disableCommitting(sqlInstance):
+def disableAutoCommit(sqlInstance):
+	"""
+	Disable automatic committing.
+
+	:type sqlInstance: MySQL
+	"""
+
 	sqlInstance.autoCommit = False
 	logger.debug2(u'autoCommit set to False')
 	try:
@@ -661,7 +667,7 @@ class MySQLBackend(SQLBackend):
 				try:
 					# transaction
 					cursor.execute("SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE")
-					with disableCommitting(self._sql):
+					with disableAutoCommit(self._sql):
 						logger.debug2(u'Start Transaction: delete from ppv #{}', retry)
 						conn.begin()
 						self._sql.delete('PRODUCT_PROPERTY_VALUE', where, conn, cursor)
@@ -724,7 +730,7 @@ class MySQLBackend(SQLBackend):
 					try:
 						# transaction
 						cursor.execute("SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE")
-						with disableCommitting(self._sql):
+						with disableAutoCommit(self._sql):
 							logger.debug2(u'Start Transaction: insert to ppv #{}', retry)
 							conn.begin()
 							if not self._sql.getRow(myPPVselect, conn, cursor):
@@ -778,7 +784,7 @@ class MySQLBackend(SQLBackend):
 			logger.debug2(u"Failed to delete from PRODUCT_PROPERTY_VALUE: {}", delError)
 
 		for value in possibleValues:
-			with disableCommitting(self._sql):
+			with disableAutoCommit(self._sql):
 				valuesExist = self._sql.getRow(
 					u"select * from PRODUCT_PROPERTY_VALUE where "
 					u"`propertyId` = '{0}' AND `productId` = '{1}' AND "
