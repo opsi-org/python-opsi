@@ -66,6 +66,8 @@ Do you wish to continue? [y/n]""")
 
 class OpsiBackup(object):
 
+	SUPPORTED_BACKENDS = set(['auto', 'all', 'file', 'mysql', 'dhcp'])
+
 	def __init__(self, stdout=None):
 		if stdout is None:
 			self.stdout = sys.stdout
@@ -258,7 +260,12 @@ If this is `None` information will be read from the current system.
 
 		auto = "auto" in backends
 
-		logger.debug("Backends for restore: {}", backends)
+		logger.debug("Backends to restore: {}", backends)
+
+		if not force:
+			for backend in backends:
+				if backend not in self.SUPPORTED_BACKENDS:
+					raise ValueError("{!r} is not a valid backend.".format(backend))
 
 		with closing(self._getArchive(file=file[0], mode="r")) as archive:
 			self.verify(archive.name)
@@ -295,6 +302,9 @@ If this is `None` information will be read from the current system.
 
 								logger.debug(u"Adding restore of {0} backend.", name)
 								functions.append(restoreData)
+
+				if not functions:
+					raise RuntimeError("Neither possible backend given nor configuration selected for restore.")
 
 				try:
 					for restoreFunction in functions:
