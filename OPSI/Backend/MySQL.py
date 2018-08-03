@@ -671,13 +671,19 @@ class MySQLBackend(SQLBackend):
 				except Exception as deleteError:
 					logger.debug(u"Execute error: {}", deleteError)
 					if deleteError.args[0] == DEADLOCK_FOUND_WHEN_TRYING_TO_GET_LOCK_ERROR_CODE:
-						logger.debug(u'Table locked (Code 2013) - restarting Transaction')
+						logger.debug(
+							u'Table locked (Code {}) - restarting Transaction',
+							DEADLOCK_FOUND_WHEN_TRYING_TO_GET_LOCK_ERROR_CODE
+						)
 						time.sleep(0.1)
 					else:
 						logger.error(u'Unknown DB Error: {!r}', deleteError)
 						raise
 			else:
-				errorMessage = u'Table locked (Code 2013) - giving up after {} retries'.format(retries)
+				errorMessage = u'Table locked (Code {}) - giving up after {} retries'.format(
+					DEADLOCK_FOUND_WHEN_TRYING_TO_GET_LOCK_ERROR_CODE,
+					retries
+				)
 				logger.error(errorMessage)
 				raise BackendUnaccomplishableError(errorMessage)
 
@@ -739,13 +745,20 @@ class MySQLBackend(SQLBackend):
 						logger.debug(u"Execute error: {!r}", insertError)
 						if deleteError.args[0] == DEADLOCK_FOUND_WHEN_TRYING_TO_GET_LOCK_ERROR_CODE:
 							# 1213: May be table locked because of concurrent access - retrying
-							logger.notice(u'Table locked (Code 2013) - restarting Transaction')
+							logger.notice(
+								u'Table locked (Code {}) - restarting Transaction'.format(
+									DEADLOCK_FOUND_WHEN_TRYING_TO_GET_LOCK_ERROR_CODE
+								)
+							)
 							time.sleep(0.1)
 						else:
 							logger.error(u'Unknown DB Error: {!r}', insertError)
 							raise
 				else:
-					errorMessage = u'Table locked (Code 2013) - giving up after {} retries'.format(retries)
+					errorMessage = u'Table locked (Code {}) - giving up after {} retries'.format(
+						DEADLOCK_FOUND_WHEN_TRYING_TO_GET_LOCK_ERROR_CODE,
+						retries
+					)
 					logger.error(errorMessage)
 					raise BackendUnaccomplishableError(errorMessage)
 
