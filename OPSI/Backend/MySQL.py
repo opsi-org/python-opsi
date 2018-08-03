@@ -131,7 +131,6 @@ class MySQL(SQL):
 	ESCAPED_BACKSLASH = "\\\\"
 	ESCAPED_APOSTROPHE = "\\\'"
 	ESCAPED_ASTERISK = "\\*"
-	doCommit = True
 
 	_POOL_LOCK = threading.Lock()
 
@@ -144,6 +143,7 @@ class MySQL(SQL):
 		self._connectionPoolSize = 20
 		self._connectionPoolMaxOverflow = 10
 		self._connectionPoolTimeout = 30
+		self.doCommit = True
 
 		# Parse arguments
 		for (option, value) in kwargs.items():
