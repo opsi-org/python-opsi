@@ -37,7 +37,8 @@ import termios
 from contextlib import closing
 
 from OPSI.Exceptions import (
-	OpsiBackupFileError, OpsiBackupBackendNotFound, OpsiError)
+	BackendConfigurationError, OpsiBackupFileError, OpsiBackupBackendNotFound,
+	OpsiError)
 from OPSI.Logger import Logger, LOG_DEBUG
 from OPSI.Types import forceList, forceUnicode
 from OPSI.Util.File.Opsi import OpsiBackupArchive
@@ -260,6 +261,8 @@ If this is `None` information will be read from the current system.
 
 		logger.debug("Backends for restore: {}", backends)
 
+		configuredBackends = getConfiguredBackends()
+
 		with closing(self._getArchive(file=file[0], mode="r")) as archive:
 			self.verify(archive.name)
 
@@ -296,6 +299,9 @@ If this is `None` information will be read from the current system.
 								logger.debug(u"Adding restore of {0} backend.", name)
 								functions.append(restoreData)
 
+								if configuredBackends and (not configuration) and backend not in configuredBackends:
+									logger.warning("Backend {} is currently not in use!", backend)
+
 				try:
 					for restoreFunction in functions:
 						logger.debug2(u"Running restoration function {0!r}", restoreFunction)
@@ -312,3 +318,32 @@ If this is `None` information will be read from the current system.
 					raise error
 
 				logger.notice(u"Restoration complete")
+
+
+def getConfiguredBackends():
+	"""
+	Get what backends are currently confiugured.
+
+	:returns: A set containing the names of the used backends. \
+None if reading the configuration failed.
+	:rtype: set or None
+	"""
+	try:
+		from OPSI.Backend.BackendManager import BackendDispatcher
+	except ImportError as impError:
+		logger.debug("Import failed: {}", impError)
+		return None
+
+	try:
+		dispatcher = BackendDispatcher(
+			dispatchConfigFile='/etc/opsi/backendManager/dispatch.conf',
+			backendconfigdir='/etc/opsi/backends/',
+		)
+	except BackendConfigurationError as bcerror:
+		logger.debug("Unable to read backends: {}", bcerror)
+		return None
+
+	names = [name.lower() for name in dispatcher.dispatcher_getBackendNames()]
+	dispatcher.backend_exit()
+
+	return set(names)
