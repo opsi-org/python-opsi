@@ -258,6 +258,7 @@ If this is `None` information will be read from the current system.
 			backends = ["all"]
 
 		auto = "auto" in backends
+		backends = [backend.lower() for backend in backends]
 
 		logger.debug("Backends for restore: {}", backends)
 
