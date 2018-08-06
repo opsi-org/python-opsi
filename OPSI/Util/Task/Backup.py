@@ -152,6 +152,28 @@ class OpsiBackup(object):
 			logger.logException(error, LOG_DEBUG)
 			raise error
 
+	def list(self, files):
+		"""
+		List the contents of the backup.
+
+		:param files: Path to files that should be processed.
+		:type files: [str]
+		"""
+		for filename in forceList(files):
+			with closing(self._getArchive(file=filename, mode="r")) as archive:
+				archive.verify()
+
+				data = {
+					"configuration": archive.hasConfiguration(),
+					"dhcp": archive.hasDHCPBackend(),
+					"file": archive.hasFileBackend(),
+					"mysql": archive.hasMySQLBackend(),
+				}
+				existingData = [btype for btype, exists in data.items() if exists]
+				existingData.sort()
+
+				logger.notice("{} contains: {}", archive.name, ', '.join(existingData))
+
 	def verify(self, file, **kwargs):
 		"""
 		Verify a backup.
