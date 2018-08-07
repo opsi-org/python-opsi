@@ -1,3 +1,22 @@
+python-opsi (4.1.1.42-1) testing; urgency=medium
+
+  * Various small internal refactorings.
+  * OPSI.Backend.Depotserver: Refactored handling in installPackage.
+  * OPSI.Backend.MySQL: Refactored productProperty_updateObject and
+    productProperty_insertObject.
+  * OPSI.System.Windows.getArchitecture: correctly returns the default 'x86'
+    in case of an error.
+  * OPSI.Util.File.Archive: Make use of longopts in all commands.
+  * OPSI.Util.File.Archive.CpioArchive: Extract with --no-preserve-owner.
+  * OPSI.Util.Task.Backup.OpsiBackup: added method 'list' to show what is
+    contained in a backup.
+  * OPSI.Util.Task.Backup.OpsiBackup: restore will warn if restoring an
+    currently unused backend is attempted.
+  * OPSI.Util.Task.Backup.OpsiBackup: restore will fail if an restore attempt
+    would lead to doing nothing.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 07 Aug 2018 09:09:07 +0200
+
 python-opsi (4.1.1.41-1) stable; urgency=medium
 
   * Based on python-opsi 4.0.7.68.
