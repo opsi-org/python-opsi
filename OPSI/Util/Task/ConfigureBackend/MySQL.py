@@ -113,7 +113,7 @@ on to. Defaults to ``Logger.error``.
 	try:
 		backend.backend_createBase()
 	except MySQLdb.OperationalError as exc:
-		if exc[0] == INVALID_DEFAULT_VALUE:
+		if exc.errno == INVALID_DEFAULT_VALUE:
 			errorFunction(
 				u"It seems you have the MySQL strict mode enabled. "
 				u"Please read the opsi handbook.\n"
@@ -190,11 +190,11 @@ def initializeDatabase(
 		try:
 			db.query(u'CREATE DATABASE {database} DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_bin;'.format(**config))
 		except MySQLdb.OperationalError as error:
-			if error[0] == ACCESS_DENIED_ERROR_CODE:
-				raise DatabaseConnectionFailedException(error)
+			if error.errno == ACCESS_DENIED_ERROR_CODE:
+				raise DatabaseConnectionFailedException(error.msg)
 			raise error
 		except MySQLdb.ProgrammingError as error:
-			if error[0] != DATABASE_EXISTS_ERROR_CODE:
+			if error.errno != DATABASE_EXISTS_ERROR_CODE:
 				raise error
 		notificationFunction(u"Database '{database}' created".format(**config))
 
