@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2016 uib GmbH <info@uib.de>
+# Copyright (C) 2016-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -83,7 +83,7 @@ def testMultiThreadingBackend(multithreadingBackend, numberOfThreads):
             except IntegrityError as e:
                 if e.errno != DUP_ENTRY:
                     self.errorMessage = e.msg
-                    self.exitCode = 1
+                    self.exitCode = 2
             except Exception as e:
                 self.errorMessage = e
                 self.exitCode = 1
