@@ -102,8 +102,7 @@ def testMultiThreadingBackend(multithreadingBackend, numberOfThreads):
 
     while mtts:
         mtt = mtts.pop(0)
-        if not mtt.is_alive():
-            if mtt.exitCode != 0:
-                assert 0 == mtt.exitCode, (u"Multithreading test failed: Exit Code {0}: {1}".format(mtt.exitCode, mtt.errorMessage))
+        if not mtt.isAlive():
+            assert 0 == mtt.exitCode, u"Multithreading test failed: Exit Code {0.exitCode}: {0.errorMessage}".format(mtt)
         else:
             mtts.append(mtt)
