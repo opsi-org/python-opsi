@@ -539,7 +539,7 @@ class MySQLBackend(SQLBackend):
 			logger.error(u"Disabling mysql backend and license management module: modules file expired")
 		else:
 			logger.info(u"Verifying modules file signature")
-			publicKey = keys.Key.fromString(data=base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
+			publicKey = keys.Key.fromString(data=base64.decodestring(b'AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
 			data = u''
 			mks = list(modules.keys())
 			mks.sort()
@@ -560,7 +560,7 @@ class MySQLBackend(SQLBackend):
 
 				data += u'%s = %s\r\n' % (module.lower().strip(), val)
 
-			if not bool(publicKey.verify(md5(data).digest(), [int(modules['signature'])])):
+			if not bool(publicKey.verify(md5(data.encode()).digest(), [int(modules['signature'])])):
 				logger.error(u"Disabling mysql backend and license management module: modules file invalid")
 			else:
 				logger.info(u"Modules file signature verified (customer: %s)" % modules.get('customer'))
