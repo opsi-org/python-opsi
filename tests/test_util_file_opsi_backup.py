@@ -534,6 +534,7 @@ def testBackupHasDHCPDBackend(tempDir):
         assert backup.hasDHCPBackend()
 
 
+@pytest.mark.fixlater
 @pytest.mark.skipif(not MySQLdb, reason="Missing MySQLdb.")
 @pytest.mark.skipif(not mysqldump, reason="Missing mysqldump.")
 def test_backupMySQLBackend(tempDir):
