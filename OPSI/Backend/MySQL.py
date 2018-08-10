@@ -277,7 +277,7 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 				self.execute(query, conn, cursor)
 			except Exception as e:
 				logger.debug(u"Execute error: %s" % e)
-				if e[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
+				if e.args[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
 					raise
 
 				self.close(conn, cursor)
@@ -301,7 +301,7 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 				self.execute(query, conn, cursor)
 			except Exception as e:
 				logger.debug(u"Execute error: %s" % e)
-				if e[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
+				if e.args[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
 					raise
 
 				self.close(conn, cursor)
@@ -332,7 +332,7 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 				self.execute(query, conn, cursor)
 			except Exception as e:
 				logger.debug(u"Execute error: {0!r}", e)
-				if e[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
+				if e.args[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
 					raise
 
 				self.close(conn, cursor)
@@ -384,7 +384,7 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 				self.execute(query, conn, cursor)
 			except Exception as e:
 				logger.debug(u"Execute error: {0!r}", e)
-				if e[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
+				if e.args[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
 					raise
 
 				self.close(conn, cursor)
@@ -429,7 +429,7 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 				self.execute(query, conn, cursor)
 			except Exception as e:
 				logger.debug(u"Execute error: {0!r}", e)
-				if e[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
+				if e.args[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
 					raise
 
 				self.close(conn, cursor)
@@ -456,7 +456,7 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 				self.execute(query, conn, cursor)
 			except Exception as e:
 				logger.debug(u"Execute error: {0}", e)
-				if e[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
+				if e.args[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
 					raise
 
 				self.close(conn, cursor)
