@@ -76,12 +76,13 @@ class ModificationTrackingBackend(ExtendedBackend):
 			action = methodName.split('_', 1)[1]
 
 		if action in ('insertObject', 'updateObject', 'deleteObjects'):
+			value = list(kwargs.values())[0]
 			if action == 'insertObject':
-				self._fireEvent('objectInserted', kwargs.values()[0])
+				self._fireEvent('objectInserted', value)
 			elif action == 'updateObject':
-				self._fireEvent('objectUpdated', kwargs.values()[0])
+				self._fireEvent('objectUpdated', value)
 			elif action == 'deleteObjects':
-				self._fireEvent('objectsDeleted', kwargs.values()[0])
+				self._fireEvent('objectsDeleted', value)
 			self._fireEvent('backendModified')
 
 		return result
