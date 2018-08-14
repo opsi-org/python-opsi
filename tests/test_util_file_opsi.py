@@ -268,7 +268,6 @@ def outsideDir():
 		yield dirPath
 
 
-@pytest.mark.endless
 def testPackageContentFileCreation(outsideFile, outsideDir):
 	with workInTemporaryDirectory() as tempDir:
 		content = fillDirectory(tempDir)
