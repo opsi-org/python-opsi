@@ -31,7 +31,7 @@ Depends: duplicity,
 	python-pam,
 	python-sqlalchemy,
 	python-twisted-web,
-	python-twisted-conch,
+	python-twisted-conch (<< 18.4),
 	${misc:Depends},
 	${python:Depends}
 Recommends: cabextract

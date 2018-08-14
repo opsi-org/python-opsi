@@ -1,3 +1,9 @@
+python-opsi (4.1.1.42-2) stable; urgency=medium
+
+  * Do not use conch 18.4 or newer because this will currently break things
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 14 Aug 2018 17:06:37 +0200
+
 python-opsi (4.1.1.42-1) testing; urgency=medium
 
   * Various small internal refactorings.
