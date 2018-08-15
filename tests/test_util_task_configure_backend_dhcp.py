@@ -83,7 +83,6 @@ subnet 192.168.0.0 netmask 255.255.0.0 {
         assert any("next-server" in line for line in target), "next-server not fonud in new file."
 
 
-@pytest.mark.endless
 def testConfiguringDHCPDBackendWithEmptyFile(tempDir):
     filename = 'dhcpd_test.conf'
     with open(filename, 'x'):
