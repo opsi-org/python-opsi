@@ -1,3 +1,9 @@
+python-opsi (4.1.1.42-3) stable; urgency=medium
+
+  * Alter dependency from 4.1.1.42-2: Depend on python-twisted <= 17.9.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 15 Aug 2018 11:46:48 +0200
+
 python-opsi (4.1.1.42-2) stable; urgency=medium
 
   * Do not use conch 18.4 or newer because this will currently break things
