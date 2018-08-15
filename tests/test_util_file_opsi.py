@@ -26,7 +26,6 @@ from __future__ import absolute_import
 import os
 import pytest
 import random
-import sys
 
 from OPSI.Util import findFiles, md5sum
 from OPSI.Util.File.Opsi import (
