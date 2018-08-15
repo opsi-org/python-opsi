@@ -30,8 +30,9 @@ Depends: duplicity,
 	python-openssl | python-pyopenssl,
 	python-pam,
 	python-sqlalchemy,
+	python-twisted (<= 17.9),
 	python-twisted-web,
-	python-twisted-conch (<< 18.4),
+	python-twisted-conch,
 	${misc:Depends},
 	${python:Depends}
 Recommends: cabextract
