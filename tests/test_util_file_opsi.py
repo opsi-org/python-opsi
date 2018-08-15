@@ -381,7 +381,6 @@ def fillDirectory(directory):
 	return content
 
 
-@pytest.mark.endless
 def testParsingPackageContentFile(outsideFile, outsideDir):
 	with workInTemporaryDirectory() as tempDir:
 		content = fillDirectory(tempDir)
