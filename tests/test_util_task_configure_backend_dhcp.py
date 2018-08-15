@@ -27,8 +27,6 @@ from __future__ import absolute_import
 import os
 from contextlib import contextmanager
 
-import pytest
-
 import OPSI.Util.Task.ConfigureBackend as backendConfigUtils
 from OPSI.Util import md5sum
 from OPSI.Util.Task.ConfigureBackend.DHCPD import configureDHCPD, insertDHCPDRestartCommand
