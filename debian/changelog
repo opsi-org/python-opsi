@@ -1,3 +1,10 @@
+python-opsi (4.1.1.43-1) testing; urgency=medium
+
+  * OPSI.Backend.Depotserver: only unlock productOnDepot after successful
+    installation.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 20 Aug 2018 17:15:26 +0200
+
 python-opsi (4.1.1.42-4) stable; urgency=medium
 
   * Debian: Reverted changes from -3 and -2.
@@ -2095,7 +2102,7 @@ python-opsi (4.0.3.1-1) testing; urgency=low
   * dhcp-backend: ddns-rev-domainname added to list where the values are written in double quotas
   * System: opsi-setup --init-current-config gives an warning instead of error, when vendor not found for network device
   * Posix:
-    - saveImage returns the result from partclone if run was successfull.
+    - saveImage returns the result from partclone if run was successful.
     - readPartitionTable: Try to find out the right filesystem with blkid tool.
     - createPartition: allows linux as filesystem-type and produces partition with id 83
   * WindowsDriver: byAudit: Translating model and vendor from hwinvent: characters <>?":|\/* will be translated to _
