@@ -189,7 +189,7 @@ class DepotserverPackageManager(object):
 				if productOnDepots[0].getLocked():
 					logger.notice(u"Product '{0}' currently locked on depot '{1}'", productId, depotId)
 					if not forceInstallation:
-						raise BackendTemporaryError(u"Product currently locked on depot '%s'" % depotId)
+						raise BackendTemporaryError(u"Product '{}' currently locked on depot '{}'".format(productId, depotId))
 					logger.warning(u"Installation of locked product forced")
 			except IndexError:
 				pass
