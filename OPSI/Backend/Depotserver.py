@@ -208,16 +208,19 @@ class DepotserverPackageManager(object):
 
 			try:
 				yield productOnDepot
-			finally:
-				logger.notice(
-					u"Unlocking product '{0}_{1}-{2}' on depot '{3}'",
-					productOnDepot.getProductId(),
-					productOnDepot.getProductVersion(),
-					productOnDepot.getPackageVersion(),
-					depotId
-				)
-				productOnDepot.setLocked(False)
-				self._depotBackend._context.productOnDepot_updateObject(productOnDepot)
+			except Exception as err:
+				logger.warning("Installation error. Not unlocking product '{}' on depot '{}'.", productId, depotId)
+				raise err
+
+			logger.notice(
+				u"Unlocking product '{0}' {1}-{2} on depot '{3}'",
+				productOnDepot.getProductId(),
+				productOnDepot.getProductVersion(),
+				productOnDepot.getPackageVersion(),
+				depotId
+			)
+			productOnDepot.setLocked(False)
+			self._depotBackend._context.productOnDepot_updateObject(productOnDepot)
 
 		@contextmanager
 		def runPackageScripts(productPackageFile, depotId):
