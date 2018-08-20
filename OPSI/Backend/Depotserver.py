@@ -182,8 +182,19 @@ class DepotserverPackageManager(object):
 
 		@contextmanager
 		def lockProduct(backend, product, depotId, forceInstallation):
-			logger.notice(u"Locking product '{0}' on depot '{1}'", product.getId(), depotId)
 			productId = product.getId()
+			logger.debug("Checking for locked product '{}' on depot '{}'", productId, depotId)
+			productOnDepots = backend.productOnDepot_getObjects(depotId=depotId, productId=productId)
+			try:
+				if productOnDepots[0].getLocked():
+					logger.notice(u"Product '{0}' currently locked on depot '{1}'", productId, depotId)
+					if not forceInstallation:
+						raise BackendTemporaryError(u"Product '{}' currently locked on depot '{}'".format(productId, depotId))
+					logger.warning(u"Installation of locked product forced")
+			except IndexError:
+				pass
+
+			logger.notice(u"Locking product '{0}' on depot '{1}'", productId, depotId)
 			productOnDepot = ProductOnDepot(
 				productId=productId,
 				productType=product.getType(),
@@ -192,32 +203,24 @@ class DepotserverPackageManager(object):
 				depotId=depotId,
 				locked=True
 			)
-
-			productOnDepots = backend.productOnDepot_getObjects(depotId=depotId, productId=productId)
-			try:
-				if productOnDepots[0].getLocked():
-					logger.notice(u"Product {0} currently locked on depot '{1}'", productId, depotId)
-					if not forceInstallation:
-						raise BackendTemporaryError(u"Product currently locked on depot '%s'" % depotId)
-					logger.warning(u"Installation of locked product forced")
-			except IndexError:
-				pass
-
 			logger.info(u"Creating product on depot {0}", productOnDepot)
 			backend.productOnDepot_createObjects(productOnDepot)
 
 			try:
 				yield productOnDepot
-			finally:
-				logger.notice(
-					u"Unlocking product '{0}_{1}-{2}' on depot '{3}'",
-					productOnDepot.getProductId(),
-					productOnDepot.getProductVersion(),
-					productOnDepot.getPackageVersion(),
-					depotId
-				)
-				productOnDepot.setLocked(False)
-				self._depotBackend._context.productOnDepot_updateObject(productOnDepot)
+			except Exception as err:
+				logger.warning("Installation error. Not unlocking product '{}' on depot '{}'.", productId, depotId)
+				raise err
+
+			logger.notice(
+				u"Unlocking product '{0}' {1}-{2} on depot '{3}'",
+				productOnDepot.getProductId(),
+				productOnDepot.getProductVersion(),
+				productOnDepot.getPackageVersion(),
+				depotId
+			)
+			productOnDepot.setLocked(False)
+			self._depotBackend._context.productOnDepot_updateObject(productOnDepot)
 
 		@contextmanager
 		def runPackageScripts(productPackageFile, depotId):
