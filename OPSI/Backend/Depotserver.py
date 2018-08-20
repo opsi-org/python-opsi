@@ -183,17 +183,18 @@ class DepotserverPackageManager(object):
 		@contextmanager
 		def lockProduct(backend, product, depotId, forceInstallation):
 			productId = product.getId()
-			logger.notice(u"Locking product '{0}' on depot '{1}'", productId, depotId)
+			logger.debug("Checking for locked product '{}' on depot '{}'", productId, depotId)
 			productOnDepots = backend.productOnDepot_getObjects(depotId=depotId, productId=productId)
 			try:
 				if productOnDepots[0].getLocked():
-					logger.notice(u"Product {0} currently locked on depot '{1}'", productId, depotId)
+					logger.notice(u"Product '{0}' currently locked on depot '{1}'", productId, depotId)
 					if not forceInstallation:
 						raise BackendTemporaryError(u"Product currently locked on depot '%s'" % depotId)
 					logger.warning(u"Installation of locked product forced")
 			except IndexError:
 				pass
 
+			logger.notice(u"Locking product '{0}' on depot '{1}'", productId, depotId)
 			productOnDepot = ProductOnDepot(
 				productId=productId,
 				productType=product.getType(),
