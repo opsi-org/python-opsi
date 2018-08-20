@@ -182,17 +182,8 @@ class DepotserverPackageManager(object):
 
 		@contextmanager
 		def lockProduct(backend, product, depotId, forceInstallation):
-			logger.notice(u"Locking product '{0}' on depot '{1}'", product.getId(), depotId)
 			productId = product.getId()
-			productOnDepot = ProductOnDepot(
-				productId=productId,
-				productType=product.getType(),
-				productVersion=product.getProductVersion(),
-				packageVersion=product.getPackageVersion(),
-				depotId=depotId,
-				locked=True
-			)
-
+			logger.notice(u"Locking product '{0}' on depot '{1}'", productId, depotId)
 			productOnDepots = backend.productOnDepot_getObjects(depotId=depotId, productId=productId)
 			try:
 				if productOnDepots[0].getLocked():
@@ -203,6 +194,14 @@ class DepotserverPackageManager(object):
 			except IndexError:
 				pass
 
+			productOnDepot = ProductOnDepot(
+				productId=productId,
+				productType=product.getType(),
+				productVersion=product.getProductVersion(),
+				packageVersion=product.getPackageVersion(),
+				depotId=depotId,
+				locked=True
+			)
 			logger.info(u"Creating product on depot {0}", productOnDepot)
 			backend.productOnDepot_createObjects(productOnDepot)
 
