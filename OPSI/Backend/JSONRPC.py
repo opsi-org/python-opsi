@@ -607,12 +607,7 @@ class JSONRPCBackend(Backend):
 		if self._deflate:
 			logger.debug2(u"Compressing data")
 			headers['Content-Encoding'] = 'deflate'
-
 			data = deflateEncode(data)
-			# Fix for python 2.7
-			# http://bugs.python.org/issue12398
-			if version_info >= (2, 7):
-				data = bytearray(data)
 			logger.debug2(u"Data compressed.")
 
 		headers['content-length'] = len(data)
