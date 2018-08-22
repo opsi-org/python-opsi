@@ -613,7 +613,7 @@ class JSONRPCBackend(Backend):
 		headers['content-length'] = len(data)
 
 		auth = (self._username + u':' + self._password)
-		headers['Authorization'] = 'Basic ' + base64.b64encode(auth)
+		headers['Authorization'] = 'Basic ' + base64.b64encode(auth.encode()).decode()
 
 		if self._sessionId:
 			headers['Cookie'] = self._sessionId
