@@ -37,7 +37,6 @@ import threading
 import types
 from hashlib import md5
 from queue import Queue, Empty
-from sys import version_info
 from twisted.conch.ssh import keys
 
 from OPSI import __version__
