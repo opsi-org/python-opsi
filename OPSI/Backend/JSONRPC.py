@@ -552,10 +552,9 @@ class JSONRPCBackend(Backend):
 
 					if isinstance(defaults, (tuple, list)) and len(defaults) + i >= len(args):
 						default = defaults[len(defaults) - len(args) + i]
-						# TODO: watch out for Python 3
-						if isinstance(default, (str, unicode)):
+						if isinstance(default, str):
 							default = u"{0!r}".format(default).replace('"', "'")
-						argString.append(u'{0}={1}'.format(argument, unicode(default)))
+						argString.append(u'{0}={1}'.format(argument, str(default)))
 					else:
 						argString.append(argument)
 					callString.append(argument)
@@ -601,8 +600,6 @@ class JSONRPCBackend(Backend):
 			'Accept-Encoding': 'deflate, gzip',
 			'content-type': 'application/json',
 		}
-		if isinstance(data, str):
-			data = unicode(data, 'utf-8')
 		data = data.encode('utf-8')
 
 		logger.debug2(u"Request to host {0!r}, baseUrl: {1!r}, query: {2!r}".format(self._host, baseUrl, data))
