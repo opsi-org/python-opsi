@@ -153,7 +153,7 @@ class RpcThread(KillableThread):
 
 				response = connection.getresponse()
 				response = response.read()
-				response = fromJson(unicode(response, 'utf-8'))
+				response = fromJson(str(response, encoding='utf-8'))
 
 				if response and isinstance(response, dict):
 					self.error = response.get('error')

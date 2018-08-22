@@ -234,7 +234,7 @@ class OpsiBackup(object):
 			if self.getDifferencesInSysConfig(archive.sysinfo):
 				return ask(WARNING_DIFF)
 		except OpsiError as error:
-			return ask(WARNING_SYSCONFIG % unicode(error))
+			return ask(WARNING_SYSCONFIG % str(error))
 
 		return True
 
