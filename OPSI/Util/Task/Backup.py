@@ -37,7 +37,8 @@ import termios
 from contextlib import closing
 
 from OPSI.Exceptions import (
-	OpsiBackupFileError, OpsiBackupBackendNotFound, OpsiError)
+BackendConfigurationError, OpsiBackupFileError, OpsiBackupBackendNotFound,
+OpsiError)
 from OPSI.Logger import Logger, LOG_DEBUG
 from OPSI.Types import forceList, forceUnicode
 from OPSI.Util.File.Opsi import OpsiBackupArchive
@@ -65,6 +66,8 @@ Do you wish to continue? [y/n]""")
 
 
 class OpsiBackup(object):
+
+	SUPPORTED_BACKENDS = set(['auto', 'all', 'file', 'mysql', 'dhcp'])
 
 	def __init__(self, stdout=None):
 		if stdout is None:
@@ -152,6 +155,28 @@ class OpsiBackup(object):
 			logger.logException(error, LOG_DEBUG)
 			raise error
 
+	def list(self, files):
+		"""
+		List the contents of the backup.
+
+		:param files: Path to files that should be processed.
+		:type files: [str]
+		"""
+		for filename in forceList(files):
+			with closing(self._getArchive(file=filename, mode="r")) as archive:
+				archive.verify()
+
+				data = {
+					"configuration": archive.hasConfiguration(),
+					"dhcp": archive.hasDHCPBackend(),
+					"file": archive.hasFileBackend(),
+					"mysql": archive.hasMySQLBackend(),
+				}
+				existingData = [btype for btype, exists in data.items() if exists]
+				existingData.sort()
+
+				logger.notice("{} contains: {}", archive.name, ', '.join(existingData))
+
 	def verify(self, file, **kwargs):
 		"""
 		Verify a backup.
@@ -168,7 +193,7 @@ class OpsiBackup(object):
 				logger.info(u"Verifying archive {0}", fileName)
 				try:
 					archive.verify()
-					logger.notice(u"Archive is OK.")
+					logger.notice(u"Archive {} is OK.", fileName)
 				except OpsiBackupFileError as error:
 					logger.error(error)
 					result = 1
@@ -257,8 +282,16 @@ If this is `None` information will be read from the current system.
 			backends = ["all"]
 
 		auto = "auto" in backends
+		backends = [backend.lower() for backend in backends]
 
-		logger.debug("Backends for restore: {}", backends)
+		logger.debug("Backends to restore: {}", backends)
+
+		if not force:
+			for backend in backends:
+				if backend not in self.SUPPORTED_BACKENDS:
+					raise ValueError("{!r} is not a valid backend.".format(backend))
+
+		configuredBackends = getConfiguredBackends()
 
 		with closing(self._getArchive(file=file[0], mode="r")) as archive:
 			self.verify(archive.name)
@@ -296,6 +329,12 @@ If this is `None` information will be read from the current system.
 								logger.debug(u"Adding restore of {0} backend.", name)
 								functions.append(restoreData)
 
+								if configuredBackends and (not configuration) and backend not in configuredBackends:
+									logger.warning("Backend {} is currently not in use!", backend)
+
+				if not functions:
+					raise RuntimeError("Neither possible backend given nor configuration selected for restore.")
+
 				try:
 					for restoreFunction in functions:
 						logger.debug2(u"Running restoration function {0!r}", restoreFunction)
@@ -312,3 +351,32 @@ If this is `None` information will be read from the current system.
 					raise error
 
 				logger.notice(u"Restoration complete")
+
+
+def getConfiguredBackends():
+	"""
+	Get what backends are currently confiugured.
+
+	:returns: A set containing the names of the used backends. \
+None if reading the configuration failed.
+	:rtype: set or None
+	"""
+	try:
+		from OPSI.Backend.BackendManager import BackendDispatcher
+	except ImportError as impError:
+		logger.debug("Import failed: {}", impError)
+		return None
+
+	try:
+		dispatcher = BackendDispatcher(
+			dispatchConfigFile='/etc/opsi/backendManager/dispatch.conf',
+			backendconfigdir='/etc/opsi/backends/',
+		)
+	except BackendConfigurationError as bcerror:
+		logger.debug("Unable to read backends: {}", bcerror)
+		return None
+
+	names = [name.lower() for name in dispatcher.dispatcher_getBackendNames()]
+	dispatcher.backend_exit()
+
+	return set(names)

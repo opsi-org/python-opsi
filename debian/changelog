@@ -1,3 +1,47 @@
+python-opsi (4.1.1.43-1) testing; urgency=medium
+
+  * OPSI.Backend.Depotserver: only unlock productOnDepot after successful
+    installation.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 20 Aug 2018 17:15:26 +0200
+
+python-opsi (4.1.1.42-4) stable; urgency=medium
+
+  * Debian: Reverted changes from -3 and -2.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 15 Aug 2018 13:08:28 +0200
+
+python-opsi (4.1.1.42-3) stable; urgency=medium
+
+  * Alter dependency from 4.1.1.42-2: Depend on python-twisted <= 17.9.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 15 Aug 2018 11:46:48 +0200
+
+python-opsi (4.1.1.42-2) stable; urgency=medium
+
+  * Do not use conch 18.4 or newer because this will currently break things
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 14 Aug 2018 17:06:37 +0200
+
+python-opsi (4.1.1.42-1) testing; urgency=medium
+
+  * Various small internal refactorings.
+  * OPSI.Backend.Depotserver: Refactored handling in installPackage.
+  * OPSI.Backend.MySQL: Refactored productProperty_updateObject and
+    productProperty_insertObject.
+  * OPSI.System.Windows.getArchitecture: correctly returns the default 'x86'
+    in case of an error.
+  * OPSI.Util.File.Archive: Make use of longopts in all commands.
+  * OPSI.Util.File.Archive.CpioArchive: Extract with --no-preserve-owner.
+  * OPSI.Util.Task.Backup.OpsiBackup: added method 'list' to show what is
+    contained in a backup.
+  * OPSI.Util.Task.Backup.OpsiBackup: restore will warn if restoring an
+    currently unused backend is attempted.
+  * OPSI.Util.Task.Backup.OpsiBackup: restore will fail if an restore attempt
+    would lead to doing nothing.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 07 Aug 2018 09:09:07 +0200
+
 python-opsi (4.1.1.41-1) stable; urgency=medium
 
   * Based on python-opsi 4.0.7.68.
@@ -2058,7 +2102,7 @@ python-opsi (4.0.3.1-1) testing; urgency=low
   * dhcp-backend: ddns-rev-domainname added to list where the values are written in double quotas
   * System: opsi-setup --init-current-config gives an warning instead of error, when vendor not found for network device
   * Posix:
-    - saveImage returns the result from partclone if run was successfull.
+    - saveImage returns the result from partclone if run was successful.
     - readPartitionTable: Try to find out the right filesystem with blkid tool.
     - createPartition: allows linux as filesystem-type and produces partition with id 83
   * WindowsDriver: byAudit: Translating model and vendor from hwinvent: characters <>?":|\/* will be translated to _
