@@ -522,7 +522,7 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 					break
 
 			elif method == 'selectChoice':
-				logger.debug(u"selectChoice(%s)" % unicode(params)[1:-1])
+				logger.debug(u"selectChoice(%s)" % str(params)[1:-1])
 				subjectId = params[0]
 				for subject in self.getSubjects():
 					if not isinstance(subject, ChoiceSubject) or (subject.getId() != subjectId):
@@ -596,8 +596,6 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 		for client in clients:
 			# json-rpc: notifications have id null
 			jsonString = json.dumps({"id": None, "method": name, "params": params})
-			if isinstance(jsonString, unicode):
-				jsonString = jsonString.encode('utf-8')
 			client.sendLine(jsonString)
 
 

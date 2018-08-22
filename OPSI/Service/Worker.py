@@ -329,7 +329,7 @@ class WorkerOpsi:
 				encoded = auth[1]
 
 				logger.confidential(u"Auth encoded: {0}", encoded)
-				parts = unicode(base64.decodestring(encoded), 'latin-1').split(':')
+				parts = str(base64.decodestring(encoded), encoding='latin-1').split(':')
 				if len(parts) > 6:
 					user = u':'.join(parts[:6])
 					password = u':'.join(parts[6:])
@@ -504,12 +504,12 @@ class WorkerOpsi:
 					self.query = deflateDecode(self.query)
 					self.gzip = True
 
-			if not isinstance(self.query, unicode):
-				self.query = unicode(self.query, 'utf-8')
+			if not isinstance(self.query, str):
+				self.query = str(self.query, encoding='utf-8')
 		except (UnicodeError, UnicodeEncodeError) as error:
 			logger.logException(error)
-			if not isinstance(self.query, unicode):
-				self.query = unicode(self.query, 'utf-8', 'replace')
+			if not isinstance(self.query, str):
+				self.query = str(self.query, encoding='utf-8', errors='replace')
 		except Exception as error:
 			logger.logException(error)
 			logger.warning("Unexpected error during decoding of query: {0}", error)
@@ -661,7 +661,7 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 		try:
 			failure.raiseException()
 		except Exception as err:
-			error = {'class': err.__class__.__name__, 'message': unicode(err)}
+			error = {'class': err.__class__.__name__, 'message': str(err)}
 			error = toJson({"id": None, "result": None, "error": error})
 		result.stream = stream.IByteStream(error.encode('utf-8'))
 		return result
@@ -745,7 +745,7 @@ class WorkerOpsiJsonInterface(WorkerOpsiJsonRpc):
 			try:
 				result.raiseException()
 			except Exception as err:
-				error = {'class': err.__class__.__name__, 'message': unicode(err)}
+				error = {'class': err.__class__.__name__, 'message': str(err)}
 				error = toJson({"id": None, "result": None, "error": error})
 			results.append(wrapInDiv(objectToHtml(error)))
 		else:

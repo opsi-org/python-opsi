@@ -1056,8 +1056,8 @@ class WebDAVRepository(HTTPRepository):
 			info = {
 				'size': 0,
 				'type': 'file',
-				'path': unicode(urllib.unquote(child.childOfType(davxml.HRef).children[0].data[srcLen:]), encoding),
-				'name': unicode(pContainer.childOfType(davxml.DisplayName).children[0].data, encoding),
+				'path': str(urllib.unquote(child.childOfType(davxml.HRef).children[0].data[srcLen:]), encoding=encoding),
+				'name': str(pContainer.childOfType(davxml.DisplayName).children[0].data, encoding=encoding),
 			}
 
 			if str(pContainer.childOfType(davxml.GETContentLength)) != 'None':
