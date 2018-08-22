@@ -150,13 +150,12 @@ class HTTPResponse(object):
 
 	Similar to httplib's HTTPResponse but the data is pre-loaded.
 	"""
-	def __init__(self, data='', headers={}, status=0, version=0, reason=None, strict=0):
+	def __init__(self, data='', headers={}, status=0, version=0, reason=None):
 		self.data = data
 		self.headers = headers
 		self.status = status
 		self.version = version
 		self.reason = reason
-		self.strict = strict
 
 	def addData(self, data):
 		self.data += data
@@ -203,8 +202,7 @@ class HTTPResponse(object):
 			headers=dict(r.getheaders()),
 			status=r.status,
 			version=r.version,
-			reason=r.reason,
-			strict=r.strict
+			reason=r.reason
 		)
 
 	# Backwards-compatibility methods for httplib.HTTPResponse
