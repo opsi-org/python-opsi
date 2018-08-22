@@ -503,8 +503,7 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 		self.clients.remove(client)
 
 	def rpc(self, client, line):
-		line = unicode(line, 'utf-8')
-		logger.info(u"received line %s" % line)
+		logger.info(u"received line {!r}", line)
 		id = None
 		try:
 			rpc = json.loads(line)
