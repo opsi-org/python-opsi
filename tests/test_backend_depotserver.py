@@ -191,15 +191,10 @@ def testUninstallingProduct(depotserverBackend, depotServerFQDN, testPackageFile
     productId = 'testingproduct'
     depotserverBackend.depot_installPackage(testPackageFile, force=True)
 
-    assert os.listdir(depotDirectory)
-
-    pod = depotserverBackend.productOnDepot_getObjects(productId=productId, depotId=depotServerFQDN)[0]
-    assert pod.locked is False
-    assert '23' == pod.productVersion
-    assert '42' == pod.packageVersion
+    assert isProductFolderInDepot(depotDirectory, productId)
 
     depotserverBackend.depot_uninstallPackage(productId)
 
-    assert not os.listdir(depotDirectory)
+    assert not isProductFolderInDepot(depotDirectory, productId)
     assert not depotserverBackend.productOnDepot_getObjects(productId=productId, depotId=depotServerFQDN)
     assert not depotserverBackend.product_getObjects(id=productId)
