@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -33,8 +33,9 @@ between servers and clients.
 import os
 import random
 import shutil
-from OpenSSL import crypto, rand
 from tempfile import NamedTemporaryFile
+
+from OpenSSL import crypto
 
 from OPSI.Logger import Logger
 from OPSI.System import which, execute
@@ -228,14 +229,7 @@ If not given will use a default.
 
 	with NamedTemporaryFile(mode="wt") as randfile:
 		LOGGER.notice(u"Generating and filling new randomize string")
-		try:
-			randomBytes = rand.bytes(512)
-		except AttributeError as error:
-			LOGGER.debug(u"Getting rand.bytes failed: {0}".format(error))
-			LOGGER.debug(u"Using workaround with random.getrandbits")
-			# SLES11SP3 ships a version so old that rand.bytes does not
-			# even exist yet. As a workaround we use plain old random
-			randomBytes = str(bytearray(random.getrandbits(8) for _ in range(512)))
+		randomBytes = os.urandom(512)
 		randfile.write(randomBytes)
 
 		execute(

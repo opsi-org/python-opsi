@@ -1,0 +1,44 @@
+#! /bin/bash -e
+
+# = = = = = = = = = = = = = = = = = = = = = = =
+# =     Copyright (C) 2010-2018 uib GmbH      =
+# =           http://www.uib.de               =
+# =          All rights reserved.             =
+# = = = = = = = = = = = = = = = = = = = = = = =
+
+case "$1" in
+	install|upgrade)
+    if [ -L "/etc/opsi/backendManager/dispatch.conf" ]; then
+		  dispatchConfTarget=$(readlink -f /etc/opsi/backendManager/dispatch.conf)
+      if [ $dispatchConfTarget != "/etc/opsi/backendManager/dispatch.conf" ]; then
+		    rm /etc/opsi/backendManager/dispatch.conf
+        cp $dispatchConfTarget /etc/opsi/backendManager/dispatch.conf
+      fi
+    fi
+    if [ -L "/etc/opsi/backendManager/acl.conf" ]; then
+      aclConfTarget=$(readlink -f /etc/opsi/backendManager/acl.conf)
+      if [ $aclConfTarget != "/etc/opsi/backendManager/acl.conf" ]; then
+        rm /etc/opsi/backendManager/acl.conf
+        cp $aclConfTarget /etc/opsi/backendManager/acl.conf
+      fi
+    fi
+    if [ -e "/etc/opsi/backendManager/dispatch.conf.default" ]; then
+    	rm "/etc/opsi/backendManager/dispatch.conf.default"
+    fi
+
+    if [ -e "/etc/opsi/backendManager/acl.conf.default" ]; then
+    	rm "/etc/opsi/backendManager/acl.conf.default"
+    fi
+
+	;;
+
+	abort-upgrade)
+	;;
+
+	*)
+		echo "preinst called with unknown argument \`$1'" >&2
+		exit 1
+	;;
+esac
+
+#DEBHELPER#

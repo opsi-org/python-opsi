@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2010-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2010-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -37,8 +37,8 @@ import threading
 import types
 from hashlib import md5
 from Queue import Queue, Empty
-from twisted.conch.ssh import keys
 from sys import version_info
+from twisted.conch.ssh import keys
 
 from OPSI import __version__
 from OPSI.Exceptions import (
@@ -271,7 +271,7 @@ class JSONRPCBackend(Backend):
 		self._protocol = 'https'
 		self._socketTimeout = None
 		self._connectTimeout = 30
-		self._connectionPoolSize = 1
+		self._connectionPoolSize = 2
 		self._interface = None
 		self._rpcId = 0
 		self._rpcIdLock = threading.Lock()
@@ -377,15 +377,13 @@ class JSONRPCBackend(Backend):
 		return self._connectionPool.getPeerCertificate(asPem)
 
 	def backend_exit(self):
-		res = None
 		if self._connected:
 			try:
-				res = self._jsonRPC('backend_exit', retry=False)
+				self._jsonRPC('backend_exit', retry=False)
 			except Exception:
 				pass
-		if self._rpcQueue:
-			self._rpcQueue.stop()
-		return res
+
+		self.stopRpcQueue()
 
 	def setAsync(self, enableAsync):
 		if not self._connected:

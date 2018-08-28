@@ -1,3 +1,187 @@
+python-opsi (4.1.1.43-1) testing; urgency=medium
+
+  * OPSI.Backend.Depotserver: only unlock productOnDepot after successful
+    installation.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 20 Aug 2018 17:15:26 +0200
+
+python-opsi (4.1.1.42-4) stable; urgency=medium
+
+  * Debian: Reverted changes from -3 and -2.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 15 Aug 2018 13:08:28 +0200
+
+python-opsi (4.1.1.42-3) stable; urgency=medium
+
+  * Alter dependency from 4.1.1.42-2: Depend on python-twisted <= 17.9.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 15 Aug 2018 11:46:48 +0200
+
+python-opsi (4.1.1.42-2) stable; urgency=medium
+
+  * Do not use conch 18.4 or newer because this will currently break things
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 14 Aug 2018 17:06:37 +0200
+
+python-opsi (4.1.1.42-1) testing; urgency=medium
+
+  * Various small internal refactorings.
+  * OPSI.Backend.Depotserver: Refactored handling in installPackage.
+  * OPSI.Backend.MySQL: Refactored productProperty_updateObject and
+    productProperty_insertObject.
+  * OPSI.System.Windows.getArchitecture: correctly returns the default 'x86'
+    in case of an error.
+  * OPSI.Util.File.Archive: Make use of longopts in all commands.
+  * OPSI.Util.File.Archive.CpioArchive: Extract with --no-preserve-owner.
+  * OPSI.Util.Task.Backup.OpsiBackup: added method 'list' to show what is
+    contained in a backup.
+  * OPSI.Util.Task.Backup.OpsiBackup: restore will warn if restoring an
+    currently unused backend is attempted.
+  * OPSI.Util.Task.Backup.OpsiBackup: restore will fail if an restore attempt
+    would lead to doing nothing.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 07 Aug 2018 09:09:07 +0200
+
+python-opsi (4.1.1.41-1) stable; urgency=medium
+
+  * Based on python-opsi 4.0.7.68.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 26 Jul 2018 15:10:44 +0200
+
+python-opsi (4.1.1.40-2) stable; urgency=medium
+
+  * Postinst: Making sure that /etc/opsi/server_commands_default.conf exists.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 16 Jul 2018 12:18:52 +0200
+
+python-opsi (4.1.1.40-1) testing; urgency=medium
+
+  * OpsiPXEConfd backend: improve performance by precollecting the
+    required data that then can be used by opsipxeconfd.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 19 Jun 2018 14:38:25 +0200
+
+python-opsi (4.1.1.39-1) stable; urgency=medium
+
+  * SQL-based backends: Increased length of inventoryNumber of a host to 64
+    characters.
+  * OPSI.Backend.Backend.ModificationTrackingBackend: small speedup.
+  * Various small internal refactorings.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 11 Jun 2018 11:44:15 +0200
+
+python-opsi (4.1.1.38-1) stable; urgency=medium
+
+  * Based on python-opsi 4.0.7.66.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 07 Jun 2018 22:35:19 +0200
+
+python-opsi (4.1.1.37-1) stable; urgency=medium
+
+  * Based on python-opsi 4.0.7.65.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 29 May 2018 13:23:17 +0200
+
+python-opsi (4.1.1.36-1) testing; urgency=medium
+
+  * OPSI.Util.Message has received an __all__.
+  * OPSI.Backend.SQL: The length of column `groupId` in table `OBJECT_TO_GROUP`
+    is now the same as defined in the table `GROUP`.
+  * Refactored processing of backend migrations for MySQL backend.
+  * OPSI.SharedAlgorithm: Changed classification of many log messages to
+    have fewer log entries in non-debug levels.
+  * OPSI.Backend.Backend: added new method 'describeInterface' to describe
+    the public interface of an instance.
+  * OPSI.Service.JsonRpc: Only one lookup of the method name during execution.
+  * 10_opsi.conf: setProductActionRequestWithDependencies will relay
+    requests for a netboot product to setProductActionRequest.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 22 May 2018 15:10:02 +0200
+
+python-opsi (4.1.1.35-2) testing; urgency=medium
+
+  * Debian: depend on iproute or iproute2.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 04 May 2018 14:26:40 +0200
+
+python-opsi (4.1.1.35-1) testing; urgency=medium
+
+  * Based on python-opsi 4.0.7.63.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 02 May 2018 17:45:26 +0200
+
+python-opsi (4.1.1.34-1) testing; urgency=medium
+
+  * OpsiPXEConfdBackend.configState_deleteObjects: Make sure that only one
+    update of the PXE config is triggered per host.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 24 Apr 2018 18:15:31 +0200
+
+python-opsi (4.1.1.33-1) experimental; urgency=medium
+
+  * Changed loglevel for execution of a package script (preinst / postinst).
+  * Small internal refactorings.
+  * OPSI.Util.HTTP: Removed unfinished pycurl experiments.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 13 Apr 2018 11:07:17 +0200
+
+python-opsi (4.1.1.32-1) stable; urgency=medium
+
+  * BackendManager logs easier to spot warning if loading the configuration
+    for HostControlBackend or HostControlSafeBackend fails.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 09 Apr 2018 10:03:28 +0200
+
+python-opsi (4.1.1.31-1) testing; urgency=medium
+
+  * Creating /var/lib/opsi/server_commands_custom.conf if missing and
+    setting the appropriate access rights during postinst.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 21 Mar 2018 15:22:50 +0100
+
+python-opsi (4.1.1.30-1) testing; urgency=medium
+
+  * Based on python-opsi 4.0.7.58.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 20 Mar 2018 16:07:34 +0100
+
+python-opsi (4.1.1.29-1) stable; urgency=medium
+
+  * OPSI.Util.Task.Certificate: use os.urandom instead of OpenSSL.rand
+    because OpenSSL.rand has been removed in current versions.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 09 Mar 2018 15:40:23 +0100
+
+python-opsi (4.1.1.28-1) stable; urgency=medium
+
+  * Based on python-opsi 4.0.7.57-1.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 23 Feb 2018 13:26:52 +0100
+
+python-opsi (4.1.1.27-1) stable; urgency=medium
+
+  * 45_deprecated.conf: Added methods createOpsiBase, createServer,
+    deleteClient, deleteDepot, deleteGroup, deleteProductDependency,
+    deleteServer, setHostLastSeen. These methods are deprecated.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 22 Feb 2018 13:48:10 +0100
+
+python-opsi (4.1.1.26-1) stable; urgency=medium
+
+  * Based on python-opsi 4.0.7.56-1.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 20 Feb 2018 14:13:35 +0100
+
+python-opsi (4.1.1.25-1) stable; urgency=medium
+
+  * Move targetfile to the name of link if dispatch.conf and acl.conf
+    are symbolic links
+  * dispatch.conf.default renamed to dispatch.conf.example
+  * acl.conf.default renamed to acl.conf.example
+  * RPM & debian: Added preinst
+
+ -- Erol Ueluekmen <e.ueluekmen@uib.de>  Thu, 08 Feb 2018 00:39:05 +0100
+
 python-opsi (4.1.1.24-1) stable; urgency=medium
 
   * dispatch.conf.default: Removed dhcpd from backends because this is
@@ -309,6 +493,105 @@ python-opsi (4.1.1.1-1) experimental; urgency=medium
     into OPSI/__init__.py to always show the current version.
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 04 Oct 2016 16:15:11 +0200
+
+python-opsi (4.0.7.68-1) stable; urgency=medium
+
+  * OpsiBackup: Internal refactorings for restore handling.
+  * OpsiBackup: Fix restore when backends are "auto" and the backup
+    does not contain data for a backend.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 26 Jul 2018 14:25:19 +0200
+
+python-opsi (4.0.7.67-1) stable; urgency=medium
+
+  * OpsiBackup: File backend: improve handling of hostkeys file.
+    Most noticable the restore will restore the file to the path
+    configured in the backup.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 11 Jun 2018 09:51:42 +0200
+
+python-opsi (4.0.7.66-1) stable; urgency=medium
+
+  * MySQL-Backend: Improve handling of very large changelogs containing
+    unicode characters.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 07 Jun 2018 22:07:32 +0200
+
+python-opsi (4.0.7.65-1) stable; urgency=medium
+
+  * Reverted changes made in 4.0.7.63.
+    This means all updates will be relayed to the depot again regardless
+    of the set action request.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 29 May 2018 12:56:42 +0200
+
+python-opsi (4.0.7.64-1) testing; urgency=medium
+
+  * 10_opsi.conf: setProductActionRequestWithDependencies will relay
+    requests for a netboot product to setProductActionRequest.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 22 May 2018 15:32:58 +0200
+
+python-opsi (4.0.7.63-1) testing; urgency=medium
+
+  * OpsiPXEConfd: Only relay updates to the depot if the action request is
+    setup, always or once.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 02 May 2018 16:40:36 +0200
+
+python-opsi (4.0.7.62-1) testing; urgency=medium
+
+  * JSONRPCBackend: Block again when retrieving connections.
+  * JSONRPCBackend: Default connection pool size is 2.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 18 Apr 2018 10:35:24 +0200
+
+python-opsi (4.0.7.61-1) testing; urgency=medium
+
+  * OpsiPXEConfd backend: Reliably close socket.
+  * OpsiPXEConfd backend: small refactorings.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 12 Apr 2018 14:15:17 +0200
+
+python-opsi (4.0.7.60-1) experimental; urgency=medium
+
+  * JSONRPCBackend: Do not block when retrieving connections.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 12 Apr 2018 12:12:15 +0200
+
+python-opsi (4.0.7.59-1) testing; urgency=medium
+
+  * 10_wim.conf: updateWIMConfig checks for install.wim and install.esd.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 21 Mar 2018 15:16:25 +0100
+
+python-opsi (4.0.7.58-1) testing; urgency=medium
+
+  * 20_legacy.conf: setProductProperty does not make a string out of lists
+    anymore.
+  * 20_legacy.conf: setProductProperty does not have the side-effect of
+    changing out-of-scope properties anymore.
+  * 20_legacy.conf: Refactored setProductProperties.
+    This will now raise BackendMissingDataError in case non-existing
+    product or property should be changed.
+    This will raise an ValueError if an attempt is made to set multiple
+    values on a non-multivalue ProductProperty.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 20 Mar 2018 15:10:37 +0100
+
+python-opsi (4.0.7.57-1) testing; urgency=medium
+
+  * OPSI.Backend.MySQL: In case the MySQL server goes away during the
+    execution of a query the retry will not deadlock.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 23 Feb 2018 12:58:25 +0100
+
+python-opsi (4.0.7.56-1) testing; urgency=medium
+
+  * OPSI.Backend.MySQL: Creation of connection pool will wait for the lock
+    in a non-blocking fashion.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 20 Feb 2018 13:34:45 +0100
 
 python-opsi (4.0.7.55-1) stable; urgency=medium
 
@@ -1819,7 +2102,7 @@ python-opsi (4.0.3.1-1) testing; urgency=low
   * dhcp-backend: ddns-rev-domainname added to list where the values are written in double quotas
   * System: opsi-setup --init-current-config gives an warning instead of error, when vendor not found for network device
   * Posix:
-    - saveImage returns the result from partclone if run was successfull.
+    - saveImage returns the result from partclone if run was successful.
     - readPartitionTable: Try to find out the right filesystem with blkid tool.
     - createPartition: allows linux as filesystem-type and produces partition with id 83
   * WindowsDriver: byAudit: Translating model and vendor from hwinvent: characters <>?":|\/* will be translated to _

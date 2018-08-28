@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2010-2017 uib GmbH
+# Copyright (C) 2010-2018 uib GmbH
 
 # http://www.uib.de/
 
@@ -64,6 +64,7 @@ class JsonRpc(object):
 
 		if not self.tid:
 			raise OpsiBadRpcError(u"No transaction id ((t)id) found in rpc")
+
 		if not self.method:
 			raise OpsiBadRpcError(u"No method found in rpc")
 
@@ -76,11 +77,13 @@ class JsonRpc(object):
 	def getMethodName(self):
 		if self.action:
 			return u'%s_%s' % (self.action, self.method)
+
 		return self.method
 
 	def getDuration(self):
 		if not self.started or not self.ended:
 			return None
+
 		return round(self.ended - self.started, 3)
 
 	def execute(self, result=None):
@@ -89,14 +92,16 @@ class JsonRpc(object):
 		self.started = time.time()
 
 		try:
-			methodInterface = None
-			for m in self._interface:
-				if self.getMethodName() == m['name']:
-					methodInterface = m
+			methodName = self.getMethodName()
+			for method in self._interface:
+				if methodName == method['name']:
+					methodInterface = method
 					break
+			else:
+				methodInterface = None
 
 			if not methodInterface:
-				raise OpsiRpcError(u"Method '%s' is not valid" % self.getMethodName())
+				raise OpsiRpcError(u"Method '%s' is not valid" % methodName)
 
 			keywords = {}
 			if methodInterface['keywords']:
@@ -125,15 +130,15 @@ class JsonRpc(object):
 			if len(pString) > 200:
 				pString = u'{0}...'.format(pString[:200])
 
-			logger.notice(u"-----> Executing: %s(%s)" % (self.getMethodName(), pString))
+			logger.notice(u"-----> Executing: %s(%s)" % (methodName, pString))
 
-			instance = self._instance
+			method = getattr(self._instance, methodName)
 			if keywords:
-				self.result = eval("instance.%s(*params, **keywords)" % self.getMethodName())
+				self.result = method(*params, **keywords)
 			else:
-				self.result = eval("instance.%s(*params)" % self.getMethodName())
+				self.result = method(*params)
 
-			logger.info(u'Got result')
+			logger.info(u'Got result for {}', methodName)
 			logger.debug2("RPC ID {0}: {1!r}", self.tid, self.result)
 		except Exception as error:
 			logger.logException(error, LOG_INFO)

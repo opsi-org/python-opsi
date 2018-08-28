@@ -60,8 +60,8 @@ data_files = [
 	(
 		'/etc/opsi/backendManager',
 		[
-			'data/backendManager/acl.conf.default',
-			'data/backendManager/dispatch.conf.default'
+			'data/backendManager/acl.conf.example',
+			'data/backendManager/dispatch.conf.example'
 		]
 	),
 	(

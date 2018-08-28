@@ -16,7 +16,7 @@ Package: python-opsi
 Section: opsi
 Architecture: all
 Depends: duplicity,
-	iproute,
+	iproute | iproute2,
 	lsb-release,
 	lshw,
 	net-tools,
