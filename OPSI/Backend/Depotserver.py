@@ -508,12 +508,13 @@ class DepotserverPackageManager(object):
 			dataBackend = self._depotBackend._context
 			depot = dataBackend.host_getObjects(type='OpsiDepotserver', id=depotId)[0]
 			productOnDepots = dataBackend.productOnDepot_getObjects(depotId=depotId, productId=productId)
-			if not productOnDepots:
+			try:
+				productOnDepot = productOnDepots[0]
+			except IndexError:
 				raise BackendBadValueError("Product '%s' is not installed on depot '%s'" % (productId, depotId))
 
 			logger.notice(u"Locking product '%s' on depot '%s'" % (productId, depotId))
 
-			productOnDepot = productOnDepots[0]
 			if productOnDepot.getLocked():
 				logger.notice(u"Product currently locked on depot '%s'" % depotId)
 				if not force:
