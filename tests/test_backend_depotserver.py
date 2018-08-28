@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2016-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2016-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -29,18 +29,23 @@ import grp
 import os
 import pytest
 from OPSI.Backend.Depotserver import DepotserverBackend
+from OPSI.Exceptions import BackendError
+from OPSI.Object import LocalbootProduct, ProductOnDepot
 
 from .helpers import mock, patchAddress
 from .test_util import fileAndHash  # test fixture
 
 
 @pytest.fixture
-def depotserverBackend(extendedConfigDataBackend, tempDir):
-    fakeFQDN = "depotserver.test.invalid"
+def depotServerFQDN():
+    return "depotserver.test.invalid"
 
-    extendedConfigDataBackend.host_createOpsiDepotserver(fakeFQDN)
 
-    depot = extendedConfigDataBackend.host_getObjects(id=fakeFQDN)[0]
+@pytest.fixture
+def depotserverBackend(extendedConfigDataBackend, tempDir, depotServerFQDN):
+    extendedConfigDataBackend.host_createOpsiDepotserver(depotServerFQDN)
+
+    depot = extendedConfigDataBackend.host_getObjects(id=depotServerFQDN)[0]
     depot.depotLocalUrl = 'file://' + tempDir
     extendedConfigDataBackend.host_updateObject(depot)
 
@@ -58,7 +63,7 @@ def depotserverBackend(extendedConfigDataBackend, tempDir):
     else:
         pytest.skip("Unable to get user data for mocking.")
 
-    with patchAddress(fqdn=fakeFQDN):
+    with patchAddress(fqdn=depotServerFQDN):
         with mock.patch('OPSI.Util.Product.grp.getgrnam', lambda x: groupData):
             with mock.patch('OPSI.Util.Product.pwd.getpwnam', lambda x: userData):
                 yield DepotserverBackend(extendedConfigDataBackend)
@@ -141,3 +146,27 @@ def testInstallingPackageCreatesPackageContentFile(depotserverBackend, suppressC
 
     assert isProductFolderInDepot(depotPath, 'testingproduct')
     assert suppressCreation != os.path.exists(os.path.join(depotPath, 'testingproduct', 'testingproduct.files'))
+
+
+@pytest.mark.requiresModulesFile  # because of SQLite...
+def testInstallingWithLockedProductFails(depotserverBackend, depotServerFQDN):
+    product = LocalbootProduct(
+        id='testingproduct',
+        productVersion=23,
+        packageVersion=42
+    )
+    depotserverBackend.product_insertObject(product)
+
+    lockedProductOnDepot = ProductOnDepot(
+        productId='testingproduct',
+        productType=product.getType(),
+        productVersion=product.getProductVersion(),
+        packageVersion=product.getPackageVersion(),
+        depotId=depotServerFQDN,
+        locked=True
+    )
+    depotserverBackend.productOnDepot_createObjects(lockedProductOnDepot)
+
+    pathToPackage = os.path.join(os.path.dirname(__file__), 'testdata', 'backend', 'testingproduct_23-42.opsi')
+    with pytest.raises(BackendError):
+        depotserverBackend.depot_installPackage(pathToPackage)
