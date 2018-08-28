@@ -505,8 +505,9 @@ class DepotserverPackageManager(object):
 			force = forceBool(force)
 			deleteFiles = forceBool(deleteFiles)
 
-			depot = self._depotBackend._context.host_getObjects(type='OpsiDepotserver', id=depotId)[0]
-			productOnDepots = self._depotBackend._context.productOnDepot_getObjects(depotId=depotId, productId=productId)
+			dataBackend = self._depotBackend._context
+			depot = dataBackend.host_getObjects(type='OpsiDepotserver', id=depotId)[0]
+			productOnDepots = dataBackend.productOnDepot_getObjects(depotId=depotId, productId=productId)
 			if not productOnDepots:
 				raise BackendBadValueError("Product '%s' is not installed on depot '%s'" % (productId, depotId))
 
@@ -519,7 +520,7 @@ class DepotserverPackageManager(object):
 					raise BackendTemporaryError(u"Product currently locked on depot '%s'" % depotId)
 				logger.warning(u"Uninstallation of locked product forced")
 			productOnDepot.setLocked(True)
-			self._depotBackend._context.productOnDepot_updateObject(productOnDepot)
+			dataBackend.productOnDepot_updateObject(productOnDepot)
 
 			logger.debug("Deleting product '%s'" % productId)
 
@@ -533,7 +534,7 @@ class DepotserverPackageManager(object):
 						logger.info("Deleting client data dir '%s'" % clientDataDir)
 						removeDirectory(clientDataDir)
 
-			self._depotBackend._context.productOnDepot_deleteObjects(productOnDepot)
+			dataBackend.productOnDepot_deleteObjects(productOnDepot)
 		except Exception as e:
 			logger.logException(e)
 			raise BackendError(u"Failed to uninstall product '%s' on depot '%s': %s" % (productId, depotId, e))
