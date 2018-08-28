@@ -220,7 +220,7 @@ class DepotserverPackageManager(object):
 				depotId
 			)
 			productOnDepot.setLocked(False)
-			self._depotBackend._context.productOnDepot_updateObject(productOnDepot)
+			backend.productOnDepot_updateObject(productOnDepot)
 
 		@contextmanager
 		def runPackageScripts(productPackageFile, depotId):
