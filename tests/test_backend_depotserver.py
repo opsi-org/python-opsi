@@ -80,7 +80,7 @@ def testPackageFile():
 
 
 @pytest.mark.requiresModulesFile  # because of SQLite...
-def testInstallingPackageOnDepotserver(depotserverBackend, testPackageFile):
+def testInstallingPackageOnDepotserver(depotserverBackend, testPackageFile, depotDirectory):
     depotserverBackend.depot_installPackage(testPackageFile)
 
     products = depotserverBackend.product_getObjects()
@@ -91,10 +91,7 @@ def testInstallingPackageOnDepotserver(depotserverBackend, testPackageFile):
     assert product.productVersion == '23'
     assert product.packageVersion == '42'
 
-    depot = depotserverBackend.host_getObjects(type="OpsiDepotserver")[0]
-    depotPath = depot.depotLocalUrl.replace('file://', '')
-
-    assert isProductFolderInDepot(depotPath, 'testingproduct')
+    assert isProductFolderInDepot(depotDirectory, 'testingproduct')
 
 
 def isProductFolderInDepot(depotPath, productId):
@@ -102,7 +99,7 @@ def isProductFolderInDepot(depotPath, productId):
 
 
 @pytest.mark.requiresModulesFile  # because of SQLite...
-def testInstallingPackageOnDepotserverWithForcedProductId(depotserverBackend, testPackageFile):
+def testInstallingPackageOnDepotserverWithForcedProductId(depotserverBackend, testPackageFile, depotDirectory):
     wantedProductId = 'jumpinthefire'
 
     depotserverBackend.depot_installPackage(testPackageFile, forceProductId=wantedProductId)
@@ -115,11 +112,8 @@ def testInstallingPackageOnDepotserverWithForcedProductId(depotserverBackend, te
     assert product.productVersion == '23'
     assert product.packageVersion == '42'
 
-    depot = depotserverBackend.host_getObjects(type="OpsiDepotserver")[0]
-    depotPath = depot.depotLocalUrl.replace('file://', '')
-
-    assert isProductFolderInDepot(depotPath, wantedProductId)
-    assert not isProductFolderInDepot(depotPath, 'testingproduct')
+    assert isProductFolderInDepot(depotDirectory, wantedProductId)
+    assert not isProductFolderInDepot(depotDirectory, 'testingproduct')
 
     dependencies = depotserverBackend.productDependency_getObjects()
     assert len(dependencies) == 1
@@ -145,14 +139,11 @@ def testReadingMd5sum(depotserverBackend, fileAndHash):
 
 @pytest.mark.requiresModulesFile  # because of SQLite...
 @pytest.mark.parametrize("suppressCreation", [False, True])
-def testInstallingPackageCreatesPackageContentFile(depotserverBackend, suppressCreation, testPackageFile):
+def testInstallingPackageCreatesPackageContentFile(depotserverBackend, suppressCreation, testPackageFile, depotDirectory):
     depotserverBackend.depot_installPackage(testPackageFile, suppressPackageContentFileGeneration=suppressCreation)
 
-    depot = depotserverBackend.host_getObjects(type="OpsiDepotserver")[0]
-    depotPath = depot.depotLocalUrl.replace('file://', '')
-
-    assert isProductFolderInDepot(depotPath, 'testingproduct')
-    assert suppressCreation != os.path.exists(os.path.join(depotPath, 'testingproduct', 'testingproduct.files'))
+    assert isProductFolderInDepot(depotDirectory, 'testingproduct')
+    assert suppressCreation != os.path.exists(os.path.join(depotDirectory, 'testingproduct', 'testingproduct.files'))
 
 
 @pytest.mark.requiresModulesFile  # because of SQLite...
