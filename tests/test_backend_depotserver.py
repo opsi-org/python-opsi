@@ -37,16 +37,21 @@ from .test_util import fileAndHash  # test fixture
 
 
 @pytest.fixture
+def depotDirectory(tempDir):
+    return tempDir
+
+
+@pytest.fixture
 def depotServerFQDN():
     return "depotserver.test.invalid"
 
 
 @pytest.fixture
-def depotserverBackend(extendedConfigDataBackend, tempDir, depotServerFQDN):
+def depotserverBackend(extendedConfigDataBackend, depotDirectory, depotServerFQDN):
     extendedConfigDataBackend.host_createOpsiDepotserver(depotServerFQDN)
 
     depot = extendedConfigDataBackend.host_getObjects(id=depotServerFQDN)[0]
-    depot.depotLocalUrl = 'file://' + tempDir
+    depot.depotLocalUrl = 'file://' + depotDirectory
     extendedConfigDataBackend.host_updateObject(depot)
 
     for g in grp.getgrall():
@@ -187,3 +192,22 @@ def testInstallingWithLockedProduct(depotserverBackend, depotServerFQDN, testPac
         assert pod.locked is False
         assert '23' == pod.productVersion
         assert '42' == pod.packageVersion
+
+
+@pytest.mark.requiresModulesFile  # because of SQLite...
+def testUninstallingProduct(depotserverBackend, depotServerFQDN, testPackageFile, depotDirectory):
+    productId = 'testingproduct'
+    depotserverBackend.depot_installPackage(testPackageFile, force=True)
+
+    assert os.listdir(depotDirectory)
+
+    pod = depotserverBackend.productOnDepot_getObjects(productId=productId, depotId=depotServerFQDN)[0]
+    assert pod.locked is False
+    assert '23' == pod.productVersion
+    assert '42' == pod.packageVersion
+
+    depotserverBackend.depot_uninstallPackage(productId)
+
+    assert not os.listdir(depotDirectory)
+    assert not depotserverBackend.productOnDepot_getObjects(productId=productId, depotId=depotServerFQDN)
+    assert not depotserverBackend.product_getObjects(id=productId)
