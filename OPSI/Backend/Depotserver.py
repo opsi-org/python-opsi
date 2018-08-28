@@ -513,13 +513,13 @@ class DepotserverPackageManager(object):
 			except IndexError:
 				raise BackendBadValueError("Product '%s' is not installed on depot '%s'" % (productId, depotId))
 
-			logger.notice(u"Locking product '%s' on depot '%s'" % (productId, depotId))
-
 			if productOnDepot.getLocked():
 				logger.notice(u"Product currently locked on depot '%s'" % depotId)
 				if not force:
 					raise BackendTemporaryError(u"Product currently locked on depot '%s'" % depotId)
 				logger.warning(u"Uninstallation of locked product forced")
+
+			logger.notice(u"Locking product '%s' on depot '%s'" % (productId, depotId))
 			productOnDepot.setLocked(True)
 			dataBackend.productOnDepot_updateObject(productOnDepot)
 
