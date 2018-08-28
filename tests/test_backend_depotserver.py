@@ -198,3 +198,30 @@ def testUninstallingProduct(depotserverBackend, depotServerFQDN, testPackageFile
     assert not isProductFolderInDepot(depotDirectory, productId)
     assert not depotserverBackend.productOnDepot_getObjects(productId=productId, depotId=depotServerFQDN)
     assert not depotserverBackend.product_getObjects(id=productId)
+
+
+@pytest.mark.requiresModulesFile  # because of SQLite...
+@pytest.mark.parametrize("forceUninstall", [False, True])
+def testUninstallingLockedProduct(depotserverBackend, depotServerFQDN, testPackageFile, depotDirectory, forceUninstall):
+    productId = 'testingproduct'
+
+    depotserverBackend.depot_installPackage(testPackageFile, force=True)
+    assert os.listdir(depotDirectory)
+
+    pod = depotserverBackend.productOnDepot_getObjects(productId=productId, depotId=depotServerFQDN)[0]
+    pod.setLocked(True)
+    depotserverBackend.productOnDepot_updateObject(pod)
+
+    if not forceUninstall:
+        with pytest.raises(BackendError):
+            depotserverBackend.depot_uninstallPackage(productId)
+
+        assert isProductFolderInDepot(depotDirectory, productId)
+        assert depotserverBackend.productOnDepot_getObjects(productId=productId, depotId=depotServerFQDN)
+        assert depotserverBackend.product_getObjects(id=productId)
+    else:
+        depotserverBackend.depot_uninstallPackage(productId, force=forceUninstall)
+
+        assert not isProductFolderInDepot(depotDirectory, productId)
+        assert not depotserverBackend.productOnDepot_getObjects(productId=productId, depotId=depotServerFQDN)
+        assert not depotserverBackend.product_getObjects(id=productId)
