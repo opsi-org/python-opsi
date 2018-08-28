@@ -1145,14 +1145,14 @@ class OpsiBackupArchive(tarfile.TarFile):
 				if name in backends:
 					raise OpsiBackupFileError("Multiple backends with the same name are not supported.")
 
-				backendLocals = {'socket': socket, 'config': {}, 'module': ''}
+				backendGlobals = {'config': {}, 'module': '', 'socket': socket}
 				backendFile = os.path.join(self.BACKEND_CONF_DIR, entry)
 				try:
-					execfile(backendFile, backendLocals)
+					execfile(backendFile, backendGlobals)
 					backends[name] = {
 						"name": name,
-						"config": backendLocals["config"],
-						"module": backendLocals['module'],
+						"config": backendGlobals["config"],
+						"module": backendGlobals['module'],
 						"dispatch": (name in dispatchedBackends)
 					}
 				except Exception as error:

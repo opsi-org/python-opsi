@@ -132,13 +132,13 @@ class JsonRpc(object):
 
 			logger.notice(u"-----> Executing: %s(%s)" % (methodName, pString))
 
-			instance = self._instance
+			method = getattr(self._instance, methodName)
 			if keywords:
-				self.result = eval("instance.%s(*params, **keywords)" % methodName)
+				self.result = method(*params, **keywords)
 			else:
-				self.result = eval("instance.%s(*params)" % methodName)
+				self.result = method(*params)
 
-			logger.info(u'Got result')
+			logger.info(u'Got result for {}', methodName)
 			logger.debug2("RPC ID {0}: {1!r}", self.tid, self.result)
 		except Exception as error:
 			logger.logException(error, LOG_INFO)
