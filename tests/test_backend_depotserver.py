@@ -151,7 +151,8 @@ def testInstallingPackageCreatesPackageContentFile(depotserverBackend, suppressC
 
 
 @pytest.mark.requiresModulesFile  # because of SQLite...
-def testInstallingWithLockedProductFails(depotserverBackend, depotServerFQDN, testPackageFile):
+@pytest.mark.parametrize("forceInstallation", [False, True])
+def testInstallingWithLockedProduct(depotserverBackend, depotServerFQDN, testPackageFile, forceInstallation):
     product = LocalbootProduct(
         id='testingproduct',
         productVersion=23,
@@ -169,11 +170,20 @@ def testInstallingWithLockedProductFails(depotserverBackend, depotServerFQDN, te
     )
     depotserverBackend.productOnDepot_createObjects(lockedProductOnDepot)
 
-    with pytest.raises(BackendError):
-        depotserverBackend.depot_installPackage(testPackageFile)
+    if not forceInstallation:
+        with pytest.raises(BackendError):
+            depotserverBackend.depot_installPackage(testPackageFile)
 
-    # Checking that the package version does not get changed
-    pod = depotserverBackend.productOnDepot_getObjects(productId=product.getId(), depotId=depotServerFQDN)[0]
-    assert pod.locked is True
-    assert '23' == pod.productVersion
-    assert '41' == pod.packageVersion
+        # Checking that the package version does not get changed
+        pod = depotserverBackend.productOnDepot_getObjects(productId=product.getId(), depotId=depotServerFQDN)[0]
+        assert pod.locked is True
+        assert '23' == pod.productVersion
+        assert '41' == pod.packageVersion
+    else:
+        depotserverBackend.depot_installPackage(testPackageFile, force=True)
+
+        # Checking that the package version does not get changed
+        pod = depotserverBackend.productOnDepot_getObjects(productId=product.getId(), depotId=depotServerFQDN)[0]
+        assert pod.locked is False
+        assert '23' == pod.productVersion
+        assert '42' == pod.packageVersion
