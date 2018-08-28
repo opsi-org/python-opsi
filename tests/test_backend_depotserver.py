@@ -148,7 +148,7 @@ def testInstallingPackageCreatesPackageContentFile(depotserverBackend, suppressC
 
 @pytest.mark.requiresModulesFile  # because of SQLite...
 @pytest.mark.parametrize("forceInstallation", [False, True])
-def testInstallingWithLockedProduct(depotserverBackend, depotServerFQDN, testPackageFile, forceInstallation):
+def testInstallingWithLockedProduct(depotserverBackend, depotServerFQDN, testPackageFile, forceInstallation, depotDirectory):
     product = LocalbootProduct(
         id='testingproduct',
         productVersion=23,
@@ -182,6 +182,8 @@ def testInstallingWithLockedProduct(depotserverBackend, depotServerFQDN, testPac
         assert pod.locked is False
         assert '23' == pod.productVersion
         assert '42' == pod.packageVersion
+
+        assert isProductFolderInDepot(depotDirectory, product.id)
 
 
 @pytest.mark.requiresModulesFile  # because of SQLite...
