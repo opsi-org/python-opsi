@@ -137,15 +137,11 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 					raise BackendMissingDataError(u"Failed to get opsi host key for depot '%s'" % self._depotId)
 				self._opsiHostKey = depots[0].getOpsiHostKey()
 
-			try:
-				self._depotConnections[depotId] = JSONRPCBackend(
-					address=u'https://%s:4447/rpc/backend/%s' % (depotId, self._name),
-					username=self._depotId,
-					password=self._opsiHostKey
-				)
-			except Exception as error:
-				raise BackendUnableToConnectError(u"Failed to connect to depot '%s': %s" % (depotId, error))
-
+			self._depotConnections[depotId] = self._getExternalBackendConnection(
+				depotId,
+				self._depotId,
+				self._opsiHostKey
+			)
 			return self._depotConnections[depotId]
 
 	def _getExternalDepotConnection(self, depot, port):
@@ -158,16 +154,23 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 					raise BackendMissingDataError(u"Failed to get opsi host key for depot '%s'" % self._depotId)
 				self._opsiHostKey = depots[0].getOpsiHostKey()
 
-			try:
-				self._depotConnections[depot] = JSONRPCBackend(
-					address=u'https://%s:%s/rpc/backend/%s' % (depot, port, self._name),
-					username=self._depotId,
-					password=self._opsiHostKey
-				)
-			except Exception as error:
-				raise BackendUnableToConnectError(u"Failed to connect to depot '%s': %s" % (depot, error))
-
+			self._depotConnections[depot] = self._getExternalBackendConnection(
+				depot,
+				self._depotId,
+				self._opsiHostKey,
+				port=port
+			)
 			return self._depotConnections[depot]
+
+	def _getExternalBackendConnection(self, address, username, password, port=4447):
+		try:
+			return JSONRPCBackend(
+				address=u'https://%s:%s/rpc/backend/%s' % (address, port, self._name),
+				username=username,
+				password=password
+			)
+		except Exception as error:
+			raise BackendUnableToConnectError(u"Failed to connect to depot '%s': %s" % (address, error))
 
 	def _getResponsibleDepotId(self, clientId):
 		configStates = self._context.configState_getObjects(configId=u'clientconfig.depot.id', objectId=clientId)  # pylint: disable=maybe-no-member
