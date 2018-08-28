@@ -69,10 +69,14 @@ def depotserverBackend(extendedConfigDataBackend, tempDir, depotServerFQDN):
                 yield DepotserverBackend(extendedConfigDataBackend)
 
 
+@pytest.fixture
+def testPackageFile():
+    return os.path.join(os.path.dirname(__file__), 'testdata', 'backend', 'testingproduct_23-42.opsi')
+
+
 @pytest.mark.requiresModulesFile  # because of SQLite...
-def testInstallingPackageOnDepotserver(depotserverBackend):
-    pathToPackage = os.path.join(os.path.dirname(__file__), 'testdata', 'backend', 'testingproduct_23-42.opsi')
-    depotserverBackend.depot_installPackage(pathToPackage)
+def testInstallingPackageOnDepotserver(depotserverBackend, testPackageFile):
+    depotserverBackend.depot_installPackage(testPackageFile)
 
     products = depotserverBackend.product_getObjects()
     assert len(products) == 1
@@ -93,11 +97,10 @@ def isProductFolderInDepot(depotPath, productId):
 
 
 @pytest.mark.requiresModulesFile  # because of SQLite...
-def testInstallingPackageOnDepotserverWithForcedProductId(depotserverBackend):
-    pathToPackage = os.path.join(os.path.dirname(__file__), 'testdata', 'backend', 'testingproduct_23-42.opsi')
+def testInstallingPackageOnDepotserverWithForcedProductId(depotserverBackend, testPackageFile):
     wantedProductId = 'jumpinthefire'
 
-    depotserverBackend.depot_installPackage(pathToPackage, forceProductId=wantedProductId)
+    depotserverBackend.depot_installPackage(testPackageFile, forceProductId=wantedProductId)
 
     products = depotserverBackend.product_getObjects()
     assert len(products) == 1
@@ -137,9 +140,8 @@ def testReadingMd5sum(depotserverBackend, fileAndHash):
 
 @pytest.mark.requiresModulesFile  # because of SQLite...
 @pytest.mark.parametrize("suppressCreation", [False, True])
-def testInstallingPackageCreatesPackageContentFile(depotserverBackend, suppressCreation):
-    pathToPackage = os.path.join(os.path.dirname(__file__), 'testdata', 'backend', 'testingproduct_23-42.opsi')
-    depotserverBackend.depot_installPackage(pathToPackage, suppressPackageContentFileGeneration=suppressCreation)
+def testInstallingPackageCreatesPackageContentFile(depotserverBackend, suppressCreation, testPackageFile):
+    depotserverBackend.depot_installPackage(testPackageFile, suppressPackageContentFileGeneration=suppressCreation)
 
     depot = depotserverBackend.host_getObjects(type="OpsiDepotserver")[0]
     depotPath = depot.depotLocalUrl.replace('file://', '')
@@ -149,7 +151,7 @@ def testInstallingPackageCreatesPackageContentFile(depotserverBackend, suppressC
 
 
 @pytest.mark.requiresModulesFile  # because of SQLite...
-def testInstallingWithLockedProductFails(depotserverBackend, depotServerFQDN):
+def testInstallingWithLockedProductFails(depotserverBackend, depotServerFQDN, testPackageFile):
     product = LocalbootProduct(
         id='testingproduct',
         productVersion=23,
@@ -167,6 +169,5 @@ def testInstallingWithLockedProductFails(depotserverBackend, depotServerFQDN):
     )
     depotserverBackend.productOnDepot_createObjects(lockedProductOnDepot)
 
-    pathToPackage = os.path.join(os.path.dirname(__file__), 'testdata', 'backend', 'testingproduct_23-42.opsi')
     with pytest.raises(BackendError):
-        depotserverBackend.depot_installPackage(pathToPackage)
+        depotserverBackend.depot_installPackage(testPackageFile)
