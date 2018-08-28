@@ -130,7 +130,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 
 			return self._depotConnections[depotId]
 
-	def _getScalabilityDepotConnection(self, depot, port):
+	def _getExternalDepotConnection(self, depot, port):
 		try:
 			return self._depotConnections[depot]
 		except KeyError:
@@ -179,7 +179,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 		if ':' in self._port:
 			depot = self._port.split(":")[0]
 			port = self._port.split(":")[1]
-			return self._getScalabilityDepotConnection(depot, port).opsipxeconfd_updatePXEBootConfiguration(productOnClient.clientId)
+			return self._getExternalDepotConnection(depot, port).opsipxeconfd_updatePXEBootConfiguration(productOnClient.clientId)
 		depotId = self._getResponsibleDepotId(productOnClient.clientId)
 		if depotId != self._depotId:
 			logger.info(u"Not responsible for client '{}', forwarding request to depot {!r}", productOnClient.clientId, depotId)
