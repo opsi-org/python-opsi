@@ -187,7 +187,6 @@ def testInstallingWithLockedProduct(depotserverBackend, depotServerFQDN, testPac
     else:
         depotserverBackend.depot_installPackage(testPackageFile, force=True)
 
-        # Checking that the package version does not get changed
         pod = depotserverBackend.productOnDepot_getObjects(productId=product.getId(), depotId=depotServerFQDN)[0]
         assert pod.locked is False
         assert '23' == pod.productVersion
