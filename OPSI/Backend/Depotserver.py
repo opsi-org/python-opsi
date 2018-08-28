@@ -516,23 +516,23 @@ class DepotserverPackageManager(object):
 			if productOnDepot.getLocked():
 				logger.notice(u"Product '{}' currently locked on depot '{}'", productId, depotId)
 				if not force:
-					raise BackendTemporaryError(u"Product currently locked on depot '%s'" % depotId)
+					raise BackendTemporaryError(u"Product '%s' currently locked on depot '%s'" % (productId, depotId))
 				logger.warning(u"Uninstallation of locked product forced")
 
 			logger.notice(u"Locking product '%s' on depot '%s'" % (productId, depotId))
 			productOnDepot.setLocked(True)
 			dataBackend.productOnDepot_updateObject(productOnDepot)
 
-			logger.debug("Deleting product '%s'" % productId)
+			logger.debug("Deleting product '{}'", productId)
 
 			if deleteFiles:
 				if not depot.depotLocalUrl.startswith('file:///'):
 					raise BackendBadValueError(u"Value '%s' not allowed for depot local url (has to start with 'file:///')" % depot.depotLocalUrl)
 
-				for f in os.listdir(depot.depotLocalUrl[7:]):
-					if f.lower() == productId.lower():
-						clientDataDir = os.path.join(depot.depotLocalUrl[7:], f)
-						logger.info("Deleting client data dir '%s'" % clientDataDir)
+				for element in os.listdir(depot.depotLocalUrl[7:]):
+					if element.lower() == productId.lower():
+						clientDataDir = os.path.join(depot.depotLocalUrl[7:], element)
+						logger.info("Deleting client data dir '{}'", clientDataDir)
 						removeDirectory(clientDataDir)
 
 			dataBackend.productOnDepot_deleteObjects(productOnDepot)
