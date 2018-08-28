@@ -536,9 +536,9 @@ class DepotserverPackageManager(object):
 						removeDirectory(clientDataDir)
 
 			dataBackend.productOnDepot_deleteObjects(productOnDepot)
-		except Exception as e:
-			logger.logException(e)
-			raise BackendError(u"Failed to uninstall product '%s' on depot '%s': %s" % (productId, depotId, e))
+		except Exception as uninstallError:
+			logger.logException(uninstallError)
+			raise BackendError(u"Failed to uninstall product '%s' on depot '%s': %s" % (productId, depotId, uninstallError))
 
 	def checkDependencies(self, productPackageFile):
 		for dependency in productPackageFile.packageControlFile.getPackageDependencies():
