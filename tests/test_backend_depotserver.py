@@ -160,7 +160,7 @@ def testInstallingWithLockedProductFails(depotserverBackend, depotServerFQDN, te
     depotserverBackend.product_insertObject(product)
 
     lockedProductOnDepot = ProductOnDepot(
-        productId='testingproduct',
+        productId=product.getId(),
         productType=product.getType(),
         productVersion=product.getProductVersion(),
         packageVersion=product.getPackageVersion(),
