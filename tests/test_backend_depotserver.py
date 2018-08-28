@@ -206,7 +206,7 @@ def testUninstallingLockedProduct(depotserverBackend, depotServerFQDN, testPacka
     productId = 'testingproduct'
 
     depotserverBackend.depot_installPackage(testPackageFile, force=True)
-    assert os.listdir(depotDirectory)
+    assert isProductFolderInDepot(depotDirectory, productId)
 
     pod = depotserverBackend.productOnDepot_getObjects(productId=productId, depotId=depotServerFQDN)[0]
     pod.setLocked(True)
