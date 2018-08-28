@@ -514,7 +514,7 @@ class DepotserverPackageManager(object):
 				raise BackendBadValueError("Product '%s' is not installed on depot '%s'" % (productId, depotId))
 
 			if productOnDepot.getLocked():
-				logger.notice(u"Product currently locked on depot '%s'" % depotId)
+				logger.notice(u"Product '{}' currently locked on depot '{}'", productId, depotId)
 				if not force:
 					raise BackendTemporaryError(u"Product currently locked on depot '%s'" % depotId)
 				logger.warning(u"Uninstallation of locked product forced")
