@@ -155,7 +155,7 @@ def testInstallingWithLockedProductFails(depotserverBackend, depotServerFQDN, te
     product = LocalbootProduct(
         id='testingproduct',
         productVersion=23,
-        packageVersion=42
+        packageVersion=41  # One lower than from the package file.
     )
     depotserverBackend.product_insertObject(product)
 
@@ -171,3 +171,9 @@ def testInstallingWithLockedProductFails(depotserverBackend, depotServerFQDN, te
 
     with pytest.raises(BackendError):
         depotserverBackend.depot_installPackage(testPackageFile)
+
+    # Checking that the package version does not get changed
+    pod = depotserverBackend.productOnDepot_getObjects(productId=product.getId(), depotId=depotServerFQDN)[0]
+    assert pod.locked is True
+    assert '23' == pod.productVersion
+    assert '41' == pod.packageVersion
