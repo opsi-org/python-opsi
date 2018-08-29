@@ -358,29 +358,35 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 		if not self._pxeBootConfigurationUpdateNeeded(productOnClient):
 			return
 
-		destinationSupportsCachedData = True
-		depotId = self._getResponsibleDepotId(productOnClient.clientId)
-		if depotId != self._depotId:
-			logger.info(u"Not responsible for client '{}', forwarding request to depot {!r}", productOnClient.clientId, depotId)
-
-			if ':' in self._port:
-				depot, port = self._port.split(":")
-				destination = self._getExternalDepotConnection(depot, port)
-			else:
-				destination = self._getDepotConnection(depotId)
+		def supportsBackendCachedData(destination):
+			if destination == self:
+				return True
 
 			for method in destination.backend_getInterface():
 				if method['name'] == 'opsipxeconfd_updatePXEBootConfiguration':
 					if len(method['params']) < 2:
-						destinationSupportsCachedData = False
-						logger.debug("Depot {} does not support receiving cached data.", depotId)
+						logger.debug("Depot {} does not support receiving cached data.", responsibleDepot)
+						return False
 
 					break
+
+			# We assume this as our default.
+			return True
+
+		responsibleDepot = self._getResponsibleDepotId(productOnClient.clientId)
+		if ':' in self._port:
+			# Prefer connections to addr:port over all others.
+			# They are used in scaled setups.
+			depot, port = self._port.split(":")
+			destination = self._getExternalDepotConnection(depot, port)
+		elif responsibleDepot != self._depotId:
+			logger.info(u"Not responsible for client '{}', forwarding request to depot {!r}", productOnClient.clientId, responsibleDepot)
+			destination = self._getDepotConnection(responsibleDepot)
 		else:
 			destination = self
 
-		if destinationSupportsCachedData:
-			data = self._collectDataForUpdate(productOnClient, depotId)
+		if supportsBackendCachedData(destination):
+			data = self._collectDataForUpdate(productOnClient, responsibleDepot)
 			destination.opsipxeconfd_updatePXEBootConfiguration(productOnClient.clientId, data)
 		else:
 			destination.opsipxeconfd_updatePXEBootConfiguration(productOnClient.clientId)
