@@ -109,7 +109,7 @@ class HostControlSafeBackend(ExtendedBackend):
 			try:
 				configState = self._context.configState_getObjects(configId="opsiclientd.control_server.port", objectId=host.id)
 				port = int(configState[0].values[0])
-				logger.notice("Using port {} for opsiclientd at {}", port, host.id)
+				logger.info("Using port {} for opsiclientd at {}", port, host.id)
 			except IndexError:
 				pass  # No values found
 			except Exception as portError:
