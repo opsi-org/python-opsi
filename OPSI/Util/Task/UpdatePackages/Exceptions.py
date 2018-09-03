@@ -28,8 +28,8 @@ Exceptions used in updating packages.
 from OPSI.Exceptions import OpsiError
 
 __all__ = (
-    'ConfigurationError', 'MissingConfigurationValueError',
-    'RequiringBackendError'
+	'ConfigurationError', 'MissingConfigurationValueError',
+	'RequiringBackendError'
 )
 
 
@@ -42,4 +42,4 @@ class MissingConfigurationValueError(ConfigurationError):
 
 
 class RequiringBackendError(OpsiError):
-    pass
+	pass
