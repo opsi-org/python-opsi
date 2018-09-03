@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2010-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2010-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -256,15 +256,16 @@ class HostControlBackend(ExtendedBackend):
 		rpcts = []
 		for host in self._context.host_getObjects(id=hostIds):  # pylint: disable=maybe-no-member
 			try:
+				port = None
 				try:
-					port = None
 					configState = self._context.configState_getObjects(configId="opsiclientd.control_server.port", objectId=host.id)
-					if configState:
-						logger.notice("Custom Port for opsiclientd found %s" % type(int(configState[0].values[0])))
-						port = int(configState[0].values[0])
-				except Exception as e:
-					logger.critical("Exception: %s" % e)
-					pass
+					port = int(configState[0].values[0])
+					logger.info("Using port {} for opsiclientd at {}", port, host.id)
+				except IndexError:
+					pass  # No values found
+				except Exception as portError:
+					logger.warning("Failed to read custom opsiclientd port for {}: {!r}", host.id, portError)
+
 				address = self._getHostAddress(host)
 				rpcts.append(
 					RpcThread(

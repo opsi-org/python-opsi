@@ -137,16 +137,40 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 					raise BackendMissingDataError(u"Failed to get opsi host key for depot '%s'" % self._depotId)
 				self._opsiHostKey = depots[0].getOpsiHostKey()
 
-			try:
-				self._depotConnections[depotId] = JSONRPCBackend(
-					address=u'https://%s:4447/rpc/backend/%s' % (depotId, self._name),
-					username=self._depotId,
-					password=self._opsiHostKey
-				)
-			except Exception as error:
-				raise BackendUnableToConnectError(u"Failed to connect to depot '%s': %s" % (depotId, error))
-
+			self._depotConnections[depotId] = self._getExternalBackendConnection(
+				depotId,
+				self._depotId,
+				self._opsiHostKey
+			)
 			return self._depotConnections[depotId]
+
+	def _getScalabilityDepotConnection(self, depot, port):
+		try:
+			return self._depotConnections[depot]
+		except KeyError:
+			if not self._opsiHostKey:
+				depots = self._context.host_getObjects(type="OpsiConfigserver")  # pylint: disable=maybe-no-member
+				if not depots or not depots[0].getOpsiHostKey():
+					raise BackendMissingDataError(u"Failed to get opsi host key for depot '%s'" % self._depotId)
+				self._opsiHostKey = depots[0].getOpsiHostKey()
+
+			self._depotConnections[depot] = self._getExternalBackendConnection(
+				depot,
+				self._depotId,
+				self._opsiHostKey,
+				port=port
+			)
+			return self._depotConnections[depot]
+
+	def _getExternalBackendConnection(self, address, username, password, port=4447):
+		try:
+			return JSONRPCBackend(
+				address=u'https://%s:%s/rpc/backend/%s' % (address, port, self._name),
+				username=username,
+				password=password
+			)
+		except Exception as error:
+			raise BackendUnableToConnectError(u"Failed to connect to depot '%s': %s" % (address, error))
 
 	def _getResponsibleDepotId(self, clientId):
 		configStates = self._context.configState_getObjects(configId=u'clientconfig.depot.id', objectId=clientId)  # pylint: disable=maybe-no-member
@@ -334,24 +358,35 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 		if not self._pxeBootConfigurationUpdateNeeded(productOnClient):
 			return
 
-		destinationSupportsCachedData = True
-		depotId = self._getResponsibleDepotId(productOnClient.clientId)
-		if depotId != self._depotId:
-			logger.info(u"Not responsible for client '{}', forwarding request to depot {!r}", productOnClient.clientId, depotId)
-			destination = self._getDepotConnection(depotId)
+		def backendSupportsCachedData(destination):
+			if destination == self:
+				return True
 
 			for method in destination.backend_getInterface():
 				if method['name'] == 'opsipxeconfd_updatePXEBootConfiguration':
 					if len(method['params']) < 2:
-						destinationSupportsCachedData = False
-						logger.debug("Depot {} does not support receiving cached data.", depotId)
+						logger.debug("Depot {} does not support receiving cached data.", responsibleDepot)
+						return False
 
 					break
+
+			# We assume this as our default.
+			return True
+
+		responsibleDepot = self._getResponsibleDepotId(productOnClient.clientId)
+		if ':' in self._port:
+			# Prefer connections to addr:port over all others.
+			# They are used in scaled setups.
+			depot, port = self._port.split(":")
+			destination = self._getScalabilityDepotConnection(depot, port)
+		elif responsibleDepot != self._depotId:
+			logger.info(u"Not responsible for client '{}', forwarding request to depot {!r}", productOnClient.clientId, responsibleDepot)
+			destination = self._getDepotConnection(responsibleDepot)
 		else:
 			destination = self
 
-		if destinationSupportsCachedData:
-			data = self._collectDataForUpdate(productOnClient, depotId)
+		if backendSupportsCachedData(destination):
+			data = self._collectDataForUpdate(productOnClient, responsibleDepot)
 			destination.opsipxeconfd_updatePXEBootConfiguration(productOnClient.clientId, data)
 		else:
 			destination.opsipxeconfd_updatePXEBootConfiguration(productOnClient.clientId)

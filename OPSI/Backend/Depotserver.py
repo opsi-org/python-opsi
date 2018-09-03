@@ -220,7 +220,7 @@ class DepotserverPackageManager(object):
 				depotId
 			)
 			productOnDepot.setLocked(False)
-			self._depotBackend._context.productOnDepot_updateObject(productOnDepot)
+			backend.productOnDepot_updateObject(productOnDepot)
 
 		@contextmanager
 		def runPackageScripts(productPackageFile, depotId):
@@ -505,38 +505,40 @@ class DepotserverPackageManager(object):
 			force = forceBool(force)
 			deleteFiles = forceBool(deleteFiles)
 
-			depot = self._depotBackend._context.host_getObjects(type='OpsiDepotserver', id=depotId)[0]
-			productOnDepots = self._depotBackend._context.productOnDepot_getObjects(depotId=depotId, productId=productId)
-			if not productOnDepots:
+			dataBackend = self._depotBackend._context
+			depot = dataBackend.host_getObjects(type='OpsiDepotserver', id=depotId)[0]
+			productOnDepots = dataBackend.productOnDepot_getObjects(depotId=depotId, productId=productId)
+			try:
+				productOnDepot = productOnDepots[0]
+			except IndexError:
 				raise BackendBadValueError("Product '%s' is not installed on depot '%s'" % (productId, depotId))
 
-			logger.notice(u"Locking product '%s' on depot '%s'" % (productId, depotId))
-
-			productOnDepot = productOnDepots[0]
 			if productOnDepot.getLocked():
-				logger.notice(u"Product currently locked on depot '%s'" % depotId)
+				logger.notice(u"Product '{}' currently locked on depot '{}'", productId, depotId)
 				if not force:
-					raise BackendTemporaryError(u"Product currently locked on depot '%s'" % depotId)
+					raise BackendTemporaryError(u"Product '%s' currently locked on depot '%s'" % (productId, depotId))
 				logger.warning(u"Uninstallation of locked product forced")
-			productOnDepot.setLocked(True)
-			self._depotBackend._context.productOnDepot_updateObject(productOnDepot)
 
-			logger.debug("Deleting product '%s'" % productId)
+			logger.notice(u"Locking product '%s' on depot '%s'" % (productId, depotId))
+			productOnDepot.setLocked(True)
+			dataBackend.productOnDepot_updateObject(productOnDepot)
+
+			logger.debug("Deleting product '{}'", productId)
 
 			if deleteFiles:
 				if not depot.depotLocalUrl.startswith('file:///'):
 					raise BackendBadValueError(u"Value '%s' not allowed for depot local url (has to start with 'file:///')" % depot.depotLocalUrl)
 
-				for f in os.listdir(depot.depotLocalUrl[7:]):
-					if f.lower() == productId.lower():
-						clientDataDir = os.path.join(depot.depotLocalUrl[7:], f)
-						logger.info("Deleting client data dir '%s'" % clientDataDir)
+				for element in os.listdir(depot.depotLocalUrl[7:]):
+					if element.lower() == productId.lower():
+						clientDataDir = os.path.join(depot.depotLocalUrl[7:], element)
+						logger.info("Deleting client data dir '{}'", clientDataDir)
 						removeDirectory(clientDataDir)
 
-			self._depotBackend._context.productOnDepot_deleteObjects(productOnDepot)
-		except Exception as e:
-			logger.logException(e)
-			raise BackendError(u"Failed to uninstall product '%s' on depot '%s': %s" % (productId, depotId, e))
+			dataBackend.productOnDepot_deleteObjects(productOnDepot)
+		except Exception as uninstallError:
+			logger.logException(uninstallError)
+			raise BackendError(u"Failed to uninstall product '%s' on depot '%s': %s" % (productId, depotId, uninstallError))
 
 	def checkDependencies(self, productPackageFile):
 		for dependency in productPackageFile.packageControlFile.getPackageDependencies():
