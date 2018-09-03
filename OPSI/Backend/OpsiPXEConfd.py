@@ -358,7 +358,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 		if not self._pxeBootConfigurationUpdateNeeded(productOnClient):
 			return
 
-		def supportsBackendCachedData(destination):
+		def backendSupportsCachedData(destination):
 			if destination == self:
 				return True
 
@@ -385,7 +385,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 		else:
 			destination = self
 
-		if supportsBackendCachedData(destination):
+		if backendSupportsCachedData(destination):
 			data = self._collectDataForUpdate(productOnClient, responsibleDepot)
 			destination.opsipxeconfd_updatePXEBootConfiguration(productOnClient.clientId, data)
 		else:
