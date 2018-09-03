@@ -144,7 +144,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 			)
 			return self._depotConnections[depotId]
 
-	def _getExternalDepotConnection(self, depot, port):
+	def _getScalabilityDepotConnection(self, depot, port):
 		try:
 			return self._depotConnections[depot]
 		except KeyError:
@@ -378,7 +378,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 			# Prefer connections to addr:port over all others.
 			# They are used in scaled setups.
 			depot, port = self._port.split(":")
-			destination = self._getExternalDepotConnection(depot, port)
+			destination = self._getScalabilityDepotConnection(depot, port)
 		elif responsibleDepot != self._depotId:
 			logger.info(u"Not responsible for client '{}', forwarding request to depot {!r}", productOnClient.clientId, responsibleDepot)
 			destination = self._getDepotConnection(responsibleDepot)
