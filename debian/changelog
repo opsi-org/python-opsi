@@ -1,3 +1,15 @@
+python-opsi (4.1.1.44-1) stable; urgency=medium
+
+  * OPSI.Backend.Depotserver: Small internal refactorings.
+  * OPSI.Backend.Depotserver: depot_installPackage: Log messages show exactly
+    what product / depot is involved.
+  * OPSI.Backend.HostControl: Refactored lookup for custom opsiclientd port.
+  * OPSI.Backend.HostControlSafe: Added support for custom opsiclientd port.
+  * OPSI.Backend.OpsiPXEConfd: Added support for connection to a different
+    external opsi server.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 03 Sep 2018 13:34:03 +0200
+
 python-opsi (4.1.1.43-1) testing; urgency=medium
 
   * OPSI.Backend.Depotserver: only unlock productOnDepot after successful
