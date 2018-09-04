@@ -41,5 +41,9 @@ class MissingConfigurationValueError(ConfigurationError):
 	pass
 
 
+class NoActiveRepositoryError(ConfigurationError):
+	pass
+
+
 class RequiringBackendError(OpsiError):
 	pass
