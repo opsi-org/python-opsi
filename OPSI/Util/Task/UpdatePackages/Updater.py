@@ -30,7 +30,6 @@ from __future__ import absolute_import
 import formatter
 import os
 import os.path
-import socket
 import time
 import urllib
 import urllib2
