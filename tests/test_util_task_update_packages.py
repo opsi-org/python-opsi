@@ -24,6 +24,7 @@ Testing the opsi-package-updater functionality.
 
 from __future__ import absolute_import
 
+import formatter
 import os.path
 import shutil
 
@@ -31,7 +32,7 @@ import pytest
 
 from OPSI.Util.Task.UpdatePackages import OpsiPackageUpdater
 from OPSI.Util.Task.UpdatePackages.Config import DEFAULT_CONFIG
-from OPSI.Util.Task.UpdatePackages.Repository import ProductRepositoryInfo
+from OPSI.Util.Task.UpdatePackages.Repository import ProductRepositoryInfo, LinksExtractor
 
 from .helpers import mock, createTemporaryTestfile, workInTemporaryDirectory
 from .test_hosts import getConfigServer
@@ -170,3 +171,30 @@ def copyExampleRepoConfigs(targetDir):
 			'updatePackages', filename
 		)
 		shutil.copy(filePath, targetDir)
+
+
+@pytest.fixture(
+	params=['apachelisting.html'],
+	ids=['apache']
+)
+def repositoryListingPage(request):
+	filePath = os.path.join(
+		os.path.dirname(__file__), 'testdata', 'util', 'task',
+		'updatePackages', request.param
+	)
+
+	with open(filePath) as exampleFile:
+		return exampleFile.read()
+
+
+def testLinkExtracting(repositoryListingPage):
+	defaultFormatter = formatter.NullFormatter()
+	extractor = LinksExtractor(defaultFormatter)
+	extractor.feed(repositoryListingPage)
+	extractor.close()
+
+	for link in extractor.getLinks():
+		# Currently just checking their existance
+		break
+	else:
+		raise RuntimeError("No links found!")
