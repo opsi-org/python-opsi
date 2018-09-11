@@ -1596,3 +1596,23 @@ def testGettingPxeConfigTemplate(backendManager):
     assert product.productVersion == prodFromBackend.productVersion
     assert product.packageVersion == prodFromBackend.packageVersion
     assert product.pxeConfigTemplate == prodFromBackend.pxeConfigTemplate
+
+
+def testGettingUserloginScript(backendManager):
+    product = LocalbootProduct(
+        id='product1',
+        productVersion='1.0',
+        packageVersion=1,
+        userLoginScript='iloveyou'
+    )
+
+    backendManager.product_insertObject(product)
+
+    prodFromBackend = backendManager.product_getObjects(attributes=['id', 'userLoginScript'], id=product.id)
+    assert len(prodFromBackend) == 1
+    prodFromBackend = prodFromBackend[0]
+
+    assert product.id == prodFromBackend.id
+    assert product.productVersion == prodFromBackend.productVersion
+    assert product.packageVersion == prodFromBackend.packageVersion
+    assert product.userLoginScript == prodFromBackend.userLoginScript
