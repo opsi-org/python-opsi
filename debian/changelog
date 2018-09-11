@@ -1,3 +1,10 @@
+python-opsi (4.1.1.46-1) stable; urgency=medium
+
+  * OPSI.Backend.File: Fix reading extended attributes of LocalbootProduct and
+    NetbootProduct.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 11 Sep 2018 14:59:21 +0200
+
 python-opsi (4.1.1.45-1) testing; urgency=medium
 
   * Added OPSI.Util.Task.UpdatePackages. This makes parts of
