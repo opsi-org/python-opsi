@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2006-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -216,7 +216,7 @@ class FileBackend(ConfigDataBackend):
 		self._mappings['BoolConfig'] = self._mappings['Config']
 		self._mappings['OpsiConfigserver'] = self._mappings['OpsiDepotserver']
 		self._mappings['LocalbootProduct'] = self._mappings['Product']
-		self._mappings['NetbootProduct'] = self._mappings['Product']
+		self._mappings['NetbootProduct'].extend(self._mappings['Product'])
 		self._mappings['UnicodeProductProperty'] = self._mappings['ProductProperty']
 		self._mappings['BoolProductProperty'] = self._mappings['ProductProperty']
 		self._mappings['HostGroup'] = self._mappings['Group']
