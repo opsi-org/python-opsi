@@ -1573,3 +1573,26 @@ def test_processProductOnClientSequence(extendedConfigDataBackend):
     assert posProduct2 > posProduct4, u"Wrong sequence: product4 not before product2"
     assert posProduct2 > posProduct5, u"Wrong sequence: product5 not before product2"
     assert posProduct4 > posProduct5, u"Wrong sequence: product5 not before product4"
+
+
+def testGettingPxeConfigTemplate(backendManager):
+    """
+    Test getting a product with limiting the read attributes.
+    """
+    product = NetbootProduct(
+        id='product1',
+        productVersion='1.0',
+        packageVersion=1,
+        pxeConfigTemplate='special'
+    )
+
+    backendManager.product_insertObject(product)
+
+    prodFromBackend = backendManager.product_getObjects(attributes=['id', 'pxeConfigTemplate'], id=product.id)
+    assert len(prodFromBackend) == 1
+    prodFromBackend = prodFromBackend[0]
+
+    assert product.id == prodFromBackend.id
+    assert product.productVersion == prodFromBackend.productVersion
+    assert product.packageVersion == prodFromBackend.packageVersion
+    assert product.pxeConfigTemplate == prodFromBackend.pxeConfigTemplate
