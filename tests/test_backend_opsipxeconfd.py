@@ -57,7 +57,10 @@ def testGetClientCachePath():
     assert path.endswith('.json')
 
 
-def testCacheDataCollection(backendManager, client, depot):
+def testCacheDataCollectionWithPxeConfigTemplate(backendManager, client, depot):
+    """
+    Collection of caching data with a product with pxeConfigTemplate.
+    """
     backendManager.host_createObjects([client, depot])
 
     backendManager.config_createObjects([
