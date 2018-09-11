@@ -1577,7 +1577,7 @@ def test_processProductOnClientSequence(extendedConfigDataBackend):
 
 def testGettingPxeConfigTemplate(backendManager):
     """
-    Test getting a product with limiting the read attributes.
+    Test getting a NetbootProduct and limiting the attributes to pxeConfigTemplate.
     """
     product = NetbootProduct(
         id='product1',
@@ -1599,6 +1599,9 @@ def testGettingPxeConfigTemplate(backendManager):
 
 
 def testGettingUserloginScript(backendManager):
+    """
+    Test getting a LocalbootProduct and limiting the attributes to userLoginScript.
+    """
     product = LocalbootProduct(
         id='product1',
         productVersion='1.0',
