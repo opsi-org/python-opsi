@@ -24,9 +24,23 @@ Testing opsipxeconfd backend.
 
 from __future__ import absolute_import
 
+import pytest
+
 from OPSI.Backend.OpsiPXEConfd import OpsiPXEConfdBackend, getClientCacheFilePath
+from OPSI.Object import (NetbootProduct, OpsiClient, OpsiDepotserver,
+    ProductOnClient, ProductOnDepot, UnicodeConfig)
 
 from .helpers import patchAddress
+
+
+@pytest.fixture()
+def client():
+    return OpsiClient(id='foo.test.invalid')
+
+
+@pytest.fixture()
+def depot():
+    return OpsiDepotserver(id='depotserver1.test.invalid')
 
 
 def testInitialisation():
@@ -41,3 +55,63 @@ def testGetClientCachePath():
 
     assert clientId in path
     assert path.endswith('.json')
+
+
+def testCacheDataCollection(backendManager, client, depot):
+    backendManager.host_createObjects([client, depot])
+
+    backendManager.config_createObjects([
+        UnicodeConfig(
+            id=u'opsi-linux-bootimage.append',
+            possibleValues=[
+                u'acpi=off', u'irqpoll', u'noapic', u'pci=nomsi',
+                u'vga=normal', u'reboot=b'
+            ],
+            defaultValues=[u''],
+        ),
+        UnicodeConfig(
+            id=u'clientconfig.configserver.url',
+            description=u'URL(s) of opsi config service(s) to use',
+            possibleValues=[u'https://%s:4447/rpc' % depot.id],
+            defaultValues=[u'https://%s:4447/rpc' % depot.id],
+        ),
+        UnicodeConfig(
+            id=u'clientconfig.depot.id',
+            description=u'Depotserver to use',
+            possibleValues=[],
+            defaultValues=[depot.id]
+        )
+    ])
+
+    product = NetbootProduct(
+        'mytest86',
+        productVersion=1,
+        packageVersion=1,
+        pxeConfigTemplate='scaredOfNothing'
+    )
+    backendManager.product_insertObject(product)
+
+    productOnDepot = ProductOnDepot(
+        productId=product.getId(),
+        productType=product.getType(),
+        productVersion=product.getProductVersion(),
+        packageVersion=product.getPackageVersion(),
+        depotId=depot.id
+    )
+    backendManager.productOnDepot_createObjects([productOnDepot])
+
+    poc = ProductOnClient(
+        product.id,
+        product.getType(),
+        client.id,
+        actionRequest="setup"
+    )
+    backendManager.productOnClient_insertObject(poc)
+
+    with patchAddress(fqdn=depot.id):
+        backend = OpsiPXEConfdBackend(context=backendManager)
+
+        data = backend._collectDataForUpdate(poc, depot.id)
+
+        assert data
+        assert data['product']['pxeConfigTemplate'] == product.pxeConfigTemplate
