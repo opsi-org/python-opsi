@@ -345,6 +345,7 @@ def testParsingPackageContentFile(outsideFile):
 	('firefox_52.3.0esror55.0-2~fra3264.opsi', FileInfo('firefox', '52.3.0esror55.0-2~fra3264')),
 	('README.txt', None),
 	('some/relative/path/summer_2000-19.opsi', FileInfo('summer', '2000-19')),
+	('/tmp/summer_2000-18.opsi', FileInfo('summer', '2000-18')),
 ])
 def testParsingFile(filename, expected):
 	assert expected == parseFilename(filename)
