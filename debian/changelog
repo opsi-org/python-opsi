@@ -1,3 +1,10 @@
+python-opsi (4.0.7.69-1) stable; urgency=medium
+
+  * OPSI.Util.File.Opsi.parseFilename now works with absolute and relative
+    paths.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 13 Sep 2018 14:19:24 +0200
+
 python-opsi (4.0.7.68-1) stable; urgency=medium
 
   * OpsiBackup: Internal refactorings for restore handling.

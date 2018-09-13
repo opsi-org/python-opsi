@@ -62,7 +62,7 @@ if os.name == 'posix':
 	import pwd
 	from OPSI.System.Posix import SysInfo
 
-__version__ = '4.0.7.67'
+__version__ = '4.0.7.69'
 
 logger = Logger()
 
@@ -78,6 +78,7 @@ def parseFilename(filename):
 If no information can be extracted returns None.
 	:rtype: namedtuple with attributes `productId`, `version`.
 	"""
+	filename = os.path.basename(filename)
 	parts = filename.rsplit('.opsi', 1)[0]
 	parts = parts.split('_')
 
