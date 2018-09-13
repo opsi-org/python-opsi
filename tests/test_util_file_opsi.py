@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -344,6 +344,7 @@ def testParsingPackageContentFile(outsideFile):
 	('sap_dev_bex_7.40.8-3.opsi', FileInfo('sap_dev_bex', '7.40.8-3')),
 	('firefox_52.3.0esror55.0-2~fra3264.opsi', FileInfo('firefox', '52.3.0esror55.0-2~fra3264')),
 	('README.txt', None),
+	('some/relative/path/summer_2000-19.opsi', FileInfo('summer', '2000-19')),
 ])
 def testParsingFile(filename, expected):
 	assert expected == parseFilename(filename)
