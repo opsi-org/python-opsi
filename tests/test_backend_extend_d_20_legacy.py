@@ -37,7 +37,7 @@ from OPSI.Object import (
     ProductDependency, ProductOnDepot, ProductPropertyState,
     UnicodeProductProperty)
 from OPSI.Types import BackendMissingDataError
-from .test_hosts import getConfigServer, getDepotServers
+from .test_hosts import getClients, getConfigServer, getDepotServers
 
 
 def testGetGeneralConfigValueFailsWithInvalidObjectId(backendManager):
@@ -419,3 +419,25 @@ def testSetProductPropertyFailingIfMultivalueIsFalse(backendManager):
 
     with pytest.raises(ValueError):
         backendManager.setProductProperty(product.id, testprop.propertyId, ["1", "2"], client.id)
+
+
+def testGetDepotId(backendManager):
+    clients = getClients()
+    configServer = getConfigServer()
+    depots = getDepotServers()
+
+    backendManager.host_createObjects(clients)
+    backendManager.host_createObjects(depots)
+    backendManager.host_createObjects(configServer)
+
+    backendManager.config_createObjects([{
+        "id": u'clientconfig.depot.id',
+        "type": "UnicodeConfig",
+        "values": [configServer.id],
+    }])
+
+    client = clients[0]
+    depotId = depots[0].id
+    backendManager.configState_create(u'clientconfig.depot.id', client.id, values=depotId)
+
+    assert depotId == backendManager.getDepotId(clientId=client.id)
