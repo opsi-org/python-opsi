@@ -1,3 +1,9 @@
+python-opsi (4.1.1.47-1) stable; urgency=medium
+
+  * Based on python-opsi 4.0.7.69.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 20 Sep 2018 17:17:14 +0200
+
 python-opsi (4.1.1.46-1) stable; urgency=medium
 
   * OPSI.Backend.File: Fix reading extended attributes of LocalbootProduct and
