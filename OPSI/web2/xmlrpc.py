@@ -65,7 +65,7 @@ class XMLRPC(resource.Resource):
         return self.subHandlers.get(prefix, None)
 
     def getSubHandlerPrefixes(self):
-        return self.subHandlers.keys()
+        return list(self.subHandlers.keys())
 
     def render(self, request):
         # For GET/HEAD: Return an error message

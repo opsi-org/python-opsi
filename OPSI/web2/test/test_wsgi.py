@@ -1,4 +1,4 @@
-from __future__ import generators
+
 
 import time
 from OPSI.web2.test.test_server import BaseCase
@@ -250,9 +250,9 @@ class TestWSGIEnvironment(BaseCase):
         return _app
 
     def assertEnv(self, uri, env, version=None):
-        keys = env.keys()
+        keys = list(env.keys())
         keys.sort()
-        envstring = ''.join(['%s=%r;' % (k, v) for k, v in env.items()])
+        envstring = ''.join(['%s=%r;' % (k, v) for k, v in list(env.items())])
         self.assertResponse(
             (WSGI(self.envApp(*keys)), uri, None, None, version),
             (200, {}, envstring))

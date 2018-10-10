@@ -36,7 +36,7 @@ class BaseCGIChannelRequest(protocol.Protocol):
                 qstr = "?"+urllib.quote(qstr, safe="")
             uri = urllib.quote(vars['SCRIPT_NAME'])+urllib.quote(vars.get('PATH_INFO',  ''))+qstr
             
-        for name,val in vars.iteritems():
+        for name,val in vars.items():
             if name.startswith('HTTP_'):
                 name = name[5:].replace('_', '-')
             elif name == 'CONTENT_TYPE':

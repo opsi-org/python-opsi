@@ -120,7 +120,7 @@ class CGI(CGITestBase):
         return d
 
     def _testCGI_1(self, res):
-        self.failUnlessEqual(res, "cgi output%s" % os.linesep)
+        self.assertEqual(res, "cgi output%s" % os.linesep)
 
     def testReadEmptyInput(self):
         """
@@ -136,7 +136,7 @@ class CGI(CGITestBase):
         return d
 
     def _testReadEmptyInput_1(self, res):
-        self.failUnlessEqual(res, "readinput ok%s" % os.linesep)
+        self.assertEqual(res, "readinput ok%s" % os.linesep)
 
     def test_readInput(self):
         """
@@ -151,7 +151,7 @@ class CGI(CGITestBase):
         return d
 
     def _testReadInput_1(self, res):
-        self.failUnlessEqual(res, "readinput ok%s" % os.linesep)
+        self.assertEqual(res, "readinput ok%s" % os.linesep)
 
     def test_readAllInput(self):
         """
@@ -169,7 +169,7 @@ class CGI(CGITestBase):
         return d
 
     def _testReadAllInput_1(self, res):
-        self.failUnlessEqual(res, "readallinput ok%s" % os.linesep)
+        self.assertEqual(res, "readallinput ok%s" % os.linesep)
 
 
 if not interfaces.IReactorProcess.providedBy(reactor):
@@ -208,8 +208,8 @@ class CGIDirectoryTest(CGITestBase):
 
         response = self.root.render(None)
 
-        self.failUnless(iweb.IResponse.providedBy(response))
-        self.assertEquals(response.code, 403)
+        self.assertTrue(iweb.IResponse.providedBy(response))
+        self.assertEqual(response.code, 403)
 
     def test_foundScript(self):
         """
@@ -219,9 +219,9 @@ class CGIDirectoryTest(CGITestBase):
 
         resource, segments = self.root.locateChild(None, ('dummy',))
 
-        self.assertEquals(segments, ())
+        self.assertEqual(segments, ())
 
-        self.failUnless(isinstance(resource, (twcgi.CGIScript,)))
+        self.assertTrue(isinstance(resource, twcgi.CGIScript))
 
     def test_subDirectory(self):
         """
@@ -234,7 +234,7 @@ class CGIDirectoryTest(CGITestBase):
                                                           'dont',
                                                           'matter'))
 
-        self.failUnless(isinstance(resource, twcgi.CGIDirectory))
+        self.assertTrue(isinstance(resource, twcgi.CGIDirectory))
 
     def createScript(self, filename):
         """
@@ -246,7 +246,7 @@ class CGIDirectoryTest(CGITestBase):
         cgiFile.write("#!%s\n\n%s" % (sys.executable,
                                       DUMMY_CGI))
         cgiFile.close()
-        os.chmod(filename, 0700)
+        os.chmod(filename, 0o700)
 
     def test_scriptsExecute(self):
         """
@@ -272,7 +272,7 @@ class CGIDirectoryTest(CGITestBase):
         d = request.locateResource('/dummy')
 
         def _firstResponse(res):
-            self.failUnlessEqual(res, "cgi output%s" % os.linesep)
+            self.assertEqual(res, "cgi output%s" % os.linesep)
 
         def _firstRequest(resource):
             d1 = self.getPage(request, resource)
@@ -283,7 +283,7 @@ class CGIDirectoryTest(CGITestBase):
         d.addCallback(_firstRequest)
 
         def _secondResponse(res):
-            self.failUnlessEqual(res, "cgi output%s" % os.linesep)
+            self.assertEqual(res, "cgi output%s" % os.linesep)
 
         def _secondRequest(ign):
             request = SimpleRequest(site, "GET", '/sub/dummy')

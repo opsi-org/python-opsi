@@ -79,10 +79,10 @@ class TestLogging(BaseCase):
 
         if expected.get('logged', True):
             # Ensure there weren't other messages hanging out
-            self.assertEquals(len(messages), 1, "len(%r) != 1" % (messages, ))
-            self.assertEquals(messages[0], expectedLog % expected)
+            self.assertEqual(len(messages), 1, "len(%r) != 1" % (messages, ))
+            self.assertEqual(messages[0], expectedLog % expected)
         else:
-            self.assertEquals(len(messages), 0, "len(%r) != 0" % (messages, ))
+            self.assertEqual(len(messages), 0, "len(%r) != 0" % (messages, ))
 
     def test_logSimpleRequest(self):
         """
@@ -109,7 +109,7 @@ class TestLogging(BaseCase):
             expected['method'] = method
 
             def _cbCheckLog(response):
-                self.assertEquals(response[0], expected['status'])
+                self.assertEqual(response[0], expected['status'])
                 self.assertLogged(
                     length=response[1].getHeader('content-length'), **expected)
 

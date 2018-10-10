@@ -136,7 +136,7 @@ class PROP(OPSI.web2.dav.test.util.TestCase):
         def check_xml(doc, which):
             response = doc.root_element.childOfType(davxml.PropertyStatusResponse)
 
-            self.failUnless(
+            self.assertTrue(
                 response.childOfType(davxml.HRef) == "/",
                 "Incorrect response URI: %s != /" % (response.childOfType(davxml.HRef),)
             )
@@ -165,12 +165,12 @@ class PROP(OPSI.web2.dav.test.util.TestCase):
 
                     if which.name == "propname":
                         # Element should be empty
-                        self.failUnless(len(property.children) == 0)
+                        self.assertTrue(len(property.children) == 0)
                     else:
                         # Element should have a value
                         # Actually, this isn't necessarily true, but it is for the live
                         # properties we've defined so far...
-                        self.failIf(len(property.children) == 0)
+                        self.assertFalse(len(property.children) == 0)
 
                 if properties_to_find:
                     self.fail("PROPFIND with %s failed to find properties: %r" % (which.name, properties_to_find))
@@ -227,7 +227,7 @@ class PROP(OPSI.web2.dav.test.util.TestCase):
             response.childOfType(davxml.ResponseDescription)
 
             # Requested property change was on /
-            self.failUnless(
+            self.assertTrue(
                 response.childOfType(davxml.HRef) == "/",
                 "Incorrect response URI: %s != /" % (response.childOfType(davxml.HRef),)
             )
@@ -236,7 +236,7 @@ class PROP(OPSI.web2.dav.test.util.TestCase):
             propstat = response.childOfType(davxml.PropertyStatus)
 
             # And the contained property should be a SpiffyProperty
-            self.failIf(
+            self.assertFalse(
                 propstat.childOfType(davxml.PropertyContainer).childOfType(SpiffyProperty) is None,
                 "Not a SpiffyProperty in PROPPATCH property status: %s" % (propstat.toxml())
             )
@@ -248,7 +248,7 @@ class PROP(OPSI.web2.dav.test.util.TestCase):
                 )
 
             # And the status should be 200
-            self.failUnless(
+            self.assertTrue(
                 propstat.childOfType(davxml.Status).code == responsecode.OK,
                 "Incorrect status code for PROPPATCH of property %s: %s != %s"
                 % (propstat.childOfType(davxml.PropertyContainer).toxml(),
@@ -299,12 +299,12 @@ class PROP(OPSI.web2.dav.test.util.TestCase):
             response = doc.root_element.childOfType(davxml.Response)
             propstat = response.childOfType(davxml.PropertyStatus)
 
-            self.failUnless(
+            self.assertTrue(
                 response.childOfType(davxml.HRef) == "/",
                 "Incorrect response URI: %s != /" % (response.childOfType(davxml.HRef),)
             )
 
-            self.failIf(
+            self.assertFalse(
                 propstat.childOfType(davxml.PropertyContainer).childOfType(prop) is None,
                 "Not a %s in PROPPATCH property status: %s" % (prop.sname(), propstat.toxml())
             )
@@ -315,7 +315,7 @@ class PROP(OPSI.web2.dav.test.util.TestCase):
                     "Install xattr (http://undefined.org/python/#xattr) to enable use of dead properties."
                 )
 
-            self.failUnless(
+            self.assertTrue(
                 propstat.childOfType(davxml.Status).code == expected_code,
                 "Incorrect status code for PROPPATCH %s: %s != %s"
                 % (what, propstat.childOfType(davxml.Status).code, expected_code)

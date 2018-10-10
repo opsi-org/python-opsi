@@ -13,11 +13,11 @@ class FCGI(unittest.TestCase):
         req = fastcgi.FastCGIChannelRequest()
         called = []
         def writePacket(rec):
-            self.assertEquals(rec.__class__, fastcgi.Record)
+            self.assertEqual(rec.__class__, fastcgi.Record)
             called.append(rec)
         req.writePacket = writePacket
         req.packetReceived(record)
-        self.assertEquals(len(called), 1)
+        self.assertEqual(len(called), 1)
 
     def testPacketWrongVersion(self):
         '''
@@ -25,7 +25,7 @@ class FCGI(unittest.TestCase):
         '''
         record = fastcgi.Record(fastcgi.FCGI_GET_VALUES, 0, '', version=2)
         req = fastcgi.FastCGIChannelRequest()
-        self.failUnless(util.raises(fastcgi.FastCGIError, req.packetReceived, record))
+        self.assertTrue(util.raises(fastcgi.FastCGIError, req.packetReceived, record))
 
     def testPacketBadType(self):
         '''
@@ -33,7 +33,7 @@ class FCGI(unittest.TestCase):
         '''
         record = fastcgi.Record(99999, 0, '')
         req = fastcgi.FastCGIChannelRequest()
-        self.failUnless(util.raises(fastcgi.FastCGIError, req.packetReceived, record))
+        self.assertTrue(util.raises(fastcgi.FastCGIError, req.packetReceived, record))
 
     def testParseLongName(self):
         '''

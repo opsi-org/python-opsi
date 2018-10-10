@@ -222,7 +222,7 @@ class PrintVisitor:
                 self._nsHints = {}
             del nss['xml']
             for prefix in nss.keys():
-                if not self._namespaces[-1].has_key(prefix) or self._namespaces[-1][prefix] != nss[prefix]:
+                if prefix not in self._namespaces[-1] or self._namespaces[-1][prefix] != nss[prefix]:
                     nsuri, delimiter = TranslateCdataAttr(nss[prefix])
                     if prefix:
                         xmlns = " xmlns:%s=%s%s%s" % (prefix, delimiter,nsuri,delimiter)

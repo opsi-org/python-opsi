@@ -328,7 +328,7 @@ class File(StaticRenderMixin):
         """
         @return: a sequence of the names of all known children of this resource.
         """
-        children = self.putChildren.keys()
+        children = list(self.putChildren.keys())
         if self.fp.isdir():
             children += [c for c in self.fp.listdir() if c not in children]
         return children
@@ -435,7 +435,7 @@ class FileSaver(resource.PostableResource):
                     http_headers.MimeType('text', 'html'),
                     http_headers.MimeType('text', 'css'))
     
-    def __init__(self, destination, expectedFields=[], allowedTypes=None, maxBytes=1000000, permissions=0644):
+    def __init__(self, destination, expectedFields=[], allowedTypes=None, maxBytes=1000000, permissions=0o644):
         self.destination = destination
         self.allowedTypes = allowedTypes or self.allowedTypes
         self.maxBytes = maxBytes
@@ -580,7 +580,7 @@ def loadMimeTypes(mimetype_locations=['/etc/mime.types']):
 def getTypeAndEncoding(filename, types, encodings, defaultType):
     p, ext = os.path.splitext(filename)
     ext = ext.lower()
-    if encodings.has_key(ext):
+    if ext in encodings:
         enc = encodings[ext]
         ext = os.path.splitext(p)[1].lower()
     else:

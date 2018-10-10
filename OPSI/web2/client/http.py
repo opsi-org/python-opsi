@@ -243,7 +243,7 @@ class HTTPClientProtocol(basic.LineReceiver, policies.TimeoutMixin, object):
 
     def rawDataReceived(self, data):
         if not self.inRequests:
-            print "Extra raw data!"
+            print("Extra raw data!")
             # server sending random unrequested data.
             self.transport.loseConnection()
             return
@@ -336,10 +336,10 @@ def testConn(host):
     d = protocol.ClientCreator(reactor, HTTPClientProtocol).connectTCP(host, 80)
     def gotResp(resp, num):
         def print_(n):
-            print "DATA %s: %r" % (num, n)
+            print("DATA %s: %r" % (num, n))
         def printdone(n):
-            print "DONE %s" % num
-        print "GOT RESPONSE %s: %s" % (num, resp)
+            print("DONE %s" % num)
+        print("GOT RESPONSE %s: %s" % (num, resp))
         stream_mod.readStream(resp.stream, print_).addCallback(printdone)
     def sendReqs(proto):
         proto.submitRequest(ClientRequest("GET", "/", {'Host':host}, None)).addCallback(gotResp, 1)

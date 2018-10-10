@@ -209,7 +209,7 @@ class XMLRPCTestIntrospection(XMLRPCServerBase):
         """
         def cbMethods(meths):
             meths.sort()
-            self.failUnlessEqual(
+            self.assertEqual(
                 meths,
                 )
         postdata = xmlrpclib.dumps((), 'system.listMethods')

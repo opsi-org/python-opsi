@@ -888,7 +888,7 @@ class _IteratorStream(object):
         
     def read(self):
         try:
-            val = self._gen.next()
+            val = next(self._gen)
         except StopIteration:
             return None
         else:
