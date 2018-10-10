@@ -36,5 +36,5 @@ Depends: duplicity,
 Recommends: cabextract
 Provides: ${python3:Provides}
 Description: opsi python library
- This package contains the opsi python library.
+ This package contains the opsi Python 3 library.
 
