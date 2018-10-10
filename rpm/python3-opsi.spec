@@ -16,8 +16,7 @@ Requires:       python3 >= 3.5
 Requires:       python-ldaptor
 Requires:       python3-magic
 Requires:       python3-sqlalchemy
-Requires:       python3-twisted-web >= 8.2
-Requires:       python3-twisted-conch >= 8.2, python3-twisted-conch < 18.4
+Requires:       python3-twisted >= 8.2, python3-twisted < 18.4
 
 # Dependencies for twisted are a mess because most lack needed packages.
 # We try to avoid problems with this:
@@ -35,7 +34,6 @@ Requires:       newt-python
 Requires:       pyOpenSSL
 Requires:       python3-pam
 Requires:       python3-ctypes
-Requires:       python3-twisted >= 8.2, python3-twisted < 18.4
 %if 0%{?rhel_version} >= 700 || 0%{?centos_version} >= 700
 # To have ifconfig available
 Requires:       net-tools
