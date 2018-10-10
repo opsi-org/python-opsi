@@ -32,9 +32,9 @@ Depends: duplicity,
 	python3-sqlalchemy,
 	python3-twisted-web,
 	${misc:Depends},
-	${python:Depends}
+	${python3:Depends}
 Recommends: cabextract
-Provides: ${python:Provides}
+Provides: ${python3:Provides}
 Description: opsi python library
  This package contains the opsi python library.
 
