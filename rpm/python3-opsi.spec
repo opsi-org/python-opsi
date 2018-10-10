@@ -1,11 +1,11 @@
 #
-# spec file for package python-opsi
+# spec file for package python3-opsi
 #
 # Copyright (c) 2013-2019 uib GmbH.
 # This file and all modifications and additions to the pristine
 # package are under the same license as the package itself.
 #
-Name:           python-opsi
+Name:           python3-opsi
 BuildRequires:  gettext-devel
 %if 0%{?rhel_version} >= 800 || 0%{?centos_version} >= 800
 BuildRequires:  python2-devel
@@ -21,7 +21,7 @@ Requires:		net-tools-deprecated
 Requires:       iproute
 %endif
 Requires:       lshw
-Requires:       python >= 2.7
+Requires:       python3 >= 3.5
 Requires:       python-ldaptor
 Requires:       python-magic
 Requires:       python-sqlalchemy
