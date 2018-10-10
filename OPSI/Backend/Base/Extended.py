@@ -94,7 +94,7 @@ def getArgAndCallString(method):
 		else:
 			argString.append(element)
 
-	for (index, element) in enumerate((spec.varargs, spec.varkwargs), start=1):
+	for (index, element) in enumerate((spec.varargs, spec.varkw), start=1):
 		if element:
 			toAdd = '{0}{1}'.format(index * u'*', element)
 			argString.append(toAdd)
