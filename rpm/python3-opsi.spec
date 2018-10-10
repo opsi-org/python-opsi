@@ -1,31 +1,23 @@
 #
 # spec file for package python3-opsi
 #
-# Copyright (c) 2013-2019 uib GmbH.
+# Copyright (c) 2013-2018 uib GmbH.
 # This file and all modifications and additions to the pristine
 # package are under the same license as the package itself.
 #
 Name:           python3-opsi
 BuildRequires:  gettext-devel
-%if 0%{?rhel_version} >= 800 || 0%{?centos_version} >= 800
-BuildRequires:  python2-devel
-BuildRequires:  python2-setuptools
-%else
-BuildRequires:  python-devel
-BuildRequires:  python-setuptools
-%endif
+BuildRequires:  python3-devel
+BuildRequires:  python3-setuptools
 Requires:       duplicity
-%if 0%{?sle_version} >= 150000 && 0%{?is_opensuse}
-Requires:		net-tools-deprecated
-%else
 Requires:       iproute
-%endif
 Requires:       lshw
 Requires:       python3 >= 3.5
 Requires:       python-ldaptor
-Requires:       python-magic
-Requires:       python-sqlalchemy
-Requires:       python-twisted-web >= 8.2
+Requires:       python3-magic
+Requires:       python3-sqlalchemy
+Requires:       python3-twisted-web >= 8.2
+Requires:       python3-twisted-conch >= 8.2, python3-twisted-conch < 18.4
 
 # Dependencies for twisted are a mess because most lack needed packages.
 # We try to avoid problems with this:
@@ -36,17 +28,14 @@ BuildRequires:  pwdutils
 Requires:       pwdutils
 %{py_requires}
 %endif
-%if (0%{?sle_version} >= 150000 && 0%{?is_opensuse})
-Requires:		python2-distro
-%endif
 %if 0%{?rhel_version} || 0%{?centos_version} || 0%{?fedora_version}
 Requires:       m2crypto
 Requires:       MySQL-python
 Requires:       newt-python
 Requires:       pyOpenSSL
-Requires:       python3-pam
-Requires:       python-ctypes
-Requires:       python-twisted >= 8.2
+Requires:       PyPAM
+Requires:       python3-ctypes
+Requires:       python3-twisted >= 8.2
 %if 0%{?rhel_version} >= 700 || 0%{?centos_version} >= 700
 # To have ifconfig available
 Requires:       net-tools
@@ -54,13 +43,9 @@ Requires:       net-tools
 %else
 Requires:       lsb-release
 Requires:       python-m2crypto
-%if 0%{?sle_version} == 150000 && 0%{?is_opensuse}
-Requires:       python-mysqlclient
-%else
-Requires:       python-mysql
-%endif
-Requires:       python-newt
-Requires:       python-openssl
+Requires:       python3-mysql
+Requires:       python3-newt
+Requires:       python3-openssl
 Requires:       python3-pam
 %endif
 %if 0%{?suse_version}
@@ -68,16 +53,16 @@ Requires:       python3-pam
 Requires:       libmagic1
 Requires:       python-pycrypto
 %else
-Requires:	python-crypto
+Requires:       python-crypto
 %endif
-Url:            https://opsi.org
+Url:            http://www.opsi.org
 License:        AGPL-3.0+
 Group:          Productivity/Networking/Opsi
 AutoReqProv:    on
-Version:        4.1.1.93
+Version:        4.1.1.19
 Release:        1
 Summary:        Python library for the client management solution opsi
-Source:         python-opsi_4.1.1.93-1.tar.gz
+Source:         python-opsi_4.1.1.19-1.tar.gz
 #Source2:        setup.py
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 # python noarch modules are only working on openSUSE 11.2 or higher
@@ -115,20 +100,16 @@ components of the client management solution opsi.
 # ===[ build ]======================================
 %build
 export CFLAGS="$RPM_OPT_FLAGS"
-%if 0%{?rhel_version} >= 800 || 0%{?centos_version} >= 800
-python2 setup.py build
-%else
-python setup.py build
-%endif
+python3 setup.py build
 
 # ===[ install ]====================================
 %install
 
 # install python files and record installed files in INSTALLED_FILES
 %if 0%{?suse_version}
-python2 setup.py install --prefix=%{_prefix} --root=$RPM_BUILD_ROOT --record-rpm=INSTALLED_FILES
+python3 setup.py install --prefix=%{_prefix} --root=$RPM_BUILD_ROOT --record-rpm=INSTALLED_FILES
 %else
-python2 setup.py install --prefix=%{_prefix} --root=$RPM_BUILD_ROOT --record=INSTALLED_FILES
+python3 setup.py install --prefix=%{_prefix} --root=$RPM_BUILD_ROOT --record=INSTALLED_FILES
 %endif
 
 %if 0%{?rhel_version} || 0%{?centos_version}
@@ -137,8 +118,8 @@ sed -i 's#isc-dhcp-server#dhcpd#' $RPM_BUILD_ROOT/etc/opsi/backends/dhcpd.conf
 sed -i 's#/etc/dhcp/dhcpd.conf#/etc/dhcpd.conf#;s#isc-dhcp-server#dhcpd#' $RPM_BUILD_ROOT/etc/opsi/backends/dhcpd.conf
 %endif
 
-%if 0%{?suse_version}
-	# We only want to change this on SUSE (openSUSE and SLES)
+%if 0%{?suse_version} == 1110 || 0%{?suse_version} == 1315
+	# We only want to change this on SLES.
 	sed -i 's#linux/pxelinux.0#opsi/pxelinux.0#' $RPM_BUILD_ROOT/etc/opsi/backends/dhcpd.conf
 %endif
 
@@ -279,13 +260,8 @@ fi
 %dir /var/lib/opsi/
 
 %if 0%{?rhel_version} || 0%{?centos_version} || 0%{?fedora_version}
-%if 0%{?rhel_version} >= 800 || 0%{?centos_version} >= 800
-%define python2_sitearch %(%{__python2} -c 'from distutils import sysconfig; print sysconfig.get_python_lib()')
-%{python2_sitearch}/OPSI/*
-%else
-%define python_sitearch %(%{__python} -c 'from distutils import sysconfig; print sysconfig.get_python_lib()')
-%{python_sitearch}/OPSI/*
-%endif
+%define python3_sitearch %(%{__python3} -c 'from distutils import sysconfig; print sysconfig.get_python_lib()')
+%{python3_sitearch}/OPSI/*
 %endif
 
 # ===[ changelog ]==================================

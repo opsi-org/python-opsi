@@ -8,7 +8,7 @@ Build-Depends: debhelper (>= 7.0.50~),
 	gettext,
 	lsb-release,
 	python3-all (>= 3.5),
-	python-setuptools
+	python3-setuptools
 X-Python-3-Version: >= 3.5
 Standards-Version: 3.9.4
 
