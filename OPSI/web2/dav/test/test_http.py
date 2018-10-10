@@ -80,7 +80,7 @@ class HTTP(OPSI.web2.dav.test.util.TestCase):
         except Exception as e:
             failure = Failure()
             status = statusForFailure(failure)
-            self.failUnless(
+            self.assertTrue(
                 status == result,
                 "Failure %r (%s) generated incorrect status code: %s != %s"
                 % (failure, failure.value, status, result)

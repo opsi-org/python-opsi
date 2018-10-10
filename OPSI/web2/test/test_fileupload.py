@@ -48,7 +48,7 @@ class MultipartTests(unittest.TestCase):
 
     def _assertFailures(self, failures, *expectedFailures):
         for flag, failure in failures:
-            self.failUnlessEqual(flag, defer.FAILURE)
+            self.assertEqual(flag, defer.FAILURE)
             failure.trap(*expectedFailures)
             
     def doTest(self, boundary, data, expected_args, expected_files):
@@ -61,13 +61,13 @@ class MultipartTests(unittest.TestCase):
             yield d; args, files = d.getResult()
             #e=time.time()
             #print "%.2g"%(e-t)
-            self.assertEquals(args, expected_args)
+            self.assertEqual(args, expected_args)
         
             # Read file data back into memory to compare.
             out = {}
             for name, l in files.items():
                 out[name] = [(filename, ctype, f.read()) for (filename, ctype, f) in l]
-            self.assertEquals(out, expected_files)
+            self.assertEqual(out, expected_files)
 
         #data=cStringIO.StringIO(data)
         #t=time.time()
@@ -181,7 +181,7 @@ class TestURLEncoded(unittest.TestCase):
             s = TestStream(data, maxReturn=bytes)
             d = waitForDeferred(fileupload.parse_urlencoded(s))
             yield d; args = d.getResult()
-            self.assertEquals(args, expected_args)
+            self.assertEqual(args, expected_args)
     doTest = deferredGenerator(doTest)
     
     def test_parseValid(self):

@@ -19,25 +19,25 @@ class HeadersAPITest(unittest.TestCase):
         rawvalue = ("value1", "value2")
         h = http_headers.Headers(handler=HeaderHandler(parsers={}, generators={}))
         h.setRawHeaders("test", rawvalue)
-        self.assertEquals(h.hasHeader("test"), True)
-        self.assertEquals(h.getRawHeaders("test"), rawvalue)
-        self.assertEquals(list(h.getAllRawHeaders()), [('Test', rawvalue)])
+        self.assertEqual(h.hasHeader("test"), True)
+        self.assertEqual(h.getRawHeaders("test"), rawvalue)
+        self.assertEqual(list(h.getAllRawHeaders()), [('Test', rawvalue)])
 
-        self.assertEquals(h.getRawHeaders("foobar"), None)
+        self.assertEqual(h.getRawHeaders("foobar"), None)
         h.removeHeader("test")
-        self.assertEquals(h.getRawHeaders("test"), None)
+        self.assertEqual(h.getRawHeaders("test"), None)
 
     def testParsed(self):
         parsed = parsedvalue(("value1", "value2"))
         h = http_headers.Headers(handler=HeaderHandler(parsers={}, generators={}))
 
         h.setHeader("test", parsed)
-        self.assertEquals(h.hasHeader("test"), True)
-        self.assertEquals(h.getHeader("test"), parsed)
+        self.assertEqual(h.hasHeader("test"), True)
+        self.assertEqual(h.getHeader("test"), parsed)
 
-        self.assertEquals(h.getHeader("foobar"), None)
+        self.assertEqual(h.getHeader("foobar"), None)
         h.removeHeader("test")
-        self.assertEquals(h.getHeader("test"), None)
+        self.assertEqual(h.getHeader("test"), None)
 
     def testParsedAndRaw(self):
         def parse(raw):
@@ -53,19 +53,19 @@ class HeadersAPITest(unittest.TestCase):
 
         h = http_headers.Headers(handler=handler)
         h.setRawHeaders("test", rawvalue)
-        self.assertEquals(h.getHeader("test"), parsedvalue(rawvalue))
+        self.assertEqual(h.getHeader("test"), parsedvalue(rawvalue))
 
         h.setHeader("test", parsedvalue(rawvalue2))
-        self.assertEquals(h.getRawHeaders("test"), rawvalue2)
+        self.assertEqual(h.getRawHeaders("test"), rawvalue2)
 
         # Check the initializers
         h = http_headers.Headers(rawHeaders={"test": rawvalue},
                                  handler=handler)
-        self.assertEquals(h.getHeader("test"), parsedvalue(rawvalue))
+        self.assertEqual(h.getHeader("test"), parsedvalue(rawvalue))
 
         h = http_headers.Headers({"test": parsedvalue(rawvalue2)},
                                  handler=handler)
-        self.assertEquals(h.getRawHeaders("test"), rawvalue2)
+        self.assertEqual(h.getRawHeaders("test"), rawvalue2)
 
     def testImmutable(self):
         h = http_headers.Headers(handler=HeaderHandler(parsers={}, generators={}))
@@ -91,7 +91,7 @@ class TokenizerTest(unittest.TestCase):
         raiseTests = ('"open quote', '"ending \\', "control character: \x127", "\x00", "\x1f")
 
         for test,result in tests:
-            self.assertEquals(parser(test), result)
+            self.assertEqual(parser(test), result)
         for test in raiseTests:
             self.assertRaises(ValueError, parser, test)
 
@@ -161,7 +161,7 @@ class HeaderParsingTestBase(unittest.TestCase):
 
             # parser
             parsed = parseHeader(headername, [rawHeaderInput,])
-            self.assertEquals(parsed, parsedHeaderData)
+            self.assertEqual(parsed, parsedHeaderData)
 
             regeneratedHeaderValue = generateHeader(headername, parsed)
 
@@ -178,13 +178,13 @@ class HeaderParsingTestBase(unittest.TestCase):
 
             # parser/generator
             reparsed = parseHeader(headername, regeneratedHeaderValue)
-            self.assertEquals(parsed, reparsed)
+            self.assertEqual(parsed, reparsed)
 
 
     def invalidParseTest(self, headername, values):
         for val in values:
             parsed = parseHeader(headername, val)
-            self.assertEquals(parsed, None)
+            self.assertEqual(parsed, None)
 
 class GeneralHeaderParsingTests(HeaderParsingTestBase):
     def testCacheControl(self):
@@ -379,7 +379,7 @@ class RequestHeaderParsingTests(HeaderParsingTestBase):
              '$Version="1";name="qq\\"qq";name2="value2"'),
             )
         for row in table3:
-            self.assertEquals(generateHeader("Cookie", row[0]), [row[1],])
+            self.assertEqual(generateHeader("Cookie", row[0]), [row[1],])
 
 
 
@@ -586,7 +586,7 @@ class ResponseHeaderParsingTests(HeaderParsingTestBase):
             rawHeaderInput, parsedHeaderData, requiredGeneratedElements = row
 
             parsed = parseHeader(headername, [rawHeaderInput,])
-            self.assertEquals(parsed, parsedHeaderData)
+            self.assertEqual(parsed, parsedHeaderData)
 
             regeneratedHeaderValue = generateHeader(headername, parsed)
 
@@ -606,7 +606,7 @@ class ResponseHeaderParsingTests(HeaderParsingTestBase):
 
         # parser/generator
         reparsed = parseHeader(headername, regeneratedHeaderValue)
-        self.assertEquals(parsed, reparsed)
+        self.assertEqual(parsed, reparsed)
 
 
 class EntityHeaderParsingTests(HeaderParsingTestBase):
@@ -666,8 +666,8 @@ class EntityHeaderParsingTests(HeaderParsingTestBase):
     def testExpires(self):
         self.runRoundtripTest("Expires", (("Sun, 09 Sep 2001 01:46:40 GMT", 1000000000),))
         # Invalid expires MUST return date in the past.
-        self.assertEquals(parseHeader("Expires", ["0"]), 0)
-        self.assertEquals(parseHeader("Expires", ["wejthnaljn"]), 0)
+        self.assertEqual(parseHeader("Expires", ["0"]), 0)
+        self.assertEqual(parseHeader("Expires", ["wejthnaljn"]), 0)
 
 
     def testLastModified(self):
@@ -696,24 +696,24 @@ class DateTimeTest(unittest.TestCase):
                     'Nov  6 08:49:37 1994',
                     )
         for timeStr in timeStrs:
-            self.assertEquals(http_headers.parseDateTime(timeStr), timeNum)
+            self.assertEqual(http_headers.parseDateTime(timeStr), timeNum)
 
         # Test 2 Digit date wraparound yuckiness.
-        self.assertEquals(http_headers.parseDateTime(
+        self.assertEqual(http_headers.parseDateTime(
             'Monday, 11-Oct-04 14:56:50 GMT'), 1097506610)
-        self.assertEquals(http_headers.parseDateTime(
+        self.assertEqual(http_headers.parseDateTime(
             'Monday, 11-Oct-2004 14:56:50 GMT'), 1097506610)
 
 
     def testGenerate(self):
-        self.assertEquals(http_headers.generateDateTime(784111777), 'Sun, 06 Nov 1994 08:49:37 GMT')
+        self.assertEqual(http_headers.generateDateTime(784111777), 'Sun, 06 Nov 1994 08:49:37 GMT')
 
     def testRoundtrip(self):
         for i in range(2000):
             time = random.randint(0, 2000000000)
             timestr = http_headers.generateDateTime(time)
             time2 = http_headers.parseDateTime(timestr)
-            self.assertEquals(time, time2)
+            self.assertEqual(time, time2)
 
 
 class TestMimeType(unittest.TestCase):
@@ -733,7 +733,7 @@ class TestMimeType(unittest.TestCase):
 
         stringMime = http_headers.MimeType.fromString('text/plain;key=value;param')
 
-        self.assertEquals(kwargMime, dictMime)
-        self.assertEquals(dictMime, tupleMime)
-        self.assertEquals(kwargMime, tupleMime)
-        self.assertEquals(kwargMime, stringMime)
+        self.assertEqual(kwargMime, dictMime)
+        self.assertEqual(dictMime, tupleMime)
+        self.assertEqual(kwargMime, tupleMime)
+        self.assertEqual(kwargMime, stringMime)

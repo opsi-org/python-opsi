@@ -180,7 +180,7 @@ class WSGIHandler(object):
         if exc_info is not None:
             try:
                 if self.headersSent:
-                    raise exc_info[0], exc_info[1], exc_info[2]
+                    raise exc_info[0](exc_info[1]).with_traceback(exc_info[2])
             finally:
                 exc_info = None
         elif self.response is not None:

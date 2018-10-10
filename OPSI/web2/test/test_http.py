@@ -26,8 +26,8 @@ class PreconditionTestCase(unittest.TestCase):
             http.checkPreconditions(request, response, **kw)
         except http.HTTPError as e:
             preconditionsPass = False
-            self.assertEquals(e.response.code, expectedCode)
-        self.assertEquals(preconditionsPass, expectedResult)
+            self.assertEqual(e.response.code, expectedCode)
+        self.assertEqual(preconditionsPass, expectedResult)
 
     def testWithoutHeaders(self):
         request = http.Request(None, "GET", "/", "HTTP/1.1", 0, http_headers.Headers())
@@ -245,44 +245,44 @@ class IfRangeTestCase(unittest.TestCase):
         request = http.Request(None, "GET", "/", "HTTP/1.1", 0, http_headers.Headers())
         response = TestResponse()
 
-        self.assertEquals(http.checkIfRange(request, response), True)
+        self.assertEqual(http.checkIfRange(request, response), True)
 
         request.headers.setRawHeaders("If-Range", ('"foo"',))
-        self.assertEquals(http.checkIfRange(request, response), False)
+        self.assertEqual(http.checkIfRange(request, response), False)
 
         response.headers.setHeader("ETag", http_headers.ETag('foo'))
-        self.assertEquals(http.checkIfRange(request, response), True)
+        self.assertEqual(http.checkIfRange(request, response), True)
 
         request.headers.setRawHeaders("If-Range", ('"bar"',))
         response.headers.setHeader("ETag", http_headers.ETag('foo'))
-        self.assertEquals(http.checkIfRange(request, response), False)
+        self.assertEqual(http.checkIfRange(request, response), False)
 
         request.headers.setRawHeaders("If-Range", ('W/"foo"',))
         response.headers.setHeader("ETag", http_headers.ETag('foo', weak=True))
-        self.assertEquals(http.checkIfRange(request, response), False)
+        self.assertEqual(http.checkIfRange(request, response), False)
 
         request.headers.setRawHeaders("If-Range", ('"foo"',))
         response.headers.removeHeader("ETag")
-        self.assertEquals(http.checkIfRange(request, response), False)
+        self.assertEqual(http.checkIfRange(request, response), False)
 
         request.headers.setRawHeaders("If-Range", ('Sun, 02 Jan 2000 00:00:00 GMT',))
         response.headers.setHeader("Last-Modified", 946771200) # Sun, 02 Jan 2000 00:00:00 GMT
-        self.assertEquals(http.checkIfRange(request, response), True)
+        self.assertEqual(http.checkIfRange(request, response), True)
 
         request.headers.setRawHeaders("If-Range", ('Sun, 02 Jan 2000 00:00:01 GMT',))
         response.headers.setHeader("Last-Modified", 946771200) # Sun, 02 Jan 2000 00:00:00 GMT
-        self.assertEquals(http.checkIfRange(request, response), False)
+        self.assertEqual(http.checkIfRange(request, response), False)
 
         request.headers.setRawHeaders("If-Range", ('Sun, 01 Jan 2000 23:59:59 GMT',))
         response.headers.setHeader("Last-Modified", 946771200) # Sun, 02 Jan 2000 00:00:00 GMT
-        self.assertEquals(http.checkIfRange(request, response), False)
+        self.assertEqual(http.checkIfRange(request, response), False)
 
         request.headers.setRawHeaders("If-Range", ('Sun, 01 Jan 2000 23:59:59 GMT',))
         response.headers.removeHeader("Last-Modified")
-        self.assertEquals(http.checkIfRange(request, response), False)
+        self.assertEqual(http.checkIfRange(request, response), False)
 
         request.headers.setRawHeaders("If-Range", ('jwerlqjL#$Y*KJAN',))
-        self.assertEquals(http.checkIfRange(request, response), False)
+        self.assertEqual(http.checkIfRange(request, response), False)
 
 
 @implementer(interfaces.IProducer)
@@ -410,12 +410,12 @@ class HTTPTests(unittest.TestCase):
                     sortedHeaderCommands.append(cmd[:5] + (tuple(sortedHeaders),))
                 else:
                     sortedHeaderCommands.append(cmd)
-            self.assertEquals(receivedRequest.cmds, sortedHeaderCommands)
-        self.assertEquals(cxn.client.data, data)
+            self.assertEqual(receivedRequest.cmds, sortedHeaderCommands)
+        self.assertEqual(cxn.client.data, data)
 
     def assertDone(self, cxn, done=True):
         self.iterate(cxn)
-        self.assertEquals(cxn.client.done, done)
+        self.assertEqual(cxn.client.done, done)
 
 
 class CoreHTTPTestCase(HTTPTests):
@@ -864,7 +864,7 @@ class CoreHTTPTestCase(HTTPTests):
 
 class ErrorTestCase(HTTPTests):
     def assertStartsWith(self, first, second, msg=None):
-        self.assert_(first.startswith(second), '%r.startswith(%r)' % (first, second))
+        self.assertTrue(first.startswith(second), '%r.startswith(%r)' % (first, second))
 
     def checkError(self, cxn, code):
         self.iterate(cxn)
@@ -978,7 +978,7 @@ class PipelinedErrorTestCase(ErrorTestCase):
 
     def checkError(self, cxn, code):
         self.iterate(cxn)
-        self.assertEquals(cxn.client.data, '')
+        self.assertEqual(cxn.client.data, '')
 
         response = TestResponse()
         response.headers.setRawHeaders("Content-Length", ("0",))
@@ -987,7 +987,7 @@ class PipelinedErrorTestCase(ErrorTestCase):
 
         data = "HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n"
         self.iterate(cxn)
-        self.assertEquals(cxn.client.data, data)
+        self.assertEqual(cxn.client.data, data)
 
         # Reset the data so the checkError's startswith test can work right.
         cxn.client.data = ""
@@ -1028,8 +1028,8 @@ class AbstractServerTestMixin:
         d = waitForDeferred(utils.getProcessOutputAndValue(sys.executable, args=args))
         yield d; out,err,code = d.getResult()
 
-        self.assertEquals(code, 0, "Error output:\n%s" % (err,))
-        self.assertEquals(out, "HTTP/1.1 402 Payment Required\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
+        self.assertEqual(code, 0, "Error output:\n%s" % (err,))
+        self.assertEqual(out, "HTTP/1.1 402 Payment Required\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
     testBasicWorkingness = deferredGenerator(testBasicWorkingness)
 
     def testLingeringClose(self):
@@ -1037,8 +1037,8 @@ class AbstractServerTestMixin:
                 "lingeringClose", str(self.port), self.type)
         d = waitForDeferred(utils.getProcessOutputAndValue(sys.executable, args=args))
         yield d; out,err,code = d.getResult()
-        self.assertEquals(code, 0, "Error output:\n%s" % (err,))
-        self.assertEquals(out, "HTTP/1.1 402 Payment Required\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
+        self.assertEqual(code, 0, "Error output:\n%s" % (err,))
+        self.assertEqual(out, "HTTP/1.1 402 Payment Required\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
     testLingeringClose = deferredGenerator(testLingeringClose)
 
 class TCPServerTest(unittest.TestCase, AbstractServerTestMixin):

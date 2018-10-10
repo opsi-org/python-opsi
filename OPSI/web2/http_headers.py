@@ -1,5 +1,5 @@
 # -*- test-case-name: OPSI.web2.test.test_http_headers -*-
-from __future__ import generators
+
 
 import types, time
 from calendar import timegm
@@ -361,7 +361,7 @@ def parseKeyValue(val):
 
 def parseArgs(field):
     args=split(field, Token(';'))
-    val = args.next()
+    val = next(args)
     args = [parseKeyValue(arg) for arg in args]
     return val,args
 
@@ -1359,7 +1359,7 @@ class Headers(object):
         """Removes the header named."""
 
         name=name.lower()
-        if self._raw_headers.has_key(name):
+        if name in self._raw_headers:
             del self._raw_headers[name]
             del self._headers[name]
 
@@ -1397,7 +1397,7 @@ class Headers(object):
    is strictly an error, but we're nice.).
    """
 
-iteritems = lambda x: x.items()
+iteritems = lambda x: list(x.items())
 
 
 parser_general_headers = {

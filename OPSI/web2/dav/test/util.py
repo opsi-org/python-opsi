@@ -40,7 +40,7 @@ class TodoTest(Exception):
     pass
 
 class TestCase(unittest.TestCase):
-    docroot = property(lambda(self): self.site.resource.fp.path)
+    docroot = property(lambda self: self.site.resource.fp.path)
 
     resource_class = DAVFile
 
@@ -143,7 +143,7 @@ def serialize(f, work):
 
     def do_serialize(_):
         try:
-            args = work.next()
+            args = next(work)
         except StopIteration:
             d.callback(None)
         else:

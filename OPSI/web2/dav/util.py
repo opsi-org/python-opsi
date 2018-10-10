@@ -65,7 +65,7 @@ def allDataFromStream(stream, filter=None):
         if filter is None:
             return result
         else:
-            return filter(result)
+            return list(filter(result))
     return readStream(stream, data.append).addCallback(gotAllData)
 
 def davXMLFromStream(stream):

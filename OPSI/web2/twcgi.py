@@ -95,9 +95,9 @@ def createCGIEnvironment(request):
 
     for k,v in env.items():
         if type(k) is not str:
-            print "is not string:",k
+            print("is not string:",k)
         if type(v) is not str:
-            print k, "is not string:",v
+            print(k, "is not string:",v)
     return env
 
 def runCGI(request, filename, filterscript=None):

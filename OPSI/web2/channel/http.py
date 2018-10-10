@@ -889,7 +889,7 @@ class HTTPFactory(protocol.ServerFactory):
         
         p = protocol.ServerFactory.buildProtocol(self, addr)
         
-        for arg,value in self.protocolArgs.iteritems():
+        for arg,value in self.protocolArgs.items():
             setattr(p, arg, value)
         return p
 

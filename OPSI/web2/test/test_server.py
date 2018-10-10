@@ -106,7 +106,7 @@ class AdaptionTestCase(unittest.TestCase):
         object which does not provide it, that adapter is used.
         """
         notResource = NotResource()
-        self.failUnless(isinstance(iweb.IResource(notResource), ResourceAdapter))
+        self.assertTrue(isinstance(iweb.IResource(notResource), ResourceAdapter))
 
 
     def test_oldResources(self):
@@ -119,7 +119,7 @@ class AdaptionTestCase(unittest.TestCase):
             pass
         oldResource = OldResource()
         resource = iweb.IResource(oldResource)
-        self.failUnless(isinstance(resource, compat.OldNevowResourceAdapter))
+        self.assertTrue(isinstance(resource, compat.OldNevowResourceAdapter))
 
 
     def test_transitive(self):
@@ -129,7 +129,7 @@ class AdaptionTestCase(unittest.TestCase):
         """
         notResource = NotOldResource()
         resource = iweb.IResource(notResource)
-        self.failUnless(isinstance(resource, compat.OldNevowResourceAdapter))
+        self.assertTrue(isinstance(resource, compat.OldNevowResourceAdapter))
 
 
 
@@ -304,12 +304,12 @@ class BaseCase(unittest.TestCase):
 
     def _cbGotResponse(self, (code, headers, data, failed), expected_response, expectedfailure=False):
         expected_code, expected_headers, expected_data = expected_response
-        self.assertEquals(code, expected_code)
+        self.assertEqual(code, expected_code)
         if expected_data is not None:
-            self.assertEquals(data, expected_data)
-        for key, value in expected_headers.iteritems():
-            self.assertEquals(headers.getHeader(key), value)
-        self.assertEquals(failed, expectedfailure)
+            self.assertEqual(data, expected_data)
+        for key, value in expected_headers.items():
+            self.assertEqual(headers.getHeader(key), value)
+        self.assertEqual(failed, expectedfailure)
 
 class SampleWebTest(BaseCase):
     class SampleTestResource(BaseTestResource):
@@ -481,7 +481,7 @@ class EmptyResource(resource.Resource):
         self.test = test
 
     def render(self, request):
-        self.test.assertEquals(request.urlForResource(self), self.expectedURI)
+        self.test.assertEqual(request.urlForResource(self), self.expectedURI)
         return 201
 
 
@@ -547,7 +547,7 @@ class RememberURIs(BaseCase):
         request = SimpleRequest(server.Site(root), "GET", "/")
 
         def gotResource(resource):
-            self.assertEquals("/foo", request.urlForResource(resource))
+            self.assertEqual("/foo", request.urlForResource(resource))
 
         d = defer.maybeDeferred(request.locateResource, "/foo")
         d.addCallback(gotResource)
@@ -587,15 +587,15 @@ class RememberURIs(BaseCase):
 
         def gotResource(resource):
             # Make sure locateChildResource() gave us the right answer
-            self.assertEquals(resource, bar)
+            self.assertEqual(resource, bar)
 
             return request.locateChildResource(resource, "b a z").addCallback(gotChildResource)
 
         def gotChildResource(resource):
             # Make sure locateChildResource() gave us the right answer
-            self.assertEquals(resource, baz)
+            self.assertEqual(resource, baz)
 
-            self.assertEquals(resource.expectedURI, request.urlForResource(resource))
+            self.assertEqual(resource.expectedURI, request.urlForResource(resource))
 
         d = request.locateResource(bar.expectedURI)
         d.addCallback(gotResource)
@@ -619,7 +619,7 @@ class RememberURIs(BaseCase):
         request = SimpleRequest(server.Site(root), "GET", "/foo")
 
         def gotResource(resource):
-            self.assertEquals("/foo", request.urlForResource(resource))
+            self.assertEqual("/foo", request.urlForResource(resource))
 
         d = request.locateResource("/foo")
         d.addCallback(gotResource)
