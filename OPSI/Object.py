@@ -72,7 +72,7 @@ def mandatoryConstructorArgs(Class):
 	try:
 		return _MANDATORY_CONSTRUCTOR_ARGS_CACHE[cacheKey]
 	except KeyError:
-		args, _, _, defaults = inspect.getargspec(Class.__init__)
+		args, _, _, defaults, _, _ = inspect.getfullargspec(Class.__init__)
 		try:
 			last = len(defaults) * -1
 			mandatory = args[1:][:last]
@@ -98,9 +98,9 @@ def getPossibleClassAttributes(klass):
 
 	:returntype: set of strings
 	"""
-	attributes = inspect.getargspec(klass.__init__)[0]
+	attributes = inspect.getfullargspec(klass.__init__)[0]
 	for subClass in klass.subClasses.values():
-		attributes.extend(inspect.getargspec(subClass.__init__)[0])
+		attributes.extend(inspect.getfullargspec(subClass.__init__)[0])
 
 	attributes = set(attributes)
 	attributes.add('type')

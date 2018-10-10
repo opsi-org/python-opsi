@@ -74,7 +74,7 @@ def getArgAndCallString(method):
 	"""
 	argString = []
 	callString = []
-	(args, varargs, varkwargs, argDefaults) = inspect.getargspec(method)
+	args, varargs, varkwargs, argDefaults, _, _ = inspect.getfullargspec(method)
 
 	for element in args:
 		if element == 'self':
