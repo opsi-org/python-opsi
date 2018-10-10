@@ -78,14 +78,14 @@ BuildRequires:  gettext-runtime
 %if 0%{?suse_version} == 1315 || 0%{?is_opensuse}
 # Workaround for missing dependency at python-cryptography
 # See https://bugzilla.opensuse.org/show_bug.cgi?id=1052927
-Requires: python-setuptools
+Requires: python3-setuptools
 %endif
 
 %define toplevel_dir %{name}-%{version}
 
 # ===[ description ]================================
 %description
-This package contains the python library that is used by various
+This package contains the Python 3 library that is used by various
 components of the client management solution opsi.
 
 # ===[ debug_package ]==============================
