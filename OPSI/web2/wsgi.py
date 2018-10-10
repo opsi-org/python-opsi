@@ -337,7 +337,7 @@ class FileWrapper(object):
     def __iter__(self):
         return self
         
-    def next(self):
+    def __next__(self):
         data = self.filelike.read(self.blksize)
         if data:
             return data

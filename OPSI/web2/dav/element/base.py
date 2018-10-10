@@ -125,11 +125,11 @@ class WebDAVElement (object):
         #
         # Validate that children are of acceptable types
         #
-        allowed_children = dict([
-            (child_type, list(limits))
+        allowed_children = {
+            child_type: list(limits)
             for child_type, limits
             in self.allowed_children.items()
-        ])
+        }
 
         my_children = []
 

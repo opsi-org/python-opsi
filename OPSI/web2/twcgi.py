@@ -15,7 +15,7 @@ Things which are still not working properly:
 # System Imports
 import os
 import sys
-import urllib
+from urllib.parse import unquote
 
 # Twisted Imports
 from twisted.internet import defer, protocol, reactor
@@ -29,7 +29,10 @@ from OPSI.web2 import server
 from OPSI.web2 import stream
 
 
-headerNameTranslation = ''.join([c.isalnum() and c.upper() or '_' for c in map(chr, range(256))])
+headerNameTranslation = ''.join([
+    c.isalnum() and c.upper() or '_' for c in
+    [chr(i) for i in range(256)]
+])
 
 def createCGIEnvironment(request):
     # See http://hoohoo.ncsa.uiuc.edu/cgi/env.html for CGI interface spec
@@ -109,8 +112,8 @@ def runCGI(request, filename, filterscript=None):
     if '=' in request.querystring:
         qargs = []
     else:
-        qargs = [urllib.unquote(x) for x in request.querystring.split('+')]
-    
+        qargs = [unquote(x) for x in request.querystring.split('+')]
+
     if filterscript is None:
         filterscript = filename
         qargs = [filename] + qargs

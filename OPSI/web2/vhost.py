@@ -6,9 +6,8 @@
 """
 
 # System Imports
-import urlparse
-import urllib
 import warnings
+from urllib.parse import quote, unquote, urlparse
 
 from twisted.internet import address
 from twisted.python import log
@@ -169,7 +168,7 @@ class AutoVHostURIRewrite(object):
         req.remoteAddr = address.IPv4Address('TCP', remote_ip, 0)
 
         req.prepath = app_location[1:].split('/')[:-1]
-        req.path = '/'+('/'.join([urllib.quote(s, '') for s in (req.prepath + segments)]))
+        req.path = '/'+('/'.join([quote(s, '') for s in (req.prepath + segments)]))
 
         return self.resource, segments
 
@@ -214,10 +213,10 @@ class VHostURIRewrite(object):
         self.resource = resource
 
         (self.scheme, self.host, self.path,
-         params, querystring, fragment) = urlparse.urlparse(uri)
+         params, querystring, fragment) = urlparse(uri)
         if params or querystring or fragment:
             raise ValueError("Must not specify params, query args, or fragment to VHostURIRewrite")
-        self.path = map(urllib.unquote, self.path[1:].split('/'))[:-1]
+        self.path = [unquote(p) for p in self.path[1:].split('/')][:-1]
         self.host, self.port = http.splitHostPort(self.scheme, self.host)
 
     def renderHTTP(self, req):
@@ -228,9 +227,9 @@ class VHostURIRewrite(object):
         req.host = self.host
         req.port = self.port
         req.prepath=self.path[:]
-        req.path = '/'+('/'.join([urllib.quote(s, '') for s in (req.prepath + segments)]))
+        req.path = '/'+('/'.join([quote(s, '') for s in (req.prepath + segments)]))
         # print req.prepath, segments, req.postpath, req.path
-        
+
         return self.resource, segments
 
 __all__ = ['VHostURIRewrite', 'AutoVHostURIRewrite', 'NameVirtualHost']

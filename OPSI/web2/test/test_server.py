@@ -140,11 +140,11 @@ class SimpleRequest(server.Request):
     """
 
     clientproto = (1,1)
-    
+
     def __init__(self, site, method, uri, headers=None, content=None):
         if not headers:
             headers = http_headers.Headers(headers)
-            
+
         super(SimpleRequest, self).__init__(
             site=site,
             chanRequest=None,
@@ -190,11 +190,11 @@ class TestChanRequest:
                                       self.headers,
                                       site=self.site,
                                       prepathuri=self.prepath)
-        
+
         if content is not None:
             self.request.handleContentChunk(content)
             self.request.handleContentComplete()
-            
+
         self.code = None
         self.responseHeaders = None
         self.data = ''
@@ -202,11 +202,11 @@ class TestChanRequest:
 
     def writeIntermediateResponse(code, headers=None):
         pass
-    
+
     def writeHeaders(self, code, headers):
         self.responseHeaders = headers
         self.code = code
-        
+
     def write(self, data):
         self.data += data
 
@@ -217,7 +217,7 @@ class TestChanRequest:
 
     def abortConnection(self):
         self.finish(failed=True)
-        
+
     def registerProducer(self, producer, streaming):
         pass
 
@@ -229,14 +229,14 @@ class TestChanRequest:
 
     def getRemoteHost(self):
         return self.remoteHost
-    
+
 
 class BaseTestResource(resource.Resource):
     responseCode = 200
     responseText = 'This is a fake resource.'
     responseHeaders = {}
     addSlash = False
-    
+
     def __init__(self, children=[]):
         """
         @type children: C{list} of C{tuple}
@@ -258,11 +258,11 @@ class BaseCase(unittest.TestCase):
     Base class for test cases that involve testing the result
     of arbitrary HTTP(S) queries.
     """
-    
+
     method = 'GET'
     version = (1, 1)
     wait_timeout = 5.0
-    
+
     def chanrequest(self, root, uri, length, headers, method, version, prepath, content):
         site = server.Site(root)
         return TestChanRequest(site, method, prepath, uri, length, headers, version, content)
@@ -276,7 +276,7 @@ class BaseCase(unittest.TestCase):
                 length = len(content)
             else:
                 length = 0
-            
+
         if method is None:
             method = self.method
         if version is None:
@@ -299,10 +299,11 @@ class BaseCase(unittest.TestCase):
         """
         d = self.getResponseFor(*request_data)
         d.addCallback(self._cbGotResponse, expected_response, failure)
-        
+
         return d
 
-    def _cbGotResponse(self, (code, headers, data, failed), expected_response, expectedfailure=False):
+    def _cbGotResponse(self, meta, expected_response, expectedfailure=False):
+        (code, headers, data, failed) = meta
         expected_code, expected_headers, expected_data = expected_response
         self.assertEqual(code, expected_code)
         if expected_data is not None:
@@ -376,13 +377,13 @@ class SampleWebTest(BaseCase):
         return self.assertResponse(
             (redirectResource, 'http://localhost/'),
             (301, {'location': 'https://localhost/foo?bar=baz'}, None))
-    
+
 
 class URLParsingTest(BaseCase):
     class TestResource(resource.LeafResource):
         def render(self, req):
             return http.Response(stream="Host:%s, Path:%s"%(req.host, req.path))
-            
+
     def setUp(self):
         self.root = self.TestResource()
 
@@ -421,7 +422,7 @@ class TestDeferredRendering(BaseCase):
             d = defer.Deferred()
             reactor.callLater(0, d.callback, BaseTestResource())
             return d
-        
+
     def test_deferredRootResource(self):
         return self.assertResponse(
             (self.ResourceWithDeferreds(), 'http://host/'),

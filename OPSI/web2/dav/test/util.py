@@ -23,7 +23,7 @@
 ##
 
 import os
-from urllib import quote as url_quote
+from urllib.parse import quote as url_quote
 from filecmp import dircmp as DirCompare
 from tempfile import mkdtemp
 from shutil import copy

@@ -1,9 +1,8 @@
-from __future__ import generators
 
 import re
-import urllib
 import tempfile
 from io import StringIO
+from urllib.parse import unquote
 
 from zope.interface.declarations import implementer
 from twisted.internet import defer
@@ -330,8 +329,8 @@ def parse_urlencoded_stream(input, maxMem=100*1024,
                     raise MimeFormatError("bad query field: %s") % repr(name_value)
                 continue
             if len(nv[1]) or keep_blank_values:
-                name = urllib.unquote(nv[0].replace('+', ' '))
-                value = urllib.unquote(nv[1].replace('+', ' '))
+                name = unquote(nv[0].replace('+', ' '))
+                value = unquote(nv[1].replace('+', ' '))
                 yield name, value
 parse_urlencoded_stream = generatorToStream(parse_urlencoded_stream)
 

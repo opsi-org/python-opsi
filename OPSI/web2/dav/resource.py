@@ -26,13 +26,7 @@
 WebDAV resources.
 """
 
-__all__ = [
-    "DAVPropertyMixIn",
-    "DAVResource",
-    "DAVLeafResource"
-]
-
-import urllib
+from urllib.parse import unquote
 
 from twisted.python import log
 from twisted.internet.defer import maybeDeferred, succeed
@@ -48,6 +42,12 @@ from OPSI.web2.http_headers import generateContentType
 from OPSI.web2.iweb import IResponse
 from OPSI.web2.resource import LeafResource
 from OPSI.web2.static import MetaDataMixin, StaticRenderMixin
+
+__all__ = [
+    "DAVPropertyMixIn",
+    "DAVResource",
+    "DAVLeafResource"
+]
 
 twisted_dav_namespace = "http://twistedmatrix.com/xml_namespace/dav/"
 twisted_private_namespace = "http://twistedmatrix.com/xml_namespace/dav/private/"
@@ -464,7 +464,7 @@ class DAVResource (DAVPropertyMixIn, StaticRenderMixin):
 
         # FIXME: Learn how to use twisted logging facility, wsanchez
         protocol = "HTTP/%s.%s" % request.clientproto
-        log.msg("%s %s %s" % (request.method, urllib.unquote(request.uri), protocol))
+        log.msg("%s %s %s" % (request.method, unquote(request.uri), protocol))
 
         #
         # If this is a collection and the URI doesn't end in "/", redirect.

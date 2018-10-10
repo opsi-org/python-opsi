@@ -22,9 +22,9 @@
 # DRI: Wilfredo Sanchez, wsanchez@apple.com
 ##
 
-import os
-import urllib
 import md5
+import os
+from urllib.parse import quote
 
 import OPSI.web2.dav.test.util
 from OPSI.web2 import responsecode
@@ -138,7 +138,7 @@ def work(self, test, overwrite=None, dst=None, depths=("0", "infinity", None)):
         sum = sumFile(path)
         basename = os.path.basename(path)
         dst_path = os.path.join(dst, basename)
-        dst_uri = urllib.quote("/dst/" + basename)
+        dst_uri = quote("/dst/" + basename)
 
         if not isfile:
             uri     += "/"
