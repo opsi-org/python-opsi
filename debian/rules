@@ -1,6 +1,6 @@
 #!/usr/bin/make -f
 
-WITH_PYTHON2 = $(shell test -f /usr/bin/dh_python2 && echo "--with python2")
+export PYBUILD_NAME=OPSI
 
 %:
-	dh $@ ${WITH_PYTHON2}
+	dh $@ --with python3 --buildsystem=pybuild
