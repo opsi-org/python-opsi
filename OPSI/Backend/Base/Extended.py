@@ -74,7 +74,9 @@ def getArgAndCallString(method):
 	"""
 	argString = []
 	callString = []
-	args, varargs, varkwargs, argDefaults, _, _ = inspect.getfullargspec(method)
+	spec = inspect.getfullargspec(method)
+	args = spec.args
+	argDefaults = spec.defaults
 
 	for element in args:
 		if element == 'self':
@@ -92,7 +94,7 @@ def getArgAndCallString(method):
 		else:
 			argString.append(element)
 
-	for (index, element) in enumerate((varargs, varkwargs), start=1):
+	for (index, element) in enumerate((spec.varargs, spec.varkwargs), start=1):
 		if element:
 			toAdd = '{0}{1}'.format(index * u'*', element)
 			argString.append(toAdd)
