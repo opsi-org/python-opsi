@@ -3,7 +3,7 @@ Section: opsi
 Priority: optional
 Maintainer: uib GmbH <info@uib.de>
 Homepage: http://opsi.org/
-Build-Depends: debhelper (>= 11~),
+Build-Depends: debhelper (>= 9.2~),
 	dh-python,
 	gettext,
 	lsb-release,
