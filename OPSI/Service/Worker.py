@@ -329,7 +329,7 @@ class WorkerOpsi:
 				encoded = auth[1]
 
 				logger.confidential(u"Auth encoded: {0}", encoded)
-				parts = str(base64.decodestring(encoded), encoding='latin-1').split(':')
+				parts = str(base64.decodebytes(encoded), encoding='latin-1').split(':')
 				if len(parts) > 6:
 					user = u':'.join(parts[:6])
 					password = u':'.join(parts[6:])
