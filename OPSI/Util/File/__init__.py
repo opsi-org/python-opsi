@@ -589,7 +589,7 @@ class IniFile(ConfigFile):
 			self._configParser = SafeConfigParser()
 
 		try:
-			self._configParser.readfp(StringIO(u'\r\n'.join(lines)))
+			self._configParser.read_file(StringIO(u'\r\n'.join(lines)))
 		except Exception as e:
 			raise RuntimeError(u"Failed to parse ini file '%s': %s" % (self._filename, e))
 
