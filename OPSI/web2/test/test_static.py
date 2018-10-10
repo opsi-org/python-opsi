@@ -50,7 +50,7 @@ class TestFileSaver(BaseCase):
     def setUpClass(self):
         self.tempdir = self.mktemp()
         os.mkdir(self.tempdir)
-        
+
         self.root = static.FileSaver(self.tempdir,
                               expectedFields=['FileNameOne'],
                               maxBytes=16)
@@ -60,10 +60,10 @@ class TestFileSaver(BaseCase):
                    host='foo', path='/'):
         if not resrc:
             resrc = self.root
-            
+
         ctype = http_headers.MimeType('multipart', 'form-data',
                                       (('boundary', '---weeboundary'),))
-        
+
         return self.getResponseFor(resrc, '/',
                             headers={'host': 'foo',
                                      'content-type': ctype },
@@ -77,12 +77,13 @@ Content-Type: %s\r
 -----weeboundary--\r
 """ % (fieldname, filename, mimetype, content))
 
-    def _CbAssertInResponse(self, (code, headers, data, failed),
+    def _CbAssertInResponse(self, meta,
                             expected_response, expectedFailure=False):
-        
+
+        (code, headers, data, failed) = meta
         expected_code, expected_headers, expected_data = expected_response
         self.assertEqual(code, expected_code)
-        
+
         if expected_data is not None:
             self.failUnlessSubstring(expected_data, data)
 

@@ -29,20 +29,21 @@ This API is considered private to static.py and is therefore subject to
 change.
 """
 
-__all__ = ["xattrPropertyStore"]
-
-import urllib
 import sys
+from urllib.parse import unquote
 
 import xattr
-
-if getattr(xattr, 'xattr', None) is None:
-    raise ImportError("wrong xattr package imported")
 
 from twisted.python import log
 from OPSI.web2 import responsecode
 from OPSI.web2.http import HTTPError, StatusResponse
 from OPSI.web2.dav import davxml
+
+__all__ = ["xattrPropertyStore"]
+
+if getattr(xattr, 'xattr', None) is None:
+    raise ImportError("wrong xattr package imported")
+
 
 class xattrPropertyStore (object):
     """
@@ -80,13 +81,13 @@ class xattrPropertyStore (object):
         return r
 
     def _decode(clazz, name):
-        name = urllib.unquote(name[len(clazz.deadPropertyXattrPrefix):])
+        name = unquote(name[len(clazz.deadPropertyXattrPrefix):])
 
         index = name.find("}")
-    
+
         if (index is -1 or not len(name) > index or not name[0] == "{"):
             raise ValueError("Invalid encoded name: %r" % (name,))
-    
+
         return (name[1:index], name[index+1:])
 
     _encode = classmethod(_encode)

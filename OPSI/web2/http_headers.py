@@ -1,14 +1,15 @@
 # -*- test-case-name: OPSI.web2.test.test_http_headers -*-
 
 
-import types, time
+import time
 from calendar import timegm
 import base64
 import re
 
+
 def dashCapitalize(s):
     ''' Capitalize a string, making sure to treat - as a word seperator '''
-    return '-'.join([ x.capitalize() for x in s.split('-')])
+    return '-'.join([x.capitalize() for x in s.split('-')])
 
 # datetime parsing and formatting
 weekdayname = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
@@ -22,13 +23,15 @@ monthname_lower = [name and name.lower() for name in monthname]
 
 header_case_mapping = {}
 
+
 def casemappingify(d):
     global header_case_mapping
-    newd = dict([(key.lower(),key) for key in d.keys()])
+    newd = {key.lower(): key for key in d.keys()}
     header_case_mapping.update(newd)
 
+
 def lowerify(d):
-    return dict([(key.lower(),value) for key,value in d.items()])
+    return {key.lower(): value for key, value in d.items()}
 
 
 class HeaderHandler(object):
@@ -206,7 +209,7 @@ def parseDateTime(dateString):
     else:
         month = int(monthname_lower.index(month.lower()))
     year = int(year)
-    hour, min, sec = map(int, time.split(':'))
+    hour, min, sec = [int(x) for x in time.split(':')]
     return int(timegm((year, month, day, hour, min, sec)))
 
 
@@ -545,7 +548,8 @@ def parseContentRange(header):
     if startend.strip() == '*':
         start,end=None,None
     else:
-        start, end = map(int, startend.split("-"))
+        start, end = [int(x) for x in startend.split("-")]
+
     if realLength == "*":
         realLength = None
     else:
@@ -681,7 +685,7 @@ def generateAccept(accept):
 
     out="%s/%s"%(mimeType.mediaType, mimeType.mediaSubtype)
     if mimeType.params:
-        out+=';'+generateKeyValues(mimeType.params.items())
+        out+=';'+generateKeyValues(list(mimeType.params.items()))
 
     if q != 1.0:
         out+=(';q=%.3f' % (q,)).rstrip('0').rstrip('.')
@@ -783,7 +787,7 @@ def generateRetryAfter(when):
 def generateContentType(mimeType):
     out="%s/%s"%(mimeType.mediaType, mimeType.mediaSubtype)
     if mimeType.params:
-        out+=';'+generateKeyValues(mimeType.params.items())
+        out+=';'+generateKeyValues(list(mimeType.params.items()))
     return out
 
 def generateIfRange(dateOrETag):
@@ -803,9 +807,9 @@ def generateWWWAuthenticate(headers):
         # we need to be able to generate from something other than a dict
 
         try:
-            l = []
-            for k,v in dict(challenge).items():
-                l.append("%s=%s" % (k, quoteString(v)))
+            l = ["%s=%s" % (k, quoteString(v))
+                 for k, v
+                 in dict(challenge).items()]
 
             _generated.append("%s %s" % (scheme, ", ".join(l)))
         except ValueError:

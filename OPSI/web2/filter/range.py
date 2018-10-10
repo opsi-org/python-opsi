@@ -9,7 +9,7 @@ from OPSI.web2 import http, http_headers, responsecode, stream
 class UnsatisfiableRangeRequest(Exception):
     pass
 
-def canonicalizeRange((start, end), size):
+def canonicalizeRange(spec, size):
     """Return canonicalized (start, end) or raises UnsatisfiableRangeRequest
     exception.
 
@@ -17,17 +17,18 @@ def canonicalizeRange((start, end), size):
     in python! Be very careful! A range of 0,1 should return 2 bytes."""
     
     # handle "-500" ranges
+    (start, end) = spec
     if start is None:
         start = max(0, size-end)
         end = None
-    
+
     if end is None or end >= size:
         end = size - 1
-        
+
     if start >= size:
         raise UnsatisfiableRangeRequest
-    
-    return start,end
+
+    return start, end
 
 def makeUnsatisfiable(request, oldresponse):
     if request.headers.hasHeader('if-range'):

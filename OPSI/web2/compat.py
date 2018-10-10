@@ -207,7 +207,7 @@ class OldRequestAdapter(pb.Copyable, components.Componentized, object):
         return None
 
     def getAllHeaders(self):
-        return dict(self.headers.iteritems())
+        return dict(self.headers.items())
 
     def getRequestHostname(self):
         return self.request.host

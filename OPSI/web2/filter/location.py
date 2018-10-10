@@ -1,7 +1,8 @@
 from OPSI.web2 import responsecode
-import urlparse
+from urllib.parse import urlparse
 
 __all__ = ['addLocation']
+
 
 def addLocation(request, location):
     """
@@ -16,13 +17,13 @@ def addLocation(request, location):
             # Check to see whether we have an absolute URI or not.
             # If not, have the request turn it into an absolute URI.
             #
-            (scheme, host, path, params, querystring, fragment) = urlparse.urlparse(location)
+            (scheme, host, path, params, querystring, fragment) = urlparse(location)
 
             if scheme == "":
                 uri = request.unparseURL(path=location)
             else:
                 uri = location
-        
+
             response.headers.setHeader("location", uri)
 
         return response

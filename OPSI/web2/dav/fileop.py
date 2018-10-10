@@ -29,17 +29,8 @@ This API is considered private to static.py and is therefore subject to
 change.
 """
 
-__all__ = [
-    "delete",
-    "copy",
-    "move",
-    "put",
-    "mkcollection",
-]
-
 import os
-import urllib
-from urlparse import urlsplit
+from urllib.parse import urlsplit, unquote
 
 from twisted.python import log
 from twisted.python.filepath import FilePath
@@ -49,6 +40,15 @@ from OPSI.web2 import responsecode
 from OPSI.web2.http import StatusResponse, HTTPError
 from OPSI.web2.stream import FileStream, readIntoFile
 from OPSI.web2.dav.http import ResponseQueue, statusForFailure
+
+__all__ = [
+    "delete",
+    "copy",
+    "move",
+    "put",
+    "mkcollection",
+]
+
 
 def delete(uri, filepath, depth="infinity"):
     """
@@ -102,7 +102,7 @@ def delete(uri, filepath, depth="infinity"):
         # recursive filsystem deletes fail.
         #
 
-        uri_path = urllib.unquote(urlsplit(uri)[2])
+        uri_path = unquote(urlsplit(uri)[2])
         if uri_path[-1] == "/":
             uri_path = uri_path[:-1]
 

@@ -1,6 +1,6 @@
 import warnings
 import os
-import urllib
+from urllib.parse import quote
 from zope.interface.declarations import implementer
 
 from twisted.internet import protocol, address
@@ -33,9 +33,9 @@ class BaseCGIChannelRequest(protocol.Protocol):
         if not uri:
             qstr = vars.get('QUERY_STRING', '')
             if qstr:
-                qstr = "?"+urllib.quote(qstr, safe="")
-            uri = urllib.quote(vars['SCRIPT_NAME'])+urllib.quote(vars.get('PATH_INFO',  ''))+qstr
-            
+                qstr = "?" + quote(qstr, safe="")
+            uri = quote(vars['SCRIPT_NAME'])+urllib.parse.quote(vars.get('PATH_INFO',  ''))+qstr
+
         for name,val in vars.items():
             if name.startswith('HTTP_'):
                 name = name[5:].replace('_', '-')

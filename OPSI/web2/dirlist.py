@@ -5,9 +5,10 @@
 
 # system imports
 import os
-import urllib
 import stat
 import time
+
+from urllib.parse import quote, unquote
 
 # twisted imports
 from OPSI.web2 import resource, http, http_headers
@@ -37,7 +38,7 @@ class DirectoryLister(resource.Resource):
         files = []
 
         for path in directory:
-            url = urllib.quote(path, '/~')
+            url = quote(path, '/~')
             fullpath = os.path.join(self.path, path)
             try:
                 st = os.stat(fullpath)
@@ -76,7 +77,7 @@ class DirectoryLister(resource.Resource):
 
 
     def render(self, request):
-        title = "Directory listing for %s" % urllib.unquote(request.path)
+        title = "Directory listing for %s" % unquote(request.path)
 
         s= """<html><head><title>%s</title><style>
           th, .even td, .odd td { padding-right: 0.5em; font-family: monospace}
