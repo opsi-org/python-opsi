@@ -30,7 +30,7 @@ Depends: duplicity,
 	python3-openssl,
 	python3-pam,
 	python3-sqlalchemy,
-	python3-twisted-web,
+	python3-twisted,
 	${misc:Depends},
 	${python3:Depends}
 Recommends: cabextract
