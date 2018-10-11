@@ -179,7 +179,7 @@ def integrateWindowsDrivers(driverSourceDirectories, driverDestinationDirectory,
 	infFiles = findFiles(
 		directory=driverDestinationDirectory,
 		prefix=driverDestinationDirectory,
-		includeFile=re.compile('\.inf$', re.IGNORECASE),
+		includeFile=re.compile(r'\.inf$', re.IGNORECASE),
 		returnDirs=False,
 		followLinks=True
 	)
@@ -212,7 +212,7 @@ def integrateWindowsDrivers(driverSourceDirectories, driverDestinationDirectory,
 		infFiles = findFiles(
 			directory=driverSourceDirectory,
 			prefix=driverSourceDirectory,
-			includeFile=re.compile('\.inf$', re.IGNORECASE),
+			includeFile=re.compile(r'\.inf$', re.IGNORECASE),
 			returnDirs=False,
 			followLinks=True,
 			repository=srcRepository)
@@ -326,7 +326,7 @@ def integrateWindowsTextmodeDrivers(driverDirectory, destination, devices, sifFi
 		messageSubject.setMessage(u"Integrating textmode drivers")
 
 	logger.info(u"Searching for txtsetup.oem in '%s'" % driverDirectory)
-	txtSetupOems = findFiles(directory=driverDirectory, prefix=driverDirectory, includeFile=re.compile('^txtsetup\.oem$', re.IGNORECASE), returnDirs=False)
+	txtSetupOems = findFiles(directory=driverDirectory, prefix=driverDirectory, includeFile=re.compile(r'^txtsetup\.oem$', re.IGNORECASE), returnDirs=False)
 	if not txtSetupOems:
 		logger.info(u"No txtsetup.oem found in '%s'" % driverDirectory)
 		return
@@ -530,7 +530,7 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 		infFiles = findFiles(
 				directory=additionalDriverDir,
 				prefix=additionalDriverDir,
-				includeFile=re.compile('\.inf$', re.IGNORECASE),
+				includeFile=re.compile(r'\.inf$', re.IGNORECASE),
 				returnDirs=False,
 				followLinks=True,
 				repository=srcRepository)
