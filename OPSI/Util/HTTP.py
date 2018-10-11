@@ -600,7 +600,7 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 				if self.peerCertificate:
 					commonName = crypto.load_certificate(crypto.FILETYPE_PEM, self.peerCertificate).get_subject().commonName
 					host = self.host
-					if re.search('^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$', host):
+					if re.search(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$', host):
 						fqdn = socket.getfqdn(host)
 						if fqdn == host:
 							raise OpsiServiceVerificationError(u"Failed to get fqdn for ip %s" % host)

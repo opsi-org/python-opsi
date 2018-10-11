@@ -171,7 +171,7 @@ def integrateWindowsDrivers(driverSourceDirectories, driverDestinationDirectory,
 		dirname = os.path.join(driverDestinationDirectory, filename)
 		if not os.path.isdir(dirname):
 			continue
-		if re.search('^\d+$', filename):
+		if re.search(r'^\d+$', filename):
 			if forceInt(filename) >= driverNumber:
 				driverNumber = forceInt(filename)
 
