@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 #
-# Copyright (C) 2006-2010, 2013-2019 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2010, 2013-2017 uib GmbH <info@uib.de>
 # All rights reserved.
 #
 # This program is free software: you can redistribute it and/or modify
@@ -456,27 +456,23 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 			if auditHardwareOnHost.hardwareClass not in auditInfoByClass:
 				auditInfoByClass[auditHardwareOnHost.hardwareClass] = auditHardwareOnHost
 
-	invalidCharactersRegex = re.compile(r'[<>?":|\\/*]')
 	byAuditIntegrated = False
 	if exists(rulesdir) and "COMPUTER_SYSTEM" in auditInfoByClass:
 		logger.info(u"Checking if automated integrating of additional drivers are possible")
 		auditHardwareOnHost = auditInfoByClass["COMPUTER_SYSTEM"]
-		vendorFromHost = invalidCharactersRegex.sub("_", auditHardwareOnHost.vendor or "")
-		modelFromHost = invalidCharactersRegex.sub("_", auditHardwareOnHost.model or "")
+		vendorFromHost = re.sub(r"[\<\>\?\"\:\|\\\/\*]", "_", auditHardwareOnHost.vendor or "")
+		modelFromHost = re.sub(r"[\<\>\?\"\:\|\\\/\*]", "_", auditHardwareOnHost.model or "")
 		skuFromHost = auditHardwareOnHost.sku or ""
 		skuLabel = ""
 		fallbackPath = ""
 
 		if vendorFromHost and modelFromHost:
-			logger.notice(u"Additional drivers for integration found using byAudit (System) for vendor: '%s' model : '%s' Check if drivers are available." % (vendorFromHost, modelFromHost))
-
 			vendordirectories = listdir(rulesdir)
 			if vendorFromHost not in vendordirectories:
 				if vendorFromHost.endswith((".", " ")):
 					vendorFromHost = "%s_" % vendorFromHost[:-1]
 
 			for vendordirectory in vendordirectories:
-				logger.info("Checking Vendor directory: %s" % vendordirectory)
 				if vendordirectory.lower() == vendorFromHost.lower():
 					modeldirectories = listdir(os.path.join(rulesdir, vendordirectory))
 					if skuFromHost and skuFromHost in modelFromHost:
@@ -485,9 +481,8 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 						if modelFromHost.endswith((".", " ")):
 							modelFromHost = "%s_" % modelFromHost[:-1]
 					for modeldirectory in modeldirectories:
-						logger.info("Checking Model directory %s" % modeldirectory)
 						if modeldirectory.lower() == modelFromHost.lower():
-							logger.info("ByAudit: Exact match found in Vendor directory: %s" % vendordirectory)
+							logger.info("ByAudit: Exact match found.")
 							additionalDrivers.append(os.path.join("byAudit", vendordirectory, modeldirectory))
 							byAuditIntegrated = True
 							break
@@ -502,12 +497,10 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 	if not byAuditIntegrated and exists(rulesdir) and "BASE_BOARD" in auditInfoByClass:
 		logger.info(u"Checking if mainboard-fallback for automated integrating of additional drivers are possible")
 		auditHardwareOnHost = auditInfoByClass["BASE_BOARD"]
-		vendorFromHost = invalidCharactersRegex.sub("_", auditHardwareOnHost.vendor or "")
-		productFromHost = invalidCharactersRegex.sub("_", auditHardwareOnHost.product or "")
+		vendorFromHost = re.sub(r"[\<\>\?\"\:\|\\\/\*]", "_", auditHardwareOnHost.vendor or "")
+		productFromHost = re.sub(r"[\<\>\?\"\:\|\\\/\*]", "_", auditHardwareOnHost.product or "")
 
 		if vendorFromHost and productFromHost:
-			logger.notice(u"Additional drivers for integration found using byAudit (Motherboard) for vendor: '%s' model : '%s' Check if drivers are available." % (vendorFromHost, modelFromHost))
-
 			vendordirectories = listdir(rulesdir)
 			if vendorFromHost not in vendordirectories:
 				if vendorFromHost.endswith((".", " ")):
