@@ -391,7 +391,7 @@ def compareVersions(v1, condition, v2):
 	def splitProductAndPackageVersion(versionString):
 		productVersion = packageVersion = u'0'
 
-		match = re.search('^\s*([\w\.]+)-*([\w\.]*)\s*$', versionString)
+		match = re.search(r'^\s*([\w\.]+)-*([\w\.]*)\s*$', versionString)
 		if not match:
 			raise ValueError(u"Bad version string '%s'" % versionString)
 
