@@ -1125,7 +1125,7 @@ def mount(dev, mountpoint, **options):
 
 		with codecs.open(u"/etc/davfs2/secrets", "w", "utf8") as f:
 			for line in lines:
-				if re.search("^%s\s+" % dev, line):
+				if re.search(r"^%s\s+" % dev, line):
 					f.write(u"#")
 				f.write(line)
 			f.write(u'%s "%s" "%s"\n' % (dev, options['username'], options['password']))
@@ -1137,7 +1137,7 @@ def mount(dev, mountpoint, **options):
 
 			with open(u"/etc/davfs2/davfs2.conf", "w") as f:
 				for line in lines:
-					if re.search("^servercert\s+", line):
+					if re.search(r"^servercert\s+", line):
 						f.write("#")
 					f.write(line)
 				f.write(u"servercert /etc/davfs2/certs/trusted.pem\n")
@@ -1202,11 +1202,11 @@ def getBlockDeviceBusType(device):
 		device = d
 
 	for line in execute(u'%s --disk --cdrom' % which('hwinfo')):
-		if re.search('^\s+$', line):
+		if re.search(r'^\s+$', line):
 			(devs, type) = ([], None)
 			continue
 
-		match = re.search('^\s+Device Files*:(.*)$', line)
+		match = re.search(r'^\s+Device Files*:(.*)$', line)
 		if match:
 			if match.group(1).find(u',') != -1:
 				devs = match.group(1).split(u',')
@@ -1217,7 +1217,7 @@ def getBlockDeviceBusType(device):
 
 			devs = [currentDev.strip() for currentDev in devs]
 
-		match = re.search('^\s+Attached to:\s+[^\(]+\((\S+)\s*', line)
+		match = re.search(r'^\s+Attached to:\s+[^\(]+\((\S+)\s*', line)
 		if match:
 			type = match.group(1)
 
@@ -1244,7 +1244,7 @@ def getBlockDeviceContollerInfo(device, lshwoutput=None):
 	storageControllers = {}
 
 	for line in lines:
-		match = re.search('^(/\S+)\s+(\S+)\s+storage\s+(\S+.*)\s\[([a-fA-F0-9]{1,4})\:([a-fA-F0-9]{1,4})\]$', line)
+		match = re.search(r'^(/\S+)\s+(\S+)\s+storage\s+(\S+.*)\s\[([a-fA-F0-9]{1,4})\:([a-fA-F0-9]{1,4})\]$', line)
 		if match:
 			vendorId = match.group(4)
 			while len(vendorId) < 4:
@@ -1280,7 +1280,7 @@ def getBlockDeviceContollerInfo(device, lshwoutput=None):
 	# In this case return the first AHCI controller, that will be found
 	storageControllers = {}
 
-	storagePattern = re.compile('^(/\S+)\s+storage\s+(\S+.*[Aa][Hh][Cc][Ii].*)\s\[([a-fA-F0-9]{1,4})\:([a-fA-F0-9]{1,4})\]$')
+	storagePattern = re.compile(r'^(/\S+)\s+storage\s+(\S+.*[Aa][Hh][Cc][Ii].*)\s\[([a-fA-F0-9]{1,4})\:([a-fA-F0-9]{1,4})\]$')
 	for line in lines:
 		match = storagePattern.search(line)
 		if match:
@@ -3409,7 +3409,7 @@ def hardwareInventory(config, progressSubject=None):
 	dmiType = None
 	header = True
 	option = None
-	optRegex = re.compile('(\s+)([^:]+):(.*)')
+	optRegex = re.compile(r'(\s+)([^:]+):(.*)')
 	for line in execute(which("dmidecode")):
 		try:
 			if not line.strip():
@@ -3902,7 +3902,7 @@ def getActiveSessionIds(winApiBugCommand=None, data=None):
 
 	sessionIds = []
 	for line in data:
-		parts = re.split('\s+', line)
+		parts = re.split(r'\s+', line)
 		if len(parts) == 7:
 			sessionIds.append(int(parts[-2]))
 		elif len(parts) == 6:

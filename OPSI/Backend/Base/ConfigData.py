@@ -372,7 +372,7 @@ the opsi host key.
 		result = {'password': u'', 'rsaPrivateKey': u''}
 
 		cf = ConfigFile(filename=self._opsiPasswdFile)
-		lineRegex = re.compile('^\s*([^:]+)\s*:\s*(\S+)\s*$')
+		lineRegex = re.compile(r'^\s*([^:]+)\s*:\s*(\S+)\s*$')
 		for line in cf.parse():
 			match = lineRegex.search(line)
 			if match is None:
@@ -433,7 +433,7 @@ depot where the method is.
 		encodedPassword = blowfishEncrypt(depot.opsiHostKey, password)
 
 		cf = ConfigFile(filename=self._opsiPasswdFile)
-		lineRegex = re.compile('^\s*([^:]+)\s*:\s*(\S+)\s*$')
+		lineRegex = re.compile(r'^\s*([^:]+)\s*:\s*(\S+)\s*$')
 		lines = []
 		if os.path.exists(self._opsiPasswdFile):
 			for line in cf.readlines():

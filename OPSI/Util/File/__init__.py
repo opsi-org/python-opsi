@@ -307,7 +307,7 @@ class ChangelogFile(TextFile):
 		  [optional blank line(s), stripped]
 	[one space]-- maintainer name <email address>[two spaces]date
 	'''
-	releaseLineRegex = re.compile('^\s*(\S+)\s+\(([^\)]+)\)\s+([^\;]+)\;\s+urgency\=(\S+)\s*$')
+	releaseLineRegex = re.compile(r'^\s*(\S+)\s+\(([^\)]+)\)\s+([^\;]+)\;\s+urgency\=(\S+)\s*$')
 
 	def __init__(self, filename, lockFailTimeout=2000):
 		TextFile.__init__(self, filename, lockFailTimeout)
@@ -498,7 +498,7 @@ class ConfigFile(TextFile):
 
 
 class IniFile(ConfigFile):
-	optionMatch = re.compile('^([^\:\=]+)\s*([\:\=].*)$')
+	optionMatch = re.compile(r'^([^\:\=]+)\s*([\:\=].*)$')
 
 	def __init__(self, filename, lockFailTimeout=2000, ignoreCase=True, raw=True):
 		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars=[';', '#'])
@@ -1146,7 +1146,7 @@ class TxtSetupOemFile(ConfigFile):
 			componentId = match.group(2)
 			logger.info(u"Found hardwareIds section '%s', component name '%s', component id '%s'" % (section, componentName, componentId))
 			for line in lines:
-				if not re.search('[iI][dD]\s*=', line):
+				if not re.search(r'[iI][dD]\s*=', line):
 					continue
 				(device, serviceName) = line.split(u'=', 1)[1].strip().split(u',', 1)
 				device = device.strip()
@@ -1938,7 +1938,7 @@ class DHCPDConfFile(TextFile):
 					current.append(l)
 				else:
 					quote = u"'"
-			elif re.search('\s', l):
+			elif re.search(r'\s', l):
 				current.append(l)
 			elif l == u',':
 				if quote:

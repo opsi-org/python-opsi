@@ -119,7 +119,7 @@ class BackendAccessControl(object):
 			raise BackendConfigurationError(u"Cannot use BackendAccessControl instance as backend")
 
 		try:
-			if re.search('^[^\.]+\.[^\.]+\.\S+$', self._username):
+			if re.search(r'^[^\.]+\.[^\.]+\.\S+$', self._username):
 				# Username starts with something like hostname.domain.tld:
 				# Assuming it is a host passing his FQDN as username
 				logger.debug(u"Trying to authenticate by opsiHostKey...")
