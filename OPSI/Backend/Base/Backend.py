@@ -69,7 +69,10 @@ def describeInterface(instance):
 			# protected / private
 			continue
 
-		args, varargs, keywords, defaults = inspect.getargspec(function)
+		spec = inspect.getfullargspec(function)
+		args = spec.args
+		defaults = spec.defaults
+
 		params = [arg for arg in args if arg != 'self']
 
 		if defaults is not None:
@@ -78,7 +81,7 @@ def describeInterface(instance):
 				index = offset + i
 				params[index] = '*{0}'.format(params[index])
 
-		for index, element in enumerate((varargs, keywords), start=1):
+		for index, element in enumerate((spec.varargs, spec.varkw), start=1):
 			if element:
 				stars = '*' * index
 				params.extend(['{0}{1}'.format(stars, arg) for arg in forceList(element)])
@@ -88,8 +91,8 @@ def describeInterface(instance):
 			'name': methodName,
 			'params': params,
 			'args': args,
-			'varargs': varargs,
-			'keywords': keywords,
+			'varargs': spec.varargs,
+			'keywords': spec.varkw,
 			'defaults': defaults
 		}
 
