@@ -307,7 +307,7 @@ class ChangelogFile(TextFile):
 		  [optional blank line(s), stripped]
 	[one space]-- maintainer name <email address>[two spaces]date
 	'''
-	releaseLineRegex = re.compile(r'^\s*(\S+)\s+\(([^\)]+)\)\s+([^\;]+)\;\s+urgency\=(\S+)\s*$')
+	releaseLineRegex = re.compile(r'^\s*(\S+)\s+\(([^\)]+)\)\s+([^;]+);\s+urgency\=(\S+)\s*$')
 
 	def __init__(self, filename, lockFailTimeout=2000):
 		TextFile.__init__(self, filename, lockFailTimeout)
