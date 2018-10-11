@@ -531,7 +531,7 @@ def parseContentType(header):
 
 def parseContentMD5(header):
     try:
-        return base64.decodestring(header)
+        return base64.decodebytes(header)
     except Exception as e:
         raise ValueError(e)
 

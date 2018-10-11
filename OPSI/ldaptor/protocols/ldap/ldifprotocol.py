@@ -73,7 +73,7 @@ class LDIF(object, basic.LineReceiver):
 
     def parseValue(self, val):
         if val.startswith(':'):
-            return base64.decodestring(val[1:].lstrip(' '))
+            return base64.decodebytes(val[1:].lstrip(' '))
         elif val.startswith('<'):
             raise NotImplementedError
         else:
