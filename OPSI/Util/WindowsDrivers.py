@@ -460,8 +460,8 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 	if exists(rulesdir) and "COMPUTER_SYSTEM" in auditInfoByClass:
 		logger.info(u"Checking if automated integrating of additional drivers are possible")
 		auditHardwareOnHost = auditInfoByClass["COMPUTER_SYSTEM"]
-		vendorFromHost = re.sub("[\<\>\?\"\:\|\\\/\*]", "_", auditHardwareOnHost.vendor or "")
-		modelFromHost = re.sub("[\<\>\?\"\:\|\\\/\*]", "_", auditHardwareOnHost.model or "")
+		vendorFromHost = re.sub(r"[\<\>\?\"\:\|\\\/\*]", "_", auditHardwareOnHost.vendor or "")
+		modelFromHost = re.sub(r"[\<\>\?\"\:\|\\\/\*]", "_", auditHardwareOnHost.model or "")
 		skuFromHost = auditHardwareOnHost.sku or ""
 		skuLabel = ""
 		fallbackPath = ""
@@ -497,8 +497,8 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 	if not byAuditIntegrated and exists(rulesdir) and "BASE_BOARD" in auditInfoByClass:
 		logger.info(u"Checking if mainboard-fallback for automated integrating of additional drivers are possible")
 		auditHardwareOnHost = auditInfoByClass["BASE_BOARD"]
-		vendorFromHost = re.sub("[\<\>\?\"\:\|\\\/\*]", "_", auditHardwareOnHost.vendor or "")
-		productFromHost = re.sub("[\<\>\?\"\:\|\\\/\*]", "_", auditHardwareOnHost.product or "")
+		vendorFromHost = re.sub(r"[\<\>\?\"\:\|\\\/\*]", "_", auditHardwareOnHost.vendor or "")
+		productFromHost = re.sub(r"[\<\>\?\"\:\|\\\/\*]", "_", auditHardwareOnHost.product or "")
 
 		if vendorFromHost and productFromHost:
 			vendordirectories = listdir(rulesdir)
