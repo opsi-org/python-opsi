@@ -670,7 +670,7 @@ class InfFile(ConfigFile):
 	hdaudioDeviceRegex = re.compile(r'HDAUDIO\\\.*VEN_([\da-fA-F]+)&DEV_([\da-fA-F]+)', re.IGNORECASE)
 	usbDeviceRegex = re.compile(r'USB.*VID_([\da-fA-F]+)&PID_([\da-fA-F]+)', re.IGNORECASE)
 	acpiDeviceRegex = re.compile(r'ACPI\\(\S+)_-_(\S+)', re.IGNORECASE)
-	varRegex = re.compile(r'\%([^\%]+)\%')
+	varRegex = re.compile(r'%([^%]+)%')
 	classRegex = re.compile(r'class\s*=')
 
 	def __init__(self, filename, lockFailTimeout=2000):
