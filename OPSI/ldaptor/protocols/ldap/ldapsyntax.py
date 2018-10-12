@@ -617,7 +617,7 @@ class LDAPEntryWithClient(entry.EditableLDAPEntry):
             if not isinstance(e, ldaperrors.Success):
                 try:
                     raise e
-                except ldaperrors.LDAPSizeLimitExceeded, e:
+                except ldaperrors.LDAPSizeLimitExceeded as e:
                     if sizeLimitIsNonFatal:
                         pass
                 except:
