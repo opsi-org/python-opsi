@@ -90,7 +90,7 @@ def _put(path, entry):
                 raise LDIFTreeNoSuchObject(entry.dn.up())
             try:
                 os.mkdir(parentDir)
-            except OSError, e:
+            except OSError as e:
                 if e.errno == errno.EEXIST:
                     # we lost a race to create the directory, safe to ignore
                     pass

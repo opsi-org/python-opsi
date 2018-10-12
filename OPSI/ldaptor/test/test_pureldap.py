@@ -476,7 +476,7 @@ class KnownValues(unittest.TestCase):
 
         (pureldap.LDAPMessage,
          [],
-         {'id': 1L,
+         {'id': 1,
           'value': pureldap.LDAPSearchRequest(
         baseObject='dc=example,dc=com',
         scope=pureldap.LDAP_SCOPE_wholeSubtree,

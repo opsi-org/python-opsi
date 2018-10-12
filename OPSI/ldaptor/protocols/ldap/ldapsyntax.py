@@ -523,7 +523,8 @@ class LDAPEntryWithClient(entry.EditableLDAPEntry):
             d = defer.maybeDeferred(fn, newPasswd)
             d.addCallbacks(self._cbSetPassword_one,
                            self._ebSetPassword_one)
-            def cb((success, info)):
+            def cb(x):
+                success, info = x
                 return results+[(success, info)]
             d.addCallback(cb)
 

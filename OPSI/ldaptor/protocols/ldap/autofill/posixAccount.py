@@ -25,7 +25,7 @@ class Autofill_posix: #TODO baseclass
     def start(self, ldapObject):
         assert 'objectClass' in ldapObject
         if 'posixAccount' not in ldapObject['objectClass']:
-            raise autofill.ObjectMissingObjectClassException, ldapObject
+            raise autofill.ObjectMissingObjectClassException(ldapObject)
 
         assert 'loginShell' not in ldapObject
         ldapObject['loginShell'] = ['/bin/sh']

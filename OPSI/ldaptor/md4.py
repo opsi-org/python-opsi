@@ -106,7 +106,7 @@ class MD4Type:
         self.B = U32(0xefcdab89)
         self.C = U32(0x98badcfe)
         self.D = U32(0x10325476)
-        self.count, self.len1, self.len2 = U32(0L), U32(0L), U32(0L)
+        self.count, self.len1, self.len2 = U32(0), U32(0), U32(0)
         self.buf = [0x00] * 64
         self.update(data)
 
@@ -152,8 +152,8 @@ class MD4Type:
             bufpos = bufpos + int(L)
 
             #print self.count, L, ilen
-            if (int(self.count) == 64L):
-                self.count = U32(0L)
+            if (int(self.count) == 64):
+                self.count = U32(0)
                 X = []
                 i = 0
                 for j in range(16):
