@@ -31,6 +31,7 @@ Depends: duplicity,
 	python3-pam,
 	python3-sqlalchemy,
 	python3-twisted,
+	python3-pyparsing,
 	${misc:Depends},
 	${python3:Depends}
 Recommends: cabextract
