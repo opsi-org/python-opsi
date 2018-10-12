@@ -40,10 +40,10 @@ class HeaderAdapter(collections.MutableMapping):
             yield k, ', '.join(v)
 
     def keys(self):
-        return [k for k, _ in self.iteritems()]
+        return [k for k, _ in self.items()]
 
     def __iter__(self):
-        for k, _ in self.iteritems():
+        for k, _ in self.items():
             yield k
 
     def has_key(self, name):
@@ -207,7 +207,7 @@ class OldRequestAdapter(pb.Copyable, components.Componentized, object):
         return None
 
     def getAllHeaders(self):
-        return dict(self.headers.iteritems())
+        return dict(self.headers.items())
 
     def getRequestHostname(self):
         return self.request.host
@@ -418,7 +418,7 @@ class OldResourceAdapter(object):
         return "<%s @ 0x%x adapting %r>" % (self.__class__.__name__, id(self), self.original)
 
     def locateChild(self, req, segments):
-        import server
+        from . import server
         request = iweb.IOldRequest(req)
         if self.original.isLeaf:
             return self, server.StopTraversal

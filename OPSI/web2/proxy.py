@@ -28,7 +28,7 @@ from zope.interface import Interface
 from zope.interface.declarations import implementer
 
 # system imports
-import urlparse
+from urllib.parse import urlparse, urlunparse
 
 
 class ProxyClient(http.HTTPClient):
@@ -38,7 +38,7 @@ class ProxyClient(http.HTTPClient):
         self.father = father
         self.command = command
         self.rest = rest
-        if headers.has_key("proxy-connection"):
+        if "proxy-connection" in headers:
             del headers["proxy-connection"]
         headers["connection"] = "close"
         self.headers = headers
@@ -100,19 +100,19 @@ class ProxyRequest(http.Request):
     ports = {'http': 80}
 
     def process(self):
-        parsed = urlparse.urlparse(self.uri)
+        parsed = urlparse(self.uri)
         protocol = parsed[0]
         host = parsed[1]
         port = self.ports[protocol]
         if ':' in host:
             host, port = host.split(':')
             port = int(port)
-        rest = urlparse.urlunparse(('','')+parsed[2:])
+        rest = urlunparse(('','')+parsed[2:])
         if not rest:
             rest = rest+'/'
         class_ = self.protocols[protocol]
         headers = self.getAllHeaders().copy()
-        if not headers.has_key('host'):
+        if 'host' not in headers:
             headers['host'] = host
         self.content.seek(0, 0)
         s = self.content.read()
@@ -202,7 +202,7 @@ class ReverseProxyResourceConnector:
     def render(self, request):
         request.received_headers['host'] = self.connector.name
         request.content.seek(0, 0)
-        qs = urlparse.urlparse(request.uri)[4]
+        qs = urlparse(request.uri)[4]
         path = self.path+'/'.join(request.postpath)
         if qs:
             rest = path + '?' + qs

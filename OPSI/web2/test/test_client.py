@@ -60,7 +60,7 @@ class ClientTests(HTTPTests):
         headers = headers.split('\r\n')
 
         # check status line
-        self.assertEquals(status, expectedStatus)
+        self.assertEqual(status, expectedStatus)
 
         # check headers (header order isn't guraunteed so we use
         # self.assertIn
@@ -70,16 +70,16 @@ class ClientTests(HTTPTests):
         if not expectedContent:
             expectedContent = ''
 
-        self.assertEquals(content, expectedContent)
+        self.assertEqual(content, expectedContent)
 
     def assertDone(self, cxn):
         self.iterate(cxn)
-        self.assertEquals(cxn.server.done, True, 'Connection not closed.')
+        self.assertEqual(cxn.server.done, True, 'Connection not closed.')
 
     def assertHeaders(self, resp, expectedHeaders):
         headers = list(resp.headers.getAllRawHeaders())
         headers.sort()
-        self.assertEquals(headers, expectedHeaders)
+        self.assertEqual(headers, expectedHeaders)
 
     def checkResponse(self, resp, code, headers, length, data):
         """
@@ -87,11 +87,11 @@ class ClientTests(HTTPTests):
         length, and data in stream.
         """
         def gotData(gotdata):
-            self.assertEquals(gotdata, data)
+            self.assertEqual(gotdata, data)
 
-        self.assertEquals(resp.code, code)
+        self.assertEqual(resp.code, code)
         self.assertHeaders(resp, headers)
-        self.assertEquals(resp.stream.length, length)
+        self.assertEqual(resp.stream.length, length)
 
         return defer.maybeDeferred(resp.stream.read).addCallback(gotData)
 
@@ -128,12 +128,12 @@ class TestHTTPClient(ClientTests):
         req = http.ClientRequest('GET', '/', None, None)
 
         def gotData(data):
-            self.assertEquals(data, '1234567890')
+            self.assertEqual(data, '1234567890')
 
         def gotResp(resp):
-            self.assertEquals(resp.code, 200)
+            self.assertEqual(resp.code, 200)
             self.assertHeaders(resp, [])
-            self.assertEquals(resp.stream.length, 10)
+            self.assertEqual(resp.stream.length, 10)
 
             self.writeToClient(cxn, '1234567890')
 
@@ -274,11 +274,11 @@ class TestHTTPClient(ClientTests):
         didIt = [0]
 
         def gotData(data):
-            self.assertEquals(data, None)
+            self.assertEqual(data, None)
 
         def gotResp(resp):
-            self.assertEquals(resp.code, 200)
-            self.assertEquals(resp.stream.length, 0)
+            self.assertEqual(resp.code, 200)
+            self.assertEqual(resp.stream.length, 0)
             self.assertHeaders(resp, [])
 
             return defer.maybeDeferred(resp.stream.read).addCallback(gotData)
@@ -369,7 +369,7 @@ class TestEdgeCases(ClientTests):
         req = http.ClientRequest('GET', '/', None, None)
 
         def gotResp(r):
-            print r
+            print(r)
 
         d = cxn.client.submitRequest(req).addCallback(gotResp)
 

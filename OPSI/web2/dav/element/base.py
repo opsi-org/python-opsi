@@ -125,11 +125,11 @@ class WebDAVElement (object):
         #
         # Validate that children are of acceptable types
         #
-        allowed_children = dict([
-            (child_type, list(limits))
+        allowed_children = {
+            child_type: list(limits)
             for child_type, limits
             in self.allowed_children.items()
-        ])
+        }
 
         my_children = []
 
@@ -186,7 +186,7 @@ class WebDAVElement (object):
         else:
             if not isinstance(self, WebDAVUnknownElement) and attributes:
                 log.msg("Attributes %s are unexpected in %s element"
-                        % (attributes.keys(), self.sname()))
+                        % (list(attributes.keys()), self.sname()))
             my_attributes.update(attributes)
 
         self.attributes = my_attributes
@@ -247,7 +247,7 @@ class WebDAVElement (object):
             # Write out any attributes or the namespace if difference from enclosing element.
             if self.attributes or (ns != self.namespace):
                 output.write("<%s" % (self.name,))
-                for name, value in self.attributes.iteritems():
+                for name, value in self.attributes.items():
                     self.writeAttributeToStream(output, name, value)
                 if ns != self.namespace:
                     output.write(" xmlns='%s'" % (self.namespace,))
@@ -258,7 +258,7 @@ class WebDAVElement (object):
             # Write out any attributes or the namespace if difference from enclosing element.
             if self.attributes or (ns != self.namespace):
                 output.write("<%s" % (self.name,))
-                for name, value in self.attributes.iteritems():
+                for name, value in self.attributes.items():
                     self.writeAttributeToStream(output, name, value)
                 if ns != self.namespace:
                     output.write(" xmlns='%s'" % (self.namespace,))

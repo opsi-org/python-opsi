@@ -122,7 +122,7 @@ class TestURIRewrite(BaseCase):
 
 def raw(d):
     headers=http_headers.Headers()
-    for k,v in d.iteritems():
+    for k,v in d.items():
         headers.setRawHeaders(k, [v])
     return headers
 

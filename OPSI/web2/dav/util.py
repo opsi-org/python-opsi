@@ -31,8 +31,7 @@ change.
 """
 
 import importlib
-import urllib
-from urlparse import urlsplit, urlunsplit
+from urllib.parse import urlsplit, urlunsplit, unquote, quote
 import posixpath # Careful; this module is not documented as public API
 
 from twisted.python import log
@@ -65,7 +64,7 @@ def allDataFromStream(stream, filter=None):
         if filter is None:
             return result
         else:
-            return filter(result)
+            return list(filter(result))
     return readStream(stream, data.append).addCallback(gotAllData)
 
 def davXMLFromStream(stream):
@@ -116,9 +115,9 @@ def normalizeURL(url):
 
     (scheme, host, path, query, fragment) = urlsplit(cleanup(url))
 
-    path = cleanup(posixpath.normpath(urllib.unquote(path)))
+    path = cleanup(posixpath.normpath(unquote(path)))
 
-    return urlunsplit((scheme, host, urllib.quote(path), query, fragment))
+    return urlunsplit((scheme, host, quote(path), query, fragment))
 
 def joinURL(*urls):
     """

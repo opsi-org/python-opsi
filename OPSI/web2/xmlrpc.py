@@ -12,7 +12,7 @@ Maintainer: U{Itamar Shtull-Trauring<mailto:twisted@itamarst.org>}
 """
 
 # System Imports
-import xmlrpclib
+import xmlrpc.client
 
 # Sibling Imports
 from OPSI.web2 import resource, stream
@@ -21,10 +21,10 @@ from twisted.internet import defer
 from twisted.python import log, reflect
 
 # Useful so people don't need to import xmlrpclib directly
-Fault = xmlrpclib.Fault
-Binary = xmlrpclib.Binary
-Boolean = xmlrpclib.Boolean
-DateTime = xmlrpclib.DateTime
+Fault = xmlrpc.client.Fault
+Binary = xmlrpc.client.Binary
+Boolean = xmlrpc.client.Boolean
+DateTime = xmlrpc.client.DateTime
 
 
 class NoSuchFunction(Fault):
@@ -65,7 +65,7 @@ class XMLRPC(resource.Resource):
         return self.subHandlers.get(prefix, None)
 
     def getSubHandlerPrefixes(self):
-        return self.subHandlers.keys()
+        return list(self.subHandlers.keys())
 
     def render(self, request):
         # For GET/HEAD: Return an error message
@@ -77,7 +77,7 @@ class XMLRPC(resource.Resource):
             s)
     
     def http_POST(self, request):
-        parser, unmarshaller = xmlrpclib.getparser()
+        parser, unmarshaller = xmlrpc.client.getparser()
         deferred = stream.readStream(request.stream, parser.feed)
         deferred.addCallback(lambda x: self._cbDispatch(
             request, parser, unmarshaller))
@@ -96,10 +96,10 @@ class XMLRPC(resource.Resource):
         if not isinstance(result, Fault):
             result = (result,)
         try:
-            s = xmlrpclib.dumps(result, methodresponse=1)
+            s = xmlrpc.client.dumps(result, methodresponse=1)
         except:
             f = Fault(self.FAILURE, "can't serialize output")
-            s = xmlrpclib.dumps(f, methodresponse=1)
+            s = xmlrpc.client.dumps(f, methodresponse=1)
         return http.Response(responsecode.OK,
             {'content-type': http_headers.MimeType('text', 'xml')},
             s)

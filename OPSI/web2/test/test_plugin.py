@@ -17,15 +17,15 @@ class TestResourcePlugin(unittest.TestCase):
         
         assert isinstance(myPluggedResource, plugin.TestResource)
 
-        self.assertEquals(myPluggedResource.foo, 'Foo')
-        self.assertEquals(myPluggedResource.bar, 'Bar')
+        self.assertEqual(myPluggedResource.foo, 'Foo')
+        self.assertEqual(myPluggedResource.bar, 'Bar')
            
     def testNoPlugin(self):
         myPluggedResource = plugin.resourcePlugger('NoSuchResource')
         
         assert isinstance(myPluggedResource, plugin.NoPlugin)
         
-        self.assertEquals(myPluggedResource.plugin, 'NoSuchResource')
+        self.assertEqual(myPluggedResource.plugin, 'NoSuchResource')
 
     def testDefaultPlugin(self):
         myPluggedResource = plugin.resourcePlugger('NoSuchResource',

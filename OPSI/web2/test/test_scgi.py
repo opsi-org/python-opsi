@@ -15,7 +15,7 @@ from OPSI.web2 import stream
 from OPSI.web2 import twscgi
 
 def parseSCGIHeaders(headers):
-    return zip(*[iter(headers.split(':', 1)[1].split('\x00'))]*2)
+    return list(zip(*[iter(headers.split(':', 1)[1].split('\x00'))]*2))
 
 class SCGITests(HTTPTests):
     def connect(self, logFile=None):
@@ -45,12 +45,12 @@ class SCGIClientTests(SCGITests, ClientTests):
 
     def testSimpleRequest(self):
         def gotResponse(resp):
-            self.assertEquals(resp.code, 200)
-            self.assertEquals(resp.headers.getHeader('Content-Type'), 
+            self.assertEqual(resp.code, 200)
+            self.assertEqual(resp.headers.getHeader('Content-Type'), 
                               http_headers.MimeType.fromString('text/plain'))
 
             return defer.maybeDeferred(resp.stream.read
-                                       ).addCallback(self.assertEquals, '42')
+                                       ).addCallback(self.assertEqual, '42')
             
         req = SimpleRequest(None, 'GET', '/')
 
@@ -61,7 +61,7 @@ class SCGIClientTests(SCGITests, ClientTests):
 
         headers = parseSCGIHeaders(self.cxn.server.data)
 
-        self.assertEquals(headers[0], ('CONTENT_LENGTH', '0'))
+        self.assertEqual(headers[0], ('CONTENT_LENGTH', '0'))
 
         self.failUnlessIn(('SCGI', '1'), headers)
         
@@ -75,15 +75,15 @@ class SCGIClientTests(SCGITests, ClientTests):
 
     def testOperatesOnStreamDirectly(self):
         def gotResponse(resp):
-            self.assertEquals(resp.code, 200)
-            self.assertEquals(resp.headers.getHeader('Content-Type'), 
+            self.assertEqual(resp.code, 200)
+            self.assertEqual(resp.headers.getHeader('Content-Type'), 
                               http_headers.MimeType.fromString('text/plain'))
             
             stream = resp.stream
             resp.stream = None
 
             return defer.maybeDeferred(stream.read
-                                       ).addCallback(self.assertEquals, '42')
+                                       ).addCallback(self.assertEqual, '42')
             
         req = SimpleRequest(None, 'GET', '/')
 
@@ -94,7 +94,7 @@ class SCGIClientTests(SCGITests, ClientTests):
 
         headers = parseSCGIHeaders(self.cxn.server.data)
 
-        self.assertEquals(headers[0], ('CONTENT_LENGTH', '0'))
+        self.assertEqual(headers[0], ('CONTENT_LENGTH', '0'))
 
         self.failUnlessIn(('SCGI', '1'), headers)
         
