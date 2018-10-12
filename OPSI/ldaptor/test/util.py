@@ -121,7 +121,7 @@ def pumpingDeferredResult(d, timeout=None):
     result = _getDeferredResult(d, timeout)
     if isinstance(result, failure.Failure):
         if result.tb:
-            raise result.value.__class__, result.value, result.tb
+            raise result.value.__class__(result.value, result.tb)
         raise result.value
     else:
         return result
@@ -132,4 +132,4 @@ def pumpingDeferredError(d, timeout=None):
     if isinstance(result, failure.Failure):
         return result
     else:
-        raise unittest.FailTest, "Deferred did not fail: %r" % (result,)
+        raise unittest.FailTest("Deferred did not fail: %r" % (result,))

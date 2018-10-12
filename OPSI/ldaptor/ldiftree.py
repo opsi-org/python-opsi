@@ -61,7 +61,7 @@ def _get(path, dn):
     if len(entries) == 0:
         raise LDIFTreeEntryContainsNoEntries
     elif len(entries) > 1:
-        raise LDIFTreeEntryContainsMultipleEntries, entries
+        raise LDIFTreeEntryContainsMultipleEntries(entries)
     else:
         return entries[0]
 
@@ -87,7 +87,7 @@ def _put(path, entry):
         parentDir = os.path.join(grandParent, '%s.dir' % l[-1])
         if not os.path.exists(parentDir):
             if not os.path.exists(parentEntry):
-                raise LDIFTreeNoSuchObject, entry.dn.up()
+                raise LDIFTreeNoSuchObject(entry.dn.up())
             try:
                 os.mkdir(parentDir)
             except OSError, e:
@@ -144,7 +144,7 @@ class LDIFTreeEntry(entry.EditableLDAPEntry,
         if len(entries) == 0:
             raise LDIFTreeEntryContainsNoEntries
         elif len(entries) > 1:
-            raise LDIFTreeEntryContainsMultipleEntries, entries
+            raise LDIFTreeEntryContainsMultipleEntries(entries)
         else:
             # TODO ugliness and all of its friends
             for k,v in entries[0].items():
@@ -222,7 +222,7 @@ class LDIFTreeEntry(entry.EditableLDAPEntry,
         rdn = distinguishedname.RelativeDistinguishedName(rdn)
         for c in self._sync_children():
             if c.dn.split()[0] == rdn:
-                raise ldaperrors.LDAPEntryAlreadyExists, c.dn
+                raise ldaperrors.LDAPEntryAlreadyExists(c.dn)
 
         dn = distinguishedname.DistinguishedName(listOfRDNs=
                                                  (rdn,)
@@ -267,7 +267,7 @@ class LDIFTreeEntry(entry.EditableLDAPEntry,
         for c in self._sync_children():
             if c.dn.split()[0] == rdn:
                 return c.delete()
-        raise ldaperrors.LDAPNoSuchObject, rdn
+        raise ldaperrors.LDAPNoSuchObject(rdn)
 
     def deleteChild(self, rdn):
         return defer.maybeDeferred(self._deleteChild, rdn)

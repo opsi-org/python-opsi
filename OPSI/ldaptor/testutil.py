@@ -11,10 +11,10 @@ def mustRaise(dummy):
 def calltrace():
     """Print out all function calls. For debug use only."""
     def printfuncnames(frame, event, arg):
-        print "|%s: %s:%d:%s" % (event,
+        print("|%s: %s:%d:%s" % (event,
                                  frame.f_code.co_filename,
                                  frame.f_code.co_firstlineno,
-                                 frame.f_code.co_name)
+                                 frame.f_code.co_name))
     import sys
     sys.setprofile(printfuncnames)
 
