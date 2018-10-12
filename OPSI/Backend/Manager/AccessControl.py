@@ -50,7 +50,7 @@ from OPSI.Util.File.Opsi import BackendACLFile, OpsiConfFile
 if os.name == 'posix':
 	import grp
 	import pwd
-	import pam
+	import PAM as pam
 elif os.name == 'nt':
 	import win32net
 	import win32security
@@ -298,7 +298,7 @@ class BackendAccessControl(object):
 			auth = pam.pam()
 			auth.start(self._pamService)
 			# Authenticate
-			auth.set_item(pam.PamConv, AuthConv(self._username, self._password))
+			auth.set_item(pam.PAM_CONV, AuthConv(self._username, self._password))
 			auth.authenticate()
 			auth.acct_mgmt()
 			logger.debug2("PAM authentication successful.")
@@ -314,6 +314,8 @@ class BackendAccessControl(object):
 				self._userGroups = set(forceUnicode(group[0]) for group in grp.getgrall() if self._username in group[3])
 				self._userGroups.add(primaryGroup)
 				logger.debug(u"User {0!r} is member of groups: {1}", self._username, self._userGroups)
+		except pam.error as e:
+			raise BackendAuthenticationError(u"PAM authentication failed for user '%s': %s" % (self._username, e))
 		except Exception as e:
 			raise BackendAuthenticationError(u"PAM authentication failed for user '%s': %s" % (self._username, e))
 
