@@ -127,7 +127,7 @@ class LDIFTreeEntry(entry.EditableLDAPEntry,
 
         try:
             f = file(entryPath)
-        except IOError, e:
+        except IOError as e:
             if e.errno == errno.ENOENT:
                 return
             else:
@@ -163,7 +163,7 @@ class LDIFTreeEntry(entry.EditableLDAPEntry,
         children = []
         try:
             filenames = os.listdir(self.path)
-        except OSError, e:
+        except OSError as e:
             if e.errno == errno.ENOENT:
                 pass
             else:
@@ -325,7 +325,7 @@ class LDIFTreeEntry(entry.EditableLDAPEntry,
         newpath = os.path.join(dstdir, '%s.dir' % newRDN)
         try:
             os.rename(self.path, newpath)
-        except OSError, e:
+        except OSError as e:
             if e.errno == errno.ENOENT:
                 pass
             else:

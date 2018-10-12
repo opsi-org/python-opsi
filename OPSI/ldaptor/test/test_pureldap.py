@@ -555,11 +555,11 @@ class KnownValues(unittest.TestCase):
             result = str(result)
             result = map(ord, result)
             if result!=encoded:
-                raise AssertionError, \
+                raise AssertionError(
                       "Class %s(*%s, **%s) doesn't encode properly: " \
                       "%s != %s" % (klass.__name__,
                                     repr(args), repr(kwargs),
-                                    repr(result), repr(encoded))
+                                    repr(result), repr(encoded)))
 
     def testFromLDAP(self):
         """LDAPClass(encoded="...") should give known result with known input"""
