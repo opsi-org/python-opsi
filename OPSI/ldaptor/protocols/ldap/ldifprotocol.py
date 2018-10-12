@@ -85,7 +85,7 @@ class LDIF(object, basic.LineReceiver):
         except ValueError:
             # unpack list of wrong size
             # -> invalid input data
-            raise LDIFLineWithoutSemicolonError, line
+            raise LDIFLineWithoutSemicolonError(line)
         val = self.parseValue(val)
         return key, val
 
@@ -99,10 +99,10 @@ class LDIF(object, basic.LineReceiver):
             try:
                 version = int(val)
             except ValueError:
-                raise LDIFVersionNotANumberError, val
+                raise LDIFVersionNotANumberError(val)
             self.version = version
             if version > 1:
-                raise LDIFUnsupportedVersionError, version
+                raise LDIFUnsupportedVersionError(version)
 
     def state_WAIT_FOR_DN(self, line):
         assert self.dn is None, 'self.dn must not be set when waiting for DN'
@@ -114,7 +114,7 @@ class LDIF(object, basic.LineReceiver):
         key, val = self._parseLine(line)
 
         if key.upper() != 'DN':
-            raise LDIFEntryStartsWithNonDNError, line
+            raise LDIFEntryStartsWithNonDNError(line)
 
         self.dn = val
         self.data = {}
@@ -146,4 +146,4 @@ class LDIF(object, basic.LineReceiver):
 
     def connectionLost(self, reason=protocol.connectionDone):
         if self.mode != WAIT_FOR_DN:
-            raise LDIFTruncatedError, reason
+            raise LDIFTruncatedError(reason)

@@ -209,7 +209,8 @@ class MatchMixin(object):
         elif isinstance(filter, pureldap.LDAPFilter_not):
             return not self.match(filter.value)
         else:
-            raise ldapsyntax.MatchNotImplemented, filter
+            raise ldapsyntax.MatchNotImplemented(filter)
+
 
 class SearchByTreeWalkingMixin(object):
     def search(self,
@@ -248,8 +249,7 @@ class SearchByTreeWalkingMixin(object):
                 return defer.succeed(None)
             iterator = iterateSelf
         else:
-            raise ldaperrors.LDAPProtocolError, \
-                  'unknown search scope: %r' % scope
+            raise ldaperrors.LDAPProtocolError('unknown search scope: %r' % scope)
 
         results = []
         if callback is None:

@@ -234,7 +234,7 @@ class LDAPClient(protocol.Protocol):
         if not self.connected:
             raise LDAPClientConnectionLostException
         elif self.onwire:
-            raise LDAPStartTLSBusyError, self.onwire
+            raise LDAPStartTLSBusyError(self.onwire)
         else:
             op=pureldap.LDAPStartTLSRequest()
             d = self.send(op)

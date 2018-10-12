@@ -75,14 +75,14 @@ Subject: Re: About your md4.py
 > :(){ :|:&};:
 """
 
-C = 0x1000000000L
+C = 0x1000000000
 
 def norm(n):
-    return n & 0xFFFFFFFFL
+    return n & 0xFFFFFFFF
 
 
 class U32:
-    v = 0L
+    v = 0
 
     def __init__(self, value = 0):
         self.v = C + norm(abs(int(value)))
@@ -105,7 +105,7 @@ class U32:
     def __sub__(self, b):
         r = U32()
         if self.v < b.v:
-            r.v = C + norm(0x100000000L - (b.v - self.v))
+            r.v = C + norm(0x100000000 - (b.v - self.v))
         else: r.v = C + norm(self.v - b.v)
         return r
 

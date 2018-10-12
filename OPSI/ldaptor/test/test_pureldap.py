@@ -72,7 +72,7 @@ class KnownValues(unittest.TestCase):
          { "object": 'cn=foo, dc=example, dc=com',
            "modification": [
                       pureber.BERSequence([
-                        pureber.BEREnumerated(1L),
+                        pureber.BEREnumerated(1),
                         pureber.BERSequence([
                           pureber.BEROctetString('bar'),
                           pureber.BERSet([]),

@@ -87,7 +87,7 @@ class JournaledLDAPAttributeSet(attributeset.LDAPAttributeSet):
 
     def remove(self, value):
         if value not in self:
-            raise LookupError, value
+            raise LookupError(value)
         self.ldapObject._canRemove(self.key, value)
         self.ldapObject.journal(delta.Delete(self.key, [value]))
         super(JournaledLDAPAttributeSet, self).remove(value)
@@ -153,7 +153,7 @@ class LDAPEntryWithClient(entry.EditableLDAPEntry):
         self._checkState()
         for rdn in self.dn.split()[0].split():
             if rdn.attributeType == key and rdn.value == value:
-                raise CannotRemoveRDNError, (key, value)
+                raise CannotRemoveRDNError((key, value))
 
     def _canRemoveAll(self, key):
         """
@@ -167,7 +167,7 @@ class LDAPEntryWithClient(entry.EditableLDAPEntry):
         assert not isinstance(self.dn, types.StringType)
         for keyval in self.dn.split()[0].split():
             if keyval.attributeType == key:
-                raise CannotRemoveRDNError, (key)
+                raise CannotRemoveRDNError(key)
 
 
 
@@ -176,9 +176,9 @@ class LDAPEntryWithClient(entry.EditableLDAPEntry):
             if self._state == 'deleted':
                 raise ObjectDeletedError
             else:
-                raise ObjectInBadStateError, \
+                raise ObjectInBadStateError(
                       "State is %s while expecting %s" \
-                      % (repr(self._state), repr('ready'))
+                      % (repr(self._state), repr('ready')))
 
     def journal(self, journalOperation):
         """
@@ -464,7 +464,7 @@ class LDAPEntryWithClient(entry.EditableLDAPEntry):
             self['ntPassword'] = [nthash]
             self['lmPassword'] = [lmhash]
         else:
-            raise RuntimeError, "Unknown samba password style %r" % style
+            raise RuntimeError("Unknown samba password style %r" % style)
         return self.commit()
 
     _setPasswordPriority_Samba=20
@@ -501,7 +501,7 @@ class LDAPEntryWithClient(entry.EditableLDAPEntry):
             if not ok:
                 l.append((name, x))
         if l:
-            raise PasswordSetAggregateError, l
+            raise PasswordSetAggregateError(l)
         return self
 
     def _cbSetPassword_one(self, result):
@@ -559,7 +559,7 @@ class LDAPEntryWithClient(entry.EditableLDAPEntry):
                 dn = distinguishedname.DistinguishedName(namingContext)
                 if dn.contains(self.dn):
                     return LDAPEntry(self.client, dn)
-        raise NoContainingNamingContext, self.dn
+        raise NoContainingNamingContext(self.dn)
 
     def namingContext(self):
         o=LDAPEntry(client=self.client, dn='')
@@ -571,7 +571,7 @@ class LDAPEntryWithClient(entry.EditableLDAPEntry):
 
     def _cbFetch(self, results, overWrite):
         if len(results)!=1:
-            raise DNNotPresentError, self.dn
+            raise DNNotPresentError(self.dn)
         o=results[0]
 
         assert not self._journal
@@ -592,7 +592,7 @@ class LDAPEntryWithClient(entry.EditableLDAPEntry):
     def fetch(self, *attributes):
         self._checkState()
         if self._journal:
-            raise ObjectDirtyError, 'cannot fetch attributes of %s, it is dirty' % repr(self)
+            raise ObjectDirtyError('cannot fetch attributes of %s, it is dirty' % repr(self))
 
         d = self.search(scope=pureldap.LDAP_SCOPE_baseObject,
                         attributes=attributes)
@@ -632,8 +632,7 @@ class LDAPEntryWithClient(entry.EditableLDAPEntry):
                                 complete=complete)
             return False
         else:
-            raise ldaperrors.LDAPProtocolError, \
-                  'bad search response: %r' % msg
+            raise ldaperrors.LDAPProtocolError('bad search response: %r' % msg)
 
     def search(self,
                filterText=None,

@@ -78,15 +78,15 @@ Subject: Re: About your md4.py
 # MD4 validation data
 
 md4_test= [
-      ('', 0x31d6cfe0d16ae931b73c59d7e0c089c0L),
-      ("a",   0xbde52cb31de33e46245e05fbdbd6fb24L),
-      ("abc",   0xa448017aaf21d8525fc10ae87aa6729dL),
-      ("message digest",   0xd9130a8164549fe818874806e1c7014bL),
-      ("abcdefghijklmnopqrstuvwxyz",   0xd79e1c308aa5bbcdeea8ed63df412da9L),
+      ('', 0x31d6cfe0d16ae931b73c59d7e0c089c0),
+      ("a",   0xbde52cb31de33e46245e05fbdbd6fb24),
+      ("abc",   0xa448017aaf21d8525fc10ae87aa6729d),
+      ("message digest",   0xd9130a8164549fe818874806e1c7014b),
+      ("abcdefghijklmnopqrstuvwxyz",   0xd79e1c308aa5bbcdeea8ed63df412da9),
       ("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789",
-       0x043f8582f241db351ce627e153e7f0e4L),
+       0x043f8582f241db351ce627e153e7f0e4),
       ("12345678901234567890123456789012345678901234567890123456789012345678901234567890",
-      0xe33b4ddc9c38f2199c3e7b164fcc0536L),
+      0xe33b4ddc9c38f2199c3e7b164fcc0536),
      ]
 
 from U32 import U32
@@ -102,10 +102,10 @@ class MD4Type:
     def __init__(self, data=""):
 
 
-        self.A = U32(0x67452301L)
-        self.B = U32(0xefcdab89L)
-        self.C = U32(0x98badcfeL)
-        self.D = U32(0x10325476L)
+        self.A = U32(0x67452301)
+        self.B = U32(0xefcdab89)
+        self.C = U32(0x98badcfe)
+        self.D = U32(0x10325476)
         self.count, self.len1, self.len2 = U32(0L), U32(0L), U32(0L)
         self.buf = [0x00] * 64
         self.update(data)
@@ -283,8 +283,8 @@ def H(x, y, z): return ((x) ^ (y) ^ (z))
 def ROL(x, n): return (((x) << n) | ((x) >> (32-n)))
 
 def f1(a, b, c, d, k, s, X): return ROL(a + F(b, c, d) + X[k], s)
-def f2(a, b, c, d, k, s, X): return ROL(a + G(b, c, d) + X[k] + U32(0x5a827999L), s)
-def f3(a, b, c, d, k, s, X): return ROL(a + H(b, c, d) + X[k] + U32(0x6ed9eba1L), s)
+def f2(a, b, c, d, k, s, X): return ROL(a + G(b, c, d) + X[k] + U32(0x5a827999), s)
+def f3(a, b, c, d, k, s, X): return ROL(a + H(b, c, d) + X[k] + U32(0x6ed9eba1), s)
 
 def int_array2str(array):
         str = ''

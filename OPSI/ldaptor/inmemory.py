@@ -54,7 +54,7 @@ class ReadOnlyInMemoryLDAPEntry(entry.EditableLDAPEntry,
         rdn = distinguishedname.RelativeDistinguishedName(rdn)
         for c in self._children:
             if c.dn.split()[0] == rdn:
-                raise ldaperrors.LDAPEntryAlreadyExists, c.dn
+                raise ldaperrors.LDAPEntryAlreadyExists(c.dn)
         dn = distinguishedname.DistinguishedName(listOfRDNs=
                                                  (rdn,)
                                                  +self.dn.split())
@@ -67,7 +67,7 @@ class ReadOnlyInMemoryLDAPEntry(entry.EditableLDAPEntry,
         if self._parent is None:
             raise LDAPCannotRemoveRootError
         if self._children:
-            raise ldaperrors.LDAPNotAllowedOnNonLeaf, self.dn
+            raise ldaperrors.LDAPNotAllowedOnNonLeaf(self.dn)
         return self._parent.deleteChild(self.dn.split()[0])
 
     def delete(self):
@@ -80,7 +80,7 @@ class ReadOnlyInMemoryLDAPEntry(entry.EditableLDAPEntry,
             if c.dn.split()[0] == rdn:
                 self._children.remove(c)
                 return c
-        raise ldaperrors.LDAPNoSuchObject, rdn
+        raise ldaperrors.LDAPNoSuchObject(rdn)
 
     def deleteChild(self, rdn):
         return defer.maybeDeferred(self._deleteChild, rdn)

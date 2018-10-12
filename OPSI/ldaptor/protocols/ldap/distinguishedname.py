@@ -90,7 +90,7 @@ class LDAPAttributeTypeAndValue:
             assert attributeType is None
             assert value is None
             if '=' not in stringValue:
-                raise InvalidRelativeDistinguishedName, stringValue
+                raise InvalidRelativeDistinguishedName(stringValue)
             self.attributeType, self.value = stringValue.split('=', 1)
 
     def __str__(self):
