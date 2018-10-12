@@ -74,8 +74,7 @@ class BaseLDAPServer(protocol.Protocol):
         if controls is not None:
             for controlType, criticality, controlValue in controls:
                 if criticality:
-                    raise ldaperrors.LDAPUnavailableCriticalExtension, \
-                          'Unknown control %s' % controlType
+                    raise ldaperrors.LDAPUnavailableCriticalExtension('Unknown control %s' % controlType)
 
     def handleUnknown(self, request, controls, callback):
         log.msg('Unknown request: %r' % request)
@@ -136,8 +135,7 @@ class LDAPServer(BaseLDAPServer):
 
     def handle_LDAPBindRequest(self, request, controls, reply):
         if request.version != 3:
-            raise ldaperrors.LDAPProtocolError, \
-                  'Version %u not supported' % request.version
+            raise ldaperrors.LDAPProtocolError('Version %u not supported' % request.version)
 
         self.checkControls(controls)
 
