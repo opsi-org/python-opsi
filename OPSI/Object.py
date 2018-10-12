@@ -100,9 +100,9 @@ def getPossibleClassAttributes(klass):
 
 	:returntype: set of strings
 	"""
-	attributes = inspect.getfullargspec(klass.__init__)[0]
+	attributes = inspect.getfullargspec(klass.__init__).args
 	for subClass in klass.subClasses.values():
-		attributes.extend(inspect.getfullargspec(subClass.__init__)[0])
+		attributes.extend(inspect.getfullargspec(subClass.__init__).args)
 
 	attributes = set(attributes)
 	attributes.add('type')
