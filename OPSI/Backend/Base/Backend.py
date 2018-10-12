@@ -69,7 +69,10 @@ def describeInterface(instance):
 			# protected / private
 			continue
 
-		args, varargs, keywords, defaults = inspect.getargspec(function)
+		spec = inspect.getfullargspec(function)
+		args = spec.args
+		defaults = spec.defaults
+
 		params = [arg for arg in args if arg != 'self']
 
 		if defaults is not None:
@@ -78,7 +81,7 @@ def describeInterface(instance):
 				index = offset + i
 				params[index] = '*{0}'.format(params[index])
 
-		for index, element in enumerate((varargs, keywords), start=1):
+		for index, element in enumerate((spec.varargs, spec.varkw), start=1):
 			if element:
 				stars = '*' * index
 				params.extend(['{0}{1}'.format(stars, arg) for arg in forceList(element)])
@@ -88,8 +91,8 @@ def describeInterface(instance):
 			'name': methodName,
 			'params': params,
 			'args': args,
-			'varargs': varargs,
-			'keywords': keywords,
+			'varargs': spec.varargs,
+			'keywords': spec.varkw,
 			'defaults': defaults
 		}
 
@@ -190,10 +193,10 @@ This defaults to ``self``.
 							continue
 						elif value is None or isinstance(value, bool):
 							continue
-						elif isinstance(value, (float, int)) or re.search('^\s*([>=<]+)\s*([\d\.]+)', forceUnicode(filterValue)):
+						elif isinstance(value, (float, int)) or re.search(r'^\s*([>=<]+)\s*([\d\.]+)', forceUnicode(filterValue)):
 							operator = '=='
 							v = forceUnicode(filterValue)
-							match = re.search('^\s*([>=<]+)\s*([\d\.]+)', filterValue)
+							match = re.search(r'^\s*([>=<]+)\s*([\d\.]+)', filterValue)
 							if match:
 								operator = match.group(1)  # pylint: disable=maybe-no-member
 								v = match.group(2)  # pylint: disable=maybe-no-member
@@ -311,7 +314,7 @@ This defaults to ``self``.
 			if (modules.get('expires', '') != 'never') and (time.mktime(time.strptime(modules.get('expires', '2000-01-01'), "%Y-%m-%d")) - time.time() <= 0):
 				modules = {'valid': False}
 				raise ValueError(u"Signature expired")
-			publicKey = keys.Key.fromString(data=base64.decodestring(b'AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
+			publicKey = keys.Key.fromString(data=base64.decodebytes(b'AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
 			data = u''
 			mks = list(modules.keys())
 			mks.sort()

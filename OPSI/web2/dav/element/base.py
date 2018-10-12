@@ -692,11 +692,11 @@ def parse_date(date):
         import re
 
         regex_date = re.compile(
-            "^" +
-              "(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})T" +
-              "(?P<hour>\d{2}):(?P<minute>\d{2}):(?P<second>\d{2})(?:.(?P<subsecond>\d+))*" +
-              "(?:Z|(?P<offset_sign>\+|-)(?P<offset_hour>\d{2}):(?P<offset_minute>\d{2}))" +
-            "$"
+            r"^"
+            r"(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})T"
+            r"(?P<hour>\d{2}):(?P<minute>\d{2}):(?P<second>\d{2})(?:.(?P<subsecond>\d+))*"
+            r"(?:Z|(?P<offset_sign>\+|-)(?P<offset_hour>\d{2}):(?P<offset_minute>\d{2}))"
+            r"$"
         )
 
     match = regex_date.match(date)

@@ -307,7 +307,7 @@ class ChangelogFile(TextFile):
 		  [optional blank line(s), stripped]
 	[one space]-- maintainer name <email address>[two spaces]date
 	'''
-	releaseLineRegex = re.compile('^\s*(\S+)\s+\(([^\)]+)\)\s+([^\;]+)\;\s+urgency\=(\S+)\s*$')
+	releaseLineRegex = re.compile(r'^\s*(\S+)\s+\(([^\)]+)\)\s+([^;]+);\s+urgency\=(\S+)\s*$')
 
 	def __init__(self, filename, lockFailTimeout=2000):
 		TextFile.__init__(self, filename, lockFailTimeout)
@@ -498,7 +498,7 @@ class ConfigFile(TextFile):
 
 
 class IniFile(ConfigFile):
-	optionMatch = re.compile('^([^\:\=]+)\s*([\:\=].*)$')
+	optionMatch = re.compile(r'^([^\:\=]+)\s*([\:\=].*)$')
 
 	def __init__(self, filename, lockFailTimeout=2000, ignoreCase=True, raw=True):
 		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars=[';', '#'])
@@ -589,7 +589,7 @@ class IniFile(ConfigFile):
 			self._configParser = SafeConfigParser()
 
 		try:
-			self._configParser.readfp(StringIO(u'\r\n'.join(lines)))
+			self._configParser.read_file(StringIO(u'\r\n'.join(lines)))
 		except Exception as e:
 			raise RuntimeError(u"Failed to parse ini file '%s': %s" % (self._filename, e))
 
@@ -665,13 +665,13 @@ class IniFile(ConfigFile):
 
 
 class InfFile(ConfigFile):
-	sectionRegex = re.compile('\[\s*([^\]]+)\s*\]')
-	pciDeviceRegex = re.compile('VEN_([\da-fA-F]+)&DEV_([\da-fA-F]+)', re.IGNORECASE)
-	hdaudioDeviceRegex = re.compile('HDAUDIO\\\.*VEN_([\da-fA-F]+)&DEV_([\da-fA-F]+)', re.IGNORECASE)
-	usbDeviceRegex = re.compile('USB.*VID_([\da-fA-F]+)&PID_([\da-fA-F]+)', re.IGNORECASE)
-	acpiDeviceRegex = re.compile('ACPI\\\(\S+)_-_(\S+)', re.IGNORECASE)
-	varRegex = re.compile('\%([^\%]+)\%')
-	classRegex = re.compile('class\s*=')
+	sectionRegex = re.compile(r'\[\s*([^\]]+)\s*\]')
+	pciDeviceRegex = re.compile(r'VEN_([\da-fA-F]+)&DEV_([\da-fA-F]+)', re.IGNORECASE)
+	hdaudioDeviceRegex = re.compile(r'HDAUDIO\\\.*VEN_([\da-fA-F]+)&DEV_([\da-fA-F]+)', re.IGNORECASE)
+	usbDeviceRegex = re.compile(r'USB.*VID_([\da-fA-F]+)&PID_([\da-fA-F]+)', re.IGNORECASE)
+	acpiDeviceRegex = re.compile(r'ACPI\\(\S+)_-_(\S+)', re.IGNORECASE)
+	varRegex = re.compile(r'%([^%]+)%')
+	classRegex = re.compile(r'class\s*=')
 
 	def __init__(self, filename, lockFailTimeout=2000):
 		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars=[';', '#'])
@@ -947,13 +947,13 @@ UsbidsFile = PciidsFile
 
 
 class TxtSetupOemFile(ConfigFile):
-	sectionRegex = re.compile('\[\s*([^\]]+)\s*\]')
-	pciDeviceRegex = re.compile('VEN_([\da-fA-F]+)(&DEV_([\da-fA-F]+))?(\S*)\s*$')
-	usbDeviceRegex = re.compile('USB.*VID_([\da-fA-F]+)(&PID_([\da-fA-F]+))?(\S*)\s*$', re.IGNORECASE)
-	filesRegex = re.compile('^files\.(computer|display|keyboard|mouse|scsi)\.(.+)$', re.IGNORECASE)
-	configsRegex = re.compile('^config\.(.+)$', re.IGNORECASE)
-	hardwareIdsRegex = re.compile('^hardwareids\.(computer|display|keyboard|mouse|scsi)\.(.+)$', re.IGNORECASE)
-	dllEntryRegex = re.compile('^(dll\s*\=\s*)(\S+.*)$', re.IGNORECASE)
+	sectionRegex = re.compile(r'\[\s*([^\]]+)\s*\]')
+	pciDeviceRegex = re.compile(r'VEN_([\da-fA-F]+)(&DEV_([\da-fA-F]+))?(\S*)\s*$')
+	usbDeviceRegex = re.compile(r'USB.*VID_([\da-fA-F]+)(&PID_([\da-fA-F]+))?(\S*)\s*$', re.IGNORECASE)
+	filesRegex = re.compile(r'^files\.(computer|display|keyboard|mouse|scsi)\.(.+)$', re.IGNORECASE)
+	configsRegex = re.compile(r'^config\.(.+)$', re.IGNORECASE)
+	hardwareIdsRegex = re.compile(r'^hardwareids\.(computer|display|keyboard|mouse|scsi)\.(.+)$', re.IGNORECASE)
+	dllEntryRegex = re.compile(r'^(dll\s*\=\s*)(\S+.*)$', re.IGNORECASE)
 
 	def __init__(self, filename, lockFailTimeout=2000):
 		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars=[';', '#'])
@@ -1146,7 +1146,7 @@ class TxtSetupOemFile(ConfigFile):
 			componentId = match.group(2)
 			logger.info(u"Found hardwareIds section '%s', component name '%s', component id '%s'" % (section, componentName, componentId))
 			for line in lines:
-				if not re.search('[iI][dD]\s*=', line):
+				if not re.search(r'[iI][dD]\s*=', line):
 					continue
 				(device, serviceName) = line.split(u'=', 1)[1].strip().split(u',', 1)
 				device = device.strip()
@@ -1938,7 +1938,7 @@ class DHCPDConfFile(TextFile):
 					current.append(l)
 				else:
 					quote = u"'"
-			elif re.search('\s', l):
+			elif re.search(r'\s', l):
 				current.append(l)
 			elif l == u',':
 				if quote:
