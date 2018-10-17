@@ -38,6 +38,7 @@ import subprocess
 import sys
 import threading
 import time
+from datetime import datetime
 
 # Win32 imports
 import _winreg
@@ -59,7 +60,6 @@ import win32service
 import win32ts
 import win32wnet
 from ctypes import *
-from datetime import datetime
 
 from OPSI.Logger import Logger
 from OPSI.Types import (forceBool, forceDict, forceInt, forceUnicode,
@@ -177,7 +177,7 @@ def getArchitecture():
 		else:
 			return u'x86'
 	except Exception as e:
-		logger.error("Error by determining OS-Architecture: '{0}'; returning default: 'x86'".format(e))
+		logger.error("Error determining OS-Architecture: '{0}'; returning default: 'x86'".format(e))
 		return u'x86'
 
 
@@ -1029,8 +1029,6 @@ def getSessionInformation(sessionId, winApiBugCommand = None):
 				sessiondt = datetime(lts.year, lts.month, lts.day, lts.hour, lts.minute, lts.second)
 				logger.debug("newest datetime: '%s'" % lt)
 				logger.debug("newest datetime in session: '%s'" % lts)
-				logger.debug("newest datetime timestamp: '%s'" % newestdt.timestamp())
-				logger.debug("newest datetime in session timestamp: '%s'" % sessiondt.timestamp())
 				if sessiondt > newestdt:
 					logger.notice("Token in SessionData is newer then the cached one.")
 					newest = sessionData
@@ -1068,8 +1066,8 @@ def getActiveSessionInformation(winApiBugCommand = None):
 					logger.debug2("lts: year: '%s', month: '%s', day: '%s', hour: '%s', minute: '%s', second: '%s'" % (lts.year, lts.month, lts.day, lts.hour, lts.minute, lts.second))
 					logger.debug2("lt-type '%s'" % type(lt))
 					logger.debug2("lts-type '%s'" % type(lts))
-					infodt = datetime.datetime(lt.year, lt.month, lt.day, lt.hour, lt.minute, lt.second)
-					sessiondt = datetime.datetime(lts.year, lts.month, lts.day, lts.hour, lts.minute, lts.second)
+					infodt = datetime(lt.year, lt.month, lt.day, lt.hour, lt.minute, lt.second)
+					sessiondt = datetime(lts.year, lts.month, lts.day, lts.hour, lts.minute, lts.second)
 					if sessiondt > infodt:
 						logger.notice("Token in SessionData is newer then the cached one.")
 						info.remove(item)
@@ -1805,7 +1803,7 @@ def setLocalSystemTime(timestring):
 		raise ValueError(u"Invalid timestring given. It should be in format like: '2014-07-15 13:20:24.085661'")
 
 	try:
-		dt = datetime.datetime.strptime(timestring, '%Y-%m-%d %H:%M:%S.%f')
+		dt = datetime.strptime(timestring, '%Y-%m-%d %H:%M:%S.%f')
 		logger.info(u"Setting Systemtime Time to %s" % timestring)
 		win32api.SetSystemTime(dt.year, dt.month, 0, dt.day, dt.hour, dt.minute, dt.second, 0)
 	except Exception as e:
