@@ -215,12 +215,14 @@ class FileBackend(ConfigDataBackend):
 		self._mappings['UnicodeConfig'] = self._mappings['Config']
 		self._mappings['BoolConfig'] = self._mappings['Config']
 		self._mappings['OpsiConfigserver'] = self._mappings['OpsiDepotserver']
-		self._mappings['LocalbootProduct'] = self._mappings['Product']
-		self._mappings['NetbootProduct'] = self._mappings['Product']
 		self._mappings['UnicodeProductProperty'] = self._mappings['ProductProperty']
 		self._mappings['BoolProductProperty'] = self._mappings['ProductProperty']
 		self._mappings['HostGroup'] = self._mappings['Group']
 		self._mappings['ProductGroup'] = self._mappings['Group']
+
+		# Extending the settings with the attributes from the base class
+		self._mappings['LocalbootProduct'].extend(self._mappings['Product'])
+		self._mappings['NetbootProduct'].extend(self._mappings['Product'])
 
 	def backend_exit(self):
 		pass

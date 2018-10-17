@@ -1,3 +1,35 @@
+python-opsi (4.1.1.47-1) stable; urgency=medium
+
+  * Based on python-opsi 4.0.7.69.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 20 Sep 2018 17:17:14 +0200
+
+python-opsi (4.1.1.46-1) stable; urgency=medium
+
+  * OPSI.Backend.File: Fix reading extended attributes of LocalbootProduct and
+    NetbootProduct.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 11 Sep 2018 14:59:21 +0200
+
+python-opsi (4.1.1.45-1) testing; urgency=medium
+
+  * Added OPSI.Util.Task.UpdatePackages. This makes parts of
+    opsi-package-updater reusable.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 04 Sep 2018 13:56:55 +0200
+
+python-opsi (4.1.1.44-1) stable; urgency=medium
+
+  * OPSI.Backend.Depotserver: Small internal refactorings.
+  * OPSI.Backend.Depotserver: depot_installPackage: Log messages show exactly
+    what product / depot is involved.
+  * OPSI.Backend.HostControl: Refactored lookup for custom opsiclientd port.
+  * OPSI.Backend.HostControlSafe: Added support for custom opsiclientd port.
+  * OPSI.Backend.OpsiPXEConfd: Added support for connection to a different
+    external opsi server.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 03 Sep 2018 13:34:03 +0200
+
 python-opsi (4.1.1.43-1) testing; urgency=medium
 
   * OPSI.Backend.Depotserver: only unlock productOnDepot after successful
@@ -493,6 +525,13 @@ python-opsi (4.1.1.1-1) experimental; urgency=medium
     into OPSI/__init__.py to always show the current version.
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 04 Oct 2016 16:15:11 +0200
+
+python-opsi (4.0.7.69-1) stable; urgency=medium
+
+  * OPSI.Util.File.Opsi.parseFilename now works with absolute and relative
+    paths.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 13 Sep 2018 14:19:24 +0200
 
 python-opsi (4.0.7.68-1) stable; urgency=medium
 

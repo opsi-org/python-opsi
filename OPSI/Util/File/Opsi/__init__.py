@@ -79,6 +79,7 @@ def parseFilename(filename):
 If no information can be extracted returns None.
 	:rtype: namedtuple with attributes `productId`, `version`.
 	"""
+	filename = os.path.basename(filename)
 	parts = filename.rsplit('.opsi', 1)[0]
 	parts = parts.split('_')
 
