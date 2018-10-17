@@ -1066,8 +1066,8 @@ def getActiveSessionInformation(winApiBugCommand = None):
 					logger.debug2("lts: year: '%s', month: '%s', day: '%s', hour: '%s', minute: '%s', second: '%s'" % (lts.year, lts.month, lts.day, lts.hour, lts.minute, lts.second))
 					logger.debug2("lt-type '%s'" % type(lt))
 					logger.debug2("lts-type '%s'" % type(lts))
-					infodt = datetime.datetime(lt.year, lt.month, lt.day, lt.hour, lt.minute, lt.second)
-					sessiondt = datetime.datetime(lts.year, lts.month, lts.day, lts.hour, lts.minute, lts.second)
+					infodt = datetime(lt.year, lt.month, lt.day, lt.hour, lt.minute, lt.second)
+					sessiondt = datetime(lts.year, lts.month, lts.day, lts.hour, lts.minute, lts.second)
 					if sessiondt > infodt:
 						logger.notice("Token in SessionData is newer then the cached one.")
 						info.remove(item)
@@ -1803,7 +1803,7 @@ def setLocalSystemTime(timestring):
 		raise ValueError(u"Invalid timestring given. It should be in format like: '2014-07-15 13:20:24.085661'")
 
 	try:
-		dt = datetime.datetime.strptime(timestring, '%Y-%m-%d %H:%M:%S.%f')
+		dt = datetime.strptime(timestring, '%Y-%m-%d %H:%M:%S.%f')
 		logger.info(u"Setting Systemtime Time to %s" % timestring)
 		win32api.SetSystemTime(dt.year, dt.month, 0, dt.day, dt.hour, dt.minute, dt.second, 0)
 	except Exception as e:
