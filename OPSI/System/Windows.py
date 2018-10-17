@@ -38,6 +38,7 @@ import subprocess
 import sys
 import threading
 import time
+from datetime import datetime
 
 # Win32 imports
 import _winreg
@@ -59,7 +60,6 @@ import win32service
 import win32ts
 import win32wnet
 from ctypes import *
-from datetime import datetime
 
 from OPSI.Logger import Logger
 from OPSI.Types import (forceBool, forceDict, forceInt, forceUnicode,
