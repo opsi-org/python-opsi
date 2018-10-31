@@ -451,6 +451,7 @@ class HTTPConnectionPool(object):
 					logger.critical(u"Cannot verify server based on certificate file {0!r}: {1}", self.serverCertFile, error)
 					randomKey = None
 
+			logger.debug2("Request headers: {!r}", headers)
 			logger.debug2("Handing data to connection...")
 			conn.request(method, url, body=body, headers=headers)
 			if self.socketTimeout:
@@ -463,6 +464,7 @@ class HTTPConnectionPool(object):
 			# the side effect of letting us use this connection for another
 			# request.
 			response = HTTPResponse.from_httplib(httplib_response)
+			logger.debug2("Response headers: {!r}", response.headers)
 
 			if randomKey:
 				logger.debug2("Checking for random key...")
