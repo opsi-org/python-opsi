@@ -609,8 +609,6 @@ class JSONRPCBackend(Backend):
 			data = deflateEncode(data)
 			logger.debug2(u"Data compressed.")
 
-		headers['content-length'] = len(data)
-
 		auth = (self._username + u':' + self._password)
 		headers['Authorization'] = 'Basic ' + base64.b64encode(auth.encode('latin-1')).decode()
 
