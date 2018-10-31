@@ -643,7 +643,7 @@ class JSONRPCBackend(Backend):
 			logger.debug(u"Expecting deflated data from server")
 			response = deflateDecode(response)
 
-		logger.debug2(u"Response is: {0}", response)
+		logger.debug2(u"Response is: {0!r}", response)
 		return response
 
 	def getInterface(self):
