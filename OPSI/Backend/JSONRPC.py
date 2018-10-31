@@ -633,7 +633,7 @@ class JSONRPCBackend(Backend):
 				self._sessionId = sessionId
 
 		contentEncoding = response.getheader('content-encoding', '').lower()
-		logger.debug2(u"Content-Encoding: {1}", contentEncoding)
+		logger.debug2(u"Content-Encoding: {}", contentEncoding)
 
 		response = response.data
 		if contentEncoding == 'gzip':
