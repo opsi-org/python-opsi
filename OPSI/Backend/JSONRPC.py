@@ -630,7 +630,7 @@ class JSONRPCBackend(Backend):
 			if sessionId != self._sessionId:
 				self._sessionId = sessionId
 
-		contentEncoding = response.getheader('content-encoding', '').lower()
+		contentEncoding = response.getheader('Content-Encoding', '').lower()
 		logger.debug2(u"Content-Encoding: {}", contentEncoding)
 
 		response = response.data
