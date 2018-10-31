@@ -257,7 +257,7 @@ class JSONRPCBackend(Backend):
 
 		Backend.__init__(self, **kwargs)
 
-		self._application = 'opsi jsonrpc module version %s' % __version__
+		self._application = 'opsi JSONRPCBackend/%s' % __version__
 		self._sessionId = None
 		self._deflate = False
 		self._connectOnInit = True
