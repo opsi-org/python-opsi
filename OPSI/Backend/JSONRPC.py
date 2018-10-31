@@ -599,7 +599,6 @@ class JSONRPCBackend(Backend):
 			'Accept-Encoding': 'deflate, gzip',
 			'content-type': 'application/json',
 		}
-		data = data.encode('utf-8')
 
 		logger.debug2(u"Request to host {0!r}, baseUrl: {1!r}, query: {2!r}".format(self._host, baseUrl, data))
 
