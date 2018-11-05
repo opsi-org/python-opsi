@@ -60,6 +60,12 @@ class FakeMediaType(object):
 	def __init__(self, type):
 		self.mediaType = type
 
+	def __str__(self):
+		return self.mediaType
+
+	def __repr__(self):
+		return "FakeMediaType({})".format(self.type)
+
 
 class FakeRequest(object):
 	def __init__(self, headers=None):
