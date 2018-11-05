@@ -634,16 +634,15 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 			logger.debug(u"Sending deflated data (backwards compatible - with content-encoding 'gzip')")
 			result.stream = stream.IByteStream(deflateEncode(toJson(response).encode('utf-8')))
 		elif encoding == "deflate":
-			result.headers.setHeader('content-encoding', [encoding])
-
 			logger.debug(u"Sending deflated data")
+			result.headers.setHeader('content-encoding', [encoding])
 			result.stream = stream.IByteStream(deflateEncode(toJson(response).encode('utf-8')))
 		elif encoding == "gzip":
-			result.headers.setHeader('content-encoding', [encoding])
-
 			logger.debug(u"Sending gzip compressed data")
+			result.headers.setHeader('content-encoding', [encoding])
 			result.stream = stream.IByteStream(gzipEncode(toJson(response).encode('utf-8')))
 		else:
+			logger.debug(u"Sending plain data")
 			result.stream = stream.IByteStream(toJson(response).encode('utf-8'))
 
 		return result
