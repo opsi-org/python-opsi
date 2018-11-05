@@ -33,7 +33,7 @@ except ImportError:
 import pytest
 
 from OPSI.Service.Worker import WorkerOpsi, WorkerOpsiJsonRpc
-from OPSI.Util import gzipEncode, deflateEncode
+from OPSI.Util.HTTP import gzipEncode, deflateEncode
 
 
 class FakeHeader(object):
