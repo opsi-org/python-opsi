@@ -240,7 +240,7 @@ def testDecodingOldCallQuery():
 	"Simulating opsi 4.0.6 with invalid MIME type handling."
 	r = FakeRequest(headers=FakeHeader(
 		{
-			"content-encoding": "gzip",
+			"content-encoding": ["gzip"],
 			"content-type": FakeMediaType("gzip-application/json-rpc"),
 		}
 	))
@@ -262,7 +262,7 @@ def testDecodingCallQuery(contentEncoding, compressor):
 	}
 
 	if contentEncoding:
-		headers['content-encoding'] = contentEncoding
+		headers['content-encoding'] = [contentEncoding]
 
 	r = FakeRequest(headers=FakeHeader(headers))
 
