@@ -239,7 +239,6 @@ class WorkerOpsi:
 			request.remoteAddr.host = request.headers.getRawHeaders("x-forwarded-for")[0]
 		self.request = request
 		self.query = u''
-		self.gzip = False
 		self.path = u''
 		self.resource = resource
 		self.session = None
@@ -493,15 +492,12 @@ class WorkerOpsi:
 					# we need to behave like we did before.
 					logger.debug(u"Expecting compressed data from client (backwards compatible)")
 					self.query = deflateDecode(self.query)
-					self.gzip = True
 				elif contentEncoding == 'gzip':
 					logger.debug(u"Expecting gzip compressed data from client")
 					self.query = gzipDecode(self.query)
-					self.gzip = True
 				elif contentEncoding == 'deflate':
 					logger.debug(u"Expecting deflate compressed data from client")
 					self.query = deflateDecode(self.query)
-					self.gzip = True
 
 			if not isinstance(self.query, unicode):
 				self.query = unicode(self.query, 'utf-8')
