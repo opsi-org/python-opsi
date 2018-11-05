@@ -231,6 +231,7 @@ def testReturningPlainCalls():
 
 
 def testDecodingOldCallQuery():
+	"Simulating opsi 4.0.6 with invalid MIME type handling."
 	r = FakeRequest(headers=FakeHeader(
 		{
 			"content-encoding": "gzip",
