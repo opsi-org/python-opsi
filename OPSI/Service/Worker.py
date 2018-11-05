@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2010-2017 uib GmbH
+# Copyright (C) 2010-2018 uib GmbH
 
 # http://www.uib.de/
 
@@ -30,7 +30,6 @@ Worker for the various interfaces.
 :license: GNU Affero General Public License version 3
 """
 
-import os.path
 import base64
 import urllib
 
