@@ -30,7 +30,10 @@ try:
 except ImportError:
 	from io import StringIO
 
+import pytest
+
 from OPSI.Service.Worker import WorkerOpsi, WorkerOpsiJsonRpc
+from OPSI.Util import gzipEncode, deflateEncode
 
 
 class FakeHeader(object):
@@ -237,5 +240,26 @@ def testDecodingOldCallQuery():
 
 	worker = WorkerOpsi(service=None, request=r, resource=None)
 	worker.query = zlib.compress("Test 1234")
+	worker._decodeQuery(None)
+	assert u'Test 1234' == worker.query
+
+
+@pytest.mark.parametrize("contentEncoding, compressor", [
+	["gzip", gzipEncode],
+	["deflate", deflateEncode],
+	[None, lambda x: x],
+])
+def testDecodingCallQuery(contentEncoding, compressor):
+	headers = {
+		"content-type": FakeMediaType("application/json"),
+	}
+
+	if contentEncoding:
+		headers['content-encoding'] = contentEncoding
+
+	r = FakeRequest(headers=FakeHeader(headers))
+
+	worker = WorkerOpsi(service=None, request=r, resource=None)
+	worker.query = compressor("Test 1234")
 	worker._decodeQuery(None)
 	assert u'Test 1234' == worker.query
