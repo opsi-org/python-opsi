@@ -537,8 +537,6 @@ class WorkerOpsi:
 
 class WorkerOpsiJsonRpc(WorkerOpsi):
 
-	RFC_CONFORM_HEADERS = os.path.exists('/etc/opsi/opsi.header.fix.enable')
-
 	def __init__(self, service, request, resource):
 		WorkerOpsi.__init__(self, service, request, resource)
 
@@ -628,17 +626,13 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 
 		result.headers.setHeader('content-type', http_headers.MimeType("application", "json", {"charset": "utf-8"}))
 
-		if not self.RFC_CONFORM_HEADERS or invalidMime:
-			if encoding in ('deflate', 'gzip'):
-				# The invalid requests expect the encoding set to
-				# gzip but the content is deflated.
-				result.headers.setHeader('content-encoding', [encoding])
-				result.headers.setHeader('content-type', http_headers.MimeType("gzip-application", "json", {"charset": "utf-8"}))
-				logger.debug(u"Sending deflated data (backwards compatible - with content-encoding {0!r})", encoding)
-				result.stream = stream.IByteStream(deflateEncode(toJson(response).encode('utf-8')))
-			else:
-				logger.debug(u"Sending plain data")
-				result.stream = stream.IByteStream(toJson(response).encode('utf-8'))
+		if invalidMime:
+			# The invalid requests expect the encoding set to
+			# gzip but the content is deflated.
+			result.headers.setHeader('content-encoding', ["gzip"])
+			result.headers.setHeader('content-type', http_headers.MimeType("gzip-application", "json", {"charset": "utf-8"}))
+			logger.debug(u"Sending deflated data (backwards compatible - with content-encoding 'gzip')")
+			result.stream = stream.IByteStream(deflateEncode(toJson(response).encode('utf-8')))
 		elif encoding == "deflate":
 			result.headers.setHeader('content-encoding', [encoding])
 
