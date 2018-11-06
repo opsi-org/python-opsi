@@ -1,9 +1,20 @@
+python-opsi (4.1.1.49-1) stable; urgency=medium
+
+  * OPSI.Service.Worker: HTTP headers are set according to RFC 2616.
+    If a header with Content-Type starting with "gzip" is encountered a
+    backwards-compatible answer is made.
+  * OPSI.Object: Adding a property read-only property version to Product,
+    ProductOnClient and ProductOnDepot. It is a string combining the values of
+    productVersion and packageVersion. This property is not present in the API.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 06 Nov 2018 12:16:49 +0100
+
 python-opsi (4.1.1.48-1) stable; urgency=medium
 
   * OPSI.System.Windows: Fixed some reference bugs.
   * OPSI.Util.Task.UpdatePackages: Added missing reference.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 17 Sep 2018 14:36:41 +0200
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 17 Oct 2018 14:36:41 +0200
 
 python-opsi (4.1.1.47-1) stable; urgency=medium
 
