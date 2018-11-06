@@ -25,8 +25,6 @@ Utilities for updating packages on a opsi server.
 :license: GNU Affero General Public License version 3
 """
 
-from __future__ import absolute_import
-
 from .Updater import OpsiPackageUpdater
 
 __all__ = ('OpsiPackageUpdater', )
