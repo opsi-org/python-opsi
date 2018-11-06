@@ -77,18 +77,20 @@ class LinksExtractor(HTMLParser):
 		super().__init__()
 		self.links = set()
 
-	def start_a(self, attrs):
-		if len(attrs) > 0:
-			for attr in attrs:
-				if attr[0] != "href":
-					continue
+	def handle_starttag(self, tag, attrs):
+		if tag != 'a':
+			return
 
-				link = attr[1]
-				if link.startswith('/'):
-					# Fix for IIS repos
-					link = link[1:]
+		for attr in attrs:
+			if attr[0] != "href":
+				continue
 
-				self.links.add(link)
+			link = attr[1]
+			if link.startswith('/'):
+				# Fix for IIS repos
+				link = link[1:]
+
+			self.links.add(link)
 
 	def getLinks(self):
 		return self.links
