@@ -49,8 +49,8 @@ from OPSI.Util.File.Opsi import BackendACLFile, OpsiConfFile
 
 if os.name == 'posix':
 	import grp
+	import pam
 	import pwd
-	import PAM as pam
 elif os.name == 'nt':
 	import win32net
 	import win32security
