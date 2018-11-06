@@ -29,7 +29,6 @@ import os
 import os.path
 import time
 import urllib.request
-from formatter import NullFormatter
 from urllib.parse import quote
 
 from .Config import ConfigurationParser
@@ -849,8 +848,7 @@ class OpsiPackageUpdater(object):
 				response = opener.open(req)
 				content = response.read()
 				logger.debug("content: '%s'" % content)
-				format = NullFormatter()
-				htmlParser = LinksExtractor(format)
+				htmlParser = LinksExtractor()
 				htmlParser.feed(content)
 				htmlParser.close()
 				for link in htmlParser.getLinks():

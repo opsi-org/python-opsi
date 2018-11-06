@@ -73,8 +73,8 @@ class ProductRepositoryInfo(object):
 
 
 class LinksExtractor(HTMLParser):
-	def __init__(self, formatter):
-		super().__init__(formatter)
+	def __init__(self):
+		super().__init__()
 		self.links = set()
 
 	def start_a(self, attrs):

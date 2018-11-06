@@ -26,7 +26,6 @@ from __future__ import absolute_import
 
 import os.path
 import shutil
-from formatter import NullFormatter
 
 import pytest
 
@@ -188,8 +187,7 @@ def repositoryListingPage(request):
 
 
 def testLinkExtracting(repositoryListingPage):
-	defaultFormatter = NullFormatter()
-	extractor = LinksExtractor(defaultFormatter)
+	extractor = LinksExtractor()
 	extractor.feed(repositoryListingPage)
 	extractor.close()
 
