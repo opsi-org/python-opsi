@@ -25,11 +25,11 @@ Component for handling packages updates.
 :license: GNU Affero General Public License version 3
 """
 
-import formatter
 import os
 import os.path
 import time
 import urllib.request
+from formatter import NullFormatter
 from urllib.parse import quote
 
 from .Config import ConfigurationParser
@@ -849,7 +849,7 @@ class OpsiPackageUpdater(object):
 				response = opener.open(req)
 				content = response.read()
 				logger.debug("content: '%s'" % content)
-				format = formatter.NullFormatter()
+				format = NullFormatter()
 				htmlParser = LinksExtractor(format)
 				htmlParser.feed(content)
 				htmlParser.close()
