@@ -3,7 +3,7 @@ python-opsi (4.1.1.48-1) stable; urgency=medium
   * OPSI.System.Windows: Fixed some reference bugs.
   * OPSI.Util.Task.UpdatePackages: Added missing reference.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 17 Sep 2018 14:36:41 +0200
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 17 Oct 2018 14:36:41 +0200
 
 python-opsi (4.1.1.47-1) stable; urgency=medium
 
