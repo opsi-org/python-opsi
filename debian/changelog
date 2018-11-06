@@ -1,3 +1,13 @@
+python3-opsi (4.2.0.1-1) experimental; urgency=medium
+
+  * Providing initial support for Python 3.
+  * OPSI.Backend.BackendManager has been split into various modules in
+    OPSI.Backend.Manager.
+  * OPSI.Backend.Backend has been split into various modules in
+    OPSI.Backend.Base.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 06 Nov 2018 16:46:45 +0100
+
 python-opsi (4.1.1.49-1) stable; urgency=medium
 
   * OPSI.Service.Worker: HTTP headers are set according to RFC 2616.
