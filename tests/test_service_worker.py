@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2015-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2015-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -22,10 +22,7 @@ Testing the workers.
 :license: GNU Affero General Public License version 3
 """
 
-from __future__ import absolute_import
-
 import gzip
-import pytest
 import zlib
 
 try:
@@ -33,15 +30,10 @@ try:
 except ImportError:
 	from io import StringIO
 
-from .helpers import mock
+import pytest
 
 from OPSI.Service.Worker import WorkerOpsi, WorkerOpsiJsonRpc
-
-
-@pytest.fixture
-def enableRFCConformHeaders():
-	with mock.patch.object(WorkerOpsiJsonRpc, 'RFC_CONFORM_HEADERS', True):
-		yield
+from OPSI.Util.HTTP import gzipEncode, deflateEncode
 
 
 class FakeHeader(object):
@@ -68,6 +60,12 @@ class FakeMediaType(object):
 	def __init__(self, type):
 		self.mediaType = type
 
+	def __str__(self):
+		return self.mediaType
+
+	def __repr__(self):
+		return "FakeMediaType({})".format(self.type)
+
 
 class FakeRequest(object):
 	def __init__(self, headers=None):
@@ -83,7 +81,7 @@ class FakeRPC(object):
 		return self.result
 
 
-def testReturningEmptyResponse(enableRFCConformHeaders):
+def testReturningEmptyResponse():
 	"""
 	Making sure that an empty uncompressed response is returned.
 
@@ -100,7 +98,7 @@ def testReturningEmptyResponse(enableRFCConformHeaders):
 	assert 'null' == str(result.stream.read())
 
 
-def testHandlingMultipleRPCs(enableRFCConformHeaders):
+def testHandlingMultipleRPCs():
 	"""
 	With multiple RPCs the results are returned in a list.
 
@@ -120,7 +118,7 @@ def testHandlingMultipleRPCs(enableRFCConformHeaders):
 	assert '[null, 1, "F\xc3\x84KE!", {"Narziss": "Morgen Nicht Geboren"}]' == str(result.stream.read())
 
 
-def testHandlingSingleResult(enableRFCConformHeaders):
+def testHandlingSingleResult():
 	"""
 	A single RPC result must not be returned in a list.
 	"""
@@ -135,7 +133,7 @@ def testHandlingSingleResult(enableRFCConformHeaders):
 	assert '"Hallo Welt"' == str(result.stream.read())
 
 
-def testHandlingSingleResultConsistingOfList(enableRFCConformHeaders):
+def testHandlingSingleResultConsistingOfList():
 	"""
 	If a single result is made the result is a list this list must not be unpacked.
 	"""
@@ -150,7 +148,7 @@ def testHandlingSingleResultConsistingOfList(enableRFCConformHeaders):
 	assert '["Eins", "Zwei", "Drei"]' == str(result.stream.read())
 
 
-def testCompressingResponseDataWithGzip(enableRFCConformHeaders):
+def testCompressingResponseDataWithGzip():
 	"""
 	Responding with data compressed by gzip.
 	"""
@@ -172,7 +170,7 @@ def testCompressingResponseDataWithGzip(enableRFCConformHeaders):
 	assert 'null' == data
 
 
-def testCompressingResponseDataWithDeflate(enableRFCConformHeaders):
+def testCompressingResponseDataWithDeflate():
 	"""
 	Responding with data compressed by deflate.
 	"""
@@ -191,7 +189,7 @@ def testCompressingResponseDataWithDeflate(enableRFCConformHeaders):
 	assert 'null' == data
 
 
-def testCompressingResponseIfInvalidMimetype(enableRFCConformHeaders):
+def testCompressingResponseIfInvalidMimetype():
 	"""
 	Staying backwards compatible.
 
@@ -223,7 +221,7 @@ def testCompressingResponseIfInvalidMimetype(enableRFCConformHeaders):
 	assert 'null' == data
 
 
-def testReturningPlainCalls(enableRFCConformHeaders):
+def testReturningPlainCalls():
 	testHeader = FakeDictHeader({"Accept": "text/plain"})
 	request = FakeRequest(testHeader)
 	worker = WorkerOpsiJsonRpc(service=None, request=request, resource=None)
@@ -239,14 +237,36 @@ def testReturningPlainCalls(enableRFCConformHeaders):
 
 
 def testDecodingOldCallQuery():
+	"Simulating opsi 4.0.6 with invalid MIME type handling."
 	r = FakeRequest(headers=FakeHeader(
 		{
-			"content-encoding": "gzip",
+			"content-encoding": ["gzip"],
 			"content-type": FakeMediaType("gzip-application/json-rpc"),
 		}
 	))
 
 	worker = WorkerOpsi(service=None, request=r, resource=None)
 	worker.query = zlib.compress("Test 1234")
+	worker._decodeQuery(None)
+	assert u'Test 1234' == worker.query
+
+
+@pytest.mark.parametrize("contentEncoding, compressor", [
+	["gzip", gzipEncode],
+	["deflate", deflateEncode],
+	[None, lambda x: x],
+])
+def testDecodingCallQuery(contentEncoding, compressor):
+	headers = {
+		"content-type": FakeMediaType("application/json"),
+	}
+
+	if contentEncoding:
+		headers['content-encoding'] = [contentEncoding]
+
+	r = FakeRequest(headers=FakeHeader(headers))
+
+	worker = WorkerOpsi(service=None, request=r, resource=None)
+	worker.query = compressor("Test 1234")
 	worker._decodeQuery(None)
 	assert u'Test 1234' == worker.query
