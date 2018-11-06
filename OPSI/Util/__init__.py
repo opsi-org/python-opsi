@@ -366,6 +366,17 @@ def replaceSpecialHTMLCharacters(text):
 		.replace(u'\n', u'<br />\n')
 
 
+def combineVersions(obj):
+	"""
+	Returns the combination of product and package version.
+
+	:type obj: Product, ProductOnClient, ProductOnDepot
+	:return: The version.
+	:rtype: str
+	"""
+	return '{0.productVersion}-{0.packageVersion}'.format(obj)
+
+
 def compareVersions(v1, condition, v2):
 	"""
 	Compare the versions `v1` and `v2` with the given `condition`.

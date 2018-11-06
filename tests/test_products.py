@@ -1619,3 +1619,28 @@ def testGettingUserloginScript(backendManager):
     assert product.productVersion == prodFromBackend.productVersion
     assert product.packageVersion == prodFromBackend.packageVersion
     assert product.userLoginScript == prodFromBackend.userLoginScript
+
+
+def testVersionOnProduct():
+    for product in getProducts():
+        version = '{}-{}'.format(product.productVersion, product.packageVersion)
+        assert version == product.version
+
+
+def testVersionOnProductOnClients():
+    clients = getClients()
+    products = getLocalbootProducts()
+
+    for poc in getProductsOnClients(products, clients):
+        version = '{}-{}'.format(poc.productVersion, poc.packageVersion)
+        assert version == poc.version
+
+
+def testVersionOnProductOnDepots():
+    products = getProducts()
+    configServer = getConfigServer()
+    depots = getDepotServers()
+
+    for pod in getProductsOnDepot(products, configServer, depots):
+        version = '{}-{}'.format(pod.productVersion, pod.packageVersion)
+        assert version == pod.version

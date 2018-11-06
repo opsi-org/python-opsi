@@ -44,7 +44,8 @@ from OPSI.Types import (forceActionProgress, forceActionRequest,
 	forceProductTargetConfiguration, forceProductType, forceProductVersion,
 	forceRequirementType, forceSoftwareLicenseId, forceUnicode,
 	forceUnicodeList, forceUnicodeLower, forceUnsignedInt, forceUrl)
-from OPSI.Util import fromJson, toJson, generateOpsiHostKey, timestamp
+from OPSI.Util import (
+	combineVersions, fromJson, toJson, generateOpsiHostKey, timestamp)
 
 __all__ = (
 	'AuditHardware', 'AuditHardwareOnHost', 'AuditSoftware',
@@ -1216,6 +1217,10 @@ class Product(Entity):
 	def setPackageVersion(self, packageVersion):
 		self.packageVersion = forcePackageVersion(packageVersion)
 
+	@property
+	def version(self):
+		return combineVersions(self)
+
 	def getName(self):
 		return self.name
 
@@ -1843,6 +1848,10 @@ class ProductOnDepot(Relationship):
 	def setPackageVersion(self, packageVersion):
 		self.packageVersion = forcePackageVersion(packageVersion)
 
+	@property
+	def version(self):
+		return combineVersions(self)
+
 	def getDepotId(self):
 		return self.depotId
 
@@ -1989,6 +1998,10 @@ class ProductOnClient(Relationship):
 
 	def setPackageVersion(self, packageVersion):
 		self.packageVersion = forcePackageVersion(packageVersion)
+
+	@property
+	def version(self):
+		return combineVersions(self)
 
 	def getModificationTime(self):
 		return self.modificationTime
