@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2018-2019 uib GmbH - http://www.uib.de/
+# Copyright (C) 2018 uib GmbH - http://www.uib.de/
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -18,7 +18,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-Component for handling package updates.
+Component for handling packages updates.
 
 :copyright: uib GmbH <info@uib.de>
 :author: Niko Wenselowski <n.wenselowski@uib.de>
@@ -27,14 +27,16 @@ Component for handling package updates.
 
 from __future__ import absolute_import
 
+import formatter
 import os
 import os.path
-import re
-import ssl
 import time
-import urllib
 import urllib2
-from formatter import NullFormatter
+from urllib.parse import quote
+
+from .Config import ConfigurationParser
+from .Notifier import EmailNotifier
+from .Repository import LinksExtractor
 
 from OPSI import System
 from OPSI.Backend.BackendManager import BackendManager
@@ -48,23 +50,15 @@ from OPSI.Util.File.Opsi import parseFilename
 from OPSI.Util.Product import ProductPackageFile
 from OPSI.Util.Task.Rights import setRights
 
-from .Config import DEFAULT_USER_AGENT, ConfigurationParser
-from .Notifier import DummyNotifier, EmailNotifier
-from .Repository import LinksExtractor
-
 __all__ = ('OpsiPackageUpdater', )
 
 logger = Logger()
 
 
-class HashsumMissmatchError(ValueError):
-	pass
-
-
 class OpsiPackageUpdater(object):
 	def __init__(self, config):
 		self.config = config
-		self.httpHeaders = {'User-Agent': self.config.get("userAgent", DEFAULT_USER_AGENT)}
+		self.httpHeaders = {'User-Agent': self.config.get("userAgent", "")}
 		self.configBackend = None
 		self.depotConnections = {}
 		self.depotId = forceHostId(getfqdn(conf='/etc/opsi/global.conf').lower())
@@ -129,7 +123,7 @@ class OpsiPackageUpdater(object):
 			yield repo
 
 	def readConfigFile(self):
-		parser = ConfigurationParser(self.config["configFile"], backend=self.getConfigBackend(), depotId=self.depotId, depotKey=self.depotKey)
+		parser = ConfigurationParser(self.config["configFile"], self.getConfigBackend())
 		self.config = parser.parse(self.config)
 
 	def getConfigBackend(self):
@@ -158,7 +152,10 @@ class OpsiPackageUpdater(object):
 			logger.warning(u"No repositories configured, nothing to do")
 			return
 
-		notifier = self._getNotifier()
+		notifier = None
+		if self.config["notification"]:
+			logger.info(u"Notification is activated")
+			notifier = self._getNotifier()
 
 		try:
 			try:
@@ -258,7 +255,26 @@ class OpsiPackageUpdater(object):
 							self.downloadPackage(availablePackage, notifier=notifier)
 						self.cleanupPackages(availablePackage)
 
-					self._verifyDownloadedPackage(packageFile, availablePackage, zsynced, notifier)
+					if availablePackage['md5sum']:
+						logger.info(u"Verifying download of package '%s'" % packageFile)
+						md5 = md5sum(packageFile)
+						if md5 == availablePackage["md5sum"]:
+							logger.info(u"{productId}: md5sum match, package download verified", productId=availablePackage['productId'])
+						elif md5 != availablePackage["md5sum"] and zsynced:
+							logger.warning(u"{productId}: zsynced Download has failed, try once to load full package", productId=availablePackage['productId'])
+							self.downloadPackage(availablePackage, notifier=notifier)
+							self.cleanupPackages(availablePackage)
+
+							md5 = md5sum(packageFile)
+							if md5 == availablePackage["md5sum"]:
+								logger.info(u"{productId}: md5sum match, package download verified", productId=availablePackage['productId'])
+							else:
+								raise RuntimeError(u"Failed to download package '%s', md5sum mismatch" % availablePackage['packageFile'])
+						else:
+							logger.info(u"{productId}: md5sum mismatch and no zsync. Doing nothing.", productId=availablePackage['productId'])
+					else:
+						logger.warning(u"{productId}: Cannot verify download of package: missing md5sum file", productId=availablePackage['productId'])
+
 					newPackages.append(availablePackage)
 
 				if not newPackages:
@@ -285,7 +301,7 @@ class OpsiPackageUpdater(object):
 
 				sequence = []
 				for package in newPackages:
-					if not insideInstallWindow and package['productId'] not in self.config['installationWindowExceptions']:
+					if not insideInstallWindow and not package['productId'] in self.config['installationWindowExceptions']:
 						continue
 					sequence.append(package['productId'])
 
@@ -316,7 +332,6 @@ class OpsiPackageUpdater(object):
 							break
 				newPackages = sortedPackages
 
-				backend = self.getConfigBackend()
 				installedPackages = []
 				for package in newPackages:
 					packageFile = os.path.join(self.config["packageDir"], package["filename"])
@@ -328,15 +343,13 @@ class OpsiPackageUpdater(object):
 					try:
 						if package['repository'].inheritProductProperties and availablePackage['repository'].opsiDepotId:
 							logger.info(u"Trying to get product property defaults from repository")
-							productPropertyStates = backend.productPropertyState_getObjects(
-								productId=package['productId'],
-								objectId=availablePackage['repository'].opsiDepotId
-							)
+							productPropertyStates = self.getConfigBackend().productPropertyState_getObjects(
+											productId=package['productId'],
+											objectId=availablePackage['repository'].opsiDepotId)
 						else:
-							productPropertyStates = backend.productPropertyState_getObjects(
-								productId=package['productId'],
-								objectId=self.depotId
-							)
+							productPropertyStates = self.getConfigBackend().productPropertyState_getObjects(
+											productId=package['productId'],
+											objectId=self.depotId)
 						if productPropertyStates:
 							for pps in productPropertyStates:
 								propertyDefaultValues[pps.propertyId] = pps.values
@@ -345,34 +358,35 @@ class OpsiPackageUpdater(object):
 						logger.warning(u"Failed to get product property defaults: %s" % error)
 
 					logger.info(u"Installing package '%s'" % packageFile)
-					backend.depot_installPackage(filename=packageFile, propertyDefaultValues=propertyDefaultValues, tempDir=self.config.get('tempdir', '/tmp'))
-					productOnDepots = backend.productOnDepot_getObjects(depotId=self.depotId, productId=package['productId'])
+					self.getConfigBackend().depot_installPackage(filename=packageFile, propertyDefaultValues=propertyDefaultValues, tempDir=self.config.get('tempdir', '/tmp'))
+					productOnDepots = self.getConfigBackend().productOnDepot_getObjects(depotId=self.depotId, productId=package['productId'])
 					if not productOnDepots:
 						raise ValueError(u"Product '%s' not found on depot '%s' after installation" % (package['productId'], self.depotId))
-					package['product'] = backend.product_getObjects(
+					package['product'] = self.getConfigBackend().product_getObjects(
 						id=productOnDepots[0].productId,
 						productVersion=productOnDepots[0].productVersion,
 						packageVersion=productOnDepots[0].packageVersion
 					)[0]
 
-					message = u"Package '%s' successfully installed" % packageFile
-					notifier.appendLine(message, pre='\n')
-					logger.notice(message)
+					if notifier:
+						notifier.appendLine(u"Package '%s' successfully installed" % packageFile, pre='\n')
+					logger.notice(u"Package '%s' successfully installed" % packageFile)
 					installedPackages.append(package)
 
 				if not installedPackages:
 					logger.notice(u"No new packages installed")
 					return
 
+				wakeOnLanClients = set()
 				shutdownProduct = None
 				if self.config['wolAction'] and self.config["wolShutdownWanted"]:
-					try:
-						shutdownProduct = backend.productOnDepot_getObjects(depotId=self.depotId, productId='shutdownwanted')[0]
+					for product in self.getConfigBackend().productOnDepot_getObjects(depotId=self.depotId, productId='shutdownwanted'):
+						shutdownProduct = product
 						logger.info(u"Found 'shutdownwanted' product on depot '%s': %s" % (self.depotId, shutdownProduct))
-					except IndexError:
+						break
+					if not shutdownProduct:
 						logger.error(u"Product 'shutdownwanted' not avaliable on depot '%s'" % self.depotId)
 
-				wakeOnLanClients = set()
 				for package in installedPackages:
 					if not package['product'].setupScript:
 						continue
@@ -382,16 +396,6 @@ class OpsiPackageUpdater(object):
 								u"Not setting action 'setup' for product '{0}' where installation status 'installed' because auto setup is not allowed for netboot products",
 								package['productId']
 							)
-							continue
-						elif package['productId'].startswith(('opsi-local-image-', 'opsi-uefi-', 'opsi-vhd-', 'opsi-wim-', 'windows10-upgrade', 'opsi-auto-update')):
-							logger.info(
-								u"Not setting action 'setup' for product '{0}' where installation status 'installed' because auto setup is not allowed for opsi module products",
-								package['productId']
-							)
-							continue
-
-						elif any(exclude.search(package['productId']) for exclude in package['repository'].autosetupexcludes):
-							logger.info(u"Not setting action 'setup' for product '%s' because it's excluded by regular expression" % package['productId'])
 							continue
 
 						logger.notice(
@@ -405,7 +409,7 @@ class OpsiPackageUpdater(object):
 						)
 						continue
 
-					clientToDepotserver = backend.configState_getClientToDepotserver(depotIds=[self.depotId])
+					clientToDepotserver = self.getConfigBackend().configState_getClientToDepotserver(depotIds=[self.depotId])
 					clientIds = set(
 						ctd['clientId']
 						for ctd in clientToDepotserver
@@ -413,7 +417,7 @@ class OpsiPackageUpdater(object):
 					)
 
 					if clientIds:
-						productOnClients = backend.productOnClient_getObjects(
+						productOnClients = self.getConfigBackend().productOnClient_getObjects(
 							attributes=['installationStatus'],
 							productId=package['productId'],
 							productType='LocalbootProduct',
@@ -429,12 +433,14 @@ class OpsiPackageUpdater(object):
 								if wolEnabled and package['productId'] not in excludedWolProducts:
 									wakeOnLanClients.add(poc.clientId)
 
-							backend.productOnClient_updateObjects(productOnClients)
-							notifier.appendLine(u"Product {0} set to 'setup' on clients: {1}".format(package['productId'], ', '.join(sorted(poc.clientId for poc in productOnClients))))
+							self.getConfigBackend().productOnClient_updateObjects(productOnClients)
+							if notifier:
+								notifier.appendLine(u"Product {0} set to 'setup' on clients: {1}".format(package['productId'], ', '.join(sorted(poc.clientId for poc in productOnClients))))
 
 				if wakeOnLanClients:
 					logger.notice(u"Powering on clients %s" % wakeOnLanClients)
-					notifier.appendLine(u"Powering on clients: {0}".format(', '.join(sorted(wakeOnLanClients))))
+					if notifier:
+						notifier.appendLine(u"Powering on clients: {0}".format(', '.join(sorted(wakeOnLanClients))))
 
 					for clientId in wakeOnLanClients:
 						try:
@@ -442,7 +448,7 @@ class OpsiPackageUpdater(object):
 							if self.config["wolShutdownWanted"] and shutdownProduct:
 								logger.info(u"Setting shutdownwanted to 'setup' for client '%s'" % clientId)
 
-								backend.productOnClient_updateObjects(
+								self.getConfigBackend().productOnClient_updateObjects(
 									ProductOnClient(
 										productId=shutdownProduct.productId,
 										productType=shutdownProduct.productType,
@@ -452,22 +458,19 @@ class OpsiPackageUpdater(object):
 										actionRequest='setup'
 									)
 								)
-							backend.hostControl_start(hostIds=[clientId])
+							self.getConfigBackend().hostControl_start(hostIds=[clientId])
 							time.sleep(self.config["wolStartGap"])
 						except Exception as error:
 							logger.error(u"Failed to power on client '%s': %s" % (clientId, error))
 			except Exception as error:
-				notifier.appendLine(u"Error occurred: %s" % error)
+				if notifier:
+					notifier.appendLine(u"Error occurred: %s" % error)
 				raise
 		finally:
 			if notifier and notifier.hasMessage():
 				notifier.notify()
 
 	def _getNotifier(self):
-		if not self.config["notification"]:
-			return DummyNotifier()
-
-		logger.info(u"E-Mail notification is activated")
 		notifier = EmailNotifier(
 			smtphost=self.config["smtphost"],
 			smtpport=self.config["smtpport"],
@@ -506,62 +509,15 @@ class OpsiPackageUpdater(object):
 
 		return products
 
-	def _verifyDownloadedPackage(self, packageFile, availablePackage, zsynced, notifier):
-		"""
-		Verify the downloaded package.
-
-		This checks the hashsums of the downloaded package.
-		If the download was done with zsync and the hashes are different
-		we download the package in whole.
-
-		:param packageFile: The path to the package that is checked.
-		:type packageFile: str
-		:param availablePackage: Information about the package.
-		:type availablePackage: dict
-		:param notifier: The notifier to use
-		:raise HashsumMissmatchError: In case the hashsums mismatch
-		"""
-		if availablePackage['md5sum']:
-			logger.info(u"Verifying download of package '%s'" % packageFile)
-			md5 = md5sum(packageFile)
-			if md5 != availablePackage["md5sum"]:
-				if zsynced:
-					logger.warning(
-						u"{productId}: zsynced Download has failed, trying "
-						u"once to load full package",
-						productId=availablePackage['productId']
-					)
-					self.downloadPackage(availablePackage, notifier=notifier)
-					self.cleanupPackages(availablePackage)
-
-					md5 = md5sum(packageFile)
-
-				# Check again in case we re-downloaded the file
-				if md5 != availablePackage["md5sum"]:
-					raise HashsumMissmatchError(
-						u"{productId}: md5sum mismatch".format(
-							productId=availablePackage['productId']
-						)
-					)
-
-			logger.info(
-				u"{productId}: md5sum match, package download verified",
-				productId=availablePackage['productId']
-			)
-		else:
-			logger.warning(
-				u"{productId}: Cannot verify download of package: "
-				u"missing md5sum file".format(
-					productId=availablePackage['productId']
-				)
-			)
-
 	def downloadPackages(self):
 		if not any(self.getActiveRepositories()):
 			logger.warning(u"No repositories configured, nothing to do")
 			return
 
-		notifier = self._getNotifier()
+		notifier = None
+		if self.config["notification"]:
+			logger.info(u"Notification is activated")
+			notifier = self._getNotifier()
 
 		forceDownload = self.config["forceDownload"]
 
@@ -603,7 +559,8 @@ class OpsiPackageUpdater(object):
 
 					message = u"{filename} - download of package is forced.".format(**availablePackage)
 					logger.notice(message)
-					notifier.appendLine(message)
+					if notifier:
+						notifier.appendLine(message)
 				elif not downloadNeeded:
 					logger.info(
 						u"%s - download of package is not required: found local package %s with matching md5sum" % (
@@ -614,11 +571,13 @@ class OpsiPackageUpdater(object):
 				elif localPackageFound:
 					message = u"{filename} - download of package is required: found local package {0} which differs from available".format(localPackageFound['filename'], **availablePackage)
 					logger.notice(message)
-					notifier.appendLine(message)
+					if notifier:
+						notifier.appendLine(message)
 				else:
 					message = u"{filename} - download of package is required: local package not found".format(**availablePackage)
 					logger.notice(message)
-					notifier.appendLine(message)
+					if notifier:
+						notifier.appendLine(message)
 
 				packageFile = os.path.join(self.config["packageDir"], availablePackage["filename"])
 				zsynced = False
@@ -637,14 +596,34 @@ class OpsiPackageUpdater(object):
 						self.downloadPackage(availablePackage, notifier=notifier)
 					self.cleanupPackages(availablePackage)
 
-				self._verifyDownloadedPackage(packageFile, availablePackage, zsynced, notifier=notifier)
+				if availablePackage['md5sum']:
+					logger.info(u"Verifying download of package '%s'" % packageFile)
+					md5 = md5sum(packageFile)
+					if md5 == availablePackage["md5sum"]:
+						logger.info(u"{productId}: md5sum match, package download verified", productId=availablePackage['productId'])
+					elif md5 != availablePackage["md5sum"] and zsynced:
+						logger.warning(u"{productId}: zsynced Download has failed, try once to load full package", productId=availablePackage['productId'])
+						self.downloadPackage(availablePackage, notifier=notifier)
+						self.cleanupPackages(availablePackage)
+
+						md5 = md5sum(packageFile)
+						if md5 == availablePackage["md5sum"]:
+							logger.info(u"{productId}: md5sum match, package download verified", productId=availablePackage['productId'])
+						else:
+							raise RuntimeError(u"Failed to download package '%s', md5sum mismatch" % availablePackage['packageFile'])
+					else:
+						logger.warning(u"{productId}: md5sum mismatch and no zsync. Doing nothing.", productId=availablePackage['productId'])
+				else:
+					logger.warning(u"{productId}: Cannot verify download of package: missing md5sum file", productId=availablePackage['productId'])
+
 				newPackages.append(availablePackage)
 
 			if not newPackages:
 				logger.notice(u"No new packages downloaded")
 				return
 		except Exception as error:
-			notifier.appendLine(u"Error occurred: %s" % error)
+			if notifier:
+				notifier.appendLine(u"Error occurred: %s" % error)
 			raise
 		finally:
 			if notifier and notifier.hasMessage():
@@ -654,24 +633,22 @@ class OpsiPackageUpdater(object):
 		outFile = os.path.join(self.config["packageDir"], availablePackage["filename"])
 		curdir = os.getcwd()
 		os.chdir(os.path.dirname(outFile))
-
-		repository = availablePackage['repository']
 		try:
 			logger.info(u"Zsyncing %s to %s" % (availablePackage["packageFile"], outFile))
 
 			cmd = u"%s -A %s='%s:%s' -o '%s' %s 2>&1" % (
 				self.config["zsyncCommand"],
-				repository.baseUrl.split('/')[2].split(':')[0],
-				repository.username,
-				repository.password,
+				availablePackage['repository'].baseUrl.split('/')[2].split(':')[0],
+				availablePackage['repository'].username,
+				availablePackage['repository'].password,
 				outFile,
 				availablePackage["zsyncFile"]
 			)
 
-			if repository.proxy:
-				cmd = u"http_proxy=%s %s" % (repository.proxy, cmd)
+			if availablePackage['repository'].proxy:
+				cmd = u"http_proxy=%s %s" % (availablePackage['repository'].proxy, cmd)
 
-			stateRegex = re.compile(r'\s([\d.]+)%\s+([\d.]+)\skBps(.*)$')
+			stateRegex = re.compile('\s([\d\.]+)%\s+([\d\.]+)\skBps(.*)$')
 			data = ''
 			percent = 0.0
 			speed = 0
@@ -691,20 +668,25 @@ class OpsiPackageUpdater(object):
 				percent = float(match.group(1))
 				speed = float(match.group(2)) * 8
 				logger.debug(u'Zsyncing %s: %d%% (%d kbit/s)' % (availablePackage["packageFile"], percent, speed))
-
-			message = u"Zsync of '%s' completed" % availablePackage["packageFile"]
-			logger.info(message)
 			if notifier:
-				notifier.appendLine(message)
+				notifier.appendLine(u"Zsync of '%s' completed" % availablePackage["packageFile"])
+			logger.info(u"Zsync of '%s' completed" % availablePackage["packageFile"])
 		finally:
 			os.chdir(curdir)
 
 	def downloadPackage(self, availablePackage, notifier=None):
-		repository = availablePackage['repository']
 		url = availablePackage["packageFile"]
 		outFile = os.path.join(self.config["packageDir"], availablePackage["filename"])
 
-		opener = self._getUrllibOpener(repository)
+		passwordManager = urllib2.HTTPPasswordMgrWithDefaultRealm()
+		passwordManager.add_password(None, availablePackage['repository'].baseUrl, availablePackage['repository'].username, availablePackage['repository'].password)
+		handler = urllib2.HTTPBasicAuthHandler(passwordManager)
+		if availablePackage['repository'].proxy:
+			logger.notice(u"Using Proxy: %s" % availablePackage['repository'].proxy)
+			proxyHandler = urllib2.ProxyHandler({'http': availablePackage['repository'].proxy, 'https': availablePackage['repository'].proxy})
+			opener = urllib2.build_opener(proxyHandler, handler)
+		else:
+			opener = urllib2.build_opener(handler)
 		urllib2.install_opener(opener)
 
 		req = urllib2.Request(url, None, self.httpHeaders)
@@ -741,14 +723,12 @@ class OpsiPackageUpdater(object):
 					except Exception:
 						pass
 
-		if size:
-			message = u"Download of '%s' completed (~%s)" % (url, formatFileSize(size))
-		else:
-			message = u"Download of '%s' completed" % url
-
-		logger.info(message)
 		if notifier:
-			notifier.appendLine(message)
+			if size:
+				notifier.appendLine(u"Download of '%s' completed (~%s)" % (url, formatFileSize(size)))
+			else:
+				notifier.appendLine(u"Download of '%s' completed" % url)
+		logger.info(u"Download of '%s' completed" % url)
 
 	def cleanupPackages(self, newPackage):
 		logger.info(u"Cleaning up in %s" % self.config["packageDir"])
@@ -845,7 +825,20 @@ class OpsiPackageUpdater(object):
 				raise ValueError(u"Invalid repository local url for depot '%s'" % repository.opsiDepotId)
 			depotRepositoryPath = repositoryLocalUrl[7:]
 
-		opener = self._getUrllibOpener(repository)
+		passwordManager = urllib2.HTTPPasswordMgrWithDefaultRealm()
+		passwordManager.add_password(None, repository.baseUrl.encode('utf-8'), repository.username.encode('utf-8'), repository.password.encode('utf-8'))
+		handler = urllib2.HTTPBasicAuthHandler(passwordManager)
+		if repository.proxy:
+			logger.notice(u"Using Proxy: %s" % repository.proxy)
+			proxyHandler = urllib2.ProxyHandler(
+				{
+					'http': repository.proxy,
+					'https': repository.proxy
+				}
+			)
+			opener = urllib2.build_opener(proxyHandler, handler)
+		else:
+			opener = urllib2.build_opener(handler)
 		urllib2.install_opener(opener)
 
 		packages = []
@@ -853,24 +846,37 @@ class OpsiPackageUpdater(object):
 
 		for url in repository.getDownloadUrls():
 			try:
-				url = urllib.quote(url.encode('utf-8'), safe="/#%[]=:;$&()+,!?*@'~")
+				url = quote(url.encode('utf-8'), safe="/#%[]=:;$&()+,!?*@'~")
 				req = urllib2.Request(url, None, self.httpHeaders)
 				response = opener.open(req)
 				content = response.read()
 				logger.debug("content: '%s'" % content)
-				htmlParser = LinksExtractor(NullFormatter())
+				format = formatter.NullFormatter()
+				htmlParser = LinksExtractor(format)
 				htmlParser.feed(content)
 				htmlParser.close()
 				for link in htmlParser.getLinks():
 					if not link.endswith('.opsi'):
 						continue
 
-					if repository.includes:
-						if not any(include.search(link) for include in repository.includes):
-							logger.info(u"Package '%s' is not included. Please check your includeProductIds-entry in configurationfile." % link)
-							continue
+					excluded = False
+					included = True
 
-					if any(exclude.search(link) for exclude in repository.excludes):
+					if repository.includes:
+						included = False
+						for include in repository.includes:
+							if include.search(link):
+								included = True
+								break
+					if not included:
+						logger.info(u"Package '%s' is not included. Please check your includeProductIds-entry in configurationfile." % link)
+						continue
+
+					for exclude in repository.excludes:
+						if exclude.search(link):
+							excluded = True
+							break
+					if excluded:
 						logger.info(u"Package '%s' excluded by regular expression" % link)
 						continue
 
@@ -914,12 +920,7 @@ class OpsiPackageUpdater(object):
 										req = urllib2.Request(url + '/' + link, None, self.httpHeaders)
 										con = opener.open(req)
 										md5sum = con.read(32768)
-
-										# Hashes are expected to be 32 chars
-										# long. We allow shorter hashes
-										# because this allows us to trigger an
-										# exception during verification.
-										match = re.search(r'([a-z\d]{0,32})', md5sum)
+										match = re.search('([a-z\d]{32})', md5sum)
 										if match:
 											foundMd5sum = match.group(1)
 											packages[i]["md5sum"] = foundMd5sum
@@ -928,7 +929,6 @@ class OpsiPackageUpdater(object):
 										zsyncFile = url + '/' + link
 										packages[i]["zsyncFile"] = zsyncFile
 										logger.debug(u"Found zsync file for package {0!r}: {1}", filename, zsyncFile)
-
 									break
 						except Exception as error:
 							logger.error(u"Failed to process link '%s': %s" % (link, error))
@@ -942,37 +942,6 @@ class OpsiPackageUpdater(object):
 
 		return packages
 
-	def _getUrllibOpener(self, repository):
-		handler = self._getHTTPHandler(repository)
-
-		if repository.proxy:
-			logger.notice(u"Using Proxy: %s" % repository.proxy)
-			proxyHandler = urllib2.ProxyHandler(
-				{
-					'http': repository.proxy,
-					'https': repository.proxy
-				}
-			)
-			opener = urllib2.build_opener(proxyHandler, handler)
-		else:
-			opener = urllib2.build_opener(handler)
-
-		return opener
-
-	@staticmethod
-	def _getHTTPHandler(repository):
-		authcertfile = repository.authcertfile
-		authkeyfile = repository.authkeyfile
-		if os.path.exists(authcertfile) and os.path.exists(authkeyfile):
-			context = ssl.create_default_context()
-			context.load_cert_chain(authcertfile, authkeyfile)
-			handler = urllib2.HTTPSHandler(context=context)
-		else:
-			passwordManager = urllib2.HTTPPasswordMgrWithDefaultRealm()
-			passwordManager.add_password(None, repository.baseUrl, repository.username, repository.password)
-			handler = urllib2.HTTPBasicAuthHandler(passwordManager)
-
-		return handler
 
 def getLocalPackages(packageDirectory, forceChecksumCalculation=False):
 	"""
@@ -1002,7 +971,7 @@ _version_, _packageFile_ (complete path), _filename_ and _md5sum_.
 		logger.info(u"Found local package '%s'" % packageFile)
 		try:
 			productId, version = parseFilename(filename)
-			checkSumFile = packageFile + '.md5'
+			checkSumFile = filename + '.md5'
 			if not forceChecksumCalculation and os.path.exists(checkSumFile):
 				logger.debug("Reading existing checksum from {0}", checkSumFile)
 				with open(checkSumFile) as hashFile:
