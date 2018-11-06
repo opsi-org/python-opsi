@@ -599,7 +599,6 @@ class JSONRPCBackend(Backend):
 			'Accept-Encoding': 'deflate, gzip',
 			'content-type': 'application/json',
 		}
-		data = data.encode('utf-8')
 
 		logger.debug2(u"Request to host {0!r}, baseUrl: {1!r}, query: {2!r}".format(self._host, baseUrl, data))
 
@@ -630,7 +629,7 @@ class JSONRPCBackend(Backend):
 			if sessionId != self._sessionId:
 				self._sessionId = sessionId
 
-		contentEncoding = response.getheader('content-encoding', '').lower()
+		contentEncoding = response.getheader('Content-Encoding', '').lower()
 		logger.debug2(u"Content-Encoding: {}", contentEncoding)
 
 		response = response.data
