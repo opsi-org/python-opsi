@@ -25,7 +25,7 @@ Handling repositories.
 :license: GNU Affero General Public License version 3
 """
 
-import htmllib
+from html.parser import HTMLParser
 
 from OPSI.Logger import Logger
 from OPSI.Types import forceBool, forceUnicode, forceUnicodeList
@@ -72,7 +72,7 @@ class ProductRepositoryInfo(object):
 		return urls
 
 
-class LinksExtractor(htmllib.HTMLParser):
+class LinksExtractor(HTMLParser):
 	def __init__(self, formatter):
 		htmllib.HTMLParser.__init__(self, formatter)
 		self.links = set()
