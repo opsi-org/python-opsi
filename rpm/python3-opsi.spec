@@ -28,7 +28,6 @@ Requires:       pwdutils
 %{py_requires}
 %endif
 %if 0%{?rhel_version} || 0%{?centos_version} || 0%{?fedora_version}
-Requires:       m2crypto
 Requires:       MySQL-python
 Requires:       newt-python
 Requires:       pyOpenSSL
@@ -40,7 +39,6 @@ Requires:       net-tools
 %endif
 %else
 Requires:       lsb-release
-Requires:       python-m2crypto
 Requires:       python3-mysql
 Requires:       python3-newt
 Requires:       python3-openssl
