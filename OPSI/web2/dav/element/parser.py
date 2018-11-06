@@ -30,19 +30,19 @@ This module provides XML utilities for use with WebDAV.
 See RFC 2518: http://www.ietf.org/rfc/rfc2518.txt (WebDAV)
 """
 
+import io as StringIO
+import xml.dom.minidom
+import xml.sax
+
+from OPSI.web2.dav.element.base import WebDAVElement, WebDAVUnknownElement, PCDATAElement
+from OPSI.web2.dav.element.util import PrintXML
+
 __all__ = [
     "registerElement",
     "registerElements",
     "lookupElement",
     "WebDAVDocument",
 ]
-
-import cStringIO as StringIO
-import xml.dom.minidom
-import xml.sax
-
-from OPSI.web2.dav.element.base import WebDAVElement, WebDAVUnknownElement, PCDATAElement
-from OPSI.web2.dav.element.util import PrintXML
 
 ##
 # Parsing
@@ -162,7 +162,7 @@ class WebDAVContentHandler (xml.sax.handler.ContentHandler):
         # children.
         try:
             element = top["class"](*top["children"], **top["attributes"])
-        except ValueError, e:
+        except ValueError as e:
             e.args = ("%s at %s" % (e.args[0], self.location()),) + e.args[1:]
             raise # Re-raises modified e, but preserves traceback
 
@@ -207,7 +207,7 @@ class WebDAVDocument (object):
 
             try:
                 parser.parse(source)
-            except xml.sax.SAXParseException, e:
+            except xml.sax.SAXParseException as e:
                 raise ValueError(e)
 
             #handler.dom.root_element.validate()

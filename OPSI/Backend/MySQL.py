@@ -40,13 +40,13 @@ from MySQLdb.converters import conversions
 from sqlalchemy import pool
 from twisted.conch.ssh import keys
 
+from OPSI.Backend.Base import ConfigDataBackend
+from OPSI.Backend.SQL import (
+	onlyAllowSelect, SQL, SQLBackend, SQLBackendObjectModificationTracker)
 from OPSI.Exceptions import (BackendBadValueError, BackendUnableToConnectError,
 	BackendUnaccomplishableError)
 from OPSI.Logger import Logger
 from OPSI.Types import forceInt, forceUnicode
-from OPSI.Backend.Backend import ConfigDataBackend
-from OPSI.Backend.SQL import (
-	onlyAllowSelect, SQL, SQLBackend, SQLBackendObjectModificationTracker)
 
 __all__ = (
 	'ConnectionPool', 'MySQL', 'MySQLBackend',
@@ -304,7 +304,7 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 				self.execute(query, conn, cursor)
 			except Exception as e:
 				logger.debug(u"Execute error: %s" % e)
-				if e[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
+				if e.args[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
 					raise
 
 				self.close(conn, cursor)
@@ -328,7 +328,7 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 				self.execute(query, conn, cursor)
 			except Exception as e:
 				logger.debug(u"Execute error: %s" % e)
-				if e[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
+				if e.args[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
 					raise
 
 				self.close(conn, cursor)
@@ -359,7 +359,7 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 				self.execute(query, conn, cursor)
 			except Exception as e:
 				logger.debug(u"Execute error: {0!r}", e)
-				if e[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
+				if e.args[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
 					raise
 
 				self.close(conn, cursor)
@@ -398,10 +398,10 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 						values.append(u"1")
 					else:
 						values.append(u"0")
-				elif isinstance(value, (float, long, int)):
+				elif isinstance(value, (float, int)):
 					values.append(u"{0}".format(value))
 				elif isinstance(value, str):
-					values.append(u"\'{0}\'".format(self.escapeApostrophe(self.escapeBackslash(value.decode("utf-8")))))
+					values.append(u"\'{0}\'".format(self.escapeApostrophe(self.escapeBackslash(value))))
 				else:
 					values.append(u"\'{0}\'".format(self.escapeApostrophe(self.escapeBackslash(value))))
 
@@ -411,7 +411,7 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 				self.execute(query, conn, cursor)
 			except Exception as e:
 				logger.debug(u"Execute error: {0!r}", e)
-				if e[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
+				if e.args[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
 					raise
 
 				self.close(conn, cursor)
@@ -441,10 +441,10 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 						value = u"1"
 					else:
 						value = u"0"
-				elif isinstance(value, (float, long, int)):
+				elif isinstance(value, (float, int)):
 					value = u"%s" % value
 				elif isinstance(value, str):
-					value = u"\'{0}\'".format(self.escapeApostrophe(self.escapeBackslash(value.decode("utf-8"))))
+					value = u"\'{0}\'".format(self.escapeApostrophe(self.escapeBackslash(value)))
 				else:
 					value = u"\'{0}\'".format(self.escapeApostrophe(self.escapeBackslash(value)))
 
@@ -456,7 +456,7 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 				self.execute(query, conn, cursor)
 			except Exception as e:
 				logger.debug(u"Execute error: {0!r}", e)
-				if e[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
+				if e.args[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
 					raise
 
 				self.close(conn, cursor)
@@ -483,7 +483,7 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 				self.execute(query, conn, cursor)
 			except Exception as e:
 				logger.debug(u"Execute error: {0}", e)
-				if e[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
+				if e.args[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
 					raise
 
 				self.close(conn, cursor)
@@ -521,10 +521,11 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 		tables = {}
 		logger.debug(u"Current tables:")
 		for i in self.getSet(u'SHOW TABLES;'):
-			tableName = i.values()[0]
-			logger.debug2(u" [ {0} ]", tableName)
-			tables[tableName] = [j['Field'] for j in self.getSet(u'SHOW COLUMNS FROM `%s`' % tableName)]
-			logger.debug2("Fields in {0}: {1}", tableName, tables[tableName])
+			for tableName in i.values():
+				logger.debug2(u" [ {0} ]", tableName)
+				tables[tableName] = [j['Field'] for j in self.getSet(u'SHOW COLUMNS FROM `%s`' % tableName)]
+				logger.debug2("Fields in {0}: {1}", tableName, tables[tableName])
+
 		return tables
 
 	def getTableCreationOptions(self, table):
@@ -565,9 +566,9 @@ class MySQLBackend(SQLBackend):
 			logger.error(u"Disabling mysql backend and license management module: modules file expired")
 		else:
 			logger.info(u"Verifying modules file signature")
-			publicKey = keys.Key.fromString(data=base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
+			publicKey = keys.Key.fromString(data=base64.decodebytes(b'AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
 			data = u''
-			mks = modules.keys()
+			mks = list(modules.keys())
 			mks.sort()
 			for module in mks:
 				if module in ('valid', 'signature'):
@@ -586,7 +587,7 @@ class MySQLBackend(SQLBackend):
 
 				data += u'%s = %s\r\n' % (module.lower().strip(), val)
 
-			if not bool(publicKey.verify(md5(data).digest(), [long(modules['signature'])])):
+			if not bool(publicKey.verify(md5(data.encode()).digest(), [int(modules['signature'])])):
 				logger.error(u"Disabling mysql backend and license management module: modules file invalid")
 			else:
 				logger.info(u"Modules file signature verified (customer: %s)" % modules.get('customer'))
@@ -706,7 +707,7 @@ class MySQLBackend(SQLBackend):
 						myPPVvalue = u"`value` = 1"
 					else:
 						myPPVvalue = u"`value` = 0"
-				elif isinstance(value, (float, long, int)):
+				elif isinstance(value, (float, int)):
 					myPPVvalue = u"`value` = %s" % (value)
 				else:
 					myPPVvalue = u"`value` = '%s'" % (self._sql.escapeApostrophe(self._sql.escapeBackslash(value)))

@@ -31,6 +31,16 @@ This module provides XML utilities for use with WebDAV.
 See RFC 2518: http://www.ietf.org/rfc/rfc2518.txt (WebDAV)
 """
 
+import string
+import io as StringIO
+import xml.dom.minidom
+
+import datetime
+
+from twisted.python import log
+from OPSI.web2.http_headers import parseDateTime
+from OPSI.web2.dav.element.util import PrintXML, decodeXMLName
+
 __all__ = [
     "dav_namespace",
     "twisted_dav_namespace",
@@ -45,15 +55,7 @@ __all__ = [
     "DateTimeHeaderElement",
 ]
 
-import string
-import cStringIO as StringIO
-import xml.dom.minidom
-
-import datetime
-
-from twisted.python import log
-from OPSI.web2.http_headers import parseDateTime
-from OPSI.web2.dav.element.util import PrintXML, decodeXMLName
+unicode = str  # Easy Python 3 compatibility
 
 ##
 # Base XML elements
@@ -93,7 +95,7 @@ class WebDAVElement (object):
 
         my_children = []
 
-        allowPCDATA = self.allowed_children.has_key(PCDATAElement)
+        allowPCDATA = PCDATAElement in self.allowed_children
 
         for child in children:
             if child is None:
@@ -123,11 +125,11 @@ class WebDAVElement (object):
         #
         # Validate that children are of acceptable types
         #
-        allowed_children = dict([
-            (child_type, list(limits))
+        allowed_children = {
+            child_type: list(limits)
             for child_type, limits
             in self.allowed_children.items()
-        ])
+        }
 
         my_children = []
 
@@ -184,7 +186,7 @@ class WebDAVElement (object):
         else:
             if not isinstance(self, WebDAVUnknownElement) and attributes:
                 log.msg("Attributes %s are unexpected in %s element"
-                        % (attributes.keys(), self.sname()))
+                        % (list(attributes.keys()), self.sname()))
             my_attributes.update(attributes)
 
         self.attributes = my_attributes
@@ -245,7 +247,7 @@ class WebDAVElement (object):
             # Write out any attributes or the namespace if difference from enclosing element.
             if self.attributes or (ns != self.namespace):
                 output.write("<%s" % (self.name,))
-                for name, value in self.attributes.iteritems():
+                for name, value in self.attributes.items():
                     self.writeAttributeToStream(output, name, value)
                 if ns != self.namespace:
                     output.write(" xmlns='%s'" % (self.namespace,))
@@ -256,7 +258,7 @@ class WebDAVElement (object):
             # Write out any attributes or the namespace if difference from enclosing element.
             if self.attributes or (ns != self.namespace):
                 output.write("<%s" % (self.name,))
-                for name, value in self.attributes.iteritems():
+                for name, value in self.attributes.items():
                     self.writeAttributeToStream(output, name, value)
                 if ns != self.namespace:
                     output.write(" xmlns='%s'" % (self.namespace,))
@@ -690,11 +692,11 @@ def parse_date(date):
         import re
 
         regex_date = re.compile(
-            "^" +
-              "(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})T" +
-              "(?P<hour>\d{2}):(?P<minute>\d{2}):(?P<second>\d{2})(?:.(?P<subsecond>\d+))*" +
-              "(?:Z|(?P<offset_sign>\+|-)(?P<offset_hour>\d{2}):(?P<offset_minute>\d{2}))" +
-            "$"
+            r"^"
+            r"(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})T"
+            r"(?P<hour>\d{2}):(?P<minute>\d{2}):(?P<second>\d{2})(?:.(?P<subsecond>\d+))*"
+            r"(?:Z|(?P<offset_sign>\+|-)(?P<offset_hour>\d{2}):(?P<offset_minute>\d{2}))"
+            r"$"
         )
 
     match = regex_date.match(date)

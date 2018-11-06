@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2014-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -111,7 +111,7 @@ def testArgumentWithUnicodeDefault():
 
 	args, kwargs = Backend.getArgAndCallString(foo)
 
-	assert "bar=u'baz'" == args
+	assert "bar='baz'" == args
 	assert 'bar=bar' == kwargs
 
 

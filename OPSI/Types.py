@@ -65,44 +65,32 @@ __all__ = (
 encoding = sys.getfilesystemencoding()
 logger = Logger()
 
-_HARDWARE_ID_REGEX = re.compile('^[a-fA-F0-9]{4}$')
-_OPSI_TIMESTAMP_REGEX = re.compile('^(\d{4})-?(\d{2})-?(\d{2})\s?(\d{2}):?(\d{2}):?(\d{2})\.?\d*$')
-_OPSI_DATE_REGEX = re.compile('^(\d{4})-?(\d{2})-?(\d{2})$')
-_FQDN_REGEX = re.compile('^[a-z0-9][a-z0-9\-]{,63}\.((\w+\-+)|(\w+\.))*\w{1,63}\.\w{2,16}\.?$')
-_HARDWARE_ADDRESS_REGEX = re.compile('^([0-9a-f]{2})[:-]?([0-9a-f]{2})[:-]?([0-9a-f]{2})[:-]?([0-9a-f]{2})[:-]?([0-9a-f]{2})[:-]?([0-9a-f]{2})$')
-_IP_ADDRESS_REGEX = re.compile('^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$')
-_NETMASK_REGEX = re.compile('^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$')
-_NETWORK_ADDRESS_REGEX = re.compile('^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/([0-3]?[0-9]|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$')
-_URL_REGEX = re.compile('^[a-z0-9]+://[/a-zA-Z0-9]')
-_OPSI_HOST_KEY_REGEX = re.compile('^[0-9a-f]{32}$')
-_PRODUCT_VERSION_REGEX = re.compile('^[a-z0-9\.]{1,32}$')
-_PACKAGE_VERSION_REGEX = re.compile('^[a-z0-9\.]{1,16}$')
-_PRODUCT_ID_REGEX = re.compile('^[a-z0-9-_\.]{1,128}$')
-_PACKAGE_CUSTOM_NAME_REGEX = re.compile('^[a-zA-Z0-9]+$')
-_PRODUCT_PROPERTY_ID_REGEX = re.compile('^\S+$')
-_CONFIG_ID_REGEX = re.compile('^\S+$')
-_GROUP_ID_REGEX = re.compile('^[a-z0-9][a-z0-9-_. ]*$')
-_OBJECT_ID_REGEX = re.compile('^[a-z0-9][a-z0-9-_. ]*$')
-_EMAIL_REGEX = re.compile('^(([A-Za-z0-9]+_+)|([A-Za-z0-9]+\-+)|([A-Za-z0-9]+\.+)|([A-Za-z0-9]+\++))*[A-Za-z0-9]+@((\w+\-+)|(\w+\.))*\w*')
-_DOMAIN_REGEX = re.compile('^((\w+\-+)|(\w+\.))*\w{1,63}\.\w{2,16}\.?$')
-_HOSTNAME_REGEX = re.compile('^[a-z0-9][a-z0-9\-]*$')
-_LICENSE_CONTRACT_ID_REGEX = re.compile('^[a-z0-9][a-z0-9-_\. :]*$')
-_SOFTWARE_LICENSE_ID_REGEX = re.compile('^[a-z0-9][a-z0-9-_\. :]*$')
-_LICENSE_POOL_ID_REGEX = re.compile('^[a-z0-9][a-z0-9-_\. :]*$')
-_LANGUAGE_CODE_REGEX = re.compile('^([a-z]{2,3})[-_]?([a-z]{4})?[-_]?([a-z]{2})?$')
-_ARCHITECTURE_REGEX = re.compile('^(x86|x64)$')
-
-if sys.version_info > (3, ):
-	# Python 3
-	unicode = str
-	_STRING_TYPE = str
-	_UNICODE_TYPE = str
-	_STRING_TYPES = (str, )
-else:
-	# Python 2
-	_STRING_TYPE = str
-	_UNICODE_TYPE = unicode
-	_STRING_TYPES = (str, unicode)
+_HARDWARE_ID_REGEX = re.compile(r'^[a-fA-F0-9]{4}$')
+_OPSI_TIMESTAMP_REGEX = re.compile(r'^(\d{4})-?(\d{2})-?(\d{2})\s?(\d{2}):?(\d{2}):?(\d{2})\.?\d*$')
+_OPSI_DATE_REGEX = re.compile(r'^(\d{4})-?(\d{2})-?(\d{2})$')
+_FQDN_REGEX = re.compile(r'^[a-z0-9][a-z0-9\-]{,63}\.((\w+\-+)|(\w+\.))*\w{1,63}\.\w{2,16}\.?$')
+_HARDWARE_ADDRESS_REGEX = re.compile(r'^([0-9a-f]{2})[:-]?([0-9a-f]{2})[:-]?([0-9a-f]{2})[:-]?([0-9a-f]{2})[:-]?([0-9a-f]{2})[:-]?([0-9a-f]{2})$')
+_IP_ADDRESS_REGEX = re.compile(r'^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$')
+_NETMASK_REGEX = re.compile(r'^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$')
+_NETWORK_ADDRESS_REGEX = re.compile(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/([0-3]?[0-9]|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$')
+_URL_REGEX = re.compile(r'^[a-z0-9]+://[/a-zA-Z0-9]')
+_OPSI_HOST_KEY_REGEX = re.compile(r'^[0-9a-f]{32}$')
+_PRODUCT_VERSION_REGEX = re.compile(r'^[a-z0-9\.]{1,32}$')
+_PACKAGE_VERSION_REGEX = re.compile(r'^[a-z0-9\.]{1,16}$')
+_PRODUCT_ID_REGEX = re.compile(r'^[a-z0-9-_\.]{1,128}$')
+_PACKAGE_CUSTOM_NAME_REGEX = re.compile(r'^[a-zA-Z0-9]+$')
+_PRODUCT_PROPERTY_ID_REGEX = re.compile(r'^\S+$')
+_CONFIG_ID_REGEX = re.compile(r'^\S+$')
+_GROUP_ID_REGEX = re.compile(r'^[a-z0-9][a-z0-9-_. ]*$')
+_OBJECT_ID_REGEX = re.compile(r'^[a-z0-9][a-z0-9-_. ]*$')
+_EMAIL_REGEX = re.compile(r'^(([A-Za-z0-9]+_+)|([A-Za-z0-9]+\-+)|([A-Za-z0-9]+\.+)|([A-Za-z0-9]+\++))*[A-Za-z0-9]+@((\w+\-+)|(\w+\.))*\w*')
+_DOMAIN_REGEX = re.compile(r'^((\w+\-+)|(\w+\.))*\w{1,63}\.\w{2,16}\.?$')
+_HOSTNAME_REGEX = re.compile(r'^[a-z0-9][a-z0-9\-]*$')
+_LICENSE_CONTRACT_ID_REGEX = re.compile(r'^[a-z0-9][a-z0-9-_\. :]*$')
+_SOFTWARE_LICENSE_ID_REGEX = re.compile(r'^[a-z0-9][a-z0-9-_\. :]*$')
+_LICENSE_POOL_ID_REGEX = re.compile(r'^[a-z0-9][a-z0-9-_\. :]*$')
+_LANGUAGE_CODE_REGEX = re.compile(r'^([a-z]{2,3})[-_]?([a-z]{4})?[-_]?([a-z]{2})?$')
+_ARCHITECTURE_REGEX = re.compile(r'^(x86|x64)$')
 
 
 def forceList(var):
@@ -113,32 +101,26 @@ def forceList(var):
 
 
 def forceUnicode(var):
-	if isinstance(var, _UNICODE_TYPE):
+	if isinstance(var, str):
 		return var
-	elif isinstance(var, _STRING_TYPE):
-		return unicode(var, 'utf-8', 'replace')
 	elif (os.name == 'nt') and isinstance(var, WindowsError):
 		return u"[Error %s] %s" % (var.args[0], var.args[1].decode(encoding))
 
 	try:
-		return var.__unicode__()
-	except Exception:
-		pass
-
-	try:
-		return unicode(var)
+		if isinstance(var, bytes):
+			return var.decode()
 	except Exception:
 		pass
 
 	try:
 		var = var.__repr__()
-		if isinstance(var, _UNICODE_TYPE):
+		if isinstance(var, str):
 			return var
-		return unicode(var, 'utf-8', 'replace')
+		return str(var, 'utf-8', 'replace')
 	except Exception:
 		pass
 
-	return unicode(var)
+	return str(var)
 
 
 def forceUnicodeLower(var):
@@ -164,7 +146,7 @@ def forceUnicodeLowerList(var):
 def forceBool(var):
 	if isinstance(var, bool):
 		return var
-	elif isinstance(var, _STRING_TYPES):
+	elif isinstance(var, str):
 		if len(var) <= 5:  # longest word is 5 characters ("false")
 			lowValue = var.lower()
 			if lowValue in ('true', 'yes', 'on', '1'):
@@ -212,7 +194,8 @@ def forceOct(var):
 			elif i == 0 and x != '0':
 				octValue += '0'
 			octValue += str(x)
-		octValue = eval(octValue)
+
+		octValue = eval('0o' + octValue)
 		return octValue
 	except Exception as error:
 		raise ValueError(u"Bad oct value {0!r}: {1}".format(var, error))
@@ -360,7 +343,7 @@ def forceUrl(var):
 	"""
 	Forces ``var`` to be an valid URL.
 
-	:rtype: unicode
+	:rtype: str
 	"""
 	var = forceUnicode(var)
 	if not _URL_REGEX.search(var):
@@ -371,7 +354,8 @@ def forceUrl(var):
 def forceOpsiHostKey(var):
 	var = forceUnicodeLower(var)
 	if not re.search(_OPSI_HOST_KEY_REGEX, var):
-		raise ValueError(u"Bad opsi host key: '%s'" % var)
+		raise ValueError(u"Bad opsi host key: {!r}".format(var))
+
 	return var
 
 
@@ -517,7 +501,7 @@ def forceObjectClass(var, objectClass):
 		return var
 
 	exception = None
-	if isinstance(var, _STRING_TYPES) and var.lstrip().startswith('{'):
+	if isinstance(var, str) and var.lstrip().startswith('{'):
 		from OPSI.Util import fromJson
 
 		try:
@@ -536,7 +520,7 @@ def forceObjectClass(var, objectClass):
 			if issubclass(c, objectClass):
 				var = c.fromHash(var)
 		except AttributeError as error:
-			if "'module' object has no attribute " in str(error):
+			if "module 'OPSI.Object' has no attribute" in str(error):
 				error = ValueError("Invalild object type: {0}".format(var['type']))
 
 			exception = error
@@ -738,7 +722,7 @@ def args(*vars, **typeVars):
 				else:
 					ka[var] = None
 
-			for key, value in ka.iteritems():
+			for key, value in ka.items():
 				if getattr(obj, key, None) is None:
 					setattr(obj, key, value)
 

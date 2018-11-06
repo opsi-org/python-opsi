@@ -25,15 +25,12 @@ Component for handling package updates.
 :license: GNU Affero General Public License version 3
 """
 
-from __future__ import absolute_import
-
-import formatter
 import os
 import os.path
 import re
 import time
-import urllib
-import urllib2
+import urllib.request
+from urllib.parse import quote
 
 from .Config import ConfigurationParser
 from .Notifier import EmailNotifier
@@ -679,18 +676,18 @@ class OpsiPackageUpdater(object):
 		url = availablePackage["packageFile"]
 		outFile = os.path.join(self.config["packageDir"], availablePackage["filename"])
 
-		passwordManager = urllib2.HTTPPasswordMgrWithDefaultRealm()
+		passwordManager = urllib.request.HTTPPasswordMgrWithDefaultRealm()
 		passwordManager.add_password(None, availablePackage['repository'].baseUrl, availablePackage['repository'].username, availablePackage['repository'].password)
-		handler = urllib2.HTTPBasicAuthHandler(passwordManager)
+		handler = urllib.request.HTTPBasicAuthHandler(passwordManager)
 		if availablePackage['repository'].proxy:
 			logger.notice(u"Using Proxy: %s" % availablePackage['repository'].proxy)
-			proxyHandler = urllib2.ProxyHandler({'http': availablePackage['repository'].proxy, 'https': availablePackage['repository'].proxy})
-			opener = urllib2.build_opener(proxyHandler, handler)
+			proxyHandler = urllib.request.ProxyHandler({'http': availablePackage['repository'].proxy, 'https': availablePackage['repository'].proxy})
+			opener = urllib.request.build_opener(proxyHandler, handler)
 		else:
-			opener = urllib2.build_opener(handler)
-		urllib2.install_opener(opener)
+			opener = urllib.request.build_opener(handler)
+		urllib.request.install_opener(opener)
 
-		req = urllib2.Request(url, None, self.httpHeaders)
+		req = urllib.request.Request(url, None, self.httpHeaders)
 		con = opener.open(req)
 		size = int(con.info().get('Content-length', 0))
 		if size:
@@ -826,34 +823,33 @@ class OpsiPackageUpdater(object):
 				raise ValueError(u"Invalid repository local url for depot '%s'" % repository.opsiDepotId)
 			depotRepositoryPath = repositoryLocalUrl[7:]
 
-		passwordManager = urllib2.HTTPPasswordMgrWithDefaultRealm()
+		passwordManager = urllib.request.HTTPPasswordMgrWithDefaultRealm()
 		passwordManager.add_password(None, repository.baseUrl.encode('utf-8'), repository.username.encode('utf-8'), repository.password.encode('utf-8'))
-		handler = urllib2.HTTPBasicAuthHandler(passwordManager)
+		handler = urllib.request.HTTPBasicAuthHandler(passwordManager)
 		if repository.proxy:
 			logger.notice(u"Using Proxy: %s" % repository.proxy)
-			proxyHandler = urllib2.ProxyHandler(
+			proxyHandler = urllib.request.ProxyHandler(
 				{
 					'http': repository.proxy,
 					'https': repository.proxy
 				}
 			)
-			opener = urllib2.build_opener(proxyHandler, handler)
+			opener = urllib.request.build_opener(proxyHandler, handler)
 		else:
-			opener = urllib2.build_opener(handler)
-		urllib2.install_opener(opener)
+			opener = urllib.request.build_opener(handler)
+		urllib.request.install_opener(opener)
 
 		packages = []
 		errors = set()
 
 		for url in repository.getDownloadUrls():
 			try:
-				url = urllib.quote(url.encode('utf-8'), safe="/#%[]=:;$&()+,!?*@'~")
-				req = urllib2.Request(url, None, self.httpHeaders)
+				url = quote(url.encode('utf-8'), safe="/#%[]=:;$&()+,!?*@'~")
+				req = urllib.request.Request(url, None, self.httpHeaders)
 				response = opener.open(req)
 				content = response.read()
 				logger.debug("content: '%s'" % content)
-				format = formatter.NullFormatter()
-				htmlParser = LinksExtractor(format)
+				htmlParser = LinksExtractor()
 				htmlParser.feed(content)
 				htmlParser.close()
 				for link in htmlParser.getLinks():
@@ -918,7 +914,7 @@ class OpsiPackageUpdater(object):
 							for i, package in enumerate(packages):
 								if package.get('filename') == filename:
 									if isMd5:
-										req = urllib2.Request(url + '/' + link, None, self.httpHeaders)
+										req = urllib.request.Request(url + '/' + link, None, self.httpHeaders)
 										con = opener.open(req)
 										md5sum = con.read(32768)
 										match = re.search('([a-z\d]{32})', md5sum)

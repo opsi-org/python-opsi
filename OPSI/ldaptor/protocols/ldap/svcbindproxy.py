@@ -141,8 +141,8 @@ class ServiceBindingProxy(proxy.Proxy):
 
     def handle_LDAPBindRequest(self, request, controls, reply):
         if request.version != 3:
-            raise ldaperrors.LDAPProtocolError, \
-                  'Version %u not supported' % request.version
+            raise ldaperrors.LDAPProtocolError(
+                  'Version %u not supported' % request.version)
 
         self.checkControls(controls)
 

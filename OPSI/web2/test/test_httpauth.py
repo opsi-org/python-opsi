@@ -2,11 +2,12 @@ import md5
 from twisted.internet import address
 from twisted.trial import unittest
 from twisted.cred import error
+from twisted.cred import portal, checkers
+from zope.interface.declarations import implementer
 from OPSI.web2 import http, responsecode
 from OPSI.web2.auth import basic, digest, wrapper
 from OPSI.web2.auth.interfaces import IAuthenticatedRequest, IHTTPUser
 from OPSI.web2.test.test_server import SimpleRequest
-
 from OPSI.web2.test import test_server
 
 import base64
@@ -47,7 +48,7 @@ class BasicAuthTestCase(unittest.TestCase):
                 self.password))
 
         creds = self.credentialFactory.decode(response, _trivial_GET)
-        self.failUnless(creds.checkPassword(self.password))
+        self.assertTrue(creds.checkPassword(self.password))
 
     def testIncorrectPassword(self):
         response = base64.encodestring('%s:%s' % (
@@ -55,7 +56,7 @@ class BasicAuthTestCase(unittest.TestCase):
                 'incorrectPassword'))
 
         creds = self.credentialFactory.decode(response, _trivial_GET)
-        self.failIf(creds.checkPassword(self.password))
+        self.assertFalse(creds.checkPassword(self.password))
 
     def testIncorrectPadding(self):
         response = base64.encodestring('%s:%s' % (
@@ -65,7 +66,7 @@ class BasicAuthTestCase(unittest.TestCase):
         response = response.strip('=')
 
         creds = self.credentialFactory.decode(response, _trivial_GET)
-        self.failUnless(creds.checkPassword(self.password))
+        self.assertTrue(creds.checkPassword(self.password))
 
     def testInvalidCredentials(self):
         response = base64.encodestring(self.username)
@@ -143,11 +144,11 @@ class DigestAuthTestCase(unittest.TestCase):
         """
 
         challenge = self.credentialFactory.getChallenge(clientAddress)
-        self.assertEquals(challenge['qop'], 'auth')
-        self.assertEquals(challenge['realm'], 'test realm')
-        self.assertEquals(challenge['algorithm'], 'md5')
-        self.assertTrue(challenge.has_key("nonce"))
-        self.assertTrue(challenge.has_key("opaque"))
+        self.assertEqual(challenge['qop'], 'auth')
+        self.assertEqual(challenge['realm'], 'test realm')
+        self.assertEqual(challenge['algorithm'], 'md5')
+        self.assertTrue("nonce" in challenge)
+        self.assertTrue("opaque" in challenge)
 
     def test_response(self):
         """
@@ -162,7 +163,7 @@ class DigestAuthTestCase(unittest.TestCase):
             challenge['opaque'])
 
         creds = self.credentialFactory.decode(clientResponse, _trivial_GET)
-        self.failUnless(creds.checkPassword('password'))
+        self.assertTrue(creds.checkPassword('password'))
 
     def test_multiResponse(self):
         """
@@ -178,7 +179,7 @@ class DigestAuthTestCase(unittest.TestCase):
             challenge['opaque'])
 
         creds = self.credentialFactory.decode(clientResponse, _trivial_GET)
-        self.failUnless(creds.checkPassword('password'))
+        self.assertTrue(creds.checkPassword('password'))
 
         clientResponse = authRequest2 % (
             challenge['nonce'],
@@ -186,7 +187,7 @@ class DigestAuthTestCase(unittest.TestCase):
             challenge['opaque'])
 
         creds = self.credentialFactory.decode(clientResponse, _trivial_GET)
-        self.failUnless(creds.checkPassword('password'))
+        self.assertTrue(creds.checkPassword('password'))
 
     def test_failsWithDifferentMethod(self):
         """
@@ -203,7 +204,7 @@ class DigestAuthTestCase(unittest.TestCase):
 
         creds = self.credentialFactory.decode(clientResponse,
                                               SimpleRequest(None, 'POST', '/'))
-        self.failIf(creds.checkPassword('password'))
+        self.assertFalse(creds.checkPassword('password'))
 
     def test_noUsername(self):
         """
@@ -216,14 +217,14 @@ class DigestAuthTestCase(unittest.TestCase):
                               self.credentialFactory.decode,
                               namelessAuthRequest,
                               _trivial_GET)
-        self.assertEquals(str(e), "Invalid response, no username given.")
+        self.assertEqual(str(e), "Invalid response, no username given.")
 
         # Check for an empty username
         e = self.assertRaises(error.LoginFailed,
                               self.credentialFactory.decode,
                               namelessAuthRequest + ',username=""',
                               _trivial_GET)
-        self.assertEquals(str(e), "Invalid response, no username given.")
+        self.assertEqual(str(e), "Invalid response, no username given.")
 
     def test_noNonce(self):
         """
@@ -234,7 +235,7 @@ class DigestAuthTestCase(unittest.TestCase):
                               self.credentialFactory.decode,
                               'realm="Test",username="Foo",opaque="bar"',
                               _trivial_GET)
-        self.assertEquals(str(e), "Invalid response, no nonce given.")
+        self.assertEqual(str(e), "Invalid response, no nonce given.")
 
     def test_noOpaque(self):
         """
@@ -245,7 +246,7 @@ class DigestAuthTestCase(unittest.TestCase):
                               self.credentialFactory.decode,
                               'realm="Test",username="Foo"',
                               _trivial_GET)
-        self.assertEquals(str(e), "Invalid response, no opaque given.")
+        self.assertEqual(str(e), "Invalid response, no opaque given.")
 
     def test_checkHash(self):
         """
@@ -262,10 +263,10 @@ class DigestAuthTestCase(unittest.TestCase):
 
         creds = self.credentialFactory.decode(clientResponse, _trivial_GET)
 
-        self.failUnless(creds.checkHash(
+        self.assertTrue(creds.checkHash(
                 md5.md5('username:test realm:password').hexdigest()))
 
-        self.failIf(creds.checkHash(
+        self.assertFalse(creds.checkHash(
                 md5.md5('username:test realm:bogus').hexdigest()))
 
     def test_invalidOpaque(self):
@@ -429,15 +430,11 @@ class DigestAuthTestCase(unittest.TestCase):
                 )
 
 
-from zope.interface import implements
-from twisted.cred import portal, checkers
-
+@implementer(IHTTPUser)
 class TestHTTPUser(object):
     """
     Test avatar implementation for http auth with cred
     """
-    implements(IHTTPUser)
-
     username = None
 
     def __init__(self, username):
@@ -448,12 +445,11 @@ class TestHTTPUser(object):
         self.username = username
 
 
+@implementer(portal.IRealm)
 class TestAuthRealm(object):
     """
     Test realm that supports the IHTTPUser interface
     """
-
-    implements(portal.IRealm)
 
     def requestAvatar(self, avatarId, mind, *interfaces):
         if IHTTPUser in interfaces:
@@ -561,16 +557,16 @@ class HTTPAuthResourceTest(test_server.BaseCase):
         def checkRequest(result):
             resource = self.protectedResource
 
-            self.failUnless(hasattr(resource, "request"))
+            self.assertTrue(hasattr(resource, "request"))
 
             request = resource.request
 
-            self.failUnless(IAuthenticatedRequest.providedBy(request))
-            self.failUnless(hasattr(request, "avatar"))
-            self.failUnless(IHTTPUser.providedBy(request.avatar))
-            self.failUnless(hasattr(request, "avatarInterface"))
-            self.assertEquals(request.avatarInterface, IHTTPUser)
-            self.assertEquals(request.avatar.username, 'username')
+            self.assertTrue(IAuthenticatedRequest.providedBy(request))
+            self.assertTrue(hasattr(request, "avatar"))
+            self.assertTrue(IHTTPUser.providedBy(request.avatar))
+            self.assertTrue(hasattr(request, "avatarInterface"))
+            self.assertEqual(request.avatarInterface, IHTTPUser)
+            self.assertEqual(request.avatar.username, 'username')
 
         d.addCallback(checkRequest)
         return d
@@ -775,7 +771,7 @@ class HTTPAuthResourceTest(test_server.BaseCase):
         def checkSegments(ign):
             resource = self.protectedResource
 
-            self.assertEquals(resource.segments, ['foo', 'bar', 'baz', 'bax'])
+            self.assertEqual(resource.segments, ['foo', 'bar', 'baz', 'bax'])
 
         d.addCallback(checkSegments)
 
@@ -818,7 +814,7 @@ class HTTPAuthResourceTest(test_server.BaseCase):
                                         interfaces=(IHTTPUser,))
 
         def _checkRequest(ign):
-            self.assertEquals(
+            self.assertEqual(
                 self.protectedResource.request.avatar.username,
                 'anonymous')
 
@@ -914,16 +910,16 @@ class HTTPAuthResourceTest(test_server.BaseCase):
         request.prepath = ['']
 
         def _gotSecondResponse(response):
-            self.assertEquals(response.code, 200)
-            self.assertEquals(str(response.stream.read()),
+            self.assertEqual(response.code, 200)
+            self.assertEqual(str(response.stream.read()),
                               "I hope you can see me.")
 
         def _gotResponse(exception):
             response = exception.response
 
-            self.assertEquals(response.code, 401)
-            self.failUnless(response.headers.hasHeader('WWW-Authenticate'))
-            self.assertEquals(response.headers.getHeader('WWW-Authenticate'),
+            self.assertEqual(response.code, 401)
+            self.assertTrue(response.headers.hasHeader('WWW-Authenticate'))
+            self.assertEqual(response.headers.getHeader('WWW-Authenticate'),
                               [('basic', {'realm': "test realm"})])
 
             credentials = base64.encodestring('username:password')

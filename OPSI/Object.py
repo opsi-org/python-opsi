@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) - http://www.opsi.org
 
-# Copyright (C) 2006-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -72,7 +72,9 @@ def mandatoryConstructorArgs(Class):
 	try:
 		return _MANDATORY_CONSTRUCTOR_ARGS_CACHE[cacheKey]
 	except KeyError:
-		args, _, _, defaults = inspect.getargspec(Class.__init__)
+		spec = inspect.getfullargspec(Class.__init__)
+		args = spec.args
+		defaults = spec.defaults
 		try:
 			last = len(defaults) * -1
 			mandatory = args[1:][:last]
@@ -98,9 +100,9 @@ def getPossibleClassAttributes(klass):
 
 	:returntype: set of strings
 	"""
-	attributes = inspect.getargspec(klass.__init__)[0]
+	attributes = inspect.getfullargspec(klass.__init__).args
 	for subClass in klass.subClasses.values():
-		attributes.extend(inspect.getargspec(subClass.__init__)[0])
+		attributes.extend(inspect.getfullargspec(subClass.__init__).args)
 
 	attributes = set(attributes)
 	attributes.add('type')
@@ -185,18 +187,6 @@ def objectsDiffer(obj1, obj2, excludeAttributes=None):
 	return False
 
 
-def toStr(value):
-	"""
-	Converts `value` into a str if it is a unicode.
-
-	:returntype: str
-	"""
-	if isinstance(value, unicode):
-		return str(value)
-	else:
-		return value
-
-
 class BaseObject(object):
 	subClasses = {}
 	identSeparator = u';'
@@ -254,23 +244,28 @@ class BaseObject(object):
 	def update(self, updateObject, updateWithNoneValues=True):
 		if not issubclass(updateObject.__class__, self.__class__):
 			raise TypeError(u"Cannot update instance of %s with instance of %s" % (self.__class__.__name__, updateObject.__class__.__name__))
-		hash = updateObject.toHash()
+		objectHash = updateObject.toHash()
 
 		try:
-			del hash['type']
+			del objectHash['type']
 		except KeyError:
 			# No key "type", everything fine.
 			pass
 
 		if not updateWithNoneValues:
-			for (key, value) in hash.items():
-				if value is None:
-					del hash[key]
+			toDelete = set(
+				key for (key, value)
+				in objectHash.items()
+				if value is None
+			)
 
-		self.__dict__.update(hash)
+			for key in toDelete:
+				del objectHash[key]
+
+		self.__dict__.update(objectHash)
 
 	def getType(self):
-		return unicode(self.__class__.__name__)
+		return self.__class__.__name__
 
 	def setGeneratedDefault(self, flag=True):
 		self._isGeneratedDefault = forceBool(flag)
@@ -279,9 +274,9 @@ class BaseObject(object):
 		return self._isGeneratedDefault
 
 	def toHash(self):
-		hash = dict(self.__dict__)
-		hash['type'] = self.getType()
-		return hash
+		objectHash = dict(self.__dict__)
+		objectHash['type'] = self.getType()
+		return objectHash
 
 	def toJson(self):
 		return toJson(self)
@@ -293,10 +288,23 @@ class BaseObject(object):
 			return False
 		return self.getIdent() == other.getIdent()
 
+	def __hash__(self):
+		def getIdentvalue(attribute):
+			try:
+				value = getattr(self, attribute)
+				if value is None:
+					value = u''
+				return value
+			except AttributeError:
+				return u''
+
+		identValues = tuple(getIdentvalue(attribute) for attribute in self.getIdentAttributes())
+		return hash(identValues)
+
 	def __ne__(self, other):
 		return not self.__eq__(other)
 
-	def __unicode__(self):
+	def __str__(self):
 		additionalAttributes = []
 		for attr in self.getIdentAttributes():
 			try:
@@ -306,9 +314,6 @@ class BaseObject(object):
 				pass
 
 		return u"<{0}({1})>".format(self.getType(), ', '.join(additionalAttributes))
-
-	def __str__(self):
-		return self.__unicode__().encode("ascii", "replace")
 
 	def __repr__(self):
 		return self.__str__()
@@ -330,7 +335,7 @@ class Entity(BaseObject):
 		Class = eval(hash['type'])
 		kwargs = {}
 		decodeIdent(Class, hash)
-		for varname in Class.__init__.func_code.co_varnames[1:]:
+		for varname in Class.__init__.__code__.co_varnames[1:]:
 			try:
 				kwargs[varname] = hash[varname]
 			except KeyError:
@@ -392,7 +397,7 @@ class Relationship(BaseObject):
 		Class = eval(hash['type'])
 		kwargs = {}
 		decodeIdent(Class, hash)
-		for varname in Class.__init__.func_code.co_varnames[1:]:
+		for varname in Class.__init__.__code__.co_varnames[1:]:
 			try:
 				kwargs[varname] = hash[varname]
 			except KeyError:
@@ -772,7 +777,7 @@ class OpsiDepotserver(Host):
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'OpsiDepotserver')
 
-	def __unicode__(self):
+	def __str__(self):
 		additionalInfos = [u"id={0!r}".format(self.id)]
 		if self.isMasterDepot:
 			additionalInfos.append(u'isMasterDepot={0!r}'.format(self.isMasterDepot))
@@ -935,7 +940,7 @@ class Config(Entity):
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'Config')
 
-	def __unicode__(self):
+	def __str__(self):
 		return (
 			u"<{klass}(id={id!r}, description={description!r}, "
 			u"possibleValues={possibleValues!r}, defaultValues={defaults!r}, "
@@ -1030,7 +1035,7 @@ class BoolConfig(Config):
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'BoolConfig')
 
-	def __unicode__(self):
+	def __str__(self):
 		return (
 			u"<{klass}(id={id!r}, description={description!r}, "
 			u"defaultValues={defaults!r})>".format(
@@ -1093,7 +1098,7 @@ class ConfigState(Relationship):
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'ConfigState')
 
-	def __unicode__(self):
+	def __str__(self):
 		return u"<{0}(configId={1!r}, objectId={2!r}, values={3!r})>".format(self.getType(), self.configId, self.objectId, self.values)
 
 Relationship.subClasses['ConfigState'] = ConfigState
@@ -1316,7 +1321,7 @@ class Product(Entity):
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'Product')
 
-	def __unicode__(self):
+	def __str__(self):
 		return (
 			u"<{0}(id={1!r}, name={2!r}, productVersion={3!r}, "
 			u"packageVersion={4!r})>".format(
@@ -1536,7 +1541,7 @@ class ProductProperty(Entity):
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'ProductProperty')
 
-	def __unicode__(self):
+	def __str__(self):
 		def getAttributes():
 			yield 'productId={0!r}'.format(self.productId)
 			yield 'productVersion={0!r}'.format(self.productVersion)
@@ -1655,7 +1660,7 @@ class BoolProductProperty(ProductProperty):
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'BoolProductProperty')
 
-	def __unicode__(self):
+	def __str__(self):
 		def getAttributes():
 			yield 'productId={0!r}'.format(self.productId)
 			yield 'productVersion={0!r}'.format(self.productVersion)
@@ -1782,7 +1787,7 @@ class ProductDependency(Relationship):
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'ProductDependency')
 
-	def __unicode__(self):
+	def __str__(self):
 		return (u"<{klass}(productId={prodId!r}, productVersion={prodVer!r}, "
 				u"packageVersion={packVer!r}, productAction={prodAct!r}, "
 				u"requiredProductId={reqProdId!r}>".format(
@@ -2010,7 +2015,7 @@ class ProductOnClient(Relationship):
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'ProductOnClient')
 
-	def __unicode__(self):
+	def __str__(self):
 		return (u"<{klass}(clientId={clientId!r}, productId={prodId!r}, "
 				u"installationStatus={status!r}, actionRequest={actReq!r})>".format(
 					klass=self.getType(), clientId=self.clientId,
@@ -2076,7 +2081,7 @@ class ProductPropertyState(Relationship):
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'ProductPropertyState')
 
-	def __unicode__(self):
+	def __str__(self):
 		def getAttributes():
 			yield 'productId={0!r}'.format(self.productId)
 			yield 'propertyId={0!r}'.format(self.propertyId)
@@ -2132,7 +2137,7 @@ class Group(Object):
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'Group')
 
-	def __unicode__(self):
+	def __str__(self):
 		return (u"<{klass}(id={id!r}, parentGroupId={parentId!r}>".format(
 				klass=self.getType(), id=self.id, parentId=self.parentGroupId))
 
@@ -2334,7 +2339,7 @@ class LicenseContract(Entity):
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'LicenseContract')
 
-	def __unicode__(self):
+	def __str__(self):
 		infos = [u"id={0!r}".format(self.id)]
 
 		if self.description:
@@ -2423,7 +2428,7 @@ class SoftwareLicense(Entity):
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'SoftwareLicense')
 
-	def __unicode__(self):
+	def __str__(self):
 		infos = [
 			u"id='{0}'".format(self.id),
 			u"licenseContractId='{0}'".format(self.licenseContractId)
@@ -2616,7 +2621,7 @@ class LicensePool(Entity):
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'LicensePool')
 
-	def __unicode__(self):
+	def __str__(self):
 		infos = [u"id={0!r}".format(self.id)]
 
 		if self.description:
@@ -2703,7 +2708,7 @@ class AuditSoftwareToLicensePool(Relationship):
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'AuditSoftwareToLicensePool')
 
-	def __unicode__(self):
+	def __str__(self):
 		infos = [u"name={0}".format(self.name)]
 
 		if self.version:
@@ -3136,10 +3141,11 @@ class AuditHardware(Entity):
 					kwargs[attribute] = None
 
 		if self.hardwareAttributes.get(hardwareClass):
+			attributeToDelete = set()
 			for (attribute, value) in kwargs.items():
 				attrType = self.hardwareAttributes[hardwareClass].get(attribute)
 				if not attrType:
-					del kwargs[attribute]
+					attributeToDelete.add(attribute)
 					continue
 				if value is None:
 					continue
@@ -3168,10 +3174,19 @@ class AuditHardware(Entity):
 						kwargs[attribute] = None
 				else:
 					raise BackendConfigurationError(u"Attribute '%s' of hardware class '%s' has unknown type '%s'" % (attribute, hardwareClass, type))
+
+			for attribute in attributeToDelete:
+				del kwargs[attribute]
 		else:
+			newKwargs = {}
 			for (attribute, value) in kwargs.items():
 				if isinstance(value, str):
-					kwargs[attribute] = forceUnicode(value).strip()
+					newKwargs[attribute] = forceUnicode(value).strip()
+				else:
+					newKwargs[attribute] = value
+
+			kwargs = newKwargs
+			del newKwargs
 
 		self.__dict__.update(kwargs)
 
@@ -3220,10 +3235,10 @@ class AuditHardware(Entity):
 		return self.hardwareClass
 
 	def getIdentAttributes(self):
-		attributes = self.hardwareAttributes.get(self.hardwareClass, {}).keys()
+		attributes = list(self.hardwareAttributes.get(self.hardwareClass, {}).keys())
 		attributes.sort()
 		attributes.insert(0, 'hardwareClass')
-		return attributes
+		return tuple(attributes)
 
 	def serialize(self):
 		return self.toHash()
@@ -3231,7 +3246,7 @@ class AuditHardware(Entity):
 	@staticmethod
 	def fromHash(hash):
 		initHash = {
-			toStr(key): value
+			key: value
 			for key, value in hash.items()
 			if key != 'type'
 		}
@@ -3242,7 +3257,7 @@ class AuditHardware(Entity):
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'AuditHardware')
 
-	def __unicode__(self):
+	def __str__(self):
 		infos = []
 		hardwareClass = self.getHardwareClass()
 		if hardwareClass:
@@ -3441,11 +3456,11 @@ class AuditHardwareOnHost(Relationship):
 		return AuditHardware.fromHash(auditHardwareHash)
 
 	def getIdentAttributes(self):
-		attributes = self.hardwareAttributes.get(self.hardwareClass, {}).keys()
+		attributes = list(self.hardwareAttributes.get(self.hardwareClass, {}).keys())
 		attributes.sort()
 		attributes.insert(0, 'hostId')
 		attributes.insert(0, 'hardwareClass')
-		return attributes
+		return tuple(attributes)
 
 	def serialize(self):
 		return self.toHash()
@@ -3453,7 +3468,7 @@ class AuditHardwareOnHost(Relationship):
 	@staticmethod
 	def fromHash(hash):
 		initHash = {
-			toStr(key): value
+			key: value
 			for key, value in hash.items()
 			if key != 'type'
 		}
@@ -3464,7 +3479,7 @@ class AuditHardwareOnHost(Relationship):
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'AuditHardwareOnHost')
 
-	def __unicode__(self):
+	def __str__(self):
 		additional = [u"hostId={0!r}".format(self.hostId)]
 		hardwareClass = self.getHardwareClass()
 		if hardwareClass:

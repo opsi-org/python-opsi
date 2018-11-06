@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2015-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2015-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -83,6 +83,7 @@ class FakeRPC(object):
 		return self.result
 
 
+@pytest.mark.obsolete
 def testReturningEmptyResponse(enableRFCConformHeaders):
 	"""
 	Making sure that an empty uncompressed response is returned.
@@ -100,6 +101,7 @@ def testReturningEmptyResponse(enableRFCConformHeaders):
 	assert 'null' == str(result.stream.read())
 
 
+@pytest.mark.obsolete
 def testHandlingMultipleRPCs(enableRFCConformHeaders):
 	"""
 	With multiple RPCs the results are returned in a list.
@@ -120,6 +122,7 @@ def testHandlingMultipleRPCs(enableRFCConformHeaders):
 	assert '[null, 1, "F\xc3\x84KE!", {"Narziss": "Morgen Nicht Geboren"}]' == str(result.stream.read())
 
 
+@pytest.mark.obsolete
 def testHandlingSingleResult(enableRFCConformHeaders):
 	"""
 	A single RPC result must not be returned in a list.
@@ -135,6 +138,7 @@ def testHandlingSingleResult(enableRFCConformHeaders):
 	assert '"Hallo Welt"' == str(result.stream.read())
 
 
+@pytest.mark.obsolete
 def testHandlingSingleResultConsistingOfList(enableRFCConformHeaders):
 	"""
 	If a single result is made the result is a list this list must not be unpacked.
@@ -150,6 +154,7 @@ def testHandlingSingleResultConsistingOfList(enableRFCConformHeaders):
 	assert '["Eins", "Zwei", "Drei"]' == str(result.stream.read())
 
 
+@pytest.mark.obsolete
 def testCompressingResponseDataWithGzip(enableRFCConformHeaders):
 	"""
 	Responding with data compressed by gzip.
@@ -172,6 +177,7 @@ def testCompressingResponseDataWithGzip(enableRFCConformHeaders):
 	assert 'null' == data
 
 
+@pytest.mark.obsolete
 def testCompressingResponseDataWithDeflate(enableRFCConformHeaders):
 	"""
 	Responding with data compressed by deflate.
@@ -191,6 +197,7 @@ def testCompressingResponseDataWithDeflate(enableRFCConformHeaders):
 	assert 'null' == data
 
 
+@pytest.mark.obsolete
 def testCompressingResponseIfInvalidMimetype(enableRFCConformHeaders):
 	"""
 	Staying backwards compatible.
@@ -223,6 +230,7 @@ def testCompressingResponseIfInvalidMimetype(enableRFCConformHeaders):
 	assert 'null' == data
 
 
+@pytest.mark.obsolete
 def testReturningPlainCalls(enableRFCConformHeaders):
 	testHeader = FakeDictHeader({"Accept": "text/plain"})
 	request = FakeRequest(testHeader)
@@ -238,6 +246,7 @@ def testReturningPlainCalls(enableRFCConformHeaders):
 	assert 'null' == str(data)
 
 
+@pytest.mark.obsolete
 def testDecodingOldCallQuery():
 	r = FakeRequest(headers=FakeHeader(
 		{

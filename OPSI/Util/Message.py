@@ -89,11 +89,8 @@ class Subject(object):
 			"class": self.getClass()
 		}
 
-	def __unicode__(self):
-		return u'<%s type: %s, id: %s>' % (self.__class__.__name__, self._type, self._id)
-
 	def __str__(self):
-		return self.__unicode__().encode("ascii", "replace")
+		return u'<%s type: %s, id: %s>' % (self.__class__.__name__, self._type, self._id)
 
 	def __repr__(self):
 		return self.__str__()
@@ -506,8 +503,7 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 		self.clients.remove(client)
 
 	def rpc(self, client, line):
-		line = unicode(line, 'utf-8')
-		logger.info(u"received line %s" % line)
+		logger.info(u"received line {!r}", line)
 		id = None
 		try:
 			rpc = json.loads(line)
@@ -525,7 +521,7 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 					break
 
 			elif method == 'selectChoice':
-				logger.debug(u"selectChoice(%s)" % unicode(params)[1:-1])
+				logger.debug(u"selectChoice(%s)" % str(params)[1:-1])
 				subjectId = params[0]
 				for subject in self.getSubjects():
 					if not isinstance(subject, ChoiceSubject) or (subject.getId() != subjectId):
@@ -599,8 +595,6 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 		for client in clients:
 			# json-rpc: notifications have id null
 			jsonString = json.dumps({"id": None, "method": name, "params": params})
-			if isinstance(jsonString, unicode):
-				jsonString = jsonString.encode('utf-8')
 			client.sendLine(jsonString)
 
 

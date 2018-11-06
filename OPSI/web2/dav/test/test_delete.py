@@ -23,8 +23,8 @@
 ##
 
 import os
-import urllib
 import random
+from urllib.parse import quote
 
 from OPSI.web2 import responsecode
 from OPSI.web2.iweb import IResponse
@@ -56,7 +56,7 @@ class DELETE(OPSI.web2.dav.test.util.TestCase):
         def work():
             for filename in os.listdir(self.docroot):
                 path = os.path.join(self.docroot, filename)
-                uri = urllib.quote("/" + filename)
+                uri = quote("/" + filename)
 
                 if os.path.isdir(path): uri = uri + "/"
 

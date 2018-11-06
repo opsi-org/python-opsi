@@ -5,7 +5,6 @@
 #   * Handle scgi server death, half way through a resonse.
 
 
-from zope.interface import implements
 from twisted.internet import defer, protocol, reactor
 from twisted.protocols import basic
 from OPSI.web2 import http, iweb, resource, responsecode, stream, twcgi
@@ -61,7 +60,7 @@ class SCGIClientProtocol(basic.LineReceiver):
         scgiHeaders = []
         scgiHeaders.append('%s\x00%s\x00'%('CONTENT_LENGTH', str(contentLength)))
         scgiHeaders.append('SCGI\x001\x00')
-        for name, value in env.iteritems():
+        for name, value in env.items():
             if name in ('CONTENT_LENGTH', 'SCGI'):
                 continue
             scgiHeaders.append('%s\x00%s\x00'%(name,value))

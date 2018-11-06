@@ -5,15 +5,17 @@ Implementation of RFC2617: HTTP Digest Authentication
 
 http://www.faqs.org/rfcs/rfc2617.html
 """
+import md5
+import random
+import sha
+import sys
 import time
 
 from twisted.cred import credentials, error
-from zope.interface import implements, Interface
+from zope.interface import Interface
+from zope.interface.declarations import implementer
 
 from OPSI.web2.auth.interfaces import ICredentialFactory
-
-import md5, sha
-import random, sys
 
 # The digest math
 
@@ -128,11 +130,9 @@ class IUsernameDigestHash(Interface):
         """
 
 
+@implementer(credentials.IUsernameHashedPassword, IUsernameDigestHash)
 class DigestedCredentials:
     """Yet Another Simple HTTP Digest authentication scheme"""
-
-    implements(credentials.IUsernameHashedPassword,
-               IUsernameDigestHash)
 
     def __init__(self, username, method, realm, fields):
         self.username = username
@@ -173,6 +173,7 @@ class DigestedCredentials:
         return expected == response
 
 
+@implementer(ICredentialFactory)
 class DigestCredentialFactory(object):
     """
     Support for RFC2617 HTTP Digest Authentication
@@ -182,8 +183,6 @@ class DigestCredentialFactory(object):
 
     @ivar privateKey: A random string used for generating the secure opaque.
     """
-
-    implements(ICredentialFactory)
 
     CHALLENGE_LIFETIME_SECS = 15 * 60    # 15 minutes
 
@@ -203,12 +202,12 @@ class DigestCredentialFactory(object):
         self.algorithm = algorithm
         self.realm = realm
 
-        c = tuple([random.randrange(sys.maxint) for _ in range(3)])
+        c = tuple([random.randrange(sys.maxsize) for _ in range(3)])
 
         self.privateKey = '%d%d%d' % c
 
     def generateNonce(self):
-        c = tuple([random.randrange(sys.maxint) for _ in range(3)])
+        c = tuple([random.randrange(sys.maxsize) for _ in range(3)])
         c = '%d%d%d' % c
         return c
 

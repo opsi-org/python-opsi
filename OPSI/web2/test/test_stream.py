@@ -3,7 +3,8 @@ import tempfile, operator, sys, os
 from twisted.trial import unittest
 from twisted.internet import reactor, defer, interfaces
 from twisted.python import log
-from zope.interface import Interface, Attribute, implements
+from zope.interface import Interface, Attribute
+from zope.interface.declarations import implementer
 
 from twisted.python.util import sibpath
 from OPSI.web2 import stream
@@ -22,40 +23,40 @@ class SimpleStreamTests:
             s = self.makeStream(0)
             a,b = s.split(point)
             if point > 0:
-                self.assertEquals(bufstr(a.read()), self.text[:point])
-            self.assertEquals(a.read(), None)
+                self.assertEqual(bufstr(a.read()), self.text[:point])
+            self.assertEqual(a.read(), None)
             if point < len(self.text):
-                self.assertEquals(bufstr(b.read()), self.text[point:])
-            self.assertEquals(b.read(), None)
+                self.assertEqual(bufstr(b.read()), self.text[point:])
+            self.assertEqual(b.read(), None)
 
         for point in range(7):
             s = self.makeStream(2, 6)
-            self.assertEquals(s.length, 6)
+            self.assertEqual(s.length, 6)
             a,b = s.split(point)
             if point > 0:
-                self.assertEquals(bufstr(a.read()), self.text[2:point+2])
-            self.assertEquals(a.read(), None)
+                self.assertEqual(bufstr(a.read()), self.text[2:point+2])
+            self.assertEqual(a.read(), None)
             if point < 6:
-                self.assertEquals(bufstr(b.read()), self.text[point+2:8])
-            self.assertEquals(b.read(), None)
+                self.assertEqual(bufstr(b.read()), self.text[point+2:8])
+            self.assertEqual(b.read(), None)
 
     def test_read(self):
         s = self.makeStream()
-        self.assertEquals(s.length, len(self.text))
-        self.assertEquals(bufstr(s.read()), self.text)
-        self.assertEquals(s.read(), None)
+        self.assertEqual(s.length, len(self.text))
+        self.assertEqual(bufstr(s.read()), self.text)
+        self.assertEqual(s.read(), None)
 
         s = self.makeStream(0, 4)
-        self.assertEquals(s.length, 4)
-        self.assertEquals(bufstr(s.read()), self.text[0:4])
-        self.assertEquals(s.read(), None)
-        self.assertEquals(s.length, 0)
+        self.assertEqual(s.length, 4)
+        self.assertEqual(bufstr(s.read()), self.text[0:4])
+        self.assertEqual(s.read(), None)
+        self.assertEqual(s.length, 0)
 
         s = self.makeStream(4, 6)
-        self.assertEquals(s.length, 6)
-        self.assertEquals(bufstr(s.read()), self.text[4:10])
-        self.assertEquals(s.read(), None)
-        self.assertEquals(s.length, 0)
+        self.assertEqual(s.length, 6)
+        self.assertEqual(bufstr(s.read()), self.text[4:10])
+        self.assertEqual(s.read(), None)
+        self.assertEqual(s.length, 0)
     
 class FileStreamTest(SimpleStreamTests, unittest.TestCase):
     def makeStream(self, *args, **kw):
@@ -71,7 +72,7 @@ class FileStreamTest(SimpleStreamTests, unittest.TestCase):
         s = self.makeStream()
         s.close()
 
-        self.assertEquals(s.length, 0)
+        self.assertEqual(s.length, 0)
         # Make sure close doesn't close file
         # would raise exception if f is closed
         self.f.seek(0, 0)
@@ -79,21 +80,21 @@ class FileStreamTest(SimpleStreamTests, unittest.TestCase):
     def test_read2(self):
         s = self.makeStream(0)
         s.CHUNK_SIZE = 6
-        self.assertEquals(s.length, 10)
-        self.assertEquals(bufstr(s.read()), self.text[0:6])
-        self.assertEquals(bufstr(s.read()), self.text[6:10])
-        self.assertEquals(s.read(), None)
+        self.assertEqual(s.length, 10)
+        self.assertEqual(bufstr(s.read()), self.text[0:6])
+        self.assertEqual(bufstr(s.read()), self.text[6:10])
+        self.assertEqual(s.read(), None)
 
         s = self.makeStream(0)
         s.CHUNK_SIZE = 5
-        self.assertEquals(s.length, 10)
-        self.assertEquals(bufstr(s.read()), self.text[0:5])
-        self.assertEquals(bufstr(s.read()), self.text[5:10])
-        self.assertEquals(s.read(), None)
+        self.assertEqual(s.length, 10)
+        self.assertEqual(bufstr(s.read()), self.text[0:5])
+        self.assertEqual(bufstr(s.read()), self.text[5:10])
+        self.assertEqual(s.read(), None)
 
         s = self.makeStream(0, 20)
-        self.assertEquals(s.length, 20)
-        self.assertEquals(bufstr(s.read()), self.text)
+        self.assertEqual(s.length, 20)
+        self.assertEqual(bufstr(s.read()), self.text)
         self.assertRaises(RuntimeError, s.read) # ran out of data
 
 class MMapFileStreamTest(SimpleStreamTests, unittest.TestCase):
@@ -122,7 +123,7 @@ class MemoryStreamTest(SimpleStreamTests, unittest.TestCase):
     def test_close(self):
         s = self.makeStream()
         s.close()
-        self.assertEquals(s.length, 0)
+        self.assertEqual(s.length, 0)
 
     def test_read2(self):
         self.assertRaises(ValueError, self.makeStream, 0, 20)
@@ -159,23 +160,23 @@ class TestSubstream(unittest.TestCase):
 
     def testStart(self):
         s = stream.substream(self.s, 0, 11)
-        self.assertEquals('I was angry', self.suckTheMarrow(s))
+        self.assertEqual('I was angry', self.suckTheMarrow(s))
 
     def testNotStart(self):
         s = stream.substream(self.s, 12, 26)
-        self.assertEquals('with my friend', self.suckTheMarrow(s))
+        self.assertEqual('with my friend', self.suckTheMarrow(s))
 
     def testReverseStartEnd(self):
         self.assertRaises(ValueError, stream.substream, self.s, 26, 12)
 
     def testEmptySubstream(self):
         s = stream.substream(self.s, 11, 11)
-        self.assertEquals('', self.suckTheMarrow(s))
+        self.assertEqual('', self.suckTheMarrow(s))
 
     def testEnd(self):
         size = len(self.data)
         s = stream.substream(self.s, size-4, size)
-        self.assertEquals('tree', self.suckTheMarrow(s))
+        self.assertEqual('tree', self.suckTheMarrow(s))
 
     def testPastEnd(self):
         size = len(self.data)
@@ -268,17 +269,18 @@ class TestBufferedStream(unittest.TestCase):
         """
         self.assertEqual(str(self.s.read()), self.data)
 
+
+@implementer(stream.IStream, stream.IByteStream)
 class TestStreamer:
-    implements(stream.IStream, stream.IByteStream)
 
     length = None
 
     readCalled=0
     closeCalled=0
-    
+
     def __init__(self, list):
         self.list = list
-        
+
     def read(self):
         self.readCalled+=1
         if self.list:
@@ -293,76 +295,76 @@ class FallbackSplitTest(unittest.TestCase):
     def test_split(self):
         s = TestStreamer(['abcd', defer.succeed('efgh'), 'ijkl'])
         left,right = stream.fallbackSplit(s, 5)
-        self.assertEquals(left.length, 5)
-        self.assertEquals(right.length, None)
-        self.assertEquals(bufstr(left.read()), 'abcd')
+        self.assertEqual(left.length, 5)
+        self.assertEqual(right.length, None)
+        self.assertEqual(bufstr(left.read()), 'abcd')
         d = left.read()
         d.addCallback(self._cbSplit, left, right)
         return d
 
     def _cbSplit(self, result, left, right):
-        self.assertEquals(bufstr(result), 'e')
-        self.assertEquals(left.read(), None)
+        self.assertEqual(bufstr(result), 'e')
+        self.assertEqual(left.read(), None)
 
-        self.assertEquals(bufstr(right.read().result), 'fgh')
-        self.assertEquals(bufstr(right.read()), 'ijkl')
-        self.assertEquals(right.read(), None)
+        self.assertEqual(bufstr(right.read().result), 'fgh')
+        self.assertEqual(bufstr(right.read()), 'ijkl')
+        self.assertEqual(right.read(), None)
 
     def test_split2(self):
         s = TestStreamer(['abcd', defer.succeed('efgh'), 'ijkl'])
         left,right = stream.fallbackSplit(s, 4)
         
-        self.assertEquals(left.length, 4)
-        self.assertEquals(right.length, None)
+        self.assertEqual(left.length, 4)
+        self.assertEqual(right.length, None)
         
-        self.assertEquals(bufstr(left.read()), 'abcd')
-        self.assertEquals(left.read(), None)
+        self.assertEqual(bufstr(left.read()), 'abcd')
+        self.assertEqual(left.read(), None)
 
-        self.assertEquals(bufstr(right.read().result), 'efgh')
-        self.assertEquals(bufstr(right.read()), 'ijkl')
-        self.assertEquals(right.read(), None)
+        self.assertEqual(bufstr(right.read().result), 'efgh')
+        self.assertEqual(bufstr(right.read()), 'ijkl')
+        self.assertEqual(right.read(), None)
 
     def test_splitsplit(self):
         s = TestStreamer(['abcd', defer.succeed('efgh'), 'ijkl'])
         left,right = stream.fallbackSplit(s, 5)
         left,middle = left.split(3)
         
-        self.assertEquals(left.length, 3)
-        self.assertEquals(middle.length, 2)
-        self.assertEquals(right.length, None)
+        self.assertEqual(left.length, 3)
+        self.assertEqual(middle.length, 2)
+        self.assertEqual(right.length, None)
         
-        self.assertEquals(bufstr(left.read()), 'abc')
-        self.assertEquals(left.read(), None)
+        self.assertEqual(bufstr(left.read()), 'abc')
+        self.assertEqual(left.read(), None)
 
-        self.assertEquals(bufstr(middle.read().result), 'd')
-        self.assertEquals(bufstr(middle.read().result), 'e')
-        self.assertEquals(middle.read(), None)
+        self.assertEqual(bufstr(middle.read().result), 'd')
+        self.assertEqual(bufstr(middle.read().result), 'e')
+        self.assertEqual(middle.read(), None)
 
-        self.assertEquals(bufstr(right.read().result), 'fgh')
-        self.assertEquals(bufstr(right.read()), 'ijkl')
-        self.assertEquals(right.read(), None)
+        self.assertEqual(bufstr(right.read().result), 'fgh')
+        self.assertEqual(bufstr(right.read()), 'ijkl')
+        self.assertEqual(right.read(), None)
 
     def test_closeboth(self):
         s = TestStreamer(['abcd', defer.succeed('efgh'), 'ijkl'])
         left,right = stream.fallbackSplit(s, 5)
         left.close()
-        self.assertEquals(s.closeCalled, 0)
+        self.assertEqual(s.closeCalled, 0)
         right.close()
 
         # Make sure nothing got read
-        self.assertEquals(s.readCalled, 0)
-        self.assertEquals(s.closeCalled, 1)
+        self.assertEqual(s.readCalled, 0)
+        self.assertEqual(s.closeCalled, 1)
 
     def test_closeboth_rev(self):
         s = TestStreamer(['abcd', defer.succeed('efgh'), 'ijkl'])
         left,right = stream.fallbackSplit(s, 5)
         right.close()
-        self.assertEquals(s.closeCalled, 0)
+        self.assertEqual(s.closeCalled, 0)
         left.close()
 
         # Make sure nothing got read
-        self.assertEquals(s.readCalled, 0)
-        self.assertEquals(s.closeCalled, 1)
+        self.assertEqual(s.readCalled, 0)
+        self.assertEqual(s.closeCalled, 1)
 
     def test_closeleft(self):
         s = TestStreamer(['abcd', defer.succeed('efgh'), 'ijkl'])
@@ -373,19 +375,19 @@ class FallbackSplitTest(unittest.TestCase):
         return d
 
     def _cbCloseleft(self, result, right):
-        self.assertEquals(bufstr(result), 'fgh')
-        self.assertEquals(bufstr(right.read()), 'ijkl')
-        self.assertEquals(right.read(), None)
+        self.assertEqual(bufstr(result), 'fgh')
+        self.assertEqual(bufstr(right.read()), 'ijkl')
+        self.assertEqual(right.read(), None)
 
     def test_closeright(self):
         s = TestStreamer(['abcd', defer.succeed('efgh'), 'ijkl'])
         left,right = stream.fallbackSplit(s, 3)
         right.close()
 
-        self.assertEquals(bufstr(left.read()), 'abc')
-        self.assertEquals(left.read(), None)
+        self.assertEqual(bufstr(left.read()), 'abc')
+        self.assertEqual(left.read(), None)
         
-        self.assertEquals(s.closeCalled, 1)
+        self.assertEqual(s.closeCalled, 1)
 
 
 class ProcessStreamerTest(unittest.TestCase):
@@ -405,7 +407,7 @@ class ProcessStreamerTest(unittest.TestCase):
         l = []
         d = stream.readStream(p.outStream, l.append)
         def verify(_):
-            self.assertEquals("".join(l), ("x" * 1000) * 100)
+            self.assertEqual("".join(l), ("x" * 1000) * 100)
         d2 = p.run()
         return d.addCallback(verify).addCallback(lambda _: d2)
 
@@ -414,7 +416,7 @@ class ProcessStreamerTest(unittest.TestCase):
         l = []
         d = stream.readStream(p.errStream, l.append)
         def verify(_):
-            self.assertEquals("".join(l), ("x" * 1000) * 100)
+            self.assertEqual("".join(l), ("x" * 1000) * 100)
         p.run()
         return d.addCallback(verify)
 
@@ -425,7 +427,7 @@ class ProcessStreamerTest(unittest.TestCase):
         d = stream.readStream(p.outStream, l.append)
         d2 = p.run()
         def verify(_):
-            self.assertEquals("".join(l), "hello world")
+            self.assertEqual("".join(l), "hello world")
             return d2
         return d.addCallback(verify)
 
@@ -434,9 +436,9 @@ class ProcessStreamerTest(unittest.TestCase):
         l = []
         from twisted.internet.error import ProcessTerminated
         def verify(_):
-            self.assertEquals(l, [1])
-            self.assert_(p.outStream.closed)
-            self.assert_(p.errStream.closed)
+            self.assertEqual(l, [1])
+            self.assertTrue(p.outStream.closed)
+            self.assertTrue(p.errStream.closed)
         return p.run().addErrback(lambda _: _.trap(ProcessTerminated) and l.append(1)).addCallback(verify)
 
     def test_inputerror(self):
@@ -446,7 +448,7 @@ class ProcessStreamerTest(unittest.TestCase):
         d = stream.readStream(p.outStream, l.append)
         d2 = p.run()
         def verify(_):
-            self.assertEquals("".join(l), "hello")
+            self.assertEqual("".join(l), "hello")
             return d2
         return d.addCallback(verify).addCallback(lambda _: log.flushErrors(ZeroDivisionError))
 
@@ -457,7 +459,7 @@ class ProcessStreamerTest(unittest.TestCase):
         l = []
         d = stream.readStream(p.outStream, l.append)
         def verify(_):
-            self.assertEquals("".join(l), "abcdef")
+            self.assertEqual("".join(l), "abcdef")
         d2 = p.run()
         return d.addCallback(verify).addCallback(lambda _: d2)
 
@@ -471,8 +473,8 @@ class AdapterTestCase(unittest.TestCase):
         f.close()
         for i in ("test", buffer("test"), file(fName)):
             s = stream.IByteStream(i)
-            self.assertEquals(str(s.read()), "test")
-            self.assertEquals(s.read(), None)
+            self.assertEqual(str(s.read()), "test")
+            self.assertEqual(s.read(), None)
 
 
 class ReadStreamTestCase(unittest.TestCase):
@@ -481,14 +483,14 @@ class ReadStreamTestCase(unittest.TestCase):
         l = []
         s = TestStreamer(['abcd', defer.succeed('efgh'), 'ijkl'])
         return readStream(s, l.append).addCallback(
-            lambda _: self.assertEquals(l, ["abcd", "efgh", "ijkl"]))
+            lambda _: self.assertEqual(l, ["abcd", "efgh", "ijkl"]))
         
     def test_pullFailure(self):
         l = []
         s = TestStreamer(['abcd', defer.fail(RuntimeError()), 'ijkl'])
         def test(result):
             result.trap(RuntimeError)
-            self.assertEquals(l, ["abcd"])
+            self.assertEqual(l, ["abcd"])
         return readStream(s, l.append).addErrback(test)
     
     def test_pullException(self):
@@ -507,11 +509,11 @@ class ProducerStreamTestCase(unittest.TestCase):
         p = stream.ProducerStream()
         p.write("hello")
         p.finish(RuntimeError())
-        self.assertEquals(p.read(), "hello")
+        self.assertEqual(p.read(), "hello")
         d = p.read()
         l = []
         d.addErrback(lambda _: (l.append(1), _.trap(RuntimeError))).addCallback(
-            lambda _: self.assertEquals(l, [1]))
+            lambda _: self.assertEqual(l, [1]))
         return d
 
 

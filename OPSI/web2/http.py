@@ -19,7 +19,7 @@ import cgi
 # twisted imports
 from twisted.internet import interfaces, error
 from twisted.python import log, components
-from zope.interface import implements
+from zope.interface.declarations import implementer
 
 # sibling imports
 from OPSI.web2 import responsecode
@@ -27,6 +27,8 @@ from OPSI.web2 import http_headers
 from OPSI.web2 import iweb
 from OPSI.web2 import stream
 from OPSI.web2.stream import IByteStream
+
+unicode = str  # Easy Python 3 compatibility
 
 defaultPortForScheme = {'http': 80, 'https':443, 'ftp':21}
 
@@ -73,11 +75,11 @@ class HTTPError(Exception):
         return "<%s %s>" % (self.__class__.__name__, self.response)
 
 
+@implementer(iweb.IResponse)
 class Response(object):
     """An object representing an HTTP Response to be sent to the client.
     """
-    implements(iweb.IResponse)
-    
+
     code = responsecode.OK
     headers = None
     stream = None
@@ -338,23 +340,23 @@ class _NotifyingProducerStream(stream.ProducerStream):
 # response codes that must have empty bodies
 NO_BODY_CODES = (responsecode.NO_CONTENT, responsecode.NOT_MODIFIED)
 
+
+@implementer(iweb.IRequest, interfaces.IConsumer)
 class Request(object):
     """A HTTP request.
 
     Subclasses should override the process() method to determine how
     the request will be processed.
-    
+
     @ivar method: The HTTP method that was used.
     @ivar uri: The full URI that was requested (includes arguments).
     @ivar headers: All received headers
     @ivar clientproto: client HTTP version
     @ivar stream: incoming data stream.
     """
-    
-    implements(iweb.IRequest, interfaces.IConsumer)
-    
+
     known_expects = ('100-continue',)
-    
+
     def __init__(self, chanRequest, command, path, version, contentLength, headers):
         """
         @param chanRequest: the channel request we're associated with.

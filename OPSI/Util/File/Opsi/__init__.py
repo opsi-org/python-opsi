@@ -36,10 +36,10 @@ import tarfile
 import tempfile
 import shutil
 import socket
-import StringIO
 from collections import namedtuple
 from contextlib import closing
 from hashlib import sha1
+from io import BytesIO, StringIO
 from operator import itemgetter
 from subprocess import Popen, PIPE, STDOUT
 
@@ -48,7 +48,8 @@ from OPSI import __version__ as LIBRARY_VERSION
 from OPSI.Exceptions import (
 	OpsiBackupBackendNotFound, OpsiBackupFileError,	OpsiBackupFileNotFound)
 from OPSI.Logger import Logger
-from OPSI.Object import BoolProductProperty, LocalbootProduct, NetbootProduct, Product, ProductDependency, ProductProperty, UnicodeProductProperty
+from OPSI.Object import (BoolProductProperty, LocalbootProduct, NetbootProduct,
+	Product, ProductDependency, ProductProperty, UnicodeProductProperty)
 from OPSI.Types import (
 	forceActionRequest, forceBool, forceDictList, forceFilename, forceHostId,
 	forceInstallationStatus, forceList, forceObjectClass, forceObjectClassList,
@@ -93,7 +94,7 @@ If no information can be extracted returns None.
 
 class HostKeyFile(ConfigFile):
 
-	lineRegex = re.compile('^\s*([^:]+)\s*:\s*([0-9a-fA-F]{32})\s*$')
+	lineRegex = re.compile(r'^\s*([^:]+)\s*:\s*([0-9a-fA-F]{32})\s*$')
 
 	def __init__(self, filename, lockFailTimeout=2000):
 		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars=[';', '/', '#'])
@@ -157,7 +158,7 @@ class HostKeyFile(ConfigFile):
 
 class BackendACLFile(ConfigFile):
 
-	aclEntryRegex = re.compile('^([^:]+)+\s*:\s*(\S.*)$')
+	aclEntryRegex = re.compile(r'^([^:]+)+\s*:\s*(\S.*)$')
 
 	def __init__(self, filename, lockFailTimeout=2000):
 		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars=['#'])
@@ -251,7 +252,7 @@ class BackendACLFile(ConfigFile):
 
 
 class BackendDispatchConfigFile(ConfigFile):
-	DISPATCH_ENTRY_REGEX = re.compile('^([^:]+)+\s*:\s*(\S.*)$')
+	DISPATCH_ENTRY_REGEX = re.compile(r'^([^:]+)+\s*:\s*(\S.*)$')
 
 	def parse(self, lines=None):
 		"""
@@ -443,9 +444,9 @@ class PackageContentFile(TextFile):
 
 class PackageControlFile(TextFile):
 
-	sectionRegex = re.compile('^\s*\[([^\]]+)\]\s*$')
-	valueContinuationRegex = re.compile('^\s(.*)$')
-	optionRegex = re.compile('^([^\:]+)\s*\:\s*(.*)$')
+	sectionRegex = re.compile(r'^\s*\[([^\]]+)\]\s*$')
+	valueContinuationRegex = re.compile(r'^\s(.*)$')
+	optionRegex = re.compile(r'^([^\:]+)\s*\:\s*(.*)$')
 
 	def __init__(self, filename, lockFailTimeout=2000):
 		TextFile.__init__(self, filename, lockFailTimeout)
@@ -626,7 +627,7 @@ class PackageControlFile(TextFile):
 			if option not in self._sections[sectionType][-1]:
 				self._sections[sectionType][-1][option] = value
 			else:
-				if isinstance(self._sections[sectionType][-1][option], unicode):
+				if isinstance(self._sections[sectionType][-1][option], str):
 					if not self._sections[sectionType][-1][option].endswith('\n'):
 						self._sections[sectionType][-1][option] += u'\n'
 					self._sections[sectionType][-1][option] += value.lstrip()
@@ -672,7 +673,7 @@ class PackageControlFile(TextFile):
 									tmp.append(v)
 							value = tmp
 
-					if isinstance(value, unicode):
+					if isinstance(value, str):
 						value = value.rstrip()
 
 					self._sections[sectionType][i][option] = value
@@ -684,7 +685,7 @@ class PackageControlFile(TextFile):
 		for (option, value) in self._sections.get('package', [{}])[0].items():
 			if option == 'depends':
 				for dep in value:
-					match = re.search('^\s*([^\(]+)\s*\(*\s*([^\)]*)\s*\)*', dep)
+					match = re.search(r'^\s*([^\(]+)\s*\(*\s*([^\)]*)\s*\)*', dep)
 					if not match.group(1):
 						raise ValueError(u"Bad package dependency '%s' in control file" % dep)
 
@@ -692,7 +693,7 @@ class PackageControlFile(TextFile):
 					version = match.group(2)
 					condition = None
 					if version:
-						match = re.search('^\s*([<>]?=?)\s*([\w\.]+-*[\w\.]*)\s*$', version)
+						match = re.search(r'^\s*([<>]?=?)\s*([\w\.]+-*[\w\.]*)\s*$', version)
 						if not match:
 							raise ValueError(u"Bad version string '%s' in package dependency" % version)
 
@@ -973,8 +974,8 @@ class PackageControlFile(TextFile):
 
 class OpsiConfFile(IniFile):
 
-	sectionRegex = re.compile('^\s*\[([^\]]+)\]\s*$')
-	optionRegex = re.compile('^([^\:]+)\s*\=\s*(.*)$')
+	sectionRegex = re.compile(r'^\s*\[([^\]]+)\]\s*$')
+	optionRegex = re.compile(r'^([^\:]+)\s*\=\s*(.*)$')
 
 	def __init__(self, filename=u'/etc/opsi/opsi.conf', lockFailTimeout=2000):
 		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars=[';', '#'])
@@ -1149,7 +1150,9 @@ class OpsiBackupArchive(tarfile.TarFile):
 				backendGlobals = {'config': {}, 'module': '', 'socket': socket}
 				backendFile = os.path.join(self.BACKEND_CONF_DIR, entry)
 				try:
-					execfile(backendFile, backendGlobals)
+					with open(backendFile) as confFile:
+						exec(confFile.read(), backendGlobals)
+
 					backends[name] = {
 						"name": name,
 						"config": backendGlobals["config"],
@@ -1205,8 +1208,8 @@ class OpsiBackupArchive(tarfile.TarFile):
 	def _readSysInfo(self):
 		sysInfo = {}
 		with closing(self.extractfile("%s/sysinfo" % self.CONTROL_DIR)) as fp:
-			for line in fp.readlines():
-				key, value = line.split(":")
+			for line in fp:
+				key, value = line.decode().split(":")
 				sysInfo[key.strip()] = value.strip()
 
 		return sysInfo
@@ -1214,8 +1217,8 @@ class OpsiBackupArchive(tarfile.TarFile):
 	def _readChecksumFile(self):
 		checksums = {}
 		with closing(self.extractfile("%s/checksums" % self.CONTROL_DIR)) as fp:
-			for line in fp.readlines():
-				key, value = line.split(" ", 1)
+			for line in fp:
+				key, value = line.decode().split(" ", 1)
 				checksums[value.strip()] = key.strip()
 
 		return checksums
@@ -1249,7 +1252,7 @@ element of the tuple is replace with the second element.
 
 			checksum = sha1()
 
-			with open(path) as f:
+			with open(path, 'rb') as f:
 				chunk = True
 				while chunk:
 					chunk = f.read()
@@ -1260,26 +1263,28 @@ element of the tuple is replace with the second element.
 			self.add(path, dest)
 
 	def _addChecksumFile(self):
-		string = StringIO.StringIO()
-		for path, checksum in self._filemap.iteritems():
-			string.write("%s %s\n" % (checksum, path))
+		string = StringIO()
+		size = 0
+		for path, checksum in self._filemap.items():
+			size += string.write("%s %s\n" % (checksum, path))
 		string.seek(0)
-		info = tarfile.TarInfo(name="%s/checksums" % self.CONTROL_DIR)
-		info.size = len(string.buf)
 
-		self.addfile(info, string)
+		info = tarfile.TarInfo(name="%s/checksums" % self.CONTROL_DIR)
+		info.size = size
+
+		self.addfile(info, BytesIO(string.getvalue().encode()))
 
 	def _addSysInfoFile(self):
-		string = StringIO.StringIO()
-
-		for key, value in self.sysinfo.iteritems():
-			string.write("%s: %s\n" % (key, value))
-
+		string = StringIO()
+		size = 0
+		for key, value in self.sysinfo.items():
+			size += string.write("%s: %s\n" % (key, value))
 		string.seek(0)
-		info = tarfile.TarInfo(name="%s/sysinfo" % self.CONTROL_DIR)
-		info.size = len(string.buf)
 
-		self.addfile(info, string)
+		info = tarfile.TarInfo(name="%s/sysinfo" % self.CONTROL_DIR)
+		info.size = size
+
+		self.addfile(info, BytesIO(string.getvalue().encode()))
 
 	def verify(self):
 		if self.mode.startswith("w"):
@@ -1541,7 +1546,7 @@ element of the tuple is replace with the second element.
 					cmd.append("--password=%s" % backend["config"]["password"])
 					cmd.append(backend["config"]["database"])
 
-					output = StringIO.StringIO()
+					output = StringIO()
 
 					p = Popen(cmd, stdin=fd, stdout=PIPE, stderr=STDOUT)
 

@@ -197,7 +197,7 @@ def ping(dest_addr, timeout = 2):
 	icmp = socket.getprotobyname("icmp")
 	try:
 		my_socket = socket.socket(socket.AF_INET, socket.SOCK_RAW, icmp)
-	except socket.error, error:
+	except socket.error as error:
 		(errno, msg) = error
 		if errno == 1:
 			# Operation not permitted
@@ -222,17 +222,17 @@ def verbose_ping(dest_addr, timeout = 2, count = 4):
 	Send >count< ping to >dest_addr< with the given >timeout< and display
 	the result.
 	"""
-	for i in xrange(count):
-		print "ping %s..." % dest_addr,
+	for i in range(count):
+		print("ping %s..." % dest_addr, end=' ')
 		try:
 			delay  =  ping(dest_addr, timeout)
 		except socket.gaierror as e:
-			print "failed. (socket error: '%s')" % e[1]
+			print("failed. (socket error: '%s')" % e[1])
 			break
 
 		if delay  ==  None:
-			print "failed. (timeout within %ssec.)" % timeout
+			print("failed. (timeout within %ssec.)" % timeout)
 		else:
 			delay  =  delay * 1000
-			print "get ping in %0.4fms" % delay
-	print
+			print("get ping in %0.4fms" % delay)
+	print()

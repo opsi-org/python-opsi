@@ -25,9 +25,10 @@ Depotserver backend.
 """
 
 import os
-
 from contextlib import contextmanager
 
+from OPSI.Backend.Base import ExtendedBackend
+from OPSI.Backend.Base.ConfigData import LOG_DIR
 from OPSI.Exceptions import (
 	BackendBadValueError, BackendConfigurationError,
 	BackendError, BackendIOError, BackendMissingDataError,
@@ -38,12 +39,9 @@ from OPSI.Types import (
 	forceUnicode, forceUnicodeLower)
 from OPSI.Types import forceProductId as forceProductIdFunc
 from OPSI.Object import ProductOnDepot, ProductPropertyState
-from OPSI.Backend.Backend import LOG_DIR, ExtendedBackend
 from OPSI.System import getDiskSpaceUsage
 from OPSI.Util.Product import ProductPackageFile
-from OPSI.Util import (
-	compareVersions, getfqdn, md5sum, librsyncSignature,
-	librsyncPatchFile, librsyncDeltaFile, removeDirectory)
+from OPSI.Util import compareVersions, getfqdn, md5sum, removeDirectory
 from OPSI.Util.File import ZsyncFile
 
 __all__ = ('DepotserverBackend', 'DepotserverPackageManager')
@@ -92,18 +90,24 @@ class DepotserverBackend(ExtendedBackend):
 			raise BackendIOError(u"Failed to get md5sum: %s" % error)
 
 	def depot_librsyncSignature(self, filename):
+		from OPSI.Util.Sync import librsyncSignature
+
 		try:
 			return librsyncSignature(filename)
 		except Exception as e:
 			raise BackendIOError(u"Failed to get librsync signature: %s" % e)
 
 	def depot_librsyncPatchFile(self, oldfile, deltafile, newfile):
+		from OPSI.Util.Sync import librsyncPatchFile
+
 		try:
 			return librsyncPatchFile(oldfile, deltafile, newfile)
 		except Exception as e:
 			raise BackendIOError(u"Failed to patch file: %s" % e)
 
 	def depot_librsyncDeltaFile(self, filename, signature, deltafile):
+		from OPSI.Util.Sync import librsyncDeltaFile
+
 		try:
 			librsyncDeltaFile(filename, signature, deltafile)
 		except Exception as e:

@@ -58,7 +58,7 @@ class LDAPBindingChecker:
     def requestAvatarId(self, credentials):
         try:
             baseDN = self.config.getIdentityBaseDN()
-        except config.MissingBaseDNError, e:
+        except config.MissingBaseDNError as e:
             return failure.Failure(error.UnauthorizedLogin("Disabled due configuration error: %s." % e))
         if not credentials.username:
             return failure.Failure(error.UnauthorizedLogin("I don't support anonymous"))

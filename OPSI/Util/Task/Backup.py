@@ -142,7 +142,7 @@ class OpsiBackup(object):
 
 			filename = archive.name.split(os.sep)[-1]
 			if not destination:
-				destination = os.getcwdu()
+				destination = os.getcwd()
 
 			if os.path.isdir(destination):
 				destination = os.path.join(destination, filename)
@@ -234,7 +234,7 @@ class OpsiBackup(object):
 			if self.getDifferencesInSysConfig(archive.sysinfo):
 				return ask(WARNING_DIFF)
 		except OpsiError as error:
-			return ask(WARNING_SYSCONFIG % unicode(error))
+			return ask(WARNING_SYSCONFIG % str(error))
 
 		return True
 

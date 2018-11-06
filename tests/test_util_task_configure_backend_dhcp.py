@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2015-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2015-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -83,7 +83,7 @@ subnet 192.168.0.0 netmask 255.255.0.0 {
 
 def testConfiguringDHCPDBackendWithEmptyFile(tempDir):
     filename = 'dhcpd_test.conf'
-    with open(filename, 'wx'):
+    with open(filename, 'x'):
         pass
 
     oldHash = md5sum(filename)
@@ -98,7 +98,7 @@ def testConfiguringDHCPDBackendWithEmptyFile(tempDir):
 
 def testConfiguringPatchesDHCPDBackendConfig(tempDir):
     filename = 'dhcpd_test.conf'
-    with open(filename, 'wx'):
+    with open(filename, 'x'):
         pass
 
     funcMock = mock.Mock()

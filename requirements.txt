@@ -1,10 +1,10 @@
 pycrypto
 twisted < 18.4
-libmagic
-ldaptor
-pam
+filemagic
+git+https://github.com/twisted/ldaptor.git
+python-pam
 pyOpenSSL
-MySQL-python
+mysqlclient
 SQLAlchemy
 M2Crypto
 pyasn1

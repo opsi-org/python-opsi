@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2010-2017 uib GmbH
+# Copyright (C) 2010-2018 uib GmbH
 
 # http://www.uib.de/
 
@@ -329,7 +329,7 @@ class WorkerOpsi:
 				encoded = auth[1]
 
 				logger.confidential(u"Auth encoded: {0}", encoded)
-				parts = unicode(base64.decodestring(encoded), 'latin-1').split(':')
+				parts = str(base64.decodebytes(encoded), encoding='latin-1').split(':')
 				if len(parts) > 6:
 					user = u':'.join(parts[:6])
 					password = u':'.join(parts[6:])
@@ -504,12 +504,12 @@ class WorkerOpsi:
 					self.query = deflateDecode(self.query)
 					self.gzip = True
 
-			if not isinstance(self.query, unicode):
-				self.query = unicode(self.query, 'utf-8')
+			if not isinstance(self.query, str):
+				self.query = str(self.query, encoding='utf-8')
 		except (UnicodeError, UnicodeEncodeError) as error:
 			logger.logException(error)
-			if not isinstance(self.query, unicode):
-				self.query = unicode(self.query, 'utf-8', 'replace')
+			if not isinstance(self.query, str):
+				self.query = str(self.query, encoding='utf-8', errors='replace')
 		except Exception as error:
 			logger.logException(error)
 			logger.warning("Unexpected error during decoding of query: {0}", error)
@@ -635,22 +635,22 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 				result.headers.setHeader('content-encoding', [encoding])
 				result.headers.setHeader('content-type', http_headers.MimeType("gzip-application", "json", {"charset": "utf-8"}))
 				logger.debug(u"Sending deflated data (backwards compatible - with content-encoding {0!r})", encoding)
-				result.stream = stream.IByteStream(deflateEncode(toJson(response).encode('utf-8')))
+				result.stream = stream.IByteStream(deflateEncode(toJson(response)))
 			else:
 				logger.debug(u"Sending plain data")
-				result.stream = stream.IByteStream(toJson(response).encode('utf-8'))
+				result.stream = stream.IByteStream(toJson(response))
 		elif encoding == "deflate":
 			result.headers.setHeader('content-encoding', [encoding])
 
 			logger.debug(u"Sending deflated data")
-			result.stream = stream.IByteStream(deflateEncode(toJson(response).encode('utf-8')))
+			result.stream = stream.IByteStream(deflateEncode(toJson(response)))
 		elif encoding == "gzip":
 			result.headers.setHeader('content-encoding', [encoding])
 
 			logger.debug(u"Sending gzip compressed data")
-			result.stream = stream.IByteStream(gzipEncode(toJson(response).encode('utf-8')))
+			result.stream = stream.IByteStream(gzipEncode(toJson(response)))
 		else:
-			result.stream = stream.IByteStream(toJson(response).encode('utf-8'))
+			result.stream = stream.IByteStream(toJson(response))
 
 		return result
 
@@ -661,7 +661,7 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 		try:
 			failure.raiseException()
 		except Exception as err:
-			error = {'class': err.__class__.__name__, 'message': unicode(err)}
+			error = {'class': err.__class__.__name__, 'message': str(err)}
 			error = toJson({"id": None, "result": None, "error": error})
 		result.stream = stream.IByteStream(error.encode('utf-8'))
 		return result
@@ -745,7 +745,7 @@ class WorkerOpsiJsonInterface(WorkerOpsiJsonRpc):
 			try:
 				result.raiseException()
 			except Exception as err:
-				error = {'class': err.__class__.__name__, 'message': unicode(err)}
+				error = {'class': err.__class__.__name__, 'message': str(err)}
 				error = toJson({"id": None, "result": None, "error": error})
 			results.append(wrapInDiv(objectToHtml(error)))
 		else:

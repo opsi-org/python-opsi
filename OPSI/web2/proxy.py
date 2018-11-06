@@ -24,10 +24,11 @@ ReverseProxy is used on the server end.
 from OPSI.web2 import http
 from twisted.internet import reactor, protocol
 from OPSI.web2 import resource, server
-from zope.interface import implements, Interface
+from zope.interface import Interface
+from zope.interface.declarations import implementer
 
 # system imports
-import urlparse
+from urllib.parse import urlparse, urlunparse
 
 
 class ProxyClient(http.HTTPClient):
@@ -37,7 +38,7 @@ class ProxyClient(http.HTTPClient):
         self.father = father
         self.command = command
         self.rest = rest
-        if headers.has_key("proxy-connection"):
+        if "proxy-connection" in headers:
             del headers["proxy-connection"]
         headers["connection"] = "close"
         self.headers = headers
@@ -99,19 +100,19 @@ class ProxyRequest(http.Request):
     ports = {'http': 80}
 
     def process(self):
-        parsed = urlparse.urlparse(self.uri)
+        parsed = urlparse(self.uri)
         protocol = parsed[0]
         host = parsed[1]
         port = self.ports[protocol]
         if ':' in host:
             host, port = host.split(':')
             port = int(port)
-        rest = urlparse.urlunparse(('','')+parsed[2:])
+        rest = urlunparse(('','')+parsed[2:])
         if not rest:
             rest = rest+'/'
         class_ = self.protocols[protocol]
         headers = self.getAllHeaders().copy()
-        if not headers.has_key('host'):
+        if 'host' not in headers:
             headers['host'] = host
         self.content.seek(0, 0)
         s = self.content.read()
@@ -161,8 +162,9 @@ class IConnector(Interface):
     def connect(factory):
         """connect ClientFactory"""
 
+
+@implementer(IConnector)
 class TCPConnector:
-    implements(IConnector)
     def __init__(self, host, port):
         self.host = host
         self.name = host
@@ -171,8 +173,8 @@ class TCPConnector:
         reactor.connectTCP(self.host, self.port, factory)
 
 
+@implementer(IConnector)
 class UNIXConnector:
-    implements(IConnector)
     name = 'n/a'
     def __init__(self, socket):
         self.socket = socket
@@ -183,6 +185,8 @@ class UNIXConnector:
 def ReverseProxyResource(host, port, path):
     return ReverseProxyResourceConnector(TCPConnector(host, port), path)
 
+
+@implementer(resource.IResource)
 class ReverseProxyResourceConnector:
     """Resource that renders the results gotten from another server
 
@@ -190,7 +194,6 @@ class ReverseProxyResourceConnector:
     to a different server.
     """
     isLeaf = True
-    implements(resource.IResource)
 
     def __init__(self, connector, path):
         self.connector = connector
@@ -199,7 +202,7 @@ class ReverseProxyResourceConnector:
     def render(self, request):
         request.received_headers['host'] = self.connector.name
         request.content.seek(0, 0)
-        qs = urlparse.urlparse(request.uri)[4]
+        qs = urlparse(request.uri)[4]
         path = self.path+'/'.join(request.postpath)
         if qs:
             rest = path + '?' + qs

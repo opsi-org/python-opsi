@@ -460,7 +460,7 @@ class SnackUI(UI):
 			if (buttonPressed not in [ okButton, 'F12' ] ):
 				return None
 
-			return unicode(entry.value(), encoding)
+			return str(entry.value(), encoding=encoding)
 		except Exception as e:
 			self.exit()
 			logger.logException(e)
@@ -661,7 +661,7 @@ class SnackUI(UI):
 				return None
 
 			for i in range( len(entries) ):
-				value = unicode(entries[i]['entry'].value(), encoding)
+				value = str(entries[i]['entry'].value(), encoding=encoding)
 				if entries[i].get('multivalue') and ( value.find(u',') != -1 ):
 					value = map(lambda x:x.strip(), value.split(u','))
 

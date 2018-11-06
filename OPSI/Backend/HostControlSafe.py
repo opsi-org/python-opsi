@@ -30,12 +30,12 @@ import struct
 
 from contextlib import closing
 
+from OPSI.Backend.Base import ExtendedBackend
+from OPSI.Backend.HostControl import RpcThread, ConnectionThread
+from OPSI.Backend.HostControl import _configureHostcontrolBackend
 from OPSI.Exceptions import BackendMissingDataError, BackendUnaccomplishableError
 from OPSI.Logger import LOG_DEBUG, Logger
 from OPSI.Types import (forceHostIdList, forceInt, forceList, forceUnicode)
-from OPSI.Backend.Backend import ExtendedBackend
-from OPSI.Backend.HostControl import RpcThread, ConnectionThread
-from OPSI.Backend.HostControl import _configureHostcontrolBackend
 
 __all__ = ('HostControlSafeBackend', )
 

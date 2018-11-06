@@ -188,7 +188,7 @@ def test_verifyHosts(extendedConfigDataBackend):
     hostsOriginal.update({configServer.id: configServer})
     depots = getDepotServers()
     hostsOriginal.update({depot.id: depot for depot in depots})
-    extendedConfigDataBackend.host_createObjects(hostsOriginal.values())
+    extendedConfigDataBackend.host_createObjects(list(hostsOriginal.values()))
 
     hosts = extendedConfigDataBackend.host_getObjects()
     assert hosts

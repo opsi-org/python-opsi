@@ -15,17 +15,17 @@ class Options_service_location:
     def opt_service_location(self, value):
         """Service location, in the form BASEDN:HOST[:PORT]"""
 
-        if not self.opts.has_key('service-location'):
+        if 'service-location' not in self.opts:
             self.opts['service-location']={}
 
         base, location = value.split(':', 1)
         try:
             dn = distinguishedname.DistinguishedName(base)
-        except distinguishedname.InvalidRelativeDistinguishedName, e:
-            raise usage.UsageError, str(e)
+        except distinguishedname.InvalidRelativeDistinguishedName as e:
+            raise usage.UsageError(str(e))
 
         if not location:
-            raise usage.UsageError, "service-location must specify host"
+            raise usage.UsageError("service-location must specify host")
 
         if ':' in location:
             host, port = location.split(':', 1)
@@ -41,7 +41,7 @@ class Options_service_location:
         self.opts['service-location'][dn] = (host, port)
 
     def postOptions_service_location(self):
-        if not self.opts.has_key('service-location'):
+        if 'service-location' not in self.opts:
             self.opts['service-location']={}
 
 class Options_base_optional:
@@ -54,7 +54,7 @@ class Options_base(Options_base_optional):
     def postOptions_base(self):
         # check that some things are given
         if self.opts['base'] is None:
-            raise usage.UsageError, "%s must be given" % 'base'
+            raise usage.UsageError("%s must be given" % 'base')
 
 class Options_scope:
     optParameters = (
@@ -74,7 +74,7 @@ class Options_scope:
         try:
             scope=getattr(pureldap, 'LDAP_SCOPE_'+scope)
         except AttributeError:
-            raise usage.UsageError, "bad scope: %s" % scope
+            raise usage.UsageError("bad scope: %s" % scope)
         self.opts['scope'] = scope
 
 class Options_bind:
@@ -91,10 +91,10 @@ class Options_bind:
             try:
                 val = int(val)
             except ValueError:
-                raise usage.UsageError, "%s value must be numeric" % 'bind-auth-fd'
+                raise usage.UsageError("%s value must be numeric" % 'bind-auth-fd')
             self.opts['bind-auth-fd'] = val
 
 class Options_bind_mandatory(Options_bind):
     def postOptions_bind_mandatory(self):
         if not self.opts['binddn']:
-            raise usage.UsageError, "%s must be given" % 'binddn'
+            raise usage.UsageError("%s must be given" % 'binddn')

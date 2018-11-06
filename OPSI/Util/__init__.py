@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2006-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2018 uib GmbH <info@uib.de>
 # http://www.uib.de/
 
 # This program is free software: you can redistribute it and/or modify
@@ -32,6 +32,7 @@ or to JSON, working with librsync and more.
 """
 
 import base64
+import binascii
 import json
 import os
 import random
@@ -42,7 +43,6 @@ import struct
 import time
 import types
 from collections import namedtuple
-from contextlib import closing
 from Crypto.Cipher import Blowfish
 from hashlib import md5
 from itertools import islice
@@ -51,6 +51,11 @@ from OPSI.Logger import Logger, LOG_DEBUG
 from OPSI.Types import (forceBool, forceFilename, forceFqdn, forceInt,
 						forceIPAddress, forceNetworkAddress, forceUnicode)
 
+try:
+	import secrets  # Since Python 3.6
+except ImportError:
+	secrets = None
+
 __all__ = (
 	'BLOWFISH_IV', 'PickleString',
 	'RANDOM_DEVICE', 'blowfishDecrypt', 'blowfishEncrypt',
@@ -58,7 +63,6 @@ __all__ = (
 	'deserialize', 'encryptWithPublicKeyFromX509CertificatePEMFile',
 	'findFiles', 'formatFileSize', 'fromJson', 'generateOpsiHostKey',
 	'getfqdn', 'ipAddressInNetwork', 'isRegularExpressionPattern',
-	'librsyncDeltaFile', 'librsyncPatchFile', 'librsyncSignature',
 	'md5sum', 'objectToBash', 'objectToBeautifiedText', 'objectToHtml',
 	'randomString', 'removeDirectory', 'removeUnit',
 	'replaceSpecialHTMLCharacters', 'serialize', 'timestamp', 'toJson'
@@ -66,17 +70,9 @@ __all__ = (
 
 logger = Logger()
 
-if os.name == 'posix':
-	from duplicity import librsync
-elif os.name == 'nt':
-	try:
-		import librsync
-	except Exception as e:
-		logger.error(u"Failed to import librsync: %s" % e)
-
 BLOWFISH_IV = 'OPSI1234'
 RANDOM_DEVICE = u'/dev/urandom'
-UNIT_REGEX = re.compile('^(\d+\.*\d*)\s*([\w]{0,4})$')
+UNIT_REGEX = re.compile(r'^(\d+\.*\d*)\s*([\w]{0,4})$')
 _ACCEPTED_CHARACTERS = (
 	"abcdefghijklmnopqrstuvwxyz"
 	"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -148,7 +144,7 @@ of strings, dicts, lists or numbers.
 
 	:return: a JSON-compatible serialisation of the input.
 	"""
-	if isinstance(obj, (unicode, str)):
+	if isinstance(obj, str):
 		return obj
 
 	try:
@@ -186,63 +182,12 @@ def toJson(obj, ensureAscii=False):
 	return json.dumps(serialize(obj), ensure_ascii=ensureAscii)
 
 
-def librsyncSignature(filename, base64Encoded=True):
-	try:
-		with open(filename, 'rb') as f:
-			with closing(librsync.SigFile(f)) as sf:
-				sig = sf.read()
-
-				if base64Encoded:
-					sig = base64.encodestring(sig)
-
-				return sig
-	except Exception as e:
-		raise RuntimeError(u"Failed to get librsync signature: %s" % forceUnicode(e))
-
-
-def librsyncPatchFile(oldfile, deltafile, newfile):
-	logger.debug(u"Librsync : %s, %s, %s" % (oldfile, deltafile, newfile))
-	if oldfile == newfile:
-		raise ValueError(u"Oldfile and newfile are the same file")
-	if deltafile == newfile:
-		raise ValueError(u"deltafile and newfile are the same file")
-	if deltafile == oldfile:
-		raise ValueError(u"oldfile and deltafile are the same file")
-
-	bufsize = 1024 * 1024
-	try:
-		with open(oldfile, "rb") as of:
-			with open(deltafile, "rb") as df:
-				with open(newfile, "wb") as nf:
-					with closing(librsync.PatchedFile(of, df)) as pf:
-						data = True
-						while data:
-							data = pf.read(bufsize)
-							nf.write(data)
-	except Exception as e:
-		raise RuntimeError(u"Failed to patch file: %s" % forceUnicode(e))
-
-
-def librsyncDeltaFile(filename, signature, deltafile):
-	bufsize = 1024 * 1024
-	try:
-		with open(filename, "rb") as f:
-			with open(deltafile, "wb") as df:
-				with closing(librsync.DeltaFile(signature, f)) as ldf:
-					data = True
-					while data:
-						data = ldf.read(bufsize)
-						df.write(data)
-	except Exception as e:
-		raise RuntimeError(u"Failed to write delta file: %s" % forceUnicode(e))
-
-
 def md5sum(filename):
 	""" Returns the md5sum of the given file. """
 	md5object = md5()
 
 	with open(filename, 'rb') as fileToHash:
-		for data in iter(lambda: fileToHash.read(524288), ''):
+		for data in iter(lambda: fileToHash.read(524288), b''):
 			md5object.update(data)
 
 	return md5object.hexdigest()
@@ -261,17 +206,23 @@ def generateOpsiHostKey(forcePython=False):
 	"""
 	Generates an random opsi host key.
 
-	This will try to make use of an existing random device.
+	On Python 3.5 or lower this will try to make use of an existing
+	random device.
 	As a fallback the generation is done in plain Python.
 
 	:param forcePython: Force the usage of Python for host key generation.
+	:rtype: str
 	"""
+	if secrets:
+		return secrets.token_hex(16)
+
 	if os.name == 'posix' and not forcePython:
-		logger.debug(u"Opening random device '%s' to generate opsi host key" % RANDOM_DEVICE)
-		with open(RANDOM_DEVICE) as r:
+		logger.debug2(u"Opening random device {!r} to generate opsi host key", RANDOM_DEVICE)
+		with open(RANDOM_DEVICE, 'rb') as r:
 			key = r.read(16)
-		logger.debug("Random device closed")
-		key = unicode(key.encode("hex"))
+		logger.debug2("Random device closed")
+		key = binascii.hexlify(key)
+		key = key.decode()
 	else:
 		logger.debug(u"Using python random module to generate opsi host key")
 		key = randomString(32, "0123456789abcdef")
@@ -394,7 +345,7 @@ def objectToHtml(obj, level=0):
 	elif obj is None:
 		append('null')
 	else:
-		if isinstance(obj, (str, unicode)):  # TODO: watch out for Python 3
+		if isinstance(obj, str):
 			append(replaceSpecialHTMLCharacters(obj).join((u'"', u'"')))
 		else:
 			append(replaceSpecialHTMLCharacters(obj))
@@ -440,7 +391,7 @@ def compareVersions(v1, condition, v2):
 	def splitProductAndPackageVersion(versionString):
 		productVersion = packageVersion = u'0'
 
-		match = re.search('^\s*([\w\.]+)-*([\w\.]*)\s*$', versionString)
+		match = re.search(r'^\s*([\w\.]+)-*([\w\.]*)\s*$', versionString)
 		if not match:
 			raise ValueError(u"Bad version string '%s'" % versionString)
 
@@ -458,11 +409,11 @@ def compareVersions(v1, condition, v2):
 			second.append(u'0')
 
 	def splitValue(value):
-		match = re.search('^(\d+)(\D*.*)$', value)
+		match = re.search(r'^(\d+)(\D*.*)$', value)
 		if match:
 			return int(match.group(1)), match.group(2)
 		else:
-			match = re.search('^(\D+)(\d*.*)$', value)
+			match = re.search(r'^(\D+)(\d*.*)$', value)
 			if match:
 				return match.group(1), match.group(2)
 
@@ -581,20 +532,17 @@ def blowfishEncrypt(key, cleartext):
 	Takes `cleartext` string, returns hex-encoded,
 	blowfish-encrypted string.
 
+	:type key: str
+	:type cleartext: str
 	:raises BlowfishError: In case things go wrong.
-	:rtype: unicode
+	:rtype: str
 	"""
-	cleartext = forceUnicode(cleartext).encode('utf-8')
-	key = forceUnicode(key)
+	cleartext = forceUnicode(cleartext)
+	key = forceUnicode(key).encode()
 
 	while len(cleartext) % 8 != 0:
 		# Fill up with \0 until length is a mutiple of 8
 		cleartext += chr(0)
-
-	try:
-		key = key.decode("hex")
-	except TypeError:
-		raise BlowfishError(u"Failed to hex decode key '%s'" % key)
 
 	blowfish = Blowfish.new(key, Blowfish.MODE_CBC, BLOWFISH_IV)
 	try:
@@ -603,7 +551,7 @@ def blowfishEncrypt(key, cleartext):
 		logger.logException(encryptError, LOG_DEBUG)
 		raise BlowfishError(u"Failed to encrypt")
 
-	return unicode(crypt.encode("hex"))
+	return crypt.hex()
 
 
 def blowfishDecrypt(key, crypt):
@@ -611,18 +559,15 @@ def blowfishDecrypt(key, crypt):
 	Takes hex-encoded, blowfish-encrypted string,
 	returns cleartext string.
 
+	:type key: str
+	:param crypt: The encrypted text as hex.
+	:type crypt: str
 	:raises BlowfishError: In case things go wrong.
-	:rtype: unicode
+	:rtype: str
 	"""
+	key = forceUnicode(key).encode()
+	crypt = bytes.fromhex(crypt)
 
-	key = forceUnicode(key)
-	crypt = forceUnicode(crypt)
-	try:
-		key = key.decode("hex")
-	except TypeError as e:
-		raise BlowfishError(u"Failed to hex decode key '%s'" % key)
-
-	crypt = crypt.decode("hex")
 	blowfish = Blowfish.new(key, Blowfish.MODE_CBC, BLOWFISH_IV)
 	try:
 		cleartext = blowfish.decrypt(crypt)
@@ -631,17 +576,25 @@ def blowfishDecrypt(key, crypt):
 		raise BlowfishError(u"Failed to decrypt")
 
 	# Remove possible \0-chars
-	if cleartext.find('\0') != -1:
-		cleartext = cleartext[:cleartext.find('\0')]
+	if b'\0' in cleartext:
+		cleartext = cleartext[:cleartext.find(b'\0')]
 
 	try:
-		return unicode(cleartext, 'utf-8')
+		return cleartext.decode()
 	except Exception as e:
 		logger.error(e)
 		raise BlowfishError(u"Failed to convert decrypted text to unicode.")
 
 
 def encryptWithPublicKeyFromX509CertificatePEMFile(data, filename):
+	"""
+	Encrypt the data by using the certificate.
+
+	:type data: str
+	:type filename: str
+	:param filename: The path to the certificate to use.
+	:rtype: bytes
+	"""
 	import M2Crypto
 
 	cert = M2Crypto.X509.load_cert(filename)
@@ -650,12 +603,21 @@ def encryptWithPublicKeyFromX509CertificatePEMFile(data, filename):
 
 	def encrypt():
 		for parts in chunk(data, size=32):
-			yield rsa.public_encrypt(data=''.join(parts), padding=padding)
+			partedText = ''.join(parts)
+			yield rsa.public_encrypt(data=partedText.encode(), padding=padding)
 
-	return ''.join(encrypt())
+	return b''.join(encrypt())
 
 
 def decryptWithPrivateKeyFromPEMFile(data, filename):
+	"""
+	Decrypt the data by using the certificate.
+
+	:type data: bytes
+	:type filename: str
+	:param filename: The path to the certificate to use.
+	:rtype: str
+	"""
 	import M2Crypto
 
 	privateKey = M2Crypto.RSA.load_key(filename)
@@ -663,14 +625,12 @@ def decryptWithPrivateKeyFromPEMFile(data, filename):
 
 	def decrypt():
 		for parts in chunk(data, size=256):
-			decr = privateKey.private_decrypt(data=''.join(parts), padding=padding)
+			newBytes = bytearray(parts)
+			decr = privateKey.private_decrypt(data=bytes(newBytes), padding=padding)
+			yield decr
 
-			for x in decr:
-				if x not in ('\x00', '\0'):
-					# Avoid any nullbytes
-					yield x
+	return (b''.join(decrypt())).decode()
 
-	return ''.join(decrypt())
 
 
 def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeDir=None, includeFile=None, returnDirs=True, returnLinks=True, followLinks=False, repository=None):
@@ -716,9 +676,6 @@ def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeD
 
 	files = []
 	for entry in listdir(directory):
-		if isinstance(entry, str):  # TODO how to handle this with Python 3?
-			logger.error(u"Bad filename '%s' found in directory '%s', skipping entry!" % (unicode(entry, 'ascii', 'replace'), directory))
-			continue
 		pp = os.path.join(prefix, entry)
 		dp = os.path.join(directory, entry)
 		isLink = False

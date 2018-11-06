@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -24,15 +24,12 @@ Testing functionality of OPSI.Util.
 
 from __future__ import absolute_import
 
-import codecs
 import random
 import re
 import os
 import os.path
-import shutil
 from collections import defaultdict
 from contextlib import contextmanager
-from itertools import combinations_with_replacement
 
 from OPSI.Object import ConfigState, LocalbootProduct, OpsiClient
 from OPSI.Util import (
@@ -40,8 +37,7 @@ from OPSI.Util import (
 	decryptWithPrivateKeyFromPEMFile,
 	encryptWithPublicKeyFromX509CertificatePEMFile, findFiles, formatFileSize,
 	fromJson, generateOpsiHostKey, getfqdn, ipAddressInNetwork,
-	isRegularExpressionPattern, librsyncDeltaFile, librsyncSignature,
-	librsyncPatchFile, md5sum, objectToBash, objectToBeautifiedText,
+	isRegularExpressionPattern,	md5sum, objectToBash, objectToBeautifiedText,
 	objectToHtml, randomString, removeUnit, toJson)
 from OPSI.Util import BlowfishError
 from OPSI.Util.Config import getGlobalConfig
@@ -72,7 +68,13 @@ def testIpAddressInNetworkWithFullNetmask():
 	assert ipAddressInNetwork('10.10.1.1', '10.10.0.0/255.240.0.0')
 
 
-class ProductFactory(object):
+def generateLocalbootProducts(amount):
+	"""
+	Generates `amount` random LocalbootProducts.
+
+	:rtype: LocalbootProduct
+	"""
+
 	productVersions = ('1.0', '2', 'xxx', '3.1', '4')
 	packageVersions = ('1', '2', 'y', '3', '10', 11, 22)
 	licenseRequirements = (None, True, False)
@@ -85,22 +87,21 @@ class ProductFactory(object):
 	descriptions = ['Test product', 'Some product', '--------', '', None]
 	advices = ('Nothing', 'Be careful', '--------', '', None)
 
-	@classmethod
-	def generateLocalbootProduct(self, index=0):
-		return LocalbootProduct(
+	for index in range(amount):
+		yield LocalbootProduct(
 			id='product{0}'.format(index),
-			productVersion=random.choice(self.productVersions),
-			packageVersion=random.choice(self.packageVersions),
+			productVersion=random.choice(productVersions),
+			packageVersion=random.choice(packageVersions),
 			name='Product {0}'.format(index),
-			licenseRequired=random.choice(self.licenseRequirements),
-			setupScript=random.choice(self.setupScripts),
-			uninstallScript=random.choice(self.uninstallScripts),
-			updateScript=random.choice(self.updateScripts),
-			alwaysScript=random.choice(self.alwaysScripts),
-			onceScript=random.choice(self.onceScripts),
-			priority=random.choice(self.priorities),
-			description=random.choice(self.descriptions),
-			advice=random.choice(self.advices),
+			licenseRequired=random.choice(licenseRequirements),
+			setupScript=random.choice(setupScripts),
+			uninstallScript=random.choice(uninstallScripts),
+			updateScript=random.choice(updateScripts),
+			alwaysScript=random.choice(alwaysScripts),
+			onceScript=random.choice(onceScripts),
+			priority=random.choice(priorities),
+			description=random.choice(descriptions),
+			advice=random.choice(advices),
 			changelog=None,
 			windowsSoftwareIds=None
 		)
@@ -108,12 +109,7 @@ class ProductFactory(object):
 
 @pytest.mark.parametrize("objectCount", [128, 1024])
 def testObjectToHtmlProcessesGenerators(objectCount):
-	generator = (
-		ProductFactory.generateLocalbootProduct(i)
-		for i in range(objectCount)
-	)
-
-	text = objectToHtml(generator)
+	text = objectToHtml(generateLocalbootProducts(objectCount))
 
 	assert text.lstrip().startswith('[')
 	assert text.rstrip().endswith(']')
@@ -138,16 +134,37 @@ def testObjectToHtmlOutputIsAsExpected():
 		windowsSoftwareIds=None
 	)
 
-	expected = u'{<div style="padding-left: 3em;"><font class="json_key">"onceScript"</font>: "once.ins",<br />\n<font class="json_key">"windowsSoftwareIds"</font>: null,<br />\n<font class="json_key">"description"</font>: "asdf",<br />\n<font class="json_key">"advice"</font>: "lolnope",<br />\n<font class="json_key">"alwaysScript"</font>: "always.ins",<br />\n<font class="json_key">"updateScript"</font>: "update.ins",<br />\n<font class="json_key">"productClassIds"</font>: null,<br />\n<font class="json_key">"id"</font>: "htmltestproduct",<br />\n<font class="json_key">"licenseRequired"</font>: false,<br />\n<font class="json_key">"ident"</font>: "htmltestproduct;3.1;1",<br />\n<font class="json_key">"name"</font>: "Product&nbsp;HTML&nbsp;Test",<br />\n<font class="json_key">"changelog"</font>: null,<br />\n<font class="json_key">"customScript"</font>: null,<br />\n<font class="json_key">"uninstallScript"</font>: "uninstall.ins",<br />\n<font class="json_key">"userLoginScript"</font>: null,<br />\n<font class="json_key">"priority"</font>: 0,<br />\n<font class="json_key">"productVersion"</font>: "3.1",<br />\n<font class="json_key">"packageVersion"</font>: "1",<br />\n<font class="json_key">"type"</font>: "LocalbootProduct",<br />\n<font class="json_key">"setupScript"</font>: "setup.ins"</div>}'
-	assert expected == objectToHtml(product)
+	result = objectToHtml(product)
+	assert result.startswith('{<div style="padding-left: 3em;">')
+	assert result.endswith('</div>}')
+	assert result.count('\n') == 19
+	assert result.count(',<br />') == 19
+
+	assert '<font class="json_key">"onceScript"</font>: "once.ins"' in result
+	assert '<font class="json_key">"windowsSoftwareIds"</font>: null' in result
+	assert '<font class="json_key">"description"</font>: "asdf"' in result
+	assert '<font class="json_key">"advice"</font>: "lolnope"' in result
+	assert '<font class="json_key">"alwaysScript"</font>: "always.ins"' in result
+	assert '<font class="json_key">"updateScript"</font>: "update.ins"' in result
+	assert '<font class="json_key">"productClassIds"</font>: null' in result
+	assert '<font class="json_key">"id"</font>: "htmltestproduct"' in result
+	assert '<font class="json_key">"licenseRequired"</font>: false' in result
+	assert '<font class="json_key">"ident"</font>: "htmltestproduct;3.1;1"' in result
+	assert '<font class="json_key">"name"</font>: "Product&nbsp;HTML&nbsp;Test"' in result
+	assert '<font class="json_key">"changelog"</font>: null' in result
+	assert '<font class="json_key">"customScript"</font>: null' in result
+	assert '<font class="json_key">"uninstallScript"</font>: "uninstall.ins"' in result
+	assert '<font class="json_key">"userLoginScript"</font>: null' in result
+	assert '<font class="json_key">"priority"</font>: 0' in result
+	assert '<font class="json_key">"productVersion"</font>: "3.1"' in result
+	assert '<font class="json_key">"packageVersion"</font>: "1"' in result
+	assert '<font class="json_key">"type"</font>: "LocalbootProduct"' in result
+	assert '<font class="json_key">"setupScript"</font>: "setup.ins"' in result
 
 
 @pytest.mark.parametrize("objectCount", [1, 10240])
 def testObjectToBeautifiedTextWorksWithGenerators(objectCount):
-	generator = (
-		ProductFactory.generateLocalbootProduct(i)
-		for i in range(objectCount)
-	)
+	generator = generateLocalbootProducts(objectCount)
 
 	text = objectToBeautifiedText(generator)
 
@@ -157,7 +174,7 @@ def testObjectToBeautifiedTextWorksWithGenerators(objectCount):
 
 @pytest.mark.parametrize("objectCount", [1, 10240])
 def testObjectToBeautifiedTextGeneratesValidJSON(objectCount):
-	objectsIn = [ProductFactory.generateLocalbootProduct(i) for i in range(objectCount)]
+	objectsIn = list(generateLocalbootProducts(objectCount))
 	text = objectToBeautifiedText(objectsIn)
 
 	objects = fromJson(text)
@@ -166,7 +183,7 @@ def testObjectToBeautifiedTextGeneratesValidJSON(objectCount):
 		assert isinstance(obj, LocalbootProduct)
 
 
-def testCheckingOutput():
+def testObjectToBeautifiedText():
 	product = LocalbootProduct(
 		id='htmltestproduct',
 		productVersion='3.1',
@@ -185,25 +202,39 @@ def testCheckingOutput():
 		windowsSoftwareIds=None
 	)
 
-	expected = u'[\n    {\n        "onceScript": "once.ins", \n        "windowsSoftwareIds": null, \n        "description": "asdf", \n        "advice": "lolnope", \n        "alwaysScript": "always.ins", \n        "updateScript": "update.ins", \n        "productClassIds": null, \n        "id": "htmltestproduct", \n        "licenseRequired": false, \n        "ident": "htmltestproduct;3.1;1", \n        "name": "Product HTML Test", \n        "changelog": null, \n        "customScript": null, \n        "uninstallScript": "uninstall.ins", \n        "userLoginScript": null, \n        "priority": 0, \n        "productVersion": "3.1", \n        "packageVersion": "1", \n        "type": "LocalbootProduct", \n        "setupScript": "setup.ins"\n    }, \n    {\n        "onceScript": "once.ins", \n        "windowsSoftwareIds": null, \n        "description": "asdf", \n        "advice": "lolnope", \n        "alwaysScript": "always.ins", \n        "updateScript": "update.ins", \n        "productClassIds": null, \n        "id": "htmltestproduct", \n        "licenseRequired": false, \n        "ident": "htmltestproduct;3.1;1", \n        "name": "Product HTML Test", \n        "changelog": null, \n        "customScript": null, \n        "uninstallScript": "uninstall.ins", \n        "userLoginScript": null, \n        "priority": 0, \n        "productVersion": "3.1", \n        "packageVersion": "1", \n        "type": "LocalbootProduct", \n        "setupScript": "setup.ins"\n    }\n]'
+	result = objectToBeautifiedText([product, product])
+	assert result.startswith('[\n    {\n        ')
+	assert result.endswith('\n    }\n]')
+	assert result.count('\n') == 45
 
-	assert expected == objectToBeautifiedText([product, product])
+	for key, value in product.toHash().items():
+		print("Checking {} ({!r})".format(key, value))
+
+		if value is None:
+			fValue = 'null'
+		elif isinstance(value, bool):
+			fValue = '{}'.format(str(value).lower())
+		elif isinstance(value, int):
+			fValue = '{}'.format(value)
+		else:
+			fValue = '"{}"'.format(value)
+
+		formattedStr = '"{}": {}'.format(key, fValue)
+		assert formattedStr in result
+		assert result.count(formattedStr) == 2  # We have two objects
 
 
-def testFormattingEmptyList():
-	assert '[]' == objectToBeautifiedText([])
+@pytest.mark.parametrize("value, expected", [
+	([], '[]'),
+	([[], []], '[\n    [],\n    []\n]'),
+	({},'{}'),
+
+])
+def testObjectToBeautifiedTextEmptyObjects(expected, value):
+	assert expected == objectToBeautifiedText(value)
 
 
-def testFormattingListOfEmptyLists():
-	expected = '[\n    [], \n    []\n]'
-	assert expected == objectToBeautifiedText([[], []])
-
-
-def testFormattingEmptyDict():
-	assert '{}' == objectToBeautifiedText({})
-
-
-def testFormattingDefaultDict():
+def testObjectToBeautifiedTextFormattingDefaultDict():
 	normalDict = {u'lastStateChange': u'', u'actionRequest': u'none', u'productVersion': u'', u'productActionProgress': u'', u'packageVersion': u'', u'installationStatus': u'not_installed', u'productId': u'thunderbird'}
 	defaultDict = defaultdict(lambda x: u'')
 
@@ -213,34 +244,72 @@ def testFormattingDefaultDict():
 	normal = objectToBeautifiedText(normalDict)
 	default = objectToBeautifiedText(defaultDict)
 
-	assert normal == default
+	expected = [
+		(u'lastStateChange', u''),
+		(u'actionRequest', u'none'),
+		(u'productVersion', u''),
+		(u'productActionProgress', u''),
+		(u'packageVersion', u''),
+		(u'installationStatus', u'not_installed'),
+		(u'productId', u'thunderbird')
+	]
+
+	for index, result in enumerate((normal, default)):
+		print("Check #{}: {}".format(index, result))
+
+		assert result.startswith('{')
+		assert result.endswith('}')
+		assert result.count(':') == len(expected)
+		assert result.count(',') == len(expected) - 1
+		assert result.count('\n') == len(expected) + 1
+
+		for key, value in expected:
+			assert '"{}": "{}"'.format(key, value) in result
 
 
-def testWorkingWithSet():
+def testObjectToBeautifiedTextWorkingWithSet():
+	product = LocalbootProduct(
+		id='htmltestproduct',
+		productVersion='3.1',
+		packageVersion='1',
+		name='Product HTML Test',
+		licenseRequired=False,
+		setupScript='setup.ins',
+		uninstallScript='uninstall.ins',
+		updateScript='update.ins',
+		alwaysScript='always.ins',
+		onceScript='once.ins',
+		priority=0,
+		description="asdf",
+		advice="lolnope",
+		changelog=None,
+		windowsSoftwareIds=None
+	)
+
 	# Exactly one product because set is unordered.
-	obj = set([
-		LocalbootProduct(
-			id='htmltestproduct',
-			productVersion='3.1',
-			packageVersion='1',
-			name='Product HTML Test',
-			licenseRequired=False,
-			setupScript='setup.ins',
-			uninstallScript='uninstall.ins',
-			updateScript='update.ins',
-			alwaysScript='always.ins',
-			onceScript='once.ins',
-			priority=0,
-			description="asdf",
-			advice="lolnope",
-			changelog=None,
-			windowsSoftwareIds=None
-		)
-	])
+	obj = set([product])
 
-	expected = u'[\n    {\n        "onceScript": "once.ins", \n        "windowsSoftwareIds": null, \n        "description": "asdf", \n        "advice": "lolnope", \n        "alwaysScript": "always.ins", \n        "updateScript": "update.ins", \n        "productClassIds": null, \n        "id": "htmltestproduct", \n        "licenseRequired": false, \n        "ident": "htmltestproduct;3.1;1", \n        "name": "Product HTML Test", \n        "changelog": null, \n        "customScript": null, \n        "uninstallScript": "uninstall.ins", \n        "userLoginScript": null, \n        "priority": 0, \n        "productVersion": "3.1", \n        "packageVersion": "1", \n        "type": "LocalbootProduct", \n        "setupScript": "setup.ins"\n    }\n]'
+	result = objectToBeautifiedText(obj)
+	assert result.startswith('[\n    {\n        ')
+	assert result.endswith('\n    }\n]')
+	assert result.count(':') == 20
+	assert result.count(',') == 19
+	assert result.count('\n') == 23
 
-	assert expected == objectToBeautifiedText(obj)
+	for key, value in product.toHash().items():
+		print("Checking {} ({!r})".format(key, value))
+
+		if value is None:
+			fValue = 'null'
+		elif isinstance(value, bool):
+			fValue = '{}'.format(str(value).lower())
+		elif isinstance(value, int):
+			fValue = '{}'.format(value)
+		else:
+			fValue = '"{}"'.format(value)
+
+		formattedStr = '"{}": {}'.format(key, fValue)
+		assert formattedStr in result
 
 
 def testRandomStringBuildsStringOutOfGivenCharacters():
@@ -259,8 +328,10 @@ def testRandomStringHasExpectedLength(length):
 	{"forcePython": True},
 	{"forcePython": False}
 ])
-def testGenerateOpsiHostKeyIs32CharsLong(kwargs):
-	assert 32 == len(generateOpsiHostKey(kwargs))
+def testGeneratingOpsiHostKey(kwargs):
+	key = generateOpsiHostKey(kwargs)
+	assert 32 == len(key)
+	assert isinstance(key, str)
 
 
 @pytest.mark.parametrize("testInput, expected", [
@@ -344,114 +415,6 @@ def testChunkingGeneratorWithDifferentSize():
 	assert (5, 6, 7, 8, 9) == next(chunks)
 	with pytest.raises(StopIteration):
 		next(chunks)
-
-
-@pytest.fixture
-def librsyncTestfile():
-	return os.path.join(
-		os.path.dirname(__file__),
-		'testdata', 'util', 'syncFiles', 'librsyncSignature.txt'
-	)
-
-
-def testLibrsyncSignatureBase64Encoded(librsyncTestfile):
-	assert 'cnMBNgAACAAAAAAI/6410IBmvH1GKbBN\n' == librsyncSignature(librsyncTestfile)
-
-
-def testLibrsyncSignatureCreation(librsyncTestfile):
-	signature = librsyncSignature(librsyncTestfile, base64Encoded=False)
-	assert 'rs\x016\x00\x00\x08\x00\x00\x00\x00\x08\xff\xae5\xd0\x80f\xbc}F)\xb0M' == signature
-
-
-def testLibrsyncDeltaFileCreation(librsyncTestfile, tempDir):
-	signature = librsyncSignature(librsyncTestfile, base64Encoded=False)
-	deltafile = os.path.join(tempDir, 'delta')
-
-	librsyncDeltaFile(librsyncTestfile, signature.strip(), deltafile)
-	assert os.path.exists(deltafile), "No delta file was created"
-
-	expectedDelta = 'rs\x026F\x00\x04\x8a\x00'
-	with open(deltafile, "r") as f:
-		assert expectedDelta == f.read()
-
-
-def testLibrsyncPatchFileDoesNotAlterIfUnneeded(librsyncTestfile, tempDir):
-	baseFile = librsyncTestfile
-	signature = librsyncSignature(baseFile, False)
-
-	deltaFile = os.path.join(tempDir, 'base.delta')
-	librsyncDeltaFile(baseFile, signature, deltaFile)
-
-	assert os.path.exists(deltaFile)
-	expectedDelta = "rs\x026F\x00\x04\x8a\x00"
-	with open(deltaFile, "rb") as f:
-		assert expectedDelta == f.read()
-
-	newFile = os.path.join(tempDir, 'newFile.txt')
-	librsyncPatchFile(baseFile, deltaFile, newFile)
-	assert os.path.exists(newFile)
-
-	with open(newFile, "r") as newF:
-		with open(baseFile, "r") as baseF:
-			assert baseF.readlines() == newF.readlines()
-
-
-def testLibrsyncPatchFileCreatesNewFileBasedOnDelta(librsyncTestfile, tempDir):
-	baseFile = librsyncTestfile
-	signature = librsyncSignature(baseFile, False)
-
-	newFile = os.path.join(tempDir, 'oldnew.txt')
-	shutil.copy(baseFile, newFile)
-
-	additionalText = u"Und diese Zeile hier macht den Unterschied."
-
-	with codecs.open(newFile, 'a', 'utf-8') as nf:
-		nf.write("\n\n{0}\n".format(additionalText))
-
-	deltaFileForNewFile = os.path.join(tempDir, 'newDelta.delta')
-	librsyncDeltaFile(newFile, signature, deltaFileForNewFile)
-	expectedDelta = (
-		'rs\x026B\x04\xb8Die NASA konnte wieder ein Funksignal der '
-		'Sonde New Horizons empfangen. Damit scheint sicher, dass '
-		'das Man\xc3\xb6ver ein Erfolg war und nun jede Menge Daten '
-		'zu erwarten sind. Bis die alle auf der Erde sind, wird es '
-		'aber dauern.\n\nDie NASA feiert eine "historische Nacht": '
-		'Die Sonde New Horizons ist am Zwergplaneten Pluto '
-		'vorbeigeflogen und hat kurz vor drei Uhr MESZ wieder Kontakt '
-		'mit der Erde aufgenommen. Jubel, rotwei\xc3\x9fblaue '
-		'F\xc3\xa4hnchen und stehende Ovationen pr\xc3\xa4gten die '
-		'Stimmung im John Hopkins Labor in Maryland. Digital stellten '
-		'sich prominente Gratulanten ein, von Stephen Hawking mit '
-		'einer Videobotschaft bis zu US-Pr\xc3\xa4sident Barack Obama '
-		'per Twitter.\n\n"Hallo Welt"\n\nDas erste Funksignal New '
-		'Horizons nach dem Vorbeiflug am Pluto brachte noch keine '
-		'wissenschaftlichen Ergebnisse oder neue Fotos, sondern '
-		'Telemetriedaten der Sonde selbst. Das war so geplant. '
-		'Aus diesen Informationen geht hervor, dass es New Horizons '
-		'gut geht, dass sie ihren Kurs h\xc3\xa4lt und die '
-		'vorausberechnete Menge an Speichersektoren belegt ist. '
-		'Daraus schlie\xc3\x9fen die Verantwortlichen der NASA, dass '
-		'auch tats\xc3\xa4chlich wissenschaftliche Informationen im '
-		'geplanten Ausma\xc3\x9f gesammelt wurden.\n\nUnd diese Zeile '
-		'hier macht den Unterschied.\n\x00')
-
-	with open(deltaFileForNewFile, "rb") as f:
-		assert expectedDelta == f.read()
-
-	fileBasedOnDelta = os.path.join(tempDir, 'newnew.txt')
-	librsyncPatchFile(baseFile, deltaFileForNewFile, fileBasedOnDelta)
-	with open(newFile, "r") as newF:
-		with open(fileBasedOnDelta, "r") as newF2:
-			assert newF.readlines() == newF2.readlines()
-
-	with codecs.open(fileBasedOnDelta, "r", 'utf-8') as newF2:
-		assert any(additionalText in line for line in newF2)
-
-
-@pytest.mark.parametrize("old, delta, new", list(combinations_with_replacement(('foo', 'bar'), 3)))
-def testLibrsyncPatchFileAvoidsPatchingSameFile(old, delta, new):
-	with pytest.raises(ValueError):
-		librsyncPatchFile(old, delta, new)
 
 
 @pytest.mark.parametrize("first, operator, second", [
@@ -678,7 +641,15 @@ def testSerialisingDictsInList():
 	]
 	output = toJson(inputValues)
 
-	assert u'[{"a": "b", "c": 1}, {"a": "b", "c": 1}]' == output
+	assert output.startswith('[{')
+	assert output.endswith('}]')
+	assert output.count(':') == 4  # 2 dicts * 2 values
+	assert output.count(',') == 3
+	assert output.count('"c": 1') == 2
+	assert output.count('"a": "b"') == 2
+	assert output.count('}, {') == 1
+
+	assert inputValues == fromJson(output)
 
 
 def testSerialisingDictsInListWithFloat():
@@ -688,16 +659,40 @@ def testSerialisingDictsInListWithFloat():
 	]
 	output = toJson(inputValues)
 
-	assert u'[{"a": "b", "c": 1, "e": 2.3}, {"i": 4, "k": 5.6, "g": "h"}]' == output
+	assert output.startswith('[{')
+	assert output.endswith('}]')
+	assert output.count(':') == 6  # 2 dicts * 3 values
+	assert output.count(',') == 5
+	assert output.count('}, {') == 1
+
+	for d in inputValues:
+		for key, value in d.items():
+			if isinstance(value, str):
+				assert '"{}": "{}"'.format(key, value) in output
+			else:
+				assert '"{}": {}'.format(key, value) in output
+
+	assert inputValues == fromJson(output)
 
 
-def testSerialisingDict():
-	inputValues = {'a': 'b', 'c': 1, 'e': 2}
-	assert u'{"a": "b", "c": 1, "e": 2}' == toJson(inputValues)
-	assert inputValues == fromJson(toJson(inputValues))
+@pytest.mark.parametrize("inputValues", [
+	{'a': 'b', 'c': 1, 'e': 2},
+	{'a': 'b', 'c': 1, 'e': 2.3}
+	])
+def testSerialisingDict(inputValues):
+	result = toJson(inputValues)
 
-	inputValues = {'a': 'b', 'c': 1, 'e': 2.3}
-	assert u'{"a": "b", "c": 1, "e": 2.3}' == toJson(inputValues)
+	assert result.startswith('{')
+	assert result.endswith('}')
+	assert result.count(':') == 3
+	assert result.count(',') == 2
+	for key, value in inputValues.items():
+		if isinstance(value, str):
+			assert '"{}": "{}"'.format(key, value) in result
+		else:
+			assert '"{}": {}'.format(key, value) in result
+
+	assert inputValues == fromJson(result)
 
 
 def testUnserialisableThingsFail():
@@ -910,11 +905,7 @@ def testBlowfishEncryptionFailsWithNoKey(randomText, blowfishKey):
 
 @pytest.mark.parametrize("objectCount", [1, 10240])
 def testObjectToBashWorksWithGenerators(objectCount):
-	generator = (
-		ProductFactory.generateLocalbootProduct(i)
-		for i in range(objectCount)
-	)
-
+	generator = generateLocalbootProducts(objectCount)
 	result = objectToBash(generator)
 
 	assert isinstance(result, dict)
@@ -926,7 +917,7 @@ def testObjectToBashWorksWithGenerators(objectCount):
 		assert resultVar in result['RESULT']
 
 	for value in result.values():
-		assert isinstance(value, (str, unicode))
+		assert isinstance(value, str)
 
 
 def testObjectToBashOutput():
@@ -956,8 +947,37 @@ def testObjectToBashOutput():
 
 	result = objectToBash([product, product])
 
-	assert expected == result
+	assert set(result.keys()) == set(expected.keys())
+	assert expected['RESULT'] == result['RESULT']
+
 	assert result['RESULT1'] == result['RESULT2']
+
+	singleResult = result['RESULT1']
+	assert singleResult.startswith('(\n')
+	assert singleResult.endswith('\n)')
+	assert singleResult.count('\n') == 21
+
+	# The order may not necessarily be the same so we check every value
+	assert 'onceScript="once.ins"\n' in singleResult
+	assert 'windowsSoftwareIds=""\n' in singleResult
+	assert 'description="asdf"\n' in singleResult
+	assert 'advice="lolnope"\n' in singleResult
+	assert 'alwaysScript="always.ins"\n' in singleResult
+	assert 'updateScript="update.ins"\n' in singleResult
+	assert 'productClassIds=""\n' in singleResult
+	assert 'id="htmltestproduct"\n' in singleResult
+	assert 'licenseRequired="False"\n' in singleResult
+	assert 'ident="htmltestproduct;3.1;1"\n' in singleResult
+	assert 'name="Product HTML Test"\n' in singleResult
+	assert 'changelog=""\n' in singleResult
+	assert 'customScript=""\n' in singleResult
+	assert 'uninstallScript="uninstall.ins"\n' in singleResult
+	assert 'userLoginScript=""\n' in singleResult
+	assert 'priority="0"\n' in singleResult
+	assert 'productVersion="3.1"\n' in singleResult
+	assert 'packageVersion="1"\n' in singleResult
+	assert 'type="LocalbootProduct"\n' in singleResult
+	assert 'setupScript="setup.ins"\n' in singleResult
 
 
 def testObjectToBashOnConfigStates():
@@ -983,7 +1003,7 @@ def testObjectToBashOnConfigStates():
 	assert len(result) == expectedLength
 
 	for value in result.values():
-		assert isinstance(value, (str, unicode))
+		assert isinstance(value, str)
 
 	for index in range(1, len(states) + 1):  # exclude ref to values of drive.slow
 		resultVar = 'RESULT{0}'.format(index)

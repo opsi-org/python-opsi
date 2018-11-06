@@ -38,6 +38,7 @@ from datetime import datetime
 from hashlib import md5
 from twisted.conch.ssh import keys
 
+from OPSI.Backend.Base import BackendModificationListener, ConfigDataBackend
 from OPSI.Exceptions import (BackendConfigurationError, BackendMissingDataError,
 	BackendModuleDisabledError, BackendReferentialIntegrityError)
 from OPSI.Logger import Logger
@@ -50,7 +51,6 @@ from OPSI.Object import (AuditHardware, AuditHardwareOnHost, AuditSoftware,
 	ProductOnClient, ProductOnDepot, ProductProperty, ProductPropertyState,
 	Relationship, SoftwareLicense, SoftwareLicenseToLicensePool,
 	mandatoryConstructorArgs)
-from OPSI.Backend.Backend import BackendModificationListener, ConfigDataBackend
 from OPSI.Util import timestamp
 
 __all__ = (
@@ -223,7 +223,7 @@ class SQLBackendObjectModificationTracker(BackendModificationListener):
 
 class SQLBackend(ConfigDataBackend):
 
-	_OPERATOR_IN_CONDITION_PATTERN = re.compile('^\s*([>=<]+)\s*(\d\.?\d*)')
+	_OPERATOR_IN_CONDITION_PATTERN = re.compile(r'^\s*([>=<]+)\s*(\d\.?\d*)')
 
 	def __init__(self, **kwargs):
 		self._name = 'sql'
@@ -275,7 +275,7 @@ class SQLBackend(ConfigDataBackend):
 						yield u"`{0}` = 1".format(key)
 					else:
 						yield u"`{0}` = 0".format(key)
-				elif isinstance(value, (float, long, int)):
+				elif isinstance(value, (float, int)):
 					yield u"`{0}` = {1}".format(key, value)
 				elif value is None:
 					yield u"`{0}` is NULL".format(key)
@@ -456,7 +456,7 @@ class SQLBackend(ConfigDataBackend):
 						yield u"`{0}` = 1".format(arg)
 					else:
 						yield u"`{0}` = 0".format(arg)
-				elif isinstance(value, (float, long, int)):
+				elif isinstance(value, (float, int)):
 					yield u"`{0}` = {1}".format(arg, value)
 				else:
 					yield u"`{0}` = '{1}'".format(arg, self._sql.escapeApostrophe(self._sql.escapeBackslash(value)))
@@ -1280,8 +1280,10 @@ class SQLBackend(ConfigDataBackend):
 		modules = backendinfo['modules']
 		helpermodules = backendinfo['realmodules']
 
-		publicKey = keys.Key.fromString(data=base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
-		data = u''; mks = modules.keys(); mks.sort()
+		publicKey = keys.Key.fromString(data=base64.decodebytes(b'AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
+		data = u''
+		mks = list(modules.keys())
+		mks.sort()
 		for module in mks:
 			if module in ('valid', 'signature'):
 				continue
@@ -1295,8 +1297,9 @@ class SQLBackend(ConfigDataBackend):
 					val = 'no'
 				elif val == True:
 					val = 'yes'
+
 			data += u'%s = %s\r\n' % (module.lower().strip(), val)
-		if not bool(publicKey.verify(md5(data).digest(), [long(modules['signature'])])):
+		if not bool(publicKey.verify(md5(data.encode()).digest(), [int(modules['signature'])])):
 			logger.error(u"Failed to verify modules signature")
 			return
 
@@ -1833,8 +1836,10 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 		modules = backendinfo['modules']
 		helpermodules = backendinfo['realmodules']
 
-		publicKey = keys.Key.fromString(data=base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
-		data = u''; mks = modules.keys(); mks.sort()
+		publicKey = keys.Key.fromString(data=base64.decodebytes(b'AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
+		data = u''
+		mks = list(modules.keys())
+		mks.sort()
 		for module in mks:
 			if module in ('valid', 'signature'):
 				continue
@@ -1851,7 +1856,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 					val = 'yes'
 
 			data += u'%s = %s\r\n' % (module.lower().strip(), val)
-		if not bool(publicKey.verify(md5(data).digest(), [long(modules['signature'])])):
+		if not bool(publicKey.verify(md5(data.encode()).digest(), [int(modules['signature'])])):
 			logger.error(u"Failed to verify modules signature")
 			return
 
@@ -2180,7 +2185,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 
 				if value is None or value == listWithNone:
 					yield u"`{0}` is NULL".format(attribute)
-				elif isinstance(value, (float, long, int, bool)):
+				elif isinstance(value, (float, int, bool)):
 					yield u"`{0}` = {1}".format(attribute, value)
 				else:
 					yield u"`{0}` = '{1}'".format(attribute, self._sql.escapeApostrophe(self._sql.escapeBackslash(value)))
@@ -2196,7 +2201,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 		for (attribute, value) in auditHardware.items():
 			if value is None:
 				auditHardware[attribute] = [None]
-			elif isinstance(value, unicode):
+			elif isinstance(value, str):
 				auditHardware[attribute] = self._sql.escapeAsterisk(value)
 
 		logger.debug(u"Getting hardware ids, filter {0}", auditHardware)
@@ -2213,7 +2218,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 		for attribute, value in hardwareHash.items():
 			if value is None:
 				filter[attribute] = [None]
-			elif isinstance(value, unicode):
+			elif isinstance(value, str):
 				filter[attribute] = self._sql.escapeAsterisk(value)
 			else:
 				filter[attribute] = value
@@ -2286,7 +2291,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 		results = []
 		for hardwareClass in hardwareClasses:
 			classFilter = {}
-			for (attribute, value) in filter.iteritems():
+			for (attribute, value) in filter.items():
 				valueInfo = self._auditHardwareConfig[hardwareClass].get(attribute)
 				if not valueInfo:
 					logger.debug(u"Skipping hardwareClass '%s', because of missing info for attribute '%s'" % (hardwareClass, attribute))
@@ -2318,7 +2323,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 						pass
 
 					res['hardwareClass'] = hardwareClass
-					for (attribute, valueInfo) in self._auditHardwareConfig[hardwareClass].iteritems():
+					for (attribute, valueInfo) in self._auditHardwareConfig[hardwareClass].items():
 						try:
 							if valueInfo['Scope'] == 'i':
 								continue
@@ -2388,10 +2393,10 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 		del auditHardwareOnHost['hardwareClass']
 
 		hardwareFilter = {}
-		for (attribute, value) in auditHardwareOnHost.iteritems():
+		for (attribute, value) in auditHardwareOnHost.items():
 			if value is None:
 				hardwareFilter[attribute] = [None]
-			elif isinstance(value, unicode):
+			elif isinstance(value, str):
 				hardwareFilter[attribute] = self._sql.escapeAsterisk(value)
 			else:
 				hardwareFilter[attribute] = value
@@ -2450,11 +2455,15 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 		logger.info(u"Updating auditHardwareOnHost: %s" % auditHardwareOnHost)
 		data = auditHardwareOnHost.toHash()
 		update = {}
+		toDelete = set()
 		for (attribute, value) in data.items():
 			if attribute in ('state', 'lastseen', 'firstseen'):
 				if value is not None:
 					update[attribute] = value
-				del data[attribute]
+				toDelete.add(attribute)
+
+		for key in toDelete:
+			del data[key]
 
 		if update:
 			where = self._uniqueAuditHardwareOnHostCondition(data)
@@ -2491,7 +2500,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 			auditHardwareFilter = {}
 			classFilter = {}
 			skipHardwareClass = False
-			for attribute, value in filter.iteritems():
+			for attribute, value in filter.items():
 				valueInfo = None
 				if attribute not in ('hostId', 'state', 'firstseen', 'lastseen'):
 					valueInfo = self._auditHardwareConfig[hardwareClass].get(attribute)

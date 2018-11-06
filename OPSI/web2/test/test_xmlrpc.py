@@ -3,11 +3,9 @@
 # Copyright (c) 2001-2004 Twisted Matrix Laboratories.
 # See LICENSE for details.
 
-# 
-
 """Test XML-RPC support."""
 
-import xmlrpclib
+import xmlrpc.client
 
 from OPSI.web2 import xmlrpc
 from OPSI.web2.xmlrpc import XMLRPC, addIntrospection
@@ -145,8 +143,8 @@ class XMLRPCServerPOSTTest(XMLRPCServerBase):
             ("complex", (), {"a": ["b", "c", 12, []], "D": "foo"})]
         dl = []
         for meth, args, outp in inputOutput:
-            postdata = xmlrpclib.dumps(args, meth)
-            respdata = xmlrpclib.dumps((outp,))
+            postdata = xmlrpc.client.dumps(args, meth)
+            respdata = xmlrpc.client.dumps((outp,))
             reqdata = (self.root, 'http://host/', {}, None, None, '', postdata)
             d = self.assertResponse(reqdata, (200, {}, self.xml % respdata))
             dl.append(d)
@@ -163,8 +161,8 @@ class XMLRPCServerPOSTTest(XMLRPCServerBase):
             (17, "deferFault", 'hi'),
             (42, "SESSION_TEST", 'Session non-existant/expired.')]
         for code, meth, fault in codeMethod:
-            postdata = xmlrpclib.dumps((), meth)
-            respdata = xmlrpclib.dumps(xmlrpc.Fault(code, fault))
+            postdata = xmlrpc.client.dumps((), meth)
+            respdata = xmlrpc.client.dumps(xmlrpc.Fault(code, fault))
             reqdata = (self.root, 'http://host/', {}, None, None, '', postdata)
             d = self.assertResponse(reqdata, (200, {}, respdata))
             dl.append(d)
@@ -180,8 +178,8 @@ class XMLRPCServerPOSTTest(XMLRPCServerBase):
             (666, "fail"),
             (666, "deferFail")]
         for code, meth in codeMethod:
-            postdata = xmlrpclib.dumps((), meth)
-            respdata = xmlrpclib.dumps(xmlrpc.Fault(code, 'error'))
+            postdata = xmlrpc.client.dumps((), meth)
+            respdata = xmlrpc.client.dumps(xmlrpc.Fault(code, 'error'))
             reqdata = (self.root, 'http://host/', {}, None, None, '', postdata)
             d = self.assertResponse(reqdata, (200, {}, respdata))
             d.addCallback(self.flushLoggedErrors, TestRuntimeError, TestValueError)
@@ -209,11 +207,11 @@ class XMLRPCTestIntrospection(XMLRPCServerBase):
         """
         def cbMethods(meths):
             meths.sort()
-            self.failUnlessEqual(
+            self.assertEqual(
                 meths,
                 )
-        postdata = xmlrpclib.dumps((), 'system.listMethods')
-        respdata = xmlrpclib.dumps((self.methodList,))
+        postdata = xmlrpc.client.dumps((), 'system.listMethods')
+        respdata = xmlrpc.client.dumps((self.methodList,))
         reqdata = (self.root, 'http://host/', {}, None, None, '', postdata)
         return self.assertResponse(reqdata, (200, {}, self.xml % respdata))
 
@@ -228,8 +226,8 @@ class XMLRPCTestIntrospection(XMLRPCServerBase):
 
         dl = []
         for meth, outp in inputOutput:
-            postdata = xmlrpclib.dumps((meth,), 'system.methodHelp')
-            respdata = xmlrpclib.dumps((outp,))
+            postdata = xmlrpc.client.dumps((meth,), 'system.methodHelp')
+            respdata = xmlrpc.client.dumps((outp,))
             reqdata = (self.root, 'http://host/', {}, None, None, '', postdata)
             d = self.assertResponse(reqdata, (200, {}, self.xml % respdata))
             dl.append(d)
@@ -248,8 +246,8 @@ class XMLRPCTestIntrospection(XMLRPCServerBase):
 
         dl = []
         for meth, outp in inputOutput:
-            postdata = xmlrpclib.dumps((meth,), 'system.methodSignature')
-            respdata = xmlrpclib.dumps((outp,))
+            postdata = xmlrpc.client.dumps((meth,), 'system.methodSignature')
+            respdata = xmlrpc.client.dumps((outp,))
             reqdata = (self.root, 'http://host/', {}, None, None, '', postdata)
             d = self.assertResponse(reqdata, (200, {}, self.xml % respdata))
             dl.append(d)

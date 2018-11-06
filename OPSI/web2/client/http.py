@@ -1,4 +1,4 @@
-from zope.interface import implements
+from zope.interface.declarations import implementer
 
 from twisted.internet import defer, protocol
 from twisted.protocols import basic, policies
@@ -181,34 +181,33 @@ class HTTPClientChannelRequest(httpchan.HTTPParser):
         self.stream.finish()
 
 
+@implementer(interfaces.IHTTPClientManager)
 class EmptyHTTPClientManager(object):
-    """A dummy HTTPClientManager.  It doesn't do any client management, and is 
+    """A dummy HTTPClientManager.  It doesn't do any client management, and is
     meant to be used only when creating an HTTPClientProtocol directly.
     """
 
-    implements(interfaces.IHTTPClientManager)
-
     def clientBusy(self, proto):
         pass
-    
+
     def clientIdle(self, proto):
         pass
 
     def clientPipelining(self, proto):
         pass
-    
+
     def clientGone(self, proto):
         pass
-    
+
 
 class HTTPClientProtocol(basic.LineReceiver, policies.TimeoutMixin, object):
     """A HTTP 1.1 Client with request pipelining support."""
-    
+
     chanRequest = None
     maxHeaderLength = 10240
     firstLine = 1
     readPersistent = PERSIST_NO_PIPELINE
-    
+
     # inputTimeOut should be pending whenever a complete request has
     # been written but the complete response has not yet been
     # received, and be reset every time data is received.
@@ -244,7 +243,7 @@ class HTTPClientProtocol(basic.LineReceiver, policies.TimeoutMixin, object):
 
     def rawDataReceived(self, data):
         if not self.inRequests:
-            print "Extra raw data!"
+            print("Extra raw data!")
             # server sending random unrequested data.
             self.transport.loseConnection()
             return
@@ -337,10 +336,10 @@ def testConn(host):
     d = protocol.ClientCreator(reactor, HTTPClientProtocol).connectTCP(host, 80)
     def gotResp(resp, num):
         def print_(n):
-            print "DATA %s: %r" % (num, n)
+            print("DATA %s: %r" % (num, n))
         def printdone(n):
-            print "DONE %s" % num
-        print "GOT RESPONSE %s: %s" % (num, resp)
+            print("DONE %s" % num)
+        print("GOT RESPONSE %s: %s" % (num, resp))
         stream_mod.readStream(resp.stream, print_).addCallback(printdone)
     def sendReqs(proto):
         proto.submitRequest(ClientRequest("GET", "/", {'Host':host}, None)).addCallback(gotResp, 1)

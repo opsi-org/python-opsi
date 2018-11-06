@@ -2,7 +2,7 @@
 A test harness for the OPSI.web2 server.
 """
 
-from zope.interface import implements
+from zope.interface.declarations import implementer
 
 from twisted.python import components
 from OPSI.web2 import http, http_headers, iweb, server
@@ -21,7 +21,7 @@ class NotResource(object):
     """
 
 
-
+@implementer(iweb.IResource)
 class ResourceAdapter(object):
     """
     Adapter to IResource.
@@ -30,7 +30,6 @@ class ResourceAdapter(object):
     L{AdaptionTestCase.test_registered} can test that such an adapter will
     be used.
     """
-    implements(iweb.IResource)
 
     def __init__(self, original):
         pass
@@ -51,7 +50,7 @@ class NotOldResource(object):
     """
 
 
-
+@implementer(iweb.IOldNevowResource)
 class OldResourceAdapter(object):
     """
     Adapter to IOldNevowResource.
@@ -60,7 +59,6 @@ class OldResourceAdapter(object):
     that L{AdaptionTestCase.test_transitive} can test that such an adapter
     will be used to allow the initial input to be adapted to IResource.
     """
-    implements(iweb.IOldNevowResource)
 
     def __init__(self, original):
         pass
@@ -94,8 +92,10 @@ class AdaptionTestCase(unittest.TestCase):
         Test that the adaption to IResource of an object which provides
         IResource returns the same object.
         """
+        @implementer(iweb.IResource)
         class Resource(object):
-            implements(iweb.IResource)
+            pass
+
         resource = Resource()
         self.assertIdentical(iweb.IResource(resource), resource)
 
@@ -106,7 +106,7 @@ class AdaptionTestCase(unittest.TestCase):
         object which does not provide it, that adapter is used.
         """
         notResource = NotResource()
-        self.failUnless(isinstance(iweb.IResource(notResource), ResourceAdapter))
+        self.assertTrue(isinstance(iweb.IResource(notResource), ResourceAdapter))
 
 
     def test_oldResources(self):
@@ -114,11 +114,12 @@ class AdaptionTestCase(unittest.TestCase):
         Test that providers of L{IOldNevowResource} can be adapted to
         IResource automatically.
         """
+        @implementer(iweb.IOldNevowResource)
         class OldResource(object):
-            implements(iweb.IOldNevowResource)
+            pass
         oldResource = OldResource()
         resource = iweb.IResource(oldResource)
-        self.failUnless(isinstance(resource, compat.OldNevowResourceAdapter))
+        self.assertTrue(isinstance(resource, compat.OldNevowResourceAdapter))
 
 
     def test_transitive(self):
@@ -128,7 +129,7 @@ class AdaptionTestCase(unittest.TestCase):
         """
         notResource = NotOldResource()
         resource = iweb.IResource(notResource)
-        self.failUnless(isinstance(resource, compat.OldNevowResourceAdapter))
+        self.assertTrue(isinstance(resource, compat.OldNevowResourceAdapter))
 
 
 
@@ -139,11 +140,11 @@ class SimpleRequest(server.Request):
     """
 
     clientproto = (1,1)
-    
+
     def __init__(self, site, method, uri, headers=None, content=None):
         if not headers:
             headers = http_headers.Headers(headers)
-            
+
         super(SimpleRequest, self).__init__(
             site=site,
             chanRequest=None,
@@ -164,13 +165,12 @@ class SimpleRequest(server.Request):
         return response
 
 
+@implementer(iweb.IChanRequest)
 class TestChanRequest:
-    implements(iweb.IChanRequest)
 
     hostInfo = address.IPv4Address('TCP', 'host', 80), False
     remoteHost = address.IPv4Address('TCP', 'remotehost', 34567)
 
-    
     def __init__(self, site, method, prepath, uri, length=None,
                  headers=None, version=(1,1), content=None):
         self.site = site
@@ -190,11 +190,11 @@ class TestChanRequest:
                                       self.headers,
                                       site=self.site,
                                       prepathuri=self.prepath)
-        
+
         if content is not None:
             self.request.handleContentChunk(content)
             self.request.handleContentComplete()
-            
+
         self.code = None
         self.responseHeaders = None
         self.data = ''
@@ -202,11 +202,11 @@ class TestChanRequest:
 
     def writeIntermediateResponse(code, headers=None):
         pass
-    
+
     def writeHeaders(self, code, headers):
         self.responseHeaders = headers
         self.code = code
-        
+
     def write(self, data):
         self.data += data
 
@@ -217,7 +217,7 @@ class TestChanRequest:
 
     def abortConnection(self):
         self.finish(failed=True)
-        
+
     def registerProducer(self, producer, streaming):
         pass
 
@@ -229,14 +229,14 @@ class TestChanRequest:
 
     def getRemoteHost(self):
         return self.remoteHost
-    
+
 
 class BaseTestResource(resource.Resource):
     responseCode = 200
     responseText = 'This is a fake resource.'
     responseHeaders = {}
     addSlash = False
-    
+
     def __init__(self, children=[]):
         """
         @type children: C{list} of C{tuple}
@@ -258,11 +258,11 @@ class BaseCase(unittest.TestCase):
     Base class for test cases that involve testing the result
     of arbitrary HTTP(S) queries.
     """
-    
+
     method = 'GET'
     version = (1, 1)
     wait_timeout = 5.0
-    
+
     def chanrequest(self, root, uri, length, headers, method, version, prepath, content):
         site = server.Site(root)
         return TestChanRequest(site, method, prepath, uri, length, headers, version, content)
@@ -276,7 +276,7 @@ class BaseCase(unittest.TestCase):
                 length = len(content)
             else:
                 length = 0
-            
+
         if method is None:
             method = self.method
         if version is None:
@@ -299,17 +299,18 @@ class BaseCase(unittest.TestCase):
         """
         d = self.getResponseFor(*request_data)
         d.addCallback(self._cbGotResponse, expected_response, failure)
-        
+
         return d
 
-    def _cbGotResponse(self, (code, headers, data, failed), expected_response, expectedfailure=False):
+    def _cbGotResponse(self, meta, expected_response, expectedfailure=False):
+        (code, headers, data, failed) = meta
         expected_code, expected_headers, expected_data = expected_response
-        self.assertEquals(code, expected_code)
+        self.assertEqual(code, expected_code)
         if expected_data is not None:
-            self.assertEquals(data, expected_data)
-        for key, value in expected_headers.iteritems():
-            self.assertEquals(headers.getHeader(key), value)
-        self.assertEquals(failed, expectedfailure)
+            self.assertEqual(data, expected_data)
+        for key, value in expected_headers.items():
+            self.assertEqual(headers.getHeader(key), value)
+        self.assertEqual(failed, expectedfailure)
 
 class SampleWebTest(BaseCase):
     class SampleTestResource(BaseTestResource):
@@ -376,13 +377,13 @@ class SampleWebTest(BaseCase):
         return self.assertResponse(
             (redirectResource, 'http://localhost/'),
             (301, {'location': 'https://localhost/foo?bar=baz'}, None))
-    
+
 
 class URLParsingTest(BaseCase):
     class TestResource(resource.LeafResource):
         def render(self, req):
             return http.Response(stream="Host:%s, Path:%s"%(req.host, req.path))
-            
+
     def setUp(self):
         self.root = self.TestResource()
 
@@ -421,7 +422,7 @@ class TestDeferredRendering(BaseCase):
             d = defer.Deferred()
             reactor.callLater(0, d.callback, BaseTestResource())
             return d
-        
+
     def test_deferredRootResource(self):
         return self.assertResponse(
             (self.ResourceWithDeferreds(), 'http://host/'),
@@ -481,7 +482,7 @@ class EmptyResource(resource.Resource):
         self.test = test
 
     def render(self, request):
-        self.test.assertEquals(request.urlForResource(self), self.expectedURI)
+        self.test.assertEqual(request.urlForResource(self), self.expectedURI)
         return 201
 
 
@@ -547,7 +548,7 @@ class RememberURIs(BaseCase):
         request = SimpleRequest(server.Site(root), "GET", "/")
 
         def gotResource(resource):
-            self.assertEquals("/foo", request.urlForResource(resource))
+            self.assertEqual("/foo", request.urlForResource(resource))
 
         d = defer.maybeDeferred(request.locateResource, "/foo")
         d.addCallback(gotResource)
@@ -587,15 +588,15 @@ class RememberURIs(BaseCase):
 
         def gotResource(resource):
             # Make sure locateChildResource() gave us the right answer
-            self.assertEquals(resource, bar)
+            self.assertEqual(resource, bar)
 
             return request.locateChildResource(resource, "b a z").addCallback(gotChildResource)
 
         def gotChildResource(resource):
             # Make sure locateChildResource() gave us the right answer
-            self.assertEquals(resource, baz)
+            self.assertEqual(resource, baz)
 
-            self.assertEquals(resource.expectedURI, request.urlForResource(resource))
+            self.assertEqual(resource.expectedURI, request.urlForResource(resource))
 
         d = request.locateResource(bar.expectedURI)
         d.addCallback(gotResource)
@@ -619,7 +620,7 @@ class RememberURIs(BaseCase):
         request = SimpleRequest(server.Site(root), "GET", "/foo")
 
         def gotResource(resource):
-            self.assertEquals("/foo", request.urlForResource(resource))
+            self.assertEqual("/foo", request.urlForResource(resource))
 
         d = request.locateResource("/foo")
         d.addCallback(gotResource)

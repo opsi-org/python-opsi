@@ -1,14 +1,15 @@
 # -*- test-case-name: OPSI.web2.test.test_http_headers -*-
-from __future__ import generators
 
-import types, time
+
+import time
 from calendar import timegm
 import base64
 import re
 
+
 def dashCapitalize(s):
     ''' Capitalize a string, making sure to treat - as a word seperator '''
-    return '-'.join([ x.capitalize() for x in s.split('-')])
+    return '-'.join([x.capitalize() for x in s.split('-')])
 
 # datetime parsing and formatting
 weekdayname = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
@@ -22,13 +23,15 @@ monthname_lower = [name and name.lower() for name in monthname]
 
 header_case_mapping = {}
 
+
 def casemappingify(d):
     global header_case_mapping
-    newd = dict([(key.lower(),key) for key in d.keys()])
+    newd = {key.lower(): key for key in d.keys()}
     header_case_mapping.update(newd)
 
+
 def lowerify(d):
-    return dict([(key.lower(),value) for key,value in d.items()])
+    return {key.lower(): value for key, value in d.items()}
 
 
 class HeaderHandler(object):
@@ -74,7 +77,7 @@ class HeaderHandler(object):
                 header = p(header)
                 # if isinstance(h, types.GeneratorType):
                 #     h=list(h)
-        except ValueError,v:
+        except ValueError as v:
             # print v
             header=None
 
@@ -206,7 +209,7 @@ def parseDateTime(dateString):
     else:
         month = int(monthname_lower.index(month.lower()))
     year = int(year)
-    hour, min, sec = map(int, time.split(':'))
+    hour, min, sec = [int(x) for x in time.split(':')]
     return int(timegm((year, month, day, hour, min, sec)))
 
 
@@ -297,9 +300,9 @@ def tokenize(header, foldCase=True):
         cur = cur+1
 
     if qpair:
-        raise ValueError, "Missing character after '\\'"
+        raise ValueError("Missing character after '\\'")
     if quoted:
-        raise ValueError, "Missing end quote"
+        raise ValueError("Missing end quote")
 
     if start != cur:
         if foldCase:
@@ -349,7 +352,7 @@ def filterTokens(seq):
 ##### parser utilities:
 def checkSingleToken(tokens):
     if len(tokens) != 1:
-        raise ValueError, "Expected single token, not %s." % (tokens,)
+        raise ValueError("Expected single token, not %s." % tokens)
     return tokens[0]
 
 def parseKeyValue(val):
@@ -357,11 +360,11 @@ def parseKeyValue(val):
         return val[0],None
     elif len(val) == 3 and val[1] == Token('='):
         return val[0],val[2]
-    raise ValueError, "Expected key or key=value, but got %s." % (val,)
+    raise ValueError("Expected key or key=value, but got %s." % val)
 
 def parseArgs(field):
     args=split(field, Token(';'))
-    val = args.next()
+    val = next(args)
     args = [parseKeyValue(arg) for arg in args]
     return val,args
 
@@ -450,14 +453,14 @@ class MimeType(object):
         return "MimeType(%r, %r, %r)" % (self.mediaType, self.mediaSubtype, self.params)
 
     def __hash__(self):
-        return hash(self.mediaType)^hash(self.mediaSubtype)^hash(tuple(self.params.iteritems()))
+        return hash(self.mediaType)^hash(self.mediaSubtype)^hash(tuple(self.params.items()))
 
 ##### Specific header parsers.
 def parseAccept(field):
     type,args = parseArgs(field)
 
     if len(type) != 3 or type[1] != Token('/'):
-        raise ValueError, "MIME Type "+str(type)+" invalid."
+        raise ValueError("MIME Type "+str(type)+" invalid.")
 
     # okay, this spec is screwy. A 'q' parameter is used as the separator
     # between MIME parameters and (as yet undefined) additional HTTP
@@ -520,7 +523,7 @@ def parseContentType(header):
     type,args = parseArgs(header)
 
     if len(type) != 3 or type[1] != Token('/'):
-        raise ValueError, "MIME Type "+str(type)+" invalid."
+        raise ValueError("MIME Type "+str(type)+" invalid.")
 
     args = [(kv[0].lower(), kv[1]) for kv in args]
 
@@ -528,8 +531,8 @@ def parseContentType(header):
 
 def parseContentMD5(header):
     try:
-        return base64.decodestring(header)
-    except Exception,e:
+        return base64.decodebytes(header)
+    except Exception as e:
         raise ValueError(e)
 
 def parseContentRange(header):
@@ -545,7 +548,8 @@ def parseContentRange(header):
     if startend.strip() == '*':
         start,end=None,None
     else:
-        start, end = map(int, startend.split("-"))
+        start, end = [int(x) for x in startend.split("-")]
+
     if realLength == "*":
         realLength = None
     else:
@@ -681,7 +685,7 @@ def generateAccept(accept):
 
     out="%s/%s"%(mimeType.mediaType, mimeType.mediaSubtype)
     if mimeType.params:
-        out+=';'+generateKeyValues(mimeType.params.iteritems())
+        out+=';'+generateKeyValues(list(mimeType.params.items()))
 
     if q != 1.0:
         out+=(';q=%.3f' % (q,)).rstrip('0').rstrip('.')
@@ -717,7 +721,7 @@ def parseCacheControl(kv):
             v = [field.strip().lower() for field in v.split(',')]
     return k, v
 
-def generateCacheControl((k, v)):
+def generateCacheControl(k, v):
     if v is None:
         return str(k)
     else:
@@ -783,7 +787,7 @@ def generateRetryAfter(when):
 def generateContentType(mimeType):
     out="%s/%s"%(mimeType.mediaType, mimeType.mediaSubtype)
     if mimeType.params:
-        out+=';'+generateKeyValues(mimeType.params.iteritems())
+        out+=';'+generateKeyValues(list(mimeType.params.items()))
     return out
 
 def generateIfRange(dateOrETag):
@@ -798,14 +802,14 @@ def generateWWWAuthenticate(headers):
     _generated = []
     for seq in headers:
         scheme, challenge = seq[0], seq[1]
-        
+
         # If we're going to parse out to something other than a dict
         # we need to be able to generate from something other than a dict
 
         try:
-            l = []
-            for k,v in dict(challenge).iteritems():
-                l.append("%s=%s" % (k, quoteString(v)))
+            l = ["%s=%s" % (k, quoteString(v))
+                 for k, v
+                 in dict(challenge).items()]
 
             _generated.append("%s %s" % (scheme, ", ".join(l)))
         except ValueError:
@@ -1266,10 +1270,10 @@ class Headers(object):
         self._headers = {}
         self.handler = handler
         if headers is not None:
-            for key, value in headers.iteritems():
+            for key, value in headers.items():
                 self.setHeader(key, value)
         if rawHeaders is not None:
-            for key, value in rawHeaders.iteritems():
+            for key, value in rawHeaders.items():
                 self.setRawHeaders(key, value)
 
     def _setRawHeaders(self, headers):
@@ -1293,7 +1297,7 @@ class Headers(object):
     def hasHeader(self, name):
         """Does a header with the given name exist?"""
         name=name.lower()
-        return self._raw_headers.has_key(name)
+        return name in self._raw_headers
 
     def getRawHeaders(self, name, default=None):
         """Returns a list of headers matching the given name as the raw string given."""
@@ -1359,7 +1363,7 @@ class Headers(object):
         """Removes the header named."""
 
         name=name.lower()
-        if self._raw_headers.has_key(name):
+        if name in self._raw_headers:
             del self._raw_headers[name]
             del self._headers[name]
 
@@ -1375,7 +1379,7 @@ class Headers(object):
         """Return an iterator of key,value pairs of all headers
         contained in this object, as strings. The keys are capitalized
         in canonical capitalization."""
-        for k,v in self._raw_headers.iteritems():
+        for k,v in self._raw_headers.items():
             if v is _RecalcNeeded:
                 v = self._toRaw(k)
             yield self.canonicalNameCaps(k), v
@@ -1397,7 +1401,7 @@ class Headers(object):
    is strictly an error, but we're nice.).
    """
 
-iteritems = lambda x: x.iteritems()
+iteritems = lambda x: list(x.items())
 
 
 parser_general_headers = {

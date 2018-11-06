@@ -2,9 +2,10 @@
 An implementation of PEP 333: Python Web Server Gateway Interface (WSGI).
 """
 
-import os, threading
-import Queue
-from zope.interface import implements
+import os
+import threading
+import queue as Queue
+from zope.interface.declarations import implementer
 
 from twisted.internet import defer
 from twisted.python import log, failure
@@ -22,6 +23,7 @@ class AlreadyStartedResponse(Exception):
 # This isn't a subclass of resource.Resource, because it shouldn't do
 # any method-specific actions at all. All that stuff is totally up to
 # the contained wsgi application
+@implementer(iweb.IResource)
 class WSGIResource(object):
     """
     A web2 Resource which wraps the given WSGI application callable.
@@ -30,8 +32,7 @@ class WSGIResource(object):
     the reactor threadpool) whenever a request for this resource or
     any lower part of the url hierarchy is received.
     """
-    implements(iweb.IResource)
-    
+
     def __init__(self, application):
         self.application = application
 
@@ -179,11 +180,11 @@ class WSGIHandler(object):
         if exc_info is not None:
             try:
                 if self.headersSent:
-                    raise exc_info[0], exc_info[1], exc_info[2]
+                    raise exc_info[0](exc_info[1]).with_traceback(exc_info[2])
             finally:
                 exc_info = None
         elif self.response is not None:
-            raise AlreadyStartedResponse, 'startWSGIResponse(%r)' % status
+            raise AlreadyStartedResponse('startWSGIResponse(%r)' % status)
         status = int(status.split(' ')[0])
         self.response = http.Response(status)
         for key, value in response_headers:
@@ -336,7 +337,7 @@ class FileWrapper(object):
     def __iter__(self):
         return self
         
-    def next(self):
+    def __next__(self):
         data = self.filelike.read(self.blksize)
         if data:
             return data

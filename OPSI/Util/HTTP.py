@@ -38,22 +38,17 @@ import base64
 import gzip
 import os
 import re
+import ssl as ssl_module
 import socket
 import time
 import zlib
-import urlparse
 from contextlib import contextmanager
-from io import BytesIO
-
-try:
-	from cStringIO import StringIO
-except ImportError:
-	from io import StringIO
-
-from Queue import Queue, Empty, Full
-from httplib import HTTPConnection, HTTPSConnection, HTTPException
+from io import BytesIO, StringIO
+from queue import Queue, Empty, Full
+from http.client import HTTPConnection, HTTPSConnection, HTTPException
 from socket import error as SocketError, timeout as SocketTimeout
-import ssl as ssl_module
+from urllib.parse import urlparse
+
 from OpenSSL import crypto
 
 from OPSI.Exceptions import (OpsiAuthenticationError, OpsiTimeoutError,
@@ -155,13 +150,12 @@ class HTTPResponse(object):
 
 	Similar to httplib's HTTPResponse but the data is pre-loaded.
 	"""
-	def __init__(self, data='', headers={}, status=0, version=0, reason=None, strict=0):
+	def __init__(self, data='', headers={}, status=0, version=0, reason=None):
 		self.data = data
 		self.headers = headers
 		self.status = status
 		self.version = version
 		self.reason = reason
-		self.strict = strict
 
 	def addData(self, data):
 		self.data += data
@@ -208,8 +202,7 @@ class HTTPResponse(object):
 			headers=dict(r.getheaders()),
 			status=r.status,
 			version=r.version,
-			reason=r.reason,
-			strict=r.strict
+			reason=r.reason
 		)
 
 	# Backwards-compatibility methods for httplib.HTTPResponse
@@ -315,7 +308,7 @@ class HTTPConnectionPool(object):
 		if self.proxyURL:
 			headers = {}
 			try:
-				url = urlparse.urlparse(self.proxyURL)
+				url = urlparse(self.proxyURL)
 				if url.password:
 					logger.setConfidentialStrings(url.password)
 				logger.debug(u"Starting new HTTP connection (%d) to %s:%d over proxy-url %s" % (self.num_connections, self.host, self.port, self.proxyURL))
@@ -458,6 +451,7 @@ class HTTPConnectionPool(object):
 					logger.critical(u"Cannot verify server based on certificate file {0!r}: {1}", self.serverCertFile, error)
 					randomKey = None
 
+			logger.debug2("Request headers: {!r}", headers)
 			logger.debug2("Handing data to connection...")
 			conn.request(method, url, body=body, headers=headers)
 			if self.socketTimeout:
@@ -470,6 +464,7 @@ class HTTPConnectionPool(object):
 			# the side effect of letting us use this connection for another
 			# request.
 			response = HTTPResponse.from_httplib(httplib_response)
+			logger.debug2("Response headers: {!r}", response.headers)
 
 			if randomKey:
 				logger.debug2("Checking for random key...")
@@ -565,7 +560,7 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 		if self.proxyURL:
 			headers = {}
 			try:
-				url = urlparse.urlparse(self.proxyURL)
+				url = urlparse(self.proxyURL)
 				if url.password:
 					logger.setConfidentialString(url.password)
 				logger.debug(u"Starting new HTTPS connection (%d) to %s:%d over proxy-url %s" % (self.num_connections, self.host, self.port, self.proxyURL))
@@ -607,7 +602,7 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 				if self.peerCertificate:
 					commonName = crypto.load_certificate(crypto.FILETYPE_PEM, self.peerCertificate).get_subject().commonName
 					host = self.host
-					if re.search('^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$', host):
+					if re.search(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$', host):
 						fqdn = socket.getfqdn(host)
 						if fqdn == host:
 							raise OpsiServiceVerificationError(u"Failed to get fqdn for ip %s" % host)
@@ -702,31 +697,54 @@ def destroyPool(pool):
 
 
 def deflateEncode(data, level=1):
-	if isinstance(data, unicode):
-		data = data.encode('utf-8')
-	return zlib.compress(data, level)
+	"""
+	Compress data with deflate.
+
+	:type data: str
+	:type level: int
+	:param level: Compression level
+	:rtype: bytes
+	"""
+	return zlib.compress(data.encode(), level)
 
 
 def deflateDecode(data):
-	return forceUnicode(zlib.decompress(data))
+	"""
+	Decompress data with deflate.
+
+	:type data: bytes
+	:rtype: str
+	"""
+	return zlib.decompress(data).decode()
 
 
 def gzipEncode(data, level=1):
-	if isinstance(data, unicode):
-		data = data.encode('utf-8')
+	"""
+	Compress data with gzip.
 
+	:type data: str
+	:type level: int
+	:param level: Compression level
+	:rtype: bytes
+	"""
 	inmemoryFile = BytesIO()
 	with gzip.GzipFile(fileobj=inmemoryFile, mode="w", compresslevel=level) as gzipfile:
-		gzipfile.write(data)
+		gzipfile.write(data.encode())
 
 	return inmemoryFile.getvalue()
 
 
 def gzipDecode(data):
-	with gzip.GzipFile(fileobj=StringIO(data), mode="r") as gzipfile:
+	"""
+	Decompress data with gzip.
+
+	:type data: bytes
+	:rtype: str
+	"""
+	with gzip.GzipFile(fileobj=BytesIO(data), mode="r") as gzipfile:
 		uncompressedData = gzipfile.read()
 
-	return forceUnicode(uncompressedData)
+	return uncompressedData.decode()
 
 
 @contextmanager

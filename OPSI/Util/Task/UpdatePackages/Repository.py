@@ -25,7 +25,7 @@ Handling repositories.
 :license: GNU Affero General Public License version 3
 """
 
-import htmllib
+from html.parser import HTMLParser
 
 from OPSI.Logger import Logger
 from OPSI.Types import forceBool, forceUnicode, forceUnicodeList
@@ -72,23 +72,25 @@ class ProductRepositoryInfo(object):
 		return urls
 
 
-class LinksExtractor(htmllib.HTMLParser):
-	def __init__(self, formatter):
-		htmllib.HTMLParser.__init__(self, formatter)
+class LinksExtractor(HTMLParser):
+	def __init__(self):
+		super().__init__()
 		self.links = set()
 
-	def start_a(self, attrs):
-		if len(attrs) > 0:
-			for attr in attrs:
-				if attr[0] != "href":
-					continue
+	def handle_starttag(self, tag, attrs):
+		if tag != 'a':
+			return
 
-				link = attr[1]
-				if link.startswith('/'):
-					# Fix for IIS repos
-					link = link[1:]
+		for attr in attrs:
+			if attr[0] != "href":
+				continue
 
-				self.links.add(link)
+			link = attr[1]
+			if link.startswith('/'):
+				# Fix for IIS repos
+				link = link[1:]
+
+			self.links.add(link)
 
 	def getLinks(self):
 		return self.links

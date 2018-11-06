@@ -24,16 +24,14 @@ SQLite backend.
 :license: GNU Affero GPL version 3
 """
 
-from itertools import izip
-
 from apsw import (
 	SQLITE_OPEN_CREATE, SQLITE_CONFIG_MULTITHREAD, SQLITE_OPEN_READWRITE,
 	Connection)
 
+from OPSI.Backend.SQL import SQL, SQLBackend, SQLBackendObjectModificationTracker
 from OPSI.Exceptions import BackendBadValueError
 from OPSI.Logger import Logger
 from OPSI.Types import forceBool, forceFilename, forceUnicode
-from OPSI.Backend.SQL import SQL, SQLBackend, SQLBackendObjectModificationTracker
 
 __all__ = ('SQLite', 'SQLiteBackend', 'SQLiteObjectBackendModificationTracker')
 
@@ -77,7 +75,7 @@ class SQLite(SQL):
 			if not self._cursor:
 				def rowtrace(cursor, row):
 					valueSet = {}
-					for rowDescription, current in izip(cursor.getdescription(), row):
+					for rowDescription, current in zip(cursor.getdescription(), row):
 						valueSet[rowDescription[0]] = current
 
 					return valueSet
@@ -147,7 +145,7 @@ class SQLite(SQL):
 						values.append(u"1")
 					else:
 						values.append(u"0")
-				elif isinstance(value, (float, long, int)):
+				elif isinstance(value, (float, int)):
 					values.append(u"{0}".format(value))
 				elif isinstance(value, str):
 					values.append(u"\'{0}\'".format(self.escapeApostrophe(self.escapeBackslash(value.decode("utf-8")))))
@@ -183,7 +181,7 @@ class SQLite(SQL):
 						values.append(u"`{0}` = 1".format(key))
 					else:
 						values.append(u"`{0}` = 0".format(key))
-				elif isinstance(value, (float, long, int)):
+				elif isinstance(value, (float, int)):
 					values.append(u"`{0}` = {1}".format(key, value))
 				elif isinstance(value, str):
 					values.append(u"`{0}` = \'{1}\'".format(key, self.escapeApostrophe(self.escapeBackslash(value.decode("utf-8")))))

@@ -36,18 +36,18 @@ import time
 import threading
 import types
 from hashlib import md5
-from Queue import Queue, Empty
-from sys import version_info
+from queue import Queue, Empty
 from twisted.conch.ssh import keys
 
 from OPSI import __version__
+from OPSI.Backend.Base import Backend
+from OPSI.Backend.Backend import DeferredCall
 from OPSI.Exceptions import (
 	OpsiAuthenticationError, OpsiConnectionError, OpsiError,
 	OpsiServiceVerificationError, OpsiRpcError, OpsiTimeoutError)
 from OPSI.Logger import Logger, LOG_INFO
 from OPSI.Types import (
 	forceBool, forceFilename, forceFloat, forceInt, forceList, forceUnicode)
-from OPSI.Backend.Backend import Backend, DeferredCall
 from OPSI.Util import serialize, deserialize
 from OPSI.Util.HTTP import getSharedConnectionPool, urlsplit
 from OPSI.Util.HTTP import deflateEncode, deflateDecode, gzipDecode
@@ -257,7 +257,7 @@ class JSONRPCBackend(Backend):
 
 		Backend.__init__(self, **kwargs)
 
-		self._application = 'opsi jsonrpc module version %s' % __version__
+		self._application = 'opsi JSONRPCBackend/%s' % __version__
 		self._sessionId = None
 		self._deflate = False
 		self._connectOnInit = True
@@ -499,9 +499,9 @@ class JSONRPCBackend(Backend):
 					raise OpsiError(u"MySQL backend in use but not licensed")
 			else:
 				logger.info(u"Verifying modules file signature")
-				publicKey = keys.Key.fromString(data=base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
+				publicKey = keys.Key.fromString(data=base64.decodebytes(b'AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
 				data = u''
-				mks = modules.keys()
+				mks = list(modules.keys())
 				mks.sort()
 				for module in mks:
 					if module in ('valid', 'signature'):
@@ -518,7 +518,7 @@ class JSONRPCBackend(Backend):
 						if val is True:
 							val = 'yes'
 					data += u'%s = %s\r\n' % (module.lower().strip(), val)
-				if not bool(publicKey.verify(md5(data).digest(), [long(modules['signature'])])):
+				if not bool(publicKey.verify(md5(data.encode()).digest(), [int(modules['signature'])])):
 					logger.error(u"Disabling mysql backend and license management module: modules file invalid")
 					if mysqlBackend:
 						raise OpsiError(u"MySQL backend in use but not licensed")
@@ -551,10 +551,9 @@ class JSONRPCBackend(Backend):
 
 					if isinstance(defaults, (tuple, list)) and len(defaults) + i >= len(args):
 						default = defaults[len(defaults) - len(args) + i]
-						# TODO: watch out for Python 3
-						if isinstance(default, (str, unicode)):
+						if isinstance(default, str):
 							default = u"{0!r}".format(default).replace('"', "'")
-						argString.append(u'{0}={1}'.format(argument, unicode(default)))
+						argString.append(u'{0}={1}'.format(argument, str(default)))
 					else:
 						argString.append(argument)
 					callString.append(argument)
@@ -600,27 +599,17 @@ class JSONRPCBackend(Backend):
 			'Accept-Encoding': 'deflate, gzip',
 			'content-type': 'application/json',
 		}
-		if isinstance(data, str):
-			data = unicode(data, 'utf-8')
-		data = data.encode('utf-8')
 
 		logger.debug2(u"Request to host {0!r}, baseUrl: {1!r}, query: {2!r}".format(self._host, baseUrl, data))
 
 		if self._deflate:
 			logger.debug2(u"Compressing data")
 			headers['Content-Encoding'] = 'deflate'
-
 			data = deflateEncode(data)
-			# Fix for python 2.7
-			# http://bugs.python.org/issue12398
-			if version_info >= (2, 7):
-				data = bytearray(data)
 			logger.debug2(u"Data compressed.")
 
-		headers['content-length'] = len(data)
-
-		auth = (self._username + u':' + self._password).encode('latin-1')
-		headers['Authorization'] = 'Basic ' + base64.b64encode(auth)
+		auth = (self._username + u':' + self._password)
+		headers['Authorization'] = 'Basic ' + base64.b64encode(auth.encode('latin-1')).decode()
 
 		if self._sessionId:
 			headers['Cookie'] = self._sessionId
@@ -640,8 +629,8 @@ class JSONRPCBackend(Backend):
 			if sessionId != self._sessionId:
 				self._sessionId = sessionId
 
-		contentEncoding = response.getheader('content-encoding', '').lower()
-		logger.debug2(u"Content-Encoding: {1}", contentEncoding)
+		contentEncoding = response.getheader('Content-Encoding', '').lower()
+		logger.debug2(u"Content-Encoding: {}", contentEncoding)
 
 		response = response.data
 		if contentEncoding == 'gzip':
@@ -651,7 +640,7 @@ class JSONRPCBackend(Backend):
 			logger.debug(u"Expecting deflated data from server")
 			response = deflateDecode(response)
 
-		logger.debug2(u"Response is: {0}", response)
+		logger.debug2(u"Response is: {0!r}", response)
 		return response
 
 	def getInterface(self):

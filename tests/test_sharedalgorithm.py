@@ -345,9 +345,8 @@ def testCreatingOrderWithImpossibleDependenciesFails(productSequenceAlgorithm):
 		try:
 			productSequenceAlgorithm(products, deps)
 		except OpsiProductOrderingError as error:
+			errormessage = forceUnicode(error)
 			raise error
-
-	errormessage = forceUnicode(error)
 
 	assert 'firefox-sequ' in errormessage
 	assert 'javavm-sequ' in errormessage

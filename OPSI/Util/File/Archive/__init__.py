@@ -62,9 +62,8 @@ def getFileType(filename):
 		raise NotImplementedError(u"getFileType() not implemented on windows")
 
 	filename = forceFilename(filename)
-	with closing(magic.open(magic.MAGIC_SYMLINK)) as ms:
-		ms.load()
-		return ms.file(filename)
+	with magic.Magic() as m:
+		return m.id_filename(filename)
 
 
 class BaseArchive(object):
@@ -96,10 +95,6 @@ class BaseArchive(object):
 				command,
 				shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
 			)
-
-			encoding = proc.stdout.encoding
-			if not encoding:
-				encoding = locale.getpreferredencoding()
 
 			flags = fcntl.fcntl(proc.stdout, fcntl.F_GETFL)
 			fcntl.fcntl(proc.stdout, fcntl.F_SETFL, flags | os.O_NONBLOCK)
@@ -137,7 +132,6 @@ class BaseArchive(object):
 			logger.info(u"Exit code: %s" % ret)
 
 			if ret != 0:
-				error = error.decode(encoding, 'replace')
 				logger.error(error)
 				raise RuntimeError(u"Command '%s' failed with code %s: %s" % (command, ret, error))
 
@@ -161,10 +155,6 @@ class BaseArchive(object):
 				stderr=subprocess.PIPE
 			)
 
-			encoding = proc.stdin.encoding
-			if not encoding:
-				encoding = locale.getpreferredencoding()
-
 			flags = fcntl.fcntl(proc.stdout, fcntl.F_GETFL)
 			fcntl.fcntl(proc.stdout, fcntl.F_SETFL, flags | os.O_NONBLOCK)
 			flags = fcntl.fcntl(proc.stderr, fcntl.F_GETFL)
@@ -174,6 +164,7 @@ class BaseArchive(object):
 				self._progressSubject.setEnd(len(fileList))
 				self._progressSubject.setState(0)
 
+			encoding = locale.getpreferredencoding()
 			error = ''
 			ret = None
 			for filename in fileList:
@@ -292,7 +283,7 @@ class TarArchive(BaseArchive, PigzMixin):
 
 			for line in System.execute(u'%s %s --list --file "%s"' % (System.which('tar'), options, self._filename)):
 				if line:
-					names.append(unicode(line))
+					names.append(line)
 
 			return names
 		except Exception as e:
@@ -387,7 +378,7 @@ class CpioArchive(BaseArchive, PigzMixin):
 			elif self._compression == 'bzip2':
 				cat = System.which('bzcat')
 
-			return [unicode(line) for line in
+			return [line for line in
 					System.execute(u'{cat} "{filename}" | {cpio} --quiet --extract --list'.format(cat=cat, filename=self._filename, cpio=System.which('cpio')))
 					if line]
 		except Exception as e:

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2006-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -30,13 +30,14 @@ Functionality to work with opsi repositories.
 """
 
 import base64
-import httplib
 import os
 import re
 import shutil
 import stat
 import time
 import urllib
+
+from http.client import HTTPConnection, HTTPSConnection, HTTPResponse
 
 from OPSI.web2 import responsecode
 from OPSI.web2.dav import davxml
@@ -49,7 +50,8 @@ from OPSI.Types import forceBool, forceFilename, forceInt, forceUnicode, forceUn
 from OPSI.Util.Message import ProgressSubject
 from OPSI.Util import md5sum, randomString
 from OPSI.Util.File.Opsi import PackageContentFile
-from OPSI.Util.HTTP import getSharedConnectionPool, urlsplit, HTTPResponse
+from OPSI.Util.HTTP import getSharedConnectionPool, urlsplit
+from OPSI.Util.HTTP import HTTPResponse as OpsiHTTPResponse
 
 if os.name == 'nt':
 	from OPSI.System.Windows import getFreeDrive
@@ -156,11 +158,8 @@ class Repository:
 	def setMaxBandwidth(self, maxBandwidth):
 		self.setBandwidth(dynamicBandwidth=self._dynamicBandwidth, maxBandwidth=maxBandwidth)
 
-	def __unicode__(self):
-		return u"<{0}({1!r})>".format(self.__class__.__name__, self._url)
-
 	def __str__(self):
-		return self.__unicode__().encode("ascii", "replace")
+		return u"<{0}({1!r})>".format(self.__class__.__name__, self._url)
 
 	def __repr__(self):
 		return self.__str__()
@@ -377,7 +376,7 @@ class Repository:
 			transferStartTime = time.time()
 			buf = True
 
-			if isinstance(src, httplib.HTTPResponse) or hasattr(src, 'length'):
+			if isinstance(src, HTTPResponse) or hasattr(src, 'length'):
 				fileSize = src.length
 			else:
 				fileSize = os.path.getsize(src.name)
@@ -404,7 +403,7 @@ class Repository:
 						buf = buf[:bytes-self._bytesTransfered]
 						read = len(buf)
 					self._bytesTransfered += read
-					if isinstance(dst, (httplib.HTTPConnection, httplib.HTTPSConnection)):
+					if isinstance(dst, (HTTPConnection, HTTPSConnection)):
 						dst.send(buf)
 					else:
 						dst.write(buf)
@@ -692,7 +691,7 @@ class FileRepository(Repository):
 				'name': os.path.basename(source),
 				'path': source[len(self._path)+1:],
 				'type': 'file',
-				'size': long(0)
+				'size': 0
 			}
 			if not os.path.exists(source):
 				raise IOError(u'File not found')
@@ -991,7 +990,7 @@ class HTTPRepository(Repository):
 						raise
 					logger.info(u"Error '%s' occurred while downloading, retrying" % error)
 					continue
-				response = HTTPResponse.from_httplib(httplib_response)
+				response = OpsiHTTPResponse.from_httplib(httplib_response)
 				conn = None
 				self._connectionPool.endConnection(conn)
 				break
@@ -1057,12 +1056,12 @@ class WebDAVRepository(HTTPRepository):
 			info = {
 				'size': 0,
 				'type': 'file',
-				'path': unicode(urllib.unquote(child.childOfType(davxml.HRef).children[0].data[srcLen:]), encoding),
-				'name': unicode(pContainer.childOfType(davxml.DisplayName).children[0].data, encoding),
+				'path': str(urllib.unquote(child.childOfType(davxml.HRef).children[0].data[srcLen:]), encoding=encoding),
+				'name': str(pContainer.childOfType(davxml.DisplayName).children[0].data, encoding=encoding),
 			}
 
 			if str(pContainer.childOfType(davxml.GETContentLength)) != 'None':
-				info['size'] = long(str(pContainer.childOfType(davxml.GETContentLength)))
+				info['size'] = int(str(pContainer.childOfType(davxml.GETContentLength)))
 
 			if pContainer.childOfType(davxml.ResourceType).children:
 				info['type'] = 'dir'
@@ -1119,7 +1118,7 @@ class WebDAVRepository(HTTPRepository):
 						raise
 					logger.info(u"Error '%s' occurred while uploading, retrying" % error)
 					continue
-				response = HTTPResponse.from_httplib(httplib_response)
+				response = OpsiHTTPResponse.from_httplib(httplib_response)
 				conn = None
 				self._connectionPool.endConnection(conn)
 				break

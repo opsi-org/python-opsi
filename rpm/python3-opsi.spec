@@ -1,23 +1,22 @@
 #
-# spec file for package python-opsi
+# spec file for package python3-opsi
 #
 # Copyright (c) 2013-2018 uib GmbH.
 # This file and all modifications and additions to the pristine
 # package are under the same license as the package itself.
 #
-Name:           python-opsi
+Name:           python3-opsi
 BuildRequires:  gettext-devel
-BuildRequires:  python-devel
-BuildRequires:  python-setuptools
+BuildRequires:  python3-devel
+BuildRequires:  python3-setuptools
 Requires:       duplicity
 Requires:       iproute
 Requires:       lshw
-Requires:       python >= 2.7
+Requires:       python3 >= 3.5
 Requires:       python-ldaptor
-Requires:       python-magic
-Requires:       python-sqlalchemy
-Requires:       python-twisted-web >= 8.2
-Requires:       python-twisted-conch >= 8.2, python-twisted-conch < 18.4
+Requires:       python3-magic
+Requires:       python3-sqlalchemy
+Requires:       python3-twisted >= 8.2, python3-twisted < 18.4
 
 # Dependencies for twisted are a mess because most lack needed packages.
 # We try to avoid problems with this:
@@ -33,9 +32,8 @@ Requires:       m2crypto
 Requires:       MySQL-python
 Requires:       newt-python
 Requires:       pyOpenSSL
-Requires:       PyPAM
-Requires:       python-ctypes
-Requires:       python-twisted >= 8.2
+Requires:       python3-pam
+Requires:       python3-ctypes
 %if 0%{?rhel_version} >= 700 || 0%{?centos_version} >= 700
 # To have ifconfig available
 Requires:       net-tools
@@ -43,17 +41,17 @@ Requires:       net-tools
 %else
 Requires:       lsb-release
 Requires:       python-m2crypto
-Requires:       python-mysql
-Requires:       python-newt
-Requires:       python-openssl
-Requires:       python-pam
+Requires:       python3-mysql
+Requires:       python3-newt
+Requires:       python3-openssl
+Requires:       python3-pam
 %endif
 %if 0%{?suse_version}
 # Needed for working python-magic
 Requires:       libmagic1
 Requires:       python-pycrypto
 %else
-Requires:	python-crypto
+Requires:       python-crypto
 %endif
 Url:            http://www.opsi.org
 License:        AGPL-3.0+
@@ -78,14 +76,14 @@ BuildRequires:  gettext-runtime
 %if 0%{?suse_version} == 1315 || 0%{?is_opensuse}
 # Workaround for missing dependency at python-cryptography
 # See https://bugzilla.opensuse.org/show_bug.cgi?id=1052927
-Requires: python-setuptools
+Requires: python3-setuptools
 %endif
 
 %define toplevel_dir %{name}-%{version}
 
 # ===[ description ]================================
 %description
-This package contains the python library that is used by various
+This package contains the Python 3 library that is used by various
 components of the client management solution opsi.
 
 # ===[ debug_package ]==============================
@@ -100,16 +98,16 @@ components of the client management solution opsi.
 # ===[ build ]======================================
 %build
 export CFLAGS="$RPM_OPT_FLAGS"
-python setup.py build
+python3 setup.py build
 
 # ===[ install ]====================================
 %install
 
 # install python files and record installed files in INSTALLED_FILES
 %if 0%{?suse_version}
-python setup.py install --prefix=%{_prefix} --root=$RPM_BUILD_ROOT --record-rpm=INSTALLED_FILES
+python3 setup.py install --prefix=%{_prefix} --root=$RPM_BUILD_ROOT --record-rpm=INSTALLED_FILES
 %else
-python setup.py install --prefix=%{_prefix} --root=$RPM_BUILD_ROOT --record=INSTALLED_FILES
+python3 setup.py install --prefix=%{_prefix} --root=$RPM_BUILD_ROOT --record=INSTALLED_FILES
 %endif
 
 %if 0%{?rhel_version} || 0%{?centos_version}
@@ -260,8 +258,8 @@ fi
 %dir /var/lib/opsi/
 
 %if 0%{?rhel_version} || 0%{?centos_version} || 0%{?fedora_version}
-%define python_sitearch %(%{__python} -c 'from distutils import sysconfig; print sysconfig.get_python_lib()')
-%{python_sitearch}/OPSI/*
+%define python3_sitearch %(%{__python3} -c 'from distutils import sysconfig; print sysconfig.get_python_lib()')
+%{python3_sitearch}/OPSI/*
 %endif
 
 # ===[ changelog ]==================================

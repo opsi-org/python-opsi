@@ -8,10 +8,10 @@
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-# 
+#
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -30,6 +30,17 @@ This API is considered private to static.py and is therefore subject to
 change.
 """
 
+import importlib
+from urllib.parse import urlsplit, urlunsplit, unquote, quote
+import posixpath # Careful; this module is not documented as public API
+
+from twisted.python import log
+from twisted.python.failure import Failure
+from twisted.internet.defer import succeed
+from OPSI.web2.stream import readStream
+
+from OPSI.web2.dav import davxml
+
 __all__ = [
     "allDataFromStream",
     "davXMLFromStream",
@@ -40,16 +51,6 @@ __all__ = [
     "bindMethods",
 ]
 
-import urllib
-from urlparse import urlsplit, urlunsplit
-import posixpath # Careful; this module is not documented as public API
-
-from twisted.python import log
-from twisted.python.failure import Failure
-from twisted.internet.defer import succeed
-from OPSI.web2.stream import readStream
-
-from OPSI.web2.dav import davxml
 
 ##
 # Reading request body
@@ -63,7 +64,7 @@ def allDataFromStream(stream, filter=None):
         if filter is None:
             return result
         else:
-            return filter(result)
+            return list(filter(result))
     return readStream(stream, data.append).addCallback(gotAllData)
 
 def davXMLFromStream(stream):
@@ -114,9 +115,9 @@ def normalizeURL(url):
 
     (scheme, host, path, query, fragment) = urlsplit(cleanup(url))
 
-    path = cleanup(posixpath.normpath(urllib.unquote(path)))
+    path = cleanup(posixpath.normpath(unquote(path)))
 
-    return urlunsplit((scheme, host, urllib.quote(path), query, fragment))
+    return urlunsplit((scheme, host, quote(path), query, fragment))
 
 def joinURL(*urls):
     """
@@ -186,10 +187,11 @@ def bindMethods(module, clazz, prefixes=("preconditions_", "http_", "report_")):
     """
     for submodule_name in module.__all__:
         try:
-            __import__(module.__name__ + "." + submodule_name)
+            importlib.import_module(module.__name__ + "." + submodule_name)
         except ImportError:
             log.err("Unable to import module %s" % (module.__name__ + "." + submodule_name,))
             Failure().raiseException()
+
         submodule = getattr(module, submodule_name)
         for method_name in submodule.__all__:
             for prefix in prefixes:

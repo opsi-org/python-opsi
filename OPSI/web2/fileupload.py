@@ -1,15 +1,15 @@
-from __future__ import generators
 
 import re
-from zope.interface import implements
-import urllib
 import tempfile
+from io import StringIO
+from urllib.parse import unquote
 
+from zope.interface.declarations import implementer
 from twisted.internet import defer
 from OPSI.web2.stream import IStream, FileStream, BufferedStream, readStream
 from OPSI.web2.stream import generatorToStream, readAndDiscard
 from OPSI.web2 import http_headers
-from cStringIO import StringIO
+
 
 ###################################
 #####  Multipart MIME Reader  #####
@@ -136,26 +136,28 @@ class _BoundaryWatchingStream(object):
             self.deferred = None
             deferred.errback(err)
         return err
-    
+
     def close(self):
         # Assume error will be raised again and handled by MMS?
         readAndDiscard(self).addErrback(lambda _: None)
-        
+
+
+@implementer(IStream)
 class MultipartMimeStream(object):
-    implements(IStream)
+
     def __init__(self, stream, boundary):
         self.stream = BufferedStream(stream)
         self.boundary = "--"+boundary
         self.first = True
-        
+
     def read(self):
         """
         Return a deferred which will fire with a tuple of:
         (fieldname, filename, ctype, dataStream)
         or None when all done.
-        
+
         Format errors will be sent to the errback.
-        
+
         Returns None when all done.
 
         IMPORTANT: you *must* exhaust dataStream returned by this call
@@ -307,7 +309,7 @@ def parse_urlencoded_stream(input, maxMem=100*1024,
     while still_going:
         try:
             yield input.wait
-            data = input.next()
+            data = next(input)
         except StopIteration:
             pairs = [lastdata]
             still_going=0
@@ -324,11 +326,11 @@ def parse_urlencoded_stream(input, maxMem=100*1024,
             nv = name_value.split('=', 1)
             if len(nv) != 2:
                 if strict_parsing:
-                    raise MimeFormatError("bad query field: %s") % `name_value`
+                    raise MimeFormatError("bad query field: %s") % repr(name_value)
                 continue
             if len(nv[1]) or keep_blank_values:
-                name = urllib.unquote(nv[0].replace('+', ' '))
-                value = urllib.unquote(nv[1].replace('+', ' '))
+                name = unquote(nv[0].replace('+', ' '))
+                value = unquote(nv[1].replace('+', ' '))
                 yield name, value
 parse_urlencoded_stream = generatorToStream(parse_urlencoded_stream)
 
@@ -368,7 +370,7 @@ if __name__ == '__main__':
     from twisted.python import log
     d.addErrback(log.err)
     def pr(s):
-        print s
+        print(s)
     d.addCallback(pr)
 
 __all__ = ['parseMultipartFormData', 'parse_urlencoded', 'parse_urlencoded_stream', 'MultipartMimeStream', 'MimeFormatError']

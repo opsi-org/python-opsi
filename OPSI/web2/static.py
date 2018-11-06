@@ -21,7 +21,8 @@ from OPSI.web2 import http, iweb, stream, responsecode, server, dirlist
 # Twisted Imports
 from twisted.python import filepath
 from twisted.internet.defer import maybeDeferred
-from zope.interface import implements
+from zope.interface.declarations import implementer
+
 
 class MetaDataMixin(object):
     """
@@ -158,6 +159,7 @@ class Data(resource.Resource):
             stream=self.data)
 
 
+@implementer(iweb.IResource)
 class File(StaticRenderMixin):
     """
     File is a resource that represents a plain non-interpreted file
@@ -175,7 +177,6 @@ class File(StaticRenderMixin):
     listing of the /tmp/ directory, and http://server/FILE/foo/bar.html will
     return the contents of /tmp/foo/bar.html .
     """
-    implements(iweb.IResource)
 
     def _getContentTypes(self):
         if not hasattr(File, "_sharedContentTypes"):
@@ -327,7 +328,7 @@ class File(StaticRenderMixin):
         """
         @return: a sequence of the names of all known children of this resource.
         """
-        children = self.putChildren.keys()
+        children = list(self.putChildren.keys())
         if self.fp.isdir():
             children += [c for c in self.fp.listdir() if c not in children]
         return children
@@ -403,7 +404,7 @@ class File(StaticRenderMixin):
 
         try:
             f = self.fp.open()
-        except IOError, e:
+        except IOError as e:
             import errno
             if e[0] == errno.EACCES:
                 return responsecode.FORBIDDEN
@@ -434,7 +435,7 @@ class FileSaver(resource.PostableResource):
                     http_headers.MimeType('text', 'html'),
                     http_headers.MimeType('text', 'css'))
     
-    def __init__(self, destination, expectedFields=[], allowedTypes=None, maxBytes=1000000, permissions=0644):
+    def __init__(self, destination, expectedFields=[], allowedTypes=None, maxBytes=1000000, permissions=0o644):
         self.destination = destination
         self.allowedTypes = allowedTypes or self.allowedTypes
         self.maxBytes = maxBytes
@@ -493,7 +494,7 @@ class FileSaver(resource.PostableResource):
                         try:
                             outname = self.writeFile(*finfo)
                             content.append("Saved file %s<br />" % outname)
-                        except IOError, err:
+                        except IOError as err:
                             content.append(str(err) + "<br />")
                 else:
                     content.append("%s is not a valid field" % fieldName)
@@ -579,7 +580,7 @@ def loadMimeTypes(mimetype_locations=['/etc/mime.types']):
 def getTypeAndEncoding(filename, types, encodings, defaultType):
     p, ext = os.path.splitext(filename)
     ext = ext.lower()
-    if encodings.has_key(ext):
+    if ext in encodings:
         enc = encodings[ext]
         ext = os.path.splitext(p)[1].lower()
     else:

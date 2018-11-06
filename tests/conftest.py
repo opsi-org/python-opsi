@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2016-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2016-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -33,6 +33,7 @@ from __future__ import absolute_import
 
 import os
 import shutil
+import sys
 from contextlib import contextmanager
 
 from OPSI.Backend.Backend import ExtendedConfigDataBackend
@@ -230,3 +231,11 @@ def pytest_runtest_setup(item):
     if envmarker is not None:
         if not os.path.exists(os.path.join('/etc', 'opsi', 'modules')):
             pytest.skip("{0} requires a modules file!".format(item.name))
+
+    envmarker = item.get_marker("obsolete")
+    if envmarker is not None:
+        pytest.skip("{0} uses tech that will likely be obsolete in the future".format(item.name))
+
+    envmarker = item.get_marker("fixlater")
+    if envmarker is not None:
+        pytest.skip("{0} will be fixed later".format(item.name))

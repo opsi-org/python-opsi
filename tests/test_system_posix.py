@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -27,13 +27,9 @@ Various unittests to test functionality of python-opsi.
 import mock
 import os
 import pytest
-import sys
 from contextlib import contextmanager
 
 import OPSI.System.Posix as Posix
-
-if sys.version_info > (3, ):
-	long = int
 
 
 def testGetBlockDeviceContollerInfo():
@@ -283,9 +279,9 @@ def testReadingPartitionTableOnHPProliantDisksTest():
 		'secStart': 2048,
 		'secSize': 625072816,
 		'device': u'/fakedev/cciss/c0d0p1',
-		'size': long(69177999360),
+		'size': 69177999360,
 		'cylStart': 0,
-		'end': long(69182177280),
+		'end': 69182177280,
 		'secEnd': 135114751,
 		'boot': False,
 		'start': 0,
@@ -351,9 +347,9 @@ def testReadingPartitionTableOnHPProliantDisksWithOldSfdiskVersion():
 		'secStart': 2048,
 		'secSize': 135112704,
 		'device': u'/fakedev/cciss/c0d0p1',
-		'size': long(69177999360),
+		'size': 69177999360,
 		'cylStart': 0,
-		'end': long(69182177280),
+		'end': 69182177280,
 		'secEnd': 135114751,
 		'boot': False,
 		'start': 0,
@@ -369,12 +365,12 @@ def testReadingPartitionTableOnHPProliantDisksWithOldSfdiskVersion():
 		'secStart': 135114752,
 		'secSize': 8191168,
 		'device': u'/fakedev/cciss/c0d0p2',
-		'size': long(4194631680),
+		'size': 4194631680,
 		'cylStart': 16558,
-		'end': long(73372631040),
+		'end': 73372631040,
 		'secEnd': 143305919,
 		'boot': True,
-		'start': long(69177999360),
+		'start': 69177999360,
 		'cylEnd': 17561,
 		'type': u'c'
 	}
@@ -441,9 +437,9 @@ def testReadingPartitionTableFromOldSfdiskVersion():
 		'secStart': 2048,
 		'secSize': 67923968,
 		'device': u'/fakedev/sdb1',
-		'size': long(34784709120),
+		'size': 34784709120,
 		'cylStart': 0,
-		'end': long(34784709120),
+		'end': 34784709120,
 		'secEnd': 67926015,
 		'boot': True,
 		'start': 0,
@@ -459,12 +455,12 @@ def testReadingPartitionTableFromOldSfdiskVersion():
 		'secStart': 69971968,
 		'secSize': 8193392,
 		'device': u'/fakedev/sdb2',
-		'size': long(4203118080),
+		'size': 4203118080,
 		'cylStart': 4355,
-		'end': long(40024212480),
+		'end': 40024212480,
 		'secEnd': 78165359,
 		'boot': False,
-		'start': long(35821094400),
+		'start': 35821094400,
 		'cylEnd': 4865,
 		'type': u'c'
 	}
@@ -672,7 +668,7 @@ def testGetEthernetDevicesOnDebianWheezy():
 
 		yield output()
 
-	with mock.patch('__builtin__.open', fakeReader):
+	with mock.patch('OPSI.System.Posix.open', fakeReader):
 		devices = Posix.getEthernetDevices()
 		assert 2 == len(devices)
 		assert 'br0' in devices
@@ -699,7 +695,7 @@ def testReadingUnpredictableNetworkInterfaceNames():
 
 		yield output()
 
-	with mock.patch('__builtin__.open', fakeReader):
+	with mock.patch('OPSI.System.Posix.open', fakeReader):
 		devices = Posix.getEthernetDevices()
 		assert 1 == len(devices)
 		assert 'ens18' in devices

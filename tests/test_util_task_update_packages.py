@@ -24,7 +24,6 @@ Testing the opsi-package-updater functionality.
 
 from __future__ import absolute_import
 
-import formatter
 import os.path
 import shutil
 
@@ -188,8 +187,7 @@ def repositoryListingPage(request):
 
 
 def testLinkExtracting(repositoryListingPage):
-	defaultFormatter = formatter.NullFormatter()
-	extractor = LinksExtractor(defaultFormatter)
+	extractor = LinksExtractor()
 	extractor.feed(repositoryListingPage)
 	extractor.close()
 

@@ -22,9 +22,9 @@
 # DRI: Wilfredo Sanchez, wsanchez@apple.com
 ##
 
-import os
-import urllib
 import md5
+import os
+from urllib.parse import quote
 
 import OPSI.web2.dav.test.util
 from OPSI.web2 import responsecode
@@ -106,7 +106,7 @@ class COPY(OPSI.web2.dav.test.util.TestCase):
                 # FIXME: Check XML error code (2518bis)
                 pass
 
-            self.failUnless(os.path.exists(dst_path), "COPY didn't produce file: %s" % (dst_path,))
+            self.assertTrue(os.path.exists(dst_path), "COPY didn't produce file: %s" % (dst_path,))
 
         return serialize(self.send, work(self, test, overwrite=True))
 
@@ -138,7 +138,7 @@ def work(self, test, overwrite=None, dst=None, depths=("0", "infinity", None)):
         sum = sumFile(path)
         basename = os.path.basename(path)
         dst_path = os.path.join(dst, basename)
-        dst_uri = urllib.quote("/dst/" + basename)
+        dst_uri = quote("/dst/" + basename)
 
         if not isfile:
             uri     += "/"

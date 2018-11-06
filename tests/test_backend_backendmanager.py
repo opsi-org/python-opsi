@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -26,7 +26,8 @@ from __future__ import absolute_import, print_function
 
 import os
 
-from OPSI.Backend.BackendManager import BackendManager, ConfigDataBackend
+from OPSI.Backend.BackendManager import BackendManager
+from OPSI.Backend.Base import ConfigDataBackend
 
 from .helpers import getLocalFQDN
 from .Backends.File import getFileBackend
@@ -94,11 +95,11 @@ def testBackendManagerMethods(backendManager):
     }
     bm.setGeneralConfig(config=generalConfig, objectId=None)
 
-    key = generalConfig.keys()[0]
+    key = 'test-key-1'
     value = bm.getGeneralConfigValue(key=key, objectId=client1.id)
     assert value == generalConfig[key]
 
-    anotherKey = generalConfig.keys()[1]
+    anotherKey = 'test-key-2'
     bm.setGeneralConfigValue(anotherKey, client1.id, objectId=client1.id)
     bm.setGeneralConfigValue(anotherKey, 'changed', objectId=None)
     assert 'changed' == bm.getGeneralConfigValue(key=anotherKey, objectId=None)

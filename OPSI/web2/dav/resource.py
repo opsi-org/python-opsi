@@ -26,17 +26,11 @@
 WebDAV resources.
 """
 
-__all__ = [
-    "DAVPropertyMixIn",
-    "DAVResource",
-    "DAVLeafResource"
-]
+from urllib.parse import unquote
 
-import urllib
-
-from zope.interface import implements
 from twisted.python import log
 from twisted.internet.defer import maybeDeferred, succeed
+from zope.interface.declarations import implementer
 from OPSI.web2 import responsecode
 from OPSI.web2.dav import davxml
 from OPSI.web2.dav.davxml import dav_namespace, lookupElement
@@ -48,6 +42,12 @@ from OPSI.web2.http_headers import generateContentType
 from OPSI.web2.iweb import IResponse
 from OPSI.web2.resource import LeafResource
 from OPSI.web2.static import MetaDataMixin, StaticRenderMixin
+
+__all__ = [
+    "DAVPropertyMixIn",
+    "DAVResource",
+    "DAVLeafResource"
+]
 
 twisted_dav_namespace = "http://twistedmatrix.com/xml_namespace/dav/"
 twisted_private_namespace = "http://twistedmatrix.com/xml_namespace/dav/private/"
@@ -383,8 +383,9 @@ class DAVPropertyMixIn (MetaDataMixin):
         else:
             return super(DAVPropertyMixIn, self).displayName()
 
+
+@implementer(IDAVResource)
 class DAVResource (DAVPropertyMixIn, StaticRenderMixin):
-    implements(IDAVResource)
 
     ##
     # DAV
@@ -463,7 +464,7 @@ class DAVResource (DAVPropertyMixIn, StaticRenderMixin):
 
         # FIXME: Learn how to use twisted logging facility, wsanchez
         protocol = "HTTP/%s.%s" % request.clientproto
-        log.msg("%s %s %s" % (request.method, urllib.unquote(request.uri), protocol))
+        log.msg("%s %s %s" % (request.method, unquote(request.uri), protocol))
 
         #
         # If this is a collection and the URI doesn't end in "/", redirect.

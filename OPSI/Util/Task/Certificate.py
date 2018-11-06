@@ -42,6 +42,11 @@ from OPSI.System import which, execute
 from OPSI.Types import forceHostId, forceInt
 from OPSI.Util import getfqdn
 
+try:
+	import secrets
+except ImportError:
+	secrets = None
+
 OPSICONFD_CERTFILE = u'/etc/opsi/opsiconfd.pem'
 DEFAULT_CERTIFICATE_PARAMETERS = {
 	"country": "DE",
@@ -214,9 +219,9 @@ If not given will use a default.
 	cert.set_version(2)
 
 	LOGGER.notice(u"Signing Certificate")
-	cert.sign(k, str('sha512'))
+	cert.sign(k, 'sha512')
 
-	certcontext = "".join(
+	certcontext = b"".join(
 		(
 			crypto.dump_certificate(crypto.FILETYPE_PEM, cert),
 			crypto.dump_privatekey(crypto.FILETYPE_PEM, k)
@@ -225,12 +230,11 @@ If not given will use a default.
 
 	LOGGER.notice(u"Beginning to write certificate.")
 	with open(path, "wt") as certfile:
-		certfile.write(certcontext)
+		certfile.write(certcontext.decode())
 
-	with NamedTemporaryFile(mode="wt") as randfile:
+	with NamedTemporaryFile(mode="wb") as randfile:
 		LOGGER.notice(u"Generating and filling new randomize string")
-		randomBytes = os.urandom(512)
-		randfile.write(randomBytes)
+		randfile.write(randomBytes(512))
 
 		execute(
 			u"{command} dhparam -rand {tempfile} 512 >> {target}".format(
@@ -239,6 +243,18 @@ If not given will use a default.
 		)
 
 	LOGGER.notice(u'Certificate creation done.')
+
+
+def randomBytes(length):
+	"""
+	Return _length_ random bytes.
+
+	:rtype: bytes
+	"""
+	if secrets:
+		return secrets.token_bytes(512)
+	else:
+		return os.urandom(512)
 
 
 def loadConfigurationFromCertificate(path=None):

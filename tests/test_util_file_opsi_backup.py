@@ -293,7 +293,7 @@ def fillFileBackendWithFakeFiles(backendDir, hostKeyFile):
     )
     for targetFile in exampleFiles:
         try:
-            with open(targetFile, 'wx'):
+            with open(targetFile, 'x'):
                 pass
         except IOError as error:
             if error.errno != 17:  # 17 is File exists
@@ -352,7 +352,7 @@ def fillMySQLBackend(connectionConfig):
         cursor = con.cursor()
         cursor.execute(table)
     except MySQLdb.OperationalError as operror:
-        if operror.args[0] != 1050:  # "Table 'CONFIG' already exists"
+        if operror.errno != 1050:  # "Table 'CONFIG' already exists"
             raise operror
     finally:
         con.close()
@@ -368,7 +368,7 @@ def fakeDispatchConfig(baseDir, dataBackend="file"):
     dispatchConfig = os.path.join(baseDir, "backendManager", "dispatch.conf")
 
     try:
-        with open(dispatchConfig, 'wx') as dispatchFile:
+        with open(dispatchConfig, 'x') as dispatchFile:
             dispatchFile.write("""
 backend_.*         : {0}, opsipxeconfd, dhcpd
 host_.*            : {0}, opsipxeconfd, dhcpd
@@ -475,7 +475,7 @@ def testBackupHasFileBackend(tempDir):
         assert backup.hasFileBackend()
 
 
-def test_backupDHCPBackend(tempDir):
+def testBackupDHCPBackend(tempDir):
     with getOpsiBackupArchive(tempdir=tempDir, keepArchive=True) as archive:
         with pytest.raises(OpsiBackupBackendNotFound):
             archive.restoreDHCPBackend()
@@ -533,6 +533,7 @@ def testBackupHasDHCPDBackend(tempDir):
         assert backup.hasDHCPBackend()
 
 
+@pytest.mark.fixlater
 @pytest.mark.skipif(not MySQLdb, reason="Missing MySQLdb.")
 @pytest.mark.skipif(not mysqldump, reason="Missing mysqldump.")
 def test_backupMySQLBackend(tempDir):

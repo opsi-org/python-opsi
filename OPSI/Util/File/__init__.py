@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2006-2017 uib GmbH - http://www.uib.de/
+# Copyright (C) 2006-2018 uib GmbH - http://www.uib.de/
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -28,15 +28,16 @@ parsing files for information.
 :license: GNU Affero General Public License version 3
 """
 
+import builtins
 import codecs
-import ConfigParser
 import functools
 import locale
 import os
 import re
-import StringIO
 import threading
 import time
+from configparser import RawConfigParser, SafeConfigParser
+from io import StringIO
 from itertools import islice
 
 from OPSI.Exceptions import BackendBadValueError, BackendMissingDataError
@@ -134,7 +135,7 @@ class File(object):
 			self.chmod(mode)
 
 	def open(self, mode='r'):
-		self._fileHandle = __builtins__['open'](self._filename, mode)
+		self._fileHandle = builtins.open(self._filename, mode)
 		return self._fileHandle
 
 	def close(self):
@@ -193,7 +194,7 @@ class LockableFile(File):
 		if encoding:
 			self._fileHandle = codecs.open(self._filename, mode, encoding, errors)
 		else:
-			self._fileHandle = __builtins__['open'](self._filename, mode)
+			self._fileHandle = builtins.open(self._filename, mode)
 		self._lockFile(mode)
 		if truncate:
 			self._fileHandle.seek(0)
@@ -306,7 +307,7 @@ class ChangelogFile(TextFile):
 		  [optional blank line(s), stripped]
 	[one space]-- maintainer name <email address>[two spaces]date
 	'''
-	releaseLineRegex = re.compile('^\s*(\S+)\s+\(([^\)]+)\)\s+([^\;]+)\;\s+urgency\=(\S+)\s*$')
+	releaseLineRegex = re.compile(r'^\s*(\S+)\s+\(([^\)]+)\)\s+([^;]+);\s+urgency\=(\S+)\s*$')
 
 	def __init__(self, filename, lockFailTimeout=2000):
 		TextFile.__init__(self, filename, lockFailTimeout)
@@ -497,7 +498,7 @@ class ConfigFile(TextFile):
 
 
 class IniFile(ConfigFile):
-	optionMatch = re.compile('^([^\:\=]+)\s*([\:\=].*)$')
+	optionMatch = re.compile(r'^([^\:\=]+)\s*([\:\=].*)$')
 
 	def __init__(self, filename, lockFailTimeout=2000, ignoreCase=True, raw=True):
 		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars=[';', '#'])
@@ -583,12 +584,12 @@ class IniFile(ConfigFile):
 			lines.append(line)
 		self._configParser = None
 		if self._raw:
-			self._configParser = ConfigParser.RawConfigParser()
+			self._configParser = RawConfigParser()
 		else:
-			self._configParser = ConfigParser.SafeConfigParser()
+			self._configParser = SafeConfigParser()
 
 		try:
-			self._configParser.readfp(StringIO.StringIO(u'\r\n'.join(lines)))
+			self._configParser.read_file(StringIO(u'\r\n'.join(lines)))
 		except Exception as e:
 			raise RuntimeError(u"Failed to parse ini file '%s': %s" % (self._filename, e))
 
@@ -664,13 +665,13 @@ class IniFile(ConfigFile):
 
 
 class InfFile(ConfigFile):
-	sectionRegex = re.compile('\[\s*([^\]]+)\s*\]')
-	pciDeviceRegex = re.compile('VEN_([\da-fA-F]+)&DEV_([\da-fA-F]+)', re.IGNORECASE)
-	hdaudioDeviceRegex = re.compile('HDAUDIO\\\.*VEN_([\da-fA-F]+)&DEV_([\da-fA-F]+)', re.IGNORECASE)
-	usbDeviceRegex = re.compile('USB.*VID_([\da-fA-F]+)&PID_([\da-fA-F]+)', re.IGNORECASE)
-	acpiDeviceRegex = re.compile('ACPI\\\(\S+)_-_(\S+)', re.IGNORECASE)
-	varRegex = re.compile('\%([^\%]+)\%')
-	classRegex = re.compile('class\s*=')
+	sectionRegex = re.compile(r'\[\s*([^\]]+)\s*\]')
+	pciDeviceRegex = re.compile(r'VEN_([\da-fA-F]+)&DEV_([\da-fA-F]+)', re.IGNORECASE)
+	hdaudioDeviceRegex = re.compile(r'HDAUDIO\\\.*VEN_([\da-fA-F]+)&DEV_([\da-fA-F]+)', re.IGNORECASE)
+	usbDeviceRegex = re.compile(r'USB.*VID_([\da-fA-F]+)&PID_([\da-fA-F]+)', re.IGNORECASE)
+	acpiDeviceRegex = re.compile(r'ACPI\\(\S+)_-_(\S+)', re.IGNORECASE)
+	varRegex = re.compile(r'%([^%]+)%')
+	classRegex = re.compile(r'class\s*=')
 
 	def __init__(self, filename, lockFailTimeout=2000):
 		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars=[';', '#'])
@@ -946,13 +947,13 @@ UsbidsFile = PciidsFile
 
 
 class TxtSetupOemFile(ConfigFile):
-	sectionRegex = re.compile('\[\s*([^\]]+)\s*\]')
-	pciDeviceRegex = re.compile('VEN_([\da-fA-F]+)(&DEV_([\da-fA-F]+))?(\S*)\s*$')
-	usbDeviceRegex = re.compile('USB.*VID_([\da-fA-F]+)(&PID_([\da-fA-F]+))?(\S*)\s*$', re.IGNORECASE)
-	filesRegex = re.compile('^files\.(computer|display|keyboard|mouse|scsi)\.(.+)$', re.IGNORECASE)
-	configsRegex = re.compile('^config\.(.+)$', re.IGNORECASE)
-	hardwareIdsRegex = re.compile('^hardwareids\.(computer|display|keyboard|mouse|scsi)\.(.+)$', re.IGNORECASE)
-	dllEntryRegex = re.compile('^(dll\s*\=\s*)(\S+.*)$', re.IGNORECASE)
+	sectionRegex = re.compile(r'\[\s*([^\]]+)\s*\]')
+	pciDeviceRegex = re.compile(r'VEN_([\da-fA-F]+)(&DEV_([\da-fA-F]+))?(\S*)\s*$')
+	usbDeviceRegex = re.compile(r'USB.*VID_([\da-fA-F]+)(&PID_([\da-fA-F]+))?(\S*)\s*$', re.IGNORECASE)
+	filesRegex = re.compile(r'^files\.(computer|display|keyboard|mouse|scsi)\.(.+)$', re.IGNORECASE)
+	configsRegex = re.compile(r'^config\.(.+)$', re.IGNORECASE)
+	hardwareIdsRegex = re.compile(r'^hardwareids\.(computer|display|keyboard|mouse|scsi)\.(.+)$', re.IGNORECASE)
+	dllEntryRegex = re.compile(r'^(dll\s*\=\s*)(\S+.*)$', re.IGNORECASE)
 
 	def __init__(self, filename, lockFailTimeout=2000):
 		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars=[';', '#'])
@@ -1145,7 +1146,7 @@ class TxtSetupOemFile(ConfigFile):
 			componentId = match.group(2)
 			logger.info(u"Found hardwareIds section '%s', component name '%s', component id '%s'" % (section, componentName, componentId))
 			for line in lines:
-				if not re.search('[iI][dD]\s*=', line):
+				if not re.search(r'[iI][dD]\s*=', line):
 					continue
 				(device, serviceName) = line.split(u'=', 1)[1].strip().split(u',', 1)
 				device = device.strip()
@@ -1364,8 +1365,9 @@ class ZsyncFile(LockableFile):
 		self._parsed = False
 
 		with open(self._filename, 'rb') as f:
-			for line in iter(lambda: f.readline().strip(), ''):
-				key, value = line.split(':', 1)
+			for line in iter(lambda: f.readline().strip(), b''):
+				strLine = line.decode()
+				key, value = strLine.split(':', 1)
 				self._header[key.strip()] = value.strip()
 
 			# Header and data are divided by an empty line
@@ -1382,8 +1384,9 @@ class ZsyncFile(LockableFile):
 			for key, value in self._header.items():
 				if key.lower() == 'mtime':
 					continue
-				f.write('%s: %s\n' % (key, value))
-			f.write('\n')
+				headerData = '%s: %s\n' % (key, value)
+				f.write(headerData.encode())
+			f.write('\n'.encode())
 			f.write(self._data)
 
 
@@ -1406,12 +1409,9 @@ class DHCPDConf_Component(object):
 	def asText(self):
 		return self.getShifting()
 
-	def __unicode__(self):
+	def __str__(self):
 		return u'<{0}({1:d}, {2})>'.format(
 			self.__class__.__name__, self.startLine, self.endLine)
-
-	def __str__(self):
-		return self.__unicode__().encode("ascii", "replace")
 
 	def __repr__(self):
 		return self.__str__()
@@ -1422,7 +1422,7 @@ class DHCPDConf_Parameter(DHCPDConf_Component):
 		DHCPDConf_Component.__init__(self, startLine, parentBlock)
 		self.key = key
 		self.value = value
-		if isinstance(self.value, (unicode, str)):
+		if isinstance(self.value, str):
 			if self.value.lower() in (u'yes', u'true', u'on'):
 				self.value = True
 			elif self.value.lower() in (u'no', u'false', u'off'):
@@ -1938,7 +1938,7 @@ class DHCPDConfFile(TextFile):
 					current.append(l)
 				else:
 					quote = u"'"
-			elif re.search('\s', l):
+			elif re.search(r'\s', l):
 				current.append(l)
 			elif l == u',':
 				if quote:

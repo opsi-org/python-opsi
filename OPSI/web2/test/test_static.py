@@ -15,17 +15,17 @@ class TestData(BaseCase):
         """
         Test the internal state of the Data object
         """
-        self.assert_(hasattr(self.data, "created_time"))
-        self.assertEquals(self.data.data, self.text)
-        self.assertEquals(self.data.type, http_headers.MimeType("text", "plain"))
-        self.assertEquals(self.data.contentType(), http_headers.MimeType("text", "plain"))
+        self.assertTrue(hasattr(self.data, "created_time"))
+        self.assertEqual(self.data.data, self.text)
+        self.assertEqual(self.data.type, http_headers.MimeType("text", "plain"))
+        self.assertEqual(self.data.contentType(), http_headers.MimeType("text", "plain"))
 
 
     def test_etag(self):
         """
         Test that we can get an ETag
         """
-        self.failUnless(self.data.etag())
+        self.assertTrue(self.data.etag())
 
 
     def test_render(self):
@@ -36,11 +36,11 @@ class TestData(BaseCase):
         """
         response = iweb.IResponse(self.data.render(None))
         self.assertEqual(response.code, 200)
-        self.assert_(response.headers.hasHeader("content-type"))
+        self.assertTrue(response.headers.hasHeader("content-type"))
         self.assertEqual(response.headers.getHeader("content-type"),
                          http_headers.MimeType("text", "plain"))
         def checkStream(data):
-            self.assertEquals(str(data), self.text)
+            self.assertEqual(str(data), self.text)
         return stream.readStream(iweb.IResponse(self.data.render(None)).stream,
                                  checkStream)
 
@@ -50,7 +50,7 @@ class TestFileSaver(BaseCase):
     def setUpClass(self):
         self.tempdir = self.mktemp()
         os.mkdir(self.tempdir)
-        
+
         self.root = static.FileSaver(self.tempdir,
                               expectedFields=['FileNameOne'],
                               maxBytes=16)
@@ -60,10 +60,10 @@ class TestFileSaver(BaseCase):
                    host='foo', path='/'):
         if not resrc:
             resrc = self.root
-            
+
         ctype = http_headers.MimeType('multipart', 'form-data',
                                       (('boundary', '---weeboundary'),))
-        
+
         return self.getResponseFor(resrc, '/',
                             headers={'host': 'foo',
                                      'content-type': ctype },
@@ -77,19 +77,20 @@ Content-Type: %s\r
 -----weeboundary--\r
 """ % (fieldname, filename, mimetype, content))
 
-    def _CbAssertInResponse(self, (code, headers, data, failed),
+    def _CbAssertInResponse(self, meta,
                             expected_response, expectedFailure=False):
-        
+
+        (code, headers, data, failed) = meta
         expected_code, expected_headers, expected_data = expected_response
-        self.assertEquals(code, expected_code)
-        
+        self.assertEqual(code, expected_code)
+
         if expected_data is not None:
             self.failUnlessSubstring(expected_data, data)
 
-        for key, value in expected_headers.iteritems():
-            self.assertEquals(headers.getHeader(key), value)
+        for key, value in expected_headers.items():
+            self.assertEqual(headers.getHeader(key), value)
 
-        self.assertEquals(failed, expectedFailure)
+        self.assertEqual(failed, expectedFailure)
 
     def fileNameFromResponse(self, response):
         (code, headers, data, failure) = response
@@ -124,7 +125,7 @@ Content-Type: %s\r
     def test_compareFileContents(self):
         def gotFname(fname):
             contents = file(fname, 'r').read()
-            self.assertEquals(contents, 'Test contents')
+            self.assertEqual(contents, 'Test contents')
 
         d = self.uploadFile('FileNameOne', 'myfilename', 'text/plain',
                             'Test contents')

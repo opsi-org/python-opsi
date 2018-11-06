@@ -32,7 +32,7 @@ import pwd
 import re
 import shutil
 
-from OPSI.Backend.Backend import ConfigDataBackend
+from OPSI.Backend.Base import ConfigDataBackend
 from OPSI.Config import OPSICONFD_USER, FILE_ADMIN_GROUP
 from OPSI.Exceptions import (
 	BackendBadValueError, BackendConfigurationError, BackendError,
@@ -720,9 +720,13 @@ class FileBackend(ConfigDataBackend):
 		if not attributes:
 			return objHash
 
+		toDelete = set()
 		for attribute in objHash.keys():
 			if attribute not in attributes and attribute not in ident:
-				del objHash[attribute]
+				toDelete.add(attribute)
+
+		for attribute in toDelete:
+			del objHash[attribute]
 
 		return objHash
 
@@ -834,7 +838,7 @@ class FileBackend(ConfigDataBackend):
 							value = cp.get(section, option)
 							if m.get('json'):
 								value = fromJson(value)
-							elif isinstance(value, (str, unicode)):
+							elif isinstance(value, str):
 								value = self.__unescape(value)
 
 							# invalid values will throw exceptions later
@@ -1011,7 +1015,7 @@ class FileBackend(ConfigDataBackend):
 						if value is not None:
 							if attributeMapping.get('json'):
 								value = toJson(value)
-							elif isinstance(value, (str, unicode)):
+							elif isinstance(value, str):
 								value = self.__escape(value)
 
 							cp.set(section, option, value)

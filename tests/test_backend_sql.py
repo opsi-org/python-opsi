@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2014-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -34,9 +34,6 @@ import OPSI.Object as ob
 
 from .helpers import cleanMandatoryConstructorArgsCache as cmcac
 from .helpers import createTemporaryTestfile
-
-if sys.version_info > (3, ):
-    long = int
 
 
 @pytest.fixture
@@ -90,7 +87,10 @@ def testBoolValueRepresentation(sqlBackendWithoutConnection, expectedConversion,
 
 
 def testCreateFilterForMultipleBools(sqlBackendWithoutConnection):
-    assert u'(`a` = 1) and (`b` = 0)' == sqlBackendWithoutConnection._filterToSql({'a': True, 'b': False})
+    condition = sqlBackendWithoutConnection._filterToSql({'a': True, 'b': False})
+    first, second = condition.split(' and ', 1)
+
+    assert (first == '(`a` = 1)' and second == '(`b` = 0)') or (second == '(`a` = 1)' and first == '(`b` = 0)')
 
 
 def testCreatingFilterAddsMultipleValuesWithAnAnd(sqlBackendWithoutConnection):
@@ -100,7 +100,7 @@ def testCreatingFilterAddsMultipleValuesWithAnAnd(sqlBackendWithoutConnection):
 @pytest.mark.parametrize("result, filterExpression", [
     ('(`a` = 1)', {'a': 1}),
     ('(`b` = 2.3)', {'b': 2.3}),
-    ('(`c` = 4)', {'c': long(4)}),
+    ('(`c` = 4)', {'c': 4}),
 ])
 def testCreatingFilterForNumberRepresentation(sqlBackendWithoutConnection, result, filterExpression):
     assert result == sqlBackendWithoutConnection._filterToSql(filterExpression)
@@ -110,12 +110,27 @@ def testCreatingFilterForStringValue(sqlBackendWithoutConnection):
     assert "(`a` = 'b')" == sqlBackendWithoutConnection._filterToSql({'a': "b"})
 
 
-@pytest.mark.parametrize("expected, filterExpression", [
-    ('(`a` = 1 or `a` = 2)', {'a': [1, 2]}),
-    ('(`a` = 1 or `a` = 2) and (`b` = 0)', {'a': [1, 2], 'b': False})
-])
-def testCreatingFilterWithListOfValuesCreatesAnOrExpression(sqlBackendWithoutConnection, expected, filterExpression):
-    assert expected == sqlBackendWithoutConnection._filterToSql(filterExpression)
+def testCreatingFilterWithListOfValuesCreatesAnOrExpression(sqlBackendWithoutConnection):
+    assert '(`a` = 1 or `a` = 2)' == sqlBackendWithoutConnection._filterToSql({'a': [1, 2]})
+
+
+def testCreatingFilterWithMultipleParameters(sqlBackendWithoutConnection):
+    # Expected is something like: '(`a` = 1 or `a` = 2) and (`b` = 0)'
+    result = sqlBackendWithoutConnection._filterToSql({'a': [1, 2], 'b': False})
+
+    first, second = result.split(' and ')
+
+    def testOrCondition(condition):
+        ffirst, fsecond = condition.split(' or ')
+        assert ffirst == '(`a` = 1'
+        assert fsecond == '`a` = 2)'
+
+    if second == '(`b` = 0)':
+        testOrCondition(first)
+    elif first == '(`b` = 0)':
+        testOrCondition(second)
+    else:
+        raise RuntimeError("We should never get here!")
 
 
 def testCreatingFilterWithWildcard(sqlBackendWithoutConnection):
@@ -265,7 +280,7 @@ def testCreatingQueryWithVariousTypes(sqlBackendWithoutConnection):
     testDict = {
         "int": 1,
         "float": 2.3,
-        "long": long(4),
+        "long": 4,
         "bool_true": True,
         "bool_false": False,
         "string": "caramba",

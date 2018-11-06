@@ -1,21 +1,23 @@
-from __future__ import generators
 
-from urllib import quote, string
+from urllib.parse import quote
 
-import UserDict, math, time
-from cStringIO import StringIO
+import collections
+import math
+import time
+from io import StringIO
 
 from OPSI.web2 import http_headers, iweb, stream, responsecode
 from twisted.internet import defer, address
 from twisted.python import components
 from twisted.spread import pb
 
-from zope.interface import implements
+from zope.interface.declarations import implementer
 
-class HeaderAdapter(UserDict.DictMixin):
+
+class HeaderAdapter(collections.MutableMapping):
     def __init__(self, headers):
         self._headers = headers
-        
+
     def __getitem__(self, name):
         raw = self._headers.getRawHeaders(name)
         if raw is None:
@@ -30,15 +32,18 @@ class HeaderAdapter(UserDict.DictMixin):
             raise KeyError(name)
         self._headers.removeHeader(name)
 
+    def items(self):
+        return [(k, ', '.join(v)) for k, v in self._headers.getAllRawHeaders()]
+
     def iteritems(self):
         for k,v in self._headers.getAllRawHeaders():
             yield k, ', '.join(v)
 
     def keys(self):
-        return [k for k, _ in self.iteritems()]
+        return [k for k, _ in self.items()]
 
     def __iter__(self):
-        for k, _ in self.iteritems():
+        for k, _ in self.items():
             yield k
 
     def has_key(self, name):
@@ -59,11 +64,12 @@ def _addressToTuple(addr):
     else:
         return tuple(addr)
 
+
+@implementer(iweb.IOldRequest)
 class OldRequestAdapter(pb.Copyable, components.Componentized, object):
     """Adapt old requests to new request
     """
-    implements(iweb.IOldRequest)
-    
+
     def _getFrom(where, name):
         def _get(self):
             return getattr(getattr(self, where), name)
@@ -185,14 +191,14 @@ class OldRequestAdapter(pb.Copyable, components.Componentized, object):
         """Set an outgoing HTTP header.
         """
         self.response.headers.setRawHeaders(name, [value])
-        
+
     def setResponseCode(self, code, message=None):
         # message ignored
         self.response.code = code
 
     def setLastModified(self, when):
         # Never returns CACHED -- can it and still be compliant?
-        when = long(math.ceil(when))
+        when = int(math.ceil(when))
         self.response.headers.setHeader('last-modified', when)
         return None
 
@@ -201,7 +207,7 @@ class OldRequestAdapter(pb.Copyable, components.Componentized, object):
         return None
 
     def getAllHeaders(self):
-        return dict(self.headers.iteritems())
+        return dict(self.headers.items())
 
     def getRequestHostname(self):
         return self.request.host
@@ -297,7 +303,8 @@ class OldRequestAdapter(pb.Copyable, components.Componentized, object):
             self.isSecure() and 's' or '',
             self.getRequestHostname(),
             hostport,
-            string.join(self.prepath, '/')), "/:")
+            self.prepath.join('/')
+            ), "/:")
 
 #     def URLPath(self):
 #         from twisted.python import urlpath
@@ -326,14 +333,14 @@ class OldRequestAdapter(pb.Copyable, components.Componentized, object):
         """
         return self.appRootURL
 
-    
+
     session = None
 
     def getSession(self, sessionInterface = None):
         # Session management
         if not self.session:
             # FIXME: make sitepath be something
-            cookiename = string.join(['TWISTED_SESSION'] + self.sitepath, "_")
+            cookiename = (['TWISTED_SESSION'] + self.sitepath).join("_")
             sessionCookie = self.getCookie(cookiename)
             if sessionCookie:
                 try:
@@ -350,13 +357,13 @@ class OldRequestAdapter(pb.Copyable, components.Componentized, object):
         return self.session
 
 
+@implementer(iweb.IResource)
 class OldNevowResourceAdapter(object):
-    implements(iweb.IResource)
-    
+
     def __init__(self, original):
         # Can't use self.__original= because of __setattr__.
         self.__dict__['_OldNevowResourceAdapter__original']=original
-        
+
     def __getattr__(self, name):
         return getattr(self.__original, name)
 
@@ -401,8 +408,8 @@ class OldNevowResourceAdapter(object):
         oldRequest.finish()
 
 
+@implementer(iweb.IOldNevowResource)
 class OldResourceAdapter(object):
-    implements(iweb.IOldNevowResource)
 
     def __init__(self, original):
         self.original = original
@@ -411,7 +418,7 @@ class OldResourceAdapter(object):
         return "<%s @ 0x%x adapting %r>" % (self.__class__.__name__, id(self), self.original)
 
     def locateChild(self, req, segments):
-        import server
+        from . import server
         request = iweb.IOldRequest(req)
         if self.original.isLeaf:
             return self, server.StopTraversal

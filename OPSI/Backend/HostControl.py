@@ -40,15 +40,15 @@ except ImportError:
 	# Python 3 compatibility
 	from http.client import HTTPSConnection
 
+from OPSI.Backend.Base import ExtendedBackend
 from OPSI.Exceptions import BackendMissingDataError, BackendUnaccomplishableError
 from OPSI.Logger import Logger, LOG_DEBUG
 from OPSI.Types import (forceBool, forceDict, forceHostId, forceHostIdList,
 						forceInt, forceIpAddress, forceList, forceUnicode,
 						forceUnicodeList)
-from OPSI.Backend.Backend import ExtendedBackend
 from OPSI.Util import fromJson, toJson
-from OPSI.Util.Thread import KillableThread
 from OPSI.Util.HTTP import closingConnection, non_blocking_connect_https
+from OPSI.Util.Thread import KillableThread
 
 __all__ = ('RpcThread', 'ConnectionThread', 'HostControlBackend')
 
@@ -145,7 +145,6 @@ class RpcThread(KillableThread):
 				non_blocking_connect_https(connection, timeout)
 				connection.putrequest('POST', '/opsiclientd')
 				connection.putheader('content-type', 'application/json')
-				connection.putheader('content-length', str(len(query)))
 				auth = u'{0}:{1}'.format(self.username, self.password)
 				connection.putheader('Authorization', 'Basic ' + base64.b64encode(auth.encode('latin-1')))
 				connection.endheaders()
@@ -153,7 +152,7 @@ class RpcThread(KillableThread):
 
 				response = connection.getresponse()
 				response = response.read()
-				response = fromJson(unicode(response, 'utf-8'))
+				response = fromJson(str(response, encoding='utf-8'))
 
 				if response and isinstance(response, dict):
 					self.error = response.get('error')

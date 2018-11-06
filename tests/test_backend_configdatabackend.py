@@ -42,7 +42,7 @@ def logBackend(patchLogDir):
 
 @pytest.fixture
 def patchLogDir(tempDir):
-	with mock.patch('OPSI.Backend.Backend.LOG_DIR', tempDir):
+	with mock.patch('OPSI.Backend.Base.ConfigData.LOG_DIR', tempDir):
 		yield tempDir
 
 
