@@ -65,7 +65,7 @@ def text():
 def testProcessingResponseWithEncodedContent(jsonRpcBackend, encodingFunction, contentEncoding, text):
     response = FakeResponse(
         data=encodingFunction(text),
-        header={'content-encoding': contentEncoding}
+        header={'Content-Encoding': contentEncoding}
     )
 
     assert text == jsonRpcBackend._processResponse(response)
