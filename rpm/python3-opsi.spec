@@ -33,9 +33,9 @@ Requires:       m2crypto
 Requires:       MySQL-python
 Requires:       newt-python
 Requires:       pyOpenSSL
-Requires:       PyPAM
+Requires:       python3-pam
 Requires:       python3-ctypes
-Requires:       python3-twisted >= 8.2
+Requires:       python3-twisted >= 8.2, python3-twisted < 18.4
 %if 0%{?rhel_version} >= 700 || 0%{?centos_version} >= 700
 # To have ifconfig available
 Requires:       net-tools
