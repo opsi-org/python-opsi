@@ -31,8 +31,8 @@ import formatter
 import os
 import os.path
 import time
-import urllib
 import urllib2
+from urllib.parse import quote
 
 from .Config import ConfigurationParser
 from .Notifier import EmailNotifier
@@ -846,7 +846,7 @@ class OpsiPackageUpdater(object):
 
 		for url in repository.getDownloadUrls():
 			try:
-				url = urllib.quote(url.encode('utf-8'), safe="/#%[]=:;$&()+,!?*@'~")
+				url = quote(url.encode('utf-8'), safe="/#%[]=:;$&()+,!?*@'~")
 				req = urllib2.Request(url, None, self.httpHeaders)
 				response = opener.open(req)
 				content = response.read()
