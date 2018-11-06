@@ -6,5 +6,4 @@ python-pam
 pyOpenSSL
 mysqlclient
 SQLAlchemy
-M2Crypto
 pyasn1
