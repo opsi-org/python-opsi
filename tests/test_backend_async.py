@@ -56,5 +56,5 @@ async def testWrappingBackendAndPassingArguments():
 @pytest.mark.asyncio
 async def testNotPresentingProtectedFunctions():
     backend = AsyncBackendWrapper(ClassicBackend())
-    with pytest.raises(RuntimeError):
+    with pytest.raises(AttributeError):
         await backend._protected_func()
