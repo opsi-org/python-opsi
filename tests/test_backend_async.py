@@ -58,3 +58,8 @@ async def testNotPresentingProtectedFunctions():
     backend = AsyncBackendWrapper(ClassicBackend())
     with pytest.raises(AttributeError):
         await backend._protected_func()
+
+
+async def testWorkingAsContextManager():
+    with AsyncBackendWrapper(ClassicBackend()) as backend:
+        assert "Here we are." == await backend.some_method()
