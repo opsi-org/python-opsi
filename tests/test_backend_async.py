@@ -38,6 +38,9 @@ class ClassicBackend:
     def _protected_func(self):
         raise RuntimeError("I am uncallable!")
 
+    def backend_exit(self):
+        print("Goodbye")
+
 
 @pytest.mark.asyncio
 async def testWrappingBackend():
