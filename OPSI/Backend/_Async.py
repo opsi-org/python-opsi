@@ -21,6 +21,9 @@ Asynchronous backend wrapper.
 This allows having synchronous backends wrapped for use in an
 asynchronous way with async/await.
 
+Please note that this module is considered internal and available
+functionality may change at any time without prior notice.
+
 :copyright: uib GmbH <info@uib.de>
 :author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
