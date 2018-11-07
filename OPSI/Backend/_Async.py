@@ -67,7 +67,7 @@ class AsyncBackendWrapper:
                 logger.debug(u"{0}: skipping already present method {1}", self.__class__.__name__, name)
                 continue
 
-            setattr(self, methodName, make_async(funcRef))
+            setattr(self, name, make_async(funcRef))
 
     def backend_exit(self):
         try:
