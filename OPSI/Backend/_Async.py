@@ -29,18 +29,12 @@ functionality may change at any time without prior notice.
 :license: GNU Affero General Public License version 3
 """
 
-from OPSI.Logger import Logger
-
 import inspect
 import functools
 from asyncio import get_event_loop
 from concurrent.futures import ThreadPoolExecutor
 
-from .Base import getArgAndCallString
-
 __all__ = ('AsyncBackendWrapper', )
-
-LOGGER = Logger()
 
 
 class AsyncBackendWrapper:
@@ -67,7 +61,6 @@ class AsyncBackendWrapper:
                 continue
 
             if hasattr(self, name):
-                logger.debug(u"{0}: skipping already present method {1}", self.__class__.__name__, name)
                 continue
 
             setattr(self, name, make_async(funcRef))
