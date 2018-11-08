@@ -685,9 +685,10 @@ class SnackUI(UI):
 			row = 0
 			labelWidth = 10
 			for entry in entries:
-				l = len(entry.get('name', u''))
-				if l > labelWidth:
-					labelWidth = l
+				entryLength = len(entry.get('name', u''))
+				if entryLength > labelWidth:
+					labelWidth = entryLength
+
 			width = width - labelWidth
 			if width < 5:
 				width = 5
