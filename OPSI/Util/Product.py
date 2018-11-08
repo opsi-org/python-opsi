@@ -608,6 +608,6 @@ class ProductPackageSource(object):
 				progressSubject.reset()
 				progressSubject.setMessage(u'Creating archive %s' % os.path.basename(archive.getFilename()))
 			archive.create(fileList=archives, baseDir=self.tmpPackDir)
-		except Exception as e:
+		except Exception as error:
 			self.cleanup()
-			raise RuntimeError(u"Failed to create package '%s': %s" % (self.packageFile, e))
+			raise RuntimeError(u"Failed to create package '%s': %s" % (self.packageFile, error))
