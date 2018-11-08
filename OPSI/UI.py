@@ -667,9 +667,9 @@ class SnackUI(UI):
 			if text:
 				textHeight = len(text.split(u'\n'))
 				diff = textHeight + len(entries) + 11 - height
-				if (diff > 0):
+				if diff > 0:
 					textHeight -= diff
-				if (textHeight > 0):
+				if textHeight > 0:
 					textBox = Textbox(
 						width=width,
 						height=textHeight,
@@ -686,10 +686,10 @@ class SnackUI(UI):
 			labelWidth = 10
 			for entry in entries:
 				l = len(entry.get('name', u''))
-				if (l > labelWidth):
+				if l > labelWidth:
 					labelWidth = l
 			width = width-labelWidth
-			if (width < 5):
+			if width < 5:
 				width = 5
 			for entry in entries:
 				label = Label( forceUnicode(entry.get('name', u'???')).encode(encoding, 'replace') )
@@ -885,8 +885,10 @@ class SnackMessageBox(MessageBox, MessageObserver):
 						if parts[j]:
 							lines[i] = parts[j] + u"\r"
 							break
-			if (lines > self._textHeight):
-				self._text = u"\n".join( lines[(-1)*self._textHeight:] )
+
+			if lines > self._textHeight:
+				self._text = u"\n".join(lines[-1 * self._textHeight:])
+
 			try:
 				self._textbox.setText(self._text.encode(encoding, 'replace'))
 			except Exception as e:
@@ -920,9 +922,9 @@ class SnackProgressBox(SnackMessageBox, ProgressBox, ProgressObserver):
 		title = forceUnicode(title)
 		text = forceUnicode(text)
 
-		if (width <= 0):
+		if width <= 0:
 			width = self._ui.getScreen().width - 7
-		if (height <= 0):
+		if height <= 0:
 			height = self._ui.getScreen().height - 7
 
 		SnackMessageBox.__init__(self, ui, width, height-4, title, text)
@@ -949,7 +951,7 @@ class SnackProgressBox(SnackMessageBox, ProgressBox, ProgressObserver):
 		return self._state
 
 	def endChanged(self, subject, end):
-		if (end <= 0) or (self._total <= 0):
+		if end <= 0 or self._total <= 0:
 			self.setState(0)
 		else:
 			self._factor = float(self._total)/end
@@ -963,12 +965,14 @@ class SnackCopyProgressBox(SnackProgressBox):
 	def messageChanged(self, subject, message):
 		minLeft = 0
 		secLeft = subject.getTimeLeft()
-		if (secLeft >= 60):
-			minLeft = int(secLeft/60)
-			secLeft -= (minLeft*60)
-		if (minLeft < 10):
+		if secLeft >= 60:
+			minLeft = int(secLeft // 60)
+			secLeft -= minLeft * 60
+
+		if minLeft < 10:
 			minLeft = '0%d' % minLeft
-		if (secLeft < 10):
+
+		if secLeft < 10:
 			secLeft = '0%d' % secLeft
 		message = u"[%s:%s ETA] %s" % (minLeft, secLeft, message)
 		self.addText(u"%s\n" % message)
@@ -985,9 +989,9 @@ class SnackDualProgressBox(SnackMessageBox, ProgressObserver):
 		title = forceUnicode(title)
 		text = forceUnicode(text)
 
-		if (width <= 0):
+		if width <= 0:
 			width = self._ui.getScreen().width - 7
-		if (height <= 0):
+		if height <= 0:
 			height = self._ui.getScreen().height - 7
 
 		SnackMessageBox.__init__(self, ui, width, height-4, title, text)
@@ -1037,23 +1041,23 @@ class SnackDualProgressBox(SnackMessageBox, ProgressObserver):
 		return self._overallState
 
 	def endChanged(self, subject, end):
-		if (subject == self._overallProgressSubject):
-			if (end <= 0) or (self._overallTotal <= 0):
+		if subject == self._overallProgressSubject:
+			if end <= 0 or self._overallTotal <= 0:
 				self.setOverallState(0)
 			else:
 				self._overallFactor = float(self._overallTotal)/end
 				self.setOverallState(self._overallState)
-		elif (subject == self._currentProgressSubject):
-			if (end <= 0) or (self._currentTotal <= 0):
+		elif subject == self._currentProgressSubject:
+			if end <= 0 or self._currentTotal <= 0:
 				self.setCurrentState(0)
 			else:
 				self._currentFactor = float(self._currentTotal)/end
 				self.setCurrentState(self._currentState)
 
 	def progressChanged(self, subject, state, percent, timeSpend, timeLeft, speed):
-		if (subject == self._overallProgressSubject):
+		if subject == self._overallProgressSubject:
 			self.setOverallState(state)
-		elif (subject == self._currentProgressSubject):
+		elif subject == self._currentProgressSubject:
 			self.setCurrentState(state)
 
 
