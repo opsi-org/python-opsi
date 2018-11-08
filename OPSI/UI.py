@@ -943,7 +943,7 @@ class SnackProgressBox(SnackMessageBox, ProgressBox, ProgressObserver):
 
 	def setState(self, state):
 		self._state = state
-		self._scale.set(int(self._state*self._factor))
+		self._scale.set(int(self._state * self._factor))
 		self.show()
 
 	def getState(self):
@@ -1029,12 +1029,12 @@ class SnackDualProgressBox(SnackMessageBox, ProgressObserver):
 
 	def setOverallState(self, state):
 		self._overallState = state
-		self._overallScale.set(int(self._overallState*self._overallFactor))
+		self._overallScale.set(int(self._overallState * self._overallFactor))
 		self.show()
 
 	def setCurrentState(self, state):
 		self._currentState = state
-		self._currentScale.set(int(self._currentState*self._currentFactor))
+		self._currentScale.set(int(self._currentState * self._currentFactor))
 		self.show()
 
 	def getState(self):
