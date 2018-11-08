@@ -740,7 +740,7 @@ class SnackUI(UI):
 			for i in range(len(entries)):
 				value = str(entries[i]['entry'].value(), encoding=encoding)
 				if entries[i].get('multivalue') and u',' in value:
-					value = map(lambda x:x.strip(), value.split(u','))
+					value = [x.strip() for x in value.split(u',')]
 
 				entries[i]['value'] = value
 				del(entries[i]['entry'])
