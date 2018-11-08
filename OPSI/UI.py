@@ -233,9 +233,9 @@ class SnackUI(UI):
 		try:
 			self._screen.drawRootText(x, y, text.encode(encoding, 'replace'))
 			self.refresh()
-		except Exception as e:
+		except Exception as error:
 			self.exit()
-			logger.logException(e)
+			logger.logException(error)
 			raise
 
 	def showError(self, text, title=_(u'An error occurred'), okLabel=_(u'OK'), width=-1, height=-1, seconds=0):
@@ -272,9 +272,9 @@ class SnackUI(UI):
 				helpLine = _(u"<F12> %s | <Space> select | <Up/Down> scroll text") % okLabel
 				self.getScreen().pushHelpLine(forceUnicode(helpLine).encode(encoding, 'replace'))
 				return gridForm.runOnce()
-		except Exception as e:
+		except Exception as error:
 			self.exit()
-			logger.logException(e)
+			logger.logException(error)
 			raise
 
 	def showMessage(self, text, title=_(u'Message'), okLabel=_(u'OK'), width=-1, height=-1, seconds=0):
@@ -377,9 +377,9 @@ class SnackUI(UI):
 				text=text
 			)
 			return dualProgressBox
-		except Exception as e:
+		except Exception as error:
 			self.exit()
-			logger.logException(e)
+			logger.logException(error)
 			raise
 
 	def createCopyDualProgressBox(self, width=-1, height=-1, total=100, title=_(u'Copy progress'), text=u''):
@@ -399,9 +399,9 @@ class SnackUI(UI):
 				text=text
 			)
 			return progressBox
-		except Exception as e:
+		except Exception as error:
 			self.exit()
-			logger.logException(e)
+			logger.logException(error)
 			raise
 
 	def createMessageBox(self, width=-1, height=-1, title=_(u'Text'), text=u''):
@@ -508,9 +508,9 @@ class SnackUI(UI):
 				return None
 
 			return str(entry.value(), encoding=encoding)
-		except Exception as e:
+		except Exception as error:
 			self.exit()
-			logger.logException(e)
+			logger.logException(error)
 			raise
 
 	def getSelection(self, entries, radio=False, width=-1, height=-1, title=_(u'Please select'), text=u'', okLabel=_(u'OK'), cancelLabel=_(u'Cancel')):
@@ -746,9 +746,9 @@ class SnackUI(UI):
 				entries[i]['value'] = value
 				del(entries[i]['entry'])
 			return entries
-		except Exception as e:
+		except Exception as error:
 			self.exit()
-			logger.logException(e)
+			logger.logException(error)
 			raise
 
 	def yesno(self, text, title=_(u'Question'), okLabel=_(u'OK'), cancelLabel=_(u'Cancel'), width=-1, height=-1):
@@ -804,9 +804,9 @@ class SnackUI(UI):
 			if buttonPressed in (okButton, 'F12'):
 				return True
 			return False
-		except Exception as e:
+		except Exception as error:
 			self.exit()
-			logger.logException(e)
+			logger.logException(error)
 			raise
 
 
@@ -843,9 +843,9 @@ class SnackMessageBox(MessageBox, MessageObserver):
 
 			# help line
 			self._ui.getScreen().pushHelpLine(u"")
-		except Exception as e:
+		except Exception as error:
 			self._ui.exit()
-			logger.logException(e)
+			logger.logException(error)
 			raise
 
 	def show(self, seconds=0):
@@ -856,9 +856,9 @@ class SnackMessageBox(MessageBox, MessageObserver):
 			if seconds:
 				time.sleep(seconds)
 				self.hide()
-		except Exception as e:
+		except Exception as error:
 			self._ui.exit()
-			logger.logException(e)
+			logger.logException(error)
 			raise
 
 	def hide(self):
@@ -866,9 +866,9 @@ class SnackMessageBox(MessageBox, MessageObserver):
 			if self._visible:
 				self._ui.getScreen().popWindow()
 			self._visible = False
-		except Exception as e:
+		except Exception as error:
 			self._ui.exit()
-			logger.logException(e)
+			logger.logException(error)
 			raise
 
 	def setText(self, text):
@@ -891,20 +891,20 @@ class SnackMessageBox(MessageBox, MessageObserver):
 
 			try:
 				self._textbox.setText(self._text.encode(encoding, 'replace'))
-			except Exception as e:
-				logger.logException(e)
+			except Exception as setTextError:
+				logger.logException(setTextError)
 			self.show()
-		except Exception as e:
+		except Exception as error:
 			self._ui.exit()
-			logger.logException(e)
+			logger.logException(error)
 			raise
 
 	def addText(self, text):
 		try:
 			self.setText(self._text + forceUnicode(text))
-		except Exception as e:
+		except Exception as error:
 			self._ui.exit()
-			logger.logException(e)
+			logger.logException(error)
 			raise
 
 	def messageChanged(self, subject, message):
