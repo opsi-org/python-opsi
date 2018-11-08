@@ -223,7 +223,7 @@ class BaseArchive(object):
 			logger.info(u"Exit code: %s" % ret)
 
 			if ret != 0:
-				error = error.decode(encoding, 'replace')
+				error = error.decode()
 				logger.error(error)
 				raise RuntimeError(u"Command '%s' failed with code %s: %s" % (command, ret, error))
 			if self._progressSubject:
