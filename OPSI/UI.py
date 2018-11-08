@@ -34,7 +34,10 @@ import time
 import gettext
 import locale
 import signal as ui_signal
-from snack import *
+
+from snack import (
+	Button, CheckboxTree, Entry, Grid, GridForm, Label, Listbox, Scale,
+	SnackScreen, Textbox)
 
 from OPSI.Logger import Logger
 from OPSI.Types import (forceBool, forceInt, forceList, forceUnicode,
