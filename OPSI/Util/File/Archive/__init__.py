@@ -37,7 +37,6 @@ import os
 import re
 import subprocess
 import time
-from contextlib import closing
 
 import OPSI.Util.File.Opsi
 from OPSI.Logger import Logger
