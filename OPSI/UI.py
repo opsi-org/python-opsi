@@ -953,7 +953,7 @@ class SnackProgressBox(SnackMessageBox, ProgressBox, ProgressObserver):
 		if end <= 0 or self._total <= 0:
 			self.setState(0)
 		else:
-			self._factor = float(self._total)/end
+			self._factor = self._total / end
 			self.setState(self._state)
 
 	def progressChanged(self, subject, state, percent, timeSpend, timeLeft, speed):
@@ -1045,13 +1045,13 @@ class SnackDualProgressBox(SnackMessageBox, ProgressObserver):
 			if end <= 0 or self._overallTotal <= 0:
 				self.setOverallState(0)
 			else:
-				self._overallFactor = float(self._overallTotal)/end
+				self._overallFactor = self._overallTotal / end
 				self.setOverallState(self._overallState)
 		elif subject == self._currentProgressSubject:
 			if end <= 0 or self._currentTotal <= 0:
 				self.setCurrentState(0)
 			else:
-				self._currentFactor = float(self._currentTotal)/end
+				self._currentFactor = self._currentTotal / end
 				self.setCurrentState(self._currentState)
 
 	def progressChanged(self, subject, state, percent, timeSpend, timeLeft, speed):
@@ -1066,7 +1066,7 @@ class SnackCopyDualProgressBox(SnackDualProgressBox):
 		minLeft = 0
 		secLeft = subject.getTimeLeft()
 		if secLeft >= 60:
-			minLeft = int(secLeft / 60)
+			minLeft = secLeft // 60
 			secLeft -= minLeft * 60
 		if minLeft < 10:
 			minLeft = '0%d' % minLeft
