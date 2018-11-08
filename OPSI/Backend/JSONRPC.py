@@ -117,6 +117,8 @@ class JSONRPC(DeferredCall):
 			logger.debug2(u"jsonrpc: {0!r}", rpc)
 
 			response = self.jsonrpcBackend._request(baseUrl=self.baseUrl, data=rpc, retry=self.retry)
+			if isinstance(response, bytes):
+				response = response.decode()
 			self.processResult(json.loads(response))
 		except Exception as error:
 			if self.method not in ('backend_exit', 'exit'):
