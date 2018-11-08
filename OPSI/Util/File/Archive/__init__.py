@@ -37,7 +37,6 @@ import os
 import re
 import subprocess
 import time
-from contextlib import closing
 
 import OPSI.Util.File.Opsi
 from OPSI.Logger import Logger
@@ -178,8 +177,8 @@ class BaseArchive(object):
 					filename = filename[len(baseDir):]
 					while filename.startswith('/'):
 						filename = filename[1:]
-				logger.info(u"Adding file '%s'" % filename)
-				proc.stdin.write("%s\n" % filename.encode(encoding))
+				logger.info(u"Adding file '{}'", filename)
+				proc.stdin.write(("%s\n" % filename).encode())
 
 				try:
 					chunk = proc.stdout.read()
@@ -223,7 +222,7 @@ class BaseArchive(object):
 			logger.info(u"Exit code: %s" % ret)
 
 			if ret != 0:
-				error = error.decode(encoding, 'replace')
+				error = error.decode()
 				logger.error(error)
 				raise RuntimeError(u"Command '%s' failed with code %s: %s" % (command, ret, error))
 			if self._progressSubject:
