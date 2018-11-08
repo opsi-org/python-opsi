@@ -688,11 +688,11 @@ class SnackUI(UI):
 				l = len(entry.get('name', u''))
 				if l > labelWidth:
 					labelWidth = l
-			width = width-labelWidth
+			width = width - labelWidth
 			if width < 5:
 				width = 5
 			for entry in entries:
-				label = Label( forceUnicode(entry.get('name', u'???')).encode(encoding, 'replace') )
+				label = Label(forceUnicode(entry.get('name', u'???')).encode(encoding, 'replace'))
 				value = forceUnicodeList(entry.get('value'))
 				value = u', '.join(value)
 				entry['entry'] = Entry(
@@ -773,7 +773,7 @@ class SnackUI(UI):
 
 			textBox = Textbox(
 				width=width,
-				height=height-6,
+				height=height - 6,
 				text=text.encode(encoding, 'replace'),
 				scroll=1,
 				wrap=1
@@ -877,11 +877,10 @@ class SnackMessageBox(MessageBox, MessageObserver):
 				self._text = self._text.replace(string, u'*** confidential ***')
 
 			lines = self._text.split(u"\n")
-			for i in range( len(lines) ):
-				pos = lines[i].find(u"\r")
-				if (pos != -1):
+			for i in range(len(lines)):
+				if u"\r" in lines[i]:
 					parts = lines[i].split(u"\r")
-					for j in range (len(parts)-1, -1, -1):
+					for j in range(len(parts) - 1, -1, -1):
 						if parts[j]:
 							lines[i] = parts[j] + u"\r"
 							break
@@ -927,7 +926,7 @@ class SnackProgressBox(SnackMessageBox, ProgressBox, ProgressObserver):
 		if height <= 0:
 			height = self._ui.getScreen().height - 7
 
-		SnackMessageBox.__init__(self, ui, width, height-4, title, text)
+		SnackMessageBox.__init__(self, ui, width, height - 4, title, text)
 
 		self._total = total
 		self._state = -1
@@ -974,6 +973,7 @@ class SnackCopyProgressBox(SnackProgressBox):
 
 		if secLeft < 10:
 			secLeft = '0%d' % secLeft
+
 		message = u"[%s:%s ETA] %s" % (minLeft, secLeft, message)
 		self.addText(u"%s\n" % message)
 
@@ -994,7 +994,7 @@ class SnackDualProgressBox(SnackMessageBox, ProgressObserver):
 		if height <= 0:
 			height = self._ui.getScreen().height - 7
 
-		SnackMessageBox.__init__(self, ui, width, height-4, title, text)
+		SnackMessageBox.__init__(self, ui, width, height - 4, title, text)
 
 		self._overallTotal = total
 		self._overallState = -1
