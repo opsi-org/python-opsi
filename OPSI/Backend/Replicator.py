@@ -104,7 +104,7 @@ class BackendReplicator(object):
 		return self.__overallProgressSubject
 
 	def replicate(self, serverIds=[], depotIds=[], clientIds=[], groupIds=[],
-			productIds=[], productTypes=[], audit=True, license=True):
+			productIds=[], productTypes=[], audit=True, licenses=True):
 		'''
 		Replicate (a part) of a opsi configuration database
 		An empty list passed as a param means: replicate all known
@@ -117,13 +117,13 @@ class BackendReplicator(object):
 		productIds = forceList(productIds)
 		productTypes = forceList(productTypes)
 		audit = forceBool(audit)
-		license = forceBool(license)
+		licenses = forceBool(licenses)
 
 		logger.info(
 			u"Replicating: serverIds={serverIds}, depotIds={depotIds}, "
 			u"clientIds={clientIds}, groupIds={groupIds}, "
 			u"productIds={productIds}, productTypes={productTypes}, "
-			u"audit: {audit}, license: {license}".format(**locals())
+			u"audit: {audit}, license: {licenses}".format(**locals())
 		)
 
 		rb = self._extendedReadBackend
@@ -154,7 +154,7 @@ class BackendReplicator(object):
 				hostIds.add(clientId)
 
 			self.__overallProgressSubject.reset()
-			end = self._getNumberOfObjectClassesToProcess(audit, license)
+			end = self._getNumberOfObjectClassesToProcess(audit, licenses)
 			if self.__cleanupFirst:
 				end += 1
 			if self.__newServerId:
@@ -204,7 +204,7 @@ class BackendReplicator(object):
 			for objClass in self.OBJECT_CLASSES:
 				if not audit and objClass in auditClasses:
 					continue
-				if not license and objClass in licenseClasses:
+				if not licenses and objClass in licenseClasses:
 					continue
 
 				subClasses = [None]
@@ -375,7 +375,7 @@ class BackendReplicator(object):
 			wb.backend_setOptions({'additionalReferentialIntegrityChecks': aric})
 
 	@classmethod
-	def _getNumberOfObjectClassesToProcess(cls, audit=True, license=True):
+	def _getNumberOfObjectClassesToProcess(cls, audit=True, licenses=True):
 		auditClasses = set([
 			'AuditHardware', 'AuditSoftware', 'AuditHardwareOnHost',
 			'AuditSoftwareOnClient'
@@ -389,7 +389,7 @@ class BackendReplicator(object):
 		classesToProgress = set(cls.OBJECT_CLASSES)
 		if not audit:
 			classesToProgress = classesToProgress - auditClasses
-		if not license:
+		if not licenses:
 			classesToProgress = classesToProgress - licenseManagementClasses
 
 		return len(classesToProgress)
