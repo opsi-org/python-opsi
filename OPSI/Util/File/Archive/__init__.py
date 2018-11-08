@@ -178,8 +178,8 @@ class BaseArchive(object):
 					filename = filename[len(baseDir):]
 					while filename.startswith('/'):
 						filename = filename[1:]
-				logger.info(u"Adding file '%s'" % filename)
-				proc.stdin.write("%s\n" % filename.encode(encoding))
+				logger.info(u"Adding file '{}'", filename)
+				proc.stdin.write(("%s\n" % filename).encode())
 
 				try:
 					chunk = proc.stdout.read()
