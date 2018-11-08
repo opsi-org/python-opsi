@@ -438,19 +438,19 @@ class SnackUI(UI):
 			for string in self.confidentialStrings:
 				text = text.replace(string, u'*** confidential ***')
 
-			if (width <= 0):
+			if width <= 0:
 				width = self.getScreen().width - 15
 
 			# create text grid
 			textGrid = Grid(1, 1)
 			if text:
 				textHeight = 0
-				if (height <= 0):
+				if height <= 0:
 					height = self.getScreen().height - 15
 					textHeight = height - 5
-					if (textHeight < 2):
+					if textHeight < 2:
 						textHeight = 2
-					elif (textHeight > len(text.split('\n')) + 1):
+					elif textHeight > len(text.split('\n')) + 1:
 						textHeight = len(text.split('\n')) + 1
 				else:
 					textHeight = height - len(text.split('\n')) + 1
@@ -527,18 +527,18 @@ class SnackUI(UI):
 			for string in self.confidentialStrings:
 				text = text.replace(string, u'*** confidential ***')
 
-			if (width <= 0):
+			if width <= 0:
 				width = self.getScreen().width - 15
 
-			if (height <= 14):
+			if height <= 14:
 				height = 13 + len(entries)
 				if text:
 					height += len(text.split(u'\n')) + 1
-				if (height > self.getScreen().height - 5):
+				if height > self.getScreen().height - 5:
 					height = self.getScreen().height - 5
 
 			entriesHeight = len(entries)
-			if (entriesHeight > height - 13):
+			if entriesHeight > height - 13:
 				entriesHeight = height - 13
 
 			# create text grid
@@ -546,9 +546,9 @@ class SnackUI(UI):
 			if text:
 				textHeight = len(text.split(u'\n')) + 1
 				diff = textHeight + entriesHeight + 13 - height
-				if (diff > 0):
+				if diff > 0:
 					entriesHeight -= diff
-					if (entriesHeight < 3):
+					if entriesHeight < 3:
 						textHeight = textHeight - 3 + entriesHeight
 						entriesHeight = 3
 
@@ -652,14 +652,14 @@ class SnackUI(UI):
 			for string in self.confidentialStrings:
 				text = text.replace(string, u'*** confidential ***')
 
-			if (width <= 0):
+			if width <= 0:
 				width = self.getScreen().width - 15
 
-			if (height <= 0):
+			if height <= 0:
 				height = 11 + len(entries)
 				if text:
 					height += len(text.split(u'\n'))
-				if (height > self.getScreen().height - 10):
+				if height > self.getScreen().height - 10:
 					height = self.getScreen().height - 10
 
 			# create text grid
@@ -744,7 +744,7 @@ class SnackUI(UI):
 					value = [x.strip() for x in value.split(u',')]
 
 				entries[i]['value'] = value
-				del(entries[i]['entry'])
+				del entries[i]['entry']
 			return entries
 		except Exception as error:
 			self.exit()
@@ -763,11 +763,11 @@ class SnackUI(UI):
 			for string in self.confidentialStrings:
 				text = text.replace(string, u'*** confidential ***')
 
-			if (width <= 0):
+			if width <= 0:
 				width = self.getScreen().width - 15
 				if width > len(text) + 5:
 					width = len(text) + 5
-			if (height <= 0):
+			if height <= 0:
 				height = 10
 
 			gridForm = GridForm(self._screen, title.encode(encoding, 'replace'), 1, 2)
@@ -829,9 +829,9 @@ class SnackMessageBox(MessageBox, MessageObserver):
 			for string in self._ui.confidentialStrings:
 				self._text = self._text.replace(string, u'*** confidential ***')
 
-			if (width <= 0):
+			if width <= 0:
 				width = self._ui.getScreen().width - 7
-			if (height <= 0):
+			if height <= 0:
 				height = self._ui.getScreen().height - 7
 
 			self._width = width
