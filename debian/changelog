@@ -1,3 +1,18 @@
+python3-opsi (4.2.0.2-1) experimental; urgency=medium
+
+  * OPSI.Backend._Async: Added asynchronous backend wrapper.
+    Use at own risk. Changes to this module may be made without further
+    announcements.
+  * OPSI.Backend.Manager.Dispatcher: Removed accidently remaining
+    BackendExtender class. Import from OPSI.Backend.Manager.Extender instead.
+  * OPSI.UI: Make it compatible with Python 3.
+  * OPSI.Backend.JSONRPC.JSONRPC: Convert retrieved data to str if they are
+    bytes to be able to load with json.loads on older Python 3.
+  * OPSI.Backend.Replicator: Avoid use of a variable with name of a builtin.
+  * OPSI.Util.File.Archive: Fix encoding bug preventing opsi package creation.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 08 Nov 2018 16:19:34 +0100
+
 python3-opsi (4.2.0.1-1) experimental; urgency=medium
 
   * Providing initial support for Python 3.
