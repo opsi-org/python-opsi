@@ -31,12 +31,10 @@ import pam
 
 from OPSI.Exceptions import BackendAuthenticationError
 from OPSI.Logger import Logger
-from OPSI.System.Posix import Distribution
+from OPSI.System.Posix import isRHEL, isCentOS, isOpenSUSE, isSLES
 from OPSI.Types import forceUnicode
 
 __all__ = ('authenticate', 'readGroups')
-
-DISTRIBUTOR = Distribution().distributor or 'unknown'
 
 logger = Logger()
 
@@ -86,9 +84,9 @@ def getPAMService():
 	if os.path.exists("/etc/pam.d/opsi-auth"):
 		# Prefering our own - if present.
 		return 'opsi-auth'
-	elif 'suse' in DISTRIBUTOR.lower():
+	elif isSLES() or isOpenSUSE():
 		return 'sshd'
-	elif 'centos' in DISTRIBUTOR.lower() or 'redhat' in DISTRIBUTOR.lower():
+	elif isCentOS() or isRHEL():
 		return 'system-auth'
 	else:
 		return 'common-auth'
