@@ -23,13 +23,14 @@ PAM authentication.
 :license: GNU Affero General Public License version 3
 """
 
+import win32net
 import win32security
 
 from OPSI.Exceptions import BackendAuthenticationError
 from OPSI.Logger import Logger
 
 
-__all__ = ('authenticate', )
+__all__ = ('authenticate', 'readGroups')
 
 logger = Logger()
 
@@ -52,3 +53,27 @@ def authenticate(username, password):
 		)
 	except Exception as error:
 		raise BackendAuthenticationError(u"Win32security authentication failed for user '%s': %s" % (username, error))
+
+
+def readGroups(username):
+	collectedGroups = set()
+
+	gresume = 0
+	while True:
+		(groups, total, gresume) = win32net.NetLocalGroupEnum(None, 0, gresume)
+		for groupname in (u['name'] for u in groups):
+			logger.debug2(u"Found group '%s'" % groupname)
+			uresume = 0
+			while True:
+				(users, total, uresume) = win32net.NetLocalGroupGetMembers(None, groupname, 0, uresume)
+				for sid in (u['sid'] for u in users):
+					(groupUsername, domain, type) = win32security.LookupAccountSid(None, sid)
+					if groupUsername.lower() == username.lower():
+						collectedGroups.add(groupname)
+						logger.debug(u"User {0!r} is member of group {1!r}", username, groupname)
+				if uresume == 0:
+					break
+			if gresume == 0:
+				break
+
+	return collectedGroups

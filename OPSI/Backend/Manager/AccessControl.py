@@ -48,13 +48,11 @@ from OPSI.Types import forceBool, forceList, forceUnicode, forceUnicodeList
 from OPSI.Util.File.Opsi import BackendACLFile, OpsiConfFile
 
 if os.name == 'posix':
-	import grp
-	import pwd
 	from .Authentication.PAM import authenticate as pamAuthenticate
+	from .Authentication.PAM import readGroups
 elif os.name == 'nt':
-	import win32net
-	import win32security
 	from .Authentication.NT import authenticate as ntAuthenticate
+	from .Authentication.NT import readGroups
 
 __all__ = ('BackendAccessControl', )
 
@@ -236,23 +234,7 @@ class BackendAccessControl(object):
 				self._userGroups = set(self._forceGroups)
 				logger.info(u"Forced groups for user '%s': %s" % (self._username, self._userGroups))
 			else:
-				gresume = 0
-				while True:
-					(groups, total, gresume) = win32net.NetLocalGroupEnum(None, 0, gresume)
-					for groupname in (u['name'] for u in groups):
-						logger.debug2(u"Found group '%s'" % groupname)
-						uresume = 0
-						while True:
-							(users, total, uresume) = win32net.NetLocalGroupGetMembers(None, groupname, 0, uresume)
-							for sid in (u['sid'] for u in users):
-								(username, domain, type) = win32security.LookupAccountSid(None, sid)
-								if username.lower() == self._username.lower():
-									self._userGroups.add(groupname)
-									logger.debug(u"User {0!r} is member of group {1!r}", self._username, groupname)
-							if uresume == 0:
-								break
-						if gresume == 0:
-							break
+				self._userGroups = readGroups(self._username)
 		except Exception as e:
 			raise BackendAuthenticationError(u"Win32security authentication failed for user '%s': %s" % (self._username, e))
 
@@ -273,13 +255,7 @@ class BackendAccessControl(object):
 				self._userGroups = set(self._forceGroups)
 				logger.info(u"Forced groups for user '%s': %s" % (self._username, self._userGroups))
 			else:
-				logger.debug("Reading groups of user...")
-				primaryGroup = forceUnicode(grp.getgrgid(pwd.getpwnam(self._username)[3])[0])
-				logger.debug(u"Primary group of user {0!r} is {1!r}", self._username, primaryGroup)
-
-				self._userGroups = set(forceUnicode(group[0]) for group in grp.getgrall() if self._username in group[3])
-				self._userGroups.add(primaryGroup)
-				logger.debug(u"User {0!r} is member of groups: {1}", self._username, self._userGroups)
+				self._userGroups = readGroups(self._username)
 		except Exception as error:
 			raise BackendAuthenticationError(u"PAM authentication failed for user '%s': %s" % (self._username, error))
 
