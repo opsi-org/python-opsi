@@ -1283,17 +1283,25 @@ into the IDs of these depots are to be found in the list behind \
 
 		return result
 
-	def product_createLocalboot(self, id, productVersion, packageVersion, name=None, licenseRequired=None,
-					setupScript=None, uninstallScript=None, updateScript=None, alwaysScript=None, onceScript=None,
-					priority=None, description=None, advice=None, changelog=None, productClassIds=None, windowsSoftwareIds=None):
+	def product_createLocalboot(
+			self, id, productVersion, packageVersion, name=None,
+			licenseRequired=None, setupScript=None, uninstallScript=None,
+			updateScript=None, alwaysScript=None, onceScript=None,
+			priority=None, description=None, advice=None, changelog=None,
+			productClassIds=None, windowsSoftwareIds=None):
+
 		hash = locals()
 		del hash['self']
 		return self.product_createObjects(LocalbootProduct.fromHash(hash))
 
-	def product_createNetboot(self, id, productVersion, packageVersion, name=None, licenseRequired=None,
-					setupScript=None, uninstallScript=None, updateScript=None, alwaysScript=None, onceScript=None,
-					priority=None, description=None, advice=None, changelog=None, productClassIds=None, windowsSoftwareIds=None,
-					pxeConfigTemplate=None):
+	def product_createNetboot(
+			self, id, productVersion, packageVersion, name=None,
+			licenseRequired=None, setupScript=None, uninstallScript=None,
+			updateScript=None, alwaysScript=None, onceScript=None,
+			priority=None, description=None, advice=None, changelog=None,
+			productClassIds=None, windowsSoftwareIds=None,
+			pxeConfigTemplate=None):
+
 		hash = locals()
 		del hash['self']
 		return self.product_createObjects(NetbootProduct.fromHash(hash))
