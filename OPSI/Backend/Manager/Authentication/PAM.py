@@ -44,7 +44,6 @@ def authenticate(username, password, pamService):
 	if os uses traditional unix authentication mechanisms.
 
 	:raises BackendAuthenticationError: If authentication fails.
-	:returns: True for an successful authentication
 	'''
 	logger.confidential(u"Trying to authenticate user {0!r} with password {1!r} by PAM", username, password)
 
@@ -58,7 +57,6 @@ def authenticate(username, password, pamService):
 		auth.authenticate()
 		auth.acct_mgmt()
 		logger.debug2("PAM authentication successful.")
-		return True
 	except pam.error as error:
 		raise BackendAuthenticationError(u"PAM authentication failed for user '%s': %s" % (username, error))
 	except Exception as error:
