@@ -1975,16 +1975,20 @@ into the IDs of these depots are to be found in the list behind \
 				if not nextProductOnClient.productVersion or not nextProductOnClient.packageVersion:
 					clientToDepots = self.configState_getClientToDepotserver(clientIds=[nextProductOnClient.clientId])
 					if not clientToDepots:
-						raise BackendError(u"Cannot set productInstallationStatus 'installed' for product '%s' on client '%s': product/package version not set and depot for client not found" \
-									% (nextProductOnClient.productId, nextProductOnClient.clientId))
+						raise BackendError(
+							u"Cannot set productInstallationStatus 'installed' for product '%s' on client '%s': product/package version not set and depot for client not found"
+							% (nextProductOnClient.productId, nextProductOnClient.clientId)
+						)
 
 					productOnDepots = self._backend.productOnDepot_getObjects(
 						depotId=clientToDepots[0]['depotId'],
 						productId=nextProductOnClient.productId
 					)
 					if not productOnDepots:
-						raise BackendError(u"Cannot set productInstallationStatus 'installed' for product '%s' on client '%s': product/package version not set and product not found on depot '%s'" \
-									% (nextProductOnClient.productId, nextProductOnClient.clientId, clientToDepots[0]['depotId']))
+						raise BackendError(
+							u"Cannot set productInstallationStatus 'installed' for product '%s' on client '%s': product/package version not set and product not found on depot '%s'"
+							% (nextProductOnClient.productId, nextProductOnClient.clientId, clientToDepots[0]['depotId'])
+						)
 					nextProductOnClient.setProductVersion(productOnDepots[0].productVersion)
 					nextProductOnClient.setPackageVersion(productOnDepots[0].packageVersion)
 			else:
@@ -2603,8 +2607,10 @@ into the IDs of these depots are to be found in the list behind \
 			if len(licensePoolIds) < 1:
 				raise LicenseConfigurationError(u"No license pool for product id '%s', windowsSoftwareId '%s' found" % (productId, windowsSoftwareId))
 			elif len(licensePoolIds) > 1:
-				raise LicenseConfigurationError(u"Multiple license pools for product id '%s', windowsSoftwareId '%s' found: %s" \
-						% (productId, windowsSoftwareId, licensePoolIds))
+				raise LicenseConfigurationError(
+					u"Multiple license pools for product id '%s', windowsSoftwareId '%s' found: %s"
+					% (productId, windowsSoftwareId, licensePoolIds)
+				)
 			licensePoolId = licensePoolIds[0]
 		else:
 			raise ValueError(u"You have to specify one of: licensePoolId, productId, windowsSoftwareId")
@@ -2616,16 +2622,20 @@ into the IDs of these depots are to be found in the list behind \
 		licenseOnClient = None
 		licenseOnClients = self._backend.licenseOnClient_getObjects(licensePoolId=licensePoolId, clientId=clientId)
 		if licenseOnClients:
-			logger.info(u"Using already assigned license '%s' for client '%s', license pool '%s'" \
-					% (licenseOnClients[0].getSoftwareLicenseId(), clientId, licensePoolId))
+			logger.info(
+				u"Using already assigned license '%s' for client '%s', license pool '%s'"
+				% (licenseOnClients[0].getSoftwareLicenseId(), clientId, licensePoolId)
+			)
 			licenseOnClient = licenseOnClients[0]
 		else:
 			(softwareLicenseId, licenseKey) = self._getUsableSoftwareLicense(clientId, licensePoolId)
 			if not licenseKey:
 				logger.info(u"License available but no license key found")
 
-			logger.info(u"Using software license id '%s', license key '%s' for host '%s' and license pool '%s'" \
-						% (softwareLicenseId, licenseKey, clientId, licensePoolId))
+			logger.info(
+				u"Using software license id '%s', license key '%s' for host '%s' and license pool '%s'"
+				% (softwareLicenseId, licenseKey, clientId, licensePoolId)
+			)
 
 			licenseOnClient = LicenseOnClient(
 				softwareLicenseId=softwareLicenseId,
@@ -2663,8 +2673,10 @@ into the IDs of these depots are to be found in the list behind \
 		else:
 			# Search an available license
 			for softwareLicense in self._backend.softwareLicense_getObjects(id=softwareLicenseIds, boundToHost=[None, '']):
-				logger.debug(u"Checking license '%s', maxInstallations %d" \
-					% (softwareLicense.getId(), softwareLicense.getMaxInstallations()))
+				logger.debug(
+					u"Checking license '%s', maxInstallations %d"
+					% (softwareLicense.getId(), softwareLicense.getMaxInstallations())
+				)
 				if softwareLicense.getMaxInstallations() == 0:
 					# 0 = infinite
 					softwareLicenseId = softwareLicense.getId()
