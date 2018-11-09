@@ -56,6 +56,12 @@ def authenticate(username, password):
 
 
 def readGroups(username):
+	"""
+	Read the groups of a user.
+
+	:returns: Group the user is a member of.
+	:rtype: set()
+	"""
 	collectedGroups = set()
 
 	gresume = 0
