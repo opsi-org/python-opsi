@@ -49,8 +49,8 @@ from OPSI.Util.File.Opsi import BackendACLFile, OpsiConfFile
 
 if os.name == 'posix':
 	import grp
-	import pam
 	import pwd
+	from .Authentication.PAM import authenticate as pamAuthenticate
 elif os.name == 'nt':
 	import win32net
 	import win32security
@@ -112,7 +112,7 @@ class BackendAccessControl(object):
 			raise BackendConfigurationError(u"Cannot use BackendAccessControl instance as backend")
 
 		try:
-			if re.search('^[^\.]+\.[^\.]+\.\S+$', self._username):
+			if re.search(r'^[^\.]+\.[^\.]+\.\S+$', self._username):
 				# Username starts with something like hostname.domain.tld:
 				# Assuming it is a host passing his FQDN as username
 				logger.debug(u"Trying to authenticate by opsiHostKey...")
@@ -187,7 +187,7 @@ class BackendAccessControl(object):
 	def _createInstanceMethods(self):
 		protectedMethods = set()
 		for Class in (ExtendedConfigDataBackend, ConfigDataBackend, DepotserverBackend, HostControlBackend, HostControlSafeBackend):
-			methodnames = (name for name, _ in inspect.getmembers(Class, inspect.ismethod) if not name.startswith('_'))
+			methodnames = (name for name, _ in inspect.getmembers(Class, inspect.isfunction) if not name.startswith('_'))
 			for methodName in methodnames:
 				protectedMethods.add(methodName)
 
@@ -262,48 +262,10 @@ class BackendAccessControl(object):
 
 		:raises BackendAuthenticationError: If authentication fails.
 		'''
-		logger.confidential(u"Trying to authenticate user {0!r} with password {1!r} by PAM", self._username, self._password)
-
-		class AuthConv:
-			''' Handle PAM conversation '''
-			def __init__(self, user, password):
-				self.user = user
-				self.password = password
-
-			def __call__(self, auth, query_list, userData=None):
-				response = []
-				for (query, qtype) in query_list:
-					logger.debug(u"PAM conversation: query {0!r}, type {1!r}", query, qtype)
-					if qtype == pam.PAM_PROMPT_ECHO_ON:
-						response.append((self.user, 0))
-					elif qtype == pam.PAM_PROMPT_ECHO_OFF:
-						response.append((self.password, 0))
-					elif qtype in (pam.PAM_ERROR_MSG, pam.PAM_TEXT_INFO):
-						response.append(('', 0))
-					else:
-						return None
-
-				return response
-
 		logger.debug2(u"Attempting PAM authentication as user {0!r}...", self._username)
+
 		try:
-			# Create instance
-			auth = pam.pam()
-			auth.start(self._pamService)
-			# Authenticate
-			auth.set_item(pam.PAM_CONV, AuthConv(self._username, self._password))
-			# Set the tty
-			# Workaround for:
-			#   If running as daemon without a tty the following error
-			#   occurs with older versions of pam:
-			#      pam_access: couldn't get the tty name
-			try:
-				auth.set_item(pam.PAM_TTY, '/dev/null')
-			except Exception:
-				pass
-			auth.authenticate()
-			auth.acct_mgmt()
-			logger.debug2("PAM authentication successful.")
+			pamAuthenticate(self._username, self._password, self._pamService)
 
 			if self._forceGroups is not None:
 				self._userGroups = set(self._forceGroups)
@@ -316,8 +278,8 @@ class BackendAccessControl(object):
 				self._userGroups = set(forceUnicode(group[0]) for group in grp.getgrall() if self._username in group[3])
 				self._userGroups.add(primaryGroup)
 				logger.debug(u"User {0!r} is member of groups: {1}", self._username, self._userGroups)
-		except Exception as e:
-			raise BackendAuthenticationError(u"PAM authentication failed for user '%s': %s" % (self._username, e))
+		except Exception as error:
+			raise BackendAuthenticationError(u"PAM authentication failed for user '%s': %s" % (self._username, error))
 
 	def _isMemberOfGroup(self, ids):
 		for groupId in forceUnicodeList(ids):
@@ -436,7 +398,7 @@ class BackendAccessControl(object):
 
 	def _filterParams(self, params, acls):
 		logger.debug(u"Filtering params: {0}", params)
-		for (key, value) in params.items():
+		for (key, value) in tuple(params.items()):
 			valueList = forceList(value)
 			if not valueList:
 				continue
@@ -512,11 +474,15 @@ class BackendAccessControl(object):
 				for attribute in mandatoryConstructorArgs(obj.__class__):
 					allowedAttributes.add(attribute)
 
+			keysToDelete = set()
 			for key in objHash.keys():
 				if key not in allowedAttributes:
 					if exceptionOnTruncate:
 						raise BackendPermissionDeniedError(u"Access to attribute '%s' denied" % key)
-					del objHash[key]
+					keysToDelete.add(key)
+
+			for key in keysToDelete:
+				del objHash[key]
 
 			if isDict:
 				newObjects.append(objHash)
