@@ -94,6 +94,7 @@ class BackendAccessControl(object):
 			elif option == 'aclfile':
 				self._aclFile = value
 			elif option == 'pamservice':
+				logger.debug("Using PAM service {}", value)
 				self._pamService = value
 			elif option in ('context', 'accesscontrolcontext'):
 				self._context = value
