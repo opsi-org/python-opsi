@@ -75,9 +75,7 @@ def authenticate(username, password, service=None):
 		auth.authenticate()
 		auth.acct_mgmt()
 		logger.debug2("PAM authentication successful.")
-	except pam.error as error:
-		raise BackendAuthenticationError(u"PAM authentication failed for user '%s': %s" % (username, error))
-	except Exception as error:
+	except (Exception, pam.error) as error:
 		raise BackendAuthenticationError(u"PAM authentication failed for user '%s': %s" % (username, error))
 
 
