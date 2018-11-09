@@ -459,84 +459,109 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		return [product.getIdent(returnType) for product in self.product_getObjects(attributes=['id'], **filter)]
 
 	def productProperty_getIdents(self, returnType='unicode', **filter):
-		return [productProperty.getIdent(returnType) for productProperty
-				in self.productProperty_getObjects(
-					attributes=['productId', 'productVersion', 'packageVersion', 'propertyId'],
-					**filter
-				)
+		return [
+			productProperty.getIdent(returnType) for productProperty
+			in self.productProperty_getObjects(
+				attributes=['productId', 'productVersion', 'packageVersion', 'propertyId'],
+				**filter
+			)
 		]
 
 	def productDependency_getIdents(self, returnType='unicode', **filter):
-		return [productDependency.getIdent(returnType) for productDependency
-				in self.productDependency_getObjects(
-					attributes=['productId', 'productVersion', 'packageVersion', 'productAction', 'requiredProductId'],
-					**filter
-				)
+		return [
+			productDependency.getIdent(returnType)
+			for productDependency
+			in self.productDependency_getObjects(
+				attributes=['productId', 'productVersion', 'packageVersion', 'productAction', 'requiredProductId'],
+				**filter
+			)
 		]
 
 	def productOnDepot_getIdents(self, returnType='unicode', **filter):
-		return [productOnDepot.getIdent(returnType) for productOnDepot
-				in self.productOnDepot_getObjects(
-					attributes=['productId', 'productType', 'depotId'],
-					**filter
-				)
+		return [
+			productOnDepot.getIdent(returnType)
+			for productOnDepot
+			in self.productOnDepot_getObjects(
+				attributes=['productId', 'productType', 'depotId'],
+				**filter
+			)
 		]
 
 	def productOnClient_getIdents(self, returnType='unicode', **filter):
-		return [productOnClient.getIdent(returnType) for productOnClient
-				in self.productOnClient_getObjects(
-					attributes=['productId', 'productType', 'clientId'],
-					**filter
-				)
+		return [
+			productOnClient.getIdent(returnType)
+			for productOnClient
+			in self.productOnClient_getObjects(
+				attributes=['productId', 'productType', 'clientId'],
+				**filter
+			)
 		]
 
 	def productPropertyState_getIdents(self, returnType='unicode', **filter):
-		return [productPropertyState.getIdent(returnType) for
-				productPropertyState in self.productPropertyState_getObjects(
-					attributes=['productId', 'propertyId', 'objectId'],
-					**filter
-				)
+		return [
+			productPropertyState.getIdent(returnType)
+			for productPropertyState
+			in self.productPropertyState_getObjects(
+				attributes=['productId', 'propertyId', 'objectId'],
+				**filter
+			)
 		]
 
 	def group_getIdents(self, returnType='unicode', **filter):
-		return [group.getIdent(returnType) for group in
-				self.group_getObjects(attributes=['id'], **filter)]
+		return [
+			group.getIdent(returnType)
+			for group
+			in self.group_getObjects(attributes=['id'], **filter)
+		]
 
 	def objectToGroup_getIdents(self, returnType='unicode', **filter):
-		return [objectToGroup.getIdent(returnType) for objectToGroup
-				in self.objectToGroup_getObjects(
-					attributes=['groupType', 'groupId', 'objectId'],
-					**filter
-				)
+		return [
+			objectToGroup.getIdent(returnType)
+			for objectToGroup
+			in self.objectToGroup_getObjects(
+				attributes=['groupType', 'groupId', 'objectId'],
+				**filter
+			)
 		]
 
 	def licenseContract_getIdents(self, returnType='unicode', **filter):
-		return [licenseContract.getIdent(returnType) for licenseContract
-				in self.licenseContract_getObjects(attributes=['id'], **filter)]
+		return [
+			licenseContract.getIdent(returnType)
+			for licenseContract
+			in self.licenseContract_getObjects(attributes=['id'], **filter)
+		]
 
 	def softwareLicense_getIdents(self, returnType='unicode', **filter):
-		return [softwareLicense.getIdent(returnType) for softwareLicense
-				in self.softwareLicense_getObjects(
-					attributes=['id', 'licenseContractId'],
-					**filter
-				)
+		return [
+			softwareLicense.getIdent(returnType)
+			for softwareLicense
+			in self.softwareLicense_getObjects(
+				attributes=['id', 'licenseContractId'],
+				**filter
+			)
 		]
 
 	def licensePool_getIdents(self, returnType='unicode', **filter):
-		return [licensePool.getIdent(returnType) for licensePool in
-				self.licensePool_getObjects(attributes=['id'], **filter)]
+		return [
+			licensePool.getIdent(returnType)
+			for licensePool in
+			self.licensePool_getObjects(attributes=['id'], **filter)
+		]
 
 	def softwareLicenseToLicensePool_getIdents(self, returnType='unicode', **filter):
-		return [softwareLicenseToLicensePool.getIdent(returnType) for
-				softwareLicenseToLicensePool in
-				self.softwareLicenseToLicensePool_getObjects(
-					attributes=['softwareLicenseId', 'licensePoolId'],
-					**filter
-				)
+		return [
+			softwareLicenseToLicensePool.getIdent(returnType)
+			for softwareLicenseToLicensePool
+			in self.softwareLicenseToLicensePool_getObjects(
+				attributes=['softwareLicenseId', 'licensePoolId'],
+				**filter
+			)
 		]
 
 	def licenseOnClient_getIdents(self, returnType='unicode', **filter):
-		return [licenseOnClient.getIdent(returnType) for licenseOnClient
+		return [
+				licenseOnClient.getIdent(returnType)
+				for licenseOnClient
 				in self.licenseOnClient_getObjects(
 					attributes=['softwareLicenseId', 'licensePoolId', 'clientId'],
 					**filter
@@ -544,38 +569,48 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		]
 
 	def auditSoftware_getIdents(self, returnType='unicode', **filter):
-		return [auditSoftware.getIdent(returnType) for auditSoftware in
-				self.auditSoftware_getObjects(
-					attributes=['name', 'version', 'subVersion', 'language', 'architecture'],
-					**filter
-				)
+		return [
+			auditSoftware.getIdent(returnType)
+			for auditSoftware
+			in self.auditSoftware_getObjects(
+				attributes=['name', 'version', 'subVersion', 'language', 'architecture'],
+				**filter
+			)
 		]
 
 	def auditSoftwareToLicensePool_getIdents(self, returnType='unicode', **filter):
-		return [auditSoftwareToLicensePool.getIdent(returnType) for
-				auditSoftwareToLicensePool in
-				self.auditSoftwareToLicensePool_getObjects(
-					attributes=['name', 'version', 'subVersion', 'language', 'architecture', 'licensePoolId'],
-					**filter
-				)
+		return [
+			auditSoftwareToLicensePool.getIdent(returnType)
+			for auditSoftwareToLicensePool
+			in self.auditSoftwareToLicensePool_getObjects(
+				attributes=['name', 'version', 'subVersion', 'language', 'architecture', 'licensePoolId'],
+				**filter
+			)
 		]
 
 	def auditSoftwareOnClient_getIdents(self, returnType='unicode', **filter):
-		return [auditSoftwareOnClient.getIdent(returnType) for
-				auditSoftwareOnClient in
-				self.auditSoftwareOnClient_getObjects(
-					attributes=['name', 'version', 'subVersion', 'language', 'architecture', 'clientId'],
-					**filter
-				)
+		return [
+			auditSoftwareOnClient.getIdent(returnType)
+			for auditSoftwareOnClient in
+			self.auditSoftwareOnClient_getObjects(
+				attributes=['name', 'version', 'subVersion', 'language', 'architecture', 'clientId'],
+				**filter
+			)
 		]
 
 	def auditHardware_getIdents(self, returnType='unicode', **filter):
-		return [auditHardware.getIdent(returnType) for auditHardware
-				in self.auditHardware_getObjects(**filter)]
+		return [
+			auditHardware.getIdent(returnType)
+			for auditHardware
+			in self.auditHardware_getObjects(**filter)
+		]
 
 	def auditHardwareOnHost_getIdents(self, returnType='unicode', **filter):
-		return [auditHardwareOnHost.getIdent(returnType) for auditHardwareOnHost
-				in self.auditHardwareOnHost_getObjects(**filter)]
+		return [
+			auditHardwareOnHost.getIdent(returnType)
+			for auditHardwareOnHost
+			in self.auditHardwareOnHost_getObjects(**filter)
+		]
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Hosts                                                                                     -
@@ -1899,8 +1934,12 @@ into the IDs of these depots are to be found in the list behind \
 			logger.debug(u"   * generating productOnClient sequence")
 			productOnClients = self.productOnClient_generateSequence(productOnClients)
 
-		return [productOnClient for productOnClient in productOnClients if
-				self._objectHashMatches(productOnClient.toHash(), **filter)]
+		return [
+			productOnClient
+			for productOnClient
+			in productOnClients
+			if self._objectHashMatches(productOnClient.toHash(), **filter)
+		]
 
 	def _productOnClientUpdateOrCreate(self, productOnClient, update=False):
 		nextProductOnClient = None
@@ -2602,9 +2641,11 @@ into the IDs of these depots are to be found in the list behind \
 		if not softwareLicenseToLicensePools:
 			raise LicenseMissingError(u"No licenses in pool '%s'" % licensePoolId)
 
-		softwareLicenseIds = [softwareLicenseToLicensePool.softwareLicenseId
-								for softwareLicenseToLicensePool
-								in softwareLicenseToLicensePools]
+		softwareLicenseIds = [
+			softwareLicenseToLicensePool.softwareLicenseId
+			for softwareLicenseToLicensePool
+			in softwareLicenseToLicensePools
+		]
 
 		softwareLicensesBoundToHost = self._backend.softwareLicense_getObjects(id=softwareLicenseIds, boundToHost=clientId)
 		if softwareLicensesBoundToHost:
