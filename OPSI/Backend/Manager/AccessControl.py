@@ -50,8 +50,6 @@ from OPSI.Util.File.Opsi import BackendACLFile, OpsiConfFile
 if os.name == 'posix':
 	from .Authentication.PAM import authenticate as pamAuthenticate
 	from .Authentication.PAM import readGroups
-	from OPSI.System.Posix import Distribution
-	DISTRIBUTOR = Distribution().distributor or 'unknown'
 elif os.name == 'nt':
 	from .Authentication.NT import authenticate as ntAuthenticate
 	from .Authentication.NT import readGroups
@@ -242,8 +240,6 @@ class BackendAccessControl(object):
 		:raises BackendAuthenticationError: If authentication fails.
 		'''
 		logger.debug2(u"Attempting PAM authentication as user {0!r}...", self._username)
-		if self._pamService is None:
-			self._pamService = getPAMService()
 
 		try:
 			pamAuthenticate(self._username, self._password, self._pamService)
@@ -472,21 +468,3 @@ class BackendAccessControl(object):
 				raise BackendPermissionDeniedError(u"Access denied")
 
 		return newObjects
-
-
-def getPAMService():
-	"""
-	Get the PAM service to use.
-
-	:returns: Name of the service to use.
-	:rtype: str
-	"""
-	if os.path.exists("/etc/pam.d/opsi-auth"):
-		# Prefering our own - if present.
-		return 'opsi-auth'
-	elif 'suse' in DISTRIBUTOR.lower():
-		return 'sshd'
-	elif 'centos' in DISTRIBUTOR.lower() or 'redhat' in DISTRIBUTOR.lower():
-		return 'system-auth'
-	else:
-		return 'common-auth'
