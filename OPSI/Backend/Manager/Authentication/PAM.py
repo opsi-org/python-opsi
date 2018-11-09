@@ -25,29 +25,42 @@ PAM authentication.
 
 import grp
 import pwd
+import os
 
 import pam
 
 from OPSI.Exceptions import BackendAuthenticationError
 from OPSI.Logger import Logger
+from OPSI.System.Posix import Distribution
 from OPSI.Types import forceUnicode
 
 __all__ = ('authenticate', 'readGroups')
 
+DISTRIBUTOR = Distribution().distributor or 'unknown'
+
 logger = Logger()
 
 
-def authenticate(username, password, pamService):
+def authenticate(username, password, service=None):
 	'''
 	Authenticate a user by PAM (Pluggable Authentication Modules).
 	Important: the uid running this code needs access to /etc/shadow
 	if os uses traditional unix authentication mechanisms.
 
+	:param service: The PAM service to use. Leave None for autodetection.
+	:type service: str
 	:raises BackendAuthenticationError: If authentication fails.
 	'''
-	logger.confidential(u"Trying to authenticate user {0!r} with password {1!r} by PAM", username, password)
+	logger.confidential(
+		u"Trying to authenticate user {0!r} with password {1!r} by PAM",
+		username, password
+	)
 
-	logger.debug2(u"Attempting PAM authentication as user {0!r}...", username)
+	pamService = service or getPAMService()
+	logger.debug2(
+		u"Attempting PAM authentication as user {0!r} (service={})...",
+		username, pamService
+	)
 	try:
 		# Create instance
 		auth = pam.pam()
@@ -61,6 +74,24 @@ def authenticate(username, password, pamService):
 		raise BackendAuthenticationError(u"PAM authentication failed for user '%s': %s" % (username, error))
 	except Exception as error:
 		raise BackendAuthenticationError(u"PAM authentication failed for user '%s': %s" % (username, error))
+
+
+def getPAMService():
+	"""
+	Get the PAM service to use.
+
+	:returns: Name of the service to use.
+	:rtype: str
+	"""
+	if os.path.exists("/etc/pam.d/opsi-auth"):
+		# Prefering our own - if present.
+		return 'opsi-auth'
+	elif 'suse' in DISTRIBUTOR.lower():
+		return 'sshd'
+	elif 'centos' in DISTRIBUTOR.lower() or 'redhat' in DISTRIBUTOR.lower():
+		return 'system-auth'
+	else:
+		return 'common-auth'
 
 
 class AuthConv:
