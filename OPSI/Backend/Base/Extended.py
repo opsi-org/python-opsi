@@ -1830,16 +1830,17 @@ into the IDs of these depots are to be found in the list behind \
 		pocAttributes = attributes
 		pocFilter = dict(filter)
 
-		defaultMatchesFilter = \
-					(not filter.get('installationStatus') or 'not_installed' in forceList(filter['installationStatus'])) \
-				and (not filter.get('actionRequest')      or 'none'          in forceList(filter['actionRequest'])) \
-				and (not filter.get('productVersion')     or None            in forceList(filter['productVersion'])) \
-				and (not filter.get('packageVersion')     or None            in forceList(filter['packageVersion'])) \
-				and (not filter.get('modificationTime')   or None            in forceList(filter['modificationTime'])) \
-				and (not filter.get('targetState')        or None            in forceList(filter['targetState'])) \
-				and (not filter.get('lastAction')         or None            in forceList(filter['lastAction'])) \
-				and (not filter.get('actionProgress')     or None            in forceList(filter['actionProgress'])) \
-				and (not filter.get('actionResult')       or None            in forceList(filter['actionResult']))
+		defaultMatchesFilter = (
+			(not filter.get('installationStatus') or 'not_installed' in forceList(filter['installationStatus'])) and
+			(not filter.get('actionRequest') or 'none' in forceList(filter['actionRequest'])) and
+			(not filter.get('productVersion') or None in forceList(filter['productVersion'])) and
+			(not filter.get('packageVersion') or None in forceList(filter['packageVersion'])) and
+			(not filter.get('modificationTime') or None in forceList(filter['modificationTime'])) and
+			(not filter.get('targetState') or None in forceList(filter['targetState'])) and
+			(not filter.get('lastAction') or None in forceList(filter['lastAction'])) and
+			(not filter.get('actionProgress') or None in forceList(filter['actionProgress'])) and
+			(not filter.get('actionResult') or None in forceList(filter['actionResult']))
+		)
 
 		if (self._options['addProductOnClientDefaults'] and defaultMatchesFilter) or self._options['processProductOnClientSequence']:
 			# Do not filter out ProductOnClients on the basis of these attributes in this case
