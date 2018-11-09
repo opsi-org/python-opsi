@@ -232,7 +232,7 @@ class BackendAccessControl(object):
 
 			if self._forceGroups is not None:
 				self._userGroups = set(self._forceGroups)
-				logger.info(u"Forced groups for user '%s': %s" % (self._username, self._userGroups))
+				logger.info(u"Forced groups for user {!r}: {}", self._username, ', '.join(self._userGroups))
 			else:
 				self._userGroups = readGroups(self._username)
 		except Exception as e:
@@ -253,7 +253,7 @@ class BackendAccessControl(object):
 
 			if self._forceGroups is not None:
 				self._userGroups = set(self._forceGroups)
-				logger.info(u"Forced groups for user '%s': %s" % (self._username, self._userGroups))
+				logger.info(u"Forced groups for user {!r}: {}", self._username, ', '.join(self._userGroups))
 			else:
 				self._userGroups = readGroups(self._username)
 		except Exception as error:
