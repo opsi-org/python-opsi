@@ -228,8 +228,8 @@ class BackendAccessControl:
 				logger.info(u"Forced groups for user {!r}: {}", self._username, ', '.join(self._userGroups))
 			else:
 				self._userGroups = readGroups(self._username)
-		except Exception as e:
-			raise BackendAuthenticationError(u"Win32security authentication failed for user '%s': %s" % (self._username, e))
+		except Exception as error:
+			raise BackendAuthenticationError(u"Win32security authentication failed for user '%s': %s" % (self._username, error))
 
 	def _pamAuthenticateUser(self):
 		'''
@@ -353,9 +353,9 @@ class BackendAccessControl:
 				newKwargs = self._filterParams(kwargs, acls)
 				if not newKwargs:
 					raise BackendPermissionDeniedError(u"No allowed param supplied")
-			except Exception as e:
-				logger.logException(e, LOG_INFO)
-				raise BackendPermissionDeniedError(u"Access to method '%s' denied for user '%s': %s" % (methodName, self._username, e))
+			except Exception as error:
+				logger.logException(error, LOG_INFO)
+				raise BackendPermissionDeniedError(u"Access to method '%s' denied for user '%s': %s" % (methodName, self._username, error))
 
 		logger.debug2("newKwargs: {0}", newKwargs)
 
