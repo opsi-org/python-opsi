@@ -59,7 +59,7 @@ __all__ = ('BackendAccessControl', )
 logger = Logger()
 
 
-class BackendAccessControl(object):
+class BackendAccessControl:
 
 	def __init__(self, backend, **kwargs):
 
