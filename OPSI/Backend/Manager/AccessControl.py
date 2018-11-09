@@ -77,19 +77,11 @@ class BackendAccessControl(object):
 		self._password = None
 		self._acl = None
 		self._aclFile = None
-		self._pamService = 'common-auth'
 		self._userGroups = set()
 		self._forceGroups = None
 		self._host = None
 		self._authenticated = False
-
-		if os.path.exists("/etc/pam.d/opsi-auth"):
-			# Prefering our own - if present.
-			self._pamService = 'opsi-auth'
-		elif 'suse' in DISTRIBUTOR.lower():
-			self._pamService = 'sshd'
-		elif 'centos' in DISTRIBUTOR.lower() or 'redhat' in DISTRIBUTOR.lower():
-			self._pamService = 'system-auth'
+		self._pamService = getPAMService()
 
 		for (option, value) in kwargs.items():
 			option = option.lower()
@@ -535,3 +527,21 @@ class BackendAccessControl(object):
 				raise BackendPermissionDeniedError(u"Access denied")
 
 		return newObjects
+
+
+def getPAMService():
+	"""
+	Get the PAM service to use.
+
+	:returns: Name of the service to use.
+	:rtype: str
+	"""
+	if os.path.exists("/etc/pam.d/opsi-auth"):
+		# Prefering our own - if present.
+		return 'opsi-auth'
+	elif 'suse' in DISTRIBUTOR.lower():
+		return 'sshd'
+	elif 'centos' in DISTRIBUTOR.lower() or 'redhat' in DISTRIBUTOR.lower():
+		return 'system-auth'
+	else:
+		return 'common-auth'
