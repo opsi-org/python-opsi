@@ -54,6 +54,7 @@ if os.name == 'posix':
 elif os.name == 'nt':
 	import win32net
 	import win32security
+	from .Authentication.NT import authenticate as ntAuthenticate
 
 __all__ = ('BackendAccessControl', )
 
@@ -226,10 +227,11 @@ class BackendAccessControl(object):
 
 		:raises BackendAuthenticationError: If authentication fails.
 		'''
-		logger.confidential(u"Trying to authenticate user '%s' with password '%s' by win32security" % (self._username, self._password))
+		logger.debug2(u"Attempting NT authentication as user {0!r}...", self._username)
 
 		try:
-			win32security.LogonUser(self._username, 'None', self._password, win32security.LOGON32_LOGON_NETWORK, win32security.LOGON32_PROVIDER_DEFAULT)
+			ntAuthenticate(self._username, self._password)
+
 			if self._forceGroups is not None:
 				self._userGroups = set(self._forceGroups)
 				logger.info(u"Forced groups for user '%s': %s" % (self._username, self._userGroups))
