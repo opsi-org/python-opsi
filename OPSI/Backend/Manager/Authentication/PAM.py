@@ -17,18 +17,22 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-PAM authentication
+PAM authentication.
 
 :author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
 """
 
+import grp
+import pwd
+
 import pam
 
 from OPSI.Exceptions import BackendAuthenticationError
 from OPSI.Logger import Logger
+from OPSI.Types import forceUnicode
 
-__all__ = ('authenticate', )
+__all__ = ('authenticate', 'readGroups')
 
 logger = Logger()
 
@@ -81,3 +85,21 @@ class AuthConv:
 				return None
 
 		return response
+
+
+def readGroups(username):
+	"""
+	Read the groups of a user.
+
+	:returns: Group the user is a member of.
+	:rtype: set()
+	"""
+	logger.debug("Reading groups of user {!r}...", username)
+	primaryGroup = forceUnicode(grp.getgrgid(pwd.getpwnam(username)[3])[0])
+	logger.debug(u"Primary group of user {0!r} is {1!r}", username, primaryGroup)
+
+	groups = set(forceUnicode(group[0]) for group in grp.getgrall() if username in group[3])
+	groups.add(primaryGroup)
+	logger.debug(u"User {0!r} is member of groups: {1}", username, groups)
+
+	return groups
