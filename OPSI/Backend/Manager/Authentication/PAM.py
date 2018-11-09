@@ -36,6 +36,9 @@ from OPSI.Types import forceUnicode
 
 __all__ = ('authenticate', 'readGroups')
 
+
+_DEFAULT_SERVICE = None
+
 logger = Logger()
 
 
@@ -54,7 +57,11 @@ def authenticate(username, password, service=None):
 		username, password
 	)
 
-	pamService = service or getPAMService()
+	global _DEFAULT_SERVICE
+	pamService = service or _DEFAULT_SERVICE
+	if pamService is None:
+		pamService = _DEFAULT_SERVICE = getPAMService()
+
 	logger.debug2(
 		u"Attempting PAM authentication as user {0!r} (service={})...",
 		username, pamService
