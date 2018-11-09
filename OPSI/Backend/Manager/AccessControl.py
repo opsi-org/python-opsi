@@ -24,6 +24,7 @@ Backend access control.
 :license: GNU Affero General Public License version 3
 """
 
+import functools
 import inspect
 import os
 import re
@@ -48,10 +49,10 @@ from OPSI.Types import forceBool, forceList, forceUnicode, forceUnicodeList
 from OPSI.Util.File.Opsi import BackendACLFile, OpsiConfFile
 
 if os.name == 'posix':
-	from .Authentication.PAM import authenticate as pamAuthenticate
+	from .Authentication.PAM import authenticate
 	from .Authentication.PAM import readGroups
 elif os.name == 'nt':
-	from .Authentication.NT import authenticate as ntAuthenticate
+	from .Authentication.NT import authenticate
 	from .Authentication.NT import readGroups
 
 __all__ = ('BackendAccessControl', )
@@ -206,43 +207,14 @@ class BackendAccessControl:
 		:raises BackendAuthenticationError: If authentication fails.
 		'''
 		if os.name == 'posix':
-			self._pamAuthenticateUser()
+			authFunc = functools.partial(authenticate, service=self._pamService)
 		elif os.name == 'nt':
-			self._winAuthenticateUser()
+			authFunc = authenticate
 		else:
 			raise NotImplementedError("Sorry, operating system '%s' not supported yet!" % os.name)
 
-	def _winAuthenticateUser(self):
-		'''
-		Authenticate a user by Windows-Login on current machine
-
-		:raises BackendAuthenticationError: If authentication fails.
-		'''
-		logger.debug2(u"Attempting NT authentication as user {0!r}...", self._username)
-
 		try:
-			ntAuthenticate(self._username, self._password)
-
-			if self._forceGroups is not None:
-				self._userGroups = set(self._forceGroups)
-				logger.info(u"Forced groups for user {!r}: {}", self._username, ', '.join(self._userGroups))
-			else:
-				self._userGroups = readGroups(self._username)
-		except Exception as error:
-			raise BackendAuthenticationError(u"Win32security authentication failed for user '%s': %s" % (self._username, error))
-
-	def _pamAuthenticateUser(self):
-		'''
-		Authenticate a user by PAM (Pluggable Authentication Modules).
-		Important: the uid running this code needs access to /etc/shadow
-		if os uses traditional unix authentication mechanisms.
-
-		:raises BackendAuthenticationError: If authentication fails.
-		'''
-		logger.debug2(u"Attempting PAM authentication as user {0!r}...", self._username)
-
-		try:
-			pamAuthenticate(self._username, self._password, self._pamService)
+			authFunc(self._username, self._password)
 
 			if self._forceGroups is not None:
 				self._userGroups = set(self._forceGroups)
