@@ -73,7 +73,7 @@ def readGroups(username):
 			while True:
 				(users, total, uresume) = win32net.NetLocalGroupGetMembers(None, groupname, 0, uresume)
 				for sid in (u['sid'] for u in users):
-					(groupUsername, domain, type) = win32security.LookupAccountSid(None, sid)
+					(groupUsername, domain, groupType) = win32security.LookupAccountSid(None, sid)
 					if groupUsername.lower() == username.lower():
 						collectedGroups.add(groupname)
 						logger.debug(u"User {0!r} is member of group {1!r}", username, groupname)
