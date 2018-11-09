@@ -50,6 +50,8 @@ from OPSI.Util.File.Opsi import BackendACLFile, OpsiConfFile
 if os.name == 'posix':
 	from .Authentication.PAM import authenticate as pamAuthenticate
 	from .Authentication.PAM import readGroups
+	from OPSI.System.Posix import Distribution
+	DISTRIBUTOR = Distribution().distributor or 'unknown'
 elif os.name == 'nt':
 	from .Authentication.NT import authenticate as ntAuthenticate
 	from .Authentication.NT import readGroups
@@ -57,13 +59,6 @@ elif os.name == 'nt':
 __all__ = ('BackendAccessControl', )
 
 logger = Logger()
-
-try:
-	from OPSI.System.Posix import Distribution
-	DISTRIBUTOR = Distribution().distributor or 'unknown'
-except ImportError:
-	# Probably running on Windows.
-	DISTRIBUTOR = 'unknown'
 
 
 class BackendAccessControl(object):
@@ -80,7 +75,7 @@ class BackendAccessControl(object):
 		self._forceGroups = None
 		self._host = None
 		self._authenticated = False
-		self._pamService = getPAMService()
+		self._pamService = None
 
 		for (option, value) in kwargs.items():
 			option = option.lower()
@@ -247,6 +242,8 @@ class BackendAccessControl(object):
 		:raises BackendAuthenticationError: If authentication fails.
 		'''
 		logger.debug2(u"Attempting PAM authentication as user {0!r}...", self._username)
+		if self._pamService is None:
+			self._pamService = getPAMService()
 
 		try:
 			pamAuthenticate(self._username, self._password, self._pamService)
