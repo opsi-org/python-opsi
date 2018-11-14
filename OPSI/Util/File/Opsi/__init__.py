@@ -1546,19 +1546,16 @@ element of the tuple is replace with the second element.
 					cmd.append("--password=%s" % backend["config"]["password"])
 					cmd.append(backend["config"]["database"])
 
-					output = StringIO()
-
 					p = Popen(cmd, stdin=fd, stdout=PIPE, stderr=STDOUT)
 
 					out = p.stdout.readline()
-
+					output = StringIO()
 					while not p.poll() and out:
-						output.write(out)
+						output.write(out.decode())
 						out = p.stdout.readline()
 
 					if p.returncode not in (0, None):
 						raise OpsiBackupFileError(u"Failed to restore MySQL Backend: %s" % output.getvalue())
-
 				finally:
 					os.close(fd)
 					os.remove(name)
