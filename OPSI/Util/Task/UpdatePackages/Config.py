@@ -310,6 +310,10 @@ overriden based on values in configuration file.
 				repository.password = forceUnicode(value.strip())
 				if repository.password:
 					logger.addConfidentialString(repository.password)
+			elif option.lower() == 'authcertfile':
+				repository.authcertfile = forceFilename(value.strip())
+			elif option.lower() == 'authkeyfile':
+				repository.authkeyfile = forceFilename(value.strip())
 			elif option.lower() == 'autoinstall':
 				repository.autoInstall = forceBool(value.strip())
 			elif option.lower() == 'autoupdate':
