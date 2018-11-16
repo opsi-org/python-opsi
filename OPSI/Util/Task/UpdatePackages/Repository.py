@@ -36,7 +36,7 @@ logger = Logger()
 
 
 class ProductRepositoryInfo(object):
-	def __init__(self, name, baseUrl, dirs=[], username=u"", password=u"", opsiDepotId=None, autoInstall=False, autoUpdate=True, autoSetup=False, proxy=None, excludes=[], includes=[], active=False):
+	def __init__(self, name, baseUrl, dirs=[], username=u"", password=u"", authcertfile=u"", authkeyfile="", opsiDepotId=None, autoInstall=False, autoUpdate=True, autoSetup=False, proxy=None, excludes=[], includes=[], active=False):
 		self.name = forceUnicode(name)
 		self.baseUrl = forceUnicode(baseUrl)
 		self.dirs = forceUnicodeList(dirs)
@@ -44,6 +44,8 @@ class ProductRepositoryInfo(object):
 		self.includes = includes
 		self.username = forceUnicode(username)
 		self.password = forceUnicode(password)
+		self.authcertfile = forceUnicode(authcertfile)
+		self.authkeyfile = forceUnicode(authkeyfile)
 		self.autoInstall = autoInstall
 		self.autoUpdate = autoUpdate
 		self.autoSetup = autoSetup
