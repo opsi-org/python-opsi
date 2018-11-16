@@ -1,3 +1,10 @@
+python-opsi (4.1.1.50-1) stable; urgency=medium
+
+  * OPSI.Util.Task.UpdatePackages: Certificate authentication implemented
+    for opsi-package-updater.
+
+ -- Erol Ueluekmen <e.ueluekmen@uib.de>  Fri, 16 Nov 2018 12:38:45 +0100
+
 python-opsi (4.1.1.49-1) stable; urgency=medium
 
   * OPSI.Service.Worker: HTTP headers are set according to RFC 2616.

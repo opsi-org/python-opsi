@@ -31,6 +31,7 @@ import formatter
 import os
 import os.path
 import re
+import ssl
 import time
 import urllib
 import urllib2
@@ -676,12 +677,19 @@ class OpsiPackageUpdater(object):
 			os.chdir(curdir)
 
 	def downloadPackage(self, availablePackage, notifier=None):
+		authcertfile = availablePackage['repository'].authcertfile
+		authkeyfile = availablePackage['repository'].authkeyfile
 		url = availablePackage["packageFile"]
 		outFile = os.path.join(self.config["packageDir"], availablePackage["filename"])
 
-		passwordManager = urllib2.HTTPPasswordMgrWithDefaultRealm()
-		passwordManager.add_password(None, availablePackage['repository'].baseUrl, availablePackage['repository'].username, availablePackage['repository'].password)
-		handler = urllib2.HTTPBasicAuthHandler(passwordManager)
+		if os.path.exists(authcertfile) and os.path.exists(authkeyfile):
+			context = ssl.create_default_context()
+			context.load_cert_chain(authcertfile, authkeyfile)
+			handler = urllib2.HTTPSHandler(context=context)
+		else:
+			passwordManager = urllib2.HTTPPasswordMgrWithDefaultRealm()
+			passwordManager.add_password(None, availablePackage['repository'].baseUrl, availablePackage['repository'].username, availablePackage['repository'].password)
+			handler = urllib2.HTTPBasicAuthHandler(passwordManager)
 		if availablePackage['repository'].proxy:
 			logger.notice(u"Using Proxy: %s" % availablePackage['repository'].proxy)
 			proxyHandler = urllib2.ProxyHandler({'http': availablePackage['repository'].proxy, 'https': availablePackage['repository'].proxy})
@@ -825,10 +833,17 @@ class OpsiPackageUpdater(object):
 			if not repositoryLocalUrl or not repositoryLocalUrl.startswith('file://'):
 				raise ValueError(u"Invalid repository local url for depot '%s'" % repository.opsiDepotId)
 			depotRepositoryPath = repositoryLocalUrl[7:]
+		authcertfile = repository.authcertfile
+		authkeyfile = repository.authkeyfile
 
-		passwordManager = urllib2.HTTPPasswordMgrWithDefaultRealm()
-		passwordManager.add_password(None, repository.baseUrl.encode('utf-8'), repository.username.encode('utf-8'), repository.password.encode('utf-8'))
-		handler = urllib2.HTTPBasicAuthHandler(passwordManager)
+		if os.path.exists(authcertfile) and os.path.exists(authkeyfile):
+			context = ssl.create_default_context()
+			context.load_cert_chain(authcertfile, authkeyfile)
+			handler = urllib2.HTTPSHandler(context=context)
+		else:
+			passwordManager = urllib2.HTTPPasswordMgrWithDefaultRealm()
+			passwordManager.add_password(None, repository.baseUrl.encode('utf-8'), repository.username.encode('utf-8'), repository.password.encode('utf-8'))
+			handler = urllib2.HTTPBasicAuthHandler(passwordManager)
 		if repository.proxy:
 			logger.notice(u"Using Proxy: %s" % repository.proxy)
 			proxyHandler = urllib2.ProxyHandler(
