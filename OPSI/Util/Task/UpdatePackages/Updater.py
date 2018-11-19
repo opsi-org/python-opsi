@@ -125,7 +125,7 @@ class OpsiPackageUpdater(object):
 			yield repo
 
 	def readConfigFile(self):
-		parser = ConfigurationParser(self.config["configFile"], self.getConfigBackend())
+		parser = ConfigurationParser(self.config["configFile"], backend=self.getConfigBackend(), depotId=self.depotId, depotKey=self.depotKey)
 		self.config = parser.parse(self.config)
 
 	def getConfigBackend(self):
