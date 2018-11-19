@@ -262,6 +262,9 @@ def testHost_createClient(extendedConfigDataBackend, lastSeen):
     assert client.created
     assert client.lastSeen
 
+    if lastSeen:
+        assert client.lastSeen == lastSeen
+
 
 def testConfigState_getIdents(extendedConfigDataBackend):
     extendedConfigDataBackend.host_createOpsiDepotserver(
