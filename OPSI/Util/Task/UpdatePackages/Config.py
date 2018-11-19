@@ -99,9 +99,11 @@ def splitAndStrip(string, sep):
 
 
 class ConfigurationParser(object):
-	def __init__(self, configFile, backend=None):
+	def __init__(self, configFile, backend=None, depotId=None, depotKey=None):
 		self.configFile = configFile
 		self.backend = backend
+		self.depotId = depotId
+		self.depotKey = depotKey
 
 	def parse(self, configuration=None):
 		"""
