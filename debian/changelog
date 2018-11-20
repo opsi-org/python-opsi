@@ -1,3 +1,9 @@
+python-opsi (4.1.1.51-2) stable; urgency=medium
+
+  * RPM: requires python-mysqlclient on openSUSE Leap 15.0
+
+ -- Mathias Radtke <m.radtke@uib.de>  Mon, 19 Nov 2018 15:43:29 +0100
+
 python-opsi (4.1.1.51-1) stable; urgency=medium
 
   * Fixed opsiDepotId Usage for opsi-package-updater
