@@ -159,9 +159,11 @@ def tempDir():
 
 
 @pytest.fixture
-def licenseManagementBackend(_sqlBackend):
+def licenseManagementBackend(sqlBackendCreationContextManager):
     '''Returns a backend that can handle License Management.'''
-    yield ExtendedConfigDataBackend(_sqlBackend)
+    with sqlBackendCreationContextManager() as backend:
+        with _backendBase(backend):
+            yield ExtendedConfigDataBackend(backend)
 
 
 @pytest.fixture(
@@ -173,15 +175,6 @@ def licenseManagementBackend(_sqlBackend):
 )
 def sqlBackendCreationContextManager(request):
     yield request.param
-
-
-@pytest.fixture
-def _sqlBackend(sqlBackendCreationContextManager):
-    '''Backends that make use of SQL.'''
-
-    with sqlBackendCreationContextManager() as backend:
-        with _backendBase(backend):
-            yield backend
 
 
 @pytest.fixture(
