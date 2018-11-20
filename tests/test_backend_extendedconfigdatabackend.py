@@ -230,7 +230,8 @@ def testHost_createDepotServer(extendedConfigDataBackend):
     assert depot.maxBandwidth == 0
 
 
-def testHost_createClient(extendedConfigDataBackend):
+@pytest.mark.parametrize("lastSeen", [None, '0000-00-00 00:00:00'])
+def testHost_createClient(extendedConfigDataBackend, lastSeen):
     extendedConfigDataBackend.host_createOpsiClient(
         id='client100.test.invalid',
         opsiHostKey=None,
@@ -239,7 +240,7 @@ def testHost_createClient(extendedConfigDataBackend):
         hardwareAddress='00:00:01:01:02:02',
         ipAddress='192.168.0.200',
         created=None,
-        lastSeen=None
+        lastSeen=lastSeen
     )
 
     hosts = extendedConfigDataBackend.host_getObjects(id='client100.test.invalid')
@@ -256,6 +257,9 @@ def testHost_createClient(extendedConfigDataBackend):
     assert client.opsiHostKey
     assert client.created
     assert client.lastSeen
+
+    if lastSeen:
+        assert client.lastSeen == lastSeen
 
 
 def testConfigState_getIdents(extendedConfigDataBackend):
