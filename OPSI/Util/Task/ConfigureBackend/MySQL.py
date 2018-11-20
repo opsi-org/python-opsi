@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2014-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -113,7 +113,7 @@ on to. Defaults to ``Logger.error``.
 	try:
 		backend.backend_createBase()
 	except MySQLdb.OperationalError as exc:
-		if exc.errno == INVALID_DEFAULT_VALUE:
+		if exc.args[0] == INVALID_DEFAULT_VALUE:
 			errorFunction(
 				u"It seems you have the MySQL strict mode enabled. "
 				u"Please read the opsi handbook.\n"
@@ -190,11 +190,11 @@ def initializeDatabase(
 		try:
 			db.query(u'CREATE DATABASE {database} DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_bin;'.format(**config))
 		except MySQLdb.OperationalError as error:
-			if error.errno == ACCESS_DENIED_ERROR_CODE:
+			if error.args[0] == ACCESS_DENIED_ERROR_CODE:
 				raise DatabaseConnectionFailedException(error.msg)
 			raise error
 		except MySQLdb.ProgrammingError as error:
-			if error.errno != DATABASE_EXISTS_ERROR_CODE:
+			if error.args[0] != DATABASE_EXISTS_ERROR_CODE:
 				raise error
 		notificationFunction(u"Database '{database}' created".format(**config))
 
