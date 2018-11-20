@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2014-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -52,7 +52,6 @@ import pytest
 #     'returnObjectsOnUpdateAndCreate':      False
 # })
 
-@pytest.mark.requiresModulesFile
 def test_configState_getClientToDepotserver(extendedConfigDataBackend):
     originalClients = getClients()
     depotservers = getDepotServers()
@@ -91,7 +90,6 @@ def test_configState_getClientToDepotserver(extendedConfigDataBackend):
         assert clientToDepot['depotId'] in depotServerIDs
 
 
-@pytest.mark.requiresModulesFile
 def test_createProductOnClient(extendedConfigDataBackend):
     client = OpsiClient(id='client.test.invalid')
     extendedConfigDataBackend.host_createObjects(client)
@@ -112,7 +110,6 @@ def test_createProductOnClient(extendedConfigDataBackend):
     assert [originalPoc] == productOnClients
 
 
-@pytest.mark.requiresModulesFile
 def test_selectProductOnClientWithDefault(extendedConfigDataBackend):
     client = OpsiClient(id='client.test.invalid')
     depot = OpsiDepotserver(id='depotserver1.test.invalid')
@@ -233,7 +230,6 @@ def testHost_createDepotServer(extendedConfigDataBackend):
     assert depot.maxBandwidth == 0
 
 
-@pytest.mark.requiresModulesFile
 def testHost_createClient(extendedConfigDataBackend):
     extendedConfigDataBackend.host_createOpsiClient(
         id='client100.test.invalid',
@@ -310,7 +306,6 @@ def testConfigState_getIdents(extendedConfigDataBackend):
     assert expect == len(ids)
 
 
-@pytest.mark.requiresModulesFile
 def test_ldapSearchFilter(extendedConfigDataBackend):
     depotServer = getDepotServers()
     extendedConfigDataBackend.host_createObjects(depotServer)
@@ -380,7 +375,6 @@ def test_ldapSearchFilter(extendedConfigDataBackend):
     'productOnDepot',
     'productPropertyState',
 ))
-@pytest.mark.requiresModulesFile  # because of SQL / fillBackend...
 def testGettingIdentsDoesNotRaiseAnException(extendedConfigDataBackend, objectType, returnType, klass):
     fillBackend(extendedConfigDataBackend)
 
@@ -448,7 +442,6 @@ def testBackend_getInterface(extendedConfigDataBackend, methodSignature):
         pytest.fail("Expected method {0!r} not found".format(methodSignature['name']))
 
 
-@pytest.mark.requiresModulesFile
 @pytest.mark.parametrize("query", [
     '(&(objectClass=Host)(type=OpsiDepotserver))',
     '(&(&(objectClass=Host)(type=OpsiDepotserver))(objectClass=Host))',
@@ -471,7 +464,6 @@ def testSearchingForIdents(extendedConfigDataBackend, query):
     assert result
 
 
-@pytest.mark.requiresModulesFile  # SQLite needs a license
 @pytest.mark.parametrize("addressType", ['fqdn'])
 def testRenamingDepotServer(extendedConfigDataBackend, addressType, newId='hello.world.test'):
     backend = extendedConfigDataBackend
@@ -700,7 +692,6 @@ def testRenamingDepotServerFailsIfOldServerMissing(extendedConfigDataBackend, ne
         extendedConfigDataBackend.host_renameOpsiDepotserver("not.here.invalid", "foo.bar.baz")
 
 
-@pytest.mark.requiresModulesFile  # File backend can't handle foreign depotserver
 def testRenamingDepotServerFailsIfNewIdAlreadyExisting(extendedConfigDataBackend, newId='hello.world.test'):
     backend = extendedConfigDataBackend
     depots = getDepotServers()
