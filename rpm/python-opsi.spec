@@ -43,7 +43,11 @@ Requires:       net-tools
 %else
 Requires:       lsb-release
 Requires:       python-m2crypto
+%if 0%{?sle_version} == 150000 && 0%{?is_opensuse}
+Requires:       python-mysqlclient
+%else
 Requires:       python-mysql
+%endif
 Requires:       python-newt
 Requires:       python-openssl
 Requires:       python-pam
