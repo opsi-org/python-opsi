@@ -39,6 +39,11 @@ Requires:       net-tools
 %endif
 %else
 Requires:       lsb-release
+%if 0%{?sle_version} == 150000 && 0%{?is_opensuse}
+Requires:       python3-mysqlclient
+%else
+Requires:       python3-mysql
+%endif
 Requires:       python3-mysql
 Requires:       python3-newt
 Requires:       python3-openssl

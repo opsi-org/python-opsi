@@ -36,6 +36,7 @@ except ImportError:
 
 UNKNOWN_TABLE_ERROR_CODE = 1051
 
+
 @contextmanager
 def getMySQLBackend(**backendOptions):
     if not MySQLconfiguration:
