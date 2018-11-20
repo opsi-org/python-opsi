@@ -24,6 +24,7 @@ Backend access control.
 :license: GNU Affero General Public License version 3
 """
 
+import functools
 import inspect
 import os
 import re
@@ -48,26 +49,18 @@ from OPSI.Types import forceBool, forceList, forceUnicode, forceUnicodeList
 from OPSI.Util.File.Opsi import BackendACLFile, OpsiConfFile
 
 if os.name == 'posix':
-	import grp
-	import pam
-	import pwd
+	from .Authentication.PAM import authenticate
+	from .Authentication.PAM import readGroups
 elif os.name == 'nt':
-	import win32net
-	import win32security
+	from .Authentication.NT import authenticate
+	from .Authentication.NT import readGroups
 
 __all__ = ('BackendAccessControl', )
 
 logger = Logger()
 
-try:
-	from OPSI.System.Posix import Distribution
-	DISTRIBUTOR = Distribution().distributor or 'unknown'
-except ImportError:
-	# Probably running on Windows.
-	DISTRIBUTOR = 'unknown'
 
-
-class BackendAccessControl(object):
+class BackendAccessControl:
 
 	def __init__(self, backend, **kwargs):
 
@@ -77,19 +70,11 @@ class BackendAccessControl(object):
 		self._password = None
 		self._acl = None
 		self._aclFile = None
-		self._pamService = 'common-auth'
 		self._userGroups = set()
 		self._forceGroups = None
 		self._host = None
 		self._authenticated = False
-
-		if os.path.exists("/etc/pam.d/opsi-auth"):
-			# Prefering our own - if present.
-			self._pamService = 'opsi-auth'
-		elif 'suse' in DISTRIBUTOR.lower():
-			self._pamService = 'sshd'
-		elif 'centos' in DISTRIBUTOR.lower() or 'redhat' in DISTRIBUTOR.lower():
-			self._pamService = 'system-auth'
+		self._pamService = None
 
 		for (option, value) in kwargs.items():
 			option = option.lower()
@@ -102,6 +87,7 @@ class BackendAccessControl(object):
 			elif option == 'aclfile':
 				self._aclFile = value
 			elif option == 'pamservice':
+				logger.debug("Using PAM service {}", value)
 				self._pamService = value
 			elif option in ('context', 'accesscontrolcontext'):
 				self._context = value
@@ -221,103 +207,22 @@ class BackendAccessControl(object):
 		:raises BackendAuthenticationError: If authentication fails.
 		'''
 		if os.name == 'posix':
-			self._pamAuthenticateUser()
+			authFunc = functools.partial(authenticate, service=self._pamService)
 		elif os.name == 'nt':
-			self._winAuthenticateUser()
+			authFunc = authenticate
 		else:
 			raise NotImplementedError("Sorry, operating system '%s' not supported yet!" % os.name)
 
-	def _winAuthenticateUser(self):
-		'''
-		Authenticate a user by Windows-Login on current machine
-
-		:raises BackendAuthenticationError: If authentication fails.
-		'''
-		logger.confidential(u"Trying to authenticate user '%s' with password '%s' by win32security" % (self._username, self._password))
-
 		try:
-			win32security.LogonUser(self._username, 'None', self._password, win32security.LOGON32_LOGON_NETWORK, win32security.LOGON32_PROVIDER_DEFAULT)
-			if self._forceGroups is not None:
-				self._userGroups = set(self._forceGroups)
-				logger.info(u"Forced groups for user '%s': %s" % (self._username, self._userGroups))
-			else:
-				gresume = 0
-				while True:
-					(groups, total, gresume) = win32net.NetLocalGroupEnum(None, 0, gresume)
-					for groupname in (u['name'] for u in groups):
-						logger.debug2(u"Found group '%s'" % groupname)
-						uresume = 0
-						while True:
-							(users, total, uresume) = win32net.NetLocalGroupGetMembers(None, groupname, 0, uresume)
-							for sid in (u['sid'] for u in users):
-								(username, domain, type) = win32security.LookupAccountSid(None, sid)
-								if username.lower() == self._username.lower():
-									self._userGroups.add(groupname)
-									logger.debug(u"User {0!r} is member of group {1!r}", self._username, groupname)
-							if uresume == 0:
-								break
-						if gresume == 0:
-							break
-		except Exception as e:
-			raise BackendAuthenticationError(u"Win32security authentication failed for user '%s': %s" % (self._username, e))
-
-	def _pamAuthenticateUser(self):
-		'''
-		Authenticate a user by PAM (Pluggable Authentication Modules).
-		Important: the uid running this code needs access to /etc/shadow
-		if os uses traditional unix authentication mechanisms.
-
-		:raises BackendAuthenticationError: If authentication fails.
-		'''
-		logger.confidential(u"Trying to authenticate user {0!r} with password {1!r} by PAM", self._username, self._password)
-
-		class AuthConv:
-			''' Handle PAM conversation '''
-			def __init__(self, user, password):
-				self.user = user
-				self.password = password
-
-			def __call__(self, auth, query_list, userData=None):
-				response = []
-				for (query, qtype) in query_list:
-					logger.debug(u"PAM conversation: query {0!r}, type {1!r}", query, qtype)
-					if qtype == pam.PAM_PROMPT_ECHO_ON:
-						response.append((self.user, 0))
-					elif qtype == pam.PAM_PROMPT_ECHO_OFF:
-						response.append((self.password, 0))
-					elif qtype in (pam.PAM_ERROR_MSG, pam.PAM_TEXT_INFO):
-						response.append(('', 0))
-					else:
-						return None
-
-				return response
-
-		logger.debug2(u"Attempting PAM authentication as user {0!r}...", self._username)
-		try:
-			# Create instance
-			auth = pam.pam()
-			auth.start(self._pamService)
-			# Authenticate
-			auth.set_item(pam.PAM_CONV, AuthConv(self._username, self._password))
-			auth.authenticate()
-			auth.acct_mgmt()
-			logger.debug2("PAM authentication successful.")
+			authFunc(self._username, self._password)
 
 			if self._forceGroups is not None:
 				self._userGroups = set(self._forceGroups)
-				logger.info(u"Forced groups for user '%s': %s" % (self._username, self._userGroups))
+				logger.info(u"Forced groups for user {!r}: {}", self._username, ', '.join(self._userGroups))
 			else:
-				logger.debug("Reading groups of user...")
-				primaryGroup = forceUnicode(grp.getgrgid(pwd.getpwnam(self._username)[3])[0])
-				logger.debug(u"Primary group of user {0!r} is {1!r}", self._username, primaryGroup)
-
-				self._userGroups = set(forceUnicode(group[0]) for group in grp.getgrall() if self._username in group[3])
-				self._userGroups.add(primaryGroup)
-				logger.debug(u"User {0!r} is member of groups: {1}", self._username, self._userGroups)
-		except pam.error as e:
-			raise BackendAuthenticationError(u"PAM authentication failed for user '%s': %s" % (self._username, e))
-		except Exception as e:
-			raise BackendAuthenticationError(u"PAM authentication failed for user '%s': %s" % (self._username, e))
+				self._userGroups = readGroups(self._username)
+		except Exception as error:
+			raise BackendAuthenticationError(u"PAM authentication failed for user '%s': %s" % (self._username, error))
 
 	def _isMemberOfGroup(self, ids):
 		for groupId in forceUnicodeList(ids):
@@ -420,9 +325,9 @@ class BackendAccessControl(object):
 				newKwargs = self._filterParams(kwargs, acls)
 				if not newKwargs:
 					raise BackendPermissionDeniedError(u"No allowed param supplied")
-			except Exception as e:
-				logger.logException(e, LOG_INFO)
-				raise BackendPermissionDeniedError(u"Access to method '%s' denied for user '%s': %s" % (methodName, self._username, e))
+			except Exception as error:
+				logger.logException(error, LOG_INFO)
+				raise BackendPermissionDeniedError(u"Access to method '%s' denied for user '%s': %s" % (methodName, self._username, error))
 
 		logger.debug2("newKwargs: {0}", newKwargs)
 
