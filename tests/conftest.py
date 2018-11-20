@@ -188,10 +188,7 @@ def multithreadingBackend(request):
 
 
 @pytest.fixture(
-    params=[
-        pytest.param(getSQLiteBackend, marks=pytest.mark.requiresModulesFile),
-        getMySQLBackend
-    ],
+    params=[getSQLiteBackend, getMySQLBackend],
     ids=['sqlite', 'mysql']
 )
 def hardwareAuditBackendWithHistory(request, hardwareAuditConfigPath):
@@ -215,11 +212,7 @@ def hardwareAuditConfigPath():
 
 
 @pytest.fixture(
-    params=[
-        getFileBackend,
-        getMySQLBackend,
-        pytest.param(getSQLiteBackend, marks=pytest.mark.requiresModulesFile),
-    ],
+    params=[getFileBackend, getMySQLBackend, getSQLiteBackend],
     ids=['file', 'mysql', 'sqlite']
 )
 def auditDataBackend(request, hardwareAuditConfigPath):
