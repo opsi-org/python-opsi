@@ -352,7 +352,7 @@ def fillMySQLBackend(connectionConfig):
         cursor = con.cursor()
         cursor.execute(table)
     except MySQLdb.OperationalError as operror:
-        if operror.errno != 1050:  # "Table 'CONFIG' already exists"
+        if operror.args[0] != 1050:  # "Table 'CONFIG' already exists"
             raise operror
     finally:
         con.close()
