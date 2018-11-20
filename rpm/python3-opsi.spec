@@ -12,7 +12,7 @@ BuildRequires:  python3-setuptools
 Requires:       duplicity
 Requires:       iproute
 Requires:       lshw
-Requires:       python3 >= 3.5
+Requires:       python3 >= 3.5.3
 Requires:       python-ldaptor
 Requires:       python3-magic
 Requires:       python3-sqlalchemy
