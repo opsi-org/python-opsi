@@ -54,10 +54,10 @@ _MODULES_FILE = os.path.exists(os.path.join('/etc', 'opsi', 'modules'))
 @pytest.fixture(
     params=[
         getFileBackend,
+        pytest.param(getMySQLBackend, marks=pytest.mark.requiresModulesFile),
         pytest.param(getSQLiteBackend, marks=pytest.mark.requiresModulesFile),
-        pytest.param(getMySQLBackend, marks=pytest.mark.requiresModulesFile)
     ],
-    ids=['file', 'sqlite', 'mysql']
+    ids=['file', 'mysql', 'sqlite']
 )
 def configDataBackend(request):
     """
@@ -168,10 +168,10 @@ def licenseManagementBackend(sqlBackendCreationContextManager):
 
 @pytest.fixture(
     params=[
+        getMySQLBackend,
         pytest.param(getSQLiteBackend, marks=pytest.mark.requiresModulesFile),
-        getMySQLBackend
     ],
-    ids=['sqlite', 'mysql']
+    ids=['mysql', 'sqlite']
 )
 def sqlBackendCreationContextManager(request):
     yield request.param
@@ -188,8 +188,8 @@ def multithreadingBackend(request):
 
 
 @pytest.fixture(
-    params=[getSQLiteBackend, getMySQLBackend],
-    ids=['sqlite', 'mysql']
+    params=[getMySQLBackend, getSQLiteBackend],
+    ids=['mysql', 'sqlite']
 )
 def hardwareAuditBackendWithHistory(request, hardwareAuditConfigPath):
     with request.param(auditHardwareConfigFile=hardwareAuditConfigPath) as backend:
