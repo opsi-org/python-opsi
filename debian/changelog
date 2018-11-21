@@ -1,3 +1,12 @@
+python3-opsi (4.2.0.3-1) experimental; urgency=medium
+
+  * 20_legacy.conf: getDepotId: Parameter clientId is required.
+  * Added OPSI.Backend.Manager.Authentication. This module contains reusable
+    authentication functionality.
+  * Fix accessing MySQL error codes in exceptions.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 21 Nov 2018 14:06:19 +0100
+
 python3-opsi (4.2.0.2-1) experimental; urgency=medium
 
   * OPSI.Backend._Async: Added asynchronous backend wrapper.
