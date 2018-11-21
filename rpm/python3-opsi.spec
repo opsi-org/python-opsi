@@ -12,7 +12,7 @@ BuildRequires:  python3-setuptools
 Requires:       duplicity
 Requires:       iproute
 Requires:       lshw
-Requires:       python3 >= 3.5
+Requires:       python3 >= 3.5.3
 Requires:       python-ldaptor
 Requires:       python3-magic
 Requires:       python3-sqlalchemy
@@ -39,6 +39,11 @@ Requires:       net-tools
 %endif
 %else
 Requires:       lsb-release
+%if 0%{?sle_version} == 150000 && 0%{?is_opensuse}
+Requires:       python3-mysqlclient
+%else
+Requires:       python3-mysql
+%endif
 Requires:       python3-mysql
 Requires:       python3-newt
 Requires:       python3-openssl

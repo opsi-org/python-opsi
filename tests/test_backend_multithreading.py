@@ -81,7 +81,7 @@ def testMultiThreadingBackend(multithreadingBackend, numberOfThreads):
                 self.backend.host_createObjects(self.client1)
                 self.backend.host_getObjects()
             except IntegrityError as e:
-                if e.errno != DUP_ENTRY:
+                if e.args[0] != DUP_ENTRY:
                     self.errorMessage = e.msg
                     self.exitCode = 2
             except Exception as e:
