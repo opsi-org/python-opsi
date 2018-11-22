@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -22,17 +22,15 @@ Testing the patching of the sudoers file.
 :license: GNU Affero General Public License version 3
 """
 
-from __future__ import absolute_import, print_function
-
 import os
 import pytest
 
 from .helpers import mock, createTemporaryTestfile
 
 from OPSI.System import which
-from OPSI.Util.Task.Sudoers import (_NO_TTY_FOR_SERVICE_REQUIRED,
-    _NO_TTY_REQUIRED_DEFAULT, FILE_ADMIN_GROUP, patchSudoersFileForOpsi,
-    patchSudoersFileToAllowRestartingDHCPD)
+from OPSI.Util.Task.Sudoers import (
+    _NO_TTY_FOR_SERVICE_REQUIRED, _NO_TTY_REQUIRED_DEFAULT, FILE_ADMIN_GROUP,
+    patchSudoersFileForOpsi, patchSudoersFileToAllowRestartingDHCPD)
 
 
 SUDOERS_WITHOUT_ENTRIES = os.path.join(

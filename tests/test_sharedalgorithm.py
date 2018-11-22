@@ -23,8 +23,6 @@ Testing OPSI.SharedAlgorithm
 :license: GNU Affero General Public License version 3
 """
 
-from __future__ import absolute_import, print_function
-
 from OPSI import SharedAlgorithm
 from OPSI.Exceptions import OpsiProductOrderingError
 from OPSI.Object import LocalbootProduct, ProductDependency

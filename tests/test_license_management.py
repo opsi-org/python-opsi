@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
@@ -22,8 +21,6 @@ Testing the license management functionality.
 :author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
 """
-
-from __future__ import absolute_import
 
 from OPSI.Object import (
 	LicenseContract, RetailSoftwareLicense, OEMSoftwareLicense,

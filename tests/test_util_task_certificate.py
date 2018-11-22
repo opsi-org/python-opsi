@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -22,18 +22,16 @@ Testing certificate creation and renewal.
 :license: GNU Affero General Public License version 3
 """
 
-from __future__ import absolute_import
-
 import os
 import shutil
 
+import pytest
+
 from OPSI.Types import forceHostId
 from OPSI.Util import getfqdn, randomString
-from OPSI.Util.Task.Certificate import (NoCertificateError,
-    CertificateCreationError, UnreadableCertificateError, createCertificate,
-    loadConfigurationFromCertificate, renewCertificate)
-
-import pytest
+from OPSI.Util.Task.Certificate import (
+    NoCertificateError, CertificateCreationError, UnreadableCertificateError,
+    createCertificate, loadConfigurationFromCertificate, renewCertificate)
 
 
 @pytest.fixture

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2017 uib GmbH <info@uib.de>
+# Copyright (C) 2017-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -22,19 +22,18 @@ Testing the update of the MySQL backend from an older version.
 :license: GNU Affero General Public License version 3
 """
 
-from __future__ import absolute_import
-
 import json
 import os.path
 
-from .Backends.File import getFileBackend
-
 import pytest
+
 from OPSI.Util.Task.UpdateBackend.File import (
     FileBackendUpdateError,
     getVersionFilePath, readBackendVersion, _readVersionFile,
     updateBackendVersion, updateFileBackend
 )
+
+from .Backends.File import getFileBackend
 
 
 @pytest.fixture

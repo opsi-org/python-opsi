@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2015-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2015-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -22,13 +22,11 @@ Testing backend cleaning.
 :license: GNU Affero General Public License version 3
 """
 
-from __future__ import absolute_import
-
 from OPSI.Object import LocalbootProduct, ProductOnDepot
 from OPSI.Util.Task.CleanupBackend import cleanupBackend, cleanUpProducts
 
-from .test_backend_replicator import (checkIfBackendIsFilled, fillBackend,
-    fillBackendWithHosts)
+from .test_backend_replicator import (
+    checkIfBackendIsFilled, fillBackend, fillBackendWithHosts)
 
 
 def testCleanupBackend(cleanableDataBackend):

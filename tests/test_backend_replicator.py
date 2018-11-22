@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2015-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2015-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -23,10 +22,6 @@ Testing backend replication.
 :license: GNU Affero General Public License version 3
 """
 
-from __future__ import absolute_import
-
-import sys
-
 import pytest
 
 from OPSI.Backend.Replicator import BackendReplicator
@@ -36,11 +31,13 @@ from .test_configs import getConfigs, getConfigStates
 from .test_groups import getHostGroups, getObjectToGroups, getProductGroup
 from .test_hosts import getClients, getConfigServer, getDepotServers
 from .test_license_management import getLicenseContracts
-from .test_products import (getLocalbootProducts, getNetbootProduct,
+from .test_products import (
+    getLocalbootProducts, getNetbootProduct,
     getProductDepdencies, getProductProperties, getProductsOnDepot,
     getProductsOnClients, getProductPropertyStates)
-from .test_software_and_hardware_audit import (getAuditHardwares,
-    getAuditHardwareOnHost, getAuditSoftwares, getAuditSoftwareOnClient)
+from .test_software_and_hardware_audit import (
+    getAuditHardwares, getAuditHardwareOnHost, getAuditSoftwares,
+    getAuditSoftwareOnClient)
 
 
 # TODO: there are some cases we should test
