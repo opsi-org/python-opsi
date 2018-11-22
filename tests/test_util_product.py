@@ -28,11 +28,11 @@ import os
 import re
 import tempfile
 
+import pytest
+
 import OPSI.Util.Product as Product
 
 from .helpers import cd, mock
-
-import pytest
 
 
 @pytest.mark.parametrize("text", [
