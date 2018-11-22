@@ -22,9 +22,9 @@ Testing the update of the MySQL backend from an older version.
 :license: GNU Affero General Public License version 3
 """
 
-from __future__ import absolute_import
-
 import os
+
+import pytest
 
 from OPSI.Backend.MySQL import MySQL, MySQLBackend
 from OPSI.Backend.SQL import DATABASE_SCHEMA_VERSION, createSchemaVersionTable
@@ -34,8 +34,6 @@ from OPSI.Util.Task.UpdateBackend.MySQL import (
 from OPSI.Util.Task.ConfigureBackend import updateConfigFile
 
 from .Backends.MySQL import MySQLconfiguration, getTableNames, cleanDatabase
-
-import pytest
 
 
 @pytest.fixture

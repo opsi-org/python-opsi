@@ -24,12 +24,13 @@ Various unittests to test functionality of python-opsi.
 :license: GNU Affero General Public License version 3
 """
 
-import mock
 import os
 import pytest
 from contextlib import contextmanager
 
 import OPSI.System.Posix as Posix
+
+from .helpers import mock
 
 
 def testGetBlockDeviceContollerInfo():

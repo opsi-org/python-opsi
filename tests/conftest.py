@@ -29,11 +29,8 @@ creating a test function. No rurther imports are needed.
 :license: GNU Affero General Public License version 3
 """
 
-from __future__ import absolute_import
-
 import os
 import shutil
-import sys
 from contextlib import contextmanager
 
 from OPSI.Backend.Backend import ExtendedConfigDataBackend

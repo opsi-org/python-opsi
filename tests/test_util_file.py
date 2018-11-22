@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2019 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -22,21 +22,19 @@ Testing OPSI.Util.File
 :license: GNU Affero General Public License version 3
 """
 
-from __future__ import absolute_import
-
 import os
 import shutil
 from contextlib import contextmanager
+
+import pytest
 
 from OPSI.Util.File import IniFile, InfFile, TxtSetupOemFile, ZsyncFile
 
 from .helpers import createTemporaryTestfile
 
-import pytest
-
 
 def testParsingIniFileDoesNotFail():
-    iniTestData = r'''
+    iniTestData = '''
 #[section1]
 # abc = def
 
@@ -51,7 +49,7 @@ key = value \; no comment \# comment2 ;# comment3
 
 [section5]
 key = \;\;\;\;\;\;\;\;\;\;\;\;
-'''
+    '''
 
     iniFile = IniFile('filename_is_irrelevant_for_this')
     iniFile.parse(iniTestData.split('\n'))

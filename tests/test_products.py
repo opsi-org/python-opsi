@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014-2019 uib GmbH <info@uib.de>
+# Copyright (C) 2014-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -21,10 +21,6 @@ Testing the functionality of working with products.
 :author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
 """
-
-from __future__ import absolute_import, print_function
-
-from itertools import product as iterproduct
 
 import pytest
 
@@ -699,26 +695,24 @@ def testGettingProductProperties(extendedConfigDataBackend):
     productProperties = extendedConfigDataBackend.productProperty_getObjects()
     assert len(productProperties) == len(prodPropertiesOrig)
 
-    matching = 0
-    for productProperty, originalProperty in iterproduct(productProperties, prodPropertiesOrig):
-        if (productProperty.productId == originalProperty.productId and
-            productProperty.propertyId == originalProperty.propertyId and
-            productProperty.productVersion == originalProperty.productVersion and
-            productProperty.packageVersion == originalProperty.packageVersion):
+    for productProperty in productProperties:
+        for originalProperty in prodPropertiesOrig:
+            if (productProperty.productId == originalProperty.productId and
+                productProperty.propertyId == originalProperty.propertyId and
+                productProperty.productVersion == originalProperty.productVersion and
+                productProperty.packageVersion == originalProperty.packageVersion):
 
-            productProperty = productProperty.toHash()
-            originalProperty = originalProperty.toHash()
-            for (attribute, value) in originalProperty.items():
-                if value is not None:
-                    if isinstance(value, list):
-                        for v in value:
-                            assert v in productProperty[attribute]
-                    else:
-                        assert value == productProperty[attribute]
+                productProperty = productProperty.toHash()
+                originalProperty = originalProperty.toHash()
+                for (attribute, value) in originalProperty.items():
+                    if value is not None:
+                        if isinstance(value, list):
+                            for v in value:
+                                assert v in productProperty[attribute]
+                        else:
+                            assert value == productProperty[attribute]
 
-            matching += 1
-
-    assert matching == len(prodPropertiesOrig)
+                break  # Stop iterating the original product properties
 
 
 def testUpdatingProductProperty(extendedConfigDataBackend):
@@ -1616,63 +1610,3 @@ def testVersionOnProductOnDepots():
     for pod in getProductsOnDepot(products, configServer, depots):
         version = '{}-{}'.format(pod.productVersion, pod.packageVersion)
         assert version == pod.version
-
-
-def testUpdatingProductPropertyHashes(extendedConfigDataBackend):
-    backend = extendedConfigDataBackend
-
-    prods = getProducts()
-    prodPropertiesOrig = getProductProperties(prods)
-    backend.product_createObjects(prods)
-    backend.productProperty_createObjects(prodPropertiesOrig)
-
-    ppFromBackend = backend.productProperty_getObjects()
-    assert ppFromBackend
-    ppFromBackend = [pp.toHash() for pp in ppFromBackend]
-    for pp in ppFromBackend:
-        pp['description'] = u"Das ist auch dein Zuhause!"
-
-    backend.productProperty_updateObjects(ppFromBackend)
-
-    for pp in backend.productProperty_getObjects():
-        assert pp.getDescription() == u"Das ist auch dein Zuhause!"
-
-
-def testUpdatingMultipleProductProperties(extendedConfigDataBackend):
-    backend = extendedConfigDataBackend
-
-    prods = getProducts()
-    prodPropertiesOrig = getProductProperties(prods)
-    backend.product_createObjects(prods)
-    backend.productProperty_createObjects(prodPropertiesOrig)
-
-    properties = backend.productProperty_getObjects()
-    assert len(prodPropertiesOrig) == len(properties)
-    assert len(properties) > 1, "Want more properties for tests"
-
-    for index, changedProperty in enumerate(properties):
-        if isinstance(changedProperty, UnicodeProductProperty):
-            # We can not change the status of editable on a
-            # BoolProductProperty and therefore need to use a
-            # UnicodeProductProperty for this test.
-            break
-    else:
-        raise RuntimeError("No UnicodeProductProperty found!")
-
-    newText = u'Eat my shorts!'
-    changedProperty.setDescription(newText)
-    changedProperty.setEditable(not changedProperty.getEditable())
-    properties[index] == changedProperty
-    backend.productProperty_updateObjects(properties)
-
-    props = backend.productProperty_getObjects(
-        productId=changedProperty.productId,
-        productVersion=changedProperty.productVersion,
-        packageVersion=changedProperty.packageVersion,
-        propertyId=changedProperty.propertyId
-    )
-    assert len(props) == 1
-    updatedProp = props[0]
-
-    assert updatedProp.getDescription() == newText
-    assert updatedProp.getEditable() == changedProperty.getEditable()

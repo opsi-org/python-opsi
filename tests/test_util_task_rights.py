@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014-2019 uib GmbH <info@uib.de>
+# Copyright (C) 2014-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -21,8 +21,6 @@ Testing the setting of rights.
 :author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
 """
-
-from __future__ import absolute_import, print_function
 
 import grp
 import os
@@ -89,9 +87,9 @@ def testGetDirectoriesToProcess(depotDirectory, patchUserInfo, slesSupport, tftp
     (False, u'/tftpboot/linux'),
     (True, u'/var/lib/tftpboot/opsi')
 ], ids=["opensuse", "non-opensuse"])
-def testGetDirectoriesToProcessOpenSUSE(depotDirectory, patchUserInfo, slesSupport, tftpdir):
+def testGetDirectoriesToProcessOpenSUSELeap(depotDirectory, patchUserInfo, slesSupport, tftpdir):
     with mock.patch('OPSI.Util.Task.Rights.getWebserverRepositoryPath', lambda: '/path/to/apache'):
-        with mock.patch('OPSI.Util.Task.Rights.isOpenSUSE', lambda: slesSupport):
+        with mock.patch('OPSI.Util.Task.Rights.isOpenSUSELeap', lambda: slesSupport):
             directories = [d for d, _ in getDirectoriesAndExpectedRights('/')]
 
     assert u'/etc/opsi' in directories

@@ -1,7 +1,8 @@
+#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2019 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -22,10 +23,7 @@ Testing the Host Control backend.
 :license: GNU Affero General Public License version 3
 """
 
-from __future__ import absolute_import
-
 from OPSI.Backend.HostControl import HostControlBackend
-from OPSI.Exceptions import BackendMissingDataError
 from .test_hosts import getClients
 
 import pytest
@@ -45,11 +43,6 @@ def testCallingStartAndStopMethod(hostControlBackend):
 
     hostControlBackend.hostControl_start([u'client1.test.invalid'])
     hostControlBackend.hostControl_shutdown([u'client1.test.invalid'])
-
-
-def testhostControlReachableWithoutHosts(hostControlBackend):
-    with pytest.raises(BackendMissingDataError):
-        hostControlBackend.hostControl_reachable()
 
 
 @pytest.fixture

@@ -22,14 +22,13 @@ Testing OPSI.Objects
 :license: GNU Affero General Public License version 3
 """
 
-from __future__ import absolute_import, print_function
-
 import pytest
 
-from OPSI.Object import (AuditHardwareOnHost, BoolProductProperty, Host,
-    LocalbootProduct, OpsiConfigserver, OpsiDepotserver, Product,
-    ProductDependency, ProductProperty, ProductPropertyState,
-    UnicodeConfig, UnicodeProductProperty,
+from OPSI.Object import (
+    AuditHardwareOnHost, BoolProductProperty, Host, LocalbootProduct,
+    OpsiConfigserver, OpsiDepotserver, Product, ProductDependency,
+    ProductProperty, ProductPropertyState, UnicodeConfig,
+    UnicodeProductProperty,
     getPossibleClassAttributes, mandatoryConstructorArgs)
 
 from .helpers import cleanMandatoryConstructorArgsCache
