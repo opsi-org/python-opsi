@@ -1,5 +1,4 @@
-pycrypto
-twisted < 18.4
+twisted[conch,tls]<18.4
 filemagic
 git+https://github.com/twisted/ldaptor.git
 python-pam
