@@ -24,13 +24,16 @@ Various unittests to test functionality of python-opsi.
 :license: GNU Affero General Public License version 3
 """
 
-import mock
+from __future__ import absolute_import
+
 import os
 import pytest
 import sys
 from contextlib import contextmanager
 
 import OPSI.System.Posix as Posix
+
+from .helpers import mock
 
 if sys.version_info > (3, ):
 	long = int
