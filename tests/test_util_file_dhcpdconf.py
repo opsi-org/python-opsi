@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -22,15 +22,14 @@ Testing the work with the DHCPD configuration files.
 :license: GNU Affero General Public License version 3
 """
 
-from __future__ import absolute_import
-
 import codecs
 import os
+
+import pytest
 
 from OPSI.Util.File import DHCPDConfFile
 
 from .helpers import createTemporaryTestfile
-import pytest
 
 
 def testParsingExampleDHCPDConf():

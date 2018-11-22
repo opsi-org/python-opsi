@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -22,8 +22,6 @@ Testing OPSI.SharedAlgorithm
 :author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
 """
-
-from __future__ import absolute_import, print_function
 
 from OPSI import SharedAlgorithm
 from OPSI.Exceptions import OpsiProductOrderingError
@@ -226,117 +224,117 @@ def productSequenceAlgorithm(request):
 
 def testCreatingOrderWithImpossibleDependenciesFails(productSequenceAlgorithm):
 	products = [
-	{
-		"setupScript" : "setup.ins",
-		"name" : "firefox-sequ",
-		"priority" : 0,
-		"packageVersion" : "1",
-		"productVersion" : "1.0",
-		"id" : "firefox-sequ",
-	},
-	{
-		"setupScript" : "setup.ins",
-		"uninstallScript" : "unsetup.ins",
-		"name" : "flashplayer-sequ",
-		"priority" : 0,
-		"packageVersion" : "1",
-		"productVersion" : "1.0",
-		"id" : "flashplayer-sequ",
-	},
-	{
-		"setupScript" : "setup.ins",
-		"uninstallScript" : "unsetup.ins",
-		"name" : "javavm-sequ",
-		"priority" : 0,
-		"packageVersion" : "1",
-		"productVersion" : "1.0",
-		"id" : "javavm-sequ",
-	},
-	{
-		"setupScript" : "setup.ins",
-		"name" : "jedit-sequ",
-		"priority" : 0,
-		"packageVersion" : "1",
-		"productVersion" : "1.0",
-		"id" : "jedit-sequ",
-	},
-	{
-		"setupScript" : "setup.ins",
-		"uninstallScript" : "unsetup.ins",
-		"name" : "sysessential-sequ",
-		"priority" : 55,
-		"packageVersion" : "1",
-		"productVersion" : "1.0",
-		"id" : "sysessential-sequ",
-	},
-	{
-		"setupScript" : "setup.ins",
-		"uninstallScript" : "unsetup.ins",
-		"name" : "ultravnc-sequ",
-		"priority" : 0,
-		"packageVersion" : "1",
-		"productVersion" : "1.0",
-		"id" : "ultravnc-sequ",
-	}
-]
+		{
+			"setupScript": "setup.ins",
+			"name": "firefox-sequ",
+			"priority": 0,
+			"packageVersion": "1",
+			"productVersion": "1.0",
+			"id": "firefox-sequ",
+		},
+		{
+			"setupScript": "setup.ins",
+			"uninstallScript": "unsetup.ins",
+			"name": "flashplayer-sequ",
+			"priority": 0,
+			"packageVersion": "1",
+			"productVersion": "1.0",
+			"id": "flashplayer-sequ",
+		},
+		{
+			"setupScript": "setup.ins",
+			"uninstallScript": "unsetup.ins",
+			"name": "javavm-sequ",
+			"priority": 0,
+			"packageVersion": "1",
+			"productVersion": "1.0",
+			"id": "javavm-sequ",
+		},
+		{
+			"setupScript": "setup.ins",
+			"name": "jedit-sequ",
+			"priority": 0,
+			"packageVersion": "1",
+			"productVersion": "1.0",
+			"id": "jedit-sequ",
+		},
+		{
+			"setupScript": "setup.ins",
+			"uninstallScript": "unsetup.ins",
+			"name": "sysessential-sequ",
+			"priority": 55,
+			"packageVersion": "1",
+			"productVersion": "1.0",
+			"id": "sysessential-sequ",
+		},
+		{
+			"setupScript": "setup.ins",
+			"uninstallScript": "unsetup.ins",
+			"name": "ultravnc-sequ",
+			"priority": 0,
+			"packageVersion": "1",
+			"productVersion": "1.0",
+			"id": "ultravnc-sequ",
+		}
+	]
 
 	deps = [
-	{
-		"productAction" : "setup",
-		"requirementType" : "before",
-		"requiredInstallationStatus" : "installed",
-		"productVersion" : "1.0",
-		"requiredProductId" : "ultravnc-sequ",
-		"packageVersion" : "1",
-		"productId" : "firefox-sequ"
-	},
-	{
-		"productAction" : "setup",
-		"requirementType" : "before",
-		"requiredInstallationStatus" : "installed",
-		"productVersion" : "1.0",
-		"requiredProductId" : "firefox-sequ",
-		"packageVersion" : "1",
-		"productId" : "flashplayer-sequ"
-	},
-	{
-		"productAction" : "setup",
-		"requirementType" : "before",
-		"requiredInstallationStatus" : "installed",
-		"productVersion" : "1.0",
-		"requiredProductId" : "firefox-sequ",
-		"packageVersion" : "1",
-		"productId" : "javavm-sequ"
-	},
-	{
-		"productAction" : "setup",
-		"requirementType" : "before",
-		"requiredInstallationStatus" : "installed",
-		"productVersion" : "1.0",
-		"requiredProductId" : "javavm-sequ",
-		"packageVersion" : "1",
-		"productId" : "jedit-sequ"
-	},
-	{
-		"productAction" : "setup",
-		"requirementType" : "before",
-		"requiredInstallationStatus" : "installed",
-		"productVersion" : "1.0",
-		"requiredProductId" : "ultravnc-sequ",
-		"packageVersion" : "1",
-		"productId" : "sysessential-sequ"
-	},
-	{
-		"ident" : "ultravnc-sequ;1.0;1;setup;javavm-sequ",
-		"productAction" : "setup",
-		"requirementType" : "before",
-		"requiredInstallationStatus" : "installed",
-		"productVersion" : "1.0",
-		"requiredProductId" : "javavm-sequ",
-		"packageVersion" : "1",
-		"productId" : "ultravnc-sequ"
-	}
-]
+		{
+			"productAction": "setup",
+			"requirementType": "before",
+			"requiredInstallationStatus": "installed",
+			"productVersion": "1.0",
+			"requiredProductId": "ultravnc-sequ",
+			"packageVersion": "1",
+			"productId": "firefox-sequ"
+		},
+		{
+			"productAction": "setup",
+			"requirementType": "before",
+			"requiredInstallationStatus": "installed",
+			"productVersion": "1.0",
+			"requiredProductId": "firefox-sequ",
+			"packageVersion": "1",
+			"productId": "flashplayer-sequ"
+		},
+		{
+			"productAction": "setup",
+			"requirementType": "before",
+			"requiredInstallationStatus": "installed",
+			"productVersion": "1.0",
+			"requiredProductId": "firefox-sequ",
+			"packageVersion": "1",
+			"productId": "javavm-sequ"
+		},
+		{
+			"productAction": "setup",
+			"requirementType": "before",
+			"requiredInstallationStatus": "installed",
+			"productVersion": "1.0",
+			"requiredProductId": "javavm-sequ",
+			"packageVersion": "1",
+			"productId": "jedit-sequ"
+		},
+		{
+			"productAction": "setup",
+			"requirementType": "before",
+			"requiredInstallationStatus": "installed",
+			"productVersion": "1.0",
+			"requiredProductId": "ultravnc-sequ",
+			"packageVersion": "1",
+			"productId": "sysessential-sequ"
+		},
+		{
+			"ident": "ultravnc-sequ;1.0;1;setup;javavm-sequ",
+			"productAction": "setup",
+			"requirementType": "before",
+			"requiredInstallationStatus": "installed",
+			"productVersion": "1.0",
+			"requiredProductId": "javavm-sequ",
+			"packageVersion": "1",
+			"productId": "ultravnc-sequ"
+		}
+	]
 
 	products = [LocalbootProduct.fromHash(h) for h in products]
 	deps = [ProductDependency.fromHash(h) for h in deps]
@@ -407,17 +405,15 @@ def getCircularDepedencies():
 	return dependencies, products
 
 
-@pytest.mark.parametrize("sortFunction, expectedOrder",
-	[
-		(SharedAlgorithm.generateProductSequence_algorithm1,
-			[u'opsi-agent', u'firefox', u'javavm', u'ultravnc',
-			u'sysessential', u'flashplayer', u'jedit']
-		),
-		(SharedAlgorithm.generateProductSequence_algorithm2,
-			[u'opsi-agent', u'sysessential', u'firefox', u'javavm',
-			u'ultravnc', u'flashplayer', u'jedit']
-		)
-	],
+@pytest.mark.parametrize("sortFunction, expectedOrder", [
+	(SharedAlgorithm.generateProductSequence_algorithm1,
+		[u'opsi-agent', u'firefox', u'javavm', u'ultravnc',
+		u'sysessential', u'flashplayer', u'jedit']
+	),
+	(SharedAlgorithm.generateProductSequence_algorithm2,
+		[u'opsi-agent', u'sysessential', u'firefox', u'javavm',
+		u'ultravnc', u'flashplayer', u'jedit']
+	)],
 	ids=['algo1', 'algo2']
 )
 def testSortingWithOverlappingDependencies(sortFunction, expectedOrder):
@@ -458,27 +454,27 @@ front in contradiction to priority
 
 def testAlgorithm1SortingWithDifferentPriorities():
 	msServicePack = LocalbootProduct.fromHash({
-		"priority" : 0,
-		"packageVersion" : "5",
-		"productVersion" : "xpsp3",
-		"id" : "msservicepack"
-		})
+		"priority": 0,
+		"packageVersion": "5",
+		"productVersion": "xpsp3",
+		"id": "msservicepack"
+	})
 
 	msHotFix = LocalbootProduct.fromHash({
-		"priority" : 80,
-		"packageVersion" : "1",
-		"productVersion" : "201305",
-		"id" : "mshotfix"
-		})
+		"priority": 80,
+		"packageVersion": "1",
+		"productVersion": "201305",
+		"id": "mshotfix"
+	})
 
 	productDep = ProductDependency.fromHash({
-		"productAction" : "setup",
-		"requirementType" : "after",
-		"requiredInstallationStatus" : "installed",
-		"productVersion" : "xpsp3",
-		"requiredProductId" : "mshotfix",
-		"packageVersion" : "5",
-		"productId" : "msservicepack"
+		"productAction": "setup",
+		"requirementType": "after",
+		"requiredInstallationStatus": "installed",
+		"productVersion": "xpsp3",
+		"requiredProductId": "mshotfix",
+		"packageVersion": "5",
+		"productId": "msservicepack"
 	})
 
 	results = SharedAlgorithm.generateProductSequence_algorithm1([msServicePack, msHotFix], [productDep])
@@ -490,27 +486,27 @@ def testAlgorithm1SortingWithDifferentPriorities():
 
 def testAlgorithm1SortingWithAfterSetupDependency():
 	renameClient = LocalbootProduct.fromHash({
-		"priority" : 0,
-		"packageVersion" : "2",
-		"productVersion" : "1.0",
-		"id" : "renameopsiclient",
+		"priority": 0,
+		"packageVersion": "2",
+		"productVersion": "1.0",
+		"id": "renameopsiclient",
 	})
 
 	winDomain = LocalbootProduct.fromHash({
-		"priority" : 20,
-		"packageVersion" : "6",
-		"productVersion" : "1.0",
-		"id" : "windomain",
+		"priority": 20,
+		"packageVersion": "6",
+		"productVersion": "1.0",
+		"id": "windomain",
 	})
 
 	productDep = ProductDependency.fromHash({
-		"productAction" : "setup",
-		"requirementType" : "after",
-		"productVersion" : "1.0",
-		"requiredProductId" : "windomain",
-		"requiredAction" : "setup",
-		"packageVersion" : "6",
-		"productId" : "renameopsiclient"
+		"productAction": "setup",
+		"requirementType": "after",
+		"productVersion": "1.0",
+		"requiredProductId": "windomain",
+		"requiredAction": "setup",
+		"packageVersion": "6",
+		"productId": "renameopsiclient"
 	})
 
 	results = SharedAlgorithm.generateProductSequence_algorithm1([winDomain, renameClient], [productDep])

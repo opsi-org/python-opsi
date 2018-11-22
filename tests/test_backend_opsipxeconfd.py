@@ -22,8 +22,6 @@ Testing opsipxeconfd backend.
 :license: GNU Affero General Public License version 3
 """
 
-from __future__ import absolute_import
-
 import pytest
 
 from OPSI.Backend.OpsiPXEConfd import OpsiPXEConfdBackend, getClientCacheFilePath

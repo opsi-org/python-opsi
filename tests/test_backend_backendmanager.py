@@ -22,8 +22,6 @@ Testing BackendManager.
 :license: GNU Affero General Public License version 3
 """
 
-from __future__ import absolute_import, print_function
-
 import os
 
 from OPSI.Backend.BackendManager import BackendManager

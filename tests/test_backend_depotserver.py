@@ -22,8 +22,6 @@ Testing Depotserver features.
 :license: GNU Affero General Public License version 3
 """
 
-from __future__ import absolute_import
-
 import grp
 import os
 import pwd
