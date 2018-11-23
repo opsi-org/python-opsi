@@ -2959,7 +2959,7 @@ def isOpenSUSELeap():
 	"""
 	if isOpenSUSE():
 		leap = Distribution()
-		if leap.version >= (42, 1):
+		if leap.version >= (42, 1) or leap.version >= (15, 0):
 			return True
 
 	return False

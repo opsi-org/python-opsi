@@ -36,7 +36,9 @@ DISTRI_INFOS = [
     (('Ubuntu', '16.04', 'xenial'), (16, 4)),
     # TODO: add UCS 4.x
     # TODO: add SLES12
-    # TODO: add OpenSUSE Leap
+    (('openSUSE project', '42.3', 'n/a'), (42, 3)),
+    (('openSUSE', '15.0', 'n/a'), (15, 0)),
+
 ]
 
 
