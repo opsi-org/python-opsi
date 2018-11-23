@@ -1,3 +1,12 @@
+python-opsi (4.1.1.52-1) testing; urgency=medium
+
+  * OPSI.System.Posix: correctly detecting openSUSE Leap 15.0 and above
+  * OPSI.System.Posix: using isOpenSUSE() to determine Leap, isOpenSUSELeap()
+    is obsolete
+  * OPSI.Util.Task.Rights: replaced isOpenSUSELeap() with isOpenSUSE()
+
+ -- Mathias Radtke <m.radtke@uib.de>  Fri, 23 Nov 2018 09:58:13 +0100
+
 python-opsi (4.1.1.51-2) stable; urgency=medium
 
   * RPM: requires python-mysqlclient on openSUSE Leap 15.0
