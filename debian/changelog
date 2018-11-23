@@ -1,3 +1,9 @@
+python-opsi (4.1.1.51-3) stable; urgency=medium
+
+  * RPM: openSUSE Leap 15 needs net-tools-deprecated to work with 'ifconfig'
+
+ -- Mathias Radtke <m.radtke@uib.de>  Thu, 22 Nov 2018 15:30:36 +0100
+
 python-opsi (4.1.1.51-2) stable; urgency=medium
 
   * RPM: requires python-mysqlclient on openSUSE Leap 15.0
