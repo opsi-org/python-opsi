@@ -24,10 +24,12 @@ Testing Depotserver features.
 
 from __future__ import absolute_import
 
-import pwd
 import grp
 import os
+import pwd
+
 import pytest
+
 from OPSI.Backend.Depotserver import DepotserverBackend
 from OPSI.Exceptions import BackendError
 from OPSI.Object import LocalbootProduct, ProductOnDepot
@@ -79,7 +81,6 @@ def testPackageFile():
     return os.path.join(os.path.dirname(__file__), 'testdata', 'backend', 'testingproduct_23-42.opsi')
 
 
-@pytest.mark.requiresModulesFile  # because of SQLite...
 def testInstallingPackageOnDepotserver(depotserverBackend, testPackageFile, depotDirectory):
     depotserverBackend.depot_installPackage(testPackageFile)
 
@@ -98,7 +99,6 @@ def isProductFolderInDepot(depotPath, productId):
     return any(os.path.isdir(listing) for listing in os.listdir(depotPath) if productId == listing)
 
 
-@pytest.mark.requiresModulesFile  # because of SQLite...
 def testInstallingPackageOnDepotserverWithForcedProductId(depotserverBackend, testPackageFile, depotDirectory):
     wantedProductId = 'jumpinthefire'
 
@@ -131,13 +131,11 @@ def testInstallingPackageOnDepotserverWithForcedProductId(depotserverBackend, te
     assert prodProperty.packageVersion == product.packageVersion
 
 
-@pytest.mark.requiresModulesFile  # because of SQLite...
 def testReadingMd5sum(depotserverBackend, fileAndHash):
     filename, expectedHash = fileAndHash
     assert expectedHash == depotserverBackend.depot_getMD5Sum(filename)
 
 
-@pytest.mark.requiresModulesFile  # because of SQLite...
 @pytest.mark.parametrize("suppressCreation", [False, True])
 def testInstallingPackageCreatesPackageContentFile(depotserverBackend, suppressCreation, testPackageFile, depotDirectory):
     depotserverBackend.depot_installPackage(testPackageFile, suppressPackageContentFileGeneration=suppressCreation)
@@ -146,7 +144,6 @@ def testInstallingPackageCreatesPackageContentFile(depotserverBackend, suppressC
     assert suppressCreation != os.path.exists(os.path.join(depotDirectory, 'testingproduct', 'testingproduct.files'))
 
 
-@pytest.mark.requiresModulesFile  # because of SQLite...
 @pytest.mark.parametrize("forceInstallation", [False, True])
 def testInstallingWithLockedProduct(depotserverBackend, depotServerFQDN, testPackageFile, forceInstallation, depotDirectory):
     product = LocalbootProduct(
@@ -186,7 +183,6 @@ def testInstallingWithLockedProduct(depotserverBackend, depotServerFQDN, testPac
         assert isProductFolderInDepot(depotDirectory, product.id)
 
 
-@pytest.mark.requiresModulesFile  # because of SQLite...
 def testUninstallingProduct(depotserverBackend, depotServerFQDN, testPackageFile, depotDirectory):
     productId = 'testingproduct'
     depotserverBackend.depot_installPackage(testPackageFile, force=True)
@@ -200,7 +196,6 @@ def testUninstallingProduct(depotserverBackend, depotServerFQDN, testPackageFile
     assert not depotserverBackend.product_getObjects(id=productId)
 
 
-@pytest.mark.requiresModulesFile  # because of SQLite...
 @pytest.mark.parametrize("forceUninstall", [False, True])
 def testUninstallingLockedProduct(depotserverBackend, depotServerFQDN, testPackageFile, depotDirectory, forceUninstall):
     productId = 'testingproduct'
