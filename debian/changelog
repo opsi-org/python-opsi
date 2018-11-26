@@ -1,3 +1,9 @@
+python-opsi (4.1.1.52-2) testing; urgency=medium
+
+  * OPSI.System.Posix: isOpenSUSE refactored to not use platform
+
+ -- Mathias Radtke <m.radtke@uib.de>  Mon, 26 Nov 2018 12:07:10 +0100
+
 python-opsi (4.1.1.52-1) testing; urgency=medium
 
   * OPSI.System.Posix: correctly detecting openSUSE Leap 15.0 and above
