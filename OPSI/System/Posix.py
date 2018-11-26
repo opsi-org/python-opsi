@@ -65,7 +65,7 @@ __all__ = (
 	'getKernelParams', 'getNetworkDeviceConfig', 'getNetworkInterfaces',
 	'getSambaServiceName', 'getServiceNames', 'getSystemProxySetting', 'halt',
 	'hardwareExtendedInventory', 'hardwareInventory', 'hooks', 'ifconfig',
-	'isCentOS', 'isDebian', 'isOpenSUSE', 'isOpenSUSELeap', 'isRHEL', 'isSLES',
+	'isCentOS', 'isDebian', 'isOpenSUSE', 'isRHEL', 'isSLES',
 	'isUCS', 'isUbuntu', 'isXenialSfdiskVersion', 'locateDHCPDConfig',
 	'locateDHCPDInit', 'mount', 'reboot', 'removeSystemHook',
 	'runCommandInSession', 'setLocalSystemTime', 'shutdown', 'umount', 'which'
@@ -2947,22 +2947,12 @@ def isOpenSUSE():
 	"""
 	Returns `True` if this is running on openSUSE.
 	Returns `False` if otherwise.
-	For OpenSUSE Leap please use isOpenSUSELeap()
 	"""
-	return _checkForDistribution('opensuse')
-
-
-def isOpenSUSELeap():
-	"""
-	Returns `True` if this is running on OpenSUSE Leap.
-	Returns `False` if otherwise.
-	"""
-	if isOpenSUSE():
-		leap = Distribution()
-		if leap.version >= (42, 1):
-			return True
-
-	return False
+	if os.path.exists('/etc/os-release'):
+	    with open('/etc/os-release', 'r') as release:
+	        for line in release:
+	            if 'opensuse' in line.lower():
+	                return True
 
 
 def isRHEL():
