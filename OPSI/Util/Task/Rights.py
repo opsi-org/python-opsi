@@ -70,7 +70,7 @@ from OPSI.Logger import LOG_DEBUG, Logger
 from OPSI.Util import findFiles
 from OPSI.System.Posix import (
 	getLocalFqdn as getLocalFQDN, isCentOS, isDebian, isOpenSUSE, isRHEL, isSLES, isUbuntu,
-	isUCS, isOpenSUSELeap)
+	isUCS)
 
 __all__ = ('setRights', 'setPasswdRights')
 
@@ -228,7 +228,7 @@ def getWorkbenchDirectory():
 
 
 def getPxeDirectory():
-	if isSLES() or isOpenSUSELeap():
+	if isSLES() or isOpenSUSE():
 		return u'/var/lib/tftpboot/opsi'
 	else:
 		return u'/tftpboot/linux'

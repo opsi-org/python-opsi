@@ -89,9 +89,9 @@ def testGetDirectoriesToProcess(depotDirectory, patchUserInfo, slesSupport, tftp
     (False, u'/tftpboot/linux'),
     (True, u'/var/lib/tftpboot/opsi')
 ], ids=["opensuse", "non-opensuse"])
-def testGetDirectoriesToProcessOpenSUSELeap(depotDirectory, patchUserInfo, slesSupport, tftpdir):
+def testGetDirectoriesToProcessOpenSUSE(depotDirectory, patchUserInfo, slesSupport, tftpdir):
     with mock.patch('OPSI.Util.Task.Rights.getWebserverRepositoryPath', lambda: '/path/to/apache'):
-        with mock.patch('OPSI.Util.Task.Rights.isOpenSUSELeap', lambda: slesSupport):
+        with mock.patch('OPSI.Util.Task.Rights.isOpenSUSE', lambda: slesSupport):
             directories = [d for d, _ in getDirectoriesAndExpectedRights('/')]
 
     assert u'/etc/opsi' in directories
