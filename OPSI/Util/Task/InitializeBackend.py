@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2017 uib GmbH - http://www.uib.de/
+# Copyright (C) 2017-2018 uib GmbH - http://www.uib.de/
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -38,6 +38,8 @@ from OPSI.System.Posix import getLocalFqdn, getNetworkConfiguration, isUCS
 from OPSI.Types import forceList
 from OPSI.Util.Task.ConfigureBackend.ConfigurationData import initializeConfigs
 from OPSI.Util.Task.Rights import setPasswdRights
+
+__all__ = ('initializeBackends', )
 
 LOGGER = Logger()
 
