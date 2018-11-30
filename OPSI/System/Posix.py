@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 #
-# Copyright (C) 2006-2010, 2013-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2010, 2013-2018 uib GmbH <info@uib.de>
 # All rights reserved.
 #
 # This program is free software: you can redistribute it and/or modify
@@ -46,10 +46,10 @@ from itertools import islice
 from signal import SIGKILL
 
 from OPSI.Logger import Logger, LOG_NONE
-from OPSI.Types import (forceDomain, forceInt, forceBool, forceUnicode,
-	forceFilename, forceHostname, forceHostId, forceNetmask, forceIpAddress,
-	forceIPAddress, forceHardwareVendorId, forceHardwareAddress,
-	forceHardwareDeviceId, forceUnicodeLower)
+from OPSI.Types import (
+	forceBool, forceDomain, forceFilename, forceHardwareAddress,
+	forceHardwareDeviceId, forceHardwareVendorId, forceHostId, forceHostname,
+	forceInt, forceIpAddress, forceNetmask, forceUnicode, forceUnicodeLower)
 from OPSI.Object import *
 from OPSI.Util import getfqdn, objectToBeautifiedText, removeUnit
 
@@ -2949,10 +2949,12 @@ def isOpenSUSE():
 	Returns `False` if otherwise.
 	"""
 	if os.path.exists('/etc/os-release'):
-	    with open('/etc/os-release', 'r') as release:
-	        for line in release:
-	            if 'opensuse' in line.lower():
-	                return True
+		with open('/etc/os-release', 'r') as release:
+			for line in release:
+				if 'opensuse' in line.lower():
+					return True
+
+	return False
 
 
 def isRHEL():
@@ -3080,7 +3082,7 @@ class SysInfo(object):
 
 	@property
 	def ipAddress(self):
-		return forceIPAddress(socket.gethostbyname(self.hostname))
+		return forceIpAddress(socket.gethostbyname(self.hostname))
 
 	@property
 	def hardwareAddress(self):
