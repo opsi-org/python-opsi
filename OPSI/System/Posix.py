@@ -49,7 +49,7 @@ from OPSI.Logger import Logger, LOG_NONE
 from OPSI.Types import (
 	forceBool, forceDomain, forceFilename, forceHardwareAddress,
 	forceHardwareDeviceId, forceHardwareVendorId, forceHostId, forceHostname,
-	forceInt, forceIpAddress, forceNetmask,	forceUnicode, forceUnicodeLower)
+	forceInt, forceIpAddress, forceNetmask, forceUnicode, forceUnicodeLower)
 from OPSI.Object import *
 from OPSI.Util import getfqdn, objectToBeautifiedText, removeUnit
 
