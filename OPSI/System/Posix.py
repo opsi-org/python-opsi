@@ -3082,7 +3082,7 @@ class SysInfo(object):
 
 	@property
 	def ipAddress(self):
-		return forceIPAddress(socket.gethostbyname(self.hostname))
+		return forceIpAddress(socket.gethostbyname(self.hostname))
 
 	@property
 	def hardwareAddress(self):
