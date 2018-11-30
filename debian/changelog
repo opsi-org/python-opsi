@@ -1,3 +1,9 @@
+python-opsi (4.1.1.53-1) stable; urgency=medium
+
+  * OPSI.System.Posix: isOpenSuse will return False if not running on openSuse.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 30 Nov 2018 11:26:37 +0100
+
 python-opsi (4.1.1.52-2) testing; urgency=medium
 
   * OPSI.System.Posix: isOpenSUSE refactored to not use platform
