@@ -46,10 +46,10 @@ from itertools import islice
 from signal import SIGKILL
 
 from OPSI.Logger import Logger, LOG_NONE
-from OPSI.Types import (forceDomain, forceInt, forceBool, forceUnicode,
-	forceFilename, forceHostname, forceHostId, forceNetmask, forceIpAddress,
-	forceIPAddress, forceHardwareVendorId, forceHardwareAddress,
-	forceHardwareDeviceId, forceUnicodeLower)
+from OPSI.Types import (
+	forceBool, forceDomain, forceFilename, forceHardwareAddress,
+	forceHardwareDeviceId, forceHardwareVendorId, forceHostId, forceHostname,
+	forceInt, forceIpAddress, forceNetmask,	forceUnicode, forceUnicodeLower)
 from OPSI.Object import *
 from OPSI.Util import getfqdn, objectToBeautifiedText, removeUnit
 
