@@ -2949,10 +2949,10 @@ def isOpenSUSE():
 	Returns `False` if otherwise.
 	"""
 	if os.path.exists('/etc/os-release'):
-	    with open('/etc/os-release', 'r') as release:
-	        for line in release:
-	            if 'opensuse' in line.lower():
-	                return True
+		with open('/etc/os-release', 'r') as release:
+			for line in release:
+				if 'opensuse' in line.lower():
+					return True
 
 
 def isRHEL():
