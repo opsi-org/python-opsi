@@ -1121,7 +1121,7 @@ def getUserSessionIds(username, winApiBugCommand=None, onlyNewestId=None):
 	domain = None
 	newest = None
 	logger.debug(u"Getting sessions of user '%s'" % username)
-	if (username.find('\\') != -1):
+	if '\\' in username:
 		domain = username.split('\\')[0]
 		username = username.split('\\')[-1]
 
@@ -1745,7 +1745,7 @@ def createUser(username, password, groups=[]):
 	logger.addConfidentialString(password)
 
 	domain = getHostname().upper()
-	if (username.find(u'\\') != -1):
+	if u'\\' in username:
 		domain = username.split(u'\\')[0]
 		username = username.split(u'\\')[-1]
 
@@ -1779,7 +1779,7 @@ def createUser(username, password, groups=[]):
 def deleteUser(username, deleteProfile=True):
 	username = forceUnicode(username)
 	domain = getHostname()
-	if username.find(u'\\') != -1:
+	if u'\\' in username:
 		domain = username.split(u'\\')[0]
 		username = username.split(u'\\')[-1]
 
@@ -1806,7 +1806,7 @@ def deleteUser(username, deleteProfile=True):
 def existsUser(username):
 	username = forceUnicode(username)
 	domain = getHostname()
-	if username.find(u'\\') != -1:
+	if u'\\' in username:
 		domain = username.split(u'\\')[0]
 		username = username.split(u'\\')[-1]
 
@@ -1831,7 +1831,7 @@ def getUserSidFromHandle(userHandle):
 def getUserSid(username):
 	username = forceUnicode(username)
 	domain = getHostname()
-	if (username.find(u'\\') != -1):
+	if u'\\' in username:
 		domain = username.split(u'\\')[0]
 		username = username.split(u'\\')[-1]
 
@@ -1888,7 +1888,7 @@ class Impersonate:
 		# 	raise Exception("User '%s' does not exist" % username)
 		self.domain = getHostname()
 		self.username = forceUnicode(username)
-		if (self.username.find('\\') != -1):
+		if '\\' in self.username:
 			self.domain = self.username.split('\\')[0]
 			self.username = self.username.split('\\')[-1]
 
@@ -1896,7 +1896,8 @@ class Impersonate:
 		self.password = forceUnicode(password)
 		if not desktop:
 			desktop = u"default"
-		if (desktop.find(u'\\') == -1):
+
+		if u'\\' not in desktop:
 			desktop = u'winsta0\\' + desktop
 
 		(self.winsta, self.desktop) = desktop.split('\\', 1)
