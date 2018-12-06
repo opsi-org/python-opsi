@@ -254,8 +254,9 @@ def getHostname():
 
 def getFQDN():
 	fqdn = socket.getfqdn().lower()
-	if ( len(fqdn.split(u'.')) < 2 ):
+	if fqdn.count('.') < 2:
 		return getHostname()
+
 	return forceUnicodeLower(getHostname() + u'.' + u'.'.join(fqdn.split(u'.')[1:]))
 
 
