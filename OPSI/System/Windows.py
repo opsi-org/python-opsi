@@ -62,8 +62,9 @@ import win32wnet
 from ctypes import *
 
 from OPSI.Logger import Logger
-from OPSI.Types import (forceBool, forceDict, forceInt, forceUnicode,
-	forceUnicodeList, forceUnicodeLower, forceFilename, forceList)
+from OPSI.Types import (
+	forceBool, forceDict, forceInt, forceUnicode, forceUnicodeList,
+	forceUnicodeLower, forceFilename, forceList)
 
 __all__ = (
 	'HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE', 'hooks', 'SystemSpecificHook',
