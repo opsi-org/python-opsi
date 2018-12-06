@@ -938,9 +938,6 @@ def getActiveSessionId(verifyProcessRunning="winlogon.exe", winApiBugCommand=Non
 
 				if newest:
 					try:
-						if not newest:
-							newest = sessionData
-							continue
 						lt = newest['LogonTime']
 						lts = sessionData['LogonTime']
 						newestdt = datetime(lt.year, lt.month, lt.day, lt.hour, lt.minute, lt.second)
@@ -978,9 +975,6 @@ def getActiveSessionId(verifyProcessRunning="winlogon.exe", winApiBugCommand=Non
 
 			if newest:
 				try:
-					if not newest:
-						newest = sessionData
-						continue
 					lt = newest['LogonTime']
 					lts = sessionData['LogonTime']
 					newestdt = datetime(lt.year, lt.month, lt.day, lt.hour, lt.minute, lt.second)
