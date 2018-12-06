@@ -1126,10 +1126,6 @@ def getUserSessionIds(username, winApiBugCommand=None, onlyNewestId=None):
 		username = username.split('\\')[-1]
 
 	for session in getActiveSessionInformation(winApiBugCommand):
-		# if ( session.get('WTSUserName') and (session.get('WTSUserName').lower() == username.lower()) and \
-		#     (not domain or (session.get('WTSDomainName') and (session.get('WTSDomainName').lower() == domain.lower()))) ):
-		# 	sessionIds.append(session.get('WTSSessionId'))
-		# 	logger.debug(u"   Found session id of user '%s': %s" % (username, session.get('WTSSessionId')))
 		if (session.get('UserName') and (session.get('UserName').lower() == username.lower()) and
 			(not domain or (session.get('LogonDomain') and (session.get('LogonDomain').lower() == domain.lower())))):
 			sessionIds.append(forceInt(session.get('Session')))
@@ -1162,10 +1158,6 @@ def getUserSessionIds(username, winApiBugCommand=None, onlyNewestId=None):
 
 def logoffCurrentUser():
 	logger.notice("Logging off current user")
-	# win32api.ExitWindows()
-	# win32api.ExitWindowsEx(0)
-	# # Windows Server 2008 and Windows Vista:  A call to WTSShutdownSystem does not work when Remote Connection Manager (RCM) is disabled. This is the case when the Terminal Services service is stopped.
-	# win32ts.WTSShutdownSystem(win32ts.WTS_CURRENT_SERVER_HANDLE, win32ts.WTS_WSD_LOGOFF)
 	command = ''
 	if sys.getwindowsversion()[0] == 5:
 		if sys.getwindowsversion()[1] == 0:
@@ -1579,11 +1571,7 @@ def getProcessName(processId):
 		return
 
 	while True:
-		# logger.info("Got process %s" % pe32.szExeFile)
-		# sid = win32ts.ProcessIdToSessionId(pe32.th32ProcessID)
 		pid = pe32.th32ProcessID
-		# logger.notice("Found process %s with pid %d in session %d" % (process, pid, sid))
-		# logger.notice("Found process %s with pid %d" % (pe32.szExeFile, pid))
 		if pid == processId:
 			processName = forceUnicode(pe32.szExeFile)
 			break
@@ -1710,8 +1698,6 @@ def runCommandInSession(command, sessionId=None, desktop=u"default", duplicateFr
 
 	s = win32process.STARTUPINFO()
 	s.lpDesktop = desktop
-	# s.wShowWindow = win32con.SW_MAXIMIZE
-	# s.dwFlags = win32process.STARTF_USESTDHANDLES
 
 	logger.notice(u"Executing: '%s' in session '%s' on desktop '%s'" % (command, sessionId, desktop))
 	(hProcess, hThread, dwProcessId, dwThreadId) = win32process.CreateProcessAsUser(userToken, None, command, None, None, 1, dwCreationFlags, None, None, s)
@@ -1765,7 +1751,6 @@ def createUser(username, password, groups=[]):
 		'password_expired': 0
 	}
 
-	# win32net.NetUserAdd(domain, 3, userData)
 	win32net.NetUserAdd(u"\\\\" + domain, 1, userData)
 	if not groups:
 		return
@@ -1884,8 +1869,7 @@ class Impersonate:
 	def __init__(self, username=u"", password=u"", userToken=None, desktop=u"default"):
 		if not username and not userToken:
 			raise ValueError(u"Neither username nor user token given")
-		# if username and not existsUser(username):
-		# 	raise Exception("User '%s' does not exist" % username)
+
 		self.domain = getHostname()
 		self.username = forceUnicode(username)
 		if '\\' in self.username:
@@ -1961,8 +1945,8 @@ class Impersonate:
 				if not self.newDesktop:
 					self.newDesktop = win32service.OpenDesktop(
 						self.desktop,
-						win32con.DF_ALLOWOTHERACCOUNTHOOK, #0,
-						True, #False,
+						win32con.DF_ALLOWOTHERACCOUNTHOOK,
+						True,
 						win32con.READ_CONTROL |
 						win32con.WRITE_DAC |
 						win32con.DESKTOP_CREATEMENU |
