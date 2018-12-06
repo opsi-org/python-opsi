@@ -1252,10 +1252,8 @@ def createDesktop(name, runCommand=None):
 def getDesktops(winsta=None):
 	if not winsta:
 		winsta = win32service.GetProcessWindowStation()
-	desktops = []
-	for d in winsta.EnumDesktops():
-		desktops.append(forceUnicodeLower(d))
-	return desktops
+
+	return [forceUnicodeLower(d) for d in winsta.EnumDesktops()]
 
 
 def switchDesktop(name):
