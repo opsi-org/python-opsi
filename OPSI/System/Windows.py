@@ -189,27 +189,27 @@ def getOpsiHotfixName(helper=None):
 	os = u'unknown'
 	lang = u'unknown'
 
-	if (major == 5):
+	if major == 5:
 		loc = locale.getdefaultlocale()[0].split('_')[0]
-		if (loc == 'en'):
+		if loc == 'en':
 			lang = u'enu'
-		elif (loc == 'de'):
+		elif loc == 'de':
 			lang = u'deu'
-		elif (loc == 'fr'):
+		elif loc == 'fr':
 			lang = u'fra'
-		elif (loc == 'it'):
+		elif loc == 'it':
 			lang = u'ita'
-		elif (loc == 'ch'):
+		elif loc == 'ch':
 			lang = u'chs'
 
-		if (minor == 1):
+		if minor == 1:
 			os = u'winxp'
-		elif (minor == 2):
-			if (arch == 'x86'):
+		elif minor == 2:
+			if arch == 'x86':
 				os = u'win2003'
 			else:
 				os = u'win2003-winxp'
-	elif (major == 6):
+	elif major == 6:
 		lang = u'glb'
 		if helper:
 			try:
@@ -220,25 +220,26 @@ def getOpsiHotfixName(helper=None):
 					major = 10
 			except Exception:
 				logger.warning(u"MSHotfix fix for Windows 8.1 don't work. Fallback to normal mode.")
-			if (major == 10):
-				if (arch == 'x86'):
+
+			if major == 10:
+				if arch == 'x86':
 					os = u'win10'
 				else:
 					os = u'win10-win2016'
 			else:
-				if (minor == 0):
+				if minor == 0:
 					os = u'vista-win2008'
-				elif (minor == 1):
-					if (arch == 'x86'):
+				elif minor == 1:
+					if arch == 'x86':
 						os = u'win7'
 					else:
 						os = u'win7-win2008r2'
-				elif (minor == 2):
-					if (arch == 'x86'):
+				elif minor == 2:
+					if arch == 'x86':
 						os = u'win8'
 					else:
 						os = u'win8-win2012'
-				elif (minor == 3):
+				elif minor == 3:
 					if (arch == 'x86'):
 						os = u'win81'
 					else:
@@ -370,15 +371,16 @@ class NetworkPerformanceCounter(threading.Thread):
 		iftable.dwNumEntries = 0
 		windll.iphlpapi.GetIfTable(byref(iftable), byref(iftable_size), 0)
 		bestRatio = 0.0
-		if (iftable.dwNumEntries <= 0):
+		if iftable.dwNumEntries <= 0:
 			raise RuntimeError(u"No network interfaces found while searching for interface '%s'" % interface)
 
 		for i in range(iftable.dwNumEntries):
 			ratio = difflib.SequenceMatcher(None, iftable.table[i].bDescr, interface).ratio()
 			logger.info(u"NetworkPerformanceCounter: searching for interface '%s', got interface '%s', match ratio: %s" % (interface, iftable.table[i].bDescr, ratio))
-			if (ratio > bestRatio):
+			if ratio > bestRatio:
 				bestRatio = ratio
 				self.interface = iftable.table[i].bDescr
+
 		if not self.interface:
 			raise ValueError(u"Network interface '%s' not found" % interface)
 
@@ -398,27 +400,32 @@ class NetworkPerformanceCounter(threading.Thread):
 
 	def _getStatistics(self):
 		now = time.time()
-		(bytesIn, bytesOut) = (0, 0)
+		bytesIn = 0
+		bytesOut = 0
 		iftable = MIB_IFTABLE()
 		iftable_size = c_ulong(sizeof(iftable))
 		iftable.dwNumEntries = 0
 		windll.iphlpapi.GetIfTable(byref(iftable), byref(iftable_size), 0)
 		for i in range(iftable.dwNumEntries):
-			if (iftable.table[i].bDescr == self.interface):
+			if iftable.table[i].bDescr == self.interface:
 				bytesIn = iftable.table[i].dwInOctets
 				bytesOut = iftable.table[i].dwOutOctets
 				break
+
 		timeDiff = 1
 		if self._lastTime:
 			timeDiff = now - self._lastTime
+
 		if self._lastBytesIn:
-			self._bytesInPerSecond = (bytesIn - self._lastBytesIn)/timeDiff
-			if (self._bytesInPerSecond < 0):
+			self._bytesInPerSecond = (bytesIn - self._lastBytesIn) / timeDiff
+			if self._bytesInPerSecond < 0:
 				self._bytesInPerSecond = 0
+
 		if self._lastBytesOut:
-			self._bytesOutPerSecond = (bytesOut - self._lastBytesOut)/timeDiff
-			if (self._bytesOutPerSecond < 0):
+			self._bytesOutPerSecond = (bytesOut - self._lastBytesOut) / timeDiff
+			if self._bytesOutPerSecond < 0:
 				self._bytesOutPerSecond = 0
+
 		self._lastBytesIn = bytesIn
 		self._lastBytesOut = bytesOut
 		self._lastTime = now
@@ -461,7 +468,7 @@ class NetworkPerformanceCounterWMI(threading.Thread):
 			for instance in self.wmi.Win32_PerfRawData_Tcpip_NetworkInterface():
 				ratio = difflib.SequenceMatcher(None, instance.Name, interface).ratio()
 				logger.info(u"NetworkPerformanceCounter: searching for interface '%s', got interface '%s', match ratio: %s" % (interface, instance.Name, ratio))
-				if (ratio > bestRatio):
+				if ratio > bestRatio:
 					bestRatio = ratio
 					self.interface = instance.Name
 			logger.info(u"NetworkPerformanceCounter: using interface '%s' match ratio (%s)" % (self.interface, bestRatio))
@@ -487,12 +494,12 @@ class NetworkPerformanceCounterWMI(threading.Thread):
 		if self._lastTime:
 			timeDiff = now - self._lastTime
 		if self._lastBytesIn:
-			self._bytesInPerSecond = (bytesIn - self._lastBytesIn)/timeDiff
-			if (self._bytesInPerSecond < 0):
+			self._bytesInPerSecond = (bytesIn - self._lastBytesIn) / timeDiff
+			if self._bytesInPerSecond < 0:
 				self._bytesInPerSecond = 0
 		if self._lastBytesOut:
-			self._bytesOutPerSecond = (bytesOut - self._lastBytesOut)/timeDiff
-			if (self._bytesOutPerSecond < 0):
+			self._bytesOutPerSecond = (bytesOut - self._lastBytesOut) / timeDiff
+			if self._bytesOutPerSecond < 0:
 				self._bytesOutPerSecond = 0
 		self._lastBytesIn = bytesIn
 		self._lastBytesOut = bytesOut
@@ -526,7 +533,7 @@ class NetworkPerformanceCounterPDH(threading.Thread):
 		for instance in instances:
 			ratio = difflib.SequenceMatcher(None, instance, interface).ratio()
 			logger.info(u"NetworkPerformanceCounter: searching for interface '%s', got interface '%s', match ratio: %s" % (interface, instance, ratio))
-			if (ratio > bestRatio):
+			if ratio > bestRatio:
 				bestRatio = ratio
 				self.interface = instance
 		logger.info(u"NetworkPerformanceCounter: using interface '%s' match ratio (%s) with available counters: %s" % (self.interface, bestRatio, items))
@@ -613,17 +620,17 @@ def copyACL(src, dest):
 		logger.debug2(u"copyACL: ace: %s" % str(ace))
 		# XXX: Not sure if these are actually correct.
 		# See http://aspn.activestate.com/ASPN/docs/ActivePython/2.4/pywin32/PyACL__GetAce_meth.html
-		if   (ace[0][0] == win32con.ACCESS_ALLOWED_ACE_TYPE):
+		if ace[0][0] == win32con.ACCESS_ALLOWED_ACE_TYPE:
 			dest.AddAccessAllowedAce(revision, ace[1], ace[2])
-		elif (ace[0][0] == win32con.ACCESS_DENIED_ACE_TYPE):
+		elif ace[0][0] == win32con.ACCESS_DENIED_ACE_TYPE:
 			dest.AddAccessDeniedAce(revision, ace[1], ace[2])
-		elif (ace[0][0] == win32con.SYSTEM_AUDIT_ACE_TYPE):
+		elif ace[0][0] == win32con.SYSTEM_AUDIT_ACE_TYPE:
 			dest.AddAuditAccessAce(revision, ace[1], ace[2], 1, 1)
-		elif (ace[0][0] == win32con.ACCESS_ALLOWED_OBJECT_ACE_TYPE):
+		elif ace[0][0] == win32con.ACCESS_ALLOWED_OBJECT_ACE_TYPE:
 			dest.AddAccessAllowedObjectAce(revision, ace[0][1], ace[1], ace[2], ace[3], ace[4])
-		elif (ace[0][0] == win32con.ACCESS_DENIED_OBJECT_ACE_TYPE):
+		elif ace[0][0] == win32con.ACCESS_DENIED_OBJECT_ACE_TYPE:
 			dest.AddAccessDeniedObjectAce(revision, ace[0][1], ace[1], ace[2], ace[3], ace[4])
-		elif (ace[0][0] == win32con.SYSTEM_AUDIT_OBJECT_ACE_TYPE):
+		elif ace[0][0] == win32con.SYSTEM_AUDIT_OBJECT_ACE_TYPE:
 			dest.AddAuditAccessObjectAce(revision, ace[0][1], ace[1], ace[2], ace[3], ace[4], 1, 1)
 	return src.GetAceCount()
 
@@ -821,7 +828,7 @@ def umount(mountpoint):
 		# Remove connection and update user profile (remove persistent connection)
 		win32wnet.WNetCancelConnection2(mountpoint, win32netcon.CONNECT_UPDATE_PROFILE, True)
 	except pywintypes.error as details:
-		if (details[0] == 2250):
+		if details[0] == 2250:
 			# Not connected
 			logger.warning(u"Failed to umount '%s': %s" % (mountpoint, details))
 		else:
@@ -867,7 +874,7 @@ def getActiveSessionIds(winApiBugCommand = None):
 			if forceInt(sessionData['LogonType']) not in (2, 10) or sessionData['LogonDomain'] in invalidLogonDomains:
 				continue
 			sessionId = forceInt(sessionData['Session'])
-			if (sessionId == 0) and (sys.getwindowsversion()[0] >= 6):
+			if sessionId == 0 and sys.getwindowsversion()[0] >= 6:
 				# Service session
 				continue
 			logger.debug(u"   Found session: %s" % sessionData)
@@ -880,7 +887,7 @@ def getActiveSessionId(verifyProcessRunning = "winlogon.exe", winApiBugCommand =
 	logger.debug("Getting ActiveSessionId")
 	invalidLogonDomains = ["Window Manager", "Font Driver Host"]
 	defaultSessionId = getActiveConsoleSessionId()
-	if (sys.getwindowsversion()[0] >= 6) and (defaultSessionId == 0):
+	if sys.getwindowsversion()[0] >= 6 and defaultSessionId == 0:
 		defaultSessionId = 1
 	sessionIds = []
 	newest = None
@@ -924,7 +931,7 @@ def getActiveSessionId(verifyProcessRunning = "winlogon.exe", winApiBugCommand =
 			if forceInt(sessionData['LogonType']) not in (2, 10) or sessionData['LogonDomain'] in invalidLogonDomains:
 				continue
 			sessionId = forceInt(sessionData['Session'])
-			if (sessionId == 0) and (sys.getwindowsversion()[0] >= 6):
+			if sessionId == 0 and sys.getwindowsversion()[0] >= 6:
 				# Service session
 				continue
 
@@ -953,14 +960,16 @@ def getActiveSessionId(verifyProcessRunning = "winlogon.exe", winApiBugCommand =
 						newest = sessionData
 			else:
 				newest = sessionData
-	if (len(sessionIds) == 0):
+
+	if not sessionIds:
 		return defaultSessionId
 	if newest:
 		return forceInt(newest['Session'])
 	if defaultSessionId in sessionIds:
 		return defaultSessionId
-	if (sys.getwindowsversion()[0]>= 6) and (sessionIds[0] == 0):
-		if (len(sessionIds) > 1):
+
+	if sys.getwindowsversion()[0] >= 6 and sessionIds[0] == 0:
+		if len(sessionIds) > 1:
 			return sessionIds[1]
 		return defaultSessionId
 	return sessionIds[0]
@@ -1014,7 +1023,7 @@ def getSessionInformation(sessionId, winApiBugCommand = None):
 	for s in win32security.LsaEnumerateLogonSessions():
 		sessionData = win32security.LsaGetLogonSessionData(s)
 
-		if (forceInt(sessionData['Session']) == forceInt(sessionId)):
+		if forceInt(sessionData['Session']) == forceInt(sessionId):
 			logger.debug("Session is found and checked. wtsUserName: '%s'" % wtsUserName)
 			if wtsUserName and sessionData['UserName'].lower() != wtsUserName.lower():
 				continue
@@ -1132,14 +1141,14 @@ def logoffCurrentUser():
 	# # Windows Server 2008 and Windows Vista:  A call to WTSShutdownSystem does not work when Remote Connection Manager (RCM) is disabled. This is the case when the Terminal Services service is stopped.
 	# win32ts.WTSShutdownSystem(win32ts.WTS_CURRENT_SERVER_HANDLE, win32ts.WTS_WSD_LOGOFF)
 	command = ''
-	if (sys.getwindowsversion()[0] == 5):
-		if (sys.getwindowsversion()[1] == 0):
+	if sys.getwindowsversion()[0] == 5:
+		if sys.getwindowsversion()[1] == 0:
 			# NT5.0: win2k
 			raise NotImplementedError(u"Not available on win2k")
 		else:
 			# NT5.1: XP
 			command = u'logoff.exe'
-	elif (sys.getwindowsversion()[0] == 6):
+	elif sys.getwindowsversion()[0] == 6:
 		# NT6: Vista, Win7
 		command = u'shutdown.exe /l'
 	else:
@@ -1386,18 +1395,25 @@ def execute(cmd, waitForEnding=True, getHandle=False, ignoreExitCode=[], exitOnS
 				stdout=subprocess.PIPE,
 				stderr=stderr,
 			)
+
 			if not encoding:
 				encoding = proc.stdout.encoding
 				logger.debug(u"proc.stdout.encoding: %s" % encoding)
-				if (encoding == 'ascii'): encoding = None
+				if encoding == 'ascii':
+					encoding = None
+
 			if not encoding:
 				encoding = locale.getpreferredencoding()
 				logger.debug(u"locale.getpreferredencoding(): %s" % encoding)
-				if (encoding == 'ascii'): encoding = None
+				if encoding == 'ascii':
+					encoding = None
+
 			if not encoding:
 				encoding = sys.stdout.encoding
 				logger.debug(u"sys.stdout.encoding: %s" % encoding)
-				if (encoding == 'ascii'): encoding = None
+				if encoding == 'ascii':
+					encoding = None
+
 			if not encoding:
 				encoding = 'cp850'
 
@@ -1425,7 +1441,7 @@ def execute(cmd, waitForEnding=True, getHandle=False, ignoreExitCode=[], exitOnS
 						if (e.errno != 11):
 							raise
 
-				if (timeout > 0) and (time.time() - startTime >= timeout):
+				if timeout > 0 and (time.time() - startTime >= timeout):
 					try:
 						proc.kill()
 					except Exception:
@@ -1486,7 +1502,7 @@ def getPids(process, sessionId=None):
 		except Exception:
 			pass
 		logger.debug2(u"   got process %s with pid %d in session %s" % (pe32.szExeFile, pid, sid))
-		if (pe32.szExeFile.lower() == process.lower()):
+		if pe32.szExeFile.lower() == process.lower():
 			logger.info(u"Found process %s with matching name (pid %d, session %s)" % (pe32.szExeFile.lower(), pid, sid))
 			if sessionId is None or (sid == sessionId):
 				processIds.append(forceInt(pid))
@@ -1523,7 +1539,7 @@ def getProcessName(processId):
 	pe32 = PROCESSENTRY32()
 	pe32.dwSize = sizeof(PROCESSENTRY32)
 	logger.info(u"Getting first process")
-	if ( Process32First(hProcessSnap, byref(pe32)) == win32con.FALSE ):
+	if Process32First(hProcessSnap, byref(pe32)) == win32con.FALSE:
 		logger.error(u"Failed getting first process")
 		return
 	while True:
@@ -1686,7 +1702,7 @@ def createUser(username, password, groups=[]):
 		domain = username.split(u'\\')[0]
 		username = username.split(u'\\')[-1]
 	domain = domain.upper()
-	if (domain != getHostname().upper()):
+	if domain != getHostname().upper():
 		raise ValueError(u"Can only handle domain %s" % getHostname().upper())
 
 	userData = {
@@ -1718,7 +1734,7 @@ def deleteUser(username, deleteProfile=True):
 		domain = username.split(u'\\')[0]
 		username = username.split(u'\\')[-1]
 	domain = domain.upper()
-	if (domain != getHostname().upper()):
+	if domain != getHostname().upper():
 		raise ValueError(u"Can only handle domain %s" % getHostname().upper())
 
 	if deleteProfile:
@@ -1744,11 +1760,11 @@ def existsUser(username):
 		domain = username.split(u'\\')[0]
 		username = username.split(u'\\')[-1]
 	domain = domain.upper()
-	if (domain != getHostname().upper()):
+	if domain != getHostname().upper():
 		raise ValueError(u"Can only handle domain %s" % getHostname().upper())
 
 	for user in win32net.NetUserEnum(u"\\\\" + domain, 0)[0]:
-		if (user.get('name').lower() == username.lower()):
+		if user.get('name').lower() == username.lower():
 			return True
 	return False
 
@@ -1756,7 +1772,7 @@ def existsUser(username):
 def getUserSidFromHandle(userHandle):
 	tic = win32security.GetTokenInformation(userHandle, ntsecuritycon.TokenGroups)
 	for (sid, flags) in tic:
-		if (flags & win32con.SE_GROUP_LOGON_ID):
+		if flags & win32con.SE_GROUP_LOGON_ID:
 			return sid
 
 
@@ -1843,10 +1859,10 @@ class Impersonate:
 		try:
 			logonType = forceUnicode(logonType)
 			newDesktop = forceBool(newDesktop)
-			if (logonType == u'NEW_CREDENTIALS'):
+			if logonType == u'NEW_CREDENTIALS':
 				# Stay who you are but add credentials for network connections
 				logonType = win32security.LOGON32_LOGON_NEW_CREDENTIALS
-			elif (logonType == u'INTERACTIVE'):
+			elif logonType == u'INTERACTIVE':
 				logonType = win32con.LOGON32_LOGON_INTERACTIVE
 			else:
 				raise ValueError(u"Unhandled logon type '%s'" % logonType)
