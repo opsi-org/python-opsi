@@ -1007,22 +1007,11 @@ def getActiveSessionId(verifyProcessRunning="winlogon.exe", winApiBugCommand=Non
 	return sessionIds[0]
 
 
-def getSessionInformation(sessionId, winApiBugCommand = None):
-	# info = {}
-	# for infoClass in ('WTSUserName', 'WTSApplicationName', 'WTSClientDirectory', 'WTSClientName', 'WTSDomainName', 'WTSInitialProgram',
-	#                  'WTSOEMId', 'WTSUserName', 'WTSWinStationName', 'WTSWorkingDirectory', 'WTSClientProtocolType', 'WTSClientProductId',
-	#                  'WTSClientBuildNumber', 'WTSClientHardwareId', 'WTSSessionId', 'WTSConnectState', 'WTSClientDisplay', 'WTSClientAddress'):
-	# 	try:
-	# 		info[infoClass] = win32ts.WTSQuerySessionInformation(None, sessionId, eval('win32ts.%s' % infoClass))
-	# 	except Exception, e:
-	# 		info[infoClass] = None
-	# 		logger.debug(e)
-	# return info
-	wtsUserName = None
+def getSessionInformation(sessionId, winApiBugCommand=None):
 	try:
 		wtsUserName = win32ts.WTSQuerySessionInformation(None, sessionId, win32ts.WTSUserName)
 	except Exception:
-		pass
+		wtsUserName = None
 
 	# 'UserName': u'Administrator',
 	# 'AuthenticationPackage': u'NTLM',
@@ -1119,8 +1108,8 @@ def getActiveSessionInformation(winApiBugCommand=None):
 						info.append(sessionInfo)
 		elif sessionInfo:
 			info.append(sessionInfo)
-		# info.append(getSessionInformation(sessionId, winApiBugCommand))
-	logger.debug(u"info: '%s'" % info)
+
+	logger.debug(u"info: {}", info)
 	return info
 
 
