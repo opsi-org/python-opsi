@@ -933,7 +933,7 @@ def getActiveSessionId(verifyProcessRunning="winlogon.exe", winApiBugCommand=Non
 				if verifyProcessRunning and not getPids(verifyProcessRunning, sessionId=sessionId):
 					continue
 
-				if not sessionId in sessionIds:
+				if sessionId not in sessionIds:
 					sessionIds.append(sessionId)
 
 				if newest:
@@ -1714,7 +1714,7 @@ def runCommandInSession(command, sessionId=None, desktop=u"default", duplicateFr
 		logger.debug(u"No session id given, running in active session")
 		sessionId = getActiveSessionId()
 
-	if not desktop.split('\\')[-1] in ('default', 'winlogon'):
+	if desktop.split('\\')[-1] not in ('default', 'winlogon'):
 		logger.info(u"Creating new desktop '%s'" % desktop.split('\\')[-1])
 		try:
 			createDesktop(desktop.split('\\')[-1])
