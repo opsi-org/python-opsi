@@ -1687,8 +1687,8 @@ def runCommandInSession(command, sessionId=None, desktop=u"default", duplicateFr
 		logger.info(u"Creating new desktop '%s'" % desktop.split('\\')[-1])
 		try:
 			createDesktop(desktop.split('\\')[-1])
-		except Exception as e:
-			logger.warning(e)
+		except Exception as error:
+			logger.warning(error)
 
 	userToken = getUserToken(sessionId, duplicateFrom)
 
