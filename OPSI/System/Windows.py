@@ -1692,7 +1692,7 @@ def runCommandInSession(command, sessionId=None, desktop=u"default", duplicateFr
 
 	userToken = getUserToken(sessionId, duplicateFrom)
 
-	dwCreationFlags = win32con.NORMAL_PRIORITY_CLASS#|win32con.CREATE_NEW_CONSOLE
+	dwCreationFlags = win32con.NORMAL_PRIORITY_CLASS
 
 	s = win32process.STARTUPINFO()
 	s.lpDesktop = desktop
