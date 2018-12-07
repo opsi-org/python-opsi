@@ -1459,7 +1459,7 @@ class DepotToLocalDirectorySychronizer(object):
 									os.remove(linkDestination)
 							parts = len(linkDestination.split('/'))
 							parts -= len(linkSource.split('/'))
-							for i in range(parts):
+							for counter in range(parts):
 								linkSource = os.path.join('..', linkSource)
 							logger.info(u"Symlink '%s' to '%s'" % (linkDestination, linkSource))
 							os.symlink(linkSource, linkDestination)
