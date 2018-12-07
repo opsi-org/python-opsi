@@ -690,30 +690,22 @@ def getFreeDrive(startLetter='a'):
 
 def getDiskSpaceUsage(path):
 	path = forceUnicode(path)
-	if (len(path) == 1):
+	if len(path) == 1:
+		# Assuming a drive letter like "C"
 		path = path + ':'
-	info = {
-		'capacity':  0,
-		'available': 0,
-		'used':      0,
-		'usage':     0
-	}
-	# (items, instances) = win32pdh.EnumObjectItems(
-	# 			None,
-	# 			None,
-	# 			win32pdhutil.find_pdh_counter_localized_name('LogicalDisk'),
-	# 			win32pdh.PERF_DETAIL_WIZARD)
 
-	# for instance in instances:
-	# 	if path.lower().startswith(instance.lower()):
 	(sectPerCluster, bytesPerSector, freeClusters, totalClusters) = win32file.GetDiskFreeSpace(path)
-	info['capacity'] = totalClusters * sectPerCluster * bytesPerSector
-	info['available'] = freeClusters * sectPerCluster * bytesPerSector
-	info['used'] = info['capacity'] - info['available']
-	info['usage'] = float(info['used']) / float(info['capacity'])
-	# break
 
-	logger.info(u"Disk space usage for path '%s': %s" % (path, info))
+	capacity = totalClusters * sectPerCluster * bytesPerSector
+	available = freeClusters * sectPerCluster * bytesPerSector
+
+	info = {
+		'capacity': capacity,
+		'available': available,
+		'used': capacity - available,
+		'usage': (capacity - available) / capacity
+	}
+	logger.info(u"Disk space usage for path '{}': {}", path, info)
 	return info
 
 

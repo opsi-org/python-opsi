@@ -1045,11 +1045,12 @@ def getHarddisks(data=None):
 
 def getDiskSpaceUsage(path):
 	disk = os.statvfs(path)
-	info = {}
-	info['capacity'] = disk.f_bsize * disk.f_blocks
-	info['available'] = disk.f_bsize * disk.f_bavail
-	info['used'] = disk.f_bsize * (disk.f_blocks - disk.f_bavail)
-	info['usage'] = float(disk.f_blocks - disk.f_bavail) / float(disk.f_blocks)
+	info = {
+		'capacity': disk.f_bsize * disk.f_blocks,
+		'available': disk.f_bsize * disk.f_bavail,
+		'used': disk.f_bsize * (disk.f_blocks - disk.f_bavail),
+		'usage': float(disk.f_blocks - disk.f_bavail) / float(disk.f_blocks),
+	}
 	logger.info(u"Disk space usage for path '%s': %s" % (path, info))
 	return info
 
