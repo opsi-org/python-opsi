@@ -1132,8 +1132,8 @@ def getUserSessionIds(username, winApiBugCommand=None, onlyNewestId=None):
 					newestdt = datetime(lt.year, lt.month, lt.day, lt.hour, lt.minute, lt.second)
 					sessiondt = datetime(lts.year, lts.month, lts.day, lts.hour, lts.minute, lts.second)
 					if sessiondt > newestdt:
-						logger.notice("Token in SessionData is newer then the cached one.")
-						newest = sessionData
+						logger.notice("Token in session is newer then the cached one.")
+						newest = session
 				except Exception as error:
 					logger.warning(error)
 					if forceInt(session['LogonId']) > forceInt(newest['LogonId']):
