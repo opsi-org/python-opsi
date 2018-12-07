@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2017 uib GmbH - http://www.uib.de/
+# Copyright (C) 2017-2018 uib GmbH - http://www.uib.de/
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -39,6 +39,8 @@ from OPSI.Types import forceList
 from OPSI.Util.Task.ConfigureBackend.ConfigurationData import initializeConfigs
 from OPSI.Util.Task.Rights import setPasswdRights
 
+__all__ = ('initializeBackends', )
+
 LOGGER = Logger()
 
 
@@ -55,60 +57,62 @@ def initializeBackends(ipAddress=None):
 	_setupPasswdFile()
 
 	from OPSI.Backend.BackendManager import BackendManager
-	backend = BackendManager(
-		dispatchConfigFile=u'/etc/opsi/backendManager/dispatch.conf',
-		backendConfigDir=u'/etc/opsi/backends',
-		extensionConfigDir=u'/etc/opsi/backendManager/extend.d',
-		depotbackend=False
-	)
-	backend.backend_createBase()
 
-	networkConfig = getNetworkConfiguration(ipAddress)
-	fqdn = getLocalFqdn()
+	managerConfig = {
+		"dispatchConfigFile": u'/etc/opsi/backendManager/dispatch.conf',
+		"backendConfigDir": u'/etc/opsi/backends',
+		"extensionConfigDir": u'/etc/opsi/backendManager/extend.d',
+		"depotbackend": False
+	}
 
-	LOGGER.notice(u"Try to find a Configserver.")
-	configServer = backend.host_getObjects(type='OpsiConfigserver')
-	if not configServer and not backend.host_getIdents(type='OpsiConfigserver', id=fqdn):
-		depot = backend.host_getObjects(type='OpsiDepotserver', id=fqdn)
-		if not depot:
-			LOGGER.notice(u"Creating config server '%s'" % fqdn)
-			serverConfig = _getServerConfig(fqdn, networkConfig)
-			backend.host_createOpsiConfigserver(**serverConfig)
-			configServer = backend.host_getObjects(type='OpsiConfigserver', id=fqdn)
+	with BackendManager(**managerConfig) as backend:
+		backend.backend_createBase()
+
+		networkConfig = getNetworkConfiguration(ipAddress)
+		fqdn = getLocalFqdn()
+
+		LOGGER.info(u"Trying to find a Configserver...")
+		configServer = backend.host_getObjects(type='OpsiConfigserver')
+		if not configServer and not backend.host_getIdents(type='OpsiConfigserver', id=fqdn):
+			depot = backend.host_getObjects(type='OpsiDepotserver', id=fqdn)
+			if not depot:
+				LOGGER.notice(u"Creating config server '%s'" % fqdn)
+				serverConfig = _getServerConfig(fqdn, networkConfig)
+				backend.host_createOpsiConfigserver(**serverConfig)
+				configServer = backend.host_getObjects(type='OpsiConfigserver', id=fqdn)
+			else:
+				LOGGER.notice(u"Converting depot server '%s' to config server" % fqdn)
+				configServer = OpsiConfigserver.fromHash(depot[0].toHash())
+				backend.host_createObjects(configServer)
+
+				# list expected in further processing
+				configServer = [configServer]
 		else:
-			LOGGER.notice(u"Converting depot server '%s' to config server" % fqdn)
-			configServer = OpsiConfigserver.fromHash(depot[0].toHash())
-			backend.host_createObjects(configServer)
+			depot = backend.host_getObjects(type='OpsiDepotserver', id=fqdn)
+			if not depot:
+				LOGGER.notice(u"Creating depot server '%s'" % fqdn)
+				serverConfig = _getServerConfig(fqdn, networkConfig)
+				backend.host_createOpsiDepotserver(**serverConfig)
 
-			# list expected in further processing
-			configServer = [configServer]
-	else:
-		depot = backend.host_getObjects(type='OpsiDepotserver', id=fqdn)
-		if not depot:
-			LOGGER.notice(u"Creating depot server '%s'" % fqdn)
-			serverConfig = _getServerConfig(fqdn, networkConfig)
-			backend.host_createOpsiDepotserver(**serverConfig)
+		if configServer:
+			if configServer[0].id == fqdn:
+				try:
+					configServer = backend.host_getObjects(type='OpsiConfigserver')[0]
+				except IndexError:
+					raise Exception(u"Config server '%s' not found" % fqdn)
 
-	if configServer:
-		if configServer[0].id == fqdn:
-			try:
-				configServer = backend.host_getObjects(type='OpsiConfigserver')[0]
-			except IndexError:
-				raise Exception(u"Config server '%s' not found" % fqdn)
+				if networkConfig['ipAddress']:
+					configServer.setIpAddress(networkConfig['ipAddress'])
+				if networkConfig['hardwareAddress']:
+					configServer.setHardwareAddress(networkConfig['hardwareAddress'])
 
-			if networkConfig['ipAddress']:
-				configServer.setIpAddress(networkConfig['ipAddress'])
-			if networkConfig['hardwareAddress']:
-				configServer.setHardwareAddress(networkConfig['hardwareAddress'])
+				# make sure the config server is present in all backends or we get reference error later on
+				backend.host_insertObject(configServer)
 
-			# make sure the config server is present in all backends or we get reference error later on
-			backend.host_insertObject(configServer)
+			# initializeConfigs does only handle a single object
+			configServer = forceList(configServer)[0]
 
-		# initializeConfigs does only handle a single object
-		configServer = forceList(configServer)[0]
-
-	initializeConfigs(backend=backend, configServer=configServer)
-	backend.backend_exit()
+		initializeConfigs(backend=backend, configServer=configServer)
 
 	_setupDepotDirectory()
 	_setupWorkbenchDirectory()

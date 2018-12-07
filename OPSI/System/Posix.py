@@ -78,7 +78,6 @@ GEO_OVERWRITE_SO = '/usr/local/lib/geo_override.so'
 BIN_WHICH = '/usr/bin/which'
 WHICH_CACHE = {}
 DHCLIENT_LEASES_FILE = '/var/lib/dhcp/dhclient.leases'
-DHCLIENT_LEASES_FILE_OLD = '/var/lib/dhcp3/dhclient.leases'
 
 hooks = []
 x86_64 = False
@@ -582,12 +581,7 @@ keys are: ``ip``, ``netmask``, ``bootserver``, ``nextserver``, \
 		raise ValueError(u"No device given")
 
 	if not leasesFile:
-		if os.path.exists(DHCLIENT_LEASES_FILE_OLD):
-			# old style dhcp.leases handling should be work
-			# will be removed, if precise bootimage is in testing.
-			leasesFile = DHCLIENT_LEASES_FILE_OLD
-		else:
-			leasesFile = DHCLIENT_LEASES_FILE
+		leasesFile = DHCLIENT_LEASES_FILE
 
 	dhcpResult = {}
 	if os.path.exists(leasesFile):
@@ -1045,11 +1039,12 @@ def getHarddisks(data=None):
 
 def getDiskSpaceUsage(path):
 	disk = os.statvfs(path)
-	info = {}
-	info['capacity'] = disk.f_bsize * disk.f_blocks
-	info['available'] = disk.f_bsize * disk.f_bavail
-	info['used'] = disk.f_bsize * (disk.f_blocks - disk.f_bavail)
-	info['usage'] = float(disk.f_blocks - disk.f_bavail) / float(disk.f_blocks)
+	info = {
+		'capacity': disk.f_bsize * disk.f_blocks,
+		'available': disk.f_bsize * disk.f_bavail,
+		'used': disk.f_bsize * (disk.f_blocks - disk.f_bavail),
+		'usage': float(disk.f_blocks - disk.f_bavail) / float(disk.f_blocks),
+	}
 	logger.info(u"Disk space usage for path '%s': %s" % (path, info))
 	return info
 

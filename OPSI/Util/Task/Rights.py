@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2014-2017 uib GmbH - http://www.uib.de/
+# Copyright (C) 2014-2018 uib GmbH - http://www.uib.de/
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -285,18 +285,14 @@ def getLocalDepot():
 	from OPSI.Backend.BackendManager import BackendManager
 
 	try:
-		backend = BackendManager()
+		with BackendManager() as backend:
+			depot = backend.host_getObjects(type='OpsiDepotserver', id=getLocalFQDN())
+			return depot[0]
+	except IndexError:
+		raise BackendMissingDataError("No depots found!")
 	except Exception as err:
 		LOGGER.warning("Has the backend been initialized?")
 		raise BackendConfigurationError("Unable to instantiate a backend: {}".format(err))
-
-	depot = backend.host_getObjects(type='OpsiDepotserver', id=getLocalFQDN())
-	backend.backend_exit()
-
-	try:
-		return depot[0]
-	except IndexError:
-		raise BackendMissingDataError("No depots found!")
 
 
 def getWebserverRepositoryPath():

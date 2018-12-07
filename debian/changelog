@@ -1,3 +1,18 @@
+python-opsi (4.1.1.54-1) stable; urgency=medium
+
+  * OPSI.Util.Task.Backup: Do not show a message for an unused backend
+    when running in auto mode.
+  * OPSI.System.Posix & OPSI.System.Windows: refactored getDiskSpaceUsage.
+  * OPSI.System.Windows: Make code more consistent with the other modules.
+  * OPSI.Util.Task.InitializeBackend: supplied an __all__.
+  * OPSI.Util.Task.InitializeBackend and OPSI.Util.Task.Rights use the
+    BackendManager in contextmanager style.
+  * OPSI.Util.Repository: Make code more consistent with the other modules.
+  * opsihwaudit.conf: Accept NICs with 10GB+ throughput.
+  * OPSI.Sytem.Posix: removed support for dhcp3 dhclient.leases file.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 07 Dec 2018 13:37:00 +0100
+
 python-opsi (4.1.1.53-1) stable; urgency=medium
 
   * OPSI.System.Posix: isOpenSuse will return False if not running on openSuse.

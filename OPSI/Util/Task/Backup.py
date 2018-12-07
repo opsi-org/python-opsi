@@ -329,7 +329,7 @@ If this is `None` information will be read from the current system.
 								logger.debug(u"Adding restore of {0} backend.", name)
 								functions.append(restoreData)
 
-								if configuredBackends and (not configuration) and backend not in configuredBackends:
+								if configuredBackends and (not configuration) and (backend not in configuredBackends and backend != 'auto'):
 									logger.warning("Backend {} is currently not in use!", backend)
 
 				if not functions:
