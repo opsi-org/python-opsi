@@ -502,9 +502,9 @@ class Repository:
 					'size': 0
 				}
 
-			for c in self.content(dirname):
-				if c['name'] == filename:
-					info = c
+			for item in self.content(dirname):
+				if item['name'] == filename:
+					info = item
 					return info
 			raise IOError(u'File not found')
 		except Exception as error:
@@ -1138,16 +1138,16 @@ class WebDAVRepository(HTTPRepository):
 				trynum += 1
 				conn = self._connectionPool.getConnection()
 				conn.putrequest('PUT', destination)
-				for (k, v) in headers.items():
-					conn.putheader(k, v)
+				for (key, value) in headers.items():
+					conn.putheader(key, value)
 				conn.endheaders()
 				conn.sock.settimeout(self._socketTimeout)
 
-				httplib_response = None
+				httplibResponse = None
 				try:
 					with open(source, 'rb') as src:
 						self._transferUp(src, conn, progressSubject)
-					httplib_response = conn.getresponse()
+					httplibResponse = conn.getresponse()
 				except Exception as error:
 					conn = None
 					self._connectionPool.endConnection(conn)
@@ -1155,7 +1155,7 @@ class WebDAVRepository(HTTPRepository):
 						raise
 					logger.info(u"Error '%s' occurred while uploading, retrying" % error)
 					continue
-				response = HTTPResponse.from_httplib(httplib_response)
+				response = HTTPResponse.from_httplib(httplibResponse)
 				conn = None
 				self._connectionPool.endConnection(conn)
 				break
@@ -1356,7 +1356,7 @@ class DepotToLocalDirectorySychronizer(object):
 						if os.path.exists(partialStartFile):
 							os.remove(partialStartFile)
 						# Last byte needed is byte number <localSize> - 1
-						logger.info(u"Downloading file '%s' ending at byte number %d" % (item['name'], localSize-1))
+						logger.info(u"Downloading file '%s' ending at byte number %d" % (item['name'], localSize - 1))
 						self._sourceDepot.download(sourcePath, partialStartFile, endByteNumber=localSize - 1)
 
 						with open(partialStartFile, 'ab') as f1:
@@ -1381,8 +1381,8 @@ class DepotToLocalDirectorySychronizer(object):
 	def synchronize(self, productProgressObserver=None, overallProgressObserver=None):
 		if not self._productIds:
 			logger.info(u"Getting product dirs of depot '%s'" % self._sourceDepot)
-			for c in self._sourceDepot.content():
-				self._productIds.append(c['name'])
+			for item in self._sourceDepot.content():
+				self._productIds.append(item['name'])
 
 		overallProgressSubject = ProgressSubject(id='sync_products_overall', type='product_sync', end=len(self._productIds), fireAlways=True)
 		overallProgressSubject.setMessage(_(u'Synchronizing products'))
