@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2006-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -29,6 +28,9 @@ import os
 import re
 import shutil
 
+from OPSI.Config import (
+	FILE_ADMIN_GROUP as DEFAULT_CLIENT_DATA_GROUP,
+	OPSICONFD_USER as DEFAULT_CLIENT_DATA_USER)
 from OPSI.Logger import Logger, LOG_INFO, LOG_ERROR
 from OPSI.Util.File.Opsi import PackageControlFile, PackageContentFile
 from OPSI.Util.File.Archive import Archive
@@ -41,16 +43,7 @@ if os.name == 'posix':
 	import pwd
 	import grp
 
-__version__ = '4.0.7.1'
-
-try:
-	from OPSI.Util.File.Opsi import OpsiConfFile
-	DEFAULT_CLIENT_DATA_GROUP = OpsiConfFile().getOpsiFileAdminGroup()
-except Exception:
-	DEFAULT_CLIENT_DATA_GROUP = u'pcpatch'
-
 DEFAULT_TMP_DIR = u'/tmp'
-DEFAULT_CLIENT_DATA_USER = u'opsiconfd'
 EXCLUDE_DIRS_ON_PACK = u'(^\.svn$)|(^\.git$)'
 EXCLUDE_FILES_ON_PACK = u'~$'
 PACKAGE_SCRIPT_TIMEOUT = 600
@@ -67,14 +60,13 @@ class ProductPackageFile(object):
 	def __init__(self, packageFile, tempDir=None):
 		self.packageFile = os.path.abspath(forceFilename(packageFile))
 		if not os.path.exists(self.packageFile):
-			raise Exception(u"Package file '%s' not found" % self.packageFile)
+			raise IOError(u"Package file '%s' not found" % self.packageFile)
 
-		if not tempDir:
-			tempDir = DEFAULT_TMP_DIR
+		tempDir = tempDir or DEFAULT_TMP_DIR
 		self.tempDir = os.path.abspath(forceFilename(tempDir))
 
 		if not os.path.isdir(self.tempDir):
-			raise Exception(u"Temporary directory '%s' not found" % self.tempDir)
+			raise IOError(u"Temporary directory '%s' not found" % self.tempDir)
 
 		self.clientDataDir = None
 		self.tmpUnpackDir = os.path.join(self.tempDir, u'.opsi.unpack.%s' % randomString(5))
@@ -93,25 +85,25 @@ class ProductPackageFile(object):
 
 	def getProductClientDataDir(self):
 		if not self.packageControlFile:
-			raise Exception(u"Metadata not present")
+			raise ValueError(u"Metadata not present")
 
 		if not self.clientDataDir:
-			raise Exception(u"Client data dir not set")
+			raise ValueError(u"Client data dir not set")
 
 		productId = self.packageControlFile.getProduct().getId()
 		return os.path.join(self.clientDataDir, productId)
 
 	def uninstall(self):
-		logger.notice(u"Uninstalling package")
+		logger.info(u"Uninstalling package")
 		self.deleteProductClientDataDir()
 		logger.debug(u"Finished uninstalling package")
 
 	def deleteProductClientDataDir(self):
 		if not self.packageControlFile:
-			raise Exception(u"Metadata not present")
+			raise ValueError(u"Metadata not present")
 
 		if not self.clientDataDir:
-			raise Exception(u"Client data dir not set")
+			raise ValueError(u"Client data dir not set")
 
 		productId = self.packageControlFile.getProduct().getId()
 		for f in os.listdir(self.clientDataDir):
@@ -143,8 +135,10 @@ class ProductPackageFile(object):
 		self.cleanup()
 
 	def unpackSource(self, destinationDir=u'.', newProductId=None, progressSubject=None):
-		logger.notice(u"Extracting package source from '%s'" % self.packageFile)
-		if progressSubject: progressSubject.setMessage(_(u"Extracting package source from '%s'") % self.packageFile)
+		logger.info(u"Extracting package source from '%s'" % self.packageFile)
+		if progressSubject:
+			progressSubject.setMessage(_(u"Extracting package source from '%s'") % self.packageFile)
+
 		try:
 			destinationDir = forceFilename(destinationDir)
 			if newProductId:
@@ -200,13 +194,15 @@ class ProductPackageFile(object):
 		except Exception as e:
 			logger.logException(e, LOG_INFO)
 			self.cleanup()
-			raise Exception(u"Failed to extract package source from '%s': %s" % (self.packageFile, e))
+			raise RuntimeError(u"Failed to extract package source from '%s': %s" % (self.packageFile, e))
 
 	def getMetaData(self):
 		if self.packageControlFile:
 			# Already done
 			return
-		logger.notice(u"Getting meta data from package '%s'" % self.packageFile)
+
+		logger.info(u"Getting meta data from package '%s'" % self.packageFile)
+
 		try:
 			if not os.path.exists(self.tmpUnpackDir):
 				os.mkdir(self.tmpUnpackDir)
@@ -220,15 +216,15 @@ class ProductPackageFile(object):
 
 			metadataArchives = []
 			for f in os.listdir(metaDataTmpDir):
-				if not f.endswith(u'.cpio.gz') and not f.endswith(u'.tar.gz') and not f.endswith(u'.cpio') and not f.endswith(u'.tar'):
+				if not f.endswith((u'.cpio.gz', u'.tar.gz', u'.cpio', u'.tar')):
 					logger.warning(u"Unknown content in archive: %s" % f)
 					continue
 				logger.debug(u"Metadata archive found: %s" % f)
 				metadataArchives.append(f)
 			if not metadataArchives:
-				raise Exception(u"No metadata archive found")
+				raise ValueError(u"No metadata archive found")
 			if len(metadataArchives) > 2:
-				raise Exception(u"More than two metadata archives found")
+				raise ValueError(u"More than two metadata archives found")
 
 			# Sorting to unpack custom version metadata at last
 			metadataArchives.sort()
@@ -239,7 +235,7 @@ class ProductPackageFile(object):
 
 			packageControlFile = os.path.join(metaDataTmpDir, u'control')
 			if not os.path.exists(packageControlFile):
-				raise Exception(u"No control file found in package metadata archives")
+				raise IOError(u"No control file found in package metadata archives")
 
 			self.packageControlFile = PackageControlFile(packageControlFile)
 			self.packageControlFile.parse()
@@ -247,18 +243,19 @@ class ProductPackageFile(object):
 		except Exception as e:
 			logger.logException(e)
 			self.cleanup()
-			raise Exception(u"Failed to get metadata from package '%s': %s" % (self.packageFile, e))
+			raise RuntimeError(u"Failed to get metadata from package '%s': %s" % (self.packageFile, e))
 		logger.debug(u"Got meta data from package '%s'" % self.packageFile)
 		return self.packageControlFile
 
 	def extractData(self):
-		logger.notice(u"Extracting data from package '%s'" % self.packageFile)
+		logger.info(u"Extracting data from package '%s'" % self.packageFile)
+
 		try:
 			if not self.packageControlFile:
-				raise Exception(u"Metadata not present")
+				raise ValueError(u"Metadata not present")
 
 			if not self.clientDataDir:
-				raise Exception(u"Client data dir not set")
+				raise ValueError(u"Client data dir not set")
 
 			self.clientDataFiles = []
 
@@ -273,7 +270,7 @@ class ProductPackageFile(object):
 				if f.startswith('OPSI'):
 					continue
 
-				if not f.endswith(u'.cpio.gz') and not f.endswith(u'.tar.gz') and not f.endswith(u'.cpio') and not f.endswith(u'.tar'):
+				if not f.endswith((u'.cpio.gz', u'.tar.gz', u'.cpio', u'.tar')):
 					logger.warning(u"Unknown content in archive: %s" % f)
 					continue
 
@@ -287,9 +284,9 @@ class ProductPackageFile(object):
 			if not clientDataArchives:
 				logger.warning(u"No client-data archive found")
 			if len(clientDataArchives) > 2:
-				raise Exception(u"More than two client-data archives found")
+				raise ValueError(u"More than two client-data archives found")
 			if len(serverDataArchives) > 2:
-				raise Exception(u"More than two server-data archives found")
+				raise ValueError(u"More than two server-data archives found")
 
 			# Sorting to unpack custom version data at last
 			def psort(name):
@@ -318,7 +315,7 @@ class ProductPackageFile(object):
 			logger.debug(u"Finished extracting data from package")
 		except Exception as e:
 			self.cleanup()
-			raise Exception(u"Failed to extract data from package '%s': %s" % (self.packageFile, e))
+			raise RuntimeError(u"Failed to extract data from package '%s': %s" % (self.packageFile, e))
 
 	def getClientDataFiles(self):
 		if self.clientDataFiles:
@@ -328,16 +325,17 @@ class ProductPackageFile(object):
 		return self.clientDataFiles
 
 	def setAccessRights(self):
-		logger.notice(u"Setting access rights of client-data files")
+		logger.info(u"Setting access rights of client-data files")
+
 		if os.name != 'posix':
 			raise NotImplementedError(u"setAccessRights not implemented on windows")
 
 		try:
 			if not self.packageControlFile:
-				raise Exception(u"Metadata not present")
+				raise ValueError(u"Metadata not present")
 
 			if not self.clientDataDir:
-				raise Exception(u"Client data dir not set")
+				raise ValueError(u"Client data dir not set")
 
 			productClientDataDir = self.getProductClientDataDir()
 
@@ -358,7 +356,7 @@ class ProductPackageFile(object):
 					logger.debug(u"Setting owner of '%s' to '%s:%s'" % (path, uid, gid))
 					os.chown(path, uid, gid)
 				except Exception as e:
-					raise Exception(u"Failed to change owner of '%s' to '%s:%s': %s" % (path, uid, gid, e))
+					raise RuntimeError(u"Failed to change owner of '%s' to '%s:%s': %s" % (path, uid, gid, e))
 
 				mode = None
 				try:
@@ -375,22 +373,23 @@ class ProductPackageFile(object):
 						os.chmod(path, mode)
 				except Exception as error:
 					if mode is None:
-						raise Exception(u"Failed to set access rights of '%s': %s" % (path, error))
+						raise RuntimeError(u"Failed to set access rights of '%s': %s" % (path, error))
 					else:
-						raise Exception(u"Failed to set access rights of '%s' to '%o': %s" % (path, mode, error))
+						raise RuntimeError(u"Failed to set access rights of '%s' to '%o': %s" % (path, mode, error))
 			logger.debug(u"Finished setting access rights of client-data files")
 		except Exception as e:
 			self.cleanup()
-			raise Exception(u"Failed to set access rights of client-data files of package '%s': %s" % (self.packageFile, e))
+			raise RuntimeError(u"Failed to set access rights of client-data files of package '%s': %s" % (self.packageFile, e))
 
 	def createPackageContentFile(self):
-		logger.notice(u"Creating package content file")
+		logger.info(u"Creating package content file")
+
 		try:
 			if not self.packageControlFile:
-				raise Exception(u"Metadata not present")
+				raise ValueError(u"Metadata not present")
 
 			if not self.clientDataDir:
-				raise Exception(u"Client data dir not set")
+				raise ValueError(u"Client data dir not set")
 
 			productId = self.packageControlFile.getProduct().getId()
 			productClientDataDir = self.getProductClientDataDir()
@@ -416,22 +415,23 @@ class ProductPackageFile(object):
 		except Exception as e:
 			logger.logException(e)
 			self.cleanup()
-			raise Exception(u"Failed to create package content file of package '%s': %s" % (self.packageFile, e))
+			raise RuntimeError(u"Failed to create package content file of package '%s': %s" % (self.packageFile, e))
 
 	def _runPackageScript(self, scriptName, env={}):
-		logger.notice(u"Running package script '%s'" % scriptName)
+		logger.info(u"Attempt to run package script {0!r}", scriptName)
 		try:
 			if not self.packageControlFile:
-				raise Exception(u"Metadata not present")
+				raise ValueError(u"Metadata not present")
 
 			if not self.clientDataDir:
-				raise Exception(u"Client data dir not set")
+				raise ValueError(u"Client data dir not set")
 
 			script = os.path.join(self.tmpUnpackDir, u'OPSI', scriptName)
 			if not os.path.exists(script):
-				logger.warning(u"Package script '%s' not found" % scriptName)
+				logger.info(u"Package script '%s' not found" % scriptName)
 				return []
 
+			logger.notice(u"Running package script '%s'" % scriptName)
 			os.chmod(script, 0o700)
 
 			os.putenv('PRODUCT_ID', self.packageControlFile.getProduct().getId())
@@ -446,7 +446,7 @@ class ProductPackageFile(object):
 		except Exception as error:
 			logger.logException(error, LOG_ERROR)
 			self.cleanup()
-			raise Exception(u"Failed to execute package script '%s' of package '%s': %s" % (scriptName, self.packageFile, error))
+			raise RuntimeError(u"Failed to execute package script '%s' of package '%s': %s" % (scriptName, self.packageFile, error))
 		finally:
 			logger.debug(u"Finished running package script {0!r}".format(scriptName))
 
@@ -462,13 +462,12 @@ class ProductPackageSource(object):
 	def __init__(self, packageSourceDir, tempDir=None, customName=None, customOnly=False, packageFileDestDir=None, format='cpio', compression='gzip', dereference=False):
 		self.packageSourceDir = os.path.abspath(forceFilename(packageSourceDir))
 		if not os.path.isdir(self.packageSourceDir):
-			raise Exception(u"Package source directory '%s' not found" % self.packageSourceDir)
+			raise IOError(u"Package source directory '%s' not found" % self.packageSourceDir)
 
-		if not tempDir:
-			tempDir = DEFAULT_TMP_DIR
+		tempDir = tempDir or DEFAULT_TMP_DIR
 		self.tempDir = os.path.abspath(forceFilename(tempDir))
 		if not os.path.isdir(self.tempDir):
-			raise Exception(u"Temporary directory '%s' not found" % self.tempDir)
+			raise IOError(u"Temporary directory '%s' not found" % self.tempDir)
 
 		self.customName = None
 		if customName:
@@ -478,7 +477,7 @@ class ProductPackageSource(object):
 
 		if format:
 			if format not in (u'cpio', u'tar'):
-				raise Exception(u"Format '%s' not supported" % format)
+				raise ValueError(u"Format '%s' not supported" % format)
 			self.format = format
 		else:
 			self.format = u'cpio'
@@ -487,7 +486,7 @@ class ProductPackageSource(object):
 			self.compression = None
 		else:
 			if compression not in (u'gzip', u'bzip2'):
-				raise Exception(u"Compression '%s' not supported" % compression)
+				raise ValueError(u"Compression '%s' not supported" % compression)
 			self.compression = compression
 
 		self.dereference = forceBool(dereference)
@@ -496,7 +495,7 @@ class ProductPackageSource(object):
 			packageFileDestDir = self.packageSourceDir
 		packageFileDestDir = os.path.abspath(forceFilename(packageFileDestDir))
 		if not os.path.isdir(packageFileDestDir):
-			raise Exception(u"Package destination directory '%s' not found" % packageFileDestDir)
+			raise IOError(u"Package destination directory '%s' not found" % packageFileDestDir)
 
 		packageControlFile = os.path.join(self.packageSourceDir, u'OPSI', u'control')
 		if customName and os.path.exists(os.path.join(self.packageSourceDir, u'OPSI.%s' % customName, u'control')):
@@ -530,11 +529,11 @@ class ProductPackageSource(object):
 			shutil.rmtree(self.tmpPackDir)
 		os.mkdir(self.tmpPackDir)
 
-		try:
-			archives = []
-			diskusage = 0
-			dirs = [u'CLIENT_DATA', u'SERVER_DATA', u'OPSI']
+		archives = []
+		diskusage = 0
+		dirs = [u'CLIENT_DATA', u'SERVER_DATA', u'OPSI']
 
+		try:
 			if self.customName:
 				found = False
 				for i, currentDir in enumerate(dirs):
@@ -546,7 +545,7 @@ class ProductPackageSource(object):
 						else:
 							dirs.append(customDir)
 				if not found:
-					raise Exception(u"No custom dirs found for '%s'" % self.customName)
+					raise RuntimeError(u"No custom dirs found for '%s'" % self.customName)
 
 			# Try to define diskusage from Sourcedirectory to prevent a override from cpio sizelimit.
 			for d in dirs:
@@ -611,4 +610,4 @@ class ProductPackageSource(object):
 			archive.create(fileList=archives, baseDir=self.tmpPackDir)
 		except Exception as e:
 			self.cleanup()
-			raise Exception(u"Failed to create package '%s': %s" % (self.packageFile, e))
+			raise RuntimeError(u"Failed to create package '%s': %s" % (self.packageFile, e))

@@ -4,7 +4,7 @@
 # This file is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2010-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2010-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -37,17 +37,31 @@ with codecs.open(os.path.join("debian", "changelog"), 'r', 'utf-8') as changelog
 	VERSION = changelog.readline().split('(')[1].split('-')[0]
 
 if not VERSION:
-	raise Exception(u"Failed to get version info")
+	raise ValueError(u"Failed to get version info")
 
-with open("data/version", "w") as versionFile:
-	versionFile.write(VERSION)
+# Always set __version__ in OPSI.__init__.py to the version found in
+# the changelog to make sure the version is always up-to-date
+# and nobody needs to manually update it.
+initFilePath = os.path.join('OPSI', '__init__.py')
+newInitLines = []
+with open(initFilePath) as originalFile:
+	for line in originalFile:
+		if line.startswith('__version__'):
+			newInitLines.append("__version__ = '{0}'\n".format(VERSION))
+			continue
+
+		newInitLines.append(line)
+
+with open(initFilePath, 'w') as newInitFile:
+	newInitFile.writelines(newInitLines)
+print("Patched version {1!r} from changelog into {0}".format(initFilePath, VERSION))
 
 data_files = [
 	(
 		'/etc/opsi/backendManager',
 		[
-			'data/backendManager/acl.conf.default',
-			'data/backendManager/dispatch.conf.default'
+			'data/backendManager/acl.conf.example',
+			'data/backendManager/dispatch.conf.example'
 		]
 	),
 	(
@@ -58,8 +72,9 @@ data_files = [
 			'data/backendManager/extend.d/20_legacy.conf',
 			'data/backendManager/extend.d/30_kiosk.conf',
 			'data/backendManager/extend.d/30_sshcommands.conf',
-			'data/backendManager/extend.d/40_groupActions.conf',
 			'data/backendManager/extend.d/40_admin_tasks.conf',
+			'data/backendManager/extend.d/40_groupActions.conf',
+			'data/backendManager/extend.d/45_deprecated.conf',
 			'data/backendManager/extend.d/70_dynamic_depot.conf',
 			'data/backendManager/extend.d/70_wan.conf',
 		]
@@ -72,7 +87,6 @@ data_files = [
 			'data/backends/jsonrpc.conf',
 			'data/backends/mysql.conf',
 			'data/backends/sqlite.conf',
-			'data/backends/multiplex.conf',
 			'data/backends/hostcontrol.conf',
 			'data/backends/opsipxeconfd.conf'
 		]
@@ -80,7 +94,6 @@ data_files = [
 	(
 		'/etc/opsi/',
 		[
-			'data/version',
 			'data/server_commands_default.conf',
 			'data/opsi.conf'
 		]

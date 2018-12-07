@@ -17,15 +17,6 @@ host_updateObjects(host)
 
 =============================================================================================================
 
--------------------------------------------------------------------------------------------------------------
-Backend()
-   Backend-Basis-Klasse
-
-backend_getInterface()
-   Gibt das Interface (Methoden-Rümpfe) der Backend-Methoden zurück
-
-backend_exit()
-   Backend aufräumen/deinitialisieren (Datenbank-/LDAP-Verbindungen beenden, ...)
 
 -------------------------------------------------------------------------------------------------------------
 ConfigDataBackend(Backend):

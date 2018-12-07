@@ -26,49 +26,42 @@ from __future__ import absolute_import
 
 from collections import namedtuple
 
+import pytest
+
 from OPSI.Backend.DHCPD import DHCPDBackend
+from OPSI.Exceptions import BackendIOError
 from OPSI.Object import OpsiClient
-from OPSI.Types import BackendIOError
 
 from .helpers import mock
-from .test_util_file_dhcpdconf import dhcpdConf  # fixture
+from .test_util_file_dhcpdconf import dhcpdConf  # test fixture
 
-import pytest
 
 ClientConfig = namedtuple("ClientConfig", "hostname oldMAC newMAC additionalConfig")
 
 
-@pytest.fixture
-def dhcpdBackend(dhcpdConf):
-    yield DHCPDBackend(
-        dhcpdConfigFile=dhcpdConf._filename,
-        reloadConfigCommand=u'/bin/echo "Reloading dhcpd.conf"'
-    )
-
-
-def testAddingHostsToBackend(dhcpdBackend):
-    dhcpdBackend.host_insertObject(
+def testAddingHostsToBackend(dhcpBackendWithoutLookup):
+    dhcpBackendWithoutLookup.host_insertObject(
         OpsiClient(
             id='client1.test.invalid',
             hardwareAddress='00:01:02:03:04:05',
             ipAddress='192.168.1.101',
         )
     )
-    dhcpdBackend.host_insertObject(
+    dhcpBackendWithoutLookup.host_insertObject(
         OpsiClient(
             id='client2.test.invalid',
             hardwareAddress='00:01:02:03:11:22',
             ipAddress='192.168.1.102',
         )
     )
-    dhcpdBackend.host_insertObject(
+    dhcpBackendWithoutLookup.host_insertObject(
         OpsiClient(
             id='client3.test.invalid',
             hardwareAddress='1101:02:03-83:22',
             ipAddress='192.168.1.103',
         )
     )
-    dhcpdBackend.host_insertObject(
+    dhcpBackendWithoutLookup.host_insertObject(
         OpsiClient(
             id='client4.test.invalid',
             hardwareAddress='00:99:88:77:77:11',
@@ -94,6 +87,14 @@ def dhcpBackendWithoutLookup(dhcpdBackend):
 
     with mock.patch('socket.gethostbyname', failingLookup):
         yield dhcpdBackend
+
+
+@pytest.fixture
+def dhcpdBackend(dhcpdConf):
+    yield DHCPDBackend(
+        dhcpdConfigFile=dhcpdConf._filename,
+        reloadConfigCommand=u'/bin/echo "Reloading dhcpd.conf"'
+    )
 
 
 def testUpdatingHostTriggersChangeInDHCPDConfiguration(dhcpBackendWithoutLookup):

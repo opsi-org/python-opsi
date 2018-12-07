@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -25,18 +24,18 @@ SQLite backend.
 :license: GNU Affero GPL version 3
 """
 
-import threading
 from itertools import izip
 
-from apsw import (SQLITE_OPEN_CREATE, SQLITE_CONFIG_MULTITHREAD,
-				  SQLITE_OPEN_READWRITE, Connection)
+from apsw import (
+	SQLITE_OPEN_CREATE, SQLITE_CONFIG_MULTITHREAD, SQLITE_OPEN_READWRITE,
+	Connection)
 
+from OPSI.Exceptions import BackendBadValueError
 from OPSI.Logger import Logger
 from OPSI.Types import forceBool, forceFilename, forceUnicode
-from OPSI.Types import BackendBadValueError
 from OPSI.Backend.SQL import SQL, SQLBackend, SQLBackendObjectModificationTracker
 
-__version__ = '4.0.7.26'
+__all__ = ('SQLite', 'SQLiteBackend', 'SQLiteObjectBackendModificationTracker')
 
 logger = Logger()
 
@@ -63,7 +62,6 @@ class SQLite(SQL):
 
 		self._connection = None
 		self._cursor = None
-		self._transactionLock = threading.Lock()
 		logger.debug(u'SQLite created: %s' % self)
 
 	def connect(self):
@@ -93,8 +91,9 @@ class SQLite(SQL):
 					self._cursor.execute('PRAGMA encoding="UTF-8"')
 				self._cursor.setrowtrace(rowtrace)
 			return (self._connection, self._cursor)
-		except Exception:
-			raise
+		except Exception as connectionError:
+			logger.warning("Problem connecting to SQLite databse: {!r}", connectionError)
+			raise connectionError
 
 	def close(self, conn, cursor):
 		pass

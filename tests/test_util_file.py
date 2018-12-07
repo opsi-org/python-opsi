@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -31,7 +30,7 @@ from contextlib import contextmanager
 
 from OPSI.Util.File import IniFile, InfFile, TxtSetupOemFile, ZsyncFile
 
-from .helpers import copyTestfileToTemporaryFolder, workInTemporaryDirectory
+from .helpers import createTemporaryTestfile, workInTemporaryDirectory
 
 import pytest
 
@@ -97,12 +96,7 @@ def txtSetupOemFileInTempDirectory(txtSetupOemFilePath):
 
 @contextmanager
 def getTempTxtSetupOemFileFromPath(filePath):
-    with workInTemporaryDirectory() as tempDir:
-        shutil.copy(filePath, tempDir)
-
-        filename = os.path.basename(filePath)
-
-        newPath = os.path.join(tempDir, filename)
+    with createTemporaryTestfile(filePath) as newPath:
         yield TxtSetupOemFile(newPath)
 
 
@@ -148,16 +142,8 @@ def testTxtSetupOemFileApplyingWorkaroundsCreatesDisksSection(regeneratedtxtSetu
 
 
 def _sectionExists(filepath, sectionName):
-    sectionFound = False
-
     with open(filepath) as setupfile:
-        for line in setupfile:
-            sectionFound = sectionName in line
-
-            if sectionFound:
-                break
-
-    return sectionFound
+        return any(sectionName in line for line in setupfile)
 
 
 def testTxtSetupOemFileApplyingWorkaroundsCreatesDefaultsSection(regeneratedtxtSetupOemFileWithWorkarounds):
@@ -184,33 +170,6 @@ def testTxtSetupOemFileApplyingWorkaroundsChangesContents(txtSetupOemFileInTempD
         after = setupfile.readlines()
 
     assert before != after
-
-
-class CopySetupOemFileTestsMixin(object):
-    TEST_DATA_FOLDER = os.path.join(
-        os.path.dirname(__file__), 'testdata', 'util', 'file',
-    )
-    ORIGINAL_SETUP_FILE = None
-
-    @classmethod
-    def setUpClass(self):
-        oemSetupFile = copyTestfileToTemporaryFolder(
-            os.path.join(self.TEST_DATA_FOLDER, self.ORIGINAL_SETUP_FILE)
-        )
-
-        self.txtSetupOemFile = TxtSetupOemFile(oemSetupFile)
-        self.txtSetupOemFile.parse()
-
-    @classmethod
-    def tearDownClass(self):
-        testDirectory = os.path.dirname(self.txtSetupOemFile.getFilename())
-        if os.path.normpath(self.TEST_DATA_FOLDER) != os.path.normpath(testDirectory):
-            try:
-                shutil.rmtree(testDirectory)
-            except OSError:
-                pass
-
-        del self.txtSetupOemFile
 
 
 @pytest.mark.parametrize("filename, vendorId, deviceId", [
@@ -291,9 +250,9 @@ def testReadingDevicesContents(filename):
 
 
 @pytest.mark.parametrize("filename", [
-    pytest.mark.xfail('txtsetupoem_testdata_1.oem'),
+    pytest.param('txtsetupoem_testdata_1.oem', marks=pytest.mark.xfail),
     'txtsetupoem_testdata_2.oem',
-    pytest.mark.xfail('txtsetupoem_testdata_3.oem'),
+    pytest.param('txtsetupoem_testdata_3.oem', marks=pytest.mark.xfail),
     'txtsetupoem_testdata_4.oem',
     'txtsetupoem_testdata_5.oem',
     'txtsetupoem_testdata_6.oem',
@@ -317,7 +276,7 @@ def testReadingDataFromTextfileOemSetup(filename):
             setupFile.getComponentOptionsForDevice(vendorId='10DE', deviceId='0AD4')
 
 
-def testZsyncFile():
+def testZsyncFile(tempDir):
     filename = 'opsi-configed_4.0.7.1.3-2.opsi.zsync'
     expectedHeaders = {
         'Blocksize': '2048',
@@ -338,22 +297,21 @@ def testZsyncFile():
 
         assert 'mtime' not in zf._header
 
-    with workInTemporaryDirectory() as tempDir:
-        shutil.copy(os.path.join(os.path.dirname(__file__), 'testdata',
-                    'util', 'file', filename), tempDir)
+    shutil.copy(os.path.join(os.path.dirname(__file__), 'testdata',
+                'util', 'file', filename), tempDir)
 
-        testFile = os.path.join(tempDir, filename)
+    testFile = os.path.join(tempDir, filename)
 
-        zf = ZsyncFile(testFile)
-        assert not zf._parsed
-        zf.parse()
-        checkZsyncFile(zf)
+    zf = ZsyncFile(testFile)
+    assert not zf._parsed
+    zf.parse()
+    checkZsyncFile(zf)
 
-        zf._header['mtime'] = 'should not be written'
-        zf.generate()
-        zf.close()
-        del zf
+    zf._header['mtime'] = 'should not be written'
+    zf.generate()
+    zf.close()
+    del zf
 
-        zf = ZsyncFile(testFile)
-        zf.parse()
-        checkZsyncFile(zf)
+    zf = ZsyncFile(testFile)
+    zf.parse()
+    checkZsyncFile(zf)

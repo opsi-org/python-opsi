@@ -1,6 +1,7 @@
-usr/share/opsi
 etc/opsi/backendManager/extend.d
 etc/opsi/backendManager/extend.d/configed
 etc/opsi/backends
 etc/opsi/hwaudit/locales
-etc/opsi/systemdTemplates
+etc/opsi/modules.d
+usr/share/opsi
+var/lib/opsi/

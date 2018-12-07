@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -34,15 +33,12 @@ from OPSI.Util.Task.Certificate import (NoCertificateError,
     CertificateCreationError, UnreadableCertificateError, createCertificate,
     loadConfigurationFromCertificate, renewCertificate)
 
-from .helpers import workInTemporaryDirectory
-
 import pytest
 
 
 @pytest.fixture
-def pathToTempFile():
-    with workInTemporaryDirectory() as tempDir:
-        yield os.path.join(tempDir, randomString(8))
+def pathToTempFile(tempDir):
+    yield os.path.join(tempDir, randomString(8))
 
 
 def testCertificateFileExistsAfterCreation(pathToTempFile):
@@ -149,35 +145,35 @@ def testCertificateRenewalFailsOnMissingFile():
         renewCertificate('nofile')
 
 
-def testCertificateFileAfterRenewal():
+def testCertificateFileAfterRenewal(tempDir):
     exampleCertificate = getAbsolutePathToTestCert('example.pem')
 
-    with workInTemporaryDirectory() as certificate_folder:
-        shutil.copy(exampleCertificate, certificate_folder)
-        certificate_path = os.path.join(certificate_folder, 'example.pem')
-        assert os.path.exists(certificate_path)
+    certificate_folder = tempDir
+    shutil.copy(exampleCertificate, certificate_folder)
+    certificate_path = os.path.join(certificate_folder, 'example.pem')
+    assert os.path.exists(certificate_path)
 
-        old_config = loadConfigurationFromCertificate(certificate_path)
+    old_config = loadConfigurationFromCertificate(certificate_path)
 
-        configForCreating = old_config
-        configForCreating['commonName'] = forceHostId(getfqdn())
-        renewCertificate(path=certificate_path, config=configForCreating)
+    configForCreating = old_config
+    configForCreating['commonName'] = forceHostId(getfqdn())
+    renewCertificate(path=certificate_path, config=configForCreating)
 
-        assert os.path.exists(certificate_path)
-        backupFile = '{file}.bak'.format(file=certificate_path)
-        assert os.path.exists(backupFile), u"Missing backup-file!"
+    assert os.path.exists(certificate_path)
+    backupFile = '{file}.bak'.format(file=certificate_path)
+    assert os.path.exists(backupFile), u"Missing backup-file!"
 
-        new_config = loadConfigurationFromCertificate(certificate_path)
+    new_config = loadConfigurationFromCertificate(certificate_path)
 
-        keysToCompare = ('organizationalUnit', 'commonName', 'country',
-                         'state', 'locality', 'organization',
-                         'emailAddress')
+    keysToCompare = ('organizationalUnit', 'commonName', 'country',
+                     'state', 'locality', 'organization',
+                     'emailAddress')
 
-        for key in keysToCompare:
-            assert old_config[key] == new_config[key], (
-                u"Difference at key {0!r} between old and new: {1!r} vs. {2!r}".format(
-                    key, old_config[key], new_config[key]
-                )
+    for key in keysToCompare:
+        assert old_config[key] == new_config[key], (
+            u"Difference at key {0!r} between old and new: {1!r} vs. {2!r}".format(
+                key, old_config[key], new_config[key]
             )
+        )
 
-        assert old_config['serialNumber'] != new_config['serialNumber']
+    assert old_config['serialNumber'] != new_config['serialNumber']

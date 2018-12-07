@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2016-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2016-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -24,51 +24,65 @@ Testing Depotserver features.
 
 from __future__ import absolute_import
 
-import pwd
 import grp
 import os
-import pytest
-from OPSI.Backend.Depotserver import DepotserverBackend
+import pwd
 
-from .helpers import mock, patchAddress, workInTemporaryDirectory
+import pytest
+
+from OPSI.Backend.Depotserver import DepotserverBackend
+from OPSI.Exceptions import BackendError
+from OPSI.Object import LocalbootProduct, ProductOnDepot
+
+from .helpers import mock, patchAddress
+from .test_util import fileAndHash  # test fixture
 
 
 @pytest.fixture
-def depotserverBackend(extendedConfigDataBackend):
-    fakeFQDN = "depotserver.test.invalid"
-
-    extendedConfigDataBackend.host_createOpsiDepotserver(fakeFQDN)
-
-    depot = extendedConfigDataBackend.host_getObjects(id=fakeFQDN)[0]
-
-    with workInTemporaryDirectory() as tempDir:
-        depot.depotLocalUrl = 'file://' + tempDir
-        extendedConfigDataBackend.host_updateObject(depot)
-
-        for g in grp.getgrall():
-            if g.gr_gid == os.getgid():
-                groupData = grp.getgrnam(g.gr_name)
-                break
-        else:
-            pytest.skip("Unable to get group data for patching.")
-
-        for u in pwd.getpwall():
-            if u.pw_uid == os.getuid():
-                userData = pwd.getpwnam(u.pw_name)
-                break
-        else:
-            pytest.skip("Unable to get user data for mocking.")
-
-        with patchAddress(fqdn=fakeFQDN):
-            with mock.patch('OPSI.Util.Product.grp.getgrnam', lambda x: groupData):
-                with mock.patch('OPSI.Util.Product.pwd.getpwnam', lambda x: userData):
-                    yield DepotserverBackend(extendedConfigDataBackend)
+def depotDirectory(tempDir):
+    return tempDir
 
 
-@pytest.mark.requiresModulesFile  # because of SQLite...
-def testInstallingPackageOnDepotserver(depotserverBackend):
-    pathToPackage = os.path.join(os.path.dirname(__file__), 'testdata', 'backend', 'testingproduct_23-42.opsi')
-    depotserverBackend.depot_installPackage(pathToPackage)
+@pytest.fixture
+def depotServerFQDN():
+    return "depotserver.test.invalid"
+
+
+@pytest.fixture
+def depotserverBackend(extendedConfigDataBackend, depotDirectory, depotServerFQDN):
+    extendedConfigDataBackend.host_createOpsiDepotserver(depotServerFQDN)
+
+    depot = extendedConfigDataBackend.host_getObjects(id=depotServerFQDN)[0]
+    depot.depotLocalUrl = 'file://' + depotDirectory
+    extendedConfigDataBackend.host_updateObject(depot)
+
+    for g in grp.getgrall():
+        if g.gr_gid == os.getgid():
+            groupData = grp.getgrnam(g.gr_name)
+            break
+    else:
+        pytest.skip("Unable to get group data for patching.")
+
+    for u in pwd.getpwall():
+        if u.pw_uid == os.getuid():
+            userData = pwd.getpwnam(u.pw_name)
+            break
+    else:
+        pytest.skip("Unable to get user data for mocking.")
+
+    with patchAddress(fqdn=depotServerFQDN):
+        with mock.patch('OPSI.Util.Product.grp.getgrnam', lambda x: groupData):
+            with mock.patch('OPSI.Util.Product.pwd.getpwnam', lambda x: userData):
+                yield DepotserverBackend(extendedConfigDataBackend)
+
+
+@pytest.fixture
+def testPackageFile():
+    return os.path.join(os.path.dirname(__file__), 'testdata', 'backend', 'testingproduct_23-42.opsi')
+
+
+def testInstallingPackageOnDepotserver(depotserverBackend, testPackageFile, depotDirectory):
+    depotserverBackend.depot_installPackage(testPackageFile)
 
     products = depotserverBackend.product_getObjects()
     assert len(products) == 1
@@ -78,22 +92,17 @@ def testInstallingPackageOnDepotserver(depotserverBackend):
     assert product.productVersion == '23'
     assert product.packageVersion == '42'
 
-    depot = depotserverBackend.host_getObjects(type="OpsiDepotserver")[0]
-    depotPath = depot.depotLocalUrl.replace('file://', '')
-
-    assert isProductFolderInDepot(depotPath, 'testingproduct')
+    assert isProductFolderInDepot(depotDirectory, 'testingproduct')
 
 
 def isProductFolderInDepot(depotPath, productId):
     return any(os.path.isdir(listing) for listing in os.listdir(depotPath) if productId == listing)
 
 
-@pytest.mark.requiresModulesFile  # because of SQLite...
-def testInstallingPackageOnDepotserverWithForcedProductId(depotserverBackend):
-    pathToPackage = os.path.join(os.path.dirname(__file__), 'testdata', 'backend', 'testingproduct_23-42.opsi')
+def testInstallingPackageOnDepotserverWithForcedProductId(depotserverBackend, testPackageFile, depotDirectory):
     wantedProductId = 'jumpinthefire'
 
-    depotserverBackend.depot_installPackage(pathToPackage, forceProductId=wantedProductId)
+    depotserverBackend.depot_installPackage(testPackageFile, forceProductId=wantedProductId)
 
     products = depotserverBackend.product_getObjects()
     assert len(products) == 1
@@ -103,11 +112,8 @@ def testInstallingPackageOnDepotserverWithForcedProductId(depotserverBackend):
     assert product.productVersion == '23'
     assert product.packageVersion == '42'
 
-    depot = depotserverBackend.host_getObjects(type="OpsiDepotserver")[0]
-    depotPath = depot.depotLocalUrl.replace('file://', '')
-
-    assert isProductFolderInDepot(depotPath, wantedProductId)
-    assert not isProductFolderInDepot(depotPath, 'testingproduct')
+    assert isProductFolderInDepot(depotDirectory, wantedProductId)
+    assert not isProductFolderInDepot(depotDirectory, 'testingproduct')
 
     dependencies = depotserverBackend.productDependency_getObjects()
     assert len(dependencies) == 1
@@ -125,14 +131,92 @@ def testInstallingPackageOnDepotserverWithForcedProductId(depotserverBackend):
     assert prodProperty.packageVersion == product.packageVersion
 
 
-@pytest.mark.requiresModulesFile  # because of SQLite...
+def testReadingMd5sum(depotserverBackend, fileAndHash):
+    filename, expectedHash = fileAndHash
+    assert expectedHash == depotserverBackend.depot_getMD5Sum(filename)
+
+
 @pytest.mark.parametrize("suppressCreation", [False, True])
-def testInstallingPackageCreatesPackageContentFile(depotserverBackend, suppressCreation):
-    pathToPackage = os.path.join(os.path.dirname(__file__), 'testdata', 'backend', 'testingproduct_23-42.opsi')
-    depotserverBackend.depot_installPackage(pathToPackage, suppressPackageContentFileGeneration=suppressCreation)
+def testInstallingPackageCreatesPackageContentFile(depotserverBackend, suppressCreation, testPackageFile, depotDirectory):
+    depotserverBackend.depot_installPackage(testPackageFile, suppressPackageContentFileGeneration=suppressCreation)
 
-    depot = depotserverBackend.host_getObjects(type="OpsiDepotserver")[0]
-    depotPath = depot.depotLocalUrl.replace('file://', '')
+    assert isProductFolderInDepot(depotDirectory, 'testingproduct')
+    assert suppressCreation != os.path.exists(os.path.join(depotDirectory, 'testingproduct', 'testingproduct.files'))
 
-    assert isProductFolderInDepot(depotPath, 'testingproduct')
-    assert suppressCreation != os.path.exists(os.path.join(depotPath, 'testingproduct', 'testingproduct.files'))
+
+@pytest.mark.parametrize("forceInstallation", [False, True])
+def testInstallingWithLockedProduct(depotserverBackend, depotServerFQDN, testPackageFile, forceInstallation, depotDirectory):
+    product = LocalbootProduct(
+        id='testingproduct',
+        productVersion=23,
+        packageVersion=41  # One lower than from the package file.
+    )
+    depotserverBackend.product_insertObject(product)
+
+    lockedProductOnDepot = ProductOnDepot(
+        productId=product.getId(),
+        productType=product.getType(),
+        productVersion=product.getProductVersion(),
+        packageVersion=product.getPackageVersion(),
+        depotId=depotServerFQDN,
+        locked=True
+    )
+    depotserverBackend.productOnDepot_createObjects(lockedProductOnDepot)
+
+    if not forceInstallation:
+        with pytest.raises(BackendError):
+            depotserverBackend.depot_installPackage(testPackageFile)
+
+        # Checking that the package version does not get changed
+        pod = depotserverBackend.productOnDepot_getObjects(productId=product.getId(), depotId=depotServerFQDN)[0]
+        assert pod.locked is True
+        assert '23' == pod.productVersion
+        assert '41' == pod.packageVersion
+    else:
+        depotserverBackend.depot_installPackage(testPackageFile, force=True)
+
+        pod = depotserverBackend.productOnDepot_getObjects(productId=product.getId(), depotId=depotServerFQDN)[0]
+        assert pod.locked is False
+        assert '23' == pod.productVersion
+        assert '42' == pod.packageVersion
+
+        assert isProductFolderInDepot(depotDirectory, product.id)
+
+
+def testUninstallingProduct(depotserverBackend, depotServerFQDN, testPackageFile, depotDirectory):
+    productId = 'testingproduct'
+    depotserverBackend.depot_installPackage(testPackageFile, force=True)
+
+    assert isProductFolderInDepot(depotDirectory, productId)
+
+    depotserverBackend.depot_uninstallPackage(productId)
+
+    assert not isProductFolderInDepot(depotDirectory, productId)
+    assert not depotserverBackend.productOnDepot_getObjects(productId=productId, depotId=depotServerFQDN)
+    assert not depotserverBackend.product_getObjects(id=productId)
+
+
+@pytest.mark.parametrize("forceUninstall", [False, True])
+def testUninstallingLockedProduct(depotserverBackend, depotServerFQDN, testPackageFile, depotDirectory, forceUninstall):
+    productId = 'testingproduct'
+
+    depotserverBackend.depot_installPackage(testPackageFile, force=True)
+    assert isProductFolderInDepot(depotDirectory, productId)
+
+    pod = depotserverBackend.productOnDepot_getObjects(productId=productId, depotId=depotServerFQDN)[0]
+    pod.setLocked(True)
+    depotserverBackend.productOnDepot_updateObject(pod)
+
+    if not forceUninstall:
+        with pytest.raises(BackendError):
+            depotserverBackend.depot_uninstallPackage(productId)
+
+        assert isProductFolderInDepot(depotDirectory, productId)
+        assert depotserverBackend.productOnDepot_getObjects(productId=productId, depotId=depotServerFQDN)
+        assert depotserverBackend.product_getObjects(id=productId)
+    else:
+        depotserverBackend.depot_uninstallPackage(productId, force=forceUninstall)
+
+        assert not isProductFolderInDepot(depotDirectory, productId)
+        assert not depotserverBackend.productOnDepot_getObjects(productId=productId, depotId=depotServerFQDN)
+        assert not depotserverBackend.product_getObjects(id=productId)

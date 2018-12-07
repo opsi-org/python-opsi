@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -25,13 +24,23 @@ Testing the functionality of working with hosts.
 
 from __future__ import absolute_import
 
+import itertools
 import socket
 
 import pytest
 
+from OPSI.Exceptions import BackendError, BackendMissingDataError
 from OPSI.Object import (HostGroup, ObjectToGroup, OpsiClient, OpsiConfigserver,
     OpsiDepotserver)
-from OPSI.Types import BackendError, BackendMissingDataError
+from OPSI.Util import randomString
+
+
+def getLocalHostFqdn():
+    fqdn = socket.getfqdn()
+    if fqdn.count('.') < 2:
+        raise RuntimeError(u"Failed to get fqdn: %s" % fqdn)
+
+    return fqdn
 
 
 def getClients():
@@ -88,36 +97,38 @@ def getClients():
 
 
 def getConfigServer():
-    serverId = socket.getfqdn()
-    if serverId.count('.') < 2:
-        raise Exception(u"Failed to get fqdn: %s" % serverId)
+    serverId = getLocalHostFqdn()
 
     return OpsiConfigserver(
-            id=serverId,
-            opsiHostKey='71234545689056789012123678901234',
-            depotLocalUrl='file:///opt/pcbin/install',
-            depotRemoteUrl=u'smb://%s/opt_pcbin/install' % serverId.split(
-                '.')[0],
-            repositoryLocalUrl='file:///var/lib/opsi/repository',
-            repositoryRemoteUrl=u'webdavs://%s:4447/repository' % serverId,
-            description='The configserver',
-            notes='Config 1',
-            hardwareAddress=None,
-            ipAddress=None,
-            inventoryNumber='00000000001',
-            networkAddress='192.168.1.0/24',
-            maxBandwidth=10000
-        )
+        id=serverId,
+        opsiHostKey='71234545689056789012123678901234',
+        depotLocalUrl='file:///var/lib/opsi/depot',
+        depotRemoteUrl=u'smb://%s/opsi_depot' % serverId.split('.')[0],
+        repositoryLocalUrl='file:///var/lib/opsi/repository',
+        repositoryRemoteUrl=u'webdavs://%s:4447/repository' % serverId,
+        workbenchLocalUrl='file:///var/lib/opsi/workbench',
+        workbenchRemoteUrl=u'smb://%s/opsi_workbench' % serverId.split('.')[0],
+        description='The configserver',
+        notes='Config 1',
+        hardwareAddress=None,
+        ipAddress=None,
+        inventoryNumber='00000000001',
+        networkAddress='192.168.1.0/24',
+        maxBandwidth=10000
+    )
 
 
 def getDepotServers():
     depotserver1 = OpsiDepotserver(
         id='depotserver1.uib.local',
         opsiHostKey='19012334567845645678901232789012',
-        depotLocalUrl='file:///opt/pcbin/install',
-        depotRemoteUrl='smb://depotserver1.test.invalid/opt_pcbin/install',
+        depotLocalUrl='file:///var/lib/opsi/depot',
+        depotRemoteUrl='smb://depotserver1.test.invalid/opsi_depot',
+        depotWebdavUrl=u'webdavs://depotserver1.test.invalid:4447/depot',
         repositoryLocalUrl='file:///var/lib/opsi/repository',
         repositoryRemoteUrl='webdavs://depotserver1.test.invalid:4447/repository',
+        workbenchLocalUrl='file:///var/lib/opsi/workbench',
+        workbenchRemoteUrl=u'smb://depotserver1.test.invalid/opsi_workbench',
         description='A depot',
         notes='D€pot 1',
         hardwareAddress=None,
@@ -130,12 +141,14 @@ def getDepotServers():
     depotserver2 = OpsiDepotserver(
         id='depotserver2.test.invalid',
         opsiHostKey='93aa22f38a678c64ef678a012d2e82f2',
-        depotLocalUrl='file:///opt/pcbin/install',
-        depotRemoteUrl='smb://depotserver2.test.invalid/opt_pcbin',
+        depotLocalUrl='file:///var/lib/opsi/depot',
+        depotRemoteUrl='smb://depotserver2.test.invalid/opsi_depot',
         repositoryLocalUrl='file:///var/lib/opsi/repository',
         repositoryRemoteUrl='webdavs://depotserver2.test.invalid:4447/repository',
+        workbenchLocalUrl='file:///var/lib/opsi/workbench',
+        workbenchRemoteUrl=u'smb://depotserver2.test.invalid/opsi_workbench',
         description='Second depot',
-        notes='no notes here',
+        notes=None,  # no notes here
         hardwareAddress='00:01:09:07:11:aa',
         ipAddress='192.168.10.1',
         inventoryNumber='',
@@ -160,34 +173,35 @@ def test_getHostsHostOnBackend(extendedConfigDataBackend):
 
 
 def test_verifyHosts(extendedConfigDataBackend):
+
+    def nullifyUncomparableValues(hostDict):
+        keys = (
+            'lastSeen', 'created', 'inventoryNumber', 'notes', 'opsiHostKey',
+            'isMasterDepot'
+        )
+        for key in keys:
+            hostDict[key] = None
+
     clients = getClients()
+    hostsOriginal = {client.id: client for client in clients}
     configServer = getConfigServer()
+    hostsOriginal.update({configServer.id: configServer})
     depots = getDepotServers()
-    hostsOriginal = list(clients) + [configServer] + list(depots)
-    extendedConfigDataBackend.host_createObjects(hostsOriginal)
+    hostsOriginal.update({depot.id: depot for depot in depots})
+    extendedConfigDataBackend.host_createObjects(hostsOriginal.values())
 
     hosts = extendedConfigDataBackend.host_getObjects()
     assert hosts
     for host in hosts:
         assert host.getOpsiHostKey() is not None
 
-        for h in hostsOriginal:
-            if host.id == h.id:
-                h1 = h.toHash()
-                h2 = host.toHash()
-                h1['lastSeen'] = None
-                h2['lastSeen'] = None
-                h1['created'] = None
-                h2['created'] = None
-                h1['inventoryNumber'] = None
-                h2['inventoryNumber'] = None
-                h1['notes'] = None
-                h2['notes'] = None
-                h1['opsiHostKey'] = None
-                h2['opsiHostKey'] = None
-                h1['isMasterDepot'] = None
-                h2['isMasterDepot'] = None
-                assert h1 == h2
+        h = hostsOriginal[host.id]
+        h1 = h.toHash()
+        h2 = host.toHash()
+        nullifyUncomparableValues(h1)
+        nullifyUncomparableValues(h2)
+
+        assert h1 == h2
 
 
 def test_createDepotserverOnBackend(extendedConfigDataBackend):
@@ -344,104 +358,41 @@ def testDeletingAllHosts(extendedConfigDataBackend):
     assert len(hosts) <= 1
 
 
-def testGettingHostIdents(extendedConfigDataBackend):
-    clients = getClients()
+def testHost_GetIdents(extendedConfigDataBackend):
     configserver1 = getConfigServer()
     depots = getDepotServers()
+    clients = getClients()
 
-    extendedConfigDataBackend.host_createObjects(clients)
-    extendedConfigDataBackend.host_createObjects(depots)
     extendedConfigDataBackend.host_createObjects(configserver1)
-    extendedConfigDataBackend.host_createOpsiClient(
-        id='client100.test.invalid',
-        opsiHostKey=None,
-        description='Client 100',
-        notes='No notes',
-        hardwareAddress='00:00:01:01:02:02',
-        ipAddress='192.168.0.200',
-        created=None,
-        lastSeen=None
-    )
-    extendedConfigDataBackend.host_createOpsiDepotserver(
-        id='depot100.test.invalid',
-        opsiHostKey='123456789012345678901234567890aa',
-        depotLocalUrl='file:///opt/pcbin/install',
-        depotRemoteUrl='smb://depot3.uib.local/opt_pcbin/install',
-        repositoryLocalUrl='file:///var/lib/opsi/products',
-        repositoryRemoteUrl='webdavs://depot3.uib.local:4447/products',
-        description='A depot',
-        notes='Depot 100',
-        hardwareAddress=None,
-        ipAddress=None,
-        networkAddress='192.168.100.0/24',
-        maxBandwidth=0
-    )
+    extendedConfigDataBackend.host_createObjects(depots)
+    extendedConfigDataBackend.host_createObjects(clients)
+    extendedConfigDataBackend.host_createOpsiClient(id='client100.test.invalid')
+    extendedConfigDataBackend.host_createOpsiDepotserver(id='depot100.test.invalid')
 
-    selfIdents = []
-    for host in clients:
-        selfIdents.append(host.getIdent(returnType='dict'))
-    for host in depots:
-        selfIdents.append(host.getIdent(returnType='dict'))
-    selfIdents.append(configserver1.getIdent(returnType='dict'))
-
-    selfIdents.append({'id': 'depot100.test.invalid'})
-    selfIdents.append({'id': 'client100.test.invalid'})
-
-    # TODO: split this into multiple tests
+    knownIdents = [host.getIdent(returnType='dict') for host in itertools.chain(clients, depots, [configserver1])]
+    knownIdents.append({'id': 'depot100.test.invalid'})
+    knownIdents.append({'id': 'client100.test.invalid'})
+    knownIdents = set(selfIdent['id'] for selfIdent in knownIdents)
 
     ids = extendedConfigDataBackend.host_getIdents()
-    assert len(ids) == len(
-        selfIdents), u"got: '%s', expected: '%s'" % (ids, len(selfIdents))
+    assert len(ids) == len(knownIdents)
     for ident in ids:
-        found = False
-        for selfIdent in selfIdents:
-            if (ident == selfIdent['id']):
-                found = True
-                break
-        assert found, u"'%s' not in '%s'" % (ident, selfIdents)
-
-    ids = extendedConfigDataBackend.host_getIdents(id='*100*')
-    assert len(ids) == 2, u"got: '%s', expected: '%s'" % (ids, 2)
-    for ident in ids:
-        found = False
-        for selfIdent in selfIdents:
-            if (ident == selfIdent['id']):
-                found = True
-                break
-        assert found, u"'%s' not in '%s'" % (ident, selfIdents)
+        assert ident in knownIdents
 
     ids = extendedConfigDataBackend.host_getIdents(returnType='tuple')
-    assert len(ids) == len(
-        selfIdents), u"got: '%s', expected: '%s'" % (ids, len(selfIdents))
+    assert len(ids) == len(knownIdents)
     for ident in ids:
-        found = False
-        for selfIdent in selfIdents:
-            if (ident[0] == selfIdent['id']):
-                found = True
-                break
-        assert found, u"'%s' not in '%s'" % (ident, selfIdents)
+        assert ident[0] in knownIdents
 
     ids = extendedConfigDataBackend.host_getIdents(returnType='list')
-    assert len(ids) == len(
-        selfIdents), u"got: '%s', expected: '%s'" % (ids, len(selfIdents))
+    assert len(ids) == len(knownIdents)
     for ident in ids:
-        found = False
-        for selfIdent in selfIdents:
-            if (ident[0] == selfIdent['id']):
-                found = True
-                break
-        assert found, u"'%s' not in '%s'" % (ident, selfIdents)
+        assert ident[0] in knownIdents
 
     ids = extendedConfigDataBackend.host_getIdents(returnType='dict')
-    assert len(ids) == len(
-        selfIdents), u"got: '%s', expected: '%s'" % (ids, len(selfIdents))
+    assert len(ids) == len(knownIdents)
     for ident in ids:
-        found = False
-        for selfIdent in selfIdents:
-            if (ident['id'] == selfIdent['id']):
-                found = True
-                break
-        assert found, u"'%s' not in '%s'" % (ident, selfIdents)
+        assert ident['id'] in knownIdents
 
 
 def testRenamingOpsiClientFailsIfNewIdAlreadyExisting(extendedConfigDataBackend):
@@ -489,3 +440,81 @@ def testRenamingOpsiClient(extendedConfigDataBackend):
     membership = memberships[0]
     assert membership.objectId == newId
     assert membership.groupId == protagonists.id
+
+
+@pytest.fixture(scope="session")
+def localHostFqdn():
+    return getLocalHostFqdn()
+
+
+@pytest.fixture(scope="session")
+def localWorkbenchPath():
+    return 'file:///var/lib/opsi/workbench'
+
+
+@pytest.fixture(scope="session")
+def remoteWorkbenchPath(localHostFqdn):
+    return u'smb://%s/opsi_workbench' % localHostFqdn.split('.')[0]
+
+
+@pytest.fixture
+def workbenchConfigServer(localHostFqdn, localWorkbenchPath, remoteWorkbenchPath):
+    return OpsiConfigserver(
+        id=localHostFqdn,
+        workbenchLocalUrl=localWorkbenchPath,
+        workbenchRemoteUrl=remoteWorkbenchPath
+    )
+
+
+def testWorkbenchAddressAtDepots(extendedConfigDataBackend, workbenchConfigServer, localWorkbenchPath, remoteWorkbenchPath):
+    extendedConfigDataBackend.host_insertObject(workbenchConfigServer)
+
+    serverFromBackend = extendedConfigDataBackend.host_getObjects(id=workbenchConfigServer.id)[0]
+
+    assert serverFromBackend.workbenchLocalUrl == localWorkbenchPath
+    assert serverFromBackend.workbenchRemoteUrl == remoteWorkbenchPath
+
+    assert serverFromBackend.getWorkbenchLocalUrl() == localWorkbenchPath
+    assert serverFromBackend.getWorkbenchRemoteUrl() == remoteWorkbenchPath
+
+
+def testWorkbenchAddressAtDepotsInJson(extendedConfigDataBackend, workbenchConfigServer, localWorkbenchPath, remoteWorkbenchPath):
+    extendedConfigDataBackend.host_insertObject(workbenchConfigServer)
+
+    serverFromBackend = extendedConfigDataBackend.host_getObjects(id=workbenchConfigServer.id)[0]
+
+    serverDict = serverFromBackend.toHash()
+    assert serverDict['workbenchLocalUrl'] == localWorkbenchPath
+    assert serverDict['workbenchRemoteUrl'] == remoteWorkbenchPath
+
+
+def testWorkbenchAddressHasNoDefault(extendedConfigDataBackend, localHostFqdn):
+    server = OpsiConfigserver(id=localHostFqdn)
+    extendedConfigDataBackend.host_insertObject(server)
+
+    serverFromBackend = extendedConfigDataBackend.host_getObjects(id=server.id)[0]
+    assert serverFromBackend.workbenchLocalUrl is None
+    assert serverFromBackend.workbenchRemoteUrl is None
+
+
+@pytest.fixture(
+    scope="session",
+    params=[30, 64],
+    ids=['inventoryNumber-30', 'inventoryNumber-64']
+)
+def inventoryNumber(request):
+    return randomString(request.param)
+
+
+@pytest.mark.parametrize("hostClass", [OpsiClient, OpsiDepotserver])
+def testInventoryNumberOnHosts(configDataBackend, hostClass, inventoryNumber):
+    host = hostClass(id='testhost.some.test')
+    host.setInventoryNumber(inventoryNumber)
+
+    backend = configDataBackend
+    backend.host_insertObject(host)
+
+    hostFromBackend = backend.host_getObjects(id=host.id)[0]
+
+    assert hostFromBackend.inventoryNumber == inventoryNumber
+    assert hostFromBackend.getInventoryNumber() == inventoryNumber

@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2014-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -32,15 +31,6 @@ try:
     import unittest.mock as mock
 except ImportError:
     import mock
-
-import unittest
-if 'SkipTest' not in dir(unittest):
-    try:
-        import unittest2 as unittest
-    except ImportError:
-        print("Your are missing a recent enough version of unittest. "
-              "Please install the unittest2 package.")
-        raise ImportError("Your unittest module is too old.")
 
 
 @contextmanager
@@ -75,15 +65,6 @@ def cd(path):
         os.chdir(old_dir)
 
 
-def copyTestfileToTemporaryFolder(filename):
-    temporary_folder = tempfile.mkdtemp()
-    shutil.copy(filename, temporary_folder)
-
-    (_, new_filename) = os.path.split(filename)
-
-    return os.path.join(temporary_folder, new_filename)
-
-
 @contextmanager
 def createTemporaryTestfile(original, tempDir=None):
     '''Copy `original` to a temporary directory and \
@@ -94,9 +75,9 @@ yield the path to the new file.
     with workInTemporaryDirectory(tempDir) as targetDir:
         shutil.copy(original, targetDir)
 
-        (_, new_filename) = os.path.split(original)
+        filename = os.path.basename(original)
 
-        yield os.path.join(targetDir, new_filename)
+        yield os.path.join(targetDir, filename)
 
 
 def getLocalFQDN():

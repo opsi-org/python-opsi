@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2014-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -26,152 +25,150 @@ Testing opsis backup functionality.
 from __future__ import absolute_import, print_function
 
 import os
+import pytest
 import shutil
-import tempfile
-from contextlib import contextmanager
+from contextlib import closing, contextmanager
 
-import mock
+from OPSI.Exceptions import OpsiBackupBackendNotFound
+from OPSI.System import which
+from OPSI.Util.File.Opsi import OpsiBackupFileError, OpsiBackupArchive
+from OPSI.Util import md5sum, randomString
+
+from .helpers import mock, workInTemporaryDirectory
+
 try:
     import MySQLdb
 except ImportError as ierr:
     print(ierr)
     MySQLdb = None
 
-from .helpers import unittest, workInTemporaryDirectory
+try:
+    which('mysqldump')
+    mysqldump = True
+except Exception as error:
+    mysqldump = False
 
-from OPSI.System import which
-from OPSI.Types import OpsiBackupBackendNotFound
-from OPSI.Util.File.Opsi import OpsiBackupFileError, OpsiBackupArchive
-from OPSI.Util import md5sum, randomString
 
+def createArchive(tempDir, **kwargs):
+    """
+    Creates an archive with the given keyword arguments.
+    """
+    kwargs['tempdir'] = tempDir
+    print('Creating archive with the fowlling settings: {0}'.format(kwargs))
 
-class BackendArchiveTestCase(unittest.TestCase):
-    def setUp(self):
-        self._tempDir = tempfile.mkdtemp()
+    if not os.path.exists('/etc/opsi/version'):
+        def returnExampleSysconfig(unused):
+            exampleSysConfig = {
+                'hostname': u'debian6',
+                'sysVersion': (6, 0, 9),
+                'domainname': u'test.invalid',
+                'distributionId': '',
+                'fqdn': u'debian6.test.invalid',
+                'opsiVersion': '4.0.4.5',
+                'distribution': 'debian'
+            }
+            return exampleSysConfig
 
-    def tearDown(self):
-        try:
-            if os.path.exists(self.archive.name):
-                os.remove(self.archive.name)
-        except AttributeError:
-            pass
-
-        if os.path.exists(self._tempDir):
-            shutil.rmtree(self._tempDir)
-
-    def createArchive(self, **kwargs):
-        """
-        Creates an archive with the given keyword arguments.
-        """
-        kwargs['tempdir'] = self._tempDir
-        self._kwargs = kwargs
-        print('Creating archive with the fowlling settings: {0}'.format(kwargs))
-
-        if not os.path.exists('/etc/opsi/version'):
-            def returnExampleSysconfig(unused):
-                exampleSysConfig = {
-                    'hostname': u'debian6',
-                    'sysVersion': (6, 0, 9),
-                    'domainname': u'test.invalid',
-                    'distributionId': '',
-                    'fqdn': u'debian6.test.invalid',
-                    'opsiVersion': '4.0.4.5',
-                    'distribution': 'debian'
-                }
-                return exampleSysConfig
-
-            # TODO: rather setup an fake environment.
-            def returnExampleBackendConfiguration(unused):
-                return {
-                    'file': {
-                        'config': {
-                            'baseDir': u'/var/lib/opsi/config',
-                            'hostKeyFile': u'/etc/opsi/pckeys'
-                        },
-                        'dispatch': True,
-                        'module': 'File',
-                        'name': 'file'
+        # TODO: rather setup an fake environment.
+        def returnExampleBackendConfiguration(unused):
+            return {
+                'file': {
+                    'config': {
+                        'baseDir': u'/var/lib/opsi/config',
+                        'hostKeyFile': u'/etc/opsi/pckeys'
                     },
-                    'hostcontrol': {
-                        'config': {
-                            'broadcastAddresses': ['255.255.255.255'],
-                            'hostRpcTimeout': 15,
-                            'maxConnections': 50,
-                            'opsiclientdPort': 4441,
-                            'resolveHostAddress': False
-                        },
-                        'dispatch': False,
-                        'module': 'HostControl',
-                        'name': 'hostcontrol'
+                    'dispatch': True,
+                    'module': 'File',
+                    'name': 'file'
+                },
+                'hostcontrol': {
+                    'config': {
+                        'broadcastAddresses': ['255.255.255.255'],
+                        'hostRpcTimeout': 15,
+                        'maxConnections': 50,
+                        'opsiclientdPort': 4441,
+                        'resolveHostAddress': False
                     },
-                    'mysql': {
-                        'config': {
-                            'address': u'localhost',
-                            'connectionPoolMaxOverflow': 10,
-                            'connectionPoolSize': 20,
-                            'connectionPoolTimeout': 30,
-                            'database': u'opsi',
-                            'databaseCharset': 'utf8',
-                            'password': u'opsi',
-                            'username': u'opsi'
-                        },
-                        'dispatch': False,
-                        'module': 'MySQL',
-                        'name': 'mysql'
+                    'dispatch': False,
+                    'module': 'HostControl',
+                    'name': 'hostcontrol'
+                },
+                'mysql': {
+                    'config': {
+                        'address': u'localhost',
+                        'connectionPoolMaxOverflow': 10,
+                        'connectionPoolSize': 20,
+                        'connectionPoolTimeout': 30,
+                        'database': u'opsi',
+                        'databaseCharset': 'utf8',
+                        'password': u'opsi',
+                        'username': u'opsi'
                     },
-                }
+                    'dispatch': False,
+                    'module': 'MySQL',
+                    'name': 'mysql'
+                },
+            }
 
-            with mock.patch('OPSI.Util.File.Opsi.OpsiBackupArchive._probeSysInfo', returnExampleSysconfig):
-                with mock.patch('OPSI.Util.File.Opsi.OpsiBackupArchive._readBackendConfiguration', returnExampleBackendConfiguration):
-                    print('Detected missing version file. Patchiiiing.')
-                    self.archive = OpsiBackupArchive(**kwargs)
-        else:
-            self.archive = OpsiBackupArchive(**kwargs)
+        with mock.patch('OPSI.Util.File.Opsi.OpsiBackupArchive.getSysInfo', returnExampleSysconfig):
+            with mock.patch('OPSI.Util.File.Opsi.OpsiBackupArchive._readBackendConfiguration', returnExampleBackendConfiguration):
+                print('Detected missing version file. Patchiiiing.')
+                archive = OpsiBackupArchive(**kwargs)
+    else:
+        archive = OpsiBackupArchive(**kwargs)
 
-    def testArchiveGetsCreated(self):
-        self.createArchive()
-        self.assertTrue(os.path.exists(self.archive.name))
+    return archive, kwargs
 
-    def testArchiveCanBeNamed(self):
-        randomName = os.path.join(self._tempDir, '{0}.tar'.format(randomString(16)))
-        self.createArchive(name=randomName, mode="w")
 
-        self.assertTrue(os.path.exists(self.archive.name))
+def testArchiveGetsCreated(tempDir):
+    archive, _ = createArchive(tempDir)
+    assert os.path.exists(archive.name)
 
-    def testExistingArchiveIsImmutable(self):
-        randomName = os.path.join(self._tempDir, '{0}.tar'.format(randomString(16)))
-        self.createArchive(name=randomName, mode="w")
 
-        self.assertRaises(OpsiBackupFileError, OpsiBackupArchive, **self._kwargs)
+def testArchiveCanBeNamed(tempDir):
+    randomName = os.path.join(tempDir, '{0}.tar'.format(randomString(16)))
+    archive, _ = createArchive(tempDir, name=randomName, mode="w")
 
-    def testFilesCanBeAdded(self):
-        self.createArchive()
-        exampleFile = os.path.join(
-            os.path.dirname(__file__),
-            'testdata', 'util', 'fake_global.conf'
-        )
+    assert os.path.exists(archive.name)
 
-        self.archive._addContent(exampleFile)
 
-        self.archive.close()
+def testExistingArchiveIsImmutable(tempDir):
+    randomName = os.path.join(tempDir, '{0}.tar'.format(randomString(16)))
+    _, options = createArchive(tempDir, name=randomName, mode="w")
 
-    def testVerifyingBackup(self):
-        requiredDirectory = '/var/lib/opsi/config'
-        if not os.path.exists(requiredDirectory):
-            self.skipTest('Missing directory "{0}" on testmachine.'.format(requiredDirectory))
+    with pytest.raises(OpsiBackupFileError):
+        OpsiBackupArchive(**options)
 
-        self.createArchive(mode="w")
-        # TODO: Fix for computers without /var/lib/opsi/config
-        self.archive.backupFileBackend()
-        self.archive.close()
 
-        newArguments = self._kwargs
-        newArguments['mode'] = 'r'
-        newArguments['name'] = self.archive.name
+def testFilesCanBeAdded(tempDir):
+    archive, _ = createArchive(tempDir)
 
-        backup = OpsiBackupArchive(**newArguments)
-        self.assertTrue(backup.verify())
-        backup.close()
+    # TODO: check if file exists
+    # TODO: reuse fixture?
+    exampleFile = os.path.join(
+        os.path.dirname(__file__),
+        'testdata', 'util', 'fake_global.conf'
+    )
+
+    with closing(archive):
+        archive._addContent(exampleFile)
+
+
+@pytest.mark.skipif(not os.path.exists('/var/lib/opsi/config'),
+                    reason='Missing directory "/var/lib/opsi/config" on testmachine.')
+def testVerifyingBackup(tempDir):
+    archive, options = createArchive(tempDir, mode="w")
+
+    # TODO: Fix for computers without /var/lib/opsi/config
+    with closing(archive):
+        archive.backupFileBackend()
+
+    newArguments = options
+    newArguments['mode'] = 'r'
+    newArguments['name'] = archive.name
+
+    with closing(OpsiBackupArchive(**newArguments)) as backup:
+        assert backup.verify()
 
 
 @contextmanager
@@ -191,8 +188,8 @@ def getOpsiBackupArchive(name=None, mode=None, tempdir=None, keepArchive=False, 
             with mock.patch('OPSI.Util.File.Opsi.OpsiBackupArchive.BACKEND_CONF_DIR', backendDir):
                 fakeDHCPDBackendConfig(baseDir, backendDir)
                 if dataBackend == 'file':
-                    backendDataDir = fakeFileBackendConfig(baseDir, backendDir)
-                    fillFileBackendWithFakeFiles(backendDataDir)
+                    backendDataDir, hostKeyFile = fakeFileBackendConfig(baseDir, backendDir)
+                    fillFileBackendWithFakeFiles(backendDataDir, hostKeyFile)
                 elif "mysql" == dataBackend:
                     mySQLConnectionConfig = fakeMySQLBackend(backendDir)
                     fillMySQLBackend(mySQLConnectionConfig)
@@ -201,22 +198,21 @@ def getOpsiBackupArchive(name=None, mode=None, tempdir=None, keepArchive=False, 
                 dispatchConfig = fakeDispatchConfig(baseDir, dataBackend)
 
                 with mock.patch('OPSI.Util.File.Opsi.OpsiBackupArchive.DISPATCH_CONF', dispatchConfig):
-                    with mock.patch('OPSI.System.Posix.SysInfo.opsiVersion', '1.2.3'):
-                        archive = OpsiBackupArchive(name=name, mode=mode, tempdir=tempDir)
+                    archive = OpsiBackupArchive(name=name, mode=mode, tempdir=tempDir)
+                    try:
+                        yield archive
+                    finally:
                         try:
-                            yield archive
-                        finally:
-                            try:
-                                archive.close()
-                            except IOError:
-                                # Archive is probably already closed
-                                pass
+                            archive.close()
+                        except IOError:
+                            # Archive is probably already closed
+                            pass
 
-                            if not keepArchive:
-                                try:
-                                    os.remove(archive.name)
-                                except OSError:
-                                    pass
+                        if not keepArchive:
+                            try:
+                                os.remove(archive.name)
+                            except OSError:
+                                pass
 
 
 def fakeDHCPDBackendConfig(baseDir, backendDir):
@@ -275,10 +271,13 @@ config = {{
 }}
 """.format(configDataFolder, keyFile))
 
-    return configDataFolder
+    return configDataFolder, keyFile
 
 
-def fillFileBackendWithFakeFiles(backendDir):
+def fillFileBackendWithFakeFiles(backendDir, hostKeyFile):
+    with open(hostKeyFile, 'w') as keyFile:
+        keyFile.write('abc:123\n')
+
     requiredFolders = (u'clients', u'depots', u'products', u'audit', u'templates')
     for folder in requiredFolders:
         try:
@@ -294,7 +293,7 @@ def fillFileBackendWithFakeFiles(backendDir):
     )
     for targetFile in exampleFiles:
         try:
-            with open(targetFile, 'wx') as dispatchFile:
+            with open(targetFile, 'wx'):
                 pass
         except IOError as error:
             if error.errno != 17:  # 17 is File exists
@@ -304,10 +303,12 @@ def fillFileBackendWithFakeFiles(backendDir):
 def fakeMySQLBackend(backendDir):
     try:
         from .Backends.config import MySQLconfiguration
-    except ImportError as ierr:
-        raise unittest.SkipTest(u"Missing MySQLconfiguration - "
+    except ImportError:
+        pytest.skip(
+            u"Missing MySQLconfiguration - "
             u"please check your config.py in tests/Backends. "
-            u"See config.py.example for example data.")
+            u"See config.py.example for example data."
+        )
 
     mysqlConfigFile = os.path.join(backendDir, "mysql.conf")
     with open(mysqlConfigFile, 'w') as mySQLConf:
@@ -394,209 +395,208 @@ def getFolderContent(path):
     return content
 
 
-class BackupArchiveTest(unittest.TestCase):
-    def testCreatingConfigurationBackup(self):
-        with workInTemporaryDirectory() as tempDir:
-            with getOpsiBackupArchive(tempdir=tempDir, keepArchive=True) as archive:
-                archive.backupConfiguration()
-                oldContent = getFolderContent(archive.CONF_DIR)
-                shutil.rmtree(archive.CONF_DIR, ignore_errors="True")
+def testCreatingConfigurationBackup(tempDir):
+    with getOpsiBackupArchive(tempdir=tempDir, keepArchive=True) as archive:
+        archive.backupConfiguration()
+        oldContent = getFolderContent(archive.CONF_DIR)
+        shutil.rmtree(archive.CONF_DIR, ignore_errors="True")
 
-            self.assertTrue(oldContent, "No data found!")
+    assert oldContent
 
-            expectedFiles = (
-                '/backends/sqlite.conf', '/backends/jsonrpc.conf',
-                '/backends/mysql.conf', '/backends/opsipxeconfd.conf',
-                '/backends/file.conf', '/backends/hostcontrol.conf',
-                '/backends/dhcpd.conf', '/backendManager/dispatch.conf',
+    expectedFiles = (
+        '/backends/sqlite.conf', '/backends/jsonrpc.conf',
+        '/backends/mysql.conf', '/backends/opsipxeconfd.conf',
+        '/backends/file.conf', '/backends/hostcontrol.conf',
+        '/backends/dhcpd.conf', '/backendManager/dispatch.conf',
+    )
+    for expectedFile in expectedFiles:
+        print("Checking for {0!r}".format(expectedFile))
+        assert any(entry.endswith(expectedFile) for entry in oldContent)
+
+    with getOpsiBackupArchive(name=archive.name, mode="r", tempdir=tempDir) as backup:
+        backup.restoreConfiguration()
+        newContent = getFolderContent(backup.CONF_DIR)
+
+    assert newContent
+    assert oldContent == newContent
+
+
+def testBackupHasConfiguration(tempDir):
+    with getOpsiBackupArchive(tempdir=tempDir, keepArchive=True) as archive:
+        assert not archive.hasConfiguration()
+        archiveName = archive.name
+        archive.backupConfiguration()
+
+    with getOpsiBackupArchive(name=archiveName, mode="r", tempdir=tempDir) as backup:
+        assert backup.hasConfiguration()
+
+
+def testCreatingFileBackendBackup(tempDir):
+    with getOpsiBackupArchive(tempdir=tempDir, keepArchive=True) as archive:
+        assert list(archive._getBackends("file")), "Missing file backend!"
+        assert 1 == len(list(archive._getBackends("file")))
+
+        with pytest.raises(OpsiBackupBackendNotFound):
+            archive.restoreFileBackend()
+
+        for backend in archive._getBackends("file"):
+            baseDir = backend["config"]["baseDir"]
+            oldContent = getFolderContent(baseDir)
+
+            keyFile = backend["config"]["hostKeyFile"]
+            assert os.path.exists(keyFile)
+
+            archive.backupFileBackend()
+            archive.close()
+
+            shutil.rmtree(baseDir, ignore_errors=True)
+            if baseDir not in keyFile:
+                os.remove(keyFile)
+            assert not os.path.exists(keyFile)
+            os.mkdir(baseDir)
+
+        with getOpsiBackupArchive(name=archive.name, mode="r", tempdir=tempDir) as backup:
+            backup.restoreFileBackend()
+            newContent = getFolderContent(baseDir)
+
+            newKeyFile = backend["config"]["hostKeyFile"]
+            assert os.path.exists(newKeyFile)
+
+        assert oldContent == newContent
+
+
+def testBackupHasFileBackend(tempDir):
+    with getOpsiBackupArchive(tempdir=tempDir, keepArchive=True) as archive:
+        assert not archive.hasFileBackend()
+        archiveName = archive.name
+        archive.backupFileBackend()
+
+    with getOpsiBackupArchive(name=archiveName, mode="r", tempdir=tempDir) as backup:
+        assert backup.hasFileBackend()
+
+
+def test_backupDHCPBackend(tempDir):
+    with getOpsiBackupArchive(tempdir=tempDir, keepArchive=True) as archive:
+        with pytest.raises(OpsiBackupBackendNotFound):
+            archive.restoreDHCPBackend()
+
+        archiveName = archive.name
+
+        for backend in archive._getBackends("dhcpd"):
+            dhcpConfigFile = backend['config']['dhcpdConfigFile']
+
+            md5OfOriginalFile = md5sum(dhcpConfigFile)
+
+            archive.backupDHCPBackend()
+            archive.close()
+
+            os.remove(dhcpConfigFile)
+            break
+        else:
+            raise RuntimeError("No DHCPD backend configured!")
+
+    with getOpsiBackupArchive(name=archiveName, mode="r", tempdir=tempDir) as backup:
+        backup.restoreDHCPBackend()
+        md5OfRestoredFile = md5sum(dhcpConfigFile)
+
+    assert md5OfOriginalFile == md5OfRestoredFile
+
+
+def testBackupDHCPBackendDoesNotFailIfConfigFileIsMissing(tempDir):
+    with getOpsiBackupArchive(tempdir=tempDir, keepArchive=True) as archive:
+        archiveName = archive.name
+
+        for backend in archive._getBackends("dhcpd"):
+            dhcpConfigFile = backend['config']['dhcpdConfigFile']
+            os.remove(dhcpConfigFile)
+            break
+        else:
+            raise RuntimeError("No DHCPD backend configured!")
+
+        archive.backupDHCPBackend()
+        archive.close()
+
+    with getOpsiBackupArchive(name=archiveName, mode="r", tempdir=tempDir) as backup:
+        assert not backup.hasDHCPBackend()
+
+        with pytest.raises(OpsiBackupBackendNotFound):
+            backup.restoreDHCPBackend()
+
+
+def testBackupHasDHCPDBackend(tempDir):
+    with getOpsiBackupArchive(tempdir=tempDir, keepArchive=True) as archive:
+        assert not archive.hasDHCPBackend()
+        archiveName = archive.name
+        archive.backupDHCPBackend()
+
+    with getOpsiBackupArchive(name=archiveName, mode="r", tempdir=tempDir) as backup:
+        assert backup.hasDHCPBackend()
+
+
+@pytest.mark.skipif(not MySQLdb, reason="Missing MySQLdb.")
+@pytest.mark.skipif(not mysqldump, reason="Missing mysqldump.")
+def test_backupMySQLBackend(tempDir):
+    with getOpsiBackupArchive(tempdir=tempDir, keepArchive=True, dataBackend="mysql") as archive:
+        with pytest.raises(OpsiBackupBackendNotFound):
+            archive.restoreMySQLBackend()
+
+        archiveName = archive.name
+        archive.backupMySQLBackend()
+        archive.close()
+
+        orig = {}
+        for backend in archive._getBackends("mysql"):
+            con = MySQLdb.connect(
+                host=backend["config"]["address"],
+                user=backend["config"]["username"],
+                passwd=backend["config"]["password"],
+                db=backend["config"]["database"]
             )
-            for expectedFile in expectedFiles:
-                print("Checking for {0!r}".format(expectedFile))
-                assert any(entry.endswith(expectedFile) for entry in oldContent)
 
-            with getOpsiBackupArchive(name=archive.name, mode="r", tempdir=tempDir) as backup:
-                backup.restoreConfiguration()
-                newContent = getFolderContent(backup.CONF_DIR)
+            cursor = con.cursor()
+            cursor.execute("SHOW TABLES;")
+            orig[backend["name"]] = dict.fromkeys([r[0] for r in cursor.fetchall()])
+            for entry in orig[backend["name"]].keys():
+                cursor.execute("SELECT COUNT(*) FROM `%s`" % entry)
+                count = cursor.fetchone()
+                orig[backend["name"]][entry] = count[0]
+                cursor.execute("DROP TABLE `%s`" % entry)
 
-            self.assertTrue(newContent, "No data found!")
-            self.assertEquals(oldContent, newContent)
+    assert orig
+    for backendName, values in orig.items():
+        print("Checking for content in {0!r}...".format(backendName))
+        assert values
 
-    def testBackupHasConfiguration(self):
-        with workInTemporaryDirectory() as tempDir:
-            with getOpsiBackupArchive(tempdir=tempDir, keepArchive=True) as archive:
-                self.assertFalse(archive.hasConfiguration())
-                archiveName = archive.name
-                archive.backupConfiguration()
+    with getOpsiBackupArchive(name=archiveName, mode="r", tempdir=tempDir, dataBackend="mysql") as backup:
+        backup.restoreMySQLBackend()
 
-            with getOpsiBackupArchive(name=archiveName, mode="r", tempdir=tempDir) as backup:
-                self.assertTrue(backup.hasConfiguration())
+        new = {}
+        for backend in archive._getBackends("mysql"):
+            con = MySQLdb.connect(
+                host=backend["config"]["address"],
+                user=backend["config"]["username"],
+                passwd=backend["config"]["password"],
+                db=backend["config"]["database"]
+            )
+            cursor = con.cursor()
+            cursor.execute("SHOW TABLES;")
+            new[backend["name"]] = dict.fromkeys([r[0] for r in cursor.fetchall()])
+            for entry in new[backend["name"]].keys():
+                cursor.execute("SELECT COUNT(*) FROM `%s`" % entry)
+                count = cursor.fetchone()
+                new[backend["name"]][entry] = count[0]
 
-    def testCreatingFileBackendBackup(self):
-        with workInTemporaryDirectory() as tempDir:
-            with getOpsiBackupArchive(tempdir=tempDir, keepArchive=True) as archive:
-                self.assertTrue(list(archive._getBackends("file")), "Missing file backend!")
-                self.assertTrue(1, len(list(archive._getBackends("file"))))
-
-                self.assertRaises(OpsiBackupBackendNotFound, archive.restoreFileBackend)
-
-                for backend in archive._getBackends("file"):
-                    baseDir = backend["config"]["baseDir"]
-
-                    oldContent = getFolderContent(baseDir)
-
-                    archive.backupFileBackend()
-                    archive.close()
-
-                    shutil.rmtree(baseDir, ignore_errors=True)
-                    os.mkdir(baseDir)
-
-                self.assertTrue(oldContent)
-
-                with getOpsiBackupArchive(name=archive.name, mode="r", tempdir=tempDir) as backup:
-                    backup.restoreFileBackend()
-                    newContent = getFolderContent(baseDir)
-
-                self.assertEquals(oldContent, newContent)
-
-    def testBackupHasFileBackend(self):
-        with workInTemporaryDirectory() as tempDir:
-            with getOpsiBackupArchive(tempdir=tempDir, keepArchive=True) as archive:
-                self.assertFalse(archive.hasFileBackend())
-                archiveName = archive.name
-                archive.backupFileBackend()
-
-            with getOpsiBackupArchive(name=archiveName, mode="r", tempdir=tempDir) as backup:
-                self.assertTrue(backup.hasFileBackend())
-
-    def test_backupDHCPBackend(self):
-        with workInTemporaryDirectory() as tempDir:
-            with getOpsiBackupArchive(tempdir=tempDir, keepArchive=True) as archive:
-                self.assertRaises(OpsiBackupBackendNotFound, archive.restoreDHCPBackend)
-
-                archiveName = archive.name
-
-                for backend in archive._getBackends("dhcpd"):
-                    dhcpConfigFile = backend['config']['dhcpdConfigFile']
-
-                    md5OfOriginalFile = md5sum(dhcpConfigFile)
-
-                    archive.backupDHCPBackend()
-                    archive.close()
-
-                    os.remove(dhcpConfigFile)
-                    break
-                else:
-                    raise RuntimeError("No DHCPD backend configured!")
-
-            with getOpsiBackupArchive(name=archiveName, mode="r", tempdir=tempDir) as backup:
-                backup.restoreDHCPBackend()
-                md5OfRestoredFile = md5sum(dhcpConfigFile)
-
-            self.assertEqual(md5OfOriginalFile, md5OfRestoredFile)
-
-    def testBackupDHCPBackendDoesNotFailIfConfigFileIsMissing(self):
-        with workInTemporaryDirectory() as tempDir:
-            with getOpsiBackupArchive(tempdir=tempDir, keepArchive=True) as archive:
-
-                archiveName = archive.name
-
-                for backend in archive._getBackends("dhcpd"):
-                    dhcpConfigFile = backend['config']['dhcpdConfigFile']
-                    os.remove(dhcpConfigFile)
-                    break
-                else:
-                    raise RuntimeError("No DHCPD backend configured!")
-
-                archive.backupDHCPBackend()
-                archive.close()
-
-            with getOpsiBackupArchive(name=archiveName, mode="r", tempdir=tempDir) as backup:
-                assert not backup.hasDHCPBackend()
-                self.assertRaises(OpsiBackupBackendNotFound, backup.restoreDHCPBackend)
-
-    def testBackupHasDHCPDBackend(self):
-        with workInTemporaryDirectory() as tempDir:
-            with getOpsiBackupArchive(tempdir=tempDir, keepArchive=True) as archive:
-                self.assertFalse(archive.hasDHCPBackend())
-                archiveName = archive.name
-                archive.backupDHCPBackend()
-
-            with getOpsiBackupArchive(name=archiveName, mode="r", tempdir=tempDir) as backup:
-                self.assertTrue(backup.hasDHCPBackend())
-
-    def test_backupMySQLBackend(self):
-        if not MySQLdb:
-            raise unittest.SkipTest("Could not import MySQLdb: {0}".format(ierr))
-
-        try:
-            which('mysqldump')
-        except Exception as error:
-            raise unittest.SkipTest("Missing mysqldump: {0}".format(error))
-
-        with workInTemporaryDirectory() as tempDir:
-            with getOpsiBackupArchive(tempdir=tempDir, keepArchive=True, dataBackend="mysql") as archive:
-                self.assertRaises(OpsiBackupBackendNotFound, archive.restoreMySQLBackend)
-
-                archiveName = archive.name
-                archive.backupMySQLBackend()
-                archive.close()
-
-                orig = {}
-                for backend in archive._getBackends("mysql"):
-                    con = MySQLdb.connect(
-                        host=backend["config"]["address"],
-                        user=backend["config"]["username"],
-                        passwd=backend["config"]["password"],
-                        db=backend["config"]["database"]
-                    )
-
-                    cursor = con.cursor()
-                    cursor.execute("SHOW TABLES;")
-                    orig[backend["name"]] = dict.fromkeys([r[0] for r in cursor.fetchall()])
-                    for entry in orig[backend["name"]].keys():
-                        cursor.execute("SELECT COUNT(*) FROM `%s`" % entry)
-                        count = cursor.fetchone()
-                        orig[backend["name"]][entry] = count[0]
-                        cursor.execute("DROP TABLE `%s`" % entry)
-
-            self.assertTrue(orig)
-            for backendName, values in orig.items():
-                print("Checking for content in {0!r}...".format(backendName))
-                self.assertTrue(values)
-
-            with getOpsiBackupArchive(name=archiveName, mode="r", tempdir=tempDir, dataBackend="mysql") as backup:
-                backup.restoreMySQLBackend()
-
-                new = {}
-                for backend in archive._getBackends("mysql"):
-                    con = MySQLdb.connect (
-                        host=backend["config"]["address"],
-                        user=backend["config"]["username"],
-                        passwd=backend["config"]["password"],
-                        db=backend["config"]["database"]
-                    )
-                    cursor = con.cursor()
-                    cursor.execute("SHOW TABLES;")
-                    new[backend["name"]] = dict.fromkeys([r[0] for r in cursor.fetchall()])
-                    for entry in new[backend["name"]].keys():
-                        cursor.execute("SELECT COUNT(*) FROM `%s`" % entry)
-                        count = cursor.fetchone()
-                        new[backend["name"]][entry] = count[0]
-
-            self.assertEqual(orig, new)
-
-    def testBackupHasMySQLBackend(self):
-        with workInTemporaryDirectory() as tempDir:
-            with getOpsiBackupArchive(tempdir=tempDir, keepArchive=True) as archive:
-                self.assertFalse(archive.hasMySQLBackend())
-                archiveName = archive.name
-
-                with mock.patch('OPSI.System.which', lambda x: 'echo'):
-                    archive.backupMySQLBackend()
-
-            with getOpsiBackupArchive(name=archiveName, mode="r", tempdir=tempDir) as backup:
-                self.assertTrue(backup.hasMySQLBackend())
+    assert orig == new
 
 
-if __name__ == '__main__':
-    unittest.main()
+def testBackupHasMySQLBackend(tempDir):
+    with getOpsiBackupArchive(tempdir=tempDir, keepArchive=True) as archive:
+        assert not archive.hasMySQLBackend()
+        archiveName = archive.name
+
+        with mock.patch('OPSI.System.which', lambda x: 'echo'):
+            archive.backupMySQLBackend()
+
+    with getOpsiBackupArchive(name=archiveName, mode="r", tempdir=tempDir) as backup:
+        assert backup.hasMySQLBackend()
+

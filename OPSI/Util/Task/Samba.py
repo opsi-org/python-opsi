@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2015-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2015-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-Function and classes for Samba
+Configuration of Samba for the use with opsi.
 
 :author: Mathias Radtke <m.radtke@uib.de>
 :author: Niko Wenselowski <n.wenselowski@uib.de>
@@ -28,46 +28,33 @@ import os
 import shutil
 import time
 
-import OPSI.System.Posix as Posix
+from OPSI.Config import FILE_ADMIN_GROUP
 from OPSI.Logger import Logger
 from OPSI.System import execute, which
+from OPSI.System.Posix import getSambaServiceName
+from OPSI.Util.Task.Rights import getWorkbenchDirectory
+
+__all__ = ('configureSamba', 'isSamba4')
 
 logger = Logger()
 
 SMB_CONF = u'/etc/samba/smb.conf'
 
-try:
-	from OPSI.Util.File.Opsi import OpsiConfFile
-	FILE_ADMIN_GROUP = OpsiConfFile().getOpsiFileAdminGroup()
-except Exception:
-	FILE_ADMIN_GROUP = u'pcpatch'
 
+def configureSamba(config=SMB_CONF):
+	"""
+	Configure the Samba configuration to include the required shares.
 
-def getDistribution():
-	try:
-		readDistri = os.popen('lsb_release -d 2>/dev/null')
-		distribution = readDistri.read().split(':')[1].strip()
-		readDistri.close()
-	except Exception as error:
-		logger.debug('Getting Distibution failed due to: %s' % error)
-		distribution = ''
-
-	return distribution
-
-
-def isSamba4():
-	samba4 = False
-
-	try:
-		smbd = which('smbd')
-		result = execute('%s -V 2>/dev/null' % smbd)
-		for line in result:
-			if line.lower().startswith("version"):
-				samba4 = line.split()[1].startswith('4')
-	except Exception as error:
-		logger.debug('Getting Samba Version failed due to: {0}', error)
-
-	return samba4
+	:param config: The path to the Samba configuration file.
+	:type config: str
+	"""
+	logger.notice(u"Configuring samba")
+	lines = _readConfig(config)
+	newlines = _processConfig(lines)
+	if lines != newlines:
+		_writeConfig(newlines, config)
+		_reloadSamba()
+		logger.notice(u"Samba configuration finished. You may want to restart your Samba daemon.")
 
 
 def _readConfig(config):
@@ -126,7 +113,7 @@ def _processConfig(lines):
 			try:
 				os.mkdir(depotDir)
 				if os.path.exists("/opt/pcbin/install"):
-					logger.warning(u"You have an old depot configuration. Using /opt/pcbin/install is depracted, please use /var/lib/opsi/depot instead.")
+					logger.warning(u"You have an old depot configuration. Using /opt/pcbin/install is deprecated, please use /var/lib/opsi/depot instead.")
 			except Exception as error:
 				logger.warning(u"Failed to create depot directory '%s': %s" % (depotDir, error))
 	elif samba4:
@@ -182,20 +169,33 @@ def _processConfig(lines):
 			os.mkdir("/var/lib/opsi/ntfs-images")
 
 	if not workbenchShareFound:
-		logger.notice(u"   Adding share [opsi_workbench]")
-		newlines.append(u"[opsi_workbench]\n")
-		newlines.append(u"   available = yes\n")
-		newlines.append(u"   comment = opsi workbench\n")
-		if Posix.isSLES() or Posix.isOpenSUSELeap():
-			newlines.append(u"   path = /var/lib/opsi/workbench\n")
-		else:
-			newlines.append(u"   path = /home/opsiproducts\n")
+		try:
+			workbenchDirectory = getWorkbenchDirectory()
+		except Exception as error:
+			logger.warning("Failed to read the location of the workbench: {0}", error)
+			workbenchDirectory = None
 
-		newlines.append(u"   writeable = yes\n")
-		newlines.append(u"   invalid users = root\n")
-		newlines.append(u"   create mask = 0660\n")
-		newlines.append(u"   directory mask = 0770\n")
-		newlines.append(u"\n")
+		if workbenchDirectory:
+			if workbenchDirectory.endswith('/'):
+				# Removing trailing slash
+				workbenchDirectory = workbenchDirectory[:-1]
+
+			try:
+				os.mkdir(workbenchDirectory)
+				logger.notice(u"Created missing workbench directory {0}", workbenchDirectory)
+			except OSError as mkdirErr:
+				logger.debug2(u"Did not create workbench {}: {!r}", workbenchDirectory, mkdirErr)
+
+			logger.notice(u"   Adding share [opsi_workbench]")
+			newlines.append(u"[opsi_workbench]\n")
+			newlines.append(u"   available = yes\n")
+			newlines.append(u"   comment = opsi workbench\n")
+			newlines.append(u"   path = {0}\n".format(workbenchDirectory))
+			newlines.append(u"   writeable = yes\n")
+			newlines.append(u"   invalid users = root\n")
+			newlines.append(u"   create mask = 0660\n")
+			newlines.append(u"   directory mask = 0770\n")
+			newlines.append(u"\n")
 
 	if not repositoryFound:
 		logger.notice(u"  Adding share [opsi_repository]")
@@ -216,6 +216,27 @@ def _processConfig(lines):
 	return newlines
 
 
+def isSamba4():
+	"""
+	Check if the current system uses samba 4.
+
+	:return: True if running Samba 4. False otherwise.
+	:rtype: bool
+	"""
+	samba4 = False
+
+	try:
+		smbd = which('smbd')
+		result = execute('%s -V 2>/dev/null' % smbd)
+		for line in result:
+			if line.lower().startswith("version"):
+				samba4 = line.split()[1].startswith('4')
+	except Exception as error:
+		logger.debug('Getting Samba Version failed due to: {0}', error)
+
+	return samba4
+
+
 def _writeConfig(newlines, config):
 	logger.notice(u"   Creating backup of %s" % config)
 	shutil.copy(config, config + u'.' + time.strftime("%Y-%m-%d_%H:%M"))
@@ -224,17 +245,10 @@ def _writeConfig(newlines, config):
 	with codecs.open(config, 'w', 'utf-8') as writeConf:
 		writeConf.writelines(newlines)
 
+
+def _reloadSamba():
 	logger.notice(u"   Reloading samba")
 	try:
-		execute(u'%s reload' % u'service {name}'.format(name=Posix.getSambaServiceName(default="smbd")))
+		execute(u'service {name} reload'.format(name=getSambaServiceName(default="smbd")))
 	except Exception as error:
 		logger.warning(error)
-
-
-def configureSamba(config=SMB_CONF):
-	logger.notice(u"Configuring samba")
-	lines = _readConfig(config)
-	newlines = _processConfig(lines)
-	if lines != newlines:
-		_writeConfig(newlines, config)
-		logger.notice(u"Samba configuration finished. You may want to restart your Samba daemon.")

@@ -2,4 +2,3 @@
 omit =
 	OPSI/web2/*
 	OPSI/ldaptor/*
-	OPSI/tests/*

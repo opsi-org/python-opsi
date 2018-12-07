@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) - http://www.opsi.org
 
-# Copyright (C) 2006-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -31,23 +31,38 @@ As an example this contains classes for hosts, products, configurations.
 import inspect
 
 from OPSI.Logger import Logger
-from OPSI.Types import BackendBadValueError, BackendConfigurationError
+from OPSI.Exceptions import BackendBadValueError, BackendConfigurationError
 from OPSI.Types import (forceActionProgress, forceActionRequest,
 	forceActionResult, forceArchitecture, forceAuditState, forceBool,
-	forceBoolList, forceBootConfigurationPriority, forceConfigId, forceDict,
-	forceFilename, forceFloat, forceGroupId, forceGroupType,
-	forceHardwareAddress, forceHardwareDeviceId, forceHardwareVendorId,
-	forceHostId, forceInstallationStatus, forceInt, forceIPAddress,
-	forceLanguageCode, forceLicenseContractId, forceLicensePoolId,
-	forceList, forceNetworkAddress, forceObjectId, forceOpsiHostKey,
-	forceOpsiTimestamp, forcePackageVersion, forceProductId,
+	forceBoolList, forceConfigId, forceFilename, forceFloat, forceGroupId,
+	forceGroupType, forceHardwareAddress, forceHardwareDeviceId,
+	forceHardwareVendorId, forceHostId, forceInstallationStatus, forceInt,
+	forceIPAddress, forceLanguageCode, forceLicenseContractId,
+	forceLicensePoolId, forceList, forceNetworkAddress, forceObjectId,
+	forceOpsiHostKey, forceOpsiTimestamp, forcePackageVersion, forceProductId,
 	forceProductIdList, forceProductPriority, forceProductPropertyId,
 	forceProductTargetConfiguration, forceProductType, forceProductVersion,
 	forceRequirementType, forceSoftwareLicenseId, forceUnicode,
 	forceUnicodeList, forceUnicodeLower, forceUnsignedInt, forceUrl)
-from OPSI.Util import fromJson, toJson, generateOpsiHostKey, timestamp
+from OPSI.Util import (
+	combineVersions, fromJson, toJson, generateOpsiHostKey, timestamp)
 
-__version__ = '4.0.7.27'
+__all__ = (
+	'AuditHardware', 'AuditHardwareOnHost', 'AuditSoftware',
+	'AuditSoftwareOnClient', 'AuditSoftwareToLicensePool', 'BaseObject',
+	'BoolConfig', 'BoolProductProperty', 'ConcurrentSoftwareLicense',
+	'Config', 'ConfigState', 'Entity', 'Group', 'Host', 'HostGroup',
+	'LicenseContract', 'LicenseOnClient', 'LicensePool', 'LocalbootProduct',
+	'Logger', 'NetbootProduct', 'OEMSoftwareLicense', 'Object', 'ObjectToGroup',
+	'OpsiClient', 'OpsiConfigserver', 'OpsiDepotserver', 'Product',
+	'ProductDependency', 'ProductGroup', 'ProductOnClient', 'ProductOnDepot',
+	'ProductProperty', 'ProductPropertyState', 'Relationship',
+	'RetailSoftwareLicense', 'SoftwareLicense', 'SoftwareLicenseToLicensePool',
+	'UnicodeConfig', 'UnicodeProductProperty', 'VolumeSoftwareLicense',
+	'decodeIdent', 'getBackendMethodPrefix', 'getForeignIdAttributes',
+	'getIdentAttributes', 'getPossibleClassAttributes',
+	'mandatoryConstructorArgs', 'objectsDiffer'
+)
 
 logger = Logger()
 _MANDATORY_CONSTRUCTOR_ARGS_CACHE = {}
@@ -105,26 +120,25 @@ def getBackendMethodPrefix(klass):
 
 def decodeIdent(klass, hash):
 	try:
-		if hash['ident']:
-			if isinstance(hash['ident'], dict):
-				ident = hash['ident']
-			else:
-				if isinstance(hash['ident'], (str, unicode)):
-					identValues = hash['ident'].split(klass.identSeparator)
-				elif isinstance(hash['ident'], (tuple, list)):
-					identValues = hash['ident']
+		identFromHash = hash.pop('ident')
+	except KeyError:  # No 'ident' in hash. Can happen.
+		return hash
+
+	if identFromHash:
+		try:
+			hash.update(identFromHash)
+		except (TypeError, ValueError):  # identFromHash is no dict
+			try:
+				identValues = identFromHash.split(klass.identSeparator)
+			except AttributeError:  # neither string nor unicode
+				if isinstance(identFromHash, (tuple, list)):
+					identValues = identFromHash
 				else:
 					identValues = []
 
-				args = mandatoryConstructorArgs(klass)
-				if len(identValues) == len(args):
-					ident = dict(zip(args, identValues))
-
-			del hash['ident']
-			hash.update(ident)
-	except KeyError:
-		# No 'ident' in hash. Can happen.
-		pass
+			args = mandatoryConstructorArgs(klass)
+			assert len(identValues) == len(args), "ident has unexpected length."
+			hash.update({k: v for k, v in zip(args, identValues)})
 
 	return hash
 
@@ -170,6 +184,18 @@ def objectsDiffer(obj1, obj2, excludeAttributes=None):
 			if value1 != value2:
 				return True
 	return False
+
+
+def toStr(value):
+	"""
+	Converts `value` into a str if it is a unicode.
+
+	:returntype: str
+	"""
+	if isinstance(value, unicode):
+		return str(value)
+	else:
+		return value
 
 
 class BaseObject(object):
@@ -228,7 +254,7 @@ class BaseObject(object):
 
 	def update(self, updateObject, updateWithNoneValues=True):
 		if not issubclass(updateObject.__class__, self.__class__):
-			raise Exception(u"Cannot update instance of %s with instance of %s" % (self.__class__.__name__, updateObject.__class__.__name__))
+			raise TypeError(u"Cannot update instance of %s with instance of %s" % (self.__class__.__name__, updateObject.__class__.__name__))
 		hash = updateObject.toHash()
 
 		try:
@@ -306,8 +332,10 @@ class Entity(BaseObject):
 		kwargs = {}
 		decodeIdent(Class, hash)
 		for varname in Class.__init__.func_code.co_varnames[1:]:
-			if varname in hash:
+			try:
 				kwargs[varname] = hash[varname]
+			except KeyError:
+				pass
 
 		try:
 			return Class(**kwargs)
@@ -366,8 +394,10 @@ class Relationship(BaseObject):
 		kwargs = {}
 		decodeIdent(Class, hash)
 		for varname in Class.__init__.func_code.co_varnames[1:]:
-			if varname in hash:
+			try:
 				kwargs[varname] = hash[varname]
+			except KeyError:
+				pass
 
 		try:
 			return Class(**kwargs)
@@ -601,15 +631,19 @@ class OpsiDepotserver(Host):
 	subClasses = {}
 	foreignIdAttributes = Host.foreignIdAttributes + ['depotId']
 
-	def __init__(self, id, opsiHostKey=None, depotLocalUrl=None,
-				depotRemoteUrl=None, depotWebdavUrl=None,
-				repositoryLocalUrl=None, repositoryRemoteUrl=None,
-				description=None, notes=None, hardwareAddress=None,
-				ipAddress=None, inventoryNumber=None, networkAddress=None,
-				maxBandwidth=None, isMasterDepot=None, masterDepotId=None):
+	def __init__(
+		self, id, opsiHostKey=None, depotLocalUrl=None,
+		depotRemoteUrl=None, depotWebdavUrl=None,
+		repositoryLocalUrl=None, repositoryRemoteUrl=None,
+		description=None, notes=None, hardwareAddress=None,
+		ipAddress=None, inventoryNumber=None, networkAddress=None,
+		maxBandwidth=None, isMasterDepot=None, masterDepotId=None,
+		workbenchLocalUrl=None, workbenchRemoteUrl=None):
 
-		Host.__init__(self, id, description, notes, hardwareAddress, ipAddress,
+		Host.__init__(
+			self, id, description, notes, hardwareAddress, ipAddress,
 			inventoryNumber)
+
 		self.opsiHostKey = None
 		self.depotLocalUrl = None
 		self.depotRemoteUrl = None
@@ -620,6 +654,8 @@ class OpsiDepotserver(Host):
 		self.maxBandwidth = None
 		self.isMasterDepot = None
 		self.masterDepotId = None
+		self.workbenchLocalUrl = None
+		self.workbenchRemoteUrl = None
 
 		if opsiHostKey is not None:
 			self.setOpsiHostKey(opsiHostKey)
@@ -641,6 +677,10 @@ class OpsiDepotserver(Host):
 			self.setIsMasterDepot(isMasterDepot)
 		if masterDepotId is not None:
 			self.setMasterDepotId(masterDepotId)
+		if workbenchLocalUrl is not None:
+			self.setWorkbenchLocalUrl(workbenchLocalUrl)
+		if workbenchRemoteUrl is not None:
+			self.setWorkbenchRemoteUrl(workbenchRemoteUrl)
 
 	def setDefaults(self):
 		Host.setDefaults(self)
@@ -709,6 +749,18 @@ class OpsiDepotserver(Host):
 	def getMasterDepotId(self):
 		return self.masterDepotId
 
+	def setWorkbenchLocalUrl(self, value):
+		self.workbenchLocalUrl = forceUrl(value)
+
+	def getWorkbenchLocalUrl(self):
+		return self.workbenchLocalUrl
+
+	def setWorkbenchRemoteUrl(self, value):
+		self.workbenchRemoteUrl = forceUrl(value)
+
+	def getWorkbenchRemoteUrl(self):
+		return self.workbenchRemoteUrl
+
 	@staticmethod
 	def fromHash(hash):
 		try:
@@ -737,17 +789,21 @@ class OpsiConfigserver(OpsiDepotserver):
 	subClasses = {}
 	foreignIdAttributes = OpsiDepotserver.foreignIdAttributes + ['serverId']
 
-	def __init__(self, id, opsiHostKey=None, depotLocalUrl=None,
-				depotRemoteUrl=None, depotWebdavUrl=None,
-				repositoryLocalUrl=None, repositoryRemoteUrl=None,
-				description=None, notes=None, hardwareAddress=None,
-				ipAddress=None, inventoryNumber=None, networkAddress=None,
-				maxBandwidth=None, isMasterDepot=None, masterDepotId=None):
-		OpsiDepotserver.__init__(self, id, opsiHostKey, depotLocalUrl,
+	def __init__(
+		self, id, opsiHostKey=None, depotLocalUrl=None,
+		depotRemoteUrl=None, depotWebdavUrl=None,
+		repositoryLocalUrl=None, repositoryRemoteUrl=None,
+		description=None, notes=None, hardwareAddress=None,
+		ipAddress=None, inventoryNumber=None, networkAddress=None,
+		maxBandwidth=None, isMasterDepot=None, masterDepotId=None,
+		workbenchLocalUrl=None, workbenchRemoteUrl=None):
+		OpsiDepotserver.__init__(
+			self, id, opsiHostKey, depotLocalUrl,
 			depotRemoteUrl, depotWebdavUrl, repositoryLocalUrl,
 			repositoryRemoteUrl, description, notes, hardwareAddress,
 			ipAddress, inventoryNumber, networkAddress, maxBandwidth,
-			isMasterDepot, masterDepotId)
+			isMasterDepot, masterDepotId,
+			workbenchLocalUrl, workbenchRemoteUrl)
 
 	def setDefaults(self):
 		if self.isMasterDepot is None:
@@ -1155,6 +1211,10 @@ class Product(Entity):
 
 	def setPackageVersion(self, packageVersion):
 		self.packageVersion = forcePackageVersion(packageVersion)
+
+	@property
+	def version(self):
+		return combineVersions(self)
 
 	def getName(self):
 		return self.name
@@ -1783,6 +1843,10 @@ class ProductOnDepot(Relationship):
 	def setPackageVersion(self, packageVersion):
 		self.packageVersion = forcePackageVersion(packageVersion)
 
+	@property
+	def version(self):
+		return combineVersions(self)
+
 	def getDepotId(self):
 		return self.depotId
 
@@ -1929,6 +1993,10 @@ class ProductOnClient(Relationship):
 
 	def setPackageVersion(self, packageVersion):
 		self.packageVersion = forcePackageVersion(packageVersion)
+
+	@property
+	def version(self):
+		return combineVersions(self)
 
 	def getModificationTime(self):
 		return self.modificationTime
@@ -3073,10 +3141,11 @@ class AuditHardware(Entity):
 		self.setHardwareClass(hardwareClass)
 		for attribute in self.hardwareAttributes.get(hardwareClass, {}):
 			if attribute not in kwargs:
-				if attribute.lower() in kwargs:
-					kwargs[attribute] = kwargs[attribute.lower()]
-					del kwargs[attribute.lower()]
-				else:
+				lowAttr = attribute.lower()
+				try:
+					kwargs[attribute] = kwargs[lowAttr]
+					del kwargs[lowAttr]
+				except KeyError:
 					kwargs[attribute] = None
 
 		if self.hardwareAttributes.get(hardwareClass):
@@ -3174,14 +3243,12 @@ class AuditHardware(Entity):
 
 	@staticmethod
 	def fromHash(hash):
-		initHash = {}
-		for (key, value) in hash.items():
-			if key == 'type':
-				continue
+		initHash = {
+			toStr(key): value
+			for key, value in hash.items()
+			if key != 'type'
+		}
 
-			if isinstance(key, unicode):
-				key = str(key)
-			initHash[key] = value
 		return AuditHardware(**initHash)
 
 	@staticmethod
@@ -3244,10 +3311,10 @@ class AuditHardwareOnHost(Relationship):
 		for attribute in self.hardwareAttributes.get(hardwareClass, {}):
 			if attribute not in kwargs:
 				lowerAttribute = attribute.lower()
-				if lowerAttribute in kwargs:
+				try:
 					kwargs[attribute] = kwargs[lowerAttribute]
 					del kwargs[lowerAttribute]
-				else:
+				except KeyError:
 					kwargs[attribute] = None
 
 		if self.hardwareAttributes.get(hardwareClass):
@@ -3398,15 +3465,12 @@ class AuditHardwareOnHost(Relationship):
 
 	@staticmethod
 	def fromHash(hash):
-		initHash = {}
-		for (key, value) in hash.items():
-			if key == 'type':
-				continue
+		initHash = {
+			toStr(key): value
+			for key, value in hash.items()
+			if key != 'type'
+		}
 
-			if isinstance(key, unicode):
-				key = str(key)
-
-			initHash[key] = value
 		return AuditHardwareOnHost(**initHash)
 
 	@staticmethod
@@ -3429,167 +3493,4 @@ class AuditHardwareOnHost(Relationship):
 			additional=u', '.join(additional)
 		)
 
-
 Relationship.subClasses['AuditHardwareOnHost'] = AuditHardwareOnHost
-
-
-class BootConfiguration(Relationship):
-	subClasses = {}
-	backendMethodPrefix = 'bootConfiguration'
-
-	def __init__(self, name, clientId, priority=None, description=None,
-				netbootProductId=None, pxeTemplate=None, options=None,
-				disk=None, partition=None, active=None, deleteAfter=None,
-				deactivateAfter=None, accessCount=None, osName=None):
-		self.priority = None
-		self.description = None
-		self.netbootProductId = None
-		self.pxeTemplate = None
-		self.options = None
-		self.disk = None
-		self.partition = None
-		self.active = None
-		self.deleteAfter = None
-		self.deactivateAfter = None
-		self.accessCount = None
-		self.osName = None
-		self.setName(name)
-		self.setClientId(clientId)
-
-		if priority is not None:
-			self.setPriority(priority)
-		if description is not None:
-			self.setDescription(description)
-		if netbootProductId is not None:
-			self.setNetbootProductId(netbootProductId)
-		if pxeTemplate is not None:
-			self.setPxeTemplate(pxeTemplate)
-		if options is not None:
-			self.setOptions(options)
-		if disk is not None:
-			self.setDisk(disk)
-		if partition is not None:
-			self.setPartition(partition)
-		if active is not None:
-			self.setActive(active)
-		if deleteAfter is not None:
-			self.setDeleteAfter(deleteAfter)
-		if deactivateAfter is not None:
-			self.setDeactivateAfter(deactivateAfter)
-		if accessCount is not None:
-			self.setAccessCount(accessCount)
-		if osName is not None:
-			self.setOsName(osName)
-
-	def setDefaults(self):
-		Relationship.setDefaults(self)
-		if self.priority is None:
-			self.setPriority(0)
-		if self.description is None:
-			self.setDescription(u"")
-		if self.accessCount is None:
-			self.setAccessCount(0)
-
-	def getName(self):
-		return self.name
-
-	def setName(self, name):
-		self.name = forceUnicode(name)
-
-	def getClientId(self):
-		return self.clientId
-
-	def setClientId(self, clientId):
-		self.clientId = forceHostId(clientId)
-
-	def getPriority(self):
-		return self.priority
-
-	def setPriority(self, priority):
-		self.priority = forceBootConfigurationPriority(priority)
-
-	def getDescription(self):
-		return self.description
-
-	def setDescription(self, description):
-		self.description = forceUnicode(description)
-
-	def getNetbootProductId(self):
-		return self.netbootProductId
-
-	def setNetbootProductId(self, netbootProductId):
-		self.netbootProductId = forceProductId(netbootProductId)
-
-	def getPxeTemplate(self):
-		return self.pxeTemplate
-
-	def setPxeTemplate(self, pxeTemplate):
-		self.pxeTemplate = forceUnicode(pxeTemplate)
-
-	def getOptions(self):
-		return self.options
-
-	def setOptions(self, options):
-		self.options = forceDict(options)
-
-	def getDisk(self):
-		return self.disk
-
-	def setDisk(self, disk):
-		self.disk = forceInt(disk)
-
-	def getPartition(self):
-		return self.partition
-
-	def setPartition(self, partition):
-		self.partition = forceInt(partition)
-
-	def getActive(self):
-		return self.active
-
-	def setActive(self, active):
-		self.active = forceBool(active)
-
-	def getDeleteAfter(self):
-		return self.deleteAfter
-
-	def setDeleteAfter(self, deleteAfter):
-		self.deleteAfter = forceInt(deleteAfter)
-
-	def getDeactivateAfter(self):
-		return self.deactivateAfter
-
-	def setDeactivateAfter(self, deactivateAfter):
-		self.deactivateAfter = forceInt(deactivateAfter)
-
-	def getAccessCount(self):
-		return self.accessCount
-
-	def setAccessCount(self, accessCount):
-		self.accessCount = forceInt(accessCount)
-
-	def getOsName(self):
-		return self.osName
-
-	def setOsName(self, osName):
-		self.osName = forceUnicode(osName)
-
-	@staticmethod
-	def fromHash(hash):
-		try:
-			hash['type']
-		except KeyError:
-			hash['type'] = 'BootConfiguration'
-
-		return Relationship.fromHash(hash)
-
-	@staticmethod
-	def fromJson(jsonString):
-		return fromJson(jsonString, 'BootConfiguration')
-
-	def __unicode__(self):
-		return u"<{klass}(name={name!r}, clientId={cid!r}, priority={prio:d}>".format(
-			klass=self.getType(), name=self.name,
-			cid=self.clientId, prio=self.priority)
-
-Relationship.subClasses['BootConfiguration'] = BootConfiguration

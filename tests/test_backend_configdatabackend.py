@@ -27,10 +27,10 @@ from __future__ import absolute_import
 import os
 
 import OPSI.Backend.Backend
-from OPSI.Types import BackendBadValueError
+from OPSI.Exceptions import BackendBadValueError
 from OPSI.Util import removeUnit
 
-from .helpers import mock, workInTemporaryDirectory
+from .helpers import mock
 
 import pytest
 
@@ -41,10 +41,9 @@ def logBackend(patchLogDir):
 
 
 @pytest.fixture
-def patchLogDir():
-	with workInTemporaryDirectory() as tempDir:
-		with mock.patch('OPSI.Backend.Backend.LOG_DIR', tempDir):
-			yield tempDir
+def patchLogDir(tempDir):
+	with mock.patch('OPSI.Backend.Backend.LOG_DIR', tempDir):
+		yield tempDir
 
 
 def testReadingLogFailsIfTypeUnknown(logBackend):
@@ -52,7 +51,7 @@ def testReadingLogFailsIfTypeUnknown(logBackend):
 		logBackend.log_read('unknowntype')
 
 
-@pytest.mark.parametrize("logType", ['bootimage', 'clientconnect', 'instlog', 'userlogin'])
+@pytest.mark.parametrize("logType", ['bootimage', 'clientconnect', 'instlog', 'userlogin', 'winpe'])
 def testReadingLogRequiresObjectId(logBackend, logType):
 	with pytest.raises(BackendBadValueError):
 		logBackend.log_read(logType)
@@ -79,15 +78,16 @@ def testOnlyValidLogTypesAreWritten(logBackend):
 @pytest.mark.parametrize("objectId", [
 	'foo.bar.baz',
 	'opsiconfd',
-	pytest.mark.xfail(''),
-	pytest.mark.xfail(None),
+	pytest.param('', marks=pytest.mark.xfail),
+	pytest.param(None, marks=pytest.mark.xfail),
 ])
 @pytest.mark.parametrize("logType", [
 	'bootimage',
 	'clientconnect',
 	'instlog',
 	'opsiconfd',
-	'userlogin'
+	'userlogin',
+	'winpe',
 ])
 def testWritingLogRequiresValidObjectId(logBackend, logType, objectId):
 	logBackend.log_write(logType, 'logdata', objectId)
@@ -100,7 +100,7 @@ def testWritingAndThenReadingDataFromLog(logBackend):
 
 
 @pytest.mark.parametrize("logType", [
-	'bootimage', 'clientconnect', 'instlog', 'opsiconfd', 'userlogin'
+	'bootimage', 'clientconnect', 'instlog', 'opsiconfd', 'userlogin', 'winpe'
 ])
 def testWritingLogCreatesFile(patchLogDir, logType):
 	cdb = OPSI.Backend.Backend.ConfigDataBackend()
@@ -273,3 +273,16 @@ def testLimitingTheReadTextInSize(patchLogDir, longText, sizeLimit):
 	textFromBackend = cdb.log_read('instlog', objectId=objId, maxSize=limit)
 
 	assert len(textFromBackend.encode('utf-8')) < limit
+
+
+def testGettingSystemConfig(configDataBackend):
+	sysConfig = configDataBackend.backend_getSystemConfiguration()
+
+	assert 'log' in sysConfig
+
+	logSizeLimit = sysConfig['log']['size_limit']
+	logSizeLimit = int(logSizeLimit)
+	assert logSizeLimit is not None
+
+	for expectedLogType in ('bootimage', 'clientconnect', 'instlog', 'opsiconfd', 'userlogin', 'winpe'):
+		assert expectedLogType in sysConfig['log']['types']

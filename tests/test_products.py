@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2014-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -25,16 +24,18 @@ Testing the functionality of working with products.
 
 from __future__ import absolute_import, print_function
 
-from OPSI.Object import (BoolProductProperty, LocalbootProduct, NetbootProduct,
-    OpsiClient, OpsiDepotserver, ProductDependency, ProductOnClient,
+import pytest
+
+from OPSI.Backend.Backend import temporaryBackendOptions
+from OPSI.Exceptions import BackendBadValueError
+from OPSI.Object import (
+    BoolProductProperty, LocalbootProduct, NetbootProduct, OpsiClient,
+    OpsiDepotserver, Product, ProductDependency, ProductOnClient,
     ProductOnDepot, ProductPropertyState, UnicodeConfig, UnicodeProductProperty)
 from OPSI.Types import forceHostId
-from OPSI.Types import BackendBadValueError
 from OPSI.Util import getfqdn
 
 from .test_hosts import getClients, getConfigServer, getDepotServers
-
-import pytest
 
 
 def getProducts():
@@ -278,7 +279,6 @@ def getProductDepdencies(products):
 def getProductProperties(products):
     product1, _, product3 = products[:3]
 
-    # TODO: turn this into tests?
     productProperty1 = UnicodeProductProperty(
         productId=product1.id,
         productVersion=product1.productVersion,
@@ -291,7 +291,6 @@ def getProductProperties(products):
         multiValue=True
     )
 
-    # TODO: turn this into tests?
     productProperty2 = BoolProductProperty(
         productId=product1.id,
         productVersion=product1.productVersion,
@@ -493,7 +492,6 @@ def getProductPropertyStates(productProperties, depotServer, clients):
     depotserver1, depotserver2 = depotServer[:2]
     client1, client2 = clients[:2]
 
-    # TODO: test?
     productPropertyState1 = ProductPropertyState(
         productId=productProperty1.getProductId(),
         propertyId=productProperty1.getPropertyId(),
@@ -501,7 +499,6 @@ def getProductPropertyStates(productProperties, depotServer, clients):
         values='unicode-depot-default'
     )
 
-    # TODO: test?
     productPropertyState2 = ProductPropertyState(
         productId=productProperty2.getProductId(),
         propertyId=productProperty2.getPropertyId(),
@@ -509,7 +506,6 @@ def getProductPropertyStates(productProperties, depotServer, clients):
         values=[True]
     )
 
-    # TODO: test?
     productPropertyState3 = ProductPropertyState(
         productId=productProperty2.getProductId(),
         propertyId=productProperty2.getPropertyId(),
@@ -517,7 +513,6 @@ def getProductPropertyStates(productProperties, depotServer, clients):
         values=False
     )
 
-    # TODO: test?
     productPropertyState4 = ProductPropertyState(
         productId=productProperty1.getProductId(),
         propertyId=productProperty1.getPropertyId(),
@@ -525,7 +520,6 @@ def getProductPropertyStates(productProperties, depotServer, clients):
         values='unicode1'
     )
 
-    # TODO: test?
     productPropertyState5 = ProductPropertyState(
         productId=productProperty2.getProductId(),
         propertyId=productProperty2.getPropertyId(),
@@ -533,7 +527,6 @@ def getProductPropertyStates(productProperties, depotServer, clients):
         values=[False]
     )
 
-    # TODO: test?
     productPropertyState6 = ProductPropertyState(
         productId=productProperty2.getProductId(),
         propertyId=productProperty2.getPropertyId(),
@@ -545,66 +538,33 @@ def getProductPropertyStates(productProperties, depotServer, clients):
             productPropertyState4, productPropertyState5, productPropertyState6)
 
 
-@pytest.mark.requiresModulesFile  # because of SQLite backend...
-def testProductMethods(extendedConfigDataBackend):
-    netbootProducts = [getNetbootProduct()]
-    localbootProducts = list(getLocalbootProducts())
-    origProds = netbootProducts + localbootProducts
+@pytest.mark.parametrize("prodFilter, prodClass", (
+    (None, object),
+    ("Product", Product),
+    ("LocalbootProduct", LocalbootProduct),
+    ("NetbootProduct", NetbootProduct)
+))
+def testGetProductsByType(extendedConfigDataBackend, prodFilter, prodClass):
+    origProds = getProducts()
     extendedConfigDataBackend.product_createObjects(origProds)
 
-    products = extendedConfigDataBackend.product_getObjects()
-    assert len(products) == len(origProds)
+    expectedProducts = [p for p in origProds if isinstance(p, prodClass)]
 
-    products = extendedConfigDataBackend.product_getObjects(type='Product')
-    assert len(products) == len(origProds)
+    pFilter = {}
+    if prodFilter:
+        pFilter['type'] = prodFilter
 
-    localbootProduct1 = localbootProducts[0]
-    products = extendedConfigDataBackend.product_getObjects(type=localbootProduct1.getType())
-    assert len(products) == len(localbootProducts)
-
-    ids = []
-    for product in products:
-        ids.append(product.getId())
-
-    for product in localbootProducts:
-        assert product.id in ids, u"'%s' not in '%s'" % (product.id, ids)
+    products = extendedConfigDataBackend.product_getObjects(**pFilter)
+    assert len(products) == len(expectedProducts)
 
     for product in products:
-        for p in origProds:
+        assert product in expectedProducts
+
+        for p in expectedProducts:
             if (product.id == p.id) and (product.productVersion == p.productVersion) and (product.packageVersion == p.packageVersion):
-                assert product == p, u"got: '%s', expected: '%s'" % (
-                    product.toHash(), p.toHash())
-
-    product2 = origProds[1]
-    product2.setName(u'Product 2 updated')
-    product2.setPriority(60)
-    products = extendedConfigDataBackend.product_updateObject(product2)
-    products = extendedConfigDataBackend.product_getObjects(
-        attributes=['name', 'priority'], id='product2')
-    assert len(products) == 1
-    assert products[0].getName() == u'Product 2 updated'
-    assert products[0].getPriority() == 60
+                assert product == p
 
 
-@pytest.mark.requiresModulesFile  # because of SQLite backend...
-def test_getProductsFromBackend(extendedConfigDataBackend):
-    origProds = getProducts()
-    extendedConfigDataBackend.product_createObjects(origProds)
-
-    products = extendedConfigDataBackend.product_getObjects()
-    assert len(products) == len(origProds)
-
-
-@pytest.mark.requiresModulesFile  # because of SQLite backend...
-def test_getProductsByType(extendedConfigDataBackend):
-    origProds = getProducts()
-    extendedConfigDataBackend.product_createObjects(origProds)
-
-    products = extendedConfigDataBackend.product_getObjects(type='Product')
-    assert len(products) == len(origProds)
-
-
-@pytest.mark.requiresModulesFile  # because of SQLite backend...
 def test_verifyProducts(extendedConfigDataBackend):
     localProducts = getLocalbootProducts()
     netbootProducts = getNetbootProduct()
@@ -614,9 +574,9 @@ def test_verifyProducts(extendedConfigDataBackend):
     products = extendedConfigDataBackend.product_getObjects(type=localProducts[0].getType())
     assert len(products) == len(localProducts)
 
-    ids = [product.getId() for product in products]
+    productIds = set(product.getId() for product in products)
     for product in localProducts:
-        assert product.id in ids
+        assert product.id in productIds
 
     for product in products:
         for p in origProds:
@@ -636,8 +596,7 @@ def test_verifyProducts(extendedConfigDataBackend):
                 break  # Stop iterating origProds
 
 
-@pytest.mark.requiresModulesFile  # because of SQLite backend...
-def test_updatingProducts(extendedConfigDataBackend):
+def testUpdatingProduct(extendedConfigDataBackend):
     origProds = getProducts()
     extendedConfigDataBackend.product_createObjects(origProds)
 
@@ -652,7 +611,6 @@ def test_updatingProducts(extendedConfigDataBackend):
     assert products[0].getPriority() == 60
 
 
-@pytest.mark.requiresModulesFile  # because of SQLite backend...
 def testLongProductName(extendedConfigDataBackend):
     """
     Can the backend handle product names of 128 characters length?
@@ -669,6 +627,7 @@ def testLongProductName(extendedConfigDataBackend):
         u'creation of long product names that should work now but '
         u'were limited b4'
     )
+    assert len(newName) == 128
 
     product.setName(newName)
 
@@ -681,11 +640,24 @@ def testLongProductName(extendedConfigDataBackend):
     assert newName == backendProduct.name
 
 
-@pytest.mark.requiresModulesFile  # because of SQLite backend...
-def testLongChangelogOnProductCanBeHandled(extendedConfigDataBackend):
-    product = LocalbootProduct(id='freiheit', productVersion=1, packageVersion=1)
+@pytest.fixture(
+    scope='session',
+    params=[False, True],
+    ids=['ascii', 'unicode'])
+def changelog(request):
+    if request.param:
+        # unicode
+        changelog = u'''opsi-winst/opsi-script (4.11.5.13) stable; urgency=low
 
-    changelog = '''opsi-winst/opsi-script (4.11.5.13) stable; urgency=low
+* do not try to run non existing external sub sections
+* Jetzt ausf\xfchren oder sp\xe4ter
+
+-- Detlef Oertel <d.oertel@uib.de>  Thu,  21 Aug 2015:15:00:00 +0200
+
+'''
+    else:
+        # ASCII
+        changelog = '''opsi-winst/opsi-script (4.11.5.13) stable; urgency=low
 
 * do not try to run non existing external sub sections
 
@@ -696,6 +668,12 @@ def testLongChangelogOnProductCanBeHandled(extendedConfigDataBackend):
     changelog = changelog * 555
 
     assert len(changelog.strip()) > 65535  # Limit for `TEXT` in MySQL / MariaDB
+
+    return changelog
+
+
+def testLongChangelogOnProductCanBeHandled(extendedConfigDataBackend, changelog):
+    product = LocalbootProduct(id='freiheit', productVersion=1, packageVersion=1)
     product.setChangelog(changelog)
     assert product.getChangelog() == changelog
 
@@ -710,47 +688,7 @@ def testLongChangelogOnProductCanBeHandled(extendedConfigDataBackend):
     assert changelog[:2048] == changelogFromBackend[:2048]
 
 
-@pytest.mark.requiresModulesFile  # because of SQLite backend...
-def testProductPropertyStateMethods(extendedConfigDataBackend):
-    products = getProducts()
-    clients = getClients()
-    depotServer = getDepotServers()
-    properties = getProductProperties(products)
-    pps = getProductPropertyStates(properties, depotServer, clients)
-
-    extendedConfigDataBackend.host_createObjects(clients)
-    extendedConfigDataBackend.host_createObjects(depotServer)
-    extendedConfigDataBackend.product_createObjects(products)
-    extendedConfigDataBackend.productProperty_createObjects(properties)
-    extendedConfigDataBackend.productPropertyState_createObjects(pps)
-
-    productPropertyStates = extendedConfigDataBackend.productPropertyState_getObjects()
-    assert len(productPropertyStates) == len(pps)
-
-    productPropertyState2 = pps[1]
-    extendedConfigDataBackend.productPropertyState_deleteObjects(productPropertyState2)
-
-    productPropertyStates = extendedConfigDataBackend.productPropertyState_getObjects()
-    assert len(productPropertyStates) == len(pps) - 1
-
-    extendedConfigDataBackend.productPropertyState_insertObject(productPropertyState2)
-    productPropertyStates = extendedConfigDataBackend.productPropertyState_getObjects()
-    assert len(productPropertyStates) == len(pps)
-
-
-@pytest.mark.requiresModulesFile  # because of SQLite backend...
-def test_getProductPropertiesFromBackend(extendedConfigDataBackend):
-    prods = getProducts()
-    prodProperties = getProductProperties(prods)
-    extendedConfigDataBackend.product_createObjects(prods)
-    extendedConfigDataBackend.productProperty_createObjects(prodProperties)
-
-    productProperties = extendedConfigDataBackend.productProperty_getObjects()
-    assert len(productProperties) == len(prodProperties)
-
-
-@pytest.mark.requiresModulesFile  # because of SQLite backend...
-def test_verifyProductProperties(extendedConfigDataBackend):
+def testGettingProductProperties(extendedConfigDataBackend):
     prods = getProducts()
     prodPropertiesOrig = getProductProperties(prods)
     extendedConfigDataBackend.product_createObjects(prods)
@@ -760,15 +698,15 @@ def test_verifyProductProperties(extendedConfigDataBackend):
     assert len(productProperties) == len(prodPropertiesOrig)
 
     for productProperty in productProperties:
-        for p in prodPropertiesOrig:
-            if (productProperty.productId == p.productId and
-                productProperty.propertyId == p.propertyId and
-                productProperty.productVersion == p.productVersion and
-                productProperty.packageVersion == p.packageVersion):
+        for originalProperty in prodPropertiesOrig:
+            if (productProperty.productId == originalProperty.productId and
+                productProperty.propertyId == originalProperty.propertyId and
+                productProperty.productVersion == originalProperty.productVersion and
+                productProperty.packageVersion == originalProperty.packageVersion):
 
                 productProperty = productProperty.toHash()
-                p = p.toHash()
-                for (attribute, value) in p.items():
+                originalProperty = originalProperty.toHash()
+                for (attribute, value) in originalProperty.items():
                     if value is not None:
                         if isinstance(value, list):
                             for v in value:
@@ -779,8 +717,7 @@ def test_verifyProductProperties(extendedConfigDataBackend):
                 break  # Stop iterating the original product properties
 
 
-@pytest.mark.requiresModulesFile  # because of SQLite backend...
-def test_updateProductProperty(extendedConfigDataBackend):
+def testUpdatingProductProperty(extendedConfigDataBackend):
     prods = getProducts()
     prodPropertiesOrig = getProductProperties(prods)
     extendedConfigDataBackend.product_createObjects(prods)
@@ -795,8 +732,7 @@ def test_updateProductProperty(extendedConfigDataBackend):
     assert productProperties[0].getDescription() == u'updatedfortest'
 
 
-@pytest.mark.requiresModulesFile  # because of SQLite backend...
-def test_deleteProductProperty(extendedConfigDataBackend):
+def testDeletingProductProperty(extendedConfigDataBackend):
     prods = getProducts()
     prodPropertiesOrig = getProductProperties(prods)
     extendedConfigDataBackend.product_createObjects(prods)
@@ -809,8 +745,7 @@ def test_deleteProductProperty(extendedConfigDataBackend):
     assert productProperty2 not in productProperties
 
 
-@pytest.mark.requiresModulesFile  # because of SQLite backend...
-def test_createDuplicateProductProperies(extendedConfigDataBackend):
+def testCreateDuplicateProductProperies(extendedConfigDataBackend):
     prods = getProducts()
     prodPropertiesOrig = getProductProperties(prods)
     extendedConfigDataBackend.product_createObjects(prods)
@@ -830,14 +765,12 @@ def test_createDuplicateProductProperies(extendedConfigDataBackend):
 def testGettingErrorMessageWhenAttributeInFilterIsNotAtObject(extendedConfigDataBackend):
     try:
         extendedConfigDataBackend.productPropertyState_getObjects(unknownAttribute='foobar')
-        pytest.fail("We should not get here.")
+        assert False, "We should not get here."
     except BackendBadValueError as bbve:
-        print(bbve)
         assert 'has no attribute' in str(bbve)
         assert 'unknownAttribute' in str(bbve)
 
 
-@pytest.mark.requiresModulesFile  # because of SQLite backend...
 def testProductAndPropertyWithSameName(extendedConfigDataBackend):
     """
     Product and property may have the same name.
@@ -880,7 +813,6 @@ def testProductAndPropertyWithSameName(extendedConfigDataBackend):
 
     properties = extendedConfigDataBackend.productProperty_getObjects(productId='cbk')
 
-    print("Used backend: {0}".format(extendedConfigDataBackend))
     assert 1 == len(properties)
     prop = properties[0]
 
@@ -891,78 +823,22 @@ def testProductAndPropertyWithSameName(extendedConfigDataBackend):
     assert [True] == prop.defaultValues
 
 
-@pytest.mark.requiresModulesFile  # because of SQLite backend...
-def testProductPropertyMethods(extendedConfigDataBackend):
-    products = getProducts()
-    productPropertiesOrig = getProductProperties(products)
-    extendedConfigDataBackend.product_createObjects(products)
-    extendedConfigDataBackend.productProperty_createObjects(productPropertiesOrig)
-
-    productProperties = extendedConfigDataBackend.productProperty_getObjects()
-    assert len(productProperties) == len(productPropertiesOrig)
-
-    for productProperty in productProperties:
-        for p in productPropertiesOrig:
-            if (productProperty.productId == p.productId and
-                    productProperty.propertyId == p.propertyId and
-                    productProperty.productVersion == p.productVersion and
-                    productProperty.packageVersion == p.packageVersion):
-
-                productProperty = productProperty.toHash()
-                p = p.toHash()
-                for (attribute, value) in p.items():
-                    if value is not None:
-                        if isinstance(value, list):
-                            for v in value:
-                                assert v in productProperty[attribute], u"'%s' not in '%s'" % (
-                                    v, productProperty[attribute])
-                        else:
-                            assert value == productProperty[attribute], u"got: '%s', expected: '%s'" % (
-                                productProperty[attribute], value)
-                break
-
-    extendedConfigDataBackend.productProperty_createObjects(productPropertiesOrig)
-    productProperties = extendedConfigDataBackend.productProperty_getObjects()
-    assert len(productProperties) == len(productPropertiesOrig)
-
-    productProperty2 = productPropertiesOrig[1]
-    productProperty2.setDescription(u'updatedfortest')
-    extendedConfigDataBackend.productProperty_updateObject(productProperty2)
-    productProperties = extendedConfigDataBackend.productProperty_getObjects(
-        attributes=[],
-        description=u'updatedfortest'
+def testProductPropertyStatesMustReferValidObjectId(extendedConfigDataBackend):
+    product = LocalbootProduct('p1', productVersion=1, packageVersion=1)
+    productProp = BoolProductProperty(
+        productId=product.id,
+        productVersion=product.productVersion,
+        packageVersion=product.packageVersion,
+        propertyId="testtest",
+        defaultValues=True,
     )
 
-    assert len(productProperties) == 1, u"got: '%s', expected: '%s'" % (
-        productProperties,  1)
-    assert productProperties[0].getDescription() == u'updatedfortest', u"got: '%s', expected: '%s'" % (
-        productProperties[0].getDescription(), u'updatedfortest')
-
-    extendedConfigDataBackend.productProperty_deleteObjects(productProperty2)
-    productProperties = extendedConfigDataBackend.productProperty_getObjects()
-    assert len(productProperties) == len(productPropertiesOrig) - 1
-
-    extendedConfigDataBackend.productProperty_createObjects(productProperty2)
-    productProperty1 = productPropertiesOrig[0]
-    productProperty4 = productPropertiesOrig[3]
-    extendedConfigDataBackend.productProperty_createObjects(
-        [productProperty4, productProperty1, productProperty4, productProperty4, productProperty4])
-    productProperties = extendedConfigDataBackend.productProperty_getObjects()
-    assert len(productProperties) == len(productPropertiesOrig)
-
-
-@pytest.mark.requiresModulesFile  # because of SQLite backend...
-def testProductPropertyStatesMustReferValidObjectId(extendedConfigDataBackend):
-    products = getProducts()
-    productProperties = getProductProperties(products)
-    extendedConfigDataBackend.product_createObjects(products)
-    extendedConfigDataBackend.productProperty_createObjects(productProperties)
-
-    productProperty1 = productProperties[0]
+    extendedConfigDataBackend.product_createObjects(product)
+    extendedConfigDataBackend.productProperty_createObjects(productProp)
 
     pps0 = ProductPropertyState(
-        productId=productProperty1.getProductId(),
-        propertyId=productProperty1.getPropertyId(),
+        productId=productProp.getProductId(),
+        propertyId=productProp.getPropertyId(),
         objectId='kaputtesdepot.dom.local'
     )
 
@@ -970,7 +846,6 @@ def testProductPropertyStatesMustReferValidObjectId(extendedConfigDataBackend):
         extendedConfigDataBackend.productPropertyState_insertObject(pps0)
 
 
-@pytest.mark.requiresModulesFile  # because of SQLite backend...
 def testFixing1554(extendedConfigDataBackend):
     """
     The backend must not ignore product property states of a product when \
@@ -1075,32 +950,7 @@ the name of the product equals the name of a product property.
     assert len(propertyStatesForServer) == 2
 
 
-@pytest.mark.requiresModulesFile  # because of SQLite backend...
-def test_insertFaultyPropertyState(extendedConfigDataBackend):
-    product = LocalbootProduct('p1', productVersion=1, packageVersion=1)
-    productProp = BoolProductProperty(
-        productId=product.id,
-        productVersion=product.productVersion,
-        packageVersion=product.packageVersion,
-        propertyId="testtest",
-        defaultValues=True,
-    )
-
-    extendedConfigDataBackend.product_createObjects(product)
-    extendedConfigDataBackend.productProperty_createObjects(productProp)
-
-    pps0 = ProductPropertyState(
-        productId=productProp.getProductId(),
-        propertyId=productProp.getPropertyId(),
-        objectId='kaputtesdepot.dom.local'
-    )
-
-    with pytest.raises(Exception):
-        extendedConfigDataBackend.productPropertyState_insertObject(pps0)
-
-
-@pytest.mark.requiresModulesFile  # because of SQLite backend...
-def test_getProductPropertyStatesFromBackend(extendedConfigDataBackend):
+def testGetProductPropertyStatesFromBackend(extendedConfigDataBackend):
     products = getProducts()
     clients = getClients()
     depotServer = getDepotServers()
@@ -1120,8 +970,7 @@ def test_getProductPropertyStatesFromBackend(extendedConfigDataBackend):
         assert state in productPropertyStates
 
 
-@pytest.mark.requiresModulesFile  # because of SQLite backend...
-def test_deleteProductPropertyState(extendedConfigDataBackend):
+def testDeletingProductPropertyStateFromBackend(extendedConfigDataBackend):
     products = getProducts()
     clients = getClients()
     depotServer = getDepotServers()
@@ -1140,8 +989,7 @@ def test_deleteProductPropertyState(extendedConfigDataBackend):
     assert productPropertyState2 not in productPropertyStates
 
 
-@pytest.mark.requiresModulesFile  # because of SQLite backend...
-def test_insertProductPropertyState(extendedConfigDataBackend):
+def testInsertProductPropertyState(extendedConfigDataBackend):
     client = OpsiClient(id='someclient.test.invalid')
     product = LocalbootProduct('p1', productVersion=1, packageVersion=1)
     productProp = BoolProductProperty(
@@ -1163,47 +1011,10 @@ def test_insertProductPropertyState(extendedConfigDataBackend):
     extendedConfigDataBackend.productPropertyState_insertObject(pps)
 
     productPropertyStates = extendedConfigDataBackend.productPropertyState_getObjects()
-    assert pps in productPropertyStates
     assert 1 == len(productPropertyStates)
+    assert pps in productPropertyStates
 
 
-@pytest.mark.requiresModulesFile  # because of SQLite backend...
-def testProductDependencies(extendedConfigDataBackend):
-    products = getProducts()
-    productDependenciesOrig = list(getProductDepdencies(products))
-
-    extendedConfigDataBackend.product_createObjects(products)
-    extendedConfigDataBackend.productDependency_createObjects(productDependenciesOrig)
-
-    productDependencies = extendedConfigDataBackend.productDependency_getObjects()
-    assert productDependencies
-    assert len(productDependencies) == len(productDependenciesOrig)
-
-    productDependency2 = productDependenciesOrig[1]
-    productDependency2.requiredProductVersion = "2.0"
-    productDependency2.requirementType = None
-    extendedConfigDataBackend.productDependency_updateObject(productDependency2)
-    productDependencies = extendedConfigDataBackend.productDependency_getObjects()
-    assert productDependencies
-    assert len(productDependencies) == len(productDependenciesOrig)
-
-    for productDependency in productDependencies:
-        if productDependency.getIdent() == productDependency2.getIdent():
-            assert productDependency.getRequiredProductVersion() == "2.0"
-            assert productDependency.getRequirementType() == 'after'
-
-    extendedConfigDataBackend.productDependency_deleteObjects(productDependency2)
-    productDependencies = extendedConfigDataBackend.productDependency_getObjects()
-    assert productDependencies
-    assert len(productDependencies) == len(productDependenciesOrig) - 1
-
-    extendedConfigDataBackend.productDependency_createObjects(productDependenciesOrig)
-    productDependencies = extendedConfigDataBackend.productDependency_getObjects()
-    assert productDependencies
-    assert len(productDependencies) == len(productDependenciesOrig)
-
-
-@pytest.mark.requiresModulesFile  # because of SQLite backend...
 def test_getProductDependenciesFromBackendSmallExample(extendedConfigDataBackend):
     prod1 = LocalbootProduct('bla', 1, 1)
     prod2 = LocalbootProduct('foo', 2, 2)
@@ -1243,8 +1054,7 @@ def test_getProductDependenciesFromBackendSmallExample(extendedConfigDataBackend
     assert 2 == len(productDependencies)
 
 
-@pytest.mark.requiresModulesFile  # because of SQLite backend...
-def test_getProductDependenciesFromBackend(extendedConfigDataBackend):
+def testGetProductDependenciesFromBackend(extendedConfigDataBackend):
     products = getProducts()
     productDependenciesOrig = list(getProductDepdencies(products))
 
@@ -1255,8 +1065,7 @@ def test_getProductDependenciesFromBackend(extendedConfigDataBackend):
     assert len(productDependencies) == len(productDependenciesOrig)
 
 
-@pytest.mark.requiresModulesFile  # because of SQLite backend...
-def test_updateProductDependencies(extendedConfigDataBackend):
+def testUpdateProductDependencies(extendedConfigDataBackend):
     products = getProducts()
     productDependenciesOrig = getProductDepdencies(products)
 
@@ -1280,8 +1089,7 @@ def test_updateProductDependencies(extendedConfigDataBackend):
             assert productDependency.getRequirementType() == 'after'
 
 
-@pytest.mark.requiresModulesFile  # because of SQLite backend...
-def test_deleteProductDependency(extendedConfigDataBackend):
+def testDeletingProductDependency(extendedConfigDataBackend):
     products = getProducts()
     productDependenciesOrig = getProductDepdencies(products)
     extendedConfigDataBackend.product_createObjects(products)
@@ -1294,7 +1102,6 @@ def test_deleteProductDependency(extendedConfigDataBackend):
     assert len(productDependencies) == len(productDependenciesOrig) - 1
 
 
-@pytest.mark.requiresModulesFile  # because of SQLite backend...
 def testNotCreatingDuplicateProductDependency(extendedConfigDataBackend):
     products = getProducts()
     productDependenciesOrig = getProductDepdencies(products)
@@ -1307,35 +1114,6 @@ def testNotCreatingDuplicateProductDependency(extendedConfigDataBackend):
     assert len(productDependenciesOrig) == len(productDependencies)
 
 
-@pytest.mark.requiresModulesFile  # because of SQLite backend...
-def testProductOnDepotMethods(extendedConfigDataBackend):
-    products = getProducts()
-    configServer = getConfigServer()
-    depots = getDepotServers()
-    productsOnDepotOrig = getProductsOnDepot(products, configServer, depots)
-    extendedConfigDataBackend.host_createObjects(configServer)
-    extendedConfigDataBackend.host_createObjects(depots)
-    extendedConfigDataBackend.product_createObjects(products)
-    extendedConfigDataBackend.productOnDepot_createObjects(productsOnDepotOrig)
-
-    productOnDepots = extendedConfigDataBackend.productOnDepot_getObjects(attributes=['productId'])
-    assert len(productOnDepots) == len(productsOnDepotOrig)
-
-    extendedConfigDataBackend.productOnDepot_deleteObjects(productsOnDepotOrig[0])
-    productOnDepots = extendedConfigDataBackend.productOnDepot_getObjects()
-    assert len(productOnDepots) == len(productsOnDepotOrig) - 1
-
-    # Non-existing product, must fail.
-    with pytest.raises(Exception):
-        extendedConfigDataBackend.productOnDepot_createObjects(productsOnDepotOrig)
-
-    extendedConfigDataBackend.product_createObjects(products)
-    extendedConfigDataBackend.productOnDepot_createObjects(productsOnDepotOrig)
-    productOnDepots = extendedConfigDataBackend.productOnDepot_getObjects()
-    assert len(productOnDepots) == len(productsOnDepotOrig)
-
-
-@pytest.mark.requiresModulesFile  # because of SQLite backend...
 def testLockingProducts(extendedConfigDataBackend):
     prod = LocalbootProduct('Ruhe', 1, 1)
     depotserver = getConfigServer()  # A configserver always is also a depot.
@@ -1362,8 +1140,7 @@ def testLockingProducts(extendedConfigDataBackend):
     assert podFromBackend.locked
 
 
-@pytest.mark.requiresModulesFile  # because of SQLite backend...
-def test_getProductOnDepotsFromBackend(extendedConfigDataBackend):
+def testGettingProductOnDepotsFromBackend(extendedConfigDataBackend):
     products = getProducts()
     configServer = getConfigServer()
     depots = getDepotServers()
@@ -1377,8 +1154,7 @@ def test_getProductOnDepotsFromBackend(extendedConfigDataBackend):
     assert len(productOnDepots) == len(productsOnDepotOrig)
 
 
-@pytest.mark.requiresModulesFile  # because of SQLite backend...
-def test_deleteProductOnDepot(extendedConfigDataBackend):
+def testDeletingProductOnDepot(extendedConfigDataBackend):
     products = getProducts()
     configServer = getConfigServer()
     depots = getDepotServers()
@@ -1394,8 +1170,7 @@ def test_deleteProductOnDepot(extendedConfigDataBackend):
     assert len(productOnDepots) == len(productsOnDepotOrig) - 1
 
 
-@pytest.mark.requiresModulesFile  # because of SQLite backend...
-def test_createDuplicateProductsOnDepots(extendedConfigDataBackend):
+def testCreatingDuplicateProductsOnDepots(extendedConfigDataBackend):
     products = getProducts()
     configServer = getConfigServer()
     depots = getDepotServers()
@@ -1411,8 +1186,7 @@ def test_createDuplicateProductsOnDepots(extendedConfigDataBackend):
     assert len(productOnDepots) == len(productsOnDepotOrig)
 
 
-@pytest.mark.requiresModulesFile  # because of SQLite backend...
-def testProductOnClientMethods(extendedConfigDataBackend):
+def testNotManuallyUpdatingModificationTimeOnProductOnClient(extendedConfigDataBackend):
     backend = extendedConfigDataBackend
 
     clients = getClients()
@@ -1423,95 +1197,155 @@ def testProductOnClientMethods(extendedConfigDataBackend):
     backend.product_createObjects(products)
     backend.productOnClient_createObjects(pocs)
 
-    productOnClients = backend.productOnClient_getObjects()
+    productOnClient2 = pocs[1]
+
+    modTime = '2010-01-01 05:55:55'
+    productOnClient2.setModificationTime(modTime)
+    backend.productOnClient_updateObject(productOnClient2)
+    productOnClients = backend.productOnClient_getObjects(modificationTime='2010-01-01 05:55:55')
+    assert not productOnClients
+    productOnClients = backend.productOnClient_getObjects(modificationTime='2010-*')
+    assert not productOnClients
+
+
+def testGettingProductsOnClients(extendedConfigDataBackend):
+    clients = getClients()
+    products = getLocalbootProducts()
+    pocs = getProductsOnClients(products, clients)
+
+    extendedConfigDataBackend.host_createObjects(clients)
+    extendedConfigDataBackend.product_createObjects(products)
+    extendedConfigDataBackend.productOnClient_createObjects(pocs)
+
+    productOnClients = extendedConfigDataBackend.productOnClient_getObjects()
     assert len(productOnClients) == len(pocs)
 
-    client1 = clients[0]
-    client1ProductOnClients = []
-    for productOnClient in pocs:
-        if (productOnClient.getClientId() == client1.id):
-            client1ProductOnClients.append(productOnClient)
+    for poc in pocs:
+        assert poc in productOnClients
 
-    productOnClients = backend.productOnClient_getObjects(clientId=client1.getId())
+
+def testGettingProductOnClientWithFilter(extendedConfigDataBackend):
+    products = getProducts()
+    clients = getClients()
+    pocs = getProductsOnClients(products, clients)
+
+    extendedConfigDataBackend.host_createObjects(clients)
+    extendedConfigDataBackend.product_createObjects(products)
+    extendedConfigDataBackend.productOnClient_createObjects(pocs)
+
+    client1 = clients[0]
+    client1ProductOnClients = [productOnClient for productOnClient in pocs
+                               if productOnClient.getClientId() == client1.id]
+
+    productOnClients = extendedConfigDataBackend.productOnClient_getObjects(clientId=client1.getId())
     for productOnClient in productOnClients:
         assert productOnClient.getClientId() == client1.getId()
 
+    assert client1ProductOnClients == productOnClients
+
+
+def testGettingProductOnClientByClientAndProduct(extendedConfigDataBackend):
+    products = getProducts()
+    clients = getClients()
+    pocs = getProductsOnClients(products, clients)
+
+    extendedConfigDataBackend.host_createObjects(clients)
+    extendedConfigDataBackend.product_createObjects(products)
+    extendedConfigDataBackend.productOnClient_createObjects(pocs)
+
+    client1 = clients[0]
     product2 = products[1]
-    productOnClients = backend.productOnClient_getObjects(clientId=client1.getId(), productId=product2.getId())
-    assert len(productOnClients) == 1
-    assert productOnClients[0].getProductId() == product2.getId()
-    assert productOnClients[0].getClientId() == client1.getId()
+
+    productOnClients = extendedConfigDataBackend.productOnClient_getObjects(clientId=client1.getId(), productId=product2.getId())
+    assert 1 == len(productOnClients)
+    poc = productOnClients[0]
+    assert poc.getProductId() == product2.getId()
+    assert poc.getClientId() == client1.getId()
+
+
+def testGettingProductOnClientByClientAndProductType(extendedConfigDataBackend):
+    backend = extendedConfigDataBackend
+
+    clients = getClients()
+    products = getLocalbootProducts()
+    pocs = getProductsOnClients(products, clients)
+
+    backend.host_createObjects(clients)
+    backend.product_createObjects(products)
+    backend.productOnClient_createObjects(pocs)
 
     productOnClient2 = pocs[1]
-    productOnClient2.setTargetConfiguration('forbidden')
-    backend.productOnClient_updateObject(productOnClient2)
-    productOnClients = backend.productOnClient_getObjects(targetConfiguration='forbidden')
-    assert len(productOnClients) == 1
-
-    productOnClient2.setInstallationStatus('unknown')
-    backend.productOnClient_updateObject(productOnClient2)
-    productOnClients = backend.productOnClient_getObjects(installationStatus='unknown')
-    assert len(productOnClients) == 1
-
-    productOnClient2.setActionRequest('custom')
-    backend.productOnClient_updateObject(productOnClient2)
-    productOnClients = backend.productOnClient_getObjects(actionRequest='custom')
-    assert len(productOnClients) == 1
-
-    productOnClient2.setLastAction('once')
-    backend.productOnClient_updateObject(productOnClient2)
-    productOnClients = backend.productOnClient_getObjects(lastAction='once')
-    assert len(productOnClients) == 1
-
-    productOnClient2.setActionProgress('aUniqueProgress')
-    backend.productOnClient_updateObject(productOnClient2)
-    productOnClients = backend.productOnClient_getObjects(actionProgress='aUniqueProgress')
-    assert len(productOnClients) == 1
 
     productOnClients = backend.productOnClient_getObjects(
         productType=productOnClient2.productType,
-        clientId=productOnClient2.clientId)
+        clientId=productOnClient2.clientId
+    )
     assert len(productOnClients) >= 1
+    assert productOnClient2 in productOnClients
 
-    for productOnClient in productOnClients:
-        if productOnClient.productId == productOnClient2.productId:
-            assert productOnClient.actionProgress == productOnClient2.actionProgress
+
+def testUpdatingProductsOnClients(extendedConfigDataBackend):
+    products = getProducts()
+    clients = getClients()
+    pocs = getProductsOnClients(products, clients)
+
+    extendedConfigDataBackend.host_createObjects(clients)
+    extendedConfigDataBackend.product_createObjects(products)
+    extendedConfigDataBackend.productOnClient_createObjects(pocs)
+
+    productOnClient2 = pocs[1]
+    productOnClient2.setTargetConfiguration('forbidden')
+    extendedConfigDataBackend.productOnClient_updateObject(productOnClient2)
+    productOnClients = extendedConfigDataBackend.productOnClient_getObjects(targetConfiguration='forbidden')
+    assert productOnClient2 in productOnClients
+
+    productOnClient2.setInstallationStatus('unknown')
+    extendedConfigDataBackend.productOnClient_updateObject(productOnClient2)
+    productOnClients = extendedConfigDataBackend.productOnClient_getObjects(installationStatus='unknown')
+    assert len(productOnClients) == 1
+
+    productOnClient2.setActionRequest('custom')
+    extendedConfigDataBackend.productOnClient_updateObject(productOnClient2)
+    productOnClients = extendedConfigDataBackend.productOnClient_getObjects(actionRequest='custom')
+    assert len(productOnClients) == 1
+    assert productOnClients[0] == productOnClient2
+
+    productOnClient2.setLastAction('once')
+    extendedConfigDataBackend.productOnClient_updateObject(productOnClient2)
+    productOnClients = extendedConfigDataBackend.productOnClient_getObjects(lastAction='once')
+    assert len(productOnClients) == 1
+    assert productOnClients[0].clientId == productOnClient2.clientId
+
+    productOnClient2.setActionProgress('aUniqueProgress')
+    extendedConfigDataBackend.productOnClient_updateObject(productOnClient2)
+    productOnClients = extendedConfigDataBackend.productOnClient_getObjects(actionProgress='aUniqueProgress')
+    assert len(productOnClients) == 1
+    assert productOnClients[0].clientId == productOnClient2.clientId
 
     productOnClient2.setActionResult('failed')
-    backend.productOnClient_updateObject(productOnClient2)
-    productOnClients = backend.productOnClient_getObjects(actionResult='failed')
+    extendedConfigDataBackend.productOnClient_updateObject(productOnClient2)
+    productOnClients = extendedConfigDataBackend.productOnClient_getObjects(actionResult='failed')
     assert len(productOnClients) == 1
-
-    productOnClient2.setInstallationStatus('installed')
-    productOnClient2.setProductVersion('777777')
-    productOnClient2.setPackageVersion('1')
-    backend.productOnClient_updateObject(productOnClient2)
-    productOnClients = backend.productOnClient_getObjects(
-        productVersion='777777')
-    assert len(productOnClients) == 1, u"got: '%s', expected: '%s'" % (
-        productOnClients, 1)
-
-    productOnClient2.setPackageVersion('999999')
-    backend.productOnClient_updateObject(productOnClient2)
-    productOnClients = backend.productOnClient_getObjects(packageVersion='999999')
-    assert len(productOnClients) == 1
-
-    productOnClient2.setModificationTime('2010-01-01 05:55:55')
-    backend.productOnClient_updateObject(productOnClient2)
-    productOnClients = backend.productOnClient_getObjects(modificationTime='2010-01-01 05:55:55')
-    # You cant set modification time on update!
-    assert len(productOnClients) == 0
-
-    backend.productOnClient_createObjects(pocs)
-    backend.productOnClient_deleteObjects(productOnClient2)
-    productOnClients = backend.productOnClient_getObjects()
-    assert len(productOnClients) == len(pocs) - 1
-
-    backend.productOnClient_createObjects(pocs)
-    # TODO: test something here?!
+    assert productOnClients[0].clientId == productOnClient2.clientId
 
 
-@pytest.mark.requiresModulesFile  # because of SQLite backend...
+def testDeletingProductOnClient(extendedConfigDataBackend):
+    products = getProducts()
+    clients = getClients()
+    pocs = getProductsOnClients(products, clients)
+
+    extendedConfigDataBackend.host_createObjects(clients)
+    extendedConfigDataBackend.product_createObjects(products)
+    extendedConfigDataBackend.productOnClient_createObjects(pocs)
+
+    productOnClient2 = pocs[1]
+    extendedConfigDataBackend.productOnClient_deleteObjects(productOnClient2)
+    productOnClients = extendedConfigDataBackend.productOnClient_getObjects()
+
+    assert len(pocs) - 1 == len(productOnClients)
+    assert productOnClient2 not in productOnClients
+
+
 def testProductOnClientDependencies(extendedConfigDataBackend):
     backend = extendedConfigDataBackend
 
@@ -1560,15 +1394,13 @@ def testProductOnClientDependencies(extendedConfigDataBackend):
         clientId='client1.test.invalid', productId=['product6', 'product7'])
     for productOnClient in productOnClients:
         print(u"Got productOnClient: %s" % productOnClient)
-        assert productOnClient.productId in ('product6', 'product7'), u"'%s' not in '%s'" % (
-            productOnClient.productId, ('product6', 'product7'))
+        assert productOnClient.productId in ('product6', 'product7')
 
     productOnClients = backend.productOnClient_getObjects(
         clientId='client1.test.invalid', productId=['*6*'])
     for productOnClient in productOnClients:
         print(u"Got productOnClient: %s" % productOnClient)
-        assert productOnClient.productId in ('product6'), u"'%s' not in '%s'" % (
-            productOnClient.productId, ('product6'))
+        assert productOnClient.productId == 'product6'
 
     backend.productOnClient_create(
         productId='product6',
@@ -1587,114 +1419,11 @@ def testProductOnClientDependencies(extendedConfigDataBackend):
 
     productOnClients = backend.productOnClient_getObjects(
         clientId='client5.test.invalid')
-    setup = []
-    for productOnClient in productOnClients:
-        print(u"Got productOnClient: %s" % productOnClient)
-        if (productOnClient.actionRequest == 'setup'):
-            setup.append(productOnClient.productId)
-    assert 'product7' not in setup, u"'%s' is in '%s'" % (
-        'product7', setup)
-    assert 'product9' not in setup, u"'%s' is in '%s'" % (
-        'product9', setup)
+    setup = [productOnClient.productId for productOnClient in productOnClients if productOnClient.actionRequest == 'setup']
+    assert 'product7' not in setup
+    assert 'product9' not in setup
 
 
-@pytest.mark.requiresModulesFile  # because of SQLite backend...
-def test_getProductsOnClientsFromBackend(extendedConfigDataBackend):
-    clients = getClients()
-    products = getLocalbootProducts()
-    pocs = getProductsOnClients(products, clients)
-
-    extendedConfigDataBackend.host_createObjects(clients)
-    extendedConfigDataBackend.product_createObjects(products)
-    extendedConfigDataBackend.productOnClient_createObjects(pocs)
-
-    productOnClients = extendedConfigDataBackend.productOnClient_getObjects()
-    for poc in pocs:
-        assert poc in productOnClients
-
-
-@pytest.mark.requiresModulesFile  # because of SQLite backend...
-def test_selectProductOnClient(extendedConfigDataBackend):
-    products = getProducts()
-    clients = getClients()
-    pocs = getProductsOnClients(products, clients)
-
-    extendedConfigDataBackend.host_createObjects(clients)
-    extendedConfigDataBackend.product_createObjects(products)
-    extendedConfigDataBackend.productOnClient_createObjects(pocs)
-
-    client1 = clients[0]
-    client1ProductOnClients = [productOnClient for productOnClient in pocs
-                               if productOnClient.getClientId() == client1.id]
-
-    productOnClients = extendedConfigDataBackend.productOnClient_getObjects(clientId=client1.getId())
-    for productOnClient in productOnClients:
-        assert productOnClient.getClientId() == client1.getId()
-
-    assert client1ProductOnClients == productOnClients
-
-
-@pytest.mark.requiresModulesFile  # because of SQLite backend...
-def test_selectProductOnClientById(extendedConfigDataBackend):
-    products = getProducts()
-    clients = getClients()
-    pocs = getProductsOnClients(products, clients)
-
-    extendedConfigDataBackend.host_createObjects(clients)
-    extendedConfigDataBackend.product_createObjects(products)
-    extendedConfigDataBackend.productOnClient_createObjects(pocs)
-
-    client1 = clients[0]
-    product2 = products[1]
-
-    productOnClients = extendedConfigDataBackend.productOnClient_getObjects(clientId=client1.getId(), productId=product2.getId())
-    assert 1 == len(productOnClients)
-    poc = productOnClients[0]
-    assert poc.getProductId() == product2.getId()
-    assert poc.getClientId() == client1.getId()
-
-
-@pytest.mark.requiresModulesFile  # because of SQLite backend...
-def test_updateProductsOnClients(extendedConfigDataBackend):
-    products = getProducts()
-    clients = getClients()
-    pocs = getProductsOnClients(products, clients)
-
-    extendedConfigDataBackend.host_createObjects(clients)
-    extendedConfigDataBackend.product_createObjects(products)
-    extendedConfigDataBackend.productOnClient_createObjects(pocs)
-
-    productOnClient2 = pocs[1]
-    productOnClient2.setTargetConfiguration('forbidden')
-    extendedConfigDataBackend.productOnClient_updateObject(productOnClient2)
-    productOnClients = extendedConfigDataBackend.productOnClient_getObjects(targetConfiguration='forbidden')
-    assert productOnClient2 in productOnClients
-
-    productOnClient2.setInstallationStatus('unknown')
-    extendedConfigDataBackend.productOnClient_updateObject(productOnClient2)
-    productOnClients = extendedConfigDataBackend.productOnClient_getObjects(installationStatus='unknown')
-    assert len(productOnClients) == 1
-
-
-@pytest.mark.requiresModulesFile  # because of SQLite backend...
-def test_deleteProductOnClient(extendedConfigDataBackend):
-    products = getProducts()
-    clients = getClients()
-    pocs = getProductsOnClients(products, clients)
-
-    extendedConfigDataBackend.host_createObjects(clients)
-    extendedConfigDataBackend.product_createObjects(products)
-    extendedConfigDataBackend.productOnClient_createObjects(pocs)
-
-    productOnClient2 = pocs[1]
-    extendedConfigDataBackend.productOnClient_deleteObjects(productOnClient2)
-    productOnClients = extendedConfigDataBackend.productOnClient_getObjects()
-
-    assert len(pocs) - 1 == len(productOnClients)
-    assert productOnClient2 not in productOnClients
-
-
-@pytest.mark.requiresModulesFile  # because of SQLite backend...
 def test_processProductOnClientSequence(extendedConfigDataBackend):
     """
     Checking that the backend is able to compute the sequences of clients.
@@ -1710,7 +1439,6 @@ def test_processProductOnClientSequence(extendedConfigDataBackend):
     * product4 (setup)
     * product2 (setup)
     """
-    from .test_backend_extendedconfigdatabackend import temporaryBackendOptions
     backend = extendedConfigDataBackend
 
     clients = getClients()
@@ -1813,3 +1541,74 @@ def test_processProductOnClientSequence(extendedConfigDataBackend):
     assert posProduct2 > posProduct4, u"Wrong sequence: product4 not before product2"
     assert posProduct2 > posProduct5, u"Wrong sequence: product5 not before product2"
     assert posProduct4 > posProduct5, u"Wrong sequence: product5 not before product4"
+
+
+def testGettingPxeConfigTemplate(backendManager):
+    """
+    Test getting a NetbootProduct and limiting the attributes to pxeConfigTemplate.
+    """
+    product = NetbootProduct(
+        id='product1',
+        productVersion='1.0',
+        packageVersion=1,
+        pxeConfigTemplate='special'
+    )
+
+    backendManager.product_insertObject(product)
+
+    prodFromBackend = backendManager.product_getObjects(attributes=['id', 'pxeConfigTemplate'], id=product.id)
+    assert len(prodFromBackend) == 1
+    prodFromBackend = prodFromBackend[0]
+
+    assert product.id == prodFromBackend.id
+    assert product.productVersion == prodFromBackend.productVersion
+    assert product.packageVersion == prodFromBackend.packageVersion
+    assert product.pxeConfigTemplate == prodFromBackend.pxeConfigTemplate
+
+
+def testGettingUserloginScript(backendManager):
+    """
+    Test getting a LocalbootProduct and limiting the attributes to userLoginScript.
+    """
+    product = LocalbootProduct(
+        id='product1',
+        productVersion='1.0',
+        packageVersion=1,
+        userLoginScript='iloveyou'
+    )
+
+    backendManager.product_insertObject(product)
+
+    prodFromBackend = backendManager.product_getObjects(attributes=['id', 'userLoginScript'], id=product.id)
+    assert len(prodFromBackend) == 1
+    prodFromBackend = prodFromBackend[0]
+
+    assert product.id == prodFromBackend.id
+    assert product.productVersion == prodFromBackend.productVersion
+    assert product.packageVersion == prodFromBackend.packageVersion
+    assert product.userLoginScript == prodFromBackend.userLoginScript
+
+
+def testVersionOnProduct():
+    for product in getProducts():
+        version = '{}-{}'.format(product.productVersion, product.packageVersion)
+        assert version == product.version
+
+
+def testVersionOnProductOnClients():
+    clients = getClients()
+    products = getLocalbootProducts()
+
+    for poc in getProductsOnClients(products, clients):
+        version = '{}-{}'.format(poc.productVersion, poc.packageVersion)
+        assert version == poc.version
+
+
+def testVersionOnProductOnDepots():
+    products = getProducts()
+    configServer = getConfigServer()
+    depots = getDepotServers()
+
+    for pod in getProductsOnDepot(products, configServer, depots):
+        version = '{}-{}'.format(pod.productVersion, pod.packageVersion)
+        assert version == pod.version

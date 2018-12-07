@@ -1,8 +1,7 @@
-#! /usr/bin/env python
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -30,7 +29,7 @@ import os
 
 from OPSI.Util.File import DHCPDConfFile
 
-from .helpers import createTemporaryTestfile, workInTemporaryDirectory
+from .helpers import createTemporaryTestfile
 import pytest
 
 
@@ -46,7 +45,7 @@ def testParsingExampleDHCPDConf():
 
 
 @pytest.fixture
-def dhcpdConf():
+def dhcpdConf(tempDir):
     """Mixin for an DHCPD backend.
     Manages a subnet 192.168.99.0/24"""
 
@@ -86,13 +85,12 @@ host out-of-subnet {
 }
 '''
 
-    with workInTemporaryDirectory() as tempDir:
-        dhcpdConfFile = os.path.join(tempDir, 'dhcpd.conf')
+    dhcpdConfFile = os.path.join(tempDir, 'dhcpd.conf')
 
-        with codecs.open(dhcpdConfFile, 'w', 'utf-8') as f:
-            f.write(testData)
+    with codecs.open(dhcpdConfFile, 'w', 'utf-8') as f:
+        f.write(testData)
 
-        yield DHCPDConfFile(dhcpdConfFile)
+    yield DHCPDConfFile(dhcpdConfFile)
 
 
 def testAddingHostsToConfig(dhcpdConf):
@@ -109,6 +107,7 @@ def testAddingHostsToConfig(dhcpdConf):
 
     assert dhcpdConf.getHost('TestclienT2') is not None
     assert dhcpdConf.getHost('notthere') is None
+
 
 def testGeneratingConfig(dhcpdConf):
     dhcpdConf.parse()

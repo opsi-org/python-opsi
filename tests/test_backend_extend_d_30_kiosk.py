@@ -24,9 +24,10 @@ Tests for the kiosk client method.
 
 import pytest
 
-from OPSI.Object import (LocalbootProduct, ObjectToGroup, OpsiClient,
+from OPSI.Object import (
+    LocalbootProduct, ObjectToGroup, OpsiClient,
     OpsiDepotserver, ProductGroup, ProductOnDepot, UnicodeConfig)
-from OPSI.Types import BackendMissingDataError
+from OPSI.Exceptions import BackendMissingDataError
 
 
 def testGettingInfoForNonExistingClient(backendManager):
@@ -35,8 +36,6 @@ def testGettingInfoForNonExistingClient(backendManager):
 
 
 # TODO: set custom configState for the client with different products in group.
-# TODO: check that everything works if the client is assigned to different depots.
-# TODO: check what happens if client is on different depot.
 def testGettingEmptyInfo(backendManager, client, depot):
     backendManager.host_createObjects([client, depot])
 
@@ -66,6 +65,11 @@ def client():
 @pytest.fixture()
 def depot():
     return OpsiDepotserver(id='depotserver1.test.invalid')
+
+
+@pytest.fixture()
+def anotherDepot():
+    return OpsiDepotserver(id='depotserver2.some.test')
 
 
 def createProducts(amount=2):
@@ -130,3 +134,64 @@ def testDoNotDuplicateProducts(backendManager, client, depot):
 
     result = backendManager.getKioskProductInfosForClient(client.id)
     assert len(result) == len(products)
+
+
+def testGettingKioskInfoFromDifferentDepot(backendManager, client, depot, anotherDepot):
+    backendManager.host_createObjects([client, depot, anotherDepot])
+
+    products = list(createProducts(10))
+    backendManager.product_createObjects(products)
+
+    expectedProducts = set()
+    for index, product in enumerate(products):
+        pod = ProductOnDepot(
+            productId=product.id,
+            productType=product.getType(),
+            productVersion=product.getProductVersion(),
+            packageVersion=product.getPackageVersion(),
+            depotId=depot.id,
+        )
+        backendManager.productOnDepot_createObjects([pod])
+
+        if index % 2 == 0:
+            # Assign every second product to the second depot
+            pod.depotId = anotherDepot.id
+            backendManager.productOnDepot_createObjects([pod])
+            expectedProducts.add(product.id)
+
+    productGroup = ProductGroup(id=u'my product group')
+    backendManager.group_createObjects([productGroup])
+
+    for product in products:
+        groupAssignment = ObjectToGroup(
+            groupType=productGroup.getType(),
+            groupId=productGroup.id,
+            objectId=product.id
+        )
+        backendManager.objectToGroup_createObjects([groupAssignment])
+
+    basicConfigs = [
+        UnicodeConfig(
+            id=u'software-on-demand.product-group-ids',
+            defaultValues=[productGroup.id],
+            multiValue=True,
+        ),
+        UnicodeConfig(
+            id=u'clientconfig.depot.id',
+            description=u'Depotserver to use',
+            possibleValues=[],
+            defaultValues=[depot.id]
+        ),
+    ]
+    backendManager.config_createObjects(basicConfigs)
+
+    # Assign client to second depot
+    backendManager.configState_create(u'clientconfig.depot.id', client.id, values=[anotherDepot.id])
+    assert backendManager.getDepotId(client.id) == anotherDepot.id
+
+    results = backendManager.getKioskProductInfosForClient(client.id)
+
+    for result in results:
+        assert result['productId'] in expectedProducts
+
+    assert len(results) == 5

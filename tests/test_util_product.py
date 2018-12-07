@@ -1,8 +1,7 @@
-#! /usr/bin/env python
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2014-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -25,29 +24,28 @@ Testing the OPSI.Util.Product module.
 
 from __future__ import absolute_import
 
-import mock
 import os
 import re
 import tempfile
 
+import pytest
+
 import OPSI.Util.Product as Product
 
-from .helpers import cd, workInTemporaryDirectory
-
-import pytest
+from .helpers import cd, mock
 
 
 @pytest.mark.parametrize("text", [
 	'.svn',
-	pytest.mark.xfail('.svnotmatching'),
+	pytest.param('.svnotmatching', marks=pytest.mark.xfail),
 	'.git',
-	pytest.mark.xfail('.gitignore'),
+	pytest.param('.gitignore', marks=pytest.mark.xfail),
 ])
 def testDirectoryExclusion(text):
 	assert re.match(Product.EXCLUDE_DIRS_ON_PACK, text)
 
 
-def testProductPackageFileRemovingFolderWithUnicodeFilenamesInsideFails():
+def testProductPackageFileRemovingFolderWithUnicodeFilenamesInsideFails(tempDir):
 	"""
 	As mentioned in http://bugs.python.org/issue3616 the attempt to
 	remove a filename that contains unicode can fail.
@@ -57,28 +55,27 @@ def testProductPackageFileRemovingFolderWithUnicodeFilenamesInsideFails():
 	We need to make shure that removing such fails does not fail and
 	that we are able to remove them.
 	"""
-	with workInTemporaryDirectory() as tempDir:
-		tempPackageFilename = tempfile.NamedTemporaryFile(suffix='.opsi')
+	tempPackageFilename = tempfile.NamedTemporaryFile(suffix='.opsi')
 
-		ppf = Product.ProductPackageFile(tempPackageFilename.name)
-		ppf.setClientDataDir(tempDir)
+	ppf = Product.ProductPackageFile(tempPackageFilename.name)
+	ppf.setClientDataDir(tempDir)
 
-		fakeProduct = mock.Mock()
-		fakeProduct.getId.return_value = 'umlauts'
-		fakePackageControlFile = mock.Mock()
-		fakePackageControlFile.getProduct.return_value = fakeProduct
+	fakeProduct = mock.Mock()
+	fakeProduct.getId.return_value = 'umlauts'
+	fakePackageControlFile = mock.Mock()
+	fakePackageControlFile.getProduct.return_value = fakeProduct
 
-		# Setting up evil file
-		targetDir = os.path.join(tempDir, 'umlauts')
-		os.makedirs(targetDir)
+	# Setting up evil file
+	targetDir = os.path.join(tempDir, 'umlauts')
+	os.makedirs(targetDir)
 
-		with cd(targetDir):
-			os.system(r"touch -- $(echo -e '--\0250--')")
+	with cd(targetDir):
+		os.system(r"touch -- $(echo -e '--\0250--')")
 
-		with mock.patch.object(ppf, 'packageControlFile', fakePackageControlFile):
-			ppf.deleteProductClientDataDir()
+	with mock.patch.object(ppf, 'packageControlFile', fakePackageControlFile):
+		ppf.deleteProductClientDataDir()
 
-		assert not os.path.exists(targetDir), "Product directory in depot should be deleted."
+	assert not os.path.exists(targetDir), "Product directory in depot should be deleted."
 
 
 def testSettigUpProductPackageFileWithNonExistingFileFails():
@@ -86,9 +83,8 @@ def testSettigUpProductPackageFileWithNonExistingFileFails():
 		Product.ProductPackageFile('nonexisting.opsi')
 
 
-def testCreatingProductPackageSourceRequiresExistingSourceFolder():
-	with workInTemporaryDirectory() as tempDir:
-		targetDir = os.path.join(tempDir, 'nope')
+def testCreatingProductPackageSourceRequiresExistingSourceFolder(tempDir):
+	targetDir = os.path.join(tempDir, 'nope')
 
-		with pytest.raises(Exception):
-			Product.ProductPackageSource(targetDir)
+	with pytest.raises(Exception):
+		Product.ProductPackageSource(targetDir)

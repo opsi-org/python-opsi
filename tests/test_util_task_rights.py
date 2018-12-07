@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2014-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -33,12 +33,12 @@ from collections import defaultdict
 
 import pytest
 
-from OPSI.Util.Task.Rights import (chown, getDepotDirectory,
-    getDirectoriesAndExpectedRights, getWebserverRepositoryPath,
-    getWebserverUsernameAndGroupname, filterDirsAndRights,
-    setRightsOnSSHDirectory, setRightsOnFile)
+from OPSI.Util.Task.Rights import (
+    chown, getDepotDirectory, getDirectoriesAndExpectedRights,
+    getWebserverRepositoryPath, getWebserverUsernameAndGroupname,
+    filterDirsAndRights, setRightsOnSSHDirectory, setRightsOnFile)
 
-from .helpers import mock, workInTemporaryDirectory
+from .helpers import mock
 
 
 OS_CHECK_FUNCTIONS = ['isRHEL', 'isCentOS', 'isSLES', 'isOpenSUSE', 'isUbuntu', 'isDebian', 'isUCS']
@@ -69,11 +69,11 @@ def patchUserInfo():
             yield uid, gid
 
 
-@pytest.mark.parametrize("slesSupport, workbench, tftpdir", [
-    (False, u'/home/opsiproducts', u'/tftpboot/linux'),
-    (True, u'/var/lib/opsi/workbench', u'/var/lib/tftpboot/opsi')
+@pytest.mark.parametrize("slesSupport, tftpdir", [
+    (False, u'/tftpboot/linux'),
+    (True, u'/var/lib/tftpboot/opsi')
 ], ids=["sles", "non-sles"])
-def testGetDirectoriesToProcess(depotDirectory, patchUserInfo, slesSupport, workbench, tftpdir):
+def testGetDirectoriesToProcess(depotDirectory, patchUserInfo, slesSupport, tftpdir):
     with mock.patch('OPSI.Util.Task.Rights.getWebserverRepositoryPath', lambda: '/path/to/apache'):
         with mock.patch('OPSI.Util.Task.Rights.isSLES', lambda: slesSupport):
             directories = [d for d, _ in getDirectoriesAndExpectedRights('/')]
@@ -81,24 +81,22 @@ def testGetDirectoriesToProcess(depotDirectory, patchUserInfo, slesSupport, work
     assert u'/etc/opsi' in directories
     assert u'/var/lib/opsi' in directories
     assert u'/var/log/opsi' in directories
-    assert workbench in directories
     assert tftpdir in directories
     assert '/path/to/apache' in directories
 
 
-@pytest.mark.parametrize("slesSupport, workbench, tftpdir", [
-    (False, u'/home/opsiproducts', u'/tftpboot/linux'),
-    (True, u'/var/lib/opsi/workbench', u'/var/lib/tftpboot/opsi')
+@pytest.mark.parametrize("slesSupport, tftpdir", [
+    (False, u'/tftpboot/linux'),
+    (True, u'/var/lib/tftpboot/opsi')
 ], ids=["opensuse", "non-opensuse"])
-def testGetDirectoriesToProcessOpenSUSELeap(depotDirectory, patchUserInfo, slesSupport, workbench, tftpdir):
+def testGetDirectoriesToProcessOpenSUSE(depotDirectory, patchUserInfo, slesSupport, tftpdir):
     with mock.patch('OPSI.Util.Task.Rights.getWebserverRepositoryPath', lambda: '/path/to/apache'):
-        with mock.patch('OPSI.Util.Task.Rights.isOpenSUSELeap', lambda: slesSupport):
+        with mock.patch('OPSI.Util.Task.Rights.isOpenSUSE', lambda: slesSupport):
             directories = [d for d, _ in getDirectoriesAndExpectedRights('/')]
 
     assert u'/etc/opsi' in directories
     assert u'/var/lib/opsi' in directories
     assert u'/var/log/opsi' in directories
-    assert workbench in directories
     assert tftpdir in directories
     assert '/path/to/apache' in directories
 
@@ -110,7 +108,7 @@ def testGettingDirectories(patchUserInfo, depotDirectory):
 
 @pytest.mark.parametrize("testDir", [
     '/opt/pcbin/install/foo',
-    pytest.mark.xfail('/tmp'),
+    pytest.param('/tmp', marks=pytest.mark.xfail),
 ])
 def testOptPcbinGetRelevantIfInParameter(emptyDepotDirectoryCache, depotDirectory, testDir):
     directories = getDepotDirectory(testDir)
@@ -133,7 +131,7 @@ def testDepotPathMayWillBeReturned(depotDirectory):
     assert depotDir == '/var/lib/opsi/depot'
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def currentUserId():
     yield os.getuid()
 
@@ -162,7 +160,7 @@ def nonRootUserId():
         return -1
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def currentGroupId():
     yield os.getgid()
 
@@ -183,49 +181,47 @@ def nonRootGroupId(currentGroupId):
         pytest.skip("No group for test found. Aborting.")
 
 
-def testChangingOwnershipWithOurChown(currentUserId, nonRootUserId, currentGroupId, nonRootGroupId):
+def testChangingOwnershipWithOurChown(currentUserId, nonRootUserId, currentGroupId, nonRootGroupId, tempDir):
     isRoot = os.geteuid() == 0
-    with workInTemporaryDirectory() as tempDir:
-        original = os.path.join(tempDir, 'original')
-        with open(original, 'w'):
-            pass
+    original = os.path.join(tempDir, 'original')
+    with open(original, 'w'):
+        pass
 
-        linkfile = os.path.join(tempDir, 'linkfile')
-        os.symlink(original, linkfile)
-        assert os.path.islink(linkfile)
+    linkfile = os.path.join(tempDir, 'linkfile')
+    os.symlink(original, linkfile)
+    assert os.path.islink(linkfile)
 
-        # Changing the uid/gid to something different
-        os.chown(original, nonRootUserId, nonRootGroupId)
-        os.lchown(linkfile, nonRootUserId, nonRootGroupId)
+    # Changing the uid/gid to something different
+    os.chown(original, nonRootUserId, nonRootGroupId)
+    os.lchown(linkfile, nonRootUserId, nonRootGroupId)
 
-        for filename in (original, linkfile):
-            if os.path.islink(filename):
-                stat = os.lstat(filename)
-            else:
-                stat = os.stat(linkfile)
+    for filename in (original, linkfile):
+        if os.path.islink(filename):
+            stat = os.lstat(filename)
+        else:
+            stat = os.stat(linkfile)
 
-            assert nonRootGroupId == stat.st_gid
-            if not isRoot:
-                assert nonRootUserId == stat.st_uid
+        assert nonRootGroupId == stat.st_gid
+        if not isRoot:
+            assert nonRootUserId == stat.st_uid
 
-        # Correcting the uid/gid
-        chown(linkfile, currentUserId, currentGroupId)
-        chown(original, currentUserId, currentGroupId)
+    # Correcting the uid/gid
+    chown(linkfile, currentUserId, currentGroupId)
+    chown(original, currentUserId, currentGroupId)
 
-        for filename in (original, linkfile):
-            if os.path.islink(filename):
-                stat = os.lstat(filename)
-            else:
-                stat = os.stat(linkfile)
+    for filename in (original, linkfile):
+        if os.path.islink(filename):
+            stat = os.lstat(filename)
+        else:
+            stat = os.stat(linkfile)
 
-            assert currentGroupId == stat.st_gid
-            if not isRoot:
-                assert currentUserId == stat.st_uid
+        assert currentGroupId == stat.st_gid
+        if not isRoot:
+            assert currentUserId == stat.st_uid
 
 
 def testGettingDirectoriesAndRights(patchUserInfo):
     dm = dict(getDirectoriesAndExpectedRights('/'))
-    print(dm)
 
     for rights in dm.values():
         # For now we just want to make sure these fields are filled.
@@ -233,25 +229,22 @@ def testGettingDirectoriesAndRights(patchUserInfo):
         assert rights.gid
 
     rights = dm[u'/etc/opsi']
-    print(rights)
     assert rights.files == 0o660
     assert rights.directories == 0o770
     assert rights.correctLinks
 
     rights = dm[u'/var/lib/opsi']
-    print(rights)
     assert rights.files == 0o660
     assert rights.directories == 0o770
     assert not rights.correctLinks
 
     rights = dm[u'/var/log/opsi']
-    print(rights)
     assert rights.files == 0o660
     assert rights.directories == 0o770
     assert rights.correctLinks
 
 
-@pytest.mark.parametrize("directoryExists", [True, pytest.mark.xfail(False)])
+@pytest.mark.parametrize("directoryExists", [True, pytest.param(False, marks=pytest.mark.xfail)])
 @pytest.mark.parametrize("dir, function", [
     ('/var/www/html/opsi', 'isCentOS'),
     ('/var/www/html/opsi', 'isDebian'),
@@ -276,7 +269,7 @@ def testGettingWebserverRepositoryPath(dir, function, directoryExists):
     ('isSLES', 'wwwrun', 'www'),
     ('isUbuntu', 'www-data', 'www-data'),
     ('isUCS', 'www-data', 'www-data'),
-    pytest.mark.xfail(('forceHostId', '', '')),
+    pytest.param('forceHostId', '', '', marks=pytest.mark.xfail),
 ])
 def testGettingWebserverUsernameAndGroupname(function, username, groupname):
     with disableOSChecks(OS_CHECK_FUNCTIONS[:]):
@@ -348,36 +341,35 @@ def testFilteringOutDuplicateDirectories():
         assert count == 1, "{0} was returned more than once!".format(d)
 
 
-def testSetRightsOnSSHDirectory():
+def testSetRightsOnSSHDirectory(tempDir):
     groupId = os.getgid()
     userId = os.getuid()
 
-    with workInTemporaryDirectory() as sshDir:
-        expectedFilemod = {
-            os.path.join(sshDir, u'id_rsa'): 0o640,
-            os.path.join(sshDir, u'id_rsa.pub'): 0o644,
-            os.path.join(sshDir, u'authorized_keys'): 0o600,
-        }
+    sshDir = tempDir
+    expectedFilemod = {
+        os.path.join(sshDir, u'id_rsa'): 0o640,
+        os.path.join(sshDir, u'id_rsa.pub'): 0o644,
+        os.path.join(sshDir, u'authorized_keys'): 0o600,
+    }
 
-        for filename in expectedFilemod:
-            with open(filename, 'w'):
-                pass
+    for filename in expectedFilemod:
+        with open(filename, 'w'):
+            pass
 
-            os.chmod(filename, 0o400)
+        os.chmod(filename, 0o400)
 
-        setRightsOnSSHDirectory(userId, groupId, path=sshDir)
+    setRightsOnSSHDirectory(userId, groupId, path=sshDir)
 
-        for filename, mod in expectedFilemod.items():
-            print("Checking {0} with expected mod {1}".format(filename, mod))
-            assert os.path.exists(filename)
+    for filename, mod in expectedFilemod.items():
+        assert os.path.exists(filename)
 
-            assert getMod(filename) == mod
+        assert getMod(filename) == mod
 
-            stats = os.stat(filename)
-            # The following checks are not that good yet...
-            # ... but make sure the files are still accessible.
-            assert stats.st_gid == groupId
-            assert stats.st_uid == userId
+        stats = os.stat(filename)
+        # The following checks are not that good yet...
+        # ... but make sure the files are still accessible.
+        assert stats.st_gid == groupId
+        assert stats.st_uid == userId
 
 
 def getMod(path):
@@ -392,15 +384,14 @@ def getMod(path):
     return os.stat(path).st_mode & 0o777
 
 
-def testSettingRightsOnFile():
-    with workInTemporaryDirectory() as tempDir:
-        filePath = os.path.join(tempDir, 'foobar')
-        with open(filePath, 'w'):
-            pass
+def testSettingRightsOnFile(tempDir):
+    filePath = os.path.join(tempDir, 'foobar')
+    with open(filePath, 'w'):
+        pass
 
-        os.chmod(filePath, 0o000)
-        assert getMod(filePath) == 0o000
+    os.chmod(filePath, 0o000)
+    assert getMod(filePath) == 0o000
 
-        setRightsOnFile(filePath, 0o777)
+    setRightsOnFile(filePath, 0o777)
 
-        assert getMod(filePath) == 0o777
+    assert getMod(filePath) == 0o777

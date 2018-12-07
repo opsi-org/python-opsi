@@ -1,8 +1,7 @@
-#!/usr/bin/env python
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2014-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -23,32 +22,26 @@ Testing extended backends features
 :license: GNU Affero General Public License version 3
 """
 
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 
-from contextlib import contextmanager
-from itertools import izip
+import random
 
-from OPSI.Object import (LocalbootProduct, OpsiClient, OpsiDepotserver,
-    ProductOnClient, ProductOnDepot, UnicodeConfig)
+from OPSI.Backend.Backend import temporaryBackendOptions
+from OPSI.Exceptions import BackendError, BackendMissingDataError
+from OPSI.Object import (
+    BoolProductProperty, ConfigState, LocalbootProduct, OpsiClient,
+    OpsiDepotserver, ProductOnClient, ProductOnDepot, ProductPropertyState,
+    UnicodeConfig, UnicodeProductProperty)
+from OPSI.Util.Task.ConfigureBackend.ConfigurationData import initializeConfigs
 
+from .test_backend_replicator import fillBackend
 from .test_configs import getConfigs, getConfigStates
-from .test_hosts import getClients, getDepotServers
-from .test_products import (getLocalbootProducts, getNetbootProduct,
-    getProductsOnClients, getProductsOnDepot)
+from .test_hosts import getClients, getConfigServer, getDepotServers
+from .test_products import (
+    getLocalbootProducts, getNetbootProduct, getProductsOnClients,
+    getProductsOnDepot, getProductPropertyStates)
 
 import pytest
-
-
-@contextmanager
-def temporaryBackendOptions(backend, **config):
-    oldkeys = backend.backend_getOptions()
-
-    try:
-        print("Setting backend option {0!r}".format(config))
-        backend.backend_setOptions(config)
-        yield
-    finally:
-        backend.backend_setOptions(oldkeys)
 
 
 # TODO: provide tests for these backend options:
@@ -59,7 +52,6 @@ def temporaryBackendOptions(backend, **config):
 #     'returnObjectsOnUpdateAndCreate':      False
 # })
 
-@pytest.mark.requiresModulesFile
 def test_configState_getClientToDepotserver(extendedConfigDataBackend):
     originalClients = getClients()
     depotservers = getDepotServers()
@@ -92,11 +84,12 @@ def test_configState_getClientToDepotserver(extendedConfigDataBackend):
         for productOnDepot in productOnDepots:
             assert productOnDepot in expectedProducts
 
+    depotServerIDs = set(ds.id for ds in depotservers)
+
     for clientToDepot in clientToDepots:
-       assert clientToDepot['depotId'] in [ds.id for ds in depotservers]
+        assert clientToDepot['depotId'] in depotServerIDs
 
 
-@pytest.mark.requiresModulesFile
 def test_createProductOnClient(extendedConfigDataBackend):
     client = OpsiClient(id='client.test.invalid')
     extendedConfigDataBackend.host_createObjects(client)
@@ -117,7 +110,6 @@ def test_createProductOnClient(extendedConfigDataBackend):
     assert [originalPoc] == productOnClients
 
 
-@pytest.mark.requiresModulesFile
 def test_selectProductOnClientWithDefault(extendedConfigDataBackend):
     client = OpsiClient(id='client.test.invalid')
     depot = OpsiDepotserver(id='depotserver1.test.invalid')
@@ -204,7 +196,7 @@ def test_selectProductOnClientsByWildcard(extendedConfigDataBackend):
     assert productOnClients == [poc]
 
 
-def test_createDepotServer(extendedConfigDataBackend):
+def testHost_createDepotServer(extendedConfigDataBackend):
     extendedConfigDataBackend.host_createOpsiDepotserver(
         id='depot100.test.invalid',
         opsiHostKey='123456789012345678901234567890aa',
@@ -222,11 +214,24 @@ def test_createDepotServer(extendedConfigDataBackend):
 
     hosts = extendedConfigDataBackend.host_getObjects(id='depot100.test.invalid')
     assert len(hosts) == 1
-    # TODO: check host!
+
+    depot = hosts[0]
+    assert depot.id == 'depot100.test.invalid'
+    assert depot.opsiHostKey == '123456789012345678901234567890aa'
+    assert depot.depotLocalUrl == 'file:///opt/pcbin/install'
+    assert depot.depotRemoteUrl == 'smb://depot3.uib.local/opt_pcbin/install'
+    assert depot.repositoryLocalUrl == 'file:///var/lib/opsi/products'
+    assert depot.repositoryRemoteUrl == 'webdavs://depot3.uib.local:4447/products'
+    assert depot.description == 'A depot'
+    assert depot.notes == 'Depot 100'
+    assert depot.hardwareAddress is None
+    assert depot.ipAddress is None
+    assert depot.networkAddress == '192.168.100.0/24'
+    assert depot.maxBandwidth == 0
 
 
-@pytest.mark.requiresModulesFile
-def test_createClient(extendedConfigDataBackend):
+@pytest.mark.parametrize("lastSeen", [None, '0000-00-00 00:00:00'])
+def testHost_createClient(extendedConfigDataBackend, lastSeen):
     extendedConfigDataBackend.host_createOpsiClient(
         id='client100.test.invalid',
         opsiHostKey=None,
@@ -235,15 +240,29 @@ def test_createClient(extendedConfigDataBackend):
         hardwareAddress='00:00:01:01:02:02',
         ipAddress='192.168.0.200',
         created=None,
-        lastSeen=None
+        lastSeen=lastSeen
     )
 
     hosts = extendedConfigDataBackend.host_getObjects(id='client100.test.invalid')
     assert len(hosts) == 1
-    # TODO: check Host
+
+    client = hosts[0]
+    assert client.id == 'client100.test.invalid'
+    assert client.description == 'Client 100'
+    assert client.notes == 'No notes'
+    assert client.hardwareAddress == '00:00:01:01:02:02'
+    assert client.ipAddress == '192.168.0.200'
+
+    # Automatically filled atttributes
+    assert client.opsiHostKey
+    assert client.created
+    assert client.lastSeen
+
+    if lastSeen:
+        assert client.lastSeen == lastSeen
 
 
-def test_hostIdents(extendedConfigDataBackend):
+def testConfigState_getIdents(extendedConfigDataBackend):
     extendedConfigDataBackend.host_createOpsiDepotserver(
         id='depot100.test.invalid',
         opsiHostKey='123456789012345678901234567890aa',
@@ -269,69 +288,21 @@ def test_hostIdents(extendedConfigDataBackend):
     clients = getClients()
     extendedConfigDataBackend.host_createObjects(clients)
 
-    numHosts = len(clients) + 2
-
-    selfIdents = [
-        {'id': 'depot100.test.invalid'},
-        {'id': 'client100.test.invalid'}
-    ]
-    for host in clients:
-        selfIdents.append(host.getIdent(returnType = 'dict'))
-
-    selfIds = [d['id'] for d in selfIdents]
-
-    ids = extendedConfigDataBackend.host_getIdents()
-    assert len(ids) == len(selfIdents)
-
-    for ident in ids:
-        assert ident in selfIds
-
-    ids = extendedConfigDataBackend.host_getIdents(id='*100*')
-    assert 2 == len(ids)
-    for ident in ids:
-        assert ident in selfIds
-
-    ids = extendedConfigDataBackend.host_getIdents(returnType='tuple')
-    assert len(ids) == len(selfIdents)
-    for ident in ids:
-        assert ident[0] in selfIds
-
-    ids = extendedConfigDataBackend.host_getIdents(returnType='list')
-    assert len(ids) == len(selfIdents)
-    for ident in ids:
-        assert ident[0] in selfIds
-
-    ids = extendedConfigDataBackend.host_getIdents(returnType = 'dict')
-    assert len(ids) == len(selfIdents)
-    for ident in ids:
-        assert ident['id'] in selfIds
-
     configs = getConfigs()
     extendedConfigDataBackend.config_createObjects(configs)
-    selfIdents = []
-    for config in configs:
-        selfIdents.append(config.getIdent(returnType='dict'))
-    selfIds = [d['id'] for d in selfIdents]
-
-    ids = extendedConfigDataBackend.config_getIdents()
-    assert len(ids) == len(selfIdents)
-    for ident in ids:
-        assert ident in selfIds
 
     depotServer = extendedConfigDataBackend.host_getObjects(id='depot100.test.invalid')[0]
     configStates = getConfigStates(configs, clients, [None, depotServer])
     extendedConfigDataBackend.configState_createObjects(configStates)
-    selfIdents = []
-    for configState in configStates:
-        selfIdents.append(configState.getIdent(returnType='dict'))
+    expectedIdents = [configState.getIdent(returnType='dict') for configState in configStates]
 
     with temporaryBackendOptions(extendedConfigDataBackend, addConfigStateDefaults=False):
         ids = extendedConfigDataBackend.configState_getIdents()
 
-    assert len(ids) == len(selfIdents)
+    assert len(ids) == len(expectedIdents)
     for ident in ids:
-        id = dict(zip(('configId', 'objectId'), tuple(ident.split(";"))))
-        assert id in selfIdents
+        objectIdent = dict(zip(('configId', 'objectId'), tuple(ident.split(";"))))
+        assert objectIdent in expectedIdents
 
     expect = len(extendedConfigDataBackend.host_getObjects()) * len(configs)
     with temporaryBackendOptions(extendedConfigDataBackend, addConfigStateDefaults=True):
@@ -339,7 +310,6 @@ def test_hostIdents(extendedConfigDataBackend):
     assert expect == len(ids)
 
 
-@pytest.mark.requiresModulesFile
 def test_ldapSearchFilter(extendedConfigDataBackend):
     depotServer = getDepotServers()
     extendedConfigDataBackend.host_createObjects(depotServer)
@@ -382,7 +352,6 @@ def test_ldapSearchFilter(extendedConfigDataBackend):
     extendedConfigDataBackend.productOnClient_createObjects(pocs)
     result = extendedConfigDataBackend.backend_searchIdents('(&(&(objectClass=OpsiClient))(&(objectClass=ProductOnClient)(installationStatus=installed))(&(objectClass=ProductOnClient)(productId={0})))'.format(product1.id))
     expected = [x["clientId"] for x in extendedConfigDataBackend.productOnClient_getIdents(returnType="dict", installationStatus="installed", productId=product1.id)]
-    print(extendedConfigDataBackend.productOnClient_getIdents(returnType="dict"))
     result.sort()
     expected.sort()
     assert expected  # If this fails there are no objects.
@@ -395,24 +364,65 @@ def test_ldapSearchFilter(extendedConfigDataBackend):
     assert expected  # If this fails there are no objects.
     assert expected == result
 
-
-def test_gettingIdentsDoesNotRaiseAnException(extendedConfigDataBackend):
-    # TODO: create objects and check if something is returned.
-
-    extendedConfigDataBackend.product_getIdents()
-    extendedConfigDataBackend.productProperty_getIdents()
-    extendedConfigDataBackend.productOnDepot_getIdents()
-    extendedConfigDataBackend.productOnDepot_getIdents()
-    extendedConfigDataBackend.productPropertyState_getIdents()
-    extendedConfigDataBackend.productPropertyState_getIdents(returnType='tuple')
-    extendedConfigDataBackend.productPropertyState_getIdents(returnType='list')
-    extendedConfigDataBackend.productPropertyState_getIdents(returnType='dict')
-    extendedConfigDataBackend.group_getIdents()
-    extendedConfigDataBackend.objectToGroup_getIdents()
-    extendedConfigDataBackend.product_getIdents(id='*product*')
+    pocIdents = extendedConfigDataBackend.productOnClient_getIdents(returnType="dict")
+    assert pocIdents
 
 
-def testBackend_getInterface(extendedConfigDataBackend):
+@pytest.mark.parametrize("returnType, klass", ((None, object), ('tuple', tuple), ('list', list), ('dict', dict)))
+@pytest.mark.parametrize("objectType", (
+    'config',
+    'host',
+    'group',
+    'objectToGroup',
+    'product',
+    'productProperty',
+    'productOnDepot',
+    'productPropertyState',
+))
+def testGettingIdentsDoesNotRaiseAnException(extendedConfigDataBackend, objectType, returnType, klass):
+    fillBackend(extendedConfigDataBackend)
+
+    methodOptions = {}
+    if returnType is not None:
+        methodOptions['returnType'] = returnType
+
+    getObjects = getattr(extendedConfigDataBackend, objectType + '_getObjects')
+    objectCount = len(getObjects())
+
+    methodName = objectType + '_getIdents'
+    method = getattr(extendedConfigDataBackend, methodName)
+
+    result = method(**methodOptions)
+    assert result
+    assert objectCount == len(result)
+
+    for obj in result:
+        assert isinstance(obj, klass)
+
+
+def testGetIdentsWithWildcardFilter(extendedConfigDataBackend):
+    extendedConfigDataBackend.host_createOpsiDepotserver(id='depot100.test.invalid')
+    extendedConfigDataBackend.host_createOpsiClient(id='client100.test.invalid')
+    clients = getClients()
+    extendedConfigDataBackend.host_createObjects(clients)
+
+    ids = extendedConfigDataBackend.host_getIdents(id='*100*')
+    assert 2 == len(ids)
+    assert 'depot100.test.invalid' in ids
+    assert 'client100.test.invalid' in ids
+
+
+@pytest.mark.parametrize("methodSignature", (
+    {'name': 'backend_getInterface', 'args': ['self'], 'params': [], 'defaults': None, 'varargs': None, 'keywords': None},
+    {'name': 'backend_getOptions', 'args': ['self'], 'params': [], 'defaults': None, 'varargs': None, 'keywords': None},
+    {'name': 'backend_info', 'args': ['self'], 'params': [], 'defaults': None, 'varargs': None, 'keywords': None},
+    {'name': 'configState_getObjects', 'args': ['self', 'attributes'], 'params': ['*attributes', '**filter'], 'defaults': ([],), 'varargs': None, 'keywords': 'filter'},
+    {'name': 'config_getIdents', 'args': ['self', 'returnType'], 'params': ['*returnType', '**filter'], 'defaults': ('unicode',), 'varargs': None, 'keywords': 'filter'},
+    {'name': 'host_getObjects', 'args': ['self', 'attributes'], 'params': ['*attributes', '**filter'], 'defaults': ([],), 'varargs': None, 'keywords': 'filter'},
+    {'name': 'productOnClient_getObjects', 'args': ['self', 'attributes'], 'params': ['*attributes', '**filter'], 'defaults': ([],), 'varargs': None, 'keywords': 'filter'},
+    {'name': 'productPropertyState_getObjects', 'args': ['self', 'attributes'], 'params': ['*attributes', '**filter'], 'defaults': ([],), 'varargs': None, 'keywords': 'filter'},
+))
+def testBackend_getInterface(extendedConfigDataBackend, methodSignature):
     """
     Testing the behaviour of backend_getInterface.
 
@@ -428,71 +438,274 @@ def testBackend_getInterface(extendedConfigDataBackend):
         except AttributeError:
             pass
 
-    expected = [
-        {'name': 'backend_getInterface', 'args': ['self'], 'params': [], 'defaults': None, 'varargs': None, 'keywords': None},
-        {'name': 'backend_getOptions', 'args': ['self'], 'params': [], 'defaults': None, 'varargs': None, 'keywords': None},
-        {'name': 'backend_info', 'args': ['self'], 'params': [], 'defaults': None, 'varargs': None, 'keywords': None},
-        {'name': 'configState_getObjects', 'args': ['self', 'attributes'], 'params': ['*attributes', '**filter'], 'defaults': ([],), 'varargs': None, 'keywords': 'filter'},
-        {'name': 'config_getIdents', 'args': ['self', 'returnType'], 'params': ['*returnType', '**filter'], 'defaults': ('unicode',), 'varargs': None, 'keywords': 'filter'},
-        {'name': 'host_getObjects', 'args': ['self', 'attributes'], 'params': ['*attributes', '**filter'], 'defaults': ([],), 'varargs': None, 'keywords': 'filter'},
-        {'name': 'productOnClient_getObjects', 'args': ['self', 'attributes'], 'params': ['*attributes', '**filter'], 'defaults': ([],), 'varargs': None, 'keywords': 'filter'},
-        {'name': 'productPropertyState_getObjects', 'args': ['self', 'attributes'], 'params': ['*attributes', '**filter'], 'defaults': ([],), 'varargs': None, 'keywords': 'filter'},
+    for result in extendedConfigDataBackend.backend_getInterface():
+        if result['name'] == methodSignature['name']:
+            assert result == methodSignature
+            break
+    else:
+        pytest.fail("Expected method {0!r} not found".format(methodSignature['name']))
+
+
+@pytest.mark.parametrize("query", [
+    '(&(objectClass=Host)(type=OpsiDepotserver))',
+    '(&(&(objectClass=Host)(type=OpsiDepotserver))(objectClass=Host))',
+    '(|(&(objectClass=OpsiClient)(id=client1*))(&(objectClass=OpsiClient)(id=client2*)))',
+    '(&(&(objectClass=OpsiClient))(&(objectClass=ProductOnClient)(installationStatus=installed))(&(objectClass=ProductOnClient)(productId=product1)))',
+    '(&(&(objectClass=OpsiClient))(&(objectClass=ProductOnClient)(installationStatus=installed))(|(&(objectClass=ProductOnClient)(productId=product1))(&(objectClass=ProductOnClient)(productId=product2))))',
+    '(&(objectClass=OpsiClient)(&(objectClass=ProductOnClient)(installationStatus=installed))(&(objectClass=ProductOnClient)(productId=product1)))',
+    '(&(objectClass=Host)(description=T*))',
+    '(&(objectClass=Host)(description=*))',
+    '(&(&(objectClass=OpsiClient)(ipAddress=192*))(&(objectClass=ProductOnClient)(installationStatus=installed)))',
+    '(&(objectClass=Product)(description=*))',
+    '(&(objectClass=ProductOnClient)(installationStatus=installed))',
+    # TODO: this fails with SQL backends. Fix it:
+    # '(&(&(objectClass=Product)(description=*))(&(objectClass=ProductOnClient)(installationStatus=installed)))'
+])
+def testSearchingForIdents(extendedConfigDataBackend, query):
+    fillBackend(extendedConfigDataBackend)
+
+    result = extendedConfigDataBackend.backend_searchIdents(query)
+    assert result
+
+
+@pytest.mark.parametrize("addressType", ['fqdn'])
+def testRenamingDepotServer(extendedConfigDataBackend, addressType, newId='hello.world.test'):
+    backend = extendedConfigDataBackend
+    configServer = getConfigServer()
+
+    backend.host_createObjects(configServer)
+    initializeConfigs(backend)
+
+    # TODO: add test variant that uses the hostname or IP in the addresses
+    # TODO: relevant for #3034?
+    if addressType != 'fqdn':
+        raise RuntimeError("Unsupported address type")
+    address = 'toberenamed.domain.test'
+
+    depots = list(getDepotServers())
+    oldServer = OpsiDepotserver(
+        id='toberenamed.domain.test',
+        depotLocalUrl='file:///var/lib/opsi/depot',
+        depotRemoteUrl='smb://{address}/opsi_depot'.format(address=address),
+        depotWebdavUrl=u'webdavs://{address}:4447/depot'.format(address=address),
+        repositoryLocalUrl='file:///var/lib/opsi/repository',
+        repositoryRemoteUrl='webdavs://{address}:4447/repository'.format(address=address),
+        workbenchLocalUrl='file:///var/lib/opsi/workbench',
+        workbenchRemoteUrl=u'smb://{address}/opsi_workbench'.format(address=address),
+    )
+    depots.append(oldServer)
+    backend.host_createObjects(depots)
+
+    products = list(getLocalbootProducts()) + [getNetbootProduct()]
+    backend.product_createObjects(products)
+    originalProductsOnDepots = getProductsOnDepot(products, oldServer, depots)
+    backend.productOnDepot_createObjects(originalProductsOnDepots)
+    productsOnOldDepot = backend.productOnDepot_getObjects(depotId=oldServer.id)
+
+    product1 = products[0]
+    specialProperty = UnicodeProductProperty(
+        productId=product1.id,
+        productVersion=product1.productVersion,
+        packageVersion=product1.packageVersion,
+        propertyId="changeMe",
+        possibleValues=['foo', oldServer.id, 'baz'],
+        defaultValues=['foo', oldServer.id],
+        editable=False,
+        multiValue=True
+    )
+    properties = [
+        UnicodeProductProperty(
+            productId=product1.id,
+            productVersion=product1.productVersion,
+            packageVersion=product1.packageVersion,
+            propertyId="overridden",
+            possibleValues=['foo', 'bar', 'baz'],
+            defaultValues=['foo'],
+            editable=True,
+            multiValue=True
+        ),
+        BoolProductProperty(
+            productId=product1.id,
+            productVersion=product1.productVersion,
+            packageVersion=product1.packageVersion,
+            propertyId="irrelevant2",
+            defaultValues=True
+        ),
+        specialProperty,
     ]
+    backend.productProperty_createObjects(properties)
+    oldProperties = backend.productProperty_getObjects()
 
-    results = extendedConfigDataBackend.backend_getInterface()
-    for selection in expected:
-        for result in results:
-            if result['name'] == selection['name']:
-                print('Checking {0}'.format(selection['name']))
-                for parameter in ('args', 'params', 'defaults', 'varargs', 'keywords'):
-                    print('Now checking parameter {0!r}, expecting {1!r}'.format(parameter, selection[parameter]))
-                    singleResult = result[parameter]
-                    if isinstance(singleResult, (list, tuple)):
-                        # We do check the content of the result
-                        # because JSONRPC-Backends can only work
-                        # with JSON and therefore not with tuples
-                        assert len(singleResult) == len(selection[parameter])
+    specialProdPropertyState = ProductPropertyState(
+        productId=product1.id,
+        propertyId=properties[0].propertyId,
+        objectId=oldServer.id,
+        values=[oldServer.id]
+    )
+    productPropertyStates = list(getProductPropertyStates(properties, depots, depots))
+    productPropertyStates.append(specialProdPropertyState)
+    backend.productPropertyState_createObjects(productPropertyStates)
+    oldProductPropertyStates = backend.productPropertyState_getObjects()
 
-                        for exp, res in izip(singleResult, selection[parameter]):
-                            assert exp == res
-                    else:
-                        assert singleResult == selection[parameter]
+    testConfig = UnicodeConfig(
+        id=u'test.config.rename',
+        description=u'Testing value rename',
+        possibleValues=['random value', oldServer.id, 'another value'],
+        defaultValues=[oldServer.id],
+        editable=True,
+        multiValue=False
+    )
+    configs = list(getConfigs())
+    configs.append(testConfig)
+    configs.append(
+        UnicodeConfig(
+            id=u'clientconfig.depot.id',  # get's special treatment
+            description=u'ID of the opsi depot to use',
+            possibleValues=[configServer.id, oldServer.id],
+            defaultValues=[oldServer.id],
+            editable=True,
+            multiValue=False
+        )
+    )
+    configs.append(
+        UnicodeConfig(
+            id=u'clientconfig.configserver.url',  # get's special treatment
+            description=u'URL(s) of opsi config service(s) to use',
+            possibleValues=[u'https://%s:4447/rpc' % server for server in (configServer.id, oldServer.id)],
+            defaultValues=[u'https://%s:4447/rpc' % configServer.id],
+            editable=True,
+            multiValue=True
+        )
+    )
+    backend.config_createObjects(configs)
+    oldConfigs = backend.config_getObjects()
 
-                break  # We found what we are looking for.
-        else:
-            pytest.fail("Expected method {0!r} not found".format(selection['name']))
+    testConfigState = ConfigState(
+        configId=testConfig.id,
+        objectId=oldServer.id,
+        values=["broken glass", oldServer.id, "red"]
+    )
+    manyDepots = depots * 4
+    configStates = list(getConfigStates(configs, manyDepots[:7], [None, oldServer]))
+    configStates.append(testConfigState)
+    backend.configState_createObjects(configStates)
+    oldConfigStates = backend.configState_getObjects()
+    configStatesFromDifferentObjects = [cs for cs in oldConfigStates if not cs.objectId == oldServer.id]
+
+    secondaryDepot = OpsiDepotserver(
+        id='sub-{0}'.format(oldServer.id),
+        isMasterDepot=False,
+        masterDepotId=oldServer.id
+    )
+    backend.host_createObjects(secondaryDepot)
+
+    backend.host_renameOpsiDepotserver(oldServer.id, newId)
+
+    assert not backend.host_getObjects(id=oldServer.id)
+
+    newServer = backend.host_getObjects(id=newId)[0]
+    assert newServer.id == newId
+    assert newServer.getType() == "OpsiDepotserver"
+    assert newServer.depotLocalUrl == 'file:///var/lib/opsi/depot'
+    assert newServer.repositoryLocalUrl == 'file:///var/lib/opsi/repository'
+    assert newServer.workbenchLocalUrl == 'file:///var/lib/opsi/workbench'
+    assert newServer.depotRemoteUrl == u'smb://%s/opsi_depot' % newId
+    assert newServer.depotWebdavUrl == u'webdavs://%s:4447/depot' % newId
+    assert newServer.repositoryRemoteUrl == u'webdavs://%s:4447/repository' % newId
+    assert newServer.workbenchRemoteUrl == u'smb://{}/opsi_workbench'.format(newId)
+
+    assert not backend.productOnDepot_getObjects(depotId=oldServer.id)
+    productsOnNewDepot = backend.productOnDepot_getObjects(depotId=newId)
+    assert len(productsOnOldDepot) == len(productsOnNewDepot)
+
+    newProperties = backend.productProperty_getObjects()
+    assert len(newProperties) == len(oldProperties)
+    specialPropertyChecked = False
+    for productProperty in newProperties:
+        if productProperty.propertyId == specialProperty.propertyId:
+            assert oldServer.id not in productProperty.possibleValues
+            assert newId in productProperty.possibleValues
+
+            assert oldServer.id not in productProperty.defaultValues
+            assert newId in productProperty.defaultValues
+            specialPropertyChecked = True
+
+    assert specialPropertyChecked, "Missing property {0}".format(specialProperty.propertyId)
+
+    newProductPropertyStates = backend.productPropertyState_getObjects()
+    assert len(oldProductPropertyStates) == len(newProductPropertyStates)
+    assert not any(pps.objectId == oldServer.id for pps in newProductPropertyStates)
+    assert not any(oldServer.id in pps.values for pps in newProductPropertyStates)
+
+    newConfigs = backend.config_getObjects()
+    assert len(oldConfigs) == len(newConfigs)
+    configsTested = 0
+    for config in newConfigs:
+        assert oldServer.id not in config.possibleValues
+        assert oldServer.id not in config.defaultValues
+
+        if config.id == testConfig.id:
+            assert newId in config.possibleValues
+            assert newId in config.defaultValues
+            assert len(testConfig.possibleValues) == len(config.possibleValues)
+            assert len(testConfig.defaultValues) == len(config.defaultValues)
+            configsTested += 1
+        elif config.id == 'clientconfig.configserver.url':
+            assert 1 == len(config.defaultValues)
+            assert newId not in config.defaultValues[0]  # Default is config server
+            assert 2 == len(config.possibleValues)
+
+            # TODO: this could be relevant for #1571
+            if addressType == 'fqdn':
+                assert any(newId in value for value in config.possibleValues)
+            else:
+                raise RuntimeError("Missing check for address type {0!r}".format(addressType))
+            configsTested += 1
+        elif config.id == 'clientconfig.depot.id':
+            assert newId in config.possibleValues
+            assert oldServer.id not in config.possibleValues
+            assert 2 == len(config.possibleValues)
+            assert [newId] == config.defaultValues
+            configsTested += 1
+
+    assert 3 == configsTested
+
+    newConfigStates = backend.configState_getObjects()
+    assert len(oldConfigStates) == len(newConfigStates)
+    newConfigStatesFromDifferentObjects = [cs for cs in newConfigStates if not cs.objectId == newId]
+    assert len(configStatesFromDifferentObjects) == len(newConfigStatesFromDifferentObjects)
+
+    configStateTested = False
+    for configState in newConfigStates:
+        assert oldServer.id not in configState.values
+        assert configState.objectId != oldServer.id
+
+        if configState.configId == testConfigState.configId:
+            assert configState.objectId == newId
+            configStateTested = True
+
+    assert configStateTested, "Reference to ID not changed"
+
+    newSecondaryDepot = backend.host_getObjects(id=secondaryDepot.id)[0]
+    assert newSecondaryDepot.isMasterDepot is False
+    assert newSecondaryDepot.masterDepotId == newId
 
 
-def testSearchingForIdents(extendedConfigDataBackend):
-    # TODO: fill the backend with data!
-    # TODO: assertions
-    result = extendedConfigDataBackend.backend_searchIdents(
-        '(&(objectClass=Host)(type=OpsiDepotserver))')
-    print(result)
-    result = extendedConfigDataBackend.backend_searchIdents(
-        '(&(&(objectClass=Host)(type=OpsiDepotserver))(objectClass=Host))')
-    print(result)
-    result = extendedConfigDataBackend.backend_searchIdents(
-        '(|(&(objectClass=OpsiClient)(id=client1*))(&(objectClass=OpsiClient)(id=client2*)))')
-    print(result)
-    result = extendedConfigDataBackend.backend_searchIdents(
-        '(&(&(objectClass=OpsiClient))(&(objectClass=ProductOnClient)(installationStatus=installed))(&(objectClass=ProductOnClient)(productId=product1)))')
-    print(result)
-    result = extendedConfigDataBackend.backend_searchIdents(
-        '(&(&(objectClass=OpsiClient))(&(objectClass=ProductOnClient)(installationStatus=installed))(|(&(objectClass=ProductOnClient)(productId=product1))(&(objectClass=ProductOnClient)(productId=product2))))')
-    print(result)
-    result = extendedConfigDataBackend.backend_searchIdents(
-        '(&(objectClass=OpsiClient)(&(objectClass=ProductOnClient)(installationStatus=installed))(&(objectClass=ProductOnClient)(productId=product1)))')
-    print(result)
-    result = extendedConfigDataBackend.backend_searchIdents(
-        '(&(objectClass=Host)(description=T*))')
-    print(result)
-    result = extendedConfigDataBackend.backend_searchIdents(
-        '(&(objectClass=Host)(description=*))')
-    print(result)
-    result = extendedConfigDataBackend.backend_searchIdents(
-        '(&(&(objectClass=OpsiClient)(ipAddress=192*))(&(objectClass=ProductOnClient)(installationStatus=installed)))')
-    print(result)
-    result = extendedConfigDataBackend.backend_searchIdents(
-        '(&(&(objectClass=Product)(description=*))(&(objectClass=ProductOnClient)(installationStatus=installed)))')
-    print(result)
+def testRenamingDepotServerFailsIfOldServerMissing(extendedConfigDataBackend, newId='hello.world.test'):
+    with pytest.raises(BackendMissingDataError):
+        extendedConfigDataBackend.host_renameOpsiDepotserver("not.here.invalid", "foo.bar.baz")
+
+
+def testRenamingDepotServerFailsIfNewIdAlreadyExisting(extendedConfigDataBackend, newId='hello.world.test'):
+    backend = extendedConfigDataBackend
+    depots = getDepotServers()
+    backend.host_createObjects(depots)
+
+    assert len(depots) >= 2, "Requiring at least two depots for this test."
+    oldServer = random.choice(depots)
+    newServer = random.choice(depots)
+    while newServer == oldServer:
+        newServer = random.choice(depots)
+
+    with pytest.raises(BackendError):
+        backend.host_renameOpsiDepotserver(oldServer.id, newServer.id)

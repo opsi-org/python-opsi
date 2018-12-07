@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -24,26 +24,20 @@ Testing OPSI.Util.File.Opsi
 from __future__ import absolute_import
 
 import os
-import unittest
-
 import pytest
+import random
 
 from OPSI.Util import findFiles, md5sum
 from OPSI.Util.File.Opsi import (
-	parseFilename,
-	BackendDispatchConfigFile, FileInfo, OpsiConfFile, PackageContentFile,
-	PackageControlFile)
+	BackendDispatchConfigFile, FileInfo, HostKeyFile, OpsiConfFile,
+	PackageContentFile, PackageControlFile, parseFilename,
+)
 
-from .helpers import workInTemporaryDirectory
+from .helpers import createTemporaryTestfile, workInTemporaryDirectory
 
 
-class BackendDispatchConfigFileTestCase(unittest.TestCase):
-	"""
-	Testing reading in the dispatch.conf
-	"""
-
-	def testReadingAllUsedBackends(self):
-		exampleConfig = '''
+def testReadingAllUsedBackends():
+	exampleConfig = '''
 backend_.*         : file, mysql, opsipxeconfd, dhcpd
 host_.*            : file, mysql, opsipxeconfd, dhcpd
 productOnClient_.* : file, mysql, opsipxeconfd
@@ -54,106 +48,101 @@ audit.*            : mysql
 .*                 : mysql
 '''
 
-		dispatchConfig = BackendDispatchConfigFile('not_reading_file')
+	dispatchConfig = BackendDispatchConfigFile('not_reading_file')
 
-		self.assertEqual(
-			set(('file', 'mysql', 'opsipxeconfd', 'dhcpd')),
-			dispatchConfig.getUsedBackends(lines=exampleConfig.split('\n'))
-		)
+	assert set(('file', 'mysql', 'opsipxeconfd', 'dhcpd')) == dispatchConfig.getUsedBackends(lines=exampleConfig.split('\n'))
 
-	def testParsingIgnoresCommentedLines(self):
-		exampleConfig = '''
+
+def testParsingIgnoresCommentedLines():
+	exampleConfig = '''
 ;backend_.*.*  : fail
 	#audit.*            : fail
 		.*                 : yolofile
 '''
 
-		dispatchConfig = BackendDispatchConfigFile('not_reading_file')
-		usedBackends = dispatchConfig.getUsedBackends(lines=exampleConfig.split('\n'))
+	dispatchConfig = BackendDispatchConfigFile('not_reading_file')
+	usedBackends = dispatchConfig.getUsedBackends(lines=exampleConfig.split('\n'))
 
-		self.assertTrue('fail' not in usedBackends)
-		self.assertEqual(
-			set(('yolofile',)),
-			usedBackends
-		)
+	assert 'fail' not in usedBackends
+	assert set(('yolofile',)), usedBackends
 
-	def testNotFailingOnInvalidLines(self):
-		"""
-		Reading invalid lines in a config must not lead to an exception.
-		"""
-		exampleConfig = '''
+
+def testBackendDispatchConfigFileNotFailingOnInvalidLines():
+	"""
+	Reading invalid lines in a config must not lead to an exception.
+	"""
+	exampleConfig = '''
 this does not work
 '''
 
-		dispatchConfig = BackendDispatchConfigFile('not_reading_file')
-		dispatchConfig.parse(lines=exampleConfig.split('\n'))
+	dispatchConfig = BackendDispatchConfigFile('not_reading_file')
+	dispatchConfig.parse(lines=exampleConfig.split('\n'))
 
-	def testBackendsCanBeEmpty(self):
-		exampleConfig = '''
+
+def testBackendDispatchConfigFileBackendsCanBeEmpty():
+	exampleConfig = '''
 no_backends_follow:\t
 empty_backends:\t, ,
 '''
 
-		dispatchConfig = BackendDispatchConfigFile('not_reading_file')
-		result = dispatchConfig.parse(lines=exampleConfig.split('\n'))
+	dispatchConfig = BackendDispatchConfigFile('not_reading_file')
+	result = dispatchConfig.parse(lines=exampleConfig.split('\n'))
 
-		self.assertEquals(1, len(result))
-		regex, backends = result[0]
-		self.assertEquals('empty_backends', regex)
-		self.assertEquals([u''], backends)
-
-
-class OpsiConfigFileTestCase(unittest.TestCase):
-	"""
-	Testing functions for /etc/opsi.conf
-	"""
-
-	EXAMPLE_CONFIG_FILE = os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'file', 'opsi', 'opsi.conf')
-
-	def setUp(self):
-		self.config = OpsiConfFile(filename=self.EXAMPLE_CONFIG_FILE)
-
-	def tearDown(self):
-		del self.config
-
-	def testReadingFileAdminGroupReturnsLowercaseName(self):
-		self.assertEquals('mypcpatch', self.config.getOpsiFileAdminGroup())
-
-	def testReturningDefaultForFileAdminGroup(self):
-		self.config.parse([''])
-		self.assertEquals('pcpatch', self.config.getOpsiFileAdminGroup())
-
-	def testReadingReadonlyGroups(self):
-		self.assertEquals(['myopsireadonlys'], self.config.getOpsiGroups("readonly"))
-
-	def testGettingDefaultForReadonlyGroups(self):
-		self.config.parse([''])
-		self.assertEquals(None, self.config.getOpsiGroups("readonly"))
-
-	def testReadingPigzStatus(self):
-		self.assertEquals(False, self.config.isPigzEnabled())
-
-	def testGettingDefaultPigzStatus(self):
-		self.config.parse([''])
-		self.assertEquals(True, self.config.isPigzEnabled())
+	assert 1 == len(result)
+	regex, backends = result[0]
+	assert 'empty_backends' == regex
+	assert tuple() == backends
 
 
-class OpsiControlFileTestCase(unittest.TestCase):
+@pytest.fixture
+def opsiConfigFile():
+	path = os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'file', 'opsi', 'opsi.conf')
+	return OpsiConfFile(filename=path)
 
+
+def testReadingFileAdminGroupReturnsLowercaseName(opsiConfigFile):
+	assert 'mypcpatch' == opsiConfigFile.getOpsiFileAdminGroup()
+
+
+def testReturningDefaultForFileAdminGroup(opsiConfigFile):
+	opsiConfigFile.parse([''])
+	assert 'pcpatch' == opsiConfigFile.getOpsiFileAdminGroup()
+
+
+def testReadingReadonlyGroups(opsiConfigFile):
+	assert ['myopsireadonlys'] == opsiConfigFile.getOpsiGroups("readonly")
+
+
+def testGettingDefaultForReadonlyGroups(opsiConfigFile):
+	opsiConfigFile.parse([''])
+	assert opsiConfigFile.getOpsiGroups("readonly") is None
+
+
+def testReadingPigzStatus(opsiConfigFile):
+	assert not opsiConfigFile.isPigzEnabled()
+
+
+def testGettingDefaultPigzStatus(opsiConfigFile):
+	opsiConfigFile.parse([''])
+	assert opsiConfigFile.isPigzEnabled()
+
+
+@pytest.fixture
+def opsiControlFilePath():
 	# The file is the one that was causing a problem in
 	# https://forum.opsi.org/viewtopic.php?f=7&t=7907
-	EXAMPLE_CONFIG_FILE = os.path.join(os.path.dirname(__file__),
-		'testdata', 'util', 'file', 'opsi', 'control_with_german_umlauts')
+	return os.path.join(
+		os.path.dirname(__file__),
+		'testdata', 'util', 'file', 'opsi', 'control_with_german_umlauts'
+	)
 
-	def testParsingControlFileWithGermanUmlautsInDescription(self):
-		p = PackageControlFile(self.EXAMPLE_CONFIG_FILE)
-		p.parse()
 
-		product = p.getProduct()
-		self.assertEquals(
-			u'Startet die Druckerwarteschlange auf dem Client neu / oder überhaupt.',
-			product.description
-		)
+def testParsingControlFileWithGermanUmlautsInDescription(opsiControlFilePath):
+	p = PackageControlFile(opsiControlFilePath)
+	p.parse()
+
+	product = p.getProduct()
+	assert u'Startet die Druckerwarteschlange auf dem Client neu / oder überhaupt.' == product.description
 
 
 def testProductControlFileWithoutVersionUsesDefaults():
@@ -170,6 +159,96 @@ def testProductControlFileWithoutVersionUsesDefaults():
 
 
 @pytest.fixture
+def controlFileWithEmptyValues():
+	filePath = os.path.join(
+		os.path.dirname(__file__),
+		'testdata', 'util', 'file', 'opsi', 'control_with_empty_property_values')
+
+	with createTemporaryTestfile(filePath) as newFilePath:
+		yield newFilePath
+
+
+def testParsingProductControlFileContainingPropertyWithEmptyValues(controlFileWithEmptyValues):
+	pcf = PackageControlFile(controlFileWithEmptyValues)
+
+	properties = pcf.getProductProperties()
+	assert len(properties) == 1
+
+	testProperty = properties[0]
+	assert testProperty.propertyId == 'important'
+	assert testProperty.possibleValues == []
+	assert testProperty.defaultValues == []
+	assert testProperty.multiValue is False
+	assert testProperty.editable is True
+	assert testProperty.description == "Nothing is important."
+
+
+def testGeneratingProductControlFileContainingPropertyWithEmptyValues(controlFileWithEmptyValues):
+	pcf = PackageControlFile(controlFileWithEmptyValues)
+	pcf.parse()
+	pcf.generate()
+	pcf.generate()  # should destroy nothing
+	pcf.close()
+	del pcf
+
+	pcf = PackageControlFile(controlFileWithEmptyValues)
+	properties = pcf.getProductProperties()
+	assert len(properties) == 1
+
+	testProperty = properties[0]
+	assert testProperty.propertyId == 'important'
+	assert testProperty.possibleValues == []
+	assert testProperty.defaultValues == []
+	assert testProperty.multiValue is False
+	assert testProperty.editable is True
+	assert testProperty.description == "Nothing is important."
+
+
+@pytest.fixture
+def specialCharacterControlFile():
+	filePath = os.path.join(
+		os.path.dirname(__file__),
+		'testdata', 'util', 'file', 'opsi',
+		'control_with_special_characters_in_property')
+
+	with createTemporaryTestfile(filePath) as newFilePath:
+		yield newFilePath
+
+
+def testGeneratingProductControlFileContainingSpecialCharactersInProperty(specialCharacterControlFile):
+	pcf = PackageControlFile(specialCharacterControlFile)
+	pcf.parse()
+	pcf.generate()
+	pcf.generate()  # should destroy nothing
+	pcf.close()
+	del pcf
+
+	pcf = PackageControlFile(specialCharacterControlFile)
+	properties = pcf.getProductProperties()
+	assert len(properties) == 2
+
+	if properties[0].propertyId == 'target_path':
+		testProperty = properties.pop(0)
+	else:
+		testProperty = properties.pop()
+
+	assert testProperty.propertyId == 'target_path'
+	assert testProperty.description == "The target path"
+	assert testProperty.multiValue is False
+	assert testProperty.editable is True
+	assert testProperty.possibleValues == ["C:\\temp\\my_target"]
+	assert testProperty.defaultValues == ["C:\\temp\\my_target"]
+
+	testProperty = properties.pop()
+	assert testProperty.propertyId == 'adminaccounts'
+	assert testProperty.description == "Windows account(s) to provision as administrators."
+	assert testProperty.multiValue is False
+	assert testProperty.editable is True
+	assert testProperty.defaultValues == ["Administrator"]
+	assert set(testProperty.possibleValues) == set(["Administrator", "domain.local\\Administrator", "BUILTIN\\ADMINISTRATORS"])
+
+
+@pytest.fixture
 def outsideFile():
 	with workInTemporaryDirectory() as anotherDirectory:
 		outsideFile = os.path.join(anotherDirectory, 'joan')
@@ -179,7 +258,16 @@ def outsideFile():
 		yield outsideFile
 
 
-def testPackageContentFileCreation(outsideFile):
+@pytest.fixture
+def outsideDir():
+	with workInTemporaryDirectory() as tmpDir:
+		dirPath = os.path.join(tmpDir, 'dirOutside')
+		os.mkdir(dirPath)
+
+		yield dirPath
+
+
+def testPackageContentFileCreation(outsideFile, outsideDir):
 	with workInTemporaryDirectory() as tempDir:
 		content = fillDirectory(tempDir)
 
@@ -188,6 +276,13 @@ def testPackageContentFileCreation(outsideFile):
 		for filename in (f for f, t in content.items() if t == 'f'):
 			os.symlink(outsideFile, os.path.join(tempDir, outsideLink))
 			content[outsideLink] = 'f'
+			break
+
+		outsideDirLink = 'dlink'
+		assert outsideDirLink not in content
+		for dirname in (f for f, t in content.items() if t == 'd'):
+			os.symlink(outsideDir, os.path.join(tempDir, outsideDirLink))
+			content[outsideDirLink] = 'd'
 			break
 
 		clientDataFiles = findFiles(tempDir)
@@ -213,6 +308,8 @@ def testPackageContentFileCreation(outsideFile):
 
 					if path == outsideLink:
 						assert entry == 'f'
+					elif path == outsideDirLink:
+						assert entry == 'd'
 
 					if entry == 'd':
 						assert int(size.strip()) == 0
@@ -283,7 +380,7 @@ def fillDirectory(directory):
 	return content
 
 
-def testParsingPackageContentFile(outsideFile):
+def testParsingPackageContentFile(outsideFile, outsideDir):
 	with workInTemporaryDirectory() as tempDir:
 		content = fillDirectory(tempDir)
 
@@ -292,6 +389,13 @@ def testParsingPackageContentFile(outsideFile):
 		for filename in (f for f, t in content.items() if t == 'f'):
 			os.symlink(outsideFile, os.path.join(tempDir, outsideLink))
 			content[outsideLink] = 'f'
+			break
+
+		outsideDirLink = 'dlink'
+		assert outsideDirLink not in content
+		for dirname in (f for f, t in content.items() if t == 'd'):
+			os.symlink(outsideDir, os.path.join(tempDir, outsideDirLink))
+			content[outsideDirLink] = 'd'
 			break
 
 		filename = os.path.join(tempDir, 'test.files')
@@ -337,6 +441,91 @@ def testParsingPackageContentFile(outsideFile):
 				raise RuntimeError("Unexpected type in {0!r}".format(entry))
 
 
+@pytest.fixture
+def emptyFile():
+	with workInTemporaryDirectory() as tempDir:
+
+		path = os.path.join(tempDir, 'empty')
+		with open(path, 'w'):
+			pass
+
+		yield path
+
+
+def testHostKeyFileUsage(emptyFile):
+	hkf = HostKeyFile(emptyFile)
+
+	hostId = 'client.domain.test'
+	assert hkf.getOpsiHostKey(hostId) is None  # unknown entry
+
+	password = 'deadbeef1c0ff3300deadbeef1c0ff33'  # 32 chars
+	hkf.setOpsiHostKey(hostId, password)
+	assert hkf.getOpsiHostKey(hostId) == password
+
+
+@pytest.fixture(
+	params=[50, 500, 5000],
+	scope='session'
+)
+def hostKeyEntries(request):
+	def generatePassword(number):
+		pw = 'deadbeef1c0ff3300deadbeef1c0ff33{0}'.format(number)
+		return pw[-32:]  # We need to have 32 characters in length
+
+	entries = [
+		('client{0}.domain.test'.format(i), generatePassword(i))
+		for i in range(request.param)
+	]
+	random.shuffle(entries)
+
+	return entries
+
+
+def testHostKeyFileGeneration(emptyFile, hostKeyEntries):
+	hkf = HostKeyFile(emptyFile)
+	for hostId, password in hostKeyEntries:
+		hkf.setOpsiHostKey(hostId, password)
+	hkf.generate()
+
+	hosts = dict(hostKeyEntries)
+
+	foundKeys = 0
+	with open(emptyFile) as f:
+		for line in f:
+			line = line.strip()
+			hostId, pw = line.split(':')
+			assert hostId
+			assert pw
+			assert hosts[hostId] == pw
+			foundKeys += 1
+
+	assert foundKeys == len(hostKeyEntries)
+
+
+def testHostKeyFileParsing(emptyFile, hostKeyEntries):
+	with open(emptyFile, 'w') as f:
+		for hostId, password in hostKeyEntries:
+			f.write('%s:%s\n' % (hostId, password))
+
+	hkf = HostKeyFile(emptyFile)
+	for hostId, password in hostKeyEntries:
+		assert hkf.getOpsiHostKey(hostId) == password
+
+
+def testHostKeyFileParsingSkippingInvalidEntries(emptyFile, hostKeyEntries):
+	with open(emptyFile, 'w') as f:
+		for hostId, password in hostKeyEntries:
+			f.write('%s:%s\n' % (hostId, password))
+
+		f.write('%s:%s\n' % (hostId, password))  # duplicate entry
+		f.write('nohostid:%s\n' % password)  # Invalid password
+		f.write('%s:nopw\n' % hostId)  # Invalid host Id
+		f.write(':\n')  # no content
+
+	hkf = HostKeyFile(emptyFile)
+	hkf.parse()
+
+
 @pytest.mark.parametrize("filename, expected", [
 	('sap_7.40.8-3.opsi', FileInfo('sap', '7.40.8-3')),
 	('sap_7.40.8-3.opsi.md5', FileInfo('sap', '7.40.8-3')),
@@ -344,6 +533,8 @@ def testParsingPackageContentFile(outsideFile):
 	('sap_dev_bex_7.40.8-3.opsi', FileInfo('sap_dev_bex', '7.40.8-3')),
 	('firefox_52.3.0esror55.0-2~fra3264.opsi', FileInfo('firefox', '52.3.0esror55.0-2~fra3264')),
 	('README.txt', None),
+	('some/relative/path/summer_2000-19.opsi', FileInfo('summer', '2000-19')),
+	('/tmp/summer_2000-18.opsi', FileInfo('summer', '2000-18')),
 ])
 def testParsingFile(filename, expected):
 	assert expected == parseFilename(filename)

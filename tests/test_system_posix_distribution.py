@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -28,17 +27,18 @@ from OPSI.System.Posix import Distribution
 import pytest
 
 
+# The first tuple is retrieved by running platform.linux_distribution()
+# on the corresponding version.
 DISTRI_INFOS = [
-    (('debian', '6.0.7', ''), (6, 0, 7)),
-    (('debian', '7.1', ''), (7, 1)),
-    (('CentOS', '6.4', 'Final'), (6, 4)),
+    # TODO: add Debian 8
+    # TODO: add CentOS 7
     (('Red Hat Enterprise Linux Server', '7.0', 'Maipo'), (7, 0)),
-    (('Red Hat Enterprise Linux Server', '6.4', 'Santiago'), (6, 4)),
-    (('Ubuntu', '12.04', 'precise'), (12, 4)),
-    (('"Univention"', '"3.0-2 errata145"', '"Horn-Lehe"'), (3, 0)),
-    (('"Univention"', '"3.1-1 errata163"', '"Findorff"'), (3, 1)),
-    (('openSUSE ', '12.1', 'x86_64'), (12, 1)),
-    (('SUSE Linux Enterprise Server ', '11', 'x86_64'), (11, ))
+    (('Ubuntu', '16.04', 'xenial'), (16, 4)),
+    # TODO: add UCS 4.x
+    # TODO: add SLES12
+    (('openSUSE project', '42.3', 'n/a'), (42, 3)),
+    (('openSUSE', '15.0', 'n/a'), (15, 0)),
+
 ]
 
 

@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2016 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -31,14 +30,14 @@ import struct
 
 from contextlib import closing
 
+from OPSI.Exceptions import BackendMissingDataError, BackendUnaccomplishableError
 from OPSI.Logger import LOG_DEBUG, Logger
-from OPSI.Types import BackendMissingDataError
-from OPSI.Types import (forceBool, forceHostIdList, forceInt, forceList,
-	forceUnicode, forceUnicodeList)
+from OPSI.Types import (forceHostIdList, forceInt, forceList, forceUnicode)
 from OPSI.Backend.Backend import ExtendedBackend
 from OPSI.Backend.HostControl import RpcThread, ConnectionThread
+from OPSI.Backend.HostControl import _configureHostcontrolBackend
 
-__version__ = '4.0.7.2'
+__all__ = ('HostControlSafeBackend', )
 
 logger = Logger()
 
@@ -59,24 +58,9 @@ class HostControlSafeBackend(ExtendedBackend):
 		self._hostReachableTimeout = 3
 		self._resolveHostAddress = False
 		self._maxConnections = 50
-		self._broadcastAddresses = ["255.255.255.255"]
+		self._broadcastAddresses = {"255.255.255.255": (7, 9, 12287)}
 
-		# Parse arguments
-		for (option, value) in kwargs.items():
-			option = option.lower()
-			if option == 'opsiclientdport':
-				self._opsiclientdPort = forceInt(value)
-			elif option == 'hostrpctimeout':
-				self._hostRpcTimeout = forceInt(value)
-			elif option == 'resolvehostaddress':
-				self._resolveHostAddress = forceBool(value)
-			elif option == 'maxconnections':
-				self._maxConnections = forceInt(value)
-			elif option == 'broadcastaddresses':
-				self._broadcastAddresses = forceUnicodeList(value)
-
-		if (self._maxConnections < 1):
-			self._maxConnections = 1
+		_configureHostcontrolBackend(self, kwargs)
 
 	def __repr__(self):
 		try:
@@ -101,17 +85,19 @@ class HostControlSafeBackend(ExtendedBackend):
 			try:
 				address = socket.gethostbyname(host.id)
 			except socket.error:
-				raise Exception(u"Failed to resolve ip address for host '%s'" % host.id)
+				raise BackendUnaccomplishableError(u"Failed to resolve ip address for host '%s'" % host.id)
+
 		if not address:
-			raise Exception(u"Failed to get ip address for host '%s'" % host.id)
+			raise BackendUnaccomplishableError(u"Failed to get ip address for host '%s'" % host.id)
+
 		return address
 
 	def _opsiclientdRpc(self, hostIds, method, params=[], timeout=None):
 		if not hostIds:
 			raise BackendMissingDataError(u"No matching host ids found")
 		hostIds = forceHostIdList(hostIds)
-		method  = forceUnicode(method)
-		params  = forceList(params)
+		method = forceUnicode(method)
+		params = forceList(params)
 		if not timeout:
 			timeout = self._hostRpcTimeout
 		timeout = forceInt(timeout)
@@ -119,17 +105,30 @@ class HostControlSafeBackend(ExtendedBackend):
 		result = {}
 		rpcts = []
 		for host in self._context.host_getObjects(id=hostIds):  # pylint: disable=maybe-no-member
+			port = None
+			try:
+				configState = self._context.configState_getObjects(configId="opsiclientd.control_server.port", objectId=host.id)
+				port = int(configState[0].values[0])
+				logger.info("Using port {} for opsiclientd at {}", port, host.id)
+			except IndexError:
+				pass  # No values found
+			except Exception as portError:
+				logger.warning("Failed to read custom opsiclientd port for {}: {!r}", host.id, portError)
+
 			try:
 				address = self._getHostAddress(host)
 				rpcts.append(
 					RpcThread(
-						hostControlBackend = self,
-						hostId   = host.id,
-						address  = address,
-						username = u'',
-						password = host.opsiHostKey,
-						method   = method,
-						params   = params))
+						hostControlBackend=self,
+						hostId=host.id,
+						hostPort=port,
+						address=address,
+						username=u'',
+						password=host.opsiHostKey,
+						method=method,
+						params=params
+					)
+				)
 			except Exception as e:
 				result[host.id] = {"result": None, "error": forceUnicode(e)}
 
@@ -147,13 +146,13 @@ class HostControlSafeBackend(ExtendedBackend):
 					runningThreads -= 1
 					continue
 				if not rpct.started:
-					if (runningThreads < self._maxConnections):
+					if runningThreads < self._maxConnections:
 						logger.debug(u"Starting rpc to host %s" % rpct.hostId)
 						rpct.start()
 						runningThreads += 1
 				else:
 					timeRunning = time.time() - rpct.started
-					if (timeRunning >= timeout + 5):
+					if timeRunning >= timeout + 5:
 						# thread still alive 5 seconds after timeout => kill
 						logger.error(u"Rpc to host %s (address: %s) timed out after %0.2f seconds, terminating" % (rpct.hostId, rpct.address, timeRunning))
 						result[rpct.hostId] = {"result": None, "error": u"timed out after %0.2f seconds" % timeRunning}
@@ -182,27 +181,28 @@ class HostControlSafeBackend(ExtendedBackend):
 					raise BackendMissingDataError(u"Failed to get hardware address for host '%s'" % host.id)
 
 				mac = host.hardwareAddress.replace(':', '')
-
-				# Pad the synchronization stream.
-				data = ''.join(['FFFFFFFFFFFF', mac * 16])
-				send_data = ''
+				data = ''.join(['FFFFFFFFFFFF', mac * 16])  # Pad the synchronization stream.
 
 				# Split up the hex values and pack.
+				payload = ''
 				for i in range(0, len(data), 2):
-					send_data = ''.join([
-						send_data,
-						struct.pack('B', int(data[i: i + 2], 16)) ])
+					payload = ''.join([
+						payload,
+						struct.pack('B', int(data[i:i + 2], 16))])
 
-				for broadcastAddress in self._broadcastAddresses:
-					logger.debug(u"Sending data to network broadcast %s [%s]" % (broadcastAddress, data))
-					# Broadcast it to the LAN.
-					with closing(socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)) as sock:
-						sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, True)
-						sock.sendto(send_data, (broadcastAddress, 12287))
+				for broadcastAddress, targetPorts in self._broadcastAddresses.items():
+					logger.debug(u"Sending data to network broadcast {0} [{1}]", broadcastAddress, data)
+
+					for port in targetPorts:
+						logger.debug("Broadcasting to port {0!r}", port)
+						with closing(socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)) as sock:
+							sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, True)
+							sock.sendto(payload, (broadcastAddress, port))
+
 				result[host.id] = {"result": "sent", "error": None}
-			except Exception as e:
-				logger.logException(e, LOG_DEBUG)
-				result[host.id] = {"result": None, "error": forceUnicode(e)}
+			except Exception as error:
+				logger.logException(error, LOG_DEBUG)
+				result[host.id] = {"result": None, "error": forceUnicode(error)}
 		return result
 
 	def hostControlSafe_shutdown(self, hostIds=[]):
@@ -281,13 +281,13 @@ class HostControlSafeBackend(ExtendedBackend):
 					runningThreads -= 1
 					continue
 				if not thread.started:
-					if (runningThreads < self._maxConnections):
+					if runningThreads < self._maxConnections:
 						logger.debug(u"Trying to check host reachable %s" % thread.hostId)
 						thread.start()
 						runningThreads += 1
 				else:
 					timeRunning = time.time() - thread.started
-					if (timeRunning >= timeout +5):
+					if timeRunning >= timeout + 5:
 						# thread still alive 5 seconds after timeout => kill
 						logger.error(u"Reachable check to host %s address %s timed out after %0.2f  seconds, terminating" % (thread.hostId, thread.address, timeRunning))
 						result[thread.hostId] = False
@@ -308,4 +308,4 @@ class HostControlSafeBackend(ExtendedBackend):
 			raise BackendMissingDataError(u"No matching host ids found")
 		command = forceUnicode(command)
 		hostIds = self._context.host_getIdents(id=hostIds, returnType='unicode')  # pylint: disable=maybe-no-member
-		return self._opsiclientdRpc(hostIds=hostIds, method='execute', params=[command,waitForEnding,captureStderr,encoding,timeout])
+		return self._opsiclientdRpc(hostIds=hostIds, method='execute', params=[command, waitForEnding, captureStderr, encoding, timeout])

@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -34,15 +33,15 @@ between servers and clients.
 import os
 import random
 import shutil
-from OpenSSL import crypto, rand
 from tempfile import NamedTemporaryFile
+
+from OpenSSL import crypto
 
 from OPSI.Logger import Logger
 from OPSI.System import which, execute
 from OPSI.Types import forceHostId, forceInt
 from OPSI.Util import getfqdn
 
-OPSI_GLOBAL_CONF = u'/etc/opsi/global.conf'
 OPSICONFD_CERTFILE = u'/etc/opsi/opsiconfd.pem'
 DEFAULT_CERTIFICATE_PARAMETERS = {
 	"country": "DE",
@@ -50,7 +49,7 @@ DEFAULT_CERTIFICATE_PARAMETERS = {
 	"locality": "Mainz",
 	"organization": "uib gmbh",
 	"organizationalUnit": "",
-	"commonName": forceHostId(getfqdn(conf=OPSI_GLOBAL_CONF)),
+	"commonName": forceHostId(getfqdn()),
 	"emailAddress": "",
 	"expires": 2,
 }
@@ -152,7 +151,7 @@ If not given will use a default.
 			u"No valid expiration date given. Must be an integer."
 		)
 
-	if certparams["commonName"] != forceHostId(getfqdn(conf=OPSI_GLOBAL_CONF)):
+	if certparams["commonName"] != forceHostId(getfqdn()):
 		raise CertificateCreationError(
 			u"commonName must be the FQDN of the local server"
 		)
@@ -170,17 +169,21 @@ If not given will use a default.
 	cert.get_subject().O = certparams['organization']
 	cert.get_subject().CN = certparams['commonName']
 
-	if 'organizationalUnit' in certparams:
+	try:
 		if certparams['organizationalUnit']:
 			cert.get_subject().OU = certparams['organizationalUnit']
 		else:
 			del certparams['organizationalUnit']
+	except KeyError:
+		pass
 
-	if 'emailAddress' in certparams:
+	try:
 		if certparams['emailAddress']:
 			cert.get_subject().emailAddress = certparams['emailAddress']
 		else:
 			del certparams['emailAddress']
+	except KeyError:
+		pass
 
 	LOGGER.notice("Generating new Serialnumber")
 	# As described in RFC5280 this value is required and must be a
@@ -211,7 +214,7 @@ If not given will use a default.
 	cert.set_version(2)
 
 	LOGGER.notice(u"Signing Certificate")
-	cert.sign(k, str('sha1'))
+	cert.sign(k, str('sha512'))
 
 	certcontext = "".join(
 		(
@@ -226,14 +229,7 @@ If not given will use a default.
 
 	with NamedTemporaryFile(mode="wt") as randfile:
 		LOGGER.notice(u"Generating and filling new randomize string")
-		try:
-			randomBytes = rand.bytes(512)
-		except AttributeError as error:
-			LOGGER.debug(u"Getting rand.bytes failed: {0}".format(error))
-			LOGGER.debug(u"Using workaround with random.getrandbits")
-			# SLES11SP3 ships a version so old that rand.bytes does not
-			# even exist yet. As a workaround we use plain old random
-			randomBytes = str(bytearray(random.getrandbits(8) for _ in range(512)))
+		randomBytes = os.urandom(512)
 		randfile.write(randomBytes)
 
 		execute(
