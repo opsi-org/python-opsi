@@ -1427,42 +1427,42 @@ class DepotToLocalDirectorySychronizer(object):
 
 				self._synchronizeDirectories(self._productId, productDestinationDirectory, productProgressSubject)
 
-				fs = self._linkFiles.keys()
-				fs.sort()
-				for f in fs:
-					t = self._linkFiles[f]
+				links = self._linkFiles.keys()
+				links.sort()
+				for linkDestination in links:
+					linkSource = self._linkFiles[linkDestination]
 					cwd = os.getcwd()
 					os.chdir(productDestinationDirectory)
 					try:
 						if os.name == 'nt':
-							if t.startswith('/'):
-								t = t[1:]
-							if f.startswith('/'):
-								f = f[1:]
-							t = os.path.join(productDestinationDirectory, t.replace('/', '\\'))
-							f = os.path.join(productDestinationDirectory, f.replace('/', '\\'))
-							if os.path.exists(f):
-								if os.path.isdir(f):
-									shutil.rmtree(f)
+							if linkSource.startswith('/'):
+								linkSource = linkSource[1:]
+							if linkDestination.startswith('/'):
+								linkDestination = linkDestination[1:]
+							linkSource = os.path.join(productDestinationDirectory, linkSource.replace('/', '\\'))
+							linkDestination = os.path.join(productDestinationDirectory, linkDestination.replace('/', '\\'))
+							if os.path.exists(linkDestination):
+								if os.path.isdir(linkDestination):
+									shutil.rmtree(linkDestination)
 								else:
-									os.remove(f)
-							logger.info(u"Symlink => copying '%s' to '%s'" % (t, f))
-							if os.path.isdir(t):
-								shutil.copytree(t, f)
+									os.remove(linkDestination)
+							logger.info(u"Symlink => copying '%s' to '%s'" % (linkSource, linkDestination))
+							if os.path.isdir(linkSource):
+								shutil.copytree(linkSource, linkDestination)
 							else:
-								shutil.copyfile(t, f)
+								shutil.copyfile(linkSource, linkDestination)
 						else:
-							if os.path.exists(f):
-								if os.path.isdir(f) and not os.path.islink(f):
-									shutil.rmtree(f)
+							if os.path.exists(linkDestination):
+								if os.path.isdir(linkDestination) and not os.path.islink(linkDestination):
+									shutil.rmtree(linkDestination)
 								else:
-									os.remove(f)
-							parts = len(f.split('/'))
-							parts -= len(t.split('/'))
+									os.remove(linkDestination)
+							parts = len(linkDestination.split('/'))
+							parts -= len(linkSource.split('/'))
 							for i in range(parts):
-								t = os.path.join('..', t)
-							logger.info(u"Symlink '%s' to '%s'" % (f, t))
-							os.symlink(t, f)
+								linkSource = os.path.join('..', linkSource)
+							logger.info(u"Symlink '%s' to '%s'" % (linkDestination, linkSource))
+							os.symlink(linkSource, linkDestination)
 					finally:
 						os.chdir(cwd)
 			except Exception as error:
