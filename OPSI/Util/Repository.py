@@ -720,14 +720,15 @@ class FileRepository(Repository):
 	def fileInfo(self, source):
 		source = self._preProcessPath(source)
 		try:
+			if not os.path.exists(source):
+				raise IOError(u'File not found')
+
 			info = {
 				'name': os.path.basename(source),
 				'path': source[len(self._path) + 1:],
 				'type': 'file',
 				'size': long(0)
 			}
-			if not os.path.exists(source):
-				raise IOError(u'File not found')
 			if os.path.isdir(source):
 				info['type'] = 'dir'
 			if os.path.isfile(source):
