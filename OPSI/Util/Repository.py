@@ -290,7 +290,7 @@ class Repository:
 						)
 
 						if index > 1:
-							self._networkUsageData = self._networkUsageData[index-1:]
+							self._networkUsageData = self._networkUsageData[index - 1:]
 
 						if self._dynamicBandwidthLimit:
 							if usage >= self._dynamicBandwidthThresholdNoLimit:
@@ -422,7 +422,7 @@ class Repository:
 
 				if read > 0:
 					if bytes >= 0 and (self._bytesTransfered + read) > bytes:
-						buf = buf[:bytes-self._bytesTransfered]
+						buf = buf[:bytes - self._bytesTransfered]
 						read = len(buf)
 					self._bytesTransfered += read
 					if isinstance(dst, (httplib.HTTPConnection, httplib.HTTPSConnection)):
@@ -722,7 +722,7 @@ class FileRepository(Repository):
 		try:
 			info = {
 				'name': os.path.basename(source),
-				'path': source[len(self._path)+1:],
+				'path': source[len(self._path) + 1:],
 				'type': 'file',
 				'size': long(0)
 			}
