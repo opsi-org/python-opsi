@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2006-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -281,11 +281,16 @@ class Repository:
 
 					if count > 0:
 						usage = float(usage) / float(count)
-						logger.debug(u"Current network usage %0.2f kByte/s, last measured network bandwidth %0.2f kByte/s, usage: %0.5f, dynamic limit: %0.2f kByte/s"
-								% ((float(totalNetworkUsage) / 1024), (float(self._networkBandwidth) / 1024), usage, float(bwlimit) / 1024))
+						logger.debug(
+							u"Current network usage {:.2f} kByte/s, last measured network bandwidth {:.2f} kByte/s, usage: {:.5f}, dynamic limit: {:.2f} kByte/s",
+							float(totalNetworkUsage) / 1024,
+							float(self._networkBandwidth) / 1024,
+							usage,
+							float(bwlimit) / 1024
+						)
 
 						if index > 1:
-							self._networkUsageData = self._networkUsageData[index-1:]
+							self._networkUsageData = self._networkUsageData[index - 1:]
 
 						if self._dynamicBandwidthLimit:
 							if usage >= self._dynamicBandwidthThresholdNoLimit:
@@ -304,8 +309,11 @@ class Repository:
 										self._dynamicBandwidthLimit = bwlimit = 10000
 										logger.info(u"Other traffic detected, dynamically limiting bandwidth to minimum of %0.2f kByte/s" % (float(bwlimit) / 1024))
 									else:
-										logger.info(u"Other traffic detected, dynamically limiting bandwidth to %0.1f%% of last average to %0.2f kByte/s" \
-											% (float(self._dynamicBandwidthLimitRate) * 100, float(bwlimit) / 1024))
+										logger.info(
+											u"Other traffic detected, dynamically limiting bandwidth to {:.1f}% of last average to {:.2f} kByte/s",
+											float(self._dynamicBandwidthLimitRate) * 100,
+											float(bwlimit) / 1024
+										)
 									self._fireEvent('dynamicBandwidthLimitChanged', self._dynamicBandwidthLimit)
 								self._networkUsageData = []
 
@@ -318,8 +326,12 @@ class Repository:
 			if speed > bwlimit:
 				# Too fast
 				factor = float(speed) / float(bwlimit)
-				logger.debug(u"Transfer speed %0.2f kByte/s is to fast, limit: %0.2f kByte/s, factor: %0.5f" \
-					% ((speed / 1024), (bwlimit / 1024), factor))
+				logger.debug(
+					u"Transfer speed {:.2f} kByte/s is to fast, limit: {:.2f} kByte/s, factor: {:.5f}",
+					(speed / 1024),
+					(bwlimit / 1024),
+					factor
+				)
 
 				if factor < 1.001:
 					bandwidthSleepTime = self._bandwidthSleepTime + (0.00007 * factor)
@@ -331,8 +343,12 @@ class Repository:
 			else:
 				# Too slow
 				factor = float(bwlimit) / float(speed)
-				logger.debug(u"Transfer speed %0.2f kByte/s is to slow, limit: %0.2f kByte/s, factor: %0.5f" \
-					% ((speed / 1024), (bwlimit / 1024), factor))
+				logger.debug(
+					u"Transfer speed {:.2f} kByte/s is to slow, limit: {:.2f} kByte/s, factor: {:.5f}",
+					(speed / 1024),
+					(bwlimit / 1024),
+					factor
+				)
 
 				if factor < 1.001:
 					bandwidthSleepTime = self._bandwidthSleepTime - (0.00006 * factor)
@@ -361,8 +377,13 @@ class Repository:
 			elif self._bufferSize < 1:
 				self._bufferSize = 1
 
-			logger.debug(u"Transfer speed %0.2f kByte/s, limit: %0.2f kByte/s, sleep time: %0.6f, buffer size: %s" \
-				% (speed / 1024, bwlimit / 1024, self._bandwidthSleepTime, self._bufferSize))
+			logger.debug(
+				u"Transfer speed {:.2f} kByte/s, limit: {:.2f} kByte/s, sleep time: {:.6f}, buffer size: {}",
+				speed / 1024,
+				bwlimit / 1024,
+				self._bandwidthSleepTime,
+				self._bufferSize
+			)
 		else:
 			self._bandwidthSleepTime = 0.000001
 			self._bufferSize = 16384
@@ -384,15 +405,15 @@ class Repository:
 			logger.debug('Filesize is: {0}'.format(fileSize))
 
 			while buf and (bytes < 0 or self._bytesTransfered < bytes):
-				logger.debug2("self._bufferSize: '%d" % self._bufferSize)
-				logger.debug2("self._bytesTransfered: '%d'" % self._bytesTransfered)
-				logger.debug2("bytes: '%d'" % bytes)
+				logger.debug2("self._bufferSize: {:d}", self._bufferSize)
+				logger.debug2("self._bytesTransfered: {:d}", self._bytesTransfered)
+				logger.debug2("bytes: {:d}", bytes)
 
-				remaining_bytes = fileSize - self._bytesTransfered
-				logger.debug2("self._remainingBytes: '%d'" % remaining_bytes)
-				if remaining_bytes > 0 and remaining_bytes < self._bufferSize:
-					buf = src.read(remaining_bytes)
-				elif remaining_bytes > 0:
+				remainingBytes = fileSize - self._bytesTransfered
+				logger.debug2("remainingBytes: {:d}", remainingBytes)
+				if remainingBytes > 0 and remainingBytes < self._bufferSize:
+					buf = src.read(remainingBytes)
+				elif remainingBytes > 0:
 					buf = src.read(self._bufferSize)
 				else:
 					break
@@ -401,7 +422,7 @@ class Repository:
 
 				if read > 0:
 					if bytes >= 0 and (self._bytesTransfered + read) > bytes:
-						buf = buf[:bytes-self._bytesTransfered]
+						buf = buf[:bytes - self._bytesTransfered]
 						read = len(buf)
 					self._bytesTransfered += read
 					if isinstance(dst, (httplib.HTTPConnection, httplib.HTTPSConnection)):
@@ -421,8 +442,12 @@ class Repository:
 			transferTime = time.time() - transferStartTime
 			if transferTime == 0:
 				transferTime = 0.0000001
-			logger.info(u"Transfered %0.2f kByte in %0.2f minutes, average speed was %0.2f kByte/s" % \
-				((float(self._bytesTransfered) / 1024), (float(transferTime) / 60), (float(self._bytesTransfered)/transferTime) / 1024))
+			logger.info(
+				u"Transfered {:.2f} kByte in {:.2f} minutes, average speed was {:.2f} kByte/s",
+				float(self._bytesTransfered) / 1024,
+				float(transferTime) / 60,
+				(float(self._bytesTransfered) / transferTime) / 1024
+			)
 			return self._bytesTransfered
 		except Exception as error:
 			logger.logException(error, LOG_INFO)
@@ -449,7 +474,7 @@ class Repository:
 		raise RepositoryError(u"Not implemented")
 
 	def listdir(self, source=''):
-		return [c['name'] for c in self.content(source, recursive=False)]
+		return [item['name'] for item in self.content(source, recursive=False)]
 
 	def getCountAndSize(self, source=''):
 		source = forceUnicode(source)
@@ -477,9 +502,9 @@ class Repository:
 					'size': 0
 				}
 
-			for c in self.content(dirname):
-				if c['name'] == filename:
-					info = c
+			for item in self.content(dirname):
+				if item['name'] == filename:
+					info = item
 					return info
 			raise IOError(u'File not found')
 		except Exception as error:
@@ -592,38 +617,45 @@ class Repository:
 						destination = os.path.join(destination, info['name'])
 				content = self.content(source, recursive=True)
 				fileCount = 0
-				for c in content:
-					if c.get('type') == 'dir':
+				for item in content:
+					if item.get('type') == 'dir':
 						path = [destination]
-						path.extend(c['path'].split('/'))
+						path.extend(item['path'].split('/'))
 						targetDir = os.path.join(*path)
 						if not targetDir:
 							raise RuntimeError(u"Bad target directory '%s'" % targetDir)
 						if not os.path.isdir(targetDir):
 							os.makedirs(targetDir)
-					elif c.get('type') == 'file':
+					elif item.get('type') == 'file':
 						fileCount += 1
 						if overallProgressSubject:
 							countLen = len(str(totalFiles))
 							countLenFormat = '%' + str(countLen) + 's'
-							sizeString = "%d Byte" % c['size']
-							if c['size'] > 1024 * 1024:
-								sizeString = "%0.2f MByte" % (float(c['size']) / (1024 * 1024))
-							elif c['size'] > 1024:
-								sizeString = "%0.2f kByte" % (float(c['size']) / 1024)
-							overallProgressSubject.setMessage(u"[%s/%s] %s (%s)" \
-									% (countLenFormat % fileCount, totalFiles, c['name'], sizeString))
+							sizeString = "%d Byte" % item['size']
+							if item['size'] > 1024 * 1024:
+								sizeString = "%0.2f MByte" % (float(item['size']) / (1024 * 1024))
+							elif item['size'] > 1024:
+								sizeString = "%0.2f kByte" % (float(item['size']) / 1024)
+
+							overallProgressSubject.setMessage(
+								u"[%s/%s] %s (%s)" % (
+									countLenFormat % fileCount,
+									totalFiles,
+									item['name'],
+									sizeString
+								)
+							)
 						path = [destination]
-						path.extend(c['path'].split('/')[:-1])
+						path.extend(item['path'].split('/')[:-1])
 						targetDir = os.path.join(*path)
 						if not targetDir:
 							raise RuntimeError(u"Bad target directory '%s'" % targetDir)
 						if targetDir and not os.path.isdir(targetDir):
 							os.makedirs(targetDir)
-						self.download(u'/'.join((source, c['path'])), os.path.join(targetDir, c['name']), currentProgressSubject)
+						self.download(u'/'.join((source, item['path'])), os.path.join(targetDir, item['name']), currentProgressSubject)
 
 						if overallProgressSubject:
-							overallProgressSubject.addToState(c['size'])
+							overallProgressSubject.addToState(item['size'])
 			else:
 				raise RuntimeError(u"Failed to copy: unknown source type '%s'" % source)
 			logger.info(u'Copy done')
@@ -688,14 +720,15 @@ class FileRepository(Repository):
 	def fileInfo(self, source):
 		source = self._preProcessPath(source)
 		try:
+			if not os.path.exists(source):
+				raise IOError(u'File not found')
+
 			info = {
 				'name': os.path.basename(source),
-				'path': source[len(self._path)+1:],
+				'path': source[len(self._path) + 1:],
 				'type': 'file',
 				'size': long(0)
 			}
-			if not os.path.exists(source):
-				raise IOError(u'File not found')
 			if os.path.isdir(source):
 				info['type'] = 'dir'
 			if os.path.isfile(source):
@@ -789,8 +822,10 @@ class FileRepository(Repository):
 				with open(destination, dstWriteMode) as dst:
 					self._transferDown(src, dst, progressSubject, bytes=bytes)
 		except Exception as error:
-			raise RepositoryError(u"Failed to download '%s' to '%s': %s" \
-						% (source, destination, forceUnicode(error)))
+			raise RepositoryError(
+				u"Failed to download '%s' to '%s': %s" %
+				(source, destination, forceUnicode(error))
+			)
 
 	def upload(self, source, destination, progressSubject=None):
 		source = forceUnicode(source)
@@ -808,8 +843,9 @@ class FileRepository(Repository):
 				with open(destination, 'wb') as dst:
 					self._transferUp(src, dst, progressSubject)
 		except Exception as error:
-			raise RepositoryError(u"Failed to upload '%s' to '%s': %s" \
-						% (source, destination, error))
+			raise RepositoryError(
+				u"Failed to upload '%s' to '%s': %s" % (source, destination, error)
+			)
 
 	def delete(self, destination):
 		destination = self._preProcessPath(destination)
@@ -965,13 +1001,13 @@ class HTTPRepository(Repository):
 				conn.endheaders()
 				conn.sock.settimeout(self._socketTimeout)
 
-				httplib_response = None
+				httplibResponse = None
 				try:
-					httplib_response = conn.getresponse()
-					self._processResponseHeaders(httplib_response)
-					if httplib_response.status not in (responsecode.OK, responsecode.PARTIAL_CONTENT):
-						raise RuntimeError(httplib_response.status)
-					size = forceInt(httplib_response.getheader('content-length', 0))
+					httplibResponse = conn.getresponse()
+					self._processResponseHeaders(httplibResponse)
+					if httplibResponse.status not in (responsecode.OK, responsecode.PARTIAL_CONTENT):
+						raise RuntimeError(httplibResponse.status)
+					size = forceInt(httplibResponse.getheader('content-length', 0))
 					logger.debug(u"Length of binary data to download: %d bytes" % size)
 
 					if progressSubject:
@@ -983,7 +1019,7 @@ class HTTPRepository(Repository):
 						mode = 'wb'
 
 					with open(destination, mode) as dst:
-						bytesTransfered = self._transferDown(httplib_response, dst, progressSubject)
+						bytesTransfered = self._transferDown(httplibResponse, dst, progressSubject)
 				except Exception as error:
 					conn = None
 					self._connectionPool.endConnection(conn)
@@ -991,7 +1027,8 @@ class HTTPRepository(Repository):
 						raise
 					logger.info(u"Error '%s' occurred while downloading, retrying" % error)
 					continue
-				response = HTTPResponse.from_httplib(httplib_response)
+
+				response = HTTPResponse.from_httplib(httplibResponse)
 				conn = None
 				self._connectionPool.endConnection(conn)
 				break
@@ -1102,16 +1139,16 @@ class WebDAVRepository(HTTPRepository):
 				trynum += 1
 				conn = self._connectionPool.getConnection()
 				conn.putrequest('PUT', destination)
-				for (k, v) in headers.items():
-					conn.putheader(k, v)
+				for (key, value) in headers.items():
+					conn.putheader(key, value)
 				conn.endheaders()
 				conn.sock.settimeout(self._socketTimeout)
 
-				httplib_response = None
+				httplibResponse = None
 				try:
 					with open(source, 'rb') as src:
 						self._transferUp(src, conn, progressSubject)
-					httplib_response = conn.getresponse()
+					httplibResponse = conn.getresponse()
 				except Exception as error:
 					conn = None
 					self._connectionPool.endConnection(conn)
@@ -1119,7 +1156,7 @@ class WebDAVRepository(HTTPRepository):
 						raise
 					logger.info(u"Error '%s' occurred while uploading, retrying" % error)
 					continue
-				response = HTTPResponse.from_httplib(httplib_response)
+				response = HTTPResponse.from_httplib(httplibResponse)
 				conn = None
 				self._connectionPool.endConnection(conn)
 				break
@@ -1247,14 +1284,14 @@ class DepotToLocalDirectorySychronizer(object):
 		if not os.path.isdir(destination):
 			os.mkdir(destination)
 
-		for f in os.listdir(destination):
-			relSource = (source + u'/' + f).split(u'/', 1)[1]
+		for item in os.listdir(destination):
+			relSource = (source + u'/' + item).split(u'/', 1)[1]
 			if relSource == self._productId + u'.files':
 				continue
 			if relSource in self._fileInfo:
 				continue
 
-			path = os.path.join(destination, f)
+			path = os.path.join(destination, item)
 			if os.path.isdir(path) and not os.path.islink(path):
 				logger.info(u"Deleting '%s'" % relSource)
 				shutil.rmtree(path)
@@ -1269,19 +1306,19 @@ class DepotToLocalDirectorySychronizer(object):
 				logger.info(u"Deleting '%s'" % relSource)
 				os.remove(path)
 
-		for f in self._sourceDepot.content(source):
+		for item in self._sourceDepot.content(source):
 			source = forceUnicode(source)
-			s = source + u'/' + f['name']
-			d = os.path.join(destination, f['name'])
-			relSource = s.split(u'/', 1)[1]
+			sourcePath = source + u'/' + item['name']
+			destinationPath = os.path.join(destination, item['name'])
+			relSource = sourcePath.split(u'/', 1)[1]
 			if relSource == self._productId + u'.files':
 				continue
 			if relSource not in self._fileInfo:
 				continue
-			if f['type'] == 'dir':
-				self._synchronizeDirectories(s, d, progressSubject)
+			if item['type'] == 'dir':
+				self._synchronizeDirectories(sourcePath, destinationPath, progressSubject)
 			else:
-				logger.debug(u"Syncing %s with %s %s" % (relSource, d, self._fileInfo[relSource]))
+				logger.debug(u"Syncing %s with %s %s" % (relSource, destinationPath, self._fileInfo[relSource]))
 				if self._fileInfo[relSource]['type'] == 'l':
 					self._linkFiles[relSource] = self._fileInfo[relSource]['target']
 					continue
@@ -1290,63 +1327,63 @@ class DepotToLocalDirectorySychronizer(object):
 				exists = False
 				if self._fileInfo[relSource]['type'] == 'f':
 					size = int(self._fileInfo[relSource]['size'])
-					exists = os.path.exists(d)
+					exists = os.path.exists(destinationPath)
 					if exists:
-						md5s = md5sum(d)
-						logger.debug(u"Destination file '%s' already exists (size: %s, md5sum: %s)" % (d, size, md5s))
-						localSize = os.path.getsize(d)
+						md5s = md5sum(destinationPath)
+						logger.debug(u"Destination file '%s' already exists (size: %s, md5sum: %s)" % (destinationPath, size, md5s))
+						localSize = os.path.getsize(destinationPath)
 						if (localSize == size) and (md5s == self._fileInfo[relSource]['md5sum']):
 							continue
 
 				if progressSubject:
-					progressSubject.setMessage(_(u"Downloading file '%s'") % f['name'])
+					progressSubject.setMessage(_(u"Downloading file '%s'") % item['name'])
 
 				if exists and (localSize < size):
-					partialEndFile = d + u'.opsi_sync_endpart'
+					partialEndFile = destinationPath + u'.opsi_sync_endpart'
 					# First byte needed is byte number <localSize>
-					logger.info(u"Downloading file '%s' starting at byte number %d" % (f['name'], localSize))
+					logger.info(u"Downloading file '%s' starting at byte number %d" % (item['name'], localSize))
 					if os.path.exists(partialEndFile):
 						os.remove(partialEndFile)
-					self._sourceDepot.download(s, partialEndFile, startByteNumber=localSize)
+					self._sourceDepot.download(sourcePath, partialEndFile, startByteNumber=localSize)
 
-					with open(d, 'ab') as f1:
+					with open(destinationPath, 'ab') as f1:
 						with open(partialEndFile, 'rb') as f2:
 							f1.write(f2.read())
 
-					md5s = md5sum(d)
+					md5s = md5sum(destinationPath)
 					if md5s != self._fileInfo[relSource]['md5sum']:
 						logger.warning(u"MD5sum of composed file differs")
-						partialStartFile = d + u'.opsi_sync_startpart'
+						partialStartFile = destinationPath + u'.opsi_sync_startpart'
 						if os.path.exists(partialStartFile):
 							os.remove(partialStartFile)
 						# Last byte needed is byte number <localSize> - 1
-						logger.info(u"Downloading file '%s' ending at byte number %d" % (f['name'], localSize-1))
-						self._sourceDepot.download(s, partialStartFile, endByteNumber=localSize - 1)
+						logger.info(u"Downloading file '%s' ending at byte number %d" % (item['name'], localSize - 1))
+						self._sourceDepot.download(sourcePath, partialStartFile, endByteNumber=localSize - 1)
 
 						with open(partialStartFile, 'ab') as f1:
 							with open(partialEndFile, 'rb') as f2:
 								f1.write(f2.read())
 
-						if os.path.exists(d):
-							os.remove(d)
-						os.rename(partialStartFile, d)
+						if os.path.exists(destinationPath):
+							os.remove(destinationPath)
+						os.rename(partialStartFile, destinationPath)
 					os.remove(partialEndFile)
 				else:
 					if exists:
-						os.remove(d)
-					logger.info(u"Downloading file '%s'" % f['name'])
-					self._sourceDepot.download(s, d, progressSubject=progressSubject)
-				md5s = md5sum(d)
+						os.remove(destinationPath)
+					logger.info(u"Downloading file '%s'" % item['name'])
+					self._sourceDepot.download(sourcePath, destinationPath, progressSubject=progressSubject)
+				md5s = md5sum(destinationPath)
 				if md5s != self._fileInfo[relSource]['md5sum']:
-					error = u"Failed to download '%s': MD5sum mismatch (local:%s != remote:%s)" % (f['name'], md5s, self._fileInfo[relSource]['md5sum'])
+					error = u"Failed to download '%s': MD5sum mismatch (local:%s != remote:%s)" % (item['name'], md5s, self._fileInfo[relSource]['md5sum'])
 					logger.error(error)
 					raise RuntimeError(error)
 
 	def synchronize(self, productProgressObserver=None, overallProgressObserver=None):
 		if not self._productIds:
 			logger.info(u"Getting product dirs of depot '%s'" % self._sourceDepot)
-			for c in self._sourceDepot.content():
-				self._productIds.append(c['name'])
+			for item in self._sourceDepot.content():
+				self._productIds.append(item['name'])
 
 		overallProgressSubject = ProgressSubject(id='sync_products_overall', type='product_sync', end=len(self._productIds), fireAlways=True)
 		overallProgressSubject.setMessage(_(u'Synchronizing products'))
@@ -1362,8 +1399,12 @@ class DepotToLocalDirectorySychronizer(object):
 
 			try:
 				self._linkFiles = {}
-				logger.notice(u"Syncing product %s of depot %s with local directory %s" \
-						% (self._productId, self._sourceDepot, self._destinationDirectory))
+				logger.notice(
+					u"Syncing product {} of depot {} with local directory {}",
+					self._productId,
+					self._sourceDepot,
+					self._destinationDirectory
+				)
 
 				productDestinationDirectory = os.path.join(self._destinationDirectory, self._productId)
 				if not os.path.isdir(productDestinationDirectory):
@@ -1387,42 +1428,42 @@ class DepotToLocalDirectorySychronizer(object):
 
 				self._synchronizeDirectories(self._productId, productDestinationDirectory, productProgressSubject)
 
-				fs = self._linkFiles.keys()
-				fs.sort()
-				for f in fs:
-					t = self._linkFiles[f]
+				links = self._linkFiles.keys()
+				links.sort()
+				for linkDestination in links:
+					linkSource = self._linkFiles[linkDestination]
 					cwd = os.getcwd()
 					os.chdir(productDestinationDirectory)
 					try:
 						if os.name == 'nt':
-							if t.startswith('/'):
-								t = t[1:]
-							if f.startswith('/'):
-								f = f[1:]
-							t = os.path.join(productDestinationDirectory, t.replace('/', '\\'))
-							f = os.path.join(productDestinationDirectory, f.replace('/', '\\'))
-							if os.path.exists(f):
-								if os.path.isdir(f):
-									shutil.rmtree(f)
+							if linkSource.startswith('/'):
+								linkSource = linkSource[1:]
+							if linkDestination.startswith('/'):
+								linkDestination = linkDestination[1:]
+							linkSource = os.path.join(productDestinationDirectory, linkSource.replace('/', '\\'))
+							linkDestination = os.path.join(productDestinationDirectory, linkDestination.replace('/', '\\'))
+							if os.path.exists(linkDestination):
+								if os.path.isdir(linkDestination):
+									shutil.rmtree(linkDestination)
 								else:
-									os.remove(f)
-							logger.info(u"Symlink => copying '%s' to '%s'" % (t, f))
-							if os.path.isdir(t):
-								shutil.copytree(t, f)
+									os.remove(linkDestination)
+							logger.info(u"Symlink => copying '%s' to '%s'" % (linkSource, linkDestination))
+							if os.path.isdir(linkSource):
+								shutil.copytree(linkSource, linkDestination)
 							else:
-								shutil.copyfile(t, f)
+								shutil.copyfile(linkSource, linkDestination)
 						else:
-							if os.path.exists(f):
-								if os.path.isdir(f) and not os.path.islink(f):
-									shutil.rmtree(f)
+							if os.path.exists(linkDestination):
+								if os.path.isdir(linkDestination) and not os.path.islink(linkDestination):
+									shutil.rmtree(linkDestination)
 								else:
-									os.remove(f)
-							parts = len(f.split('/'))
-							parts -= len(t.split('/'))
-							for i in range(parts):
-								t = os.path.join('..', t)
-							logger.info(u"Symlink '%s' to '%s'" % (f, t))
-							os.symlink(t, f)
+									os.remove(linkDestination)
+							parts = len(linkDestination.split('/'))
+							parts -= len(linkSource.split('/'))
+							for counter in range(parts):
+								linkSource = os.path.join('..', linkSource)
+							logger.info(u"Symlink '%s' to '%s'" % (linkDestination, linkSource))
+							os.symlink(linkSource, linkDestination)
 					finally:
 						os.chdir(cwd)
 			except Exception as error:
