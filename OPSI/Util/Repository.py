@@ -821,8 +821,10 @@ class FileRepository(Repository):
 				with open(destination, dstWriteMode) as dst:
 					self._transferDown(src, dst, progressSubject, bytes=bytes)
 		except Exception as error:
-			raise RepositoryError(u"Failed to download '%s' to '%s': %s" \
-						% (source, destination, forceUnicode(error)))
+			raise RepositoryError(
+				u"Failed to download '%s' to '%s': %s" %
+				(source, destination, forceUnicode(error))
+			)
 
 	def upload(self, source, destination, progressSubject=None):
 		source = forceUnicode(source)
@@ -840,8 +842,9 @@ class FileRepository(Repository):
 				with open(destination, 'wb') as dst:
 					self._transferUp(src, dst, progressSubject)
 		except Exception as error:
-			raise RepositoryError(u"Failed to upload '%s' to '%s': %s" \
-						% (source, destination, error))
+			raise RepositoryError(
+				u"Failed to upload '%s' to '%s': %s" % (source, destination, error)
+			)
 
 	def delete(self, destination):
 		destination = self._preProcessPath(destination)
