@@ -474,7 +474,7 @@ class Repository:
 		raise RepositoryError(u"Not implemented")
 
 	def listdir(self, source=''):
-		return [c['name'] for c in self.content(source, recursive=False)]
+		return [item['name'] for item in self.content(source, recursive=False)]
 
 	def getCountAndSize(self, source=''):
 		source = forceUnicode(source)
@@ -617,45 +617,45 @@ class Repository:
 						destination = os.path.join(destination, info['name'])
 				content = self.content(source, recursive=True)
 				fileCount = 0
-				for c in content:
-					if c.get('type') == 'dir':
+				for item in content:
+					if item.get('type') == 'dir':
 						path = [destination]
-						path.extend(c['path'].split('/'))
+						path.extend(item['path'].split('/'))
 						targetDir = os.path.join(*path)
 						if not targetDir:
 							raise RuntimeError(u"Bad target directory '%s'" % targetDir)
 						if not os.path.isdir(targetDir):
 							os.makedirs(targetDir)
-					elif c.get('type') == 'file':
+					elif item.get('type') == 'file':
 						fileCount += 1
 						if overallProgressSubject:
 							countLen = len(str(totalFiles))
 							countLenFormat = '%' + str(countLen) + 's'
-							sizeString = "%d Byte" % c['size']
-							if c['size'] > 1024 * 1024:
-								sizeString = "%0.2f MByte" % (float(c['size']) / (1024 * 1024))
-							elif c['size'] > 1024:
-								sizeString = "%0.2f kByte" % (float(c['size']) / 1024)
+							sizeString = "%d Byte" % item['size']
+							if item['size'] > 1024 * 1024:
+								sizeString = "%0.2f MByte" % (float(item['size']) / (1024 * 1024))
+							elif item['size'] > 1024:
+								sizeString = "%0.2f kByte" % (float(item['size']) / 1024)
 
 							overallProgressSubject.setMessage(
 								u"[%s/%s] %s (%s)" % (
 									countLenFormat % fileCount,
 									totalFiles,
-									c['name'],
+									item['name'],
 									sizeString
 								)
 							)
 						path = [destination]
-						path.extend(c['path'].split('/')[:-1])
+						path.extend(item['path'].split('/')[:-1])
 						targetDir = os.path.join(*path)
 						if not targetDir:
 							raise RuntimeError(u"Bad target directory '%s'" % targetDir)
 						if targetDir and not os.path.isdir(targetDir):
 							os.makedirs(targetDir)
-						self.download(u'/'.join((source, c['path'])), os.path.join(targetDir, c['name']), currentProgressSubject)
+						self.download(u'/'.join((source, item['path'])), os.path.join(targetDir, item['name']), currentProgressSubject)
 
 						if overallProgressSubject:
-							overallProgressSubject.addToState(c['size'])
+							overallProgressSubject.addToState(item['size'])
 			else:
 				raise RuntimeError(u"Failed to copy: unknown source type '%s'" % source)
 			logger.info(u'Copy done')
@@ -1000,13 +1000,13 @@ class HTTPRepository(Repository):
 				conn.endheaders()
 				conn.sock.settimeout(self._socketTimeout)
 
-				httplib_response = None
+				httplibResponse = None
 				try:
-					httplib_response = conn.getresponse()
-					self._processResponseHeaders(httplib_response)
-					if httplib_response.status not in (responsecode.OK, responsecode.PARTIAL_CONTENT):
-						raise RuntimeError(httplib_response.status)
-					size = forceInt(httplib_response.getheader('content-length', 0))
+					httplibResponse = conn.getresponse()
+					self._processResponseHeaders(httplibResponse)
+					if httplibResponse.status not in (responsecode.OK, responsecode.PARTIAL_CONTENT):
+						raise RuntimeError(httplibResponse.status)
+					size = forceInt(httplibResponse.getheader('content-length', 0))
 					logger.debug(u"Length of binary data to download: %d bytes" % size)
 
 					if progressSubject:
@@ -1018,7 +1018,7 @@ class HTTPRepository(Repository):
 						mode = 'wb'
 
 					with open(destination, mode) as dst:
-						bytesTransfered = self._transferDown(httplib_response, dst, progressSubject)
+						bytesTransfered = self._transferDown(httplibResponse, dst, progressSubject)
 				except Exception as error:
 					conn = None
 					self._connectionPool.endConnection(conn)
@@ -1026,7 +1026,8 @@ class HTTPRepository(Repository):
 						raise
 					logger.info(u"Error '%s' occurred while downloading, retrying" % error)
 					continue
-				response = HTTPResponse.from_httplib(httplib_response)
+
+				response = HTTPResponse.from_httplib(httplibResponse)
 				conn = None
 				self._connectionPool.endConnection(conn)
 				break
@@ -1282,14 +1283,14 @@ class DepotToLocalDirectorySychronizer(object):
 		if not os.path.isdir(destination):
 			os.mkdir(destination)
 
-		for f in os.listdir(destination):
-			relSource = (source + u'/' + f).split(u'/', 1)[1]
+		for item in os.listdir(destination):
+			relSource = (source + u'/' + item).split(u'/', 1)[1]
 			if relSource == self._productId + u'.files':
 				continue
 			if relSource in self._fileInfo:
 				continue
 
-			path = os.path.join(destination, f)
+			path = os.path.join(destination, item)
 			if os.path.isdir(path) and not os.path.islink(path):
 				logger.info(u"Deleting '%s'" % relSource)
 				shutil.rmtree(path)
@@ -1304,19 +1305,19 @@ class DepotToLocalDirectorySychronizer(object):
 				logger.info(u"Deleting '%s'" % relSource)
 				os.remove(path)
 
-		for f in self._sourceDepot.content(source):
+		for item in self._sourceDepot.content(source):
 			source = forceUnicode(source)
-			s = source + u'/' + f['name']
-			d = os.path.join(destination, f['name'])
-			relSource = s.split(u'/', 1)[1]
+			sourcePath = source + u'/' + item['name']
+			destinationPath = os.path.join(destination, item['name'])
+			relSource = sourcePath.split(u'/', 1)[1]
 			if relSource == self._productId + u'.files':
 				continue
 			if relSource not in self._fileInfo:
 				continue
-			if f['type'] == 'dir':
-				self._synchronizeDirectories(s, d, progressSubject)
+			if item['type'] == 'dir':
+				self._synchronizeDirectories(sourcePath, destinationPath, progressSubject)
 			else:
-				logger.debug(u"Syncing %s with %s %s" % (relSource, d, self._fileInfo[relSource]))
+				logger.debug(u"Syncing %s with %s %s" % (relSource, destinationPath, self._fileInfo[relSource]))
 				if self._fileInfo[relSource]['type'] == 'l':
 					self._linkFiles[relSource] = self._fileInfo[relSource]['target']
 					continue
@@ -1325,55 +1326,55 @@ class DepotToLocalDirectorySychronizer(object):
 				exists = False
 				if self._fileInfo[relSource]['type'] == 'f':
 					size = int(self._fileInfo[relSource]['size'])
-					exists = os.path.exists(d)
+					exists = os.path.exists(destinationPath)
 					if exists:
-						md5s = md5sum(d)
-						logger.debug(u"Destination file '%s' already exists (size: %s, md5sum: %s)" % (d, size, md5s))
-						localSize = os.path.getsize(d)
+						md5s = md5sum(destinationPath)
+						logger.debug(u"Destination file '%s' already exists (size: %s, md5sum: %s)" % (destinationPath, size, md5s))
+						localSize = os.path.getsize(destinationPath)
 						if (localSize == size) and (md5s == self._fileInfo[relSource]['md5sum']):
 							continue
 
 				if progressSubject:
-					progressSubject.setMessage(_(u"Downloading file '%s'") % f['name'])
+					progressSubject.setMessage(_(u"Downloading file '%s'") % item['name'])
 
 				if exists and (localSize < size):
-					partialEndFile = d + u'.opsi_sync_endpart'
+					partialEndFile = destinationPath + u'.opsi_sync_endpart'
 					# First byte needed is byte number <localSize>
-					logger.info(u"Downloading file '%s' starting at byte number %d" % (f['name'], localSize))
+					logger.info(u"Downloading file '%s' starting at byte number %d" % (item['name'], localSize))
 					if os.path.exists(partialEndFile):
 						os.remove(partialEndFile)
-					self._sourceDepot.download(s, partialEndFile, startByteNumber=localSize)
+					self._sourceDepot.download(sourcePath, partialEndFile, startByteNumber=localSize)
 
-					with open(d, 'ab') as f1:
+					with open(destinationPath, 'ab') as f1:
 						with open(partialEndFile, 'rb') as f2:
 							f1.write(f2.read())
 
-					md5s = md5sum(d)
+					md5s = md5sum(destinationPath)
 					if md5s != self._fileInfo[relSource]['md5sum']:
 						logger.warning(u"MD5sum of composed file differs")
-						partialStartFile = d + u'.opsi_sync_startpart'
+						partialStartFile = destinationPath + u'.opsi_sync_startpart'
 						if os.path.exists(partialStartFile):
 							os.remove(partialStartFile)
 						# Last byte needed is byte number <localSize> - 1
-						logger.info(u"Downloading file '%s' ending at byte number %d" % (f['name'], localSize-1))
-						self._sourceDepot.download(s, partialStartFile, endByteNumber=localSize - 1)
+						logger.info(u"Downloading file '%s' ending at byte number %d" % (item['name'], localSize-1))
+						self._sourceDepot.download(sourcePath, partialStartFile, endByteNumber=localSize - 1)
 
 						with open(partialStartFile, 'ab') as f1:
 							with open(partialEndFile, 'rb') as f2:
 								f1.write(f2.read())
 
-						if os.path.exists(d):
-							os.remove(d)
-						os.rename(partialStartFile, d)
+						if os.path.exists(destinationPath):
+							os.remove(destinationPath)
+						os.rename(partialStartFile, destinationPath)
 					os.remove(partialEndFile)
 				else:
 					if exists:
-						os.remove(d)
-					logger.info(u"Downloading file '%s'" % f['name'])
-					self._sourceDepot.download(s, d, progressSubject=progressSubject)
-				md5s = md5sum(d)
+						os.remove(destinationPath)
+					logger.info(u"Downloading file '%s'" % item['name'])
+					self._sourceDepot.download(sourcePath, destinationPath, progressSubject=progressSubject)
+				md5s = md5sum(destinationPath)
 				if md5s != self._fileInfo[relSource]['md5sum']:
-					error = u"Failed to download '%s': MD5sum mismatch (local:%s != remote:%s)" % (f['name'], md5s, self._fileInfo[relSource]['md5sum'])
+					error = u"Failed to download '%s': MD5sum mismatch (local:%s != remote:%s)" % (item['name'], md5s, self._fileInfo[relSource]['md5sum'])
 					logger.error(error)
 					raise RuntimeError(error)
 
