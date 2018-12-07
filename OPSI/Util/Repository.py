@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2006-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2018 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -281,8 +281,13 @@ class Repository:
 
 					if count > 0:
 						usage = float(usage) / float(count)
-						logger.debug(u"Current network usage %0.2f kByte/s, last measured network bandwidth %0.2f kByte/s, usage: %0.5f, dynamic limit: %0.2f kByte/s"
-								% ((float(totalNetworkUsage) / 1024), (float(self._networkBandwidth) / 1024), usage, float(bwlimit) / 1024))
+						logger.debug(
+							u"Current network usage {:.2f} kByte/s, last measured network bandwidth {:.2f} kByte/s, usage: {:.5f}, dynamic limit: {:.2f} kByte/s",
+							float(totalNetworkUsage) / 1024,
+							float(self._networkBandwidth) / 1024,
+							usage,
+							float(bwlimit) / 1024
+						)
 
 						if index > 1:
 							self._networkUsageData = self._networkUsageData[index-1:]
@@ -304,8 +309,11 @@ class Repository:
 										self._dynamicBandwidthLimit = bwlimit = 10000
 										logger.info(u"Other traffic detected, dynamically limiting bandwidth to minimum of %0.2f kByte/s" % (float(bwlimit) / 1024))
 									else:
-										logger.info(u"Other traffic detected, dynamically limiting bandwidth to %0.1f%% of last average to %0.2f kByte/s" \
-											% (float(self._dynamicBandwidthLimitRate) * 100, float(bwlimit) / 1024))
+										logger.info(
+											u"Other traffic detected, dynamically limiting bandwidth to {:.1f}% of last average to {:.2f} kByte/s",
+											float(self._dynamicBandwidthLimitRate) * 100,
+											float(bwlimit) / 1024
+										)
 									self._fireEvent('dynamicBandwidthLimitChanged', self._dynamicBandwidthLimit)
 								self._networkUsageData = []
 
@@ -318,8 +326,12 @@ class Repository:
 			if speed > bwlimit:
 				# Too fast
 				factor = float(speed) / float(bwlimit)
-				logger.debug(u"Transfer speed %0.2f kByte/s is to fast, limit: %0.2f kByte/s, factor: %0.5f" \
-					% ((speed / 1024), (bwlimit / 1024), factor))
+				logger.debug(
+					u"Transfer speed {:.2f} kByte/s is to fast, limit: {:.2f} kByte/s, factor: {:.5f}",
+					(speed / 1024),
+					(bwlimit / 1024),
+					factor
+				)
 
 				if factor < 1.001:
 					bandwidthSleepTime = self._bandwidthSleepTime + (0.00007 * factor)
@@ -331,8 +343,12 @@ class Repository:
 			else:
 				# Too slow
 				factor = float(bwlimit) / float(speed)
-				logger.debug(u"Transfer speed %0.2f kByte/s is to slow, limit: %0.2f kByte/s, factor: %0.5f" \
-					% ((speed / 1024), (bwlimit / 1024), factor))
+				logger.debug(
+					u"Transfer speed {:.2f} kByte/s is to slow, limit: {:.2f} kByte/s, factor: {:.5f}",
+					(speed / 1024),
+					(bwlimit / 1024),
+					factor
+				)
 
 				if factor < 1.001:
 					bandwidthSleepTime = self._bandwidthSleepTime - (0.00006 * factor)
@@ -361,8 +377,13 @@ class Repository:
 			elif self._bufferSize < 1:
 				self._bufferSize = 1
 
-			logger.debug(u"Transfer speed %0.2f kByte/s, limit: %0.2f kByte/s, sleep time: %0.6f, buffer size: %s" \
-				% (speed / 1024, bwlimit / 1024, self._bandwidthSleepTime, self._bufferSize))
+			logger.debug(
+				u"Transfer speed {:.2f} kByte/s, limit: {:.2f} kByte/s, sleep time: {:.6f}, buffer size: {}",
+				speed / 1024,
+				bwlimit / 1024,
+				self._bandwidthSleepTime,
+				self._bufferSize
+			)
 		else:
 			self._bandwidthSleepTime = 0.000001
 			self._bufferSize = 16384
@@ -421,8 +442,12 @@ class Repository:
 			transferTime = time.time() - transferStartTime
 			if transferTime == 0:
 				transferTime = 0.0000001
-			logger.info(u"Transfered %0.2f kByte in %0.2f minutes, average speed was %0.2f kByte/s" % \
-				((float(self._bytesTransfered) / 1024), (float(transferTime) / 60), (float(self._bytesTransfered)/transferTime) / 1024))
+			logger.info(
+				u"Transfered {:.2f} kByte in {:.2f} minutes, average speed was {:.2f} kByte/s",
+				float(self._bytesTransfered) / 1024,
+				float(transferTime) / 60,
+				(float(self._bytesTransfered) / transferTime) / 1024
+			)
 			return self._bytesTransfered
 		except Exception as error:
 			logger.logException(error, LOG_INFO)
@@ -611,8 +636,15 @@ class Repository:
 								sizeString = "%0.2f MByte" % (float(c['size']) / (1024 * 1024))
 							elif c['size'] > 1024:
 								sizeString = "%0.2f kByte" % (float(c['size']) / 1024)
-							overallProgressSubject.setMessage(u"[%s/%s] %s (%s)" \
-									% (countLenFormat % fileCount, totalFiles, c['name'], sizeString))
+
+							overallProgressSubject.setMessage(
+								u"[%s/%s] %s (%s)" % (
+									countLenFormat % fileCount,
+									totalFiles,
+									c['name'],
+									sizeString
+								)
+							)
 						path = [destination]
 						path.extend(c['path'].split('/')[:-1])
 						targetDir = os.path.join(*path)
@@ -1362,8 +1394,12 @@ class DepotToLocalDirectorySychronizer(object):
 
 			try:
 				self._linkFiles = {}
-				logger.notice(u"Syncing product %s of depot %s with local directory %s" \
-						% (self._productId, self._sourceDepot, self._destinationDirectory))
+				logger.notice(
+					u"Syncing product {} of depot {} with local directory {}",
+					self._productId,
+					self._sourceDepot,
+					self._destinationDirectory
+				)
 
 				productDestinationDirectory = os.path.join(self._destinationDirectory, self._productId)
 				if not os.path.isdir(productDestinationDirectory):
