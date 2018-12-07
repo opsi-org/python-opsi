@@ -913,7 +913,7 @@ def getActiveSessionId(verifyProcessRunning="winlogon.exe", winApiBugCommand=Non
 		defaultSessionId = 1
 
 	sessionIds = []
-	newest = None
+	newest = {}
 	if sys.getwindowsversion()[0] == 5 and getArchitecture() == "x64":
 		logger.debug(u"Using Workarround for problems with buggy winapi from nt5 x64")
 		try:
@@ -1033,7 +1033,7 @@ def getSessionInformation(sessionId, winApiBugCommand=None):
 			logger.debug("Working directory: '%s', scriptdirectory: '%s'" % (os.getcwd(),sys.path[0]))
 			logger.logException(error)
 
-	newest = None
+	newest = {}
 	for s in win32security.LsaEnumerateLogonSessions():
 		sessionData = win32security.LsaGetLogonSessionData(s)
 
@@ -1111,7 +1111,7 @@ def getUserSessionIds(username, winApiBugCommand=None, onlyNewestId=None):
 		return sessionIds
 
 	domain = None
-	newest = None
+	newest = {}
 	logger.debug(u"Getting sessions of user '%s'" % username)
 	if '\\' in username:
 		domain = username.split('\\')[0]
