@@ -1,3 +1,10 @@
+python-opsi (4.1.1.56-1) testing; urgency=medium
+
+  * OPSI.Backend.OpsiPXEConfd: _collectDataForUpdate: Changed first parameter
+    to client ID instead of getting the value from a ProductOnClient.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 08 Jan 2019 17:40:47 +0100
+
 python-opsi (4.1.1.55-1) testing; urgency=medium
 
   * OPSI.Backend.OpsiPXEConfd: Caching data will now work as expected
