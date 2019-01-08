@@ -194,9 +194,8 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 
 		return True
 
-	def _collectDataForUpdate(self, productOnClient, depotId):
+	def _collectDataForUpdate(self, clientId, depotId):
 		logger.debug("Collecting data for opsipxeconfd...")
-		clientId = productOnClient.clientId
 
 		try:
 			try:
@@ -214,7 +213,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 				actionRequest=['setup', 'uninstall', 'update', 'always', 'once', 'custom']
 			)
 			try:
-				existingProductOnClient = productOnClients[0]
+				productOnClient = productOnClients[0]
 			except IndexError:
 				logger.debug("No productOnClient found - fast exit.")
 				return serialize({"host": host, "productOnClient": []})
@@ -388,7 +387,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 			destination = self
 
 		if backendSupportsCachedData(destination):
-			data = self._collectDataForUpdate(productOnClient, responsibleDepot)
+			data = self._collectDataForUpdate(productOnClient.clientId, responsibleDepot)
 			destination.opsipxeconfd_updatePXEBootConfiguration(productOnClient.clientId, data)
 		else:
 			destination.opsipxeconfd_updatePXEBootConfiguration(productOnClient.clientId)
