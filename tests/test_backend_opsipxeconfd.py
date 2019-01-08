@@ -114,7 +114,7 @@ def testCacheDataCollectionWithPxeConfigTemplate(backendManager, client, depot):
     with patchAddress(fqdn=depot.id):
         backend = OpsiPXEConfdBackend(context=backendManager)
 
-        data = backend._collectDataForUpdate(poc, depot.id)
+        data = backend._collectDataForUpdate(client.id, depot.id)
 
         assert data
         assert data['product']['pxeConfigTemplate'] == product.pxeConfigTemplate
@@ -193,13 +193,13 @@ def testCacheDataCollectionWithChangingPxeConfigTemplate(backendManager, client,
     with patchAddress(fqdn=depot.id):
         backend = OpsiPXEConfdBackend(context=backendManager)
 
-        data = backend._collectDataForUpdate(poc, depot.id)
+        data = backend._collectDataForUpdate(client.id, depot.id)
         assert data['product']['pxeConfigTemplate'] == oldProduct.pxeConfigTemplate
 
         # Switching to new version on depot
         backendManager.productOnDepot_createObjects([productOnDepot2])
 
-        data = backend._collectDataForUpdate(poc, depot.id)
+        data = backend._collectDataForUpdate(client.id, depot.id)
         assert data['product']['pxeConfigTemplate'] == newProduct.pxeConfigTemplate
 
 
@@ -276,6 +276,6 @@ def testCacheDataCollectionWithMultiplePxeConfigTemplates(backendManager, client
     with patchAddress(fqdn=depot.id):
         backend = OpsiPXEConfdBackend(context=backendManager)
 
-        data = backend._collectDataForUpdate(poc, depot.id)
+        data = backend._collectDataForUpdate(client.id, depot.id)
 
         assert data['product']['pxeConfigTemplate'] == newProduct.pxeConfigTemplate
