@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2010-2018 uib GmbH <info@uib.de>
+# Copyright (C) 2010-2019 uib GmbH <info@uib.de>
 # All rights reserved.
 
 # This program is free software: you can redistribute it and/or modify
@@ -214,7 +214,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 				actionRequest=['setup', 'uninstall', 'update', 'always', 'once', 'custom']
 			)
 			try:
-				productOnClient = productOnClients[0]
+				existingProductOnClient = productOnClients[0]
 			except IndexError:
 				logger.debug("No productOnClient found - fast exit.")
 				return serialize({"host": host, "productOnClient": []})
@@ -233,12 +233,14 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 					"productOnDepot": None
 				})
 
+			# Get the product information for the version present on
+			# the depot.
 			product = self._context.product_getObjects(
 				attributes=['id', 'pxeConfigTemplate'],
 				type=u'NetbootProduct',
 				id=productOnClient.productId,
-				productVersion=productOnClient.productVersion,
-				packageVersion=productOnClient.packageVersion
+				productVersion=productOnDepot.productVersion,
+				packageVersion=productOnDepot.packageVersion
 			)[0]
 
 			eliloMode = None
