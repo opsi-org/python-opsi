@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2016-2018 uib GmbH <info@uib.de>
+# Copyright (C) 2016-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -235,7 +235,7 @@ def licenseManagentAndAuditBackend(request):
 
 
 def pytest_runtest_setup(item):
-    envmarker = item.get_marker("requiresModulesFile")
+    envmarker = item.get_closest_marker("requiresModulesFile")
     if envmarker is not None:
         if not _MODULES_FILE:
             pytest.skip("{0} requires a modules file!".format(item.name))
