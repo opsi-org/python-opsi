@@ -1,3 +1,10 @@
+python-opsi (4.1.1.55-1) testing; urgency=medium
+
+  * OPSI.Backend.OpsiPXEConfd: Caching data will now work as expected
+    when changing PXE templates of a product.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 08 Jan 2019 17:12:53 +0100
+
 python-opsi (4.1.1.54-1) stable; urgency=medium
 
   * OPSI.Util.Task.Backup: Do not show a message for an unused backend
