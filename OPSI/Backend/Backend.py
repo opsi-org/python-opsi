@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2013-2018 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -111,7 +111,7 @@ def describeInterface(instance):
 	These methods are represented as a dict with the following keys: \
 	*name*, *params*, *args*, *varargs*, *keywords*, *defaults*.
 
-	:returntype: [{},]
+	:rtype: [{},]
 	"""
 	methods = {}
 	for methodName, function in inspect.getmembers(instance, inspect.ismethod):
@@ -385,7 +385,7 @@ This defaults to ``self``.
 		*name*, *params*, *args*, *varargs*, *keywords*, *defaults*.
 
 
-		:returntype: [{},]
+		:rtype: [{},]
 		"""
 		return describeInterface(self)
 
@@ -2607,7 +2607,7 @@ alternative depots are to be taken into account.
 `clientId` that belong to each other. If alternative depots are taken \
 into the IDs of these depots are to be found in the list behind \
 `alternativeDepotIds`. The key does always exist but may be empty.
-		:returntype: [{"depotId": str, "alternativeDepotIds": [str, ], "clientId": str},]
+		:rtype: [{"depotId": str, "alternativeDepotIds": [str, ], "clientId": str},]
 		"""
 		depotIds = forceHostIdList(depotIds)
 		productIds = forceProductIdList(productIds)
