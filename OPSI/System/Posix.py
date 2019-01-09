@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 #
-# Copyright (C) 2006-2010, 2013-2018 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2019 uib GmbH <info@uib.de>
 # All rights reserved.
 #
 # This program is free software: you can redistribute it and/or modify
@@ -354,7 +354,7 @@ def getKernelParams():
 	Reads the kernel cmdline and returns a dict containing all key=value pairs.
 	Keys are converted to lower case.
 
-	:returntype: dict
+	:rtype: dict
 	"""
 	cmdline = ''
 	try:
@@ -385,7 +385,7 @@ def getEthernetDevices():
 	Get the ethernet devices on the system.
 
 	:return: For each device the name of the device.
-	:returntype: [str]
+	:rtype: [str]
 	"""
 	devices = []
 	with open("/proc/net/dev") as f:
@@ -406,7 +406,7 @@ def getNetworkInterfaces():
 	"""
 	Get information about the network interfaces on the system.
 
-	:returntype: [{}]
+	:rtype: [{}]
 	"""
 	return [getNetworkDeviceConfig(device) for device in getEthernetDevices()]
 
@@ -575,7 +575,7 @@ given known places for this file will be tried.
 	:return: Settings of the lease. All keys are lowercase. Possible \
 keys are: ``ip``, ``netmask``, ``bootserver``, ``nextserver``, \
 ``gateway``, ``bootfile``, ``hostname``, ``domain``.
-	:returntype: dict
+	:rtype: dict
 	"""
 	if not device:
 		raise ValueError(u"No device given")
@@ -825,7 +825,7 @@ on Windows.
 	:type waitForEnding: bool
 	:return: If the command finishes and we wait for it to finish the \
 output will be returned.
-	:returntype: list
+	:rtype: list
 	"""
 	nowait = forceBool(nowait)
 	getHandle = forceBool(getHandle)
@@ -979,7 +979,7 @@ def getHarddisks(data=None):
 	:param data: Data to parse through.
 	:type data: [str, ]
 	:return: The found harddisks.
-	:returntype: [Harddisk, ]
+	:rtype: [Harddisk, ]
 	"""
 	disks = []
 
@@ -1189,7 +1189,7 @@ def umount(devOrMountpoint):
 def getBlockDeviceBusType(device):
 	"""
 	:return: 'IDE', 'SCSI', 'SATA', 'RAID' or None (not found)
-	:returntype: str or None
+	:rtype: str or None
 	"""
 	device = forceFilename(device)
 
@@ -3731,7 +3731,7 @@ def locateDHCPDInit(default=None):
 
 	:param default: If no init script is found fall back to this \
 instead of throwing an error.
-	:returntype: str
+	:rtype: str
 	"""
 	locations = (
 		u"/etc/init.d/dhcpd",  # suse / redhat / centos
@@ -3861,7 +3861,7 @@ def getServiceNames(_serviceStatusOutput=None):
 	:param _serviceStatusOutput: The output of `service --status-all`.\
 Used for testing.
 	:type _serviceStatusOutput: [str, ]
-	:returntype: set
+	:rtype: set
 
 	.. versionadded:: 4.0.5.11
 
@@ -3890,7 +3890,7 @@ def getActiveSessionIds(winApiBugCommand=None, data=None):
 	.. versionadded:: 4.0.5
 	:param data: Prefetched data to read information from.
 	:type data: [str, ]
-	:returntype: [int, ]
+	:rtype: [int, ]
 
 	"""
 	if data is None:
@@ -3914,7 +3914,7 @@ def getActiveSessionId():
 	Returns the currently active session ID.
 
 	.. versionadded:: 4.0.5
-	:returntype: int
+	:rtype: int
 
 	"""
 	ownPid = os.getpid()
@@ -3951,7 +3951,7 @@ started and we will not wait for it to finish.
 	:type waitForProcessEnding: bool
 	:param timeoutSeconds: If this is set we will wait this many seconds \
 until the execution of the process is terminated.
-	:returntype: (subprocess.Popen, None, int, None) if \
+	:rtype: (subprocess.Popen, None, int, None) if \
 `waitForProcessEnding` is False, otherwise (None, None, None, None)
 	"""
 	sleepDuration = 0.1

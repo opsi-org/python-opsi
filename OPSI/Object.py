@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) - http://www.opsi.org
 
-# Copyright (C) 2006-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -97,7 +97,7 @@ def getPossibleClassAttributes(klass):
 	"""
 	Returns the possible attributes of a class.
 
-	:returntype: set of strings
+	:rtype: set of strings
 	"""
 	attributes = inspect.getargspec(klass.__init__)[0]
 	for subClass in klass.subClasses.values():
@@ -190,7 +190,7 @@ def toStr(value):
 	"""
 	Converts `value` into a str if it is a unicode.
 
-	:returntype: str
+	:rtype: str
 	"""
 	if isinstance(value, unicode):
 		return str(value)

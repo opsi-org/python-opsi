@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2006-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2019 uib GmbH <info@uib.de>
 # http://www.uib.de/
 
 # This program is free software: you can redistribute it and/or modify
@@ -299,7 +299,7 @@ def objectToBash(obj, bashVars=None, level=0):
 
 	:type bashVars: dict
 	:type level: int
-	:returntype: dict
+	:rtype: dict
 	"""
 	if bashVars is None:
 		bashVars = {}
