@@ -519,7 +519,6 @@ def testForceEmailAddressRaisesAnExceptionOnInvalidMailAddress(invalidMailAddres
 @pytest.mark.parametrize("address, expected", (
 	(u'info@uib.de', 'info@uib.de'),
 	(u'webmaster@somelongname.passenger-association.aero', 'webmaster@somelongname.passenger-association.aero'),
-	(u'webmaster@village.trentin-süd-tirol.it', 'webmaster@village.trentin-süd-tirol.it'),
 	(u'bla@name.posts-and-telecommunications.museum', 'bla@name.posts-and-telecommunications.museum'),
 	(u'webmaster@bike.equipment', 'webmaster@bike.equipment'),
 	(u'some.name@company.travelersinsurance', 'some.name@company.travelersinsurance'),
