@@ -134,6 +134,7 @@ def editConfigDefaults():
 				backend.config_updateObjects([configs[selectedConfig]])
 
 
+@contextmanager
 def disableConsoleLogging():
 	consoleLevel = LOGGER.getConsoleLevel()
 	LOGGER.setConsoleLevel(LOG_NONE)
