@@ -138,6 +138,7 @@ def editConfigDefaults():
 
 @contextmanager
 def disableConsoleLogging():
+	"Disable console logging in the context."
 	consoleLevel = LOGGER.getConsoleLevel()
 	LOGGER.setConsoleLevel(LOG_NONE)
 	try:
@@ -156,6 +157,7 @@ def _getUI():
 
 
 def shortenStr(string, length):
+	"If 'string' is shorter than 'length' we shorten it."
 	if len(string) > length:
 		return string[:length] + '...'
 
