@@ -53,12 +53,12 @@ def editConfigDefaults():
 		if not configs:
 			raise BackendMissingDataError("Backend misses configurations!")
 
+		maxConfigIdLen = max(len(config.id) for config in configs)
+		format = u"%-10s %-" + str(maxConfigIdLen) + "s = %s"
+
 		with disableConsoleLogging(), _getUI() as ui:
 			while True:
 				entries = []
-				maxConfigIdLen = max(len(config.id) for config in configs)
-
-				format = u"%-10s %-" + str(maxConfigIdLen) + "s = %s"
 				for config in configs:
 					configType = '[unicode]'
 					if config.getType() == 'BoolConfig':
