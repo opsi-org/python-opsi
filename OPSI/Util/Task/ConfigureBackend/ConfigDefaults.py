@@ -54,12 +54,13 @@ def editConfigDefaults():
 						if u'configed.saved_search.' in config.id:
 							continue
 
-						if (len(config.id) > maxConfigIdLen):
+						if len(config.id) > maxConfigIdLen:
 							maxConfigIdLen = len(config.id)
+
 					format = u"%-10s %-" + str(maxConfigIdLen) + "s = %s"
 					for config in configs:
 						type = '[unicode]'
-						if (config.getType() == 'BoolConfig'):
+						if config.getType() == 'BoolConfig':
 							type = '[bool]'
 
 						if u'configed.saved_search.' in config.id:
@@ -87,13 +88,13 @@ def editConfigDefaults():
 
 					configId = None
 					for entry in entries:
-						if (selection[0] == entry['name']):
+						if selection[0] == entry['name']:
 							configId = entry['id']
 							break
 
 					selectedConfig = -1
 					for i in range(len(configs)):
-						if (configs[i].id == configId):
+						if configs[i].id == configId:
 							selectedConfig = i
 							break
 
