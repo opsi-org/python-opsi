@@ -2,7 +2,7 @@
 
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
-# Copyright (C) 2013-2018 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -442,7 +442,7 @@ class SQLBackend(ConfigDataBackend):
 		Objects must have an attribute named like the parameter.
 
 		:param object: The object to create an condition for.
-		:returntype: str
+		:rtype: str
 		"""
 		def createCondition():
 			for argument in mandatoryConstructorArgs(object.__class__):
