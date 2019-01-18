@@ -54,7 +54,7 @@ def editConfigDefaults():
 			raise BackendMissingDataError("Backend misses configurations!")
 
 		maxConfigIdLen = max(len(config.id) for config in configs)
-		format = u"%-10s %-" + str(maxConfigIdLen) + "s = %s"
+		entryFormat = u"%-10s %-" + str(maxConfigIdLen) + "s = %s"
 
 		with disableConsoleLogging(), _getUI() as ui:
 			while True:
@@ -69,7 +69,7 @@ def editConfigDefaults():
 					entries.append(
 						{
 							"id": config.id,
-							"name": format % (configType, config.id, values)
+							"name": entryFormat % (configType, config.id, values)
 						}
 					)
 
