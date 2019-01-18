@@ -33,7 +33,7 @@ from OPSI.Types import forceUnicodeList
 from OPSI.UI import UIFactory
 
 
-logger = Logger()
+LOGGER = Logger()
 
 def editConfigDefaults():
 	bmconfig = dict(
@@ -135,12 +135,12 @@ def editConfigDefaults():
 
 
 def disableConsoleLogging():
-	consoleLevel = logger.getConsoleLevel()
-	logger.setConsoleLevel(LOG_NONE)
+	consoleLevel = LOGGER.getConsoleLevel()
+	LOGGER.setConsoleLevel(LOG_NONE)
 	try:
 		yield
 	finally:
-		logger.setConsoleLevel(consoleLevel)
+		LOGGER.setConsoleLevel(consoleLevel)
 
 
 @contextmanager
