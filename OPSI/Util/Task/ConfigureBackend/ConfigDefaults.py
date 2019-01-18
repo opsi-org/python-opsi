@@ -65,8 +65,7 @@ def editConfigDefaults():
 						configType = '[bool]'
 
 					values = u', '.join(forceUnicodeList(config.defaultValues))
-					if len(values) > 60:
-						values = values[:60] + '...'
+					values = shortenStr(values, 60)
 					entries.append(
 						{
 							"id": config.id,
@@ -151,3 +150,10 @@ def _getUI():
 		yield ui
 	finally:
 		ui.exit()
+
+
+def shortenStr(string, length):
+	if len(string) > length:
+		return string[:length] + '...'
+
+	return string
