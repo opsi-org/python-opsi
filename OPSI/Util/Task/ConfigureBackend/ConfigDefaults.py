@@ -50,89 +50,88 @@ def editConfigDefaults():
 		]
 
 		with disableConsoleLogging(), _getUI() as ui:
-			try:
-				while True:
-					entries = []
-					maxConfigIdLen = 0
-					for config in configs:
-						if len(config.id) > maxConfigIdLen:
-							maxConfigIdLen = len(config.id)
+			while True:
+				entries = []
+				maxConfigIdLen = 0
+				for config in configs:
+					if len(config.id) > maxConfigIdLen:
+						maxConfigIdLen = len(config.id)
 
-					format = u"%-10s %-" + str(maxConfigIdLen) + "s = %s"
-					for config in configs:
-						type = '[unicode]'
-						if config.getType() == 'BoolConfig':
-							type = '[bool]'
+				format = u"%-10s %-" + str(maxConfigIdLen) + "s = %s"
+				for config in configs:
+					type = '[unicode]'
+					if config.getType() == 'BoolConfig':
+						type = '[bool]'
 
-						values = u', '.join(forceUnicodeList(config.defaultValues))
-						if len(values) > 60:
-							values = values[:60] + '...'
-						entries.append(
-							{
-								"id": config.id,
-								"name": format % (type, config.id, values)
-							}
-						)
-
-					selection = ui.getSelection(
-						entries, radio=True,
-						width=100, height=10,
-						title=u'Please select config value to change',
-						okLabel='Change', cancelLabel='Quit'
+					values = u', '.join(forceUnicodeList(config.defaultValues))
+					if len(values) > 60:
+						values = values[:60] + '...'
+					entries.append(
+						{
+							"id": config.id,
+							"name": format % (type, config.id, values)
+						}
 					)
 
-					if not selection:
-						return
+				selection = ui.getSelection(
+					entries, radio=True,
+					width=100, height=10,
+					title=u'Please select config value to change',
+					okLabel='Change', cancelLabel='Quit'
+				)
 
-					configId = None
-					for entry in entries:
-						if selection[0] == entry['name']:
-							configId = entry['id']
-							break
+				if not selection:
+					return
 
-					selectedConfig = -1
-					for i in range(len(configs)):
-						if configs[i].id == configId:
-							selectedConfig = i
-							break
+				configId = None
+				for entry in entries:
+					if selection[0] == entry['name']:
+						configId = entry['id']
+						break
 
-					addNewValue = False
-					cancelLabel = u'Back'
-					title = u'Edit default values for: %s' % configs[selectedConfig].id
-					text = configs[selectedConfig].description or u''
-					if configs[selectedConfig].possibleValues:
-						entries = []
-						for possibleValue in configs[selectedConfig].possibleValues:
-							entries.append({'name': possibleValue, 'value': possibleValue, 'selected': possibleValue in configs[selectedConfig].defaultValues})
-						radio = not configs[selectedConfig].multiValue
-						if configs[selectedConfig].editable:
-							entries.append({'name': '<other value>', 'value': '<other value>', 'selected': False})
-						selection = ui.getSelection(entries, radio=radio, width=65, height=10, title=title, text=text, cancelLabel=cancelLabel)
+				selectedConfig = -1
+				for i in range(len(configs)):
+					if configs[i].id == configId:
+						selectedConfig = i
+						break
 
-						if selection is None:
-							continue
-						if "<other value>" in selection:
-							addNewValue = True
-						else:
-							configs[selectedConfig].setDefaultValues(selection)
-					else:
+				addNewValue = False
+				cancelLabel = u'Back'
+				title = u'Edit default values for: %s' % configs[selectedConfig].id
+				text = configs[selectedConfig].description or u''
+				if configs[selectedConfig].possibleValues:
+					entries = []
+					for possibleValue in configs[selectedConfig].possibleValues:
+						entries.append({'name': possibleValue, 'value': possibleValue, 'selected': possibleValue in configs[selectedConfig].defaultValues})
+					radio = not configs[selectedConfig].multiValue
+					if configs[selectedConfig].editable:
+						entries.append({'name': '<other value>', 'value': '<other value>', 'selected': False})
+					selection = ui.getSelection(entries, radio=radio, width=65, height=10, title=title, text=text, cancelLabel=cancelLabel)
+
+					if selection is None:
+						continue
+					if "<other value>" in selection:
 						addNewValue = True
+					else:
+						configs[selectedConfig].setDefaultValues(selection)
+				else:
+					addNewValue = True
 
-					if addNewValue:
-						default = u''
-						if configs[selectedConfig].defaultValues:
-							default = configs[selectedConfig].defaultValues[0]
-						value = ui.getValue(width=65, height=13, title=title, default=default, password=False, text=text, cancelLabel=cancelLabel)
-						if value is None:
-							continue
+				if addNewValue:
+					default = u''
+					if configs[selectedConfig].defaultValues:
+						default = configs[selectedConfig].defaultValues[0]
+					value = ui.getValue(width=65, height=13, title=title, default=default, password=False, text=text, cancelLabel=cancelLabel)
+					if value is None:
+						continue
 
-						possibleValues = configs[selectedConfig].getPossibleValues()
-						if value not in possibleValues:
-							possibleValues.append(value)
-							configs[selectedConfig].setPossibleValues(possibleValues)
-						configs[selectedConfig].setDefaultValues(value)
+					possibleValues = configs[selectedConfig].getPossibleValues()
+					if value not in possibleValues:
+						possibleValues.append(value)
+						configs[selectedConfig].setPossibleValues(possibleValues)
+					configs[selectedConfig].setDefaultValues(value)
 
-					backend.config_updateObjects([configs[selectedConfig]])
+				backend.config_updateObjects([configs[selectedConfig]])
 
 
 def disableConsoleLogging():
