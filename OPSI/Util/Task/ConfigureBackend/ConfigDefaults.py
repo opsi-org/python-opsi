@@ -27,6 +27,7 @@ CLI Utility to change the config defaults.
 from contextlib import contextmanager
 
 from OPSI.Backend.BackendManager import BackendManager
+from OPSI.Exceptions import BackendMissingDataError
 from OPSI.Logger import Logger
 from OPSI.Types import forceUnicodeList
 from OPSI.UI import UIFactory
@@ -48,6 +49,9 @@ def editConfigDefaults():
 			config for config in configs
 			if not config.id.startswith(u'configed.saved_search.')
 		]
+
+		if not configs:
+			raise BackendMissingDataError("Backend misses configurations!")
 
 		with disableConsoleLogging(), _getUI() as ui:
 			while True:
