@@ -56,10 +56,7 @@ def editConfigDefaults():
 		with disableConsoleLogging(), _getUI() as ui:
 			while True:
 				entries = []
-				maxConfigIdLen = 0
-				for config in configs:
-					if len(config.id) > maxConfigIdLen:
-						maxConfigIdLen = len(config.id)
+				maxConfigIdLen = max(len(config.id) for config in configs)
 
 				format = u"%-10s %-" + str(maxConfigIdLen) + "s = %s"
 				for config in configs:
