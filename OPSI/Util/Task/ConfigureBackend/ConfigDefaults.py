@@ -44,6 +44,10 @@ def editConfigDefaults():
 
 	with BackendManager(**bmconfig) as backend:
 		configs = backend.config_getObjects()
+		configs = [
+			config for config in configs
+			if not config.id.startswith(u'configed.saved_search.')
+		]
 
 		with disableConsoleLogging(), _getUI() as ui:
 			try:
@@ -51,9 +55,6 @@ def editConfigDefaults():
 					entries = []
 					maxConfigIdLen = 0
 					for config in configs:
-						if u'configed.saved_search.' in config.id:
-							continue
-
 						if len(config.id) > maxConfigIdLen:
 							maxConfigIdLen = len(config.id)
 
@@ -62,9 +63,6 @@ def editConfigDefaults():
 						type = '[unicode]'
 						if config.getType() == 'BoolConfig':
 							type = '[bool]'
-
-						if u'configed.saved_search.' in config.id:
-							continue
 
 						values = u', '.join(forceUnicodeList(config.defaultValues))
 						if len(values) > 60:
