@@ -1,3 +1,11 @@
+python-opsi (4.1.1.57-1) stable; urgency=medium
+
+  * OPSI.Util.Task.ConfigureBackend.DHCPD: Default path for dhcpd config set
+    to /etc/dhcp/dhcpd.conf.
+  * Added module OPSI.Util.Task.ConfigureBackend.ConfigDefaults.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 18 Jan 2019 16:19:30 +0100
+
 python-opsi (4.1.1.56-1) testing; urgency=medium
 
   * OPSI.Backend.OpsiPXEConfd: _collectDataForUpdate: Changed first parameter
