@@ -1,3 +1,9 @@
+python-opsi (4.1.1.58-1) stable; urgency=medium
+
+  * Re-release 4.1.1.57 due to some merge problems.
+
+ -- Niko Wenselowski <niko@stellar>  Fri, 18 Jan 2019 16:36:48 +0100
+
 python-opsi (4.1.1.57-1) stable; urgency=medium
 
   * OPSI.Util.Task.ConfigureBackend.DHCPD: Default path for dhcpd config set
