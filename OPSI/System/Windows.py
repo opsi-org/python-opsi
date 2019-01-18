@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2013-2018 uib GmbH
+# Copyright (C) 2013-2019 uib GmbH
 
 # http://www.uib.de/
 
