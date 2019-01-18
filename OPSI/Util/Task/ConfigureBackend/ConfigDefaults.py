@@ -60,9 +60,9 @@ def editConfigDefaults():
 
 				format = u"%-10s %-" + str(maxConfigIdLen) + "s = %s"
 				for config in configs:
-					type = '[unicode]'
+					configType = '[unicode]'
 					if config.getType() == 'BoolConfig':
-						type = '[bool]'
+						configType = '[bool]'
 
 					values = u', '.join(forceUnicodeList(config.defaultValues))
 					if len(values) > 60:
@@ -70,7 +70,7 @@ def editConfigDefaults():
 					entries.append(
 						{
 							"id": config.id,
-							"name": format % (type, config.id, values)
+							"name": format % (configType, config.id, values)
 						}
 					)
 
