@@ -90,9 +90,9 @@ def editConfigDefaults():
 						break
 
 				selectedConfig = -1
-				for i in range(len(configs)):
-					if configs[i].id == configId:
-						selectedConfig = i
+				for index, config in enumerate(configs):
+					if config.id == configId:
+						selectedConfig = index
 						break
 
 				addNewValue = False
