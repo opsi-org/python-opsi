@@ -28,7 +28,7 @@ from contextlib import contextmanager
 
 from OPSI.Backend.BackendManager import BackendManager
 from OPSI.Exceptions import BackendMissingDataError
-from OPSI.Logger import Logger
+from OPSI.Logger import LOG_NONE, Logger
 from OPSI.Types import forceUnicodeList
 from OPSI.UI import UIFactory
 
