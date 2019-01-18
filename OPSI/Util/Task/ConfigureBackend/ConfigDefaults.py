@@ -32,8 +32,10 @@ from OPSI.Logger import LOG_NONE, Logger
 from OPSI.Types import forceUnicodeList
 from OPSI.UI import UIFactory
 
+__all__ = ('editConfigDefaults', )
 
 LOGGER = Logger()
+
 
 def editConfigDefaults():
 	bmconfig = dict(
