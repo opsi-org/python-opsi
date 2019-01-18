@@ -43,10 +43,7 @@ def editConfigDefaults():
 	)
 	configs = backend.config_getObjects()
 
-	consoleLevel = logger.getConsoleLevel()
-	logger.setConsoleLevel(LOG_NONE)
-
-	with _getUI() as ui:
+	with disableConsoleLogging(), _getUI() as ui:
 		try:
 			while True:
 				entries = []
@@ -135,8 +132,15 @@ def editConfigDefaults():
 					configs[selectedConfig].setDefaultValues(value)
 
 				backend.config_updateObjects([configs[selectedConfig]])
-		finally:
-			logger.setConsoleLevel(consoleLevel)
+
+
+def disableConsoleLogging():
+	consoleLevel = logger.getConsoleLevel()
+	logger.setConsoleLevel(LOG_NONE)
+	try:
+		yield
+	finally:
+		logger.setConsoleLevel(consoleLevel)
 
 
 @contextmanager
