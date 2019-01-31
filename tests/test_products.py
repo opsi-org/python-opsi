@@ -1622,7 +1622,7 @@ def testUpdatingMultipleProductProperties(extendedConfigDataBackend):
     backend.product_createObjects(prods)
     backend.productProperty_createObjects(prodPropertiesOrig)
 
-    properties = backend.productProperties_getObjects()
+    properties = backend.productProperty_getObjects()
     assert set(prodPropertiesOrig) == set(properties)
     assert len(properties) > 1, "Want more properties for tests"
 
