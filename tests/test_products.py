@@ -1612,3 +1612,33 @@ def testVersionOnProductOnDepots():
     for pod in getProductsOnDepot(products, configServer, depots):
         version = '{}-{}'.format(pod.productVersion, pod.packageVersion)
         assert version == pod.version
+
+
+def testUpdatingMultipleProductProperties(extendedConfigDataBackend):
+    backend = extendedConfigDataBackend
+
+    prods = getProducts()
+    prodPropertiesOrig = getProductProperties(prods)
+    backend.product_createObjects(prods)
+    backend.productProperty_createObjects(prodPropertiesOrig)
+
+    properties = backend.productProperties_getObjects()
+    assert set(prodPropertiesOrig) == set(properties)
+    assert len(properties) > 1, "Want more properties for tests"
+
+    propZero = properties[0]
+    propZero.editable = not properties[0].editable
+    propZero.description = 'Eat my shorts!'
+
+    properties[0] = propZero
+    backend.productProperties_updateObjects(properties)
+
+    updatedProp = backend.productProperties_getObjects(
+        productId=propZero.productId,
+        productVersion=propZero.productVersion,
+        packageVersion=propZero.packageVersion,
+        propertyId=propZero.propertyId
+    )
+
+    assert updatedProp.description == 'Eat my shorts'
+    assert updatedProp.editable == propZero.editable
