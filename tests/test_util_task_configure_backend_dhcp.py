@@ -110,6 +110,20 @@ def testConfiguringPatchesDHCPDBackendConfig(tempDir):
     funcMock.assert_called_with(backendConfigTarget, FAKE_RESTART_COMMAND)
 
 
+def testConfiguringCreatesBackupFile(tempDir):
+    filename = 'dhcpd_test.conf'
+    with open(filename, 'wx'):
+        pass
+
+    assert len(os.listdir(tempDir)) == 1, "Too many files in temp directory"
+
+    with disableSystemCallsForConfigureDHCPD():
+        with mock.patch('OPSI.Util.Task.ConfigureBackend.DHCPD.insertDHCPDRestartCommand', mock.Mock()):
+            configureDHCPD(filename)
+
+    assert len(os.listdir(tempDir)) == 2, "No backup was created"
+
+
 def testUpdatingDHCPDBackendConfigReplacesCurrentCommand(tempDir):
     target = os.path.join(tempDir, 'dhcpd.test.conf')
 
