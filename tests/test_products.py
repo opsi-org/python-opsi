@@ -1640,5 +1640,5 @@ def testUpdatingMultipleProductProperties(extendedConfigDataBackend):
         propertyId=propZero.propertyId
     )
 
-    assert updatedProp.description == 'Eat my shorts'
+    assert updatedProp.description == 'Eat my shorts!'
     assert updatedProp.editable == propZero.editable
