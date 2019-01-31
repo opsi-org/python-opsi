@@ -1631,9 +1631,9 @@ def testUpdatingMultipleProductProperties(extendedConfigDataBackend):
     propZero.description = 'Eat my shorts!'
 
     properties[0] = propZero
-    backend.productProperties_updateObjects(properties)
+    backend.productProperty_updateObjects(properties)
 
-    updatedProp = backend.productProperties_getObjects(
+    updatedProp = backend.productProperty_getObjects(
         productId=propZero.productId,
         productVersion=propZero.productVersion,
         packageVersion=propZero.packageVersion,
