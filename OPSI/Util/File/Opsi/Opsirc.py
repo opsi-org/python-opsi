@@ -65,6 +65,17 @@ def readOpsirc(filename):
 	return _parseConfig(filename)
 
 
+def getOpsircPath():
+	"""
+	Return the path where an opsirc file is expected to be.
+
+	:return: The path of an opsirc file.
+	:rtype: str
+	"""
+	path = os.path.expanduser('~/.opsi/opsirc')
+	return path
+
+
 def _parseConfig(filename):
 	config = {}
 	with codecs.open(filename, mode='r', encoding='utf-8') as opsircfile:

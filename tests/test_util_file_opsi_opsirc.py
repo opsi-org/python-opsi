@@ -25,7 +25,7 @@ Testing .opsirc handling.
 import os
 import pytest
 
-from OPSI.Util.File.Opsi.Opsirc import readOpsirc
+from OPSI.Util.File.Opsi.Opsirc import getOpsircPath, readOpsirc
 from OPSI.Util import randomString
 
 
@@ -94,3 +94,10 @@ def testIgnoringUnknownKeywords(filename):
     config = readOpsirc(filename)
 
     assert not config
+
+
+def testReadingOpsircPath():
+    path = getOpsircPath()
+    head, tail = os.path.split(path)
+    assert tail == 'opsirc'
+    assert head.endswith('.opsi')
