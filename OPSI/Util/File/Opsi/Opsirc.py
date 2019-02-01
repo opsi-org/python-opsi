@@ -44,6 +44,8 @@ import os
 from OPSI.Logger import Logger
 from OPSI.Types import forceUnicode, forceUrl
 
+__all__ = ('getOpsircPath', 'readOpsirc')
+
 
 logger = Logger()
 
