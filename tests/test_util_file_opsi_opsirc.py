@@ -98,6 +98,8 @@ def testIgnoringUnknownKeywords(filename):
 
 def testReadingOpsircPath():
     path = getOpsircPath()
+    assert '~' not in path
+
     head, tail = os.path.split(path)
     assert tail == 'opsirc'
     assert head.endswith('.opsi')
