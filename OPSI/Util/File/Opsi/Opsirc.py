@@ -31,7 +31,13 @@ An example::
 
 None of these settings are mandatory.
 
-The file should be encoded as utf-8.
+Instead of writing the password directly to the file it is possible
+to reference a file with the secret as follows::
+
+	password file = ~/.opsi/opsirc.secret
+
+
+The files should be encoded as utf-8.
 
 :copyright: uib GmbH <info@uib.de>
 :author: Niko Wenselowski <n.wenselowski@uib.de>
@@ -99,7 +105,17 @@ def _parseConfig(filename):
 				config[key] = forceUrl(value)
 			elif key in ('username', 'password'):
 				config[key] = forceUnicode(value)
+			elif key == 'password file':
+				passwordFilePath = os.path.expanduser(value)
+				config['password'] = _readPasswordFile(passwordFilePath)
 			else:
 				logger.debug(u"Ignoring unknown key {}".format(key))
 
 	return config
+
+
+def _readPasswordFile(filename):
+	with codecs.open(filename, mode='r', encoding='utf-8') as pwfile:
+		password = pwfile.read()
+
+	return password.strip()

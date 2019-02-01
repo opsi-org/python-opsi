@@ -22,6 +22,7 @@ Testing .opsirc handling.
 :license: GNU Affero General Public License version 3
 """
 
+import codecs
 import os
 import pytest
 
@@ -71,6 +72,25 @@ def testReadingConfigFileIgnoresLeadingAndTrailingSpacing(filename):
     assert config['address'] == 'https://lullaby.machine.dream:12345/c3'
     assert config['username'] == 'hanz'
     assert config['password'] == 'gr3tel'
+
+
+def testReadingPasswordFromCredentialsfile(filename):
+    password = randomString(32)
+
+    pwdfile = filename + '.secret'
+    with codecs.open(pwdfile, 'w', 'utf-8') as f:
+        f.write(password + '\n')
+
+    with open(filename, 'w') as f:
+        f.write('address = https://lullaby.machine.dream:12345/c3\n')
+        f.write('username = hanz\n')
+        f.write('password file = {}\n'.format(pwdfile))
+
+    config = readOpsirc(filename)
+
+    assert config['address'] == 'https://lullaby.machine.dream:12345/c3'
+    assert config['username'] == 'hanz'
+    assert config['password'] == password
 
 
 def testIgnoringComments(filename):
