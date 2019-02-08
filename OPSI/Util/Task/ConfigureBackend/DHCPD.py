@@ -47,6 +47,14 @@ logger = Logger()
 
 
 def configureDHCPD(configFile=DHCPD_CONF):
+	"""
+	Configure the configuration file for DHCPD.
+
+	If any changes are made the original file will be backed up.
+	The backup file has a timestamp appended to the filename.
+
+	:param configFile: The configuration file for DHCP.
+	"""
 	if not os.path.exists(configFile):
 		logger.warning("Can't find an dhcpd.conf. Aborting configuration.")
 		return
