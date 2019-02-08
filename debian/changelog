@@ -1,3 +1,10 @@
+python-opsi (4.1.1.59-1) stable; urgency=medium
+
+  * DhcpOnDepot Feature-Fix: (fixes #3901)
+  * Added module OPSI.Util.File.Opsi.Opsirc
+
+ -- Erol Ueluekmen <e.ueluekmen@uib.de>  Fri, 08 Feb 2019 15:15:29 +0100
+
 python-opsi (4.1.1.58-1) stable; urgency=medium
 
   * Re-release 4.1.1.57 due to some merge problems.
