@@ -124,6 +124,10 @@ def _parseConfig(filename):
 			else:
 				logger.debug(u"Ignoring unknown key {}", key)
 
+	logger.debug(
+		"Found the following usable keys in {!r}: {}",
+		filename, ", ".join(config.keys())
+	)
 	return config
 
 
