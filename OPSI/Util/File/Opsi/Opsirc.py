@@ -56,16 +56,20 @@ __all__ = ('getOpsircPath', 'readOpsirc')
 logger = Logger()
 
 
-def readOpsirc(filename):
+def readOpsirc(filename=None):
 	"""
 	Read the configuration file and parse it for usable information.
 
-	:param filename: The path of the file to read.
+	:param filename: The path of the file to read. Defaults to using \
+the result from `getOpsircPath`.
 	:type filename: str
 	:returns: Settings read from the file. Possible keys are `username`,\
 `password` and `address`.
 	:rtype: {str: str}
 	"""
+	if filename is None:
+		filename = getOpsircPath()
+
 	if not os.path.exists(filename):
 		logger.debug(u".opsirc file {} does not exist.".format(filename))
 		return {}
