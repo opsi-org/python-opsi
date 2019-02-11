@@ -101,6 +101,13 @@ def _parseConfig(filename):
 			key = key.strip()
 			value = value.strip()
 
+			if not value:
+				logger.warning(
+					"There is no value for {} in opsirc file {!r}, skipping.",
+					key, filename
+				)
+				continue
+
 			if key == 'address':
 				config[key] = forceUrl(value)
 			elif key == 'username':
