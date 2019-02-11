@@ -103,11 +103,17 @@ def _parseConfig(filename):
 
 			if key == 'address':
 				config[key] = forceUrl(value)
-			elif key in ('username', 'password'):
+			elif key == 'username':
 				config[key] = forceUnicode(value)
+			elif key == 'password':
+				value = forceUnicode(value)
+				logger.addConfidentialString(value)
+				config[key] = value
 			elif key == 'password file':
 				passwordFilePath = os.path.expanduser(value)
-				config['password'] = _readPasswordFile(passwordFilePath)
+				value = _readPasswordFile(passwordFilePath)
+				logger.addConfidentialString(value)
+				config['password'] = value
 			else:
 				logger.debug(u"Ignoring unknown key {}", key)
 
