@@ -109,7 +109,7 @@ def _parseConfig(filename):
 				passwordFilePath = os.path.expanduser(value)
 				config['password'] = _readPasswordFile(passwordFilePath)
 			else:
-				logger.debug(u"Ignoring unknown key {}".format(key))
+				logger.debug(u"Ignoring unknown key {}", key)
 
 	return config
 
