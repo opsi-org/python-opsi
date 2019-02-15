@@ -56,16 +56,20 @@ __all__ = ('getOpsircPath', 'readOpsirc')
 logger = Logger()
 
 
-def readOpsirc(filename):
+def readOpsirc(filename=None):
 	"""
 	Read the configuration file and parse it for usable information.
 
-	:param filename: The path of the file to read.
+	:param filename: The path of the file to read. Defaults to using \
+the result from `getOpsircPath`.
 	:type filename: str
 	:returns: Settings read from the file. Possible keys are `username`,\
 `password` and `address`.
 	:rtype: {str: str}
 	"""
+	if filename is None:
+		filename = getOpsircPath()
+
 	if not os.path.exists(filename):
 		logger.debug(u".opsirc file {} does not exist.".format(filename))
 		return {}
@@ -101,16 +105,33 @@ def _parseConfig(filename):
 			key = key.strip()
 			value = value.strip()
 
+			if not value:
+				logger.warning(
+					"There is no value for {} in opsirc file {!r}, skipping.",
+					key, filename
+				)
+				continue
+
 			if key == 'address':
 				config[key] = forceUrl(value)
-			elif key in ('username', 'password'):
+			elif key == 'username':
 				config[key] = forceUnicode(value)
+			elif key == 'password':
+				value = forceUnicode(value)
+				logger.addConfidentialString(value)
+				config[key] = value
 			elif key == 'password file':
 				passwordFilePath = os.path.expanduser(value)
-				config['password'] = _readPasswordFile(passwordFilePath)
+				value = _readPasswordFile(passwordFilePath)
+				logger.addConfidentialString(value)
+				config['password'] = value
 			else:
-				logger.debug(u"Ignoring unknown key {}".format(key))
+				logger.debug(u"Ignoring unknown key {}", key)
 
+	logger.debug(
+		"Found the following usable keys in {!r}: {}",
+		filename, ", ".join(config.keys())
+	)
 	return config
 
 
