@@ -1,3 +1,15 @@
+python-opsi (4.1.1.60-1) stable; urgency=medium
+
+  * OPSI.Backend.MySQL: Fixed a reference error.
+  * OPSI.Util.File.Opsi.Opsirc.readOpsirc: Skip empty values from config.
+  * OPSI.Util.File.Opsi.Opsirc.readOpsirc: Mark passwords as confidential
+    right after reading.
+  * OPSI.Util.File.Opsi.Opsirc.readOpsirc: filename parameter is optional.
+    If None is given it will resort to retrieving the path via
+    getOpsircPath.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 15 Feb 2019 13:07:20 +0100
+
 python-opsi (4.1.1.59-1) stable; urgency=medium
 
   * DhcpOnDepot Feature-Fix: (fixes #3901)
