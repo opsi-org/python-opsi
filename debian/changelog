@@ -1,3 +1,10 @@
+python-opsi (4.1.1.61-1) stable; urgency=medium
+
+  * OPSI.Util.Task.UpdatePackages.Updater.getLocalPackages: When looking for
+    the checksum file use the absolute path.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 18 Feb 2019 10:53:33 +0100
+
 python-opsi (4.1.1.60-1) stable; urgency=medium
 
   * OPSI.Backend.MySQL: Fixed a reference error.
