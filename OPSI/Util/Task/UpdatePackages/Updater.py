@@ -987,7 +987,7 @@ _version_, _packageFile_ (complete path), _filename_ and _md5sum_.
 		logger.info(u"Found local package '%s'" % packageFile)
 		try:
 			productId, version = parseFilename(filename)
-			checkSumFile = filename + '.md5'
+			checkSumFile = packageFile + '.md5'
 			if not forceChecksumCalculation and os.path.exists(checkSumFile):
 				logger.debug("Reading existing checksum from {0}", checkSumFile)
 				with open(checkSumFile) as hashFile:
