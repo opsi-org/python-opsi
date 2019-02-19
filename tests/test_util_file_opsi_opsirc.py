@@ -56,6 +56,7 @@ def testReadingConfigFile(filename):
 
     config = readOpsirc(filename)
 
+    assert len(config) == 3
     assert config['address'] == 'https://lullaby.machine.dream:12345/c3'
     assert config['username'] == 'hanz'
     assert config['password'] == 'gr3tel'
@@ -69,6 +70,7 @@ def testReadingConfigFileIgnoresLeadingAndTrailingSpacing(filename):
 
     config = readOpsirc(filename)
 
+    assert len(config) == 3
     assert config['address'] == 'https://lullaby.machine.dream:12345/c3'
     assert config['username'] == 'hanz'
     assert config['password'] == 'gr3tel'
@@ -88,6 +90,7 @@ def testReadingPasswordFromCredentialsfile(filename):
 
     config = readOpsirc(filename)
 
+    assert len(config) == 3
     assert config['address'] == 'https://lullaby.machine.dream:12345/c3'
     assert config['username'] == 'hanz'
     assert config['password'] == password
@@ -102,6 +105,7 @@ def testIgnoringComments(filename):
 
     config = readOpsirc(filename)
 
+    assert len(config) == 1
     assert config['address'] == 'https://lullaby.machine.dream:12345/c3'
 
 
@@ -114,6 +118,18 @@ def testIgnoringUnknownKeywords(filename):
     config = readOpsirc(filename)
 
     assert not config
+
+
+def testIgnoringEmptyValues(filename):
+    with open(filename, 'w') as f:
+        f.write('username=\n')
+        f.write('username = foo\n')
+        f.write('username =     \n')
+
+    config = readOpsirc(filename)
+
+    assert len(config) == 1
+    assert config['username'] == 'foo'
 
 
 def testReadingOpsircPath():
