@@ -21,6 +21,7 @@ Handling an .opsirc file.
 
 An .opsirc file contains information about how to connect to an
 opsi API.
+By default the file is expected to be at `~/.opsi.org/opsirc`.
 
 An example::
 
@@ -34,7 +35,7 @@ None of these settings are mandatory.
 Instead of writing the password directly to the file it is possible
 to reference a file with the secret as follows::
 
-	password file = ~/.opsi/opsirc.secret
+	password file = ~/.opsi.org/opsirc.secret
 
 
 The files should be encoded as utf-8.
@@ -84,7 +85,7 @@ def getOpsircPath():
 	:return: The path of an opsirc file.
 	:rtype: str
 	"""
-	path = os.path.expanduser('~/.opsi/opsirc')
+	path = os.path.expanduser('~/.opsi.org/opsirc')
 	return path
 
 
