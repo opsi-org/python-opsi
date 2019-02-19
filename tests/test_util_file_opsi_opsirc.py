@@ -122,4 +122,4 @@ def testReadingOpsircPath():
 
     head, tail = os.path.split(path)
     assert tail == 'opsirc'
-    assert head.endswith('.opsi')
+    assert head.endswith('.opsi.org')
