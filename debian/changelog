@@ -1,3 +1,10 @@
+python-opsi (4.1.1.62-1) stable; urgency=medium
+
+  * Opsi.Util.File.Opsi.Opsirc: Change the default path for an opsirc file
+    to ~/.opsi.org/opsirc.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 19 Feb 2019 16:58:20 +0100
+
 python-opsi (4.1.1.61-1) stable; urgency=medium
 
   * OPSI.Util.Task.UpdatePackages.Updater.getLocalPackages: When looking for
