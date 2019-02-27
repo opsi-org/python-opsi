@@ -238,10 +238,10 @@ def pytest_runtest_setup(item):
         if not _MODULES_FILE:
             pytest.skip("{0} requires a modules file!".format(item.name))
 
-    envmarker = item.get_marker("obsolete")
+    envmarker = item.get_closest_marker("obsolete")
     if envmarker is not None:
         pytest.skip("{0} uses tech that will likely be obsolete in the future".format(item.name))
 
-    envmarker = item.get_marker("fixlater")
+    envmarker = item.get_closest_marker("fixlater")
     if envmarker is not None:
         pytest.skip("{0} will be fixed later".format(item.name))
