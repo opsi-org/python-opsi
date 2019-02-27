@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2015-2018 uib GmbH <info@uib.de>
+# Copyright (C) 2015-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -106,6 +106,20 @@ def testConfiguringPatchesDHCPDBackendConfig(tempDir):
 
     backendConfigTarget = os.path.join('/etc', 'opsi', 'backends', 'dhcpd.conf')
     funcMock.assert_called_with(backendConfigTarget, FAKE_RESTART_COMMAND)
+
+
+def testConfiguringCreatesBackupFile(tempDir):
+    filename = 'dhcpd_test.conf'
+    with open(filename, 'w'):
+        pass
+
+    assert len(os.listdir(tempDir)) == 1, "Too many files in temp directory"
+
+    with disableSystemCallsForConfigureDHCPD():
+        with mock.patch('OPSI.Util.Task.ConfigureBackend.DHCPD.insertDHCPDRestartCommand', mock.Mock()):
+            configureDHCPD(filename)
+
+    assert len(os.listdir(tempDir)) == 2, "No backup was created"
 
 
 def testUpdatingDHCPDBackendConfigReplacesCurrentCommand(tempDir):
