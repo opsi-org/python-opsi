@@ -110,7 +110,7 @@ def testConfiguringPatchesDHCPDBackendConfig(tempDir):
 
 def testConfiguringCreatesBackupFile(tempDir):
     filename = 'dhcpd_test.conf'
-    with open(filename, 'wx'):
+    with open(filename, 'w'):
         pass
 
     assert len(os.listdir(tempDir)) == 1, "Too many files in temp directory"
