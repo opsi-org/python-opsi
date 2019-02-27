@@ -1,7 +1,7 @@
 twisted[conch,tls]<18.4
 filemagic
 git+https://github.com/twisted/ldaptor.git
-python-pam
+pam3
 pyOpenSSL
 mysqlclient
 SQLAlchemy
