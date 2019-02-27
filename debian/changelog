@@ -32,6 +32,109 @@ python3-opsi (4.2.0.1-1) experimental; urgency=medium
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 06 Nov 2018 16:46:45 +0100
 
+python-opsi (4.1.1.62-1) stable; urgency=medium
+
+  * Opsi.Util.File.Opsi.Opsirc: Change the default path for an opsirc file
+    to ~/.opsi.org/opsirc.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 19 Feb 2019 16:58:20 +0100
+
+python-opsi (4.1.1.61-1) stable; urgency=medium
+
+  * OPSI.Util.Task.UpdatePackages.Updater.getLocalPackages: When looking for
+    the checksum file use the absolute path.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 18 Feb 2019 10:53:33 +0100
+
+python-opsi (4.1.1.60-1) stable; urgency=medium
+
+  * OPSI.Backend.MySQL: Fixed a reference error.
+  * OPSI.Util.File.Opsi.Opsirc.readOpsirc: Skip empty values from config.
+  * OPSI.Util.File.Opsi.Opsirc.readOpsirc: Mark passwords as confidential
+    right after reading.
+  * OPSI.Util.File.Opsi.Opsirc.readOpsirc: filename parameter is optional.
+    If None is given it will resort to retrieving the path via
+    getOpsircPath.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 15 Feb 2019 13:07:20 +0100
+
+python-opsi (4.1.1.59-1) stable; urgency=medium
+
+  * DhcpOnDepot Feature-Fix: (fixes #3901)
+  * Added module OPSI.Util.File.Opsi.Opsirc
+
+ -- Erol Ueluekmen <e.ueluekmen@uib.de>  Fri, 08 Feb 2019 15:15:29 +0100
+
+python-opsi (4.1.1.58-1) stable; urgency=medium
+
+  * Re-release 4.1.1.57 due to some merge problems.
+
+ -- Niko Wenselowski <niko@stellar>  Fri, 18 Jan 2019 16:36:48 +0100
+
+python-opsi (4.1.1.57-1) stable; urgency=medium
+
+  * OPSI.Util.Task.ConfigureBackend.DHCPD: Default path for dhcpd config set
+    to /etc/dhcp/dhcpd.conf.
+  * Added module OPSI.Util.Task.ConfigureBackend.ConfigDefaults.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 18 Jan 2019 16:19:30 +0100
+
+python-opsi (4.1.1.56-1) testing; urgency=medium
+
+  * OPSI.Backend.OpsiPXEConfd: _collectDataForUpdate: Changed first parameter
+    to client ID instead of getting the value from a ProductOnClient.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 08 Jan 2019 17:40:47 +0100
+
+python-opsi (4.1.1.55-1) testing; urgency=medium
+
+  * OPSI.Backend.OpsiPXEConfd: Caching data will now work as expected
+    when changing PXE templates of a product.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 08 Jan 2019 17:12:53 +0100
+
+python-opsi (4.1.1.54-1) stable; urgency=medium
+
+  * OPSI.Util.Task.Backup: Do not show a message for an unused backend
+    when running in auto mode.
+  * OPSI.System.Posix & OPSI.System.Windows: refactored getDiskSpaceUsage.
+  * OPSI.System.Windows: Make code more consistent with the other modules.
+  * OPSI.Util.Task.InitializeBackend: supplied an __all__.
+  * OPSI.Util.Task.InitializeBackend and OPSI.Util.Task.Rights use the
+    BackendManager in contextmanager style.
+  * OPSI.Util.Repository: Make code more consistent with the other modules.
+  * opsihwaudit.conf: Accept NICs with 10GB+ throughput.
+  * OPSI.Sytem.Posix: removed support for dhcp3 dhclient.leases file.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 07 Dec 2018 13:37:00 +0100
+
+python-opsi (4.1.1.53-1) stable; urgency=medium
+
+  * OPSI.System.Posix: isOpenSuse will return False if not running on openSuse.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 30 Nov 2018 11:26:37 +0100
+
+python-opsi (4.1.1.52-2) testing; urgency=medium
+
+  * OPSI.System.Posix: isOpenSUSE refactored to not use platform
+
+ -- Mathias Radtke <m.radtke@uib.de>  Mon, 26 Nov 2018 12:07:10 +0100
+
+python-opsi (4.1.1.52-1) testing; urgency=medium
+
+  * OPSI.System.Posix: correctly detecting openSUSE Leap 15.0 and above
+  * OPSI.System.Posix: using isOpenSUSE() to determine Leap, isOpenSUSELeap()
+    is obsolete
+  * OPSI.Util.Task.Rights: replaced isOpenSUSELeap() with isOpenSUSE()
+
+ -- Mathias Radtke <m.radtke@uib.de>  Fri, 23 Nov 2018 09:58:13 +0100
+
+python-opsi (4.1.1.51-3) stable; urgency=medium
+
+  * RPM: openSUSE Leap 15 needs net-tools-deprecated to work with 'ifconfig'
+
+ -- Mathias Radtke <m.radtke@uib.de>  Thu, 22 Nov 2018 15:30:36 +0100
+
 python-opsi (4.1.1.51-2) stable; urgency=medium
 
   * RPM: requires python-mysqlclient on openSUSE Leap 15.0

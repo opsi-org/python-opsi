@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2010-2018 uib GmbH <info@uib.de>
+# Copyright (C) 2010-2019 uib GmbH <info@uib.de>
 # All rights reserved.
 
 # This program is free software: you can redistribute it and/or modify
@@ -194,9 +194,8 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 
 		return True
 
-	def _collectDataForUpdate(self, productOnClient, depotId):
+	def _collectDataForUpdate(self, clientId, depotId):
 		logger.debug("Collecting data for opsipxeconfd...")
-		clientId = productOnClient.clientId
 
 		try:
 			try:
@@ -233,12 +232,14 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 					"productOnDepot": None
 				})
 
+			# Get the product information for the version present on
+			# the depot.
 			product = self._context.product_getObjects(
 				attributes=['id', 'pxeConfigTemplate'],
 				type=u'NetbootProduct',
 				id=productOnClient.productId,
-				productVersion=productOnClient.productVersion,
-				packageVersion=productOnClient.packageVersion
+				productVersion=productOnDepot.productVersion,
+				packageVersion=productOnDepot.packageVersion
 			)[0]
 
 			eliloMode = None
@@ -386,7 +387,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 			destination = self
 
 		if backendSupportsCachedData(destination):
-			data = self._collectDataForUpdate(productOnClient, responsibleDepot)
+			data = self._collectDataForUpdate(productOnClient.clientId, responsibleDepot)
 			destination.opsipxeconfd_updatePXEBootConfiguration(productOnClient.clientId, data)
 		else:
 			destination.opsipxeconfd_updatePXEBootConfiguration(productOnClient.clientId)
