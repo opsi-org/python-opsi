@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2010-2018 uib GmbH <info@uib.de>
+# Copyright (C) 2010-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -141,7 +141,7 @@ class DHCPDBackend(ConfigDataBackend):
 
 			try:
 				self._depotConnections[depotId] = JSONRPCBackend(
-					address=u'https://%s:4447/rpc/backend/%s' % (depotId, self._name),
+					address=u'https://%s:4447/rpc/backend/dhcpd' % (depotId),
 					username=self._depotId,
 					password=self._opsiHostKey
 				)
@@ -173,7 +173,7 @@ class DHCPDBackend(ConfigDataBackend):
 			depotId = self._getResponsibleDepotId(host.id)  # pylint: disable=maybe-no-member
 			if depotId != self._depotId:
 				logger.info(u"Not responsible for client '%s', forwarding request to depot '%s'" % (host.id, depotId))  # pylint: disable=maybe-no-member
-				return self._getDepotConnection(depotId).dhcpd_updateHost(host.id)  # pylint: disable=maybe-no-member
+				return self._getDepotConnection(depotId).dhcpd_updateHost(host)  # pylint: disable=maybe-no-member
 		self.dhcpd_updateHost(host)
 
 	def dhcpd_updateHost(self, host):
@@ -252,7 +252,7 @@ class DHCPDBackend(ConfigDataBackend):
 		if self._dhcpdOnDepot:
 			for depot in self._context.host_getObjects(id=self._depotId):  # pylint: disable=maybe-no-member
 				if depot.id != self._depotId:
-					self._getDepotConnection(depot.id).dhcpd_deleteHost(host.id)  # pylint: disable=maybe-no-member
+					self._getDepotConnection(depot.id).dhcpd_deleteHost(host)  # pylint: disable=maybe-no-member
 		self.dhcpd_deleteHost(host)
 
 	def dhcpd_deleteHost(self, host):

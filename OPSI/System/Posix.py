@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 #
-# Copyright (C) 2006-2018 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2019 uib GmbH <info@uib.de>
 # All rights reserved.
 #
 # This program is free software: you can redistribute it and/or modify
@@ -46,10 +46,10 @@ from itertools import islice
 from signal import SIGKILL
 
 from OPSI.Logger import Logger, LOG_NONE
-from OPSI.Types import (forceDomain, forceInt, forceBool, forceUnicode,
-	forceFilename, forceHostname, forceHostId, forceNetmask, forceIpAddress,
-	forceIPAddress, forceHardwareVendorId, forceHardwareAddress,
-	forceHardwareDeviceId, forceUnicodeLower)
+from OPSI.Types import (
+	forceBool, forceDomain, forceFilename, forceHardwareAddress,
+	forceHardwareDeviceId, forceHardwareVendorId, forceHostId, forceHostname,
+	forceInt, forceIpAddress, forceNetmask, forceUnicode, forceUnicodeLower)
 from OPSI.Object import *
 from OPSI.Util import getfqdn, objectToBeautifiedText, removeUnit
 
@@ -65,7 +65,7 @@ __all__ = (
 	'getKernelParams', 'getNetworkDeviceConfig', 'getNetworkInterfaces',
 	'getSambaServiceName', 'getServiceNames', 'getSystemProxySetting', 'halt',
 	'hardwareExtendedInventory', 'hardwareInventory', 'hooks', 'ifconfig',
-	'isCentOS', 'isDebian', 'isOpenSUSE', 'isOpenSUSELeap', 'isRHEL', 'isSLES',
+	'isCentOS', 'isDebian', 'isOpenSUSE', 'isRHEL', 'isSLES',
 	'isUCS', 'isUbuntu', 'isXenialSfdiskVersion', 'locateDHCPDConfig',
 	'locateDHCPDInit', 'mount', 'reboot', 'removeSystemHook',
 	'runCommandInSession', 'setLocalSystemTime', 'shutdown', 'umount', 'which'
@@ -78,7 +78,6 @@ GEO_OVERWRITE_SO = '/usr/local/lib/geo_override.so'
 BIN_WHICH = '/usr/bin/which'
 WHICH_CACHE = {}
 DHCLIENT_LEASES_FILE = '/var/lib/dhcp/dhclient.leases'
-DHCLIENT_LEASES_FILE_OLD = '/var/lib/dhcp3/dhclient.leases'
 
 hooks = []
 x86_64 = False
@@ -355,7 +354,7 @@ def getKernelParams():
 	Reads the kernel cmdline and returns a dict containing all key=value pairs.
 	Keys are converted to lower case.
 
-	:returntype: dict
+	:rtype: dict
 	"""
 	cmdline = ''
 	try:
@@ -386,7 +385,7 @@ def getEthernetDevices():
 	Get the ethernet devices on the system.
 
 	:return: For each device the name of the device.
-	:returntype: [str]
+	:rtype: [str]
 	"""
 	devices = []
 	with open("/proc/net/dev") as f:
@@ -407,7 +406,7 @@ def getNetworkInterfaces():
 	"""
 	Get information about the network interfaces on the system.
 
-	:returntype: [{}]
+	:rtype: [{}]
 	"""
 	return [getNetworkDeviceConfig(device) for device in getEthernetDevices()]
 
@@ -576,18 +575,13 @@ given known places for this file will be tried.
 	:return: Settings of the lease. All keys are lowercase. Possible \
 keys are: ``ip``, ``netmask``, ``bootserver``, ``nextserver``, \
 ``gateway``, ``bootfile``, ``hostname``, ``domain``.
-	:returntype: dict
+	:rtype: dict
 	"""
 	if not device:
 		raise ValueError(u"No device given")
 
 	if not leasesFile:
-		if os.path.exists(DHCLIENT_LEASES_FILE_OLD):
-			# old style dhcp.leases handling should be work
-			# will be removed, if precise bootimage is in testing.
-			leasesFile = DHCLIENT_LEASES_FILE_OLD
-		else:
-			leasesFile = DHCLIENT_LEASES_FILE
+		leasesFile = DHCLIENT_LEASES_FILE
 
 	dhcpResult = {}
 	if os.path.exists(leasesFile):
@@ -831,7 +825,7 @@ on Windows.
 	:type waitForEnding: bool
 	:return: If the command finishes and we wait for it to finish the \
 output will be returned.
-	:returntype: list
+	:rtype: list
 	"""
 	nowait = forceBool(nowait)
 	getHandle = forceBool(getHandle)
@@ -981,7 +975,7 @@ def getHarddisks(data=None):
 	:param data: Data to parse through.
 	:type data: [str, ]
 	:return: The found harddisks.
-	:returntype: [Harddisk, ]
+	:rtype: [Harddisk, ]
 	"""
 	disks = []
 
@@ -1041,11 +1035,12 @@ def getHarddisks(data=None):
 
 def getDiskSpaceUsage(path):
 	disk = os.statvfs(path)
-	info = {}
-	info['capacity'] = disk.f_bsize * disk.f_blocks
-	info['available'] = disk.f_bsize * disk.f_bavail
-	info['used'] = disk.f_bsize * (disk.f_blocks - disk.f_bavail)
-	info['usage'] = float(disk.f_blocks - disk.f_bavail) / float(disk.f_blocks)
+	info = {
+		'capacity': disk.f_bsize * disk.f_blocks,
+		'available': disk.f_bsize * disk.f_bavail,
+		'used': disk.f_bsize * (disk.f_blocks - disk.f_bavail),
+		'usage': float(disk.f_blocks - disk.f_bavail) / float(disk.f_blocks),
+	}
 	logger.info(u"Disk space usage for path '%s': %s" % (path, info))
 	return info
 
@@ -1190,7 +1185,7 @@ def umount(devOrMountpoint):
 def getBlockDeviceBusType(device):
 	"""
 	:return: 'IDE', 'SCSI', 'SATA', 'RAID' or None (not found)
-	:returntype: str or None
+	:rtype: str or None
 	"""
 	device = forceFilename(device)
 
@@ -2943,20 +2938,12 @@ def isOpenSUSE():
 	"""
 	Returns `True` if this is running on openSUSE.
 	Returns `False` if otherwise.
-	For OpenSUSE Leap please use isOpenSUSELeap()
 	"""
-	return _checkForDistribution('opensuse')
-
-
-def isOpenSUSELeap():
-	"""
-	Returns `True` if this is running on OpenSUSE Leap.
-	Returns `False` if otherwise.
-	"""
-	if isOpenSUSE():
-		leap = Distribution()
-		if leap.version >= (42, 1):
-			return True
+	if os.path.exists('/etc/os-release'):
+		with open('/etc/os-release', 'r') as release:
+			for line in release:
+				if 'opensuse' in line.lower():
+					return True
 
 	return False
 
@@ -3083,7 +3070,7 @@ class SysInfo(object):
 
 	@property
 	def ipAddress(self):
-		return forceIPAddress(socket.gethostbyname(self.hostname))
+		return forceIpAddress(socket.gethostbyname(self.hostname))
 
 	@property
 	def hardwareAddress(self):
@@ -3735,7 +3722,7 @@ def locateDHCPDInit(default=None):
 
 	:param default: If no init script is found fall back to this \
 instead of throwing an error.
-	:returntype: str
+	:rtype: str
 	"""
 	locations = (
 		u"/etc/init.d/dhcpd",  # suse / redhat / centos
@@ -3865,7 +3852,7 @@ def getServiceNames(_serviceStatusOutput=None):
 	:param _serviceStatusOutput: The output of `service --status-all`.\
 Used for testing.
 	:type _serviceStatusOutput: [str, ]
-	:returntype: set
+	:rtype: set
 
 	.. versionadded:: 4.0.5.11
 
@@ -3894,7 +3881,7 @@ def getActiveSessionIds(winApiBugCommand=None, data=None):
 	.. versionadded:: 4.0.5
 	:param data: Prefetched data to read information from.
 	:type data: [str, ]
-	:returntype: [int, ]
+	:rtype: [int, ]
 
 	"""
 	if data is None:
@@ -3918,7 +3905,7 @@ def getActiveSessionId():
 	Returns the currently active session ID.
 
 	.. versionadded:: 4.0.5
-	:returntype: int
+	:rtype: int
 
 	"""
 	ownPid = os.getpid()
@@ -3955,7 +3942,7 @@ started and we will not wait for it to finish.
 	:type waitForProcessEnding: bool
 	:param timeoutSeconds: If this is set we will wait this many seconds \
 until the execution of the process is terminated.
-	:returntype: (subprocess.Popen, None, int, None) if \
+	:rtype: (subprocess.Popen, None, int, None) if \
 `waitForProcessEnding` is False, otherwise (None, None, None, None)
 	"""
 	sleepDuration = 0.1

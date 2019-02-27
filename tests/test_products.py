@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014-2018 uib GmbH <info@uib.de>
+# Copyright (C) 2014-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -1610,3 +1610,23 @@ def testVersionOnProductOnDepots():
     for pod in getProductsOnDepot(products, configServer, depots):
         version = '{}-{}'.format(pod.productVersion, pod.packageVersion)
         assert version == pod.version
+
+
+def testUpdatingProductPropertyHashes(extendedConfigDataBackend):
+    backend = extendedConfigDataBackend
+
+    prods = getProducts()
+    prodPropertiesOrig = getProductProperties(prods)
+    backend.product_createObjects(prods)
+    backend.productProperty_createObjects(prodPropertiesOrig)
+
+    ppFromBackend = backend.productProperty_getObjects()
+    assert ppFromBackend
+    ppFromBackend = [pp.toHash() for pp in ppFromBackend]
+    for pp in ppFromBackend:
+        pp['description'] = u"Das ist auch dein Zuhause!"
+
+    backend.productProperty_updateObjects(ppFromBackend)
+
+    for pp in backend.productProperty_getObjects():
+        assert pp.getDescription() == u"Das ist auch dein Zuhause!"

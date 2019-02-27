@@ -2,7 +2,7 @@
 
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
-# Copyright (C) 2006-2018 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -258,7 +258,7 @@ class BackendDispatchConfigFile(ConfigFile):
 		"""
 		Returns the dispatch config entries with RegEx and corresponding backends.
 
-		:returntype: [('regex', ('backend1', 'backend2', ...)),]
+		:rtype: [('regex', ('backend1', 'backend2', ...)),]
 		"""
 		if lines:
 			self._lines = forceUnicodeList(lines)
@@ -287,7 +287,7 @@ class BackendDispatchConfigFile(ConfigFile):
 		Returns the backends used by the dispatch configuration.
 		This will not include any information on where it is used.
 
-		:returntype: set(['backend1', 'backend2'])
+		:rtype: set(['backend1', 'backend2'])
 		"""
 		collectedBackends = set()
 
@@ -1063,7 +1063,7 @@ class OpsiConfFile(IniFile):
 		Check if the usage of pigz is enabled.
 
 		:return: False if the usage of pigz is disabled, True otherwise.
-		:returntype: bool
+		:rtype: bool
 		"""
 		if "packages" in self._opsiConfig and "use_pigz" in self._opsiConfig["packages"]:
 			return self._opsiConfig["packages"]["use_pigz"]
@@ -1546,19 +1546,16 @@ element of the tuple is replace with the second element.
 					cmd.append("--password=%s" % backend["config"]["password"])
 					cmd.append(backend["config"]["database"])
 
-					output = StringIO()
-
 					p = Popen(cmd, stdin=fd, stdout=PIPE, stderr=STDOUT)
 
 					out = p.stdout.readline()
-
+					output = StringIO()
 					while not p.poll() and out:
-						output.write(out)
+						output.write(out.decode())
 						out = p.stdout.readline()
 
 					if p.returncode not in (0, None):
 						raise OpsiBackupFileError(u"Failed to restore MySQL Backend: %s" % output.getvalue())
-
 				finally:
 					os.close(fd)
 					os.remove(name)

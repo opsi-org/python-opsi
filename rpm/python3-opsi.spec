@@ -1,7 +1,7 @@
 #
 # spec file for package python3-opsi
 #
-# Copyright (c) 2013-2018 uib GmbH.
+# Copyright (c) 2013-2019 uib GmbH.
 # This file and all modifications and additions to the pristine
 # package are under the same license as the package itself.
 #
@@ -10,7 +10,11 @@ BuildRequires:  gettext-devel
 BuildRequires:  python3-devel
 BuildRequires:  python3-setuptools
 Requires:       duplicity
+%if 0%{?sle_version} == 150000 && 0%{?is_opensuse}
+Requires:		net-tools-deprecated
+%else
 Requires:       iproute
+%endif
 Requires:       lshw
 Requires:       python3 >= 3.5.3
 Requires:       python-ldaptor
@@ -60,10 +64,10 @@ Url:            http://www.opsi.org
 License:        AGPL-3.0+
 Group:          Productivity/Networking/Opsi
 AutoReqProv:    on
-Version:        4.1.1.19
+Version:        4.1.1.52
 Release:        1
 Summary:        Python library for the client management solution opsi
-Source:         python-opsi_4.1.1.19-1.tar.gz
+Source:         python-opsi_4.1.1.52-1.tar.gz
 #Source2:        setup.py
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 # python noarch modules are only working on openSUSE 11.2 or higher

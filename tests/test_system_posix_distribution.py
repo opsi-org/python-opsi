@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -36,7 +36,9 @@ DISTRI_INFOS = [
     (('Ubuntu', '16.04', 'xenial'), (16, 4)),
     # TODO: add UCS 4.x
     # TODO: add SLES12
-    # TODO: add OpenSUSE Leap
+    (('openSUSE project', '42.3', 'n/a'), (42, 3)),
+    (('openSUSE', '15.0', 'n/a'), (15, 0)),
+
 ]
 
 

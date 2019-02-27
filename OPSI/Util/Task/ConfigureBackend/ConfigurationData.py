@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2014-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -277,7 +277,7 @@ def readWindowsDomainFromSambaConfig(pathToConfig=SMB_CONF):
 	:param pathToConfig: Path to the smb.conf
 	:type pathToConfig: str
 	:return: The Windows domain in uppercase letters.
-	:returntype: str
+	:rtype: str
 	"""
 	winDomain = u''
 	if os.path.exists(pathToConfig):
@@ -298,7 +298,7 @@ def readWindowsDomainFromUCR():
 	If no domain can be found this returns an empty string.
 
 	:return: The Windows domain in uppercase letters.
-	:returntype: str
+	:rtype: str
 	"""
 	domain = ''
 	try:
