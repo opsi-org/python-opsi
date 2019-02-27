@@ -38,7 +38,7 @@ from tempfile import NamedTemporaryFile
 from OpenSSL import crypto
 
 from OPSI.Logger import Logger
-from OPSI.System import CommandNotFoundException, which, execute
+from OPSI.System import isUCS, which, execute
 from OPSI.Types import forceHostId, forceInt
 from OPSI.Util import getfqdn
 
@@ -134,12 +134,9 @@ If not given will use a default.
 	:type config: dict
 	:raises CertificateCreationError: If errors exist in configuration.
 	"""
-	try:
-		which("ucr")
+	if isUCS():
 		LOGGER.notice(u"Don't use certificate creation method on UCS-Systems")
 		return
-	except CommandNotFoundException:
-		pass  # not on UCS - we can continue
 
 	if path is None:
 		path = OPSICONFD_CERTFILE
