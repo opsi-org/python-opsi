@@ -1,3 +1,10 @@
+python3-opsi (4.2.0.4-1) experimental; urgency=medium
+
+  * Use python3-pam for PAM auth.
+  * Fix an encoding error that could occur on restoring a backup.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 27 Feb 2019 17:30:05 +0100
+
 python3-opsi (4.2.0.3-1) experimental; urgency=medium
 
   * 20_legacy.conf: getDepotId: Parameter clientId is required.
