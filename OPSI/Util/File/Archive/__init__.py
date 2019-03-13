@@ -61,8 +61,7 @@ def getFileType(filename):
 		raise NotImplementedError(u"getFileType() not implemented on windows")
 
 	filename = forceFilename(filename)
-	with magic.Magic() as m:
-		return m.id_filename(filename)
+	return magic.from_file(filename)
 
 
 class BaseArchive(object):
