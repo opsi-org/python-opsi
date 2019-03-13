@@ -76,3 +76,14 @@ async def testExitingBackend():
     """
     with AsyncBackendWrapper(ClassicBackend()) as backend:
         await backend.backend_exit()
+
+
+async def testExitingBackendWithoutMethod():
+    class ShortBackend:
+        def hey(self):
+            return "Ohai"
+
+    sbackend = ShortBackend()
+
+    with AsyncBackendWrapper(sbackend) as backend:
+        await backend.backend_exit()
