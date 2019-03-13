@@ -86,6 +86,5 @@ async def testExitingBackendWithoutMethod():
             return "Ohai"
 
     sbackend = ShortBackend()
-
-    with AsyncBackendWrapper(sbackend) as backend:
-        await backend.backend_exit()
+    backend = AsyncBackendWrapper(sbackend)
+    await backend.backend_exit()
