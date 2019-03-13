@@ -66,3 +66,13 @@ async def testNotPresentingProtectedFunctions():
 async def testWorkingAsContextManager():
     with AsyncBackendWrapper(ClassicBackend()) as backend:
         assert "Here we are." == await backend.some_method()
+
+
+async def testExitingBackend():
+    """
+    We want to support a proper backend exit.
+
+    This is used by backends to be able to provide proper shutdowns.
+    """
+    with AsyncBackendWrapper(ClassicBackend()) as backend:
+        await backend.backend_exit()
