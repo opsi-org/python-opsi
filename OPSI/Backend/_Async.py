@@ -68,10 +68,13 @@ class AsyncBackendWrapper:
     def __enter__(self):
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
-        self.backend_exit()
+   def __exit__(self, exc_type, exc_value, traceback):
+        self._sync_backend_exit()
 
-    def backend_exit(self):
+    async def backend_exit(self):
+        self._sync_backend_exit()
+
+    def _sync_backend_exit(self):
         try:
             self.backend.backend_exit()
         except Exception:
