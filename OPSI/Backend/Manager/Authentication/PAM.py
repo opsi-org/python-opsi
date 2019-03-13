@@ -27,7 +27,7 @@ import grp
 import pwd
 import os
 
-import pam
+import PAM as pam
 
 from OPSI.Exceptions import BackendAuthenticationError
 from OPSI.Logger import Logger

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2018 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -38,7 +38,7 @@ from tempfile import NamedTemporaryFile
 from OpenSSL import crypto
 
 from OPSI.Logger import Logger
-from OPSI.System import which, execute
+from OPSI.System import isUCS, which, execute
 from OPSI.Types import forceHostId, forceInt
 from OPSI.Util import getfqdn
 
@@ -134,12 +134,9 @@ If not given will use a default.
 	:type config: dict
 	:raises CertificateCreationError: If errors exist in configuration.
 	"""
-	try:
-		which("ucr")
+	if isUCS():
 		LOGGER.notice(u"Don't use certificate creation method on UCS-Systems")
 		return
-	except Exception:
-		pass
 
 	if path is None:
 		path = OPSICONFD_CERTFILE

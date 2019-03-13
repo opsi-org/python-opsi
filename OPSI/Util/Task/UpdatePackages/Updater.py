@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2018 uib GmbH - http://www.uib.de/
+# Copyright (C) 2018-2019 uib GmbH - http://www.uib.de/
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -985,7 +985,7 @@ _version_, _packageFile_ (complete path), _filename_ and _md5sum_.
 		logger.info(u"Found local package '%s'" % packageFile)
 		try:
 			productId, version = parseFilename(filename)
-			checkSumFile = filename + '.md5'
+			checkSumFile = packageFile + '.md5'
 			if not forceChecksumCalculation and os.path.exists(checkSumFile):
 				logger.debug("Reading existing checksum from {0}", checkSumFile)
 				with open(checkSumFile) as hashFile:

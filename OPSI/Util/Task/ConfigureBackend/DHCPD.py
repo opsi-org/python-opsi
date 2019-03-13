@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2015-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2015-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -41,12 +41,20 @@ from OPSI.System.Posix import isCentOS, isSLES, isRHEL
 from OPSI.Util.File import DHCPDConfFile, DHCPDConf_Block, DHCPDConf_Parameter
 from OPSI.Util.Task.Sudoers import patchSudoersFileToAllowRestartingDHCPD
 
-DHCPD_CONF = locateDHCPDConfig(default=u'/etc/dhcp3/dhcpd.conf')
+DHCPD_CONF = locateDHCPDConfig(default=u'/etc/dhcp/dhcpd.conf')
 
 logger = Logger()
 
 
 def configureDHCPD(configFile=DHCPD_CONF):
+	"""
+	Configure the configuration file for DHCPD.
+
+	If any changes are made the original file will be backed up.
+	The backup file has a timestamp appended to the filename.
+
+	:param configFile: The configuration file for DHCP.
+	"""
 	if not os.path.exists(configFile):
 		logger.warning("Can't find an dhcpd.conf. Aborting configuration.")
 		return

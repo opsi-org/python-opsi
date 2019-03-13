@@ -1,7 +1,8 @@
 twisted[conch,tls]<18.4
 filemagic
 git+https://github.com/twisted/ldaptor.git
-python-pam
+pyCrypto  # formerly brought in as an ldaptor dependency
+# pam3  # Altnerative: use python3-pam
 pyOpenSSL
 mysqlclient
 SQLAlchemy
