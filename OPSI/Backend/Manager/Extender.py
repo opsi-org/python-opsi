@@ -100,7 +100,7 @@ class BackendExtender(ExtendedBackend):
 						logger.logException(execError)
 						raise RuntimeError(u"Error reading file {0!r}: {1}".format(confFile, execError))
 
-					for key, val in locals().items():
+					for key, val in locals().copy().items():
 						if isinstance(val, types.FunctionType):   # TODO: find a better way
 							logger.debug2(u"Extending %s with instancemethod: '%s'" % (self._backend.__class__.__name__, key))
 							setattr(self, key, types.MethodType(val, self))
