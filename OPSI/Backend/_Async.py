@@ -38,46 +38,46 @@ __all__ = ('AsyncBackendWrapper', )
 
 
 class AsyncBackendWrapper:
-    def __init__(self, backend, loop=None):
-        self.backend = backend
+	def __init__(self, backend, loop=None):
+		self.backend = backend
 
-        self.loop = loop or get_event_loop()
-        self.pool = ThreadPoolExecutor()
+		self.loop = loop or get_event_loop()
+		self.pool = ThreadPoolExecutor()
 
-        self._wrapBackend()
+		self._wrapBackend()
 
-    def _wrapBackend(self):
-        def make_async(f):
-            @functools.wraps(f)
-            async def wrapped(*args, **kwargs):
-                partialFunc = functools.partial(f, *args, **kwargs)
-                return await self.loop.run_in_executor(self.pool, partialFunc)
+	def _wrapBackend(self):
+		def make_async(f):
+			@functools.wraps(f)
+			async def wrapped(*args, **kwargs):
+				partialFunc = functools.partial(f, *args, **kwargs)
+				return await self.loop.run_in_executor(self.pool, partialFunc)
 
-            return wrapped
+			return wrapped
 
-        methods = inspect.getmembers(self.backend, inspect.ismethod)
-        for name, funcRef in methods:
-            if name.startswith('_'):  # Protected or private
-                continue
+		methods = inspect.getmembers(self.backend, inspect.ismethod)
+		for name, funcRef in methods:
+			if name.startswith('_'):  # Protected or private
+				continue
 
-            if hasattr(self, name):
-                continue
+			if hasattr(self, name):
+				continue
 
-            setattr(self, name, make_async(funcRef))
+			setattr(self, name, make_async(funcRef))
 
-    def __enter__(self):
-        return self
+	def __enter__(self):
+		return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
-        self._sync_backend_exit()
+	def __exit__(self, exc_type, exc_value, traceback):
+		self._sync_backend_exit()
 
-    async def backend_exit(self):
-        self._sync_backend_exit()
+	async def backend_exit(self):
+		self._sync_backend_exit()
 
-    def _sync_backend_exit(self):
-        try:
-            self.backend.backend_exit()
-        except Exception:
-            pass
+	def _sync_backend_exit(self):
+		try:
+			self.backend.backend_exit()
+		except Exception:
+			pass
 
-        self.pool.shutdown()
+		self.pool.shutdown()
