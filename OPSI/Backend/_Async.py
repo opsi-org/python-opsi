@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2018 uib GmbH <info@uib.de>
+# Copyright (C) 2018-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -69,12 +69,15 @@ class AsyncBackendWrapper:
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        self.backend_exit()
+        self._sync_backend_exit()
 
-    def backend_exit(self):
+    async def backend_exit(self):
+        self._sync_backend_exit()
+
+    def _sync_backend_exit(self):
         try:
             self.backend.backend_exit()
         except Exception:
             pass
 
-        self.executor.shutdown()
+        self.pool.shutdown()

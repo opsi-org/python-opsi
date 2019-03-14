@@ -66,3 +66,25 @@ async def testNotPresentingProtectedFunctions():
 async def testWorkingAsContextManager():
     with AsyncBackendWrapper(ClassicBackend()) as backend:
         assert "Here we are." == await backend.some_method()
+
+
+@pytest.mark.asyncio
+async def testExitingBackend():
+    """
+    We want to support a proper backend exit.
+
+    This is used by backends to be able to provide proper shutdowns.
+    """
+    with AsyncBackendWrapper(ClassicBackend()) as backend:
+        await backend.backend_exit()
+
+
+@pytest.mark.asyncio
+async def testExitingBackendWithoutMethod():
+    class ShortBackend:
+        def hey(self):
+            return "Ohai"
+
+    sbackend = ShortBackend()
+    backend = AsyncBackendWrapper(sbackend)
+    await backend.backend_exit()
