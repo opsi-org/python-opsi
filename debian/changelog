@@ -1,3 +1,11 @@
+python3-opsi (4.2.0.5-1) experimental; urgency=medium
+
+  * AsyncBackendWrapper: backend_exit is now async.
+  * BackendExtender: Fix bug when loading files.
+  * OPSI.Util.File.Archive: Fix invocation of magic.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 15 Mar 2019 11:00:08 +0100
+
 python3-opsi (4.2.0.4-1) experimental; urgency=medium
 
   * Use python3-pam for PAM auth.
