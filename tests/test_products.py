@@ -1626,18 +1626,25 @@ def testUpdatingMultipleProductProperties(extendedConfigDataBackend):
     assert len(prodPropertiesOrig) == len(properties)
     assert len(properties) > 1, "Want more properties for tests"
 
-    propZero = properties[0]
-    propZero.editable = not propZero.editable
-    propZero.description = 'Eat my shorts!'
+    for changedProperty in properties:
+        if isinstance(changedProperty, UnicodeProductProperty):
+            break
+    else:
+        raise RuntimeError("No UnicodeProductProperty found!")
 
-    backend.productProperty_updateObjects([propZero])
+    changedProperty.editable = not changedProperty.editable
+    changedProperty.description = u'Eat my shorts!'
+    properties[0] == changedProperty
+    backend.productProperty_updateObjects(properties)
 
-    updatedProp = backend.productProperty_getObjects(
-        productId=propZero.productId,
-        productVersion=propZero.productVersion,
-        packageVersion=propZero.packageVersion,
-        propertyId=propZero.propertyId
-    )[0]
+    props = backend.productProperty_getObjects(
+        productId=changedProperty.productId,
+        productVersion=changedProperty.productVersion,
+        packageVersion=changedProperty.packageVersion,
+        propertyId=changedProperty.propertyId
+    )
+    assert len(props) == 1
+    updatedProp = props[0]
 
-    assert updatedProp.description == 'Eat my shorts!'
-    assert updatedProp.editable == propZero.editable
+    assert updatedProp.description == u'Eat my shorts!'
+    assert updatedProp.editable == changedProperty.editable
