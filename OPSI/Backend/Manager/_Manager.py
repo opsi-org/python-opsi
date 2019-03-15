@@ -113,7 +113,6 @@ class BackendManager(ExtendedBackend):
 		depotBackend = False
 		hostControlBackend = False
 		hostControlSafeBackend = False
-		startReactor = True
 		loadBackend = None
 
 		if not kwargs:
@@ -160,8 +159,6 @@ class BackendManager(ExtendedBackend):
 				extend = forceBool(value)
 			elif option in ('acl', 'aclfile') and value:
 				accessControl = True
-			elif option == 'startreactor' and value is False:
-				startReactor = False
 
 		for argument in argumentToDelete:
 			del kwargs[argument]
