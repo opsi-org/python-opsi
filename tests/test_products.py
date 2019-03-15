@@ -1623,22 +1623,21 @@ def testUpdatingMultipleProductProperties(extendedConfigDataBackend):
     backend.productProperty_createObjects(prodPropertiesOrig)
 
     properties = backend.productProperty_getObjects()
-    assert set(prodPropertiesOrig) == set(properties)
+    assert len(prodPropertiesOrig) == len(properties)
     assert len(properties) > 1, "Want more properties for tests"
 
     propZero = properties[0]
-    propZero.editable = not properties[0].editable
+    propZero.editable = not propZero.editable
     propZero.description = 'Eat my shorts!'
 
-    properties[0] = propZero
-    backend.productProperty_updateObjects(properties)
+    backend.productProperty_updateObjects([propZero])
 
     updatedProp = backend.productProperty_getObjects(
         productId=propZero.productId,
         productVersion=propZero.productVersion,
         packageVersion=propZero.packageVersion,
         propertyId=propZero.propertyId
-    )
+    )[0]
 
     assert updatedProp.description == 'Eat my shorts!'
     assert updatedProp.editable == propZero.editable
