@@ -24,6 +24,8 @@ Testing the functionality of working with products.
 
 from __future__ import absolute_import, print_function
 
+from itertools import product as iterproduct
+
 import pytest
 
 from OPSI.Backend.Backend import temporaryBackendOptions
@@ -697,24 +699,26 @@ def testGettingProductProperties(extendedConfigDataBackend):
     productProperties = extendedConfigDataBackend.productProperty_getObjects()
     assert len(productProperties) == len(prodPropertiesOrig)
 
-    for productProperty in productProperties:
-        for originalProperty in prodPropertiesOrig:
-            if (productProperty.productId == originalProperty.productId and
-                productProperty.propertyId == originalProperty.propertyId and
-                productProperty.productVersion == originalProperty.productVersion and
-                productProperty.packageVersion == originalProperty.packageVersion):
+    matching = 0
+    for productProperty, originalProperty in iterproduct(productProperties, prodPropertiesOrig):
+        if (productProperty.productId == originalProperty.productId and
+            productProperty.propertyId == originalProperty.propertyId and
+            productProperty.productVersion == originalProperty.productVersion and
+            productProperty.packageVersion == originalProperty.packageVersion):
 
-                productProperty = productProperty.toHash()
-                originalProperty = originalProperty.toHash()
-                for (attribute, value) in originalProperty.items():
-                    if value is not None:
-                        if isinstance(value, list):
-                            for v in value:
-                                assert v in productProperty[attribute]
-                        else:
-                            assert value == productProperty[attribute]
+            productProperty = productProperty.toHash()
+            originalProperty = originalProperty.toHash()
+            for (attribute, value) in originalProperty.items():
+                if value is not None:
+                    if isinstance(value, list):
+                        for v in value:
+                            assert v in productProperty[attribute]
+                    else:
+                        assert value == productProperty[attribute]
 
-                break  # Stop iterating the original product properties
+            matching += 1
+
+    assert matching == len(prodPropertiesOrig)
 
 
 def testUpdatingProductProperty(extendedConfigDataBackend):
