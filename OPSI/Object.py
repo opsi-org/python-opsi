@@ -32,7 +32,8 @@ import inspect
 
 from OPSI.Logger import Logger
 from OPSI.Exceptions import BackendBadValueError, BackendConfigurationError
-from OPSI.Types import (forceActionProgress, forceActionRequest,
+from OPSI.Types import (
+	forceActionProgress, forceActionRequest,
 	forceActionResult, forceArchitecture, forceAuditState, forceBool,
 	forceBoolList, forceConfigId, forceFilename, forceFloat, forceGroupId,
 	forceGroupType, forceHardwareAddress, forceHardwareDeviceId,
