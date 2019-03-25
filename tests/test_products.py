@@ -1626,7 +1626,7 @@ def testUpdatingMultipleProductProperties(extendedConfigDataBackend):
     assert len(prodPropertiesOrig) == len(properties)
     assert len(properties) > 1, "Want more properties for tests"
 
-    for changedProperty in properties:
+    for index, changedProperty in enumerate(properties):
         if isinstance(changedProperty, UnicodeProductProperty):
             # We can not change the status of editable on a
             # BoolProductProperty and therefore need to use a
@@ -1635,9 +1635,10 @@ def testUpdatingMultipleProductProperties(extendedConfigDataBackend):
     else:
         raise RuntimeError("No UnicodeProductProperty found!")
 
-    changedProperty.editable = not changedProperty.editable
-    changedProperty.description = u'Eat my shorts!'
-    properties[0] == changedProperty
+    newText = u'Eat my shorts!'
+    changedProperty.setDescription(newText)
+    changedProperty.setEditable(not changedProperty.getEditable())
+    properties[index] == changedProperty
     backend.productProperty_updateObjects(properties)
 
     props = backend.productProperty_getObjects(
@@ -1649,5 +1650,5 @@ def testUpdatingMultipleProductProperties(extendedConfigDataBackend):
     assert len(props) == 1
     updatedProp = props[0]
 
-    assert updatedProp.description == u'Eat my shorts!'
-    assert updatedProp.editable == changedProperty.editable
+    assert updatedProp.getDescription() == newText
+    assert updatedProp.getEditable() == changedProperty.getEditable()
