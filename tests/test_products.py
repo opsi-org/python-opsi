@@ -1628,6 +1628,9 @@ def testUpdatingMultipleProductProperties(extendedConfigDataBackend):
 
     for changedProperty in properties:
         if isinstance(changedProperty, UnicodeProductProperty):
+            # We can not change the status of editable on a
+            # BoolProductProperty and therefore need to use a
+            # UnicodeProductProperty for this test.
             break
     else:
         raise RuntimeError("No UnicodeProductProperty found!")
