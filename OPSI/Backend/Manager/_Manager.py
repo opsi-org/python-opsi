@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2006-2018 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -33,6 +33,7 @@ from __future__ import absolute_import
 
 import os
 import re
+from functools import lru_cache
 
 from OPSI.Backend.Base import Backend, ExtendedBackend, ExtendedConfigDataBackend
 from OPSI.Backend.Depotserver import DepotserverBackend
@@ -220,6 +221,7 @@ class BackendManager(ExtendedBackend):
 
 		self._createInstanceMethods()
 
+	@lru_cache(maxsize=None)
 	def __loadBackendConfig(self, name):
 		if not self._backendConfigDir:
 			raise BackendConfigurationError(u"Backend config dir not given")
@@ -233,11 +235,10 @@ class BackendManager(ExtendedBackend):
 
 	def __loadBackend(self, name):
 		config = self.__loadBackendConfig(name)
-		backendConfigFile = os.path.join(self._backendConfigDir, '%s.conf' % name)
 		if not config['module']:
-			raise BackendConfigurationError(u"No module defined in backend config file '%s'" % backendConfigFile)
+			raise BackendConfigurationError(u"No module defined in backend config file for '%s'" % name)
 		if not isinstance(config['config'], dict):
-			raise BackendConfigurationError(u"Bad type for config var in backend config file '%s', has to be dict" % backendConfigFile)
+			raise BackendConfigurationError(u"Bad type for 'config' var in backend config file for '%s': has to be dict" % name)
 		config['config']['name'] = name
 		moduleName = config['module']
 		backendClassName = '%sBackend' % config['module']
