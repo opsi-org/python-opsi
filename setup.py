@@ -144,7 +144,7 @@ for language in LANGUAGES:
 setup(
 	name='python-opsi',
 	version=VERSION,
-	license='AGPL-3',
+	license='AGPL-3.0',
 	url="http://www.opsi.org",
 	description='The opsi python library',
 	packages=find_packages(exclude=["*.tests", "*.tests.*", "tests.*", "tests"]),
