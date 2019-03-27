@@ -221,7 +221,7 @@ class BackendManager(ExtendedBackend):
 
 		self._createInstanceMethods()
 
-	@lru_cache(maxsize=32)
+	@lru_cache(maxsize=None)
 	def __loadBackendConfig(self, name):
 		if not self._backendConfigDir:
 			raise BackendConfigurationError(u"Backend config dir not given")
