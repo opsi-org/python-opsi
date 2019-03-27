@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2006-2018 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -32,6 +32,7 @@ from __future__ import absolute_import
 import inspect
 import os
 import types
+from functools import lru_cache
 
 from OPSI.Backend.Base import ExtendedBackend
 from OPSI.Exceptions import BackendConfigurationError
@@ -80,22 +81,11 @@ class BackendExtender(ExtendedBackend):
 				setattr(self, methodName, new_method)
 
 		if self._extensionConfigDir:
-			if not os.path.exists(self._extensionConfigDir):
-				logger.error(u"No extensions loaded: extension directory {0!r} does not exist".format(self._extensionConfigDir))
-				return
-
 			try:
-				confFiles = (
-					os.path.join(self._extensionConfigDir, filename)
-					for filename in sorted(os.listdir(self._extensionConfigDir))
-					if filename.endswith('.conf')
-				)
-
-				for confFile in confFiles:
+				for confFile in _getExtensionFiles(self._extensionConfigDir):
 					try:
 						logger.info(u"Reading config file '%s'" % confFile)
-						with open(confFile) as confFileHandle:
-							exec(confFileHandle.read())
+						exec(_readExtension(confFile))
 					except Exception as execError:
 						logger.logException(execError)
 						raise RuntimeError(u"Error reading file {0!r}: {1}".format(confFile, execError))
@@ -106,3 +96,23 @@ class BackendExtender(ExtendedBackend):
 							setattr(self, key, types.MethodType(val, self))
 			except Exception as error:
 				raise BackendConfigurationError(u"Failed to read extensions from '%s': %s" % (self._extensionConfigDir, error))
+
+
+@lru_cache(maxsize=16)
+def _getExtensionFiles(directory):
+	if not os.path.exists(directory):
+		logger.error(u"No extensions loaded: extension directory {0!r} does not exist".format(self._extensionConfigDir))
+		return
+
+	return [
+		os.path.join(directory, filename)
+		for filename in sorted(os.listdir(directory))
+		if filename.endswith('.conf')
+	]
+
+
+@lru_cache(maxsize=128)
+def _readExtension(filepath):
+	logger.debug(u"Reading extension file {!r}", filepath)
+	with open(filepath) as confFileHandle:
+		return confFileHandle.read()
