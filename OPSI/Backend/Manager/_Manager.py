@@ -235,11 +235,10 @@ class BackendManager(ExtendedBackend):
 
 	def __loadBackend(self, name):
 		config = self.__loadBackendConfig(name)
-		backendConfigFile = os.path.join(self._backendConfigDir, '%s.conf' % name)
 		if not config['module']:
-			raise BackendConfigurationError(u"No module defined in backend config file '%s'" % backendConfigFile)
+			raise BackendConfigurationError(u"No module defined in backend config file for '%s'" % name)
 		if not isinstance(config['config'], dict):
-			raise BackendConfigurationError(u"Bad type for config var in backend config file '%s', has to be dict" % backendConfigFile)
+			raise backendconfigurationerror(u"Bad type for 'config' var in backend config file for '%s': has to be dict" % name)
 		config['config']['name'] = name
 		moduleName = config['module']
 		backendClassName = '%sBackend' % config['module']
