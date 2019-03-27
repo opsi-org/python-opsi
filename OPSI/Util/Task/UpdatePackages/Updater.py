@@ -937,7 +937,7 @@ class OpsiPackageUpdater(object):
 										con = opener.open(req)
 										md5sum = con.read(32768)
 										md5sum = md5sum.decode()  # to str
-										match = re.search('([a-z\d]{32})', md5sum)
+										match = re.search(r'([a-z\d]{32})', md5sum)
 										if match:
 											foundMd5sum = match.group(1)
 											packages[i]["md5sum"] = foundMd5sum
