@@ -142,7 +142,7 @@ for language in LANGUAGES:
 
 required_packages = [
 	'twisted[conch,tls]<18.4',
-	'git+https://github.com/twisted/ldaptor.git',
+	# 'git+https://github.com/twisted/ldaptor.git',
 	'pyCrypto',
 	'pyOpenSSL',
 	'SQLAlchemy',
