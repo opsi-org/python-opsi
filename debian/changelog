@@ -1,3 +1,16 @@
+python3-opsi (4.2.0.6-1) experimental; urgency=medium
+
+  * OPSI.Backend.OpsiPXEConfd.ServerConnection: Fix communication through the
+    unix socket.
+  * OPSI.Util.Task.UpdatePackages: Correctly encode when communicating with
+    a webserver.
+  * OPSI.Util.Task.UpdatePackages: Pass correct types to password manager.
+  * OPSI.Backend.Manager: Caching backend configuration and extension files
+    once read to avoid the same files being read over and over again.
+  * For developers: Dependencies moved from requirements files into setup.py.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 27 Mar 2019 17:49:16 +0100
+
 python3-opsi (4.2.0.5-1) experimental; urgency=medium
 
   * AsyncBackendWrapper: backend_exit is now async.

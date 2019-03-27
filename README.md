@@ -50,14 +50,6 @@ This can be done with:
 ``apt-get install build-essential python-dev librsync-dev python-apsw``
 
 
-### Install via pip
-
-It is possible to use `pip` to install most of the requirements - some
-requirements are for other programs that can not be installed via pip.
-
-``pip install -r requirements.txt``
-
-
 ## Building
 
 Packages can be build for distributions that use either Debian or RPM
@@ -82,9 +74,10 @@ Tests can be found in the `tests` folder. We use [pytest](http://pytest.org/) fo
 
 ### Installing Requirements
 
-Requirements for the tests can be found in ``requirements-qa.txt``.
+Requirements for tests and QA are listed as package extras.
+
 They can be installed with the following command:
-``pip install -r requirements-qa.txt``
+``pip install ".[test,qa]"``
 
 ### Configuring database for test
 

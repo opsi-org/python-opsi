@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2006-2018 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -29,6 +29,7 @@ import inspect
 import os
 import re
 import types
+from functools import lru_cache
 
 from OPSI.Backend.Base import (
 	Backend, ConfigDataBackend, getArgAndCallString)
@@ -102,11 +103,8 @@ class BackendDispatcher(Backend):
 		if not self._dispatchConfigFile:
 			raise BackendConfigurationError(u"No dispatch config file defined")
 
-		if not os.path.exists(self._dispatchConfigFile):
-			raise BackendConfigurationError(u"Dispatch config file '%s' not found" % self._dispatchConfigFile)
-
 		try:
-			self._dispatchConfig = BackendDispatchConfigFile(self._dispatchConfigFile).parse()
+			self._dispatchConfig = _loadDispatchConfig(self._dispatchConfigFile)
 			logger.debug(u"Read dispatch config from file {0!r}: {1!r}", self._dispatchConfigFile, self._dispatchConfig)
 		except Exception as e:
 			raise BackendConfigurationError(u"Failed to load dispatch config file '%s': %s" % (self._dispatchConfigFile, e))
@@ -222,3 +220,11 @@ class BackendDispatcher(Backend):
 
 	def dispatcher_getBackendNames(self):
 		return self._backends.keys()
+
+
+@lru_cache(maxsize=None)
+def _loadDispatchConfig(dispatchConfigFile):
+	if not os.path.exists(dispatchConfigFile):
+		raise BackendConfigurationError(u"Dispatch config file '%s' not found" % dispatchConfigFile)
+
+	return BackendDispatchConfigFile(dispatchConfigFile).parse()
