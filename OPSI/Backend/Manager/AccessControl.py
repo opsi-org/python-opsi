@@ -442,7 +442,7 @@ class BackendAccessControl:
 		return newObjects
 
 
-@lru_cache(maxsize=8)
+@lru_cache(maxsize=None)
 def _readACLFile(path):
 	if not os.path.exists(path):
 		raise BackendIOError(u"Acl file '%s' not found" % path)

@@ -54,7 +54,7 @@ def loadBackendConfig(path):
 	return moduleGlobals
 
 
-@lru_cache(maxsize=32)
+@lru_cache(maxsize=None)
 def _readFile(path):
 	with open(path) as configFile:
 		return configFile.read()

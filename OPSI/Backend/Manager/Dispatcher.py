@@ -222,7 +222,7 @@ class BackendDispatcher(Backend):
 		return self._backends.keys()
 
 
-@lru_cache(maxsize=8)
+@lru_cache(maxsize=None)
 def _loadDispatchConfig(dispatchConfigFile):
 	if not os.path.exists(dispatchConfigFile):
 		raise BackendConfigurationError(u"Dispatch config file '%s' not found" % dispatchConfigFile)
