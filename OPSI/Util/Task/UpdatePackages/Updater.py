@@ -865,7 +865,9 @@ class OpsiPackageUpdater(object):
 				req = urllib.request.Request(url, None, self.httpHeaders)
 				response = opener.open(req)
 				content = response.read()
-				logger.debug("content: '%s'" % content)
+				logger.debug("content: {!r}", content)
+				content = content.decode()  # to str
+
 				htmlParser = LinksExtractor()
 				htmlParser.feed(content)
 				htmlParser.close()
@@ -934,6 +936,7 @@ class OpsiPackageUpdater(object):
 										req = urllib.request.Request(url + '/' + link, None, self.httpHeaders)
 										con = opener.open(req)
 										md5sum = con.read(32768)
+										md5sum = md5sum.decode()  # to str
 										match = re.search('([a-z\d]{32})', md5sum)
 										if match:
 											foundMd5sum = match.group(1)
