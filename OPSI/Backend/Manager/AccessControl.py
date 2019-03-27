@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2006-2018 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -29,6 +29,7 @@ import inspect
 import os
 import re
 import types
+from functools import lru_cache
 
 from OPSI.Backend.Base import (
 	ConfigDataBackend, ExtendedConfigDataBackend,
@@ -169,9 +170,8 @@ class BackendAccessControl:
 		try:
 			if not self._aclFile:
 				raise BackendConfigurationError(u"No acl file defined")
-			if not os.path.exists(self._aclFile):
-				raise BackendIOError(u"Acl file '%s' not found" % self._aclFile)
-			self._acl = BackendACLFile(self._aclFile).parse()
+
+			self._acl = _readACLFile(self._aclFile)
 			logger.debug(u"Read acl from file {0!r}: {1!r}", self._aclFile, self._acl)
 		except Exception as error:
 			logger.logException(error)
@@ -440,3 +440,11 @@ class BackendAccessControl:
 				raise BackendPermissionDeniedError(u"Access denied")
 
 		return newObjects
+
+
+@lru_cache(maxsize=8)
+def _readACLFile(path):
+	if not os.path.exists(path):
+		raise BackendIOError(u"Acl file '%s' not found" % path)
+
+	return BackendACLFile(path).parse()
