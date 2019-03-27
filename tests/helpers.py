@@ -154,6 +154,9 @@ def showLogs(logLevel=7, color=True):
 
     logLevelBefore = logger.getConsoleLevel()
 
+    # We might want to have a better log format:
+    # logger.setLogFormat(u'[%l] [%D] %M (%F|%N)')
+
     try:
         logger.setConsoleLevel(logLevel)
         logger.setConsoleColor(color)
