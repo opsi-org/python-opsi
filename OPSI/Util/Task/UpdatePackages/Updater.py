@@ -840,7 +840,7 @@ class OpsiPackageUpdater(object):
 			handler = urllib.request.HTTPSHandler(context=context)
 		else:
 			passwordManager = urllib.request.HTTPPasswordMgrWithDefaultRealm()
-			passwordManager.add_password(None, repository.baseUrl.encode('utf-8'), repository.username.encode('utf-8'), repository.password.encode('utf-8'))
+			passwordManager.add_password(None, repository.baseUrl, repository.username, repository.password)
 			handler = urllib.request.HTTPBasicAuthHandler(passwordManager)
 
 		if repository.proxy:
@@ -865,7 +865,9 @@ class OpsiPackageUpdater(object):
 				req = urllib.request.Request(url, None, self.httpHeaders)
 				response = opener.open(req)
 				content = response.read()
-				logger.debug("content: '%s'" % content)
+				logger.debug("content: {!r}", content)
+				content = content.decode()  # to str
+
 				htmlParser = LinksExtractor()
 				htmlParser.feed(content)
 				htmlParser.close()
@@ -912,7 +914,7 @@ class OpsiPackageUpdater(object):
 						logger.debug(u"Repository package info: {0}", packageInfo)
 						packages.append(packageInfo)
 					except Exception as error:
-						logger.error(u"Failed to process link '%s': %s" % (link, error))
+						logger.error(u"Failed to process link {!r}: {}", link, error)
 
 				if not depotConnection:
 					for link in htmlParser.getLinks():
@@ -934,7 +936,8 @@ class OpsiPackageUpdater(object):
 										req = urllib.request.Request(url + '/' + link, None, self.httpHeaders)
 										con = opener.open(req)
 										md5sum = con.read(32768)
-										match = re.search('([a-z\d]{32})', md5sum)
+										md5sum = md5sum.decode()  # to str
+										match = re.search(r'([a-z\d]{32})', md5sum)
 										if match:
 											foundMd5sum = match.group(1)
 											packages[i]["md5sum"] = foundMd5sum
@@ -945,7 +948,7 @@ class OpsiPackageUpdater(object):
 										logger.debug(u"Found zsync file for package {0!r}: {1}", filename, zsyncFile)
 									break
 						except Exception as error:
-							logger.error(u"Failed to process link '%s': %s" % (link, error))
+							logger.error(u"Failed to process link {!r}: {}", link, error)
 			except Exception as error:
 				logger.logException(error, LOG_DEBUG)
 				self.errors.append(error)
