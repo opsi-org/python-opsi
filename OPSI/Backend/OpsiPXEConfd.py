@@ -62,7 +62,7 @@ class ServerConnection:
 
 			result = ''
 			try:
-				for part in iter(lambda: unixSocket.recv(4096), ''):
+				for part in iter(lambda: unixSocket.recv(4096), b''):
 					logger.debug2("Received {!r}", part)
 					result += forceUnicode(part)
 			except Exception as error:
