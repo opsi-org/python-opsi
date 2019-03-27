@@ -840,7 +840,7 @@ class OpsiPackageUpdater(object):
 			handler = urllib.request.HTTPSHandler(context=context)
 		else:
 			passwordManager = urllib.request.HTTPPasswordMgrWithDefaultRealm()
-			passwordManager.add_password(None, repository.baseUrl.encode('utf-8'), repository.username.encode('utf-8'), repository.password.encode('utf-8'))
+			passwordManager.add_password(None, repository.baseUrl, repository.username, repository.password)
 			handler = urllib.request.HTTPBasicAuthHandler(passwordManager)
 
 		if repository.proxy:
