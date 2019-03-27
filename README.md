@@ -82,9 +82,10 @@ Tests can be found in the `tests` folder. We use [pytest](http://pytest.org/) fo
 
 ### Installing Requirements
 
-Requirements for the tests can be found in ``requirements-qa.txt``.
+Requirements for tests and QA are listed as package extras.
+
 They can be installed with the following command:
-``pip install -r requirements-qa.txt``
+``pip install ".[test,qa]"``
 
 ### Configuring database for test
 
