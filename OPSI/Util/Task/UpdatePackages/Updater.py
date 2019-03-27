@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2018 uib GmbH - http://www.uib.de/
+# Copyright (C) 2018-2019 uib GmbH - http://www.uib.de/
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -18,7 +18,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-Component for handling packages updates.
+Component for handling package updates.
 
 :copyright: uib GmbH <info@uib.de>
 :author: Niko Wenselowski <n.wenselowski@uib.de>
@@ -27,6 +27,8 @@ Component for handling packages updates.
 
 import os
 import os.path
+import re
+import ssl
 import time
 import urllib.request
 from urllib.parse import quote
@@ -120,7 +122,7 @@ class OpsiPackageUpdater(object):
 			yield repo
 
 	def readConfigFile(self):
-		parser = ConfigurationParser(self.config["configFile"], self.getConfigBackend())
+		parser = ConfigurationParser(self.config["configFile"], backend=self.getConfigBackend(), depotId=self.depotId, depotKey=self.depotKey)
 		self.config = parser.parse(self.config)
 
 	def getConfigBackend(self):
@@ -672,12 +674,20 @@ class OpsiPackageUpdater(object):
 			os.chdir(curdir)
 
 	def downloadPackage(self, availablePackage, notifier=None):
+		authcertfile = availablePackage['repository'].authcertfile
+		authkeyfile = availablePackage['repository'].authkeyfile
 		url = availablePackage["packageFile"]
 		outFile = os.path.join(self.config["packageDir"], availablePackage["filename"])
 
-		passwordManager = urllib.request.HTTPPasswordMgrWithDefaultRealm()
-		passwordManager.add_password(None, availablePackage['repository'].baseUrl, availablePackage['repository'].username, availablePackage['repository'].password)
-		handler = urllib.request.HTTPBasicAuthHandler(passwordManager)
+		if os.path.exists(authcertfile) and os.path.exists(authkeyfile):
+			context = ssl.create_default_context()
+			context.load_cert_chain(authcertfile, authkeyfile)
+			handler = urllib.request.HTTPSHandler(context=context)
+		else:
+			passwordManager = urllib.request.HTTPPasswordMgrWithDefaultRealm()
+			passwordManager.add_password(None, availablePackage['repository'].baseUrl, availablePackage['repository'].username, availablePackage['repository'].password)
+			handler = urllib.request.HTTPBasicAuthHandler(passwordManager)
+
 		if availablePackage['repository'].proxy:
 			logger.notice(u"Using Proxy: %s" % availablePackage['repository'].proxy)
 			proxyHandler = urllib.request.ProxyHandler({'http': availablePackage['repository'].proxy, 'https': availablePackage['repository'].proxy})
@@ -821,10 +831,18 @@ class OpsiPackageUpdater(object):
 			if not repositoryLocalUrl or not repositoryLocalUrl.startswith('file://'):
 				raise ValueError(u"Invalid repository local url for depot '%s'" % repository.opsiDepotId)
 			depotRepositoryPath = repositoryLocalUrl[7:]
+		authcertfile = repository.authcertfile
+		authkeyfile = repository.authkeyfile
 
-		passwordManager = urllib.request.HTTPPasswordMgrWithDefaultRealm()
-		passwordManager.add_password(None, repository.baseUrl.encode('utf-8'), repository.username.encode('utf-8'), repository.password.encode('utf-8'))
-		handler = urllib.request.HTTPBasicAuthHandler(passwordManager)
+		if os.path.exists(authcertfile) and os.path.exists(authkeyfile):
+			context = ssl.create_default_context()
+			context.load_cert_chain(authcertfile, authkeyfile)
+			handler = urllib.request.HTTPSHandler(context=context)
+		else:
+			passwordManager = urllib.request.HTTPPasswordMgrWithDefaultRealm()
+			passwordManager.add_password(None, repository.baseUrl, repository.username, repository.password)
+			handler = urllib.request.HTTPBasicAuthHandler(passwordManager)
+
 		if repository.proxy:
 			logger.notice(u"Using Proxy: %s" % repository.proxy)
 			proxyHandler = urllib.request.ProxyHandler(
@@ -967,7 +985,7 @@ _version_, _packageFile_ (complete path), _filename_ and _md5sum_.
 		logger.info(u"Found local package '%s'" % packageFile)
 		try:
 			productId, version = parseFilename(filename)
-			checkSumFile = filename + '.md5'
+			checkSumFile = packageFile + '.md5'
 			if not forceChecksumCalculation and os.path.exists(checkSumFile):
 				logger.debug("Reading existing checksum from {0}", checkSumFile)
 				with open(checkSumFile) as hashFile:
