@@ -238,7 +238,7 @@ class BackendManager(ExtendedBackend):
 		if not config['module']:
 			raise BackendConfigurationError(u"No module defined in backend config file for '%s'" % name)
 		if not isinstance(config['config'], dict):
-			raise backendconfigurationerror(u"Bad type for 'config' var in backend config file for '%s': has to be dict" % name)
+			raise BackendConfigurationError(u"Bad type for 'config' var in backend config file for '%s': has to be dict" % name)
 		config['config']['name'] = name
 		moduleName = config['module']
 		backendClassName = '%sBackend' % config['module']
