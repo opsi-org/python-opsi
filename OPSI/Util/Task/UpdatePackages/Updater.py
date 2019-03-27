@@ -914,7 +914,7 @@ class OpsiPackageUpdater(object):
 						logger.debug(u"Repository package info: {0}", packageInfo)
 						packages.append(packageInfo)
 					except Exception as error:
-						logger.error(u"Failed to process link '%s': %s" % (link, error))
+						logger.error(u"Failed to process link {!r}: {}", link, error)
 
 				if not depotConnection:
 					for link in htmlParser.getLinks():
@@ -948,7 +948,7 @@ class OpsiPackageUpdater(object):
 										logger.debug(u"Found zsync file for package {0!r}: {1}", filename, zsyncFile)
 									break
 						except Exception as error:
-							logger.error(u"Failed to process link '%s': %s" % (link, error))
+							logger.error(u"Failed to process link {!r}: {}", link, error)
 			except Exception as error:
 				logger.logException(error, LOG_DEBUG)
 				self.errors.append(error)
