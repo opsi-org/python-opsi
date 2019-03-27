@@ -141,6 +141,7 @@ for language in LANGUAGES:
 	else:
 		print('Generating locale for "{0}" failed. Is gettext installed?'.format(language))
 
+test_modules = ['pytest >= 3.6', 'pytest-asyncio >= 0.6']
 
 setup(
 	name='python-opsi',
@@ -150,4 +151,9 @@ setup(
 	description='The opsi python library',
 	packages=find_packages(exclude=["*.tests", "*.tests.*", "tests.*", "tests"]),
 	data_files=data_files,
+	extras_require={
+		'test': test_modules,
+		'qa': ['pytest-cov >= 2.3.1', 'pylint', 'flake8']
+	},
+	tests_require=test_modules,
 )
