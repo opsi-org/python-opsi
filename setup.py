@@ -140,6 +140,20 @@ for language in LANGUAGES:
 	else:
 		print('Generating locale for "{0}" failed. Is gettext installed?'.format(language))
 
+required_packages = [
+	'twisted[conch,tls]<18.4',
+	'pyCrypto',
+	'pyOpenSSL',
+	'SQLAlchemy',
+	'pyasn1',
+]
+
+if os.name == 'posix':
+	# The following dependencies aren't required when running on a
+	# Windows client as part of the opsiclientd.
+	required_packages.append('python-magic')
+	required_packages.append('mysqlclient')
+
 test_modules = ['pytest >= 3.6', 'pytest-asyncio >= 0.6']
 
 setup(
@@ -150,6 +164,7 @@ setup(
 	description='The opsi python library',
 	packages=find_packages(exclude=["*.tests", "*.tests.*", "tests.*", "tests"]),
 	data_files=data_files,
+	install_requires=required_packages,
 	extras_require={
 		'test': test_modules,
 		'qa': ['pytest-cov >= 2.3.1', 'pylint', 'flake8']
