@@ -29,8 +29,8 @@ Attention: socket.defaulttimeout may be changed per config file setting.
 
 import os
 import os.path
-import socket
 import re
+import socket
 
 from .Exceptions import (ConfigurationError, MissingConfigurationValueError,
 	RequiringBackendError)
