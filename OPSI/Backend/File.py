@@ -53,7 +53,7 @@ logger = Logger()
 
 class FileBackend(ConfigDataBackend):
 	# example match (ignore spaces):      exampleexam_e.-ex  _ 1234.12 - 1234.12  . local     boot
-	productFilenameRegex = re.compile('^([a-zA-Z0-9\_\.-]+)\_([\w\.]+)-([\w\.]+)\.(local|net)boot$')
+	productFilenameRegex = re.compile(r'^([a-zA-Z0-9_.-]+)_([\w.]+)-([\w.]+)\.(local|net)boot$')
 
 	def __init__(self, **kwargs):
 		self._name = 'file'
@@ -109,7 +109,7 @@ class FileBackend(ConfigDataBackend):
 		self.__defaultClientTemplatePath = os.path.join(self.__clientTemplateDir, u'{0}.ini'.format(self.__defaultClientTemplateName))
 
 		self.__serverId = forceHostId(getfqdn())
-		self._placeholderRegex = re.compile('^(.*)<([^>]+)>(.*)$')
+		self._placeholderRegex = re.compile(r'^(.*)<([^>]+)>(.*)$')
 
 		self._mappings = {
 			'Config': [
