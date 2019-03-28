@@ -276,7 +276,7 @@ class BackendManager(ExtendedBackend):
 			raise BackendConfigurationError(u"Backend config dir not given")
 		if not os.path.exists(self._backendConfigDir):
 			raise BackendConfigurationError(u"Backend config dir '%s' not found" % self._backendConfigDir)
-		if not re.search('^[a-zA-Z0-9-_]+$', name):
+		if not re.search(r'^[a-zA-Z0-9-_]+$', name):
 			raise ValueError(u"Bad backend config name '%s'" % name)
 		name = name.lower()
 		backendConfigFile = os.path.join(self._backendConfigDir, '%s.conf' % name)
@@ -583,7 +583,7 @@ class BackendAccessControl(object):
 			raise BackendConfigurationError(u"Cannot use BackendAccessControl instance as backend")
 
 		try:
-			if re.search('^[^\.]+\.[^\.]+\.\S+$', self._username):
+			if re.search(r'^[^\.]+\.[^\.]+\.\S+$', self._username):
 				# Username starts with something like hostname.domain.tld:
 				# Assuming it is a host passing his FQDN as username
 				logger.debug(u"Trying to authenticate by opsiHostKey...")
@@ -625,7 +625,7 @@ class BackendAccessControl(object):
 		self._authenticated = True
 
 		if not self._acl:
-			self._acl = [['.*', [{'type': u'sys_group', 'ids': [OPSI_ADMIN_GROUP], 'denyAttributes': [], 'allowAttributes': []}]]]
+			self._acl = [[r'.*', [{'type': u'sys_group', 'ids': [OPSI_ADMIN_GROUP], 'denyAttributes': [], 'allowAttributes': []}]]]
 
 		# Pre-compiling regex patterns for speedup.
 		for i, (pattern, acl) in enumerate(self._acl):
@@ -1019,7 +1019,7 @@ def backendManagerFactory(user, password, dispatchConfigFile, backendConfigDir,
 		)
 	elif len(postpath) == 2 and postpath[0] == 'extend':
 		extendPath = postpath[1]
-		if not re.search('^[a-zA-Z0-9\_\-]+$', extendPath):
+		if not re.search(r'^[a-zA-Z0-9_-]+$', extendPath):
 			raise ValueError(u"Extension config path '%s' refused" % extendPath)
 		backendManager = BackendManager(
 			dispatchConfigFile=dispatchConfigFile,
