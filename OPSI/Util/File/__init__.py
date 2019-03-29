@@ -297,6 +297,10 @@ class TextFile(LockableFile):
 
 class ChangelogFile(TextFile):
 	'''
+	Files containing changelogs.
+
+	These follow the Debian style changelogs:
+
 	package (version) distribution(s); urgency=urgency
 		[optional blank line(s), stripped]
 	  * change details
