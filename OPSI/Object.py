@@ -374,6 +374,7 @@ class Entity(BaseObject):
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'Entity')
 
+
 BaseObject.subClasses['Entity'] = Entity
 
 
@@ -434,6 +435,7 @@ class Relationship(BaseObject):
 	@staticmethod
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'Relationship')
+
 
 BaseObject.subClasses['Relationship'] = Relationship
 
@@ -551,6 +553,7 @@ class Host(Object):
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'Host')
 
+
 Object.subClasses['Host'] = Host
 
 
@@ -623,6 +626,7 @@ class OpsiClient(Host):
 	@staticmethod
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'OpsiClient')
+
 
 Host.subClasses['OpsiClient'] = OpsiClient
 
@@ -782,6 +786,7 @@ class OpsiDepotserver(Host):
 
 		return u"<{0}({1})>".format(self.getType(), u', '.join(additionalInfos))
 
+
 Host.subClasses['OpsiDepotserver'] = OpsiDepotserver
 
 
@@ -822,6 +827,7 @@ class OpsiConfigserver(OpsiDepotserver):
 	@staticmethod
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'OpsiConfigserver')
+
 
 OpsiDepotserver.subClasses['OpsiConfigserver'] = OpsiConfigserver
 Host.subClasses['OpsiConfigserver'] = OpsiConfigserver
@@ -951,6 +957,7 @@ class Config(Entity):
 			)
 		)
 
+
 Entity.subClasses['Config'] = Config
 
 
@@ -993,6 +1000,7 @@ class UnicodeConfig(Config):
 	@staticmethod
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'UnicodeConfig')
+
 
 Config.subClasses['UnicodeConfig'] = UnicodeConfig
 
@@ -1041,6 +1049,7 @@ class BoolConfig(Config):
 				defaults=self.defaultValues,
 			)
 		)
+
 
 Config.subClasses['BoolConfig'] = BoolConfig
 
@@ -1096,6 +1105,7 @@ class ConfigState(Relationship):
 
 	def __unicode__(self):
 		return u"<{0}(configId={1!r}, objectId={2!r}, values={3!r})>".format(self.getType(), self.configId, self.objectId, self.values)
+
 
 Relationship.subClasses['ConfigState'] = ConfigState
 
@@ -1330,6 +1340,7 @@ class Product(Entity):
 			)
 		)
 
+
 Entity.subClasses['Product'] = Product
 
 
@@ -1363,6 +1374,7 @@ class LocalbootProduct(Product):
 	@staticmethod
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'LocalbootProduct')
+
 
 Product.subClasses['LocalbootProduct'] = LocalbootProduct
 
@@ -1407,6 +1419,7 @@ class NetbootProduct(Product):
 	@staticmethod
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'NetbootProduct')
+
 
 Product.subClasses['NetbootProduct'] = NetbootProduct
 
@@ -1567,6 +1580,7 @@ class ProductProperty(Entity):
 		return u"<{klass}({0})>".format(', '.join(getAttributes()),
 										klass=self.__class__.__name__)
 
+
 Entity.subClasses['ProductProperty'] = ProductProperty
 
 
@@ -1613,6 +1627,7 @@ class UnicodeProductProperty(ProductProperty):
 	@staticmethod
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'UnicodeProductProperty')
+
 
 ProductProperty.subClasses['UnicodeProductProperty'] = UnicodeProductProperty
 
@@ -1677,6 +1692,7 @@ class BoolProductProperty(ProductProperty):
 
 		return u"<{klass}({0})>".format(', '.join(getAttributes()),
 										klass=self.__class__.__name__)
+
 
 ProductProperty.subClasses['BoolProductProperty'] = BoolProductProperty
 
@@ -1796,6 +1812,7 @@ class ProductDependency(Relationship):
 					prodAct=self.productAction,
 					reqProdId=self.requiredProductId))
 
+
 Relationship.subClasses['ProductDependency'] = ProductDependency
 
 
@@ -1871,6 +1888,7 @@ class ProductOnDepot(Relationship):
 	@staticmethod
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'ProductOnDepot')
+
 
 Relationship.subClasses['ProductOnDepot'] = ProductOnDepot
 
@@ -2030,6 +2048,7 @@ class ProductOnClient(Relationship):
 					prodId=self.productId, status=self.installationStatus,
 					actReq=self.actionRequest))
 
+
 Relationship.subClasses['ProductOnClient'] = ProductOnClient
 
 
@@ -2101,6 +2120,7 @@ class ProductPropertyState(Relationship):
 		return u"<{klass}({0})>".format(', '.join(getAttributes()),
 										klass=self.getType())
 
+
 Relationship.subClasses['ProductPropertyState'] = ProductPropertyState
 
 
@@ -2149,6 +2169,7 @@ class Group(Object):
 		return (u"<{klass}(id={id!r}, parentGroupId={parentId!r}>".format(
 				klass=self.getType(), id=self.id, parentId=self.parentGroupId))
 
+
 Object.subClasses['Group'] = Group
 
 
@@ -2174,6 +2195,7 @@ class HostGroup(Group):
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'HostGroup')
 
+
 Group.subClasses['HostGroup'] = HostGroup
 
 
@@ -2198,6 +2220,7 @@ class ProductGroup(Group):
 	@staticmethod
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'ProductGroup')
+
 
 Group.subClasses['ProductGroup'] = ProductGroup
 
@@ -2244,6 +2267,7 @@ class ObjectToGroup(Relationship):
 	@staticmethod
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'ObjectToGroup')
+
 
 Relationship.subClasses['ObjectToGroup'] = ObjectToGroup
 
@@ -2363,6 +2387,7 @@ class LicenseContract(Entity):
 
 		return u"<{0}({1})>".format(self.getType(), u', '.join(infos))
 
+
 Entity.subClasses['LicenseContract'] = LicenseContract
 
 
@@ -2450,6 +2475,7 @@ class SoftwareLicense(Entity):
 
 		return u"<{0}({1})>".format(self.getType(), u', '.join(infos))
 
+
 Entity.subClasses['LicenseContract'] = LicenseContract
 
 
@@ -2477,6 +2503,7 @@ class RetailSoftwareLicense(SoftwareLicense):
 	@staticmethod
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'RetailSoftwareLicense')
+
 
 SoftwareLicense.subClasses['RetailSoftwareLicense'] = RetailSoftwareLicense
 
@@ -2516,6 +2543,7 @@ class OEMSoftwareLicense(SoftwareLicense):
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'OEMSoftwareLicense')
 
+
 SoftwareLicense.subClasses['OEMSoftwareLicense'] = OEMSoftwareLicense
 
 
@@ -2545,6 +2573,7 @@ class VolumeSoftwareLicense(SoftwareLicense):
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'VolumeSoftwareLicense')
 
+
 SoftwareLicense.subClasses['VolumeSoftwareLicense'] = VolumeSoftwareLicense
 
 
@@ -2571,6 +2600,7 @@ class ConcurrentSoftwareLicense(SoftwareLicense):
 	@staticmethod
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'ConcurrentSoftwareLicense')
+
 
 SoftwareLicense.subClasses['ConcurrentSoftwareLicense'] = ConcurrentSoftwareLicense
 
@@ -2638,6 +2668,7 @@ class LicensePool(Entity):
 			infos.append(u"productIds={0!r}".format(self.productIds))
 
 		return u"<{0}({1})>".format(self.getType(), u', '.join(infos))
+
 
 Entity.subClasses['LicensePool'] = LicensePool
 
@@ -2785,6 +2816,7 @@ class SoftwareLicenseToLicensePool(Relationship):
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'SoftwareLicenseToLicensePool')
 
+
 Relationship.subClasses['SoftwareLicenseToLicensePool'] = SoftwareLicenseToLicensePool
 
 
@@ -2855,6 +2887,7 @@ class LicenseOnClient(Relationship):
 	@staticmethod
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'LicenseOnClient')
+
 
 Relationship.subClasses['LicenseOnClient'] = LicenseOnClient
 
@@ -2963,6 +2996,7 @@ class AuditSoftware(Entity):
 	@staticmethod
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'AuditSoftware')
+
 
 Entity.subClasses['AuditSoftware'] = AuditSoftware
 
@@ -3128,6 +3162,7 @@ class AuditSoftwareOnClient(Relationship):
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'AuditSoftwareOnClient')
 
+
 Relationship.subClasses['AuditSoftwareOnClient'] = AuditSoftwareOnClient
 
 
@@ -3291,6 +3326,7 @@ class AuditHardware(Entity):
 			pass
 
 		return u"<{0}({1})>".format(self.__class__.__name__, u', '.join(infos))
+
 
 Entity.subClasses['AuditHardware'] = AuditHardware
 
@@ -3492,5 +3528,6 @@ class AuditHardwareOnHost(Relationship):
 			type=self.getType(),
 			additional=u', '.join(additional)
 		)
+
 
 Relationship.subClasses['AuditHardwareOnHost'] = AuditHardwareOnHost
