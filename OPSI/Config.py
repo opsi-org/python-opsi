@@ -32,12 +32,6 @@ Doing so might result in unforseen problems and is strongly discouraged!
 :license: GNU Affero General Public License version 3
 """
 
-try:
-	from OPSI.Util.File.Opsi import OpsiConfFile
-	FILE_ADMIN_GROUP = OpsiConfFile().getOpsiFileAdminGroup()
-except Exception:
-	FILE_ADMIN_GROUP = u'pcpatch'
-
 # Group used to identify members whits administrative rights in opsi
 OPSI_ADMIN_GROUP = u'opsiadmin'
 
@@ -49,3 +43,9 @@ OPSI_GLOBAL_CONF = u'/etc/opsi/global.conf'
 
 # User that is running opsiconfd.
 OPSICONFD_USER = u'opsiconfd'
+
+try:
+    from OPSI.Util.File.Opsi import OpsiConfFile
+    FILE_ADMIN_GROUP = OpsiConfFile().getOpsiFileAdminGroup()
+except Exception:
+    FILE_ADMIN_GROUP = u'pcpatch'
