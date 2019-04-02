@@ -95,7 +95,7 @@ def checksum(source_string):
 	# I'm not too confident that this is right but testing seems
 	# to suggest that it gives the same answers as in_cksum in ping.c
 	sum = 0
-	countTo = (len(source_string)/2)*2
+	countTo = (len(source_string) / 2) * 2
 	count = 0
 	while count < countTo:
 		thisVal = ord(source_string[count + 1]) * 256 + ord(source_string[count])
