@@ -300,6 +300,8 @@ def forceFqdn(var):
 	if var.endswith('.'):
 		var = var[:-1]
 	return var
+
+
 forceHostId = forceFqdn
 
 
@@ -324,6 +326,8 @@ def forceIPAddress(var):
 	if not re.search(_IP_ADDRESS_REGEX, var):
 		raise ValueError(u"Bad ip address: '%s'" % var)
 	return var
+
+
 forceIpAddress = forceIPAddress
 
 

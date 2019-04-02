@@ -942,6 +942,7 @@ class PciidsFile(ConfigFile):
 				logger.error(e)
 		self._parsed = True
 
+
 UsbidsFile = PciidsFile
 
 

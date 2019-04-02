@@ -491,6 +491,7 @@ class Object(Entity):
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'Object')
 
+
 Entity.subClasses['Object'] = Object
 
 

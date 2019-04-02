@@ -168,6 +168,7 @@ def removeSystemHook(hook):
 	if hook in hooks:
 		hooks.remove(hook)
 
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # -                                               INFO                                                -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -288,6 +289,7 @@ def getProgramFilesDir():
 
 def getSystemDrive():
 	return forceUnicode(os.getenv('SystemDrive', u'c:'))
+
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # -                                            NETWORK                                                -
