@@ -37,8 +37,8 @@ import termios
 from contextlib import closing
 
 from OPSI.Exceptions import (
-BackendConfigurationError, OpsiBackupFileError, OpsiBackupBackendNotFound,
-OpsiError)
+	BackendConfigurationError, OpsiBackupFileError,
+	OpsiBackupBackendNotFound, OpsiError)
 from OPSI.Logger import Logger, LOG_DEBUG
 from OPSI.Types import forceList, forceUnicode
 from OPSI.Util.File.Opsi import OpsiBackupArchive
