@@ -92,10 +92,8 @@ ICMP_ECHO_REQUEST = 8 # Seems to be the same on Solaris.
 
 
 def checksum(source_string):
-	"""
-	I'm not too confident that this is right but testing seems
-	to suggest that it gives the same answers as in_cksum in ping.c
-	"""
+	# I'm not too confident that this is right but testing seems
+	# to suggest that it gives the same answers as in_cksum in ping.c
 	sum = 0
 	countTo = (len(source_string)/2)*2
 	count = 0
