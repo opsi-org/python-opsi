@@ -223,7 +223,7 @@ class SQLBackendObjectModificationTracker(BackendModificationListener):
 
 class SQLBackend(ConfigDataBackend):
 
-	_OPERATOR_IN_CONDITION_PATTERN = re.compile('^\s*([>=<]+)\s*(\d\.?\d*)')
+	_OPERATOR_IN_CONDITION_PATTERN = re.compile(r'^\s*([>=<]+)\s*(\d\.?\d*)')
 
 	def __init__(self, **kwargs):
 		self._name = 'sql'
@@ -2465,7 +2465,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 		hardwareClass = filter.get('hardwareClass')
 		if hardwareClass not in ([], None):
 			for hwc in forceUnicodeList(hardwareClass):
-				regex = re.compile(u'^{0}$'.format(hwc.replace('*', '.*')))
+				regex = re.compile(r'^%s$' % hwc.replace('*', '.*'))
 				keys = (key for key in self._auditHardwareConfig if regex.search(key))
 				for key in keys:
 					hardwareClasses.add(key)

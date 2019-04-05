@@ -42,7 +42,7 @@ from .helpers import cd, mock
 	pytest.param('.gitignore', marks=pytest.mark.xfail),
 ])
 def testDirectoryExclusion(text):
-	assert re.match(Product.EXCLUDE_DIRS_ON_PACK, text)
+	assert re.match(Product.EXCLUDE_DIRS_ON_PACK_REGEX, text) is not None
 
 
 def testProductPackageFileRemovingFolderWithUnicodeFilenamesInsideFails(tempDir):

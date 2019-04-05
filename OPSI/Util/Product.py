@@ -44,8 +44,8 @@ if os.name == 'posix':
 	import grp
 
 DEFAULT_TMP_DIR = u'/tmp'
-EXCLUDE_DIRS_ON_PACK = u'(^\.svn$)|(^\.git$)'
-EXCLUDE_FILES_ON_PACK = u'~$'
+EXCLUDE_DIRS_ON_PACK_REGEX = re.compile(r'(^\.svn$)|(^\.git$)')
+EXCLUDE_FILES_ON_PACK_REGEX = re.compile(r'~$')
 PACKAGE_SCRIPT_TIMEOUT = 600
 
 logger = Logger()
@@ -290,7 +290,7 @@ class ProductPackageFile(object):
 
 			# Sorting to unpack custom version data at last
 			def psort(name):
-				return re.sub('(\.tar|\.tar\.gz|\.cpio|\.cpio\.gz)$', '', name)
+				return re.sub(r'(\.tar|\.tar\.gz|\.cpio|\.cpio\.gz)$', '', name)
 
 			clientDataArchives = sorted(clientDataArchives, key=psort)
 			serverDataArchives = sorted(serverDataArchives, key=psort)
@@ -554,8 +554,8 @@ class ProductPackageSource(object):
 					continue
 				fileList = findFiles(
 					os.path.join(self.packageSourceDir, d),
-					excludeDir=EXCLUDE_DIRS_ON_PACK,
-					excludeFile=EXCLUDE_FILES_ON_PACK,
+					excludeDir=EXCLUDE_DIRS_ON_PACK_REGEX,
+					excludeFile=EXCLUDE_FILES_ON_PACK_REGEX,
 					followLinks=self.dereference)
 				if fileList:
 					for f in fileList:
@@ -572,8 +572,8 @@ class ProductPackageSource(object):
 
 				fileList = findFiles(
 					os.path.join(self.packageSourceDir, d),
-					excludeDir=EXCLUDE_DIRS_ON_PACK,
-					excludeFile=EXCLUDE_FILES_ON_PACK,
+					excludeDir=EXCLUDE_DIRS_ON_PACK_REGEX,
+					excludeFile=EXCLUDE_FILES_ON_PACK_REGEX,
 					followLinks=self.dereference)
 
 				if d.startswith(u'SERVER_DATA'):

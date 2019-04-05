@@ -117,7 +117,7 @@ def setRights(path=u'/'):
 		LOGGER.debug2(u"Rights configuration: {0}", rights)
 		chown(startPath, rights.uid, rights.gid)
 		os.chmod(startPath, rights.directories)
-		for filepath in findFiles(startPath, prefix=startPath, returnLinks=rights.correctLinks, excludeFile=re.compile("(.swp|~)$")):
+		for filepath in findFiles(startPath, prefix=startPath, returnLinks=rights.correctLinks, excludeFile=re.compile(r"(.swp|~)$")):
 			chown(filepath, rights.uid, rights.gid)
 			if os.path.isdir(filepath):
 				LOGGER.debug(u"Setting rights on directory {0!r}", filepath)

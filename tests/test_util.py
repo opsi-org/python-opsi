@@ -550,7 +550,7 @@ def testGetGlobalConfigExitsGracefullyIfFileIsMissing(globalConfigTestFile):
 
 
 @pytest.mark.parametrize("value", [
-	re.compile("ABC"),
+	re.compile(r"ABC"),
 	pytest.param("no pattern", marks=pytest.mark.xfail),
 	pytest.param("SRE_Pattern", marks=pytest.mark.xfail),
 ])

@@ -182,7 +182,7 @@ interfacePage = u'''<?xml version="1.0" encoding="UTF-8"?>
 </head>
 <body onload="selectMethod(document.getElementById('method_select'))">
 	<p id="title">
-		<img src="/opsi_logo.png" />
+		<img src="/opsi_logo.png" /><br /><br />
 		<span style="padding: 1px">%(title)s</span>
 	</p>
 	<form method="post" onsubmit="return onSubmit()">
