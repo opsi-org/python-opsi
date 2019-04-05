@@ -26,6 +26,7 @@ from __future__ import absolute_import
 
 import pytest
 
+from OPSI.Backend.File import FileBackend
 from OPSI.Exceptions import BackendConfigurationError
 
 from .Backends.File import getFileBackend
@@ -35,3 +36,10 @@ def testGetRawDataFailsOnFileBackendBecauseMissingQuerySupport():
     with getFileBackend() as backend:
         with pytest.raises(BackendConfigurationError):
             backend.getRawData('SELECT * FROM BAR;')
+
+
+@pytest.mark.parametrize("filename", [
+    "exampleexam_e.-ex_1234.12-1234.12.localboot",
+])
+def testProductFilenamePattern(filename):
+    assert FileBackend.PRODUCT_FILENAME_REGEX.search(filename) is not None

@@ -93,7 +93,7 @@ If no information can be extracted returns None.
 
 class HostKeyFile(ConfigFile):
 
-	lineRegex = re.compile('^\s*([^:]+)\s*:\s*([0-9a-fA-F]{32})\s*$')
+	lineRegex = re.compile(r'^\s*([^:]+)\s*:\s*([0-9a-fA-F]{32})\s*$')
 
 	def __init__(self, filename, lockFailTimeout=2000):
 		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars=[';', '/', '#'])
@@ -157,7 +157,7 @@ class HostKeyFile(ConfigFile):
 
 class BackendACLFile(ConfigFile):
 
-	aclEntryRegex = re.compile('^([^:]+)+\s*:\s*(\S.*)$')
+	aclEntryRegex = re.compile(r'^([^:]+)+\s*:\s*(\S.*)$')
 
 	def __init__(self, filename, lockFailTimeout=2000):
 		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars=['#'])
@@ -251,7 +251,8 @@ class BackendACLFile(ConfigFile):
 
 
 class BackendDispatchConfigFile(ConfigFile):
-	DISPATCH_ENTRY_REGEX = re.compile('^([^:]+)+\s*:\s*(\S.*)$')
+
+	DISPATCH_ENTRY_REGEX = re.compile(r'^([^:]+)+\s*:\s*(\S.*)$')
 
 	def parse(self, lines=None):
 		"""
@@ -443,9 +444,9 @@ class PackageContentFile(TextFile):
 
 class PackageControlFile(TextFile):
 
-	sectionRegex = re.compile('^\s*\[([^\]]+)\]\s*$')
-	valueContinuationRegex = re.compile('^\s(.*)$')
-	optionRegex = re.compile('^([^\:]+)\s*\:\s*(.*)$')
+	sectionRegex = re.compile(r'^\s*\[([^\]]+)\]\s*$')
+	valueContinuationRegex = re.compile(r'^\s(.*)$')
+	optionRegex = re.compile(r'^([^\:]+)\s*\:\s*(.*)$')
 
 	def __init__(self, filename, lockFailTimeout=2000):
 		TextFile.__init__(self, filename, lockFailTimeout)
@@ -684,7 +685,7 @@ class PackageControlFile(TextFile):
 		for (option, value) in self._sections.get('package', [{}])[0].items():
 			if option == 'depends':
 				for dep in value:
-					match = re.search('^\s*([^\(]+)\s*\(*\s*([^\)]*)\s*\)*', dep)
+					match = re.search(r'^\s*([^\(]+)\s*\(*\s*([^\)]*)\s*\)*', dep)
 					if not match.group(1):
 						raise ValueError(u"Bad package dependency '%s' in control file" % dep)
 
@@ -692,7 +693,7 @@ class PackageControlFile(TextFile):
 					version = match.group(2)
 					condition = None
 					if version:
-						match = re.search('^\s*([<>]?=?)\s*([\w\.]+-*[\w\.]*)\s*$', version)
+						match = re.search(r'^\s*([<>]?=?)\s*([\w\.]+-*[\w\.]*)\s*$', version)
 						if not match:
 							raise ValueError(u"Bad version string '%s' in package dependency" % version)
 
@@ -973,8 +974,8 @@ class PackageControlFile(TextFile):
 
 class OpsiConfFile(IniFile):
 
-	sectionRegex = re.compile('^\s*\[([^\]]+)\]\s*$')
-	optionRegex = re.compile('^([^\:]+)\s*\=\s*(.*)$')
+	sectionRegex = re.compile(r'^\s*\[([^\]]+)\]\s*$')
+	optionRegex = re.compile(r'^([^\:]+)\s*\=\s*(.*)$')
 
 	def __init__(self, filename=u'/etc/opsi/opsi.conf', lockFailTimeout=2000):
 		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars=[';', '#'])

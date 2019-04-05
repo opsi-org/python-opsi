@@ -428,7 +428,7 @@ def getNetworkDeviceConfig(device):
 
 	for line in execute(u"{ifconfig} {device}".format(ifconfig=which(u'ifconfig'), device=device)):
 		line = line.lower().strip()
-		match = re.search('\s([\da-f]{2}:[\da-f]{2}:[\da-f]{2}:[\da-f]{2}:[\da-f]{2}:[\da-f]{2}).*', line)
+		match = re.search(r'\s([\da-f]{2}:[\da-f]{2}:[\da-f]{2}:[\da-f]{2}:[\da-f]{2}:[\da-f]{2}).*', line)
 		if match:
 			result['hardwareAddress'] = forceHardwareAddress(match.group(1))
 			continue
@@ -444,9 +444,9 @@ def getNetworkDeviceConfig(device):
 				continue
 
 			match = re.search(
-				"^\w+\s+(?P<ipAddress>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s+"
-				"\w+\s+(?P<netmask>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s+"
-				"\w+\s+(?P<broadcast>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$",
+				r"^\w+\s+(?P<ipAddress>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s+"
+				r"\w+\s+(?P<netmask>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s+"
+				r"\w+\s+(?P<broadcast>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$",
 				line
 			)
 			if match:
@@ -459,7 +459,7 @@ def getNetworkDeviceConfig(device):
 
 	for line in execute(u"{ip} route".format(ip=which(u'ip'))):
 		line = line.lower().strip()
-		match = re.search('via\s(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\sdev\s(\S+)\s*', line)
+		match = re.search(r'via\s(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\sdev\s(\S+)\s*', line)
 		if match and match.group(2).lower() == device.lower():
 			result['gateway'] = forceIpAddress(match.group(1))
 
@@ -508,7 +508,7 @@ class NetworkPerformanceCounter(threading.Thread):
 		self._lastTime = None
 		self._bytesInPerSecond = 0
 		self._bytesOutPerSecond = 0
-		self._regex = re.compile('\s*(\S+)\:\s*(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)')
+		self._regex = re.compile(r'\s*(\S+):\s*(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)')
 		self._running = False
 		self._stopped = False
 		self.start()
@@ -1063,7 +1063,7 @@ def mount(dev, mountpoint, **options):
 
 	credentialsFiles = []
 	if dev.lower().startswith(('smb://', 'cifs://')):
-		match = re.search('^(smb|cifs)://([^/]+\/.+)$', dev, re.IGNORECASE)
+		match = re.search(r'^(smb|cifs)://([^/]+\/.+)$', dev, re.IGNORECASE)
 		if match:
 			fs = u'-t cifs'
 			parts = match.group(2).split('/')
@@ -1101,7 +1101,7 @@ def mount(dev, mountpoint, **options):
 	elif dev.lower().startswith(('webdav://', 'webdavs://', 'http://', 'https://')):
 		# We need enough free space in /var/cache/davfs2
 		# Maximum transfer file size <= free space in /var/cache/davfs2
-		match = re.search('^(http|webdav)(s*)(://[^/]+\/.+)$', dev, re.IGNORECASE)
+		match = re.search(r'^(http|webdav)(s*)(://[^/]+\/.+)$', dev, re.IGNORECASE)
 		if match:
 			fs = u'-t davfs'
 			dev = u'http' + match.group(2) + match.group(3)
@@ -1125,7 +1125,7 @@ def mount(dev, mountpoint, **options):
 
 		with codecs.open(u"/etc/davfs2/secrets", "w", "utf8") as f:
 			for line in lines:
-				if re.search("^%s\s+" % dev, line):
+				if re.search(r"^%s\s+" % dev, line):
 					f.write(u"#")
 				f.write(line)
 			f.write(u'%s "%s" "%s"\n' % (dev, options['username'], options['password']))
@@ -1137,7 +1137,7 @@ def mount(dev, mountpoint, **options):
 
 			with open(u"/etc/davfs2/davfs2.conf", "w") as f:
 				for line in lines:
-					if re.search("^servercert\s+", line):
+					if re.search(r"^servercert\s+", line):
 						f.write("#")
 					f.write(line)
 				f.write(u"servercert /etc/davfs2/certs/trusted.pem\n")
@@ -1202,11 +1202,11 @@ def getBlockDeviceBusType(device):
 		device = d
 
 	for line in execute(u'%s --disk --cdrom' % which('hwinfo')):
-		if re.search('^\s+$', line):
+		if re.search(r'^\s+$', line):
 			(devs, type) = ([], None)
 			continue
 
-		match = re.search('^\s+Device Files*:(.*)$', line)
+		match = re.search(r'^\s+Device Files*:(.*)$', line)
 		if match:
 			if match.group(1).find(u',') != -1:
 				devs = match.group(1).split(u',')
@@ -1217,7 +1217,7 @@ def getBlockDeviceBusType(device):
 
 			devs = [currentDev.strip() for currentDev in devs]
 
-		match = re.search('^\s+Attached to:\s+[^\(]+\((\S+)\s*', line)
+		match = re.search(r'^\s+Attached to:\s+[^\(]+\((\S+)\s*', line)
 		if match:
 			type = match.group(1)
 
@@ -1244,7 +1244,7 @@ def getBlockDeviceContollerInfo(device, lshwoutput=None):
 	storageControllers = {}
 
 	for line in lines:
-		match = re.search('^(/\S+)\s+(\S+)\s+storage\s+(\S+.*)\s\[([a-fA-F0-9]{1,4})\:([a-fA-F0-9]{1,4})\]$', line)
+		match = re.search(r'^(/\S+)\s+(\S+)\s+storage\s+(\S+.*)\s\[([a-fA-F0-9]{1,4}):([a-fA-F0-9]{1,4})\]$', line)
 		if match:
 			vendorId = match.group(4)
 			while len(vendorId) < 4:
@@ -1280,7 +1280,7 @@ def getBlockDeviceContollerInfo(device, lshwoutput=None):
 	# In this case return the first AHCI controller, that will be found
 	storageControllers = {}
 
-	storagePattern = re.compile('^(/\S+)\s+storage\s+(\S+.*[Aa][Hh][Cc][Ii].*)\s\[([a-fA-F0-9]{1,4})\:([a-fA-F0-9]{1,4})\]$')
+	storagePattern = re.compile(r'^(/\S+)\s+storage\s+(\S+.*[Aa][Hh][Cc][Ii].*)\s\[([a-fA-F0-9]{1,4}):([a-fA-F0-9]{1,4})\]$')
 	for line in lines:
 		match = storagePattern.search(line)
 		if match:
@@ -1306,7 +1306,7 @@ def getBlockDeviceContollerInfo(device, lshwoutput=None):
 			# This Quick hack is for Bios-Generations, that will only
 			# have a choice for "RAID + AHCI", this devices will be shown as
 			# RAID mode-Devices
-			match = re.search('^(/\S+)\s+storage\s+(\S+.*[Rr][Aa][Ii][Dd].*)\s\[([a-fA-F0-9]{1,4})\:([a-fA-F0-9]{1,4})\]$', line)
+			match = re.search(r'^(/\S+)\s+storage\s+(\S+.*[Rr][Aa][Ii][Dd].*)\s\[([a-fA-F0-9]{1,4}):([a-fA-F0-9]{1,4})\]$', line)
 			if match:
 				vendorId = match.group(3)
 				while len(vendorId) < 4:
@@ -1447,7 +1447,7 @@ class Harddisk:
 			if (partition < 1) or (partition > 4):
 				raise ValueError(u"Partition has to be int value between 1 and 4")
 
-			if not re.search('^[a-f0-9]{2}$', id):
+			if not re.search(r'^[a-f0-9]{2}$', id):
 				if id in (u'linux', u'ext2', u'ext3', u'ext4', u'xfs', u'reiserfs', u'reiser4'):
 					id = u'83'
 				elif id == u'linux-swap':
@@ -1568,7 +1568,7 @@ class Harddisk:
 
 					geometryOutput = execute(u"{sfdisk} -g {device}".format(sfdisk=which('sfdisk'), device=self.device))
 					for line in geometryOutput:
-						match = re.search('\s+(\d+)\s+cylinders,\s+(\d+)\s+heads,\s+(\d+)\s+sectors', line)
+						match = re.search(r'\s+(\d+)\s+cylinders,\s+(\d+)\s+heads,\s+(\d+)\s+sectors', line)
 						if not match:
 							raise RuntimeError(u"Unable to get geometry for disk '%s'" % self.device)
 						self.cylinders = forceInt(match.group(1))
@@ -1576,7 +1576,7 @@ class Harddisk:
 						self.sectors = forceInt(match.group(3))
 						self.totalCylinders = self.cylinders
 				else:
-					match = re.search('\s+(\d+)\s+cylinders,\s+(\d+)\s+heads,\s+(\d+)\s+sectors', line)
+					match = re.search(r'\s+(\d+)\s+cylinders,\s+(\d+)\s+heads,\s+(\d+)\s+sectors', line)
 					if not match:
 						raise RuntimeError(u"Unable to get geometry for disk '%s'" % self.device)
 
@@ -1587,10 +1587,10 @@ class Harddisk:
 
 			elif line.lower().startswith(u'units'):
 				if isXenialSfdiskVersion():
-					match = re.search('sectors\s+of\s+\d\s+.\s+\d+\s+.\s+(\d+)\s+bytes', line)
+					match = re.search(r'sectors\s+of\s+\d\s+.\s+\d+\s+.\s+(\d+)\s+bytes', line)
 
 				else:
-					match = re.search('cylinders\s+of\s+(\d+)\s+bytes', line)
+					match = re.search(r'cylinders\s+of\s+(\d+)\s+bytes', line)
 
 				if not match:
 					raise RuntimeError(u"Unable to get bytes/cylinder for disk '%s'" % self.device)
@@ -1600,12 +1600,12 @@ class Harddisk:
 
 			elif line.startswith(self.device):
 				if isXenialSfdiskVersion():
-					match = re.search('(%sp*)(\d+)\s+(\**)\s*(\d+)[\+\-]*\s+(\d*)[\+\-]*\s+(\d+)[\+\-]*\s+(\d+)[\+\-]*.?\d*\S+\s+(\S+)\s*(.*)' % self.device, line)
+					match = re.search(r'(%sp*)(\d+)\s+(\**)\s*(\d+)[\+\-]*\s+(\d*)[\+\-]*\s+(\d+)[\+\-]*\s+(\d+)[\+\-]*.?\d*\S+\s+(\S+)\s*(.*)' % self.device, line)
 
 					if not match:
 						raise RuntimeError(u"Unable to read partition table of disk '%s'" % self.device)
 				else:
-					match = re.search('(%sp*)(\d+)\s+(\**)\s*(\d+)[\+\-]*\s+(\d*)[\+\-]*\s+(\d+)[\+\-]*\s+(\d+)[\+\-]*\s+(\S+)\s+(.*)' % self.device, line)
+					match = re.search(r'(%sp*)(\d+)\s+(\**)\s*(\d+)[\+\-]*\s+(\d*)[\+\-]*\s+(\d+)[\+\-]*\s+(\d+)[\+\-]*\s+(\S+)\s+(.*)' % self.device, line)
 
 					if not match:
 						raise RuntimeError(u"Unable to read partition table of disk '%s'" % self.device)
@@ -1696,9 +1696,9 @@ class Harddisk:
 
 			if line.startswith(self.device):
 				if isXenialSfdiskVersion():
-					match = re.match('%sp*(\d+)\s+(\**)\s*(\d+)[\+\-]*\s+(\d*)[\+\-]*\s+(\d+)[\+\-]*\s+(\d+)[\+\-]*.?\d*\S+\s+(\S+)\s*(.*)' % self.device, line)
+					match = re.match(r'%sp*(\d+)\s+(\**)\s*(\d+)[\+\-]*\s+(\d*)[\+\-]*\s+(\d+)[\+\-]*\s+(\d+)[\+\-]*.?\d*\S+\s+(\S+)\s*(.*)' % self.device, line)
 				else:
-					match = re.search('%sp*(\d+)\s+(\**)\s*(\d+)[\+\-]*\s+(\d*)[\+\-]*\s+(\d+)[\+\-]*\s+(\S+)\s+(.*)' % self.device, line)
+					match = re.search(r'%sp*(\d+)\s+(\**)\s*(\d+)[\+\-]*\s+(\d*)[\+\-]*\s+(\d+)[\+\-]*\s+(\S+)\s+(.*)' % self.device, line)
 				if not match:
 					raise RuntimeError(u"Unable to read partition table (sectors) of disk '%s'" % self.device)
 
@@ -1722,10 +1722,10 @@ class Harddisk:
 
 			elif line.lower().startswith('units'):
 				if isXenialSfdiskVersion():
-					match = re.search('sectors\s+of\s+\d\s+.\s+\d+\s+.\s+(\d+)\s+bytes', line)
-
+					match = re.search(r'sectors\s+of\s+\d\s+.\s+\d+\s+.\s+(\d+)\s+bytes', line)
 				else:
-					match = re.search('sectors\s+of\s+(\d+)\s+bytes', line)
+					match = re.search(r'sectors\s+of\s+(\d+)\s+bytes', line)
+
 				if not match:
 					raise RuntimeError(u"Unable to get bytes/sector for disk '%s'" % self.device)
 				self.bytesPerSector = forceInt(match.group(1))
@@ -1790,7 +1790,6 @@ class Harddisk:
 			if self.ldPreload:
 				os.putenv("LD_PRELOAD", self.ldPreload)
 
-			#changing execution to os.system
 			execute(cmd, ignoreExitCode=[1])
 			if self.ldPreload:
 				os.unsetenv("LD_PRELOAD")
@@ -1855,8 +1854,8 @@ class Harddisk:
 
 			cmd = u"%s -v -n %d %s 2>&1" % (which('shred'), iterations, dev)
 
-			lineRegex = re.compile('\s(\d+)\/(\d+)\s\(([^\)]+)\)\.\.\.(.*)$')
-			posRegex = re.compile('([^\/]+)\/(\S+)\s+(\d+)%')
+			lineRegex = re.compile(r'\s(\d+)\/(\d+)\s\(([^\)]+)\)\.\.\.(.*)$')
+			posRegex = re.compile(r'([^\/]+)\/(\S+)\s+(\d+)%')
 			handle = execute(cmd, getHandle=True)
 			position = u''
 			error = u''
@@ -1958,10 +1957,10 @@ class Harddisk:
 					skip = 0
 
 				if progressSubject:
-					match = re.search('avg\.rate:\s+(\d+)kB/s', inp)
+					match = re.search(r'avg\.rate:\s+(\d+)kB/s', inp)
 					if match:
 						rate = match.group(1)
-					match = re.search('ipos:\s+(\d+)\.\d+k', inp)
+					match = re.search(r'ipos:\s+(\d+)\.\d+k', inp)
 					if match:
 						position = forceInt(match.group(1))
 						percent = (position * 100) / xfermax
@@ -2198,7 +2197,7 @@ class Harddisk:
 			lba = forceBool(lba)
 
 			partId = u'00'
-			if re.search('^[a-f0-9]{2}$', fs):
+			if re.search(r'^[a-f0-9]{2}$', fs):
 				partId = fs
 			else:
 				if fs in (u'ext2', u'ext3', u'ext4', u'xfs', u'reiserfs', u'reiser4', u'linux'):
@@ -2222,25 +2221,25 @@ class Harddisk:
 			end = end.replace(u' ', u'')
 
 			if start.endswith((u'm', u'mb')):
-				match = re.search('^(\d+)\D', start)
+				match = re.search(r'^(\d+)\D', start)
 				if self.blockAlignment:
 					start = int(round((int(match.group(1)) * 1024 * 1024) / self.bytesPerSector))
 				else:
 					start = int(round((int(match.group(1)) * 1024 * 1024) / self.bytesPerCylinder))
 			elif start.endswith((u'g', u'gb')):
-				match = re.search('^(\d+)\D', start)
+				match = re.search(r'^(\d+)\D', start)
 				if self.blockAlignment:
 					start = int(round((int(match.group(1)) * 1024 * 1024 * 1024) / self.bytesPerSector))
 				else:
 					start = int(round((int(match.group(1)) * 1024 * 1024 * 1024) / self.bytesPerCylinder))
 			elif start.lower().endswith(u'%'):
-				match = re.search('^(\d+)\D', start)
+				match = re.search(r'^(\d+)\D', start)
 				if self.blockAlignment:
 					start = int(round((float(match.group(1)) / 100) * self.totalSectors))
 				else:
 					start = int(round((float(match.group(1)) / 100) * self.totalCylinders))
 			elif start.lower().endswith(u's'):
-				match = re.search('^(\d+)\D', start)
+				match = re.search(r'^(\d+)\D', start)
 				start = int(match.group(1))
 				if not self.blockAlignment:
 					start = int(round(((float(start) * self.bytesPerSector) / self.bytesPerCylinder)))
@@ -2256,25 +2255,25 @@ class Harddisk:
 					start = int(round(((float(start) * self.bytesPerCylinder) / self.bytesPerSector)))
 
 			if end.endswith((u'm', u'mb')):
-				match = re.search('^(\d+)\D', end)
+				match = re.search(r'^(\d+)\D', end)
 				if self.blockAlignment:
 					end = int(round((int(match.group(1)) * 1024 * 1024) / self.bytesPerSector))
 				else:
 					end = int(round((int(match.group(1)) * 1024 * 1024) / self.bytesPerCylinder))
 			elif end.endswith((u'g', u'gb')):
-				match = re.search('^(\d+)\D', end)
+				match = re.search(r'^(\d+)\D', end)
 				if self.blockAlignment:
 					end = int(round((int(match.group(1)) * 1024 * 1024 * 1024) / self.bytesPerSector))
 				else:
 					end = int(round((int(match.group(1)) * 1024 * 1024 * 1024) / self.bytesPerCylinder))
 			elif end.lower().endswith(u'%'):
-				match = re.search('^(\d+)\D', end)
+				match = re.search(r'^(\d+)\D', end)
 				if self.blockAlignment:
 					end = int(round((float(match.group(1)) / 100) * self.totalSectors))
 				else:
 					end = int(round((float(match.group(1)) / 100) * self.totalCylinders))
 			elif end.lower().endswith(u's'):
-				match = re.search('^(\d+)\D', end)
+				match = re.search(r'^(\d+)\D', end)
 				end = int(match.group(1))
 				if not self.blockAlignment:
 					end = int(round(((float(end) * self.bytesPerSector) / self.bytesPerCylinder)))
@@ -2635,7 +2634,7 @@ class Harddisk:
 						if u'Partclone successfully' in currentBuffer:
 							done = True
 						if u'Total Time' in currentBuffer:
-							match = re.search('Total\sTime:\s(\d+:\d+:\d+),\sAve.\sRate:\s*(\d*.\d*)([GgMm]B/min)', currentBuffer)
+							match = re.search(r'Total\sTime:\s(\d+:\d+:\d+),\sAve.\sRate:\s*(\d*.\d*)([GgMm]B/min)', currentBuffer)
 							if match:
 								rate = match.group(2)
 								unit = match.group(3)
@@ -2666,7 +2665,7 @@ class Harddisk:
 									started = True
 									continue
 						else:
-							match = re.search('Completed:\s*([\d\.]+)%', currentBuffer)
+							match = re.search(r'Completed:\s*([\d\.]+)%', currentBuffer)
 							if match:
 								percent = int("%0.f" % float(match.group(1)))
 								if progressSubject and percent != progressSubject.getState():
@@ -2824,7 +2823,7 @@ class Harddisk:
 										started = True
 										continue
 							else:
-								match = re.search('Completed:\s*([\d\.]+)%', currentBuffer)
+								match = re.search(r'Completed:\s*([\d\.]+)%', currentBuffer)
 								if match:
 									percent = int("%0.f" % float(match.group(1)))
 									if progressSubject and percent != progressSubject.getState():
@@ -2882,7 +2881,7 @@ class Harddisk:
 								if progressSubject:
 									progressSubject.setMessage(u"Syncing")
 								done = True
-							match = re.search('\s(\d+)[\.\,]\d\d\spercent', currentBuffer)
+							match = re.search(r'\s(\d+)[\.\,]\d\d\spercent', currentBuffer)
 							if match:
 								percent = int(match.group(1))
 								if progressSubject and percent != progressSubject.getState():
@@ -3155,7 +3154,7 @@ def hardwareExtendedInventory(config, opsiValues={}, progressSubject=None):
 
 		logger.debug(u"Processing class '%s'" % (opsiName))
 
-		valuesregex = re.compile("(.*)#(.*)#")
+		valuesregex = re.compile(r"(.*)#(.*)#")
 		for item in hwClass['Values']:
 			pythonline = item.get('Python')
 			if not pythonline:
@@ -3232,8 +3231,8 @@ def hardwareInventory(config, progressSubject=None):
 	# Read output from lspci
 	lspci = {}
 	busId = None
-	devRegex = re.compile('([\d\.:a-f]+)\s+([\da-f]+):\s+([\da-f]+):([\da-f]+)\s*(\(rev ([^\)]+)\)|)')
-	subRegex = re.compile('\s*Subsystem:\s+([\da-f]+):([\da-f]+)\s*')
+	devRegex = re.compile(r'([\d.:a-f]+)\s+([\da-f]+):\s+([\da-f]+):([\da-f]+)\s*(\(rev ([^\)]+)\)|)')
+	subRegex = re.compile(r'\s*Subsystem:\s+([\da-f]+):([\da-f]+)\s*')
 	for line in execute(u"%s -vn" % which("lspci")):
 		if not line.strip():
 			continue
@@ -3296,12 +3295,12 @@ def hardwareInventory(config, progressSubject=None):
 	currentKey = None
 	status = False
 
-	devRegex = re.compile('^Bus\s+(\d+)\s+Device\s+(\d+)\:\s+ID\s+([\da-fA-F]{4})\:([\da-fA-F]{4})\s*(.*)$')
-	descriptorRegex = re.compile('^(\s*)(.*)\s+Descriptor\:\s*$')
-	deviceStatusRegex = re.compile('^(\s*)Device\s+Status\:\s+(\S+)\s*$')
-	deviceQualifierRegex = re.compile('^(\s*)Device\s+Qualifier\s+.*\:\s*$')
-	keyRegex = re.compile('^(\s*)([^\:]+)\:\s*$')
-	keyValueRegex = re.compile('^(\s*)(\S+)\s+(.*)$')
+	devRegex = re.compile(r'^Bus\s+(\d+)\s+Device\s+(\d+):\s+ID\s+([\da-fA-F]{4}):([\da-fA-F]{4})\s*(.*)$')
+	descriptorRegex = re.compile(r'^(\s*)(.*)\s+Descriptor:\s*$')
+	deviceStatusRegex = re.compile(r'^(\s*)Device\s+Status:\s+(\S+)\s*$')
+	deviceQualifierRegex = re.compile(r'^(\s*)Device\s+Qualifier\s+.*:\s*$')
+	keyRegex = re.compile(r'^(\s*)([^\:]+):\s*$')
+	keyValueRegex = re.compile(r'^(\s*)(\S+)\s+(.*)$')
 
 	try:
 		for line in execute(u"%s -v" % which("lsusb")):
@@ -3406,7 +3405,7 @@ def hardwareInventory(config, progressSubject=None):
 	dmiType = None
 	header = True
 	option = None
-	optRegex = re.compile('(\s+)([^:]+):(.*)')
+	optRegex = re.compile(r'(\s+)([^:]+):(.*)')
 	for line in execute(which("dmidecode")):
 		try:
 			if not line.strip():
@@ -3899,7 +3898,7 @@ def getActiveSessionIds(winApiBugCommand=None, data=None):
 
 	sessionIds = []
 	for line in data:
-		parts = re.split('\s+', line)
+		parts = re.split(r'\s+', line)
 		if len(parts) == 7:
 			sessionIds.append(int(parts[-2]))
 		elif len(parts) == 6:

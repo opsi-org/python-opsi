@@ -315,7 +315,7 @@ This defaults to ``self``.
 						elif isinstance(value, (float, long, int)) or re.search('^\s*([>=<]+)\s*([\d\.]+)', forceUnicode(filterValue)):
 							operator = '=='
 							v = forceUnicode(filterValue)
-							match = re.search('^\s*([>=<]+)\s*([\d\.]+)', filterValue)
+							match = re.search(r'^\s*([>=<]+)\s*([\d.]+)', filterValue)
 							if match:
 								operator = match.group(1)  # pylint: disable=maybe-no-member
 								v = match.group(2)  # pylint: disable=maybe-no-member
@@ -329,7 +329,7 @@ This defaults to ``self``.
 
 							continue
 
-						if '*' in filterValue and re.search('^%s$' % filterValue.replace('*', '.*'), value):
+						if '*' in filterValue and re.search(r'^%s$' % filterValue.replace('*', '.*'), value):
 							matched = True
 							break
 
@@ -810,7 +810,7 @@ the opsi host key.
 		result = {'password': u'', 'rsaPrivateKey': u''}
 
 		cf = ConfigFile(filename=self._opsiPasswdFile)
-		lineRegex = re.compile('^\s*([^:]+)\s*:\s*(\S+)\s*$')
+		lineRegex = re.compile(r'^\s*([^:]+)\s*:\s*(\S+)\s*$')
 		for line in cf.parse():
 			match = lineRegex.search(line)
 			if match is None:
@@ -870,7 +870,7 @@ depot where the method is.
 		encodedPassword = blowfishEncrypt(depot.opsiHostKey, password)
 
 		cf = ConfigFile(filename=self._opsiPasswdFile)
-		lineRegex = re.compile('^\s*([^:]+)\s*:\s*(\S+)\s*$')
+		lineRegex = re.compile(r'^\s*([^:]+)\s*:\s*(\S+)\s*$')
 		lines = []
 		if os.path.exists(self._opsiPasswdFile):
 			for line in cf.readlines():

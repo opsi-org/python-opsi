@@ -650,7 +650,7 @@ class OpsiPackageUpdater(object):
 			if availablePackage['repository'].proxy:
 				cmd = u"http_proxy=%s %s" % (availablePackage['repository'].proxy, cmd)
 
-			stateRegex = re.compile('\s([\d\.]+)%\s+([\d\.]+)\skBps(.*)$')
+			stateRegex = re.compile(r'\s([\d.]+)%\s+([\d.]+)\skBps(.*)$')
 			data = ''
 			percent = 0.0
 			speed = 0
@@ -936,7 +936,7 @@ class OpsiPackageUpdater(object):
 										req = urllib2.Request(url + '/' + link, None, self.httpHeaders)
 										con = opener.open(req)
 										md5sum = con.read(32768)
-										match = re.search('([a-z\d]{32})', md5sum)
+										match = re.search(r'([a-z\d]{32})', md5sum)
 										if match:
 											foundMd5sum = match.group(1)
 											packages[i]["md5sum"] = foundMd5sum
