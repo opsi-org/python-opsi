@@ -1,3 +1,10 @@
+python-opsi (4.1.1.63-1) stable; urgency=medium
+
+  * Update regular expression patterns to be raw strings.
+  * Add line breaks after the opsi logo on the interface page.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 05 Apr 2019 18:42:38 +0200
+
 python-opsi (4.1.1.62-1) stable; urgency=medium
 
   * Opsi.Util.File.Opsi.Opsirc: Change the default path for an opsirc file

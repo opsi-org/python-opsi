@@ -168,6 +168,7 @@ def removeSystemHook(hook):
 	if hook in hooks:
 		hooks.remove(hook)
 
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # -                                               INFO                                                -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -288,6 +289,7 @@ def getProgramFilesDir():
 
 def getSystemDrive():
 	return forceUnicode(os.getenv('SystemDrive', u'c:'))
+
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # -                                            NETWORK                                                -
@@ -759,7 +761,7 @@ def mount(dev, mountpoint, **options):
 	dev = forceUnicode(dev)
 	mountpoint = forceUnicode(mountpoint)
 
-	match = re.search('^([a-z]:|dynamic)$', mountpoint, re.IGNORECASE)
+	match = re.search(r'^([a-z]:|dynamic)$', mountpoint, re.IGNORECASE)
 	if not match:
 		logger.error(u"Bad mountpoint '%s'" % mountpoint)
 		raise ValueError(u"Bad mountpoint '%s'" % mountpoint)
@@ -788,7 +790,7 @@ def mount(dev, mountpoint, **options):
 				raise RuntimeError("Dynamic mountpoint detection could not find a a free mountpoint!")
 
 	if dev.lower().startswith(('smb://', 'cifs://')):
-		match = re.search('^(smb|cifs)://([^/]+\/.+)$', dev, re.IGNORECASE)
+		match = re.search(r'^(smb|cifs)://([^/]+/.+)$', dev, re.IGNORECASE)
 		if match:
 			parts = match.group(2).split('/')
 			dev = u'\\\\%s\\%s' % (parts[0], parts[1])

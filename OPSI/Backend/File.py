@@ -52,8 +52,8 @@ logger = Logger()
 
 
 class FileBackend(ConfigDataBackend):
-	# example match (ignore spaces):      exampleexam_e.-ex  _ 1234.12 - 1234.12  . local     boot
-	productFilenameRegex = re.compile('^([a-zA-Z0-9\_\.-]+)\_([\w\.]+)-([\w\.]+)\.(local|net)boot$')
+	PRODUCT_FILENAME_REGEX = re.compile(r'^([a-zA-Z0-9_.-]+)_([\w.]+)-([\w.]+)\.(local|net)boot$')
+	PLACEHOLDER_REGEX = re.compile(r'^(.*)<([^>]+)>(.*)$')
 
 	def __init__(self, **kwargs):
 		self._name = 'file'
@@ -109,7 +109,6 @@ class FileBackend(ConfigDataBackend):
 		self.__defaultClientTemplatePath = os.path.join(self.__clientTemplateDir, u'{0}.ini'.format(self.__defaultClientTemplateName))
 
 		self.__serverId = forceHostId(getfqdn())
-		self._placeholderRegex = re.compile('^(.*)<([^>]+)>(.*)$')
 
 		self._mappings = {
 			'Config': [
@@ -506,7 +505,7 @@ class FileBackend(ConfigDataBackend):
 					logger.debug2(u"Ignoring invalid product file '%s'" % (entry))
 					continue
 
-				match = self.productFilenameRegex.search(entry)
+				match = self.PRODUCT_FILENAME_REGEX.search(entry)
 				if not match:
 					logger.warning(u"Ignoring invalid product file '%s'" % (entry))
 					continue
@@ -820,13 +819,13 @@ class FileBackend(ConfigDataBackend):
 						section = m['section']
 						option = m['option']
 
-						match = self._placeholderRegex.search(section)
+						match = self.PLACEHOLDER_REGEX.search(section)
 						if match:
 							section = u'%s%s%s' % (match.group(1), objHash[match.group(2)], match.group(3))  # pylint: disable=maybe-no-member
 							if objType == 'ProductOnClient':  # <productType>_product_states
 								section = section.replace('LocalbootProduct', 'localboot').replace('NetbootProduct', 'netboot')
 
-						match = self._placeholderRegex.search(option)
+						match = self.PLACEHOLDER_REGEX.search(option)
 						if match:
 							option = u'%s%s%s' % (match.group(1), objHash[match.group(2)], match.group(3))  # pylint: disable=maybe-no-member
 
@@ -972,13 +971,13 @@ class FileBackend(ConfigDataBackend):
 						section = attributeMapping['section']
 						option = attributeMapping['option']
 
-						match = self._placeholderRegex.search(section)
+						match = self.PLACEHOLDER_REGEX.search(section)
 						if match:
 							section = u'%s%s%s' % (match.group(1), objHash[match.group(2)], match.group(3))
 							if objType == 'ProductOnClient':
 								section = section.replace('LocalbootProduct', 'localboot').replace('NetbootProduct', 'netboot')
 
-						match = self._placeholderRegex.search(option)
+						match = self.PLACEHOLDER_REGEX.search(option)
 						if match:
 							option = u'%s%s%s' % (match.group(1), objHash[match.group(2)], match.group(3))
 

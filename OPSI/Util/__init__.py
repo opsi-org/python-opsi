@@ -76,7 +76,7 @@ elif os.name == 'nt':
 
 BLOWFISH_IV = 'OPSI1234'
 RANDOM_DEVICE = u'/dev/urandom'
-UNIT_REGEX = re.compile('^(\d+\.*\d*)\s*([\w]{0,4})$')
+UNIT_REGEX = re.compile(r'^(\d+\.*\d*)\s*(\w{0,4})$')
 _ACCEPTED_CHARACTERS = (
 	"abcdefghijklmnopqrstuvwxyz"
 	"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -451,7 +451,7 @@ def compareVersions(v1, condition, v2):
 	def splitProductAndPackageVersion(versionString):
 		productVersion = packageVersion = u'0'
 
-		match = re.search('^\s*([\w\.]+)-*([\w\.]*)\s*$', versionString)
+		match = re.search(r'^\s*([\w.]+)-*([\w.]*)\s*$', versionString)
 		if not match:
 			raise ValueError(u"Bad version string '%s'" % versionString)
 
@@ -469,11 +469,11 @@ def compareVersions(v1, condition, v2):
 			second.append(u'0')
 
 	def splitValue(value):
-		match = re.search('^(\d+)(\D*.*)$', value)
+		match = re.search(r'^(\d+)(\D*.*)$', value)
 		if match:
 			return int(match.group(1)), match.group(2)
 		else:
-			match = re.search('^(\D+)(\d*.*)$', value)
+			match = re.search(r'^(\D+)(\d*.*)$', value)
 			if match:
 				return match.group(1), match.group(2)
 
