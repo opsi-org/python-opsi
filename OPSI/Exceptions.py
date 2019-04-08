@@ -72,14 +72,13 @@ class OpsiError(Exception):
 
 	complete_message = __str__
 
-	def message():
-		def get(self):
-			return self._message
+	@property
+	def message(self):
+		return self._message
 
-		def set(self, message):
-			self._message = forceUnicode(message)
-
-		return property(get, set)
+	@message.setter
+	def message(self, message):
+		self._message = forceUnicode(message)
 
 
 class OpsiBackupFileError(OpsiError):
