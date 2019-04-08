@@ -48,7 +48,6 @@ class OpsiError(Exception):
 	""" Base class for OPSI Backend exceptions. """
 
 	ExceptionShortDescription = "Opsi error"
-	_message = None
 
 	def __init__(self, message=''):
 		self._message = forceUnicode(message)
@@ -60,7 +59,7 @@ class OpsiError(Exception):
 			return u"%s" % self.ExceptionShortDescription
 
 	def __repr__(self):
-		if self._message and self._message != u'None':
+		if self._message:
 			text = u"<{0}({1!r})>".format(self.__class__.__name__, self._message)
 		else:
 			text = u"<{0}()>".format(self.__class__.__name__)
@@ -127,7 +126,7 @@ class OpsiProductOrderingError(OpsiError):
 		self.problematicRequirements = problematicRequirements
 
 	def __repr__(self):
-		if self._message and self._message != u'None':
+		if self._message:
 			text = u"<{0}({1!r}, {2!r})>".format(self.__class__.__name__, self._message, self.problematicRequirements)
 		else:
 			text = u"<{0}()>".format(self.__class__.__name__)
