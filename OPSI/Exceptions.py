@@ -23,8 +23,6 @@ OPSI Exceptions.
 :license: GNU Affero General Public License version 3
 """
 
-import sys
-
 from OPSI.Types import forceUnicode
 
 
@@ -65,10 +63,7 @@ class OpsiError(Exception):
 		else:
 			text = u"<{0}()>".format(self.__class__.__name__)
 
-		if sys.version_info > (3, ):
-			return text
-		else:
-			return text.encode('utf-8')
+		return text
 
 	complete_message = __str__
 
@@ -133,10 +128,7 @@ class OpsiProductOrderingError(OpsiError):
 		else:
 			text = u"<{0}()>".format(self.__class__.__name__)
 
-		if sys.version_info > (3, ):
-			return text
-		else:
-			return text.encode('utf-8')
+		return text
 
 	def __str__(self):
 		if self._message:
