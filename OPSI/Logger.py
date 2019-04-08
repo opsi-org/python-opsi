@@ -25,7 +25,6 @@ opsi python library - Logger
 """
 
 import codecs
-import locale
 import os
 import sys
 import threading
