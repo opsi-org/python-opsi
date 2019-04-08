@@ -45,7 +45,7 @@ OPSI_GLOBAL_CONF = u'/etc/opsi/global.conf'
 OPSICONFD_USER = u'opsiconfd'
 
 try:
-    from OPSI.Util.File.Opsi import OpsiConfFile
-    FILE_ADMIN_GROUP = OpsiConfFile().getOpsiFileAdminGroup()
+	from OPSI.Util.File.Opsi import OpsiConfFile
+	FILE_ADMIN_GROUP = OpsiConfFile().getOpsiFileAdminGroup()
 except Exception:
-    FILE_ADMIN_GROUP = u'pcpatch'
+	FILE_ADMIN_GROUP = u'pcpatch'
