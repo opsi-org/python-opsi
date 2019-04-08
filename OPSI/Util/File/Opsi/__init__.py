@@ -252,6 +252,7 @@ class BackendACLFile(ConfigFile):
 
 
 class BackendDispatchConfigFile(ConfigFile):
+
 	DISPATCH_ENTRY_REGEX = re.compile(r'^([^:]+)+\s*:\s*(\S.*)$')
 
 	def parse(self, lines=None):

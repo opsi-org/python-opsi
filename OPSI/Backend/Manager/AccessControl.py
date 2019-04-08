@@ -106,7 +106,7 @@ class BackendAccessControl:
 			raise BackendConfigurationError(u"Cannot use BackendAccessControl instance as backend")
 
 		try:
-			if re.search(r'^[^\.]+\.[^\.]+\.\S+$', self._username):
+			if re.search(r'^[^.]+\.[^.]+\.\S+$', self._username):
 				# Username starts with something like hostname.domain.tld:
 				# Assuming it is a host passing his FQDN as username
 				logger.debug(u"Trying to authenticate by opsiHostKey...")
@@ -148,7 +148,7 @@ class BackendAccessControl:
 		self._authenticated = True
 
 		if not self._acl:
-			self._acl = [['.*', [{'type': u'sys_group', 'ids': [OPSI_ADMIN_GROUP], 'denyAttributes': [], 'allowAttributes': []}]]]
+			self._acl = [[r'.*', [{'type': u'sys_group', 'ids': [OPSI_ADMIN_GROUP], 'denyAttributes': [], 'allowAttributes': []}]]]
 
 		# Pre-compiling regex patterns for speedup.
 		for i, (pattern, acl) in enumerate(self._acl):

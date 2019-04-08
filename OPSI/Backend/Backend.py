@@ -29,8 +29,6 @@ This holds the basic backend classes.
 :license: GNU Affero General Public License version 3
 """
 
-from __future__ import absolute_import
-
 import threading
 from contextlib import contextmanager
 

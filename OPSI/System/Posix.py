@@ -508,7 +508,7 @@ class NetworkPerformanceCounter(threading.Thread):
 		self._lastTime = None
 		self._bytesInPerSecond = 0
 		self._bytesOutPerSecond = 0
-		self._regex = re.compile(r'\s*(\S+)\:\s*(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)')
+		self._regex = re.compile(r'\s*(\S+):\s*(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)')
 		self._running = False
 		self._stopped = False
 		self.start()
@@ -771,6 +771,7 @@ def halt(wait=10):
 
 	for hook in hooks:
 		hook.post_halt(wait)
+
 
 shutdown = halt
 
@@ -1058,7 +1059,7 @@ def mount(dev, mountpoint, **options):
 
 	credentialsFiles = []
 	if dev.lower().startswith(('smb://', 'cifs://')):
-		match = re.search('^(smb|cifs)://([^/]+\/.+)$', dev, re.IGNORECASE)
+		match = re.search(r'^(smb|cifs)://([^/]+\/.+)$', dev, re.IGNORECASE)
 		if match:
 			fs = u'-t cifs'
 			parts = match.group(2).split('/')
@@ -1096,7 +1097,7 @@ def mount(dev, mountpoint, **options):
 	elif dev.lower().startswith(('webdav://', 'webdavs://', 'http://', 'https://')):
 		# We need enough free space in /var/cache/davfs2
 		# Maximum transfer file size <= free space in /var/cache/davfs2
-		match = re.search('^(http|webdav)(s*)(://[^/]+\/.+)$', dev, re.IGNORECASE)
+		match = re.search(r'^(http|webdav)(s*)(://[^/]+\/.+)$', dev, re.IGNORECASE)
 		if match:
 			fs = u'-t davfs'
 			dev = u'http' + match.group(2) + match.group(3)
@@ -1239,7 +1240,7 @@ def getBlockDeviceContollerInfo(device, lshwoutput=None):
 	storageControllers = {}
 
 	for line in lines:
-		match = re.search(r'^(/\S+)\s+(\S+)\s+storage\s+(\S+.*)\s\[([a-fA-F0-9]{1,4})\:([a-fA-F0-9]{1,4})\]$', line)
+		match = re.search(r'^(/\S+)\s+(\S+)\s+storage\s+(\S+.*)\s\[([a-fA-F0-9]{1,4}):([a-fA-F0-9]{1,4})\]$', line)
 		if match:
 			vendorId = match.group(4)
 			while len(vendorId) < 4:
@@ -1275,7 +1276,7 @@ def getBlockDeviceContollerInfo(device, lshwoutput=None):
 	# In this case return the first AHCI controller, that will be found
 	storageControllers = {}
 
-	storagePattern = re.compile(r'^(/\S+)\s+storage\s+(\S+.*[Aa][Hh][Cc][Ii].*)\s\[([a-fA-F0-9]{1,4})\:([a-fA-F0-9]{1,4})\]$')
+	storagePattern = re.compile(r'^(/\S+)\s+storage\s+(\S+.*[Aa][Hh][Cc][Ii].*)\s\[([a-fA-F0-9]{1,4}):([a-fA-F0-9]{1,4})\]$')
 	for line in lines:
 		match = storagePattern.search(line)
 		if match:
@@ -1301,7 +1302,7 @@ def getBlockDeviceContollerInfo(device, lshwoutput=None):
 			# This Quick hack is for Bios-Generations, that will only
 			# have a choice for "RAID + AHCI", this devices will be shown as
 			# RAID mode-Devices
-			match = re.search('^(/\S+)\s+storage\s+(\S+.*[Rr][Aa][Ii][Dd].*)\s\[([a-fA-F0-9]{1,4})\:([a-fA-F0-9]{1,4})\]$', line)
+			match = re.search(r'^(/\S+)\s+storage\s+(\S+.*[Rr][Aa][Ii][Dd].*)\s\[([a-fA-F0-9]{1,4}):([a-fA-F0-9]{1,4})\]$', line)
 			if match:
 				vendorId = match.group(3)
 				while len(vendorId) < 4:
@@ -1442,7 +1443,7 @@ class Harddisk:
 			if (partition < 1) or (partition > 4):
 				raise ValueError(u"Partition has to be int value between 1 and 4")
 
-			if not re.search('^[a-f0-9]{2}$', id):
+			if not re.search(r'^[a-f0-9]{2}$', id):
 				if id in (u'linux', u'ext2', u'ext3', u'ext4', u'xfs', u'reiserfs', u'reiser4'):
 					id = u'83'
 				elif id == u'linux-swap':
@@ -1718,9 +1719,9 @@ class Harddisk:
 			elif line.lower().startswith('units'):
 				if isXenialSfdiskVersion():
 					match = re.search(r'sectors\s+of\s+\d\s+.\s+\d+\s+.\s+(\d+)\s+bytes', line)
-
 				else:
 					match = re.search(r'sectors\s+of\s+(\d+)\s+bytes', line)
+
 				if not match:
 					raise RuntimeError(u"Unable to get bytes/sector for disk '%s'" % self.device)
 				self.bytesPerSector = forceInt(match.group(1))
@@ -1785,7 +1786,6 @@ class Harddisk:
 			if self.ldPreload:
 				os.putenv("LD_PRELOAD", self.ldPreload)
 
-			#changing execution to os.system
 			execute(cmd, ignoreExitCode=[1])
 			if self.ldPreload:
 				os.unsetenv("LD_PRELOAD")
@@ -2193,7 +2193,7 @@ class Harddisk:
 			lba = forceBool(lba)
 
 			partId = u'00'
-			if re.search('^[a-f0-9]{2}$', fs):
+			if re.search(r'^[a-f0-9]{2}$', fs):
 				partId = fs
 			else:
 				if fs in (u'ext2', u'ext3', u'ext4', u'xfs', u'reiserfs', u'reiser4', u'linux'):
@@ -3147,7 +3147,7 @@ def hardwareExtendedInventory(config, opsiValues={}, progressSubject=None):
 
 		logger.debug(u"Processing class '%s'" % (opsiName))
 
-		valuesregex = re.compile("(.*)#(.*)#")
+		valuesregex = re.compile(r"(.*)#(.*)#")
 		for item in hwClass['Values']:
 			pythonline = item.get('Python')
 			if not pythonline:
@@ -3222,7 +3222,7 @@ def hardwareInventory(config, progressSubject=None):
 	# Read output from lspci
 	lspci = {}
 	busId = None
-	devRegex = re.compile(r'([\d\.:a-f]+)\s+([\da-f]+):\s+([\da-f]+):([\da-f]+)\s*(\(rev ([^\)]+)\)|)')
+	devRegex = re.compile(r'([\d.:a-f]+)\s+([\da-f]+):\s+([\da-f]+):([\da-f]+)\s*(\(rev ([^\)]+)\)|)')
 	subRegex = re.compile(r'\s*Subsystem:\s+([\da-f]+):([\da-f]+)\s*')
 	for line in execute(u"%s -vn" % which("lspci")):
 		if not line.strip():
@@ -3286,11 +3286,11 @@ def hardwareInventory(config, progressSubject=None):
 	currentKey = None
 	status = False
 
-	devRegex = re.compile(r'^Bus\s+(\d+)\s+Device\s+(\d+)\:\s+ID\s+([\da-fA-F]{4})\:([\da-fA-F]{4})\s*(.*)$')
-	descriptorRegex = re.compile(r'^(\s*)(.*)\s+Descriptor\:\s*$')
-	deviceStatusRegex = re.compile(r'^(\s*)Device\s+Status\:\s+(\S+)\s*$')
-	deviceQualifierRegex = re.compile(r'^(\s*)Device\s+Qualifier\s+.*\:\s*$')
-	keyRegex = re.compile(r'^(\s*)([^\:]+)\:\s*$')
+	devRegex = re.compile(r'^Bus\s+(\d+)\s+Device\s+(\d+):\s+ID\s+([\da-fA-F]{4}):([\da-fA-F]{4})\s*(.*)$')
+	descriptorRegex = re.compile(r'^(\s*)(.*)\s+Descriptor:\s*$')
+	deviceStatusRegex = re.compile(r'^(\s*)Device\s+Status:\s+(\S+)\s*$')
+	deviceQualifierRegex = re.compile(r'^(\s*)Device\s+Qualifier\s+.*:\s*$')
+	keyRegex = re.compile(r'^(\s*)([^\:]+):\s*$')
 	keyValueRegex = re.compile(r'^(\s*)(\S+)\s+(.*)$')
 
 	try:

@@ -97,6 +97,9 @@ def splitAndStrip(string, sep):
 
 
 class ConfigurationParser(object):
+
+	TIME_REGEX = re.compile(r'^\d{1,2}:\d{1,2}$')
+
 	def __init__(self, configFile, backend=None, depotId=None, depotKey=None):
 		self.configFile = configFile
 		self.backend = backend
@@ -187,13 +190,13 @@ overriden based on values in configuration file.
 						if option.lower() == 'windowstart':
 							if not value.strip():
 								continue
-							if not re.search('^\d{1,2}\:\d{1,2}$', value.strip()):
+							if not self.TIME_REGEX.search(value.strip()):
 								raise ValueError(u"Start time '%s' not in needed format 'HH:MM'" % value.strip())
 							config["installationWindowStartTime"] = value.strip()
 						elif option.lower() == 'windowend':
 							if not value.strip():
 								continue
-							if not re.search('^\d{1,2}\:\d{1,2}$', value.strip()):
+							if not self.TIME_REGEX.search(value.strip()):
 								raise ValueError(u"End time '%s' not in needed format 'HH:MM'" % value.strip())
 							config["installationWindowEndTime"] = value.strip()
 						elif option.lower() == 'exceptproductids':

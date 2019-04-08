@@ -193,10 +193,10 @@ This defaults to ``self``.
 							continue
 						elif value is None or isinstance(value, bool):
 							continue
-						elif isinstance(value, (float, int)) or re.search(r'^\s*([>=<]+)\s*([\d\.]+)', forceUnicode(filterValue)):
+						elif isinstance(value, (float, int)) or re.search(r'^\s*([>=<]+)\s*([\d.]+)', forceUnicode(filterValue)):
 							operator = '=='
 							v = forceUnicode(filterValue)
-							match = re.search(r'^\s*([>=<]+)\s*([\d\.]+)', filterValue)
+							match = re.search(r'^\s*([>=<]+)\s*([\d.]+)', filterValue)
 							if match:
 								operator = match.group(1)  # pylint: disable=maybe-no-member
 								v = match.group(2)  # pylint: disable=maybe-no-member
@@ -210,7 +210,7 @@ This defaults to ``self``.
 
 							continue
 
-						if '*' in filterValue and re.search('^%s$' % filterValue.replace('*', '.*'), value):
+						if '*' in filterValue and re.search(r'^%s$' % filterValue.replace('*', '.*'), value):
 							matched = True
 							break
 
