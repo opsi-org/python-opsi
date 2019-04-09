@@ -72,14 +72,6 @@ class OpsiError(Exception):
 
 	complete_message = __str__
 
-	@property
-	def message(self):
-		return self._message
-
-	@message.setter
-	def message(self, message):
-		self._message = forceUnicode(message)
-
 
 class OpsiBackupFileError(OpsiError):
 	ExceptionShortDescription = u"Opsi backup file error"
