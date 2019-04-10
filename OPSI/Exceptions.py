@@ -46,35 +46,24 @@ class OpsiError(Exception):
 	""" Base class for OPSI Backend exceptions. """
 
 	ExceptionShortDescription = "Opsi error"
-	_message = None
 
 	def __init__(self, message=''):
-		self._message = forceUnicode(message)
+		super().__init__(message)
+		self.message = forceUnicode(message)
 
 	def __str__(self):
-		if self._message:
-			return u"%s: %s" % (self.ExceptionShortDescription, self._message)
+		if self.message:
+			return u"%s: %s" % (self.ExceptionShortDescription, self.message)
 		else:
 			return u"%s" % self.ExceptionShortDescription
 
 	def __repr__(self):
-		if self._message and self._message != u'None':
-			text = u"<{0}({1!r})>".format(self.__class__.__name__, self._message)
+		if self.message:
+			text = u"<{0}({1!r})>".format(self.__class__.__name__, self.message)
 		else:
 			text = u"<{0}()>".format(self.__class__.__name__)
 
 		return text
-
-	complete_message = __str__
-
-	def message():
-		def get(self):
-			return self._message
-
-		def set(self, message):
-			self._message = forceUnicode(message)
-
-		return property(get, set)
 
 
 class OpsiBackupFileError(OpsiError):
@@ -117,25 +106,24 @@ class OpsiProductOrderingError(OpsiError):
 	ExceptionShortDescription = u"A condition for ordering cannot be fulfilled"
 
 	def __init__(self, message='', problematicRequirements=None):
-		problematicRequirements = problematicRequirements or []
+		super().__init__(message)
 
-		self._message = forceUnicode(message)
-		self.problematicRequirements = problematicRequirements
+		self.problematicRequirements = problematicRequirements or []
 
 	def __repr__(self):
-		if self._message and self._message != u'None':
-			text = u"<{0}({1!r}, {2!r})>".format(self.__class__.__name__, self._message, self.problematicRequirements)
+		if self.message:
+			text = u"<{0}({1!r}, {2!r})>".format(self.__class__.__name__, self.message, self.problematicRequirements)
 		else:
 			text = u"<{0}()>".format(self.__class__.__name__)
 
 		return text
 
 	def __str__(self):
-		if self._message:
+		if self.message:
 			if self.problematicRequirements:
-				return u"{0}: {1} ({2})".format(self.ExceptionShortDescription, self._message, self.problematicRequirements)
+				return u"{0}: {1} ({2})".format(self.ExceptionShortDescription, self.message, self.problematicRequirements)
 			else:
-				return u"{0}: {1}".format(self.ExceptionShortDescription, self._message)
+				return u"{0}: {1}".format(self.ExceptionShortDescription, self.message)
 		else:
 			return forceUnicode(self.ExceptionShortDescription)
 
