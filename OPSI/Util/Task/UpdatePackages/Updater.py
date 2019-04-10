@@ -712,7 +712,7 @@ class OpsiPackageUpdater(object):
 		speed = 0
 
 		with open(outFile, 'wb') as out:
-			for chunk in iter(lambda: con.read(32768), ''):
+			for chunk in iter(lambda: con.read(32768), b''):
 				completed += len(chunk)
 				out.write(chunk)
 
