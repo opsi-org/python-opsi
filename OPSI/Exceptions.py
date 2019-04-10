@@ -70,8 +70,6 @@ class OpsiError(Exception):
 		else:
 			return text.encode('utf-8')
 
-	complete_message = __str__
-
 
 class OpsiBackupFileError(OpsiError):
 	ExceptionShortDescription = u"Opsi backup file error"
