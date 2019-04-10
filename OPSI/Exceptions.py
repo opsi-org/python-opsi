@@ -111,6 +111,7 @@ class OpsiProductOrderingError(OpsiError):
 	ExceptionShortDescription = u"A condition for ordering cannot be fulfilled"
 
 	def __init__(self, message='', problematicRequirements=None):
+		super().__init__(message)
 		problematicRequirements = problematicRequirements or []
 
 		self.message = forceUnicode(message)
