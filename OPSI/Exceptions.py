@@ -65,8 +65,6 @@ class OpsiError(Exception):
 
 		return text
 
-	complete_message = __str__
-
 
 class OpsiBackupFileError(OpsiError):
 	ExceptionShortDescription = u"Opsi backup file error"
