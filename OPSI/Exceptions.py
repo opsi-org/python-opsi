@@ -112,10 +112,8 @@ class OpsiProductOrderingError(OpsiError):
 
 	def __init__(self, message='', problematicRequirements=None):
 		super().__init__(message)
-		problematicRequirements = problematicRequirements or []
 
-		self.message = forceUnicode(message)
-		self.problematicRequirements = problematicRequirements
+		self.problematicRequirements = problematicRequirements or []
 
 	def __repr__(self):
 		if self.message:
