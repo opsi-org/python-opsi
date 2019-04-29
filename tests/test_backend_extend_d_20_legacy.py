@@ -419,3 +419,71 @@ def testSetProductPropertyFailingIfMultivalueIsFalse(backendManager):
 
     with pytest.raises(ValueError):
         backendManager.setProductProperty(product.id, testprop.propertyId, ["1", "2"], client.id)
+
+
+def testSetProductPropertiesWithMultipleValues(backendManager):
+    product = LocalbootProduct('testproduct', '1.0', '2')
+    backendManager.product_insertObject(product)
+
+    testprop = UnicodeProductProperty(
+        productId=product.id,
+        productVersion=product.productVersion,
+        packageVersion=product.packageVersion,
+        propertyId=u"rebootflag",
+        possibleValues=["0", "1", "2", "3"],
+        defaultValues=["0"],
+        editable=False,
+        multiValue=True
+    )
+    donotchange = UnicodeProductProperty(
+        productId=product.id,
+        productVersion=product.productVersion,
+        packageVersion=product.packageVersion,
+        propertyId=u"upgradeproducts",
+        possibleValues=["firefox", "opsi-vhd-control", "winscp"],
+        defaultValues=["firefox", "opsi-vhd-control", "winscp"],
+        editable=True,
+        multiValue=True
+    )
+
+    backendManager.productProperty_insertObject(testprop)
+    backendManager.productProperty_insertObject(donotchange)
+
+    client = OpsiClient('testclient.domain.invalid')
+    backendManager.host_insertObject(client)
+
+    depotIds = set()
+    for depot in getDepotServers():
+        depotIds.add(depot.id)
+        backendManager.host_insertObject(depot)
+
+    for depotId in depotIds:
+        backendManager.setProductProperties(product.id, {testprop.propertyId: ["1", "2"]}, depotId)
+
+    result = backendManager.productProperty_getObjects(propertyId=donotchange.propertyId)
+    assert len(result) == 1
+    result = result[0]
+    assert isinstance(result, UnicodeProductProperty)
+    assert result.getPossibleValues() == ["firefox", "opsi-vhd-control", "winscp"]
+    assert result.getDefaultValues() == ["firefox", "opsi-vhd-control", "winscp"]
+
+    result = backendManager.productProperty_getObjects(propertyId=testprop.propertyId)
+    assert len(result) == 1
+    result = result[0]
+    assert isinstance(result, UnicodeProductProperty)
+    assert result.getPossibleValues() == ["0", "1", "2", "3"]
+    assert result.getDefaultValues() == ["0"]
+
+    results = backendManager.productPropertyState_getObjects()
+    assert len(results) == len(depotIds)
+
+    for result in results:
+        assert result.getObjectId() in depotIds
+        print("Checking {0!r}".format(result))
+
+        if result.propertyId == donotchange.propertyId:
+            assert result.getValues() == donotchange.getPossibleValues()
+        elif result.propertyId == testprop.propertyId:
+            assert result.getValues() == ["1", "2"]
+        else:
+            raise ValueError("Unexpected property state: {0!r}".format(result))
