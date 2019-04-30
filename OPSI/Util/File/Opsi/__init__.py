@@ -1550,11 +1550,23 @@ element of the tuple is replace with the second element.
 						if member.name == os.path.join(self.CONTENT_DIR, "BACKENDS/MYSQL/%s/database.sql" % backend["name"]):
 							self._extractFile(member, name)
 
-					cmd = [OPSI.System.which("mysql")]
-					cmd.append("--host=%s" % backend["config"]["address"])
-					cmd.append("--user=%s" % backend["config"]["username"])
-					cmd.append("--password=%s" % backend["config"]["password"])
-					cmd.append(backend["config"]["database"])
+					# Early check for available command to not leak
+					# credentials if mysqldump is missing
+					mysqlCmd = OPSI.System.which("mysql")
+					defaultsFile = createMySQLDefaultsFile(
+						"mysql",
+						backend["config"]["username"],
+						backend["config"]["password"]
+					)
+
+					cmd = [
+						mysqlCmd,
+						# --defaults-file has to be the first argument
+						"--defaults-file=%s" % defaultsFile,
+						"--host=%s" % backend["config"]["address"],
+						backend["config"]["database"]
+					]
+					logger.debug2("Restore command: {!r}", cmd)
 
 					output = StringIO.StringIO()
 
@@ -1572,6 +1584,7 @@ element of the tuple is replace with the second element.
 				finally:
 					os.close(fd)
 					os.remove(name)
+					os.remove(defaultsFile)
 
 
 def createMySQLDefaultsFile(program, username, password):
