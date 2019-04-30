@@ -1494,7 +1494,7 @@ element of the tuple is replace with the second element.
 							currentError = p.stderr.readline().strip()
 							if currentError:
 								lastErrors.append(currentError)
-								if "Warning: Using a password on the command line interface can be insecure." not in currentError:
+								if "Using a password on the command line interface can be insecure." not in currentError:
 									collectedErrors.append(currentError)
 						except Exception:
 							continue
