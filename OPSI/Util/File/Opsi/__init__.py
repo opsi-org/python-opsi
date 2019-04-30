@@ -1465,12 +1465,11 @@ element of the tuple is replace with the second element.
 				# credentials if mysqldump is missing
 				mysqldumpCmd = OPSI.System.which("mysqldump")
 
-				with tempfile.NamedTemporaryFile(mode='wt', delete=False) as cFile:
-					defaultsFile = cFile.name
-					cFile.write("""[mysqldump]
-user=%s
-password=%s
-""" % (backend["config"]["username"], backend["config"]["password"]))
+				defaultsFile = createMySQLDefaultsFile(
+					"mysqldump",
+					backend["config"]["username"],
+					backend["config"]["password"]
+				)
 
 				cmd = [
 					mysqldumpCmd,
@@ -1573,3 +1572,29 @@ password=%s
 				finally:
 					os.close(fd)
 					os.remove(name)
+
+
+def createMySQLDefaultsFile(program, username, password):
+	"""
+	Create a secure file with mysql defaults.
+	This can usually be passed as --defaults-file to most mysql commands.
+	Returns the path to the file.
+
+	The caller has to make sure that the file will be deleted afterwards!
+
+	:param program: Name of the section in the config file
+	:type program: str
+	:param username: Username to use
+	:type username: str
+	:param password: Password to use
+	:type password: str
+	:returns: Path to the created file
+	:rtype: str
+	"""
+	with tempfile.NamedTemporaryFile(mode='wt', delete=False) as cFile:
+		cFile.write("""[%s]
+user=%s
+password=%s
+""" % (program, username, password))
+
+		return cFile.name
