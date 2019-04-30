@@ -1452,8 +1452,6 @@ element of the tuple is replace with the second element.
 		return self._hasBackend("MYSQL", name=name)
 
 	def backupMySQLBackend(self, flushLogs=False, auto=False):
-		pwOnCliWarning = "using a password on the command line interface can be insecure."
-
 		# In Python 2.6 a deque has no "maxlen" attribute so we need to
 		# work around with this.
 		maximumDequeLength = 10
@@ -1511,8 +1509,7 @@ password=%s
 							currentError = p.stderr.readline().strip()
 							if currentError:
 								lastErrors.append(currentError)
-								if pwOnCliWarning not in currentError.lower():
-									collectedErrors.append(currentError)
+								collectedErrors.append(currentError)
 						except Exception:
 							continue
 
