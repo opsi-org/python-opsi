@@ -91,16 +91,17 @@ def testCreatingArchive():
             shutil.copytree(sourceBackendDir, fakeBackendDir)
 
             for filename in os.listdir(fakeBackendDir):
-                if 'file' not in filename or not filename.endswith('.conf'):
+                if not filename.endswith('.conf'):
                     continue
 
                 configPath = os.path.join(fakeBackendDir, filename)
                 config = getBackendConfiguration(configPath)
-                if 'mysql' in filename and MySQLconfiguration:
+                if 'file' in filename:
+                    config['baseDir'] = configDir
+                    updateConfigFile(configPath, config)
+                elif 'mysql' in filename and MySQLconfiguration:
                     config.update(MySQLconfiguration)
-
-                config['baseDir'] = configDir
-                updateConfigFile(configPath, config)
+                    updateConfigFile(configPath, config)
 
             with mock.patch('OPSI.Util.Task.Backup.OpsiBackupArchive.CONF_DIR', os.path.dirname(__file__)):
                 with mock.patch('OPSI.Util.Task.Backup.OpsiBackupArchive.BACKEND_CONF_DIR', fakeBackendDir):
