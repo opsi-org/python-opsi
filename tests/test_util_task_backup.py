@@ -34,6 +34,11 @@ from OPSI.Util.Task.ConfigureBackend import (
 
 from .helpers import mock, workInTemporaryDirectory
 
+try:
+    from .Backends.MySQL import MySQLconfiguration
+except ImportError:
+    MySQLconfiguration = None
+
 
 def testVerifySysConfigDoesNotFailBecauseWhitespaceAtEnd():
     backup = OpsiBackup()
@@ -91,6 +96,9 @@ def testCreatingArchive():
 
                 configPath = os.path.join(fakeBackendDir, filename)
                 config = getBackendConfiguration(configPath)
+                if 'mysql' in filename and MySQLconfiguration:
+                    config.update(MySQLconfiguration)
+
                 config['baseDir'] = configDir
                 updateConfigFile(configPath, config)
 
