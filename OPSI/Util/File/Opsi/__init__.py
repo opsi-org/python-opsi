@@ -1452,10 +1452,6 @@ element of the tuple is replace with the second element.
 		return self._hasBackend("MYSQL", name=name)
 
 	def backupMySQLBackend(self, flushLogs=False, auto=False):
-		# In Python 2.6 a deque has no "maxlen" attribute so we need to
-		# work around with this.
-		maximumDequeLength = 10
-
 		for backend in self._getBackends("mysql"):
 			if not auto or backend["dispatch"]:
 				if not backend["dispatch"]:
@@ -1484,7 +1480,7 @@ element of the tuple is replace with the second element.
 						collectedErrors = [p.stderr.readline()]
 					except Exception:
 						collectedErrors = []
-					lastErrors = collections.deque(collectedErrors, maxlen=maximumDequeLength)
+					lastErrors = collections.deque(collectedErrors, maxlen=10)
 
 					while not p.poll() and out:
 						os.write(fd, out)
@@ -1499,7 +1495,7 @@ element of the tuple is replace with the second element.
 						except Exception:
 							continue
 
-						if maximumDequeLength == len(lastErrors):
+						if lastErrors.maxlen == len(lastErrors):
 							onlyOneErrorMessageInLastErrors = True
 							firstError = lastErrors[0]
 							for err in list(lastErrors)[1:]:
