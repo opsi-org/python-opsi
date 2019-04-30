@@ -1462,16 +1462,31 @@ element of the tuple is replace with the second element.
 			if not auto or backend["dispatch"]:
 				if not backend["dispatch"]:
 					logger.warning("Backing up backend %s although it's currently not in use." % backend["name"])
-				cmd = [OPSI.System.which("mysqldump")]
-				cmd.append("--host=%s" % backend["config"]["address"])
-				cmd.append("--user=%s" % backend["config"]["username"])
-				cmd.append("--password=%s" % backend["config"]["password"])
+
+				# Early check for available command to not leak
+				# credentials if mysqldump is missing
+				mysqldumpCmd = OPSI.System.which("mysqldump")
+
+				with tempfile.NamedTemporaryFile(mode='wt', delete=False) as cFile:
+					defaultsFile = cFile.name
+					cFile.write("""[mysqldump]
+user=%s
+password=%s
+""" % (backend["config"]["username"], backend["config"]["password"]))
+
+				cmd = [
+					mysqldumpCmd,
+					# --defaults-file has to be the first argument
+					"--defaults-file=%s" % defaultsFile,
+					"--host=%s" % backend["config"]["address"],
+					"--lock-tables",
+					"--add-drop-table"
+				]
 				if flushLogs:
 					logger.debug("Flushing mysql table logs.")
 					cmd.append("--flush-log")
-				cmd.append("--lock-tables")
-				cmd.append("--add-drop-table")
 				cmd.append(backend["config"]["database"])
+				logger.debug2("Prepared mysqldump command: {!r}", cmd)
 
 				fd, name = tempfile.mkstemp(dir=self.tempdir)
 				try:
@@ -1523,6 +1538,7 @@ element of the tuple is replace with the second element.
 				finally:
 					os.close(fd)
 					os.remove(name)
+					os.remove(defaultsFile)
 
 	def restoreMySQLBackend(self, auto=False):
 		if not self.hasMySQLBackend():
