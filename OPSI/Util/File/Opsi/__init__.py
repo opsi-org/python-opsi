@@ -224,13 +224,7 @@ class BackendACLFile(ConfigFile):
 								aclTypeParamValues.append(u'')
 							else:
 								aclTypeParam = aclTypeParam.strip()
-								tmp = []
-								for t in aclTypeParamValues:
-									t = t.strip()
-									if not t:
-										continue
-									tmp.append(t)
-								aclTypeParamValues = tmp
+								aclTypeParamValues = [t.strip() for t in aclTypeParamValues if t.strip()]
 								if aclTypeParam == 'attributes':
 									for v in aclTypeParamValues:
 										if not v:
@@ -655,12 +649,8 @@ class PackageControlFile(TextFile):
 							value = value.replace(u'\n', u'')
 							value = value.replace(u'\t', u'')
 							if not (sectionType == 'productproperty' and option == 'default'):
-								value = value.split(u',')
-								newV = []
-								for v in value:
-									v = v.strip()
-									newV.append(v)
-								value = newV
+								value = [v.strip() for v in value.split(u',')]
+
 							# Remove duplicates
 							value = [v for v in forceList(value) if v not in ('', None)]
 							value = forceUniqueList(value)
