@@ -40,6 +40,7 @@ except ImportError:
 	# Python 3 compatibility
 	from http.client import HTTPSConnection
 
+from OPSI import __version__
 from OPSI.Exceptions import BackendMissingDataError, BackendUnaccomplishableError
 from OPSI.Logger import Logger, LOG_DEBUG
 from OPSI.Types import (forceBool, forceDict, forceHostId, forceHostIdList,
@@ -103,6 +104,9 @@ def _configureHostcontrolBackend(backend, kwargs):
 
 
 class RpcThread(KillableThread):
+
+	_USER_AGENT = 'opsi-RpcThread/{}'.format(__version__)
+
 	def __init__(self, hostControlBackend, hostId, address, username, password, method, params=[], hostPort=0):
 		KillableThread.__init__(self)
 		self.hostControlBackend = hostControlBackend
@@ -144,6 +148,7 @@ class RpcThread(KillableThread):
 			with closingConnection(connection) as connection:
 				non_blocking_connect_https(connection, timeout)
 				connection.putrequest('POST', '/opsiclientd')
+				connection.putheader('User-Agent', self._USER_AGENT)
 				connection.putheader('content-type', 'application/json')
 				connection.putheader('content-length', str(len(query)))
 				auth = u'{0}:{1}'.format(self.username, self.password)

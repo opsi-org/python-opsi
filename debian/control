@@ -2,7 +2,7 @@ Source: python-opsi
 Section: opsi
 Priority: optional
 Maintainer: uib GmbH <info@uib.de>
-Homepage: http://opsi.org/
+Homepage: https://opsi.org/
 Build-Depends: debhelper (>= 7.0.50~),
 	dh-python,
 	gettext,
