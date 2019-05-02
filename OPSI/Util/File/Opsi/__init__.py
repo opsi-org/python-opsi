@@ -975,10 +975,8 @@ class OpsiConfFile(IniFile):
 		self._opsiConfig = {}
 
 		sectionType = None
-		lineNum = 0
 
-		for line in self._lines:
-			lineNum += 1
+		for lineNum, line in enumerate(self._lines, start=1):
 			line = line.strip()
 			if line and line.startswith((';', '#')):
 				# This is a comment
