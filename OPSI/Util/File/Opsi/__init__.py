@@ -635,9 +635,9 @@ class PackageControlFile(TextFile):
 				for (option, value) in currentSection.items():
 					if ((sectionType == 'product' and option == 'productclasses') or
 						(sectionType == 'package' and option == 'depends') or
-						(sectionType == 'productproperty' and option == 'default') or
-						(sectionType == 'productproperty' and option == 'values') or
+						(sectionType == 'productproperty' and option in ('default', 'values')) or
 						(sectionType == 'windows' and option == 'softwareids')):
+
 						try:
 							if not value.strip().startswith(('{', '[')):
 								raise ValueError(u'Not trying to read json string because value does not start with { or [')
