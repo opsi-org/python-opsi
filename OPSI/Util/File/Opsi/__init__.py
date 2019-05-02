@@ -1229,11 +1229,8 @@ element of the tuple is replace with the second element.
 				return
 
 			checksum = sha1()
-
 			with open(path) as f:
-				chunk = True
-				while chunk:
-					chunk = f.read()
+				for chunk in f:
 					checksum.update(chunk)
 
 			self._filemap[dest] = checksum.hexdigest()
@@ -1273,10 +1270,8 @@ element of the tuple is replace with the second element.
 				filesum = sha1()
 
 				count = 0
-				chunk = True
 				with closing(self.extractfile(member)) as fp:
-					while chunk:
-						chunk = fp.read()
+					for chunk in fp:
 						count += len(chunk)
 						filesum.update(chunk)
 
@@ -1301,10 +1296,8 @@ element of the tuple is replace with the second element.
 			checksum = self._filemap[member.name]
 			filesum = sha1()
 
-			chunk = True
 			with closing(self.extractfile(member.name)) as fp:
-				while chunk:
-					chunk = fp.read()
+				for chunk in fp:
 					filesum.update(chunk)
 					os.write(tf, chunk)
 
