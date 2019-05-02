@@ -54,7 +54,8 @@ from OPSI.Types import (
 	forceInstallationStatus, forceList, forceObjectClass, forceObjectClassList,
 	forceOpsiHostKey, forcePackageVersion, forceProductId, forceProductPriority,
 	forceProductPropertyType, forceProductType, forceProductVersion,
-	forceRequirementType, forceUnicode, forceUnicodeList, forceUnicodeLower)
+	forceRequirementType, forceUnicode, forceUnicodeList, forceUnicodeLower,
+	forceUniqueList)
 from OPSI.Util.File import ConfigFile, IniFile, TextFile, requiresParsing
 from OPSI.Util import md5sum, toJson, fromJson
 
@@ -648,12 +649,7 @@ class PackageControlFile(TextFile):
 								raise ValueError(u'Not trying to read json string because value does not start with { or [')
 							value = fromJson(value.strip())
 							# Remove duplicates
-							# TODO: use set
-							tmp = []
-							for v in forceList(value):
-								if v not in tmp:
-									tmp.append(v)
-							value = tmp
+							value = forceUniqueList(value)
 						except Exception as error:
 							logger.debug2(u"Failed to read json string '%s': %s" % (value.strip(), error))
 							value = value.replace(u'\n', u'')
@@ -666,12 +662,8 @@ class PackageControlFile(TextFile):
 									newV.append(v)
 								value = newV
 							# Remove duplicates
-							# TODO: use set
-							tmp = []
-							for v in forceList(value):
-								if v not in ('', None) and v not in tmp:
-									tmp.append(v)
-							value = tmp
+							value = [v for v in forceList(value) if v not in ('', None)]
+							value = forceUniqueList(value)
 
 					if isinstance(value, unicode):
 						value = value.rstrip()
