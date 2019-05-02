@@ -1265,7 +1265,6 @@ element of the tuple is replace with the second element.
 
 		for member in self.getmembers():
 			if member.isfile() and member.name.startswith(self.CONTENT_DIR):
-
 				checksum = self._filemap[member.name]
 				filesum = sha1()
 
@@ -1308,7 +1307,6 @@ element of the tuple is replace with the second element.
 			os.chown(dest, pwd.getpwnam(member.uname)[2], grp.getgrnam(member.gname)[2])
 			os.chmod(dest, member.mode)
 			os.utime(dest, (member.mtime, member.mtime))
-
 		finally:
 			os.close(tf)
 			os.remove(path)
