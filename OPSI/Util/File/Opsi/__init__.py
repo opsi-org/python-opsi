@@ -1460,16 +1460,30 @@ element of the tuple is replace with the second element.
 			if not auto or backend["dispatch"]:
 				if not backend["dispatch"]:
 					logger.warning("Backing up backend %s although it's currently not in use." % backend["name"])
-				cmd = [OPSI.System.which("mysqldump")]
-				cmd.append("--host=%s" % backend["config"]["address"])
-				cmd.append("--user=%s" % backend["config"]["username"])
-				cmd.append("--password=%s" % backend["config"]["password"])
+
+				# Early check for available command to not leak
+				# credentials if mysqldump is missing
+				mysqldumpCmd = OPSI.System.which("mysqldump")
+
+				defaultsFile = createMySQLDefaultsFile(
+					"mysqldump",
+					backend["config"]["username"],
+					backend["config"]["password"]
+				)
+
+				cmd = [
+					mysqldumpCmd,
+					# --defaults-file has to be the first argument
+					"--defaults-file=%s" % defaultsFile,
+					"--host=%s" % backend["config"]["address"],
+					"--lock-tables",
+					"--add-drop-table"
+				]
 				if flushLogs:
 					logger.debug("Flushing mysql table logs.")
 					cmd.append("--flush-log")
-				cmd.append("--lock-tables")
-				cmd.append("--add-drop-table")
 				cmd.append(backend["config"]["database"])
+				logger.debug2("Prepared mysqldump command: {!r}", cmd)
 
 				fd, name = tempfile.mkstemp(dir=self.tempdir)
 				try:
@@ -1494,8 +1508,7 @@ element of the tuple is replace with the second element.
 							currentError = p.stderr.readline().strip()
 							if currentError:
 								lastErrors.append(currentError)
-								if "Warning: Using a password on the command line interface can be insecure." not in currentError:
-									collectedErrors.append(currentError)
+								collectedErrors.append(currentError)
 						except Exception:
 							continue
 
@@ -1521,6 +1534,7 @@ element of the tuple is replace with the second element.
 				finally:
 					os.close(fd)
 					os.remove(name)
+					os.remove(defaultsFile)
 
 	def restoreMySQLBackend(self, auto=False):
 		if not self.hasMySQLBackend():
@@ -1536,11 +1550,23 @@ element of the tuple is replace with the second element.
 						if member.name == os.path.join(self.CONTENT_DIR, "BACKENDS/MYSQL/%s/database.sql" % backend["name"]):
 							self._extractFile(member, name)
 
-					cmd = [OPSI.System.which("mysql")]
-					cmd.append("--host=%s" % backend["config"]["address"])
-					cmd.append("--user=%s" % backend["config"]["username"])
-					cmd.append("--password=%s" % backend["config"]["password"])
-					cmd.append(backend["config"]["database"])
+					# Early check for available command to not leak
+					# credentials if mysqldump is missing
+					mysqlCmd = OPSI.System.which("mysql")
+					defaultsFile = createMySQLDefaultsFile(
+						"mysql",
+						backend["config"]["username"],
+						backend["config"]["password"]
+					)
+
+					cmd = [
+						mysqlCmd,
+						# --defaults-file has to be the first argument
+						"--defaults-file=%s" % defaultsFile,
+						"--host=%s" % backend["config"]["address"],
+						backend["config"]["database"]
+					]
+					logger.debug2("Restore command: {!r}", cmd)
 
 					output = StringIO.StringIO()
 
@@ -1558,3 +1584,30 @@ element of the tuple is replace with the second element.
 				finally:
 					os.close(fd)
 					os.remove(name)
+					os.remove(defaultsFile)
+
+
+def createMySQLDefaultsFile(program, username, password):
+	"""
+	Create a secure file with mysql defaults.
+	This can usually be passed as --defaults-file to most mysql commands.
+	Returns the path to the file.
+
+	The caller has to make sure that the file will be deleted afterwards!
+
+	:param program: Name of the section in the config file
+	:type program: str
+	:param username: Username to use
+	:type username: str
+	:param password: Password to use
+	:type password: str
+	:returns: Path to the created file
+	:rtype: str
+	"""
+	with tempfile.NamedTemporaryFile(mode='wt', delete=False) as cFile:
+		cFile.write("""[%s]
+user=%s
+password=%s
+""" % (program, username, password))
+
+		return cFile.name
