@@ -1309,7 +1309,7 @@ element of the tuple is replace with the second element.
 					os.write(tf, chunk)
 
 			if filesum.hexdigest() != checksum:
-				raise OpsiBackupFileError("Error restoring file %s: checksum missmacht.")
+				raise OpsiBackupFileError("Error restoring file %s: checksum missmatch." % member)
 
 			shutil.copyfile(path, dest)
 			os.chown(dest, pwd.getpwnam(member.uname)[2], grp.getgrnam(member.gname)[2])
