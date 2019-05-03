@@ -54,7 +54,8 @@ from OPSI.Types import (
 	forceInstallationStatus, forceList, forceObjectClass, forceObjectClassList,
 	forceOpsiHostKey, forcePackageVersion, forceProductId, forceProductPriority,
 	forceProductPropertyType, forceProductType, forceProductVersion,
-	forceRequirementType, forceUnicode, forceUnicodeList, forceUnicodeLower)
+	forceRequirementType, forceUnicode, forceUnicodeList, forceUnicodeLower,
+	forceUniqueList)
 from OPSI.Util.File import ConfigFile, IniFile, TextFile, requiresParsing
 from OPSI.Util import md5sum, toJson, fromJson
 
@@ -223,13 +224,7 @@ class BackendACLFile(ConfigFile):
 								aclTypeParamValues.append(u'')
 							else:
 								aclTypeParam = aclTypeParam.strip()
-								tmp = []
-								for t in aclTypeParamValues:
-									t = t.strip()
-									if not t:
-										continue
-									tmp.append(t)
-								aclTypeParamValues = tmp
+								aclTypeParamValues = [t.strip() for t in aclTypeParamValues if t.strip()]
 								if aclTypeParam == 'attributes':
 									for v in aclTypeParamValues:
 										if not v:
@@ -640,38 +635,25 @@ class PackageControlFile(TextFile):
 				for (option, value) in currentSection.items():
 					if ((sectionType == 'product' and option == 'productclasses') or
 						(sectionType == 'package' and option == 'depends') or
-						(sectionType == 'productproperty' and option == 'default') or
-						(sectionType == 'productproperty' and option == 'values') or
+						(sectionType == 'productproperty' and option in ('default', 'values')) or
 						(sectionType == 'windows' and option == 'softwareids')):
+
 						try:
 							if not value.strip().startswith(('{', '[')):
 								raise ValueError(u'Not trying to read json string because value does not start with { or [')
 							value = fromJson(value.strip())
 							# Remove duplicates
-							# TODO: use set
-							tmp = []
-							for v in forceList(value):
-								if v not in tmp:
-									tmp.append(v)
-							value = tmp
+							value = forceUniqueList(value)
 						except Exception as error:
 							logger.debug2(u"Failed to read json string '%s': %s" % (value.strip(), error))
 							value = value.replace(u'\n', u'')
 							value = value.replace(u'\t', u'')
 							if not (sectionType == 'productproperty' and option == 'default'):
-								value = value.split(u',')
-								newV = []
-								for v in value:
-									v = v.strip()
-									newV.append(v)
-								value = newV
+								value = [v.strip() for v in value.split(u',')]
+
 							# Remove duplicates
-							# TODO: use set
-							tmp = []
-							for v in forceList(value):
-								if v not in ('', None) and v not in tmp:
-									tmp.append(v)
-							value = tmp
+							value = [v for v in forceList(value) if v not in ('', None)]
+							value = forceUniqueList(value)
 
 					if isinstance(value, unicode):
 						value = value.rstrip()
@@ -993,10 +975,8 @@ class OpsiConfFile(IniFile):
 		self._opsiConfig = {}
 
 		sectionType = None
-		lineNum = 0
 
-		for line in self._lines:
-			lineNum += 1
+		for lineNum, line in enumerate(self._lines, start=1):
 			line = line.strip()
 			if line and line.startswith((';', '#')):
 				# This is a comment
@@ -1206,7 +1186,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 	def _readSysInfo(self):
 		sysInfo = {}
 		with closing(self.extractfile("%s/sysinfo" % self.CONTROL_DIR)) as fp:
-			for line in fp.readlines():
+			for line in fp:
 				key, value = line.split(":")
 				sysInfo[key.strip()] = value.strip()
 
@@ -1215,7 +1195,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 	def _readChecksumFile(self):
 		checksums = {}
 		with closing(self.extractfile("%s/checksums" % self.CONTROL_DIR)) as fp:
-			for line in fp.readlines():
+			for line in fp:
 				key, value = line.split(" ", 1)
 				checksums[value.strip()] = key.strip()
 
@@ -1249,11 +1229,8 @@ element of the tuple is replace with the second element.
 				return
 
 			checksum = sha1()
-
 			with open(path) as f:
-				chunk = True
-				while chunk:
-					chunk = f.read()
+				for chunk in f:
 					checksum.update(chunk)
 
 			self._filemap[dest] = checksum.hexdigest()
@@ -1288,15 +1265,12 @@ element of the tuple is replace with the second element.
 
 		for member in self.getmembers():
 			if member.isfile() and member.name.startswith(self.CONTENT_DIR):
-
 				checksum = self._filemap[member.name]
 				filesum = sha1()
 
 				count = 0
-				chunk = True
 				with closing(self.extractfile(member)) as fp:
-					while chunk:
-						chunk = fp.read()
+					for chunk in fp:
 						count += len(chunk)
 						filesum.update(chunk)
 
@@ -1321,21 +1295,18 @@ element of the tuple is replace with the second element.
 			checksum = self._filemap[member.name]
 			filesum = sha1()
 
-			chunk = True
 			with closing(self.extractfile(member.name)) as fp:
-				while chunk:
-					chunk = fp.read()
+				for chunk in fp:
 					filesum.update(chunk)
 					os.write(tf, chunk)
 
 			if filesum.hexdigest() != checksum:
-				raise OpsiBackupFileError("Error restoring file %s: checksum missmacht.")
+				raise OpsiBackupFileError("Error restoring file %s: checksum missmatch." % member)
 
 			shutil.copyfile(path, dest)
 			os.chown(dest, pwd.getpwnam(member.uname)[2], grp.getgrnam(member.gname)[2])
 			os.chmod(dest, member.mode)
 			os.utime(dest, (member.mtime, member.mtime))
-
 		finally:
 			os.close(tf)
 			os.remove(path)
