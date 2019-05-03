@@ -1,3 +1,13 @@
+python-opsi (4.1.1.65-1) stable; urgency=medium
+
+  * Using thread.is_alive instead of thread.isAlive because the latter will
+    be removed in Python 3.8.
+  * hwaudit.conf: Change field for extClock from int to bigint.
+  * OPSI.Util.File.Opsi: Internal refactorings.
+  * OPSI.Util.Task.Backup: Internal refactorings.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 03 May 2019 14:26:59 +0200
+
 python-opsi (4.1.1.64-1) stable; urgency=medium
 
   * OpsiBackupArchive: Use a defaults-file when creating/restoring a mysql
