@@ -276,16 +276,16 @@ def testTerminatingKillableThread(self):
             runningThread.join(2)
 
     with getTestThread() as runningThread:
-        assert runningThread.isAlive()
+        assert runningThread.is_alive()
 
         runningThread.terminate()
 
         runChecks = 0
-        while runningThread.isAlive():
+        while runningThread.is_alive():
             time.sleep(0.1)
             runChecks += 1
 
             if runChecks > 30:
                 assert False, "Thread should be stopped by now."
 
-        assert not runningThread.isAlive(), "Thread should be killed."
+        assert not runningThread.is_alive(), "Thread should be killed."
