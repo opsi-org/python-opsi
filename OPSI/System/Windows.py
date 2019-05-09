@@ -1465,14 +1465,14 @@ def execute(cmd, waitForEnding=True, getHandle=False, ignoreExitCode=[], exitOnS
 			exitCode = ret
 			if data:
 				lines = data.split('\n')
-				for i in range(len(lines)):
-					line = lines[i].decode(encoding, 'replace').replace('\r', '')
-					if (i == len(lines) - 1) and not line:
+				lineCount = len(lines)
+				for i, origLine in enumerate(lines):
+					line = origLine.decode(encoding, 'replace').replace('\r', '')
+					if (i == lineCount - 1) and not line:
 						break
 
 					logger.debug(u'>>> %s' % line)
 					result.append(line)
-
 	except (os.error, IOError) as error:
 		# Some error occurred during execution
 		raise IOError(error.errno, u"Command '%s' failed:\n%s" % (cmd, error))
