@@ -124,7 +124,7 @@ def addActionRequest(productOnClientByProductId, productId, productDependenciesB
 			setActionRequestToNone = True
 
 		if setActionRequestToNone:
-			logger.info(u"   => setting action request for product {0!r} to 'none'!", productId)
+			logger.notice(u"   => setting action request for product {0!r} to 'none'!", productId)
 			productOnClientByProductId[productId].actionRequest = 'none'
 			continue
 
