@@ -40,10 +40,11 @@ import random
 import re
 import threading
 import time
-import types
 import warnings
 from contextlib import contextmanager
 from hashlib import md5
+from types import MethodType
+
 from twisted.conch.ssh import keys
 
 from OPSI import __version__ as LIBRARY_VERSION
@@ -514,7 +515,7 @@ class ExtendedBackend(Backend):
 			argString, callString = getArgAndCallString(functionRef)
 
 			exec(u'def %s(self, %s): return self._executeMethod("%s", %s)' % (methodName, argString, methodName, callString))
-			setattr(self, methodName, types.MethodType(eval(methodName), self))
+			setattr(self, methodName, MethodType(eval(methodName), self))
 
 	def _executeMethod(self, methodName, **kwargs):
 		logger.debug(u"ExtendedBackend {0!r}: executing {1!r} on backend {2!r}", self, methodName, self._backend)
