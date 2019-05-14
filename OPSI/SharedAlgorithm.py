@@ -65,7 +65,7 @@ def addActionRequest(productOnClientByProductId, productId, productDependenciesB
 			logger.debug(
 				u"   product {0!r} requires action {1.requiredAction!r} "
 				u"of product {1.requiredProductId!r} "
-				u"{1.requiredProductVersion!r}-{1.requiredPackageVersion!r}"
+				u"{1.requiredProductVersion!r}-{1.requiredPackageVersion!r} "
 				u"on action {1.productAction!r}",
 				productId,
 				dependency
