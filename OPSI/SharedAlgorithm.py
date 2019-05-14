@@ -65,7 +65,7 @@ def addActionRequest(productOnClientByProductId, productId, productDependenciesB
 			logger.debug(
 				u"   product {0!r} requires action {1.requiredAction!r} "
 				u"of product {1.requiredProductId!r} "
-				u"{1.requiredProductVersion!r}-{1.requiredPackageVersion!r}"
+				u"{1.requiredProductVersion!r}-{1.requiredPackageVersion!r} "
 				u"on action {1.productAction!r}",
 				productId,
 				dependency
@@ -102,11 +102,10 @@ def addActionRequest(productOnClientByProductId, productId, productDependenciesB
 
 		setActionRequestToNone = False
 		if dependency.requiredProductId not in availableProductsByProductId:
-			logger.debug(u"   product {0!r} defines dependency to product {1!r}, which is not avaliable on depot", productId, dependency.requiredProductId)
+			logger.warning(u"   product {0!r} defines dependency to product {1!r}, which is not avaliable on depot", productId, dependency.requiredProductId)
 			setActionRequestToNone = True
-
 		elif dependency.requiredProductVersion is not None and dependency.requiredProductVersion != availableProductsByProductId[dependency.requiredProductId].productVersion:
-			logger.debug(
+			logger.warning(
 				u"   product {0!r} defines dependency to product "
 				u"{1.requiredProductId!r}, but product version "
 				u"{1.requiredProductVersion!r} is not available",
@@ -115,7 +114,7 @@ def addActionRequest(productOnClientByProductId, productId, productDependenciesB
 			)
 			setActionRequestToNone = True
 		elif dependency.requiredPackageVersion is not None and dependency.requiredPackageVersion != availableProductsByProductId[dependency.requiredProductId].packageVersion:
-			logger.debug(
+			logger.warning(
 				u"   product {0!r} defines dependency to product "
 				u"{1.requiredProductId!r}, but package version "
 				u"{1.requiredProductId!r} is not available",
@@ -125,7 +124,7 @@ def addActionRequest(productOnClientByProductId, productId, productDependenciesB
 			setActionRequestToNone = True
 
 		if setActionRequestToNone:
-			logger.info(u"   => setting action request for product {0!r} to 'none'!", productId)
+			logger.notice(u"   => setting action request for product {0!r} to 'none'!", productId)
 			productOnClientByProductId[productId].actionRequest = 'none'
 			continue
 
