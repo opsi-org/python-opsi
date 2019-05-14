@@ -266,8 +266,6 @@ class JSONRPCBackend(Backend):
 		self._connectOnInit = True
 		self._connected = False
 		self._retryTime = 5
-		self._defaultHttpPort = 4444
-		self._defaultHttpsPort = 4447
 		self._host = None
 		self._port = None
 		self._baseUrl = u'/rpc'
