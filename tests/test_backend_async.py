@@ -57,6 +57,13 @@ async def testWrappingBackendAndPassingArguments():
 
 
 @pytest.mark.asyncio
+async def testCallingMultipleMethods():
+    backend = AsyncBackendWrapper(ClassicBackend())
+    assert "Got something" == await backend.arguments_required('something')
+    assert "Here we are." == await backend.some_method()
+
+
+@pytest.mark.asyncio
 async def testNotPresentingProtectedFunctions():
     backend = AsyncBackendWrapper(ClassicBackend())
     with pytest.raises(AttributeError):
