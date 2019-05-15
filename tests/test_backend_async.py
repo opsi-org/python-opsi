@@ -107,3 +107,6 @@ async def testAsyncWrappingBackendManager(backendManager):
         break
     else:
         raise ValueError("No interface descriptions found")
+
+    info = await asyncBackend.backend_info()
+    assert isinstance(info, dict)
