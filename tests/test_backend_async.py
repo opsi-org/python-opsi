@@ -95,3 +95,15 @@ async def testExitingBackendWithoutMethod():
     sbackend = ShortBackend()
     backend = AsyncBackendWrapper(sbackend)
     await backend.backend_exit()
+
+
+@pytest.mark.asyncio
+async def testAsyncWrappingBackendManager(backendManager):
+    asyncBackend = AsyncBackendWrapper(backendManager)
+
+    interface = await asyncBackend.backend_getInterface()
+    for method in interface:
+        assert isinstance(method, dict)
+        break
+    else:
+        raise ValueError("No interface descriptions found")
