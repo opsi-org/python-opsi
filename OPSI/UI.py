@@ -887,7 +887,7 @@ class SnackMessageBox(MessageBox, MessageObserver):
 							lines[i] = parts[j] + u"\r"
 							break
 
-			if lines > self._textHeight:
+			if len(lines) > self._textHeight:
 				self._text = u"\n".join(lines[-1 * self._textHeight:])
 
 			try:
