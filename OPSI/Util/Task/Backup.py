@@ -34,7 +34,6 @@ import os
 import shutil
 import sys
 import termios
-from contextlib import closing
 
 from OPSI.Exceptions import (
 	BackendConfigurationError, OpsiBackupFileError,
@@ -163,7 +162,7 @@ class OpsiBackup(object):
 		:type files: [str]
 		"""
 		for filename in forceList(files):
-			with closing(self._getArchive(file=filename, mode="r")) as archive:
+			with self._getArchive(file=filename, mode="r") as archive:
 				archive.verify()
 
 				data = {
@@ -189,7 +188,7 @@ class OpsiBackup(object):
 		result = 0
 
 		for fileName in files:
-			with closing(self._getArchive(mode="r", file=fileName)) as archive:
+			with self._getArchive(mode="r", file=fileName) as archive:
 				logger.info(u"Verifying archive {0}", fileName)
 				try:
 					archive.verify()
@@ -293,7 +292,7 @@ If this is `None` information will be read from the current system.
 
 		configuredBackends = getConfiguredBackends()
 
-		with closing(self._getArchive(file=file[0], mode="r")) as archive:
+		with self._getArchive(file=file[0], mode="r") as archive:
 			self.verify(archive.name)
 
 			if force or self._verifySysconfig(archive):

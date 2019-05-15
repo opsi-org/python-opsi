@@ -60,6 +60,37 @@ python3-opsi (4.2.0.1-1) experimental; urgency=medium
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 06 Nov 2018 16:46:45 +0100
 
+python-opsi (4.1.1.66-1) stable; urgency=medium
+
+  * OPSI.Backend.Backend: Only import MethodType from types.
+  * OPSI.System.Windows.execute: refactored showing output lines.
+  * 10_opsi.conf: setProductActionRequestWithDependencies small refactoring.
+  * OPSI.SharedAlgorithm: Adjusted loglevel for cases where unfulfillable
+    requirements are requested to make problems easier to spot.
+  * OPSI.Backend.JSONRPC.JSONRPCBackend: Defaults ports are now class
+    variables instead of instance variables.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 14 May 2019 15:42:58 +0200
+
+python-opsi (4.1.1.65-1) stable; urgency=medium
+
+  * Using thread.is_alive instead of thread.isAlive because the latter will
+    be removed in Python 3.8.
+  * hwaudit.conf: Change field for extClock from int to bigint.
+  * OPSI.Util.File.Opsi: Internal refactorings.
+  * OPSI.Util.Task.Backup: Internal refactorings.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 03 May 2019 14:26:59 +0200
+
+python-opsi (4.1.1.64-1) stable; urgency=medium
+
+  * OpsiBackupArchive: Use a defaults-file when creating/restoring a mysql
+    backup.
+  * OpsiBackupArchive: Removed Python 2.6 workaround code.
+  * OPSI.Backend.HostControl.RpcThread: Setting user-agent to "opsi-RpcThread".
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 02 May 2019 12:03:40 +0200
+
 python-opsi (4.1.1.63-1) stable; urgency=medium
 
   * Update regular expression patterns to be raw strings.

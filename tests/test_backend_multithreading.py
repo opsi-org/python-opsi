@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2016-2018 uib GmbH <info@uib.de>
+# Copyright (C) 2016-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -100,7 +100,7 @@ def testMultiThreadingBackend(multithreadingBackend, numberOfThreads):
 
     while mtts:
         mtt = mtts.pop(0)
-        if not mtt.isAlive():
+        if not mtt.is_alive():
             assert 0 == mtt.exitCode, u"Multithreading test failed: Exit Code {0.exitCode}: {0.errorMessage}".format(mtt)
         else:
             mtts.append(mtt)

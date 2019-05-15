@@ -35,8 +35,8 @@ import collections
 import inspect
 import os
 import random
-import types
 import warnings
+from types import MethodType
 
 from OPSI.Logger import Logger
 from OPSI.Exceptions import *  # this is needed for dynamic loading
@@ -140,7 +140,7 @@ class ExtendedBackend(Backend):
 			argString, callString = getArgAndCallString(functionRef)
 
 			exec(u'def %s(self, %s): return self._executeMethod("%s", %s)' % (methodName, argString, methodName, callString))
-			setattr(self, methodName, types.MethodType(eval(methodName), self))
+			setattr(self, methodName, MethodType(eval(methodName), self))
 
 	def _executeMethod(self, methodName, **kwargs):
 		logger.debug(u"ExtendedBackend {0!r}: executing {1!r} on backend {2!r}", self, methodName, self._backend)

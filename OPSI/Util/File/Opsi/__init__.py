@@ -55,7 +55,8 @@ from OPSI.Types import (
 	forceInstallationStatus, forceList, forceObjectClass, forceObjectClassList,
 	forceOpsiHostKey, forcePackageVersion, forceProductId, forceProductPriority,
 	forceProductPropertyType, forceProductType, forceProductVersion,
-	forceRequirementType, forceUnicode, forceUnicodeList, forceUnicodeLower)
+	forceRequirementType, forceUnicode, forceUnicodeList, forceUnicodeLower,
+	forceUniqueList)
 from OPSI.Util.File import ConfigFile, IniFile, TextFile, requiresParsing
 from OPSI.Util import md5sum, toJson, fromJson
 
@@ -224,13 +225,7 @@ class BackendACLFile(ConfigFile):
 								aclTypeParamValues.append(u'')
 							else:
 								aclTypeParam = aclTypeParam.strip()
-								tmp = []
-								for t in aclTypeParamValues:
-									t = t.strip()
-									if not t:
-										continue
-									tmp.append(t)
-								aclTypeParamValues = tmp
+								aclTypeParamValues = [t.strip() for t in aclTypeParamValues if t.strip()]
 								if aclTypeParam == 'attributes':
 									for v in aclTypeParamValues:
 										if not v:
@@ -641,38 +636,25 @@ class PackageControlFile(TextFile):
 				for (option, value) in currentSection.items():
 					if ((sectionType == 'product' and option == 'productclasses') or
 						(sectionType == 'package' and option == 'depends') or
-						(sectionType == 'productproperty' and option == 'default') or
-						(sectionType == 'productproperty' and option == 'values') or
+						(sectionType == 'productproperty' and option in ('default', 'values')) or
 						(sectionType == 'windows' and option == 'softwareids')):
+
 						try:
 							if not value.strip().startswith(('{', '[')):
 								raise ValueError(u'Not trying to read json string because value does not start with { or [')
 							value = fromJson(value.strip())
 							# Remove duplicates
-							# TODO: use set
-							tmp = []
-							for v in forceList(value):
-								if v not in tmp:
-									tmp.append(v)
-							value = tmp
+							value = forceUniqueList(value)
 						except Exception as error:
 							logger.debug2(u"Failed to read json string '%s': %s" % (value.strip(), error))
 							value = value.replace(u'\n', u'')
 							value = value.replace(u'\t', u'')
 							if not (sectionType == 'productproperty' and option == 'default'):
-								value = value.split(u',')
-								newV = []
-								for v in value:
-									v = v.strip()
-									newV.append(v)
-								value = newV
+								value = [v.strip() for v in value.split(u',')]
+
 							# Remove duplicates
-							# TODO: use set
-							tmp = []
-							for v in forceList(value):
-								if v not in ('', None) and v not in tmp:
-									tmp.append(v)
-							value = tmp
+							value = [v for v in forceList(value) if v not in ('', None)]
+							value = forceUniqueList(value)
 
 					if isinstance(value, str):
 						value = value.rstrip()
@@ -994,10 +976,8 @@ class OpsiConfFile(IniFile):
 		self._opsiConfig = {}
 
 		sectionType = None
-		lineNum = 0
 
-		for line in self._lines:
-			lineNum += 1
+		for lineNum, line in enumerate(self._lines, start=1):
 			line = line.strip()
 			if line and line.startswith((';', '#')):
 				# This is a comment
@@ -1252,11 +1232,8 @@ element of the tuple is replace with the second element.
 				return
 
 			checksum = sha1()
-
-			with open(path, 'rb') as f:
-				chunk = True
-				while chunk:
-					chunk = f.read()
+			with open(path) as f:
+				for chunk in f:
 					checksum.update(chunk)
 
 			self._filemap[dest] = checksum.hexdigest()
@@ -1293,15 +1270,12 @@ element of the tuple is replace with the second element.
 
 		for member in self.getmembers():
 			if member.isfile() and member.name.startswith(self.CONTENT_DIR):
-
 				checksum = self._filemap[member.name]
 				filesum = sha1()
 
 				count = 0
-				chunk = True
 				with closing(self.extractfile(member)) as fp:
-					while chunk:
-						chunk = fp.read()
+					for chunk in fp:
 						count += len(chunk)
 						filesum.update(chunk)
 
@@ -1326,21 +1300,18 @@ element of the tuple is replace with the second element.
 			checksum = self._filemap[member.name]
 			filesum = sha1()
 
-			chunk = True
 			with closing(self.extractfile(member.name)) as fp:
-				while chunk:
-					chunk = fp.read()
+				for chunk in fp:
 					filesum.update(chunk)
 					os.write(tf, chunk)
 
 			if filesum.hexdigest() != checksum:
-				raise OpsiBackupFileError("Error restoring file %s: checksum missmacht.")
+				raise OpsiBackupFileError("Error restoring file %s: checksum missmatch." % member)
 
 			shutil.copyfile(path, dest)
 			os.chown(dest, pwd.getpwnam(member.uname)[2], grp.getgrnam(member.gname)[2])
 			os.chmod(dest, member.mode)
 			os.utime(dest, (member.mtime, member.mtime))
-
 		finally:
 			os.close(tf)
 			os.remove(path)
@@ -1457,24 +1428,34 @@ element of the tuple is replace with the second element.
 		return self._hasBackend("MYSQL", name=name)
 
 	def backupMySQLBackend(self, flushLogs=False, auto=False):
-		# In Python 2.6 a deque has no "maxlen" attribute so we need to
-		# work around with this.
-		maximumDequeLength = 10
-
 		for backend in self._getBackends("mysql"):
 			if not auto or backend["dispatch"]:
 				if not backend["dispatch"]:
 					logger.warning("Backing up backend %s although it's currently not in use." % backend["name"])
-				cmd = [OPSI.System.which("mysqldump")]
-				cmd.append("--host=%s" % backend["config"]["address"])
-				cmd.append("--user=%s" % backend["config"]["username"])
-				cmd.append("--password=%s" % backend["config"]["password"])
+
+				# Early check for available command to not leak
+				# credentials if mysqldump is missing
+				mysqldumpCmd = OPSI.System.which("mysqldump")
+
+				defaultsFile = createMySQLDefaultsFile(
+					"mysqldump",
+					backend["config"]["username"],
+					backend["config"]["password"]
+				)
+
+				cmd = [
+					mysqldumpCmd,
+					# --defaults-file has to be the first argument
+					"--defaults-file=%s" % defaultsFile,
+					"--host=%s" % backend["config"]["address"],
+					"--lock-tables",
+					"--add-drop-table"
+				]
 				if flushLogs:
 					logger.debug("Flushing mysql table logs.")
 					cmd.append("--flush-log")
-				cmd.append("--lock-tables")
-				cmd.append("--add-drop-table")
 				cmd.append(backend["config"]["database"])
+				logger.debug2("Prepared mysqldump command: {!r}", cmd)
 
 				fd, name = tempfile.mkstemp(dir=self.tempdir)
 				try:
@@ -1489,7 +1470,7 @@ element of the tuple is replace with the second element.
 						collectedErrors = [p.stderr.readline()]
 					except Exception:
 						collectedErrors = []
-					lastErrors = collections.deque(collectedErrors, maxlen=maximumDequeLength)
+					lastErrors = collections.deque(collectedErrors, maxlen=10)
 
 					while not p.poll() and out:
 						os.write(fd, out)
@@ -1499,12 +1480,11 @@ element of the tuple is replace with the second element.
 							currentError = p.stderr.readline().strip()
 							if currentError:
 								lastErrors.append(currentError)
-								if "Warning: Using a password on the command line interface can be insecure." not in currentError:
-									collectedErrors.append(currentError)
+								collectedErrors.append(currentError)
 						except Exception:
 							continue
 
-						if maximumDequeLength == len(lastErrors):
+						if lastErrors.maxlen == len(lastErrors):
 							onlyOneErrorMessageInLastErrors = True
 							firstError = lastErrors[0]
 							for err in list(lastErrors)[1:]:
@@ -1526,6 +1506,7 @@ element of the tuple is replace with the second element.
 				finally:
 					os.close(fd)
 					os.remove(name)
+					os.remove(defaultsFile)
 
 	def restoreMySQLBackend(self, auto=False):
 		if not self.hasMySQLBackend():
@@ -1541,11 +1522,23 @@ element of the tuple is replace with the second element.
 						if member.name == os.path.join(self.CONTENT_DIR, "BACKENDS/MYSQL/%s/database.sql" % backend["name"]):
 							self._extractFile(member, name)
 
-					cmd = [OPSI.System.which("mysql")]
-					cmd.append("--host=%s" % backend["config"]["address"])
-					cmd.append("--user=%s" % backend["config"]["username"])
-					cmd.append("--password=%s" % backend["config"]["password"])
-					cmd.append(backend["config"]["database"])
+					# Early check for available command to not leak
+					# credentials if mysqldump is missing
+					mysqlCmd = OPSI.System.which("mysql")
+					defaultsFile = createMySQLDefaultsFile(
+						"mysql",
+						backend["config"]["username"],
+						backend["config"]["password"]
+					)
+
+					cmd = [
+						mysqlCmd,
+						# --defaults-file has to be the first argument
+						"--defaults-file=%s" % defaultsFile,
+						"--host=%s" % backend["config"]["address"],
+						backend["config"]["database"]
+					]
+					logger.debug2("Restore command: {!r}", cmd)
 
 					p = Popen(cmd, stdin=fd, stdout=PIPE, stderr=STDOUT)
 
@@ -1560,3 +1553,30 @@ element of the tuple is replace with the second element.
 				finally:
 					os.close(fd)
 					os.remove(name)
+					os.remove(defaultsFile)
+
+
+def createMySQLDefaultsFile(program, username, password):
+	"""
+	Create a secure file with mysql defaults.
+	This can usually be passed as --defaults-file to most mysql commands.
+	Returns the path to the file.
+
+	The caller has to make sure that the file will be deleted afterwards!
+
+	:param program: Name of the section in the config file
+	:type program: str
+	:param username: Username to use
+	:type username: str
+	:param password: Password to use
+	:type password: str
+	:returns: Path to the created file
+	:rtype: str
+	"""
+	with tempfile.NamedTemporaryFile(mode='wt', delete=False) as cFile:
+		cFile.write("""[%s]
+user=%s
+password=%s
+""" % (program, username, password))
+
+		return cFile.name
