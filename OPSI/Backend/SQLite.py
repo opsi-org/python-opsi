@@ -236,12 +236,12 @@ class SQLite(SQL):
 		tables = {}
 		logger.debug2(u"Current tables:")
 		for i in self.getSet('SELECT name FROM sqlite_master WHERE type = "table";'):
-			tableName = i.values()[0].upper()
+			tableName = next(i.values())  # We only need the first item
 			logger.debug2(u" [ %s ]" % tableName)
-			fields = [j['name'] for j in self.getSet('PRAGMA table_info(`%s`);' % tableName)]
-			tables[tableName] = fields
-			logger.debug2("Fields in {0}: {1}", tableName, fields)
-
+			tables[tableName] = []
+			for j in self.getSet('PRAGMA table_info(`%s`);' % tableName):
+				logger.debug2(u"      %s" % j)
+				tables[tableName].append(j['name'])
 		return tables
 
 	def getTableCreationOptions(self, table):
@@ -346,8 +346,8 @@ class SQLiteBackend(SQLBackend):
 						u'`config_id` INTEGER NOT NULL {autoincrement},\n'
 						u'`hostId` varchar(255) NOT NULL,\n'
 						u'`hardware_id` INTEGER NOT NULL,\n'
-						u"`firstseen` TIMESTAMP NOT NULL DEFAULT '1970-01-01 00:00:01',\n"
-						u"`lastseen` TIMESTAMP NOT NULL DEFAULT '1970-01-01 00:00:01',\n"
+						u'`firstseen` TIMESTAMP NOT NULL DEFAULT \'0000-00-00 00:00:00\',\n'
+						u'`lastseen` TIMESTAMP NOT NULL DEFAULT \'0000-00-00 00:00:00\',\n'
 						u'`state` TINYINT NOT NULL,\n'.format(
 							name=hardwareConfigTableName,
 							autoincrement=self._sql.AUTOINCREMENT
