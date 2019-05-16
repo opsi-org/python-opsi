@@ -228,7 +228,7 @@ class SQLite(SQL):
 		tables = {}
 		logger.debug2(u"Current tables:")
 		for i in self.getSet('SELECT name FROM sqlite_master WHERE type = "table";'):
-			tableName = next(i.values())  # We only need the first item
+			tableName = tuple(i.values())[0]
 			logger.debug2(u" [ %s ]" % tableName)
 			tables[tableName] = []
 			for j in self.getSet('PRAGMA table_info(`%s`);' % tableName):
