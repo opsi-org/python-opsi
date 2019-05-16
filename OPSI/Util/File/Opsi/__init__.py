@@ -1232,7 +1232,7 @@ element of the tuple is replace with the second element.
 				return
 
 			checksum = sha1()
-			with open(path) as f:
+			with open(path, 'rb') as f:
 				for chunk in f:
 					checksum.update(chunk)
 
