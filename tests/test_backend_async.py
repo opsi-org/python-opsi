@@ -70,6 +70,7 @@ async def testNotPresentingProtectedFunctions():
         await backend._protected_func()
 
 
+@pytest.mark.asyncio
 async def testWorkingAsContextManager():
     with AsyncBackendWrapper(ClassicBackend()) as backend:
         assert "Here we are." == await backend.some_method()
