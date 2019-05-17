@@ -236,6 +236,9 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "fixlater: mark test to be fixed later during the 4.2 development"
     )
+    config.addinivalue_line(
+        "markers", "obsolete: mark test that are obsolete for 4.2 development"
+    )
 
 
 def pytest_runtest_setup(item):
