@@ -36,7 +36,7 @@ import pytest
 
 
 def testParsingIniFileDoesNotFail():
-    iniTestData = '''
+    iniTestData = r'''
 #[section1]
 # abc = def
 
@@ -51,7 +51,7 @@ key = value \; no comment \# comment2 ;# comment3
 
 [section5]
 key = \;\;\;\;\;\;\;\;\;\;\;\;
-    '''
+'''
 
     iniFile = IniFile('filename_is_irrelevant_for_this')
     iniFile.parse(iniTestData.split('\n'))
