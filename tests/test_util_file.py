@@ -30,7 +30,7 @@ from contextlib import contextmanager
 
 from OPSI.Util.File import IniFile, InfFile, TxtSetupOemFile, ZsyncFile
 
-from .helpers import createTemporaryTestfile, workInTemporaryDirectory
+from .helpers import createTemporaryTestfile
 
 import pytest
 
