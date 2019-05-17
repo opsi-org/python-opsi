@@ -254,6 +254,9 @@ class RpcQueue(threading.Thread):
 
 class JSONRPCBackend(Backend):
 
+	_DEFAULT_HTTP_PORT = 4444
+	_DEFAULT_HTTPS_PORT = 4447
+
 	def __init__(self, address, **kwargs):
 		self._name = 'jsonrpc'
 
@@ -265,8 +268,6 @@ class JSONRPCBackend(Backend):
 		self._connectOnInit = True
 		self._connected = False
 		self._retryTime = 5
-		self._defaultHttpPort = 4444
-		self._defaultHttpsPort = 4447
 		self._host = None
 		self._port = None
 		self._baseUrl = u'/rpc'
@@ -464,13 +465,16 @@ class JSONRPCBackend(Backend):
 			if scheme not in ('http', 'https'):
 				raise ValueError(u"Protocol %s not supported" % scheme)
 			self._protocol = scheme
+
 		self._host = host
+
 		if port:
 			self._port = port
 		elif self._protocol == 'https':
-			self._port = self._defaultHttpsPort
+			self._port = self._DEFAULT_HTTPS_PORT
 		else:
-			self._port = self._defaultHttpPort
+			self._port = self._DEFAULT_HTTP_PORT
+
 		if baseurl and (baseurl != '/'):
 			self._baseUrl = baseurl
 		if not self._username and username:

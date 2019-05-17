@@ -227,7 +227,7 @@ class BackendManager(ExtendedBackend):
 			raise BackendConfigurationError(u"Backend config dir not given")
 		if not os.path.exists(self._backendConfigDir):
 			raise BackendConfigurationError(u"Backend config dir '%s' not found" % self._backendConfigDir)
-		if not re.search('^[a-zA-Z0-9-_]+$', name):
+		if not re.search(r'^[a-zA-Z0-9-_]+$', name):
 			raise ValueError(u"Bad backend config name '%s'" % name)
 		name = name.lower()
 		backendConfigFile = os.path.join(self._backendConfigDir, '%s.conf' % name)
@@ -261,7 +261,7 @@ def backendManagerFactory(user, password, dispatchConfigFile, backendConfigDir,
 		)
 	elif len(postpath) == 2 and postpath[0] == 'extend':
 		extendPath = postpath[1]
-		if not re.search('^[a-zA-Z0-9\_\-]+$', extendPath):
+		if not re.search(r'^[a-zA-Z0-9_-]+$', extendPath):
 			raise ValueError(u"Extension config path '%s' refused" % extendPath)
 		backendManager = BackendManager(
 			dispatchConfigFile=dispatchConfigFile,

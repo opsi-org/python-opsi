@@ -879,15 +879,15 @@ class SnackMessageBox(MessageBox, MessageObserver):
 				self._text = self._text.replace(string, u'*** confidential ***')
 
 			lines = self._text.split(u"\n")
-			for i in range(len(lines)):
-				if u"\r" in lines[i]:
-					parts = lines[i].split(u"\r")
+			for i, line in enumerate(lines):
+				if "\r" in line:
+					parts = line.split("\r")
 					for j in range(len(parts) - 1, -1, -1):
 						if parts[j]:
-							lines[i] = parts[j] + u"\r"
+							lines[i] = parts[j] + "\r"
 							break
 
-			if lines > self._textHeight:
+			if len(lines) > self._textHeight:
 				self._text = u"\n".join(lines[-1 * self._textHeight:])
 
 			try:

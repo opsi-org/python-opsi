@@ -32,7 +32,7 @@ from .test_util import tempCertPath  # Fixture
 
 @pytest.mark.parametrize("cipherList", (
     None,
-    'TLSv1+HIGH:!SSLv2:RC4+MEDIUM:!aNULL:!eNULL:!3DES:@STRENGTH',
+    b'TLSv1+HIGH:!SSLv2:RC4+MEDIUM:!aNULL:!eNULL:!3DES:@STRENGTH',
 ))
 def testGettingSSLContext(tempCertPath, cipherList):
     sslContext = SSLContext(tempCertPath, tempCertPath, cipherList)

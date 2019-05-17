@@ -298,6 +298,10 @@ class TextFile(LockableFile):
 
 class ChangelogFile(TextFile):
 	'''
+	Files containing changelogs.
+
+	These follow the Debian style changelogs:
+
 	package (version) distribution(s); urgency=urgency
 		[optional blank line(s), stripped]
 	  * change details
@@ -307,7 +311,8 @@ class ChangelogFile(TextFile):
 		  [optional blank line(s), stripped]
 	[one space]-- maintainer name <email address>[two spaces]date
 	'''
-	releaseLineRegex = re.compile(r'^\s*(\S+)\s+\(([^\)]+)\)\s+([^;]+);\s+urgency\=(\S+)\s*$')
+
+	releaseLineRegex = re.compile(r'^\s*(\S+)\s+\(([^\)]+)\)\s+([^;]+);\s+urgency=(\S+)\s*$')
 
 	def __init__(self, filename, lockFailTimeout=2000):
 		TextFile.__init__(self, filename, lockFailTimeout)
@@ -498,7 +503,8 @@ class ConfigFile(TextFile):
 
 
 class IniFile(ConfigFile):
-	optionMatch = re.compile(r'^([^\:\=]+)\s*([\:\=].*)$')
+
+	optionMatch = re.compile(r'^([^:=]+)\s*([:=].*)$')
 
 	def __init__(self, filename, lockFailTimeout=2000, ignoreCase=True, raw=True):
 		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars=[';', '#'])
@@ -665,6 +671,7 @@ class IniFile(ConfigFile):
 
 
 class InfFile(ConfigFile):
+
 	sectionRegex = re.compile(r'\[\s*([^\]]+)\s*\]')
 	pciDeviceRegex = re.compile(r'VEN_([\da-fA-F]+)&DEV_([\da-fA-F]+)', re.IGNORECASE)
 	hdaudioDeviceRegex = re.compile(r'HDAUDIO\\\.*VEN_([\da-fA-F]+)&DEV_([\da-fA-F]+)', re.IGNORECASE)
@@ -943,10 +950,12 @@ class PciidsFile(ConfigFile):
 				logger.error(e)
 		self._parsed = True
 
+
 UsbidsFile = PciidsFile
 
 
 class TxtSetupOemFile(ConfigFile):
+
 	sectionRegex = re.compile(r'\[\s*([^\]]+)\s*\]')
 	pciDeviceRegex = re.compile(r'VEN_([\da-fA-F]+)(&DEV_([\da-fA-F]+))?(\S*)\s*$')
 	usbDeviceRegex = re.compile(r'USB.*VID_([\da-fA-F]+)(&PID_([\da-fA-F]+))?(\S*)\s*$', re.IGNORECASE)
@@ -1436,8 +1445,8 @@ class DHCPDConf_Parameter(DHCPDConf_Component):
 			else:
 				value = u'off'
 		elif (self.key in (u'filename', u'ddns-domainname') or
-				re.match('.*[\'/\\\].*', value) or
-				re.match('^\w+\.\w+$', value) or
+				re.match(r".*['/\\].*", value) or
+				re.match(r'^\w+\.\w+$', value) or
 				self.key.endswith(u'-name')):
 
 			value = u'"%s"' % value
@@ -1466,8 +1475,8 @@ class DHCPDConf_Option(DHCPDConf_Component):
 
 		text = []
 		for value in self.value:
-			if (re.match('.*[\'/\\\].*', value) or
-				re.match('^\w+\.\w+$', value) or
+			if (re.match(r".*['/\\].*", value) or
+				re.match(r"^\w+\.\w+$", value) or
 				self.key.endswith(quotedOptions)):
 
 				text.append(u'"%s"' % value)

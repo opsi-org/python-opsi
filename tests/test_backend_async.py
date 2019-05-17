@@ -57,12 +57,20 @@ async def testWrappingBackendAndPassingArguments():
 
 
 @pytest.mark.asyncio
+async def testCallingMultipleMethods():
+    backend = AsyncBackendWrapper(ClassicBackend())
+    assert "Got something" == await backend.arguments_required('something')
+    assert "Here we are." == await backend.some_method()
+
+
+@pytest.mark.asyncio
 async def testNotPresentingProtectedFunctions():
     backend = AsyncBackendWrapper(ClassicBackend())
     with pytest.raises(AttributeError):
         await backend._protected_func()
 
 
+@pytest.mark.asyncio
 async def testWorkingAsContextManager():
     with AsyncBackendWrapper(ClassicBackend()) as backend:
         assert "Here we are." == await backend.some_method()
@@ -88,3 +96,18 @@ async def testExitingBackendWithoutMethod():
     sbackend = ShortBackend()
     backend = AsyncBackendWrapper(sbackend)
     await backend.backend_exit()
+
+
+@pytest.mark.asyncio
+async def testAsyncWrappingBackendManager(backendManager):
+    asyncBackend = AsyncBackendWrapper(backendManager)
+
+    interface = await asyncBackend.backend_getInterface()
+    for method in interface:
+        assert isinstance(method, dict)
+        break
+    else:
+        raise ValueError("No interface descriptions found")
+
+    info = await asyncBackend.backend_info()
+    assert isinstance(info, dict)

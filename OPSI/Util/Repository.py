@@ -64,13 +64,13 @@ def _(string):
 
 
 def getRepository(url, **kwargs):
-	if re.search('^file://', url, re.IGNORECASE):
+	if re.search(r'^file://', url, re.IGNORECASE):
 		return FileRepository(url, **kwargs)
-	elif re.search('^https?://', url, re.IGNORECASE):
+	elif re.search(r'^https?://', url, re.IGNORECASE):
 		return HTTPRepository(url, **kwargs)
-	elif re.search('^webdavs?://', url, re.IGNORECASE):
+	elif re.search(r'^webdavs?://', url, re.IGNORECASE):
 		return WebDAVRepository(url, **kwargs)
-	elif re.search('^(smb|cifs)://', url, re.IGNORECASE):
+	elif re.search(r'^(smb|cifs)://', url, re.IGNORECASE):
 		return CIFSRepository(url, **kwargs)
 
 	raise RepositoryError(u"Repository url '%s' not supported" % url)
@@ -699,7 +699,7 @@ class FileRepository(Repository):
 	def __init__(self, url, **kwargs):
 		Repository.__init__(self, url, **kwargs)
 
-		match = re.search('^file://(/[^/]+.*)$', self._url, re.IGNORECASE)
+		match = re.search(r'^file://(/[^/]+.*)$', self._url, re.IGNORECASE)
 		if not match:
 			raise RepositoryError(u"Bad file url: '%s'" % self._url)
 		self._path = match.group(1)
@@ -1184,7 +1184,7 @@ class CIFSRepository(FileRepository):
 	def __init__(self, url, **kwargs):
 		Repository.__init__(self, url, **kwargs)
 
-		match = re.search('^(smb|cifs)://([^/]+/.+)$', self._url, re.IGNORECASE)
+		match = re.search(r'^(smb|cifs)://([^/]+/.+)$', self._url, re.IGNORECASE)
 		if not match:
 			raise RepositoryError(u"Bad smb/cifs url: '%s'" % self._url)
 

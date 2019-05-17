@@ -75,8 +75,8 @@ _NETMASK_REGEX = re.compile(r'^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|
 _NETWORK_ADDRESS_REGEX = re.compile(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/([0-3]?[0-9]|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$')
 _URL_REGEX = re.compile(r'^[a-z0-9]+://[/a-zA-Z0-9]')
 _OPSI_HOST_KEY_REGEX = re.compile(r'^[0-9a-f]{32}$')
-_PRODUCT_VERSION_REGEX = re.compile(r'^[a-z0-9\.]{1,32}$')
-_PACKAGE_VERSION_REGEX = re.compile(r'^[a-z0-9\.]{1,16}$')
+_PRODUCT_VERSION_REGEX = re.compile(r'^[a-z0-9.]{1,32}$')
+_PACKAGE_VERSION_REGEX = re.compile(r'^[a-z0-9.]{1,16}$')
 _PRODUCT_ID_REGEX = re.compile(r'^[a-z0-9-_\.]{1,128}$')
 _PACKAGE_CUSTOM_NAME_REGEX = re.compile(r'^[a-zA-Z0-9]+$')
 _PRODUCT_PROPERTY_ID_REGEX = re.compile(r'^\S+$')
@@ -86,9 +86,9 @@ _OBJECT_ID_REGEX = re.compile(r'^[a-z0-9][a-z0-9-_. ]*$')
 _EMAIL_REGEX = re.compile(r'^(([A-Za-z0-9]+_+)|([A-Za-z0-9]+\-+)|([A-Za-z0-9]+\.+)|([A-Za-z0-9]+\++))*[A-Za-z0-9]+@((\w+\-+)|(\w+\.))*\w*')
 _DOMAIN_REGEX = re.compile(r'^((\w+\-+)|(\w+\.))*\w{1,63}\.\w{2,16}\.?$')
 _HOSTNAME_REGEX = re.compile(r'^[a-z0-9][a-z0-9\-]*$')
-_LICENSE_CONTRACT_ID_REGEX = re.compile(r'^[a-z0-9][a-z0-9-_\. :]*$')
-_SOFTWARE_LICENSE_ID_REGEX = re.compile(r'^[a-z0-9][a-z0-9-_\. :]*$')
-_LICENSE_POOL_ID_REGEX = re.compile(r'^[a-z0-9][a-z0-9-_\. :]*$')
+_LICENSE_CONTRACT_ID_REGEX = re.compile(r'^[a-z0-9][a-z0-9-_. :]*$')
+_SOFTWARE_LICENSE_ID_REGEX = re.compile(r'^[a-z0-9][a-z0-9-_. :]*$')
+_LICENSE_POOL_ID_REGEX = re.compile(r'^[a-z0-9][a-z0-9-_. :]*$')
 _LANGUAGE_CODE_REGEX = re.compile(r'^([a-z]{2,3})[-_]?([a-z]{4})?[-_]?([a-z]{2})?$')
 _ARCHITECTURE_REGEX = re.compile(r'^(x86|x64)$')
 
@@ -283,6 +283,8 @@ def forceFqdn(var):
 	if var.endswith('.'):
 		var = var[:-1]
 	return var
+
+
 forceHostId = forceFqdn
 
 
@@ -307,6 +309,8 @@ def forceIPAddress(var):
 	if not re.search(_IP_ADDRESS_REGEX, var):
 		raise ValueError(u"Bad ip address: '%s'" % var)
 	return var
+
+
 forceIpAddress = forceIPAddress
 
 

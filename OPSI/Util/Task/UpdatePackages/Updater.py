@@ -647,7 +647,7 @@ class OpsiPackageUpdater(object):
 			if availablePackage['repository'].proxy:
 				cmd = u"http_proxy=%s %s" % (availablePackage['repository'].proxy, cmd)
 
-			stateRegex = re.compile('\s([\d\.]+)%\s+([\d\.]+)\skBps(.*)$')
+			stateRegex = re.compile(r'\s([\d.]+)%\s+([\d.]+)\skBps(.*)$')
 			data = ''
 			percent = 0.0
 			speed = 0
@@ -712,7 +712,7 @@ class OpsiPackageUpdater(object):
 		speed = 0
 
 		with open(outFile, 'wb') as out:
-			for chunk in iter(lambda: con.read(32768), ''):
+			for chunk in iter(lambda: con.read(32768), b''):
 				completed += len(chunk)
 				out.write(chunk)
 

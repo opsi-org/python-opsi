@@ -60,7 +60,7 @@ Requires:       python-pycrypto
 %else
 Requires:       python-crypto
 %endif
-Url:            http://www.opsi.org
+Url:            https://opsi.org
 License:        AGPL-3.0+
 Group:          Productivity/Networking/Opsi
 AutoReqProv:    on
