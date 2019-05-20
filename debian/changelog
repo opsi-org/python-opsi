@@ -1,3 +1,9 @@
+python3-opsi (4.2.0.8-1) testing; urgency=medium
+
+  * OPSI.Backend.SQLite: Support Python 3.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 20 May 2019 10:19:43 +0200
+
 python3-opsi (4.2.0.7-1) experimental; urgency=medium
 
   * OPSI.Backend.Base: More conversion to raw strings.
