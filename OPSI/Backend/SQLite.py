@@ -117,9 +117,9 @@ class SQLite(SQL):
 		try:
 			self.execute(query, conn, cursor)
 			try:
-				row = cursor.next()
-			except Exception:
-				pass
+				row = cursor.fetchone()
+			except Exception as retrieveError:
+				logger.debug2("Failed to fetch data: {}", retrieveError)
 
 			if not row:
 				logger.debug(u"No result for query '%s'" % query)
@@ -147,8 +147,6 @@ class SQLite(SQL):
 						values.append(u"0")
 				elif isinstance(value, (float, int)):
 					values.append(u"{0}".format(value))
-				elif isinstance(value, str):
-					values.append(u"\'{0}\'".format(self.escapeApostrophe(self.escapeBackslash(value.decode("utf-8")))))
 				else:
 					values.append(u"\'{0}\'".format(self.escapeApostrophe(self.escapeBackslash(value))))
 
@@ -183,8 +181,6 @@ class SQLite(SQL):
 						values.append(u"`{0}` = 0".format(key))
 				elif isinstance(value, (float, int)):
 					values.append(u"`{0}` = {1}".format(key, value))
-				elif isinstance(value, str):
-					values.append(u"`{0}` = \'{1}\'".format(key, self.escapeApostrophe(self.escapeBackslash(value.decode("utf-8")))))
 				else:
 					values.append(u"`{0}` = \'{1}\'".format(key, self.escapeApostrophe(self.escapeBackslash(value))))
 
