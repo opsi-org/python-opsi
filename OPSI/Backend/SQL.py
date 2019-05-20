@@ -466,10 +466,6 @@ class SQLBackend(ConfigDataBackend):
 
 		return ' and '.join(createCondition())
 
-	def _objectExists(self, table, object):
-		query = 'select * from `%s` where %s' % (table, self._uniqueCondition(object))
-		return bool(self._sql.getRow(query))
-
 	def backend_exit(self):
 		pass
 
