@@ -79,6 +79,7 @@ BIN_WHICH = '/usr/bin/which'
 WHICH_CACHE = {}
 DHCLIENT_LEASES_FILE = '/var/lib/dhcp/dhclient.leases'
 _DHCP_SERVICE_NAME = None
+_SAMBA_SERVICE_NAME = None
 
 hooks = []
 x86_64 = False
@@ -3825,6 +3826,10 @@ lookup to determine what value needs to be returned in case no \
 service name was detected by the automatic approach.
 	:type staticFallback: bool
 	"""
+	global _SAMBA_SERVICE_NAME
+	if _SAMBA_SERVICE_NAME is not None:
+		return _SAMBA_SERVICE_NAME
+
 	def getFixServiceName():
 		distroName = distro.distribution.strip().lower()
 		if distroName == u'debian':
@@ -3839,12 +3844,15 @@ service name was detected by the automatic approach.
 
 	distro = Distribution()
 	if distro.distribution.strip() == u'SUSE Linux Enterprise Server':
-		return u"smb"
+		name = u"smb"
+		_SAMBA_SERVICE_NAME = name
+		return name
 
 	possibleNames = (u"samba", u"smb", u"smbd")
 
 	for servicename in getServiceNames():
 		if servicename in possibleNames:
+			_SAMBA_SERVICE_NAME = servicename
 			return servicename
 
 	if staticFallback:
