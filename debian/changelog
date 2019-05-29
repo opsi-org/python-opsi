@@ -1,3 +1,10 @@
+python-opsi (4.1.1.67-1) stable; urgency=medium
+
+  * OPSI.Backend.File.FileBackend: raise an error when executing getData.
+  * OPSI.System.Posix: Cache the service names of DHCPD and Samba after lookup.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 29 May 2019 16:52:29 +0200
+
 python-opsi (4.1.1.66-1) stable; urgency=medium
 
   * OPSI.Backend.Backend: Only import MethodType from types.
