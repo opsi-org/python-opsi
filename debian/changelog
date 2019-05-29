@@ -1,3 +1,10 @@
+python3-opsi (4.2.0.9-1) testing; urgency=medium
+
+  * Make BackendManager garbage collectable again.
+  * AsyncBackendWrapper: Limit amount of threads in pool to 2.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 29 May 2019 17:31:43 +0200
+
 python3-opsi (4.2.0.8-1) testing; urgency=medium
 
   * OPSI.Backend.SQLite: Support Python 3.
