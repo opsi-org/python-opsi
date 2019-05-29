@@ -42,7 +42,7 @@ class AsyncBackendWrapper:
 		self.backend = backend
 
 		self.loop = loop or get_event_loop()
-		self.pool = ThreadPoolExecutor()
+		self.pool = ThreadPoolExecutor(max_workers=2)
 
 		self._wrapBackend()
 

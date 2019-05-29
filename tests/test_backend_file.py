@@ -36,6 +36,12 @@ def testGetRawDataFailsOnFileBackendBecauseMissingQuerySupport():
             backend.getRawData('SELECT * FROM BAR;')
 
 
+def testGetDataFailsOnFileBackendBecauseMissingQuerySupport():
+    with getFileBackend() as backend:
+        with pytest.raises(BackendConfigurationError):
+            backend.getData('SELECT * FROM BAR;')
+
+
 @pytest.mark.parametrize("filename", [
     "exampleexam_e.-ex_1234.12-1234.12.localboot",
 ])

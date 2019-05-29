@@ -486,8 +486,9 @@ def testGetSambaServiceNameFailsIfNoServiceFound(values):
 	("samba", set(["abc", "samba", "def"])),
 ))
 def testGetSambaServiceNameGettingFoundSambaServiceName(expectedName, services):
-	with mock.patch('OPSI.System.Posix.getServiceNames',  mock.Mock(return_value=services)):
-		assert expectedName == Posix.getSambaServiceName()
+	with mock.patch('OPSI.System.Posix._SAMBA_SERVICE_NAME', None):
+		with mock.patch('OPSI.System.Posix.getServiceNames',  mock.Mock(return_value=services)):
+			assert expectedName == Posix.getSambaServiceName()
 
 
 def testGetServiceNameParsingFromSystemd():

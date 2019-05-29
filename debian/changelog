@@ -1,3 +1,10 @@
+python3-opsi (4.2.0.9-1) testing; urgency=medium
+
+  * Make BackendManager garbage collectable again.
+  * AsyncBackendWrapper: Limit amount of threads in pool to 2.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 29 May 2019 17:31:43 +0200
+
 python3-opsi (4.2.0.8-1) testing; urgency=medium
 
   * OPSI.Backend.SQLite: Support Python 3.
@@ -74,6 +81,13 @@ python3-opsi (4.2.0.1-1) experimental; urgency=medium
     OPSI.Backend.Base.
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 06 Nov 2018 16:46:45 +0100
+
+python-opsi (4.1.1.67-1) stable; urgency=medium
+
+  * OPSI.Backend.File.FileBackend: raise an error when executing getData.
+  * OPSI.System.Posix: Cache the service names of DHCPD and Samba after lookup.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 29 May 2019 16:52:29 +0200
 
 python-opsi (4.1.1.66-1) stable; urgency=medium
 
