@@ -33,7 +33,6 @@ from __future__ import absolute_import
 
 import os
 import re
-from functools import lru_cache
 
 from OPSI.Backend.Base import Backend, ExtendedBackend, ExtendedConfigDataBackend
 from OPSI.Backend.Depotserver import DepotserverBackend
@@ -221,7 +220,6 @@ class BackendManager(ExtendedBackend):
 
 		self._createInstanceMethods()
 
-	@lru_cache(maxsize=None)
 	def __loadBackendConfig(self, name):
 		if not self._backendConfigDir:
 			raise BackendConfigurationError(u"Backend config dir not given")
