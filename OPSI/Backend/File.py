@@ -1229,6 +1229,9 @@ class FileBackend(ConfigDataBackend):
 		else:
 			logger.warning(u"_delete(): unhandled objType: '%s' object: %s" % (objType, objList[0]))
 
+	def getData(self, query):
+		raise BackendConfigurationError(u"You have tried to execute a method, that will not work with filebackend.")
+
 	def getRawData(self, query):
 		raise BackendConfigurationError(u"You have tried to execute a method, that will not work with filebackend.")
 
