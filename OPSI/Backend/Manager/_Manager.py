@@ -33,7 +33,6 @@ from __future__ import absolute_import
 
 import os
 import re
-from functools import lru_cache
 
 from OPSI.Backend.Base import Backend, ExtendedBackend, ExtendedConfigDataBackend
 from OPSI.Backend.Depotserver import DepotserverBackend
@@ -49,6 +48,8 @@ from .Dispatcher import BackendDispatcher
 from .Extender import BackendExtender
 
 __all__ = ('BackendManager', 'backendManagerFactory')
+
+_BACKEND_CONFIG_NAME_REGEX = re.compile(r'^[a-zA-Z0-9-_]+$')
 
 logger = Logger()
 
@@ -221,13 +222,12 @@ class BackendManager(ExtendedBackend):
 
 		self._createInstanceMethods()
 
-	@lru_cache(maxsize=None)
 	def __loadBackendConfig(self, name):
 		if not self._backendConfigDir:
 			raise BackendConfigurationError(u"Backend config dir not given")
 		if not os.path.exists(self._backendConfigDir):
 			raise BackendConfigurationError(u"Backend config dir '%s' not found" % self._backendConfigDir)
-		if not re.search(r'^[a-zA-Z0-9-_]+$', name):
+		if not _BACKEND_CONFIG_NAME_REGEX.search(name):
 			raise ValueError(u"Bad backend config name '%s'" % name)
 		name = name.lower()
 		backendConfigFile = os.path.join(self._backendConfigDir, '%s.conf' % name)
