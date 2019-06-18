@@ -314,9 +314,9 @@ Deprecated: Use keyword 'compression' instead.
 				self._sessionId = str(value)
 			elif option == 'deflate':
 				if forceBool(value):
-					self._compression = _DEFLATE_COMPRESSION
+					self.setCompression('deflate')
 				else:
-					self._compression = False
+					self.setCompression(False)
 			elif option == 'compression':
 				self._compression = self._parseCompressionValue(value)
 			elif option == 'connectoninit':
