@@ -6,6 +6,8 @@
 # package are under the same license as the package itself.
 #
 Name:           python3-opsi
+Conflicts:      python-opsi
+Obsoletes:      python-opsi < 4.2
 BuildRequires:  gettext-devel
 BuildRequires:  python3-devel
 BuildRequires:  python3-setuptools
