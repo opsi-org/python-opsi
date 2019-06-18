@@ -54,6 +54,8 @@ from OPSI.Util.HTTP import deflateEncode, deflateDecode, gzipDecode
 
 __all__ = ('JSONRPC', 'JSONRPCThread', 'RpcQueue', 'JSONRPCBackend')
 
+_DEFLATE_COMPRESSION = 'deflate'
+
 logger = Logger()
 
 
@@ -256,13 +258,24 @@ class JSONRPCBackend(Backend):
 	_DEFAULT_HTTPS_PORT = 4447
 
 	def __init__(self, address, **kwargs):
+		"""
+		Backend for JSON-RPC access to another opsi service.
+
+		:param compression: Specify compression usage. Can be a boolean \
+or the string 'deflate'.
+		:type compression: bool or str
+		:param deflate: Specify if deflate compression should be used for requests. \
+Deprecated: Use keyword 'compression' instead.
+		:type deflate: bool
+		"""
+
 		self._name = 'jsonrpc'
 
 		Backend.__init__(self, **kwargs)
 
 		self._application = 'opsi jsonrpc module version %s' % __version__
 		self._sessionId = None
-		self._deflate = False
+		self._compression = False
 		self._connectOnInit = True
 		self._connected = False
 		self._retryTime = 5
@@ -300,7 +313,12 @@ class JSONRPCBackend(Backend):
 			elif option == 'sessionid':
 				self._sessionId = str(value)
 			elif option == 'deflate':
-				self._deflate = forceBool(value)
+				if forceBool(value):
+					self._compression = _DEFLATE_COMPRESSION
+				else:
+					self._compression = False
+			elif option == 'compression':
+				self._compression = self._parseCompressionValue(value)
 			elif option == 'connectoninit':
 				self._connectOnInit = forceBool(value)
 			elif option == 'connecttimeout' and value is not None:
@@ -397,14 +415,50 @@ class JSONRPCBackend(Backend):
 			self._async = False
 			self.stopRpcQueue()
 
+	def setCompression(self, compression):
+		"""
+		Set the compression to use.
+
+		:param compression: `True` to enable compression, `False` to disable. \
+To specify the use of
+		"""
+		self._compression = self._parseCompressionValue(compression)
+
+	@staticmethod
+	def _parseCompressionValue(compression):
+		if isinstance(compression, bool):
+			return compression
+		else:
+			value = forceUnicode(compression)
+			value = value.strip()
+			value = value.lower()
+
+			if value in ('true', 'false'):
+				return forceBool(value)
+			elif value == 'deflate':
+				return _DEFLATE_COMPRESSION
+			else:
+				return False
+
+	def isCompressionUsed(self):
+		"""
+		Is compression used?
+
+		:rtype: bool
+		"""
+		return bool(self._compression)
+
 	def setDeflate(self, deflate):
 		if not self._connected:
 			raise OpsiConnectionError(u'Not connected')
 
-		self._deflate = forceBool(deflate)
+		if forceBool(deflate):
+			self.setCompression('deflate')
+		else:
+			self.setCompression(False)
 
 	def getDeflate(self):
-		return self._deflate
+		return _DEFLATE_COMPRESSION in self._compression
 
 	def isConnected(self):
 		return self._connected
@@ -610,8 +664,8 @@ class JSONRPCBackend(Backend):
 
 		logger.debug2(u"Request to host {0!r}, baseUrl: {1!r}, query: {2!r}".format(self._host, baseUrl, data))
 
-		if self._deflate:
-			logger.debug2(u"Compressing data")
+		if (isinstance(self._compression, bool) and self._compression is True) or self._compression == _DEFLATE_COMPRESSION:
+			logger.debug2(u"Compressing data with deflate")
 			headers['Content-Encoding'] = 'deflate'
 
 			data = deflateEncode(data)
@@ -666,6 +720,6 @@ class JSONRPCBackend(Backend):
 
 	def __repr__(self):
 		if self._name:
-			return u'<{0}(address={1!r}, host={2!r}, deflate={3!r})>'.format(self.__class__.__name__, self._name, self._host, self._deflate)
+			return u'<{0}(address={1!r}, host={2!r}, compression={3!r})>'.format(self.__class__.__name__, self._name, self._host, self._compression)
 		else:
-			return u'<{0}(host={1!r}, deflate={2!r})>'.format(self.__class__.__name__, self._host, self._deflate)
+			return u'<{0}(host={1!r}, compression={2!r})>'.format(self.__class__.__name__, self._host, self._compression)
