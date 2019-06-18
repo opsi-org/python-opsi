@@ -25,7 +25,8 @@ from __future__ import absolute_import
 
 import pytest
 
-from OPSI.Backend.JSONRPC import JSONRPCBackend, _DEFLATE_COMPRESSION
+from OPSI.Backend.JSONRPC import _DEFLATE_COMPRESSION, _GZIP_COMPRESSION
+from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Util.HTTP import deflateEncode, gzipEncode
 from OPSI.Util import randomString
 
@@ -92,6 +93,8 @@ def testCreatinBackendWithCompression(compressionOptions, expectedCompression):
     ("true", True),
     ('deflate', _DEFLATE_COMPRESSION),
     ('  DEFLATE  ', _DEFLATE_COMPRESSION),
+    ('GZIP   ', _GZIP_COMPRESSION),
+    ('gzip', _GZIP_COMPRESSION),
 ])
 def testParsingCompressionValue(value, expectedResult):
     assert JSONRPCBackend._parseCompressionValue(value) == expectedResult

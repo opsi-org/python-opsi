@@ -50,11 +50,12 @@ from OPSI.Types import (
 from OPSI.Backend.Backend import Backend, DeferredCall
 from OPSI.Util import serialize, deserialize
 from OPSI.Util.HTTP import getSharedConnectionPool, urlsplit
-from OPSI.Util.HTTP import deflateEncode, deflateDecode, gzipDecode
+from OPSI.Util.HTTP import deflateEncode, deflateDecode, gzipEncode, gzipDecode
 
 __all__ = ('JSONRPC', 'JSONRPCThread', 'RpcQueue', 'JSONRPCBackend')
 
 _DEFLATE_COMPRESSION = 'deflate'
+_GZIP_COMPRESSION = 'gzip'
 
 logger = Logger()
 
@@ -262,7 +263,7 @@ class JSONRPCBackend(Backend):
 		Backend for JSON-RPC access to another opsi service.
 
 		:param compression: Specify compression usage. Can be a boolean \
-or the string 'deflate'.
+or the strings 'gzip' or 'deflate' in case a specific compression is desired.
 		:type compression: bool or str
 		:param deflate: Specify if deflate compression should be used for requests. \
 Deprecated: Use keyword 'compression' instead.
@@ -420,7 +421,7 @@ Deprecated: Use keyword 'compression' instead.
 		Set the compression to use.
 
 		:param compression: `True` to enable compression, `False` to disable. \
-To specify the use of
+To specify the use of a specific compression supply either 'gzip' or 'deflate'.
 		"""
 		self._compression = self._parseCompressionValue(compression)
 
@@ -435,6 +436,8 @@ To specify the use of
 
 			if value in ('true', 'false'):
 				return forceBool(value)
+			elif value == 'gzip':
+				return _GZIP_COMPRESSION
 			elif value == 'deflate':
 				return _DEFLATE_COMPRESSION
 			else:
@@ -664,7 +667,17 @@ To specify the use of
 
 		logger.debug2(u"Request to host {0!r}, baseUrl: {1!r}, query: {2!r}".format(self._host, baseUrl, data))
 
-		if (isinstance(self._compression, bool) and self._compression is True) or self._compression == _DEFLATE_COMPRESSION:
+		if self._compression is True or self._compression == _GZIP_COMPRESSION:
+			logger.debug2(u"Compressing data with gzip")
+			headers['Content-Encoding'] = 'gzip'
+
+			data = gzipEncode(data)
+			# Fix for python 2.7
+			# http://bugs.python.org/issue12398
+			if version_info >= (2, 7):
+				data = bytearray(data)
+			logger.debug2(u"Data compressed.")
+		elif self._compression == _DEFLATE_COMPRESSION:
 			logger.debug2(u"Compressing data with deflate")
 			headers['Content-Encoding'] = 'deflate'
 
