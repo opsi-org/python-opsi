@@ -461,6 +461,9 @@ To specify the use of a specific compression supply either 'gzip' or 'deflate'.
 			self.setCompression(False)
 
 	def getDeflate(self):
+		if isinstance(self._compression, bool):
+			return False
+
 		return _DEFLATE_COMPRESSION in self._compression
 
 	def isConnected(self):
