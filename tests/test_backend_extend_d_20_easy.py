@@ -147,3 +147,14 @@ def testGetClientsOnDepotWithDifferentDepot(backendManager, hosts, clients, depo
     assert clientIds[0] == client.id
 
     assert len(backendManager.getClientsOnDepot(configServer.id)) == len(clients) - 1
+
+
+@pytest.mark.parametrize("productIds, installationStatus", [
+    ([], None),
+    ([''], None),
+    (['myproduct'], 1),
+    (['myproduct'], 'not_a_valid_status'),
+])
+def testGetClientsWithProductsWithInvalidParameters(backendManager, productIds, installationStatus):
+    with pytest.raises(ValueError):
+        backendManager.getClientsWithProducts(productIds, installationStatus)
