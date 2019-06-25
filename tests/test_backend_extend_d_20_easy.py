@@ -31,11 +31,9 @@ from .test_hosts import getConfigServer, getDepotServers, getClients
 
 
 def testGetClients(backendManager):
-    configserver = getConfigServer()
-    depots = getDepotServers()
     clients = getClients()
-    hosts = [configserver]
-    hosts.extend(depots)
+    hosts = [getConfigServer()]
+    hosts.extend(getDepotServers())
     hosts.extend(clients)
     for host in hosts:
         backendManager.host_insertObject(host)
