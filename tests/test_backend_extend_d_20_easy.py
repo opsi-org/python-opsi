@@ -57,3 +57,22 @@ def testGetClients(backendManager):
 
     assert not clientIds, 'possibly duplicate clients'
 
+
+def testGetClientIDs(backendManager):
+    clients = getClients()
+    hosts = [getConfigServer()]
+    hosts.extend(getDepotServers())
+    hosts.extend(clients)
+    for host in hosts:
+        backendManager.host_insertObject(host)
+
+    originalClientIDs = [client.id for client in clients]
+    clientIDs = backendManager.getClientIDs()
+
+    assert len(originalClientIDs) == len(clientIDs)
+
+    origIDs = set(originalClientIDs)
+    newIDs = set(clientIDs)
+
+    diff = origIDs ^ newIDs
+    assert not diff
