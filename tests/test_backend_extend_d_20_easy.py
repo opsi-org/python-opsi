@@ -41,6 +41,7 @@ def testGetClients(backendManager):
     newClients = backendManager.getClients()
 
     assert len(newClients) == len(clients)
+    clientIds = [client.id for client in clients]
 
     for client in newClients:
         assert isinstance(client, dict)
@@ -51,3 +52,6 @@ def testGetClients(backendManager):
 
         for key, value in client.items():
             assert value is not None, 'Key {} has a None value'.format(key)
+
+        assert client['hostId'] in clientIds
+
