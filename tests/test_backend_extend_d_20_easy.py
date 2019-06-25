@@ -53,5 +53,7 @@ def testGetClients(backendManager):
         for key, value in client.items():
             assert value is not None, 'Key {} has a None value'.format(key)
 
-        assert client['hostId'] in clientIds
+        clientIds.remove(client['hostId'])
+
+    assert not clientIds, 'possibly duplicate clients'
 
