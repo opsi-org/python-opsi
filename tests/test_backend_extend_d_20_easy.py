@@ -27,14 +27,38 @@ This tests what usually is found under
 
 from __future__ import absolute_import
 
+import pytest
+
+from OPSI.Object import UnicodeConfig
+
 from .test_hosts import getConfigServer, getDepotServers, getClients
 
 
-def testGetClients(backendManager):
-    clients = getClients()
+@pytest.fixture
+def clients():
+    return getClients()
+
+
+@pytest.fixture
+def depots():
+    return getDepotServers()
+
+
+@pytest.fixture
+def configServer():
+    return getConfigServer()
+
+
+@pytest.fixture
+def hosts(clients, depots, configServer):
     hosts = [getConfigServer()]
-    hosts.extend(getDepotServers())
+    hosts.extend(depots)
     hosts.extend(clients)
+
+    return hosts
+
+
+def testGetClients(backendManager, hosts, clients):
     for host in hosts:
         backendManager.host_insertObject(host)
 
@@ -58,11 +82,7 @@ def testGetClients(backendManager):
     assert not clientIds, 'possibly duplicate clients'
 
 
-def testGetClientIDs(backendManager):
-    clients = getClients()
-    hosts = [getConfigServer()]
-    hosts.extend(getDepotServers())
-    hosts.extend(clients)
+def testGetClientIDs(backendManager, hosts, clients):
     for host in hosts:
         backendManager.host_insertObject(host)
 
@@ -71,8 +91,31 @@ def testGetClientIDs(backendManager):
 
     assert len(originalClientIDs) == len(clientIDs)
 
-    origIDs = set(originalClientIDs)
-    newIDs = set(clientIDs)
-
-    diff = origIDs ^ newIDs
+    diff = set(originalClientIDs) ^ set(clientIDs)
     assert not diff
+
+
+def testGetClientsOnDepotWithoutGivenDepot(backendManager, hosts, clients, configServer):
+    for host in hosts:
+        backendManager.host_insertObject(host)
+
+    clientIds = backendManager.getClientsOnDepot(configServer.id)
+    assert not clientIds, 'Default mapping appeared somewhere'
+
+    clientConfigDepotId = UnicodeConfig(
+        id=u'clientconfig.depot.id',
+        description=u'Depotserver to use',
+        possibleValues=[],
+        defaultValues=[configServer.id]
+    )
+    backendManager.config_createObjects(clientConfigDepotId)
+    clientIds = backendManager.getClientsOnDepot(configServer.id)
+    assert len(clientIds) == len(clients)
+    diff = set(clientIds) ^ set([client.id for client in clients])
+    assert not diff
+
+
+@pytest.mark.parametrize("value", [1, 'justahostname'])
+def testGetClientsOnDepotExpectsValidIDs(backendManager, value):
+    with pytest.raises(ValueError):
+        backendManager.getClientsOnDepot(value)
