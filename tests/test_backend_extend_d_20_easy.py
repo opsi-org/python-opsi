@@ -97,7 +97,7 @@ def testGetClientIDs(backendManager, hosts, clients):
     assert not diff
 
 
-def testGetClientsOnDepotWithoutGivenDepot(backendManager, hosts, clients, configServer):
+def testGetClientsOnDepot(backendManager, hosts, clients, configServer):
     for host in hosts:
         backendManager.host_insertObject(host)
 
