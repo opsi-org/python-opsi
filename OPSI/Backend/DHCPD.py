@@ -289,7 +289,7 @@ class DHCPDBackend(ConfigDataBackend):
 		try:
 			self._dhcpd_updateHost(host)
 		except Exception as exc:
-			logger.info(exc)
+			logger.logException(exc)
 
 	def host_deleteObjects(self, hosts):
 		logger.debug(u"host_deleteObjects %s" % hosts)
