@@ -27,6 +27,8 @@ This tests what usually is found under
 
 from __future__ import absolute_import
 
+import random
+
 import pytest
 
 from OPSI.Object import UnicodeConfig
@@ -119,3 +121,29 @@ def testGetClientsOnDepotWithoutGivenDepot(backendManager, hosts, clients, confi
 def testGetClientsOnDepotExpectsValidIDs(backendManager, value):
     with pytest.raises(ValueError):
         backendManager.getClientsOnDepot(value)
+
+
+def testGetClientsOnDepotWithDifferentDepot(backendManager, hosts, clients, depots, configServer):
+    for host in hosts:
+        backendManager.host_insertObject(host)
+
+    clientConfigDepotId = UnicodeConfig(
+        id=u'clientconfig.depot.id',
+        description=u'Depotserver to use',
+        possibleValues=[],
+        defaultValues=[configServer.id]
+    )
+    backendManager.config_createObjects(clientConfigDepotId)
+
+    depot = random.choice(depots)
+    clientIds = backendManager.getClientsOnDepot(depot.id)
+    assert len(clientIds) == 0
+
+    client = random.choice(clients)
+    backendManager.configState_create(clientConfigDepotId.id, client.id, values=[depot.id])
+
+    clientIds = backendManager.getClientsOnDepot(depot.id)
+    assert len(clientIds) == 1
+    assert clientIds[0] == client.id
+
+    assert len(backendManager.getClientsOnDepot(configServer.id)) == len(clients) - 1
