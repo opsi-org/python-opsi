@@ -1680,6 +1680,7 @@ class DHCPDConfFile(TextFile):
 				if not self._data.strip():
 					self._parse_emptyline()
 				continue
+
 			for token in ('#', ';', '{', '}'):
 				index = self._data.find(token)
 				if (index != -1) and (index >= minIndex) and ((self._currentIndex == -1) or (index < self._currentIndex)):
@@ -1687,11 +1688,13 @@ class DHCPDConfFile(TextFile):
 						continue
 					self._currentToken = token
 					self._currentIndex = index
+
 			if not self._currentToken:
 				minIndex = len(self._data)
 				if not self._getNewData():
 					break
 				continue
+
 			minIndex = 0
 			if self._currentToken == '#':
 				self._parse_comment()
@@ -1701,6 +1704,7 @@ class DHCPDConfFile(TextFile):
 				self._parse_lbracket()
 			elif self._currentToken == '}':
 				self._parse_rbracket()
+
 		self._parsed = True
 
 	def generate(self):
