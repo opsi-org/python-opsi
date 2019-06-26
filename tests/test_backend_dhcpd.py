@@ -92,12 +92,19 @@ def testAddingHostToBackend():
         with showLogs(8):
             backend.host_insertObject(client)
 
+        optionExists = False
+        clientFound = False
         with open(dhcpdFile) as f:
             for line in f:
+                print(line)
+                if 'option voip-tftp-server code 150 = { ip-address, ip-address };' in line:
+                    optionExists = True
                 if client.hardwareAddress in line:
-                    break
-            else:
-                raise RuntimeError("Client not found in config file")
+                    clientFound = True
+
+        assert clientFound, "Client not found in config file"
+        assert '}' in line, 'Expected closing bracket in last line'
+        assert optionExists, "Missing option with array"
 
 
 def testUpdatingHostWhereAddressCantBeResolvedFails(dhcpBackendWithoutLookup):
