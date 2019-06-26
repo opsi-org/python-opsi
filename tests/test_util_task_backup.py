@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -33,6 +33,11 @@ from OPSI.Util.Task.ConfigureBackend import (
     getBackendConfiguration, updateConfigFile)
 
 from .helpers import mock, workInTemporaryDirectory
+
+try:
+    from .Backends.MySQL import MySQLconfiguration
+except ImportError:
+    MySQLconfiguration = None
 
 
 def testVerifySysConfigDoesNotFailBecauseWhitespaceAtEnd():
@@ -86,12 +91,18 @@ def testCreatingArchive():
             shutil.copytree(sourceBackendDir, fakeBackendDir)
 
             for filename in os.listdir(fakeBackendDir):
-                if 'file' not in filename or not filename.endswith('.conf'):
+                if not filename.endswith('.conf'):
                     continue
 
                 configPath = os.path.join(fakeBackendDir, filename)
                 config = getBackendConfiguration(configPath)
-                config['baseDir'] = configDir
+                if 'file' in filename:
+                    config['baseDir'] = configDir
+                elif 'mysql' in filename and MySQLconfiguration:
+                    config.update(MySQLconfiguration)
+                else:
+                    continue  # no modifications here
+
                 updateConfigFile(configPath, config)
 
             with mock.patch('OPSI.Util.Task.Backup.OpsiBackupArchive.CONF_DIR', os.path.dirname(__file__)):

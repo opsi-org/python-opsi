@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2016-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2016-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -25,6 +25,9 @@ creating a test function. No rurther imports are needed.
         pass
 
 
+Backends with MySQL / SQLite sometimes require a modules file and may
+be skipped if it does not exist.
+
 :author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
 """
@@ -45,9 +48,18 @@ from .helpers import workInTemporaryDirectory, createTemporaryTestfile
 
 import pytest
 
+_MODULES_FILE = os.path.exists(os.path.join('/etc', 'opsi', 'modules'))
 
-@pytest.fixture
-def configDataBackend(backendCreationContextManager):
+
+@pytest.fixture(
+    params=[
+        getFileBackend,
+        pytest.param(getMySQLBackend, marks=pytest.mark.requiresModulesFile),
+        pytest.param(getSQLiteBackend, marks=pytest.mark.requiresModulesFile),
+    ],
+    ids=['file', 'mysql', 'sqlite']
+)
+def configDataBackend(request):
     """
     Returns an `OPSI.Backend.ConfigDataBackend` for testing.
 
@@ -55,17 +67,9 @@ def configDataBackend(backendCreationContextManager):
     skips if required libraries are missing or conditions for the
     execution are not met.
     """
-    with backendCreationContextManager() as backend:
+    with request.param() as backend:
         with _backendBase(backend):
             yield backend
-
-
-@pytest.fixture(
-    params=[getFileBackend, getSQLiteBackend, getMySQLBackend],
-    ids=['file', 'sqlite', 'mysql']
-)
-def backendCreationContextManager(request):
-    yield request.param
 
 
 @contextmanager
@@ -100,7 +104,10 @@ def cleanableDataBackend(_serverBackend):
 
 
 @pytest.fixture(
-    params=[getFileBackend, getMySQLBackend],
+    params=[
+        getFileBackend,
+        pytest.param(getMySQLBackend, marks=pytest.mark.requiresModulesFile),
+    ],
     ids=['file', 'mysql']
 )
 def _serverBackend(request):
@@ -112,7 +119,10 @@ def _serverBackend(request):
 
 
 @pytest.fixture(
-    params=[getFileBackend, getMySQLBackend],
+    params=[
+        getFileBackend,
+        pytest.param(getMySQLBackend, marks=pytest.mark.requiresModulesFile),
+    ],
     ids=['destination:file', 'destination:mysql']
 )
 def replicationDestinationBackend(request):
@@ -149,26 +159,22 @@ def tempDir():
 
 
 @pytest.fixture
-def licenseManagementBackend(_sqlBackend):
+def licenseManagementBackend(sqlBackendCreationContextManager):
     '''Returns a backend that can handle License Management.'''
-    yield ExtendedConfigDataBackend(_sqlBackend)
+    with sqlBackendCreationContextManager() as backend:
+        with _backendBase(backend):
+            yield ExtendedConfigDataBackend(backend)
 
 
 @pytest.fixture(
-    params=[getSQLiteBackend, getMySQLBackend],
-    ids=['sqlite', 'mysql']
+    params=[
+        getMySQLBackend,
+        pytest.param(getSQLiteBackend, marks=pytest.mark.requiresModulesFile),
+    ],
+    ids=['mysql', 'sqlite']
 )
 def sqlBackendCreationContextManager(request):
     yield request.param
-
-
-@pytest.fixture
-def _sqlBackend(sqlBackendCreationContextManager):
-    '''Backends that make use of SQL.'''
-
-    with sqlBackendCreationContextManager() as backend:
-        with _backendBase(backend):
-            yield backend
 
 
 @pytest.fixture(
@@ -182,8 +188,8 @@ def multithreadingBackend(request):
 
 
 @pytest.fixture(
-    params=[getSQLiteBackend, getMySQLBackend],
-    ids=['sqlite', 'mysql']
+    params=[getMySQLBackend, getSQLiteBackend],
+    ids=['mysql', 'sqlite']
 )
 def hardwareAuditBackendWithHistory(request, hardwareAuditConfigPath):
     with request.param(auditHardwareConfigFile=hardwareAuditConfigPath) as backend:
@@ -205,28 +211,31 @@ def hardwareAuditConfigPath():
         yield fileCopy
 
 
-@pytest.fixture
-def auditDataBackend(backendCreationContextManager, hardwareAuditConfigPath):
-    with backendCreationContextManager(auditHardwareConfigFile=hardwareAuditConfigPath) as backend:
+@pytest.fixture(
+    params=[getFileBackend, getMySQLBackend, getSQLiteBackend],
+    ids=['file', 'mysql', 'sqlite']
+)
+def auditDataBackend(request, hardwareAuditConfigPath):
+    with request.param(auditHardwareConfigFile=hardwareAuditConfigPath) as backend:
         with _backendBase(backend):
             yield ExtendedConfigDataBackend(backend)
 
 
 @pytest.fixture(
-    params=[getMySQLBackend],
-    ids=['mysql']
+    params=[
+        getMySQLBackend,
+        pytest.param(getSQLiteBackend, marks=pytest.mark.requiresModulesFile),
+    ],
+    ids=['mysql', 'sqlite']
 )
 def licenseManagentAndAuditBackend(request):
-    # Note: this could run include SQLite but because then won't work
-    # on servers without opsi / licensing. Sadly sticking to this.
-
     with request.param() as backend:
         with _backendBase(backend):
             yield ExtendedConfigDataBackend(backend)
 
 
 def pytest_runtest_setup(item):
-    envmarker = item.get_marker("requiresModulesFile")
+    envmarker = item.get_closest_marker("requiresModulesFile")
     if envmarker is not None:
-        if not os.path.exists(os.path.join('/etc', 'opsi', 'modules')):
+        if not _MODULES_FILE:
             pytest.skip("{0} requires a modules file!".format(item.name))

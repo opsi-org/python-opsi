@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -408,6 +408,66 @@ def testSetProductActionRequestWithDependenciesUpdateOnlyNeededObjects(backendMa
 	for poc in productsOnClient:
 		if poc.productId == 'nicht_anfassen':
 			assert poc.modificationTime != expectedModificationTime
+
+
+def testSetProductActionRequestWithDependenciesHandlingMissingProductOnDepot(backendManager):
+	"""
+	setProductActionRequestWithDependencies should be able to handle
+	cases where not all products are present on the depot.
+	"""
+	client, depot = createClientAndDepot(backendManager)
+
+	masterProduct = LocalbootProduct('master', '3', '1.0')
+	prodWithSetup = LocalbootProduct('reiter', '1.0', '1.0')
+	backendManager.product_createObjects([masterProduct, prodWithSetup])
+
+	prodSetupDependency = ProductDependency(
+		productId=masterProduct.id,
+		productVersion=masterProduct.productVersion,
+		packageVersion=masterProduct.packageVersion,
+		productAction='setup',
+		requiredProductId=prodWithSetup.id,
+		requiredAction='setup',
+		requirementType='after',
+	)
+	brokenSetupDependency = ProductDependency(
+		productId=masterProduct.id,
+		productVersion=masterProduct.productVersion,
+		packageVersion=masterProduct.packageVersion,
+		productAction='setup',
+		requiredProductId='missing_product',
+		requiredAction='setup',
+		requirementType='after',
+	)
+
+	backendManager.productDependency_createObjects([prodSetupDependency, brokenSetupDependency])
+
+	for prod in (masterProduct, prodWithSetup):
+		pod = ProductOnDepot(
+			productId=prod.id,
+			productType=prod.getType(),
+			productVersion=prod.productVersion,
+			packageVersion=prod.packageVersion,
+			depotId=depot.id,
+		)
+		backendManager.productOnDepot_createObjects([pod])
+
+	backendManager.setProductActionRequestWithDependencies(masterProduct.id, client.id, "setup")
+
+	productsOnClient = backendManager.productOnClient_getObjects()
+
+	# Neither master nor dependencies are set to setup
+	# product 'reiter' could be set to setup depending on the order in
+	# which products are processed in the backend.
+	# product 'master' will not be set to setup because it is set to
+	# 'none' through OPSI.SharedAlgorithm.
+	assert len(productsOnClient) <= 1
+
+	for poc in productsOnClient:
+		if poc.productId == 'reiter':
+			assert poc.actionRequest == 'setup'
+		else:
+			raise RuntimeError("Unexpected product: %s" % poc)
 
 
 @pytest.mark.parametrize("sortalgorithm", [None, 'algorithm1', 'algorithm2', 'unknown-algo'])

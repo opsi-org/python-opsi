@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2014-2017 uib GmbH - http://www.uib.de/
+# Copyright (C) 2014-2019 uib GmbH - http://www.uib.de/
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -70,7 +70,7 @@ from OPSI.Logger import LOG_DEBUG, Logger
 from OPSI.Util import findFiles
 from OPSI.System.Posix import (
 	getLocalFqdn as getLocalFQDN, isCentOS, isDebian, isOpenSUSE, isRHEL, isSLES, isUbuntu,
-	isUCS, isOpenSUSELeap)
+	isUCS)
 
 __all__ = ('setRights', 'setPasswdRights')
 
@@ -117,7 +117,7 @@ def setRights(path=u'/'):
 		LOGGER.debug2(u"Rights configuration: {0}", rights)
 		chown(startPath, rights.uid, rights.gid)
 		os.chmod(startPath, rights.directories)
-		for filepath in findFiles(startPath, prefix=startPath, returnLinks=rights.correctLinks, excludeFile=re.compile("(.swp|~)$")):
+		for filepath in findFiles(startPath, prefix=startPath, returnLinks=rights.correctLinks, excludeFile=re.compile(r"(.swp|~)$")):
 			chown(filepath, rights.uid, rights.gid)
 			if os.path.isdir(filepath):
 				LOGGER.debug(u"Setting rights on directory {0!r}", filepath)
@@ -228,7 +228,7 @@ def getWorkbenchDirectory():
 
 
 def getPxeDirectory():
-	if isSLES() or isOpenSUSELeap():
+	if isSLES() or isOpenSUSE():
 		return u'/var/lib/tftpboot/opsi'
 	else:
 		return u'/tftpboot/linux'
@@ -285,18 +285,14 @@ def getLocalDepot():
 	from OPSI.Backend.BackendManager import BackendManager
 
 	try:
-		backend = BackendManager()
+		with BackendManager() as backend:
+			depot = backend.host_getObjects(type='OpsiDepotserver', id=getLocalFQDN())
+			return depot[0]
+	except IndexError:
+		raise BackendMissingDataError("No depots found!")
 	except Exception as err:
 		LOGGER.warning("Has the backend been initialized?")
 		raise BackendConfigurationError("Unable to instantiate a backend: {}".format(err))
-
-	depot = backend.host_getObjects(type='OpsiDepotserver', id=getLocalFQDN())
-	backend.backend_exit()
-
-	try:
-		return depot[0]
-	except IndexError:
-		raise BackendMissingDataError("No depots found!")
 
 
 def getWebserverRepositoryPath():

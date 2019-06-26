@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2010-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2010-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -276,16 +276,16 @@ def testTerminatingKillableThread(self):
             runningThread.join(2)
 
     with getTestThread() as runningThread:
-        assert runningThread.isAlive()
+        assert runningThread.is_alive()
 
         runningThread.terminate()
 
         runChecks = 0
-        while runningThread.isAlive():
+        while runningThread.is_alive():
             time.sleep(0.1)
             runChecks += 1
 
             if runChecks > 30:
                 assert False, "Thread should be stopped by now."
 
-        assert not runningThread.isAlive(), "Thread should be killed."
+        assert not runningThread.is_alive(), "Thread should be killed."

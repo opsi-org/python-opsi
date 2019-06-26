@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2006-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -52,8 +52,8 @@ logger = Logger()
 
 
 class FileBackend(ConfigDataBackend):
-	# example match (ignore spaces):      exampleexam_e.-ex  _ 1234.12 - 1234.12  . local     boot
-	productFilenameRegex = re.compile('^([a-zA-Z0-9\_\.-]+)\_([\w\.]+)-([\w\.]+)\.(local|net)boot$')
+	PRODUCT_FILENAME_REGEX = re.compile(r'^([a-zA-Z0-9_.-]+)_([\w.]+)-([\w.]+)\.(local|net)boot$')
+	PLACEHOLDER_REGEX = re.compile(r'^(.*)<([^>]+)>(.*)$')
 
 	def __init__(self, **kwargs):
 		self._name = 'file'
@@ -109,7 +109,6 @@ class FileBackend(ConfigDataBackend):
 		self.__defaultClientTemplatePath = os.path.join(self.__clientTemplateDir, u'{0}.ini'.format(self.__defaultClientTemplateName))
 
 		self.__serverId = forceHostId(getfqdn())
-		self._placeholderRegex = re.compile('^(.*)<([^>]+)>(.*)$')
 
 		self._mappings = {
 			'Config': [
@@ -215,12 +214,14 @@ class FileBackend(ConfigDataBackend):
 		self._mappings['UnicodeConfig'] = self._mappings['Config']
 		self._mappings['BoolConfig'] = self._mappings['Config']
 		self._mappings['OpsiConfigserver'] = self._mappings['OpsiDepotserver']
-		self._mappings['LocalbootProduct'] = self._mappings['Product']
-		self._mappings['NetbootProduct'] = self._mappings['Product']
 		self._mappings['UnicodeProductProperty'] = self._mappings['ProductProperty']
 		self._mappings['BoolProductProperty'] = self._mappings['ProductProperty']
 		self._mappings['HostGroup'] = self._mappings['Group']
 		self._mappings['ProductGroup'] = self._mappings['Group']
+
+		# Extending the settings with the attributes from the base class
+		self._mappings['LocalbootProduct'].extend(self._mappings['Product'])
+		self._mappings['NetbootProduct'].extend(self._mappings['Product'])
 
 	def backend_exit(self):
 		pass
@@ -504,7 +505,7 @@ class FileBackend(ConfigDataBackend):
 					logger.debug2(u"Ignoring invalid product file '%s'" % (entry))
 					continue
 
-				match = self.productFilenameRegex.search(entry)
+				match = self.PRODUCT_FILENAME_REGEX.search(entry)
 				if not match:
 					logger.warning(u"Ignoring invalid product file '%s'" % (entry))
 					continue
@@ -818,13 +819,13 @@ class FileBackend(ConfigDataBackend):
 						section = m['section']
 						option = m['option']
 
-						match = self._placeholderRegex.search(section)
+						match = self.PLACEHOLDER_REGEX.search(section)
 						if match:
 							section = u'%s%s%s' % (match.group(1), objHash[match.group(2)], match.group(3))  # pylint: disable=maybe-no-member
 							if objType == 'ProductOnClient':  # <productType>_product_states
 								section = section.replace('LocalbootProduct', 'localboot').replace('NetbootProduct', 'netboot')
 
-						match = self._placeholderRegex.search(option)
+						match = self.PLACEHOLDER_REGEX.search(option)
 						if match:
 							option = u'%s%s%s' % (match.group(1), objHash[match.group(2)], match.group(3))  # pylint: disable=maybe-no-member
 
@@ -970,13 +971,13 @@ class FileBackend(ConfigDataBackend):
 						section = attributeMapping['section']
 						option = attributeMapping['option']
 
-						match = self._placeholderRegex.search(section)
+						match = self.PLACEHOLDER_REGEX.search(section)
 						if match:
 							section = u'%s%s%s' % (match.group(1), objHash[match.group(2)], match.group(3))
 							if objType == 'ProductOnClient':
 								section = section.replace('LocalbootProduct', 'localboot').replace('NetbootProduct', 'netboot')
 
-						match = self._placeholderRegex.search(option)
+						match = self.PLACEHOLDER_REGEX.search(option)
 						if match:
 							option = u'%s%s%s' % (match.group(1), objHash[match.group(2)], match.group(3))
 
@@ -1227,6 +1228,9 @@ class FileBackend(ConfigDataBackend):
 				iniFile.generate(cp)
 		else:
 			logger.warning(u"_delete(): unhandled objType: '%s' object: %s" % (objType, objList[0]))
+
+	def getData(self, query):
+		raise BackendConfigurationError(u"You have tried to execute a method, that will not work with filebackend.")
 
 	def getRawData(self, query):
 		raise BackendConfigurationError(u"You have tried to execute a method, that will not work with filebackend.")

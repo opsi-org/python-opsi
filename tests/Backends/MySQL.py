@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2013-2018 uib GmbH
+# Copyright (C) 2013-2019 uib GmbH
 #
 # http://www.uib.de/
 #
@@ -33,6 +33,8 @@ try:
     from .config import MySQLconfiguration
 except ImportError:
     MySQLconfiguration = None
+
+UNKNOWN_TABLE_ERROR_CODE = 1051
 
 
 @contextmanager
@@ -71,6 +73,10 @@ def cleanDatabase(database):
                 try:
                     database.execute(u'DROP TABLE `{0}`;'.format(tableName))
                 except Exception as error:
+                    errorCode = error.args[0]
+                    if errorCode == UNKNOWN_TABLE_ERROR_CODE:
+                        continue
+
                     print("Failed to drop {0} a second time: {1}".format(tableName, error))
                     raise error
 

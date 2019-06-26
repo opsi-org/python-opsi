@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2006-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -80,6 +80,28 @@ try:
 except Exception as error:
 	logger.debug("Reading Distribution failed: {0}".format(error))
 	DISTRIBUTION = 'unknown'
+
+
+def loadBackendConfig(path):
+	"""
+	Load the backend configuration at `path`.
+
+	:param path: Path to the configuration file to load.
+	:type path: str
+	:rtype: dict
+	"""
+	if not os.path.exists(path):
+		raise BackendConfigurationError(u"Backend config file '%s' not found" % path)
+
+	moduleGlobals = {
+		'config': {},  # Will be filled after loading
+		'module': '',  # Will be filled after loading
+		'os': os,
+		'socket': socket,
+		'sys': sys,
+	}
+	execfile(path, moduleGlobals)
+	return moduleGlobals
 
 
 class BackendManager(ExtendedBackend):
@@ -254,16 +276,11 @@ class BackendManager(ExtendedBackend):
 			raise BackendConfigurationError(u"Backend config dir not given")
 		if not os.path.exists(self._backendConfigDir):
 			raise BackendConfigurationError(u"Backend config dir '%s' not found" % self._backendConfigDir)
-		if not re.search('^[a-zA-Z0-9-_]+$', name):
+		if not re.search(r'^[a-zA-Z0-9-_]+$', name):
 			raise ValueError(u"Bad backend config name '%s'" % name)
 		name = name.lower()
 		backendConfigFile = os.path.join(self._backendConfigDir, '%s.conf' % name)
-		if not os.path.exists(backendConfigFile):
-			raise BackendConfigurationError(u"Backend config file '%s' not found" % backendConfigFile)
-
-		l = {'socket': socket, 'os': os, 'sys': sys, 'module': '', 'config': {}}
-		execfile(backendConfigFile, l)
-		return l
+		return loadBackendConfig(backendConfigFile)
 
 	def __loadBackend(self, name):
 		config = self.__loadBackendConfig(name)
@@ -362,11 +379,8 @@ class BackendDispatcher(Backend):
 		for backend in collectedBackends:
 			self._backends[backend] = {}
 			backendConfigFile = os.path.join(self._backendConfigDir, '%s.conf' % backend)
-			if not os.path.exists(backendConfigFile):
-				raise BackendConfigurationError(u"Backend config file '%s' not found" % backendConfigFile)
-			l = {'socket': socket, 'os': os, 'sys': sys, 'module': '', 'config': {}}
 			logger.info(u"Loading backend config '%s'" % backendConfigFile)
-			execfile(backendConfigFile, l)
+			l = loadBackendConfig(backendConfigFile)
 			if not l['module']:
 				raise BackendConfigurationError(u"No module defined in backend config file '%s'" % backendConfigFile)
 			if l['module'] in self._dispatchIgnoreModules:
@@ -569,7 +583,7 @@ class BackendAccessControl(object):
 			raise BackendConfigurationError(u"Cannot use BackendAccessControl instance as backend")
 
 		try:
-			if re.search('^[^\.]+\.[^\.]+\.\S+$', self._username):
+			if re.search(r'^[^.]+\.[^.]+\.\S+$', self._username):
 				# Username starts with something like hostname.domain.tld:
 				# Assuming it is a host passing his FQDN as username
 				logger.debug(u"Trying to authenticate by opsiHostKey...")
@@ -611,7 +625,7 @@ class BackendAccessControl(object):
 		self._authenticated = True
 
 		if not self._acl:
-			self._acl = [['.*', [{'type': u'sys_group', 'ids': [OPSI_ADMIN_GROUP], 'denyAttributes': [], 'allowAttributes': []}]]]
+			self._acl = [[r'.*', [{'type': u'sys_group', 'ids': [OPSI_ADMIN_GROUP], 'denyAttributes': [], 'allowAttributes': []}]]]
 
 		# Pre-compiling regex patterns for speedup.
 		for i, (pattern, acl) in enumerate(self._acl):
@@ -1005,7 +1019,7 @@ def backendManagerFactory(user, password, dispatchConfigFile, backendConfigDir,
 		)
 	elif len(postpath) == 2 and postpath[0] == 'extend':
 		extendPath = postpath[1]
-		if not re.search('^[a-zA-Z0-9\_\-]+$', extendPath):
+		if not re.search(r'^[a-zA-Z0-9_-]+$', extendPath):
 			raise ValueError(u"Extension config path '%s' refused" % extendPath)
 		backendManager = BackendManager(
 			dispatchConfigFile=dispatchConfigFile,

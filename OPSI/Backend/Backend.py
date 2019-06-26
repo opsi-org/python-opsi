@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2013-2018 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -40,10 +40,11 @@ import random
 import re
 import threading
 import time
-import types
 import warnings
 from contextlib import contextmanager
 from hashlib import md5
+from types import MethodType
+
 from twisted.conch.ssh import keys
 
 from OPSI import __version__ as LIBRARY_VERSION
@@ -68,7 +69,7 @@ if os.name == 'posix':
 			from OPSI.ldaptor import ldapfilter
 
 __all__ = (
-	'getArgAndCallString', 'temporaryBackendOptions',
+	'describeInterface', 'getArgAndCallString', 'temporaryBackendOptions',
 	'DeferredCall', 'Backend', 'ExtendedBackend', 'ConfigDataBackend',
 	'ExtendedConfigDataBackend',
 	'ModificationTrackingBackend', 'BackendModificationListener'
@@ -102,6 +103,48 @@ try:
 except Exception as error:
 	logger.debug("Failed to set MAX LOG SIZE from config: {0}".format(error))
 	DEFAULT_MAX_LOGFILE_SIZE = 5000000
+
+
+def describeInterface(instance):
+	"""
+	Describes what public methods are available and the signatures they use.
+
+	These methods are represented as a dict with the following keys: \
+	*name*, *params*, *args*, *varargs*, *keywords*, *defaults*.
+
+	:rtype: [{},]
+	"""
+	methods = {}
+	for methodName, function in inspect.getmembers(instance, inspect.ismethod):
+		if methodName.startswith('_'):
+			# protected / private
+			continue
+
+		args, varargs, keywords, defaults = inspect.getargspec(function)
+		params = [arg for arg in args if arg != 'self']
+
+		if defaults is not None:
+			offset = len(params) - len(defaults)
+			for i in xrange(len(defaults)):
+				index = offset + i
+				params[index] = '*{0}'.format(params[index])
+
+		for index, element in enumerate((varargs, keywords), start=1):
+			if element:
+				stars = '*' * index
+				params.extend(['{0}{1}'.format(stars, arg) for arg in forceList(element)])
+
+		logger.debug2(u"{0} interface method: name {1!r}, params {2}", instance.__class__.__name__, methodName, params)
+		methods[methodName] = {
+			'name': methodName,
+			'params': params,
+			'args': args,
+			'varargs': varargs,
+			'keywords': keywords,
+			'defaults': defaults
+		}
+
+	return [methods[name] for name in sorted(methods.keys())]
 
 
 def getArgAndCallString(method):
@@ -273,7 +316,7 @@ This defaults to ``self``.
 						elif isinstance(value, (float, long, int)) or re.search('^\s*([>=<]+)\s*([\d\.]+)', forceUnicode(filterValue)):
 							operator = '=='
 							v = forceUnicode(filterValue)
-							match = re.search('^\s*([>=<]+)\s*([\d\.]+)', filterValue)
+							match = re.search(r'^\s*([>=<]+)\s*([\d.]+)', filterValue)
 							if match:
 								operator = match.group(1)  # pylint: disable=maybe-no-member
 								v = match.group(2)  # pylint: disable=maybe-no-member
@@ -287,7 +330,7 @@ This defaults to ``self``.
 
 							continue
 
-						if '*' in filterValue and re.search('^%s$' % filterValue.replace('*', '.*'), value):
+						if '*' in filterValue and re.search(r'^%s$' % filterValue.replace('*', '.*'), value):
 							matched = True
 							break
 
@@ -337,45 +380,15 @@ This defaults to ``self``.
 
 	def backend_getInterface(self):
 		"""
-		Returns what methods are available and the signatures they use.
+		Returns what public methods are available and the signatures they use.
 
 		These methods are represented as a dict with the following keys: \
 		*name*, *params*, *args*, *varargs*, *keywords*, *defaults*.
 
 
-		:returntype: [{},]
+		:rtype: [{},]
 		"""
-		methods = {}
-		for methodName, function in inspect.getmembers(self, inspect.ismethod):
-			if methodName.startswith('_'):
-				# protected / private
-				continue
-
-			args, varargs, keywords, defaults = inspect.getargspec(function)
-			params = [arg for arg in args if arg != 'self']
-
-			if defaults is not None:
-				offset = len(params) - len(defaults)
-				for i in xrange(len(defaults)):
-					index = offset + i
-					params[index] = '*{0}'.format(params[index])
-
-			for (index, element) in enumerate((varargs, keywords), start=1):
-				if element:
-					stars = '*' * index
-					params.extend(['{0}{1}'.format(stars, arg) for arg in forceList(element)])
-
-			logger.debug2(u"{0} interface method: name {1!r}, params {2}", self.__class__.__name__, methodName, params)
-			methods[methodName] = {
-				'name': methodName,
-				'params': params,
-				'args': args,
-				'varargs': varargs,
-				'keywords': keywords,
-				'defaults': defaults
-			}
-
-		return [methods[name] for name in sorted(methods.keys())]
+		return describeInterface(self)
 
 	def backend_info(self):
 		"""
@@ -502,7 +515,7 @@ class ExtendedBackend(Backend):
 			argString, callString = getArgAndCallString(functionRef)
 
 			exec(u'def %s(self, %s): return self._executeMethod("%s", %s)' % (methodName, argString, methodName, callString))
-			setattr(self, methodName, types.MethodType(eval(methodName), self))
+			setattr(self, methodName, MethodType(eval(methodName), self))
 
 	def _executeMethod(self, methodName, **kwargs):
 		logger.debug(u"ExtendedBackend {0!r}: executing {1!r} on backend {2!r}", self, methodName, self._backend)
@@ -798,7 +811,7 @@ the opsi host key.
 		result = {'password': u'', 'rsaPrivateKey': u''}
 
 		cf = ConfigFile(filename=self._opsiPasswdFile)
-		lineRegex = re.compile('^\s*([^:]+)\s*:\s*(\S+)\s*$')
+		lineRegex = re.compile(r'^\s*([^:]+)\s*:\s*(\S+)\s*$')
 		for line in cf.parse():
 			match = lineRegex.search(line)
 			if match is None:
@@ -858,7 +871,7 @@ depot where the method is.
 		encodedPassword = blowfishEncrypt(depot.opsiHostKey, password)
 
 		cf = ConfigFile(filename=self._opsiPasswdFile)
-		lineRegex = re.compile('^\s*([^:]+)\s*:\s*(\S+)\s*$')
+		lineRegex = re.compile(r'^\s*([^:]+)\s*:\s*(\S+)\s*$')
 		lines = []
 		if os.path.exists(self._opsiPasswdFile):
 			for line in cf.readlines():
@@ -1688,7 +1701,6 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			raise BackendBadValueError(u"Failed to parse filter '%s'" % filter)
 		logger.debug(u"Parsed search filter: {0!r}", parsedFilter)
 
-
 		def combineResults(result1, result2, operator):
 			if not result1:
 				return result2
@@ -1827,7 +1839,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			elif isinstance(f, pureldap.LDAPFilter_present):
 				objectFilter = {f.value: '*'}
 
-			elif isinstance(f, pureldap.LDAPFilter_and) or isinstance(f, pureldap.LDAPFilter_or):
+			elif isinstance(f, (pureldap.LDAPFilter_and, pureldap.LDAPFilter_or)):
 				operator = None
 				if isinstance(f, pureldap.LDAPFilter_and):
 					operator = 'AND'
@@ -2596,7 +2608,7 @@ alternative depots are to be taken into account.
 `clientId` that belong to each other. If alternative depots are taken \
 into the IDs of these depots are to be found in the list behind \
 `alternativeDepotIds`. The key does always exist but may be empty.
-		:returntype: [{"depotId": str, "alternativeDepotIds": [str, ], "clientId": str},]
+		:rtype: [{"depotId": str, "alternativeDepotIds": [str, ], "clientId": str},]
 		"""
 		depotIds = forceHostIdList(depotIds)
 		productIds = forceProductIdList(productIds)
@@ -2613,10 +2625,7 @@ into the IDs of these depots are to be found in the list behind \
 
 		usedDepotIds = set()
 		result = []
-		addConfigStateDefaults = self.backend_getOptions().get('addConfigStateDefaults', False)
-		try:
-			logger.debug(u"Calling backend_setOptions on {0}", self)
-			self.backend_setOptions({'addConfigStateDefaults': True})
+		with temporaryBackendOptions(self, addConfigStateDefaults=True):
 			for configState in self.configState_getObjects(configId=u'clientconfig.depot.id', objectId=clientIds):
 				try:
 					depotId = configState.values[0]
@@ -2637,8 +2646,6 @@ into the IDs of these depots are to be found in the list behind \
 						'alternativeDepotIds': []
 					}
 				)
-		finally:
-			self.backend_setOptions({'addConfigStateDefaults': addConfigStateDefaults})
 
 		if forceBool(masterOnly):
 			return result
@@ -4530,9 +4537,12 @@ class ModificationTrackingBackend(ExtendedBackend):
 		logger.debug(u"ModificationTrackingBackend {0}: executing {1!r} on backend {2}".format(self, methodName, self._backend))
 		meth = getattr(self._backend, methodName)
 		result = meth(**kwargs)
-		action = None
-		if '_' in methodName:
+
+		try:
 			action = methodName.split('_', 1)[1]
+		except IndexError:
+			# split failed
+			return result
 
 		if action in ('insertObject', 'updateObject', 'deleteObjects'):
 			if action == 'insertObject':

@@ -1,7 +1,7 @@
 #
 # spec file for package python-opsi
 #
-# Copyright (c) 2013-2018 uib GmbH.
+# Copyright (c) 2013-2019 uib GmbH.
 # This file and all modifications and additions to the pristine
 # package are under the same license as the package itself.
 #
@@ -10,14 +10,18 @@ BuildRequires:  gettext-devel
 BuildRequires:  python-devel
 BuildRequires:  python-setuptools
 Requires:       duplicity
+%if 0%{?sle_version} == 150000 && 0%{?is_opensuse}
+Requires:		net-tools-deprecated
+%else
 Requires:       iproute
+%endif
 Requires:       lshw
 Requires:       python >= 2.7
 Requires:       python-ldaptor
 Requires:       python-magic
 Requires:       python-sqlalchemy
 Requires:       python-twisted-web >= 8.2
-Requires:       python-twisted-conch >= 8.2
+Requires:       python-twisted-conch >= 8.2, python-twisted-conch < 18.4
 
 # Dependencies for twisted are a mess because most lack needed packages.
 # We try to avoid problems with this:
@@ -43,7 +47,11 @@ Requires:       net-tools
 %else
 Requires:       lsb-release
 Requires:       python-m2crypto
+%if 0%{?sle_version} == 150000 && 0%{?is_opensuse}
+Requires:       python-mysqlclient
+%else
 Requires:       python-mysql
+%endif
 Requires:       python-newt
 Requires:       python-openssl
 Requires:       python-pam
@@ -55,14 +63,14 @@ Requires:       python-pycrypto
 %else
 Requires:	python-crypto
 %endif
-Url:            http://www.opsi.org
+Url:            https://opsi.org
 License:        AGPL-3.0+
 Group:          Productivity/Networking/Opsi
 AutoReqProv:    on
-Version:        4.1.1.19
+Version:        4.1.1.52
 Release:        1
 Summary:        Python library for the client management solution opsi
-Source:         python-opsi_4.1.1.19-1.tar.gz
+Source:         python-opsi_4.1.1.52-1.tar.gz
 #Source2:        setup.py
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 # python noarch modules are only working on openSUSE 11.2 or higher
@@ -197,6 +205,7 @@ chmod 660 /etc/opsi/passwd
 [ -e "/etc/opsi/backendManager/dispatch.conf" ] || cp /etc/opsi/backendManager/dispatch.conf.example /etc/opsi/backendManager/dispatch.conf
 
 # Processing files for the SSH extension
+test -e /etc/opsi/server_commands_default.conf || touch /etc/opsi/server_commands_default.conf
 chown opsiconfd:opsiadmin /etc/opsi/server_commands_default.conf
 chmod 440 /etc/opsi/server_commands_default.conf
 

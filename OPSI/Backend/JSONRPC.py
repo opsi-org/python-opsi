@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2010-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2010-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -37,8 +37,8 @@ import threading
 import types
 from hashlib import md5
 from Queue import Queue, Empty
-from twisted.conch.ssh import keys
 from sys import version_info
+from twisted.conch.ssh import keys
 
 from OPSI import __version__
 from OPSI.Exceptions import (
@@ -252,6 +252,9 @@ class RpcQueue(threading.Thread):
 
 class JSONRPCBackend(Backend):
 
+	_DEFAULT_HTTP_PORT = 4444
+	_DEFAULT_HTTPS_PORT = 4447
+
 	def __init__(self, address, **kwargs):
 		self._name = 'jsonrpc'
 
@@ -263,15 +266,13 @@ class JSONRPCBackend(Backend):
 		self._connectOnInit = True
 		self._connected = False
 		self._retryTime = 5
-		self._defaultHttpPort = 4444
-		self._defaultHttpsPort = 4447
 		self._host = None
 		self._port = None
 		self._baseUrl = u'/rpc'
 		self._protocol = 'https'
 		self._socketTimeout = None
 		self._connectTimeout = 30
-		self._connectionPoolSize = 1
+		self._connectionPoolSize = 2
 		self._interface = None
 		self._rpcId = 0
 		self._rpcIdLock = threading.Lock()
@@ -377,15 +378,13 @@ class JSONRPCBackend(Backend):
 		return self._connectionPool.getPeerCertificate(asPem)
 
 	def backend_exit(self):
-		res = None
 		if self._connected:
 			try:
-				res = self._jsonRPC('backend_exit', retry=False)
+				self._jsonRPC('backend_exit', retry=False)
 			except Exception:
 				pass
-		if self._rpcQueue:
-			self._rpcQueue.stop()
-		return res
+
+		self.stopRpcQueue()
 
 	def setAsync(self, enableAsync):
 		if not self._connected:
@@ -464,13 +463,16 @@ class JSONRPCBackend(Backend):
 			if scheme not in ('http', 'https'):
 				raise ValueError(u"Protocol %s not supported" % scheme)
 			self._protocol = scheme
+
 		self._host = host
+
 		if port:
 			self._port = port
 		elif self._protocol == 'https':
-			self._port = self._defaultHttpsPort
+			self._port = self._DEFAULT_HTTPS_PORT
 		else:
-			self._port = self._defaultHttpPort
+			self._port = self._DEFAULT_HTTP_PORT
+
 		if baseurl and (baseurl != '/'):
 			self._baseUrl = baseurl
 		if not self._username and username:

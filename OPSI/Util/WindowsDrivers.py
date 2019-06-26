@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 #
-# Copyright (C) 2006-2010, 2013-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2010, 2013-2019 uib GmbH <info@uib.de>
 # All rights reserved.
 #
 # This program is free software: you can redistribute it and/or modify
@@ -80,8 +80,11 @@ def searchWindowsDrivers(driverDir, auditHardwares, messageSubject=None, srcRepo
 			continue
 
 		name = u'unknown'
-		if hasattr(auditHardware, 'name') and auditHardware.name:
-			name = auditHardware.name.replace(u'/', u'_')
+		try:
+			if auditHardware.name:
+				name = auditHardware.name.replace(u'/', u'_')
+		except AttributeError:
+			pass
 
 		logger.info(u"Searching driver for %s '%s', id '%s:%s'" % (hwClass, name, auditHardware.vendorId, auditHardware.deviceId))
 		if messageSubject:
@@ -168,7 +171,7 @@ def integrateWindowsDrivers(driverSourceDirectories, driverDestinationDirectory,
 		dirname = os.path.join(driverDestinationDirectory, filename)
 		if not os.path.isdir(dirname):
 			continue
-		if re.search('^\d+$', filename):
+		if re.search(r'^\d+$', filename):
 			if forceInt(filename) >= driverNumber:
 				driverNumber = forceInt(filename)
 
@@ -176,7 +179,7 @@ def integrateWindowsDrivers(driverSourceDirectories, driverDestinationDirectory,
 	infFiles = findFiles(
 		directory=driverDestinationDirectory,
 		prefix=driverDestinationDirectory,
-		includeFile=re.compile('\.inf$', re.IGNORECASE),
+		includeFile=re.compile(r'\.inf$', re.IGNORECASE),
 		returnDirs=False,
 		followLinks=True
 	)
@@ -209,7 +212,7 @@ def integrateWindowsDrivers(driverSourceDirectories, driverDestinationDirectory,
 		infFiles = findFiles(
 			directory=driverSourceDirectory,
 			prefix=driverSourceDirectory,
-			includeFile=re.compile('\.inf$', re.IGNORECASE),
+			includeFile=re.compile(r'\.inf$', re.IGNORECASE),
 			returnDirs=False,
 			followLinks=True,
 			repository=srcRepository)
@@ -287,10 +290,16 @@ def integrateWindowsHardwareDrivers(driverSourceDirectory, driverDestinationDire
 			driverDirectories.append(driver['directory'])
 
 		name = u'[%s:%s]' % (driver['vendorId'], driver['deviceId'])
-		if hasattr(driver['hardwareInfo'], 'vendor'):
+		try:
 			name += u' %s' % driver['hardwareInfo'].vendor
-		if hasattr(driver['hardwareInfo'], 'name'):
+		except AttributeError:
+			pass
+
+		try:
 			name += u' : %s' % driver['hardwareInfo'].name
+		except AttributeError:
+			pass
+
 		logger.notice(u"Integrating driver for device %s" % name)
 		if messageSubject:
 			messageSubject.setMessage(u"Integrating driver for device %s" % name)
@@ -317,7 +326,7 @@ def integrateWindowsTextmodeDrivers(driverDirectory, destination, devices, sifFi
 		messageSubject.setMessage(u"Integrating textmode drivers")
 
 	logger.info(u"Searching for txtsetup.oem in '%s'" % driverDirectory)
-	txtSetupOems = findFiles(directory=driverDirectory, prefix=driverDirectory, includeFile=re.compile('^txtsetup\.oem$', re.IGNORECASE), returnDirs=False)
+	txtSetupOems = findFiles(directory=driverDirectory, prefix=driverDirectory, includeFile=re.compile(r'^txtsetup\.oem$', re.IGNORECASE), returnDirs=False)
 	if not txtSetupOems:
 		logger.info(u"No txtsetup.oem found in '%s'" % driverDirectory)
 		return
@@ -447,12 +456,13 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 			if auditHardwareOnHost.hardwareClass not in auditInfoByClass:
 				auditInfoByClass[auditHardwareOnHost.hardwareClass] = auditHardwareOnHost
 
+	invalidCharactersRegex = re.compile(r'[<>?":|\\/*]')
 	byAuditIntegrated = False
 	if exists(rulesdir) and "COMPUTER_SYSTEM" in auditInfoByClass:
 		logger.info(u"Checking if automated integrating of additional drivers are possible")
 		auditHardwareOnHost = auditInfoByClass["COMPUTER_SYSTEM"]
-		vendorFromHost = re.sub("[\<\>\?\"\:\|\\\/\*]", "_", auditHardwareOnHost.vendor or "")
-		modelFromHost = re.sub("[\<\>\?\"\:\|\\\/\*]", "_", auditHardwareOnHost.model or "")
+		vendorFromHost = invalidCharactersRegex.sub("_", auditHardwareOnHost.vendor or "")
+		modelFromHost = invalidCharactersRegex.sub("_", auditHardwareOnHost.model or "")
 		skuFromHost = auditHardwareOnHost.sku or ""
 		skuLabel = ""
 		fallbackPath = ""
@@ -488,8 +498,8 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 	if not byAuditIntegrated and exists(rulesdir) and "BASE_BOARD" in auditInfoByClass:
 		logger.info(u"Checking if mainboard-fallback for automated integrating of additional drivers are possible")
 		auditHardwareOnHost = auditInfoByClass["BASE_BOARD"]
-		vendorFromHost = re.sub("[\<\>\?\"\:\|\\\/\*]", "_", auditHardwareOnHost.vendor or "")
-		productFromHost = re.sub("[\<\>\?\"\:\|\\\/\*]", "_", auditHardwareOnHost.product or "")
+		vendorFromHost = invalidCharactersRegex.sub("_", auditHardwareOnHost.vendor or "")
+		productFromHost = invalidCharactersRegex.sub("_", auditHardwareOnHost.product or "")
 
 		if vendorFromHost and productFromHost:
 			vendordirectories = listdir(rulesdir)
@@ -521,7 +531,7 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 		infFiles = findFiles(
 				directory=additionalDriverDir,
 				prefix=additionalDriverDir,
-				includeFile=re.compile('\.inf$', re.IGNORECASE),
+				includeFile=re.compile(r'\.inf$', re.IGNORECASE),
 				returnDirs=False,
 				followLinks=True,
 				repository=srcRepository)

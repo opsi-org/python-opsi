@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2013-2016 uib GmbH
+# Copyright (C) 2013-2019 uib GmbH
 #
 # http://www.uib.de/
 #

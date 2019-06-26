@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2017 uib GmbH <info@uib.de>
+# Copyright (C) 2017-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -32,12 +32,6 @@ Doing so might result in unforseen problems and is strongly discouraged!
 :license: GNU Affero General Public License version 3
 """
 
-try:
-	from OPSI.Util.File.Opsi import OpsiConfFile
-	FILE_ADMIN_GROUP = OpsiConfFile().getOpsiFileAdminGroup()
-except Exception:
-	FILE_ADMIN_GROUP = u'pcpatch'
-
 # Group used to identify members whits administrative rights in opsi
 OPSI_ADMIN_GROUP = u'opsiadmin'
 
@@ -49,3 +43,9 @@ OPSI_GLOBAL_CONF = u'/etc/opsi/global.conf'
 
 # User that is running opsiconfd.
 OPSICONFD_USER = u'opsiconfd'
+
+try:
+    from OPSI.Util.File.Opsi import OpsiConfFile
+    FILE_ADMIN_GROUP = OpsiConfFile().getOpsiFileAdminGroup()
+except Exception:
+    FILE_ADMIN_GROUP = u'pcpatch'

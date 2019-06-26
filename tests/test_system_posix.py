@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -24,13 +24,16 @@ Various unittests to test functionality of python-opsi.
 :license: GNU Affero General Public License version 3
 """
 
-import mock
+from __future__ import absolute_import
+
 import os
 import pytest
 import sys
 from contextlib import contextmanager
 
 import OPSI.System.Posix as Posix
+
+from .helpers import mock
 
 if sys.version_info > (3, ):
 	long = int
@@ -489,8 +492,9 @@ def testGetSambaServiceNameFailsIfNoServiceFound(values):
 	("samba", set(["abc", "samba", "def"])),
 ))
 def testGetSambaServiceNameGettingFoundSambaServiceName(expectedName, services):
-	with mock.patch('OPSI.System.Posix.getServiceNames',  mock.Mock(return_value=services)):
-		assert expectedName == Posix.getSambaServiceName()
+	with mock.patch('OPSI.System.Posix._SAMBA_SERVICE_NAME', None):
+		with mock.patch('OPSI.System.Posix.getServiceNames',  mock.Mock(return_value=services)):
+			assert expectedName == Posix.getSambaServiceName()
 
 
 def testGetServiceNameParsingFromSystemd():

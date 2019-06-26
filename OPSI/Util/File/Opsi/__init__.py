@@ -2,7 +2,7 @@
 
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
-# Copyright (C) 2006-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -54,7 +54,8 @@ from OPSI.Types import (
 	forceInstallationStatus, forceList, forceObjectClass, forceObjectClassList,
 	forceOpsiHostKey, forcePackageVersion, forceProductId, forceProductPriority,
 	forceProductPropertyType, forceProductType, forceProductVersion,
-	forceRequirementType, forceUnicode, forceUnicodeList, forceUnicodeLower)
+	forceRequirementType, forceUnicode, forceUnicodeList, forceUnicodeLower,
+	forceUniqueList)
 from OPSI.Util.File import ConfigFile, IniFile, TextFile, requiresParsing
 from OPSI.Util import md5sum, toJson, fromJson
 
@@ -78,6 +79,7 @@ def parseFilename(filename):
 If no information can be extracted returns None.
 	:rtype: namedtuple with attributes `productId`, `version`.
 	"""
+	filename = os.path.basename(filename)
 	parts = filename.rsplit('.opsi', 1)[0]
 	parts = parts.split('_')
 
@@ -92,7 +94,7 @@ If no information can be extracted returns None.
 
 class HostKeyFile(ConfigFile):
 
-	lineRegex = re.compile('^\s*([^:]+)\s*:\s*([0-9a-fA-F]{32})\s*$')
+	lineRegex = re.compile(r'^\s*([^:]+)\s*:\s*([0-9a-fA-F]{32})\s*$')
 
 	def __init__(self, filename, lockFailTimeout=2000):
 		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars=[';', '/', '#'])
@@ -156,7 +158,7 @@ class HostKeyFile(ConfigFile):
 
 class BackendACLFile(ConfigFile):
 
-	aclEntryRegex = re.compile('^([^:]+)+\s*:\s*(\S.*)$')
+	aclEntryRegex = re.compile(r'^([^:]+)+\s*:\s*(\S.*)$')
 
 	def __init__(self, filename, lockFailTimeout=2000):
 		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars=['#'])
@@ -222,13 +224,7 @@ class BackendACLFile(ConfigFile):
 								aclTypeParamValues.append(u'')
 							else:
 								aclTypeParam = aclTypeParam.strip()
-								tmp = []
-								for t in aclTypeParamValues:
-									t = t.strip()
-									if not t:
-										continue
-									tmp.append(t)
-								aclTypeParamValues = tmp
+								aclTypeParamValues = [t.strip() for t in aclTypeParamValues if t.strip()]
 								if aclTypeParam == 'attributes':
 									for v in aclTypeParamValues:
 										if not v:
@@ -250,13 +246,14 @@ class BackendACLFile(ConfigFile):
 
 
 class BackendDispatchConfigFile(ConfigFile):
-	DISPATCH_ENTRY_REGEX = re.compile('^([^:]+)+\s*:\s*(\S.*)$')
+
+	DISPATCH_ENTRY_REGEX = re.compile(r'^([^:]+)+\s*:\s*(\S.*)$')
 
 	def parse(self, lines=None):
 		"""
 		Returns the dispatch config entries with RegEx and corresponding backends.
 
-		:returntype: [('regex', ('backend1', 'backend2', ...)),]
+		:rtype: [('regex', ('backend1', 'backend2', ...)),]
 		"""
 		if lines:
 			self._lines = forceUnicodeList(lines)
@@ -285,7 +282,7 @@ class BackendDispatchConfigFile(ConfigFile):
 		Returns the backends used by the dispatch configuration.
 		This will not include any information on where it is used.
 
-		:returntype: set(['backend1', 'backend2'])
+		:rtype: set(['backend1', 'backend2'])
 		"""
 		collectedBackends = set()
 
@@ -442,9 +439,9 @@ class PackageContentFile(TextFile):
 
 class PackageControlFile(TextFile):
 
-	sectionRegex = re.compile('^\s*\[([^\]]+)\]\s*$')
-	valueContinuationRegex = re.compile('^\s(.*)$')
-	optionRegex = re.compile('^([^\:]+)\s*\:\s*(.*)$')
+	sectionRegex = re.compile(r'^\s*\[([^\]]+)\]\s*$')
+	valueContinuationRegex = re.compile(r'^\s(.*)$')
+	optionRegex = re.compile(r'^([^\:]+)\s*\:\s*(.*)$')
 
 	def __init__(self, filename, lockFailTimeout=2000):
 		TextFile.__init__(self, filename, lockFailTimeout)
@@ -638,38 +635,25 @@ class PackageControlFile(TextFile):
 				for (option, value) in currentSection.items():
 					if ((sectionType == 'product' and option == 'productclasses') or
 						(sectionType == 'package' and option == 'depends') or
-						(sectionType == 'productproperty' and option == 'default') or
-						(sectionType == 'productproperty' and option == 'values') or
+						(sectionType == 'productproperty' and option in ('default', 'values')) or
 						(sectionType == 'windows' and option == 'softwareids')):
+
 						try:
 							if not value.strip().startswith(('{', '[')):
 								raise ValueError(u'Not trying to read json string because value does not start with { or [')
 							value = fromJson(value.strip())
 							# Remove duplicates
-							# TODO: use set
-							tmp = []
-							for v in forceList(value):
-								if v not in tmp:
-									tmp.append(v)
-							value = tmp
+							value = forceUniqueList(value)
 						except Exception as error:
 							logger.debug2(u"Failed to read json string '%s': %s" % (value.strip(), error))
 							value = value.replace(u'\n', u'')
 							value = value.replace(u'\t', u'')
 							if not (sectionType == 'productproperty' and option == 'default'):
-								value = value.split(u',')
-								newV = []
-								for v in value:
-									v = v.strip()
-									newV.append(v)
-								value = newV
+								value = [v.strip() for v in value.split(u',')]
+
 							# Remove duplicates
-							# TODO: use set
-							tmp = []
-							for v in forceList(value):
-								if v not in ('', None) and v not in tmp:
-									tmp.append(v)
-							value = tmp
+							value = [v for v in forceList(value) if v not in ('', None)]
+							value = forceUniqueList(value)
 
 					if isinstance(value, unicode):
 						value = value.rstrip()
@@ -683,7 +667,7 @@ class PackageControlFile(TextFile):
 		for (option, value) in self._sections.get('package', [{}])[0].items():
 			if option == 'depends':
 				for dep in value:
-					match = re.search('^\s*([^\(]+)\s*\(*\s*([^\)]*)\s*\)*', dep)
+					match = re.search(r'^\s*([^\(]+)\s*\(*\s*([^\)]*)\s*\)*', dep)
 					if not match.group(1):
 						raise ValueError(u"Bad package dependency '%s' in control file" % dep)
 
@@ -691,7 +675,7 @@ class PackageControlFile(TextFile):
 					version = match.group(2)
 					condition = None
 					if version:
-						match = re.search('^\s*([<>]?=?)\s*([\w\.]+-*[\w\.]*)\s*$', version)
+						match = re.search(r'^\s*([<>]?=?)\s*([\w\.]+-*[\w\.]*)\s*$', version)
 						if not match:
 							raise ValueError(u"Bad version string '%s' in package dependency" % version)
 
@@ -972,8 +956,8 @@ class PackageControlFile(TextFile):
 
 class OpsiConfFile(IniFile):
 
-	sectionRegex = re.compile('^\s*\[([^\]]+)\]\s*$')
-	optionRegex = re.compile('^([^\:]+)\s*\=\s*(.*)$')
+	sectionRegex = re.compile(r'^\s*\[([^\]]+)\]\s*$')
+	optionRegex = re.compile(r'^([^\:]+)\s*\=\s*(.*)$')
 
 	def __init__(self, filename=u'/etc/opsi/opsi.conf', lockFailTimeout=2000):
 		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars=[';', '#'])
@@ -991,10 +975,8 @@ class OpsiConfFile(IniFile):
 		self._opsiConfig = {}
 
 		sectionType = None
-		lineNum = 0
 
-		for line in self._lines:
-			lineNum += 1
+		for lineNum, line in enumerate(self._lines, start=1):
 			line = line.strip()
 			if line and line.startswith((';', '#')):
 				# This is a comment
@@ -1061,7 +1043,7 @@ class OpsiConfFile(IniFile):
 		Check if the usage of pigz is enabled.
 
 		:return: False if the usage of pigz is disabled, True otherwise.
-		:returntype: bool
+		:rtype: bool
 		"""
 		if "packages" in self._opsiConfig and "use_pigz" in self._opsiConfig["packages"]:
 			return self._opsiConfig["packages"]["use_pigz"]
@@ -1145,14 +1127,14 @@ class OpsiBackupArchive(tarfile.TarFile):
 				if name in backends:
 					raise OpsiBackupFileError("Multiple backends with the same name are not supported.")
 
-				backendLocals = {'socket': socket, 'config': {}, 'module': ''}
+				backendGlobals = {'config': {}, 'module': '', 'socket': socket}
 				backendFile = os.path.join(self.BACKEND_CONF_DIR, entry)
 				try:
-					execfile(backendFile, backendLocals)
+					execfile(backendFile, backendGlobals)
 					backends[name] = {
 						"name": name,
-						"config": backendLocals["config"],
-						"module": backendLocals['module'],
+						"config": backendGlobals["config"],
+						"module": backendGlobals['module'],
 						"dispatch": (name in dispatchedBackends)
 					}
 				except Exception as error:
@@ -1204,7 +1186,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 	def _readSysInfo(self):
 		sysInfo = {}
 		with closing(self.extractfile("%s/sysinfo" % self.CONTROL_DIR)) as fp:
-			for line in fp.readlines():
+			for line in fp:
 				key, value = line.split(":")
 				sysInfo[key.strip()] = value.strip()
 
@@ -1213,17 +1195,30 @@ class OpsiBackupArchive(tarfile.TarFile):
 	def _readChecksumFile(self):
 		checksums = {}
 		with closing(self.extractfile("%s/checksums" % self.CONTROL_DIR)) as fp:
-			for line in fp.readlines():
+			for line in fp:
 				key, value = line.split(" ", 1)
 				checksums[value.strip()] = key.strip()
 
 		return checksums
 
-	def _addContent(self, path, sub=()):
+	def _addContent(self, path, sub=None):
+		"""
+		Add content to an backup.
+
+		Content can be a file or directory.
+		In case of a directory it will be added with all of its content.
+
+		:param path: Path to the content to add.
+		:type path: str
+		:param sub: If given `path` will be alterd so that the first \
+element of the tuple is replace with the second element.
+		:type sub: tuple(str, str) or None
+		"""
 		dest = path
 		if sub:
 			dest = dest.replace(sub[0], sub[1])
 		dest = os.path.join(self.CONTENT_DIR, dest)
+
 		if os.path.isdir(path):
 			self.add(path, dest, recursive=False)
 			for entry in os.listdir(path):
@@ -1234,11 +1229,8 @@ class OpsiBackupArchive(tarfile.TarFile):
 				return
 
 			checksum = sha1()
-
 			with open(path) as f:
-				chunk = True
-				while chunk:
-					chunk = f.read()
+				for chunk in f:
 					checksum.update(chunk)
 
 			self._filemap[dest] = checksum.hexdigest()
@@ -1273,15 +1265,12 @@ class OpsiBackupArchive(tarfile.TarFile):
 
 		for member in self.getmembers():
 			if member.isfile() and member.name.startswith(self.CONTENT_DIR):
-
 				checksum = self._filemap[member.name]
 				filesum = sha1()
 
 				count = 0
-				chunk = True
 				with closing(self.extractfile(member)) as fp:
-					while chunk:
-						chunk = fp.read()
+					for chunk in fp:
 						count += len(chunk)
 						filesum.update(chunk)
 
@@ -1306,21 +1295,18 @@ class OpsiBackupArchive(tarfile.TarFile):
 			checksum = self._filemap[member.name]
 			filesum = sha1()
 
-			chunk = True
 			with closing(self.extractfile(member.name)) as fp:
-				while chunk:
-					chunk = fp.read()
+				for chunk in fp:
 					filesum.update(chunk)
 					os.write(tf, chunk)
 
 			if filesum.hexdigest() != checksum:
-				raise OpsiBackupFileError("Error restoring file %s: checksum missmacht.")
+				raise OpsiBackupFileError("Error restoring file %s: checksum missmatch." % member)
 
 			shutil.copyfile(path, dest)
 			os.chown(dest, pwd.getpwnam(member.uname)[2], grp.getgrnam(member.gname)[2])
 			os.chmod(dest, member.mode)
 			os.utime(dest, (member.mtime, member.mtime))
-
 		finally:
 			os.close(tf)
 			os.remove(path)
@@ -1374,19 +1360,25 @@ class OpsiBackupArchive(tarfile.TarFile):
 				baseDir = backend["config"]["baseDir"]
 				self._addContent(baseDir, sub=(baseDir, "BACKENDS/FILE/%s" % backend["name"]))
 
+				hostKeyFile = backend["config"]["hostKeyFile"]
+				if baseDir not in os.path.dirname(hostKeyFile):
+					# File resides outside of baseDir
+					self._addContent(hostKeyFile, sub=(os.path.dirname(hostKeyFile), "BACKENDS/FILE_HOSTKEYS/%s" % backend["name"]))
+
 	def restoreFileBackend(self, auto=False):
 		if not self.hasFileBackend():
 			raise OpsiBackupBackendNotFound("No File Backend found in backup archive")
 
 		for backend in self._getBackends("file"):
 			if not auto or backend["dispatch"]:
+				backendBackupPath = os.path.join(self.CONTENT_DIR, "BACKENDS/FILE/%s" % backend["name"])
+				hostKeyBackupPath = os.path.join(self.CONTENT_DIR, "BACKENDS/FILE_HOSTKEYS/%s" % backend["name"])
 				baseDir = backend["config"]["baseDir"]
 
 				members = self.getmembers()
-
 				for member in members:
-					if member.name.startswith(os.path.join(self.CONTENT_DIR, "BACKENDS/FILE/%s" % backend["name"])):
-						dest = member.name.replace(os.path.join(self.CONTENT_DIR, "BACKENDS/FILE/%s" % backend["name"]), baseDir)
+					if member.name.startswith(backendBackupPath):
+						dest = member.name.replace(backendBackupPath, baseDir)
 
 						if member.isfile():
 							self._extractFile(member, dest)
@@ -1394,6 +1386,10 @@ class OpsiBackupArchive(tarfile.TarFile):
 							if not os.path.exists(dest):
 								os.makedirs(dest, mode=member.mode)
 								os.chown(dest, pwd.getpwnam(member.uname)[2], grp.getgrnam(member.gname)[2])
+					elif member.name.startswith(hostKeyBackupPath):
+						assert member.isfile(), "No directory expected."
+						hostKeyFile = backend["config"]["hostKeyFile"]
+						self._extractFile(member, hostKeyFile)
 
 	def backupDHCPBackend(self, auto=False):
 		for backend in self._getBackends("dhcpd"):
@@ -1427,24 +1423,34 @@ class OpsiBackupArchive(tarfile.TarFile):
 		return self._hasBackend("MYSQL", name=name)
 
 	def backupMySQLBackend(self, flushLogs=False, auto=False):
-		# In Python 2.6 a deque has no "maxlen" attribute so we need to
-		# work around with this.
-		maximumDequeLength = 10
-
 		for backend in self._getBackends("mysql"):
 			if not auto or backend["dispatch"]:
 				if not backend["dispatch"]:
 					logger.warning("Backing up backend %s although it's currently not in use." % backend["name"])
-				cmd = [OPSI.System.which("mysqldump")]
-				cmd.append("--host=%s" % backend["config"]["address"])
-				cmd.append("--user=%s" % backend["config"]["username"])
-				cmd.append("--password=%s" % backend["config"]["password"])
+
+				# Early check for available command to not leak
+				# credentials if mysqldump is missing
+				mysqldumpCmd = OPSI.System.which("mysqldump")
+
+				defaultsFile = createMySQLDefaultsFile(
+					"mysqldump",
+					backend["config"]["username"],
+					backend["config"]["password"]
+				)
+
+				cmd = [
+					mysqldumpCmd,
+					# --defaults-file has to be the first argument
+					"--defaults-file=%s" % defaultsFile,
+					"--host=%s" % backend["config"]["address"],
+					"--lock-tables",
+					"--add-drop-table"
+				]
 				if flushLogs:
 					logger.debug("Flushing mysql table logs.")
 					cmd.append("--flush-log")
-				cmd.append("--lock-tables")
-				cmd.append("--add-drop-table")
 				cmd.append(backend["config"]["database"])
+				logger.debug2("Prepared mysqldump command: {!r}", cmd)
 
 				fd, name = tempfile.mkstemp(dir=self.tempdir)
 				try:
@@ -1459,7 +1465,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 						collectedErrors = [p.stderr.readline()]
 					except Exception:
 						collectedErrors = []
-					lastErrors = collections.deque(collectedErrors, maxlen=maximumDequeLength)
+					lastErrors = collections.deque(collectedErrors, maxlen=10)
 
 					while not p.poll() and out:
 						os.write(fd, out)
@@ -1469,12 +1475,11 @@ class OpsiBackupArchive(tarfile.TarFile):
 							currentError = p.stderr.readline().strip()
 							if currentError:
 								lastErrors.append(currentError)
-								if "Warning: Using a password on the command line interface can be insecure." not in currentError:
-									collectedErrors.append(currentError)
+								collectedErrors.append(currentError)
 						except Exception:
 							continue
 
-						if maximumDequeLength == len(lastErrors):
+						if lastErrors.maxlen == len(lastErrors):
 							onlyOneErrorMessageInLastErrors = True
 							firstError = lastErrors[0]
 							for err in list(lastErrors)[1:]:
@@ -1496,6 +1501,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 				finally:
 					os.close(fd)
 					os.remove(name)
+					os.remove(defaultsFile)
 
 	def restoreMySQLBackend(self, auto=False):
 		if not self.hasMySQLBackend():
@@ -1511,11 +1517,23 @@ class OpsiBackupArchive(tarfile.TarFile):
 						if member.name == os.path.join(self.CONTENT_DIR, "BACKENDS/MYSQL/%s/database.sql" % backend["name"]):
 							self._extractFile(member, name)
 
-					cmd = [OPSI.System.which("mysql")]
-					cmd.append("--host=%s" % backend["config"]["address"])
-					cmd.append("--user=%s" % backend["config"]["username"])
-					cmd.append("--password=%s" % backend["config"]["password"])
-					cmd.append(backend["config"]["database"])
+					# Early check for available command to not leak
+					# credentials if mysqldump is missing
+					mysqlCmd = OPSI.System.which("mysql")
+					defaultsFile = createMySQLDefaultsFile(
+						"mysql",
+						backend["config"]["username"],
+						backend["config"]["password"]
+					)
+
+					cmd = [
+						mysqlCmd,
+						# --defaults-file has to be the first argument
+						"--defaults-file=%s" % defaultsFile,
+						"--host=%s" % backend["config"]["address"],
+						backend["config"]["database"]
+					]
+					logger.debug2("Restore command: {!r}", cmd)
 
 					output = StringIO.StringIO()
 
@@ -1533,3 +1551,30 @@ class OpsiBackupArchive(tarfile.TarFile):
 				finally:
 					os.close(fd)
 					os.remove(name)
+					os.remove(defaultsFile)
+
+
+def createMySQLDefaultsFile(program, username, password):
+	"""
+	Create a secure file with mysql defaults.
+	This can usually be passed as --defaults-file to most mysql commands.
+	Returns the path to the file.
+
+	The caller has to make sure that the file will be deleted afterwards!
+
+	:param program: Name of the section in the config file
+	:type program: str
+	:param username: Username to use
+	:type username: str
+	:param password: Password to use
+	:type password: str
+	:returns: Path to the created file
+	:rtype: str
+	"""
+	with tempfile.NamedTemporaryFile(mode='wt', delete=False) as cFile:
+		cFile.write("""[%s]
+user=%s
+password=%s
+""" % (program, username, password))
+
+		return cFile.name

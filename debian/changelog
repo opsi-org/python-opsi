@@ -1,3 +1,347 @@
+python-opsi (4.1.1.67-1) stable; urgency=medium
+
+  * OPSI.Backend.File.FileBackend: raise an error when executing getData.
+  * OPSI.System.Posix: Cache the service names of DHCPD and Samba after lookup.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 29 May 2019 16:52:29 +0200
+
+python-opsi (4.1.1.66-1) stable; urgency=medium
+
+  * OPSI.Backend.Backend: Only import MethodType from types.
+  * OPSI.System.Windows.execute: refactored showing output lines.
+  * 10_opsi.conf: setProductActionRequestWithDependencies small refactoring.
+  * OPSI.SharedAlgorithm: Adjusted loglevel for cases where unfulfillable
+    requirements are requested to make problems easier to spot.
+  * OPSI.Backend.JSONRPC.JSONRPCBackend: Defaults ports are now class
+    variables instead of instance variables.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 14 May 2019 15:42:58 +0200
+
+python-opsi (4.1.1.65-1) stable; urgency=medium
+
+  * Using thread.is_alive instead of thread.isAlive because the latter will
+    be removed in Python 3.8.
+  * hwaudit.conf: Change field for extClock from int to bigint.
+  * OPSI.Util.File.Opsi: Internal refactorings.
+  * OPSI.Util.Task.Backup: Internal refactorings.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 03 May 2019 14:26:59 +0200
+
+python-opsi (4.1.1.64-1) stable; urgency=medium
+
+  * OpsiBackupArchive: Use a defaults-file when creating/restoring a mysql
+    backup.
+  * OpsiBackupArchive: Removed Python 2.6 workaround code.
+  * OPSI.Backend.HostControl.RpcThread: Setting user-agent to "opsi-RpcThread".
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 02 May 2019 12:03:40 +0200
+
+python-opsi (4.1.1.63-1) stable; urgency=medium
+
+  * Update regular expression patterns to be raw strings.
+  * Add line breaks after the opsi logo on the interface page.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 05 Apr 2019 18:42:38 +0200
+
+python-opsi (4.1.1.62-1) stable; urgency=medium
+
+  * Opsi.Util.File.Opsi.Opsirc: Change the default path for an opsirc file
+    to ~/.opsi.org/opsirc.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 19 Feb 2019 16:58:20 +0100
+
+python-opsi (4.1.1.61-1) stable; urgency=medium
+
+  * OPSI.Util.Task.UpdatePackages.Updater.getLocalPackages: When looking for
+    the checksum file use the absolute path.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 18 Feb 2019 10:53:33 +0100
+
+python-opsi (4.1.1.60-1) stable; urgency=medium
+
+  * OPSI.Backend.MySQL: Fixed a reference error.
+  * OPSI.Util.File.Opsi.Opsirc.readOpsirc: Skip empty values from config.
+  * OPSI.Util.File.Opsi.Opsirc.readOpsirc: Mark passwords as confidential
+    right after reading.
+  * OPSI.Util.File.Opsi.Opsirc.readOpsirc: filename parameter is optional.
+    If None is given it will resort to retrieving the path via
+    getOpsircPath.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 15 Feb 2019 13:07:20 +0100
+
+python-opsi (4.1.1.59-1) stable; urgency=medium
+
+  * DhcpOnDepot Feature-Fix: (fixes #3901)
+  * Added module OPSI.Util.File.Opsi.Opsirc
+
+ -- Erol Ueluekmen <e.ueluekmen@uib.de>  Fri, 08 Feb 2019 15:15:29 +0100
+
+python-opsi (4.1.1.58-1) stable; urgency=medium
+
+  * Re-release 4.1.1.57 due to some merge problems.
+
+ -- Niko Wenselowski <niko@stellar>  Fri, 18 Jan 2019 16:36:48 +0100
+
+python-opsi (4.1.1.57-1) stable; urgency=medium
+
+  * OPSI.Util.Task.ConfigureBackend.DHCPD: Default path for dhcpd config set
+    to /etc/dhcp/dhcpd.conf.
+  * Added module OPSI.Util.Task.ConfigureBackend.ConfigDefaults.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 18 Jan 2019 16:19:30 +0100
+
+python-opsi (4.1.1.56-1) testing; urgency=medium
+
+  * OPSI.Backend.OpsiPXEConfd: _collectDataForUpdate: Changed first parameter
+    to client ID instead of getting the value from a ProductOnClient.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 08 Jan 2019 17:40:47 +0100
+
+python-opsi (4.1.1.55-1) testing; urgency=medium
+
+  * OPSI.Backend.OpsiPXEConfd: Caching data will now work as expected
+    when changing PXE templates of a product.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 08 Jan 2019 17:12:53 +0100
+
+python-opsi (4.1.1.54-1) stable; urgency=medium
+
+  * OPSI.Util.Task.Backup: Do not show a message for an unused backend
+    when running in auto mode.
+  * OPSI.System.Posix & OPSI.System.Windows: refactored getDiskSpaceUsage.
+  * OPSI.System.Windows: Make code more consistent with the other modules.
+  * OPSI.Util.Task.InitializeBackend: supplied an __all__.
+  * OPSI.Util.Task.InitializeBackend and OPSI.Util.Task.Rights use the
+    BackendManager in contextmanager style.
+  * OPSI.Util.Repository: Make code more consistent with the other modules.
+  * opsihwaudit.conf: Accept NICs with 10GB+ throughput.
+  * OPSI.Sytem.Posix: removed support for dhcp3 dhclient.leases file.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 07 Dec 2018 13:37:00 +0100
+
+python-opsi (4.1.1.53-1) stable; urgency=medium
+
+  * OPSI.System.Posix: isOpenSuse will return False if not running on openSuse.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 30 Nov 2018 11:26:37 +0100
+
+python-opsi (4.1.1.52-2) testing; urgency=medium
+
+  * OPSI.System.Posix: isOpenSUSE refactored to not use platform
+
+ -- Mathias Radtke <m.radtke@uib.de>  Mon, 26 Nov 2018 12:07:10 +0100
+
+python-opsi (4.1.1.52-1) testing; urgency=medium
+
+  * OPSI.System.Posix: correctly detecting openSUSE Leap 15.0 and above
+  * OPSI.System.Posix: using isOpenSUSE() to determine Leap, isOpenSUSELeap()
+    is obsolete
+  * OPSI.Util.Task.Rights: replaced isOpenSUSELeap() with isOpenSUSE()
+
+ -- Mathias Radtke <m.radtke@uib.de>  Fri, 23 Nov 2018 09:58:13 +0100
+
+python-opsi (4.1.1.51-3) stable; urgency=medium
+
+  * RPM: openSUSE Leap 15 needs net-tools-deprecated to work with 'ifconfig'
+
+ -- Mathias Radtke <m.radtke@uib.de>  Thu, 22 Nov 2018 15:30:36 +0100
+
+python-opsi (4.1.1.51-2) stable; urgency=medium
+
+  * RPM: requires python-mysqlclient on openSUSE Leap 15.0
+
+ -- Mathias Radtke <m.radtke@uib.de>  Mon, 19 Nov 2018 15:43:29 +0100
+
+python-opsi (4.1.1.51-1) stable; urgency=medium
+
+  * Fixed opsiDepotId Usage for opsi-package-updater
+
+ -- Erol Ueluekmen <e.ueluekmen@uib.de>  Mon, 19 Nov 2018 14:48:57 +0100
+
+python-opsi (4.1.1.50-1) stable; urgency=medium
+
+  * OPSI.Util.Task.UpdatePackages: Certificate authentication implemented
+    for opsi-package-updater.
+
+ -- Erol Ueluekmen <e.ueluekmen@uib.de>  Fri, 16 Nov 2018 12:38:45 +0100
+
+python-opsi (4.1.1.49-1) stable; urgency=medium
+
+  * OPSI.Service.Worker: HTTP headers are set according to RFC 2616.
+    If a header with Content-Type starting with "gzip" is encountered a
+    backwards-compatible answer is made.
+  * OPSI.Object: Adding a property read-only property version to Product,
+    ProductOnClient and ProductOnDepot. It is a string combining the values of
+    productVersion and packageVersion. This property is not present in the API.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 06 Nov 2018 12:16:49 +0100
+
+python-opsi (4.1.1.48-1) stable; urgency=medium
+
+  * OPSI.System.Windows: Fixed some reference bugs.
+  * OPSI.Util.Task.UpdatePackages: Added missing reference.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 17 Oct 2018 14:36:41 +0200
+
+python-opsi (4.1.1.47-1) stable; urgency=medium
+
+  * Based on python-opsi 4.0.7.69.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 20 Sep 2018 17:17:14 +0200
+
+python-opsi (4.1.1.46-1) stable; urgency=medium
+
+  * OPSI.Backend.File: Fix reading extended attributes of LocalbootProduct and
+    NetbootProduct.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 11 Sep 2018 14:59:21 +0200
+
+python-opsi (4.1.1.45-1) testing; urgency=medium
+
+  * Added OPSI.Util.Task.UpdatePackages. This makes parts of
+    opsi-package-updater reusable.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 04 Sep 2018 13:56:55 +0200
+
+python-opsi (4.1.1.44-1) stable; urgency=medium
+
+  * OPSI.Backend.Depotserver: Small internal refactorings.
+  * OPSI.Backend.Depotserver: depot_installPackage: Log messages show exactly
+    what product / depot is involved.
+  * OPSI.Backend.HostControl: Refactored lookup for custom opsiclientd port.
+  * OPSI.Backend.HostControlSafe: Added support for custom opsiclientd port.
+  * OPSI.Backend.OpsiPXEConfd: Added support for connection to a different
+    external opsi server.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 03 Sep 2018 13:34:03 +0200
+
+python-opsi (4.1.1.43-1) testing; urgency=medium
+
+  * OPSI.Backend.Depotserver: only unlock productOnDepot after successful
+    installation.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 20 Aug 2018 17:15:26 +0200
+
+python-opsi (4.1.1.42-4) stable; urgency=medium
+
+  * Debian: Reverted changes from -3 and -2.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 15 Aug 2018 13:08:28 +0200
+
+python-opsi (4.1.1.42-3) stable; urgency=medium
+
+  * Alter dependency from 4.1.1.42-2: Depend on python-twisted <= 17.9.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 15 Aug 2018 11:46:48 +0200
+
+python-opsi (4.1.1.42-2) stable; urgency=medium
+
+  * Do not use conch 18.4 or newer because this will currently break things
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 14 Aug 2018 17:06:37 +0200
+
+python-opsi (4.1.1.42-1) testing; urgency=medium
+
+  * Various small internal refactorings.
+  * OPSI.Backend.Depotserver: Refactored handling in installPackage.
+  * OPSI.Backend.MySQL: Refactored productProperty_updateObject and
+    productProperty_insertObject.
+  * OPSI.System.Windows.getArchitecture: correctly returns the default 'x86'
+    in case of an error.
+  * OPSI.Util.File.Archive: Make use of longopts in all commands.
+  * OPSI.Util.File.Archive.CpioArchive: Extract with --no-preserve-owner.
+  * OPSI.Util.Task.Backup.OpsiBackup: added method 'list' to show what is
+    contained in a backup.
+  * OPSI.Util.Task.Backup.OpsiBackup: restore will warn if restoring an
+    currently unused backend is attempted.
+  * OPSI.Util.Task.Backup.OpsiBackup: restore will fail if an restore attempt
+    would lead to doing nothing.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 07 Aug 2018 09:09:07 +0200
+
+python-opsi (4.1.1.41-1) stable; urgency=medium
+
+  * Based on python-opsi 4.0.7.68.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 26 Jul 2018 15:10:44 +0200
+
+python-opsi (4.1.1.40-2) stable; urgency=medium
+
+  * Postinst: Making sure that /etc/opsi/server_commands_default.conf exists.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 16 Jul 2018 12:18:52 +0200
+
+python-opsi (4.1.1.40-1) testing; urgency=medium
+
+  * OpsiPXEConfd backend: improve performance by precollecting the
+    required data that then can be used by opsipxeconfd.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 19 Jun 2018 14:38:25 +0200
+
+python-opsi (4.1.1.39-1) stable; urgency=medium
+
+  * SQL-based backends: Increased length of inventoryNumber of a host to 64
+    characters.
+  * OPSI.Backend.Backend.ModificationTrackingBackend: small speedup.
+  * Various small internal refactorings.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 11 Jun 2018 11:44:15 +0200
+
+python-opsi (4.1.1.38-1) stable; urgency=medium
+
+  * Based on python-opsi 4.0.7.66.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 07 Jun 2018 22:35:19 +0200
+
+python-opsi (4.1.1.37-1) stable; urgency=medium
+
+  * Based on python-opsi 4.0.7.65.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 29 May 2018 13:23:17 +0200
+
+python-opsi (4.1.1.36-1) testing; urgency=medium
+
+  * OPSI.Util.Message has received an __all__.
+  * OPSI.Backend.SQL: The length of column `groupId` in table `OBJECT_TO_GROUP`
+    is now the same as defined in the table `GROUP`.
+  * Refactored processing of backend migrations for MySQL backend.
+  * OPSI.SharedAlgorithm: Changed classification of many log messages to
+    have fewer log entries in non-debug levels.
+  * OPSI.Backend.Backend: added new method 'describeInterface' to describe
+    the public interface of an instance.
+  * OPSI.Service.JsonRpc: Only one lookup of the method name during execution.
+  * 10_opsi.conf: setProductActionRequestWithDependencies will relay
+    requests for a netboot product to setProductActionRequest.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 22 May 2018 15:10:02 +0200
+
+python-opsi (4.1.1.35-2) testing; urgency=medium
+
+  * Debian: depend on iproute or iproute2.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 04 May 2018 14:26:40 +0200
+
+python-opsi (4.1.1.35-1) testing; urgency=medium
+
+  * Based on python-opsi 4.0.7.63.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 02 May 2018 17:45:26 +0200
+
+python-opsi (4.1.1.34-1) testing; urgency=medium
+
+  * OpsiPXEConfdBackend.configState_deleteObjects: Make sure that only one
+    update of the PXE config is triggered per host.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 24 Apr 2018 18:15:31 +0200
+
+python-opsi (4.1.1.33-1) experimental; urgency=medium
+
+  * Changed loglevel for execution of a package script (preinst / postinst).
+  * Small internal refactorings.
+  * OPSI.Util.HTTP: Removed unfinished pycurl experiments.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 13 Apr 2018 11:07:17 +0200
+
 python-opsi (4.1.1.32-1) stable; urgency=medium
 
   * BackendManager logs easier to spot warning if loading the configuration
@@ -366,6 +710,78 @@ python-opsi (4.1.1.1-1) experimental; urgency=medium
     into OPSI/__init__.py to always show the current version.
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 04 Oct 2016 16:15:11 +0200
+
+python-opsi (4.0.7.69-1) stable; urgency=medium
+
+  * OPSI.Util.File.Opsi.parseFilename now works with absolute and relative
+    paths.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 13 Sep 2018 14:19:24 +0200
+
+python-opsi (4.0.7.68-1) stable; urgency=medium
+
+  * OpsiBackup: Internal refactorings for restore handling.
+  * OpsiBackup: Fix restore when backends are "auto" and the backup
+    does not contain data for a backend.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 26 Jul 2018 14:25:19 +0200
+
+python-opsi (4.0.7.67-1) stable; urgency=medium
+
+  * OpsiBackup: File backend: improve handling of hostkeys file.
+    Most noticable the restore will restore the file to the path
+    configured in the backup.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 11 Jun 2018 09:51:42 +0200
+
+python-opsi (4.0.7.66-1) stable; urgency=medium
+
+  * MySQL-Backend: Improve handling of very large changelogs containing
+    unicode characters.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 07 Jun 2018 22:07:32 +0200
+
+python-opsi (4.0.7.65-1) stable; urgency=medium
+
+  * Reverted changes made in 4.0.7.63.
+    This means all updates will be relayed to the depot again regardless
+    of the set action request.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 29 May 2018 12:56:42 +0200
+
+python-opsi (4.0.7.64-1) testing; urgency=medium
+
+  * 10_opsi.conf: setProductActionRequestWithDependencies will relay
+    requests for a netboot product to setProductActionRequest.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 22 May 2018 15:32:58 +0200
+
+python-opsi (4.0.7.63-1) testing; urgency=medium
+
+  * OpsiPXEConfd: Only relay updates to the depot if the action request is
+    setup, always or once.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 02 May 2018 16:40:36 +0200
+
+python-opsi (4.0.7.62-1) testing; urgency=medium
+
+  * JSONRPCBackend: Block again when retrieving connections.
+  * JSONRPCBackend: Default connection pool size is 2.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 18 Apr 2018 10:35:24 +0200
+
+python-opsi (4.0.7.61-1) testing; urgency=medium
+
+  * OpsiPXEConfd backend: Reliably close socket.
+  * OpsiPXEConfd backend: small refactorings.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 12 Apr 2018 14:15:17 +0200
+
+python-opsi (4.0.7.60-1) experimental; urgency=medium
+
+  * JSONRPCBackend: Do not block when retrieving connections.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 12 Apr 2018 12:12:15 +0200
 
 python-opsi (4.0.7.59-1) testing; urgency=medium
 
@@ -1910,7 +2326,7 @@ python-opsi (4.0.3.1-1) testing; urgency=low
   * dhcp-backend: ddns-rev-domainname added to list where the values are written in double quotas
   * System: opsi-setup --init-current-config gives an warning instead of error, when vendor not found for network device
   * Posix:
-    - saveImage returns the result from partclone if run was successfull.
+    - saveImage returns the result from partclone if run was successful.
     - readPartitionTable: Try to find out the right filesystem with blkid tool.
     - createPartition: allows linux as filesystem-type and produces partition with id 83
   * WindowsDriver: byAudit: Translating model and vendor from hwinvent: characters <>?":|\/* will be translated to _

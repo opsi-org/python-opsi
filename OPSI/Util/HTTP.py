@@ -4,7 +4,7 @@
 # Based on urllib3
 # (open pc server integration) http://www.opsi.org
 # Copyright (C) 2010 Andrey Petrov
-# Copyright (C) 2010-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2010-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -67,10 +67,6 @@ logger = Logger()
 connectionPools = {}
 totalRequests = 0
 
-# This could be an import - but support for pycurl is currently not fully implrement
-pycurl = None
-
-
 try:
 	# We are running a new version of Python that implements PEP 476:
 	# https://www.python.org/dev/peps/pep-0476/
@@ -122,8 +118,11 @@ def getPeerCertificate(httpsConnectionOrSSLSocket, asPEM=True):
 	logger.debug2("Trying to get peer cert...")
 	sock = httpsConnectionOrSSLSocket
 	try:
-		if hasattr(sock, 'sock'):
-			sock = sock.sock
+		sock = sock.sock
+	except AttributeError:
+		pass
+
+	try:
 		cert = crypto.load_certificate(crypto.FILETYPE_ASN1, sock.getpeercert(binary_form=True))
 
 		if not asPEM:
@@ -562,6 +561,7 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 		"""
 		Return a fresh HTTPSConnection.
 		"""
+		self.num_connections += 1
 		if self.proxyURL:
 			headers = {}
 			try:
@@ -600,7 +600,6 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 				logger.debug(u"Verification failed: {0!r}", error)
 				raise OpsiServiceVerificationError(forceUnicode(error))
 
-		self.num_connections += 1
 		self.peerCertificate = getPeerCertificate(conn, asPEM=True)
 		if self.verifyServerCertByCa:
 			logger.debug("Attempting to verify server cert by CA...")
@@ -608,7 +607,7 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 				if self.peerCertificate:
 					commonName = crypto.load_certificate(crypto.FILETYPE_PEM, self.peerCertificate).get_subject().commonName
 					host = self.host
-					if re.search('^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$', host):
+					if re.search(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$', host):
 						fqdn = socket.getfqdn(host)
 						if fqdn == host:
 							raise OpsiServiceVerificationError(u"Failed to get fqdn for ip %s" % host)
@@ -676,31 +675,15 @@ def getSharedConnectionPool(scheme, host, port, **kw):
 	scheme = forceUnicodeLower(scheme)
 	host = forceUnicode(host)
 	port = forceInt(port)
-	curl = False
-	try:
-		if kw['preferCurl'] and pycurl is not None:
-			curl = True
-		del kw['preferCurl']
-	except KeyError:
-		pass
 
+	poolKey = u'httplib:%s:%d' % (host, port)
 	global connectionPools
-	if curl:
-		poolKey = u'curl:%s:%d' % (host, port)
-	else:
-		poolKey = u'httplib:%s:%d' % (host, port)
 
 	if poolKey not in connectionPools:
 		if scheme in ('https', 'webdavs'):
-			if curl:
-				connectionPools[poolKey] = CurlHTTPSConnectionPool(host, port=port, **kw)
-			else:
-				connectionPools[poolKey] = HTTPSConnectionPool(host, port=port, **kw)
+			connectionPools[poolKey] = HTTPSConnectionPool(host, port=port, **kw)
 		else:
-			if curl:
-				connectionPools[poolKey] = CurlHTTPConnectionPool(host, port=port, **kw)
-			else:
-				connectionPools[poolKey] = HTTPConnectionPool(host, port=port, **kw)
+			connectionPools[poolKey] = HTTPConnectionPool(host, port=port, **kw)
 	else:
 		connectionPools[poolKey].increaseUsageCount()
 		maxsize = kw.get('maxsize', 0)

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2016-2018 uib GmbH <info@uib.de>
+# Copyright (C) 2016-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -261,6 +261,28 @@ def createRequiredTables(database):
 
     createOpsi40HostTable(database)
 
+    database.execute(u'''CREATE TABLE `GROUP` (
+        `type` varchar(30) NOT NULL,
+        `groupId` varchar(255) NOT NULL,
+        `parentGroupId` varchar(255),
+        `description` varchar(100),
+        `notes` varchar(500),
+        PRIMARY KEY (`type`, `groupId`)
+    ) %s;
+    ''' % database.getTableCreationOptions('GROUP'))
+    database.execute('CREATE INDEX `index_group_parentGroupId` on `GROUP` (`parentGroupId`);')
+
+    database.execute(u'''CREATE TABLE `OBJECT_TO_GROUP` (
+        `object_to_group_id` integer NOT NULL ''' + database.AUTOINCREMENT + ''',
+        `groupType` varchar(30) NOT NULL,
+        `groupId` varchar(100) NOT NULL,
+        `objectId` varchar(255) NOT NULL,
+        PRIMARY KEY (`object_to_group_id`),
+        FOREIGN KEY (`groupType`, `groupId`) REFERENCES `GROUP` (`type`, `groupId`)
+    ) %s;
+    ''' % database.getTableCreationOptions('OBJECT_TO_GROUP'))
+    database.execute('CREATE INDEX `index_object_to_group_objectId` on `OBJECT_TO_GROUP` (`objectId`);')
+
 
 def createOpsi40HostTable(database):
     "Creates a table for hosts as seen in opsi 4.0."
@@ -435,3 +457,31 @@ def testAddingWorkbenchAttributesToHost(mysqlBackendConfig, mySQLBackendConfigFi
                 break
 
         assert changesFound == 2
+
+
+def testCorrectingObjectToGroupGroupIdFieldLength(mysqlBackendConfig, mySQLBackendConfigFile):
+    with cleanDatabase(MySQL(**mysqlBackendConfig)) as db:
+        createRequiredTables(db)
+
+        updateMySQLBackend(backendConfigFile=mySQLBackendConfigFile)
+
+        for column in getTableColumns(db, 'OBJECT_TO_GROUP'):
+            if column.name == 'groupId':
+                assert column.type.lower().startswith('varchar(')
+                assert getColumnLength(column.type) == 255
+                break
+
+
+def testIncreasingInventoryNumberFieldLength(mysqlBackendConfig, mySQLBackendConfigFile):
+    with cleanDatabase(MySQL(**mysqlBackendConfig)) as db:
+        createRequiredTables(db)
+
+        updateMySQLBackend(backendConfigFile=mySQLBackendConfigFile)
+
+        for column in getTableColumns(db, 'HOST'):
+            if column.name == 'inventoryNumber':
+                assert column.type.lower().startswith('varchar(')
+                assert getColumnLength(column.type) == 64
+                break
+        else:
+            raise RuntimeError("Expected to find matching column.")

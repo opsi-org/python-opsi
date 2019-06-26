@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2006-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2019 uib GmbH <info@uib.de>
 # http://www.uib.de/
 
 # This program is free software: you can redistribute it and/or modify
@@ -76,7 +76,7 @@ elif os.name == 'nt':
 
 BLOWFISH_IV = 'OPSI1234'
 RANDOM_DEVICE = u'/dev/urandom'
-UNIT_REGEX = re.compile('^(\d+\.*\d*)\s*([\w]{0,4})$')
+UNIT_REGEX = re.compile(r'^(\d+\.*\d*)\s*(\w{0,4})$')
 _ACCEPTED_CHARACTERS = (
 	"abcdefghijklmnopqrstuvwxyz"
 	"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -150,14 +150,16 @@ of strings, dicts, lists or numbers.
 	"""
 	if isinstance(obj, (unicode, str)):
 		return obj
-	elif hasattr(obj, 'serialize'):
+
+	try:
 		return obj.serialize()
-	elif isinstance(obj, (list, set, types.GeneratorType)):
-		return [serialize(tempObject) for tempObject in obj]
-	elif isinstance(obj, dict):
-		return {key: serialize(value) for key, value in obj.items()}
-	else:
-		return obj
+	except AttributeError:
+		if isinstance(obj, (list, set, types.GeneratorType)):
+			return [serialize(tempObject) for tempObject in obj]
+		elif isinstance(obj, dict):
+			return {key: serialize(value) for key, value in obj.items()}
+
+	return obj
 
 
 def formatFileSize(sizeInBytes):
@@ -297,7 +299,7 @@ def objectToBash(obj, bashVars=None, level=0):
 
 	:type bashVars: dict
 	:type level: int
-	:returntype: dict
+	:rtype: dict
 	"""
 	if bashVars is None:
 		bashVars = {}
@@ -310,8 +312,10 @@ def objectToBash(obj, bashVars=None, level=0):
 		varName = 'RESULT%d' % level
 		compress = False
 
-	if hasattr(obj, 'serialize'):
+	try:
 		obj = obj.serialize()
+	except AttributeError:
+		pass
 
 	try:
 		append = bashVars[varName].append
@@ -411,6 +415,17 @@ def replaceSpecialHTMLCharacters(text):
 		.replace(u'\n', u'<br />\n')
 
 
+def combineVersions(obj):
+	"""
+	Returns the combination of product and package version.
+
+	:type obj: Product, ProductOnClient, ProductOnDepot
+	:return: The version.
+	:rtype: str
+	"""
+	return '{0.productVersion}-{0.packageVersion}'.format(obj)
+
+
 def compareVersions(v1, condition, v2):
 	"""
 	Compare the versions `v1` and `v2` with the given `condition`.
@@ -436,7 +451,7 @@ def compareVersions(v1, condition, v2):
 	def splitProductAndPackageVersion(versionString):
 		productVersion = packageVersion = u'0'
 
-		match = re.search('^\s*([\w\.]+)-*([\w\.]*)\s*$', versionString)
+		match = re.search(r'^\s*([\w.]+)-*([\w.]*)\s*$', versionString)
 		if not match:
 			raise ValueError(u"Bad version string '%s'" % versionString)
 
@@ -454,11 +469,11 @@ def compareVersions(v1, condition, v2):
 			second.append(u'0')
 
 	def splitValue(value):
-		match = re.search('^(\d+)(\D*.*)$', value)
+		match = re.search(r'^(\d+)(\D*.*)$', value)
 		if match:
 			return int(match.group(1)), match.group(2)
 		else:
-			match = re.search('^(\D+)(\d*.*)$', value)
+			match = re.search(r'^(\D+)(\d*.*)$', value)
 			if match:
 				return match.group(1), match.group(2)
 
