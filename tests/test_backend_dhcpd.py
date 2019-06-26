@@ -24,6 +24,7 @@ Testing DHCPD Backend.
 
 from __future__ import absolute_import
 
+import os.path
 from collections import namedtuple
 
 import pytest
@@ -32,7 +33,7 @@ from OPSI.Backend.DHCPD import DHCPDBackend
 from OPSI.Exceptions import BackendIOError
 from OPSI.Object import OpsiClient
 
-from .helpers import mock
+from .helpers import createTemporaryTestfile, mock, showLogs
 from .test_util_file_dhcpdconf import dhcpdConf  # test fixture
 
 
@@ -68,6 +69,35 @@ def testAddingHostsToBackend(dhcpBackendWithoutLookup):
             ipAddress='192.168.1.104',
         )
     )
+
+
+def testAddingHostToBackend():
+    originalDhcpdFile = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        'testdata', 'backend', 'dhcp_ki.conf'
+    )
+
+    client = OpsiClient(
+        id='client1.test.invalid',
+        hardwareAddress='aa:bb:cc:dd:ee:ff',
+        ipAddress='192.168.3.1',
+    )
+
+    with createTemporaryTestfile(originalDhcpdFile) as dhcpdFile:
+        backend = DHCPDBackend(
+            dhcpdConfigFile=dhcpdFile,
+            reloadConfigCommand=u'/bin/echo "Reloading dhcpd.conf"'
+        )
+
+        with showLogs(8):
+            backend.host_insertObject(client)
+
+        with open(dhcpdFile) as f:
+            for line in f:
+                if client.hardwareAddress in line:
+                    break
+            else:
+                raise RuntimeError("Client not found in config file")
 
 
 def testUpdatingHostWhereAddressCantBeResolvedFails(dhcpBackendWithoutLookup):
