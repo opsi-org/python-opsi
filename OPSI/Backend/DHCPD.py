@@ -274,7 +274,7 @@ class DHCPDBackend(ConfigDataBackend):
 		if not isinstance(host, OpsiClient):
 			return
 
-		logger.debug(u"host_insertObject %s" % host)
+		logger.debug(u"Inserting host: {!r}", host)
 		self._dhcpd_updateHost(host)
 
 	def host_updateObject(self, host):
@@ -285,14 +285,14 @@ class DHCPDBackend(ConfigDataBackend):
 			# Not of interest
 			return
 
-		logger.debug(u"host_updateObject %s" % host)
+		logger.debug(u"Updating host: {!r}", host)
 		try:
 			self._dhcpd_updateHost(host)
 		except Exception as exc:
 			logger.logException(exc)
 
 	def host_deleteObjects(self, hosts):
-		logger.debug(u"host_deleteObjects %s" % hosts)
+		logger.debug(u"Deleting host: {!r}", hosts)
 
 		errors = []
 		for host in hosts:
