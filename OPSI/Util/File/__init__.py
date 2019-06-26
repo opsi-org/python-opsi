@@ -1660,13 +1660,14 @@ class DHCPDConfFile(TextFile):
 		self._currentToken = None
 		self._currentIndex = -1
 		self._data = u''
-		self._currentBlock = self._globalBlock = DHCPDConf_GlobalBlock()
 		self._parsed = False
 
 		if lines:
 			self._lines = forceUnicodeList(lines)
 		else:
 			self.readlines()
+
+		self._currentBlock = self._globalBlock = DHCPDConf_GlobalBlock()
 		self._globalBlock.endLine = len(self._lines)
 
 		minIndex = 0
