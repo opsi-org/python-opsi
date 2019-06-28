@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2015-2018 uib GmbH <info@uib.de>
+# Copyright (C) 2015-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -23,6 +23,7 @@ Testing the JSON-RPC backend.
 """
 import pytest
 
+from OPSI.Backend.JSONRPC import _GZIP_COMPRESSION
 from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Util.HTTP import deflateEncode, gzipEncode
 from OPSI.Util import randomString
@@ -67,3 +68,31 @@ def testProcessingResponseWithEncodedContent(jsonRpcBackend, encodingFunction, c
     )
 
     assert text == jsonRpcBackend._processResponse(response)
+
+
+@pytest.mark.parametrize("compressionOptions, expectedCompression", [
+    ({"deflate": False}, False),
+    ({"deflate": True}, True),
+    ({"compression": False}, False),
+    ({"compression": True}, True),
+    ({"compression": 'deflate'}, False),
+    ({"compression": 'DEFLATE'}, False),
+])
+def testCreatinBackendWithCompression(compressionOptions, expectedCompression):
+    backend = JSONRPCBackend("localhost", connectoninit=False, **compressionOptions)
+
+    assert backend.isCompressionUsed() == expectedCompression
+
+
+@pytest.mark.parametrize("value, expectedResult", [
+    (False, False),
+    (True, True),
+    ("no", False),
+    ("true", True),
+    ('deflate', False),  # deprecated
+    ('  DEFLATE  ', False),  # deprecated
+    ('GZIP   ', _GZIP_COMPRESSION),
+    ('gzip', _GZIP_COMPRESSION),
+])
+def testParsingCompressionValue(value, expectedResult):
+    assert JSONRPCBackend._parseCompressionValue(value) == expectedResult
