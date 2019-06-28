@@ -225,7 +225,7 @@ def testGetClientsWithProductsWithSpecificStatus(backendManager, clients):
 
     testclient1 = OpsiClient(id='testclient1.test.invalid')
     backendManager.host_insertObject(testclient1)
-    testclient2 = OpsiClient(id='testclient1.test.invalid')
+    testclient2 = OpsiClient(id='testclient2.test.invalid')
     backendManager.host_insertObject(testclient2)
 
     product1 = LocalbootProduct('product1', '1.0', '1')
