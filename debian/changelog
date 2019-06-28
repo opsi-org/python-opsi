@@ -88,6 +88,29 @@ python3-opsi (4.2.0.1-1) experimental; urgency=medium
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 06 Nov 2018 16:46:45 +0100
 
+python-opsi (4.1.1.68-1) testing; urgency=medium
+
+  * OPSI.Util.File.DHCPDConfFile: Small refactoring to improve parse time.
+  * OPSI.Backend.DHCPD: Errors are now logged with their traceback.
+  * OPSI.Util.File.DHCPDConfFile: Support parsing data structures consisting
+    of a sequence of data types (a.k.a. record types).
+  * OPSI.Backend.JSONRPC.JSONRPCBackend: Added support for 'gzip' compression.
+    For a seamless integration the new option 'compress' has been added to the
+    constructor. It accepts either the values 'deflate', 'gzip' or a boolean.
+    In case the boolean is selected the compression to use will be chosen
+    by the implementation.
+    This also adds the new function setCompression to instances of the class.
+    This method should be used instead of the now deprecated 'setDeflate'.
+    If compression is used can be checked with isCompressionUsed.
+  * Added 20_easy.conf with the following methods: getClients, getClientIDs,
+    getClientsOnDepot and getClientsWithProducts.
+  * API: Deprecated the methods backend_searchIdents, getClients_listOfHashes
+    and getClientIds_list.
+    To replace their commonly used functionality use the methods getClients,
+    getClientIDs, getClientsOnDepot and getClientsWithProducts respectively.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 28 Jun 2019 15:57:19 +0200
+
 python-opsi (4.1.1.67-1) stable; urgency=medium
 
   * OPSI.Backend.File.FileBackend: raise an error when executing getData.
