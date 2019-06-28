@@ -169,12 +169,7 @@ def testGetClientsWithProducts(backendManager, clients):
     testclient = random.choice(clients)
     dummyClient = random.choice([c for c in clients if c != testclient])
 
-    product = LocalbootProduct(
-        id='product2',
-        name=u'Product 2',
-        productVersion='2.0',
-        packageVersion='test',
-    )
+    product = LocalbootProduct('product2', '2.0', 'test')
     backendManager.product_insertObject(product)
 
     fillerProducts = [
