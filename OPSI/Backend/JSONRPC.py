@@ -455,6 +455,12 @@ To specify the use of a specific compression supply either 'gzip' or 'deflate'.
 		if not self._connected:
 			raise OpsiConnectionError(u'Not connected')
 
+		logger.warning(
+			"Call to deprecated method 'setDeflate'. "
+			"This method will be removed in the future. "
+			"Please use the method 'setCompression' instead."
+		)
+
 		if forceBool(deflate):
 			self.setCompression('deflate')
 		else:
