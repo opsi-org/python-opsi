@@ -183,7 +183,7 @@ class DHCPDBackend(ConfigDataBackend):
 			logger.warning(u"Cannot update dhcpd configuration for client %s: hardware address unknown" % host)
 			return
 
-		hostname = _getHostname(host)  # pylint: disable=maybe-no-member
+		hostname = _getHostname(host.id)  # pylint: disable=maybe-no-member
 
 		ipAddress = host.ipAddress  # pylint: disable=maybe-no-member
 		if not ipAddress:
@@ -261,7 +261,7 @@ class DHCPDBackend(ConfigDataBackend):
 		with self._reloadLock:
 			try:
 				self._dhcpdConfFile.parse()
-				hostname = _getHostname(host)
+				hostname = _getHostname(host.id)
 				if not self._dhcpdConfFile.getHost(hostname):  # pylint: disable=maybe-no-member
 					return
 				self._dhcpdConfFile.deleteHost(hostname)  # pylint: disable=maybe-no-member
@@ -331,12 +331,12 @@ class DHCPDBackend(ConfigDataBackend):
 				self.host_updateObject(host)
 
 
-def _getHostname(host):
+def _getHostname(fqdn):
 	"""
-	Return only the hostname of an host.
+	Return only the hostname of an FQDN.
 
-	:param host: The Host to work with.
-	:type host: OPSI.Object.Host
+	:param fqdn: The FQDN to work with.
+	:type fqdn: str
 	:rtype: str
 	"""
-	return host.id.split('.')[0]
+	return fqdn.split('.')[0]
