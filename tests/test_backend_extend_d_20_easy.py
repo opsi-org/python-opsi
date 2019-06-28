@@ -27,11 +27,12 @@ This tests what usually is found under
 
 from __future__ import absolute_import
 
+import itertools
 import random
 
 import pytest
 
-from OPSI.Object import LocalbootProduct, ProductOnClient, UnicodeConfig
+from OPSI.Object import LocalbootProduct, OpsiClient, ProductOnClient, UnicodeConfig
 
 from .test_hosts import getConfigServer, getDepotServers, getClients
 
@@ -220,3 +221,71 @@ def testGetClientsWithProducts(backendManager, clients):
 
     assert len(clientsToCheck) == 1
     assert clientsToCheck[0] == testclient.id
+
+
+def testGetClientsWithProductsWithSpecificStatus(backendManager, clients):
+    for client in clients:
+        backendManager.host_insertObject(client)
+
+    testclient1 = OpsiClient(id='testclient1.test.invalid')
+    backendManager.host_insertObject(testclient1)
+    testclient2 = OpsiClient(id='testclient1.test.invalid')
+    backendManager.host_insertObject(testclient2)
+
+    product1 = LocalbootProduct('product1', '1.0', '1')
+    backendManager.product_insertObject(product1)
+    product2 = LocalbootProduct('product2', '2.0', '1')
+    backendManager.product_insertObject(product2)
+
+    fillerProducts = [
+        LocalbootProduct("filler1", '1', '1'),
+        LocalbootProduct("filler2", '2', '2'),
+        LocalbootProduct("filler3", '3', '3'),
+    ]
+    for poc in fillerProducts:
+        backendManager.product_insertObject(poc)
+
+    fillerPocs = [
+        ProductOnClient(
+            productId=product.getId(),
+            productType=product.getType(),
+            clientId=client.getId(),
+            installationStatus=random.choice(['installed', 'not_installed', 'unknown']),
+            productVersion=product.getProductVersion(),
+            packageVersion=product.getPackageVersion()
+        )
+        for client, product in itertools.product(clients, fillerProducts)
+     ]
+
+    relevantPocs = [
+        ProductOnClient(
+            productId=product1.getId(),
+            productType=product1.getType(),
+            clientId=testclient2.getId(),
+            installationStatus='installed',
+            productVersion=product1.getProductVersion(),
+            packageVersion=product1.getPackageVersion()
+        ),
+        ProductOnClient(
+            productId=product2.getId(),
+            productType=product2.getType(),
+            clientId=testclient1.getId(),
+            installationStatus='unknown',
+            productVersion=product2.getProductVersion(),
+            packageVersion=product2.getPackageVersion()
+        ),
+    ]
+
+    for poc in fillerPocs + relevantPocs:
+        backendManager.productOnClient_insertObject(poc)
+
+    combinations = [
+        (testclient2, 'installed'),
+        (testclient1, 'unknown'),
+    ]
+
+    for client, status in combinations:
+        clientsToCheck = backendManager.getClientsWithProducts([product1.id, product2.id], status)
+
+        assert len(clientsToCheck) == 1
+        assert clientsToCheck[0] == client.id
