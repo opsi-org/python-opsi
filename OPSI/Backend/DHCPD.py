@@ -33,9 +33,9 @@ import threading
 import OPSI.System as System
 from OPSI.Backend.Backend import ConfigDataBackend
 from OPSI.Backend.JSONRPC import JSONRPCBackend
-from OPSI.Exceptions import (BackendIOError, BackendBadValueError,
-	BackendMissingDataError, BackendUnableToConnectError,
-	BackendUnaccomplishableError)
+from OPSI.Exceptions import (
+	BackendIOError, BackendBadValueError, BackendMissingDataError,
+	BackendUnableToConnectError, BackendUnaccomplishableError)
 from OPSI.Logger import Logger
 from OPSI.Object import OpsiClient, Host
 from OPSI.Types import forceBool, forceDict, forceHostId, forceObjectClass, forceUnicode
