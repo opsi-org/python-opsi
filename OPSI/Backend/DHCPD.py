@@ -261,9 +261,10 @@ class DHCPDBackend(ConfigDataBackend):
 		with self._reloadLock:
 			try:
 				self._dhcpdConfFile.parse()
-				if not self._dhcpdConfFile.getHost(_getHostname(host)):  # pylint: disable=maybe-no-member
+				hostname = _getHostname(host)
+				if not self._dhcpdConfFile.getHost(hostname):  # pylint: disable=maybe-no-member
 					return
-				self._dhcpdConfFile.deleteHost(_getHostname(host))  # pylint: disable=maybe-no-member
+				self._dhcpdConfFile.deleteHost(hostname)  # pylint: disable=maybe-no-member
 				self._dhcpdConfFile.generate()
 			except Exception as error:
 				logger.logException(error, logLevel=LOG_ERROR)
