@@ -1693,6 +1693,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		return u"<{0}(configDataBackend={1!r})>".format(self.__class__.__name__, self._backend)
 
 	def backend_searchIdents(self, filter):
+		logger.warning("The method 'backend_searchIdents' has been deprecated and will be removed in the future.")
 		logger.info(u"=== Starting search, filter: %s" % filter)
 		try:
 			parsedFilter = ldapfilter.parseFilter(filter)
