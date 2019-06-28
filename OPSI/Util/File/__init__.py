@@ -1697,6 +1697,7 @@ class DHCPDConfFile(TextFile):
 						continue
 					self._currentToken = token
 					self._currentIndex = index
+					break
 
 			if not self._currentToken:
 				minIndex = len(self._data)
