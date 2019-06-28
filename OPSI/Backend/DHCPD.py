@@ -36,7 +36,7 @@ from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Exceptions import (BackendIOError, BackendBadValueError,
 	BackendMissingDataError, BackendUnableToConnectError,
 	BackendUnaccomplishableError)
-from OPSI.Logger import Logger
+from OPSI.Logger import Logger, LOG_ERROR
 from OPSI.Object import OpsiClient, Host
 from OPSI.Types import forceBool, forceDict, forceHostId, forceObjectClass, forceUnicode
 from OPSI.Util.File import DHCPDConfFile
@@ -243,7 +243,7 @@ class DHCPDBackend(ConfigDataBackend):
 				)
 				self._dhcpdConfFile.generate()
 			except Exception as error:
-				logger.error(error)
+				logger.logException(error, logLevel=LOG_ERROR)
 
 		self._triggerReload()
 
@@ -266,7 +266,7 @@ class DHCPDBackend(ConfigDataBackend):
 				self._dhcpdConfFile.deleteHost(host.id.split('.')[0])  # pylint: disable=maybe-no-member
 				self._dhcpdConfFile.generate()
 			except Exception as error:
-				logger.error(error)
+				logger.logException(error, logLevel=LOG_ERROR)
 
 		self._triggerReload()
 
@@ -274,7 +274,7 @@ class DHCPDBackend(ConfigDataBackend):
 		if not isinstance(host, OpsiClient):
 			return
 
-		logger.debug(u"host_insertObject %s" % host)
+		logger.debug(u"Inserting host: {!r}", host)
 		self._dhcpd_updateHost(host)
 
 	def host_updateObject(self, host):
@@ -285,14 +285,14 @@ class DHCPDBackend(ConfigDataBackend):
 			# Not of interest
 			return
 
-		logger.debug(u"host_updateObject %s" % host)
+		logger.debug(u"Updating host: {!r}", host)
 		try:
 			self._dhcpd_updateHost(host)
 		except Exception as exc:
-			logger.info(exc)
+			logger.logException(exc, logLevel=LOG_ERROR)
 
 	def host_deleteObjects(self, hosts):
-		logger.debug(u"host_deleteObjects %s" % hosts)
+		logger.debug(u"Deleting host: {!r}", hosts)
 
 		errors = []
 		for host in hosts:
