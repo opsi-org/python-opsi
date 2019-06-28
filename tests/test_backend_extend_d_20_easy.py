@@ -219,7 +219,11 @@ def testGetClientsWithProducts(backendManager, clients):
     assert clientsToCheck[0] == testclient.id
 
 
-def testGetClientsWithProductsWithSpecificStatus(backendManager, clients):
+@pytest.mark.parametrize("expectedClient, desiredStatus", [
+    ('testclient2.test.invalid', 'installed'),
+    ('testclient1.test.invalid', 'unknown'),
+])
+def testGetClientsWithProductsWithSpecificStatus(backendManager, clients, desiredStatus, expectedClient):
     for client in clients:
         backendManager.host_insertObject(client)
 
@@ -275,13 +279,7 @@ def testGetClientsWithProductsWithSpecificStatus(backendManager, clients):
     for poc in fillerPocs + relevantPocs:
         backendManager.productOnClient_insertObject(poc)
 
-    combinations = [
-        (testclient2, 'installed'),
-        (testclient1, 'unknown'),
-    ]
+    clientsToCheck = backendManager.getClientsWithProducts([product1.id, product2.id], desiredStatus)
 
-    for client, status in combinations:
-        clientsToCheck = backendManager.getClientsWithProducts([product1.id, product2.id], status)
-
-        assert len(clientsToCheck) == 1
-        assert clientsToCheck[0] == client.id
+    assert len(clientsToCheck) == 1
+    assert clientsToCheck[0] == expectedClient
