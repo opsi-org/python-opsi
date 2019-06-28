@@ -39,7 +39,7 @@ these.
 ### Installing on Ubuntu
 
 Installing the depedencies via apt-get:
-``apt-get install lsb-release python-twisted-web python-twisted-conch python-magic python-crypto python-ldap python-newt python-pam python-openssl python-mysqldb python-sqlalchemy iproute duplicity python-m2crypto lshw python-dev python-ldaptor``
+``apt-get install lsb-release python-twisted-web python-twisted-conch python-magic python-crypto  python-newt python-pam python-openssl python-mysqldb python-sqlalchemy iproute duplicity python-m2crypto lshw python-dev``
 
 
 For installing further depedencies on your system we also recommend to

@@ -19,7 +19,6 @@ Requires:       iproute
 %endif
 Requires:       lshw
 Requires:       python3 >= 3.5.3
-Requires:       python-ldaptor
 Requires:       python3-magic
 Requires:       python3-sqlalchemy
 Requires:       python3-twisted >= 8.2, python3-twisted < 18.4
