@@ -23,7 +23,7 @@ Testing the JSON-RPC backend.
 """
 import pytest
 
-from OPSI.Backend.JSONRPC import _DEFLATE_COMPRESSION, _GZIP_COMPRESSION
+from OPSI.Backend.JSONRPC import _GZIP_COMPRESSION
 from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Util.HTTP import deflateEncode, gzipEncode
 from OPSI.Util import randomString
@@ -75,8 +75,8 @@ def testProcessingResponseWithEncodedContent(jsonRpcBackend, encodingFunction, c
     ({"deflate": True}, True),
     ({"compression": False}, False),
     ({"compression": True}, True),
-    ({"compression": 'deflate'}, True),
-    ({"compression": 'DEFLATE'}, True),
+    ({"compression": 'deflate'}, False),
+    ({"compression": 'DEFLATE'}, False),
 ])
 def testCreatinBackendWithCompression(compressionOptions, expectedCompression):
     backend = JSONRPCBackend("localhost", connectoninit=False, **compressionOptions)
@@ -89,8 +89,8 @@ def testCreatinBackendWithCompression(compressionOptions, expectedCompression):
     (True, True),
     ("no", False),
     ("true", True),
-    ('deflate', _DEFLATE_COMPRESSION),
-    ('  DEFLATE  ', _DEFLATE_COMPRESSION),
+    ('deflate', False),  # deprecated
+    ('  DEFLATE  ', False),  # deprecated
     ('GZIP   ', _GZIP_COMPRESSION),
     ('gzip', _GZIP_COMPRESSION),
 ])

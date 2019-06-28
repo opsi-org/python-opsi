@@ -50,11 +50,10 @@ from OPSI.Types import (
 	forceBool, forceFilename, forceFloat, forceInt, forceList, forceUnicode)
 from OPSI.Util import serialize, deserialize
 from OPSI.Util.HTTP import getSharedConnectionPool, urlsplit
-from OPSI.Util.HTTP import deflateEncode, deflateDecode, gzipEncode, gzipDecode
+from OPSI.Util.HTTP import deflateDecode, gzipEncode, gzipDecode
 
 __all__ = ('JSONRPC', 'JSONRPCThread', 'RpcQueue', 'JSONRPCBackend')
 
-_DEFLATE_COMPRESSION = 'deflate'
 _GZIP_COMPRESSION = 'gzip'
 
 logger = Logger()
@@ -264,12 +263,8 @@ class JSONRPCBackend(Backend):
 		"""
 		Backend for JSON-RPC access to another opsi service.
 
-		:param compression: Specify compression usage. Can be a boolean \
-or the strings 'gzip' or 'deflate' in case a specific compression is desired.
-		:type compression: bool or str
-		:param deflate: Specify if deflate compression should be used for requests. \
-Deprecated: Use keyword 'compression' instead.
-		:type deflate: bool
+		:param compression: Should requests be compressed?
+		:type compression: bool
 		"""
 
 		self._name = 'jsonrpc'
@@ -315,11 +310,6 @@ Deprecated: Use keyword 'compression' instead.
 				self._application = str(value)
 			elif option == 'sessionid':
 				self._sessionId = str(value)
-			elif option == 'deflate':
-				if forceBool(value):
-					self.setCompression('deflate')
-				else:
-					self.setCompression(False)
 			elif option == 'compression':
 				self._compression = self._parseCompressionValue(value)
 			elif option == 'connectoninit':
@@ -422,8 +412,8 @@ Deprecated: Use keyword 'compression' instead.
 		"""
 		Set the compression to use.
 
-		:param compression: `True` to enable compression, `False` to disable. \
-To specify the use of a specific compression supply either 'gzip' or 'deflate'.
+		:param compression: `True` to enable compression, `False` to disable.
+		:type compression: bool
 		"""
 		self._compression = self._parseCompressionValue(compression)
 
@@ -440,8 +430,6 @@ To specify the use of a specific compression supply either 'gzip' or 'deflate'.
 				return forceBool(value)
 			elif value == 'gzip':
 				return _GZIP_COMPRESSION
-			elif value == 'deflate':
-				return _DEFLATE_COMPRESSION
 			else:
 				return False
 
@@ -452,27 +440,6 @@ To specify the use of a specific compression supply either 'gzip' or 'deflate'.
 		:rtype: bool
 		"""
 		return bool(self._compression)
-
-	def setDeflate(self, deflate):
-		if not self._connected:
-			raise OpsiConnectionError(u'Not connected')
-
-		logger.warning(
-			"Call to deprecated method 'setDeflate'. "
-			"This method will be removed in the future. "
-			"Please use the method 'setCompression' instead."
-		)
-
-		if forceBool(deflate):
-			self.setCompression('deflate')
-		else:
-			self.setCompression(False)
-
-	def getDeflate(self):
-		if isinstance(self._compression, bool):
-			return False
-
-		return _DEFLATE_COMPRESSION == self._compression
 
 	def isConnected(self):
 		return self._connected
@@ -683,11 +650,6 @@ To specify the use of a specific compression supply either 'gzip' or 'deflate'.
 			# http://bugs.python.org/issue12398
 			if version_info >= (2, 7):
 				data = bytearray(data)
-			logger.debug2(u"Data compressed.")
-		elif self._compression == _DEFLATE_COMPRESSION:
-			logger.debug2(u"Compressing data with deflate")
-			headers['Content-Encoding'] = 'deflate'
-			data = deflateEncode(data)
 			logger.debug2(u"Data compressed.")
 
 		auth = (self._username + u':' + self._password)
