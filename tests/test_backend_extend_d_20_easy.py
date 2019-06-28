@@ -31,7 +31,7 @@ import random
 
 import pytest
 
-from OPSI.Object import UnicodeConfig
+from OPSI.Object import LocalbootProduct, ProductOnClient, UnicodeConfig
 
 from .test_hosts import getConfigServer, getDepotServers, getClients
 
@@ -158,3 +158,76 @@ def testGetClientsOnDepotWithDifferentDepot(backendManager, hosts, clients, depo
 def testGetClientsWithProductsWithInvalidParameters(backendManager, productIds, installationStatus):
     with pytest.raises(ValueError):
         backendManager.getClientsWithProducts(productIds, installationStatus)
+
+
+def testGetClientsWithProducts(backendManager, clients):
+    for client in clients:
+        backendManager.host_insertObject(client)
+
+    testclient = random.choice(clients)
+    dummyClient = random.choice([c for c in clients if c != testclient])
+
+    product = LocalbootProduct(
+        id='product2',
+        name=u'Product 2',
+        productVersion='2.0',
+        packageVersion='test',
+        licenseRequired=False,
+        setupScript="setup.ins",
+        uninstallScript=u"uninstall.ins",
+        updateScript="update.ins",
+        alwaysScript=None,
+        onceScript=None,
+        priority=0,
+        description=None,
+        advice="",
+        productClassIds=[],
+        windowsSoftwareIds=['{98723-7898adf2-287aab}', 'xxxxxxxx']
+    )
+    backendManager.product_insertObject(product)
+
+    fillerProducts = [
+        LocalbootProduct("filler1", '1', '1'),
+        LocalbootProduct("filler2", '2', '2'),
+        LocalbootProduct("filler3", '3', '3'),
+    ]
+    for poc in fillerProducts:
+        backendManager.product_insertObject(poc)
+
+    fillerProd = random.choice(fillerProducts)
+    fillerProd2 = random.choice(fillerProducts)
+
+    fillerPocs = [
+        ProductOnClient(
+            productId=fillerProd.getId(),
+            productType=fillerProd.getType(),
+            clientId=dummyClient.getId(),
+            installationStatus='installed',
+            productVersion=fillerProd.getProductVersion(),
+            packageVersion=fillerProd.getPackageVersion()
+        ),
+        ProductOnClient(
+            productId=fillerProd2.getId(),
+            productType=fillerProd2.getType(),
+            clientId=dummyClient.getId(),
+            installationStatus='installed',
+            productVersion=fillerProd2.getProductVersion(),
+            packageVersion=fillerProd2.getPackageVersion()
+        ),
+    ]
+
+    relevantPoc = ProductOnClient(
+        productId=product.getId(),
+        productType=product.getType(),
+        clientId=testclient.getId(),
+        installationStatus='installed',
+        productVersion=product.getProductVersion(),
+        packageVersion=product.getPackageVersion()
+    )
+    for poc in fillerPocs + [relevantPoc]:
+        backendManager.productOnClient_insertObject(poc)
+
+    clientsToCheck = backendManager.getClientsWithProducts([product.id])
+
+    assert len(clientsToCheck) == 1
+    assert clientsToCheck[0] == testclient.id
