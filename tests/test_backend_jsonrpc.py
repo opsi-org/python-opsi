@@ -72,7 +72,7 @@ def testProcessingResponseWithEncodedContent(jsonRpcBackend, encodingFunction, c
 
 @pytest.mark.parametrize("compressionOptions, expectedCompression", [
     ({"deflate": False}, False),
-    ({"deflate": True}, True),
+    ({"deflate": True}, False),  # not supported anymore.
     ({"compression": False}, False),
     ({"compression": True}, True),
     ({"compression": 'deflate'}, False),
