@@ -155,6 +155,7 @@ def testGetClientsOnDepotWithDifferentDepot(backendManager, hosts, clients, depo
     ([''], None),
     (['myproduct'], 1),
     (['myproduct'], 'not_a_valid_status'),
+    (['myproduct'], 'intalled'),  # Typo - missing s
 ])
 def testGetClientsWithProductsWithInvalidParameters(backendManager, productIds, installationStatus):
     with pytest.raises(ValueError):
