@@ -172,17 +172,6 @@ def testGetClientsWithProducts(backendManager, clients):
         name=u'Product 2',
         productVersion='2.0',
         packageVersion='test',
-        licenseRequired=False,
-        setupScript="setup.ins",
-        uninstallScript=u"uninstall.ins",
-        updateScript="update.ins",
-        alwaysScript=None,
-        onceScript=None,
-        priority=0,
-        description=None,
-        advice="",
-        productClassIds=[],
-        windowsSoftwareIds=['{98723-7898adf2-287aab}', 'xxxxxxxx']
     )
     backendManager.product_insertObject(product)
 
