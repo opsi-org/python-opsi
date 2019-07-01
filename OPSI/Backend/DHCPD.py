@@ -29,6 +29,7 @@ the daemon afterwards.
 
 import socket
 import threading
+from functools import lru_cache
 
 import OPSI.System as System
 from OPSI.Backend.Base import ConfigDataBackend
@@ -331,6 +332,7 @@ class DHCPDBackend(ConfigDataBackend):
 				self.host_updateObject(host)
 
 
+@lru_cache(maxsize=256)
 def _getHostname(fqdn):
 	"""
 	Return only the hostname of an FQDN.
