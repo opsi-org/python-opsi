@@ -88,6 +88,13 @@ python3-opsi (4.2.0.1-1) experimental; urgency=medium
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 06 Nov 2018 16:46:45 +0100
 
+python-opsi (4.1.1.68-2) testing; urgency=medium
+
+  * 45_deprecated.conf: Fix deprecation warning for getClients_listOfHashes
+    and getClientIds_list.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 28 Jun 2019 17:50:27 +0200
+
 python-opsi (4.1.1.68-1) testing; urgency=medium
 
   * OPSI.Util.File.DHCPDConfFile: Small refactoring to improve parse time.

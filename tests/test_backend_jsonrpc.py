@@ -77,6 +77,7 @@ def testProcessingResponseWithEncodedContent(jsonRpcBackend, encodingFunction, c
     ({"compression": True}, True),
     ({"compression": 'deflate'}, False),
     ({"compression": 'DEFLATE'}, False),
+    ({"compression": 'gzip'}, True),
 ])
 def testCreatinBackendWithCompression(compressionOptions, expectedCompression):
     backend = JSONRPCBackend("localhost", connectoninit=False, **compressionOptions)
