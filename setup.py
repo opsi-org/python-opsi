@@ -70,6 +70,7 @@ data_files = [
 			'data/backendManager/extend.d/10_opsi.conf',
 			'data/backendManager/extend.d/10_wim.conf',
 			'data/backendManager/extend.d/20_legacy.conf',
+			'data/backendManager/extend.d/20_easy.conf',
 			'data/backendManager/extend.d/30_kiosk.conf',
 			'data/backendManager/extend.d/30_sshcommands.conf',
 			'data/backendManager/extend.d/40_admin_tasks.conf',
@@ -142,7 +143,6 @@ for language in LANGUAGES:
 
 required_packages = [
 	'twisted[conch,tls]<18.4',
-	'ldaptor>=19.0',
 	'pyCrypto',
 	'pyOpenSSL',
 	'SQLAlchemy',

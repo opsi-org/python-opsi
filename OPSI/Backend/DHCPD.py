@@ -29,14 +29,15 @@ the daemon afterwards.
 
 import socket
 import threading
+from functools import lru_cache
 
 import OPSI.System as System
 from OPSI.Backend.Base import ConfigDataBackend
 from OPSI.Backend.JSONRPC import JSONRPCBackend
-from OPSI.Exceptions import (BackendIOError, BackendBadValueError,
-	BackendMissingDataError, BackendUnableToConnectError,
-	BackendUnaccomplishableError)
-from OPSI.Logger import Logger
+from OPSI.Exceptions import (
+	BackendIOError, BackendBadValueError, BackendMissingDataError,
+	BackendUnableToConnectError, BackendUnaccomplishableError)
+from OPSI.Logger import Logger, LOG_ERROR
 from OPSI.Object import OpsiClient, Host
 from OPSI.Types import forceBool, forceDict, forceHostId, forceObjectClass, forceUnicode
 from OPSI.Util.File import DHCPDConfFile
@@ -183,7 +184,7 @@ class DHCPDBackend(ConfigDataBackend):
 			logger.warning(u"Cannot update dhcpd configuration for client %s: hardware address unknown" % host)
 			return
 
-		hostname = host.id.split('.')[0]  # pylint: disable=maybe-no-member
+		hostname = _getHostname(host.id)  # pylint: disable=maybe-no-member
 
 		ipAddress = host.ipAddress  # pylint: disable=maybe-no-member
 		if not ipAddress:
@@ -243,7 +244,7 @@ class DHCPDBackend(ConfigDataBackend):
 				)
 				self._dhcpdConfFile.generate()
 			except Exception as error:
-				logger.error(error)
+				logger.logException(error, logLevel=LOG_ERROR)
 
 		self._triggerReload()
 
@@ -261,12 +262,13 @@ class DHCPDBackend(ConfigDataBackend):
 		with self._reloadLock:
 			try:
 				self._dhcpdConfFile.parse()
-				if not self._dhcpdConfFile.getHost(host.id.split('.')[0]):  # pylint: disable=maybe-no-member
+				hostname = _getHostname(host.id)
+				if not self._dhcpdConfFile.getHost(hostname):  # pylint: disable=maybe-no-member
 					return
-				self._dhcpdConfFile.deleteHost(host.id.split('.')[0])  # pylint: disable=maybe-no-member
+				self._dhcpdConfFile.deleteHost(hostname)  # pylint: disable=maybe-no-member
 				self._dhcpdConfFile.generate()
 			except Exception as error:
-				logger.error(error)
+				logger.logException(error, logLevel=LOG_ERROR)
 
 		self._triggerReload()
 
@@ -274,7 +276,7 @@ class DHCPDBackend(ConfigDataBackend):
 		if not isinstance(host, OpsiClient):
 			return
 
-		logger.debug(u"host_insertObject %s" % host)
+		logger.debug(u"Inserting host: {!r}", host)
 		self._dhcpd_updateHost(host)
 
 	def host_updateObject(self, host):
@@ -285,14 +287,14 @@ class DHCPDBackend(ConfigDataBackend):
 			# Not of interest
 			return
 
-		logger.debug(u"host_updateObject %s" % host)
+		logger.debug(u"Updating host: {!r}", host)
 		try:
 			self._dhcpd_updateHost(host)
 		except Exception as exc:
-			logger.info(exc)
+			logger.logException(exc, logLevel=LOG_ERROR)
 
 	def host_deleteObjects(self, hosts):
-		logger.debug(u"host_deleteObjects %s" % hosts)
+		logger.debug(u"Deleting host: {!r}", hosts)
 
 		errors = []
 		for host in hosts:
@@ -328,3 +330,15 @@ class DHCPDBackend(ConfigDataBackend):
 
 			for host in self._context.host_getObjects(id=configState.objectId):
 				self.host_updateObject(host)
+
+
+@lru_cache(maxsize=256)
+def _getHostname(fqdn):
+	"""
+	Return only the hostname of an FQDN.
+
+	:param fqdn: The FQDN to work with.
+	:type fqdn: str
+	:rtype: str
+	"""
+	return fqdn.split('.')[0]

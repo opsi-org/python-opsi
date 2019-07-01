@@ -23,6 +23,7 @@ Testing the JSON-RPC backend.
 """
 import pytest
 
+from OPSI.Backend.JSONRPC import _GZIP_COMPRESSION
 from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Util.HTTP import deflateEncode, gzipEncode
 from OPSI.Util import randomString
@@ -67,3 +68,32 @@ def testProcessingResponseWithEncodedContent(jsonRpcBackend, encodingFunction, c
     )
 
     assert text == jsonRpcBackend._processResponse(response)
+
+
+@pytest.mark.parametrize("compressionOptions, expectedCompression", [
+    ({"deflate": False}, False),
+    ({"deflate": True}, False),  # not supported anymore.
+    ({"compression": False}, False),
+    ({"compression": True}, True),
+    ({"compression": 'deflate'}, False),
+    ({"compression": 'DEFLATE'}, False),
+    ({"compression": 'gzip'}, True),
+])
+def testCreatinBackendWithCompression(compressionOptions, expectedCompression):
+    backend = JSONRPCBackend("localhost", connectoninit=False, **compressionOptions)
+
+    assert backend.isCompressionUsed() == expectedCompression
+
+
+@pytest.mark.parametrize("value, expectedResult", [
+    (False, False),
+    (True, True),
+    ("no", False),
+    ("true", True),
+    ('deflate', False),  # deprecated
+    ('  DEFLATE  ', False),  # deprecated
+    ('GZIP   ', _GZIP_COMPRESSION),
+    ('gzip', _GZIP_COMPRESSION),
+])
+def testParsingCompressionValue(value, expectedResult):
+    assert JSONRPCBackend._parseCompressionValue(value) == expectedResult

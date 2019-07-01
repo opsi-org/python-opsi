@@ -1669,13 +1669,14 @@ class DHCPDConfFile(TextFile):
 		self._currentToken = None
 		self._currentIndex = -1
 		self._data = u''
-		self._currentBlock = self._globalBlock = DHCPDConf_GlobalBlock()
 		self._parsed = False
 
 		if lines:
 			self._lines = forceUnicodeList(lines)
 		else:
 			self.readlines()
+
+		self._currentBlock = self._globalBlock = DHCPDConf_GlobalBlock()
 		self._globalBlock.endLine = len(self._lines)
 
 		minIndex = 0
@@ -1688,6 +1689,7 @@ class DHCPDConfFile(TextFile):
 				if not self._data.strip():
 					self._parse_emptyline()
 				continue
+
 			for token in ('#', ';', '{', '}'):
 				index = self._data.find(token)
 				if (index != -1) and (index >= minIndex) and ((self._currentIndex == -1) or (index < self._currentIndex)):
@@ -1695,11 +1697,14 @@ class DHCPDConfFile(TextFile):
 						continue
 					self._currentToken = token
 					self._currentIndex = index
+					break
+
 			if not self._currentToken:
 				minIndex = len(self._data)
 				if not self._getNewData():
 					break
 				continue
+
 			minIndex = 0
 			if self._currentToken == '#':
 				self._parse_comment()
@@ -1709,6 +1714,7 @@ class DHCPDConfFile(TextFile):
 				self._parse_lbracket()
 			elif self._currentToken == '}':
 				self._parse_rbracket()
+
 		self._parsed = True
 
 	def generate(self):
@@ -1907,7 +1913,8 @@ class DHCPDConfFile(TextFile):
 		data = self._data[:self._currentIndex]
 		self._data = self._data[self._currentIndex + 1:]
 
-		key = data.split()[0]
+		splittedData = data.split()
+		key = splittedData[0]
 		if key != 'option':
 			# Parameter
 			value = u' '.join(data.split()[1:]).strip()
@@ -1925,8 +1932,8 @@ class DHCPDConfFile(TextFile):
 			return
 
 		# Option
-		key = data.split()[1]
-		value = u' '.join(data.split()[2:]).strip()
+		key = splittedData[1]
+		value = u' '.join(splittedData[2:]).strip()
 		if len(value) > 1 and value.startswith('"') and value.endswith('"'):
 			value = value[1:-1]
 		values = []
@@ -1978,11 +1985,12 @@ class DHCPDConfFile(TextFile):
 		# Split the block definition at whitespace
 		# The first value is the block type
 		# Example: subnet 194.31.185.0 netmask 255.255.255.0 => type is subnet
+		splittedData = data.split()
 		block = DHCPDConf_Block(
 			startLine=self._currentLine,
 			parentBlock=self._currentBlock,
-			type=data.split()[0].strip(),
-			settings=data.split()
+			type=splittedData[0].strip(),
+			settings=splittedData
 		)
 		self._currentBlock.addComponent(block)
 		self._currentBlock = block
