@@ -308,64 +308,6 @@ def testConfigState_getIdents(extendedConfigDataBackend):
     assert expect == len(ids)
 
 
-def test_ldapSearchFilter(extendedConfigDataBackend):
-    depotServer = getDepotServers()
-    extendedConfigDataBackend.host_createObjects(depotServer)
-
-    result = extendedConfigDataBackend.backend_searchIdents('(&(objectClass=Host)(type=OpsiDepotserver))')
-    expected = extendedConfigDataBackend.host_getIdents(type="OpsiDepotserver")
-    result.sort()
-    expected.sort()
-    assert expected  # If this fails there are no objects.
-    assert expected == result
-
-    result = extendedConfigDataBackend.backend_searchIdents('(&(&(objectClass=Host)(type=OpsiDepotserver))(objectClass=Host))')
-    expected = extendedConfigDataBackend.host_getIdents(type="OpsiDepotserver")
-    result.sort()
-    expected.sort()
-    assert expected  # If this fails there are no objects.
-    assert expected == result
-    depotIdents = [d.getIdent() for d in depotServer]
-    depotIdents.sort()
-    assert result == depotIdents
-
-    clients = getClients()
-    extendedConfigDataBackend.host_createObjects(clients)
-    result = extendedConfigDataBackend.backend_searchIdents('(|(&(objectClass=OpsiClient)(id=client1*))(&(objectClass=OpsiClient)(id=client2*)))')
-    expected = extendedConfigDataBackend.host_getIdents(type="OpsiClient", id=["client1*", "client2*"])
-    result.sort()
-    expected.sort()
-    assert expected  # If this fails there are no objects.
-    assert expected == result
-    clientIdents = [c.getIdent() for c in clients if c.id.startswith('client1.') or c.id.startswith('client2.')]
-    clientIdents.sort()
-    assert result == clientIdents
-
-    products = getLocalbootProducts()
-    product1 = products[0]
-    pocs = getProductsOnClients(products, clients)
-    assert products
-    assert pocs
-    extendedConfigDataBackend.product_createObjects(products)
-    extendedConfigDataBackend.productOnClient_createObjects(pocs)
-    result = extendedConfigDataBackend.backend_searchIdents('(&(&(objectClass=OpsiClient))(&(objectClass=ProductOnClient)(installationStatus=installed))(&(objectClass=ProductOnClient)(productId={0})))'.format(product1.id))
-    expected = [x["clientId"] for x in extendedConfigDataBackend.productOnClient_getIdents(returnType="dict", installationStatus="installed", productId=product1.id)]
-    result.sort()
-    expected.sort()
-    assert expected  # If this fails there are no objects.
-    assert expected == result
-
-    result = extendedConfigDataBackend.backend_searchIdents('(&(objectClass=Host)(description=T*))')
-    expected = extendedConfigDataBackend.host_getIdents(description="T*")
-    result.sort()
-    expected.sort()
-    assert expected  # If this fails there are no objects.
-    assert expected == result
-
-    pocIdents = extendedConfigDataBackend.productOnClient_getIdents(returnType="dict")
-    assert pocIdents
-
-
 @pytest.mark.parametrize("returnType, klass", ((None, object), ('tuple', tuple), ('list', list), ('dict', dict)))
 @pytest.mark.parametrize("objectType", (
     'config',
@@ -442,28 +384,6 @@ def testBackend_getInterface(extendedConfigDataBackend, methodSignature):
             break
     else:
         pytest.fail("Expected method {0!r} not found".format(methodSignature['name']))
-
-
-@pytest.mark.parametrize("query", [
-    '(&(objectClass=Host)(type=OpsiDepotserver))',
-    '(&(&(objectClass=Host)(type=OpsiDepotserver))(objectClass=Host))',
-    '(|(&(objectClass=OpsiClient)(id=client1*))(&(objectClass=OpsiClient)(id=client2*)))',
-    '(&(&(objectClass=OpsiClient))(&(objectClass=ProductOnClient)(installationStatus=installed))(&(objectClass=ProductOnClient)(productId=product1)))',
-    '(&(&(objectClass=OpsiClient))(&(objectClass=ProductOnClient)(installationStatus=installed))(|(&(objectClass=ProductOnClient)(productId=product1))(&(objectClass=ProductOnClient)(productId=product2))))',
-    '(&(objectClass=OpsiClient)(&(objectClass=ProductOnClient)(installationStatus=installed))(&(objectClass=ProductOnClient)(productId=product1)))',
-    '(&(objectClass=Host)(description=T*))',
-    '(&(objectClass=Host)(description=*))',
-    '(&(&(objectClass=OpsiClient)(ipAddress=192*))(&(objectClass=ProductOnClient)(installationStatus=installed)))',
-    '(&(objectClass=Product)(description=*))',
-    '(&(objectClass=ProductOnClient)(installationStatus=installed))',
-    # TODO: this fails with SQL backends. Fix it:
-    # '(&(&(objectClass=Product)(description=*))(&(objectClass=ProductOnClient)(installationStatus=installed)))'
-])
-def testSearchingForIdents(extendedConfigDataBackend, query):
-    fillBackend(extendedConfigDataBackend)
-
-    result = extendedConfigDataBackend.backend_searchIdents(query)
-    assert result
 
 
 @pytest.mark.parametrize("addressType", ['fqdn'])
