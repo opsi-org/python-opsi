@@ -19,6 +19,7 @@
 Testing the work with repositories.
 
 :author: Niko Wenselowski <n.wenselowski@uib.de>
+:author: Erol Ueluekmen <e.ueluekmen@uib.de>
 :license: GNU Affero General Public License version 3
 """
 
@@ -26,7 +27,7 @@ import os
 import pytest
 
 from OPSI.Exceptions import RepositoryError
-from OPSI.Util.Repository import FileRepository, getRepository
+from OPSI.Util.Repository import FileRepository, getRepository, getFileInfosFromDavXML
 
 
 def testGettingFileRepository():
@@ -62,3 +63,27 @@ def testListingRepository(tempDir):
 def testFileRepositoryFailsWithWrongURL():
     with pytest.raises(RepositoryError):
         FileRepository(u'nofile://nada')
+
+def testGetFileInfosFromDavXML():
+	filename = os.path.join(
+		os.path.dirname(__file__),
+		'testdata', 'util', 'davxml', 'twisted-davxml.data')
+	with open(filename, 'r') as f:
+		xmldata = f.read()
+
+	content = getFileInfosFromDavXML(xmldata)
+	assert len(content) == 4
+
+	dirs = 0
+	files = 0
+	for item in content:
+		assert isinstance(item['size'], int)
+		if item['type'] == 'dir':
+			dirs = dirs + 1
+		elif item['type'] == 'file':
+			files = files + 1
+		else:
+			pytest.raises("Unexpected type found. Maybe creepy testdata?")
+
+	assert dirs == 1
+	assert files == 3

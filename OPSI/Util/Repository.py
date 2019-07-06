@@ -78,7 +78,7 @@ def getRepository(url, **kwargs):
 
 def getFileInfosFromDavXML(davxmldata):
 	content = []
-	root = ET.fromString(davxmldata)
+	root = ET.fromstring(davxmldata)
 	for child in root:
 		info = {'size': 0, 'type': 'file', 'path': '', 'name': ''}
 		if not child.tag == "{DAV:}response":
@@ -96,7 +96,7 @@ def getFileInfosFromDavXML(davxmldata):
 						if "directory" in text:
 							info['type'] = 'dir'
 					if tag == "{DAV:}getcontentlength":
-						if not text = "None": info['size'] = int(text)
+						if not text == "None": info['size'] = int(text)
 					if tag == "{DAV:}displayname":
 						info['name'] = text
 				#IIS Fix: Remove trailing backslash on file-paths
