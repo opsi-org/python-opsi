@@ -35,7 +35,6 @@ import copy as pycopy
 import json
 import os
 import re
-import threading
 
 from OPSI.Logger import Logger
 from OPSI.Exceptions import (
@@ -87,32 +86,6 @@ try:
 except Exception as error:
 	logger.debug("Failed to set MAX LOG SIZE from config: {0}".format(error))
 	DEFAULT_MAX_LOGFILE_SIZE = 5000000
-
-
-class DeferredCall(object):
-	def __init__(self, callback=None):
-		self.error = None
-		self.result = None
-		self.finished = threading.Event()
-		self.callback = callback
-		self.callbackArgs = []
-		self.callbackKwargs = {}
-
-	def waitForResult(self):
-		self.finished.wait()
-		if self.error:
-			raise self.error  # pylint: disable=raising-bad-type
-		return self.result
-
-	def setCallback(self, callback, *args, **kwargs):
-		self.callback = callback
-		self.callbackArgs = args
-		self.callbackKwargs = kwargs
-
-	def _gotResult(self):
-		self.finished.set()
-		if self.callback:
-			self.callback(self, *self.callbackArgs, **self.callbackKwargs)
 
 
 class ConfigDataBackend(Backend):
