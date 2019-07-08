@@ -1,3 +1,9 @@
+python-opsi (4.1.1.69-1) testing; urgency=medium
+
+  * 20_easy.conf: Added new method: getClientsWithActionRequest.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 08 Jul 2019 13:59:45 +0200
+
 python-opsi (4.1.1.68-2) testing; urgency=medium
 
   * 45_deprecated.conf: Fix deprecation warning for getClients_listOfHashes
