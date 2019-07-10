@@ -27,7 +27,7 @@ import grp
 import pwd
 import os
 
-import PAM as pam
+import pam
 
 from OPSI.Exceptions import BackendAuthenticationError
 from OPSI.Logger import Logger
@@ -66,14 +66,13 @@ def authenticate(username, password, service=None):
 		u"Attempting PAM authentication as user {0!r} (service={})...",
 		username, pamService
 	)
+
 	try:
-		# Create instance
 		auth = pam.pam()
-		auth.start(pamService)
-		# Authenticate
-		auth.set_item(pam.PAM_CONV, AuthConv(username, password))
-		auth.authenticate()
-		auth.acct_mgmt()
+		if not auth.authenticate(username, password, service=service):
+			logger.debug2("PAM authentication failed: {} (code {})", auth.reason, auth.code)
+			raise RuntimeError(auth.reason)
+
 		logger.debug2("PAM authentication successful.")
 	except (Exception, pam.error) as error:
 		raise BackendAuthenticationError(u"PAM authentication failed for user '%s': %s" % (username, error))

@@ -145,6 +145,7 @@ required_packages = [
 	'twisted[conch,tls]<18.4',
 	'pyCrypto',
 	'pyOpenSSL',
+	'python-pam',
 	'SQLAlchemy',
 	'pyasn1',
 ]
