@@ -1,3 +1,10 @@
+python-opsi (4.1.1.70-1) stable; urgency=medium
+
+  * OPSI.System.Posix: Add support for retrieving the currently used
+    distribution through the "distro" module.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 10 Jul 2019 14:30:26 +0200
+
 python-opsi (4.1.1.69-1) testing; urgency=medium
 
   * 20_easy.conf: Added new method: getClientsWithActionRequest.
