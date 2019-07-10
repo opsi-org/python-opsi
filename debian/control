@@ -34,7 +34,8 @@ Depends: duplicity,
 	python-twisted-conch,
 	${misc:Depends},
 	${python:Depends}
-Recommends: cabextract
+Recommends: cabextract,
+	python-distro
 Provides: ${python:Provides}
 Description: opsi python library
  This package contains the opsi python library.

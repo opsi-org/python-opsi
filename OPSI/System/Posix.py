@@ -53,6 +53,11 @@ from OPSI.Types import (
 from OPSI.Object import *
 from OPSI.Util import getfqdn, objectToBeautifiedText, removeUnit
 
+try:
+	import distro as distro_module
+except ImportError:
+	distro_module = None
+
 __all__ = (
 	'CommandNotFoundException',
 	'Distribution', 'Harddisk', 'NetworkPerformanceCounter', 'SysInfo',
@@ -3000,7 +3005,12 @@ class Distribution(object):
 
 	def __init__(self, distribution_information=None):
 		if distribution_information is None:
-			distribution_information = platform.linux_distribution()
+			try:
+				distribution_information = distro_module.linux_distribution()
+			except AttributeError:
+				# Fallback to platform.
+				# platform will be removed in Python 3.8.
+				distribution_information = platform.linux_distribution()
 
 		self.distribution, self._version, self.id = distribution_information
 		self.distribution = self.distribution.strip()
