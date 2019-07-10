@@ -63,7 +63,7 @@ def authenticate(username, password, service=None):
 		pamService = _DEFAULT_SERVICE = getPAMService()
 
 	logger.debug2(
-		u"Attempting PAM authentication as user {0!r} (service={})...",
+		u"Attempting PAM authentication as user {!r} (service={})...",
 		username, pamService
 	)
 
