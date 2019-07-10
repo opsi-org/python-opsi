@@ -96,28 +96,6 @@ def getPAMService():
 		return 'common-auth'
 
 
-class AuthConv:
-	''' Handle PAM conversation '''
-	def __init__(self, user, password):
-		self.user = user
-		self.password = password
-
-	def __call__(self, auth, query_list, userData=None):
-		response = []
-		for (query, qtype) in query_list:
-			logger.debug(u"PAM conversation: query {0!r}, type {1!r}", query, qtype)
-			if qtype == pam.PAM_PROMPT_ECHO_ON:
-				response.append((self.user, 0))
-			elif qtype == pam.PAM_PROMPT_ECHO_OFF:
-				response.append((self.password, 0))
-			elif qtype in (pam.PAM_ERROR_MSG, pam.PAM_TEXT_INFO):
-				response.append(('', 0))
-			else:
-				return None
-
-		return response
-
-
 def readGroups(username):
 	"""
 	Read the groups of a user.
