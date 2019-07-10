@@ -74,7 +74,7 @@ def authenticate(username, password, service=None):
 			raise RuntimeError(auth.reason)
 
 		logger.debug2("PAM authentication successful.")
-	except (Exception, pam.error) as error:
+	except Exception as error:
 		raise BackendAuthenticationError(u"PAM authentication failed for user '%s': %s" % (username, error))
 
 
