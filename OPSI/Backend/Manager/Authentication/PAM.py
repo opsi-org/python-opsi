@@ -69,7 +69,7 @@ def authenticate(username, password, service=None):
 
 	try:
 		auth = pam.pam()
-		if not auth.authenticate(username, password, service=service):
+		if not auth.authenticate(username, password, service=pamService):
 			logger.debug2("PAM authentication failed: {} (code {})", auth.reason, auth.code)
 			raise RuntimeError(auth.reason)
 
