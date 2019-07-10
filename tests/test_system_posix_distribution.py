@@ -36,7 +36,7 @@ DISTRI_INFOS = [
     (('Red Hat Enterprise Linux Server', '7.0', 'Maipo'), (7, 0)),
     (('Ubuntu', '16.04', 'xenial'), (16, 4)),
     (('Ubuntu', '19.04', 'disco'), (19, 4)),
-    (('Univention', '"4.4-0 errata175"', 'Blumenthal'), (4, 4))
+    (('Univention', '"4.4-0 errata175"', 'Blumenthal'), (4, 4)),
     # TODO: add SLES12
     (('openSUSE project', '42.3', 'n/a'), (42, 3)),
     (('openSUSE', '15.0', 'n/a'), (15, 0)),
