@@ -3034,10 +3034,15 @@ class Distribution(object):
 		Returns an empty string if no information can be obtained.
 		"""
 		try:
-			lsbReleaseOutput = execute('lsb_release -i')
-			distributor = lsbReleaseOutput[0].split(':')[1].strip()
-		except Exception:
-			distributor = ''
+			distributor = distro_module.distro_release_attr('distributor_id')
+			if not distributor:
+				raise ValueError('No distributor information found.')
+		except (AttributeError, ValueError):
+			try:
+				lsbReleaseOutput = execute('lsb_release -i')
+				distributor = lsbReleaseOutput[0].split(':')[1].strip()
+			except Exception:
+				distributor = ''
 
 		return distributor
 
