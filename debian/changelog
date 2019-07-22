@@ -1,3 +1,15 @@
+python3-opsi (4.2.0.11-1) testing; urgency=medium
+
+  * OPSI.Backend.Manager.Authentication.PAM: Use python-pam module.
+  * OPSI.System.Posix: Make more use of the distro module to be prepared for
+    Python 3.8 where platform.linux_distribution() will be removed.
+  * Remove DeferredCall class from OPSI.Backend.Base.ConfigData.
+  * OPSI.Util.isRegularExpressionPattern works under Python 3.7.
+  * OPSI.Util.Repository: Use a custom implementation for response codes
+    in order to remove a dependency to web2.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 22 Jul 2019 15:13:01 +0200
+
 python3-opsi (4.2.0.10-1) testing; urgency=medium
 
   * OPSI.Backend.JSONRPC: Removed support for deflate compression for outgoing
