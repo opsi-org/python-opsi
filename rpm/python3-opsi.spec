@@ -39,7 +39,7 @@ Requires:		python2-distro
 Requires:       MySQL-python
 Requires:       newt-python
 Requires:       pyOpenSSL
-Requires:       python3-pam
+Requires:       python3-pampy
 Requires:       python3-ctypes
 %if 0%{?rhel_version} >= 700 || 0%{?centos_version} >= 700
 # To have ifconfig available
@@ -55,7 +55,7 @@ Requires:       python3-mysql
 Requires:       python3-mysql
 Requires:       python3-newt
 Requires:       python3-openssl
-Requires:       python3-pam
+Requires:       python3-pampy
 %endif
 %if 0%{?suse_version}
 # Needed for working python-magic
