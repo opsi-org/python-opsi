@@ -99,6 +99,19 @@ python3-opsi (4.2.0.1-1) experimental; urgency=medium
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 06 Nov 2018 16:46:45 +0100
 
+python-opsi (4.1.1.70-1) stable; urgency=medium
+
+  * OPSI.System.Posix: Add support for retrieving the currently used
+    distribution through the "distro" module.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 10 Jul 2019 14:30:26 +0200
+
+python-opsi (4.1.1.69-1) testing; urgency=medium
+
+  * 20_easy.conf: Added new method: getClientsWithActionRequest.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 08 Jul 2019 13:59:45 +0200
+
 python-opsi (4.1.1.68-2) testing; urgency=medium
 
   * 45_deprecated.conf: Fix deprecation warning for getClients_listOfHashes

@@ -32,11 +32,11 @@ Depends: duplicity,
 	python3-pyparsing,
 	${misc:Depends},
 	${python3:Depends}
-Recommends: cabextract
+Recommends: cabextract,
+	python3-distro
 Provides: ${python3:Provides}
 Breaks: python-opsi (<< 4.2)
 Replaces: python-opsi (<< 4.2)
 Conflicts: python-opsi
 Description: opsi python library
  This package contains the opsi Python 3 library.
-
