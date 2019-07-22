@@ -32,24 +32,14 @@ import time
 from OPSI.Logger import Logger
 from OPSI.Types import forceInt, forceUnicode, forceUnicodeList
 
-__all__ = ('EmailNotifier', )
+__all__ = ('DummyNotifier', 'EmailNotifier')
 
 logger = Logger()
 
 
-class EmailNotifier(object):
-	def __init__(self, smtphost=u'localhost', smtpport=25, subject=u'opsi product updater', sender=u'', receivers=[]):
-		self.receivers = forceUnicodeList(receivers)
-		if not self.receivers:
-			raise ValueError(u"List of mail recipients empty")
-		self.smtphost = forceUnicode(smtphost)
-		self.smtpport = forceInt(smtpport)
-		self.sender = forceUnicode(sender)
-		self.subject = forceUnicode(subject)
-		self.message = u''
-		self.username = None
-		self.password = None
-		self.useStarttls = False
+class BaseNotifier(object):
+	def __init__(self):
+		self.message = ''
 
 	def appendLine(self, line, pre=''):
 		now = unicode(time.strftime(u"%b %d %H:%M:%S", time.localtime()), 'utf-8', 'replace')
@@ -57,6 +47,30 @@ class EmailNotifier(object):
 
 	def hasMessage(self):
 		return bool(self.message)
+
+	def notify(self):
+		raise NotImplementedError("Has to be implemented by subclass")
+
+
+class DummyNotifier(BaseNotifier):
+	def notify(self):
+		pass  # Doing nothing
+
+
+class EmailNotifier(BaseNotifier):
+	def __init__(self, smtphost=u'localhost', smtpport=25, subject=u'opsi product updater', sender=u'', receivers=[]):
+		super().__init__()
+
+		self.receivers = forceUnicodeList(receivers)
+		if not self.receivers:
+			raise ValueError(u"List of mail recipients empty")
+		self.smtphost = forceUnicode(smtphost)
+		self.smtpport = forceInt(smtpport)
+		self.sender = forceUnicode(sender)
+		self.subject = forceUnicode(subject)
+		self.username = None
+		self.password = None
+		self.useStarttls = False
 
 	def notify(self):
 		logger.notice(u"Sending mail notification")
