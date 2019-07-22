@@ -150,6 +150,8 @@ required_packages = [
 ]
 
 if os.name == 'posix':
+	required_packages.append('distro')
+
 	# The following dependencies aren't required when running on a
 	# Windows client as part of the opsiclientd.
 	required_packages.append('python-magic')
