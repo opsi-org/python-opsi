@@ -37,9 +37,9 @@ import stat
 import time
 import urllib
 
+from enum import IntEnum
 from http.client import HTTPConnection, HTTPSConnection, HTTPResponse
 
-from OPSI.web2 import responsecode
 from OPSI.web2.dav import davxml
 
 from OPSI import __version__
@@ -57,6 +57,14 @@ if os.name == 'nt':
 	from OPSI.System.Windows import getFreeDrive
 
 logger = Logger()
+
+
+class ResponseCode(IntEnum):
+	OK = 200
+	CREATED = 201
+	NO_CONTENT = 204
+	PARTIAL_CONTENT = 206
+	MULTI_STATUS = 207
 
 
 def _(string):
@@ -1004,7 +1012,7 @@ class HTTPRepository(Repository):
 				try:
 					httplibResponse = conn.getresponse()
 					self._processResponseHeaders(httplibResponse)
-					if httplibResponse.status not in (responsecode.OK, responsecode.PARTIAL_CONTENT):
+					if httplibResponse.status not in (ResponseCode.OK, ResponseCode.PARTIAL_CONTENT):
 						raise RuntimeError(httplibResponse.status)
 					size = forceInt(httplibResponse.getheader('content-length', 0))
 					logger.debug(u"Length of binary data to download: %d bytes" % size)
@@ -1073,7 +1081,7 @@ class WebDAVRepository(HTTPRepository):
 
 		response = self._connectionPool.urlopen(method='PROPFIND', url=source, body=None, headers=headers, retry=True, redirect=True)
 		self._processResponseHeaders(response)
-		if response.status != responsecode.MULTI_STATUS:
+		if response.status != ResponseCode.MULTI_STATUS:
 			raise RepositoryError(u"Failed to list dir '%s': %s" % (source, response.status))
 
 		encoding = 'utf-8'
@@ -1161,7 +1169,7 @@ class WebDAVRepository(HTTPRepository):
 				break
 
 			self._processResponseHeaders(response)
-			if response.status not in (responsecode.CREATED, responsecode.NO_CONTENT):
+			if response.status not in (ResponseCode.CREATED, ResponseCode.NO_CONTENT):
 				raise RuntimeError(response.status)
 		except Exception as error:
 			logger.logException(error)
@@ -1176,7 +1184,7 @@ class WebDAVRepository(HTTPRepository):
 		headers = self._headers()
 		response = self._connectionPool.urlopen(method='DELETE', url=destination, body=None, headers=headers, retry=True, redirect=True)
 		self._processResponseHeaders(response)
-		if response.status != responsecode.NO_CONTENT:
+		if response.status != ResponseCode.NO_CONTENT:
 			raise RepositoryError(u"Failed to delete '%s': %s" % (destination, response.status))
 
 
