@@ -3012,7 +3012,10 @@ class Distribution(object):
 		self.distribution, self._version, self.id = distribution_information
 		self.distribution = self.distribution.strip()
 
-		osType, self.hostname, self.kernel, self.detailedVersion, self.arch, processor = platform.uname()
+		self.hostname = platform.node()
+		self.kernel = platform.release()
+		self.detailedVersion = platform.version()
+		self.arch = platform.machine()
 
 		self.distributor = self._getDistributor()
 
