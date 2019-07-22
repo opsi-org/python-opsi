@@ -33,7 +33,7 @@ Requires:       pwdutils
 %{py_requires}
 %endif
 %if (0%{?sle_version} >= 150000 && 0%{?is_opensuse})
-Requires:		python2-distro
+Requires:		python3-distro
 %endif
 %if 0%{?rhel_version} || 0%{?centos_version} || 0%{?fedora_version}
 Requires:       MySQL-python
