@@ -40,6 +40,7 @@ import re
 import shutil
 import socket
 import struct
+import sys
 import time
 import types
 from collections import namedtuple
@@ -739,8 +740,12 @@ def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeD
 	return files
 
 
-def isRegularExpressionPattern(object):
-	return "SRE_Pattern" in str(type(object))
+if sys.version_info >= (3, 7):
+	def isRegularExpressionPattern(object):
+		return isinstance(object, re.Pattern)
+else:
+	def isRegularExpressionPattern(object):
+		return "SRE_Pattern" in str(type(object))
 
 
 def ipAddressInNetwork(ipAddress, networkAddress):
