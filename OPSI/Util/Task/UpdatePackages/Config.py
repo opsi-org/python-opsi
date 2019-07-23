@@ -299,7 +299,7 @@ overriden based on values in configuration file.
 
 		elif baseUrl:
 			if proxy:
-				logger.notice(u"Using Proxy: %s" % proxy)
+				logger.info(u"Repository {} is using proxy {}", repoName, proxy)
 
 			repository = ProductRepositoryInfo(
 				name=repoName,
