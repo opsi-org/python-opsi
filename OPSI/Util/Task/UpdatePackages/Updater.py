@@ -379,7 +379,6 @@ class OpsiPackageUpdater(object):
 					logger.notice(u"No new packages installed")
 					return
 
-				wakeOnLanClients = set()
 				shutdownProduct = None
 				if self.config['wolAction'] and self.config["wolShutdownWanted"]:
 					for product in self.getConfigBackend().productOnDepot_getObjects(depotId=self.depotId, productId='shutdownwanted'):
@@ -389,6 +388,7 @@ class OpsiPackageUpdater(object):
 					if not shutdownProduct:
 						logger.error(u"Product 'shutdownwanted' not avaliable on depot '%s'" % self.depotId)
 
+				wakeOnLanClients = set()
 				for package in installedPackages:
 					if not package['product'].setupScript:
 						continue
