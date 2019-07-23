@@ -635,20 +635,22 @@ class OpsiPackageUpdater(object):
 		outFile = os.path.join(self.config["packageDir"], availablePackage["filename"])
 		curdir = os.getcwd()
 		os.chdir(os.path.dirname(outFile))
+
+		repository = availablePackage['repository']
 		try:
 			logger.info(u"Zsyncing %s to %s" % (availablePackage["packageFile"], outFile))
 
 			cmd = u"%s -A %s='%s:%s' -o '%s' %s 2>&1" % (
 				self.config["zsyncCommand"],
-				availablePackage['repository'].baseUrl.split('/')[2].split(':')[0],
-				availablePackage['repository'].username,
-				availablePackage['repository'].password,
+				repository.baseUrl.split('/')[2].split(':')[0],
+				repository.username,
+				repository.password,
 				outFile,
 				availablePackage["zsyncFile"]
 			)
 
-			if availablePackage['repository'].proxy:
-				cmd = u"http_proxy=%s %s" % (availablePackage['repository'].proxy, cmd)
+			if repository.proxy:
+				cmd = u"http_proxy=%s %s" % (repository.proxy, cmd)
 
 			stateRegex = re.compile(r'\s([\d.]+)%\s+([\d.]+)\skBps(.*)$')
 			data = ''
@@ -677,8 +679,9 @@ class OpsiPackageUpdater(object):
 			os.chdir(curdir)
 
 	def downloadPackage(self, availablePackage, notifier=None):
-		authcertfile = availablePackage['repository'].authcertfile
-		authkeyfile = availablePackage['repository'].authkeyfile
+		repository = availablePackage['repository']
+		authcertfile = repository.authcertfile
+		authkeyfile = repository.authkeyfile
 		url = availablePackage["packageFile"]
 		outFile = os.path.join(self.config["packageDir"], availablePackage["filename"])
 
@@ -688,11 +691,12 @@ class OpsiPackageUpdater(object):
 			handler = urllib2.HTTPSHandler(context=context)
 		else:
 			passwordManager = urllib2.HTTPPasswordMgrWithDefaultRealm()
-			passwordManager.add_password(None, availablePackage['repository'].baseUrl, availablePackage['repository'].username, availablePackage['repository'].password)
+			passwordManager.add_password(None, repository.baseUrl, repository.username, repository.password)
 			handler = urllib2.HTTPBasicAuthHandler(passwordManager)
-		if availablePackage['repository'].proxy:
-			logger.notice(u"Using Proxy: %s" % availablePackage['repository'].proxy)
-			proxyHandler = urllib2.ProxyHandler({'http': availablePackage['repository'].proxy, 'https': availablePackage['repository'].proxy})
+
+		if repository.proxy:
+			logger.notice(u"Using Proxy: %s" % repository.proxy)
+			proxyHandler = urllib2.ProxyHandler({'http': repository.proxy, 'https': repository.proxy})
 			opener = urllib2.build_opener(proxyHandler, handler)
 		else:
 			opener = urllib2.build_opener(handler)
