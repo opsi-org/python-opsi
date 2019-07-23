@@ -334,6 +334,7 @@ class OpsiPackageUpdater(object):
 							break
 				newPackages = sortedPackages
 
+				configBackend = self.getConfigBackend()
 				installedPackages = []
 				for package in newPackages:
 					packageFile = os.path.join(self.config["packageDir"], package["filename"])
@@ -345,11 +346,11 @@ class OpsiPackageUpdater(object):
 					try:
 						if package['repository'].inheritProductProperties and availablePackage['repository'].opsiDepotId:
 							logger.info(u"Trying to get product property defaults from repository")
-							productPropertyStates = self.getConfigBackend().productPropertyState_getObjects(
+							productPropertyStates = configBackend.productPropertyState_getObjects(
 											productId=package['productId'],
 											objectId=availablePackage['repository'].opsiDepotId)
 						else:
-							productPropertyStates = self.getConfigBackend().productPropertyState_getObjects(
+							productPropertyStates = configBackend.productPropertyState_getObjects(
 											productId=package['productId'],
 											objectId=self.depotId)
 						if productPropertyStates:
@@ -360,11 +361,11 @@ class OpsiPackageUpdater(object):
 						logger.warning(u"Failed to get product property defaults: %s" % error)
 
 					logger.info(u"Installing package '%s'" % packageFile)
-					self.getConfigBackend().depot_installPackage(filename=packageFile, propertyDefaultValues=propertyDefaultValues, tempDir=self.config.get('tempdir', '/tmp'))
-					productOnDepots = self.getConfigBackend().productOnDepot_getObjects(depotId=self.depotId, productId=package['productId'])
+					configBackend.depot_installPackage(filename=packageFile, propertyDefaultValues=propertyDefaultValues, tempDir=self.config.get('tempdir', '/tmp'))
+					productOnDepots = configBackend.productOnDepot_getObjects(depotId=self.depotId, productId=package['productId'])
 					if not productOnDepots:
 						raise ValueError(u"Product '%s' not found on depot '%s' after installation" % (package['productId'], self.depotId))
-					package['product'] = self.getConfigBackend().product_getObjects(
+					package['product'] = configBackend.product_getObjects(
 						id=productOnDepots[0].productId,
 						productVersion=productOnDepots[0].productVersion,
 						packageVersion=productOnDepots[0].packageVersion
@@ -382,7 +383,7 @@ class OpsiPackageUpdater(object):
 				shutdownProduct = None
 				if self.config['wolAction'] and self.config["wolShutdownWanted"]:
 					try:
-						shutdownProduct = self.getConfigBackend().productOnDepot_getObjects(depotId=self.depotId, productId='shutdownwanted')[0]
+						shutdownProduct = configBackend.productOnDepot_getObjects(depotId=self.depotId, productId='shutdownwanted')[0]
 						logger.info(u"Found 'shutdownwanted' product on depot '%s': %s" % (self.depotId, shutdownProduct))
 					except IndexError:
 						logger.error(u"Product 'shutdownwanted' not avaliable on depot '%s'" % self.depotId)
@@ -410,7 +411,7 @@ class OpsiPackageUpdater(object):
 						)
 						continue
 
-					clientToDepotserver = self.getConfigBackend().configState_getClientToDepotserver(depotIds=[self.depotId])
+					clientToDepotserver = configBackend.configState_getClientToDepotserver(depotIds=[self.depotId])
 					clientIds = set(
 						ctd['clientId']
 						for ctd in clientToDepotserver
@@ -418,7 +419,7 @@ class OpsiPackageUpdater(object):
 					)
 
 					if clientIds:
-						productOnClients = self.getConfigBackend().productOnClient_getObjects(
+						productOnClients = configBackend.productOnClient_getObjects(
 							attributes=['installationStatus'],
 							productId=package['productId'],
 							productType='LocalbootProduct',
@@ -434,7 +435,7 @@ class OpsiPackageUpdater(object):
 								if wolEnabled and package['productId'] not in excludedWolProducts:
 									wakeOnLanClients.add(poc.clientId)
 
-							self.getConfigBackend().productOnClient_updateObjects(productOnClients)
+							configBackend.productOnClient_updateObjects(productOnClients)
 							if notifier:
 								notifier.appendLine(u"Product {0} set to 'setup' on clients: {1}".format(package['productId'], ', '.join(sorted(poc.clientId for poc in productOnClients))))
 
@@ -449,7 +450,7 @@ class OpsiPackageUpdater(object):
 							if self.config["wolShutdownWanted"] and shutdownProduct:
 								logger.info(u"Setting shutdownwanted to 'setup' for client '%s'" % clientId)
 
-								self.getConfigBackend().productOnClient_updateObjects(
+								configBackend.productOnClient_updateObjects(
 									ProductOnClient(
 										productId=shutdownProduct.productId,
 										productType=shutdownProduct.productType,
@@ -459,7 +460,7 @@ class OpsiPackageUpdater(object):
 										actionRequest='setup'
 									)
 								)
-							self.getConfigBackend().hostControl_start(hostIds=[clientId])
+							configBackend.hostControl_start(hostIds=[clientId])
 							time.sleep(self.config["wolStartGap"])
 						except Exception as error:
 							logger.error(u"Failed to power on client '%s': %s" % (clientId, error))
