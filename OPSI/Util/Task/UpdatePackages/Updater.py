@@ -381,11 +381,10 @@ class OpsiPackageUpdater(object):
 
 				shutdownProduct = None
 				if self.config['wolAction'] and self.config["wolShutdownWanted"]:
-					for product in self.getConfigBackend().productOnDepot_getObjects(depotId=self.depotId, productId='shutdownwanted'):
-						shutdownProduct = product
+					try:
+						shutdownProduct = self.getConfigBackend().productOnDepot_getObjects(depotId=self.depotId, productId='shutdownwanted')[0]
 						logger.info(u"Found 'shutdownwanted' product on depot '%s': %s" % (self.depotId, shutdownProduct))
-						break
-					if not shutdownProduct:
+					except IndexError:
 						logger.error(u"Product 'shutdownwanted' not avaliable on depot '%s'" % self.depotId)
 
 				wakeOnLanClients = set()
