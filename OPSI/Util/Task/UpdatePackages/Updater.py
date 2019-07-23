@@ -303,7 +303,7 @@ class OpsiPackageUpdater(object):
 
 				sequence = []
 				for package in newPackages:
-					if not insideInstallWindow and not package['productId'] in self.config['installationWindowExceptions']:
+					if not insideInstallWindow and package['productId'] not in self.config['installationWindowExceptions']:
 						continue
 					sequence.append(package['productId'])
 
