@@ -37,7 +37,7 @@ import urllib
 import urllib2
 
 from .Config import ConfigurationParser
-from .Notifier import EmailNotifier
+from .Notifier import DummyNotifier, EmailNotifier
 from .Repository import LinksExtractor
 
 from OPSI import System
@@ -154,10 +154,7 @@ class OpsiPackageUpdater(object):
 			logger.warning(u"No repositories configured, nothing to do")
 			return
 
-		notifier = None
-		if self.config["notification"]:
-			logger.info(u"Notification is activated")
-			notifier = self._getNotifier()
+		notifier = self._getNotifier()
 
 		try:
 			try:
@@ -373,9 +370,9 @@ class OpsiPackageUpdater(object):
 						packageVersion=productOnDepots[0].packageVersion
 					)[0]
 
-					if notifier:
-						notifier.appendLine(u"Package '%s' successfully installed" % packageFile, pre='\n')
-					logger.notice(u"Package '%s' successfully installed" % packageFile)
+					message = u"Package '%s' successfully installed" % packageFile
+					notifier.appendLine(message, pre='\n')
+					logger.notice(message)
 					installedPackages.append(package)
 
 				if not installedPackages:
@@ -438,13 +435,11 @@ class OpsiPackageUpdater(object):
 									wakeOnLanClients.add(poc.clientId)
 
 							backend.productOnClient_updateObjects(productOnClients)
-							if notifier:
-								notifier.appendLine(u"Product {0} set to 'setup' on clients: {1}".format(package['productId'], ', '.join(sorted(poc.clientId for poc in productOnClients))))
+							notifier.appendLine(u"Product {0} set to 'setup' on clients: {1}".format(package['productId'], ', '.join(sorted(poc.clientId for poc in productOnClients))))
 
 				if wakeOnLanClients:
 					logger.notice(u"Powering on clients %s" % wakeOnLanClients)
-					if notifier:
-						notifier.appendLine(u"Powering on clients: {0}".format(', '.join(sorted(wakeOnLanClients))))
+					notifier.appendLine(u"Powering on clients: {0}".format(', '.join(sorted(wakeOnLanClients))))
 
 					for clientId in wakeOnLanClients:
 						try:
@@ -467,14 +462,17 @@ class OpsiPackageUpdater(object):
 						except Exception as error:
 							logger.error(u"Failed to power on client '%s': %s" % (clientId, error))
 			except Exception as error:
-				if notifier:
-					notifier.appendLine(u"Error occurred: %s" % error)
+				notifier.appendLine(u"Error occurred: %s" % error)
 				raise
 		finally:
 			if notifier and notifier.hasMessage():
 				notifier.notify()
 
 	def _getNotifier(self):
+		if not self.config["notification"]:
+			return DummyNotifier()
+
+		logger.info(u"E-Mail notification is activated")
 		notifier = EmailNotifier(
 			smtphost=self.config["smtphost"],
 			smtpport=self.config["smtpport"],
@@ -518,10 +516,7 @@ class OpsiPackageUpdater(object):
 			logger.warning(u"No repositories configured, nothing to do")
 			return
 
-		notifier = None
-		if self.config["notification"]:
-			logger.info(u"Notification is activated")
-			notifier = self._getNotifier()
+		notifier = self._getNotifier()
 
 		forceDownload = self.config["forceDownload"]
 
@@ -563,8 +558,7 @@ class OpsiPackageUpdater(object):
 
 					message = u"{filename} - download of package is forced.".format(**availablePackage)
 					logger.notice(message)
-					if notifier:
-						notifier.appendLine(message)
+					notifier.appendLine(message)
 				elif not downloadNeeded:
 					logger.info(
 						u"%s - download of package is not required: found local package %s with matching md5sum" % (
@@ -575,13 +569,11 @@ class OpsiPackageUpdater(object):
 				elif localPackageFound:
 					message = u"{filename} - download of package is required: found local package {0} which differs from available".format(localPackageFound['filename'], **availablePackage)
 					logger.notice(message)
-					if notifier:
-						notifier.appendLine(message)
+					notifier.appendLine(message)
 				else:
 					message = u"{filename} - download of package is required: local package not found".format(**availablePackage)
 					logger.notice(message)
-					if notifier:
-						notifier.appendLine(message)
+					notifier.appendLine(message)
 
 				packageFile = os.path.join(self.config["packageDir"], availablePackage["filename"])
 				zsynced = False
@@ -626,8 +618,7 @@ class OpsiPackageUpdater(object):
 				logger.notice(u"No new packages downloaded")
 				return
 		except Exception as error:
-			if notifier:
-				notifier.appendLine(u"Error occurred: %s" % error)
+			notifier.appendLine(u"Error occurred: %s" % error)
 			raise
 		finally:
 			if notifier and notifier.hasMessage():
@@ -674,9 +665,11 @@ class OpsiPackageUpdater(object):
 				percent = float(match.group(1))
 				speed = float(match.group(2)) * 8
 				logger.debug(u'Zsyncing %s: %d%% (%d kbit/s)' % (availablePackage["packageFile"], percent, speed))
+
+			message = u"Zsync of '%s' completed" % availablePackage["packageFile"]
+			logger.info(message)
 			if notifier:
-				notifier.appendLine(u"Zsync of '%s' completed" % availablePackage["packageFile"])
-			logger.info(u"Zsync of '%s' completed" % availablePackage["packageFile"])
+				notifier.appendLine(message)
 		finally:
 			os.chdir(curdir)
 
@@ -738,12 +731,14 @@ class OpsiPackageUpdater(object):
 					except Exception:
 						pass
 
+		if size:
+			message = u"Download of '%s' completed (~%s)" % (url, formatFileSize(size))
+		else:
+			message = u"Download of '%s' completed" % url
+
+		logger.info(message)
 		if notifier:
-			if size:
-				notifier.appendLine(u"Download of '%s' completed (~%s)" % (url, formatFileSize(size)))
-			else:
-				notifier.appendLine(u"Download of '%s' completed" % url)
-		logger.info(u"Download of '%s' completed" % url)
+			notifier.appendLine(message)
 
 	def cleanupPackages(self, newPackage):
 		logger.info(u"Cleaning up in %s" % self.config["packageDir"])
