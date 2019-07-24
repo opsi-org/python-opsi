@@ -42,10 +42,23 @@ class BaseNotifier(object):
 		self.message = ''
 
 	def appendLine(self, line, pre=''):
+		"""
+		Add another line to the message.
+
+		:param line: Text to add
+		:type line: str
+		:param pre: Prefix that will be added before the timestampt and text.
+		:type pre: str
+		"""
 		now = unicode(time.strftime(u"%b %d %H:%M:%S", time.localtime()), 'utf-8', 'replace')
 		self.message += u'%s%s %s\n' % (pre, now, forceUnicode(line))
 
 	def hasMessage(self):
+		"""
+		Check if the notifier already collected a message.
+
+		:rtype: bool
+		"""
 		return bool(self.message)
 
 	def notify(self):
@@ -53,11 +66,17 @@ class BaseNotifier(object):
 
 
 class DummyNotifier(BaseNotifier):
+	"""
+	Notifier that does nothing on `notify()`.
+	"""
 	def notify(self):
 		pass  # Doing nothing
 
 
 class EmailNotifier(BaseNotifier):
+	"""
+	Notify by sending an email.
+	"""
 	def __init__(self, smtphost=u'localhost', smtpport=25, subject=u'opsi product updater', sender=u'', receivers=[]):
 		super().__init__()
 
