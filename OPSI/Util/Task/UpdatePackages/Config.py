@@ -48,7 +48,7 @@ from OPSI.Types import (
 __all__ = ('DEFAULT_CONFIG', 'ConfigurationParser')
 
 DEFAULT_CONFIG = {
-	"userAgent": 'opsi package updater %s' % __version__,
+	"userAgent": 'opsi-package-updater/%s' % __version__,
 	"packageDir": '/var/lib/opsi/products',
 	"configFile": '/etc/opsi/opsi-package-updater.conf',
 	"repositoryConfigDir": '/etc/opsi/package-updater.repos.d',
