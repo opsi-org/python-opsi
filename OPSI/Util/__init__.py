@@ -225,6 +225,9 @@ def librsyncPatchFile(oldfile, deltafile, newfile):
 
 def librsyncDeltaFile(filename, signature, deltafile):
 	bufsize = 1024 * 1024
+	filename = forceFilename(filename)
+	deltafile = forceFilename(deltafile)
+	logger.debug("Creating deltafile {!r} on base of {!r}", deltafile, filename)
 	try:
 		with open(filename, "rb") as f:
 			with open(deltafile, "wb") as df:
