@@ -28,45 +28,40 @@ import os
 
 from OPSI.Backend.Backend import temporaryBackendOptions
 
+def getMenuFiles():
+	if os.path.exists('/tftpboot/linux/pxelinux.cfg/default.menu'):
+		defaultMenu = '/tftpboot/linux/pxelinux.cfg/default.menu'
+		grubMenu = '/tftpboot/grub/grub.cfg'
+	else:
+		defaultMenu = '/var/lib/tftpboot/opsi/pxelinux.cfg/default.menu'
+		grubmenu = '/var/lib/tftpboot/grub/grub.cfg'
+
+def patchMenuFile(menufile, searchString):
+	with open(menufile) as readMenu:
+		newlines=[]
+		for line in readMenu:
+			if line.strip().startswith(searchString):
+				newlines.append('{} service={}\n'.format(line.rstrip(), configServer.rstrip()))
+				continue
+			newLines.append(line)
+
+			with open(menufile, 'w') as writeMenu:
+				writeMenu.writelines(newlines)
+
 
 def patchConfigserserverurlInDefaultMenu(backend):
 	"""
-	Patches the clientconfig.configserver.url into the default.menu"
+	Patches the clientconfig.configserver.url into the default.menu/grub.cfg"
 	"""
 
-	from OPSI.Backend.BackendManager import BackendManager
-	with BackendManager() as backend:
-		with temporaryBackendOptions(backend, addConfigStateDefaults=True):
-			try:
-				configServer = backend.config_getObjects(attributes=["defaultValues"], id='clientconfig.configserver.url')[0]
-				configServer = configServer.defaultValues[0]
-			except IndexError:
-				raise BackendMissingDataError("Unable to get clientconfig.configserver.url")
-			if configServer:
-				if os.path.exists('/tftpboot/linux/pxelinux.cfg/default.menu'):
-					defaultMenu = '/tftpboot/linux/pxelinux.cfg/default.menu'
-				else:
-					defaultMenu = '/var/lib/tftpboot/opsi/pxelinux.cfg/default.menu'
-				with open(defaultMenu, 'r+') as readMenu:
-					newlines=[]
-					for line in readMenu:
-						if line.strip().startswith('append'):
-							newlines.append('{} service={}\n'.format(line.strip(), configServer.rstrip()))
-						newLines.append(line)
+	with temporaryBackendOptions(backend, addConfigStateDefaults=True):
+		try:
+			configServer = backend.config_getObjects(attributes=["defaultValues"], id='clientconfig.configserver.url')[0]
+			configServer = configServer.defaultValues[0]
+		except IndexError:
+			raise BackendMissingDataError("Unable to get clientconfig.configserver.url")
 
-				with open(defaultMenu, 'w') as writeMenu:
-					writeMenu.write(newLines)
-
-				if os.path.exists('/tftpboot/grub/grub.cfg'):
-					grubMenu = '/tftpboot/grub/grub.cfg'
-				else:
-					grubmenu = '/var/lib/tftpboot/grub/grub.cfg'
-				with open(grubMenu) as readMenu:
-					newlines=[]
-					for line in readMenu:
-						if line.strip().startswith('linux'):
-							newlines.append('{} service={}\n'.format(line.rstrip(), configServer.rstrip()))
-						newlines.append(line)
-
-				with open(grubMenu, 'w') as writeMenu:
-					writemenu.write(newlines)
+		if configServer:
+			getMenuFiles()
+			patchMenuFile(defaultMenu, 'append')
+			patchMenuFile(grubMenu, 'linux')
