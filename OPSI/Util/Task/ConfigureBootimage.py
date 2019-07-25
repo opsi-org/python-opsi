@@ -27,23 +27,23 @@ This writes the opsi configserver URL into the default.menu file
 import os
 
 from OPSI.Backend.Backend import temporaryBackendOptions
-
+from OPSI.Exceptions import BackendMissingDataError
 def getMenuFiles():
 	if os.path.exists('/tftpboot/linux/pxelinux.cfg/default.menu'):
-		defaultMenu = '/tftpboot/linux/pxelinux.cfg/default.menu'
-		grubMenu = '/tftpboot/grub/grub.cfg'
+		return defaultMenu = '/tftpboot/linux/pxelinux.cfg/default.menu'
+		return grubMenu = '/tftpboot/grub/grub.cfg'
 	else:
-		defaultMenu = '/var/lib/tftpboot/opsi/pxelinux.cfg/default.menu'
-		grubmenu = '/var/lib/tftpboot/grub/grub.cfg'
+		return defaultMenu = '/var/lib/tftpboot/opsi/pxelinux.cfg/default.menu'
+		return grubmenu = '/var/lib/tftpboot/grub/grub.cfg'
 
-def patchMenuFile(menufile, searchString):
+def patchMenuFile(menufile, searchString, configServer):
 	with open(menufile) as readMenu:
 		newlines=[]
 		for line in readMenu:
 			if line.strip().startswith(searchString):
 				newlines.append('{} service={}\n'.format(line.rstrip(), configServer.rstrip()))
 				continue
-			newLines.append(line)
+			newlines.append(line)
 
 			with open(menufile, 'w') as writeMenu:
 				writeMenu.writelines(newlines)
@@ -62,6 +62,8 @@ def patchConfigserserverurlInDefaultMenu(backend):
 			raise BackendMissingDataError("Unable to get clientconfig.configserver.url")
 
 		if configServer:
+			defaultMenu=''
+			grubmenu=''
 			getMenuFiles()
-			patchMenuFile(defaultMenu, 'append')
-			patchMenuFile(grubMenu, 'linux')
+			patchMenuFile(defaultMenu, 'append', configServer)
+			patchMenuFile(grubMenu, 'linux', configServer)
