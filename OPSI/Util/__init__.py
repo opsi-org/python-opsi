@@ -202,7 +202,7 @@ def librsyncSignature(filename, base64Encoded=True):
 
 
 def librsyncPatchFile(oldfile, deltafile, newfile):
-	logger.debug(u"Librsync : %s, %s, %s" % (oldfile, deltafile, newfile))
+	logger.debug(u"Librsync patch: old file {!r}, delta file {!r}, new file {!r}", oldfile, deltafile, newfile)
 
 	oldfile = forceFilename(oldfile)
 	newfile = forceFilename(newfile)
