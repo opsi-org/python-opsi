@@ -187,6 +187,7 @@ def toJson(obj, ensureAscii=False):
 
 
 def librsyncSignature(filename, base64Encoded=True):
+	filename = forceFilename(filename)
 	try:
 		with open(filename, 'rb') as f:
 			with closing(librsync.SigFile(f)) as sf:
@@ -202,6 +203,11 @@ def librsyncSignature(filename, base64Encoded=True):
 
 def librsyncPatchFile(oldfile, deltafile, newfile):
 	logger.debug(u"Librsync : %s, %s, %s" % (oldfile, deltafile, newfile))
+
+	oldfile = forceFilename(oldfile)
+	newfile = forceFilename(newfile)
+	deltafile = forceFilename(deltafile)
+
 	if oldfile == newfile:
 		raise ValueError(u"Oldfile and newfile are the same file")
 	if deltafile == newfile:
@@ -237,7 +243,9 @@ def librsyncDeltaFile(filename, signature, deltafile):
 						data = ldf.read(bufsize)
 						df.write(data)
 	except Exception as e:
-		raise RuntimeError(u"Failed to write delta file: %s" % forceUnicode(e))
+		raise RuntimeError(
+			u"Failed to write delta file %s: %s" % (deltafile, forceUnicode(e))
+		)
 
 
 def md5sum(filename):
