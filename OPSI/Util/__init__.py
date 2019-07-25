@@ -197,8 +197,13 @@ def librsyncSignature(filename, base64Encoded=True):
 					sig = base64.encodestring(sig)
 
 				return sig
-	except Exception as e:
-		raise RuntimeError(u"Failed to get librsync signature: %s" % forceUnicode(e))
+	except Exception as sigError:
+		raise RuntimeError(
+			u"Failed to get librsync signature from %s: %s" % (
+				filename,
+				forceUnicode(sigError)
+			)
+		)
 
 
 def librsyncPatchFile(oldfile, deltafile, newfile):
@@ -225,8 +230,12 @@ def librsyncPatchFile(oldfile, deltafile, newfile):
 						while data:
 							data = pf.read(bufsize)
 							nf.write(data)
-	except Exception as e:
-		raise RuntimeError(u"Failed to patch file: %s" % forceUnicode(e))
+	except Exception as patchError:
+		logger.debug(
+			"Patching {!r} with delta {!r} into {!r} failed: {}",
+			oldfile, deltafile, newfile, patchError
+		)
+		raise RuntimeError(u"Failed to patch file %s: %s" % (oldfile, forceUnicode(patchError)))
 
 
 def librsyncDeltaFile(filename, signature, deltafile):
