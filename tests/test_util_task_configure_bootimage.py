@@ -33,6 +33,7 @@ import OPSI.Util.Task.ConfigureBootimage as ConfigureBootimage
 from .helpers import mock
 
 def testMenuFiles():
-	defaultMenu, grubmenu = configureBootimage.getMenuFiles()
-	assert defaultMenu == u'/tftpboot/linux/pxelinux.cfg/default.menu'
-	assert grubMenu == u'/tftpboot/grub/grub.cfg'
+	with mock.patch('os.path.exists', lambda x:True):
+		defaultMenu, grubmenu = configureBootimage.getMenuFiles()
+		assert defaultMenu == u'/tftpboot/linux/pxelinux.cfg/default.menu'
+		assert grubMenu == u'/tftpboot/grub/grub.cfg'
