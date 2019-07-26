@@ -69,5 +69,7 @@ def testPatchMenuFile(tempDir):
 		u''
 	]
 
-	with open(filename) as patchedDefault:
-		assertItemsEqual(patchedDefault, expectedDefault)
+	with open(filename) as patchedFile:
+		patchedDefault = patchedFile.readlines()
+
+	assert patchedDefault == expectedDefault
