@@ -43,8 +43,8 @@ def testMenuFiles(fileExists, expectedDefaultMenu, expectedGrubMenu):
 		assert grubMenu == expectedGrubMenu
 
 
-def testPatchMenuFile(tmpDir):
-	filename = os.path.join(tmpDir, 'default.menu')
+def testPatchMenuFile(tempDir):
+	filename = os.path.join(tempDir, 'default.menu')
 	with open(filename, w) as writeFile:
 		writefile.write(u'label install\n')
 		writefile.write(u'  menu label Start ^opsi bootimage\n')
