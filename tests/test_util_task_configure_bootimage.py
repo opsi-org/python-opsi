@@ -46,27 +46,27 @@ def testMenuFiles(fileExists, expectedDefaultMenu, expectedGrubMenu):
 def testPatchMenuFile(tempDir):
 	filename = os.path.join(tempDir, 'default.menu')
 	with open(filename, 'w') as writefile:
-		writefile.write(u'label install\n')
-		writefile.write(u'  menu label Start ^opsi bootimage\n')
-		writefile.write(u'  text help\n')
-		writefile.write(u'                 Start opsi linux bootimage from tftp server.\n')
-		writefile.write(u'  endtext\n')
-		writefile.write(u'  kernel install\n')
-		writefile.write(u'  append initrd=miniroot.bz2 video=vesa:ywrap,mtrr vga=791 quiet splash --no-log console=tty1 console=ttyS0\n')
-		writefile.write(u'')
+		writefile.write('label install\n')
+		writefile.write('  menu label Start ^opsi bootimage\n')
+		writefile.write('  text help\n')
+		writefile.write('                 Start opsi linux bootimage from tftp server.\n')
+		writefile.write('  endtext\n')
+		writefile.write('  kernel install\n')
+		writefile.write('  append initrd=miniroot.bz2 video=vesa:ywrap,mtrr vga=791 quiet splash --no-log console=tty1 console=ttyS0\n')
+		writefile.write('')
 
 	configServer = u'https://192.168.1.14:4447/rpc'
 	ConfigureBootimage.patchMenuFile(filename, 'append', configServer)
 
 	expectedDefault = [
-		u'label install\n',
-		u'  menu label Start ^opsi bootimage\n',
-		u'  text help\n',
-		u'                 Start opsi linux bootimage from tftp server.\n',
-		u'  endtext\n',
-		u'  kernel install\n',
-		u'  append initrd=miniroot.bz2 video=vesa:ywrap,mtrr vga=791 quiet splash --no-log console=tty1 console=ttyS0 service=https://192.168.1.14:4447/rpc\n',
-		u''
+		'label install\n',
+		'  menu label Start ^opsi bootimage\n',
+		'  text help\n',
+		'                 Start opsi linux bootimage from tftp server.\n',
+		'  endtext\n',
+		'  kernel install\n',
+		'  append initrd=miniroot.bz2 video=vesa:ywrap,mtrr vga=791 quiet splash --no-log console=tty1 console=ttyS0 service=https://192.168.1.14:4447/rpc\n',
+		''
 	]
 
 	with open(filename) as patchedFile:
