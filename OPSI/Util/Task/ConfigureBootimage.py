@@ -30,11 +30,11 @@ from OPSI.Backend.Backend import temporaryBackendOptions
 from OPSI.Exceptions import BackendMissingDataError
 def getMenuFiles():
 	if os.path.exists('/tftpboot/linux/pxelinux.cfg/default.menu'):
-		defaultMenu = '/tftpboot/linux/pxelinux.cfg/default.menu'
-		grubMenu = '/tftpboot/grub/grub.cfg'
+		defaultMenu = u'/tftpboot/linux/pxelinux.cfg/default.menu'
+		grubMenu = u'/tftpboot/grub/grub.cfg'
 	else:
-		defaultMenu = '/var/lib/tftpboot/opsi/pxelinux.cfg/default.menu'
-		grubmenu = '/var/lib/tftpboot/grub/grub.cfg'
+		defaultMenu = u'/var/lib/tftpboot/opsi/pxelinux.cfg/default.menu'
+		grubmenu = u'/var/lib/tftpboot/grub/grub.cfg'
 	return defaultMenu
 	return grubMenu
 
