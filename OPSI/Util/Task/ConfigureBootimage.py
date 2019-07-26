@@ -35,8 +35,8 @@ def getMenuFiles():
 	else:
 		defaultMenu = u'/var/lib/tftpboot/opsi/pxelinux.cfg/default.menu'
 		grubmenu = u'/var/lib/tftpboot/grub/grub.cfg'
-	return defaultMenu
-	return grubMenu
+	return defaultMenu, grubMenu
+
 
 def patchMenuFile(menufile, searchString, configServer):
 	with open(menufile) as readMenu:
@@ -47,8 +47,8 @@ def patchMenuFile(menufile, searchString, configServer):
 				continue
 			newlines.append(line)
 
-			with open(menufile, 'w') as writeMenu:
-				writeMenu.writelines(newlines)
+	with open(menufile, 'w') as writeMenu:
+		writeMenu.writelines(newlines)
 
 
 def patchConfigserserverurlInDefaultMenu(backend):
@@ -64,8 +64,6 @@ def patchConfigserserverurlInDefaultMenu(backend):
 			raise BackendMissingDataError("Unable to get clientconfig.configserver.url")
 
 		if configServer:
-			defaultMenu=''
-			grubmenu=''
-			getMenuFiles()
+			defaultMenu, grubMenu = getMenuFiles()
 			patchMenuFile(defaultMenu, 'append', configServer)
 			patchMenuFile(grubMenu, 'linux', configServer)
