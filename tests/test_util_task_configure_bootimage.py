@@ -38,6 +38,36 @@ from .helpers import mock
 ])
 def testMenuFiles(fileExists, expectedDefaultMenu, expectedGrubMenu):
 	with mock.patch('os.path.exists', lambda x: fileExists):
-		defaultMenu, grubmenu = ConfigureBootimage.getMenuFiles()
+		defaultMenu, grubMenu = ConfigureBootimage.getMenuFiles()
 		assert defaultMenu == expectedDefaultMenu
 		assert grubMenu == expectedGrubMenu
+
+
+def testPatchMenuFile(tmpDir):
+	filename = os.path.join(tmpDir, 'default.menu')
+	with open(filename, w) as writeFile:
+		writefile.write(u'label install\n')
+		writefile.write(u'  menu label Start ^opsi bootimage\n')
+		writefile.write(u'  text help\n')
+		writefile.write(u'                 Start opsi linux bootimage from tftp server.\n')
+		writefile.write(u'  endtext\n')
+		writefile.write(u'  kernel install\n')
+		writefile.write(u'  append initrd=miniroot.bz2 video=vesa:ywrap,mtrr vga=791 quiet splash --no-log console=tty1 console=ttyS0\n')
+		writefile.write(u'')
+	]
+	configServer = u'https://192.168.1.14:4447/rpc'
+	ConfigureBootimage.patchMenuFile(filename, 'append', configServer)
+
+	expectedDefault = [
+		u'label install\n',
+		u'  menu label Start ^opsi bootimage\n',
+		u'  text help\n',
+		u'                 Start opsi linux bootimage from tftp server.\n',
+		u'  endtext\n',
+		u'  kernel install\n',
+		u'  append initrd=miniroot.bz2 video=vesa:ywrap,mtrr vga=791 quiet splash --no-log console=tty1 console=ttyS0 service=https://192.168.1.14:4447/rpc\n',
+		u''
+	]
+
+	with open(filename) as patchedDefault:
+		assert get_list(patchedDefault) == get_list(expectedDefault)
