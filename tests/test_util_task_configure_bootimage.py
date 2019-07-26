@@ -70,4 +70,4 @@ def testPatchMenuFile(tempDir):
 	]
 
 	with open(filename) as patchedDefault:
-		assert get_list(patchedDefault) == get_list(expectedDefault)
+		assertItemsEqual(patchedDefault, expectedDefault)
