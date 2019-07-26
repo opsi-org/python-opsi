@@ -45,7 +45,7 @@ def testMenuFiles(fileExists, expectedDefaultMenu, expectedGrubMenu):
 
 def testPatchMenuFile(tempDir):
 	filename = os.path.join(tempDir, 'default.menu')
-	with open(filename, 'w') as writeFile:
+	with open(filename, 'w') as writefile:
 		writefile.write(u'label install\n')
 		writefile.write(u'  menu label Start ^opsi bootimage\n')
 		writefile.write(u'  text help\n')
