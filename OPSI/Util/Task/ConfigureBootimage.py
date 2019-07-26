@@ -34,7 +34,7 @@ def getMenuFiles():
 		grubMenu = u'/tftpboot/grub/grub.cfg'
 	else:
 		defaultMenu = u'/var/lib/tftpboot/opsi/pxelinux.cfg/default.menu'
-		grubmenu = u'/var/lib/tftpboot/grub/grub.cfg'
+		grubMenu = u'/var/lib/tftpboot/grub/grub.cfg'
 	return defaultMenu, grubMenu
 
 
