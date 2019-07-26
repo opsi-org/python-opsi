@@ -38,6 +38,6 @@ from .helpers import mock
 ])
 def testMenuFiles(fileExists, expectedDefaultMenu, expectedGrubMenu):
 	with mock.patch('os.path.exists', lambda x: fileExists):
-		defaultMenu, grubmenu = configureBootimage.getMenuFiles()
+		defaultMenu, grubmenu = ConfigureBootimage.getMenuFiles()
 		assert defaultMenu == expectedDefaultMenu
 		assert grubMenu == expectedGrubMenu
