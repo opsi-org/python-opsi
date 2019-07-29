@@ -100,11 +100,13 @@ def getFileInfosFromDavXML(davxmldata):
 						if not text == "None": info['size'] = int(text)
 					if tag == "{DAV:}displayname":
 						info['name'] = text
-				#IIS Fix: Remove trailing backslash on file-paths
+
+				# IIS Fix: Remove trailing backslash on file-paths
 				if info['type'] == 'file' and info['path'].endswith("/"):
 					info['path'] = info['path'][:-1]
 			content.append(info)
 	return content
+
 
 class RepositoryHook(object):
 	def __init__(self):
