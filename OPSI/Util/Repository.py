@@ -105,10 +105,10 @@ def getFileInfosFromDavXML(davxmldata):
 					if tag == "{DAV:}getcontenttype":
 						if "directory" in text:
 							info['type'] = 'dir'
-					if tag == "{DAV:}getcontentlength":
+					elif tag == "{DAV:}getcontentlength":
 						if text != "None":
 							info['size'] = int(text)
-					if tag == "{DAV:}displayname":
+					elif tag == "{DAV:}displayname":
 						info['name'] = text
 
 				# IIS Fix: Remove trailing backslash on file-paths
