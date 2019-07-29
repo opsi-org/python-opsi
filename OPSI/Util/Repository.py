@@ -90,12 +90,15 @@ def getFileInfosFromDavXML(davxmldata):
 		info = {'size': 0, 'type': 'file', 'path': '', 'name': ''}
 		if child.tag != "{DAV:}response":
 			raise RepositoryError(u"No valid davxml given")
+
 		if child[0].tag == "{DAV:}href":
 			info['path'] = child[0].text
+
 		if child[1].tag == "{DAV:}propstat":
 			for node in child[1]:
 				if node.tag != "{DAV:}prop":
 					continue
+
 				for childnode in node:
 					tag = childnode.tag
 					text = childnode.text
@@ -111,7 +114,9 @@ def getFileInfosFromDavXML(davxmldata):
 				# IIS Fix: Remove trailing backslash on file-paths
 				if info['type'] == 'file' and info['path'].endswith("/"):
 					info['path'] = info['path'][:-1]
+
 			content.append(info)
+
 	return content
 
 
