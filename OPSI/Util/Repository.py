@@ -88,13 +88,13 @@ def getFileInfosFromDavXML(davxmldata):
 	root = ET.fromstring(davxmldata)
 	for child in root:
 		info = {'size': 0, 'type': 'file', 'path': '', 'name': ''}
-		if not child.tag == "{DAV:}response":
+		if child.tag != "{DAV:}response":
 			raise RepositoryError(u"No valid davxml given")
 		if child[0].tag == "{DAV:}href":
 			info['path'] = child[0].text
 		if child[1].tag == "{DAV:}propstat":
 			for node in child[1]:
-				if not node.tag == "{DAV:}prop":
+				if node.tag != "{DAV:}prop":
 					continue
 				for childnode in node:
 					tag = childnode.tag
