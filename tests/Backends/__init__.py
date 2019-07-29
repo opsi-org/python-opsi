@@ -52,7 +52,7 @@ def getTestBackend(extended=False):
             backend.backend_deleteBase()
 
 
-class BackendMixin(object):
+class BackendMixin:
     """
     Base class for backend test mixins.
 

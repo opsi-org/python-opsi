@@ -198,7 +198,7 @@ def addDependentProductOnClients(productOnClients, availableProducts, productDep
 	return productOnClientByProductId.values()
 
 
-class XClassifiedProduct(object):
+class XClassifiedProduct:
 	"""
 	has String member id, int members priority, revisedPriority, and a member that is intendend to be a reference to a Product
 	"""
@@ -216,7 +216,7 @@ class XClassifiedProduct(object):
 		return self.__str__()
 
 
-class OrderRequirement(object):
+class OrderRequirement:
 	"""
 	Represents a request for ordering of two elements with a notice
 	if it is fulfilled.
@@ -234,7 +234,7 @@ class OrderRequirement(object):
 		return self.__str__()
 
 
-class Requirements(object):
+class Requirements:
 	# Comprises a list with ordering requirements and ordered lists of them
 
 	def __init__(self):
@@ -389,7 +389,7 @@ class Requirements(object):
 		return self.orderByPosterior
 
 
-class OrderBuild(object):
+class OrderBuild:
 	# Describes the building of an ordering
 
 	def __init__(self, elementCount, requs, completing):

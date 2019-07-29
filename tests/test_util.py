@@ -694,7 +694,7 @@ def testSerialisingDict(inputValues):
 
 
 def testUnserialisableThingsFail():
-	class Foo(object):
+	class Foo:
 		pass
 
 	with pytest.raises(TypeError):

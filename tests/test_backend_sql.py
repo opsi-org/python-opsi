@@ -205,7 +205,7 @@ def testUniqueConditionForProductGroupHasTypeAppended(sqlBackendWithoutConnectio
 
 
 def testUniqueConditionForBooleanParameters(sqlBackendWithoutConnection, cleanMandatoryConstructorArgsCache):
-    class Foo(object):
+    class Foo:
         def __init__(self, true, false):
             self.true = true
             self.false = false
@@ -218,7 +218,7 @@ def testUniqueConditionForBooleanParameters(sqlBackendWithoutConnection, cleanMa
 
 
 def testAccessingParametersWithAttributenamesFails(sqlBackendWithoutConnection, cleanMandatoryConstructorArgsCache):
-    class Foo2(object):
+    class Foo2:
         def __init__(self, something):
             self._something = something
 
@@ -235,7 +235,7 @@ def testParameterIsNumber(sqlBackendWithoutConnection, number, cleanMandatoryCon
     assert '`param` = {0!s}'.format(number) == sqlBackendWithoutConnection._uniqueCondition(FooParam(number))
 
 
-class FooParam(object):
+class FooParam:
     def __init__(self, param):
         self.param = param
 

@@ -35,14 +35,13 @@ __all__ = ('LinksExtractor', 'ProductRepositoryInfo')
 logger = Logger()
 
 
-class ProductRepositoryInfo(object):
-	def __init__(self, name, baseUrl, dirs=None, username=u"", password=u"", authcertfile=u"", authkeyfile="", opsiDepotId=None, autoInstall=False, autoUpdate=True, autoSetup=False, proxy=None, excludes=None, includes=None, active=False, autosetupexcludes=None):
+class ProductRepositoryInfo:
+	def __init__(self, name, baseUrl, dirs=[], username=u"", password=u"", authcertfile=u"", authkeyfile="", opsiDepotId=None, autoInstall=False, autoUpdate=True, autoSetup=False, proxy=None, excludes=[], includes=[], active=False):
 		self.name = forceUnicode(name)
 		self.baseUrl = forceUnicode(baseUrl)
-		self.dirs = forceUnicodeList(dirs) if dirs else []
-		self.excludes = forceUnicodeList(excludes) if excludes else []
-		self.includes = forceUnicodeList(includes) if includes else []
-		self.autosetupexcludes = forceUnicodeList(autosetupexcludes) if autosetupexcludes else []
+		self.dirs = forceUnicodeList(dirs)
+		self.excludes = excludes
+		self.includes = includes
 		self.username = forceUnicode(username)
 		self.password = forceUnicode(password)
 		self.authcertfile = forceUnicode(authcertfile)

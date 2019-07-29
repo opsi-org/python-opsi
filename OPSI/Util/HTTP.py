@@ -145,7 +145,7 @@ class HostChangedError(HTTPError):
 	pass
 
 
-class HTTPResponse(object):
+class HTTPResponse:
 	"""
 	HTTP Response container.
 
@@ -214,7 +214,7 @@ class HTTPResponse(object):
 		return self.headers.get(name, default)
 
 
-class HTTPConnectionPool(object):
+class HTTPConnectionPool:
 
 	scheme = 'http'
 

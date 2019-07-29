@@ -64,7 +64,7 @@ This means the backup was probably taken for another machine and restoring it mi
 Do you wish to continue? [y/n]""")
 
 
-class OpsiBackup(object):
+class OpsiBackup:
 
 	SUPPORTED_BACKENDS = set(['auto', 'all', 'file', 'mysql', 'dhcp'])
 

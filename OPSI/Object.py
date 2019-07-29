@@ -187,7 +187,7 @@ def objectsDiffer(obj1, obj2, excludeAttributes=None):
 	return False
 
 
-class BaseObject(object):
+class BaseObject:
 	subClasses = {}
 	identSeparator = u';'
 	foreignIdAttributes = []

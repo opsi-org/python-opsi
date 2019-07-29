@@ -64,7 +64,7 @@ def getFileType(filename):
 	return magic.from_file(filename)
 
 
-class BaseArchive(object):
+class BaseArchive:
 	def __init__(self, filename, compression=None, progressSubject=None):
 		self._filename = forceFilename(filename)
 		self._progressSubject = progressSubject
@@ -230,7 +230,7 @@ class BaseArchive(object):
 			os.chdir(curDir)
 
 
-class PigzMixin(object):
+class PigzMixin:
 	@property
 	def pigz_detected(self):
 		if not hasattr(self, '_pigz_detected'):

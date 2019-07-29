@@ -93,7 +93,7 @@ class CommandNotFoundException(RuntimeError):
 	pass
 
 
-class SystemSpecificHook(object):
+class SystemSpecificHook:
 	def __init__(self):
 		pass
 
@@ -3003,7 +3003,7 @@ def _checkForDistribution(name):
 		return False
 
 
-class Distribution(object):
+class Distribution:
 
 	def __init__(self, distribution_information=None):
 		if distribution_information is None:
@@ -3060,7 +3060,7 @@ class Distribution(object):
 				)
 
 
-class SysInfo(object):
+class SysInfo:
 
 	def __init__(self):
 		self.dist = Distribution()

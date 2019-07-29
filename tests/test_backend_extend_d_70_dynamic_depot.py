@@ -155,7 +155,7 @@ def showAlgoWithLineNumbers(algo):
 		print("{num}: {line}".format(num=number, line=line))
 
 
-class FakeDepot(object):
+class FakeDepot:
 	def __init__(self, id, latency=2, masterDepotId=None):
 		self.id = id
 		self.latency = latency

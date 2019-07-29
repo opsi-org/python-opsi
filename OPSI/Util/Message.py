@@ -48,7 +48,7 @@ __all__ = (
 logger = Logger()
 
 
-class Subject(object):
+class Subject:
 	def __init__(self, id, type=u'', title=u'', **args):
 		self._id = forceUnicode(id)
 		self._type = forceUnicode(type)
@@ -377,7 +377,7 @@ class ProgressSubject(MessageSubject):
 		return subject
 
 
-class MessageObserver(object):
+class MessageObserver:
 	def __init__(self):
 		pass
 
