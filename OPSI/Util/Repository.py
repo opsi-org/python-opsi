@@ -84,7 +84,7 @@ def getRepository(url, **kwargs):
 	raise RepositoryError(u"Repository url '%s' not supported" % url)
 
 
-class RepositoryHook(object):
+class RepositoryHook:
 	def __init__(self):
 		pass
 
@@ -98,7 +98,7 @@ class RepositoryHook(object):
 		pass
 
 
-class RepositoryObserver(object):
+class RepositoryObserver:
 	def dynamicBandwidthLimitChanged(self, repository, bandwidth):
 		pass
 
@@ -1275,7 +1275,7 @@ class CIFSRepository(FileRepository):
 		self._umount()
 
 
-class DepotToLocalDirectorySychronizer(object):
+class DepotToLocalDirectorySychronizer:
 	def __init__(self, sourceDepot, destinationDirectory, productIds=[], maxBandwidth=0, dynamicBandwidth=False):
 		self._sourceDepot = sourceDepot
 		self._destinationDirectory = forceUnicode(destinationDirectory)

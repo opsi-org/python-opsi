@@ -91,7 +91,7 @@ def createSchemaVersionTable(database):
 	database.execute(table)
 
 
-class SQL(object):
+class SQL:
 
 	AUTOINCREMENT = 'AUTO_INCREMENT'
 	ALTER_TABLE_CHANGE_SUPPORTED = True

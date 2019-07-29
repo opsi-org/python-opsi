@@ -42,7 +42,7 @@ def testBackendManagerDispatchesCallsToExtensionClass():
     Make sure that calls are dispatched to the extension class.
     These calls should not fail.
     """
-    class TestClass(object):
+    class TestClass:
         def methodOnBackend(self, y):
             assert y == 'yyyyyyyy'
 

@@ -96,7 +96,7 @@ def splitAndStrip(string, sep):
 			yield singleValue
 
 
-class ConfigurationParser(object):
+class ConfigurationParser:
 
 	TIME_REGEX = re.compile(r'^\d{1,2}:\d{1,2}$')
 

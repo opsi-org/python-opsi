@@ -579,7 +579,7 @@ def testForceUniqueListDoesNotChangeOrder():
 def testArgsDecoratorArgumentsDefaultToNone():
 
 	@args("somearg", "someOtherArg")
-	class SomeClass(object):
+	class SomeClass:
 		def __init__(self, **kwargs):
 			pass
 
@@ -592,7 +592,7 @@ def testArgsDecoratorArgumentsDefaultToNone():
 def testArgsDecoratorTakesKeywordArguments():
 
 	@args("somearg", someOtherArg=forceInt)
-	class SomeOtherClass(object):
+	class SomeOtherClass:
 		def __init__(self, **kwargs):
 			pass
 
@@ -605,7 +605,7 @@ def testArgsDecoratorTakesKeywordArguments():
 def testArgsDecoratorCreatesPrivateArgs():
 
 	@args("_somearg", "_someOtherArg")
-	class SomeClass(object):
+	class SomeClass:
 		def __init__(self, **kwargs):
 			pass
 

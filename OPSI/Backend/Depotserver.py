@@ -148,7 +148,7 @@ class DepotserverBackend(ExtendedBackend):
 		zsyncFile.generate(filename)
 
 
-class DepotserverPackageManager(object):
+class DepotserverPackageManager:
 	def __init__(self, depotBackend):
 		if not isinstance(depotBackend, DepotserverBackend):
 			raise BackendConfigurationError(u"DepotserverPackageManager needs instance of DepotserverBackend as backend, got %s" % depotBackend.__class__.__name__)

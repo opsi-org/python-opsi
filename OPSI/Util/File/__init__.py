@@ -76,7 +76,7 @@ def requiresParsing(function):
 	return parsedFile
 
 
-class File(object):
+class File:
 	def __init__(self, filename):
 		self._filename = forceFilename(filename)
 		self._fileHandle = None
@@ -1399,7 +1399,7 @@ class ZsyncFile(LockableFile):
 			f.write(self._data)
 
 
-class DHCPDConf_Component(object):
+class DHCPDConf_Component:
 	def __init__(self, startLine, parentBlock):
 		self.startLine = startLine
 		self.endLine = startLine

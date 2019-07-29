@@ -238,7 +238,7 @@ def testGettingHelpfulErrorMessageWithBaseclassEntity():
 
 
 def testGetMandatoryConstructorArgsFromConstructorWithNoArguments():
-    class NoArgs(object):
+    class NoArgs:
         def __init__(self):
             pass
 
@@ -250,7 +250,7 @@ def testGetMandatoryConstructorArgsFromConstructorWithNoArguments():
 
 
 def testGetMandatoryConstructorArgsFromConstructorWithOnlyMandatoryArguments():
-    class OnlyMandatory(object):
+    class OnlyMandatory:
         def __init__(self, give, me, this):
             pass
 
@@ -262,7 +262,7 @@ def testGetMandatoryConstructorArgsFromConstructorWithOnlyMandatoryArguments():
 
 
 def testGetMandatoryConstructorArgsFromConstructorWithOnlyOptionalArguments():
-    class OnlyOptional(object):
+    class OnlyOptional:
         def __init__(self, only=1, optional=2, arguments=[]):
             pass
 
@@ -274,7 +274,7 @@ def testGetMandatoryConstructorArgsFromConstructorWithOnlyOptionalArguments():
 
 
 def testGetMandatoryConstructorArgsFromConstructorWithMixedArguments():
-    class MixedArgs(object):
+    class MixedArgs:
         def __init__(self, i, want, this, but=0, that=0, notso=0, much=0):
             pass
 
@@ -286,7 +286,7 @@ def testGetMandatoryConstructorArgsFromConstructorWithMixedArguments():
 
 
 def testGetMandatoryConstructorArgsFromConstructorWithWildcardArguments():
-    class WildcardOnly(object):
+    class WildcardOnly:
         def __init__(self, *only):
             pass
 
@@ -298,7 +298,7 @@ def testGetMandatoryConstructorArgsFromConstructorWithWildcardArguments():
 
 
 def testGetMandatoryConstructorArgsFromConstructorWithKeywordArguments():
-    class Kwargz(object):
+    class Kwargz:
         def __init__(self, **kwargs):
             pass
 
@@ -310,7 +310,7 @@ def testGetMandatoryConstructorArgsFromConstructorWithKeywordArguments():
 
 
 def testGetMandatoryConstructorArgsFromConstructorWithMixedWithArgsAndKwargs():
-    class KwargzAndMore(object):
+    class KwargzAndMore:
         def __init__(self, crosseyed, heart, *more, **kwargs):
             pass
 
