@@ -84,7 +84,7 @@ def testGetFileInfosFromDavXML():
 		elif item['type'] == 'file':
 			files = files + 1
 		else:
-			pytest.raises("Unexpected type found. Maybe creepy testdata?")
+			raise ValueError("Unexpected type {!r} found. Maybe creepy testdata?".format(item['type']))
 
 	assert dirs == 1
 	assert files == 3
