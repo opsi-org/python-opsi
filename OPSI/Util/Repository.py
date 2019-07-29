@@ -97,7 +97,8 @@ def getFileInfosFromDavXML(davxmldata):
 						if "directory" in text:
 							info['type'] = 'dir'
 					if tag == "{DAV:}getcontentlength":
-						if not text == "None": info['size'] = int(text)
+						if text != "None":
+							info['size'] = int(text)
 					if tag == "{DAV:}displayname":
 						info['name'] = text
 
