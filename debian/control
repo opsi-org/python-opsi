@@ -26,17 +26,17 @@ Depends: duplicity,
 	python3-mysqldb,
 	python3-newt,
 	python3-openssl,
-	python3-pam,
+	python3-pampy,
 	python3-sqlalchemy,
 	python3-twisted,
 	python3-pyparsing,
 	${misc:Depends},
 	${python3:Depends}
-Recommends: cabextract
+Recommends: cabextract,
+	python3-distro
 Provides: ${python3:Provides}
 Breaks: python-opsi (<< 4.2)
 Replaces: python-opsi (<< 4.2)
 Conflicts: python-opsi
 Description: opsi python library
  This package contains the opsi Python 3 library.
-

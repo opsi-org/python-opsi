@@ -1,3 +1,15 @@
+python3-opsi (4.2.0.11-1) testing; urgency=medium
+
+  * OPSI.Backend.Manager.Authentication.PAM: Use python-pam module.
+  * OPSI.System.Posix: Make more use of the distro module to be prepared for
+    Python 3.8 where platform.linux_distribution() will be removed.
+  * Remove DeferredCall class from OPSI.Backend.Base.ConfigData.
+  * OPSI.Util.isRegularExpressionPattern works under Python 3.7.
+  * OPSI.Util.Repository: Use a custom implementation for response codes
+    in order to remove a dependency to web2.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 22 Jul 2019 15:13:01 +0200
+
 python3-opsi (4.2.0.10-1) testing; urgency=medium
 
   * OPSI.Backend.JSONRPC: Removed support for deflate compression for outgoing
@@ -98,6 +110,19 @@ python3-opsi (4.2.0.1-1) experimental; urgency=medium
     OPSI.Backend.Base.
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 06 Nov 2018 16:46:45 +0100
+
+python-opsi (4.1.1.70-1) stable; urgency=medium
+
+  * OPSI.System.Posix: Add support for retrieving the currently used
+    distribution through the "distro" module.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 10 Jul 2019 14:30:26 +0200
+
+python-opsi (4.1.1.69-1) testing; urgency=medium
+
+  * 20_easy.conf: Added new method: getClientsWithActionRequest.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 08 Jul 2019 13:59:45 +0200
 
 python-opsi (4.1.1.68-2) testing; urgency=medium
 

@@ -27,7 +27,7 @@ import grp
 import pwd
 import os
 
-import PAM as pam
+import pam
 
 from OPSI.Exceptions import BackendAuthenticationError
 from OPSI.Logger import Logger
@@ -63,19 +63,18 @@ def authenticate(username, password, service=None):
 		pamService = _DEFAULT_SERVICE = getPAMService()
 
 	logger.debug2(
-		u"Attempting PAM authentication as user {0!r} (service={})...",
+		u"Attempting PAM authentication as user {!r} (service={})...",
 		username, pamService
 	)
+
 	try:
-		# Create instance
 		auth = pam.pam()
-		auth.start(pamService)
-		# Authenticate
-		auth.set_item(pam.PAM_CONV, AuthConv(username, password))
-		auth.authenticate()
-		auth.acct_mgmt()
+		if not auth.authenticate(username, password, service=pamService):
+			logger.debug2("PAM authentication failed: {} (code {})", auth.reason, auth.code)
+			raise RuntimeError(auth.reason)
+
 		logger.debug2("PAM authentication successful.")
-	except (Exception, pam.error) as error:
+	except Exception as error:
 		raise BackendAuthenticationError(u"PAM authentication failed for user '%s': %s" % (username, error))
 
 
@@ -95,28 +94,6 @@ def getPAMService():
 		return 'system-auth'
 	else:
 		return 'common-auth'
-
-
-class AuthConv:
-	''' Handle PAM conversation '''
-	def __init__(self, user, password):
-		self.user = user
-		self.password = password
-
-	def __call__(self, auth, query_list, userData=None):
-		response = []
-		for (query, qtype) in query_list:
-			logger.debug(u"PAM conversation: query {0!r}, type {1!r}", query, qtype)
-			if qtype == pam.PAM_PROMPT_ECHO_ON:
-				response.append((self.user, 0))
-			elif qtype == pam.PAM_PROMPT_ECHO_OFF:
-				response.append((self.password, 0))
-			elif qtype in (pam.PAM_ERROR_MSG, pam.PAM_TEXT_INFO):
-				response.append(('', 0))
-			else:
-				return None
-
-		return response
 
 
 def readGroups(username):
