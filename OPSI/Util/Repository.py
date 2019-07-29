@@ -76,13 +76,14 @@ def getRepository(url, **kwargs):
 
 	raise RepositoryError(u"Repository url '%s' not supported" % url)
 
+
 def getFileInfosFromDavXML(davxmldata):
 	content = []
 	root = ET.fromstring(davxmldata)
 	for child in root:
 		info = {'size': 0, 'type': 'file', 'path': '', 'name': ''}
 		if not child.tag == "{DAV:}response":
-			raise RepositoyError(u"No valid davxml given")
+			raise RepositoryError(u"No valid davxml given")
 		if child[0].tag == "{DAV:}href":
 			info['path'] = child[0].text
 		if child[1].tag == "{DAV:}propstat":
