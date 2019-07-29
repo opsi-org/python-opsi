@@ -65,14 +65,21 @@ def testFileRepositoryFailsWithWrongURL():
 		FileRepository(u'nofile://nada')
 
 
-def testGetFileInfosFromDavXML():
-	filename = os.path.join(
+@pytest.fixture
+def twistedDAVXMLPath():
+	return os.path.join(
 		os.path.dirname(__file__),
 		'testdata', 'util', 'davxml', 'twisted-davxml.data')
-	with open(filename, 'r') as f:
-		xmldata = f.read()
 
-	content = getFileInfosFromDavXML(xmldata)
+
+@pytest.fixture
+def twistedDAVXML(twistedDAVXMLPath):
+	with open(twistedDAVXMLPath, 'r') as f:
+		return f.read()
+
+
+def testGetFileInfosFromDavXML(twistedDAVXML):
+	content = getFileInfosFromDavXML(twistedDAVXML)
 	assert len(content) == 4
 
 	dirs = 0
