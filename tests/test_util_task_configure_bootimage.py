@@ -53,7 +53,7 @@ def testPatchMenuFile(tempDir):
 		writefile.write('  endtext\n')
 		writefile.write('  kernel install\n')
 		writefile.write('  append initrd=miniroot.bz2 video=vesa:ywrap,mtrr vga=791 quiet splash --no-log console=tty1 console=ttyS0\n')
-		writefile.write('')
+		writefile.write('\n')
 
 	configServer = u'https://192.168.1.14:4447/rpc'
 	ConfigureBootimage.patchMenuFile(filename, 'append', configServer)
@@ -66,7 +66,7 @@ def testPatchMenuFile(tempDir):
 		'  endtext\n',
 		'  kernel install\n',
 		'  append initrd=miniroot.bz2 video=vesa:ywrap,mtrr vga=791 quiet splash --no-log console=tty1 console=ttyS0 service=https://192.168.1.14:4447/rpc\n',
-		''
+		'\n'
 	]
 
 	with open(filename) as patchedFile:
