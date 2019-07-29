@@ -31,38 +31,39 @@ from OPSI.Util.Repository import FileRepository, getRepository, getFileInfosFrom
 
 
 def testGettingFileRepository():
-    repo = getRepository("file:///not-here")
-    assert isinstance(repo, FileRepository)
+	repo = getRepository("file:///not-here")
+	assert isinstance(repo, FileRepository)
 
 
 def testGettingRepositoryFailsOnUnsupportedURL():
-    with pytest.raises(RepositoryError):
-        getRepository("lolnope:///asdf")
+	with pytest.raises(RepositoryError):
+		getRepository("lolnope:///asdf")
 
 
 def testListingRepository(tempDir):
-    repo = FileRepository(url=u'file://{path}'.format(path=tempDir))
-    assert not repo.content('', recursive=True)
+	repo = FileRepository(url=u'file://{path}'.format(path=tempDir))
+	assert not repo.content('', recursive=True)
 
-    os.mkdir(os.path.join(tempDir, "foobar"))
+	os.mkdir(os.path.join(tempDir, "foobar"))
 
-    assert 1 == len(repo.content('', recursive=True))
-    for content in repo.content('', recursive=True):
-        assert content == {'path': u'foobar', 'type': 'dir', 'name': u'foobar', 'size': 0}
+	assert 1 == len(repo.content('', recursive=True))
+	for content in repo.content('', recursive=True):
+		assert content == {'path': u'foobar', 'type': 'dir', 'name': u'foobar', 'size': 0}
 
-    with open(os.path.join(tempDir, "bar"), "w"):
-        pass
+	with open(os.path.join(tempDir, "bar"), "w"):
+		pass
 
-    assert 2 == len(repo.content('', recursive=True))
-    assert 2 == len(repo.listdir())
-    assert "bar" in repo.listdir()
+	assert 2 == len(repo.content('', recursive=True))
+	assert 2 == len(repo.listdir())
+	assert "bar" in repo.listdir()
 
-    # TODO: list subdir tempDir and check if file is shown
+	# TODO: list subdir tempDir and check if file is shown
 
 
 def testFileRepositoryFailsWithWrongURL():
-    with pytest.raises(RepositoryError):
-        FileRepository(u'nofile://nada')
+	with pytest.raises(RepositoryError):
+		FileRepository(u'nofile://nada')
+
 
 def testGetFileInfosFromDavXML():
 	filename = os.path.join(
