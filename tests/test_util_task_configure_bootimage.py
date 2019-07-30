@@ -27,8 +27,9 @@ from __future__ import absolute_import
 import os
 import os.path
 import pytest
-
 import OPSI.Util.Task.ConfigureBootimage as ConfigureBootimage
+
+from OPSI.Object import UnicodeConfig
 
 from .helpers import mock
 
