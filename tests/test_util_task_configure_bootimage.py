@@ -89,5 +89,5 @@ def testpatchConfigserserverurlInDefaultMenu(backendManager):
 		grub = os.path.join(tempdir, 'test.grub')
 		return menu, grub
 	with mock.patch('OPSI.Util.Task.ConfigureBootimage.getMenuFiles', getTestMenuFiles):
-		grubMenu, defaultMenu = ConfigureBootimage.getMenuFiles
+		defaultMenu, grubMenu = ConfigureBootimage.getMenuFiles()
 		print(grubMenu, defaultMenu)
