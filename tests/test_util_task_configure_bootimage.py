@@ -73,3 +73,21 @@ def testPatchMenuFile(tempDir):
 		patchedDefault = patchedFile.readlines()
 
 	assert patchedDefault == expectedDefault
+
+
+def testpatchConfigserserverurlInDefaultMenu(backendManager):
+	clientconfigConfigserverUrl = UnicodeConfig(
+		id=u'clientconfig.configserver.url',
+		description=u'Configserver URL',
+		possibleValues=[],
+		defaultValues=['192.168.1.1']
+	)
+	backendManager.config_insertObject(clientconfigConfigserverUrl)
+
+	def getTestMenuFiles():
+		menu = os.path.join(tempDir, 'test.menu')
+		grub = os.path.join(tempdir, 'test.grub')
+		return menu, grub
+	with mock.patch('OPSI.Util.Task.ConfigureBootimage.getMenuFiles', getTestMenuFiles):
+		grubMenu, defaultMenu = ConfigureBootimage.getMenuFiles
+		print(grubMenu, defaultMenu)
