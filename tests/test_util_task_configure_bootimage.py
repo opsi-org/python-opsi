@@ -90,7 +90,7 @@ def testPatchMenuFileWithService(tempDir):
 	configServer = u'https://192.168.1.14:4447/rpc'
 	ConfigureBootimage.patchMenuFile(filename, 'append', configServer)
 
-		expectedDefault = [
+	expectedDefault = [
 		'label install\n',
 		'  menu label Start ^opsi bootimage\n',
 		'  text help\n',
