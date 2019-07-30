@@ -24,7 +24,9 @@ This writes the opsi configserver URL into the default.menu file
 :author: Mathias Radtke <m.radtke@uib.de>
 :license: GNU Affero General Public License version 3
 """
+
 import os
+import re
 
 from OPSI.Exceptions import BackendMissingDataError
 
@@ -44,7 +46,9 @@ def patchMenuFile(menufile, searchString, configServer):
 		newlines=[]
 		for line in readMenu:
 			if line.strip().startswith(searchString):
-				newlines.append('{} service={}\n'.format(line.rstrip(), configServer.rstrip()))
+				if 'service=' in line:
+					line = re.sub('service=\S+', '', line.rstrip())
+				newlines.append('{} service={}\n'.format(line.rstrip(), configServer))
 				continue
 			newlines.append(line)
 
