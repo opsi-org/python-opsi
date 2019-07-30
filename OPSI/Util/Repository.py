@@ -83,7 +83,7 @@ def getRepository(url, **kwargs):
 	raise RepositoryError(u"Repository url '%s' not supported" % url)
 
 
-def getFileInfosFromDavXML(davxmldata):
+def getFileInfosFromDavXML(davxmldata, encoding='utf-8'):
 	content = []
 	root = ET.fromstring(davxmldata)
 	for child in root:
@@ -113,7 +113,7 @@ def getFileInfosFromDavXML(davxmldata):
 
 				# IIS Fix: Remove trailing backslash on file-paths
 				if info['type'] == 'file' and info['path'].endswith("/"):
-					info['path'] = info['path'][:-1]
+					info['path'] = str(info['path'][:-1], encoding=encoding)
 
 			content.append(info)
 
@@ -1126,7 +1126,7 @@ class WebDAVRepository(HTTPRepository):
 			if 'charset=' in part:
 				encoding = part.split('=')[1].replace('"', '').strip()
 
-		content = getFileInfosFromDavXML(response.data)
+		content = getFileInfosFromDavXML(davxmldata=response.data, encoding=encoding)
 
 		if recursive:
 			self._contentCache[source] = {
