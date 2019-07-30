@@ -115,10 +115,20 @@ def testpatchConfigserserverurlInDefaultMenu(backendManager):
 	)
 	backendManager.config_insertObject(clientconfigConfigserverUrl)
 
-	def getTestMenuFiles():
+	def getTestMenuFiles(tempDir):
 		menu = os.path.join(tempDir, 'test.menu')
 		grub = os.path.join(tempdir, 'test.grub')
 		return menu, grub
 	with mock.patch('OPSI.Util.Task.ConfigureBootimage.getMenuFiles', getTestMenuFiles):
 		defaultMenu, grubMenu = ConfigureBootimage.getMenuFiles()
-		print(grubMenu, defaultMenu)
+		print(defaultMenu, grubMenu)
+		with open(defaultMenu) as defaultWrite:
+			defaultWrite.write('  kernel install\n')
+			defaultWrite.write('  append initrd=miniroot.bz2 video=vesa:ywrap,mtrr vga=791 quiet splash --no-log console=tty1 console=ttyS0\n')
+			defaultWrite.write(\n')
+
+		with open(grubMenu) as grubWrite:
+			grubWrite.write('        set gfxpayload=keep\n')
+			grubWrite.write('        linux (pxe)/linux/install initrd=miniroot.bz2 video=vesa:ywrap,mtrr vga=791 quiet splash --no-log console=tty1 console=ttyS0\n')
+			grubWrite.write('\n')
+		ConfigureBootimage.patchConfigserserverurlInDefaultMenu(backendManager)
