@@ -106,7 +106,7 @@ def testPatchMenuFileWithService(tempDir):
 
 	assert patchedDefault == expectedDefault
 
-def testpatchConfigserserverurlInDefaultMenu(backendManager):
+def testPatchServiceUrlInDefaultConfigs(backendManager, tempDir):
 	clientconfigConfigserverUrl = UnicodeConfig(
 		id=u'clientconfig.configserver.url',
 		possibleValues=[],
@@ -114,7 +114,7 @@ def testpatchConfigserserverurlInDefaultMenu(backendManager):
 	)
 	backendManager.config_insertObject(clientconfigConfigserverUrl)
 
-	def getTestMenuFiles(tempDir):
+	def getTestMenuFiles():
 		menu = os.path.join(tempDir, 'test.menu')
 		grub = os.path.join(tempdir, 'test.grub')
 		return menu, grub
