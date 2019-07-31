@@ -30,6 +30,8 @@ import re
 
 from OPSI.Exceptions import BackendMissingDataError
 
+__all__ = ('patchServiceUrlInDefaultConfigs', )
+
 
 def getMenuFiles():
 	if os.path.exists('/tftpboot/linux/pxelinux.cfg/default.menu'):
@@ -56,7 +58,7 @@ def patchMenuFile(menufile, searchString, configServer):
 		writeMenu.writelines(newlines)
 
 
-def patchConfigserserverurlInDefaultMenu(backend):
+def patchServiceUrlInDefaultConfigs(backend):
 	"""
 	Patches the clientconfig.configserver.url into the default.menu/grub.cfg
 	"""

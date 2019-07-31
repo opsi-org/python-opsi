@@ -134,7 +134,8 @@ def testPatchServiceUrlInDefaultConfigs(backendManager, tempDir):
 			grubWrite.write('        set gfxpayload=keep\n')
 			grubWrite.write('        linux (pxe)/linux/install initrd=miniroot.bz2 video=vesa:ywrap,mtrr vga=791 quiet splash --no-log console=tty1 console=ttyS0\n')
 			grubWrite.write('\n')
-		ConfigureBootimage.patchConfigserserverurlInDefaultMenu(backendManager)
+
+		ConfigureBootimage.patchServiceUrlInDefaultConfigs(backendManager)
 
 		expectedServiceConfig = 'service=%s' % testIp
 		with open(defaultMenu) as defaultReader:
