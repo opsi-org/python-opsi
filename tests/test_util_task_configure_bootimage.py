@@ -158,5 +158,5 @@ def testPatchServiceUrlInDefaultConfigs(backendManager, tempDir):
 
 
 def testPatchServiceUrlInDefaultConfigsFailsIfUnconfigured(backendManager):
-	with pytest.raises(BackendMissingDataError)
+	with pytest.raises(BackendMissingDataError):
 		ConfigureBootimage.patchServiceUrlInDefaultConfigs(backendManager)
