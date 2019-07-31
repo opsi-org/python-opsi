@@ -65,7 +65,7 @@ def getMenuFiles():
 
 
 def patchMenuFile(menufile, searchString, configServer):
-	newlines=[]
+	newlines = []
 	with open(menufile) as readMenu:
 		for line in readMenu:
 			if line.strip().startswith(searchString):
