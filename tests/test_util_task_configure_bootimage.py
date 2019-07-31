@@ -125,7 +125,7 @@ def testpatchConfigserserverurlInDefaultMenu(backendManager):
 		with open(defaultMenu) as defaultWrite:
 			defaultWrite.write('  kernel install\n')
 			defaultWrite.write('  append initrd=miniroot.bz2 video=vesa:ywrap,mtrr vga=791 quiet splash --no-log console=tty1 console=ttyS0\n')
-			defaultWrite.write(\n')
+			defaultWrite.write('\n')
 
 		with open(grubMenu) as grubWrite:
 			grubWrite.write('        set gfxpayload=keep\n')
