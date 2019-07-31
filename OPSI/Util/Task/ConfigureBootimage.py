@@ -33,31 +33,6 @@ from OPSI.Exceptions import BackendMissingDataError
 __all__ = ('patchServiceUrlInDefaultConfigs', )
 
 
-def getMenuFiles():
-	if os.path.exists('/tftpboot/linux/pxelinux.cfg/default.menu'):
-		defaultMenu = u'/tftpboot/linux/pxelinux.cfg/default.menu'
-		grubMenu = u'/tftpboot/grub/grub.cfg'
-	else:
-		defaultMenu = u'/var/lib/tftpboot/opsi/pxelinux.cfg/default.menu'
-		grubMenu = u'/var/lib/tftpboot/grub/grub.cfg'
-	return defaultMenu, grubMenu
-
-
-def patchMenuFile(menufile, searchString, configServer):
-	with open(menufile) as readMenu:
-		newlines=[]
-		for line in readMenu:
-			if line.strip().startswith(searchString):
-				if 'service=' in line:
-					line = re.sub('service=\S+', '', line.rstrip())
-				newlines.append('{} service={}\n'.format(line.rstrip(), configServer))
-				continue
-			newlines.append(line)
-
-	with open(menufile, 'w') as writeMenu:
-		writeMenu.writelines(newlines)
-
-
 def patchServiceUrlInDefaultConfigs(backend):
 	"""
 	Patches the clientconfig.configserver.url into the default.menu/grub.cfg
@@ -76,3 +51,30 @@ def patchServiceUrlInDefaultConfigs(backend):
 		defaultMenu, grubMenu = getMenuFiles()
 		patchMenuFile(defaultMenu, 'append', configServer)
 		patchMenuFile(grubMenu, 'linux', configServer)
+
+
+def getMenuFiles():
+	if os.path.exists('/tftpboot/linux/pxelinux.cfg/default.menu'):
+		defaultMenu = u'/tftpboot/linux/pxelinux.cfg/default.menu'
+		grubMenu = u'/tftpboot/grub/grub.cfg'
+	else:
+		defaultMenu = u'/var/lib/tftpboot/opsi/pxelinux.cfg/default.menu'
+		grubMenu = u'/var/lib/tftpboot/grub/grub.cfg'
+
+	return defaultMenu, grubMenu
+
+
+def patchMenuFile(menufile, searchString, configServer):
+	newlines=[]
+	with open(menufile) as readMenu:
+		for line in readMenu:
+			if line.strip().startswith(searchString):
+				if 'service=' in line:
+					line = re.sub('service=\S+', '', line.rstrip())
+				newlines.append('{} service={}\n'.format(line.rstrip(), configServer))
+				continue
+
+			newlines.append(line)
+
+	with open(menufile, 'w') as writeMenu:
+		writeMenu.writelines(newlines)
