@@ -122,12 +122,12 @@ def testPatchServiceUrlInDefaultConfigs(backendManager, tempDir):
 	with mock.patch('OPSI.Util.Task.ConfigureBootimage.getMenuFiles', getTestMenuFiles):
 		defaultMenu, grubMenu = ConfigureBootimage.getMenuFiles()
 
-		with open(defaultMenu) as defaultWrite:
+		with open(defaultMenu, 'w') as defaultWrite:
 			defaultWrite.write('  kernel install\n')
 			defaultWrite.write('  append initrd=miniroot.bz2 video=vesa:ywrap,mtrr vga=791 quiet splash --no-log console=tty1 console=ttyS0\n')
 			defaultWrite.write('\n')
 
-		with open(grubMenu) as grubWrite:
+		with open(grubMenu, 'w') as grubWrite:
 			grubWrite.write('        set gfxpayload=keep\n')
 			grubWrite.write('        linux (pxe)/linux/install initrd=miniroot.bz2 video=vesa:ywrap,mtrr vga=791 quiet splash --no-log console=tty1 console=ttyS0\n')
 			grubWrite.write('\n')
