@@ -35,6 +35,7 @@ from OPSI.Object import UnicodeConfig
 
 from .helpers import mock
 
+
 @pytest.mark.parametrize('fileExists, expectedDefaultMenu, expectedGrubMenu', [
 	[True, u'/tftpboot/linux/pxelinux.cfg/default.menu', u'/tftpboot/grub/grub.cfg'],
 	[False, u'/var/lib/tftpboot/opsi/pxelinux.cfg/default.menu', u'/var/lib/tftpboot/grub/grub.cfg'],
@@ -77,7 +78,8 @@ def testPatchMenuFile(tempDir):
 
 	assert patchedDefault == expectedDefault
 
-def testPatchMenuFileWithService(tempDir):
+
+def testPatchMenuFileReplacesExistingServiceConfiguration(tempDir):
 	filename = os.path.join(tempDir, 'default.menu')
 	with open(filename, 'w') as writefile:
 		writefile.write('label install\n')
