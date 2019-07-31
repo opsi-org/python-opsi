@@ -70,7 +70,7 @@ def patchMenuFile(menufile, searchString, configServer):
 		for line in readMenu:
 			if line.strip().startswith(searchString):
 				if 'service=' in line:
-					line = re.sub('service=\S+', '', line.rstrip())
+					line = re.sub(r'service=\S+', '', line.rstrip())
 				newlines.append('{} service={}\n'.format(line.rstrip(), configServer))
 				continue
 
