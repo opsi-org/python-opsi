@@ -106,11 +106,14 @@ def testPatchMenuFileWithService(tempDir):
 
 	assert patchedDefault == expectedDefault
 
+
 def testPatchServiceUrlInDefaultConfigs(backendManager, tempDir):
+	testIp = '192.168.1.14'
+
 	clientconfigConfigserverUrl = UnicodeConfig(
 		id=u'clientconfig.configserver.url',
 		possibleValues=[],
-		defaultValues=['192.168.1.14']
+		defaultValues=[testIp]
 	)
 	backendManager.config_insertObject(clientconfigConfigserverUrl)
 
@@ -132,3 +135,20 @@ def testPatchServiceUrlInDefaultConfigs(backendManager, tempDir):
 			grubWrite.write('        linux (pxe)/linux/install initrd=miniroot.bz2 video=vesa:ywrap,mtrr vga=791 quiet splash --no-log console=tty1 console=ttyS0\n')
 			grubWrite.write('\n')
 		ConfigureBootimage.patchConfigserserverurlInDefaultMenu(backendManager)
+
+		expectedServiceConfig = 'service=%s' % testIp
+		with open(defaultMenu) as defaultReader:
+			for line in defaultReader:
+				if line.lstrip().startswith('append'):
+					assert expectedServiceConfig in line
+					break
+			else:
+				raise RuntimeError("default.menu not patched")
+
+		with open(grubMenu) as grubReader:
+			for line in grubReader:
+				if line.lstrip().startswith('linux'):
+					assert expectedServiceConfig in line
+					break
+			else:
+				raise RuntimeError("default.menu not patched")
