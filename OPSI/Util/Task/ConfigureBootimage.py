@@ -61,6 +61,9 @@ def patchMenuFile(menufile, searchString, configServer):
 def patchServiceUrlInDefaultConfigs(backend):
 	"""
 	Patches the clientconfig.configserver.url into the default.menu/grub.cfg
+
+	:param backend: The backend used to read the configuration
+	:type backend: ConfigDataBackend
 	"""
 
 	try:
