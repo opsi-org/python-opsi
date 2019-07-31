@@ -26,9 +26,11 @@ from __future__ import absolute_import
 
 import os
 import os.path
-import pytest
-import OPSI.Util.Task.ConfigureBootimage as ConfigureBootimage
 
+import pytest
+
+import OPSI.Util.Task.ConfigureBootimage as ConfigureBootimage
+from OPSI.Exceptions import BackendMissingDataError
 from OPSI.Object import UnicodeConfig
 
 from .helpers import mock
@@ -153,3 +155,8 @@ def testPatchServiceUrlInDefaultConfigs(backendManager, tempDir):
 					break
 			else:
 				raise RuntimeError("default.menu not patched")
+
+
+def testPatchServiceUrlInDefaultConfigsFailsIfUnconfigured(backendManager):
+	with pytest.raises(BackendMissingDataError)
+		ConfigureBootimage.patchServiceUrlInDefaultConfigs(backendManager)
