@@ -109,7 +109,6 @@ def testPatchMenuFileWithService(tempDir):
 def testpatchConfigserserverurlInDefaultMenu(backendManager):
 	clientconfigConfigserverUrl = UnicodeConfig(
 		id=u'clientconfig.configserver.url',
-		description=u'Configserver URL',
 		possibleValues=[],
 		defaultValues=['192.168.1.14']
 	)
@@ -119,9 +118,10 @@ def testpatchConfigserserverurlInDefaultMenu(backendManager):
 		menu = os.path.join(tempDir, 'test.menu')
 		grub = os.path.join(tempdir, 'test.grub')
 		return menu, grub
+
 	with mock.patch('OPSI.Util.Task.ConfigureBootimage.getMenuFiles', getTestMenuFiles):
 		defaultMenu, grubMenu = ConfigureBootimage.getMenuFiles()
-		print(defaultMenu, grubMenu)
+
 		with open(defaultMenu) as defaultWrite:
 			defaultWrite.write('  kernel install\n')
 			defaultWrite.write('  append initrd=miniroot.bz2 video=vesa:ywrap,mtrr vga=791 quiet splash --no-log console=tty1 console=ttyS0\n')
