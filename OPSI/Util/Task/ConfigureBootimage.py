@@ -40,7 +40,6 @@ def patchServiceUrlInDefaultConfigs(backend):
 	:param backend: The backend used to read the configuration
 	:type backend: ConfigDataBackend
 	"""
-
 	try:
 		configServer = backend.config_getObjects(attributes=["defaultValues"], id='clientconfig.configserver.url')[0]
 		configServer = configServer.defaultValues[0]
@@ -54,6 +53,13 @@ def patchServiceUrlInDefaultConfigs(backend):
 
 
 def getMenuFiles():
+	"""
+	Returns the paths for for the default.menu and grub.cfg files.
+
+	:returns: A two-item-tuple with absolute paths to first the \
+default.menu and second grub.cfg.
+	:rtype: (str, str)
+	"""
 	if os.path.exists('/tftpboot/linux/pxelinux.cfg/default.menu'):
 		defaultMenu = u'/tftpboot/linux/pxelinux.cfg/default.menu'
 		grubMenu = u'/tftpboot/grub/grub.cfg'
@@ -65,6 +71,20 @@ def getMenuFiles():
 
 
 def patchMenuFile(menufile, searchString, configServer):
+	"""
+	Patch the address to the `configServer` into `menufile`.
+
+	To find out where to patch we look for lines that starts with the
+	given `searchString` (excluding preceding whitespace).
+
+	:param menufile: Path to the file to patch
+	:type menufile: str
+	:param searchString: Patches only lines starting with this string.
+	:type searchString: str
+	:param configServer: The address of the OpsiConfigserver to patch \
+into the file.
+	:type configServer: str
+	"""
 	newlines = []
 	with open(menufile) as readMenu:
 		for line in readMenu:
