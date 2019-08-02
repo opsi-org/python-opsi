@@ -149,6 +149,14 @@ def testSettingTemporaryBackendOptions(extendedConfigDataBackend, option):
 
             assert currentOptions[key] == False
 
+    currentOptions = extendedConfigDataBackend.backend_getOptions()
+    print("options after leaving context: %s" % currentOptions)
+
+    for key, defaultValue in optionDefaults.items():
+        # if key == 'additionalReferentialIntegrityChecks':
+        print("Checking key %s (%s)" % (key, currentOptions[key]))
+        assert currentOptions[key] == defaultValue
+
 
 def testSettingMultipleTemporaryBackendOptions(extendedConfigDataBackend):
     tempOptions = {
