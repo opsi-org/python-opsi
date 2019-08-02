@@ -185,7 +185,7 @@ def getArgAndCallString(method):
 
 @contextmanager
 def temporaryBackendOptions(backend, **options):
-	oldOptions = backend.backend_getOptions()
+	oldOptions = backend.backend_getOptions().copy()
 	try:
 		backend.backend_setOptions(options)
 		yield
