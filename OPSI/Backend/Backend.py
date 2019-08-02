@@ -374,9 +374,11 @@ This defaults to ``self``.
 		"""
 		Get the current backend options.
 
+		To alter these options make use of `backend_setOptions`.
+
 		:rtype: dict
 		"""
-		return self._options
+		return self._options.copy()  # Do not return a reference
 
 	def backend_getInterface(self):
 		"""
