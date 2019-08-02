@@ -1,4 +1,4 @@
-python-opsi (4.1.1.70-1ubuntu3) UNRELEASED; urgency=medium
+python-opsi (4.1.1.70-1ubuntu4) UNRELEASED; urgency=medium
 
   * OPSI.Util.Task.UpdatePackages.Config: Use RFC 2616 compatible user agent.
   * OPSI.Util.Task.UpdatePackages.Config: Make it possible to configure a
@@ -11,8 +11,10 @@ python-opsi (4.1.1.70-1ubuntu3) UNRELEASED; urgency=medium
   * Added new module OPSI.Util.Task.ConfigureBootimage.
   * Backend.backend_getOptions now returns a copy instead of a reference.
     This leads to temporaryBackendOptions behaving as expected.
+  * OPSI.Service.Worker.WorkerOpsiJsonRpc: If a client sends gzip and deflate
+    in the 'Accept-Encoding' HTTP header we prefer gzip for the response.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 02 Aug 2019 15:18:17 +0200
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 02 Aug 2019 15:22:11 +0200
 
 python-opsi (4.1.1.70-1) stable; urgency=medium
 
