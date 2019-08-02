@@ -185,7 +185,7 @@ def getArgAndCallString(method):
 
 @contextmanager
 def temporaryBackendOptions(backend, **options):
-	oldOptions = backend.backend_getOptions().copy()
+	oldOptions = backend.backend_getOptions()
 	try:
 		backend.backend_setOptions(options)
 		yield
@@ -374,9 +374,11 @@ This defaults to ``self``.
 		"""
 		Get the current backend options.
 
+		To alter these options make use of `backend_setOptions`.
+
 		:rtype: dict
 		"""
-		return self._options
+		return self._options.copy()  # Do not return a reference
 
 	def backend_getInterface(self):
 		"""
