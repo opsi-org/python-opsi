@@ -192,6 +192,11 @@ def testSettingMultipleTemporaryBackendOptions(extendedConfigDataBackend):
 
         assert set(tempOptions.keys()) == testedOptions
 
+    postContextOptions = extendedConfigDataBackend.backend_getOptions()
+    assert postContextOptions
+    for key, value in postContextOptions.items():
+        assert preOptions[key] == value
+
 
 def testConfigStateCheckWorksWithInsertedDict(extendedConfigDataBackend):
     backend = extendedConfigDataBackend
