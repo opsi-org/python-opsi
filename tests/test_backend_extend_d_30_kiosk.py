@@ -19,6 +19,7 @@
 Tests for the kiosk client method.
 
 :author: Niko Wenselowski <n.wenselowski@uib.de>
+:author: Niko Wenselowski <e.ueluekmen@uib.de>
 :license: GNU Affero General Public License version 3
 """
 
@@ -195,3 +196,78 @@ def testGettingKioskInfoFromDifferentDepot(backendManager, client, depot, anothe
         assert result['productId'] in expectedProducts
 
     assert len(results) == 5
+
+def testGettingKioskInfoWithConfigStates(backendManager, client, depot):
+	backendManager.host_createObjects([client, depot])
+
+	products = list(createProducts(2))
+	backendManager.product_createObjects(products)
+
+	for product in products:
+		pod = ProductOnDepot(
+			productId=product.id,
+			productType=product.getType(),
+			productVersion=product.getProductVersion(),
+			packageVersion=product.getPackageVersion(),
+			depotId=depot.id,
+		)
+		backendManager.productOnDepot_createObjects([pod])
+
+	productGroup = ProductGroup(id=u'my product group')
+	backendManager.group_createObjects([productGroup])
+
+	for product in products:
+		groupAssignment = ObjectToGroup(
+			groupType=productGroup.getType(),
+			groupId=productGroup.id,
+			objectId=product.id
+		)
+		backendManager.objectToGroup_createObjects([groupAssignment])
+
+	dependecy = ProductDependency(
+					productId=products[0].id,
+					requiredProductId=products[1].id,
+					productAction="setup",
+					requiredInstallationStatus="installed"
+					)
+	backendManager.productDependency_createObjects([dependency])
+
+	basicConfigs = [
+		UnicodeConfig(
+			id=u'software-on-demand.product-group-ids',
+			defaultValues=[productGroup.id],
+			multiValue=True,
+		),
+		UnicodeConfig(
+			id=u'clientconfig.depot.id',
+			description=u'Depotserver to use',
+			possibleValues=[],
+			defaultValues=[depot.id]
+		),
+	]
+	backendManager.config_createObjects(basicConfigs)
+
+	# First try compatible-mode
+	result = backendManager.getKioskProductInfosForClient(client.id)
+
+	assert isinstance(result, list)
+	assert len(result) == 2
+	assert isinstance(result[0], dict)
+
+	for item in result:
+		if item["productId"] == products[0].id:
+			assert len(item["requirements"]) == 1
+			break
+
+	# Now try new version with addConfigs parameter
+	result = backendManager.getKioskProductInfosForClient(clientId=client.id, addConfigs=True)
+
+	assert isinstance(result, dict)
+	assert len(result.keys()) == 2
+
+	assert len(result["configStates"]) == 1
+
+	for item in result["products"]:
+		if item["productId"] == products[0].id:
+			assert len(item["requirements"]) == 1
+			break
