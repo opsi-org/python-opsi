@@ -225,7 +225,7 @@ def testGettingKioskInfoWithConfigStates(backendManager, client, depot):
 		)
 		backendManager.objectToGroup_createObjects([groupAssignment])
 
-	dependecy = ProductDependency(
+	dependency = ProductDependency(
 					productId=products[0].id,
 					requiredProductId=products[1].id,
 					productVersion='1',
