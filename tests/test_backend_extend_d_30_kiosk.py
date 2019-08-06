@@ -228,9 +228,10 @@ def testGettingKioskInfoWithConfigStates(backendManager, client, depot):
 	dependecy = ProductDependency(
 					productId=products[0].id,
 					requiredProductId=products[1].id,
-					productAction="setup",
-					requiredInstallationStatus="installed"
-					)
+					productVersion='1',
+					packageVersion='1',
+					productAction="setup"
+				)
 	backendManager.productDependency_createObjects([dependency])
 
 	basicConfigs = [
