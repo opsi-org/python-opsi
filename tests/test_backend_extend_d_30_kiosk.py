@@ -264,11 +264,14 @@ def testGettingKioskInfoWithConfigStates(backendManager, client, depot, addConfi
 		assert len(result.keys()) == 2
 
 		assert len(result["configStates"]) == 1
+		assert len(result['products']) == 2
 
 		for item in result["products"]:
 			if item["productId"] == products[0].id:
 				assert len(item["requirements"]) == 1
 				break
+		else:
+			raise RuntimeError("Did not find product with id {}".format(products[0].id))
 	else:
 		assert isinstance(result, list)
 		assert len(result) == 2
@@ -278,3 +281,5 @@ def testGettingKioskInfoWithConfigStates(backendManager, client, depot, addConfi
 			if item["productId"] == products[0].id:
 				assert len(item["requirements"]) == 1
 				break
+		else:
+			raise RuntimeError("Did not find product with id {}".format(products[0].id))
