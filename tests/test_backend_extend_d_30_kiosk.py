@@ -230,13 +230,13 @@ def testGettingKioskInfoWithConfigStates(backendManager, client, depot, addConfi
 		backendManager.objectToGroup_createObjects([groupAssignment])
 
 	dependency = ProductDependency(
-					productId=products[0].id,
-					requiredProductId=products[1].id,
-					productVersion='1',
-					packageVersion='1',
-					productAction="setup",
-					requiredAction="setup"
-				)
+		productId=products[0].id,
+		requiredProductId=products[1].id,
+		productVersion='1',
+		packageVersion='1',
+		productAction="setup",
+		requiredAction="setup"
+	)
 	backendManager.productDependency_createObjects([dependency])
 
 	basicConfigs = [
@@ -254,8 +254,10 @@ def testGettingKioskInfoWithConfigStates(backendManager, client, depot, addConfi
 	]
 	backendManager.config_createObjects(basicConfigs)
 
-	# First try compatible-mode
-	result = backendManager.getKioskProductInfosForClient(clientId=client.id, addConfigs=addConfigs)
+	result = backendManager.getKioskProductInfosForClient(
+		clientId=client.id,
+		addConfigs=addConfigs
+	)
 
 	if addConfigs:
 		assert isinstance(result, dict)
