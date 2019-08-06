@@ -135,6 +135,7 @@ def testDoNotDuplicateProducts(backendManager, client, depot):
 	backendManager.config_createObjects(basicConfigs)
 
 	result = backendManager.getKioskProductInfosForClient(client.id)
+	assert isinstance(result, list)
 	assert len(result) == len(products)
 
 
@@ -192,6 +193,7 @@ def testGettingKioskInfoFromDifferentDepot(backendManager, client, depot, anothe
 	assert backendManager.getDepotId(client.id) == anotherDepot.id
 
 	results = backendManager.getKioskProductInfosForClient(client.id)
+	assert isinstance(results, list)
 
 	for result in results:
 		assert result['productId'] in expectedProducts
