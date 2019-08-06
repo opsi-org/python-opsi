@@ -261,7 +261,7 @@ def testGettingKioskInfoWithConfigStates(backendManager, client, depot, addConfi
 
 	if addConfigs:
 		assert isinstance(result, dict)
-		assert len(result.keys()) == 2
+		assert len(result) == 2
 
 		assert len(result["configStates"]) == 1
 		assert len(result['products']) == 2
