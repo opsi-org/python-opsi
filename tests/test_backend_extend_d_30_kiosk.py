@@ -275,9 +275,9 @@ def testGettingKioskInfoWithConfigStates(backendManager, client, depot, addConfi
 	else:
 		assert isinstance(result, list)
 		assert len(result) == 2
-		assert isinstance(result[0], dict)
 
 		for item in result:
+			assert isinstance(item, dict)
 			if item["productId"] == products[0].id:
 				assert len(item["requirements"]) == 1
 				break
