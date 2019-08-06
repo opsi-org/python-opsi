@@ -230,7 +230,8 @@ def testGettingKioskInfoWithConfigStates(backendManager, client, depot):
 					requiredProductId=products[1].id,
 					productVersion='1',
 					packageVersion='1',
-					productAction="setup"
+					productAction="setup",
+					requiredAction="setup"
 				)
 	backendManager.productDependency_createObjects([dependency])
 
