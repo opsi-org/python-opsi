@@ -123,6 +123,9 @@ def testParsingConfigFile(exampleConfigPath, packageUpdaterClass):
 		assert config['tempdir'] == '/tmp'
 		assert config['repositoryConfigDir'] == repoPath
 
+		# Global proxy
+		assert not config['proxy']
+
 		# e-mail notification settings
 		assert config['notification'] == False
 		assert config['smtphost'] == 'smtp'
@@ -198,3 +201,27 @@ def testLinkExtracting(repositoryListingPage):
 		break
 	else:
 		raise RuntimeError("No links found!")
+
+
+def testGlobalProxyAppliedToRepos(exampleConfigPath, packageUpdaterClass):
+	testProxy = 'http://hurr:durr@someproxy:1234'
+
+	with workInTemporaryDirectory() as tempDir:
+		preparedConfig = DEFAULT_CONFIG.copy()
+		preparedConfig['packageDir'] = tempDir
+		preparedConfig['configFile'] = exampleConfigPath
+
+		repoPath = os.path.join(tempDir, 'repos.d')
+		os.mkdir(repoPath)
+
+		patchConfigFile(exampleConfigPath, packageDir=tempDir, repositoryConfigDir=repoPath, proxy=testProxy)
+		copyExampleRepoConfigs(repoPath)
+
+		packageUpdater = packageUpdaterClass(preparedConfig)
+		config = packageUpdater.config
+
+		assert config['proxy'] == testProxy
+
+		for repo in config['repositories']:
+			print(repo.active)
+			assert repo.proxy == testProxy
