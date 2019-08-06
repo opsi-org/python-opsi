@@ -27,7 +27,8 @@ import pytest
 
 from OPSI.Object import (
     LocalbootProduct, ObjectToGroup, OpsiClient,
-    OpsiDepotserver, ProductGroup, ProductOnDepot, UnicodeConfig)
+    OpsiDepotserver, ProductGroup, ProductOnDepot,
+	ProductDependency, UnicodeConfig)
 from OPSI.Exceptions import BackendMissingDataError
 
 
