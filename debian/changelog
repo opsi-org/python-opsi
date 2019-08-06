@@ -1,4 +1,4 @@
-python-opsi (4.1.1.70-1ubuntu4) UNRELEASED; urgency=medium
+python-opsi (4.1.1.71-1) stable; urgency=medium
 
   * OPSI.Util.Task.UpdatePackages.Config: Use RFC 2616 compatible user agent.
   * OPSI.Util.Task.UpdatePackages.Config: Make it possible to configure a
@@ -13,8 +13,10 @@ python-opsi (4.1.1.70-1ubuntu4) UNRELEASED; urgency=medium
     This leads to temporaryBackendOptions behaving as expected.
   * OPSI.Service.Worker.WorkerOpsiJsonRpc: If a client sends gzip and deflate
     in the 'Accept-Encoding' HTTP header we prefer gzip for the response.
+  * 30_kiosk.conf: getKioskProductInfosForClient: added new parameter
+    addConfigs for the new version of the Kiosk client.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 02 Aug 2019 15:22:11 +0200
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 06 Aug 2019 17:47:54 +0200
 
 python-opsi (4.1.1.70-1) stable; urgency=medium
 
