@@ -380,3 +380,12 @@ def testBackendManagerCanAccessExtensions(backendManager):
 
     # This may be empty but the call must not fail.
     backendManager.getServerIds_list()
+
+
+def testBackendManagerGettingOptionsReturnsCopy(backendManager):
+    options = backendManager.backend_getOptions()
+    options['foo'] = True
+
+    newOptions = backendManager.backend_getOptions()
+    assert newOptions
+    assert 'foo' not in newOptions
