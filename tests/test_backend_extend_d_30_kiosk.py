@@ -201,7 +201,8 @@ def testGettingKioskInfoFromDifferentDepot(backendManager, client, depot, anothe
 	assert len(results) == 5
 
 
-def testGettingKioskInfoWithConfigStates(backendManager, client, depot):
+@pytest.mark.parametrize("addConfigs", [True, False])
+def testGettingKioskInfoWithConfigStates(backendManager, client, depot, addConfigs):
 	backendManager.host_createObjects([client, depot])
 
 	products = list(createProducts(2))
@@ -254,26 +255,24 @@ def testGettingKioskInfoWithConfigStates(backendManager, client, depot):
 	backendManager.config_createObjects(basicConfigs)
 
 	# First try compatible-mode
-	result = backendManager.getKioskProductInfosForClient(client.id)
+	result = backendManager.getKioskProductInfosForClient(clientId=client.id, addConfigs=addConfigs)
 
-	assert isinstance(result, list)
-	assert len(result) == 2
-	assert isinstance(result[0], dict)
+	if addConfigs:
+		assert isinstance(result, dict)
+		assert len(result.keys()) == 2
 
-	for item in result:
-		if item["productId"] == products[0].id:
-			assert len(item["requirements"]) == 1
-			break
+		assert len(result["configStates"]) == 1
 
-	# Now try new version with addConfigs parameter
-	result = backendManager.getKioskProductInfosForClient(clientId=client.id, addConfigs=True)
+		for item in result["products"]:
+			if item["productId"] == products[0].id:
+				assert len(item["requirements"]) == 1
+				break
+	else:
+		assert isinstance(result, list)
+		assert len(result) == 2
+		assert isinstance(result[0], dict)
 
-	assert isinstance(result, dict)
-	assert len(result.keys()) == 2
-
-	assert len(result["configStates"]) == 1
-
-	for item in result["products"]:
-		if item["productId"] == products[0].id:
-			assert len(item["requirements"]) == 1
-			break
+		for item in result:
+			if item["productId"] == products[0].id:
+				assert len(item["requirements"]) == 1
+				break
