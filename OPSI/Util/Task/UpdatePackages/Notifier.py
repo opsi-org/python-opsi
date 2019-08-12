@@ -78,7 +78,7 @@ class EmailNotifier(BaseNotifier):
 	Notify by sending an email.
 	"""
 	def __init__(self, smtphost=u'localhost', smtpport=25, subject=u'opsi product updater', sender=u'', receivers=[]):
-		super().__init__()
+		super(EmailNotifier, self).__init__()
 
 		self.receivers = forceUnicodeList(receivers)
 		if not self.receivers:
