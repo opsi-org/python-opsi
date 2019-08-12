@@ -1,3 +1,9 @@
+python-opsi (4.1.1.72-1) stable; urgency=medium
+
+  * OPSI.Util.Task.UpdatePackages.Notifier: Fix setting up EmailNotifier.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 12 Aug 2019 10:52:55 +0200
+
 python-opsi (4.1.1.71-1) stable; urgency=medium
 
   * OPSI.Util.Task.UpdatePackages.Config: Use RFC 2616 compatible user agent.
