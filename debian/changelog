@@ -111,6 +111,32 @@ python3-opsi (4.2.0.1-1) experimental; urgency=medium
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 06 Nov 2018 16:46:45 +0100
 
+python-opsi (4.1.1.72-1) stable; urgency=medium
+
+  * OPSI.Util.Task.UpdatePackages.Notifier: Fix setting up EmailNotifier.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 12 Aug 2019 10:52:55 +0200
+
+python-opsi (4.1.1.71-1) stable; urgency=medium
+
+  * OPSI.Util.Task.UpdatePackages.Config: Use RFC 2616 compatible user agent.
+  * OPSI.Util.Task.UpdatePackages.Config: Make it possible to configure a
+    global proxy in the general config that will be applied to all repos
+    that do not use their own proxy.
+  * OPSI.Util.Task.UpdatePackages: Lower the loglevel for the used proxy.
+  * OPSI.Util.Task.UpdatePackages.Updater: Simplify notifier handling.
+  * OPSI.Util: librsync functions now provide more information about used
+    files in the log.
+  * Added new module OPSI.Util.Task.ConfigureBootimage.
+  * Backend.backend_getOptions now returns a copy instead of a reference.
+    This leads to temporaryBackendOptions behaving as expected.
+  * OPSI.Service.Worker.WorkerOpsiJsonRpc: If a client sends gzip and deflate
+    in the 'Accept-Encoding' HTTP header we prefer gzip for the response.
+  * 30_kiosk.conf: getKioskProductInfosForClient: added new parameter
+    addConfigs for the new version of the Kiosk client.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 06 Aug 2019 17:47:54 +0200
+
 python-opsi (4.1.1.70-1) stable; urgency=medium
 
   * OPSI.System.Posix: Add support for retrieving the currently used

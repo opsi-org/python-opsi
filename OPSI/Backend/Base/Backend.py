@@ -256,7 +256,7 @@ This defaults to ``self``.
 
 		:rtype: dict
 		"""
-		return self._options
+		return self._options.copy()
 
 	def backend_getInterface(self):
 		"""

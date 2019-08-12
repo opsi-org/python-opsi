@@ -645,7 +645,6 @@ def decryptWithPrivateKeyFromPEMFile(data, filename):
 	return (b''.join(decrypt())).decode()
 
 
-
 def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeDir=None, includeFile=None, returnDirs=True, returnLinks=True, followLinks=False, repository=None):
 	directory = forceFilename(directory)
 	prefix = forceUnicode(prefix)
