@@ -50,7 +50,7 @@ class BaseNotifier(object):
 		:param pre: Prefix that will be added before the timestampt and text.
 		:type pre: str
 		"""
-		now = unicode(time.strftime(u"%b %d %H:%M:%S", time.localtime()), 'utf-8', 'replace')
+		now = time.strftime(u"%b %d %H:%M:%S", time.localtime())
 		self.message += u'%s%s %s\n' % (pre, now, forceUnicode(line))
 
 	def hasMessage(self):
