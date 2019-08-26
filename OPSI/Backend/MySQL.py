@@ -100,8 +100,7 @@ class ConnectionPool(object):
 			poolArgs = {}
 			for key in ('pool_size', 'max_overflow', 'timeout'):
 				try:
-					poolArgs[key] = kwargs[key]
-					del kwargs[key]
+					poolArgs[key] = kwargs.pop(key)
 				except KeyError:
 					pass
 
