@@ -104,7 +104,7 @@ def testParsingCompressionValue(value, expectedResult):
 @pytest.mark.parametrize("header, expectedSessionID", [
     ({}, None),
     ({'set-cookie': "OPSISID=d395e2f8-9409-4876-bea9-cc621b829998; Path=/"}, "OPSISID=d395e2f8-9409-4876-bea9-cc621b829998"),
-    ({'Set-Cookie': "raserei"}, "raserei"),
+    ({'Set-Cookie': "SID=abc-def-12-345; Path=/"}, "SID=abc-def-12-345"),
     ({'SET-COOKIE': "weltunter"}, "weltunter"),
     ({'FAT-NOOKIE': "foo"}, None),
 ])
