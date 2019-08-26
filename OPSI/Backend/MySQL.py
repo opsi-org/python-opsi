@@ -98,7 +98,7 @@ class ConnectionPool(object):
 			logger.debug(u"Creating ConnectionPool instance")
 			# Create and remember instance
 			poolArgs = {}
-			for key in ('pool_size', 'max_overflow', 'timeout'):
+			for key in ('pool_size', 'max_overflow', 'timeout', 'recycle'):
 				try:
 					poolArgs[key] = kwargs.pop(key)
 				except KeyError:
@@ -147,6 +147,7 @@ class MySQL(SQL):
 		self._connectionPoolSize = 20
 		self._connectionPoolMaxOverflow = 10
 		self._connectionPoolTimeout = 30
+		self._connectionPoolRecyclingSeconds = 3600
 		self.autoCommit = True
 
 		# Parse arguments
@@ -168,6 +169,8 @@ class MySQL(SQL):
 				self._connectionPoolMaxOverflow = forceInt(value)
 			elif option == 'connectionpooltimeout':
 				self._connectionPoolTimeout = forceInt(value)
+			elif option == 'connectionpoolrecycling':
+				self._connectionPoolRecyclingSeconds = forceInt(value)
 
 		self._transactionLock = threading.Lock()
 		self._pool = None
@@ -209,7 +212,8 @@ class MySQL(SQL):
 						pool_size=self._connectionPoolSize,
 						max_overflow=self._connectionPoolMaxOverflow,
 						timeout=self._connectionPoolTimeout,
-						conv=conv
+						conv=conv,
+						recycle=self._connectionPoolRecyclingSeconds,
 					)
 					logger.debug2("Created connection pool {0}", self._pool)
 					break
