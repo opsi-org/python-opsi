@@ -99,3 +99,21 @@ def testCreatinBackendWithCompression(compressionOptions, expectedCompression):
 ])
 def testParsingCompressionValue(value, expectedResult):
     assert JSONRPCBackend._parseCompressionValue(value) == expectedResult
+
+
+@pytest.mark.parametrize("header, expectedSessionID", [
+    ({}, None),
+    ({'set-cookie': "OPSISID=d395e2f8-9409-4876-bea9-cc621b829998; Path=/"}, "OPSISID=d395e2f8-9409-4876-bea9-cc621b829998"),
+    ({'Set-Cookie': "raserei"}, "raserei"),
+    ({'SET-COOKIE': "weltunter"}, "weltunter"),
+    ({'FAT-NOOKIE': "foo"}, None),
+])
+def testReadingSessionID(jsonRpcBackend, header, expectedSessionID):
+    response = FakeResponse(
+        data='randomtext',
+        header=header
+    )
+
+    jsonRpcBackend._processResponse(response)
+
+    assert jsonRpcBackend._sessionId == expectedSessionID
