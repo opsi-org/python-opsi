@@ -27,13 +27,13 @@ import pytest
 
 from OPSI.Backend.JSONRPC import _DEFLATE_COMPRESSION, _GZIP_COMPRESSION
 from OPSI.Backend.JSONRPC import JSONRPCBackend
-from OPSI.Util.HTTP import deflateEncode, gzipEncode
+from OPSI.Util.HTTP import HTTPHeaders, deflateEncode, gzipEncode
 from OPSI.Util import randomString
 
 
 class FakeResponse(object):
     def __init__(self, header=None, data=None):
-        self._header = header or {}
+        self._header = HTTPHeaders(header or {})
         self.data = data
 
     def getheader(self, field, default=None):

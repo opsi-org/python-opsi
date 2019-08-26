@@ -44,6 +44,7 @@ import zlib
 import urlparse
 from contextlib import contextmanager
 from io import BytesIO
+from collections import MutableMapping
 
 try:
 	from cStringIO import StringIO
@@ -155,9 +156,9 @@ class HTTPResponse(object):
 
 	Similar to httplib's HTTPResponse but the data is pre-loaded.
 	"""
-	def __init__(self, data='', headers={}, status=0, version=0, reason=None, strict=0):
+	def __init__(self, data='', headers=None, status=0, version=0, reason=None, strict=0):
 		self.data = data
-		self.headers = headers
+		self.headers = HTTPHeaders(headers or {})
 		self.status = status
 		self.version = version
 		self.reason = reason
@@ -205,7 +206,7 @@ class HTTPResponse(object):
 		logger.debug2("Creating HTTPResponse from httplib...")
 		return HTTPResponse(
 			data=r.read(),
-			headers=dict(r.getheaders()),
+			headers=HTTPHeaders(r.getheaders()),
 			status=r.status,
 			version=r.version,
 			reason=r.reason,
@@ -218,6 +219,57 @@ class HTTPResponse(object):
 
 	def getheader(self, name, default=None):
 		return self.headers.get(name, default)
+
+
+class HTTPHeaders(MutableMapping):
+	"""
+	A dictionary that maintains ``Http-Header-Case`` for all keys.
+
+	Heavily influeced by HTTPHeaders from tornado.
+	"""
+
+	def __init__(self, *args, **kwargs):
+		self._dict = {}
+		self.update(*args, **kwargs)
+
+	def __setitem__(self, name, value):
+		key = self.normalizeKey(name)
+		self._dict[key] = value
+
+	def __getitem__(self, name):
+		key = self.normalizeKey(name)
+		return self._dict[key]
+
+	def __delitem__(self, name):
+		key = self.normalizeKey(name)
+		del self._dict[key]
+
+	def __len__(self):
+		return len(self._dict)
+
+	def __iter__(self):
+		return iter(self._dict)
+
+	@staticmethod
+	def normalizeKey(key):
+		return "-".join([w.capitalize() for w in key.split("-")])
+
+	def copy(self):
+		# defined in dict but not in MutableMapping.
+		return HTTPHeaders(self)
+
+	# Use our overridden copy method for the copy.copy module.
+	# This makes shallow copies one level deeper, but preserves
+	# the appearance that HTTPHeaders is a single container.
+	__copy__ = copy
+
+	def __str__(self):
+		return "\n".join("%s: %s" % (name, value) for name, value in self.items())
+
+	__unicode__ = __str__  # lazy
+
+	def __repr__(self):
+		return "{}({!r})".format(self.__class__.__name__, self._dict)
 
 
 class HTTPConnectionPool(object):
