@@ -732,6 +732,9 @@ To specify the use of a specific compression supply either 'gzip' or 'deflate'.
 
 	@staticmethod
 	def _decompressResponse(response):
+		"""
+		Decompress the body of the response based on it's encoding.
+		"""
 		contentEncoding = response.getheader('Content-Encoding', '').lower()
 		logger.debug2(u"Content-Encoding: {}", contentEncoding)
 
