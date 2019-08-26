@@ -306,7 +306,7 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 			try:
 				self.execute(query, conn, cursor)
 			except Exception as e:
-				logger.debug(u"Execute error: %s" % e)
+				logger.debug(u"Execute error: {!r}", e)
 				if e[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
 					raise
 
