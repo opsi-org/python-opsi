@@ -166,33 +166,6 @@ class HTTPResponse(object):
 	def addData(self, data):
 		self.data += data
 
-	def curlHeader(self, header):
-		header = header.strip()
-		if header.upper().startswith('HTTP'):
-			try:
-				(version, status, reason) = header.split(None, 2)
-				self.version = 9
-				if version == 'HTTP/1.0':
-					self.version = 10
-				elif version.startswith('HTTP/1.'):
-					self.version = 11
-				self.status = int(status.strip())
-				self.reason = reason.strip()
-			except Exception:
-				pass
-		elif header.count(':') > 0:
-			(key, value) = header.split(':', 1)
-			key = key.lower().strip()
-			value = value.strip()
-			if key == 'content-length':
-				try:
-					value = int(value)
-					if value < 0:
-						value = 0
-				except Exception:
-					return
-			self.headers[key] = value
-
 	@staticmethod
 	def from_httplib(r):
 		"""
