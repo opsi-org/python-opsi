@@ -129,7 +129,7 @@ def configureDHCPD(configFile=DHCPD_CONF):
 			else:
 				confChanged = True
 				filename = 'linux/pxelinux.0'
-				if isSLES():
+				if isSLES() or isOpenSUSE():
 					filename = 'opsi/pxelinux.0'
 				group.addComponent(
 					DHCPDConf_Parameter(
