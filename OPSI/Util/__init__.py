@@ -930,7 +930,7 @@ def getPublicKey(data):
 	count = 0
 	mp = []
 	for i in range(2):
-		length, = struct.unpack('>L', rest[c:c+4])
-		mp.append(bytes_to_long(rest[c+4:c+4+length]))
-		c += 4 + length
+		length = struct.unpack('>L', rest[count:count + 4])[0]
+		mp.append(bytes_to_long(rest[count + 4:count + 4 + length]))
+		count += 4 + length
 	return Key.RSA.construct(mp[1],mp[0])
