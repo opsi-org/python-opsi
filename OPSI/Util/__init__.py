@@ -925,8 +925,9 @@ def chunk(iterable, size):
 	it = iter(iterable)
 	return iter(lambda: tuple(islice(it, size)), ())
 
+
 def getPublicKey(data):
-	#keyType = data[4:11]
+	# Key type can be found in 4:11.
 	rest = data[11:]
 	count = 0
 	mp = []
