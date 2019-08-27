@@ -931,7 +931,7 @@ def getPublicKey(data):
 	rest = data[11:]
 	count = 0
 	mp = []
-	for i in range(2):
+	for _ in range(2):
 		length = struct.unpack('>L', rest[count:count + 4])[0]
 		mp.append(bytes_to_long(rest[count + 4:count + 4 + length]))
 		count += 4 + length
