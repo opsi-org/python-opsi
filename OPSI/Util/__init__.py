@@ -43,9 +43,12 @@ import time
 import types
 from collections import namedtuple
 from contextlib import closing
-from Crypto.Cipher import Blowfish
 from hashlib import md5
 from itertools import islice
+
+from Crypto.Cipher import Blowfish
+from Crypto.PublicKey import RSA
+from Crypto.Util.number import bytes_to_long
 
 from OPSI.Logger import Logger, LOG_DEBUG
 from OPSI.Types import (forceBool, forceFilename, forceFqdn, forceInt,
@@ -921,3 +924,16 @@ def chunk(iterable, size):
 	"""
 	it = iter(iterable)
 	return iter(lambda: tuple(islice(it, size)), ())
+
+
+def getPublicKey(data):
+	# Key type can be found in 4:11.
+	rest = data[11:]
+	count = 0
+	mp = []
+	for _ in range(2):
+		length = struct.unpack('>L', rest[count:count + 4])[0]
+		mp.append(bytes_to_long(rest[count + 4:count + 4 + length]))
+		count += 4 + length
+
+	return RSA.construct((mp[1], mp[0]))
