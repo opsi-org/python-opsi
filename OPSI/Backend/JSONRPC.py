@@ -712,16 +712,31 @@ To specify the use of a specific compression supply either 'gzip' or 'deflate'.
 
 	def _processResponse(self, response):
 		logger.debug2("Processing response...")
-		# Get cookie from header
+		self._readSessionId(response)
+
+		response = self._decompressResponse(response)
+		logger.debug2(u"Response is: {0!r}", response)
+		return response
+
+	def _readSessionId(self, response):
+		"""
+		Reads the session ID from the response and saves it for future use.
+		"""
 		cookie = response.getheader('set-cookie', None)
+
 		if cookie:
 			# Store sessionId cookie
 			sessionId = cookie.split(';')[0].strip()
 			if sessionId != self._sessionId:
 				self._sessionId = sessionId
 
-		contentEncoding = response.getheader('content-encoding', '').lower()
-		logger.debug2(u"Content-Encoding: {1}", contentEncoding)
+	@staticmethod
+	def _decompressResponse(response):
+		"""
+		Decompress the body of the response based on it's encoding.
+		"""
+		contentEncoding = response.getheader('Content-Encoding', '').lower()
+		logger.debug2(u"Content-Encoding: {}", contentEncoding)
 
 		response = response.data
 		if contentEncoding == 'gzip':
