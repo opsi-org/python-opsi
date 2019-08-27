@@ -44,6 +44,8 @@ import types
 from collections import namedtuple
 from contextlib import closing
 from Crypto.Cipher import Blowfish
+from Crypto import PublicKey as Key
+from Crypto.Util.number import bytes_to_long
 from hashlib import md5
 from itertools import islice
 
@@ -921,3 +923,14 @@ def chunk(iterable, size):
 	"""
 	it = iter(iterable)
 	return iter(lambda: tuple(islice(it, size)), ())
+
+def getPublicKey(data):
+	#keyType = data[4:11]
+	rest = data[11:]
+	count = 0
+	mp = []
+	for i in range(2):
+		length, = struct.unpack('>L', rest[c:c+4])
+		mp.append(bytes_to_long(rest[c+4:c+4+length]))
+		c += 4 + length
+	return Key.RSA.construct(mp[1],mp[0])
