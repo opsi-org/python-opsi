@@ -10,7 +10,7 @@ BuildRequires:  gettext-devel
 BuildRequires:  python-devel
 BuildRequires:  python-setuptools
 Requires:       duplicity
-%if 0%{?sle_version} > 150000 && 0%{?is_opensuse}
+%if 0%{?sle_version} >= 150000 && 0%{?is_opensuse}
 Requires:		net-tools-deprecated
 %else
 Requires:       iproute
