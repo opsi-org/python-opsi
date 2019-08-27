@@ -10,7 +10,7 @@ BuildRequires:  gettext-devel
 BuildRequires:  python-devel
 BuildRequires:  python-setuptools
 Requires:       duplicity
-%if 0%{?sle_version} == 150000 && 0%{?is_opensuse}
+%if 0%{?sle_version} >= 150000 && 0%{?is_opensuse}
 Requires:		net-tools-deprecated
 %else
 Requires:       iproute
@@ -70,10 +70,10 @@ Url:            https://opsi.org
 License:        AGPL-3.0+
 Group:          Productivity/Networking/Opsi
 AutoReqProv:    on
-Version:        4.1.1.52
+Version:        4.1.1.74
 Release:        1
 Summary:        Python library for the client management solution opsi
-Source:         python-opsi_4.1.1.52-1.tar.gz
+Source:         python-opsi_4.1.1.74-1.tar.gz
 #Source2:        setup.py
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 # python noarch modules are only working on openSUSE 11.2 or higher
