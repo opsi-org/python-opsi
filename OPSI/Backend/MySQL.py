@@ -147,7 +147,7 @@ class MySQL(SQL):
 		self._connectionPoolSize = 20
 		self._connectionPoolMaxOverflow = 10
 		self._connectionPoolTimeout = 30
-		self._connectionPoolRecyclingSeconds = 3600
+		self._connectionPoolRecyclingSeconds = -1
 		self.autoCommit = True
 
 		# Parse arguments
