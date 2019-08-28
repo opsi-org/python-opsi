@@ -37,7 +37,6 @@ import threading
 import types
 from hashlib import md5
 from queue import Queue, Empty
-from twisted.conch.ssh import keys
 
 from OPSI import __version__
 from OPSI.Backend.Base import Backend
@@ -51,6 +50,7 @@ from OPSI.Types import (
 from OPSI.Util import serialize, deserialize
 from OPSI.Util.HTTP import getSharedConnectionPool, urlsplit
 from OPSI.Util.HTTP import deflateDecode, gzipEncode, gzipDecode
+from OPSI.Util import getPublicKey
 
 __all__ = ('JSONRPC', 'JSONRPCThread', 'RpcQueue', 'JSONRPCBackend')
 
@@ -538,7 +538,7 @@ class JSONRPCBackend(Backend):
 					raise OpsiError(u"MySQL backend in use but not licensed")
 			else:
 				logger.info(u"Verifying modules file signature")
-				publicKey = keys.Key.fromString(data=base64.decodebytes(b'AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
+				publicKey = getPublicKey(data=base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP'))
 				data = u''
 				mks = list(modules.keys())
 				mks.sort()
@@ -665,14 +665,29 @@ class JSONRPCBackend(Backend):
 
 	def _processResponse(self, response):
 		logger.debug2("Processing response...")
-		# Get cookie from header
+		self._readSessionId(response)
+
+		response = self._decompressResponse(response)
+		logger.debug2(u"Response is: {0!r}", response)
+		return response
+
+	def _readSessionId(self, response):
+		"""
+		Reads the session ID from the response and saves it for future use.
+		"""
 		cookie = response.getheader('set-cookie', None)
+
 		if cookie:
 			# Store sessionId cookie
 			sessionId = cookie.split(';')[0].strip()
 			if sessionId != self._sessionId:
 				self._sessionId = sessionId
 
+	@staticmethod
+	def _decompressResponse(response):
+		"""
+		Decompress the body of the response based on it's encoding.
+		"""
 		contentEncoding = response.getheader('Content-Encoding', '').lower()
 		logger.debug2(u"Content-Encoding: {}", contentEncoding)
 

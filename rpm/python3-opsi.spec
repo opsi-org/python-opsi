@@ -12,7 +12,7 @@ BuildRequires:  gettext-devel
 BuildRequires:  python3-devel
 BuildRequires:  python3-setuptools
 Requires:       duplicity
-%if 0%{?sle_version} == 150000 && 0%{?is_opensuse}
+%if 0%{?sle_version} >= 150000 && 0%{?is_opensuse}
 Requires:		net-tools-deprecated
 %else
 Requires:       iproute
@@ -21,7 +21,7 @@ Requires:       lshw
 Requires:       python3 >= 3.5.3
 Requires:       python3-magic
 Requires:       python3-sqlalchemy
-Requires:       python3-twisted >= 8.2, python3-twisted < 18.4
+Requires:       python3-twisted
 
 # Dependencies for twisted are a mess because most lack needed packages.
 # We try to avoid problems with this:
@@ -68,10 +68,10 @@ Url:            https://opsi.org
 License:        AGPL-3.0+
 Group:          Productivity/Networking/Opsi
 AutoReqProv:    on
-Version:        4.1.1.52
+Version:        4.1.1.75
 Release:        1
 Summary:        Python library for the client management solution opsi
-Source:         python-opsi_4.1.1.52-1.tar.gz
+Source:         python-opsi_4.1.1.75-1.tar.gz
 #Source2:        setup.py
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 # python noarch modules are only working on openSUSE 11.2 or higher

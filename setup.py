@@ -142,7 +142,7 @@ for language in LANGUAGES:
 		print('Generating locale for "{0}" failed. Is gettext installed?'.format(language))
 
 required_packages = [
-	'twisted[conch,tls]<18.4',
+	'twisted[tls]',
 	'pyCrypto',
 	'pyOpenSSL',
 	'python-pam',

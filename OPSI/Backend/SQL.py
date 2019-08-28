@@ -36,14 +36,11 @@ import time
 from contextlib import contextmanager
 from datetime import datetime
 from hashlib import md5
-from twisted.conch.ssh import keys
 
 from OPSI.Backend.Base import BackendModificationListener, ConfigDataBackend
 from OPSI.Exceptions import (BackendConfigurationError, BackendMissingDataError,
 	BackendModuleDisabledError, BackendReferentialIntegrityError)
 from OPSI.Logger import Logger
-from OPSI.Types import (forceBool, forceUnicodeLower, forceOpsiTimestamp,
-	forceList, forceUnicode, forceUnicodeList, forceDict, forceObjectClassList)
 from OPSI.Object import (AuditHardware, AuditHardwareOnHost, AuditSoftware,
 	AuditSoftwareOnClient, AuditSoftwareToLicensePool, Config, ConfigState,
 	Entity, Group, Host, HostGroup, LicenseContract, LicenseOnClient,
@@ -51,7 +48,9 @@ from OPSI.Object import (AuditHardware, AuditHardwareOnHost, AuditSoftware,
 	ProductOnClient, ProductOnDepot, ProductProperty, ProductPropertyState,
 	Relationship, SoftwareLicense, SoftwareLicenseToLicensePool,
 	mandatoryConstructorArgs)
-from OPSI.Util import timestamp
+from OPSI.Types import (forceBool, forceUnicodeLower, forceOpsiTimestamp,
+	forceList, forceUnicode, forceUnicodeList, forceDict, forceObjectClassList)
+from OPSI.Util import timestamp, getPublicKey
 
 __all__ = (
 	'timeQuery', 'onlyAllowSelect', 'SQL', 'SQLBackend',
@@ -1275,8 +1274,7 @@ class SQLBackend(ConfigDataBackend):
 		backendinfo = self._context.backend_info()
 		modules = backendinfo['modules']
 		helpermodules = backendinfo['realmodules']
-
-		publicKey = keys.Key.fromString(data=base64.decodebytes(b'AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
+		publicKey = getPublicKey(data=base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP'))
 		data = u''
 		mks = list(modules.keys())
 		mks.sort()
@@ -1831,8 +1829,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 		backendinfo = self._context.backend_info()
 		modules = backendinfo['modules']
 		helpermodules = backendinfo['realmodules']
-
-		publicKey = keys.Key.fromString(data=base64.decodebytes(b'AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
+		publicKey = getPublicKey(data=base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP'))
 		data = u''
 		mks = list(modules.keys())
 		mks.sort()
