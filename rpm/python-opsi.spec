@@ -128,8 +128,8 @@ sed -i 's#isc-dhcp-server#dhcpd#' $RPM_BUILD_ROOT/etc/opsi/backends/dhcpd.conf
 sed -i 's#/etc/dhcp/dhcpd.conf#/etc/dhcpd.conf#;s#isc-dhcp-server#dhcpd#' $RPM_BUILD_ROOT/etc/opsi/backends/dhcpd.conf
 %endif
 
-%if 0%{?suse_version} == 1110 || 0%{?suse_version} == 1315
-	# We only want to change this on SLES.
+%if 0%{?suse_version}
+	# We only want to change this on SUSE (openSUSE and SLES)
 	sed -i 's#linux/pxelinux.0#opsi/pxelinux.0#' $RPM_BUILD_ROOT/etc/opsi/backends/dhcpd.conf
 %endif
 
