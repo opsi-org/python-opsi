@@ -38,7 +38,6 @@ import MySQLdb
 from MySQLdb.constants import FIELD_TYPE
 from MySQLdb.converters import conversions
 from sqlalchemy import pool
-from twisted.conch.ssh import keys
 
 from OPSI.Exceptions import (BackendBadValueError, BackendUnableToConnectError,
 	BackendUnaccomplishableError)
@@ -47,6 +46,7 @@ from OPSI.Types import forceInt, forceUnicode
 from OPSI.Backend.Backend import ConfigDataBackend
 from OPSI.Backend.SQL import (
 	onlyAllowSelect, SQL, SQLBackend, SQLBackendObjectModificationTracker)
+from OPSI.Util import getPublicKey
 
 __all__ = (
 	'ConnectionPool', 'MySQL', 'MySQLBackend',
@@ -98,10 +98,9 @@ class ConnectionPool(object):
 			logger.debug(u"Creating ConnectionPool instance")
 			# Create and remember instance
 			poolArgs = {}
-			for key in ('pool_size', 'max_overflow', 'timeout'):
+			for key in ('pool_size', 'max_overflow', 'timeout', 'recycle'):
 				try:
-					poolArgs[key] = kwargs[key]
-					del kwargs[key]
+					poolArgs[key] = kwargs.pop(key)
 				except KeyError:
 					pass
 
@@ -148,6 +147,7 @@ class MySQL(SQL):
 		self._connectionPoolSize = 20
 		self._connectionPoolMaxOverflow = 10
 		self._connectionPoolTimeout = 30
+		self._connectionPoolRecyclingSeconds = -1
 		self.autoCommit = True
 
 		# Parse arguments
@@ -169,6 +169,8 @@ class MySQL(SQL):
 				self._connectionPoolMaxOverflow = forceInt(value)
 			elif option == 'connectionpooltimeout':
 				self._connectionPoolTimeout = forceInt(value)
+			elif option == 'connectionpoolrecycling':
+				self._connectionPoolRecyclingSeconds = forceInt(value)
 
 		self._transactionLock = threading.Lock()
 		self._pool = None
@@ -210,7 +212,8 @@ class MySQL(SQL):
 						pool_size=self._connectionPoolSize,
 						max_overflow=self._connectionPoolMaxOverflow,
 						timeout=self._connectionPoolTimeout,
-						conv=conv
+						conv=conv,
+						recycle=self._connectionPoolRecyclingSeconds,
 					)
 					logger.debug2("Created connection pool {0}", self._pool)
 					break
@@ -303,7 +306,7 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 			try:
 				self.execute(query, conn, cursor)
 			except Exception as e:
-				logger.debug(u"Execute error: %s" % e)
+				logger.debug(u"Execute error: {!r}", e)
 				if e[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
 					raise
 
@@ -565,7 +568,7 @@ class MySQLBackend(SQLBackend):
 			logger.error(u"Disabling mysql backend and license management module: modules file expired")
 		else:
 			logger.info(u"Verifying modules file signature")
-			publicKey = keys.Key.fromString(data=base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
+			publicKey = getPublicKey(data=base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP'))
 			data = u''
 			mks = modules.keys()
 			mks.sort()
