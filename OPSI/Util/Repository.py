@@ -454,7 +454,7 @@ class Repository:
 
 				remainingBytes = fileSize - self._bytesTransfered
 				logger.debug2("remainingBytes: {:d}", remainingBytes)
-				if remainingBytes > 0 and remainingBytes < self._bufferSize:
+				if 0 < remainingBytes < self._bufferSize:
 					buf = src.read(remainingBytes)
 				elif remainingBytes > 0:
 					buf = src.read(self._bufferSize)
