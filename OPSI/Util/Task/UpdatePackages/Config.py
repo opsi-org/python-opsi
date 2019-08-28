@@ -46,7 +46,7 @@ from OPSI.Types import (
 __all__ = ('DEFAULT_CONFIG', 'ConfigurationParser')
 
 DEFAULT_CONFIG = {
-	"userAgent": 'opsi package updater %s' % __version__,
+	"userAgent": 'opsi-package-updater/%s' % __version__,
 	"packageDir": '/var/lib/opsi/products',
 	"configFile": '/etc/opsi/opsi-package-updater.conf',
 	"repositoryConfigDir": '/etc/opsi/package-updater.repos.d',
@@ -74,6 +74,7 @@ DEFAULT_CONFIG = {
 	"processProductIds": None,
 	"forceChecksumCalculation": False,
 	"forceDownload": False,
+	"proxy": None,
 }
 
 logger = Logger()
@@ -144,6 +145,8 @@ overriden based on values in configuration file.
 							config["tempdir"] = value.strip()
 						elif option.lower() == 'repositoryconfigdir':
 							config["repositoryConfigDir"] = value.strip()
+						elif option.lower() == 'proxy' and value.strip():
+							config["proxy"] = forceUrl(value.strip())
 
 				elif section.lower() == 'notification':
 					for (option, value) in configIni.items(section):
@@ -207,7 +210,7 @@ overriden based on values in configuration file.
 
 				elif section.lower().startswith('repository'):
 					try:
-						repository = self._getRepository(configIni, section, config['forceRepositoryActivation'], config['repositoryName'], config['installAllAvailable'])
+						repository = self._getRepository(configIni, section, config['forceRepositoryActivation'], config['repositoryName'], config['installAllAvailable'], config['proxy'])
 						config['repositories'].append(repository)
 					except MissingConfigurationValueError as mcverr:
 						logger.debug(u"Configuration for {section} incomplete: {error}", error=mcverr, section=section)
@@ -230,7 +233,7 @@ overriden based on values in configuration file.
 						continue
 
 					try:
-						repository = self._getRepository(repoConfig, section, config['forceRepositoryActivation'], config['repositoryName'], config['installAllAvailable'])
+						repository = self._getRepository(repoConfig, section, config['forceRepositoryActivation'], config['repositoryName'], config['installAllAvailable'], proxy=config['proxy'])
 						config['repositories'].append(repository)
 					except MissingConfigurationValueError as mcverr:
 						logger.debug(u"Configuration for {section} in {filename} incomplete: {error}", error=mcverr, section=section, filename=configFile)
@@ -243,11 +246,10 @@ overriden based on values in configuration file.
 
 		return config
 
-	def _getRepository(self, config, section, forceRepositoryActivation=False, repositoryName=None, installAllAvailable=False):
+	def _getRepository(self, config, section, forceRepositoryActivation=False, repositoryName=None, installAllAvailable=False, proxy=None):
 		active = False
 		baseUrl = None
 		opsiDepotId = None
-		proxy = None
 		for (option, value) in config.items(section):
 			option = option.lower()
 			value = value.strip()
@@ -295,7 +297,7 @@ overriden based on values in configuration file.
 
 		elif baseUrl:
 			if proxy:
-				logger.notice(u"Using Proxy: %s" % proxy)
+				logger.info(u"Repository {} is using proxy {}", repoName, proxy)
 
 			repository = ProductRepositoryInfo(
 				name=repoName,

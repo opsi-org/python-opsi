@@ -36,11 +36,10 @@ import shutil
 import stat
 import time
 import urllib
+import xml.etree.ElementTree as ET
 
 from enum import IntEnum
 from http.client import HTTPConnection, HTTPSConnection, HTTPResponse
-
-from OPSI.web2.dav import davxml
 
 from OPSI import __version__
 from OPSI.Exceptions import RepositoryError
@@ -82,6 +81,43 @@ def getRepository(url, **kwargs):
 		return CIFSRepository(url, **kwargs)
 
 	raise RepositoryError(u"Repository url '%s' not supported" % url)
+
+
+def getFileInfosFromDavXML(davxmldata, encoding='utf-8'):
+	content = []
+	root = ET.fromstring(davxmldata)
+	for child in root:
+		info = {'size': 0, 'type': 'file', 'path': '', 'name': ''}
+		if child.tag != "{DAV:}response":
+			raise RepositoryError(u"No valid davxml given")
+
+		if child[0].tag == "{DAV:}href":
+			info['path'] = child[0].text
+
+		if child[1].tag == "{DAV:}propstat":
+			for node in child[1]:
+				if node.tag != "{DAV:}prop":
+					continue
+
+				for childnode in node:
+					tag = childnode.tag
+					text = childnode.text
+					if tag == "{DAV:}getcontenttype":
+						if "directory" in text:
+							info['type'] = 'dir'
+					elif tag == "{DAV:}getcontentlength":
+						if text != "None":
+							info['size'] = int(text)
+					elif tag == "{DAV:}displayname":
+						info['name'] = text
+
+				# IIS Fix: Remove trailing backslash on file-paths
+				if info['type'] == 'file' and info['path'].endswith("/"):
+					info['path'] = str(info['path'][:-1], encoding=encoding)
+
+			content.append(info)
+
+	return content
 
 
 class RepositoryHook(object):
@@ -418,7 +454,7 @@ class Repository:
 
 				remainingBytes = fileSize - self._bytesTransfered
 				logger.debug2("remainingBytes: {:d}", remainingBytes)
-				if remainingBytes > 0 and remainingBytes < self._bufferSize:
+				if 0 < remainingBytes < self._bufferSize:
 					buf = src.read(remainingBytes)
 				elif remainingBytes > 0:
 					buf = src.read(self._bufferSize)
@@ -1090,30 +1126,7 @@ class WebDAVRepository(HTTPRepository):
 			if 'charset=' in part:
 				encoding = part.split('=')[1].replace('"', '').strip()
 
-		msr = davxml.WebDAVDocument.fromString(response.data)
-		if not msr.root_element.children[0].childOfType(davxml.PropertyStatus).childOfType(davxml.PropertyContainer).childOfType(davxml.ResourceType).children:
-			raise RepositoryError(u"Not a directory: '%s'" % source)
-
-		content = []
-		srcLen = len(source)
-		for child in msr.root_element.children[1:]:
-			pContainer = child.childOfType(davxml.PropertyStatus).childOfType(davxml.PropertyContainer)
-			info = {
-				'size': 0,
-				'type': 'file',
-				'path': str(urllib.unquote(child.childOfType(davxml.HRef).children[0].data[srcLen:]), encoding=encoding),
-				'name': str(pContainer.childOfType(davxml.DisplayName).children[0].data, encoding=encoding),
-			}
-
-			if str(pContainer.childOfType(davxml.GETContentLength)) != 'None':
-				info['size'] = int(str(pContainer.childOfType(davxml.GETContentLength)))
-
-			if pContainer.childOfType(davxml.ResourceType).children:
-				info['type'] = 'dir'
-				if info['path'].endswith('/'):
-					info['path'] = info['path'][:-1]
-
-			content.append(info)
+		content = getFileInfosFromDavXML(davxmldata=response.data, encoding=encoding)
 
 		if recursive:
 			self._contentCache[source] = {

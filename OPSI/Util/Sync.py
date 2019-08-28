@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2006-2018 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2019 uib GmbH <info@uib.de>
 # http://www.uib.de/
 
 # This program is free software: you can redistribute it and/or modify
@@ -36,7 +36,7 @@ import os
 from contextlib import closing
 
 from OPSI.Logger import Logger
-from OPSI.Types import forceUnicode
+from OPSI.Types import forceFilename, forceUnicode
 
 __all__ = (
     'librsyncDeltaFile', 'librsyncPatchFile', 'librsyncSignature',
@@ -54,6 +54,7 @@ elif os.name == 'nt':
 
 
 def librsyncSignature(filename, base64Encoded=True):
+    filename = forceFilename(filename)
     try:
         with open(filename, 'rb') as f:
             with closing(librsync.SigFile(f)) as sf:
@@ -63,12 +64,22 @@ def librsyncSignature(filename, base64Encoded=True):
                     sig = base64.encodestring(sig)
 
                 return sig
-    except Exception as e:
-        raise RuntimeError(u"Failed to get librsync signature: %s" % forceUnicode(e))
+    except Exception as sigError:
+        raise RuntimeError(
+            u"Failed to get librsync signature from %s: %s" % (
+                filename,
+                forceUnicode(sigError)
+            )
+        )
 
 
 def librsyncPatchFile(oldfile, deltafile, newfile):
-    logger.debug(u"Librsync : %s, %s, %s" % (oldfile, deltafile, newfile))
+    logger.debug(u"Librsync patch: old file {!r}, delta file {!r}, new file {!r}", oldfile, deltafile, newfile)
+
+    oldfile = forceFilename(oldfile)
+    newfile = forceFilename(newfile)
+    deltafile = forceFilename(deltafile)
+
     if oldfile == newfile:
         raise ValueError(u"Oldfile and newfile are the same file")
     if deltafile == newfile:
@@ -86,12 +97,19 @@ def librsyncPatchFile(oldfile, deltafile, newfile):
                         while data:
                             data = pf.read(bufsize)
                             nf.write(data)
-    except Exception as e:
-        raise RuntimeError(u"Failed to patch file: %s" % forceUnicode(e))
+    except Exception as patchError:
+        logger.debug(
+            "Patching {!r} with delta {!r} into {!r} failed: {}",
+            oldfile, deltafile, newfile, patchError
+        )
+        raise RuntimeError(u"Failed to patch file %s: %s" % (oldfile, forceUnicode(patchError)))
 
 
 def librsyncDeltaFile(filename, signature, deltafile):
     bufsize = 1024 * 1024
+    filename = forceFilename(filename)
+    deltafile = forceFilename(deltafile)
+    logger.debug("Creating deltafile {!r} on base of {!r}", deltafile, filename)
     try:
         with open(filename, "rb") as f:
             with open(deltafile, "wb") as df:
@@ -101,4 +119,6 @@ def librsyncDeltaFile(filename, signature, deltafile):
                         data = ldf.read(bufsize)
                         df.write(data)
     except Exception as e:
-        raise RuntimeError(u"Failed to write delta file: %s" % forceUnicode(e))
+        raise RuntimeError(
+            u"Failed to write delta file %s: %s" % (deltafile, forceUnicode(e))
+        )

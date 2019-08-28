@@ -34,7 +34,7 @@ import urllib.request
 from urllib.parse import quote
 
 from .Config import ConfigurationParser
-from .Notifier import EmailNotifier
+from .Notifier import DummyNotifier, EmailNotifier
 from .Repository import LinksExtractor
 
 from OPSI import System
@@ -151,10 +151,7 @@ class OpsiPackageUpdater(object):
 			logger.warning(u"No repositories configured, nothing to do")
 			return
 
-		notifier = None
-		if self.config["notification"]:
-			logger.info(u"Notification is activated")
-			notifier = self._getNotifier()
+		notifier = self._getNotifier()
 
 		try:
 			try:
@@ -300,7 +297,7 @@ class OpsiPackageUpdater(object):
 
 				sequence = []
 				for package in newPackages:
-					if not insideInstallWindow and not package['productId'] in self.config['installationWindowExceptions']:
+					if not insideInstallWindow and package['productId'] not in self.config['installationWindowExceptions']:
 						continue
 					sequence.append(package['productId'])
 
@@ -331,6 +328,7 @@ class OpsiPackageUpdater(object):
 							break
 				newPackages = sortedPackages
 
+				backend = self.getConfigBackend()
 				installedPackages = []
 				for package in newPackages:
 					packageFile = os.path.join(self.config["packageDir"], package["filename"])
@@ -342,13 +340,15 @@ class OpsiPackageUpdater(object):
 					try:
 						if package['repository'].inheritProductProperties and availablePackage['repository'].opsiDepotId:
 							logger.info(u"Trying to get product property defaults from repository")
-							productPropertyStates = self.getConfigBackend().productPropertyState_getObjects(
-											productId=package['productId'],
-											objectId=availablePackage['repository'].opsiDepotId)
+							productPropertyStates = backend.productPropertyState_getObjects(
+								productId=package['productId'],
+								objectId=availablePackage['repository'].opsiDepotId
+							)
 						else:
-							productPropertyStates = self.getConfigBackend().productPropertyState_getObjects(
-											productId=package['productId'],
-											objectId=self.depotId)
+							productPropertyStates = backend.productPropertyState_getObjects(
+								productId=package['productId'],
+								objectId=self.depotId
+							)
 						if productPropertyStates:
 							for pps in productPropertyStates:
 								propertyDefaultValues[pps.propertyId] = pps.values
@@ -357,35 +357,34 @@ class OpsiPackageUpdater(object):
 						logger.warning(u"Failed to get product property defaults: %s" % error)
 
 					logger.info(u"Installing package '%s'" % packageFile)
-					self.getConfigBackend().depot_installPackage(filename=packageFile, propertyDefaultValues=propertyDefaultValues, tempDir=self.config.get('tempdir', '/tmp'))
-					productOnDepots = self.getConfigBackend().productOnDepot_getObjects(depotId=self.depotId, productId=package['productId'])
+					backend.depot_installPackage(filename=packageFile, propertyDefaultValues=propertyDefaultValues, tempDir=self.config.get('tempdir', '/tmp'))
+					productOnDepots = backend.productOnDepot_getObjects(depotId=self.depotId, productId=package['productId'])
 					if not productOnDepots:
 						raise ValueError(u"Product '%s' not found on depot '%s' after installation" % (package['productId'], self.depotId))
-					package['product'] = self.getConfigBackend().product_getObjects(
+					package['product'] = backend.product_getObjects(
 						id=productOnDepots[0].productId,
 						productVersion=productOnDepots[0].productVersion,
 						packageVersion=productOnDepots[0].packageVersion
 					)[0]
 
-					if notifier:
-						notifier.appendLine(u"Package '%s' successfully installed" % packageFile, pre='\n')
-					logger.notice(u"Package '%s' successfully installed" % packageFile)
+					message = u"Package '%s' successfully installed" % packageFile
+					notifier.appendLine(message, pre='\n')
+					logger.notice(message)
 					installedPackages.append(package)
 
 				if not installedPackages:
 					logger.notice(u"No new packages installed")
 					return
 
-				wakeOnLanClients = set()
 				shutdownProduct = None
 				if self.config['wolAction'] and self.config["wolShutdownWanted"]:
-					for product in self.getConfigBackend().productOnDepot_getObjects(depotId=self.depotId, productId='shutdownwanted'):
-						shutdownProduct = product
+					try:
+						shutdownProduct = backend.productOnDepot_getObjects(depotId=self.depotId, productId='shutdownwanted')[0]
 						logger.info(u"Found 'shutdownwanted' product on depot '%s': %s" % (self.depotId, shutdownProduct))
-						break
-					if not shutdownProduct:
+					except IndexError:
 						logger.error(u"Product 'shutdownwanted' not avaliable on depot '%s'" % self.depotId)
 
+				wakeOnLanClients = set()
 				for package in installedPackages:
 					if not package['product'].setupScript:
 						continue
@@ -408,7 +407,7 @@ class OpsiPackageUpdater(object):
 						)
 						continue
 
-					clientToDepotserver = self.getConfigBackend().configState_getClientToDepotserver(depotIds=[self.depotId])
+					clientToDepotserver = backend.configState_getClientToDepotserver(depotIds=[self.depotId])
 					clientIds = set(
 						ctd['clientId']
 						for ctd in clientToDepotserver
@@ -416,7 +415,7 @@ class OpsiPackageUpdater(object):
 					)
 
 					if clientIds:
-						productOnClients = self.getConfigBackend().productOnClient_getObjects(
+						productOnClients = backend.productOnClient_getObjects(
 							attributes=['installationStatus'],
 							productId=package['productId'],
 							productType='LocalbootProduct',
@@ -432,14 +431,12 @@ class OpsiPackageUpdater(object):
 								if wolEnabled and package['productId'] not in excludedWolProducts:
 									wakeOnLanClients.add(poc.clientId)
 
-							self.getConfigBackend().productOnClient_updateObjects(productOnClients)
-							if notifier:
-								notifier.appendLine(u"Product {0} set to 'setup' on clients: {1}".format(package['productId'], ', '.join(sorted(poc.clientId for poc in productOnClients))))
+							backend.productOnClient_updateObjects(productOnClients)
+							notifier.appendLine(u"Product {0} set to 'setup' on clients: {1}".format(package['productId'], ', '.join(sorted(poc.clientId for poc in productOnClients))))
 
 				if wakeOnLanClients:
 					logger.notice(u"Powering on clients %s" % wakeOnLanClients)
-					if notifier:
-						notifier.appendLine(u"Powering on clients: {0}".format(', '.join(sorted(wakeOnLanClients))))
+					notifier.appendLine(u"Powering on clients: {0}".format(', '.join(sorted(wakeOnLanClients))))
 
 					for clientId in wakeOnLanClients:
 						try:
@@ -447,7 +444,7 @@ class OpsiPackageUpdater(object):
 							if self.config["wolShutdownWanted"] and shutdownProduct:
 								logger.info(u"Setting shutdownwanted to 'setup' for client '%s'" % clientId)
 
-								self.getConfigBackend().productOnClient_updateObjects(
+								backend.productOnClient_updateObjects(
 									ProductOnClient(
 										productId=shutdownProduct.productId,
 										productType=shutdownProduct.productType,
@@ -457,19 +454,22 @@ class OpsiPackageUpdater(object):
 										actionRequest='setup'
 									)
 								)
-							self.getConfigBackend().hostControl_start(hostIds=[clientId])
+							backend.hostControl_start(hostIds=[clientId])
 							time.sleep(self.config["wolStartGap"])
 						except Exception as error:
 							logger.error(u"Failed to power on client '%s': %s" % (clientId, error))
 			except Exception as error:
-				if notifier:
-					notifier.appendLine(u"Error occurred: %s" % error)
+				notifier.appendLine(u"Error occurred: %s" % error)
 				raise
 		finally:
 			if notifier and notifier.hasMessage():
 				notifier.notify()
 
 	def _getNotifier(self):
+		if not self.config["notification"]:
+			return DummyNotifier()
+
+		logger.info(u"E-Mail notification is activated")
 		notifier = EmailNotifier(
 			smtphost=self.config["smtphost"],
 			smtpport=self.config["smtpport"],
@@ -513,10 +513,7 @@ class OpsiPackageUpdater(object):
 			logger.warning(u"No repositories configured, nothing to do")
 			return
 
-		notifier = None
-		if self.config["notification"]:
-			logger.info(u"Notification is activated")
-			notifier = self._getNotifier()
+		notifier = self._getNotifier()
 
 		forceDownload = self.config["forceDownload"]
 
@@ -558,8 +555,7 @@ class OpsiPackageUpdater(object):
 
 					message = u"{filename} - download of package is forced.".format(**availablePackage)
 					logger.notice(message)
-					if notifier:
-						notifier.appendLine(message)
+					notifier.appendLine(message)
 				elif not downloadNeeded:
 					logger.info(
 						u"%s - download of package is not required: found local package %s with matching md5sum" % (
@@ -570,13 +566,11 @@ class OpsiPackageUpdater(object):
 				elif localPackageFound:
 					message = u"{filename} - download of package is required: found local package {0} which differs from available".format(localPackageFound['filename'], **availablePackage)
 					logger.notice(message)
-					if notifier:
-						notifier.appendLine(message)
+					notifier.appendLine(message)
 				else:
 					message = u"{filename} - download of package is required: local package not found".format(**availablePackage)
 					logger.notice(message)
-					if notifier:
-						notifier.appendLine(message)
+					notifier.appendLine(message)
 
 				packageFile = os.path.join(self.config["packageDir"], availablePackage["filename"])
 				zsynced = False
@@ -621,8 +615,7 @@ class OpsiPackageUpdater(object):
 				logger.notice(u"No new packages downloaded")
 				return
 		except Exception as error:
-			if notifier:
-				notifier.appendLine(u"Error occurred: %s" % error)
+			notifier.appendLine(u"Error occurred: %s" % error)
 			raise
 		finally:
 			if notifier and notifier.hasMessage():
@@ -632,20 +625,22 @@ class OpsiPackageUpdater(object):
 		outFile = os.path.join(self.config["packageDir"], availablePackage["filename"])
 		curdir = os.getcwd()
 		os.chdir(os.path.dirname(outFile))
+
+		repository = availablePackage['repository']
 		try:
 			logger.info(u"Zsyncing %s to %s" % (availablePackage["packageFile"], outFile))
 
 			cmd = u"%s -A %s='%s:%s' -o '%s' %s 2>&1" % (
 				self.config["zsyncCommand"],
-				availablePackage['repository'].baseUrl.split('/')[2].split(':')[0],
-				availablePackage['repository'].username,
-				availablePackage['repository'].password,
+				repository.baseUrl.split('/')[2].split(':')[0],
+				repository.username,
+				repository.password,
 				outFile,
 				availablePackage["zsyncFile"]
 			)
 
-			if availablePackage['repository'].proxy:
-				cmd = u"http_proxy=%s %s" % (availablePackage['repository'].proxy, cmd)
+			if repository.proxy:
+				cmd = u"http_proxy=%s %s" % (repository.proxy, cmd)
 
 			stateRegex = re.compile(r'\s([\d.]+)%\s+([\d.]+)\skBps(.*)$')
 			data = ''
@@ -667,15 +662,18 @@ class OpsiPackageUpdater(object):
 				percent = float(match.group(1))
 				speed = float(match.group(2)) * 8
 				logger.debug(u'Zsyncing %s: %d%% (%d kbit/s)' % (availablePackage["packageFile"], percent, speed))
+
+			message = u"Zsync of '%s' completed" % availablePackage["packageFile"]
+			logger.info(message)
 			if notifier:
-				notifier.appendLine(u"Zsync of '%s' completed" % availablePackage["packageFile"])
-			logger.info(u"Zsync of '%s' completed" % availablePackage["packageFile"])
+				notifier.appendLine(message)
 		finally:
 			os.chdir(curdir)
 
 	def downloadPackage(self, availablePackage, notifier=None):
-		authcertfile = availablePackage['repository'].authcertfile
-		authkeyfile = availablePackage['repository'].authkeyfile
+		repository = availablePackage['repository']
+		authcertfile = repository.authcertfile
+		authkeyfile = repository.authkeyfile
 		url = availablePackage["packageFile"]
 		outFile = os.path.join(self.config["packageDir"], availablePackage["filename"])
 
@@ -685,12 +683,12 @@ class OpsiPackageUpdater(object):
 			handler = urllib.request.HTTPSHandler(context=context)
 		else:
 			passwordManager = urllib.request.HTTPPasswordMgrWithDefaultRealm()
-			passwordManager.add_password(None, availablePackage['repository'].baseUrl, availablePackage['repository'].username, availablePackage['repository'].password)
+			passwordManager.add_password(None, repository.baseUrl, repository.username, repository.password)
 			handler = urllib.request.HTTPBasicAuthHandler(passwordManager)
 
-		if availablePackage['repository'].proxy:
-			logger.notice(u"Using Proxy: %s" % availablePackage['repository'].proxy)
-			proxyHandler = urllib.request.ProxyHandler({'http': availablePackage['repository'].proxy, 'https': availablePackage['repository'].proxy})
+		if repository.proxy:
+			logger.notice(u"Using Proxy: %s" % repository.proxy)
+			proxyHandler = urllib.request.ProxyHandler({'http': repository.proxy, 'https': repository.proxy})
 			opener = urllib.request.build_opener(proxyHandler, handler)
 		else:
 			opener = urllib.request.build_opener(handler)
@@ -730,12 +728,14 @@ class OpsiPackageUpdater(object):
 					except Exception:
 						pass
 
+		if size:
+			message = u"Download of '%s' completed (~%s)" % (url, formatFileSize(size))
+		else:
+			message = u"Download of '%s' completed" % url
+
+		logger.info(message)
 		if notifier:
-			if size:
-				notifier.appendLine(u"Download of '%s' completed (~%s)" % (url, formatFileSize(size)))
-			else:
-				notifier.appendLine(u"Download of '%s' completed" % url)
-		logger.info(u"Download of '%s' completed" % url)
+			notifier.appendLine(message)
 
 	def cleanupPackages(self, newPackage):
 		logger.info(u"Cleaning up in %s" % self.config["packageDir"])
