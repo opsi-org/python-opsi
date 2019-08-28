@@ -55,7 +55,7 @@ def temporaryBackendOptions(backend, **options):
 		backend.backend_setOptions(oldOptions)
 
 
-class DeferredCall(object):
+class DeferredCall:
 	def __init__(self, callback=None):
 		self.error = None
 		self.result = None

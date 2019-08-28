@@ -55,7 +55,7 @@ def _(string):
 	return string
 
 
-class ProductPackageFile(object):
+class ProductPackageFile:
 
 	def __init__(self, packageFile, tempDir=None):
 		self.packageFile = os.path.abspath(forceFilename(packageFile))
@@ -457,7 +457,7 @@ class ProductPackageFile(object):
 		return self._runPackageScript(u'postinst', env=env)
 
 
-class ProductPackageSource(object):
+class ProductPackageSource:
 
 	def __init__(self, packageSourceDir, tempDir=None, customName=None, customOnly=False, packageFileDestDir=None, format='cpio', compression='gzip', dereference=False):
 		self.packageSourceDir = os.path.abspath(forceFilename(packageSourceDir))

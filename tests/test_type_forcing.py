@@ -579,7 +579,7 @@ def testForceUniqueListDoesNotChangeOrder():
 def testArgsDecoratorArgumentsDefaultToNone():
 
 	@args("somearg", "someOtherArg")
-	class SomeClass(object):
+	class SomeClass:
 		def __init__(self, **kwargs):
 			pass
 
@@ -592,7 +592,7 @@ def testArgsDecoratorArgumentsDefaultToNone():
 def testArgsDecoratorTakesKeywordArguments():
 
 	@args("somearg", someOtherArg=forceInt)
-	class SomeOtherClass(object):
+	class SomeOtherClass:
 		def __init__(self, **kwargs):
 			pass
 
@@ -605,7 +605,7 @@ def testArgsDecoratorTakesKeywordArguments():
 def testArgsDecoratorCreatesPrivateArgs():
 
 	@args("_somearg", "_someOtherArg")
-	class SomeClass(object):
+	class SomeClass:
 		def __init__(self, **kwargs):
 			pass
 
@@ -619,11 +619,13 @@ def testForceFqdnRemovesTrailingDot():
 	assert 'abc.example.local' == forceFqdn('abc.example.local.')
 
 
-def testForceFqdnRequiresHostnameRootZoneAndTopLevelDomain():
-	with pytest.raises(ValueError):
-		forceFqdn('hostname.tld')
-
-	forceFqdn('hostname.rootzone.tld')
+@pytest.mark.parametrize("hostname", [
+	'hostname.rootzone.tld',  # complete hostname
+	pytest.param('host_name.rootzone.tld', marks=pytest.mark.xfail),  # underscore
+	pytest.param('hostname.tld', marks=pytest.mark.xfail),  # only domain
+])
+def testForceFqdnRequiresHostnameRootZoneAndTopLevelDomain(hostname):
+	forceFqdn(hostname)
 
 
 @pytest.mark.parametrize("domain", [

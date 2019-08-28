@@ -152,7 +152,7 @@ class MIB_IFTABLE(Structure):
 	]
 
 
-class SystemSpecificHook(object):
+class SystemSpecificHook:
 	def __init__(self):
 		pass
 

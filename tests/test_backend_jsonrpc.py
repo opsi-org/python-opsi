@@ -25,13 +25,13 @@ import pytest
 
 from OPSI.Backend.JSONRPC import _GZIP_COMPRESSION
 from OPSI.Backend.JSONRPC import JSONRPCBackend
-from OPSI.Util.HTTP import deflateEncode, gzipEncode
+from OPSI.Util.HTTP import HTTPHeaders, deflateEncode, gzipEncode
 from OPSI.Util import randomString
 
 
-class FakeResponse(object):
+class FakeResponse:
     def __init__(self, header=None, data=None):
-        self._header = header or {}
+        self._header = HTTPHeaders(header or {})
         self.data = data
 
     def getheader(self, field, default=None):
@@ -97,3 +97,21 @@ def testCreatinBackendWithCompression(compressionOptions, expectedCompression):
 ])
 def testParsingCompressionValue(value, expectedResult):
     assert JSONRPCBackend._parseCompressionValue(value) == expectedResult
+
+
+@pytest.mark.parametrize("header, expectedSessionID", [
+    ({}, None),
+    ({'set-cookie': "OPSISID=d395e2f8-9409-4876-bea9-cc621b829998; Path=/"}, "OPSISID=d395e2f8-9409-4876-bea9-cc621b829998"),
+    ({'Set-Cookie': "SID=abc-def-12-345; Path=/"}, "SID=abc-def-12-345"),
+    ({'SET-COOKIE': "weltunter"}, "weltunter"),
+    ({'FAT-NOOKIE': "foo"}, None),
+])
+def testReadingSessionID(jsonRpcBackend, header, expectedSessionID):
+    response = FakeResponse(
+        data='randomtext',
+        header=header
+    )
+
+    jsonRpcBackend._processResponse(response)
+
+    assert jsonRpcBackend._sessionId == expectedSessionID

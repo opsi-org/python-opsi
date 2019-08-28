@@ -99,7 +99,7 @@ class KillableThread(threading.Thread):
 		self.raise_exc(SystemExit)
 
 
-class ThreadPool(object):
+class ThreadPool:
 
 	def __init__(self, size=20, autostart=True):
 		self.size = int(size)

@@ -37,7 +37,7 @@ from OPSI.Logger import Logger
 from OPSI.System import execute
 from OPSI.System.Posix import getDHCPDRestartCommand, locateDHCPDConfig
 from OPSI.System.Posix import getNetworkConfiguration
-from OPSI.System.Posix import isCentOS, isSLES, isRHEL
+from OPSI.System.Posix import isCentOS, isSLES, isRHEL, isOpenSUSE
 from OPSI.Util.File import DHCPDConfFile, DHCPDConf_Block, DHCPDConf_Parameter
 from OPSI.Util.Task.Sudoers import patchSudoersFileToAllowRestartingDHCPD
 
@@ -129,7 +129,7 @@ def configureDHCPD(configFile=DHCPD_CONF):
 			else:
 				confChanged = True
 				filename = 'linux/pxelinux.0'
-				if isSLES():
+				if isSLES() or isOpenSUSE():
 					filename = 'opsi/pxelinux.0'
 				group.addComponent(
 					DHCPDConf_Parameter(

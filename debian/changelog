@@ -1,3 +1,10 @@
+python3-opsi (4.2.0.12-1) testing; urgency=medium
+
+  * OPSI.Util.Repository: Implemented WebDAV XML handling without web2.
+  * Some small internal refactorings.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 28 Aug 2019 16:40:47 +0200
+
 python3-opsi (4.2.0.11-1) testing; urgency=medium
 
   * OPSI.Backend.Manager.Authentication.PAM: Use python-pam module.
@@ -110,6 +117,42 @@ python3-opsi (4.2.0.1-1) experimental; urgency=medium
     OPSI.Backend.Base.
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 06 Nov 2018 16:46:45 +0100
+
+python-opsi (4.1.1.76-2) stable; urgency=medium
+
+  * RPM: patch the correct filename into /etc/opsi/backends/dhcpd.conf if
+    running on a SUSE distribution.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 28 Aug 2019 16:09:47 +0200
+
+python-opsi (4.1.1.76-1) stable; urgency=medium
+
+  * OPSI.Backend.MySQL: The lifetime for DB connections can now be configured
+    through the backend parameter 'ConnectionPoolRecycling'.
+  * Removed module OPSI.Util.Debug.
+  * Removed dependency to twisted.conch.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 28 Aug 2019 09:49:08 +0200
+
+python-opsi (4.1.1.75-1) stable; urgency=medium
+
+  * OPSI.Util.Task.ConfigureBackend.DHCPD: checking for SLES and OpenSUSE to
+    set dhcpd boot file properly
+
+ -- Mathias Radtke <m.radtke@uib.de>  Tue, 27 Aug 2019 13:50:17 +0200
+
+python-opsi (4.1.1.74-1) stableD; urgency=medium
+
+  * OPSI.Util.HTTP.HTTPResponse: Removed parts of experimental curl support.
+  * OPSI.Util.HTTP.HTTPResponse: HTTP headers are now handle case-insensitive.
+
+ -- Mathias Radtke <m.radtke@uib.de>  Tue, 27 Aug 2019 12:27:32 +0200
+
+python-opsi (4.1.1.73-1) stable; urgency=medium
+
+  * RPM/spec: installing net-tools-deprecated on Leap >= 15.0
+
+ -- Mathias Radtke <m.radtke@uib.de>  Tue, 27 Aug 2019 10:23:31 +0200
 
 python-opsi (4.1.1.72-1) stable; urgency=medium
 
