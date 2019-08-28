@@ -1,5 +1,5 @@
 pycrypto
-twisted < 18.4
+twisted
 libmagic
 ldaptor
 pam

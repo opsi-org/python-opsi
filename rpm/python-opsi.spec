@@ -21,7 +21,6 @@ Requires:       python-ldaptor
 Requires:       python-magic
 Requires:       python-sqlalchemy
 Requires:       python-twisted-web >= 8.2
-Requires:       python-twisted-conch >= 8.2, python-twisted-conch < 18.4
 
 # Dependencies for twisted are a mess because most lack needed packages.
 # We try to avoid problems with this:
