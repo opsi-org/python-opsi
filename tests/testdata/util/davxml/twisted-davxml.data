@@ -1,0 +1,140 @@
+<?xml version='1.0' encoding='UTF-8'?><multistatus xmlns='DAV:'>
+  <response>
+    <href>/repository/</href>
+    <propstat>
+      <prop>
+        <resourcetype>
+          <collection/>
+        </resourcetype>
+        <getetag>"2-9000-5D1E186F"</getetag>
+        <getcontenttype>httpd/unix-directory</getcontenttype>
+        <getcontentlength>None</getcontentlength>
+        <getlastmodified>Thu, 04 Jul 2019 17:17:03 GMT</getlastmodified>
+        <creationdate>2019-07-04T17:17:03Z</creationdate>
+        <displayname>repository</displayname>
+        <supportedlock>
+          <lockentry>
+            <lockscope>
+              <exclusive/>
+            </lockscope>
+            <locktype>
+              <write/>
+            </locktype>
+          </lockentry>
+          <lockentry>
+            <lockscope>
+              <shared/>
+            </lockscope>
+            <locktype>
+              <write/>
+            </locktype>
+          </lockentry>
+        </supportedlock>
+        <resource-class xmlns='http://twistedmatrix.com/xml_namespace/dav/'>ResourceOpsiconfdDAV</resource-class>
+      </prop>
+      <status>HTTP/1.1 200 OK</status>
+    </propstat>
+  </response>
+  <response>
+    <href>/repository/l-opsi-server_4.1.1.11-1.opsi.zsync</href>
+    <propstat>
+      <prop>
+        <resourcetype/>
+        <getetag>"20D-139-5D1B4E09"</getetag>
+        <getcontenttype>text/plain</getcontenttype>
+        <getcontentlength>313</getcontentlength>
+        <getlastmodified>Tue, 02 Jul 2019 14:28:57 GMT</getlastmodified>
+        <creationdate>2019-07-02T14:28:57Z</creationdate>
+        <displayname>l-opsi-server_4.1.1.11-1.opsi.zsync</displayname>
+        <supportedlock>
+          <lockentry>
+            <lockscope>
+              <exclusive/>
+            </lockscope>
+            <locktype>
+              <write/>
+            </locktype>
+          </lockentry>
+          <lockentry>
+            <lockscope>
+              <shared/>
+            </lockscope>
+            <locktype>
+              <write/>
+            </locktype>
+          </lockentry>
+        </supportedlock>
+        <resource-class xmlns='http://twistedmatrix.com/xml_namespace/dav/'>ResourceOpsiconfdDAV</resource-class>
+      </prop>
+      <status>HTTP/1.1 200 OK</status>
+    </propstat>
+  </response>
+  <response>
+    <href>/repository/l-opsi-server_4.1.1.11-1.opsi.md5</href>
+    <propstat>
+      <prop>
+        <resourcetype/>
+        <getetag>"20A-20-5D1B4E09"</getetag>
+        <getcontenttype>text/plain</getcontenttype>
+        <getcontentlength>32</getcontentlength>
+        <getlastmodified>Tue, 02 Jul 2019 14:28:57 GMT</getlastmodified>
+        <creationdate>2019-07-02T14:28:57Z</creationdate>
+        <displayname>l-opsi-server_4.1.1.11-1.opsi.md5</displayname>
+        <supportedlock>
+          <lockentry>
+            <lockscope>
+              <exclusive/>
+            </lockscope>
+            <locktype>
+              <write/>
+            </locktype>
+          </lockentry>
+          <lockentry>
+            <lockscope>
+              <shared/>
+            </lockscope>
+            <locktype>
+              <write/>
+            </locktype>
+          </lockentry>
+        </supportedlock>
+        <resource-class xmlns='http://twistedmatrix.com/xml_namespace/dav/'>ResourceOpsiconfdDAV</resource-class>
+      </prop>
+      <status>HTTP/1.1 200 OK</status>
+    </propstat>
+  </response>
+  <response>
+    <href>/repository/l-opsi-server_4.1.1.11-2.opsi.zsync</href>
+    <propstat>
+      <prop>
+        <resourcetype/>
+        <getetag>"259-139-5D1E184F"</getetag>
+        <getcontenttype>text/plain</getcontenttype>
+        <getcontentlength>313</getcontentlength>
+        <getlastmodified>Thu, 04 Jul 2019 17:16:31 GMT</getlastmodified>
+        <creationdate>2019-07-04T17:16:31Z</creationdate>
+        <displayname>l-opsi-server_4.1.1.11-2.opsi.zsync</displayname>
+        <supportedlock>
+          <lockentry>
+            <lockscope>
+              <exclusive/>
+            </lockscope>
+            <locktype>
+              <write/>
+            </locktype>
+          </lockentry>
+          <lockentry>
+            <lockscope>
+              <shared/>
+            </lockscope>
+            <locktype>
+              <write/>
+            </locktype>
+          </lockentry>
+        </supportedlock>
+        <resource-class xmlns='http://twistedmatrix.com/xml_namespace/dav/'>ResourceOpsiconfdDAV</resource-class>
+      </prop>
+      <status>HTTP/1.1 200 OK</status>
+    </propstat>
+  </response>
+</multistatus>

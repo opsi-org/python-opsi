@@ -42,6 +42,7 @@ import ssl as ssl_module
 import socket
 import time
 import zlib
+from collections import MutableMapping
 from contextlib import contextmanager
 from io import BytesIO, StringIO
 from queue import Queue, Empty, Full
@@ -150,42 +151,15 @@ class HTTPResponse:
 
 	Similar to httplib's HTTPResponse but the data is pre-loaded.
 	"""
-	def __init__(self, data='', headers={}, status=0, version=0, reason=None):
+	def __init__(self, data='', headers=None, status=0, version=0, reason=None):
 		self.data = data
-		self.headers = headers
+		self.headers = HTTPHeaders(headers or {})
 		self.status = status
 		self.version = version
 		self.reason = reason
 
 	def addData(self, data):
 		self.data += data
-
-	def curlHeader(self, header):
-		header = header.strip()
-		if header.upper().startswith('HTTP'):
-			try:
-				(version, status, reason) = header.split(None, 2)
-				self.version = 9
-				if version == 'HTTP/1.0':
-					self.version = 10
-				elif version.startswith('HTTP/1.'):
-					self.version = 11
-				self.status = int(status.strip())
-				self.reason = reason.strip()
-			except Exception:
-				pass
-		elif header.count(':') > 0:
-			(key, value) = header.split(':', 1)
-			key = key.lower().strip()
-			value = value.strip()
-			if key == 'content-length':
-				try:
-					value = int(value)
-					if value < 0:
-						value = 0
-				except Exception:
-					return
-			self.headers[key] = value
 
 	@staticmethod
 	def from_httplib(r):
@@ -199,7 +173,7 @@ class HTTPResponse:
 		logger.debug2("Creating HTTPResponse from httplib...")
 		return HTTPResponse(
 			data=r.read(),
-			headers=dict(r.getheaders()),
+			headers=HTTPHeaders(r.getheaders()),
 			status=r.status,
 			version=r.version,
 			reason=r.reason
@@ -213,7 +187,58 @@ class HTTPResponse:
 		return self.headers.get(name, default)
 
 
-class HTTPConnectionPool:
+class HTTPHeaders(MutableMapping):
+	"""
+	A dictionary that maintains ``Http-Header-Case`` for all keys.
+
+	Heavily influeced by HTTPHeaders from tornado.
+	"""
+
+	def __init__(self, *args, **kwargs):
+		self._dict = {}
+		self.update(*args, **kwargs)
+
+	def __setitem__(self, name, value):
+		key = self.normalizeKey(name)
+		self._dict[key] = value
+
+	def __getitem__(self, name):
+		key = self.normalizeKey(name)
+		return self._dict[key]
+
+	def __delitem__(self, name):
+		key = self.normalizeKey(name)
+		del self._dict[key]
+
+	def __len__(self):
+		return len(self._dict)
+
+	def __iter__(self):
+		return iter(self._dict)
+
+	@staticmethod
+	def normalizeKey(key):
+		return "-".join([w.capitalize() for w in key.split("-")])
+
+	def copy(self):
+		# defined in dict but not in MutableMapping.
+		return HTTPHeaders(self)
+
+	# Use our overridden copy method for the copy.copy module.
+	# This makes shallow copies one level deeper, but preserves
+	# the appearance that HTTPHeaders is a single container.
+	__copy__ = copy
+
+	def __str__(self):
+		return "\n".join("%s: %s" % (name, value) for name, value in self.items())
+
+	__unicode__ = __str__  # lazy
+
+	def __repr__(self):
+		return "{}({!r})".format(self.__class__.__name__, self._dict)
+
+
+class HTTPConnectionPool(object):
 
 	scheme = 'http'
 

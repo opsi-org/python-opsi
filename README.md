@@ -39,15 +39,14 @@ these.
 ### Installing on Ubuntu
 
 Installing the depedencies via apt-get:
-``apt-get install lsb-release python-twisted-web python-twisted-conch python-magic python-crypto  python-newt python-pam python-openssl python-mysqldb python-sqlalchemy iproute duplicity python-m2crypto lshw python-dev``
-
+``apt-get install lsb-release python3-twisted python3-magic python3-crypto python3-newt python3-pampy python3-openssl python3-mysqldb python3-sqlalchemy iproute duplicity lshw python3-dev``
 
 For installing further depedencies on your system we also recommend to
 install the header files for Python, librsync and to test the
 SQLite-backend we also need apsw.
 
 This can be done with:
-``apt-get install build-essential python-dev librsync-dev python-apsw``
+``apt-get install build-essential python3-dev librsync-dev python3-apsw``
 
 
 ## Building
