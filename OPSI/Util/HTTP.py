@@ -145,7 +145,7 @@ class HostChangedError(HTTPError):
 	pass
 
 
-class HTTPResponse(object):
+class HTTPResponse:
 	"""
 	HTTP Response container.
 

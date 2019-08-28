@@ -35,7 +35,7 @@ __all__ = ('LinksExtractor', 'ProductRepositoryInfo')
 logger = Logger()
 
 
-class ProductRepositoryInfo(object):
+class ProductRepositoryInfo:
 	def __init__(self, name, baseUrl, dirs=[], username=u"", password=u"", authcertfile=u"", authkeyfile="", opsiDepotId=None, autoInstall=False, autoUpdate=True, autoSetup=False, proxy=None, excludes=[], includes=[], active=False):
 		self.name = forceUnicode(name)
 		self.baseUrl = forceUnicode(baseUrl)

@@ -54,7 +54,7 @@ __all__ = ('OpsiPackageUpdater', )
 logger = Logger()
 
 
-class OpsiPackageUpdater(object):
+class OpsiPackageUpdater:
 	def __init__(self, config):
 		self.config = config
 		self.httpHeaders = {'User-Agent': self.config.get("userAgent", "")}

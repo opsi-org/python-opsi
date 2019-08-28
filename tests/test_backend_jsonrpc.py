@@ -29,7 +29,7 @@ from OPSI.Util.HTTP import HTTPHeaders, deflateEncode, gzipEncode
 from OPSI.Util import randomString
 
 
-class FakeResponse(object):
+class FakeResponse:
     def __init__(self, header=None, data=None):
         self._header = HTTPHeaders(header or {})
         self.data = data

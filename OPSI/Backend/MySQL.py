@@ -86,7 +86,7 @@ def disableAutoCommit(sqlInstance):
 		logger.debug2(u'autoCommit set to true')
 
 
-class ConnectionPool(object):
+class ConnectionPool:
 	# Storage for the instance reference
 	__instance = None
 

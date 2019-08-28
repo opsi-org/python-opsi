@@ -889,7 +889,7 @@ file or syslog.
 		return setattr(self.__instance, attr, value)
 
 
-class VirtFile(object):
+class VirtFile:
 
 	def __init__(self, logger, level):
 		self.logger = logger

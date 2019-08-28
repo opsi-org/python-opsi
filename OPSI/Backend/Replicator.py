@@ -38,7 +38,7 @@ __all__ = ('BackendReplicator', )
 logger = Logger()
 
 
-class BackendReplicator(object):
+class BackendReplicator:
 	OBJECT_CLASSES = [
 		'Host',
 		'Product',

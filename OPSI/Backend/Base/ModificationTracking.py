@@ -88,7 +88,7 @@ class ModificationTrackingBackend(ExtendedBackend):
 		return result
 
 
-class BackendModificationListener(object):
+class BackendModificationListener:
 	def objectInserted(self, backend, obj):
 		# Should return immediately!
 		pass
