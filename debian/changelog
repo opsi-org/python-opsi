@@ -1,3 +1,10 @@
+python3-opsi (4.2.0.12-1) testing; urgency=medium
+
+  * OPSI.Util.Repository: Implemented WebDAV XML handling without web2.
+  * Some small internal refactorings.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 28 Aug 2019 16:40:47 +0200
+
 python3-opsi (4.2.0.11-1) testing; urgency=medium
 
   * OPSI.Backend.Manager.Authentication.PAM: Use python-pam module.
