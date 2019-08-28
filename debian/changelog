@@ -111,6 +111,13 @@ python3-opsi (4.2.0.1-1) experimental; urgency=medium
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 06 Nov 2018 16:46:45 +0100
 
+python-opsi (4.1.1.76-2) stable; urgency=medium
+
+  * RPM: patch the correct filename into /etc/opsi/backends/dhcpd.conf if
+    running on a SUSE distribution.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 28 Aug 2019 16:09:47 +0200
+
 python-opsi (4.1.1.76-1) stable; urgency=medium
 
   * OPSI.Backend.MySQL: The lifetime for DB connections can now be configured
