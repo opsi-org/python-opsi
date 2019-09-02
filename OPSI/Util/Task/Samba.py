@@ -219,7 +219,7 @@ def _processConfig(lines):
 		newlines.append(u"[opsi_logs]\n")
 		newlines.append(u"   available = yes\n")
 		newlines.append(u"   comment = opsi logs share (ro)\n")
-		newlines.append(u"   path = /var/logs/opsi\n")
+		newlines.append(u"   path = /var/log/opsi\n")
 		newlines.append(u"   follow symlinks = yes\n")
 		newlines.append(u"   writeable = no\n")
 		newlines.append(u"   invalid users = root\n")
