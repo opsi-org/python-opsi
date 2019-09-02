@@ -1,4 +1,4 @@
-python-opsi (4.1.1.77-1) testingD; urgency=medium
+python-opsi (4.1.1.77-1) testing; urgency=medium
 
   * OPSI.Util.Task.Rights: Cache the path of the workbench once this has been read.
   * OPSI.util.Task.Samba: Added opsi_logs SMB share
