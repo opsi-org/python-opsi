@@ -1,4 +1,10 @@
-python-opsi (4.1.1.77-1) testingD; urgency=medium
+python-opsi (4.1.1.77-2) testing; urgency=medium
+
+  * OPSI.Util.Task:Samba: corrected typo on opsi_logs SMB share creation
+
+ -- Mathias Radtke <m.radtke@uib.de>  Mon, 02 Sep 2019 16:29:40 +0200
+
+python-opsi (4.1.1.77-1) testing; urgency=medium
 
   * OPSI.Util.Task.Rights: Cache the path of the workbench once this has been read.
   * OPSI.util.Task.Samba: Added opsi_logs SMB share
