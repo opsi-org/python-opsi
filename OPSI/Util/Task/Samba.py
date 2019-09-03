@@ -223,6 +223,7 @@ def _processConfig(lines):
 		newlines.append(u"   follow symlinks = yes\n")
 		newlines.append(u"   writeable = no\n")
 		newlines.append(u"   invalid users = root\n")
+		newlines.append(u"\n")
 
 	if oplocksFound:
 		logger.warning(u" Detected oplocks in your samba configuration. It is not recommended to use them with opsi. Please see the opsi manual for further information.")
