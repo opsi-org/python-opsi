@@ -534,6 +534,9 @@ def blowfishEncrypt(key, cleartext):
 	:raises BlowfishError: In case things go wrong.
 	:rtype: str
 	"""
+	if not key:
+		raise BlowfishError("Missing key")
+
 	cleartext = forceUnicode(cleartext)
 	key = forceUnicode(key).encode()
 
@@ -562,6 +565,9 @@ def blowfishDecrypt(key, crypt):
 	:raises BlowfishError: In case things go wrong.
 	:rtype: str
 	"""
+	if not key:
+		raise BlowfishError("Missing key")
+
 	key = forceUnicode(key).encode()
 	crypt = bytes.fromhex(crypt)
 
