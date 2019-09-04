@@ -592,8 +592,7 @@ def blowfishDecrypt(key, crypt):
 		raise BlowfishError(u"Failed to decrypt")
 
 	# Remove possible \0-chars
-	if b'\0' in cleartext:
-		cleartext = cleartext[:cleartext.find(b'\0')]
+	cleartext = cleartext.rstrip(b'\0')
 
 	try:
 		return cleartext.decode()
