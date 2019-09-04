@@ -894,11 +894,16 @@ def testBlowfishEncryptionFailures(randomText, blowfishKey):
 		blowfishDecrypt(blowfishKey + 'f00b4', encodedText)
 
 
-def testBlowfishEncryptionFailsWithNoKey(randomText, blowfishKey):
+def testBlowfishDecryptionFailsWithNoKey(randomText, blowfishKey):
 	encodedText = blowfishEncrypt(blowfishKey, randomText)
 
 	with pytest.raises(BlowfishError):
 		blowfishDecrypt(None, encodedText)
+
+
+def testBlowfishEncryptionFailsWithNoKey(randomText, blowfishKey):
+	with pytest.raises(BlowfishError):
+		blowfishEncrypt(None, randomText)
 
 
 @pytest.mark.parametrize("objectCount", [1, 10240])
