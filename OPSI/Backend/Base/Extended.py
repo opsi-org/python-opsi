@@ -1474,16 +1474,16 @@ into the IDs of these depots are to be found in the list behind \
 		additionalProductIds = []
 		productDependenciesByProductIdAndVersion = collections.defaultdict(lambda: collections.defaultdict(lambda: collections.defaultdict(list)))
 
-		def addDependencies(additionalProductIds, productDependency, productDependenciesByProductIdAndVersion):
+		def collectDependencies(additionalProductIds, productDependency, productDependenciesByProductIdAndVersion):
 			productDependenciesByProductIdAndVersion[productDependency.productId][productDependency.productVersion][productDependency.packageVersion].append(productDependency)
 
 			if productDependency.requiredProductId not in productIds and productDependency.requiredProductId not in additionalProductIds:
 				additionalProductIds.append(productDependency.requiredProductId)
 				for productDependency in self._backend.productDependency_getObjects(productId=productDependency.requiredProductId):
-					addDependencies(additionalProductIds, productDependency, productDependenciesByProductIdAndVersion)
+					collectDependencies(additionalProductIds, productDependency, productDependenciesByProductIdAndVersion)
 
 		for productDependency in self._backend.productDependency_getObjects(productId=productIds):
-			addDependencies(additionalProductIds, productDependency, productDependenciesByProductIdAndVersion)
+			collectDependencies(additionalProductIds, productDependency, productDependenciesByProductIdAndVersion)
 
 		if additionalProductIds:
 			for product in self._backend.product_getObjects(id=additionalProductIds):
