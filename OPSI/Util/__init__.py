@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2006-2018 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2019 uib GmbH <info@uib.de>
 # http://www.uib.de/
 
 # This program is free software: you can redistribute it and/or modify
@@ -44,9 +44,13 @@ import sys
 import time
 import types
 from collections import namedtuple
-from Crypto.Cipher import Blowfish
 from hashlib import md5
 from itertools import islice
+from functools import lru_cache
+
+from Crypto.Cipher import Blowfish
+from Crypto.PublicKey import RSA
+from Crypto.Util.number import bytes_to_long
 
 from OPSI.Logger import Logger, LOG_DEBUG
 from OPSI.Types import (forceBool, forceFilename, forceFqdn, forceInt,
@@ -74,6 +78,7 @@ logger = Logger()
 BLOWFISH_IV = 'OPSI1234'
 RANDOM_DEVICE = u'/dev/urandom'
 UNIT_REGEX = re.compile(r'^(\d+\.*\d*)\s*([\w]{0,4})$')
+UNIT_REGEX = re.compile(r'^(\d+\.*\d*)\s*(\w{0,4})$')
 _ACCEPTED_CHARACTERS = (
 	"abcdefghijklmnopqrstuvwxyz"
 	"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -147,14 +152,16 @@ of strings, dicts, lists or numbers.
 	"""
 	if isinstance(obj, str):
 		return obj
-	elif hasattr(obj, 'serialize'):
+
+	try:
 		return obj.serialize()
-	elif isinstance(obj, (list, set, types.GeneratorType)):
-		return [serialize(tempObject) for tempObject in obj]
-	elif isinstance(obj, dict):
-		return {key: serialize(value) for key, value in obj.items()}
-	else:
-		return obj
+	except AttributeError:
+		if isinstance(obj, (list, set, types.GeneratorType)):
+			return [serialize(tempObject) for tempObject in obj]
+		elif isinstance(obj, dict):
+			return {key: serialize(value) for key, value in obj.items()}
+
+	return obj
 
 
 def formatFileSize(sizeInBytes):
@@ -249,7 +256,7 @@ def objectToBash(obj, bashVars=None, level=0):
 
 	:type bashVars: dict
 	:type level: int
-	:returntype: dict
+	:rtype: dict
 	"""
 	if bashVars is None:
 		bashVars = {}
@@ -262,8 +269,10 @@ def objectToBash(obj, bashVars=None, level=0):
 		varName = 'RESULT%d' % level
 		compress = False
 
-	if hasattr(obj, 'serialize'):
+	try:
 		obj = obj.serialize()
+	except AttributeError:
+		pass
 
 	try:
 		append = bashVars[varName].append
@@ -363,6 +372,17 @@ def replaceSpecialHTMLCharacters(text):
 		.replace(u'\n', u'<br />\n')
 
 
+def combineVersions(obj):
+	"""
+	Returns the combination of product and package version.
+
+	:type obj: Product, ProductOnClient, ProductOnDepot
+	:return: The version.
+	:rtype: str
+	"""
+	return '{0.productVersion}-{0.packageVersion}'.format(obj)
+
+
 def compareVersions(v1, condition, v2):
 	"""
 	Compare the versions `v1` and `v2` with the given `condition`.
@@ -388,7 +408,7 @@ def compareVersions(v1, condition, v2):
 	def splitProductAndPackageVersion(versionString):
 		productVersion = packageVersion = u'0'
 
-		match = re.search(r'^\s*([\w\.]+)-*([\w\.]*)\s*$', versionString)
+		match = re.search(r'^\s*([\w.]+)-*([\w.]*)\s*$', versionString)
 		if not match:
 			raise ValueError(u"Bad version string '%s'" % versionString)
 
@@ -534,9 +554,6 @@ def blowfishEncrypt(key, cleartext):
 	:raises BlowfishError: In case things go wrong.
 	:rtype: str
 	"""
-	if not key:
-		raise BlowfishError("Missing key")
-
 	cleartext = forceUnicode(cleartext)
 	key = forceUnicode(key).encode()
 
@@ -565,9 +582,6 @@ def blowfishDecrypt(key, crypt):
 	:raises BlowfishError: In case things go wrong.
 	:rtype: str
 	"""
-	if not key:
-		raise BlowfishError("Missing key")
-
 	key = forceUnicode(key).encode()
 	crypt = bytes.fromhex(crypt)
 
@@ -579,7 +593,8 @@ def blowfishDecrypt(key, crypt):
 		raise BlowfishError(u"Failed to decrypt")
 
 	# Remove possible \0-chars
-	cleartext = cleartext.rstrip(b'\0')
+	if b'\0' in cleartext:
+		cleartext = cleartext[:cleartext.find(b'\0')]
 
 	try:
 		return cleartext.decode()
@@ -632,7 +647,6 @@ def decryptWithPrivateKeyFromPEMFile(data, filename):
 			yield decr
 
 	return (b''.join(decrypt())).decode()
-
 
 
 def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeDir=None, includeFile=None, returnDirs=True, returnLinks=True, followLinks=False, repository=None):
@@ -853,3 +867,17 @@ def chunk(iterable, size):
 	"""
 	it = iter(iterable)
 	return iter(lambda: tuple(islice(it, size)), ())
+
+
+@lru_cache(maxsize=4)
+def getPublicKey(data):
+	# Key type can be found in 4:11.
+	rest = data[11:]
+	count = 0
+	mp = []
+	for _ in range(2):
+		length = struct.unpack('>L', rest[count:count + 4])[0]
+		mp.append(bytes_to_long(rest[count + 4:count + 4 + length]))
+		count += 4 + length
+
+	return RSA.construct((mp[1], mp[0]))
