@@ -118,6 +118,19 @@ python3-opsi (4.2.0.1-1) experimental; urgency=medium
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 06 Nov 2018 16:46:45 +0100
 
+python-opsi (4.1.1.77-2) testing; urgency=medium
+
+  * OPSI.Util.Task:Samba: corrected typo on opsi_logs SMB share creation
+
+ -- Mathias Radtke <m.radtke@uib.de>  Mon, 02 Sep 2019 16:29:40 +0200
+
+python-opsi (4.1.1.77-1) testing; urgency=medium
+
+  * OPSI.Util.Task.Rights: Cache the path of the workbench once this has been read.
+  * OPSI.util.Task.Samba: Added opsi_logs SMB share
+
+ -- Mathias Radtke <m.radtke@uib.de>  Mon, 02 Sep 2019 13:24:05 +0200
+
 python-opsi (4.1.1.76-2) stable; urgency=medium
 
   * RPM: patch the correct filename into /etc/opsi/backends/dhcpd.conf if
