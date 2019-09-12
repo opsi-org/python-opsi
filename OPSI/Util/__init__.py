@@ -46,6 +46,7 @@ import types
 from collections import namedtuple
 from hashlib import md5
 from itertools import islice
+from functools import lru_cache
 
 from Crypto.Cipher import Blowfish
 from Crypto.PublicKey import RSA
@@ -868,6 +869,7 @@ def chunk(iterable, size):
 	return iter(lambda: tuple(islice(it, size)), ())
 
 
+@lru_cache(maxsize=4)
 def getPublicKey(data):
 	# Key type can be found in 4:11.
 	rest = data[11:]
