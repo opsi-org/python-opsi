@@ -46,6 +46,7 @@ from OPSI.Types import forceHostId, forceProductId, forceUnicode
 from OPSI.Util import compareVersions, formatFileSize, getfqdn, md5sum
 from OPSI.Util.File import ZsyncFile
 from OPSI.Util.File.Opsi import parseFilename
+from OPSI.Util.Path import cd
 from OPSI.Util.Product import ProductPackageFile
 from OPSI.Util.Task.Rights import setRights
 
@@ -623,11 +624,9 @@ class OpsiPackageUpdater:
 
 	def zsyncPackage(self, availablePackage, notifier=None):
 		outFile = os.path.join(self.config["packageDir"], availablePackage["filename"])
-		curdir = os.getcwd()
-		os.chdir(os.path.dirname(outFile))
 
 		repository = availablePackage['repository']
-		try:
+		with cd(os.path.dirname(outFile)):
 			logger.info(u"Zsyncing %s to %s" % (availablePackage["packageFile"], outFile))
 
 			cmd = u"%s -A %s='%s:%s' -o '%s' %s 2>&1" % (
@@ -667,8 +666,6 @@ class OpsiPackageUpdater:
 			logger.info(message)
 			if notifier:
 				notifier.appendLine(message)
-		finally:
-			os.chdir(curdir)
 
 	def downloadPackage(self, availablePackage, notifier=None):
 		repository = availablePackage['repository']
