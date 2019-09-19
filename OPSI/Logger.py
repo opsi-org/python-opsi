@@ -607,7 +607,7 @@ False suppresses exceptions.
 			try:
 				message = message.format(*formatArgs, **formatKwargs)
 			except KeyError as e:
-				if 'Missing format for key ' not in str(e).lower():
+				if 'missing format for key ' not in str(e).lower():
 					raise e
 			except ValueError as e:
 				if 'invalid conversion specification' not in str(e).lower():
