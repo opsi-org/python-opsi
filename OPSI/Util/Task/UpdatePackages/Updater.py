@@ -643,7 +643,7 @@ class OpsiPackageUpdater:
 				cmd = u"http_proxy=%s %s" % (repository.proxy, cmd)
 
 			stateRegex = re.compile(r'\s([\d.]+)%\s+([\d.]+)\skBps(.*)$')
-			data = ''
+			data = b''
 			percent = 0.0
 			speed = 0
 			handle = System.execute(cmd, getHandle=True)
@@ -653,10 +653,10 @@ class OpsiPackageUpdater:
 					handle.close()
 					break
 				data += inp
-				match = stateRegex.search(data)
+				match = stateRegex.search(data.decode())
 				if not match:
 					continue
-				data = match.group(3)
+				data = match.group(3).encode()
 				if (percent == 0) and (float(match.group(1)) == 100):
 					continue
 				percent = float(match.group(1))
