@@ -1,3 +1,10 @@
+python-opsi (4.1.1.78-1) stable; urgency=medium
+
+  * OPSI.Logger: Do not raise an exception if message formatting fails due to
+    missing format for key.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 19 Sep 2019 13:13:24 +0200
+
 python-opsi (4.1.1.77-2) testing; urgency=medium
 
   * OPSI.Util.Task:Samba: corrected typo on opsi_logs SMB share creation
