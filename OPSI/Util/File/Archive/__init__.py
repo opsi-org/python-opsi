@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2006-2018 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -43,6 +43,7 @@ from OPSI.Logger import Logger
 from OPSI import System
 from OPSI.Types import forceBool, forceFilename, forceUnicodeList, forceUnicodeLower
 from OPSI.Util import compareVersions
+from OPSI.Util.Path import cd
 
 if os.name == 'posix':
 	import fcntl
@@ -140,13 +141,11 @@ class BaseArchive:
 			raise
 
 	def _create(self, fileList, baseDir, command):
-		curDir = os.path.abspath(os.getcwd())
-		try:
-			baseDir = os.path.abspath(forceFilename(baseDir))
-			if not os.path.isdir(baseDir):
-				raise IOError(u"Base dir '%s' not found" % baseDir)
-			os.chdir(baseDir)
+		baseDir = os.path.abspath(forceFilename(baseDir))
+		if not os.path.isdir(baseDir):
+			raise IOError(u"Base dir '%s' not found" % baseDir)
 
+		with cd(baseDir):
 			logger.info(u"Executing: %s" % command)
 			proc = subprocess.Popen(command,
 				shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
@@ -226,8 +225,6 @@ class BaseArchive:
 				raise RuntimeError(u"Command '%s' failed with code %s: %s" % (command, ret, error))
 			if self._progressSubject:
 				self._progressSubject.setState(len(fileList))
-		finally:
-			os.chdir(curDir)
 
 
 class PigzMixin:
@@ -370,14 +367,14 @@ class CpioArchive(BaseArchive, PigzMixin):
 			cat = System.which('cat')
 			if self._compression == 'gzip':
 				if self.pigz_detected:
-					cat = u'{pigz} -cd'.format(pigz=System.which('pigz'))
+					cat = u'{pigz} --stdout --decompress'.format(pigz=System.which('pigz'))
 				else:
 					cat = System.which('zcat')
 			elif self._compression == 'bzip2':
 				cat = System.which('bzcat')
 
 			return [line for line in
-					System.execute(u'{cat} "{filename}" | {cpio} --quiet -it'.format(cat=cat, filename=self._filename, cpio=System.which('cpio')))
+					System.execute(u'{cat} "{filename}" | {cpio} --quiet --extract --list'.format(cat=cat, filename=self._filename, cpio=System.which('cpio')))
 					if line]
 		except Exception as e:
 			raise RuntimeError(u"Failed to get archive content '%s': %s" % (self._filename, e))
@@ -395,7 +392,7 @@ class CpioArchive(BaseArchive, PigzMixin):
 			cat = System.which('cat')
 			if self._compression == 'gzip':
 				if self.pigz_detected:
-					cat = u'%s -cd' % (System.which('pigz'), )
+					cat = u'%s --stdout --decompress' % (System.which('pigz'), )
 				else:
 					cat = System.which('zcat')
 			elif self._compression == 'bzip2':
@@ -421,13 +418,9 @@ class CpioArchive(BaseArchive, PigzMixin):
 
 			include = ' '.join('"%s"' % pattern for pattern in patterns)
 
-			curDir = os.path.abspath(os.getcwd())
-			os.chdir(targetPath)
-			try:
-				command = u'%s "%s" | %s --quiet -idumv %s' % (cat, self._filename, System.which('cpio'), include)
+			with cd(targetPath):
+				command = u'%s "%s" | %s --quiet --extract --make-directories --unconditional --preserve-modification-time --verbose --no-preserve-owner %s' % (cat, self._filename, System.which('cpio'), include)
 				self._extract(command, fileCount)
-			finally:
-				os.chdir(curDir)
 		except Exception as e:
 			raise RuntimeError(u"Failed to extract archive '%s': %s" % (self._filename, e))
 
@@ -440,7 +433,7 @@ class CpioArchive(BaseArchive, PigzMixin):
 			if not os.path.isdir(baseDir):
 				raise IOError(u"Base dir '%s' not found" % baseDir)
 
-			command = u'%s --quiet -v -o -H crc' % System.which('cpio')
+			command = u'%s --create --quiet --verbose --format crc' % System.which('cpio')
 			if dereference:
 				command += ' --dereference'
 			if self._compression == 'gzip':
