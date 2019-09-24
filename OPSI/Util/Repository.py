@@ -51,6 +51,7 @@ from OPSI.Util import md5sum, randomString
 from OPSI.Util.File.Opsi import PackageContentFile
 from OPSI.Util.HTTP import getSharedConnectionPool, urlsplit
 from OPSI.Util.HTTP import HTTPResponse as OpsiHTTPResponse
+from OPSI.Util.Path import cd
 
 if os.name == 'nt':
 	from OPSI.System.Windows import getFreeDrive
@@ -1452,9 +1453,8 @@ class DepotToLocalDirectorySychronizer:
 				links.sort()
 				for linkDestination in links:
 					linkSource = self._linkFiles[linkDestination]
-					cwd = os.getcwd()
-					os.chdir(productDestinationDirectory)
-					try:
+
+					with cd(productDestinationDirectory):
 						if os.name == 'nt':
 							if linkSource.startswith('/'):
 								linkSource = linkSource[1:]
@@ -1484,8 +1484,6 @@ class DepotToLocalDirectorySychronizer:
 								linkSource = os.path.join('..', linkSource)
 							logger.info(u"Symlink '%s' to '%s'" % (linkDestination, linkSource))
 							os.symlink(linkSource, linkDestination)
-					finally:
-						os.chdir(cwd)
 			except Exception as error:
 				productProgressSubject.setMessage(_(u"Failed to sync product %s: %s") % (self._productId, error))
 				if packageContentFile and os.path.exists(packageContentFile):
