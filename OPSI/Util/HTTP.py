@@ -44,6 +44,7 @@ import time
 import zlib
 from collections import MutableMapping
 from contextlib import contextmanager
+from functools import lru_cache
 from io import BytesIO, StringIO
 from queue import Queue, Empty, Full
 from http.client import HTTPConnection, HTTPSConnection, HTTPException
@@ -217,6 +218,7 @@ class HTTPHeaders(MutableMapping):
 		return iter(self._dict)
 
 	@staticmethod
+	@lru_cache(maxsize=512)
 	def normalizeKey(key):
 		return "-".join([w.capitalize() for w in key.split("-")])
 
