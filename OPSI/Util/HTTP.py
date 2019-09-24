@@ -45,7 +45,7 @@ import zlib
 from collections import MutableMapping
 from contextlib import contextmanager
 from functools import lru_cache
-from io import BytesIO, StringIO
+from io import BytesIO
 from queue import Queue, Empty, Full
 from http.client import HTTPConnection, HTTPSConnection, HTTPException
 from socket import error as SocketError, timeout as SocketTimeout
