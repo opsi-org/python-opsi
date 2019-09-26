@@ -66,6 +66,7 @@ def testReadingSambaConfig(tempDir):
 		u"[opsi_images]\n",
 		u"[opsi_workbench]\n",
 		u"[opsi_repository]\n",
+		u"[opsi_logs]\n",
 	]
 
 	PathToSmbConf = os.path.join(tempDir, 'SMB_CONF')
@@ -101,6 +102,7 @@ def testSambaConfigureSamba4Share(isSamba4):
 		u"[opsi_images]\n",
 		u"[opsi_workbench]\n",
 		u"[opsi_repository]\n",
+		u"[opsi_logs]\n",
 	]
 
 	with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda: isSamba4):
@@ -120,6 +122,7 @@ def testConfigureSambaOnSLESWithFilledConfig(isSamba4):
 		u"[opsi_images]\n",
 		u"[opsi_workbench]\n",
 		u"[opsi_repository]\n",
+		u"[opsi_logs]\n",
 	]
 
 	with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda: isSamba4):
@@ -198,6 +201,7 @@ def testCorrectOpsiDepotShareWithSamba4Fix():
 		u"[opsi_images]\n",
 		u"[opsi_workbench]\n",
 		u"[opsi_repository]\n",
+		u"[opsi_logs]\n",
 	]
 
 	with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda: True):
@@ -217,6 +221,7 @@ def testProcessConfigDoesNotRemoveComment():
 		u"[opsi_images]\n",
 		u"[opsi_workbench]\n",
 		u"[opsi_repository]\n",
+		u"[opsi_logs]\n",
 	]
 
 	with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda: True):
@@ -235,6 +240,7 @@ def testProcessConfigAddsMissingRepositoryShare():
 		u"[opsi_depot_rw]\n",
 		u"[opsi_images]\n",
 		u"[opsi_workbench]\n",
+		u"[opsi_logs]\n",
 	]
 
 	with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda: True):
@@ -279,6 +285,8 @@ def testWritingSambaConfig(tempDir):
 		u"[opsi_images]\n",
 		u"[opsi_workbench]\n",
 		u"[opsi_repository]\n",
+		u"[opsi_logs]\n",
+
 	]
 
 	PathToSmbConf = os.path.join(tempDir, 'SMB_CONF')
