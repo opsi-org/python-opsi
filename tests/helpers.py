@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2014-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -25,7 +25,6 @@ Helpers for testing opsi.
 import os
 import shutil
 import tempfile
-import unittest  # will be importet from other test modules!
 from contextlib import contextmanager
 
 try:
@@ -66,15 +65,6 @@ def cd(path):
         os.chdir(old_dir)
 
 
-def copyTestfileToTemporaryFolder(filename):
-    temporary_folder = tempfile.mkdtemp()
-    shutil.copy(filename, temporary_folder)
-
-    (_, new_filename) = os.path.split(filename)
-
-    return os.path.join(temporary_folder, new_filename)
-
-
 @contextmanager
 def createTemporaryTestfile(original, tempDir=None):
     '''Copy `original` to a temporary directory and \
@@ -85,9 +75,9 @@ yield the path to the new file.
     with workInTemporaryDirectory(tempDir) as targetDir:
         shutil.copy(original, targetDir)
 
-        (_, new_filename) = os.path.split(original)
+        filename = os.path.basename(original)
 
-        yield os.path.join(targetDir, new_filename)
+        yield os.path.join(targetDir, filename)
 
 
 def getLocalFQDN():
@@ -166,6 +156,9 @@ def showLogs(logLevel=7, color=True):
     logger = Logger()
 
     logLevelBefore = logger.getConsoleLevel()
+
+    # We might want to have a better log format:
+    # logger.setLogFormat(u'[%l] [%D] %M (%F|%N)')
 
     try:
         logger.setConsoleLevel(logLevel)

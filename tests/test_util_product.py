@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2014-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -24,16 +24,15 @@ Testing the OPSI.Util.Product module.
 
 from __future__ import absolute_import
 
-import mock
 import os
 import re
 import tempfile
 
+import pytest
+
 import OPSI.Util.Product as Product
 
-from .helpers import cd
-
-import pytest
+from .helpers import cd, mock
 
 
 @pytest.mark.parametrize("text", [
@@ -43,7 +42,7 @@ import pytest
 	pytest.param('.gitignore', marks=pytest.mark.xfail),
 ])
 def testDirectoryExclusion(text):
-	assert re.match(Product.EXCLUDE_DIRS_ON_PACK, text)
+	assert re.match(Product.EXCLUDE_DIRS_ON_PACK_REGEX, text) is not None
 
 
 def testProductPackageFileRemovingFolderWithUnicodeFilenamesInsideFails(tempDir):

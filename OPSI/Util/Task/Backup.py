@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2006-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -34,10 +34,10 @@ import os
 import shutil
 import sys
 import termios
-from contextlib import closing
 
 from OPSI.Exceptions import (
-	OpsiBackupFileError, OpsiBackupBackendNotFound, OpsiError)
+	BackendConfigurationError, OpsiBackupFileError,
+	OpsiBackupBackendNotFound, OpsiError)
 from OPSI.Logger import Logger, LOG_DEBUG
 from OPSI.Types import forceList, forceUnicode
 from OPSI.Util.File.Opsi import OpsiBackupArchive
@@ -65,6 +65,8 @@ Do you wish to continue? [y/n]""")
 
 
 class OpsiBackup(object):
+
+	SUPPORTED_BACKENDS = set(['auto', 'all', 'file', 'mysql', 'dhcp'])
 
 	def __init__(self, stdout=None):
 		if stdout is None:
@@ -152,23 +154,45 @@ class OpsiBackup(object):
 			logger.logException(error, LOG_DEBUG)
 			raise error
 
+	def list(self, files):
+		"""
+		List the contents of the backup.
+
+		:param files: Path to files that should be processed.
+		:type files: [str]
+		"""
+		for filename in forceList(files):
+			with self._getArchive(file=filename, mode="r") as archive:
+				archive.verify()
+
+				data = {
+					"configuration": archive.hasConfiguration(),
+					"dhcp": archive.hasDHCPBackend(),
+					"file": archive.hasFileBackend(),
+					"mysql": archive.hasMySQLBackend(),
+				}
+				existingData = [btype for btype, exists in data.items() if exists]
+				existingData.sort()
+
+				logger.notice("{} contains: {}", archive.name, ', '.join(existingData))
+
 	def verify(self, file, **kwargs):
 		"""
 		Verify a backup.
 
 		:return: 0 if everything is okay, 1 if there was a failure.
-		:returntype: int
+		:rtype: int
 		"""
 		files = forceList(file)
 
 		result = 0
 
 		for fileName in files:
-			with closing(self._getArchive(mode="r", file=fileName)) as archive:
+			with self._getArchive(mode="r", file=fileName) as archive:
 				logger.info(u"Verifying archive {0}", fileName)
 				try:
 					archive.verify()
-					logger.notice(u"Archive is OK.")
+					logger.notice(u"Archive {} is OK.", fileName)
 				except OpsiBackupFileError as error:
 					logger.error(error)
 					result = 1
@@ -257,44 +281,67 @@ If this is `None` information will be read from the current system.
 			backends = ["all"]
 
 		auto = "auto" in backends
+		backends = [backend.lower() for backend in backends]
 
-		with closing(self._getArchive(file=file[0], mode="r")) as archive:
+		logger.debug("Backends to restore: {}", backends)
+
+		if not force:
+			for backend in backends:
+				if backend not in self.SUPPORTED_BACKENDS:
+					raise ValueError("{!r} is not a valid backend.".format(backend))
+
+		configuredBackends = getConfiguredBackends()
+
+		with self._getArchive(file=file[0], mode="r") as archive:
 			self.verify(archive.name)
-
-			functions = []
 
 			if force or self._verifySysconfig(archive):
 				logger.notice(u"Restoring data from backup archive {0}.", archive.name)
 
+				functions = []
 				if configuration:
 					if not archive.hasConfiguration() and not force:
 						raise OpsiBackupFileError(u"Backup file does not contain configuration data.")
 
-					logger.debug(u"Restoring opsi configuration.")
+					logger.debug(u"Adding restore of opsi configuration.")
 					functions.append(lambda x: archive.restoreConfiguration())
 
 				if mode == "raw":
+					backendMapping = {
+						"file": (archive.hasFileBackend, archive.restoreFileBackend),
+						"mysql": (archive.hasMySQLBackend, archive.restoreMySQLBackend),
+						"dhcp": (archive.hasDHCPBackend, archive.restoreDHCPBackend),
+					}
+
 					for backend in backends:
-						if backend in ("file", "all", "auto"):
-							if not archive.hasFileBackend() and not force and not auto:
-								raise OpsiBackupFileError(u"Backup file does not contain file backend data.")
-							functions.append(archive.restoreFileBackend)
+						for name, handlingFunctions in backendMapping.items():
+							if backend in (name, "all", "auto"):
+								dataExists, restoreData = handlingFunctions
 
-						if backend in ("mysql", "all", "auto"):
-							if not archive.hasMySQLBackend() and not force and not auto:
-								raise OpsiBackupFileError(u"Backup file does not contain mysql backend data.")
-							functions.append(archive.restoreMySQLBackend)
+								if not dataExists() and not force:
+									if auto:
+										logger.debug(u"No backend data for {0} - skipping.", name)
+										continue  # Don't attempt to restore.
+									else:
+										raise OpsiBackupFileError(u"Backup file does not contain {0} backend data.".format(name))
 
-						if backend in ("dhcp", "all", "auto"):
-							if not archive.hasDHCPBackend() and not force and not auto:
-								raise OpsiBackupFileError(u"Backup file does not contain DHCP backup data.")
-							functions.append(archive.restoreDHCPBackend)
+								logger.debug(u"Adding restore of {0} backend.", name)
+								functions.append(restoreData)
+
+								if configuredBackends and (not configuration) and (backend not in configuredBackends and backend != 'auto'):
+									logger.warning("Backend {} is currently not in use!", backend)
+
+				if not functions:
+					raise RuntimeError("Neither possible backend given nor configuration selected for restore.")
 
 				try:
 					for restoreFunction in functions:
 						logger.debug2(u"Running restoration function {0!r}", restoreFunction)
 						restoreFunction(auto)
 				except OpsiBackupBackendNotFound as error:
+					logger.logException(error, LOG_DEBUG)
+					logger.debug("Restoring with {0!r} failed: {1}", restoreFunction, error)
+
 					if not auto:
 						raise error
 				except Exception as error:
@@ -303,3 +350,32 @@ If this is `None` information will be read from the current system.
 					raise error
 
 				logger.notice(u"Restoration complete")
+
+
+def getConfiguredBackends():
+	"""
+	Get what backends are currently confiugured.
+
+	:returns: A set containing the names of the used backends. \
+None if reading the configuration failed.
+	:rtype: set or None
+	"""
+	try:
+		from OPSI.Backend.BackendManager import BackendDispatcher
+	except ImportError as impError:
+		logger.debug("Import failed: {}", impError)
+		return None
+
+	try:
+		dispatcher = BackendDispatcher(
+			dispatchConfigFile='/etc/opsi/backendManager/dispatch.conf',
+			backendconfigdir='/etc/opsi/backends/',
+		)
+	except BackendConfigurationError as bcerror:
+		logger.debug("Unable to read backends: {}", bcerror)
+		return None
+
+	names = [name.lower() for name in dispatcher.dispatcher_getBackendNames()]
+	dispatcher.backend_exit()
+
+	return set(names)

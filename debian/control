@@ -2,7 +2,7 @@ Source: python-opsi
 Section: opsi
 Priority: optional
 Maintainer: uib GmbH <info@uib.de>
-Homepage: http://opsi.org/
+Homepage: https://opsi.org/
 Build-Depends: debhelper (>= 7.0.50~),
 	dh-python,
 	gettext,
@@ -16,7 +16,7 @@ Package: python-opsi
 Section: opsi
 Architecture: all
 Depends: duplicity,
-	iproute,
+	iproute | iproute2,
 	lsb-release,
 	lshw,
 	net-tools,
@@ -31,10 +31,10 @@ Depends: duplicity,
 	python-pam,
 	python-sqlalchemy,
 	python-twisted-web,
-	python-twisted-conch,
 	${misc:Depends},
 	${python:Depends}
-Recommends: cabextract
+Recommends: cabextract,
+	python-distro
 Provides: ${python:Provides}
 Description: opsi python library
  This package contains the opsi python library.

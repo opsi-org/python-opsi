@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2015 uib GmbH <info@uib.de>
+# Copyright (C) 2015-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -42,10 +42,8 @@ def main():
 	resp = pool.urlopen('GET', url='/index.html', body=None, headers={"accept": "text/html", "user-agent": "test"})
 	LOGGER.notice(resp.data)
 	time.sleep(5)
-	# pool = CurlHTTPSConnectionPool(host='download.uib.de', port=443, connectTimeout=5)
 	resp = pool.urlopen('GET', url='/index.html', body=None, headers={"accept": "text/html", "user-agent": "test"})
 	LOGGER.notice(resp.data)
-	# pool = CurlHTTPConnectionPool(host='www.uib.de', port=80, socketTimeout=None, connectTimeout=5, reuseConnection=True)
 	resp = pool.urlopen('GET', url='/www/home/index.html', body=None, headers={"accept": "text/html", "user-agent": "test"})
 	LOGGER.notice(resp.headers)
 	resp = pool.urlopen('GET', url='/www/home/index.html', body=None, headers={"accept": "text/html", "user-agent": "test"})

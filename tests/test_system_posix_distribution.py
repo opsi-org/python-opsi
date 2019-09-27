@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -28,15 +28,18 @@ import pytest
 
 
 # The first tuple is retrieved by running platform.linux_distribution()
-# on the corresponding version.
+# or distro.linux_distribution() on the corresponding version.
 DISTRI_INFOS = [
-    # TODO: add Debian 8
+    (('debian', '8.11', ''), (8, 11)),
+    (('debian', '10.0', ''), (10, 0)),
     # TODO: add CentOS 7
     (('Red Hat Enterprise Linux Server', '7.0', 'Maipo'), (7, 0)),
     (('Ubuntu', '16.04', 'xenial'), (16, 4)),
-    # TODO: add UCS 4.x
+    (('Ubuntu', '19.04', 'disco'), (19, 4)),
+    (('Univention', '"4.4-0 errata175"', 'Blumenthal'), (4, 4)),
     # TODO: add SLES12
-    # TODO: add OpenSUSE Leap
+    (('openSUSE project', '42.3', 'n/a'), (42, 3)),
+    (('openSUSE', '15.0', 'n/a'), (15, 0)),
 ]
 
 

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -29,6 +29,7 @@ import os.path
 from OPSI.Backend.Backend import temporaryBackendOptions
 from OPSI.Backend.Backend import Backend, ExtendedBackend
 from OPSI.Exceptions import BackendMissingDataError
+from OPSI.Object import BoolConfig, OpsiClient, UnicodeConfig
 from OPSI.Util import randomString
 from .test_hosts import getConfigServer
 
@@ -116,7 +117,12 @@ def testBackendCanBeUsedAsContextManager():
 
 @pytest.mark.parametrize("option", [
     'addProductOnClientDefaults',
-    'returnObjectsOnUpdateAndCreate'
+    'addProductPropertyStateDefaults',
+    'addConfigStateDefaults',
+    'deleteConfigStateIfDefault',
+    'returnObjectsOnUpdateAndCreate',
+    'addDependentProductOnClients',
+    'processProductOnClientSequence',
 ])
 def testSettingTemporaryBackendOptions(extendedConfigDataBackend, option):
     optionDefaults = {
@@ -135,9 +141,116 @@ def testSettingTemporaryBackendOptions(extendedConfigDataBackend, option):
 
     with temporaryBackendOptions(extendedConfigDataBackend, **tempOptions):
         currentOptions = extendedConfigDataBackend.backend_getOptions()
+        assert currentOptions
         for key, value in optionDefaults.items():
             if key == option:
                 assert currentOptions[key] == True
                 continue
 
             assert currentOptions[key] == False
+
+    currentOptions = extendedConfigDataBackend.backend_getOptions()
+    print("options after leaving context: %s" % currentOptions)
+
+    for key, defaultValue in optionDefaults.items():
+        # if key == 'additionalReferentialIntegrityChecks':
+        print("Checking key %s (%s)" % (key, currentOptions[key]))
+        assert currentOptions[key] == defaultValue
+
+
+def testSettingMultipleTemporaryBackendOptions(extendedConfigDataBackend):
+    tempOptions = {
+        'addProductOnClientDefaults': True,
+        'addProductPropertyStateDefaults': True,
+        'addConfigStateDefaults': True,
+    }
+
+    preOptions = extendedConfigDataBackend.backend_getOptions()
+    assert preOptions
+    for key, value in preOptions.items():
+        try:
+            assert value != tempOptions[key]
+        except KeyError:
+            continue
+
+    # this is the same as:
+    # with temporaryBackendOptions(extendedConfigDataBackend,
+    #                              addProductOnClientDefaults=True,
+    #                              addProductPropertyStateDefaults=True,
+    #                              addConfigStateDefaults=True):
+    with temporaryBackendOptions(extendedConfigDataBackend, **tempOptions):
+        currentOptions = extendedConfigDataBackend.backend_getOptions()
+        assert currentOptions
+
+        testedOptions = set()
+        for key, value in currentOptions.items():
+            try:
+                assert value == tempOptions[key]
+                testedOptions.add(key)
+            except KeyError:
+                continue
+
+        assert set(tempOptions.keys()) == testedOptions
+
+    postContextOptions = extendedConfigDataBackend.backend_getOptions()
+    assert postContextOptions
+    for key, value in postContextOptions.items():
+        assert preOptions[key] == value
+
+
+def testConfigStateCheckWorksWithInsertedDict(extendedConfigDataBackend):
+    backend = extendedConfigDataBackend
+    client = OpsiClient(id='client.test.invalid')
+    backend.host_insertObject(client)
+    config = BoolConfig('license-managment.use')
+    backend.config_insertObject(config)
+    configState = {'configId': config.id, 'objectId': client.id, 'values': 'true', 'type': 'ConfigState'}
+    backend.configState_insertObject(configState)
+
+
+def testConfigStateCheckWorksWithUpdatedDict(extendedConfigDataBackend):
+    backend = extendedConfigDataBackend
+    client = OpsiClient('client.test.invalid')
+    backend.host_insertObject(client)
+    config = BoolConfig('license-managment.use')
+    backend.config_insertObject(config)
+
+    configState = {
+        'configId': config.id,
+        'objectId': client.id,
+        'values': True,
+        'type': 'ConfigState'
+    }
+    backend.configState_insertObject(configState)
+
+    configState['values'] = False
+    backend.configState_updateObject(configState)
+
+
+@pytest.mark.parametrize("configValue", ['nofqdn', None, 'non.existing.depot'])
+def testConfigStateCheckFailsOnInvalidDepotSettings(extendedConfigDataBackend, configValue):
+    backend = extendedConfigDataBackend
+    client = OpsiClient(id='client.test.invalid')
+    backend.host_insertObject(client)
+
+    configServer = getConfigServer()
+    backend.host_insertObject(configServer)
+
+    config = UnicodeConfig(
+        id=u'clientconfig.depot.id',
+        description=u'ID of the opsi depot to use',
+        possibleValues=[configServer.getId()],
+        defaultValues=[configServer.getId()],
+        editable=True,
+        multiValue=False
+    )
+
+    backend.config_insertObject(config)
+    configState = {
+        'configId': config.id,
+        'objectId': client.id,
+        'values': configValue,
+        'type': 'ConfigState'
+    }
+    with pytest.raises(ValueError):
+        backend.configState_insertObject(configState)

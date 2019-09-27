@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2016 uib GmbH <info@uib.de>
+# Copyright (C) 2016-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -25,14 +25,13 @@ Testing the license management functionality.
 
 from __future__ import absolute_import
 
-from OPSI.Object import (LicenseContract, RetailSoftwareLicense,
-	OEMSoftwareLicense, VolumeSoftwareLicense, ConcurrentSoftwareLicense,
-	LicensePool, SoftwareLicenseToLicensePool, LicenseOnClient)
+from OPSI.Object import (
+	LicenseContract, RetailSoftwareLicense, OEMSoftwareLicense,
+	VolumeSoftwareLicense, ConcurrentSoftwareLicense, LicensePool,
+	SoftwareLicenseToLicensePool, LicenseOnClient)
 
 from .test_hosts import getClients
 from .test_products import getProducts
-
-import pytest
 
 
 def getLicenseContracts():
@@ -59,7 +58,6 @@ def getLicenseContracts():
 	return licenseContract1, licenseContract2
 
 
-@pytest.mark.requiresModulesFile
 def testCreatingAndGettingLicenseOnClient(licenseManagementBackend):
 	originalLicenseOnClients, _, _, _, _, _, _ = createLicenseOnClients(licenseManagementBackend)
 
@@ -111,7 +109,6 @@ def createLicenseOnClients(backend):
 	)
 
 
-@pytest.mark.requiresModulesFile
 def testSoftwareLicenseToLicensePoolMethods(licenseManagementBackend):
 	originalSoftwareLicenseToLicensePools, _, _, _, _, _ = createSoftwareLicenseToLicensePools(licenseManagementBackend)
 
@@ -173,7 +170,6 @@ def createSoftwareLicenseToLicensePools(backend):
 	)
 
 
-@pytest.mark.requiresModulesFile
 def testSoftwareLicenseMethods(licenseManagementBackend):
 	licenses, _, _ = createSoftwareLicenses(licenseManagementBackend)
 
@@ -236,7 +232,6 @@ def createSoftwareLicenses(backend):
 	)
 
 
-@pytest.mark.requiresModulesFile
 def testLicenseContractMethods(licenseManagementBackend):
 	originalLicenseContracts = createLicenseContracts(licenseManagementBackend)
 
@@ -252,7 +247,6 @@ def createLicenseContracts(backend):
 	return licenseContracts
 
 
-@pytest.mark.requiresModulesFile
 def testSelectingInvalidLicensePoolById(licenseManagementBackend):
 	originalLicensePools, _ = createLicensePool(licenseManagementBackend)
 
@@ -266,7 +260,6 @@ def testSelectingInvalidLicensePoolById(licenseManagementBackend):
 	assert 0 == len(licensePoolsFromBackend)
 
 
-@pytest.mark.requiresModulesFile
 def testCheckingProductIdsInLicensePool(licenseManagementBackend):
 	originalLicensePools, _ = createLicensePool(licenseManagementBackend)
 
@@ -281,7 +274,6 @@ def testCheckingProductIdsInLicensePool(licenseManagementBackend):
 		)
 
 
-@pytest.mark.requiresModulesFile
 def testSelectingLicensePoolWithoutProducts(licenseManagementBackend):
 	originalLicensePools, _ = createLicensePool(licenseManagementBackend)
 
@@ -289,7 +281,6 @@ def testSelectingLicensePoolWithoutProducts(licenseManagementBackend):
 	assert len(originalLicensePools) == len(licensePools)
 
 
-@pytest.mark.requiresModulesFile
 def testSelectLicensePoolByInvalidProductReturnsNoPools(licenseManagementBackend):
 	originalLicensePools, _ = createLicensePool(licenseManagementBackend)
 
@@ -299,7 +290,6 @@ def testSelectLicensePoolByInvalidProductReturnsNoPools(licenseManagementBackend
 	assert 0 == len(licensePools), u"Did not expect any license pools, but found %s on backend." % len(licensePools)
 
 
-@pytest.mark.requiresModulesFile
 def testSelectingLicensePoolsByProductIds(licenseManagementBackend):
 	originalLicensePools, _ = createLicensePool(licenseManagementBackend)
 

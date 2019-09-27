@@ -5,7 +5,7 @@ opsi python library - Util - Task
 This module is part of the desktop management solution opsi
 (open pc server integration) http://www.opsi.org
 
-Copyright (C) 2006-2013 uib GmbH
+Copyright (C) 2006-2019 uib GmbH
 
 http://www.uib.de/
 

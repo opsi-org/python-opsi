@@ -1,7 +1,7 @@
 #
 # spec file for package python-opsi
 #
-# Copyright (c) 2013-2017 uib GmbH.
+# Copyright (c) 2013-2019 uib GmbH.
 # This file and all modifications and additions to the pristine
 # package are under the same license as the package itself.
 #
@@ -10,14 +10,17 @@ BuildRequires:  gettext-devel
 BuildRequires:  python-devel
 BuildRequires:  python-setuptools
 Requires:       duplicity
+%if 0%{?sle_version} >= 150000 && 0%{?is_opensuse}
+Requires:		net-tools-deprecated
+%else
 Requires:       iproute
+%endif
 Requires:       lshw
 Requires:       python >= 2.7
 Requires:       python-ldaptor
 Requires:       python-magic
 Requires:       python-sqlalchemy
 Requires:       python-twisted-web >= 8.2
-Requires:       python-twisted-conch >= 8.2
 
 # Dependencies for twisted are a mess because most lack needed packages.
 # We try to avoid problems with this:
@@ -27,6 +30,9 @@ Requires: python-pyasn1
 BuildRequires:  pwdutils
 Requires:       pwdutils
 %{py_requires}
+%endif
+%if (0%{?sle_version} >= 150000 && 0%{?is_opensuse})
+Requires:		python2-distro
 %endif
 %if 0%{?rhel_version} || 0%{?centos_version} || 0%{?fedora_version}
 Requires:       m2crypto
@@ -43,7 +49,11 @@ Requires:       net-tools
 %else
 Requires:       lsb-release
 Requires:       python-m2crypto
+%if 0%{?sle_version} == 150000 && 0%{?is_opensuse}
+Requires:       python-mysqlclient
+%else
 Requires:       python-mysql
+%endif
 Requires:       python-newt
 Requires:       python-openssl
 Requires:       python-pam
@@ -55,14 +65,14 @@ Requires:       python-pycrypto
 %else
 Requires:	python-crypto
 %endif
-Url:            http://www.opsi.org
+Url:            https://opsi.org
 License:        AGPL-3.0+
 Group:          Productivity/Networking/Opsi
 AutoReqProv:    on
-Version:        4.0.7.49
-Release:        1
+Version:        4.1.1.77
+Release:        2
 Summary:        Python library for the client management solution opsi
-Source:         python-opsi_4.0.7.49-1.tar.gz
+Source:         python-opsi_4.1.1.77-2.tar.gz
 #Source2:        setup.py
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 # python noarch modules are only working on openSUSE 11.2 or higher
@@ -75,7 +85,7 @@ BuildRequires:  gettext
 %else
 BuildRequires:  gettext-runtime
 %endif
-%if 0%{?leap_version} == 420300
+%if 0%{?suse_version} == 1315 || 0%{?is_opensuse}
 # Workaround for missing dependency at python-cryptography
 # See https://bugzilla.opensuse.org/show_bug.cgi?id=1052927
 Requires: python-setuptools
@@ -118,14 +128,37 @@ sed -i 's#isc-dhcp-server#dhcpd#' $RPM_BUILD_ROOT/etc/opsi/backends/dhcpd.conf
 sed -i 's#/etc/dhcp/dhcpd.conf#/etc/dhcpd.conf#;s#isc-dhcp-server#dhcpd#' $RPM_BUILD_ROOT/etc/opsi/backends/dhcpd.conf
 %endif
 
-%if 0%{?suse_version} == 1110 || 0%{?suse_version} == 1315
-	# We only want to change this on SLES.
+%if 0%{?suse_version}
+	# We only want to change this on SUSE (openSUSE and SLES)
 	sed -i 's#linux/pxelinux.0#opsi/pxelinux.0#' $RPM_BUILD_ROOT/etc/opsi/backends/dhcpd.conf
 %endif
+
+mkdir -p $RPM_BUILD_ROOT/etc/opsi/modules.d
+
+# Configed SSH extension
+mkdir -p $RPM_BUILD_ROOT/var/lib/opsi/
+touch $RPM_BUILD_ROOT/var/lib/opsi/server_commands_custom.conf
 
 # ===[ clean ]======================================
 %clean
 rm -rf $RPM_BUILD_ROOT
+
+# ===[ pre ]========================================
+%pre
+if [ -L "/etc/opsi/backendManager/dispatch.conf" ]; then
+	dispatchConfTarget=$(readlink -f /etc/opsi/backendManager/dispatch.conf)
+	if [ $dispatchConfTarget != "/etc/opsi/backendManager/dispatch.conf" ]; then
+		rm /etc/opsi/backendManager/dispatch.conf
+		cp $dispatchConfTarget /etc/opsi/backendManager/dispatch.conf
+	fi
+fi
+if [ -L "/etc/opsi/backendManager/acl.conf" ]; then
+	aclConfTarget=$(readlink -f /etc/opsi/backendManager/acl.conf)
+	if [ $aclConfTarget != "/etc/opsi/backendManager/acl.conf" ]; then
+		rm /etc/opsi/backendManager/acl.conf
+		cp $aclConfTarget /etc/opsi/backendManager/acl.conf
+	fi
+fi
 
 # ===[ post ]=======================================
 %post
@@ -170,16 +203,29 @@ test -e /etc/opsi/passwd || touch /etc/opsi/passwd
 chown root:$fileadmingroup /etc/opsi/passwd
 chmod 660 /etc/opsi/passwd
 
-[ -e "/etc/opsi/backendManager/acl.conf" ]      || cp /etc/opsi/backendManager/acl.conf.default      /etc/opsi/backendManager/acl.conf
-[ -e "/etc/opsi/backendManager/dispatch.conf" ] || cp /etc/opsi/backendManager/dispatch.conf.default /etc/opsi/backendManager/dispatch.conf
+[ -e "/etc/opsi/backendManager/acl.conf" ]      || cp /etc/opsi/backendManager/acl.conf.example      /etc/opsi/backendManager/acl.conf
+[ -e "/etc/opsi/backendManager/dispatch.conf" ] || cp /etc/opsi/backendManager/dispatch.conf.example /etc/opsi/backendManager/dispatch.conf
 
 # Processing files for the SSH extension
+test -e /etc/opsi/server_commands_default.conf || touch /etc/opsi/server_commands_default.conf
 chown opsiconfd:opsiadmin /etc/opsi/server_commands_default.conf
 chmod 440 /etc/opsi/server_commands_default.conf
+
+# Processing user-editable file for the SSH extension
+chown opsiconfd:opsiadmin /var/lib/opsi/server_commands_custom.conf
+chmod 660 /var/lib/opsi/server_commands_custom.conf
 
 # Removing files dating before opsi 4.1
 if [ -e "/etc/opsi/version" ]; then
 	rm "/etc/opsi/version" || echo "Failed to remove /etc/opsi/version"
+fi
+
+if [ -e "/etc/opsi/backendManager/dispatch.conf.default" ]; then
+	rm "/etc/opsi/backendManager/dispatch.conf.default"
+fi
+
+if [ -e "/etc/opsi/backendManager/acl.conf.default" ]; then
+	rm "/etc/opsi/backendManager/acl.conf.default"
 fi
 
 # ===[ files ]======================================
@@ -197,8 +243,8 @@ fi
 %config(noreplace) /etc/opsi/backends/opsipxeconfd.conf
 %config(noreplace) /etc/opsi/backends/sqlite.conf
 %config /etc/opsi/opsi.conf
-%config /etc/opsi/backendManager/acl.conf.default
-%config /etc/opsi/backendManager/dispatch.conf.default
+%config /etc/opsi/backendManager/acl.conf.example
+%config /etc/opsi/backendManager/dispatch.conf.example
 %config /etc/opsi/backendManager/extend.d/10_opsi.conf
 %config /etc/opsi/backendManager/extend.d/10_wim.conf
 %config /etc/opsi/backendManager/extend.d/20_legacy.conf
@@ -218,6 +264,10 @@ fi
 %config /etc/opsi/hwaudit/locales/nl_NL
 %config /etc/opsi/hwaudit/locales/ru_RU
 %config(noreplace) /etc/opsi/server_commands_default.conf
+%config(noreplace) /var/lib/opsi/server_commands_custom.conf
+
+%dir /etc/opsi/modules.d
+%dir /var/lib/opsi/
 
 %if 0%{?rhel_version} || 0%{?centos_version} || 0%{?fedora_version}
 %define python_sitearch %(%{__python} -c 'from distutils import sysconfig; print sysconfig.get_python_lib()')

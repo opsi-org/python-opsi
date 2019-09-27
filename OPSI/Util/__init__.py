@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2006-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2019 uib GmbH <info@uib.de>
 # http://www.uib.de/
 
 # This program is free software: you can redistribute it and/or modify
@@ -32,7 +32,6 @@ or to JSON, working with librsync and more.
 """
 
 import base64
-import codecs
 import json
 import os
 import random
@@ -44,11 +43,13 @@ import time
 import types
 from collections import namedtuple
 from contextlib import closing
-from Crypto.Cipher import Blowfish
 from hashlib import md5
 from itertools import islice
 
-from OPSI.Config import OPSI_GLOBAL_CONF
+from Crypto.Cipher import Blowfish
+from Crypto.PublicKey import RSA
+from Crypto.Util.number import bytes_to_long
+
 from OPSI.Logger import Logger, LOG_DEBUG
 from OPSI.Types import (forceBool, forceFilename, forceFqdn, forceInt,
 						forceIPAddress, forceNetworkAddress, forceUnicode)
@@ -59,10 +60,10 @@ __all__ = (
 	'chunk', 'compareVersions', 'decryptWithPrivateKeyFromPEMFile',
 	'deserialize', 'encryptWithPublicKeyFromX509CertificatePEMFile',
 	'findFiles', 'formatFileSize', 'fromJson', 'generateOpsiHostKey',
-	'getGlobalConfig', 'getfqdn', 'ipAddressInNetwork',
-	'isRegularExpressionPattern', 'librsyncDeltaFile', 'librsyncPatchFile',
-	'librsyncSignature', 'md5sum', 'objectToBash', 'objectToBeautifiedText',
-	'objectToHtml', 'randomString', 'removeDirectory', 'removeUnit',
+	'getfqdn', 'ipAddressInNetwork', 'isRegularExpressionPattern',
+	'librsyncDeltaFile', 'librsyncPatchFile', 'librsyncSignature',
+	'md5sum', 'objectToBash', 'objectToBeautifiedText', 'objectToHtml',
+	'randomString', 'removeDirectory', 'removeUnit',
 	'replaceSpecialHTMLCharacters', 'serialize', 'timestamp', 'toJson'
 )
 
@@ -78,7 +79,7 @@ elif os.name == 'nt':
 
 BLOWFISH_IV = 'OPSI1234'
 RANDOM_DEVICE = u'/dev/urandom'
-UNIT_REGEX = re.compile('^(\d+\.*\d*)\s*([\w]{0,4})$')
+UNIT_REGEX = re.compile(r'^(\d+\.*\d*)\s*(\w{0,4})$')
 _ACCEPTED_CHARACTERS = (
 	"abcdefghijklmnopqrstuvwxyz"
 	"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -152,14 +153,16 @@ of strings, dicts, lists or numbers.
 	"""
 	if isinstance(obj, (unicode, str)):
 		return obj
-	elif hasattr(obj, 'serialize'):
+
+	try:
 		return obj.serialize()
-	elif isinstance(obj, (list, set, types.GeneratorType)):
-		return [serialize(tempObject) for tempObject in obj]
-	elif isinstance(obj, dict):
-		return {key: serialize(value) for key, value in obj.items()}
-	else:
-		return obj
+	except AttributeError:
+		if isinstance(obj, (list, set, types.GeneratorType)):
+			return [serialize(tempObject) for tempObject in obj]
+		elif isinstance(obj, dict):
+			return {key: serialize(value) for key, value in obj.items()}
+
+	return obj
 
 
 def formatFileSize(sizeInBytes):
@@ -187,6 +190,7 @@ def toJson(obj, ensureAscii=False):
 
 
 def librsyncSignature(filename, base64Encoded=True):
+	filename = forceFilename(filename)
 	try:
 		with open(filename, 'rb') as f:
 			with closing(librsync.SigFile(f)) as sf:
@@ -196,12 +200,22 @@ def librsyncSignature(filename, base64Encoded=True):
 					sig = base64.encodestring(sig)
 
 				return sig
-	except Exception as e:
-		raise RuntimeError(u"Failed to get librsync signature: %s" % forceUnicode(e))
+	except Exception as sigError:
+		raise RuntimeError(
+			u"Failed to get librsync signature from %s: %s" % (
+				filename,
+				forceUnicode(sigError)
+			)
+		)
 
 
 def librsyncPatchFile(oldfile, deltafile, newfile):
-	logger.debug(u"Librsync : %s, %s, %s" % (oldfile, deltafile, newfile))
+	logger.debug(u"Librsync patch: old file {!r}, delta file {!r}, new file {!r}", oldfile, deltafile, newfile)
+
+	oldfile = forceFilename(oldfile)
+	newfile = forceFilename(newfile)
+	deltafile = forceFilename(deltafile)
+
 	if oldfile == newfile:
 		raise ValueError(u"Oldfile and newfile are the same file")
 	if deltafile == newfile:
@@ -219,12 +233,19 @@ def librsyncPatchFile(oldfile, deltafile, newfile):
 						while data:
 							data = pf.read(bufsize)
 							nf.write(data)
-	except Exception as e:
-		raise RuntimeError(u"Failed to patch file: %s" % forceUnicode(e))
+	except Exception as patchError:
+		logger.debug(
+			"Patching {!r} with delta {!r} into {!r} failed: {}",
+			oldfile, deltafile, newfile, patchError
+		)
+		raise RuntimeError(u"Failed to patch file %s: %s" % (oldfile, forceUnicode(patchError)))
 
 
 def librsyncDeltaFile(filename, signature, deltafile):
 	bufsize = 1024 * 1024
+	filename = forceFilename(filename)
+	deltafile = forceFilename(deltafile)
+	logger.debug("Creating deltafile {!r} on base of {!r}", deltafile, filename)
 	try:
 		with open(filename, "rb") as f:
 			with open(deltafile, "wb") as df:
@@ -234,7 +255,9 @@ def librsyncDeltaFile(filename, signature, deltafile):
 						data = ldf.read(bufsize)
 						df.write(data)
 	except Exception as e:
-		raise RuntimeError(u"Failed to write delta file: %s" % forceUnicode(e))
+		raise RuntimeError(
+			u"Failed to write delta file %s: %s" % (deltafile, forceUnicode(e))
+		)
 
 
 def md5sum(filename):
@@ -299,7 +322,7 @@ def objectToBash(obj, bashVars=None, level=0):
 
 	:type bashVars: dict
 	:type level: int
-	:returntype: dict
+	:rtype: dict
 	"""
 	if bashVars is None:
 		bashVars = {}
@@ -312,8 +335,10 @@ def objectToBash(obj, bashVars=None, level=0):
 		varName = 'RESULT%d' % level
 		compress = False
 
-	if hasattr(obj, 'serialize'):
+	try:
 		obj = obj.serialize()
+	except AttributeError:
+		pass
 
 	try:
 		append = bashVars[varName].append
@@ -413,6 +438,17 @@ def replaceSpecialHTMLCharacters(text):
 		.replace(u'\n', u'<br />\n')
 
 
+def combineVersions(obj):
+	"""
+	Returns the combination of product and package version.
+
+	:type obj: Product, ProductOnClient, ProductOnDepot
+	:return: The version.
+	:rtype: str
+	"""
+	return '{0.productVersion}-{0.packageVersion}'.format(obj)
+
+
 def compareVersions(v1, condition, v2):
 	"""
 	Compare the versions `v1` and `v2` with the given `condition`.
@@ -438,7 +474,7 @@ def compareVersions(v1, condition, v2):
 	def splitProductAndPackageVersion(versionString):
 		productVersion = packageVersion = u'0'
 
-		match = re.search('^\s*([\w\.]+)-*([\w\.]*)\s*$', versionString)
+		match = re.search(r'^\s*([\w.]+)-*([\w.]*)\s*$', versionString)
 		if not match:
 			raise ValueError(u"Bad version string '%s'" % versionString)
 
@@ -456,11 +492,11 @@ def compareVersions(v1, condition, v2):
 			second.append(u'0')
 
 	def splitValue(value):
-		match = re.search('^(\d+)(\D*.*)$', value)
+		match = re.search(r'^(\d+)(\D*.*)$', value)
 		if match:
 			return int(match.group(1)), match.group(2)
 		else:
-			match = re.search('^(\D+)(\d*.*)$', value)
+			match = re.search(r'^(\D+)(\d*.*)$', value)
 			if match:
 				return match.group(1), match.group(2)
 
@@ -836,6 +872,9 @@ def getfqdn(name='', conf=None):
 			# not set in environment.
 			pass
 
+		# lazy import to avoid circular dependency
+		from OPSI.Util.Config import getGlobalConfig
+
 		if conf is not None:
 			hostname = getGlobalConfig('hostname', conf)
 		else:
@@ -845,27 +884,6 @@ def getfqdn(name='', conf=None):
 			return forceFqdn(hostname)
 
 	return forceFqdn(socket.getfqdn(name))
-
-
-def getGlobalConfig(name, configFile=OPSI_GLOBAL_CONF):
-	"""
-	Reads the value of ``name`` from the global configuration.
-
-	:param configFile: The path of the config file.
-	:type configFile: str
-	"""
-	name = forceUnicode(name)
-	if os.path.exists(configFile):
-		with codecs.open(configFile, 'r', 'utf8') as config:
-			for line in config:
-				line = line.strip()
-				if '=' not in line or line.startswith(('#', ';')):
-					continue
-
-				(key, value) = line.split('=', 1)
-				if key.strip().lower() == name.lower():
-					return value.strip()
-	return None
 
 
 def removeDirectory(directory):
@@ -906,3 +924,16 @@ def chunk(iterable, size):
 	"""
 	it = iter(iterable)
 	return iter(lambda: tuple(islice(it, size)), ())
+
+
+def getPublicKey(data):
+	# Key type can be found in 4:11.
+	rest = data[11:]
+	count = 0
+	mp = []
+	for _ in range(2):
+		length = struct.unpack('>L', rest[count:count + 4])[0]
+		mp.append(bytes_to_long(rest[count + 4:count + 4 + length]))
+		count += 4 + length
+
+	return RSA.construct((mp[1], mp[0]))

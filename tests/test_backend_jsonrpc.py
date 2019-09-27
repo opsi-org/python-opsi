@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2015-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2015-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -25,14 +25,15 @@ from __future__ import absolute_import
 
 import pytest
 
+from OPSI.Backend.JSONRPC import _DEFLATE_COMPRESSION, _GZIP_COMPRESSION
 from OPSI.Backend.JSONRPC import JSONRPCBackend
-from OPSI.Util.HTTP import deflateEncode, gzipEncode
+from OPSI.Util.HTTP import HTTPHeaders, deflateEncode, gzipEncode
 from OPSI.Util import randomString
 
 
 class FakeResponse(object):
     def __init__(self, header=None, data=None):
-        self._header = header or {}
+        self._header = HTTPHeaders(header or {})
         self.data = data
 
     def getheader(self, field, default=None):
@@ -69,3 +70,50 @@ def testProcessingResponseWithEncodedContent(jsonRpcBackend, encodingFunction, c
     )
 
     assert text == jsonRpcBackend._processResponse(response)
+
+
+@pytest.mark.parametrize("compressionOptions, expectedCompression", [
+    ({"deflate": False}, False),
+    ({"deflate": True}, True),
+    ({"compression": False}, False),
+    ({"compression": True}, True),
+    ({"compression": 'deflate'}, True),
+    ({"compression": 'DEFLATE'}, True),
+    ({"compression": 'gzip'}, True),
+])
+def testCreatinBackendWithCompression(compressionOptions, expectedCompression):
+    backend = JSONRPCBackend("localhost", connectoninit=False, **compressionOptions)
+
+    assert backend.isCompressionUsed() == expectedCompression
+
+
+@pytest.mark.parametrize("value, expectedResult", [
+    (False, False),
+    (True, True),
+    ("no", False),
+    ("true", True),
+    ('deflate', _DEFLATE_COMPRESSION),
+    ('  DEFLATE  ', _DEFLATE_COMPRESSION),
+    ('GZIP   ', _GZIP_COMPRESSION),
+    ('gzip', _GZIP_COMPRESSION),
+])
+def testParsingCompressionValue(value, expectedResult):
+    assert JSONRPCBackend._parseCompressionValue(value) == expectedResult
+
+
+@pytest.mark.parametrize("header, expectedSessionID", [
+    ({}, None),
+    ({'set-cookie': "OPSISID=d395e2f8-9409-4876-bea9-cc621b829998; Path=/"}, "OPSISID=d395e2f8-9409-4876-bea9-cc621b829998"),
+    ({'Set-Cookie': "SID=abc-def-12-345; Path=/"}, "SID=abc-def-12-345"),
+    ({'SET-COOKIE': "weltunter"}, "weltunter"),
+    ({'FAT-NOOKIE': "foo"}, None),
+])
+def testReadingSessionID(jsonRpcBackend, header, expectedSessionID):
+    response = FakeResponse(
+        data='randomtext',
+        header=header
+    )
+
+    jsonRpcBackend._processResponse(response)
+
+    assert jsonRpcBackend._sessionId == expectedSessionID

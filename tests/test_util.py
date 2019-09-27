@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -39,11 +39,12 @@ from OPSI.Util import (
 	blowfishDecrypt, blowfishEncrypt, chunk, compareVersions,
 	decryptWithPrivateKeyFromPEMFile,
 	encryptWithPublicKeyFromX509CertificatePEMFile, findFiles, formatFileSize,
-	fromJson, generateOpsiHostKey, getfqdn, getGlobalConfig, ipAddressInNetwork,
+	fromJson, generateOpsiHostKey, getfqdn, ipAddressInNetwork,
 	isRegularExpressionPattern, librsyncDeltaFile, librsyncSignature,
 	librsyncPatchFile, md5sum, objectToBash, objectToBeautifiedText,
 	objectToHtml, randomString, removeUnit, toJson)
 from OPSI.Util import BlowfishError
+from OPSI.Util.Config import getGlobalConfig
 from OPSI.Util.Task.Certificate import createCertificate
 
 from .helpers import (
@@ -253,7 +254,11 @@ def testRandomStringHasExpectedLength(length):
 	assert length == len(result.strip())
 
 
-@pytest.mark.parametrize("kwargs", [{}, {"forcePython": True}])
+@pytest.mark.parametrize("kwargs", [
+	{},
+	{"forcePython": True},
+	{"forcePython": False}
+])
 def testGenerateOpsiHostKeyIs32CharsLong(kwargs):
 	assert 32 == len(generateOpsiHostKey(kwargs))
 
@@ -545,7 +550,7 @@ def testGetGlobalConfigExitsGracefullyIfFileIsMissing(globalConfigTestFile):
 
 
 @pytest.mark.parametrize("value", [
-	re.compile("ABC"),
+	re.compile(r"ABC"),
 	pytest.param("no pattern", marks=pytest.mark.xfail),
 	pytest.param("SRE_Pattern", marks=pytest.mark.xfail),
 ])
@@ -861,7 +866,7 @@ def tempCertPath():
 		yield keyFile
 
 
-@pytest.fixture(params=[1, 5, 91, 256, 337, 512, 829, 3333])
+@pytest.fixture(params=[1, 5, 91, 256, 337, 512, 829, 3333], scope="session")
 def randomText(request):
 	yield randomString(request.param)
 

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -32,6 +32,7 @@ import pytest
 from OPSI.Exceptions import BackendError, BackendMissingDataError
 from OPSI.Object import (HostGroup, ObjectToGroup, OpsiClient, OpsiConfigserver,
     OpsiDepotserver)
+from OPSI.Util import randomString
 
 
 def getLocalHostFqdn():
@@ -441,17 +442,17 @@ def testRenamingOpsiClient(extendedConfigDataBackend):
     assert membership.groupId == protagonists.id
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def localHostFqdn():
     return getLocalHostFqdn()
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def localWorkbenchPath():
     return 'file:///var/lib/opsi/workbench'
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def remoteWorkbenchPath(localHostFqdn):
     return u'smb://%s/opsi_workbench' % localHostFqdn.split('.')[0]
 
@@ -494,3 +495,26 @@ def testWorkbenchAddressHasNoDefault(extendedConfigDataBackend, localHostFqdn):
     serverFromBackend = extendedConfigDataBackend.host_getObjects(id=server.id)[0]
     assert serverFromBackend.workbenchLocalUrl is None
     assert serverFromBackend.workbenchRemoteUrl is None
+
+
+@pytest.fixture(
+    scope="session",
+    params=[30, 64],
+    ids=['inventoryNumber-30', 'inventoryNumber-64']
+)
+def inventoryNumber(request):
+    return randomString(request.param)
+
+
+@pytest.mark.parametrize("hostClass", [OpsiClient, OpsiDepotserver])
+def testInventoryNumberOnHosts(configDataBackend, hostClass, inventoryNumber):
+    host = hostClass(id='testhost.some.test')
+    host.setInventoryNumber(inventoryNumber)
+
+    backend = configDataBackend
+    backend.host_insertObject(host)
+
+    hostFromBackend = backend.host_getObjects(id=host.id)[0]
+
+    assert hostFromBackend.inventoryNumber == inventoryNumber
+    assert hostFromBackend.getInventoryNumber() == inventoryNumber

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -518,7 +518,12 @@ def testForceEmailAddressRaisesAnExceptionOnInvalidMailAddress(invalidMailAddres
 
 @pytest.mark.parametrize("address, expected", (
 	(u'info@uib.de', 'info@uib.de'),
+	(u'webmaster@somelongname.passenger-association.aero', 'webmaster@somelongname.passenger-association.aero'),
+	(u'bla@name.posts-and-telecommunications.museum', 'bla@name.posts-and-telecommunications.museum'),
+	(u'webmaster@bike.equipment', 'webmaster@bike.equipment'),
+	(u'some.name@company.travelersinsurance', 'some.name@company.travelersinsurance'),
 ))
+# A large list of TLDs can be found at https://publicsuffix.org/
 def testForceEmailAddress(address, expected):
 	assert expected == forceEmailAddress(address)
 
@@ -608,11 +613,13 @@ def testForceFqdnRemovesTrailingDot():
 	assert 'abc.example.local' == forceFqdn('abc.example.local.')
 
 
-def testForceFqdnRequiresHostnameRootZoneAndTopLevelDomain():
-	with pytest.raises(ValueError):
-		forceFqdn('hostname.tld')
-
-	forceFqdn('hostname.rootzone.tld')
+@pytest.mark.parametrize("hostname", [
+	'hostname.rootzone.tld',  # complete hostname
+	pytest.param('host_name.rootzone.tld', marks=pytest.mark.xfail),  # underscore
+	pytest.param('hostname.tld', marks=pytest.mark.xfail),  # only domain
+])
+def testForceFqdnRequiresHostnameRootZoneAndTopLevelDomain(hostname):
+	forceFqdn(hostname)
 
 
 @pytest.mark.parametrize("domain", [

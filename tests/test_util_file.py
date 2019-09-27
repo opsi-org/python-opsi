@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -30,13 +30,13 @@ from contextlib import contextmanager
 
 from OPSI.Util.File import IniFile, InfFile, TxtSetupOemFile, ZsyncFile
 
-from .helpers import copyTestfileToTemporaryFolder, workInTemporaryDirectory
+from .helpers import createTemporaryTestfile
 
 import pytest
 
 
 def testParsingIniFileDoesNotFail():
-    iniTestData = '''
+    iniTestData = r'''
 #[section1]
 # abc = def
 
@@ -51,7 +51,7 @@ key = value \; no comment \# comment2 ;# comment3
 
 [section5]
 key = \;\;\;\;\;\;\;\;\;\;\;\;
-    '''
+'''
 
     iniFile = IniFile('filename_is_irrelevant_for_this')
     iniFile.parse(iniTestData.split('\n'))
@@ -96,12 +96,7 @@ def txtSetupOemFileInTempDirectory(txtSetupOemFilePath):
 
 @contextmanager
 def getTempTxtSetupOemFileFromPath(filePath):
-    with workInTemporaryDirectory() as tempDir:
-        shutil.copy(filePath, tempDir)
-
-        filename = os.path.basename(filePath)
-
-        newPath = os.path.join(tempDir, filename)
+    with createTemporaryTestfile(filePath) as newPath:
         yield TxtSetupOemFile(newPath)
 
 
@@ -175,33 +170,6 @@ def testTxtSetupOemFileApplyingWorkaroundsChangesContents(txtSetupOemFileInTempD
         after = setupfile.readlines()
 
     assert before != after
-
-
-class CopySetupOemFileTestsMixin(object):
-    TEST_DATA_FOLDER = os.path.join(
-        os.path.dirname(__file__), 'testdata', 'util', 'file',
-    )
-    ORIGINAL_SETUP_FILE = None
-
-    @classmethod
-    def setUpClass(self):
-        oemSetupFile = copyTestfileToTemporaryFolder(
-            os.path.join(self.TEST_DATA_FOLDER, self.ORIGINAL_SETUP_FILE)
-        )
-
-        self.txtSetupOemFile = TxtSetupOemFile(oemSetupFile)
-        self.txtSetupOemFile.parse()
-
-    @classmethod
-    def tearDownClass(self):
-        testDirectory = os.path.dirname(self.txtSetupOemFile.getFilename())
-        if os.path.normpath(self.TEST_DATA_FOLDER) != os.path.normpath(testDirectory):
-            try:
-                shutil.rmtree(testDirectory)
-            except OSError:
-                pass
-
-        del self.txtSetupOemFile
 
 
 @pytest.mark.parametrize("filename, vendorId, deviceId", [

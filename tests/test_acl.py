@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2014-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -26,6 +26,8 @@ from __future__ import absolute_import
 
 import os
 
+import pytest
+
 import OPSI.Object
 from OPSI.Exceptions import BackendPermissionDeniedError
 from OPSI.Types import forceHostId
@@ -37,8 +39,6 @@ from .test_backend_replicator import (fillBackendWithHosts,
     fillBackendWithProducts, fillBackendWithProductOnClients)
 from .test_hosts import getClients
 from .test_products import getProducts
-
-import pytest
 
 
 def testParsingBackendACLFile(tempDir):
@@ -161,7 +161,6 @@ def testDenyingAttributes(extendedConfigDataBackend):
 #     assert client3FromBackend.notes == newClient3.notes
 
 
-@pytest.mark.requiresModulesFile
 def testDenyingAccessToOtherObjects(extendedConfigDataBackend):
     """
     It must be possible to deny access to foreign objects.
@@ -377,7 +376,6 @@ def testGettingAccessButDenyingAttributesOnSelf(extendedConfigDataBackend):
                     assert value is None
 
 
-@pytest.mark.requiresModulesFile
 def testAccessingSelfProductOnClients(extendedConfigDataBackend):
     dataBackend = extendedConfigDataBackend
 

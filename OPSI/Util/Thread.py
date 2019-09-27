@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2010-2016 uib GmbH - http://www.uib.de/
+# Copyright (C) 2010-2019 uib GmbH - http://www.uib.de/
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -93,7 +93,7 @@ class KillableThread(threading.Thread):
 	def terminate(self):
 		"""raises SystemExit in the context of the given thread, which should
 		cause the thread to exit silently (unless caught)"""
-		if not self.isAlive():
+		if not self.is_alive():
 			logger.debug(u"Cannot terminate, thread must be started")
 			return
 		self.raise_exc(SystemExit)

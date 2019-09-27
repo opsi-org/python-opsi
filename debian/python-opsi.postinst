@@ -1,7 +1,7 @@
 #! /bin/bash -e
 
 # = = = = = = = = = = = = = = = = = = = = = = =
-# =     Copyright (C) 2010-2017 uib GmbH      =
+# =     Copyright (C) 2010-2019 uib GmbH      =
 # =           http://www.uib.de               =
 # =          All rights reserved.             =
 # = = = = = = = = = = = = = = = = = = = = = = =
@@ -49,12 +49,18 @@ case "$1" in
 		chown root:$fileadmingroup /etc/opsi/passwd
 		chmod 660 /etc/opsi/passwd
 
-		[ -e "/etc/opsi/backendManager/acl.conf" ]      || cp /etc/opsi/backendManager/acl.conf.default      /etc/opsi/backendManager/acl.conf
-		[ -e "/etc/opsi/backendManager/dispatch.conf" ] || cp /etc/opsi/backendManager/dispatch.conf.default /etc/opsi/backendManager/dispatch.conf
+		[ -e "/etc/opsi/backendManager/acl.conf" ]      || cp /etc/opsi/backendManager/acl.conf.example      /etc/opsi/backendManager/acl.conf
+		[ -e "/etc/opsi/backendManager/dispatch.conf" ] || cp /etc/opsi/backendManager/dispatch.conf.example /etc/opsi/backendManager/dispatch.conf
 
 		# Processing files for the SSH extension
+		test -e /etc/opsi/server_commands_default.conf || touch /etc/opsi/server_commands_default.conf
 		chown opsiconfd:opsiadmin /etc/opsi/server_commands_default.conf
 		chmod 440 /etc/opsi/server_commands_default.conf
+
+		# Processing user-editable file for the SSH extension
+		test -e /var/lib/opsi/server_commands_custom.conf || touch /var/lib/opsi/server_commands_custom.conf
+		chown opsiconfd:opsiadmin /var/lib/opsi/server_commands_custom.conf
+		chmod 660 /var/lib/opsi/server_commands_custom.conf
 
 		# Removing files dating before opsi 4.1
 		if [ -e "/etc/opsi/version" ]; then

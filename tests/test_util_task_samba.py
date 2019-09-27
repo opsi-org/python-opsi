@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2015-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2015-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -26,10 +26,11 @@ Testing functionality of OPSI.Util.Task.Samba
 from __future__ import absolute_import
 
 import os.path
-import mock
 import pytest
 
 import OPSI.Util.Task.Samba as Samba
+
+from .helpers import mock
 
 
 @pytest.fixture(params=[True, False], ids=['Samba-4', 'Samba-3'])
@@ -52,7 +53,7 @@ def pathToSmbConf(tempDir):
 
 @pytest.fixture
 def disableDirCreation():
-	def printMessage(path):
+	def printMessage(path, *_unused):
 		print("Would create {0!r}".format(path))
 
 	with mock.patch('OPSI.Util.Task.Samba.os.mkdir', printMessage):
@@ -95,6 +96,7 @@ def testReadingSambaConfig(pathToSmbConf):
 		u"[opsi_images]\n",
 		u"[opsi_workbench]\n",
 		u"[opsi_repository]\n",
+		u"[opsi_logs]\n",
 	]
 
 	with open(pathToSmbConf, 'w') as fakeSambaConfig:
@@ -121,6 +123,7 @@ def testSambaConfigureSamba4Share(isSamba4, workbenchPath, disableDirCreation):
 		u"[opsi_images]\n",
 		u"[opsi_workbench]\n",
 		u"[opsi_repository]\n",
+		u"[opsi_logs]\n",
 	]
 
 	result = Samba._processConfig(config)
@@ -141,13 +144,15 @@ def testAdminUsersAreAddedToExistingOpsiDepotShare(isSamba4, disableDirCreation)
 		u"   invalid users = root\n",
 	]
 
-	with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda: True):
-		result = Samba._processConfig(config)
+	if not isSamba4:
+		pytest.skip("Requires Samba 4.")
+
+	result = Samba._processConfig(config)
 
 	assert any('admin users' in line for line in result), 'Missing Admin Users in Share opsi_depot'
 
 
-def testCorrectOpsiDepotShareWithoutFixForSamba4(disableDirCreation):
+def testCorrectOpsiDepotShareWithoutFixForSamba4(isSamba4, disableDirCreation):
 	config = [
 		u"[opsi_depot]\n",
 		u"   available = yes\n",
@@ -160,8 +165,10 @@ def testCorrectOpsiDepotShareWithoutFixForSamba4(disableDirCreation):
 		u"   invalid users = root\n",
 	]
 
-	with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda: True):
-		result = Samba._processConfig(config)
+	if not isSamba4:
+		pytest.skip("Requires Samba 4.")
+
+	result = Samba._processConfig(config)
 
 	opsiDepotFound = False
 	for line in result:
@@ -177,7 +184,7 @@ def testCorrectOpsiDepotShareWithoutFixForSamba4(disableDirCreation):
 		raise RuntimeError('Did not find "admin users" in opsi_depot share')
 
 
-def testCorrectOpsiDepotShareWithSamba4Fix(disableDirCreation):
+def testCorrectOpsiDepotShareWithSamba4Fix(isSamba4, disableDirCreation):
 	config = [
 		u"[opt_pcbin]\n",
 		u"[opsi_depot]\n",
@@ -194,10 +201,13 @@ def testCorrectOpsiDepotShareWithSamba4Fix(disableDirCreation):
 		u"[opsi_images]\n",
 		u"[opsi_workbench]\n",
 		u"[opsi_repository]\n",
+		u"[opsi_logs]\n",
 	]
 
-	with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda: True):
-		assert config == Samba._processConfig(config)
+	if not isSamba4:
+		pytest.skip("Requires Samba 4.")
+
+	assert config == Samba._processConfig(config)
 
 
 def testProcessConfigDoesNotRemoveComment(isSamba4, disableDirCreation):
@@ -210,6 +220,7 @@ def testProcessConfigDoesNotRemoveComment(isSamba4, disableDirCreation):
 		u"[opsi_images]\n",
 		u"[opsi_workbench]\n",
 		u"[opsi_repository]\n",
+		u"[opsi_logs]\n",
 	]
 
 	result = Samba._processConfig(config)
@@ -226,6 +237,7 @@ def testProcessConfigAddsMissingRepositoryShare(isSamba4, disableDirCreation):
 		u"[opsi_depot_rw]\n",
 		u"[opsi_images]\n",
 		u"[opsi_workbench]\n",
+		u"[opsi_logs]\n",
 	]
 
 	result = Samba._processConfig(config)
@@ -263,6 +275,8 @@ def testWritingSambaConfig(pathToSmbConf):
 		u"[opsi_images]\n",
 		u"[opsi_workbench]\n",
 		u"[opsi_repository]\n",
+		u"[opsi_logs]\n",
+
 	]
 
 	Samba._writeConfig(config, pathToSmbConf)

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -39,28 +39,28 @@ __all__ = ('getBackendConfiguration', 'updateConfigFile')
 LOGGER = Logger()
 
 
-def getBackendConfiguration(backendConfigFile, customLocals=None):
+def getBackendConfiguration(backendConfigFile, customGlobals=None):
 	"""
 	Reads the backend configuration from the given file.
 
 	:param backendConfigFile: Path to the backend configuration file.
-	:param customLocals: If special locals are needed for the config file \
+	:param customGlobals: If special locals are needed for the config file \
 please pass them here. If this is None defaults will be used.
-	:type customLocals: dict
+	:type customGlobals: dict
 	"""
-	if customLocals is None:
-		customLocals = {
-			'socket': socket,
+	if customGlobals is None:
+		customGlobals = {
+			'config': {},  # Will be filled after loading
+			'module': '',  # Will be filled after loading
 			'os': os,
+			'socket': socket,
 			'sys': sys,
-			'module': '',
-			'config': {}
 		}
 
-	LOGGER.info(u"Loading backend config '{0}'".format(backendConfigFile))
-	execfile(backendConfigFile, customLocals)
-	config = customLocals['config']
-	LOGGER.debug(u"Current backend config: %s" % config)
+	LOGGER.info(u"Loading backend config '{0}'", backendConfigFile)
+	execfile(backendConfigFile, customGlobals)
+	config = customGlobals['config']
+	LOGGER.debug(u"Current backend config: {!r}", config)
 
 	return config
 

@@ -4,7 +4,7 @@
 # This file is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2010-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2010-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -60,8 +60,8 @@ data_files = [
 	(
 		'/etc/opsi/backendManager',
 		[
-			'data/backendManager/acl.conf.default',
-			'data/backendManager/dispatch.conf.default'
+			'data/backendManager/acl.conf.example',
+			'data/backendManager/dispatch.conf.example'
 		]
 	),
 	(
@@ -70,6 +70,7 @@ data_files = [
 			'data/backendManager/extend.d/10_opsi.conf',
 			'data/backendManager/extend.d/10_wim.conf',
 			'data/backendManager/extend.d/20_legacy.conf',
+			'data/backendManager/extend.d/20_easy.conf',
 			'data/backendManager/extend.d/30_kiosk.conf',
 			'data/backendManager/extend.d/30_sshcommands.conf',
 			'data/backendManager/extend.d/40_admin_tasks.conf',

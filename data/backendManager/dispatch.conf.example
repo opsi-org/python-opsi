@@ -52,8 +52,8 @@
 #       .*                 : file
 #
 
-backend_.* : file, mysql, opsipxeconfd, dhcpd
-host_.* : file, opsipxeconfd, dhcpd
+backend_.* : file, mysql, opsipxeconfd
+host_.* : file, opsipxeconfd
 productOnClient_.* : file, opsipxeconfd
 configState_.* : file, opsipxeconfd
 license.* : mysql

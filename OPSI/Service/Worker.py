@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2010-2017 uib GmbH
+# Copyright (C) 2010-2019 uib GmbH
 
 # http://www.uib.de/
 
@@ -30,7 +30,6 @@ Worker for the various interfaces.
 :license: GNU Affero General Public License version 3
 """
 
-import os.path
 import base64
 import urllib
 
@@ -183,7 +182,7 @@ interfacePage = u'''<?xml version="1.0" encoding="UTF-8"?>
 </head>
 <body onload="selectMethod(document.getElementById('method_select'))">
 	<p id="title">
-		<img src="/opsi_logo.png" />
+		<img src="/opsi_logo.png" /><br /><br />
 		<span style="padding: 1px">%(title)s</span>
 	</p>
 	<form method="post" onsubmit="return onSubmit()">
@@ -240,7 +239,6 @@ class WorkerOpsi:
 			request.remoteAddr.host = request.headers.getRawHeaders("x-forwarded-for")[0]
 		self.request = request
 		self.query = u''
-		self.gzip = False
 		self.path = u''
 		self.resource = resource
 		self.session = None
@@ -494,15 +492,12 @@ class WorkerOpsi:
 					# we need to behave like we did before.
 					logger.debug(u"Expecting compressed data from client (backwards compatible)")
 					self.query = deflateDecode(self.query)
-					self.gzip = True
 				elif contentEncoding == 'gzip':
 					logger.debug(u"Expecting gzip compressed data from client")
 					self.query = gzipDecode(self.query)
-					self.gzip = True
 				elif contentEncoding == 'deflate':
 					logger.debug(u"Expecting deflate compressed data from client")
 					self.query = deflateDecode(self.query)
-					self.gzip = True
 
 			if not isinstance(self.query, unicode):
 				self.query = unicode(self.query, 'utf-8')
@@ -510,6 +505,7 @@ class WorkerOpsi:
 			logger.logException(error)
 			if not isinstance(self.query, unicode):
 				self.query = unicode(self.query, 'utf-8', 'replace')
+				logger.debug(u"Fallback Decoded query: {!r}", self.query)
 		except Exception as error:
 			logger.logException(error)
 			logger.warning("Unexpected error during decoding of query: {0}", error)
@@ -536,8 +532,6 @@ class WorkerOpsi:
 
 
 class WorkerOpsiJsonRpc(WorkerOpsi):
-
-	RFC_CONFORM_HEADERS = os.path.exists('/etc/opsi/opsi.header.fix.enable')
 
 	def __init__(self, service, request, resource):
 		WorkerOpsi.__init__(self, service, request, resource)
@@ -600,7 +594,7 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 		try:
 			if 'gzip' in self.request.headers.getHeader('Accept-Encoding'):
 				encoding = 'gzip'
-			if 'deflate' in self.request.headers.getHeader('Accept-Encoding'):
+			elif 'deflate' in self.request.headers.getHeader('Accept-Encoding'):
 				encoding = 'deflate'
 		except Exception as error:
 			logger.debug2("Failed to get Accept-Encoding from request header: {0}".format(error))
@@ -628,28 +622,23 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 
 		result.headers.setHeader('content-type', http_headers.MimeType("application", "json", {"charset": "utf-8"}))
 
-		if not self.RFC_CONFORM_HEADERS or invalidMime:
-			if encoding in ('deflate', 'gzip'):
-				# The invalid requests expect the encoding set to
-				# gzip but the content is deflated.
-				result.headers.setHeader('content-encoding', [encoding])
-				result.headers.setHeader('content-type', http_headers.MimeType("gzip-application", "json", {"charset": "utf-8"}))
-				logger.debug(u"Sending deflated data (backwards compatible - with content-encoding {0!r})", encoding)
-				result.stream = stream.IByteStream(deflateEncode(toJson(response).encode('utf-8')))
-			else:
-				logger.debug(u"Sending plain data")
-				result.stream = stream.IByteStream(toJson(response).encode('utf-8'))
+		if invalidMime:
+			# The invalid requests expect the encoding set to
+			# gzip but the content is deflated.
+			result.headers.setHeader('content-encoding', ["gzip"])
+			result.headers.setHeader('content-type', http_headers.MimeType("gzip-application", "json", {"charset": "utf-8"}))
+			logger.debug(u"Sending deflated data (backwards compatible - with content-encoding 'gzip')")
+			result.stream = stream.IByteStream(deflateEncode(toJson(response).encode('utf-8')))
 		elif encoding == "deflate":
-			result.headers.setHeader('content-encoding', [encoding])
-
 			logger.debug(u"Sending deflated data")
+			result.headers.setHeader('content-encoding', [encoding])
 			result.stream = stream.IByteStream(deflateEncode(toJson(response).encode('utf-8')))
 		elif encoding == "gzip":
-			result.headers.setHeader('content-encoding', [encoding])
-
 			logger.debug(u"Sending gzip compressed data")
+			result.headers.setHeader('content-encoding', [encoding])
 			result.stream = stream.IByteStream(gzipEncode(toJson(response).encode('utf-8')))
 		else:
+			logger.debug(u"Sending plain data")
 			result.stream = stream.IByteStream(toJson(response).encode('utf-8'))
 
 		return result

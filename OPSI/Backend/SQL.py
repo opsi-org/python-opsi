@@ -2,7 +2,7 @@
 
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
-# Copyright (C) 2013-2017 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -36,7 +36,6 @@ import time
 from contextlib import contextmanager
 from datetime import datetime
 from hashlib import md5
-from twisted.conch.ssh import keys
 
 from OPSI.Exceptions import (BackendConfigurationError, BackendMissingDataError,
 	BackendModuleDisabledError, BackendReferentialIntegrityError)
@@ -51,14 +50,14 @@ from OPSI.Object import (AuditHardware, AuditHardwareOnHost, AuditSoftware,
 	Relationship, SoftwareLicense, SoftwareLicenseToLicensePool,
 	mandatoryConstructorArgs)
 from OPSI.Backend.Backend import BackendModificationListener, ConfigDataBackend
-from OPSI.Util import timestamp
+from OPSI.Util import timestamp, getPublicKey
 
 __all__ = (
 	'timeQuery', 'onlyAllowSelect', 'SQL', 'SQLBackend',
 	'SQLBackendObjectModificationTracker'
 )
 
-DATABASE_SCHEMA_VERSION = 3
+DATABASE_SCHEMA_VERSION = 5
 
 logger = Logger()
 
@@ -100,7 +99,6 @@ class SQL(object):
 	ESCAPED_UNDERSCORE = "\\_"
 	ESCAPED_PERCENT = "\\%"
 	ESCAPED_ASTERISK = "\\*"
-	doCommit = True
 
 	def __init__(self, **kwargs):
 		pass
@@ -224,7 +222,7 @@ class SQLBackendObjectModificationTracker(BackendModificationListener):
 
 class SQLBackend(ConfigDataBackend):
 
-	_OPERATOR_IN_CONDITION_PATTERN = re.compile('^\s*([>=<]+)\s*(\d\.?\d*)')
+	_OPERATOR_IN_CONDITION_PATTERN = re.compile(r'^\s*([>=<]+)\s*(\d\.?\d*)')
 
 	def __init__(self, **kwargs):
 		self._name = 'sql'
@@ -386,9 +384,21 @@ class SQLBackend(ConfigDataBackend):
 		if issubclass(object.__class__, Product):
 			try:
 				# Truncating a possibly too long changelog entry
-				hash['changelog'] = hash['changelog'][:65534]
+				# This takes into account that unicode characters may be
+				# composed of multiple bytes by encoding, stripping and
+				# decoding them.
+				changelog = hash['changelog']
+				changelog = changelog.encode('utf-8')
+				changelog = changelog[:65534]
+				hash['changelog'] = changelog.decode('utf-8')
 			except (KeyError, TypeError):
 				pass  # Either not present in hash or set to None
+			except UnicodeError:
+				# Encoding problem. We truncate anyway and remove some
+				# buffer characters for possible unicode characters.
+				# Since encoding is attempted after we have read the
+				# has we can assume that the key is present.
+				hash['changelog'] = hash['changelog'][:65000]
 
 		if issubclass(object.__class__, Relationship):
 			try:
@@ -431,7 +441,7 @@ class SQLBackend(ConfigDataBackend):
 		Objects must have an attribute named like the parameter.
 
 		:param object: The object to create an condition for.
-		:returntype: str
+		:rtype: str
 		"""
 		def createCondition():
 			for argument in mandatoryConstructorArgs(object.__class__):
@@ -710,7 +720,7 @@ class SQLBackend(ConfigDataBackend):
 			table = u'''CREATE TABLE `OBJECT_TO_GROUP` (
 					`object_to_group_id` integer NOT NULL ''' + self._sql.AUTOINCREMENT + ''',
 					`groupType` varchar(30) NOT NULL,
-					`groupId` varchar(100) NOT NULL,
+					`groupId` varchar(255) NOT NULL,
 					`objectId` varchar(255) NOT NULL,
 					PRIMARY KEY (`object_to_group_id`),
 					FOREIGN KEY (`groupType`, `groupId`) REFERENCES `GROUP` (`type`, `groupId`)
@@ -896,7 +906,7 @@ class SQLBackend(ConfigDataBackend):
 				`notes` varchar(500),
 				`hardwareAddress` varchar(17),
 				`ipAddress` varchar(15),
-				`inventoryNumber` varchar(30),
+				`inventoryNumber` varchar(64),
 				`created` TIMESTAMP,
 				`lastSeen` TIMESTAMP,
 				`opsiHostKey` varchar(32),
@@ -1269,7 +1279,7 @@ class SQLBackend(ConfigDataBackend):
 		modules = backendinfo['modules']
 		helpermodules = backendinfo['realmodules']
 
-		publicKey = keys.Key.fromString(data=base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
+		publicKey = getPublicKey(data=base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP'))
 		data = u''; mks = modules.keys(); mks.sort()
 		for module in mks:
 			if module in ('valid', 'signature'):
@@ -1822,7 +1832,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 		modules = backendinfo['modules']
 		helpermodules = backendinfo['realmodules']
 
-		publicKey = keys.Key.fromString(data=base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
+		publicKey = getPublicKey(data=base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP'))
 		data = u''; mks = modules.keys(); mks.sort()
 		for module in mks:
 			if module in ('valid', 'signature'):
@@ -2155,15 +2165,19 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 	# -   AuditHardwares
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def _uniqueAuditHardwareCondition(self, auditHardware):
-		if hasattr(auditHardware, 'toHash'):
+		try:
 			auditHardware = auditHardware.toHash()
+		except AttributeError:
+			pass
 
 		def createCondition():
+			listWithNone = [None]
+
 			for attribute, value in auditHardware.items():
 				if attribute in ('hardwareClass', 'type'):
 					continue
 
-				if value is None or value == [None]:
+				if value is None or value == listWithNone:
 					yield u"`{0}` is NULL".format(attribute)
 				elif isinstance(value, (float, long, int, bool)):
 					yield u"`{0}` = {1}".format(attribute, value)
@@ -2450,7 +2464,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 		hardwareClass = filter.get('hardwareClass')
 		if hardwareClass not in ([], None):
 			for hwc in forceUnicodeList(hardwareClass):
-				regex = re.compile(u'^{0}$'.format(hwc.replace('*', '.*')))
+				regex = re.compile(r'^%s$' % hwc.replace('*', '.*'))
 				keys = (key for key in self._auditHardwareConfig if regex.search(key))
 				for key in keys:
 					hardwareClasses.add(key)
