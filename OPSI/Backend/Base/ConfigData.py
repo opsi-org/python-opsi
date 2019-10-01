@@ -378,9 +378,11 @@ the opsi host key.
 
 		if hostId:
 			host = self._context.host_getObjects(id=hostId)  # pylint: disable=maybe-no-member
-			if not host:
-				raise BackendMissingDataError(u"Host '%s' not found in backend" % hostId)
-			host = host[0]
+			try:
+				host = host[0]
+			except IndexError:
+				raise BackendMissingDataError(u"Host %r not found in backend" % hostId)
+
 			result['password'] = blowfishEncrypt(host.opsiHostKey, result['password'])
 			if result['rsaPrivateKey']:
 				result['rsaPrivateKey'] = blowfishEncrypt(host.opsiHostKey, result['rsaPrivateKey'])

@@ -33,6 +33,7 @@ or to JSON, working with librsync and more.
 
 import base64
 import binascii
+import codecs
 import json
 import os
 import random
@@ -557,8 +558,8 @@ def blowfishEncrypt(key, cleartext):
 	if not key:
 		raise BlowfishError("Missing key")
 
+	key = _prepareBlowfishKey(key)
 	cleartext = forceUnicode(cleartext)
-	key = forceUnicode(key).encode()
 
 	while len(cleartext) % 8 != 0:
 		# Fill up with \0 until length is a mutiple of 8
@@ -588,7 +589,7 @@ def blowfishDecrypt(key, crypt):
 	if not key:
 		raise BlowfishError("Missing key")
 
-	key = forceUnicode(key).encode()
+	key = _prepareBlowfishKey(key)
 	crypt = bytes.fromhex(crypt)
 
 	blowfish = Blowfish.new(key, Blowfish.MODE_CBC, BLOWFISH_IV)
@@ -606,6 +607,15 @@ def blowfishDecrypt(key, crypt):
 	except Exception as e:
 		logger.error(e)
 		raise BlowfishError(u"Failed to convert decrypted text to unicode.")
+
+
+def _prepareBlowfishKey(key: str) -> bytes:
+	"Transform the key into hex."
+	try:
+		key = forceUnicode(key).encode()
+		return codecs.decode(key, "hex")
+	except (binascii.Error, Exception) as err:
+		raise BlowfishError("Unable to prepare key: %r" % err)
 
 
 def encryptWithPublicKeyFromX509CertificatePEMFile(data, filename):

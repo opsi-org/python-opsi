@@ -906,6 +906,22 @@ def testBlowfishEncryptionFailsWithNoKey(randomText, blowfishKey):
 		blowfishEncrypt(None, randomText)
 
 
+def testBlowfishWithFixedValues():
+	"""
+	Testing that blowfish encryption returns the desired values.
+
+	This is important to assure that across different versions and
+	platforms we always get the same values.
+	"""
+	key = "08e23bfada2293e0ecbd7612acf15275"
+
+	encryptedPassword = blowfishEncrypt(key, "tanz1tanz2tanz3")
+	assert encryptedPassword == '3b189043053c4e32befa7291c2f162c3'
+
+	pcpatchPassword = blowfishDecrypt(key, encryptedPassword)
+	assert pcpatchPassword == "tanz1tanz2tanz3"
+
+
 @pytest.mark.parametrize("objectCount", [1, 10240])
 def testObjectToBashWorksWithGenerators(objectCount):
 	generator = generateLocalbootProducts(objectCount)
