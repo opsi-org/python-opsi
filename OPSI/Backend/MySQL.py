@@ -522,7 +522,7 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 	def getTables(self):
 		# Hardware audit database
 		tables = {}
-		logger.debug(u"Current tables:")
+		logger.debug2(u"Current tables:")
 		for i in self.getSet(u'SHOW TABLES;'):
 			tableName = i.values()[0]
 			logger.debug2(u" [ {0} ]", tableName)
