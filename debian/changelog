@@ -1,3 +1,15 @@
+python3-opsi (4.2.0.13-1) testing; urgency=medium
+
+  * OPSI.Util: Functions for Blowfish encryption / decryption behave like
+    their Python 2 counterparts.
+  * New function: OPSI.Util.Path.cd: Acts a a context manager to switch to
+    another directory.
+  * OPSI.Util.HTTP.HTTPHeaders: Cache HTTP header normalization.
+  * OPSI.Util.Task.UpdatePackages.Updater.OpsiPackageUpdater: Correctly handle
+    bytes when zsync'ing a package.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 01 Oct 2019 13:17:29 +0200
+
 python3-opsi (4.2.0.12-1) testing; urgency=medium
 
   * OPSI.Util.Repository: Implemented WebDAV XML handling without web2.
