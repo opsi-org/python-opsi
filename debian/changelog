@@ -1,3 +1,10 @@
+python-opsi (4.1.1.79-1) stable; urgency=medium
+
+  * OPSI.Backend.MySQL.MySQL / OPSI.Backend.SQLite.SQLite: getTables will now
+    always return the table names in uppercase.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 01 Oct 2019 14:16:20 +0200
+
 python-opsi (4.1.1.78-1) stable; urgency=medium
 
   * OPSI.Logger: Do not raise an exception if message formatting fails due to

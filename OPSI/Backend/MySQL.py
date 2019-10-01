@@ -520,14 +520,22 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 		return res
 
 	def getTables(self):
-		# Hardware audit database
+		"""
+		Get what tables are present in the database.
+
+		Table names will always be uppercased.
+
+		:returns: A dict with the tablename as key and the field names as value.
+		:rtype: dict
+		"""
 		tables = {}
-		logger.debug(u"Current tables:")
+		logger.debug2(u"Current tables:")
 		for i in self.getSet(u'SHOW TABLES;'):
-			tableName = i.values()[0]
+			tableName = i.values()[0].upper()
 			logger.debug2(u" [ {0} ]", tableName)
-			tables[tableName] = [j['Field'] for j in self.getSet(u'SHOW COLUMNS FROM `%s`' % tableName)]
-			logger.debug2("Fields in {0}: {1}", tableName, tables[tableName])
+			fields = [j['Field'] for j in self.getSet(u'SHOW COLUMNS FROM `%s`' % tableName)]
+			tables[tableName] = fields
+			logger.debug2("Fields in {0}: {1}", tableName, fields)
 		return tables
 
 	def getTableCreationOptions(self, table):
