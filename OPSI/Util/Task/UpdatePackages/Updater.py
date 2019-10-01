@@ -840,24 +840,15 @@ class OpsiPackageUpdater(object):
 					if not link.endswith('.opsi'):
 						continue
 
-					excluded = False
 					included = True
-
 					if repository.includes:
-						included = False
-						for include in repository.includes:
-							if include.search(link):
-								included = True
-								break
+						included = any(include.search(link) for include in repository.includes)
+
 					if not included:
 						logger.info(u"Package '%s' is not included. Please check your includeProductIds-entry in configurationfile." % link)
 						continue
 
-					for exclude in repository.excludes:
-						if exclude.search(link):
-							excluded = True
-							break
-					if excluded:
+					if any(exclude.search(link) for exclude in repository.excludes):
 						logger.info(u"Package '%s' excluded by regular expression" % link)
 						continue
 
@@ -910,6 +901,7 @@ class OpsiPackageUpdater(object):
 										zsyncFile = url + '/' + link
 										packages[i]["zsyncFile"] = zsyncFile
 										logger.debug(u"Found zsync file for package {0!r}: {1}", filename, zsyncFile)
+
 									break
 						except Exception as error:
 							logger.error(u"Failed to process link '%s': %s" % (link, error))
