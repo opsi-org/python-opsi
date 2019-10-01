@@ -78,6 +78,7 @@ LOGGER = Logger()
 
 _POSSIBLE_DEPOT_DIRECTORIES = (u'/var/lib/opsi/depot/', u'/opt/pcbin/install/')
 _CACHED_DEPOT_DIRECTORY = None
+_CACHED_WORKBENCH_DIRECTORY = None
 _HAS_ROOT_RIGHTS = os.geteuid() == 0
 
 KNOWN_EXECUTABLES = frozenset((
@@ -217,6 +218,10 @@ def getWorkbenchDirectory():
 	:raises BackendMissingDataError: If no depot is found.
 	:raises ValueError: If the workbench local url does not use `file` protocoll.
 	"""
+	global _CACHED_WORKBENCH_DIRECTORY
+	if _CACHED_WORKBENCH_DIRECTORY is not None:
+		return _CACHED_WORKBENCH_DIRECTORY
+
 	depot = getLocalDepot()
 
 	workbenchUrl = depot.getWorkbenchLocalUrl()
@@ -224,6 +229,7 @@ def getWorkbenchDirectory():
 		raise ValueError(u"Bad workbench local url: {0!r}".format(workbenchUrl))
 
 	workbenchPath = workbenchUrl[7:]  # removing protocol prefix
+	_CACHED_WORKBENCH_DIRECTORY = workbenchPath
 	return workbenchPath
 
 

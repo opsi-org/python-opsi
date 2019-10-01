@@ -70,6 +70,7 @@ def _processConfig(lines):
 	workbenchShareFound = False
 	opsiImagesFound = False
 	repositoryFound = False
+	logsFound = False
 	oplocksFound = False
 
 	samba4 = isSamba4()
@@ -88,6 +89,8 @@ def _processConfig(lines):
 			workbenchShareFound = True
 		elif currentLine == '[opsi_repository]':
 			repositoryFound = True
+		elif currentLine == '[opsi_logs]':
+			logsFound = True
 		elif 'oplocks' in currentLine:
 			oplocksFound = True
 		newlines.append(line)
@@ -210,6 +213,18 @@ def _processConfig(lines):
 		if not os.path.exists("/var/lib/opsi/repository"):
 			logger.debug(u"Path:  /var/lib/opsi/repository not found: creating.")
 			os.mkdir("/var/lib/opsi/repository")
+
+	if not logsFound:
+		logger.notice(u"  Adding share [opsi_logs]")
+		newlines.append(u"[opsi_logs]\n")
+		newlines.append(u"   available = yes\n")
+		newlines.append(u"   comment = opsi logs share (ro)\n")
+		newlines.append(u"   path = /var/log/opsi\n")
+		newlines.append(u"   follow symlinks = yes\n")
+		newlines.append(u"   writeable = no\n")
+		newlines.append(u"   invalid users = root\n")
+		newlines.append(u"\n")
+
 	if oplocksFound:
 		logger.warning(u" Detected oplocks in your samba configuration. It is not recommended to use them with opsi. Please see the opsi manual for further information.")
 
@@ -245,9 +260,9 @@ def _writeConfig(newlines, config):
 	with codecs.open(config, 'w', 'utf-8') as writeConf:
 		writeConf.writelines(newlines)
 
-
 def _reloadSamba():
 	logger.notice(u"   Reloading samba")
+
 	try:
 		execute(u'service {name} reload'.format(name=getSambaServiceName(default="smbd")))
 	except Exception as error:

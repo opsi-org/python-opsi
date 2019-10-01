@@ -46,6 +46,7 @@ from OPSI.Types import forceHostId, forceProductId, forceUnicode
 from OPSI.Util import compareVersions, formatFileSize, getfqdn, md5sum
 from OPSI.Util.File import ZsyncFile
 from OPSI.Util.File.Opsi import parseFilename
+from OPSI.Util.Path import cd
 from OPSI.Util.Product import ProductPackageFile
 from OPSI.Util.Task.Rights import setRights
 
@@ -623,11 +624,9 @@ class OpsiPackageUpdater:
 
 	def zsyncPackage(self, availablePackage, notifier=None):
 		outFile = os.path.join(self.config["packageDir"], availablePackage["filename"])
-		curdir = os.getcwd()
-		os.chdir(os.path.dirname(outFile))
 
 		repository = availablePackage['repository']
-		try:
+		with cd(os.path.dirname(outFile)):
 			logger.info(u"Zsyncing %s to %s" % (availablePackage["packageFile"], outFile))
 
 			cmd = u"%s -A %s='%s:%s' -o '%s' %s 2>&1" % (
@@ -643,7 +642,7 @@ class OpsiPackageUpdater:
 				cmd = u"http_proxy=%s %s" % (repository.proxy, cmd)
 
 			stateRegex = re.compile(r'\s([\d.]+)%\s+([\d.]+)\skBps(.*)$')
-			data = ''
+			data = b''
 			percent = 0.0
 			speed = 0
 			handle = System.execute(cmd, getHandle=True)
@@ -653,10 +652,10 @@ class OpsiPackageUpdater:
 					handle.close()
 					break
 				data += inp
-				match = stateRegex.search(data)
+				match = stateRegex.search(data.decode())
 				if not match:
 					continue
-				data = match.group(3)
+				data = match.group(3).encode()
 				if (percent == 0) and (float(match.group(1)) == 100):
 					continue
 				percent = float(match.group(1))
@@ -667,8 +666,6 @@ class OpsiPackageUpdater:
 			logger.info(message)
 			if notifier:
 				notifier.appendLine(message)
-		finally:
-			os.chdir(curdir)
 
 	def downloadPackage(self, availablePackage, notifier=None):
 		repository = availablePackage['repository']

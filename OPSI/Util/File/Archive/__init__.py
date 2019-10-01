@@ -43,6 +43,7 @@ from OPSI.Logger import Logger
 from OPSI import System
 from OPSI.Types import forceBool, forceFilename, forceUnicodeList, forceUnicodeLower
 from OPSI.Util import compareVersions
+from OPSI.Util.Path import cd
 
 if os.name == 'posix':
 	import fcntl
@@ -140,13 +141,11 @@ class BaseArchive:
 			raise
 
 	def _create(self, fileList, baseDir, command):
-		curDir = os.path.abspath(os.getcwd())
-		try:
-			baseDir = os.path.abspath(forceFilename(baseDir))
-			if not os.path.isdir(baseDir):
-				raise IOError(u"Base dir '%s' not found" % baseDir)
-			os.chdir(baseDir)
+		baseDir = os.path.abspath(forceFilename(baseDir))
+		if not os.path.isdir(baseDir):
+			raise IOError(u"Base dir '%s' not found" % baseDir)
 
+		with cd(baseDir):
 			logger.info(u"Executing: %s" % command)
 			proc = subprocess.Popen(command,
 				shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
@@ -226,8 +225,6 @@ class BaseArchive:
 				raise RuntimeError(u"Command '%s' failed with code %s: %s" % (command, ret, error))
 			if self._progressSubject:
 				self._progressSubject.setState(len(fileList))
-		finally:
-			os.chdir(curDir)
 
 
 class PigzMixin:
@@ -421,13 +418,9 @@ class CpioArchive(BaseArchive, PigzMixin):
 
 			include = ' '.join('"%s"' % pattern for pattern in patterns)
 
-			curDir = os.path.abspath(os.getcwd())
-			os.chdir(targetPath)
-			try:
+			with cd(targetPath):
 				command = u'%s "%s" | %s --quiet --extract --make-directories --unconditional --preserve-modification-time --verbose --no-preserve-owner %s' % (cat, self._filename, System.which('cpio'), include)
 				self._extract(command, fileCount)
-			finally:
-				os.chdir(curDir)
 		except Exception as e:
 			raise RuntimeError(u"Failed to extract archive '%s': %s" % (self._filename, e))
 
