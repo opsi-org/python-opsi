@@ -604,6 +604,7 @@ def blowfishDecrypt(key, crypt):
 
 
 def _prepareBlowfishKey(key: str) -> bytes:
+	"Transform the key into hex."
 	try:
 		key = forceUnicode(key).encode()
 		return codecs.decode(key, "hex")
