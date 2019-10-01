@@ -409,11 +409,15 @@ depot where the method is.
 
 		cf = ConfigFile(filename=self._opsiPasswdFile)
 		lines = []
-		if os.path.exists(self._opsiPasswdFile):
+		try:
 			for line in cf.readlines():
 				match = _PASSWD_LINE_REGEX.search(line)
 				if not match or (match.group(1) != username):
 					lines.append(line.rstrip())
+		except OSError as oserr:
+			if oserr.errno != 2:  # 2 = File not found
+				raise oserr
+
 		lines.append(u'%s:%s' % (username, encodedPassword))
 		cf.open('w')
 		cf.writelines(lines)
