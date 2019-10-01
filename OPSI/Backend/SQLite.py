@@ -230,7 +230,7 @@ class SQLite(SQL):
 		tables = {}
 		logger.debug2(u"Current tables:")
 		for i in self.getSet('SELECT name FROM sqlite_master WHERE type = "table";'):
-			tableName = i.values()[0]
+			tableName = i.values()[0].upper()
 			logger.debug2(u" [ %s ]" % tableName)
 			fields = [j['name'] for j in self.getSet('PRAGMA table_info(`%s`);' % tableName)]
 			tables[tableName] = fields
