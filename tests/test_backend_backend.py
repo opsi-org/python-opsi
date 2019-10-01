@@ -30,7 +30,7 @@ from OPSI.Backend.Backend import temporaryBackendOptions
 from OPSI.Backend.Backend import Backend, ExtendedBackend
 from OPSI.Exceptions import BackendMissingDataError
 from OPSI.Object import BoolConfig, OpsiClient, UnicodeConfig
-from OPSI.Util import randomString
+from OPSI.Util import blowfishDecrypt, generateOpsiHostKey, randomString
 from .test_hosts import getConfigServer
 
 import pytest
@@ -83,6 +83,26 @@ def testSettingUserCredentialsWithoutDepot(fakeCredentialsBackend):
 
     with pytest.raises(Exception):
         backend.user_setCredentials("hans", '')
+
+
+def testGettingPcpatchCredentials(fakeCredentialsBackend):
+    """
+    Test reading and decrypting the pcpatch password with per-client encryption.
+
+    This is essentially what is done in the opsi-linux-bootimage.
+    """
+    backend = fakeCredentialsBackend
+
+    backend.user_setCredentials(username="pcpatch", password='somepassword')
+
+    host = OpsiClient("someclient.opsi.test", opsiHostKey=generateOpsiHostKey())
+    backend.host_insertObject(host)
+
+    creds = backend.user_getCredentials("pcpatch", host.id)
+
+    password = blowfishDecrypt(host.opsiHostKey, creds['password'])
+
+    assert password == 'somepassword'
 
 
 @pytest.fixture
