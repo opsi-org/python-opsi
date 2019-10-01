@@ -227,6 +227,14 @@ class SQLite(SQL):
 		return res
 
 	def getTables(self):
+		"""
+		Get what tables are present in the database.
+
+		Table names will always be uppercased.
+
+		:returns: A dict with the tablename as key and the field names as value.
+		:rtype: dict
+		"""
 		tables = {}
 		logger.debug2(u"Current tables:")
 		for i in self.getSet('SELECT name FROM sqlite_master WHERE type = "table";'):
