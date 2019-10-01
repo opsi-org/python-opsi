@@ -604,9 +604,8 @@ def blowfishDecrypt(key, crypt):
 
 
 def _prepareBlowfishKey(key: str) -> bytes:
-	key = forceUnicode(key).encode()
-
 	try:
+		key = forceUnicode(key).encode()
 		return codecs.decode(key, "hex")
 	except (binascii.Error, Exception) as err:
 		raise BlowfishError("Unable to prepare key: %r" % err)
