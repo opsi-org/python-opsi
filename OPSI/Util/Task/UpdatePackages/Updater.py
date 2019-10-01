@@ -675,26 +675,10 @@ class OpsiPackageUpdater(object):
 
 	def downloadPackage(self, availablePackage, notifier=None):
 		repository = availablePackage['repository']
-		authcertfile = repository.authcertfile
-		authkeyfile = repository.authkeyfile
 		url = availablePackage["packageFile"]
 		outFile = os.path.join(self.config["packageDir"], availablePackage["filename"])
 
-		if os.path.exists(authcertfile) and os.path.exists(authkeyfile):
-			context = ssl.create_default_context()
-			context.load_cert_chain(authcertfile, authkeyfile)
-			handler = urllib2.HTTPSHandler(context=context)
-		else:
-			passwordManager = urllib2.HTTPPasswordMgrWithDefaultRealm()
-			passwordManager.add_password(None, repository.baseUrl, repository.username, repository.password)
-			handler = urllib2.HTTPBasicAuthHandler(passwordManager)
-
-		if repository.proxy:
-			logger.notice(u"Using Proxy: %s" % repository.proxy)
-			proxyHandler = urllib2.ProxyHandler({'http': repository.proxy, 'https': repository.proxy})
-			opener = urllib2.build_opener(proxyHandler, handler)
-		else:
-			opener = urllib2.build_opener(handler)
+		opener = self._getUrllibOpener(repository)
 		urllib2.install_opener(opener)
 
 		req = urllib2.Request(url, None, self.httpHeaders)
@@ -834,28 +818,8 @@ class OpsiPackageUpdater(object):
 			if not repositoryLocalUrl or not repositoryLocalUrl.startswith('file://'):
 				raise ValueError(u"Invalid repository local url for depot '%s'" % repository.opsiDepotId)
 			depotRepositoryPath = repositoryLocalUrl[7:]
-		authcertfile = repository.authcertfile
-		authkeyfile = repository.authkeyfile
 
-		if os.path.exists(authcertfile) and os.path.exists(authkeyfile):
-			context = ssl.create_default_context()
-			context.load_cert_chain(authcertfile, authkeyfile)
-			handler = urllib2.HTTPSHandler(context=context)
-		else:
-			passwordManager = urllib2.HTTPPasswordMgrWithDefaultRealm()
-			passwordManager.add_password(None, repository.baseUrl.encode('utf-8'), repository.username.encode('utf-8'), repository.password.encode('utf-8'))
-			handler = urllib2.HTTPBasicAuthHandler(passwordManager)
-		if repository.proxy:
-			logger.notice(u"Using Proxy: %s" % repository.proxy)
-			proxyHandler = urllib2.ProxyHandler(
-				{
-					'http': repository.proxy,
-					'https': repository.proxy
-				}
-			)
-			opener = urllib2.build_opener(proxyHandler, handler)
-		else:
-			opener = urllib2.build_opener(handler)
+		opener = self._getUrllibOpener(repository)
 		urllib2.install_opener(opener)
 
 		packages = []
@@ -959,6 +923,37 @@ class OpsiPackageUpdater(object):
 
 		return packages
 
+	def _getUrllibOpener(self, repository):
+		handler = self._getHTTPHandler(repository)
+
+		if repository.proxy:
+			logger.notice(u"Using Proxy: %s" % repository.proxy)
+			proxyHandler = urllib2.ProxyHandler(
+				{
+					'http': repository.proxy,
+					'https': repository.proxy
+				}
+			)
+			opener = urllib2.build_opener(proxyHandler, handler)
+		else:
+			opener = urllib2.build_opener(handler)
+
+		return opener
+
+	@staticmethod
+	def _getHTTPHandler(repository):
+		authcertfile = repository.authcertfile
+		authkeyfile = repository.authkeyfile
+		if os.path.exists(authcertfile) and os.path.exists(authkeyfile):
+			context = ssl.create_default_context()
+			context.load_cert_chain(authcertfile, authkeyfile)
+			handler = urllib2.HTTPSHandler(context=context)
+		else:
+			passwordManager = urllib2.HTTPPasswordMgrWithDefaultRealm()
+			passwordManager.add_password(None, repository.baseUrl, repository.username, repository.password)
+			handler = urllib2.HTTPBasicAuthHandler(passwordManager)
+
+		return handler
 
 def getLocalPackages(packageDirectory, forceChecksumCalculation=False):
 	"""
