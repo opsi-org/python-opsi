@@ -27,7 +27,6 @@ Component for handling package updates.
 
 from __future__ import absolute_import
 
-import formatter
 import os
 import os.path
 import re
@@ -35,6 +34,7 @@ import ssl
 import time
 import urllib
 import urllib2
+from formatter import NullFormatter
 
 from .Config import ConfigurationParser
 from .Notifier import DummyNotifier, EmailNotifier
@@ -832,8 +832,7 @@ class OpsiPackageUpdater(object):
 				response = opener.open(req)
 				content = response.read()
 				logger.debug("content: '%s'" % content)
-				format = formatter.NullFormatter()
-				htmlParser = LinksExtractor(format)
+				htmlParser = LinksExtractor(NullFormatter())
 				htmlParser.feed(content)
 				htmlParser.close()
 				for link in htmlParser.getLinks():
