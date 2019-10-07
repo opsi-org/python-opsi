@@ -839,13 +839,10 @@ class OpsiPackageUpdater(object):
 					if not link.endswith('.opsi'):
 						continue
 
-					included = True
 					if repository.includes:
-						included = any(include.search(link) for include in repository.includes)
-
-					if not included:
-						logger.info(u"Package '%s' is not included. Please check your includeProductIds-entry in configurationfile." % link)
-						continue
+						if not any(include.search(link) for include in repository.includes):
+							logger.info(u"Package '%s' is not included. Please check your includeProductIds-entry in configurationfile." % link)
+							continue
 
 					if any(exclude.search(link) for exclude in repository.excludes):
 						logger.info(u"Package '%s' excluded by regular expression" % link)
