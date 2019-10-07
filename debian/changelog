@@ -1,3 +1,9 @@
+python-opsi (4.1.1.79-2) stable; urgency=medium
+
+  * opsihwaudit.conf: Windows: Fix reading speed of network interfaces.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 07 Oct 2019 10:25:45 +0200
+
 python-opsi (4.1.1.79-1) stable; urgency=medium
 
   * OPSI.Backend.MySQL.MySQL / OPSI.Backend.SQLite.SQLite: getTables will now
