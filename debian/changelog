@@ -1,3 +1,11 @@
+python-opsi (4.1.1.80-1) stable; urgency=medium
+
+  * OPSI.System.Posix.getActiveSessionIds: Support parsing output where the
+    date is split into separate entries for month and day.
+  * OPSI.Util.Task.UpdatePackages.Config: refactored parsing of split entries.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 10 Oct 2019 12:38:59 +0200
+
 python-opsi (4.1.1.79-2) stable; urgency=medium
 
   * opsihwaudit.conf: Windows: Fix reading speed of network interfaces.

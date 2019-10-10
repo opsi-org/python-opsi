@@ -27,7 +27,6 @@ Component for handling package updates.
 
 from __future__ import absolute_import
 
-import formatter
 import os
 import os.path
 import re
@@ -35,6 +34,7 @@ import ssl
 import time
 import urllib
 import urllib2
+from formatter import NullFormatter
 
 from .Config import ConfigurationParser
 from .Notifier import DummyNotifier, EmailNotifier
@@ -675,26 +675,10 @@ class OpsiPackageUpdater(object):
 
 	def downloadPackage(self, availablePackage, notifier=None):
 		repository = availablePackage['repository']
-		authcertfile = repository.authcertfile
-		authkeyfile = repository.authkeyfile
 		url = availablePackage["packageFile"]
 		outFile = os.path.join(self.config["packageDir"], availablePackage["filename"])
 
-		if os.path.exists(authcertfile) and os.path.exists(authkeyfile):
-			context = ssl.create_default_context()
-			context.load_cert_chain(authcertfile, authkeyfile)
-			handler = urllib2.HTTPSHandler(context=context)
-		else:
-			passwordManager = urllib2.HTTPPasswordMgrWithDefaultRealm()
-			passwordManager.add_password(None, repository.baseUrl, repository.username, repository.password)
-			handler = urllib2.HTTPBasicAuthHandler(passwordManager)
-
-		if repository.proxy:
-			logger.notice(u"Using Proxy: %s" % repository.proxy)
-			proxyHandler = urllib2.ProxyHandler({'http': repository.proxy, 'https': repository.proxy})
-			opener = urllib2.build_opener(proxyHandler, handler)
-		else:
-			opener = urllib2.build_opener(handler)
+		opener = self._getUrllibOpener(repository)
 		urllib2.install_opener(opener)
 
 		req = urllib2.Request(url, None, self.httpHeaders)
@@ -834,28 +818,8 @@ class OpsiPackageUpdater(object):
 			if not repositoryLocalUrl or not repositoryLocalUrl.startswith('file://'):
 				raise ValueError(u"Invalid repository local url for depot '%s'" % repository.opsiDepotId)
 			depotRepositoryPath = repositoryLocalUrl[7:]
-		authcertfile = repository.authcertfile
-		authkeyfile = repository.authkeyfile
 
-		if os.path.exists(authcertfile) and os.path.exists(authkeyfile):
-			context = ssl.create_default_context()
-			context.load_cert_chain(authcertfile, authkeyfile)
-			handler = urllib2.HTTPSHandler(context=context)
-		else:
-			passwordManager = urllib2.HTTPPasswordMgrWithDefaultRealm()
-			passwordManager.add_password(None, repository.baseUrl.encode('utf-8'), repository.username.encode('utf-8'), repository.password.encode('utf-8'))
-			handler = urllib2.HTTPBasicAuthHandler(passwordManager)
-		if repository.proxy:
-			logger.notice(u"Using Proxy: %s" % repository.proxy)
-			proxyHandler = urllib2.ProxyHandler(
-				{
-					'http': repository.proxy,
-					'https': repository.proxy
-				}
-			)
-			opener = urllib2.build_opener(proxyHandler, handler)
-		else:
-			opener = urllib2.build_opener(handler)
+		opener = self._getUrllibOpener(repository)
 		urllib2.install_opener(opener)
 
 		packages = []
@@ -868,32 +832,19 @@ class OpsiPackageUpdater(object):
 				response = opener.open(req)
 				content = response.read()
 				logger.debug("content: '%s'" % content)
-				format = formatter.NullFormatter()
-				htmlParser = LinksExtractor(format)
+				htmlParser = LinksExtractor(NullFormatter())
 				htmlParser.feed(content)
 				htmlParser.close()
 				for link in htmlParser.getLinks():
 					if not link.endswith('.opsi'):
 						continue
 
-					excluded = False
-					included = True
-
 					if repository.includes:
-						included = False
-						for include in repository.includes:
-							if include.search(link):
-								included = True
-								break
-					if not included:
-						logger.info(u"Package '%s' is not included. Please check your includeProductIds-entry in configurationfile." % link)
-						continue
+						if not any(include.search(link) for include in repository.includes):
+							logger.info(u"Package '%s' is not included. Please check your includeProductIds-entry in configurationfile." % link)
+							continue
 
-					for exclude in repository.excludes:
-						if exclude.search(link):
-							excluded = True
-							break
-					if excluded:
+					if any(exclude.search(link) for exclude in repository.excludes):
 						logger.info(u"Package '%s' excluded by regular expression" % link)
 						continue
 
@@ -946,6 +897,7 @@ class OpsiPackageUpdater(object):
 										zsyncFile = url + '/' + link
 										packages[i]["zsyncFile"] = zsyncFile
 										logger.debug(u"Found zsync file for package {0!r}: {1}", filename, zsyncFile)
+
 									break
 						except Exception as error:
 							logger.error(u"Failed to process link '%s': %s" % (link, error))
@@ -959,6 +911,37 @@ class OpsiPackageUpdater(object):
 
 		return packages
 
+	def _getUrllibOpener(self, repository):
+		handler = self._getHTTPHandler(repository)
+
+		if repository.proxy:
+			logger.notice(u"Using Proxy: %s" % repository.proxy)
+			proxyHandler = urllib2.ProxyHandler(
+				{
+					'http': repository.proxy,
+					'https': repository.proxy
+				}
+			)
+			opener = urllib2.build_opener(proxyHandler, handler)
+		else:
+			opener = urllib2.build_opener(handler)
+
+		return opener
+
+	@staticmethod
+	def _getHTTPHandler(repository):
+		authcertfile = repository.authcertfile
+		authkeyfile = repository.authkeyfile
+		if os.path.exists(authcertfile) and os.path.exists(authkeyfile):
+			context = ssl.create_default_context()
+			context.load_cert_chain(authcertfile, authkeyfile)
+			handler = urllib2.HTTPSHandler(context=context)
+		else:
+			passwordManager = urllib2.HTTPPasswordMgrWithDefaultRealm()
+			passwordManager.add_password(None, repository.baseUrl, repository.username, repository.password)
+			handler = urllib2.HTTPBasicAuthHandler(passwordManager)
+
+		return handler
 
 def getLocalPackages(packageDirectory, forceChecksumCalculation=False):
 	"""
