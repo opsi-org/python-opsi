@@ -3923,7 +3923,7 @@ def getActiveSessionIds(winApiBugCommand=None, data=None):
 
 	sessionIds = []
 	for line in data:
-		parts = re.split(r'\s+', line)
+		parts = line.split()
 		if len(parts) in (7, 8):
 			sessionIds.append(int(parts[-2]))
 		elif len(parts) == 6:
