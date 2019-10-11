@@ -45,10 +45,11 @@ from OPSI.Types import (
 	forceBool, forceEmailAddress, forceFilename, forceHostAddress,
 	forceHostId, forceInt, forceProductId, forceUnicode, forceUrl)
 
-__all__ = ('DEFAULT_CONFIG', 'ConfigurationParser')
+__all__ = ('DEFAULT_CONFIG', 'DEFAULT_USER_AGENT', 'ConfigurationParser')
 
+DEFAULT_USER_AGENT = 'opsi-package-updater/%s' % __version__
 DEFAULT_CONFIG = {
-	"userAgent": 'opsi-package-updater/%s' % __version__,
+	"userAgent": DEFAULT_USER_AGENT,
 	"packageDir": '/var/lib/opsi/products',
 	"configFile": '/etc/opsi/opsi-package-updater.conf',
 	"repositoryConfigDir": '/etc/opsi/package-updater.repos.d',
