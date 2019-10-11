@@ -36,7 +36,7 @@ import urllib
 import urllib2
 from formatter import NullFormatter
 
-from .Config import ConfigurationParser
+from .Config import DEFAULT_USER_AGENT, ConfigurationParser
 from .Notifier import DummyNotifier, EmailNotifier
 from .Repository import LinksExtractor
 
@@ -60,7 +60,7 @@ logger = Logger()
 class OpsiPackageUpdater(object):
 	def __init__(self, config):
 		self.config = config
-		self.httpHeaders = {'User-Agent': self.config.get("userAgent", "")}
+		self.httpHeaders = {'User-Agent': self.config.get("userAgent", DEFAULT_USER_AGENT)}
 		self.configBackend = None
 		self.depotConnections = {}
 		self.depotId = forceHostId(getfqdn(conf='/etc/opsi/global.conf').lower())
