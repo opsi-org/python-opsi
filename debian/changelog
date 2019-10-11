@@ -1,3 +1,9 @@
+python-opsi (4.1.1.81-1) stable; urgency=medium
+
+  * Use an User-Agent setting in accordance to RFC 2616 in more places.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 11 Oct 2019 15:22:25 +0200
+
 python-opsi (4.1.1.80-1) stable; urgency=medium
 
   * OPSI.System.Posix.getActiveSessionIds: Support parsing output where the
