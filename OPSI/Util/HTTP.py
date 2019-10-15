@@ -90,10 +90,11 @@ def non_blocking_connect_http(self, connectTimeout=0):
 		except socket.error as error:
 			logger.logException(error, LOG_DEBUG)
 			logger.debug(error)
-			if error[0] in (106, 10056):
+			if error.args[0] in (106, 10056):
 				# Transport endpoint is already connected
 				break
-			if error[0] not in (114, ) or not lastError:
+
+			if error.args[0] not in (114, ) or not lastError:
 				lastError = error
 			time.sleep(0.5)
 	sock.settimeout(None)
