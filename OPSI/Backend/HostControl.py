@@ -151,7 +151,7 @@ class RpcThread(KillableThread):
 				connection.putheader('User-Agent', self._USER_AGENT)
 				connection.putheader('content-type', 'application/json')
 				auth = u'{0}:{1}'.format(self.username, self.password)
-				connection.putheader('Authorization', 'Basic ' + base64.b64encode(auth.encode('latin-1')))
+				connection.putheader('Authorization', b'Basic ' + base64.b64encode(auth.encode('latin-1')))
 				connection.endheaders()
 				connection.send(query)
 
