@@ -485,3 +485,18 @@ def testIncreasingInventoryNumberFieldLength(mysqlBackendConfig, mySQLBackendCon
                 break
         else:
             raise RuntimeError("Expected to find matching column.")
+
+
+def testChangingSoftwareConfigConfiIdToBigInt(mysqlBackendConfig, mySQLBackendConfigFile):
+    with cleanDatabase(MySQL(**mysqlBackendConfig)) as db:
+        createRequiredTables(db)
+
+        updateMySQLBackend(backendConfigFile=mySQLBackendConfigFile)
+
+        for column in getTableColumns(db, 'SOFTWARE_CONFIG'):
+            if column.name == 'config_id':
+                assert column.type.lower().startswith('bigint(')
+                assert getColumnLength(column.type) == 20
+                break
+        else:
+            raise RuntimeError("Unable to find column SOFTWARE_CONFIG.config_id")
