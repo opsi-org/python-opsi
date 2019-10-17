@@ -656,6 +656,35 @@ class MySQLBackend(SQLBackend):
 		self._sql.execute(table)
 		self._sql.execute('CREATE INDEX `index_host_type` on `HOST` (`type`);')
 
+	def _createTableSoftwareConfig(self):
+		logger.debug(u'Creating table SOFTWARE_CONFIG')
+		# We want the primary key config_id to be of a bigint as
+		# regular int has been proven to be too small on some
+		# installations.
+		table = u'''CREATE TABLE `SOFTWARE_CONFIG` (
+				`config_id` bigint NOT NULL ''' + self._sql.AUTOINCREMENT + ''',
+				`clientId` varchar(255) NOT NULL,
+				`name` varchar(100) NOT NULL,
+				`version` varchar(100) NOT NULL,
+				`subVersion` varchar(100) NOT NULL,
+				`language` varchar(10) NOT NULL,
+				`architecture` varchar(3) NOT NULL,
+				`uninstallString` varchar(200),
+				`binaryName` varchar(100),
+				`firstseen` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
+				`lastseen` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
+				`state` TINYINT NOT NULL,
+				`usageFrequency` integer NOT NULL DEFAULT -1,
+				`lastUsed` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
+				`licenseKey` VARCHAR(1024),
+				PRIMARY KEY (`config_id`)
+			) %s;
+			''' % self._sql.getTableCreationOptions('SOFTWARE_CONFIG')
+		logger.debug(table)
+		self._sql.execute(table)
+		self._sql.execute('CREATE INDEX `index_software_config_clientId` on `SOFTWARE_CONFIG` (`clientId`);')
+		self._sql.execute('CREATE INDEX `index_software_config_nvsla` on `SOFTWARE_CONFIG` (`name`, `version`, `subVersion`, `language`, `architecture`);')
+
 	# Overwriting productProperty_insertObject and
 	# productProperty_updateObject to implement Transaction
 	def productProperty_insertObject(self, productProperty):
