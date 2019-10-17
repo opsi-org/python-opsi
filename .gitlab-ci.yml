@@ -20,6 +20,6 @@ package for OBS:
       - python-opsi.spec
     expire_in: 2 days
   only:
-      - /^release/.*$
+      - /^release/.*$/i
       - tags
       - triggers
