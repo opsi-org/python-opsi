@@ -22,4 +22,4 @@ package for OBS:
   only:
       - /^release/.*$/i
       - tags
-      - triggers
+      - web
