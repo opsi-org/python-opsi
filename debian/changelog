@@ -1,3 +1,12 @@
+python-opsi (4.1.1.82-1) testing; urgency=medium
+
+  * 30_kiosk.conf: Getting the product groups now works with broken configs.
+  * MySQL backend: Changed SOFTWARE_CONFIG.config_id to bigint to allow for
+    more entries. An update routine has been added that can be executed by
+    running opsi-setup --update-mysql.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 17 Oct 2019 13:19:31 +0200
+
 python-opsi (4.1.1.81-1) stable; urgency=medium
 
   * Use an User-Agent setting in accordance to RFC 2616 in more places.
