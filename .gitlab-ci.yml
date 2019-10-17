@@ -3,7 +3,7 @@ image: ubuntu:latest
 stages:
   - package
 
-package_for_build:
+package for OBS:
   stage: package
   before_script:
     - apt update
