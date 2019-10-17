@@ -414,9 +414,8 @@ depot where the method is.
 				match = _PASSWD_LINE_REGEX.search(line)
 				if not match or (match.group(1) != username):
 					lines.append(line.rstrip())
-		except OSError as oserr:
-			if oserr.errno != 2:  # 2 = File not found
-				raise oserr
+		except FileNotFoundError:
+			pass
 
 		lines.append(u'%s:%s' % (username, encodedPassword))
 		cf.open('w')
