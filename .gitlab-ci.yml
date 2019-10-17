@@ -21,3 +21,5 @@ package for OBS:
     expire_in: 2 days
   only:
       - /^release/.*
+      - tags
+      - triggers
