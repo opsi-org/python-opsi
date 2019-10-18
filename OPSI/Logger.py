@@ -497,9 +497,10 @@ will disable logging to a file.
 
 			try:
 				os.unlink(linkFile)
+			except FileNotFoundError:
+				pass
 			except OSError as oserr:
-				if oserr.errno != 2:  # 2 = File not found
-					self.debug2(u"Failed to remove link {0!r}: {1}", linkFile, oserr)
+				self.debug2(u"Failed to remove link {0!r}: {1}", linkFile, oserr)
 
 			os.symlink(logFile, linkFile)
 		except Exception as error:

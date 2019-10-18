@@ -52,8 +52,8 @@ def testGetBlockDeviceContollerInfo():
 	assert '3A02' == deviceInfo['deviceId']
 
 
-def testGetActiveSessionIds():
-	testdata = [
+@pytest.mark.parametrize("testdata, expectedIds", [
+	([
 		'wenselowski tty4         2014-05-20 13:54   .         24093',
 		'wenselowski pts/0        2014-05-20 09:45 01:10       15884 (:0.0)',
 		'wenselowski pts/1        2014-05-20 12:58 00:46       14849 (:0.0)',
@@ -64,10 +64,10 @@ def testGetActiveSessionIds():
 		'wenselowski pts/8        2014-05-20 10:50 00:16       27443 (:0.0)',
 		'wenselowski pts/9        2014-05-20 13:27   .         18172 (:0.0)',
 		'wenselowski pts/10       2014-05-20 13:42 00:02       21605 (:0.0)',
-	]
-
-	expectedIds = [24093, 15884, 14849, 15401, 15688, 20496, 25574, 27443, 18172, 21605]
-
+	], [24093, 15884, 14849, 15401, 15688, 20496, 25574, 27443, 18172, 21605]),
+	(['root     pts/2        Oct 10 09:32 00:02       19391 (192.168.2.5)'], [19391])
+])
+def testGetActiveSessionIds(testdata, expectedIds):
 	assert expectedIds == Posix.getActiveSessionIds(data=testdata)
 
 

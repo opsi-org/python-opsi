@@ -151,13 +151,15 @@ class RpcThread(KillableThread):
 				connection.putheader('User-Agent', self._USER_AGENT)
 				connection.putheader('content-type', 'application/json')
 				auth = u'{0}:{1}'.format(self.username, self.password)
-				connection.putheader('Authorization', 'Basic ' + base64.b64encode(auth.encode('latin-1')))
+				connection.putheader('Authorization', b'Basic ' + base64.b64encode(auth.encode('latin-1')))
 				connection.endheaders()
 				connection.send(query)
 
 				response = connection.getresponse()
 				response = response.read()
-				response = fromJson(str(response, encoding='utf-8'))
+				if isinstance(response, bytes):
+					response = response.decode('utf-8')
+				response = fromJson(response)
 
 				if response and isinstance(response, dict):
 					self.error = response.get('error')

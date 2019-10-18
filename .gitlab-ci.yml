@@ -1,0 +1,25 @@
+image: ubuntu:latest
+
+stages:
+  - package
+
+package for OBS:
+  stage: package
+  before_script:
+    - apt update
+    - apt install -y devscripts debhelper dh-python gettext lsb-release python3-all python3-setuptools
+  script:
+    - ./create_source.sh
+    - test -f python3-opsi_*.dsc
+    - test -f python3-opsi_*.tar.gz
+    - test -f python3-opsi.spec
+  artifacts:
+    paths:
+      - python3-opsi_*.dsc
+      - python3-opsi_*.tar.gz
+      - python3-opsi.spec
+    expire_in: 2 days
+  only:
+      - /^release/.*$/i
+      - tags
+      - web

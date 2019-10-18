@@ -54,7 +54,8 @@ def testReadingMySQLConfigFile(exampleMySQLBackendConfig):
         "databaseCharset": "utf8",
         "connectionPoolSize": 20,
         "connectionPoolMaxOverflow": 10,
-        "connectionPoolTimeout": 30
+        "connectionPoolTimeout": 30,
+        "connectionPoolRecycling": 28000,
     }
 
     config = backendConfigUtils.getBackendConfiguration(exampleMySQLBackendConfig)

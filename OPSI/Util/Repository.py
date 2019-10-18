@@ -903,10 +903,12 @@ class FileRepository(Repository):
 
 class HTTPRepository(Repository):
 
+	_USER_AGENT = 'opsi-HTTPRepository/%s' % __version__
+
 	def __init__(self, url, **kwargs):
 		Repository.__init__(self, url, **kwargs)
 
-		self._application = 'opsi repository module version %s' % __version__
+		self._application = self._USER_AGENT
 		self._username = u''
 		self._password = u''
 		self._port = 80
@@ -1089,6 +1091,8 @@ class HTTPRepository(Repository):
 
 
 class WebDAVRepository(HTTPRepository):
+
+	_USER_AGENT = 'opsi-WebDAVRepository/%s' % __version__
 
 	def __init__(self, url, **kwargs):
 		HTTPRepository.__init__(self, url, **kwargs)

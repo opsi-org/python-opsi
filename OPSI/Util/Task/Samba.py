@@ -260,6 +260,7 @@ def _writeConfig(newlines, config):
 	with codecs.open(config, 'w', 'utf-8') as writeConf:
 		writeConf.writelines(newlines)
 
+
 def _reloadSamba():
 	logger.notice(u"   Reloading samba")
 
