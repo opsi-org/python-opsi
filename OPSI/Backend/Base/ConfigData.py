@@ -69,6 +69,7 @@ LOG_TYPES = {  # key = logtype, value = requires objectId for read
 	'userlogin': True,
 	'winpe': True,
 }
+_PASSWD_LINE_REGEX = re.compile(r'^\s*([^:]+)\s*:\s*(\S+)\s*$')
 
 logger = Logger()
 
@@ -345,9 +346,8 @@ the opsi host key.
 		result = {'password': u'', 'rsaPrivateKey': u''}
 
 		cf = ConfigFile(filename=self._opsiPasswdFile)
-		lineRegex = re.compile(r'^\s*([^:]+)\s*:\s*(\S+)\s*$')
 		for line in cf.parse():
-			match = lineRegex.search(line)
+			match = _PASSWD_LINE_REGEX.search(line)
 			if match is None:
 				continue
 
@@ -408,13 +408,15 @@ depot where the method is.
 		encodedPassword = blowfishEncrypt(depot.opsiHostKey, password)
 
 		cf = ConfigFile(filename=self._opsiPasswdFile)
-		lineRegex = re.compile(r'^\s*([^:]+)\s*:\s*(\S+)\s*$')
 		lines = []
-		if os.path.exists(self._opsiPasswdFile):
+		try:
 			for line in cf.readlines():
-				match = lineRegex.search(line)
+				match = _PASSWD_LINE_REGEX.search(line)
 				if not match or (match.group(1) != username):
 					lines.append(line.rstrip())
+		except FileNotFoundError:
+			pass
+
 		lines.append(u'%s:%s' % (username, encodedPassword))
 		cf.open('w')
 		cf.writelines(lines)
