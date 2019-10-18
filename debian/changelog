@@ -1,3 +1,13 @@
+python3-opsi (4.2.0.13-1ubuntu1) UNRELEASED; urgency=medium
+
+  * OPSI.Util.HTTP.non_blocking_connect_http: Fix handling timeouts.
+  * OPSI.Backend.HostControl.RpcThread: Fix working with bytes and strings.
+  * /etc/opsi/backends/mysql.conf: Set "connectionPoolRecycling" to 28000.
+  * OPSI.Backend.Base.ConfigData: user_setCredentials handling of missing
+    file changed in order to be faster in everyday use.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 18 Oct 2019 11:29:01 +0200
+
 python3-opsi (4.2.0.13-1) testing; urgency=medium
 
   * OPSI.Util: Functions for Blowfish encryption / decryption behave like
