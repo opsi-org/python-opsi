@@ -1,4 +1,4 @@
-python3-opsi (4.2.0.13-1ubuntu1) UNRELEASED; urgency=medium
+python3-opsi (4.2.0.14-1) testing; urgency=medium
 
   * OPSI.Util.HTTP.non_blocking_connect_http: Fix handling timeouts.
   * OPSI.Backend.HostControl.RpcThread: Fix working with bytes and strings.
