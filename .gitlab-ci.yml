@@ -7,7 +7,7 @@ package for OBS:
   stage: package
   before_script:
     - apt update
-    - apt install -y devscripts debhelper dh-python gettext lsb-release python-all python-setuptools
+    - apt install -y devscripts debhelper dh-python gettext lsb-release python3-all python3-setuptools
   script:
     - ./create_source.sh
     - test -f python-opsi_*.dsc
