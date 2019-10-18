@@ -221,15 +221,23 @@ class SQLite(SQL):
 		return res
 
 	def getTables(self):
+		"""
+		Get what tables are present in the database.
+
+		Table names will always be uppercased.
+
+		:returns: A dict with the tablename as key and the field names as value.
+		:rtype: dict
+		"""
 		tables = {}
 		logger.debug2(u"Current tables:")
 		for i in self.getSet('SELECT name FROM sqlite_master WHERE type = "table";'):
-			tableName = tuple(i.values())[0]
+			tableName = tuple(i.values())[0].upper()
 			logger.debug2(u" [ %s ]" % tableName)
-			tables[tableName] = []
-			for j in self.getSet('PRAGMA table_info(`%s`);' % tableName):
-				logger.debug2(u"      %s" % j)
-				tables[tableName].append(j['name'])
+			fields = [j['name'] for j in self.getSet('PRAGMA table_info(`%s`);' % tableName)]
+			tables[tableName] = fields
+			logger.debug2("Fields in {0}: {1}", tableName, fields)
+
 		return tables
 
 	def getTableCreationOptions(self, table):

@@ -140,6 +140,42 @@ python3-opsi (4.2.0.1-1) experimental; urgency=medium
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 06 Nov 2018 16:46:45 +0100
 
+python-opsi (4.1.1.82-1) testing; urgency=medium
+
+  * 30_kiosk.conf: Getting the product groups now works with broken configs.
+  * MySQL backend: Changed SOFTWARE_CONFIG.config_id to bigint to allow for
+    more entries. An update routine has been added that can be executed by
+    running opsi-setup --update-mysql.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 17 Oct 2019 13:19:31 +0200
+
+python-opsi (4.1.1.81-1) stable; urgency=medium
+
+  * Use an User-Agent setting in accordance to RFC 2616 in more places.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 11 Oct 2019 15:22:25 +0200
+
+python-opsi (4.1.1.80-1) stable; urgency=medium
+
+  * OPSI.System.Posix.getActiveSessionIds: Support parsing output where the
+    date is split into separate entries for month and day.
+  * OPSI.Util.Task.UpdatePackages.Config: refactored parsing of split entries.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 10 Oct 2019 12:38:59 +0200
+
+python-opsi (4.1.1.79-2) stable; urgency=medium
+
+  * opsihwaudit.conf: Windows: Fix reading speed of network interfaces.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 07 Oct 2019 10:25:45 +0200
+
+python-opsi (4.1.1.79-1) stable; urgency=medium
+
+  * OPSI.Backend.MySQL.MySQL / OPSI.Backend.SQLite.SQLite: getTables will now
+    always return the table names in uppercase.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 01 Oct 2019 14:16:20 +0200
+
 python-opsi (4.1.1.78-1) stable; urgency=medium
 
   * OPSI.Logger: Do not raise an exception if message formatting fails due to

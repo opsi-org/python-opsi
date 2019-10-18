@@ -3911,18 +3911,19 @@ def getActiveSessionIds(winApiBugCommand=None, data=None):
 	Getting the IDs of the currently active sessions.
 
 	.. versionadded:: 4.0.5
+
+
 	:param data: Prefetched data to read information from.
 	:type data: [str, ]
 	:rtype: [int, ]
-
 	"""
 	if data is None:
 		data = execute(u"who -p -u")
 
 	sessionIds = []
 	for line in data:
-		parts = re.split(r'\s+', line)
-		if len(parts) == 7:
+		parts = line.split()
+		if len(parts) in (7, 8):
 			sessionIds.append(int(parts[-2]))
 		elif len(parts) == 6:
 			sessionIds.append(int(parts[-1]))

@@ -43,10 +43,11 @@ from OPSI.Types import (
 	forceBool, forceEmailAddress, forceFilename, forceHostAddress,
 	forceHostId, forceInt, forceProductId, forceUnicode, forceUrl)
 
-__all__ = ('DEFAULT_CONFIG', 'ConfigurationParser')
+__all__ = ('DEFAULT_CONFIG', 'DEFAULT_USER_AGENT', 'ConfigurationParser')
 
+DEFAULT_USER_AGENT = 'opsi-package-updater/%s' % __version__
 DEFAULT_CONFIG = {
-	"userAgent": 'opsi-package-updater/%s' % __version__,
+	"userAgent": DEFAULT_USER_AGENT,
 	"packageDir": '/var/lib/opsi/products',
 	"configFile": '/etc/opsi/opsi-package-updater.conf',
 	"repositoryConfigDir": '/etc/opsi/package-updater.repos.d',
@@ -167,20 +168,20 @@ overriden based on values in configuration file.
 						elif option.lower() == 'sender':
 							config["sender"] = forceEmailAddress(value.strip())
 						elif option.lower() == 'receivers':
-							config["receivers"] = []
-
-							for receiver in splitAndStrip(value, u","):
-								config["receivers"].append(forceEmailAddress(receiver))
+							config["receivers"] = [
+								forceEmailAddress(receiver)
+								for receiver in splitAndStrip(value, u",")
+							]
 
 				elif section.lower() == 'wol':
 					for (option, value) in configIni.items(section):
 						if option.lower() == 'active':
 							config["wolAction"] = forceBool(value.strip())
 						elif option.lower() == 'excludeproductids':
-							config['wolActionExcludeProductIds'] = []
-
-							for productId in splitAndStrip(value, u','):
-								config["wolActionExcludeProductIds"].append(forceProductId(productId))
+							config['wolActionExcludeProductIds'] = [
+								forceProductId(productId)
+								for productId in splitAndStrip(value, u',')
+							]
 						elif option.lower() == 'shutdownwanted':
 							config["wolShutdownWanted"] = forceBool(value.strip())
 						elif option.lower() == 'startgap':
@@ -203,11 +204,10 @@ overriden based on values in configuration file.
 								raise ValueError(u"End time '%s' not in needed format 'HH:MM'" % value.strip())
 							config["installationWindowEndTime"] = value.strip()
 						elif option.lower() == 'exceptproductids':
-							config['installationWindowExceptions'] = []
-
-							for productId in splitAndStrip(value, ','):
-								config["installationWindowExceptions"].append(forceProductId(productId))
-
+							config['installationWindowExceptions'] = [
+								forceProductId(productId)
+								for productId in splitAndStrip(value, ',')
+							]
 				elif section.lower().startswith('repository'):
 					try:
 						repository = self._getRepository(configIni, section, config['forceRepositoryActivation'], config['repositoryName'], config['installAllAvailable'], config['proxy'])
@@ -334,17 +334,20 @@ overriden based on values in configuration file.
 				else:
 					repository.inheritProductProperties = forceBool(value.strip())
 			elif option.lower() == 'dirs':
-				repository.dirs = []
-				for directory in splitAndStrip(value, ','):
-					repository.dirs.append(forceFilename(directory))
+				repository.dirs = [
+					forceFilename(directory)
+					for directory in splitAndStrip(value, ',')
+				]
 			elif option.lower() == 'excludes':
-				repository.excludes = []
-				for exclude in splitAndStrip(value, ','):
-					repository.excludes.append(re.compile(exclude))
+				repository.excludes = [
+					re.compile(exclude)
+					for exclude in splitAndStrip(value, ',')
+				]
 			elif option.lower() == 'includeproductids':
-				repository.includes = []
-				for include in splitAndStrip(value, ','):
-					repository.includes.append(re.compile(include))
+				repository.includes = [
+					re.compile(include)
+					for include in splitAndStrip(value, ',')
+				]
 			elif option.lower() == 'description':
 				repository.description = forceUnicode(value)
 

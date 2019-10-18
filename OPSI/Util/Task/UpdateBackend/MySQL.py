@@ -102,6 +102,7 @@ read from `backendConfigFile`.
 		_addWorkbenchAttributesToHosts,
 		_adjustLengthOfGroupId,
 		_increaseInventoryNumberLength,
+		_changeSoftwareConfigConfigIdToBigInt,
 	]
 
 	for newSchemaVersion, migration in enumerate(migrations, start=1):
@@ -715,3 +716,8 @@ def _increaseInventoryNumberLength(database):
 		'ALTER TABLE `HOST` '
 		'MODIFY COLUMN `inventoryNumber` varchar(64) NOT NULL;'
 	)
+
+
+def _changeSoftwareConfigConfigIdToBigInt(database):
+	LOGGER.info("Changing the type of SOFTWARE_CONFIG.config_id to bigint")
+	database.execute("ALTER TABLE `SOFTWARE_CONFIG` MODIFY COLUMN `config_id` bigint auto_increment;")
