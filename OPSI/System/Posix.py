@@ -658,6 +658,14 @@ keys are: ``ip``, ``netmask``, ``bootserver``, ``nextserver``, \
 
 
 def configureInterface(device, address, netmask=None):
+	"""
+	Configure the given device to use the given address.
+	Optionally you can set a netmask aswell.
+
+	:type device: str
+	:type address: str
+	:type netmask: str
+	"""
 	cmd = u'%s %s %s' % (which('ifconfig'), device, forceIpAddress(address))
 	if netmask:
 		cmd += u' netmask %s' % forceNetmask(netmask)
