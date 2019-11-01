@@ -61,9 +61,9 @@ except ImportError:
 __all__ = (
 	'CommandNotFoundException',
 	'Distribution', 'Harddisk', 'NetworkPerformanceCounter', 'SysInfo',
-	'SystemSpecificHook', 'addSystemHook', 'auditHardware', 'daemonize',
-	'execute', 'getActiveConsoleSessionId', 'getActiveSessionId',
-	'getActiveSessionIds', 'getBlockDeviceBusType',
+	'SystemSpecificHook', 'addSystemHook', 'auditHardware',
+	'configureInterface', 'daemonize', 'execute', 'getActiveConsoleSessionId',
+	'getActiveSessionId', 'getActiveSessionIds', 'getBlockDeviceBusType',
 	'getBlockDeviceContollerInfo', 'getDHCPDRestartCommand', 'getDHCPResult',
 	'getDHCPServiceName', 'getDefaultNetworkInterfaceName', 'getDiskSpaceUsage',
 	'getEthernetDevices', 'getFQDN', 'getHarddisks', 'getHostname',
@@ -657,11 +657,19 @@ keys are: ``ip``, ``netmask``, ``bootserver``, ``nextserver``, \
 	return dhcpResult
 
 
-def ifconfig(device, address, netmask=None):
+def configureInterface(device, address, netmask=None):
 	cmd = u'%s %s %s' % (which('ifconfig'), device, forceIpAddress(address))
 	if netmask:
 		cmd += u' netmask %s' % forceNetmask(netmask)
 	execute(cmd)
+
+
+def ifconfig(device, address, netmask=None):
+	logger.warning(
+		"Method 'ifconfig' is deprecated. "
+		"Use 'configureInterface' instead!"
+	)
+	configureInterface(device, address, netmask)
 
 
 def getLocalFqdn():
