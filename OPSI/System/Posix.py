@@ -710,10 +710,20 @@ def configureInterface(device, address, netmask=None):
 	:param netmask: Optionally set the netmask in format 12.34.56.78.
 	:type netmask: str
 	"""
-	cmd = u'%s %s %s' % (which('ifconfig'), device, forceIpAddress(address))
-	if netmask:
-		cmd += u' netmask %s' % forceNetmask(netmask)
-	execute(cmd)
+	try:
+		cmd = u'%s %s %s' % (which('ifconfig'), device, forceIpAddress(address))
+		if netmask:
+			cmd += u' netmask %s' % forceNetmask(netmask)
+		execute(cmd)
+	except CommandNotFoundException:  # no ifconfig
+		if netmask:
+			preparedAddress = '%s/%s' % (forceIpAddress(address), forceNetmask(netmask))
+		else:
+			preparedAddress = forceIPAddress(address)
+
+		ipCommand = which('ip')
+		command = '%s address add %s dev %s' % (ipCommand, preparedAddress, device)
+		execute(command)
 
 
 def ifconfig(device, address, netmask=None):
