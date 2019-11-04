@@ -469,7 +469,7 @@ def getNetworkDeviceConfig(device):
 	except CommandNotFoundException:  # no ifconfig
 		# Falling back to ip
 		jsonIp = execute(
-			"{ip} -j addr show {device}".format(
+			"{ip} -j address show {device}".format(
 				ip=which('ip'),
 				device=device
 			)
