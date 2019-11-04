@@ -483,7 +483,7 @@ def getNetworkDeviceConfig(device):
 			if 'ifname' not in interface:
 				continue
 
-			result['hardwareAddress'] = forceHardwareAddress(jsonIp['address'])
+			result['hardwareAddress'] = forceHardwareAddress(interface['address'])
 
 			for addrInfo in interface['addr_info']:
 				if addr['Family'] != 'inet':
