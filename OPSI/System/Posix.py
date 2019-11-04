@@ -707,6 +707,7 @@ def configureInterface(device, address, netmask=None):
 
 	:type device: str
 	:type address: str
+	:param netmask: Optionally set the netmask in format 12.34.56.78.
 	:type netmask: str
 	"""
 	cmd = u'%s %s %s' % (which('ifconfig'), device, forceIpAddress(address))
