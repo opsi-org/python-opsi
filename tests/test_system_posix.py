@@ -660,6 +660,77 @@ def testGetNetworkDeviceConfigFromOldIfconfigOutput():
 		assert expectedConfig[key] == config[key], 'Key {key} differs: {0} vs. {1}'.format(expectedConfig[key], config[key], key=key)
 
 
+def testGetNetworkDeviceConfigWithIp():
+	def fakeExecute(command):
+		if command.startswith('ip -j address show'):
+			return [
+				'[{',
+				'        "addr_info": [{},{}]',
+				'    },{',
+				'        "ifindex": 2,',
+				'        "ifname": "ens18",',
+				'        "flags": ["BROADCAST","MULTICAST","UP","LOWER_UP"],',
+				'        "mtu": 1500,',
+				'        "qdisc": "fq_codel",',
+				'        "operstate": "UP",',
+				'        "group": "default",',
+				'        "txqlen": 1000,',
+				'        "link_type": "ether",',
+				'        "address": "46:70:a9:6e:f7:60",',
+				'        "broadcast": "ff:ff:ff:ff:ff:ff",',
+				'        "addr_info": [{',
+				'                "family": "inet",',
+				'                "local": "192.168.20.41",',
+				'                "prefixlen": 24,',
+				'                "broadcast": "192.168.20.255",',
+				'                "scope": "global",',
+				'                "secondary": true,',
+				'                "label": "ens18",',
+				'                "valid_life_time": 4294967295,',
+				'                "preferred_life_time": 4294967295',
+				'            },{',
+				'                "family": "inet6",',
+				'                "local": "fe80::443f:a9ff:fe6e:f790",',
+				'                "prefixlen": 64,',
+				'                "scope": "link",',
+				'                "valid_life_time": 4294967295,',
+				'                "preferred_life_time": 4294967295',
+				'            }]',
+				'    }',
+				']'
+			]
+		elif command.startswith('ip route'):
+			return []
+		else:
+			raise Exception("Ooops, unexpected code.")
+
+	def whichOnlyIp(command):
+		if command == 'ifconfig':
+			raise Posix.CommandNotFoundException("ifconfig not present in this test")
+
+		return command
+
+	with mock.patch('OPSI.System.Posix.execute', fakeExecute):
+		with mock.patch('OPSI.System.Posix.which', whichOnlyIp):
+			config = Posix.getNetworkDeviceConfig('eth0')
+
+	expectedConfig = {
+		'device': 'ens18',
+		'gateway': None,
+		'hardwareAddress': u'46:70:a9:6e:f7:60',
+		'broadcast': u"192.168.20.255",
+		'ipAddress': u"192.168.20.41",
+		'netmask': u"255.255.255.0",
+	}
+
+	# The following values must exist but may not have a value.
+	assert 'vendorId' in config
+	assert 'deviceId' in config
+
+	for key in expectedConfig:
+		assert expectedConfig[key] == config[key]
+
+
 def testGetEthernetDevicesOnDebianWheezy():
 	@contextmanager
 	def fakeReader(*args):
