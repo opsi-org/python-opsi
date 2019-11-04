@@ -475,7 +475,7 @@ def getNetworkDeviceConfig(device):
 			)
 		)
 
-		for interface in json.loads(jsonIp):
+		for interface in json.loads(''.join(jsonIp)):
 			# Some versions of ip will list entries for all devices even
 			# when queried to show only one specific interface.
 			# These undesided entries only have an key "addr_info" without
