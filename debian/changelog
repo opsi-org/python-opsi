@@ -1,3 +1,10 @@
+python-opsi (4.1.1.83-1) testing; urgency=medium
+
+  * Fix regular expression pattern of HD audio device drivers.
+    This has been broken since 4.1.1.63-1.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 04 Nov 2019 14:51:34 +0100
+
 python-opsi (4.1.1.82-1) testing; urgency=medium
 
   * 30_kiosk.conf: Getting the product groups now works with broken configs.
