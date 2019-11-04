@@ -486,13 +486,13 @@ def getNetworkDeviceConfig(device):
 			result['hardwareAddress'] = forceHardwareAddress(interface['address'])
 
 			for addrInfo in interface['addr_info']:
-				if addr['Family'] != 'inet':
+				if addrInfo['Family'] != 'inet':
 					continue  # Skip everything ipv6
 
 				result['ipAddress'] = forceIpAddress(addrInfo['local'])
 				result['broadcast'] = forceIpAddress(addrInfo['broadcast'])
 
-				prefixLength = result['prefixlen']
+				prefixLength = addrInfo['prefixlen']
 				netmask = socket.inet_ntoa(struct.pack('>I', 0xffffffff ^ (1 << 32 - forceInt(prefixLength)) - 1))
 				result['netmask'] = forceIpAddress(netmask)
 
