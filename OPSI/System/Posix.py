@@ -516,20 +516,25 @@ def getNetworkDeviceConfig(device):
 			x = eval(x)
 		x = "%x" % int(x)
 		result['vendorId'] = forceHardwareVendorId(((4-len(x))*'0') + x)
+	except Exception:
+		logger.warning(u"Failed to get vendor id for network device %s" % device)
 
+	try:
 		with open('/sys/class/net/%s/device/device' % device) as f:
 			x = f.read().strip()
 
 		if x.startswith('0x'):
 			x = eval(x)
 		x = int(x)
+
 		if result['vendorId'] == '1AF4':
 			# FIXME: what is wrong with virtio devices?
 			x += 0xfff
 		x = "%x" % x
 		result['deviceId'] = forceHardwareDeviceId(((4 - len(x)) * '0') + x)
 	except Exception:
-		logger.warning(u"Failed to get vendor/device id for network device %s" % device)
+		logger.warning(u"Failed to get device id for network device %s" % device)
+
 	return result
 
 
