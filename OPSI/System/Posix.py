@@ -486,7 +486,7 @@ def getNetworkDeviceConfig(device):
 			result['hardwareAddress'] = forceHardwareAddress(interface['address'])
 
 			for addrInfo in interface['addr_info']:
-				if addrInfo['Family'] != 'inet':
+				if addrInfo['family'] != 'inet':
 					continue  # Skip everything ipv6
 
 				result['ipAddress'] = forceIpAddress(addrInfo['local'])
