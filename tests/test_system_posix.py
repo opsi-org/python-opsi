@@ -716,7 +716,7 @@ def testGetNetworkDeviceConfigWithIp(key, expectedValue):
 
 	with mock.patch('OPSI.System.Posix.execute', fakeExecute):
 		with mock.patch('OPSI.System.Posix.which', whichOnlyIp):
-			config = Posix.getNetworkDeviceConfig('eth0')
+			config = Posix.getNetworkDeviceConfig('ens18')
 
 	# The following values must exist but may not have a value.
 	assert 'vendorId' in config
