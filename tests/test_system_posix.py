@@ -660,7 +660,15 @@ def testGetNetworkDeviceConfigFromOldIfconfigOutput():
 		assert expectedConfig[key] == config[key], 'Key {key} differs: {0} vs. {1}'.format(expectedConfig[key], config[key], key=key)
 
 
-def testGetNetworkDeviceConfigWithIp():
+@pytest.mark.parametrize("key, expectedValue", [
+	('device', 'ens18'),
+	('gateway', None),
+	('hardwareAddress', u'46:70:a9:6e:f7:60'),
+	('broadcast', u"192.168.20.255"),
+	('ipAddress', u"192.168.20.41"),
+	('netmask', u"255.255.255.0"),
+])
+def testGetNetworkDeviceConfigWithIp(key, expectedValue):
 	def fakeExecute(command):
 		if command.startswith('ip -j address show'):
 			return [
@@ -714,21 +722,11 @@ def testGetNetworkDeviceConfigWithIp():
 		with mock.patch('OPSI.System.Posix.which', whichOnlyIp):
 			config = Posix.getNetworkDeviceConfig('eth0')
 
-	expectedConfig = {
-		'device': 'ens18',
-		'gateway': None,
-		'hardwareAddress': u'46:70:a9:6e:f7:60',
-		'broadcast': u"192.168.20.255",
-		'ipAddress': u"192.168.20.41",
-		'netmask': u"255.255.255.0",
-	}
-
 	# The following values must exist but may not have a value.
 	assert 'vendorId' in config
 	assert 'deviceId' in config
 
-	for key in expectedConfig:
-		assert expectedConfig[key] == config[key]
+	assert expectedValue == config[key]
 
 
 def testGetEthernetDevicesOnDebianWheezy():
