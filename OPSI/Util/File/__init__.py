@@ -811,7 +811,7 @@ class InfFile(ConfigFile):
 		regexAndType = (
 			(self.hdaudioDeviceRegex, u'HDAUDIO'),
 			(self.pciDeviceRegex, u'PCI'),
-			(self.self.usbDeviceRegex, u'USB'),
+			(self.usbDeviceRegex, u'USB'),
 			(self.acpiDeviceRegex, u'ACPI'),
 		)
 		found = set()
