@@ -827,40 +827,42 @@ class InfFile(ConfigFile):
 								continue
 							devString = line.split(u'=')[1].split(u',')[1].strip()
 							logger.debug2(u"      - Processing device string: %s" % devString)
-							type = ''
+							deviceType = ''
 							match = re.search(self.hdaudioDeviceRegex, devString)
 							if match:
-								type = u'HDAUDIO'
+								deviceType = u'HDAUDIO'
 							else:
 								match = re.search(self.pciDeviceRegex, devString)
 								if match:
-									type = u'PCI'
+									deviceType = u'PCI'
 								else:
 									match = re.search(self.usbDeviceRegex, devString)
 									if match:
-										type = u'USB'
+										deviceType = u'USB'
 									else:
 										match = re.search(self.acpiDeviceRegex, devString)
 										if match:
-											type = u'ACPI'
+											deviceType = u'ACPI'
+
 							if match:
-								logger.debug2(u"         - Device type is %s" % type)
-								if type == u'ACPI':
+								logger.debug2(u"         - Device type is %s" % deviceType)
+								if deviceType == u'ACPI':
 									vendor = match.group(1)
 									device = match.group(2)
 								else:
 									vendor = forceHardwareVendorId(match.group(1))
 									device = forceHardwareDeviceId(match.group(2))
+
 								if u"%s:%s" % (vendor, device) not in found:
-									logger.debug2(u"         - Found %s device: %s:%s" % (type, vendor, device))
-									found.add(u"%s:%s:%s" % (type, vendor, device))
+									logger.debug2(u"         - Found %s device: %s:%s" % (deviceType, vendor, device))
+									found.add(u"%s:%s:%s" % (deviceType, vendor, device))
 									self._devices.append(
 										{
 											'path': path,
 											'class': deviceClass,
 											'vendor': vendor,
 											'device': device,
-											'type': type
+											'type': deviceType
 										}
 									)
 						except IndexError:
