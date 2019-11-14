@@ -41,11 +41,12 @@ from itertools import islice
 
 from OPSI.Exceptions import BackendBadValueError, BackendMissingDataError
 from OPSI.Logger import Logger
-from OPSI.Types import (forceArchitecture, forceBool, forceDict,
-	forceEmailAddress, forceFilename, forceHardwareAddress,
-	forceHardwareDeviceId, forceHardwareVendorId, forceHostname, forceInt,
-	forceIPAddress, forceList, forceOct, forceProductId, forceTime,
-	forceUnicode, forceUnicodeList, forceUnicodeLower, forceUnicodeLowerList)
+from OPSI.Types import (
+	forceArchitecture, forceBool, forceDict, forceEmailAddress, forceFilename,
+	forceHardwareAddress, forceHardwareDeviceId, forceHardwareVendorId,
+	forceHostname, forceInt, forceIPAddress, forceList, forceOct,
+	forceProductId, forceTime, forceUnicode, forceUnicodeList,
+	forceUnicodeLower, forceUnicodeLowerList)
 from OPSI.System import which, execute
 from OPSI.Util import ipAddressInNetwork
 
