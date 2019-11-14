@@ -577,7 +577,15 @@ def testGetNetworkDeviceConfigFromNoDeviceRaisesAnException():
 		Posix.getNetworkDeviceConfig(None)
 
 
-def testGetNetworkDeviceConfigFromNewIfconfigOutput():
+@pytest.mark.parametrize("key, expectedValue", [
+	('device', 'eth0'),
+	('hardwareAddress', u'00:15:5d:01:15:1b'),
+	('gateway', None),
+	('broadcast', u"172.26.255.255"),
+	('ipAddress', u"172.26.2.25"),
+	('netmask', u"255.255.0.0"),
+])
+def testGetNetworkDeviceConfigFromNewIfconfigOutput(key, expectedValue):
 	"""
 	Testing output from new version of ifconfig.
 
@@ -604,24 +612,22 @@ def testGetNetworkDeviceConfigFromNewIfconfigOutput():
 		with mock.patch('OPSI.System.Posix.which', lambda cmd: cmd):
 			config = Posix.getNetworkDeviceConfig('eth0')
 
-	expectedConfig = {
-		'device': 'eth0',
-		'hardwareAddress': u'00:15:5d:01:15:1b',
-		'gateway': None,
-		'broadcast': u"172.26.255.255",
-		'ipAddress': u"172.26.2.25",
-		'netmask': u"255.255.0.0",
-	}
-
 	# The following values must but may not have a value.
 	assert 'vendorId' in config
 	assert 'deviceId' in config
 
-	for key in expectedConfig:
-		assert expectedConfig[key] == config[key], 'Key {key} differs: {0} vs. {1}'.format(expectedConfig[key], config[key], key=key)
+	assert expectedValue == config[key]
 
 
-def testGetNetworkDeviceConfigFromOldIfconfigOutput():
+@pytest.mark.parametrize("key, expectedValue", [
+	('device', 'eth0'),
+	('gateway', None),
+	('hardwareAddress', u'54:52:00:63:99:b3'),
+	('broadcast', u"192.168.255.255"),
+	('ipAddress', u"192.168.1.14"),
+	('netmask', u"255.255.0.0"),
+])
+def testGetNetworkDeviceConfigFromOldIfconfigOutput(key, expectedValue):
 	def fakeExecute(command):
 		if command.startswith('ifconfig'):
 			return [
@@ -643,21 +649,80 @@ def testGetNetworkDeviceConfigFromOldIfconfigOutput():
 		with mock.patch('OPSI.System.Posix.which', lambda cmd: cmd):
 			config = Posix.getNetworkDeviceConfig('eth0')
 
-	expectedConfig = {
-		'device': 'eth0',
-		'gateway': None,
-		'hardwareAddress': u'54:52:00:63:99:b3',
-		'broadcast': u"192.168.255.255",
-		'ipAddress': u"192.168.1.14",
-		'netmask': u"255.255.0.0",
-	}
+	# The following values must exist but may not have a value.
+	assert 'vendorId' in config
+	assert 'deviceId' in config
+
+	assert expectedValue == config[key]
+
+
+@pytest.mark.parametrize("key, expectedValue", [
+	('device', 'ens18'),
+	('gateway', None),
+	('hardwareAddress', u'46:70:a9:6e:f7:60'),
+	('broadcast', u"192.168.20.255"),
+	('ipAddress', u"192.168.20.41"),
+	('netmask', u"255.255.255.0"),
+])
+def testGetNetworkDeviceConfigWithIp(key, expectedValue):
+	def fakeExecute(command):
+		if command.startswith('ip -j address show'):
+			return [
+				'[{',
+				'        "addr_info": [{},{}]',
+				'    },{',
+				'        "ifindex": 2,',
+				'        "ifname": "ens18",',
+				'        "flags": ["BROADCAST","MULTICAST","UP","LOWER_UP"],',
+				'        "mtu": 1500,',
+				'        "qdisc": "fq_codel",',
+				'        "operstate": "UP",',
+				'        "group": "default",',
+				'        "txqlen": 1000,',
+				'        "link_type": "ether",',
+				'        "address": "46:70:a9:6e:f7:60",',
+				'        "broadcast": "ff:ff:ff:ff:ff:ff",',
+				'        "addr_info": [{',
+				'                "family": "inet",',
+				'                "local": "192.168.20.41",',
+				'                "prefixlen": 24,',
+				'                "broadcast": "192.168.20.255",',
+				'                "scope": "global",',
+				'                "secondary": true,',
+				'                "label": "ens18",',
+				'                "valid_life_time": 4294967295,',
+				'                "preferred_life_time": 4294967295',
+				'            },{',
+				'                "family": "inet6",',
+				'                "local": "fe80::443f:a9ff:fe6e:f790",',
+				'                "prefixlen": 64,',
+				'                "scope": "link",',
+				'                "valid_life_time": 4294967295,',
+				'                "preferred_life_time": 4294967295',
+				'            }]',
+				'    }',
+				']'
+			]
+		elif command.startswith('ip route'):
+			return []
+		else:
+			raise Exception("Ooops, unexpected code.")
+
+	def whichOnlyIp(command):
+		if command == 'ifconfig':
+			raise Posix.CommandNotFoundException("ifconfig not present in this test")
+
+		return command
+
+	with mock.patch('OPSI.System.Posix.execute', fakeExecute):
+		with mock.patch('OPSI.System.Posix.which', whichOnlyIp):
+			config = Posix.getNetworkDeviceConfig('ens18')
 
 	# The following values must exist but may not have a value.
 	assert 'vendorId' in config
 	assert 'deviceId' in config
 
-	for key in expectedConfig:
-		assert expectedConfig[key] == config[key], 'Key {key} differs: {0} vs. {1}'.format(expectedConfig[key], config[key], key=key)
+	assert expectedValue == config[key]
 
 
 def testGetEthernetDevicesOnDebianWheezy():
