@@ -32,11 +32,13 @@ Functions and classes for the use with a POSIX operating system.
 import codecs
 import datetime
 import fcntl
+import json
 import locale
 import os
 import platform
 import re
 import socket
+import struct
 import sys
 import subprocess
 import threading
@@ -61,9 +63,9 @@ except ImportError:
 __all__ = (
 	'CommandNotFoundException',
 	'Distribution', 'Harddisk', 'NetworkPerformanceCounter', 'SysInfo',
-	'SystemSpecificHook', 'addSystemHook', 'auditHardware', 'daemonize',
-	'execute', 'getActiveConsoleSessionId', 'getActiveSessionId',
-	'getActiveSessionIds', 'getBlockDeviceBusType',
+	'SystemSpecificHook', 'addSystemHook', 'auditHardware',
+	'configureInterface', 'daemonize', 'execute', 'getActiveConsoleSessionId',
+	'getActiveSessionId', 'getActiveSessionIds', 'getBlockDeviceBusType',
 	'getBlockDeviceContollerInfo', 'getDHCPDRestartCommand', 'getDHCPResult',
 	'getDHCPServiceName', 'getDefaultNetworkInterfaceName', 'getDiskSpaceUsage',
 	'getEthernetDevices', 'getFQDN', 'getHarddisks', 'getHostname',
@@ -433,36 +435,72 @@ def getNetworkDeviceConfig(device):
 		'deviceId': None
 	}
 
-	for line in execute(u"{ifconfig} {device}".format(ifconfig=which(u'ifconfig'), device=device)):
-		line = line.lower().strip()
-		match = re.search(r'\s([\da-f]{2}:[\da-f]{2}:[\da-f]{2}:[\da-f]{2}:[\da-f]{2}:[\da-f]{2}).*', line)
-		if match:
-			result['hardwareAddress'] = forceHardwareAddress(match.group(1))
-			continue
-
-		if line.startswith('inet '):
-			logger.debug('Found inet line: {0}'.format(line))
-
-			parts = line.split(':')
-			if len(parts) == 4:
-				result['ipAddress'] = forceIpAddress(parts[1].split()[0].strip())
-				result['broadcast'] = forceIpAddress(parts[2].split()[0].strip())
-				result['netmask'] = forceIpAddress(parts[3].split()[0].strip())
-				continue
-
-			match = re.search(
-				r"^\w+\s+(?P<ipAddress>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s+"
-				r"\w+\s+(?P<netmask>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s+"
-				r"\w+\s+(?P<broadcast>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$",
-				line
-			)
+	try:
+		for line in execute(u"{ifconfig} {device}".format(ifconfig=which(u'ifconfig'), device=device)):
+			line = line.lower().strip()
+			match = re.search(r'\s([\da-f]{2}:[\da-f]{2}:[\da-f]{2}:[\da-f]{2}:[\da-f]{2}:[\da-f]{2}).*', line)
 			if match:
-				result['ipAddress'] = forceIpAddress(match.group('ipAddress'))
-				result['broadcast'] = forceIpAddress(match.group('broadcast'))
-				result['netmask'] = forceIpAddress(match.group('netmask'))
+				result['hardwareAddress'] = forceHardwareAddress(match.group(1))
 				continue
 
-			logger.error(u"Unexpected ifconfig line '%s'" % line)
+			if line.startswith('inet '):
+				logger.debug('Found inet line: {0}'.format(line))
+
+				parts = line.split(':')
+				if len(parts) == 4:
+					result['ipAddress'] = forceIpAddress(parts[1].split()[0].strip())
+					result['broadcast'] = forceIpAddress(parts[2].split()[0].strip())
+					result['netmask'] = forceIpAddress(parts[3].split()[0].strip())
+					continue
+
+				match = re.search(
+					r"^\w+\s+(?P<ipAddress>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s+"
+					r"\w+\s+(?P<netmask>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s+"
+					r"\w+\s+(?P<broadcast>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$",
+					line
+				)
+				if match:
+					result['ipAddress'] = forceIpAddress(match.group('ipAddress'))
+					result['broadcast'] = forceIpAddress(match.group('broadcast'))
+					result['netmask'] = forceIpAddress(match.group('netmask'))
+					continue
+
+				logger.error(u"Unexpected ifconfig line '%s'" % line)
+	except CommandNotFoundException:  # no ifconfig
+		# Falling back to ip
+		jsonIp = execute(
+			"{ip} -j address show {device}".format(
+				ip=which('ip'),
+				device=device
+			)
+		)
+
+		for interface in json.loads(''.join(jsonIp)):
+			# Some versions of ip will list entries for all devices even
+			# when queried to show only one specific interface.
+			# These undesided entries only have an key "addr_info" without
+			# being filled.
+			if 'ifname' not in interface:
+				continue
+
+			result['hardwareAddress'] = forceHardwareAddress(interface['address'])
+
+			for addrInfo in interface['addr_info']:
+				if addrInfo['family'] != 'inet':
+					continue  # Skip everything ipv6
+
+				result['ipAddress'] = forceIpAddress(addrInfo['local'])
+				result['broadcast'] = forceIpAddress(addrInfo['broadcast'])
+
+				prefixLength = addrInfo['prefixlen']
+				netmask = socket.inet_ntoa(struct.pack('>I', 0xffffffff ^ (1 << 32 - forceInt(prefixLength)) - 1))
+				result['netmask'] = forceIpAddress(netmask)
+
+				break
+
+			# There should only be one interface with valid results.
+			# Skipping all others
+			break
 
 	for line in execute(u"{ip} route".format(ip=which(u'ip'))):
 		line = line.lower().strip()
@@ -478,20 +516,25 @@ def getNetworkDeviceConfig(device):
 			x = eval(x)
 		x = "%x" % int(x)
 		result['vendorId'] = forceHardwareVendorId(((4-len(x))*'0') + x)
+	except Exception:
+		logger.warning(u"Failed to get vendor id for network device %s" % device)
 
+	try:
 		with open('/sys/class/net/%s/device/device' % device) as f:
 			x = f.read().strip()
 
 		if x.startswith('0x'):
 			x = eval(x)
 		x = int(x)
+
 		if result['vendorId'] == '1AF4':
 			# FIXME: what is wrong with virtio devices?
 			x += 0xfff
 		x = "%x" % x
 		result['deviceId'] = forceHardwareDeviceId(((4 - len(x)) * '0') + x)
 	except Exception:
-		logger.warning(u"Failed to get vendor/device id for network device %s" % device)
+		logger.warning(u"Failed to get device id for network device %s" % device)
+
 	return result
 
 
@@ -657,11 +700,38 @@ keys are: ``ip``, ``netmask``, ``bootserver``, ``nextserver``, \
 	return dhcpResult
 
 
+def configureInterface(device, address, netmask=None):
+	"""
+	Configure the given device to use the given address.
+	Optionally you can set a netmask aswell.
+
+	:type device: str
+	:type address: str
+	:param netmask: Optionally set the netmask in format 12.34.56.78.
+	:type netmask: str
+	"""
+	try:
+		cmd = u'%s %s %s' % (which('ifconfig'), device, forceIpAddress(address))
+		if netmask:
+			cmd += u' netmask %s' % forceNetmask(netmask)
+		execute(cmd)
+	except CommandNotFoundException:  # no ifconfig
+		if netmask:
+			preparedAddress = '%s/%s' % (forceIpAddress(address), forceNetmask(netmask))
+		else:
+			preparedAddress = forceIPAddress(address)
+
+		ipCommand = which('ip')
+		command = '%s address add %s dev %s' % (ipCommand, preparedAddress, device)
+		execute(command)
+
+
 def ifconfig(device, address, netmask=None):
-	cmd = u'%s %s %s' % (which('ifconfig'), device, forceIpAddress(address))
-	if netmask:
-		cmd += u' netmask %s' % forceNetmask(netmask)
-	execute(cmd)
+	logger.warning(
+		"Method 'ifconfig' is deprecated. "
+		"Use 'configureInterface' instead!"
+	)
+	configureInterface(device, address, netmask)
 
 
 def getLocalFqdn():
