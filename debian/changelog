@@ -1,3 +1,13 @@
+python-opsi (4.1.1.84-1) testing; urgency=medium
+
+  * OPSI.Util.File.InfFile: Small refactoring in device type detection.
+  * OPSI.System.Posix: Support for using the 'ip' command to parse network
+    information. By default 'ifconfig' is tried but in case of absence 'ip'
+    will be used.
+    This requires iproute2 4.15 or newer.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 14 Nov 2019 13:13:56 +0100
+
 python-opsi (4.1.1.83-1) testing; urgency=medium
 
   * Fix regular expression pattern of HD audio device drivers.
