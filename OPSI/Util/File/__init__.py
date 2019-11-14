@@ -808,6 +808,12 @@ class InfFile(ConfigFile):
 					return False
 			return True
 
+		regexAndType = (
+			(self.hdaudioDeviceRegex, u'HDAUDIO'),
+			(self.pciDeviceRegex, u'PCI'),
+			(self.self.usbDeviceRegex, u'USB'),
+			(self.acpiDeviceRegex, u'ACPI'),
+		)
 		found = set()
 		section = ''
 		sectionsParsed = []
@@ -825,24 +831,16 @@ class InfFile(ConfigFile):
 						try:
 							if '=' not in line or ',' not in line:
 								continue
+
 							devString = line.split(u'=')[1].split(u',')[1].strip()
 							logger.debug2(u"      - Processing device string: %s" % devString)
-							deviceType = ''
-							match = re.search(self.hdaudioDeviceRegex, devString)
-							if match:
-								deviceType = u'HDAUDIO'
-							else:
-								match = re.search(self.pciDeviceRegex, devString)
+
+							for regex, deviceType in regexAndType:
+								match = regex.search(devString)
 								if match:
-									deviceType = u'PCI'
-								else:
-									match = re.search(self.usbDeviceRegex, devString)
-									if match:
-										deviceType = u'USB'
-									else:
-										match = re.search(self.acpiDeviceRegex, devString)
-										if match:
-											deviceType = u'ACPI'
+									break
+							else:  # No match found
+								deviceType = ''  # reset the device type
 
 							if match:
 								logger.debug2(u"         - Device type is %s" % deviceType)
