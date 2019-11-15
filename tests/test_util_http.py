@@ -28,7 +28,8 @@ import pytest
 
 
 @pytest.mark.parametrize("username, password, expectedResult", [
-    ("hans", "wurst", b"Basic aGFuczp3dXJzdA==")
+    ("hans", "wurst", b"Basic aGFuczp3dXJzdA=="),
+    ("pcpatch", "notarealpw", b"Basic cGNwYXRjaDpub3RhcmVhbHB3"),
 ])
 def testCreateBasicAuthHeader(username, password, expectedResult):
     assert expectedResult == createBasicAuthHeader(username, password)
