@@ -241,7 +241,7 @@ def getOpsiHotfixName(helper=None):
 					else:
 						os = u'win8-win2012'
 				elif minor == 3:
-					if (arch == 'x86'):
+					if arch == 'x86':
 						os = u'win81'
 					else:
 						os = u'win81-win2012r2'
@@ -818,7 +818,7 @@ def mount(dev, mountpoint, **options):
 					# Remove connection and update user profile (remove persistent connection)
 					win32wnet.WNetCancelConnection2(mountpoint, win32netcon.CONNECT_UPDATE_PROFILE, True)
 				except pywintypes.error as details:
-					if (details[0] == 2250):
+					if details[0] == 2250:
 						# Not connected
 						logger.debug(u"Failed to umount '%s': %s" % (mountpoint, details))
 					else:
