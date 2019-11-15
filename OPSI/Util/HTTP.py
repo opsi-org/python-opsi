@@ -802,4 +802,4 @@ def createBasicAuthHeader(username: str, password: str) -> bytes:
 	Creates an header for basic auth.
 	"""
 	auth = '%s:%s' % (username, password)
-	return b'Basic ' + base64.b64encode(auth.encode('latin-1')).decode()
+	return b'Basic ' + base64.b64encode(auth.encode('latin-1'))
