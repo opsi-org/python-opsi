@@ -101,7 +101,7 @@ class BackendExtender(ExtendedBackend):
 @lru_cache(maxsize=None)
 def _getExtensionFiles(directory):
 	if not os.path.exists(directory):
-		logger.error(u"No extensions loaded: extension directory {0!r} does not exist".format(self._extensionConfigDir))
+		logger.error(u"No extensions loaded: extension directory {0!r} does not exist".format(directory))
 		return
 
 	return [
