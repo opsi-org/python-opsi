@@ -29,27 +29,27 @@ Functionality to work with opsi repositories.
 .. codeauthor:: Niko Wenselowski <n.wenselowski@uib.de>
 """
 
-import base64
 import os
 import re
 import shutil
 import stat
 import time
-import urllib
 import xml.etree.ElementTree as ET
-
 from enum import IntEnum
 from http.client import HTTPConnection, HTTPSConnection, HTTPResponse
+from urllib.parse import quote
 
 from OPSI import __version__
 from OPSI.Exceptions import RepositoryError
 from OPSI.Logger import LOG_INFO, Logger
 from OPSI.System import mount, umount
-from OPSI.Types import forceBool, forceFilename, forceInt, forceUnicode, forceUnicodeList
+from OPSI.Types import (
+	forceBool, forceFilename, forceInt, forceUnicode, forceUnicodeList)
 from OPSI.Util.Message import ProgressSubject
 from OPSI.Util import md5sum, randomString
 from OPSI.Util.File.Opsi import PackageContentFile
-from OPSI.Util.HTTP import getSharedConnectionPool, urlsplit
+from OPSI.Util.HTTP import (
+	createBasicAuthHeader, getSharedConnectionPool, urlsplit)
 from OPSI.Util.HTTP import HTTPResponse as OpsiHTTPResponse
 from OPSI.Util.Path import cd
 
@@ -964,8 +964,7 @@ class HTTPRepository(Repository):
 		if self._password:
 			logger.addConfidentialString(self._password)
 
-		auth = u'%s:%s' % (self._username, self._password)
-		self._auth = 'Basic ' + base64.b64encode(auth.encode('latin-1'))
+		self._auth = createBasicAuthHeader(self._username, self._password)
 
 		self._connectionPool = getSharedConnectionPool(
 			scheme=self._protocol,
@@ -990,7 +989,7 @@ class HTTPRepository(Repository):
 			path = u"/" + path
 
 		path = path.rstrip("/")
-		return urllib.quote(path.encode('utf-8'))
+		return quote(path.encode('utf-8'))
 
 	def _headers(self):
 		headers = {'user-agent': self._application}
