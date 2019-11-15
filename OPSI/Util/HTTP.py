@@ -53,11 +53,13 @@ from urllib.parse import urlparse
 
 from OpenSSL import crypto
 
-from OPSI.Exceptions import (OpsiAuthenticationError, OpsiTimeoutError,
-	OpsiServiceVerificationError)
-from OPSI.Types import forceBool, forceFilename, forceInt, forceUnicode, forceUnicodeLower
+from OPSI.Exceptions import (
+	OpsiAuthenticationError, OpsiTimeoutError, OpsiServiceVerificationError)
+from OPSI.Types import (
+	forceBool, forceFilename, forceInt, forceUnicode, forceUnicodeLower)
 from OPSI.Logger import LOG_DEBUG, LOG_INFO, Logger
-from OPSI.Util import encryptWithPublicKeyFromX509CertificatePEMFile, randomString
+from OPSI.Util import (
+	encryptWithPublicKeyFromX509CertificatePEMFile, randomString)
 
 logger = Logger()
 

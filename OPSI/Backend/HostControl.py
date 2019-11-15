@@ -40,11 +40,13 @@ except ImportError:
 	from http.client import HTTPSConnection
 
 from OPSI.Backend.Base import ExtendedBackend
-from OPSI.Exceptions import BackendMissingDataError, BackendUnaccomplishableError
+from OPSI.Exceptions import (
+	BackendMissingDataError, BackendUnaccomplishableError)
 from OPSI.Logger import Logger, LOG_DEBUG
-from OPSI.Types import (forceBool, forceDict, forceHostId, forceHostIdList,
-						forceInt, forceIpAddress, forceList, forceUnicode,
-						forceUnicodeList)
+from OPSI.Types import (
+	forceBool, forceDict, forceHostId, forceHostIdList,	forceInt,
+	forceIpAddress, forceList, forceUnicode, forceUnicodeList
+)
 from OPSI.Util import fromJson, toJson
 from OPSI.Util.HTTP import (
 	closingConnection, createBasicAuthHeader, non_blocking_connect_https)
