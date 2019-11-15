@@ -36,9 +36,9 @@ import stat
 import time
 import urllib
 import xml.etree.ElementTree as ET
-
 from enum import IntEnum
 from http.client import HTTPConnection, HTTPSConnection, HTTPResponse
+from urllib.parse import quote
 
 from OPSI import __version__
 from OPSI.Exceptions import RepositoryError
@@ -990,7 +990,7 @@ class HTTPRepository(Repository):
 			path = u"/" + path
 
 		path = path.rstrip("/")
-		return urllib.quote(path.encode('utf-8'))
+		return quote(path.encode('utf-8'))
 
 	def _headers(self):
 		headers = {'user-agent': self._application}
