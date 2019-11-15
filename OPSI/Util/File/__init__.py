@@ -42,11 +42,12 @@ from itertools import islice
 
 from OPSI.Exceptions import BackendBadValueError, BackendMissingDataError
 from OPSI.Logger import Logger
-from OPSI.Types import (forceArchitecture, forceBool, forceDict,
-	forceEmailAddress, forceFilename, forceHardwareAddress,
-	forceHardwareDeviceId, forceHardwareVendorId, forceHostname, forceInt,
-	forceIPAddress, forceList, forceOct, forceProductId, forceTime,
-	forceUnicode, forceUnicodeList, forceUnicodeLower, forceUnicodeLowerList)
+from OPSI.Types import (
+	forceArchitecture, forceBool, forceDict, forceEmailAddress, forceFilename,
+	forceHardwareAddress, forceHardwareDeviceId, forceHardwareVendorId,
+	forceHostname, forceInt, forceIPAddress, forceList, forceOct,
+	forceProductId, forceTime, forceUnicode, forceUnicodeList,
+	forceUnicodeLower, forceUnicodeLowerList)
 from OPSI.System import which, execute
 from OPSI.Util import ipAddressInNetwork
 
@@ -674,7 +675,7 @@ class InfFile(ConfigFile):
 
 	sectionRegex = re.compile(r'\[\s*([^\]]+)\s*\]')
 	pciDeviceRegex = re.compile(r'VEN_([\da-fA-F]+)&DEV_([\da-fA-F]+)', re.IGNORECASE)
-	hdaudioDeviceRegex = re.compile(r'HDAUDIO\\\.*VEN_([\da-fA-F]+)&DEV_([\da-fA-F]+)', re.IGNORECASE)
+	hdaudioDeviceRegex = re.compile(r'HDAUDIO\\.*VEN_([\da-fA-F]+)&DEV_([\da-fA-F]+)', re.IGNORECASE)
 	usbDeviceRegex = re.compile(r'USB.*VID_([\da-fA-F]+)&PID_([\da-fA-F]+)', re.IGNORECASE)
 	acpiDeviceRegex = re.compile(r'ACPI\\(\S+)_-_(\S+)', re.IGNORECASE)
 	varRegex = re.compile(r'%([^%]+)%')
@@ -808,6 +809,12 @@ class InfFile(ConfigFile):
 					return False
 			return True
 
+		regexAndType = (
+			(self.hdaudioDeviceRegex, u'HDAUDIO'),
+			(self.pciDeviceRegex, u'PCI'),
+			(self.usbDeviceRegex, u'USB'),
+			(self.acpiDeviceRegex, u'ACPI'),
+		)
 		found = set()
 		section = ''
 		sectionsParsed = []
@@ -825,42 +832,36 @@ class InfFile(ConfigFile):
 						try:
 							if '=' not in line or ',' not in line:
 								continue
+
 							devString = line.split(u'=')[1].split(u',')[1].strip()
 							logger.debug2(u"      - Processing device string: %s" % devString)
-							type = ''
-							match = re.search(self.hdaudioDeviceRegex, devString)
-							if match:
-								type = u'HDAUDIO'
-							else:
-								match = re.search(self.pciDeviceRegex, devString)
+
+							for regex, deviceType in regexAndType:
+								match = regex.search(devString)
 								if match:
-									type = u'PCI'
-								else:
-									match = re.search(self.usbDeviceRegex, devString)
-									if match:
-										type = u'USB'
-									else:
-										match = re.search(self.acpiDeviceRegex, devString)
-										if match:
-											type = u'ACPI'
+									break
+							else:  # No match found
+								deviceType = ''  # reset the device type
+
 							if match:
-								logger.debug2(u"         - Device type is %s" % type)
-								if type == u'ACPI':
+								logger.debug2(u"         - Device type is %s" % deviceType)
+								if deviceType == u'ACPI':
 									vendor = match.group(1)
 									device = match.group(2)
 								else:
 									vendor = forceHardwareVendorId(match.group(1))
 									device = forceHardwareDeviceId(match.group(2))
+
 								if u"%s:%s" % (vendor, device) not in found:
-									logger.debug2(u"         - Found %s device: %s:%s" % (type, vendor, device))
-									found.add(u"%s:%s:%s" % (type, vendor, device))
+									logger.debug2(u"         - Found %s device: %s:%s" % (deviceType, vendor, device))
+									found.add(u"%s:%s:%s" % (deviceType, vendor, device))
 									self._devices.append(
 										{
 											'path': path,
 											'class': deviceClass,
 											'vendor': vendor,
 											'device': device,
-											'type': type
+											'type': deviceType
 										}
 									)
 						except IndexError:
