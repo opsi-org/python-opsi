@@ -34,7 +34,6 @@ import re
 import shutil
 import stat
 import time
-import urllib
 import xml.etree.ElementTree as ET
 from enum import IntEnum
 from http.client import HTTPConnection, HTTPSConnection, HTTPResponse
