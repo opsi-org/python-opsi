@@ -29,7 +29,6 @@ Functionality to work with opsi repositories.
 .. codeauthor:: Niko Wenselowski <n.wenselowski@uib.de>
 """
 
-import base64
 import os
 import re
 import shutil
@@ -49,7 +48,8 @@ from OPSI.Types import forceBool, forceFilename, forceInt, forceUnicode, forceUn
 from OPSI.Util.Message import ProgressSubject
 from OPSI.Util import md5sum, randomString
 from OPSI.Util.File.Opsi import PackageContentFile
-from OPSI.Util.HTTP import getSharedConnectionPool, urlsplit
+from OPSI.Util.HTTP import (
+	createBasicAuthHeader, getSharedConnectionPool, urlsplit)
 from OPSI.Util.HTTP import HTTPResponse as OpsiHTTPResponse
 from OPSI.Util.Path import cd
 
@@ -964,8 +964,7 @@ class HTTPRepository(Repository):
 		if self._password:
 			logger.addConfidentialString(self._password)
 
-		auth = u'%s:%s' % (self._username, self._password)
-		self._auth = 'Basic ' + base64.b64encode(auth.encode('latin-1'))
+		self._auth = createBasicAuthHeader(self._username, self,_password)
 
 		self._connectionPool = getSharedConnectionPool(
 			scheme=self._protocol,
