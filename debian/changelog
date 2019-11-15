@@ -1,3 +1,15 @@
+python3-opsi (4.2.0.15-1) testing; urgency=medium
+
+  * OPSI.Backend.JSONRPC: Remove Python 2 workaround code.
+  * Standardized way of creating a Basic Auth header for HTTP requests.
+  * OPSI.Backend.Manager.Extender: Better error message in case the directory
+    given to load extensions from does not exist.
+  * OPSI.Logger.LoggerImplementation.getLogFile: Fix calling to non-existing
+    functions.
+  * OPSI.Util.Repository: Fix reading repository content from remote repo.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 15 Nov 2019 14:17:50 +0100
+
 python3-opsi (4.2.0.14-1) testing; urgency=medium
 
   * OPSI.Util.HTTP.non_blocking_connect_http: Fix handling timeouts.
