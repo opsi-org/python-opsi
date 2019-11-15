@@ -27,6 +27,8 @@ from OPSI.Util.HTTP import createBasicAuthHeader
 import pytest
 
 
-@pytest.mark.parametrize("username, password, expectedResult", [])
+@pytest.mark.parametrize("username, password, expectedResult", [
+    ("hans", "wurst", b"Basic aGFuczp3dXJzdA==")
+])
 def testCreateBasicAuthHeader(username, password, expectedResult):
     assert expectedResult == createBasicAuthHeader(username, password)
