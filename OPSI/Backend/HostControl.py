@@ -27,7 +27,6 @@ This backend can be used to control hosts.
 :license: GNU Affero General Public License version 3
 """
 
-import base64
 import socket
 import struct
 import time
@@ -42,13 +41,16 @@ except ImportError:
 
 from OPSI import __version__
 from OPSI.Backend.Base import ExtendedBackend
-from OPSI.Exceptions import BackendMissingDataError, BackendUnaccomplishableError
+from OPSI.Exceptions import (
+	BackendMissingDataError, BackendUnaccomplishableError)
 from OPSI.Logger import Logger, LOG_DEBUG
-from OPSI.Types import (forceBool, forceDict, forceHostId, forceHostIdList,
-						forceInt, forceIpAddress, forceList, forceUnicode,
-						forceUnicodeList)
+from OPSI.Types import (
+	forceBool, forceDict, forceHostId, forceHostIdList,	forceInt,
+	forceIpAddress, forceList, forceUnicode, forceUnicodeList
+)
 from OPSI.Util import fromJson, toJson
-from OPSI.Util.HTTP import closingConnection, non_blocking_connect_https
+from OPSI.Util.HTTP import (
+	closingConnection, createBasicAuthHeader, non_blocking_connect_https)
 from OPSI.Util.Thread import KillableThread
 
 __all__ = ('RpcThread', 'ConnectionThread', 'HostControlBackend')
@@ -150,8 +152,13 @@ class RpcThread(KillableThread):
 				connection.putrequest('POST', '/opsiclientd')
 				connection.putheader('User-Agent', self._USER_AGENT)
 				connection.putheader('content-type', 'application/json')
-				auth = u'{0}:{1}'.format(self.username, self.password)
-				connection.putheader('Authorization', b'Basic ' + base64.b64encode(auth.encode('latin-1')))
+				connection.putheader(
+					'Authorization',
+					createBasicAuthHeader(
+						self.username,
+						self.password
+					)
+				)
 				connection.endheaders()
 				connection.send(query)
 

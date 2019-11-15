@@ -447,9 +447,9 @@ class LoggerImplementation:
 
 	def getLogFile(self, currentThread=False, object=None):
 		if currentThread:
-			return self._getCurrentThreadLog()
+			return self._getThreadConfig('logFile')
 		elif object:
-			return self._getObjectLog(id(object))
+			return self._getObjectConfig(id(object), 'logFile')
 
 		return self.__logFile
 

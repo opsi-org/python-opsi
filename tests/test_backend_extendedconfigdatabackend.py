@@ -174,6 +174,62 @@ def test_selectProductOnClientWithDefault(extendedConfigDataBackend):
     assert productOnClients == [u'product6', u'product7']
 
 
+def test_backend_option_addProductOnClientDefaults(extendedConfigDataBackend):
+    backend = extendedConfigDataBackend
+
+    clients = getClients()
+    backend.host_createObjects(clients)
+    client = random.choice(clients)
+
+    configServer = getConfigServer()
+    backend.host_createObjects(configServer)
+
+    depots = getDepotServers()
+    backend.host_createObjects(depots)
+    depot = random.choice(depots)
+
+    products = list(getLocalbootProducts()) + [getNetbootProduct()]
+    backend.product_createObjects(products)
+
+    pods = getProductsOnDepot(products, configServer, depots)
+    backend.productOnDepot_createObjects(pods)
+
+    pocs = getProductsOnClients(products, clients)
+    backend.productOnClient_createObjects(pocs)
+
+    podsOnDepot = backend.productOnDepot_getObjects(depotId=depot.id)
+    assert 0 < len(podsOnDepot)
+
+    pocsOnClient = backend.productOnClient_getObjects(clientId=client.id)
+    assert len(pocsOnClient) < len(products)
+    assert len(podsOnDepot) > len(pocsOnClient)
+
+    productsOnClientNotOnDepot = set(p.productId for p in pocsOnClient) - set(p.productId for p in podsOnDepot)
+
+    clientConfigDepotId = UnicodeConfig(
+        id=u'clientconfig.depot.id',
+        description=u'Depotserver to use',
+        defaultValues=[configServer.id]
+    )
+    backend.config_createObjects(clientConfigDepotId)
+
+    clientDepotAssignment = ConfigState(
+        configId=clientConfigDepotId.id,
+        objectId=client.id,
+        values=[depot.id]
+    )
+    backend.configState_createObjects(clientDepotAssignment)
+
+    with temporaryBackendOptions(backend, addProductOnClientDefaults=True):
+        productOnClients = [pocc.productId for pocc in
+                            backend.productOnClient_getObjects(
+                                clientId=client.id
+                            )]
+
+    assert len(pocsOnClient) < len(productOnClients)
+    assert len(productOnClients) - len(productsOnClientNotOnDepot) == len(podsOnDepot)
+
+
 def test_selectProductOnClientsByWildcard(extendedConfigDataBackend):
     client = OpsiClient(id='client.test.invalid')
     extendedConfigDataBackend.host_createObjects(client)

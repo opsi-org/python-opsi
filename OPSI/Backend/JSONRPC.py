@@ -48,7 +48,8 @@ from OPSI.Logger import Logger, LOG_INFO
 from OPSI.Types import (
 	forceBool, forceFilename, forceFloat, forceInt, forceList, forceUnicode)
 from OPSI.Util import serialize, deserialize
-from OPSI.Util.HTTP import getSharedConnectionPool, urlsplit
+from OPSI.Util.HTTP import (
+	createBasicAuthHeader, getSharedConnectionPool, urlsplit)
 from OPSI.Util.HTTP import deflateDecode, gzipEncode, gzipDecode
 from OPSI.Util import getPublicKey
 
@@ -644,16 +645,13 @@ class JSONRPCBackend(Backend):
 		if self._compression is True or self._compression == _GZIP_COMPRESSION:
 			logger.debug2(u"Compressing data with gzip")
 			headers['Content-Encoding'] = 'gzip'
-
 			data = gzipEncode(data)
-			# Fix for python 2.7
-			# http://bugs.python.org/issue12398
-			if version_info >= (2, 7):
-				data = bytearray(data)
 			logger.debug2(u"Data compressed.")
 
-		auth = (self._username + u':' + self._password)
-		headers['Authorization'] = 'Basic ' + base64.b64encode(auth.encode('latin-1')).decode()
+		headers['Authorization'] = createBasicAuthHeader(
+			self._username,
+			self._password
+		)
 
 		if self._sessionId:
 			headers['Cookie'] = self._sessionId

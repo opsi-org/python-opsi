@@ -1,3 +1,15 @@
+python3-opsi (4.2.0.15-1) testing; urgency=medium
+
+  * OPSI.Backend.JSONRPC: Remove Python 2 workaround code.
+  * Standardized way of creating a Basic Auth header for HTTP requests.
+  * OPSI.Backend.Manager.Extender: Better error message in case the directory
+    given to load extensions from does not exist.
+  * OPSI.Logger.LoggerImplementation.getLogFile: Fix calling to non-existing
+    functions.
+  * OPSI.Util.Repository: Fix reading repository content from remote repo.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 15 Nov 2019 14:17:50 +0100
+
 python3-opsi (4.2.0.14-1) testing; urgency=medium
 
   * OPSI.Util.HTTP.non_blocking_connect_http: Fix handling timeouts.
@@ -139,6 +151,23 @@ python3-opsi (4.2.0.1-1) experimental; urgency=medium
     OPSI.Backend.Base.
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 06 Nov 2018 16:46:45 +0100
+
+python-opsi (4.1.1.84-1) testing; urgency=medium
+
+  * OPSI.Util.File.InfFile: Small refactoring in device type detection.
+  * OPSI.System.Posix: Support for using the 'ip' command to parse network
+    information. By default 'ifconfig' is tried but in case of absence 'ip'
+    will be used.
+    This requires iproute2 4.15 or newer.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 14 Nov 2019 13:13:56 +0100
+
+python-opsi (4.1.1.83-1) testing; urgency=medium
+
+  * Fix regular expression pattern of HD audio device drivers.
+    This has been broken since 4.1.1.63-1.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 04 Nov 2019 14:51:34 +0100
 
 python-opsi (4.1.1.82-1) testing; urgency=medium
 
