@@ -343,9 +343,11 @@ class HTTPConnectionPool(object):
 
 				conn = HTTPConnection(host=url.hostname, port=url.port)
 				if url.username and url.password:
-					logger.debug(u"Proxy Authentication detected, setting auth with user: '%s'" % url.username)
-					auth = "{username}:{password}".format(username=url.username, password=url.password)
-					headers['Proxy-Authorization'] = 'Basic ' + base64.base64encode(auth)
+					logger.debug(u"Proxy Authentication detected, setting auth with user: %r" % url.username)
+					headers['Proxy-Authorization'] = createBasicAuthHeader(
+						url.username,
+						url.password
+					)
 				conn.set_tunnel(self.host, self.port, headers)
 				logger.debug(u"Connection established to: %s" % self.host)
 			except Exception as error:
@@ -594,9 +596,11 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 				logger.debug(u"Starting new HTTPS connection (%d) to %s:%d over proxy-url %s" % (self.num_connections, self.host, self.port, self.proxyURL))
 				conn = HTTPSConnection(host=url.hostname, port=url.port)
 				if url.username and url.password:
-					logger.debug(u"Proxy Authentication detected, setting auth with user: '%s'" % url.username)
-					auth = "{username}:{password}".format(username=url.username, password=url.password)
-					headers['Proxy-Authorization'] = 'Basic ' + base64.base64encode(auth)
+					logger.debug(u"Proxy Authentication detected, setting auth with user: %r" % url.username)
+					headers['Proxy-Authorization'] = createBasicAuthHeader(
+						url.username,
+						url.password
+					)
 				conn.set_tunnel(self.host, self.port, headers)
 				logger.debug(u"Connection established to: %s" % self.host)
 			except Exception as e:
