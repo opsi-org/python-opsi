@@ -965,7 +965,7 @@ class HTTPRepository(Repository):
 		if self._password:
 			logger.addConfidentialString(self._password)
 
-		self._auth = createBasicAuthHeader(self._username, self,_password)
+		self._auth = createBasicAuthHeader(self._username, self._password)
 
 		self._connectionPool = getSharedConnectionPool(
 			scheme=self._protocol,
