@@ -56,6 +56,8 @@ __all__ = ('OpsiPackageUpdater', )
 
 logger = Logger()
 
+class HashsumMismatchError(ValueError):
+    pass
 
 class OpsiPackageUpdater(object):
 	def __init__(self, config):
