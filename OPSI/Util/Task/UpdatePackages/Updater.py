@@ -56,7 +56,7 @@ __all__ = ('OpsiPackageUpdater', )
 
 logger = Logger()
 
-class HashsumMismatchError(ValueError):
+class HashsumMissmatchError(ValueError):
 	pass
 
 class OpsiPackageUpdater(object):
@@ -274,7 +274,7 @@ class OpsiPackageUpdater(object):
 						else:
 							logger.info(u"{productId}: md5sum mismatch and no zsync. Doing nothing.", productId=availablePackage['productId'])
 					else:
-						raise HashsumMismatchError(u"{productId}: Cannot verify download of package: missing md5sum file", productId=availablePackage['productId'])
+						raise HashsumMisssmatchError(u"{productId}: Cannot verify download of package: missing md5sum file", productId=availablePackage['productId'])
 
 					newPackages.append(availablePackage)
 
