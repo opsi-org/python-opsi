@@ -46,6 +46,10 @@ def testCallingStartAndStopMethod(hostControlBackend):
     hostControlBackend.hostControl_shutdown([u'client1.test.invalid'])
 
 
+def testhostControlReachableWithoutHosts(hostControlBackend):
+    assert {} == hostControlBackend.hostControl_reachable()
+
+
 @pytest.fixture
 def hostControlBackend(extendedConfigDataBackend):
     yield HostControlBackend(extendedConfigDataBackend)
