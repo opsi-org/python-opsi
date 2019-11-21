@@ -276,12 +276,13 @@ def testConfigStateCheckFailsOnInvalidDepotSettings(extendedConfigDataBackend, c
         backend.configState_insertObject(configState)
 
 
-def testNamesAndPasswordsCanBeVeryLong(fakeCredentialsBackend):
+@pytest.mark.parametrize("length", [32, 64, 128, 256])
+def testNamesAndPasswordsCanBeVeryLong(fakeCredentialsBackend, length):
     backend = fakeCredentialsBackend
     backend.host_insertObject(getConfigServer())  # Required for file backend.
 
-    user = randomString(256)
-    password = randomString(256)
+    user = randomString(length)
+    password = randomString(length)
 
     backend.user_setCredentials(username=user, password=password)
     credentials = backend.user_getCredentials(username=user)
