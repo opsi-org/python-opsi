@@ -415,6 +415,7 @@ def test_getConfigStateByClientID(extendedConfigDataBackend):
         objectId=client1.getId()
     )
     assert configStates
+    assert len(configStates) == len(client1ConfigStates)
     for configState in configStates:
         assert configState.objectId == client1.getId()
 
