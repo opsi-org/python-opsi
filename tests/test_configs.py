@@ -275,9 +275,11 @@ def test_getMultiValueConfigs(extendedConfigDataBackend):
     configsOrig = getConfigs()
     extendedConfigDataBackend.config_createObjects(configsOrig)
 
-    multiValueConfigNames = [config.id for config
-                            in configsOrig
-                            if config.getMultiValue()]
+    multiValueConfigNames = [
+        config.id for config
+        in configsOrig
+        if config.getMultiValue()
+    ]
     assert multiValueConfigNames
 
     configs = extendedConfigDataBackend.config_getObjects(attributes=[], multiValue=True)
@@ -402,9 +404,11 @@ def test_getConfigStateByClientID(extendedConfigDataBackend):
     extendedConfigDataBackend.configState_createObjects(configStatesOrig)
 
     client1 = clients[0]
-    client1ConfigStates = [configState for configState
-                            in configStatesOrig
-                            if configState.getObjectId() == client1.getId()]
+    client1ConfigStates = [
+        configState for configState
+        in configStatesOrig
+        if configState.getObjectId() == client1.getId()
+    ]
 
     configStates = extendedConfigDataBackend.configState_getObjects(
         attributes=[],
