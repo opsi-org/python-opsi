@@ -25,7 +25,7 @@ Testing configuration objects on a backend.
 
 from __future__ import absolute_import
 
-from OPSI.Object import UnicodeConfig, BoolConfig, ConfigState
+from OPSI.Object import BoolConfig, ConfigState, OpsiClient, UnicodeConfig
 
 from .test_hosts import getClients, getDepotServers
 
@@ -514,3 +514,31 @@ def testGetConfigStateIdents(extendedConfigDataBackend):
         i = ident.split(';')
 
         assert any(((i[0] == selfIdent['configId']) and (i[1] == selfIdent['objectId'])) for selfIdent in selfIdents), u"'%s' not in '%s'" % (ident, selfIdents)
+
+
+def testConfigStateGetObjectsIncludesDefaultValues(extendedConfigDataBackend):
+    backend = extendedConfigDataBackend
+
+    config = UnicodeConfig(
+        id=u'democonfig',
+        editable=False,
+        multiValue=False,
+        possibleValues=[0, 5],
+        defaultValues=[5]
+    )
+    backend.config_insertObject(config)
+
+    client = OpsiClient(id='mytest.client.id')
+    backend.host_insertObject(client)
+
+    csOrig = ConfigState(config.id, client.id, [0])
+    backend.configState_insertObject(csOrig)
+
+    configStates = backend.configState_getObjects()
+    assert len(configStates) == 1
+
+    cs = configStates[0]
+    assert cs.objectId == client.id
+    assert cs.configId == config.id
+    assert cs.values == csOrig.values
+    assert cs.values == [0]
