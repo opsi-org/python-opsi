@@ -344,16 +344,16 @@ def testConfigStateMethods(extendedConfigDataBackend):
         attributes=[],
         objectId=client1.getId()
     )
-    #assert len(configStates) == len(client1ConfigStates), u"got: '%s', expected: '%s'" % (configStates, len(client1ConfigStates))
+    assert len(configStates) == len(client1ConfigStates)
     for configState in configStates:
         assert configState.objectId == client1.getId()
 
     configState2 = configStatesOrig[1]
     extendedConfigDataBackend.configState_deleteObjects(configState2)
     configStates = extendedConfigDataBackend.configState_getObjects()
-    #assert len(configStates) == len(self.configStates)-1
-    # for configState in configStates:
-    #   assert not (configState.objectId == self.configState2.objectId and configState.configId == self.configState2.configId)
+    assert len(configStates) == len(configStatesOrig) - 1
+    for configState in configStates:
+        assert not (configState.objectId == configState2.objectId and configState.configId == configState2.configId)
 
     configState3 = configStatesOrig[2]
     configState3.setValues([True])
