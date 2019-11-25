@@ -9,7 +9,7 @@ build documentation:
   stage: build
   before_script:
     - apt update
-    - apt install python-pip
+    - apt -y install python-pip
     - pip install 'sphinx<1.5'
   script:
     - sphinx-apidoc --force --separate -o doc/src OPSI/
