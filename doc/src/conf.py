@@ -26,7 +26,7 @@ except ImportError:
     # duplicity could not be imported but we require it to render the
     # docs properly.
     # Fake it till you make it.
-    import mock
+    from unittest import mock
     sys.modules['duplicity'] = mock.Mock()
 
 # -- General configuration -----------------------------------------------------
