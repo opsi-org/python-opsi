@@ -9,9 +9,8 @@ stages:
 #   stage: test
 #   before_script:
 #     - apt update
-#     - apt -y install build-essential python-dev librsync-dev lsb-release python-apsw python-crypto python-ldaptor python-m2crypto python-magic python-mysqldb python-newt python-openssl python-pam python-pip python-sqlalchemy python-twisted-web
-#     - pip install -r requirements-qa.txt
-#     - pip install https://launchpad.net/duplicity/0.6-series/0.6.24/+download/duplicity-0.6.24.tar.gz
+#     - apt -y install build-essential python3-dev librsync-dev lsb-release python3-apsw python3-crypto python3-magic python3-mysqldb python3-openssl python3-pampy python3-pip python3-sqlalchemy
+#     - pip install .[test,qa]
 #   script:
 #     - ./run_qa.sh
 #   artifacts:
