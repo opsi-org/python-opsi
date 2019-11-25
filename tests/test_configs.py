@@ -22,7 +22,7 @@ Testing configuration objects on a backend.
 :license: GNU Affero General Public License version 3
 """
 
-from OPSI.Object import UnicodeConfig, BoolConfig, ConfigState
+from OPSI.Object import BoolConfig, ConfigState, OpsiClient, UnicodeConfig
 
 from .test_hosts import getClients, getDepotServers
 
@@ -272,9 +272,11 @@ def test_getMultiValueConfigs(extendedConfigDataBackend):
     configsOrig = getConfigs()
     extendedConfigDataBackend.config_createObjects(configsOrig)
 
-    multiValueConfigNames = [config.id for config
-                            in configsOrig
-                            if config.getMultiValue()]
+    multiValueConfigNames = [
+        config.id for config
+        in configsOrig
+        if config.getMultiValue()
+    ]
     assert multiValueConfigNames
 
     configs = extendedConfigDataBackend.config_getObjects(attributes=[], multiValue=True)
@@ -339,16 +341,16 @@ def testConfigStateMethods(extendedConfigDataBackend):
         attributes=[],
         objectId=client1.getId()
     )
-    #assert len(configStates) == len(client1ConfigStates), u"got: '%s', expected: '%s'" % (configStates, len(client1ConfigStates))
+    assert len(configStates) == len(client1ConfigStates)
     for configState in configStates:
         assert configState.objectId == client1.getId()
 
     configState2 = configStatesOrig[1]
     extendedConfigDataBackend.configState_deleteObjects(configState2)
     configStates = extendedConfigDataBackend.configState_getObjects()
-    #assert len(configStates) == len(self.configStates)-1
-    # for configState in configStates:
-    #   assert not (configState.objectId == self.configState2.objectId and configState.configId == self.configState2.configId)
+    assert len(configStates) == len(configStatesOrig) - 1
+    for configState in configStates:
+        assert not (configState.objectId == configState2.objectId and configState.configId == configState2.configId)
 
     configState3 = configStatesOrig[2]
     configState3.setValues([True])
@@ -399,15 +401,18 @@ def test_getConfigStateByClientID(extendedConfigDataBackend):
     extendedConfigDataBackend.configState_createObjects(configStatesOrig)
 
     client1 = clients[0]
-    client1ConfigStates = [configState for configState
-                            in configStatesOrig
-                            if configState.getObjectId() == client1.getId()]
+    client1ConfigStates = [
+        configState for configState
+        in configStatesOrig
+        if configState.getObjectId() == client1.getId()
+    ]
 
     configStates = extendedConfigDataBackend.configState_getObjects(
         attributes=[],
         objectId=client1.getId()
     )
     assert configStates
+    assert len(configStates) == len(client1ConfigStates)
     for configState in configStates:
         assert configState.objectId == client1.getId()
 
@@ -511,3 +516,31 @@ def testGetConfigStateIdents(extendedConfigDataBackend):
         i = ident.split(';')
 
         assert any(((i[0] == selfIdent['configId']) and (i[1] == selfIdent['objectId'])) for selfIdent in selfIdents), u"'%s' not in '%s'" % (ident, selfIdents)
+
+
+def testConfigStateGetObjectsIncludesDefaultValues(extendedConfigDataBackend):
+    backend = extendedConfigDataBackend
+
+    config = UnicodeConfig(
+        id=u'democonfig',
+        editable=False,
+        multiValue=False,
+        possibleValues=[0, 5],
+        defaultValues=[5]
+    )
+    backend.config_insertObject(config)
+
+    client = OpsiClient(id='mytest.client.id')
+    backend.host_insertObject(client)
+
+    csOrig = ConfigState(config.id, client.id, [0])
+    backend.configState_insertObject(csOrig)
+
+    configStates = backend.configState_getObjects()
+    assert len(configStates) == 1
+
+    cs = configStates[0]
+    assert cs.objectId == client.id
+    assert cs.configId == config.id
+    assert cs.values == csOrig.values
+    assert cs.values == [0]

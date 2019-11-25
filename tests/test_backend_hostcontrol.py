@@ -23,6 +23,7 @@ Testing the Host Control backend.
 """
 
 from OPSI.Backend.HostControl import HostControlBackend
+from OPSI.Exceptions import BackendMissingDataError
 from .test_hosts import getClients
 
 import pytest
@@ -42,6 +43,11 @@ def testCallingStartAndStopMethod(hostControlBackend):
 
     hostControlBackend.hostControl_start([u'client1.test.invalid'])
     hostControlBackend.hostControl_shutdown([u'client1.test.invalid'])
+
+
+def testhostControlReachableWithoutHosts(hostControlBackend):
+    with pytest.raises(BackendMissingDataError):
+        hostControlBackend.hostControl_reachable()
 
 
 @pytest.fixture

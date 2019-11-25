@@ -273,3 +273,33 @@ def testConfigStateCheckFailsOnInvalidDepotSettings(extendedConfigDataBackend, c
     }
     with pytest.raises(ValueError):
         backend.configState_insertObject(configState)
+
+
+@pytest.mark.parametrize("length", [32, 64, 128, 256])
+def testNamesAndPasswordsCanBeVeryLong(fakeCredentialsBackend, length):
+    backend = fakeCredentialsBackend
+    backend.host_insertObject(getConfigServer())  # Required for file backend.
+
+    user = randomString(length)
+    password = randomString(length)
+
+    backend.user_setCredentials(username=user, password=password)
+    credentials = backend.user_getCredentials(username=user)
+    assert password == credentials['password']
+
+
+@pytest.mark.parametrize("user, password", [
+    ("user", randomString(32)),
+    ("user.domain", randomString(32)),
+    ("user.domain.tld", randomString(32)),
+    ("user.subdomain.domain.tld", randomString(32)),
+    ("user.subdomain.subdomain.domain.tld", randomString(32)),
+    ("user.subdomain1.subdomain2.anotherdomain.tld", randomString(32)),
+])
+def testSettingUserCredentialsWithDomain(fakeCredentialsBackend, user, password):
+    backend = fakeCredentialsBackend
+    backend.host_insertObject(getConfigServer())  # Required for file backend.
+
+    backend.user_setCredentials(username=user, password=password)
+    credentials = backend.user_getCredentials(username=user)
+    assert password == credentials['password']
