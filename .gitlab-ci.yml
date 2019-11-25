@@ -10,6 +10,7 @@ build documentation:
   before_script:
     - apt update
     - apt -y install python-pip
+    - pip install -r requirements-qa.txt
     - pip install 'sphinx<1.5'
   script:
     - sphinx-apidoc --force --separate -o doc/src OPSI/
