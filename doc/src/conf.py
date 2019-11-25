@@ -308,7 +308,10 @@ epub_copyright = u'2013-{year}, uib GmbH'.format(year=datetime.datetime.now().ye
 # This is required to have all the docs on readthedocs.org
 # Taken from https://github.com/rtfd/readthedocs.org/issues/1139
 def run_apidoc(_):
-    from sphinx.apidoc import main as apidoc_main
+    try:
+        from sphinx.ext.apidoc import main as apidoc_main
+    except ImportError:  # Sphinx 1.6 or earlier
+        from sphinx.apidoc import main as apidoc_main
 
     cur_dir = os.path.abspath(os.path.dirname(__file__))
     output_path = cur_dir
