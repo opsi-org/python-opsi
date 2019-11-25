@@ -1,7 +1,27 @@
 image: ubuntu:latest
 
 stages:
+  - build
   - package
+
+
+build documentation:
+  stage: build
+  before_script:
+    - apt update
+    - apt install python-pip
+    - pip install 'sphinx<1.5'
+  script:
+    - sphinx-apidoc --force --separate -o doc/src OPSI/
+    - sphinx-build -b html -d doc/_build/doctrees -D latex_paper_size=a4 -D latex_paper_size=letter doc/src/ doc/python-opsi/
+  after_script:
+    - cd doc
+    - tar -czvf python-opsi-documentation.tar.gz python-opsi/
+  artifacts:
+    paths:
+      - doc/python-opsi-documentation.tar.gz
+    expire_in: 1 day
+
 
 package for OBS:
   stage: package
