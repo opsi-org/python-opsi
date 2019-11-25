@@ -18,7 +18,7 @@ build documentation:
   after_script:
     - mv doc/python-opsi/ .
   artifacts:
-    name: 'documentation'
+    name: 'python-opsi_documentation'
     paths:
       - python-opsi/
     expire_in: 1 day
