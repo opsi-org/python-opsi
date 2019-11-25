@@ -1,31 +1,27 @@
-image: ubuntu:18.04
+image: ubuntu:latest
 
 stages:
-  - test
+  # - test
   - package
 
 
-run unittests:
-  image: docker.uib.gmbh/py-test-image
-  stage: test
-  before_script:
-#    - hostname test.uib.local
-#    - apt update
-#    - apt -y install build-essential python-dev librsync-dev lsb-release python-apsw python-crypto python-ldaptor python-m2crypto python-magic python-mysqldb python-newt python-openssl python-pam python-pip python-sqlalchemy python-twisted-web
-    - apt -y install cpio iproute2
-    - pip install -r requirements-qa.txt
-#    - pip install https://launchpad.net/duplicity/0.6-series/0.6.24/+download/duplicity-0.6.24.tar.gz
-  script:
-    - ./run_qa.sh
-  artifacts:
-    name: 'python-opsi_QA'
-    paths:
-      - pylint.txt
-      - pep8.txt
-      - coverage.xml
-    reports:
-      junit: testreport.xml
-    expire_in: 1 day
+# run unittests:
+#   stage: test
+#   before_script:
+#     - apt update
+#     - apt -y install build-essential python3-dev librsync-dev lsb-release python3-apsw python3-crypto python3-magic python3-mysqldb python3-openssl python3-pampy python3-pip python3-sqlalchemy
+#     - pip install .[test,qa]
+#   script:
+#     - ./run_qa.sh
+#   artifacts:
+#     name: 'python-opsi_QA'
+#     paths:
+#       - pylint.txt
+#       - pep8.txt
+#       - coverage.xml
+#     reports:
+#       junit: testreport.xml
+#     expire_in: 1 day
 
 
 build documentation:
