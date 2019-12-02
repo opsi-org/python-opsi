@@ -27,6 +27,7 @@ import os
 import OPSI.Backend.Backend
 from OPSI.Exceptions import BackendBadValueError
 from OPSI.Util import removeUnit
+from OPSI.Util.Log import truncateLogData
 
 from .helpers import mock
 
@@ -122,8 +123,8 @@ def testWritingLogCreatesFile(patchLogDir, logType):
 		('welt\n', 'hallo\nwelt\n', 10),
 		('hallo\nwelt', 'hallo\nwelt', 15),
 	])
-def testTruncatingLogData(logBackend, text, length, expected):
-	assert expected == logBackend._truncateLogData(text, length)
+def testTruncatingLogData(text, length, expected):
+	assert expected == truncateLogData(text, length)
 
 
 def testWritingAndThenReadingDataFromLogWithLimitedWrite(patchLogDir):
