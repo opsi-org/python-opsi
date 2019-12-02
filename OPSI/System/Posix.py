@@ -1364,11 +1364,11 @@ def getBlockDeviceContollerInfo(device, lshwoutput=None):
 			while len(deviceId) < 4:
 				deviceId = '0' + deviceId
 			storageControllers[match.group(1)] = {
-				'hwPath':      forceUnicode(match.group(1)),
-				'device':      device,
+				'hwPath': forceUnicode(match.group(1)),
+				'device': device,
 				'description': forceUnicode(match.group(2)),
-				'vendorId':    forceHardwareVendorId(vendorId),
-				'deviceId':    forceHardwareDeviceId(deviceId)
+				'vendorId': forceHardwareVendorId(vendorId),
+				'deviceId': forceHardwareDeviceId(deviceId)
 			}
 			if storageControllers:
 				for hwPath in storageControllers.keys():
@@ -1388,11 +1388,11 @@ def getBlockDeviceContollerInfo(device, lshwoutput=None):
 				while len(deviceId) < 4:
 					deviceId = '0' + deviceId
 				storageControllers[match.group(1)] = {
-					'hwPath':      forceUnicode(match.group(1)),
-					'device':      device,
+					'hwPath': forceUnicode(match.group(1)),
+					'device': device,
 					'description': forceUnicode(match.group(2)),
-					'vendorId':    forceHardwareVendorId(vendorId),
-					'deviceId':    forceHardwareDeviceId(deviceId)
+					'vendorId': forceHardwareVendorId(vendorId),
+					'deviceId': forceHardwareDeviceId(deviceId)
 				}
 				if storageControllers:
 					for hwPath in storageControllers.keys():
