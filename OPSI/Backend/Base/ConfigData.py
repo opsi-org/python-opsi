@@ -52,6 +52,7 @@ from OPSI.Object import (
 	SoftwareLicenseToLicensePool)
 from OPSI.Util import blowfishEncrypt, blowfishDecrypt, getfqdn, removeUnit
 from OPSI.Util.File import ConfigFile
+from OPSI.Util.Log import truncateLogData
 
 from .Backend import Backend
 
@@ -1178,23 +1179,3 @@ depot where the method is.
 
 	def getRawData(self, query):
 		return query
-
-
-def truncateLogData(data, maxSize):
-	"""
-	Truncating `data` to not be longer than `maxSize` bytes.
-
-	:param data: Text
-	:type data: str
-	:param maxSize: The maximum size that is allowed in bytes.
-	:type maxSize: int
-	"""
-	maxSize = forceInt(maxSize)
-	dataLength = len(data.encode('utf-8'))
-	if dataLength > maxSize:
-		start = data.find('\n', dataLength - maxSize)
-		if start == -1:
-			start = dataLength - maxSize
-		return data[start:].lstrip()
-
-	return data
