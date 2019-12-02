@@ -160,7 +160,6 @@ containing the localisation of the hardware audit.
 
 		This can be something like creating a directory structure to setting up a databse.
 		"""
-		pass
 
 	def backend_deleteBase(self):
 		"""
@@ -169,7 +168,6 @@ containing the localisation of the hardware audit.
 		This is the place to undo all the things that were created by \
 *backend_createBase*.
 		"""
-		pass
 
 	def backend_getSystemConfiguration(self):
 		"""

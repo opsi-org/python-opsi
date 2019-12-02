@@ -767,13 +767,11 @@ def mount(dev, mountpoint, **options):
 		raise ValueError(u"Bad mountpoint '%s'" % mountpoint)
 
 	if mountpoint == u'dynamic':
-		usedDriveletters = set(
-			[
-				x[0].lower()
-				for x in win32api.GetLogicalDriveStrings().split('\0')
-				if x
-			]
-		)
+		usedDriveletters = {
+			x[0].lower()
+			for x in win32api.GetLogicalDriveStrings().split('\0')
+			if x
+		}
 
 		if mountpoint.lower() in usedDriveletters:
 			logger.debug(

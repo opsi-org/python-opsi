@@ -239,7 +239,7 @@ class BaseObject:
 			keepAttributes.add(attribute)
 		keepAttributes.add('type')
 
-		for attribute in self.__dict__.keys():
+		for attribute in self.__dict__:
 			if attribute not in keepAttributes:
 				self.__dict__[attribute] = None
 

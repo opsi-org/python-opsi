@@ -1326,19 +1326,20 @@ def getBlockDeviceContollerInfo(device, lshwoutput=None):
 			while len(deviceId) < 4:
 				deviceId = '0' + deviceId
 			storageControllers[match.group(1)] = {
-				'hwPath':      forceUnicode(match.group(1)),
-				'device':      forceUnicode(match.group(2)),
+				'hwPath': forceUnicode(match.group(1)),
+				'device': forceUnicode(match.group(2)),
 				'description': forceUnicode(match.group(3)),
-				'vendorId':    forceHardwareVendorId(vendorId),
-				'deviceId':    forceHardwareDeviceId(deviceId)
+				'vendorId': forceHardwareVendorId(vendorId),
+				'deviceId': forceHardwareDeviceId(deviceId)
 			}
 			continue
 
 		parts = line.split(None, 3)
 		if len(parts) < 4:
 			continue
+
 		if parts[1].lower() == device:
-			for hwPath in storageControllers.keys():
+			for hwPath in storageControllers:
 				if parts[0].startswith(hwPath + u'/'):
 					return storageControllers[hwPath]
 
@@ -1360,19 +1361,21 @@ def getBlockDeviceContollerInfo(device, lshwoutput=None):
 			vendorId = match.group(3)
 			while len(vendorId) < 4:
 				vendorId = '0' + vendorId
+
 			deviceId = match.group(4)
 			while len(deviceId) < 4:
 				deviceId = '0' + deviceId
+
 			storageControllers[match.group(1)] = {
-				'hwPath':      forceUnicode(match.group(1)),
-				'device':      device,
+				'hwPath': forceUnicode(match.group(1)),
+				'device': device,
 				'description': forceUnicode(match.group(2)),
-				'vendorId':    forceHardwareVendorId(vendorId),
-				'deviceId':    forceHardwareDeviceId(deviceId)
+				'vendorId': forceHardwareVendorId(vendorId),
+				'deviceId': forceHardwareDeviceId(deviceId)
 			}
-			if storageControllers:
-				for hwPath in storageControllers.keys():
-					return storageControllers[hwPath]
+
+			for hwPath in storageControllers:
+				return storageControllers[hwPath]
 		else:
 			# Quick Hack: for entry like this:
 			# /0/100/1f.2              storage        82801 SATA Controller [RAID mode] [8086:2822]
@@ -1384,19 +1387,21 @@ def getBlockDeviceContollerInfo(device, lshwoutput=None):
 				vendorId = match.group(3)
 				while len(vendorId) < 4:
 					vendorId = '0' + vendorId
+
 				deviceId = match.group(4)
 				while len(deviceId) < 4:
 					deviceId = '0' + deviceId
+
 				storageControllers[match.group(1)] = {
-					'hwPath':      forceUnicode(match.group(1)),
-					'device':      device,
+					'hwPath': forceUnicode(match.group(1)),
+					'device': device,
 					'description': forceUnicode(match.group(2)),
-					'vendorId':    forceHardwareVendorId(vendorId),
-					'deviceId':    forceHardwareDeviceId(deviceId)
+					'vendorId': forceHardwareVendorId(vendorId),
+					'deviceId': forceHardwareDeviceId(deviceId)
 				}
-				if storageControllers:
-					for hwPath in storageControllers.keys():
-						return storageControllers[hwPath]
+
+				for hwPath in storageControllers:
+					return storageControllers[hwPath]
 
 	return None
 
@@ -3593,7 +3598,7 @@ def hardwareInventory(config, progressSubject=None):
 				devices.extend(devs)
 
 			# Process matching xml nodes
-			for i in range(len(devices)):
+			for i, device in enumerate(devices):
 				if opsiClass not in opsiValues:
 					opsiValues[opsiClass] = []
 				opsiValues[opsiClass].append({})
@@ -3602,7 +3607,7 @@ def hardwareInventory(config, progressSubject=None):
 					break
 
 				for attribute in hwClass['Values']:
-					elements = [devices[i]]
+					elements = [device]
 					if not attribute.get('Opsi') or not attribute.get('Linux'):
 						continue
 

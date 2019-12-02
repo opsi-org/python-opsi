@@ -1086,30 +1086,26 @@ into the IDs of these depots are to be found in the list behind \
 			return
 
 		# Check if productPropertyStates are possible
-		depotIds = set(
-			[
-				productOnDepot.depotId
-				for productOnDepot in self.productOnDepot_getObjects(
-					productId=productProperty.productId,
-					productVersion=productProperty.productVersion,
-					packageVersion=productProperty.packageVersion
-				)
-			]
-		)
+		depotIds = {
+			productOnDepot.depotId
+			for productOnDepot in self.productOnDepot_getObjects(
+				productId=productProperty.productId,
+				productVersion=productProperty.productVersion,
+				packageVersion=productProperty.packageVersion
+			)
+		}
 
 		if not depotIds:
 			return
 
 		# Get depot to client assignment
 		objectIds = depotIds.union(
-			set(
-				[
-					clientToDepot['clientId'] for clientToDepot
-					in self.configState_getClientToDepotserver(
-						depotIds=depotIds
-					)
-				]
-			)
+			{
+				clientToDepot['clientId'] for clientToDepot
+				in self.configState_getClientToDepotserver(
+					depotIds=depotIds
+				)
+			}
 		)
 
 		deleteProductPropertyStates = []
@@ -2751,7 +2747,8 @@ into the IDs of these depots are to be found in the list behind \
 	def auditHardware_delete(self, hardwareClass, **kwargs):
 		if hardwareClass is None:
 			hardwareClass = []
-		for key in kwargs.keys():
+
+		for key in kwargs:
 			if kwargs[key] is None:
 				kwargs[key] = []
 

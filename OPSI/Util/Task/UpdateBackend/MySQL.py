@@ -56,7 +56,6 @@ class DatabaseMigrationUnfinishedError(BackendUpdateError):
 	"""
 	This error indicates an unfinished database migration.
 	"""
-	pass
 
 
 def updateMySQLBackend(
@@ -303,7 +302,7 @@ def _processOpsi40migrations(mysql):
 
 		mysql.execute(u"alter table HOST add INDEX(`type`);")
 
-	for key in tables.keys():
+	for key in tables:
 		if key.startswith(u'HARDWARE_DEVICE'):
 			if 'vendorId' not in tables[key]:
 				continue
@@ -625,7 +624,7 @@ def _processOpsi40migrations(mysql):
 		return False
 
 	with disableForeignKeyChecks(mysql):
-		for tablename in tables.keys():
+		for tablename in tables:
 			if tablename == 'PRODUCT_ON_DEPOT' and tableNeedsHostIDLengthFix(tablename, columnName="depotId"):
 				LOGGER.info(u"Fixing length of 'depotId' column on {table}".format(table=tablename))
 				mysql.execute(u"ALTER TABLE `PRODUCT_ON_DEPOT` MODIFY COLUMN `depotId` VARCHAR(255) NOT NULL;")
