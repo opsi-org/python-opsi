@@ -1,3 +1,15 @@
+python3-opsi (4.2.0.16-1) testing; urgency=medium
+
+  * OPSI.Backend.Base.Extended.ExtendedConfigDataBackend: The parameter passed
+    to productOnDepot_insertObject will be converted to an ProductOnDepot.
+  * OPSI.Backend.Base.ConfigData.ConfigDataBackend: Group of logfiles will be
+    changed to the opsi admin group (opsiadmin).
+  * New module OPSI.Util.Log with function truncateLogdata.
+  * OPSI.Backend.Base.ConfigData.ConfigDataBackend: Use truncateLogdata
+    when truncating logs.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 02 Dec 2019 11:30:50 +0100
+
 python3-opsi (4.2.0.15-1) testing; urgency=medium
 
   * OPSI.Backend.JSONRPC: Remove Python 2 workaround code.
