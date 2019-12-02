@@ -266,7 +266,10 @@ overwrite the log.
 		with codecs.open(logFile, logWriteMode, 'utf-8', 'replace') as log:
 			log.write(data)
 
-		shutil.chown(logFile, group=OPSI_ADMIN_GROUP)
+		try:
+			shutil.chown(logFile, group=OPSI_ADMIN_GROUP)
+		except LookupError:  # Group could not be found
+			pass
 
 		os.chmod(logFile, 0o640)
 
