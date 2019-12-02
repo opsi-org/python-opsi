@@ -152,6 +152,13 @@ python3-opsi (4.2.0.1-1) experimental; urgency=medium
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 06 Nov 2018 16:46:45 +0100
 
+python-opsi (4.1.1.85-1) testing; urgency=medium
+
+  * OPSI.Util.Task.UpdatePackages.Updater: throwing exception when md5sum
+    missmatched an no zsync is available
+
+ -- Mathias Radtke <m.radtke@uib.de>  Wed, 20 Nov 2019 13:37:21 +0100
+
 python-opsi (4.1.1.84-1) testing; urgency=medium
 
   * OPSI.Util.File.InfFile: Small refactoring in device type detection.
