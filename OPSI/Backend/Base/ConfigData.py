@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2013-2018 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -35,7 +35,9 @@ import copy as pycopy
 import json
 import os
 import re
+import shutil
 
+from OPSI.Config import OPSI_ADMIN_GROUP
 from OPSI.Logger import Logger
 from OPSI.Exceptions import (
 	BackendBadValueError, BackendMissingDataError,
@@ -263,6 +265,8 @@ overwrite the log.
 
 		with codecs.open(logFile, logWriteMode, 'utf-8', 'replace') as log:
 			log.write(data)
+
+		shutil.chown(logFile, group=OPSI_ADMIN_GROUP)
 
 		os.chmod(logFile, 0o640)
 
