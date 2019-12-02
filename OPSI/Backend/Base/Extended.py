@@ -2747,7 +2747,8 @@ into the IDs of these depots are to be found in the list behind \
 	def auditHardware_delete(self, hardwareClass, **kwargs):
 		if hardwareClass is None:
 			hardwareClass = []
-		for key in kwargs.keys():
+
+		for key in kwargs:
 			if kwargs[key] is None:
 				kwargs[key] = []
 
