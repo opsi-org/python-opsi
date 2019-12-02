@@ -243,7 +243,7 @@ This defaults to ``self``.
 			if key not in self._options:
 				continue
 
-			if type(value) != type(self._options[key]):
+			if not isinstance(value, self._options[key].__class__):
 				logger.debug(u"Wrong type {0} for option {1}, expecting type {2}", type(value), key, type(self._options[key]))
 				continue
 
