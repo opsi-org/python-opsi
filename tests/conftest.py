@@ -234,9 +234,6 @@ def licenseManagentAndAuditBackend(request):
 
 def pytest_configure(config):
     config.addinivalue_line(
-        "markers", "fixlater: mark test to be fixed later during the 4.2 development"
-    )
-    config.addinivalue_line(
         "markers", "obsolete: mark test that are obsolete for 4.2 development"
     )
 
@@ -250,7 +247,3 @@ def pytest_runtest_setup(item):
     envmarker = item.get_closest_marker("obsolete")
     if envmarker is not None:
         pytest.skip("{0} uses tech that will likely be obsolete in the future".format(item.name))
-
-    envmarker = item.get_closest_marker("fixlater")
-    if envmarker is not None:
-        pytest.skip("{0} will be fixed later".format(item.name))
