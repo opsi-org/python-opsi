@@ -3529,7 +3529,7 @@ def hardwareInventory(config, progressSubject=None):
 				devices.extend(devs)
 
 			# Process matching xml nodes
-			for i in range(len(devices)):
+			for i, device in enumerate(devices):
 				if opsiClass not in opsiValues:
 					opsiValues[opsiClass] = []
 				opsiValues[opsiClass].append({})
@@ -3538,7 +3538,7 @@ def hardwareInventory(config, progressSubject=None):
 					break
 
 				for attribute in hwClass['Values']:
-					elements = [devices[i]]
+					elements = [device]
 					if not attribute.get('Opsi') or not attribute.get('Linux'):
 						continue
 
