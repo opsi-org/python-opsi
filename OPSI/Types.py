@@ -428,10 +428,10 @@ def forceConfigId(var):
 
 
 def forceProductPropertyType(var):
-	v = forceUnicodeLower(var)
-	if v in ('unicode', 'unicodeproductproperty'):
+	value = forceUnicodeLower(var)
+	if value in ('unicode', 'unicodeproductproperty'):
 		return u'UnicodeProductProperty'
-	elif v in ('bool', 'boolproductproperty'):
+	elif value in ('bool', 'boolproductproperty'):
 		return u'BoolProductProperty'
 	else:
 		raise ValueError(u"Unknown product property type: '%s'" % var)
