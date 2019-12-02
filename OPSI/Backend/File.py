@@ -672,7 +672,7 @@ class FileBackend(ConfigDataBackend):
 							'architecture': None
 						}
 
-						for key in objIdent.keys():
+						for key in objIdent:
 							option = key.lower()
 							if cp.has_option(section, option):
 								objIdent[key] = self.__unescape(cp.get(section, option))
