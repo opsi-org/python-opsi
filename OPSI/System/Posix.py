@@ -1288,9 +1288,11 @@ def getBlockDeviceContollerInfo(device, lshwoutput=None):
 			vendorId = match.group(3)
 			while len(vendorId) < 4:
 				vendorId = '0' + vendorId
+
 			deviceId = match.group(4)
 			while len(deviceId) < 4:
 				deviceId = '0' + deviceId
+
 			storageControllers[match.group(1)] = {
 				'hwPath': forceUnicode(match.group(1)),
 				'device': device,
@@ -1312,9 +1314,11 @@ def getBlockDeviceContollerInfo(device, lshwoutput=None):
 				vendorId = match.group(3)
 				while len(vendorId) < 4:
 					vendorId = '0' + vendorId
+
 				deviceId = match.group(4)
 				while len(deviceId) < 4:
 					deviceId = '0' + deviceId
+
 				storageControllers[match.group(1)] = {
 					'hwPath': forceUnicode(match.group(1)),
 					'device': device,
