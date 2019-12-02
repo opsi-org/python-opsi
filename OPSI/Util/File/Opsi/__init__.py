@@ -48,7 +48,8 @@ from OPSI import __version__ as LIBRARY_VERSION
 from OPSI.Exceptions import (
 	OpsiBackupBackendNotFound, OpsiBackupFileError,	OpsiBackupFileNotFound)
 from OPSI.Logger import Logger
-from OPSI.Object import (BoolProductProperty, LocalbootProduct, NetbootProduct,
+from OPSI.Object import (
+	BoolProductProperty, LocalbootProduct, NetbootProduct,
 	Product, ProductDependency, ProductProperty, UnicodeProductProperty)
 from OPSI.Types import (
 	forceActionRequest, forceBool, forceDictList, forceFilename, forceHostId,
