@@ -25,9 +25,9 @@ Testing ConfigDataBackend.
 import os
 
 import OPSI.Backend.Backend
-from OPSI.Backend.Base.ConfigData import truncateLogData
 from OPSI.Exceptions import BackendBadValueError
 from OPSI.Util import removeUnit
+from OPSI.Util.Log import truncateLogData
 
 from .helpers import mock
 
