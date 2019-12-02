@@ -28,7 +28,8 @@ from OPSI.Backend.Backend import temporaryBackendOptions
 from OPSI.Backend.Backend import Backend, ExtendedBackend
 from OPSI.Exceptions import BackendMissingDataError
 from OPSI.Object import BoolConfig, OpsiClient, UnicodeConfig
-from OPSI.Util import blowfishDecrypt, generateOpsiHostKey, randomString
+from OPSI.Util import (
+    BlowfishError, blowfishDecrypt, generateOpsiHostKey, randomString)
 from .test_hosts import getConfigServer
 
 import pytest
@@ -75,13 +76,17 @@ def testWorkingWithManyCredentials(fakeCredentialsBackend, number):
     assert 'bla' == credentials['password']
 
 
-@pytest.mark.fixlater
 def testSettingUserCredentialsWithoutDepot(fakeCredentialsBackend):
     backend = fakeCredentialsBackend
     backend.host_deleteObjects(backend.host_getObjects())
 
-    with pytest.raises(BackendMissingDataError):
+    try:
         backend.user_setCredentials("hans", '')
+        assert False, "We expected an exception to be risen!"
+    except BlowfishError:  # File backend
+        pass
+    except BackendMissingDataError:  # SQL based backend
+        pass
 
 
 def testGettingPcpatchCredentials(fakeCredentialsBackend):
