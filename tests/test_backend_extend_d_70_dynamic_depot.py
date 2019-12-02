@@ -43,26 +43,31 @@ from OPSI.Logger import Logger
 logger = Logger()
 
 
-@pytest.mark.fixlater
 def testDepotSelectionAlgorythmIsExecutable(depotSelectionAlgorythm):
 	"""
 	Executing the default configuration should never fail.
 	"""
-	exec(depotSelectionAlgorythm)
+	currentLocals = locals()
+	assert 'selectDepot' not in currentLocals
+	exec(depotSelectionAlgorythm, None, currentLocals)
+	assert 'selectDepot' in currentLocals
+	selectDepot = currentLocals['selectDepot']
 	print(selectDepot)
 
 
-@pytest.mark.fixlater
 def testDepotSelectionAlgorythmReturnsMasterDepotIfNoAlternativesAreGiven(depotSelectionAlgorythm):
-	exec(depotSelectionAlgorythm)
+	currentLocals = locals()
+	exec(depotSelectionAlgorythm, None, currentLocals)
+	selectDepot = currentLocals['selectDepot']
 
 	masterDepot = FakeDepot('clients.master.depot')
 	assert masterDepot == selectDepot({}, masterDepot)
 
 
-@pytest.mark.fixlater
 def testDepotSelectionAlgorithmByLowestLatency(depotSelectionAlgorithmByLatency):
-	exec(depotSelectionAlgorithmByLatency)
+	currentLocals = locals()
+	exec(depotSelectionAlgorithmByLatency, None, currentLocals)
+	selectDepot = currentLocals['selectDepot']
 
 	masterDepot = FakeDepot('clients.master.depot')
 	lowLatencyRepo = FakeDepot('x.y.z', latency=1.5)
@@ -71,9 +76,10 @@ def testDepotSelectionAlgorithmByLowestLatency(depotSelectionAlgorithmByLatency)
 	assert lowLatencyRepo == selectDepot({}, masterDepot, alternativeDepots)
 
 
-@pytest.mark.fixlater
 def testDepotSelectionByLatencyIgnoresDepotsWithoutLatency(depotSelectionAlgorithmByLatency):
-	exec(depotSelectionAlgorithmByLatency)
+	currentLocals = locals()
+	exec(depotSelectionAlgorithmByLatency, None, currentLocals)
+	selectDepot = currentLocals['selectDepot']
 
 	highLatencyRepo = FakeDepot('a', latency=10)
 	alternativeDepots = [highLatencyRepo]
@@ -81,7 +87,6 @@ def testDepotSelectionByLatencyIgnoresDepotsWithoutLatency(depotSelectionAlgorit
 	assert highLatencyRepo == selectDepot({}, FakeDepot('m', latency=None), alternativeDepots)
 
 
-@pytest.mark.fixlater
 def testDepotSelectionAlgorithmByMasterDepotAndLatency(depotSelectionAlgorithmByMasterDepotAndLatency):
 	masterDepot = FakeDepot('clients.master.depot')
 	wantedRepo = FakeDepot('our.wanted.repo', latency=1, masterDepotId='clients.master.depot')
@@ -93,7 +98,9 @@ def testDepotSelectionAlgorithmByMasterDepotAndLatency(depotSelectionAlgorithmBy
 	]
 	random.shuffle(alternativeDepots)
 
+	currentLocals = locals()
 	exec(depotSelectionAlgorithmByMasterDepotAndLatency)
+	selectDepot = currentLocals['selectDepot']
 	assert wantedRepo == selectDepot({}, masterDepot, alternativeDepots)
 
 
