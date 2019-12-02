@@ -46,7 +46,6 @@ class FileBackendUpdateError(BackendUpdateError):
 	"""
 	Something went wrong during the update of the file-based backend.
 	"""
-	pass
 
 
 def updateFileBackend(

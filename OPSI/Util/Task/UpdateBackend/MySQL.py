@@ -56,7 +56,6 @@ class DatabaseMigrationUnfinishedError(BackendUpdateError):
 	"""
 	This error indicates an unfinished database migration.
 	"""
-	pass
 
 
 def updateMySQLBackend(
