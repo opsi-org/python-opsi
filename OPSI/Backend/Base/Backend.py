@@ -348,7 +348,6 @@ This defaults to ``self``.
 		This method should be used to close connections or clean up \
 		used resources.
 		"""
-		pass
 
 	def __repr__(self):
 		if self._name:

@@ -136,17 +136,14 @@ def getPeerCertificate(httpsConnectionOrSSLSocket, asPEM=True):
 
 class HTTPError(Exception):
 	"Base exception used by this module."
-	pass
 
 
 class TimeoutError(HTTPError):
 	"Raised when a socket timeout occurs."
-	pass
 
 
 class HostChangedError(HTTPError):
 	"Raised when an existing pool gets a request for a foreign host."
-	pass
 
 
 class HTTPResponse:
