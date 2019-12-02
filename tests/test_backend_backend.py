@@ -80,8 +80,13 @@ def testSettingUserCredentialsWithoutDepot(fakeCredentialsBackend):
     backend = fakeCredentialsBackend
     backend.host_deleteObjects(backend.host_getObjects())
 
-    with pytest.raises(BlowfishError):
+    try:
         backend.user_setCredentials("hans", '')
+        assert False, "We expected an exception to be risen!"
+    except BlowfishError:  # File backend
+        pass
+    except BackendMissingDataError:  # SQL based backend
+        pass
 
 
 def testGettingPcpatchCredentials(fakeCredentialsBackend):
