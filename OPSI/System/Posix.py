@@ -1337,8 +1337,9 @@ def getBlockDeviceContollerInfo(device, lshwoutput=None):
 		parts = line.split(None, 3)
 		if len(parts) < 4:
 			continue
+
 		if parts[1].lower() == device:
-			for hwPath in storageControllers.keys():
+			for hwPath in storageControllers:
 				if parts[0].startswith(hwPath + u'/'):
 					return storageControllers[hwPath]
 
