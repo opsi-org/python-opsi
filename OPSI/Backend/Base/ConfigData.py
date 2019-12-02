@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2013-2018 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -27,15 +27,15 @@ Configuration data holding backend.
 :license: GNU Affero General Public License version 3
 """
 
-from __future__ import absolute_import
-
 import codecs
 import collections
 import copy as pycopy
 import json
 import os
 import re
+import shutil
 
+from OPSI.Config import OPSI_ADMIN_GROUP
 from OPSI.Logger import Logger
 from OPSI.Exceptions import (
 	BackendBadValueError, BackendMissingDataError,
@@ -54,6 +54,7 @@ from OPSI.Object import (
 	SoftwareLicenseToLicensePool)
 from OPSI.Util import blowfishEncrypt, blowfishDecrypt, getfqdn, removeUnit
 from OPSI.Util.File import ConfigFile
+from OPSI.Util.Log import truncateLogData
 
 from .Backend import Backend
 
@@ -247,7 +248,7 @@ overwrite the log.
 
 				amountToReadFromLog = self._maxLogfileSize - len(data)
 
-				if amountToReadFromLog > 0 and amountToReadFromLog < currentLogSize:
+				if 0 < amountToReadFromLog < currentLogSize:
 					with codecs.open(logFile, 'r', 'utf-8', 'replace') as log:
 						log.seek(currentLogSize - amountToReadFromLog)
 						data = log.read() + data
@@ -259,32 +260,17 @@ overwrite the log.
 			logWriteMode = "w"
 
 		if limitFileSize:
-			data = self._truncateLogData(data, self._maxLogfileSize)
+			data = truncateLogData(data, self._maxLogfileSize)
 
 		with codecs.open(logFile, logWriteMode, 'utf-8', 'replace') as log:
 			log.write(data)
 
+		try:
+			shutil.chown(logFile, group=OPSI_ADMIN_GROUP)
+		except LookupError:  # Group could not be found
+			pass
+
 		os.chmod(logFile, 0o640)
-
-	@staticmethod
-	def _truncateLogData(data, maxSize):
-		"""
-		Truncating `data` to not be longer than `maxSize` bytes.
-
-		:param data: Text
-		:type data: str
-		:param maxSize: The maximum size that is allowed in bytes.
-		:type maxSize: int
-		"""
-		maxSize = forceInt(maxSize)
-		dataLength = len(data.encode('utf-8'))
-		if dataLength > maxSize:
-			start = data.find('\n', dataLength - maxSize)
-			if start == -1:
-				start = dataLength - maxSize
-			return data[start:].lstrip()
-
-		return data
 
 	def log_read(self, logType, objectId=None, maxSize=DEFAULT_MAX_LOGFILE_SIZE):
 		"""
@@ -321,7 +307,7 @@ Setting this to `0` disables limiting.
 			raise
 
 		if maxSize > 0:
-			return self._truncateLogData(data, maxSize)
+			return truncateLogData(data, maxSize)
 
 		return data
 

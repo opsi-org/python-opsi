@@ -1,3 +1,15 @@
+python3-opsi (4.2.0.16-1) testing; urgency=medium
+
+  * OPSI.Backend.Base.Extended.ExtendedConfigDataBackend: The parameter passed
+    to productOnDepot_insertObject will be converted to an ProductOnDepot.
+  * OPSI.Backend.Base.ConfigData.ConfigDataBackend: Group of logfiles will be
+    changed to the opsi admin group (opsiadmin).
+  * New module OPSI.Util.Log with function truncateLogdata.
+  * OPSI.Backend.Base.ConfigData.ConfigDataBackend: Use truncateLogdata
+    when truncating logs.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 02 Dec 2019 11:30:50 +0100
+
 python3-opsi (4.2.0.15-1) testing; urgency=medium
 
   * OPSI.Backend.JSONRPC: Remove Python 2 workaround code.
@@ -151,6 +163,13 @@ python3-opsi (4.2.0.1-1) experimental; urgency=medium
     OPSI.Backend.Base.
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 06 Nov 2018 16:46:45 +0100
+
+python-opsi (4.1.1.85-1) testing; urgency=medium
+
+  * OPSI.Util.Task.UpdatePackages.Updater: throwing exception when md5sum
+    missmatched an no zsync is available
+
+ -- Mathias Radtke <m.radtke@uib.de>  Wed, 20 Nov 2019 13:37:21 +0100
 
 python-opsi (4.1.1.84-1) testing; urgency=medium
 
