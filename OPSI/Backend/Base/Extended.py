@@ -1331,6 +1331,7 @@ into the IDs of these depots are to be found in the list behind \
 		If productOnDepot exits (same productId, same depotId, different version)
 		then update existing productOnDepot instead of creating a new one
 		'''
+		productOnDepot = forceObjectClass(productOnDepot, ProductOnDepot)
 		currentProductOnDepots = self._backend.productOnDepot_getObjects(
 			productId=productOnDepot.productId,
 			depotId=productOnDepot.depotId
