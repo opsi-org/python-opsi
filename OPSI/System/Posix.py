@@ -1373,9 +1373,9 @@ def getBlockDeviceContollerInfo(device, lshwoutput=None):
 				'vendorId': forceHardwareVendorId(vendorId),
 				'deviceId': forceHardwareDeviceId(deviceId)
 			}
-			if storageControllers:
-				for hwPath in storageControllers.keys():
-					return storageControllers[hwPath]
+
+			for hwPath in storageControllers:
+				return storageControllers[hwPath]
 		else:
 			# Quick Hack: for entry like this:
 			# /0/100/1f.2              storage        82801 SATA Controller [RAID mode] [8086:2822]
@@ -1399,9 +1399,9 @@ def getBlockDeviceContollerInfo(device, lshwoutput=None):
 					'vendorId': forceHardwareVendorId(vendorId),
 					'deviceId': forceHardwareDeviceId(deviceId)
 				}
-				if storageControllers:
-					for hwPath in storageControllers.keys():
-						return storageControllers[hwPath]
+
+				for hwPath in storageControllers:
+					return storageControllers[hwPath]
 
 	return None
 
