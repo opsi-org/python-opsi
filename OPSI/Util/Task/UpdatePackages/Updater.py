@@ -276,7 +276,7 @@ class OpsiPackageUpdater(object):
 						else:
 							raise HashsumMissmatchError(u"{productId}: md5sum mismatch".format(productId=availablePackage['productId']))
 					else:
-						raise HashsumMissmatchError(
+						logger.warning(
 							u"{productId}: Cannot verify download of package: "
 							u"missing md5sum file".format(
 								productId=availablePackage['productId']
