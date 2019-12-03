@@ -36,10 +36,6 @@ import urllib
 import urllib2
 from formatter import NullFormatter
 
-from .Config import DEFAULT_USER_AGENT, ConfigurationParser
-from .Notifier import DummyNotifier, EmailNotifier
-from .Repository import LinksExtractor
-
 from OPSI import System
 from OPSI.Backend.BackendManager import BackendManager
 from OPSI.Backend.JSONRPC import JSONRPCBackend
@@ -51,6 +47,10 @@ from OPSI.Util.File import ZsyncFile
 from OPSI.Util.File.Opsi import parseFilename
 from OPSI.Util.Product import ProductPackageFile
 from OPSI.Util.Task.Rights import setRights
+
+from .Config import DEFAULT_USER_AGENT, ConfigurationParser
+from .Notifier import DummyNotifier, EmailNotifier
+from .Repository import LinksExtractor
 
 __all__ = ('OpsiPackageUpdater', )
 
