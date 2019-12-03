@@ -497,6 +497,20 @@ class OpsiPackageUpdater(object):
 		return products
 
 	def _verifyDownloadedPackage(self, packageFile, availablePackage, zsynced, notifier):
+		"""
+		Verify the downloaded package.
+
+		This checks the hashsums of the downloaded package.
+		If the download was done with zsync and the hashes are different
+		we download the package in whole.
+
+		:param packageFile: The path to the package that is checked.
+		:type packageFile: str
+		:param availablePackage: Information about the package.
+		:type availablePackage: dict
+		:param notifier: The notifier to use
+		:raise HashsumMissmatchError: In case the hashsums mismatch
+		"""
 		if availablePackage['md5sum']:
 			logger.info(u"Verifying download of package '%s'" % packageFile)
 			md5 = md5sum(packageFile)
