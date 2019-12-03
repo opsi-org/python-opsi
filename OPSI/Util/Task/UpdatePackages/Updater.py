@@ -890,7 +890,12 @@ class OpsiPackageUpdater(object):
 										req = urllib2.Request(url + '/' + link, None, self.httpHeaders)
 										con = opener.open(req)
 										md5sum = con.read(32768)
-										match = re.search(r'([a-z\d]{32})', md5sum)
+
+										# Hashes are expected to be 32 chars
+										# long. We allow shorter hashes
+										# because this allows us to trigger an
+										# exception during verification.
+										match = re.search(r'([a-z\d]{0,32})', md5sum)
 										if match:
 											foundMd5sum = match.group(1)
 											packages[i]["md5sum"] = foundMd5sum
