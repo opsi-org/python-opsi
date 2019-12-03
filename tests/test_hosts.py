@@ -22,16 +22,14 @@ Testing the functionality of working with hosts.
 :license: GNU Affero General Public License version 3
 """
 
-from __future__ import absolute_import
-
 import itertools
 import socket
 
 import pytest
 
 from OPSI.Exceptions import BackendError, BackendMissingDataError
-from OPSI.Object import (HostGroup, ObjectToGroup, OpsiClient, OpsiConfigserver,
-    OpsiDepotserver)
+from OPSI.Object import (
+    HostGroup, ObjectToGroup, OpsiClient, OpsiConfigserver, OpsiDepotserver)
 from OPSI.Util import randomString
 
 
@@ -518,3 +516,42 @@ def testInventoryNumberOnHosts(configDataBackend, hostClass, inventoryNumber):
 
     assert hostFromBackend.inventoryNumber == inventoryNumber
     assert hostFromBackend.getInventoryNumber() == inventoryNumber
+
+
+def testHandlingLongDescription(extendedConfigDataBackend, longDescription):
+    host = OpsiClient(id='client.test.invalid', description=longDescription)
+    extendedConfigDataBackend.host_insertObject(host)
+
+    hostFromBackend = extendedConfigDataBackend.host_getObjects(id=host.id)[0]
+
+    assert len(hostFromBackend.description) == len(longDescription)
+    assert hostFromBackend.description == longDescription
+
+
+@pytest.fixture(params=[64, 100], scope='session')
+def longDescription(request):
+    """
+    Long random description.
+
+    Length of 100 inspired by the limits for opsi 4.0.
+    """
+    yield randomString(request.param)
+
+
+def testHandlingLongNotes(extendedConfigDataBackend, longNotes):
+    host = OpsiClient(id='client.test.invalid', notes=longNotes)
+    extendedConfigDataBackend.host_insertObject(host)
+
+    hostFromBackend = extendedConfigDataBackend.host_getObjects(id=host.id)[0]
+    assert len(hostFromBackend.notes) == len(longNotes)
+    assert hostFromBackend.notes == longNotes
+
+
+@pytest.fixture(params=[128, 500], scope='session')
+def longNotes(request):
+    """
+    Long random notes.
+
+    Length of 500 is inspired by the limits for opsi 4.0.
+    """
+    yield randomString(request.param)

@@ -1,7 +1,48 @@
 image: ubuntu:latest
 
 stages:
+  # - test
   - package
+
+
+# run unittests:
+#   stage: test
+#   before_script:
+#     - apt update
+#     - apt -y install build-essential python-dev librsync-dev lsb-release python-apsw python-crypto python-ldaptor python-m2crypto python-magic python-mysqldb python-newt python-openssl python-pam python-pip python-sqlalchemy python-twisted-web
+#     - pip install -r requirements-qa.txt
+#     - pip install https://launchpad.net/duplicity/0.6-series/0.6.24/+download/duplicity-0.6.24.tar.gz
+#   script:
+#     - ./run_qa.sh
+#   artifacts:
+#     name: 'python-opsi_QA'
+#     paths:
+#       - pylint.txt
+#       - pep8.txt
+#       - coverage.xml
+#     reports:
+#       junit: testreport.xml
+#     expire_in: 1 day
+
+
+build documentation:
+  stage: package
+  before_script:
+    - apt update
+    - apt -y install python-pip
+    - pip install -r requirements-qa.txt
+    - pip install 'sphinx<1.5'
+  script:
+    - sphinx-apidoc --force --separate -o doc/src OPSI/
+    - sphinx-build -b html -d doc/_build/doctrees -D latex_paper_size=a4 -D latex_paper_size=letter doc/src/ doc/python-opsi/
+  after_script:
+    - mv doc/python-opsi/ .
+  artifacts:
+    name: 'python-opsi_documentation'
+    paths:
+      - python-opsi/
+    expire_in: 1 day
+
 
 package for OBS:
   stage: package
@@ -14,6 +55,7 @@ package for OBS:
     - test -f python-opsi_*.tar.gz
     - test -f python-opsi.spec
   artifacts:
+    name: 'python-opsi_OBS'
     paths:
       - python-opsi_*.dsc
       - python-opsi_*.tar.gz

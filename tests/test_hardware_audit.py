@@ -22,6 +22,7 @@ Testing hardware audit behaviour.
 :license: GNU Affero General Public License version 3
 """
 
+import pytest
 from OPSI.Object import AuditHardwareOnHost, OpsiClient
 
 
@@ -58,6 +59,70 @@ def testHardwareAuditAcceptingHugeMemoryClockSpeeds(hardwareAuditBackendWithHist
 			"dataWidth": 64
 		},
 	])
+
+
+@pytest.mark.parametrize("objects", [1, 5, 50])
+def testHardwareAuditObsoletingOldHardware(hardwareAuditBackendWithHistory, objects):
+	backend = hardwareAuditBackendWithHistory
+
+	client = OpsiClient(id='foo.bar.invalid')
+	backend.host_insertObject(client)
+
+	for _ in range(objects):
+		ahoh = {
+			"hostId": client.id,
+			"vendor": "Micron",
+			"description": "Physikalischer Speicher",
+			"tag": "Physical Memory 0",
+			"speed": 2400000000,
+			"hardwareClass": "MEMORY_MODULE",
+			"formFactor": "SODIMM",
+			"capacity": "8589934592",
+			"name": "DIMM 1",
+			"serialNumber": "15E64109",
+			"memoryType": "Unknown",
+			"model": None,
+			"type": "AuditHardwareOnHost",
+			"deviceLocator": "DIMM 1",
+			"dataWidth": 64,
+			"state": 1
+		}
+
+		backend.auditHardwareOnHost_createObjects([ahoh])
+
+	backend.auditHardwareOnHost_setObsolete([client.id])
+
+
+@pytest.mark.parametrize("objects", [1, 5, 50])
+def testHardwareAuditObsoletingAllObjects(hardwareAuditBackendWithHistory, objects):
+	backend = hardwareAuditBackendWithHistory
+
+	client = OpsiClient(id='foo.bar.invalid')
+	backend.host_insertObject(client)
+
+	for _ in range(objects):
+		ahoh = {
+			"hostId": client.id,
+			"vendor": "Micron",
+			"description": "Physikalischer Speicher",
+			"tag": "Physical Memory 0",
+			"speed": 2400000000,
+			"hardwareClass": "MEMORY_MODULE",
+			"formFactor": "SODIMM",
+			"capacity": "8589934592",
+			"name": "DIMM 1",
+			"serialNumber": "15E64109",
+			"memoryType": "Unknown",
+			"model": None,
+			"type": "AuditHardwareOnHost",
+			"deviceLocator": "DIMM 1",
+			"dataWidth": 64,
+			"state": 1
+		}
+
+		backend.auditHardwareOnHost_createObjects([ahoh])
+
+	backend.auditHardwareOnHost_setObsolete(None)
 
 
 def testUpdatingAuditHardware(hardwareAuditBackendWithHistory):
