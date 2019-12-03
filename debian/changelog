@@ -1,3 +1,12 @@
+python-opsi (4.1.1.86-1) testing; urgency=medium
+
+  * OPSI.Util.Task.UpdatePackages.Updater: Fix throwing an exception when
+    mismatching md5sums are detected.
+  * OPSI.Util.Task.UpdatePackages.Updater: Error on wrong md5sum in remote
+    repository.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 03 Dec 2019 11:31:01 +0100
+
 python-opsi (4.1.1.85-1) testing; urgency=medium
 
   * OPSI.Util.Task.UpdatePackages.Updater: throwing exception when md5sum
