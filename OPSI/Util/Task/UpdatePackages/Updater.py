@@ -502,7 +502,11 @@ class OpsiPackageUpdater(object):
 			md5 = md5sum(packageFile)
 			if md5 != availablePackage["md5sum"]:
 				if zsynced:
-					logger.warning(u"{productId}: zsynced Download has failed, try once to load full package", productId=availablePackage['productId'])
+					logger.warning(
+						u"{productId}: zsynced Download has failed, trying "
+						u"once to load full package",
+						productId=availablePackage['productId']
+					)
 					self.downloadPackage(availablePackage, notifier=notifier)
 					self.cleanupPackages(availablePackage)
 
@@ -510,9 +514,16 @@ class OpsiPackageUpdater(object):
 
 				# Check again in case we re-downloaded the file
 				if md5 != availablePackage["md5sum"]:
-					raise HashsumMissmatchError(u"{productId}: md5sum mismatch".format(productId=availablePackage['productId']))
+					raise HashsumMissmatchError(
+						u"{productId}: md5sum mismatch".format(
+							productId=availablePackage['productId']
+						)
+					)
 
-			logger.info(u"{productId}: md5sum match, package download verified", productId=availablePackage['productId'])
+			logger.info(
+				u"{productId}: md5sum match, package download verified",
+				productId=availablePackage['productId']
+			)
 		else:
 			logger.warning(
 				u"{productId}: Cannot verify download of package: "
