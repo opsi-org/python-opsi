@@ -126,9 +126,9 @@ python setup.py build
 
 # install python files and record installed files in INSTALLED_FILES
 %if 0%{?suse_version}
-python setup.py install --prefix=%{_prefix} --root=$RPM_BUILD_ROOT --record-rpm=INSTALLED_FILES
+python2 setup.py install --prefix=%{_prefix} --root=$RPM_BUILD_ROOT --record-rpm=INSTALLED_FILES
 %else
-python setup.py install --prefix=%{_prefix} --root=$RPM_BUILD_ROOT --record=INSTALLED_FILES
+python2 setup.py install --prefix=%{_prefix} --root=$RPM_BUILD_ROOT --record=INSTALLED_FILES
 %endif
 
 %if 0%{?rhel_version} || 0%{?centos_version}
