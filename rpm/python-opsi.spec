@@ -7,8 +7,13 @@
 #
 Name:           python-opsi
 BuildRequires:  gettext-devel
+%if 0%{?rhel_version} >= 800 || 0%{?centos_version} >= 800
+BuildRequires:  python2-devel
+BuildRequires:  python2-setuptools
+%else
 BuildRequires:  python-devel
 BuildRequires:  python-setuptools
+%endif
 Requires:       duplicity
 %if 0%{?sle_version} >= 150000 && 0%{?is_opensuse}
 Requires:		net-tools-deprecated
