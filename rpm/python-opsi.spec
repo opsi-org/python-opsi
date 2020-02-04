@@ -74,10 +74,10 @@ Url:            https://opsi.org
 License:        AGPL-3.0+
 Group:          Productivity/Networking/Opsi
 AutoReqProv:    on
-Version:        4.1.1.77
-Release:        2
+Version:        4.1.1.87
+Release:        1
 Summary:        Python library for the client management solution opsi
-Source:         python-opsi_4.1.1.77-2.tar.gz
+Source:         python-opsi_4.1.1.87-1.tar.gz
 #Source2:        setup.py
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 # python noarch modules are only working on openSUSE 11.2 or higher
@@ -115,7 +115,11 @@ components of the client management solution opsi.
 # ===[ build ]======================================
 %build
 export CFLAGS="$RPM_OPT_FLAGS"
+%if 0%{?rhel_version} >= 800 || 0%{?centos_version} >= 800
+python2 setup.py build
+%else
 python setup.py build
+%endif
 
 # ===[ install ]====================================
 %install
