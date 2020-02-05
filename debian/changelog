@@ -1,3 +1,9 @@
+python-opsi (4.1.1.88-1) stable; urgency=medium
+
+  * version bumped to cleanup rpm builds in buildservice.
+
+ -- Erol Ueluekmen <e.ueluekmen@uib.de>  Wed, 05 Feb 2020 11:02:12 +0100
+
 python-opsi (4.1.1.87-1) stable; urgency=medium
 
   * DHCPD-Parser small fix for multiple domain-search entries
