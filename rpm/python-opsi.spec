@@ -7,8 +7,13 @@
 #
 Name:           python-opsi
 BuildRequires:  gettext-devel
+%if 0%{?rhel_version} >= 800 || 0%{?centos_version} >= 800
+BuildRequires:  python2-devel
+BuildRequires:  python2-setuptools
+%else
 BuildRequires:  python-devel
 BuildRequires:  python-setuptools
+%endif
 Requires:       duplicity
 %if 0%{?sle_version} >= 150000 && 0%{?is_opensuse}
 Requires:		net-tools-deprecated
@@ -69,10 +74,10 @@ Url:            https://opsi.org
 License:        AGPL-3.0+
 Group:          Productivity/Networking/Opsi
 AutoReqProv:    on
-Version:        4.1.1.77
-Release:        2
+Version:        4.1.1.88
+Release:        1
 Summary:        Python library for the client management solution opsi
-Source:         python-opsi_4.1.1.77-2.tar.gz
+Source:         python-opsi_4.1.1.88-1.tar.gz
 #Source2:        setup.py
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 # python noarch modules are only working on openSUSE 11.2 or higher
@@ -110,16 +115,20 @@ components of the client management solution opsi.
 # ===[ build ]======================================
 %build
 export CFLAGS="$RPM_OPT_FLAGS"
+%if 0%{?rhel_version} >= 800 || 0%{?centos_version} >= 800
+python2 setup.py build
+%else
 python setup.py build
+%endif
 
 # ===[ install ]====================================
 %install
 
 # install python files and record installed files in INSTALLED_FILES
 %if 0%{?suse_version}
-python setup.py install --prefix=%{_prefix} --root=$RPM_BUILD_ROOT --record-rpm=INSTALLED_FILES
+python2 setup.py install --prefix=%{_prefix} --root=$RPM_BUILD_ROOT --record-rpm=INSTALLED_FILES
 %else
-python setup.py install --prefix=%{_prefix} --root=$RPM_BUILD_ROOT --record=INSTALLED_FILES
+python2 setup.py install --prefix=%{_prefix} --root=$RPM_BUILD_ROOT --record=INSTALLED_FILES
 %endif
 
 %if 0%{?rhel_version} || 0%{?centos_version}
@@ -270,8 +279,13 @@ fi
 %dir /var/lib/opsi/
 
 %if 0%{?rhel_version} || 0%{?centos_version} || 0%{?fedora_version}
+%if 0%{?rhel_version} >= 800 || 0%{?centos_version} >= 800
+%define python2_sitearch %(%{__python2} -c 'from distutils import sysconfig; print sysconfig.get_python_lib()')
+%{python2_sitearch}/OPSI/*
+%else
 %define python_sitearch %(%{__python} -c 'from distutils import sysconfig; print sysconfig.get_python_lib()')
 %{python_sitearch}/OPSI/*
+%endif
 %endif
 
 # ===[ changelog ]==================================
