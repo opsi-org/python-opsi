@@ -383,7 +383,7 @@ class OpsiPackageUpdater(object):
 								package['productId']
 							)
 							continue
-						elif package.['productId'].startswith(('opsi-local-image-', 'opsi-uefi-', 'opsi-vhd-', 'opsi-wim-', 'windows10-upgrade')):
+						elif package['productId'].startswith(('opsi-local-image-', 'opsi-uefi-', 'opsi-vhd-', 'opsi-wim-', 'windows10-upgrade')):
 							logger.info(
 								u"Not setting action 'setup' for product '{0}' where installation status 'installed' because auto setup is not allowed for opsi module products",
 								package['productId']
