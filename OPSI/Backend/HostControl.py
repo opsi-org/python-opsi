@@ -217,7 +217,7 @@ class HostControlBackend(ExtendedBackend):
 	def __init__(self, backend, **kwargs):
 		self._name = 'hostcontrol'
 
-		ExtendedBackend.__init__(self, backend)
+		ExtendedBackend.__init__(self, backend, **kwargs)
 
 		self._opsiclientdPort = 4441
 		self._hostRpcTimeout = 15

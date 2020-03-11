@@ -53,7 +53,7 @@ class DepotserverBackend(ExtendedBackend):
 	def __init__(self, backend, **kwargs):
 		self._name = 'depotserver'
 
-		ExtendedBackend.__init__(self, backend)
+		ExtendedBackend.__init__(self, backend, **kwargs)
 
 		self._packageLog = os.path.join(LOG_DIR, 'package.log')
 		self._sshRSAPublicKeyFile = u'/etc/ssh/ssh_host_rsa_key.pub'
