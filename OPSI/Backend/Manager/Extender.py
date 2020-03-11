@@ -56,7 +56,7 @@ class BackendExtender(ExtendedBackend):
 			if not isinstance(backend, BackendAccessControl) or (not isinstance(backend._backend, ExtendedBackend) and not isinstance(backend._backend, BackendDispatcher)):
 				raise TypeError("BackendExtender needs instance of ExtendedBackend or BackendDispatcher as backend, got %s" % backend.__class__.__name__)
 
-		ExtendedBackend.__init__(self, backend, overwrite=kwargs.get('overwrite', True))
+		ExtendedBackend.__init__(self, backend, **kwargs)
 
 		self._extensionConfigDir = None
 		self._extensionClass = None
