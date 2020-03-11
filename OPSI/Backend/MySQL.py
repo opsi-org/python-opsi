@@ -31,6 +31,7 @@ import base64
 import warnings
 import time
 import threading
+import orjson
 from contextlib import contextmanager
 from hashlib import md5
 
@@ -47,6 +48,7 @@ from OPSI.Exceptions import (BackendBadValueError, BackendUnableToConnectError,
 from OPSI.Logger import Logger
 from OPSI.Types import forceInt, forceUnicode
 from OPSI.Util import getPublicKey
+from OPSI.Object import ProductProperty
 
 __all__ = (
 	'ConnectionPool', 'MySQL', 'MySQLBackend',
@@ -86,7 +88,7 @@ def disableAutoCommit(sqlInstance):
 		logger.debug2(u'autoCommit set to true')
 
 
-class ConnectionPool(object):
+class ConnectionPool:
 	# Storage for the instance reference
 	__instance = None
 
@@ -233,7 +235,8 @@ class MySQL(SQL):
 					raise BackendUnableToConnectError(u"Failed to connect to database '%s' address '%s': %s" % (self._database, self._address, error))
 		finally:
 			logger.debug2(u"Releasing pool lock...")
-			self._POOL_LOCK.release()
+			if self._POOL_LOCK.locked():
+				self._POOL_LOCK.release()
 
 	def connect(self, cursorType=None):
 		"""
@@ -265,6 +268,8 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 				conn = self._pool.connect()
 				conn.autocommit(False)
 				cursor = conn.cursor(cursorType)
+				cursor.execute("SET SESSION sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''));")
+				conn.commit()
 				break
 			except Exception as connectionError:
 				logger.debug(u"MySQL connection error: {0!r}", connectionError)
@@ -520,14 +525,23 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 		return res
 
 	def getTables(self):
-		# Hardware audit database
+		"""
+		Get what tables are present in the database.
+
+		Table names will always be uppercased.
+
+		:returns: A dict with the tablename as key and the field names as value.
+		:rtype: dict
+		"""
 		tables = {}
-		logger.debug(u"Current tables:")
+		logger.debug2(u"Current tables:")
 		for i in self.getSet(u'SHOW TABLES;'):
 			for tableName in i.values():
+				tableName = tableName.upper()
 				logger.debug2(u" [ {0} ]", tableName)
-				tables[tableName] = [j['Field'] for j in self.getSet(u'SHOW COLUMNS FROM `%s`' % tableName)]
-				logger.debug2("Fields in {0}: {1}", tableName, tables[tableName])
+				fields = [j['Field'] for j in self.getSet(u'SHOW COLUMNS FROM `%s`' % tableName)]
+				tables[tableName] = fields
+				logger.debug2("Fields in {0}: {1}", tableName, fields)
 
 		return tables
 
@@ -649,6 +663,79 @@ class MySQLBackend(SQLBackend):
 		self._sql.execute(table)
 		self._sql.execute('CREATE INDEX `index_host_type` on `HOST` (`type`);')
 
+	def _createTableSoftwareConfig(self):
+		logger.debug(u'Creating table SOFTWARE_CONFIG')
+		# We want the primary key config_id to be of a bigint as
+		# regular int has been proven to be too small on some
+		# installations.
+		table = u'''CREATE TABLE `SOFTWARE_CONFIG` (
+				`config_id` bigint NOT NULL ''' + self._sql.AUTOINCREMENT + ''',
+				`clientId` varchar(255) NOT NULL,
+				`name` varchar(100) NOT NULL,
+				`version` varchar(100) NOT NULL,
+				`subVersion` varchar(100) NOT NULL,
+				`language` varchar(10) NOT NULL,
+				`architecture` varchar(3) NOT NULL,
+				`uninstallString` varchar(200),
+				`binaryName` varchar(100),
+				`firstseen` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
+				`lastseen` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
+				`state` TINYINT NOT NULL,
+				`usageFrequency` integer NOT NULL DEFAULT -1,
+				`lastUsed` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
+				`licenseKey` VARCHAR(1024),
+				PRIMARY KEY (`config_id`)
+			) %s;
+			''' % self._sql.getTableCreationOptions('SOFTWARE_CONFIG')
+		logger.debug(table)
+		self._sql.execute(table)
+		self._sql.execute('CREATE INDEX `index_software_config_clientId` on `SOFTWARE_CONFIG` (`clientId`);')
+		self._sql.execute('CREATE INDEX `index_software_config_nvsla` on `SOFTWARE_CONFIG` (`name`, `version`, `subVersion`, `language`, `architecture`);')
+
+	# Overwriting productProperty_getObjects to use JOIN for speedup
+	def productProperty_getObjects(self, attributes=[], **filter):
+		self._requiresEnabledSQLBackendModule()
+		ConfigDataBackend.productProperty_getObjects(self, attributes=[], **filter)
+		logger.info(f"Getting product properties, filter: {filter}")
+
+		(attributes, filter) = self._adjustAttributes(ProductProperty, attributes, filter)
+		readValues = not attributes or 'possibleValues' in attributes or 'defaultValues' in attributes
+
+		select = ','.join(f'pp.`{attribute}`' for attribute in attributes) or 'pp.*'
+		where = self._filterToSql(filter) or '1=1'
+		query = f'''
+			SELECT
+				{select},
+				JSON_ARRAYAGG(ppv.value) AS possibleValues,
+				JSON_ARRAYAGG(IF(ppv.isDefault, ppv.value, NULL)) AS defaultValues
+			FROM
+				PRODUCT_PROPERTY AS pp
+			LEFT JOIN
+				PRODUCT_PROPERTY_VALUE AS ppv ON
+					ppv.productId = pp.productId AND
+					ppv.productVersion = pp.productVersion AND
+					ppv.packageVersion = pp.packageVersion AND
+					ppv.propertyId = pp.propertyId
+			WHERE
+				{where}
+			GROUP BY
+				pp.productId,
+				pp.productVersion,
+				pp.packageVersion,
+				pp.propertyId
+		'''
+		productProperties = []
+		for productProperty in self._sql.getSet(query):
+			if readValues:
+				productProperty['possibleValues'] = orjson.loads(productProperty['possibleValues'])
+				# workaround https://bugs.mysql.com/bug.php?id=90835
+				productProperty['defaultValues'] = [x for x in orjson.loads(productProperty['defaultValues']) if x is not None]
+			else:
+				productProperty['possibleValues'] = []
+				productProperty['defaultValues'] = []
+			productProperties.append(ProductProperty.fromHash(productProperty))
+		return productProperties
+	
 	# Overwriting productProperty_insertObject and
 	# productProperty_updateObject to implement Transaction
 	def productProperty_insertObject(self, productProperty):
