@@ -31,6 +31,7 @@ import base64
 import warnings
 import time
 import threading
+import orjson
 from contextlib import contextmanager
 from hashlib import md5
 
@@ -47,6 +48,7 @@ from OPSI.Exceptions import (BackendBadValueError, BackendUnableToConnectError,
 from OPSI.Logger import Logger
 from OPSI.Types import forceInt, forceUnicode
 from OPSI.Util import getPublicKey
+from OPSI.Object import ProductProperty
 
 __all__ = (
 	'ConnectionPool', 'MySQL', 'MySQLBackend',
@@ -233,7 +235,8 @@ class MySQL(SQL):
 					raise BackendUnableToConnectError(u"Failed to connect to database '%s' address '%s': %s" % (self._database, self._address, error))
 		finally:
 			logger.debug2(u"Releasing pool lock...")
-			self._POOL_LOCK.release()
+			if self._POOL_LOCK.locked():
+				self._POOL_LOCK.release()
 
 	def connect(self, cursorType=None):
 		"""
@@ -265,6 +268,8 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 				conn = self._pool.connect()
 				conn.autocommit(False)
 				cursor = conn.cursor(cursorType)
+				cursor.execute("SET SESSION sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''));")
+				conn.commit()
 				break
 			except Exception as connectionError:
 				logger.debug(u"MySQL connection error: {0!r}", connectionError)
@@ -687,6 +692,50 @@ class MySQLBackend(SQLBackend):
 		self._sql.execute('CREATE INDEX `index_software_config_clientId` on `SOFTWARE_CONFIG` (`clientId`);')
 		self._sql.execute('CREATE INDEX `index_software_config_nvsla` on `SOFTWARE_CONFIG` (`name`, `version`, `subVersion`, `language`, `architecture`);')
 
+	# Overwriting productProperty_getObjects to use JOIN for speedup
+	def productProperty_getObjects(self, attributes=[], **filter):
+		self._requiresEnabledSQLBackendModule()
+		ConfigDataBackend.productProperty_getObjects(self, attributes=[], **filter)
+		logger.info(f"Getting product properties, filter: {filter}")
+
+		(attributes, filter) = self._adjustAttributes(ProductProperty, attributes, filter)
+		readValues = not attributes or 'possibleValues' in attributes or 'defaultValues' in attributes
+
+		select = ','.join(f'pp.`{attribute}`' for attribute in attributes) or 'pp.*'
+		where = self._filterToSql(filter) or '1=1'
+		query = f'''
+			SELECT
+				{select},
+				JSON_ARRAYAGG(ppv.value) AS possibleValues,
+				JSON_ARRAYAGG(IF(ppv.isDefault, ppv.value, NULL)) AS defaultValues
+			FROM
+				PRODUCT_PROPERTY AS pp
+			LEFT JOIN
+				PRODUCT_PROPERTY_VALUE AS ppv ON
+					ppv.productId = pp.productId AND
+					ppv.productVersion = pp.productVersion AND
+					ppv.packageVersion = pp.packageVersion AND
+					ppv.propertyId = pp.propertyId
+			WHERE
+				{where}
+			GROUP BY
+				pp.productId,
+				pp.productVersion,
+				pp.packageVersion,
+				pp.propertyId
+		'''
+		productProperties = []
+		for productProperty in self._sql.getSet(query):
+			if readValues:
+				productProperty['possibleValues'] = orjson.loads(productProperty['possibleValues'])
+				# workaround https://bugs.mysql.com/bug.php?id=90835
+				productProperty['defaultValues'] = [x for x in orjson.loads(productProperty['defaultValues']) if x is not None]
+			else:
+				productProperty['possibleValues'] = []
+				productProperty['defaultValues'] = []
+			productProperties.append(ProductProperty.fromHash(productProperty))
+		return productProperties
+	
 	# Overwriting productProperty_insertObject and
 	# productProperty_updateObject to implement Transaction
 	def productProperty_insertObject(self, productProperty):

@@ -1438,7 +1438,7 @@ class SQLBackend(ConfigDataBackend):
 	def productProperty_getObjects(self, attributes=[], **filter):
 		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.productProperty_getObjects(self, attributes=[], **filter)
-		logger.info(u"Getting product properties, filter: {0}", filter)
+		logger.info(f"Getting product properties, filter: {filter}")
 		(attributes, filter) = self._adjustAttributes(ProductProperty, attributes, filter)
 
 		readValues = not attributes or 'possibleValues' in attributes or 'defaultValues' in attributes
