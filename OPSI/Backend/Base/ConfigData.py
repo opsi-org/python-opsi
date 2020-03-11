@@ -97,6 +97,13 @@ class ConfigDataBackend(Backend):
 	These backends should keep data integrity intact but not alter the data.
 	"""
 
+	option_defaults = {
+		**Backend.option_defaults,
+		**{
+			'additionalReferentialIntegrityChecks': True
+		}
+	}
+
 	def __init__(self, **kwargs):
 		"""
 		Constructor.
@@ -134,8 +141,6 @@ containing the localisation of the hardware audit.
 		if not self._depotId:
 			self._depotId = getfqdn()
 		self._depotId = forceHostId(self._depotId)
-
-		self._options['additionalReferentialIntegrityChecks'] = True
 
 	def _testFilterAndAttributes(self, Class, attributes, **filter):
 		if not attributes:
