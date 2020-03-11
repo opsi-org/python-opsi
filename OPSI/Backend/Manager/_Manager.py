@@ -99,9 +99,9 @@ class BackendManager(ExtendedBackend):
 		"""
 		self._backend = None
 		self._backendConfigDir = None
-		self._options = {}
 		self._overwrite = True
 		self._context = self
+		self.backendAccessControl = None
 
 		Backend.__init__(self, **kwargs)
 
@@ -112,11 +112,12 @@ class BackendManager(ExtendedBackend):
 		extensionConfigDir = None
 		extensionClass = None
 		accessControl = False
+		accessControlClass = BackendAccessControl
 		depotBackend = False
 		hostControlBackend = False
 		hostControlSafeBackend = False
 		loadBackend = None
-
+		
 		if not kwargs:
 			kwargs = {
 				"dispatchConfigFile": u'/etc/opsi/backendManager/dispatch.conf',
@@ -161,6 +162,8 @@ class BackendManager(ExtendedBackend):
 				extend = forceBool(value)
 			elif option in ('acl', 'aclfile') and value:
 				accessControl = True
+			elif option == 'accesscontrolclass':
+				accessControlClass = value
 
 		for argument in argumentToDelete:
 			del kwargs[argument]
@@ -181,41 +184,41 @@ class BackendManager(ExtendedBackend):
 		if extend or depotBackend:
 			logger.info(u"* BackendManager is creating ExtendedConfigDataBackend")
 			# DepotserverBackend/BackendExtender need ExtendedConfigDataBackend backend
-			self._backend = ExtendedConfigDataBackend(self._backend)
+			self._backend = ExtendedConfigDataBackend(self._backend, **kwargs)
 			# self._backend is now an ExtendedConfigDataBackend
 
 		if depotBackend:
 			logger.info(u"* BackendManager is creating DepotserverBackend")
-			self._backend = DepotserverBackend(self._backend)
+			self._backend = DepotserverBackend(self._backend, **kwargs)
 
 		if hostControlBackend:
 			logger.info(u"* BackendManager is creating HostControlBackend")
+			hostControlBackendConfig = dict(kwargs)
 			try:
-				hostControlBackendConfig = self.__loadBackendConfig('hostcontrol')['config']
+				hostControlBackendConfig.update(self.__loadBackendConfig('hostcontrol')['config'])
 			except Exception as backendConfigLoadError:
 				logger.error(
 					"Failed to load configuration for HostControlBackend: {}",
 					backendConfigLoadError
 				)
-				hostControlBackendConfig = {}
 			self._backend = HostControlBackend(self._backend, **hostControlBackendConfig)
 
 		if hostControlSafeBackend:
 			logger.info(u"* BackendManager is creating HostControlSafeBackend")
+			hostControlSafeBackendConfig = dict(kwargs)
 			try:
-				hostControlSafeBackendConfig = self.__loadBackendConfig('hostcontrol')['config']
+				hostControlSafeBackendConfig.update(self.__loadBackendConfig('hostcontrol')['config'])
 			except Exception as backendConfigLoadError:
 				logger.error(
 					"Failed to load configuration for HostControlSafeBackend: {}",
 					backendConfigLoadError
 				)
-				hostControlSafeBackendConfig = {}
 			self._backend = HostControlSafeBackend(self._backend, **hostControlSafeBackendConfig)
 
 		if accessControl:
-			logger.info(u"* BackendManager is creating BackendAccessControl")
-			self._backend = BackendAccessControl(backend=self._backend, **kwargs)
-
+			logger.info(f"* BackendManager is creating {accessControlClass.__name__}")
+			self._backend = self.backendAccessControl = accessControlClass(backend=self._backend, **kwargs)
+		
 		if extensionConfigDir or extensionClass:
 			logger.info(u"* BackendManager is creating BackendExtender")
 			self._backend = BackendExtender(self._backend, **kwargs)
