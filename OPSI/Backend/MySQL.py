@@ -48,7 +48,7 @@ from OPSI.Exceptions import (BackendBadValueError, BackendUnableToConnectError,
 from OPSI.Logger import Logger
 from OPSI.Types import forceInt, forceUnicode
 from OPSI.Util import getPublicKey
-from OPSI.Object import ProductProperty
+from OPSI.Object import Product, ProductProperty
 
 __all__ = (
 	'ConnectionPool', 'MySQL', 'MySQLBackend',
@@ -174,7 +174,7 @@ class MySQL(SQL):
 			elif option == 'connectionpoolrecycling':
 				self._connectionPoolRecyclingSeconds = forceInt(value)
 
-		self._transactionLock = threading.Lock()
+		#self._transactionLock = threading.Lock()
 		self._pool = None
 		self._createConnectionPool()
 		logger.debug(u'MySQL created: %s' % self)
@@ -263,7 +263,7 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 		for retryCount in range(retryLimit):
 			try:
 				logger.debug2(u"Connecting to connection pool")
-				self._transactionLock.acquire()
+				#self._transactionLock.acquire()
 				logger.debug2(u"Connection pool status: {0}", self._pool.status())
 				conn = self._pool.connect()
 				conn.autocommit(False)
@@ -275,8 +275,8 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 				logger.debug(u"MySQL connection error: {0!r}", connectionError)
 				errorCode = connectionError.args[0]
 
-				self._transactionLock.release()
-				logger.debug2(u"Lock released")
+				#self._transactionLock.release()
+				#logger.debug2(u"Lock released")
 
 				if errorCode == MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
 					logger.notice(u'MySQL server has gone away (Code {1}) - restarting connection: retry #{0}', retryCount, errorCode)
@@ -289,8 +289,8 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 			self._pool.destroy()
 			self._pool = None
 
-			self._transactionLock.release()
-			logger.debug2(u"Lock released")
+			#self._transactionLock.release()
+			#logger.debug2(u"Lock released")
 
 			raise BackendUnableToConnectError(u"Unable to connnect to mysql server. Giving up after {0} retries!".format(retryLimit))
 
@@ -301,7 +301,8 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 			cursor.close()
 			conn.close()
 		finally:
-			self._transactionLock.release()
+			#self._transactionLock.release()
+			pass
 
 	def getSet(self, query):
 		logger.debug2(u"getSet: {0}", query)
@@ -692,6 +693,50 @@ class MySQLBackend(SQLBackend):
 		self._sql.execute('CREATE INDEX `index_software_config_clientId` on `SOFTWARE_CONFIG` (`clientId`);')
 		self._sql.execute('CREATE INDEX `index_software_config_nvsla` on `SOFTWARE_CONFIG` (`name`, `version`, `subVersion`, `language`, `architecture`);')
 
+	# Overwriting product_getObjects to use JOIN for speedup
+	def product_getObjects(self, attributes=[], **filter):
+		self._requiresEnabledSQLBackendModule()
+		ConfigDataBackend.product_getObjects(self, attributes=[], **filter)
+		logger.info(u"Getting products, filter: %s" % filter)
+
+		(attributes, filter) = self._adjustAttributes(Product, attributes, filter)
+		readWindowsSoftwareIDs = not attributes or 'windowsSoftwareIds' in attributes
+
+		select = ','.join(f'p.`{attribute}`' for attribute in attributes) or 'p.*'
+		where = self._filterToSql(filter) or '1=1'
+		query = f'''
+			SELECT
+				{select},
+				JSON_ARRAYAGG(wp.windowsSoftwareId) AS windowsSoftwareIds
+			FROM
+				PRODUCT AS p
+			LEFT JOIN
+				WINDOWS_SOFTWARE_ID_TO_PRODUCT AS wp ON p.productId = wp.productId
+			WHERE
+				{where}
+			GROUP BY
+				p.productId,
+				p.productVersion,
+				p.packageVersion
+		'''
+
+		products = []
+		for product in self._sql.getSet(query):
+			product['productClassIds'] = []
+			if readWindowsSoftwareIDs:
+				# workaround https://bugs.mysql.com/bug.php?id=90835
+				product['windowsSoftwareIds'] = [x for x in orjson.loads(product['windowsSoftwareIds']) if x is not None]
+			else:
+				product['windowsSoftwareIds'] = []
+			
+			if not attributes or 'productClassIds' in attributes:
+				# TODO: is this missing an query?
+				pass
+			
+			self._adjustResult(Product, product)
+			products.append(Product.fromHash(product))
+		return products
+
 	# Overwriting productProperty_getObjects to use JOIN for speedup
 	def productProperty_getObjects(self, attributes=[], **filter):
 		self._requiresEnabledSQLBackendModule()
@@ -727,8 +772,8 @@ class MySQLBackend(SQLBackend):
 		productProperties = []
 		for productProperty in self._sql.getSet(query):
 			if readValues:
-				productProperty['possibleValues'] = orjson.loads(productProperty['possibleValues'])
 				# workaround https://bugs.mysql.com/bug.php?id=90835
+				productProperty['possibleValues'] = [x for x in orjson.loads(productProperty['possibleValues']) if x is not None]
 				productProperty['defaultValues'] = [x for x in orjson.loads(productProperty['defaultValues']) if x is not None]
 			else:
 				productProperty['possibleValues'] = []
