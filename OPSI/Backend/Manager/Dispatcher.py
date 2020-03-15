@@ -140,8 +140,9 @@ class BackendDispatcher(Backend):
 			moduleName = 'OPSI.Backend.%s' % l['module']
 			backendClassName = "%sBackend" % l['module']
 			b = importlib.import_module(moduleName)
-			kwargs.update(l['config'])
-			self._backends[backend]["instance"] = getattr(b, backendClassName)(**kwargs)
+			cargs = dict(l['config'])
+			cargs.update(kwargs)
+			self._backends[backend]["instance"] = getattr(b, backendClassName)(**cargs)
 
 	def _createInstanceMethods(self):
 		logger.debug(u"BackendDispatcher is creating instance methods")
