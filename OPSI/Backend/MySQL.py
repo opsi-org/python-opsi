@@ -174,7 +174,7 @@ class MySQL(SQL):
 			elif option == 'connectionpoolrecycling':
 				self._connectionPoolRecyclingSeconds = forceInt(value)
 
-		#self._transactionLock = threading.Lock()
+		self._transactionLock = threading.Lock()
 		self._pool = None
 		self._createConnectionPool()
 		logger.debug(u'MySQL created: %s' % self)
