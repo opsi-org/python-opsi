@@ -263,7 +263,7 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 		for retryCount in range(retryLimit):
 			try:
 				logger.debug2(u"Connecting to connection pool")
-				#self._transactionLock.acquire()
+				self._transactionLock.acquire()
 				logger.debug2(u"Connection pool status: {0}", self._pool.status())
 				conn = self._pool.connect()
 				conn.autocommit(False)
@@ -275,8 +275,8 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 				logger.debug(u"MySQL connection error: {0!r}", connectionError)
 				errorCode = connectionError.args[0]
 
-				#self._transactionLock.release()
-				#logger.debug2(u"Lock released")
+				self._transactionLock.release()
+				logger.debug2(u"Lock released")
 
 				if errorCode == MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
 					logger.notice(u'MySQL server has gone away (Code {1}) - restarting connection: retry #{0}', retryCount, errorCode)
@@ -289,8 +289,8 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 			self._pool.destroy()
 			self._pool = None
 
-			#self._transactionLock.release()
-			#logger.debug2(u"Lock released")
+			self._transactionLock.release()
+			logger.debug2(u"Lock released")
 
 			raise BackendUnableToConnectError(u"Unable to connnect to mysql server. Giving up after {0} retries!".format(retryLimit))
 
@@ -301,8 +301,7 @@ Defaults to :py:class:MySQLdb.cursors.DictCursor:.
 			cursor.close()
 			conn.close()
 		finally:
-			#self._transactionLock.release()
-			pass
+			self._transactionLock.release()
 
 	def getSet(self, query):
 		logger.debug2(u"getSet: {0}", query)
