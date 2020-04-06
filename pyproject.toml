@@ -21,6 +21,7 @@ pyasn1 = "^0.4.8"
 pyCrypto = "^2.6.1"
 pyOpenSSL = "^19.1.0"
 twisted = {extras = ["tls"], version = "^20.3.0"}
+python-magic = "^0.4.15"
 
 [tool.poetry.dev-dependencies]
 
