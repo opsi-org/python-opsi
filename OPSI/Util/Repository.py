@@ -114,7 +114,7 @@ def getFileInfosFromDavXML(davxmldata, encoding='utf-8'):
 
 				# IIS Fix: Remove trailing backslash on file-paths
 				if info['type'] == 'file' and info['path'].endswith("/"):
-					info['path'] = str(info['path'][:-1], encoding=encoding)
+					info['path'] = info['path'][:-1]
 
 			content.append(info)
 
