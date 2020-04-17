@@ -299,7 +299,7 @@ class SQLBackend(ConfigDataBackend):
 							operator = '='
 
 						value = value.replace(u'\uffff', self._sql.ESCAPED_ASTERISK)
-						yield u"{0}`{1}` {2} '{3}'".format(key, operator, forceUnicode(value))
+						yield u"{0}`{1}` {2} '{3}'".format(table, key, operator, forceUnicode(value))
 
 		def addParenthesis(conditions):
 			for condition in conditions:
