@@ -253,7 +253,7 @@ class SQLBackend(ConfigDataBackend):
 		if not self._sqlBackendModule:
 			raise BackendModuleDisabledError(u"SQL backend module disabled")
 
-	def _filterToSql(self, filter={}):
+	def _filterToSql(self, filter={}, table=None):
 		"""
 		Creates a SQL condition out of the given filter.
 		"""
@@ -265,19 +265,23 @@ class SQLBackend(ConfigDataBackend):
 				if not values:
 					continue
 
-				yield u' or '.join(processValues(key, values))
+				yield u' or '.join(processValues(key, values, table))
 
-		def processValues(key, values):
+		def processValues(key, values, table=None):
+			if table:
+				table = "`{0}`.".format(table)
+			else:
+				table = ""
 			for value in values:
 				if isinstance(value, bool):
 					if value:
-						yield u"`{0}` = 1".format(key)
+						yield u"{0}`{1}` = 1".format(table, key)
 					else:
-						yield u"`{0}` = 0".format(key)
+						yield u"{0}`{1}` = 0".format(table, key)
 				elif isinstance(value, (float, int)):
-					yield u"`{0}` = {1}".format(key, value)
+					yield u"{0}`{1}` = {2}".format(table, key, value)
 				elif value is None:
-					yield u"`{0}` is NULL".format(key)
+					yield u"{0}`{1}` is NULL".format(table, key)
 				else:
 					value = value.replace(self._sql.ESCAPED_ASTERISK, u'\uffff')
 					value = self._sql.escapeApostrophe(self._sql.escapeBackslash(value))
@@ -286,7 +290,7 @@ class SQLBackend(ConfigDataBackend):
 						operator = match.group(1)
 						value = match.group(2)
 						value = value.replace(u'\uffff', self._sql.ESCAPED_ASTERISK)
-						yield u"`%s` %s %s" % (key, operator, forceUnicode(value))
+						yield u"%s`%s` %s %s" % (table, key, operator, forceUnicode(value))
 					else:
 						if '*' in value:
 							operator = 'LIKE'
@@ -295,7 +299,7 @@ class SQLBackend(ConfigDataBackend):
 							operator = '='
 
 						value = value.replace(u'\uffff', self._sql.ESCAPED_ASTERISK)
-						yield u"`{0}` {1} '{2}'".format(key, operator, forceUnicode(value))
+						yield u"{0}`{1}` {2} '{3}'".format(key, operator, forceUnicode(value))
 
 		def addParenthesis(conditions):
 			for condition in conditions:
