@@ -702,7 +702,7 @@ class MySQLBackend(SQLBackend):
 		readWindowsSoftwareIDs = not attributes or 'windowsSoftwareIds' in attributes
 
 		select = ','.join(f'p.`{attribute}`' for attribute in attributes) or 'p.*'
-		where = self._filterToSql(filter) or '1=1'
+		where = self._filterToSql(filter, table="p") or '1=1'
 		query = f'''
 			SELECT
 				{select},
@@ -746,7 +746,7 @@ class MySQLBackend(SQLBackend):
 		readValues = not attributes or 'possibleValues' in attributes or 'defaultValues' in attributes
 
 		select = ','.join(f'pp.`{attribute}`' for attribute in attributes) or 'pp.*'
-		where = self._filterToSql(filter) or '1=1'
+		where = self._filterToSql(filter, table="pp") or '1=1'
 		query = f'''
 			SELECT
 				{select},
