@@ -320,15 +320,9 @@ class DepotserverPackageManager:
 		logger.info(u"=================================================================================================")
 		if forceProductId:
 			forceProductId = forceProductIdFunc(forceProductId)
-			logger.notice(
-				u"Installing package file '{filename}' as '{productId}' on depot '{depotId}'",
-				filename=filename, depotId=depotId, productId=forceProductId
-			)
+			logger.notice(u"Installing package file '{0}' as '{1}' on depot '{2}'", filename, forceProductId, depotId)
 		else:
-			logger.notice(
-				u"Installing package file '{filename}' on depot '{depotId}'",
-				filename=filename, depotId=depotId
-			)
+			logger.notice(u"Installing package file '{0}' on depot '{1}'", filename, depotId)
 
 		try:
 			filename = forceFilename(filename)
