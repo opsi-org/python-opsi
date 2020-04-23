@@ -32,7 +32,7 @@ from OPSI.Logger import Logger
 from OPSI.Service.Worker import (WorkerOpsi, WorkerOpsiJsonRpc,
 	WorkerOpsiJsonInterface, WorkerOpsiDAV)
 from OPSI.Types import forceUnicode
-from twisted.web import http, resource, server, responsecode
+from twisted.web import http, resource, server
 
 logger = Logger()
 
