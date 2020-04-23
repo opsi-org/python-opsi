@@ -233,9 +233,6 @@ interfacePage = u'''<?xml version="1.0" encoding="UTF-8"?>
 class WorkerOpsi:
 	def __init__(self, service, request, resource):
 		self.service = service
-		if request.headers.hasHeader("x-forwarded-for"):
-			# overloading request because proxy detected
-			request.remoteAddr.host = request.headers.getRawHeaders("x-forwarded-for")[0]
 		self.request = request
 		self.query = u''
 		self.path = u''
@@ -252,11 +249,15 @@ class WorkerOpsi:
 		deferred.addCallback(self._processQuery)
 		deferred.addCallback(self._setResponse)
 		deferred.addCallback(self._setCookie)
+		deferred.addCallback(self._finishRequest)
 		deferred.addCallback(self._freeSession)
 		deferred.addErrback(self._errback)
 		deferred.callback(None)
 		return deferred
 
+	def _finishRequest(self, result):
+		self.request.finish()
+	
 	def _getSessionHandler(self):
 		try:
 			return self.service._getSessionHandler()
@@ -279,29 +280,27 @@ class WorkerOpsi:
 		logger.debug2("{0}._errback", self.__class__.__name__)
 
 		self._freeSession(failure)
-
-		self._renderError(failure)
-		self._setCookie()
+		self._setCookie(failure)
 		self.request.setResponseCode(500)
 
 		try:
 			failure.raiseException()
 		except OpsiAuthenticationError as error:
 			logger.logException(error)
-			result.code = 401
-			result.headers.setHeader('www-authenticate', [('basic', {'realm': self.authRealm})])
+			self.request.setResponseCode(401)
+			self.request.setHeader("www-authenticate", f"basic realm={self.authRealm}")
 		except OpsiBadRpcError as error:
 			logger.logException(error)
-			result.code = 400
+			self.request.setResponseCode(400)
 		except Exception as error:
 			logger.logException(error, LOG_ERROR)
-			logger.error(failure)
-
-		return result
+			#logger.error(error)
+		self._renderError(failure)
+		self.request.finish()
 
 	def _renderError(self, failure):
-		self.request.setHeader('content-type', http_headers.MimeType("text", "html", {"charset": "utf-8"}))
-		error = u'Unknown error'
+		self.request.setHeader("content-type", "text/html; charset=utf-8")
+		error = "Unknown error"
 		try:
 			failure.raiseException()
 		except Exception as error:
@@ -315,15 +314,14 @@ class WorkerOpsi:
 		return result
 
 	def _getAuthorization(self):
-		user = password = u''
-		logger.debug(u"Trying to get username and password from Authorization header")
-		auth = self.request.headers.getHeader('Authorization')
+		user = password = ""
+		logger.debug("Trying to get username and password from Authorization header")
+		auth = self.request.getHeader('Authorization').split()
 		if auth:
-			logger.debug(u"Authorization header found (type: {0})", auth[0])
+			logger.debug("Authorization header found (type: {0})", auth[0])
 			try:
-				encoded = auth[1]
-
-				logger.confidential(u"Auth encoded: {0}", encoded)
+				encoded = auth[1].encode("ascii")
+				logger.confidential("Auth encoded: {0}", encoded)
 				parts = str(base64.decodebytes(encoded), encoding='latin-1').split(':')
 				if len(parts) > 6:
 					user = u':'.join(parts[:6])
@@ -334,7 +332,7 @@ class WorkerOpsi:
 				user = user.strip()
 				logger.confidential(u"Client supplied username {0!r} and password {1!r}", user, password)
 			except Exception as error:
-				logger.error(u"Bad Authorization header from '{0}': {1}", self.request.remoteAddr.host, error)
+				logger.error(u"Bad Authorization header from '{0}': {1}", self.request.getClientIP(), error, exc_info=True)
 
 		return (user, password)
 
@@ -343,67 +341,65 @@ class WorkerOpsi:
 
 	def _getUserAgent(self):
 		try:
-			userAgent = self.request.headers.getHeader('user-agent')
+			userAgent = self.request.getHeader('user-agent')
 		except Exception:
-			logger.info(u"Client '%s' did not supply user-agent" % self.request.remoteAddr.host)
+			logger.info("Client '%s' did not supply user-agent" % self.request.getClientIP())
 			userAgent = None
 
 		if not userAgent:
-			userAgent = 'unknown'
+			userAgent = "unknown"
 
 		return userAgent
 
 	def _getSessionId(self):
 		"Get session id from cookie request header"
-		sessionId = u''
+		sessionId = ""
 		try:
-			for (headerTag, headerValue) in self.request.headers.getAllRawHeaders():
-				if headerTag.lower() == 'cookie':
-					for cookie in headerValue:
-						for c in cookie.split(';'):
-							if '=' not in c:
-								continue
-
-							(name, value) = c.split('=', 1)
-							if name.strip() == self._getSessionHandler().sessionName:
-								sessionId = forceUnicode(value.strip())
-								break
-
-					break
+			#cookie = self.request.getCookie(self._getSessionHandler().sessionName)
+			cookie = self.request.getHeader("cookie")
+			if cookie:
+				for c in cookie.split(';'):
+					if '=' not in c:
+						continue
+					(name, value) = c.split('=', 1)
+					if name.strip() == self._getSessionHandler().sessionName:
+						sessionId = forceUnicode(value.strip())
+						break
 		except Exception as error:
 			logger.error(u"Failed to get cookie from header: {0}", error)
 
+		logger.confidential("sessionId: {0}", sessionId)
 		return sessionId
 
 	def _getSession(self, result):
 		''' This method restores a session or generates a new one. '''
 		self.session = None
 
-		logger.confidential(u"Request headers: {0}", self.request.headers)
+		logger.confidential(u"Request headers: {0}", self.request.getAllHeaders())
 
 		userAgent = self._getUserAgent()
 		sessionHandler = self._getSessionHandler()
 		sessionId = self._getSessionId()
 
 		# Get Session object
-		self.session = sessionHandler.getSession(sessionId, self.request.remoteAddr.host)
+		self.session = sessionHandler.getSession(sessionId, self.request.getClientIP())
 		if sessionId == self.session.uid:
-			logger.info(u"Reusing session for client '{0}', application '{1}'", self.request.remoteAddr.host, userAgent)
+			logger.info(u"Reusing session for client '{0}', application '{1}'", self.request.getClientIP(), userAgent)
 		elif sessionId:
-			logger.notice(u"Application '{0}' on client '{1}' supplied non existing session id: {2}", userAgent, self.request.remoteAddr.host, sessionId)
+			logger.notice(u"Application '{0}' on client '{1}' supplied non existing session id: {2}", userAgent, self.request.getClientIP(), sessionId)
 
-		if sessionHandler and self.session.ip and (self.session.ip != self.request.remoteAddr.host):
+		if sessionHandler and self.session.ip and (self.session.ip != self.request.getClientIP()):
 			logger.critical(
 				u"Client ip '{0}' does not match session ip '{1}', "
 				u"deleting old session and creating a new one",
-				self.request.remoteAddr.host,
+				self.request.getClientIP(),
 				self.session.ip
 			)
 			sessionHandler.deleteSession(self.session.uid)
 			self.session = sessionHandler.getSession()
 
 		# Set ip
-		self.session.ip = self.request.remoteAddr.host
+		self.session.ip = self.request.getClientIP()
 
 		# Set user-agent / application
 		if self.session.userAgent and (self.session.userAgent != userAgent):
@@ -411,29 +407,28 @@ class WorkerOpsi:
 				u"Application changed from '{0}' to '{1}' for existing session of client '{2}'",
 				self.session.userAgent,
 				userAgent,
-				self.request.remoteAddr.host
+				self.request.getClientIP()
 			)
 		self.session.userAgent = userAgent
 
 		logger.confidential(
 			u"Session id is {0!r} for client {1!r}, application {2!r}",
 			self.session.uid,
-			self.request.remoteAddr.host,
+			self.request.getClientIP(),
 			self.session.userAgent
 		)
 
 		logger.confidential(u"Session content: {0}", self.session.__dict__)
 		return result
 
-	def _setCookie(self):
+	def _setCookie(self, result):
 		logger.debug(u"%s._setCookie" % self)
 		if not self.session:
 			return
 
 		# Add cookie to headers
-		cookie = http_headers.Cookie(self.session.name.encode('ascii', 'replace'), self.session.uid.encode('ascii', 'replace'), path='/')
-		self.request.setHeader('set-cookie', [cookie])
-
+		self.request.addCookie(self.session.name.encode('ascii', 'replace'), self.session.uid.encode('ascii', 'replace'), path='/')
+	
 	def _authenticate(self, result):
 		'''
 		This function tries to authenticate a user.
@@ -455,17 +450,16 @@ class WorkerOpsi:
 		return result
 
 	def _getQuery(self, result):
-		self.query = ''
-		if self.request.method == 'GET':
-			self.query = urllib.unquote(self.request.querystring)
-		elif self.request.method == 'POST':
+		self.query = ""
+		if self.request.method == b'GET':
+			self.query = urllib.parse.urlparse(urllib.parse.unquote(self.request.uri.decode("ascii"))).query
+		elif self.request.method == b'POST':
 			self.query = self.request.content.read()
 			# Returning deferred needed for chaining
 			#d = stream.readStream(self.request.stream, self._handlePostData)
 			#return d
 		else:
 			raise ValueError(u"Unhandled method '%s'" % self.request.method)
-
 		return result
 
 	#def _handlePostData(self, chunk):
@@ -474,9 +468,9 @@ class WorkerOpsi:
 	def _decodeQuery(self, result):
 		try:
 			if self.request.method == 'POST':
-				contentType = self.request.headers.getHeader('content-type')
+				contentType = self.request.getHeader('content-type')
 				try:
-					contentEncoding = self.request.headers.getHeader('content-encoding')[0].lower()
+					contentEncoding = self.request.getHeader('content-encoding')[0].lower()
 				except Exception:
 					contentEncoding = None
 
@@ -515,13 +509,9 @@ class WorkerOpsi:
 		return self._decodeQuery(result)
 
 	def _generateResponse(self, result):
-		if not isinstance(result, http.Response):
-			result = http.Response()
-
-		result.code = 200
-		result.headers.setHeader('content-type', http_headers.MimeType("text", "html", {"charset": "utf-8"}))
-		result.stream = stream.IByteStream("")
-		return result
+		self.request.setResponseCode(200)
+		self.request.setHeader("content-type", "text/html; charset=utf-8")
+		self.request.write("")
 
 	def _setResponse(self, result):
 		return self._generateResponse(result)
@@ -588,17 +578,17 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 		invalidMime = False  # For handling the invalid MIME type "gzip-application/json-rpc"
 		encoding = None
 		try:
-			if 'gzip' in self.request.headers.getHeader('Accept-Encoding'):
+			if 'gzip' in self.request.getHeader('Accept-Encoding'):
 				encoding = 'gzip'
-			elif 'deflate' in self.request.headers.getHeader('Accept-Encoding'):
+			elif 'deflate' in self.request.getHeader('Accept-Encoding'):
 				encoding = 'deflate'
 		except Exception as error:
 			logger.debug2("Failed to get Accept-Encoding from request header: {0}".format(error))
 
 		try:
-			if self.request.headers.getHeader('Accept'):
-				for accept in self.request.headers.getHeader('Accept').keys():
-					if accept.mediaType.startswith('gzip'):
+			if self.request.getHeader('Accept'):
+				for accept in self.request.getHeader('Accept').split(','):
+					if accept.strip().startswith('gzip'):
 						invalidMime = True
 						encoding = 'gzip'
 						break
@@ -610,47 +600,41 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 		if len(response) == 1:
 			response = response[0]
 		if not response:
-			response = None
+			response = ""
 
-		if not isinstance(result, http.Response):
-			result = http.Response()
-		result.code = 200
-
-		result.headers.setHeader('content-type', http_headers.MimeType("application", "json", {"charset": "utf-8"}))
+		self.request.setResponseCode(200)
+		self.request.setHeader("content-type", "application/json; charset=utf-8")
 
 		if invalidMime:
 			# The invalid requests expect the encoding set to
 			# gzip but the content is deflated.
-			result.headers.setHeader('content-encoding', ["gzip"])
-			result.headers.setHeader('content-type', http_headers.MimeType("gzip-application", "json", {"charset": "utf-8"}))
-			logger.debug(u"Sending deflated data (backwards compatible - with content-encoding 'gzip')")
-			result.stream = stream.IByteStream(deflateEncode(toJson(response)))
+			self.request.setHeader("content-encoding", "gzip")
+			self.request.setHeader("content-type", "gzip-application/json; charset=utf-8")
+			logger.debug("Sending deflated data (backwards compatible - with content-encoding 'gzip')")
+			response = deflateEncode(toJson(response))
 		elif encoding == "deflate":
-			logger.debug(u"Sending deflated data")
-			result.headers.setHeader('content-encoding', [encoding])
-			result.stream = stream.IByteStream(deflateEncode(toJson(response)))
+			logger.debug("Sending deflated data")
+			self.request.setHeader("content-encoding", encoding)
+			response = deflateEncode(toJson(response))
 		elif encoding == "gzip":
-			logger.debug(u"Sending gzip compressed data")
-			result.headers.setHeader('content-encoding', [encoding])
-			result.stream = stream.IByteStream(gzipEncode(toJson(response)))
+			logger.debug("Sending gzip compressed data")
+			self.request.setHeader("content-encoding", encoding)
+			response = gzipEncode(toJson(response))
 		else:
-			logger.debug(u"Sending plain data")
-			result.stream = stream.IByteStream(toJson(response))
+			logger.debug("Sending plain data")
+			response = toJson(response)
 
-		return result
+		self.request.write(response)
 
 	def _renderError(self, failure):
-		result = http.Response()
-		result.headers.setHeader('content-type', http_headers.MimeType("text", "html", {"charset": "utf-8"}))
-		error = u'Unknown error'
+		self.request.setHeader('content-type', "application/json; charset=utf-8")
+		error = "Unknown error"
 		try:
 			failure.raiseException()
 		except Exception as err:
 			error = {'class': err.__class__.__name__, 'message': str(err)}
 			error = toJson({"id": None, "result": None, "error": error})
-		result.stream = stream.IByteStream(error.encode('utf-8'))
-		return result
-
+		self.request.write(error.encode('utf-8'))
 
 class MultiprocessWorkerOpsiJsonRpc(WorkerOpsiJsonRpc):
 
@@ -674,13 +658,13 @@ class MultiprocessWorkerOpsiJsonRpc(WorkerOpsiJsonRpc):
 			return rpcs
 
 		def makeInstanceCall():
-			contentType = self.request.headers.getHeader('content-type')
+			contentType = self.request.headers.getHeader("content-type")
 			try:
-				contentEncoding = self.request.headers.getHeader('content-encoding')[0].lower()
+				contentEncoding = self.request.headers.getHeader("content-encoding").lower()
 			except Exception:
 				contentEncoding = None
 
-			gzipEnabled = (contentEncoding == 'gzip') or (contentType and contentType.mediaType.startswith('gzip'))
+			gzipEnabled = ("gzip" in contentEncoding) or (contentType and "gzip" in contentType)
 			d = self._callInstance.processQuery(self.query, gzipEnabled)
 			d.addCallback(processResult)
 			return d
@@ -696,88 +680,60 @@ class WorkerOpsiJsonInterface(WorkerOpsiJsonRpc):
 	Worker responsible for creating the human-usable interface page.
 	"""
 	def _generateResponse(self, result):
-		logger.info(u"Creating interface page")
+		logger.info("Creating interface page")
 
 		javascript = [
-			u"var currentParams = new Array();",
-			u"var currentMethod = null;"
+			"var currentParams = new Array();",
+			"var currentMethod = null;"
 		]
-		currentMethod = u''
+		currentMethod = ""
 		if self._rpcs:
 			currentMethod = self._rpcs[0].getMethodName()
-			javascript.append(u"currentMethod = '%s';" % currentMethod)
+			javascript.append(f"currentMethod = '{currentMethod}';")
 			for (index, param) in enumerate(self._rpcs[0].params):
-				javascript.append(u"currentParams[%d] = '%s';" % (index, toJson(param)))
+				javascript.append(f"currentParams[{index}] = '{toJson(param)}';")
 
 		selectMethod = []
 		for method in self._callInterface:
-			methodName = method['name']
-			javascript.append(u"parameters['%s'] = new Array();" % methodName)
+			methodName = method["name"]
+			javascript.append(f"parameters['{methodName}'] = new Array();")
 			for (index, param) in enumerate(method['params']):
-				javascript.append(u"parameters['%s'][%s]='%s';" % (methodName, index, param))
+				javascript.append(f"parameters['{methodName}'][{index}]='{param}';")
 
-			selected = u''
-			if method['name'] == currentMethod:
-				selected = u' selected="selected"'
-			selectMethod.append(u'<option%s>%s</option>' % (selected, method['name']))
+			selected = ""
+			if method["name"] == currentMethod:
+				selected = ' selected="selected"'
+			selectMethod.append(f"<option{selected}>{method['name']}</option>")
 
 		def wrapInDiv(obj):
-			return u'<div class="json">{0}</div>'.format(obj)
+			return f'<div class="json">{obj}</div>'
 
-		results = [u'<div id="result">']
+		results = ['<div id="result">']
 		if isinstance(result, failure.Failure):
-			error = u'Unknown error'
+			error = "Unknown error"
 			try:
 				result.raiseException()
 			except Exception as err:
-				error = {'class': err.__class__.__name__, 'message': str(err)}
+				error = {"class": err.__class__.__name__, "message": str(err)}
 				error = toJson({"id": None, "result": None, "error": error})
 			results.append(wrapInDiv(objectToHtml(error)))
 		else:
 			for rpc in self._rpcs:
 				results.append(wrapInDiv(objectToHtml(serialize(rpc.getResponse()))))
-		results.append(u'</div>')
+		results.append("</div>")
 
 		html = interfacePage % {
-			'path': self.path,
-			'title': u'opsi interface page',
-			'javascript': u'\n'.join(javascript),
-			'select_path': u'<option selected="selected">%s</option>' % self.path,
-			'select_method': u''.join(selectMethod),
-			'result': u''.join(results),
+			"path": self.path,
+			"title": "opsi interface page",
+			"javascript": "\n".join(javascript),
+			"select_path": f'<option selected="selected">{self.path}</option>',
+			"select_method": "".join(selectMethod),
+			"result": "".join(results),
 		}
 
-		if not isinstance(result, http.Response):
-			result = http.Response()
-		result.code = 200
-		result.stream = stream.IByteStream(html.encode('utf-8').strip())
-
+		self.request.setResponseCode(200)
+		self.request.write(html.strip().encode("utf-8"))
 		return result
 
 	def _renderError(self, failure):
 		return self._generateResponse(failure)
-
-
-class WorkerOpsiDAV(WorkerOpsi):
-	def process(self):
-		logger.debug(u"Worker {0} started processing", self)
-
-		deferred = defer.Deferred()
-		if self.resource._authRequired:
-			deferred.addCallback(self._getSession)
-			deferred.addCallback(self._authenticate)
-		deferred.addCallback(self._setResponse)
-		if self.resource._authRequired:
-			deferred.addCallback(self._setCookie)
-			deferred.addCallback(self._freeSession)
-		deferred.addErrback(self._errback)
-		deferred.callback(None)
-		return deferred
-
-	def _setResponse(self, result):
-		logger.debug(u"Client requests DAV operation: {0}", self.request)
-		if not self.resource._authRequired and self.request.method not in ('GET', 'PROPFIND', 'OPTIONS', 'USERINFO', 'HEAD'):
-			logger.critical(u"Method '{0}' not allowed (read only)", self.request.method)
-			return http.Response(code=403, stream="Readonly!")
-
-		return self.resource.renderHTTP_super(self.request, self)
