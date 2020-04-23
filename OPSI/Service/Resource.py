@@ -29,8 +29,7 @@ opsi python library - Resource
 from twisted.internet import defer
 
 from OPSI.Logger import Logger
-from OPSI.Service.Worker import (WorkerOpsi, WorkerOpsiJsonRpc,
-	WorkerOpsiJsonInterface, WorkerOpsiDAV)
+from OPSI.Service.Worker import WorkerOpsi, WorkerOpsiJsonRpc, WorkerOpsiJsonInterface
 from OPSI.Types import forceUnicode
 from twisted.web import http, resource, server
 
@@ -58,14 +57,15 @@ class ResourceOpsi(resource.Resource):
 		deferred.callback(None)
 		return deferred
 
-	def renderHTTP(self, request):
+	def render(self, request):
 		''' Process request. '''
 		try:
-			logger.debug2(u"{0}.renderHTTP()", self.__class__.__name__)
+			logger.debug2(u"{0}.render()", self.__class__.__name__)
 			if not self.WorkerClass:
 				raise RuntimeError(u"No worker class defined in resource %s" % self.__class__.__name__)
 			worker = self.WorkerClass(self._service, request, self)
-			return worker.process()
+			worker.process()
+			return server.NOT_DONE_YET
 		except Exception as exc:
 			logger.logException(exc)
 
