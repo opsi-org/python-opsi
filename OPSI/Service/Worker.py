@@ -35,7 +35,7 @@ import urllib
 
 from twisted.internet import defer, reactor, threads
 from twisted.python import failure
-from twisted.web import responsecode, http_headers, http, stream
+from twisted.web import http_headers, http
 
 from OPSI.Exceptions import OpsiAuthenticationError, OpsiBadRpcError
 from OPSI.Logger import Logger, LOG_ERROR, LOG_INFO
@@ -280,19 +280,19 @@ class WorkerOpsi:
 
 		self._freeSession(failure)
 
-		result = self._renderError(failure)
-		result = self._setCookie(result)
-		result.code = responsecode.INTERNAL_SERVER_ERROR
+		self._renderError(failure)
+		self._setCookie()
+		self.request.setResponseCode(500)
 
 		try:
 			failure.raiseException()
 		except OpsiAuthenticationError as error:
 			logger.logException(error)
-			result.code = responsecode.UNAUTHORIZED
+			result.code = 401
 			result.headers.setHeader('www-authenticate', [('basic', {'realm': self.authRealm})])
 		except OpsiBadRpcError as error:
 			logger.logException(error)
-			result.code = responsecode.BAD_REQUEST
+			result.code = 400
 		except Exception as error:
 			logger.logException(error, LOG_ERROR)
 			logger.error(failure)
@@ -300,16 +300,14 @@ class WorkerOpsi:
 		return result
 
 	def _renderError(self, failure):
-		result = http.Response()
-		result.headers.setHeader('content-type', http_headers.MimeType("text", "html", {"charset": "utf-8"}))
+		self.request.setHeader('content-type', http_headers.MimeType("text", "html", {"charset": "utf-8"}))
 		error = u'Unknown error'
 		try:
 			failure.raiseException()
 		except Exception as error:
 			error = forceUnicode(error)
-		result.stream = stream.IByteStream(stream.IByteStream(error.encode('utf-8')))
-		return result
-
+		self.request.write(error.encode('utf-8'))
+	
 	def _freeSession(self, result):
 		if self.session:
 			logger.debug(u"Freeing session {0}", self.session)
@@ -427,17 +425,14 @@ class WorkerOpsi:
 		logger.confidential(u"Session content: {0}", self.session.__dict__)
 		return result
 
-	def _setCookie(self, result):
+	def _setCookie(self):
 		logger.debug(u"%s._setCookie" % self)
 		if not self.session:
-			return result
+			return
 
 		# Add cookie to headers
 		cookie = http_headers.Cookie(self.session.name.encode('ascii', 'replace'), self.session.uid.encode('ascii', 'replace'), path='/')
-		if not isinstance(result, http.Response):
-			result = http.Response()
-		result.headers.setHeader('set-cookie', [cookie])
-		return result
+		self.request.setHeader('set-cookie', [cookie])
 
 	def _authenticate(self, result):
 		'''
@@ -464,16 +459,17 @@ class WorkerOpsi:
 		if self.request.method == 'GET':
 			self.query = urllib.unquote(self.request.querystring)
 		elif self.request.method == 'POST':
+			self.query = self.request.content.read()
 			# Returning deferred needed for chaining
-			d = stream.readStream(self.request.stream, self._handlePostData)
-			return d
+			#d = stream.readStream(self.request.stream, self._handlePostData)
+			#return d
 		else:
 			raise ValueError(u"Unhandled method '%s'" % self.request.method)
 
 		return result
 
-	def _handlePostData(self, chunk):
-		self.query += chunk
+	#def _handlePostData(self, chunk):
+	#	self.query += chunk
 
 	def _decodeQuery(self, result):
 		try:
@@ -522,7 +518,7 @@ class WorkerOpsi:
 		if not isinstance(result, http.Response):
 			result = http.Response()
 
-		result.code = responsecode.OK
+		result.code = 200
 		result.headers.setHeader('content-type', http_headers.MimeType("text", "html", {"charset": "utf-8"}))
 		result.stream = stream.IByteStream("")
 		return result
@@ -618,7 +614,7 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 
 		if not isinstance(result, http.Response):
 			result = http.Response()
-		result.code = responsecode.OK
+		result.code = 200
 
 		result.headers.setHeader('content-type', http_headers.MimeType("application", "json", {"charset": "utf-8"}))
 
@@ -753,7 +749,7 @@ class WorkerOpsiJsonInterface(WorkerOpsiJsonRpc):
 
 		if not isinstance(result, http.Response):
 			result = http.Response()
-		result.code = responsecode.OK
+		result.code = 200
 		result.stream = stream.IByteStream(html.encode('utf-8').strip())
 
 		return result
@@ -782,6 +778,6 @@ class WorkerOpsiDAV(WorkerOpsi):
 		logger.debug(u"Client requests DAV operation: {0}", self.request)
 		if not self.resource._authRequired and self.request.method not in ('GET', 'PROPFIND', 'OPTIONS', 'USERINFO', 'HEAD'):
 			logger.critical(u"Method '{0}' not allowed (read only)", self.request.method)
-			return http.Response(code=responsecode.FORBIDDEN, stream="Readonly!")
+			return http.Response(code=403, stream="Readonly!")
 
 		return self.resource.renderHTTP_super(self.request, self)
