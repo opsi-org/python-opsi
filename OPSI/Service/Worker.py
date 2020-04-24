@@ -247,8 +247,8 @@ class WorkerOpsi:
 		deferred.addCallback(self._authenticate)
 		deferred.addCallback(self._getQuery)
 		deferred.addCallback(self._processQuery)
-		deferred.addCallback(self._setResponse)
 		deferred.addCallback(self._setCookie)
+		deferred.addCallback(self._setResponse)
 		deferred.addCallback(self._finishRequest)
 		deferred.addCallback(self._freeSession)
 		deferred.addErrback(self._errback)
@@ -427,7 +427,8 @@ class WorkerOpsi:
 			return
 
 		# Add cookie to headers
-		self.request.addCookie(self.session.name.encode('ascii', 'replace'), self.session.uid.encode('ascii', 'replace'), path='/')
+		logger.debug("Adding session cookie to headers")
+		self.request.addCookie(self.session.name, self.session.uid, path='/')
 	
 	def _authenticate(self, result):
 		'''
@@ -732,6 +733,7 @@ class WorkerOpsiJsonInterface(WorkerOpsiJsonRpc):
 		}
 
 		self.request.setResponseCode(200)
+		self.request.setHeader("content-type", "text/html; charset=utf-8")
 		self.request.write(html.strip().encode("utf-8"))
 		return result
 
