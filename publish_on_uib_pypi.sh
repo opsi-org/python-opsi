@@ -3,12 +3,20 @@
 repo_name="uibpypi"
 repo_url="http://pypi.uib.gmbh:8080"
 repo_username="upload"
-pkg_name="python-opsi"
-pkg_version=$(grep "^version = " pyproject.toml | cut -d '"' -f2)
+repo_password=""
+pkg_name=$(grep "^name = " pyproject.toml | head -n1 | cut -d '"' -f2)
+pkg_version=$(grep "^version = " pyproject.toml | head -n1 | cut -d '"' -f2)
 
-echo -n "password for user ${repo_username}: "
-read -s repo_password
-echo ""
+[ -z "${UIB_PYPI_NAME}" ] || repo_name="${UIB_PYPI_NAME}"
+[ -z "${UIB_PYPI_URL}" ] || repo_url="${UIB_PYPI_URL}"
+[ -z "${UIB_PYPI_USERNAME}" ] || repo_username="${UIB_PYPI_USERNAME}"
+[ -z "${UIB_PYPI_PASSWORD}" ] || repo_password="${UIB_PYPI_PASSWORD}"
+
+if [ -z "${repo_password}" ]; then
+	echo -n "password for user ${repo_username}: "
+	read -s repo_password
+	echo ""
+fi
 
 whl_name="${pkg_name/-/_}"
 
