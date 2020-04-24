@@ -95,14 +95,14 @@ class ExtendedBackend(Backend):
 	"""
 	Extending an backend with additional functionality.
 	"""
-	def __init__(self, backend, overwrite=True):
+	def __init__(self, backend, overwrite=True, **kwargs):
 		"""
 		Constructor.
 
 		:param backend: Instance of the backend to extend.
 		:param overwrite: Overwriting the public methods of the backend.
 		"""
-		Backend.__init__(self)
+		Backend.__init__(self, **kwargs)
 		self._backend = backend
 		if self._context is self:
 			logger.info(u"Setting context to backend %s" % self._context)
@@ -168,10 +168,9 @@ class ExtendedBackend(Backend):
 
 
 class ExtendedConfigDataBackend(ExtendedBackend):
-
-	def __init__(self, configDataBackend, overwrite=True):
-		ExtendedBackend.__init__(self, configDataBackend, overwrite=overwrite)
-		self._options = {
+	option_defaults = {
+		**Backend.option_defaults,
+		**{
 			'addProductOnClientDefaults': False,
 			'addProductPropertyStateDefaults': False,
 			'addConfigStateDefaults': False,
@@ -180,6 +179,10 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			'addDependentProductOnClients': False,
 			'processProductOnClientSequence': False
 		}
+	}
+	
+	def __init__(self, configDataBackend, overwrite=True, **kwargs):
+		ExtendedBackend.__init__(self, configDataBackend, overwrite=overwrite, **kwargs)
 		self._auditHardwareConfig = {}
 
 		if hasattr(self._backend, 'auditHardware_getConfig'):

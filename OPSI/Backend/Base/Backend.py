@@ -36,6 +36,7 @@ import codecs
 import inspect
 import re
 import time
+from typing import Union
 from hashlib import md5
 
 from OPSI import __version__ as LIBRARY_VERSION
@@ -97,6 +98,49 @@ def describeInterface(instance):
 
 	return [methods[name] for name in sorted(methods.keys())]
 
+class BackendOptions:
+	"""
+	A class used to combine option defaults and changed options
+	"""
+	def __init__(self, option_defaults: dict, option_store: Union[dict,callable] = {}):
+		"""
+		:param option_defaults: The default option items as dict
+		:param options_store: A dict or a callable to retrieve a dict to store changed options
+		"""
+		self._option_defaults = option_defaults
+		self._option_store = option_store
+
+	@property
+	def option_store(self):
+		if callable(self._option_store):
+			return self._option_store()
+		return self._option_store
+	
+	@option_store.setter
+	def option_store(self, option_store):
+		self._option_store = option_store
+	
+	def __setitem__(self, item, value):
+		self.option_store[item] = value
+
+	def __getitem__(self, item):
+		if item in self.option_store:
+			return self.option_store[item]
+		return self._option_defaults[item]
+	
+	def __contains__(self, item):
+		return item in self._option_defaults
+
+	def keys(self):
+		return self._option_defaults.keys()
+	
+	def items(self):
+		items = dict(self._option_defaults)
+		items.update(self.option_store)
+		return items.items()
+	
+	def copy(self):
+		return dict(self.items())
 
 class Backend:
 	"""
@@ -104,6 +148,7 @@ class Backend:
 	"""
 
 	matchCache = {}
+	option_defaults = {}
 
 	def __init__(self, **kwargs):
 		"""
@@ -121,8 +166,8 @@ This defaults to ``self``.
 		self._password = None
 		self._context = self
 		self._opsiVersion = LIBRARY_VERSION
-
 		self._opsiModulesFile = OPSI_MODULES_FILE
+		option_store = {}
 
 		for (option, value) in kwargs.items():
 			option = option.lower()
@@ -137,7 +182,10 @@ This defaults to ``self``.
 				logger.info(u"Backend context was set to %s" % self._context)
 			elif option == 'opsimodulesfile':
 				self._opsiModulesFile = forceFilename(value)
-		self._options = {}
+			elif option in ('option_store', 'optionstore'):
+				option_store = value
+
+		self._options = BackendOptions(self.option_defaults, option_store)
 
 	def __enter__(self):
 		return self

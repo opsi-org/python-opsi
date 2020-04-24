@@ -28,12 +28,10 @@ opsi python library - Resource
 
 from twisted.internet import defer
 
-import OPSI.web2.dav.static
 from OPSI.Logger import Logger
-from OPSI.Service.Worker import (WorkerOpsi, WorkerOpsiJsonRpc,
-	WorkerOpsiJsonInterface, WorkerOpsiDAV)
+from OPSI.Service.Worker import WorkerOpsi, WorkerOpsiJsonRpc, WorkerOpsiJsonInterface
 from OPSI.Types import forceUnicode
-from OPSI.web2 import http, resource, server, responsecode
+from twisted.web import http, resource, server
 
 logger = Logger()
 
@@ -59,14 +57,15 @@ class ResourceOpsi(resource.Resource):
 		deferred.callback(None)
 		return deferred
 
-	def renderHTTP(self, request):
+	def render(self, request):
 		''' Process request. '''
 		try:
-			logger.debug2(u"{0}.renderHTTP()", self.__class__.__name__)
+			logger.debug2(u"{0}.render()", self.__class__.__name__)
 			if not self.WorkerClass:
 				raise RuntimeError(u"No worker class defined in resource %s" % self.__class__.__name__)
 			worker = self.WorkerClass(self._service, request, self)
-			return worker.process()
+			worker.process()
+			return server.NOT_DONE_YET
 		except Exception as exc:
 			logger.logException(exc)
 
@@ -89,43 +88,3 @@ class ResourceOpsiJsonInterface(ResourceOpsiJsonRpc):
 		ResourceOpsi.__init__(self, service)
 		self._interface = service.getInterface()
 
-
-class ResourceOpsiDAV(OPSI.web2.dav.static.DAVFile):
-	WorkerClass = WorkerOpsiDAV
-
-	def __init__(self, service, path, readOnly=True, defaultType="text/plain", indexNames=None, authRequired=True):
-		path = forceUnicode(path).encode('utf-8')
-		OPSI.web2.dav.static.DAVFile.__init__(self, path, defaultType, indexNames)
-		self._service = service
-		self._readOnly = readOnly
-		self._authRequired = authRequired
-
-	def createSimilarFile(self, path):
-		return self.__class__(
-			self._service,
-			path,
-			readOnly=self._readOnly,
-			defaultType=self.defaultType,
-			indexNames=self.indexNames[:],
-			authRequired=self._authRequired
-		)
-
-	def renderHTTP(self, request):
-		try:
-			if self._readOnly and request.method not in ('GET', 'PROPFIND', 'OPTIONS', 'USERINFO', 'HEAD'):
-				logger.warning(u"Command %s not allowed (readonly)" % request.method)
-				return http.Response(
-					code=responsecode.FORBIDDEN,
-					stream="Readonly!"
-				)
-
-			worker = self.WorkerClass(self._service, request, self)
-			return worker.process()
-		except Exception as exc:
-			logger.logException(exc)
-
-	def renderHTTP_super(self, request, worker):
-		deferred = super(ResourceOpsiDAV, self).renderHTTP(request)
-		if isinstance(deferred, defer.Deferred):
-			deferred.addErrback(worker._errback)
-		return deferred

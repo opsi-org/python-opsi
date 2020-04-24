@@ -53,7 +53,7 @@ class DepotserverBackend(ExtendedBackend):
 	def __init__(self, backend, **kwargs):
 		self._name = 'depotserver'
 
-		ExtendedBackend.__init__(self, backend)
+		ExtendedBackend.__init__(self, backend, **kwargs)
 
 		self._packageLog = os.path.join(LOG_DIR, 'package.log')
 		self._sshRSAPublicKeyFile = u'/etc/ssh/ssh_host_rsa_key.pub'
@@ -320,15 +320,9 @@ class DepotserverPackageManager:
 		logger.info(u"=================================================================================================")
 		if forceProductId:
 			forceProductId = forceProductIdFunc(forceProductId)
-			logger.notice(
-				u"Installing package file '{filename}' as '{productId}' on depot '{depotId}'",
-				filename=filename, depotId=depotId, productId=forceProductId
-			)
+			logger.notice(u"Installing package file '{0}' as '{1}' on depot '{2}'", filename, forceProductId, depotId)
 		else:
-			logger.notice(
-				u"Installing package file '{filename}' on depot '{depotId}'",
-				filename=filename, depotId=depotId
-			)
+			logger.notice(u"Installing package file '{0}' on depot '{1}'", filename, depotId)
 
 		try:
 			filename = forceFilename(filename)

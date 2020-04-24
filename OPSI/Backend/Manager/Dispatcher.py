@@ -54,7 +54,6 @@ class BackendDispatcher(Backend):
 		self._dispatchIgnoreModules = []
 		self._backendConfigDir = None
 		self._backends = {}
-		self._options = {}
 		self._context = self
 
 		for (option, value) in kwargs.items():
@@ -77,7 +76,7 @@ class BackendDispatcher(Backend):
 		if not self._dispatchConfig:
 			raise BackendConfigurationError(u"Dispatcher not configured")
 
-		self.__loadBackends()
+		self.__loadBackends(dict(kwargs))
 		self._createInstanceMethods()
 
 	def __repr__(self):
@@ -109,7 +108,7 @@ class BackendDispatcher(Backend):
 		except Exception as e:
 			raise BackendConfigurationError(u"Failed to load dispatch config file '%s': %s" % (self._dispatchConfigFile, e))
 
-	def __loadBackends(self):
+	def __loadBackends(self, kwargs={}):
 		if not self._backendConfigDir:
 			raise BackendConfigurationError(u"Backend config dir not given")
 
@@ -141,7 +140,9 @@ class BackendDispatcher(Backend):
 			moduleName = 'OPSI.Backend.%s' % l['module']
 			backendClassName = "%sBackend" % l['module']
 			b = importlib.import_module(moduleName)
-			self._backends[backend]["instance"] = getattr(b, backendClassName)(**l['config'])
+			cargs = dict(l['config'])
+			cargs.update(kwargs)
+			self._backends[backend]["instance"] = getattr(b, backendClassName)(**cargs)
 
 	def _createInstanceMethods(self):
 		logger.debug(u"BackendDispatcher is creating instance methods")
