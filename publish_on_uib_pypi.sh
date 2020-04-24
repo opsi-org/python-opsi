@@ -22,9 +22,9 @@ whl_name="${pkg_name/-/_}"
 
 poetry build
 
-curl -u "${repo_username}:${repo_password}" --form ":action=remove_pkg" --form "name=${pkg_name}" --form "version=${pkg_version}" "${repo_url}"
+curl -s -u "${repo_username}:${repo_password}" --form ":action=remove_pkg" --form "name=${pkg_name}" --form "version=${pkg_version}" "${repo_url}" >/dev/null
 if [ "$whl_name" != "$pgk_name" ]; then
-	curl -u "${repo_username}:${repo_password}" --form ":action=remove_pkg" --form "name=${whl_name}" --form "version=${pkg_version}" "${repo_url}"
+	curl -s -u "${repo_username}:${repo_password}" --form ":action=remove_pkg" --form "name=${whl_name}" --form "version=${pkg_version}" "${repo_url}" >/dev/null
 fi
 
 poetry publish -r "${repo_name}" -u "${repo_username}" -p "${repo_password}"
