@@ -303,8 +303,8 @@ class WorkerOpsi:
 		error = "Unknown error"
 		try:
 			failure.raiseException()
-		except Exception as error:
-			error = forceUnicode(error)
+		except Exception as err:
+			error = forceUnicode(err)
 		self.request.write(error.encode('utf-8'))
 	
 	def _freeSession(self, result):
@@ -316,8 +316,9 @@ class WorkerOpsi:
 	def _getAuthorization(self):
 		user = password = ""
 		logger.debug("Trying to get username and password from Authorization header")
-		auth = self.request.getHeader('Authorization').split()
+		auth = self.request.getHeader('Authorization')
 		if auth:
+			auth = auth.split()
 			logger.debug("Authorization header found (type: {0})", auth[0])
 			try:
 				encoded = auth[1].encode("ascii")
