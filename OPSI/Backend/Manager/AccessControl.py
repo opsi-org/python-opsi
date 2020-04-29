@@ -43,6 +43,7 @@ from OPSI.Exceptions import (
 	BackendMissingDataError, BackendPermissionDeniedError,
 	BackendUnaccomplishableError)
 from OPSI.Logger import Logger, LOG_INFO
+from OPSI.Config import OPSI_ADMIN_GROUP
 from OPSI.Object import (
 	mandatoryConstructorArgs,
 	BaseObject, Object, OpsiClient, OpsiDepotserver)
@@ -97,6 +98,8 @@ class BackendAccessControl:
 		if isinstance(self._backend, BackendAccessControl):
 			raise BackendConfigurationError(u"Cannot use BackendAccessControl instance as backend")
 		
+		#import OPSI.Backend.Manager.Authentication.LDAP
+		#self._auth_module = OPSI.Backend.Manager.Authentication.LDAP.LDAPAuthentication("ldaps://adldap.uib.gmbh", "dc=ad,dc=uib,dc=gmbh", "ad.uib.gmbh")
 		if not self._auth_module:
 			if os.name == 'posix':
 				import OPSI.Backend.Manager.Authentication.PAM
