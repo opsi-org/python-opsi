@@ -23,63 +23,62 @@ PAM authentication.
 :license: GNU Affero General Public License version 3
 """
 
+from typing import Set
 import win32net
 import win32security
 
+from OPSI.Backend.Manager.Authentication import AuthenticationModule
 from OPSI.Exceptions import BackendAuthenticationError
 from OPSI.Logger import Logger
-
-
-__all__ = ('authenticate', 'readGroups')
 
 logger = Logger()
 
 
-def authenticate(username, password):
-	'''
-	Authenticate a user by Windows-Login on current machine
+class NTAuthentication(AuthenticationModule):
+	def __init__(self):
+		pass
 
-	:raises BackendAuthenticationError: If authentication fails.
-	'''
-	logger.confidential(
-		u"Trying to authenticate user {!r} with password {!r} by win32security",
-		username, password
-	)
+	def authenticate(self, username: str, password: str) -> None:
+		'''
+		Authenticate a user by Windows-Login on current machine
 
-	try:
-		win32security.LogonUser(
-			username, 'None', password,
-			win32security.LOGON32_LOGON_NETWORK, win32security.LOGON32_PROVIDER_DEFAULT
-		)
-	except Exception as error:
-		raise BackendAuthenticationError(u"Win32security authentication failed for user '%s': %s" % (username, error))
+		:raises BackendAuthenticationError: If authentication fails.
+		'''
+		logger.confidential("Trying to authenticate user {0} with password {1} by win32security", username, password)
+		
+		try:
+			win32security.LogonUser(
+				username, 'None', password,
+				win32security.LOGON32_LOGON_NETWORK, win32security.LOGON32_PROVIDER_DEFAULT
+			)
+		except Exception as error:
+			raise BackendAuthenticationError("Win32security authentication failed for user '%s': %s" % (username, error))
 
+	def get_groupnames(self, username: str) -> Set[str]:
+		"""
+		Read the groups of a user.
 
-def readGroups(username):
-	"""
-	Read the groups of a user.
+		:returns: List og group names the user is a member of.
+		:rtype: set()
+		"""
+		collected_groupnames = set()
 
-	:returns: Group the user is a member of.
-	:rtype: set()
-	"""
-	collectedGroups = set()
-
-	gresume = 0
-	while True:
-		(groups, total, gresume) = win32net.NetLocalGroupEnum(None, 0, gresume)
-		for groupname in (u['name'] for u in groups):
-			logger.debug2(u"Found group '%s'" % groupname)
-			uresume = 0
-			while True:
-				(users, total, uresume) = win32net.NetLocalGroupGetMembers(None, groupname, 0, uresume)
-				for sid in (u['sid'] for u in users):
-					(groupUsername, domain, groupType) = win32security.LookupAccountSid(None, sid)
-					if groupUsername.lower() == username.lower():
-						collectedGroups.add(groupname)
-						logger.debug(u"User {0!r} is member of group {1!r}", username, groupname)
-				if uresume == 0:
+		gresume = 0
+		while True:
+			(groups, total, gresume) = win32net.NetLocalGroupEnum(None, 0, gresume)
+			for groupname in (u['name'] for u in groups):
+				logger.debug2("Found group '%s'" % groupname)
+				uresume = 0
+				while True:
+					(users, total, uresume) = win32net.NetLocalGroupGetMembers(None, groupname, 0, uresume)
+					for sid in (u['sid'] for u in users):
+						(groupUsername, domain, groupType) = win32security.LookupAccountSid(None, sid)
+						if groupUsername.lower() == username.lower():
+							collected_groupnames.add(groupname)
+							logger.debug("User {0!r} is member of group {1!r}", username, groupname)
+					if uresume == 0:
+						break
+				if gresume == 0:
 					break
-			if gresume == 0:
-				break
 
-	return collectedGroups
+		return collected_groupnames
