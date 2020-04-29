@@ -97,6 +97,17 @@ scripts = ["click (>=6.0)", "twisted (>=16.4.0)"]
 
 [[package]]
 category = "main"
+description = "A strictly RFC 4510 conforming LDAP V3 pure Python client library"
+name = "ldap3"
+optional = false
+python-versions = "*"
+version = "2.7"
+
+[package.dependencies]
+pyasn1 = ">=0.1.8"
+
+[[package]]
+category = "main"
 description = "ASN.1 types and codecs"
 name = "pyasn1"
 optional = false
@@ -276,7 +287,7 @@ test = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 
 [metadata]
-content-hash = "d224c1dfb12c0e40e286d249b80f772807372848f2cac15b21bdf1b686265197"
+content-hash = "c8ca6b6c00f19282c95c307e27a67e4ae27fb186fb47b057ff05c5d88816f25a"
 python-versions = "^3.6"
 
 [metadata.files]
@@ -354,6 +365,14 @@ idna = [
 incremental = [
     {file = "incremental-17.5.0-py2.py3-none-any.whl", hash = "sha256:717e12246dddf231a349175f48d74d93e2897244939173b01974ab6661406b9f"},
     {file = "incremental-17.5.0.tar.gz", hash = "sha256:7b751696aaf36eebfab537e458929e194460051ccad279c72b755a167eebd4b3"},
+]
+ldap3 = [
+    {file = "ldap3-2.7-py2.6.egg", hash = "sha256:52ab557b3c4908db4a90bea16731aa714b1b54e039b54fd4c4b83994c6c48c0c"},
+    {file = "ldap3-2.7-py2.7.egg", hash = "sha256:4fd2db72d0412cc16ee86be01332095e86e361329c3579b314231eb2e56c7871"},
+    {file = "ldap3-2.7-py2.py3-none-any.whl", hash = "sha256:81df4ac8b6df10fb1f05b17c18d0cb8c4c344d5a03083c382824960ed959cf5b"},
+    {file = "ldap3-2.7-py3.8.egg", hash = "sha256:298769ab0232b3a3efa1e84881096c24526fe37911c83a11285f222fe4975efd"},
+    {file = "ldap3-2.7.tar.gz", hash = "sha256:17f04298b70bf7ecaa5db8a7d8622b5a962ef7fc2b245b2eea705ac1c24338c0"},
+    {file = "ldap3-2.7.win-amd64.exe", hash = "sha256:53aaae5bf14f3827c69600ddf4d61b88f49c055bb93060e9702c5bafd206c744"},
 ]
 pyasn1 = [
     {file = "pyasn1-0.4.8-py2.4.egg", hash = "sha256:fec3e9d8e36808a28efb59b489e4528c10ad0f480e57dcc32b4de5c9d8c9fdf3"},
