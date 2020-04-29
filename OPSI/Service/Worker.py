@@ -35,7 +35,6 @@ import urllib
 
 from twisted.internet import defer, reactor, threads
 from twisted.python import failure
-from twisted.web import http_headers, http
 
 from OPSI.Exceptions import OpsiAuthenticationError, OpsiBadRpcError
 from OPSI.Logger import Logger, LOG_ERROR, LOG_INFO
@@ -46,7 +45,7 @@ from OPSI.Service.JsonRpc import JsonRpc
 
 logger = Logger()
 
-interfacePage = u'''<?xml version="1.0" encoding="UTF-8"?>
+INTERFACE_PAGE = '''<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
@@ -289,6 +288,8 @@ class WorkerOpsi:
 			logger.logException(error)
 			self.request.setResponseCode(401)
 			self.request.setHeader("www-authenticate", f"basic realm={self.authRealm}")
+			self.request.finish()
+			return
 		except OpsiBadRpcError as error:
 			logger.logException(error)
 			self.request.setResponseCode(400)
@@ -624,7 +625,7 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 			response = gzipEncode(toJson(response))
 		else:
 			logger.debug("Sending plain data")
-			response = toJson(response)
+			response = toJson(response).encode("utf-8")
 
 		self.request.write(response)
 
@@ -724,7 +725,7 @@ class WorkerOpsiJsonInterface(WorkerOpsiJsonRpc):
 				results.append(wrapInDiv(objectToHtml(serialize(rpc.getResponse()))))
 		results.append("</div>")
 
-		html = interfacePage % {
+		html = INTERFACE_PAGE % {
 			"path": self.path,
 			"title": "opsi interface page",
 			"javascript": "\n".join(javascript),
