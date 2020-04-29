@@ -38,7 +38,6 @@ from OPSI.Backend.Base import (
 from OPSI.Backend.Depotserver import DepotserverBackend
 from OPSI.Backend.HostControl import HostControlBackend
 from OPSI.Backend.HostControlSafe import HostControlSafeBackend
-from OPSI.Config import OPSI_ADMIN_GROUP
 from OPSI.Exceptions import (
 	BackendAuthenticationError, BackendConfigurationError, BackendIOError,
 	BackendMissingDataError, BackendPermissionDeniedError,
@@ -48,14 +47,7 @@ from OPSI.Object import (
 	mandatoryConstructorArgs,
 	BaseObject, Object, OpsiClient, OpsiDepotserver)
 from OPSI.Types import forceBool, forceList, forceUnicode, forceUnicodeList
-from OPSI.Util.File.Opsi import BackendACLFile, OpsiConfFile
-
-if os.name == 'posix':
-	from .Authentication.PAM import authenticate
-	from .Authentication.PAM import readGroups
-elif os.name == 'nt':
-	from .Authentication.NT import authenticate
-	from .Authentication.NT import readGroups
+from OPSI.Util.File.Opsi import BackendACLFile
 
 __all__ = ('BackendAccessControl', 'BackendAccessControlManager')
 
@@ -66,9 +58,11 @@ class UserStore:
 		self.username = None
 		self.password = None
 		self.userGroups = set()
-		self.forceGroups = None
 		self.host = None
 		self.authenticated = False
+		self.isAdmin = False
+		self.isReadOnly = False
+
 
 class BackendAccessControl:
 
@@ -78,9 +72,10 @@ class BackendAccessControl:
 		self._context = backend
 		self._acl = None
 		self._aclFile = None
-		self._pamService = None
 		self._user_store = UserStore()
-		
+		self._auth_module = None
+
+		pam_service = None
 		kwargs = {k.lower(): v for k, v in kwargs.items()}
 		for (option, value) in kwargs.items():
 			if option == 'acl':
@@ -89,23 +84,36 @@ class BackendAccessControl:
 				self._aclFile = value
 			elif option == 'pamservice':
 				logger.debug("Using PAM service {}", value)
-				self._pamService = value
+				pam_service = value
 			elif option in ('context', 'accesscontrolcontext'):
 				self._context = value
 			elif option in ('user_store', 'userstore'):
 				self._user_store = value
+			elif option in ('auth_module', 'authmodule'):
+				self._auth_module = value
 
 		if not self._backend:
 			raise BackendAuthenticationError(u"No backend specified")
 		if isinstance(self._backend, BackendAccessControl):
 			raise BackendConfigurationError(u"Cannot use BackendAccessControl instance as backend")
 		
+		if not self._auth_module:
+			if os.name == 'posix':
+				import OPSI.Backend.Manager.Authentication.PAM
+				self._auth_module = OPSI.Backend.Manager.Authentication.PAM.PAMAuthentication(pam_service)
+			elif os.name == 'nt':
+				import OPSI.Backend.Manager.Authentication.NT
+				self._auth_module = OPSI.Backend.Manager.Authentication.NT.NTAuthentication()
+
 		self._createInstanceMethods()
 		if self._aclFile:
 			self.__loadACLFile()
 		
 		if not self._acl:
-			self._acl = [[r'.*', [{'type': u'sys_group', 'ids': [OPSI_ADMIN_GROUP], 'denyAttributes': [], 'allowAttributes': []}]]]
+			admin_groupname = OPSI_ADMIN_GROUP
+			if self._auth_module:
+				admin_groupname = self._auth_module.get_admin_groupname()
+			self._acl = [[r'.*', [{'type': u'sys_group', 'ids': [admin_groupname], 'denyAttributes': [], 'allowAttributes': []}]]]
 
 		# Pre-compiling regex patterns for speedup.
 		for i, (pattern, acl) in enumerate(self._acl):
@@ -128,9 +136,6 @@ class BackendAccessControl:
 		self.user_store.authenticated = False
 		self.user_store.username = username
 		self.user_store.password = password
-		self.user_store.forceGroups = None
-		if forceGroups is not None:
-			self.user_store.forceGroups = forceUnicodeList(forceGroups)
 		
 		if not self.user_store.username:
 			raise BackendAuthenticationError("No username specified")
@@ -164,28 +169,47 @@ class BackendAccessControl:
 					raise BackendAuthenticationError(u"OpsiHostKey authentication failed for host '%s': wrong key" % self.user_store.host.id)
 
 				logger.info(u"OpsiHostKey authentication successful for host {0!r}", self.user_store.host.id)
+
+				self.user_store.authenticated = True
+				self.user_store.isAdmin = self._isOpsiDepotserver()
+				self.user_store.isReadOnly = False
 			else:
 				# System user trying to log in with username and password
-				logger.debug(u"Trying to authenticate by operating system...")
-				self._authenticateUser()
+				logger.debug("Trying to authenticate by user authentication module %s", self._auth_module)
+				
+				if not self._auth_module:
+					raise BackendAuthenticationError("Authentication module unavailable")
+				
+				try:
+					self._auth_module.authenticate(self.user_store.username, self.user_store.password)
+				except Exception as error:
+					raise BackendAuthenticationError("Authentication failed for user '%s': %s" % (self.user_store.username, error))
+				
 				# Authentication did not throw exception => authentication successful
-				logger.info(u"Operating system authentication successful for user '%s', groups '%s'" % (self.user_store.username, ','.join(self.user_store.userGroups)))
+				self.user_store.authenticated = True
+				if forceGroups:
+					self.user_store.userGroups = forceUnicodeList(forceGroups)
+					logger.info("Forced groups for user {0}: {1}", self.user_store.username, ', '.join(self.user_store.userGroups))
+				else:
+					self.user_store.userGroups = self._auth_module.get_groupnames(self.user_store.username)
+				self.user_store.isAdmin = self._auth_module.user_is_admin(self.user_store.username)
+				self.user_store.isReadOnly = self._auth_module.user_is_read_only(self.user_store.username, set(forceGroups) if forceGroups else None)
+
+				logger.info(u"Authentication successful for user '%s', groups '%s'" % (self.user_store.username, ','.join(self.user_store.userGroups)))
+		
 		except Exception as e:
 			raise BackendAuthenticationError(forceUnicode(e))
 		
-		self.user_store.authenticated = True
+		
 	
 	def accessControl_authenticated(self):
 		return self.user_store.authenticated
 
 	def accessControl_userIsAdmin(self):
-		return self._isMemberOfGroup(OPSI_ADMIN_GROUP) or self._isOpsiDepotserver()
-
+		return self.user_store.isAdmin
+	
 	def accessControl_userIsReadOnlyUser(self):
-		readOnlyGroups = OpsiConfFile().getOpsiGroups('readonly')
-		if readOnlyGroups:
-			return self._isMemberOfGroup(readOnlyGroups)
-		return False
+		return self.user_store.isReadOnly
 
 	def __loadACLFile(self):
 		try:
@@ -220,31 +244,7 @@ class BackendAccessControl:
 				exec(u'def %s(self, %s): return self._executeMethod("%s", %s)' % (methodName, argString, methodName, callString))
 
 			setattr(self, methodName, types.MethodType(eval(methodName), self))
-
-	def _authenticateUser(self):
-		'''
-		Authenticate a user by the underlying operating system.
-
-		:raises BackendAuthenticationError: If authentication fails.
-		'''
-		if os.name == 'posix':
-			authFunc = functools.partial(authenticate, service=self._pamService)
-		elif os.name == 'nt':
-			authFunc = authenticate
-		else:
-			raise NotImplementedError("Sorry, operating system '%s' not supported yet!" % os.name)
-
-		try:
-			authFunc(self.user_store.username, self.user_store.password)
-
-			if self.user_store.forceGroups is not None:
-				self.user_store.userGroups = set(self.user_store.forceGroups)
-				logger.info(u"Forced groups for user {!r}: {}", self.user_store.username, ', '.join(self.user_store.userGroups))
-			else:
-				self.user_store.userGroups = readGroups(self.user_store.username)
-		except Exception as error:
-			raise BackendAuthenticationError(u"PAM authentication failed for user '%s': %s" % (self.user_store.username, error))
-
+	
 	def _isMemberOfGroup(self, ids):
 		for groupId in forceUnicodeList(ids):
 			if groupId in self.user_store.userGroups:

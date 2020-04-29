@@ -23,92 +23,71 @@ PAM authentication.
 :license: GNU Affero General Public License version 3
 """
 
+from typing import Set
 import grp
 import pwd
 import os
-
 import pam
 
+from OPSI.Backend.Manager.Authentication import AuthenticationModule
 from OPSI.Exceptions import BackendAuthenticationError
 from OPSI.Logger import Logger
 from OPSI.System.Posix import isRHEL, isCentOS, isOpenSUSE, isSLES
 from OPSI.Types import forceUnicode
 
-__all__ = ('authenticate', 'readGroups')
-
-
-_DEFAULT_SERVICE = None
-
 logger = Logger()
 
 
-def authenticate(username, password, service=None):
-	'''
-	Authenticate a user by PAM (Pluggable Authentication Modules).
-	Important: the uid running this code needs access to /etc/shadow
-	if os uses traditional unix authentication mechanisms.
+class PAMAuthentication(AuthenticationModule):
+	def __init__(self, pam_service: str = None):
+		self._pam_service = pam_service
+		if not self._pam_service:
+			if os.path.exists("/etc/pam.d/opsi-auth"):
+				# Prefering our own - if present.
+				self._pam_service = 'opsi-auth'
+			elif isSLES() or isOpenSUSE():
+				self._pam_service = 'sshd'
+			elif isCentOS() or isRHEL():
+				self._pam_service = 'system-auth'
+			else:
+				self._pam_service = 'common-auth'
+	
+	def authenticate(self, username: str, password: str) -> None:
+		'''
+		Authenticate a user by PAM (Pluggable Authentication Modules).
+		Important: the uid running this code needs access to /etc/shadow
+		if os uses traditional unix authentication mechanisms.
 
-	:param service: The PAM service to use. Leave None for autodetection.
-	:type service: str
-	:raises BackendAuthenticationError: If authentication fails.
-	'''
-	logger.confidential(
-		u"Trying to authenticate user {0!r} with password {1!r} by PAM",
-		username, password
-	)
+		:param service: The PAM service to use. Leave None for autodetection.
+		:type service: str
+		:raises BackendAuthenticationError: If authentication fails.
+		'''
+		logger.confidential("Trying to authenticate user {0} with password {1} by PAM", username, password)
+		logger.debug2("Attempting PAM authentication as user {0} (service={1})...", username, self._pam_service)
 
-	global _DEFAULT_SERVICE
-	pamService = service or _DEFAULT_SERVICE
-	if pamService is None:
-		pamService = _DEFAULT_SERVICE = getPAMService()
+		try:
+			auth = pam.pam()
+			if not auth.authenticate(username, password, service=self._pam_service):
+				logger.debug2("PAM authentication failed: {0} (code {1})", auth.reason, auth.code)
+				raise RuntimeError(auth.reason)
 
-	logger.debug2(
-		u"Attempting PAM authentication as user {!r} (service={})...",
-		username, pamService
-	)
+			logger.debug2("PAM authentication successful.")
+		except Exception as error:
+			raise BackendAuthenticationError("PAM authentication failed for user '%s': %s" % (username, error))
 
-	try:
-		auth = pam.pam()
-		if not auth.authenticate(username, password, service=pamService):
-			logger.debug2("PAM authentication failed: {} (code {})", auth.reason, auth.code)
-			raise RuntimeError(auth.reason)
+	def get_groupnames(self, username: str) -> Set[str]:
+		"""
+		Read the groups of a user.
 
-		logger.debug2("PAM authentication successful.")
-	except Exception as error:
-		raise BackendAuthenticationError(u"PAM authentication failed for user '%s': %s" % (username, error))
+		:returns: Group the user is a member of.
+		:rtype: set()
+		"""
+		logger.debug("Reading groups of user {!r}...", username)
+		primary_group = forceUnicode(grp.getgrgid(pwd.getpwnam(username)[3])[0])
+		logger.debug("Primary group of user {0!r} is {1!r}", username, primary_group)
 
-
-def getPAMService():
-	"""
-	Get the PAM service to use.
-
-	:returns: Name of the service to use.
-	:rtype: str
-	"""
-	if os.path.exists("/etc/pam.d/opsi-auth"):
-		# Prefering our own - if present.
-		return 'opsi-auth'
-	elif isSLES() or isOpenSUSE():
-		return 'sshd'
-	elif isCentOS() or isRHEL():
-		return 'system-auth'
-	else:
-		return 'common-auth'
-
-
-def readGroups(username):
-	"""
-	Read the groups of a user.
-
-	:returns: Group the user is a member of.
-	:rtype: set()
-	"""
-	logger.debug("Reading groups of user {!r}...", username)
-	primaryGroup = forceUnicode(grp.getgrgid(pwd.getpwnam(username)[3])[0])
-	logger.debug(u"Primary group of user {0!r} is {1!r}", username, primaryGroup)
-
-	groups = set(forceUnicode(group[0]) for group in grp.getgrall() if username in group[3])
-	groups.add(primaryGroup)
-	logger.debug(u"User {0!r} is member of groups: {1}", username, groups)
-
-	return groups
+		groups = set(forceUnicode(group[0]) for group in grp.getgrall() if group[0] and username in group[3])
+		if primary_group:
+			groups.add(primary_group)
+		logger.debug("User {0!r} is member of groups: {1}", username, groups)
+		return groups
