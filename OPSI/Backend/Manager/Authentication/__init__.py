@@ -49,7 +49,7 @@ class AuthenticationModule:
 		return set(OpsiConfFile().getOpsiGroups('readonly') or [])
 	
 	def user_is_admin(self, username: str) -> bool:
-		return self.get_admin_groupname in self.get_groupnames(username)
+		return self.get_admin_groupname() in self.get_groupnames(username)
 	
 	def user_is_read_only(self, username: str, forced_user_groupnames: Set[str] = None) -> bool:
 		user_groupnames = set()
