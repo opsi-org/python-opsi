@@ -48,7 +48,7 @@ from OPSI.Object import (
 	mandatoryConstructorArgs,
 	BaseObject, Object, OpsiClient, OpsiDepotserver)
 from OPSI.Types import forceBool, forceList, forceUnicode, forceUnicodeList
-from OPSI.Util.File.Opsi import BackendACLFile
+from OPSI.Util.File.Opsi import BackendACLFile, OpsiConfFile
 
 __all__ = ('BackendAccessControl', 'BackendAccessControlManager')
 
@@ -98,15 +98,22 @@ class BackendAccessControl:
 		if isinstance(self._backend, BackendAccessControl):
 			raise BackendConfigurationError(u"Cannot use BackendAccessControl instance as backend")
 		
-		#import OPSI.Backend.Manager.Authentication.LDAP
-		#self._auth_module = OPSI.Backend.Manager.Authentication.LDAP.LDAPAuthentication("ldaps://adldap.uib.gmbh", "dc=ad,dc=uib,dc=gmbh", "ad.uib.gmbh")
 		if not self._auth_module:
-			if os.name == 'posix':
-				import OPSI.Backend.Manager.Authentication.PAM
-				self._auth_module = OPSI.Backend.Manager.Authentication.PAM.PAMAuthentication(pam_service)
-			elif os.name == 'nt':
-				import OPSI.Backend.Manager.Authentication.NT
-				self._auth_module = OPSI.Backend.Manager.Authentication.NT.NTAuthentication()
+			try:
+				ldap_conf = OpsiConfFile().get_ldap_auth_config()
+				if ldap_conf:
+					logger.debug("Using ldap auth with config: %s", ldap_conf)
+					import OPSI.Backend.Manager.Authentication.LDAP
+					self._auth_module = OPSI.Backend.Manager.Authentication.LDAP.LDAPAuthentication(**ldap_conf)		
+			except Exception as e:
+				logger.debug(e)
+			if not self._auth_module:
+				if os.name == 'posix':
+					import OPSI.Backend.Manager.Authentication.PAM
+					self._auth_module = OPSI.Backend.Manager.Authentication.PAM.PAMAuthentication(pam_service)
+				elif os.name == 'nt':
+					import OPSI.Backend.Manager.Authentication.NT
+					self._auth_module = OPSI.Backend.Manager.Authentication.NT.NTAuthentication()
 
 		self._createInstanceMethods()
 		if self._aclFile:
