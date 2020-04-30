@@ -989,7 +989,7 @@ class OpsiConfFile(IniFile):
 			match = self.sectionRegex.search(line)
 			if match:
 				sectionType = match.group(1).strip().lower()
-				if sectionType not in ('groups', 'packages'):
+				if sectionType not in ("groups", "packages", "ldap_auth"):
 					raise ValueError(u"Parse error in line %s: unknown section '%s'" % (lineNum, sectionType))
 			elif not sectionType and line:
 				raise ValueError(u"Parse error in line %s: not in a section" % lineNum)
@@ -1022,6 +1022,12 @@ class OpsiConfFile(IniFile):
 				if key == 'use_pigz':
 					self._opsiConfig['packages'][key] = forceBool(value)
 
+			elif sectionType == "ldap_auth":
+				if "ldap_auth" not in self._opsiConfig:
+					self._opsiConfig["ldap_auth"] = {}
+				if key in ("ldap_url", "bind_user", "group_filter") and value:
+					self._opsiConfig["ldap_auth"][key] = value
+
 		self._parsed = True
 		return self._opsiConfig
 
@@ -1051,6 +1057,12 @@ class OpsiConfFile(IniFile):
 			return self._opsiConfig["packages"]["use_pigz"]
 		else:
 			return True
+	
+	@requiresParsing
+	def get_ldap_auth_config(self) -> dict:
+		conf = self._opsiConfig.get("ldap_auth", {})
+		if conf and conf.get("ldap_url"):
+			return conf
 
 
 class OpsiBackupArchive(tarfile.TarFile):
