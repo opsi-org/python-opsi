@@ -27,6 +27,7 @@ from typing import Set
 import win32net
 import win32security
 
+from OPSI.Config import OPSI_ADMIN_GROUP
 from OPSI.Backend.Manager.Authentication import AuthenticationModule
 from OPSI.Exceptions import BackendAuthenticationError
 from OPSI.Logger import Logger
@@ -35,9 +36,14 @@ logger = Logger()
 
 
 class NTAuthentication(AuthenticationModule):
-	def __init__(self):
-		pass
-
+	def __init__(self, admin_group_sid: str = None):
+		self._admin_groupname = OPSI_ADMIN_GROUP
+		if admin_group_sid is not None:
+			try:
+				self._admin_groupname = win32security.LookupAccountSid(None, admin_group_sid)[0]
+			except Exception as e:
+				logger.error("Failed to lookup group with sid '%s': %s" % (admin_group_sid, e))
+	
 	def authenticate(self, username: str, password: str) -> None:
 		'''
 		Authenticate a user by Windows-Login on current machine
@@ -53,7 +59,10 @@ class NTAuthentication(AuthenticationModule):
 			)
 		except Exception as error:
 			raise BackendAuthenticationError("Win32security authentication failed for user '%s': %s" % (username, error))
-
+	
+	def get_admin_groupname(self) -> str:	
+		return self._admin_groupname
+	
 	def get_groupnames(self, username: str) -> Set[str]:
 		"""
 		Read the groups of a user.
