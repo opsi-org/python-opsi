@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "python-opsi"
-version = "4.2.0.21"
+version = "4.2.0.22"
 description = "The opsi python library"
 authors = ["Jan Schneider <j.schneider@uib.de>"]
 license = "AGPL-3.0"
