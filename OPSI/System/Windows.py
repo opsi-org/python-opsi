@@ -1405,6 +1405,7 @@ def execute(cmd, waitForEnding=True, getHandle=False, ignoreExitCode=[], exitOnS
 				stderr=stderr,
 			)
 
+			"""
 			encoding = locale.getpreferredencoding()
 			logger.debug("locale.getpreferredencoding(): %s" % encoding)
 			if encoding == "ascii":
@@ -1418,6 +1419,8 @@ def execute(cmd, waitForEnding=True, getHandle=False, ignoreExitCode=[], exitOnS
 
 			if not encoding:
 				encoding = "cp850"
+			"""
+			encoding = "cp850"
 			
 			logger.info("Using encoding '%s'" % encoding)
 			
