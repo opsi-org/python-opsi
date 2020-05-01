@@ -1385,14 +1385,14 @@ def execute(cmd, waitForEnding=True, getHandle=False, ignoreExitCode=[], exitOnS
 
 	startTime = time.time()
 	try:
-		logger.info(u"Executing: %s" % cmd)
+		logger.info("Executing: %s" % cmd)
 		if getHandle:
 			if captureStderr:
 				return (subprocess.Popen(cmd, shell=shell, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)).stdout
 			else:
 				return (subprocess.Popen(cmd, shell=shell, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=None)).stdout
 		else:
-			data = ''
+			data = b""
 			stderr = None
 			if captureStderr:
 				stderr = subprocess.PIPE
@@ -1407,20 +1407,20 @@ def execute(cmd, waitForEnding=True, getHandle=False, ignoreExitCode=[], exitOnS
 
 			if not encoding:
 				encoding = locale.getpreferredencoding()
-				logger.debug(u"locale.getpreferredencoding(): %s" % encoding)
-				if encoding == 'ascii':
+				logger.debug("locale.getpreferredencoding(): %s" % encoding)
+				if encoding == "ascii":
 					encoding = None
 
 			if not encoding:
 				encoding = sys.stdout.encoding
-				logger.debug(u"sys.stdout.encoding: %s" % encoding)
-				if encoding == 'ascii':
+				logger.debug("sys.stdout.encoding: %s" % encoding)
+				if encoding == "ascii":
 					encoding = None
 
 			if not encoding:
-				encoding = 'cp850'
+				encoding = "cp850"
 
-			logger.info(u"Using encoding '%s'" % encoding)
+			logger.info("Using encoding '%s'" % encoding)
 
 			ret = None
 			while ret is None:
@@ -1438,7 +1438,7 @@ def execute(cmd, waitForEnding=True, getHandle=False, ignoreExitCode=[], exitOnS
 						chunk = proc.stderr.read()
 						if len(chunk) > 0:
 							if exitOnStderr:
-								raise IOError(exitCode, u"Command '%s' failed: %s" % (cmd, chunk))
+								raise IOError(exitCode, "Command '%s' failed: %s" % (cmd, chunk))
 							data += chunk
 					except IOError as error:
 						if error.errno != 11:
@@ -1450,33 +1450,33 @@ def execute(cmd, waitForEnding=True, getHandle=False, ignoreExitCode=[], exitOnS
 					except Exception:
 						pass
 
-					raise IOError(exitCode, u"Command '%s' timed out atfer %d seconds" % (cmd, (time.time() - startTime)))
+					raise IOError(exitCode, "Command '%s' timed out atfer %d seconds" % (cmd, (time.time() - startTime)))
 
 				time.sleep(0.001)
 
 			exitCode = ret
 			if data:
-				lines = data.split('\n')
+				lines = data.split(b'\n')
 				lineCount = len(lines)
 				for i, origLine in enumerate(lines):
 					line = origLine.decode(encoding, 'replace').replace('\r', '')
 					if (i == lineCount - 1) and not line:
 						break
 
-					logger.debug(u'>>> %s' % line)
+					logger.debug(">>> %s" % line)
 					result.append(line)
 	except (os.error, IOError) as error:
 		# Some error occurred during execution
-		raise IOError(error.errno, u"Command '%s' failed:\n%s" % (cmd, error))
+		raise IOError(error.errno, "Command '%s' failed:\n%s" % (cmd, error))
 
-	logger.debug(u"Exit code: %s" % exitCode)
+	logger.debug("Exit code: %s" % exitCode)
 	if exitCode:
 		if isinstance(ignoreExitCode, bool) and ignoreExitCode:
 			pass
 		elif isinstance(ignoreExitCode, list) and exitCode in ignoreExitCode:
 			pass
 		else:
-			raise IOError(exitCode, u"Command '%s' failed (%s):\n%s" % (cmd, exitCode, u'\n'.join(result)))
+			raise IOError(exitCode, "Command '%s' failed (%s):\n%s" % (cmd, exitCode, u'\n'.join(result)))
 
 	return result
 
