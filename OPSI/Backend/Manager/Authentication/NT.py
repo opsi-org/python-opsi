@@ -40,7 +40,7 @@ class NTAuthentication(AuthenticationModule):
 		self._admin_groupname = OPSI_ADMIN_GROUP
 		if admin_group_sid is not None:
 			try:
-				self._admin_groupname = win32security.LookupAccountSid(None, admin_group_sid)[0]
+				self._admin_groupname = win32security.LookupAccountSid(None, win32security.ConvertStringSidToSid(admin_group_sid))[0]
 			except Exception as e:
 				logger.error("Failed to lookup group with sid '%s': %s" % (admin_group_sid, e))
 	
@@ -89,7 +89,7 @@ class NTAuthentication(AuthenticationModule):
 							logger.debug("User {0!r} is member of group {1!r}", username, groupname)
 					if uresume == 0:
 						break
-				if gresume == 0:
-					break
+			if gresume == 0:
+				break
 
 		return collected_groupnames
