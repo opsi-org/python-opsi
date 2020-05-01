@@ -46,7 +46,7 @@ logger = Logger()
 
 try:
 	translation = gettext.translation('opsi-utils', '/usr/share/locale')
-	_ = translation.ugettext
+	_ = translation.gettext
 except Exception as error:
 	logger.error(u"Locale not found: {0}", error)
 

@@ -32,7 +32,7 @@ from OPSI.UI import UIFactory
 
 try:
     translation = gettext.translation('python-opsi', '/usr/share/locale')
-    _ = translation.ugettext
+    _ = translation.gettext
 except Exception as e:
     print(u"Locale not found: %s" % e)
 
