@@ -151,7 +151,8 @@ class SQLite(SQL):
 
 			with self._WRITE_LOCK:
 				self.execute(query, conn, cursor)
-				result = conn.last_insert_rowid()
+				conn.commit()
+				result = conn.lastrowid
 		finally:
 			self.close(conn, cursor)
 
@@ -185,7 +186,8 @@ class SQLite(SQL):
 			logger.debug2(u"update: %s" % query)
 			with self._WRITE_LOCK:
 				self.execute(query, conn, cursor)
-				result = conn.changes()
+				conn.commit()
+				result = conn.rowcount
 		finally:
 			self.close(conn, cursor)
 		return result
@@ -198,7 +200,8 @@ class SQLite(SQL):
 			logger.debug2(u"delete: %s" % query)
 			with self._WRITE_LOCK:
 				self.execute(query, conn, cursor)
-				result = conn.changes()
+				conn.commit()
+				result = conn.rowcount
 		finally:
 			self.close(conn, cursor)
 		return result
