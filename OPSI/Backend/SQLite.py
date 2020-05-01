@@ -24,9 +24,8 @@ SQLite backend.
 :license: GNU Affero GPL version 3
 """
 
-from apsw import (
-	SQLITE_OPEN_CREATE, SQLITE_CONFIG_MULTITHREAD, SQLITE_OPEN_READWRITE,
-	Connection)
+import sqlite3
+import threading
 
 from OPSI.Backend.SQL import SQL, SQLBackend, SQLBackendObjectModificationTracker
 from OPSI.Exceptions import BackendBadValueError
@@ -44,6 +43,7 @@ class SQLite(SQL):
 	ESCAPED_BACKSLASH = "\\"
 	ESCAPED_APOSTROPHE = "''"
 	ESCAPED_ASTERISK = "**"
+	_WRITE_LOCK = threading.Lock()
 
 	def __init__(self, **kwargs):
 		self._database = ":memory:"
@@ -63,35 +63,32 @@ class SQLite(SQL):
 		logger.debug(u'SQLite created: %s' % self)
 
 	def connect(self):
-		try:
-			logger.debug2(u"Connecting to sqlite db '%s'" % self._database)
-			if not self._connection:
-				self._connection = Connection(
-					filename=self._database,
-					flags=SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_CONFIG_MULTITHREAD,
-					vfs=None,
-					statementcachesize=100
-				)
-			if not self._cursor:
-				def rowtrace(cursor, row):
-					valueSet = {}
-					for rowDescription, current in zip(cursor.getdescription(), row):
-						valueSet[rowDescription[0]] = current
-
-					return valueSet
-
-				self._cursor = self._connection.cursor()
-				if not self._synchronous:
-					self._cursor.execute('PRAGMA synchronous=OFF')
-					self._cursor.execute('PRAGMA temp_store=MEMORY')
-					self._cursor.execute('PRAGMA cache_size=5000')
-				if self._databaseCharset.lower() in ('utf8', 'utf-8'):
-					self._cursor.execute('PRAGMA encoding="UTF-8"')
-				self._cursor.setrowtrace(rowtrace)
-			return (self._connection, self._cursor)
-		except Exception as connectionError:
-			logger.warning("Problem connecting to SQLite databse: {!r}", connectionError)
-			raise connectionError
+		with self._WRITE_LOCK:
+			try:
+				logger.debug2(u"Connecting to sqlite db '%s'" % self._database)
+				if not self._connection:
+					# When using multiple threads with the same connection writing operations
+					# should be serialized by the user to avoid data corruption
+					self._connection = sqlite3.connect(self._database, check_same_thread=False)
+				if not self._cursor:
+					def dict_factory(cursor, row):
+						d = {}
+						for idx, col in enumerate(cursor.description):
+							d[col[0]] = row[idx]
+						return d
+					self._connection.row_factory = dict_factory
+					self._cursor = self._connection.cursor()
+					if not self._synchronous:
+						self._cursor.execute('PRAGMA synchronous=OFF')
+						self._cursor.execute('PRAGMA temp_store=MEMORY')
+						self._cursor.execute('PRAGMA cache_size=5000')
+					if self._databaseCharset.lower() in ('utf8', 'utf-8'):
+						self._cursor.execute('PRAGMA encoding="UTF-8"')
+					self._cursor.setrowtrace(rowtrace)
+				return (self._connection, self._cursor)
+			except Exception as connectionError:
+				logger.warning("Problem connecting to SQLite databse: {!r}", connectionError)
+				raise connectionError
 
 	def close(self, conn, cursor):
 		pass
@@ -153,8 +150,9 @@ class SQLite(SQL):
 			query = u'INSERT INTO `{table}` ({columns}) VALUES ({values});'.format(columns=', '.join(colNames), values=', '.join(values), table=table)
 			logger.debug2(u"insert: %s" % query)
 
-			self.execute(query, conn, cursor)
-			result = conn.last_insert_rowid()
+			with self._WRITE_LOCK:
+				self.execute(query, conn, cursor)
+				result = conn.last_insert_rowid()
 		finally:
 			self.close(conn, cursor)
 
@@ -186,8 +184,9 @@ class SQLite(SQL):
 
 			query = u"UPDATE `{table}` SET {values} WHERE {condition};".format(table=table, values=', '.join(values), condition=where)
 			logger.debug2(u"update: %s" % query)
-			self.execute(query, conn, cursor)
-			result = conn.changes()
+			with self._WRITE_LOCK:
+				self.execute(query, conn, cursor)
+				result = conn.changes()
 		finally:
 			self.close(conn, cursor)
 		return result
@@ -198,8 +197,9 @@ class SQLite(SQL):
 		try:
 			query = u"DELETE FROM `%s` WHERE %s;" % (table, where)
 			logger.debug2(u"delete: %s" % query)
-			self.execute(query, conn, cursor)
-			result = conn.changes()
+			with self._WRITE_LOCK:
+				self.execute(query, conn, cursor)
+				result = conn.changes()
 		finally:
 			self.close(conn, cursor)
 		return result
