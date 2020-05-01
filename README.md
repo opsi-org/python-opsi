@@ -42,11 +42,10 @@ Installing the depedencies via apt-get:
 ``apt-get install lsb-release python3-twisted python3-magic python3-crypto python3-newt python3-pampy python3-openssl python3-mysqldb python3-sqlalchemy iproute duplicity lshw python3-dev``
 
 For installing further depedencies on your system we also recommend to
-install the header files for Python, librsync and to test the
-SQLite-backend we also need apsw.
+install the header files for Python and librsync.
 
 This can be done with:
-``apt-get install build-essential python3-dev librsync-dev python3-apsw``
+``apt-get install build-essential python3-dev librsync-dev``
 
 
 ## Building
