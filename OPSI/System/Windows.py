@@ -1405,6 +1405,7 @@ def execute(cmd, waitForEnding=True, getHandle=False, ignoreExitCode=[], exitOnS
 				stderr=stderr,
 			)
 
+			"""
 			if not encoding:
 				encoding = locale.getpreferredencoding()
 				logger.debug("locale.getpreferredencoding(): %s" % encoding)
@@ -1421,6 +1422,7 @@ def execute(cmd, waitForEnding=True, getHandle=False, ignoreExitCode=[], exitOnS
 				encoding = "cp850"
 
 			logger.info("Using encoding '%s'" % encoding)
+			"""
 
 			ret = None
 			while ret is None:
@@ -1459,7 +1461,8 @@ def execute(cmd, waitForEnding=True, getHandle=False, ignoreExitCode=[], exitOnS
 				lines = data.split(b'\n')
 				lineCount = len(lines)
 				for i, origLine in enumerate(lines):
-					line = origLine.decode(encoding, 'replace').replace('\r', '')
+					#line = origLine.decode(encoding, 'replace').replace('\r', '')
+					line = origLine.decode().replace('\r', '')
 					if (i == lineCount - 1) and not line:
 						break
 
