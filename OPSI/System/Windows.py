@@ -1405,12 +1405,10 @@ def execute(cmd, waitForEnding=True, getHandle=False, ignoreExitCode=[], exitOnS
 				stderr=stderr,
 			)
 
-			"""
-			if not encoding:
-				encoding = locale.getpreferredencoding()
-				logger.debug("locale.getpreferredencoding(): %s" % encoding)
-				if encoding == "ascii":
-					encoding = None
+			encoding = locale.getpreferredencoding()
+			logger.debug("locale.getpreferredencoding(): %s" % encoding)
+			if encoding == "ascii":
+				encoding = None
 
 			if not encoding:
 				encoding = sys.stdout.encoding
@@ -1422,8 +1420,7 @@ def execute(cmd, waitForEnding=True, getHandle=False, ignoreExitCode=[], exitOnS
 				encoding = "cp850"
 
 			logger.info("Using encoding '%s'" % encoding)
-			"""
-
+			
 			ret = None
 			while ret is None:
 				ret = proc.poll()
