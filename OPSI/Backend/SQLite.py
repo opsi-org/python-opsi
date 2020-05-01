@@ -84,10 +84,9 @@ class SQLite(SQL):
 						self._cursor.execute('PRAGMA cache_size=5000')
 					if self._databaseCharset.lower() in ('utf8', 'utf-8'):
 						self._cursor.execute('PRAGMA encoding="UTF-8"')
-					self._cursor.setrowtrace(rowtrace)
 				return (self._connection, self._cursor)
 			except Exception as connectionError:
-				logger.warning("Problem connecting to SQLite databse: {!r}", connectionError)
+				logger.warning("Problem connecting to SQLite database: {!r}", connectionError)
 				raise connectionError
 
 	def close(self, conn, cursor):
