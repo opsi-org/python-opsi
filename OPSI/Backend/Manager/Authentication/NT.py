@@ -75,13 +75,13 @@ class NTAuthentication(AuthenticationModule):
 		gresume = 0
 		while True:
 			(groups, gtotal, gresume) = win32net.NetLocalGroupEnum(None, 0, gresume)
-			logger.debug("Got %s groups, total=%s, resume=%s" % (groups, gtotal, gresume))
+			logger.debug2("Got %s groups, total=%s, resume=%s" % (len(groups), gtotal, gresume))
 			for groupname in (u['name'] for u in groups):
 				logger.debug2("Found group '%s'" % groupname)
 				uresume = 0
 				while True:
 					(users, utotal, uresume) = win32net.NetLocalGroupGetMembers(None, groupname, 0, uresume)
-					logger.debug("Got %s users, total=%s, resume=%s" % (users, utotal, uresume))
+					logger.debug2("Got %s users, total=%s, resume=%s" % (len(users), utotal, uresume))
 					for sid in (u['sid'] for u in users):
 						(groupUsername, domain, groupType) = win32security.LookupAccountSid(None, sid)
 						if groupUsername.lower() == username.lower():
