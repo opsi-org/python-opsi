@@ -49,7 +49,7 @@ encoding = locale.getpreferredencoding()
 
 try:
 	translation = gettext.translation('python-opsi', '/usr/share/locale')
-	_ = translation.ugettext
+	_ = translation.gettext
 except Exception as error:
 	logger.error(u"Locale not found: %s" % error)
 
