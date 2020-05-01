@@ -1418,7 +1418,7 @@ def execute(cmd, waitForEnding=True, getHandle=False, ignoreExitCode=[], exitOnS
 
 			if not encoding:
 				encoding = "cp850"
-
+			
 			logger.info("Using encoding '%s'" % encoding)
 			
 			ret = None
@@ -1458,8 +1458,7 @@ def execute(cmd, waitForEnding=True, getHandle=False, ignoreExitCode=[], exitOnS
 				lines = data.split(b'\n')
 				lineCount = len(lines)
 				for i, origLine in enumerate(lines):
-					#line = origLine.decode(encoding, 'replace').replace('\r', '')
-					line = origLine.decode().replace('\r', '')
+					line = origLine.decode(encoding, 'replace').replace('\r', '')
 					if (i == lineCount - 1) and not line:
 						break
 
