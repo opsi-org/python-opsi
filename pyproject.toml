@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "python-opsi"
-version = "4.2.0.17"
+version = "4.2.0.18"
 description = "The opsi python library"
 authors = ["Jan Schneider <j.schneider@uib.de>"]
 license = "AGPL-3.0"
@@ -23,6 +23,8 @@ twisted = {extras = ["tls"], version = "^20.3.0"}
 python-magic = "^0.4.15"
 ldap3 = "^2.7"
 PyCryptodome = "^3.9.7"
+pywin32 = {platform = "windows", version = "^227"}
+
 
 [tool.poetry.dev-dependencies]
 
