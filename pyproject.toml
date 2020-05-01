@@ -23,6 +23,7 @@ twisted = {extras = ["tls"], version = "^20.3.0"}
 python-magic = "^0.4.15"
 ldap3 = "^2.7"
 PyCryptodome = "^3.9.7"
+apsw = { git = "https://github.com/rogerbinns/apsw", branch = "master" }
 
 [tool.poetry.dev-dependencies]
 
