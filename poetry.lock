@@ -174,7 +174,7 @@ description = ""
 name = "opsi-dev-tools"
 optional = false
 python-versions = ">=3.6,<4.0"
-version = "1.0"
+version = "1.0.1"
 
 [package.dependencies]
 colorlog = ">=4.1.0,<5.0.0"
@@ -579,8 +579,8 @@ ldap3 = [
     {file = "ldap3-2.7.win-amd64.exe", hash = "sha256:53aaae5bf14f3827c69600ddf4d61b88f49c055bb93060e9702c5bafd206c744"},
 ]
 opsi-dev-tools = [
-    {file = "opsi-dev-tools-1.0.tar.gz", hash = "md5:63ef1f4132fe01f53b139a47d92464b4"},
-    {file = "opsi_dev_tools-1.0-py3-none-any.whl", hash = "md5:9f9825f90c1ad6b0d68d8395c40f0abf"},
+    {file = "opsi-dev-tools-1.0.1.tar.gz", hash = "md5:d81f5c527be286a4e9156d30f5bfa6b2"},
+    {file = "opsi_dev_tools-1.0.1-py3-none-any.whl", hash = "md5:992db2d9b77a7d5d1d07c063346d3d70"},
 ]
 packaging = [
     {file = "packaging-20.3-py2.py3-none-any.whl", hash = "sha256:82f77b9bee21c1bafbf35a84905d604d5d1223801d639cf3ed140bd651c08752"},
