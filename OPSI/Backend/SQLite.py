@@ -185,9 +185,8 @@ class SQLite(SQL):
 			query = u"UPDATE `{table}` SET {values} WHERE {condition};".format(table=table, values=', '.join(values), condition=where)
 			logger.debug2(u"update: %s" % query)
 			with self._WRITE_LOCK:
-				self.execute(query, conn, cursor)
+				result = self.execute(query, conn, cursor).rowcount
 				conn.commit()
-				result = conn.rowcount
 		finally:
 			self.close(conn, cursor)
 		return result
@@ -199,9 +198,8 @@ class SQLite(SQL):
 			query = u"DELETE FROM `%s` WHERE %s;" % (table, where)
 			logger.debug2(u"delete: %s" % query)
 			with self._WRITE_LOCK:
-				self.execute(query, conn, cursor)
+				result = self.execute(query, conn, cursor).rowcount
 				conn.commit()
-				result = conn.rowcount
 		finally:
 			self.close(conn, cursor)
 		return result
