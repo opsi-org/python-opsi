@@ -4060,7 +4060,19 @@ until the execution of the process is terminated.
 	timeoutSeconds = forceInt(timeoutSeconds)
 
 	logger.notice(u"Executing: '{0}'".format(command))
-	process = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+	sp_env = os.environ.copy()
+	if getattr(sys, 'frozen', False):
+		# Running in pyinstaller / frozen
+		lp_orig = sp_env.get("LD_LIBRARY_PATH_ORIG")
+		if lp_orig is not None:
+			# Restore the original, unmodified value
+			sp_env["LD_LIBRARY_PATH"] = lp_orig
+		else:
+			# This happens when LD_LIBRARY_PATH was not set.
+			# Remove the env var as a last resort
+			sp_env.pop("LD_LIBRARY_PATH", None)
+	
+	process = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=sp_env)
 
 	logger.info(u"Process started, pid: {0}".format(process.pid))
 	if not waitForProcessEnding:
