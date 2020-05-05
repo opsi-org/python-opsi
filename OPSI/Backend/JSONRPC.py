@@ -561,7 +561,7 @@ class JSONRPCBackend(Backend):
 					data += "%s = %s\r\n" % (module.lower().strip(), val)
 				
 				verfied = False
-				if not modules["signature"].startswith("{"):
+				if modules["signature"].startswith("{"):
 					s_bytes = int(modules['signature'].split("}", 1)[-1]).to_bytes(256, "big")
 					try:
 						pkcs1_15.new(publicKey).verify(MD5.new(data.encode()), s_bytes)
