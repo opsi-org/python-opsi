@@ -170,11 +170,11 @@ pyasn1 = ">=0.1.8"
 
 [[package]]
 category = "dev"
-description = ""
+description = "opsi development tools"
 name = "opsi-dev-tools"
 optional = false
 python-versions = ">=3.6,<4.0"
-version = "1.0.1"
+version = "1.0.2"
 
 [package.dependencies]
 colorlog = ">=4.1.0,<5.0.0"
@@ -300,7 +300,6 @@ version = "1.8.4"
 [[package]]
 category = "main"
 description = "Python for Window Extensions"
-marker = "sys_platform == \"win32\""
 name = "pywin32"
 optional = false
 python-versions = "*"
@@ -452,6 +451,24 @@ socks = ["PySocks (>=1.5.6,<1.5.7 || >1.5.7,<2.0)"]
 
 [[package]]
 category = "main"
+description = "Windows Management Instrumentation"
+name = "wmi"
+optional = false
+python-versions = "*"
+version = "1.5.1"
+
+[package.dependencies]
+pywin32 = "*"
+
+[package.extras]
+all = ["pytest", "wheel", "twine", "sphinx"]
+dev = ["pytest", "sphinx", "wheel", "twine"]
+docs = ["sphinx"]
+package = ["wheel", "twine"]
+tests = ["pytest"]
+
+[[package]]
+category = "main"
 description = "Interfaces for Python"
 name = "zope.interface"
 optional = false
@@ -467,7 +484,7 @@ test = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 
 [metadata]
-content-hash = "3564e56bf89ddb9aa45ed704c7b3739a77cffa339410b741051d3b82dd78bded"
+content-hash = "d983d6ee6402e5ea990bdae93b0048fe8819da1b71b2690905780ba6a886ddbf"
 python-versions = "^3.6"
 
 [metadata.files]
@@ -579,8 +596,8 @@ ldap3 = [
     {file = "ldap3-2.7.win-amd64.exe", hash = "sha256:53aaae5bf14f3827c69600ddf4d61b88f49c055bb93060e9702c5bafd206c744"},
 ]
 opsi-dev-tools = [
-    {file = "opsi-dev-tools-1.0.1.tar.gz", hash = "md5:d81f5c527be286a4e9156d30f5bfa6b2"},
-    {file = "opsi_dev_tools-1.0.1-py3-none-any.whl", hash = "md5:992db2d9b77a7d5d1d07c063346d3d70"},
+    {file = "opsi-dev-tools-1.0.2.tar.gz", hash = "md5:6334b2466ccd519acdafc152ec63d43e"},
+    {file = "opsi_dev_tools-1.0.2-py3-none-any.whl", hash = "md5:ecab9f1757f2d584cc7eaa00788fd396"},
 ]
 packaging = [
     {file = "packaging-20.3-py2.py3-none-any.whl", hash = "sha256:82f77b9bee21c1bafbf35a84905d604d5d1223801d639cf3ed140bd651c08752"},
@@ -773,6 +790,10 @@ twisted = [
 urllib3 = [
     {file = "urllib3-1.25.9-py2.py3-none-any.whl", hash = "sha256:88206b0eb87e6d677d424843ac5209e3fb9d0190d0ee169599165ec25e9d9115"},
     {file = "urllib3-1.25.9.tar.gz", hash = "sha256:3018294ebefce6572a474f0604c2021e33b3fd8006ecd11d62107a5d2a963527"},
+]
+wmi = [
+    {file = "WMI-1.5.1-py2.py3-none-any.whl", hash = "sha256:1d6b085e5c445141c475476000b661f60fff1aaa19f76bf82b7abb92e0ff4942"},
+    {file = "WMI-1.5.1.tar.gz", hash = "sha256:b6a6be5711b1b6c8d55bda7a8befd75c48c12b770b9d227d31c1737dbf0d40a6"},
 ]
 "zope.interface" = [
     {file = "zope.interface-5.1.0-cp27-cp27m-macosx_10_9_x86_64.whl", hash = "sha256:645a7092b77fdbc3f68d3cc98f9d3e71510e419f54019d6e282328c0dd140dcd"},
