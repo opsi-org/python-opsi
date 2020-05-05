@@ -34,6 +34,8 @@ import threading
 import orjson
 from contextlib import contextmanager
 from hashlib import md5
+from Crypto.Hash import MD5
+from Crypto.Signature import pkcs1_15
 
 import MySQLdb
 from MySQLdb.constants import FIELD_TYPE
@@ -582,15 +584,14 @@ class MySQLBackend(SQLBackend):
 		elif (modules.get('expires', '') != 'never') and (time.mktime(time.strptime(modules.get('expires', '2000-01-01'), "%Y-%m-%d")) - time.time() <= 0):
 			logger.error(u"Disabling mysql backend and license management module: modules file expired")
 		else:
-			logger.info(u"Verifying modules file signature")
-			publicKey = getPublicKey(data=base64.decodebytes(b'AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP'))
-			data = u''
+			logger.info("Verifying modules file signature")
+			publicKey = getPublicKey(data=base64.decodebytes(b"AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP"))
+			data = ""
 			mks = list(modules.keys())
 			mks.sort()
 			for module in mks:
-				if module in ('valid', 'signature'):
+				if module in ("valid", "signature"):
 					continue
-
 				if module in helpermodules:
 					val = helpermodules[module]
 					if int(val) > 0:
@@ -598,21 +599,34 @@ class MySQLBackend(SQLBackend):
 				else:
 					val = modules[module]
 					if val is False:
-						val = 'no'
+						val = "no"
 					if val is True:
-						val = 'yes'
+						val = "yes"
+				data += "%s = %s\r\n" % (module.lower().strip(), val)
 
-				data += u'%s = %s\r\n' % (module.lower().strip(), val)
-
-			if not bool(publicKey.verify(md5(data.encode()).digest(), [int(modules['signature'])])):
-				logger.error(u"Disabling mysql backend and license management module: modules file invalid")
+			verfied = False
+			if not modules["signature"].startswith("{"):
+				s_bytes = int(modules['signature'].split("}", 1)[-1]).to_bytes(256, "big")
+				try:
+					pkcs1_15.new(publicKey).verify(MD5.new(data.encode()), s_bytes)
+					verfied = True
+				except ValueError:
+					# Invalid signature
+					pass
 			else:
-				logger.info(u"Modules file signature verified (customer: %s)" % modules.get('customer'))
+				h_int = int.from_bytes(md5(data.encode()).digest(), "big")
+				s_int = publicKey._encrypt(int(modules["signature"]))
+				verfied = h_int == s_int
+			
+			if not verfied:
+				logger.error("Disabling mysql backend and license management module: modules file invalid")
+			else:
+				logger.debug("Modules file signature verified (customer: %s)" % modules.get('customer'))
 
-				if modules.get('license_management'):
+				if modules.get("license_management"):
 					self._licenseManagementModule = True
 
-				if modules.get('mysql_backend'):
+				if modules.get("mysql_backend"):
 					self._sqlBackendModule = True
 
 		logger.debug(u'MySQLBackend created: %s' % self)

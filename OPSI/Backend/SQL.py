@@ -36,6 +36,8 @@ import time
 from contextlib import contextmanager
 from datetime import datetime
 from hashlib import md5
+from Crypto.Hash import MD5
+from Crypto.Signature import pkcs1_15
 
 from OPSI.Backend.Base import BackendModificationListener, ConfigDataBackend
 from OPSI.Exceptions import (BackendConfigurationError, BackendMissingDataError,
@@ -1281,12 +1283,12 @@ class SQLBackend(ConfigDataBackend):
 		backendinfo = self._context.backend_info()
 		modules = backendinfo['modules']
 		helpermodules = backendinfo['realmodules']
-		publicKey = getPublicKey(data=base64.decodebytes(b'AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP'))
-		data = u''
+		publicKey = getPublicKey(data=base64.decodebytes(b"AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP"))
+		data = ""
 		mks = list(modules.keys())
 		mks.sort()
 		for module in mks:
-			if module in ('valid', 'signature'):
+			if module in ("valid", "signature"):
 				continue
 			if module in helpermodules:
 				val = helpermodules[module]
@@ -1295,13 +1297,27 @@ class SQLBackend(ConfigDataBackend):
 			else:
 				val = modules[module]
 				if val == False:
-					val = 'no'
+					val = "no"
 				elif val == True:
-					val = 'yes'
-
-			data += u'%s = %s\r\n' % (module.lower().strip(), val)
-		if not bool(publicKey.verify(md5(data.encode()).digest(), [int(modules['signature'])])):
-			logger.error(u"Failed to verify modules signature")
+					val = "yes"
+			data += "%s = %s\r\n" % (module.lower().strip(), val)
+		
+		verfied = False
+		if not modules["signature"].startswith("{"):
+			s_bytes = int(modules['signature'].split("}", 1)[-1]).to_bytes(256, "big")
+			try:
+				pkcs1_15.new(publicKey).verify(MD5.new(data.encode()), s_bytes)
+				verfied = True
+			except ValueError:
+				# Invalid signature
+				pass
+		else:
+			h_int = int.from_bytes(md5(data.encode()).digest(), "big")
+			s_int = publicKey._encrypt(int(modules["signature"]))
+			verfied = h_int == s_int
+		
+		if not verified:
+			logger.error("Failed to verify modules signature")
 			return
 
 		ConfigDataBackend.product_insertObject(self, product)
