@@ -4091,8 +4091,10 @@ until the execution of the process is terminated.
 			timeRunning += sleepDuration
 		time.sleep(sleepDuration)
 
-	exitCode = process.returncode
-	logger.notice(u"Process {0} ended with exit code {1}".format(process.pid, exitCode))
+	l = logger.notice
+	if process.returncode != 0:
+		l = logger.warning
+	l("Process {0} ended with exit code {1}".format(process.pid, process.returncode))
 	return (None, None, None, None)
 
 

@@ -76,8 +76,8 @@ __all__ = (
 
 logger = Logger()
 
-BLOWFISH_IV = 'OPSI1234'
-RANDOM_DEVICE = u'/dev/urandom'
+BLOWFISH_IV = b"OPSI1234"
+RANDOM_DEVICE = "/dev/urandom"
 UNIT_REGEX = re.compile(r'^(\d+\.*\d*)\s*([\w]{0,4})$')
 UNIT_REGEX = re.compile(r'^(\d+\.*\d*)\s*(\w{0,4})$')
 _ACCEPTED_CHARACTERS = (
@@ -567,7 +567,7 @@ def blowfishEncrypt(key, cleartext):
 
 	blowfish = Blowfish.new(key, Blowfish.MODE_CBC, BLOWFISH_IV)
 	try:
-		crypt = blowfish.encrypt(cleartext)
+		crypt = blowfish.encrypt(cleartext.encode("utf-8"))
 	except Exception as encryptError:
 		logger.logException(encryptError, LOG_DEBUG)
 		raise BlowfishError(u"Failed to encrypt")
@@ -603,7 +603,7 @@ def blowfishDecrypt(key, crypt):
 	cleartext = cleartext.rstrip(b'\0')
 
 	try:
-		return cleartext.decode()
+		return cleartext.decode("utf-8")
 	except Exception as e:
 		logger.error(e)
 		raise BlowfishError(u"Failed to convert decrypted text to unicode.")
