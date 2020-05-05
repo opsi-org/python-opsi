@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "python-opsi"
-version = "4.2.0.23"
+version = "4.2.0.24"
 description = "The opsi python library"
 authors = ["Jan Schneider <j.schneider@uib.de>"]
 license = "AGPL-3.0"
@@ -28,6 +28,7 @@ python-magic = "^0.4.15"
 ldap3 = "^2.7"
 PyCryptodome = "^3.9.7"
 pywin32 = {platform = "win32", version = "^227"}
+wmi = {platform = "win32", version = "^1.5.1"}
 
 [tool.poetry.dev-dependencies]
 opsi-dev-tools = "^1.0"
