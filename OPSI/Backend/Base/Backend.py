@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2013-2018 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -38,7 +38,8 @@ import re
 import time
 from typing import Union
 from hashlib import md5
-from twisted.conch.ssh import keys
+from Crypto.Hash import MD5
+from Crypto.Signature import pkcs1_15
 
 from OPSI import __version__ as LIBRARY_VERSION
 from OPSI.Exceptions import BackendError
@@ -46,7 +47,7 @@ from OPSI.Logger import Logger
 from OPSI.Object import *  # this is needed for dynamic loading
 from OPSI.Types import (forceDict, forceFilename, forceList, forceUnicode,
 	forceUnicodeList)
-from OPSI.Util import compareVersions
+from OPSI.Util import compareVersions, getPublicKey
 
 __all__ = ('describeInterface', 'Backend')
 
@@ -62,7 +63,7 @@ def describeInterface(instance):
 	These methods are represented as a dict with the following keys: \
 	*name*, *params*, *args*, *varargs*, *keywords*, *defaults*.
 
-	:returntype: [{},]
+	:rtype: [{},]
 	"""
 	methods = {}
 	for methodName, function in inspect.getmembers(instance, inspect.ismethod):
@@ -241,10 +242,10 @@ This defaults to ``self``.
 							continue
 						elif value is None or isinstance(value, bool):
 							continue
-						elif isinstance(value, (float, int)) or re.search(r'^\s*([>=<]+)\s*([\d\.]+)', forceUnicode(filterValue)):
+						elif isinstance(value, (float, int)) or re.search(r'^\s*([>=<]+)\s*([\d.]+)', forceUnicode(filterValue)):
 							operator = '=='
 							v = forceUnicode(filterValue)
-							match = re.search(r'^\s*([>=<]+)\s*([\d\.]+)', filterValue)
+							match = re.search(r'^\s*([>=<]+)\s*([\d.]+)', filterValue)
 							if match:
 								operator = match.group(1)  # pylint: disable=maybe-no-member
 								v = match.group(2)  # pylint: disable=maybe-no-member
@@ -258,7 +259,7 @@ This defaults to ``self``.
 
 							continue
 
-						if '*' in filterValue and re.search('^%s$' % filterValue.replace('*', '.*'), value):
+						if '*' in filterValue and re.search(r'^%s$' % filterValue.replace('*', '.*'), value):
 							matched = True
 							break
 
@@ -304,7 +305,7 @@ This defaults to ``self``.
 
 		:rtype: dict
 		"""
-		return self._options
+		return self._options.copy()
 
 	def backend_getInterface(self):
 		"""
@@ -314,7 +315,7 @@ This defaults to ``self``.
 		*name*, *params*, *args*, *varargs*, *keywords*, *defaults*.
 
 
-		:returntype: [{},]
+		:rtype: [{},]
 		"""
 		return describeInterface(self)
 
@@ -362,12 +363,13 @@ This defaults to ``self``.
 			if (modules.get('expires', '') != 'never') and (time.mktime(time.strptime(modules.get('expires', '2000-01-01'), "%Y-%m-%d")) - time.time() <= 0):
 				modules = {'valid': False}
 				raise ValueError(u"Signature expired")
-			publicKey = keys.Key.fromString(data=base64.decodebytes(b'AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
-			data = u''
+			
+			publicKey = getPublicKey(data=base64.decodebytes(b"AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP"))
+			data = ""
 			mks = list(modules.keys())
 			mks.sort()
 			for module in mks:
-				if module in ('valid', 'signature'):
+				if module in ("valid", "signature"):
 					continue
 
 				if module in helpermodules:
@@ -375,12 +377,25 @@ This defaults to ``self``.
 				else:
 					val = modules[module]
 					if val is False:
-						val = 'no'
-					elif val is True:
-						val = 'yes'
-
-				data += u'%s = %s\r\n' % (module.lower().strip(), val)
-			modules['valid'] = bool(publicKey.verify(md5(data.encode()).digest(), [int(modules['signature'])]))
+						val = "no"
+					if val is True:
+						val = "yes"
+				data += "%s = %s\r\n" % (module.lower().strip(), val)
+			
+			modules['valid'] = False
+			if not modules["signature"].startswith("{"):
+				s_bytes = int(modules['signature'].split("}", 1)[-1]).to_bytes(256, "big")
+				try:
+					pkcs1_15.new(publicKey).verify(MD5.new(data.encode()), s_bytes)
+					modules['valid'] = True
+				except ValueError:
+					# Invalid signature
+					pass
+			else:
+				h_int = int.from_bytes(md5(data.encode()).digest(), "big")
+				s_int = publicKey._encrypt(int(modules["signature"]))
+				modules['valid'] = h_int == s_int
+		
 		except Exception as error:
 			logger.info(u"Failed to read opsi modules file '%s': %s" % (self._opsiModulesFile, error))
 
