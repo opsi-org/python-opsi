@@ -104,7 +104,7 @@ def forceUnicode(var):
 	if isinstance(var, str):
 		return var
 	elif (os.name == 'nt') and isinstance(var, WindowsError):
-		return u"[Error %s] %s" % (var.args[0], var.args[1].decode(encoding))
+		return "[Error %s] %s" % (var.args[0], var.args[1])
 
 	try:
 		if isinstance(var, bytes):
