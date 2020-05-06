@@ -1491,9 +1491,9 @@ def getPids(process, sessionId=None):
 		except Exception:
 			pass
 
-		logger.debug2(u"   got process %s with pid %d in session %s" % (pe32.szExeFile, pid, sid))
-		if pe32.szExeFile.lower() == process.lower():
-			logger.info(u"Found process %s with matching name (pid %d, session %s)" % (pe32.szExeFile.lower(), pid, sid))
+		logger.debug2(u"   got process %s with pid %d in session %s" % (pe32.szExeFile.decode(), pid, sid))
+		if pe32.szExeFile.decode().lower() == process.lower():
+			logger.info(u"Found process %s with matching name (pid %d, session %s)" % (pe32.szExeFile.decode().lower(), pid, sid))
 			if sessionId is None or (sid == sessionId):
 				processIds.append(forceInt(pid))
 
