@@ -110,7 +110,7 @@ class MessageSubject(Subject):
 		except KeyError:
 			pass  # no matching key
 
-		logger.debug(u"MessageSubject {0!r} created", self._id)
+		logger.debug("MessageSubject {0!r} created", self._id)
 
 	def reset(self):
 		Subject.reset(self)
@@ -164,7 +164,7 @@ class ChoiceSubject(MessageSubject):
 		except KeyError:
 			pass
 
-		logger.debug(u"ChoiceSubject '%s' created" % self._id)
+		logger.debug("ChoiceSubject '%s' created" % self._id)
 
 	def reset(self):
 		MessageSubject.reset(self)
@@ -199,11 +199,11 @@ class ChoiceSubject(MessageSubject):
 		return self._choices
 
 	def selectChoice(self):
-		logger.debug(u"ChoiceSubject.selectChoice()")
+		logger.debug("ChoiceSubject.selectChoice()")
 		for selectedIndex in self._selectedIndexes:
 			if (selectedIndex >= 0) and (selectedIndex < len(self._callbacks)):
 				# Exceute callback
-				logger.notice(u"Executing callback %s" % self._callbacks[selectedIndex])
+				logger.notice("Executing callback %s" % self._callbacks[selectedIndex])
 				self._callbacks[selectedIndex](self)
 
 	def setCallbacks(self, callbacks):
@@ -278,7 +278,7 @@ class ProgressSubject(MessageSubject):
 		except KeyError:
 			pass
 
-		logger.debug(u"ProgressSubject {0!r} created", self._id)
+		logger.debug("ProgressSubject {0!r} created", self._id)
 
 	def reset(self):
 		MessageSubject.reset(self)
@@ -494,16 +494,16 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 		return len(self.clients)
 
 	def connectionMade(self, client):
-		logger.info(u"client connection made")
+		logger.info("client connection made")
 		self.clients.append(client)
 		self.subjectsChanged(self.getSubjects())
 
 	def connectionLost(self, client, reason):
-		logger.info(u"client connection lost")
+		logger.info("client connection lost")
 		self.clients.remove(client)
 
 	def rpc(self, client, line):
-		logger.info(u"received line {!r}", line)
+		logger.info("received line {!r}", line)
 		id = None
 		try:
 			rpc = json.loads(line)
@@ -521,7 +521,7 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 					break
 
 			elif method == 'selectChoice':
-				logger.debug(u"selectChoice(%s)" % str(params)[1:-1])
+				logger.debug("selectChoice(%s)" % str(params)[1:-1])
 				subjectId = params[0]
 				for subject in self.getSubjects():
 					if not isinstance(subject, ChoiceSubject) or (subject.getId() != subjectId):
@@ -529,56 +529,56 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 					result = subject.selectChoice()
 					break
 			else:
-				raise ValueError(u"unknown method '%s'" % method)
+				raise ValueError("unknown method '%s'" % method)
 		except Exception as error:
-			logger.error(u"Failed to execute rpc: %s" % error)
+			logger.error("Failed to execute rpc: %s" % error)
 
 	def messageChanged(self, subject, message):
 		if subject not in self.getSubjects():
-			logger.info(u"Unknown subject %s passed to messageChanged, automatically adding subject" % subject)
+			logger.info("Unknown subject %s passed to messageChanged, automatically adding subject" % subject)
 			self.addSubject(subject)
-		logger.debug(u"messageChanged: subject id '%s', message '%s'" % (subject.getId(), message))
-		self.notify(name=u"messageChanged", params=[subject.serializable(), message])
+		logger.debug("messageChanged: subject id '%s', message '%s'" % (subject.getId(), message))
+		self.notify(name="messageChanged", params=[subject.serializable(), message])
 
 	def selectedIndexesChanged(self, subject, selectedIndexes):
 		if subject not in self.getSubjects():
-			logger.info(u"Unknown subject %s passed to selectedIndexesChanged, automatically adding subject" % subject)
+			logger.info("Unknown subject %s passed to selectedIndexesChanged, automatically adding subject" % subject)
 			self.addSubject(subject)
-		logger.debug(u"selectedIndexesChanged: subject id '%s', selectedIndexes %s" % (subject.getId(), selectedIndexes))
-		self.notify(name=u"selectedIndexesChanged", params=[subject.serializable(), selectedIndexes])
+		logger.debug("selectedIndexesChanged: subject id '%s', selectedIndexes %s" % (subject.getId(), selectedIndexes))
+		self.notify(name="selectedIndexesChanged", params=[subject.serializable(), selectedIndexes])
 
 	def choicesChanged(self, subject, choices):
 		if subject not in self.getSubjects():
-			logger.info(u"Unknown subject %s passed to choicesChanged, automatically adding subject" % subject)
+			logger.info("Unknown subject %s passed to choicesChanged, automatically adding subject" % subject)
 			self.addSubject(subject)
-		logger.debug(u"choicesChanged: subject id '%s', choices %s" % (subject.getId(), choices))
-		self.notify(name=u"choicesChanged", params=[subject.serializable(), choices])
+		logger.debug("choicesChanged: subject id '%s', choices %s" % (subject.getId(), choices))
+		self.notify(name="choicesChanged", params=[subject.serializable(), choices])
 
 	def progressChanged(self, subject, state, percent, timeSpend, timeLeft, speed):
 		if subject not in self.getSubjects():
-			logger.info(u"Unknown subject %s passed to progressChanged, automatically adding subject" % subject)
+			logger.info("Unknown subject %s passed to progressChanged, automatically adding subject" % subject)
 			self.addSubject(subject)
-		logger.debug(u"progressChanged: subject id '%s', state %s, percent %s, timeSpend %s, timeLeft %s, speed %s" \
+		logger.debug("progressChanged: subject id '%s', state %s, percent %s, timeSpend %s, timeLeft %s, speed %s" \
 			% (subject.getId(), state, percent, timeSpend, timeLeft, speed))
-		self.notify(name=u"progressChanged", params=[subject.serializable(), state, percent, timeSpend, timeLeft, speed])
+		self.notify(name="progressChanged", params=[subject.serializable(), state, percent, timeSpend, timeLeft, speed])
 
 	def endChanged(self, subject, end):
 		if subject not in self.getSubjects():
-			logger.info(u"Unknown subject %s passed to endChanged, automatically adding subject" % subject)
+			logger.info("Unknown subject %s passed to endChanged, automatically adding subject" % subject)
 			self.addSubject(subject)
-		logger.debug(u"endChanged: subject id '%s', end %s" \
+		logger.debug("endChanged: subject id '%s', end %s" \
 			% (subject.getId(), end))
-		self.notify(name=u"endChanged", params=[subject.serializable(), end])
+		self.notify(name="endChanged", params=[subject.serializable(), end])
 
 	def subjectsChanged(self, subjects):
-		logger.debug(u"subjectsChanged: subjects %s" % subjects)
+		logger.debug("subjectsChanged: subjects %s" % subjects)
 		param = [subject.serializable() for subject in subjects]
-		self.notify(name=u"subjectsChanged", params=[param])
+		self.notify(name="subjectsChanged", params=[param])
 
 	def requestEndConnections(self, clientIds=[]):
 		if not self.clients:
 			return
-		self.notify(name=u"endConnection", params=[clientIds])
+		self.notify(name="endConnection", params=[clientIds])
 
 	def notify(self, name, params, clients=[]):
 		if not isinstance(params, list):
@@ -588,14 +588,14 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 		if not isinstance(clients, list):
 			clients = [clients]
 		if not clients:
-			logger.debug(u"cannot send notification '%s', no client connected" % name)
+			logger.debug("cannot send notification '%s', no client connected" % name)
 			return
 
-		logger.debug(u"sending notification '%s' to clients" % name)
+		logger.debug("sending notification '%s' to clients" % name)
 		for client in clients:
 			# json-rpc: notifications have id null
 			jsonString = json.dumps({"id": None, "method": name, "params": params})
-			client.sendLine(jsonString)
+			client.sendLine(jsonString.encode("utf-8"))
 
 
 class NotificationServer(threading.Thread, SubjectsObserver):
@@ -640,7 +640,7 @@ class NotificationServer(threading.Thread, SubjectsObserver):
 			self._factory.requestEndConnections(clientIds)
 
 	def run(self):
-		logger.info(u"Notification server starting")
+		logger.info("Notification server starting")
 		try:
 			if self._address == '0.0.0.0':
 				self._server = reactor.listenTCP(self._port, self._factory)
@@ -649,7 +649,7 @@ class NotificationServer(threading.Thread, SubjectsObserver):
 
 			self._listening = True
 			if not reactor.running:
-				logger.info(u"Starting reactor")
+				logger.info("Starting reactor")
 				reactor.run(installSignalHandlers=0)
 		except Exception as error:
 			self._error = forceUnicode(error)
@@ -675,14 +675,14 @@ class NotificationServer(threading.Thread, SubjectsObserver):
 					timeout -= 0.1
 
 				if timeout == 0:
-					logger.warning(u"Timed out while waiting for stop listening")
+					logger.warning("Timed out while waiting for stop listening")
 			self._listening = False
 		if stopReactor and reactor and reactor.running:
 			try:
 				reactor.stop()
 			except Exception as error:
-				logger.error(u"Failed to stop reactor: %s" % error)
-		logger.info(u"Notification server stopped")
+				logger.error("Failed to stop reactor: %s" % error)
+		logger.info("Notification server stopped")
 
 
 class NotificationClientProtocol(LineReceiver):
@@ -708,21 +708,21 @@ class NotificationClientFactory(ClientFactory):
 		self._timeout = 5
 
 	def connectionLost(self, reason):
-		logger.info(u"server connection lost")
+		logger.info("server connection lost")
 
 	def connectionMade(self, client):
-		logger.info(u"server connection made")
+		logger.info("server connection made")
 		self._client = client
 
 	def isReady(self):
 		return self._client is not None
 
 	def sendLine(self, line):
-		logger.debug(u"sending line '%s'" % line)
+		logger.debug("sending line '%s'" % line)
 		self._client.sendLine(line)
 
 	def receive(self, rpc):
-		logger.debug(u"received rpc '%s'" % rpc)
+		logger.debug("received rpc '%s'" % rpc)
 		id = None
 		try:
 			rpc = json.loads(rpc)
@@ -735,7 +735,7 @@ class NotificationClientFactory(ClientFactory):
 				method = rpc['method']
 				params = rpc['params']
 				if method == 'endConnection':
-					logger.info(u"Server requested connection end")
+					logger.info("Server requested connection end")
 					if not params or not params[0] or not self._notificationClient.getId() or self._notificationClient.getId() in forceList(params[0]):
 						self._notificationClient.endConnectionRequested()
 				else:
@@ -745,7 +745,7 @@ class NotificationClientFactory(ClientFactory):
 			logger.error(error)
 
 	def execute(self, method, params):
-		logger.debug(u"executing method '%s', params %s" % (method, params))
+		logger.debug("executing method '%s', params %s" % (method, params))
 		if not params:
 			params = []
 		if not isinstance(params, (list, tuple)):
@@ -756,7 +756,7 @@ class NotificationClientFactory(ClientFactory):
 			time.sleep(0.1)
 			timeout += 0.1
 		if timeout >= self._timeout:
-			raise RuntimeError(u"execute timed out after %d seconds" % self._timeout)
+			raise RuntimeError("execute timed out after %d seconds" % self._timeout)
 
 		rpc = {'id': None, "method": method, "params": params}
 		self.sendLine(json.dumps(rpc))
@@ -795,9 +795,9 @@ class NotificationClient(threading.Thread):
 		return self._factory
 
 	def run(self):
-		logger.info(u"Notification client starting")
+		logger.info("Notification client starting")
 		try:
-			logger.info(u"Connecting to %s:%s" % (self._address, self._port))
+			logger.info("Connecting to %s:%s" % (self._address, self._port))
 			reactor.connectTCP(self._address, self._port, self._factory)
 			if not reactor.running:
 				reactor.run(installSignalHandlers=0)
