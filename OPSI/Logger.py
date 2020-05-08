@@ -605,18 +605,18 @@ False suppresses exceptions.
 			return tempMessage
 
 		try:
-			if not isinstance(message, str):
-				message = str(message, 'utf-8', 'replace')
-
-			try:
-				message = message.format(*formatArgs, **formatKwargs)
-			except KeyError as e:
-				if 'missing format for key ' not in str(e).lower():
-					raise e
-			except ValueError as e:
-				if 'invalid conversion specification' not in str(e).lower():
-					raise e
-
+			if type(message) in (str, bytes):
+				if type(message) == bytes:
+					message = message.decode('utf-8', 'replace')
+				
+				if formatArgs or formatKwargs:
+					try:
+						message = message.format(*formatArgs, **formatKwargs)
+					except Exception as e:
+						message = "%s (format error %s %s)" % (message, formatArgs, formatKwargs)
+			else:
+				message = str(message)
+			
 			componentname = self.__componentName
 			datetime = time.strftime(u"%b %d %H:%M:%S", time.localtime())
 			threadId = str(thread.get_ident())
@@ -767,6 +767,8 @@ False suppresses exceptions.
 				if univentionLevel:
 					self.univentionLogger_priv.debug(self.__univentionClass, univentionLevel, m)
 		except Exception as err:
+			print("LOGGING ERROR:", err, file=sys.stderr)
+			traceback.print_exc()
 			if raiseException:
 				raise err
 
