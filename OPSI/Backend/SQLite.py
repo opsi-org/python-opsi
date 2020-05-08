@@ -150,7 +150,8 @@ class SQLite(SQL):
 			logger.debug2(u"insert: %s" % query)
 
 			with self._WRITE_LOCK:
-				result = self.execute(query, conn, cursor).rowcount
+				self.execute(query, conn, cursor)
+				result = cursor.lastrowid
 				conn.commit()
 		finally:
 			self.close(conn, cursor)
