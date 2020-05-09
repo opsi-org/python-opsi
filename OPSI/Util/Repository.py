@@ -1448,7 +1448,7 @@ class DepotToLocalDirectorySychronizer(object):
 
 				self._synchronizeDirectories(self._productId, productDestinationDirectory, productProgressSubject)
 
-				links = self._linkFiles.keys()
+				links = list(self._linkFiles.keys())
 				links.sort()
 				for linkDestination in links:
 					linkSource = self._linkFiles[linkDestination]
