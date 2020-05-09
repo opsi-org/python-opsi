@@ -174,7 +174,7 @@ description = "opsi development tools"
 name = "opsi-dev-tools"
 optional = false
 python-versions = ">=3.6,<4.0"
-version = "1.0.2"
+version = "1.0.4"
 
 [package.dependencies]
 colorlog = ">=4.1.0,<5.0.0"
@@ -286,8 +286,8 @@ category = "main"
 description = "File type identification using libmagic"
 name = "python-magic"
 optional = false
-python-versions = "*"
-version = "0.4.15"
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
+version = "0.4.18"
 
 [[package]]
 category = "main"
@@ -300,6 +300,7 @@ version = "1.8.4"
 [[package]]
 category = "main"
 description = "Python for Window Extensions"
+marker = "sys_platform == \"win32\""
 name = "pywin32"
 optional = false
 python-versions = "*"
@@ -452,6 +453,7 @@ socks = ["PySocks (>=1.5.6,<1.5.7 || >1.5.7,<2.0)"]
 [[package]]
 category = "main"
 description = "Windows Management Instrumentation"
+marker = "sys_platform == \"win32\""
 name = "wmi"
 optional = false
 python-versions = "*"
@@ -484,7 +486,7 @@ test = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 
 [metadata]
-content-hash = "d983d6ee6402e5ea990bdae93b0048fe8819da1b71b2690905780ba6a886ddbf"
+content-hash = "dcf65f399625f85415ae3673d129664fec51df85dd50a6dac75623589b59cde6"
 python-versions = "^3.6"
 
 [metadata.files]
@@ -596,8 +598,8 @@ ldap3 = [
     {file = "ldap3-2.7.win-amd64.exe", hash = "sha256:53aaae5bf14f3827c69600ddf4d61b88f49c055bb93060e9702c5bafd206c744"},
 ]
 opsi-dev-tools = [
-    {file = "opsi-dev-tools-1.0.2.tar.gz", hash = "md5:6334b2466ccd519acdafc152ec63d43e"},
-    {file = "opsi_dev_tools-1.0.2-py3-none-any.whl", hash = "md5:ecab9f1757f2d584cc7eaa00788fd396"},
+    {file = "opsi-dev-tools-1.0.4.tar.gz", hash = "md5:0b6f1e530337341211826512174ec62b"},
+    {file = "opsi_dev_tools-1.0.4-py3-none-any.whl", hash = "md5:fc12f1998abe6c643954545c261619d2"},
 ]
 packaging = [
     {file = "packaging-20.3-py2.py3-none-any.whl", hash = "sha256:82f77b9bee21c1bafbf35a84905d604d5d1223801d639cf3ed140bd651c08752"},
@@ -686,8 +688,8 @@ pypi-simple = [
     {file = "pypi_simple-0.6.0-py2.py3-none-any.whl", hash = "sha256:fc2ab9aa5c666b8b5a57593b26826301c7801ca9f90931645d7040c525373fbb"},
 ]
 python-magic = [
-    {file = "python-magic-0.4.15.tar.gz", hash = "sha256:f3765c0f582d2dfc72c15f3b5a82aecfae9498bd29ca840d72f37d7bd38bfcd5"},
-    {file = "python_magic-0.4.15-py2.py3-none-any.whl", hash = "sha256:f2674dcfad52ae6c49d4803fa027809540b130db1dec928cfbb9240316831375"},
+    {file = "python-magic-0.4.18.tar.gz", hash = "sha256:b757db2a5289ea3f1ced9e60f072965243ea43a2221430048fd8cacab17be0ce"},
+    {file = "python_magic-0.4.18-py2.py3-none-any.whl", hash = "sha256:356efa93c8899047d1eb7d3eb91e871ba2f5b1376edbaf4cc305e3c872207355"},
 ]
 python-pam = [
     {file = "python-pam-1.8.4.tar.gz", hash = "sha256:c856d9c89fedb33951dd8a95727ae57c6887b02d065bbdffd2fd9dbc0183909b"},
