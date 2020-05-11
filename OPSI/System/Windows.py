@@ -816,7 +816,7 @@ def mount(dev, mountpoint, **options):
 					# Remove connection and update user profile (remove persistent connection)
 					win32wnet.WNetCancelConnection2(mountpoint, win32netcon.CONNECT_UPDATE_PROFILE, True)
 				except pywintypes.error as details:
-					if details[0] == 2250:
+					if details.winerror == 2250:
 						# Not connected
 						logger.debug(u"Failed to umount '%s': %s" % (mountpoint, details))
 					else:
@@ -848,7 +848,7 @@ def umount(mountpoint):
 		# Remove connection and update user profile (remove persistent connection)
 		win32wnet.WNetCancelConnection2(mountpoint, win32netcon.CONNECT_UPDATE_PROFILE, True)
 	except pywintypes.error as details:
-		if details[0] == 2250:
+		if details.winerror == 2250:
 			# Not connected
 			logger.warning(u"Failed to umount '%s': %s" % (mountpoint, details))
 		else:
