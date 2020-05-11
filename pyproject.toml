@@ -8,9 +8,7 @@ packages = [
     { include = "OPSI" }
 ]
 include = [
-    "data/**/*.conf",
-    "data/**/*.conf.example",
-    "data/hwaudit/locales/*"
+    "data/**/*"
 ]
 
 [[tool.poetry.source]]
