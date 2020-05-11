@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "python-opsi"
-version = "4.2.0.24"
+version = "4.2.0.25"
 description = "The opsi python library"
 authors = ["Jan Schneider <j.schneider@uib.de>"]
 license = "AGPL-3.0"
@@ -8,7 +8,7 @@ packages = [
     { include = "OPSI" }
 ]
 include = [
-    "data/**/*"
+    "python-opsi_data/**/*"
 ]
 
 [[tool.poetry.source]]
