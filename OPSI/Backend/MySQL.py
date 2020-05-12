@@ -47,7 +47,7 @@ from OPSI.Backend.SQL import (
 	onlyAllowSelect, SQL, SQLBackend, SQLBackendObjectModificationTracker)
 from OPSI.Exceptions import (BackendBadValueError, BackendUnableToConnectError,
 	BackendUnaccomplishableError)
-from OPSI.Logger import Logger
+from OPSI.Logger import Logger, LOG_DEBUG
 from OPSI.Types import forceInt, forceUnicode
 from OPSI.Util import getPublicKey
 from OPSI.Object import Product, ProductProperty
@@ -204,8 +204,11 @@ class MySQL(SQL):
 			conv[FIELD_TYPE.DATETIME] = str
 			conv[FIELD_TYPE.TIMESTAMP] = str
 
-			for tryNumber in (1, 2):
+			tryNumber = 0
+			while True:
+				tryNumber += 1
 				try:
+					logger.debug(u"Creating connection pool - connecting to {0}/{1} as {2}", self._address, self._database, self._username)
 					self._pool = ConnectionPool(
 						host=self._address,
 						user=self._username,
@@ -222,19 +225,14 @@ class MySQL(SQL):
 					logger.debug2("Created connection pool {0}", self._pool)
 					break
 				except Exception as error:
-					logger.logException(error)
-
-					if tryNumber < 2:
-						secondsToWait = 5
-						logger.debug(
-							u"We are waiting {0} seconds before trying "
-							u"an reconnect.".format(secondsToWait)
-						)
-						for _ in range(secondsToWait * 10):
-							time.sleep(0.1)
-						continue
-
-					raise BackendUnableToConnectError(u"Failed to connect to database '%s' address '%s': %s" % (self._database, self._address, error))
+					logger.logException(error, logLevel=LOG_DEBUG)
+					if tryNumber >= 10:
+						raise BackendUnableToConnectError(u"Failed to connect to database '%s' address '%s': %s" % (self._database, self._address, error))
+					secondsToWait = 1
+					logger.debug("We are waiting {0} seconds before retrying connect.".format(secondsToWait)
+					)
+					for _ in range(secondsToWait * 10):
+						time.sleep(0.1)
 		finally:
 			logger.debug2(u"Releasing pool lock...")
 			if self._POOL_LOCK.locked():
