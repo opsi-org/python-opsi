@@ -161,9 +161,11 @@ class RpcThread(KillableThread):
 				)
 				connection.endheaders()
 				connection.send(query)
+				logger.debug2("Sending data to client: {0}", query)
 
 				response = connection.getresponse()
 				response = response.read()
+				logger.debug2("Got response from client: {0}", response)
 				if isinstance(response, bytes):
 					response = response.decode('utf-8')
 				response = fromJson(response)
