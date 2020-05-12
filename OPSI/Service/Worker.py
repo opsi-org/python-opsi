@@ -626,9 +626,10 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 		else:
 			logger.debug("Sending plain data")
 			response = toJson(response).encode("utf-8")
-
+		
+		logger.debug2("Sending response: {0}", response)
 		self.request.write(response)
-
+	
 	def _renderError(self, failure):
 		self.request.setHeader('content-type', "application/json; charset=utf-8")
 		error = "Unknown error"

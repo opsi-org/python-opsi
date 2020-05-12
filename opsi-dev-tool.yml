@@ -6,3 +6,18 @@ locale:
   source_files:
     - OPSI/UI.py
 
+package:
+  name: python3-opsi
+  type: poetry
+  dependencies:
+    - python3-magic
+    - python3-pampy
+    - python3-pyasn1
+    - python3-openssl
+    - python3-pycryptodome
+    - python3-twisted
+    - python3-sqlalchemy
+  #source_script:
+  #  - 
+  #  #- mkdir -p ${DST}/files/usr/bin
+  #  #- install -m 0755 ${SRC}/opsi-dev-tools/opsi-dev-tool ${DST}/files/usr/bin/opsi-dev-tool
