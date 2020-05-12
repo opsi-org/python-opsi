@@ -536,7 +536,7 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 
 	def _getRpcs(self, result):
 		if not self.query:
-			return result
+			raise ValueError(u"Got no rpcs")
 		if not self._callInstance:
 			raise RuntimeError(u"Call instance not defined in %s" % self)
 		if not self._callInterface:
@@ -629,7 +629,7 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 		
 		logger.debug2("Sending response: {0}", response)
 		self.request.write(response)
-	
+
 	def _renderError(self, failure):
 		self.request.setHeader('content-type', "application/json; charset=utf-8")
 		error = "Unknown error"
