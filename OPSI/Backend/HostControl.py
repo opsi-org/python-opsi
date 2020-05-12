@@ -151,7 +151,8 @@ class RpcThread(KillableThread):
 				non_blocking_connect_https(connection, timeout)
 				connection.putrequest('POST', '/opsiclientd')
 				connection.putheader('User-Agent', self._USER_AGENT)
-				connection.putheader('content-type', 'application/json')
+				connection.putheader('Content-Type', 'application/json')
+				connection.putheader('Content-Length', str(len(query)))
 				connection.putheader(
 					'Authorization',
 					createBasicAuthHeader(
