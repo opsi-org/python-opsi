@@ -1684,7 +1684,10 @@ def runCommandInSession(command, sessionId=None, desktop=u"default", duplicateFr
 		time.sleep(0.1)
 
 	exitCode = win32process.GetExitCodeProcess(hProcess)
-	logger.notice(u"Process %d ended with exit code %d" % (dwProcessId, exitCode))
+	log = logger.notice
+	if exitCode != 0:
+		log = logger.warning
+	log(u"Process %d ended with exit code %d" % (dwProcessId, exitCode))
 	return (None, None, None, None)
 
 
