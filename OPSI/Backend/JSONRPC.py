@@ -119,11 +119,11 @@ class JSONRPC(DeferredCall):
 
 		try:
 			rpc = json.dumps(self.getRpc())
-			logger.debug2(u"jsonrpc: {0!r}", rpc)
-
+			logger.debug2(u"jsonrpc request: {0!r}", rpc)
 			response = self.jsonrpcBackend._request(baseUrl=self.baseUrl, data=rpc, retry=self.retry)
 			if isinstance(response, bytes):
 				response = response.decode()
+			logger.debug2(u"jsonrpc response: {0!r}", response)
 			self.processResult(json.loads(response))
 		except Exception as error:
 			if self.method not in ('backend_exit', 'exit'):
@@ -650,10 +650,10 @@ class JSONRPCBackend(Backend):
 
 	def _request(self, baseUrl, data, retry=True):
 		headers = {
-			'user-agent': self._application,
+			'User-Agent': self._application,
 			'Accept': 'application/json, text/plain',
 			'Accept-Encoding': 'deflate, gzip',
-			'content-type': 'application/json',
+			'Content-Type': 'application/json',
 		}
 
 		logger.debug2(u"Request to host {0!r}, baseUrl: {1!r}, query: {2!r}".format(self._host, baseUrl, data))
@@ -664,6 +664,7 @@ class JSONRPCBackend(Backend):
 			data = gzipEncode(data)
 			logger.debug2(u"Data compressed.")
 
+		headers['Content-Length'] = str(len(data))
 		headers['Authorization'] = createBasicAuthHeader(
 			self._username,
 			self._password
