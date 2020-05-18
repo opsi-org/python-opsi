@@ -1635,6 +1635,9 @@ def getUserToken(sessionId=None, duplicateFrom=u"winlogon.exe"):
 
 
 def runCommandInSession(command, sessionId=None, desktop=u"default", duplicateFrom=u"winlogon.exe", waitForProcessEnding=True, timeoutSeconds=0):
+	"""
+	put command arguments in double, not single, quotes.
+	"""
 	command = forceUnicode(command)
 	if sessionId is not None:
 		sessionId = forceInt(sessionId)
