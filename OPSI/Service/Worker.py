@@ -470,6 +470,7 @@ class WorkerOpsi:
 
 	def _decodeQuery(self, result):
 		try:
+			logger.debug("Decoding query, request method {0}", self.request.method)
 			if self.request.method == 'POST':
 				contentType = self.request.getHeader('content-type')
 				try:
@@ -478,6 +479,8 @@ class WorkerOpsi:
 					contentEncoding = None
 
 				logger.debug(u"Content-Type: {0}, Content-Encoding: {1}", contentType, contentEncoding)
+				if not contentType:
+					logger.warning("Header Content-Type missing, headers: {0}", self.request.getAllHeaders())
 				if contentType and contentType.mediaType.startswith('gzip'):
 					# Invalid MIME type.
 					# Probably it is gzip-application/json-rpc and therefore
