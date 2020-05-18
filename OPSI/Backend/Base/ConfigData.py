@@ -80,8 +80,8 @@ try:
 			if line.strip().startswith('max log size'):
 				_, logSize = line.strip().split('=', 1)
 				logSize = removeUnit(logSize.strip())
-				logger.debug("Setting max log size {0}", logSize)
-				DEFAULT_MAX_LOGFILE_SIZE = logSize
+				logger.debug("Setting max log size to {0} MB", logSize)
+				DEFAULT_MAX_LOGFILE_SIZE = int(logSize)*1000*1000 
 				break
 		else:
 			raise ValueError("No custom setting found.")
@@ -287,7 +287,8 @@ Currently supported: *bootimage*, *clientconnect*, *instlog*, *opsiconfd* or *us
 Setting this to `0` disables limiting.
 		"""
 		logType = forceUnicode(logType)
-
+		maxSize = int(maxSize)
+		
 		if logType not in LOG_TYPES:
 			raise BackendBadValueError(u'Unknown log type {0!r}'.format(logType))
 
