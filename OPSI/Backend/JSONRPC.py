@@ -317,11 +317,11 @@ class JSONRPCBackend(Backend):
 				self._compression = self._parseCompressionValue(value)
 			elif option == 'connectoninit':
 				self._connectOnInit = forceBool(value)
-			elif option == 'connecttimeout' and value is not None:
+			elif option == 'connecttimeout' and value not in (None, ""):
 				self._connectTimeout = forceInt(value)
-			elif option == 'connectionpoolsize' and value is not None:
+			elif option == 'connectionpoolsize' and value not in (None, ""):
 				self._connectionPoolSize = forceInt(value)
-			elif option in ('timeout', 'sockettimeout') and value is not None:
+			elif option in ('timeout', 'sockettimeout') and value not in (None, ""):
 				self._socketTimeout = forceInt(value)
 			elif option == 'retry':
 				retry = forceBool(value)
@@ -331,15 +331,15 @@ class JSONRPCBackend(Backend):
 				self._rpcQueuePollingTime = forceFloat(value)
 			elif option == 'rpcqueuesize':
 				self._rpcQueueSize = forceInt(value)
-			elif option == 'servercertfile' and value is not None:
+			elif option == 'servercertfile' and value not in (None, ""):
 				self._serverCertFile = forceFilename(value)
 			elif option == 'verifyservercert':
 				self._verifyServerCert = forceBool(value)
-			elif option == 'cacertfile' and value is not None:
+			elif option == 'cacertfile' and value not in (None, ""):
 				self._caCertFile = forceFilename(value)
 			elif option == 'verifyservercertbyca':
 				self._verifyServerCertByCa = forceBool(value)
-			elif option == 'proxyurl' and value is not None:
+			elif option == 'proxyurl' and value not in (None, ""):
 				logger.debug(u"ProxyURL detected: '%s'" % value)
 				self._proxyURL = forceUnicode(value)
 
