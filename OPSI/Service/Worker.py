@@ -472,16 +472,19 @@ class WorkerOpsi:
 		try:
 			logger.debug("Decoding query, request method {0}", self.request.method)
 			if self.request.method == b'POST':
-				contentType = self.request.getHeader('content-type')
+				logger.debug2("Request headers: {0}", self.request.getAllHeaders())
 				try:
-					contentEncoding = self.request.getHeader('content-encoding')[0].lower()
-				except Exception:
+					contentType = self.request.getHeader('content-type').lower()
+				except Exception as e:
+					contentType = None
+				try:
+					contentEncoding = self.request.getHeader('content-encoding').lower()
+				except Exception as e:
 					contentEncoding = None
-
+				
 				logger.debug(u"Content-Type: {0}, Content-Encoding: {1}", contentType, contentEncoding)
-				if not contentType:
-					logger.warning("Header Content-Type missing, headers: {0}", self.request.getAllHeaders())
-				if contentType and contentType.mediaType.startswith('gzip'):
+					
+				if contentType and "gzip" in contentType:
 					# Invalid MIME type.
 					# Probably it is gzip-application/json-rpc and therefore
 					# we need to behave like we did before.
