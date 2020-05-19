@@ -221,48 +221,30 @@ overwrite the log.
 			raise BackendBadValueError(u"Writing {0} log requires an objectId".format(logType))
 		objectId = forceObjectId(objectId)
 
-		try:
-			os.mkdir(os.path.join(LOG_DIR, logType), 0o2770)
-		except OSError:
-			pass  # Directory already existing
-
 		limitFileSize = self._maxLogfileSize > 0
 		data = forceUnicode(data)
 		logFile = os.path.join(LOG_DIR, logType, '{0}.log'.format(objectId))
 
+		if not os.path.exists(os.path.dirname(logFile)):
+			os.mkdir(os.path.dirname(logFile), 0o2770)
+
+		logWriteMode = "w"
 		if forceBool(append):
-			logWriteMode = 'a'
-
-			if limitFileSize:
-				try:
-					with open(logFile, 'x'):
-						pass
-
-					# If we got here the file was created by us and we
-					# can safely assume that it has no content.
-					currentLogSize = 0
-				except IOError as ioerr:
-					if ioerr.errno != 17:  # 17 is File exists
-						raise
-
-					# The file existed before and we can now check it's
-					# current size
-					currentLogSize = os.stat(logFile).st_size
-
+			if limitFileSize and os.path.exists(logFile):
+				currentLogSize = os.stat(logFile).st_size
 				amountToReadFromLog = self._maxLogfileSize - len(data)
-
 				if 0 < amountToReadFromLog < currentLogSize:
 					with codecs.open(logFile, 'r', 'utf-8', 'replace') as log:
 						log.seek(currentLogSize - amountToReadFromLog)
-						data = log.read() + data
-
-					logWriteMode = "w"
-				elif amountToReadFromLog <= 0:
-					logWriteMode = "w"
-		else:
-			logWriteMode = "w"
-
-		if limitFileSize:
+						oldData = log.read()
+						idx = oldData.find("\n")
+						if idx > 0:
+							oldData = oldData[idx+1:]
+						data = oldData + data
+			else:
+				logWriteMode = "a"
+		
+		if limitFileSize and len(data) > self._maxLogfileSize:
 			data = truncateLogData(data, self._maxLogfileSize)
 
 		with codecs.open(logFile, logWriteMode, 'utf-8', 'replace') as log:
@@ -270,12 +252,13 @@ overwrite the log.
 
 		try:
 			shutil.chown(logFile, group=OPSI_ADMIN_GROUP)
-		except LookupError:  # Group could not be found
+		except LookupError:
+			# Group could not be found
 			pass
 
 		os.chmod(logFile, 0o640)
 
-	def log_read(self, logType, objectId=None, maxSize=DEFAULT_MAX_LOGFILE_SIZE):
+	def log_read(self, logType, objectId=None, maxSize=0):
 		"""
 		Return the content of a log.
 
@@ -310,7 +293,7 @@ Setting this to `0` disables limiting.
 
 			raise
 
-		if maxSize > 0:
+		if maxSize > 0 and len(data) > maxSize:
 			return truncateLogData(data, maxSize)
 
 		return data
