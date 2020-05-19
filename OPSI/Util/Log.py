@@ -32,19 +32,19 @@ __all__ = ('truncateLogData', )
 
 def truncateLogData(data, maxSize):
 	"""
-	Truncating `data` to not be longer than `maxSize` bytes.
+	Truncating `data` to not be longer than `maxSize` chars.
 
 	:param data: Text
 	:type data: str
-	:param maxSize: The maximum size that is allowed in bytes.
+	:param maxSize: The maximum size that is allowed in chars.
 	:type maxSize: int
 	"""
 	maxSize = forceInt(maxSize)
-	dataLength = len(data.encode('utf-8'))
+	dataLength = len(data)
 	if dataLength > maxSize:
 		start = data.find('\n', dataLength - maxSize)
 		if start == -1:
 			start = dataLength - maxSize
-		return data[start:].lstrip()
+		return data[start+1:].lstrip()
 
 	return data
