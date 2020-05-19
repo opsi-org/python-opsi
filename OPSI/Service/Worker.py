@@ -471,7 +471,7 @@ class WorkerOpsi:
 	def _decodeQuery(self, result):
 		try:
 			logger.debug("Decoding query, request method {0}", self.request.method)
-			if self.request.method == 'POST':
+			if self.request.method == b'POST':
 				contentType = self.request.getHeader('content-type')
 				try:
 					contentEncoding = self.request.getHeader('content-encoding')[0].lower()
