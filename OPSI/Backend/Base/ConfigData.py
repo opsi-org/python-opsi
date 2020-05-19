@@ -77,7 +77,7 @@ logger = Logger()
 try:
 	with open(os.path.join('/etc', 'opsi', 'opsiconfd.conf')) as config:
 		for line in config:
-			if line.strip().startswith('max log size'):
+			if line.strip().startswith('max-log-size'):
 				_, logSize = line.strip().split('=', 1)
 				logSize = removeUnit(logSize.strip())
 				logger.debug("Setting max log size to {0} MB", logSize)
@@ -230,10 +230,12 @@ overwrite the log.
 
 		logWriteMode = "w"
 		if forceBool(append):
+			logWriteMode = "a"
 			if limitFileSize and os.path.exists(logFile):
 				currentLogSize = os.stat(logFile).st_size
 				amountToReadFromLog = self._maxLogfileSize - len(data)
 				if 0 < amountToReadFromLog < currentLogSize:
+					logWriteMode = "w"
 					with codecs.open(logFile, 'r', 'utf-8', 'replace') as log:
 						log.seek(currentLogSize - amountToReadFromLog)
 						oldData = log.read()
@@ -241,8 +243,6 @@ overwrite the log.
 						if idx > 0:
 							oldData = oldData[idx+1:]
 						data = oldData + data
-			else:
-				logWriteMode = "a"
 		
 		if limitFileSize and len(data) > self._maxLogfileSize:
 			data = truncateLogData(data, self._maxLogfileSize)
