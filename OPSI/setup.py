@@ -26,9 +26,11 @@ import grp
 import subprocess
 
 from OPSI.Config import OPSI_ADMIN_GROUP, FILE_ADMIN_GROUP, DEFAULT_DEPOT_USER
+from OPSI.Logger import Logger
 
-from .logging import logger
 from .config import config
+
+logger = Logger()
 
 def create_group(groupname: str, system: bool = False):
 	logger.notice("Creating group: {0}", groupname)
