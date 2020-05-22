@@ -33,19 +33,23 @@ Doing so might result in unforseen problems and is strongly discouraged!
 """
 
 # Group used to identify members whits administrative rights in opsi
-OPSI_ADMIN_GROUP = u'opsiadmin'
+OPSI_ADMIN_GROUP = "opsiadmin"
 
 # Default user when accessing the opsi depot
-DEFAULT_DEPOT_USER = u'pcpatch'
+DEFAULT_DEPOT_USER = "pcpatch"
 
 # Path to global opsi configuration file
-OPSI_GLOBAL_CONF = u'/etc/opsi/global.conf'
-
-# User that is running opsiconfd.
-OPSICONFD_USER = u'opsiconfd'
+OPSI_GLOBAL_CONF = "/etc/opsi/global.conf"
 
 try:
 	from OPSI.Util.File.Opsi import OpsiConfFile
 	FILE_ADMIN_GROUP = OpsiConfFile().getOpsiFileAdminGroup()
 except Exception:
-	FILE_ADMIN_GROUP = u'pcpatch'
+	FILE_ADMIN_GROUP = "pcpatch"
+
+# User that is running opsiconfd.
+try:
+	from opsiconfd.config import config
+	OPSICONFD_USER = config.run_as_user
+except Exception:
+	OPSICONFD_USER = "opsiconfd"
