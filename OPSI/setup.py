@@ -101,6 +101,6 @@ def setup_file_permissions():
 		os.chmod(path="/etc/shadow", mode=0o640)
 
 def setup():
-	logger.notice("Running setup")
+	logger.notice("Running python-opsi setup")
 	setup_users_and_groups()
 	setup_file_permissions()
