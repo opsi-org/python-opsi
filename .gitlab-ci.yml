@@ -9,7 +9,7 @@ run unittests:
   image: docker.uib.local/py-test-image
   stage: test
   before_script:
-    - hostname test.uib.local
+#    - hostname test.uib.local
 #    - apt update
 #    - apt -y install build-essential python-dev librsync-dev lsb-release python-apsw python-crypto python-ldaptor python-m2crypto python-magic python-mysqldb python-newt python-openssl python-pam python-pip python-sqlalchemy python-twisted-web
     - pip install -r requirements-qa.txt
