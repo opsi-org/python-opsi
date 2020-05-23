@@ -31,27 +31,27 @@ from OPSI.Logger import Logger
 logger = Logger()
 
 def create_group(groupname: str, system: bool = False):
-	logger.notice("Creating group: {0}", groupname)
+	logger.notice("Creating group: %s", groupname)
 	cmd = ["groupadd"]
 	if system:
 		cmd.append("--system")
 	cmd.append(groupname)
-	logger.info("Running command: {0}", cmd)
+	logger.info("Running command: %s", cmd)
 	subprocess.check_call(cmd)
 
 def create_user(username: str, primary_groupname: str, home: str, shell: str, system: bool = False):
-	logger.notice("Creating user: {0}", username)
+	logger.notice("Creating user: %s", username)
 	cmd = ["useradd", "-g", primary_groupname, "-d", home, "-s", shell]
 	if system:
 		cmd.append("--system")
 	cmd.append(username)
-	logger.info("Running command: {0}", cmd)
+	logger.info("Running command: %s", cmd)
 	subprocess.check_call(cmd)
 
 def add_user_to_group(username: str, groupname: str):
-	logger.notice("Adding user '{0}' to group '{1}'", username, groupname)
+	logger.notice("Adding user '%s' to group '%s'", username, groupname)
 	cmd = ["usermod", "-a", "-G", groupname, username]
-	logger.info("Running command: {0}", cmd)
+	logger.info("Running command: %s", cmd)
 	subprocess.check_call(cmd)
 
 def get_groups():
@@ -101,6 +101,6 @@ def setup_file_permissions():
 		os.chmod(path="/etc/shadow", mode=0o640)
 
 def setup():
-	logger.notice("Running python-opsi setup")
+	logger.notice("Running setup")
 	setup_users_and_groups()
 	setup_file_permissions()
