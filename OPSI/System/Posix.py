@@ -2238,7 +2238,7 @@ class Harddisk:
 				start = os.read(hd, 4)
 				logger.debug(
 					u"NTFS Boot Record now using %s %s %s %s as partition "
-					u"start sector"
+					u"start sector",
 						hex(ord(start[0])), hex(ord(start[1])),
 						hex(ord(start[2])), hex(ord(start[3]))
 				)
