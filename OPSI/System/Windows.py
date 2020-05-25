@@ -68,7 +68,7 @@ from OPSI.Types import (
 
 __all__ = (
 	'HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE', 'hooks', 'SystemSpecificHook',
-	'addSystemHook', 'removeSystemHook', 'getArchitecture', 'getOpsiHotfixName',
+	'addSystemHook', 'removeSystemHook', 'get_subprocess_environment', 'getArchitecture', 'getOpsiHotfixName',
 	'getHostname', 'getFQDN', 'getFileVersionInfo', 'getProgramFilesDir',
 	'getSystemDrive', 'getNetworkInterfaces', 'getDefaultNetworkInterfaceName',
 	'getSystemProxySetting', 'NetworkPerformanceCounter',
