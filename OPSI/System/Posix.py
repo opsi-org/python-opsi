@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 #
-# Copyright (C) 2006-2018 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2019 uib GmbH <info@uib.de>
 # All rights reserved.
 #
 # This program is free software: you can redistribute it and/or modify
@@ -32,11 +32,13 @@ Functions and classes for the use with a POSIX operating system.
 import codecs
 import datetime
 import fcntl
+import json
 import locale
 import os
 import platform
 import re
 import socket
+import struct
 import sys
 import subprocess
 import threading
@@ -46,26 +48,31 @@ from itertools import islice
 from signal import SIGKILL
 
 from OPSI.Logger import Logger, LOG_NONE
-from OPSI.Types import (forceDomain, forceInt, forceBool, forceUnicode,
-	forceFilename, forceHostname, forceHostId, forceNetmask, forceIpAddress,
-	forceIPAddress, forceHardwareVendorId, forceHardwareAddress,
-	forceHardwareDeviceId, forceUnicodeLower)
+from OPSI.Types import (
+	forceBool, forceDomain, forceFilename, forceHardwareAddress,
+	forceHardwareDeviceId, forceHardwareVendorId, forceHostId, forceHostname,
+	forceInt, forceIpAddress, forceNetmask, forceUnicode, forceUnicodeLower)
 from OPSI.Object import *
 from OPSI.Util import getfqdn, objectToBeautifiedText, removeUnit
+
+try:
+	import distro as distro_module
+except ImportError:
+	distro_module = None
 
 __all__ = (
 	'CommandNotFoundException',
 	'Distribution', 'Harddisk', 'NetworkPerformanceCounter', 'SysInfo',
-	'SystemSpecificHook', 'addSystemHook', 'auditHardware', 'daemonize',
-	'execute', 'getActiveConsoleSessionId', 'getActiveSessionId',
-	'getActiveSessionIds', 'getBlockDeviceBusType',
+	'SystemSpecificHook', 'addSystemHook', 'auditHardware',
+	'configureInterface', 'daemonize', 'execute', 'get_subprocess_environment', 'getActiveConsoleSessionId',
+	'getActiveSessionId', 'getActiveSessionIds', 'getBlockDeviceBusType',
 	'getBlockDeviceContollerInfo', 'getDHCPDRestartCommand', 'getDHCPResult',
 	'getDHCPServiceName', 'getDefaultNetworkInterfaceName', 'getDiskSpaceUsage',
 	'getEthernetDevices', 'getFQDN', 'getHarddisks', 'getHostname',
 	'getKernelParams', 'getNetworkDeviceConfig', 'getNetworkInterfaces',
 	'getSambaServiceName', 'getServiceNames', 'getSystemProxySetting', 'halt',
 	'hardwareExtendedInventory', 'hardwareInventory', 'hooks', 'ifconfig',
-	'isCentOS', 'isDebian', 'isOpenSUSE', 'isOpenSUSELeap', 'isRHEL', 'isSLES',
+	'isCentOS', 'isDebian', 'isOpenSUSE', 'isRHEL', 'isSLES',
 	'isUCS', 'isUbuntu', 'isXenialSfdiskVersion', 'locateDHCPDConfig',
 	'locateDHCPDInit', 'mount', 'reboot', 'removeSystemHook',
 	'runCommandInSession', 'setLocalSystemTime', 'shutdown', 'umount', 'which'
@@ -78,7 +85,8 @@ GEO_OVERWRITE_SO = '/usr/local/lib/geo_override.so'
 BIN_WHICH = '/usr/bin/which'
 WHICH_CACHE = {}
 DHCLIENT_LEASES_FILE = '/var/lib/dhcp/dhclient.leases'
-DHCLIENT_LEASES_FILE_OLD = '/var/lib/dhcp3/dhclient.leases'
+_DHCP_SERVICE_NAME = None
+_SAMBA_SERVICE_NAME = None
 
 hooks = []
 x86_64 = False
@@ -355,7 +363,7 @@ def getKernelParams():
 	Reads the kernel cmdline and returns a dict containing all key=value pairs.
 	Keys are converted to lower case.
 
-	:returntype: dict
+	:rtype: dict
 	"""
 	cmdline = ''
 	try:
@@ -386,7 +394,7 @@ def getEthernetDevices():
 	Get the ethernet devices on the system.
 
 	:return: For each device the name of the device.
-	:returntype: [str]
+	:rtype: [str]
 	"""
 	devices = []
 	with open("/proc/net/dev") as f:
@@ -407,7 +415,7 @@ def getNetworkInterfaces():
 	"""
 	Get information about the network interfaces on the system.
 
-	:returntype: [{}]
+	:rtype: [{}]
 	"""
 	return [getNetworkDeviceConfig(device) for device in getEthernetDevices()]
 
@@ -427,36 +435,72 @@ def getNetworkDeviceConfig(device):
 		'deviceId': None
 	}
 
-	for line in execute(u"{ifconfig} {device}".format(ifconfig=which(u'ifconfig'), device=device)):
-		line = line.lower().strip()
-		match = re.search(r'\s([\da-f]{2}:[\da-f]{2}:[\da-f]{2}:[\da-f]{2}:[\da-f]{2}:[\da-f]{2}).*', line)
-		if match:
-			result['hardwareAddress'] = forceHardwareAddress(match.group(1))
-			continue
-
-		if line.startswith('inet '):
-			logger.debug('Found inet line: {0}'.format(line))
-
-			parts = line.split(':')
-			if len(parts) == 4:
-				result['ipAddress'] = forceIpAddress(parts[1].split()[0].strip())
-				result['broadcast'] = forceIpAddress(parts[2].split()[0].strip())
-				result['netmask'] = forceIpAddress(parts[3].split()[0].strip())
-				continue
-
-			match = re.search(
-				r"^\w+\s+(?P<ipAddress>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s+"
-				r"\w+\s+(?P<netmask>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s+"
-				r"\w+\s+(?P<broadcast>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$",
-				line
-			)
+	try:
+		for line in execute(u"{ifconfig} {device}".format(ifconfig=which(u'ifconfig'), device=device)):
+			line = line.lower().strip()
+			match = re.search(r'\s([\da-f]{2}:[\da-f]{2}:[\da-f]{2}:[\da-f]{2}:[\da-f]{2}:[\da-f]{2}).*', line)
 			if match:
-				result['ipAddress'] = forceIpAddress(match.group('ipAddress'))
-				result['broadcast'] = forceIpAddress(match.group('broadcast'))
-				result['netmask'] = forceIpAddress(match.group('netmask'))
+				result['hardwareAddress'] = forceHardwareAddress(match.group(1))
 				continue
 
-			logger.error(u"Unexpected ifconfig line '%s'" % line)
+			if line.startswith('inet '):
+				logger.debug('Found inet line: {0}'.format(line))
+
+				parts = line.split(':')
+				if len(parts) == 4:
+					result['ipAddress'] = forceIpAddress(parts[1].split()[0].strip())
+					result['broadcast'] = forceIpAddress(parts[2].split()[0].strip())
+					result['netmask'] = forceIpAddress(parts[3].split()[0].strip())
+					continue
+
+				match = re.search(
+					r"^\w+\s+(?P<ipAddress>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s+"
+					r"\w+\s+(?P<netmask>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s+"
+					r"\w+\s+(?P<broadcast>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$",
+					line
+				)
+				if match:
+					result['ipAddress'] = forceIpAddress(match.group('ipAddress'))
+					result['broadcast'] = forceIpAddress(match.group('broadcast'))
+					result['netmask'] = forceIpAddress(match.group('netmask'))
+					continue
+
+				logger.error(u"Unexpected ifconfig line '%s'" % line)
+	except CommandNotFoundException:  # no ifconfig
+		# Falling back to ip
+		jsonIp = execute(
+			"{ip} -j address show {device}".format(
+				ip=which('ip'),
+				device=device
+			)
+		)
+
+		for interface in json.loads(''.join(jsonIp)):
+			# Some versions of ip will list entries for all devices even
+			# when queried to show only one specific interface.
+			# These undesided entries only have an key "addr_info" without
+			# being filled.
+			if 'ifname' not in interface:
+				continue
+
+			result['hardwareAddress'] = forceHardwareAddress(interface['address'])
+
+			for addrInfo in interface['addr_info']:
+				if addrInfo['family'] != 'inet':
+					continue  # Skip everything ipv6
+
+				result['ipAddress'] = forceIpAddress(addrInfo['local'])
+				result['broadcast'] = forceIpAddress(addrInfo['broadcast'])
+
+				prefixLength = addrInfo['prefixlen']
+				netmask = socket.inet_ntoa(struct.pack('>I', 0xffffffff ^ (1 << 32 - forceInt(prefixLength)) - 1))
+				result['netmask'] = forceIpAddress(netmask)
+
+				break
+
+			# There should only be one interface with valid results.
+			# Skipping all others
+			break
 
 	for line in execute(u"{ip} route".format(ip=which(u'ip'))):
 		line = line.lower().strip()
@@ -472,20 +516,25 @@ def getNetworkDeviceConfig(device):
 			x = eval(x)
 		x = "%x" % int(x)
 		result['vendorId'] = forceHardwareVendorId(((4-len(x))*'0') + x)
+	except Exception:
+		logger.warning(u"Failed to get vendor id for network device %s" % device)
 
+	try:
 		with open('/sys/class/net/%s/device/device' % device) as f:
 			x = f.read().strip()
 
 		if x.startswith('0x'):
 			x = eval(x)
 		x = int(x)
+
 		if result['vendorId'] == '1AF4':
 			# FIXME: what is wrong with virtio devices?
 			x += 0xfff
 		x = "%x" % x
 		result['deviceId'] = forceHardwareDeviceId(((4 - len(x)) * '0') + x)
 	except Exception:
-		logger.warning(u"Failed to get vendor/device id for network device %s" % device)
+		logger.warning(u"Failed to get device id for network device %s" % device)
+
 	return result
 
 
@@ -509,7 +558,7 @@ class NetworkPerformanceCounter(threading.Thread):
 		self._lastTime = None
 		self._bytesInPerSecond = 0
 		self._bytesOutPerSecond = 0
-		self._regex = re.compile(r'\s*(\S+)\:\s*(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)')
+		self._regex = re.compile(r'\s*(\S+):\s*(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)')
 		self._running = False
 		self._stopped = False
 		self.start()
@@ -576,18 +625,13 @@ given known places for this file will be tried.
 	:return: Settings of the lease. All keys are lowercase. Possible \
 keys are: ``ip``, ``netmask``, ``bootserver``, ``nextserver``, \
 ``gateway``, ``bootfile``, ``hostname``, ``domain``.
-	:returntype: dict
+	:rtype: dict
 	"""
 	if not device:
 		raise ValueError(u"No device given")
 
 	if not leasesFile:
-		if os.path.exists(DHCLIENT_LEASES_FILE_OLD):
-			# old style dhcp.leases handling should be work
-			# will be removed, if precise bootimage is in testing.
-			leasesFile = DHCLIENT_LEASES_FILE_OLD
-		else:
-			leasesFile = DHCLIENT_LEASES_FILE
+		leasesFile = DHCLIENT_LEASES_FILE
 
 	dhcpResult = {}
 	if os.path.exists(leasesFile):
@@ -656,11 +700,38 @@ keys are: ``ip``, ``netmask``, ``bootserver``, ``nextserver``, \
 	return dhcpResult
 
 
+def configureInterface(device, address, netmask=None):
+	"""
+	Configure the given device to use the given address.
+	Optionally you can set a netmask aswell.
+
+	:type device: str
+	:type address: str
+	:param netmask: Optionally set the netmask in format 12.34.56.78.
+	:type netmask: str
+	"""
+	try:
+		cmd = u'%s %s %s' % (which('ifconfig'), device, forceIpAddress(address))
+		if netmask:
+			cmd += u' netmask %s' % forceNetmask(netmask)
+		execute(cmd)
+	except CommandNotFoundException:  # no ifconfig
+		if netmask:
+			preparedAddress = '%s/%s' % (forceIpAddress(address), forceNetmask(netmask))
+		else:
+			preparedAddress = forceIPAddress(address)
+
+		ipCommand = which('ip')
+		command = '%s address add %s dev %s' % (ipCommand, preparedAddress, device)
+		execute(command)
+
+
 def ifconfig(device, address, netmask=None):
-	cmd = u'%s %s %s' % (which('ifconfig'), device, forceIpAddress(address))
-	if netmask:
-		cmd += u' netmask %s' % forceNetmask(netmask)
-	execute(cmd)
+	logger.warning(
+		"Method 'ifconfig' is deprecated. "
+		"Use 'configureInterface' instead!"
+	)
+	configureInterface(device, address, netmask)
 
 
 def getLocalFqdn():
@@ -778,6 +849,7 @@ def halt(wait=10):
 	for hook in hooks:
 		hook.post_halt(wait)
 
+
 shutdown = halt
 
 
@@ -846,7 +918,7 @@ on Windows.
 	:type waitForEnding: bool
 	:return: If the command finishes and we wait for it to finish the \
 output will be returned.
-	:returntype: list
+	:rtype: list
 	"""
 	nowait = forceBool(nowait)
 	getHandle = forceBool(getHandle)
@@ -998,7 +1070,7 @@ def getHarddisks(data=None):
 	:param data: Data to parse through.
 	:type data: [str, ]
 	:return: The found harddisks.
-	:returntype: [Harddisk, ]
+	:rtype: [Harddisk, ]
 	"""
 	disks = []
 
@@ -1058,11 +1130,12 @@ def getHarddisks(data=None):
 
 def getDiskSpaceUsage(path):
 	disk = os.statvfs(path)
-	info = {}
-	info['capacity'] = disk.f_bsize * disk.f_blocks
-	info['available'] = disk.f_bsize * disk.f_bavail
-	info['used'] = disk.f_bsize * (disk.f_blocks - disk.f_bavail)
-	info['usage'] = float(disk.f_blocks - disk.f_bavail) / float(disk.f_blocks)
+	info = {
+		'capacity': disk.f_bsize * disk.f_blocks,
+		'available': disk.f_bsize * disk.f_bavail,
+		'used': disk.f_bsize * (disk.f_blocks - disk.f_bavail),
+		'usage': float(disk.f_blocks - disk.f_bavail) / float(disk.f_blocks),
+	}
 	logger.info(u"Disk space usage for path '%s': %s" % (path, info))
 	return info
 
@@ -1080,7 +1153,7 @@ def mount(dev, mountpoint, **options):
 
 	credentialsFiles = []
 	if dev.lower().startswith(('smb://', 'cifs://')):
-		match = re.search('^(smb|cifs)://([^/]+\/.+)$', dev, re.IGNORECASE)
+		match = re.search(r'^(smb|cifs)://([^/]+\/.+)$', dev, re.IGNORECASE)
 		if match:
 			fs = u'-t cifs'
 			parts = match.group(2).split('/')
@@ -1118,7 +1191,7 @@ def mount(dev, mountpoint, **options):
 	elif dev.lower().startswith(('webdav://', 'webdavs://', 'http://', 'https://')):
 		# We need enough free space in /var/cache/davfs2
 		# Maximum transfer file size <= free space in /var/cache/davfs2
-		match = re.search('^(http|webdav)(s*)(://[^/]+\/.+)$', dev, re.IGNORECASE)
+		match = re.search(r'^(http|webdav)(s*)(://[^/]+\/.+)$', dev, re.IGNORECASE)
 		if match:
 			fs = u'-t davfs'
 			dev = u'http' + match.group(2) + match.group(3)
@@ -1207,7 +1280,7 @@ def umount(devOrMountpoint):
 def getBlockDeviceBusType(device):
 	"""
 	:return: 'IDE', 'SCSI', 'SATA', 'RAID' or None (not found)
-	:returntype: str or None
+	:rtype: str or None
 	"""
 	device = forceFilename(device)
 
@@ -1261,7 +1334,7 @@ def getBlockDeviceContollerInfo(device, lshwoutput=None):
 	storageControllers = {}
 
 	for line in lines:
-		match = re.search(r'^(/\S+)\s+(\S+)\s+storage\s+(\S+.*)\s\[([a-fA-F0-9]{1,4})\:([a-fA-F0-9]{1,4})\]$', line)
+		match = re.search(r'^(/\S+)\s+(\S+)\s+storage\s+(\S+.*)\s\[([a-fA-F0-9]{1,4}):([a-fA-F0-9]{1,4})\]$', line)
 		if match:
 			vendorId = match.group(4)
 			while len(vendorId) < 4:
@@ -1298,7 +1371,7 @@ def getBlockDeviceContollerInfo(device, lshwoutput=None):
 	# In this case return the first AHCI controller, that will be found
 	storageControllers = {}
 
-	storagePattern = re.compile(r'^(/\S+)\s+storage\s+(\S+.*[Aa][Hh][Cc][Ii].*)\s\[([a-fA-F0-9]{1,4})\:([a-fA-F0-9]{1,4})\]$')
+	storagePattern = re.compile(r'^(/\S+)\s+storage\s+(\S+.*[Aa][Hh][Cc][Ii].*)\s\[([a-fA-F0-9]{1,4}):([a-fA-F0-9]{1,4})\]$')
 	for line in lines:
 		match = storagePattern.search(line)
 		if match:
@@ -1326,7 +1399,7 @@ def getBlockDeviceContollerInfo(device, lshwoutput=None):
 			# This Quick hack is for Bios-Generations, that will only
 			# have a choice for "RAID + AHCI", this devices will be shown as
 			# RAID mode-Devices
-			match = re.search('^(/\S+)\s+storage\s+(\S+.*[Rr][Aa][Ii][Dd].*)\s\[([a-fA-F0-9]{1,4})\:([a-fA-F0-9]{1,4})\]$', line)
+			match = re.search(r'^(/\S+)\s+storage\s+(\S+.*[Rr][Aa][Ii][Dd].*)\s\[([a-fA-F0-9]{1,4}):([a-fA-F0-9]{1,4})\]$', line)
 			if match:
 				vendorId = match.group(3)
 				while len(vendorId) < 4:
@@ -1469,7 +1542,7 @@ class Harddisk:
 			if (partition < 1) or (partition > 4):
 				raise ValueError(u"Partition has to be int value between 1 and 4")
 
-			if not re.search('^[a-f0-9]{2}$', id):
+			if not re.search(r'^[a-f0-9]{2}$', id):
 				if id in (u'linux', u'ext2', u'ext3', u'ext4', u'xfs', u'reiserfs', u'reiser4'):
 					id = u'83'
 				elif id == u'linux-swap':
@@ -1745,9 +1818,9 @@ class Harddisk:
 			elif line.lower().startswith('units'):
 				if isXenialSfdiskVersion():
 					match = re.search(r'sectors\s+of\s+\d\s+.\s+\d+\s+.\s+(\d+)\s+bytes', line)
-
 				else:
 					match = re.search(r'sectors\s+of\s+(\d+)\s+bytes', line)
+
 				if not match:
 					raise RuntimeError(u"Unable to get bytes/sector for disk '%s'" % self.device)
 				self.bytesPerSector = forceInt(match.group(1))
@@ -1812,7 +1885,6 @@ class Harddisk:
 			if self.ldPreload:
 				os.putenv("LD_PRELOAD", self.ldPreload)
 
-			#changing execution to os.system
 			execute(cmd, ignoreExitCode=[1])
 			if self.ldPreload:
 				os.unsetenv("LD_PRELOAD")
@@ -2220,7 +2292,7 @@ class Harddisk:
 			lba = forceBool(lba)
 
 			partId = u'00'
-			if re.search('^[a-f0-9]{2}$', fs):
+			if re.search(r'^[a-f0-9]{2}$', fs):
 				partId = fs
 			else:
 				if fs in (u'ext2', u'ext3', u'ext4', u'xfs', u'reiserfs', u'reiser4', u'linux'):
@@ -2965,20 +3037,12 @@ def isOpenSUSE():
 	"""
 	Returns `True` if this is running on openSUSE.
 	Returns `False` if otherwise.
-	For OpenSUSE Leap please use isOpenSUSELeap()
 	"""
-	return _checkForDistribution('opensuse')
-
-
-def isOpenSUSELeap():
-	"""
-	Returns `True` if this is running on OpenSUSE Leap.
-	Returns `False` if otherwise.
-	"""
-	if isOpenSUSE():
-		leap = Distribution()
-		if leap.version >= (42, 1):
-			return True
+	if os.path.exists('/etc/os-release'):
+		with open('/etc/os-release', 'r') as release:
+			for line in release:
+				if 'opensuse' in line.lower():
+					return True
 
 	return False
 
@@ -3029,7 +3093,12 @@ class Distribution:
 
 	def __init__(self, distribution_information=None):
 		if distribution_information is None:
-			distribution_information = platform.linux_distribution()
+			try:
+				distribution_information = distro_module.linux_distribution()
+			except AttributeError:
+				# Fallback to platform.
+				# platform will be removed in Python 3.8.
+				distribution_information = platform.linux_distribution()
 
 		self.distribution, self._version, self.id = distribution_information
 		self.distribution = self.distribution.strip()
@@ -3113,7 +3182,7 @@ class SysInfo:
 
 	@property
 	def ipAddress(self):
-		return forceIPAddress(socket.gethostbyname(self.hostname))
+		return forceIpAddress(socket.gethostbyname(self.hostname))
 
 	@property
 	def hardwareAddress(self):
@@ -3190,7 +3259,7 @@ def hardwareExtendedInventory(config, opsiValues={}, progressSubject=None):
 
 		logger.debug(u"Processing class '%s'" % (opsiName))
 
-		valuesregex = re.compile("(.*)#(.*)#")
+		valuesregex = re.compile(r"(.*)#(.*)#")
 		for item in hwClass['Values']:
 			pythonline = item.get('Python')
 			if not pythonline:
@@ -3265,7 +3334,7 @@ def hardwareInventory(config, progressSubject=None):
 	# Read output from lspci
 	lspci = {}
 	busId = None
-	devRegex = re.compile(r'([\d\.:a-f]+)\s+([\da-f]+):\s+([\da-f]+):([\da-f]+)\s*(\(rev ([^\)]+)\)|)')
+	devRegex = re.compile(r'([\d.:a-f]+)\s+([\da-f]+):\s+([\da-f]+):([\da-f]+)\s*(\(rev ([^\)]+)\)|)')
 	subRegex = re.compile(r'\s*Subsystem:\s+([\da-f]+):([\da-f]+)\s*')
 	for line in execute(u"%s -vn" % which("lspci")):
 		if not line.strip():
@@ -3329,11 +3398,11 @@ def hardwareInventory(config, progressSubject=None):
 	currentKey = None
 	status = False
 
-	devRegex = re.compile(r'^Bus\s+(\d+)\s+Device\s+(\d+)\:\s+ID\s+([\da-fA-F]{4})\:([\da-fA-F]{4})\s*(.*)$')
-	descriptorRegex = re.compile(r'^(\s*)(.*)\s+Descriptor\:\s*$')
-	deviceStatusRegex = re.compile(r'^(\s*)Device\s+Status\:\s+(\S+)\s*$')
-	deviceQualifierRegex = re.compile(r'^(\s*)Device\s+Qualifier\s+.*\:\s*$')
-	keyRegex = re.compile(r'^(\s*)([^\:]+)\:\s*$')
+	devRegex = re.compile(r'^Bus\s+(\d+)\s+Device\s+(\d+):\s+ID\s+([\da-fA-F]{4}):([\da-fA-F]{4})\s*(.*)$')
+	descriptorRegex = re.compile(r'^(\s*)(.*)\s+Descriptor:\s*$')
+	deviceStatusRegex = re.compile(r'^(\s*)Device\s+Status:\s+(\S+)\s*$')
+	deviceQualifierRegex = re.compile(r'^(\s*)Device\s+Qualifier\s+.*:\s*$')
+	keyRegex = re.compile(r'^(\s*)([^\:]+):\s*$')
 	keyValueRegex = re.compile(r'^(\s*)(\S+)\s+(.*)$')
 
 	try:
@@ -3765,7 +3834,7 @@ def locateDHCPDInit(default=None):
 
 	:param default: If no init script is found fall back to this \
 instead of throwing an error.
-	:returntype: str
+	:rtype: str
 	"""
 	locations = (
 		u"/etc/init.d/dhcpd",  # suse / redhat / centos
@@ -3830,6 +3899,10 @@ def getDHCPServiceName():
 	Tries to read the name of the used dhcpd.
 	Returns `None` if no known service was detected.
 	"""
+	global _DHCP_SERVICE_NAME
+	if _DHCP_SERVICE_NAME is not None:
+		return _DHCP_SERVICE_NAME
+
 	knownServices = (
 		u"dhcpd", u"univention-dhcp", u"isc-dhcp-server", u"dhcp3-server"
 	)
@@ -3837,6 +3910,7 @@ def getDHCPServiceName():
 	try:
 		for servicename in getServiceNames():
 			if servicename in knownServices:
+				_DHCP_SERVICE_NAME = servicename
 				return servicename
 	except Exception:
 		pass
@@ -3853,6 +3927,10 @@ lookup to determine what value needs to be returned in case no \
 service name was detected by the automatic approach.
 	:type staticFallback: bool
 	"""
+	global _SAMBA_SERVICE_NAME
+	if _SAMBA_SERVICE_NAME is not None:
+		return _SAMBA_SERVICE_NAME
+
 	def getFixServiceName():
 		distroName = distro.distribution.strip().lower()
 		if distroName == u'debian':
@@ -3867,12 +3945,15 @@ service name was detected by the automatic approach.
 
 	distro = Distribution()
 	if distro.distribution.strip() == u'SUSE Linux Enterprise Server':
-		return u"smb"
+		name = u"smb"
+		_SAMBA_SERVICE_NAME = name
+		return name
 
 	possibleNames = (u"samba", u"smb", u"smbd")
 
 	for servicename in getServiceNames():
 		if servicename in possibleNames:
+			_SAMBA_SERVICE_NAME = servicename
 			return servicename
 
 	if staticFallback:
@@ -3895,7 +3976,7 @@ def getServiceNames(_serviceStatusOutput=None):
 	:param _serviceStatusOutput: The output of `service --status-all`.\
 Used for testing.
 	:type _serviceStatusOutput: [str, ]
-	:returntype: set
+	:rtype: set
 
 	.. versionadded:: 4.0.5.11
 
@@ -3922,18 +4003,19 @@ def getActiveSessionIds(winApiBugCommand=None, data=None):
 	Getting the IDs of the currently active sessions.
 
 	.. versionadded:: 4.0.5
+
+
 	:param data: Prefetched data to read information from.
 	:type data: [str, ]
-	:returntype: [int, ]
-
+	:rtype: [int, ]
 	"""
 	if data is None:
 		data = execute(u"who -p -u")
 
 	sessionIds = []
 	for line in data:
-		parts = re.split(r'\s+', line)
-		if len(parts) == 7:
+		parts = line.split()
+		if len(parts) in (7, 8):
 			sessionIds.append(int(parts[-2]))
 		elif len(parts) == 6:
 			sessionIds.append(int(parts[-1]))
@@ -3948,7 +4030,7 @@ def getActiveSessionId():
 	Returns the currently active session ID.
 
 	.. versionadded:: 4.0.5
-	:returntype: int
+	:rtype: int
 
 	"""
 	ownPid = os.getpid()
@@ -3985,7 +4067,7 @@ started and we will not wait for it to finish.
 	:type waitForProcessEnding: bool
 	:param timeoutSeconds: If this is set we will wait this many seconds \
 until the execution of the process is terminated.
-	:returntype: (subprocess.Popen, None, int, None) if \
+	:rtype: (subprocess.Popen, None, int, None) if \
 `waitForProcessEnding` is False, otherwise (None, None, None, None)
 	"""
 	sleepDuration = 0.1
