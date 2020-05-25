@@ -1370,6 +1370,8 @@ def addUserToWindowStation(winsta, userSid):
 def which(cmd):
 	raise NotImplementedError(u"which() not implemented on windows")
 
+def get_subprocess_environment():
+	return os.environ.copy()
 
 def execute(cmd, waitForEnding=True, getHandle=False, ignoreExitCode=[], exitOnStderr=False, captureStderr=True, encoding=None, timeout=0, shell=True):
 	cmd = forceUnicode(cmd)
