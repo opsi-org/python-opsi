@@ -940,14 +940,14 @@ output will be returned.
 		logger.info(u"Executing: %s" % cmd)
 
 		if nowait:
-			os.spawnv(os.P_NOWAIT, which('bash'), [which('bash'), '-c', cmd])
+			os.spawnve(os.P_NOWAIT, which('bash'), [which('bash'), '-c', cmd], sp_env)
 			return []
 
 		elif getHandle:
 			if captureStderr:
-				return (subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)).stdout
+				return (subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=sp_env)).stdout
 			else:
-				return (subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=None)).stdout
+				return (subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=None, env=sp_env)).stdout
 
 		else:
 			data = b''
@@ -960,6 +960,7 @@ output will be returned.
 				stdin=subprocess.PIPE,
 				stdout=subprocess.PIPE,
 				stderr=stderr,
+				env=sp_env
 			)
 
 			if not encoding:
