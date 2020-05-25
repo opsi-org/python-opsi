@@ -191,7 +191,7 @@ def initializeDatabase(
 			db.query(u'CREATE DATABASE {database} DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_bin;'.format(**config))
 		except MySQLdb.OperationalError as error:
 			if error.args[0] == ACCESS_DENIED_ERROR_CODE:
-				raise DatabaseConnectionFailedException(error.msg)
+				raise DatabaseConnectionFailedException(str(error))
 			raise error
 		except MySQLdb.ProgrammingError as error:
 			if error.args[0] != DATABASE_EXISTS_ERROR_CODE:
