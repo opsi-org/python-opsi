@@ -76,12 +76,12 @@ def initializeBackends(ipAddress=None):
 		if not configServer and not backend.host_getIdents(type='OpsiConfigserver', id=fqdn):
 			depot = backend.host_getObjects(type='OpsiDepotserver', id=fqdn)
 			if not depot:
-				LOGGER.notice(u"Creating config server '%s'" % fqdn)
+				LOGGER.notice(u"Creating config server '%s'", fqdn)
 				serverConfig = _getServerConfig(fqdn, networkConfig)
 				backend.host_createOpsiConfigserver(**serverConfig)
 				configServer = backend.host_getObjects(type='OpsiConfigserver', id=fqdn)
 			else:
-				LOGGER.notice(u"Converting depot server '%s' to config server" % fqdn)
+				LOGGER.notice(u"Converting depot server '%s' to config server", fqdn)
 				configServer = OpsiConfigserver.fromHash(depot[0].toHash())
 				backend.host_createObjects(configServer)
 
@@ -90,7 +90,7 @@ def initializeBackends(ipAddress=None):
 		else:
 			depot = backend.host_getObjects(type='OpsiDepotserver', id=fqdn)
 			if not depot:
-				LOGGER.notice(u"Creating depot server '%s'" % fqdn)
+				LOGGER.notice(u"Creating depot server '%s'", fqdn)
 				serverConfig = _getServerConfig(fqdn, networkConfig)
 				backend.host_createOpsiDepotserver(**serverConfig)
 

@@ -112,17 +112,17 @@ class HostKeyFile(ConfigFile):
 		for line in ConfigFile.parse(self):
 			match = self.lineRegex.search(line)
 			if not match:
-				logger.error(u"Found bad formatted line '%s' in pckey file '%s'" % (line, self._filename))
+				logger.error(u"Found bad formatted line '%s' in pckey file '%s'", line, self._filename)
 				continue
 
 			try:
 				hostId = forceHostId(match.group(1))
 				opsiHostKey = forceOpsiHostKey(match.group(2))
 				if hostId in self._opsiHostKeys:
-					logger.error(u"Found duplicate host '%s' in pckey file '%s'" % (hostId, self._filename))
+					logger.error(u"Found duplicate host '%s' in pckey file '%s'", hostId, self._filename)
 				self._opsiHostKeys[hostId] = opsiHostKey
 			except ValueError as error:
-				logger.error(u"Found bad formatted line '%s' in pckey file '%s': %s" % (line, self._filename, error))
+				logger.error(u"Found bad formatted line '%s' in pckey file '%s': %s", line, self._filename, error)
 
 		self._parsed = True
 		return self._opsiHostKeys
@@ -267,7 +267,7 @@ class BackendDispatchConfigFile(ConfigFile):
 		for line in ConfigFile.parse(self, lines):
 			match = self.DISPATCH_ENTRY_REGEX.search(line)
 			if not match:
-				logger.error(u"Found bad formatted line '%s' in dispatch config file '%s'" % (line, self._filename))
+				logger.error(u"Found bad formatted line '%s' in dispatch config file '%s'", line, self._filename)
 				continue
 
 			method = match.group(1).strip()
@@ -647,7 +647,7 @@ class PackageControlFile(TextFile):
 							# Remove duplicates
 							value = forceUniqueList(value)
 						except Exception as error:
-							logger.debug2(u"Failed to read json string '%s': %s" % (value.strip(), error))
+							logger.debug2(u"Failed to read json string '%s': %s", value.strip(), error)
 							value = value.replace(u'\n', u'')
 							value = value.replace(u'\t', u'')
 							if not (sectionType == 'productproperty' and option == 'default'):
@@ -841,7 +841,7 @@ class PackageControlFile(TextFile):
 		if not self._product:
 			raise ValueError(u"Got no data to write")
 
-		logger.info(u"Writing opsi package control file '%s'" % self._filename)
+		logger.info(u"Writing opsi package control file '%s'", self._filename)
 
 		self._lines = [u'[Package]']
 		self._lines.append(u'version: %s' % self._product.getPackageVersion())
@@ -1125,7 +1125,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 			try:
 				dispatchedBackends = BackendDispatchConfigFile(self.DISPATCH_CONF).getUsedBackends()
 			except Exception as error:
-				logger.warning(u"Could not read dispatch configuration: %s" % forceUnicode(error))
+				logger.warning(u"Could not read dispatch configuration: %s", error)
 				dispatchedBackends = []
 
 		if not os.path.exists(self.BACKEND_CONF_DIR):
@@ -1154,7 +1154,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 						"dispatch": (name in dispatchedBackends)
 					}
 				except Exception as error:
-					logger.warning(u'Failed to read backend config "{filename}": {error}'.format(filename=forceFilename(entry), error=error))
+					logger.warning(u'Failed to read backend config "%s": %s', forceFilename(entry), error)
 
 		return backends
 
@@ -1293,7 +1293,7 @@ element of the tuple is replace with the second element.
 						filesum.update(chunk)
 
 				if checksum != filesum.hexdigest():
-					logger.debug2("Read %s bytes from file %s, resulting in checksum %s" % (count, member.name, filesum.hexdigest()))
+					logger.debug2("Read %s bytes from file %s, resulting in checksum %s", count, member.name, filesum.hexdigest())
 					raise OpsiBackupFileError("Backup Archive is not valid: File %s is corrupetd" % member.name)
 
 		return True
@@ -1374,7 +1374,7 @@ element of the tuple is replace with the second element.
 		for backend in self._getBackends("file"):
 			if not auto or backend["dispatch"]:
 				if not backend["dispatch"]:
-					logger.warning("Backing up backend %s although it's currently not in use." % backend["name"])
+					logger.warning("Backing up backend %s although it's currently not in use.", backend["name"])
 				baseDir = backend["config"]["baseDir"]
 				self._addContent(baseDir, sub=(baseDir, "BACKENDS/FILE/%s" % backend["name"]))
 
@@ -1413,7 +1413,7 @@ element of the tuple is replace with the second element.
 		for backend in self._getBackends("dhcpd"):
 			if not auto or backend["dispatch"]:
 				if not backend["dispatch"]:
-					logger.warning("Backing up backend %s although it's currently not in use." % backend["name"])
+					logger.warning("Backing up backend %s although it's currently not in use.", backend["name"])
 
 				dhcpdConfigFile = backend["config"]['dhcpdConfigFile']
 				self._addContent(dhcpdConfigFile, sub=(os.path.dirname(dhcpdConfigFile), "BACKENDS/DHCP/%s" % backend["name"]))
@@ -1444,7 +1444,7 @@ element of the tuple is replace with the second element.
 		for backend in self._getBackends("mysql"):
 			if not auto or backend["dispatch"]:
 				if not backend["dispatch"]:
-					logger.warning("Backing up backend %s although it's currently not in use." % backend["name"])
+					logger.warning("Backing up backend %s although it's currently not in use.", backend["name"])
 
 				# Early check for available command to not leak
 				# credentials if mysqldump is missing

@@ -75,7 +75,7 @@ class BackendExtender(ExtendedBackend):
 			for methodName, functionRef in inspect.getmembers(self._extensionClass, inspect.isfunction):
 				if methodName.startswith('_'):
 					continue
-				logger.debug2(u"Extending {0} with instancemethod: {1!r}", self._backend.__class__.__name__, methodName)
+				logger.debug2(u"Extending %s with instancemethod: %s", self._backend.__class__.__name__, methodName)
 				new_function = types.FunctionType(functionRef.__code__, functionRef.__globals__, functionRef.__name__)
 				new_method = types.MethodType(new_function, self)
 				setattr(self, methodName, new_method)
@@ -84,7 +84,7 @@ class BackendExtender(ExtendedBackend):
 			try:
 				for confFile in _getExtensionFiles(self._extensionConfigDir):
 					try:
-						logger.info(u"Reading config file '%s'" % confFile)
+						logger.info(u"Reading config file '%s'", confFile)
 						exec(_readExtension(confFile))
 					except Exception as execError:
 						logger.logException(execError)
@@ -92,7 +92,7 @@ class BackendExtender(ExtendedBackend):
 
 					for key, val in locals().copy().items():
 						if isinstance(val, types.FunctionType):   # TODO: find a better way
-							logger.debug2(u"Extending %s with instancemethod: '%s'" % (self._backend.__class__.__name__, key))
+							logger.debug2(u"Extending %s with instancemethod: '%s'", self._backend.__class__.__name__, key)
 							setattr(self, key, types.MethodType(val, self))
 			except Exception as error:
 				raise BackendConfigurationError(u"Failed to read extensions from '%s': %s" % (self._extensionConfigDir, error))
@@ -112,6 +112,6 @@ def _getExtensionFiles(directory) -> list:
 
 @lru_cache(maxsize=None)
 def _readExtension(filepath):
-	logger.debug(u"Reading extension file {!r}", filepath)
+	logger.debug(u"Reading extension file %s}", filepath)
 	with open(filepath) as confFileHandle:
 		return confFileHandle.read()

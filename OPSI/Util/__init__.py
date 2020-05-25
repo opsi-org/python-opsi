@@ -131,7 +131,7 @@ object instance from it
 				objectClass = eval('OPSI.Object.%s' % obj['type'])
 				return objectClass.fromHash(obj)
 			except Exception as error:
-				logger.debug(u"Failed to get object from dict {0!r}: {1}", obj, forceUnicode(error))
+				logger.debug(u"Failed to get object from dict %s: %s", obj, forceUnicode(error))
 				return obj
 		else:
 			return {
@@ -224,7 +224,7 @@ def generateOpsiHostKey(forcePython=False):
 		return secrets.token_hex(16)
 
 	if os.name == 'posix' and not forcePython:
-		logger.debug2(u"Opening random device {!r} to generate opsi host key", RANDOM_DEVICE)
+		logger.debug2(u"Opening random device %s to generate opsi host key", RANDOM_DEVICE)
 		with open(RANDOM_DEVICE, 'rb') as r:
 			key = r.read(16)
 		logger.debug2("Random device closed")
@@ -449,7 +449,7 @@ def compareVersions(v1, condition, v2):
 
 	version = splitProductAndPackageVersion(v1)
 	otherVersion = splitProductAndPackageVersion(v2)
-	logger.debug2("Versions: {0!r}, {1!r}", version, otherVersion)
+	logger.debug2("Versions: %s, %s", version, otherVersion)
 
 	comparisons = (
 		(version.product, otherVersion.product),
@@ -457,7 +457,7 @@ def compareVersions(v1, condition, v2):
 	)
 
 	for first, second in comparisons:
-		logger.debug2("Comparing {0!r} with {1!r}...", first, second)
+		logger.debug2("Comparing %s with %s...", first, second)
 		firstParts = first.split(u'.')
 		secondParts = second.split(u'.')
 		makeEqualLength(firstParts, secondParts)
@@ -473,7 +473,7 @@ def compareVersions(v1, condition, v2):
 					cv2 = chr(1)
 
 				if cv1 == cv2:
-					logger.debug2(u"{0!r} == {1!r} => continue", cv1, cv2)
+					logger.debug2(u"%s == %s => continue", cv1, cv2)
 					continue
 
 				if not isinstance(cv1, int):
@@ -481,20 +481,20 @@ def compareVersions(v1, condition, v2):
 				if not isinstance(cv2, int):
 					cv2 = u"'%s'" % cv2
 
-				logger.debug2(u"Is {0!r} {1} {2!r}?", cv1, condition, cv2)
+				logger.debug2(u"Is %s %s %s?", cv1, condition, cv2)
 				conditionFulfilled = eval(u"%s %s %s" % (cv1, condition, cv2))
 				if not conditionFulfilled:
-					logger.debug(u"Unfulfilled condition: {0} {1} {2}", version, condition, otherVersion)
+					logger.debug(u"Unfulfilled condition: %s %s %s", version, condition, otherVersion)
 					return False
 
-				logger.debug(u"Fulfilled condition: {0} {1} {2}", version, condition, otherVersion)
+				logger.debug(u"Fulfilled condition: %s %s %s", version, condition, otherVersion)
 				return True
 
 	if u'=' not in condition:
-		logger.debug(u"Unfulfilled condition: {0} {1} {2}", version, condition, otherVersion)
+		logger.debug(u"Unfulfilled condition: %s %s %s", version, condition, otherVersion)
 		return False
 
-	logger.debug(u"Fulfilled condition: {0} {1} {2}", version, condition, otherVersion)
+	logger.debug(u"Fulfilled condition: %s %s %s", version, condition, otherVersion)
 	return True
 
 
@@ -716,12 +716,12 @@ def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeD
 				continue
 		if isdir(dp) and (not isLink or followLinks):
 			if excludeDir and re.search(excludeDir, entry):
-				logger.debug(u"Excluding dir '%s' and containing files" % entry)
+				logger.debug(u"Excluding dir '%s' and containing files", entry)
 				continue
 			if includeDir:
 				if not re.search(includeDir, entry):
 					continue
-				logger.debug(u"Including dir '%s' and containing files" % entry)
+				logger.debug(u"Including dir '%s' and containing files", entry)
 			if returnDirs:
 				files.append(pp)
 			files.extend(
@@ -742,18 +742,18 @@ def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeD
 
 		if excludeFile and re.search(excludeFile, entry):
 			if isLink:
-				logger.debug(u"Excluding link '%s'" % entry)
+				logger.debug(u"Excluding link '%s'", entry)
 			else:
-				logger.debug(u"Excluding file '%s'" % entry)
+				logger.debug(u"Excluding file '%s'", entry)
 			continue
 
 		if includeFile:
 			if not re.search(includeFile, entry):
 				continue
 			if isLink:
-				logger.debug(u"Including link '%s'" % entry)
+				logger.debug(u"Including link '%s'", entry)
 			else:
-				logger.debug(u"Including file '%s'" % entry)
+				logger.debug(u"Including file '%s'", entry)
 		files.append(pp)
 	return files
 
@@ -795,15 +795,8 @@ def ipAddressInNetwork(ipAddress, networkAddress):
 	while netmask.count('.') < 3:
 		netmask = netmask + u'.0'
 
-	logger.debug(
-		u"Testing if ip {ipAddress} is part of network "
-		u"{network}/{netmask}".format(
-			ipAddress=ipAddress,
-			network=network,
-			netmask=netmask
-		)
-	)
-
+	logger.debug(u"Testing if ip %s is part of network %s/%s", ipAddress, network, netmask)
+	
 	network = createBytemaskFromAddress(network)
 	netmask = createBytemaskFromAddress(netmask)
 
@@ -856,7 +849,7 @@ def removeDirectory(directory):
 	:param directory: Path to the directory
 	:tye directory: str
 	"""
-	logger.debug('Removing directory: {0}'.format(directory))
+	logger.debug('Removing directory: %s', directory)
 	try:
 		shutil.rmtree(directory)
 	except UnicodeDecodeError:

@@ -70,7 +70,7 @@ class BackendDispatcher(Backend):
 				self._context = value
 
 		if self._dispatchConfigFile:
-			logger.info(u"Loading dispatch config file '%s'" % self._dispatchConfigFile)
+			logger.info(u"Loading dispatch config file '%s'", self._dispatchConfigFile)
 			self.__loadDispatchConfig()
 
 		if not self._dispatchConfig:
@@ -104,7 +104,7 @@ class BackendDispatcher(Backend):
 
 		try:
 			self._dispatchConfig = _loadDispatchConfig(self._dispatchConfigFile)
-			logger.debug(u"Read dispatch config from file {0!r}: {1!r}", self._dispatchConfigFile, self._dispatchConfig)
+			logger.debug(u"Read dispatch config from file %s: %s", self._dispatchConfigFile, self._dispatchConfig)
 		except Exception as e:
 			raise BackendConfigurationError(u"Failed to load dispatch config file '%s': %s" % (self._dispatchConfigFile, e))
 
@@ -126,12 +126,12 @@ class BackendDispatcher(Backend):
 		for backend in collectedBackends:
 			self._backends[backend] = {}
 			backendConfigFile = os.path.join(self._backendConfigDir, '%s.conf' % backend)
-			logger.info(u"Loading backend config '%s'" % backendConfigFile)
+			logger.info(u"Loading backend config '%s'", backendConfigFile)
 			l = loadBackendConfig(backendConfigFile)
 			if not l['module']:
 				raise BackendConfigurationError(u"No module defined in backend config file '%s'" % backendConfigFile)
 			if l['module'] in self._dispatchIgnoreModules:
-				logger.notice(u"Ignoring module '%s', backend '%s'" % (l['module'], backend))
+				logger.notice(u"Ignoring module '%s', backend '%s'", l['module'], backend)
 				del self._backends[backend]
 				continue
 			if not isinstance(l['config'], dict):
@@ -151,10 +151,10 @@ class BackendDispatcher(Backend):
 				if methodName.startswith('_'):
 					# Not a public method
 					continue
-				logger.debug2(u"Found public %s method '%s'" % (Class.__name__, methodName))
+				logger.debug2(u"Found public %s method '%s'", Class.__name__, methodName)
 
 				if hasattr(self, methodName):
-					logger.debug(u"{0}: skipping already present method {1}", self.__class__.__name__, methodName)
+					logger.debug(u"%s: skipping already present method %s", self.__class__.__name__, methodName)
 					continue
 
 				methodBackends = []
@@ -164,10 +164,10 @@ class BackendDispatcher(Backend):
 
 					for backend in forceList(backends):
 						if backend not in self._backends:
-							logger.debug(u"Ignoring backend {0!r}: backend not available", backend)
+							logger.debug(u"Ignoring backend %s: backend not available", backend)
 							continue
 						methodBackends.append(backend)
-					logger.debug(u"{0!r} matches method {1!r}, dispatching to backends: {2}", regex, methodName, u', '.join(methodBackends))
+					logger.debug(u"%s matches method %s, dispatching to backends: %s", regex, methodName, u', '.join(methodBackends))
 					break
 
 				if not methodBackends:
@@ -179,7 +179,7 @@ class BackendDispatcher(Backend):
 				setattr(self, methodName, types.MethodType(eval(methodName), self))
 
 	def _dispatchMethod(self, methodBackends, methodName, **kwargs):
-		logger.debug(u"Dispatching method {0!r} to backends: {1}", methodName, methodBackends)
+		logger.debug(u"Dispatching method %s to backends: %s", methodName, methodBackends)
 		result = None
 
 		for methodBackend in methodBackends:
@@ -198,7 +198,7 @@ class BackendDispatcher(Backend):
 			elif res is not None:
 				result = res
 
-		logger.debug2(u"Finished dispatching method {0!r}", methodName)
+		logger.debug2(u"Finished dispatching method %s", methodName)
 		return result
 
 	def backend_setOptions(self, options):

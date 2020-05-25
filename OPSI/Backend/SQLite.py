@@ -60,12 +60,12 @@ class SQLite(SQL):
 
 		self._connection = None
 		self._cursor = None
-		logger.debug(u'SQLite created: %s' % self)
+		logger.debug(u'SQLite created: %s', self)
 
 	def connect(self):
 		with self._WRITE_LOCK:
 			try:
-				logger.debug2(u"Connecting to sqlite db '%s'" % self._database)
+				logger.debug2(u"Connecting to sqlite db '%s'", self._database)
 				if not self._connection:
 					# When using multiple threads with the same connection writing operations
 					# should be serialized by the user to avoid data corruption
@@ -86,28 +86,28 @@ class SQLite(SQL):
 						self._cursor.execute('PRAGMA encoding="UTF-8"')
 				return (self._connection, self._cursor)
 			except Exception as connectionError:
-				logger.warning("Problem connecting to SQLite database: {!r}", connectionError)
+				logger.warning("Problem connecting to SQLite database: %s", connectionError)
 				raise connectionError
 
 	def close(self, conn, cursor):
 		pass
 
 	def getSet(self, query):
-		logger.debug2(u"getSet: %s" % query)
+		logger.debug2(u"getSet: %s", query)
 		(conn, cursor) = self.connect()
 		valueSet = []
 		try:
 			self.execute(query, conn, cursor)
 			valueSet = cursor.fetchall()
 			if not valueSet:
-				logger.debug(u"No result for query '%s'" % query)
+				logger.debug(u"No result for query '%s'", query)
 				valueSet = []
 		finally:
 			self.close(conn, cursor)
 		return valueSet
 
 	def getRow(self, query):
-		logger.debug2(u"getRow: %s" % query)
+		logger.debug2(u"getRow: %s", query)
 		(conn, cursor) = self.connect()
 		row = {}
 		try:
@@ -115,13 +115,13 @@ class SQLite(SQL):
 			try:
 				row = cursor.fetchone()
 			except Exception as retrieveError:
-				logger.debug2("Failed to fetch data: {}", retrieveError)
+				logger.debug2("Failed to fetch data: %s", retrieveError)
 
 			if not row:
-				logger.debug(u"No result for query '%s'" % query)
+				logger.debug(u"No result for query '%s'", query)
 				row = {}
 			else:
-				logger.debug2(u"Result: '%s'" % row)
+				logger.debug2(u"Result: '%s'", row)
 		finally:
 			self.close(conn, cursor)
 		return row
@@ -147,7 +147,7 @@ class SQLite(SQL):
 					values.append(u"\'{0}\'".format(self.escapeApostrophe(self.escapeBackslash(value))))
 
 			query = u'INSERT INTO `{table}` ({columns}) VALUES ({values});'.format(columns=', '.join(colNames), values=', '.join(values), table=table)
-			logger.debug2(u"insert: %s" % query)
+			logger.debug2(u"insert: %s", query)
 
 			with self._WRITE_LOCK:
 				self.execute(query, conn, cursor)
@@ -183,7 +183,7 @@ class SQLite(SQL):
 					values.append(u"`{0}` = \'{1}\'".format(key, self.escapeApostrophe(self.escapeBackslash(value))))
 
 			query = u"UPDATE `{table}` SET {values} WHERE {condition};".format(table=table, values=', '.join(values), condition=where)
-			logger.debug2(u"update: %s" % query)
+			logger.debug2(u"update: %s", query)
 			with self._WRITE_LOCK:
 				result = self.execute(query, conn, cursor).rowcount
 				conn.commit()
@@ -196,7 +196,7 @@ class SQLite(SQL):
 		result = 0
 		try:
 			query = u"DELETE FROM `%s` WHERE %s;" % (table, where)
-			logger.debug2(u"delete: %s" % query)
+			logger.debug2(u"delete: %s", query)
 			with self._WRITE_LOCK:
 				result = self.execute(query, conn, cursor).rowcount
 				conn.commit()
@@ -212,7 +212,7 @@ class SQLite(SQL):
 			needClose = True
 
 		try:
-			logger.debug2(u"SQL query: %s" % forceUnicode(query))
+			logger.debug2(u"SQL query: %s", query)
 			res = cursor.execute(query)
 		finally:
 			if needClose:
@@ -233,10 +233,10 @@ class SQLite(SQL):
 		logger.debug2(u"Current tables:")
 		for i in self.getSet('SELECT name FROM sqlite_master WHERE type = "table";'):
 			tableName = tuple(i.values())[0].upper()
-			logger.debug2(u" [ %s ]" % tableName)
+			logger.debug2(u" [ %s ]", tableName)
 			fields = [j['name'] for j in self.getSet('PRAGMA table_info(`%s`);' % tableName)]
 			tables[tableName] = fields
-			logger.debug2("Fields in {0}: {1}", tableName, fields)
+			logger.debug2("Fields in %s: %s", tableName, fields)
 
 		return tables
 
@@ -256,7 +256,7 @@ class SQLiteBackend(SQLBackend):
 		self._licenseManagementEnabled = True
 		self._licenseManagementModule = True
 		self._sqlBackendModule = True
-		logger.debug(u'SQLiteBackend created: %s' % self)
+		logger.debug(u'SQLiteBackend created: %s', self)
 
 	def _createAuditHardwareTables(self):
 		"""
@@ -283,7 +283,7 @@ class SQLiteBackend(SQLBackend):
 
 		def getSQLStatements():
 			for (hwClass, values) in self._auditHardwareConfig.items():
-				logger.debug(u"Processing hardware class '%s'" % hwClass)
+				logger.debug(u"Processing hardware class '%s'", hwClass)
 				hardwareDeviceTableName = u'HARDWARE_DEVICE_{0}'.format(hwClass)
 				hardwareConfigTableName = u'HARDWARE_CONFIG_{0}'.format(hwClass)
 
@@ -306,7 +306,7 @@ class SQLiteBackend(SQLBackend):
 				avoidProcessingFurtherHardwareDevice = False
 				hardwareDeviceValuesProcessed = 0
 				for (value, valueInfo) in values.items():
-					logger.debug(u"  Processing value '%s'" % value)
+					logger.debug(u"  Processing value '%s'", value)
 					if valueInfo['Scope'] == 'g':
 						if hardwareDeviceTableExists:
 							if value in tables[hardwareDeviceTableName]:
@@ -353,7 +353,7 @@ class SQLiteBackend(SQLBackend):
 				avoidProcessingFurtherHardwareConfig = False
 				hardwareConfigValuesProcessed = 0
 				for (value, valueInfo) in values.items():
-					logger.debug(u"  Processing value '%s'" % value)
+					logger.debug(u"  Processing value '%s'", value)
 					if valueInfo['Scope'] == 'i':
 						if hardwareConfigTableExists:
 							if value in tables[hardwareConfigTableName]:
@@ -401,7 +401,7 @@ class SQLiteBackend(SQLBackend):
 					yield hardwareConfigTable
 
 		for statement in getSQLStatements():
-			logger.debug2("Processing statement {0!r}", statement)
+			logger.debug2("Processing statement %s", statement)
 			self._sql.execute(statement)
 			logger.debug2("Done with statement.")
 

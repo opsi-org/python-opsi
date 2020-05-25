@@ -192,13 +192,13 @@ class Repository:
 
 				if exception:
 					logger.logException(exception)
-					logger.critical(u"Failed to enable dynamic bandwidth: %s" % exception)
+					logger.critical(u"Failed to enable dynamic bandwidth: %s", exception)
 					self._dynamicBandwidth = False
 		elif self._networkPerformanceCounter:
 			try:
 				self._networkPerformanceCounter.stop()
 			except Exception as counterStopError:
-				logger.warning(u"Failed to stop networkPerformanceCounter: %s" % counterStopError)
+				logger.warning(u"Failed to stop networkPerformanceCounter: %s", counterStopError)
 
 	def setMaxBandwidth(self, maxBandwidth):
 		self.setBandwidth(dynamicBandwidth=self._dynamicBandwidth, maxBandwidth=maxBandwidth)
@@ -346,12 +346,12 @@ class Repository:
 							if usage <= self._dynamicBandwidthThresholdLimit:
 								if self._averageSpeed < 20000:
 									self._dynamicBandwidthLimit = bwlimit = 0.0
-									logger.debug(u"Other traffic detected, not limiting traffic because average speed is only %0.2f kByte/s" % (float(self._averageSpeed) / 1024))
+									logger.debug(u"Other traffic detected, not limiting traffic because average speed is only %0.2f kByte/s", (float(self._averageSpeed) / 1024))
 								else:
 									self._dynamicBandwidthLimit = bwlimit = self._averageSpeed * self._dynamicBandwidthLimitRate
 									if self._dynamicBandwidthLimit < 10000:
 										self._dynamicBandwidthLimit = bwlimit = 10000
-										logger.info(u"Other traffic detected, dynamically limiting bandwidth to minimum of %0.2f kByte/s" % (float(bwlimit) / 1024))
+										logger.info(u"Other traffic detected, dynamically limiting bandwidth to minimum of %0.2f kByte/s", (float(bwlimit) / 1024))
 									else:
 										logger.info(
 											u"Other traffic detected, dynamically limiting bandwidth to {:.1f}% of last average to {:.2f} kByte/s",
@@ -435,7 +435,9 @@ class Repository:
 		time.sleep(self._bandwidthSleepTime)
 
 	def _transfer(self, transferDirection, src, dst, progressSubject=None, bytes=-1):
-		logger.debug(u"Transfer %s from %s to %s, dynamic bandwidth %s, max bandwidth %s" % (transferDirection, src, dst, self._dynamicBandwidth, self._maxBandwidth))
+		logger.debug(u"Transfer %s from %s to %s, dynamic bandwidth %s, max bandwidth %s",
+			transferDirection, src, dst, self._dynamicBandwidth, self._maxBandwidth
+		)
 		try:
 			self._transferDirection = transferDirection
 			self._bytesTransfered = 0
@@ -446,7 +448,7 @@ class Repository:
 				fileSize = src.length
 			else:
 				fileSize = os.path.getsize(src.name)
-			logger.debug('Filesize is: {0}'.format(fileSize))
+			logger.debug('Filesize is: %s', fileSize)
 
 			while buf and (bytes < 0 or self._bytesTransfered < bytes):
 				logger.debug2("self._bufferSize: {:d}", self._bufferSize)
@@ -609,7 +611,7 @@ class Repository:
 			if copySrcContent and not self.isdir(source):
 				raise IOError(u"Source directory '%s' not found" % source)
 
-			logger.info(u"Copying from '%s' to '%s'" % (source, destination))
+			logger.info(u"Copying from '%s' to '%s'", source, destination)
 
 			totalFiles = 0
 			size = 0
@@ -843,7 +845,7 @@ class FileRepository(Repository):
 		if startByteNumber > -1:
 			size -= startByteNumber
 
-		logger.debug(u"Length of binary data to download: %d bytes" % size)
+		logger.debug(u"Length of binary data to download: %d bytes", size)
 
 		if progressSubject:
 			progressSubject.setEnd(size)
@@ -877,7 +879,7 @@ class FileRepository(Repository):
 
 		fs = os.stat(source)
 		size = fs[stat.ST_SIZE]
-		logger.debug(u"Length of binary data to upload: %d" % size)
+		logger.debug(u"Length of binary data to upload: %d", size)
 
 		if progressSubject:
 			progressSubject.setEnd(size)
@@ -1053,7 +1055,7 @@ class HTTPRepository(Repository):
 					if httplibResponse.status not in (ResponseCode.OK, ResponseCode.PARTIAL_CONTENT):
 						raise RuntimeError(httplibResponse.status)
 					size = forceInt(httplibResponse.getheader('content-length', 0))
-					logger.debug(u"Length of binary data to download: %d bytes" % size)
+					logger.debug(u"Length of binary data to download: %d bytes", size)
 
 					if progressSubject:
 						progressSubject.setEnd(size)
@@ -1070,7 +1072,7 @@ class HTTPRepository(Repository):
 					self._connectionPool.endConnection(conn)
 					if trynum > 2:
 						raise
-					logger.info(u"Error '%s' occurred while downloading, retrying" % error)
+					logger.info(u"Error '%s' occurred while downloading, retrying", error)
 					continue
 				response = OpsiHTTPResponse.from_httplib(httplibResponse)
 
@@ -1147,7 +1149,7 @@ class WebDAVRepository(HTTPRepository):
 
 		fs = os.stat(source)
 		size = fs[stat.ST_SIZE]
-		logger.debug(u"Length of binary data to upload: %d" % size)
+		logger.debug(u"Length of binary data to upload: %d", size)
 
 		if progressSubject:
 			progressSubject.setEnd(size)
@@ -1178,7 +1180,7 @@ class WebDAVRepository(HTTPRepository):
 					self._connectionPool.endConnection(conn)
 					if trynum > 2:
 						raise
-					logger.info(u"Error '%s' occurred while uploading, retrying" % error)
+					logger.info(u"Error '%s' occurred while uploading, retrying", error)
 					continue
 				response = OpsiHTTPResponse.from_httplib(httplibResponse)
 				conn = None
@@ -1255,8 +1257,8 @@ class CIFSRepository(FileRepository):
 			self._umount()
 		if not self._mountPoint:
 			raise ValueError(u"Mount point not defined")
-		logger.info(u"Mountpoint: %s " % self._mountPoint)
-		logger.info(u"Mounting '%s' to '%s'" % (self._url, self._mountPoint))
+		logger.info(u"Mountpoint: %s ", self._mountPoint)
+		logger.info(u"Mounting '%s' to '%s'", self._url, self._mountPoint)
 		if os.name == 'posix' and not os.path.isdir(self._mountPoint):
 			os.makedirs(self._mountPoint)
 			self._mountPointCreated = True
@@ -1279,7 +1281,7 @@ class CIFSRepository(FileRepository):
 		if not self._mounted or not self._mountPoint:
 			return
 
-		logger.info(u"Umounting '%s' from '%s'" % (self._url, self._mountPoint))
+		logger.info(u"Umounting '%s' from '%s'", self._url, self._mountPoint)
 
 		umount(self._mountPoint)
 
@@ -1304,7 +1306,7 @@ class DepotToLocalDirectorySychronizer:
 	def _synchronizeDirectories(self, source, destination, progressSubject=None):
 		source = forceUnicode(source)
 		destination = forceUnicode(destination)
-		logger.debug(u"Syncing directory %s to %s" % (source, destination))
+		logger.debug(u"Syncing directory %s to %s", source, destination)
 		if not os.path.isdir(destination):
 			os.mkdir(destination)
 
@@ -1317,17 +1319,17 @@ class DepotToLocalDirectorySychronizer:
 
 			path = os.path.join(destination, item)
 			if os.path.isdir(path) and not os.path.islink(path):
-				logger.info(u"Deleting '%s'" % relSource)
+				logger.info(u"Deleting '%s'", relSource)
 				shutil.rmtree(path)
 			else:
 				if path.endswith(u'.opsi_sync_endpart'):
 					oPath = path[:-1 * len(".opsi_sync_endpart")]
 					if os.path.isfile(oPath):
-						logger.info(u"Appending '%s' to '%s'" % (path, oPath))
+						logger.info(u"Appending '%s' to '%s'", path, oPath)
 						with open(oPath, 'ab') as f1:
 							with open(path, 'rb') as f2:
 								f1.write(f2.read())
-				logger.info(u"Deleting '%s'" % relSource)
+				logger.info(u"Deleting '%s'", relSource)
 				os.remove(path)
 
 		for item in self._sourceDepot.content(source):
@@ -1342,7 +1344,7 @@ class DepotToLocalDirectorySychronizer:
 			if item['type'] == 'dir':
 				self._synchronizeDirectories(sourcePath, destinationPath, progressSubject)
 			else:
-				logger.debug(u"Syncing %s with %s %s" % (relSource, destinationPath, self._fileInfo[relSource]))
+				logger.debug(u"Syncing %s with %s %s", relSource, destinationPath, self._fileInfo[relSource])
 				if self._fileInfo[relSource]['type'] == 'l':
 					self._linkFiles[relSource] = self._fileInfo[relSource]['target']
 					continue
@@ -1354,7 +1356,7 @@ class DepotToLocalDirectorySychronizer:
 					exists = os.path.exists(destinationPath)
 					if exists:
 						md5s = md5sum(destinationPath)
-						logger.debug(u"Destination file '%s' already exists (size: %s, md5sum: %s)" % (destinationPath, size, md5s))
+						logger.debug(u"Destination file '%s' already exists (size: %s, md5sum: %s)", destinationPath, size, md5s)
 						localSize = os.path.getsize(destinationPath)
 						if (localSize == size) and (md5s == self._fileInfo[relSource]['md5sum']):
 							continue
@@ -1365,7 +1367,7 @@ class DepotToLocalDirectorySychronizer:
 				if exists and (localSize < size):
 					partialEndFile = destinationPath + u'.opsi_sync_endpart'
 					# First byte needed is byte number <localSize>
-					logger.info(u"Downloading file '%s' starting at byte number %d" % (item['name'], localSize))
+					logger.info(u"Downloading file '%s' starting at byte number %d", item['name'], localSize)
 					if os.path.exists(partialEndFile):
 						os.remove(partialEndFile)
 					self._sourceDepot.download(sourcePath, partialEndFile, startByteNumber=localSize)
@@ -1381,7 +1383,7 @@ class DepotToLocalDirectorySychronizer:
 						if os.path.exists(partialStartFile):
 							os.remove(partialStartFile)
 						# Last byte needed is byte number <localSize> - 1
-						logger.info(u"Downloading file '%s' ending at byte number %d" % (item['name'], localSize - 1))
+						logger.info(u"Downloading file '%s' ending at byte number %d", item['name'], localSize - 1)
 						self._sourceDepot.download(sourcePath, partialStartFile, endByteNumber=localSize - 1)
 
 						with open(partialStartFile, 'ab') as f1:
@@ -1395,7 +1397,7 @@ class DepotToLocalDirectorySychronizer:
 				else:
 					if exists:
 						os.remove(destinationPath)
-					logger.info(u"Downloading file '%s'" % item['name'])
+					logger.info(u"Downloading file '%s'", item['name'])
 					self._sourceDepot.download(sourcePath, destinationPath, progressSubject=progressSubject)
 				md5s = md5sum(destinationPath)
 				if md5s != self._fileInfo[relSource]['md5sum']:
@@ -1405,7 +1407,7 @@ class DepotToLocalDirectorySychronizer:
 
 	def synchronize(self, productProgressObserver=None, overallProgressObserver=None):
 		if not self._productIds:
-			logger.info(u"Getting product dirs of depot '%s'" % self._sourceDepot)
+			logger.info(u"Getting product dirs of depot '%s'", self._sourceDepot)
 			for item in self._sourceDepot.content():
 				self._productIds.append(item['name'])
 
@@ -1470,7 +1472,7 @@ class DepotToLocalDirectorySychronizer:
 									shutil.rmtree(linkDestination)
 								else:
 									os.remove(linkDestination)
-							logger.info(u"Symlink => copying '%s' to '%s'" % (linkSource, linkDestination))
+							logger.info(u"Symlink => copying '%s' to '%s'", linkSource, linkDestination)
 							if os.path.isdir(linkSource):
 								shutil.copytree(linkSource, linkDestination)
 							else:
@@ -1485,7 +1487,7 @@ class DepotToLocalDirectorySychronizer:
 							parts -= len(linkSource.split('/'))
 							for counter in range(parts):
 								linkSource = os.path.join('..', linkSource)
-							logger.info(u"Symlink '%s' to '%s'" % (linkDestination, linkSource))
+							logger.info(u"Symlink '%s' to '%s'", linkDestination, linkSource)
 							os.symlink(linkSource, linkDestination)
 			except Exception as error:
 				productProgressSubject.setMessage(_(u"Failed to sync product %s: %s") % (self._productId, error))

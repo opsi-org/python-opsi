@@ -83,7 +83,7 @@ def mandatoryConstructorArgs(Class):
 		except TypeError:  # Happens if defaults is None
 			mandatory = args[1:]
 
-		logger.debug2(u"mandatoryConstructorArgs for {0!r}: {1}", cacheKey, mandatory)
+		logger.debug2(u"mandatoryConstructorArgs for %s: %s", cacheKey, mandatory)
 		_MANDATORY_CONSTRUCTOR_ARGS_CACHE[cacheKey] = mandatory
 		return mandatory
 
@@ -3206,7 +3206,7 @@ class AuditHardware(Entity):
 						size = int(attrType.split('(')[1].split(')')[0].strip())
 
 						if len(kwargs[attribute]) > size:
-							logger.warning(u'Truncating value of attribute %s of hardware class %s to length %d' % (attribute, hardwareClass, size))
+							logger.warning(u'Truncating value of attribute %s of hardware class %s to length %d', attribute, hardwareClass, size)
 							kwargs[attribute] = kwargs[attribute][:size].strip()
 					except (ValueError, IndexError):
 						pass
@@ -3385,7 +3385,7 @@ class AuditHardwareOnHost(Relationship):
 						size = int(attrType.split('(')[1].split(')')[0].strip())
 
 						if len(kwargs[attribute]) > size:
-							logger.warning(u'Truncating value of attribute %s of hardware class %s to length %d' % (attribute, hardwareClass, size))
+							logger.warning(u'Truncating value of attribute %s of hardware class %s to length %d', attribute, hardwareClass, size)
 							kwargs[attribute] = kwargs[attribute][:size].strip()
 					except (ValueError, IndexError):
 						pass

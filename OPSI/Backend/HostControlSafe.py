@@ -77,7 +77,7 @@ class HostControlSafeBackend(ExtendedBackend):
 			try:
 				address = socket.gethostbyname(host.id)
 			except socket.error as lookupError:
-				logger.debug2("Failed to lookup ip address for {0}: {1!r}", host.id, lookupError)
+				logger.debug2("Failed to lookup ip address for %s: %s", host.id, lookupError)
 
 		if not address:
 			address = host.ipAddress
@@ -109,11 +109,11 @@ class HostControlSafeBackend(ExtendedBackend):
 			try:
 				configState = self._context.configState_getObjects(configId="opsiclientd.control_server.port", objectId=host.id)
 				port = int(configState[0].values[0])
-				logger.info("Using port {} for opsiclientd at {}", port, host.id)
+				logger.info("Using port %s for opsiclientd at %s", port, host.id)
 			except IndexError:
 				pass  # No values found
 			except Exception as portError:
-				logger.warning("Failed to read custom opsiclientd port for {}: {!r}", host.id, portError)
+				logger.warning("Failed to read custom opsiclientd port for %s: %s", host.id, portError)
 
 			try:
 				address = self._getHostAddress(host)
@@ -138,29 +138,29 @@ class HostControlSafeBackend(ExtendedBackend):
 			for rpct in rpcts:
 				if rpct.ended:
 					if rpct.error:
-						logger.error(u"Rpc to host %s failed, error: %s" % (rpct.hostId, rpct.error))
+						logger.error(u"Rpc to host %s failed, error: %s", rpct.hostId, rpct.error)
 						result[rpct.hostId] = {"result": None, "error": rpct.error}
 					else:
-						logger.info(u"Rpc to host %s successful, result: %s" % (rpct.hostId, rpct.result))
+						logger.info(u"Rpc to host %s successful, result: %s", rpct.hostId, rpct.result)
 						result[rpct.hostId] = {"result": rpct.result, "error": None}
 					runningThreads -= 1
 					continue
 				if not rpct.started:
 					if runningThreads < self._maxConnections:
-						logger.debug(u"Starting rpc to host %s" % rpct.hostId)
+						logger.debug(u"Starting rpc to host %s", rpct.hostId)
 						rpct.start()
 						runningThreads += 1
 				else:
 					timeRunning = time.time() - rpct.started
 					if timeRunning >= timeout + 5:
 						# thread still alive 5 seconds after timeout => kill
-						logger.error(u"Rpc to host %s (address: %s) timed out after %0.2f seconds, terminating" % (rpct.hostId, rpct.address, timeRunning))
+						logger.error(u"Rpc to host %s (address: %s) timed out after %0.2f seconds, terminating", rpct.hostId, rpct.address, timeRunning)
 						result[rpct.hostId] = {"result": None, "error": u"timed out after %0.2f seconds" % timeRunning}
 						if not rpct.ended:
 							try:
 								rpct.terminate()
 							except Exception as e:
-								logger.error(u"Failed to terminate rpc thread: %s" % e)
+								logger.error(u"Failed to terminate rpc thread: %s", e)
 						runningThreads -= 1
 						continue
 				newRpcts.append(rpct)
@@ -191,10 +191,10 @@ class HostControlSafeBackend(ExtendedBackend):
 						struct.pack('B', int(data[i:i + 2], 16))])
 
 				for broadcastAddress, targetPorts in self._broadcastAddresses.items():
-					logger.debug(u"Sending data to network broadcast {0} [{1}]", broadcastAddress, data)
+					logger.debug(u"Sending data to network broadcast %s [%s]", broadcastAddress, data)
 
 					for port in targetPorts:
-						logger.debug("Broadcasting to port {0!r}", port)
+						logger.debug("Broadcasting to port %s", port)
 						with closing(socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)) as sock:
 							sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, True)
 							sock.sendto(payload, (broadcastAddress, port))
@@ -269,7 +269,7 @@ class HostControlSafeBackend(ExtendedBackend):
 						hostId=host.id,
 						address=address))
 			except Exception as e:
-				logger.debug("Problem found: '%s'" % e)
+				logger.debug("Problem found: '%s'", e)
 				result[host.id] = False
 
 		runningThreads = 0
@@ -282,20 +282,20 @@ class HostControlSafeBackend(ExtendedBackend):
 					continue
 				if not thread.started:
 					if runningThreads < self._maxConnections:
-						logger.debug(u"Trying to check host reachable %s" % thread.hostId)
+						logger.debug(u"Trying to check host reachable %s", thread.hostId)
 						thread.start()
 						runningThreads += 1
 				else:
 					timeRunning = time.time() - thread.started
 					if timeRunning >= timeout + 5:
 						# thread still alive 5 seconds after timeout => kill
-						logger.error(u"Reachable check to host %s address %s timed out after %0.2f  seconds, terminating" % (thread.hostId, thread.address, timeRunning))
+						logger.error(u"Reachable check to host %s address %s timed out after %0.2f  seconds, terminating", thread.hostId, thread.address, timeRunning)
 						result[thread.hostId] = False
 						if not thread.ended:
 							try:
 								thread.terminate()
 							except Exception as e:
-								logger.error(u"Failed to terminate reachable thread: %s" % e)
+								logger.error(u"Failed to terminate reachable thread: %s", e)
 						runningThreads -= 1
 						continue
 				newThreads.append(thread)

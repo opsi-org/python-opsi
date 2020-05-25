@@ -133,7 +133,7 @@ def getSize(path):
 		elif os.path.isfile(path):
 			size = os.path.getsize(path)
 		elif os.path.isdir(path):
-			logger.debug(u"Getting size of files in dir '%s'" % path)
+			logger.debug(u"Getting size of files in dir '%s'", path)
 			for element in os.listdir(path):
 				size += getSize(os.path.join(path, element))
 	except Exception as error:
@@ -159,7 +159,7 @@ def countFiles(path):
 		elif os.path.isfile(path):
 			count = 1
 		elif os.path.isdir(path):
-			logger.debug(u"Counting files in dir '%s'" % path)
+			logger.debug(u"Counting files in dir '%s'", path)
 			for element in os.listdir(path):
 				count += countFiles(os.path.join(path, element))
 	except Exception as error:
@@ -182,11 +182,11 @@ def getCountAndSize(path):
 	(count, size) = (0, 0)
 	try:
 		if os.path.isfile(path):
-			logger.debug2(u"Is file: {0}", path)
+			logger.debug2(u"Is file: %s", path)
 			(count, size) = (1, os.path.getsize(path))
 		elif os.path.isdir(path):
-			logger.debug2(u"Is dir: {0}", path)
-			logger.debug(u"Counting and getting sizes of files in dir {0!r}", path)
+			logger.debug2(u"Is dir: %s", path)
+			logger.debug(u"Counting and getting sizes of files in dir %s", path)
 			for element in os.listdir(path):
 				(elementCount, elementSize) = getCountAndSize(os.path.join(path, element))
 				count += elementCount
@@ -260,7 +260,7 @@ def copy(src, dst, progressSubject=None):
 		if copySrcContent and not os.path.isdir(src):
 			raise IOError(u"Source directory '%s' not found" % src)
 
-		logger.info(u"Copying from '%s' to '%s'" % (src, dst))
+		logger.info(u"Copying from '%s' to '%s'", src, dst)
 		(count, size) = (0, 0)
 		if progressSubject:
 			progressSubject.reset()

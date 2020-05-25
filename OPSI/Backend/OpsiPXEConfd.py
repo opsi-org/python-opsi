@@ -63,7 +63,7 @@ class ServerConnection:
 			result = ''
 			try:
 				for part in iter(lambda: unixSocket.recv(4096), b''):
-					logger.debug2("Received {!r}", part)
+					logger.debug2("Received %s", part)
 					result += forceUnicode(part)
 			except Exception as error:
 				raise RuntimeError(u"Failed to receive: %s" % error)
@@ -76,7 +76,7 @@ class ServerConnection:
 
 @contextmanager
 def createUnixSocket(port, timeout=5.0):
-	logger.notice(u"Creating unix socket {!r}", port)
+	logger.notice(u"Creating unix socket %s", port)
 	_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
 	_socket.settimeout(timeout)
 	try:
@@ -185,11 +185,11 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 
 	def _pxeBootConfigurationUpdateNeeded(self, productOnClient):
 		if productOnClient.productType != 'NetbootProduct':
-			logger.debug(u"Not a netboot product: {0!r}, nothing to do", productOnClient.productId)
+			logger.debug(u"Not a netboot product: %s, nothing to do", productOnClient.productId)
 			return False
 
 		if not productOnClient.actionRequest:
-			logger.debug(u"No action request update for product {0!r}, client {1!r}, nothing to do", productOnClient.productId, productOnClient.clientId)
+			logger.debug(u"No action request update for product %s, client %s, nothing to do", productOnClient.productId, productOnClient.clientId)
 			return False
 
 		return True
@@ -261,14 +261,14 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 						# and no items are present.
 						pass
 					except Exception as eliloError:
-						logger.debug("Failed to detect elilo setting for {}: {}", clientId, eliloError)
+						logger.debug("Failed to detect elilo setting for %s: %s", clientId, eliloError)
 
 			productPropertyStates = self._collectProductPropertyStates(
 				clientId,
 				productOnClient.productId,
 				depotId
 			)
-			logger.debug("Collected product property states: {}", productPropertyStates)
+			logger.debug("Collected product property states: %s", productPropertyStates)
 
 			backendinfo = self._context.backend_info()
 			backendinfo["hostCount"] = len(self._context.host_getObjects(attributes=['id'], type='OpsiClient'))
@@ -287,10 +287,10 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 			}
 
 			data = serialize(data)
-			logger.debug("Collected data of for opsipxeconfd: {!r}", clientId, data)
+			logger.debug("Collected data of for opsipxeconfd: %s, %s", clientId, data)
 		except Exception as collectError:
 			logger.logException(collectError)
-			logger.warning("Failed to collect data of {} for opsipxeconfd: {}", clientId, collectError)
+			logger.warning("Failed to collect data of %s for opsipxeconfd: %s", clientId, collectError)
 			data = {}
 
 		return data
@@ -316,7 +316,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 
 		# Create missing config states
 		for config in self._context.config_getObjects(id=missingConfigStateIds):
-			logger.debug(u"Got default values for {0!r}: {1}", config.id, config.defaultValues)
+			logger.debug(u"Got default values for %s: %s", config.id, config.defaultValues)
 			# Config state does not exist for client => create default
 			cf = ConfigState(
 				configId=config.id,
@@ -366,7 +366,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 			for method in destination.backend_getInterface():
 				if method['name'] == 'opsipxeconfd_updatePXEBootConfiguration':
 					if len(method['params']) < 2:
-						logger.debug("Depot {} does not support receiving cached data.", responsibleDepot)
+						logger.debug("Depot %s does not support receiving cached data.", responsibleDepot)
 						return False
 
 					break
@@ -381,7 +381,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 			depot, port = self._port.split(":")
 			destination = self._getScalabilityDepotConnection(depot, port)
 		elif responsibleDepot != self._depotId:
-			logger.info(u"Not responsible for client '{}', forwarding request to depot {!r}", productOnClient.clientId, responsibleDepot)
+			logger.info(u"Not responsible for client '%s', forwarding request to depot %s", productOnClient.clientId, responsibleDepot)
 			destination = self._getDepotConnection(responsibleDepot)
 		else:
 			destination = self
@@ -403,7 +403,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 		:type data: dict
 		"""
 		clientId = forceHostId(clientId)
-		logger.debug("Updating PXE boot config of {!r}", clientId)
+		logger.debug("Updating PXE boot config of %s", clientId)
 
 		command = 'update {}'.format(clientId)
 		if data:
@@ -432,7 +432,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 		:returns: The path of the cache file. None if no file could be written.
 		"""
 		destinationFile = getClientCacheFilePath(clientId)
-		logger.debug2("Writing data to {}: {!r}", destinationFile, data)
+		logger.debug2("Writing data to %s: %s", destinationFile, data)
 		try:
 			with codecs.open(destinationFile, "w", 'utf-8') as outfile:
 				json.dump(serialize(data), outfile)
@@ -440,7 +440,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 			return destinationFile
 		except (OSError, IOError) as dataFileError:
 			logger.logException(dataFileError, logLevel=LOG_DEBUG)
-			logger.debug("Writing cache file {!r} failed: {!r}", destinationFile, dataFileError)
+			logger.debug("Writing cache file %s failed: %s", destinationFile, dataFileError)
 
 	def backend_exit(self):
 		for connection in self._depotConnections.values():
@@ -519,7 +519,7 @@ class UpdateThread(threading.Thread):
 		self._delay = self._DEFAULT_DELAY
 
 	def run(self):
-		logger.debug("UpdateThread {} waiting until delay is done...", self.name)
+		logger.debug("UpdateThread %s waiting until delay is done...", self.name)
 		delayReduction = 0.2
 		while self._delay > 0:
 			time.sleep(delayReduction)
@@ -527,16 +527,16 @@ class UpdateThread(threading.Thread):
 
 		with self._opsiPXEConfdBackend._updateThreadsLock:
 			try:
-				logger.info(u"Updating pxe boot configuration for client '{}'", self._clientId)
+				logger.info(u"Updating pxe boot configuration for client '%s'", self._clientId)
 				sc = ServerConnection(self._opsiPXEConfdBackend._port, self._opsiPXEConfdBackend._timeout)
-				logger.debug(u"Sending command {!r}", self._command)
+				logger.debug(u"Sending command %s", self._command)
 				result = sc.sendCommand(self._command)
-				logger.debug(u"Got result {!r}", result)
+				logger.debug(u"Got result %s", result)
 			except Exception as error:
-				logger.critical(u"Failed to update PXE boot configuration for client '{}': {}", self._clientId, error)
+				logger.critical(u"Failed to update PXE boot configuration for client '%s': %s", self._clientId, error)
 			finally:
 				del self._opsiPXEConfdBackend._updateThreads[self._clientId]
 
 	def delay(self):
 		self._delay = self._DEFAULT_DELAY
-		logger.debug("Resetted delay for UpdateThread {}", self.name)
+		logger.debug("Resetted delay for UpdateThread %s", self.name)

@@ -50,7 +50,7 @@ elif os.name == 'nt':
     try:
         import librsync
     except Exception as e:
-        logger.error(u"Failed to import librsync: %s" % e)
+        logger.error(u"Failed to import librsync: %s", e)
 
 
 def librsyncSignature(filename, base64Encoded=True):
@@ -74,7 +74,7 @@ def librsyncSignature(filename, base64Encoded=True):
 
 
 def librsyncPatchFile(oldfile, deltafile, newfile):
-    logger.debug(u"Librsync patch: old file {!r}, delta file {!r}, new file {!r}", oldfile, deltafile, newfile)
+    logger.debug(u"Librsync patch: old file %s, delta file %s, new file %s", oldfile, deltafile, newfile)
 
     oldfile = forceFilename(oldfile)
     newfile = forceFilename(newfile)
@@ -99,7 +99,7 @@ def librsyncPatchFile(oldfile, deltafile, newfile):
                             nf.write(data)
     except Exception as patchError:
         logger.debug(
-            "Patching {!r} with delta {!r} into {!r} failed: {}",
+            "Patching %s with delta %s into %s failed: %s",
             oldfile, deltafile, newfile, patchError
         )
         raise RuntimeError(u"Failed to patch file %s: %s" % (oldfile, forceUnicode(patchError)))
@@ -109,7 +109,7 @@ def librsyncDeltaFile(filename, signature, deltafile):
     bufsize = 1024 * 1024
     filename = forceFilename(filename)
     deltafile = forceFilename(deltafile)
-    logger.debug("Creating deltafile {!r} on base of {!r}", deltafile, filename)
+    logger.debug("Creating deltafile %s on base of %s", deltafile, filename)
     try:
         with open(filename, "rb") as f:
             with open(deltafile, "wb") as df:

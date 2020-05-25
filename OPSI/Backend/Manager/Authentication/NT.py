@@ -42,7 +42,7 @@ class NTAuthentication(AuthenticationModule):
 			try:
 				self._admin_groupname = win32security.LookupAccountSid(None, win32security.ConvertStringSidToSid(admin_group_sid))[0]
 			except Exception as e:
-				logger.error("Failed to lookup group with sid '%s': %s" % (admin_group_sid, e))
+				logger.error("Failed to lookup group with sid '%s': %s", admin_group_sid, e)
 	
 	def authenticate(self, username: str, password: str) -> None:
 		'''
@@ -50,7 +50,7 @@ class NTAuthentication(AuthenticationModule):
 
 		:raises BackendAuthenticationError: If authentication fails.
 		'''
-		logger.confidential("Trying to authenticate user {0} with password {1} by win32security", username, password)
+		logger.confidential("Trying to authenticate user %s with password %s by win32security", username, password)
 		
 		try:
 			win32security.LogonUser(
@@ -75,18 +75,18 @@ class NTAuthentication(AuthenticationModule):
 		gresume = 0
 		while True:
 			(groups, gtotal, gresume) = win32net.NetLocalGroupEnum(None, 0, gresume)
-			logger.debug2("Got %s groups, total=%s, resume=%s" % (len(groups), gtotal, gresume))
+			logger.debug2("Got %s groups, total=%s, resume=%s", len(groups), gtotal, gresume)
 			for groupname in (u['name'] for u in groups):
-				logger.debug2("Found group '%s'" % groupname)
+				logger.debug2("Found group '%s'", groupname)
 				uresume = 0
 				while True:
 					(users, utotal, uresume) = win32net.NetLocalGroupGetMembers(None, groupname, 0, uresume)
-					logger.debug2("Got %s users, total=%s, resume=%s" % (len(users), utotal, uresume))
+					logger.debug2("Got %s users, total=%s, resume=%s", len(users), utotal, uresume)
 					for sid in (u['sid'] for u in users):
 						(groupUsername, domain, groupType) = win32security.LookupAccountSid(None, sid)
 						if groupUsername.lower() == username.lower():
 							collected_groupnames.add(groupname)
-							logger.debug("User {0!r} is member of group {1!r}", username, groupname)
+							logger.debug("User %s is member of group %s", username, groupname)
 					if uresume == 0:
 						break
 			if gresume == 0:

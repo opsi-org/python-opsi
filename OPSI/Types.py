@@ -514,7 +514,7 @@ def forceObjectClass(var, objectClass):
 			var = fromJson(var)
 		except Exception as error:
 			exception = error
-			logger.debug(u"Failed to get object from json {0!r}: {1!r}", var, error)
+			logger.debug(u"Failed to get object from json %s: %s", var, error)
 
 	if isinstance(var, dict):
 		if 'type' not in var:
@@ -530,10 +530,10 @@ def forceObjectClass(var, objectClass):
 				error = ValueError("Invalild object type: {0}".format(var['type']))
 
 			exception = error
-			logger.debug(u"Failed to get object from dict {0!r}: {1!r}", var, error)
+			logger.debug(u"Failed to get object from dict %s: %s", var, error)
 		except Exception as error:
 			exception = error
-			logger.debug(u"Failed to get object from dict {0!r}: {1!r}", var, error)
+			logger.debug(u"Failed to get object from dict %s: %s", var, error)
 
 	if not isinstance(var, objectClass):
 		if exception is not None:

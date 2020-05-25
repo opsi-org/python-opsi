@@ -405,7 +405,7 @@ def getEthernetDevices():
 
 			device = line.split(':')[0].strip()
 			if device.startswith(('eth', 'ens', 'eno', 'tr', 'br', 'enp', 'enx')):
-				logger.info(u"Found ethernet device: '{0}'".format(device))
+				logger.info(u"Found ethernet device: '%s'", device)
 				devices.append(device)
 
 	return devices
@@ -444,7 +444,7 @@ def getNetworkDeviceConfig(device):
 				continue
 
 			if line.startswith('inet '):
-				logger.debug('Found inet line: {0}'.format(line))
+				logger.debug('Found inet line: %s', line)
 
 				parts = line.split(':')
 				if len(parts) == 4:
@@ -465,7 +465,7 @@ def getNetworkDeviceConfig(device):
 					result['netmask'] = forceIpAddress(match.group('netmask'))
 					continue
 
-				logger.error(u"Unexpected ifconfig line '%s'" % line)
+				logger.error(u"Unexpected ifconfig line '%s'", line)
 	except CommandNotFoundException:  # no ifconfig
 		# Falling back to ip
 		jsonIp = execute(
@@ -517,7 +517,7 @@ def getNetworkDeviceConfig(device):
 		x = "%x" % int(x)
 		result['vendorId'] = forceHardwareVendorId(((4-len(x))*'0') + x)
 	except Exception:
-		logger.warning(u"Failed to get vendor id for network device %s" % device)
+		logger.warning(u"Failed to get vendor id for network device %s", device)
 
 	try:
 		with open('/sys/class/net/%s/device/device' % device) as f:
@@ -533,7 +533,7 @@ def getNetworkDeviceConfig(device):
 		x = "%x" % x
 		result['deviceId'] = forceHardwareDeviceId(((4 - len(x)) * '0') + x)
 	except Exception:
-		logger.warning(u"Failed to get device id for network device %s" % device)
+		logger.warning(u"Failed to get device id for network device %s", device)
 
 	return result
 
@@ -541,7 +541,7 @@ def getNetworkDeviceConfig(device):
 def getDefaultNetworkInterfaceName():
 	for interface in getNetworkInterfaces():
 		if interface['gateway']:
-			logger.info(u"Default network interface found: %s" % interface['device'])
+			logger.info(u"Default network interface found: %s", interface['device'])
 			return interface['device']
 	logger.info(u"Default network interface not found")
 	return None
@@ -674,7 +674,7 @@ keys are: ``ip``, ``netmask``, ``bootserver``, ``nextserver``, \
 			except Exception as error:
 				logger.warning(error)
 	else:
-		logger.debug('Leases file {0} does not exist.'.format(leasesFile))
+		logger.debug('Leases file %s does not exist.', leasesFile)
 		logger.debug('Trying to use pump for getting dhclient info.')
 		try:
 			for line in execute(u'%s -s -i %s' % (which('pump'), device)):
@@ -767,7 +767,7 @@ def getNetworkConfiguration(ipAddress=None):
 		networkConfig['ipAddress'] = socket.gethostbyname(fqdn)
 
 	if networkConfig['ipAddress'].split(u'.')[0] in ('127', '169'):
-		logger.info("Not using IP {0} because of restricted network block.", networkConfig['ipAddress'])
+		logger.info("Not using IP %s because of restricted network block.", networkConfig['ipAddress'])
 		networkConfig['ipAddress'] = None
 
 	for device in getEthernetDevices():
@@ -783,7 +783,7 @@ def getNetworkConfiguration(ipAddress=None):
 
 	if not networkConfig['ipAddress']:
 		try:
-			logger.debug2("FQDN is: {0!r}", fqdn)
+			logger.debug2("FQDN is: %s", fqdn)
 		except NameError:
 			fqdn = getLocalFqdn()
 
@@ -864,7 +864,7 @@ def which(cmd):
 		if not path:
 			raise CommandNotFoundException(u"Command {0!r} not found in PATH".format(cmd))
 
-		logger.debug(u"Command {0!r} found at: {1!r}", cmd, path)
+		logger.debug(u"Command %s found at: %s", cmd, path)
 		WHICH_CACHE[cmd] = path
 
 	return WHICH_CACHE[cmd]
@@ -876,7 +876,7 @@ def get_subprocess_environment():
 		lp_orig = sp_env.get("LD_LIBRARY_PATH_ORIG")
 		if lp_orig is not None:
 			# Restore the original, unmodified value
-			logger.debug("Setting original LD_LIBRARY_PATH '%s' in env for subprocess" % lp_orig)
+			logger.debug("Setting original LD_LIBRARY_PATH '%s' in env for subprocess", lp_orig)
 			sp_env["LD_LIBRARY_PATH"] = lp_orig
 		else:
 			# This happens when LD_LIBRARY_PATH was not set.
@@ -939,7 +939,7 @@ output will be returned.
 	sp_env = get_subprocess_environment()
 	startTime = time.time()
 	try:
-		logger.info(u"Executing: %s" % cmd)
+		logger.info(u"Executing: %s", cmd)
 
 		if nowait:
 			os.spawnve(os.P_NOWAIT, which('bash'), [which('bash'), '-c', cmd], sp_env)
@@ -969,7 +969,7 @@ output will be returned.
 				encoding = locale.getpreferredencoding()
 				if encoding == 'ascii':
 					encoding = 'utf-8'
-			logger.info(u"Using encoding '%s'" % encoding)
+			logger.info(u"Using encoding '%s'", encoding)
 
 			flags = fcntl.fcntl(proc.stdout, fcntl.F_GETFL)
 			fcntl.fcntl(proc.stdout, fcntl.F_SETFL, flags | os.O_NONBLOCK)
@@ -1013,14 +1013,14 @@ output will be returned.
 					line = line.decode(encoding, 'replace')
 					if i == len(lines) - 1 and not line:
 						break
-					logger.debug(u'>>> {}', line)
+					logger.debug(u'>>> %s', line)
 					result.append(line)
 
 	except (os.error, IOError) as e:
 		# Some error occurred during execution
 		raise RuntimeError(u"Command '%s' failed:\n%s" % (cmd, e))
 
-	logger.debug(u"Exit code: %s" % exitCode)
+	logger.debug(u"Exit code: %s", exitCode)
 	if exitCode:
 		if isinstance(ignoreExitCode, bool) and ignoreExitCode:
 			pass
@@ -1041,12 +1041,12 @@ def _terminateProcess(process):
 	try:
 		process.kill()
 	except Exception as killException:
-		logger.debug('Killing process {0} failed: {1}'.format(process.pid, killException))
+		logger.debug('Killing process %s failed: %s', process.pid, killException)
 
 		try:
 			os.kill(process.pid, SIGKILL)
 		except Exception as sigKillException:
-			logger.debug('Sending SIGKILL to pid {0} failed: {1}'.format(process.pid, sigKillException))
+			logger.debug('Sending SIGKILL to pid %s failed: %s', process.pid, sigKillException)
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1087,12 +1087,7 @@ def getHarddisks(data=None):
 						size = forceInt(execute(u'%s --no-reread -s /dev/cciss/%s' % (which('sfdisk'), dev), ignoreExitCode=[1])[0])
 					else:
 						size = forceInt(execute(u'%s -L --no-reread -s -uB /dev/cciss/%s' % (which('sfdisk'), dev), ignoreExitCode=[1])[0])
-					logger.debug(
-						u"Found disk =>>> dev: '{device}', size: {size:0.2f} GB".format(
-							device=dev,
-							size=size / (1024 * 1024)
-							)
-						)
+					logger.debug(u"Found disk =>>> dev: '%s', size: %0.2f GB", dev, size / (1000 * 1000))
 					hd = Harddisk("/dev/cciss/%s" % dev)
 					disks.append(hd)
 			if len(disks) <= 0:
@@ -1112,13 +1107,7 @@ def getHarddisks(data=None):
 
 		(dev, size) = line.split(u':')
 		size = forceInt(size.strip())
-		logger.debug(
-			u"Found disk =>>> dev: '{device}', size: {size:0.2f} GB".format(
-				device=dev,
-				size=size / (1024 * 1024)
-			)
-		)
-
+		logger.debug(u"Found disk =>>> dev: '%s', size: %0.2f GB", dev, size / (1000 * 1000))
 		hd = Harddisk(dev)
 		disks.append(hd)
 
@@ -1136,7 +1125,7 @@ def getDiskSpaceUsage(path):
 		'used': disk.f_bsize * (disk.f_blocks - disk.f_bavail),
 		'usage': float(disk.f_blocks - disk.f_bavail) / float(disk.f_blocks),
 	}
-	logger.info(u"Disk space usage for path '%s': %s" % (path, info))
+	logger.info(u"Disk space usage for path '%s': %s", path, info)
 	return info
 
 
@@ -1262,7 +1251,7 @@ def mount(dev, mountpoint, **options):
 	try:
 		execute(u"%s %s %s %s %s" % (which('mount'), fs, optString, dev, mountpoint))
 	except Exception as e:
-		logger.error(u"Failed to mount '%s': %s" % (dev, e))
+		logger.error(u"Failed to mount '%s': %s", dev, e)
 		raise RuntimeError(u"Failed to mount '%s': %s" % (dev, e))
 	finally:
 		for f in credentialsFiles:
@@ -1273,7 +1262,7 @@ def umount(devOrMountpoint):
 	try:
 		execute(u"%s %s" % (which('umount'), devOrMountpoint))
 	except Exception as e:
-		logger.error(u"Failed to umount '%s': %s" % (devOrMountpoint, e))
+		logger.error(u"Failed to umount '%s': %s", devOrMountpoint, e)
 		raise RuntimeError(u"Failed to umount '%s': %s" % (devOrMountpoint, e))
 
 
@@ -1312,7 +1301,7 @@ def getBlockDeviceBusType(device):
 			type = match.group(1)
 
 		if devs and device in devs and type:
-			logger.info(u"Bus type of device '%s' is '%s'" % (device, type))
+			logger.info(u"Bus type of device '%s' is '%s'", device, type)
 			return type
 
 
@@ -1503,10 +1492,7 @@ class Harddisk:
 				except Exception:
 					pass
 		except Exception as error:
-			logger.error(
-				'Checking if the device {name} is rotational failed: '
-				'{error}'.format(name=self.device, error=error)
-			)
+			logger.error('Checking if the device %s is rotational failed: %s', self.device, error)
 
 	def getSignature(self):
 		hd = os.open(str(self.device), os.O_RDONLY)
@@ -1516,15 +1502,16 @@ class Harddisk:
 		finally:
 			os.close(hd)
 
-		logger.debug(u"Read signature from device '%s': %s,%s,%s,%s" \
-				% (self.device, ord(x[0]), ord(x[1]), ord(x[2]), ord(x[3])))
+		logger.debug(u"Read signature from device '%s': %s,%s,%s,%s",
+			self.device, ord(x[0]), ord(x[1]), ord(x[2]), ord(x[3])
+		)
 
 		self.signature = 0
 		self.signature += ord(x[3]) << 24
 		self.signature += ord(x[2]) << 16
 		self.signature += ord(x[1]) << 8
 		self.signature += ord(x[0])
-		logger.debug(u"Device Signature: '%s'" % hex(self.signature))
+		logger.debug(u"Device Signature: '%s'", hex(self.signature))
 
 	def setDiskLabelType(self, label):
 		label = forceUnicodeLower(label)
@@ -1609,7 +1596,7 @@ class Harddisk:
 				except Exception:
 					pass
 
-			logger.info(u"Size of disk '%s': %s Byte / %s MB" % (self.device, self.size, (self.size/(1024*1024))))
+			logger.info(u"Size of disk '%s': %s Byte / %s MB", self.device, self.size, (self.size/(1000*1000)))
 			if isXenialSfdiskVersion():
 				result = execute(u"{sfdisk} --no-reread -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
 			else:
@@ -1691,7 +1678,7 @@ class Harddisk:
 					raise RuntimeError(u"Unable to get bytes/cylinder for disk '%s'" % self.device)
 				self.bytesPerCylinder = forceInt(match.group(1))
 				self.totalCylinders = int(self.size / self.bytesPerCylinder)
-				logger.info(u"Total cylinders of disk '%s': %d, %d bytes per cylinder" % (self.device, self.totalCylinders, self.bytesPerCylinder))
+				logger.info(u"Total cylinders of disk '%s': %d, %d bytes per cylinder", self.device, self.totalCylinders, self.bytesPerCylinder)
 
 			elif line.startswith(self.device):
 				if isXenialSfdiskVersion():
@@ -1726,7 +1713,7 @@ class Harddisk:
 								line = line.strip()
 								if not line:
 									continue
-								logger.debug(u"Found filesystem: %s with blkid tool, using now this filesystemtype." % line)
+								logger.debug(u"Found filesystem: %s with blkid tool, using now this filesystemtype.", line)
 								fs = line
 					except Exception:
 						pass
@@ -1751,7 +1738,7 @@ class Harddisk:
 						u"Partition found =>>> number: %s, "
 						u"start: %s MB (%s cyl), end: %s MB (%s cyl), "
 						u"size: %s MB (%s cyl), "
-						u"type: %s, fs: %s, boot: %s" % (
+						u"type: %s, fs: %s, boot: %s",
 							partitionData['number'],
 							partitionData['start'] / (1024 * 1024),
 							partitionData['cylStart'],
@@ -1762,11 +1749,10 @@ class Harddisk:
 							match.group(8),
 							fs,
 							boot
-						)
 					)
 
 					if partitionData['device']:
-						logger.debug(u"Waiting for device '%s' to appear" % partitionData['device'])
+						logger.debug(u"Waiting for device '%s' to appear", partitionData['device'])
 						timeout = 15
 						while timeout > 0:
 							if os.path.exists(partitionData['device']):
@@ -1774,9 +1760,9 @@ class Harddisk:
 							time.sleep(1)
 							timeout -= 1
 						if os.path.exists(partitionData['device']):
-							logger.debug(u"Device '%s' found" % partitionData['device'])
+							logger.debug(u"Device '%s' found", partitionData['device'])
 						else:
-							logger.warning(u"Device '%s' not found" % partitionData['device'])
+							logger.warning(u"Device '%s' not found", partitionData['device'])
 
 	def _parseSectorData(self, outputFromSfDiskListing):
 		"""
@@ -1806,12 +1792,11 @@ class Harddisk:
 							self.partitions[p] = partition
 							logger.debug(
 								u"Partition sector values =>>> number: %s, "
-								u"start: %s sec, end: %s sec, size: %s sec " % (
+								u"start: %s sec, end: %s sec, size: %s sec ",
 									partition['number'],
 									partition['secStart'],
 									partition['secEnd'],
 									partition['secSize']
-								)
 							)
 							break
 
@@ -1825,10 +1810,10 @@ class Harddisk:
 					raise RuntimeError(u"Unable to get bytes/sector for disk '%s'" % self.device)
 				self.bytesPerSector = forceInt(match.group(1))
 				self.totalSectors = int(self.size / self.bytesPerSector)
-				logger.info(u"Total sectors of disk '%s': %d, %d bytes per cylinder" % (self.device, self.totalSectors, self.bytesPerSector))
+				logger.info(u"Total sectors of disk '%s': %d, %d bytes per cylinder", self.device, self.totalSectors, self.bytesPerSector)
 
 	def writePartitionTable(self):
-		logger.debug(u"Writing partition table to disk %s" % self.device)
+		logger.debug(u"Writing partition table to disk %s", self.device)
 		for hook in hooks:
 			hook.pre_Harddisk_writePartitionTable(self)
 		try:
@@ -1840,13 +1825,12 @@ class Harddisk:
 						logger.debug(
 							u"   number: %s, start: %s MB (%s sec), "
 							u"end: %s MB (%s sec), size: %s MB (%s sec), "
-							u"type: %s, fs: %s, boot: %s" % (
+							u"type: %s, fs: %s, boot: %s",
 								part['number'], (part['start'] / (1000 * 1000)),
 								part['secStart'], (part['end'] / (1000 * 1000)),
 								part['secEnd'], (part['size'] / (1000 * 1000)),
 								part['secSize'], part['type'], part['fs'],
 								part['boot']
-							)
 						)
 
 						cmd += u'%s,%s,%s' % (part['secStart'], part['secSize'], part['type'])
@@ -1854,13 +1838,12 @@ class Harddisk:
 						logger.debug(
 							u"   number: %s, start: %s MB (%s cyl), "
 							u"end: %s MB (%s cyl), size: %s MB (%s cyl), "
-							u"type: %s, fs: %s, boot: %s" % (
+							u"type: %s, fs: %s, boot: %s",
 								part['number'], (part['start'] / (1000 * 1000)),
 								part['cylStart'], (part['end'] / (1000 * 1000)),
 								part['cylEnd'], (part['size'] / (1000 * 1000)),
 								part['cylSize'], part['type'], part['fs'],
 								part['boot']
-							)
 						)
 
 						cmd += u'%s,%s,%s' % (part['cylStart'], part['cylSize'], part['type'])
@@ -1868,7 +1851,7 @@ class Harddisk:
 					if part['boot']:
 						cmd += u',*'
 				except Exception as e:
-					logger.debug(u"Partition %d not found: %s" % ((p+1), e))
+					logger.debug(u"Partition %d not found: %s", (p+1), e)
 					cmd += u'0,0'
 
 				cmd += u'\n'
@@ -1901,7 +1884,7 @@ class Harddisk:
 	def _forceReReadPartionTable(self):
 		if self.ldPreload:
 			os.putenv("LD_PRELOAD", self.ldPreload)
-		logger.info(u"Forcing kernel to reread partition table of '%s'." % self.device)
+		logger.info(u"Forcing kernel to reread partition table of '%s'.", self.device)
 		try:
 			execute(u'%s %s' % (which('partprobe'), self.device))
 		except Exception:
@@ -1916,7 +1899,7 @@ class Harddisk:
 			os.unsetenv("LD_PRELOAD")
 
 	def deletePartitionTable(self):
-		logger.info(u"Deleting partition table on '%s'" % self.device)
+		logger.info(u"Deleting partition table on '%s'", self.device)
 		for hook in hooks:
 			hook.pre_Harddisk_deletePartitionTable(self)
 		try:
@@ -1958,18 +1941,18 @@ class Harddisk:
 				progressSubject.setEnd(100)
 
 			for line in iter(lambda: handle.readline().strip(), ''):
-				logger.debug(u"From shred =>>> %s" % line)
+				logger.debug(u"From shred =>>> %s", line)
 				# shred: /dev/xyz: Pass 1/25 (random)...232MiB/512MiB 45%
 				match = re.search(lineRegex, line)
 				if match:
 					iteration = forceInt(match.group(1))
 					dataType = match.group(3)
-					logger.debug(u"Iteration: %d, data-type: %s" % (iteration, dataType))
+					logger.debug(u"Iteration: %d, data-type: %s", iteration, dataType)
 					match = re.search(posRegex, match.group(4))
 					if match:
 						position = match.group(1) + '/' + match.group(2)
 						percent = forceInt(match.group(3))
-						logger.debug(u"Position: %s, percent: %d" % (position, percent))
+						logger.debug(u"Position: %s, percent: %d", position, percent)
 						if progressSubject and (percent != progressSubject.getState()):
 							progressSubject.setState(percent)
 							progressSubject.setMessage(u"Pass %d/%d (%s), position: %s" \
@@ -1978,7 +1961,7 @@ class Harddisk:
 					error = line
 
 			ret = handle.close()
-			logger.debug(u"Exit code: %s" % ret)
+			logger.debug(u"Exit code: %s", ret)
 
 			if ret:
 				raise RuntimeError(u"Command '%s' failed: %s" % (cmd, error))
@@ -2059,7 +2042,7 @@ class Harddisk:
 					if match:
 						position = forceInt(match.group(1))
 						percent = (position * 100) / xfermax
-						logger.debug(u"Position: %s, xfermax: %s, percent: %s" % (position, xfermax, percent))
+						logger.debug(u"Position: %s, xfermax: %s, percent: %s", position, xfermax, percent)
 						if percent != progressSubject.getState():
 							progressSubject.setState(percent)
 							progressSubject.setMessage(u"Pos: %s MB, average transfer rate: %s kB/s" % (round((position) / 1024), rate))
@@ -2126,7 +2109,7 @@ class Harddisk:
 			elif system in (u'dos', u'winnt'):
 				mbrType = u'--mbrdos'
 
-			logger.info(u"Writing master boot record on '%s' (system: %s)" % (self.device, system))
+			logger.info(u"Writing master boot record on '%s' (system: %s)", self.device, system)
 
 			cmd = u"%s %s %s" % (which('ms-sys'), mbrType, self.device)
 			try:
@@ -2136,7 +2119,7 @@ class Harddisk:
 				if self.ldPreload:
 					os.unsetenv("LD_PRELOAD")
 			except Exception as e:
-				logger.error(u"Failed to write mbr: %s" % e)
+				logger.error(u"Failed to write mbr: %s", e)
 				raise RuntimeError(u"Failed to write mbr: %s" % e)
 		except Exception as e:
 			for hook in hooks:
@@ -2170,7 +2153,7 @@ class Harddisk:
 			partition = forceInt(partition)
 			fsType = forceUnicodeLower(fsType)
 
-			logger.info(u"Writing partition boot record on '%s' (fs-type: %s)" % (self.getPartition(partition)['device'], fsType))
+			logger.info(u"Writing partition boot record on '%s' (fs-type: %s)", self.getPartition(partition)['device'], fsType)
 
 			if fsType == u'auto':
 				fsType = u'-w'
@@ -2189,7 +2172,7 @@ class Harddisk:
 				if u'successfully' not in result[0]:
 					raise RuntimeError(result)
 			except Exception as e:
-				logger.error(u"Cannot write partition boot record: %s" % e)
+				logger.error(u"Cannot write partition boot record: %s", e)
 				raise RuntimeError(u"Cannot write partition boot record: %s" % e)
 		except Exception as e:
 			for hook in hooks:
@@ -2214,11 +2197,10 @@ class Harddisk:
 					raise RuntimeError(err)
 
 			logger.info(
-				u"Setting Partition start sector to {0} in NTFS boot record "
-				u"on partition '{1}'".format(
+				u"Setting Partition start sector to %s in NTFS boot record "
+				u"on partition '%s'",
 					sector,
 					self.getPartition(partition)['device']
-				)
 			)
 
 			x = [0, 0, 0, 0]
@@ -2232,17 +2214,17 @@ class Harddisk:
 				os.lseek(hd, 0x1c, 0)
 				start = os.read(hd, 4)
 				logger.debug(
-					u"NTFS Boot Record currently using {0} {1} {2} {3} "
-					u"as partition start sector".format(
+					u"NTFS Boot Record currently using %s %s %s %s "
+					u"as partition start sector",
 						hex(ord(start[0])), hex(ord(start[1])),
-						hex(ord(start[2])), hex(ord(start[3])))
+						hex(ord(start[2])), hex(ord(start[3]))
 				)
 			finally:
 				os.close(hd)
 
 			logger.debug(u"Manipulating NTFS Boot Record!")
 			hd = os.open(self.getPartition(partition)['device'], os.O_WRONLY)
-			logger.info(u"Writing new value %s %s %s %s at 0x1c" % (hex(x[0]), hex(x[1]), hex(x[2]), hex(x[3])))
+			logger.info(u"Writing new value %s %s %s %s at 0x1c", hex(x[0]), hex(x[1]), hex(x[2]), hex(x[3]))
 			try:
 				os.lseek(hd, 0x1c, 0)
 				for i in x:
@@ -2255,10 +2237,10 @@ class Harddisk:
 				os.lseek(hd, 0x1c, 0)
 				start = os.read(hd, 4)
 				logger.debug(
-					u"NTFS Boot Record now using {0} {1} {2} {3} as partition "
-					u"start sector".format(
+					u"NTFS Boot Record now using %s %s %s %s as partition "
+					u"start sector"
 						hex(ord(start[0])), hex(ord(start[1])),
-						hex(ord(start[2])), hex(ord(start[3])))
+						hex(ord(start[2])), hex(ord(start[3]))
 				)
 			finally:
 				os.close(hd)
@@ -2449,8 +2431,9 @@ class Harddisk:
 					start = 2048
 
 			if unit == 'sec':
-				logger.info(u"Creating partition on '%s': number: %s, type '%s', filesystem '%s', start: %s sec, end: %s sec." \
-							% (self.device, number, type, fs, start, end))
+				logger.info(u"Creating partition on '%s': number: %s, type '%s', filesystem '%s', start: %s sec, end: %s sec.",
+					self.device, number, type, fs, start, end
+				)
 
 				if number < 1 or number > 4:
 					raise ValueError(u'Cannot create partition %s' % number)
@@ -2471,8 +2454,9 @@ class Harddisk:
 					}
 				)
 			else:
-				logger.info(u"Creating partition on '%s': number: %s, type '%s', filesystem '%s', start: %s cyl, end: %s cyl." \
-							% (self.device, number, type, fs, start, end))
+				logger.info(u"Creating partition on '%s': number: %s, type '%s', filesystem '%s', start: %s cyl, end: %s cyl.",
+					self.device, number, type, fs, start, end
+				)
 
 				if number < 1 or number > 4:
 					raise ValueError(u'Cannot create partition %s' % number)
@@ -2509,7 +2493,7 @@ class Harddisk:
 		try:
 			partition = forceInt(partition)
 
-			logger.info("Deleting partition '%s' on '%s'" % (partition, self.device))
+			logger.info("Deleting partition '%s' on '%s'", partition, self.device)
 
 			partitions = []
 			exists = False
@@ -2522,7 +2506,7 @@ class Harddisk:
 					partitions.append(part)
 
 			if not exists:
-				logger.warning(u"Cannot delete non existing partition '%s'." % partition)
+				logger.warning(u"Cannot delete non existing partition '%s'.", partition)
 				return
 
 			self.partitions = partitions
@@ -2530,7 +2514,7 @@ class Harddisk:
 			self.writePartitionTable()
 			self.readPartitionTable()
 			if deleteDev:
-				logger.debug(u"Waiting for device '%s' to disappear" % deleteDev)
+				logger.debug(u"Waiting for device '%s' to disappear", deleteDev)
 				timeout = 5
 				while timeout > 0:
 					if not os.path.exists(deleteDev):
@@ -2587,7 +2571,7 @@ class Harddisk:
 			if fs not in (u'fat32', u'ntfs', u'linux-swap', u'ext2', u'ext3', u'ext4', u'reiserfs', u'reiser4', u'xfs'):
 				raise ValueError(u"Creation of filesystem '%s' not supported!" % fs)
 
-			logger.info(u"Creating filesystem '%s' on '%s'." % (fs, self.getPartition(partition)['device']))
+			logger.info(u"Creating filesystem '%s' on '%s'.", fs, self.getPartition(partition)['device'])
 
 			retries = 1
 			while retries <= 6:
@@ -2689,7 +2673,7 @@ class Harddisk:
 				pipe = imageFile
 				imageFile = u'-'
 
-			logger.info(u"Saving partition '%s' to partclone image '%s'" % (part['device'], imageFile))
+			logger.info(u"Saving partition '%s' to partclone image '%s'", part['device'], imageFile)
 
 			# "-f" will write images of "dirty" volumes too
 			# Better run chkdsk under windows before saving image!
@@ -2720,7 +2704,7 @@ class Harddisk:
 
 					for currentBuffer in islice(buf, len(buf) - 1):
 						try:
-							logger.debug(u" -->>> %s" % currentBuffer)
+							logger.debug(u" -->>> %s", currentBuffer)
 						except Exception:
 							pass
 
@@ -2751,7 +2735,7 @@ class Harddisk:
 								(k, v) = currentBuffer.split(':')
 								k = k.strip()
 								v = v.strip()
-								logger.info(u"Save image: %s: %s" % (k, v))
+								logger.info(u"Save image: %s: %s", k, v)
 								if progressSubject:
 									progressSubject.setMessage(u"%s: %s" % (k, v))
 								if 'used' in k.lower():
@@ -2764,7 +2748,7 @@ class Harddisk:
 							if match:
 								percent = int("%0.f" % float(match.group(1)))
 								if progressSubject and percent != progressSubject.getState():
-									logger.debug(u" -->>> %s" % currentBuffer)
+									logger.debug(u" -->>> %s", currentBuffer)
 									progressSubject.setState(percent)
 
 					lastMsg = buf[-2]
@@ -2820,7 +2804,7 @@ class Harddisk:
 					pid = proc.pid
 
 					head = proc.stdout.read(128)
-					logger.debug(u"Read 128 Bytes from pipe '%s': %s" % (pipe, head.decode('ascii', 'replace')))
+					logger.debug(u"Read 128 Bytes from pipe '%s': %s", pipe, head.decode('ascii', 'replace'))
 
 					proc.stdout.close()
 					proc.stdin.close()
@@ -2835,16 +2819,16 @@ class Harddisk:
 									if line.startswith("PPid:"):
 										ppid = line.split()[1].strip()
 										if ppid == str(pid):
-											logger.info(u"Killing process %s" % p)
+											logger.info(u"Killing process %s", p)
 											os.kill(int(p), SIGKILL)
 
-						logger.info(u"Killing process %s" % pid)
+						logger.info(u"Killing process %s", pid)
 						os.kill(pid, SIGKILL)
 						time.sleep(1)
 				else:
 					with open(imageFile, 'r') as image:
 						head = image.read(128)
-						logger.debug(u"Read 128 Bytes from file '%s': %s" % (imageFile, head.decode('ascii', 'replace')))
+						logger.debug(u"Read 128 Bytes from file '%s': %s", imageFile, head.decode('ascii', 'replace'))
 
 				if 'ntfsclone-image' in head:
 					logger.notice(u"Image type is ntfsclone")
@@ -2862,8 +2846,9 @@ class Harddisk:
 				os.putenv("LD_PRELOAD", self.ldPreload)
 
 			if imageType == u'partclone':
-				logger.info(u"Restoring partclone image '%s' to '%s'" % \
-							(imageFile, self.getPartition(partition)['device']))
+				logger.info(u"Restoring partclone image '%s' to '%s'",
+					imageFile, self.getPartition(partition)['device']
+				)
 
 				cmd = u'%s %s --source %s --overwrite %s' % \
 								(pipe, which('partclone.restore'), imageFile, self.getPartition(partition)['device'])
@@ -2894,7 +2879,7 @@ class Harddisk:
 
 						for currentBuffer in islice(buf, len(buf) - 1):
 							try:
-								logger.debug(u" -->>> %s" % currentBuffer)
+								logger.debug(u" -->>> %s", currentBuffer)
 							except Exception:
 								pass
 
@@ -2907,7 +2892,7 @@ class Harddisk:
 									(k, v) = currentBuffer.split(':')
 									k = k.strip()
 									v = v.strip()
-									logger.info(u"Save image: %s: %s" % (k, v))
+									logger.info(u"Save image: %s: %s", k, v)
 									if progressSubject:
 										progressSubject.setMessage(u"%s: %s" % (k, v))
 									if 'file system' in k.lower():
@@ -2922,7 +2907,7 @@ class Harddisk:
 								if match:
 									percent = int("%0.f" % float(match.group(1)))
 									if progressSubject and percent != progressSubject.getState():
-										logger.debug(u" -->>> %s" % currentBuffer)
+										logger.debug(u" -->>> %s", currentBuffer)
 										progressSubject.setState(percent)
 
 						lastMsg = buf[-2]
@@ -2941,8 +2926,9 @@ class Harddisk:
 					handle.close()
 			else:
 				fs = 'ntfs'
-				logger.info(u"Restoring ntfsclone-image '%s' to '%s'" % \
-							(imageFile, self.getPartition(partition)['device']))
+				logger.info(u"Restoring ntfsclone-image '%s' to '%s'",
+					imageFile, self.getPartition(partition)['device']
+				)
 
 				cmd = u'%s %s --restore-image --overwrite %s %s' % \
 								(pipe, which('ntfsclone'), self.getPartition(partition)['device'], imageFile)
@@ -2980,10 +2966,10 @@ class Harddisk:
 							if match:
 								percent = int(match.group(1))
 								if progressSubject and percent != progressSubject.getState():
-									logger.debug(u" -->>> %s" % currentBuffer)
+									logger.debug(u" -->>> %s", currentBuffer)
 									progressSubject.setState(percent)
 							else:
-								logger.debug(u" -->>> %s" % currentBuffer)
+								logger.debug(u" -->>> %s", currentBuffer)
 
 						lastMsg = buf[-2]
 						buf[:-1] = []
@@ -3085,7 +3071,7 @@ def _checkForDistribution(name):
 		sysinfo = SysInfo()
 		return name.lower() in sysinfo.distribution.lower()
 	except Exception as error:
-		logger.debug("Failed to check for Distribution: {0}", error)
+		logger.debug("Failed to check for Distribution: %s", error)
 		return False
 
 
@@ -3257,7 +3243,7 @@ def hardwareExtendedInventory(config, opsiValues={}, progressSubject=None):
 
 		opsiName = hwClass['Class']['Opsi']
 
-		logger.debug(u"Processing class '%s'" % (opsiName))
+		logger.debug(u"Processing class '%s'", opsiName)
 
 		valuesregex = re.compile(r"(.*)#(.*)#")
 		for item in hwClass['Values']:
@@ -3280,7 +3266,7 @@ def hardwareExtendedInventory(config, opsiValues={}, progressSubject=None):
 							break
 
 					if not value:
-						logger.warning("The Value of your condition '%s' doesn't exists, please check your opsihwaudit.conf." % condition)
+						logger.warning("The Value of your condition '%s' doesn't exists, please check your opsihwaudit.conf.", condition)
 
 					if not conditionmatch:
 						continue
@@ -3363,14 +3349,14 @@ def hardwareInventory(config, progressSubject=None):
 		for card in os.listdir('/proc/asound'):
 			if not re.search(r'^card\d$', card):
 				continue
-			logger.debug(u"Found hdaudio card '%s'" % card)
+			logger.debug(u"Found hdaudio card '%s'", card)
 			for codec in os.listdir('/proc/asound/' + card):
 				if not re.search(r'^codec#\d$', codec):
 					continue
 				if not os.path.isfile('/proc/asound/' + card + '/' + codec):
 					continue
 				with open('/proc/asound/' + card + '/' + codec) as f:
-					logger.debug(u"   Found hdaudio codec '%s'" % codec)
+					logger.debug(u"   Found hdaudio codec '%s'", codec)
 					hdaudioId = card + codec
 					hdaudio[hdaudioId] = {}
 					for line in f:
@@ -3388,7 +3374,7 @@ def hardwareInventory(config, progressSubject=None):
 							hdaudio[hdaudioId]['subsystemDeviceId'] = forceHardwareDeviceId(sid[4:8])
 						elif line.startswith(u'Revision Id:'):
 							hdaudio[hdaudioId]['revision'] = line.split('x', 1)[1].strip()
-				logger.debug(u"      Codec info: '%s'" % hdaudio[hdaudioId])
+				logger.debug(u"      Codec info: '%s'", hdaudio[hdaudioId])
 
 	# Read output from lsusb
 	lsusb = {}
@@ -3418,7 +3404,7 @@ def hardwareInventory(config, progressSubject=None):
 				indent = -1
 				currentKey = None
 				status = False
-				logger.debug(u"Device: %s:%s" % (busId, devId))
+				logger.debug(u"Device: %s:%s", busId, devId)
 				# TODO: better key building.
 				lsusb[busId + ":" + devId] = {
 					'device': {},
@@ -3453,7 +3439,7 @@ def hardwareInventory(config, progressSubject=None):
 			match = re.search(descriptorRegex, line)
 			if match:
 				descriptor = match.group(2).strip().lower()
-				logger.debug(u"Descriptor: %s" % descriptor)
+				logger.debug(u"Descriptor: %s", descriptor)
 				if isinstance(lsusb[busId + ":" + devId][descriptor], list):
 					lsusb[busId + ":" + devId][descriptor].append({})
 				currentKey = None
@@ -3465,7 +3451,7 @@ def hardwareInventory(config, progressSubject=None):
 				continue
 
 			if descriptor not in lsusb[busId + ":" + devId]:
-				logger.error(u"Unknown descriptor '%s'" % descriptor)
+				logger.error(u"Unknown descriptor '%s'", descriptor)
 				continue
 
 			(key, value) = ('', '')
@@ -3483,7 +3469,7 @@ def hardwareInventory(config, progressSubject=None):
 						(key, value) = (match.group(2), match.group(3).strip())
 						indent = len(match.group(1))
 
-			logger.debug(u"key: '%s', value: '%s'" % (key, value))
+			logger.debug(u"key: '%s', value: '%s'", key, value)
 
 			if not key or not value:
 				continue
@@ -3541,7 +3527,7 @@ def hardwareInventory(config, progressSubject=None):
 							dmidecode[dmiType][-1][option] = []
 					dmidecode[dmiType][-1][option].append(removeUnit(line.strip()))
 		except Exception as e:
-			logger.error(u"Error while parsing dmidecode output '%s': %s" % (line.strip(), e))
+			logger.error(u"Error while parsing dmidecode output '%s': %s", line.strip(), e)
 	logger.debug2(u"Parsed dmidecode info:")
 	logger.debug2(objectToBeautifiedText(dmidecode))
 
@@ -3553,7 +3539,7 @@ def hardwareInventory(config, progressSubject=None):
 		opsiClass = hwClass['Class']['Opsi']
 		linuxClass = hwClass['Class']['Linux']
 
-		logger.debug(u"Processing class '%s' : '%s'" % (opsiClass, linuxClass))
+		logger.debug(u"Processing class '%s' : '%s'", opsiClass, linuxClass)
 
 		if linuxClass.startswith('[lshw]'):
 			# Get matching xml nodes
@@ -3566,7 +3552,7 @@ def hardwareInventory(config, progressSubject=None):
 					if ':' in hwid:
 						(hwid, filter) = hwid.split(':', 1)
 
-				logger.debug(u"Class is '%s', id is '%s', filter is: %s" % (hwClass, hwid, filter))
+				logger.debug(u"Class is '%s', id is '%s', filter is: %s", hwClass, hwid, filter)
 
 				devs = getElementsByAttributeValue(dom, 'node', 'class', hwclass)
 				for dev in devs:
@@ -3575,7 +3561,7 @@ def hardwareInventory(config, progressSubject=None):
 							if child.nodeName == "businfo":
 								busInfo = child.firstChild.data.strip()
 								if busInfo.startswith('pci@'):
-									logger.debug(u"Getting pci bus info for '%s'" % busInfo)
+									logger.debug(u"Getting pci bus info for '%s'", busInfo)
 									pciBusId = busInfo.split('@')[1]
 									if pciBusId.startswith('0000:'):
 										pciBusId = pciBusId[5:]
@@ -3611,7 +3597,7 @@ def hardwareInventory(config, progressSubject=None):
 											pass
 					devs = filtered
 
-				logger.debug2("Found matching devices: %s" % devs)
+				logger.debug2("Found matching devices: %s", devs)
 				devices.extend(devs)
 
 			# Process matching xml nodes
@@ -3628,7 +3614,7 @@ def hardwareInventory(config, progressSubject=None):
 					if not attribute.get('Opsi') or not attribute.get('Linux'):
 						continue
 
-					logger.debug2(u"Processing attribute '%s' : '%s'" % (attribute['Linux'], attribute['Opsi']))
+					logger.debug2(u"Processing attribute '%s' : '%s'", attribute['Linux'], attribute['Opsi'])
 					for attr in attribute['Linux'].split('||'):
 						attr = attr.strip()
 						method = None
@@ -3647,14 +3633,14 @@ def hardwareInventory(config, progressSubject=None):
 									except Exception:
 										pass
 							if not nextElements:
-								logger.warning(u"Attribute part '%s' not found" % part)
+								logger.warning(u"Attribute part '%s' not found", part)
 								break
 							elements = nextElements
 
 						if not data:
 							if not elements:
 								opsiValues[opsiClass][i][attribute['Opsi']] = ''
-								logger.warning(u"No data found for attribute '%s' : '%s'" % (attribute['Linux'], attribute['Opsi']))
+								logger.warning(u"No data found for attribute '%s' : '%s'", attribute['Linux'], attribute['Opsi'])
 								continue
 
 							for element in elements:
@@ -3666,11 +3652,11 @@ def hardwareInventory(config, progressSubject=None):
 									data = element.firstChild.data.strip()
 						if method and data:
 							try:
-								logger.debug(u"Eval: %s.%s" % (data, method))
+								logger.debug(u"Eval: %s.%s", data, method)
 								data = eval("data.%s" % method)
 							except Exception as e:
-								logger.error(u"Failed to excecute '%s.%s': %s" % (data, method, e))
-						logger.debug2(u"Data: %s" % data)
+								logger.error(u"Failed to excecute '%s.%s': %s", data, method, e)
+						logger.debug2(u"Data: %s", data)
 						opsiValues[opsiClass][i][attribute['Opsi']] = data
 						if data:
 							break
@@ -3700,11 +3686,11 @@ def hardwareInventory(config, progressSubject=None):
 								(aname, method) = aname.split('.', 1)
 							if method:
 								try:
-									logger.debug(u"Eval: %s.%s" % (dev.get(aname, ''), method))
+									logger.debug(u"Eval: %s.%s", dev.get(aname, ''), method)
 									device[attribute['Opsi']] = eval("dev.get(aname, '').%s" % method)
 								except Exception as e:
 									device[attribute['Opsi']] = u''
-									logger.error(u"Failed to excecute '%s.%s': %s" % (dev.get(aname, ''), method, e))
+									logger.error(u"Failed to excecute '%s.%s': %s", dev.get(aname, ''), method, e)
 							else:
 								device[attribute['Opsi']] = dev.get(aname)
 							if device[attribute['Opsi']]:
@@ -3743,7 +3729,7 @@ def hardwareInventory(config, progressSubject=None):
 							if '.' in key:
 								(key, method) = key.split('.', 1)
 							if not isinstance(value, dict) or key not in value:
-								logger.error(u"Key '%s' not found" % key)
+								logger.error(u"Key '%s' not found", key)
 								value = u''
 								break
 							value = value[key]
@@ -3870,9 +3856,7 @@ def getDHCPDRestartCommand(default=None):
 				service=which('service')
 			)
 		except Exception as err:
-			logger.debug(
-				"Ooops, getting the path to service failed: {0}".format(err)
-			)
+			logger.debug("Ooops, getting the path to service failed: %s", err)
 
 	locations = (
 		u"/etc/init.d/dhcpd",  # suse / redhat / centos
@@ -3887,7 +3871,7 @@ def getDHCPDRestartCommand(default=None):
 	if default is not None:
 		logger.debug(
 			u"Could not find dhcpd restart command but default is given. "
-			u"Making use of default: {0}".format(default)
+			u"Making use of default: %s", default
 		)
 		return default
 
@@ -3994,7 +3978,7 @@ Used for testing.
 		if match:
 			services.add(match.group('servicename').strip())
 
-	logger.debug(u"Found the following services: {0}".format(services))
+	logger.debug(u"Found the following services: %s", services)
 	return services
 
 
@@ -4076,14 +4060,14 @@ until the execution of the process is terminated.
 	waitForProcessEnding = forceBool(waitForProcessEnding)
 	timeoutSeconds = forceInt(timeoutSeconds)
 
-	logger.notice(u"Executing: '{0}'".format(command))
+	logger.notice(u"Executing: '%s'", command)
 	sp_env = os.environ.copy()
 	if getattr(sys, 'frozen', False):
 		# Running in pyinstaller / frozen
 		lp_orig = sp_env.get("LD_LIBRARY_PATH_ORIG")
 		if lp_orig is not None:
 			# Restore the original, unmodified value
-			logger.debug("Setting original LD_LIBRARY_PATH '%s' in env for subprocess" % lp_orig)
+			logger.debug("Setting original LD_LIBRARY_PATH '%s' in env for subprocess", lp_orig)
 			sp_env["LD_LIBRARY_PATH"] = lp_orig
 		else:
 			# This happens when LD_LIBRARY_PATH was not set.
@@ -4093,11 +4077,11 @@ until the execution of the process is terminated.
 
 	process = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=sp_env)
 
-	logger.info(u"Process started, pid: {0}".format(process.pid))
+	logger.info(u"Process started, pid: %s", process.pid)
 	if not waitForProcessEnding:
 		return (process, None, process.pid, None)
 
-	logger.info(u"Waiting for process ending: {0} (timeout: {1} seconds)".format(process.pid, timeoutSeconds))
+	logger.info(u"Waiting for process ending: %s (timeout: %s seconds)", process.pid, timeoutSeconds)
 	timeRunning = 0.0
 	while process.poll() is None:
 		if timeoutSeconds:
@@ -4111,7 +4095,7 @@ until the execution of the process is terminated.
 	l = logger.notice
 	if process.returncode != 0:
 		l = logger.warning
-	l("Process {0} ended with exit code {1}".format(process.pid, process.returncode))
+	l("Process %s ended with exit code %s", process.pid, process.returncode)
 	return (None, None, None, None)
 
 
@@ -4142,8 +4126,8 @@ def setLocalSystemTime(timestring):
 
 	try:
 		dt = datetime.datetime.strptime(timestring, '%Y-%m-%d %H:%M:%S.%f')
-		logger.info(u"Setting Systemtime Time to %s" % timestring)
+		logger.info(u"Setting Systemtime Time to %s", timestring)
 		systemTime = 'date --set="%s-%s-%s %s:%s:%s.%s"' % (dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second, dt.microsecond)
 		subprocess.call([systemTime])
 	except Exception as error:
-		logger.error(u"Failed to set System Time: %s" % error)
+		logger.error(u"Failed to set System Time: %s", error)

@@ -81,7 +81,7 @@ class ProductPackageFile:
 
 	def setClientDataDir(self, clientDataDir):
 		self.clientDataDir = os.path.abspath(forceFilename(clientDataDir))
-		logger.info(u"Client data dir set to '%s'" % self.clientDataDir)
+		logger.info(u"Client data dir set to '%s'", self.clientDataDir)
 
 	def getProductClientDataDir(self):
 		if not self.packageControlFile:
@@ -109,7 +109,7 @@ class ProductPackageFile:
 		for f in os.listdir(self.clientDataDir):
 			if f.lower() == productId.lower():
 				clientDataDir = os.path.join(self.clientDataDir, f)
-				logger.info("Deleting client data dir '%s'" % clientDataDir)
+				logger.info("Deleting client data dir '%s'", clientDataDir)
 				removeDirectory(clientDataDir)
 
 	def install(self, clientDataDir, suppressPackageContentFileGeneration=False):
@@ -135,7 +135,7 @@ class ProductPackageFile:
 		self.cleanup()
 
 	def unpackSource(self, destinationDir=u'.', newProductId=None, progressSubject=None):
-		logger.info(u"Extracting package source from '%s'" % self.packageFile)
+		logger.info(u"Extracting package source from '%s'", self.packageFile)
 		if progressSubject:
 			progressSubject.setMessage(_(u"Extracting package source from '%s'") % self.packageFile)
 
@@ -146,14 +146,14 @@ class ProductPackageFile:
 
 			archive = Archive(filename=self.packageFile, progressSubject=progressSubject)
 
-			logger.debug(u"Extracting source from package '%s' to: '%s'" % (self.packageFile, destinationDir))
+			logger.debug(u"Extracting source from package '%s' to: '%s'", self.packageFile, destinationDir)
 
 			if progressSubject:
 				progressSubject.setMessage(_(u'Extracting archives'))
 			archive.extract(targetPath=self.tmpUnpackDir)
 
 			for f in os.listdir(self.tmpUnpackDir):
-				logger.info(u"Processing file '%s'" % f)
+				logger.info(u"Processing file '%s'", f)
 				archiveName = u''
 				if f.endswith('.cpio.gz'):
 					archiveName = f[:-8]
@@ -166,7 +166,7 @@ class ProductPackageFile:
 				elif f.startswith('OPSI'):
 					continue
 				else:
-					logger.warning(u"Unknown content in archive: %s" % f)
+					logger.warning(u"Unknown content in archive: %s", f)
 					continue
 				archive = Archive(filename=os.path.join(self.tmpUnpackDir, f), progressSubject=progressSubject)
 				if progressSubject:
@@ -182,7 +182,7 @@ class ProductPackageFile:
 						continue
 					newScript = script.replace(product.id, newProductId)
 					if not os.path.exists(os.path.join(destinationDir, u'CLIENT_DATA', script)):
-						logger.warning(u"Script file '%s' not found" % os.path.join(destinationDir, u'CLIENT_DATA', script))
+						logger.warning(u"Script file '%s' not found", os.path.join(destinationDir, u'CLIENT_DATA', script))
 						continue
 					os.rename(os.path.join(destinationDir, u'CLIENT_DATA', script), os.path.join(destinationDir, u'CLIENT_DATA', newScript))
 					setattr(product, scriptName, newScript)
@@ -201,7 +201,7 @@ class ProductPackageFile:
 			# Already done
 			return
 
-		logger.info(u"Getting meta data from package '%s'" % self.packageFile)
+		logger.info(u"Getting meta data from package '%s'", self.packageFile)
 
 		try:
 			if not os.path.exists(self.tmpUnpackDir):
@@ -211,15 +211,15 @@ class ProductPackageFile:
 			metaDataTmpDir = os.path.join(self.tmpUnpackDir, u'OPSI')
 			archive = Archive(self.packageFile)
 
-			logger.debug(u"Extracting meta data from package '%s' to: '%s'" % (self.packageFile, metaDataTmpDir))
+			logger.debug(u"Extracting meta data from package '%s' to: '%s'", self.packageFile, metaDataTmpDir)
 			archive.extract(targetPath=metaDataTmpDir, patterns=[u"OPSI*"])
 
 			metadataArchives = []
 			for f in os.listdir(metaDataTmpDir):
 				if not f.endswith((u'.cpio.gz', u'.tar.gz', u'.cpio', u'.tar')):
-					logger.warning(u"Unknown content in archive: %s" % f)
+					logger.warning(u"Unknown content in archive: %s", f)
 					continue
-				logger.debug(u"Metadata archive found: %s" % f)
+				logger.debug(u"Metadata archive found: %s", f)
 				metadataArchives.append(f)
 			if not metadataArchives:
 				raise ValueError(u"No metadata archive found")
@@ -244,11 +244,11 @@ class ProductPackageFile:
 			logger.logException(e)
 			self.cleanup()
 			raise RuntimeError(u"Failed to get metadata from package '%s': %s" % (self.packageFile, e))
-		logger.debug(u"Got meta data from package '%s'" % self.packageFile)
+		logger.debug(u"Got meta data from package '%s'", self.packageFile)
 		return self.packageControlFile
 
 	def extractData(self):
-		logger.info(u"Extracting data from package '%s'" % self.packageFile)
+		logger.info(u"Extracting data from package '%s'", self.packageFile)
 
 		try:
 			if not self.packageControlFile:
@@ -261,7 +261,7 @@ class ProductPackageFile:
 
 			archive = Archive(self.packageFile)
 
-			logger.info(u"Extracting data from package '%s' to: '%s'" % (self.packageFile, self.tmpUnpackDir))
+			logger.info(u"Extracting data from package '%s' to: '%s'", self.packageFile, self.tmpUnpackDir)
 			archive.extract(targetPath=self.tmpUnpackDir, patterns=[u"CLIENT_DATA*", u"SERVER_DATA*"])
 
 			clientDataArchives = []
@@ -271,14 +271,14 @@ class ProductPackageFile:
 					continue
 
 				if not f.endswith((u'.cpio.gz', u'.tar.gz', u'.cpio', u'.tar')):
-					logger.warning(u"Unknown content in archive: %s" % f)
+					logger.warning(u"Unknown content in archive: %s", f)
 					continue
 
 				if f.startswith('CLIENT_DATA'):
-					logger.debug(u"Client-data archive found: %s" % f)
+					logger.debug(u"Client-data archive found: %s", f)
 					clientDataArchives.append(f)
 				elif f.startswith('SERVER_DATA'):
-					logger.debug(u"Server-data archive found: %s" % f)
+					logger.debug(u"Server-data archive found: %s", f)
 					serverDataArchives.append(f)
 
 			if not clientDataArchives:
@@ -308,7 +308,7 @@ class ProductPackageFile:
 
 			for clientDataArchive in clientDataArchives:
 				archiveFile = os.path.join(self.tmpUnpackDir, clientDataArchive)
-				logger.info(u"Extracting client-data archive '%s' to '%s'" % (archiveFile, productClientDataDir))
+				logger.info(u"Extracting client-data archive '%s' to '%s'", archiveFile, productClientDataDir)
 				archive = Archive(archiveFile)
 				archive.extract(targetPath=productClientDataDir)
 
@@ -353,7 +353,7 @@ class ProductPackageFile:
 				try:
 					if os.path.islink(path):
 						continue
-					logger.debug(u"Setting owner of '%s' to '%s:%s'" % (path, uid, gid))
+					logger.debug(u"Setting owner of '%s' to '%s:%s'", path, uid, gid)
 					os.chown(path, uid, gid)
 				except Exception as e:
 					raise RuntimeError(u"Failed to change owner of '%s' to '%s:%s': %s" % (path, uid, gid, e))
@@ -363,10 +363,10 @@ class ProductPackageFile:
 					if os.path.islink(path):
 						continue
 					elif os.path.isdir(path):
-						logger.debug(u"Setting rights on directory '%s'" % path)
+						logger.debug(u"Setting rights on directory '%s'", path)
 						mode = 0o2770
 					elif os.path.isfile(path):
-						logger.debug(u"Setting rights on file '%s'" % path)
+						logger.debug(u"Setting rights on file '%s'", path)
 						mode = (os.stat(path)[0] | 0o660) & 0o770
 
 					if mode is not None:
@@ -418,7 +418,7 @@ class ProductPackageFile:
 			raise RuntimeError(u"Failed to create package content file of package '%s': %s" % (self.packageFile, e))
 
 	def _runPackageScript(self, scriptName, env={}):
-		logger.info(u"Attempt to run package script {0!r}", scriptName)
+		logger.info(u"Attempt to run package script %s", scriptName)
 		try:
 			if not self.packageControlFile:
 				raise ValueError(u"Metadata not present")
@@ -428,10 +428,10 @@ class ProductPackageFile:
 
 			script = os.path.join(self.tmpUnpackDir, u'OPSI', scriptName)
 			if not os.path.exists(script):
-				logger.info(u"Package script '%s' not found" % scriptName)
+				logger.info(u"Package script '%s' not found", scriptName)
 				return []
 
-			logger.notice(u"Running package script '%s'" % scriptName)
+			logger.notice(u"Running package script '%s'", scriptName)
 			os.chmod(script, 0o700)
 
 			os.putenv('PRODUCT_ID', self.packageControlFile.getProduct().getId())
@@ -448,7 +448,7 @@ class ProductPackageFile:
 			self.cleanup()
 			raise RuntimeError(u"Failed to execute package script '%s' of package '%s': %s" % (scriptName, self.packageFile, error))
 		finally:
-			logger.debug(u"Finished running package script {0!r}".format(scriptName))
+			logger.debug(u"Finished running package script %s", scriptName)
 
 	def runPreinst(self, env={}):
 		return self._runPackageScript(u'preinst', env=env)
@@ -550,7 +550,7 @@ class ProductPackageSource:
 			# Try to define diskusage from Sourcedirectory to prevent a override from cpio sizelimit.
 			for d in dirs:
 				if not os.path.exists(os.path.join(self.packageSourceDir, d)) and d != u'OPSI':
-					logger.info(u"Directory '%s' does not exist" % os.path.join(self.packageSourceDir, d))
+					logger.info(u"Directory '%s' does not exist", os.path.join(self.packageSourceDir, d))
 					continue
 				fileList = findFiles(
 					os.path.join(self.packageSourceDir, d),
@@ -567,7 +567,7 @@ class ProductPackageSource:
 
 			for d in dirs:
 				if not os.path.exists(os.path.join(self.packageSourceDir, d)) and d != u'OPSI':
-					logger.info(u"Directory '%s' does not exist" % os.path.join(self.packageSourceDir, d))
+					logger.info(u"Directory '%s' does not exist", os.path.join(self.packageSourceDir, d))
 					continue
 
 				fileList = findFiles(
@@ -581,14 +581,14 @@ class ProductPackageSource:
 					tmp = []
 					for f in fileList:
 						if f.find(os.sep) == -1:
-							logger.info(u"Skipping dir '%s'" % f)
+							logger.info(u"Skipping dir '%s'", f)
 							continue
 						tmp.append(f)
 
 					fileList = tmp
 
 				if not fileList:
-					logger.notice(u"Skipping empty dir '%s'" % os.path.join(self.packageSourceDir, d))
+					logger.notice(u"Skipping empty dir '%s'", os.path.join(self.packageSourceDir, d))
 					continue
 
 				filename = os.path.join(self.tmpPackDir, u'%s.%s' % (d, self.format))
