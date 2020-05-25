@@ -28,6 +28,7 @@ import subprocess
 from OPSI.Config import OPSI_ADMIN_GROUP, FILE_ADMIN_GROUP, DEFAULT_DEPOT_USER
 from OPSI.Logger import Logger
 from OPSI.System import get_subprocess_environment
+from OPSI.Util.Task.Rights import setRights
 
 logger = Logger()
 
@@ -96,6 +97,7 @@ def setup_users_and_groups():
 		users = get_users()
 
 def setup_file_permissions():
+	setRights()
 	groups = get_groups()
 	if "shadow" in groups:
 		os.chown(path="/etc/shadow", uid=0, gid=groups["shadow"].gr_gid)
