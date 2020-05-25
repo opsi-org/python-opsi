@@ -89,7 +89,7 @@ class BaseArchive:
 
 	def _extract(self, command, fileCount):
 		try:
-			logger.info(u"Executing: %s" % command)
+			logger.info(u"Executing: %s", command)
 			proc = subprocess.Popen(
 				command,
 				shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
@@ -128,7 +128,7 @@ class BaseArchive:
 					time.sleep(0.001)
 				ret = proc.poll()
 
-			logger.info(u"Exit code: %s" % ret)
+			logger.info(u"Exit code: %s", ret)
 
 			if ret != 0:
 				logger.error(error)
@@ -146,7 +146,7 @@ class BaseArchive:
 			raise IOError(u"Base dir '%s' not found" % baseDir)
 
 		with cd(baseDir):
-			logger.info(u"Executing: %s" % command)
+			logger.info(u"Executing: %s", command)
 			proc = subprocess.Popen(command,
 				shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
 				stderr=subprocess.PIPE
@@ -217,7 +217,7 @@ class BaseArchive:
 				except Exception:
 					pass
 
-			logger.info(u"Exit code: %s" % ret)
+			logger.info(u"Exit code: %s", ret)
 
 			if ret != 0:
 				error = error.decode()
@@ -240,9 +240,9 @@ class PigzMixin:
 		def is_correct_pigz_version():
 			ver = System.execute('pigz --version')[0][5:]
 
-			logger.debug('Detected pigz version: %s' % (ver, ))
+			logger.debug('Detected pigz version: %s', ver)
 			versionMatches = compareVersions(ver, '>=', '2.2.3')
-			logger.debug('pigz version is compatible? %s' % (versionMatches))
+			logger.debug('pigz version is compatible? %s', versionMatches)
 			return versionMatches
 
 		if not PIGZ_ENABLED:

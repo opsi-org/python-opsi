@@ -77,14 +77,14 @@ class DepotserverBackend(ExtendedBackend):
 					with open(hashFile) as fileHandle:
 						checksum = fileHandle.read()
 
-					logger.info(u"Using pre-calculated MD5sum from '{0}'.", hashFile)
+					logger.info(u"Using pre-calculated MD5sum from '%s'.", hashFile)
 				except (OSError, IOError):
 					pass
 
 			if not checksum:
 				checksum = md5sum(filename)
 
-			logger.info(u"MD5sum of file '{0}' is '{1}'", filename, checksum)
+			logger.info(u"MD5sum of file '%s' is '%s'", filename, checksum)
 			return checksum
 		except Exception as error:
 			raise BackendIOError(u"Failed to get md5sum: %s" % error)
@@ -135,7 +135,7 @@ class DepotserverBackend(ExtendedBackend):
 	def depot_createMd5SumFile(self, filename, md5sumFilename):
 		if not os.path.exists(filename):
 			raise BackendIOError(u"File not found: %s" % filename)
-		logger.info(u"Creating md5sum file '%s'" % md5sumFilename)
+		logger.info(u"Creating md5sum file '%s'", md5sumFilename)
 		md5 = md5sum(filename)
 		with open(md5sumFilename, 'w') as md5file:
 			md5file.write(md5)
@@ -143,7 +143,7 @@ class DepotserverBackend(ExtendedBackend):
 	def depot_createZsyncFile(self, filename, zsyncFilename):
 		if not os.path.exists(filename):
 			raise BackendIOError(u"File not found: %s" % filename)
-		logger.info(u"Creating zsync file '%s'" % zsyncFilename)
+		logger.info(u"Creating zsync file '%s'", zsyncFilename)
 		zsyncFile = ZsyncFile(zsyncFilename)
 		zsyncFile.generate(filename)
 
@@ -182,23 +182,23 @@ class DepotserverPackageManager:
 				try:
 					ppf.cleanup()
 				except Exception as cleanupError:
-					logger.error("Cleanup failed: {0!r}", cleanupError)
+					logger.error("Cleanup failed: %s", cleanupError)
 
 		@contextmanager
 		def lockProduct(backend, product, depotId, forceInstallation):
 			productId = product.getId()
-			logger.debug("Checking for locked product '{}' on depot '{}'", productId, depotId)
+			logger.debug("Checking for locked product '%s' on depot '%s'", productId, depotId)
 			productOnDepots = backend.productOnDepot_getObjects(depotId=depotId, productId=productId)
 			try:
 				if productOnDepots[0].getLocked():
-					logger.notice(u"Product '{0}' currently locked on depot '{1}'", productId, depotId)
+					logger.notice(u"Product '%s' currently locked on depot '%s'", productId, depotId)
 					if not forceInstallation:
 						raise BackendTemporaryError(u"Product '{}' currently locked on depot '{}'".format(productId, depotId))
 					logger.warning(u"Installation of locked product forced")
 			except IndexError:
 				pass
 
-			logger.notice(u"Locking product '{0}' on depot '{1}'", productId, depotId)
+			logger.notice(u"Locking product '%s' on depot '%s'", productId, depotId)
 			productOnDepot = ProductOnDepot(
 				productId=productId,
 				productType=product.getType(),
@@ -207,17 +207,17 @@ class DepotserverPackageManager:
 				depotId=depotId,
 				locked=True
 			)
-			logger.info(u"Creating product on depot {0}", productOnDepot)
+			logger.info(u"Creating product on depot %s", productOnDepot)
 			backend.productOnDepot_createObjects(productOnDepot)
 
 			try:
 				yield productOnDepot
 			except Exception as err:
-				logger.warning("Installation error. Not unlocking product '{}' on depot '{}'.", productId, depotId)
+				logger.warning("Installation error. Not unlocking product '%s' on depot '%s'.", productId, depotId)
 				raise err
 
 			logger.notice(
-				u"Unlocking product '{0}' {1}-{2} on depot '{3}'",
+				u"Unlocking product '%s' %s-%s on depot '%s'",
 				productOnDepot.getProductId(),
 				productOnDepot.getProductVersion(),
 				productOnDepot.getPackageVersion(),
@@ -230,13 +230,13 @@ class DepotserverPackageManager:
 		def runPackageScripts(productPackageFile, depotId):
 			logger.info(u"Running preinst script")
 			for line in productPackageFile.runPreinst(({'DEPOT_ID': depotId})):
-				logger.info(u"[preinst] {0}", line)
+				logger.info(u"[preinst] %s", line)
 
 			yield
 
 			logger.info(u"Running postinst script")
 			for line in productPackageFile.runPostinst({'DEPOT_ID': depotId}):
-				logger.info(u"[postinst] {0}", line)
+				logger.info(u"[postinst] %s", line)
 
 		def cleanUpProducts(backend, productId):
 			productIdents = set()
@@ -304,11 +304,11 @@ class DepotserverPackageManager:
 
 						if changed:
 							if not newValues:
-								logger.debug(u"Properties changed: marking productPropertyState {0} for deletion", productPropertyState)
+								logger.debug(u"Properties changed: marking productPropertyState %s for deletion", productPropertyState)
 								deleteProductPropertyStates.append(productPropertyState)
 							else:
 								productPropertyState.setValues(newValues)
-								logger.debug(u"Properties changed: marking productPropertyState {0} for update", productPropertyState)
+								logger.debug(u"Properties changed: marking productPropertyState %s for update", productPropertyState)
 								updateProductPropertyStates.append(productPropertyState)
 
 					if deleteProductPropertyStates:
@@ -320,9 +320,9 @@ class DepotserverPackageManager:
 		logger.info(u"=================================================================================================")
 		if forceProductId:
 			forceProductId = forceProductIdFunc(forceProductId)
-			logger.notice(u"Installing package file '{0}' as '{1}' on depot '{2}'", filename, forceProductId, depotId)
+			logger.notice(u"Installing package file '%s' as '%s' on depot '%s'", filename, forceProductId, depotId)
 		else:
-			logger.notice(u"Installing package file '{0}' on depot '{1}'", filename, depotId)
+			logger.notice(u"Installing package file '%s' on depot '%s'", filename, depotId)
 
 		try:
 			filename = forceFilename(filename)
@@ -348,7 +348,7 @@ class DepotserverPackageManager:
 				with productPackageFile(filename, tempDir, depotId) as ppf:
 					product = ppf.packageControlFile.getProduct()
 					if forceProductId:
-						logger.info(u"Forcing product id '{0}'", forceProductId)
+						logger.info(u"Forcing product id '%s'", forceProductId)
 						product.setId(forceProductId)
 						ppf.packageControlFile.setProduct(product)
 
@@ -368,7 +368,7 @@ class DepotserverPackageManager:
 							logger.info(u"Unpacking package files")
 							ppf.extractData()
 
-							logger.info(u"Updating product dependencies of product %s" % product)
+							logger.info(u"Updating product dependencies of product %s", product)
 							currentProductDependencies = {}
 							for productDependency in dataBackend.productDependency_getObjects(
 										productId=productId,
@@ -395,7 +395,7 @@ class DepotserverPackageManager:
 									currentProductDependencies.values()
 								)
 
-							logger.info(u"Updating product properties of product %s" % product)
+							logger.info(u"Updating product properties of product %s", product)
 							currentProductProperties = {}
 							productProperties = []
 							for productProperty in dataBackend.productProperty_getObjects(
@@ -436,7 +436,7 @@ class DepotserverPackageManager:
 									currentProductProperties.values()
 								)
 
-							logger.info(u"Deleting product property states of product %s on depot '%s'" % (productId, depotId))
+							logger.info(u"Deleting product property states of product %s on depot '%s'", productId, depotId)
 							dataBackend.productPropertyState_deleteObjects(
 								dataBackend.productPropertyState_getObjects(
 									productId=productId,
@@ -444,7 +444,7 @@ class DepotserverPackageManager:
 								)
 							)
 
-							logger.info(u"Deleting not needed property states of product %s" % productId)
+							logger.info(u"Deleting not needed property states of product %s", productId)
 							productPropertyStates = dataBackend.productPropertyState_getObjects(productId=productId)
 							baseProperties = dataBackend.productProperty_getObjects(productId=productId)
 
@@ -452,7 +452,7 @@ class DepotserverPackageManager:
 							productPropertyStatesToDelete = None
 							productPropertyIds = [productProperty.propertyId for productProperty in baseProperties]
 							productPropertyStatesToDelete = [ppState for ppState in productPropertyStates if ppState.propertyId not in productPropertyIds]
-							logger.debug(u"Following productPropertyStates are marked to delete: '%s'" % productPropertyStatesToDelete)
+							logger.debug(u"Following productPropertyStates are marked to delete: '%s'", productPropertyStatesToDelete)
 							if productPropertyStatesToDelete:
 								dataBackend.productPropertyState_deleteObjects(productPropertyStatesToDelete)
 
@@ -472,7 +472,7 @@ class DepotserverPackageManager:
 										productPropertyState.setValues(propertyDefaultValues[productPropertyState.propertyId])
 									except Exception as installationError:
 										logger.error(
-											u"Failed to set default values to {0} for productPropertyState {1}: {2}",
+											u"Failed to set default values to %s for productPropertyState %s: %s",
 											propertyDefaultValues[productPropertyState.propertyId],
 											productPropertyState,
 											installationError
@@ -487,7 +487,7 @@ class DepotserverPackageManager:
 				cleanUpProducts(dataBackend, productOnDepot.productId)
 				cleanUpProductPropertyStates(dataBackend, productProperties, depotId, productOnDepot)
 			except Exception as installingPackageError:
-				logger.debug(u"Failed to install the package {!r}", filename)
+				logger.debug(u"Failed to install the package %s", filename)
 				logger.logException(installingPackageError, logLevel=LOG_DEBUG)
 				raise installingPackageError
 		except Exception as installationError:
@@ -497,7 +497,7 @@ class DepotserverPackageManager:
 	def uninstallPackage(self, productId, force=False, deleteFiles=True):
 		depotId = self._depotBackend._depotId
 		logger.info(u"=================================================================================================")
-		logger.notice(u"Uninstalling product '%s' on depot '%s'" % (productId, depotId))
+		logger.notice(u"Uninstalling product '%s' on depot '%s'", productId, depotId)
 		try:
 			productId = forceProductIdFunc(productId)
 			force = forceBool(force)
@@ -512,16 +512,16 @@ class DepotserverPackageManager:
 				raise BackendBadValueError("Product '%s' is not installed on depot '%s'" % (productId, depotId))
 
 			if productOnDepot.getLocked():
-				logger.notice(u"Product '{}' currently locked on depot '{}'", productId, depotId)
+				logger.notice(u"Product '%s' currently locked on depot '%s'", productId, depotId)
 				if not force:
 					raise BackendTemporaryError(u"Product '%s' currently locked on depot '%s'" % (productId, depotId))
 				logger.warning(u"Uninstallation of locked product forced")
 
-			logger.notice(u"Locking product '%s' on depot '%s'" % (productId, depotId))
+			logger.notice(u"Locking product '%s' on depot '%s'", productId, depotId)
 			productOnDepot.setLocked(True)
 			dataBackend.productOnDepot_updateObject(productOnDepot)
 
-			logger.debug("Deleting product '{}'", productId)
+			logger.debug("Deleting product '%s'", productId)
 
 			if deleteFiles:
 				if not depot.depotLocalUrl.startswith('file:///'):
@@ -530,7 +530,7 @@ class DepotserverPackageManager:
 				for element in os.listdir(depot.depotLocalUrl[7:]):
 					if element.lower() == productId.lower():
 						clientDataDir = os.path.join(depot.depotLocalUrl[7:], element)
-						logger.info("Deleting client data dir '{}'", clientDataDir)
+						logger.info("Deleting client data dir '%s'", clientDataDir)
 						removeDirectory(clientDataDir)
 
 			dataBackend.productOnDepot_deleteObjects(productOnDepot)
@@ -545,13 +545,13 @@ class DepotserverPackageManager:
 				raise BackendUnaccomplishableError(u"Dependent package '%s' not installed" % dependency['package'])
 
 			if not dependency['version']:
-				logger.info(u"Fulfilled product dependency '%s'" % dependency)
+				logger.info(u"Fulfilled product dependency '%s'", dependency)
 				continue
 
 			productOnDepot = productOnDepots[0]
 			availableVersion = productOnDepot.getProductVersion() + u'-' + productOnDepot.getPackageVersion()
 
 			if compareVersions(availableVersion, dependency['condition'], dependency['version']):
-				logger.info(u"Fulfilled package dependency %s (available version: %s)" % (dependency, availableVersion))
+				logger.info(u"Fulfilled package dependency %s (available version: %s)", dependency, availableVersion)
 			else:
 				raise BackendUnaccomplishableError(u"Unfulfilled package dependency %s (available version: %s)" % (dependency, availableVersion))

@@ -179,7 +179,7 @@ def getArchitecture():
 		else:
 			return u'x86'
 	except Exception as e:
-		logger.error("Error determining OS-Architecture: '{0}'; returning default: 'x86'".format(e))
+		logger.error("Error determining OS-Architecture: '%s'; returning default: 'x86'", e)
 		return u'x86'
 
 
@@ -279,7 +279,7 @@ def getFileVersionInfo(filename):
 		'ProductName': forceUnicode(win32api.GetFileVersionInfo(filename, path % 'ProductName')),
 		'ProductVersion': forceUnicode(win32api.GetFileVersionInfo(filename, path % 'ProductVersion'))
 	}
-	logger.debug(u"File version info for '%s': %s" % (filename, info))
+	logger.debug(u"File version info for '%s': %s", filename, info)
 	return info
 
 
@@ -384,7 +384,9 @@ class NetworkPerformanceCounter(threading.Thread):
 
 		for i in range(iftable.dwNumEntries):
 			ratio = difflib.SequenceMatcher(None, iftable.table[i].bDescr, interface).ratio()
-			logger.info(u"NetworkPerformanceCounter: searching for interface '%s', got interface '%s', match ratio: %s" % (interface, iftable.table[i].bDescr, ratio))
+			logger.info(u"NetworkPerformanceCounter: searching for interface '%s', got interface '%s', match ratio: %s",
+				interface, iftable.table[i].bDescr, ratio
+			)
 			if ratio > bestRatio:
 				bestRatio = ratio
 				self.interface = iftable.table[i].bDescr
@@ -392,7 +394,7 @@ class NetworkPerformanceCounter(threading.Thread):
 		if not self.interface:
 			raise ValueError(u"Network interface '%s' not found" % interface)
 
-		logger.info(u"NetworkPerformanceCounter: using interface '%s' match ratio (%s)" % (self.interface, bestRatio))
+		logger.info(u"NetworkPerformanceCounter: using interface '%s' match ratio (%s)", self.interface, bestRatio)
 		self.start()
 
 	def __del__(self):
@@ -475,11 +477,13 @@ class NetworkPerformanceCounterWMI(threading.Thread):
 			bestRatio = 0.0
 			for instance in self.wmi.Win32_PerfRawData_Tcpip_NetworkInterface():
 				ratio = difflib.SequenceMatcher(None, instance.Name, interface).ratio()
-				logger.info(u"NetworkPerformanceCounter: searching for interface '%s', got interface '%s', match ratio: %s" % (interface, instance.Name, ratio))
+				logger.info(u"NetworkPerformanceCounter: searching for interface '%s', got interface '%s', match ratio: %s",
+					interface, instance.Name, ratio
+				)
 				if ratio > bestRatio:
 					bestRatio = ratio
 					self.interface = instance.Name
-			logger.info(u"NetworkPerformanceCounter: using interface '%s' match ratio (%s)" % (self.interface, bestRatio))
+			logger.info(u"NetworkPerformanceCounter: using interface '%s' match ratio (%s)", self.interface, bestRatio)
 		except Exception as error:
 			logger.logException(error)
 
@@ -547,11 +551,11 @@ class NetworkPerformanceCounterPDH(threading.Thread):
 		bestRatio = 0.0
 		for instance in instances:
 			ratio = difflib.SequenceMatcher(None, instance, interface).ratio()
-			logger.info(u"NetworkPerformanceCounter: searching for interface '%s', got interface '%s', match ratio: %s" % (interface, instance, ratio))
+			logger.info(u"NetworkPerformanceCounter: searching for interface '%s', got interface '%s', match ratio: %s", interface, instance, ratio)
 			if ratio > bestRatio:
 				bestRatio = ratio
 				self.interface = instance
-		logger.info(u"NetworkPerformanceCounter: using interface '%s' match ratio (%s) with available counters: %s" % (self.interface, bestRatio, items))
+		logger.info(u"NetworkPerformanceCounter: using interface '%s' match ratio (%s) with available counters: %s", self.interface, bestRatio, items)
 
 		# For correct translations (find_pdh_counter_localized_name) see:
 		# HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Perflib
@@ -639,11 +643,11 @@ class NetworkPerformanceCounterPDH(threading.Thread):
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 def copyACL(src, dest):
 	revision = src.GetAclRevision()
-	logger.debug2(u"copyACL: ace count is %s" % src.GetAceCount())
+	logger.debug2(u"copyACL: ace count is %s", src.GetAceCount())
 	for i in range(src.GetAceCount()):
-		logger.debug2(u"copyACL: processing ace #%s" % i)
+		logger.debug2(u"copyACL: processing ace #%s", i)
 		ace = src.GetAce(i)
-		logger.debug2(u"copyACL: ace: %s" % str(ace))
+		logger.debug2(u"copyACL: ace: %s", ace)
 		# XXX: Not sure if these are actually correct.
 		# See http://aspn.activestate.com/ASPN/docs/ActivePython/2.4/pywin32/PyACL__GetAce_meth.html
 		if ace[0][0] == win32con.ACCESS_ALLOWED_ACE_TYPE:
@@ -744,7 +748,7 @@ def getDiskSpaceUsage(path):
 		'used': capacity - available,
 		'usage': (capacity - available) / capacity
 	}
-	logger.info(u"Disk space usage for path '{}': {}", path, info)
+	logger.info(u"Disk space usage for path '%s': %s", path, info)
 	return info
 
 
@@ -763,7 +767,7 @@ def mount(dev, mountpoint, **options):
 
 	match = re.search(r'^([a-z]:|dynamic)$', mountpoint, re.IGNORECASE)
 	if not match:
-		logger.error(u"Bad mountpoint '%s'" % mountpoint)
+		logger.error(u"Bad mountpoint '%s'", mountpoint)
 		raise ValueError(u"Bad mountpoint '%s'" % mountpoint)
 
 	if mountpoint == u'dynamic':
@@ -775,14 +779,14 @@ def mount(dev, mountpoint, **options):
 
 		if mountpoint.lower() in usedDriveletters:
 			logger.debug(
-				u"Mountpoint '{0}' is in use. Trying to find a free "
-				u"mountpoint.".format(mountpoint)
+				u"Mountpoint '%s' is in use. Trying to find a free "
+				u"mountpoint.", mountpoint
 			)
 
 			for i in range(ord('c'), ord('z')):
 				mountpoint = forceUnicode(chr(i))
 				if mountpoint not in usedDriveletters:
-					logger.info(u"Using the free mountpoint '{0}'".format(mountpoint))
+					logger.info(u"Using the free mountpoint '%s'", mountpoint)
 					break
 			else:
 				raise RuntimeError("Dynamic mountpoint detection could not find a a free mountpoint!")
@@ -818,11 +822,11 @@ def mount(dev, mountpoint, **options):
 				except pywintypes.error as details:
 					if details.winerror == 2250:
 						# Not connected
-						logger.debug(u"Failed to umount '%s': %s" % (mountpoint, details))
+						logger.debug(u"Failed to umount '%s': %s", mountpoint, details)
 					else:
 						raise
 
-				logger.notice(u"Mounting '%s' to '%s'" % (dev, mountpoint))
+				logger.notice(u"Mounting '%s' to '%s'", dev, mountpoint)
 				# Mount not persistent
 				win32wnet.WNetAddConnection2(
 					win32netcon.RESOURCETYPE_DISK,
@@ -835,8 +839,8 @@ def mount(dev, mountpoint, **options):
 				)
 
 			except Exception as error:
-				logger.error(u"Failed to mount '%s': %s" % (dev, forceUnicode(error)))
-				raise RuntimeError(u"Failed to mount '%s': %s" % (dev, forceUnicode(error)))
+				logger.error(u"Failed to mount '%s': %s", dev, forceUnicode(error))
+				raise RuntimeError(u"Failed to mount '%s': %s", dev, forceUnicode(error))
 		else:
 			raise ValueError(u"Bad smb/cifs uri '%s'" % dev)
 	else:
@@ -850,11 +854,11 @@ def umount(mountpoint):
 	except pywintypes.error as details:
 		if details.winerror == 2250:
 			# Not connected
-			logger.warning(u"Failed to umount '%s': %s" % (mountpoint, details))
+			logger.warning(u"Failed to umount '%s': %s", mountpoint, details)
 		else:
 			raise
 	except Exception as error:
-		logger.error(u"Failed to umount '%s': %s" % (mountpoint, forceUnicode(error)))
+		logger.error(u"Failed to umount '%s': %s", mountpoint, error)
 		raise RuntimeError(u"Failed to umount '%s': %s" % (mountpoint, forceUnicode(error)))
 
 
@@ -865,7 +869,7 @@ def getActiveConsoleSessionId():
 	try:
 		return forceInt(windll.kernel32.WTSGetActiveConsoleSessionId())
 	except Exception as error:
-		logger.warning(u"Failed to get WTSGetActiveConsoleSessionId: %s, returning 0" % forceUnicode(error))
+		logger.warning(u"Failed to get WTSGetActiveConsoleSessionId: %s, returning 0", error)
 		return 0
 
 
@@ -883,9 +887,9 @@ def getActiveSessionIds(winApiBugCommand=None):
 		try:
 			result = execute(winApiBugCommand, shell=False)
 			sessionIds = forceList(eval(result[0]))
-			logger.debug(u"   Found sessionIds: %s" % sessionIds)
+			logger.debug(u"   Found sessionIds: %s", sessionIds)
 		except Exception as error:
-			logger.debug("Working directory: '%s', scriptdirectory: '%s'" % (os.getcwd(), sys.path[0]))
+			logger.debug("Working directory: '%s', scriptdirectory: '%s'", os.getcwd(), sys.path[0])
 			logger.logException(error)
 	else:
 		for s in win32security.LsaEnumerateLogonSessions():
@@ -898,7 +902,7 @@ def getActiveSessionIds(winApiBugCommand=None):
 				# Service session
 				continue
 
-			logger.debug(u"   Found session: %s" % sessionData)
+			logger.debug(u"   Found session: %s", sessionData)
 			if sessionId not in sessionIds:
 				sessionIds.append(sessionId)
 
@@ -918,7 +922,7 @@ def getActiveSessionId(verifyProcessRunning="winlogon.exe", winApiBugCommand=Non
 		logger.debug(u"Using Workarround for problems with buggy winapi from nt5 x64")
 		try:
 			result = execute(winApiBugCommand, shell=False)
-			logger.debug(u"   Found sessionIds: %s" % eval(result[0]))
+			logger.debug(u"   Found sessionIds: %s", eval(result[0]))
 			for sessionId in forceList(eval(result[0])):
 				res = execute("%s %s" % (winApiBugCommand, sessionId), shell=False)
 				sessionData = forceDict(eval(res[0]))
@@ -944,7 +948,7 @@ def getActiveSessionId(verifyProcessRunning="winlogon.exe", winApiBugCommand=Non
 				else:
 					newest = sessionData
 		except Exception as error:
-			logger.debug("Working directory: '%s', scriptdirectory: '%s'" % (os.getcwd(), sys.path[0]))
+			logger.debug("Working directory: '%s', scriptdirectory: '%s'", os.getcwd(), sys.path[0])
 			logger.logException(error)
 	else:
 		for s in win32security.LsaEnumerateLogonSessions():
@@ -957,7 +961,7 @@ def getActiveSessionId(verifyProcessRunning="winlogon.exe", winApiBugCommand=Non
 				# Service session
 				continue
 
-			logger.debug(u"   Found session: %s" % sessionData)
+			logger.debug(u"   Found session: %s", sessionData)
 
 			if verifyProcessRunning and not getPids(verifyProcessRunning, sessionId=sessionId):
 				continue
@@ -1027,10 +1031,10 @@ def getSessionInformation(sessionId, winApiBugCommand=None):
 						sessionData['UserName'] = wtsUserName
 				except Exception:
 					pass
-				logger.debug(u"   Found session: %s" % sessionData)
+				logger.debug(u"   Found session: %s", sessionData)
 				return sessionData
 		except Exception as error:
-			logger.debug("Working directory: '%s', scriptdirectory: '%s'" % (os.getcwd(),sys.path[0]))
+			logger.debug("Working directory: '%s', scriptdirectory: '%s'", os.getcwd(),sys.path[0])
 			logger.logException(error)
 
 	newest = {}
@@ -1038,14 +1042,14 @@ def getSessionInformation(sessionId, winApiBugCommand=None):
 		sessionData = win32security.LsaGetLogonSessionData(s)
 
 		if forceInt(sessionData['Session']) == forceInt(sessionId):
-			logger.debug("Session is found and checked. wtsUserName: '%s'" % wtsUserName)
+			logger.debug("Session is found and checked. wtsUserName: '%s'", wtsUserName)
 			if wtsUserName and sessionData['UserName'].lower() != wtsUserName.lower():
 				continue
 
-			logger.debug(u"sessionData: '%s', wtsUserName: '%s'" % (sessionData['UserName'], wtsUserName))
+			logger.debug(u"sessionData: '%s', wtsUserName: '%s'", sessionData['UserName'], wtsUserName)
 			try:
 				if not newest:
-					logger.debug("No newest object found, so newest is Session with ID: '%s'" % sessionData['Session'])
+					logger.debug("No newest object found, so newest is Session with ID: '%s'", sessionData['Session'])
 					newest = sessionData
 					continue
 
@@ -1053,23 +1057,23 @@ def getSessionInformation(sessionId, winApiBugCommand=None):
 				lts = sessionData['LogonTime']
 				newestdt = datetime(lt.year, lt.month, lt.day, lt.hour, lt.minute, lt.second)
 				sessiondt = datetime(lts.year, lts.month, lts.day, lts.hour, lts.minute, lts.second)
-				logger.debug("newest datetime: '%s'" % lt)
-				logger.debug("newest datetime in session: '%s'" % lts)
+				logger.debug("newest datetime: '%s'", lt)
+				logger.debug("newest datetime in session: '%s'", lts)
 				if sessiondt > newestdt:
 					logger.notice("Token in SessionData is newer then the cached one.")
 					newest = sessionData
 			except Exception as error:
-				logger.warning("WARNING in getSessionInformation method: '%s'" % error)
+				logger.warning("WARNING in getSessionInformation method: '%s'", error)
 				if forceInt(sessionData['LogonId']) > forceInt(newest['LogonId']):
 					newest = sessionData
 			else:
 				newest = sessionData
 
 	if newest:
-		logger.debug("Found newest SessionId: '%s' for User: '%s'" % (newest['Session'], newest['UserName']))
+		logger.debug("Found newest SessionId: '%s' for User: '%s'", newest['Session'], newest['UserName'])
 		return newest
 	elif sessionData:
-		logger.debug("Found newest SessionId: '%s' for User: '%s'" % (sessionData['Session'], sessionData['UserName']))
+		logger.debug("Found newest SessionId: '%s' for User: '%s'", sessionData['Session'], sessionData['UserName'])
 		return sessionData
 	else:
 		return {}
@@ -1078,7 +1082,7 @@ def getSessionInformation(sessionId, winApiBugCommand=None):
 def getActiveSessionInformation(winApiBugCommand=None):
 	info = []
 	for sessionId in getActiveSessionIds(winApiBugCommand):
-		logger.debug("sessionid info: %s" % sessionId)
+		logger.debug("sessionid info: %s", sessionId)
 		sessionInfo = getSessionInformation(sessionId, winApiBugCommand)
 		if info and sessionInfo:
 			for item in info:
@@ -1086,12 +1090,12 @@ def getActiveSessionInformation(winApiBugCommand=None):
 					logger.debug("Duplicate Session Found, trying to figure out, which one is the newest.")
 					lt = item['LogonTime']
 					lts = sessionInfo['LogonTime']
-					logger.debug2("lt '%s'" % lt)
-					logger.debug2("lt: year: '%s', month: '%s', day: '%s', hour: '%s', minute: '%s', second: '%s'" % (lt.year, lt.month, lt.day, lt.hour, lt.minute, lt.second))
-					logger.debug2("lts '%s'" % lts)
-					logger.debug2("lts: year: '%s', month: '%s', day: '%s', hour: '%s', minute: '%s', second: '%s'" % (lts.year, lts.month, lts.day, lts.hour, lts.minute, lts.second))
-					logger.debug2("lt-type '%s'" % type(lt))
-					logger.debug2("lts-type '%s'" % type(lts))
+					logger.debug2("lt '%s'", lt)
+					logger.debug2("lt: year: '%s', month: '%s', day: '%s', hour: '%s', minute: '%s', second: '%s'", lt.year, lt.month, lt.day, lt.hour, lt.minute, lt.second)
+					logger.debug2("lts '%s'", lts)
+					logger.debug2("lts: year: '%s', month: '%s', day: '%s', hour: '%s', minute: '%s', second: '%s'", lts.year, lts.month, lts.day, lts.hour, lts.minute, lts.second)
+					logger.debug2("lt-type '%s'", type(lt))
+					logger.debug2("lts-type '%s'", type(lts))
 					infodt = datetime(lt.year, lt.month, lt.day, lt.hour, lt.minute, lt.second)
 					sessiondt = datetime(lts.year, lts.month, lts.day, lts.hour, lts.minute, lts.second)
 					if sessiondt > infodt:
@@ -1101,7 +1105,7 @@ def getActiveSessionInformation(winApiBugCommand=None):
 		elif sessionInfo:
 			info.append(sessionInfo)
 
-	logger.debug(u"info: {}", info)
+	logger.debug(u"info: %s", info)
 	return info
 
 
@@ -1112,7 +1116,7 @@ def getUserSessionIds(username, winApiBugCommand=None, onlyNewestId=None):
 
 	domain = None
 	newest = {}
-	logger.debug(u"Getting sessions of user '%s'" % username)
+	logger.debug(u"Getting sessions of user '%s'", username)
 	if '\\' in username:
 		domain = username.split('\\')[0]
 		username = username.split('\\')[-1]
@@ -1140,8 +1144,8 @@ def getUserSessionIds(username, winApiBugCommand=None, onlyNewestId=None):
 						newest = session
 				else:
 					newest = session
-			logger.debug(u"   onlyNewestId: '%s' newest = '%s'" % (onlyNewestId, newest))
-			logger.debug(u"   Found session id of user '%s': %s" % (username, session.get('Session')))
+			logger.debug(u"   onlyNewestId: '%s' newest = '%s'", onlyNewestId, newest)
+			logger.debug(u"   Found session id of user '%s': %s", username, session.get('Session'))
 	if onlyNewestId and newest:
 		return [newest.get('Session')]
 	else:
@@ -1182,14 +1186,14 @@ def lockWorkstation():
 
 
 def reboot(wait=10):
-	logger.notice(u"Rebooting in %s seconds" % wait)
+	logger.notice(u"Rebooting in %s seconds", wait)
 	wait = forceInt(wait)
 	adjustPrivilege(ntsecuritycon.SE_SHUTDOWN_NAME)
 	win32api.InitiateSystemShutdown(None, u"Opsi reboot", wait, True, True)
 
 
 def shutdown(wait=10):
-	logger.notice(u"Shutting down in %s seconds" % wait)
+	logger.notice(u"Shutting down in %s seconds", wait)
 	wait = forceInt(wait)
 	adjustPrivilege(ntsecuritycon.SE_SHUTDOWN_NAME)
 	win32api.InitiateSystemShutdown(None, u"Opsi shutdown", wait, True, False)
@@ -1210,7 +1214,7 @@ def createWindowStation(name):
 	try:
 		return win32service.CreateWindowStation(name, 0, win32con.MAXIMUM_ALLOWED, sa)
 	except win32service.error as e:
-		logger.error(u"Failed to create window station '%s': %s" % (name, forceUnicode(e)))
+		logger.error(u"Failed to create window station '%s': %s", name, forceUnicode(e))
 
 
 def createDesktop(name, runCommand=None):
@@ -1231,7 +1235,7 @@ def createDesktop(name, runCommand=None):
 	try:
 		hdesk = win32service.CreateDesktop(name, 0, win32con.MAXIMUM_ALLOWED, sa)
 	except win32service.error as error:
-		logger.error(u"Failed to create desktop '%s': %s" % (name, forceUnicode(error)))
+		logger.error(u"Failed to create desktop '%s': %s", name, forceUnicode(error))
 
 	if runCommand:
 		s = win32process.STARTUPINFO()
@@ -1387,7 +1391,7 @@ def execute(cmd, waitForEnding=True, getHandle=False, ignoreExitCode=[], exitOnS
 
 	startTime = time.time()
 	try:
-		logger.info("Executing: %s" % cmd)
+		logger.info("Executing: %s", cmd)
 		if getHandle:
 			if captureStderr:
 				return (subprocess.Popen(cmd, shell=shell, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)).stdout
@@ -1448,13 +1452,13 @@ def execute(cmd, waitForEnding=True, getHandle=False, ignoreExitCode=[], exitOnS
 					if (i == lineCount - 1) and not line:
 						break
 
-					logger.debug(">>> %s" % line)
+					logger.debug(">>> %s", line)
 					result.append(line)
 	except (os.error, IOError) as error:
 		# Some error occurred during execution
 		raise IOError(error.errno, "Command '%s' failed:\n%s" % (cmd, error))
 
-	logger.debug("Exit code: %s" % exitCode)
+	logger.debug("Exit code: %s", exitCode)
 	if exitCode:
 		if isinstance(ignoreExitCode, bool) and ignoreExitCode:
 			pass
@@ -1471,7 +1475,7 @@ def getPids(process, sessionId=None):
 	if sessionId is not None:
 		sessionId = forceInt(sessionId)
 
-	logger.info(u"Searching pids of process name %s (session id: %s)" % (process, sessionId))
+	logger.info(u"Searching pids of process name %s (session id: %s)", process, sessionId)
 	processIds = []
 	CreateToolhelp32Snapshot = windll.kernel32.CreateToolhelp32Snapshot
 	Process32First = windll.kernel32.Process32First
@@ -1493,9 +1497,9 @@ def getPids(process, sessionId=None):
 		except Exception:
 			pass
 
-		logger.debug2(u"   got process %s with pid %d in session %s" % (pe32.szExeFile.decode(), pid, sid))
+		logger.debug2(u"   got process %s with pid %d in session %s", pe32.szExeFile.decode(), pid, sid)
 		if pe32.szExeFile.decode().lower() == process.lower():
-			logger.info(u"Found process %s with matching name (pid %d, session %s)" % (pe32.szExeFile.decode().lower(), pid, sid))
+			logger.info(u"Found process %s with matching name (pid %d, session %s)", pe32.szExeFile.decode().lower(), pid, sid)
 			if sessionId is None or (sid == sessionId):
 				processIds.append(forceInt(pid))
 
@@ -1504,7 +1508,7 @@ def getPids(process, sessionId=None):
 
 	CloseHandle(hProcessSnap)
 	if not processIds:
-		logger.debug(u"No process with name %s found (session id: %s)" % (process, sessionId))
+		logger.debug(u"No process with name %s found (session id: %s)", process, sessionId)
 
 	return processIds
 
@@ -1524,7 +1528,7 @@ def getPid(process, sessionId=None):
 
 def getProcessName(processId):
 	processId = forceInt(processId)
-	logger.notice(u"Searching name of process %d" % processId)
+	logger.notice(u"Searching name of process %d", processId)
 
 	processName = u''
 	CreateToolhelp32Snapshot = windll.kernel32.CreateToolhelp32Snapshot
@@ -1560,11 +1564,11 @@ def getProcessHandle(processId):
 
 def getProcessWindowHandles(processId):
 	processId = forceInt(processId)
-	logger.info(u"Getting window handles of process with id %s" % processId)
+	logger.info(u"Getting window handles of process with id %s", processId)
 
 	def callback(windowHandle, windowHandles):
 		if win32process.GetWindowThreadProcessId(windowHandle)[1] == processId:
-			logger.debug(u"Found window %s of process with id %s" % (windowHandle, processId))
+			logger.debug(u"Found window %s of process with id %s", windowHandle, processId)
 			windowHandles.append(windowHandle)
 
 		return True
@@ -1576,9 +1580,9 @@ def getProcessWindowHandles(processId):
 
 def closeProcessWindows(processId):
 	processId = forceInt(processId)
-	logger.info("Closing windows of process with id %s" % processId)
+	logger.info("Closing windows of process with id %s", processId)
 	for windowHandle in getProcessWindowHandles(processId):
-		logger.debug("Sending WM_CLOSE message to window %s" % windowHandle)
+		logger.debug("Sending WM_CLOSE message to window %s", windowHandle)
 		win32gui.SendMessage(windowHandle, win32con.WM_CLOSE, 0, 0)
 
 
@@ -1652,13 +1656,13 @@ def runCommandInSession(command, sessionId=None, desktop=u"default", duplicateFr
 	waitForProcessEnding = forceBool(waitForProcessEnding)
 	timeoutSeconds = forceInt(timeoutSeconds)
 
-	logger.debug(u"Session id given: %s" % sessionId)
+	logger.debug(u"Session id given: %s", sessionId)
 	if sessionId is None or (sessionId < 0):
 		logger.debug(u"No session id given, running in active session")
 		sessionId = getActiveSessionId()
 
 	if desktop.split('\\')[-1] not in ('default', 'winlogon'):
-		logger.info(u"Creating new desktop '%s'" % desktop.split('\\')[-1])
+		logger.info(u"Creating new desktop '%s'", desktop.split('\\')[-1])
 		try:
 			createDesktop(desktop.split('\\')[-1])
 		except Exception as error:
@@ -1671,14 +1675,14 @@ def runCommandInSession(command, sessionId=None, desktop=u"default", duplicateFr
 	s = win32process.STARTUPINFO()
 	s.lpDesktop = desktop
 
-	logger.notice(u"Executing: '%s' in session '%s' on desktop '%s'" % (command, sessionId, desktop))
+	logger.notice(u"Executing: '%s' in session '%s' on desktop '%s'", command, sessionId, desktop)
 	(hProcess, hThread, dwProcessId, dwThreadId) = win32process.CreateProcessAsUser(userToken, None, command, None, None, 1, dwCreationFlags, None, None, s)
 
-	logger.info(u"Process startet, pid: %d" % dwProcessId)
+	logger.info(u"Process startet, pid: %d", dwProcessId)
 	if not waitForProcessEnding:
 		return (hProcess, hThread, dwProcessId, dwThreadId)
 
-	logger.info(u"Waiting for process ending: %d (timeout: %d seconds)" % (dwProcessId, timeoutSeconds))
+	logger.info(u"Waiting for process ending: %d (timeout: %d seconds)", dwProcessId, timeoutSeconds)
 	t = 0.0
 	while win32event.WaitForSingleObject(hProcess, timeoutSeconds):
 		if timeoutSeconds > 0:
@@ -1732,7 +1736,7 @@ def createUser(username, password, groups=[]):
 
 	u = {'domainandname': domain + u'\\' + username}
 	for group in groups:
-		logger.info(u"Adding user '%s' to group '%s'" % (username, group))
+		logger.info(u"Adding user '%s' to group '%s'", username, group)
 		win32net.NetLocalGroupAddMembers(u"\\\\" + domain, group, 3, [u])
 
 
@@ -1754,13 +1758,13 @@ def deleteUser(username, deleteProfile=True):
 				try:
 					win32profile.DeleteProfile(sid)
 				except Exception as error:
-					logger.info(u"Failed to delete user profile '%s' (sid %s): %s" % (username, sid, forceUnicode(error)))
+					logger.info(u"Failed to delete user profile '%s' (sid %s): %s", username, sid, forceUnicode(error))
 		except Exception as error:
 			pass
 	try:
 		win32net.NetUserDel(u"\\\\" + domain, username)
 	except win32net.error as error:
-		logger.info(u"Failed to delete user '%s': %s" % (username, forceUnicode(error)))
+		logger.info(u"Failed to delete user '%s': %s", username, forceUnicode(error))
 
 
 def existsUser(username):
@@ -1803,7 +1807,7 @@ def getAdminGroupName():
 	subAuths = ntsecuritycon.SECURITY_BUILTIN_DOMAIN_RID, ntsecuritycon.DOMAIN_ALIAS_RID_ADMINS
 	sidAdmins = win32security.SID(ntsecuritycon.SECURITY_NT_AUTHORITY, subAuths)
 	groupName = forceUnicode(win32security.LookupAccountSid(None, sidAdmins)[0])
-	logger.info(u"Admin group name is '%s'" % groupName)
+	logger.info(u"Admin group name is '%s'", groupName)
 	return groupName
 
 
@@ -1834,10 +1838,10 @@ def setLocalSystemTime(timestring):
 
 	try:
 		dt = datetime.strptime(timestring, '%Y-%m-%d %H:%M:%S.%f')
-		logger.info(u"Setting Systemtime Time to %s" % timestring)
+		logger.info(u"Setting Systemtime Time to %s", timestring)
 		win32api.SetSystemTime(dt.year, dt.month, 0, dt.day, dt.hour, dt.minute, dt.second, 0)
 	except Exception as error:
-		logger.error(u"Failed to set System Time: '%s'" % error)
+		logger.error(u"Failed to set System Time: '%s'", error)
 
 
 class Impersonate:
@@ -1884,7 +1888,7 @@ class Impersonate:
 
 			if not self.userToken:
 				# TODO: Use (UPN) format for username <USER>@<DOMAIN> ?
-				logger.debug(u"Logon user: '%s\\%s'" % (self.domain, self.username))
+				logger.debug(u"Logon user: '%s\\%s'", self.domain, self.username)
 				self.userToken = win32security.LogonUser(
 					self.username,
 					self.domain,
@@ -1911,7 +1915,7 @@ class Impersonate:
 
 				self.newDesktop = None
 				if self.desktop not in ('default', 'winlogon'):
-					logger.info(u"Creating new desktop '%s'" % self.desktop)
+					logger.info(u"Creating new desktop '%s'", self.desktop)
 					try:
 						self.newDesktop = createDesktop(self.desktop)
 					except Exception as error:
@@ -1940,9 +1944,9 @@ class Impersonate:
 
 				userSid = getUserSidFromHandle(self.userToken)
 				if not userSid:
-					logger.warning(u"Failed to determine sid of user '%s'" % self.username)
+					logger.warning(u"Failed to determine sid of user '%s'", self.username)
 				else:
-					logger.debug(u"Got sid of user '%s'" % self.username)
+					logger.debug(u"Got sid of user '%s'", self.username)
 
 					winstaAceIndices = addUserToWindowStation(self.newWindowStation, userSid)
 					logger.debug(u"Added user to window station")
@@ -1977,7 +1981,7 @@ class Impersonate:
 		s.wShowWindow = win32con.SW_NORMAL
 		s.lpDesktop = self.winsta + u'\\' + self.desktop
 
-		logger.notice(u"Running command '%s' as user '%s' on desktop '%s'" % (command, self.username, self.desktop))
+		logger.notice(u"Running command '%s' as user '%s' on desktop '%s'", command, self.username, self.desktop)
 		(hProcess, hThread, dwProcessId, dwThreadId) = win32process.CreateProcessAsUser(
 			self.userToken,
 			None,
@@ -1991,22 +1995,22 @@ class Impersonate:
 			s
 		)
 
-		logger.info(u"Process startet, pid: %d" % dwProcessId)
+		logger.info(u"Process startet, pid: %s", dwProcessId)
 		if not waitForProcessEnding:
 			return (hProcess, hThread, dwProcessId, dwThreadId)
 
-		logger.info(u"Waiting for process ending: %d (timeout: %d seconds)" % (dwProcessId, timeoutSeconds))
+		logger.info(u"Waiting for process ending: %s (timeout: %s seconds)", dwProcessId, timeoutSeconds)
 		t = 0.0
 		while win32event.WaitForSingleObject(hProcess, timeoutSeconds):
 			if timeoutSeconds > 0:
 				if t >= timeoutSeconds:
 					terminateProcess(processId=dwProcessId)
-					raise RuntimeError(u"Timed out after %s seconds while waiting for process %d" % (t, dwProcessId))
+					raise RuntimeError(u"Timed out after %s seconds while waiting for process %s" % (t, dwProcessId))
 				t += 0.1
 			time.sleep(0.1)
 
 		exitCode = win32process.GetExitCodeProcess(hProcess)
-		logger.notice(u"Process %d ended with exit code %d" % (dwProcessId, exitCode))
+		logger.notice(u"Process %s ended with exit code %s", dwProcessId, exitCode)
 		return (None, None, None, None)
 
 	def end(self):
@@ -2016,38 +2020,38 @@ class Impersonate:
 				try:
 					self.saveWindowStation.SetProcessWindowStation()
 				except Exception as error:
-					logger.debug(u"Failed to set process WindowStation: %s" % error)
+					logger.debug(u"Failed to set process WindowStation: %s", error)
 
 			if self.saveDesktop:
 				try:
 					self.saveDesktop.SetThreadDesktop()
 				except Exception as error:
-					logger.debug(u"Failed to set thread Desktop: %s" % error)
+					logger.debug(u"Failed to set thread Desktop: %s", error)
 
 			if self.newDesktop:
 				try:
 					self.newWindowStation.CloseDesktop()
 				except Exception as error:
-					logger.debug(u"Failed to close Desktop: %s" % error)
+					logger.debug(u"Failed to close Desktop: %s", error)
 
 			if self.newWindowStation:
 				try:
 					self.newWindowStation.CloseWindowStation()
 				except Exception as error:
-					logger.debug(u"Failed to close WindowStation: %s" % error)
+					logger.debug(u"Failed to close WindowStation: %s", error)
 
 			if self.userProfile:
 				logger.debug(u"Unloading user profile")
 				try:
 					win32profile.UnloadUserProfile(self.userToken, self.userProfile)
 				except Exception as error:
-					logger.debug(u"Failed to unload user profile: %s" % error)
+					logger.debug(u"Failed to unload user profile: %s", error)
 
 			if self.userToken:
 				try:
 					self.userToken.Close()
 				except Exception as error:
-					logger.debug(u"Failed to close user token: %s" % error)
+					logger.debug(u"Failed to close user token: %s", error)
 		except Exception as error:
 			logger.logException(error)
 

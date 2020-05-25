@@ -116,7 +116,7 @@ class ConfigurationParser:
 overriden based on values in configuration file.
 		:rtype: dict
 		"""
-		logger.info(u"Reading config file '%s'" % self.configFile)
+		logger.info(u"Reading config file '%s'", self.configFile)
 		if not os.path.isfile(self.configFile):
 			raise OSError(u"Configuration file {!r} not found".format(self.configFile))
 
@@ -213,13 +213,13 @@ overriden based on values in configuration file.
 						repository = self._getRepository(configIni, section, config['forceRepositoryActivation'], config['repositoryName'], config['installAllAvailable'], config['proxy'])
 						config['repositories'].append(repository)
 					except MissingConfigurationValueError as mcverr:
-						logger.debug(u"Configuration for {section} incomplete: {error}", error=mcverr, section=section)
+						logger.debug(u"Configuration for %s incomplete: %s", section, mcverr)
 					except ConfigurationError as cerr:
-						logger.error(u"Configuration problem in {section}: {error}", error=cerr, section=section)
+						logger.error(u"Configuration problem in %s: %s", section, cerr)
 					except Exception as err:
-						logger.error(u"Can't load repository from {section}: {error}", error=err, section=section)
+						logger.error(u"Can't load repository from %s: %s", section, err)
 				else:
-					logger.error(u"Unhandled section '%s'" % section)
+					logger.error(u"Unhandled section '%s'", section)
 		except Exception as exclude:
 			raise RuntimeError(u"Failed to read config file '%s': %s" % (self.configFile, exclude))
 
@@ -236,13 +236,13 @@ overriden based on values in configuration file.
 						repository = self._getRepository(repoConfig, section, config['forceRepositoryActivation'], config['repositoryName'], config['installAllAvailable'], proxy=config['proxy'])
 						config['repositories'].append(repository)
 					except MissingConfigurationValueError as mcverr:
-						logger.debug(u"Configuration for {section} in {filename} incomplete: {error}", error=mcverr, section=section, filename=configFile)
+						logger.debug(u"Configuration for %s in %s incomplete: %s", section, configFile, mcverr)
 					except ConfigurationError as cerr:
-						logger.error(u"Configuration problem in {section} in {filename}: {error}", error=cerr, section=section, filename=configFile)
+						logger.error(u"Configuration problem in %s in %s: %s", section, configFile, cerr)
 					except Exception as err:
-						logger.error(u"Can't load repository from {section} in {filename}: {error}", error=err, section=section, filename=configFile)
+						logger.error(u"Can't load repository from %s in %s: %s", section, configFile, err)
 			except Exception as error:
-				logger.error("Unable to load repositories from {filename}: {error}", filename=configFile, error=error)
+				logger.error("Unable to load repositories from %s: %s", configFile, error)
 
 		return config
 
@@ -269,7 +269,7 @@ overriden based on values in configuration file.
 
 		if forceRepositoryActivation:
 			if repoName == repositoryName:
-				logger.debug("Activation for repository {0} forced.", repoName)
+				logger.debug("Activation for repository %s forced.", repoName)
 				active = True
 			else:
 				active = False
@@ -297,7 +297,7 @@ overriden based on values in configuration file.
 
 		elif baseUrl:
 			if proxy:
-				logger.info(u"Repository {} is using proxy {}", repoName, proxy)
+				logger.info(u"Repository %s is using proxy %s", repoName, proxy)
 
 			repository = ProductRepositoryInfo(
 				name=repoName,

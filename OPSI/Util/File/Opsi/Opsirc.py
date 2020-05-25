@@ -72,7 +72,7 @@ the result from `getOpsircPath`.
 		filename = getOpsircPath()
 
 	if not os.path.exists(filename):
-		logger.debug(u".opsirc file {} does not exist.".format(filename))
+		logger.debug(u".opsirc file %s does not exist.", filename)
 		return {}
 
 	return _parseConfig(filename)
@@ -100,7 +100,7 @@ def _parseConfig(filename):
 			try:
 				key, value = line.split('=', 1)
 			except ValueError:
-				logger.debug2(u"Unable to split line {!r}".format(line))
+				logger.debug2(u"Unable to split line %s", line)
 				continue
 
 			key = key.strip()
@@ -108,7 +108,7 @@ def _parseConfig(filename):
 
 			if not value:
 				logger.warning(
-					"There is no value for {} in opsirc file {!r}, skipping.",
+					"There is no value for %s in opsirc file %s, skipping.",
 					key, filename
 				)
 				continue
@@ -127,10 +127,10 @@ def _parseConfig(filename):
 				logger.addConfidentialString(value)
 				config['password'] = value
 			else:
-				logger.debug(u"Ignoring unknown key {}", key)
+				logger.debug(u"Ignoring unknown key %s", key)
 
 	logger.debug(
-		"Found the following usable keys in {!r}: {}",
+		"Found the following usable keys in %s: %s",
 		filename, ", ".join(config.keys())
 	)
 	return config

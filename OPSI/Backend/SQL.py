@@ -67,11 +67,11 @@ logger = Logger()
 @contextmanager
 def timeQuery(query):
 	startingTime = datetime.now()
-	logger.debug(u'start query {0}', query)
+	logger.debug(u'start query %s', query)
 	try:
 		yield
 	finally:
-		logger.debug(u'ended query (duration: {1}) {0}', query, datetime.now() - startingTime)
+		logger.debug(u'ended query (duration: %s) %s', query, datetime.now() - startingTime)
 
 
 def onlyAllowSelect(query):
@@ -200,7 +200,7 @@ class SQLBackendObjectModificationTracker(BackendModificationListener):
 			self._sql.delete('OBJECT_MODIFICATION_TRACKER', "`objectClass` = '%s' AND `ident` = '%s'" % (objectClass, ident))
 		start = time.time()
 		self._sql.insert('OBJECT_MODIFICATION_TRACKER', data)
-		logger.debug(u"Took %0.2f seconds to track modification of objectClass %s, ident %s" % ((time.time() - start), data['objectClass'], data['ident']))
+		logger.debug(u"Took %0.2f seconds to track modification of objectClass %s, ident %s", (time.time() - start), data['objectClass'], data['ident'])
 
 	def getModifications(self, sinceDate=0):
 		return self._sql.getSet("SELECT * FROM `OBJECT_MODIFICATION_TRACKER` WHERE `date` > '%s'" % forceOpsiTimestamp(sinceDate))
@@ -319,7 +319,7 @@ class SQLBackend(ConfigDataBackend):
 			query = u'select %s from `%s` where %s' % (select, table, condition)
 		else:
 			query = u'select %s from `%s`' % (select, table)
-		logger.debug(u"Created query: {0}", query)
+		logger.debug(u"Created query: %s", query)
 		return query
 
 	def _adjustAttributes(self, objectClass, attributes, filter):
@@ -488,7 +488,7 @@ class SQLBackend(ConfigDataBackend):
 				try:
 					self._sql.execute(dropCommand)
 				except Exception as error:
-					logger.error(u"Failed to drop table '{name}': {error}", name=tableName, error=error)
+					logger.error(u"Failed to drop table '%s': %s", tableName, error)
 					errorCount += 1
 					errorsExist = True
 
@@ -935,7 +935,7 @@ class SQLBackend(ConfigDataBackend):
 		existingTables = set(tables.keys())
 
 		for (hwClass, values) in self._auditHardwareConfig.items():
-			logger.debug(u"Processing hardware class '%s'" % hwClass)
+			logger.debug(u"Processing hardware class '%s'", hwClass)
 			hardwareDeviceTableName = u'HARDWARE_DEVICE_{0}'.format(hwClass)
 			hardwareConfigTableName = u'HARDWARE_CONFIG_{0}'.format(hwClass)
 
@@ -976,7 +976,7 @@ class SQLBackend(ConfigDataBackend):
 			hardwareDeviceValuesProcessed = 0
 			hardwareConfigValuesProcessed = 0
 			for (value, valueInfo) in values.items():
-				logger.debug(u"  Processing value '%s'" % value)
+				logger.debug(u"  Processing value '%s'", value)
 				if valueInfo['Scope'] == 'g':
 					if hardwareDeviceTableExists:
 						if value in tables[hardwareDeviceTableName]:
@@ -1073,7 +1073,7 @@ class SQLBackend(ConfigDataBackend):
 
 	def host_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.host_getObjects(self, attributes=[], **filter)
-		logger.info(u"Getting hosts, filter: %s" % filter)
+		logger.info(u"Getting hosts, filter: %s", filter)
 
 		hostType = forceList(filter.get('type', []))
 		if 'OpsiDepotserver' in hostType and 'OpsiConfigserver' not in hostType:
@@ -1092,7 +1092,7 @@ class SQLBackend(ConfigDataBackend):
 		ConfigDataBackend.host_deleteObjects(self, hosts)
 
 		for host in forceObjectClassList(hosts, Host):
-			logger.info(u"Deleting host {0}".format(host))
+			logger.info(u"Deleting host %s", host)
 			where = self._uniqueCondition(host)
 			self._sql.delete('HOST', where)
 
@@ -1156,7 +1156,7 @@ class SQLBackend(ConfigDataBackend):
 	def config_getObjects(self, attributes=[], **filter):
 		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.config_getObjects(self, attributes=[], **filter)
-		logger.info(u"Getting configs, filter: %s" % filter)
+		logger.info(u"Getting configs, filter: %s", filter)
 		configs = []
 		(attributes, filter) = self._adjustAttributes(Config, attributes, filter)
 
@@ -1219,7 +1219,7 @@ class SQLBackend(ConfigDataBackend):
 		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.config_deleteObjects(self, configs)
 		for config in forceObjectClassList(configs, Config):
-			logger.info(u"Deleting config %s" % config)
+			logger.info(u"Deleting config %s", config)
 			where = self._uniqueCondition(config)
 			self._sql.delete('CONFIG_VALUE', where)
 			self._sql.delete('CONFIG', where)
@@ -1250,7 +1250,7 @@ class SQLBackend(ConfigDataBackend):
 	def configState_getObjects(self, attributes=[], **filter):
 		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.configState_getObjects(self, attributes=[], **filter)
-		logger.info(u"Getting configStates, filter: %s" % filter)
+		logger.info(u"Getting configStates, filter: %s", filter)
 		(attributes, filter) = self._adjustAttributes(ConfigState, attributes, filter)
 
 		configStates = []
@@ -1268,7 +1268,7 @@ class SQLBackend(ConfigDataBackend):
 		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.configState_deleteObjects(self, configStates)
 		for configState in forceObjectClassList(configStates, ConfigState):
-			logger.info("Deleting configState %s" % configState)
+			logger.info("Deleting configState %s", configState)
 			where = self._uniqueCondition(configState)
 			self._sql.delete('CONFIG_STATE', where)
 
@@ -1360,7 +1360,7 @@ class SQLBackend(ConfigDataBackend):
 	def product_getObjects(self, attributes=[], **filter):
 		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.product_getObjects(self, attributes=[], **filter)
-		logger.info(u"Getting products, filter: %s" % filter)
+		logger.info(u"Getting products, filter: %s", filter)
 		(attributes, filter) = self._adjustAttributes(Product, attributes, filter)
 
 		readWindowsSoftwareIDs = not attributes or 'windowsSoftwareIds' in attributes
@@ -1384,7 +1384,7 @@ class SQLBackend(ConfigDataBackend):
 		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.product_deleteObjects(self, products)
 		for product in forceObjectClassList(products, Product):
-			logger.info("Deleting product %s" % product)
+			logger.info("Deleting product %s", product)
 			where = self._uniqueCondition(product)
 			self._sql.delete('WINDOWS_SOFTWARE_ID_TO_PRODUCT', "`productId` = '%s'" % product.getId())
 			self._sql.delete('PRODUCT', where)
@@ -1455,7 +1455,7 @@ class SQLBackend(ConfigDataBackend):
 	def productProperty_getObjects(self, attributes=[], **filter):
 		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.productProperty_getObjects(self, attributes=[], **filter)
-		logger.info(f"Getting product properties, filter: {filter}")
+		logger.info("Getting product properties, filter: %s", filter)
 		(attributes, filter) = self._adjustAttributes(ProductProperty, attributes, filter)
 
 		readValues = not attributes or 'possibleValues' in attributes or 'defaultValues' in attributes
@@ -1486,7 +1486,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.productProperty_deleteObjects(self, productProperties)
 		for productProperty in forceObjectClassList(productProperties, ProductProperty):
-			logger.info("Deleting product property %s" % productProperty)
+			logger.info("Deleting product property %s", productProperty)
 			where = self._uniqueCondition(productProperty)
 			self._sql.delete('PRODUCT_PROPERTY_VALUE', where)
 			self._sql.delete('PRODUCT_PROPERTY', where)
@@ -1516,7 +1516,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 	def productDependency_getObjects(self, attributes=[], **filter):
 		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.productDependency_getObjects(self, attributes=[], **filter)
-		logger.info(u"Getting product dependencies, filter: %s" % filter)
+		logger.info(u"Getting product dependencies, filter: %s", filter)
 		(attributes, filter) = self._adjustAttributes(ProductDependency, attributes, filter)
 		return [ProductDependency.fromHash(res) for res in self._sql.getSet(self._createQuery('PRODUCT_DEPENDENCY', attributes, filter))]
 
@@ -1524,7 +1524,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.productDependency_deleteObjects(self, productDependencies)
 		for productDependency in forceObjectClassList(productDependencies, ProductDependency):
-			logger.info("Deleting product dependency %s" % productDependency)
+			logger.info("Deleting product dependency %s", productDependency)
 			where = self._uniqueCondition(productDependency)
 			self._sql.delete('PRODUCT_DEPENDENCY', where)
 
@@ -1564,7 +1564,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.productOnDepot_deleteObjects(self, productOnDepots)
 		for productOnDepot in forceObjectClassList(productOnDepots, ProductOnDepot):
-			logger.info(u"Deleting productOnDepot %s" % productOnDepot)
+			logger.info(u"Deleting productOnDepot %s", productOnDepot)
 			where = self._uniqueCondition(productOnDepot)
 			self._sql.delete('PRODUCT_ON_DEPOT', where)
 
@@ -1597,7 +1597,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 	def productOnClient_getObjects(self, attributes=[], **filter):
 		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.productOnClient_getObjects(self, attributes=[], **filter)
-		logger.info(u"Getting productOnClients, filter: %s" % filter)
+		logger.info(u"Getting productOnClients, filter: %s", filter)
 		(attributes, filter) = self._adjustAttributes(ProductOnClient, attributes, filter)
 		return [ProductOnClient.fromHash(res) for res in
 				self._sql.getSet(self._createQuery('PRODUCT_ON_CLIENT', attributes, filter))]
@@ -1606,7 +1606,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.productOnClient_deleteObjects(self, productOnClients)
 		for productOnClient in forceObjectClassList(productOnClients, ProductOnClient):
-			logger.info(u"Deleting productOnClient %s" % productOnClient)
+			logger.info(u"Deleting productOnClient %s", productOnClient)
 			where = self._uniqueCondition(productOnClient)
 			self._sql.delete('PRODUCT_ON_CLIENT', where)
 
@@ -1638,7 +1638,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 	def productPropertyState_getObjects(self, attributes=[], **filter):
 		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.productPropertyState_getObjects(self, attributes=[], **filter)
-		logger.info(u"Getting productPropertyStates, filter: %s" % filter)
+		logger.info(u"Getting productPropertyStates, filter: %s", filter)
 		productPropertyStates = []
 		(attributes, filter) = self._adjustAttributes(ProductPropertyState, attributes, filter)
 		for res in self._sql.getSet(self._createQuery('PRODUCT_PROPERTY_STATE', attributes, filter)):
@@ -1653,7 +1653,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.productPropertyState_deleteObjects(self, productPropertyStates)
 		for productPropertyState in forceObjectClassList(productPropertyStates, ProductPropertyState):
-			logger.info(u"Deleting productPropertyState %s" % productPropertyState)
+			logger.info(u"Deleting productPropertyState %s", productPropertyState)
 			where = self._uniqueCondition(productPropertyState)
 			self._sql.delete('PRODUCT_PROPERTY_STATE', where)
 
@@ -1681,7 +1681,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 	def group_getObjects(self, attributes=[], **filter):
 		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.group_getObjects(self, attributes=[], **filter)
-		logger.info(u"Getting groups, filter: %s" % filter)
+		logger.info(u"Getting groups, filter: %s", filter)
 		groups = []
 		(attributes, filter) = self._adjustAttributes(Group, attributes, filter)
 		for res in self._sql.getSet(self._createQuery('GROUP', attributes, filter)):
@@ -1693,7 +1693,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.group_deleteObjects(self, groups)
 		for group in forceObjectClassList(groups, Group):
-			logger.info(u"Deleting group %s" % group)
+			logger.info(u"Deleting group %s", group)
 			where = self._uniqueCondition(group)
 			self._sql.delete('GROUP', where)
 
@@ -1721,7 +1721,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 	def objectToGroup_getObjects(self, attributes=[], **filter):
 		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.objectToGroup_getObjects(self, attributes=[], **filter)
-		logger.info(u"Getting objectToGroups, filter: %s" % filter)
+		logger.info(u"Getting objectToGroups, filter: %s", filter)
 		(attributes, filter) = self._adjustAttributes(ObjectToGroup, attributes, filter)
 		return [ObjectToGroup.fromHash(res) for res in
 				self._sql.getSet(self._createQuery('OBJECT_TO_GROUP', attributes, filter))]
@@ -1730,7 +1730,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.objectToGroup_deleteObjects(self, objectToGroups)
 		for objectToGroup in forceObjectClassList(objectToGroups, ObjectToGroup):
-			logger.info(u"Deleting objectToGroup %s" % objectToGroup)
+			logger.info(u"Deleting objectToGroup %s", objectToGroup)
 			where = self._uniqueCondition(objectToGroup)
 			self._sql.delete('OBJECT_TO_GROUP', where)
 
@@ -1767,7 +1767,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 			return []
 
 		ConfigDataBackend.licenseContract_getObjects(self, attributes=[], **filter)
-		logger.info(u"Getting licenseContracts, filter: %s" % filter)
+		logger.info(u"Getting licenseContracts, filter: %s", filter)
 		licenseContracts = []
 		(attributes, filter) = self._adjustAttributes(LicenseContract, attributes, filter)
 		for res in self._sql.getSet(self._createQuery('LICENSE_CONTRACT', attributes, filter)):
@@ -1782,7 +1782,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 
 		ConfigDataBackend.licenseContract_deleteObjects(self, licenseContracts)
 		for licenseContract in forceObjectClassList(licenseContracts, LicenseContract):
-			logger.info(u"Deleting licenseContract %s" % licenseContract)
+			logger.info(u"Deleting licenseContract %s", licenseContract)
 			where = self._uniqueCondition(licenseContract)
 			self._sql.delete('LICENSE_CONTRACT', where)
 
@@ -1819,7 +1819,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 			return []
 
 		ConfigDataBackend.softwareLicense_getObjects(self, attributes=[], **filter)
-		logger.info(u"Getting softwareLicenses, filter: %s" % filter)
+		logger.info(u"Getting softwareLicenses, filter: %s", filter)
 		softwareLicenses = []
 		(attributes, filter) = self._adjustAttributes(SoftwareLicense, attributes, filter)
 		for res in self._sql.getSet(self._createQuery('SOFTWARE_LICENSE', attributes, filter)):
@@ -1834,7 +1834,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 
 		ConfigDataBackend.softwareLicense_deleteObjects(self, softwareLicenses)
 		for softwareLicense in forceObjectClassList(softwareLicenses, SoftwareLicense):
-			logger.info(u"Deleting softwareLicense %s" % softwareLicense)
+			logger.info(u"Deleting softwareLicense %s", softwareLicense)
 			where = self._uniqueCondition(softwareLicense)
 			self._sql.delete('SOFTWARE_LICENSE', where)
 
@@ -1919,7 +1919,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 			return []
 
 		ConfigDataBackend.licensePool_getObjects(self, attributes=[], **filter)
-		logger.info(u"Getting licensePools, filter: %s" % filter)
+		logger.info(u"Getting licensePools, filter: %s", filter)
 		(attributes, filter) = self._adjustAttributes(LicensePool, attributes, filter)
 
 		try:
@@ -1960,7 +1960,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 
 		ConfigDataBackend.licensePool_deleteObjects(self, licensePools)
 		for licensePool in forceObjectClassList(licensePools, LicensePool):
-			logger.info(u"Deleting licensePool %s" % licensePool)
+			logger.info(u"Deleting licensePool %s", licensePool)
 			where = self._uniqueCondition(licensePool)
 			self._sql.delete('PRODUCT_ID_TO_LICENSE_POOL', "`licensePoolId` = '%s'" % licensePool.id)
 			self._sql.delete('LICENSE_POOL', where)
@@ -1998,7 +1998,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 			return []
 
 		ConfigDataBackend.softwareLicenseToLicensePool_getObjects(self, attributes=[], **filter)
-		logger.info(u"Getting softwareLicenseToLicensePool, filter: %s" % filter)
+		logger.info(u"Getting softwareLicenseToLicensePool, filter: %s", filter)
 		(attributes, filter) = self._adjustAttributes(SoftwareLicenseToLicensePool, attributes, filter)
 		return [SoftwareLicenseToLicensePool.fromHash(res) for res in
 				self._sql.getSet(
@@ -2015,7 +2015,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 
 		ConfigDataBackend.softwareLicenseToLicensePool_deleteObjects(self, softwareLicenseToLicensePools)
 		for softwareLicenseToLicensePool in forceObjectClassList(softwareLicenseToLicensePools, SoftwareLicenseToLicensePool):
-			logger.info(u"Deleting softwareLicenseToLicensePool %s" % softwareLicenseToLicensePool)
+			logger.info(u"Deleting softwareLicenseToLicensePool %s", softwareLicenseToLicensePool)
 			where = self._uniqueCondition(softwareLicenseToLicensePool)
 			self._sql.delete('SOFTWARE_LICENSE_TO_LICENSE_POOL', where)
 
@@ -2052,7 +2052,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 			return []
 
 		ConfigDataBackend.licenseOnClient_getObjects(self, attributes=[], **filter)
-		logger.info(u"Getting licenseOnClient, filter: %s" % filter)
+		logger.info(u"Getting licenseOnClient, filter: %s", filter)
 		(attributes, filter) = self._adjustAttributes(LicenseOnClient, attributes, filter)
 		return [LicenseOnClient.fromHash(res) for res in
 				self._sql.getSet(
@@ -2067,7 +2067,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 
 		ConfigDataBackend.licenseOnClient_deleteObjects(self, licenseOnClients)
 		for licenseOnClient in forceObjectClassList(licenseOnClients, LicenseOnClient):
-			logger.info(u"Deleting licenseOnClient %s" % licenseOnClient)
+			logger.info(u"Deleting licenseOnClient %s", licenseOnClient)
 			where = self._uniqueCondition(licenseOnClient)
 			self._sql.delete('LICENSE_ON_CLIENT', where)
 
@@ -2096,7 +2096,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 
 	def auditSoftware_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.auditSoftware_getObjects(self, attributes=[], **filter)
-		logger.info(u"Getting auditSoftware, filter: %s" % filter)
+		logger.info(u"Getting auditSoftware, filter: %s", filter)
 		return [AuditSoftware.fromHash(h) for h in
 			self.auditSoftware_getHashes(attributes, **filter)
 		]
@@ -2104,7 +2104,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 	def auditSoftware_deleteObjects(self, auditSoftwares):
 		ConfigDataBackend.auditSoftware_deleteObjects(self, auditSoftwares)
 		for auditSoftware in forceObjectClassList(auditSoftwares, AuditSoftware):
-			logger.info(u"Deleting auditSoftware %s" % auditSoftware)
+			logger.info(u"Deleting auditSoftware %s", auditSoftware)
 			where = self._uniqueCondition(auditSoftware)
 			self._sql.delete('SOFTWARE', where)
 
@@ -2133,14 +2133,14 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 
 	def auditSoftwareToLicensePool_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.auditSoftwareToLicensePool_getObjects(self, attributes=[], **filter)
-		logger.info(u"Getting auditSoftwareToLicensePool, filter: %s" % filter)
+		logger.info(u"Getting auditSoftwareToLicensePool, filter: %s", filter)
 		return [AuditSoftwareToLicensePool.fromHash(h) for h in
 				self.auditSoftwareToLicensePool_getHashes(attributes, **filter)]
 
 	def auditSoftwareToLicensePool_deleteObjects(self, auditSoftwareToLicensePools):
 		ConfigDataBackend.auditSoftwareToLicensePool_deleteObjects(self, auditSoftwareToLicensePools)
 		for auditSoftwareToLicensePool in forceObjectClassList(auditSoftwareToLicensePools, AuditSoftwareToLicensePool):
-			logger.info(u"Deleting auditSoftware %s" % auditSoftwareToLicensePool)
+			logger.info(u"Deleting auditSoftware %s", auditSoftwareToLicensePool)
 			where = self._uniqueCondition(auditSoftwareToLicensePool)
 			self._sql.delete('AUDIT_SOFTWARE_TO_LICENSE_POOL', where)
 
@@ -2169,14 +2169,14 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 
 	def auditSoftwareOnClient_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.auditSoftwareOnClient_getObjects(self, attributes=[], **filter)
-		logger.info(u"Getting auditSoftwareOnClient, filter: %s" % filter)
+		logger.info(u"Getting auditSoftwareOnClient, filter: %s", filter)
 		return [AuditSoftwareOnClient.fromHash(h) for h in
 				self.auditSoftwareOnClient_getHashes(attributes, **filter)]
 
 	def auditSoftwareOnClient_deleteObjects(self, auditSoftwareOnClients):
 		ConfigDataBackend.auditSoftwareOnClient_deleteObjects(self, auditSoftwareOnClients)
 		for auditSoftwareOnClient in forceObjectClassList(auditSoftwareOnClients, AuditSoftwareOnClient):
-			logger.info(u"Deleting auditSoftwareOnClient %s" % auditSoftwareOnClient)
+			logger.info(u"Deleting auditSoftwareOnClient %s", auditSoftwareOnClient)
 			where = self._uniqueCondition(auditSoftwareOnClient)
 			self._sql.delete('SOFTWARE_CONFIG', where)
 
@@ -2217,15 +2217,15 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 			elif isinstance(value, str):
 				auditHardware[attribute] = self._sql.escapeAsterisk(value)
 
-		logger.debug(u"Getting hardware ids, filter {0}", auditHardware)
+		logger.debug(u"Getting hardware ids, filter %s", auditHardware)
 		hardwareIds = self._auditHardware_search(returnHardwareIds=True, attributes=[], **auditHardware)
-		logger.debug(u"Found hardware ids: {0}", hardwareIds)
+		logger.debug(u"Found hardware ids: %s", hardwareIds)
 		return hardwareIds
 
 	def auditHardware_insertObject(self, auditHardware):
 		ConfigDataBackend.auditHardware_insertObject(self, auditHardware)
 
-		logger.info(u"Inserting auditHardware: %s" % auditHardware)
+		logger.info(u"Inserting auditHardware: %s", auditHardware)
 		hardwareHash = auditHardware.toHash()
 		filter = {}
 		for attribute, value in hardwareHash.items():
@@ -2248,7 +2248,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 	def auditHardware_updateObject(self, auditHardware):
 		ConfigDataBackend.auditHardware_updateObject(self, auditHardware)
 
-		logger.info(u"Updating auditHardware: %s" % auditHardware)
+		logger.info(u"Updating auditHardware: %s", auditHardware)
 		filter = {}
 		for (attribute, value) in auditHardware.toHash().items():
 			if value is None:
@@ -2260,7 +2260,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 	def auditHardware_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.auditHardware_getObjects(self, attributes=[], **filter)
 
-		logger.info(u"Getting auditHardwares, filter: %s" % filter)
+		logger.info(u"Getting auditHardwares, filter: %s", filter)
 		return [AuditHardware.fromHash(h) for h in
 				self.auditHardware_getHashes(attributes, **filter)]
 
@@ -2307,7 +2307,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 			for (attribute, value) in filter.items():
 				valueInfo = self._auditHardwareConfig[hardwareClass].get(attribute)
 				if not valueInfo:
-					logger.debug(u"Skipping hardwareClass '%s', because of missing info for attribute '%s'" % (hardwareClass, attribute))
+					logger.debug(u"Skipping hardwareClass '%s', because of missing info for attribute '%s'", hardwareClass, attribute)
 					break
 
 				try:
@@ -2323,7 +2323,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 				if not classFilter and filter:
 					continue
 
-				logger.debug(u"Getting auditHardwares, hardwareClass '%s', filter: %s" % (hardwareClass, classFilter))
+				logger.debug(u"Getting auditHardwares, hardwareClass '%s', filter: %s", hardwareClass, classFilter)
 				query = self._createQuery(u'HARDWARE_DEVICE_' + hardwareClass, attributes, classFilter)
 				for res in self._sql.getSet(query):
 					if returnHardwareIds:
@@ -2353,7 +2353,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 	def auditHardware_deleteObjects(self, auditHardwares):
 		ConfigDataBackend.auditHardware_deleteObjects(self, auditHardwares)
 		for auditHardware in forceObjectClassList(auditHardwares, AuditHardware):
-			logger.info(u"Deleting auditHardware: %s" % auditHardware)
+			logger.info(u"Deleting auditHardware: %s", auditHardware)
 
 			where = self._uniqueAuditHardwareCondition(auditHardware)
 			hardwareClass = auditHardware.getHardwareClass()
@@ -2465,7 +2465,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 	def auditHardwareOnHost_updateObject(self, auditHardwareOnHost):
 		ConfigDataBackend.auditHardwareOnHost_updateObject(self, auditHardwareOnHost)
 
-		logger.info(u"Updating auditHardwareOnHost: %s" % auditHardwareOnHost)
+		logger.info(u"Updating auditHardwareOnHost: %s", auditHardwareOnHost)
 		data = auditHardwareOnHost.toHash()
 		update = {}
 		toDelete = set()
@@ -2518,7 +2518,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 				if attribute not in ('hostId', 'state', 'firstseen', 'lastseen'):
 					valueInfo = self._auditHardwareConfig[hardwareClass].get(attribute)
 					if not valueInfo:
-						logger.debug(u"Skipping hardwareClass '%s', because of missing info for attribute '%s'" % (hardwareClass, attribute))
+						logger.debug(u"Skipping hardwareClass '%s', because of missing info for attribute '%s'", hardwareClass, attribute)
 						skipHardwareClass = True
 						break
 
@@ -2541,7 +2541,7 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 			if auditHardwareFilter:
 				auditHardwareFilter['hardwareClass'] = hardwareClass
 				hardwareIds = self._getHardwareIds(auditHardwareFilter)
-				logger.debug2(u"Filtered matching hardware ids: {0}", hardwareIds)
+				logger.debug2(u"Filtered matching hardware ids: %s", hardwareIds)
 				if not hardwareIds:
 					continue
 			classFilter['hardware_id'] = hardwareIds
@@ -2549,13 +2549,13 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 			if attributes and 'hardware_id' not in attributes:
 				attributes.append('hardware_id')
 
-			logger.debug(u"Getting auditHardwareOnHosts, hardwareClass '%s', hardwareIds: %s, filter: %s" % (hardwareClass, hardwareIds, classFilter))
+			logger.debug(u"Getting auditHardwareOnHosts, hardwareClass '%s', hardwareIds: %s, filter: %s", hardwareClass, hardwareIds, classFilter)
 			for res in self._sql.getSet(self._createQuery(u'HARDWARE_CONFIG_{0}'.format(hardwareClass), attributes, classFilter)):
 				data = self._sql.getSet(u'SELECT * from `HARDWARE_DEVICE_%s` where `hardware_id` = %s' \
 								% (hardwareClass, res['hardware_id']))
 
 				if not data:
-					logger.error(u"Hardware device of class '%s' with hardware_id '%s' not found" % (hardwareClass, res['hardware_id']))
+					logger.error(u"Hardware device of class '%s' with hardware_id '%s' not found", hardwareClass, res['hardware_id'])
 					continue
 
 				data = data[0]
@@ -2577,13 +2577,13 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 	def auditHardwareOnHost_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.auditHardwareOnHost_getObjects(self, attributes=[], **filter)
 
-		logger.info(u"Getting auditHardwareOnHosts, filter: %s" % filter)
+		logger.info(u"Getting auditHardwareOnHosts, filter: %s", filter)
 		return [AuditHardwareOnHost.fromHash(h) for h in self.auditHardwareOnHost_getHashes(attributes, **filter)]
 
 	def auditHardwareOnHost_deleteObjects(self, auditHardwareOnHosts):
 		ConfigDataBackend.auditHardwareOnHost_deleteObjects(self, auditHardwareOnHosts)
 		for auditHardwareOnHost in forceObjectClassList(auditHardwareOnHosts, AuditHardwareOnHost):
-			logger.info(u"Deleting auditHardwareOnHost: %s" % auditHardwareOnHost)
+			logger.info(u"Deleting auditHardwareOnHost: %s", auditHardwareOnHost)
 			where = self._uniqueAuditHardwareOnHostCondition(auditHardwareOnHost)
 			self._sql.delete(u'HARDWARE_CONFIG_{0}'.format(auditHardwareOnHost.getHardwareClass()), where)
 

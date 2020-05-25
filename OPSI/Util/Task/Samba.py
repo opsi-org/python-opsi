@@ -118,7 +118,7 @@ def _processConfig(lines):
 				if os.path.exists("/opt/pcbin/install"):
 					logger.warning(u"You have an old depot configuration. Using /opt/pcbin/install is deprecated, please use /var/lib/opsi/depot instead.")
 			except Exception as error:
-				logger.warning(u"Failed to create depot directory '%s': %s" % (depotDir, error))
+				logger.warning(u"Failed to create depot directory '%s': %s", depotDir, error)
 	elif samba4:
 		logger.notice(u"   Share opsi_depot found and samba 4 is detected. Trying to detect the executablefix for opsi_depot-Share")
 		endpos = 0
@@ -253,7 +253,7 @@ def isSamba4():
 
 
 def _writeConfig(newlines, config):
-	logger.notice(u"   Creating backup of %s" % config)
+	logger.notice(u"   Creating backup of %s", config)
 	shutil.copy(config, config + u'.' + time.strftime("%Y-%m-%d_%H:%M"))
 
 	logger.notice(u"   Writing new smb.conf")

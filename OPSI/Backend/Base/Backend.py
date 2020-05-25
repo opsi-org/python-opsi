@@ -88,7 +88,7 @@ def describeInterface(instance):
 				stars = '*' * index
 				params.extend(['{0}{1}'.format(stars, arg) for arg in forceList(element)])
 
-		logger.debug2(u"{0} interface method: name {1!r}, params {2}", instance.__class__.__name__, methodName, params)
+		logger.debug2(u"%s interface method: name %s, params %s", instance.__class__.__name__, methodName, params)
 		methods[methodName] = {
 			'name': methodName,
 			'params': params,
@@ -181,7 +181,7 @@ This defaults to ``self``.
 				self._password = value
 			elif option == 'context':
 				self._context = value
-				logger.info(u"Backend context was set to %s" % self._context)
+				logger.info(u"Backend context was set to %s", self._context)
 			elif option == 'opsimodulesfile':
 				self._opsiModulesFile = forceFilename(value)
 			elif option in ('option_store', 'optionstore'):
@@ -216,8 +216,8 @@ This defaults to ``self``.
 
 			try:
 				logger.debug(
-					u"Testing match of filter {0!r} of attribute {1!r} with "
-					u"value {2!r}", filter[attribute], attribute, value
+					u"Testing match of filter %s of attribute %s with "
+					u"value %s", filter[attribute], attribute, value
 				)
 				filterValues = forceUnicodeList(filter[attribute])
 				if forceUnicodeList(value) == filterValues or forceUnicode(value) in filterValues:
@@ -265,7 +265,7 @@ This defaults to ``self``.
 
 				if matched:
 					logger.debug(
-						u"Value {0!r} matched filter {1!r}, attribute {2!r}",
+						u"Value %s matched filter %s, attribute %s",
 						value, filter[attribute], attribute
 					)
 				else:
@@ -294,7 +294,7 @@ This defaults to ``self``.
 				continue
 
 			if not isinstance(value, self._options[key].__class__):
-				logger.debug(u"Wrong type {0} for option {1}, expecting type {2}", type(value), key, type(self._options[key]))
+				logger.debug(u"Wrong type %s for option %s, expecting type %s", type(value), key, type(self._options[key]))
 				continue
 
 			self._options[key] = value
@@ -333,7 +333,7 @@ This defaults to ``self``.
 				for line in modulesFile:
 					line = line.strip()
 					if '=' not in line:
-						logger.error(u"Found bad line '%s' in modules file '%s'" % (line, self._opsiModulesFile))
+						logger.error(u"Found bad line '%s' in modules file '%s'", line, self._opsiModulesFile)
 						continue
 					(module, state) = line.split('=', 1)
 					module = module.strip().lower()
@@ -347,7 +347,7 @@ This defaults to ``self``.
 							helpermodules[module] = state
 							state = int(state)
 						except ValueError:
-							logger.error(u"Found bad line '%s' in modules file '%s'" % (line, self._opsiModulesFile))
+							logger.error(u"Found bad line '%s' in modules file '%s'", line, self._opsiModulesFile)
 							continue
 					if isinstance(state, int):
 						modules[module] = (state > 0)
@@ -397,7 +397,7 @@ This defaults to ``self``.
 				modules['valid'] = h_int == s_int
 		
 		except Exception as error:
-			logger.info(u"Failed to read opsi modules file '%s': %s" % (self._opsiModulesFile, error))
+			logger.info(u"Failed to read opsi modules file '%s': %s", self._opsiModulesFile, error)
 
 		return {
 			"opsiVersion": self._opsiVersion,

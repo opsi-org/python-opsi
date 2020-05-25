@@ -105,26 +105,26 @@ class ExtendedBackend(Backend):
 		Backend.__init__(self, **kwargs)
 		self._backend = backend
 		if self._context is self:
-			logger.info(u"Setting context to backend %s" % self._context)
+			logger.info(u"Setting context to backend %s", self._context)
 			self._context = self._backend
 		self._overwrite = forceBool(overwrite)
 		self._createInstanceMethods()
 
 	def _createInstanceMethods(self):
-		logger.debug(u"%s is creating instance methods" % self.__class__.__name__)
+		logger.debug(u"%s is creating instance methods", self.__class__.__name__)
 		for _, functionRef in inspect.getmembers(self._backend, inspect.ismethod):
 			methodName = functionRef.__name__
 			if methodName.startswith('_'):
 				# Not a public method
 				continue
 			
-			logger.debug2(u"Found public {0} method {1!r}", self._backend.__class__.__name__, methodName)
+			logger.debug2(u"Found public %s method %s", self._backend.__class__.__name__, methodName)
 			if hasattr(self, methodName):
 				if self._overwrite:
-					logger.debug(u"%s: overwriting method %s of backend instance %s" % (self.__class__.__name__, methodName, self._backend))
+					logger.debug(u"%s: overwriting method %s of backend instance %s", self.__class__.__name__, methodName, self._backend)
 					continue
 				else:
-					logger.debug(u"%s: not overwriting method %s of backend instance %s" % (self.__class__.__name__, methodName, self._backend))
+					logger.debug(u"%s: not overwriting method %s of backend instance %s", self.__class__.__name__, methodName, self._backend)
 
 			argString, callString = getArgAndCallString(functionRef)
 
@@ -132,7 +132,7 @@ class ExtendedBackend(Backend):
 			setattr(self, methodName, MethodType(eval(methodName), self))
 
 	def _executeMethod(self, methodName, **kwargs):
-		logger.debug(u"ExtendedBackend {0!r}: executing {1!r} on backend {2!r}", self, methodName, self._backend)
+		logger.debug(u"ExtendedBackend %s: executing %s on backend %s", self, methodName, self._backend)
 		meth = getattr(self._backend, methodName)
 		return meth(**kwargs)
 
@@ -164,7 +164,7 @@ class ExtendedBackend(Backend):
 
 	def backend_exit(self):
 		if self._backend:
-			logger.debug(u"Calling backend_exit() on backend %s" % self._backend)
+			logger.debug(u"Calling backend_exit() on backend %s", self._backend)
 			self._backend.backend_exit()
 
 
@@ -374,7 +374,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 	def host_createObjects(self, hosts):
 		forcedHosts = forceObjectClassList(hosts, Host)
 		for host in forcedHosts:
-			logger.info(u"Creating host '%s'" % host)
+			logger.info(u"Creating host '%s'", host)
 			self._backend.host_insertObject(host)
 
 		if self._options['returnObjectsOnUpdateAndCreate']:
@@ -384,11 +384,11 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 
 	def host_updateObjects(self, hosts):
 		def updateOrInsert(host):
-			logger.info(u"Updating host '%s'" % host)
+			logger.info(u"Updating host '%s'", host)
 			if self.host_getIdents(id=host.id):
 				self._backend.host_updateObject(host)
 			else:
-				logger.info(u"Host %s does not exist, creating" % host)
+				logger.info(u"Host %s does not exist, creating", host)
 				self._backend.host_insertObject(host)
 
 		hostList = forceObjectClassList(hosts, Host)
@@ -404,7 +404,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		id = forceHostId(id)
 		newId = forceHostId(newId)
 
-		logger.info(u"Renaming client {0} to {1}...", id, newId)
+		logger.info(u"Renaming client %s to %s...", id, newId)
 
 		clients = self._backend.host_getObjects(type='OpsiClient', id=id)
 		try:
@@ -463,10 +463,10 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			softwareLicense.setBoundToHost(newId)
 			softwareLicenses.append(softwareLicense)
 
-		logger.debug(u"Deleting client {0!r}", client)
+		logger.debug(u"Deleting client %s", client)
 		self._backend.host_deleteObjects([client])
 
-		logger.info(u"Updating client {0}...", client.id)
+		logger.info(u"Updating client %s...", client.id)
 		client.setId(newId)
 		self.host_createObjects([client])
 
@@ -522,7 +522,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		if self._backend.host_getObjects(id=newId):
 			raise BackendError(u"Cannot rename: host '%s' already exists" % newId)
 
-		logger.info("Renaming depot {0} to {1}", oldId, newId)
+		logger.info("Renaming depot %s to %s", oldId, newId)
 
 		logger.info("Processing ProductOnDepots...")
 		productOnDepots = []
@@ -588,13 +588,13 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			replaceServerId(configState.values)
 			configStates.append(configState)
 
-		logger.info(u"Deleting depot {0}", depot)
+		logger.info(u"Deleting depot %s", depot)
 		self._backend.host_deleteObjects([depot])
 
 		def changeAddress(value):
 			newValue = value.replace(oldId, newId)
 			newValue = newValue.replace(oldHostname, newHostname)
-			logger.debug("Changed {0!r} to {1!r}", value, newValue)
+			logger.debug("Changed %s to %s", value, newValue)
 			return newValue
 
 		logger.info("Updating depot and it's urls...")
@@ -713,7 +713,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 	def config_createObjects(self, configs):
 		forcedConfigs = forceObjectClassList(configs, Config)
 		for config in forcedConfigs:
-			logger.info(u"Creating config '{}'", config)
+			logger.info(u"Creating config '%s'", config)
 			self._backend.config_insertObject(config)
 
 		if self._options['returnObjectsOnUpdateAndCreate']:
@@ -724,11 +724,11 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 	def config_updateObjects(self, configs):
 		forcedConfigs = forceObjectClassList(configs, Config)
 		for config in forcedConfigs:
-			logger.info(u"Updating config %s" % config)
+			logger.info(u"Updating config %s", config)
 			if self.config_getIdents(id=config.id):
 				self._backend.config_updateObject(config)
 			else:
-				logger.info(u"Config %s does not exist, creating" % config)
+				logger.info(u"Config %s does not exist, creating", config)
 				self._backend.config_insertObject(config)
 
 		if self._options['returnObjectsOnUpdateAndCreate']:
@@ -786,7 +786,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		clientIds = self.host_getIdents(id=filter.get('objectId'), returnType='unicode')
 		# Create missing config states
 		for config in self._backend.config_getObjects(id=filter.get('configId')):
-			logger.debug(u"Default values for {0!r}: {1}", config.id, config.defaultValues)
+			logger.debug(u"Default values for %s: %s", config.id, config.defaultValues)
 			for clientId in clientIds:
 				if config.id not in css.get(clientId, []):
 					# Config state does not exist for client => create default
@@ -822,7 +822,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 	def configState_insertObject(self, configState):
 		if self._options['deleteConfigStateIfDefault'] and self._configStateMatchesDefault(configState):
 			# Do not insert configStates which match the default
-			logger.debug(u"Not inserting configState {0!r}, because it does not differ from defaults", configState)
+			logger.debug(u"Not inserting configState %s, because it does not differ from defaults", configState)
 			return
 
 		configState = forceObjectClass(configState, ConfigState)
@@ -832,7 +832,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 	def configState_updateObject(self, configState):
 		if self._options['deleteConfigStateIfDefault'] and self._configStateMatchesDefault(configState):
 			# Do not update configStates which match the default
-			logger.debug(u"Deleting configState {0!r}, because it does not differ from defaults", configState)
+			logger.debug(u"Deleting configState %s, because it does not differ from defaults", configState)
 			return self._backend.configState_deleteObjects(configState)
 
 		configState = forceObjectClass(configState, ConfigState)
@@ -861,13 +861,13 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 
 		result = []
 		for configState in forceObjectClassList(configStates, ConfigState):
-			logger.info(u"Updating configState %s" % configState)
+			logger.info(u"Updating configState %s", configState)
 			if self.configState_getIdents(
 					configId=configState.configId,
 					objectId=configState.objectId):
 				self.configState_updateObject(configState)
 			else:
-				logger.info(u"ConfigState %s does not exist, creating" % configState)
+				logger.info(u"ConfigState %s does not exist, creating", configState)
 				self.configState_insertObject(configState)
 
 			if returnObjects:
@@ -937,7 +937,7 @@ into the IDs of these depots are to be found in the list behind \
 		result = []
 		addConfigStateDefaults = self.backend_getOptions().get('addConfigStateDefaults', False)
 		try:
-			logger.debug(u"Calling backend_setOptions on {0}", self)
+			logger.debug(u"Calling backend_setOptions on %s", self)
 			self.backend_setOptions({'addConfigStateDefaults': True})
 			for configState in self.configState_getObjects(configId=u'clientconfig.depot.id', objectId=clientIds):
 				try:
@@ -945,7 +945,7 @@ into the IDs of these depots are to be found in the list behind \
 					if not depotId:
 						raise IndexError("Missing value")
 				except IndexError:
-					logger.error(u"No depot server configured for client {0!r}", configState.objectId)
+					logger.error(u"No depot server configured for client %s", configState.objectId)
 					continue
 
 				if depotId not in depotIds:
@@ -1000,7 +1000,7 @@ into the IDs of these depots are to be found in the list behind \
 
 		result = []
 		for product in forceObjectClassList(products, Product):
-			logger.info(u"Creating product %s" % product)
+			logger.info(u"Creating product %s", product)
 			self._backend.product_insertObject(product)
 			if returnObjects:
 				result.extend(
@@ -1018,14 +1018,14 @@ into the IDs of these depots are to be found in the list behind \
 
 		result = []
 		for product in forceObjectClassList(products, Product):
-			logger.info(u"Updating product %s" % product)
+			logger.info(u"Updating product %s", product)
 			if self.product_getIdents(
 					id=product.id,
 					productVersion=product.productVersion,
 					packageVersion=product.packageVersion):
 				self._backend.product_updateObject(product)
 			else:
-				logger.info(u"Product %s does not exist, creating" % product)
+				logger.info(u"Product %s does not exist, creating", product)
 				self._backend.product_insertObject(product)
 
 			if returnObjects:
@@ -1147,11 +1147,11 @@ into the IDs of these depots are to be found in the list behind \
 
 			if changed:
 				if not newValues:
-					logger.debug(u"Properties changed: marking productPropertyState %s for deletion" % productPropertyState)
+					logger.debug(u"Properties changed: marking productPropertyState %s for deletion", productPropertyState)
 					deleteProductPropertyStates.append(productPropertyState)
 				else:
 					productPropertyState.setValues(newValues)
-					logger.debug(u"Properties changed: marking productPropertyState %s for update" % productPropertyState)
+					logger.debug(u"Properties changed: marking productPropertyState %s for update", productPropertyState)
 					updateProductPropertyStates.append(productPropertyState)
 
 		if deleteProductPropertyStates:
@@ -1164,7 +1164,7 @@ into the IDs of these depots are to be found in the list behind \
 
 		result = []
 		for productProperty in forceObjectClassList(productProperties, ProductProperty):
-			logger.info(u"Creating productProperty %s" % productProperty)
+			logger.info(u"Creating productProperty %s", productProperty)
 			self._backend.productProperty_insertObject(productProperty)
 
 			if returnObjects:
@@ -1184,7 +1184,7 @@ into the IDs of these depots are to be found in the list behind \
 
 		result = []
 		for productProperty in forceObjectClassList(productProperties, ProductProperty):
-			logger.info(u"Creating productProperty %s" % productProperty)
+			logger.info(u"Creating productProperty %s", productProperty)
 			if self.productProperty_getIdents(
 					productId=productProperty.productId,
 					productVersion=productProperty.productVersion,
@@ -1192,7 +1192,7 @@ into the IDs of these depots are to be found in the list behind \
 					propertyId=productProperty.propertyId):
 				self._backend.productProperty_updateObject(productProperty)
 			else:
-				logger.info(u"ProductProperty %s does not exist, creating" % productProperty)
+				logger.info(u"ProductProperty %s does not exist, creating", productProperty)
 				self._backend.productProperty_insertObject(productProperty)
 
 			if returnObjects:
@@ -1249,7 +1249,7 @@ into the IDs of these depots are to be found in the list behind \
 
 		result = []
 		for productDependency in forceObjectClassList(productDependencies, ProductDependency):
-			logger.info(u"Creating productDependency %s" % productDependency)
+			logger.info(u"Creating productDependency %s", productDependency)
 			self._backend.productDependency_insertObject(productDependency)
 
 			if returnObjects:
@@ -1270,7 +1270,7 @@ into the IDs of these depots are to be found in the list behind \
 
 		result = []
 		for productDependency in forceObjectClassList(productDependencies, ProductDependency):
-			logger.info(u"Updating productDependency %s" % productDependency)
+			logger.info(u"Updating productDependency %s", productDependency)
 			if self.productDependency_getIdents(
 					productId=productDependency.productId,
 					productVersion=productDependency.productVersion,
@@ -1280,7 +1280,7 @@ into the IDs of these depots are to be found in the list behind \
 
 				self._backend.productDependency_updateObject(productDependency)
 			else:
-				logger.info(u"ProductDependency %s does not exist, creating" % productDependency)
+				logger.info(u"ProductDependency %s does not exist, creating", productDependency)
 				self._backend.productDependency_insertObject(productDependency)
 
 			if returnObjects:
@@ -1339,7 +1339,7 @@ into the IDs of these depots are to be found in the list behind \
 
 		if currentProductOnDepots:
 			currentProductOnDepot = currentProductOnDepots[0]
-			logger.info(u"Updating productOnDepot %s instead of creating a new one" % currentProductOnDepot)
+			logger.info(u"Updating productOnDepot %s instead of creating a new one", currentProductOnDepot)
 			currentProductOnDepot.update(productOnDepot)
 			self._backend.productOnDepot_insertObject(currentProductOnDepot)
 		else:
@@ -1350,7 +1350,7 @@ into the IDs of these depots are to be found in the list behind \
 
 		result = []
 		for productOnDepot in forceObjectClassList(productOnDepots, ProductOnDepot):
-			logger.info(u"Creating productOnDepot %s" % productOnDepot.toHash())
+			logger.info(u"Creating productOnDepot %s", productOnDepot.toHash())
 			self.productOnDepot_insertObject(productOnDepot)
 
 			if returnObjects:
@@ -1369,7 +1369,7 @@ into the IDs of these depots are to be found in the list behind \
 		result = []
 		productOnDepots = forceObjectClassList(productOnDepots, ProductOnDepot)
 		for productOnDepot in productOnDepots:
-			logger.info(u"Updating productOnDepot '%s'" % productOnDepot)
+			logger.info(u"Updating productOnDepot '%s'", productOnDepot)
 			if self.productOnDepot_getIdents(
 					productId=productOnDepot.productId,
 					productType=productOnDepot.productType,
@@ -1378,7 +1378,7 @@ into the IDs of these depots are to be found in the list behind \
 					depotId=productOnDepot.depotId):
 				self._backend.productOnDepot_updateObject(productOnDepot)
 			else:
-				logger.info(u"ProductOnDepot %s does not exist, creating" % productOnDepot)
+				logger.info(u"ProductOnDepot %s does not exist, creating", productOnDepot)
 				self.productOnDepot_insertObject(productOnDepot)
 
 			if returnObjects:
@@ -1667,13 +1667,13 @@ into the IDs of these depots are to be found in the list behind \
 			logger.debug(u"   * created pocByClientIdAndProductId")
 			# for (clientId, pocs) in pocByClientIdAndProductId.items():
 			#   for (productId, poc) in pocs.items():
-			#       logger.debug2(u"      [%s] %s: %s" % (clientId, productId, poc.toHash()))
+			#       logger.debug2(u"      [%s] %s: %s", clientId, productId, poc.toHash())
 
 			for (depotId, depotClientIds) in depotToClients.items():
 				for clientId in depotClientIds:
 					for pod in productOnDepots[depotId]:
 						if pod.productId not in pocByClientIdAndProductId[clientId]:
-							logger.debug(u"      - creating default productOnClient for clientId '%s', productId '%s'" % (clientId, pod.productId))
+							logger.debug(u"      - creating default productOnClient for clientId '%s', productId '%s'", clientId, pod.productId)
 							poc = ProductOnClient(
 									productId=pod.productId,
 									productType=pod.productType,
@@ -1687,7 +1687,7 @@ into the IDs of these depots are to be found in the list behind \
 			logger.debug(u"   * created productOnClient defaults")
 			# for (clientId, pocs) in pocByClientIdAndProductId.items():
 			#   for (productId, poc) in pocs.items():
-			#       logger.debug2(u"      [%s] %s: %s" % (clientId, productId, poc.toHash()))
+			#       logger.debug2(u"      [%s] %s: %s", clientId, productId, poc.toHash())
 
 		if not self._options['addProductOnClientDefaults'] and not self._options['processProductOnClientSequence']:
 			return productOnClients
@@ -1717,7 +1717,7 @@ into the IDs of these depots are to be found in the list behind \
 			if update:
 				nextProductOnClient.update(productOnClient, updateWithNoneValues=False)
 			else:
-				logger.info(u"Updating productOnClient %s instead of creating a new one" % nextProductOnClient)
+				logger.info(u"Updating productOnClient %s instead of creating a new one", nextProductOnClient)
 				nextProductOnClient.update(productOnClient, updateWithNoneValues=True)
 		else:
 			nextProductOnClient = productOnClient.clone()
@@ -1769,7 +1769,7 @@ into the IDs of these depots are to be found in the list behind \
 			productOnClients = self.productOnClient_addDependencies(productOnClients)
 
 		for productOnClient in productOnClients:
-			logger.info(u"Creating productOnClient %s" % productOnClient)
+			logger.info(u"Creating productOnClient %s", productOnClient)
 			self.productOnClient_insertObject(productOnClient)
 
 			if returnObjects:
@@ -1791,15 +1791,15 @@ into the IDs of these depots are to be found in the list behind \
 			productOnClients = self.productOnClient_addDependencies(productOnClients)
 
 		for productOnClient in productOnClients:
-			logger.info(u"Updating productOnClient {0!r}".format(productOnClient))
+			logger.info(u"Updating productOnClient %s", productOnClient)
 			if self.productOnClient_getIdents(
 					productId=productOnClient.productId,
 					productType=productOnClient.productType,
 					clientId=productOnClient.clientId):
-				logger.info(u"ProductOnClient %s exists, updating" % productOnClient)
+				logger.info(u"ProductOnClient %s exists, updating", productOnClient)
 				self.productOnClient_updateObject(productOnClient)
 			else:
-				logger.info(u"ProductOnClient %s does not exist, creating" % productOnClient)
+				logger.info(u"ProductOnClient %s does not exist, creating", productOnClient)
 				self.productOnClient_insertObject(productOnClient)
 
 			if returnObjects:
@@ -1881,7 +1881,7 @@ into the IDs of these depots are to be found in the list behind \
 		returnObjects = self._options['returnObjectsOnUpdateAndCreate']
 		result = []
 		for productPropertyState in forceObjectClassList(productPropertyStates, ProductPropertyState):
-			logger.info(u"Updating productPropertyState %s" % productPropertyState)
+			logger.info(u"Updating productPropertyState %s", productPropertyState)
 			self._backend.productPropertyState_insertObject(productPropertyState)
 
 			if returnObjects:
@@ -1900,7 +1900,7 @@ into the IDs of these depots are to be found in the list behind \
 		result = []
 		productPropertyStates = forceObjectClassList(productPropertyStates, ProductPropertyState)
 		for productPropertyState in productPropertyStates:
-			logger.info(u"Updating productPropertyState '%s'" % productPropertyState)
+			logger.info(u"Updating productPropertyState '%s'", productPropertyState)
 			if self.productPropertyState_getIdents(
 						productId=productPropertyState.productId,
 						objectId=productPropertyState.objectId,
@@ -1908,7 +1908,7 @@ into the IDs of these depots are to be found in the list behind \
 
 				self._backend.productPropertyState_updateObject(productPropertyState)
 			else:
-				logger.info(u"ProductPropertyState %s does not exist, creating" % productPropertyState)
+				logger.info(u"ProductPropertyState %s does not exist, creating", productPropertyState)
 				self._backend.productPropertyState_insertObject(productPropertyState)
 
 			if returnObjects:
@@ -1949,7 +1949,7 @@ into the IDs of these depots are to be found in the list behind \
 	def group_createObjects(self, groups):
 		groups = forceObjectClassList(groups, Group)
 		for group in groups:
-			logger.info(u"Creating group '%s'" % group)
+			logger.info(u"Creating group '%s'", group)
 			self._backend.group_insertObject(group)
 
 		if self._options['returnObjectsOnUpdateAndCreate']:
@@ -1960,11 +1960,11 @@ into the IDs of these depots are to be found in the list behind \
 	def group_updateObjects(self, groups):
 		groups = forceObjectClassList(groups, Group)
 		for group in groups:
-			logger.info(u"Updating group '%s'" % group)
+			logger.info(u"Updating group '%s'", group)
 			if self.group_getIdents(id=group.id):
 				self._backend.group_updateObject(group)
 			else:
-				logger.info(u"Group %s does not exist, creating" % group)
+				logger.info(u"Group %s does not exist, creating", group)
 				self._backend.group_insertObject(group)
 
 		if self._options['returnObjectsOnUpdateAndCreate']:
@@ -1998,7 +1998,7 @@ into the IDs of these depots are to be found in the list behind \
 
 		result = []
 		for objectToGroup in forceObjectClassList(objectToGroups, ObjectToGroup):
-			logger.info(u"Creating objectToGroup %s" % objectToGroup)
+			logger.info(u"Creating objectToGroup %s", objectToGroup)
 			self._backend.objectToGroup_insertObject(objectToGroup)
 
 			if returnObjects:
@@ -2016,14 +2016,14 @@ into the IDs of these depots are to be found in the list behind \
 		result = []
 		objectToGroups = forceObjectClassList(objectToGroups, ObjectToGroup)
 		for objectToGroup in objectToGroups:
-			logger.info(u"Updating objectToGroup %s" % objectToGroup)
+			logger.info(u"Updating objectToGroup %s", objectToGroup)
 			if self.objectToGroup_getIdents(
 					groupType=objectToGroup.groupType,
 					groupId=objectToGroup.groupId,
 					objectId=objectToGroup.objectId):
 				self._backend.objectToGroup_updateObject(objectToGroup)
 			else:
-				logger.info(u"ObjectToGroup %s does not exist, creating" % objectToGroup)
+				logger.info(u"ObjectToGroup %s does not exist, creating", objectToGroup)
 				self._backend.objectToGroup_insertObject(objectToGroup)
 
 			if returnObjects:
@@ -2064,7 +2064,7 @@ into the IDs of these depots are to be found in the list behind \
 	def licenseContract_createObjects(self, licenseContracts):
 		licenseContracts = forceObjectClassList(licenseContracts, LicenseContract)
 		for licenseContract in licenseContracts:
-			logger.info(u"Creating licenseContract %s" % licenseContract)
+			logger.info(u"Creating licenseContract %s", licenseContract)
 			self._backend.licenseContract_insertObject(licenseContract)
 
 		if self._options['returnObjectsOnUpdateAndCreate']:
@@ -2075,11 +2075,11 @@ into the IDs of these depots are to be found in the list behind \
 	def licenseContract_updateObjects(self, licenseContracts):
 		licenseContracts = forceObjectClassList(licenseContracts, LicenseContract)
 		for licenseContract in licenseContracts:
-			logger.info(u"Updating licenseContract '%s'" % licenseContract)
+			logger.info(u"Updating licenseContract '%s'", licenseContract)
 			if self.licenseContract_getIdents(id=licenseContract.id):
 				self._backend.licenseContract_updateObject(licenseContract)
 			else:
-				logger.info(u"LicenseContract %s does not exist, creating" % licenseContract)
+				logger.info(u"LicenseContract %s does not exist, creating", licenseContract)
 				self._backend.licenseContract_insertObject(licenseContract)
 
 		if self._options['returnObjectsOnUpdateAndCreate']:
@@ -2106,7 +2106,7 @@ into the IDs of these depots are to be found in the list behind \
 	def softwareLicense_createObjects(self, softwareLicenses):
 		softwareLicenses = forceObjectClassList(softwareLicenses, SoftwareLicense)
 		for softwareLicense in softwareLicenses:
-			logger.info(u"Creating softwareLicense '%s'" % softwareLicense)
+			logger.info(u"Creating softwareLicense '%s'", softwareLicense)
 			self._backend.softwareLicense_insertObject(softwareLicense)
 
 		if self._options['returnObjectsOnUpdateAndCreate']:
@@ -2117,11 +2117,11 @@ into the IDs of these depots are to be found in the list behind \
 	def softwareLicense_updateObjects(self, softwareLicenses):
 		softwareLicenses = forceObjectClassList(softwareLicenses, SoftwareLicense)
 		for softwareLicense in softwareLicenses:
-			logger.info(u"Updating softwareLicense '%s'" % softwareLicense)
+			logger.info(u"Updating softwareLicense '%s'", softwareLicense)
 			if self.softwareLicense_getIdents(id=softwareLicense.id):
 				self._backend.softwareLicense_updateObject(softwareLicense)
 			else:
-				logger.info(u"ProducSoftwareLicenset %s does not exist, creating" % softwareLicense)
+				logger.info(u"ProducSoftwareLicenset %s does not exist, creating", softwareLicense)
 				self._backend.softwareLicense_insertObject(softwareLicense)
 
 		if self._options['returnObjectsOnUpdateAndCreate']:
@@ -2163,7 +2163,7 @@ into the IDs of these depots are to be found in the list behind \
 	def licensePool_createObjects(self, licensePools):
 		licensePools = forceObjectClassList(licensePools, LicensePool)
 		for licensePool in licensePools:
-			logger.info(u"Creating licensePool '%s'" % licensePool)
+			logger.info(u"Creating licensePool '%s'", licensePool)
 			self._backend.licensePool_insertObject(licensePool)
 
 		if self._options['returnObjectsOnUpdateAndCreate']:
@@ -2174,11 +2174,11 @@ into the IDs of these depots are to be found in the list behind \
 	def licensePool_updateObjects(self, licensePools):
 		licensePools = forceObjectClassList(licensePools, LicensePool)
 		for licensePool in licensePools:
-			logger.info(u"Updating licensePool '%s'" % licensePool)
+			logger.info(u"Updating licensePool '%s'", licensePool)
 			if self.licensePool_getIdents(id=licensePool.id):
 				self._backend.licensePool_updateObject(licensePool)
 			else:
-				logger.info(u"LicensePool %s does not exist, creating" % licensePool)
+				logger.info(u"LicensePool %s does not exist, creating", licensePool)
 				self._backend.licensePool_insertObject(licensePool)
 
 		if self._options['returnObjectsOnUpdateAndCreate']:
@@ -2207,7 +2207,7 @@ into the IDs of these depots are to be found in the list behind \
 
 		result = []
 		for softwareLicenseToLicensePool in forceObjectClassList(softwareLicenseToLicensePools, SoftwareLicenseToLicensePool):
-			logger.info(u"Creating softwareLicenseToLicensePool %s" % softwareLicenseToLicensePool)
+			logger.info(u"Creating softwareLicenseToLicensePool %s", softwareLicenseToLicensePool)
 			self._backend.softwareLicenseToLicensePool_insertObject(softwareLicenseToLicensePool)
 
 			if returnObjects:
@@ -2226,13 +2226,13 @@ into the IDs of these depots are to be found in the list behind \
 		result = []
 		softwareLicenseToLicensePools = forceObjectClassList(softwareLicenseToLicensePools, SoftwareLicenseToLicensePool)
 		for softwareLicenseToLicensePool in softwareLicenseToLicensePools:
-			logger.info(u"Updating %s" % softwareLicenseToLicensePool)
+			logger.info(u"Updating %s", softwareLicenseToLicensePool)
 			if self.softwareLicenseToLicensePool_getIdents(
 					softwareLicenseId=softwareLicenseToLicensePool.softwareLicenseId,
 					licensePoolId=softwareLicenseToLicensePool.licensePoolId):
 				self._backend.softwareLicenseToLicensePool_updateObject(softwareLicenseToLicensePool)
 			else:
-				logger.info(u"SoftwareLicenseToLicensePool %s does not exist, creating" % softwareLicenseToLicensePool)
+				logger.info(u"SoftwareLicenseToLicensePool %s does not exist, creating", softwareLicenseToLicensePool)
 				self._backend.softwareLicenseToLicensePool_insertObject(softwareLicenseToLicensePool)
 
 			if returnObjects:
@@ -2271,7 +2271,7 @@ into the IDs of these depots are to be found in the list behind \
 
 		result = []
 		for licenseOnClient in forceObjectClassList(licenseOnClients, LicenseOnClient):
-			logger.info(u"Creating licenseOnClient %s" % licenseOnClient)
+			logger.info(u"Creating licenseOnClient %s", licenseOnClient)
 			self._backend.licenseOnClient_insertObject(licenseOnClient)
 
 			if returnObjects:
@@ -2291,14 +2291,14 @@ into the IDs of these depots are to be found in the list behind \
 		result = []
 		licenseOnClients = forceObjectClassList(licenseOnClients, LicenseOnClient)
 		for licenseOnClient in licenseOnClients:
-			logger.info(u"Updating licenseOnClient %s" % licenseOnClient)
+			logger.info(u"Updating licenseOnClient %s", licenseOnClient)
 			if self.licenseOnClient_getIdents(
 					softwareLicenseId=licenseOnClient.softwareLicenseId,
 					licensePoolId=licenseOnClient.licensePoolId,
 					clientId=licenseOnClient.clientId):
 				self._backend.licenseOnClient_updateObject(licenseOnClient)
 			else:
-				logger.info(u"LicenseOnClient %s does not exist, creating" % licenseOnClient)
+				logger.info(u"LicenseOnClient %s does not exist, creating", licenseOnClient)
 				self._backend.licenseOnClient_insertObject(licenseOnClient)
 
 			if returnObjects:
@@ -2376,8 +2376,8 @@ into the IDs of these depots are to be found in the list behind \
 		licenseOnClients = self._backend.licenseOnClient_getObjects(licensePoolId=licensePoolId, clientId=clientId)
 		if licenseOnClients:
 			logger.info(
-				u"Using already assigned license '%s' for client '%s', license pool '%s'"
-				% (licenseOnClients[0].getSoftwareLicenseId(), clientId, licensePoolId)
+				u"Using already assigned license '%s' for client '%s', license pool '%s'",
+				licenseOnClients[0].getSoftwareLicenseId(), clientId, licensePoolId
 			)
 			licenseOnClient = licenseOnClients[0]
 		else:
@@ -2386,8 +2386,8 @@ into the IDs of these depots are to be found in the list behind \
 				logger.info(u"License available but no license key found")
 
 			logger.info(
-				u"Using software license id '%s', license key '%s' for host '%s' and license pool '%s'"
-				% (softwareLicenseId, licenseKey, clientId, licensePoolId)
+				u"Using software license id '%s', license key '%s' for host '%s' and license pool '%s'",
+				softwareLicenseId, licenseKey, clientId, licensePoolId
 			)
 
 			licenseOnClient = LicenseOnClient(
@@ -2421,27 +2421,27 @@ into the IDs of these depots are to be found in the list behind \
 
 		softwareLicensesBoundToHost = self._backend.softwareLicense_getObjects(id=softwareLicenseIds, boundToHost=clientId)
 		if softwareLicensesBoundToHost:
-			logger.info(u"Using license bound to host: %s" % softwareLicensesBoundToHost[0])
+			logger.info(u"Using license bound to host: %s", softwareLicensesBoundToHost[0])
 			softwareLicenseId = softwareLicensesBoundToHost[0].getId()
 		else:
 			# Search an available license
 			for softwareLicense in self._backend.softwareLicense_getObjects(id=softwareLicenseIds, boundToHost=[None, '']):
 				logger.debug(
-					u"Checking license '%s', maxInstallations %d"
-					% (softwareLicense.getId(), softwareLicense.getMaxInstallations())
+					u"Checking license '%s', maxInstallations %d",
+					softwareLicense.getId(), softwareLicense.getMaxInstallations()
 				)
 				if softwareLicense.getMaxInstallations() == 0:
 					# 0 = infinite
 					softwareLicenseId = softwareLicense.getId()
 					break
 				installations = len(self.licenseOnClient_getIdents(softwareLicenseId=softwareLicense.getId()))
-				logger.debug(u"Installations registered: %d" % installations)
+				logger.debug(u"Installations registered: %d", installations)
 				if installations < softwareLicense.getMaxInstallations():
 					softwareLicenseId = softwareLicense.getId()
 					break
 
 			if softwareLicenseId:
-				logger.info(u"Found available license for pool '%s' and client '%s': %s" % (licensePoolId, clientId, softwareLicenseId))
+				logger.info(u"Found available license for pool '%s' and client '%s': %s", licensePoolId, clientId, softwareLicenseId)
 
 		if not softwareLicenseId:
 			raise LicenseMissingError(u"No license available for pool '%s' and client '%s'" % (licensePoolId, clientId))
@@ -2452,14 +2452,14 @@ into the IDs of these depots are to be found in the list behind \
 				if softwareLicenseToLicensePool.getSoftwareLicenseId() == softwareLicenseId:
 					licenseKey = softwareLicenseToLicensePool.getLicenseKey()
 					break
-				logger.debug(u"Found license key: %s" % licenseKey)
+				logger.debug(u"Found license key: %s", licenseKey)
 				licenseKeys.append(softwareLicenseToLicensePool.getLicenseKey())
 
 		if not licenseKey and licenseKeys:
 			licenseKey = random.choice(licenseKeys)
 			logger.info(u"Randomly choosing license key")
 
-		logger.debug(u"Using license '%s', license key: %s" % (softwareLicenseId, licenseKey))
+		logger.debug(u"Using license '%s', license key: %s", softwareLicenseId, licenseKey)
 		return (softwareLicenseId, licenseKey)
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2470,7 +2470,7 @@ into the IDs of these depots are to be found in the list behind \
 
 		result = []
 		for auditSoftware in forceObjectClassList(auditSoftwares, AuditSoftware):
-			logger.info(u"Creating auditSoftware %s" % auditSoftware)
+			logger.info(u"Creating auditSoftware %s", auditSoftware)
 			self._backend.auditSoftware_insertObject(auditSoftware)
 
 			if returnObjects:
@@ -2492,7 +2492,7 @@ into the IDs of these depots are to be found in the list behind \
 		result = []
 		auditSoftwares = forceObjectClassList(auditSoftwares, AuditSoftware)
 		for auditSoftware in auditSoftwares:
-			logger.info(u"Updating %s" % auditSoftware)
+			logger.info(u"Updating %s", auditSoftware)
 			if self.auditSoftware_getIdents(
 					name=auditSoftware.name,
 					version=auditSoftware.version,
@@ -2502,7 +2502,7 @@ into the IDs of these depots are to be found in the list behind \
 
 				self._backend.auditSoftware_updateObject(auditSoftware)
 			else:
-				logger.info(u"AuditSoftware %s does not exist, creating" % auditSoftware)
+				logger.info(u"AuditSoftware %s does not exist, creating", auditSoftware)
 				self._backend.auditSoftware_insertObject(auditSoftware)
 
 			if returnObjects:
@@ -2553,7 +2553,7 @@ into the IDs of these depots are to be found in the list behind \
 
 		result = []
 		for auditSoftwareToLicensePool in forceObjectClassList(auditSoftwareToLicensePools, AuditSoftwareToLicensePool):
-			logger.info(u"Creating %s" % auditSoftwareToLicensePool)
+			logger.info(u"Creating %s", auditSoftwareToLicensePool)
 			self._backend.auditSoftwareToLicensePool_insertObject(auditSoftwareToLicensePool)
 
 			if returnObjects:
@@ -2575,7 +2575,7 @@ into the IDs of these depots are to be found in the list behind \
 		result = []
 		auditSoftwareToLicensePools = forceObjectClassList(auditSoftwareToLicensePools, AuditSoftwareToLicensePool)
 		for auditSoftwareToLicensePool in auditSoftwareToLicensePools:
-			logger.info(u"Creating %s" % auditSoftwareToLicensePool)
+			logger.info(u"Creating %s", auditSoftwareToLicensePool)
 			if self.auditSoftwareToLicensePool_getIdents(
 					name=auditSoftwareToLicensePool.name,
 					version=auditSoftwareToLicensePool.version,
@@ -2585,7 +2585,7 @@ into the IDs of these depots are to be found in the list behind \
 
 				self._backend.auditSoftwareToLicensePool_updateObject(auditSoftwareToLicensePool)
 			else:
-				logger.info(u"AuditSoftwareToLicensePool %s does not exist, creating" % auditSoftwareToLicensePool)
+				logger.info(u"AuditSoftwareToLicensePool %s does not exist, creating", auditSoftwareToLicensePool)
 				self._backend.auditSoftwareToLicensePool_insertObject(auditSoftwareToLicensePool)
 
 			if returnObjects:
@@ -2639,7 +2639,7 @@ into the IDs of these depots are to be found in the list behind \
 
 		result = []
 		for auditSoftwareOnClient in forceObjectClassList(auditSoftwareOnClients, AuditSoftwareOnClient):
-			logger.info(u"Creating auditSoftwareOnClient %s" % auditSoftwareOnClient)
+			logger.info(u"Creating auditSoftwareOnClient %s", auditSoftwareOnClient)
 			self._backend.auditSoftwareOnClient_insertObject(auditSoftwareOnClient)
 
 			if returnObjects:
@@ -2662,7 +2662,7 @@ into the IDs of these depots are to be found in the list behind \
 		result = []
 		auditSoftwareOnClients = forceObjectClassList(auditSoftwareOnClients, AuditSoftwareOnClient)
 		for auditSoftwareOnClient in auditSoftwareOnClients:
-			logger.info(u"Updating auditSoftwareOnClient %s" % auditSoftwareOnClient)
+			logger.info(u"Updating auditSoftwareOnClient %s", auditSoftwareOnClient)
 			if self.auditSoftwareOnClient_getIdents(
 					name=auditSoftwareOnClient.name,
 					version=auditSoftwareOnClient.version,
@@ -2672,7 +2672,7 @@ into the IDs of these depots are to be found in the list behind \
 					clientId=auditSoftwareOnClient.clientId):
 				self._backend.auditSoftwareOnClient_updateObject(auditSoftwareOnClient)
 			else:
-				logger.info(u"AuditSoftwareOnClient %s does not exist, creating" % auditSoftwareOnClient)
+				logger.info(u"AuditSoftwareOnClient %s does not exist, creating", auditSoftwareOnClient)
 				self._backend.auditSoftwareOnClient_insertObject(auditSoftwareOnClient)
 
 			if returnObjects:
@@ -2732,13 +2732,13 @@ into the IDs of these depots are to be found in the list behind \
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def auditHardware_createObjects(self, auditHardwares):
 		for auditHardware in forceObjectClassList(auditHardwares, AuditHardware):
-			logger.info(u"Creating auditHardware %s" % auditHardware)
+			logger.info(u"Creating auditHardware %s", auditHardware)
 			self.auditHardware_insertObject(auditHardware)
 		return []
 
 	def auditHardware_updateObjects(self, auditHardwares):
 		for auditHardware in forceObjectClassList(auditHardwares, AuditHardware):
-			logger.info(u"Updating auditHardware %s" % auditHardware)
+			logger.info(u"Updating auditHardware %s", auditHardware)
 			# You can't update auditHardwares, because the ident contains all attributes
 			self.auditHardware_insertObject(auditHardware)
 		return []
@@ -2778,7 +2778,7 @@ into the IDs of these depots are to be found in the list behind \
 
 	def auditHardwareOnHost_createObjects(self, auditHardwareOnHosts):
 		for auditHardwareOnHost in forceObjectClassList(auditHardwareOnHosts, AuditHardwareOnHost):
-			logger.info(u"Creating auditHardwareOnHost %s" % auditHardwareOnHost)
+			logger.info(u"Creating auditHardwareOnHost %s", auditHardwareOnHost)
 			self._backend.auditHardwareOnHost_insertObject(auditHardwareOnHost)
 
 		return []
@@ -2798,10 +2798,10 @@ into the IDs of these depots are to be found in the list behind \
 			}
 
 			if self.auditHardwareOnHost_getObjects(attributes=['hostId'], **filter):
-				logger.debug2(u"Updating existing AuditHardwareOnHost {0!r}", auditHardwareOnHost)
+				logger.debug2(u"Updating existing AuditHardwareOnHost %s", auditHardwareOnHost)
 				self.auditHardwareOnHost_updateObject(auditHardwareOnHost)
 			else:
-				logger.info(u"AuditHardwareOnHost %s does not exist, creating" % auditHardwareOnHost)
+				logger.info(u"AuditHardwareOnHost %s does not exist, creating", auditHardwareOnHost)
 				self._backend.auditHardwareOnHost_insertObject(auditHardwareOnHost)
 
 		return []

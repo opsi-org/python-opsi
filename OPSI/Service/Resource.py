@@ -60,7 +60,7 @@ class ResourceOpsi(resource.Resource):
 	def render(self, request):
 		''' Process request. '''
 		try:
-			logger.debug2(u"{0}.render()", self.__class__.__name__)
+			logger.debug2(u"%s.render()", self.__class__.__name__)
 			if not self.WorkerClass:
 				raise RuntimeError(u"No worker class defined in resource %s" % self.__class__.__name__)
 			worker = self.WorkerClass(self._service, request, self)

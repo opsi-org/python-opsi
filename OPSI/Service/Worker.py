@@ -240,7 +240,7 @@ class WorkerOpsi:
 		self.authRealm = 'OPSI Service'
 
 	def process(self):
-		logger.info(u"Worker {0} started processing", self)
+		logger.info(u"Worker %s started processing", self)
 		deferred = defer.Deferred()
 		deferred.addCallback(self._getSession)
 		deferred.addCallback(self._authenticate)
@@ -276,7 +276,7 @@ class WorkerOpsi:
 		return DelayResult(seconds, result).deferred
 
 	def _errback(self, failure):
-		logger.debug2("{0}._errback", self.__class__.__name__)
+		logger.debug2("%s._errback", self.__class__.__name__)
 
 		self._freeSession(failure)
 		self._setCookie(failure)
@@ -310,7 +310,7 @@ class WorkerOpsi:
 	
 	def _freeSession(self, result):
 		if self.session:
-			logger.debug(u"Freeing session {0}", self.session)
+			logger.debug(u"Freeing session %s", self.session)
 			self.session.decreaseUsageCount()
 		return result
 
@@ -320,10 +320,10 @@ class WorkerOpsi:
 		auth = self.request.getHeader('Authorization')
 		if auth:
 			auth = auth.split()
-			logger.debug("Authorization header found (type: {0})", auth[0])
+			logger.debug("Authorization header found (type: %s)", auth[0])
 			try:
 				encoded = auth[1].encode("ascii")
-				logger.confidential("Auth encoded: {0}", encoded)
+				logger.confidential("Auth encoded: %s", encoded)
 				parts = str(base64.decodebytes(encoded), encoding='latin-1').split(':')
 				if len(parts) > 6:
 					user = u':'.join(parts[:6])
@@ -332,9 +332,9 @@ class WorkerOpsi:
 					user = parts[0]
 					password = u':'.join(parts[1:])
 				user = user.strip()
-				logger.confidential(u"Client supplied username {0!r} and password {1!r}", user, password)
+				logger.confidential(u"Client supplied username '%s' and password '%s'", user, password)
 			except Exception as error:
-				logger.error(u"Bad Authorization header from '{0}': {1}", self.request.getClientIP(), error, exc_info=True)
+				logger.error(u"Bad Authorization header from '%s': %s", self.request.getClientIP(), error, exc_info=True)
 
 		return (user, password)
 
@@ -368,16 +368,16 @@ class WorkerOpsi:
 						sessionId = forceUnicode(value.strip())
 						break
 		except Exception as error:
-			logger.error(u"Failed to get cookie from header: {0}", error)
+			logger.error(u"Failed to get cookie from header: %s", error)
 
-		logger.confidential("sessionId: {0}", sessionId)
+		logger.confidential("sessionId: %s", sessionId)
 		return sessionId
 
 	def _getSession(self, result):
 		''' This method restores a session or generates a new one. '''
 		self.session = None
 
-		logger.confidential(u"Request headers: {0}", self.request.getAllHeaders())
+		logger.confidential(u"Request headers: %s", self.request.getAllHeaders())
 
 		userAgent = self._getUserAgent()
 		sessionHandler = self._getSessionHandler()
@@ -386,13 +386,13 @@ class WorkerOpsi:
 		# Get Session object
 		self.session = sessionHandler.getSession(sessionId, self.request.getClientIP())
 		if sessionId == self.session.uid:
-			logger.info(u"Reusing session for client '{0}', application '{1}'", self.request.getClientIP(), userAgent)
+			logger.info(u"Reusing session for client '%s', application '%s'", self.request.getClientIP(), userAgent)
 		elif sessionId:
-			logger.notice(u"Application '{0}' on client '{1}' supplied non existing session id: {2}", userAgent, self.request.getClientIP(), sessionId)
+			logger.notice(u"Application '%s' on client '%s' supplied non existing session id: %s", userAgent, self.request.getClientIP(), sessionId)
 
 		if sessionHandler and self.session.ip and (self.session.ip != self.request.getClientIP()):
 			logger.critical(
-				u"Client ip '{0}' does not match session ip '{1}', "
+				u"Client ip '%s' does not match session ip '%s', "
 				u"deleting old session and creating a new one",
 				self.request.getClientIP(),
 				self.session.ip
@@ -406,7 +406,7 @@ class WorkerOpsi:
 		# Set user-agent / application
 		if self.session.userAgent and (self.session.userAgent != userAgent):
 			logger.warning(
-				u"Application changed from '{0}' to '{1}' for existing session of client '{2}'",
+				u"Application changed from '%s' to '%s' for existing session of client '%s'",
 				self.session.userAgent,
 				userAgent,
 				self.request.getClientIP()
@@ -414,17 +414,17 @@ class WorkerOpsi:
 		self.session.userAgent = userAgent
 
 		logger.confidential(
-			u"Session id is {0!r} for client {1!r}, application {2!r}",
+			u"Session id is %s for client %s, application %s",
 			self.session.uid,
 			self.request.getClientIP(),
 			self.session.userAgent
 		)
 
-		logger.confidential(u"Session content: {0}", self.session.__dict__)
+		logger.confidential(u"Session content: %s", self.session.__dict__)
 		return result
 
 	def _setCookie(self, result):
-		logger.debug(u"%s._setCookie" % self)
+		logger.debug(u"%s._setCookie", self)
 		if not self.session:
 			return
 
@@ -470,9 +470,9 @@ class WorkerOpsi:
 
 	def _decodeQuery(self, result):
 		try:
-			logger.debug("Decoding query, request method {0}", self.request.method)
+			logger.debug("Decoding query, request method %s", self.request.method)
 			if self.request.method == b'POST':
-				logger.debug2("Request headers: {0}", self.request.getAllHeaders())
+				logger.debug2("Request headers: %s", self.request.getAllHeaders())
 				try:
 					contentType = self.request.getHeader('content-type').lower()
 				except Exception as e:
@@ -482,7 +482,7 @@ class WorkerOpsi:
 				except Exception as e:
 					contentEncoding = None
 				
-				logger.debug(u"Content-Type: {0}, Content-Encoding: {1}", contentType, contentEncoding)
+				logger.debug(u"Content-Type: %s, Content-Encoding: %s", contentType, contentEncoding)
 					
 				if contentType and "gzip" in contentType:
 					# Invalid MIME type.
@@ -504,17 +504,17 @@ class WorkerOpsi:
 
 			if not isinstance(self.query, str):
 				self.query = str(self.query, encoding='utf-8', errors='replace')
-				logger.debug(u"Fallback Decoded query: {!r}", self.query)
+				logger.debug(u"Fallback Decoded query: %s", self.query)
 		except Exception as error:
 			logger.logException(error)
-			logger.warning("Unexpected error during decoding of query: {0}", error)
+			logger.warning("Unexpected error during decoding of query: %s", error)
 			raise error
 
-		logger.debug2(u"query: {0}", self.query)
+		logger.debug2(u"query: %s", self.query)
 		return result
 
 	def _processQuery(self, result):
-		logger.warning(u"Class {0} should overwrite _processQuery", self.__class__.__name__)
+		logger.warning(u"Class %s should overwrite _processQuery", self.__class__.__name__)
 		return self._decodeQuery(result)
 
 	def _generateResponse(self, result):
@@ -536,7 +536,7 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 		self._rpcs = []
 
 	def _getCallInstance(self, result):
-		logger.warning(u"Class {0} should overwrite _getCallInstance", self.__class__.__name__)
+		logger.warning(u"Class %s should overwrite _getCallInstance", self.__class__.__name__)
 		self._callInstance = None
 		self._callInterface = None
 
@@ -592,7 +592,7 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 			elif 'deflate' in self.request.getHeader('Accept-Encoding'):
 				encoding = 'deflate'
 		except Exception as error:
-			logger.debug2("Failed to get Accept-Encoding from request header: {0}".format(error))
+			logger.debug2("Failed to get Accept-Encoding from request header: %s", error)
 
 		try:
 			if self.request.getHeader('Accept'):
@@ -602,7 +602,7 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 						encoding = 'gzip'
 						break
 		except Exception as error:
-			logger.error(u"Failed to get accepted mime types from header: {0}", error)
+			logger.error(u"Failed to get accepted mime types from header: %s", error)
 
 		response = [serialize(rpc.getResponse()) for rpc in self._rpcs]
 
@@ -633,7 +633,7 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 			logger.debug("Sending plain data")
 			response = toJson(response).encode("utf-8")
 		
-		logger.debug2("Sending response: {0}", response)
+		logger.debug2("Sending response: %s", response)
 		self.request.write(response)
 
 	def _renderError(self, failure):
@@ -653,7 +653,7 @@ class MultiprocessWorkerOpsiJsonRpc(WorkerOpsiJsonRpc):
 
 		def cleanup(rpc):
 			if rpc.getMethodName() == 'backend_exit':
-				logger.notice(u"User '{0}' asked to close the session", self.session.user)
+				logger.notice(u"User '%s' asked to close the session", self.session.user)
 				self._freeSession(result)
 				self.service._getSessionHandler().deleteSession(self.session.uid)
 

@@ -281,7 +281,7 @@ class HTTPConnectionPool(object):
 				if self.verifyServerCertByCa:
 					if not self.caCertFile:
 						raise ValueError(u"Server certificate verfication by CA enabled but no CA cert file given")
-					logger.info(u"Server certificate verfication by CA file '%s' enabled for host '%s'" % (self.caCertFile, self.host))
+					logger.info(u"Server certificate verfication by CA file '%s' enabled for host '%s'", self.caCertFile, self.host)
 				else:
 					self.verifyServerCert = forceBool(verifyServerCert)
 					if serverCertFile:
@@ -289,7 +289,7 @@ class HTTPConnectionPool(object):
 					if self.verifyServerCert:
 						if not self.serverCertFile:
 							raise ValueError(u"Server verfication enabled but no server cert file given")
-						logger.info(u"Server verfication by server certificate enabled for host '%s'" % self.host)
+						logger.info(u"Server verfication by server certificate enabled for host '%s'", self.host)
 		self.adjustSize(maxsize)
 
 	def increaseUsageCount(self):
@@ -338,24 +338,24 @@ class HTTPConnectionPool(object):
 				url = urlparse(self.proxyURL)
 				if url.password:
 					logger.setConfidentialStrings(url.password)
-				logger.debug(u"Starting new HTTP connection (%d) to %s:%d over proxy-url %s" % (self.num_connections, self.host, self.port, self.proxyURL))
+				logger.debug(u"Starting new HTTP connection (%d) to %s:%d over proxy-url %s", self.num_connections, self.host, self.port, self.proxyURL)
 
 				conn = HTTPConnection(host=url.hostname, port=url.port)
 				if url.username and url.password:
-					logger.debug(u"Proxy Authentication detected, setting auth with user: %r" % url.username)
+					logger.debug(u"Proxy Authentication detected, setting auth with user: %s", url.username)
 					headers['Proxy-Authorization'] = createBasicAuthHeader(
 						url.username,
 						url.password
 					)
 				conn.set_tunnel(self.host, self.port, headers)
-				logger.debug(u"Connection established to: %s" % self.host)
+				logger.debug(u"Connection established to: %s", self.host)
 			except Exception as error:
 				logger.error(error)
 		else:
-			logger.debug(u"Starting new HTTP connection (%d) to %s:%d" % (self.num_connections, self.host, self.port))
+			logger.debug(u"Starting new HTTP connection (%d) to %s:%d", self.num_connections, self.host, self.port)
 			conn = HTTPConnection(host=self.host, port=self.port)
 			non_blocking_connect_http(conn, self.connectTimeout)
-			logger.debug(u"Connection established to: %s" % self.host)
+			logger.debug(u"Connection established to: %s", self.host)
 		return conn
 
 	def _get_conn(self, timeout=None):
@@ -384,7 +384,7 @@ class HTTPConnectionPool(object):
 				self.num_connections -= 1
 		except Full:
 			# This should never happen if self.block == True
-			logger.warning(u"HttpConnectionPool is full, discarding connection: %s" % self.host)
+			logger.warning(u"HttpConnectionPool is full, discarding connection: %s", self.host)
 
 	def get_host(self, url):
 		(scheme, host, port, baseurl, username, password) = urlsplit(url)
@@ -592,22 +592,22 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 				url = urlparse(self.proxyURL)
 				if url.password:
 					logger.setConfidentialString(url.password)
-				logger.debug(u"Starting new HTTPS connection (%d) to %s:%d over proxy-url %s" % (self.num_connections, self.host, self.port, self.proxyURL))
+				logger.debug(u"Starting new HTTPS connection (%d) to %s:%d over proxy-url %s", self.num_connections, self.host, self.port, self.proxyURL)
 				conn = HTTPSConnection(host=url.hostname, port=url.port)
 				if url.username and url.password:
-					logger.debug(u"Proxy Authentication detected, setting auth with user: %r" % url.username)
+					logger.debug(u"Proxy Authentication detected, setting auth with user: %s", url.username)
 					headers['Proxy-Authorization'] = createBasicAuthHeader(
 						url.username,
 						url.password
 					)
 				conn.set_tunnel(self.host, self.port, headers)
-				logger.debug(u"Connection established to: %s" % self.host)
+				logger.debug(u"Connection established to: %s", self.host)
 			except Exception as e:
 				logger.logException(e)
 		else:
-			logger.debug(u"Starting new HTTPS connection (%d) to %s:%d" % (self.num_connections, self.host, self.port))
+			logger.debug(u"Starting new HTTPS connection (%d) to %s:%d", self.num_connections, self.host, self.port)
 			conn = HTTPSConnection(host=self.host, port=self.port)
-			logger.debug(u"Connection established to: %s" % self.host)
+			logger.debug(u"Connection established to: %s", self.host)
 
 		if self.verifyServerCert or self.verifyServerCertByCa:
 			try:

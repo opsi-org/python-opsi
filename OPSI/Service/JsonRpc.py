@@ -138,8 +138,8 @@ class JsonRpc(object):
 			else:
 				self.result = method(*params)
 
-			logger.info(u'Got result for {}', methodName)
-			logger.debug2("RPC ID {0}: {1!r}", self.tid, self.result)
+			logger.info("Got result for %s", methodName)
+			logger.debug2("RPC ID %s: %s", self.tid, self.result)
 		except Exception as error:
 			logger.logException(error, LOG_INFO)
 			logger.error(u'Execution error: %s' % forceUnicode(error))

@@ -62,7 +62,7 @@ def _async_raise(tid, exctype):
 
 	res = ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(tid), ctypes.py_object(exctype))
 	if res == 0:
-		logger.warning("Invalid thread id {0}".format(tid))
+		logger.warning("Invalid thread id %s", tid)
 		return
 	elif res != 1:
 		# if it returns a number greater than one, you're in trouble,
@@ -139,7 +139,7 @@ class ThreadPool:
 					self.__createWorkers(num=self.size - len(self.worker))
 
 	def __deleteWorkers(self, num, wait=False):
-		logger.debug(u"Deleting %d workers" % num)
+		logger.debug(u"Deleting %d workers", num)
 		deleteWorkers = set()
 
 		for worker in self.worker:
@@ -166,7 +166,7 @@ class ThreadPool:
 				worker.join(60)
 
 	def __createWorkers(self, num):
-		logger.debug(u"Creating {n} new workers", n=num)
+		logger.debug(u"Creating %s new workers", num)
 		while num > 0:
 			self.worker.append(Worker(self, len(self.worker) + 1))
 			num -= 1

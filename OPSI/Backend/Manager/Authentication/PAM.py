@@ -62,13 +62,13 @@ class PAMAuthentication(AuthenticationModule):
 		:type service: str
 		:raises BackendAuthenticationError: If authentication fails.
 		'''
-		logger.confidential("Trying to authenticate user {0} with password {1} by PAM", username, password)
-		logger.debug2("Attempting PAM authentication as user {0} (service={1})...", username, self._pam_service)
+		logger.confidential("Trying to authenticate user %s with password %s by PAM", username, password)
+		logger.debug2("Attempting PAM authentication as user %s (service=%s)...", username, self._pam_service)
 
 		try:
 			auth = pam.pam()
 			if not auth.authenticate(username, password, service=self._pam_service):
-				logger.debug2("PAM authentication failed: {0} (code {1})", auth.reason, auth.code)
+				logger.debug2("PAM authentication failed: %s (code %s)", auth.reason, auth.code)
 				raise RuntimeError(auth.reason)
 
 			logger.debug2("PAM authentication successful.")
@@ -82,12 +82,12 @@ class PAMAuthentication(AuthenticationModule):
 		:returns: Group the user is a member of.
 		:rtype: set()
 		"""
-		logger.debug("Reading groups of user {!r}...", username)
+		logger.debug("Reading groups of user %s...", username)
 		primary_group = forceUnicode(grp.getgrgid(pwd.getpwnam(username)[3])[0])
-		logger.debug("Primary group of user {0!r} is {1!r}", username, primary_group)
+		logger.debug("Primary group of user %s is %s", username, primary_group)
 
 		groups = set(forceUnicode(group[0]) for group in grp.getgrall() if group[0] and username in group[3])
 		if primary_group:
 			groups.add(primary_group)
-		logger.debug("User {0!r} is member of groups: {1}", username, groups)
+		logger.debug("User %s is member of groups: %s", username, groups)
 		return groups

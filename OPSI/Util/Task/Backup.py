@@ -257,7 +257,7 @@ If this is `None` information will be read from the current system.
 			try:
 				sysValue = str(sysInfo[key])
 			except KeyError:
-				logger.debug('Missing value for {key!r} in system!', key=key)
+				logger.debug('Missing value for %s in system!', key)
 				differences[key] = value
 				continue
 

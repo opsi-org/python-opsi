@@ -80,13 +80,13 @@ try:
 			if line.strip().startswith('max-log-size'):
 				_, logSize = line.strip().split('=', 1)
 				logSize = removeUnit(logSize.strip())
-				logger.debug("Setting max log size to {0} MB", logSize)
+				logger.debug("Setting max log size to %s MB", logSize)
 				DEFAULT_MAX_LOGFILE_SIZE = int(logSize)*1000*1000 
 				break
 		else:
 			raise ValueError("No custom setting found.")
 except Exception as error:
-	logger.debug("Failed to set MAX LOG SIZE from config: {0}".format(error))
+	logger.debug("Failed to set MAX LOG SIZE from config: %s", error)
 	DEFAULT_MAX_LOGFILE_SIZE = 5000000
 
 
@@ -136,7 +136,7 @@ containing the localisation of the hardware audit.
 				self._depotId = value
 			elif option == 'maxlogsize':
 				self._maxLogfileSize = forceInt(value)
-				logger.info(u'Logsize limited to: {0}'.format(self._maxLogfileSize))
+				logger.info(u'Logsize limited to: %s', self._maxLogfileSize)
 
 		if not self._depotId:
 			self._depotId = getfqdn()
@@ -1046,7 +1046,7 @@ depot where the method is.
 				with codecs.open(self._auditHardwareConfigFile, 'r', 'utf8') as f:
 					return json.loads(f.read())
 			except Exception as e:
-				logger.warning(u"Failed to read audit hardware configuration from file '%s': %s" % (self._auditHardwareConfigFile, e))
+				logger.warning(u"Failed to read audit hardware configuration from file '%s': %s", self._auditHardwareConfigFile, e)
 				return []
 
 		if not language:
@@ -1055,7 +1055,7 @@ depot where the method is.
 
 		localeFile = os.path.join(self._auditHardwareConfigLocalesDir, language)
 		if not os.path.exists(localeFile):
-			logger.error(u"No translation file found for language %s, falling back to en_US" % language)
+			logger.error(u"No translation file found for language %s, falling back to en_US", language)
 			language = 'en_US'
 			localeFile = os.path.join(self._auditHardwareConfigLocalesDir, language)
 
@@ -1067,10 +1067,10 @@ depot where the method is.
 					identifier, translation = line.split('=', 1)
 					locale[identifier.strip()] = translation.strip()
 				except ValueError as verr:
-					logger.debug2(u"Failed to read translation: {0!r}", verr)
+					logger.debug2(u"Failed to read translation: %s", verr)
 			del lf
 		except Exception as e:
-			logger.error(u"Failed to read translation file for language {0}: {1}", language, e)
+			logger.error(u"Failed to read translation file for language %s: %s", language, e)
 
 		def __inheritFromSuperClasses(classes, c, scname=None):
 			if not scname:
@@ -1098,7 +1098,7 @@ depot where the method is.
 						c['Values'] = newValues
 						break
 				else:
-					logger.error(u"Super class '%s' of class '%s' not found!" % (scname, c['Class'].get('Opsi')))
+					logger.error(u"Super class '%s' of class '%s' not found!", scname, c['Class'].get('Opsi'))
 
 		classes = []
 		try:
@@ -1111,7 +1111,7 @@ depot where the method is.
 					if locale.get(opsiClass):
 						OPSI_HARDWARE_CLASSES[i]['Class']['UI'] = locale[opsiClass]
 					else:
-						logger.error(u"No translation for class '%s' found" % opsiClass)
+						logger.error(u"No translation for class '%s' found", opsiClass)
 						OPSI_HARDWARE_CLASSES[i]['Class']['UI'] = opsiClass
 
 				for j, currentValue in enumerate(currentClassConfig['Values']):
@@ -1124,7 +1124,7 @@ depot where the method is.
 			for c in OPSI_HARDWARE_CLASSES:
 				try:
 					if c['Class'].get('Type') == 'STRUCTURAL':
-						logger.debug(u"Found STRUCTURAL hardware class '%s'" % c['Class'].get('Opsi'))
+						logger.debug(u"Found STRUCTURAL hardware class '%s'", c['Class'].get('Opsi'))
 						ccopy = pycopy.deepcopy(c)
 						if 'Super' in ccopy['Class']:
 							__inheritFromSuperClasses(OPSI_HARDWARE_CLASSES, ccopy)
@@ -1134,14 +1134,14 @@ depot where the method is.
 						# Fill up empty display names
 						for j, currentValue in enumerate(ccopy.get('Values', [])):
 							if not currentValue.get('UI'):
-								logger.warning("No translation for property '%s.%s' found" % (ccopy['Class']['Opsi'], currentValue['Opsi']))
+								logger.warning("No translation for property '%s.%s' found", (ccopy['Class']['Opsi'], currentValue['Opsi'])
 								ccopy['Values'][j]['UI'] = currentValue['Opsi']
 
 						classes.append(ccopy)
 				except Exception as e:
-					logger.error(u"Error in config file '%s': %s" % (self._auditHardwareConfigFile, e))
+					logger.error(u"Error in config file '%s': %s", self._auditHardwareConfigFile, e)
 		except Exception as e:
-			logger.warning(u"Failed to read audit hardware configuration from file '%s': %s" % (self._auditHardwareConfigFile, e))
+			logger.warning(u"Failed to read audit hardware configuration from file '%s': %s", self._auditHardwareConfigFile, e)
 
 		return classes
 

@@ -125,9 +125,9 @@ class Session(object):
 					self.sessionTimer.join(1)
 				except Exception:
 					pass
-				logger.info(u"Session timer {0} canceled".format(self.sessionTimer))
+				logger.info(u"Session timer %s canceled", self.sessionTimer)
 			except Exception as err:
-				logger.error(u"Failed to cancel session timer: {0}".format(err))
+				logger.error(u"Failed to cancel session timer: %s", err)
 
 
 class SessionHandler(object):
@@ -200,7 +200,7 @@ the value holds the sesion.
 		)
 
 		if session.usageCount > 0:
-			logger.notice(u"Session {0!r} currently in use, waiting before deletion".format(session.uid))
+			logger.notice(u"Session %s currently in use, waiting before deletion", session.uid)
 
 		session.setMarkedForDeletion()
 		timeout = self.sessionDeletionTimeout
@@ -250,7 +250,7 @@ the value holds the sesion.
 
 		deletionThreads = []
 		for uid in self.sessions:
-			logger.debug(u"Deleting session {0!r}", uid)
+			logger.debug(u"Deleting session %s", uid)
 			thread = SessionDeletionThread(self, uid)
 			deletionThreads.append(thread)
 

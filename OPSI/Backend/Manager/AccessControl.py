@@ -84,7 +84,7 @@ class BackendAccessControl:
 			elif option == 'aclfile':
 				self._aclFile = value
 			elif option == 'pamservice':
-				logger.debug("Using PAM service {}", value)
+				logger.debug("Using PAM service %s", value)
 				pam_service = value
 			elif option in ('context', 'accesscontrolcontext'):
 				self._context = value
@@ -161,24 +161,24 @@ class BackendAccessControl:
 				try:
 					host = self._context.host_getObjects(id=self.user_store.username)
 				except AttributeError as aerr:
-					logger.debug(u"{0!r}", aerr)
+					logger.debug(u"%s", aerr)
 					raise BackendUnaccomplishableError(u"Passed backend has no method 'host_getObjects', cannot authenticate host '%s'" % self.user_store.username)
 
 				try:
 					self.user_store.host = host[0]
 				except IndexError as ierr:
-					logger.debug(u"{0!r}", ierr)
+					logger.debug(u"%s", ierr)
 					raise BackendMissingDataError(u"Host '%s' not found in backend %s" % (self.user_store.username, self._context))
 
 				if not self.user_store.host.opsiHostKey:
 					raise BackendMissingDataError(u"OpsiHostKey not found for host '%s'" % self.user_store.username)
 
-				logger.confidential(u"Client {0!r}, key sent {1!r}, key stored {2!r}", self.user_store.username, self.user_store.password, self.user_store.host.opsiHostKey)
+				logger.confidential(u"Client %s, key sent %s, key stored %s", self.user_store.username, self.user_store.password, self.user_store.host.opsiHostKey)
 
 				if self.user_store.password != self.user_store.host.opsiHostKey:
 					raise BackendAuthenticationError(u"OpsiHostKey authentication failed for host '%s': wrong key" % self.user_store.host.id)
 
-				logger.info(u"OpsiHostKey authentication successful for host {0!r}", self.user_store.host.id)
+				logger.info(u"OpsiHostKey authentication successful for host %s", self.user_store.host.id)
 
 				self.user_store.authenticated = True
 				self.user_store.isAdmin = self._isOpsiDepotserver()
@@ -199,13 +199,13 @@ class BackendAccessControl:
 				self.user_store.authenticated = True
 				if forceGroups:
 					self.user_store.userGroups = forceUnicodeList(forceGroups)
-					logger.info("Forced groups for user {0}: {1}", self.user_store.username, ', '.join(self.user_store.userGroups))
+					logger.info("Forced groups for user %s: %s", self.user_store.username, ', '.join(self.user_store.userGroups))
 				else:
 					self.user_store.userGroups = self._auth_module.get_groupnames(self.user_store.username)
 				self.user_store.isAdmin = self._auth_module.user_is_admin(self.user_store.username)
 				self.user_store.isReadOnly = self._auth_module.user_is_read_only(self.user_store.username, set(forceGroups) if forceGroups else None)
 
-				logger.info(u"Authentication successful for user '%s', groups '%s'" % (self.user_store.username, ','.join(self.user_store.userGroups)))
+				logger.info(u"Authentication successful for user '%s', groups '%s'", self.user_store.username, ','.join(self.user_store.userGroups))
 		
 		except Exception as e:
 			raise BackendAuthenticationError(forceUnicode(e))
@@ -227,10 +227,10 @@ class BackendAccessControl:
 				raise BackendConfigurationError(u"No acl file defined")
 
 			self._acl = _readACLFile(self._aclFile)
-			logger.debug(u"Read acl from file {0!r}: {1!r}", self._aclFile, self._acl)
+			logger.debug(u"Read acl from file %s: %s", self._aclFile, self._acl)
 		except Exception as error:
 			logger.logException(error)
-			raise BackendConfigurationError(u"Failed to load acl file '%s': %s" % (self._aclFile, error))
+			raise BackendConfigurationError(u"Failed to load acl file '%s': %s", self._aclFile, error)
 
 	def _createInstanceMethods(self):
 		protectedMethods = set()
@@ -247,10 +247,10 @@ class BackendAccessControl:
 			argString, callString = getArgAndCallString(functionRef)
 
 			if methodName in protectedMethods:
-				logger.debug2(u"Protecting %s method '%s'" % (Class.__name__, methodName))
+				logger.debug2(u"Protecting %s method '%s'", Class.__name__, methodName)
 				exec(u'def %s(self, %s): return self._executeMethodProtected("%s", %s)' % (methodName, argString, methodName, callString))
 			else:
-				logger.debug2(u"Not protecting %s method '%s'" % (Class.__name__, methodName))
+				logger.debug2(u"Not protecting %s method '%s'", Class.__name__, methodName)
 				exec(u'def %s(self, %s): return self._executeMethod("%s", %s)' % (methodName, argString, methodName, callString))
 
 			setattr(self, methodName, types.MethodType(eval(methodName), self))
@@ -302,14 +302,14 @@ class BackendAccessControl:
 		granted = False
 		newKwargs = {}
 		acls = []
-		logger.debug(u"Access control for method {0!r} with params {1!r}", methodName, kwargs)
+		logger.debug(u"Access control for method %s with params %s", methodName, kwargs)
 		for regex, acl in self._acl:
-			logger.debug2(u"Testing if ACL pattern {0!r} matches method {1!r}", regex.pattern, methodName)
+			logger.debug2(u"Testing if ACL pattern %s matches method %s", regex.pattern, methodName)
 			if not regex.search(methodName):
 				logger.debug2(u"No match -> skipping.")
 				continue
 
-			logger.debug(u"Found matching acl for method {1!r}: {0}", acl, methodName)
+			logger.debug(u"Found matching acl for method %s: %s", acl, methodName)
 			for entry in acl:
 				aclType = entry.get('type')
 				ids = entry.get('ids', [])
@@ -327,7 +327,7 @@ class BackendAccessControl:
 				elif aclType == 'self':
 					newGranted = 'partial_object'
 				else:
-					logger.error(u"Unhandled acl entry type: {0}", aclType)
+					logger.error(u"Unhandled acl entry type: %s", aclType)
 					continue
 
 				if newGranted is False:
@@ -344,14 +344,14 @@ class BackendAccessControl:
 					break
 			break
 
-		logger.debug("Method {0!r} using acls: {1}", methodName, acls)
+		logger.debug("Method %s using acls: %s", methodName, acls)
 		if granted is True:
-			logger.debug(u"Full access to method {0!r} granted to user {1!r} by acl {2!r}", methodName, self.user_store.username, acls[0])
+			logger.debug(u"Full access to method %s granted to user %s by acl %s", methodName, self.user_store.username, acls[0])
 			newKwargs = kwargs
 		elif granted is False:
 			raise BackendPermissionDeniedError(u"Access to method '%s' denied for user '%s'" % (methodName, self.user_store.username))
 		else:
-			logger.debug(u"Partial access to method {0!r} granted to user {1!r} by acls {2!r}", methodName, self.user_store.username, acls)
+			logger.debug(u"Partial access to method %s granted to user %s by acls %s", methodName, self.user_store.username, acls)
 			try:
 				newKwargs = self._filterParams(kwargs, acls)
 				if not newKwargs:
@@ -360,7 +360,7 @@ class BackendAccessControl:
 				logger.logException(error, LOG_INFO)
 				raise BackendPermissionDeniedError(u"Access to method '%s' denied for user '%s': %s" % (methodName, self.user_store.username, error))
 
-		logger.debug2("newKwargs: {0}", newKwargs)
+		logger.debug2("newKwargs: %s", newKwargs)
 
 		meth = getattr(self._backend, methodName)
 		result = meth(**newKwargs)
@@ -371,7 +371,7 @@ class BackendAccessControl:
 		return self._filterResult(result, acls)
 
 	def _filterParams(self, params, acls):
-		logger.debug(u"Filtering params: {0}", params)
+		logger.debug(u"Filtering params: %s", params)
 		for (key, value) in tuple(params.items()):
 			valueList = forceList(value)
 			if not valueList:
@@ -466,7 +466,7 @@ class BackendAccessControl:
 		orilen = len(objects)
 		newlen = len(newObjects)
 		if newlen < orilen:
-			logger.warning(u"{0} objects removed by acl, {1} objects left".format((orilen - newlen), newlen))
+			logger.warning(u"%s objects removed by acl, %s objects left".format((orilen - newlen), newlen))
 			if newlen == 0 and exceptionIfAllRemoved:
 				raise BackendPermissionDeniedError(u"Access denied")
 

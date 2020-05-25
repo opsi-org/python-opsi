@@ -127,7 +127,7 @@ class BackendManager(ExtendedBackend):
 				"hostControlBackend": True,
 				"hostControlSafeBackend": True,
 			}
-			logger.debug("No config given, using {0!r}".format(kwargs))
+			logger.debug("No config given, using %s", kwargs)
 
 		argumentToDelete = set()
 		for (option, value) in kwargs.items():
@@ -169,7 +169,7 @@ class BackendManager(ExtendedBackend):
 			del kwargs[argument]
 
 		if loadBackend:
-			logger.info(u"* BackendManager is loading backend '%s'" % loadBackend)
+			logger.info(u"* BackendManager is loading backend '%s'", loadBackend)
 			self._backend = self.__loadBackend(loadBackend)
 			# self._backend is now a ConfigDataBackend
 
@@ -198,7 +198,7 @@ class BackendManager(ExtendedBackend):
 				hostControlBackendConfig.update(self.__loadBackendConfig('hostcontrol')['config'])
 			except Exception as backendConfigLoadError:
 				logger.error(
-					"Failed to load configuration for HostControlBackend: {}",
+					"Failed to load configuration for HostControlBackend: %s",
 					backendConfigLoadError
 				)
 			self._backend = HostControlBackend(self._backend, **hostControlBackendConfig)
@@ -210,13 +210,13 @@ class BackendManager(ExtendedBackend):
 				hostControlSafeBackendConfig.update(self.__loadBackendConfig('hostcontrol')['config'])
 			except Exception as backendConfigLoadError:
 				logger.error(
-					"Failed to load configuration for HostControlSafeBackend: {}",
+					"Failed to load configuration for HostControlSafeBackend: %s",
 					backendConfigLoadError
 				)
 			self._backend = HostControlSafeBackend(self._backend, **hostControlSafeBackendConfig)
 
 		if accessControl:
-			logger.info(f"* BackendManager is creating {accessControlClass.__name__}")
+			logger.info("* BackendManager is creating %s", accessControlClass.__name__)
 			self._backend = self.backendAccessControl = accessControlClass(backend=self._backend, **kwargs)
 		
 		if extensionConfigDir or extensionClass:

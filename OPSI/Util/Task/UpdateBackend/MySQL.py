@@ -75,9 +75,9 @@ read from `backendConfigFile`.
 
 	config = getBackendConfiguration(backendConfigFile)
 	config.update(additionalBackendConfiguration)
-	LOGGER.info(u"Current mysql backend config: %s" % config)
+	LOGGER.info(u"Current mysql backend config: %s", config)
 
-	LOGGER.notice(u"Connection to database '%s' on '%s' as user '%s'" % (config['database'], config['address'], config['username']))
+	LOGGER.notice(u"Connection to database '%s' on '%s' as user '%s'", config['database'], config['address'], config['username'])
 	mysql = MySQL(**config)
 
 	schemaVersion = readSchemaVersion(mysql)
@@ -522,7 +522,7 @@ def _processOpsi40migrations(mysql):
 		if res['licenseContractId'] != forceLicenseContractId(res['licenseContractId']):
 			deleteLicenseContractId = res['licenseContractId']
 			res['licenseContractId'] = forceLicenseContractId(res['licenseContractId'])
-			LOGGER.warning(u"Changing license contract id '%s' to '%s'" % (deleteLicenseContractId, res['licenseContractId']))
+			LOGGER.warning(u"Changing license contract id '%s' to '%s'", deleteLicenseContractId, res['licenseContractId'])
 
 			data = {
 				'SOFTWARE_LICENSE': [],
@@ -547,7 +547,7 @@ def _processOpsi40migrations(mysql):
 		if (res['licensePoolId'] != res['licensePoolId'].strip()) or (res['licensePoolId'] != forceLicensePoolId(res['licensePoolId'])):
 			deleteLicensePoolId = res['licensePoolId']
 			res['licensePoolId'] = forceLicensePoolId(res['licensePoolId'].strip())
-			LOGGER.warning(u"Changing license pool id '%s' to '%s'" % (deleteLicensePoolId, res['licensePoolId']))
+			LOGGER.warning(u"Changing license pool id '%s' to '%s'", deleteLicensePoolId, res['licensePoolId'])
 
 			data = {}
 			for tab in ('AUDIT_SOFTWARE_TO_LICENSE_POOL', 'PRODUCT_ID_TO_LICENSE_POOL', 'LICENSE_ON_CLIENT', 'SOFTWARE_LICENSE_TO_LICENSE_POOL'):
@@ -567,7 +567,7 @@ def _processOpsi40migrations(mysql):
 		if (res['softwareLicenseId'] != res['softwareLicenseId'].strip()) or (res['softwareLicenseId'] != forceSoftwareLicenseId(res['softwareLicenseId'])):
 			deleteSoftwareLicenseId = res['softwareLicenseId']
 			res['softwareLicenseId'] = forceSoftwareLicenseId(res['softwareLicenseId'].strip())
-			LOGGER.warning(u"Changing software license id '%s' to '%s'" % (deleteSoftwareLicenseId, res['softwareLicenseId']))
+			LOGGER.warning(u"Changing software license id '%s' to '%s'", deleteSoftwareLicenseId, res['softwareLicenseId'])
 
 			data = {}
 			for tab in ('LICENSE_ON_CLIENT', 'SOFTWARE_LICENSE_TO_LICENSE_POOL'):
@@ -588,17 +588,17 @@ def _processOpsi40migrations(mysql):
 		LOGGER.info(u"Updating productId Columns")
 		for line in mysql.getSet(u"SHOW TABLES;"):
 			for tableName in line.values():
-				LOGGER.debug(u" [ %s ]" % tableName)
+				LOGGER.debug(u" [ %s ]", tableName)
 				for column in mysql.getSet(u'SHOW COLUMNS FROM `%s`;' % tableName):
 					fieldName = column['Field']
 					fieldType = column['Type']
 					if "productid" in fieldName.lower() and fieldType != "varchar(255)":
-						LOGGER.debug("ALTER TABLE for Table: '%s' and Column: '%s'" % (tableName, fieldName))
+						LOGGER.debug("ALTER TABLE for Table: '%s' and Column: '%s'", tableName, fieldName)
 						mysql.execute(u"alter table %s MODIFY COLUMN `%s` VARCHAR(255);" % (tableName, fieldName))
 
 	# Changing description fields to type TEXT
 	for tableName in (u"PRODUCT_PROPERTY", ):
-		LOGGER.info(u"Updating field 'description' on table {name}".format(name=tableName))
+		LOGGER.info(u"Updating field 'description' on table %s", tableName)
 		fieldName = u"description"
 		mysql.execute(
 			u"alter table {name} MODIFY COLUMN `{column}` TEXT;".format(
@@ -626,10 +626,10 @@ def _processOpsi40migrations(mysql):
 	with disableForeignKeyChecks(mysql):
 		for tablename in tables:
 			if tablename == 'PRODUCT_ON_DEPOT' and tableNeedsHostIDLengthFix(tablename, columnName="depotId"):
-				LOGGER.info(u"Fixing length of 'depotId' column on {table}".format(table=tablename))
+				LOGGER.info(u"Fixing length of 'depotId' column on %s", tablename)
 				mysql.execute(u"ALTER TABLE `PRODUCT_ON_DEPOT` MODIFY COLUMN `depotId` VARCHAR(255) NOT NULL;")
 			elif tablename.startswith(u'HARDWARE_CONFIG') and tableNeedsHostIDLengthFix(tablename):
-				LOGGER.info(u"Fixing length of 'hostId' column on {table}".format(table=tablename))
+				LOGGER.info(u"Fixing length of 'hostId' column on %s", tablename)
 				mysql.execute(u"ALTER TABLE `{table}` MODIFY COLUMN `hostId` VARCHAR(255) NOT NULL;".format(table=tablename))
 
 	_fixLengthOfLicenseKeys(mysql)
@@ -670,7 +670,7 @@ def _fixLengthOfLicenseKeys(database):
 				length = int(length[:-1])
 
 				if length != 1024:
-					LOGGER.info(u"Fixing length of 'licenseKey' column on table {0!r}".format(table))
+					LOGGER.info(u"Fixing length of 'licenseKey' column on table {0!r}", table)
 					database.execute(u"ALTER TABLE `{0}` MODIFY COLUMN `licenseKey` VARCHAR(1024);".format(table))
 
 

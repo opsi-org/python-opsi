@@ -119,7 +119,7 @@ class DHCPDBackend(ConfigDataBackend):
 							if 'error' in line:
 								raise RuntimeError(u'\n'.join(result))
 					except Exception as error:
-						logger.critical(u"Failed to restart dhcpd: {0}".format(error))
+						logger.critical(u"Failed to restart dhcpd: %s", error)
 
 				self._reloadEvent.set()
 
@@ -173,7 +173,7 @@ class DHCPDBackend(ConfigDataBackend):
 		if self._dhcpdOnDepot:
 			depotId = self._getResponsibleDepotId(host.id)  # pylint: disable=maybe-no-member
 			if depotId != self._depotId:
-				logger.info(u"Not responsible for client '%s', forwarding request to depot '%s'" % (host.id, depotId))  # pylint: disable=maybe-no-member
+				logger.info(u"Not responsible for client '%s', forwarding request to depot '%s'", host.id, depotId)  # pylint: disable=maybe-no-member
 				return self._getDepotConnection(depotId).dhcpd_updateHost(host)  # pylint: disable=maybe-no-member
 		self.dhcpd_updateHost(host)
 
@@ -181,7 +181,7 @@ class DHCPDBackend(ConfigDataBackend):
 		host = forceObjectClass(host, Host)
 
 		if not host.hardwareAddress:  # pylint: disable=maybe-no-member
-			logger.warning(u"Cannot update dhcpd configuration for client %s: hardware address unknown" % host)
+			logger.warning(u"Cannot update dhcpd configuration for client %s: hardware address unknown", host)
 			return
 
 		hostname = _getHostname(host.id)  # pylint: disable=maybe-no-member
@@ -189,18 +189,18 @@ class DHCPDBackend(ConfigDataBackend):
 		ipAddress = host.ipAddress  # pylint: disable=maybe-no-member
 		if not ipAddress:
 			try:
-				logger.info(u"Ip addess of client {0} unknown, trying to get host by name", host)
+				logger.info(u"Ip addess of client %s unknown, trying to get host by name", host)
 				ipAddress = socket.gethostbyname(host.id)  # pylint: disable=maybe-no-member
-				logger.info(u"Client fqdn resolved to {0!r}", ipAddress)
+				logger.info(u"Client fqdn resolved to %s", ipAddress)
 			except Exception as error:
-				logger.debug(u"Failed to get IP by hostname: {0}", error)
+				logger.debug(u"Failed to get IP by hostname: %s", error)
 				with self._reloadLock:
 					self._dhcpdConfFile.parse()
 					currentHostParams = self._dhcpdConfFile.getHost(hostname)
 
 				if currentHostParams:
 					logger.debug(
-						'Trying to use address for {0} from existing DHCP '
+						'Trying to use address for %s from existing DHCP '
 						'configuration.', hostname
 					)
 
@@ -222,7 +222,7 @@ class DHCPDBackend(ConfigDataBackend):
 				if depot.ipAddress:
 					parameters['next-server'] = depot.ipAddress
 			except Exception as error:
-				logger.error(u"Failed to get depot info: %s" % error)
+				logger.error(u"Failed to get depot info: %s", error)
 
 		with self._reloadLock:
 			try:
@@ -232,7 +232,7 @@ class DHCPDBackend(ConfigDataBackend):
 					and (currentHostParams.get('fixed-address') == fixedAddress) \
 					and (currentHostParams.get('next-server') == parameters['next-server']):
 
-					logger.debug(u"DHCPD config of host '%s' unchanged, no need to update config file" % host)
+					logger.debug(u"DHCPD config of host '%s' unchanged, no need to update config file", host)
 					return
 
 				self._dhcpdConfFile.addHost(
@@ -276,7 +276,7 @@ class DHCPDBackend(ConfigDataBackend):
 		if not isinstance(host, OpsiClient):
 			return
 
-		logger.debug(u"Inserting host: {!r}", host)
+		logger.debug(u"Inserting host: %s", host)
 		self._dhcpd_updateHost(host)
 
 	def host_updateObject(self, host):
@@ -287,14 +287,14 @@ class DHCPDBackend(ConfigDataBackend):
 			# Not of interest
 			return
 
-		logger.debug(u"Updating host: {!r}", host)
+		logger.debug(u"Updating host: %s", host)
 		try:
 			self._dhcpd_updateHost(host)
 		except Exception as exc:
 			logger.logException(exc, logLevel=LOG_ERROR)
 
 	def host_deleteObjects(self, hosts):
-		logger.debug(u"Deleting host: {!r}", hosts)
+		logger.debug(u"Deleting host: %s", hosts)
 
 		errors = []
 		for host in hosts:

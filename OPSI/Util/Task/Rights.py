@@ -95,7 +95,7 @@ def setPasswdRights():
 	Setting correct permissions on ``/etc/opsi/passwd``.
 	"""
 	targetFile = u'/etc/opsi/passwd'
-	LOGGER.notice(u"Setting rights on {0}", targetFile)
+	LOGGER.notice(u"Setting rights on %s", targetFile)
 	opsiconfdUid = pwd.getpwnam(_OPSICONFD_USER)[2]
 	adminGroupGid = grp.getgrnam(_ADMIN_GROUP)[2]
 	os.chown(targetFile, opsiconfdUid, adminGroupGid)
@@ -103,8 +103,8 @@ def setPasswdRights():
 
 
 def setRights(path=u'/'):
-	LOGGER.debug(u"Setting rights on {0!r}", path)
-	LOGGER.debug("euid is {0}", os.geteuid())
+	LOGGER.debug(u"Setting rights on %s", path)
+	LOGGER.debug("euid is %s", os.geteuid())
 
 	dirAndRights = getDirectoriesAndExpectedRights(path)
 
@@ -114,14 +114,14 @@ def setRights(path=u'/'):
 			setRightsOnFile(os.path.abspath(path), rights.files)
 			continue
 
-		LOGGER.notice(u"Setting rights on directory {0!r}", startPath)
-		LOGGER.debug2(u"Rights configuration: {0}", rights)
+		LOGGER.notice(u"Setting rights on directory %s", startPath)
+		LOGGER.debug2(u"Rights configuration: %s", rights)
 		chown(startPath, rights.uid, rights.gid)
 		os.chmod(startPath, rights.directories)
 		for filepath in findFiles(startPath, prefix=startPath, returnLinks=rights.correctLinks, excludeFile=re.compile(r"(.swp|~)$")):
 			chown(filepath, rights.uid, rights.gid)
 			if os.path.isdir(filepath):
-				LOGGER.debug(u"Setting rights on directory {0!r}", filepath)
+				LOGGER.debug(u"Setting rights on directory %s", filepath)
 				os.chmod(filepath, rights.directories)
 			elif os.path.isfile(filepath):
 				setRightsOnFile(filepath, rights.files)
@@ -146,7 +146,7 @@ def filterDirsAndRights(path, iterable):
 	processedDirectories = set()
 	for dirname, right in iterable:
 		if not dirname.startswith(basedir) and not basedir.startswith(dirname):
-			LOGGER.debug(u"Skipping {0!r}", dirname)
+			LOGGER.debug(u"Skipping %s", dirname)
 			continue
 
 		startPath = dirname
@@ -154,7 +154,7 @@ def filterDirsAndRights(path, iterable):
 			startPath = basedir
 
 		if startPath in processedDirectories:
-			LOGGER.debug(u"Already proceesed {0}, skipping.", startPath)
+			LOGGER.debug(u"Already proceesed %s, skipping.", startPath)
 			continue
 
 		yield startPath, right
@@ -188,7 +188,7 @@ def getDirectoriesAndExpectedRights(path):
 	try:
 		yield getWorkbenchDirectory(), Rights(-1, fileAdminGroupGid, 0o664, 0o2770, False)
 	except (ValueError, BackendConfigurationError, BackendMissingDataError) as workbenchLookupError:
-		LOGGER.warning("Unable to get path of workbench directory: {}", workbenchLookupError)
+		LOGGER.warning("Unable to get path of workbench directory: %s", workbenchLookupError)
 
 	yield getPxeDirectory(), Rights(opsiconfdUid, fileAdminGroupGid, 0o664, 0o775, False)
 
@@ -205,7 +205,7 @@ def getDirectoriesAndExpectedRights(path):
 
 			yield apacheDir, Rights(webUid, webGid, 0o664, 0o775, False)
 		except (KeyError, TypeError, RuntimeError) as kerr:
-			LOGGER.debug("Lookup of user / group failed: {0!r}", kerr)
+			LOGGER.debug("Lookup of user / group failed: %s", kerr)
 
 
 def getWorkbenchDirectory():
@@ -254,7 +254,7 @@ def getDepotDirectory(path):
 		_CACHED_DEPOT_DIRECTORY = depotDir
 	except Exception as error:
 		LOGGER.logException(error, logLevel=LOG_DEBUG)
-		LOGGER.warning(u"Could not get path for depot: {0}", error)
+		LOGGER.warning(u"Could not get path for depot: %s", error)
 		depotDir = ''
 
 	basedir = getAbsoluteDir(path)
@@ -262,7 +262,7 @@ def getDepotDirectory(path):
 	if basedir.startswith('/opt/pcbin/install'):
 		depotDir = '/opt/pcbin/install'
 
-	LOGGER.info(u"Depot directory {0!r} found", depotDir)
+	LOGGER.info(u"Depot directory %s found", depotDir)
 	return depotDir
 
 
@@ -320,7 +320,7 @@ installations may be.
 		return
 
 	if not os.path.exists(path):
-		LOGGER.debug(u"Oops, found path {0!r} but does not exist.", path)
+		LOGGER.debug(u"Oops, found path %s but does not exist.", path)
 		path = None
 
 	return path
@@ -344,16 +344,16 @@ in the default configuration.
 
 
 def setRightsOnFile(filepath, filemod):
-	LOGGER.debug(u"Setting rights on file {0!r}", filepath)
+	LOGGER.debug(u"Setting rights on file %s", filepath)
 	if filepath.startswith(_POSSIBLE_DEPOT_DIRECTORIES):
 		if os.path.basename(filepath) in KNOWN_EXECUTABLES:
-			LOGGER.debug(u"Setting rights on special file {0!r}", filepath)
+			LOGGER.debug(u"Setting rights on special file %s", filepath)
 			os.chmod(filepath, 0o770)
 		else:
-			LOGGER.debug(u"Setting rights on file {0!r}", filepath)
+			LOGGER.debug(u"Setting rights on file %s", filepath)
 			os.chmod(filepath, (os.stat(filepath)[0] | 0o660) & 0o770)
 	else:
-		LOGGER.debug(u"Setting rights {rights!r} on file {file!r}", file=filepath, rights=filemod)
+		LOGGER.debug(u"Setting rights %s on file %s", filemod, filepath)
 		os.chmod(filepath, filemod)
 
 
@@ -369,13 +369,13 @@ def chown(path, uid, gid):
 	"""
 	try:
 		if _HAS_ROOT_RIGHTS:
-			LOGGER.debug(u"Setting ownership to {user}:{group} on {path!r}", path=path, user=uid, group=gid)
+			LOGGER.debug(u"Setting ownership to %s:%s on %s", uid, gid, path)
 			if os.path.islink(path):
 				os.lchown(path, uid, gid)
 			else:
 				os.chown(path, uid, gid)
 		else:
-			LOGGER.debug(u"Setting ownership to -1:{group} on {path!r}", path=path, group=gid)
+			LOGGER.debug(u"Setting ownership to -1:%s on %s", gid, path)
 			if os.path.islink(path):
 				os.lchown(path, -1, gid)
 			else:
@@ -385,7 +385,7 @@ def chown(path, uid, gid):
 			# We are root so something must be really wrong!
 			raise fist
 
-		LOGGER.warning(u"Failed to set ownership on {file!r}: {error}", file=path, error=fist)
+		LOGGER.warning(u"Failed to set ownership on %s: %s", path, fist)
 		LOGGER.notice(u"Please try setting the rights as root.")
 
 
