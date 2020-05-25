@@ -1380,6 +1380,20 @@ def execute(cmd, waitForEnding=True, getHandle=False, ignoreExitCode=[], exitOnS
 	timeout = forceInt(timeout)
 	shell = forceBool(shell)
 
+	sp_env = os.environ.copy()
+	if getattr(sys, 'frozen', False):
+		# Running in pyinstaller / frozen
+		lp_orig = sp_env.get("LD_LIBRARY_PATH_ORIG")
+		if lp_orig is not None:
+			# Restore the original, unmodified value
+			logger.debug("Setting original LD_LIBRARY_PATH '%s' in env for subprocess" % lp_orig)
+			sp_env["LD_LIBRARY_PATH"] = lp_orig
+		else:
+			# This happens when LD_LIBRARY_PATH was not set.
+			# Remove the env var as a last resort
+			logger.debug("Removing LD_LIBRARY_PATH from env for subprocess")
+			sp_env.pop("LD_LIBRARY_PATH", None)
+	
 	exitCode = 0
 	result = []
 
