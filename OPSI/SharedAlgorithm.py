@@ -148,7 +148,7 @@ def addActionRequest(productOnClientByProductId, productId, productDependenciesB
 			logger.debug(
 				u"Circular dependency at %s. Processed product: %s"
 				u"addedInfo: %s",
-				dependency.requiredProductId
+				dependency.requiredProductId,
 				productId,
 				addedInfo
 			)
