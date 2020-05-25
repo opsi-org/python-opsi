@@ -1134,7 +1134,7 @@ depot where the method is.
 						# Fill up empty display names
 						for j, currentValue in enumerate(ccopy.get('Values', [])):
 							if not currentValue.get('UI'):
-								logger.warning("No translation for property '%s.%s' found", (ccopy['Class']['Opsi'], currentValue['Opsi'])
+								logger.warning("No translation for property '%s.%s' found", ccopy['Class']['Opsi'], currentValue['Opsi'])
 								ccopy['Values'][j]['UI'] = currentValue['Opsi']
 
 						classes.append(ccopy)
