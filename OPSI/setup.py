@@ -27,6 +27,7 @@ import subprocess
 
 from OPSI.Config import OPSI_ADMIN_GROUP, FILE_ADMIN_GROUP, DEFAULT_DEPOT_USER
 from OPSI.Logger import Logger
+from OPSI.System import get_subprocess_environment
 
 logger = Logger()
 
@@ -37,7 +38,7 @@ def create_group(groupname: str, system: bool = False):
 		cmd.append("--system")
 	cmd.append(groupname)
 	logger.info("Running command: %s", cmd)
-	subprocess.check_call(cmd)
+	subprocess.check_call(cmd, env=get_subprocess_environment())
 
 def create_user(username: str, primary_groupname: str, home: str, shell: str, system: bool = False):
 	logger.notice("Creating user: %s", username)
@@ -46,13 +47,13 @@ def create_user(username: str, primary_groupname: str, home: str, shell: str, sy
 		cmd.append("--system")
 	cmd.append(username)
 	logger.info("Running command: %s", cmd)
-	subprocess.check_call(cmd)
+	subprocess.check_call(cmd, env=get_subprocess_environment())
 
 def add_user_to_group(username: str, groupname: str):
 	logger.notice("Adding user '%s' to group '%s'", username, groupname)
 	cmd = ["usermod", "-a", "-G", groupname, username]
 	logger.info("Running command: %s", cmd)
-	subprocess.check_call(cmd)
+	subprocess.check_call(cmd, env=get_subprocess_environment())
 
 def get_groups():
 	groups = {}
