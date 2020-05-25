@@ -113,6 +113,10 @@ def setRights(path=u'/'):
 			chown(path, rights.uid, rights.gid)
 			setRightsOnFile(os.path.abspath(path), rights.files)
 			continue
+		
+		if not os.path.exists(path):
+			LOGGER.warning("File not found '%s'", startPath)
+			continue
 
 		LOGGER.notice(u"Setting rights on directory %s", startPath)
 		LOGGER.debug2(u"Rights configuration: %s", rights)
