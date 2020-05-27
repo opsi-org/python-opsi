@@ -3086,6 +3086,7 @@ class Distribution:
 				# platform will be removed in Python 3.8.
 				distribution_information = platform.linux_distribution()
 
+		logger.debug("distribution information: %s", distribution_information)
 		self.distribution, self._version, self.id = distribution_information
 		self.distribution = self.distribution.strip()
 
