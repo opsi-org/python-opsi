@@ -148,7 +148,7 @@ def initializeDatabase(
 	def createUser(host):
 		notificationFunction(f"Creating user '{config['username']}' and granting all rights on '{config['database']}'")
 		db.query(f"CREATE USER IF NOT EXISTS '{config['username']}'@'{host}'")
-		db.query(f"SET PASSWORD FOR '{config['username']}'@'{host}' = '{config['password']}'")
+		db.query(f"ALTER USER '{config['username']}'@'{host}' IDENTIFIED WITH mysql_native_password BY '{config['password']}'")
 		db.query(f"GRANT ALL ON {config['database']}.* TO '{config['username']}'@'{host}'")
 		db.query("FLUSH PRIVILEGES")
 		notificationFunction(f"User '{config['username']}' created and privileges set")
