@@ -611,7 +611,10 @@ False suppresses exceptions.
 				
 				if formatArgs or formatKwargs:
 					try:
-						message = message.format(*formatArgs, **formatKwargs)
+						try:
+							message = message % formatArgs
+						except TypeError:
+							message = message.format(*formatArgs, **formatKwargs)
 					except Exception as e:
 						message = "%s (format error %s %s)" % (message, formatArgs, formatKwargs)
 			else:
