@@ -44,6 +44,7 @@ import subprocess
 import threading
 import time
 import copy as pycopy
+import distro as distro_module
 from itertools import islice
 from signal import SIGKILL
 
@@ -54,11 +55,6 @@ from OPSI.Types import (
 	forceInt, forceIpAddress, forceNetmask, forceUnicode, forceUnicodeLower)
 from OPSI.Object import *
 from OPSI.Util import getfqdn, objectToBeautifiedText, removeUnit
-
-try:
-	import distro as distro_module
-except ImportError:
-	distro_module = None
 
 __all__ = (
 	'CommandNotFoundException',
@@ -3079,13 +3075,8 @@ class Distribution:
 
 	def __init__(self, distribution_information=None):
 		if distribution_information is None:
-			try:
-				distribution_information = distro_module.linux_distribution()
-			except AttributeError:
-				# Fallback to platform.
-				# platform will be removed in Python 3.8.
-				distribution_information = platform.linux_distribution()
-
+			distribution_information = distro_module.linux_distribution()
+		
 		logger.debug("distribution information: %s", distribution_information)
 		self.distribution, self._version, self.id = distribution_information
 		self.distribution = self.distribution.strip()
