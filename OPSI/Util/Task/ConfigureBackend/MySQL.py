@@ -146,24 +146,13 @@ def initializeDatabase(
 			raise DatabaseConnectionFailedException(error)
 
 	def createUser(host):
-		notificationFunction(
-			u"Creating user '{username}' and granting"
-			u" all rights on '{database}'".format(**config)
-		)
-		db.query(u'USE {database};'.format(**config))
-		db.query(
-			(
-				u"GRANT ALL ON {1[database]}.* TO '{1[username]}'@'{0}' "
-				u"IDENTIFIED BY '{1[password]}'").format(
-					host,
-					config,
-			)
-		)
-		db.query(u'FLUSH PRIVILEGES;')
-		notificationFunction(
-			u"User '{username}' created and privileges set".format(**config)
-		)
-
+		notificationFunction(f"Creating user '{config['username']}' and granting all rights on '{config['database']}'")
+		db.query(f"CREATE USER IF NOT EXISTS '{config['username']}'@'{host}'")
+		db.query(f"SET PASSWORD FOR '{config['username']}'@'{host}' = '{config['password']}'")
+		db.query(f"GRANT ALL ON {config['database']}.* TO '{config['username']}'@'{host}'")
+		db.query("FLUSH PRIVILEGES")
+		notificationFunction(f"User '{config['username']}' created and privileges set")
+	
 	if notificationFunction is None:
 		notificationFunction = LOGGER.notice
 
