@@ -274,7 +274,7 @@ class OpsiPackageUpdater:
 						else:
 							logger.info(u"%s: md5sum mismatch and no zsync. Doing nothing.", availablePackage['productId'])
 					else:
-						raise HashsumMissmatchError(u"{productId}: Cannot verify download of package: missing md5sum file", productId=availablePackage['productId'])
+						raise HashsumMissmatchError(f"{availablePackage['productId']}: Cannot verify download of package: missing md5sum file")
 
 					newPackages.append(availablePackage)
 
