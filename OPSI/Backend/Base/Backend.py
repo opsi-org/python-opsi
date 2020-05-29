@@ -38,8 +38,14 @@ import re
 import time
 from typing import Union
 from hashlib import md5
-from Crypto.Hash import MD5
-from Crypto.Signature import pkcs1_15
+try:
+	# python3-pycryptodome installs into Cryptodome
+	from Cryptodome.Hash import MD5
+	from Cryptodome.Signature import pkcs1_15
+except ImportError:
+	# PyCryptodome from pypi installs into Crypto
+	from Crypto.Hash import MD5
+	from Crypto.Signature import pkcs1_15
 
 from OPSI import __version__ as LIBRARY_VERSION
 from OPSI.Exceptions import BackendError
