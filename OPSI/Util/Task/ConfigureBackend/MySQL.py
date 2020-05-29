@@ -151,7 +151,7 @@ def initializeDatabase(
 		try:
 			db.query(f"ALTER USER '{config['username']}'@'{host}' IDENTIFIED WITH mysql_native_password BY '{config['password']}'")
 		except Exception as e:
-			Logger.debug(e)
+			LOGGER.debug(e)
 			db.query(f"ALTER USER '{config['username']}'@'{host}' IDENTIFIED BY '{config['password']}'")
 		db.query(f"GRANT ALL ON {config['database']}.* TO '{config['username']}'@'{host}'")
 		db.query("FLUSH PRIVILEGES")
