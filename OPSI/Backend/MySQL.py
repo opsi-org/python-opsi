@@ -31,7 +31,6 @@ import base64
 import warnings
 import time
 import threading
-import orjson
 from contextlib import contextmanager
 from hashlib import md5
 try:
