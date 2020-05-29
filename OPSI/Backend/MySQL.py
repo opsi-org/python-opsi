@@ -723,7 +723,7 @@ class MySQLBackend(SQLBackend):
 		query = f'''
 			SELECT
 				{select},
-				JSON_ARRAYAGG(wp.windowsSoftwareId) AS windowsSoftwareIds
+				GROUP_CONCAT(wp.windowsSoftwareId SEPARATOR "\n") AS windowsSoftwareIds
 			FROM
 				PRODUCT AS p
 			LEFT JOIN
@@ -741,7 +741,7 @@ class MySQLBackend(SQLBackend):
 			product['productClassIds'] = []
 			if readWindowsSoftwareIDs:
 				# workaround https://bugs.mysql.com/bug.php?id=90835
-				product['windowsSoftwareIds'] = [x for x in orjson.loads(product['windowsSoftwareIds']) if x is not None]
+				product['windowsSoftwareIds'] = [x for x in product['windowsSoftwareIds'].split("\n") if x]
 			else:
 				product['windowsSoftwareIds'] = []
 			
@@ -767,8 +767,10 @@ class MySQLBackend(SQLBackend):
 		query = f'''
 			SELECT
 				{select},
-				JSON_ARRAYAGG(ppv.value) AS possibleValues,
-				JSON_ARRAYAGG(IF(ppv.isDefault, ppv.value, NULL)) AS defaultValues
+				-- JSON_ARRAYAGG(ppv.value) AS possibleValues,
+				-- JSON_ARRAYAGG(IF(ppv.isDefault, ppv.value, NULL)) AS defaultValues,
+				GROUP_CONCAT(ppv.value SEPARATOR "\n") AS possibleValues,
+				GROUP_CONCAT(IF(ppv.isDefault, ppv.value, NULL) SEPARATOR "\n") AS defaultValues
 			FROM
 				PRODUCT_PROPERTY AS pp
 			LEFT JOIN
@@ -789,8 +791,8 @@ class MySQLBackend(SQLBackend):
 		for productProperty in self._sql.getSet(query):
 			if readValues:
 				# workaround https://bugs.mysql.com/bug.php?id=90835
-				productProperty['possibleValues'] = [x for x in orjson.loads(productProperty['possibleValues']) if x is not None]
-				productProperty['defaultValues'] = [x for x in orjson.loads(productProperty['defaultValues']) if x is not None]
+				productProperty['possibleValues'] = [x for x in productProperty['possibleValues'].split("\n") if x]
+				productProperty['defaultValues'] = [x for x in productProperty['defaultValues'].split("\n") if x]
 			else:
 				productProperty['possibleValues'] = []
 				productProperty['defaultValues'] = []
