@@ -46,6 +46,7 @@ stages:
 package:obs:
   stage: package
   script:
+    - export DEBIAN_FRONTEND=noninteractive
     - apt update
     - apt -y install python3-all python3-pip curl python3-venv debhelper osc
     - curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python3
@@ -60,6 +61,7 @@ package:obs:
 publish:uibpypi:
   stage: publish
   script:
+    - export DEBIAN_FRONTEND=noninteractive
     - apt update
     - apt -y upgrade
     - apt -y install python3-all python3-pip python3-venv curl
