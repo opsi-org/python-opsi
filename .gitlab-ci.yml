@@ -51,7 +51,7 @@ package:obs:
     - curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python3
     - source $HOME/.poetry/env
     - poetry install
-    - poetry run opsi-dev-tool -l info --obs-update-package https://obs.uib.local home:uibmz:opsi:4.2:experimental
+    - poetry run opsi-dev-tool -l debug --obs-update-package https://obs.uib.local home:uibmz:opsi:4.2:experimental
   #only:
   #    - /^release/.*$/i
   #    - tags
