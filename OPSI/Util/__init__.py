@@ -49,9 +49,16 @@ from hashlib import md5
 from itertools import islice
 from functools import lru_cache
 
-from Crypto.Cipher import Blowfish
-from Crypto.PublicKey import RSA
-from Crypto.Util.number import bytes_to_long
+try:
+	# python3-pycryptodome installs into Cryptodome
+	from Cryptodome.Cipher import Blowfish
+	from Cryptodome.PublicKey import RSA
+	from Cryptodome.Util.number import bytes_to_long
+except ImportError:
+	# PyCryptodome from pypi installs into Crypto
+	from Crypto.Cipher import Blowfish
+	from Crypto.PublicKey import RSA
+	from Crypto.Util.number import bytes_to_long
 
 from OPSI.Logger import Logger, LOG_DEBUG
 from OPSI.Types import (forceBool, forceFilename, forceFqdn, forceInt,
