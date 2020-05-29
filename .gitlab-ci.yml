@@ -1,4 +1,4 @@
-image: debian:buster
+image: ubuntu:focal
 
 stages:
   # - test
