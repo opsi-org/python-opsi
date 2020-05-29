@@ -1480,7 +1480,7 @@ element of the tuple is replace with the second element.
 					out = p.stdout.readline()
 
 					try:
-						collectedErrors = [p.stderr.readline()]
+						collectedErrors = [p.stderr.readline().decode("utf-8", "replace")]
 					except Exception:
 						collectedErrors = []
 					lastErrors = collections.deque(collectedErrors, maxlen=10)
@@ -1490,7 +1490,7 @@ element of the tuple is replace with the second element.
 						out = p.stdout.readline()
 
 						try:
-							currentError = p.stderr.readline().strip()
+							currentError = p.stderr.readline().decode("utf-8", "replace").strip()
 							if currentError:
 								lastErrors.append(currentError)
 								collectedErrors.append(currentError)
@@ -1506,14 +1506,11 @@ element of the tuple is replace with the second element.
 									break
 
 							if onlyOneErrorMessageInLastErrors:
-								logger.debug(
-									u'Aborting: Only one message in stderr: '
-									u'{0}'.format(firstError)
-								)
+								logger.debug("Aborting: Only one message in stderr: {0}", firstError)
 								break
 
 					if p.returncode not in (0, None):
-						raise OpsiBackupFileError(u"MySQL dump failed for backend %s: %s" % (backend["name"], u"".join(collectedErrors)))
+						raise OpsiBackupFileError("MySQL dump failed for backend %s: %s" % (backend["name"], "".join(collectedErrors)))
 
 					self._addContent(name, (name, "BACKENDS/MYSQL/%s/database.sql" % backend["name"]))
 				finally:
