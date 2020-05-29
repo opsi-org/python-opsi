@@ -49,8 +49,9 @@ package:obs:
     - export DEBIAN_FRONTEND=noninteractive
     - apt update
     - apt -y install python3-all python3-pip curl python3-venv debhelper osc
-    - curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python3
-    - source $HOME/.poetry/env
+    #- curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python3
+    #- source $HOME/.poetry/env
+    - pip3 install poetry
     - poetry install
     - poetry run opsi-dev-tool -l debug --obs-update-package https://obs.uib.local home:uibmz:opsi:4.2:experimental
   #only:
@@ -65,7 +66,8 @@ publish:uibpypi:
     - apt update
     - apt -y upgrade
     - apt -y install python3-all python3-pip python3-venv curl
-    - curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python3
-    - source $HOME/.poetry/env
+    #- curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python3
+    #- source $HOME/.poetry/env
+    - pip3 install poetry
     - poetry install
     - poetry run opsi-dev-tool -l info --uib-pypi-publish
