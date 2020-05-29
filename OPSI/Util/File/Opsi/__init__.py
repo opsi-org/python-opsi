@@ -60,6 +60,7 @@ from OPSI.Types import (
 	forceUniqueList)
 from OPSI.Util.File import ConfigFile, IniFile, TextFile, requiresParsing
 from OPSI.Util import md5sum, toJson, fromJson
+from OPSI.System import get_subprocess_environment
 
 if os.name == 'posix':
 	import fcntl
@@ -1472,7 +1473,7 @@ element of the tuple is replace with the second element.
 
 				fd, name = tempfile.mkstemp(dir=self.tempdir)
 				try:
-					p = Popen(cmd, stdout=PIPE, stderr=PIPE)
+					p = Popen(cmd, stdout=PIPE, stderr=PIPE, env=get_subprocess_environment())
 
 					flags = fcntl.fcntl(p.stderr, fcntl.F_GETFL)
 					fcntl.fcntl(p.stderr, fcntl.F_SETFL, flags | os.O_NONBLOCK)
@@ -1550,7 +1551,7 @@ element of the tuple is replace with the second element.
 					]
 					logger.debug2("Restore command: {!r}", cmd)
 
-					p = Popen(cmd, stdin=fd, stdout=PIPE, stderr=STDOUT)
+					p = Popen(cmd, stdin=fd, stdout=PIPE, stderr=STDOUT, env=get_subprocess_environment())
 
 					out = p.stdout.readline()
 					output = StringIO()
