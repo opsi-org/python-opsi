@@ -47,7 +47,7 @@ package:obs:
   stage: package
   script:
     - apt update
-    - apt -y install python3-all curl debhelper osc
+    - apt -y install python3-all python3-pip curl python3-venv debhelper osc
     - curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python3
     - source $HOME/.poetry/env
     - poetry install
@@ -62,7 +62,7 @@ publish:uibpypi:
   script:
     - apt update
     - apt -y upgrade
-    - apt -y install python3-all curl
+    - apt -y install python3-all python3-pip python3-venv curl
     - curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python3
     - source $HOME/.poetry/env
     - poetry install
