@@ -6,23 +6,23 @@ stages:
   - package
   - publish
 
-#test:unittests:
-#   stage: test
-#   before_script:
-#     - apt update
-#     - apt -y install build-essential python3-dev librsync-dev lsb-release python3-apsw python3-crypto python3-magic python3-mysqldb python3-openssl python3-pampy python3-pip python3-sqlalchemy
-#     - pip install .[test,qa]
-#   script:
-#     - ./run_qa.sh
-#   artifacts:
-#     name: 'python-opsi_QA'
-#     paths:
-#       - pylint.txt
-#       - pep8.txt
-#       - coverage.xml
-#     reports:
-#       junit: testreport.xml
-#     expire_in: 1 day
+test:unittests:
+   stage: test
+   before_script:
+     - apt update
+     - apt -y install build-essential python3-dev librsync-dev lsb-release python3-apsw python3-crypto python3-magic python3-mysqldb python3-openssl python3-pampy python3-pip python3-sqlalchemy cpio iproute2
+     - pip install .[test,qa]
+   script:
+     - ./run_qa.sh
+   artifacts:
+     name: 'python-opsi_QA'
+     paths:
+       - pylint.txt
+       - pep8.txt
+       - coverage.xml
+     reports:
+       junit: testreport.xml
+     expire_in: 1 day
 
 
 #build:documentation:

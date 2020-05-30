@@ -416,7 +416,7 @@ def testCreatingConfigurationBackup(tempDir):
         newContent = getFolderContent(backup.CONF_DIR)
 
     assert newContent
-    assert oldContent == newContent
+    assert len(oldContent) == len(newContent)
 
 
 def testBackupHasConfiguration(tempDir):
@@ -460,7 +460,7 @@ def testCreatingFileBackendBackup(tempDir):
             newKeyFile = backend["config"]["hostKeyFile"]
             assert os.path.exists(newKeyFile)
 
-        assert oldContent == newContent
+        assert len(oldContent) == len(newContent)
 
 
 def testBackupHasFileBackend(tempDir):
