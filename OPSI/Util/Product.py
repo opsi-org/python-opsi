@@ -442,7 +442,7 @@ class ProductPackageFile:
 				'CLIENT_DATA_DIR': self.getProductClientDataDir()
 			}
 			sp_env.update(env)
-
+			logger.debug("Package script env: %s", sp_env)
 			return execute(script, timeout=PACKAGE_SCRIPT_TIMEOUT, env=sp_env)
 		except Exception as error:
 			logger.logException(error, LOG_ERROR)
