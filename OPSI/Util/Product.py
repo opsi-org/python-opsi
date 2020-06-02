@@ -434,15 +434,16 @@ class ProductPackageFile:
 			logger.notice(u"Running package script '%s'", scriptName)
 			os.chmod(script, 0o700)
 
-			os.putenv('PRODUCT_ID', self.packageControlFile.getProduct().getId())
-			os.putenv('PRODUCT_TYPE', self.packageControlFile.getProduct().getType())
-			os.putenv('PRODUCT_VERSION', self.packageControlFile.getProduct().getProductVersion())
-			os.putenv('PACKAGE_VERSION', self.packageControlFile.getProduct().getPackageVersion())
-			os.putenv('CLIENT_DATA_DIR', self.getProductClientDataDir())
-			for (k, v) in env.items():
-				os.putenv(k, v)
+			sp_env = {
+				'PRODUCT_ID': self.packageControlFile.getProduct().getId(),
+				'PRODUCT_TYPE': self.packageControlFile.getProduct().getType(),
+				'PRODUCT_VERSION': self.packageControlFile.getProduct().getProductVersion(),
+				'PACKAGE_VERSION': self.packageControlFile.getProduct().getPackageVersion(),
+				'CLIENT_DATA_DIR': self.getProductClientDataDir()
+			}
+			sp_env.update(env)
 
-			return execute(script, timeout=PACKAGE_SCRIPT_TIMEOUT)
+			return execute(script, timeout=PACKAGE_SCRIPT_TIMEOUT, env=sp_env)
 		except Exception as error:
 			logger.logException(error, LOG_ERROR)
 			self.cleanup()

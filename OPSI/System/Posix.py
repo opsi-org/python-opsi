@@ -881,7 +881,7 @@ def get_subprocess_environment():
 			sp_env.pop("LD_LIBRARY_PATH", None)
 	return sp_env
 
-def execute(cmd, nowait=False, getHandle=False, ignoreExitCode=[], exitOnStderr=False, captureStderr=True, encoding=None, timeout=0, shell=None, waitForEnding=None):
+def execute(cmd, nowait=False, getHandle=False, ignoreExitCode=[], exitOnStderr=False, captureStderr=True, encoding=None, timeout=0, shell=None, waitForEnding=None, env={}):
 	"""
 	Executes a command.
 
@@ -912,6 +912,8 @@ same keyword arguments as on Windows.
 for *nowait*. This is introduced to have the same keyword arguments as \
 on Windows.
 	:type waitForEnding: bool
+	:param env: Additional environment variables to pass to subprocess.
+	:type env: dict
 	:return: If the command finishes and we wait for it to finish the \
 output will be returned.
 	:rtype: list
@@ -929,10 +931,11 @@ output will be returned.
 		logger.debug("Detected kwarg 'waitForEnding'. Overwriting nowait.")
 		nowait = not forceBool(waitForEnding)
 
+	sp_env = get_subprocess_environment()
+	sp_env.update(env)
+
 	exitCode = 0
 	result = []
-
-	sp_env = get_subprocess_environment()
 	startTime = time.time()
 	try:
 		logger.info(u"Executing: %s", cmd)
@@ -1579,13 +1582,13 @@ class Harddisk:
 
 		try:
 			self.partitions = []
-			os.putenv("LC_ALL", "C")
+			sp_env = {"LC_ALL": "C"}
 			if self.ldPreload:  # We want this as a context manager!
-				os.putenv("LD_PRELOAD", self.ldPreload)
+				sp_env["LD_PRELOAD"] = self.ldPreload
 			if isXenialSfdiskVersion():
-				result = execute(u'{sfdisk} --no-reread -s {device}'.format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
+				result = execute(u'{sfdisk} --no-reread -s {device}'.format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1], env=sp_env)
 			else:
-				result = execute(u'{sfdisk} -L --no-reread -s -uB {device}'.format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
+				result = execute(u'{sfdisk} -L --no-reread -s -uB {device}'.format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1], env=sp_env)
 			for line in result:
 				try:
 					self.size = int(line.strip()) * 1024
@@ -1594,9 +1597,9 @@ class Harddisk:
 
 			logger.info(u"Size of disk '%s': %s Byte / %s MB", self.device, self.size, (self.size/(1000*1000)))
 			if isXenialSfdiskVersion():
-				result = execute(u"{sfdisk} --no-reread -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
+				result = execute(u"{sfdisk} --no-reread -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1], env=sp_env)
 			else:
-				result = execute(u"{sfdisk} -L --no-reread -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
+				result = execute(u"{sfdisk} -L --no-reread -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1], env=sp_env)
 			partTablefound = None
 			for line in result:
 				if line.startswith("/dev"):
@@ -1605,22 +1608,19 @@ class Harddisk:
 			if not partTablefound:
 				logger.notice(u"unrecognized partition table type, writing empty partitiontable")
 				if isXenialSfdiskVersion():
-					execute('{echo} -e "0,0\n\n\n\n" | {sfdisk} --no-reread -D {device}'.format(echo=which('echo'), sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
-					result = execute("{sfdisk} --no-reread -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
+					execute('{echo} -e "0,0\n\n\n\n" | {sfdisk} --no-reread -D {device}'.format(echo=which('echo'), sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1], env=sp_env)
+					result = execute("{sfdisk} --no-reread -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1], env=sp_env)
 				else:
-					execute('{echo} -e "0,0\n\n\n\n" | {sfdisk} -L --no-reread -D {device}'.format(echo=which('echo'), sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
-					result = execute("{sfdisk} -L --no-reread -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
+					execute('{echo} -e "0,0\n\n\n\n" | {sfdisk} -L --no-reread -D {device}'.format(echo=which('echo'), sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1], env=sp_env)
+					result = execute("{sfdisk} -L --no-reread -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1], env=sp_env)
 
 			self._parsePartitionTable(result)
 
 			if isXenialSfdiskVersion():
-				result = execute(u"{sfdisk} --no-reread -uS -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
+				result = execute(u"{sfdisk} --no-reread -uS -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1], env=sp_env)
 			else:
-				result = execute(u"{sfdisk} -L --no-reread -uS -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1])
+				result = execute(u"{sfdisk} -L --no-reread -uS -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1], env=sp_env)
 			self._parseSectorData(result)
-
-			if self.ldPreload:
-				os.unsetenv("LD_PRELOAD")
 		except Exception as e:
 			for hook in hooks:
 				hook.error_Harddisk_readPartitionTable(self, e)
@@ -1861,12 +1861,12 @@ class Harddisk:
 					cmd += u'" | %s -L --no-reread %s' % (which('sfdisk'), self.device)
 				else:
 					cmd += u'" | %s -L --no-reread -uC %s%s' % (which('sfdisk'), dosCompat, self.device)
+			
+			sp_env = {}
 			if self.ldPreload:
-				os.putenv("LD_PRELOAD", self.ldPreload)
-
-			execute(cmd, ignoreExitCode=[1])
-			if self.ldPreload:
-				os.unsetenv("LD_PRELOAD")
+				sp_env["LD_PRELOAD"] = self.ldPreload
+			execute(cmd, ignoreExitCode=[1], env=sp_env)
+			
 			self._forceReReadPartionTable()
 			time.sleep(2)
 		except Exception as e:
@@ -1878,11 +1878,12 @@ class Harddisk:
 			hook.post_Harddisk_writePartitionTable(self)
 
 	def _forceReReadPartionTable(self):
+		sp_env = {}
 		if self.ldPreload:
-			os.putenv("LD_PRELOAD", self.ldPreload)
+			sp_env["LD_PRELOAD"] = self.ldPreload
 		logger.info(u"Forcing kernel to reread partition table of '%s'.", self.device)
 		try:
-			execute(u'%s %s' % (which('partprobe'), self.device))
+			execute(u'%s %s' % (which('partprobe'), self.device), env=sp_env)
 		except Exception:
 			logger.error(u"Forcing kernel reread partion table failed, waiting 5 sec. and try again")
 			try:
@@ -1891,9 +1892,7 @@ class Harddisk:
 			except Exception:
 				logger.error(u"Reread Partiontabel failed the second time, given up.")
 				raise
-		if self.ldPreload:
-			os.unsetenv("LD_PRELOAD")
-
+	
 	def deletePartitionTable(self):
 		logger.info(u"Deleting partition table on '%s'", self.device)
 		for hook in hooks:
@@ -2109,11 +2108,10 @@ class Harddisk:
 
 			cmd = u"%s %s %s" % (which('ms-sys'), mbrType, self.device)
 			try:
+				sp_env = {}
 				if self.ldPreload:
-					os.putenv("LD_PRELOAD", self.ldPreload)
-				execute(cmd)
-				if self.ldPreload:
-					os.unsetenv("LD_PRELOAD")
+					sp_env["LD_PRELOAD"] = self.ldPreload
+				execute(cmd, env=sp_env)
 			except Exception as e:
 				logger.error(u"Failed to write mbr: %s", e)
 				raise RuntimeError(u"Failed to write mbr: %s" % e)
@@ -2160,11 +2158,10 @@ class Harddisk:
 
 			cmd = u"%s -p %s %s" % (which('ms-sys'), fsType, self.getPartition(partition)['device'])
 			try:
+				sp_env = {}
 				if self.ldPreload:
-					os.putenv("LD_PRELOAD", self.ldPreload)
-				result = execute(cmd)
-				if self.ldPreload:
-					os.unsetenv("LD_PRELOAD")
+					sp_env["LD_PRELOAD"] = self.ldPreload
+				result = execute(cmd, env=sp_env)
 				if u'successfully' not in result[0]:
 					raise RuntimeError(result)
 			except Exception as e:
@@ -2594,11 +2591,10 @@ class Harddisk:
 					options = u'-f'
 				cmd = u"mkfs.%s %s %s" % (fs, options, self.getPartition(partition)['device'])
 
+			sp_env = {}
 			if self.ldPreload:
-				os.putenv("LD_PRELOAD", self.ldPreload)
-			execute(cmd)
-			if self.ldPreload:
-				os.unsetenv("LD_PRELOAD")
+				sp_env["LD_PRELOAD"] = self.ldPreload
+			execute(cmd, env=sp_env)
 			self.readPartitionTable()
 		except Exception as e:
 			for hook in hooks:
@@ -2630,15 +2626,12 @@ class Harddisk:
 			if size <= 0:
 				raise ValueError(u"New filesystem size of %0.2f MB is not possible!" % (float(size)/(1024*1024)))
 
-			if self.ldPreload:
-				os.putenv("LD_PRELOAD", self.ldPreload)
-
 			if fs.lower() == 'ntfs':
 				cmd = u"echo 'y' | %s --force --size %s %s" % (which('ntfsresize'), size, self.getPartition(partition)['device'])
-				execute(cmd)
-
-			if self.ldPreload:
-				os.unsetenv("LD_PRELOAD")
+				sp_env = {}
+				if self.ldPreload:
+					sp_env["LD_PRELOAD"] = self.ldPreload
+				execute(cmd, env=sp_env)
 		except Exception as e:
 			for hook in hooks:
 				hook.error_Harddisk_resizeFilesystem(self, partition, size, fs, e)
@@ -2661,9 +2654,6 @@ class Harddisk:
 			if not part:
 				raise ValueError(u'Partition %s does not exist' % partition)
 
-			if self.ldPreload:
-				os.putenv("LD_PRELOAD", self.ldPreload)
-
 			pipe = u''
 			if imageFile.startswith(u'|'):
 				pipe = imageFile
@@ -2678,7 +2668,10 @@ class Harddisk:
 			if progressSubject:
 				progressSubject.setEnd(100)
 
-			handle = execute(cmd, getHandle=True)
+			sp_env = {}
+			if self.ldPreload:
+				sp_env["LD_PRELOAD"] = self.ldPreload
+			handle = execute(cmd, getHandle=True, env=sp_env)
 			done = False
 
 			timeout = 0
@@ -2759,8 +2752,6 @@ class Harddisk:
 			if handle:
 				handle.close()
 
-			if self.ldPreload:
-				os.unsetenv("LD_PRELOAD")
 		except Exception as e:
 			for hook in hooks:
 				hook.error_Harddisk_saveImage(self, partition, imageFile, progressSubject, e)
@@ -2837,10 +2828,11 @@ class Harddisk:
 
 			if imageType not in (u'ntfsclone', u'partclone'):
 				raise ValueError(u"Unknown image type.")
-
+			
+			sp_env = {}
 			if self.ldPreload:
-				os.putenv("LD_PRELOAD", self.ldPreload)
-
+				sp_env["LD_PRELOAD"] = self.ldPreload
+				
 			if imageType == u'partclone':
 				logger.info(u"Restoring partclone image '%s' to '%s'",
 					imageFile, self.getPartition(partition)['device']
@@ -2853,7 +2845,7 @@ class Harddisk:
 					progressSubject.setEnd(100)
 					progressSubject.setMessage(u"Scanning image")
 
-				handle = execute(cmd, getHandle=True)
+				handle = execute(cmd, getHandle=True, env=sp_env)
 				done = False
 
 				timeout = 0
@@ -2933,7 +2925,7 @@ class Harddisk:
 					progressSubject.setEnd(100)
 					progressSubject.setMessage(u"Restoring image")
 
-				handle = execute(cmd, getHandle=True)
+				handle = execute(cmd, getHandle=True, env=sp_env)
 				done = False
 
 				timeout = 0
@@ -2986,10 +2978,7 @@ class Harddisk:
 				if progressSubject:
 					progressSubject.setMessage(u"Resizing filesystem to partition size")
 				self.resizeFilesystem(partition, fs=u'ntfs')
-
-			if self.ldPreload:
-				os.unsetenv("LD_PRELOAD")
-
+		
 		except Exception as e:
 			for hook in hooks:
 				hook.error_Harddisk_restoreImage(self, partition, imageFile, progressSubject, e)

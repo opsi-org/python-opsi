@@ -1377,7 +1377,7 @@ def which(cmd):
 def get_subprocess_environment():
 	return os.environ.copy()
 
-def execute(cmd, waitForEnding=True, getHandle=False, ignoreExitCode=[], exitOnStderr=False, captureStderr=True, encoding=None, timeout=0, shell=True):
+def execute(cmd, waitForEnding=True, getHandle=False, ignoreExitCode=[], exitOnStderr=False, captureStderr=True, encoding=None, timeout=0, shell=True, env={}):
 	cmd = forceUnicode(cmd)
 	waitForEnding = forceBool(waitForEnding)
 	getHandle = forceBool(getHandle)
@@ -1386,17 +1386,19 @@ def execute(cmd, waitForEnding=True, getHandle=False, ignoreExitCode=[], exitOnS
 	timeout = forceInt(timeout)
 	shell = forceBool(shell)
 
+	sp_env = get_subprocess_environment()
+	sp_env.update(env)
+
 	exitCode = 0
 	result = []
-
 	startTime = time.time()
 	try:
 		logger.info("Executing: %s", cmd)
 		if getHandle:
 			if captureStderr:
-				return (subprocess.Popen(cmd, shell=shell, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)).stdout
+				return (subprocess.Popen(cmd, shell=shell, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=sp_env)).stdout
 			else:
-				return (subprocess.Popen(cmd, shell=shell, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=None)).stdout
+				return (subprocess.Popen(cmd, shell=shell, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=None, env=sp_env)).stdout
 		else:
 			data = b""
 			stderr = None
@@ -1409,6 +1411,7 @@ def execute(cmd, waitForEnding=True, getHandle=False, ignoreExitCode=[], exitOnS
 				stdin=subprocess.PIPE,
 				stdout=subprocess.PIPE,
 				stderr=stderr,
+				env=sp_env
 			)
 			
 			ret = None
