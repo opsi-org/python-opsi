@@ -738,9 +738,8 @@ class MySQLBackend(SQLBackend):
 		products = []
 		for product in self._sql.getSet(query):
 			product['productClassIds'] = []
-			if readWindowsSoftwareIDs:
-				# workaround https://bugs.mysql.com/bug.php?id=90835
-				product['windowsSoftwareIds'] = [x for x in product['windowsSoftwareIds'].split("\n") if x]
+			if readWindowsSoftwareIDs and product['windowsSoftwareIds']:
+				product['windowsSoftwareIds'] = product['windowsSoftwareIds'].split("\n")
 			else:
 				product['windowsSoftwareIds'] = []
 			
@@ -788,12 +787,14 @@ class MySQLBackend(SQLBackend):
 		'''
 		productProperties = []
 		for productProperty in self._sql.getSet(query):
-			if readValues:
-				# workaround https://bugs.mysql.com/bug.php?id=90835
-				productProperty['possibleValues'] = [x for x in productProperty['possibleValues'].split("\n") if x]
-				productProperty['defaultValues'] = [x for x in productProperty['defaultValues'].split("\n") if x]
+			if readValues and productProperty['possibleValues']:
+				productProperty['possibleValues'] = productProperty['possibleValues'].split("\n")
 			else:
 				productProperty['possibleValues'] = []
+			
+			if readValues and productProperty['defaultValues']:
+				productProperty['defaultValues'] = productProperty['defaultValues'].split("\n")
+			else:
 				productProperty['defaultValues'] = []
 			productProperties.append(ProductProperty.fromHash(productProperty))
 		return productProperties
