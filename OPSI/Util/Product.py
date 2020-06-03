@@ -430,7 +430,14 @@ class ProductPackageFile:
 			if not os.path.exists(script):
 				logger.info(u"Package script '%s' not found", scriptName)
 				return []
-
+			
+			with open(script, "rb") as f:
+				data = f.read()
+			if data.startswith(b"#!") and b"\r\n" in data:
+				logger.info(u"Replacing dos line breaks in %s", script)
+				with open(script, "wb") as f:
+					data = f.write(data.replace(b"\r\n", b"\n"))
+			
 			logger.notice(u"Running package script '%s'", scriptName)
 			os.chmod(script, 0o700)
 
