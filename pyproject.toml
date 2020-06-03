@@ -29,8 +29,8 @@ ldap3 = "^2.7"
 PyCryptodome = "^3.9.7"
 pywin32 = {platform = "win32", version = "^227"}
 wmi = {platform = "win32", version = "^1.5.1"}
-distro = "^1.5.0"
-mysqlclient = "^1.4.6"
+distro = {platform = "linux", version = "^1.5.0"}
+mysqlclient = {platform = "linux", version = "^1.4.6"}
 
 [tool.poetry.dev-dependencies]
 opsi-dev-tools = "^1.0"
