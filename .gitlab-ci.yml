@@ -16,14 +16,16 @@ test:pytests:
     MYSQL_USER: "opsi"
   stage: test
   before_script:
+    - export DEBIAN_FRONTEND=noninteractive
     - apt update
-    - apt -y install build-essential python3-dev python3-pip librsync-dev lsb-release python3-apsw python3-crypto python3-magic python3-mysqldb python3-openssl python3-pampy python3-pip python3-sqlalchemy cpio iproute2
-    - pip3 install .[test,qa]
+    - apt -y install python3-all python3-pip dh-python python3-venv curl libmysqlclient-dev
+    - pip3 install poetry
     - cp tests/Backends/config.py.gitlabci tests/Backends/config.py
     - mkdir -p /etc/opsi
     - echo ${OPSI_TEST_MODULES} > /etc/opsi/modules
+    - poetry install
   script:
-    - ./run_qa.sh
+    - poetry run ./run_qa.sh
   artifacts:
     name: 'python-opsi_QA'
     paths:
