@@ -6,15 +6,25 @@ stages:
   - package
   - publish
 
-test:unittests:
-   stage: test
-   before_script:
+test:pytests:
+  image: ubuntu:focal
+  services:
+    - mysql:latest
+  variables:
+    MYSQL_ROOT_PASSWORD: "opsi"
+    MYSQL_DATABASE: "opsi"
+    MYSQL_USER: "opsi"
+  stage: test
+  before_script:
     - apt update
     - apt -y install build-essential python3-dev python3-pip librsync-dev lsb-release python3-apsw python3-crypto python3-magic python3-mysqldb python3-openssl python3-pampy python3-pip python3-sqlalchemy cpio iproute2
     - pip3 install .[test,qa]
-   script:
+    - cp tests/config.py.gitlabci tests/config.py
+    - mkdir -p /etc/opsi
+    - echo ${OPSI_TEST_MODULES} > /etc/opsi/modules
+  script:
     - ./run_qa.sh
-   artifacts:
+  artifacts:
     name: 'python-opsi_QA'
     paths:
         - pylint.txt
