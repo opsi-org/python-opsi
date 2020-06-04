@@ -28,6 +28,8 @@ test:pytests:
     - poetry remove pycryptodome
     - poetry add pycryptodome
   script:
+    - echo waiting 20sec to wait for mysql
+    - sleep 20
     - poetry run ./run_qa.sh
   artifacts:
     name: 'python-opsi_QA'
