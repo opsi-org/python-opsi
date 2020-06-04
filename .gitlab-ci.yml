@@ -24,6 +24,9 @@ test:pytests:
     - mkdir -p /etc/opsi
     - echo ${OPSI_TEST_MODULES} > /etc/opsi/modules
     - poetry install
+    # crazy bug
+    - poetry remove pycryptodome
+    - poetry add pycryptodome
   script:
     - poetry run ./run_qa.sh
   artifacts:
