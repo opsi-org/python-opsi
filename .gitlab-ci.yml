@@ -18,7 +18,7 @@ test:pytests:
   before_script:
     - export DEBIAN_FRONTEND=noninteractive
     - apt update
-    - apt -y install python3-all python3-pip dh-python python3-venv curl libmysqlclient-dev
+    - apt -y install python3-all python3-pip dh-python python3-venv curl libmysqlclient-dev mysql-client
     - pip3 install poetry
     - cp tests/Backends/config.py.gitlabci tests/Backends/config.py
     - mkdir -p /etc/opsi
@@ -27,6 +27,7 @@ test:pytests:
     # crazy bug
     - poetry remove pycryptodome
     - poetry add pycryptodome
+    - mysql --host=mysql --user=root --password=${MYSQL_ROOT_PASSWORD} -e "SET GLOBAL sql_mode = 'NO_ENGINE_SUBSTITUTION';"
   script:
     - echo waiting 20sec to wait for mysql
 #    - sleep 20
