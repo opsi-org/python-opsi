@@ -836,7 +836,12 @@ class OpsiPackageUpdater:
 				for link in htmlParser.getLinks():
 					if not link.endswith('.opsi'):
 						continue
-
+					
+					if link.startswith("/"):
+						# absolute link to relative link
+						path = "/" + url.split("/", 3)[-1]
+						link = link[len(path):].lstrip("/")
+					
 					if repository.includes:
 						if not any(include.search(link) for include in repository.includes):
 							logger.info(u"Package '%s' is not included. Please check your includeProductIds-entry in configurationfile.", link)
