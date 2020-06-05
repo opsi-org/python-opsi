@@ -86,12 +86,7 @@ class LinksExtractor(HTMLParser):
 		for attr in attrs:
 			if attr[0] != "href":
 				continue
-
 			link = attr[1]
-			if link.startswith('/'):
-				# Fix for IIS repos
-				link = link[1:]
-
 			self.links.add(link)
 
 	def getLinks(self):

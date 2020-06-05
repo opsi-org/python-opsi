@@ -840,7 +840,9 @@ class OpsiPackageUpdater:
 					if link.startswith("/"):
 						# absolute link to relative link
 						path = "/" + url.split("/", 3)[-1]
-						link = link[len(path):].lstrip("/")
+						rlink = link[len(path):].lstrip("/")
+						logger.info("Absolute link: '%s', relative link: '%s'", link, rlink)
+						link = rlink
 					
 					if repository.includes:
 						if not any(include.search(link) for include in repository.includes):
