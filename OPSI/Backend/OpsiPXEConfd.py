@@ -475,6 +475,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 			try:
 				self._updateByProductOnClient(productOnClient)
 			except Exception as error:
+				logger.error("_updateByProductOnClient failed: %s", error, exc_info=True)
 				errors.append(forceUnicode(error))
 
 		if errors:
