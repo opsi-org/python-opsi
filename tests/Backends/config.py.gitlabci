@@ -30,7 +30,7 @@ Please adjust this file to your settings and rename it to ``config.py``
 # /etc/opsi/backends/mysql.conf but you should not use that database
 # for your tests because the tests will delete
 MySQLconfiguration = {
-	"address": u"mysql",
+	"address": u"127.0.0.1",
 	"database": u"opsi",
 	"username": u"opsi",
 	"password": u"opsi",
