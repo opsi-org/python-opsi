@@ -17,8 +17,5 @@ package:
     - python3-pycryptodome
     - python3-twisted
     - python3-sqlalchemy
-  #source_script:
-  #  - 
-  #  #- mkdir -p ${DST}/files/usr/bin
-  #  #- install -m 0755 ${SRC}/opsi-dev-tools/opsi-dev-tool ${DST}/files/usr/bin/opsi-dev-tool
+    - python3-distro
 
