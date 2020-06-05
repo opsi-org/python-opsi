@@ -9,7 +9,7 @@ stages:
 test:pytests:
   image: ubuntu:focal
   services:
-    - mysql:latest
+    - mysql:5.7
   variables:
     MYSQL_ROOT_PASSWORD: "opsi"
     MYSQL_DATABASE: "opsi"
@@ -29,7 +29,7 @@ test:pytests:
     - poetry add pycryptodome
   script:
     - echo waiting 20sec to wait for mysql
-    - sleep 20
+#    - sleep 20
     - poetry run ./run_qa.sh
   artifacts:
     name: 'python-opsi_QA'
