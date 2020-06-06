@@ -16,17 +16,18 @@ test:pytests:
     MYSQL_USER: "opsi"
   stage: test
   before_script:
+    # Installing opsi testmodules file
     - mkdir -p /etc/opsi
     - echo "${OPSI_TEST_MODULES}" > /etc/opsi/modules
     - cat /etc/opsi/modules
+    - export DEBIAN_FRONTEND=noninteractive
+    - apt update
+    - apt -y install python3-all python3-pip dh-python python3-venv curl libmysqlclient-dev mysql-client cpio iproute2 git
     # cloning opsi-server for data directory
     - rm -rf ../opsi-server
     - rm -rf data
     - git clone -b master https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.uib.gmbh/uib/opsi-server.git ../opsi-server
     - ln -s ../opsi-server/opsi-server_data/etc data
-    - export DEBIAN_FRONTEND=noninteractive
-    - apt update
-    - apt -y install python3-all python3-pip dh-python python3-venv curl libmysqlclient-dev mysql-client cpio iproute2 git
     - pip3 install poetry
     - cp tests/Backends/config.py.gitlabci tests/Backends/config.py
     - poetry install
