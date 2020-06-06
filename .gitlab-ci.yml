@@ -21,14 +21,15 @@ test:pytests:
     - apt -y install python3-all python3-pip dh-python python3-venv curl libmysqlclient-dev mysql-client
     - pip3 install poetry
     - cp tests/Backends/config.py.gitlabci tests/Backends/config.py
+    # Todo: data-Dir files moved during refactoring, has to be fixed in tests directly
+    - cp -R debian/python-opsi/etc/opsi/* data/.
     - mkdir -p /etc/opsi
     - echo ${OPSI_TEST_MODULES} > /etc/opsi/modules
     - poetry install
-    # crazy bug
+    # Todo: crazy bug
     - poetry remove pycryptodome
     - poetry add pycryptodome
     - mysql --host=mysql --user=root --password=${MYSQL_ROOT_PASSWORD} -e "SET GLOBAL sql_mode = 'NO_ENGINE_SUBSTITUTION';"
-    - cp -R ${PWD}/debian/python-opsi/etc/opsi/* ${PWD}/data/.
   script:
     - echo waiting 20sec to wait for mysql
 #    - sleep 20
