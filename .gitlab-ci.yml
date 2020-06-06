@@ -28,6 +28,9 @@ test:pytests:
     - ls -la tests/Backends/config.py.gitlabci
     - ls -la tests/Backends/config.py
     - ls -la data/
+    - ls -la debian/
+    - ls -la debian/python-opsi/
+    - ls -la debian/python-opsi/etc/
     - ls -la debian/python-opsi/etc/opsi/
     - cp -R debian/python-opsi/etc/opsi/* data/.
     - mkdir -p /etc/opsi
