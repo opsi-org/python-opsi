@@ -18,7 +18,7 @@ test:pytests:
   before_script:
     - export DEBIAN_FRONTEND=noninteractive
     - apt update
-    - apt -y install python3-all python3-pip dh-python python3-venv curl libmysqlclient-dev mysql-client
+    - apt -y install python3-all python3-pip dh-python python3-venv curl libmysqlclient-dev mysql-client git
     - pip3 install poetry
     - cp tests/Backends/config.py.gitlabci tests/Backends/config.py
     # cloning opsi-server for data directory
