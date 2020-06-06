@@ -28,6 +28,7 @@ test:pytests:
     - ln -s ../opsi-server/opsi-server_data/etc data
     - mkdir -p /etc/opsi
     - echo ${OPSI_TEST_MODULES} > /etc/opsi/modules
+    - cat /etc/opsi/modules
     - poetry install
     # Todo: crazy bug
     - poetry remove pycryptodome
