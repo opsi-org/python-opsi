@@ -28,7 +28,7 @@ test:pytests:
     - poetry remove pycryptodome
     - poetry add pycryptodome
     - mysql --host=mysql --user=root --password=${MYSQL_ROOT_PASSWORD} -e "SET GLOBAL sql_mode = 'NO_ENGINE_SUBSTITUTION';"
-    - cp -R debian/python-opsi/etc/opsi/* data/.
+    - cp -R ${PWD}/debian/python-opsi/etc/opsi/* ${PWD}/data/.
   script:
     - echo waiting 20sec to wait for mysql
 #    - sleep 20
