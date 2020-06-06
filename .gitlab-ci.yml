@@ -17,6 +17,8 @@ test:pytests:
   stage: test
   before_script:
     - export DEBIAN_FRONTEND=noninteractive
+    - echo "${OPSI_TEST_MODULES}" > /etc/opsi/modules
+    - cat /etc/opsi/modules
     - apt update
     - apt -y install python3-all python3-pip dh-python python3-venv curl libmysqlclient-dev mysql-client cpio iproute2 git
     - pip3 install poetry
@@ -27,8 +29,6 @@ test:pytests:
     - git clone -b master https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.uib.gmbh/uib/opsi-server.git ../opsi-server
     - ln -s ../opsi-server/opsi-server_data/etc data
     - mkdir -p /etc/opsi
-    - echo ${OPSI_TEST_MODULES} > /etc/opsi/modules
-    - cat /etc/opsi/modules
     - poetry install
     # Todo: crazy bug
     - poetry remove pycryptodome
