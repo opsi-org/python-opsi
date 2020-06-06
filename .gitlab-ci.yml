@@ -22,7 +22,7 @@ test:pytests:
     - pip3 install poetry
     - cp tests/Backends/config.py.gitlabci tests/Backends/config.py
     # cloning opsi-server for data directory
-    - git clone -b master https://gitlab.uib.gmbh/uib/opsi-server.git ../opsi-server
+    - git clone -b master https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.uib.gmbh/uib/opsi-server.git ../opsi-server
     - ln -s ../opsi-server/opsi-server_data/etc data
     - mkdir -p /etc/opsi
     - echo ${OPSI_TEST_MODULES} > /etc/opsi/modules
