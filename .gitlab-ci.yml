@@ -32,8 +32,8 @@ test:pytests:
     - cp tests/Backends/config.py.gitlabci tests/Backends/config.py
     - poetry install
     # Todo: crazy bug
-    - poetry remove pycryptodome
-    - poetry add pycryptodome
+    #- poetry remove pycryptodome
+    #- poetry add pycryptodome
     # Deactivate mysql strict mode
     - mysql --host=mysql --user=root --password=${MYSQL_ROOT_PASSWORD} -e "SET GLOBAL sql_mode = 'NO_ENGINE_SUBSTITUTION';"
   script:
