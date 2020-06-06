@@ -22,6 +22,11 @@ test:pytests:
     - pip3 install poetry
     - cp tests/Backends/config.py.gitlabci tests/Backends/config.py
     # Todo: data-Dir files moved during refactoring, has to be fixed in tests directly
+    - echo ${PWD}
+    - ls -la
+    - ls -la tests/Backends/config.py.gitlabci
+    - ls -la tests/Backends/config.py
+    - ls -la data/
     - ls -la debian/python-opsi/etc/opsi/
     - cp -R debian/python-opsi/etc/opsi/* data/.
     - mkdir -p /etc/opsi
