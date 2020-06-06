@@ -234,6 +234,7 @@ overwrite the log.
 			if limitFileSize and os.path.exists(logFile):
 				currentLogSize = os.stat(logFile).st_size
 				amountToReadFromLog = self._maxLogfileSize - len(data)
+				if amountToReadFromLog < 0: amountToReadFromLog = 0
 				if 0 <= amountToReadFromLog < currentLogSize:
 					logWriteMode = "w"
 					with codecs.open(logFile, 'r', 'utf-8', 'replace') as log:
