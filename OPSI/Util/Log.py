@@ -45,6 +45,6 @@ def truncateLogData(data, maxSize):
 		start = data.find('\n', dataLength - maxSize)
 		if start == -1:
 			start = dataLength - maxSize
-		return data[start+1:].lstrip()
+		return data[start:].lstrip()
 
 	return data
