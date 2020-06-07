@@ -47,7 +47,7 @@ def exampleMySQLBackendConfig():
 
 def testReadingMySQLConfigFile(exampleMySQLBackendConfig):
     defaultMySQLConfig = {
-        "address": u"localhost",
+        "address": u"127.0.0.1",
         "database": u"opsi",
         "username": u"opsi",
         "password": u"opsi",
