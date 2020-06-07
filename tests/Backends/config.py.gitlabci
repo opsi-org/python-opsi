@@ -32,7 +32,7 @@ Please adjust this file to your settings and rename it to ``config.py``
 MySQLconfiguration = {
 	"address": u"mysql",
 	"database": u"opsi",
-	"username": u"root",
+	"username": u"opsi",
 	"password": u"opsi",
 	"databaseCharset": "utf8",
 	"connectionPoolSize": 20,

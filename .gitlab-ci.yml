@@ -11,9 +11,9 @@ test:pytests:
   services:
     - mysql:5.7
   variables:
-    MYSQL_ROOT_PASSWORD: "opsi"
     MYSQL_DATABASE: "opsi"
     MYSQL_USER: "opsi"
+    MYSQL_USER_PASSWORD: "opsi"
   stage: test
   before_script:
     # Installing opsi testmodules file
@@ -22,7 +22,7 @@ test:pytests:
     - cat /etc/opsi/modules
     - export DEBIAN_FRONTEND=noninteractive
     - apt update
-    - apt -y install python3-all python3-pip dh-python python3-venv curl libmysqlclient-dev mysql-client cpio iproute2 git
+    - apt -y install python3-all python3-pip dh-python python3-venv curl libmysqlclient-dev mysql-client cpio iproute2 lsb-release git
     # cloning opsi-server for data directory
     - rm -rf ../opsi-server
     - rm -rf data
