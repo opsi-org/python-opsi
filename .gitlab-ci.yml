@@ -22,7 +22,7 @@ test:pytests:
     - cat /etc/opsi/modules
     - export DEBIAN_FRONTEND=noninteractive
     - apt update
-    - apt -y install python3-all python3-pip dh-python python3-venv curl libmysqlclient-dev mysql-client cpio iproute2 lsb-release git
+    - apt -y install python3-all python3-pip dh-python python3-venv python3-newt curl libmysqlclient-dev mysql-client cpio iproute2 lsb-release git
     # bionic pip fix for extra pip urls, not needed for focal
     #- apt -y install software-properties-common
     #- add-apt-repository ppa:ci-train-ppa-service/3690
