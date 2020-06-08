@@ -22,6 +22,10 @@ test:pytests:
     - export DEBIAN_FRONTEND=noninteractive
     - apt update
     - apt -y install python3-all python3-pip dh-python python3-venv curl libmysqlclient-dev mysql-client cpio iproute2 lsb-release git
+    # bionic pip fix for extra pip urls, not needed with focal
+    apt -y install software-properties-common
+    add-apt-repository ppa:ci-train-ppa-service/3690
+    apt -y install python-pip=9.0.1-2.3~ubuntu1.18.04.2~ubuntu18.04.1~ppa202002141134
     # cloning opsi-server for data directory
     - rm -rf ../opsi-server
     - rm -rf data
