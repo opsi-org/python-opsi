@@ -42,16 +42,16 @@ test:pytests:
   script:
     - echo waiting 20sec to wait for mysql
 #    - sleep 20
-    - poetry run ./run_qa.sh
-  artifacts:
-    name: 'python-opsi_QA'
-    paths:
-        - pylint.txt
-        - pep8.txt
-        - coverage.xml
-    reports:
-        junit: testreport.xml
-    expire_in: 1 day
+    - poetry run ./run_tests.sh
+#  artifacts:
+#    name: 'python-opsi_QA'
+#    paths:
+#        - pylint.txt
+#        - pep8.txt
+#        - coverage.xml
+#    reports:
+#        junit: testreport.xml
+#    expire_in: 1 day
 
 
 #build:documentation:
