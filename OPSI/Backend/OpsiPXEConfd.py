@@ -251,7 +251,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 				elif configState.configId == u"clientconfig.dhcpd.filename":
 					try:
 						value = configState.getValues()[0]
-						if 'elilo' in value:
+						if (('elilo' in value) or ('shim' in value)):
 							if 'x86' in value:
 								eliloMode = 'x86'
 							else:

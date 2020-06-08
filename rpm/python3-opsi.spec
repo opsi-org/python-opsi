@@ -272,6 +272,7 @@ fi
 %define python3_sitearch %(%{__python3} -c 'from distutils import sysconfig; print sysconfig.get_python_lib()')
 %{python3_sitearch}/OPSI/*
 %endif
+%endif
 
 # ===[ changelog ]==================================
 %changelog
