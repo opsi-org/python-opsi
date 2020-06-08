@@ -104,6 +104,65 @@ If your are reusing the values from `/etc/opsi/backends/mysql.conf` you can copy
 Tests can then be run with:
 ``./run_tests.sh``
 
+### Running Tests on local machine with docker
+
+You need docker, git, python3 and python3-pip installed.
+
+First install poetry:
+``pip3 install poetry``
+
+To run all tests you need a modules file under /etc/opsi of the machine (set the rights for your user, that will run the tests).
+
+You will find a file under ``tests/Backends/config.py.gitlabci`` copy this file as config.py in the same directory.
+
+Start a docker container with mysql for tests:
+
+```
+docker run --detach --name=mysql --env="MYSQL_ROOT_PASSWORD=opsi" --env="MYSQL_DATABASE=opsi" mysql:5.7
+```
+
+Grab the ip of your new container with:
+
+```
+docker inspect mysql
+```
+
+and patch your ``tests/Backends/config.py``` with the new host information for mysql.
+
+Disable strict mode from mysql:
+
+```
+mysql --host=172.17.0.2 --user=root --password=opsi -e "SET GLOBAL sql_mode = 'NO_ENGINE_SUBSTITUTION';"
+```
+
+Change host ip from that what you have seen in docker inspect of your machine.
+
+If you want to run your tests under Ubuntu 18.04 you need also a pip update from ppa:
+
+```
+apt -y install software-properties-common
+add-apt-repository ppa:ci-train-ppa-service/3690
+apt -y install python-pip=9.0.1-2.3~ubuntu1.18.04.2~ubuntu18.04.1~ppa202002141134
+```
+
+Last step for running:
+
+You need the files from opsi-server for the tests. If you have also cloned opsi-server in the same directory like python-opsi you can set a symbolic link to the data-files:
+
+```
+ln -s ../opsi-server/opsi-server_data/etc data
+```
+
+Now you can install your venv over poetry:
+
+```
+poetry install
+```
+
+Now run the tests:
+
+```poetry run pytests```
+
 ## Contributing
 
 Contributions are welcome.
