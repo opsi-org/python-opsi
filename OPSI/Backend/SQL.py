@@ -418,7 +418,7 @@ class SQLBackend(ConfigDataBackend):
 			except KeyError:
 				pass  # not there - can be
 
-		for objectAttribute in hash.keys():
+		for objectAttribute in [x for x in hash.keys()]:
 			dbAttribute = self._objectAttributeToDatabaseAttribute(object.__class__, objectAttribute)
 			if objectAttribute != dbAttribute:
 				hash[dbAttribute] = hash[objectAttribute]
@@ -1877,10 +1877,18 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 				if val == True:
 					val = 'yes'
 
-			data += u'%s = %s\r\n' % (module.lower().strip(), val)
-		if not bool(publicKey.verify(md5(data.encode()).digest(), [int(modules['signature'])])):
-			logger.error(u"Failed to verify modules signature")
-			return
+		if modules["signature"].startswith("{"):
+			s_bytes = int(modules['signature'].split("}", 1)[-1]).to_bytes(256, "big")
+			try:
+				pkcs1_15.new(publicKey).verify(MD5.new(data.encode()), s_bytes)
+				verified = True
+			except ValueError:
+				# Invalid signature
+				logger.error(u"Failed to verify modules signature")
+				return
+		else:
+			h_int = int.from_bytes(md5(data.encode()).digest(), "big")
+			s_int = publicKey._encrypt(int(modules["signature"]))
 
 		ConfigDataBackend.licensePool_insertObject(self, licensePool)
 		data = self._objectToDatabaseHash(licensePool)

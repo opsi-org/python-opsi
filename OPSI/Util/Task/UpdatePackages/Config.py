@@ -348,6 +348,11 @@ overriden based on values in configuration file.
 					re.compile(include)
 					for include in splitAndStrip(value, ',')
 				]
+			elif option.lower() == 'autosetupexcludes':
+				repository.autosetupexcludes = [
+					re.compile(exclude)
+					for exclude in splitAndStrip(value, ',')
+				]
 			elif option.lower() == 'description':
 				repository.description = forceUnicode(value)
 
