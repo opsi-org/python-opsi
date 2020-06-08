@@ -392,7 +392,7 @@ class DepotserverPackageManager:
 							dataBackend.productDependency_createObjects(productDependencies)
 							if currentProductDependencies:
 								dataBackend.productDependency_deleteObjects(
-									currentProductDependencies.values()
+									list(currentProductDependencies.values())
 								)
 
 							logger.info(u"Updating product properties of product %s", product)
@@ -431,9 +431,9 @@ class DepotserverPackageManager:
 									newValues = productProperty.defaultValues
 								propertyDefaultValues[productProperty.propertyId] = newValues
 
-							if currentProductProperties.values():
+							if currentProductProperties:
 								dataBackend.productProperty_deleteObjects(
-									currentProductProperties.values()
+									list(currentProductProperties.values())
 								)
 
 							logger.info(u"Deleting product property states of product %s on depot '%s'", productId, depotId)

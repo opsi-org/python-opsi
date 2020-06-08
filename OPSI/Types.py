@@ -714,7 +714,7 @@ def args(*vars, **typeVars):
 			else:
 				obj = cls.__base__.__new__(typ, *args, **kwargs)
 
-			vars.extend(typeVars.keys())
+			vars.extend(list(typeVars.keys()))
 			ka = kwargs.copy()
 
 			for var in vars:
