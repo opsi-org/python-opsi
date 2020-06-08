@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 #-*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
@@ -48,7 +48,7 @@ def workingWithRepositories():
 
     sourceDepot = getRepository(url = u'smb://lelap530.vmnat.local/opsi_depot', username = u'pcpatch', password = u'linux123', mountPoint = tempDir,  mountOptions = { "iocharset": 'utf8' } )
 
-    print sourceDepot.listdir()
+    print(sourceDepot.listdir())
 
     sourceDepot.download(u'winxppro/i386/IEXPLORE.CH_', u'/mnt/hd/IEXPLORE.CH_')
     sourceDepot.download(u'winxppro/i386/NTKRNLMP.EX_', u'/mnt/hd/NTKRNLMP.EX_')
