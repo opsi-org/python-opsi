@@ -195,7 +195,7 @@ def addDependentProductOnClients(productOnClients, availableProducts, productDep
 		for productId in tuple(productOnClientByProductId.keys()):
 			addActionRequest(productOnClientByProductId, productId, productDependenciesByProductId, availableProductsByProductId, addedInfo)
 
-	return productOnClientByProductId.values()
+	return list(productOnClientByProductId.values())
 
 
 class XClassifiedProduct:
@@ -539,7 +539,7 @@ def generateProductOnClientSequenceX(productOnClients, sortedList):
 
 	result = []
 
-	givenIds = fProductId2ProductOnClients.keys()
+	givenIds = list(fProductId2ProductOnClients.keys())
 
 	if sortedList:
 		for productId in sortedList:

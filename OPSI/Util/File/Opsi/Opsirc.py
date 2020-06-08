@@ -131,7 +131,7 @@ def _parseConfig(filename):
 
 	logger.debug(
 		"Found the following usable keys in %s: %s",
-		filename, ", ".join(config.keys())
+		filename, ", ".join(list(config.keys()))
 	)
 	return config
 

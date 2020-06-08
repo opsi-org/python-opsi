@@ -220,7 +220,7 @@ class BackendDispatcher(Backend):
 		return self._dispatchConfig
 
 	def dispatcher_getBackendNames(self):
-		return self._backends.keys()
+		return list(self._backends.keys())
 
 
 @lru_cache(maxsize=None)

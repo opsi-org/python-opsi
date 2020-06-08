@@ -104,7 +104,7 @@ def describeInterface(instance):
 			'defaults': defaults
 		}
 
-	return [methods[name] for name in sorted(methods.keys())]
+	return [methods[name] for name in sorted(list(methods.keys()))]
 
 class BackendOptions:
 	"""
@@ -140,7 +140,7 @@ class BackendOptions:
 		return item in self._option_defaults
 
 	def keys(self):
-		return self._option_defaults.keys()
+		return list(self._option_defaults.keys())
 	
 	def items(self):
 		items = dict(self._option_defaults)

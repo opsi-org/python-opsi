@@ -354,7 +354,7 @@ class SQLBackend(ConfigDataBackend):
 		try:
 			for oc in forceList(filter['type']):
 				if objectClass.__name__ == oc:
-					newFilter['type'] = forceList(filter['type']).append(objectClass.subClasses.values())
+					newFilter['type'] = forceList(filter['type']).append(list(objectClass.subClasses.values()))
 		except KeyError:
 			# No key 'type' - everything okay
 			pass
@@ -363,7 +363,7 @@ class SQLBackend(ConfigDataBackend):
 			if issubclass(objectClass, Entity) and 'type' not in newAttributes:
 				newAttributes.append('type')
 			objectClasses = [objectClass]
-			objectClasses.extend(objectClass.subClasses.values())
+			objectClasses.extend(list(objectClass.subClasses.values()))
 			for oc in objectClasses:
 				for arg in mandatoryConstructorArgs(oc):
 					if arg == 'id':
