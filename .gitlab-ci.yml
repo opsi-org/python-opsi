@@ -7,6 +7,7 @@ stages:
   - publish
 
 test:pytests:
+  when: manual
   image: ubuntu:focal
   services:
     - mysql:latest
@@ -50,7 +51,6 @@ test:pytests:
 #    reports:
 #        junit: testreport.xml
 #    expire_in: 1 day
-
 
 #build:documentation:
 #  stage: build
