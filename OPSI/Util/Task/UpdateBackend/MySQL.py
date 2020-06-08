@@ -132,12 +132,14 @@ started but never ended.
 	try:
 		for result in database.getSet(u"SELECT `version`, `updateStarted`, `updateEnded` FROM OPSI_SCHEMA ORDER BY `version` DESC;"):
 			version = result['version']
-			start = datetime.strptime(result['updateStarted'], '%Y-%m-%d %H:%M:%S')
+			start = result['updateStarted']
 			assert start
+			start = datetime.strptime(start, '%Y-%m-%d %H:%M:%S')
 
 			try:
-				end = datetime.strptime(result['updateEnded'], '%Y-%m-%d %H:%M:%S')
+				end = result['updateEnded']
 				assert end
+				end = datetime.strptime(end, '%Y-%m-%d %H:%M:%S')
 			except (AssertionError, ValueError):
 				raise DatabaseMigrationUnfinishedError(
 					"Migration to version {version} started at {start} "

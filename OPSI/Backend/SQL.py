@@ -90,7 +90,7 @@ def createSchemaVersionTable(database):
 	table = u'''CREATE TABLE `OPSI_SCHEMA` (
 		`version` integer NOT NULL,
 		`updateStarted` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-		`updateEnded` TIMESTAMP,
+		`updateEnded` TIMESTAMP NULL,
 		PRIMARY KEY (`version`)
 	) {0};
 	'''.format(database.getTableCreationOptions('OPSI_SCHEMA'))
