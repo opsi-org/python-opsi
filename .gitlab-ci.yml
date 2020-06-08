@@ -7,7 +7,7 @@ stages:
   - publish
 
 test:pytests:
-  image: ubuntu:bionic
+  image: ubuntu:focal
   services:
     - mysql:5.7
   variables:
@@ -36,7 +36,7 @@ test:pytests:
     - poetry install
     # Todo: crazy bug
     #- poetry remove pycryptodome
-    - poetry add pycryptodome
+    #- poetry add pycryptodome
     # Deactivate mysql strict mode
     - mysql --host=mysql --user=root --password=${MYSQL_ROOT_PASSWORD} -e "SET GLOBAL sql_mode = 'NO_ENGINE_SUBSTITUTION';"
   script:
