@@ -113,7 +113,7 @@ First install poetry:
 
 To run all tests you need a modules file under /etc/opsi of the machine (set the rights for your user, that will run the tests).
 
-You will find a file under ``tests/Backends/config.py.gitlabci`` copy this file as config.py in the same directory.
+You will find a file under ``tests/Backends/config.py.gitlabci`` copy this file as ```config.py``` in the same directory.
 
 Start a docker container with mysql for tests:
 
@@ -161,7 +161,9 @@ poetry install
 
 Now run the tests:
 
-```poetry run pytests```
+```
+poetry run pytests
+```
 
 ## Contributing
 
