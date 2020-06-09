@@ -63,6 +63,7 @@ except ImportError:
 from OPSI.Logger import Logger, LOG_DEBUG
 from OPSI.Types import (forceBool, forceFilename, forceFqdn, forceInt,
 						forceIPAddress, forceNetworkAddress, forceUnicode)
+import OPSI.Object
 
 try:
 	import secrets  # Since Python 3.6
@@ -133,7 +134,6 @@ object instance from it
 		return [deserialize(element, preventObjectCreation=preventObjectCreation) for element in obj]
 	elif isinstance(obj, dict):
 		if not preventObjectCreation and 'type' in obj:
-			import OPSI.Object
 			try:
 				objectClass = eval('OPSI.Object.%s' % obj['type'])
 				return objectClass.fromHash(obj)
