@@ -63,7 +63,7 @@ except ImportError:
 from OPSI.Logger import Logger, LOG_DEBUG
 from OPSI.Types import (forceBool, forceFilename, forceFqdn, forceInt,
 						forceIPAddress, forceNetworkAddress, forceUnicode)
-import OPSI.Object
+OPSIObject = None
 
 try:
 	import secrets  # Since Python 3.6
@@ -115,6 +115,9 @@ class PickleString(str):
 
 
 def deserialize(obj, preventObjectCreation=False):
+	global OPSIObject
+	if OPSIObject is None:
+		import OPSI.Object as OPSIObject
 	"""
 	Deserialization of `obj`.
 
@@ -135,7 +138,7 @@ object instance from it
 	elif isinstance(obj, dict):
 		if not preventObjectCreation and 'type' in obj:
 			try:
-				objectClass = eval('OPSI.Object.%s' % obj['type'])
+				objectClass = eval('OPSIObject.%s' % obj['type'])
 				return objectClass.fromHash(obj)
 			except Exception as error:
 				logger.debug(u"Failed to get object from dict %s: %s", obj, forceUnicode(error))
