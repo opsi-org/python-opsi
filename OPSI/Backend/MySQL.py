@@ -181,6 +181,13 @@ class MySQL(SQL):
 			elif option == 'connectionpoolrecycling':
 				self._connectionPoolRecyclingSeconds = forceInt(value)
 
+		if self._address == "localhost":
+			# If address is localhost mysqlclient will use the mysql unix socket.
+			# Mysqlclient will use /tmp/mysql.sock as default which will fail in
+			# nearly all environments. The correct location of the unix socket is
+			# not easy to find. Therefore we always use the tcp/ip socket. 
+			self._address = "127.0.0.1"
+		
 		self._transactionLock = threading.Lock()
 		self._pool = None
 		self._createConnectionPool()
