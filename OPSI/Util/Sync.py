@@ -19,106 +19,168 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-General utility functions.
-
-This module holds various utility functions for the work with opsi.
-This includes functions for (de)serialisation, converting classes from
-or to JSON, working with librsync and more.
-
 :copyright: uib GmbH <info@uib.de>
-:author: Jan Schneider <j.schneider@uib.de>
-:author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
 """
 
-import base64
+# forked from: https://github.com/dvas0004/py_rdiff
+# inspiration: https://pypi.python.org/pypi/python-librsync/0.1-5
+# librsync in c: http://rproxy.samba.org/doxygen/librsync/refman.pdf
+# notes: https://docs.python.org/2/library/ctypes.html
+
+import io
 import os
-from contextlib import closing
+import sys
+import base64
+import ctypes
+import ctypes.util
+import hashlib
+import tempfile
+import traceback
 
 from OPSI.Logger import Logger
 from OPSI.Types import forceFilename, forceUnicode
 
-__all__ = (
-    'librsyncDeltaFile', 'librsyncPatchFile', 'librsyncSignature',
-)
+RSYNC_STRONG_LENGTH = 8
+RSYNC_BLOCK_LENGTH = 2048
 
+_librsync = None
 logger = Logger()
 
-if os.name == 'posix':
-    from duplicity import librsync
-elif os.name == 'nt':
-    try:
-        import librsync
-    except Exception as e:
-        logger.error(u"Failed to import librsync: %s", e)
+if os.name == "posix":
+	path = ctypes.util.find_library("rsync")
+	if path is None:
+		raise ImportError("Could not find librsync, make sure it is installed")
+	try:
+		_librsync = ctypes.cdll.LoadLibrary(path)
+	except OSError:
+		raise ImportError(f"Could not load librsync at '{path}'")
+elif os.name == "nt":
+	try:
+		_librsync = ctypes.cdll.librsync
+	except:
+		raise ImportError("Could not load librsync, make sure it is installed")
+else:
+	raise NotImplementedError("Librsync is not supported on your platform")
+
+# rs_result rs_sig_file (FILE *old_file, FILE *sig_file, size_t block_len, size_t strong_len, rs_magic_number sig_magic, rs_stats_t *stats)
+_librsync.rs_sig_file.restype = ctypes.c_long
+_librsync.rs_sig_file.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p]
+
+# rs_result rs_loadsig_file (FILE *sig_file, rs_signature_t **sumset, rs_stats_t *stats)
+_librsync.rs_loadsig_file.restype = ctypes.c_long
+_librsync.rs_loadsig_file.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
+
+# rs_result rs_build_hash_table(rs_signature_t* sums);
+_librsync.rs_build_hash_table.restype = ctypes.c_size_t
+_librsync.rs_build_hash_table.argtypes = [ctypes.c_void_p]
+
+# rs_result rs_delta_file (rs_signature_t *, FILE *new_file, FILE *delta_file, rs_stats_t *)
+_librsync.rs_delta_file.restype = ctypes.c_long
+_librsync.rs_delta_file.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
+
+# rs_result rs_patch_file (FILE *basis_file, FILE *delta_file, FILE *new_file, rs_stats_t *)
+_librsync.rs_patch_file.restype = ctypes.c_long
+_librsync.rs_patch_file.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
 
 
 def librsyncSignature(filename, base64Encoded=True):
-    filename = forceFilename(filename)
-    try:
-        with open(filename, 'rb') as f:
-            with closing(librsync.SigFile(f)) as sf:
-                sig = sf.read()
-
-                if base64Encoded:
-                    sig = base64.encodestring(sig)
-
-                return sig
-    except Exception as sigError:
-        raise RuntimeError(
-            u"Failed to get librsync signature from %s: %s" % (
-                filename,
-                forceUnicode(sigError)
-            )
-        )
-
-
-def librsyncPatchFile(oldfile, deltafile, newfile):
-    logger.debug(u"Librsync patch: old file %s, delta file %s, new file %s", oldfile, deltafile, newfile)
-
-    oldfile = forceFilename(oldfile)
-    newfile = forceFilename(newfile)
-    deltafile = forceFilename(deltafile)
-
-    if oldfile == newfile:
-        raise ValueError(u"Oldfile and newfile are the same file")
-    if deltafile == newfile:
-        raise ValueError(u"deltafile and newfile are the same file")
-    if deltafile == oldfile:
-        raise ValueError(u"oldfile and deltafile are the same file")
-
-    bufsize = 1024 * 1024
-    try:
-        with open(oldfile, "rb") as of:
-            with open(deltafile, "rb") as df:
-                with open(newfile, "wb") as nf:
-                    with closing(librsync.PatchedFile(of, df)) as pf:
-                        data = True
-                        while data:
-                            data = pf.read(bufsize)
-                            nf.write(data)
-    except Exception as patchError:
-        logger.debug(
-            "Patching %s with delta %s into %s failed: %s",
-            oldfile, deltafile, newfile, patchError
-        )
-        raise RuntimeError(u"Failed to patch file %s: %s" % (oldfile, forceUnicode(patchError)))
-
+	"""
+	Get the signature of the file to patch.
+	"""
+	filename = forceFilename(filename)
+	try:
+		tf = tempfile.NamedTemporaryFile(delete=False)
+		sig_file = tf.name
+		tf.close()
+		if not os.path.isfile(filename):
+			raise FileNotFoundError(f"File '{filename}' not found")
+		try:
+			fh = _librsync.fopen(filename.encode("utf-8"), "rb")
+			sh = _librsync.fopen(sig_file.encode("utf-8"), "wb")
+			if _librsync.rs_sig_file(fh, sh, RSYNC_BLOCK_LENGTH, RSYNC_STRONG_LENGTH, None) != 0:
+				raise RuntimeError("librsync.rs_sig_file call failed")
+		finally:
+			if fh:
+				_librsync.fclose(fh)
+			if sh:
+				_librsync.fclose(sh)
+		with open(sig_file, "rb") as sh:
+			if base64Encoded:
+				return base64.encodebytes(sh.read())
+			else:
+				return sh.read()
+	except Exception as sigError:
+		raise RuntimeError(f"Failed to get librsync signature from {filename}: {forceUnicode(sigError)}")
+	finally:
+		os.unlink(sig_file)
 
 def librsyncDeltaFile(filename, signature, deltafile):
-    bufsize = 1024 * 1024
-    filename = forceFilename(filename)
-    deltafile = forceFilename(deltafile)
-    logger.debug("Creating deltafile %s on base of %s", deltafile, filename)
-    try:
-        with open(filename, "rb") as f:
-            with open(deltafile, "wb") as df:
-                with closing(librsync.DeltaFile(signature, f)) as ldf:
-                    data = True
-                    while data:
-                        data = ldf.read(bufsize)
-                        df.write(data)
-    except Exception as e:
-        raise RuntimeError(
-            u"Failed to write delta file %s: %s" % (deltafile, forceUnicode(e))
-        )
+	"""
+	Create delta file from original file and the signature of the file to patch.
+	"""
+	filename = forceFilename(filename)
+	deltafile = forceFilename(deltafile)
+	logger.debug("Creating deltafile %s on base of %s", deltafile, filename)
+
+	try:
+		tf = tempfile.NamedTemporaryFile("wb", delete=False)
+		sig_file = tf.name
+		tf.write(signature)
+		tf.close()
+		try:
+			fh = _librsync.fopen(filename.encode("utf-8"), "rb")
+			sh = _librsync.fopen(sig_file.encode("utf-8"), "rb")
+			dh = _librsync.fopen(deltafile.encode("utf-8"), "wb")
+			sig = ctypes.c_void_p()
+			if _librsync.rs_loadsig_file(sh, ctypes.byref(sig), None) != 0:
+				raise RuntimeError("librsync.rs_loadsig_file call failed")
+			if _librsync.rs_build_hash_table(sig) != 0:
+				raise RuntimeError("librsync.rs_build_hash_table call failed")
+			if _librsync.rs_delta_file(sig, fh, dh, None) != 0:
+				raise RuntimeError("librsync.rs_delta_file call failed")
+		finally:
+			if fh:
+				_librsync.fclose(fh)
+			if sh:
+				_librsync.fclose(sh)
+			if dh:
+				_librsync.fclose(dh)
+	except Exception as sigError:
+		raise RuntimeError(f"Failed to write delta file {deltafile}: {forceUnicode(sigError)}")
+	finally:
+		os.unlink(sig_file)
+
+def librsyncPatchFile(oldfile, deltafile, newfile):
+	"""
+	Create the new file from old file and delta file.
+	"""
+	logger.debug("Librsync patch: old file %s, delta file %s, new file %s", oldfile, deltafile, newfile)
+	
+	oldfile = forceFilename(oldfile)
+	newfile = forceFilename(newfile)
+	deltafile = forceFilename(deltafile)
+
+	if oldfile == newfile:
+		raise ValueError("oldfile and newfile are the same file")
+	if deltafile == newfile:
+		raise ValueError("deltafile and newfile are the same file")
+	if deltafile == oldfile:
+		raise ValueError("oldfile and deltafile are the same file")
+	
+	try:
+		try:
+			oh = _librsync.fopen(oldfile.encode("utf-8"), "rb")
+			dh = _librsync.fopen(deltafile.encode("utf-8"), "rb")
+			nh = _librsync.fopen(newfile.encode("utf-8"), "wb")
+			if  _librsync.rs_patch_file(oh, dh, nh, None) != 0:
+				raise RuntimeError("librsync.rs_patch_file call failed")
+		finally:
+			if oh:
+				_librsync.fclose(oh)
+			if dh:
+				_librsync.fclose(dh)
+			if nh:
+				_librsync.fclose(nh)
+	except Exception as patchError:
+		raise RuntimeError(f"Failed to patch file {oldfile}: {forceUnicode(patchError)}")
