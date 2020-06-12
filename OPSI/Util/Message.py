@@ -479,8 +479,9 @@ class NotificationServerProtocol(LineReceiver):
 		self.factory.connectionLost(self, reason)
 
 	def lineReceived(self, line):
-		self.factory.rpc(self, line)
-
+		# rpcs can be separated by "\r\n" or "\1e"
+		for rpc in line.split("\x1e"):
+			self.factory.rpc(self, rpc)
 
 class NotificationServerFactory(ServerFactory, SubjectsObserver):
 	protocol = NotificationServerProtocol
