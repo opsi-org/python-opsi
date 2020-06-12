@@ -31,21 +31,21 @@ from .test_util import tempCertPath  # Fixture
 
 
 @pytest.mark.parametrize("cipherList", (
-    None,
-    b'TLSv1+HIGH:!SSLv2:RC4+MEDIUM:!aNULL:!eNULL:!3DES:@STRENGTH',
+	None,
+	b'TLSv1+HIGH:!SSLv2:RC4+MEDIUM:!aNULL:!eNULL:!3DES:@STRENGTH',
 ))
 def testGettingSSLContext(tempCertPath, cipherList):
-    sslContext = SSLContext(tempCertPath, tempCertPath, cipherList)
-    context = sslContext.getContext()
+	sslContext = SSLContext(tempCertPath, tempCertPath, cipherList)
+	context = sslContext.getContext()
 
-    assert isinstance(context, Context)
+	assert isinstance(context, Context)
 
 
 def testCreatingSSLContextRequiresCertificatesToBePresent(tempCertPath):
-    with pytest.raises(OSError):
-        sslContext = SSLContext(tempCertPath, '')
-        sslContext.getContext()
+	with pytest.raises(OSError):
+		sslContext = SSLContext(tempCertPath, '')
+		sslContext.getContext()
 
-    with pytest.raises(OSError):
-        sslContext = SSLContext('', tempCertPath)
-        sslContext.getContext()
+	with pytest.raises(OSError):
+		sslContext = SSLContext('', tempCertPath)
+		sslContext.getContext()

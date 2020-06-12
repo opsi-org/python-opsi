@@ -68,7 +68,7 @@ def testLoggingTraceback():
 	assert j.traceback
 
 	print("Old traceback was something like this: {0!r}".format(
-		[u"     line 105 in 'execute' in file '/root/python-opsi/OPSI/Service/JsonRpc.py'"]
+		[u"	 line 105 in 'execute' in file '/root/python-opsi/OPSI/Service/JsonRpc.py'"]
 	))
 	print("Collected traceback: {0!r}".format(j.traceback))
 	print("Collected Exception: {0!r}".format(j.exception))

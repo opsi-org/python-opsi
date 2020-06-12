@@ -656,7 +656,7 @@ def testForceGroupTypeStandardisesCase(input, expected):
 	(1.3, 1.3),
 	("1", 1.0),
 	("1.3", 1.3),
-	("    1.4   ", 1.4),
+	("	1.4   ", 1.4),
 ])
 def testForceFloat(input, expected):
 	assert expected == forceFloat(input)

@@ -37,14 +37,14 @@ from .helpers import createTemporaryTestfile, workInTemporaryDirectory
 
 def testReadingAllUsedBackends():
 	exampleConfig = '''
-backend_.*         : file, mysql, opsipxeconfd, dhcpd
-host_.*            : file, mysql, opsipxeconfd, dhcpd
+backend_.*		 : file, mysql, opsipxeconfd, dhcpd
+host_.*			: file, mysql, opsipxeconfd, dhcpd
 productOnClient_.* : file, mysql, opsipxeconfd
-configState_.*     : file, mysql, opsipxeconfd
-license.*          : mysql
+configState_.*	 : file, mysql, opsipxeconfd
+license.*		  : mysql
 softwareLicense.*  : mysql
-audit.*            : mysql
-.*                 : mysql
+audit.*			: mysql
+.*				 : mysql
 '''
 
 	dispatchConfig = BackendDispatchConfigFile('not_reading_file')
@@ -55,8 +55,8 @@ audit.*            : mysql
 def testParsingIgnoresCommentedLines():
 	exampleConfig = '''
 ;backend_.*.*  : fail
-	#audit.*            : fail
-		.*                 : yolofile
+	#audit.*			: fail
+		.*				 : yolofile
 '''
 
 	dispatchConfig = BackendDispatchConfigFile('not_reading_file')

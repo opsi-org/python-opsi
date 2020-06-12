@@ -26,8 +26,8 @@ import pytest
 
 
 def testInitialisationOfSQLiteBackendWithoutParametersDoesNotFail():
-    sqlModule = pytest.importorskip("OPSI.Backend.SQLite")
-    SQLiteBackend = sqlModule.SQLiteBackend
+	sqlModule = pytest.importorskip("OPSI.Backend.SQLite")
+	SQLiteBackend = sqlModule.SQLiteBackend
 
-    backend = SQLiteBackend()
-    backend.backend_createBase()
+	backend = SQLiteBackend()
+	backend.backend_createBase()

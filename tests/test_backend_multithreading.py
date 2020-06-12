@@ -33,74 +33,74 @@ from .test_groups import fillBackendWithObjectToGroups
 
 @pytest.mark.parametrize("numberOfThreads", [50])
 def testMultiThreadingBackend(multithreadingBackend, numberOfThreads):
-    backend = ExtendedConfigDataBackend(multithreadingBackend)
+	backend = ExtendedConfigDataBackend(multithreadingBackend)
 
-    MySQLdb = pytest.importorskip("MySQLdb")
-    IntegrityError = MySQLdb.IntegrityError
-    errorConstants = pytest.importorskip("MySQLdb.constants.ER")
-    DUP_ENTRY = errorConstants.DUP_ENTRY
+	MySQLdb = pytest.importorskip("MySQLdb")
+	IntegrityError = MySQLdb.IntegrityError
+	errorConstants = pytest.importorskip("MySQLdb.constants.ER")
+	DUP_ENTRY = errorConstants.DUP_ENTRY
 
-    o2g, _, clients = fillBackendWithObjectToGroups(backend)
+	o2g, _, clients = fillBackendWithObjectToGroups(backend)
 
-    class MultiThreadTester(threading.Thread):
-        def __init__(self, backend, clients, objectToGroups):
-            threading.Thread.__init__(self)
+	class MultiThreadTester(threading.Thread):
+		def __init__(self, backend, clients, objectToGroups):
+			threading.Thread.__init__(self)
 
-            self.exitCode = 0
-            self.errorMessage = None
+			self.exitCode = 0
+			self.errorMessage = None
 
-            self.backend = backend
-            self.clients = clients
-            self.objectToGroups = objectToGroups
+			self.backend = backend
+			self.clients = clients
+			self.objectToGroups = objectToGroups
 
-        def run(self):
-            self.client1 = clients[0]
-            self.client2 = clients[1]
-            self.objectToGroup1 = o2g[0]
-            self.objectToGroup2 = o2g[1]
+		def run(self):
+			self.client1 = clients[0]
+			self.client2 = clients[1]
+			self.objectToGroup1 = o2g[0]
+			self.objectToGroup2 = o2g[1]
 
-            try:
-                print(u"Thread %s started" % self)
-                time.sleep(1)
-                self.backend.host_getObjects()
-                self.backend.host_deleteObjects(self.client1)
+			try:
+				print(u"Thread %s started" % self)
+				time.sleep(1)
+				self.backend.host_getObjects()
+				self.backend.host_deleteObjects(self.client1)
 
-                self.backend.host_getObjects()
-                self.backend.host_deleteObjects(self.client2)
+				self.backend.host_getObjects()
+				self.backend.host_deleteObjects(self.client2)
 
-                self.backend.host_createObjects(self.client2)
-                self.backend.host_createObjects(self.client1)
-                self.backend.objectToGroup_createObjects(self.objectToGroup1)
-                self.backend.objectToGroup_createObjects(self.objectToGroup2)
+				self.backend.host_createObjects(self.client2)
+				self.backend.host_createObjects(self.client1)
+				self.backend.objectToGroup_createObjects(self.objectToGroup1)
+				self.backend.objectToGroup_createObjects(self.objectToGroup2)
 
-                self.backend.host_getObjects()
-                self.backend.host_createObjects(self.client1)
-                self.backend.host_deleteObjects(self.client2)
-                self.backend.host_createObjects(self.client1)
-                self.backend.host_getObjects()
-            except IntegrityError as e:
-                if e.args[0] != DUP_ENTRY:
-                    self.errorMessage = e.msg
-                    self.exitCode = 2
-            except Exception as e:
-                self.errorMessage = e
-                self.exitCode = 1
-            finally:
-                print(u"Thread %s done" % self)
+				self.backend.host_getObjects()
+				self.backend.host_createObjects(self.client1)
+				self.backend.host_deleteObjects(self.client2)
+				self.backend.host_createObjects(self.client1)
+				self.backend.host_getObjects()
+			except IntegrityError as e:
+				if e.args[0] != DUP_ENTRY:
+					self.errorMessage = e.msg
+					self.exitCode = 2
+			except Exception as e:
+				self.errorMessage = e
+				self.exitCode = 1
+			finally:
+				print(u"Thread %s done" % self)
 
-    mtts = [MultiThreadTester(backend, clients, o2g) for i in range(numberOfThreads)]
-    for mtt in mtts:
-        mtt.start()
+	mtts = [MultiThreadTester(backend, clients, o2g) for i in range(numberOfThreads)]
+	for mtt in mtts:
+		mtt.start()
 
-    for mtt in mtts:
-        mtt.join()
+	for mtt in mtts:
+		mtt.join()
 
-    client1 = clients[0]
-    backend.host_createObjects(client1)
+	client1 = clients[0]
+	backend.host_createObjects(client1)
 
-    while mtts:
-        mtt = mtts.pop(0)
-        if not mtt.is_alive():
-            assert 0 == mtt.exitCode, u"Multithreading test failed: Exit Code {0.exitCode}: {0.errorMessage}".format(mtt)
-        else:
-            mtts.append(mtt)
+	while mtts:
+		mtt = mtts.pop(0)
+		if not mtt.is_alive():
+			assert 0 == mtt.exitCode, u"Multithreading test failed: Exit Code {0.exitCode}: {0.errorMessage}".format(mtt)
+		else:
+			mtts.append(mtt)
