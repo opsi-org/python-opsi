@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2018 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -24,12 +24,26 @@ Testing the opsi file backend.
 
 import pytest
 
+from OPSI.Backend.File import FileBackend
 from OPSI.Exceptions import BackendConfigurationError
 
 from .Backends.File import getFileBackend
 
 
 def testGetRawDataFailsOnFileBackendBecauseMissingQuerySupport():
-    with getFileBackend() as backend:
-        with pytest.raises(BackendConfigurationError):
-            backend.getRawData('SELECT * FROM BAR;')
+	with getFileBackend() as backend:
+		with pytest.raises(BackendConfigurationError):
+			backend.getRawData('SELECT * FROM BAR;')
+
+
+def testGetDataFailsOnFileBackendBecauseMissingQuerySupport():
+	with getFileBackend() as backend:
+		with pytest.raises(BackendConfigurationError):
+			backend.getData('SELECT * FROM BAR;')
+
+
+@pytest.mark.parametrize("filename", [
+	"exampleexam_e.-ex_1234.12-1234.12.localboot",
+])
+def testProductFilenamePattern(filename):
+	assert FileBackend.PRODUCT_FILENAME_REGEX.search(filename) is not None

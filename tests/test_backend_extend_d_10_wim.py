@@ -32,80 +32,80 @@ from .helpers import getLocalFQDN, mock, patchAddress, patchEnvironmentVariables
 
 
 def testUpdatingWim(backendManager, fakeWimPath):
-    backend = backendManager
-    localFqdn = getLocalFQDN()
+	backend = backendManager
+	localFqdn = getLocalFQDN()
 
-    with patchAddress(fqdn=localFqdn):
-        with patchEnvironmentVariables(OPSI_HOSTNAME=localFqdn):
-            fillBackend(backend)
+	with patchAddress(fqdn=localFqdn):
+		with patchEnvironmentVariables(OPSI_HOSTNAME=localFqdn):
+			fillBackend(backend)
 
-            with mock.patch('OPSI.Util.WIM.os.path.exists', lambda path: True):
-                backend.updateWIMConfig('testwindows')
+			with mock.patch('OPSI.Util.WIM.os.path.exists', lambda path: True):
+				backend.updateWIMConfig('testwindows')
 
-            imagename = backend.productProperty_getObjects(propertyId="imagename", productId='testwindows')
-            imagename = imagename[0]
+			imagename = backend.productProperty_getObjects(propertyId="imagename", productId='testwindows')
+			imagename = imagename[0]
 
-            possibleImageNames = set([
-                u'Windows 7 HOMEBASICN', u'Windows 7 HOMEPREMIUMN',
-                u'Windows 7 PROFESSIONALN', u'Windows 7 STARTERN',
-                u'Windows 7 ULTIMATEN'
-            ])
-            assert possibleImageNames == set(imagename.possibleValues)
-            assert imagename.defaultValues[0] in imagename.possibleValues
+			possibleImageNames = set([
+				u'Windows 7 HOMEBASICN', u'Windows 7 HOMEPREMIUMN',
+				u'Windows 7 PROFESSIONALN', u'Windows 7 STARTERN',
+				u'Windows 7 ULTIMATEN'
+			])
+			assert possibleImageNames == set(imagename.possibleValues)
+			assert imagename.defaultValues[0] in imagename.possibleValues
 
-            language = backend.productProperty_getObjects(propertyId="system_language", productId='testwindows')
-            language = language[0]
-            assert ['de-DE'] == language.defaultValues
-            assert ['de-DE'] == language.possibleValues
+			language = backend.productProperty_getObjects(propertyId="system_language", productId='testwindows')
+			language = language[0]
+			assert ['de-DE'] == language.defaultValues
+			assert ['de-DE'] == language.possibleValues
 
 
 @pytest.mark.parametrize("objectId", ['', None])
 def testUpdatingWimFailsWithInvalidObjectId(backendManager, objectId):
-    with pytest.raises(ValueError):
-        backendManager.updateWIMConfig(objectId)
+	with pytest.raises(ValueError):
+		backendManager.updateWIMConfig(objectId)
 
 
 def testUpdatingWimFailsWithInvalidProductId(backendManager):
-    with pytest.raises(OSError):
-        backendManager.updateWIMConfigFromPath('', '')
+	with pytest.raises(OSError):
+		backendManager.updateWIMConfigFromPath('', '')
 
 
 def fillBackend(backend):
-    configServer = getConfigServer()
-    backend.host_insertObject(configServer)
+	configServer = getConfigServer()
+	backend.host_insertObject(configServer)
 
-    product = NetbootProduct(id='testWindows', productVersion=1, packageVersion=1)
-    backend.product_insertObject(product)
+	product = NetbootProduct(id='testWindows', productVersion=1, packageVersion=1)
+	backend.product_insertObject(product)
 
-    productOnDepot = ProductOnDepot(
-        productId=product.id,
-        productType=product.getType(),
-        productVersion=product.productVersion,
-        packageVersion=product.packageVersion,
-        depotId=configServer.id,
-        locked=False
-    )
-    backend.productOnDepot_insertObject(productOnDepot)
+	productOnDepot = ProductOnDepot(
+		productId=product.id,
+		productType=product.getType(),
+		productVersion=product.productVersion,
+		packageVersion=product.packageVersion,
+		depotId=configServer.id,
+		locked=False
+	)
+	backend.productOnDepot_insertObject(productOnDepot)
 
-    imagenameProductProperty = UnicodeProductProperty(
-        productId=product.id,
-        productVersion=product.productVersion,
-        packageVersion=product.packageVersion,
-        propertyId=u"imagename",
-        possibleValues=["NOT YOUR IMAGE", "NO NO NO"],
-        defaultValues=["NOT YOUR IMAGE"],
-        editable=True,
-        multiValue=False
-    )
-    systemLanguageProductProperty = UnicodeProductProperty(
-        productId=product.id,
-        productVersion=product.productVersion,
-        packageVersion=product.packageVersion,
-        propertyId=u"system_language",
-        possibleValues=["lol_NOPE"],
-        defaultValues=["lol_NOPE", "rofl_MAO"],
-        editable=True,
-        multiValue=False
-    )
-    backend.productProperty_insertObject(imagenameProductProperty)
-    backend.productProperty_insertObject(systemLanguageProductProperty)
+	imagenameProductProperty = UnicodeProductProperty(
+		productId=product.id,
+		productVersion=product.productVersion,
+		packageVersion=product.packageVersion,
+		propertyId=u"imagename",
+		possibleValues=["NOT YOUR IMAGE", "NO NO NO"],
+		defaultValues=["NOT YOUR IMAGE"],
+		editable=True,
+		multiValue=False
+	)
+	systemLanguageProductProperty = UnicodeProductProperty(
+		productId=product.id,
+		productVersion=product.productVersion,
+		packageVersion=product.packageVersion,
+		propertyId=u"system_language",
+		possibleValues=["lol_NOPE"],
+		defaultValues=["lol_NOPE", "rofl_MAO"],
+		editable=True,
+		multiValue=False
+	)
+	backend.productProperty_insertObject(imagenameProductProperty)
+	backend.productProperty_insertObject(systemLanguageProductProperty)

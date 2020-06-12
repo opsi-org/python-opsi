@@ -53,7 +53,7 @@ def testPatchMenuFile(tempDir):
 		writefile.write('label install\n')
 		writefile.write('  menu label Start ^opsi bootimage\n')
 		writefile.write('  text help\n')
-		writefile.write('                 Start opsi linux bootimage from tftp server.\n')
+		writefile.write('				 Start opsi linux bootimage from tftp server.\n')
 		writefile.write('  endtext\n')
 		writefile.write('  kernel install\n')
 		writefile.write('  append initrd=miniroot.bz2 video=vesa:ywrap,mtrr vga=791 quiet splash --no-log console=tty1 console=ttyS0\n')
@@ -66,7 +66,7 @@ def testPatchMenuFile(tempDir):
 		'label install\n',
 		'  menu label Start ^opsi bootimage\n',
 		'  text help\n',
-		'                 Start opsi linux bootimage from tftp server.\n',
+		'				 Start opsi linux bootimage from tftp server.\n',
 		'  endtext\n',
 		'  kernel install\n',
 		'  append initrd=miniroot.bz2 video=vesa:ywrap,mtrr vga=791 quiet splash --no-log console=tty1 console=ttyS0 service=https://192.168.1.14:4447/rpc\n',
@@ -85,7 +85,7 @@ def testPatchMenuFileReplacesExistingServiceConfiguration(tempDir):
 		writefile.write('label install\n')
 		writefile.write('  menu label Start ^opsi bootimage\n')
 		writefile.write('  text help\n')
-		writefile.write('                 Start opsi linux bootimage from tftp server.\n')
+		writefile.write('				 Start opsi linux bootimage from tftp server.\n')
 		writefile.write('  endtext\n')
 		writefile.write('  kernel install\n')
 		writefile.write('  append initrd=miniroot.bz2 video=vesa:ywrap,mtrr vga=791 quiet splash --no-log console=tty1 console=ttyS0 service=https://192.159.2.2/rpc\n')
@@ -98,7 +98,7 @@ def testPatchMenuFileReplacesExistingServiceConfiguration(tempDir):
 		'label install\n',
 		'  menu label Start ^opsi bootimage\n',
 		'  text help\n',
-		'                 Start opsi linux bootimage from tftp server.\n',
+		'				 Start opsi linux bootimage from tftp server.\n',
 		'  endtext\n',
 		'  kernel install\n',
 		'  append initrd=miniroot.bz2 video=vesa:ywrap,mtrr vga=791 quiet splash --no-log console=tty1 console=ttyS0 service=https://192.168.1.14:4447/rpc\n',
@@ -135,8 +135,8 @@ def testPatchServiceUrlInDefaultConfigs(backendManager, tempDir):
 			defaultWrite.write('\n')
 
 		with open(grubMenu, 'w') as grubWrite:
-			grubWrite.write('        set gfxpayload=keep\n')
-			grubWrite.write('        linux (pxe)/linux/install initrd=miniroot.bz2 video=vesa:ywrap,mtrr vga=791 quiet splash --no-log console=tty1 console=ttyS0\n')
+			grubWrite.write('		set gfxpayload=keep\n')
+			grubWrite.write('		linux (pxe)/linux/install initrd=miniroot.bz2 video=vesa:ywrap,mtrr vga=791 quiet splash --no-log console=tty1 console=ttyS0\n')
 			grubWrite.write('\n')
 
 		ConfigureBootimage.patchServiceUrlInDefaultConfigs(backendManager)

@@ -30,46 +30,46 @@ import pytest
 
 @pytest.fixture(params=[1, 2, 3, 4, 5, 6, 7, 8, 9])
 def compressionLevel(request):
-    yield request.param
+	yield request.param
 
 
 @pytest.fixture(
-    params=[u"Mötörheäd!", "Das ist ein Test und so."],
-    ids=["unicode", "str"],
-    scope="session"
+	params=[u"Mötörheäd!", "Das ist ein Test und so."],
+	ids=["unicode", "str"],
+	scope="session"
 )
 def text(request):
-    yield request.param
+	yield request.param
 
 
 @pytest.fixture(params=[
-    (gzipEncode, gzipDecode),
-    (deflateEncode, deflateDecode)
+	(gzipEncode, gzipDecode),
+	(deflateEncode, deflateDecode)
 ],
-    ids=["gzip", "deflate"],
-    scope="session",
+	ids=["gzip", "deflate"],
+	scope="session",
 )
 def compressionFunctions(request):
-    yield request.param
+	yield request.param
 
 
 def testCompressionAndDecompression(compressionFunctions, text):
-    encode, decode = compressionFunctions
+	encode, decode = compressionFunctions
 
-    compressed = encode(text)
-    assert compressed
-    assert text != compressed
+	compressed = encode(text)
+	assert compressed
+	assert text != compressed
 
-    newText = decode(compressed)
-    assert text == newText
+	newText = decode(compressed)
+	assert text == newText
 
 
 def testCompressionWithDifferentLevels(compressionFunctions, text, compressionLevel):
-    encode, decode = compressionFunctions
-    compressed = encode(text, compressionLevel)
+	encode, decode = compressionFunctions
+	compressed = encode(text, compressionLevel)
 
-    assert compressed
-    assert text != compressed
+	assert compressed
+	assert text != compressed
 
-    newText = decode(compressed)
-    assert text == newText
+	newText = decode(compressed)
+	assert text == newText

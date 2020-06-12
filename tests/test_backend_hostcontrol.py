@@ -1,8 +1,7 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2018 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2019 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -24,27 +23,33 @@ Testing the Host Control backend.
 """
 
 from OPSI.Backend.HostControl import HostControlBackend
+from OPSI.Exceptions import BackendMissingDataError
 from .test_hosts import getClients
 
 import pytest
 
 
 def testCallingStartAndStopMethod(hostControlBackend):
-    """
-    Test if calling the methods works.
+	"""
+	Test if calling the methods works.
 
-    This test does not check if WOL on these clients work nor that
-    they do exist.
-    """
-    clients = getClients()
-    hostControlBackend.host_createObjects(clients)
+	This test does not check if WOL on these clients work nor that
+	they do exist.
+	"""
+	clients = getClients()
+	hostControlBackend.host_createObjects(clients)
 
-    hostControlBackend._hostRpcTimeout = 1  # for faster finishing of the test
+	hostControlBackend._hostRpcTimeout = 1  # for faster finishing of the test
 
-    hostControlBackend.hostControl_start([u'client1.test.invalid'])
-    hostControlBackend.hostControl_shutdown([u'client1.test.invalid'])
+	hostControlBackend.hostControl_start([u'client1.test.invalid'])
+	hostControlBackend.hostControl_shutdown([u'client1.test.invalid'])
+
+
+def testhostControlReachableWithoutHosts(hostControlBackend):
+	with pytest.raises(BackendMissingDataError):
+		hostControlBackend.hostControl_reachable()
 
 
 @pytest.fixture
 def hostControlBackend(extendedConfigDataBackend):
-    yield HostControlBackend(extendedConfigDataBackend)
+	yield HostControlBackend(extendedConfigDataBackend)

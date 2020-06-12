@@ -138,7 +138,7 @@ def testCopyingFromFileToFileOverwritesDestination(progressSubject, srcDir, dstD
 
 
 def testCopyingFromFileToDirectory(progressSubject, srcDir, dstDir):
-	# src = file,  dst = dir            => copy into dst
+	# src = file,  dst = dir			=> copy into dst
 	srcfile = os.path.join(srcDir, 'testfile')
 	dstfile = os.path.join(dstDir, 'testfile2')
 
@@ -170,7 +170,7 @@ def testCopyingFromFileToNonExistingDestination(progressSubject, srcDir, dstDir)
 
 
 def testCopyingFromDirectoryToFileRaisesException(progressSubject, srcDir, dstDir):
-	# src = dir,   dst = file           => error
+	# src = dir,   dst = file		   => error
 	testSrcDir = os.path.join(srcDir, 'testdir')
 	os.makedirs(testSrcDir)
 
@@ -183,7 +183,7 @@ def testCopyingFromDirectoryToFileRaisesException(progressSubject, srcDir, dstDi
 
 
 def testCopyingFromDirectoryToDirectoryCopiesContent(progressSubject, filledSourceDirectory, dstDir, exampleFilenames, exampleDirectories):
-	# src = dir,   dst = dir            => copy src dir into dst
+	# src = dir,   dst = dir			=> copy src dir into dst
 	copy(filledSourceDirectory, dstDir, progressSubject)
 	makeSureFilesAndFoldersExistAtDestination(exampleFilenames, exampleDirectories, filledSourceDirectory, dstDir)
 
@@ -207,7 +207,7 @@ def testCopyingFromDirectoryToNonExistingCreatesFolderAndCopiesContent(progressS
 
 
 def testCopyingManyFilesIntoNonFileDestination(progressSubject, filledSourceDirectory, dstDir, exampleFilenames, exampleDirectories):
-	# src = dir/*, dst = not file       => create dst if not exists, copy content of src into dst
+	# src = dir/*, dst = not file	   => create dst if not exists, copy content of src into dst
 	copy(filledSourceDirectory + '/*.*', dstDir, progressSubject)
 
 	makeSureFilesAndFoldersExistAtDestinationWithoutLongPath(exampleFilenames, exampleDirectories, dstDir)

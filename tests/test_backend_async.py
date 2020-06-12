@@ -29,85 +29,85 @@ from OPSI.Backend._Async import AsyncBackendWrapper
 
 
 class ClassicBackend:
-    def some_method(self):
-        return "Here we are."
+	def some_method(self):
+		return "Here we are."
 
-    def arguments_required(self, arguments):
-        return 'Got {}'.format(arguments)
+	def arguments_required(self, arguments):
+		return 'Got {}'.format(arguments)
 
-    def _protected_func(self):
-        raise RuntimeError("I am uncallable!")
+	def _protected_func(self):
+		raise RuntimeError("I am uncallable!")
 
-    def backend_exit(self):
-        print("Goodbye")
+	def backend_exit(self):
+		print("Goodbye")
 
 
 @pytest.mark.asyncio
 async def testWrappingBackend():
-    backend = AsyncBackendWrapper(ClassicBackend())
-    result = await backend.some_method()
-    assert "Here we are." == result
+	backend = AsyncBackendWrapper(ClassicBackend())
+	result = await backend.some_method()
+	assert "Here we are." == result
 
 
 @pytest.mark.asyncio
 async def testWrappingBackendAndPassingArguments():
-    backend = AsyncBackendWrapper(ClassicBackend())
-    result = await backend.arguments_required('something')
-    assert "Got something" == result
+	backend = AsyncBackendWrapper(ClassicBackend())
+	result = await backend.arguments_required('something')
+	assert "Got something" == result
 
 
 @pytest.mark.asyncio
 async def testCallingMultipleMethods():
-    backend = AsyncBackendWrapper(ClassicBackend())
-    assert "Got something" == await backend.arguments_required('something')
-    assert "Here we are." == await backend.some_method()
+	backend = AsyncBackendWrapper(ClassicBackend())
+	assert "Got something" == await backend.arguments_required('something')
+	assert "Here we are." == await backend.some_method()
 
 
 @pytest.mark.asyncio
 async def testNotPresentingProtectedFunctions():
-    backend = AsyncBackendWrapper(ClassicBackend())
-    with pytest.raises(AttributeError):
-        await backend._protected_func()
+	backend = AsyncBackendWrapper(ClassicBackend())
+	with pytest.raises(AttributeError):
+		await backend._protected_func()
 
 
 @pytest.mark.asyncio
 async def testWorkingAsContextManager():
-    with AsyncBackendWrapper(ClassicBackend()) as backend:
-        assert "Here we are." == await backend.some_method()
+	with AsyncBackendWrapper(ClassicBackend()) as backend:
+		assert "Here we are." == await backend.some_method()
 
 
 @pytest.mark.asyncio
 async def testExitingBackend():
-    """
-    We want to support a proper backend exit.
+	"""
+	We want to support a proper backend exit.
 
-    This is used by backends to be able to provide proper shutdowns.
-    """
-    with AsyncBackendWrapper(ClassicBackend()) as backend:
-        await backend.backend_exit()
+	This is used by backends to be able to provide proper shutdowns.
+	"""
+	with AsyncBackendWrapper(ClassicBackend()) as backend:
+		await backend.backend_exit()
 
 
 @pytest.mark.asyncio
 async def testExitingBackendWithoutMethod():
-    class ShortBackend:
-        def hey(self):
-            return "Ohai"
+	class ShortBackend:
+		def hey(self):
+			return "Ohai"
 
-    sbackend = ShortBackend()
-    backend = AsyncBackendWrapper(sbackend)
-    await backend.backend_exit()
+	sbackend = ShortBackend()
+	backend = AsyncBackendWrapper(sbackend)
+	await backend.backend_exit()
 
 
 @pytest.mark.asyncio
 async def testAsyncWrappingBackendManager(backendManager):
-    asyncBackend = AsyncBackendWrapper(backendManager)
+	asyncBackend = AsyncBackendWrapper(backendManager)
 
-    interface = await asyncBackend.backend_getInterface()
-    for method in interface:
-        assert isinstance(method, dict)
-        break
-    else:
-        raise ValueError("No interface descriptions found")
+	interface = await asyncBackend.backend_getInterface()
+	for method in interface:
+		assert isinstance(method, dict)
+		break
+	else:
+		raise ValueError("No interface descriptions found")
 
-    info = await asyncBackend.backend_info()
-    assert isinstance(info, dict)
+	info = await asyncBackend.backend_info()
+	assert isinstance(info, dict)
