@@ -201,8 +201,8 @@ def testObjectToBeautifiedText():
 	)
 
 	result = objectToBeautifiedText([product, product])
-	assert result.startswith('[\n	{\n		')
-	assert result.endswith('\n	}\n]')
+	assert result.startswith('[\n    {\n        ')
+	assert result.endswith('\n    }\n]')
 	assert result.count('\n') == 45
 
 	for key, value in product.toHash().items():
@@ -224,7 +224,7 @@ def testObjectToBeautifiedText():
 
 @pytest.mark.parametrize("value, expected", [
 	([], '[]'),
-	([[], []], '[\n	[],\n	[]\n]'),
+	([[], []], '[\n    [],\n    []\n]'),
 	({},'{}'),
 
 ])
@@ -288,8 +288,8 @@ def testObjectToBeautifiedTextWorkingWithSet():
 	obj = set([product])
 
 	result = objectToBeautifiedText(obj)
-	assert result.startswith('[\n	{\n		')
-	assert result.endswith('\n	}\n]')
+	assert result.startswith('[\n    {\n        ')
+	assert result.endswith('\n    }\n]')
 	assert result.count(':') == 20
 	assert result.count(',') == 19
 	assert result.count('\n') == 23
