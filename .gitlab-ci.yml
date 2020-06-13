@@ -42,7 +42,6 @@ test:pytests:
 #    - sleep 20
     - poetry run ./run_tests.sh
 #    - poetry run ./run_qa.sh
-    - coverage report
   coverage: '/TOTAL\s+\d+\s+\d+\s+(\d+)%/'
   artifacts:
     name: 'python-opsi_test'
