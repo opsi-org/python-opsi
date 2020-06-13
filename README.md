@@ -1,3 +1,6 @@
+![coverage](https://gitlab.uib.gmbh/uib/python-opsi/badges/v4.2/coverage.svg)
+![pipeline](https://gitlab.uib.gmbh/uib/python-opsi/badges/v4.2/pipeline.svg)
+
 # python-opsi
 
 This is the Python library behind the client management-tool [opsi](http://www.opsi.org/).
