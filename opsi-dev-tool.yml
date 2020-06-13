@@ -18,4 +18,4 @@ package:
     - python3-twisted
     - python3-sqlalchemy
     - python3-distro
-
+    - librsync | librsync2 | librsync1
