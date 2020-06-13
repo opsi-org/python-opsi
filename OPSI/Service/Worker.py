@@ -169,7 +169,7 @@ INTERFACE_PAGE = '''<?xml version="1.0" encoding="UTF-8"?>
 						if (i>0) {
 							params += ', ';
 						}
-						params += inputs[i].value.replace(/\\\/g, '\\\\\\\\');
+						params += inputs[i].value.replace(/\\\\/g, '\\\\\\\\');
 					}
 				}
 			}
