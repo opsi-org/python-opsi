@@ -46,13 +46,19 @@ def librsyncTestfile():
 
 @pytest.mark.skipif(importFailed, reason="Import failed.")
 def testLibrsyncSignatureBase64Encoded(librsyncTestfile):
-	assert b'cnMBNgAACAAAAAAI/6410IBmvH1GKbBN\n' == librsyncSignature(librsyncTestfile)
+	assert librsyncSignature(librsyncTestfile) in (
+		b'cnMBNgAACAAAAAAI/6410IBmvH1GKbBN\n', # librsync1
+		b'cnMBNwAACAAAAAAI/6410EtC5dhLF6sI\n', # librsync2
+	)
 
 
 @pytest.mark.skipif(importFailed, reason="Import failed.")
 def testLibrsyncSignatureCreation(librsyncTestfile):
 	signature = librsyncSignature(librsyncTestfile, base64Encoded=False)
-	assert b'rs\x016\x00\x00\x08\x00\x00\x00\x00\x08\xff\xae5\xd0\x80f\xbc}F)\xb0M' == signature
+	assert signature in (
+		b'rs\x016\x00\x00\x08\x00\x00\x00\x00\x08\xff\xae5\xd0\x80f\xbc}F)\xb0M', # librsync1
+		b'rs\x017\x00\x00\x08\x00\x00\x00\x00\x08\xff\xae5\xd0KB\xe5\xd8K\x17\xab\x08', # librsync2
+	)
 
 
 @pytest.mark.skipif(importFailed, reason="Import failed.")
@@ -90,7 +96,7 @@ def testLibrsyncDeltaSize(librsyncTestfile, tempDir):
 	signature = librsyncSignature(oldfile, False)
 	librsyncDeltaFile(baseFile, signature, deltaFile)
 	delta_size = os.path.getsize(deltaFile)
-	assert delta_size == 524398
+	assert delta_size < size * 0.51
 
 @pytest.mark.skipif(importFailed, reason="Import failed.")
 def testLibrsyncPatchFileDoesNotAlterIfUnneeded(librsyncTestfile, tempDir):

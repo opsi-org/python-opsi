@@ -43,6 +43,7 @@ from OPSI.Types import forceFilename, forceUnicode
 
 RSYNC_STRONG_LENGTH = 8
 RSYNC_BLOCK_LENGTH = 2048
+RSYNC_MAGIC_NUMBER = 0
 
 _librsync = None
 logger = Logger()
@@ -65,7 +66,7 @@ else:
 
 # rs_result rs_sig_file (FILE *old_file, FILE *sig_file, size_t block_len, size_t strong_len, rs_magic_number sig_magic, rs_stats_t *stats)
 _librsync.rs_sig_file.restype = ctypes.c_long
-_librsync.rs_sig_file.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p]
+_librsync.rs_sig_file.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p]
 
 # rs_result rs_loadsig_file (FILE *sig_file, rs_signature_t **sumset, rs_stats_t *stats)
 _librsync.rs_loadsig_file.restype = ctypes.c_long
@@ -98,7 +99,7 @@ def librsyncSignature(filename, base64Encoded=True):
 		try:
 			fh = _librsync.fopen(filename.encode("utf-8"), "rb")
 			sh = _librsync.fopen(sig_file.encode("utf-8"), "wb")
-			if _librsync.rs_sig_file(fh, sh, RSYNC_BLOCK_LENGTH, RSYNC_STRONG_LENGTH, None) != 0:
+			if _librsync.rs_sig_file(fh, sh, RSYNC_BLOCK_LENGTH, RSYNC_STRONG_LENGTH, RSYNC_MAGIC_NUMBER, None) != 0:
 				raise RuntimeError("librsync.rs_sig_file call failed")
 		finally:
 			if fh:
