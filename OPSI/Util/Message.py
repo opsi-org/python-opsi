@@ -480,7 +480,7 @@ class NotificationServerProtocol(LineReceiver):
 
 	def lineReceived(self, line):
 		# rpcs can be separated by "\r\n" or "\1e"
-		for rpc in line.split("\x1e"):
+		for rpc in line.split(b"\x1e"):
 			self.factory.rpc(self, rpc)
 
 class NotificationServerFactory(ServerFactory, SubjectsObserver):
