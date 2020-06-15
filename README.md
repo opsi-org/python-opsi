@@ -99,7 +99,7 @@ Tests can then be run with:
 
 ```bash
 poetry install
-poetry run pytests
+poetry run pytest
 ```
 
 ### Running Tests on local machine with docker
@@ -162,7 +162,7 @@ poetry install
 Now run the tests:
 
 ```bash
-poetry run pytests
+poetry run pytest
 ```
 
 ## Contributing
