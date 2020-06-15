@@ -1,5 +1,5 @@
-![pipeline](https://gitlab.uib.gmbh/uib/python-opsi/badges/v4.2/pipeline.svg)
-![coverage](https://gitlab.uib.gmbh/uib/python-opsi/badges/v4.2/coverage.svg)
+![pipeline](https://gitlab.uib.gmbh/uib/python-opsi/badges/devel/pipeline.svg)
+![coverage](https://gitlab.uib.gmbh/uib/python-opsi/badges/devel/coverage.svg)
 
 # python-opsi
 
