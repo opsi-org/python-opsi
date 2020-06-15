@@ -42,7 +42,7 @@ import ssl as ssl_module
 import socket
 import time
 import zlib
-from collections import MutableMapping
+import collections
 from contextlib import contextmanager
 from functools import lru_cache
 from io import BytesIO
@@ -183,7 +183,7 @@ class HTTPResponse:
 		return self.headers.get(name, default)
 
 
-class HTTPHeaders(MutableMapping):
+class HTTPHeaders(collections.MutableMapping):
 	"""
 	A dictionary that maintains ``Http-Header-Case`` for all keys.
 
