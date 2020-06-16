@@ -44,7 +44,7 @@ these.
 Installing the depedencies via apt-get:
 
 ```bash
-apt-get install python3-dev python3-twisted python3-magic python3-pycryptodome python3-newt python3-pampy python3-openssl python3-mysqldb python3-sqlalchemy iproute lshw librsync2
+apt-get install python3-dev python3-twisted python3-magic python3-pycryptodome python3-newt python3-pampy python3-openssl python3-mysqldb python3-sqlalchemy iproute2 lshw librsync2
 ```
 
 
