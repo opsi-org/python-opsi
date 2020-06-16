@@ -31,6 +31,7 @@ import threading
 import time
 import traceback
 import warnings
+import datetime from datetime
 
 try:
 	import thread
@@ -595,7 +596,7 @@ False suppresses exceptions.
 				for string in self.__confidentialStrings:
 					tempMessage = tempMessage.replace(string, u'*** confidential ***')
 
-			tempMessage = tempMessage.replace(u'%D', datetime)
+			tempMessage = tempMessage.replace(u'%D', _datetime)
 			tempMessage = tempMessage.replace(u'%T', threadId)
 			tempMessage = tempMessage.replace(u'%l', str(level))
 			tempMessage = tempMessage.replace(u'%L', levelname)
@@ -624,10 +625,12 @@ False suppresses exceptions.
 				message = str(message)
 			
 			componentname = self.__componentName
-			datetime = time.strftime(u"%b %d %H:%M:%S", time.localtime())
+			now = datetime.now()
+			_datetime = datetime.strftime("%Y-%m-%d %H:%M:%S", now)
+			_datetime += ".%d" % (now.microsecond / 1000)
 			threadId = str(thread.get_ident())
 			specialConfig = None
-
+			
 			try:
 				levelname, color = _LOGLEVEL_NAME_AND_COLOR_MAPPING[level]
 			except KeyError:
