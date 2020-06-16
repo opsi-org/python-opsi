@@ -31,7 +31,7 @@ import threading
 import time
 import traceback
 import warnings
-import datetime from datetime
+from datetime import datetime
 
 try:
 	import thread
@@ -630,7 +630,7 @@ False suppresses exceptions.
 			_datetime += ".%d" % (now.microsecond / 1000)
 			threadId = str(thread.get_ident())
 			specialConfig = None
-			
+
 			try:
 				levelname, color = _LOGLEVEL_NAME_AND_COLOR_MAPPING[level]
 			except KeyError:
