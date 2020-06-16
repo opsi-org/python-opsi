@@ -21,6 +21,6 @@ package:
     - python3-distro
     - python3-newt
     - librsync | librsync2 | librsync1
-    - iproute
+    - iproute2
     - lshw
 
