@@ -20,6 +20,7 @@ package:
     - python3-mysqldb
     - python3-distro
     - python3-newt
+    - python3-psutil
     - librsync | librsync2 | librsync1
     - iproute2
     - lshw

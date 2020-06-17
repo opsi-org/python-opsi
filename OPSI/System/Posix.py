@@ -43,6 +43,7 @@ import sys
 import subprocess
 import threading
 import time
+import psutil
 import copy as pycopy
 import distro as distro_module
 from itertools import islice
@@ -865,8 +866,10 @@ def which(cmd):
 
 	return WHICH_CACHE[cmd]
 
-def get_subprocess_environment():
-	sp_env = os.environ.copy()
+def get_subprocess_environment(env: dict = None):
+	sp_env = env
+	if sp_env is None:
+		sp_env = os.environ.copy()
 	if getattr(sys, 'frozen', False):
 		# Running in pyinstaller / frozen
 		lp_orig = sp_env.get("LD_LIBRARY_PATH_ORIG")
@@ -3974,21 +3977,12 @@ def getActiveSessionIds(winApiBugCommand=None, data=None):
 	:type data: [str, ]
 	:rtype: [int, ]
 	"""
-	if data is None:
-		data = execute(u"who -p -u")
-
-	sessionIds = []
-	for line in data:
-		parts = line.split()
-		if len(parts) in (7, 8):
-			sessionIds.append(int(parts[-2]))
-		elif len(parts) == 6:
-			sessionIds.append(int(parts[-1]))
-		else:
-			raise ValueError("Can't get session ID from line: {0}".format(line))
-
-	return sessionIds
-
+	session_ids = []
+	for user in psutil.users():
+		if user.terminal.startswith(":"):
+			# x11 session
+			session_ids.append(user.terminal)
+	return session_ids
 
 def getActiveSessionId():
 	"""
@@ -3998,9 +3992,10 @@ def getActiveSessionId():
 	:rtype: int
 
 	"""
-	ownPid = os.getpid()
-	return os.getsid(ownPid)
-
+	for user in psutil.users():
+		if user.terminal.startswith(":"):
+			# x11 session
+			return user.terminal
 
 def getActiveConsoleSessionId():
 	"""
@@ -4012,8 +4007,10 @@ def getActiveConsoleSessionId():
 		the opsi-linux-client-agent!
 
 	"""
-	# TODO: real implementation possible?
-	return 0
+	for user in psutil.users():
+		if user.terminal.startswith(":"):
+			# x11 session
+			return user.terminal
 
 
 def runCommandInSession(command, sessionId=None, desktop=None, duplicateFrom=None, waitForProcessEnding=True, timeoutSeconds=0):
@@ -4042,7 +4039,26 @@ until the execution of the process is terminated.
 	timeoutSeconds = forceInt(timeoutSeconds)
 
 	logger.notice(u"Executing: '%s'", command)
-	sp_env = get_subprocess_environment()
+
+	session = None
+	for user in psutil.users():
+		if user.terminal == sessionId:
+			session = user
+			break
+	
+	if not session:
+		raise ValueError(f"Session {sessionId} not found")
+	
+	procs = [ psutil.Process(pid=session.pid) ]
+	procs += procs[0].children(recursive=True)
+	env = {}
+	for proc in procs:
+		env = proc.environ()
+		if env and env.get("DISPLAY"):
+			# Need environment var DISPLAY to start process in x11
+			break
+	
+	sp_env = get_subprocess_environment(env)
 
 	process = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=sp_env)
 
