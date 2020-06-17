@@ -433,10 +433,21 @@ class ProductPackageFile:
 			
 			with open(script, "rb") as f:
 				data = f.read()
-			if data.startswith(b"#!") and b"\r\n" in data:
-				logger.info(u"Replacing dos line breaks in %s", script)
-				with open(script, "wb") as f:
-					data = f.write(data.replace(b"\r\n", b"\n"))
+			if data.startswith(b"#!"):
+				changed = False
+				if b"\r\n" in data:
+					logger.info(u"Replacing dos line breaks in %s", script)
+					data = data.replace(b"\r\n", b"\n")
+					changed = True
+				idx = data.index(b"\n")
+				if idx > -1:
+					shebang = data[:idx]
+					if shebang.strip().rstrip(b"3").endswith(b"python"):
+						data = b"#!/usr/bin/opsi-python" + data[idx:]
+						changed = True
+				if changed:
+					with open(script, "wb") as f:
+						f.write(data)
 			
 			logger.notice(u"Running package script '%s'", scriptName)
 			os.chmod(script, 0o700)
