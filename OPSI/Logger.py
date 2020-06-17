@@ -627,7 +627,7 @@ False suppresses exceptions.
 			componentname = self.__componentName
 			now = datetime.now()
 			_datetime = now.strftime("%Y-%m-%d %H:%M:%S")
-			_datetime += ".%d" % (now.microsecond / 1000)
+			_datetime += ".%03d" % (now.microsecond / 1000)
 			threadId = str(thread.get_ident())
 			specialConfig = None
 
