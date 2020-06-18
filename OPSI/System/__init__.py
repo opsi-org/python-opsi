@@ -32,6 +32,7 @@ should end up with runnable commands.
 from __future__ import absolute_import
 
 import os
+import sys
 import shutil
 import psutil
 
