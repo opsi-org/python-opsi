@@ -3993,9 +3993,16 @@ def getActiveSessionId():
 
 	"""
 	for user in psutil.users():
-		if user.terminal.startswith(":"):
+		terminal = user.terminal
+		if terminal.startswith("tty"):
+			proc = psutil.Process(user.pid)
+			env = proc.environ()
+			# DISPLAY, XDG_SESSION_TYPE, XDG_SESSION_ID
+			if env.get("DISPLAY"):
+				terminal = env["DISPLAY"]
+		if terminal.startswith(":"):
 			# x11 session
-			return user.terminal
+			return terminal
 
 def getActiveConsoleSessionId():
 	"""
@@ -4007,11 +4014,7 @@ def getActiveConsoleSessionId():
 		the opsi-linux-client-agent!
 
 	"""
-	for user in psutil.users():
-		if user.terminal.startswith(":"):
-			# x11 session
-			return user.terminal
-
+	return getActiveSessionId()
 
 def runCommandInSession(command, sessionId=None, desktop=None, duplicateFrom=None, waitForProcessEnding=True, timeoutSeconds=0):
 	"""
@@ -4042,7 +4045,15 @@ until the execution of the process is terminated.
 
 	session = None
 	for user in psutil.users():
-		if user.terminal == sessionId:
+		terminal = user.terminal
+		if terminal.startswith("tty"):
+			proc = psutil.Process(user.pid)
+			env = proc.environ()
+			# DISPLAY, XDG_SESSION_TYPE, XDG_SESSION_ID
+			if env.get("DISPLAY"):
+				terminal = env["DISPLAY"]
+		if terminal.startswith(":"):
+			# x11 session
 			session = user
 			break
 	
