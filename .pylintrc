@@ -188,13 +188,13 @@ inlinevar-rgx=[a-zA-Z_][a-zA-Z_]*$
 inlinevar-name-hint=[A-Za-z_][A-Za-z0-9_]*$
 
 # Regular expression matching correct variable names
-variable-rgx=[_]{0,2}[a-zA-Z]{2,30}$
+variable-rgx=[_]{0,2}[a-zA-Z0-9_]{2,30}$
 
 # Naming hint for variable names
 variable-name-hint=[a-z_][a-z0-9_]{2,30}$
 
 # Regular expression matching correct argument names
-argument-rgx=[a-z_][a-zA-Z]{2,30}$
+argument-rgx=[a-z_][a-zA-Z0-9_]{2,30}$
 
 # Naming hint for argument names
 argument-name-hint=[a-z_][a-z0-9_]{2,30}$
