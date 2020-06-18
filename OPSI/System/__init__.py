@@ -33,6 +33,7 @@ from __future__ import absolute_import
 
 import os
 import shutil
+import psutil
 
 from OPSI.Logger import Logger
 from OPSI.Types import forceFilename
@@ -340,3 +341,25 @@ def _copy(src, dst, copySrcContent=False, fileCount=0, totalFiles=0, totalSize=0
 			)
 
 	return fileCount
+
+def ensureNotAlreadyRunning():
+	pid = os.getpid()
+	running = None
+	try:
+		proc = psutil.Process(pid)
+		proc_name = proc.name()
+		parent_pid = proc.ppid()
+		child_pids = [p.pid for p in proc.children(recursive=True)]
+		
+		for proc in psutil.process_iter():
+			#logger.debug("Found running process: %s", proc)
+			if proc.name() == proc_name:
+				logger.debug("Found running '%s' process: %s", proc_name, proc)
+				if proc.pid != pid and proc.pid != parent_pid and proc.pid not in child_pids:
+					running = proc.pid
+					break
+	except Exception as error:
+		logger.debug("Check for running processes failed: %s", error)
+	
+	if running:
+		raise RuntimeError(f"Another {os.path.basename(sys.argv[0])} process is running (pids: {running} / {pid}).")
