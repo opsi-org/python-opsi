@@ -416,6 +416,22 @@ class ProductPackageFile:
 			logger.logException(e)
 			self.cleanup()
 			raise RuntimeError(u"Failed to create package content file of package '%s': %s" % (self.packageFile, e))
+	
+	"""
+	def _replacePythonShebang(self, script):
+		with open(script, "rb") as f:
+			data = f.read()
+		idx = data.index(b"\n")
+		if idx == -1:
+			return
+		shebang = data[:idx]
+		if not shebang.strip().rstrip(b"3").endswith(b"python"):
+			return
+		logger.info("Replacing interpreter %s with /usr/bin/opsi-python", shebang[2:].strip())
+		data = b"#!/usr/bin/opsi-python" + data[idx:]
+		with open(script, "wb") as f:
+			f.write(data)
+	"""
 
 	def _runPackageScript(self, scriptName, env={}):
 		logger.info(u"Attempt to run package script %s", scriptName)
@@ -425,7 +441,8 @@ class ProductPackageFile:
 
 			if not self.clientDataDir:
 				raise ValueError(u"Client data dir not set")
-
+			
+			clientDataDir = self.getProductClientDataDir()
 			script = os.path.join(self.tmpUnpackDir, u'OPSI', scriptName)
 			if not os.path.exists(script):
 				logger.info(u"Package script '%s' not found", scriptName)
@@ -434,21 +451,23 @@ class ProductPackageFile:
 			with open(script, "rb") as f:
 				data = f.read()
 			if data.startswith(b"#!"):
-				changed = False
+				new_data = re.sub(b"(^|\s|/)python3?(\s+)", b'\g<1>opsi-python\g<2>', data)
 				if b"\r\n" in data:
 					logger.info(u"Replacing dos line breaks in %s", script)
-					data = data.replace(b"\r\n", b"\n")
-					changed = True
-				idx = data.index(b"\n")
-				if idx > -1:
-					shebang = data[:idx]
-					if shebang.strip().rstrip(b"3").endswith(b"python"):
-						data = b"#!/usr/bin/opsi-python" + data[idx:]
-						changed = True
-				if changed:
+					new_data = new_data.replace(b"\r\n", b"\n")
+				if data != new_data:
 					with open(script, "wb") as f:
-						f.write(data)
+						f.write(new_data)
 			
+			"""
+			self._replacePythonShebang(script)
+			for match in re.finditer(b"\${?CLIENT_DATA_DIR}?/(\S+\.py)", data):
+				pyScript = os.path.join(clientDataDir, match.group(1).decode("utf8"))
+				logger.info("Found python script %s in package script %s", pyScript, scriptName)
+				if os.path.exists(pyScript):
+					self._replacePythonShebang(pyScript)
+			"""
+
 			logger.notice(u"Running package script '%s'", scriptName)
 			os.chmod(script, 0o700)
 
@@ -457,7 +476,7 @@ class ProductPackageFile:
 				'PRODUCT_TYPE': self.packageControlFile.getProduct().getType(),
 				'PRODUCT_VERSION': self.packageControlFile.getProduct().getProductVersion(),
 				'PACKAGE_VERSION': self.packageControlFile.getProduct().getPackageVersion(),
-				'CLIENT_DATA_DIR': self.getProductClientDataDir()
+				'CLIENT_DATA_DIR': clientDataDir
 			}
 			sp_env.update(env)
 			logger.debug("Package script env: %s", sp_env)
