@@ -25,13 +25,20 @@ Various unittests to test functionality of python-opsi.
 """
 
 import os
+import re
 import pytest
+import psutil
 from contextlib import contextmanager
 
 import OPSI.System.Posix as Posix
 
 from .helpers import mock
 
+xorg_running = False
+for proc in psutil.process_iter():
+	if proc.name().lower() == "xorg":
+		xorg_running = True
+		break
 
 def testGetBlockDeviceContollerInfo():
 	data = [
@@ -52,27 +59,16 @@ def testGetBlockDeviceContollerInfo():
 	assert '3A02' == deviceInfo['deviceId']
 
 
-@pytest.mark.parametrize("testdata, expectedIds", [
-	([
-		'wenselowski tty4		 2014-05-20 13:54   .		 24093',
-		'wenselowski pts/0		2014-05-20 09:45 01:10	   15884 (:0.0)',
-		'wenselowski pts/1		2014-05-20 12:58 00:46	   14849 (:0.0)',
-		'wenselowski pts/3		2014-05-20 13:01 00:43	   15401 (:0.0)',
-		'wenselowski pts/4		2014-05-20 13:03 00:40	   15688 (:0.0)',
-		'wenselowski pts/6		2014-05-19 16:45 01:15	   20496 (:0.0)',
-		'wenselowski pts/7		2014-05-19 17:17 00:04	   25574 (:0.0)',
-		'wenselowski pts/8		2014-05-20 10:50 00:16	   27443 (:0.0)',
-		'wenselowski pts/9		2014-05-20 13:27   .		 18172 (:0.0)',
-		'wenselowski pts/10	   2014-05-20 13:42 00:02	   21605 (:0.0)',
-	], [24093, 15884, 14849, 15401, 15688, 20496, 25574, 27443, 18172, 21605]),
-	(['root	 pts/2		Oct 10 09:32 00:02	   19391 (192.168.2.5)'], [19391])
-])
-def testGetActiveSessionIds(testdata, expectedIds):
-	assert expectedIds == Posix.getActiveSessionIds(data=testdata)
+@pytest.mark.skipif(not xorg_running, reason="Xorg not running")
+def testGetActiveSessionIds():
+	ids = Posix.getActiveSessionIds()
+	assert len(ids) > 0, "No sessions found"
+	assert re.search(r"^:\d+$", ids[0])
 
-
+@pytest.mark.skipif(not xorg_running, reason="Xorg not running")
 def testGetActiveSessionId():
-	assert isinstance(Posix.getActiveSessionId(), int)
+	id = Posix.getActiveSessionId()
+	assert re.search(r"^:\d+$", id)
 
 
 def testGetNetworkInterfaces():

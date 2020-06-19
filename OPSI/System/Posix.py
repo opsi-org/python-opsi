@@ -3979,9 +3979,12 @@ def getActiveSessionIds(winApiBugCommand=None, data=None):
 	"""
 	sessions = []
 	for proc in psutil.process_iter():
-		env = proc.environ()
-		if env.get("DISPLAY") and not env["DISPLAY"] in sessions:
-			sessions.append(env["DISPLAY"])
+		try:
+			env = proc.environ()
+			if env.get("DISPLAY") and not env["DISPLAY"] in sessions:
+				sessions.append(env["DISPLAY"])
+		except psutil.AccessDenied as e:
+			logger.debug(e)
 	return sessions
 
 def getActiveSessionId():
