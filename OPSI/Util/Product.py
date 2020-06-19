@@ -196,7 +196,7 @@ class ProductPackageFile:
 			self.cleanup()
 			raise RuntimeError(u"Failed to extract package source from '%s': %s" % (self.packageFile, e))
 
-	def getMetaData(self):
+	def getMetaData(self, keep_extracted_at=None):
 		if self.packageControlFile:
 			# Already done
 			return
@@ -232,6 +232,10 @@ class ProductPackageFile:
 			for metadataArchive in metadataArchives:
 				archive = Archive(os.path.join(metaDataTmpDir, metadataArchive))
 				archive.extract(targetPath=metaDataTmpDir)
+
+				if keep_extracted_at is not None:
+					archive.extract(targetPath=os.path.join(keep_extracted_at, "OPSI"))
+
 
 			packageControlFile = os.path.join(metaDataTmpDir, u'control')
 			if not os.path.exists(packageControlFile):
