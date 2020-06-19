@@ -232,11 +232,12 @@ class ProductPackageFile:
 			for metadataArchive in metadataArchives:
 				archive = Archive(os.path.join(metaDataTmpDir, metadataArchive))
 
-				if output_dir is not None:
+				if output_dir is None:
+					archive.extract(targetPath=metaDataTmpDir)
+				else:
 					archive.extract(targetPath=os.path.join(output_dir, "OPSI"))
-					return
-
-				archive.extract(targetPath=metaDataTmpDir)
+			if output_dir is not None:
+				return			# to work on the whole extracted metadata directory
 
 			packageControlFile = os.path.join(metaDataTmpDir, u'control')
 			if not os.path.exists(packageControlFile):
