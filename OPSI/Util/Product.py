@@ -235,7 +235,7 @@ class ProductPackageFile:
 				if output_dir is None:
 					archive.extract(targetPath=metaDataTmpDir)
 				else:
-					archive.extract(targetPath=os.path.join(output_dir, "OPSI"))
+					archive.extract(targetPath=output_dir)
 			if output_dir is not None:
 				return			# to work on the whole extracted metadata directory
 
