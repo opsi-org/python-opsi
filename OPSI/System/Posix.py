@@ -3977,12 +3977,12 @@ def getActiveSessionIds(winApiBugCommand=None, data=None):
 	:type data: [str, ]
 	:rtype: [int, ]
 	"""
-	session_ids = []
-	for user in psutil.users():
-		if user.terminal.startswith(":"):
-			# x11 session
-			session_ids.append(user.terminal)
-	return session_ids
+	sessions = []
+	for proc in psutil.process_iter():
+		env = proc.environ()
+		if env.get("DISPLAY") and not env["DISPLAY"] in sessions:
+			sessions.append(env["DISPLAY"])
+	return sessions
 
 def getActiveSessionId():
 	"""
@@ -3992,17 +3992,10 @@ def getActiveSessionId():
 	:rtype: int
 
 	"""
-	for user in psutil.users():
-		terminal = user.terminal
-		if terminal.startswith("tty"):
-			proc = psutil.Process(user.pid)
-			env = proc.environ()
-			# DISPLAY, XDG_SESSION_TYPE, XDG_SESSION_ID
-			if env.get("DISPLAY"):
-				terminal = env["DISPLAY"]
-		if terminal.startswith(":"):
-			# x11 session
-			return terminal
+	sessions = getActiveSessionIds()
+	if sessions:
+		return sessions[0]
+	return None
 
 def getActiveConsoleSessionId():
 	"""
@@ -4043,36 +4036,20 @@ until the execution of the process is terminated.
 
 	logger.notice(u"Executing: '%s'", command)
 
-	session = None
-	for user in psutil.users():
-		terminal = user.terminal
-		if terminal.startswith("tty"):
-			proc = psutil.Process(user.pid)
-			env = proc.environ()
-			# DISPLAY, XDG_SESSION_TYPE, XDG_SESSION_ID
-			if env.get("DISPLAY"):
-				terminal = env["DISPLAY"]
-		if terminal.startswith(":"):
-			# x11 session
-			session = user
-			break
+	session_env = None
+	for proc in psutil.process_iter():
+		env = proc.environ()
+		if env.get("DISPLAY") == sessionId:
+			session_env = env
 	
-	if not session:
+	if not session_env:
 		raise ValueError(f"Session {sessionId} not found")
 	
-	procs = [ psutil.Process(pid=session.pid) ]
-	procs += procs[0].children(recursive=True)
-	env = {}
-	for proc in procs:
-		env = proc.environ()
-		if env and env.get("DISPLAY"):
-			# Need environment var DISPLAY to start process in x11
-			break
-	
-	sp_env = get_subprocess_environment(env)
+	sp_env = get_subprocess_environment(session_env)
 
+	logger.debug("Using process env: %s", sp_env)
 	process = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=sp_env)
-
+	
 	logger.info(u"Process started, pid: %s", process.pid)
 	if not waitForProcessEnding:
 		return (process, None, process.pid, None)
