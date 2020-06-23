@@ -31,6 +31,7 @@ import base64
 import warnings
 import time
 import threading
+import traceback
 from contextlib import contextmanager
 from hashlib import md5
 try:
@@ -644,6 +645,7 @@ class MySQLBackend(SQLBackend):
 		logger.warning(u"message=%s, category=%s, filename=%s, lineno=%s, line=%s, file=%s",
 			message, category, filename, lineno, line, file
 		)
+		logger.warning(traceback.format_exc())
 		if str(message).startswith('Data truncated for column'):
 			logger.error(message)
 		else:
