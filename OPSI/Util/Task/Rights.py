@@ -114,7 +114,7 @@ def setRights(path=u'/'):
 			setRightsOnFile(os.path.abspath(path), rights.files)
 			continue
 		
-		if not os.path.exists(path):
+		if not os.path.exists(startPath):
 			LOGGER.warning("File not found '%s'", startPath)
 			continue
 
