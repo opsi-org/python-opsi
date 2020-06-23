@@ -147,25 +147,25 @@ def _getServerConfig(fqdn, networkConfig):
 	config = dict(
 		id=fqdn,
 		opsiHostKey=None,
-		depotLocalUrl=u'file:///var/lib/opsi/depot',
-		depotRemoteUrl=u'smb://%s/opsi_depot' % address,
-		depotWebdavUrl=u'webdavs://%s:4447/depot' % address,
-		repositoryLocalUrl=u'file:///var/lib/opsi/repository',
-		repositoryRemoteUrl=u'webdavs://%s:4447/repository' % address,
-		workbenchLocalUrl=u'file:///var/lib/opsi/workbench',
-		workbenchRemoteUrl=u'smb://{}/opsi_workbench'.format(address),
+		depotLocalUrl='file:///var/lib/opsi/depot',
+		depotRemoteUrl=f'smb://{address}/opsi_depot',
+		depotWebdavUrl=f'webdavs://{address}:4447/depot',
+		repositoryLocalUrl='file:///var/lib/opsi/repository',
+		repositoryRemoteUrl=f'webdavs://{address}:4447/repository',
+		workbenchLocalUrl='file:///var/lib/opsi/workbench',
+		workbenchRemoteUrl=f'smb://{address}/opsi_workbench',
 		description=None,
 		notes=None,
 		hardwareAddress=networkConfig['hardwareAddress'],
 		ipAddress=networkConfig['ipAddress'],
 		inventoryNumber=None,
-		networkAddress=u'{subnet}/{netmask}'.format(**networkConfig),
+		networkAddress=f"{networkConfig['subnet']}/{networkConfig['netmask']}",
 		maxBandwidth=0,
 		isMasterDepot=True,
 		masterDepotId=None,
 	)
 
-	LOGGER.debug("Server configuration is: {0!r}", config)
+	LOGGER.debug("Server configuration is: %s", config)
 	return config
 
 
@@ -178,7 +178,7 @@ def _setupDepotDirectory():
 		os.mkdir(depotDir)
 	except OSError as error:
 		if error.errno != 17:  # 17 is File exists
-			LOGGER.warning(u"Failed to create depot directory '{0}': {1}", depotDir, error)
+			LOGGER.warning(u"Failed to create depot directory '%s': %s", depotDir, error)
 
 	if os.path.exists("/opt/pcbin/install"):
 		LOGGER.warning(
@@ -198,4 +198,4 @@ def _setupWorkbenchDirectory():
 		os.mkdir('/var/lib/opsi/workbench')
 	except OSError as error:
 		if error.errno != 17:  # 17 is File exists
-			LOGGER.warning("Failed to create workbench directory: {0}", error)
+			LOGGER.warning("Failed to create workbench directory: %s", error)
