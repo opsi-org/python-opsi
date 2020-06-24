@@ -166,6 +166,6 @@ config = {{
 def _getOriginalBackendLocation():
     return os.path.normpath(
         os.path.join(
-            os.path.dirname(__file__), '..', '..', 'data'
+            os.path.dirname(__file__), '..', '..', '..', 'data'
         )
     )
