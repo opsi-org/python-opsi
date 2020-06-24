@@ -175,7 +175,7 @@ def getOpsiBackupArchive(name=None, mode=None, tempdir=None, keepArchive=False, 
 		baseDir = os.path.join(tempDir, 'base')
 		backendDir = os.path.join(baseDir, 'backends')
 
-		baseDataDir = os.path.join(os.path.dirname(__file__), '..', 'data', 'backends')
+		baseDataDir = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'backends')
 		baseDataDir = os.path.normpath(baseDataDir)
 		try:
 			shutil.copytree(baseDataDir, backendDir)
