@@ -33,7 +33,7 @@ test:pytests:
     - git clone -b master https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.uib.gmbh/uib/opsi-server.git ../opsi-server
     - ln -s ../opsi-server/opsi-server_data/etc data
     - pip3 install poetry
-    - cp tests/Backends/config.py.gitlabci tests/Backends/config.py
+    - cp tests/testOPSI/Backends/config.py.gitlabci tests/testOPSI/Backends/config.py
     - poetry install
     # Deactivate mysql strict mode
     - mysql --host=mysql --user=root --password=${MYSQL_ROOT_PASSWORD} -e "SET GLOBAL sql_mode = 'NO_ENGINE_SUBSTITUTION';"

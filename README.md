@@ -84,7 +84,7 @@ so make sure you are not running things against your production database!
 
 It is possible to let opsi create a database for you by running `opsi-setup --configure-mysql` and then re-use the configuration from `/etc/opsi/backends/mysql.conf`.
 
-To configure the tests copy the example configuration to `tests/Backends/config.py`:
+To configure the tests copy the example configuration to `tests/testOPSI/Backends/config.py`:
 
 ```bash
 cp tests/Backends/config.py.example tests/Backends/config.py
@@ -113,7 +113,7 @@ pip3 install poetry
 
 To run all tests you need a modules file under /etc/opsi of the machine (set the rights for your user, that will run the tests).
 
-You will find a file under `tests/Backends/config.py.gitlabci` copy this file as `config.py` in the same directory.
+You will find a file under `tests/testOPSI/Backends/config.py.gitlabci` copy this file as `config.py` in the same directory.
 
 Start a docker container with mysql for tests:
 
@@ -127,7 +127,7 @@ Grab the ip of your new container with:
 docker inspect mysql
 ```
 
-and patch your `tests/Backends/config.py` with the new host information for mysql.
+and patch your `tests/testOPSI/Backends/config.py` with the new host information for mysql.
 
 Disable strict mode from mysql:
 
