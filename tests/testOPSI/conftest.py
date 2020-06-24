@@ -202,7 +202,7 @@ def hardwareAuditConfigPath():
 	installation to a temporary folder and then returns the new absolute
 	path of the config file.
 	'''
-	pathToOriginalConfig = os.path.join(os.path.dirname(__file__), '..',
+	pathToOriginalConfig = os.path.join(os.path.dirname(__file__), '..', '..',
 										'data', 'hwaudit', 'opsihwaudit.conf')
 
 	with createTemporaryTestfile(pathToOriginalConfig) as fileCopy:

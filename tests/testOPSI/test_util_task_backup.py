@@ -63,7 +63,7 @@ def testPatchingStdout():
 
 
 def testGettingArchive():
-	fakeBackendDir = os.path.join(os.path.dirname(__file__), '..', 'data', 'backends')
+	fakeBackendDir = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'backends')
 	fakeBackendDir = os.path.normpath(fakeBackendDir)
 
 	with mock.patch('OPSI.Util.Task.Backup.OpsiBackupArchive.BACKEND_CONF_DIR', fakeBackendDir):
@@ -82,7 +82,7 @@ def testCreatingArchive():
 			configDir = os.path.join(backendDir, 'config')
 			os.mkdir(configDir)
 
-			sourceBackendDir = os.path.join(os.path.dirname(__file__), '..', 'data', 'backends')
+			sourceBackendDir = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'backends')
 			sourceBackendDir = os.path.normpath(sourceBackendDir)
 			fakeBackendDir = os.path.join(backendDir, 'backends')
 
