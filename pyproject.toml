@@ -7,7 +7,8 @@ license = "AGPL-3.0"
 maintainers = ["uib GmbH <info@uib.de>"]
 authors = ["uib GmbH <info@uib.de>"]
 packages = [
-    { include = "OPSI" }
+    { include = "OPSI" },
+    { include = "opsicommon" }
 ]
 include = [
     "python-opsi_data/**/*"
