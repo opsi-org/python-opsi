@@ -37,7 +37,7 @@ from .helpers import createTemporaryTestfile, mock
 @pytest.fixture
 def exampleMySQLBackendConfig():
 	templateFile = os.path.join(
-		os.path.dirname(__file__), '..',
+		os.path.dirname(__file__), '..', '..',
 		'data', 'backends', 'mysql.conf'
 	)
 
