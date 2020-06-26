@@ -6,6 +6,13 @@ stages:
   - package
   - publish
 
+.install_tools: &install_tools |
+  export DEBIAN_FRONTEND=noninteractive
+  apt update
+  apt -y install debhelper osc
+  pip3 install --trusted-host pypi.uib.gmbh --index-url http://pypi.uib.gmbh:8080/simple opsi-dev-tools
+  pip3 install poetry
+
 test:pytests:
   when: manual
   image: ubuntu:focal
@@ -15,33 +22,30 @@ test:pytests:
     MYSQL_ROOT_PASSWORD: "opsi"
     MYSQL_DATABASE: "opsi"
   stage: test
-  before_script:
+  script: |
     # Installing opsi testmodules file
-    - mkdir -p /etc/opsi
-    - echo "${OPSI_TEST_MODULES}" > /etc/opsi/modules
-    - cat /etc/opsi/modules
-    - export DEBIAN_FRONTEND=noninteractive
-    - apt update
-    - apt -y install python3-all python3-pip dh-python python3-venv python3-newt curl libmysqlclient-dev mysql-client cpio iproute2 lsb-release git librsync2
+    mkdir -p /etc/opsi
+    echo "${OPSI_TEST_MODULES}" > /etc/opsi/modules
+    cat /etc/opsi/modules
+    export DEBIAN_FRONTEND=noninteractive
+    apt update
+    apt -y install python3-all python3-pip dh-python python3-venv python3-newt curl libmysqlclient-dev mysql-client cpio iproute2 lsb-release git librsync2
     # bionic pip fix for extra pip urls, not needed for focal
-    #- apt -y install software-properties-common
-    #- add-apt-repository ppa:ci-train-ppa-service/3690
-    #- apt -y install python-pip=9.0.1-2.3~ubuntu1.18.04.2~ubuntu18.04.1~ppa202002141134
+    #apt -y install software-properties-common
+    #add-apt-repository ppa:ci-train-ppa-service/3690
+    #apt -y install python-pip=9.0.1-2.3~ubuntu1.18.04.2~ubuntu18.04.1~ppa202002141134
     # cloning opsi-server for data directory
-    - rm -rf ../opsi-server
-    - rm -rf data
-    - git clone -b master https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.uib.gmbh/uib/opsi-server.git ../opsi-server
-    - ln -s ../opsi-server/opsi-server_data/etc data
-    - pip3 install poetry
-    - cp tests/testOPSI/Backends/config.py.gitlabci tests/testOPSI/Backends/config.py
-    - poetry install
+    rm -rf ../opsi-server
+    rm -rf data
+    git clone -b master https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.uib.gmbh/uib/opsi-server.git ../opsi-server
+    ln -s ../opsi-server/opsi-server_data/etc data
+    pip3 install poetry
+    cp tests/testOPSI/Backends/config.py.gitlabci tests/testOPSI/Backends/config.py
+    poetry install
     # Deactivate mysql strict mode
-    - mysql --host=mysql --user=root --password=${MYSQL_ROOT_PASSWORD} -e "SET GLOBAL sql_mode = 'NO_ENGINE_SUBSTITUTION';"
-  script:
-#    - echo waiting 20sec to wait for mysql
-#    - sleep 20
-    - poetry run ./run_tests.sh
-#    - poetry run ./run_qa.sh
+    mysql --host=mysql --user=root --password=${MYSQL_ROOT_PASSWORD} -e "SET GLOBAL sql_mode = 'NO_ENGINE_SUBSTITUTION';"
+    poetry run ./run_tests.sh
+    #poetry run ./run_qa.sh
   coverage: '/TOTAL\s+\d+\s+\d+\s+(\d+)%/'
   artifacts:
     name: 'python-opsi_test'
@@ -73,31 +77,26 @@ test:pytests:
 #    expire_in: 1 day
 
 
-package:obs:
+package:obs_int:
   stage: package
+  dependencies:
+    - build:linux-pyinstaller
   script:
-    - export DEBIAN_FRONTEND=noninteractive
-    - apt update
-    - apt -y install python3-all python3-pip dh-python python3-venv curl libmysqlclient-dev debhelper osc
-    #- curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python3
-    #- source $HOME/.poetry/env
-    - pip3 install poetry
-    - poetry install
-    - poetry run opsi-dev-tool -l debug --obs-update-package https://obs.uib.local home:uibmz:opsi:4.2:experimental
-  #only:
-  #    - /^release/.*$/i
-  #    - tags
-  #    - web
+    - *install_tools
+    - python3 -m opsidevtools -l info --obs-update-package https://obs.uib.gmbh home:uibmz:opsi:4.2:experimental
+
+package:obs_ext:
+  stage: package
+  dependencies:
+    - build:linux-pyinstaller
+  script:
+    - *install_tools
+    - python3 -m opsidevtools -l debug --obs-update-package https://build.opensuse.org home:uibmz:opsi:4.2:experimental
 
 publish:uibpypi:
   stage: publish
   script:
-    - export DEBIAN_FRONTEND=noninteractive
-    - apt update
-    - apt -y upgrade
-    - apt -y install python3-all python3-pip dh-python python3-venv libmysqlclient-dev curl
-    #- curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python3
-    #- source $HOME/.poetry/env
-    - pip3 install poetry
+    - *install_tools
+    - apt -y install python3-all python3-pip dh-python libmysqlclient-dev
     - poetry install
     - poetry run opsi-dev-tool -l info --uib-pypi-publish
