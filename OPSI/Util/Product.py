@@ -398,7 +398,7 @@ class ProductPackageFile(object):
 
 			packageContentFile = PackageContentFile(packageContentFile)
 			packageContentFile.setProductClientDataDir(productClientDataDir)
-			cdf = self.getClientDataFiles(followLinke=True)
+			cdf = self.getClientDataFiles(followLinks=True)
 			try:
 				# The package content file will be re-written and
 				# then the hash will be different so we need to remove
