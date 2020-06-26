@@ -317,11 +317,11 @@ class ProductPackageFile(object):
 			self.cleanup()
 			raise RuntimeError(u"Failed to extract data from package '%s': %s" % (self.packageFile, e))
 
-	def getClientDataFiles(self):
+	def getClientDataFiles(self, followLinks=False):
 		if self.clientDataFiles:
 			return self.clientDataFiles
 
-		self.clientDataFiles = findFiles(self.getProductClientDataDir())
+		self.clientDataFiles = findFiles(self.getProductClientDataDir(), followLinks=followLinks)
 		return self.clientDataFiles
 
 	def setAccessRights(self):
@@ -398,7 +398,7 @@ class ProductPackageFile(object):
 
 			packageContentFile = PackageContentFile(packageContentFile)
 			packageContentFile.setProductClientDataDir(productClientDataDir)
-			cdf = self.getClientDataFiles()
+			cdf = self.getClientDataFiles(followLinke=True)
 			try:
 				# The package content file will be re-written and
 				# then the hash will be different so we need to remove
