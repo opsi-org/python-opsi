@@ -390,7 +390,7 @@ class OpsiPackageUpdater(object):
 							)
 							continue
 
-						if any(exclude.search(package['productId']) for exclude in repository.autosetupexcludes):
+						if any(exclude.search(package['productId']) for exclude in package['repository'].autosetupexcludes):
 							logger.info(u"Not setting action 'setup' for product '%s' because it's excluded by regular expression" % package['productId'])
 							continue
 
