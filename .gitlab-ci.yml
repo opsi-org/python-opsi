@@ -77,17 +77,17 @@ test:pytests:
 #    expire_in: 1 day
 
 
-package:obs_int:
-  stage: package
-  script:
-    - *install_tools
-    - python3 -m opsidevtools -l info --obs-update-package https://obs.uib.gmbh home:uibmz:opsi:4.2:experimental
+#package:obs_int:
+#  stage: package
+#  script:
+#    - *install_tools
+#    - python3 -m opsidevtools -l info --obs-update-package https://obs.uib.gmbh home:uibmz:opsi:4.2:experimental
 
-package:obs_ext:
-  stage: package
-  script:
-    - *install_tools
-    - python3 -m opsidevtools -l debug --obs-update-package https://build.opensuse.org home:uibmz:opsi:4.2:experimental
+#package:obs_ext:
+#  stage: package
+#  script:
+#    - *install_tools
+#    - python3 -m opsidevtools -l debug --obs-update-package https://build.opensuse.org home:uibmz:opsi:4.2:experimental
 
 publish:uibpypi:
   stage: publish
