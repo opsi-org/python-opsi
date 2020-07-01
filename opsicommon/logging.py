@@ -15,14 +15,14 @@ import colorlog
 
 from logging import LogRecord, Formatter, StreamHandler, Filter
 from logging.handlers import WatchedFileHandler, RotatingFileHandler
+from .contextlogger import ContextLogger, DEFAULT_FORMAT, DATETIME_FORMAT
 
 from .utils import Singleton
 
-DEFAULT_FORMAT = "%(log_color)s[%(opsilevel)d] [%(asctime)s.%(msecs)03d]%(reset)s %(message)s   (%(filename)s:%(lineno)d)"
-DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 SECRET_REPLACEMENT_STRING = '***secret***'
 
-logger = logging.getLogger()
+#logger = logging.getLogger()
+logger = ContextLogger()
 
 logging.NONE = 0
 logging.NOTSET = logging.NONE
