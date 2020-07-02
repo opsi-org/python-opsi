@@ -13,9 +13,9 @@ import os
 import logging
 import colorlog
 
-from logging import LogRecord, Formatter, StreamHandler, Filter
+from logging import LogRecord, Formatter, Filter
 from logging.handlers import WatchedFileHandler, RotatingFileHandler
-from .contextlogger import ContextLogger, DEFAULT_FORMAT, DATETIME_FORMAT
+from .contextlogger import ContextLogger
 
 from .utils import Singleton
 
@@ -92,38 +92,30 @@ logging._opsiLevelToLevel = {
 	0: logging.NONE
 }
 
-LOG_COLORS = {
-	'SECRET': 'thin_yellow',
-	'TRACE': 'thin_white',
-	'DEBUG': 'white',
-	'INFO': 'bold_white',
-	'NOTICE': 'bold_green',
-	'WARNING': 'bold_yellow',
-	'ERROR': 'red',
-	'CRITICAL': 'bold_red',
-	'ESSENTIAL': 'bold_cyan'
-}
-
 def secret(self, msg, *args, **kwargs):
 	if self.isEnabledFor(logging.SECRET):
 		self._log(logging.SECRET, msg, args, **kwargs)
+
 logging.Logger.secret = secret
 logging.Logger.confidential = secret
 
 def trace(self, msg, *args, **kwargs):
 	if self.isEnabledFor(logging.TRACE):
 		self._log(logging.TRACE, msg, args, **kwargs)
+
 logging.Logger.trace = trace
 logging.Logger.debug2 = trace
 
 def notice(self, msg, *args, **kwargs):
 	if self.isEnabledFor(logging.NOTICE):
 		self._log(logging.NOTICE, msg, args, **kwargs)
+
 logging.Logger.notice = notice
 
 def essential(self, msg, *args, **kwargs):
 	if self.isEnabledFor(logging.ESSENTIAL):
 		self._log(logging.ESSENTIAL, msg, args, **kwargs)
+
 logging.Logger.essential = essential
 logging.Logger.comment = essential
 
@@ -182,7 +174,8 @@ def handle_log_exception(exc: Exception, record: logging.LogRecord = None, log: 
 class SecretFormatter(object):
 	def __init__(self, orig_formatter: Formatter):
 		if orig_formatter is None:
-			orig_formatter = Formatter()
+#			orig_formatter = Formatter()
+			orig_formatter = logger.get_new_formatter()
 		self.orig_formatter = orig_formatter
 	
 	def format(self, record: LogRecord):
@@ -201,7 +194,8 @@ class SecretFilter(metaclass=Singleton):
 		self.secrets = []
 
 	def _initialize_handlers(self):
-		for handler in logging.root.handlers:
+		#for handler in logging.root.handlers:
+		for handler in logger.handlers:
 			if not isinstance(handler.formatter, SecretFormatter):
 				handler.formatter = SecretFormatter(handler.formatter)
 	
