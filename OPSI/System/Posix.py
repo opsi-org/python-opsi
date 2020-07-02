@@ -1901,8 +1901,8 @@ class Harddisk:
 		for hook in hooks:
 			hook.pre_Harddisk_deletePartitionTable(self)
 		try:
-			with open(self.device, 'r+') as f:
-				f.write(chr(0) * 512)
+			with open(self.device, 'rb+') as f:
+				f.write(bytes([0] * 512))
 
 			self._forceReReadPartionTable()
 			self.label = None
