@@ -600,18 +600,23 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 
 
 class NotificationServer(threading.Thread, SubjectsObserver):
-	def __init__(self, address, port, subjects):
+	def __init__(self, address, start_port, subjects):
 		threading.Thread.__init__(self)
 		self._address = forceIpAddress(address)
 		if not self._address:
 			self._address = u'0.0.0.0'
-		self._port = forceInt(port)
+		self._start_port = forceInt(start_port)
 		self._factory = NotificationServerFactory()
 		self._factory.setSubjects(subjects)
 		self._server = None
 		self._listening = False
 		self._error = None
+		self._port = 0
 
+	@property
+	def port(self):
+		return self._port
+	
 	def isListening(self):
 		return self._listening
 
@@ -642,20 +647,32 @@ class NotificationServer(threading.Thread, SubjectsObserver):
 
 	def run(self):
 		logger.info("Notification server starting")
-		try:
-			if self._address == '0.0.0.0':
-				self._server = reactor.listenTCP(self._port, self._factory)
-			else:
-				self._server = reactor.listenTCP(self._port, self._factory, interface=self._address)
-
-			self._listening = True
-			if not reactor.running:
-				logger.info("Starting reactor")
-				reactor.run(installSignalHandlers=0)
-		except Exception as error:
-			self._error = forceUnicode(error)
-			logger.logException(error)
-
+		
+		trynum = 0
+		port = self._start_port
+		while True:
+			trynum += 1
+			try:
+				logger.debug("Notification server - attempt %d, trying port %d" % (trynum, port))
+				if self._address == '0.0.0.0':
+					self._server = reactor.listenTCP(port, self._factory)
+				else:
+					self._server = reactor.listenTCP(port, self._factory, interface=self._address)
+				self._port = port
+				self._listening = True
+				logger.info("Notification server is now listening on port %d after %d attempts" % (port, trynum))
+				if not reactor.running:
+					logger.info("Starting reactor")
+					reactor.run(installSignalHandlers=0)
+				break
+			except Exception as error:
+				logger.debug("Notification server - attempt %d, failed to listen on port %d: %s" % (trynum, port, error))
+				if trynum >= 20:
+					self._error = forceUnicode(error)
+					logger.logException(error)
+					break
+				port += 1
+	
 	def _stopListeningCompleted(self, result):
 		self._listening = False
 
