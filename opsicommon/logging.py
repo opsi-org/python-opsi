@@ -12,17 +12,31 @@ import sys
 import os
 import logging
 import colorlog
+import threading
+import asyncio
 
 from logging import LogRecord, Formatter, Filter
 from logging.handlers import WatchedFileHandler, RotatingFileHandler
-from .contextlogger import ContextLogger
 
 from .utils import Singleton
 
+DEFAULT_COLORED_FORMAT = "%(log_color)s[%(opsilevel)d] [%(asctime)s.%(msecs)03d]%(reset)s %(message)s   (%(filename)s:%(lineno)d)"
+DEFAULT_FORMAT = "[%(opsilevel)d] [%(asctime)s.%(msecs)03d] %(message)s   (%(filename)s:%(lineno)d)"
+DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+LOG_COLORS = {
+	'SECRET': 'thin_yellow',
+	'TRACE': 'thin_white',
+	'DEBUG': 'white',
+	'INFO': 'bold_white',
+	'NOTICE': 'bold_green',
+	'WARNING': 'bold_yellow',
+	'ERROR': 'red',
+	'CRITICAL': 'bold_red',
+	'ESSENTIAL': 'bold_cyan'
+}
 SECRET_REPLACEMENT_STRING = '***secret***'
 
-#logger = logging.getLogger()
-logger = ContextLogger()
+logger = logging.getLogger()
 
 logging.NONE = 0
 logging.NOTSET = logging.NONE
@@ -170,15 +184,84 @@ def handle_log_exception(exc: Exception, record: logging.LogRecord = None, log: 
 	except:
 		pass
 
+def get_identity():
+	try:
+		task_id = id(asyncio.Task.current_task())
+	except:
+		task_id = 0
+	try:
+		thread_id = threading.current_thread().ident
+	except:
+		thread_id = 0
+	return thread_id, task_id
 
-class SecretFormatter(object):
-	def __init__(self, orig_formatter: Formatter):
+class ContextFilter(logging.Filter):
+	def __init__(self):
+		super().__init__()
+		self._context_lock = threading.Lock()
+		self.context = {}
+
+	def set_context(self, new_context):
+		self.clean()
+		thread_id, task_id = get_identity()
+		if not isinstance(new_context, dict):
+			new_context = {}
+		with self._context_lock:
+			if self.context.get(thread_id) is None:
+				self.context[thread_id] = {}
+			self.context[thread_id][task_id] = new_context
+
+	def get_context(self):
+		thread_id, task_id = get_identity()
+		if self.context.get(thread_id) is None or self.context[thread_id].get(task_id) is None:
+			return {}	#DEFAULT_CONTEXT
+		return self.context[thread_id][task_id]
+
+	def clean(self):
+		with self._context_lock:
+			try:
+				all_tasks = [id(x) for x in asyncio.Task.all_tasks() if not x.done()]
+			except:
+				all_tasks = []
+			all_threads = [x.ident for x in threading.enumerate()]
+			#print('\033[93m' + str(self.context) + '\033[0m')
+			for thread_id in list(self.context.keys()):
+				if thread_id not in all_threads:
+					#print("DEBUG: removing from self.context (", thread_id, "- ALL", ",", self.context.pop(thread_id, None), ")")
+					self.context.pop(thread_id, None)
+				elif thread_id == get_identity()[0]:		#only cleanup own thread
+					for task_id in list(self.context[thread_id].keys()):
+						if not task_id == 0 and task_id not in all_tasks:
+							#print("DEBUG: removing from self.context (", thread_id, "-", task_id, ",", self.context[thread_id].pop(task_id, None), ")")
+							self.context[thread_id].pop(task_id, None)
+
+
+	def filter(self, record):
+		my_context = self.get_context()
+		#record.__dict__.update(my_context)			#see logging.makeLogRecord (adapted to reduce copy effort)
+		#for key in my_context.keys():
+		#	 exec("record."+key + " = my_context['" + key + "']")
+		record.context = my_context
+		return True
+
+class ContextSecretFormatter(logging.Formatter):
+	def __init__(self, orig_formatter: logging.Formatter):
 		if orig_formatter is None:
-#			orig_formatter = Formatter()
-			orig_formatter = logger.get_new_formatter()
+			orig_formatter = Formatter()
 		self.orig_formatter = orig_formatter
 	
 	def format(self, record: LogRecord):
+		#if isinstance(self.orig_formatter, colorlog.colorlog.ColoredFormatter):
+		#	record = colorlog.colorlog.ColoredRecord(record)
+		data_dict = record.__dict__
+		context = data_dict.get('context')
+		if isinstance(context, dict):
+			data_dict['context'] = ",".join(context.values())
+		elif isinstance(context, str):
+			pass	#accept string as context as logrecord might be formatted multiple times
+		else:
+			data_dict['context'] = ""
+		#msg = self.orig_formatter._fmt % data_dict
 		msg = self.orig_formatter.format(record)
 		if record.levelno != logging.SECRET:
 			for secret in secret_filter.secrets:
@@ -194,10 +277,9 @@ class SecretFilter(metaclass=Singleton):
 		self.secrets = []
 
 	def _initialize_handlers(self):
-		#for handler in logging.root.handlers:
-		for handler in logger.handlers:
-			if not isinstance(handler.formatter, SecretFormatter):
-				handler.formatter = SecretFormatter(handler.formatter)
+		for handler in logging.root.handlers:
+			if not isinstance(handler.formatter, ContextSecretFormatter):
+				handler.formatter = ContextSecretFormatter(handler.formatter)
 	
 	def set_min_length(self, min_length: int):
 		self._min_length = min_length
@@ -216,4 +298,27 @@ class SecretFilter(metaclass=Singleton):
 			if secret in self.secrets:
 				self.secrets.remove(secret)
 
+def init_logging(colored=True):
+	logging.root.addFilter(ContextFilter())
+	if len(logging.root.handlers) == 0:
+		handler = logging.StreamHandler(stream=sys.stderr)
+		logging.root.addHandler(handler)
+	set_format(colored=colored)
+
+def set_format(fmt=DEFAULT_FORMAT, datefmt=DATETIME_FORMAT, log_colors=LOG_COLORS, colored=True):
+	for handler in logging.root.handlers:
+		if colored:
+			formatter = colorlog.ColoredFormatter(fmt, datefmt=datefmt, log_colors=log_colors)
+		else:
+			formatter = logging.Formatter(fmt, datefmt=datefmt)
+		csformatter = ContextSecretFormatter(formatter)
+
+		handler.setFormatter(csformatter)
+
+def set_context(new_context):
+	for fil in logging.root.filters:
+		if isinstance(fil, ContextFilter):
+			fil.set_context(new_context)
+
+init_logging()
 secret_filter = SecretFilter()
