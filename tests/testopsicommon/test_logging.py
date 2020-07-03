@@ -13,9 +13,11 @@ import logging
 import time
 import threading
 import asyncio
+import random
 from contextlib import contextmanager
 
-from opsicommon.logging import logger, handle_log_exception, secret_filter, SecretFormatter
+import opsicommon.logging
+from opsicommon.logging import logger, handle_log_exception, secret_filter, ContextSecretFormatter
 
 try:
 	from OPSI.Logger import Logger as LegacyLogger
@@ -28,10 +30,10 @@ def log_stream():
 	stream = io.StringIO()
 	handler = logging.StreamHandler(stream)
 	try:
-		logger.addHandler(handler)
+		logging.root.addHandler(handler)
 		yield stream
 	finally:
-		logger.removeHandler(handler)
+		logging.root.removeHandler(handler)
 
 @pytest.fixture
 def log_stream_handler():
@@ -43,6 +45,7 @@ def test_levels(log_stream):
 	with log_stream as stream:
 		#handler.setLevel(logging.SECRET)
 		logger.setLevel(logging.SECRET)
+		opsicommon.logging.set_format("%(message)s", colored=False)
 		expected = ""
 		for level in (
 			"secret", "confidential", "trace", "debug2", "debug",
@@ -54,7 +57,8 @@ def test_levels(log_stream):
 			expected += f"{msg}\n"
 	
 		stream.seek(0)
-		assert stream.read() == expected
+		print(expected)
+		assert stream.read().find(expected) >= 0		# not == as other instances might also log
 
 def test_log_exception_handler():
 	log_record = logging.LogRecord(name=None, level=logging.ERROR, pathname=None, lineno=1, msg="t", args=None, exc_info=None)
@@ -63,14 +67,14 @@ def test_log_exception_handler():
 
 def test_secret_formatter_attr():
 	log_record = logging.LogRecord(name=None, level=logging.ERROR, pathname=None, lineno=1, msg="t", args=None, exc_info=None)
-	sf = SecretFormatter(logging.Formatter())
+	sf = ContextSecretFormatter(logging.Formatter())
 	sf.format(log_record)
 
 def test_secret_filter(log_stream):
 	with log_stream as stream:
 		#handler.setLevel(logging.SECRET)
 		logger.setLevel(logging.SECRET)
-		logger.set_format("[%(asctime)s.%(msecs)03d] %(message)s", colored=False)
+		opsicommon.logging.set_format("[%(asctime)s.%(msecs)03d] %(message)s", colored=False)
 
 		secret_filter.set_min_length(7)	
 		secret_filter.add_secrets("PASSWORD", "2SHORT", "SECRETSTRING")
@@ -137,12 +141,12 @@ def test_context(log_stream):
 	with log_stream as stream:
 		#handler.setLevel(logging.SECRET)
 		logger.setLevel(logging.SECRET)
-		logger.set_format()
+		opsicommon.logging.set_format("%(log_color)s[%(opsilevel)d] [%(asctime)s.%(msecs)03d]%(reset)s [%(context)s] %(message)s   (%(filename)s:%(lineno)d)")
 
 		logger.info("before setting context")
-		logger.set_context("first-context")
+		opsicommon.logging.set_context({'whoami' : "first-context"})
 		logger.warning("lorem ipsum")
-		logger.set_context("second-context")
+		opsicommon.logging.set_context({'whoami' : "second-context"})
 		logger.error("dolor sit amet")
 		stream.seek(0)
 		log = stream.read()
@@ -181,7 +185,7 @@ def test_context_threads(log_stream):
 			loop.run_until_complete(self.arun())
 		
 		async def handle_client(self, client: str):
-			logger.set_context("handler for " + str(client))
+			opsicommon.logging.set_context({'whoami' : "handler for " + str(client)})
 			logger.info("handling client %s", client)
 
 			seconds = random.random() * 1
@@ -203,12 +207,12 @@ def test_context_threads(log_stream):
 			logger.warning("initializing client: %s", client)
 
 		def run(self):
-			logger.set_context("module " + str(self.client))
+			opsicommon.logging.set_context({'whoami' : "module " + str(self.client)})
 			logger.info("MyModule.run")
 			common_work()
 
-	logger.set_format("%(context)s %(message)s")
-	logger.set_context("MAIN")
+	opsicommon.logging.set_format("%(context)s %(message)s", colored=False)	#TODO: auto-detect colored
+	opsicommon.logging.set_context({'whoami' : "MAIN"})
 	with log_stream as stream:
 		m = Main()
 		try:
@@ -221,6 +225,7 @@ def test_context_threads(log_stream):
 				t.join()
 		stream.seek(0)
 		log = stream.read()
-		assert "[module Client-1] MyModule.run" in log
+		assert "module Client-1 MyModule.run" in log
 		# to check for corrent handling of async contexti when eventloop is not running in main thread
-		assert "[handler for client Client-0] handling client Client-1" not in log
+		assert "handler for client Client-0 handling client Client-1" not in log
+
