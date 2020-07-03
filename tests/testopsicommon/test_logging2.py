@@ -32,8 +32,9 @@ def log_stream():
 
 def test_simple_colored(log_stream):
 	with log_stream as stream:
-		opsicommon.logging.set_format(MY_FORMAT, colored=True)
+		opsicommon.logging.set_format(MY_FORMAT)
 		opsicommon.logging.set_context({'firstcontext' : 'asdf', 'secondcontext' : 'jkl'})
+		print(logger.filters)
 		logger.error("test message")
 		stream.seek(0)
 		log = stream.read()
@@ -41,7 +42,7 @@ def test_simple_colored(log_stream):
 
 def test_simple_plain(log_stream):
 	with log_stream as stream:
-		opsicommon.logging.set_format(OTHER_FORMAT, colored=False)
+		opsicommon.logging.set_format(OTHER_FORMAT)
 		opsicommon.logging.set_context({'firstcontext' : 'asdf', 'secondcontext' : 'jkl'})
 		logger.error("test message")
 		stream.seek(0)
@@ -50,7 +51,7 @@ def test_simple_plain(log_stream):
 
 def test_contexts(log_stream):
 	with log_stream as stream:
-		opsicommon.logging.set_format(MY_FORMAT, colored=True)
+		opsicommon.logging.set_format(MY_FORMAT)
 		opsicommon.logging.set_context({'firstcontext' : 'asdf', 'secondcontext' : 'jkl'})
 		logger.error("test message")
 		stream.seek(0)
@@ -83,7 +84,7 @@ def test_contexts(log_stream):
 
 def test_foreign_logs(log_stream):
 	with log_stream as stream:
-		opsicommon.logging.set_format("%(message)s", colored=False)
+		opsicommon.logging.set_format("%(message)s")
 		logger.error("message before request")
 
 		requests.get("http://www.uib.de")

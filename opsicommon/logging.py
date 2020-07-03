@@ -15,6 +15,8 @@ import colorlog
 import threading
 import asyncio
 
+from typing import Dict
+
 from logging import LogRecord, Formatter, Filter
 from logging.handlers import WatchedFileHandler, RotatingFileHandler
 
@@ -201,11 +203,11 @@ class ContextFilter(logging.Filter):
 		self._context_lock = threading.Lock()
 		self.context = {}
 
-	def set_context(self, new_context):
+	def set_context(self, new_context : Dict):
+		if not isinstance(new_context, dict):
+			return
 		self.clean()
 		thread_id, task_id = get_identity()
-		if not isinstance(new_context, dict):
-			new_context = {}
 		with self._context_lock:
 			if self.context.get(thread_id) is None:
 				self.context[thread_id] = {}
@@ -236,7 +238,7 @@ class ContextFilter(logging.Filter):
 							self.context[thread_id].pop(task_id, None)
 
 
-	def filter(self, record):
+	def filter(self, record : logging.LogRecord):
 		my_context = self.get_context()
 		#record.__dict__.update(my_context)			#see logging.makeLogRecord (adapted to reduce copy effort)
 		#for key in my_context.keys():
@@ -250,18 +252,17 @@ class ContextSecretFormatter(logging.Formatter):
 			orig_formatter = Formatter()
 		self.orig_formatter = orig_formatter
 	
-	def format(self, record: LogRecord):
+	def format(self, record: logging.LogRecord):
 		#if isinstance(self.orig_formatter, colorlog.colorlog.ColoredFormatter):
 		#	record = colorlog.colorlog.ColoredRecord(record)
-		data_dict = record.__dict__
-		context = data_dict.get('context')
-		if isinstance(context, dict):
-			data_dict['context'] = ",".join(context.values())
-		elif isinstance(context, str):
-			pass	#accept string as context as logrecord might be formatted multiple times
+		if hasattr(record, "context"):
+			context = record.context
+			print(context, type(context), "message:", record.msg)
+			if isinstance(context, dict):
+				values = context.values()
+				record.context = ",".join(values)
 		else:
-			data_dict['context'] = ""
-		#msg = self.orig_formatter._fmt % data_dict
+			record.context = ""
 		msg = self.orig_formatter.format(record)
 		if record.levelno != logging.SECRET:
 			for secret in secret_filter.secrets:
@@ -298,14 +299,15 @@ class SecretFilter(metaclass=Singleton):
 			if secret in self.secrets:
 				self.secrets.remove(secret)
 
-def init_logging(colored=True):
+def init_logging():
 	logging.root.addFilter(ContextFilter())
 	if len(logging.root.handlers) == 0:
 		handler = logging.StreamHandler(stream=sys.stderr)
 		logging.root.addHandler(handler)
-	set_format(colored=colored)
+	set_format()
 
-def set_format(fmt=DEFAULT_FORMAT, datefmt=DATETIME_FORMAT, log_colors=LOG_COLORS, colored=True):
+def set_format(fmt : str=DEFAULT_FORMAT, datefmt : str=DATETIME_FORMAT, log_colors : Dict=LOG_COLORS):
+	colored = (fmt.find("(log_color)") >= 0)
 	for handler in logging.root.handlers:
 		if colored:
 			formatter = colorlog.ColoredFormatter(fmt, datefmt=datefmt, log_colors=log_colors)
@@ -315,7 +317,7 @@ def set_format(fmt=DEFAULT_FORMAT, datefmt=DATETIME_FORMAT, log_colors=LOG_COLOR
 
 		handler.setFormatter(csformatter)
 
-def set_context(new_context):
+def set_context(new_context : Dict):
 	for fil in logging.root.filters:
 		if isinstance(fil, ContextFilter):
 			fil.set_context(new_context)

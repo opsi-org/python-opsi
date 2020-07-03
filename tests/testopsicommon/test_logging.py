@@ -35,17 +35,11 @@ def log_stream():
 	finally:
 		logging.root.removeHandler(handler)
 
-@pytest.fixture
-def log_stream_handler():
-	stream = io.StringIO()
-	handler = logging.StreamHandler(stream)
-	return (handler, stream)
-
 def test_levels(log_stream):
 	with log_stream as stream:
 		#handler.setLevel(logging.SECRET)
 		logger.setLevel(logging.SECRET)
-		opsicommon.logging.set_format("%(message)s", colored=False)
+		opsicommon.logging.set_format("%(message)s")
 		expected = ""
 		for level in (
 			"secret", "confidential", "trace", "debug2", "debug",
@@ -74,7 +68,7 @@ def test_secret_filter(log_stream):
 	with log_stream as stream:
 		#handler.setLevel(logging.SECRET)
 		logger.setLevel(logging.SECRET)
-		opsicommon.logging.set_format("[%(asctime)s.%(msecs)03d] %(message)s", colored=False)
+		opsicommon.logging.set_format("[%(asctime)s.%(msecs)03d] %(message)s")
 
 		secret_filter.set_min_length(7)	
 		secret_filter.add_secrets("PASSWORD", "2SHORT", "SECRETSTRING")
@@ -211,7 +205,7 @@ def test_context_threads(log_stream):
 			logger.info("MyModule.run")
 			common_work()
 
-	opsicommon.logging.set_format("%(context)s %(message)s", colored=False)	#TODO: auto-detect colored
+	opsicommon.logging.set_format("%(context)s %(message)s")
 	opsicommon.logging.set_context({'whoami' : "MAIN"})
 	with log_stream as stream:
 		m = Main()
