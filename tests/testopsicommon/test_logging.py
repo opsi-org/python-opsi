@@ -51,7 +51,6 @@ def test_levels(log_stream):
 			expected += f"{msg}\n"
 	
 		stream.seek(0)
-		print(expected)
 		assert stream.read().find(expected) >= 0		# not == as other instances might also log
 
 def test_log_exception_handler():
@@ -135,7 +134,7 @@ def test_context(log_stream):
 	with log_stream as stream:
 		#handler.setLevel(logging.SECRET)
 		logger.setLevel(logging.SECRET)
-		opsicommon.logging.set_format("%(log_color)s[%(opsilevel)d] [%(asctime)s.%(msecs)03d]%(reset)s [%(context)s] %(message)s   (%(filename)s:%(lineno)d)")
+		opsicommon.logging.set_format("%(log_color)s[%(opsilevel)d] [%(asctime)s.%(msecs)03d]%(reset)s [%(contextstring)s] %(message)s   (%(filename)s:%(lineno)d)")
 
 		logger.info("before setting context")
 		opsicommon.logging.set_context({'whoami' : "first-context"})
@@ -205,7 +204,7 @@ def test_context_threads(log_stream):
 			logger.info("MyModule.run")
 			common_work()
 
-	opsicommon.logging.set_format("%(context)s %(message)s")
+	opsicommon.logging.set_format("%(contextstring)s %(message)s")
 	opsicommon.logging.set_context({'whoami' : "MAIN"})
 	with log_stream as stream:
 		m = Main()

@@ -14,101 +14,25 @@ import logging
 import colorlog
 import threading
 import asyncio
-
-from typing import Dict
-
-from logging import LogRecord, Formatter, Filter
+from typing import Dict, Tuple, Any
 from logging.handlers import WatchedFileHandler, RotatingFileHandler
 
 from .utils import Singleton
-
-DEFAULT_COLORED_FORMAT = "%(log_color)s[%(opsilevel)d] [%(asctime)s.%(msecs)03d]%(reset)s %(message)s   (%(filename)s:%(lineno)d)"
-DEFAULT_FORMAT = "[%(opsilevel)d] [%(asctime)s.%(msecs)03d] %(message)s   (%(filename)s:%(lineno)d)"
-DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
-LOG_COLORS = {
-	'SECRET': 'thin_yellow',
-	'TRACE': 'thin_white',
-	'DEBUG': 'white',
-	'INFO': 'bold_white',
-	'NOTICE': 'bold_green',
-	'WARNING': 'bold_yellow',
-	'ERROR': 'red',
-	'CRITICAL': 'bold_red',
-	'ESSENTIAL': 'bold_cyan'
-}
-SECRET_REPLACEMENT_STRING = '***secret***'
+from .loggingconstants import *
 
 logger = logging.getLogger()
 
-logging.NONE = 0
-logging.NOTSET = logging.NONE
-logging.SECRET = 10
-logging.CONFIDENTIAL = logging.SECRET
-logging.TRACE = 20
-logging.DEBUG2 = logging.TRACE
-logging.DEBUG = 30
-logging.INFO = 40
-logging.NOTICE = 50
-logging.WARNING = 60
-logging.WARN = logging.WARNING
-logging.ERROR = 70
-logging.CRITICAL = 80
-logging.ESSENTIAL = 90
-logging.COMMENT = logging.ESSENTIAL
+def secret(self, msg : str, *args, **kwargs):
+	"""
+	Logging with level SECRET.
 
-logging._levelToName = {
-	logging.SECRET: 'SECRET',
-	logging.TRACE: 'TRACE',
-	logging.DEBUG: 'DEBUG',
-	logging.INFO: 'INFO',
-	logging.NOTICE: 'NOTICE',
-	logging.WARNING: 'WARNING',
-	logging.ERROR: 'ERROR',
-	logging.CRITICAL: 'CRITICAL',
-	logging.ESSENTIAL: 'ESSENTIAL',
-	logging.NONE: 'NONE'
-}
+	This method calls a log with level logging.SECRET.
 
-logging._nameToLevel = {
-	'SECRET': logging.SECRET,
-	'TRACE': logging.TRACE,
-	'DEBUG': logging.DEBUG,
-	'INFO': logging.INFO,
-	'NOTICE': logging.NOTICE,
-	'WARNING': logging.WARNING,
-	'ERROR': logging.ERROR,
-	'CRITICAL': logging.CRITICAL,
-	'ESSENTIAL': logging.ESSENTIAL,
-	'NONE': logging.NONE
-}
-
-logging._levelToOpsiLevel = {
-	logging.SECRET: 9,
-	logging.TRACE: 8,
-	logging.DEBUG: 7,
-	logging.INFO: 6,
-	logging.NOTICE: 5,
-	logging.WARNING: 4,
-	logging.ERROR: 3,
-	logging.CRITICAL: 2,
-	logging.ESSENTIAL: 1,
-	logging.NONE: 0
-}
-
-logging._opsiLevelToLevel = {
-	9: logging.SECRET,
-	8: logging.TRACE,
-	7: logging.DEBUG,
-	6: logging.INFO,
-	5: logging.NOTICE,
-	4: logging.WARNING,
-	3: logging.ERROR,
-	2: logging.CRITICAL,
-	1: logging.ESSENTIAL,
-	0: logging.NONE
-}
-
-def secret(self, msg, *args, **kwargs):
+	:param msg: Message to log (may contain %-style placeholders).
+	:type msg: str
+	:param *args: Arguments to fill %-style placeholders with.
+	:param **kwargs: Additional keyword-arguments.
+	"""
 	if self.isEnabledFor(logging.SECRET):
 		self._log(logging.SECRET, msg, args, **kwargs)
 
@@ -116,6 +40,16 @@ logging.Logger.secret = secret
 logging.Logger.confidential = secret
 
 def trace(self, msg, *args, **kwargs):
+	"""
+	Logging with level TRACE.
+
+	This method calls a log with level logging.TRACE.
+
+	:param msg: Message to log (may contain %-style placeholders).
+	:type msg: str
+	:param *args: Arguments to fill %-style placeholders with.
+	:param **kwargs: Additional keyword-arguments.
+	"""
 	if self.isEnabledFor(logging.TRACE):
 		self._log(logging.TRACE, msg, args, **kwargs)
 
@@ -123,12 +57,32 @@ logging.Logger.trace = trace
 logging.Logger.debug2 = trace
 
 def notice(self, msg, *args, **kwargs):
+	"""
+	Logging with level NOTICE.
+
+	This method calls a log with level logging.NOTICE.
+
+	:param msg: Message to log (may contain %-style placeholders).
+	:type msg: str
+	:param *args: Arguments to fill %-style placeholders with.
+	:param **kwargs: Additional keyword-arguments.
+	"""
 	if self.isEnabledFor(logging.NOTICE):
 		self._log(logging.NOTICE, msg, args, **kwargs)
 
 logging.Logger.notice = notice
 
 def essential(self, msg, *args, **kwargs):
+	"""
+	Logging with level ESSENTIAL.
+
+	This method calls a log with level logging.ESSENTIAL.
+
+	:param msg: Message to log (may contain %-style placeholders).
+	:type msg: str
+	:param *args: Arguments to fill %-style placeholders with.
+	:param **kwargs: Additional keyword-arguments.
+	"""
 	if self.isEnabledFor(logging.ESSENTIAL):
 		self._log(logging.ESSENTIAL, msg, args, **kwargs)
 
@@ -136,13 +90,36 @@ logging.Logger.essential = essential
 logging.Logger.comment = essential
 
 def logrecord_init(self, name, level, pathname, lineno, msg, args, exc_info, func=None, sinfo=None, **kwargs):
+	"""
+	New Constructor for LogRecord.
+
+	This overloads the LogRecord constructor to also include the OpsiLogLevel.
+	The reason is to have backwards compatibility.
+
+	:param name: Name of the logger to feed.
+	:param level: Log level of the message.
+	:param pathname: Path of the running module.
+	:param lineno: Line number of the call.
+	:param msg: Message to log (may contain %-style placeholders).
+	:param args: Arguments to fill %-style placeholders with.
+	:param exc_info: Traceback information in case of exceptions.
+	:param func: Name of the calling function.
+	:param sinfo: Call stack information.
+	:param **kwargs: Additional keyword-arguments.
+	"""
 	self.__init_orig__(name, level, pathname, lineno, msg, args, exc_info, func=func, sinfo=sinfo, **kwargs)
 	self.opsilevel = logging._levelToOpsiLevel.get(level, level)
 
-LogRecord.__init_orig__ = LogRecord.__init__
-LogRecord.__init__ = logrecord_init
+logging.LogRecord.__init_orig__ = logging.LogRecord.__init__
+logging.LogRecord.__init__ = logrecord_init
 
 try:
+	"""
+	Compatibility functions.
+
+	These functions realize the OPSI.Logger features utilizing
+	python logging methods.
+	"""
 	# Replace OPSI Logger
 	import OPSI.Logger
 	def opsi_logger_factory():
@@ -174,6 +151,18 @@ except ImportError:
 
 
 def handle_log_exception(exc: Exception, record: logging.LogRecord = None, log: bool = True):
+	"""
+	Handles an exception in logging process.
+
+	This method prints an Exception message and traceback to stderr.
+
+	:param exc: Exception to be logged.
+	:type exc: Exception
+	:param record: Log record where the exception occured.
+	:type record: logging.LogRecord.
+	:param log: If true, the Exception is also output by the logger. (Default: True)
+	:type log: bool
+	"""
 	print("Logging error:", file=sys.stderr)
 	traceback.print_exc(file=sys.stderr)
 	if not log:
@@ -186,40 +175,89 @@ def handle_log_exception(exc: Exception, record: logging.LogRecord = None, log: 
 	except:
 		pass
 
-def get_identity():
-	try:
-		task_id = id(asyncio.Task.current_task())
-	except:
-		task_id = 0
-	try:
-		thread_id = threading.current_thread().ident
-	except:
-		thread_id = 0
-	return thread_id, task_id
-
 class ContextFilter(logging.Filter):
+	"""
+	class ContextFilter
+
+	This class implements a filter which modifies allows to store context
+	for a single thread/task.
+	"""
 	def __init__(self):
+		"""
+		ContextFilter Constructor
+
+		This constructor initializes a ContextFilter instance with an
+		empty dictionary as context.
+		"""
 		super().__init__()
 		self._context_lock = threading.Lock()
 		self.context = {}
 
+	def get_identity(self) -> Tuple:
+		"""
+		Creates identifier for task/process.
+
+		This method collects information about the currently active
+		task/thread and returns both the thread_id and the task_id.
+		If any of these are not available, 0 is returned instead.
+
+		:returns: thread_id and task_id of running task/thread
+		:rtype: Tuple
+		"""
+		try:
+			task_id = id(asyncio.Task.current_task())
+		except:
+			task_id = 0
+		try:
+			thread_id = threading.current_thread().ident
+		except:
+			thread_id = 0
+		return thread_id, task_id
+
 	def set_context(self, new_context : Dict):
+		"""
+		Sets context dictionary for thread/task.
+		
+		This method expects a context dictionary as argument and stores
+		it in the instance context dictionary und a key consisting of
+		first the thread id and then the task id of the currently
+		running thread/task.
+
+		:param new_context: Context dictionary to assign.
+		:type new_context: Dict
+		"""
 		if not isinstance(new_context, dict):
 			return
 		self.clean()
-		thread_id, task_id = get_identity()
+		thread_id, task_id = self.get_identity()
 		with self._context_lock:
 			if self.context.get(thread_id) is None:
 				self.context[thread_id] = {}
 			self.context[thread_id][task_id] = new_context
 
-	def get_context(self):
-		thread_id, task_id = get_identity()
+	def get_context(self) -> Dict:
+		"""
+		Returns context of current thread/task.
+
+		This method requests the thread/task identifier,
+		looks up the context stored for it and returns it.
+
+		:returns: Context for currently active thread/task.
+		:rtype: Dict
+		"""
+		thread_id, task_id = self.get_identity()
 		if self.context.get(thread_id) is None or self.context[thread_id].get(task_id) is None:
 			return {}	#DEFAULT_CONTEXT
 		return self.context[thread_id][task_id]
 
 	def clean(self):
+		"""
+		Cleans deprecated context entries.
+
+		This method iterates over the list of stored contexti.
+		If the associated thread id and task id are not active any more,
+		the entry is deleted. This makes use of a mutex.
+		"""
 		with self._context_lock:
 			try:
 				all_tasks = [id(x) for x in asyncio.Task.all_tasks() if not x.done()]
@@ -231,14 +269,26 @@ class ContextFilter(logging.Filter):
 				if thread_id not in all_threads:
 					#print("DEBUG: removing from self.context (", thread_id, "- ALL", ",", self.context.pop(thread_id, None), ")")
 					self.context.pop(thread_id, None)
-				elif thread_id == get_identity()[0]:		#only cleanup own thread
+				elif thread_id == self.get_identity()[0]:		#only cleanup own thread
 					for task_id in list(self.context[thread_id].keys()):
 						if not task_id == 0 and task_id not in all_tasks:
 							#print("DEBUG: removing from self.context (", thread_id, "-", task_id, ",", self.context[thread_id].pop(task_id, None), ")")
 							self.context[thread_id].pop(task_id, None)
 
 
-	def filter(self, record : logging.LogRecord):
+	def filter(self, record : logging.LogRecord) -> bool:
+		"""
+		Adds context to a LogRecord.
+
+		This method is called by Logger._log and modifies LogRecords.
+		It adds the context stored for the current thread/task to the namespace.
+
+		:param record: LogRecord to add context to.
+		:type record: LogRecord
+
+		:returns: Always true (if the LogRecord should be kept)
+		:rtype: bool
+		"""
 		my_context = self.get_context()
 		#record.__dict__.update(my_context)			#see logging.makeLogRecord (adapted to reduce copy effort)
 		#for key in my_context.keys():
@@ -247,59 +297,162 @@ class ContextFilter(logging.Filter):
 		return True
 
 class ContextSecretFormatter(logging.Formatter):
+	"""
+	class ContextSecretFormatter
+
+	This class fulfills two formatting tasks:
+	1. It alters the LogRecord to also include a string representation of
+		a context dictionary, which can be logged by specifying a log
+		format which includes %(contextstring)s
+	2. It can replace secret strings specified to a SecretFilter by a
+		replacement string, thus censor passwords etc.
+	"""
 	def __init__(self, orig_formatter: logging.Formatter):
+		"""
+		ContextSecretFormatter constructor
+
+		This constructor initializes the encapsulated Formatter with
+		either one given as parameter or a newly created default one.
+
+		:param orig_formatter: Formatter to encapsulate (my be None).
+		:type orig_formatter: logging.Formatter
+		"""
 		if orig_formatter is None:
-			orig_formatter = Formatter()
+			orig_formatter = logging.Formatter()
 		self.orig_formatter = orig_formatter
 	
-	def format(self, record: logging.LogRecord):
+	def format(self, record: logging.LogRecord) -> str:
+		"""
+		Formats a LogRecord.
+
+		This method takes a LogRecord and formats it to produce
+		an output string. If context is specified in the LogRecord
+		it is used to produce a contextstring which is included in
+		the log string if %(contextstring)s is specified in the format.
+
+		:param record: LogRecord to format.
+		:type record: logging.LogRecord
+
+		:returns: The formatted log string.
+		:rytpe: str
+		"""
 		#if isinstance(self.orig_formatter, colorlog.colorlog.ColoredFormatter):
 		#	record = colorlog.colorlog.ColoredRecord(record)
 		if hasattr(record, "context"):
 			context = record.context
-			print(context, type(context), "message:", record.msg)
 			if isinstance(context, dict):
 				values = context.values()
-				record.context = ",".join(values)
+				record.contextstring = ",".join(values)
 		else:
-			record.context = ""
+			record.contextstring = ""
 		msg = self.orig_formatter.format(record)
 		if record.levelno != logging.SECRET:
 			for secret in secret_filter.secrets:
 				msg = msg.replace(secret, SECRET_REPLACEMENT_STRING)
 		return msg
-	
-	def __getattr__(self, attr):
+
+	def __getattr__(self, attr) -> Any:
+		"""
+		Retrieves attribute from original formatter.
+
+		This method expects an attribute and returns the valuefor this
+		attribute being part of the original formatters namespace.
+
+		:param attr: Any attribute requested from the original formatter.
+		:type attr: str
+
+		:returns: Current value of the attribute.
+		:rtype: Any
+		"""
 		return getattr(self.orig_formatter, attr)
 
 class SecretFilter(metaclass=Singleton):
+	"""
+	class SecretFilter
+
+	This class implements functionality of maintaining a collection
+	of secrets which can be used by the ContextSecretFormatter.
+	"""
 	def __init__(self, min_length: int = 6):
+		"""
+		SecretFilter constructor.
+
+		This constructor initializes the minimal length of secrets.
+		If no value is provided, the default is 6 (characters long).
+
+		:param min_length: Minimal length of a secret string (Default: 6).
+		:type min_length: int
+		"""
 		self._min_length = min_length
 		self.secrets = []
 
 	def _initialize_handlers(self):
+		"""
+		Assign ContextSecretFormatter to Handlers.
+
+		This method iterates of all Handlers of the root logger.
+		Each Handler is assigned a ContextSecretFormatter to ensure that
+		no secret string is printed into a Log stream.
+		"""
 		for handler in logging.root.handlers:
 			if not isinstance(handler.formatter, ContextSecretFormatter):
 				handler.formatter = ContextSecretFormatter(handler.formatter)
-	
+
 	def set_min_length(self, min_length: int):
+		"""
+		Sets minimal secret length.
+
+		This method assigns a new value to the minimal secret length.
+		Any new secret string can only be added, if it has more characters.
+
+		:param min_length: Minimal length of a secret string.
+		:type min_length: int
+		"""
 		self._min_length = min_length
-	
+
 	def clear_secrets(self):
+		"""
+		Delete all secret strings.
+
+		This method clears the list of secret strings.
+		"""
 		self.secrets = []
-	
+
 	def add_secrets(self, *secrets: str):
+		"""
+		Inserts new secret strings.
+
+		This method expects any number of secret strings and adds them to the list.
+
+		:param *secrets: Any number of strings (as individual arguments) to add.
+		:type *secrets: str
+		"""
 		self._initialize_handlers()
 		for secret in secrets:
 			if secret and len(secret) >= self._min_length and not secret in self.secrets:
 				self.secrets.append(secret)
-	
+
 	def remove_secrets(self, *secrets: str):
+		"""
+		Removes secret strings.
+
+		This method expects any number of secret strings and removes them from the list.
+
+		:param *secrets: Any number of strings (as individual arguments) to remove.
+		:type *secrets: str
+		"""
 		for secret in secrets:
 			if secret in self.secrets:
 				self.secrets.remove(secret)
 
 def init_logging():
+	"""
+	Initializes logging.
+
+	This method adds a ContextFilter to the root logger.
+	Additionally it adds a StreamHandler and makes sure that every
+	present Handler is equipped with a ContextSecretFormatter.
+	"""
 	logging.root.addFilter(ContextFilter())
 	if len(logging.root.handlers) == 0:
 		handler = logging.StreamHandler(stream=sys.stderr)
@@ -307,6 +460,24 @@ def init_logging():
 	set_format()
 
 def set_format(fmt : str=DEFAULT_FORMAT, datefmt : str=DATETIME_FORMAT, log_colors : Dict=LOG_COLORS):
+	"""
+	Assigns ContextSecretFormatter to all Handlers.
+
+	This method takes optional arguments for format, dateformat and log colors
+	and creates ContextSecretFormatters considering those.
+	Every Handler is assigned such a ContextSecretFormatter.
+
+	:param fmt: Format specification for logging. For documentation see
+		https://github.com/python/cpython/blob/3.8/Lib/logging/__init__.py
+		Additionally %(contextstring)s may be used to include context.
+		If omitted, a default format is used.
+	:type fmt: str
+	:param datefmt: Date format for logging. If omitted, a default dateformat is used.
+	:type datefmt: str
+	:param log_colors: Dictionary of colors for different log levels.
+		If omitted, a default Color dictionary is used.
+	:type log_colors: Dict
+	"""
 	colored = (fmt.find("(log_color)") >= 0)
 	for handler in logging.root.handlers:
 		if colored:
@@ -318,6 +489,16 @@ def set_format(fmt : str=DEFAULT_FORMAT, datefmt : str=DATETIME_FORMAT, log_colo
 		handler.setFormatter(csformatter)
 
 def set_context(new_context : Dict):
+	"""
+	Sets context for current thread/task.
+
+	This method expects a dictionary of Context. It is added to the
+	Context dictionary of the ContextFilter under a key corresponding
+	to the thread id and task id of the currently active thread/task.
+
+	:param new_context: New value for the own context.
+	:type new_context: Dict
+	"""
 	for fil in logging.root.filters:
 		if isinstance(fil, ContextFilter):
 			fil.set_context(new_context)
