@@ -16,8 +16,8 @@ from contextlib import contextmanager
 import opsicommon.logging
 from opsicommon.logging import logger
 
-MY_FORMAT = "%(log_color)s[%(opsilevel)d] [%(asctime)s.%(msecs)03d]%(reset)s [%(context)s] %(message)s"
-OTHER_FORMAT = "[%(opsilevel)d] [%(asctime)s.%(msecs)03d] [%(context)s] %(message)s   (%(filename)s:%(lineno)d)"
+MY_FORMAT = "%(log_color)s[%(opsilevel)d] [%(asctime)s.%(msecs)03d]%(reset)s [%(contextstring)s] %(message)s"
+OTHER_FORMAT = "[%(opsilevel)d] [%(asctime)s.%(msecs)03d] [%(contextstring)s] %(message)s   (%(filename)s:%(lineno)d)"
 
 @contextmanager
 @pytest.fixture
@@ -34,7 +34,6 @@ def test_simple_colored(log_stream):
 	with log_stream as stream:
 		opsicommon.logging.set_format(MY_FORMAT)
 		opsicommon.logging.set_context({'firstcontext' : 'asdf', 'secondcontext' : 'jkl'})
-		print(logger.filters)
 		logger.error("test message")
 		stream.seek(0)
 		log = stream.read()
