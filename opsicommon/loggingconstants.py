@@ -83,3 +83,14 @@ logging._opsiLevelToLevel = {
 	1: logging.ESSENTIAL,
 	0: logging.NONE
 }
+
+LOG_SECRET    = logging.SECRET
+LOG_TRACE     = logging.TRACE
+LOG_DEBUG     = logging.DEBUG
+LOG_INFO      = logging.INFO
+LOG_NOTICE    = logging.NOTICE
+LOG_WARNING   = logging.WARNING
+LOG_ERROR     = logging.ERROR
+LOG_CRITICAL  = logging.ESSENTIAL
+LOG_ESSENTIAL = logging.ESSENTIAL
+LOG_NONE      = logging.NONE

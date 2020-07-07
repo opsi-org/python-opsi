@@ -391,33 +391,33 @@ class PackageContentFile(TextFile):
 			return string.replace(u'\'', u'\\\'')
 
 		def handleDirectory(path):
-			logger.debug2("Processing {0!r} as directory", path)
+			logger.debug2("Processing '%s' as directory", path)
 			return 'd', 0, ''
 
 		def handleFile(path):
-			logger.debug2("Processing {0!r} as file", path)
+			logger.debug2("Processing '%s' as file", path)
 			return 'f', os.path.getsize(path), md5sum(path)
 
 		def handleLink(path):
-			logger.debug2("Processing {0!r} as link", path)
+			logger.debug2("Processing '%s' as link", path)
 			target = os.path.realpath(path)
 			if target.startswith(self._productClientDataDir):
 				target = target[len(self._productClientDataDir):]
 				return 'l', 0, "'%s'" % maskQuoteChars(target)
 			else:
 				logger.debug2(
-					"Link {0!r} links to {1!r} which is outside the "
+					"Link '%s' links to '%s' which is outside the "
 					"client data directory. Not handling as a link.",
 					path,
 					target
 				)
 
 				if os.path.isdir(path):
-					logger.debug2("Handling link {0!r} as directory", path)
+					logger.debug2("Handling link '%s' as directory", path)
 					return handleDirectory(path)
 				else:
 					# link target not in client data dir => treat as file
-					logger.debug2("Handling link {0!r} as file", target)
+					logger.debug2("Handling link '%s' as file", target)
 					return handleFile(target)
 
 		self._lines = []
@@ -1242,7 +1242,7 @@ element of the tuple is replace with the second element.
 				self._addContent(os.path.join(path, entry), sub=sub)
 		else:
 			if not os.path.exists(path):
-				logger.info(u"{0} does not exist. Skipping.", path)
+				logger.info(u"'%s' does not exist. Skipping.", path)
 				return
 
 			checksum = sha1()
@@ -1469,7 +1469,7 @@ element of the tuple is replace with the second element.
 					logger.debug("Flushing mysql table logs.")
 					cmd.append("--flush-log")
 				cmd.append(backend["config"]["database"])
-				logger.debug2("Prepared mysqldump command: {!r}", cmd)
+				logger.debug2("Prepared mysqldump command: '%s'", cmd)
 
 				fd, name = tempfile.mkstemp(dir=self.tempdir)
 				try:
@@ -1507,7 +1507,7 @@ element of the tuple is replace with the second element.
 									break
 
 							if onlyOneErrorMessageInLastErrors:
-								logger.debug("Aborting: Only one message in stderr: {0}", firstError)
+								logger.debug("Aborting: Only one message in stderr: '%s'", firstError)
 								break
 
 					if p.returncode not in (0, None):
@@ -1549,7 +1549,7 @@ element of the tuple is replace with the second element.
 						"--host=%s" % backend["config"]["address"],
 						backend["config"]["database"]
 					]
-					logger.debug2("Restore command: {!r}", cmd)
+					logger.debug2("Restore command: '%s'", cmd)
 
 					p = Popen(cmd, stdin=fd, stdout=PIPE, stderr=STDOUT, env=get_subprocess_environment())
 

@@ -81,7 +81,7 @@ read from `backendConfigFile`.
 	mysql = MySQL(**config)
 
 	schemaVersion = readSchemaVersion(mysql)
-	LOGGER.debug("Found database schema version {0}", schemaVersion)
+	LOGGER.debug("Found database schema version %s", schemaVersion)
 
 	if schemaVersion is None:
 		LOGGER.notice("Missing information about database schema. Creating...")
@@ -109,7 +109,7 @@ read from `backendConfigFile`.
 			with updateSchemaVersion(mysql, version=newSchemaVersion):
 				migration(mysql)
 
-	LOGGER.debug("Expected database schema version: {0}", DATABASE_SCHEMA_VERSION)
+	LOGGER.debug("Expected database schema version: %s", DATABASE_SCHEMA_VERSION)
 	if not readSchemaVersion(mysql) == DATABASE_SCHEMA_VERSION:
 		raise BackendUpdateError("Not all migrations have been run!")
 
@@ -150,10 +150,10 @@ started but never ended.
 		else:
 			raise RuntimeError("No schema version read!")
 	except DatabaseMigrationUnfinishedError as dbmnfe:
-		LOGGER.warning("Migration probably gone wrong: {0}", dbmnfe)
+		LOGGER.warning("Migration probably gone wrong: %s", dbmnfe)
 		raise dbmnfe
 	except Exception as versionLookupError:
-		LOGGER.warning("Reading database schema version failed: {0}", versionLookupError)
+		LOGGER.warning("Reading database schema version failed: %s", versionLookupError)
 		version = None
 
 	return version
@@ -169,12 +169,12 @@ def updateSchemaVersion(database, version):
 	If during the operation something happens there will be no
 	information about the end time written to the database.
 	"""
-	LOGGER.notice("Migrating to schema version {}...", version)
+	LOGGER.notice("Migrating to schema version %s...", version)
 	query = "INSERT INTO OPSI_SCHEMA(`version`) VALUES({version});".format(version=version)
 	database.execute(query)
 	yield
 	_finishSchemaVersionUpdate(database, version)
-	LOGGER.notice("Migration to schema version {} successful", version)
+	LOGGER.notice("Migration to schema version %s successful", version)
 
 
 def _finishSchemaVersionUpdate(database, version):
@@ -672,7 +672,7 @@ def _fixLengthOfLicenseKeys(database):
 				length = int(length[:-1])
 
 				if length != 1024:
-					LOGGER.info(u"Fixing length of 'licenseKey' column on table {0!r}", table)
+					LOGGER.info(u"Fixing length of 'licenseKey' column on table '%s'", table)
 					database.execute(u"ALTER TABLE `{0}` MODIFY COLUMN `licenseKey` VARCHAR(1024);".format(table))
 
 

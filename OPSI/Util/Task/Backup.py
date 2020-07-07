@@ -48,7 +48,7 @@ try:
 	translation = gettext.translation('opsi-utils', '/usr/share/locale')
 	_ = translation.gettext
 except Exception as error:
-	logger.error(u"Locale not found: {0}", error)
+	logger.error(u"Locale not found: %s", error)
 
 	def _(string):
 		""" Function for translating text. """
@@ -117,7 +117,7 @@ class OpsiBackup:
 				name = archive.name.split(os.sep)[-1]
 			else:
 				name = archive.name
-			logger.notice(u"Creating backup archive {0}", name)
+			logger.notice(u"Creating backup archive %s", name)
 
 			if mode == "raw":
 				for backend in backends:
@@ -174,7 +174,7 @@ class OpsiBackup:
 				existingData = [btype for btype, exists in data.items() if exists]
 				existingData.sort()
 
-				logger.notice("{} contains: {}", archive.name, ', '.join(existingData))
+				logger.notice("%s contains: %s", archive.name, ', '.join(existingData))
 
 	def verify(self, file, **kwargs):
 		"""
@@ -189,10 +189,10 @@ class OpsiBackup:
 
 		for fileName in files:
 			with self._getArchive(mode="r", file=fileName) as archive:
-				logger.info(u"Verifying archive {0}", fileName)
+				logger.info(u"Verifying archive %s", fileName)
 				try:
 					archive.verify()
-					logger.notice(u"Archive {} is OK.", fileName)
+					logger.notice(u"Archive %s is OK.", fileName)
 				except OpsiBackupFileError as error:
 					logger.error(error)
 					result = 1
@@ -261,13 +261,13 @@ If this is `None` information will be read from the current system.
 				differences[key] = value
 				continue
 
-			logger.debug("Comparing {0!r} (archive) with {1!r} (system)...", value, sysValue)
+			logger.debug("Comparing '%s' (archive) with '%s (system)...", value, sysValue)
 			if sysValue.strip() != value.strip():
 				logger.debug(
-					'Found difference (System != Archive) at {key!r}: {0!r} vs. {1!r}',
+					'Found difference (System != Archive) at {key!r}: {0!r} vs. {1!r}'.format(
 					sysValue,
 					value,
-					key=key
+					key=key)
 				)
 				differences[key] = value
 
@@ -283,7 +283,7 @@ If this is `None` information will be read from the current system.
 		auto = "auto" in backends
 		backends = [backend.lower() for backend in backends]
 
-		logger.debug("Backends to restore: {}", backends)
+		logger.debug("Backends to restore: %s", backends)
 
 		if not force:
 			for backend in backends:
@@ -296,7 +296,7 @@ If this is `None` information will be read from the current system.
 			self.verify(archive.name)
 
 			if force or self._verifySysconfig(archive):
-				logger.notice(u"Restoring data from backup archive {0}.", archive.name)
+				logger.notice(u"Restoring data from backup archive %s.", archive.name)
 
 				functions = []
 				if configuration:
@@ -320,33 +320,33 @@ If this is `None` information will be read from the current system.
 
 								if not dataExists() and not force:
 									if auto:
-										logger.debug(u"No backend data for {0} - skipping.", name)
+										logger.debug(u"No backend data for %s - skipping.", name)
 										continue  # Don't attempt to restore.
 									else:
 										raise OpsiBackupFileError(u"Backup file does not contain {0} backend data.".format(name))
 
-								logger.debug(u"Adding restore of {0} backend.", name)
+								logger.debug(u"Adding restore of %s backend.", name)
 								functions.append(restoreData)
 
 								if configuredBackends and (not configuration) and (backend not in configuredBackends and backend != 'auto'):
-									logger.warning("Backend {} is currently not in use!", backend)
+									logger.warning("Backend %s is currently not in use!", backend)
 
 				if not functions:
 					raise RuntimeError("Neither possible backend given nor configuration selected for restore.")
 
 				try:
 					for restoreFunction in functions:
-						logger.debug2(u"Running restoration function {0!r}", restoreFunction)
+						logger.debug2(u"Running restoration function '%s'", restoreFunction)
 						restoreFunction(auto)
 				except OpsiBackupBackendNotFound as error:
 					logger.logException(error, LOG_DEBUG)
-					logger.debug("Restoring with {0!r} failed: {1}", restoreFunction, error)
+					logger.debug("Restoring with '%s' failed: %s", restoreFunction, error)
 
 					if not auto:
 						raise error
 				except Exception as error:
 					logger.logException(error, LOG_DEBUG)
-					logger.error(u"Failed to restore data from archive {0}: {1}. Aborting.", archive.name, error)
+					logger.error(u"Failed to restore data from archive %s: %s. Aborting.", archive.name, error)
 					raise error
 
 				logger.notice(u"Restoration complete")
@@ -363,7 +363,7 @@ None if reading the configuration failed.
 	try:
 		from OPSI.Backend.BackendManager import BackendDispatcher
 	except ImportError as impError:
-		logger.debug("Import failed: {}", impError)
+		logger.debug("Import failed: %s", impError)
 		return None
 
 	try:
@@ -372,7 +372,7 @@ None if reading the configuration failed.
 			backendconfigdir='/etc/opsi/backends/',
 		)
 	except BackendConfigurationError as bcerror:
-		logger.debug("Unable to read backends: {}", bcerror)
+		logger.debug("Unable to read backends: %s", bcerror)
 		return None
 
 	names = [name.lower() for name in dispatcher.dispatcher_getBackendNames()]

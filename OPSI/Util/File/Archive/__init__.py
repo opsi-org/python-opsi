@@ -175,7 +175,7 @@ class BaseArchive:
 					filename = filename[len(baseDir):]
 					while filename.startswith('/'):
 						filename = filename[1:]
-				logger.info(u"Adding file '{}'", filename)
+				logger.info(u"Adding file '%s'", filename)
 				proc.stdin.write(("%s\n" % filename).encode())
 
 				try:

@@ -65,7 +65,7 @@ read from `backendConfigFile`.
 
 	config = getBackendConfiguration(backendConfigFile)
 	config.update(additionalBackendConfiguration)
-	LOGGER.info(u"Current file backend config: {0}", config)
+	LOGGER.info(u"Current file backend config: %s", config)
 
 	baseDirectory = config['baseDir']
 	schemaVersion = readBackendVersion(baseDirectory)

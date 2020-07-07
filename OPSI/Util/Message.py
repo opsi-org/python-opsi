@@ -110,7 +110,7 @@ class MessageSubject(Subject):
 		except KeyError:
 			pass  # no matching key
 
-		logger.debug("MessageSubject {0!r} created", self._id)
+		logger.debug("MessageSubject '%s' created", self._id)
 
 	def reset(self):
 		Subject.reset(self)
@@ -278,7 +278,7 @@ class ProgressSubject(MessageSubject):
 		except KeyError:
 			pass
 
-		logger.debug("ProgressSubject {0!r} created", self._id)
+		logger.debug("ProgressSubject '%s' created", self._id)
 
 	def reset(self):
 		MessageSubject.reset(self)
@@ -504,7 +504,7 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 		self.clients.remove(client)
 
 	def rpc(self, client, line):
-		logger.info("received line {!r}", line)
+		logger.info("received line '%s'", line)
 		id = None
 		try:
 			rpc = json.loads(line)
