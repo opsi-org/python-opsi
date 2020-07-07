@@ -105,9 +105,9 @@ def non_blocking_connect_http(self, connectTimeout=0):
 
 def non_blocking_connect_https(self, connectTimeout=0, verifyByCaCertsFile=None):
 	non_blocking_connect_http(self, connectTimeout)
-	logger.debug2(u"verifyByCaCertsFile is: {0!r}", verifyByCaCertsFile)
+	logger.debug2(u"verifyByCaCertsFile is: '%s'", verifyByCaCertsFile)
 	if verifyByCaCertsFile:
-		logger.debug(u"verifyByCaCertsFile is: {0!r}", verifyByCaCertsFile)
+		logger.debug(u"verifyByCaCertsFile is: '%s'", verifyByCaCertsFile)
 		self.sock = ssl_module.wrap_socket(self.sock, keyfile=self.key_file, certfile=self.cert_file, cert_reqs=ssl_module.CERT_REQUIRED, ca_certs=verifyByCaCertsFile)
 		logger.debug(u"Server verified by CA")
 	else:
@@ -125,7 +125,7 @@ def getPeerCertificate(httpsConnectionOrSSLSocket, asPEM=True):
 			return cert
 		return crypto.dump_certificate(crypto.FILETYPE_PEM, cert)
 	except Exception as error:
-		logger.debug2(u"Failed to get peer cert: {0}", error)
+		logger.debug2(u"Failed to get peer cert: %s", error)
 		return None
 
 
@@ -472,10 +472,10 @@ class HTTPConnectionPool(object):
 							headers[key] = 'Opsi ' + base64.b64encode(encodedAuth)
 				except Exception as error:
 					logger.logException(error, LOG_INFO)
-					logger.critical(u"Cannot verify server based on certificate file {0!r}: {1}", self.serverCertFile, error)
+					logger.critical(u"Cannot verify server based on certificate file '%s': %s", self.serverCertFile, error)
 					randomKey = None
 
-			logger.debug2("Request headers: {!r}", headers)
+			logger.debug2("Request headers: '%s'", headers)
 			logger.debug2("Handing data to connection...")
 			conn.request(method, url, body=body, headers=headers)
 			if self.socketTimeout:
@@ -488,7 +488,7 @@ class HTTPConnectionPool(object):
 			# the side effect of letting us use this connection for another
 			# request.
 			response = HTTPResponse.from_httplib(httplib_response)
-			logger.debug2("Response headers: {!r}", response.headers)
+			logger.debug2("Response headers: '%s'", response.headers)
 
 			if randomKey:
 				logger.debug2("Checking for random key...")
@@ -501,7 +501,7 @@ class HTTPConnectionPool(object):
 					self.serverVerified = True
 					logger.notice(u"Service verified by opsi-service-verification-key")
 				except Exception as error:
-					logger.error(u"Service verification failed: {0}", error)
+					logger.error(u"Service verification failed: %s", error)
 					raise OpsiServiceVerificationError(u"Service verification failed: %s" % error)
 
 			if self.serverCertFile and self.peerCertificate:
@@ -512,45 +512,45 @@ class HTTPConnectionPool(object):
 					with open(self.serverCertFile, 'w') as f:
 						f.write(self.peerCertificate)
 				except Exception as error:
-					logger.error(u"Failed to create server cert file {0!r}: {1}", self.serverCertFile, error)
+					logger.error(u"Failed to create server cert file '%s': %s", self.serverCertFile, error)
 
 			# Put the connection back to be reused
 			if self.reuseConnection:
 				self._put_conn(conn)
 			else:
-				logger.debug(u"Closing connection: {0}", conn)
+				logger.debug(u"Closing connection: %s", conn)
 				self._put_conn(None)
 				closeConnection(conn)
 		except (SocketTimeout, Empty, HTTPException, SocketError) as error:
 			logger.logException(error, logLevel=LOG_DEBUG)
 			try:
 				logger.debug(
-					u"Request to host {0!r} failed, retry: {1}, firstTryTime: {2}, now: {3}, retryTime: {4}, connectTimeout: {5}, socketTimeout: {6} ({7!r})",
+					u"Request to host '%s' failed, retry: %s, firstTryTime: %s, now: %s, retryTime: %s, connectTimeout: %s, socketTimeout: %s ('%s')",
 					self.host, retry, firstTryTime, now, self.retryTime, self.connectTimeout, self.socketTimeout, error
 				)
 			except Exception as loggingError:
-				logger.debug(u"Logging exception failed: {0}", forceUnicode(loggingError))
+				logger.debug(u"Logging exception failed: %s", forceUnicode(loggingError))
 				logger.debug(u"Trying to log again without original exception.")
 				try:
 					logger.debug(
-						u"Request to host {0!r} failed, retry: {1}, firstTryTime: {2}, now: {3}, retryTime: {4}, connectTimeout: {5}, socketTimeout: {6}",
+						u"Request to host '%s' failed, retry: %s, firstTryTime: %s, now: %s, retryTime: %s, connectTimeout: %s, socketTimeout: %s",
 						self.host, retry, firstTryTime, now, self.retryTime, self.connectTimeout, self.isocketTimeout
 					)
 				except Exception as error:
-					logger.debug(u"Logging message failed: {0!r}", error)
-					logger.warning(u"Logging message failed: {0}", forceUnicode(error))
+					logger.debug(u"Logging message failed: '%s'", error)
+					logger.warning(u"Logging message failed: %s", forceUnicode(error))
 
 			self._put_conn(None)
 			closeConnection(conn)
 
 			if retry and (now - firstTryTime < self.retryTime):
-				logger.debug(u"Request to {0!r} failed: {1}", self.host, forceUnicode(error))
+				logger.debug(u"Request to '%s' failed: %s", self.host, forceUnicode(error))
 				logger.debug(u"Waiting before retry...")
 				time.sleep(0.2)
 				return self.urlopen(method, url, body, headers, retry, redirect, assert_same_host, firstTryTime)
 			else:
 				if retry:
-					logger.warning("Connecting to {0!r} did not succeed after retrying.", self.host)
+					logger.warning("Connecting to '%s' did not succeed after retrying.", self.host)
 
 				raise
 		except Exception:
@@ -611,14 +611,14 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 					self.serverVerified = True
 					logger.debug("Server verified.")
 			except ssl_module.SSLError as error:
-				logger.debug(u"Verification failed: {0!r}", error)
+				logger.debug(u"Verification failed: '%s'", error)
 				if self.verifyServerCertByCa:
 					raise OpsiServiceVerificationError(u"Failed to verify server cert by CA: %s" % error)
 
 				logger.debug("Going to try a connect without caCertFile...")
 				non_blocking_connect_https(conn, self.connectTimeout)
 			except Exception as error:
-				logger.debug(u"Verification failed: {0!r}", error)
+				logger.debug(u"Verification failed: '%s'", error)
 				raise OpsiServiceVerificationError(forceUnicode(error))
 
 		self.peerCertificate = getPeerCertificate(conn, asPEM=True)

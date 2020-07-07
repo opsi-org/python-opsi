@@ -130,7 +130,7 @@ try:
 		pass
 	logger.setLogFile = setLogFile
 
-	def setLogFormat(logFormat):
+	def setLogFormat(logFormat, object=None):
 		pass
 	logger.setLogFormat = setLogFormat
 
@@ -146,6 +146,18 @@ try:
 	def logException(e, logLevel=logging.CRITICAL):
 		logger.log(level=logLevel, msg=e, exc_info=True)
 	logger.logException = logException
+
+	def setConsoleLevel(logLevel, object=None):
+		for handler in logging.root.handlers:
+			if isinstance(handler, logging.StreamHandler):
+				handler.setLevel(logLevel)
+	logger.setConsoleLevel = setConsoleLevel
+
+	def setFileLevel(logLevel, object=None):
+		for handler in logging.root.handlers:
+			if isinstance(handler, logging.FileHandler):
+				handler.setLevel(logLevel)
+	logger.setFileLevel = setFileLevel
 except ImportError:
 	pass
 
@@ -336,8 +348,6 @@ class ContextSecretFormatter(logging.Formatter):
 		:returns: The formatted log string.
 		:rytpe: str
 		"""
-		#if isinstance(self.orig_formatter, colorlog.colorlog.ColoredFormatter):
-		#	record = colorlog.colorlog.ColoredRecord(record)
 		if hasattr(record, "context"):
 			context = record.context
 			if isinstance(context, dict):

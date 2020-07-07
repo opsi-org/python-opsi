@@ -109,7 +109,7 @@ def getDefaultConfigs(backend, configServer=None, pathToSMBConf=SMB_CONF):
 			if depotdomain:
 				depotuser = u'\\'.join((depotdomain, depotuser))
 
-			LOGGER.debug(u"Using {0!r} as clientconfig.depot.user.", depotuser)
+			LOGGER.debug(u"Using '%s' as clientconfig.depot.user.", depotuser)
 
 			yield UnicodeConfig(
 				id=u'clientconfig.depot.user',
@@ -308,7 +308,7 @@ def readWindowsDomainFromUCR():
 				domain = output.strip().upper()
 				break
 	except Posix.CommandNotFoundException as missingCommandError:
-		LOGGER.info('Could not find ucr: {0}', missingCommandError)
+		LOGGER.info('Could not find ucr: %s', missingCommandError)
 
 	return domain
 
@@ -347,7 +347,7 @@ def _createBooleanConfigsIfMissing(backend, configs):
 	availableConfigs = set(backend.config_getIdents())
 	for config in configs:
 		if config.id not in availableConfigs:
-			LOGGER.debug(u"Adding missing config {0!r}", config.id)
+			LOGGER.debug(u"Adding missing config '%s", config.id)
 			backend.config_createBool(config.id, config.description, config.value)
 
 
@@ -373,7 +373,7 @@ def createUserProfileManagementDefaults(backend):
 	)
 
 	if actionProcressorCommand.id not in set(backend.config_getIdents()):
-		LOGGER.debug(u"Adding missing config {0!r}", actionProcressorCommand.id)
+		LOGGER.debug(u"Adding missing config '%s'", actionProcressorCommand.id)
 		backend.config_createUnicode(
 			actionProcressorCommand.id,
 			actionProcressorCommand.description,

@@ -66,9 +66,9 @@ def addActionRequest(productOnClientByProductId, productId, productDependenciesB
 				u"   product {0!r} requires action {1.requiredAction!r} "
 				u"of product {1.requiredProductId!r} "
 				u"{1.requiredProductVersion!r}-{1.requiredPackageVersion!r} "
-				u"on action {1.productAction!r}",
+				u"on action {1.productAction!r}".format(
 				productId,
-				dependency
+				dependency)
 			)
 		elif dependency.requiredInstallationStatus:
 			logger.debug(
@@ -76,9 +76,9 @@ def addActionRequest(productOnClientByProductId, productId, productDependenciesB
 				u"{1.requiredInstallationStatus!r} of "
 				u"product {1.requiredProductId!r} "
 				u"{1.requiredProductVersion!r}-{1.requiredPackageVersion!r} "
-				u"on action {1.productAction!r}",
+				u"on action {1.productAction!r}".format(
 				productId,
-				dependency
+				dependency)
 			)
 
 		requiredAction = dependency.requiredAction
@@ -108,18 +108,18 @@ def addActionRequest(productOnClientByProductId, productId, productDependenciesB
 			logger.warning(
 				u"   product {0!r} defines dependency to product "
 				u"{1.requiredProductId!r}, but product version "
-				u"{1.requiredProductVersion!r} is not available",
+				u"{1.requiredProductVersion!r} is not available".format(
 				productId,
-				dependency
+				dependency)
 			)
 			setActionRequestToNone = True
 		elif dependency.requiredPackageVersion is not None and dependency.requiredPackageVersion != availableProductsByProductId[dependency.requiredProductId].packageVersion:
 			logger.warning(
 				u"   product {0!r} defines dependency to product "
 				u"{1.requiredProductId!r}, but package version "
-				u"{1.requiredProductId!r} is not available",
+				u"{1.requiredProductId!r} is not available".format(
 				productId,
-				dependency
+				dependency)
 			)
 			setActionRequestToNone = True
 
