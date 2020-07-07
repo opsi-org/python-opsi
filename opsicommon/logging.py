@@ -217,7 +217,7 @@ class ContextFilter(logging.Filter):
 		:rtype: Tuple
 		"""
 		try:
-			task_id = id(asyncio.Task.current_task())
+			task_id = id(asyncio.current_task())
 		except:
 			task_id = 0
 		try:
@@ -272,7 +272,7 @@ class ContextFilter(logging.Filter):
 		"""
 		with self._context_lock:
 			try:
-				all_tasks = [id(x) for x in asyncio.Task.all_tasks() if not x.done()]
+				all_tasks = [id(x) for x in asyncio.all_tasks() if not x.done()]
 			except:
 				all_tasks = []
 			all_threads = [x.ident for x in threading.enumerate()]
