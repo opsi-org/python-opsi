@@ -36,10 +36,6 @@ import urllib
 import urllib2
 from formatter import NullFormatter
 
-from .Config import DEFAULT_USER_AGENT, ConfigurationParser
-from .Notifier import DummyNotifier, EmailNotifier
-from .Repository import LinksExtractor
-
 from OPSI import System
 from OPSI.Backend.BackendManager import BackendManager
 from OPSI.Backend.JSONRPC import JSONRPCBackend
@@ -51,6 +47,10 @@ from OPSI.Util.File import ZsyncFile
 from OPSI.Util.File.Opsi import parseFilename
 from OPSI.Util.Product import ProductPackageFile
 from OPSI.Util.Task.Rights import setRights
+
+from .Config import DEFAULT_USER_AGENT, ConfigurationParser
+from .Notifier import DummyNotifier, EmailNotifier
+from .Repository import LinksExtractor
 
 __all__ = ('OpsiPackageUpdater', )
 
@@ -258,26 +258,7 @@ class OpsiPackageUpdater(object):
 							self.downloadPackage(availablePackage, notifier=notifier)
 						self.cleanupPackages(availablePackage)
 
-					if availablePackage['md5sum']:
-						logger.info(u"Verifying download of package '%s'" % packageFile)
-						md5 = md5sum(packageFile)
-						if md5 == availablePackage["md5sum"]:
-							logger.info(u"{productId}: md5sum match, package download verified", productId=availablePackage['productId'])
-						elif md5 != availablePackage["md5sum"] and zsynced:
-							logger.warning(u"{productId}: zsynced Download has failed, try once to load full package", productId=availablePackage['productId'])
-							self.downloadPackage(availablePackage, notifier=notifier)
-							self.cleanupPackages(availablePackage)
-
-							md5 = md5sum(packageFile)
-							if md5 == availablePackage["md5sum"]:
-								logger.info(u"{productId}: md5sum match, package download verified", productId=availablePackage['productId'])
-							else:
-								raise RuntimeError(u"Failed to download package '%s', md5sum mismatch" % availablePackage['packageFile'])
-						else:
-							logger.info(u"{productId}: md5sum mismatch and no zsync. Doing nothing.", productId=availablePackage['productId'])
-					else:
-						raise HashsumMissmatchError(u"{productId}: Cannot verify download of package: missing md5sum file", productId=availablePackage['productId'])
-
+					self._verifyDownloadedPackage(packageFile, availablePackage, zsynced, notifier)
 					newPackages.append(availablePackage)
 
 				if not newPackages:
@@ -402,6 +383,16 @@ class OpsiPackageUpdater(object):
 								package['productId']
 							)
 							continue
+						elif package['productId'].startswith(('opsi-local-image-', 'opsi-uefi-', 'opsi-vhd-', 'opsi-wim-', 'windows10-upgrade', 'opsi-auto-update')):
+							logger.info(
+								u"Not setting action 'setup' for product '{0}' where installation status 'installed' because auto setup is not allowed for opsi module products",
+								package['productId']
+							)
+							continue
+
+						elif any(exclude.search(package['productId']) for exclude in package['repository'].autosetupexcludes):
+							logger.info(u"Not setting action 'setup' for product '%s' because it's excluded by regular expression" % package['productId'])
+							continue
 
 						logger.notice(
 							u"Setting action 'setup' for product '{0}' where installation status 'installed' because auto setup is set for repository '{1}'",
@@ -515,6 +506,56 @@ class OpsiPackageUpdater(object):
 
 		return products
 
+	def _verifyDownloadedPackage(self, packageFile, availablePackage, zsynced, notifier):
+		"""
+		Verify the downloaded package.
+
+		This checks the hashsums of the downloaded package.
+		If the download was done with zsync and the hashes are different
+		we download the package in whole.
+
+		:param packageFile: The path to the package that is checked.
+		:type packageFile: str
+		:param availablePackage: Information about the package.
+		:type availablePackage: dict
+		:param notifier: The notifier to use
+		:raise HashsumMissmatchError: In case the hashsums mismatch
+		"""
+		if availablePackage['md5sum']:
+			logger.info(u"Verifying download of package '%s'" % packageFile)
+			md5 = md5sum(packageFile)
+			if md5 != availablePackage["md5sum"]:
+				if zsynced:
+					logger.warning(
+						u"{productId}: zsynced Download has failed, trying "
+						u"once to load full package",
+						productId=availablePackage['productId']
+					)
+					self.downloadPackage(availablePackage, notifier=notifier)
+					self.cleanupPackages(availablePackage)
+
+					md5 = md5sum(packageFile)
+
+				# Check again in case we re-downloaded the file
+				if md5 != availablePackage["md5sum"]:
+					raise HashsumMissmatchError(
+						u"{productId}: md5sum mismatch".format(
+							productId=availablePackage['productId']
+						)
+					)
+
+			logger.info(
+				u"{productId}: md5sum match, package download verified",
+				productId=availablePackage['productId']
+			)
+		else:
+			logger.warning(
+				u"{productId}: Cannot verify download of package: "
+				u"missing md5sum file".format(
+					productId=availablePackage['productId']
+				)
+			)
+
 	def downloadPackages(self):
 		if not any(self.getActiveRepositories()):
 			logger.warning(u"No repositories configured, nothing to do")
@@ -596,26 +637,7 @@ class OpsiPackageUpdater(object):
 						self.downloadPackage(availablePackage, notifier=notifier)
 					self.cleanupPackages(availablePackage)
 
-				if availablePackage['md5sum']:
-					logger.info(u"Verifying download of package '%s'" % packageFile)
-					md5 = md5sum(packageFile)
-					if md5 == availablePackage["md5sum"]:
-						logger.info(u"{productId}: md5sum match, package download verified", productId=availablePackage['productId'])
-					elif md5 != availablePackage["md5sum"] and zsynced:
-						logger.warning(u"{productId}: zsynced Download has failed, try once to load full package", productId=availablePackage['productId'])
-						self.downloadPackage(availablePackage, notifier=notifier)
-						self.cleanupPackages(availablePackage)
-
-						md5 = md5sum(packageFile)
-						if md5 == availablePackage["md5sum"]:
-							logger.info(u"{productId}: md5sum match, package download verified", productId=availablePackage['productId'])
-						else:
-							raise RuntimeError(u"Failed to download package '%s', md5sum mismatch" % availablePackage['packageFile'])
-					else:
-						logger.warning(u"{productId}: md5sum mismatch and no zsync. Doing nothing.", productId=availablePackage['productId'])
-				else:
-					logger.warning(u"{productId}: Cannot verify download of package: missing md5sum file", productId=availablePackage['productId'])
-
+				self._verifyDownloadedPackage(packageFile, availablePackage, zsynced, notifier=notifier)
 				newPackages.append(availablePackage)
 
 			if not newPackages:
@@ -892,7 +914,12 @@ class OpsiPackageUpdater(object):
 										req = urllib2.Request(url + '/' + link, None, self.httpHeaders)
 										con = opener.open(req)
 										md5sum = con.read(32768)
-										match = re.search(r'([a-z\d]{32})', md5sum)
+
+										# Hashes are expected to be 32 chars
+										# long. We allow shorter hashes
+										# because this allows us to trigger an
+										# exception during verification.
+										match = re.search(r'([a-z\d]{0,32})', md5sum)
 										if match:
 											foundMd5sum = match.group(1)
 											packages[i]["md5sum"] = foundMd5sum

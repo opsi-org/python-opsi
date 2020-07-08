@@ -3,7 +3,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2006-2019 uib GmbH - http://www.uib.de/
+# Copyright (C) 2006-2020 uib GmbH - http://www.uib.de/
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -25,6 +25,7 @@ parsing files for information.
 
 :author: Jan Schneider <j.schneider@uib.de>
 :author: Niko Wenselowski <n.wenselowski@uib.de>
+:author: Erol Ueluekmen <e.ueluekmen@uib.de>
 :license: GNU Affero General Public License version 3
 """
 
@@ -1935,8 +1936,6 @@ class DHCPDConfFile(TextFile):
 		# Option
 		key = splittedData[1]
 		value = u' '.join(splittedData[2:]).strip()
-		if len(value) > 1 and value.startswith('"') and value.endswith('"'):
-			value = value[1:-1]
 		values = []
 		quote = u''
 		current = []
