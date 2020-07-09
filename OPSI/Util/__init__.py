@@ -75,7 +75,7 @@ __all__ = (
 	'RANDOM_DEVICE', 'blowfishDecrypt', 'blowfishEncrypt',
 	'chunk', 'compareVersions', 'decryptWithPrivateKeyFromPEMFile',
 	'deserialize', 'encryptWithPublicKeyFromX509CertificatePEMFile',
-	'findFiles', 'formatFileSize', 'fromJson', 'generateOpsiHostKey',
+	'findFiles', 'findFilesGenerator', 'formatFileSize', 'fromJson', 'generateOpsiHostKey',
 	'getfqdn', 'ipAddressInNetwork', 'isRegularExpressionPattern',
 	'md5sum', 'objectToBash', 'objectToBeautifiedText', 'objectToHtml',
 	'randomString', 'removeDirectory', 'removeUnit',
