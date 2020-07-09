@@ -235,16 +235,17 @@ class MySQL(SQL):
 					logger.logException(error, logLevel=LOG_DEBUG)
 					if tryNumber >= 10:
 						raise BackendUnableToConnectError(u"Failed to connect to database '%s' address '%s': %s" % (self._database, address, error))
-					secondsToWait = 1
-					logger.debug("We are waiting %s seconds before retrying connect.", secondsToWait)
-					for _ in range(secondsToWait * 10):
-						time.sleep(0.1)
 					if address == "localhost":
 						# If address is localhost mysqlclient will use the mysql unix socket.
 						# Mysqlclient will use /tmp/mysql.sock as default which will fail in
 						# nearly all environments. The correct location of the unix socket is
 						# not easy to find. Therefore switch to use the tcp/ip socket on error. 
 						address = "127.0.0.1"
+					else:
+						secondsToWait = 1
+						logger.debug("We are waiting %s seconds before retrying connect.", secondsToWait)
+						for _ in range(secondsToWait * 10):
+							time.sleep(0.1)
 		finally:
 			logger.debug2(u"Releasing pool lock...")
 			if self._POOL_LOCK.locked():
