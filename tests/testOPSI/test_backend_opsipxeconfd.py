@@ -105,7 +105,7 @@ def testCacheDataCollectionWithPxeConfigTemplate(backendManager, client, depot):
 	backendManager.productOnClient_insertObject(poc)
 
 	with patchAddress(fqdn=depot.id):
-		backend = OpsiPXEConfdBackend(backend=backendManager)
+		backend = OpsiPXEConfdBackend(context=backendManager)
 
 		data = backend._collectDataForUpdate(client.id, depot.id)
 
@@ -184,7 +184,7 @@ def testCacheDataCollectionWithChangingPxeConfigTemplate(backendManager, client,
 	backendManager.productOnClient_insertObject(poc)
 
 	with patchAddress(fqdn=depot.id):
-		backend = OpsiPXEConfdBackend(backend=backendManager)
+		backend = OpsiPXEConfdBackend(context=backendManager)
 
 		data = backend._collectDataForUpdate(client.id, depot.id)
 		assert data['product']['pxeConfigTemplate'] == oldProduct.pxeConfigTemplate
@@ -267,7 +267,7 @@ def testCacheDataCollectionWithMultiplePxeConfigTemplates(backendManager, client
 	backendManager.productOnClient_insertObject(poc)
 
 	with patchAddress(fqdn=depot.id):
-		backend = OpsiPXEConfdBackend(backend=backendManager)
+		backend = OpsiPXEConfdBackend(context=backendManager)
 
 		data = backend._collectDataForUpdate(client.id, depot.id)
 
