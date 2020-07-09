@@ -58,6 +58,8 @@ import grp
 import os
 import pwd
 import re
+import os
+import stat
 from collections import namedtuple
 
 from OPSI.Config import (
@@ -123,13 +125,18 @@ def setRights(path=u'/'):
 		chown(startPath, rights.uid, rights.gid)
 		os.chmod(startPath, rights.directories)
 		for filepath in findFilesGenerator(startPath, prefix=startPath, returnLinks=rights.correctLinks, excludeFile=re.compile(r"(.swp|~)$")):
-			chown(filepath, rights.uid, rights.gid)
-			if os.path.isdir(filepath):
+			st = os.stat(filepath)
+			if (rights.uid != -1 and rights.uid != st.st_uid) or (rights.gid != -1 and rights.gid != st.st_gid):
+				chown(filepath, rights.uid, rights.gid)
+			
+			if stat.S_ISDIR(st.st_mode):
 				LOGGER.debug(u"Setting rights on directory %s", filepath)
-				os.chmod(filepath, rights.directories)
-			elif os.path.isfile(filepath):
-				setRightsOnFile(filepath, rights.files)
-
+				if st.st_mode & 0o07777 != rights.directories:
+					os.chmod(filepath, rights.directories)
+			elif stat.S_ISREG(st.st_mode):
+				if st.st_mode & 0o07777 != rights.files:
+					setRightsOnFile(filepath, rights.files)
+		
 		if startPath.startswith(u'/var/lib/opsi') and _HAS_ROOT_RIGHTS:
 			clientUserUid = pwd.getpwnam(_CLIENT_USER)[2]
 			fileAdminGroupGid = grp.getgrnam(_FILE_ADMIN_GROUP)[2]
