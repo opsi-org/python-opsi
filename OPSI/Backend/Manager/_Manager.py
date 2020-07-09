@@ -38,6 +38,7 @@ from OPSI.Backend.Base import Backend, ExtendedBackend, ExtendedConfigDataBacken
 from OPSI.Backend.Depotserver import DepotserverBackend
 from OPSI.Backend.HostControl import HostControlBackend
 from OPSI.Backend.HostControlSafe import HostControlSafeBackend
+from OPSI.Backend.OpsiPXEConfd import OpsiPXEConfdBackend
 from OPSI.Exceptions import BackendConfigurationError
 from OPSI.Logger import Logger
 from OPSI.Types import forceBool
@@ -191,6 +192,9 @@ class BackendManager(ExtendedBackend):
 			logger.info(u"* BackendManager is creating DepotserverBackend")
 			self._backend = DepotserverBackend(self._backend, **kwargs)
 
+			logger.info(u"* BackendManager is creating OpsiPXEConfdBackend")
+			self._backend = OpsiPXEConfdBackend(self._backend, **kwargs)
+		
 		if hostControlBackend:
 			logger.info(u"* BackendManager is creating HostControlBackend")
 			hostControlBackendConfig = dict(kwargs)
