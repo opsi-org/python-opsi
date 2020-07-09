@@ -76,7 +76,7 @@ from OPSI.System.Posix import (
 
 __all__ = ('setRights', 'setPasswdRights')
 
-LOGGER = Logger()
+logger = Logger()
 
 _POSSIBLE_DEPOT_DIRECTORIES = (u'/var/lib/opsi/depot/', u'/opt/pcbin/install/')
 _CACHED_DEPOT_DIRECTORY = None
@@ -97,7 +97,7 @@ def setPasswdRights():
 	Setting correct permissions on ``/etc/opsi/passwd``.
 	"""
 	targetFile = u'/etc/opsi/passwd'
-	LOGGER.notice(u"Setting rights on %s", targetFile)
+	logger.notice(u"Setting rights on %s", targetFile)
 	opsiconfdUid = pwd.getpwnam(_OPSICONFD_USER)[2]
 	adminGroupGid = grp.getgrnam(_ADMIN_GROUP)[2]
 	os.chown(targetFile, opsiconfdUid, adminGroupGid)
@@ -105,8 +105,8 @@ def setPasswdRights():
 
 
 def setRights(path=u'/'):
-	LOGGER.debug(u"Setting rights on %s", path)
-	LOGGER.debug("euid is %s", os.geteuid())
+	logger.debug(u"Setting rights on %s", path)
+	logger.debug("euid is %s", os.geteuid())
 
 	dirAndRights = getDirectoriesAndExpectedRights(path)
 
@@ -117,11 +117,11 @@ def setRights(path=u'/'):
 			continue
 		
 		if not os.path.exists(startPath):
-			LOGGER.warning("File not found '%s'", startPath)
+			logger.warning("File not found '%s'", startPath)
 			continue
 
-		LOGGER.notice(u"Setting rights on directory %s", startPath)
-		LOGGER.debug2(u"Rights configuration: %s", rights)
+		logger.notice(u"Setting rights on directory %s", startPath)
+		logger.debug2(u"Rights configuration: %s", rights)
 		chown(startPath, rights.uid, rights.gid)
 		os.chmod(startPath, rights.directories)
 		for filepath in findFilesGenerator(startPath, prefix=startPath, returnLinks=rights.correctLinks, excludeFile=re.compile(r"(.swp|~)$")):
@@ -130,13 +130,17 @@ def setRights(path=u'/'):
 				chown(filepath, rights.uid, rights.gid)
 			
 			if stat.S_ISDIR(st.st_mode):
-				LOGGER.debug(u"Setting rights on directory %s", filepath)
-				if st.st_mode & 0o07777 != rights.directories:
+				logger.debug(u"Setting rights on directory %s", filepath)
+				mode = st.st_mode & 0o07777
+				if mode != rights.directories:
+					#logger.debug2("%s: %o != %o", filepath, mode, rights.directories)
 					os.chmod(filepath, rights.directories)
 			elif stat.S_ISREG(st.st_mode):
-				if st.st_mode & 0o07777 != rights.files:
+				mode = st.st_mode & 0o07777
+				if mode != rights.files:
+					#logger.debug2("%s: %o != %o", filepath, mode, rights.files)
 					setRightsOnFile(filepath, rights.files)
-		
+
 		if startPath.startswith(u'/var/lib/opsi') and _HAS_ROOT_RIGHTS:
 			clientUserUid = pwd.getpwnam(_CLIENT_USER)[2]
 			fileAdminGroupGid = grp.getgrnam(_FILE_ADMIN_GROUP)[2]
@@ -157,7 +161,7 @@ def filterDirsAndRights(path, iterable):
 	processedDirectories = set()
 	for dirname, right in iterable:
 		if not dirname.startswith(basedir) and not basedir.startswith(dirname):
-			LOGGER.debug(u"Skipping %s", dirname)
+			logger.debug(u"Skipping %s", dirname)
 			continue
 
 		startPath = dirname
@@ -165,7 +169,7 @@ def filterDirsAndRights(path, iterable):
 			startPath = basedir
 
 		if startPath in processedDirectories:
-			LOGGER.debug(u"Already proceesed %s, skipping.", startPath)
+			logger.debug(u"Already proceesed %s, skipping.", startPath)
 			continue
 
 		yield startPath, right
@@ -199,7 +203,7 @@ def getDirectoriesAndExpectedRights(path):
 	try:
 		yield getWorkbenchDirectory(), Rights(-1, fileAdminGroupGid, 0o664, 0o2770, False)
 	except (ValueError, BackendConfigurationError, BackendMissingDataError) as workbenchLookupError:
-		LOGGER.warning("Unable to get path of workbench directory: %s", workbenchLookupError)
+		logger.warning("Unable to get path of workbench directory: %s", workbenchLookupError)
 
 	yield getPxeDirectory(), Rights(opsiconfdUid, fileAdminGroupGid, 0o664, 0o775, False)
 
@@ -216,7 +220,7 @@ def getDirectoriesAndExpectedRights(path):
 
 			yield apacheDir, Rights(webUid, webGid, 0o664, 0o775, False)
 		except (KeyError, TypeError, RuntimeError) as kerr:
-			LOGGER.debug("Lookup of user / group failed: %s", kerr)
+			logger.debug("Lookup of user / group failed: %s", kerr)
 
 
 def getWorkbenchDirectory():
@@ -264,8 +268,8 @@ def getDepotDirectory(path):
 		depotDir = depotUrl[7:]
 		_CACHED_DEPOT_DIRECTORY = depotDir
 	except Exception as error:
-		LOGGER.logException(error, logLevel=LOG_DEBUG)
-		LOGGER.warning(u"Could not get path for depot: %s", error)
+		logger.logException(error, logLevel=LOG_DEBUG)
+		logger.warning(u"Could not get path for depot: %s", error)
 		depotDir = ''
 
 	basedir = getAbsoluteDir(path)
@@ -273,7 +277,7 @@ def getDepotDirectory(path):
 	if basedir.startswith('/opt/pcbin/install'):
 		depotDir = '/opt/pcbin/install'
 
-	LOGGER.info(u"Depot directory %s found", depotDir)
+	logger.info(u"Depot directory %s found", depotDir)
 	return depotDir
 
 
@@ -308,7 +312,7 @@ def getLocalDepot():
 	except IndexError:
 		raise BackendMissingDataError("No depots found!")
 	except Exception as err:
-		LOGGER.warning("Has the backend been initialized?")
+		logger.warning("Has the backend been initialized?")
 		raise BackendConfigurationError("Unable to instantiate a backend: {}".format(err))
 
 
@@ -327,11 +331,11 @@ installations may be.
 	elif isOpenSUSE() or isSLES():
 		path = u'/srv/www/htdocs/opsi'
 	else:
-		LOGGER.info("Unsupported distribution.")
+		logger.info("Unsupported distribution.")
 		return
 
 	if not os.path.exists(path):
-		LOGGER.debug(u"Oops, found path %s but does not exist.", path)
+		logger.debug(u"Oops, found path %s but does not exist.", path)
 		path = None
 
 	return path
@@ -355,16 +359,16 @@ in the default configuration.
 
 
 def setRightsOnFile(filepath, filemod):
-	LOGGER.debug(u"Setting rights on file %s", filepath)
+	logger.debug(u"Setting rights on file %s", filepath)
 	if filepath.startswith(_POSSIBLE_DEPOT_DIRECTORIES):
 		if os.path.basename(filepath) in KNOWN_EXECUTABLES:
-			LOGGER.debug(u"Setting rights on special file %s", filepath)
+			logger.debug(u"Setting rights on special file %s", filepath)
 			os.chmod(filepath, 0o770)
 		else:
-			LOGGER.debug(u"Setting rights on file %s", filepath)
+			logger.debug(u"Setting rights on file %s", filepath)
 			os.chmod(filepath, (os.stat(filepath)[0] | 0o660) & 0o770)
 	else:
-		LOGGER.debug(u"Setting rights %s on file %s", filemod, filepath)
+		logger.debug(u"Setting rights %s on file %s", filemod, filepath)
 		os.chmod(filepath, filemod)
 
 
@@ -380,13 +384,13 @@ def chown(path, uid, gid):
 	"""
 	try:
 		if _HAS_ROOT_RIGHTS:
-			LOGGER.debug(u"Setting ownership to %s:%s on %s", uid, gid, path)
+			logger.debug(u"Setting ownership to %s:%s on %s", uid, gid, path)
 			if os.path.islink(path):
 				os.lchown(path, uid, gid)
 			else:
 				os.chown(path, uid, gid)
 		else:
-			LOGGER.debug(u"Setting ownership to -1:%s on %s", gid, path)
+			logger.debug(u"Setting ownership to -1:%s on %s", gid, path)
 			if os.path.islink(path):
 				os.lchown(path, -1, gid)
 			else:
@@ -396,8 +400,8 @@ def chown(path, uid, gid):
 			# We are root so something must be really wrong!
 			raise fist
 
-		LOGGER.warning(u"Failed to set ownership on %s: %s", path, fist)
-		LOGGER.notice(u"Please try setting the rights as root.")
+		logger.warning(u"Failed to set ownership on %s: %s", path, fist)
+		logger.notice(u"Please try setting the rights as root.")
 
 
 def setRightsOnSSHDirectory(userId, groupId, path=u'/var/lib/opsi/.ssh'):
