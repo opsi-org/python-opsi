@@ -15,7 +15,7 @@ import colorlog
 import threading
 import asyncio
 import warnings
-
+import contextvars
 from typing import Dict, Tuple, Any
 from logging.handlers import WatchedFileHandler, RotatingFileHandler
 
@@ -26,6 +26,7 @@ from .loggingconstants import (DEFAULT_COLORED_FORMAT, DEFAULT_FORMAT, DATETIME_
 			LOG_ERROR, LOG_CRITICAL, LOG_ESSENTIAL, LOG_NONE)
 
 logger = logging.getLogger()
+context = contextvars.ContextVar('context', default={})
 
 def secret(self, msg : str, *args, **kwargs):
 	"""
@@ -225,7 +226,7 @@ def handle_log_exception(exc: Exception, record: logging.LogRecord = None, log: 
 	except:
 		pass
 
-class ContextFilter(logging.Filter):
+class ContextFilter(logging.Filter, metaclass=Singleton):
 	"""
 	class ContextFilter
 
@@ -245,29 +246,7 @@ class ContextFilter(logging.Filter):
 		"""
 		super().__init__()
 		self._context_lock = threading.Lock()
-		self.context = {}
 		self.filter_value = filter_value
-
-	def get_identity(self) -> Tuple:
-		"""
-		Creates identifier for task/process.
-
-		This method collects information about the currently active
-		task/thread and returns both the thread_id and the task_id.
-		If any of these are not available, 0 is returned instead.
-
-		:returns: thread_id and task_id of running task/thread
-		:rtype: Tuple
-		"""
-		try:
-			task_id = id(asyncio.current_task())
-		except:
-			task_id = 0
-		try:
-			thread_id = threading.current_thread().ident
-		except:
-			thread_id = 0
-		return thread_id, task_id
 
 	def set_context(self, new_context : Dict):
 		"""
@@ -283,12 +262,7 @@ class ContextFilter(logging.Filter):
 		"""
 		if not isinstance(new_context, dict):
 			return
-		self.clean()
-		thread_id, task_id = self.get_identity()
-		with self._context_lock:
-			if self.context.get(thread_id) is None:
-				self.context[thread_id] = {}
-			self.context[thread_id][task_id] = new_context
+		context.set(new_context)
 
 	def get_context(self) -> Dict:
 		"""
@@ -300,35 +274,7 @@ class ContextFilter(logging.Filter):
 		:returns: Context for currently active thread/task.
 		:rtype: Dict
 		"""
-		thread_id, task_id = self.get_identity()
-		if self.context.get(thread_id) is None or self.context[thread_id].get(task_id) is None:
-			return {}	#DEFAULT_CONTEXT
-		return self.context[thread_id][task_id]
-
-	def clean(self):
-		"""
-		Cleans deprecated context entries.
-
-		This method iterates over the list of stored contexti.
-		If the associated thread id and task id are not active any more,
-		the entry is deleted. This makes use of a mutex.
-		"""
-		with self._context_lock:
-			try:
-				all_tasks = [id(x) for x in asyncio.all_tasks() if not x.done()]
-			except:
-				all_tasks = []
-			all_threads = [x.ident for x in threading.enumerate()]
-			#print('\033[93m' + str(self.context) + '\033[0m')
-			for thread_id in list(self.context.keys()):
-				if thread_id not in all_threads:
-					#print("DEBUG: removing from self.context (", thread_id, "- ALL", ",", self.context.pop(thread_id, None), ")")
-					self.context.pop(thread_id, None)
-				elif thread_id == self.get_identity()[0]:		#only cleanup own thread
-					for task_id in list(self.context[thread_id].keys()):
-						if not task_id == 0 and task_id not in all_tasks:
-							#print("DEBUG: removing from self.context (", thread_id, "-", task_id, ",", self.context[thread_id].pop(task_id, None), ")")
-							self.context[thread_id].pop(task_id, None)
+		return context.get()
 
 	def set_filter_value(self, filter_value : Any=None):
 		"""
@@ -357,9 +303,8 @@ class ContextFilter(logging.Filter):
 		:returns: Always true (if the LogRecord should be kept)
 		:rtype: bool
 		"""
-		my_context = self.get_context()
-		record.context = my_context
-		if self.filter_value is None or self.filter_value in my_context.values():
+		record.context = context.get()
+		if self.filter_value is None or self.filter_value in context.values():
 			return True
 		return False
 
@@ -404,10 +349,12 @@ class ContextSecretFormatter(logging.Formatter):
 		:rytpe: str
 		"""
 		if hasattr(record, "context"):
-			context = record.context
-			if isinstance(context, dict):
-				values = context.values()
+			current_context = record.context
+			if isinstance(current_context, dict):
+				values = current_context.values()
 				record.contextstring = ",".join(values)
+			else:
+				record.contextstring = ""
 		else:
 			record.contextstring = ""
 		length = len(record.contextstring)
