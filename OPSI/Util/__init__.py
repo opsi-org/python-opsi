@@ -669,7 +669,7 @@ def decryptWithPrivateKeyFromPEMFile(data, filename):
 	return (b''.join(decrypt())).decode()
 
 
-def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeDir=None, includeFile=None, returnDirs=True, returnLinks=True, followLinks=False, repository=None):
+def findFilesGenerator(directory, prefix=u'', excludeDir=None, excludeFile=None, includeDir=None, includeFile=None, returnDirs=True, returnLinks=True, followLinks=False, repository=None):
 	directory = forceFilename(directory)
 	prefix = forceUnicode(prefix)
 
@@ -710,7 +710,6 @@ def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeD
 		isdir = os.path.isdir
 		listdir = os.listdir
 
-	files = []
 	for entry in listdir(directory):
 		pp = os.path.join(prefix, entry)
 		dp = os.path.join(directory, entry)
@@ -728,20 +727,18 @@ def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeD
 					continue
 				logger.debug(u"Including dir '%s' and containing files", entry)
 			if returnDirs:
-				files.append(pp)
-			files.extend(
-				findFiles(
-					directory=dp,
-					prefix=pp,
-					excludeDir=excludeDir,
-					excludeFile=excludeFile,
-					includeDir=includeDir,
-					includeFile=includeFile,
-					returnDirs=returnDirs,
-					returnLinks=returnLinks,
-					followLinks=followLinks,
-					repository=repository
-				)
+				yield pp
+			yield from findFilesGenerator(
+				directory=dp,
+				prefix=pp,
+				excludeDir=excludeDir,
+				excludeFile=excludeFile,
+				includeDir=includeDir,
+				includeFile=includeFile,
+				returnDirs=returnDirs,
+				returnLinks=returnLinks,
+				followLinks=followLinks,
+				repository=repository
 			)
 			continue
 
@@ -759,9 +756,10 @@ def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeD
 				logger.debug(u"Including link '%s'", entry)
 			else:
 				logger.debug(u"Including file '%s'", entry)
-		files.append(pp)
-	return files
+		yield pp
 
+def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeDir=None, includeFile=None, returnDirs=True, returnLinks=True, followLinks=False, repository=None):
+	return list(findFilesGenerator(directory, prefix, excludeDir, excludeFile, includeDir, includeFile, returnDirs, returnLinks, followLinks, repository))
 
 if sys.version_info >= (3, 7):
 	def isRegularExpressionPattern(object):

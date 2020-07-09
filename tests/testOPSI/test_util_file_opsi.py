@@ -26,7 +26,7 @@ import os
 import pytest
 import random
 
-from OPSI.Util import findFiles, md5sum
+from OPSI.Util import findFilesGenerator, md5sum
 from OPSI.Util.File.Opsi import (
 	BackendDispatchConfigFile, FileInfo, HostKeyFile, OpsiConfFile,
 	PackageContentFile, PackageControlFile, parseFilename,
@@ -284,7 +284,7 @@ def testPackageContentFileCreation(outsideFile, outsideDir):
 			content[outsideDirLink] = 'd'
 			break
 
-		clientDataFiles = findFiles(tempDir)
+		clientDataFiles = list(findFilesGenerator(tempDir))
 
 		filename = os.path.join(tempDir, 'test.files')
 		contentFile = PackageContentFile(filename)
@@ -400,7 +400,7 @@ def testParsingPackageContentFile(outsideFile, outsideDir):
 		filename = os.path.join(tempDir, 'test.files')
 		contentFile = PackageContentFile(filename)
 		contentFile.setProductClientDataDir(tempDir)
-		clientDataFiles = findFiles(tempDir)
+		clientDataFiles = list(findFilesGenerator(tempDir))
 		contentFile.setClientDataFiles(clientDataFiles)
 		contentFile.generate()
 		del contentFile

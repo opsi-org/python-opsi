@@ -34,7 +34,7 @@ from OPSI.Config import (
 from OPSI.Logger import Logger, LOG_INFO, LOG_ERROR
 from OPSI.Util.File.Opsi import PackageControlFile, PackageContentFile
 from OPSI.Util.File.Archive import Archive
-from OPSI.Util import randomString, findFiles, removeDirectory
+from OPSI.Util import randomString, findFilesGenerator, removeDirectory
 from OPSI.System import execute
 from OPSI.Types import (forceBool, forceFilename, forcePackageCustomName,
 	forceUnicode)
@@ -323,11 +323,11 @@ class ProductPackageFile:
 			self.cleanup()
 			raise RuntimeError(u"Failed to extract data from package '%s': %s" % (self.packageFile, e))
 
-	def getClientDataFiles(self, followLinks=False):
+	def getClientDataFiles(self):
 		if self.clientDataFiles:
 			return self.clientDataFiles
 
-		self.clientDataFiles = findFiles(self.getProductClientDataDir(), followLinks=followLinks)
+		self.clientDataFiles = list(findFilesGenerator(self.getProductClientDataDir()))
 		return self.clientDataFiles
 
 	def setAccessRights(self):
@@ -404,7 +404,7 @@ class ProductPackageFile:
 
 			packageContentFile = PackageContentFile(packageContentFile)
 			packageContentFile.setProductClientDataDir(productClientDataDir)
-			cdf = self.getClientDataFiles(followLinks=True)
+			cdf = self.getClientDataFiles()
 			try:
 				# The package content file will be re-written and
 				# then the hash will be different so we need to remove
@@ -596,14 +596,13 @@ class ProductPackageSource:
 				if not os.path.exists(os.path.join(self.packageSourceDir, d)) and d != u'OPSI':
 					logger.info(u"Directory '%s' does not exist", os.path.join(self.packageSourceDir, d))
 					continue
-				fileList = findFiles(
+				for f in findFilesGenerator(
 					os.path.join(self.packageSourceDir, d),
 					excludeDir=EXCLUDE_DIRS_ON_PACK_REGEX,
 					excludeFile=EXCLUDE_FILES_ON_PACK_REGEX,
-					followLinks=self.dereference)
-				if fileList:
-					for f in fileList:
-						diskusage = diskusage + os.path.getsize(os.path.join(self.packageSourceDir, d, f))
+					followLinks=self.dereference
+				):
+					diskusage = diskusage + os.path.getsize(os.path.join(self.packageSourceDir, d, f))
 
 			if diskusage >= 2147483648:
 				logger.info(u"Switching to tar format, because sourcefiles overrides cpio sizelimit.")
@@ -614,11 +613,11 @@ class ProductPackageSource:
 					logger.info(u"Directory '%s' does not exist", os.path.join(self.packageSourceDir, d))
 					continue
 
-				fileList = findFiles(
+				fileList = list(findFilesGenerator(
 					os.path.join(self.packageSourceDir, d),
 					excludeDir=EXCLUDE_DIRS_ON_PACK_REGEX,
 					excludeFile=EXCLUDE_FILES_ON_PACK_REGEX,
-					followLinks=self.dereference)
+					followLinks=self.dereference))
 
 				if d.startswith(u'SERVER_DATA'):
 					# Never change permissions of existing directories in /
