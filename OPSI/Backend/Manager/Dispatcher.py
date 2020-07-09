@@ -143,10 +143,13 @@ class BackendDispatcher(Backend):
 			cargs = dict(l['config'])
 			cargs.update(kwargs)
 			self._backends[backend]["instance"] = getattr(b, backendClassName)(**cargs)
+		logger.info("Dispatcher backends: %s", list(self._backends.keys()))
 
 	def _createInstanceMethods(self):
 		logger.debug(u"BackendDispatcher is creating instance methods")
-		for Class in (ConfigDataBackend, ):  # Also apply to ExtendedConfigDataBackend?
+		classes = [ConfigDataBackend]
+		classes.extend([ backend["instance"].__class__ for backend in self._backends.values() ])
+		for Class in classes:  # Also apply to ExtendedConfigDataBackend?
 			for methodName, functionRef in inspect.getmembers(Class, inspect.isfunction):
 				if methodName.startswith('_'):
 					# Not a public method
@@ -154,22 +157,30 @@ class BackendDispatcher(Backend):
 				logger.debug2(u"Found public %s method '%s'", Class.__name__, methodName)
 
 				if hasattr(self, methodName):
-					logger.debug(u"%s: skipping already present method %s", self.__class__.__name__, methodName)
+					logger.debug2(u"%s: skipping already present method %s", self.__class__.__name__, methodName)
 					continue
 
 				methodBackends = []
-				for regex, backends in self._dispatchConfig:
-					if not re.search(regex, methodName):
-						continue
-
-					for backend in forceList(backends):
-						if backend not in self._backends:
-							logger.debug(u"Ignoring backend %s: backend not available", backend)
+				methodBackendName = methodName.split("_", 1)[0]
+				if methodBackendName in self._backends:
+					logger.debug(u"Method name %s starts with %s, dispatching to backend: %s", methodName, methodBackendName, methodBackendName)
+					methodBackends.append(methodBackendName)
+				else:
+					for regex, backends in self._dispatchConfig:
+						if not re.search(regex, methodName):
 							continue
-						methodBackends.append(backend)
-					logger.debug(u"%s matches method %s, dispatching to backends: %s", regex, methodName, u', '.join(methodBackends))
-					break
 
+						for backend in forceList(backends):
+							if backend not in self._backends:
+								logger.debug(u"Ignoring backend %s: backend not available", backend)
+								continue
+							if not hasattr(self._backends[backend]["instance"], methodName):
+								logger.info(u"Ignoring backend %s: method %s not found", backend, methodName)
+								continue
+							methodBackends.append(backend)
+						break
+					logger.debug(u"%s matches method %s, dispatching to backends: %s", regex, methodName, u', '.join(methodBackends))
+				
 				if not methodBackends:
 					continue
 

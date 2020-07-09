@@ -68,7 +68,7 @@ from OPSI.Config import (
 	DEFAULT_DEPOT_USER as _CLIENT_USER,
 	OPSICONFD_USER as _OPSICONFD_USER)
 from OPSI.Exceptions import BackendConfigurationError, BackendMissingDataError
-from OPSI.Logger import LOG_DEBUG, Logger
+from OPSI.Logger import LOG_DEBUG, LOG_WARNING, Logger
 from OPSI.Util import findFilesGenerator
 from OPSI.System.Posix import (
 	getLocalFqdn as getLocalFQDN, isCentOS, isDebian, isOpenSUSE, isRHEL, isSLES, isUbuntu,
@@ -203,6 +203,7 @@ def getDirectoriesAndExpectedRights(path):
 	try:
 		yield getWorkbenchDirectory(), Rights(-1, fileAdminGroupGid, 0o664, 0o2770, False)
 	except (ValueError, BackendConfigurationError, BackendMissingDataError) as workbenchLookupError:
+		logger.logException(workbenchLookupError, logLevel=LOG_WARNING)
 		logger.warning("Unable to get path of workbench directory: %s", workbenchLookupError)
 
 	yield getPxeDirectory(), Rights(opsiconfdUid, fileAdminGroupGid, 0o664, 0o775, False)

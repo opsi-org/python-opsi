@@ -35,7 +35,7 @@ import time
 from contextlib import closing, contextmanager
 from pipes import quote
 
-from OPSI.Backend.Base import ExtendedBackend
+from OPSI.Backend.Base import ConfigDataBackend
 from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Exceptions import (BackendMissingDataError,
 	BackendUnableToConnectError, BackendUnaccomplishableError)
@@ -99,13 +99,13 @@ def getClientCacheFilePath(clientId):
 
 	return os.path.join(directory, clientId + '.json')
 
-class OpsiPXEConfdBackend(ExtendedBackend):
 
-	def __init__(self, backend, **kwargs):
+class OpsiPXEConfdBackend(ConfigDataBackend):
+
+	def __init__(self, **kwargs):
+		ConfigDataBackend.__init__(self, **kwargs)
+
 		self._name = 'opsipxeconfd'
-
-		ExtendedBackend.__init__(self, backend, **kwargs)
-		
 		self._port = u'/var/run/opsipxeconfd/opsipxeconfd.socket'
 		self._timeout = 10
 		self._depotId = forceHostId(getfqdn())
