@@ -67,7 +67,7 @@ from OPSI.Config import (
 	OPSICONFD_USER as _OPSICONFD_USER)
 from OPSI.Exceptions import BackendConfigurationError, BackendMissingDataError
 from OPSI.Logger import LOG_DEBUG, Logger
-from OPSI.Util import findFiles
+from OPSI.Util import findFilesGenerator
 from OPSI.System.Posix import (
 	getLocalFqdn as getLocalFQDN, isCentOS, isDebian, isOpenSUSE, isRHEL, isSLES, isUbuntu,
 	isUCS)
@@ -122,7 +122,7 @@ def setRights(path=u'/'):
 		LOGGER.debug2(u"Rights configuration: %s", rights)
 		chown(startPath, rights.uid, rights.gid)
 		os.chmod(startPath, rights.directories)
-		for filepath in findFiles(startPath, prefix=startPath, returnLinks=rights.correctLinks, excludeFile=re.compile(r"(.swp|~)$")):
+		for filepath in findFilesGenerator(startPath, prefix=startPath, returnLinks=rights.correctLinks, excludeFile=re.compile(r"(.swp|~)$")):
 			chown(filepath, rights.uid, rights.gid)
 			if os.path.isdir(filepath):
 				LOGGER.debug(u"Setting rights on directory %s", filepath)
