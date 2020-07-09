@@ -41,11 +41,6 @@ def depot():
 	return OpsiDepotserver(id='depotserver1.test.invalid')
 
 
-def testInitialisation():
-	with patchAddress():
-		OpsiPXEConfdBackend()
-
-
 def testGetClientCachePath():
 	clientId = 'foo.bar.baz'
 
@@ -110,7 +105,7 @@ def testCacheDataCollectionWithPxeConfigTemplate(backendManager, client, depot):
 	backendManager.productOnClient_insertObject(poc)
 
 	with patchAddress(fqdn=depot.id):
-		backend = OpsiPXEConfdBackend(context=backendManager)
+		backend = OpsiPXEConfdBackend(backend=backendManager)
 
 		data = backend._collectDataForUpdate(client.id, depot.id)
 
@@ -189,7 +184,7 @@ def testCacheDataCollectionWithChangingPxeConfigTemplate(backendManager, client,
 	backendManager.productOnClient_insertObject(poc)
 
 	with patchAddress(fqdn=depot.id):
-		backend = OpsiPXEConfdBackend(context=backendManager)
+		backend = OpsiPXEConfdBackend(backend=backendManager)
 
 		data = backend._collectDataForUpdate(client.id, depot.id)
 		assert data['product']['pxeConfigTemplate'] == oldProduct.pxeConfigTemplate
@@ -272,7 +267,7 @@ def testCacheDataCollectionWithMultiplePxeConfigTemplates(backendManager, client
 	backendManager.productOnClient_insertObject(poc)
 
 	with patchAddress(fqdn=depot.id):
-		backend = OpsiPXEConfdBackend(context=backendManager)
+		backend = OpsiPXEConfdBackend(backend=backendManager)
 
 		data = backend._collectDataForUpdate(client.id, depot.id)
 
