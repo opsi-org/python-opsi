@@ -218,7 +218,7 @@ def test_context_threads(log_stream):
 				t.join()
 		stream.seek(0)
 		log = stream.read()
-		assert "module Client-1 MyModule.run" in log
+		assert "module Client-1" + " "*(opsicommon.logging.CONTEXT_STRING_MIN_LENGTH - 14) + "MyModule.run" in log
 		# to check for corrent handling of async contexti when eventloop is not running in main thread
-		assert "handler for client Client-0 handling client Client-1" not in log
+		assert "handler for client Client-0" + " "*(opsicommon.logging.CONTEXT_STRING_MIN_LENGTH - 26) + "handling client Client-1" not in log
 

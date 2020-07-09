@@ -3,6 +3,8 @@ import logging
 DEFAULT_COLORED_FORMAT = "%(log_color)s[%(opsilevel)d] [%(asctime)s.%(msecs)03d]%(reset)s [%(contextstring)s] %(message)s   (%(filename)s:%(lineno)d)"
 DEFAULT_FORMAT = "[%(opsilevel)d] [%(asctime)s.%(msecs)03d] [%(contextstring)s] %(message)s   (%(filename)s:%(lineno)d)"
 DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+CONTEXT_STRING_MIN_LENGTH = 32
+
 LOG_COLORS = {
 	'SECRET': 'thin_yellow',
 	'TRACE': 'thin_white',

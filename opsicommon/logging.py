@@ -14,11 +14,16 @@ import logging
 import colorlog
 import threading
 import asyncio
+import warnings
+
 from typing import Dict, Tuple, Any
 from logging.handlers import WatchedFileHandler, RotatingFileHandler
 
 from .utils import Singleton
-from .loggingconstants import *
+from .loggingconstants import (DEFAULT_COLORED_FORMAT, DEFAULT_FORMAT, DATETIME_FORMAT,
+			CONTEXT_STRING_MIN_LENGTH, LOG_COLORS, SECRET_REPLACEMENT_STRING,
+			LOG_SECRET, LOG_TRACE, LOG_DEBUG, LOG_INFO, LOG_NOTICE, LOG_WARNING,
+			LOG_ERROR, LOG_CRITICAL, LOG_ESSENTIAL, LOG_NONE)
 
 logger = logging.getLogger()
 
@@ -123,37 +128,70 @@ try:
 	# Replace OPSI Logger
 	import OPSI.Logger
 	def opsi_logger_factory():
+		warnings.warn(
+			"OPSI.Logger.Logger is deprecated, use opsicommon.logging.logger instead.",
+			DeprecationWarning
+		)
 		return logger
 	OPSI.Logger.Logger = opsi_logger_factory
 
 	def setLogFile(logFile, currentThread=False, object=None):
-		pass
+		warnings.warn(
+			"OPSI.Logger.setLogFile is deprecated, instead add a FileHandler to logger.",
+			DeprecationWarning
+		)
+		handler = logging.FileHandler(logFile)
+		logging.root.addHandler(handler)
 	logger.setLogFile = setLogFile
 
 	def setLogFormat(logFormat, object=None):
+		warnings.warn(
+			"OPSI.Logger.setLogFormat is deprecated, use opsicommon.logging.set_format instead.",
+			DeprecationWarning
+		)
 		pass
 	logger.setLogFormat = setLogFormat
 
 	def setConfidentialStrings(strings):
+		warnings.warn(
+			"OPSI.Logger.setConfidentialStrings is deprecated, use secret_filter.clear_secrets,\
+			secret_filter.add_secrets instead.", DeprecationWarning
+		)
 		secret_filter.clear_secrets()
 		secret_filter.add_secrets(*strings)
 	logger.setConfidentialStrings = setConfidentialStrings
 
 	def addConfidentialString(string):
+		warnings.warn(
+			"OPSI.Logger.addConfidentialString is deprecated, use secret_filter.add_secrets instead.",
+			DeprecationWarning
+		)
 		secret_filter.add_secrets(string)
 	logger.addConfidentialString = addConfidentialString
 
 	def logException(e, logLevel=logging.CRITICAL):
+		warnings.warn(
+			"OPSI.Logger.logException is deprecated, instead use logger.log with exc_info=True.",
+			DeprecationWarning
+		)
 		logger.log(level=logLevel, msg=e, exc_info=True)
 	logger.logException = logException
 
 	def setConsoleLevel(logLevel, object=None):
+		warnings.warn(
+			"OPSI.Logger.setConsoleLevel is deprecated, instead modify the StreamHandler loglevel.",
+			DeprecationWarning
+		)
 		for handler in logging.root.handlers:
-			if isinstance(handler, logging.StreamHandler):
+			if isinstance(handler, logging.StreamHandler) and not isinstance(handler, logging.FileHandler):
 				handler.setLevel(logLevel)
 	logger.setConsoleLevel = setConsoleLevel
 
 	def setFileLevel(logLevel, object=None):
+		warnings.warn(
+			"OPSI.Logger.setFileLevel is deprecated, instead modify the FileHandler loglevel.",
+			DeprecationWarning
+		)
 		for handler in logging.root.handlers:
 			if isinstance(handler, logging.FileHandler):
 				handler.setLevel(logLevel)
@@ -194,16 +232,21 @@ class ContextFilter(logging.Filter):
 	This class implements a filter which modifies allows to store context
 	for a single thread/task.
 	"""
-	def __init__(self):
+	def __init__(self, filter_value : Any=None):
 		"""
 		ContextFilter Constructor
 
 		This constructor initializes a ContextFilter instance with an
 		empty dictionary as context.
+
+		:param filter_value: Value that must be present in record context
+			in order to accept the LogRecord.
+		:type filter_value: Any
 		"""
 		super().__init__()
 		self._context_lock = threading.Lock()
 		self.context = {}
+		self.filter_value = filter_value
 
 	def get_identity(self) -> Tuple:
 		"""
@@ -287,6 +330,19 @@ class ContextFilter(logging.Filter):
 							#print("DEBUG: removing from self.context (", thread_id, "-", task_id, ",", self.context[thread_id].pop(task_id, None), ")")
 							self.context[thread_id].pop(task_id, None)
 
+	def set_filter_value(self, filter_value : Any=None):
+		"""
+		Sets a new filter value.
+
+		This method expectes a filter value of any type.
+		Records are only allowed to pass if their context contains
+		this specific value. None means, every record can pass.
+
+		:param filter_value: Value that must be present in record context
+			in order to accept the LogRecord.
+		:type filter_value: Any
+		"""
+		self.filter_value = filter_value
 
 	def filter(self, record : logging.LogRecord) -> bool:
 		"""
@@ -302,11 +358,10 @@ class ContextFilter(logging.Filter):
 		:rtype: bool
 		"""
 		my_context = self.get_context()
-		#record.__dict__.update(my_context)			#see logging.makeLogRecord (adapted to reduce copy effort)
-		#for key in my_context.keys():
-		#	 exec("record."+key + " = my_context['" + key + "']")
 		record.context = my_context
-		return True
+		if self.filter_value is None or self.filter_value in my_context.values():
+			return True
+		return False
 
 class ContextSecretFormatter(logging.Formatter):
 	"""
@@ -355,6 +410,9 @@ class ContextSecretFormatter(logging.Formatter):
 				record.contextstring = ",".join(values)
 		else:
 			record.contextstring = ""
+		length = len(record.contextstring)
+		if length < CONTEXT_STRING_MIN_LENGTH:
+			record.contextstring += " "*(CONTEXT_STRING_MIN_LENGTH - length)
 		msg = self.orig_formatter.format(record)
 		if record.levelno != logging.SECRET:
 			for secret in secret_filter.secrets:
@@ -466,6 +524,7 @@ def init_logging():
 	logging.root.addFilter(ContextFilter())
 	if len(logging.root.handlers) == 0:
 		handler = logging.StreamHandler(stream=sys.stderr)
+		handler.setLevel(logging.NOTICE)
 		logging.root.addHandler(handler)
 	set_format()
 
@@ -512,6 +571,22 @@ def set_context(new_context : Dict):
 	for fil in logging.root.filters:
 		if isinstance(fil, ContextFilter):
 			fil.set_context(new_context)
+
+def set_filter_value(new_value : Any):
+	"""
+	Sets a new filter value.
+
+	This method expectes a filter value of any type.
+	Records are only allowed to pass if their context contains
+	this specific value. None means, every record can pass.
+
+	:param filter_value: Value that must be present in record context
+		in order to accept the LogRecord.
+	:type filter_value: Any
+	"""
+	for fil in logging.root.filters:
+		if isinstance(fil, ContextFilter):
+			fil.set_filter_value(new_value)
 
 init_logging()
 secret_filter = SecretFilter()
