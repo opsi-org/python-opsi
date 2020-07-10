@@ -352,7 +352,7 @@ class ContextSecretFormatter(logging.Formatter):
 			current_context = record.context
 			if isinstance(current_context, dict):
 				values = current_context.values()
-				record.contextstring = ",".join(values)
+				record.contextstring = ",".join([str(x) for x in values])
 			else:
 				record.contextstring = ""
 		else:
@@ -506,11 +506,10 @@ def set_format(fmt : str=DEFAULT_FORMAT, datefmt : str=DATETIME_FORMAT, log_colo
 
 def set_context(new_context : Dict):
 	"""
-	Sets context for current thread/task.
+	Sets context for current instance.
 
 	This method expects a dictionary of Context. It is added to the
-	Context dictionary of the ContextFilter under a key corresponding
-	to the thread id and task id of the currently active thread/task.
+	ContextFilter for the currently active instance.
 
 	:param new_context: New value for the own context.
 	:type new_context: Dict
@@ -518,6 +517,27 @@ def set_context(new_context : Dict):
 	for fil in logging.root.filters:
 		if isinstance(fil, ContextFilter):
 			fil.set_context(new_context)
+
+def update_context(key : Any, value : Any=""):
+	"""
+	Sets partial context for current instance.
+
+	This method expects a dictionary of Context. It is added to the
+	ContextFilter for the currently active instance.
+
+	:param key: key of entry to modify in the context dictionary.
+	:type key: Any
+	:param value: value of entry to modify in the context dictionary.
+	:type value: Any
+	"""
+	for fil in logging.root.filters:
+		if isinstance(fil, ContextFilter):
+			full_context = context.get()
+			if value == "":
+				full_context.pop(key, None)
+			else:
+				full_context.update({key : value})
+			fil.set_context(full_context)
 
 def set_filter_value(new_value : Any):
 	"""

@@ -92,3 +92,21 @@ def test_foreign_logs(log_stream):
 		stream.seek(0)
 		log = stream.read()
 		assert "www.uib.de" in log
+
+def test_partial_context(log_stream):
+	with log_stream as stream:
+		opsicommon.logging.set_format("[%(contextstring)s]%(message)s")
+		opsicommon.logging.set_context({'first' : 'foo', 'second' : 'bar'})
+		opsicommon.logging.update_context('first', 'blubb')
+		logger.warning("after update first")
+		stream.seek(0)
+		log = stream.read()
+		assert 'blubb' in log and 'foo' not in log
+		stream.seek(0)
+		stream.truncate()
+
+		opsicommon.logging.update_context('second')
+		logger.warning("after update second")
+		stream.seek(0)
+		log = stream.read()
+		assert 'blubb' in log and 'bar' not in log 
