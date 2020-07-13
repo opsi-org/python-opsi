@@ -41,11 +41,6 @@ def depot():
 	return OpsiDepotserver(id='depotserver1.test.invalid')
 
 
-def testInitialisation():
-	with patchAddress():
-		OpsiPXEConfdBackend()
-
-
 def testGetClientCachePath():
 	clientId = 'foo.bar.baz'
 

@@ -33,7 +33,7 @@ from OPSI.Object import ConfigState, LocalbootProduct, OpsiClient
 from OPSI.Util import (
 	blowfishDecrypt, blowfishEncrypt, chunk, compareVersions,
 	decryptWithPrivateKeyFromPEMFile,
-	encryptWithPublicKeyFromX509CertificatePEMFile, findFiles, formatFileSize,
+	encryptWithPublicKeyFromX509CertificatePEMFile, findFilesGenerator, formatFileSize,
 	fromJson, generateOpsiHostKey, getfqdn, ipAddressInNetwork,
 	isRegularExpressionPattern,	md5sum, objectToBash, objectToBeautifiedText,
 	objectToHtml, randomString, removeUnit, toJson)
@@ -823,14 +823,14 @@ def testSerialisingTuples():
 
 
 def testFindFilesWithEmptyDirectory(tempDir):
-	assert [] == findFiles(tempDir)
+	assert [] == list(findFilesGenerator(tempDir))
 
 
 def testFindFilesFindsFolders():
 	expectedFolders = ['top1', 'top2', os.path.join('top1', 'sub11')]
 
 	with preparedDemoFolders() as demoFolder:
-		folders = findFiles(demoFolder)
+		folders = list(findFilesGenerator(demoFolder))
 		for folder in expectedFolders:
 			assert folder in folders
 

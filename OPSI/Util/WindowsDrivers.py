@@ -36,7 +36,7 @@ from OPSI.Logger import Logger
 from OPSI.Object import AuditHardware, AuditHardwareOnHost
 from OPSI.Types import (forceFilename, forceInt, forceList,
 	forceObjectClassList, forceUnicode, forceUnicodeList)
-from OPSI.Util import findFiles
+from OPSI.Util import findFilesGenerator
 from OPSI.Util.File import InfFile, TxtSetupOemFile
 from OPSI.Util.Repository import Repository
 
@@ -176,13 +176,13 @@ def integrateWindowsDrivers(driverSourceDirectories, driverDestinationDirectory,
 				driverNumber = forceInt(filename)
 
 	integratedDrivers = {}
-	infFiles = findFiles(
+	infFiles = list(findFilesGenerator(
 		directory=driverDestinationDirectory,
 		prefix=driverDestinationDirectory,
 		includeFile=re.compile(r'\.inf$', re.IGNORECASE),
 		returnDirs=False,
 		followLinks=True
-	)
+	))
 	logger.debug(u"Found inf files: %s in dir '%s'" % (infFiles, driverDestinationDirectory))
 	for infFile in infFiles:
 		infFile = InfFile(infFile)
@@ -209,13 +209,13 @@ def integrateWindowsDrivers(driverSourceDirectories, driverDestinationDirectory,
 			continue
 		driverNeeded = True
 		newDriversTmp = []
-		infFiles = findFiles(
+		infFiles = list(findFilesGenerator(
 			directory=driverSourceDirectory,
 			prefix=driverSourceDirectory,
 			includeFile=re.compile(r'\.inf$', re.IGNORECASE),
 			returnDirs=False,
 			followLinks=True,
-			repository=srcRepository)
+			repository=srcRepository))
 
 		for infFile in infFiles:
 			tempInfFile = None
@@ -326,7 +326,7 @@ def integrateWindowsTextmodeDrivers(driverDirectory, destination, devices, sifFi
 		messageSubject.setMessage(u"Integrating textmode drivers")
 
 	logger.info(u"Searching for txtsetup.oem in '%s'" % driverDirectory)
-	txtSetupOems = findFiles(directory=driverDirectory, prefix=driverDirectory, includeFile=re.compile(r'^txtsetup\.oem$', re.IGNORECASE), returnDirs=False)
+	txtSetupOems = list(findFilesGenerator(directory=driverDirectory, prefix=driverDirectory, includeFile=re.compile(r'^txtsetup\.oem$', re.IGNORECASE), returnDirs=False))
 	if not txtSetupOems:
 		logger.info(u"No txtsetup.oem found in '%s'" % driverDirectory)
 		return
@@ -528,13 +528,13 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 			if messageSubject:
 				messageSubject.setMessage(u"Additional drivers dir '%s' not found" % additionalDriverDir)
 			continue
-		infFiles = findFiles(
+		infFiles = list(findFilesGenerator(
 				directory=additionalDriverDir,
 				prefix=additionalDriverDir,
 				includeFile=re.compile(r'\.inf$', re.IGNORECASE),
 				returnDirs=False,
 				followLinks=True,
-				repository=srcRepository)
+				repository=srcRepository))
 		logger.info(u"Found inf files: %s in dir '%s'" % (infFiles, additionalDriverDir))
 		if not infFiles:
 			logger.error(u"No drivers found in dir '%s'" % additionalDriverDir)
