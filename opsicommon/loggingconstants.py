@@ -93,6 +93,6 @@ LOG_INFO      = logging.INFO
 LOG_NOTICE    = logging.NOTICE
 LOG_WARNING   = logging.WARNING
 LOG_ERROR     = logging.ERROR
-LOG_CRITICAL  = logging.ESSENTIAL
+LOG_CRITICAL  = logging.CRITICAL
 LOG_ESSENTIAL = logging.ESSENTIAL
 LOG_NONE      = logging.NONE
