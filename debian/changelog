@@ -1,3 +1,9 @@
+python-opsi (4.1.1.94-1) stable; urgency=medium
+
+  * mysql strict mode support
+
+ -- Erol Ueluekmen <e.ueluekmen@uib.de>  Mon, 13 Jul 2020 01:45:02 +0200
+
 python-opsi (4.1.1.93-1) stable; urgency=medium
 
   * autosetupexcludes could be empty.

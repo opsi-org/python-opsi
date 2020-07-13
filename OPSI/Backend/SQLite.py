@@ -348,8 +348,8 @@ class SQLiteBackend(SQLBackend):
 						u'`config_id` INTEGER NOT NULL {autoincrement},\n'
 						u'`hostId` varchar(255) NOT NULL,\n'
 						u'`hardware_id` INTEGER NOT NULL,\n'
-						u'`firstseen` TIMESTAMP NOT NULL DEFAULT \'0000-00-00 00:00:00\',\n'
-						u'`lastseen` TIMESTAMP NOT NULL DEFAULT \'0000-00-00 00:00:00\',\n'
+						u"`firstseen` TIMESTAMP NOT NULL DEFAULT '1970-01-01 00:00:01',\n"
+						u"`lastseen` TIMESTAMP NOT NULL DEFAULT '1970-01-01 00:00:01',\n"
 						u'`state` TINYINT NOT NULL,\n'.format(
 							name=hardwareConfigTableName,
 							autoincrement=self._sql.AUTOINCREMENT
