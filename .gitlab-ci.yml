@@ -96,5 +96,5 @@ publish:uibpypi:
     - apt -y install python3-all python3-pip dh-python libmysqlclient-dev
     - poetry install
     - poetry run opsi-dev-tool -l info --uib-pypi-publish
-#  only:
-#    - tags
+  only:
+    - tags

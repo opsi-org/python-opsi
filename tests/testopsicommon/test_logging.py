@@ -176,6 +176,7 @@ def test_context_threads(log_stream):
 		def run(self):
 			loop = asyncio.new_event_loop()
 			loop.run_until_complete(self.arun())
+			loop.close()
 		
 		async def handle_client(self, client: str):
 			with log_context({'whoami' : "handler for " + str(client)}):
@@ -220,4 +221,3 @@ def test_context_threads(log_stream):
 			assert "module Client-1" + " "*(CONTEXT_STRING_MIN_LENGTH - 14) + "MyModule.run" in log
 			# to check for corrent handling of async contexti when eventloop is not running in main thread
 			assert "handler for client Client-0" + " "*(CONTEXT_STRING_MIN_LENGTH - 26) + "handling client Client-1" not in log
-
