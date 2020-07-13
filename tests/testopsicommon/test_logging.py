@@ -16,8 +16,8 @@ import asyncio
 import random
 from contextlib import contextmanager
 
-import opsicommon.logging
-from opsicommon.logging import logger, handle_log_exception, secret_filter, ContextSecretFormatter
+from opsicommon.logging import (logger, handle_log_exception, secret_filter,
+			ContextSecretFormatter, log_context, set_format, CONTEXT_STRING_MIN_LENGTH)
 
 try:
 	from OPSI.Logger import Logger as LegacyLogger
@@ -39,7 +39,7 @@ def test_levels(log_stream):
 	with log_stream as stream:
 		#handler.setLevel(logging.SECRET)
 		logger.setLevel(logging.SECRET)
-		opsicommon.logging.set_format("%(message)s")
+		set_format("%(message)s")
 		expected = ""
 		for level in (
 			"secret", "confidential", "trace", "debug2", "debug",
@@ -67,7 +67,7 @@ def test_secret_filter(log_stream):
 	with log_stream as stream:
 		#handler.setLevel(logging.SECRET)
 		logger.setLevel(logging.SECRET)
-		opsicommon.logging.set_format("[%(asctime)s.%(msecs)03d] %(message)s")
+		set_format("[%(asctime)s.%(msecs)03d] %(message)s")
 
 		secret_filter.set_min_length(7)	
 		secret_filter.add_secrets("PASSWORD", "2SHORT", "SECRETSTRING")
@@ -134,13 +134,13 @@ def test_context(log_stream):
 	with log_stream as stream:
 		#handler.setLevel(logging.SECRET)
 		logger.setLevel(logging.SECRET)
-		opsicommon.logging.set_format("%(log_color)s[%(opsilevel)d] [%(asctime)s.%(msecs)03d]%(reset)s [%(contextstring)s] %(message)s   (%(filename)s:%(lineno)d)")
+		set_format("%(log_color)s[%(opsilevel)d] [%(asctime)s.%(msecs)03d]%(reset)s [%(contextstring)s] %(message)s   (%(filename)s:%(lineno)d)")
 
 		logger.info("before setting context")
-		opsicommon.logging.set_context({'whoami' : "first-context"})
-		logger.warning("lorem ipsum")
-		opsicommon.logging.set_context({'whoami' : "second-context"})
-		logger.error("dolor sit amet")
+		with log_context({'whoami' : "first-context"}):
+			logger.warning("lorem ipsum")
+		with log_context({'whoami' : "second-context"}):
+			logger.error("dolor sit amet")
 		stream.seek(0)
 		log = stream.read()
 		assert "first-context" in log
@@ -178,12 +178,11 @@ def test_context_threads(log_stream):
 			loop.run_until_complete(self.arun())
 		
 		async def handle_client(self, client: str):
-			opsicommon.logging.set_context({'whoami' : "handler for " + str(client)})
-			logger.info("handling client %s", client)
-
-			seconds = random.random() * 1
-			await asyncio.sleep(seconds)
-			logger.info("client %s handled after %0.3f seconds", client, seconds)
+			with log_context({'whoami' : "handler for " + str(client)}):
+				logger.info("handling client %s", client)
+				seconds = random.random() * 1
+				await asyncio.sleep(seconds)
+				logger.info("client %s handled after %0.3f seconds", client, seconds)
 
 		async def arun(self):
 			while not self._should_stop:
@@ -200,25 +199,25 @@ def test_context_threads(log_stream):
 			logger.warning("initializing client: %s", client)
 
 		def run(self):
-			opsicommon.logging.set_context({'whoami' : "module " + str(self.client)})
-			logger.info("MyModule.run")
-			common_work()
+			with log_context({'whoami' : "module " + str(self.client)}):
+				logger.info("MyModule.run")
+				common_work()
 
-	opsicommon.logging.set_format("%(contextstring)s %(message)s")
-	opsicommon.logging.set_context({'whoami' : "MAIN"})
-	with log_stream as stream:
-		m = Main()
-		try:
-			m.run()
-		except KeyboardInterrupt:
-			pass
-		for t in threading.enumerate():
-			if hasattr(t, "stop"):
-				t.stop()
-				t.join()
-		stream.seek(0)
-		log = stream.read()
-		assert "module Client-1" + " "*(opsicommon.logging.CONTEXT_STRING_MIN_LENGTH - 14) + "MyModule.run" in log
-		# to check for corrent handling of async contexti when eventloop is not running in main thread
-		assert "handler for client Client-0" + " "*(opsicommon.logging.CONTEXT_STRING_MIN_LENGTH - 26) + "handling client Client-1" not in log
+	set_format("%(contextstring)s %(message)s")
+	with log_context({'whoami' : "MAIN"}):
+		with log_stream as stream:
+			m = Main()
+			try:
+				m.run()
+			except KeyboardInterrupt:
+				pass
+			for t in threading.enumerate():
+				if hasattr(t, "stop"):
+					t.stop()
+					t.join()
+			stream.seek(0)
+			log = stream.read()
+			assert "module Client-1" + " "*(CONTEXT_STRING_MIN_LENGTH - 14) + "MyModule.run" in log
+			# to check for corrent handling of async contexti when eventloop is not running in main thread
+			assert "handler for client Client-0" + " "*(CONTEXT_STRING_MIN_LENGTH - 26) + "handling client Client-1" not in log
 

@@ -12,10 +12,9 @@ import sys
 import os
 import logging
 import colorlog
-import threading
-import asyncio
 import warnings
 import contextvars
+from contextlib import contextmanager
 from typing import Dict, Tuple, Any
 from logging.handlers import WatchedFileHandler, RotatingFileHandler
 
@@ -245,24 +244,7 @@ class ContextFilter(logging.Filter, metaclass=Singleton):
 		:type filter_value: Any
 		"""
 		super().__init__()
-		self._context_lock = threading.Lock()
 		self.filter_value = filter_value
-
-	def set_context(self, new_context : Dict):
-		"""
-		Sets context dictionary for thread/task.
-		
-		This method expects a context dictionary as argument and stores
-		it in the instance context dictionary und a key consisting of
-		first the thread id and then the task id of the currently
-		running thread/task.
-
-		:param new_context: Context dictionary to assign.
-		:type new_context: Dict
-		"""
-		if not isinstance(new_context, dict):
-			return
-		context.set(new_context)
 
 	def get_context(self) -> Dict:
 		"""
@@ -504,40 +486,38 @@ def set_format(fmt : str=DEFAULT_FORMAT, datefmt : str=DATETIME_FORMAT, log_colo
 
 		handler.setFormatter(csformatter)
 
-def set_context(new_context : Dict):
+@contextmanager
+def log_context(new_context : Dict):
 	"""
-	Sets context for current instance.
+	Contextmanager to set a context.
 
-	This method expects a dictionary of Context. It is added to the
-	ContextFilter for the currently active instance.
+	This contextmanager sets context to the given one on entering
+	and resets to the previous dictionary when leaving.
 
-	:param new_context: New value for the own context.
-	:type new_context: Dict
+	:param new_context: new context to set for the section.
+	:type new_context: dict
 	"""
-	for fil in logging.root.filters:
-		if isinstance(fil, ContextFilter):
-			fil.set_context(new_context)
+	try:
+		token = set_context(new_context)
+		yield
+	finally:
+		if token is not None:
+			context.reset(token)
 
-def update_context(key : Any, value : Any=""):
+def set_context(new_context : Dict) -> contextvars.Token:
 	"""
-	Sets partial context for current instance.
+	Sets a context.
 
-	This method expects a dictionary of Context. It is added to the
-	ContextFilter for the currently active instance.
+	This method sets context to the given one and returns a reset-token.
 
-	:param key: key of entry to modify in the context dictionary.
-	:type key: Any
-	:param value: value of entry to modify in the context dictionary.
-	:type value: Any
+	:param new_context: new context to set.
+	:type new_context: dict
+
+	:returns: reset-token for the context (stores previous value).
+	:rtype: contextvars.Token
 	"""
-	for fil in logging.root.filters:
-		if isinstance(fil, ContextFilter):
-			full_context = context.get()
-			if value == "":
-				full_context.pop(key, None)
-			else:
-				full_context.update({key : value})
-			fil.set_context(full_context)
+	if isinstance(new_context, dict):
+		return context.set(new_context)
 
 def set_filter_value(new_value : Any):
 	"""
