@@ -18,8 +18,8 @@ from contextlib import contextmanager
 from typing import Dict, Tuple, Any
 from logging.handlers import WatchedFileHandler, RotatingFileHandler
 
-from .utils import Singleton
-from .loggingconstants import (DEFAULT_COLORED_FORMAT, DEFAULT_FORMAT, DATETIME_FORMAT,
+from ..utils import Singleton
+from .constants import (DEFAULT_COLORED_FORMAT, DEFAULT_FORMAT, DATETIME_FORMAT,
 			CONTEXT_STRING_MIN_LENGTH, LOG_COLORS, SECRET_REPLACEMENT_STRING,
 			LOG_SECRET, LOG_TRACE, LOG_DEBUG, LOG_INFO, LOG_NOTICE, LOG_WARNING,
 			LOG_ERROR, LOG_CRITICAL, LOG_ESSENTIAL, LOG_NONE)
@@ -546,7 +546,28 @@ def set_filter_dict(filter_dict : Dict):
 	"""
 	for fil in logging.root.filters:
 		if isinstance(fil, ContextFilter):
-			fil.filter_dict(filter_dict)
+			fil.set_filter(filter_dict)
+
+def set_filter_parse(filter_string : str):
+	"""
+	Parses string and sets filter dictionary.
+
+	This method expects a string (e.g. from user input).
+	It is parsed to create a dictionary which is set as filter dictionary.
+	The parsing rules are:
+		*	Entries are separated by ','.
+		*	One entry consists of exactly two strings separated by '='.
+		*	The first one is interpreted as key, the second as value.
+	"""
+	filter_dict = {}
+	if filter_string is None or not isinstance(filter_string, str):
+		return
+	parts = filter_string.split(",")
+	for part in parts:
+		entry = part.split("=")
+		if len(entry) == 2:
+			filter_dict[entry[0].strip()] = entry[1].strip()
+	set_filter_dict(filter_dict)
 
 init_logging()
 secret_filter = SecretFilter()
