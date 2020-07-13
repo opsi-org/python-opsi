@@ -12,15 +12,20 @@ import sys
 import os
 import logging
 import colorlog
-import threading
-import asyncio
+import warnings
+import contextvars
+from contextlib import contextmanager
 from typing import Dict, Tuple, Any
 from logging.handlers import WatchedFileHandler, RotatingFileHandler
 
 from .utils import Singleton
-from .loggingconstants import *
+from .loggingconstants import (DEFAULT_COLORED_FORMAT, DEFAULT_FORMAT, DATETIME_FORMAT,
+			CONTEXT_STRING_MIN_LENGTH, LOG_COLORS, SECRET_REPLACEMENT_STRING,
+			LOG_SECRET, LOG_TRACE, LOG_DEBUG, LOG_INFO, LOG_NOTICE, LOG_WARNING,
+			LOG_ERROR, LOG_CRITICAL, LOG_ESSENTIAL, LOG_NONE)
 
 logger = logging.getLogger()
+context = contextvars.ContextVar('context', default={})
 
 def secret(self, msg : str, *args, **kwargs):
 	"""
@@ -123,29 +128,74 @@ try:
 	# Replace OPSI Logger
 	import OPSI.Logger
 	def opsi_logger_factory():
+		warnings.warn(
+			"OPSI.Logger.Logger is deprecated, use opsicommon.logging.logger instead.",
+			DeprecationWarning
+		)
 		return logger
 	OPSI.Logger.Logger = opsi_logger_factory
 
 	def setLogFile(logFile, currentThread=False, object=None):
-		pass
+		warnings.warn(
+			"OPSI.Logger.setLogFile is deprecated, instead add a FileHandler to logger.",
+			DeprecationWarning
+		)
+		handler = logging.FileHandler(logFile)
+		logging.root.addHandler(handler)
 	logger.setLogFile = setLogFile
 
-	def setLogFormat(logFormat):
+	def setLogFormat(logFormat, object=None):
+		warnings.warn(
+			"OPSI.Logger.setLogFormat is deprecated, use opsicommon.logging.set_format instead.",
+			DeprecationWarning
+		)
 		pass
 	logger.setLogFormat = setLogFormat
 
 	def setConfidentialStrings(strings):
+		warnings.warn(
+			"OPSI.Logger.setConfidentialStrings is deprecated, use secret_filter.clear_secrets,\
+			secret_filter.add_secrets instead.", DeprecationWarning
+		)
 		secret_filter.clear_secrets()
 		secret_filter.add_secrets(*strings)
 	logger.setConfidentialStrings = setConfidentialStrings
 
 	def addConfidentialString(string):
+		warnings.warn(
+			"OPSI.Logger.addConfidentialString is deprecated, use secret_filter.add_secrets instead.",
+			DeprecationWarning
+		)
 		secret_filter.add_secrets(string)
 	logger.addConfidentialString = addConfidentialString
 
 	def logException(e, logLevel=logging.CRITICAL):
+		warnings.warn(
+			"OPSI.Logger.logException is deprecated, instead use logger.log with exc_info=True.",
+			DeprecationWarning
+		)
 		logger.log(level=logLevel, msg=e, exc_info=True)
 	logger.logException = logException
+
+	def setConsoleLevel(logLevel, object=None):
+		warnings.warn(
+			"OPSI.Logger.setConsoleLevel is deprecated, instead modify the StreamHandler loglevel.",
+			DeprecationWarning
+		)
+		for handler in logging.root.handlers:
+			if isinstance(handler, logging.StreamHandler) and not isinstance(handler, logging.FileHandler):
+				handler.setLevel(logLevel)
+	logger.setConsoleLevel = setConsoleLevel
+
+	def setFileLevel(logLevel, object=None):
+		warnings.warn(
+			"OPSI.Logger.setFileLevel is deprecated, instead modify the FileHandler loglevel.",
+			DeprecationWarning
+		)
+		for handler in logging.root.handlers:
+			if isinstance(handler, logging.FileHandler):
+				handler.setLevel(logLevel)
+	logger.setFileLevel = setFileLevel
 except ImportError:
 	pass
 
@@ -175,65 +225,26 @@ def handle_log_exception(exc: Exception, record: logging.LogRecord = None, log: 
 	except:
 		pass
 
-class ContextFilter(logging.Filter):
+class ContextFilter(logging.Filter, metaclass=Singleton):
 	"""
 	class ContextFilter
 
 	This class implements a filter which modifies allows to store context
 	for a single thread/task.
 	"""
-	def __init__(self):
+	def __init__(self, filter_value : Any=None):
 		"""
 		ContextFilter Constructor
 
 		This constructor initializes a ContextFilter instance with an
 		empty dictionary as context.
+
+		:param filter_value: Value that must be present in record context
+			in order to accept the LogRecord.
+		:type filter_value: Any
 		"""
 		super().__init__()
-		self._context_lock = threading.Lock()
-		self.context = {}
-
-	def get_identity(self) -> Tuple:
-		"""
-		Creates identifier for task/process.
-
-		This method collects information about the currently active
-		task/thread and returns both the thread_id and the task_id.
-		If any of these are not available, 0 is returned instead.
-
-		:returns: thread_id and task_id of running task/thread
-		:rtype: Tuple
-		"""
-		try:
-			task_id = id(asyncio.Task.current_task())
-		except:
-			task_id = 0
-		try:
-			thread_id = threading.current_thread().ident
-		except:
-			thread_id = 0
-		return thread_id, task_id
-
-	def set_context(self, new_context : Dict):
-		"""
-		Sets context dictionary for thread/task.
-		
-		This method expects a context dictionary as argument and stores
-		it in the instance context dictionary und a key consisting of
-		first the thread id and then the task id of the currently
-		running thread/task.
-
-		:param new_context: Context dictionary to assign.
-		:type new_context: Dict
-		"""
-		if not isinstance(new_context, dict):
-			return
-		self.clean()
-		thread_id, task_id = self.get_identity()
-		with self._context_lock:
-			if self.context.get(thread_id) is None:
-				self.context[thread_id] = {}
-			self.context[thread_id][task_id] = new_context
+		self.filter_value = filter_value
 
 	def get_context(self) -> Dict:
 		"""
@@ -245,36 +256,21 @@ class ContextFilter(logging.Filter):
 		:returns: Context for currently active thread/task.
 		:rtype: Dict
 		"""
-		thread_id, task_id = self.get_identity()
-		if self.context.get(thread_id) is None or self.context[thread_id].get(task_id) is None:
-			return {}	#DEFAULT_CONTEXT
-		return self.context[thread_id][task_id]
+		return context.get()
 
-	def clean(self):
+	def set_filter_value(self, filter_value : Any=None):
 		"""
-		Cleans deprecated context entries.
+		Sets a new filter value.
 
-		This method iterates over the list of stored contexti.
-		If the associated thread id and task id are not active any more,
-		the entry is deleted. This makes use of a mutex.
+		This method expectes a filter value of any type.
+		Records are only allowed to pass if their context contains
+		this specific value. None means, every record can pass.
+
+		:param filter_value: Value that must be present in record context
+			in order to accept the LogRecord.
+		:type filter_value: Any
 		"""
-		with self._context_lock:
-			try:
-				all_tasks = [id(x) for x in asyncio.Task.all_tasks() if not x.done()]
-			except:
-				all_tasks = []
-			all_threads = [x.ident for x in threading.enumerate()]
-			#print('\033[93m' + str(self.context) + '\033[0m')
-			for thread_id in list(self.context.keys()):
-				if thread_id not in all_threads:
-					#print("DEBUG: removing from self.context (", thread_id, "- ALL", ",", self.context.pop(thread_id, None), ")")
-					self.context.pop(thread_id, None)
-				elif thread_id == self.get_identity()[0]:		#only cleanup own thread
-					for task_id in list(self.context[thread_id].keys()):
-						if not task_id == 0 and task_id not in all_tasks:
-							#print("DEBUG: removing from self.context (", thread_id, "-", task_id, ",", self.context[thread_id].pop(task_id, None), ")")
-							self.context[thread_id].pop(task_id, None)
-
+		self.filter_value = filter_value
 
 	def filter(self, record : logging.LogRecord) -> bool:
 		"""
@@ -289,12 +285,10 @@ class ContextFilter(logging.Filter):
 		:returns: Always true (if the LogRecord should be kept)
 		:rtype: bool
 		"""
-		my_context = self.get_context()
-		#record.__dict__.update(my_context)			#see logging.makeLogRecord (adapted to reduce copy effort)
-		#for key in my_context.keys():
-		#	 exec("record."+key + " = my_context['" + key + "']")
-		record.context = my_context
-		return True
+		record.context = context.get()
+		if self.filter_value is None or self.filter_value in context.values():
+			return True
+		return False
 
 class ContextSecretFormatter(logging.Formatter):
 	"""
@@ -336,15 +330,18 @@ class ContextSecretFormatter(logging.Formatter):
 		:returns: The formatted log string.
 		:rytpe: str
 		"""
-		#if isinstance(self.orig_formatter, colorlog.colorlog.ColoredFormatter):
-		#	record = colorlog.colorlog.ColoredRecord(record)
 		if hasattr(record, "context"):
-			context = record.context
-			if isinstance(context, dict):
-				values = context.values()
-				record.contextstring = ",".join(values)
+			current_context = record.context
+			if isinstance(current_context, dict):
+				values = current_context.values()
+				record.contextstring = ",".join([str(x) for x in values])
+			else:
+				record.contextstring = ""
 		else:
 			record.contextstring = ""
+		length = len(record.contextstring)
+		if length < CONTEXT_STRING_MIN_LENGTH:
+			record.contextstring += " "*(CONTEXT_STRING_MIN_LENGTH - length)
 		msg = self.orig_formatter.format(record)
 		if record.levelno != logging.SECRET:
 			for secret in secret_filter.secrets:
@@ -456,6 +453,7 @@ def init_logging():
 	logging.root.addFilter(ContextFilter())
 	if len(logging.root.handlers) == 0:
 		handler = logging.StreamHandler(stream=sys.stderr)
+		handler.setLevel(logging.NOTICE)
 		logging.root.addHandler(handler)
 	set_format()
 
@@ -488,20 +486,54 @@ def set_format(fmt : str=DEFAULT_FORMAT, datefmt : str=DATETIME_FORMAT, log_colo
 
 		handler.setFormatter(csformatter)
 
-def set_context(new_context : Dict):
+@contextmanager
+def log_context(new_context : Dict):
 	"""
-	Sets context for current thread/task.
+	Contextmanager to set a context.
 
-	This method expects a dictionary of Context. It is added to the
-	Context dictionary of the ContextFilter under a key corresponding
-	to the thread id and task id of the currently active thread/task.
+	This contextmanager sets context to the given one on entering
+	and resets to the previous dictionary when leaving.
 
-	:param new_context: New value for the own context.
-	:type new_context: Dict
+	:param new_context: new context to set for the section.
+	:type new_context: dict
+	"""
+	try:
+		token = set_context(new_context)
+		yield
+	finally:
+		if token is not None:
+			context.reset(token)
+
+def set_context(new_context : Dict) -> contextvars.Token:
+	"""
+	Sets a context.
+
+	This method sets context to the given one and returns a reset-token.
+
+	:param new_context: new context to set.
+	:type new_context: dict
+
+	:returns: reset-token for the context (stores previous value).
+	:rtype: contextvars.Token
+	"""
+	if isinstance(new_context, dict):
+		return context.set(new_context)
+
+def set_filter_value(new_value : Any):
+	"""
+	Sets a new filter value.
+
+	This method expectes a filter value of any type.
+	Records are only allowed to pass if their context contains
+	this specific value. None means, every record can pass.
+
+	:param filter_value: Value that must be present in record context
+		in order to accept the LogRecord.
+	:type filter_value: Any
 	"""
 	for fil in logging.root.filters:
 		if isinstance(fil, ContextFilter):
-			fil.set_context(new_context)
+			fil.set_filter_value(new_value)
 
 init_logging()
 secret_filter = SecretFilter()

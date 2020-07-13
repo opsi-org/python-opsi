@@ -172,7 +172,7 @@ class ThreadPool:
 			num -= 1
 
 	def addJob(self, function, callback=None, *args, **kwargs):
-		logger.debug(u"New job added: {0}({1}, {2})", callback, args, kwargs)
+		logger.debug(u"New job added: %s(%s, %s)", callback, args, kwargs)
 		if not self.started:
 			raise ThreadPoolException(u"Pool is not running.")
 		self.jobQueue.put((function, callback, args, kwargs))
@@ -209,7 +209,7 @@ class Worker(threading.Thread):
 						success = True
 						errors = None
 					except Exception as error:
-						logger.debug(u"Problem running function: {0!r}", error)
+						logger.debug(u"Problem running function: '%s'", error)
 						result = None
 						errors = error
 

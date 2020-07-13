@@ -129,7 +129,7 @@ BackendManager from default paths.
 
 	if deleteProductProperties:
 		for productProperties in chunk(deleteProductProperties, _CHUNK_SIZE):
-			LOGGER.debug(u"Deleting product properties: {0!r}", productProperties)
+			LOGGER.debug(u"Deleting product properties: '%s'", productProperties)
 			backend.productProperty_deleteObjects(productProperties)  # pylint: disable=maybe-no-member
 
 	LOGGER.notice(u"Cleaning up product property states")
@@ -142,7 +142,7 @@ BackendManager from default paths.
 
 	if deleteProductPropertyStates:
 		for productPropertyStates in chunk(deleteProductPropertyStates, _CHUNK_SIZE):
-			LOGGER.debug(u"Deleting product property states: {0!r}", productPropertyStates)
+			LOGGER.debug(u"Deleting product property states: '%s'", productPropertyStates)
 			backend.productPropertyState_deleteObjects(productPropertyStates)  # pylint: disable=maybe-no-member
 
 	for depot in backend.host_getObjects(type='OpsiDepotserver'):  # pylint: disable=maybe-no-member
@@ -207,13 +207,13 @@ BackendManager from default paths.
 
 		if deleteProductPropertyStates:
 			for productPropertyStates in chunk(deleteProductPropertyStates, _CHUNK_SIZE):
-				LOGGER.debug(u"Deleting product property states: {0!r}", productPropertyStates)
+				LOGGER.debug(u"Deleting product property states: '%s'", productPropertyStates)
 				backend.productPropertyState_deleteObjects(productPropertyStates)  # pylint: disable=maybe-no-member
 			del deleteProductPropertyStates
 
 		if updateProductPropertyStates:
 			for productPropertyStates in chunk(updateProductPropertyStates, _CHUNK_SIZE):
-				LOGGER.debug(u"Updating product property states: {0!r}", productPropertyStates)
+				LOGGER.debug(u"Updating product property states: '%s'", productPropertyStates)
 				backend.productPropertyState_updateObjects(productPropertyStates)  # pylint: disable=maybe-no-member
 			del updateProductPropertyStates
 
@@ -260,7 +260,7 @@ used MySQL backend.
 				deleteIds.append(res['product_property_id'])
 
 	for ID in deleteIds:
-		LOGGER.notice(u"Deleting PropertyValue id: {0}", ID)
+		LOGGER.notice(u"Deleting PropertyValue id: %s", ID)
 		mysql.execute("DELETE FROM `PRODUCT_PROPERTY_VALUE` where "
 			"`product_property_id` = '{0}'".format(ID)
 		)
@@ -315,11 +315,11 @@ def cleanUpProducts(backend):
 	deleteProducts = []
 	for product in backend.product_getObjects():
 		if product.getIdent(returnType='unicode') not in productIdents:
-			LOGGER.info(u"Marking unreferenced product {0} for deletion", product)
+			LOGGER.info(u"Marking unreferenced product %s for deletion", product)
 			deleteProducts.append(product)
 
 	for products in chunk(deleteProducts, _CHUNK_SIZE):
-		LOGGER.debug(u"Deleting products: {0!r}", products)
+		LOGGER.debug(u"Deleting products: '%s'", products)
 		backend.product_deleteObjects(products)
 
 
@@ -375,21 +375,21 @@ is either *not_installed* without an action request set.
 	for productOnClient in backend.productOnClient_getObjects():
 		if productOnClient.clientId not in clientIds:
 			LOGGER.info(
-				u"Marking productOnClient {0} for deletion, client "
+				u"Marking productOnClient %s for deletion, client "
 				u"doesn't exists", productOnClient
 			)
 			deleteProductOnClients.append(productOnClient)
 		elif (productOnClient.installationStatus == u'not_installed'
 				and productOnClient.actionRequest == u'none'):
 			LOGGER.info(
-				u"Marking productOnClient {0} for "
+				u"Marking productOnClient %s for "
 				u"deletion", productOnClient
 			)
 			deleteProductOnClients.append(productOnClient)
 
 	if deleteProductOnClients:
 		for productOnClients in chunk(deleteProductOnClients, _CHUNK_SIZE):
-			LOGGER.debug(u"Deleting products on clients: {0!r}", productOnClients)
+			LOGGER.debug(u"Deleting products on clients: '%s'", productOnClients)
 			backend.productOnClient_deleteObjects(productOnClients)
 
 	deleteProductOnClients = []
@@ -397,14 +397,14 @@ is either *not_installed* without an action request set.
 	for productOnClient in backend.productOnClient_getObjects():
 		if productOnClient.productId not in productIds:
 			LOGGER.info(
-				u"Marking productOnClient {0} for "
+				u"Marking productOnClient %s for "
 				u"deletion", productOnClient
 			)
 			deleteProductOnClients.append(productOnClient)
 
 	if deleteProductOnClients:
 		for productOnClients in chunk(deleteProductOnClients, _CHUNK_SIZE):
-			LOGGER.debug(u"Deleting products on clients: {0!r}", productOnClients)
+			LOGGER.debug(u"Deleting products on clients: '%s'", productOnClients)
 			backend.productOnClient_deleteObjects(productOnClients)
 
 
@@ -431,7 +431,7 @@ def cleanUpConfigStates(backend):
 
 	if deleteConfigStates:
 		for configStates in chunk(deleteConfigStates, _CHUNK_SIZE):
-			LOGGER.debug(u"Deleting config states: {0!r}", configStates)
+			LOGGER.debug(u"Deleting config states: '%s'", configStates)
 			backend.configState_deleteObjects(configStates)
 
 
@@ -465,7 +465,7 @@ def cleanUpAuditSoftwareOnClients(backend):
 	for aso in backend.auditSoftwareOnClient_getHashes():
 		ident = '%(name)s;%(version)s;%(subVersion)s;%(language)s;%(architecture)s' % aso
 		if ident not in idents:
-			LOGGER.info(u"Deleting audit software on client {0!r}", ident)
+			LOGGER.info(u"Deleting audit software on client '%s'", ident)
 			backend.auditSoftwareOnClient_delete(aso['name'], aso['version'],
 				aso['subVersion'], aso['language'], aso['architecture'],
 				aso['clientId']

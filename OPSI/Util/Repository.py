@@ -326,11 +326,11 @@ class Repository:
 					if count > 0:
 						usage = float(usage) / float(count)
 						logger.debug(
-							u"Current network usage {:.2f} kByte/s, last measured network bandwidth {:.2f} kByte/s, usage: {:.5f}, dynamic limit: {:.2f} kByte/s",
+							u"Current network usage {:.2f} kByte/s, last measured network bandwidth {:.2f} kByte/s, usage: {:.5f}, dynamic limit: {:.2f} kByte/s".format(
 							float(totalNetworkUsage) / 1024,
 							float(self._networkBandwidth) / 1024,
 							usage,
-							float(bwlimit) / 1024
+							float(bwlimit) / 1024)
 						)
 
 						if index > 1:
@@ -354,9 +354,9 @@ class Repository:
 										logger.info(u"Other traffic detected, dynamically limiting bandwidth to minimum of %0.2f kByte/s", (float(bwlimit) / 1024))
 									else:
 										logger.info(
-											u"Other traffic detected, dynamically limiting bandwidth to {:.1f}% of last average to {:.2f} kByte/s",
+											u"Other traffic detected, dynamically limiting bandwidth to {:.1f}% of last average to {:.2f} kByte/s".format(
 											float(self._dynamicBandwidthLimitRate) * 100,
-											float(bwlimit) / 1024
+											float(bwlimit) / 1024)
 										)
 									self._fireEvent('dynamicBandwidthLimitChanged', self._dynamicBandwidthLimit)
 								self._networkUsageData = []
@@ -371,10 +371,10 @@ class Repository:
 				# Too fast
 				factor = float(speed) / float(bwlimit)
 				logger.debug(
-					u"Transfer speed {:.2f} kByte/s is to fast, limit: {:.2f} kByte/s, factor: {:.5f}",
+					u"Transfer speed {:.2f} kByte/s is to fast, limit: {:.2f} kByte/s, factor: {:.5f}".format(
 					(speed / 1024),
 					(bwlimit / 1024),
-					factor
+					factor)
 				)
 
 				if factor < 1.001:
@@ -388,10 +388,10 @@ class Repository:
 				# Too slow
 				factor = float(bwlimit) / float(speed)
 				logger.debug(
-					u"Transfer speed {:.2f} kByte/s is to slow, limit: {:.2f} kByte/s, factor: {:.5f}",
+					u"Transfer speed {:.2f} kByte/s is to slow, limit: {:.2f} kByte/s, factor: {:.5f}".format(
 					(speed / 1024),
 					(bwlimit / 1024),
-					factor
+					factor)
 				)
 
 				if factor < 1.001:
@@ -422,11 +422,11 @@ class Repository:
 				self._bufferSize = 1
 
 			logger.debug(
-				u"Transfer speed {:.2f} kByte/s, limit: {:.2f} kByte/s, sleep time: {:.6f}, buffer size: {}",
+				u"Transfer speed {:.2f} kByte/s, limit: {:.2f} kByte/s, sleep time: {:.6f}, buffer size: {}".format(
 				speed / 1024,
 				bwlimit / 1024,
 				self._bandwidthSleepTime,
-				self._bufferSize
+				self._bufferSize)
 			)
 		else:
 			self._bandwidthSleepTime = 0.000001
@@ -451,12 +451,12 @@ class Repository:
 			logger.debug('Filesize is: %s', fileSize)
 
 			while buf and (bytes < 0 or self._bytesTransfered < bytes):
-				logger.debug2("self._bufferSize: {:d}", self._bufferSize)
-				logger.debug2("self._bytesTransfered: {:d}", self._bytesTransfered)
-				logger.debug2("bytes: {:d}", bytes)
+				logger.debug2("self._bufferSize: %d", self._bufferSize)
+				logger.debug2("self._bytesTransfered: %d", self._bytesTransfered)
+				logger.debug2("bytes: %d", bytes)
 
 				remainingBytes = fileSize - self._bytesTransfered
-				logger.debug2("remainingBytes: {:d}", remainingBytes)
+				logger.debug2("remainingBytes: %d", remainingBytes)
 				if 0 < remainingBytes < self._bufferSize:
 					buf = src.read(remainingBytes)
 				elif remainingBytes > 0:
@@ -489,10 +489,10 @@ class Repository:
 			if transferTime == 0:
 				transferTime = 0.0000001
 			logger.info(
-				u"Transfered {:.2f} kByte in {:.2f} minutes, average speed was {:.2f} kByte/s",
+				u"Transfered {:.2f} kByte in {:.2f} minutes, average speed was {:.2f} kByte/s".format(
 				float(self._bytesTransfered) / 1024,
 				float(transferTime) / 60,
-				(float(self._bytesTransfered) / transferTime) / 1024
+				(float(self._bytesTransfered) / transferTime) / 1024)
 			)
 			return self._bytesTransfered
 		except Exception as error:
@@ -1426,7 +1426,7 @@ class DepotToLocalDirectorySychronizer:
 			try:
 				self._linkFiles = {}
 				logger.notice(
-					u"Syncing product {} of depot {} with local directory {}",
+					u"Syncing product %s of depot %s with local directory %s",
 					self._productId,
 					self._sourceDepot,
 					self._destinationDirectory

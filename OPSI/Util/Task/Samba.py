@@ -175,7 +175,7 @@ def _processConfig(lines):
 		try:
 			workbenchDirectory = getWorkbenchDirectory()
 		except Exception as error:
-			logger.warning("Failed to read the location of the workbench: {0}", error)
+			logger.warning("Failed to read the location of the workbench: %s", error)
 			workbenchDirectory = None
 
 		if workbenchDirectory:
@@ -185,9 +185,9 @@ def _processConfig(lines):
 
 			try:
 				os.mkdir(workbenchDirectory)
-				logger.notice(u"Created missing workbench directory {0}", workbenchDirectory)
+				logger.notice(u"Created missing workbench directory %s", workbenchDirectory)
 			except OSError as mkdirErr:
-				logger.debug2(u"Did not create workbench {}: {!r}", workbenchDirectory, mkdirErr)
+				logger.debug2(u"Did not create workbench %s: '%s", workbenchDirectory, mkdirErr)
 
 			logger.notice(u"   Adding share [opsi_workbench]")
 			newlines.append(u"[opsi_workbench]\n")
@@ -247,7 +247,7 @@ def isSamba4():
 			if line.lower().startswith("version"):
 				samba4 = line.split()[1].startswith('4')
 	except Exception as error:
-		logger.debug('Getting Samba Version failed due to: {0}', error)
+		logger.debug('Getting Samba Version failed due to: %s', error)
 
 	return samba4
 

@@ -57,12 +57,12 @@ please pass them here. If this is None defaults will be used.
 			'sys': sys,
 		}
 
-	LOGGER.info(u"Loading backend config '{0}'", backendConfigFile)
+	LOGGER.info(u"Loading backend config '%s'", backendConfigFile)
 	with open(backendConfigFile) as configFile:
 		exec(configFile.read(), customGlobals)
 
 	config = customGlobals['config']
-	LOGGER.debug(u"Current backend config: {!r}", config)
+	LOGGER.debug(u"Current backend config: %s", config)
 
 	return config
 

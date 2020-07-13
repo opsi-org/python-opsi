@@ -33,8 +33,8 @@ def log_stream():
 def test_simple_colored(log_stream):
 	with log_stream as stream:
 		opsicommon.logging.set_format(MY_FORMAT)
-		opsicommon.logging.set_context({'firstcontext' : 'asdf', 'secondcontext' : 'jkl'})
-		logger.error("test message")
+		with opsicommon.logging.log_context({'firstcontext' : 'asdf', 'secondcontext' : 'jkl'}):
+			logger.error("test message")
 		stream.seek(0)
 		log = stream.read()
 		assert "asdf" in log and "jkl" in log
@@ -42,13 +42,13 @@ def test_simple_colored(log_stream):
 def test_simple_plain(log_stream):
 	with log_stream as stream:
 		opsicommon.logging.set_format(OTHER_FORMAT)
-		opsicommon.logging.set_context({'firstcontext' : 'asdf', 'secondcontext' : 'jkl'})
-		logger.error("test message")
+		with opsicommon.logging.log_context({'firstcontext' : 'asdf', 'secondcontext' : 'jkl'}):
+			logger.error("test message")
 		stream.seek(0)
 		log = stream.read()
 		assert "asdf" in log and "jkl" in log
 
-def test_contexts(log_stream):
+def test_set_context(log_stream):
 	with log_stream as stream:
 		opsicommon.logging.set_format(MY_FORMAT)
 		opsicommon.logging.set_context({'firstcontext' : 'asdf', 'secondcontext' : 'jkl'})

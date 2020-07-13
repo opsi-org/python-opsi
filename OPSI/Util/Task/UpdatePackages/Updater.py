@@ -168,15 +168,15 @@ class OpsiPackageUpdater:
 
 				newPackages = []
 				for availablePackage in downloadablePackages:
-					logger.info(u"Testing if download/installation of package '{0}' is needed", availablePackage["filename"])
+					logger.info(u"Testing if download/installation of package '%s' is needed", availablePackage["filename"])
 					productInstalled = False
 					updateAvailable = False
 					for product in installedProducts:
 						if product['productId'] == availablePackage['productId']:
-							logger.debug(u"Product '{0}' is installed", availablePackage['productId'])
+							logger.debug(u"Product '%s' is installed", availablePackage['productId'])
 							productInstalled = True
 							logger.debug(
-								u"Available product version is '{0}', installed product version is '{1}-{2}'",
+								u"Available product version is '%s', installed product version is '{1}-{2}'",
 								availablePackage['version'], product['productVersion'], product['packageVersion']
 							)
 							updateAvailable = compareVersions(availablePackage['version'], '>', '%s-%s' % (product['productVersion'], product['packageVersion']))
@@ -237,7 +237,7 @@ class OpsiPackageUpdater:
 							availablePackage["filename"], localPackageFound['filename']
 						)
 					else:
-						logger.info(u"{0} - download of package is required: local package not found", availablePackage["filename"])
+						logger.info(u"%s - download of package is required: local package not found", availablePackage["filename"])
 
 					packageFile = os.path.join(self.config["packageDir"], availablePackage["filename"])
 					zsynced = False
@@ -496,7 +496,7 @@ class OpsiPackageUpdater:
 				else:
 					logger.error("Product '%s' not found in repository!", product)
 					possibleProductIDs = sorted(set(pac["productId"] for pac in products))
-					logger.notice("Possible products are: {0}", ', '.join(possibleProductIDs))
+					logger.notice("Possible products are: %s", ', '.join(possibleProductIDs))
 					raise ValueError(u"You have searched for a product, which was not found in configured repository: '%s'" % product)
 
 			if newProductList:
@@ -729,7 +729,7 @@ class OpsiPackageUpdater:
 								speed = 8 * int(((completed - lastCompleted) / (now - lastTime)) / 1024)
 								lastTime = now
 								lastCompleted = completed
-							logger.debug(u'Downloading {0}: {1:d}% ({2:d} kbit/s)', url, percent, speed)
+							logger.debug(u'Downloading {0}: {1:d}% ({2:d} kbit/s)'.format(url, percent, speed))
 					except Exception:
 						pass
 
@@ -748,7 +748,7 @@ class OpsiPackageUpdater:
 		try:
 			setRights(self.config["packageDir"])
 		except Exception as error:
-			logger.warning(u"Failed to set rights on directory '{0}': {1}", self.config["packageDir"], error)
+			logger.warning(u"Failed to set rights on directory '%s': %s", self.config["packageDir"], error)
 
 		for filename in os.listdir(self.config["packageDir"]):
 			path = os.path.join(self.config["packageDir"], filename)
@@ -761,7 +761,7 @@ class OpsiPackageUpdater:
 			try:
 				productId, version = parseFilename(filename)
 			except Exception as error:
-				logger.debug("Parsing {0!r} failed: {1!r}", filename, error)
+				logger.debug("Parsing '%s' failed: '%s'", filename, error)
 				continue
 
 			if productId == newPackage["productId"] and version != newPackage["version"]:
@@ -849,7 +849,7 @@ class OpsiPackageUpdater:
 				req = urllib.request.Request(url, None, self.httpHeaders)
 				response = opener.open(req)
 				content = response.read()
-				logger.debug("content: {!r}", content)
+				logger.debug("content: '%s'", content)
 				content = content.decode()  # to str
 
 				htmlParser = LinksExtractor()
@@ -890,10 +890,10 @@ class OpsiPackageUpdater:
 						}
 						if depotConnection:
 							packageInfo["md5sum"] = depotConnection.getMD5Sum(u'%s/%s' % (depotRepositoryPath, link))
-						logger.debug(u"Repository package info: {0}", packageInfo)
+						logger.debug(u"Repository package info: %s", packageInfo)
 						packages.append(packageInfo)
 					except Exception as error:
-						logger.error(u"Failed to process link {!r}: {}", link, error)
+						logger.error(u"Failed to process link '%s': %s", link, error)
 
 				if not depotConnection:
 					for link in htmlParser.getLinks():
@@ -920,15 +920,15 @@ class OpsiPackageUpdater:
 										if match:
 											foundMd5sum = match.group(1)
 											packages[i]["md5sum"] = foundMd5sum
-											logger.debug(u"Got md5sum for package {0!r}: {1}", filename, foundMd5sum)
+											logger.debug(u"Got md5sum for package %s: %s", filename, foundMd5sum)
 									elif isZsync:
 										zsyncFile = url + '/' + link
 										packages[i]["zsyncFile"] = zsyncFile
-										logger.debug(u"Found zsync file for package {0!r}: {1}", filename, zsyncFile)
+										logger.debug(u"Found zsync file for package '%s': %s", filename, zsyncFile)
 
 									break
 						except Exception as error:
-							logger.error(u"Failed to process link {!r}: {}", link, error)
+							logger.error(u"Failed to process link '%s': %s", link, error)
 			except Exception as error:
 				logger.logException(error, LOG_DEBUG)
 				self.errors.append(error)
@@ -1002,11 +1002,11 @@ _version_, _packageFile_ (complete path), _filename_ and _md5sum_.
 			productId, version = parseFilename(filename)
 			checkSumFile = packageFile + '.md5'
 			if not forceChecksumCalculation and os.path.exists(checkSumFile):
-				logger.debug("Reading existing checksum from {0}", checkSumFile)
+				logger.debug("Reading existing checksum from %s", checkSumFile)
 				with open(checkSumFile) as hashFile:
 					packageMd5 = hashFile.read().strip()
 			else:
-				logger.debug("Calculating checksum for {0}", packageFile)
+				logger.debug("Calculating checksum for %s", packageFile)
 				packageMd5 = md5sum(packageFile)
 
 			packageInfo = {
