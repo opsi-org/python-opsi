@@ -232,19 +232,20 @@ class ContextFilter(logging.Filter, metaclass=Singleton):
 	This class implements a filter which modifies allows to store context
 	for a single thread/task.
 	"""
-	def __init__(self, filter_value : Any=None):
+	def __init__(self, filter_dict : Dict=None):
 		"""
 		ContextFilter Constructor
 
 		This constructor initializes a ContextFilter instance with an
 		empty dictionary as context.
 
-		:param filter_value: Value that must be present in record context
+		:param filter_dict: Dictionary that must be present in record context
 			in order to accept the LogRecord.
-		:type filter_value: Any
+		:type filter_dict: Dict
 		"""
 		super().__init__()
-		self.filter_value = filter_value
+		self.filter_dict = {}
+		self.set_filter(filter_dict)
 
 	def get_context(self) -> Dict:
 		"""
@@ -258,19 +259,27 @@ class ContextFilter(logging.Filter, metaclass=Singleton):
 		"""
 		return context.get()
 
-	def set_filter_value(self, filter_value : Any=None):
+	def set_filter(self, filter_dict : Dict=None):
 		"""
-		Sets a new filter value.
+		Sets a new filter dictionary.
 
-		This method expectes a filter value of any type.
-		Records are only allowed to pass if their context contains
-		this specific value. None means, every record can pass.
+		This method expectes a filter dictionary.
+		Records are only allowed to pass if their context has a matching
+		key-value entry. None means, every record can pass.
 
-		:param filter_value: Value that must be present in record context
+		:param filter_dict: Value that must be present in record context
 			in order to accept the LogRecord.
-		:type filter_value: Any
+		:type filter_dict: Dict
 		"""
-		self.filter_value = filter_value
+		self.filter_dict = {}
+		if filter_dict is None or not isinstance(filter_dict, dict):
+			return
+		for key in filter_dict:
+			value = filter_dict.get(key)
+			if isinstance(value, list):
+				self.filter_dict[key] = value
+			else:
+				self.filter_dict[key] = [value]
 
 	def filter(self, record : logging.LogRecord) -> bool:
 		"""
@@ -278,17 +287,21 @@ class ContextFilter(logging.Filter, metaclass=Singleton):
 
 		This method is called by Logger._log and modifies LogRecords.
 		It adds the context stored for the current thread/task to the namespace.
+		If the records context conforms to the filter, it is passed on.
 
-		:param record: LogRecord to add context to.
+		:param record: LogRecord to add context to and to filter.
 		:type record: LogRecord
 
-		:returns: Always true (if the LogRecord should be kept)
+		:returns: True, if the record conforms to the filter rules.
 		:rtype: bool
 		"""
 		record.context = context.get()
-		if self.filter_value is None or self.filter_value in context.values():
-			return True
-		return False
+		for filter_key in self.filter_dict:
+			record_value = record.context.get(filter_key)
+			#skip if key not present or value not in filter values
+			if record_value is None or record_value not in self.filter_dict.get(filter_key):
+				return False
+		return True
 
 class ContextSecretFormatter(logging.Formatter):
 	"""
@@ -519,21 +532,21 @@ def set_context(new_context : Dict) -> contextvars.Token:
 	if isinstance(new_context, dict):
 		return context.set(new_context)
 
-def set_filter_value(new_value : Any):
+def set_filter_dict(filter_dict : Dict):
 	"""
-	Sets a new filter value.
+	Sets a new filter dictionary.
 
-	This method expectes a filter value of any type.
+	This method expectes a filter dictionary.
 	Records are only allowed to pass if their context contains
-	this specific value. None means, every record can pass.
+	this specific dictionary. None means, every record can pass.
 
-	:param filter_value: Value that must be present in record context
-		in order to accept the LogRecord.
-	:type filter_value: Any
+	:param filter_dict: Dictionary that must be present in record
+		context in order to accept the LogRecord.
+	:type filter_dict: Dict
 	"""
 	for fil in logging.root.filters:
 		if isinstance(fil, ContextFilter):
-			fil.set_filter_value(new_value)
+			fil.filter_dict(filter_dict)
 
 init_logging()
 secret_filter = SecretFilter()
