@@ -18,8 +18,8 @@ from contextlib import contextmanager
 from typing import Dict, Tuple, Any
 from logging.handlers import WatchedFileHandler, RotatingFileHandler
 
-from .utils import Singleton
-from .loggingconstants import (DEFAULT_COLORED_FORMAT, DEFAULT_FORMAT, DATETIME_FORMAT,
+from ..utils import Singleton
+from .constants import (DEFAULT_COLORED_FORMAT, DEFAULT_FORMAT, DATETIME_FORMAT,
 			CONTEXT_STRING_MIN_LENGTH, LOG_COLORS, SECRET_REPLACEMENT_STRING,
 			LOG_SECRET, LOG_TRACE, LOG_DEBUG, LOG_INFO, LOG_NOTICE, LOG_WARNING,
 			LOG_ERROR, LOG_CRITICAL, LOG_ESSENTIAL, LOG_NONE)
@@ -232,19 +232,20 @@ class ContextFilter(logging.Filter, metaclass=Singleton):
 	This class implements a filter which modifies allows to store context
 	for a single thread/task.
 	"""
-	def __init__(self, filter_value : Any=None):
+	def __init__(self, filter_dict : Dict=None):
 		"""
 		ContextFilter Constructor
 
 		This constructor initializes a ContextFilter instance with an
 		empty dictionary as context.
 
-		:param filter_value: Value that must be present in record context
+		:param filter_dict: Dictionary that must be present in record context
 			in order to accept the LogRecord.
-		:type filter_value: Any
+		:type filter_dict: Dict
 		"""
 		super().__init__()
-		self.filter_value = filter_value
+		self.filter_dict = {}
+		self.set_filter(filter_dict)
 
 	def get_context(self) -> Dict:
 		"""
@@ -258,19 +259,30 @@ class ContextFilter(logging.Filter, metaclass=Singleton):
 		"""
 		return context.get()
 
-	def set_filter_value(self, filter_value : Any=None):
+	def set_filter(self, filter_dict : Dict=None):
 		"""
-		Sets a new filter value.
+		Sets a new filter dictionary.
 
-		This method expectes a filter value of any type.
-		Records are only allowed to pass if their context contains
-		this specific value. None means, every record can pass.
+		This method expectes a filter dictionary.
+		Records are only allowed to pass if their context has a matching
+		key-value entry. None means, every record can pass.
 
-		:param filter_value: Value that must be present in record context
+		:param filter_dict: Value that must be present in record context
 			in order to accept the LogRecord.
-		:type filter_value: Any
+		:type filter_dict: Dict
 		"""
-		self.filter_value = filter_value
+		if filter_dict is None:
+			self.filter_dict = {}
+			return
+		if not isinstance(filter_dict, dict):
+			raise ValueError("filter_dict must be a python dictionary")
+
+		self.filter_dict = {}
+		for (key, value) in filter_dict.items():
+			if isinstance(value, list):
+				self.filter_dict[key] = value
+			else:
+				self.filter_dict[key] = [value]
 
 	def filter(self, record : logging.LogRecord) -> bool:
 		"""
@@ -278,17 +290,21 @@ class ContextFilter(logging.Filter, metaclass=Singleton):
 
 		This method is called by Logger._log and modifies LogRecords.
 		It adds the context stored for the current thread/task to the namespace.
+		If the records context conforms to the filter, it is passed on.
 
-		:param record: LogRecord to add context to.
+		:param record: LogRecord to add context to and to filter.
 		:type record: LogRecord
 
-		:returns: Always true (if the LogRecord should be kept)
+		:returns: True, if the record conforms to the filter rules.
 		:rtype: bool
 		"""
 		record.context = context.get()
-		if self.filter_value is None or self.filter_value in context.values():
-			return True
-		return False
+		for (filter_key, filter_value) in self.filter_dict.items():
+			record_value = record.context.get(filter_key)
+			#skip if key not present or value not in filter values
+			if record_value is None or record_value not in filter_value:
+				return False
+		return True
 
 class ContextSecretFormatter(logging.Formatter):
 	"""
@@ -519,21 +535,49 @@ def set_context(new_context : Dict) -> contextvars.Token:
 	if isinstance(new_context, dict):
 		return context.set(new_context)
 
-def set_filter_value(new_value : Any):
+def set_filter(filter_dict : Dict):
 	"""
-	Sets a new filter value.
+	Sets a new filter dictionary.
 
-	This method expectes a filter value of any type.
+	This method expectes a filter dictionary.
 	Records are only allowed to pass if their context contains
-	this specific value. None means, every record can pass.
+	this specific dictionary. None means, every record can pass.
 
-	:param filter_value: Value that must be present in record context
-		in order to accept the LogRecord.
-	:type filter_value: Any
+	:param filter_dict: Dictionary that must be present in record
+		context in order to accept the LogRecord.
+	:type filter_dict: Dict
 	"""
 	for fil in logging.root.filters:
 		if isinstance(fil, ContextFilter):
-			fil.set_filter_value(new_value)
+			fil.set_filter(filter_dict)
+
+def set_filter_from_string(filter_string : str):
+	"""
+	Parses string and sets filter dictionary.
+
+	This method expects a string (e.g. from user input).
+	It is parsed to create a dictionary which is set as filter dictionary.
+	The parsing rules are:
+		*	Entries are separated by ';'.
+		*	One entry consists of exactly two strings separated by '='.
+		*	The first one is interpreted as key, the second as value(s).
+		*	Values of the same key are separated by ','.
+	"""
+	filter_dict = {}
+	if filter_string is None:
+		set_filter(None)
+		return
+	if isinstance(filter_string, str):
+		filter_string = filter_string.split(";")
+	if not isinstance(filter_string, list):
+		raise ValueError("filter_string must be either string or list")
+	for part in filter_string:
+		entry = part.split("=")
+		if len(entry) == 2:
+			key = entry[0].strip()
+			values = entry[1].split(",")
+			filter_dict[key] = [v.strip() for v in values]
+	set_filter(filter_dict)
 
 init_logging()
 secret_filter = SecretFilter()
