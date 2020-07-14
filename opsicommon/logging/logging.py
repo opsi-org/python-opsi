@@ -569,14 +569,15 @@ def set_filter_from_string(filter_string : str):
 		return
 	if isinstance(filter_string, str):
 		filter_string = filter_string.split(";")
-	if isinstance(filter_string, list):
-		for part in filter_string:
-			entry = part.split("=")
-			if len(entry) == 2:
-				key = entry[0].strip()
-				values = entry[1].split(",")
-				filter_dict[key] = [v.strip() for v in values]
-		set_filter(filter_dict)
+	if not isinstance(filter_string, list):
+		raise ValueError
+	for part in filter_string:
+		entry = part.split("=")
+		if len(entry) == 2:
+			key = entry[0].strip()
+			values = entry[1].split(",")
+			filter_dict[key] = [v.strip() for v in values]
+	set_filter(filter_dict)
 
 init_logging()
 secret_filter = SecretFilter()
