@@ -1,6 +1,6 @@
 from .logging import (logger, context, secret_filter,
 		handle_log_exception, init_logging, set_format, log_context,
-		set_context, set_filter_dict, set_filter_parse,
+		set_context, set_filter, set_filter_from_string,
 		ContextFilter, ContextSecretFormatter, SecretFilter)
 
 from .constants import (DEFAULT_COLORED_FORMAT, DEFAULT_FORMAT, DATETIME_FORMAT,

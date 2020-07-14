@@ -92,3 +92,16 @@ def test_foreign_logs(log_stream):
 		stream.seek(0)
 		log = stream.read()
 		assert "www.uib.de" in log
+
+def test_filter(log_stream):
+	with log_stream as stream:
+		opsicommon.logging.set_format("%(message)s")
+		opsicommon.logging.set_filter({"testkey" : ["t1", "t3"]})
+		with opsicommon.logging.log_context({"testkey" : "t1"}):
+			logger.warning("test that should appear")
+		with opsicommon.logging.log_context({"testkey" : "t2"}):
+			logger.warning("test that should not appear")
+		stream.seek(0)
+		log = stream.read()
+		assert "test that should appear" in log
+		assert "test that should not appear" not in log
