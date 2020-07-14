@@ -558,19 +558,24 @@ def set_filter_from_string(filter_string : str):
 	This method expects a string (e.g. from user input).
 	It is parsed to create a dictionary which is set as filter dictionary.
 	The parsing rules are:
-		*	Entries are separated by ','.
+		*	Entries are separated by ';'.
 		*	One entry consists of exactly two strings separated by '='.
-		*	The first one is interpreted as key, the second as value.
+		*	The first one is interpreted as key, the second as value(s).
+		*	Values of the same key are separated by ','.
 	"""
 	filter_dict = {}
-	if filter_string is None or not isinstance(filter_string, str):
+	if filter_string is None:
 		return
-	parts = filter_string.split(",")
-	for part in parts:
-		entry = part.split("=")
-		if len(entry) == 2:
-			filter_dict[entry[0].strip()] = entry[1].strip()
-	set_filter(filter_dict)
+	if isinstance(filter_string, str):
+		filter_string = filter_string.split(";")
+	if isinstance(filter_string, list):
+		for part in filter_string:
+			entry = part.split("=")
+			if len(entry) == 2:
+				key = entry[0].strip()
+				values = entry[1].split(",")
+				filter_dict[key] = [v.strip() for v in values]
+		set_filter(filter_dict)
 
 init_logging()
 secret_filter = SecretFilter()
