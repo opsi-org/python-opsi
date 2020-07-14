@@ -108,7 +108,7 @@ def _processConfig(lines):
 		newlines.append(u"   writeable = no\n")
 		newlines.append(u"   invalid users = root\n")
 		if samba4:
-			newlines.append(u"   admin users = @%s\n" % FILE_ADMIN_GROUP)
+			newlines.append(u"   acl allow execute always = true\n")
 		newlines.append(u"\n")
 
 		depotDir = '/var/lib/opsi/depot'
@@ -120,33 +120,32 @@ def _processConfig(lines):
 			except Exception as error:
 				logger.warning(u"Failed to create depot directory '%s': %s", depotDir, error)
 	elif samba4:
-		logger.notice(u"   Share opsi_depot found and samba 4 is detected. Trying to detect the executablefix for opsi_depot-Share")
-		endpos = 0
-		found = False
-		sectionFound = False
+		logger.notice(u"   Share opsi_depot found and samba 4 is detected. Setting executable fix on opsi_depot share")
+		tmp_lines = []
+		in_opsi_depot_section = False
 		for i, line in enumerate(newlines):
+			last_line_of_file = (i + 1 == len(newlines))
 			if line.lower().strip() == '[opsi_depot]':
-				startpos = endpos = i + 1
-				sectionFound = True
-				slicedList = newlines[startpos:]
-				for element in slicedList:
-					lines = element.lower().strip()
-					if lines == "admin users = @%s" % FILE_ADMIN_GROUP:
-						logger.notice(u"   fix found, nothing to do")
-						found = True
-						break
-					elif lines.startswith("[") or not lines:
-						logger.notice(u"   End of section detected")
-						break
-					else:
-						endpos += 1
-			if sectionFound:
-				break
-
-		if not found:
-			logger.notice(u"   Section found but don't inherits samba4 fix, trying to set the fix.")
-			newlines.insert(endpos, u"   admin users = @%s\n" % FILE_ADMIN_GROUP)
-
+				in_opsi_depot_section = True
+			elif in_opsi_depot_section:
+				if line.lower().strip().startswith('[') or last_line_of_file:
+					# next section or last line of file
+					logger.notice("   Adding 'acl allow execute always = true'")
+					tmp_lines.append("   acl allow execute always = true\n")
+					in_opsi_depot_section = False
+				if not line.strip():
+					# remove empty line
+					continue
+				if line.lower().find("admin users") != -1:
+					logger.notice("   Removing old executable fix (%s)", line.strip())
+					continue
+				if line.lower().find("acl allow execute always") != -1:
+					# remove, will be re-inserted add the end of the section
+					logger.info("   Removing (%s)", line.strip())
+					continue
+			tmp_lines.append(line)
+		newlines = tmp_lines
+	
 	if not depotShareRWFound:
 		logger.notice(u"   Adding share [opsi_depot_rw]")
 		newlines.append(u"[opsi_depot_rw]\n")

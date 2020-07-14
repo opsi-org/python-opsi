@@ -123,13 +123,12 @@ def testSambaConfigureSamba4Share(isSamba4, workbenchPath, disableDirCreation):
 		u"[opsi_repository]\n",
 		u"[opsi_logs]\n",
 	]
-
 	result = Samba._processConfig(config)
 
 	assert any(line.strip() for line in result)
 
 
-def testAdminUsersAreAddedToExistingOpsiDepotShare(isSamba4, disableDirCreation):
+def testAdminUsersAreRemovedExistingOpsiDepotShare(isSamba4, disableDirCreation):
 	config = [
 		u"[opsi_depot]\n",
 		u"   available = yes\n",
@@ -140,6 +139,7 @@ def testAdminUsersAreAddedToExistingOpsiDepotShare(isSamba4, disableDirCreation)
 		u"   level2 oplocks = no\n",
 		u"   writeable = no\n",
 		u"   invalid users = root\n",
+		u"   admin users = %s\n" % Samba.FILE_ADMIN_GROUP, # old fix
 	]
 
 	if not isSamba4:
@@ -147,7 +147,7 @@ def testAdminUsersAreAddedToExistingOpsiDepotShare(isSamba4, disableDirCreation)
 
 	result = Samba._processConfig(config)
 
-	assert any('admin users' in line for line in result), 'Missing Admin Users in Share opsi_depot'
+	assert not any('admin users' in line for line in result), 'admin users left in share opsi_depot'
 
 
 def testCorrectOpsiDepotShareWithoutFixForSamba4(isSamba4, disableDirCreation):
@@ -161,25 +161,23 @@ def testCorrectOpsiDepotShareWithoutFixForSamba4(isSamba4, disableDirCreation):
 		u"   level2 oplocks = no\n",
 		u"   writeable = no\n",
 		u"   invalid users = root\n",
+		u"   # acl allow execute always = true\n",
 	]
 
 	if not isSamba4:
 		pytest.skip("Requires Samba 4.")
 
-	result = Samba._processConfig(config)
-
-	opsiDepotFound = False
-	for line in result:
-		if line.strip():
-			if '[opsi_depot]' in line:
-				opsiDepotFound = True
-			elif opsiDepotFound and 'admin users' in line:
-				break
-			elif opsiDepotFound and line.startswith('['):
-				opsiDepotFound = False
-				break
-	else:
-		raise RuntimeError('Did not find "admin users" in opsi_depot share')
+	in_opsi_depot_section = False
+	for line in Samba._processConfig(config):
+		if line.lower().strip() == '[opsi_depot]':
+			in_opsi_depot_section = True
+		elif in_opsi_depot_section and line.lower().strip().startswith('['):
+			in_opsi_depot_section = False
+		
+		if in_opsi_depot_section and line.strip() == "acl allow execute always = true":
+			return
+	
+	raise RuntimeError('Did not find "acl allow execute always = true" in opsi_depot share')
 
 
 def testCorrectOpsiDepotShareWithSamba4Fix(isSamba4, disableDirCreation):
@@ -194,7 +192,7 @@ def testCorrectOpsiDepotShareWithSamba4Fix(isSamba4, disableDirCreation):
 		u"   level2 oplocks = no\n",
 		u"   writeable = no\n",
 		u"   invalid users = root\n",
-		u"   admin users = @%s\n" % Samba.FILE_ADMIN_GROUP,
+		u"   acl allow execute always = true\n",
 		u"[opsi_depot_rw]\n",
 		u"[opsi_images]\n",
 		u"[opsi_workbench]\n",
@@ -204,6 +202,10 @@ def testCorrectOpsiDepotShareWithSamba4Fix(isSamba4, disableDirCreation):
 
 	if not isSamba4:
 		pytest.skip("Requires Samba 4.")
+
+	print("".join(config))
+	print("".join(Samba._processConfig(config)))
+
 
 	assert config == Samba._processConfig(config)
 
