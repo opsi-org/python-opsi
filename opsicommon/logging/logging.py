@@ -271,11 +271,14 @@ class ContextFilter(logging.Filter, metaclass=Singleton):
 			in order to accept the LogRecord.
 		:type filter_dict: Dict
 		"""
-		self.filter_dict = {}
-		if filter_dict is None or not isinstance(filter_dict, dict):
+		if filter_dict is None:
+			self.filter_dict = {}
 			return
-		for key in filter_dict:
-			value = filter_dict.get(key)
+		if not isinstance(filter_dict, dict):
+			raise ValueError
+
+		self.filter_dict = {}
+		for (key, value) in filter_dict.items():
 			if isinstance(value, list):
 				self.filter_dict[key] = value
 			else:
@@ -296,10 +299,10 @@ class ContextFilter(logging.Filter, metaclass=Singleton):
 		:rtype: bool
 		"""
 		record.context = context.get()
-		for filter_key in self.filter_dict:
+		for (filter_key, filter_value) in self.filter_dict.items():
 			record_value = record.context.get(filter_key)
 			#skip if key not present or value not in filter values
-			if record_value is None or record_value not in self.filter_dict.get(filter_key):
+			if record_value is None or record_value not in filter_value:
 				return False
 		return True
 
@@ -532,7 +535,7 @@ def set_context(new_context : Dict) -> contextvars.Token:
 	if isinstance(new_context, dict):
 		return context.set(new_context)
 
-def set_filter_dict(filter_dict : Dict):
+def set_filter(filter_dict : Dict):
 	"""
 	Sets a new filter dictionary.
 
@@ -548,7 +551,7 @@ def set_filter_dict(filter_dict : Dict):
 		if isinstance(fil, ContextFilter):
 			fil.set_filter(filter_dict)
 
-def set_filter_parse(filter_string : str):
+def set_filter_from_string(filter_string : str):
 	"""
 	Parses string and sets filter dictionary.
 
@@ -567,7 +570,7 @@ def set_filter_parse(filter_string : str):
 		entry = part.split("=")
 		if len(entry) == 2:
 			filter_dict[entry[0].strip()] = entry[1].strip()
-	set_filter_dict(filter_dict)
+	set_filter(filter_dict)
 
 init_logging()
 secret_filter = SecretFilter()
