@@ -565,6 +565,7 @@ def set_filter_from_string(filter_string : str):
 	"""
 	filter_dict = {}
 	if filter_string is None:
+		set_filter(None)
 		return
 	if isinstance(filter_string, str):
 		filter_string = filter_string.split(";")
