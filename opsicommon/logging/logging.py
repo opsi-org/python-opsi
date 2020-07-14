@@ -275,7 +275,7 @@ class ContextFilter(logging.Filter, metaclass=Singleton):
 			self.filter_dict = {}
 			return
 		if not isinstance(filter_dict, dict):
-			raise ValueError
+			raise ValueError("filter_dict must be a python dictionary")
 
 		self.filter_dict = {}
 		for (key, value) in filter_dict.items():
@@ -570,7 +570,7 @@ def set_filter_from_string(filter_string : str):
 	if isinstance(filter_string, str):
 		filter_string = filter_string.split(";")
 	if not isinstance(filter_string, list):
-		raise ValueError
+		raise ValueError("filter_string must be either string or list")
 	for part in filter_string:
 		entry = part.split("=")
 		if len(entry) == 2:
