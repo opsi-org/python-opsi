@@ -326,7 +326,6 @@ toml = ">=0.10.0,<0.11.0"
 
 [package.source]
 reference = "uibpypi"
-type = "legacy"
 url = "http://pypi.uib.gmbh:8080/simple"
 
 [[package]]
