@@ -45,10 +45,9 @@ import threading
 import time
 import psutil
 import copy as pycopy
+distro_module = None
 if platform.system() == "Linux":
 	import distro as distro_module
-else:
-	distro_module is None
 from itertools import islice
 from signal import SIGKILL
 
