@@ -230,8 +230,15 @@ class MySQL(SQL):
 						recycle=self._connectionPoolRecyclingSeconds,
 					)
 					logger.debug2("Created connection pool %s", self._pool)
+					# Test connection pool
+					conn = self._pool.connect()
+					conn.close()
 					break
 				except Exception as error:
+					try:
+						self._pool.destroy()
+					except:
+						pass
 					logger.logException(error, logLevel=LOG_DEBUG)
 					if tryNumber >= 10:
 						raise BackendUnableToConnectError(u"Failed to connect to database '%s' address '%s': %s" % (self._database, address, error))
