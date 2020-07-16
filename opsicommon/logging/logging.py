@@ -94,6 +94,8 @@ def essential(self, msg, *args, **kwargs):
 logging.Logger.essential = essential
 logging.Logger.comment = essential
 
+logging.Logger.devel = essential
+
 def logrecord_init(self, name, level, pathname, lineno, msg, args, exc_info, func=None, sinfo=None, **kwargs):
 	"""
 	New Constructor for LogRecord.
