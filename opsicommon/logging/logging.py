@@ -456,13 +456,27 @@ class SecretFilter(metaclass=Singleton):
 			if secret in self.secrets:
 				self.secrets.remove(secret)
 
+last_stderr_format = None
+last_file_format = None
 def init_logging(
 	stderr_level: int = None,
 	stderr_format: str = DEFAULT_COLORED_FORMAT,
 	log_file: str = None,
 	file_level: int = None,
-	file_format: str = DEFAULT_FORMAT
+	file_format: str = None
 ):
+	global last_stderr_format
+	if stderr_format is None:
+		stderr_format = last_stderr_format or DEFAULT_FORMAT
+	else:
+		last_stderr_format = stderr_format
+	
+	global last_file_format
+	if file_format is None:
+		file_format = last_file_format or DEFAULT_FORMAT
+	else:
+		last_file_format = file_format
+
 	if stderr_level is not None and stderr_level < 10:
 		stderr_level = logging._opsiLevelToLevel[stderr_level]
 	if file_level is not None and file_level < 10:
@@ -482,7 +496,7 @@ def init_logging(
 		handler.name = "opsi_stderr_handler"
 		handler.setLevel(stderr_level)
 		logging.root.addHandler(handler)
-	
+
 	if stderr_format and stderr_format.find("(log_color)") != -1 and not sys.stderr.isatty():
 		stderr_format = stderr_format.replace('%(log_color)s', '').replace('%(reset)s', '')
 	set_format(file_format, stderr_format)
@@ -607,7 +621,7 @@ def get_all_handlers(handler_type = None):
 	for _logger in get_all_loggers():
 		if not isinstance(_logger, logging.PlaceHolder):
 			for _handler in _logger.handlers:
-				if not handler_type or isinstance(_handler, handler_type):
+				if not handler_type or type(_handler) is handler_type:
 					handlers.append(_handler)
 	return handlers
 
@@ -615,7 +629,7 @@ def remove_all_handlers(handler_type = None):
 	for _logger in get_all_loggers():
 		if not isinstance(_logger, logging.PlaceHolder):
 			for _handler in _logger.handlers:
-				if not handler_type or isinstance(_handler, handler_type):
+				if not handler_type or type(_handler) is handler_type:
 					_logger.removeHandler(_handler)
 
 def print_logger_info():

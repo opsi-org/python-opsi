@@ -13,8 +13,9 @@ import requests
 
 from contextlib import contextmanager
 
+import logging
 import opsicommon.logging
-from opsicommon.logging import logger, LOG_ERROR
+from opsicommon.logging import logger, LOG_ERROR, init_logging
 
 MY_FORMAT = "%(log_color)s[%(opsilevel)d] [%(asctime)s.%(msecs)03d]%(reset)s [%(contextstring)s] %(message)s"
 OTHER_FORMAT = "[%(opsilevel)d] [%(asctime)s.%(msecs)03d] [%(contextstring)s] %(message)s   (%(filename)s:%(lineno)d)"
@@ -145,3 +146,18 @@ def test_log_devel(log_stream):
 		log = stream.read()
 		assert "test that should appear" in log
 		assert "test that should not appear" not in log
+
+def test_multi_call_init_logging(tmpdir):
+	log_file = tmpdir.join("opsi.log")
+	opsicommon.logging.init_logging(stderr_level=logging.INFO, log_file=log_file, file_level=logging.INFO, file_format="%(message)s")
+	logger.info("LINE1")
+	opsicommon.logging.init_logging(stderr_level=logging.INFO, log_file=log_file, file_level=logging.INFO, file_format="%(message)s")
+	logger.info("LINE2")
+	opsicommon.logging.init_logging(stderr_level=logging.INFO, log_file=log_file, file_level=logging.ERROR, file_format="%(message)s")
+	logger.info("LINE3")
+	opsicommon.logging.init_logging(stderr_level=logging.NONE, file_level=logging.INFO)
+	logger.info("LINE4")
+	with open(log_file) as f:
+		data = f.read()
+		assert data == "LINE1\nLINE2\nLINE4\n"
+
