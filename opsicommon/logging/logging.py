@@ -456,23 +456,6 @@ class SecretFilter(metaclass=Singleton):
 			if secret in self.secrets:
 				self.secrets.remove(secret)
 
-'''
-def init_logging():
-	"""
-	Initializes logging.
-
-	This method adds a ContextFilter to the root logger.
-	Additionally it adds a StreamHandler and makes sure that every
-	present Handler is equipped with a ContextSecretFormatter.
-	"""
-	logging.root.addFilter(ContextFilter())
-	if len(logging.root.handlers) == 0:
-		handler = logging.StreamHandler(stream=sys.stderr)
-		handler.setLevel(logging.NOTICE)
-		logging.root.addHandler(handler)
-	set_format()
-'''
-
 def init_logging(
 	stderr_level: int = None,
 	stderr_format: str = DEFAULT_COLORED_FORMAT,
