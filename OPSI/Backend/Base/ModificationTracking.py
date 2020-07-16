@@ -64,7 +64,7 @@ class ModificationTrackingBackend(ExtendedBackend):
 
 	def _executeMethod(self, methodName, **kwargs):
 		logger.debug(
-			u"ModificationTrackingBackend {0}: executing {1!r} on backend {2}",
+			u"ModificationTrackingBackend %s: executing %s on backend %s",
 			self,
 			methodName,
 			self._backend
