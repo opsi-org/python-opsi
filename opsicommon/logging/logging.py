@@ -19,10 +19,12 @@ from typing import Dict, Tuple, Any
 from logging.handlers import WatchedFileHandler, RotatingFileHandler
 
 from ..utils import Singleton
-from .constants import (DEFAULT_COLORED_FORMAT, DEFAULT_FORMAT, DATETIME_FORMAT,
-			CONTEXT_STRING_MIN_LENGTH, LOG_COLORS, SECRET_REPLACEMENT_STRING,
-			LOG_SECRET, LOG_TRACE, LOG_DEBUG, LOG_INFO, LOG_NOTICE, LOG_WARNING,
-			LOG_ERROR, LOG_CRITICAL, LOG_ESSENTIAL, LOG_NONE)
+from .constants import (
+	DEFAULT_COLORED_FORMAT, DEFAULT_FORMAT, DATETIME_FORMAT,
+	CONTEXT_STRING_MIN_LENGTH, LOG_COLORS, SECRET_REPLACEMENT_STRING,
+	LOG_SECRET, LOG_TRACE, LOG_DEBUG, LOG_INFO, LOG_NOTICE, LOG_WARNING,
+	LOG_ERROR, LOG_CRITICAL, LOG_ESSENTIAL, LOG_NONE
+)
 
 logger = logging.getLogger()
 context = contextvars.ContextVar('context', default={})
@@ -93,7 +95,6 @@ def essential(self, msg, *args, **kwargs):
 
 logging.Logger.essential = essential
 logging.Logger.comment = essential
-
 logging.Logger.devel = essential
 
 def logrecord_init(self, name, level, pathname, lineno, msg, args, exc_info, func=None, sinfo=None, **kwargs):
@@ -142,8 +143,7 @@ try:
 			"OPSI.Logger.setLogFile is deprecated, instead add a FileHandler to logger.",
 			DeprecationWarning
 		)
-		handler = logging.FileHandler(logFile)
-		logging.root.addHandler(handler)
+		init_logging(log_file=logFile)
 	logger.setLogFile = setLogFile
 
 	def setLogFormat(logFormat, object=None):
@@ -184,9 +184,7 @@ try:
 			"OPSI.Logger.setConsoleLevel is deprecated, instead modify the StreamHandler loglevel.",
 			DeprecationWarning
 		)
-		for handler in logging.root.handlers:
-			if isinstance(handler, logging.StreamHandler) and not isinstance(handler, logging.FileHandler):
-				handler.setLevel(logLevel)
+		init_logging(stderr_level=logLevel)
 	logger.setConsoleLevel = setConsoleLevel
 
 	def setFileLevel(logLevel, object=None):
@@ -194,9 +192,7 @@ try:
 			"OPSI.Logger.setFileLevel is deprecated, instead modify the FileHandler loglevel.",
 			DeprecationWarning
 		)
-		for handler in logging.root.handlers:
-			if isinstance(handler, logging.FileHandler):
-				handler.setLevel(logLevel)
+		init_logging(file_level=logLevel)
 	logger.setFileLevel = setFileLevel
 except ImportError:
 	pass
@@ -460,6 +456,7 @@ class SecretFilter(metaclass=Singleton):
 			if secret in self.secrets:
 				self.secrets.remove(secret)
 
+'''
 def init_logging():
 	"""
 	Initializes logging.
@@ -474,8 +471,45 @@ def init_logging():
 		handler.setLevel(logging.NOTICE)
 		logging.root.addHandler(handler)
 	set_format()
+'''
 
-def set_format(fmt : str=DEFAULT_FORMAT, datefmt : str=DATETIME_FORMAT, log_colors : Dict=LOG_COLORS):
+def init_logging(
+	stderr_level: int = None,
+	stderr_format: str = DEFAULT_COLORED_FORMAT,
+	log_file: str = None,
+	file_level: int = None,
+	file_format: str = DEFAULT_FORMAT
+):
+	if stderr_level is not None and stderr_level < 10:
+		stderr_level = logging._opsiLevelToLevel[stderr_level]
+	if file_level is not None and file_level < 10:
+		file_level = logging._opsiLevelToLevel[file_level]
+
+	if log_file:
+		remove_all_handlers(logging.FileHandler)
+		handler = logging.FileHandler(log_file)
+		handler.name = "opsi_file_handler"
+		logging.root.addHandler(handler)
+	if file_level is not None:
+		for handler in get_all_handlers(logging.FileHandler):
+			handler.setLevel(file_level)
+	if stderr_level is not None:
+		remove_all_handlers(logging.StreamHandler)
+		handler = logging.StreamHandler(stream = sys.stderr)
+		handler.name = "opsi_stderr_handler"
+		handler.setLevel(stderr_level)
+		logging.root.addHandler(handler)
+	
+	if stderr_format and stderr_format.find("(log_color)") != -1 and not sys.stderr.isatty():
+		stderr_format = stderr_format.replace('%(log_color)s', '').replace('%(reset)s', '')
+	set_format(file_format, stderr_format)
+
+def set_format(
+	file_format: str = DEFAULT_FORMAT,
+	stderr_format: str = DEFAULT_COLORED_FORMAT,
+	datefmt: str = DATETIME_FORMAT,
+	log_colors: Dict = LOG_COLORS
+):
 	"""
 	Assigns ContextSecretFormatter to all Handlers.
 
@@ -494,15 +528,16 @@ def set_format(fmt : str=DEFAULT_FORMAT, datefmt : str=DATETIME_FORMAT, log_colo
 		If omitted, a default Color dictionary is used.
 	:type log_colors: Dict
 	"""
-	colored = (fmt.find("(log_color)") >= 0)
-	for handler in logging.root.handlers:
-		if colored:
-			formatter = colorlog.ColoredFormatter(fmt, datefmt=datefmt, log_colors=log_colors)
-		else:
-			formatter = logging.Formatter(fmt, datefmt=datefmt)
-		csformatter = ContextSecretFormatter(formatter)
-
-		handler.setFormatter(csformatter)
+	for handler_type in (logging.StreamHandler, logging.FileHandler):
+		for handler in get_all_handlers(handler_type):
+			fmt = stderr_format if handler_type is logging.StreamHandler else file_format
+			formatter = None
+			if fmt.find("(log_color)") >= 0:
+				formatter = colorlog.ColoredFormatter(fmt, datefmt=datefmt, log_colors=log_colors)
+			else:
+				formatter = logging.Formatter(fmt, datefmt=datefmt)
+			csformatter = ContextSecretFormatter(formatter)
+			handler.setFormatter(csformatter)
 
 @contextmanager
 def log_context(new_context : Dict):
@@ -581,5 +616,32 @@ def set_filter_from_string(filter_string : str):
 			filter_dict[key] = [v.strip() for v in values]
 	set_filter(filter_dict)
 
-init_logging()
+def get_all_loggers():
+	return [logging.root] + list(logging.Logger.manager.loggerDict.values())
+
+def get_all_handlers(handler_type = None):
+	handlers = []
+	for _logger in get_all_loggers():
+		for _handler in _logger.handlers:
+			if not handler_type or isinstance(_handler, handler_type):
+				handlers.append(_handler)
+	return handlers
+
+def remove_all_handlers(handler_type = None):
+	for _logger in get_all_loggers():
+		for _handler in _logger.handlers:
+			if not handler_type or isinstance(_handler, handler_type):
+				_logger.removeHandler(_handler)
+
+def print_logger_info():
+	for _logger in get_all_loggers():
+		print(f"Logger: {_logger}", file=sys.stderr)
+		for _handler in _logger.handlers:
+			print(f"  - Handler: {_handler}", file=sys.stderr)
+			print(f"    - Formatter: {_handler.formatter}", file=sys.stderr)
+
+init_logging(stderr_level=logging.WARNING)
+#init_logging(stderr_level=logging.NOTSET)
 secret_filter = SecretFilter()
+context_filter = ContextFilter()
+logging.root.addFilter(context_filter)
