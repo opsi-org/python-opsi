@@ -4014,7 +4014,7 @@ def getActiveConsoleSessionId():
 	"""
 	return getActiveSessionId()
 
-def runCommandInSession(command, sessionId=None, desktop=None, duplicateFrom=None, waitForProcessEnding=True, timeoutSeconds=0):
+def runCommandInSession(command, sessionId=None, desktop=None, duplicateFrom=None, waitForProcessEnding=True, timeoutSeconds=0, noWindow=False):
 	"""
 	Run an command.
 
