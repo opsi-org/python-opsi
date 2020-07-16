@@ -644,6 +644,8 @@ def get_all_handlers(handler_type = None):
 	"""
 	handlers = []
 	for _logger in get_all_loggers():
+		if isinstance(_logger, logging.PlaceHolder):
+			continue
 		for _handler in _logger.handlers:
 			if not handler_type or isinstance(_handler, handler_type):
 				handlers.append(_handler)
@@ -660,6 +662,8 @@ def remove_all_handlers(handler_type = None):
 	:type handler_type: class
 	"""
 	for _logger in get_all_loggers():
+		if isinstance(_logger, logging.PlaceHolder):
+			continue
 		for _handler in _logger.handlers:
 			if not handler_type or isinstance(_handler, handler_type):
 				_logger.removeHandler(_handler)
