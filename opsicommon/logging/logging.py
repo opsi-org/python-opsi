@@ -644,10 +644,11 @@ def get_all_handlers(handler_type = None):
 	"""
 	handlers = []
 	for _logger in get_all_loggers():
-		if not isinstance(_logger, logging.PlaceHolder):
-			for _handler in _logger.handlers:
-				if not handler_type or isinstance(_handler, handler_type):
-					handlers.append(_handler)
+		if isinstance(_logger, logging.PlaceHolder):
+			continue
+		for _handler in _logger.handlers:
+			if not handler_type or isinstance(_handler, handler_type):
+				handlers.append(_handler)
 	return handlers
 
 def remove_all_handlers(handler_type = None):
@@ -661,10 +662,11 @@ def remove_all_handlers(handler_type = None):
 	:type handler_type: class
 	"""
 	for _logger in get_all_loggers():
-		if not isinstance(_logger, logging.PlaceHolder):
-			for _handler in _logger.handlers:
-				if not handler_type or isinstance(_handler, handler_type):
-					_logger.removeHandler(_handler)
+		if isinstance(_logger, logging.PlaceHolder):
+			continue
+		for _handler in _logger.handlers:
+			if not handler_type or isinstance(_handler, handler_type):
+				_logger.removeHandler(_handler)
 
 def print_logger_info():
 	"""
@@ -675,10 +677,9 @@ def print_logger_info():
 	"""
 	for _logger in get_all_loggers():
 		print(f"- Logger: {_logger}", file=sys.stderr)
-		if not isinstance(_logger, logging.PlaceHolder):
-			for _handler in _logger.handlers:
-				print(f"  - Handler: {_handler}", file=sys.stderr)
-				print(f"    - Formatter: {_handler.formatter}", file=sys.stderr)
+		for _handler in _logger.handlers:
+			print(f"  - Handler: {_handler}", file=sys.stderr)
+			print(f"    - Formatter: {_handler.formatter}", file=sys.stderr)
 
 init_logging(stderr_level=logging.WARNING)
 #init_logging(stderr_level=logging.NOTSET)
