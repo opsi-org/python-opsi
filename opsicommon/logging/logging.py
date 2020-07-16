@@ -456,29 +456,27 @@ class SecretFilter(metaclass=Singleton):
 			if secret in self.secrets:
 				self.secrets.remove(secret)
 
+last_stderr_format = None
+last_file_format = None
 def init_logging(
 	stderr_level: int = None,
 	stderr_format: str = DEFAULT_COLORED_FORMAT,
 	log_file: str = None,
 	file_level: int = None,
-	file_format: str = DEFAULT_FORMAT
+	file_format: str = None
 ):
-	"""
-	Initialize logging.
+	global last_stderr_format
+	if stderr_format is None:
+		stderr_format = last_stderr_format or DEFAULT_FORMAT
+	else:
+		last_stderr_format = stderr_format
+	
+	global last_file_format
+	if file_format is None:
+		file_format = last_file_format or DEFAULT_FORMAT
+	else:
+		last_file_format = file_format
 
-	This method initializes the logger according to given parameters.
-	Log levels and format for stderr and file output can be set individually.
-	:param stderr_level: Loglevel to set for the stderr logging stream.
-	:type stderr_level: int
-	:param stderr_format: Format to set for the stderr logging stream.
-	:type stderr_format: str
-	:param log_file: Name of the file to write logging stream to.
-	:type log_file: str
-	:param file_level: Loglevel to set for the file logging stream.
-	:type file_level: int
-	:param file_format: Format to set for the file logging stream.
-	:type file_format: str
-	"""
 	if stderr_level is not None and stderr_level < 10:
 		stderr_level = logging._opsiLevelToLevel[stderr_level]
 	if file_level is not None and file_level < 10:
@@ -498,7 +496,7 @@ def init_logging(
 		handler.name = "opsi_stderr_handler"
 		handler.setLevel(stderr_level)
 		logging.root.addHandler(handler)
-	
+
 	if stderr_format and stderr_format.find("(log_color)") != -1 and not sys.stderr.isatty():
 		stderr_format = stderr_format.replace('%(log_color)s', '').replace('%(reset)s', '')
 	set_format(file_format, stderr_format)
@@ -516,10 +514,11 @@ def set_format(
 	and creates ContextSecretFormatters considering those.
 	Every Handler is assigned such a ContextSecretFormatter.
 
-	:param file_format: Format to set for the file logging stream.
-	:type file_format: str
-	:param stderr_format: Format to set for the stderr logging stream.
-	:type stderr_format: str
+	:param fmt: Format specification for logging. For documentation see
+		https://github.com/python/cpython/blob/3.8/Lib/logging/__init__.py
+		Additionally %(contextstring)s may be used to include context.
+		If omitted, a default format is used.
+	:type fmt: str
 	:param datefmt: Date format for logging. If omitted, a default dateformat is used.
 	:type datefmt: str
 	:param log_colors: Dictionary of colors for different log levels.
@@ -597,9 +596,6 @@ def set_filter_from_string(filter_string : str):
 		*	One entry consists of exactly two strings separated by '='.
 		*	The first one is interpreted as key, the second as value(s).
 		*	Values of the same key are separated by ','.
-	
-	:param filter_string: String to parse for a filter statement.
-	:type filter_string: str
 	"""
 	filter_dict = {}
 	if filter_string is None:
@@ -618,68 +614,31 @@ def set_filter_from_string(filter_string : str):
 	set_filter(filter_dict)
 
 def get_all_loggers():
-	"""
-	Gets list of all loggers.
-
-	This method requests all Logger instances registered at
-	logging.Logger.manager.loggerDict and returns them as a list.
-
-	:returns: List containing all loggers (including root)
-	:rtype: List
-	"""
 	return [logging.root] + list(logging.Logger.manager.loggerDict.values())
 
 def get_all_handlers(handler_type = None):
-	"""
-	Gets list of all handlers.
-
-	This method iterates over all registered loggers. All handlers
-	(optional: of a certain type) are collected and returned as list.
-
-	:param handler_type: If not None, return only handlers of specified type.
-	:type handler_type: class
-
-	:returns: List containing all handlers (of specified type) of all loggers.
-	:rtype: List
-	"""
 	handlers = []
 	for _logger in get_all_loggers():
-		if isinstance(_logger, logging.PlaceHolder):
-			continue
-		for _handler in _logger.handlers:
-			if not handler_type or isinstance(_handler, handler_type):
-				handlers.append(_handler)
+		if not isinstance(_logger, logging.PlaceHolder):
+			for _handler in _logger.handlers:
+				if not handler_type or type(_handler) is handler_type:
+					handlers.append(_handler)
 	return handlers
 
 def remove_all_handlers(handler_type = None):
-	"""
-	Removes all handlers (of a certain type).
-
-	This method iterates over all loggers. All assigned handlers
-	(of a given type or all) are removed.
-
-	:param handler_type: Type of handlers that should be removed.
-	:type handler_type: class
-	"""
 	for _logger in get_all_loggers():
-		if isinstance(_logger, logging.PlaceHolder):
-			continue
-		for _handler in _logger.handlers:
-			if not handler_type or isinstance(_handler, handler_type):
-				_logger.removeHandler(_handler)
+		if not isinstance(_logger, logging.PlaceHolder):
+			for _handler in _logger.handlers:
+				if not handler_type or type(_handler) is handler_type:
+					_logger.removeHandler(_handler)
 
 def print_logger_info():
-	"""
-	Debug output logger status.
-
-	This method prints all loggers with their respective
-	handlers and formatters to stdout.
-	"""
 	for _logger in get_all_loggers():
 		print(f"- Logger: {_logger}", file=sys.stderr)
-		for _handler in _logger.handlers:
-			print(f"  - Handler: {_handler}", file=sys.stderr)
-			print(f"    - Formatter: {_handler.formatter}", file=sys.stderr)
+		if not isinstance(_logger, logging.PlaceHolder):
+			for _handler in _logger.handlers:
+				print(f"  - Handler: {_handler}", file=sys.stderr)
+				print(f"    - Formatter: {_handler.formatter}", file=sys.stderr)
 
 init_logging(stderr_level=logging.WARNING)
 #init_logging(stderr_level=logging.NOTSET)
