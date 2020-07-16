@@ -14,7 +14,7 @@ import requests
 from contextlib import contextmanager
 
 import opsicommon.logging
-from opsicommon.logging import logger
+from opsicommon.logging import logger, LOG_ERROR
 
 MY_FORMAT = "%(log_color)s[%(opsilevel)d] [%(asctime)s.%(msecs)03d]%(reset)s [%(contextstring)s] %(message)s"
 OTHER_FORMAT = "[%(opsilevel)d] [%(asctime)s.%(msecs)03d] [%(contextstring)s] %(message)s   (%(filename)s:%(lineno)d)"
@@ -129,7 +129,19 @@ def test_filter_from_string(log_stream):
 
 		stream.seek(0)
 		log = stream.read()
+		opsicommon.logging.set_filter(None)
 		assert "test that should appear" in log
 		assert "test that should also appear" in log
 		assert "test that should not appear" not in log
 		
+def test_log_devel(log_stream):
+	with log_stream as stream:
+		logger.setLevel(LOG_ERROR)
+		logger.warning("test that should not appear")
+		logger.devel("test that should appear")
+		logger.debug("test that should not appear")
+
+		stream.seek(0)
+		log = stream.read()
+		assert "test that should appear" in log
+		assert "test that should not appear" not in log
