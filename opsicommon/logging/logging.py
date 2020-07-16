@@ -606,22 +606,25 @@ def get_all_handlers(handler_type = None):
 	handlers = []
 	for _logger in get_all_loggers():
 		for _handler in _logger.handlers:
-			if not handler_type or isinstance(_handler, handler_type):
-				handlers.append(_handler)
+			if not isinstance(_handler, logging.PlaceHolder):
+				if not handler_type or isinstance(_handler, handler_type):
+					handlers.append(_handler)
 	return handlers
 
 def remove_all_handlers(handler_type = None):
 	for _logger in get_all_loggers():
 		for _handler in _logger.handlers:
-			if not handler_type or isinstance(_handler, handler_type):
-				_logger.removeHandler(_handler)
+			if not isinstance(_handler, logging.PlaceHolder):
+				if not handler_type or isinstance(_handler, handler_type):
+					_logger.removeHandler(_handler)
 
 def print_logger_info():
 	for _logger in get_all_loggers():
 		print(f"- Logger: {_logger}", file=sys.stderr)
 		for _handler in _logger.handlers:
-			print(f"  - Handler: {_handler}", file=sys.stderr)
-			print(f"    - Formatter: {_handler.formatter}", file=sys.stderr)
+			if not isinstance(_handler, logging.PlaceHolder):
+				print(f"  - Handler: {_handler}", file=sys.stderr)
+				print(f"    - Formatter: {_handler.formatter}", file=sys.stderr)
 
 init_logging(stderr_level=logging.WARNING)
 #init_logging(stderr_level=logging.NOTSET)
