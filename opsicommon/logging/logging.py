@@ -143,7 +143,7 @@ try:
 			"OPSI.Logger.setLogFile is deprecated, instead add a FileHandler to logger.",
 			DeprecationWarning
 		)
-		init_logging(log_file=logFile)
+		logging_config(log_file=logFile)
 	logger.setLogFile = setLogFile
 
 	def setLogFormat(logFormat, object=None):
@@ -184,7 +184,7 @@ try:
 			"OPSI.Logger.setConsoleLevel is deprecated, instead modify the StreamHandler loglevel.",
 			DeprecationWarning
 		)
-		init_logging(stderr_level=logLevel)
+		logging_config(stderr_level=logLevel)
 	logger.setConsoleLevel = setConsoleLevel
 
 	def setFileLevel(logLevel, object=None):
@@ -192,7 +192,7 @@ try:
 			"OPSI.Logger.setFileLevel is deprecated, instead modify the FileHandler loglevel.",
 			DeprecationWarning
 		)
-		init_logging(file_level=logLevel)
+		logging_config(file_level=logLevel)
 	logger.setFileLevel = setFileLevel
 except ImportError:
 	pass
@@ -458,7 +458,7 @@ class SecretFilter(metaclass=Singleton):
 
 last_stderr_format = None
 last_file_format = None
-def init_logging(
+def logging_config(
 	stderr_level: int = None,
 	stderr_format: str = DEFAULT_COLORED_FORMAT,
 	log_file: str = None,
@@ -470,7 +470,7 @@ def init_logging(
 		stderr_format = last_stderr_format or DEFAULT_FORMAT
 	else:
 		last_stderr_format = stderr_format
-	
+
 	global last_file_format
 	if file_format is None:
 		file_format = last_file_format or DEFAULT_FORMAT
@@ -500,6 +500,8 @@ def init_logging(
 	if stderr_format and stderr_format.find("(log_color)") != -1 and not sys.stderr.isatty():
 		stderr_format = stderr_format.replace('%(log_color)s', '').replace('%(reset)s', '')
 	set_format(file_format, stderr_format)
+
+init_logging = logging_config
 
 def set_format(
 	file_format: str = DEFAULT_FORMAT,
@@ -640,8 +642,8 @@ def print_logger_info():
 				print(f"  - Handler: {_handler}", file=sys.stderr)
 				print(f"    - Formatter: {_handler.formatter}", file=sys.stderr)
 
-init_logging(stderr_level=logging.WARNING)
-#init_logging(stderr_level=logging.NOTSET)
+logging_config(stderr_level=logging.WARNING)
+#logging_config(stderr_level=logging.NOTSET)
 secret_filter = SecretFilter()
 context_filter = ContextFilter()
 logging.root.addFilter(context_filter)
