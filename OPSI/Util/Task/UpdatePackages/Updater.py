@@ -33,10 +33,6 @@ import time
 import urllib.request
 from urllib.parse import quote
 
-from .Config import DEFAULT_USER_AGENT, ConfigurationParser
-from .Notifier import DummyNotifier, EmailNotifier
-from .Repository import LinksExtractor
-
 from OPSI import System
 from OPSI.Backend.BackendManager import BackendManager
 from OPSI.Backend.JSONRPC import JSONRPCBackend
@@ -49,6 +45,10 @@ from OPSI.Util.File.Opsi import parseFilename
 from OPSI.Util.Path import cd
 from OPSI.Util.Product import ProductPackageFile
 from OPSI.Util.Task.Rights import setRights
+
+from .Config import DEFAULT_USER_AGENT, ConfigurationParser
+from .Notifier import DummyNotifier, EmailNotifier
+from .Repository import LinksExtractor
 
 __all__ = ('OpsiPackageUpdater', )
 
@@ -176,7 +176,7 @@ class OpsiPackageUpdater:
 							logger.debug(u"Product '%s' is installed", availablePackage['productId'])
 							productInstalled = True
 							logger.debug(
-								u"Available product version is '%s', installed product version is '{1}-{2}'",
+								u"Available product version is '%s', installed product version is '%s-%s'",
 								availablePackage['version'], product['productVersion'], product['packageVersion']
 							)
 							updateAvailable = compareVersions(availablePackage['version'], '>', '%s-%s' % (product['productVersion'], product['packageVersion']))
@@ -186,30 +186,30 @@ class OpsiPackageUpdater:
 					if not productInstalled:
 						if availablePackage['repository'].autoInstall:
 							logger.notice(
-								u"{0} - installation required: product '{1}' is not installed and auto install is set for repository '{2}'",
+								u"%s - installation required: product '%s' is not installed and auto install is set for repository '%s'",
 								availablePackage["filename"], availablePackage['productId'], availablePackage['repository'].name
 							)
 							installationRequired = True
 						else:
 							logger.info(
-								u"{0} - installation not required: product '{1}' is not installed but auto install is not set for repository '{2}'",
+								u"%s - installation not required: product '%s' is not installed but auto install is not set for repository '%s'",
 								availablePackage["filename"], availablePackage['productId'], availablePackage['repository'].name
 							)
 					elif updateAvailable:
 						if availablePackage['repository'].autoUpdate:
 							logger.notice(
-								u"{0} - installation required: a more recent version of product '{1}' was found (installed: {2}-{3}, available: {4}) and auto update is set for repository '{5}'",
+								u"%s - installation required: a more recent version of product '%s' was found (installed: %s-%s, available: %s) and auto update is set for repository '%s'",
 								availablePackage["filename"], availablePackage['productId'], product['productVersion'], product['packageVersion'], availablePackage['version'], availablePackage['repository'].name
 							)
 							installationRequired = True
 						else:
 							logger.info(
-								u"{0} - installation not required: a more recent version of product '{1}' was found (installed: {2}-{3}, available: {4}) but auto update is not set for repository '{5}'",
+								u"%s - installation not required: a more recent version of product '%s' was found (installed: %s-%s, available: %s) but auto update is not set for repository '%s'",
 								availablePackage["filename"], availablePackage['productId'], product['productVersion'], product['packageVersion'], availablePackage['version'], availablePackage['repository'].name
 							)
 					else:
 						logger.info(
-							u"{0} - installation not required: installed version '{1}-{2}' of product '{3}' is up to date",
+							u"%s - installation not required: installed version '%s-%s' of product '%s' is up to date",
 							availablePackage["filename"], product['productVersion'], product['packageVersion'], availablePackage['productId']
 						)
 
@@ -228,12 +228,12 @@ class OpsiPackageUpdater:
 									break
 					if not downloadNeeded:
 						logger.info(
-							u"{0} - download of package is not required: found local package {1} with matching md5sum",
+							u"%s - download of package is not required: found local package %s with matching md5sum",
 							availablePackage["filename"], localPackageFound['filename']
 						)
 					elif localPackageFound:
 						logger.info(
-							u"{0} - download of package is required: found local package {1} which differs from available",
+							u"%s - download of package is required: found local package %s which differs from available",
 							availablePackage["filename"], localPackageFound['filename']
 						)
 					else:
@@ -256,26 +256,7 @@ class OpsiPackageUpdater:
 							self.downloadPackage(availablePackage, notifier=notifier)
 						self.cleanupPackages(availablePackage)
 
-					if availablePackage['md5sum']:
-						logger.info(u"Verifying download of package '%s'", packageFile)
-						md5 = md5sum(packageFile)
-						if md5 == availablePackage["md5sum"]:
-							logger.info(u"%s: md5sum match, package download verified", availablePackage['productId'])
-						elif md5 != availablePackage["md5sum"] and zsynced:
-							logger.warning(u"%s: zsynced Download has failed, try once to load full package", availablePackage['productId'])
-							self.downloadPackage(availablePackage, notifier=notifier)
-							self.cleanupPackages(availablePackage)
-
-							md5 = md5sum(packageFile)
-							if md5 == availablePackage["md5sum"]:
-								logger.info(u"%s: md5sum match, package download verified", availablePackage['productId'])
-							else:
-								raise RuntimeError(u"Failed to download package '%s', md5sum mismatch" % availablePackage['packageFile'])
-						else:
-							logger.info(u"%s: md5sum mismatch and no zsync. Doing nothing.", availablePackage['productId'])
-					else:
-						raise HashsumMissmatchError(f"{availablePackage['productId']}: Cannot verify download of package: missing md5sum file")
-
+					self._verifyDownloadedPackage(packageFile, availablePackage, zsynced, notifier)
 					newPackages.append(availablePackage)
 
 				if not newPackages:
@@ -396,18 +377,28 @@ class OpsiPackageUpdater:
 					if package['repository'].autoSetup:
 						if isinstance(package['product'], NetbootProduct):
 							logger.info(
-								u"Not setting action 'setup' for product '{0}' where installation status 'installed' because auto setup is not allowed for netboot products",
+								u"Not setting action 'setup' for product '%s' where installation status 'installed' because auto setup is not allowed for netboot products",
+								package['productId']
+							)
+							continue
+						elif package['productId'].startswith(('opsi-local-image-', 'opsi-uefi-', 'opsi-vhd-', 'opsi-wim-', 'windows10-upgrade', 'opsi-auto-update')):
+							logger.info(
+								u"Not setting action 'setup' for product '%s' where installation status 'installed' because auto setup is not allowed for opsi module products",
 								package['productId']
 							)
 							continue
 
+						if any(exclude.search(package['productId']) for exclude in repository.autosetupexcludes):
+							logger.info(u"Not setting action 'setup' for product '%s' because it's excluded by regular expression" % package['productId'])
+							continue
+
 						logger.notice(
-							u"Setting action 'setup' for product '{0}' where installation status 'installed' because auto setup is set for repository '{1}'",
+							u"Setting action 'setup' for product '%s' where installation status 'installed' because auto setup is set for repository '%s'",
 							package['productId'], package['repository'].name
 						)
 					else:
 						logger.info(
-							u"Not setting action 'setup' for product '{0}' where installation status 'installed' because auto setup is not set for repository '{1}'",
+							u"Not setting action 'setup' for product '%s' where installation status 'installed' because auto setup is not set for repository '%s'",
 							package['productId'], package['repository'].name
 						)
 						continue
@@ -513,6 +504,56 @@ class OpsiPackageUpdater:
 
 		return products
 
+	def _verifyDownloadedPackage(self, packageFile, availablePackage, zsynced, notifier):
+		"""
+		Verify the downloaded package.
+
+		This checks the hashsums of the downloaded package.
+		If the download was done with zsync and the hashes are different
+		we download the package in whole.
+
+		:param packageFile: The path to the package that is checked.
+		:type packageFile: str
+		:param availablePackage: Information about the package.
+		:type availablePackage: dict
+		:param notifier: The notifier to use
+		:raise HashsumMissmatchError: In case the hashsums mismatch
+		"""
+		if availablePackage['md5sum']:
+			logger.info(u"Verifying download of package '%s'" % packageFile)
+			md5 = md5sum(packageFile)
+			if md5 != availablePackage["md5sum"]:
+				if zsynced:
+					logger.warning(
+						u"%s: zsynced Download has failed, trying "
+						u"once to load full package",
+						availablePackage['productId']
+					)
+					self.downloadPackage(availablePackage, notifier=notifier)
+					self.cleanupPackages(availablePackage)
+
+					md5 = md5sum(packageFile)
+
+				# Check again in case we re-downloaded the file
+				if md5 != availablePackage["md5sum"]:
+					raise HashsumMissmatchError(
+						u"{productId}: md5sum mismatch".format(
+							productId=availablePackage['productId']
+						)
+					)
+
+			logger.info(
+				u"%s: md5sum match, package download verified",
+				availablePackage['productId']
+			)
+		else:
+			logger.warning(
+				u"{productId}: Cannot verify download of package: "
+				u"missing md5sum file".format(
+					productId=availablePackage['productId']
+				)
+			)
+
 	def downloadPackages(self):
 		if not any(self.getActiveRepositories()):
 			logger.warning(u"No repositories configured, nothing to do")
@@ -592,26 +633,7 @@ class OpsiPackageUpdater:
 						self.downloadPackage(availablePackage, notifier=notifier)
 					self.cleanupPackages(availablePackage)
 
-				if availablePackage['md5sum']:
-					logger.info(u"Verifying download of package '%s'", packageFile)
-					md5 = md5sum(packageFile)
-					if md5 == availablePackage["md5sum"]:
-						logger.info(u"%s: md5sum match, package download verified", availablePackage['productId'])
-					elif md5 != availablePackage["md5sum"] and zsynced:
-						logger.warning(u"%s: zsynced Download has failed, try once to load full package", availablePackage['productId'])
-						self.downloadPackage(availablePackage, notifier=notifier)
-						self.cleanupPackages(availablePackage)
-
-						md5 = md5sum(packageFile)
-						if md5 == availablePackage["md5sum"]:
-							logger.info(u"%s: md5sum match, package download verified", availablePackage['productId'])
-						else:
-							raise RuntimeError(u"Failed to download package '%s', md5sum mismatch" % availablePackage['packageFile'])
-					else:
-						logger.warning(u"%s: md5sum mismatch and no zsync. Doing nothing.", availablePackage['productId'])
-				else:
-					logger.warning(u"%s: Cannot verify download of package: missing md5sum file", availablePackage['productId'])
-
+				self._verifyDownloadedPackage(packageFile, availablePackage, zsynced, notifier=notifier)
 				newPackages.append(availablePackage)
 
 			if not newPackages:
