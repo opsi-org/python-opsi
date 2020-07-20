@@ -1643,7 +1643,7 @@ def getUserToken(sessionId=None, duplicateFrom=u"winlogon.exe"):
 	return hUserTokenDup
 
 
-def runCommandInSession(command, sessionId=None, desktop=u"default", duplicateFrom=u"winlogon.exe", waitForProcessEnding=True, timeoutSeconds=0):
+def runCommandInSession(command, sessionId=None, desktop=u"default", duplicateFrom=u"winlogon.exe", waitForProcessEnding=True, timeoutSeconds=0, noWindow=False):
 	"""
 	put command arguments in double, not single, quotes.
 	"""
@@ -1674,6 +1674,8 @@ def runCommandInSession(command, sessionId=None, desktop=u"default", duplicateFr
 	userToken = getUserToken(sessionId, duplicateFrom)
 
 	dwCreationFlags = win32con.NORMAL_PRIORITY_CLASS
+	if noWindow:
+		dwCreationFlags |= win32con.CREATE_NO_WINDOW
 
 	s = win32process.STARTUPINFO()
 	s.lpDesktop = desktop

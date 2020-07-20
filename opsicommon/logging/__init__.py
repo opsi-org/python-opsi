@@ -1,6 +1,6 @@
 from .logging import (
 	logger, context, secret_filter,
-	handle_log_exception, init_logging, set_format, log_context,
+	handle_log_exception, logging_config, init_logging, set_format, log_context,
 	print_logger_info,
 	set_context, set_filter, set_filter_from_string,
 	ContextFilter, ContextSecretFormatter, SecretFilter

@@ -143,7 +143,7 @@ try:
 			"OPSI.Logger.setLogFile is deprecated, instead add a FileHandler to logger.",
 			DeprecationWarning
 		)
-		init_logging(log_file=logFile)
+		logging_config(log_file=logFile)
 	logger.setLogFile = setLogFile
 
 	def setLogFormat(logFormat, object=None):
@@ -184,7 +184,7 @@ try:
 			"OPSI.Logger.setConsoleLevel is deprecated, instead modify the StreamHandler loglevel.",
 			DeprecationWarning
 		)
-		init_logging(stderr_level=logLevel)
+		logging_config(stderr_level=logLevel)
 	logger.setConsoleLevel = setConsoleLevel
 
 	def setFileLevel(logLevel, object=None):
@@ -192,7 +192,7 @@ try:
 			"OPSI.Logger.setFileLevel is deprecated, instead modify the FileHandler loglevel.",
 			DeprecationWarning
 		)
-		init_logging(file_level=logLevel)
+		logging_config(file_level=logLevel)
 	logger.setFileLevel = setFileLevel
 except ImportError:
 	pass
@@ -456,12 +456,14 @@ class SecretFilter(metaclass=Singleton):
 			if secret in self.secrets:
 				self.secrets.remove(secret)
 
-def init_logging(
+last_stderr_format = None
+last_file_format = None
+def logging_config(
 	stderr_level: int = None,
 	stderr_format: str = DEFAULT_COLORED_FORMAT,
 	log_file: str = None,
 	file_level: int = None,
-	file_format: str = DEFAULT_FORMAT
+	file_format: str = None
 ):
 	"""
 	Initialize logging.
@@ -510,10 +512,12 @@ def init_logging(
 		handler.name = "opsi_stderr_handler"
 		handler.setLevel(stderr_level)
 		logging.root.addHandler(handler)
-	
+
 	if stderr_format and stderr_format.find("(log_color)") != -1 and not sys.stderr.isatty():
 		stderr_format = stderr_format.replace('%(log_color)s', '').replace('%(reset)s', '')
 	set_format(file_format, stderr_format)
+
+init_logging = logging_config
 
 def set_format(
 	file_format: str = DEFAULT_FORMAT,
@@ -656,11 +660,10 @@ def get_all_handlers(handler_type = None):
 	"""
 	handlers = []
 	for _logger in get_all_loggers():
-		if isinstance(_logger, logging.PlaceHolder):
-			continue
-		for _handler in _logger.handlers:
-			if not handler_type or isinstance(_handler, handler_type):
-				handlers.append(_handler)
+		if not isinstance(_logger, logging.PlaceHolder):
+			for _handler in _logger.handlers:
+				if not handler_type or type(_handler) is handler_type:
+					handlers.append(_handler)
 	return handlers
 
 def remove_all_handlers(handler_type = None):
@@ -674,11 +677,10 @@ def remove_all_handlers(handler_type = None):
 	:type handler_type: class
 	"""
 	for _logger in get_all_loggers():
-		if isinstance(_logger, logging.PlaceHolder):
-			continue
-		for _handler in _logger.handlers:
-			if not handler_type or isinstance(_handler, handler_type):
-				_logger.removeHandler(_handler)
+		if not isinstance(_logger, logging.PlaceHolder):
+			for _handler in _logger.handlers:
+				if not handler_type or type(_handler) is handler_type:
+					_logger.removeHandler(_handler)
 
 def print_logger_info():
 	"""
@@ -689,12 +691,13 @@ def print_logger_info():
 	"""
 	for _logger in get_all_loggers():
 		print(f"- Logger: {_logger}", file=sys.stderr)
-		for _handler in _logger.handlers:
-			print(f"  - Handler: {_handler}", file=sys.stderr)
-			print(f"    - Formatter: {_handler.formatter}", file=sys.stderr)
+		if not isinstance(_logger, logging.PlaceHolder):
+			for _handler in _logger.handlers:
+				print(f"  - Handler: {_handler}", file=sys.stderr)
+				print(f"    - Formatter: {_handler.formatter}", file=sys.stderr)
 
-init_logging(stderr_level=logging.WARNING)
-#init_logging(stderr_level=logging.NOTSET)
+logging_config(stderr_level=logging.WARNING)
+#logging_config(stderr_level=logging.NOTSET)
 secret_filter = SecretFilter()
 context_filter = ContextFilter()
 logging.root.addFilter(context_filter)
