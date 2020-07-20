@@ -479,6 +479,18 @@ def init_logging(
 	:param file_format: Format to set for the file logging stream.
 	:type file_format: str
 	"""
+	global last_stderr_format
+	if stderr_format is None:
+		stderr_format = last_stderr_format or DEFAULT_FORMAT
+	else:
+		last_stderr_format = stderr_format
+
+	global last_file_format
+	if file_format is None:
+		file_format = last_file_format or DEFAULT_FORMAT
+	else:
+		last_file_format = file_format
+
 	if stderr_level is not None and stderr_level < 10:
 		stderr_level = logging._opsiLevelToLevel[stderr_level]
 	if file_level is not None and file_level < 10:
