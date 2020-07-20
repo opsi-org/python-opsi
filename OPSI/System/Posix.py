@@ -3987,6 +3987,7 @@ def getActiveSessionIds(winApiBugCommand=None, data=None):
 				sessions.append(env["DISPLAY"])
 		except psutil.AccessDenied as e:
 			logger.debug(e)
+	sessions = sorted(sessions, key=lambda s: int(re.sub("\D", "", s)))
 	return sessions
 
 def getActiveSessionId():
@@ -4044,9 +4045,11 @@ until the execution of the process is terminated.
 	session_env = None
 	for proc in psutil.process_iter():
 		env = proc.environ()
-		if env.get("DISPLAY") == sessionId and env.get("XAUTHORITY"):
-			session_env = env
-	
+		if env.get("DISPLAY") == sessionId:
+			if session_env is None or env.get("XAUTHORITY"):
+				session_env = env
+	if not session_env.get("XAUTHORITY"):
+		session_env["XAUTHORITY"] = os.path.join(session_env.get("HOME"), ".Xauthority")
 	if not session_env:
 		raise ValueError(f"Session {sessionId} not found")
 	
