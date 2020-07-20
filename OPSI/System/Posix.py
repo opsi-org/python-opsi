@@ -4053,14 +4053,26 @@ until the execution of the process is terminated.
 	sp_env = get_subprocess_environment(session_env)
 
 	logger.debug("Using process env: %s", sp_env)
-	process = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=sp_env)
+	process = subprocess.Popen(
+		args=command,
+		shell=True,
+		stdin=subprocess.PIPE,
+		stdout=subprocess.PIPE,
+		stderr=subprocess.STDOUT,
+		env=sp_env
+	)
 	
+	fd = process.stdout.fileno()
+	fl = fcntl.fcntl(fd, fcntl.F_GETFL)
+	fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
+
 	logger.info(u"Process started, pid: %s", process.pid)
 	if not waitForProcessEnding:
 		return (process, None, process.pid, None)
 
 	logger.info(u"Waiting for process ending: %s (timeout: %s seconds)", process.pid, timeoutSeconds)
 	timeRunning = 0.0
+	out = b""
 	while process.poll() is None:
 		if timeoutSeconds:
 			if timeRunning >= timeoutSeconds:
@@ -4069,9 +4081,18 @@ until the execution of the process is terminated.
 
 			timeRunning += sleepDuration
 		time.sleep(sleepDuration)
-
+		try:
+			data = process.stdout.read()
+			if data:
+				out += data
+		except IOError:
+			pass
+	out = out.decode("utf-8", "replace")
 	l = logger.notice
-	if process.returncode != 0:
+	if process.returncode == 0:
+		logger.info("Process output:\n%s", out)
+	else:
+		logger.warning("Process output:\n%s", out)
 		l = logger.warning
 	l("Process %s ended with exit code %s", process.pid, process.returncode)
 	return (None, None, None, None)
