@@ -39,7 +39,7 @@ def test_levels(log_stream):
 	with log_stream as stream:
 		#handler.setLevel(logging.SECRET)
 		logger.setLevel(logging.SECRET)
-		set_format("%(message)s")
+		set_format(stderr_format="%(message)s")
 		expected = ""
 		for level in (
 			"secret", "confidential", "trace", "debug2", "debug",
@@ -67,7 +67,7 @@ def test_secret_filter(log_stream):
 	with log_stream as stream:
 		#handler.setLevel(logging.SECRET)
 		logger.setLevel(logging.SECRET)
-		set_format("[%(asctime)s.%(msecs)03d] %(message)s")
+		set_format(stderr_format="[%(asctime)s.%(msecs)03d] %(message)s")
 
 		secret_filter.set_min_length(7)	
 		secret_filter.add_secrets("PASSWORD", "2SHORT", "SECRETSTRING")
@@ -134,7 +134,7 @@ def test_context(log_stream):
 	with log_stream as stream:
 		#handler.setLevel(logging.SECRET)
 		logger.setLevel(logging.SECRET)
-		set_format("%(log_color)s[%(opsilevel)d] [%(asctime)s.%(msecs)03d]%(reset)s [%(contextstring)s] %(message)s   (%(filename)s:%(lineno)d)")
+		set_format(stderr_format="%(log_color)s[%(opsilevel)d] [%(asctime)s.%(msecs)03d]%(reset)s [%(contextstring)s] %(message)s   (%(filename)s:%(lineno)d)")
 
 		logger.info("before setting context")
 		with log_context({'whoami' : "first-context"}):
@@ -204,7 +204,7 @@ def test_context_threads(log_stream):
 				logger.info("MyModule.run")
 				common_work()
 
-	set_format("%(contextstring)s %(message)s")
+	set_format(stderr_format="%(contextstring)s %(message)s")
 	with log_context({'whoami' : "MAIN"}):
 		with log_stream as stream:
 			m = Main()
