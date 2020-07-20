@@ -4044,7 +4044,7 @@ until the execution of the process is terminated.
 	session_env = None
 	for proc in psutil.process_iter():
 		env = proc.environ()
-		if env.get("DISPLAY") == sessionId:
+		if env.get("DISPLAY") == sessionId and env.get("XAUTHORITY"):
 			session_env = env
 	
 	if not session_env:
