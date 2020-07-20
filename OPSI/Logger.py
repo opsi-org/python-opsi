@@ -43,11 +43,13 @@ These functions realize the OPSI.Logger features utilizing
 python logging methods.
 """
 # Replace OPSI Logger
-def opsi_logger_factory():
+def opsi_logger_factory(logFile=None):
 	warnings.warn(
 		"OPSI.Logger.Logger is deprecated, use opsicommon.logging.logger instead.",
 		DeprecationWarning
 	)
+	if logFile is not None:
+		opsicommon.logging.logging_config(log_file=logFile)
 	return logger
 Logger = opsi_logger_factory
 
