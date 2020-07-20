@@ -1133,12 +1133,25 @@ def getDiskSpaceUsage(path):
 	return info
 
 
+def is_mounted(devOrMountpoint):
+	if platform.system() == "Linux":
+		with codecs.open("/proc/mounts", "r", "utf-8") as f:
+			for line in f.readlines():
+				(dev, mountpoint) = line.split(" ", 2)[:2]
+				if devOrMountpoint in (dev, mountpoint):
+					return True
+	return False
+	
 def mount(dev, mountpoint, **options):
 	dev = forceUnicode(dev)
 	mountpoint = forceFilename(mountpoint)
 	if not os.path.isdir(mountpoint):
 		os.makedirs(mountpoint)
 
+	if is_mounted(mountpoint):
+		logger.debug("Mountpoint '%s' already mounted, umounting before mount", mountpoint)
+		umount(mountpoint)
+	
 	for (key, value) in options.items():
 		options[key] = forceUnicode(value)
 
@@ -1262,13 +1275,24 @@ def mount(dev, mountpoint, **options):
 			os.remove(f)
 
 
-def umount(devOrMountpoint):
-	try:
-		execute(u"%s %s" % (which('umount'), devOrMountpoint))
-	except Exception as e:
-		logger.error(u"Failed to umount '%s': %s", devOrMountpoint, e)
-		raise RuntimeError(u"Failed to umount '%s': %s" % (devOrMountpoint, e))
-
+def umount(devOrMountpoint, max_attempts=10):
+	if not is_mounted(devOrMountpoint):
+		logger.info("'%s' not mounted, no need to umount", devOrMountpoint)
+		return
+	attempt = 0
+	while True:
+		attempt += 1
+		try:
+			execute(u"%s %s" % (which('umount'), devOrMountpoint))
+			logger.info("'%s' umounted", devOrMountpoint)
+			break
+		except Exception as e:
+			if attempt >= max_attempts:
+				logger.error("Failed to umount '%s': %s", devOrMountpoint, e)
+				raise RuntimeError(f"Failed to umount '{devOrMountpoint}': {e}")
+			else:
+				logger.warning("Failed to umount '%s' (attempt #%d): %s", devOrMountpoint, attempt, e)
+				time.sleep(3)
 
 def getBlockDeviceBusType(device):
 	"""
