@@ -130,6 +130,23 @@ def test_legacy_logger(log_stream):
 		log = stream.read()
 		assert "LOG_EXCEPTION" in log
 
+@pytest.mark.skipif(not LegacyLogger, reason="OPSI.Logger not available.")
+def test_legacy_logger_file(log_stream):
+	with log_stream as stream:
+		logger.setLevel(logging.SECRET)
+
+		legacy_logger = LegacyLogger("/tmp/test.log")
+		assert legacy_logger == logger
+		legacy_logger.info("test should appear")
+
+		stream.seek(0)
+		log = stream.read()
+		assert "test should appear" in log
+
+	with open("/tmp/test.log") as logfile:
+		content = logfile.read()
+		assert "test should appear" in content
+
 def test_context(log_stream):
 	with log_stream as stream:
 		#handler.setLevel(logging.SECRET)

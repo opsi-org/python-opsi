@@ -12,7 +12,6 @@ import sys
 import os
 import logging
 import colorlog
-import warnings
 import contextvars
 from contextlib import contextmanager
 from typing import Dict, Tuple, Any
@@ -21,9 +20,7 @@ from logging.handlers import WatchedFileHandler, RotatingFileHandler
 from ..utils import Singleton
 from .constants import (
 	DEFAULT_COLORED_FORMAT, DEFAULT_FORMAT, DATETIME_FORMAT,
-	CONTEXT_STRING_MIN_LENGTH, LOG_COLORS, SECRET_REPLACEMENT_STRING,
-	LOG_SECRET, LOG_TRACE, LOG_DEBUG, LOG_INFO, LOG_NOTICE, LOG_WARNING,
-	LOG_ERROR, LOG_CRITICAL, LOG_ESSENTIAL, LOG_NONE
+	CONTEXT_STRING_MIN_LENGTH, LOG_COLORS, SECRET_REPLACEMENT_STRING
 )
 
 logger = logging.getLogger()
@@ -120,83 +117,6 @@ def logrecord_init(self, name, level, pathname, lineno, msg, args, exc_info, fun
 
 logging.LogRecord.__init_orig__ = logging.LogRecord.__init__
 logging.LogRecord.__init__ = logrecord_init
-
-try:
-	"""
-	Compatibility functions.
-
-	These functions realize the OPSI.Logger features utilizing
-	python logging methods.
-	"""
-	# Replace OPSI Logger
-	import OPSI.Logger
-	def opsi_logger_factory():
-		warnings.warn(
-			"OPSI.Logger.Logger is deprecated, use opsicommon.logging.logger instead.",
-			DeprecationWarning
-		)
-		return logger
-	OPSI.Logger.Logger = opsi_logger_factory
-
-	def setLogFile(logFile, currentThread=False, object=None):
-		warnings.warn(
-			"OPSI.Logger.setLogFile is deprecated, instead add a FileHandler to logger.",
-			DeprecationWarning
-		)
-		logging_config(log_file=logFile)
-	logger.setLogFile = setLogFile
-
-	def setLogFormat(logFormat, object=None):
-		warnings.warn(
-			"OPSI.Logger.setLogFormat is deprecated, use opsicommon.logging.set_format instead.",
-			DeprecationWarning
-		)
-		pass
-	logger.setLogFormat = setLogFormat
-
-	def setConfidentialStrings(strings):
-		warnings.warn(
-			"OPSI.Logger.setConfidentialStrings is deprecated, use secret_filter.clear_secrets,\
-			secret_filter.add_secrets instead.", DeprecationWarning
-		)
-		secret_filter.clear_secrets()
-		secret_filter.add_secrets(*strings)
-	logger.setConfidentialStrings = setConfidentialStrings
-
-	def addConfidentialString(string):
-		warnings.warn(
-			"OPSI.Logger.addConfidentialString is deprecated, use secret_filter.add_secrets instead.",
-			DeprecationWarning
-		)
-		secret_filter.add_secrets(string)
-	logger.addConfidentialString = addConfidentialString
-
-	def logException(e, logLevel=logging.CRITICAL):
-		warnings.warn(
-			"OPSI.Logger.logException is deprecated, instead use logger.log with exc_info=True.",
-			DeprecationWarning
-		)
-		logger.log(level=logLevel, msg=e, exc_info=True)
-	logger.logException = logException
-
-	def setConsoleLevel(logLevel, object=None):
-		warnings.warn(
-			"OPSI.Logger.setConsoleLevel is deprecated, instead modify the StreamHandler loglevel.",
-			DeprecationWarning
-		)
-		logging_config(stderr_level=logLevel)
-	logger.setConsoleLevel = setConsoleLevel
-
-	def setFileLevel(logLevel, object=None):
-		warnings.warn(
-			"OPSI.Logger.setFileLevel is deprecated, instead modify the FileHandler loglevel.",
-			DeprecationWarning
-		)
-		logging_config(file_level=logLevel)
-	logger.setFileLevel = setFileLevel
-except ImportError:
-	pass
-
 
 def handle_log_exception(exc: Exception, record: logging.LogRecord = None, log: bool = True):
 	"""
