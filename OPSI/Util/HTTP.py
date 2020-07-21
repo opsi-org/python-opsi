@@ -117,15 +117,17 @@ def non_blocking_connect_https(self, connectTimeout=0, verifyByCaCertsFile=None)
 def getPeerCertificate(httpsConnectionOrSSLSocket, asPEM=True):
 	logger.debug2("Trying to get peer cert from %s", httpsConnectionOrSSLSocket)
 	sock = httpsConnectionOrSSLSocket
-	if hasattr(sock, "sock") and sock.sock:
+	if hasattr(sock, "sock"):
 		sock = sock.sock
 	try:
+		if not sock:
+			raise RuntimeError("Socket not initialized")
 		cert = crypto.load_certificate(crypto.FILETYPE_ASN1, sock.getpeercert(binary_form=True))
 		if not asPEM:
 			return cert
 		return crypto.dump_certificate(crypto.FILETYPE_PEM, cert)
 	except Exception as error:
-		logger.debug2(u"Failed to get peer cert: %s", error)
+		logger.warning(u"Failed to get peer cert: %s", error)
 		return None
 
 
@@ -365,7 +367,7 @@ class HTTPConnectionPool(object):
 			conn = None
 
 		return conn or self._new_conn()
-
+	
 	def _put_conn(self, conn):
 		"""
 		Put a connection back into the pool.
@@ -453,6 +455,17 @@ class HTTPConnectionPool(object):
 			global totalRequests
 			totalRequests += 1
 
+			logger.debug2("Request headers: '%s'", headers)
+			logger.debug2("Handing data to connection...")
+			conn.request(method, url, body=body, headers=headers)
+			if self.socketTimeout:
+				conn.sock.settimeout(self.socketTimeout)
+			else:
+				conn.sock.settimeout(None)
+			
+			if not self.peerCertificate:
+				self.peerCertificate = getPeerCertificate(conn, asPEM=True)
+			
 			randomKey = None
 			if isinstance(self, HTTPSConnectionPool) and self.verifyServerCert and not self.serverVerified:
 				try:
@@ -474,14 +487,7 @@ class HTTPConnectionPool(object):
 					logger.logException(error, LOG_INFO)
 					logger.critical(u"Cannot verify server based on certificate file '%s': %s", self.serverCertFile, error)
 					randomKey = None
-
-			logger.debug2("Request headers: '%s'", headers)
-			logger.debug2("Handing data to connection...")
-			conn.request(method, url, body=body, headers=headers)
-			if self.socketTimeout:
-				conn.sock.settimeout(self.socketTimeout)
-			else:
-				conn.sock.settimeout(None)
+			
 			httplib_response = conn.getresponse()
 
 			# from_httplib will perform httplib_response.read() which will have
@@ -621,7 +627,8 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 				logger.debug(u"Verification failed: '%s'", error)
 				raise OpsiServiceVerificationError(forceUnicode(error))
 
-		self.peerCertificate = getPeerCertificate(conn, asPEM=True)
+			self.peerCertificate = getPeerCertificate(conn, asPEM=True)
+		
 		if self.verifyServerCertByCa:
 			logger.debug("Attempting to verify server cert by CA...")
 			try:
