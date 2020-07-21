@@ -44,6 +44,7 @@ import subprocess
 import threading
 import time
 import psutil
+import getpass
 import copy as pycopy
 distro_module = None
 if platform.system() == "Linux":
@@ -4066,11 +4067,14 @@ until the execution of the process is terminated.
 
 	logger.notice(u"Executing: '%s'", command)
 
+	username = getpass.getuser()
+	session_username = None
 	session_env = None
 	for proc in psutil.process_iter():
 		env = proc.environ()
 		if env.get("DISPLAY") == sessionId:
 			if session_env is None or env.get("XAUTHORITY"):
+				session_username = proc.username()
 				session_env = env
 	if not session_env.get("XAUTHORITY"):
 		session_env["XAUTHORITY"] = os.path.join(session_env.get("HOME"), ".Xauthority")
@@ -4078,8 +4082,21 @@ until the execution of the process is terminated.
 		raise ValueError(f"Session {sessionId} not found")
 	
 	sp_env = get_subprocess_environment(session_env)
-
 	logger.debug("Using process env: %s", sp_env)
+
+	# Allow user to connect to X
+	xhost_cmd = ["sudo", "-u", session_username, "xhost", f"+si:localuser:{username}"]
+	logger.info("Running command %s", xhost_cmd)
+	process = subprocess.run(
+		xhost_cmd,
+		stdout=subprocess.PIPE,
+		stderr=subprocess.STDOUT,
+		env=sp_env
+	)
+	out = process.stdout.decode("utf-8", "replace") if process.stdout else ""
+	logger.debug("xhost output: %s", out)
+	
+	logger.info("Running command %s", command)
 	process = subprocess.Popen(
 		args=command,
 		shell=True,
