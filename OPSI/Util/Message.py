@@ -612,6 +612,7 @@ class NotificationServer(threading.Thread, SubjectsObserver):
 		self._listening = False
 		self._error = None
 		self._port = 0
+		self._running_event = threading.Event()
 
 	@property
 	def port(self):
@@ -672,6 +673,11 @@ class NotificationServer(threading.Thread, SubjectsObserver):
 					logger.logException(error)
 					break
 				port += 1
+		self._running_event.set()
+	
+	def start_and_wait(timeout=30):
+		self.start()
+		self._running_event.wait(timeout)
 	
 	def _stopListeningCompleted(self, result):
 		self._listening = False
