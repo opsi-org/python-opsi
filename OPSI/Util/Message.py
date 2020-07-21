@@ -678,6 +678,7 @@ class NotificationServer(threading.Thread, SubjectsObserver):
 	def start_and_wait(timeout=30):
 		self.start()
 		self._running_event.wait(timeout)
+		return self._listening
 	
 	def _stopListeningCompleted(self, result):
 		self._listening = False
