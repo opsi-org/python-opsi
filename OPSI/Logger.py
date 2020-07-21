@@ -107,5 +107,5 @@ def setFileLevel(logLevel, object=None):
 		"OPSI.Logger.setFileLevel is deprecated, instead modify the FileHandler loglevel.",
 		DeprecationWarning
 	)
-	opsicommon.logginglogging_config(file_level=logLevel)
+	opsicommon.logging.logging_config(file_level=logLevel)
 logger.setFileLevel = setFileLevel
