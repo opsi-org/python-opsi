@@ -378,7 +378,7 @@ last_stderr_format = None
 last_file_format = None
 def logging_config(
 	stderr_level: int = None,
-	stderr_format: str = DEFAULT_COLORED_FORMAT,
+	stderr_format: str = None,
 	log_file: str = None,
 	file_level: int = None,
 	file_format: str = None
