@@ -273,9 +273,7 @@ class ContextSecretFormatter(logging.Formatter):
 				record.contextstring = ""
 		else:
 			record.contextstring = ""
-		length = len(record.contextstring)
-		if length < CONTEXT_STRING_MIN_LENGTH:
-			record.contextstring += " "*(CONTEXT_STRING_MIN_LENGTH - length)
+		record.contextstring = 	f"{record.contextstring:{CONTEXT_STRING_MIN_LENGTH}}"
 		msg = self.orig_formatter.format(record)
 		if record.levelno != logging.SECRET:
 			for secret in secret_filter.secrets:
