@@ -20,7 +20,7 @@ from logging.handlers import WatchedFileHandler, RotatingFileHandler
 from ..utils import Singleton
 from .constants import (
 	DEFAULT_COLORED_FORMAT, DEFAULT_FORMAT, DATETIME_FORMAT,
-	CONTEXT_STRING_MIN_LENGTH, LOG_COLORS, SECRET_REPLACEMENT_STRING
+	LOG_COLORS, SECRET_REPLACEMENT_STRING
 )
 
 logger = logging.getLogger()
@@ -273,7 +273,7 @@ class ContextSecretFormatter(logging.Formatter):
 				record.contextstring = ""
 		else:
 			record.contextstring = ""
-		record.contextstring = 	f"{record.contextstring:{CONTEXT_STRING_MIN_LENGTH}}"
+		#record.contextstring = 	f"{record.contextstring:{CONTEXT_STRING_MIN_LENGTH}}"
 		msg = self.orig_formatter.format(record)
 		if record.levelno != logging.SECRET:
 			for secret in secret_filter.secrets:
