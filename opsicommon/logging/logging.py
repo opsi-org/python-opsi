@@ -217,10 +217,10 @@ class ContextFilter(logging.Filter, metaclass=Singleton):
 		:rtype: bool
 		"""
 		record.context = context.get()
-		for (filter_key, filter_value) in self.filter_dict.items():
+		for (filter_key, filter_values) in self.filter_dict.items():
 			record_value = record.context.get(filter_key)
-			#skip if key not present or value not in filter values
-			if record_value is None or record_value not in filter_value:
+			# Filter out record if key not present or value not in filter values
+			if record_value in (None, "") or record_value not in filter_values:
 				return False
 		return True
 
@@ -518,9 +518,11 @@ def set_filter(filter_dict : Dict):
 		context in order to accept the LogRecord.
 	:type filter_dict: Dict
 	"""
-	for fil in logging.root.filters:
-		if isinstance(fil, ContextFilter):
-			fil.set_filter(filter_dict)
+	for _logger in get_all_loggers():
+		if not isinstance(_logger, logging.PlaceHolder):
+			if not context_filter in _logger.filters:
+				_logger.addFilter(context_filter)
+	context_filter.set_filter(filter_dict)
 
 def set_filter_from_string(filter_string : str):
 	"""
