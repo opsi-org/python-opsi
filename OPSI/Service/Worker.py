@@ -497,8 +497,8 @@ class WorkerOpsi:
 					logger.debug(u"Expecting deflate compressed data from client")
 					self.query = deflateDecode(self.query)
 
-			if type(self.query) is bytes:
-				self.query = self.query.decode('utf-8')
+			#if type(self.query) is bytes:
+			#	self.query = self.query.decode('utf-8')
 		except Exception as e:
 			logger.error("Error during decoding of query: %s", e, exc_info=True)
 			#if isinstance(e, UnicodeDecodeError):
@@ -699,17 +699,20 @@ class WorkerOpsiJsonInterface(WorkerOpsiJsonRpc):
 				javascript.append(f"currentParams[{index}] = '{toJson(param)}';")
 
 		selectMethod = []
-		for method in self._callInterface:
-			methodName = method["name"]
-			javascript.append(f"parameters['{methodName}'] = new Array();")
-			for (index, param) in enumerate(method['params']):
-				javascript.append(f"parameters['{methodName}'][{index}]='{param}';")
+		try:
+			for method in self._callInterface:
+				methodName = method["name"]
+				javascript.append(f"parameters['{methodName}'] = new Array();")
+				for (index, param) in enumerate(method['params']):
+					javascript.append(f"parameters['{methodName}'][{index}]='{param}';")
 
-			selected = ""
-			if method["name"] == currentMethod:
-				selected = ' selected="selected"'
-			selectMethod.append(f"<option{selected}>{method['name']}</option>")
-
+				selected = ""
+				if method["name"] == currentMethod:
+					selected = ' selected="selected"'
+				selectMethod.append(f"<option{selected}>{method['name']}</option>")
+		except Exception as e:
+			logger.error(e, exc_info=True)
+		
 		def wrapInDiv(obj):
 			return f'<div class="json">{obj}</div>'
 
