@@ -497,19 +497,14 @@ class WorkerOpsi:
 					logger.debug(u"Expecting deflate compressed data from client")
 					self.query = deflateDecode(self.query)
 
-			if not isinstance(self.query, str):
-				self.query = str(self.query, encoding='utf-8')
-		except (UnicodeError, UnicodeEncodeError) as error:
-			logger.logException(error)
-
-			if not isinstance(self.query, str):
-				self.query = str(self.query, encoding='utf-8', errors='replace')
-				logger.debug(u"Fallback Decoded query: %s", self.query)
-		except Exception as error:
-			logger.logException(error)
-			logger.warning("Unexpected error during decoding of query: %s", error)
+			if type(self.query) is bytes:
+				self.query = self.query.decode('utf-8')
+		except Exception as e:
+			logger.error("Error during decoding of query: %s", e, exc_info=True)
+			#if isinstance(e, UnicodeDecodeError):
+			logger.trace(self.query)
 			raise error
-
+		
 		logger.debug2(u"query: %s", self.query)
 		return result
 

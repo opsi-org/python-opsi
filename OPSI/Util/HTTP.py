@@ -728,7 +728,6 @@ def destroyPool(pool):
 			del connectionPools[key]
 			break
 
-
 def deflateEncode(data, level=1):
 	"""
 	Compress data with deflate.
@@ -738,8 +737,9 @@ def deflateEncode(data, level=1):
 	:param level: Compression level
 	:rtype: bytes
 	"""
-	return zlib.compress(data.encode(), level)
-
+	if not type(data) is bytes:
+		data = data.encode()
+	return zlib.compress(data, level)
 
 def deflateDecode(data):
 	"""
@@ -748,8 +748,7 @@ def deflateDecode(data):
 	:type data: bytes
 	:rtype: str
 	"""
-	return zlib.decompress(data).decode()
-
+	return zlib.decompress(data)
 
 def gzipEncode(data, level=1):
 	"""
@@ -760,12 +759,9 @@ def gzipEncode(data, level=1):
 	:param level: Compression level
 	:rtype: bytes
 	"""
-	inmemoryFile = BytesIO()
-	with gzip.GzipFile(fileobj=inmemoryFile, mode="w", compresslevel=level) as gzipfile:
-		gzipfile.write(data.encode())
-
-	return inmemoryFile.getvalue()
-
+	if not type(data) is bytes:
+		data = data.encode()
+	return gzip.compress(data, level)
 
 def gzipDecode(data):
 	"""
@@ -774,11 +770,7 @@ def gzipDecode(data):
 	:type data: bytes
 	:rtype: str
 	"""
-	with gzip.GzipFile(fileobj=BytesIO(data), mode="r") as gzipfile:
-		uncompressedData = gzipfile.read()
-
-	return uncompressedData.decode()
-
+	return gzip.decompress(data)
 
 @contextmanager
 def closingConnection(connection):
