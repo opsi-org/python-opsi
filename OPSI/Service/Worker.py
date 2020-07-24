@@ -30,8 +30,11 @@ Worker for the various interfaces.
 :license: GNU Affero General Public License version 3
 """
 
+import os
+import uuid
 import base64
 import urllib
+import tempfile
 
 from twisted.internet import defer, reactor, threads
 from twisted.python import failure
@@ -238,6 +241,7 @@ class WorkerOpsi:
 		self.resource = resource
 		self.session = None
 		self.authRealm = 'OPSI Service'
+		self.debugDir = os.path.join(tempfile.gettempdir(), "opsiclientd-debug")
 
 	def process(self):
 		logger.info(u"Worker %s started processing", self)
@@ -497,11 +501,18 @@ class WorkerOpsi:
 					logger.debug(u"Expecting deflate compressed data from client")
 					self.query = deflateDecode(self.query)
 
-			#if type(self.query) is bytes:
-			#	self.query = self.query.decode('utf-8')
 		except Exception as e:
 			logger.error("Error during decoding of query: %s", e, exc_info=True)
-			#if isinstance(e, UnicodeDecodeError):
+			if isinstance(e, UnicodeDecodeError) and self.debugDir:
+				try:
+					if not os.path.exists(self.debugDir):
+						os.makedirs(self.debugDir)
+					debug_file = os.path.join(self.debugDir, f"service-request-decode-error-{uuid.uuid1()}")
+					logger.notice("Writing debug file: %s" % debug_file)
+					with open(debug_file, "wb") as f:
+						f.write(self.query)
+				except Exception as e2:
+					logger.error(e2, exc_info=True)
 			logger.trace(self.query)
 			raise error
 		
