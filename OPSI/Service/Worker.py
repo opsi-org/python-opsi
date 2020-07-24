@@ -503,16 +503,6 @@ class WorkerOpsi:
 
 		except Exception as e:
 			logger.error("Error during decoding of query: %s", e, exc_info=True)
-			if isinstance(e, UnicodeDecodeError) and self.debugDir:
-				try:
-					if not os.path.exists(self.debugDir):
-						os.makedirs(self.debugDir)
-					debug_file = os.path.join(self.debugDir, f"service-request-decode-error-{uuid.uuid1()}")
-					logger.notice("Writing debug file: %s" % debug_file)
-					with open(debug_file, "wb") as f:
-						f.write(self.query)
-				except Exception as e2:
-					logger.error(e2, exc_info=True)
 			logger.trace(self.query)
 			raise error
 		
@@ -559,6 +549,16 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 			if not rpcs:
 				raise ValueError(u"Got no rpcs")
 		except Exception as e:
+			if isinstance(e, UnicodeDecodeError) and self.debugDir:
+				try:
+					if not os.path.exists(self.debugDir):
+						os.makedirs(self.debugDir)
+					debug_file = os.path.join(self.debugDir, f"service-json-decode-error-{uuid.uuid1()}")
+					logger.notice("Writing debug file: %s" % debug_file)
+					with open(debug_file, "wb") as f:
+						f.write(self.query)
+				except Exception as e2:
+					logger.error(e2, exc_info=True)
 			raise OpsiBadRpcError(u"Failed to decode rpc: %s" % e)
 
 		for rpc in forceList(rpcs):
