@@ -185,68 +185,69 @@ def getArchitecture():
 
 def getOpsiHotfixName(helper=None):
 	arch = getArchitecture()
-	major = sys.getwindowsversion()[0]
-	minor = sys.getwindowsversion()[1]
+	major = sys.getwindowsversion().major
+	minor = sys.getwindowsversion().minor
+	loc = locale.getdefaultlocale()[0].split('_')[0]
 	os = u'unknown'
 	lang = u'unknown'
+	
+	if helper:
+		logger.notice("Using version helper: %s", helper)
+		try:
+			result = execute(helper, shell=False)
+			minor = int(result[0].split(".")[1])
+			major = int(result[0].split(".")[0])
+		except Exception as e:
+			logger.warning("Version helper failed: %s, using getwindowsversion()", e)
 
 	if major == 5:
-		loc = locale.getdefaultlocale()[0].split('_')[0]
 		if loc == 'en':
-			lang = u'enu'
+			lang = 'en'
 		elif loc == 'de':
-			lang = u'deu'
+			lang = 'de'
 		elif loc == 'fr':
-			lang = u'fra'
+			lang = 'fra'
 		elif loc == 'it':
-			lang = u'ita'
+			lang = 'ita'
 		elif loc == 'ch':
-			lang = u'chs'
+			lang = 'chs'
 
 		if minor == 1:
-			os = u'winxp'
+			os = 'winxp'
 		elif minor == 2:
 			if arch == 'x86':
-				os = u'win2003'
+				os = 'win2003'
 			else:
-				os = u'win2003-winxp'
+				os = 'win2003-winxp'
+	
 	elif major == 6:
-		lang = u'glb'
-		if helper:
-			try:
-				result = execute(helper, shell=False)
-				minor = int(result[0].split(".")[1])
-				if int(result[0].split(".")[0]) == 10:
-					logger.notice("Windows 10 detected, changing major from 6 to 10")
-					major = 10
-			except Exception:
-				logger.warning(u"MSHotfix fix for Windows 8.1 don't work. Fallback to normal mode.")
-
-			if major == 10:
-				if arch == 'x86':
-					os = u'win10'
-				else:
-					os = u'win10-win2016'
+		lang = 'glb'
+		if minor == 0:
+			os = 'vista-win2008'
+		elif minor == 1:
+			if arch == 'x86':
+				os = 'win7'
 			else:
-				if minor == 0:
-					os = u'vista-win2008'
-				elif minor == 1:
-					if arch == 'x86':
-						os = u'win7'
-					else:
-						os = u'win7-win2008r2'
-				elif minor == 2:
-					if arch == 'x86':
-						os = u'win8'
-					else:
-						os = u'win8-win2012'
-				elif minor == 3:
-					if arch == 'x86':
-						os = u'win81'
-					else:
-						os = u'win81-win2012r2'
+				os = 'win7-win2008r2'
+		elif minor == 2:
+			if arch == 'x86':
+				os = 'win8'
+			else:
+				os = 'win8-win2012'
+		elif minor == 3:
+			if arch == 'x86':
+				os = 'win81'
+			else:
+				os = 'win81-win2012r2'
 
-	return u'mshotfix-%s-%s-%s' % (os, arch, lang)
+	elif major == 10:
+		lang = 'glb'
+		if arch == 'x86':
+			os = 'win10'
+		else:
+			os = 'win10-win2016'
+	
+	return 'mshotfix-%s-%s-%s' % (os, arch, lang)
 
 
 def getHostname():
