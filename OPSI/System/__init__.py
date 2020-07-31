@@ -44,6 +44,11 @@ if os.name == 'posix':
 elif os.name == 'nt':
 	from .Windows import *
 
+import platform
+if platform.system() == 'Darwin':
+	#override os-specific methods from Posix
+	from .Darwin import getBlockDeviceContollerInfo, hardwareInventory
+
 logger = Logger()
 
 
