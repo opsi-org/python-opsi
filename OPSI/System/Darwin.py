@@ -67,11 +67,11 @@ def set_value(mydict, key_list, last_key, value):
 	subdict[last_key] = value
 
 def parse_profiler_output(lines):
-	optRegex = re.compile('(\s+)([^:]+):(.*)')
+	#optRegex = re.compile('(\s+)([^:]+):(.*)')
 
 	hwdata = {}
 	key_list = []
-	current_indent = 0
+	indent_list = []
 	for line in lines:
 		indent = len(line) - len(line.lstrip())
 		parts = [x.strip() for x in line.split(":", 1)]
@@ -79,15 +79,16 @@ def parse_profiler_output(lines):
 			continue
 
 		#IDEA: more efficient to maintain a subdict view -> Problem: upwards reference
-		if indent > current_indent and parts[1] == "":
-			current_indent = indent
+		if indent > indent_list[-1] and parts[1] == "":
+			indent_list.append(indent)
 			key_list.append(parts[0])
-		elif indent < current_indent:
-			current_indent = indent
-			key_list.pop()
-		elif not parts[1] == "":
-			value = removeUnit(parts[1])
-			set_value(hwdata, key_list, parts[0], value)
+		else:
+			while indent < indent_list[-1]:
+				indent_list.pop()
+				key_list.pop()
+			if  not parts[1] == "":
+				value = removeUnit(parts[1])
+				set_value(hwdata, key_list, parts[0], value)
 	return hwdata
 
 def osx_hardwareInventory(config):
