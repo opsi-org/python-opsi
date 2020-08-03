@@ -71,7 +71,7 @@ def parse_profiler_output(lines):
 
 	hwdata = {}
 	key_list = []
-	indent_list = []
+	indent_list = [-1]
 	for line in lines:
 		indent = len(line) - len(line.lstrip())
 		parts = [x.strip() for x in line.split(":", 1)]
@@ -79,16 +79,15 @@ def parse_profiler_output(lines):
 			continue
 
 		#IDEA: more efficient to maintain a subdict view -> Problem: upwards reference
-		if indent > indent_list[-1] and parts[1] == "":
+		while indent <= indent_list[-1]:	# walk up tree
+			indent_list.pop()
+			key_list.pop()
+		if parts[1] == "":					# branch new subtree ...
 			indent_list.append(indent)
 			key_list.append(parts[0])
-		else:
-			while indent < indent_list[-1]:
-				indent_list.pop()
-				key_list.pop()
-			if  not parts[1] == "":
-				value = removeUnit(parts[1])
-				set_value(hwdata, key_list, parts[0], value)
+		else:								# ... or fill in leaf
+			value = removeUnit(parts[1])
+			set_value(hwdata, key_list, parts[0], value)
 	return hwdata
 
 def osx_hardwareInventory(config):
