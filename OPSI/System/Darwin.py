@@ -44,113 +44,13 @@ from OPSI.Util import  objectToBeautifiedText, removeUnit
 
 logger = Logger()
 
-
-def getKernelParams():
-	return {}
-
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # -                                            NETWORK                                                -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-def getEthernetDevices():
-	return []
-
-def getNetworkInterfaces():
-	return [getNetworkDeviceConfig(device) for device in getEthernetDevices()]
-
-def getNetworkDeviceConfig(device):
-	if not device:
-		raise ValueError(u"No device given")
-
-	result = {
-		'device': device,
-		'hardwareAddress': None,
-		'ipAddress': None,
-		'broadcast': None,
-		'netmask': None,
-		'gateway': None,
-		'vendorId': None,
-		'deviceId': None
-	}
-	return result
-
-class NetworkPerformanceCounter(threading.Thread):
-	def __init__(self, interface):
-		threading.Thread.__init__(self)
-		if not interface:
-			raise ValueError(u"No interface given")
-		self.interface = interface
-		self._lastBytesIn = 0
-		self._lastBytesOut = 0
-		self._lastTime = None
-		self._bytesInPerSecond = 0
-		self._bytesOutPerSecond = 0
-		self._regex = re.compile(r'\s*(\S+):\s*(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)')
-		self._running = False
-		self._stopped = False
-		self.start()
-
-	def __del__(self):
-		self.stop()
-
-	def stop(self):
-		self._stopped = True
-
-	def run(self):
-		self._running = True
-		while not self._stopped:
-			self._getStatistics()
-			time.sleep(1)
-
-	def _getStatistics(self):
-		pass #TODO
-
-	def getBytesInPerSecond(self):
-		return self._bytesInPerSecond
-
-	def getBytesOutPerSecond(self):
-		return self._bytesOutPerSecond
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # -                                            FILESYSTEMS                                            -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-def isXenialSfdiskVersion():
-	return False
-
-def getHarddisks(data=None):
-	"""
-	Get the available harddisks from the machine.
-
-	:param data: Data to parse through.
-	:type data: [str, ]
-	:return: The found harddisks.
-	:rtype: [Harddisk, ]
-	"""
-	disks = []
-	#TODO
-	return disks
-
-
-def is_mounted(devOrMountpoint):
-	#TODO
-	return False
-
-def getBlockDeviceBusType(device):
-	"""
-	:return: 'IDE', 'SCSI', 'SATA', 'RAID' or None (not found)
-	:rtype: str or None
-	"""
-	#TODO
-	return None
-
-class Harddisk:
-	pass
-
-class Distribution:
-	pass
-
-
-class SysInfo:
-	pass
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # -                                       HARDWARE INVENTORY                                          -
@@ -191,7 +91,7 @@ def parse_profiler_output(lines):
 			set_value(hwdata, key_list, parts[0], value)
 	return hwdata
 
-def hardwareInventory(config):
+def osx_hardwareInventory(config):
 
 	if not config:
 		logger.error(u"hardwareInventory: no config given")
@@ -270,12 +170,3 @@ def hardwareInventory(config):
 	opsiValues['SCANPROPERTIES'] = [{"scantime": time.strftime("%Y-%m-%d %H:%M:%S")}]
 	logger.debug(u"Result of hardware inventory:\n" + objectToBeautifiedText(opsiValues))
 	return opsiValues
-
-def getServiceNames(_serviceStatusOutput=None):
-	#TODO
-	services = set()
-	return services
-
-def runCommandInSession(command, sessionId=None, desktop=None, duplicateFrom=None, waitForProcessEnding=True, timeoutSeconds=0, noWindow=False):
-	#TODO
-	return (None, None, None, None)

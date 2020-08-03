@@ -48,7 +48,8 @@ import platform
 if platform.system() == 'Darwin':
 	#override os-specific methods from Posix
 	print("importing darwin modules")
-	from .Darwin import hardwareInventory
+	from .Darwin import osx_hardwareInventory
+	hardwareInventory = osx_hardwareInventory
 
 logger = Logger()
 
