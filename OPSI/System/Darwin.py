@@ -191,7 +191,7 @@ def parse_profiler_output(lines):
 			set_value(hwdata, key_list, parts[0], value)
 	return hwdata
 
-def hardwareInventory(config, progressSubject=None):
+def hardwareInventory(config):
 
 	if not config:
 		logger.error(u"hardwareInventory: no config given")
