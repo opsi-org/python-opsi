@@ -76,7 +76,6 @@ def parse_profiler_output(lines):
 		indent = len(line) - len(line.lstrip())
 		parts = [x.strip() for x in line.split(":", 1)]
 		if len(parts) < 2:
-			logger.devel("unexpected input line %s", line)
 			continue
 
 		#IDEA: more efficient to maintain a subdict view -> Problem: upwards reference
@@ -120,17 +119,17 @@ def osx_hardwareInventory(config):
 	logger.debug(objectToBeautifiedText(hwdata))
 
 	# Build hw info structure
-	for hwClass in config:		#config['result']:
+	for hwClass in config:
 		if not hwClass.get('Class') or not hwClass['Class'].get('Opsi'): # or not hwClass['Class'].get('OSX'):
 			continue
 		opsiClass = hwClass['Class'].get('Opsi')
 		osxClass = hwClass['Class'].get('OSX')
 
-		logger.info(u"Processing class '%s' : '%s'" % (opsiClass, osxClass))
-		
+		logger.info(u"Processing class '%s' : '%s'", opsiClass, osxClass)
+		opsiValues[opsiClass] = []
+
 		# Get hw info from system_profiler
 		if osxClass is not None and osxClass.startswith('[profiler]'):
-			opsiValues[opsiClass] = []
 			for hwclass in osxClass[10:].split('|'):
 				(filterAttr, filterExp) = (None, None)
 				if ':' in hwclass:
