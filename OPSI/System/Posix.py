@@ -3328,6 +3328,8 @@ def hardwareInventory(config, progressSubject=None):
 	xmlOut = re.sub('[%c%c%c%c%c%c%c%c%c%c%c%c%c]' % (0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0xbd, 0xbf, 0xef, 0xdd), u'.', xmlOut)
 	dom = xml.dom.minidom.parseString(xmlOut.encode('utf-8'))
 
+	logger.devel("dom = %s", dom)
+
 	# Read output from lspci
 	lspci = {}
 	busId = None
@@ -3353,6 +3355,9 @@ def hardwareInventory(config, progressSubject=None):
 			lspci[busId]['subsystemDeviceId'] = forceHardwareDeviceId(match.group(2))
 	logger.debug2(u"Parsed lspci info:")
 	logger.debug2(objectToBeautifiedText(lspci))
+
+	logger.devel("lspci = %s", lspci)
+	sys.exit()
 
 	# Read hdaudio information from alsa
 	hdaudio = {}
