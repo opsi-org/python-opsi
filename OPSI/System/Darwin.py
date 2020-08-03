@@ -136,8 +136,9 @@ def osx_hardwareInventory(config):
 					(hwclass, filter_string) = hwclass.split(':', 1)
 					if '.' in filter_string:
 						(filterAttr, filterExp) = filter_string.split('.', 1)
-				for dev in hwdata.get(hwclass, {}):
-					logger.debug("found device %s for hwclass %s", dev, hwclass)
+				for key, dev in hwdata.get(hwclass, {}).items():
+					#dev = traverse_tree(key)
+					logger.debug("found device %s for hwclass %s", key, hwclass)
 					if filterAttr and dev.get(filterAttr) and not eval("str(dev.get(filterAttr)).%s" % filterExp):
 						continue
 					device = {}
@@ -145,12 +146,11 @@ def osx_hardwareInventory(config):
 						if not attribute.get('OSX'):
 							continue
 						for aname in attribute['OSX'].split('||'):
-							if hwclass == "Network":
-								logger.devel("aname is %s", aname)
 							aname = aname.strip()
 							method = None
 							if '.' in aname:
 								(aname, method) = aname.split('.', 1)
+							logger.devel("aname is %s, method is %s", aname, method)
 							if method:
 								try:
 									logger.debug(u"Eval: %s.%s" % (dev.get(aname, ''), method))

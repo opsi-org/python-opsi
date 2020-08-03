@@ -3270,6 +3270,7 @@ def hardwareExtendedInventory(config, opsiValues={}, progressSubject=None):
 					conditionmatch = None
 
 					logger.info("Condition found, try to check the Condition")
+					value = None
 					for currentValue in opsiValues[opsiName]:
 						value = currentValue.get(val, "")
 						if value:
