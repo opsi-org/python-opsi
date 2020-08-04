@@ -44,6 +44,8 @@ from OPSI.Util import  objectToBeautifiedText, removeUnit
 
 logger = Logger()
 
+HIERARCHY_SEPARATOR = "/"
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # -                                            NETWORK                                                -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -55,7 +57,7 @@ logger = Logger()
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # -                                       HARDWARE INVENTORY                                          -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-def set_value(mydict, key_list, last_key, value):
+def set_tree_value(mydict, key_list, last_key, value):
 	subdict = mydict
 	for key in key_list:
 		sub = subdict.get(key)
@@ -65,6 +67,17 @@ def set_value(mydict, key_list, last_key, value):
 		else:
 			subdict = sub
 	subdict[last_key] = value
+
+def get_tree_value(mydict, key_string):
+	key_list = key_string.split(HIERARCHY_SEPARATOR)
+	subdict = mydict
+	for key in key_list:
+		sub = subdict.get(key)
+		if sub is None:
+			return None
+		else:
+			subdict = sub
+	return subdict
 
 def parse_profiler_output(lines):
 	#optRegex = re.compile('(\s+)([^:]+):(.*)')
@@ -78,7 +91,6 @@ def parse_profiler_output(lines):
 		if len(parts) < 2:
 			continue
 
-		#IDEA: more efficient to maintain a subdict view -> Problem: upwards reference
 		while indent <= indent_list[-1]:	# walk up tree
 			indent_list.pop()
 			key_list.pop()
@@ -86,8 +98,9 @@ def parse_profiler_output(lines):
 			indent_list.append(indent)
 			key_list.append(parts[0])
 		else:								# ... or fill in leaf
-			value = removeUnit(parts[1])
-			set_value(hwdata, key_list, parts[0], value)
+			value = parts[1].strip(",")
+			value = removeUnit(value)
+			set_tree_value(hwdata, key_list, parts[0], value)
 	return hwdata
 
 def osx_hardwareInventory(config):
@@ -137,7 +150,6 @@ def osx_hardwareInventory(config):
 					if '.' in filter_string:
 						(filterAttr, filterExp) = filter_string.split('.', 1)
 				for key, dev in hwdata.get(hwclass, {}).items():
-					#dev = traverse_tree(key)
 					logger.debug("found device %s for hwclass %s", key, hwclass)
 					if filterAttr and dev.get(filterAttr) and not eval("str(dev.get(filterAttr)).%s" % filterExp):
 						continue
@@ -150,16 +162,17 @@ def osx_hardwareInventory(config):
 							method = None
 							if '.' in aname:
 								(aname, method) = aname.split('.', 1)
-							logger.devel("aname is %s, method is %s", aname, method)
+							value = get_tree_value(dev, aname)
+							#logger.devel("aname is %s, value is %s, method is %s", aname, value, method)
 							if method:
 								try:
-									logger.debug(u"Eval: %s.%s" % (dev.get(aname, ''), method))
-									device[attribute['Opsi']] = eval("dev.get(aname, '').%s" % method)
+									logger.debug(u"Eval: %s.%s" % (value, method))
+									device[attribute['Opsi']] = eval("value.%s" % method)
 								except Exception as e:
 									device[attribute['Opsi']] = u''
-									logger.warning(u"Class %s: Failed to excecute '%s.%s': %s" % (opsiClass, dev.get(aname, ''), method, e))
+									logger.warning(u"Class %s: Failed to excecute '%s.%s': %s" % (opsiClass, value, method, e))
 							else:
-								device[attribute['Opsi']] = dev.get(aname)
+								device[attribute['Opsi']] = value
 							if device[attribute['Opsi']]:
 								break
 					device["state"] = "1"
