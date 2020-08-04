@@ -44,9 +44,9 @@ these.
 Installing the depedencies via apt-get:
 
 ```bash
-apt-get install python3-dev python3-twisted python3-magic python3-pycryptodome python3-newt python3-pampy python3-openssl python3-mysqldb python3-sqlalchemy python3-psutil iproute2 lshw librsync2
+apt-get install python3-dev python3-twisted python3-magic python3-pycryptodome python3-newt python3-pampy python3-openssl python3-mysqldb python3-sqlalchemy python3-psutil iproute2 lshw mysql-server libmysqlclient-dev
+python3.7 -m pip install mysqlclient
 ```
-
 
 ## Packaging
 You need `python poetry` to build sdist / wheel / Debian and RPM packages.
