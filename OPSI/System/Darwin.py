@@ -44,19 +44,8 @@ from OPSI.Util import  objectToBeautifiedText, removeUnit
 
 logger = Logger()
 
-HIERARCHY_SEPARATOR = "/"
+HIERARCHY_SEPARATOR = "//"
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# -                                            NETWORK                                                -
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# -                                            FILESYSTEMS                                            -
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# -                                       HARDWARE INVENTORY                                          -
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 def set_tree_value(mydict, key_list, last_key, value):
 	subdict = mydict
 	for key in key_list:
@@ -80,8 +69,6 @@ def get_tree_value(mydict, key_string):
 	return subdict
 
 def parse_profiler_output(lines):
-	#optRegex = re.compile('(\s+)([^:]+):(.*)')
-
 	hwdata = {}
 	key_list = []
 	indent_list = [-1]
@@ -142,41 +129,58 @@ def osx_hardwareInventory(config):
 		opsiValues[opsiClass] = []
 
 		# Get hw info from system_profiler
-		if osxClass is not None and osxClass.startswith('[profiler]'):
-			for hwclass in osxClass[10:].split('|'):
-				(filterAttr, filterExp) = (None, None)
-				if ':' in hwclass:
-					(hwclass, filter_string) = hwclass.split(':', 1)
-					if '.' in filter_string:
-						(filterAttr, filterExp) = filter_string.split('.', 1)
-				for key, dev in hwdata.get(hwclass, {}).items():
-					logger.debug("found device %s for hwclass %s", key, hwclass)
-					if filterAttr and dev.get(filterAttr) and not eval("str(dev.get(filterAttr)).%s" % filterExp):
+		if osxClass is None or not osxClass.startswith('[profiler]'):
+			continue
+
+		for singleclass in osxClass[10:].split('|'):
+			(filterAttr, filterExp) = (None, None)
+			if ':' in singleclass:
+				(singleclass, filter_string) = singleclass.split(':', 1)
+				if '.' in filter_string:
+					(filterAttr, filterExp) = filter_string.split('.', 1)
+
+			#singleclassdata = hwdata.get(singleclass, {})
+			singleclassdata = get_tree_value(hwdata, singleclass)
+			for key, dev in singleclassdata.items():
+				if not isinstance(dev, dict):
+					continue
+				logger.debug("found device %s for singleclass %s", key, singleclass)
+				if filterAttr and dev.get(filterAttr) and not eval("str(dev.get(filterAttr)).%s" % filterExp):
+					continue
+				device = {}
+				for attribute in hwClass['Values']:
+					if not attribute.get('OSX'):
 						continue
-					device = {}
-					for attribute in hwClass['Values']:
-						if not attribute.get('OSX'):
-							continue
-						for aname in attribute['OSX'].split('||'):
-							aname = aname.strip()
-							method = None
-							if '.' in aname:
-								(aname, method) = aname.split('.', 1)
-							value = get_tree_value(dev, aname)
-							#logger.devel("aname is %s, value is %s, method is %s", aname, value, method)
-							if method:
-								try:
-									logger.debug(u"Eval: %s.%s" % (value, method))
-									device[attribute['Opsi']] = eval("value.%s" % method)
-								except Exception as e:
-									device[attribute['Opsi']] = u''
-									logger.warning(u"Class %s: Failed to excecute '%s.%s': %s" % (opsiClass, value, method, e))
-							else:
-								device[attribute['Opsi']] = value
-							if device[attribute['Opsi']]:
-								break
-					device["state"] = "1"
-					device["type"] = "AuditHardwareOnHost"
+					for aname in attribute['OSX'].split('||'):
+						aname = aname.strip()
+						method = None
+						if '.' in aname:
+							(aname, method) = aname.split('.', 1)
+						value = get_tree_value(dev, aname)
+
+						if method:
+							try:
+								logger.debug(u"Eval: %s.%s" % (value, method))
+								device[attribute['Opsi']] = eval("value.%s" % method)
+							except Exception as e:
+								device[attribute['Opsi']] = u''
+								logger.warning(u"Class %s: Failed to excecute '%s.%s': %s" % (opsiClass, value, method, e))
+						else:
+							device[attribute['Opsi']] = value
+						if device[attribute['Opsi']]:
+							break
+				device["state"] = "1"
+				device["type"] = "AuditHardwareOnHost"
+				if len(opsiValues[hwClass['Class']['Opsi']]) == 0:
+					opsiValues[hwClass['Class']['Opsi']].append(device)
+					continue	#catch this case first, as it shortens computation
+				previous = opsiValues[hwClass['Class']['Opsi']][-1]
+				shared_items = {key: "" for key in previous if key in device and previous[key] == device[key]}
+				if len(shared_items) == len(previous) and len(shared_items) == len(device):
+					# Do not add two devices with the same characteristics (e.g. 127 empty RAM slots...)
+					# TODO: better solution?
+					logger.debug("skipping device")
+				else:
 					opsiValues[hwClass['Class']['Opsi']].append(device)
 
 	opsiValues['SCANPROPERTIES'] = [{"scantime": time.strftime("%Y-%m-%d %H:%M:%S")}]
