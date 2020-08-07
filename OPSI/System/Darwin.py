@@ -90,22 +90,29 @@ def parse_profiler_output(lines):
 			set_tree_value(hwdata, key_list, parts[0], value)
 	return hwdata
 
+def parse_sysctl_output(lines):
+	hwdata = {}
+	for line in lines:
+		key_string, value = line.split(':')
+		key_list = key_string.split('.')
+		set_tree_value(hwdata, key_list[:-1], key_list[-1], value.strip())
+	return hwdata
+
 def osx_hardwareInventory(config):
 
 	if not config:
 		logger.error(u"hardwareInventory: no config given")
 		return {}
-
 	opsiValues = {}
-	hardwareList = []
 
+	hardwareList = []
 	# Read output from system_profiler	
 	logger.debug("calling system_profiler command")
 	getHardwareCommand = "system_profiler SPParallelATADataType SPAudioDataType SPBluetoothDataType SPCameraDataType \
 			SPCardReaderDataType SPEthernetDataType SPDiscBurningDataType SPFibreChannelDataType SPFireWireDataType \
 			SPDisplaysDataType SPHardwareDataType SPHardwareRAIDDataType SPMemoryDataType SPNVMeDataType \
 			SPNetworkDataType SPParallelSCSIDataType SPPowerDataType SPSASDataType SPSerialATADataType \
-			SPStorageDataType SPThunderboltDataType SPUSBDataType"
+			SPStorageDataType SPThunderboltDataType SPUSBDataType SPSoftwareDataType"
 	cmd = "{}".format(getHardwareCommand)
 	proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
 	logger.debug("reading stdout stream from system_profiler")
@@ -114,33 +121,54 @@ def osx_hardwareInventory(config):
 		if not line:
 			break
 		hardwareList.append(forceUnicode(line))		#line.rstrip()
-	hwdata = parse_profiler_output(hardwareList)
+	profiler = parse_profiler_output(hardwareList)
 	logger.debug(u"Parsed system_profiler info:")
-	logger.debug(objectToBeautifiedText(hwdata))
+	logger.debug(objectToBeautifiedText(profiler))
+
+	hardwareList = []
+	# Read output from systcl
+	logger.debug("calling sysctl command")
+	getHardwareCommand = "sysctl -a"
+	cmd = "{}".format(getHardwareCommand)
+	proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+	logger.debug("reading stdout stream from sysctl")
+	while True:
+		line = proc.stdout.readline()
+		if not line:
+			break
+		hardwareList.append(forceUnicode(line))		#line.rstrip()
+	systcl = parse_sysctl_output(hardwareList)
+	logger.debug(u"Parsed sysctl info:")
+	logger.debug(objectToBeautifiedText(systcl))
 
 	# Build hw info structure
 	for hwClass in config:
-		if not hwClass.get('Class') or not hwClass['Class'].get('Opsi'): # or not hwClass['Class'].get('OSX'):
+		if not hwClass.get('Class'):
 			continue
 		opsiClass = hwClass['Class'].get('Opsi')
 		osxClass = hwClass['Class'].get('OSX')
 
+		if osxClass is None or opsiClass is None:
+			continue
+		
 		logger.info(u"Processing class '%s' : '%s'", opsiClass, osxClass)
 		opsiValues[opsiClass] = []
 
-		# Get hw info from system_profiler
-		if osxClass is None or not osxClass.startswith('[profiler]'):
-			continue
-
-		for singleclass in osxClass[10:].split('|'):
+		command, section = osxClass.split(']', 1)
+		command = command[1:]
+		for singleclass in section.split('|'):
 			(filterAttr, filterExp) = (None, None)
 			if ':' in singleclass:
 				(singleclass, filter_string) = singleclass.split(':', 1)
 				if '.' in filter_string:
 					(filterAttr, filterExp) = filter_string.split('.', 1)
 
-			#singleclassdata = hwdata.get(singleclass, {})
-			singleclassdata = get_tree_value(hwdata, singleclass)
+			if command == "profiler":
+				singleclassdata = get_tree_value(profiler, singleclass)
+			elif command == "sysctl":
+				singleclassdata = get_tree_value(systcl, singleclass)
+			else:
+				break
 			for key, dev in singleclassdata.items():
 				if not isinstance(dev, dict):
 					continue
