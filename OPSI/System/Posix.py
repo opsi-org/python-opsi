@@ -1339,6 +1339,7 @@ def getBlockDeviceContollerInfo(device, lshwoutput=None):
 	if lshwoutput and isinstance(lshwoutput, list):
 		lines = lshwoutput
 	else:
+		#TODO: better solution for LC_ALL=C ?
 		lines = execute(u'LC_ALL=C %s -short -numeric' % which('lshw'))
 	# example:
 	# ...
@@ -3325,6 +3326,7 @@ def hardwareInventory(config, progressSubject=None):
 		return [element for element in dom.getElementsByTagName(tagName) if re.search(attributeValue, element.getAttribute(attributeName))]
 
 	# Read output from lshw
+	#TODO: better solution for LC_ALL=C ?
 	xmlOut = u'\n'.join(execute(u"LC_ALL=C %s -xml 2> /dev/null" % which("lshw")))
 	xmlOut = re.sub('[%c%c%c%c%c%c%c%c%c%c%c%c%c]' % (0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0xbd, 0xbf, 0xef, 0xdd), u'.', xmlOut)
 	dom = xml.dom.minidom.parseString(xmlOut.encode('utf-8'))
