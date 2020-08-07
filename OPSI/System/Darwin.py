@@ -93,7 +93,7 @@ def parse_profiler_output(lines):
 def parse_sysctl_output(lines):
 	hwdata = {}
 	for line in lines:
-		key_string, value = line.split(':')
+		key_string, value = line.split(':', 1)
 		key_list = key_string.split('.')
 		set_tree_value(hwdata, key_list[:-1], key_list[-1], value.strip())
 	return hwdata
@@ -120,7 +120,7 @@ def osx_hardwareInventory(config):
 		line = proc.stdout.readline()
 		if not line:
 			break
-		hardwareList.append(forceUnicode(line))		#line.rstrip()
+		hardwareList.append(forceUnicode(line))
 	profiler = parse_profiler_output(hardwareList)
 	logger.debug(u"Parsed system_profiler info:")
 	logger.debug(objectToBeautifiedText(profiler))
@@ -136,7 +136,7 @@ def osx_hardwareInventory(config):
 		line = proc.stdout.readline()
 		if not line:
 			break
-		hardwareList.append(forceUnicode(line))		#line.rstrip()
+		hardwareList.append(forceUnicode(line))
 	systcl = parse_sysctl_output(hardwareList)
 	logger.debug(u"Parsed sysctl info:")
 	logger.debug(objectToBeautifiedText(systcl))
@@ -164,9 +164,11 @@ def osx_hardwareInventory(config):
 					(filterAttr, filterExp) = filter_string.split('.', 1)
 
 			if command == "profiler":
+				# produce dictionary from key singleclass - traversed for all devices
 				singleclassdata = get_tree_value(profiler, singleclass)
 			elif command == "sysctl":
-				singleclassdata = get_tree_value(systcl, singleclass)
+				# produce dictionary with only contents from key singleclass
+				singleclassdata = { singleclass : get_tree_value(systcl, singleclass) }
 			else:
 				break
 			for key, dev in singleclassdata.items():
