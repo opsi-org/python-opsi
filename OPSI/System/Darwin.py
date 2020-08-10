@@ -19,13 +19,10 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-opsi python library - Posix
+opsi python library - Darwin
 
-Functions and classes for the use with a POSIX operating system.
+Functions and classes for the use with a DARWIN operating system.
 
-:author: Jan Schneider <j.schneider@uib.de>
-:author: Erol Ueluekmen <e.ueluekmen@uib.de>
-:author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
 """
 
@@ -98,6 +95,28 @@ def parse_sysctl_output(lines):
 		set_tree_value(hwdata, key_list[:-1], key_list[-1], value.strip())
 	return hwdata
 
+def parse_ioreg_output(lines):
+	hwdata = {}
+	key_list = []
+	indent_list = [-1]
+	for line in lines:
+		if line.endswith("{") or line.endswith("}"):
+			continue
+		indent = line.find("+-o ")
+		parts = [x.strip() for x in line.split("=", 1)]
+
+		while indent <= indent_list[-1]:	# walk up tree
+			indent_list.pop()
+			key_list.pop()
+		if len(parts) == 1:					# branch new subtree ...
+			indent_list.append(indent)
+			key = parts[0][indent+3:].split("<")[0]
+			key_list.append(key.strip())
+		else:								# ... or fill in leaf
+			value = removeUnit(parts[1])
+			set_tree_value(hwdata, key_list, parts[0], value)
+	return hwdata
+
 def osx_hardwareInventory(config):
 
 	if not config:
@@ -141,6 +160,22 @@ def osx_hardwareInventory(config):
 	logger.debug(u"Parsed sysctl info:")
 	logger.debug(objectToBeautifiedText(systcl))
 
+	hardwareList = []
+	# Read output from ioreg
+	logger.debug("calling ioreg command")
+	getHardwareCommand = "ioreg -l"
+	cmd = "{}".format(getHardwareCommand)
+	proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+	logger.debug("reading stdout stream from sysctl")
+	while True:
+		line = proc.stdout.readline()
+		if not line:
+			break
+		hardwareList.append(forceUnicode(line))
+	ioreg = parse_ioreg_output(hardwareList)
+	logger.debug(u"Parsed ioreg info:")
+	logger.debug(objectToBeautifiedText(ioreg))
+
 	# Build hw info structure
 	for hwClass in config:
 		if not hwClass.get('Class'):
@@ -169,6 +204,9 @@ def osx_hardwareInventory(config):
 			elif command == "sysctl":
 				# produce dictionary with only contents from key singleclass
 				singleclassdata = { singleclass : get_tree_value(systcl, singleclass) }
+			elif command == "ioreg":
+				# produce dictionary with only contents from key singleclass
+				singleclassdata = get_tree_value(ioreg, singleclass)
 			else:
 				break
 			for key, dev in singleclassdata.items():
