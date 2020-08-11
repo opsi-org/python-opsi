@@ -32,7 +32,6 @@ Doing so might result in unforseen problems and is strongly discouraged!
 :license: GNU Affero General Public License version 3
 """
 
-import grp
 
 # Group used to identify members whits administrative rights in opsi
 OPSI_ADMIN_GROUP = "opsiadmin"
@@ -49,9 +48,10 @@ try:
 except Exception:
 	# Use "pcpatch" if group exists otherwise use the new default "opsifileadmins"
 	try:
+		import grp
 		grp.getgrnam("pcpatch")
 		FILE_ADMIN_GROUP = "pcpatch"
-	except KeyError:
+	except (KeyError, ImportError):
 		FILE_ADMIN_GROUP = "opsifileadmins"
 
 # User that is running opsiconfd.
