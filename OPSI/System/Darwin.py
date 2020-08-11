@@ -168,21 +168,24 @@ def parse_ioreg_output(lines : List) -> Dict:
 	key_list = []
 	indent_list = [-1]
 	for line in lines:
+		line = line.strip()
 		if line.endswith("{") or line.endswith("}"):
 			continue
 		indent = line.find("+-o ")
 		parts = [x.strip() for x in line.split("=", 1)]
 
+		if indent == -1:		# fill in leafs
+			if len(parts) == 2:
+				value = removeUnit(parts[1])
+				set_tree_value(hwdata, key_list, parts[0], value)
+			continue
+
 		while indent <= indent_list[-1]:	# walk up tree
 			indent_list.pop()
 			key_list.pop()
-		if len(parts) == 1:					# branch new subtree ...
-			indent_list.append(indent)
-			key = parts[0][indent+3:].split("<")[0]
-			key_list.append(key.strip())
-		else:								# ... or fill in leaf
-			value = removeUnit(parts[1])
-			set_tree_value(hwdata, key_list, parts[0], value)
+		indent_list.append(indent)		# branch new subtree
+		key = parts[0][indent+3:].split("<")[0]
+		key_list.append(key.strip())
 	return hwdata
 
 def osx_hardwareInventory(config : List) -> Dict:
