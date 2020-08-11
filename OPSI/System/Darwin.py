@@ -27,12 +27,10 @@ Functions and classes for the use with a DARWIN operating system.
 """
 
 import os
-import re
-import struct
 import sys
 import subprocess
-import threading
 import time
+from typing import Dict, List, Any
 
 from OPSI.Logger import Logger
 from OPSI.Types import forceUnicode
@@ -43,7 +41,24 @@ logger = Logger()
 
 HIERARCHY_SEPARATOR = "//"
 
-def set_tree_value(mydict, key_list, last_key, value):
+def set_tree_value(mydict: Dict, key_list : List, last_key : str, value : str) -> None:
+	"""
+	Assigns value to dict tree leaf.
+
+	This method expects a dictionary and a series of keys.
+	It traverses the series of keys downwards in the dictionary, creating
+	subdicts if necessary. The given value is inserted as a new leaf under
+	given key.
+
+	:param mydict: Dictionary to insert into.
+	:type mydict: Dict
+	:param key_list: List of keys defining desired value location.
+	:type key_list: List
+	:param last_key: Key corresponding to the value to insert.
+	:type last_key: str
+	:param value: Value to insert into the dictionary.
+	:type value: str
+	"""
 	subdict = mydict
 	for key in key_list:
 		sub = subdict.get(key)
@@ -54,7 +69,21 @@ def set_tree_value(mydict, key_list, last_key, value):
 			subdict = sub
 	subdict[last_key] = value
 
-def get_tree_value(mydict, key_string):
+def get_tree_value(mydict : Dict, key_string : str) -> Any:
+	"""
+	Obtain certain dictionary value.
+
+	This method obtains a value from a given dictionary by
+	traversing it using a list of keys obtained from a string.
+
+	:param mydict: Dictionary to search.
+	:type mydict: Dict
+	:param key_string: string representing a list of keys.
+	:type key_strin: str
+
+	:returns: Value corresponding to the list of keys.
+	:rtype: Any
+	"""
 	key_list = key_string.split(HIERARCHY_SEPARATOR)
 	subdict = mydict
 	for key in key_list:
@@ -65,7 +94,20 @@ def get_tree_value(mydict, key_string):
 			subdict = sub
 	return subdict
 
-def parse_profiler_output(lines):
+def parse_profiler_output(lines: List) -> Dict:
+	"""
+	Parses the output of system_profiler.
+
+	This method processes system_profiler output line
+	by line and fills a dictionary with the derived
+	information.
+
+	:param lines: List of output lines.
+	:type lines: List
+
+	:returns: Dictionary containing the derived data.
+	:rtype: Dict
+	"""
 	hwdata = {}
 	key_list = []
 	indent_list = [-1]
@@ -87,7 +129,20 @@ def parse_profiler_output(lines):
 			set_tree_value(hwdata, key_list, parts[0], value)
 	return hwdata
 
-def parse_sysctl_output(lines):
+def parse_sysctl_output(lines : List) -> Dict:
+	"""
+	Parses the output of sysctl -a.
+
+	This method processes sysctl -a output line
+	by line and fills a dictionary with the derived
+	information.
+
+	:param lines: List of output lines.
+	:type lines: List
+
+	:returns: Dictionary containing the derived data.
+	:rtype: Dict
+	"""
 	hwdata = {}
 	for line in lines:
 		key_string, value = line.split(':', 1)
@@ -95,7 +150,20 @@ def parse_sysctl_output(lines):
 		set_tree_value(hwdata, key_list[:-1], key_list[-1], value.strip())
 	return hwdata
 
-def parse_ioreg_output(lines):
+def parse_ioreg_output(lines : List) -> Dict:
+	"""
+	Parses the output of ioreg -l.
+
+	This method processes ioreg -l output line
+	by line and fills a dictionary with the derived
+	information.
+
+	:param lines: List of output lines.
+	:type lines: List
+
+	:returns: Dictionary containing the derived data.
+	:rtype: Dict
+	"""
 	hwdata = {}
 	key_list = []
 	indent_list = [-1]
@@ -117,8 +185,20 @@ def parse_ioreg_output(lines):
 			set_tree_value(hwdata, key_list, parts[0], value)
 	return hwdata
 
-def osx_hardwareInventory(config):
+def osx_hardwareInventory(config : List) -> Dict:
+	"""
+	Collect hardware information on OSX.
 
+	This method utilizes multiple os-specific commands
+	to obtain hardware information and compiles it following
+	a configuration list specifying keys and their attributes.
+
+	:param config: Configuration for the audit, e.g. fetched from opsi backend.
+	:type config: List
+
+	:returns: Dictionary containing the result of the audit.
+	:rtype: Dict
+	"""
 	if not config:
 		logger.error(u"hardwareInventory: no config given")
 		return {}
