@@ -27,6 +27,7 @@ Configuration data holding backend.
 :license: GNU Affero General Public License version 3
 """
 
+import platform
 import codecs
 import collections
 import copy as pycopy
@@ -74,20 +75,21 @@ _PASSWD_LINE_REGEX = re.compile(r'^\s*([^:]+)\s*:\s*(\S+)\s*$')
 
 logger = Logger()
 
-try:
-	with open(os.path.join('/etc', 'opsi', 'opsiconfd.conf')) as config:
-		for line in config:
-			if line.strip().startswith('max-log-size'):
-				_, logSize = line.strip().split('=', 1)
-				logSize = removeUnit(logSize.strip())
-				logger.debug("Setting max log size to %s MB", logSize)
-				DEFAULT_MAX_LOGFILE_SIZE = int(logSize)*1000*1000 
-				break
-		else:
-			raise ValueError("No custom setting found.")
-except Exception as error:
-	logger.debug("Failed to set MAX LOG SIZE from config: %s", error)
-	DEFAULT_MAX_LOGFILE_SIZE = 5000000
+DEFAULT_MAX_LOGFILE_SIZE = 5000000
+if platform.system().lower() == 'linux':
+	try:
+		with open(os.path.join('/etc', 'opsi', 'opsiconfd.conf')) as config:
+			for line in config:
+				if line.strip().startswith('max-log-size'):
+					_, logSize = line.strip().split('=', 1)
+					logSize = removeUnit(logSize.strip())
+					logger.debug("Setting max log size to %s MB", logSize)
+					DEFAULT_MAX_LOGFILE_SIZE = int(logSize)*1000*1000 
+					break
+			else:
+				raise ValueError("No custom setting found.")
+	except Exception as error:
+		logger.debug("Failed to set MAX LOG SIZE from config: %s", error)
 
 
 class ConfigDataBackend(Backend):
