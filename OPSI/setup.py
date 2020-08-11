@@ -56,6 +56,12 @@ def add_user_to_group(username: str, groupname: str):
 	logger.info("Running command: %s", cmd)
 	subprocess.check_call(cmd, env=get_subprocess_environment())
 
+def set_primary_group(username: str, groupname: str):
+	logger.notice("Setting primary group of user '%s' to '%s'", username, groupname)
+	cmd = ["usermod", "-g", groupname, username]
+	logger.info("Running command: %s", cmd)
+	subprocess.check_call(cmd, env=get_subprocess_environment())
+
 def get_groups():
 	groups = {}
 	for group in grp.getgrall():
