@@ -35,17 +35,24 @@ import os
 import sys
 import shutil
 import psutil
+import platform
 
 from OPSI.Logger import Logger
 from OPSI.Types import forceFilename
 
-if os.name == 'posix':
-	from .Posix import *
-elif os.name == 'nt':
-	from .Windows import *
-
 logger = Logger()
 
+if platform.system().lower() == 'linux':
+	from .Posix import *
+elif platform.system().lower() == 'windows':
+	from .Windows import *
+elif platform.system().lower() == 'darwin':
+	from . import Posix
+	#override os-specific methods from Posix
+	from .Darwin import osx_hardwareInventory
+	Posix.hardwareInventory = osx_hardwareInventory
+else:
+	logger.error("Unable to import System library for system %s", platform.system().lower())
 
 class SystemHook(SystemSpecificHook):
 	def __init__(self):
