@@ -53,21 +53,13 @@ def opsi_logger_factory(logFile=None):
 	return logger
 Logger = opsi_logger_factory
 
-def setLogFile(logFile, currentThread=False, object=None):
-	warnings.warn(
-		"OPSI.Logger.setLogFile is deprecated, instead add a FileHandler to logger.",
-		DeprecationWarning
-	)
-	opsicommon.logging.logging_config(log_file=logFile)
-logger.setLogFile = setLogFile
-
-def setLogFormat(logFormat, object=None):
-	warnings.warn(
-		"OPSI.Logger.setLogFormat is deprecated, use opsicommon.logging.set_format instead.",
-		DeprecationWarning
-	)
+def getStderr():
 	pass
-logger.setLogFormat = setLogFormat
+logger.getStderr = getStderr
+
+def getStdout():
+	pass
+logger.getStdout = getStdout
 
 def setConfidentialStrings(strings):
 	warnings.warn(
@@ -86,13 +78,73 @@ def addConfidentialString(string):
 	opsicommon.logging.secret_filter.add_secrets(string)
 logger.addConfidentialString = addConfidentialString
 
-def logException(e, logLevel=logging.CRITICAL):
+def setLogFormat(logFormat, currentThread=False, object=None):
 	warnings.warn(
-		"OPSI.Logger.logException is deprecated, instead use logger.log with exc_info=True.",
+		"OPSI.Logger.setLogFormat is deprecated, use opsicommon.logging.set_format instead.",
 		DeprecationWarning
 	)
-	logger.log(level=logLevel, msg=e, exc_info=True)
-logger.logException = logException
+	pass
+logger.setLogFormat = setLogFormat
+
+def setConsoleFormat(format, currentThread=False, object=None):
+	pass
+logger.setConsoleFormat = setConsoleFormat
+
+def setComponentName(componentName, currentThread=False, object=None):
+	pass
+logger.setComponentName = setComponentName
+
+def logToStdout(stdout):
+	pass
+logger.logToStdout = logToStdout
+
+def setSyslogFormat(format, currentThread=False, object=None):
+	pass
+logger.setSyslogFormat = setSyslogFormat
+
+def setFileFormat(format, currentThread=False, object=None):
+	pass
+logger.setFileFormat = setFileFormat
+
+def setUniventionFormat(format, currentThread=False, object=None):
+	pass
+logger.setUniventionFormat = setUniventionFormat
+
+def setMessageSubjectFormat(format, currentThread=False, object=None):
+	pass
+logger.setMessageSubjectFormat = setMessageSubjectFormat
+
+def setUniventionLogger(logger):
+	pass
+logger.setUniventionLogger = setUniventionLogger
+
+def setUniventionClass(c):
+	pass
+logger.setUniventionClass = setUniventionClass
+
+def getMessageSubject():
+	pass
+logger.getMessageSubject = getMessageSubject
+
+def setColor(color):
+	pass
+logger.setColor = setColor
+
+def setFileColor(color):
+	pass
+logger.setFileColor = setFileColor
+
+def setConsoleColor(color):
+	pass
+logger.setConsoleColor = setConsoleColor
+
+def setSyslogLevel(level=LOG_NONE):
+	pass
+logger.setSyslogLevel = setSyslogLevel
+
+def setMessageSubjectLevel(level=LOG_NONE):
+	pass
+logger.setMessageSubjectLevel = setMessageSubjectLevel
 
 def setConsoleLevel(logLevel, object=None):
 	warnings.warn(
@@ -102,6 +154,34 @@ def setConsoleLevel(logLevel, object=None):
 	opsicommon.logging.logging_config(stderr_level=logLevel)
 logger.setConsoleLevel = setConsoleLevel
 
+@staticmethod
+def _sanitizeLogLevel(level):
+	return level
+
+def getConsoleLevel():
+	pass
+logger.getConsoleLevel = getConsoleLevel
+
+def getFileLevel():
+	pass
+logger.getFileLevel = getFileLevel
+
+def getLogFile(currentThread=False, object=None):
+	pass
+logger.getLogFile = getLogFile
+
+def setLogFile(logFile, currentThread=False, object=None):
+	warnings.warn(
+		"OPSI.Logger.setLogFile is deprecated, instead add a FileHandler to logger.",
+		DeprecationWarning
+	)
+	opsicommon.logging.logging_config(log_file=logFile)
+logger.setLogFile = setLogFile
+
+def linkLogFile(linkFile, currentThread=False, object=None):
+	pass
+logger.linkLogFile = linkLogFile
+
 def setFileLevel(logLevel, object=None):
 	warnings.warn(
 		"OPSI.Logger.setFileLevel is deprecated, instead modify the FileHandler loglevel.",
@@ -109,3 +189,53 @@ def setFileLevel(logLevel, object=None):
 	)
 	opsicommon.logging.logging_config(file_level=logLevel)
 logger.setFileLevel = setFileLevel
+
+def exit(object=None):
+	pass
+logger.exit = exit
+
+def _setThreadConfig(key, value):
+	pass
+logger._setThreadConfig = _setThreadConfig
+ 
+def _getThreadConfig(key=None):
+	pass
+logger._getThreadConfig = _getThreadConfig
+
+def _setObjectConfig(objectId, key, value):
+	pass
+logger._setObjectConfig = _setObjectConfig
+
+def _getObjectConfig(objectId, key=None):
+	pass
+logger._getObjectConfig = _getObjectConfig
+
+
+def logException(e, logLevel=logging.CRITICAL):
+	warnings.warn(
+		"OPSI.Logger.logException is deprecated, instead use logger.log with exc_info=True.",
+		DeprecationWarning
+	)
+	logger.log(level=logLevel, msg=e, exc_info=True)
+logger.logException = logException
+
+def logFailure(failure, logLevel=LOG_CRITICAL):
+	pass
+logger.logFailure = logFailure
+
+def logTraceback(tb, logLevel=LOG_CRITICAL):
+	pass
+logger.logTraceback = logTraceback
+
+def logWarnings():
+	pass
+logger.logWarnings = logWarnings
+
+def startTwistedLogging():
+	pass
+logger.startTwistedLogging = startTwistedLogging
+
+logger.debug3 = logger.trace
+logger.err = logger.error
+logger.msg = logger.info
+logger.comment = logger.essential
