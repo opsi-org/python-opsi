@@ -1339,7 +1339,9 @@ def getBlockDeviceContollerInfo(device, lshwoutput=None):
 	if lshwoutput and isinstance(lshwoutput, list):
 		lines = lshwoutput
 	else:
-		lines = execute(u'%s -short -numeric' % which('lshw'))
+		proc_env = os.environ.copy()
+		proc_env["LC_ALL"] = "C"
+		lines = execute(f"{which('lshw')} -short -numeric 2> /dev/null", env=proc_env)
 	# example:
 	# ...
 	# /0/100                      bridge     440FX - 82441FX PMC [Natoma] [8086:1237]
@@ -3270,6 +3272,7 @@ def hardwareExtendedInventory(config, opsiValues={}, progressSubject=None):
 					conditionmatch = None
 
 					logger.info("Condition found, try to check the Condition")
+					value = None
 					for currentValue in opsiValues[opsiName]:
 						value = currentValue.get(val, "")
 						if value:
@@ -3324,7 +3327,9 @@ def hardwareInventory(config, progressSubject=None):
 		return [element for element in dom.getElementsByTagName(tagName) if re.search(attributeValue, element.getAttribute(attributeName))]
 
 	# Read output from lshw
-	xmlOut = u'\n'.join(execute(u"%s -xml 2>/dev/null" % which("lshw")))
+	proc_env = os.environ.copy()
+	proc_env["LC_ALL"] = "C"
+	xmlOut = u'\n'.join(execute(f"{which('lshw')} -xml 2> /dev/null", env=proc_env))
 	xmlOut = re.sub('[%c%c%c%c%c%c%c%c%c%c%c%c%c]' % (0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0xbd, 0xbf, 0xef, 0xdd), u'.', xmlOut)
 	dom = xml.dom.minidom.parseString(xmlOut.encode('utf-8'))
 
