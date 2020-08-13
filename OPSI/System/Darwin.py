@@ -390,12 +390,11 @@ def getActiveSessionIds(winApiBugCommand=None, data=None):
 Posix.getActiveSessionIds = getActiveSessionIds
 
 def is_mounted(devOrMountpoint):
-	for line in execute("mount").split("\n"):
+	for line in execute("mount"):
 		line = line.strip().lower()
-		match = re.search("^(.*)\s+on\s+(.*)\s\(.*$")
-		if match:
-			if devOrMountpoint.lower() in (match.group(1), match.group(2)):
-				return True
+		match = re.search("^(.*)\s+on\s+(.*)\s\(.*$", line)
+		if match and devOrMountpoint.lower() in (match.group(1), match.group(2)):
+			return True
 	return False
 Posix.is_mounted = is_mounted
 
