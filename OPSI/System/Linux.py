@@ -27,6 +27,7 @@ import codecs
 
 from OPSI.Logger import Logger
 from OPSI.Types import forceUnicode, forceFilename
+import OPSI.System.Posix
 from OPSI.System.Posix import (
 	CommandNotFoundException,
 	Distribution, Harddisk, NetworkPerformanceCounter, SysInfo,
@@ -86,6 +87,7 @@ def getActiveSessionIds(winApiBugCommand=None, data=None):
 			logger.debug(e)
 	sessions = sorted(sessions, key=lambda s: int(re.sub(r"\D", "", s)))
 	return sessions
+OPSI.System.Posix.getActiveSessionIds = getActiveSessionIds
 
 def grant_session_access(username: str, session_id: str):
 	session_username = None
@@ -117,6 +119,7 @@ def grant_session_access(username: str, session_id: str):
 	logger.debug("xhost output: %s", out)
 
 	return sp_env
+OPSI.System.Posix.grant_session_access = grant_session_access
 
 def mount(dev, mountpoint, **options):
 	dev = forceUnicode(dev)
@@ -227,7 +230,7 @@ def mount(dev, mountpoint, **options):
 
 	else:
 		raise ValueError(f"Cannot mount unknown fs type '{dev}'")
-	
+
 	mountOptions = []
 	for (key, value) in options.items():
 		key = forceUnicode(key)
@@ -250,3 +253,4 @@ def mount(dev, mountpoint, **options):
 	finally:
 		for f in credentialsFiles:
 			os.remove(f)
+OPSI.System.Posix.mount = mount
