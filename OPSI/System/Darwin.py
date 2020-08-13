@@ -26,8 +26,7 @@ Functions and classes for the use with a DARWIN operating system.
 :license: GNU Affero General Public License version 3
 """
 
-import os
-import sys
+
 import subprocess
 import time
 from typing import Dict, List, Any
@@ -36,10 +35,45 @@ from OPSI.Logger import Logger
 from OPSI.Types import forceUnicode
 from OPSI.Object import *
 from OPSI.Util import  objectToBeautifiedText, removeUnit
+from OPSI.System.Posix import (
+	CommandNotFoundException,
+	Distribution, Harddisk, NetworkPerformanceCounter, SysInfo,
+	SystemSpecificHook, addSystemHook, auditHardware,
+	configureInterface, daemonize, execute, get_subprocess_environment, getActiveConsoleSessionId,
+	getActiveSessionId, getBlockDeviceBusType,
+	getBlockDeviceContollerInfo, getDHCPDRestartCommand, getDHCPResult,
+	getDHCPServiceName, getDefaultNetworkInterfaceName, getDiskSpaceUsage,
+	getEthernetDevices, getFQDN, getHarddisks, getHostname,
+	getKernelParams, getNetworkDeviceConfig, getNetworkInterfaces,
+	getSambaServiceName, getServiceNames, getSystemProxySetting, halt,
+	hardwareExtendedInventory, hardwareInventory, hooks, ifconfig,
+	isCentOS, isDebian, isOpenSUSE, isRHEL, isSLES,
+	isUCS, isUbuntu, isXenialSfdiskVersion, locateDHCPDConfig,
+	locateDHCPDInit, mount, reboot, removeSystemHook,
+	runCommandInSession, setLocalSystemTime, shutdown, umount, which
+)
 
 logger = Logger()
 
 HIERARCHY_SEPARATOR = "//"
+
+__all__ = (
+	'CommandNotFoundException',
+	'Distribution', 'Harddisk', 'NetworkPerformanceCounter', 'SysInfo',
+	'SystemSpecificHook', 'addSystemHook', 'auditHardware',
+	'configureInterface', 'daemonize', 'execute', 'get_subprocess_environment', 'getActiveConsoleSessionId',
+	'getActiveSessionId', 'getActiveSessionIds', 'getBlockDeviceBusType',
+	'getBlockDeviceContollerInfo', 'getDHCPDRestartCommand', 'getDHCPResult',
+	'getDHCPServiceName', 'getDefaultNetworkInterfaceName', 'getDiskSpaceUsage',
+	'getEthernetDevices', 'getFQDN', 'getHarddisks', 'getHostname',
+	'getKernelParams', 'getNetworkDeviceConfig', 'getNetworkInterfaces',
+	'getSambaServiceName', 'getServiceNames', 'getSystemProxySetting', 'halt',
+	'hardwareExtendedInventory', 'hardwareInventory', 'hooks', 'ifconfig',
+	'isCentOS', 'isDebian', 'isOpenSUSE', 'isRHEL', 'isSLES',
+	'isUCS', 'isUbuntu', 'isXenialSfdiskVersion', 'locateDHCPDConfig',
+	'locateDHCPDInit', 'mount', 'reboot', 'removeSystemHook',
+	'runCommandInSession', 'setLocalSystemTime', 'shutdown', 'umount', 'which'
+)
 
 def set_tree_value(mydict: Dict, key_list : List, last_key : str, value : str) -> None:
 	"""
@@ -337,3 +371,16 @@ def osx_hardwareInventory(config : List) -> Dict:
 	opsiValues['SCANPROPERTIES'] = [{"scantime": time.strftime("%Y-%m-%d %H:%M:%S")}]
 	logger.debug(u"Result of hardware inventory:\n" + objectToBeautifiedText(opsiValues))
 	return opsiValues
+
+def getActiveSessionIds(winApiBugCommand=None, data=None):
+	"""
+	Getting the IDs of the currently active sessions.
+
+	.. versionadded:: 4.0.5
+
+
+	:param data: Prefetched data to read information from.
+	:type data: [str, ]
+	:rtype: [int, ]
+	"""
+	return [1]
