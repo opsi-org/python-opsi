@@ -17,8 +17,7 @@ LOG_COLORS = {
 }
 SECRET_REPLACEMENT_STRING = '***secret***'
 
-logging.NONE = 0
-logging.NOTSET = logging.NONE
+logging.NOTSET = 0
 logging.SECRET = 10
 logging.CONFIDENTIAL = logging.SECRET
 logging.TRACE = 20
@@ -32,6 +31,7 @@ logging.ERROR = 70
 logging.CRITICAL = 80
 logging.ESSENTIAL = 90
 logging.COMMENT = logging.ESSENTIAL
+logging.NONE = 100
 
 logging._levelToName = {
 	logging.SECRET: 'SECRET',
