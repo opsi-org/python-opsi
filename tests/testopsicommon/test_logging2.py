@@ -10,26 +10,15 @@ import io
 import pytest
 import logging
 import requests
-
-from contextlib import contextmanager
-
 import logging
+
 import opsicommon.logging
-from opsicommon.logging import logger, LOG_ERROR, init_logging
+from opsicommon.logging import logger, LOG_ERROR, init_logging, print_logger_info
 
 MY_FORMAT = "%(log_color)s[%(opsilevel)d] [%(asctime)s.%(msecs)03d]%(reset)s [%(contextstring)s] %(message)s"
 OTHER_FORMAT = "[%(opsilevel)d] [%(asctime)s.%(msecs)03d] [%(contextstring)s] %(message)s   (%(filename)s:%(lineno)d)"
 
-@contextmanager
-@pytest.fixture
-def log_stream():
-	stream = io.StringIO()
-	handler = logging.StreamHandler(stream)
-	try:
-		logging.root.addHandler(handler)
-		yield stream
-	finally:
-		logging.root.removeHandler(handler)
+from .test_logging import log_stream
 
 def test_simple_colored(log_stream):
 	with log_stream as stream:
@@ -148,8 +137,10 @@ def test_log_devel(log_stream):
 		assert "test that should not appear" not in log
 
 def test_multi_call_init_logging(tmpdir):
+	logger.setLevel(logging.DEBUG)
 	log_file = tmpdir.join("opsi.log")
 	opsicommon.logging.init_logging(stderr_level=logging.INFO, log_file=log_file, file_level=logging.INFO, file_format="%(message)s")
+	print_logger_info()
 	logger.info("LINE1")
 	opsicommon.logging.init_logging(stderr_level=logging.INFO, log_file=log_file, file_level=logging.INFO, file_format="%(message)s")
 	logger.info("LINE2")
