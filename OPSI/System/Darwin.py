@@ -26,7 +26,8 @@ Functions and classes for the use with a DARWIN operating system.
 :license: GNU Affero General Public License version 3
 """
 
-
+import os
+import re
 import subprocess
 import time
 from typing import Dict, List, Any
@@ -49,7 +50,7 @@ from OPSI.System.Posix import (
 	hardwareExtendedInventory, hardwareInventory, hooks, ifconfig,
 	isCentOS, isDebian, isOpenSUSE, isRHEL, isSLES,
 	isUCS, isUbuntu, isXenialSfdiskVersion, locateDHCPDConfig,
-	locateDHCPDInit, mount, reboot, removeSystemHook,
+	locateDHCPDInit, is_mounted, reboot, removeSystemHook,
 	runCommandInSession, setLocalSystemTime, shutdown, umount, which
 )
 
@@ -384,3 +385,40 @@ def getActiveSessionIds(winApiBugCommand=None, data=None):
 	:rtype: [int, ]
 	"""
 	return [1]
+
+def mount(dev, mountpoint, **options):
+	dev = forceUnicode(dev)
+	mountpoint = forceFilename(mountpoint)
+	if not os.path.isdir(mountpoint):
+		os.makedirs(mountpoint)
+
+	if is_mounted(mountpoint):
+		logger.debug("Mountpoint '%s' already mounted, umounting before mount", mountpoint)
+		umount(mountpoint)
+	
+	for (key, value) in options.items():
+		options[key] = forceUnicode(value)
+
+	if dev.lower().startswith(('smb://', 'cifs://')):
+		# mount_smbfs //<domain>;<username>:<password>@<server>/<share> /mountpoint
+		# mount -t smbfs //<domain>;<username>:<password>@<server>/<share> /mountpoint
+		match = re.search(r'^(smb|cifs)://([^/]+)/([^/].*)$', dev, re.IGNORECASE)
+		if match:
+			server = match.group(2)
+			share = match.group(3)
+			username = re.sub("\\+", "\\", options.get("username", "guest")).replace("\\", ";")
+			password = options.get("password", "")
+			if password:
+				password = f":{password}"
+			
+			command = f"mount -t smbfs //{username}{password}@{server}/{share} {mountpoint}"
+
+			try:
+				execute(command)
+			except Exception as e:
+				logger.error("Failed to mount '%s': %s", dev, e)
+				raise RuntimeError("Failed to mount '%s': %s" % (dev, e))
+		else:
+			raise ValueError(f"Bad smb/cifs uri '{dev}'")
+	else:
+		raise ValueError(f"Cannot mount unknown fs type '{dev}'")

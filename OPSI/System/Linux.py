@@ -23,8 +23,10 @@ import os
 import re
 import subprocess
 import psutil
+import codecs
 
 from OPSI.Logger import Logger
+from OPSI.Types import forceUnicode, forceFilename
 from OPSI.System.Posix import (
 	CommandNotFoundException,
 	Distribution, Harddisk, NetworkPerformanceCounter, SysInfo,
@@ -39,7 +41,7 @@ from OPSI.System.Posix import (
 	hardwareExtendedInventory, hardwareInventory, hooks, ifconfig,
 	isCentOS, isDebian, isOpenSUSE, isRHEL, isSLES,
 	isUCS, isUbuntu, isXenialSfdiskVersion, locateDHCPDConfig,
-	locateDHCPDInit, mount, reboot, removeSystemHook,
+	locateDHCPDInit, is_mounted, reboot, removeSystemHook,
 	runCommandInSession, setLocalSystemTime, shutdown, umount, which
 )
 
@@ -115,3 +117,136 @@ def grant_session_access(username: str, session_id: str):
 	logger.debug("xhost output: %s", out)
 
 	return sp_env
+
+def mount(dev, mountpoint, **options):
+	dev = forceUnicode(dev)
+	mountpoint = forceFilename(mountpoint)
+	if not os.path.isdir(mountpoint):
+		os.makedirs(mountpoint)
+
+	if is_mounted(mountpoint):
+		logger.debug("Mountpoint '%s' already mounted, umounting before mount", mountpoint)
+		umount(mountpoint)
+	
+	for (key, value) in options.items():
+		options[key] = forceUnicode(value)
+
+	fs = ""
+
+	credentialsFiles = []
+	if dev.lower().startswith(('smb://', 'cifs://')):
+		match = re.search(r'^(smb|cifs)://([^/]+\/.+)$', dev, re.IGNORECASE)
+		if match:
+			fs = "-t cifs"
+			parts = match.group(2).split('/')
+			dev = "//%s/%s" % (parts[0], parts[1])
+			if 'username' not in options:
+				options['username'] = "guest"
+			if 'password' not in options:
+				options['password'] = ""
+			if '\\' in options['username']:
+				options['username'] = re.sub("\\+", "\\", options['username'])
+				(options['domain'], options['username']) = options['username'].split('\\', 1)
+
+			credentialsFile = "/tmp/.cifs-credentials.%s" % parts[0]
+			if os.path.exists(credentialsFile):
+				os.remove(credentialsFile)
+			with open(credentialsFile, "w") as f:
+				pass
+
+			os.chmod(credentialsFile, 0o600)
+			with codecs.open(credentialsFile, "w", "iso-8859-15") as f:
+				f.write("username=%s\n" % options['username'])
+				f.write("password=%s\n" % options['password'])
+			options['credentials'] = credentialsFile
+			credentialsFiles.append(credentialsFile)
+
+			try:
+				if not options['domain']:
+					del options['domain']
+			except KeyError:
+				pass
+			del options['username']
+			del options['password']
+		else:
+			raise ValueError(f"Bad smb/cifs uri '{dev}'")
+
+	elif dev.lower().startswith(('webdav://', 'webdavs://', 'http://', 'https://')):
+		# We need enough free space in /var/cache/davfs2
+		# Maximum transfer file size <= free space in /var/cache/davfs2
+		match = re.search(r'^(http|webdav)(s*)(://[^/]+\/.+)$', dev, re.IGNORECASE)
+		if match:
+			fs = u'-t davfs'
+			dev = u'http' + match.group(2) + match.group(3)
+		else:
+			raise ValueError(u"Bad webdav url '%s'" % dev)
+
+		if 'username' not in options:
+			options['username'] = u''
+		if 'password' not in options:
+			options['password'] = u''
+		if 'servercert' not in options:
+			options['servercert'] = u''
+
+		if options['servercert']:
+			with open(u"/etc/davfs2/certs/trusted.pem", "w") as f:
+				f.write(options['servercert'])
+			os.chmod(u"/etc/davfs2/certs/trusted.pem", 0o644)
+
+		with codecs.open(u"/etc/davfs2/secrets", "r", "utf8") as f:
+			lines = f.readlines()
+
+		with codecs.open(u"/etc/davfs2/secrets", "w", "utf8") as f:
+			for line in lines:
+				if re.search(r"^%s\s+" % dev, line):
+					f.write(u"#")
+				f.write(line)
+			f.write(u'%s "%s" "%s"\n' % (dev, options['username'], options['password']))
+		os.chmod(u"/etc/davfs2/secrets", 0o600)
+
+		if options['servercert']:
+			with open(u"/etc/davfs2/davfs2.conf", "r") as f:
+				lines = f.readlines()
+
+			with open(u"/etc/davfs2/davfs2.conf", "w") as f:
+				for line in lines:
+					if re.search(r"^servercert\s+", line):
+						f.write("#")
+					f.write(line)
+				f.write(u"servercert /etc/davfs2/certs/trusted.pem\n")
+
+		del options['username']
+		del options['password']
+		del options['servercert']
+
+	elif dev.lower().startswith(u'/'):
+		pass
+
+	elif dev.lower().startswith(u'file://'):
+		dev = dev[7:]
+
+	else:
+		raise ValueError(f"Cannot mount unknown fs type '{dev}'")
+	
+	mountOptions = []
+	for (key, value) in options.items():
+		key = forceUnicode(key)
+		value = forceUnicode(value)
+		if value:
+			mountOptions.append("{0}={1}".format(key, value))
+		else:
+			mountOptions.append("{0}".format(key))
+
+	if mountOptions:
+		optString = u'-o "{0}"'.format((u','.join(mountOptions)).replace('"', '\\"'))
+	else:
+		optString = u''
+
+	try:
+		execute(u"%s %s %s %s %s" % (which('mount'), fs, optString, dev, mountpoint))
+	except Exception as e:
+		logger.error(u"Failed to mount '%s': %s", dev, e)
+		raise RuntimeError(u"Failed to mount '%s': %s" % (dev, e))
+	finally:
+		for f in credentialsFiles:
+			os.remove(f)
