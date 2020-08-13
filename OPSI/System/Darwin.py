@@ -36,7 +36,7 @@ from OPSI.Logger import Logger
 from OPSI.Types import forceUnicode, forceFilename
 from OPSI.Object import *
 from OPSI.Util import  objectToBeautifiedText, removeUnit
-import OPSI.System.Posix
+from OPSI.System import Posix
 from OPSI.System.Posix import (
 	CommandNotFoundException,
 	Distribution, Harddisk, NetworkPerformanceCounter, SysInfo,
@@ -386,7 +386,7 @@ def getActiveSessionIds(winApiBugCommand=None, data=None):
 	:rtype: [int, ]
 	"""
 	return [1]
-OPSI.System.Posix.getActiveSessionIds = getActiveSessionIds
+Posix.getActiveSessionIds = getActiveSessionIds
 
 def mount(dev, mountpoint, **options):
 	dev = forceUnicode(dev)
@@ -424,4 +424,4 @@ def mount(dev, mountpoint, **options):
 			raise ValueError(f"Bad smb/cifs uri '{dev}'")
 	else:
 		raise ValueError(f"Cannot mount unknown fs type '{dev}'")
-OPSI.System.Posix.mount = mount
+Posix.mount = mount
