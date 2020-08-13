@@ -4009,16 +4009,7 @@ def getActiveSessionIds(winApiBugCommand=None, data=None):
 	:type data: [str, ]
 	:rtype: [int, ]
 	"""
-	sessions = []
-	for proc in psutil.process_iter():
-		try:
-			env = proc.environ()
-			if env.get("DISPLAY") and not env["DISPLAY"] in sessions:
-				sessions.append(env["DISPLAY"])
-		except psutil.AccessDenied as e:
-			logger.debug(e)
-	sessions = sorted(sessions, key=lambda s: int(re.sub("\D", "", s)))
-	return sessions
+	return []
 
 def getActiveSessionId():
 	"""
@@ -4045,6 +4036,9 @@ def getActiveConsoleSessionId():
 	"""
 	return getActiveSessionId()
 
+def grant_session_access(username: str, session_id: str):
+	pass
+
 def runCommandInSession(command, sessionId=None, desktop=None, duplicateFrom=None, waitForProcessEnding=True, timeoutSeconds=0, noWindow=False):
 	"""
 	Run an command.
@@ -4070,36 +4064,9 @@ until the execution of the process is terminated.
 	waitForProcessEnding = forceBool(waitForProcessEnding)
 	timeoutSeconds = forceInt(timeoutSeconds)
 
-	logger.notice(u"Executing: '%s'", command)
+	logger.notice("Executing: '%s'", command)
 
-	username = getpass.getuser()
-	session_username = None
-	session_env = None
-	for proc in psutil.process_iter():
-		env = proc.environ()
-		if env.get("DISPLAY") == sessionId:
-			if session_env is None or env.get("XAUTHORITY"):
-				session_username = proc.username()
-				session_env = env
-	if not session_env.get("XAUTHORITY"):
-		session_env["XAUTHORITY"] = os.path.join(session_env.get("HOME"), ".Xauthority")
-	if not session_env:
-		raise ValueError(f"Session {sessionId} not found")
-	
-	sp_env = get_subprocess_environment(session_env)
-	logger.debug("Using process env: %s", sp_env)
-
-	# Allow user to connect to X
-	xhost_cmd = ["sudo", "-u", session_username, "xhost", f"+si:localuser:{username}"]
-	logger.info("Running command %s", xhost_cmd)
-	process = subprocess.run(
-		xhost_cmd,
-		stdout=subprocess.PIPE,
-		stderr=subprocess.STDOUT,
-		env=sp_env
-	)
-	out = process.stdout.decode("utf-8", "replace") if process.stdout else ""
-	logger.debug("xhost output: %s", out)
+	grant_session_access(getpass.getuser(), sessionId)
 	
 	logger.info("Running command %s", command)
 	process = subprocess.Popen(

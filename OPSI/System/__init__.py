@@ -43,14 +43,11 @@ from OPSI.Types import forceFilename
 logger = Logger()
 
 if platform.system().lower() == 'linux':
-	from .Posix import *
+	from .Linux import *
 elif platform.system().lower() == 'windows':
 	from .Windows import *
 elif platform.system().lower() == 'darwin':
-	from . import Posix
-	#override os-specific methods from Posix
-	from .Darwin import osx_hardwareInventory
-	Posix.hardwareInventory = osx_hardwareInventory
+	from .Darwin import *
 else:
 	logger.error("Unable to import System library for system %s", platform.system().lower())
 
