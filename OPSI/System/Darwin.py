@@ -33,7 +33,7 @@ import time
 from typing import Dict, List, Any
 
 from OPSI.Logger import Logger
-from OPSI.Types import forceUnicode
+from OPSI.Types import forceUnicode, forceFilename
 from OPSI.Object import *
 from OPSI.Util import  objectToBeautifiedText, removeUnit
 from OPSI.System.Posix import (
@@ -410,7 +410,7 @@ def mount(dev, mountpoint, **options):
 			password = options.get("password", "")
 			if password:
 				password = f":{password}"
-			
+
 			command = f"mount -t smbfs //{username}{password}@{server}/{share} {mountpoint}"
 
 			try:
