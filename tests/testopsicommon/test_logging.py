@@ -16,10 +16,11 @@ import asyncio
 import random
 from contextlib import contextmanager
 
-from opsicommon.logging import (logger, handle_log_exception, secret_filter,
-			ContextSecretFormatter, log_context, set_format, init_logging,
-			print_logger_info)
-from opsicommon.logging.logging import remove_all_handlers
+from opsicommon.logging import (
+	logger, handle_log_exception, secret_filter,
+	ContextSecretFormatter, log_context, set_format,
+	init_logging, logging_config, print_logger_info
+)
 
 try:
 	from OPSI.Logger import Logger as LegacyLogger
@@ -31,6 +32,7 @@ except ImportError:
 def log_stream():
 	stream = io.StringIO()
 	handler = logging.StreamHandler(stream)
+	handler.name = "opsicommon test stream"
 	try:
 		logging.root.addHandler(handler)
 		yield stream
@@ -101,7 +103,6 @@ def test_secret_filter(log_stream):
 		assert "SECRETSTRING2" in log
 		assert "SECRETSTRING3" not in log
 
-
 @pytest.mark.skipif(not LegacyLogger, reason="OPSI.Logger not available.")
 def test_legacy_logger(log_stream):
 	with log_stream as stream:
@@ -134,13 +135,12 @@ def test_legacy_logger(log_stream):
 
 @pytest.mark.skipif(not LegacyLogger, reason="OPSI.Logger not available.")
 def test_legacy_logger_calls(log_stream):
-	remove_all_handlers()
-	init_logging(stderr_level=logging.SECRET)
 	with log_stream as stream:
-		print_logger_info()
+		logging_config(stderr_level=logging.SECRET)
 		legacy_logger = LegacyLogger()
 		assert legacy_logger == logger
-
+		
+		#print_logger_info()
 		legacy_logger.getStderr()
 		legacy_logger.getStdout()
 		legacy_logger.setConfidentialStrings(["topsecret"])
@@ -178,6 +178,7 @@ def test_legacy_logger_calls(log_stream):
 		legacy_logger.logTraceback(None)
 		legacy_logger.logWarnings()
 		legacy_logger.startTwistedLogging()
+		legacy_logger.setConsoleLevel(9)
 		legacy_logger.confidential("mymessage %s", "fill-value")
 		legacy_logger.debug3("mymessage %s", "fill-value")
 		legacy_logger.debug2("mymessage %s", "fill-value")
@@ -195,9 +196,7 @@ def test_legacy_logger_calls(log_stream):
 		#legacy_logger.log(3, "text %s", raiseException=False, formatArgs=["some format arg"], formatKwargs={})
 		stream.seek(0)
 		log = stream.read()
-		print(log)
 		assert log.count("fill-value") == 13
-
 
 @pytest.mark.skipif(not LegacyLogger, reason="OPSI.Logger not available.")
 def test_legacy_logger_file(log_stream):

@@ -381,7 +381,8 @@ def logging_config(
 	stderr_format: str = None,
 	log_file: str = None,
 	file_level: int = None,
-	file_format: str = None
+	file_format: str = None,
+	remove_handlers = False
 ):
 	"""
 	Initialize logging.
@@ -417,7 +418,10 @@ def logging_config(
 		file_level = logging._opsiLevelToLevel[file_level]
 
 	if log_file:
-		remove_all_handlers(logging.FileHandler)
+		if remove_handlers:
+			remove_all_handlers(handler_type=logging.FileHandler)
+		else:
+			remove_all_handlers(handler_name="opsi_file_handler")
 		handler = logging.FileHandler(log_file)
 		handler.name = "opsi_file_handler"
 		logging.root.addHandler(handler)
@@ -425,18 +429,35 @@ def logging_config(
 		for handler in get_all_handlers(logging.FileHandler):
 			handler.setLevel(file_level)
 	if stderr_level is not None:
-		remove_all_handlers(logging.StreamHandler)
+		if remove_handlers:
+			remove_all_handlers(handler_type=logging.StreamHandler)
+		else:
+			remove_all_handlers(handler_name="opsi_stderr_handler")
 		if stderr_level != 0:
 			handler = logging.StreamHandler(stream = sys.stderr)
 			handler.name = "opsi_stderr_handler"
-			handler.setLevel(stderr_level)
 			logging.root.addHandler(handler)
+		for handler in get_all_handlers(logging.StreamHandler):
+			handler.setLevel(stderr_level)
 
+	min_value = 0
+	for handler in get_all_handlers():
+		if handler.level != 0 and handler.level < min_value:
+			min_value = handler.level
+	logging.root.setLevel(min_value)
+	
 	if stderr_format and stderr_format.find("(log_color)") != -1 and not sys.stderr.isatty():
 		stderr_format = stderr_format.replace('%(log_color)s', '').replace('%(reset)s', '')
 	set_format(file_format, stderr_format)
 
-init_logging = logging_config
+def init_logging(
+	stderr_level: int = None,
+	stderr_format: str = None,
+	log_file: str = None,
+	file_level: int = None,
+	file_format: str = None
+):
+	return logging_config(stderr_level, stderr_format, log_file, file_level, file_format, True)
 
 def set_format(
 	file_format: str = DEFAULT_FORMAT,
@@ -566,7 +587,7 @@ def get_all_loggers():
 	"""
 	return [logging.root] + list(logging.Logger.manager.loggerDict.values())
 
-def get_all_handlers(handler_type = None):
+def get_all_handlers(handler_type = None, handler_name = None):
 	"""
 	Gets list of all handlers.
 
@@ -583,11 +604,14 @@ def get_all_handlers(handler_type = None):
 	for _logger in get_all_loggers():
 		if not isinstance(_logger, logging.PlaceHolder):
 			for _handler in _logger.handlers:
-				if not handler_type or type(_handler) is handler_type:
+				if (
+					(not handler_type or type(_handler) is handler_type) and
+					(not handler_name or _handler.name == handler_name)
+				):
 					handlers.append(_handler)
 	return handlers
 
-def remove_all_handlers(handler_type = None):
+def remove_all_handlers(handler_type = None, handler_name = None):
 	"""
 	Removes all handlers (of a certain type).
 
@@ -600,7 +624,10 @@ def remove_all_handlers(handler_type = None):
 	for _logger in get_all_loggers():
 		if not isinstance(_logger, logging.PlaceHolder):
 			for _handler in _logger.handlers:
-				if not handler_type or type(_handler) is handler_type:
+				if (
+					(not handler_type or type(_handler) is handler_type) and
+					(not handler_name or _handler.name == handler_name)
+				):
 					_logger.removeHandler(_handler)
 
 def print_logger_info():
@@ -614,7 +641,12 @@ def print_logger_info():
 		print(f"- Logger: {_logger}", file=sys.stderr)
 		if not isinstance(_logger, logging.PlaceHolder):
 			for _handler in _logger.handlers:
-				print(f"  - Handler: {_handler}", file=sys.stderr)
+				name = str(_handler)
+				if _handler.name:
+					tmp = name.split(" ")
+					tmp.insert(1, f'"{_handler.name}"')
+					name = " ".join(tmp)
+				print(f"  - Handler: {name} ", file=sys.stderr)
 				print(f"    - Formatter: {_handler.formatter}", file=sys.stderr)
 
 logging_config(stderr_level=logging.WARNING)
