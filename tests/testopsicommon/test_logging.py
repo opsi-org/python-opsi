@@ -9,7 +9,7 @@ This file is part of opsi - https://www.opsi.org
 import io
 import pytest
 import logging
-
+import re
 import time
 import threading
 import asyncio
@@ -17,7 +17,9 @@ import random
 from contextlib import contextmanager
 
 from opsicommon.logging import (logger, handle_log_exception, secret_filter,
-			ContextSecretFormatter, log_context, set_format, CONTEXT_STRING_MIN_LENGTH)
+			ContextSecretFormatter, log_context, set_format, init_logging,
+			print_logger_info)
+from opsicommon.logging.logging import remove_all_handlers
 
 try:
 	from OPSI.Logger import Logger as LegacyLogger
@@ -25,7 +27,7 @@ except ImportError:
 	LegacyLogger = None
 
 @contextmanager
-@pytest.fixture
+@pytest.fixture(scope="function")
 def log_stream():
 	stream = io.StringIO()
 	handler = logging.StreamHandler(stream)
@@ -100,7 +102,6 @@ def test_secret_filter(log_stream):
 		assert "SECRETSTRING3" not in log
 
 
-
 @pytest.mark.skipif(not LegacyLogger, reason="OPSI.Logger not available.")
 def test_legacy_logger(log_stream):
 	with log_stream as stream:
@@ -109,8 +110,8 @@ def test_legacy_logger(log_stream):
 
 		legacy_logger = LegacyLogger()
 		assert legacy_logger == logger
-		# This method does nothing
-		legacy_logger.setLogFile("/tmp/test.log")
+		#init_logging(file_level=logging.SECRET)
+		#legacy_logger.setLogFile("/tmp/test.log")
 		# This method does nothing
 		legacy_logger.setLogFormat("xy")
 
@@ -129,6 +130,74 @@ def test_legacy_logger(log_stream):
 		stream.seek(0)
 		log = stream.read()
 		assert "LOG_EXCEPTION" in log
+
+
+@pytest.mark.skipif(not LegacyLogger, reason="OPSI.Logger not available.")
+def test_legacy_logger_calls(log_stream):
+	remove_all_handlers()
+	init_logging(stderr_level=logging.SECRET)
+	with log_stream as stream:
+		print_logger_info()
+		legacy_logger = LegacyLogger()
+		assert legacy_logger == logger
+
+		legacy_logger.getStderr()
+		legacy_logger.getStdout()
+		legacy_logger.setConfidentialStrings(["topsecret"])
+		legacy_logger.addConfidentialString("evenmoresecret")
+		legacy_logger.setLogFormat("%s some format %s", currentThread=False, object=None)
+		legacy_logger.setConsoleFormat("%s some format %s", currentThread=False, object=None)
+		legacy_logger.setComponentName("name", currentThread=False, object=None)
+		legacy_logger.logToStdout(None)
+		legacy_logger.setSyslogFormat("%s some format %s", currentThread=False, object=None)
+		legacy_logger.setFileFormat("%s some format %s", currentThread=False, object=None)
+		legacy_logger.setUniventionFormat("%s some format %s", currentThread=False, object=None)
+		legacy_logger.setMessageSubjectFormat("%s some format %s", currentThread=False, object=None)
+		legacy_logger.setUniventionLogger(None)
+		legacy_logger.setUniventionClass(None)
+		legacy_logger.getMessageSubject()
+		legacy_logger.setColor(True)
+		legacy_logger.setFileColor(True)
+		legacy_logger.setConsoleColor(True)
+		legacy_logger.setSyslogLevel(0)
+		legacy_logger.setMessageSubjectLevel(0)
+		legacy_logger.setConsoleLevel(0)
+		legacy_logger.getConsoleLevel()
+		legacy_logger.getFileLevel()
+		legacy_logger.getLogFile(currentThread=False, object=None)
+		legacy_logger.setLogFile("logfile.log", currentThread=False, object=None)
+		legacy_logger.linkLogFile("logfile", currentThread=False, object=None)
+		legacy_logger.setFileLevel(0)
+		legacy_logger.exit(object=None)
+		legacy_logger._setThreadConfig(None, None)
+		legacy_logger._getThreadConfig(key=None)
+		legacy_logger._setObjectConfig(None, None, None)
+		legacy_logger._getObjectConfig(None, key=None)
+		legacy_logger.logException(None)
+		legacy_logger.logFailure(None)
+		legacy_logger.logTraceback(None)
+		legacy_logger.logWarnings()
+		legacy_logger.startTwistedLogging()
+		legacy_logger.confidential("mymessage %s", "fill-value")
+		legacy_logger.debug3("mymessage %s", "fill-value")
+		legacy_logger.debug2("mymessage %s", "fill-value")
+		legacy_logger.debug("mymessage %s", "fill-value")
+		legacy_logger.info("mymessage %s", "fill-value")
+		legacy_logger.msg("mymessage %s", "fill-value")
+		legacy_logger.notice("mymessage %s", "fill-value")
+		legacy_logger.warning("mymessage %s", "fill-value")
+		legacy_logger.error("mymessage %s", "fill-value")
+		legacy_logger.err("mymessage %s", "fill-value")
+		legacy_logger.critical("mymessage %s", "fill-value")
+		legacy_logger.essential("mymessage %s", "fill-value")
+		legacy_logger.comment("mymessage %s", "fill-value")
+		# calling log still fails as method signature has changed with opsi 4.2
+		#legacy_logger.log(3, "text %s", raiseException=False, formatArgs=["some format arg"], formatKwargs={})
+		stream.seek(0)
+		log = stream.read()
+		print(log)
+		assert log.count("fill-value") == 13
+
 
 @pytest.mark.skipif(not LegacyLogger, reason="OPSI.Logger not available.")
 def test_legacy_logger_file(log_stream):
@@ -197,10 +266,10 @@ def test_context_threads(log_stream):
 		
 		async def handle_client(self, client: str):
 			with log_context({'whoami' : "handler for " + str(client)}):
-				logger.info("handling client %s", client)
+				logger.essential("handling client %s", client)
 				seconds = random.random() * 1
 				await asyncio.sleep(seconds)
-				logger.info("client %s handled after %0.3f seconds", client, seconds)
+				logger.essential("client %s handled after %0.3f seconds", client, seconds)
 
 		async def arun(self):
 			while not self._should_stop:
@@ -214,13 +283,14 @@ def test_context_threads(log_stream):
 		def __init__(self, client: str):
 			super().__init__()
 			self.client = client
-			logger.warning("initializing client: %s", client)
+			logger.essential("initializing client: %s", client)
 
 		def run(self):
 			with log_context({'whoami' : "module " + str(self.client)}):
-				logger.info("MyModule.run")
+				logger.essential("MyModule.run")
 				common_work()
 
+	#init_logging(stderr_level=logging.INFO)
 	set_format(stderr_format="%(contextstring)s %(message)s")
 	with log_context({'whoami' : "MAIN"}):
 		with log_stream as stream:
@@ -234,7 +304,9 @@ def test_context_threads(log_stream):
 					t.stop()
 					t.join()
 			stream.seek(0)
+
 			log = stream.read()
-			assert "module Client-1" + " "*(CONTEXT_STRING_MIN_LENGTH - 14) + "MyModule.run" in log
+			print(log)
+			assert re.search(r"module Client-1.*MyModule.run", log) is not None
 			# to check for corrent handling of async contexti when eventloop is not running in main thread
-			assert "handler for client Client-0" + " "*(CONTEXT_STRING_MIN_LENGTH - 26) + "handling client Client-1" not in log
+			assert re.search(r"handler for client Client-0.*handling client Client-1", log) is None
