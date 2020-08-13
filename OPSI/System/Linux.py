@@ -42,7 +42,7 @@ from OPSI.System.Posix import (
 	hardwareExtendedInventory, hardwareInventory, hooks, ifconfig,
 	isCentOS, isDebian, isOpenSUSE, isRHEL, isSLES,
 	isUCS, isUbuntu, isXenialSfdiskVersion, locateDHCPDConfig,
-	locateDHCPDInit, is_mounted, reboot, removeSystemHook,
+	locateDHCPDInit, reboot, removeSystemHook,
 	runCommandInSession, setLocalSystemTime, shutdown, umount, which
 )
 
@@ -120,6 +120,15 @@ def grant_session_access(username: str, session_id: str):
 
 	return sp_env
 Posix.grant_session_access = grant_session_access
+
+def is_mounted(devOrMountpoint):
+	with codecs.open("/proc/mounts", "r", "utf-8") as f:
+		for line in f.readlines():
+			(dev, mountpoint) = line.split(" ", 2)[:2]
+			if devOrMountpoint in (dev, mountpoint):
+				return True
+	return False
+Posix.is_mounted = is_mounted
 
 def mount(dev, mountpoint, **options):
 	dev = forceUnicode(dev)
