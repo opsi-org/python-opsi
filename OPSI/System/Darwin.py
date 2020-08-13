@@ -408,7 +408,7 @@ def mount(dev, mountpoint, **options):
 		if match:
 			server = match.group(2)
 			share = match.group(3)
-			username = re.sub("\\+", "\\", options.get("username", "guest")).replace("\\", ";")
+			username = re.sub(r"\\+", "\\", options.get("username", "guest")).replace("\\", ";")
 			password = options.get("password", "")
 			if password:
 				password = f":{password}"
