@@ -37,6 +37,8 @@ import os
 import re
 import subprocess
 import time
+if os.name == 'posix':
+	import fcntl
 
 import OPSI.Util.File.Opsi
 from OPSI.Logger import Logger
@@ -45,11 +47,16 @@ from OPSI.Types import forceBool, forceFilename, forceUnicodeList, forceUnicodeL
 from OPSI.Util import compareVersions
 from OPSI.Util.Path import cd
 
-if os.name == 'posix':
-	import fcntl
-	import magic
 
 logger = Logger()
+
+try:
+	import magic
+except ImportError as e:
+	if os.name == 'posix':
+		# libmagic missing?
+		logger.error("Failed to import magic: %s", e)
+	magic = None
 
 try:
 	PIGZ_ENABLED = OPSI.Util.File.Opsi.OpsiConfFile().isPigzEnabled()
@@ -58,9 +65,8 @@ except IOError:
 
 
 def getFileType(filename):
-	if os.name == 'nt':
-		raise NotImplementedError(u"getFileType() not implemented on windows")
-
+	if not magic:
+		raise RuntimeError("python-magic missing")
 	filename = forceFilename(filename)
 	return magic.from_file(filename)
 
