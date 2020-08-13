@@ -426,10 +426,11 @@ def logging_config(
 			handler.setLevel(file_level)
 	if stderr_level is not None:
 		remove_all_handlers(logging.StreamHandler)
-		handler = logging.StreamHandler(stream = sys.stderr)
-		handler.name = "opsi_stderr_handler"
-		handler.setLevel(stderr_level)
-		logging.root.addHandler(handler)
+		if stderr_level != 0:
+			handler = logging.StreamHandler(stream = sys.stderr)
+			handler.name = "opsi_stderr_handler"
+			handler.setLevel(stderr_level)
+			logging.root.addHandler(handler)
 
 	if stderr_format and stderr_format.find("(log_color)") != -1 and not sys.stderr.isatty():
 		stderr_format = stderr_format.replace('%(log_color)s', '').replace('%(reset)s', '')
