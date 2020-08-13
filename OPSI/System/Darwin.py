@@ -52,7 +52,7 @@ from OPSI.System.Posix import (
 	hardwareExtendedInventory, hardwareInventory, hooks, ifconfig,
 	isCentOS, isDebian, isOpenSUSE, isRHEL, isSLES,
 	isUCS, isUbuntu, isXenialSfdiskVersion, locateDHCPDConfig,
-	locateDHCPDInit, is_mounted, reboot, removeSystemHook,
+	locateDHCPDInit, reboot, removeSystemHook,
 	runCommandInSession, setLocalSystemTime, shutdown, umount, which
 )
 
@@ -388,6 +388,16 @@ def getActiveSessionIds(winApiBugCommand=None, data=None):
 	"""
 	return [1]
 Posix.getActiveSessionIds = getActiveSessionIds
+
+def is_mounted(devOrMountpoint):
+	for line in execute("mount").split("\n"):
+		line = line.strip().lower()
+		match = re.search("^(.*)\s+on\s+(.*)\s\(.*$")
+		if match:
+			if devOrMountpoint.lower() in (match.group(1), match.group(2)):
+				return True
+	return False
+Posix.is_mounted = is_mounted
 
 def mount(dev, mountpoint, **options):
 	dev = forceUnicode(dev)
