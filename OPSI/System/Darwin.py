@@ -30,6 +30,7 @@ import os
 import re
 import subprocess
 import time
+import urllib.parse
 from typing import Dict, List, Any
 
 from OPSI.Logger import Logger
@@ -402,8 +403,7 @@ def mount(dev, mountpoint, **options):
 		options[key] = forceUnicode(value)
 
 	if dev.lower().startswith(('smb://', 'cifs://')):
-		# mount_smbfs //<domain>;<username>:<password>@<server>/<share> /mountpoint
-		# mount -t smbfs //<domain>;<username>:<password>@<server>/<share> /mountpoint
+		# mount_smbfs '//<domain>;<username>:<password>@<server>/<share>' /mountpoint
 		match = re.search(r'^(smb|cifs)://([^/]+)/([^/].*)$', dev, re.IGNORECASE)
 		if match:
 			server = match.group(2)
@@ -411,9 +411,9 @@ def mount(dev, mountpoint, **options):
 			username = re.sub(r"\\+", r"\\", options.get("username", "guest")).replace("\\", ";")
 			password = options.get("password", "")
 			if password:
-				password = f":{password}"
+				password = f":{urllib.parse.quote(password)}"
 
-			command = f"mount -t smbfs //{username}{password}@{server}/{share} {mountpoint}"
+			command = f"mount_smbfs -N '//{username}{password}@{server}/{share}' '{mountpoint}'"
 
 			try:
 				execute(command)
