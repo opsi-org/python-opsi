@@ -4037,7 +4037,7 @@ def getActiveConsoleSessionId():
 	return getActiveSessionId()
 
 def grant_session_access(username: str, session_id: str):
-	pass
+	return get_subprocess_environment()
 
 def runCommandInSession(command, sessionId=None, desktop=None, duplicateFrom=None, waitForProcessEnding=True, timeoutSeconds=0, noWindow=False):
 	"""
@@ -4066,7 +4066,7 @@ until the execution of the process is terminated.
 
 	logger.notice("Executing: '%s'", command)
 
-	grant_session_access(getpass.getuser(), sessionId)
+	sp_env = grant_session_access(getpass.getuser(), sessionId)
 	
 	logger.info("Running command %s", command)
 	process = subprocess.Popen(

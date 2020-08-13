@@ -113,3 +113,5 @@ def grant_session_access(username: str, session_id: str):
 	)
 	out = process.stdout.decode("utf-8", "replace") if process.stdout else ""
 	logger.debug("xhost output: %s", out)
+
+	return sp_env
