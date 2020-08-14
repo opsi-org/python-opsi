@@ -32,7 +32,7 @@ from collections import defaultdict
 import pytest
 
 from OPSI.Util.Task.Rights import (
-	chown, getDepotDirectory, getDirectoriesAndExpectedRights,
+	chown, getDepotDirectories, getDirectoriesAndExpectedRights,
 	getWebserverRepositoryPath, getWebserverUsernameAndGroupname,
 	filterDirsAndRights, setRightsOnSSHDirectory, setRightsOnFile)
 
@@ -41,19 +41,21 @@ from .helpers import mock
 
 OS_CHECK_FUNCTIONS = ['isRHEL', 'isCentOS', 'isSLES', 'isOpenSUSE', 'isUbuntu', 'isDebian', 'isUCS']
 
+@pytest.fixture
+def depotDirectories():
+	'Returning a fixed dirs'
+	_dirs = {
+		"depot": "/var/lib/opsi/depot",
+		"repository": "/var/lib/opsi/repository",
+		"workbench": "/var/lib/opsi/workbench"
+	}
+	with mock.patch('OPSI.Util.Task.Rights.getDepotDirectories', lambda: _dirs):
+		yield _dirs
 
 @pytest.fixture
-def depotDirectory():
-	'Returning a fixed address when checking for a depotUrl'
-	depotUrl = u'file:///var/lib/opsi/depot'
-	with mock.patch('OPSI.Util.Task.Rights.getDepotUrl', lambda: depotUrl):
-		yield depotUrl
-
-
-@pytest.fixture
-def emptyDepotDirectoryCache():
-	'Making sure that no depotUrl is cached.'
-	with mock.patch('OPSI.Util.Task.Rights._CACHED_DEPOT_DIRECTORY', None):
+def emptyDepotDirectoriesCache():
+	'Making sure to clear cached.'
+	with mock.patch('OPSI.Util.Task.Rights.CACHED_DEPOT_DIRS', None):
 		yield
 
 
@@ -68,65 +70,40 @@ def patchUserInfo():
 
 
 @pytest.mark.parametrize("slesSupport, tftpdir", [
-	(False, u'/tftpboot/linux'),
-	(True, u'/var/lib/tftpboot/opsi')
+	(False, '/tftpboot/linux'),
+	(True, '/var/lib/tftpboot/opsi')
 ], ids=["sles", "non-sles"])
-def testGetDirectoriesToProcess(depotDirectory, patchUserInfo, slesSupport, tftpdir):
+def testGetDirectoriesToProcess(depotDirectories, patchUserInfo, slesSupport, tftpdir):
 	with mock.patch('OPSI.Util.Task.Rights.getWebserverRepositoryPath', lambda: '/path/to/apache'):
 		with mock.patch('OPSI.Util.Task.Rights.isSLES', lambda: slesSupport):
-			directories = [d for d, _ in getDirectoriesAndExpectedRights('/')]
+			directories = [d for d, _ in getDirectoriesAndExpectedRights()]
 
-	assert u'/etc/opsi' in directories
-	assert u'/var/lib/opsi' in directories
-	assert u'/var/log/opsi' in directories
+	assert '/etc/opsi' in directories
+	assert '/var/lib/opsi' in directories
+	assert '/var/log/opsi' in directories
 	assert tftpdir in directories
 	assert '/path/to/apache' in directories
 
 
 @pytest.mark.parametrize("slesSupport, tftpdir", [
-	(False, u'/tftpboot/linux'),
-	(True, u'/var/lib/tftpboot/opsi')
+	(False, '/tftpboot/linux'),
+	(True, '/var/lib/tftpboot/opsi')
 ], ids=["opensuse", "non-opensuse"])
-def testGetDirectoriesToProcessOpenSUSE(depotDirectory, patchUserInfo, slesSupport, tftpdir):
+def testGetDirectoriesToProcessOpenSUSE(depotDirectories, patchUserInfo, slesSupport, tftpdir):
 	with mock.patch('OPSI.Util.Task.Rights.getWebserverRepositoryPath', lambda: '/path/to/apache'):
 		with mock.patch('OPSI.Util.Task.Rights.isOpenSUSE', lambda: slesSupport):
-			directories = [d for d, _ in getDirectoriesAndExpectedRights('/')]
+			directories = [d for d, _ in getDirectoriesAndExpectedRights()]
 
-	assert u'/etc/opsi' in directories
-	assert u'/var/lib/opsi' in directories
-	assert u'/var/log/opsi' in directories
+	assert '/etc/opsi' in directories
+	assert '/var/lib/opsi' in directories
+	assert '/var/log/opsi' in directories
 	assert tftpdir in directories
 	assert '/path/to/apache' in directories
 
 
-def testGettingDirectories(patchUserInfo, depotDirectory):
-	directories = [d for d, _ in getDirectoriesAndExpectedRights('/tmp')]
+def testGettingDirectories(patchUserInfo, depotDirectories):
+	directories = [d for d, _ in getDirectoriesAndExpectedRights()]
 	assert len(directories) > 2
-
-
-@pytest.mark.parametrize("testDir", [
-	'/opt/pcbin/install/foo',
-	pytest.param('/tmp', marks=pytest.mark.xfail),
-])
-def testOptPcbinGetRelevantIfInParameter(emptyDepotDirectoryCache, depotDirectory, testDir):
-	directories = getDepotDirectory(testDir)
-	assert '/opt/pcbin/install' in directories
-
-
-def testReturningEmptyPathIfLookupFailed(emptyDepotDirectoryCache, depotDirectory):
-	with mock.patch('OPSI.Util.Task.Rights.getDepotUrl', mock.Mock(side_effect=Exception)):
-		assert not getDepotDirectory('/')
-
-	with mock.patch('OPSI.Util.Task.Rights.getDepotUrl', lambda: 'invalid:/x'):
-		assert not getDepotDirectory('/')
-
-
-def testDepotPathMayWillBeReturned(depotDirectory):
-	depotDirToCheck = depotDirectory.split('file://', 1)[1]
-
-	depotDir = getDepotDirectory(depotDirToCheck)
-
-	assert depotDir == '/var/lib/opsi/depot'
 
 
 @pytest.fixture(scope="session")
@@ -219,24 +196,24 @@ def testChangingOwnershipWithOurChown(currentUserId, nonRootUserId, currentGroup
 
 
 def testGettingDirectoriesAndRights(patchUserInfo):
-	dm = dict(getDirectoriesAndExpectedRights('/'))
+	dm = dict(getDirectoriesAndExpectedRights())
 
 	for rights in dm.values():
 		# For now we just want to make sure these fields are filled.
 		assert rights.uid
 		assert rights.gid
 
-	rights = dm[u'/etc/opsi']
+	rights = dm['/etc/opsi']
 	assert rights.files == 0o660
 	assert rights.directories == 0o770
 	assert rights.correctLinks
 
-	rights = dm[u'/var/lib/opsi']
+	rights = dm['/var/lib/opsi']
 	assert rights.files == 0o660
 	assert rights.directories == 0o770
 	assert not rights.correctLinks
 
-	rights = dm[u'/var/log/opsi']
+	rights = dm['/var/log/opsi']
 	assert rights.files == 0o660
 	assert rights.directories == 0o770
 	assert rights.correctLinks
@@ -289,7 +266,7 @@ def disableOSChecks(functions):
 
 
 def testFilterDirsAndRightsReturnsAllWhenRootIsGiven(patchUserInfo):
-	defaultDirGenerator = getDirectoriesAndExpectedRights('/')
+	defaultDirGenerator = getDirectoriesAndExpectedRights()
 	dar = list(filterDirsAndRights('/', defaultDirGenerator))
 
 	assert len(dar) > 4
@@ -309,10 +286,10 @@ def testLimitingFilterDirsAndRights(patchUserInfo):
 	depotDir = '/var/lib/opsi/depot'
 	depotDirExists = os.path.exists(depotDir)
 
-	defaultDirGenerator = getDirectoriesAndExpectedRights(depotDir)
+	defaultDirGenerator = getDirectoriesAndExpectedRights()
 	dar = list(filterDirsAndRights(depotDir, defaultDirGenerator))
 
-	assert 3 > len(dar) >= 1
+	assert 5 > len(dar) >= 1
 
 	for dirname, _ in dar:
 		if depotDirExists and dirname == '/var/lib/opsi/depot':
@@ -345,9 +322,9 @@ def testSetRightsOnSSHDirectory(tempDir):
 
 	sshDir = tempDir
 	expectedFilemod = {
-		os.path.join(sshDir, u'id_rsa'): 0o640,
-		os.path.join(sshDir, u'id_rsa.pub'): 0o644,
-		os.path.join(sshDir, u'authorized_keys'): 0o600,
+		os.path.join(sshDir, 'id_rsa'): 0o640,
+		os.path.join(sshDir, 'id_rsa.pub'): 0o644,
+		os.path.join(sshDir, 'authorized_keys'): 0o600,
 	}
 
 	for filename in expectedFilemod:
