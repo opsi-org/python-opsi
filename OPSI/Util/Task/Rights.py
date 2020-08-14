@@ -238,6 +238,15 @@ def getDepotDirectories():
 			logger.warning("Failed to get directories from depot: %s", e)
 	return CACHED_DEPOT_DIRS
 
+def getDepotDirectory():
+	return getDepotDirectories()["depot"]
+
+def getRepositoryDirectory():
+	return getDepotDirectories()["repository"]
+
+def getWorkbenchDirectory():
+	return getDepotDirectories()["workbench"]
+
 def getPxeDirectory():
 	if isSLES() or isOpenSUSE():
 		return '/var/lib/tftpboot/opsi'
@@ -287,7 +296,7 @@ in the default configuration.
 
 def setRightsOnFile(filepath, filemod):
 	logger.debug("Setting rights on file %s", filepath)
-	if filepath.startswith(getDepotDirectories()["depot"]):
+	if filepath.startswith(getDepotDirectory()):
 		if os.path.basename(filepath) in KNOWN_EXECUTABLES:
 			logger.debug("Setting rights on special file %s", filepath)
 			os.chmod(filepath, 0o770)
