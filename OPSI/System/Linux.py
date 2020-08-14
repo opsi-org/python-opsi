@@ -157,7 +157,7 @@ def mount(dev, mountpoint, **options):
 			if 'password' not in options:
 				options['password'] = ""
 			if '\\' in options['username']:
-				options['username'] = re.sub("\\+", "\\", options['username'])
+				options['username'] = re.sub(r"\\+", r"\\", options['username'])
 				(options['domain'], options['username']) = options['username'].split('\\', 1)
 
 			credentialsFile = "/tmp/.cifs-credentials.%s" % parts[0]
