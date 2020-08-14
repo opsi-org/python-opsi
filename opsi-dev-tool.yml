@@ -5,6 +5,7 @@ locale:
     - fr
   source_files:
     - OPSI/UI.py
+  install: python-opsi_data/locale
 
 package:
   name: python3-opsi
