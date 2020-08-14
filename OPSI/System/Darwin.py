@@ -49,7 +49,7 @@ from OPSI.System.Posix import (
 	getEthernetDevices, getFQDN, getHarddisks, getHostname,
 	getKernelParams, getNetworkDeviceConfig, getNetworkInterfaces,
 	getSambaServiceName, getServiceNames, getSystemProxySetting, halt,
-	hardwareExtendedInventory, hardwareInventory, hooks, ifconfig,
+	hardwareExtendedInventory, hooks, ifconfig,
 	isCentOS, isDebian, isOpenSUSE, isRHEL, isSLES,
 	isUCS, isUbuntu, isXenialSfdiskVersion, locateDHCPDConfig,
 	locateDHCPDInit, reboot, removeSystemHook,
@@ -225,7 +225,7 @@ def parse_ioreg_output(lines : List) -> Dict:
 		key_list.append(key.strip())
 	return hwdata
 
-def osx_hardwareInventory(config : List) -> Dict:
+def hardwareInventory(config, progressSubject=None):
 	"""
 	Collect hardware information on OSX.
 
@@ -374,6 +374,7 @@ def osx_hardwareInventory(config : List) -> Dict:
 	opsiValues['SCANPROPERTIES'] = [{"scantime": time.strftime("%Y-%m-%d %H:%M:%S")}]
 	logger.debug(u"Result of hardware inventory:\n" + objectToBeautifiedText(opsiValues))
 	return opsiValues
+Posix.hardwareInventory = hardwareInventory
 
 def getActiveSessionIds(winApiBugCommand=None, data=None):
 	"""
