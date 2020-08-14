@@ -2942,7 +2942,7 @@ def isUbuntu():
 	Returns `True` if this is running on Ubuntu.
 	Returns `False` if otherwise.
 	"""
-	return _checkForDistribution('Ubuntu')
+	return _checkForDistribution('Ubuntu') or _checkForDistribution('Zorin OS')
 
 
 def isUCS():
