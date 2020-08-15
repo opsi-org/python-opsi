@@ -45,7 +45,7 @@ from OPSI.Util.File.Opsi import OpsiBackupArchive
 logger = Logger()
 
 try:
-	translation = gettext.translation('opsi-utils', '/usr/share/locale')
+	translation = gettext.translation('python-opsi', os.path.join(os.path.dirname(os.path.abspath(__file__)), 'python-opsi_data', 'locale'))
 	_ = translation.gettext
 except Exception as error:
 	logger.error(u"Locale not found: %s", error)
