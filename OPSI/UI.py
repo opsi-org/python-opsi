@@ -49,15 +49,16 @@ logger = Logger()
 encoding = locale.getpreferredencoding()
 
 try:
-	translation = gettext.translation('python-opsi', os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'python-opsi_data', 'locale'))
+	sp = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+	if os.path.exists(os.path.join(sp, "site-packages")):
+		sp = os.path.join(sp, "site-packages")
+	translation = gettext.translation('python-opsi', os.path.join(sp, 'python-opsi_data', 'locale'))
 	_ = translation.gettext
 except Exception as error:
-	logger.error(u"Locale not found: %s" % error)
+	logger.error("Failed to load locale from %s: %s", sp, error, exc_info=True)
 
 	def _(string):
-		"""
-		Fallback function for providing translations.
-		"""
+		""" Fallback function """
 		return string
 
 
