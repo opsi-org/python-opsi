@@ -156,6 +156,9 @@ def nonRootGroupId(currentGroupId):
 		pytest.skip("No group for test found. Aborting.")
 
 
+def testImports():
+	from OPSI.Util.Task.Rights import getWorkbenchDirectory, getDepotDirectory, getRepositoryDirectory
+
 def testChangingOwnershipWithOurChown(currentUserId, nonRootUserId, currentGroupId, nonRootGroupId, tempDir):
 	isRoot = os.geteuid() == 0
 	original = os.path.join(tempDir, 'original')
