@@ -30,6 +30,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 @license: GNU General Public License version 2
 """
 
+import os
 import time
 import gettext
 import locale
@@ -48,7 +49,7 @@ logger = Logger()
 encoding = locale.getpreferredencoding()
 
 try:
-	translation = gettext.translation('python-opsi', '/usr/share/locale')
+	translation = gettext.translation('python-opsi', os.path.join(os.path.dirname(os.path.abspath(__file__)), 'python-opsi_data', 'locale'))
 	_ = translation.gettext
 except Exception as error:
 	logger.error(u"Locale not found: %s" % error)

@@ -24,6 +24,7 @@ Manual testrun for the commandline UI.
 :license: GNU Affero General Public License version 3
 """
 
+import os
 import gettext
 import sys
 import time
@@ -31,7 +32,7 @@ import time
 from OPSI.UI import UIFactory
 
 try:
-    translation = gettext.translation('python-opsi', '/usr/share/locale')
+    translation = gettext.translation('python-opsi', os.path.join(os.path.dirname(os.path.abspath(__file__)), 'python-opsi_data', 'locale'))
     _ = translation.gettext
 except Exception as e:
     print(u"Locale not found: %s" % e)
