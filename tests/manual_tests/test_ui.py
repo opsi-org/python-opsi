@@ -31,20 +31,6 @@ import time
 
 from OPSI.UI import UIFactory
 
-try:
-	translation = gettext.translation('python-opsi', os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'python-opsi_data', 'locale'))
-	_ = translation.gettext
-except Exception as e:
-	print(u"Locale not found: %s" % e)
-
-
-	def _(string):
-		"""
-		Fallback function for providing translations.
-		"""
-		return string
-
-
 if __name__ == "__main__":
 	uiTest = UIFactory('snack')
 	try:
