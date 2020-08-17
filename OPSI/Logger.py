@@ -123,7 +123,7 @@ def setUniventionClass(c):
 logger.setUniventionClass = setUniventionClass
 
 def getMessageSubject():
-	pass
+	return opsicommon.logging.observable_handler
 logger.getMessageSubject = getMessageSubject
 
 def setColor(color):

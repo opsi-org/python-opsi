@@ -374,6 +374,30 @@ class SecretFilter(metaclass=Singleton):
 			if secret in self.secrets:
 				self.secrets.remove(secret)
 
+class ObservableHandler(logging.StreamHandler, metaclass=Singleton):
+	def __init__(self):
+		logging.StreamHandler.__init__(self)
+		self._observers = []
+	
+	def attach_observer(self, observer):
+		if observer not in self._observers:
+			self._observers.append(observer)
+	attachObserver = attach_observer
+
+	def detach_observer(self, observer):
+		if observer in self._observers:
+			self._observers.remove(observer)
+	detachObserver = detach_observer
+
+	def emit(self, record):
+		if self._observers:
+			message = self.format(record)
+			for o in self._observers:
+				try:
+					o.messageChanged(self, message)
+				except Exception as e:
+					handle_log_exception(e)
+
 last_stderr_format = None
 last_file_format = None
 def logging_config(
@@ -440,6 +464,9 @@ def logging_config(
 		for handler in get_all_handlers(logging.StreamHandler):
 			handler.setLevel(stderr_level)
 
+	if not observable_handler in get_all_handlers(ObservableHandler):
+		logging.root.addHandler(observable_handler)
+	
 	min_value = 0
 	for handler in get_all_handlers():
 		if handler.level != 0 and handler.level < min_value:
@@ -653,4 +680,5 @@ logging_config(stderr_level=logging.WARNING)
 #logging_config(stderr_level=logging.NOTSET)
 secret_filter = SecretFilter()
 context_filter = ContextFilter()
+observable_handler = ObservableHandler()
 logging.root.addFilter(context_filter)
