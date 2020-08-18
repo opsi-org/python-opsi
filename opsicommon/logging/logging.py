@@ -673,9 +673,10 @@ def print_logger_info():
 				print(f"  - Handler: {name} ", file=sys.stderr)
 				print(f"    - Formatter: {_handler.formatter}", file=sys.stderr)
 
+
+observable_handler = ObservableHandler()
 logging_config(stderr_level=logging.WARNING)
 #logging_config(stderr_level=logging.NOTSET)
 secret_filter = SecretFilter()
 context_filter = ContextFilter()
-observable_handler = ObservableHandler()
 logging.root.addFilter(context_filter)
