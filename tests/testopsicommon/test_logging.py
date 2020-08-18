@@ -17,7 +17,7 @@ import random
 from contextlib import contextmanager
 
 from opsicommon.logging import (
-	logger, handle_log_exception, secret_filter,
+	logger, handle_log_exception, secret_filter, observable_handler,
 	ContextSecretFormatter, log_context, set_format,
 	init_logging, logging_config, print_logger_info
 )
@@ -309,3 +309,18 @@ def test_context_threads(log_stream):
 			assert re.search(r"module Client-1.*MyModule.run", log) is not None
 			# to check for corrent handling of async contexti when eventloop is not running in main thread
 			assert re.search(r"handler for client Client-0.*handling client Client-1", log) is None
+
+def test_observable_handler():
+	class LogObserver():
+		def __init__(self):
+			self.messages = []
+		
+		def messageChanged(self, handler, message):
+			self.messages.append(message)
+	
+	logger.setLevel(logging.SECRET)
+	lo = LogObserver()
+	observable_handler.attach_observer(lo)
+	logger.error("error")
+	logger.warning("warning")
+	assert lo.messages == ["error", "warning"]
