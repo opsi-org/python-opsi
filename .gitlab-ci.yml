@@ -14,7 +14,7 @@ stages:
   pip3 install poetry
 
 test:pytests:
-  when: manual
+  #when: manual
   image: ubuntu:focal
   services:
     - mysql:latest
