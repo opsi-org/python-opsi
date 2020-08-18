@@ -7,15 +7,12 @@ This file is part of opsi - https://www.opsi.org
 """
 
 import traceback
-import time
 import sys
-import os
 import logging
 import colorlog
 import contextvars
 from contextlib import contextmanager
-from typing import Dict, Tuple, Any
-from logging.handlers import WatchedFileHandler, RotatingFileHandler
+from typing import Dict, Any
 
 from ..utils import Singleton
 from .constants import (
@@ -26,7 +23,7 @@ from .constants import (
 logger = logging.getLogger()
 context = contextvars.ContextVar('context', default={})
 
-def secret(self, msg : str, *args, **kwargs):
+def secret(self, msg:str, *args, **kwargs):
 	"""
 	Logging with level SECRET.
 
@@ -136,7 +133,7 @@ def handle_log_exception(exc: Exception, record: logging.LogRecord = None, log: 
 	if not log:
 		return
 	try:
-		logger.error(f"Logging error: {exc}", exc_info=True)
+		logger.error("Logging error: %s", exc, exc_info=True)
 		if record:
 			logger.error(record.__dict__)
 			#logger.error(f"{record.msg} - {record.args}")
@@ -150,7 +147,7 @@ class ContextFilter(logging.Filter, metaclass=Singleton):
 	This class implements a filter which modifies allows to store context
 	for a single thread/task.
 	"""
-	def __init__(self, filter_dict : Dict=None):
+	def __init__(self, filter_dict: Dict=None):
 		"""
 		ContextFilter Constructor
 
@@ -177,7 +174,7 @@ class ContextFilter(logging.Filter, metaclass=Singleton):
 		"""
 		return context.get()
 
-	def set_filter(self, filter_dict : Dict=None):
+	def set_filter(self, filter_dict: Dict = None):
 		"""
 		Sets a new filter dictionary.
 
@@ -202,7 +199,7 @@ class ContextFilter(logging.Filter, metaclass=Singleton):
 			else:
 				self.filter_dict[key] = [value]
 
-	def filter(self, record : logging.LogRecord) -> bool:
+	def filter(self, record: logging.LogRecord) -> bool:
 		"""
 		Adds context to a LogRecord.
 
@@ -406,7 +403,7 @@ def logging_config(
 	log_file: str = None,
 	file_level: int = None,
 	file_format: str = None,
-	remove_handlers = False
+	remove_handlers: bool = False
 ):
 	"""
 	Initialize logging.
@@ -458,7 +455,7 @@ def logging_config(
 		else:
 			remove_all_handlers(handler_name="opsi_stderr_handler")
 		if stderr_level != 0:
-			handler = logging.StreamHandler(stream = sys.stderr)
+			handler = logging.StreamHandler(stream=sys.stderr)
 			handler.name = "opsi_stderr_handler"
 			logging.root.addHandler(handler)
 		for handler in get_all_handlers(logging.StreamHandler):
@@ -466,7 +463,7 @@ def logging_config(
 
 	if not observable_handler in get_all_handlers(ObservableHandler):
 		logging.root.addHandler(observable_handler)
-	
+
 	min_value = 0
 	for handler in get_all_handlers():
 		if handler.level != 0 and handler.level < min_value:
@@ -521,7 +518,7 @@ def set_format(
 			handler.setFormatter(csformatter)
 
 @contextmanager
-def log_context(new_context : Dict):
+def log_context(new_context: Dict):
 	"""
 	Contextmanager to set a context.
 
@@ -538,7 +535,7 @@ def log_context(new_context : Dict):
 		if token is not None:
 			context.reset(token)
 
-def set_context(new_context : Dict) -> contextvars.Token:
+def set_context(new_context: Dict) -> contextvars.Token:
 	"""
 	Sets a context.
 
@@ -553,7 +550,7 @@ def set_context(new_context : Dict) -> contextvars.Token:
 	if isinstance(new_context, dict):
 		return context.set(new_context)
 
-def set_filter(filter_dict : Dict):
+def set_filter(filter_dict: Dict):
 	"""
 	Sets a new filter dictionary.
 
@@ -571,7 +568,7 @@ def set_filter(filter_dict : Dict):
 				_logger.addFilter(context_filter)
 	context_filter.set_filter(filter_dict)
 
-def set_filter_from_string(filter_string : str):
+def set_filter_from_string(filter_string: str):
 	"""
 	Parses string and sets filter dictionary.
 
@@ -614,7 +611,7 @@ def get_all_loggers():
 	"""
 	return [logging.root] + list(logging.Logger.manager.loggerDict.values())
 
-def get_all_handlers(handler_type = None, handler_name = None):
+def get_all_handlers(handler_type: type = None, handler_name: str = None):
 	"""
 	Gets list of all handlers.
 
@@ -638,7 +635,7 @@ def get_all_handlers(handler_type = None, handler_name = None):
 					handlers.append(_handler)
 	return handlers
 
-def remove_all_handlers(handler_type = None, handler_name = None):
+def remove_all_handlers(handler_type: type = None, handler_name: str = None):
 	"""
 	Removes all handlers (of a certain type).
 
