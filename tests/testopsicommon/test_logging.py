@@ -323,4 +323,5 @@ def test_observable_handler():
 	observable_handler.attach_observer(lo)
 	logger.error("error")
 	logger.warning("warning")
-	assert lo.messages == ["error", "warning"]
+	logger.info("in%s%s", "f", "o")
+	assert lo.messages == ["error", "warning", "info"]
