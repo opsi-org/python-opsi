@@ -774,7 +774,7 @@ class MySQLBackend(SQLBackend):
 	def productProperty_getObjects(self, attributes=[], **filter):
 		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.productProperty_getObjects(self, attributes=[], **filter)
-		logger.info("Getting product properties, filter", filter)
+		logger.info("Getting product properties, filter: %s", filter)
 
 		(attributes, filter) = self._adjustAttributes(ProductProperty, attributes, filter)
 		readValues = not attributes or 'possibleValues' in attributes or 'defaultValues' in attributes
