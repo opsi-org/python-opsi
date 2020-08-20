@@ -1137,8 +1137,8 @@ depot where the method is.
 						# Fill up empty display names
 						for j, currentValue in enumerate(ccopy.get('Values', [])):
 							if not currentValue.get('UI'):
-								logger.warning("No translation found for hardware audit configuration property '%s.%s'",
-									ccopy['Class']['Opsi'], currentValue['Opsi']
+								logger.warning("No translation found for hardware audit configuration property '%s.%s' in %s",
+									ccopy['Class']['Opsi'], currentValue['Opsi'], localeFile
 								)
 								ccopy['Values'][j]['UI'] = currentValue['Opsi']
 
