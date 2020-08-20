@@ -249,16 +249,22 @@ def mount(dev, mountpoint, **options):
 		else:
 			mountOptions.append("{0}".format(key))
 
-	if mountOptions:
-		optString = u'-o "{0}"'.format((u','.join(mountOptions)).replace('"', '\\"'))
-	else:
-		optString = u''
-
 	try:
-		execute(u"%s %s %s %s %s" % (which('mount'), fs, optString, dev, mountpoint))
-	except Exception as e:
-		logger.error(u"Failed to mount '%s': %s", dev, e)
-		raise RuntimeError(u"Failed to mount '%s': %s" % (dev, e))
+		while True:
+			try:
+				if mountOptions:
+					optString = u'-o "{0}"'.format((u','.join(mountOptions)).replace('"', '\\"'))
+				else:
+					optString = u''
+				execute(u"%s %s %s %s %s" % (which('mount'), fs, optString, dev, mountpoint))
+				break
+			except Exception as e:
+				if fs == "-t cifs" and "vers=2.0" not in mountOptions and "error(95)" in str(e):
+					logger.warning("Failed to mount '%s': %s, retrying with option vers=2.0", dev, e)
+					mountOptions.append("vers=2.0")
+				else:
+					logger.error("Failed to mount '%s': %s", dev, e)
+					raise RuntimeError("Failed to mount '%s': %s" % (dev, e))
 	finally:
 		for f in credentialsFiles:
 			os.remove(f)
