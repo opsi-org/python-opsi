@@ -19,8 +19,6 @@
 Depotserver backend.
 
 :copyright:	uib GmbH <info@uib.de>
-:author: Jan Schneider <j.schneider@uib.de>
-:author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
 """
 
@@ -43,6 +41,7 @@ from OPSI.System import getDiskSpaceUsage
 from OPSI.Util.Product import ProductPackageFile
 from OPSI.Util import compareVersions, getfqdn, md5sum, removeDirectory
 from OPSI.Util.File import ZsyncFile
+import opsicommon.logging
 
 __all__ = ('DepotserverBackend', 'DepotserverPackageManager')
 
@@ -55,7 +54,6 @@ class DepotserverBackend(ExtendedBackend):
 
 		ExtendedBackend.__init__(self, backend, **kwargs)
 
-		self._packageLog = os.path.join(LOG_DIR, 'package.log')
 		self._sshRSAPublicKeyFile = u'/etc/ssh/ssh_host_rsa_key.pub'
 
 		self._depotId = forceHostId(getfqdn())
@@ -123,11 +121,12 @@ class DepotserverBackend(ExtendedBackend):
 			raise BackendIOError(u"Failed to get disk space usage: %s" % e)
 
 	def depot_installPackage(self, filename, force=False, propertyDefaultValues={}, tempDir=None, forceProductId=None, suppressPackageContentFileGeneration=False):
-		self._packageManager.installPackage(filename,
-			force=force, propertyDefaultValues=propertyDefaultValues,
-			tempDir=tempDir, forceProductId=forceProductId,
-			suppressPackageContentFileGeneration=suppressPackageContentFileGeneration
-		)
+		with opsicommon.logging.log_context({'instance' : 'package install'}):
+			self._packageManager.installPackage(filename,
+				force=force, propertyDefaultValues=propertyDefaultValues,
+				tempDir=tempDir, forceProductId=forceProductId,
+				suppressPackageContentFileGeneration=suppressPackageContentFileGeneration
+			)
 
 	def depot_uninstallPackage(self, productId, force=False, deleteFiles=True):
 		self._packageManager.uninstallPackage(productId, force, deleteFiles)
@@ -153,7 +152,6 @@ class DepotserverPackageManager:
 		if not isinstance(depotBackend, DepotserverBackend):
 			raise BackendConfigurationError(u"DepotserverPackageManager needs instance of DepotserverBackend as backend, got %s" % depotBackend.__class__.__name__)
 		self._depotBackend = depotBackend
-		logger.setLogFile(self._depotBackend._packageLog, object=self)
 
 	def installPackage(self, filename, force=False, propertyDefaultValues={}, tempDir=None, forceProductId=None, suppressPackageContentFileGeneration=False):
 
