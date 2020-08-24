@@ -23,8 +23,8 @@
 :license: GNU Affero General Public License version 3
 """
 
-# forked from: https://github.com/dvas0004/py_rdiff
-# inspiration: https://pypi.python.org/pypi/python-librsync/0.1-5
+# forked from: https://pypi.python.org/pypi/python-librsync/0.1-5
+# inspiration: https://github.com/dvas0004/py_rdiff
 # librsync in c: http://rproxy.samba.org/doxygen/librsync/refman.pdf
 # notes: https://docs.python.org/2/library/ctypes.html
 
@@ -64,104 +64,191 @@ elif os.name == "nt":
 else:
 	raise NotImplementedError("Librsync is not supported on your platform")
 
-# rs_result rs_sig_file (FILE *old_file, FILE *sig_file, size_t block_len, size_t strong_len, rs_magic_number sig_magic, rs_stats_t *stats)
-_librsync.rs_sig_file.restype = ctypes.c_long
-_librsync.rs_sig_file.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p]
+MAX_SPOOL = 1024 ** 2 * 5
 
-# rs_result rs_loadsig_file (FILE *sig_file, rs_signature_t **sumset, rs_stats_t *stats)
-_librsync.rs_loadsig_file.restype = ctypes.c_long
-_librsync.rs_loadsig_file.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
+RS_DONE = 0
+RS_BLOCKED = 1
+
+RS_JOB_BLOCKSIZE = 65536
+RS_DEFAULT_STRONG_LEN = 8
+RS_DEFAULT_BLOCK_LEN = 2048
+
+
+#############################
+#  DEFINES FROM librsync.h  #
+#############################
+
+# librsync.h: rs_buffers_s
+class Buffer(ctypes.Structure):
+	_fields_ = [
+		('next_in', ctypes.c_char_p),
+		('avail_in', ctypes.c_size_t),
+		('eof_in', ctypes.c_int),
+
+		('next_out', ctypes.c_char_p),
+		('avail_out', ctypes.c_size_t),
+	]
+
+# char const *rs_strerror(rs_result r);
+_librsync.rs_strerror.restype = ctypes.c_char_p
+_librsync.rs_strerror.argtypes = (ctypes.c_int, )
+
+# rs_job_t *rs_sig_begin(size_t new_block_len, size_t strong_sum_len);
+_librsync.rs_sig_begin.restype = ctypes.c_void_p
+_librsync.rs_sig_begin.argtypes = (ctypes.c_size_t, ctypes.c_size_t, )
+
+# rs_job_t *rs_loadsig_begin(rs_signature_t **);
+_librsync.rs_loadsig_begin.restype = ctypes.c_void_p
+_librsync.rs_loadsig_begin.argtypes = (ctypes.c_void_p, )
+
+# rs_job_t *rs_delta_begin(rs_signature_t *);
+_librsync.rs_delta_begin.restype = ctypes.c_void_p
+_librsync.rs_delta_begin.argtypes = (ctypes.c_void_p, )
+
+# rs_job_t *rs_patch_begin(rs_copy_cb *, void *copy_arg);
+_librsync.rs_patch_begin.restype = ctypes.c_void_p
+_librsync.rs_patch_begin.argtypes = (ctypes.c_void_p, ctypes.c_void_p, )
 
 # rs_result rs_build_hash_table(rs_signature_t* sums);
 _librsync.rs_build_hash_table.restype = ctypes.c_size_t
-_librsync.rs_build_hash_table.argtypes = [ctypes.c_void_p]
+_librsync.rs_build_hash_table.argtypes = (ctypes.c_void_p, )
 
-# rs_result rs_delta_file (rs_signature_t *, FILE *new_file, FILE *delta_file, rs_stats_t *)
-_librsync.rs_delta_file.restype = ctypes.c_long
-_librsync.rs_delta_file.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
+# rs_result rs_job_iter(rs_job_t *, rs_buffers_t *);
+_librsync.rs_job_iter.restype = ctypes.c_int
+_librsync.rs_job_iter.argtypes = (ctypes.c_void_p, ctypes.c_void_p, )
 
-# rs_result rs_patch_file (FILE *basis_file, FILE *delta_file, FILE *new_file, rs_stats_t *)
-_librsync.rs_patch_file.restype = ctypes.c_long
-_librsync.rs_patch_file.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
+# void rs_trace_set_level(rs_loglevel level);
+_librsync.rs_trace_set_level.restype = None
+_librsync.rs_trace_set_level.argtypes = (ctypes.c_int, )
 
+# void rs_free_sumset(rs_signature_t *);
+_librsync.rs_free_sumset.restype = None
+_librsync.rs_free_sumset.argtypes = (ctypes.c_void_p, )
+
+# rs_result rs_job_free(rs_job_t *);
+_librsync.rs_job_free.restype = ctypes.c_int
+_librsync.rs_job_free.argtypes = (ctypes.c_void_p, )
+
+# A function declaration for our read callback.
+patch_callback = ctypes.CFUNCTYPE(
+	ctypes.c_int, ctypes.c_void_p, ctypes.c_longlong,
+	ctypes.c_size_t, ctypes.POINTER(Buffer)
+)
+
+class LibrsyncError(Exception):
+	def __init__(self, r):
+		super(LibrsyncError, self).__init__(_librsync.rs_strerror(ctypes.c_int(r)))
+
+def _execute(job, input_handle, output_handle=None):
+	"""
+	Executes a librsync "job" by reading bytes from `input_handle` and writing results to
+	`output_handle` if provided. If `output_handle` is omitted, the output is ignored.
+	"""
+	# Re-use the same buffer for output, we will read from it after each
+	# iteration.
+	out = ctypes.create_string_buffer(RS_JOB_BLOCKSIZE)
+	while True:
+		block = input_handle.read(RS_JOB_BLOCKSIZE)
+		buff = Buffer()
+		# provide the data block via input buffer.
+		buff.next_in = ctypes.c_char_p(block)
+		buff.avail_in = ctypes.c_size_t(len(block))
+		buff.eof_in = ctypes.c_int(not block)
+		# Set up our buffer for output.
+		buff.next_out = ctypes.cast(out, ctypes.c_char_p)
+		buff.avail_out = ctypes.c_size_t(RS_JOB_BLOCKSIZE)
+		r = _librsync.rs_job_iter(job, ctypes.byref(buff))
+		if output_handle:
+			output_handle.write(out.raw[:RS_JOB_BLOCKSIZE - buff.avail_out])
+		if r == RS_DONE:
+			break
+		elif r != RS_BLOCKED:
+			raise LibrsyncError(r)
+		if buff.avail_in > 0:
+			# There is data left in the input buffer, librsync did not consume
+			# all of it. Rewind the file a bit so we include that data in our
+			# next read. It would be better to simply tack data to the end of
+			# this buffer, but that is very difficult in Python.
+			input_handle.seek(input_handle.tell() - buff.avail_in)
+	if output_handle and callable(getattr(output_handle, 'seek', None)):
+		# As a matter of convenience, rewind the output file.
+		output_handle.seek(0)
+	return output_handle
 
 def librsyncSignature(filename, base64Encoded=True):
 	"""
 	Get the signature of the file to patch.
 	"""
+	logger.debug("Creating librsync signature of %s", filename)
 	filename = forceFilename(filename)
+	
 	try:
-		tf = tempfile.NamedTemporaryFile(delete=False)
-		sig_file = tf.name
-		tf.close()
-		if not os.path.isfile(filename):
-			raise FileNotFoundError(f"File '{filename}' not found")
-		try:
-			fh = _librsync.fopen(filename.encode("utf-8"), "rb")
-			sh = _librsync.fopen(sig_file.encode("utf-8"), "wb")
-			if _librsync.rs_sig_file(fh, sh, RSYNC_BLOCK_LENGTH, RSYNC_STRONG_LENGTH, RSYNC_MAGIC_NUMBER, None) != 0:
-				raise RuntimeError("librsync.rs_sig_file call failed")
-		finally:
-			if fh:
-				_librsync.fclose(fh)
-			if sh:
-				_librsync.fclose(sh)
-		with open(sig_file, "rb") as sh:
-			if base64Encoded:
-				return base64.encodebytes(sh.read())
-			else:
-				return sh.read()
+		with open(filename, "rb") as filehandle:
+			sigfile_handle = tempfile.SpooledTemporaryFile(max_size=MAX_SPOOL, mode='wb+')
+			job = _librsync.rs_sig_begin(RS_DEFAULT_BLOCK_LEN, RS_DEFAULT_STRONG_LEN)
+			try:
+				_execute(job, filehandle, sigfile_handle)
+				sigfile_handle.seek(0)
+				if base64Encoded:
+					return base64.encodebytes(sigfile_handle.read())
+				else:
+					return sigfile_handle.read()
+			finally:
+				_librsync.rs_job_free(job)
+				sigfile_handle.close()
 	except Exception as sigError:
 		raise RuntimeError(f"Failed to get librsync signature from {filename}: {forceUnicode(sigError)}")
-	finally:
-		os.unlink(sig_file)
 
 def librsyncDeltaFile(filename, signature, deltafile):
 	"""
 	Create delta file from original file and the signature of the file to patch.
 	"""
+	logger.debug("Creating librsync deltafile %s on base of %s", deltafile, filename)
 	filename = forceFilename(filename)
 	deltafile = forceFilename(deltafile)
-	logger.debug("Creating deltafile %s on base of %s", deltafile, filename)
-
+	if filename == deltafile:
+		raise ValueError("filename and deltafile are the same file")
+	
 	try:
-		tf = tempfile.NamedTemporaryFile("wb", delete=False)
-		sig_file = tf.name
-		tf.write(signature)
-		tf.close()
+		sigfile_handle = tempfile.NamedTemporaryFile("wb+")
+		sigfile_handle.write(signature)
+		sigfile_handle.seek(0)
+		
+		sig = ctypes.c_void_p()
 		try:
-			fh = _librsync.fopen(filename.encode("utf-8"), "rb")
-			sh = _librsync.fopen(sig_file.encode("utf-8"), "rb")
-			dh = _librsync.fopen(deltafile.encode("utf-8"), "wb")
-			sig = ctypes.c_void_p()
-			if _librsync.rs_loadsig_file(sh, ctypes.byref(sig), None) != 0:
-				raise RuntimeError("librsync.rs_loadsig_file call failed")
-			if _librsync.rs_build_hash_table(sig) != 0:
-				raise RuntimeError("librsync.rs_build_hash_table call failed")
-			if _librsync.rs_delta_file(sig, fh, dh, None) != 0:
-				raise RuntimeError("librsync.rs_delta_file call failed")
+			job = _librsync.rs_loadsig_begin(ctypes.byref(sig))
+			try:
+				_execute(job, sigfile_handle)
+			finally:
+				_librsync.rs_job_free(job)
+			res = _librsync.rs_build_hash_table(sig)
+			if res != RS_DONE:
+				raise LibrsyncError(res)
+			
+			with open(filename, "rb") as filehandle:
+				with open(deltafile, "wb") as deltafile_handle:
+					job = _librsync.rs_delta_begin(sig)
+					try:
+						_execute(job, filehandle, deltafile_handle)
+
+					finally:
+						_librsync.rs_job_free(job)
 		finally:
-			if fh:
-				_librsync.fclose(fh)
-			if sh:
-				_librsync.fclose(sh)
-			if dh:
-				_librsync.fclose(dh)
+			sigfile_handle.close()
+			_librsync.rs_free_sumset(sig)
+
 	except Exception as sigError:
 		raise RuntimeError(f"Failed to write delta file {deltafile}: {forceUnicode(sigError)}")
-	finally:
-		os.unlink(sig_file)
 
 def librsyncPatchFile(oldfile, deltafile, newfile):
 	"""
 	Create the new file from old file and delta file.
 	"""
-	logger.debug("Librsync patch: old file %s, delta file %s, new file %s", oldfile, deltafile, newfile)
-	
+
+	logger.debug("Patching with librync: old file %s, delta file %s, new file %s", oldfile, deltafile, newfile)
 	oldfile = forceFilename(oldfile)
 	newfile = forceFilename(newfile)
 	deltafile = forceFilename(deltafile)
-
 	if oldfile == newfile:
 		raise ValueError("oldfile and newfile are the same file")
 	if deltafile == newfile:
@@ -170,18 +257,25 @@ def librsyncPatchFile(oldfile, deltafile, newfile):
 		raise ValueError("oldfile and deltafile are the same file")
 	
 	try:
-		try:
-			oh = _librsync.fopen(oldfile.encode("utf-8"), "rb")
-			dh = _librsync.fopen(deltafile.encode("utf-8"), "rb")
-			nh = _librsync.fopen(newfile.encode("utf-8"), "wb")
-			if  _librsync.rs_patch_file(oh, dh, nh, None) != 0:
-				raise RuntimeError("librsync.rs_patch_file call failed")
-		finally:
-			if oh:
-				_librsync.fclose(oh)
-			if dh:
-				_librsync.fclose(dh)
-			if nh:
-				_librsync.fclose(nh)
+		with open(oldfile, "rb") as oldfile_handle:
+			
+			@patch_callback
+			def read_cb(opaque, pos, length, buff):
+				oldfile_handle.seek(pos)
+				size_p = ctypes.cast(length, ctypes.POINTER(ctypes.c_size_t)).contents
+				size = size_p.value
+				block = oldfile_handle.read(size)
+				size_p.value = len(block)
+				buff_p = ctypes.cast(buff, ctypes.POINTER(ctypes.c_char_p)).contents
+				buff_p.value = block
+				return RS_DONE
+			
+			with open(deltafile, "rb") as deltafile_handle:
+				with open(newfile, "wb") as newfile_handle:
+					job = _librsync.rs_patch_begin(read_cb, None)
+					try:
+						_execute(job, deltafile_handle, newfile_handle)
+					finally:
+						_librsync.rs_job_free(job)
 	except Exception as patchError:
 		raise RuntimeError(f"Failed to patch file {oldfile}: {forceUnicode(patchError)}")
