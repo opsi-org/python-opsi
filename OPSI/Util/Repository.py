@@ -141,6 +141,8 @@ class RepositoryObserver:
 
 
 class Repository:
+	DEFAULT_BUFFER_SIZE = 32 * 1024
+	
 	def __init__(self, url, **kwargs):
 		'''
 		maxBandwidth must be in byte/s
@@ -151,7 +153,7 @@ class Repository:
 		self._dynamicBandwidth = False
 		self._networkPerformanceCounter = None
 		self._lastSpeedCalcTime = None
-		self._bufferSize = 16384
+		self._bufferSize = self.DEFAULT_BUFFER_SIZE
 		self._bytesTransfered = 0
 		self._networkBandwidth = 0.0
 		self._currentSpeed = 0.0
@@ -430,7 +432,7 @@ class Repository:
 			)
 		else:
 			self._bandwidthSleepTime = 0.000001
-			self._bufferSize = 16384
+			self._bufferSize = self.DEFAULT_BUFFER_SIZE
 
 		time.sleep(self._bandwidthSleepTime)
 
@@ -482,8 +484,8 @@ class Repository:
 					self._calcSpeed(read)
 					if self._dynamicBandwidth or self._maxBandwidth:
 						self._bandwidthLimit()
-					elif self._currentSpeed > 1000000:
-						self._bufferSize = 262144
+					#elif self._currentSpeed > 1000000:
+					#	self._bufferSize = self.DEFAULT_BUFFER_SIZE
 
 			transferTime = time.time() - transferStartTime
 			if transferTime == 0:
