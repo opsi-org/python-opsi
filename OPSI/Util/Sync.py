@@ -28,22 +28,14 @@
 # librsync in c: http://rproxy.samba.org/doxygen/librsync/refman.pdf
 # notes: https://docs.python.org/2/library/ctypes.html
 
-import io
 import os
-import sys
 import base64
 import ctypes
 import ctypes.util
-import hashlib
 import tempfile
-import traceback
 
 from OPSI.Logger import Logger
 from OPSI.Types import forceFilename, forceUnicode
-
-RSYNC_STRONG_LENGTH = 8
-RSYNC_BLOCK_LENGTH = 2048
-RSYNC_MAGIC_NUMBER = 0
 
 _librsync = None
 logger = Logger()
@@ -181,7 +173,7 @@ def librsyncSignature(filename, base64Encoded=True):
 	"""
 	logger.debug("Creating librsync signature of %s", filename)
 	filename = forceFilename(filename)
-	
+
 	try:
 		with open(filename, "rb") as filehandle:
 			sigfile_handle = tempfile.SpooledTemporaryFile(max_size=MAX_SPOOL, mode='wb+')
