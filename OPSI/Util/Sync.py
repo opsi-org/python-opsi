@@ -64,7 +64,7 @@ RS_BLOCKED = 1
 RS_JOB_BLOCKSIZE = 65536
 RS_DEFAULT_STRONG_LEN = 8
 RS_DEFAULT_BLOCK_LEN = 2048
-
+RS_MD4_SIG_MAGIC = 0x72730136
 
 #############################
 #  DEFINES FROM librsync.h  #
@@ -177,7 +177,14 @@ def librsyncSignature(filename, base64Encoded=True):
 	try:
 		with open(filename, "rb") as filehandle:
 			sigfile_handle = tempfile.SpooledTemporaryFile(max_size=MAX_SPOOL, mode='wb+')
-			job = _librsync.rs_sig_begin(RS_DEFAULT_BLOCK_LEN, RS_DEFAULT_STRONG_LEN)
+
+			job = None
+			if hasattr(_librsync, "RS_DEFAULT_STRONG_LEN"):
+				# librsync < 1.0.0
+				job = _librsync.rs_sig_begin(RS_DEFAULT_BLOCK_LEN, RS_DEFAULT_STRONG_LEN)
+			else:
+				# librsync >= 1.0.0
+				job = _librsync.rs_sig_begin(RS_DEFAULT_BLOCK_LEN, RS_DEFAULT_STRONG_LEN, RS_MD4_SIG_MAGIC)
 			try:
 				_execute(job, filehandle, sigfile_handle)
 				sigfile_handle.seek(0)
