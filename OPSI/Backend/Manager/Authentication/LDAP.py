@@ -85,7 +85,7 @@ class LDAPAuthentication(AuthenticationModule):
 		self._ldap = None
 		try:
 			bind_user = self._bind_user.replace("{username}", username).replace("{base}", self._uri["base"])
-			logger.debug("Binding as user %s to server %s", bind_user, self.server_url)
+			logger.info("Binding as user %s to server %s", bind_user, self.server_url)
 			self._ldap = ldap3.Connection(server=self.server_url, user=bind_user, password=password)
 			if not self._ldap.bind():
 				raise Exception("bind failed: %s" % self._ldap.result)
@@ -103,6 +103,7 @@ class LDAPAuthentication(AuthenticationModule):
 		
 		for i, gf in enumerate(group_filter):
 			try:
+				logger.debug("Searching groups in ldap base=%s, filter=%s", self._uri["base"], gf)
 				self._ldap.search(self._uri["base"], gf, search_scope=ldap3.SUBTREE, attributes=["cn", "member", "memberUid"])
 				break
 			except ldap3.core.exceptions.LDAPObjectClassError as e:
