@@ -64,6 +64,9 @@ class LDAPAuthentication(AuthenticationModule):
 			else:
 				realm = self._uri["host"]
 			self._bind_user = "{username}@" + realm
+		logger.info("LDAP auth configuration: server_url=%s, base=%s, bind_user=%s, group_filter=%s",
+			self.server_url, self._uri["base"], self._bind_user, self._group_filter
+		)
 	
 	@property
 	def server_url(self):
@@ -90,6 +93,7 @@ class LDAPAuthentication(AuthenticationModule):
 			if not self._ldap.bind():
 				raise Exception("bind failed: %s" % self._ldap.result)
 		except Exception as error:
+			logger.info("LDAP authentication failed for user '%s'", username, exc_info=True)
 			raise BackendAuthenticationError("LDAP authentication failed for user '%s': %s" % (username, error))
 	
 	def get_groupnames(self, username: str) -> Set[str]:
