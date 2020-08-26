@@ -45,7 +45,7 @@ from OPSI.Util.File.Opsi import OpsiBackupArchive
 logger = Logger()
 
 try:
-	sp = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+	sp = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 	if os.path.exists(os.path.join(sp, "site-packages")):
 		sp = os.path.join(sp, "site-packages")
 	sp = os.path.join(sp, 'python-opsi_data', 'locale')
