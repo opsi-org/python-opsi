@@ -88,7 +88,7 @@ class LDAPAuthentication(AuthenticationModule):
 			logger.info("Binding as user %s to server %s", bind_user, self.server_url)
 			self._ldap = ldap3.Connection(server=self.server_url, user=bind_user, password=password)
 			if not self._ldap.bind():
-				raise Exception("bind failed: %s" % self._ldap.result)
+				raise Exception(f"bind failed: {self._ldap.result}")
 		except Exception as error:
 			logger.info("LDAP authentication failed for user '%s'", username, exc_info=True)
 			raise BackendAuthenticationError("LDAP authentication failed for user '%s': %s" % (username, error))
@@ -114,11 +114,13 @@ class LDAPAuthentication(AuthenticationModule):
 		
 		for entry in sorted(self._ldap.entries):
 			if "member" in entry.entry_attributes:
+				logger.debug("Entry %s member: %s", entry, entry.member)
 				for member in entry.member:
 					if member.split(',')[0].split('=', 1)[1].lower() == username.lower():
 						groupnames.add(entry.cn.value)
 						break
 			if "memberUid" in entry.entry_attributes:
+				logger.debug("Entry %s memberUid: %s", entry, entry.memberUid)
 				for member in entry.memberUid:
 					if member.lower() == username.lower():
 						groupnames.add(entry.cn.value)
