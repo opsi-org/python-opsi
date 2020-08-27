@@ -101,6 +101,7 @@ class LDAPAuthentication(AuthenticationModule):
 		
 		ldap_type = "openldap"
 		user_dn = None
+		group_dns = []
 		for uf in [
 			f"(&(objectclass=user)(sAMAccountName={username}))",
 			f"((objectclass=posixAccount)(uid={username}))"
@@ -110,7 +111,8 @@ class LDAPAuthentication(AuthenticationModule):
 				self._ldap.search(self._uri["base"], uf, search_scope=ldap3.SUBTREE, attributes="*")
 				for entry in sorted(self._ldap.entries):
 					user_dn = entry.entry_dn
-					#entry.memberOf
+					if "memberOf" in entry.entry_attributes:
+						group_dns.extend(entry.memberOf)
 					if "sAMAccountName" in entry.entry_attributes:
 						ldap_type = "ad"
 				if user_dn:
@@ -136,26 +138,32 @@ class LDAPAuthentication(AuthenticationModule):
 				group_filter = "(objectclass=posixGroup)"
 			attributes = ["cn", "member", "memberUid"]
 		
-		logger.debug("Searching groups in ldap base=%s, filter=%s", self._uri["base"], group_filter)
-		self._ldap.search(self._uri["base"], group_filter, search_scope=ldap3.SUBTREE, attributes=attributes)
-		
-		for entry in sorted(self._ldap.entries):
-			group_name = None
-			if "sAMAccountName" in entry.entry_attributes:
-				group_name = str(entry.sAMAccountName)
-			else:
-				group_name = str(entry.cn)
+		for base in group_dns or [self._uri["base"]]:
+			scope = ldap3.BASE if group_dns else ldap3.SUBTREE
 			
-			if "member" in entry.entry_attributes:
-				logger.debug("Entry %s member: %s", entry.entry_dn, entry.member)
-				for member in entry.member:
-					if user_dn.lower() == member.lower():
-						groupnames.add(group_name)
-						break
-			if "memberUid" in entry.entry_attributes:
-				logger.debug("Entry %s memberUid: %s", entry.entry_dn, entry.memberUid)
-				for member in entry.memberUid:
-					if member.lower() == username.lower():
-						groupnames.add(group_name)
-						break
+			logger.debug("Searching groups in ldap base=%s, scope=%s, filter=%s", base, scope, group_filter)
+			self._ldap.search(base, group_filter, search_scope=scope, attributes=attributes)
+			
+			for entry in sorted(self._ldap.entries):
+				group_name = None
+				if "sAMAccountName" in entry.entry_attributes:
+					group_name = str(entry.sAMAccountName)
+				else:
+					group_name = str(entry.cn)
+				
+				if group_dns:
+					logger.debug("Entry %s by memberOf", entry.entry_dn)
+					groupnames.add(group_name)
+				elif "member" in entry.entry_attributes:
+					logger.debug("Entry %s member: %s", entry.entry_dn, entry.member)
+					for member in entry.member:
+						if user_dn.lower() == member.lower():
+							groupnames.add(group_name)
+							break
+				elif "memberUid" in entry.entry_attributes:
+					logger.debug("Entry %s memberUid: %s", entry.entry_dn, entry.memberUid)
+					for member in entry.memberUid:
+						if member.lower() == username.lower():
+							groupnames.add(group_name)
+							break
 		return groupnames
