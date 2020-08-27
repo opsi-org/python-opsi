@@ -346,14 +346,15 @@ class HostControlBackend(ExtendedBackend):
 					raise BackendMissingDataError(u"Failed to get hardware address for host '%s'" % host.id)
 
 				mac = host.hardwareAddress.replace(':', '')
-				data = ''.join(['FFFFFFFFFFFF', mac * 16])  # Pad the synchronization stream.
+				data = b''.join([b'FFFFFFFFFFFF', mac.encode("ascii") * 16])  # Pad the synchronization stream.
 
 				# Split up the hex values and pack.
-				payload = ''
+				payload = b''
 				for i in range(0, len(data), 2):
-					payload = ''.join([
+					payload = b''.join([
 						payload,
-						struct.pack('B', int(data[i:i + 2], 16))])
+						struct.pack('B', int(data[i:i + 2], 16))
+					])
 
 				for broadcastAddress, targetPorts in self._broadcastAddresses.items():
 					logger.debug(u"Sending data to network broadcast %s [%s]", broadcastAddress, data)
@@ -366,7 +367,7 @@ class HostControlBackend(ExtendedBackend):
 
 				result[host.id] = {"result": "sent", "error": None}
 			except Exception as error:
-				logger.logException(error, LOG_DEBUG)
+				logger.debug(error, exc_info=True)
 				result[host.id] = {"result": None, "error": forceUnicode(error)}
 		return result
 
