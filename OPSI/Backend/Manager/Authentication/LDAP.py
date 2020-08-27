@@ -89,6 +89,7 @@ class LDAPAuthentication(AuthenticationModule):
 			self._ldap = ldap3.Connection(server=self.server_url, user=bind_user, password=password)
 			if not self._ldap.bind():
 				raise Exception(f"bind failed: {self._ldap.result}")
+			# self._ldap.extend.standard.who_am_i()
 		except Exception as error:
 			logger.info("LDAP authentication failed for user '%s'", username, exc_info=True)
 			raise BackendAuthenticationError("LDAP authentication failed for user '%s': %s" % (username, error))
@@ -98,31 +99,63 @@ class LDAPAuthentication(AuthenticationModule):
 		if not self._ldap:
 			return groupnames
 		
-		group_filter = [self._group_filter]
-		if self._group_filter is None:
-			group_filter = ["(objectclass=group)", "(objectclass=posixGroup)"]
-		
-		for i, gf in enumerate(group_filter):
+		ldap_type = "openldap"
+		user_dn = None
+		for uf in [
+			f"(&(objectclass=user)(sAMAccountName={username}))",
+			f"((objectclass=posixAccount)(uid={username}))"
+		]:
 			try:
-				logger.debug("Searching groups in ldap base=%s, filter=%s", self._uri["base"], gf)
-				self._ldap.search(self._uri["base"], gf, search_scope=ldap3.SUBTREE, attributes=["cn", "member", "memberUid"])
-				break
+				logger.debug("Searching user in ldap base=%s, filter=%s", self._uri["base"], uf)
+				self._ldap.search(self._uri["base"], uf, search_scope=ldap3.SUBTREE, attributes="*")
+				for entry in sorted(self._ldap.entries):
+					user_dn = entry.entry_dn
+					#entry.memberOf
+					if "sAMAccountName" in entry.entry_attributes:
+						ldap_type = "ad"
+				if user_dn:
+					break
 			except ldap3.core.exceptions.LDAPObjectClassError as e:
-				if i + 1 == len(group_filter):
-					raise
 				logger.debug(e)
+			if user_dn and ldap_type == "ad":
+				break
+		
+		if not user_dn:
+			raise Exception("User %s not found in %s ldap", username, ldap_type)
+		
+		logger.info("User %s found in %s ldap: %s", username, ldap_type, user_dn)
+		
+		group_filter = self._group_filter
+		attributes = []
+		if ldap_type == "ad":
+			if self._group_filter is None:
+				group_filter = "(objectclass=group)"
+			attributes = ["sAMAccountName", "member"]
+		else:
+			if self._group_filter is None:
+				group_filter = "(objectclass=posixGroup)"
+			attributes = ["cn", "member", "memberUid"]
+		
+		logger.debug("Searching groups in ldap base=%s, filter=%s", self._uri["base"], group_filter)
+		self._ldap.search(self._uri["base"], group_filter, search_scope=ldap3.SUBTREE, attributes=attributes)
 		
 		for entry in sorted(self._ldap.entries):
+			group_name = None
+			if "sAMAccountName" in entry.entry_attributes:
+				group_name = str(entry.sAMAccountName)
+			else:
+				group_name = str(entry.cn)
+			
 			if "member" in entry.entry_attributes:
-				logger.debug("Entry %s member: %s", entry, entry.member)
+				logger.debug("Entry %s member: %s", entry.entry_dn, entry.member)
 				for member in entry.member:
-					if member.split(',')[0].split('=', 1)[1].lower() == username.lower():
-						groupnames.add(entry.cn.value)
+					if user_dn.lower() == member.lower():
+						groupnames.add(group_name)
 						break
 			if "memberUid" in entry.entry_attributes:
-				logger.debug("Entry %s memberUid: %s", entry, entry.memberUid)
+				logger.debug("Entry %s memberUid: %s", entry.entry_dn, entry.memberUid)
 				for member in entry.memberUid:
 					if member.lower() == username.lower():
-						groupnames.add(entry.cn.value)
+						groupnames.add(group_name)
 						break
 		return groupnames
