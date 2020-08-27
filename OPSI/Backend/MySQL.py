@@ -249,7 +249,9 @@ class MySQL(SQL):
 						# not easy to find. Therefore switch to use the tcp/ip socket on error. 
 						address = "127.0.0.1"
 					else:
-						secondsToWait = 1
+						secondsToWait = 0
+						if tryNumber >= 3:
+							secondsToWait = 1
 						logger.debug("We are waiting %s seconds before retrying connect.", secondsToWait)
 						for _ in range(secondsToWait * 10):
 							time.sleep(0.1)
