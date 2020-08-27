@@ -535,7 +535,7 @@ class BackendAccessControl:
 		orilen = len(objects)
 		newlen = len(newObjects)
 		if newlen < orilen:
-			logger.warning(u"%s objects removed by acl, %s objects left".format((orilen - newlen), newlen))
+			logger.warning("%s objects removed by acl, %s objects left", (orilen - newlen), newlen)
 			if newlen == 0 and exceptionIfAllRemoved:
 				raise BackendPermissionDeniedError(u"Access denied")
 
