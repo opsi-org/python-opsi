@@ -292,6 +292,7 @@ class JSONRPCBackend(Backend):
 		self._protocol = 'https'
 		self._socketTimeout = None
 		self._connectTimeout = 30
+		self._connectionPool = None
 		self._connectionPoolSize = 2
 		self._interface = None
 		self._rpcId = 0
