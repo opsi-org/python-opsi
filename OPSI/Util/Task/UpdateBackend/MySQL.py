@@ -102,6 +102,7 @@ read from `backendConfigFile`.
 		_adjustLengthOfGroupId,
 		_increaseInventoryNumberLength,
 		_changeSoftwareConfigConfigIdToBigInt,
+		_addIndexProductIdOnProductAndWindowsSoftwareIDToProduct
 	]
 
 	for newSchemaVersion, migration in enumerate(migrations, start=1):
@@ -722,3 +723,8 @@ def _increaseInventoryNumberLength(database):
 def _changeSoftwareConfigConfigIdToBigInt(database):
 	LOGGER.info("Changing the type of SOFTWARE_CONFIG.config_id to bigint")
 	database.execute("ALTER TABLE `SOFTWARE_CONFIG` MODIFY COLUMN `config_id` bigint auto_increment;")
+
+def _addIndexProductIdOnProductAndWindowsSoftwareIDToProduct(database):
+	LOGGER.info("Adding productId index on PRODUCT and WINDOWS_SOFTWARE_ID_TO_PRODUCT")
+	database.execute('CREATE INDEX `index_productId` on `WINDOWS_SOFTWARE_ID_TO_PRODUCT` (`productId`);')
+	database.execute('CREATE INDEX `index_productId` on `PRODUCT` (`productId`);')
