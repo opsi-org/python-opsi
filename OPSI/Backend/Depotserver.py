@@ -165,7 +165,7 @@ class DepotserverPackageManager:
 				raise BackendMissingDataError(u"Depot '%s' not found in backend" % depotId)
 
 			depotLocalUrl = depot.getDepotLocalUrl()
-			if not depotLocalUrl.startswith(u'file:///'):
+			if not depotLocalUrl or not depotLocalUrl.startswith(u'file:///'):
 				raise BackendBadValueError(u"Value '%s' not allowed for depot local url (has to start with 'file:///')" % depotLocalUrl)
 			clientDataDir = depotLocalUrl[7:]
 
