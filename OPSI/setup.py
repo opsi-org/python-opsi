@@ -39,7 +39,7 @@ def create_group(groupname: str, system: bool = False):
 		cmd.append("--system")
 	cmd.append(groupname)
 	logger.info("Running command: %s", cmd)
-	subprocess.check_output(cmd, env=get_subprocess_environment())
+	subprocess.check_output(cmd, stderr=subprocess.STDOUT, env=get_subprocess_environment())
 
 def create_user(username: str, primary_groupname: str, home: str, shell: str, system: bool = False):
 	logger.notice("Creating user: %s", username)
@@ -48,19 +48,19 @@ def create_user(username: str, primary_groupname: str, home: str, shell: str, sy
 		cmd.append("--system")
 	cmd.append(username)
 	logger.info("Running command: %s", cmd)
-	subprocess.check_output(cmd, env=get_subprocess_environment())
+	subprocess.check_output(cmd, stderr=subprocess.STDOUT, env=get_subprocess_environment())
 
 def add_user_to_group(username: str, groupname: str):
 	logger.notice("Adding user '%s' to group '%s'", username, groupname)
 	cmd = ["usermod", "-a", "-G", groupname, username]
 	logger.info("Running command: %s", cmd)
-	subprocess.check_output(cmd, env=get_subprocess_environment())
+	subprocess.check_output(cmd, stderr=subprocess.STDOUT, env=get_subprocess_environment())
 
 def set_primary_group(username: str, groupname: str):
 	logger.notice("Setting primary group of user '%s' to '%s'", username, groupname)
 	cmd = ["usermod", "-g", groupname, username]
 	logger.info("Running command: %s", cmd)
-	subprocess.check_output(cmd, env=get_subprocess_environment())
+	subprocess.check_output(cmd, stderr=subprocess.STDOUT, env=get_subprocess_environment())
 
 def get_groups():
 	groups = {}
