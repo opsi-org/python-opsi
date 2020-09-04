@@ -101,10 +101,11 @@ class JSONRPC(DeferredCall):
 
 					try:
 						exceptionClass = eval(error.get('class', 'Exception'))
-						index = message.find(':')
-						if index != -1 and len(message) > index:
-							message = message[index + 1:].lstrip()
-						exception = exceptionClass(u'%s (error on server)' % message)
+						# This seems to cut of more than wanted
+						#index = message.find(':')
+						#if index != -1 and len(message) > index:
+						#	message = message[index + 1:].lstrip()
+						exception = exceptionClass(f"{message} (error on server)")
 					except Exception:
 						exception = OpsiRpcError(message)
 
