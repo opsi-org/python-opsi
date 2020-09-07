@@ -883,29 +883,19 @@ def getActiveSessionIds(winApiBugCommand=None):
 	sessionIds = []
 	logger.debug(u"Getting active sessions")
 	invalidLogonDomains = ["Window Manager", "Font Driver Host"]
-	if sys.getwindowsversion()[0] == 5 and getArchitecture() == "x64":
-		logger.debug(u"Using Workarround for problems with buggy winapi from nt5 x64")
-		try:
-			result = execute(winApiBugCommand, shell=False)
-			sessionIds = forceList(eval(result[0]))
-			logger.debug(u"   Found sessionIds: %s", sessionIds)
-		except Exception as error:
-			logger.debug("Working directory: '%s', scriptdirectory: '%s'", os.getcwd(), sys.path[0])
-			logger.logException(error)
-	else:
-		for s in win32security.LsaEnumerateLogonSessions():
-			sessionData = win32security.LsaGetLogonSessionData(s)
-			if forceInt(sessionData['LogonType']) not in (2, 10) or sessionData['LogonDomain'] in invalidLogonDomains:
-				continue
+	for s in win32security.LsaEnumerateLogonSessions():
+		sessionData = win32security.LsaGetLogonSessionData(s)
+		if forceInt(sessionData['LogonType']) not in (2, 10) or sessionData['LogonDomain'] in invalidLogonDomains:
+			continue
 
-			sessionId = forceInt(sessionData['Session'])
-			if sessionId == 0 and sys.getwindowsversion()[0] >= 6:
-				# Service session
-				continue
+		sessionId = forceInt(sessionData['Session'])
+		if sessionId == 0 and sys.getwindowsversion()[0] >= 6:
+			# Service session
+			continue
 
-			logger.debug(u"   Found session: %s", sessionData)
-			if sessionId not in sessionIds:
-				sessionIds.append(sessionId)
+		logger.debug(u"   Found session: %s", sessionData)
+		if sessionId not in sessionIds:
+			sessionIds.append(sessionId)
 
 	return sessionIds
 
@@ -919,72 +909,40 @@ def getActiveSessionId(verifyProcessRunning="winlogon.exe", winApiBugCommand=Non
 
 	sessionIds = []
 	newest = {}
-	if sys.getwindowsversion()[0] == 5 and getArchitecture() == "x64":
-		logger.debug(u"Using Workarround for problems with buggy winapi from nt5 x64")
-		try:
-			result = execute(winApiBugCommand, shell=False)
-			logger.debug(u"   Found sessionIds: %s", eval(result[0]))
-			for sessionId in forceList(eval(result[0])):
-				res = execute("%s %s" % (winApiBugCommand, sessionId), shell=False)
-				sessionData = forceDict(eval(res[0]))
-				if verifyProcessRunning and not getPids(verifyProcessRunning, sessionId=sessionId):
-					continue
+	
+	for s in win32security.LsaEnumerateLogonSessions():
+		sessionData = win32security.LsaGetLogonSessionData(s)
+		if forceInt(sessionData['LogonType']) not in (2, 10) or sessionData['LogonDomain'] in invalidLogonDomains:
+			continue
 
-				if sessionId not in sessionIds:
-					sessionIds.append(sessionId)
+		sessionId = forceInt(sessionData['Session'])
+		if sessionId == 0 and sys.getwindowsversion()[0] >= 6:
+			# Service session
+			continue
 
-				if newest:
-					try:
-						lt = newest['LogonTime']
-						lts = sessionData['LogonTime']
-						newestdt = datetime(lt.year, lt.month, lt.day, lt.hour, lt.minute, lt.second)
-						sessiondt = datetime(lts.year, lts.month, lts.day, lts.hour, lts.minute, lts.second)
-						if sessiondt > newestdt:
-							logger.notice("Token in SessionData is newer then the cached one.")
-							newest = sessionData
-					except Exception as error:
-						logger.warning(error)
-						if forceInt(sessionData['LogonId']) > forceInt(newest['LogonId']):
-							newest = sessionData
-				else:
+		logger.debug(u"   Found session: %s", sessionData)
+
+		if verifyProcessRunning and not getPids(verifyProcessRunning, sessionId=sessionId):
+			continue
+
+		if sessionId not in sessionIds:
+			sessionIds.append(sessionId)
+
+		if newest:
+			try:
+				lt = newest['LogonTime']
+				lts = sessionData['LogonTime']
+				newestdt = datetime(lt.year, lt.month, lt.day, lt.hour, lt.minute, lt.second)
+				sessiondt = datetime(lts.year, lts.month, lts.day, lts.hour, lts.minute, lts.second)
+				if sessiondt > newestdt:
+					logger.notice("Token in SessionData is newer then the cached one.")
 					newest = sessionData
-		except Exception as error:
-			logger.debug("Working directory: '%s', scriptdirectory: '%s'", os.getcwd(), sys.path[0])
-			logger.logException(error)
-	else:
-		for s in win32security.LsaEnumerateLogonSessions():
-			sessionData = win32security.LsaGetLogonSessionData(s)
-			if forceInt(sessionData['LogonType']) not in (2, 10) or sessionData['LogonDomain'] in invalidLogonDomains:
-				continue
-
-			sessionId = forceInt(sessionData['Session'])
-			if sessionId == 0 and sys.getwindowsversion()[0] >= 6:
-				# Service session
-				continue
-
-			logger.debug(u"   Found session: %s", sessionData)
-
-			if verifyProcessRunning and not getPids(verifyProcessRunning, sessionId=sessionId):
-				continue
-
-			if sessionId not in sessionIds:
-				sessionIds.append(sessionId)
-
-			if newest:
-				try:
-					lt = newest['LogonTime']
-					lts = sessionData['LogonTime']
-					newestdt = datetime(lt.year, lt.month, lt.day, lt.hour, lt.minute, lt.second)
-					sessiondt = datetime(lts.year, lts.month, lts.day, lts.hour, lts.minute, lts.second)
-					if sessiondt > newestdt:
-						logger.notice("Token in SessionData is newer then the cached one.")
-						newest = sessionData
-				except Exception as error:
-					logger.warning(error)
-					if forceInt(sessionData['LogonId']) > forceInt(newest['LogonId']):
-						newest = sessionData
-			else:
-				newest = sessionData
+			except Exception as error:
+				logger.warning(error)
+				if forceInt(sessionData['LogonId']) > forceInt(newest['LogonId']):
+					newest = sessionData
+		else:
+			newest = sessionData
 
 	if not sessionIds:
 		return defaultSessionId
@@ -1021,23 +979,7 @@ def getSessionInformation(sessionId, winApiBugCommand=None):
 	# 'LogonType': 10,
 	# 'LogonDomain': u'COMPUTERNAME',
 	# 'LogonTime': <PyTime:19.04.2010 16:33:07>}
-	if sys.getwindowsversion()[0] == 5 and getArchitecture() == "x64":
-		logger.debug(u"Using Workarround for problems with buggy winapi from nt5 x64")
-		try:
-			result = execute("%s %s" % (winApiBugCommand, sessionId), shell=False)
-			sessionData = forceDict(eval(result[0]))
-			if sessionData:
-				try:
-					if wtsUserName and sessionData['UserName'].lower() != wtsUserName.lower():
-						sessionData['UserName'] = wtsUserName
-				except Exception:
-					pass
-				logger.debug(u"   Found session: %s", sessionData)
-				return sessionData
-		except Exception as error:
-			logger.debug("Working directory: '%s', scriptdirectory: '%s'", os.getcwd(),sys.path[0])
-			logger.logException(error)
-
+	
 	newest = {}
 	for s in win32security.LsaEnumerateLogonSessions():
 		sessionData = win32security.LsaGetLogonSessionData(s)
@@ -1082,9 +1024,9 @@ def getSessionInformation(sessionId, winApiBugCommand=None):
 
 def getActiveSessionInformation(winApiBugCommand=None):
 	info = []
-	for sessionId in getActiveSessionIds(winApiBugCommand):
+	for sessionId in getActiveSessionIds():
 		logger.debug("sessionid info: %s", sessionId)
-		sessionInfo = getSessionInformation(sessionId, winApiBugCommand)
+		sessionInfo = getSessionInformation(sessionId)
 		if info and sessionInfo:
 			for item in info:
 				if item['UserName'].lower() == sessionInfo['UserName'].lower():
@@ -1122,7 +1064,7 @@ def getUserSessionIds(username, winApiBugCommand=None, onlyNewestId=None):
 		domain = username.split('\\')[0]
 		username = username.split('\\')[-1]
 
-	for session in getActiveSessionInformation(winApiBugCommand):
+	for session in getActiveSessionInformation():
 		if (session.get('UserName') and (session.get('UserName').lower() == username.lower()) and
 			(not domain or (session.get('LogonDomain') and (session.get('LogonDomain').lower() == domain.lower())))):
 			sessionIds.append(forceInt(session.get('Session')))
