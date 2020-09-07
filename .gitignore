@@ -7,6 +7,7 @@
 *.egg-info
 *.sublime-*
 *.idea/
+*.venv/
 tests/Backends/config.py
 
 # QA files:

@@ -81,8 +81,8 @@ def createSchemaVersionTable(database):
 	logger.debug("Creating 'OPSI_SCHEMA' table.")
 	table = u'''CREATE TABLE `OPSI_SCHEMA` (
 		`version` integer NOT NULL,
-		`updateStarted` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-		`updateEnded` TIMESTAMP,
+		`updateStarted` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		`updateEnded` TIMESTAMP NULL DEFAULT NULL,
 		PRIMARY KEY (`version`)
 	) {0};
 	'''.format(database.getTableCreationOptions('OPSI_SCHEMA'))
@@ -738,9 +738,9 @@ class SQLBackend(ConfigDataBackend):
 					`description` varchar(100),
 					`notes` varchar(1000),
 					`partner` varchar(100),
-					`conclusionDate` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
-					`notificationDate` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
-					`expirationDate` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
+					`conclusionDate` TIMESTAMP NULL DEFAULT NULL,
+					`notificationDate` TIMESTAMP NULL DEFAULT NULL,
+					`expirationDate` TIMESTAMP NULL DEFAULT NULL,
 					PRIMARY KEY (`licenseContractId`)
 				) %s;
 				''' % self._sql.getTableCreationOptions('LICENSE_CONTRACT')
@@ -756,7 +756,7 @@ class SQLBackend(ConfigDataBackend):
 					`type` varchar(30) NOT NULL,
 					`boundToHost` varchar(255),
 					`maxInstallations` integer,
-					`expirationDate` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
+					`expirationDate` TIMESTAMP NULL DEFAULT NULL,
 					PRIMARY KEY (`softwareLicenseId`),
 					FOREIGN KEY (`licenseContractId`) REFERENCES `LICENSE_CONTRACT` (`licenseContractId`)
 				) %s;
@@ -884,8 +884,8 @@ class SQLBackend(ConfigDataBackend):
 				`hardwareAddress` varchar(17),
 				`ipAddress` varchar(15),
 				`inventoryNumber` varchar(64),
-				`created` TIMESTAMP,
-				`lastSeen` TIMESTAMP,
+				`created` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+				`lastSeen` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 				`opsiHostKey` varchar(32),
 				`oneTimePassword` varchar(32),
 				`maxBandwidth` integer,
@@ -917,11 +917,11 @@ class SQLBackend(ConfigDataBackend):
 				`architecture` varchar(3) NOT NULL,
 				`uninstallString` varchar(200),
 				`binaryName` varchar(100),
-				`firstseen` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
-				`lastseen` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
+				`firstseen` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				`lastseen` TIMESTAMP NOT NULL DEFAULT '1970-01-01 00:00:00',
 				`state` TINYINT NOT NULL,
 				`usageFrequency` integer NOT NULL DEFAULT -1,
-				`lastUsed` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
+				`lastUsed` TIMESTAMP NOT NULL DEFAULT '1970-01-01 00:00:00',
 				`licenseKey` VARCHAR(1024),
 				PRIMARY KEY (`config_id`)
 			) %s;
@@ -966,8 +966,8 @@ class SQLBackend(ConfigDataBackend):
 					u'`config_id` INTEGER NOT NULL {autoincrement},\n'
 					u'`hostId` varchar(255) NOT NULL,\n'
 					u'`hardware_id` INTEGER NOT NULL,\n'
-					u'`firstseen` TIMESTAMP NOT NULL DEFAULT \'0000-00-00 00:00:00\',\n'
-					u'`lastseen` TIMESTAMP NOT NULL DEFAULT \'0000-00-00 00:00:00\',\n'
+					u'`firstseen` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,\n'
+					u'`lastseen` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,\n'
 					u'`state` TINYINT NOT NULL,\n'.format(
 						name=hardwareConfigTableName,
 						autoincrement=self._sql.AUTOINCREMENT

@@ -636,7 +636,7 @@ class MySQLBackend(SQLBackend):
 				`ipAddress` varchar(15),
 				`inventoryNumber` varchar(64),
 				`created` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-				`lastSeen` TIMESTAMP,
+				`lastSeen` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 				`opsiHostKey` varchar(32),
 				`oneTimePassword` varchar(32),
 				`maxBandwidth` integer,
@@ -671,11 +671,11 @@ class MySQLBackend(SQLBackend):
 				`architecture` varchar(3) NOT NULL,
 				`uninstallString` varchar(200),
 				`binaryName` varchar(100),
-				`firstseen` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
-				`lastseen` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
+				`firstseen` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				`lastseen` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 				`state` TINYINT NOT NULL,
 				`usageFrequency` integer NOT NULL DEFAULT -1,
-				`lastUsed` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
+				`lastUsed` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 				`licenseKey` VARCHAR(1024),
 				PRIMARY KEY (`config_id`)
 			) %s;

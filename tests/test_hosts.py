@@ -118,7 +118,7 @@ def getConfigServer():
 
 def getDepotServers():
     depotserver1 = OpsiDepotserver(
-        id='depotserver1.uib.local',
+        id='depotserver1.uib.gmbh',
         opsiHostKey='19012334567845645678901232789012',
         depotLocalUrl='file:///var/lib/opsi/depot',
         depotRemoteUrl='smb://depotserver1.test.invalid/opsi_depot',
