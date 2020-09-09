@@ -121,7 +121,7 @@ class DepotserverBackend(ExtendedBackend):
 			raise BackendIOError(u"Failed to get disk space usage: %s" % e)
 
 	def depot_installPackage(self, filename, force=False, propertyDefaultValues={}, tempDir=None, forceProductId=None, suppressPackageContentFileGeneration=False):
-		with opsicommon.logging.log_context({'instance' : 'package install'}):
+		with opsicommon.logging.log_context({'instance' : 'package_install'}):
 			self._packageManager.installPackage(filename,
 				force=force, propertyDefaultValues=propertyDefaultValues,
 				tempDir=tempDir, forceProductId=forceProductId,
