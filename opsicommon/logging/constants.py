@@ -85,19 +85,19 @@ logging._opsiLevelToLevel = {
 	0: logging.NONE
 }
 
-LOG_SECRET       = 9
+LOG_SECRET = 9
 LOG_CONFIDENTIAL = 9
-LOG_TRACE        = 8
-LOG_DEBUG2       = 7
-LOG_DEBUG        = 7
-LOG_INFO         = 6
-LOG_NOTICE       = 5
-LOG_WARNING      = 4
-LOG_WARN         = 4
-LOG_ERROR        = 3
-LOG_CRITICAL     = 2
-LOG_ESSENTIAL    = 1
-LOG_COMMENT      = 1
-LOG_NONE         = 0
-LOG_NOTSET       = 0
+LOG_TRACE = 8
+LOG_DEBUG2 = 7
+LOG_DEBUG = 7
+LOG_INFO = 6
+LOG_NOTICE = 5
+LOG_WARNING = 4
+LOG_WARN = 4
+LOG_ERROR = 3
+LOG_CRITICAL = 2
+LOG_ESSENTIAL = 1
+LOG_COMMENT = 1
+LOG_NONE = 0
+LOG_NOTSET = 0
 
