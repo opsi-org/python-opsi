@@ -3063,8 +3063,8 @@ class AuditSoftwareOnClient(Relationship):
 			self.setState(1)
 		if self.usageFrequency is None:
 			self.setUsageFrequency(-1)
-		if self.lastUsed is None:
-			self.setLastUsed('0000-00-00 00:00:00')
+		#if self.lastUsed is None:
+		#	self.setLastUsed('0000-00-00 00:00:00')
 
 	def setName(self, name):
 		self.name = forceUnicode(name)
