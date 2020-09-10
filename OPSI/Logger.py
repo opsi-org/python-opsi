@@ -28,7 +28,9 @@ import logging
 
 import opsicommon.logging
 from opsicommon.logging import (
-	logger, get_all_handlers, ObservableHandler,
+	logger, get_all_handlers, observable_handler, logging_config, secret_filter,
+	ObservableHandler,
+	DEFAULT_FORMAT, DEFAULT_COLORED_FORMAT,
 	LOG_SECRET, LOG_CONFIDENTIAL, LOG_TRACE, LOG_DEBUG2, LOG_DEBUG,
 	LOG_INFO, LOG_NOTICE, LOG_WARNING, LOG_WARN, LOG_ERROR, LOG_CRITICAL,
 	LOG_ESSENTIAL, LOG_NONE, LOG_NOTSET, LOG_COMMENT
@@ -50,7 +52,7 @@ def opsi_logger_factory(logFile=None):
 		DeprecationWarning
 	)
 	if logFile is not None:
-		opsicommon.logging.logging_config(log_file=logFile)
+		logging_config(log_file=logFile)
 	return logger
 Logger = opsi_logger_factory
 
@@ -67,8 +69,8 @@ def setConfidentialStrings(strings):
 		"OPSI.Logger.setConfidentialStrings is deprecated, use secret_filter.clear_secrets,\
 		secret_filter.add_secrets instead.", DeprecationWarning
 	)
-	opsicommon.logging.secret_filter.clear_secrets()
-	opsicommon.logging.secret_filter.add_secrets(*strings)
+	secret_filter.clear_secrets()
+	secret_filter.add_secrets(*strings)
 logger.setConfidentialStrings = setConfidentialStrings
 
 def addConfidentialString(string):
@@ -76,7 +78,7 @@ def addConfidentialString(string):
 		"OPSI.Logger.addConfidentialString is deprecated, use secret_filter.add_secrets instead.",
 		DeprecationWarning
 	)
-	opsicommon.logging.secret_filter.add_secrets(string)
+	secret_filter.add_secrets(string)
 logger.addConfidentialString = addConfidentialString
 
 def setLogFormat(logFormat, currentThread=False, object=None):
@@ -124,11 +126,11 @@ def setUniventionClass(c):
 logger.setUniventionClass = setUniventionClass
 
 def getMessageSubject():
-	return opsicommon.logging.observable_handler
+	return observable_handler
 logger.getMessageSubject = getMessageSubject
 
 def setColor(color):
-	pass
+	setConsoleColor(color)
 logger.setColor = setColor
 
 def setFileColor(color):
@@ -136,7 +138,7 @@ def setFileColor(color):
 logger.setFileColor = setFileColor
 
 def setConsoleColor(color):
-	pass
+	logging_config(stderr_format=DEFAULT_COLORED_FORMAT if color else DEFAULT_FORMAT)
 logger.setConsoleColor = setConsoleColor
 
 def setSyslogLevel(level=LOG_NONE):
@@ -153,7 +155,7 @@ def setConsoleLevel(logLevel, object=None):
 		"OPSI.Logger.setConsoleLevel is deprecated, instead modify the StreamHandler loglevel.",
 		DeprecationWarning
 	)
-	opsicommon.logging.logging_config(stderr_level=logging._opsiLevelToLevel[logLevel])
+	logging_config(stderr_level=logging._opsiLevelToLevel[logLevel])
 logger.setConsoleLevel = setConsoleLevel
 
 @staticmethod
@@ -177,7 +179,7 @@ def setLogFile(logFile, currentThread=False, object=None):
 		"OPSI.Logger.setLogFile is deprecated, instead add a FileHandler to logger.",
 		DeprecationWarning
 	)
-	opsicommon.logging.logging_config(log_file=logFile)
+	logging_config(log_file=logFile)
 logger.setLogFile = setLogFile
 
 def linkLogFile(linkFile, currentThread=False, object=None):
@@ -189,7 +191,7 @@ def setFileLevel(logLevel, object=None):
 		"OPSI.Logger.setFileLevel is deprecated, instead modify the FileHandler loglevel.",
 		DeprecationWarning
 	)
-	opsicommon.logging.logging_config(file_level=logging._opsiLevelToLevel[logLevel])
+	logging_config(file_level=logging._opsiLevelToLevel[logLevel])
 logger.setFileLevel = setFileLevel
 
 def exit(object=None):
