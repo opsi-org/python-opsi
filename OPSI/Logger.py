@@ -27,7 +27,8 @@ import warnings
 import logging
 
 import opsicommon.logging
-from opsicommon.logging import (logger,
+from opsicommon.logging import (
+	logger, get_all_handlers, ObservableHandler,
 	LOG_SECRET, LOG_CONFIDENTIAL, LOG_TRACE, LOG_DEBUG2, LOG_DEBUG,
 	LOG_INFO, LOG_NOTICE, LOG_WARNING, LOG_WARN, LOG_ERROR, LOG_CRITICAL,
 	LOG_ESSENTIAL, LOG_NONE, LOG_NOTSET, LOG_COMMENT
@@ -143,7 +144,8 @@ def setSyslogLevel(level=LOG_NONE):
 logger.setSyslogLevel = setSyslogLevel
 
 def setMessageSubjectLevel(level=LOG_NONE):
-	pass
+	for handler in get_all_handlers(ObservableHandler):
+		handler.setLevel(logging._opsiLevelToLevel[level])
 logger.setMessageSubjectLevel = setMessageSubjectLevel
 
 def setConsoleLevel(logLevel, object=None):
