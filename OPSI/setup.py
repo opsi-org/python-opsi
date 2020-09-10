@@ -102,8 +102,8 @@ def setup_users_and_groups():
 		)
 		users = get_users()
 
-def setup_file_permissions():
-	setRights()
+def setup_file_permissions(path: str = '/'):
+	setRights(path)
 	groups = get_groups()
 	if "shadow" in groups:
 		os.chown(path="/etc/shadow", uid=0, gid=groups["shadow"].gr_gid)
