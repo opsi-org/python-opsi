@@ -151,7 +151,7 @@ def setConsoleLevel(logLevel, object=None):
 		"OPSI.Logger.setConsoleLevel is deprecated, instead modify the StreamHandler loglevel.",
 		DeprecationWarning
 	)
-	opsicommon.logging.logging_config(stderr_level=logLevel)
+	opsicommon.logging.logging_config(stderr_level=logging._opsiLevelToLevel[logLevel])
 logger.setConsoleLevel = setConsoleLevel
 
 @staticmethod
@@ -187,7 +187,7 @@ def setFileLevel(logLevel, object=None):
 		"OPSI.Logger.setFileLevel is deprecated, instead modify the FileHandler loglevel.",
 		DeprecationWarning
 	)
-	opsicommon.logging.logging_config(file_level=logLevel)
+	opsicommon.logging.logging_config(file_level=logging._opsiLevelToLevel[logLevel])
 logger.setFileLevel = setFileLevel
 
 def exit(object=None):
