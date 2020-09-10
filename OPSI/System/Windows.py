@@ -39,6 +39,7 @@ import sys
 import threading
 import time
 from datetime import datetime
+import pefile
 
 # Win32 imports
 import winreg
@@ -264,22 +265,31 @@ def getFQDN():
 
 def getFileVersionInfo(filename):
 	filename = forceFilename(filename)
-	(lang, codepage) = win32api.GetFileVersionInfo(filename, u'\\VarFileInfo\\Translation')[0]
-	path = u'\\StringFileInfo\\%04X%04X\\%%s' % (lang, codepage)
-	info = {
-		'CompanyName': forceUnicode(win32api.GetFileVersionInfo(filename, path % 'CompanyName')),
-		'SpecialBuild': forceUnicode(win32api.GetFileVersionInfo(filename, path % 'SpecialBuild')),
-		'Comments': forceUnicode(win32api.GetFileVersionInfo(filename, path % 'Comments')),
-		'FileDescription': forceUnicode(win32api.GetFileVersionInfo(filename, path % 'FileDescription')),
-		'FileVersion': forceUnicode(win32api.GetFileVersionInfo(filename, path % 'FileVersion')),
-		'InternalName': forceUnicode(win32api.GetFileVersionInfo(filename, path % 'InternalName')),
-		'LegalCopyright': forceUnicode(win32api.GetFileVersionInfo(filename, path % 'LegalCopyright')),
-		'LegalTrademarks': forceUnicode(win32api.GetFileVersionInfo(filename, path % 'LegalTrademarks')),
-		'OriginalFilename': forceUnicode(win32api.GetFileVersionInfo(filename, path % 'OriginalFilename')),
-		'PrivateBuild': forceUnicode(win32api.GetFileVersionInfo(filename, path % 'PrivateBuild')),
-		'ProductName': forceUnicode(win32api.GetFileVersionInfo(filename, path % 'ProductName')),
-		'ProductVersion': forceUnicode(win32api.GetFileVersionInfo(filename, path % 'ProductVersion'))
-	}
+	info = {}
+	keys = ['CompanyName', 'SpecialBuild', 'Comments', 'FileDescription', 'FileVersion',
+				'InternalName', 'LegalCopyright', 'LegalTrademarks', 'OriginalFilename',
+				'PrivateBuild', 'ProductName', 'ProductVersion']
+	for key in keys:
+		info[key] = ""
+
+	try:
+		pe = pefile.PE(filename)
+	except pefile.PEFormatError:
+		logger.warning("File %s is not a valid PE file", filename)
+		return info
+	if not hasattr(pe, 'VS_VERSIONINFO'):
+		logger.warning(u"Could not find file version info in file %s", filename)
+		return info
+	for idx in range(len(pe.VS_VERSIONINFO)):
+		if not hasattr(pe, 'FileInfo') or len(pe.FileInfo) <= idx:
+			break
+		for entry in pe.FileInfo[idx]:
+			if not hasattr(entry, 'StringTable'):
+				continue
+			for st_entry in entry.StringTable:
+				for key, value in st_entry.entries.items():
+					info[key.decode('utf-8', 'backslashreplace')] = value.decode('utf-8', 'backslashreplace')
+
 	logger.debug(u"File version info for '%s': %s", filename, info)
 	return info
 
