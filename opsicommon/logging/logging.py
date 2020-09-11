@@ -422,6 +422,8 @@ def logging_config(
 	:param file_format: Format to set for the file logging stream.
 	:type file_format: str
 	"""
+	add_context_filter_to_loggers()
+	
 	global last_stderr_format
 	if stderr_format is None:
 		stderr_format = last_stderr_format or DEFAULT_FORMAT
@@ -551,6 +553,12 @@ def set_context(new_context: Dict) -> contextvars.Token:
 	if isinstance(new_context, dict):
 		return context.set(new_context)
 
+def add_context_filter_to_loggers():
+	for _logger in get_all_loggers():
+		if not isinstance(_logger, logging.PlaceHolder):
+			if not context_filter in _logger.filters:
+				_logger.addFilter(context_filter)
+
 def set_filter(filter_dict: Dict):
 	"""
 	Sets a new filter dictionary.
@@ -563,10 +571,7 @@ def set_filter(filter_dict: Dict):
 		context in order to accept the LogRecord.
 	:type filter_dict: Dict
 	"""
-	for _logger in get_all_loggers():
-		if not isinstance(_logger, logging.PlaceHolder):
-			if not context_filter in _logger.filters:
-				_logger.addFilter(context_filter)
+	add_context_filter_to_loggers()
 	context_filter.set_filter(filter_dict)
 
 def set_filter_from_string(filter_string: str):
@@ -679,8 +684,8 @@ def _log_warning(message, category, filename, lineno, line=None, file=None):
 warnings.showwarning = _log_warning
 
 observable_handler = ObservableHandler()
-logging_config(stderr_level=logging.WARNING)
-#logging_config(stderr_level=logging.NOTSET)
 secret_filter = SecretFilter()
 context_filter = ContextFilter()
-logging.root.addFilter(context_filter)
+logging_config(stderr_level=logging.WARNING)
+#logging_config(stderr_level=logging.NOTSET)
+
