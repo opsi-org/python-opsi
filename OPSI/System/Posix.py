@@ -3937,7 +3937,12 @@ until the execution of the process is terminated.
 
 	logger.notice("Executing: '%s'", command)
 
-	sp_env = grant_session_access(getpass.getuser(), sessionId)
+	sp_env = get_subprocess_environment()
+	if sessionId is not None:
+		try:
+			sp_env = grant_session_access(getpass.getuser(), sessionId)
+		except Exception as e:
+			logger.error("Failed to grant access to session %s to user %s: %s", sessionId, getpass.getuser(), exc_info=True)
 	
 	logger.info("Running command %s", command)
 	process = subprocess.Popen(

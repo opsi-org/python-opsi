@@ -98,10 +98,10 @@ def grant_session_access(username: str, session_id: str):
 			if session_env is None or env.get("XAUTHORITY"):
 				session_username = proc.username()
 				session_env = env
-	if not session_env.get("XAUTHORITY"):
-		session_env["XAUTHORITY"] = os.path.join(session_env.get("HOME"), ".Xauthority")
 	if not session_env:
 		raise ValueError(f"Session {session_id} not found")
+	if not session_env.get("XAUTHORITY"):
+		session_env["XAUTHORITY"] = os.path.join(session_env.get("HOME"), ".Xauthority")
 	
 	sp_env = get_subprocess_environment(session_env)
 	logger.debug("Using process env: %s", sp_env)
