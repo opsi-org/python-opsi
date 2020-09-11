@@ -10,6 +10,7 @@ import traceback
 import sys
 import logging
 import colorlog
+import warnings
 import contextvars
 from contextlib import contextmanager
 from typing import Dict, Any
@@ -673,6 +674,9 @@ def print_logger_info():
 				print(f"  - Handler: {name} ", file=sys.stderr)
 				print(f"    - Formatter: {_handler.formatter}", file=sys.stderr)
 
+def _log_warning(message, category, filename, lineno, line=None, file=None):
+	logger.warning(message)
+warnings.showwarning = _log_warning
 
 observable_handler = ObservableHandler()
 logging_config(stderr_level=logging.WARNING)

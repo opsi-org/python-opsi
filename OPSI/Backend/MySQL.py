@@ -582,8 +582,6 @@ class MySQLBackend(SQLBackend):
 
 		self._sql = MySQL(**kwargs)
 
-		warnings.showwarning = self._showwarning
-
 		self._licenseManagementEnabled = True
 		self._licenseManagementModule = False
 		self._sqlBackendModule = False
@@ -650,16 +648,6 @@ class MySQLBackend(SQLBackend):
 					self._sqlBackendModule = True
 
 		logger.debug(u'MySQLBackend created: %s', self)
-
-	def _showwarning(self, message, category, filename, lineno, line=None, file=None):
-		#logger.warning(u"message=%s, category=%s, filename=%s, lineno=%s, line=%s, file=%s",
-		#	message, category, filename, lineno, line, file
-		#)
-		logger.debug(''.join(traceback.format_stack()))
-		if str(message).startswith('Data truncated for column'):
-			logger.error(message)
-		else:
-			logger.warning(message)
 	
 	def _createTableHost(self):
 		logger.debug(u'Creating table HOST')
