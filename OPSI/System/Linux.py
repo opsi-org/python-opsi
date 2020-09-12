@@ -24,6 +24,7 @@ import re
 import subprocess
 import psutil
 import codecs
+import tempfile
 
 from OPSI.Logger import Logger
 from OPSI.Types import forceUnicode, forceFilename
@@ -146,7 +147,7 @@ def mount(dev, mountpoint, **options):
 	fs = ""
 	stdin_data = b""
 
-	credentialsFiles = []
+	tmpFiles = []
 	if dev.lower().startswith(('smb://', 'cifs://')):
 		match = re.search(r'^(smb|cifs)://([^/]+\/.+)$', dev, re.IGNORECASE)
 		if match:
@@ -161,19 +162,12 @@ def mount(dev, mountpoint, **options):
 				options['username'] = re.sub(r"\\+", r"\\", options['username'])
 				(options['domain'], options['username']) = options['username'].split('\\', 1)
 
-			credentialsFile = "/tmp/.cifs-credentials.%s" % parts[0]
-			if os.path.exists(credentialsFile):
-				os.remove(credentialsFile)
-			with open(credentialsFile, "w") as f:
-				pass
-
-			os.chmod(credentialsFile, 0o600)
-			with codecs.open(credentialsFile, "w", "iso-8859-15") as f:
-				f.write("username=%s\n" % options['username'])
-				f.write("password=%s\n" % options['password'])
-			options['credentials'] = credentialsFile
-			credentialsFiles.append(credentialsFile)
-
+			tf = tempfile.NamedTemporaryFile(mode="w", delete=False, encoding="iso-8859-15")
+			tf.write(f"username={options['username']}\npassword={options['password']}\n")
+			tf.close()
+			tmpFiles.append(tf.name)
+			options['credentials'] = tf.name
+			
 			try:
 				if not options['domain']:
 					del options['domain']
@@ -189,79 +183,56 @@ def mount(dev, mountpoint, **options):
 		# Maximum transfer file size <= free space in /var/cache/davfs2
 		match = re.search(r'^(http|webdav)(s*)(://[^/]+\/.+)$', dev, re.IGNORECASE)
 		if match:
-			fs = u'-t davfs'
-			dev = u'http' + match.group(2) + match.group(3)
+			fs = "-t davfs"
+			dev = f"http{match.group(2)}{match.group(3)}"
 		else:
-			raise ValueError(u"Bad webdav url '%s'" % dev)
+			raise ValueError(f"Bad webdav url '{dev}'")
 		
-		# trust certificate (y/n)
-		stdin_data = b"y\n"
-
 		if 'username' not in options:
-			options['username'] = u''
+			options['username'] = ""
 		if 'password' not in options:
-			options['password'] = u''
-		if 'servercert' not in options:
-			options['servercert'] = u''
+			options['password'] = ""
 
-		if options['servercert']:
-			with open(u"/etc/davfs2/certs/trusted.pem", "w") as f:
-				f.write(options['servercert'])
-			os.chmod(u"/etc/davfs2/certs/trusted.pem", 0o644)
-
-		with codecs.open(u"/etc/davfs2/secrets", "r", "utf8") as f:
-			lines = f.readlines()
-
-		with codecs.open(u"/etc/davfs2/secrets", "w", "utf8") as f:
-			for line in lines:
-				if not re.search(r"^%s\s+" % dev, line):
-					f.write(line)
-			f.write(u'%s "%s" "%s"\n' % (dev, options['username'], options['password']))
-		os.chmod(u"/etc/davfs2/secrets", 0o600)
-
-		with open(u"/etc/davfs2/davfs2.conf", "r") as f:
-			lines = f.readlines()
+		tf = tempfile.NamedTemporaryFile(mode="w", delete=False, encoding="utf-8")
+		tf.write("n_cookies 1\ncache_size 0\ntable_size 16384\nuse_locks 0\n")
+		tf.close()
+		tmpFiles.append(tf.name)
+		options['conf'] = tf.name
 		
-		with open(u"/etc/davfs2/davfs2.conf", "w") as f:
-			for line in lines:
-				if not re.search(r"^servercert\s+", line) and not re.search(r"^n_cookies\s+", line):
-					f.write(line)
-			f.write("n_cookies 1\n")
-			if options['servercert']:
-				f.write(u"servercert /etc/davfs2/certs/trusted.pem\n")
-
+		# Username, Password, Accept certificate for this session? [y,N]
+		stdin_data = f"{options['username']}\n{options['password']}\ny\n".encode("utf-8")
+		
 		del options['username']
 		del options['password']
-		del options['servercert']
 
-	elif dev.lower().startswith(u'/'):
+	elif dev.lower().startswith("/"):
 		pass
 
-	elif dev.lower().startswith(u'file://'):
+	elif dev.lower().startswith("file://"):
 		dev = dev[7:]
 
 	else:
 		raise ValueError(f"Cannot mount unknown fs type '{dev}'")
-
+	
 	mountOptions = []
 	for (key, value) in options.items():
 		key = forceUnicode(key)
 		value = forceUnicode(value)
 		if value:
-			mountOptions.append("{0}={1}".format(key, value))
+			mountOptions.append(f"{key}={value}")
 		else:
-			mountOptions.append("{0}".format(key))
+			mountOptions.append(key)
 
 	try:
 		while True:
 			try:
 				if mountOptions:
-					optString = u'-o "{0}"'.format((u','.join(mountOptions)).replace('"', '\\"'))
+					optString = '-o "{0}"'.format((u','.join(mountOptions)).replace('"', '\\"'))
 				else:
-					optString = u''
+					optString = ''
 				proc_env = os.environ.copy()
 				proc_env["LC_ALL"] = "C"
-				execute(u"%s %s %s %s %s" % (which('mount'), fs, optString, dev, mountpoint), env=proc_env, stdin_data=stdin_data)
+				execute("%s %s %s %s %s" % (which('mount'), fs, optString, dev, mountpoint), env=proc_env, stdin_data=stdin_data)
 				break
 			except Exception as e:
 				if fs == "-t cifs" and "vers=2.0" not in mountOptions and "error(95)" in str(e):
@@ -271,6 +242,6 @@ def mount(dev, mountpoint, **options):
 					logger.error("Failed to mount '%s': %s", dev, e)
 					raise RuntimeError("Failed to mount '%s': %s" % (dev, e))
 	finally:
-		for f in credentialsFiles:
+		for f in tmpFiles:
 			os.remove(f)
 Posix.mount = mount
