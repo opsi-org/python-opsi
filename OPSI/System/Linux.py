@@ -214,20 +214,20 @@ def mount(dev, mountpoint, **options):
 
 		with codecs.open(u"/etc/davfs2/secrets", "w", "utf8") as f:
 			for line in lines:
-				if re.search(r"^%s\s+" % dev, line):
-					f.write(u"#")
-				f.write(line)
+				if not re.search(r"^%s\s+" % dev, line):
+					f.write(line)
 			f.write(u'%s "%s" "%s"\n' % (dev, options['username'], options['password']))
 		os.chmod(u"/etc/davfs2/secrets", 0o600)
 
-		if options['servercert']:
-			with open(u"/etc/davfs2/davfs2.conf", "r") as f:
-				lines = f.readlines()
-
-			with open(u"/etc/davfs2/davfs2.conf", "w") as f:
-				for line in lines:
-					if not re.search(r"^servercert\s+", line):
-						f.write(line)
+		with open(u"/etc/davfs2/davfs2.conf", "r") as f:
+			lines = f.readlines()
+		
+		with open(u"/etc/davfs2/davfs2.conf", "w") as f:
+			for line in lines:
+				if not re.search(r"^servercert\s+", line) and not re.search(r"^n_cookies\s+", line):
+					f.write(line)
+			f.write("n_cookies 1\n")
+			if options['servercert']:
 				f.write(u"servercert /etc/davfs2/certs/trusted.pem\n")
 
 		del options['username']
@@ -259,7 +259,9 @@ def mount(dev, mountpoint, **options):
 					optString = u'-o "{0}"'.format((u','.join(mountOptions)).replace('"', '\\"'))
 				else:
 					optString = u''
-				execute(u"%s %s %s %s %s" % (which('mount'), fs, optString, dev, mountpoint), stdin_data=stdin_data)
+				proc_env = os.environ.copy()
+				proc_env["LC_ALL"] = "C"
+				execute(u"%s %s %s %s %s" % (which('mount'), fs, optString, dev, mountpoint), env=proc_env, stdin_data=stdin_data)
 				break
 			except Exception as e:
 				if fs == "-t cifs" and "vers=2.0" not in mountOptions and "error(95)" in str(e):
