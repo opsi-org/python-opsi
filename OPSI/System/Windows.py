@@ -1330,7 +1330,7 @@ def which(cmd):
 def get_subprocess_environment():
 	return os.environ.copy()
 
-def execute(cmd, waitForEnding=True, getHandle=False, ignoreExitCode=[], exitOnStderr=False, captureStderr=True, encoding=None, timeout=0, shell=True, env={}):
+def execute(cmd, waitForEnding=True, getHandle=False, ignoreExitCode=[], exitOnStderr=False, captureStderr=True, encoding=None, timeout=0, shell=True, env={}, stdin_data=b""):
 	cmd = forceUnicode(cmd)
 	waitForEnding = forceBool(waitForEnding)
 	getHandle = forceBool(getHandle)
@@ -1366,6 +1366,10 @@ def execute(cmd, waitForEnding=True, getHandle=False, ignoreExitCode=[], exitOnS
 				stderr=stderr,
 				env=sp_env
 			)
+			
+			if stdin_data:
+				proc.stdin.write(stdin_data)
+				proc.stdin.flush()
 			
 			ret = None
 			while ret is None:
