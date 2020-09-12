@@ -789,11 +789,8 @@ def mount(dev, mountpoint, **options):
 		}
 
 		if mountpoint.lower() in usedDriveletters:
-			logger.debug(
-				u"Mountpoint '%s' is in use. Trying to find a free "
-				u"mountpoint.", mountpoint
-			)
-
+			logger.debug("Mountpoint '%s' is in use. Trying to find a free mountpoint.", mountpoint)
+			
 			for i in range(ord('c'), ord('z')):
 				mountpoint = forceUnicode(chr(i))
 				if mountpoint not in usedDriveletters:
