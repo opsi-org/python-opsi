@@ -888,7 +888,7 @@ def get_subprocess_environment(env: dict = None):
 			sp_env.pop("LD_LIBRARY_PATH", None)
 	return sp_env
 
-def execute(cmd, nowait=False, getHandle=False, ignoreExitCode=[], exitOnStderr=False, captureStderr=True, encoding=None, timeout=0, shell=None, waitForEnding=None, env={}):
+def execute(cmd, nowait=False, getHandle=False, ignoreExitCode=[], exitOnStderr=False, captureStderr=True, encoding=None, timeout=0, shell=None, waitForEnding=None, env={}, stdin_data=b''):
 	"""
 	Executes a command.
 
@@ -983,7 +983,11 @@ output will be returned.
 			if captureStderr:
 				flags = fcntl.fcntl(proc.stderr, fcntl.F_GETFL)
 				fcntl.fcntl(proc.stderr, fcntl.F_SETFL, flags | os.O_NONBLOCK)
-
+			
+			if stdin_data:
+				proc.stdin.write(stdin_data)
+				proc.stdin.flush()
+			
 			ret = None
 			while ret is None:
 				ret = proc.poll()

@@ -144,6 +144,7 @@ def mount(dev, mountpoint, **options):
 		options[key] = forceUnicode(value)
 
 	fs = ""
+	stdin_data = b""
 
 	credentialsFiles = []
 	if dev.lower().startswith(('smb://', 'cifs://')):
@@ -192,6 +193,9 @@ def mount(dev, mountpoint, **options):
 			dev = u'http' + match.group(2) + match.group(3)
 		else:
 			raise ValueError(u"Bad webdav url '%s'" % dev)
+		
+		# trust certificate (y/n)
+		stdin_data = b"y\n"
 
 		if 'username' not in options:
 			options['username'] = u''
@@ -222,9 +226,8 @@ def mount(dev, mountpoint, **options):
 
 			with open(u"/etc/davfs2/davfs2.conf", "w") as f:
 				for line in lines:
-					if re.search(r"^servercert\s+", line):
-						f.write("#")
-					f.write(line)
+					if not re.search(r"^servercert\s+", line):
+						f.write(line)
 				f.write(u"servercert /etc/davfs2/certs/trusted.pem\n")
 
 		del options['username']
@@ -256,7 +259,7 @@ def mount(dev, mountpoint, **options):
 					optString = u'-o "{0}"'.format((u','.join(mountOptions)).replace('"', '\\"'))
 				else:
 					optString = u''
-				execute(u"%s %s %s %s %s" % (which('mount'), fs, optString, dev, mountpoint))
+				execute(u"%s %s %s %s %s" % (which('mount'), fs, optString, dev, mountpoint), stdin_data=stdin_data)
 				break
 			except Exception as e:
 				if fs == "-t cifs" and "vers=2.0" not in mountOptions and "error(95)" in str(e):
