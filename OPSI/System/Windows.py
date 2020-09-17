@@ -274,6 +274,7 @@ def getFileVersionInfo(filename):
 
 	try:
 		pe = pefile.PE(filename)
+		pe.close()
 	except pefile.PEFormatError:
 		logger.warning("File %s is not a valid PE file", filename)
 		return info
