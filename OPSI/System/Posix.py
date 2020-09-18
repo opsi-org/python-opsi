@@ -1021,9 +1021,7 @@ output will be returned.
 				lines = data.split(b'\n')
 				for i, line in enumerate(lines):
 					line = line.decode(encoding, 'replace')
-					if i == len(lines) - 1 and not line:
-						break
-					logger.debug(u'>>> %s', line)
+					logger.debug(f'>>> {line}')
 					result.append(line)
 
 	except (os.error, IOError) as e:
