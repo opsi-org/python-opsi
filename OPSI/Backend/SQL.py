@@ -594,7 +594,7 @@ class SQLBackend(ConfigDataBackend):
 				''' % self._sql.getTableCreationOptions('WINDOWS_SOFTWARE_ID_TO_PRODUCT')
 			logger.debug(table)
 			self._sql.execute(table)
-			self._sql.execute('CREATE INDEX `index_productId` on `WINDOWS_SOFTWARE_ID_TO_PRODUCT` (`productId`);')
+			self._sql.execute('CREATE INDEX `index_windows_software_id_to_product_productId` on `WINDOWS_SOFTWARE_ID_TO_PRODUCT` (`productId`);')
 		
 		if 'PRODUCT_ON_DEPOT' not in existingTables:
 			logger.debug(u'Creating table PRODUCT_ON_DEPOT')
