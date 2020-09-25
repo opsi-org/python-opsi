@@ -1519,13 +1519,15 @@ class Harddisk:
 			if line.lower().startswith('disk'):
 				geometryOutput = execute(u"{sfdisk} -g {device}".format(sfdisk=which('sfdisk'), device=self.device))
 				for line in geometryOutput:
-					match = re.search('\s+(\d+)\s+cylinders,\s+(\d+)\s+heads,\s+(\d+)\s+sectors', line)
-					if not match:
-						raise RuntimeError(u"Unable to get geometry for disk '%s'" % self.device)
-					self.cylinders = forceInt(match.group(1))
-					self.heads = forceInt(match.group(2))
-					self.sectors = forceInt(match.group(3))
-					self.totalCylinders = self.cylinders
+					if line:
+						logger.notice("geometryLine : %s" % line)
+						match = re.search('\s+(\d+)\s+cylinders,\s+(\d+)\s+heads,\s+(\d+)\s+sectors', line)
+						if not match:
+							raise RuntimeError(u"Unable to get geometry for disk '%s'" % self.device)
+						self.cylinders = forceInt(match.group(1))
+						self.heads = forceInt(match.group(2))
+						self.sectors = forceInt(match.group(3))
+						self.totalCylinders = self.cylinders
 				
 			elif line.lower().startswith(u'units'):
 				match = re.search(r'sectors\s+of\s+\d\s+.\s+\d+\s+.\s+(\d+)\s+bytes', line)
