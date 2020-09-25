@@ -22,6 +22,7 @@
 
 from typing import Set
 import ldap3
+import copy
 
 from OPSI.Backend.Manager.Authentication import AuthenticationModule
 from OPSI.Exceptions import BackendAuthenticationError
@@ -76,6 +77,11 @@ class LDAPAuthentication(AuthenticationModule):
 			url = "ldap://" + url
 		return url
 	
+	def get_instance(self):
+		_obj = copy.deepcopy(self)
+		_obj._ldap = None
+		return _obj
+	
 	def authenticate(self, username: str, password: str) -> None:
 		"""
 		Authenticate a user by LDAP bind
@@ -97,7 +103,7 @@ class LDAPAuthentication(AuthenticationModule):
 	def get_groupnames(self, username: str) -> Set[str]:
 		groupnames = set()
 		if not self._ldap:
-			return groupnames
+			raise RuntimeError("Failed to get groupnames, not connected to ldap")
 		
 		ldap_type = "openldap"
 		user_dn = None
