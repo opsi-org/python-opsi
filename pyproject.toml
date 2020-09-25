@@ -26,7 +26,7 @@ pyasn1 = "^0.4.8"
 pyOpenSSL = "^19.1.0"
 twisted = {extras = ["tls"], version = "^20.3.0"}
 python-magic = "^0.4.15"
-ldap3 = "=2.7"
+ldap3 = "^2.8.1"
 pycryptodome = "^3.9.7"
 psutil = "^5.7.0"
 pywin32 = {platform = "win32", version = "^227"}
