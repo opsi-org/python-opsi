@@ -24,6 +24,7 @@ Authentication helper.
 """
 
 from typing import Set, List
+import copy
 
 from OPSI.Exceptions import BackendAuthenticationError
 from OPSI.Config import OPSI_ADMIN_GROUP
@@ -35,6 +36,9 @@ logger = Logger()
 class AuthenticationModule:
 	def __init__(self):
 		pass
+	
+	def get_instance(self):
+		return copy.deepcopy(self)
 	
 	def authenticate(self, username: str, password: str) -> None:
 		raise BackendAuthenticationError("Not implemented")

@@ -253,14 +253,16 @@ class BackendAccessControl:
 				self.user_store.isAdmin = self._isOpsiDepotserver()
 				self.user_store.isReadOnly = False
 			else:
+				# Get a fresh instance
+				auth_module = self._auth_module.get_instance()
 				# System user trying to log in with username and password
-				logger.debug("Trying to authenticate by user authentication module %s", self._auth_module)
+				logger.debug("Trying to authenticate by user authentication module %s", auth_module)
 				
-				if not self._auth_module:
+				if not auth_module:
 					raise BackendAuthenticationError("Authentication module unavailable")
 				
 				try:
-					self._auth_module.authenticate(self.user_store.username, self.user_store.password)
+					auth_module.authenticate(self.user_store.username, self.user_store.password)
 				except Exception as error:
 					raise BackendAuthenticationError("Authentication failed for user '%s': %s" % (self.user_store.username, error))
 				
@@ -270,9 +272,9 @@ class BackendAccessControl:
 					self.user_store.userGroups = forceUnicodeList(forceGroups)
 					logger.info("Forced groups for user %s: %s", self.user_store.username, ', '.join(self.user_store.userGroups))
 				else:
-					self.user_store.userGroups = self._auth_module.get_groupnames(self.user_store.username)
-				self.user_store.isAdmin = self._auth_module.user_is_admin(self.user_store.username)
-				self.user_store.isReadOnly = self._auth_module.user_is_read_only(self.user_store.username, set(forceGroups) if forceGroups else None)
+					self.user_store.userGroups = auth_module.get_groupnames(self.user_store.username)
+				self.user_store.isAdmin = auth_module.user_is_admin(self.user_store.username)
+				self.user_store.isReadOnly = auth_module.user_is_read_only(self.user_store.username, set(forceGroups) if forceGroups else None)
 
 				logger.info(u"Authentication successful for user '%s', groups '%s'", self.user_store.username, ','.join(self.user_store.userGroups))
 		
@@ -299,7 +301,7 @@ class BackendAccessControl:
 			logger.debug(u"Read acl from file %s: %s", self._aclFile, self._acl)
 		except Exception as error:
 			logger.logException(error)
-			raise BackendConfigurationError(u"Failed to load acl file '%s': %s", self._aclFile, error)
+			raise BackendConfigurationError(u"Failed to load acl file '%s': %s" % (self._aclFile, error))
 
 	def _createInstanceMethods(self):
 		protectedMethods = set()
