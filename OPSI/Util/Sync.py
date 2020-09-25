@@ -189,7 +189,7 @@ def librsyncSignature(filename, base64Encoded=True):
 				_execute(job, filehandle, sigfile_handle)
 				sigfile_handle.seek(0)
 				if base64Encoded:
-					return base64.encodebytes(sigfile_handle.read())
+					return base64.encodebytes(sigfile_handle.read()).decode("ascii")
 				else:
 					return sigfile_handle.read()
 			finally:
