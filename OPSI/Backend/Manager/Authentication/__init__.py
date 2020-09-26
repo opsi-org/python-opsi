@@ -38,7 +38,7 @@ class AuthenticationModule:
 		pass
 	
 	def get_instance(self):
-		return copy.deepcopy(self)
+		return self.__class__()
 	
 	def authenticate(self, username: str, password: str) -> None:
 		raise BackendAuthenticationError("Not implemented")

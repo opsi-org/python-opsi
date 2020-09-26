@@ -22,7 +22,6 @@
 
 from typing import Set
 import ldap3
-import copy
 
 from OPSI.Backend.Manager.Authentication import AuthenticationModule
 from OPSI.Exceptions import BackendAuthenticationError
@@ -52,7 +51,8 @@ class LDAPAuthentication(AuthenticationModule):
 			>>> active_directory_auth = LDAPAuthentication("ldaps://ad.company.de/dc=company,dc=de", "{username}@company.de")
 			>>> open_ldap_auth = LDAPAuthentication("ldap://ldap.company.de/dc=company,dc=de", "uid={username},dc=Users,{base}")
 		"""
-		self._uri = ldap3.utils.uri.parse_uri(ldap_url)
+		self._ldap_url = ldap_url
+		self._uri = ldap3.utils.uri.parse_uri(self._ldap_url)
 		self._bind_user = bind_user
 		self._group_filter = group_filter
 		self._ldap = None
@@ -78,9 +78,7 @@ class LDAPAuthentication(AuthenticationModule):
 		return url
 	
 	def get_instance(self):
-		_obj = copy.deepcopy(self)
-		_obj._ldap = None
-		return _obj
+		return LDAPAuthentication(self._ldap_url, self._bind_user, self._group_filter)
 	
 	def authenticate(self, username: str, password: str) -> None:
 		"""
@@ -92,7 +90,8 @@ class LDAPAuthentication(AuthenticationModule):
 		try:
 			bind_user = self._bind_user.replace("{username}", username).replace("{base}", self._uri["base"])
 			logger.info("Binding as user %s to server %s", bind_user, self.server_url)
-			self._ldap = ldap3.Connection(server=self.server_url, client_strategy=ldap3.SAFE_SYNC, user=bind_user, password=password)
+			#self._ldap = ldap3.Connection(server=self.server_url, client_strategy=ldap3.SAFE_SYNC, user=bind_user, password=password)
+			self._ldap = ldap3.Connection(server=self.server_url, user=bind_user, password=password)
 			if not self._ldap.bind():
 				raise Exception(f"bind failed: {self._ldap.result}")
 			# self._ldap.extend.standard.who_am_i()
