@@ -52,6 +52,9 @@ class PAMAuthentication(AuthenticationModule):
 			else:
 				self._pam_service = 'common-auth'
 	
+	def get_instance(self):
+		return PAMAuthentication(self._pam_service)
+	
 	def authenticate(self, username: str, password: str) -> None:
 		'''
 		Authenticate a user by PAM (Pluggable Authentication Modules).

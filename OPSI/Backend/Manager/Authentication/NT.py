@@ -37,12 +37,18 @@ logger = Logger()
 
 class NTAuthentication(AuthenticationModule):
 	def __init__(self, admin_group_sid: str = None):
+		self._admin_group_sid = admin_group_sid
 		self._admin_groupname = OPSI_ADMIN_GROUP
-		if admin_group_sid is not None:
+		if self._admin_group_sid is not None:
 			try:
-				self._admin_groupname = win32security.LookupAccountSid(None, win32security.ConvertStringSidToSid(admin_group_sid))[0]
+				self._admin_groupname = win32security.LookupAccountSid(
+					None, win32security.ConvertStringSidToSid(self._admin_group_sid)
+				)[0]
 			except Exception as e:
-				logger.error("Failed to lookup group with sid '%s': %s", admin_group_sid, e)
+				logger.error("Failed to lookup group with sid '%s': %s", self._admin_group_sid, e)
+	
+	def get_instance(self):
+		return NTAuthentication(self._admin_group_sid)
 	
 	def authenticate(self, username: str, password: str) -> None:
 		'''
