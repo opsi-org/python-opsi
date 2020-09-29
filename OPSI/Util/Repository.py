@@ -1338,7 +1338,7 @@ class DepotToLocalDirectorySychronizer:
 						logger.info(u"Appending '%s' to '%s'", path, oPath)
 						with open(oPath, 'ab') as f1:
 							with open(path, 'rb') as f2:
-								f1.write(f2.read())
+								shutil.copyfileobj(f2, f1)
 				logger.info(u"Deleting '%s'", relSource)
 				os.remove(path)
 
@@ -1384,7 +1384,7 @@ class DepotToLocalDirectorySychronizer:
 
 					with open(destinationPath, 'ab') as f1:
 						with open(partialEndFile, 'rb') as f2:
-							f1.write(f2.read())
+							shutil.copyfileobj(f2, f1)
 
 					md5s = md5sum(destinationPath)
 					if md5s != self._fileInfo[relSource]['md5sum']:
@@ -1398,7 +1398,7 @@ class DepotToLocalDirectorySychronizer:
 
 						with open(partialStartFile, 'ab') as f1:
 							with open(partialEndFile, 'rb') as f2:
-								f1.write(f2.read())
+								shutil.copyfileobj(f2, f1)
 
 						if os.path.exists(destinationPath):
 							os.remove(destinationPath)
