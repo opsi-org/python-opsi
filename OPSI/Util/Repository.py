@@ -1320,6 +1320,7 @@ class DepotToLocalDirectorySychronizer:
 				os.remove(destination)
 			os.mkdir(destination)
 		
+		# Local directory cleanup
 		for item in os.listdir(destination):
 			relSource = (source + u'/' + item).split(u'/', 1)[1]
 			if relSource == self._productId + u'.files':
@@ -1328,20 +1329,13 @@ class DepotToLocalDirectorySychronizer:
 				continue
 
 			path = os.path.join(destination, item)
+			logger.info(u"Deleting '%s'", relSource)
 			if os.path.isdir(path) and not os.path.islink(path):
-				logger.info(u"Deleting '%s'", relSource)
 				shutil.rmtree(path)
 			else:
-				if path.endswith(u'.opsi_sync_endpart'):
-					oPath = path[:-1 * len(".opsi_sync_endpart")]
-					if os.path.isfile(oPath):
-						logger.info(u"Appending '%s' to '%s'", path, oPath)
-						with open(oPath, 'ab') as f1:
-							with open(path, 'rb') as f2:
-								shutil.copyfileobj(f2, f1)
-				logger.info(u"Deleting '%s'", relSource)
 				os.remove(path)
 
+		# Start sync
 		for item in self._sourceDepot.content(source):
 			source = forceUnicode(source)
 			sourcePath = source + u'/' + item['name']
