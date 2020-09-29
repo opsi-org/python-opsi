@@ -106,6 +106,10 @@ def getFileInfosFromDavXML(davxmldata, encoding='utf-8'):
 					if tag == "{DAV:}getcontenttype":
 						if "directory" in text:
 							info['type'] = 'dir'
+					elif tag == "{DAV:}resourcetype":
+						for resChild in childnode:
+							if resChild.tag == "{DAV:}collection":
+								info['type'] = 'dir'
 					elif tag == "{DAV:}getcontentlength":
 						if text != "None":
 							info['size'] = int(text)
@@ -1134,7 +1138,9 @@ class WebDAVRepository(HTTPRepository):
 			if 'charset=' in part:
 				encoding = part.split('=')[1].replace('"', '').strip()
 
-		content = getFileInfosFromDavXML(davxmldata=response.data, encoding=encoding)
+		davxmldata = response.data
+		#logger.trace(davxmldata)
+		content = getFileInfosFromDavXML(davxmldata=davxmldata, encoding=encoding)
 
 		if recursive:
 			self._contentCache[source] = {
@@ -1310,8 +1316,10 @@ class DepotToLocalDirectorySychronizer:
 		destination = forceUnicode(destination)
 		logger.debug(u"Syncing directory %s to %s", source, destination)
 		if not os.path.isdir(destination):
+			if os.path.exists(destination):
+				os.remove(destination)
 			os.mkdir(destination)
-
+		
 		for item in os.listdir(destination):
 			relSource = (source + u'/' + item).split(u'/', 1)[1]
 			if relSource == self._productId + u'.files':
@@ -1343,7 +1351,7 @@ class DepotToLocalDirectorySychronizer:
 				continue
 			if relSource not in self._fileInfo:
 				continue
-			if item['type'] == 'dir':
+			if self._fileInfo[relSource]['type'] == 'd':
 				self._synchronizeDirectories(sourcePath, destinationPath, progressSubject)
 			else:
 				logger.debug(u"Syncing %s with %s %s", relSource, destinationPath, self._fileInfo[relSource])
