@@ -211,17 +211,23 @@ class BackendAccessControl:
 	def user_store(self, user_store):
 		self._user_store = user_store
 	
-	def authenticate(self, username: str, password: str, forceGroups: List[str] = None):
+	def authenticate(self, username: str, password: str, forceGroups: List[str] = None, auth_type: str = None):
+		if not auth_type:
+			if re.search(r'^[^.]+\.[^.]+\.\S+$', username):
+				auth_type = "opsi-hostkey"
+			else:
+				auth_type = "auth-module"
 		self.user_store.authenticated = False
 		self.user_store.username = username
 		self.user_store.password = password
-		
+		self.auth_type = auth_type
+
 		if not self.user_store.username:
 			raise BackendAuthenticationError("No username specified")
 		if not self.user_store.password:
 			raise BackendAuthenticationError("No password specified")
 		try:
-			if re.search(r'^[^.]+\.[^.]+\.\S+$', self.user_store.username):
+			if auth_type == "opsi-hostkey":
 				# Username starts with something like hostname.domain.tld:
 				# Assuming it is a host passing his FQDN as username
 				logger.debug(u"Trying to authenticate by opsiHostKey...")
@@ -252,7 +258,16 @@ class BackendAccessControl:
 				self.user_store.authenticated = True
 				self.user_store.isAdmin = self._isOpsiDepotserver()
 				self.user_store.isReadOnly = False
-			else:
+			elif auth_type == "opsi-passwd":
+				credentials = self._context.user_getCredentials(self.user_store.username) 
+				if self.user_store.password and self.user_store.password == credentials.get("password"):
+					self.user_store.authenticated = True
+					if self.user_store.username == "monitoring":
+						self.user_store.isAdmin = False
+						self.user_store.isReadOnly = True
+				else:
+					raise BackendAuthenticationError(f"Authentication failed for user {self.user_store.username}")
+			elif auth_type == "auth-module":
 				# Get a fresh instance
 				auth_module = self._auth_module.get_instance()
 				# System user trying to log in with username and password
@@ -277,7 +292,8 @@ class BackendAccessControl:
 				self.user_store.isReadOnly = auth_module.user_is_read_only(self.user_store.username, set(forceGroups) if forceGroups else None)
 
 				logger.info(u"Authentication successful for user '%s', groups '%s'", self.user_store.username, ','.join(self.user_store.userGroups))
-		
+			else:
+				raise BackendAuthenticationError(f"Invalid auth type {auth_type}")
 		except Exception as e:
 			raise BackendAuthenticationError(forceUnicode(e))
 		
