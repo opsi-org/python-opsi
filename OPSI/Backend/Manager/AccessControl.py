@@ -259,14 +259,14 @@ class BackendAccessControl:
 				self.user_store.isAdmin = self._isOpsiDepotserver()
 				self.user_store.isReadOnly = False
 			elif auth_type == "opsi-passwd":
-				credentials = self._context.user_getCredentials(self.user_store.username)
-				if self.user_store.password == credentials.get("password"):
+				credentials = self._context.user_getCredentials(self.user_store.username) 
+				if self.user_store.password and self.user_store.password == credentials.get("password"):
 					self.user_store.authenticated = True
 					if self.user_store.username == "monitoring":
 						self.user_store.isAdmin = False
 						self.user_store.isReadOnly = True
 				else:
-					raise BackendAuthenticationError("Authentication failed for user %s", self.user_store.username)
+					raise BackendAuthenticationError(f"Authentication failed for user {self.user_store.username}")
 			elif auth_type == "auth-module":
 				# Get a fresh instance
 				auth_module = self._auth_module.get_instance()
@@ -292,7 +292,8 @@ class BackendAccessControl:
 				self.user_store.isReadOnly = auth_module.user_is_read_only(self.user_store.username, set(forceGroups) if forceGroups else None)
 
 				logger.info(u"Authentication successful for user '%s', groups '%s'", self.user_store.username, ','.join(self.user_store.userGroups))
-		
+			else:
+				raise BackendAuthenticationError(f"Invalid auth type {auth_type}")
 		except Exception as e:
 			raise BackendAuthenticationError(forceUnicode(e))
 		
