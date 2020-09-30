@@ -211,17 +211,28 @@ class BackendAccessControl:
 	def user_store(self, user_store):
 		self._user_store = user_store
 	
-	def authenticate(self, username: str, password: str, forceGroups: List[str] = None):
+	def authenticate(self, username: str, password: str, forceGroups: List[str] = None, auth_type: str = None):
+		if not auth_type:
+			if re.search(r'^[^.]+\.[^.]+\.\S+$', username):
+				auth_type = "opsi-hostkey"
+			else:
+				auth_type = "auth-module"
 		self.user_store.authenticated = False
 		self.user_store.username = username
 		self.user_store.password = password
+		self.auth_type = auth_type
 		
+		logger.devel("BACKEND AccessControl")
+		logger.devel(self.auth_type)
+		logger.devel(self.user_store.username)
+		logger.devel(self.user_store.password)
+
 		if not self.user_store.username:
 			raise BackendAuthenticationError("No username specified")
 		if not self.user_store.password:
 			raise BackendAuthenticationError("No password specified")
 		try:
-			if re.search(r'^[^.]+\.[^.]+\.\S+$', self.user_store.username):
+			if auth_type == "opsi-hostkey":
 				# Username starts with something like hostname.domain.tld:
 				# Assuming it is a host passing his FQDN as username
 				logger.debug(u"Trying to authenticate by opsiHostKey...")
@@ -252,7 +263,23 @@ class BackendAccessControl:
 				self.user_store.authenticated = True
 				self.user_store.isAdmin = self._isOpsiDepotserver()
 				self.user_store.isReadOnly = False
-			else:
+			elif auth_type == "opsi-passwd":
+				logger.devel("TYPE: !opsi-passwd!")
+				credentials = self._context.user_getCredentials(self.user_store.username)
+				logger.devel("passwd_password: %s", credentials)
+				logger.devel(self.user_store.password)
+				logger.devel(credentials.get("password", None))
+				logger.devel(self.user_store.password == credentials.get("password"))
+				if self.user_store.password == credentials.get("password"):
+					logger.devel("OK hello: %s", self.user_store.username)
+					self.user_store.authenticated = True
+					if self.user_store.username == "monitoring":
+						self.user_store.isAdmin = False
+						self.user_store.isReadOnly = True
+					logger.devel(u"Authentication successful for user '%s'", self.user_store.username)
+				else:
+					raise BackendAuthenticationError("Authentication failed for user %s", self.user_store.username)
+			elif auth_type == "auth-module":
 				# Get a fresh instance
 				auth_module = self._auth_module.get_instance()
 				# System user trying to log in with username and password
