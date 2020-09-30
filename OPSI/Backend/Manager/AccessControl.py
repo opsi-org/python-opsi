@@ -221,11 +221,6 @@ class BackendAccessControl:
 		self.user_store.username = username
 		self.user_store.password = password
 		self.auth_type = auth_type
-		
-		logger.devel("BACKEND AccessControl")
-		logger.devel(self.auth_type)
-		logger.devel(self.user_store.username)
-		logger.devel(self.user_store.password)
 
 		if not self.user_store.username:
 			raise BackendAuthenticationError("No username specified")
@@ -264,19 +259,12 @@ class BackendAccessControl:
 				self.user_store.isAdmin = self._isOpsiDepotserver()
 				self.user_store.isReadOnly = False
 			elif auth_type == "opsi-passwd":
-				logger.devel("TYPE: !opsi-passwd!")
 				credentials = self._context.user_getCredentials(self.user_store.username)
-				logger.devel("passwd_password: %s", credentials)
-				logger.devel(self.user_store.password)
-				logger.devel(credentials.get("password", None))
-				logger.devel(self.user_store.password == credentials.get("password"))
 				if self.user_store.password == credentials.get("password"):
-					logger.devel("OK hello: %s", self.user_store.username)
 					self.user_store.authenticated = True
 					if self.user_store.username == "monitoring":
 						self.user_store.isAdmin = False
 						self.user_store.isReadOnly = True
-					logger.devel(u"Authentication successful for user '%s'", self.user_store.username)
 				else:
 					raise BackendAuthenticationError("Authentication failed for user %s", self.user_store.username)
 			elif auth_type == "auth-module":
