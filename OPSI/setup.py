@@ -75,6 +75,7 @@ def get_users():
 	return users
 
 def setup_users_and_groups():
+	logger.info("Setup users and groups")
 	groups = get_groups()
 	users = get_users()
 	
