@@ -199,17 +199,7 @@ def testHardwareExtendedInventoryReturnsSafelyWithoutConfig(hardwareConfigAndHar
 	assert {} == Posix.hardwareExtendedInventory({}, hardwareInfo)
 
 
-@pytest.mark.parametrize("versionString, isUbuntuXenial", [
-	('sfdisk von util-linux 2.27.1', True),
-	('sfdisk von util-linux 2.20.1', False)
-])
-def testGettingSfdiskVersion(versionString, isUbuntuXenial):
-	with mock.patch('OPSI.System.Posix.execute', mock.Mock(return_value=[versionString])):
-		with mock.patch('OPSI.System.Posix.which', mock.Mock(return_value='/sbin/sfdisk')):
-			assert Posix.isXenialSfdiskVersion() == isUbuntuXenial
-
-
-@pytest.mark.skipif(True, reason="temporarily disabled")
+@pytest.mark.skipif(True, reason="temporarily disabled because of isXenialSfdiskVersion")
 def testReadingPartitionTableOnHPProliantDisksTest():
 	"Testing the behaviour of Disk objects on HP Proliant Hardware."
 
