@@ -51,7 +51,7 @@ from OPSI.System.Posix import (
 	getSambaServiceName, getServiceNames, getSystemProxySetting, halt,
 	hardwareExtendedInventory, hooks, ifconfig,
 	isCentOS, isDebian, isOpenSUSE, isRHEL, isSLES,
-	isUCS, isUbuntu, isXenialSfdiskVersion, locateDHCPDConfig,
+	isUCS, isUbuntu, locateDHCPDConfig,
 	locateDHCPDInit, reboot, removeSystemHook,
 	runCommandInSession, setLocalSystemTime, shutdown, umount, which
 )
@@ -73,7 +73,7 @@ __all__ = (
 	'getSambaServiceName', 'getServiceNames', 'getSystemProxySetting', 'halt',
 	'hardwareExtendedInventory', 'hardwareInventory', 'hooks', 'ifconfig',
 	'isCentOS', 'isDebian', 'isOpenSUSE', 'isRHEL', 'isSLES',
-	'isUCS', 'isUbuntu', 'isXenialSfdiskVersion', 'locateDHCPDConfig',
+	'isUCS', 'isUbuntu', 'locateDHCPDConfig',
 	'locateDHCPDInit', 'mount', 'reboot', 'removeSystemHook',
 	'runCommandInSession', 'setLocalSystemTime', 'shutdown', 'umount', 'which'
 )
