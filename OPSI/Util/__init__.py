@@ -34,7 +34,11 @@ or to JSON, working with librsync and more.
 import base64
 import binascii
 import codecs
-import json
+try:
+	# ujson is faster
+	import ujson as json
+except ModuleNotFoundError:
+	import json
 import os
 import random
 import re
@@ -189,6 +193,9 @@ def formatFileSize(sizeInBytes):
 
 
 def fromJson(obj, objectType=None, preventObjectCreation=False):
+	if type(obj) is bytes:
+		# Allow decoding errors (workaround for opsi-script bug)
+		obj = obj.decode("utf-8", "replace")
 	obj = json.loads(obj)
 	if isinstance(obj, dict) and objectType:
 		obj['type'] = objectType
