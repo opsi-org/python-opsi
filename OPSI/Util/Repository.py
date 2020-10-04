@@ -1139,9 +1139,10 @@ class WebDAVRepository(HTTPRepository):
 				encoding = part.split('=')[1].replace('"', '').strip()
 
 		davxmldata = response.data
-		#logger.trace(davxmldata)
+		logger.trace("davxmldata: %s", davxmldata)
 		content = getFileInfosFromDavXML(davxmldata=davxmldata, encoding=encoding)
-
+		logger.debug("fileinfo: %s", content)
+		
 		if recursive:
 			self._contentCache[source] = {
 				'time': time.time(),
