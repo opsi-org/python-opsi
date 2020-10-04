@@ -463,7 +463,7 @@ class HTTPConnectionPool(object):
 			else:
 				conn.sock.settimeout(None)
 			
-			if not self.peerCertificate:
+			if not self.peerCertificate and self.scheme.endswith("s"):
 				self.peerCertificate = getPeerCertificate(conn, asPEM=True)
 			
 			randomKey = None
