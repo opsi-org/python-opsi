@@ -91,9 +91,10 @@ def getFileInfosFromDavXML(davxmldata, encoding='utf-8'):
 		info = {'size': 0, 'type': 'file', 'path': '', 'name': ''}
 		if child.tag != "{DAV:}response":
 			raise RepositoryError(u"No valid davxml given")
-
+		
 		if child[0].tag == "{DAV:}href":
 			info['path'] = child[0].text
+			info['name'] = info['path'].rstrip('/').split('/')[-1]
 
 		if child[1].tag == "{DAV:}propstat":
 			for node in child[1]:
@@ -113,8 +114,8 @@ def getFileInfosFromDavXML(davxmldata, encoding='utf-8'):
 					elif tag == "{DAV:}getcontentlength":
 						if text != "None":
 							info['size'] = int(text)
-					elif tag == "{DAV:}displayname":
-						info['name'] = text
+					#elif tag == "{DAV:}displayname":
+					#	info['name'] = text
 
 				# IIS Fix: Remove trailing backslash on file-paths
 				if info['type'] == 'file' and info['path'].endswith("/"):
@@ -1142,7 +1143,7 @@ class WebDAVRepository(HTTPRepository):
 		logger.trace("davxmldata: %s", davxmldata)
 		content = getFileInfosFromDavXML(davxmldata=davxmldata, encoding=encoding)
 		logger.debug("fileinfo: %s", content)
-		
+
 		if recursive:
 			self._contentCache[source] = {
 				'time': time.time(),
