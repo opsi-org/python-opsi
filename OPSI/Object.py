@@ -1094,8 +1094,10 @@ class ConfigState(Relationship):
 		return self.values
 
 	def setValues(self, values):
-		self.values = forceList(values)
-		self.values.sort()
+		self.values = sorted(
+			forceList(values),
+			key=lambda x: (x is None, x)
+		)
 
 	@staticmethod
 	def fromHash(hash):
