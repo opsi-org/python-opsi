@@ -72,7 +72,8 @@ def describeInterface(instance):
 	:rtype: [{},]
 	"""
 	methods = {}
-	for methodName, function in inspect.getmembers(instance, inspect.ismethod):
+	for _, function in inspect.getmembers(instance, inspect.ismethod):
+		methodName = function.__name__
 		if methodName.startswith('_'):
 			# protected / private
 			continue
