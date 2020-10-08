@@ -34,6 +34,7 @@ import re
 import shutil
 import stat
 import time
+import urllib
 import xml.etree.ElementTree as ET
 from enum import IntEnum
 from http.client import HTTPConnection, HTTPSConnection, HTTPResponse
@@ -93,7 +94,7 @@ def getFileInfosFromDavXML(davxmldata, encoding='utf-8'):
 			raise RepositoryError(u"No valid davxml given")
 		
 		if child[0].tag == "{DAV:}href":
-			info['path'] = child[0].text
+			info['path'] = urllib.parse.unquote(child[0].text)
 			info['name'] = info['path'].rstrip('/').split('/')[-1]
 
 		if child[1].tag == "{DAV:}propstat":
@@ -1132,7 +1133,7 @@ class WebDAVRepository(HTTPRepository):
 		self._processResponseHeaders(response)
 		if response.status != ResponseCode.MULTI_STATUS:
 			raise RepositoryError(u"Failed to list dir '%s': %s" % (source, response.status))
-
+		
 		encoding = 'utf-8'
 		contentType = response.getheader('content-type', '').lower()
 		for part in contentType.split(';'):
