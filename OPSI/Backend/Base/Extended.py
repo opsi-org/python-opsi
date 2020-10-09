@@ -114,6 +114,8 @@ class ExtendedBackend(Backend):
 		logger.debug(u"%s is creating instance methods", self.__class__.__name__)
 		for _, functionRef in inspect.getmembers(self._backend, inspect.ismethod):
 			methodName = functionRef.__name__
+			if getattr(functionRef, "no_export", False):
+				continue
 			if methodName.startswith('_'):
 				# Not a public method
 				continue

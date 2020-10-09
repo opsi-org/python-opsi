@@ -151,6 +151,8 @@ class BackendDispatcher(Backend):
 		classes.extend([ backend["instance"].__class__ for backend in self._backends.values() ])
 		for Class in classes:  # Also apply to ExtendedConfigDataBackend?
 			for methodName, functionRef in inspect.getmembers(Class, inspect.isfunction):
+				if getattr(functionRef, "no_export", False):
+					continue
 				if methodName.startswith('_'):
 					# Not a public method
 					continue
