@@ -57,6 +57,8 @@ class AsyncBackendWrapper:
 
 		methods = inspect.getmembers(self.backend, inspect.ismethod)
 		for name, funcRef in methods:
+			if getattr(funcRef, "no_export", False):
+				continue
 			if name.startswith('_'):  # Protected or private
 				continue
 

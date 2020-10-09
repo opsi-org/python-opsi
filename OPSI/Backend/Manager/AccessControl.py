@@ -327,6 +327,8 @@ class BackendAccessControl:
 				protectedMethods.add(methodName)
 
 		for methodName, functionRef in inspect.getmembers(self._backend, inspect.ismethod):
+			if getattr(functionRef, "no_export", False):
+				continue
 			if methodName.startswith('_'):
 				# Not a public method
 				continue

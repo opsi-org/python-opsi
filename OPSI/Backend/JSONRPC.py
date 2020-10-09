@@ -47,6 +47,7 @@ except ImportError:
 	from Crypto.Signature import pkcs1_15
 
 from OPSI import __version__
+from OPSI.Backend import no_export
 from OPSI.Backend.Base import Backend
 from OPSI.Backend.Backend import DeferredCall
 from OPSI.Exceptions import (
@@ -378,11 +379,11 @@ class JSONRPCBackend(Backend):
 		if self._connectOnInit:
 			self.connect()
 
-	def stopRpcQueue(self):
+	def _stopRpcQueue(self):
 		if self._rpcQueue:
 			self._rpcQueue.stop()
 
-	def startRpcQueue(self):
+	def _startRpcQueue(self):
 		if not self._rpcQueue or not self._rpcQueue.is_alive():
 			self._rpcQueue = RpcQueue(
 				jsonrpcBackend=self,
@@ -393,10 +394,11 @@ class JSONRPCBackend(Backend):
 			self._rpcQueue.start()
 
 	def __del__(self):
-		self.stopRpcQueue()
+		self._stopRpcQueue()
 		if self._connectionPool:
 			self._connectionPool.free()
 
+	@no_export
 	def getPeerCertificate(self, asPem=False):
 		return self._connectionPool.getPeerCertificate(asPem)
 
@@ -407,19 +409,21 @@ class JSONRPCBackend(Backend):
 			except Exception:
 				pass
 
-		self.stopRpcQueue()
-
+		self._stopRpcQueue()
+	
+	@no_export
 	def setAsync(self, enableAsync):
 		if not self._connected:
 			raise OpsiConnectionError(u'Not connected')
 
 		if enableAsync:
-			self.startRpcQueue()
+			self._startRpcQueue()
 			self._async = True
 		else:
 			self._async = False
-			self.stopRpcQueue()
+			self._stopRpcQueue()
 
+	@no_export
 	def setCompression(self, compression):
 		"""
 		Set the compression to use.
@@ -445,6 +449,7 @@ class JSONRPCBackend(Backend):
 			else:
 				return False
 
+	@no_export
 	def isCompressionUsed(self):
 		"""
 		Is compression used?
@@ -453,9 +458,11 @@ class JSONRPCBackend(Backend):
 		"""
 		return bool(self._compression)
 
+	@no_export
 	def isConnected(self):
 		return self._connected
 
+	@no_export
 	def connect(self):
 		modules = None
 		realmodules = {}
@@ -649,7 +656,7 @@ class JSONRPCBackend(Backend):
 
 	def _jsonRPC(self, method, params=[], retry=True):
 		if self._async:
-			self.startRpcQueue()
+			self._startRpcQueue()
 			jsonrpc = JSONRPC(jsonrpcBackend=self, baseUrl=self._baseUrl, method=method, params=params, retry=retry)
 			self._rpcQueue.add(jsonrpc)
 			return jsonrpc

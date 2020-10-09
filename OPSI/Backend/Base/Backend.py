@@ -61,7 +61,6 @@ OPSI_MODULES_FILE = u'/etc/opsi/modules'
 
 logger = Logger()
 
-
 def describeInterface(instance):
 	"""
 	Describes what public methods are available and the signatures they use.
@@ -74,6 +73,8 @@ def describeInterface(instance):
 	methods = {}
 	for _, function in inspect.getmembers(instance, inspect.ismethod):
 		methodName = function.__name__
+		if getattr(function, "no_export", False):
+				continue
 		if methodName.startswith('_'):
 			# protected / private
 			continue

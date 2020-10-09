@@ -73,6 +73,8 @@ class BackendExtender(ExtendedBackend):
 	def __createExtensions(self):
 		if self._extensionClass:
 			for methodName, functionRef in inspect.getmembers(self._extensionClass, inspect.isfunction):
+				if getattr(functionRef, "no_export", False):
+					continue
 				if methodName.startswith('_'):
 					continue
 				logger.debug2(u"Extending %s with instancemethod: %s", self._backend.__class__.__name__, methodName)
