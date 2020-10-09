@@ -697,7 +697,13 @@ class JSONRPCBackend(Backend):
 
 	def _readSessionId(self, response):
 		"""
-		Reads the session ID from the response and saves it for fhttp://binaryindex.uib.gmbh/development/opsiclientd/windows/x86/opsiclientd_windows_x86_4.2.0.33~22689.zip
+		Reads the session ID from the response and saves it for future use.
+		"""
+		cookie = response.getheader('set-cookie', None)
+
+		if cookie:
+			# Store sessionId cookie
+			sessionId = cookie.split(';')[0].strip()
 			if sessionId != self._sessionId:
 				self._sessionId = sessionId
 
