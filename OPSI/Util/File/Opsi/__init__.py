@@ -36,6 +36,7 @@ import tarfile
 import tempfile
 import shutil
 import socket
+import ruamel.yaml
 from collections import namedtuple
 from contextlib import closing
 from hashlib import sha1
@@ -456,6 +457,11 @@ class PackageControlFile(TextFile):
 		self._packageDependencies = []
 
 	def parse(self, lines=None):
+		if self._filename.endswith(".yml"):
+			self.parseYaml()
+			self._parsed = True
+			return self._sections
+
 		if lines:
 			self._lines = forceUnicodeList(lines)
 		else:
@@ -795,6 +801,101 @@ class PackageControlFile(TextFile):
 			self._productProperties[-1].setDefaults()
 		self._parsed = True
 		return self._sections
+
+	def parseYaml(self):
+		yaml = ruamel.yaml.YAML(typ="safe")
+		self.open('r')
+		data_dict = yaml.load(self)
+		self.close()
+
+		# kept _section stuff for compatibility
+		self._sections['product'] = [data_dict['Product'].get('id')]
+		self._sections['productproperty'] = []
+		self._sections['productdependency'] = []
+
+		product = None
+		changelog = data_dict.get('Changelog')
+		if changelog is None:
+			changelog = load_textfile(data_dict.get('ChangelogFile'))
+
+		if data_dict['Product']['type'] == "NetbootProduct":
+			product = NetbootProduct(	data_dict['Product'].get('id'),
+										data_dict['Product'].get('version'),
+										data_dict['Package'].get('version'),
+										name=data_dict['Product'].get('name'),
+										licenseRequired=data_dict['Product'].get('licenseRequired'),
+										setupScript=data_dict['Product'].get('setupScript'),
+										uninstallScript=data_dict['Product'].get('uninstallScript'),
+										updateScript=data_dict['Product'].get('updateScript'),
+										alwaysScript=data_dict['Product'].get('alwaysScript'),
+										onceScript=data_dict['Product'].get('onceScript'),
+										customScript=data_dict['Product'].get('customScript'),
+										#userLoginScript=data_dict['Product'].get('userLoginScript'),
+										priority=data_dict['Product'].get('priority'),
+										description=data_dict['Product'].get('description'),
+										advice=data_dict['Product'].get('advice'),
+										changelog=changelog,
+										productClassIds=data_dict['Product'].get('productClasses'),
+										windowsSoftwareIds=data_dict['Product'].get('windowsSoftwareIds'),
+										pxeConfigTemplate=data_dict['Product'].get('pxeConfigTemplate')
+			)
+		elif data_dict['Product']['type'] == "LocalbootProduct":
+			product = LocalbootProduct(	data_dict['Product'].get('id'),
+										data_dict['Product'].get('version'),
+										data_dict['Package'].get('version'),
+										name=data_dict['Product'].get('name'),
+										licenseRequired=data_dict['Product'].get('licenseRequired'),
+										setupScript=data_dict['Product'].get('setupScript'),
+										uninstallScript=data_dict['Product'].get('uninstallScript'),
+										updateScript=data_dict['Product'].get('updateScript'),
+										alwaysScript=data_dict['Product'].get('alwaysScript'),
+										onceScript=data_dict['Product'].get('onceScript'),
+										customScript=data_dict['Product'].get('customScript'),
+										userLoginScript=data_dict['Product'].get('userLoginScript'),
+										priority=data_dict['Product'].get('priority'),
+										description=data_dict['Product'].get('description'),
+										advice=data_dict['Product'].get('advice'),
+										changelog=changelog,
+										productClassIds=data_dict['Product'].get('productClasses'),
+										windowsSoftwareIds=data_dict['Product'].get('windowsSoftwareIds')
+										#pxeConfigTemplate=data_dict['Product'].get('pxeConfigTemplate')
+			)
+		self.setProduct(product)
+
+		self.setPackageDependencies(data_dict['Package']['depends'])
+
+		dep_list = []
+		for dep in data_dict['ProductDependencies']:
+			dependency = ProductDependency(	data_dict['Product'].get('id'),
+											data_dict['Product'].get('version'),
+											data_dict['Package'].get('version'),
+											dep.get('action'),
+											dep.get('product_id'),
+											requiredProductVersion=dep.get('product_version'),
+											requiredPackageVersion=dep.get('package_version'),
+											requiredAction=dep.get('required_action'),
+											requiredInstallationStatus=dep.get('prodrequired_statusuct_id'),
+											requirementType=dep.get('requirement_type')
+			)
+			dep_list.append(dependency)
+			self._sections['productdependency'].append(dep.get('product_id'))	# kept for compatibility
+		self.setProductDependencies(dep_list)
+
+		prop_list = []
+		for prop in data_dict['ProductProperties']:
+			prod_prop = ProductProperty(	data_dict['Product'].get('id'),
+											data_dict['Product'].get('version'),
+											data_dict['Package'].get('version'),
+											prop.get('name'),
+											description=prop.get('description'),
+											possibleValues=prop.get('values'),
+											defaultValues=prop.get('default'),
+											editable=prop.get('editable'),
+											multiValue=prop.get('multivalue')
+			)
+			prop_list.append(prod_prop)
+			self._sections['productproperty'].append(prop.get('name'))	# kept for compatibility
+		self.setProductProperties(prop_list)
 
 	@requiresParsing
 	def getProduct(self):
