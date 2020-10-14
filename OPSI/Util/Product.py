@@ -34,7 +34,7 @@ from OPSI.Config import (
 from OPSI.Logger import Logger, LOG_INFO, LOG_ERROR
 from OPSI.Util.File.Opsi import PackageControlFile, PackageContentFile
 from OPSI.Util.File.Archive import Archive
-from OPSI.Util import randomString, findFilesGenerator, removeDirectory
+from OPSI.Util import randomString, findFilesGenerator, removeDirectory, CONTROLFILENAME
 from OPSI.System import execute
 from OPSI.Types import (forceBool, forceFilename, forcePackageCustomName,
 	forceUnicode)
@@ -188,7 +188,7 @@ class ProductPackageFile:
 					setattr(product, scriptName, newScript)
 				product.setId(newProductId)
 				self.packageControlFile.setProduct(product)
-				self.packageControlFile.setFilename(os.path.join(destinationDir, u'OPSI', u'control'))
+				self.packageControlFile.setFilename(os.path.join(destinationDir, u'OPSI', CONTROLFILENAME))
 				self.packageControlFile.generate()
 			logger.debug(u"Finished extracting package source")
 		except Exception as e:
