@@ -101,6 +101,8 @@ def forceList(var):
 
 
 def forceUnicode(var):
+	if var is None:
+		return u""
 	if isinstance(var, str):
 		return var
 	elif (os.name == 'nt') and isinstance(var, WindowsError):
