@@ -799,7 +799,8 @@ class PackageControlFile(TextFile):
 		product = None
 		changelog = data_dict.get('Changelog')
 		if changelog is None:
-			changelog = load_textfile(data_dict.get('ChangelogFile'))
+			path = os.path.dirname(self._filename)
+			changelog = load_textfile(os.path.join( path, data_dict.get('ChangelogFile') ))
 		
 		self._sections['changelog'] = changelog
 
