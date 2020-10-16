@@ -62,9 +62,9 @@ ProductProperties:
   default:
   - /qb!
 ProductDependencies:
-- product_id: dfn_ghostscript
-  product_version:
-  package_version:
+- required_product_id: dfn_ghostscript
+  required_product_version:
+  required_package_version:
   action: setup
   requirement_type: before
   required_action:

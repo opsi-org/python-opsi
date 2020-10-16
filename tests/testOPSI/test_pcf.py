@@ -72,7 +72,7 @@ def test_pcf_yml():
 
 	assert os.path.exists(YML_PCF_FILENAME_OUT)
 
-	pcf_out = PackageControlFile(OLD_PCF_FILENAME_OUT)
+	pcf_out = PackageControlFile(YML_PCF_FILENAME_OUT)
 	prod = pcf.getProduct()
 	prod_out = pcf_out.getProduct()
 	assert prod.getId() == prod_out.getId()
