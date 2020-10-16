@@ -858,16 +858,22 @@ class PackageControlFile(TextFile):
 
 		dep_list = []
 		for dep in data_dict['ProductDependencies']:
+			print(dep.get('required_product_version'))
+			req_prod_vers = forceProductVersion(dep.get('required_product_version')) if dep.get('required_product_version') else None
+			req_pack_vers = forcePackageVersion(dep.get('required_package_version')) if dep.get('required_package_version') else None
+			req_act = forceActionRequest(dep.get('required_action')) if dep.get('required_action') else None
+			req_inst_stat = forceInstallationStatus(dep.get('required_status')) if dep.get('required_status') else None
+			req_type = forceRequirementType(dep.get('requirement_type')) if dep.get('requirement_type') else None
 			dependency = ProductDependency(	forceProductId(data_dict['Product'].get('id')),
 											forceProductVersion(data_dict['Product'].get('version')),
 											forcePackageVersion(data_dict['Package'].get('version')),
 											forceActionRequest(dep.get('action')),
-											forceProductId(dep.get('product_id')),
-											requiredProductVersion=forceProductVersion(dep.get('product_version')),
-											requiredPackageVersion=forcePackageVersion(dep.get('package_version')),
-											requiredAction=forceActionRequest(dep.get('required_action')),
-											requiredInstallationStatus=forceInstallationStatus(dep.get('required_status')),
-											requirementType=forceRequirementType(dep.get('requirement_type'))
+											forceProductId(dep.get('required_product_id')),
+											requiredProductVersion=req_prod_vers,
+											requiredPackageVersion=req_pack_vers,
+											requiredAction=req_act,
+											requiredInstallationStatus=req_inst_stat,
+											requirementType=req_type
 			)
 			dep_list.append(dependency)
 			self._sections['productdependency'].append(dep.get('product_id'))	# kept for compatibility
@@ -1121,9 +1127,9 @@ class PackageControlFile(TextFile):
 
 		dep_list = []
 		for dep in self.getProductDependencies():
-			dep_dict = {	"product_id" : dep.getRequiredProductId(),
-							"product_version" : dep.getRequiredProductVersion(),
-							"package_version" : dep.getRequiredPackageVersion(),
+			dep_dict = {	"required_product_id" : dep.getRequiredProductId(),
+							"required_product_version" : dep.getRequiredProductVersion(),
+							"required_package_version" : dep.getRequiredPackageVersion(),
 							"action" : dep.getProductAction(),
 							"requirement_type" : dep.getRequirementType(),
 							"required_action" : dep.getRequiredAction(),
@@ -1135,7 +1141,8 @@ class PackageControlFile(TextFile):
 		changelog = self._product.getChangelog().replace('\t', ' '*CHANGELOG_TAB_WIDTH).strip()
 		if changelog is not None:
 			data_dict['ChangelogFile'] = CHANGELOGFILE
-			with open(CHANGELOGFILE, "w") as f:
+			path = os.path.dirname(self._filename)
+			with open(os.path.join(path, CHANGELOGFILE), "w") as f:
 				f.write(changelog)
 
 		yaml = ruamel.yaml.YAML()

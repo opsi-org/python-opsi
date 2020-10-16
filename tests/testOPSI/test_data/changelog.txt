@@ -1,0 +1,46 @@
+dfn_inkscape (0.92.4-1)
+    * neue Upstreamversion (http://wiki.inkscape.org/wiki/index.php/Release_notes/0.92.4)
+ -- Thomas Besser (archIT/KIT) <thomas.besser@kit.edu>, 21.01.2019
+
+dfn_inkscape (0.92.3-2)
+    * neues o4i-Logo
+    * neue Registrysuche (https://github.com/opsi4instituts/lib, winst-Version 4.12.0.16 Voraussetzung)
+    * Verwendung uib_exitcode (local function)
+    * Check Version (Paket <-> Installation)
+-- David Dams (archIT/KIT) <david.dams9@kit.edu>, 07.01.2019
+
+dfn_inkscape (0.92.3-1)
+    * neue Upstreamversion (http://wiki.inkscape.org/wiki/index.php/Release_notes/0.92.3)
+    * o4i-Kosmetik (desktoplink -> desktop-link, msi-silent-option -> silent-option)
+ -- Thomas Besser (archIT/KIT) <thomas.besser@kit.edu>, 26.03.2018
+
+dfn_inkscape (0.92.2-1)
+    * neue Upstreamversion (stability and bugfix release)
+    * alte uib Copyrights (Überbleibsel von opsi-template) entfernt
+    * Desktopicon -> Desktoplink gem. o4i-Richtlinie angepasst
+    * o4i-Logo: Anzeigeaufruf nach common.opsiinc ausgelagert, eigenes Logo möglich
+ -- Thomas Besser (archIT/KIT) <thomas.besser@kit.edu>, 17.02.2017
+
+dfn_inkscape (0.92.1-1)
+    * neue Upstreamversion (stability and bugfix release)
+    * Minor-Versionsnummer via $InstFile$
+ -- Thomas Besser (archIT/KIT) <thomas.besser@kit.edu>, 17.02.2017
+
+dfn_inkscape (0.92-1)
+    * o4i-Logo, MSI-Check-Exitcode, ProductProperty MSISilentOption hinzugefügt
+    * Check auf 64-Bit-System bzw. Win-Version nach common.opsiinc
+    * ProductProperty install_architecture entfernt, da nur 64-Bit im Paket
+    * Version aus Paket holen für $InstFile$
+ -- Thomas Besser (archIT/KIT) <thomas.besser@kit.edu>, 09.01.2017
+
+dfn_inkscape (0.91-2)
+    * Copy&Paste-Überbleibsel entfernt ;-)
+    * Bugfix "InstallLocation" bzw. "DisplayIcon" an die richtige Stelle in Registry schreiben
+    * Icon hinzugefügt
+ -- Thomas Besser (archIT/KIT) <thomas.besser@kit.edu>, 13.08.2015
+
+dfn_inkscape (0.91-1)
+    * initiales DFN-Paket
+    * angepasstes MSI-Paket, das kein Desktopicon anlegt
+    * MSI speichert 'InstallLocation' nicht ab bzw. 'DisplayIcon' fehlt -> manuell in Registry schreiben
+ -- Thomas Besser (archIT/KIT) <thomas.besser@kit.edu>, 12.08.2015
