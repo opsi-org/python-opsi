@@ -239,7 +239,9 @@ class ProductPackageFile:
 			if output_dir is not None:
 				return			# to work on the whole extracted metadata directory
 
-			packageControlFile = os.path.join(metaDataTmpDir, u'control')
+			packageControlFile = os.path.join(metaDataTmpDir, u'control.yml')
+			if not os.path.exists(packageControlFile):
+				packageControlFile = os.path.join(metaDataTmpDir, u'control')
 			if not os.path.exists(packageControlFile):
 				raise IOError(u"No control file found in package metadata archives")
 
@@ -541,9 +543,17 @@ class ProductPackageSource:
 		if not os.path.isdir(packageFileDestDir):
 			raise IOError(u"Package destination directory '%s' not found" % packageFileDestDir)
 
-		packageControlFile = os.path.join(self.packageSourceDir, u'OPSI', u'control')
-		if customName and os.path.exists(os.path.join(self.packageSourceDir, u'OPSI.%s' % customName, u'control')):
-			packageControlFile = os.path.join(self.packageSourceDir, u'OPSI.%s' % customName, u'control')
+		if customName:
+			packageControlFile = os.path.join(self.packageSourceDir, 'OPSI.%s' % customName, 'control.yml')
+			if not os.path.exists(packageControlFile):
+				packageControlFile = os.path.join(self.packageSourceDir, 'OPSI.%s' % customName, 'control')
+		if not customName or not os.path.exists(packageControlFile):
+			packageControlFile = os.path.join(self.packageSourceDir, 'OPSI', 'control.yml')
+			if not os.path.exists(packageControlFile):
+				packageControlFile = os.path.join(self.packageSourceDir, 'OPSI', 'control')
+		if not os.path.exists(packageControlFile):
+			raise OSError("Control file '%s' not found" % packageControlFile)
+
 		self.packageControlFile = PackageControlFile(packageControlFile)
 		self.packageControlFile.parse()
 
