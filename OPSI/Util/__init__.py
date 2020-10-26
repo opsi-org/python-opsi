@@ -68,8 +68,6 @@ from OPSI.Logger import Logger, LOG_DEBUG
 from OPSI.Types import (forceBool, forceFilename, forceFqdn, forceInt,
 						forceIPAddress, forceNetworkAddress, forceUnicode)
 
-CONTROLFILENAME = "control.yml"		# changed from "control"
-
 OPSIObject = None
 
 try:
