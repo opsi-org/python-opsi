@@ -69,4 +69,3 @@ ProductDependencies:
   requirement_type: before
   required_action:
   required_status: installed
-ChangelogFile: changelog.txt

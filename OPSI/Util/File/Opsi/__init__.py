@@ -36,6 +36,7 @@ import tarfile
 import tempfile
 import shutil
 import socket
+import codecs
 import ruamel.yaml
 from collections import namedtuple
 from contextlib import closing
@@ -70,27 +71,8 @@ if os.name == 'posix':
 	from OPSI.System.Posix import SysInfo
 
 logger = Logger()
-CHANGELOGFILE = "changelog.txt"
-CHANGELOG_TAB_WIDTH = 4
 
 FileInfo = namedtuple('FileInfo', 'productId version')
-
-def load_textfile(filename : str) -> str:
-	"""
-	Loads content of text file
-
-	This function returns the content of a text file as string.
-
-	:param filename: path of the file to load.
-	:type filename: str
-	:returns: content of file as string.
-	:rtype: str
-	"""
-	if filename is None:
-		return None
-	with open(filename, "r") as f:
-		result = f.read()
-	return result
 
 def parseFilename(filename):
 	"""
@@ -199,7 +181,7 @@ class BackendACLFile(ConfigFile):
 		for line in ConfigFile.parse(self):
 			match = re.search(self.aclEntryRegex, line)
 			if not match:
-				raise ValueError(u"Found bad formatted line '%s' in acl file '%s'" % (line, self._filename))
+				raise ValueError(f"Found bad formatted line '{line}' in acl file '{self._filename}'")
 			method = match.group(1).strip()
 			acl.append([method, []])
 			for entry in match.group(2).split(';'):
@@ -209,16 +191,16 @@ class BackendACLFile(ConfigFile):
 				if entry.find('(') != -1:
 					(aclType, aclTypeParams) = entry.split('(', 1)
 					if aclTypeParams[-1] != ')':
-						raise ValueError(u"Bad formatted acl entry '%s': trailing ')' missing" % entry)
+						raise ValueError(f"Bad formatted acl entry '{entry}': trailing ')' missing")
 					aclType = aclType.strip()
 					aclTypeParams = aclTypeParams[:-1]
 
 				if aclType not in ('all', 'self', 'opsi_depotserver', 'opsi_client', 'sys_group', 'sys_user'):
-					raise ValueError(u"Unhandled acl type: '%s'" % aclType)
+					raise ValueError(f"Unhandled acl type: '{aclType}'")
 				entry = {'type': aclType, 'allowAttributes': [], 'denyAttributes': [], 'ids': []}
 				if not aclTypeParams:
 					if aclType in ('sys_group', 'sys_user'):
-						raise ValueError(u"Bad formatted acl type '%s': no params given" % aclType)
+						raise ValueError(f"Bad formatted acl type '{aclType}': no params given")
 				else:
 					aclTypeParam = u''
 					aclTypeParamValues = [u'']
@@ -226,11 +208,11 @@ class BackendACLFile(ConfigFile):
 					for i, c in enumerate(aclTypeParams):
 						if c == '(':
 							if inAclTypeParamValues:
-								raise ValueError(u"Bad formatted acl type params '%s'" % aclTypeParams)
+								raise ValueError(f"Bad formatted acl type params '{aclTypeParams}'")
 							inAclTypeParamValues = True
 						elif c == ')':
 							if not inAclTypeParamValues or not aclTypeParam:
-								raise ValueError(u"Bad formatted acl type params '%s'" % aclTypeParams)
+								raise ValueError(f"Bad formatted acl type params '{aclTypeParams}'")
 							inAclTypeParamValues = False
 						elif c != ',' or i == len(aclTypeParams) - 1:
 							if inAclTypeParamValues:
@@ -241,7 +223,7 @@ class BackendACLFile(ConfigFile):
 						if c == ',' or i == len(aclTypeParams) - 1:
 							if inAclTypeParamValues:
 								if i == len(aclTypeParams) - 1:
-									raise ValueError(u"Bad formatted acl type params '%s'" % aclTypeParams)
+									raise ValueError(f"Bad formatted acl type params '{aclTypeParams}'")
 								aclTypeParamValues.append(u'')
 							else:
 								aclTypeParam = aclTypeParam.strip()
@@ -257,7 +239,7 @@ class BackendACLFile(ConfigFile):
 								elif aclType in ('sys_group', 'sys_user', 'opsi_depotserver', 'opsi_client'):
 									entry['ids'].append(aclTypeParam.strip())
 								else:
-									raise ValueError(u"Unhandled acl type param '%s' for acl type '%s'" % (aclTypeParam, aclType))
+									raise ValueError(f"Unhandled acl type param '{aclTypeParam}' for acl type '{aclType}'")
 								aclTypeParam = u''
 								aclTypeParamValues = [u'']
 
@@ -421,7 +403,7 @@ class PackageContentFile(TextFile):
 			target = os.path.realpath(path)
 			if target.startswith(self._productClientDataDir):
 				target = target[len(self._productClientDataDir):]
-				return 'l', 0, "'%s'" % maskQuoteChars(target)
+				return 'l', 0, f"'{maskQuoteChars(target)}'"
 			else:
 				logger.debug2(
 					"Link '%s' links to '%s' which is outside the "
@@ -449,7 +431,7 @@ class PackageContentFile(TextFile):
 				else:
 					entryType, size, additional = handleFile(path)
 
-				self._lines.append("%s '%s' %s %s" % (entryType, maskQuoteChars(filename), size, additional))
+				self._lines.append(f"{entryType} '{maskQuoteChars(filename)}' {size} {additional}")
 			except Exception as error:
 				logger.logException(error)
 
@@ -521,7 +503,7 @@ class PackageControlFile(TextFile):
 			if match:
 				sectionType = match.group(1).strip().lower()
 				if sectionType not in ('package', 'product', 'windows', 'productdependency', 'productproperty', 'changelog'):
-					raise ValueError(u"Parse error in line %s: unknown section '%s'" % (lineNum, sectionType))
+					raise ValueError(f"Parse error in line {lineNum}: unknown section '{sectionType}'")
 				if sectionType == 'changelog':
 					self._sections[sectionType] = u''
 				else:
@@ -532,7 +514,7 @@ class PackageControlFile(TextFile):
 				continue
 
 			elif not sectionType and line:
-				raise ValueError(u"Parse error in line %s: not in a section" % lineNum)
+				raise ValueError(f"Parse error in line {lineNum}: not in a section")
 
 			if sectionType == 'changelog':
 				if self._sections[sectionType]:
@@ -643,7 +625,7 @@ class PackageControlFile(TextFile):
 				value = forceUnicode(line)
 
 			if not option:
-				raise ValueError(u"Parse error in line '%s': no option / bad option defined" % lineNum)
+				raise ValueError(f"Parse error in line '{lineNum}': no option / bad option defined")
 
 			if option not in self._sections[sectionType][-1]:
 				self._sections[sectionType][-1][option] = value
@@ -687,7 +669,7 @@ class PackageControlFile(TextFile):
 					self._sections[sectionType][i][option] = value
 
 		if not self._sections.get('product'):
-			raise ValueError(u"Error in control file '%s': 'product' section not found" % self._filename)
+			raise ValueError(f"Error in control file '{self._filename}': 'product' section not found")
 
 		# Get package info
 		for (option, value) in self._sections.get('package', [{}])[0].items():
@@ -695,7 +677,7 @@ class PackageControlFile(TextFile):
 				for dep in value:
 					match = re.search(r'^\s*([^\(]+)\s*\(*\s*([^\)]*)\s*\)*', dep)
 					if not match.group(1):
-						raise ValueError(u"Bad package dependency '%s' in control file" % dep)
+						raise ValueError(f"Bad package dependency '{dep}' in control file")
 
 					package = match.group(1).strip()
 					version = match.group(2)
@@ -703,13 +685,13 @@ class PackageControlFile(TextFile):
 					if version:
 						match = re.search(r'^\s*([<>]?=?)\s*([\w\.]+-*[\w\.]*)\s*$', version)
 						if not match:
-							raise ValueError(u"Bad version string '%s' in package dependency" % version)
+							raise ValueError(f"Bad version string '{version}' in package dependency")
 
 						condition = match.group(1)
 						if not condition:
 							condition = u'='
 						if condition not in (u'=', u'<', u'<=', u'>', u'>='):
-							raise ValueError(u"Bad condition string '%s' in package dependency" % condition)
+							raise ValueError(f"Bad condition string '{condition}' in package dependency")
 						version = match.group(2)
 					else:
 						version = None
@@ -723,7 +705,7 @@ class PackageControlFile(TextFile):
 		elif product.get('type') == 'LocalbootProduct':
 			Class = LocalbootProduct
 		else:
-			raise ValueError(u"Error in control file '%s': unknown product type '%s'" % (self._filename, product.get('type')))
+			raise ValueError(f"Error in control file '{self._filename}': unknown product type '{product.get('type')}'")
 
 		productVersion = product.get('version')
 		if not productVersion:
@@ -797,11 +779,14 @@ class PackageControlFile(TextFile):
 		self._sections['productdependency'] = []
 
 		product = None
-		changelog = data_dict.get('Changelog')
+		changelog = data_dict.get('changelog')
 		if changelog is None:
-			path = os.path.dirname(self._filename)
-			changelog = load_textfile(os.path.join( path, data_dict.get('ChangelogFile') ))
-		
+			path = os.path.join( os.path.dirname(self._filename), "changelog.txt" )
+			if os.path.exists(path):
+				with codecs.open(path, "r", encoding="utf-8") as f:
+					changelog = f.read()
+			else:
+				changelog = ""
 		self._sections['changelog'] = changelog
 
 		windows_section = data_dict.get('windows')
@@ -891,7 +876,7 @@ class PackageControlFile(TextFile):
 		elif productProperty.get('type', '').lower() in ('boolproductproperty', 'bool'):
 			Class = BoolProductProperty
 		else:
-			raise ValueError(u"Error in control file '%s': unknown product property type '%s'" % (self._filename, productProperty.get('type')))
+			raise ValueError(f"Error in control file '{self._filename}': unknown product property type '{productProperty.get('type')}'")
 		self._productProperties.append(
 			Class(
 				productId=self._product.getId(),
@@ -951,7 +936,7 @@ class PackageControlFile(TextFile):
 		self._packageDependencies = []
 		for packageDependency in forceDictList(packageDependencies):
 			if not packageDependency.get('package'):
-				raise ValueError(u"No package given: %s" % packageDependency)
+				raise ValueError(f"No package given: {packageDependency}")
 
 			if not packageDependency.get('version'):
 				packageDependency['version'] = None
@@ -960,7 +945,7 @@ class PackageControlFile(TextFile):
 				if not packageDependency.get('condition'):
 					packageDependency['condition'] = u'='
 				if packageDependency['condition'] not in (u'=', u'<', u'<=', u'>', u'>='):
-					raise ValueError(u"Bad condition string '%s' in package dependency" % packageDependency['condition'])
+					raise ValueError(f"Bad condition string '{packageDependency['condition']}' in package dependency")
 
 			self._packageDependencies.append(packageDependency)
 
@@ -993,7 +978,7 @@ class PackageControlFile(TextFile):
 		elif productType == 'NetbootProduct':
 			productType = 'netboot'
 		else:
-			raise ValueError(u"Unhandled product type '%s'" % productType)
+			raise ValueError(f"Unhandled product type '{productType}'")
 
 		self._lines.append(u'type: %s' % productType)
 		self._lines.append(u'id: %s' % self._product.getId())
@@ -1138,11 +1123,10 @@ class PackageControlFile(TextFile):
 			dep_list.append(dep_dict)
 		data_dict['ProductDependencies'] = dep_list
 
-		changelog = self._product.getChangelog().replace('\t', ' '*CHANGELOG_TAB_WIDTH).strip()
+		changelog = self._product.getChangelog().strip()
 		if changelog is not None:
-			data_dict['ChangelogFile'] = CHANGELOGFILE
 			path = os.path.dirname(self._filename)
-			with open(os.path.join(path, CHANGELOGFILE), "w") as f:
+			with codecs.open(os.path.join(path, "changelog.txt"), "w", encoding="utf-8") as f:
 				f.write(changelog)
 
 		yaml = ruamel.yaml.YAML()
@@ -1188,9 +1172,9 @@ class OpsiConfFile(IniFile):
 			if match:
 				sectionType = match.group(1).strip().lower()
 				if sectionType not in ("groups", "packages", "ldap_auth"):
-					raise ValueError(u"Parse error in line %s: unknown section '%s'" % (lineNum, sectionType))
+					raise ValueError(f"Parse error in line {lineNum}: unknown section '{sectionType}'")
 			elif not sectionType and line:
-				raise ValueError(u"Parse error in line %s: not in a section" % lineNum)
+				raise ValueError(f"Parse error in line {lineNum}: not in a section")
 
 			key = None
 			value = None
@@ -1492,7 +1476,7 @@ element of the tuple is replace with the second element.
 
 				if checksum != filesum.hexdigest():
 					logger.debug2("Read %s bytes from file %s, resulting in checksum %s", count, member.name, filesum.hexdigest())
-					raise OpsiBackupFileError("Backup Archive is not valid: File %s is corrupetd" % member.name)
+					raise OpsiBackupFileError(f"Backup Archive is not valid: File {member.name} is corrupetd")
 
 		return True
 
@@ -1517,7 +1501,7 @@ element of the tuple is replace with the second element.
 					os.write(tf, chunk)
 
 			if filesum.hexdigest() != checksum:
-				raise OpsiBackupFileError("Error restoring file %s: checksum missmatch." % member)
+				raise OpsiBackupFileError(f"Error restoring file {member}: checksum missmatch.")
 
 			shutil.copyfile(path, dest)
 			os.chown(dest, pwd.getpwnam(member.uname)[2], grp.getgrnam(member.gname)[2])
@@ -1587,8 +1571,8 @@ element of the tuple is replace with the second element.
 
 		for backend in self._getBackends("file"):
 			if not auto or backend["dispatch"]:
-				backendBackupPath = os.path.join(self.CONTENT_DIR, "BACKENDS/FILE/%s" % backend["name"])
-				hostKeyBackupPath = os.path.join(self.CONTENT_DIR, "BACKENDS/FILE_HOSTKEYS/%s" % backend["name"])
+				backendBackupPath = os.path.join(self.CONTENT_DIR, f"BACKENDS/FILE/{backend['name']}")
+				hostKeyBackupPath = os.path.join(self.CONTENT_DIR, f"BACKENDS/FILE_HOSTKEYS/{backend['name']}")
 				baseDir = backend["config"]["baseDir"]
 
 				members = self.getmembers()
@@ -1632,7 +1616,7 @@ element of the tuple is replace with the second element.
 					os.remove(file)
 
 				for member in members:
-					if member.name.startswith(os.path.join(self.CONTENT_DIR, "BACKENDS/DHCP/%s" % backend["name"])):
+					if member.name.startswith(os.path.join(self.CONTENT_DIR, f"BACKENDS/DHCP/{backend['name']}")):
 						self._extractFile(member, backend["config"]['dhcpdConfigFile'])
 
 	def hasMySQLBackend(self, name=None):
@@ -1708,9 +1692,9 @@ element of the tuple is replace with the second element.
 								break
 
 					if p.returncode not in (0, None):
-						raise OpsiBackupFileError("MySQL dump failed for backend %s: %s" % (backend["name"], "".join(collectedErrors)))
+						raise OpsiBackupFileError(f"MySQL dump failed for backend {backend['name']}: {''.join(collectedErrors)}")
 
-					self._addContent(name, (name, "BACKENDS/MYSQL/%s/database.sql" % backend["name"]))
+					self._addContent(name, (name, f"BACKENDS/MYSQL/{backend['name']}/database.sql"))
 				finally:
 					os.close(fd)
 					os.remove(name)
@@ -1727,7 +1711,7 @@ element of the tuple is replace with the second element.
 
 				try:
 					for member in self.getmembers():
-						if member.name == os.path.join(self.CONTENT_DIR, "BACKENDS/MYSQL/%s/database.sql" % backend["name"]):
+						if member.name == os.path.join(self.CONTENT_DIR, f"BACKENDS/MYSQL/{backend['name']}/database.sql"):
 							self._extractFile(member, name)
 
 					# Early check for available command to not leak
@@ -1757,7 +1741,7 @@ element of the tuple is replace with the second element.
 						out = p.stdout.readline()
 
 					if p.returncode not in (0, None):
-						raise OpsiBackupFileError(u"Failed to restore MySQL Backend: %s" % output.getvalue())
+						raise OpsiBackupFileError(f"Failed to restore MySQL Backend: {output.getvalue()}")
 				finally:
 					os.close(fd)
 					os.remove(name)
