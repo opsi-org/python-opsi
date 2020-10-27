@@ -1,0 +1,71 @@
+Package:
+  version: '1'
+  depends: []
+Product:
+  type: LocalbootProduct
+  id: dfn_inkscape
+  name: Inkscape
+  description: Editor für 2D-Vektorgrafiken im standardisierten SVG-Dateiformat; Import
+    von Bildern und Vektoren, sowie PDF
+  advice: ''
+  version: 0.92.4
+  priority: 0
+  licenseRequired: false
+  productClasses: []
+  setupScript: setup64.opsiscript
+  uninstallScript: uninstall64.opsiscript
+  updateScript: ''
+  alwaysScript: ''
+  onceScript: ''
+  customScript: ''
+  userLoginScript: ''
+  windowsSoftwareIds: []
+ProductProperties:
+- type: BoolProductProperty
+  name: desktop-link
+  multivalue: false
+  editable: false
+  description: Link on Desktop?
+  values:
+  - false
+  - true
+  default:
+  - false
+- type: UnicodeProductProperty
+  name: custom-post-install
+  multivalue: false
+  editable: false
+  description: Define filename for include script in custom directory after installation
+  values:
+  - none
+  - post-install.opsiinc
+  default:
+  - none
+- type: UnicodeProductProperty
+  name: custom-post-deinstall
+  multivalue: false
+  editable: false
+  description: Define filename for include script in custom directory after deinstallation
+  values:
+  - none
+  - post-deinstall.opsiinc
+  default:
+  - none
+- type: UnicodeProductProperty
+  name: silent-option
+  multivalue: false
+  editable: false
+  description: Un/Install MSI silent (/qb!) or very silent (/qn)
+  values:
+  - /qb!
+  - /qn
+  default:
+  - /qb!
+ProductDependencies:
+- required_product_id: dfn_ghostscript
+  required_product_version:
+  required_package_version:
+  action: setup
+  requirement_type: before
+  required_action:
+  required_status: installed

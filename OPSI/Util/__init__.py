@@ -67,6 +67,7 @@ except ImportError:
 from OPSI.Logger import Logger, LOG_DEBUG
 from OPSI.Types import (forceBool, forceFilename, forceFqdn, forceInt,
 						forceIPAddress, forceNetworkAddress, forceUnicode)
+
 OPSIObject = None
 
 try:
