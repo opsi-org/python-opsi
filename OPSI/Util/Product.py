@@ -190,6 +190,9 @@ class ProductPackageFile:
 				self.packageControlFile.setProduct(product)
 				self.packageControlFile.setFilename(os.path.join(destinationDir, 'OPSI', 'control.yml'))
 				self.packageControlFile.generate()
+				self.packageControlFile.setFilename(os.path.join(destinationDir, 'OPSI', 'control'))
+				self.packageControlFile.generate()
+
 			logger.debug(u"Finished extracting package source")
 		except Exception as e:
 			logger.logException(e, LOG_INFO)
