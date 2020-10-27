@@ -46,6 +46,7 @@ import time
 import psutil
 import getpass
 import copy as pycopy
+from functools import lru_cache
 distro_module = None
 if platform.system() == "Linux":
 	import distro as distro_module
@@ -2930,6 +2931,7 @@ class Distribution:
 			return tuple([int(x) for x in self._version.split(".")])
 
 	@staticmethod
+	@lru_cache(None)
 	def _getDistributor():
 		"""
 		Get information about the distributor.
