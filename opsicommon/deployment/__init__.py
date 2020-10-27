@@ -31,19 +31,15 @@ installed via opsi.
 
 import getpass
 import os
-import sys
 import time
 
 from OPSI.Backend.BackendManager import BackendManager
 from OPSI.System import which
 from OPSI.Types import forceUnicode, forceUnicodeLower
 
-
-#TODO: imports in main, main -> deploy
-from . import __version__
-from .posix import LinuxDeployThread, paramiko, AUTO_ADD_POLICY, WARNING_POLICY, REJECT_POLICY
+from .posix import LinuxDeployThread, paramiko, WARNING_POLICY
 from .windows import WindowsDeployThread
-from .common import logger, SKIP_MARKER, LOG_WARNING, LOG_ERROR, LOG_DEBUG
+from .common import logger, SKIP_MARKER, LOG_WARNING, LOG_DEBUG
 
 def deploy_client_agent(hosts, deployLinux, logLevel=LOG_WARNING, debugFile=None, hostFile=None,
 						password=None, maxThreads=1, useIPAddress=False, useNetbios=False,
