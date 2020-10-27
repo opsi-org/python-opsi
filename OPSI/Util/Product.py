@@ -176,6 +176,10 @@ class ProductPackageFile:
 			if newProductId:
 				self.getMetaData()
 				product = self.packageControlFile.getProduct()
+				if self.packageControlFile._filename.endswith("control.yml"):
+					control_filename = "control.yml"
+				else:
+					control_filename = "control"
 				for scriptName in (u'setupScript', u'uninstallScript', u'updateScript', u'alwaysScript', u'onceScript', u'customScript'):
 					script = getattr(product, scriptName)
 					if not script:
@@ -188,7 +192,7 @@ class ProductPackageFile:
 					setattr(product, scriptName, newScript)
 				product.setId(newProductId)
 				self.packageControlFile.setProduct(product)
-				self.packageControlFile.setFilename(os.path.join(destinationDir, 'OPSI', 'control.yml'))
+				self.packageControlFile.setFilename(os.path.join(destinationDir, 'OPSI', control_filename))
 				self.packageControlFile.generate()
 			logger.debug(u"Finished extracting package source")
 		except Exception as e:
