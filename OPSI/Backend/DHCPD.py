@@ -56,10 +56,7 @@ class DHCPDBackend(ConfigDataBackend):
 		ConfigDataBackend.__init__(self, **kwargs)
 
 		self._dhcpdConfigFile = System.Posix.locateDHCPDConfig(u'/etc/dhcp3/dhcpd.conf')
-		self._reloadConfigCommand = '/usr/bin/sudo {command}'.format(
-			command=System.Posix.getDHCPDRestartCommand(default='/etc/init.d/dhcp3-server restart')
-		)
-
+		self._reloadConfigCommand = None
 		self._fixedAddressFormat = u'IP'
 		self._defaultClientParameters = {
 			'next-server': socket.gethostbyname(getfqdn()),
@@ -82,7 +79,7 @@ class DHCPDBackend(ConfigDataBackend):
 				self._fixedAddressFormat = value
 			elif option == 'dhcpdondepot':
 				self._dhcpdOnDepot = forceBool(value)
-
+		
 		if self._defaultClientParameters.get('next-server') and self._defaultClientParameters['next-server'].startswith(u'127'):
 			raise BackendBadValueError(u"Refusing to use ip address '%s' as default next-server" % self._defaultClientParameters['next-server'])
 
@@ -96,8 +93,6 @@ class DHCPDBackend(ConfigDataBackend):
 		self._depotConnections = {}
 
 	def _triggerReload(self):
-		if not self._reloadConfigCommand:
-			return
 		if not self._reloadEvent.isSet():
 			return
 
@@ -107,6 +102,10 @@ class DHCPDBackend(ConfigDataBackend):
 				self._reloadEvent = reloadEvent
 				self._reloadLock = reloadLock
 				self._reloadConfigCommand = reloadConfigCommand
+				if not self._reloadConfigCommand:
+					self._reloadConfigCommand = '/usr/bin/sudo {command}'.format(
+						command=System.Posix.getDHCPDRestartCommand(default='/etc/init.d/dhcp3-server restart')
+					)
 
 			def run(self):
 				self._reloadEvent.clear()
@@ -124,6 +123,7 @@ class DHCPDBackend(ConfigDataBackend):
 				self._reloadEvent.set()
 
 		self._reloadThread = ReloadThread(self._reloadEvent, self._reloadLock, self._reloadConfigCommand)
+		self._reloadThread.daemon = True
 		self._reloadThread.start()
 
 	def _getDepotConnection(self, depotId):
