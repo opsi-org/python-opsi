@@ -446,7 +446,7 @@ def logging_config(
 			remove_all_handlers(handler_type=logging.FileHandler)
 		else:
 			remove_all_handlers(handler_name="opsi_file_handler")
-		handler = logging.FileHandler(log_file)
+		handler = logging.FileHandler(log_file, encoding="utf-8")
 		handler.name = "opsi_file_handler"
 		logging.root.addHandler(handler)
 	if file_level is not None:
