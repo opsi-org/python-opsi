@@ -43,7 +43,7 @@ def install_ca(ca_file):
 			ca_file_content = file.read()
 		ca = crypto.load_certificate(crypto.FILETYPE_PEM, ca_file_content)
 		
-		cert_file = ca.get_subject().commonName.replace(" ", "_") + ".crt"
+		cert_file = f"{ca.get_subject().commonName.replace(' ', '_')}.crt"
 		logger.devel(cert_file)
 		copyfile(ca_file, os.path.join(system_cert_path, cert_file))
 		output = execute(cmd)
