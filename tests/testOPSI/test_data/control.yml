@@ -1,5 +1,5 @@
 Package:
-  version: '1'
+  version: 1
   depends: []
 Product:
   type: LocalbootProduct
@@ -7,18 +7,18 @@ Product:
   name: Inkscape
   description: Editor für 2D-Vektorgrafiken im standardisierten SVG-Dateiformat; Import
     von Bildern und Vektoren, sowie PDF
-  advice: ''
+  advice:
   version: 0.92.4
   priority: 0
   licenseRequired: false
   productClasses: []
   setupScript: setup64.opsiscript
   uninstallScript: uninstall64.opsiscript
-  updateScript: ''
-  alwaysScript: ''
-  onceScript: ''
-  customScript: ''
-  userLoginScript: ''
+  updateScript:
+  alwaysScript:
+  onceScript:
+  customScript:
+  userLoginScript:
   windowsSoftwareIds: []
 ProductProperties:
 - type: BoolProductProperty
