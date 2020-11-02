@@ -1136,6 +1136,7 @@ class PackageControlFile(TextFile):
 				f.write(changelog)
 
 		yaml = ruamel.yaml.YAML()
+		yaml.indent(mapping=2, sequence=4, offset=2)		# to have list "-" also indented by 2
 		yaml.default_flow_style = False
 		self.open("w")			#contextmanager would be better
 		try:
