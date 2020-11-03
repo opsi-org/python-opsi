@@ -55,13 +55,10 @@ def _open_win_cert_store(store_name):
 	return store
 
 def install_ca(ca_file):
-	try:
-		store_name = "Root"
-		with open(ca_file, "r") as file:
-			ca_file_content = file.read()
-		ca = crypto.load_certificate(crypto.FILETYPE_PEM, ca_file_content)
 
-		store = _open_win_cert_store(store_name)
-		store.CertAddEncodedCertificateToStore(CERT_STORE_ADD_NEW, crypto.dump_certificate(crypto.FILETYPE_ASN1, ca), X509_ASN_ENCODING)
-	except Exception as e:
-		logger.error("ERROR: %s", e)
+	store_name = "Root"
+	with open(ca_file, "r") as file:
+		ca = crypto.load_certificate(crypto.FILETYPE_PEM, file.read())
+
+	store = _open_win_cert_store(store_name)
+	store.CertAddEncodedCertificateToStore(CERT_STORE_ADD_NEW, crypto.dump_certificate(crypto.FILETYPE_ASN1, ca), X509_ASN_ENCODING)
