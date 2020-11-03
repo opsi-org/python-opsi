@@ -7,10 +7,7 @@ This file is part of opsi - https://www.opsi.org
 """
 
 import platform
-
-from OPSI.Logger import Logger
-
-logger = Logger()
+from opsicommon.logging import logger
 
 if platform.system().lower() == 'linux':
 	from .linux import *
