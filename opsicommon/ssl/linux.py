@@ -8,7 +8,7 @@ This file is part of opsi - https://www.opsi.org
 
 
 from OPSI.System import execute, isCentOS, isDebian, isOpenSUSE, isRHEL, isSLES, isUbuntu
-from OPSI.Logger import Logger
+from opsicommon.logging import logger
 
 from OpenSSL import crypto
 
@@ -16,8 +16,6 @@ from shutil import copyfile
 import os
 
 __all__ = ["install_ca"]
-
-logger = Logger()
 
 def install_ca(ca_file):
 	
