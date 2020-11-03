@@ -6,7 +6,7 @@ This file is part of opsi - https://www.opsi.org
 :license: GNU Affero General Public License version 3
 """
 
-import win32crypt as win32cryptimport
+import win32crypt as wcrypt
 from OpenSSL import crypto
 
 __all__ = ["install_ca"]
@@ -60,5 +60,5 @@ def install_ca(ca_file):
 		ca_file_content = file.read()
 	ca = crypto.load_certificate(crypto.FILETYPE_PEM, ca_file_content)
 
-	store = open_win_cert_store(store_name)
-	store.CertAddEncodedCertificateToStore(CERT_STORE_ADD_NEW, crypto.dump_certificate(crypto.FILETYPE_ASN1, ca), PKCS_7_OR_X509_ASN_ENCODING)
+	store = _open_win_cert_store(store_name)
+	store.CertAddEncodedCertificateToStore(CERT_STORE_ADD_NEW, crypto.dump_certificate(crypto.FILETYPE_ASN1, ca), X509_ASN_ENCODING)
