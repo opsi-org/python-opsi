@@ -88,7 +88,7 @@ def test_curl(start_httpserver):
 	r = subprocess.check_output(["update-ca-certificates"], encoding="utf-8")
 	print(r)
 
-	r = subprocess.call(["curl", "https:/localhost:8080"], encoding="utf-8")
+	r = subprocess.call(["curl", "https://localhost:8080"], encoding="utf-8")
 	print(r)
 	assert r == 60
 
