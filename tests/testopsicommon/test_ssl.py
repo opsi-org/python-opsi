@@ -83,10 +83,8 @@ def remove_ca():
 def test_curl(start_httpserver):
 
 	time.sleep(5)
-	r = subprocess.call(["rm", "/usr/local/share/ca-certificates/uib_Signing_Authority.crt"], encoding="utf-8")
-	print(r)
-	r = subprocess.check_output(["update-ca-certificates"], encoding="utf-8")
-	print(r)
+
+	remove_ca()
 
 	r = subprocess.call(["curl", "https://localhost:8080"], encoding="utf-8")
 	print(r)
