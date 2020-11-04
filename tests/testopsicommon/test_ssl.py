@@ -20,7 +20,7 @@ import ssl
 import threading
 
 def create_certification():
-	print("?")
+	print("create_certification")
 	openssl = "openssl req -nodes -x509 -newkey rsa:2048 -days 730 -keyout tests/testopsicommon/data/ssl/ca.key -out tests/testopsicommon/data/ssl/ca.crt -new -sha512 -subj /C=DE/ST=RP/L=Mainz/O=uib/OU=root/CN=uib-Signing-Authority"
 	print(openssl.split(" "))
 	r = subprocess.call(openssl.split(" "), encoding="utf-8")
@@ -37,11 +37,12 @@ def create_certification():
 	openssl = "openssl crl -inform PEM -in tests/testopsicommon/data/ssl/root.crl.pem -outform DER -out tests/testopsicommon/data/ssl/root.crl"
 	r = subprocess.call(openssl.split(" "), encoding="utf-8")
 	print(r)
-	print("fertig")
+	print("create_certification done...")
 
 @pytest.fixture(scope="function")
 def start_httpserver():
 	create_certification()
+	print("start server")
 	PORT = 8080
 	Handler = http.server.SimpleHTTPRequestHandler
 
@@ -53,7 +54,7 @@ def start_httpserver():
 	thread.daemon = True
 	thread.start()
 	yield None
-	print("Shutdown Server")
+	print("shutdown server")
 	httpd.shutdown()
 
 
@@ -94,4 +95,3 @@ def test_curl(start_httpserver):
 	r = subprocess.call(["curl", "https://localhost:8080"], encoding="utf-8")
 	print(r)
 	assert r == 0
-	print("HUHU")
