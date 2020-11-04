@@ -7,17 +7,19 @@ This file is part of opsi - https://www.opsi.org
 """
 import pytest
 import os
-import _thread
+
 import time
 import subprocess
 import http.server
 import socketserver
+import ssl
+import threading
 
 from opsicommon.ssl import install_ca
 from OPSI.System import execute, isCentOS, isDebian, isOpenSUSE, isRHEL, isSLES, isUbuntu
-import ssl
 
-import threading
+
+
 
 def create_certification():
 	print("create_certification")
