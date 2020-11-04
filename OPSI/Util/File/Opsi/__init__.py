@@ -795,6 +795,12 @@ class PackageControlFile(TextFile):
 		else:
 			softwareids = data_dict['Product'].get('windowsSoftwareIds', [])
 
+		emptystring_list = ["advice", "description", "setupScript", "uninstallScript", "updateScript",
+							"updateScript", "alwaysScript", "onceScript", "customScript", "userLoginScript"]
+		for key, value in data_dict['Product'].items():
+			if key in emptystring_list and value is None:
+				data_dict['Product'][key] = ""
+
 		if data_dict['Product']['type'] == "NetbootProduct":
 			product = NetbootProduct(	forceProductId(data_dict['Product'].get('id')),
 										forceProductVersion(data_dict['Product'].get('version')),
@@ -843,7 +849,6 @@ class PackageControlFile(TextFile):
 
 		dep_list = []
 		for dep in data_dict['ProductDependencies']:
-			print(dep.get('required_product_version'))
 			req_prod_vers = forceProductVersion(dep.get('required_product_version')) if dep.get('required_product_version') else None
 			req_pack_vers = forcePackageVersion(dep.get('required_package_version')) if dep.get('required_package_version') else None
 			req_act = forceActionRequest(dep.get('required_action')) if dep.get('required_action') else None
@@ -1075,23 +1080,24 @@ class PackageControlFile(TextFile):
 		data_dict['Package'] = {	"version" : self._product.getPackageVersion(),
 									"depends" : self.getPackageDependencies()
 		}
-		data_dict['Product'] = {	"type" : self._product.getType(),
-									"id" : self._product.getId(),
-									"name" : self._product.getName(),
-									"description" : self._product.getDescription(),
-									"advice" : self._product.getAdvice(),
-									"version" : self._product.getProductVersion(),
-									"priority" : self._product.getPriority(),
-									"licenseRequired" : self._product.getLicenseRequired(),
-									"productClasses" : self._product.getProductClassIds(),
-									"setupScript" : self._product.getSetupScript(),
-									"uninstallScript" : self._product.getUninstallScript(),
-									"updateScript" : self._product.getUpdateScript(),
-									"alwaysScript" : self._product.getAlwaysScript(),
-									"onceScript" : self._product.getOnceScript(),
-									"customScript" : self._product.getCustomScript(),
-									"userLoginScript" : self._product.getUserLoginScript(),
-									"windowsSoftwareIds" : self._product.getWindowsSoftwareIds()
+		prod = self._product
+		data_dict['Product'] = {	"type" : prod.getType(),
+									"id" : prod.getId(),
+									"name" : prod.getName(),
+									"description" : prod.getDescription() if prod.getDescription() else None,
+									"advice" : prod.getAdvice() if prod.getAdvice() else None,
+									"version" : prod.getProductVersion(),
+									"priority" : prod.getPriority(),
+									"licenseRequired" : prod.getLicenseRequired(),
+									"productClasses" : prod.getProductClassIds(),
+									"setupScript" : prod.getSetupScript() if prod.getSetupScript() else None,
+									"uninstallScript" : prod.getUninstallScript() if prod.getUninstallScript() else None,
+									"updateScript" : prod.getUpdateScript() if prod.getUpdateScript() else None,
+									"alwaysScript" : prod.getAlwaysScript() if prod.getAlwaysScript() else None,
+									"onceScript" : prod.getOnceScript() if prod.getOnceScript() else None,
+									"customScript" : prod.getCustomScript() if prod.getCustomScript() else None,
+									"userLoginScript" : prod.getUserLoginScript() if prod.getUserLoginScript() else None,
+									"windowsSoftwareIds" : prod.getWindowsSoftwareIds()
 		}
 		if data_dict['Product']['type'] == "netboot":
 			data_dict['Product']['pxeConfigTemplate'] = self._product.getPxeConfigTemplate()
@@ -1130,6 +1136,7 @@ class PackageControlFile(TextFile):
 				f.write(changelog)
 
 		yaml = ruamel.yaml.YAML()
+		yaml.indent(mapping=2, sequence=4, offset=2)		# to have list "-" also indented by 2
 		yaml.default_flow_style = False
 		self.open("w")			#contextmanager would be better
 		try:
