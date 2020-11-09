@@ -27,6 +27,7 @@ the daemon afterwards.
 :license: GNU Affero General Public License version 3
 """
 
+import time
 import socket
 import threading
 from functools import lru_cache
@@ -116,8 +117,9 @@ class DHCPDBackend(ConfigDataBackend):
 							for line in result:
 								if 'error' in line:
 									raise RuntimeError(u'\n'.join(result))
+							time.sleep(2)
 						except Exception as error:
-							logger.critical(u"Failed to reload dhcpd config: %s", error)
+							logger.critical("Failed to reload dhcpd config: %s", error)
 					self._reloadEvent.clear()
 
 		self._reloadThread = ReloadThread(self._configLock, self._reloadConfigCommand)
