@@ -99,6 +99,7 @@ class DHCPDBackend(ConfigDataBackend):
 				self._reloadConfigCommand = reloadConfigCommand
 				self._reloadEvent = threading.Event()
 				self._reloadLock = threading.Lock()
+				self.isBusy = False
 				if not self._reloadConfigCommand:
 					self._reloadConfigCommand = '/usr/bin/sudo {command}'.format(
 						command=System.Posix.getDHCPDRestartCommand(default='/etc/init.d/dhcp3-server restart')
@@ -109,19 +110,22 @@ class DHCPDBackend(ConfigDataBackend):
 					self._reloadEvent.set()
 			
 			def run(self):
-				if self._reloadEvent.wait(2):
-					with self._reloadLock, self._configLock:
-						self._reloadEvent.clear()
-						try:
-							logger.notice("Reloading dhcpd config using command: '%s'", self._reloadConfigCommand)
-							result = System.execute(self._reloadConfigCommand)
-							for line in result:
-								if 'error' in line:
-									raise RuntimeError(u'\n'.join(result))
-							time.sleep(2)
-						except Exception as error:
-							logger.critical("Failed to reload dhcpd config: %s", error)
-
+				while True:
+					if self._reloadEvent.wait(2):
+						with self._reloadLock, self._configLock:
+							self.isBusy = True
+							self._reloadEvent.clear()
+							try:
+								logger.notice("Reloading dhcpd config using command: '%s'", self._reloadConfigCommand)
+								result = System.execute(self._reloadConfigCommand)
+								for line in result:
+									if 'error' in line:
+										raise RuntimeError(u'\n'.join(result))
+								time.sleep(2)
+							except Exception as error:
+								logger.critical("Failed to reload dhcpd config: %s", error)
+							self.isBusy = False
+		
 		self._reloadThread = ReloadThread(self._configLock, self._reloadConfigCommand)
 		self._reloadThread.daemon = True
 		self._reloadThread.start()
@@ -169,8 +173,9 @@ class DHCPDBackend(ConfigDataBackend):
 		return depotId
 
 	def backend_exit(self):
-		if self._reloadThread:
-			self._reloadThread.join(10)
+		if self._reloadThread and self._reloadThread.isBusy:
+			logger.info("Waiting for reload thread")
+			self._reloadThread.join(5)
 
 	def _dhcpd_updateHost(self, host):
 		host = forceObjectClass(host, Host)
