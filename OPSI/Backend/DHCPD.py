@@ -54,6 +54,7 @@ class DHCPDBackend(ConfigDataBackend):
 		self._name = 'dhcpd'
 
 		ConfigDataBackend.__init__(self, **kwargs)
+		self._configLock = threading.Lock()
 
 		self._dhcpdConfigFile = System.Posix.locateDHCPDConfig(u'/etc/dhcp3/dhcpd.conf')
 		self._reloadConfigCommand = None
@@ -84,47 +85,49 @@ class DHCPDBackend(ConfigDataBackend):
 			raise BackendBadValueError(u"Refusing to use ip address '%s' as default next-server" % self._defaultClientParameters['next-server'])
 
 		self._dhcpdConfFile = DHCPDConfFile(self._dhcpdConfigFile)
-		self._reloadEvent = threading.Event()
-		self._reloadEvent.set()
-		self._reloadLock = threading.Lock()
 		self._reloadThread = None
 		self._depotId = forceHostId(getfqdn())
 		self._opsiHostKey = None
 		self._depotConnections = {}
 
-	def _triggerReload(self):
-		if not self._reloadEvent.isSet():
-			return
-
+	def _startReloadThread(self):
 		class ReloadThread(threading.Thread):
-			def __init__(self, reloadEvent, reloadLock, reloadConfigCommand):
+			def __init__(self, configLock, reloadConfigCommand):
 				threading.Thread.__init__(self)
-				self._reloadEvent = reloadEvent
-				self._reloadLock = reloadLock
+				self._configLock = configLock
 				self._reloadConfigCommand = reloadConfigCommand
+				self._reloadEvent = threading.Event()
+				self._reloadLock = threading.Lock()
 				if not self._reloadConfigCommand:
 					self._reloadConfigCommand = '/usr/bin/sudo {command}'.format(
 						command=System.Posix.getDHCPDRestartCommand(default='/etc/init.d/dhcp3-server restart')
 					)
 
+			def triggerReload(self):
+				if not self._reloadEvent.isSet():
+					self._reloadEvent.set()
+			
 			def run(self):
-				self._reloadEvent.clear()
-				self._reloadEvent.wait(2)
+				if self._reloadEvent.wait(2):
+					with self._reloadLock, self._configLock:
+						try:
+							logger.notice("Reloading dhcpd config using command: '%s'", self._reloadConfigCommand)
+							result = System.execute(self._reloadConfigCommand)
+							for line in result:
+								if 'error' in line:
+									raise RuntimeError(u'\n'.join(result))
+						except Exception as error:
+							logger.critical(u"Failed to reload dhcpd config: %s", error)
+					self._reloadEvent.clear()
 
-				with self._reloadLock:
-					try:
-						result = System.execute(self._reloadConfigCommand)
-						for line in result:
-							if 'error' in line:
-								raise RuntimeError(u'\n'.join(result))
-					except Exception as error:
-						logger.critical(u"Failed to restart dhcpd: %s", error)
-
-				self._reloadEvent.set()
-
-		self._reloadThread = ReloadThread(self._reloadEvent, self._reloadLock, self._reloadConfigCommand)
+		self._reloadThread = ReloadThread(self._configLock, self._reloadConfigCommand)
 		self._reloadThread.daemon = True
 		self._reloadThread.start()
+	
+	def _triggerReload(self):
+		if not self._reloadThread:
+			self._startReloadThread()
+		self._reloadThread.triggerReload()
 
 	def _getDepotConnection(self, depotId):
 		depotId = forceHostId(depotId)
@@ -194,7 +197,7 @@ class DHCPDBackend(ConfigDataBackend):
 				logger.info(u"Client fqdn resolved to %s", ipAddress)
 			except Exception as error:
 				logger.debug(u"Failed to get IP by hostname: %s", error)
-				with self._reloadLock:
+				with self._configLock:
 					self._dhcpdConfFile.parse()
 					currentHostParams = self._dhcpdConfFile.getHost(hostname)
 
@@ -224,7 +227,7 @@ class DHCPDBackend(ConfigDataBackend):
 			except Exception as error:
 				logger.error(u"Failed to get depot info: %s", error)
 
-		with self._reloadLock:
+		with self._configLock:
 			try:
 				self._dhcpdConfFile.parse()
 				currentHostParams = self._dhcpdConfFile.getHost(hostname)
@@ -259,7 +262,7 @@ class DHCPDBackend(ConfigDataBackend):
 	def dhcpd_deleteHost(self, host):
 		host = forceObjectClass(host, Host)
 
-		with self._reloadLock:
+		with self._configLock:
 			try:
 				self._dhcpdConfFile.parse()
 				hostname = _getHostname(host.id)
