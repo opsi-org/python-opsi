@@ -99,13 +99,18 @@ class DHCPDBackend(ConfigDataBackend):
 				self._reloadConfigCommand = reloadConfigCommand
 				self._reloadEvent = threading.Event()
 				self._reloadLock = threading.Lock()
-				self.isBusy = False
+				self._isReloading = False
 				if not self._reloadConfigCommand:
 					self._reloadConfigCommand = '/usr/bin/sudo {command}'.format(
 						command=System.Posix.getDHCPDRestartCommand(default='/etc/init.d/dhcp3-server restart')
 					)
 
+			@property
+			def isBusy(self):
+				return self._isReloading or self._reloadEvent.isSet()
+			
 			def triggerReload(self):
+				logger.debug("Reload triggered")
 				if not self._reloadEvent.isSet():
 					self._reloadEvent.set()
 			
@@ -113,7 +118,7 @@ class DHCPDBackend(ConfigDataBackend):
 				while True:
 					if self._reloadEvent.wait(2):
 						with self._reloadLock, self._configLock:
-							self.isBusy = True
+							self._isReloading = True
 							self._reloadEvent.clear()
 							try:
 								logger.notice("Reloading dhcpd config using command: '%s'", self._reloadConfigCommand)
@@ -124,8 +129,8 @@ class DHCPDBackend(ConfigDataBackend):
 								time.sleep(2)
 							except Exception as error:
 								logger.critical("Failed to reload dhcpd config: %s", error)
-							self.isBusy = False
-		
+							self._isReloading = False
+
 		self._reloadThread = ReloadThread(self._configLock, self._reloadConfigCommand)
 		self._reloadThread.daemon = True
 		self._reloadThread.start()
@@ -173,10 +178,12 @@ class DHCPDBackend(ConfigDataBackend):
 		return depotId
 
 	def backend_exit(self):
-		if self._reloadThread and self._reloadThread.isBusy:
+		if self._reloadThread:
 			logger.info("Waiting for reload thread")
-			self._reloadThread.join(5)
-
+			for i in range(10):
+				 if self._reloadThread.isBusy:
+					 time.sleep(1)
+	
 	def _dhcpd_updateHost(self, host):
 		host = forceObjectClass(host, Host)
 
@@ -278,8 +285,8 @@ class DHCPDBackend(ConfigDataBackend):
 				self._dhcpdConfFile.deleteHost(hostname)  # pylint: disable=maybe-no-member
 				self._dhcpdConfFile.generate()
 			except Exception as error:
-				logger.logException(error, logLevel=LOG_ERROR)
-
+				logger.error(error, exc_info=True)
+		
 		self._triggerReload()
 
 	def host_insertObject(self, host):
