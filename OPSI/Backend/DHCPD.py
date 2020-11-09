@@ -111,6 +111,7 @@ class DHCPDBackend(ConfigDataBackend):
 			def run(self):
 				if self._reloadEvent.wait(2):
 					with self._reloadLock, self._configLock:
+						self._reloadEvent.clear()
 						try:
 							logger.notice("Reloading dhcpd config using command: '%s'", self._reloadConfigCommand)
 							result = System.execute(self._reloadConfigCommand)
@@ -120,7 +121,6 @@ class DHCPDBackend(ConfigDataBackend):
 							time.sleep(2)
 						except Exception as error:
 							logger.critical("Failed to reload dhcpd config: %s", error)
-					self._reloadEvent.clear()
 
 		self._reloadThread = ReloadThread(self._configLock, self._reloadConfigCommand)
 		self._reloadThread.daemon = True
