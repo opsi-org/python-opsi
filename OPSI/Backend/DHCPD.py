@@ -27,10 +27,15 @@ the daemon afterwards.
 :license: GNU Affero General Public License version 3
 """
 
+
+
+import os
 import time
+import fcntl
 import socket
 import threading
 from functools import lru_cache
+from contextlib import contextmanager
 
 import OPSI.System as System
 from OPSI.Backend.Base import ConfigDataBackend
@@ -48,6 +53,28 @@ __all__ = ('DHCPDBackend', )
 
 logger = Logger()
 
+@contextmanager
+def dhcpd_lock():
+	lock_file = '/var/lock/opsi-dhcpd-lock'
+	with open(lock_file, 'w') as lock_fh:
+		try:
+			os.chmod(lock_file, 0o666)
+		except PermissionError:
+			pass
+		attempt = 0
+		while True:
+			attempt += 1
+			try:
+				fcntl.flock(lock_fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+				break
+			except IOError as lock_err:
+				if attempt > 200:
+					raise
+				time.sleep(0.1)
+		lock_fh.write(str(os.getpid()))
+		yield None
+		fcntl.flock(lock_fh, fcntl.LOCK_UN)
+	#os.remove(lock_file)
 
 class DHCPDBackend(ConfigDataBackend):
 
@@ -55,8 +82,6 @@ class DHCPDBackend(ConfigDataBackend):
 		self._name = 'dhcpd'
 
 		ConfigDataBackend.__init__(self, **kwargs)
-		self._configLock = threading.Lock()
-
 		self._dhcpdConfigFile = System.Posix.locateDHCPDConfig(u'/etc/dhcp3/dhcpd.conf')
 		self._reloadConfigCommand = None
 		self._fixedAddressFormat = u'IP'
@@ -93,12 +118,10 @@ class DHCPDBackend(ConfigDataBackend):
 
 	def _startReloadThread(self):
 		class ReloadThread(threading.Thread):
-			def __init__(self, configLock, reloadConfigCommand):
+			def __init__(self, reloadConfigCommand):
 				threading.Thread.__init__(self)
-				self._configLock = configLock
 				self._reloadConfigCommand = reloadConfigCommand
 				self._reloadEvent = threading.Event()
-				self._reloadLock = threading.Lock()
 				self._isReloading = False
 				if not self._reloadConfigCommand:
 					self._reloadConfigCommand = '/usr/bin/sudo {command}'.format(
@@ -117,7 +140,7 @@ class DHCPDBackend(ConfigDataBackend):
 			def run(self):
 				while True:
 					if self._reloadEvent.wait(2):
-						with self._reloadLock, self._configLock:
+						with dhcpd_lock():
 							self._isReloading = True
 							self._reloadEvent.clear()
 							try:
@@ -131,7 +154,7 @@ class DHCPDBackend(ConfigDataBackend):
 								logger.critical("Failed to reload dhcpd config: %s", error)
 							self._isReloading = False
 
-		self._reloadThread = ReloadThread(self._configLock, self._reloadConfigCommand)
+		self._reloadThread = ReloadThread(self._reloadConfigCommand)
 		self._reloadThread.daemon = True
 		self._reloadThread.start()
 	
@@ -211,7 +234,7 @@ class DHCPDBackend(ConfigDataBackend):
 				logger.info(u"Client fqdn resolved to %s", ipAddress)
 			except Exception as error:
 				logger.debug(u"Failed to get IP by hostname: %s", error)
-				with self._configLock:
+				with dhcpd_lock():
 					self._dhcpdConfFile.parse()
 					currentHostParams = self._dhcpdConfFile.getHost(hostname)
 
@@ -241,7 +264,7 @@ class DHCPDBackend(ConfigDataBackend):
 			except Exception as error:
 				logger.error(u"Failed to get depot info: %s", error)
 
-		with self._configLock:
+		with dhcpd_lock():
 			try:
 				self._dhcpdConfFile.parse()
 				currentHostParams = self._dhcpdConfFile.getHost(hostname)
@@ -276,7 +299,7 @@ class DHCPDBackend(ConfigDataBackend):
 	def dhcpd_deleteHost(self, host):
 		host = forceObjectClass(host, Host)
 
-		with self._configLock:
+		with dhcpd_lock():
 			try:
 				self._dhcpdConfFile.parse()
 				hostname = _getHostname(host.id)
