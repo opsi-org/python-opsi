@@ -438,71 +438,20 @@ def getNetworkDeviceConfig(device):
 	}
 
 	try:
-		for line in execute(u"{ifconfig} {device}".format(ifconfig=which(u'ifconfig'), device=device)):
-			line = line.lower().strip()
-			match = re.search(r'\s([\da-f]{2}:[\da-f]{2}:[\da-f]{2}:[\da-f]{2}:[\da-f]{2}:[\da-f]{2}).*', line)
-			if match:
-				result['hardwareAddress'] = forceHardwareAddress(match.group(1))
+		for key, value in psutil.net_if_addrs().items():
+			if key != device:
 				continue
-
-			if line.startswith('inet '):
-				logger.debug('Found inet line: %s', line)
-
-				parts = line.split(':')
-				if len(parts) == 4:
-					result['ipAddress'] = forceIpAddress(parts[1].split()[0].strip())
-					result['broadcast'] = forceIpAddress(parts[2].split()[0].strip())
-					result['netmask'] = forceIpAddress(parts[3].split()[0].strip())
-					continue
-
-				match = re.search(
-					r"^\w+\s+(?P<ipAddress>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s+"
-					r"\w+\s+(?P<netmask>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s+"
-					r"\w+\s+(?P<broadcast>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$",
-					line
-				)
-				if match:
-					result['ipAddress'] = forceIpAddress(match.group('ipAddress'))
-					result['broadcast'] = forceIpAddress(match.group('broadcast'))
-					result['netmask'] = forceIpAddress(match.group('netmask'))
-					continue
-
-				logger.error(u"Unexpected ifconfig line '%s'", line)
-	except CommandNotFoundException:  # no ifconfig
-		# Falling back to ip
-		jsonIp = execute(
-			"{ip} -j address show {device}".format(
-				ip=which('ip'),
-				device=device
-			)
-		)
-
-		for interface in json.loads(''.join(jsonIp)):
-			# Some versions of ip will list entries for all devices even
-			# when queried to show only one specific interface.
-			# These undesided entries only have an key "addr_info" without
-			# being filled.
-			if 'ifname' not in interface:
-				continue
-
-			result['hardwareAddress'] = forceHardwareAddress(interface['address'])
-
-			for addrInfo in interface['addr_info']:
-				if addrInfo['family'] != 'inet':
-					continue  # Skip everything ipv6
-
-				result['ipAddress'] = forceIpAddress(addrInfo['local'])
-				result['broadcast'] = forceIpAddress(addrInfo['broadcast'])
-
-				prefixLength = addrInfo['prefixlen']
-				netmask = socket.inet_ntoa(struct.pack('>I', 0xffffffff ^ (1 << 32 - forceInt(prefixLength)) - 1))
-				result['netmask'] = forceIpAddress(netmask)
-
-				break
-
-			# There should only be one interface with valid results.
-			# Skipping all others
+			for item in value:
+				if item.family == socket.AF_INET:
+					result["ipAddress"] = item.address
+					result["broadcast"] = item.broadcast
+					result["netmask"] = item.netmask
+				elif item.family == psutil.AF_LINK:
+					result["hardwareAddress"] = item.address
+			# Skipping all others devices
 			break
+	except Exception:
+		logger.warning(u"Failed to get address info for device %s", device)
 
 	for line in execute(u"{ip} route".format(ip=which(u'ip'))):
 		line = line.lower().strip()
