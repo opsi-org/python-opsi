@@ -37,6 +37,7 @@ import os
 import re
 import subprocess
 import time
+import puremagic
 if os.name == 'posix':
 	import fcntl
 
@@ -51,24 +52,14 @@ from OPSI.Util.Path import cd
 logger = Logger()
 
 try:
-	import magic
-except ImportError as e:
-	if os.name == 'posix':
-		# libmagic missing?
-		logger.error("Failed to import magic: %s", e)
-	magic = None
-
-try:
 	PIGZ_ENABLED = OPSI.Util.File.Opsi.OpsiConfFile().isPigzEnabled()
 except IOError:
 	PIGZ_ENABLED = True
 
 
 def getFileType(filename):
-	if not magic:
-		raise RuntimeError("python-magic missing")
 	filename = forceFilename(filename)
-	return magic.from_file(filename)
+	return puremagic.from_file(filename)
 
 
 class BaseArchive:
@@ -83,9 +74,9 @@ class BaseArchive:
 			self._compression = compression
 		elif os.path.exists(self._filename):
 			fileType = getFileType(self._filename)
-			if fileType.lower().startswith('gzip compressed data'):
+			if "gzip" in fileType.lower():
 				self._compression = u'gzip'
-			elif fileType.lower().startswith('bzip2 compressed data'):
+			elif "bzip2" in fileType.lower():
 				self._compression = u'bzip2'
 			else:
 				self._compression = None
@@ -470,9 +461,9 @@ def Archive(filename, format=None, compression=None, progressSubject=None):
 
 	elif os.path.exists(filename):
 		fileType = getFileType(filename)
-		if 'tar archive' in fileType.lower():
+		if 'tar' in fileType.lower():
 			Class = TarArchive
-		elif 'cpio archive' in fileType.lower():
+		elif 'cpio' in fileType.lower():
 			Class = CpioArchive
 		elif filename.lower().endswith(('tar', 'tar.gz')):
 			Class = TarArchive
