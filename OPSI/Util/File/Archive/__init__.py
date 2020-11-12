@@ -74,9 +74,9 @@ class BaseArchive:
 			self._compression = compression
 		elif os.path.exists(self._filename):
 			fileType = getFileType(self._filename)
-			if "gzip" in fileType.lower():
+			if "gz" in fileType.lower():
 				self._compression = u'gzip'
-			elif "bzip2" in fileType.lower():
+			elif "bz2" in fileType.lower():
 				self._compression = u'bzip2'
 			else:
 				self._compression = None
