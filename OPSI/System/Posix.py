@@ -3086,7 +3086,10 @@ def hardwareInventory(config, progressSubject=None):
 		else:
 			return u""
 
-	def getElementsByAttributeValue(dom, tagName, attributeName, attributeValue):
+	def getElementsByAttributeValue(dom, tagName, attributeName, attributeValue, onlyHighest=False):
+		if onlyHighest:
+			return [ [element for element in dom.getElementsByTagName(tagName) if re.search(attributeValue, element.getAttribute(attributeName))][0] ]
+
 		return [element for element in dom.getElementsByTagName(tagName) if re.search(attributeValue, element.getAttribute(attributeName))]
 
 	# Read output from lshw
@@ -3333,7 +3336,12 @@ def hardwareInventory(config, progressSubject=None):
 
 				logger.debug(u"Class is '%s', id is '%s', filter is: %s", hwClass, hwid, filter)
 
-				devs = getElementsByAttributeValue(dom, 'node', 'class', hwclass)
+				if hwclass == "system":
+					# system nodes can appear nested... only working with root system here
+					devs = getElementsByAttributeValue(dom, 'node', 'class', hwclass, onlyHighest=True)
+				else:
+					devs = getElementsByAttributeValue(dom, 'node', 'class', hwclass)
+
 				for dev in devs:
 					if dev.hasChildNodes():
 						for child in dev.childNodes:
