@@ -1,17 +1,4 @@
 [[package]]
-name = "argparse"
-version = "1.4.0"
-description = "Python command-line parsing library"
-category = "main"
-optional = false
-python-versions = "*"
-
-[package.source]
-type = "legacy"
-url = "http://pypi.uib.gmbh:8080/simple"
-reference = "uibpypi"
-
-[[package]]
 name = "astroid"
 version = "2.4.2"
 description = "An abstract syntax tree for Python with inference support."
@@ -560,22 +547,6 @@ python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 
 [package.extras]
 test = ["ipaddress", "mock", "unittest2", "enum34", "pywin32", "wmi"]
-
-[package.source]
-type = "legacy"
-url = "http://pypi.uib.gmbh:8080/simple"
-reference = "uibpypi"
-
-[[package]]
-name = "puremagic"
-version = "1.10"
-description = "Pure python implementation of magic file detection"
-category = "main"
-optional = false
-python-versions = "*"
-
-[package.dependencies]
-argparse = "*"
 
 [package.source]
 type = "legacy"
@@ -1196,13 +1167,9 @@ reference = "uibpypi"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "1f0f5b41e6dbabaafa4c112942d051af3cb034ea04226b67070e0925d405a1e6"
+content-hash = "c22bed6112d078e934c7e4fa4e07924b4c6809c12520466827ccb4a0395f3854"
 
 [metadata.files]
-argparse = [
-    {file = "argparse-1.4.0-py2.py3-none-any.whl", hash = "sha256:c31647edb69fd3d465a847ea3157d37bed1f95f19760b11a47aa91c04b666314"},
-    {file = "argparse-1.4.0.tar.gz", hash = "sha256:62b089a55be1d8949cd2bc7e0df0bddb9e028faefc8c32038cc84862aefdd6e4"},
-]
 astroid = [
     {file = "astroid-2.4.2-py3-none-any.whl", hash = "sha256:bc58d83eb610252fd8de6363e39d4f1d0619c894b0ed24603b881c02e64c7386"},
     {file = "astroid-2.4.2.tar.gz", hash = "sha256:2f4078c2a41bf377eea06d71c9d2ba4eb8f6b1af2135bec27bbbb7d8f12bb703"},
@@ -1451,10 +1418,6 @@ psutil = [
     {file = "psutil-5.7.2-cp38-cp38-win32.whl", hash = "sha256:10512b46c95b02842c225f58fa00385c08fa00c68bac7da2d9a58ebe2c517498"},
     {file = "psutil-5.7.2-cp38-cp38-win_amd64.whl", hash = "sha256:68d36986ded5dac7c2dcd42f2682af1db80d4bce3faa126a6145c1637e1b559f"},
     {file = "psutil-5.7.2.tar.gz", hash = "sha256:90990af1c3c67195c44c9a889184f84f5b2320dce3ee3acbd054e3ba0b4a7beb"},
-]
-puremagic = [
-    {file = "puremagic-1.10-py3-none-any.whl", hash = "sha256:3603ac88bfa06689b4a3a2e90ef30f8cc5769df2f269bf546620bfe6b18c06d6"},
-    {file = "puremagic-1.10.tar.gz", hash = "sha256:6ffea02b80ceec1381f9df513e0120b701a74b6efad92311ea80281c7081b108"},
 ]
 py = [
     {file = "py-1.9.0-py2.py3-none-any.whl", hash = "sha256:366389d1db726cd2fcfc79732e75410e5fe4d31db13692115529d34069a043c2"},
