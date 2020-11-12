@@ -37,7 +37,7 @@ import os
 import re
 import subprocess
 import time
-import puremagic
+
 if os.name == 'posix':
 	import fcntl
 
@@ -59,8 +59,18 @@ except IOError:
 
 def getFileType(filename):
 	filename = forceFilename(filename)
-	return puremagic.from_file(filename)
+	with open(filename, "rb") as f:
+		head = f.read(257+40)
 
+	if head[:24] == b"\x1f\x8b\x08" or head[:64] == b"\x5c\x30\x33\x37\x5c\x32\x31\x33":
+		return ".gz"
+	if head[:24] == b"\x42\x5a\x68":
+		return ".bzip2"
+	if head[:48] == b"\x30\x37\x30\x37\x30\x31" or head[:48] == b"\x30\x37\x30\x37\x30\x32:
+		return ".cpio"
+	if head[257:257+40] == b"\x75\x73\x74\x61\x72":
+		return ".tar"
+	raise NotImplementedError("getFileType only accepts .gz .bzip2 .cpio .bzip2 archive types.")
 
 class BaseArchive:
 	def __init__(self, filename, compression=None, progressSubject=None):
