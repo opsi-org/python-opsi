@@ -60,17 +60,17 @@ except IOError:
 def getFileType(filename):
 	filename = forceFilename(filename)
 	with open(filename, "rb") as f:
-		head = f.read(257+40)
+		head = f.read(257+5)
 
-	if head[:24] == b"\x1f\x8b\x08" or head[:64] == b"\x5c\x30\x33\x37\x5c\x32\x31\x33":
+	if head[:3] == b"\x1f\x8b\x08" or head[:8] == b"\x5c\x30\x33\x37\x5c\x32\x31\x33":
 		return ".gz"
-	if head[:24] == b"\x42\x5a\x68":
+	if head[:3] == b"\x42\x5a\x68":
 		return ".bzip2"
-	if head[:48] == b"\x30\x37\x30\x37\x30\x31" or head[:48] == b"\x30\x37\x30\x37\x30\x32:
+	if head[:5] == b"\x30\x37\x30\x37\x30":
 		return ".cpio"
-	if head[257:257+40] == b"\x75\x73\x74\x61\x72":
+	if head[257:257+5] == b"\x75\x73\x74\x61\x72":
 		return ".tar"
-	raise NotImplementedError("getFileType only accepts .gz .bzip2 .cpio .bzip2 archive types.")
+	raise NotImplementedError("getFileType only accepts .gz .bzip2 .cpio .tar archive types.")
 
 class BaseArchive:
 	def __init__(self, filename, compression=None, progressSubject=None):
@@ -85,8 +85,8 @@ class BaseArchive:
 		elif os.path.exists(self._filename):
 			fileType = getFileType(self._filename)
 			if "gz" in fileType.lower():
-				self._compression = u'gzip'
-			elif "bz2" in fileType.lower():
+				self._compression = u'gz'
+			elif "bzip2" in fileType.lower():
 				self._compression = u'bzip2'
 			else:
 				self._compression = None
