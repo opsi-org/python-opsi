@@ -37,7 +37,6 @@ import os
 import re
 import subprocess
 import time
-
 if os.name == 'posix':
 	import fcntl
 
@@ -52,25 +51,25 @@ from OPSI.Util.Path import cd
 logger = Logger()
 
 try:
+	import magic
+except ImportError as e:
+	if os.name == 'posix':
+		# libmagic missing?
+		logger.error("Failed to import magic: %s", e)
+	magic = None
+
+try:
 	PIGZ_ENABLED = OPSI.Util.File.Opsi.OpsiConfFile().isPigzEnabled()
 except IOError:
 	PIGZ_ENABLED = True
 
 
 def getFileType(filename):
+	if not magic:
+		raise RuntimeError("python-magic missing")
 	filename = forceFilename(filename)
-	with open(filename, "rb") as f:
-		head = f.read(257+5)
+	return magic.from_file(filename)
 
-	if head[:3] == b"\x1f\x8b\x08" or head[:8] == b"\x5c\x30\x33\x37\x5c\x32\x31\x33":
-		return ".gz"
-	if head[:3] == b"\x42\x5a\x68":
-		return ".bzip2"
-	if head[:5] == b"\x30\x37\x30\x37\x30":
-		return ".cpio"
-	if head[257:257+5] == b"\x75\x73\x74\x61\x72":
-		return ".tar"
-	raise NotImplementedError("getFileType only accepts .gz .bzip2 .cpio .tar archive types.")
 
 class BaseArchive:
 	def __init__(self, filename, compression=None, progressSubject=None):
@@ -84,9 +83,9 @@ class BaseArchive:
 			self._compression = compression
 		elif os.path.exists(self._filename):
 			fileType = getFileType(self._filename)
-			if "gz" in fileType.lower():
-				self._compression = u'gz'
-			elif "bzip2" in fileType.lower():
+			if fileType.lower().startswith('gzip compressed data'):
+				self._compression = u'gzip'
+			elif fileType.lower().startswith('bzip2 compressed data'):
 				self._compression = u'bzip2'
 			else:
 				self._compression = None
@@ -471,9 +470,9 @@ def Archive(filename, format=None, compression=None, progressSubject=None):
 
 	elif os.path.exists(filename):
 		fileType = getFileType(filename)
-		if 'tar' in fileType.lower():
+		if 'tar archive' in fileType.lower():
 			Class = TarArchive
-		elif 'cpio' in fileType.lower():
+		elif 'cpio archive' in fileType.lower():
 			Class = CpioArchive
 		elif filename.lower().endswith(('tar', 'tar.gz')):
 			Class = TarArchive
