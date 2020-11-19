@@ -99,6 +99,9 @@ def grant_session_access(username: str, session_id: str):
 			if session_env is None or env.get("XAUTHORITY"):
 				session_username = proc.username()
 				session_env = env
+				if "PATH" in session_env:
+					# Keep current PATH
+					del session_env["PATH"]
 	if not session_env:
 		raise ValueError(f"Session {session_id} not found")
 	if not session_env.get("XAUTHORITY"):
