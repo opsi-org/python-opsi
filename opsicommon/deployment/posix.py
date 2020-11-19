@@ -96,6 +96,7 @@ class LinuxDeployThread(DeployThread):
 
 				installCommand = "{0} -batch /tmp/opsi-linux-client-agent/files/opsi/setup.opsiscript /var/log/opsi-client-agent/opsi-script/opsi-client-agent.log -PARAMETER REMOTEDEPLOY".format(opsiscript)
 				nonrootExecution = self.username != 'root'
+				credentialsfile=None
 				if nonrootExecution:
 					credentialsfile = os.path.join(remoteFolder, '.credentials')
 					self._executeViaSSH("touch {credfile}".format(credfile=credentialsfile))
