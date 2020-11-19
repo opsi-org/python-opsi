@@ -52,11 +52,7 @@ def deploy_client_agent(hosts, deployLinux, logLevel=LOG_WARNING, debugFile=None
 		username = "root"
 	if not deployLinux and username is None:
 		username = "Administrator"
-	logger.setConsoleLevel(logLevel)
-
-	if debugFile:
-		logger.setLogFile(debugFile)
-		logger.setFileLevel(LOG_DEBUG)
+	logger.logging_config(stderr_level=logLevel, log_file=debugFile, file_level=LOG_DEBUG)
 
 	if deployLinux and paramiko is None:
 		message = (
