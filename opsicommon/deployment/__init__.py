@@ -39,7 +39,7 @@ from OPSI.Types import forceUnicode, forceUnicodeLower
 
 from .posix import LinuxDeployThread, paramiko, WARNING_POLICY
 from .windows import WindowsDeployThread
-from .common import logger, SKIP_MARKER, LOG_WARNING, LOG_DEBUG
+from .common import logger, SKIP_MARKER, LOG_WARNING, LOG_DEBUG, logging_config
 
 def deploy_client_agent(hosts, deployLinux, logLevel=LOG_WARNING, debugFile=None, hostFile=None,
 						password=None, maxThreads=1, useIPAddress=False, useNetbios=False,
@@ -52,11 +52,7 @@ def deploy_client_agent(hosts, deployLinux, logLevel=LOG_WARNING, debugFile=None
 		username = "root"
 	if not deployLinux and username is None:
 		username = "Administrator"
-	logger.setConsoleLevel(logLevel)
-
-	if debugFile:
-		logger.setLogFile(debugFile)
-		logger.setFileLevel(LOG_DEBUG)
+	logging_config(stderr_level=logLevel, log_file=debugFile, file_level=LOG_DEBUG)
 
 	if deployLinux and paramiko is None:
 		message = (
