@@ -92,7 +92,7 @@ Posix.getActiveSessionIds = getActiveSessionIds
 
 def grant_session_access(username: str, session_id: str):
 	session_username = None
-	session_env = None
+	session_env = {}
 	for proc in psutil.process_iter():
 		env = proc.environ()
 		if env.get("DISPLAY") == session_id:
@@ -107,7 +107,9 @@ def grant_session_access(username: str, session_id: str):
 	if not session_env.get("XAUTHORITY"):
 		session_env["XAUTHORITY"] = os.path.join(session_env.get("HOME"), ".Xauthority")
 	
-	sp_env = get_subprocess_environment(session_env)
+	sp_env = os.environ.copy()
+	sp_env.update(session_env)
+	sp_env = get_subprocess_environment(sp_env)
 	logger.debug("Using process env: %s", sp_env)
 
 	# Allow user to connect to X
