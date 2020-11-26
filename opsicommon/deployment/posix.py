@@ -159,6 +159,22 @@ class LinuxDeployThread(DeployThread):
 			except (Exception, paramiko.SSHException) as error:
 				logger.error(error)
 
+	def _getHostId(self, host):
+		hostId = None
+		try:
+			hostId = super()._getHostId(host)
+		except socket.herror as error:
+			logger.warning("Resolving hostName failed, attempting to resolve fqdn via ssh connection to ip")
+			if re.match(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', host):
+				ssh = paramiko.SSHClient()
+				ssh.set_missing_host_key_policy(self._sshPolicy())
+				ssh.connect(host, "22", self.username, self.password)
+				stdin, stdout, stderr = ssh.exec_command("hostname -f")
+				hostId = stdout.readlines()[0].encode('ascii','ignore').strip()
+				logger.info("resolved FQDN: %s (type %s)", hostId, type(hostId))
+		if hostId:
+			return hostId
+		raise ValueError("invalid host %s", host)
 
 	def _executeViaSSH(self, command):
 		"""
