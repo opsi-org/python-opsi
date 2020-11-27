@@ -1147,7 +1147,7 @@ def getBlockDeviceContollerInfo(device, lshwoutput=None):
 	else:
 		proc_env = os.environ.copy()
 		proc_env["LC_ALL"] = "C"
-		lines = execute(f"{which('lshw')} -short -numeric 2> /dev/null", env=proc_env)
+		lines = execute(f"{which('lshw')} -short -numeric", captureStderr=False, env=proc_env)
 	# example:
 	# ...
 	# /0/100                      bridge     440FX - 82441FX PMC [Natoma] [8086:1237]
@@ -3095,7 +3095,7 @@ def hardwareInventory(config, progressSubject=None):
 	# Read output from lshw
 	proc_env = os.environ.copy()
 	proc_env["LC_ALL"] = "C"
-	xmlOut = u'\n'.join(execute(f"{which('lshw')} -xml 2> /dev/null", env=proc_env))
+	xmlOut = u'\n'.join(execute(f"{which('lshw')} -xml", env=proc_env, captureStderr=False))
 	xmlOut = re.sub('[%c%c%c%c%c%c%c%c%c%c%c%c%c]' % (0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0xbd, 0xbf, 0xef, 0xdd), u'.', xmlOut)
 	dom = xml.dom.minidom.parseString(xmlOut.encode('utf-8'))
 
@@ -3104,7 +3104,7 @@ def hardwareInventory(config, progressSubject=None):
 	busId = None
 	devRegex = re.compile(r'([\d.:a-f]+)\s+([\da-f]+):\s+([\da-f]+):([\da-f]+)\s*(\(rev ([^\)]+)\)|)')
 	subRegex = re.compile(r'\s*Subsystem:\s+([\da-f]+):([\da-f]+)\s*')
-	for line in execute(u"%s -vn" % which("lspci")):
+	for line in execute(u"%s -vn" % which("lspci"), captureStderr=False):
 		if not line.strip():
 			continue
 		match = re.search(devRegex, line)
@@ -3174,7 +3174,7 @@ def hardwareInventory(config, progressSubject=None):
 	keyValueRegex = re.compile(r'^(\s*)(\S+)\s+(.*)$')
 
 	try:
-		for line in execute(u"%s -v" % which("lsusb")):
+		for line in execute(u"%s -v" % which("lsusb"), captureStderr=False):
 			if not line.strip() or (line.find(u'** UNAVAILABLE **') != -1):
 				continue
 			# line = line.decode('ISO-8859-15', 'replace').encode('utf-8', 'replace')
@@ -3277,7 +3277,7 @@ def hardwareInventory(config, progressSubject=None):
 	header = True
 	option = None
 	optRegex = re.compile(r'(\s+)([^:]+):(.*)')
-	for line in execute(which("dmidecode")):
+	for line in execute(which("dmidecode"), captureStderr=False):
 		try:
 			if not line.strip():
 				continue
