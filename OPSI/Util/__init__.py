@@ -608,8 +608,8 @@ def blowfishDecrypt(key, crypt):
 	try:
 		cleartext = blowfish.decrypt(crypt)
 	except Exception as decryptError:
-		logger.logException(decryptError, LOG_DEBUG)
-		raise BlowfishError(u"Failed to decrypt")
+		logger.debug(decryptError, exc_info=True)
+		raise BlowfishError("Failed to decrypt")
 
 	# Remove possible \0-chars
 	if b'\0' in cleartext:
@@ -628,7 +628,7 @@ def _prepareBlowfishKey(key: str) -> bytes:
 		key = forceUnicode(key).encode()
 		return codecs.decode(key, "hex")
 	except (binascii.Error, Exception) as err:
-		raise BlowfishError("Unable to prepare key: %r" % err)
+		raise BlowfishError(f"Unable to prepare key: {err}")
 
 
 def encryptWithPublicKeyFromX509CertificatePEMFile(data, filename):
