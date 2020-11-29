@@ -303,6 +303,12 @@ class SQLBackend(ConfigDataBackend):
 
 		return u' and '.join(addParenthesis(buildCondition()))
 
+	def _getPossibleAttributes(self, objectClass):
+		attributes = list(objectClass.__init__.__code__.co_varnames)
+		attributes.remove("self")
+		attributes.append("type")
+		return attributes
+
 	def _createQuery(self, table, attributes=[], filter={}):
 		select = u','.join(
 			u'`{0}`'.format(attribute) for attribute in attributes
@@ -317,41 +323,43 @@ class SQLBackend(ConfigDataBackend):
 		return query
 
 	def _adjustAttributes(self, objectClass, attributes, filter):
+		possibleAttributes = self._getPossibleAttributes(objectClass)
+		
+		newAttributes = []
 		if attributes:
 			newAttributes = forceUnicodeList(attributes)
-		else:
-			newAttributes = []
-
-		newFilter = forceDict(filter)
+			for attr in newAttributes:
+				if attr not in possibleAttributes:
+					raise ValueError("Invalid attribute '%s'" % str(attr))
+		
+		newFilter = {}
+		if filter:
+			newFilter = forceDict(filter)
+			for attr in filter:
+				if attr not in possibleAttributes:
+					raise ValueError("Invalid attribute '%s' in filter" % str(attr))
+		
 		objectId = self._objectAttributeToDatabaseAttribute(objectClass, 'id')
 
-		try:
+		if 'id' in newFilter:
 			newFilter[objectId] = newFilter['id']
 			del newFilter['id']
-		except KeyError:
-			# No key 'id' - everything okay
-			pass
-
-		try:
+		
+		if 'id' in newAttributes:
 			newAttributes.remove('id')
 			newAttributes.append(objectId)
-		except ValueError:
-			# No element 'id' - everything okay
-			pass
-
-		try:
-			for oc in forceList(filter['type']):
+		
+		if 'type' in newFilter:
+			for oc in forceList(newFilter['type']):
 				if objectClass.__name__ == oc:
-					newFilter['type'] = forceList(filter['type']).append(objectClass.subClasses.values())
-		except KeyError:
-			# No key 'type' - everything okay
-			pass
-
+					newFilter['type'] = forceList(newFilter['type']).append(list(objectClass.subClasses.values()))
+					break
+		
 		if newAttributes:
 			if issubclass(objectClass, Entity) and 'type' not in newAttributes:
 				newAttributes.append('type')
 			objectClasses = [objectClass]
-			objectClasses.extend(objectClass.subClasses.values())
+			objectClasses.extend(list(objectClass.subClasses.values()))
 			for oc in objectClasses:
 				for arg in mandatoryConstructorArgs(oc):
 					if arg == 'id':
