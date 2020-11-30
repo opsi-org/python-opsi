@@ -58,7 +58,7 @@ from OPSI.Object import (AuditHardware, AuditHardwareOnHost, AuditSoftware,
 	LicensePool, ObjectToGroup, Product, ProductDependency, ProductGroup,
 	ProductOnClient, ProductOnDepot, ProductProperty, ProductPropertyState,
 	Relationship, SoftwareLicense, SoftwareLicenseToLicensePool,
-	mandatoryConstructorArgs)
+	mandatoryConstructorArgs, getPossibleClassAttributes)
 from OPSI.Types import (forceBool, forceUnicodeLower, forceOpsiTimestamp,
 	forceList, forceUnicode, forceUnicodeList, forceDict, forceObjectClassList)
 from OPSI.Util import timestamp, getPublicKey
@@ -318,13 +318,6 @@ class SQLBackend(ConfigDataBackend):
 
 		return u' and '.join(addParenthesis(buildCondition()))
 
-	@lru_cache(None)
-	def _getPossibleAttributes(self, objectClass):
-		attributes = list(inspect.signature(objectClass.__init__).parameters.keys())
-		attributes.remove("self")
-		attributes.append("type")
-		return attributes
-	
 	def _createQuery(self, table, attributes=[], filter={}):
 		select = u','.join(
 			u'`{0}`'.format(attribute) for attribute in attributes
@@ -339,7 +332,7 @@ class SQLBackend(ConfigDataBackend):
 		return query
 
 	def _adjustAttributes(self, objectClass, attributes, filter):
-		possibleAttributes = self._getPossibleAttributes(objectClass)
+		possibleAttributes = getPossibleClassAttributes(objectClass)
 		
 		newAttributes = []
 		if attributes:
