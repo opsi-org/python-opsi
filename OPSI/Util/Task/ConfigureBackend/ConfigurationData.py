@@ -205,7 +205,8 @@ def getDefaultConfigs(backend, configServer=None, pathToSMBConf=SMB_CONF):
 			description=u'Extra options to append to kernel command line',
 			possibleValues=[
 				u'acpi=off', u'irqpoll', u'noapic', u'pci=nomsi',
-				u'vga=normal', u'reboot=b'
+				u'vga=normal', u'reboot=b', u'mem=2G', u'nomodeset',
+				u'ramdisk_size=2097152'
 			],
 			defaultValues=[u''],
 			editable=True,
