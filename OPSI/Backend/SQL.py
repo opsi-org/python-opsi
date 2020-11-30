@@ -48,7 +48,7 @@ from OPSI.Object import (AuditHardware, AuditHardwareOnHost, AuditSoftware,
 	LicensePool, ObjectToGroup, Product, ProductDependency, ProductGroup,
 	ProductOnClient, ProductOnDepot, ProductProperty, ProductPropertyState,
 	Relationship, SoftwareLicense, SoftwareLicenseToLicensePool,
-	mandatoryConstructorArgs)
+	mandatoryConstructorArgs, getPossibleClassAttributes)
 from OPSI.Backend.Backend import BackendModificationListener, ConfigDataBackend
 from OPSI.Util import timestamp, getPublicKey
 
@@ -303,12 +303,6 @@ class SQLBackend(ConfigDataBackend):
 
 		return u' and '.join(addParenthesis(buildCondition()))
 
-	def _getPossibleAttributes(self, objectClass):
-		attributes = list(objectClass.__init__.__code__.co_varnames)
-		attributes.remove("self")
-		attributes.append("type")
-		return attributes
-
 	def _createQuery(self, table, attributes=[], filter={}):
 		select = u','.join(
 			u'`{0}`'.format(attribute) for attribute in attributes
@@ -323,7 +317,7 @@ class SQLBackend(ConfigDataBackend):
 		return query
 
 	def _adjustAttributes(self, objectClass, attributes, filter):
-		possibleAttributes = self._getPossibleAttributes(objectClass)
+		possibleAttributes = getPossibleClassAttributes(objectClass)
 		
 		newAttributes = []
 		if attributes:
