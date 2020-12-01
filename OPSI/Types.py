@@ -28,6 +28,7 @@ on an object.
 """
 
 import datetime
+import ipaddress
 import os
 import re
 import sys
@@ -70,9 +71,7 @@ _OPSI_TIMESTAMP_REGEX = re.compile(r'^(\d{4})-?(\d{2})-?(\d{2})\s?(\d{2}):?(\d{2
 _OPSI_DATE_REGEX = re.compile(r'^(\d{4})-?(\d{2})-?(\d{2})$')
 _FQDN_REGEX = re.compile(r'^[a-z0-9][a-z0-9\-]{,63}\.((\w+\-+)|(\w+\.))*\w{1,63}\.\w{2,16}\.?$')
 _HARDWARE_ADDRESS_REGEX = re.compile(r'^([0-9a-f]{2})[:-]?([0-9a-f]{2})[:-]?([0-9a-f]{2})[:-]?([0-9a-f]{2})[:-]?([0-9a-f]{2})[:-]?([0-9a-f]{2})$')
-_IP_ADDRESS_REGEX = re.compile(r'^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$')
 _NETMASK_REGEX = re.compile(r'^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$')
-_NETWORK_ADDRESS_REGEX = re.compile(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/([0-3]?[0-9]|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$')
 _URL_REGEX = re.compile(r'^[a-z0-9]+://[/a-zA-Z0-9]')
 _OPSI_HOST_KEY_REGEX = re.compile(r'^[0-9a-f]{32}$')
 _PRODUCT_VERSION_REGEX = re.compile(r'^[a-z0-9.]{1,32}$')
@@ -307,11 +306,10 @@ def forceHardwareAddress(var):
 
 
 def forceIPAddress(var):
-	var = forceUnicodeLower(var)
-	if not re.search(_IP_ADDRESS_REGEX, var):
-		raise ValueError(u"Bad ip address: '%s'" % var)
-	return var
-
+	var = ipaddress.ip_address(var)
+	if isinstance(var, ipaddress.IPv6Address) and var.ipv4_mapped:
+		return var.ipv4_mapped.compressed
+	return var.compressed
 
 forceIpAddress = forceIPAddress
 
@@ -327,22 +325,19 @@ def forceHostAddress(var):
 		except Exception:
 			var = forceHostname(var)
 	except Exception:
-		raise ValueError(u"Bad host address: '%s'" % var)
+		raise ValueError(f"Invalid host address: '{var}'")
 	return var
 
 
 def forceNetmask(var):
 	var = forceUnicodeLower(var)
 	if not re.search(_NETMASK_REGEX, var):
-		raise ValueError(u"Bad netmask: '%s'" % var)
+		raise ValueError(f"Invalid netmask: '{var}'")
 	return var
 
 
 def forceNetworkAddress(var):
-	var = forceUnicodeLower(var)
-	if not re.search(_NETWORK_ADDRESS_REGEX, var):
-		raise ValueError(u"Bad network address: '%s'" % var)
-	return var
+	return ipaddress.ip_network(var).compressed
 
 
 def forceUrl(var):
@@ -353,7 +348,7 @@ def forceUrl(var):
 	"""
 	var = forceUnicode(var)
 	if not _URL_REGEX.search(var):
-		raise ValueError(u"Bad url: '{0}'".format(var))
+		raise ValueError(f"Bad url: '{var}'")
 	return var
 
 
@@ -361,7 +356,6 @@ def forceOpsiHostKey(var):
 	var = forceUnicodeLower(var)
 	if not re.search(_OPSI_HOST_KEY_REGEX, var):
 		raise ValueError(u"Bad opsi host key: {!r}".format(var))
-
 	return var
 
 
