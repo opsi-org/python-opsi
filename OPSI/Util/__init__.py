@@ -34,6 +34,7 @@ or to JSON, working with librsync and more.
 import base64
 import binascii
 import codecs
+import ipaddress
 try:
 	# ujson is faster
 	import ujson as json
@@ -788,34 +789,21 @@ def ipAddressInNetwork(ipAddress, networkAddress):
 	:param networkAddress: The network address written with slash notation.
 	:type networkAddress: str
 	"""
-	def createBytemaskFromAddress(address):
-		"Returns an int representation of an bytemask of an ipAddress."
-		num = [forceInt(part) for part in address.split('.')]
-		return (num[0] << 24) + (num[1] << 16) + (num[2] << 8) + num[3]
-
-	ipAddress = forceIPAddress(ipAddress)
-	networkAddress = forceNetworkAddress(networkAddress)
-
-	ip = createBytemaskFromAddress(ipAddress)
-
-	network, netmask = networkAddress.split(u'/')
-
-	if '.' not in netmask:
-		netmask = forceUnicode(socket.inet_ntoa(struct.pack('>I', 0xffffffff ^ (1 << 32 - forceInt(netmask)) - 1)))
-
-	while netmask.count('.') < 3:
-		netmask = netmask + u'.0'
-
-	logger.debug(u"Testing if ip %s is part of network %s/%s", ipAddress, network, netmask)
+	if (
+		not isinstance(ipAddress, ipaddress.IPv4Address) and
+		not isinstance(ipAddress, ipaddress.IPv6Address)
+	):
+		ipAddress = ipaddress.ip_address(ipAddress)
+	if isinstance(ipAddress, ipaddress.IPv6Address) and ipAddress.ipv4_mapped:
+		ipAddress = ipAddress.ipv4_mapped
 	
-	network = createBytemaskFromAddress(network)
-	netmask = createBytemaskFromAddress(netmask)
-
-	wildcard = netmask ^ 0xFFFFFFFF
-	if wildcard | ip == wildcard | network:
-		return True
-
-	return False
+	if (
+		not isinstance(networkAddress, ipaddress.IPv4Network) and
+		not isinstance(networkAddress, ipaddress.IPv6Network)
+	):
+		networkAddress = ipaddress.ip_network(networkAddress)
+	
+	return ipAddress in networkAddress
 
 
 def getfqdn(name='', conf=None):
