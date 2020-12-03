@@ -1,3 +1,9 @@
+python-opsi (4.1.1.96-1) stable; urgency=medium
+
+  * Fixing sql injection issue in backend
+
+ -- Jan Schneider <j.schneider@uib.de>  Tue, 01 Dec 2020 15:34:58 +0100
+
 python-opsi (4.1.1.95-1) stable; urgency=medium
 
   * setGeneralConfig: Raise Exception if given objectId is not found in backend
