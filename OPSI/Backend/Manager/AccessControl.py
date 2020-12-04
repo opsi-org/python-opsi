@@ -481,14 +481,7 @@ class BackendAccessControl:
 		if result:
 			resultList = forceList(result)
 			if issubclass(resultList[0].__class__, BaseObject) or isinstance(resultList[0], dict):
-				resultList = self._filterObjects(result, acls, exceptionOnTruncate=False, exceptionIfAllRemoved=False)
-				if isinstance(result, list):
-					return resultList
-				else:
-					if resultList:
-						return resultList[0]
-					else:
-						return None
+				return self._filterObjects(result, acls, exceptionOnTruncate=False, exceptionIfAllRemoved=False)
 		return result
 
 	def _filterObjects(self, objects, acls, exceptionOnTruncate=True, exceptionIfAllRemoved=True):
