@@ -277,7 +277,7 @@ If this is `None` information will be read from the current system.
 
 		return differences
 
-	def restore(self, file, mode="raw", backends=[], configuration=True, force=False, **kwargs):
+	def restore(self, file, mode="raw", backends=[], configuration=True, force=False, new_server_id=None, **kwargs):
 		if not backends:
 			backends = []
 
@@ -354,6 +354,23 @@ If this is `None` information will be read from the current system.
 					raise error
 
 				logger.notice(u"Restoration complete")
+		
+		if new_server_id:
+			try:
+				from OPSI.Backend.BackendManager import BackendManager
+				managerConfig = {
+					"dispatchConfigFile": '/etc/opsi/backendManager/dispatch.conf',
+					"backendConfigDir": '/etc/opsi/backends',
+					"extensionConfigDir": '/etc/opsi/backendManager/extend.d',
+					"depotbackend": False
+				}
+				with BackendManager(**managerConfig) as backend:
+					configserver = backend.host_getObjects(type='OpsiConfigserver')
+					if not configserver:
+						raise RuntimeError("No config server not found in backend")
+					backend.host_renameOpsiDepotserver(oldId=configserver[0].id, newId=new_server_id)
+			except Exception as rename_error:
+				raise RuntimeError(f"Failed to rename config server to '{new_server_id}': {rename_error}")
 
 
 def getConfiguredBackends():
