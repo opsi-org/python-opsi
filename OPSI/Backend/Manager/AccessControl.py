@@ -493,6 +493,7 @@ class BackendAccessControl:
 
 	def _filterObjects(self, objects, acls, exceptionOnTruncate=True, exceptionIfAllRemoved=True):
 		logger.info(u"Filtering objects by acls")
+		is_list = type(objects) in (tuple, list)
 		newObjects = []
 		for obj in forceList(objects):
 			isDict = isinstance(obj, dict)
@@ -552,14 +553,14 @@ class BackendAccessControl:
 			else:
 				newObjects.append(obj.__class__.fromHash(objHash))
 
-		orilen = len(objects)
+		orilen = len(objects) if is_list else 1
 		newlen = len(newObjects)
 		if newlen < orilen:
 			logger.warning("%s objects removed by acl, %s objects left", (orilen - newlen), newlen)
 			if newlen == 0 and exceptionIfAllRemoved:
 				raise BackendPermissionDeniedError(u"Access denied")
-
-		return newObjects
+		
+		return newObjects if is_list else newObjects[0]
 
 
 @lru_cache(maxsize=None)
