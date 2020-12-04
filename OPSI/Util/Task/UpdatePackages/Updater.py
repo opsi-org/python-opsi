@@ -264,7 +264,7 @@ class OpsiPackageUpdater:
 					newPackages.append(availablePackage)
 
 				if not newPackages:
-					logger.notice("No new packages downloaded")
+					logger.notice("No new packages available")
 					return
 
 				now = time.localtime()
