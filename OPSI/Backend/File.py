@@ -44,6 +44,7 @@ from OPSI.Types import (
 from OPSI.Util import toJson, fromJson, getfqdn
 from OPSI.Util.File import IniFile, LockableFile
 from OPSI.Util.File.Opsi import HostKeyFile, PackageControlFile
+from OPSI.Util.Config import setGlobalConfig
 from OPSI.Object import *  # needed for calls to "eval"
 
 __all__ = ('FileBackend', )
@@ -903,6 +904,8 @@ class FileBackend(ConfigDataBackend):
 		if objType == 'OpsiConfigserver':
 			if self.__serverId != obj.getId():
 				raise BackendUnaccomplishableError(u"Filebackend can only handle this config server '%s', not '%s'" % (self.__serverId, obj.getId()))
+				#setGlobalConfig("hostname", obj.getId())
+				#self.__serverId = obj.getId()
 
 		if objType not in self._mappings:
 			raise BackendUnaccomplishableError(u"Mapping not found for object type '%s'" % objType)
