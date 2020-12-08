@@ -807,9 +807,10 @@ shutdown = halt
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # -                                        PROCESS HANDLING                                           -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-def which(cmd):
+def which(cmd, env: dict={}):
 	if cmd not in WHICH_CACHE:
-		w = os.popen(u'%s "%s" 2>/dev/null' % (BIN_WHICH, cmd))
+		env_string = " ".join(["=".join([key, value]) for (key, value) in env.items()])
+		w = os.popen(u'%s %s "%s" 2>/dev/null' % (env_string, BIN_WHICH, cmd))
 		path = w.readline().strip()
 		w.close()
 		if not path:
@@ -820,7 +821,7 @@ def which(cmd):
 
 	return WHICH_CACHE[cmd]
 
-def get_subprocess_environment(env: dict = None):
+def get_subprocess_environment(env: dict = None, add_lc_all_C=False, add_path_sbin=False):
 	sp_env = env
 	if sp_env is None:
 		sp_env = os.environ.copy()
@@ -836,6 +837,17 @@ def get_subprocess_environment(env: dict = None):
 			# Remove the env var as a last resort
 			logger.debug("Removing LD_LIBRARY_PATH from env for subprocess")
 			sp_env.pop("LD_LIBRARY_PATH", None)
+
+	if add_lc_all_C:
+		sp_env["LC_ALL"] = "C"
+	if add_path_sbin:
+		if not "/usr/local/sbin" in sp_env["PATH"]:
+			sp_env["PATH"] += ":/usr/local/sbin"
+		if not "/usr/sbin" in sp_env["PATH"]:
+			sp_env["PATH"] += ":/usr/sbin"
+		if not "/sbin" in sp_env["PATH"]:
+			sp_env["PATH"] += ":/sbin"
+
 	return sp_env
 
 def execute(cmd, nowait=False, getHandle=False, ignoreExitCode=[], exitOnStderr=False, captureStderr=True, encoding=None, timeout=0, shell=None, waitForEnding=None, env={}, stdin_data=b''):
@@ -1145,9 +1157,8 @@ def getBlockDeviceContollerInfo(device, lshwoutput=None):
 	if lshwoutput and isinstance(lshwoutput, list):
 		lines = lshwoutput
 	else:
-		proc_env = os.environ.copy()
-		proc_env["LC_ALL"] = "C"
-		lines = execute(f"{which('lshw')} -short -numeric 2> /dev/null", env=proc_env)
+		proc_env = get_subprocess_environment(add_lc_all_C=True, add_path_sbin=True)
+		lines = execute(f"{which('lshw', env={'PATH' : proc_env['PATH']})} -short -numeric", captureStderr=False, env=proc_env)
 	# example:
 	# ...
 	# /0/100                      bridge     440FX - 82441FX PMC [Natoma] [8086:1237]
@@ -3093,9 +3104,8 @@ def hardwareInventory(config, progressSubject=None):
 		return [element for element in dom.getElementsByTagName(tagName) if re.search(attributeValue, element.getAttribute(attributeName))]
 
 	# Read output from lshw
-	proc_env = os.environ.copy()
-	proc_env["LC_ALL"] = "C"
-	xmlOut = u'\n'.join(execute(f"{which('lshw')} -xml 2> /dev/null", env=proc_env))
+	proc_env = get_subprocess_environment(add_lc_all_C=True, add_path_sbin=True)
+	xmlOut = u'\n'.join(execute(f"{which('lshw', env={'PATH' : proc_env['PATH']})} -xml", env=proc_env, captureStderr=False))
 	xmlOut = re.sub('[%c%c%c%c%c%c%c%c%c%c%c%c%c]' % (0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0xbd, 0xbf, 0xef, 0xdd), u'.', xmlOut)
 	dom = xml.dom.minidom.parseString(xmlOut.encode('utf-8'))
 
@@ -3104,7 +3114,8 @@ def hardwareInventory(config, progressSubject=None):
 	busId = None
 	devRegex = re.compile(r'([\d.:a-f]+)\s+([\da-f]+):\s+([\da-f]+):([\da-f]+)\s*(\(rev ([^\)]+)\)|)')
 	subRegex = re.compile(r'\s*Subsystem:\s+([\da-f]+):([\da-f]+)\s*')
-	for line in execute(u"%s -vn" % which("lspci")):
+	proc_env = get_subprocess_environment(add_path_sbin=True)
+	for line in execute(u"%s -vn" % which("lspci", env={'PATH' : proc_env['PATH']}), captureStderr=False, env=proc_env):
 		if not line.strip():
 			continue
 		match = re.search(devRegex, line)
@@ -3174,7 +3185,8 @@ def hardwareInventory(config, progressSubject=None):
 	keyValueRegex = re.compile(r'^(\s*)(\S+)\s+(.*)$')
 
 	try:
-		for line in execute(u"%s -v" % which("lsusb")):
+		proc_env = get_subprocess_environment(add_path_sbin=True)
+		for line in execute(u"%s -v" % which("lsusb", env={'PATH' : proc_env['PATH']}), captureStderr=False, env=proc_env):
 			if not line.strip() or (line.find(u'** UNAVAILABLE **') != -1):
 				continue
 			# line = line.decode('ISO-8859-15', 'replace').encode('utf-8', 'replace')
@@ -3277,7 +3289,8 @@ def hardwareInventory(config, progressSubject=None):
 	header = True
 	option = None
 	optRegex = re.compile(r'(\s+)([^:]+):(.*)')
-	for line in execute(which("dmidecode")):
+	proc_env = get_subprocess_environment(add_path_sbin=True)
+	for line in execute(which("dmidecode", env={'PATH' : proc_env['PATH']}), captureStderr=False, env=proc_env):
 		try:
 			if not line.strip():
 				continue
