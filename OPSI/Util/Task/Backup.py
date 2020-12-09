@@ -42,6 +42,7 @@ from OPSI.Logger import Logger, LOG_DEBUG
 from OPSI.Types import forceList, forceUnicode, forceHostId
 from OPSI.Util.File.Opsi import OpsiBackupArchive
 from OPSI.Util.Config import getGlobalConfig
+from OPSI.Util.Task.CleanupBackend import cleanupBackend
 
 logger = Logger()
 
@@ -360,6 +361,8 @@ If this is `None` information will be read from the current system.
 				logger.notice(u"Restoration complete")
 		
 		if new_server_id:
+			logger.info("Cleanup backend...")
+			cleanupBackend()
 			logger.notice("Renaming config server to '%s'", new_server_id)
 			try:
 				if "file" in configuredBackends:
@@ -374,8 +377,11 @@ If this is `None` information will be read from the current system.
 				}
 				with BackendManager(**managerConfig) as backend:
 					configserver = backend.host_getObjects(type='OpsiConfigserver')
+					host = backend.host_getObjects(id=new_server_id)
 					if not configserver:
 						raise RuntimeError("No config server found in backend")
+					if host and host != configserver:
+						backend.host_deleteObjects(host)
 					backend.host_renameOpsiDepotserver(oldId=configserver[0].id, newId=new_server_id)
 			except Exception as rename_error:
 				raise RuntimeError(f"Failed to rename config server to '{new_server_id}': {rename_error}")
