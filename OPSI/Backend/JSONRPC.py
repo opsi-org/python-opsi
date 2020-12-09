@@ -691,8 +691,12 @@ class JSONRPCBackend(Backend):
 			)
 		
 		if method == "POST":
-			if not data:
+			if data:
+				if not type(data) is bytes:
+					data = data.encode("utf-8")
+			else:
 				data = b""
+			
 			if data and self._compression:
 				compression = self._compression
 				if compression is True:
