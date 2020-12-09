@@ -34,6 +34,7 @@ from __future__ import absolute_import
 import collections
 import inspect
 import random
+import copy
 from types import MethodType
 
 from OPSI.Logger import Logger
@@ -590,15 +591,13 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			replaceServerId(configState.values)
 			configStates.append(configState)
 
-		logger.info(u"Deleting depot %s", depot)
-		self._backend.host_deleteObjects([depot])
-
 		def changeAddress(value):
 			newValue = value.replace(oldId, newId)
 			newValue = newValue.replace(oldHostname, newHostname)
 			logger.debug("Changed %s to %s", value, newValue)
 			return newValue
 
+		old_depot = copy.deepcopy(depot)
 		logger.info("Updating depot and it's urls...")
 		depot.setId(newId)
 		if depot.repositoryRemoteUrl:
@@ -620,6 +619,9 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		if configStates:
 			logger.info("Updating ConfigStates...")
 			self.configState_createObjects(configStates)
+
+		logger.info(u"Deleting old depot %s", old_depot)
+		self._backend.host_deleteObjects([old_depot])
 
 		def replaceOldAddress(values):
 			"""
