@@ -679,6 +679,7 @@ class JSONRPCBackend(Backend):
 			jsonrpc = JSONRPCThread(jsonrpcBackend=self, baseUrl=self._baseUrl, method=method, params=params, retry=retry)
 			return jsonrpc.execute()
 	
+	@no_export
 	def httpRequest(self, method, url, data=None, headers={}, retry=True):
 		if not 'User-Agent' in headers:
 			headers['User-Agent'] = self._application
