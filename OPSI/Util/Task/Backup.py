@@ -365,8 +365,6 @@ If this is `None` information will be read from the current system.
 			cleanupBackend()
 			logger.notice("Renaming config server to '%s'", new_server_id)
 			try:
-				if "file" in configuredBackends:
-					raise NotImplementedError("Cannot rename server if file backend is in use")
 				from OPSI.Backend.BackendManager import BackendManager
 				managerConfig = {
 					"dispatchConfigFile": '/etc/opsi/backendManager/dispatch.conf',
@@ -376,7 +374,12 @@ If this is `None` information will be read from the current system.
 					"dispatchIgnoreModules": ["OpsiPXEConfd", "DHCPD", "HostControl"]
 				}
 				with BackendManager(**managerConfig) as backend:
+					hosts =  backend.host_getObjects()
 					configserver = backend.host_getObjects(type='OpsiConfigserver')
+					if len(configserver) == 0:
+						depotserver = backend.host_getObjects(type='OpsiDepotserver')
+						if len(depotserver) == 1:
+							configserver = depotserver
 					host = backend.host_getObjects(id=new_server_id)
 					if not configserver:
 						raise RuntimeError("No config server found in backend")
