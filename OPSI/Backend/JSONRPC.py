@@ -387,7 +387,7 @@ class JSONRPCBackend(Backend):
 	def serverVersion(self):
 		try:
 			if self.serverName:
-				match = re.search(r"opsi\D+([\d\.]+)", self.serverName)
+				match = re.search(r"^opsi\D+(\d+\.\d+\.\d+\.\d+)", self.serverName)
 				if match:
 					return [int(v) for v in match.group(1).split('.')]
 		except Exception as e:
