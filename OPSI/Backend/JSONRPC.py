@@ -29,12 +29,14 @@ This backend executes the calls on a remote backend via JSONRPC.
 :license: GNU Affero General Public License version 3
 """
 
+import re
 import base64
 import json
 import socket
 import time
 import threading
 import types
+import lz4.frame
 from hashlib import md5
 from queue import Queue, Empty
 try:
@@ -65,6 +67,7 @@ from OPSI.Util import getPublicKey
 __all__ = ('JSONRPC', 'JSONRPCThread', 'RpcQueue', 'JSONRPCBackend')
 
 _GZIP_COMPRESSION = 'gzip'
+_LZ4_COMPRESSION = 'lz4'
 
 logger = Logger()
 
@@ -310,6 +313,7 @@ class JSONRPCBackend(Backend):
 		self._verifyServerCertByCa = False
 		self._verifyByCaCertsFile = None
 		self._proxyURL = None
+		self.serverName = None
 
 		if not self._username:
 			self._username = u''
@@ -379,6 +383,17 @@ class JSONRPCBackend(Backend):
 		if self._connectOnInit:
 			self.connect()
 
+	@property
+	def serverVersion(self):
+		try:
+			if self.serverName:
+				match = re.search(r"opsi\D+([\d\.]+)", self.serverName)
+				if match:
+					return [int(v) for v in match.group(1).split('.')]
+		except Exception as e:
+			logger.warning("Failed to parse server version '%s': %s", self.serverName, e)
+		return None
+	
 	def _stopRpcQueue(self):
 		if self._rpcQueue:
 			self._rpcQueue.stop()
@@ -438,14 +453,14 @@ class JSONRPCBackend(Backend):
 		if isinstance(compression, bool):
 			return compression
 		else:
-			value = forceUnicode(compression)
-			value = value.strip()
-			value = value.lower()
+			value = forceUnicode(compression).strip().lower()
 
 			if value in ('true', 'false'):
 				return forceBool(value)
-			elif value == 'gzip':
+			elif value == _GZIP_COMPRESSION:
 				return _GZIP_COMPRESSION
+			elif value == _LZ4_COMPRESSION:
+				return _LZ4_COMPRESSION
 			else:
 				return False
 
@@ -663,35 +678,59 @@ class JSONRPCBackend(Backend):
 		else:
 			jsonrpc = JSONRPCThread(jsonrpcBackend=self, baseUrl=self._baseUrl, method=method, params=params, retry=retry)
 			return jsonrpc.execute()
+	
+	def httpRequest(self, method, url, data=None, headers={}, retry=True):
+		if not 'User-Agent' in headers:
+			headers['User-Agent'] = self._application
+		if not 'Cookie' in headers and self._sessionId:
+			headers['Cookie'] = self._sessionId
+		if not 'Authorization' in headers:
+			headers['Authorization'] = createBasicAuthHeader(
+				self._username,
+				self._password
+			)
+		
+		if method == "POST":
+			if not data:
+				data = b""
+			if data and self._compression:
+				compression = self._compression
+				if compression is True:
+					# Auto choose later by server version
+					# opsiconfd 4.2.0.96 (uvicorn)
+					compression = _GZIP_COMPRESSION
+					sv = self.serverVersion
+					if sv and (sv[0] > 4 or (sv[0] == 4 and sv[1] > 1)):
+						compression = _LZ4_COMPRESSION
+				
+				if compression == _LZ4_COMPRESSION:
+					logger.debug2("Compressing data with lz4")
+					headers['Content-Encoding'] = 'lz4'
+					data = lz4.frame.compress(data, compression_level=0, block_linked=True)
+					logger.debug2("Data compressed.")
+				else:
+					logger.debug2("Compressing data with gzip")
+					headers['Content-Encoding'] = 'gzip'
+					data = gzipEncode(data)
+					logger.debug2("Data compressed.")
+			
+			headers['Content-Length'] = str(len(data))
 
+		response = self._connectionPool.urlopen(method=method, url=url, body=data, headers=headers, retry=retry)
+		if 'server' in response.headers:
+			self.serverName = response.headers.get('server')
+		return response
+	
 	def _request(self, baseUrl, data, retry=True):
 		headers = {
-			'User-Agent': self._application,
 			'Accept': 'application/json, text/plain',
 			'Accept-Encoding': 'deflate, gzip',
 			'Content-Type': 'application/json',
 		}
 
-		logger.debug2(u"Request to host %s, baseUrl: %s, query: %s", self._host, baseUrl, data)
-
-		if self._compression is True or self._compression == _GZIP_COMPRESSION:
-			logger.debug2(u"Compressing data with gzip")
-			headers['Content-Encoding'] = 'gzip'
-			data = gzipEncode(data)
-			logger.debug2(u"Data compressed.")
-
-		headers['Content-Length'] = str(len(data))
-		headers['Authorization'] = createBasicAuthHeader(
-			self._username,
-			self._password
-		)
-
-		if self._sessionId:
-			headers['Cookie'] = self._sessionId
-
+		logger.debug2(u"Request to host %s, url: %s, query: %s", self._host, baseUrl, data)
 		logger.debug("Posting request...")
-		response = self._connectionPool.urlopen(method='POST', url=baseUrl, body=data, headers=headers, retry=retry)
-
+		response = self.httpRequest(method='POST', url=baseUrl, data=data, headers=headers, retry=retry)
 		return self._processResponse(response)
 
 	def _processResponse(self, response):
@@ -724,13 +763,16 @@ class JSONRPCBackend(Backend):
 
 		response = response.data
 		if contentEncoding == 'gzip':
-			logger.debug(u"Expecting gzip'ed data from server")
+			logger.debug("Expecting gzip compressed data from server")
 			response = gzipDecode(response)
 		elif contentEncoding == "deflate":
-			logger.debug(u"Expecting deflated data from server")
+			logger.debug("Expecting deflate compressed data from server")
 			response = deflateDecode(response)
-
-		logger.debug2(u"Response is: %s", response)
+		elif contentEncoding == "lz4":
+			logger.debug("Expecting lz4 compressed data from server")
+			response = lz4.frame.decompress(response)
+		
+		logger.trace(u"Response is: %s", response)
 		return response
 
 	def getInterface(self):
