@@ -495,12 +495,12 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 		return len(self.clients)
 
 	def connectionMade(self, client):
-		logger.info("client connection made: %s", client)
+		logger.info("client connection made: %s", client.transport)
 		self.clients.append(client)
 		self.subjectsChanged(self.getSubjects())
 
 	def connectionLost(self, client, reason):
-		logger.info("client connection lost: %s (%s)", client, reason)
+		logger.info("client connection lost: %s (%s)", client.transport, reason)
 		self.clients.remove(client)
 
 	def rpc(self, client, line):
