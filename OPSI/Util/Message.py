@@ -495,16 +495,22 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 		return len(self.clients)
 
 	def connectionMade(self, client):
-		logger.info("client connection made: %s", client.transport)
 		self.clients.append(client)
+		logger.info(
+			"Client connection made: %s, %d client(s) connected",
+			client.transport, self.connectionCount()
+		)
 		self.subjectsChanged(self.getSubjects())
 
 	def connectionLost(self, client, reason):
-		logger.info("client connection lost: %s (%s)", client.transport, reason)
 		self.clients.remove(client)
+		logger.info(
+			"Client connection lost: %s (%s), %d client(s) connected",
+			client.transport, reason, self.connectionCount()
+		)
 
 	def rpc(self, client, line):
-		logger.info("received line '%s'", line)
+		logger.info("Received line '%s'", line)
 		id = None
 		try:
 			rpc = json.loads(line)
@@ -530,7 +536,7 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 					result = subject.selectChoice()
 					break
 			else:
-				raise ValueError("unknown method '%s'" % method)
+				raise ValueError(f"Unknown method '{method}'")
 		except Exception as error:
 			logger.error("Failed to execute rpc: %s", error)
 
@@ -588,15 +594,19 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 			clients = self.clients
 		if not isinstance(clients, list):
 			clients = [clients]
+		
+		logger.debug("Sending notification '%s' to %d client(s)", name, len(clients))
+
 		if not clients:
-			logger.debug("cannot send notification '%s', no client connected", name)
 			return
 
-		logger.debug("sending notification '%s' to clients", name)
+		# json-rpc: notifications have id null
+		jsonBytes = json.dumps({"id": None, "method": name, "params": params}).encode("utf-8")
 		for client in clients:
-			# json-rpc: notifications have id null
-			jsonString = json.dumps({"id": None, "method": name, "params": params})
-			client.sendLine(jsonString.encode("utf-8"))
+			try:
+				client.sendLine(jsonBytes)
+			except Exception as e:
+				logger.warning("Failed to send line to client %s: %s", client, e)
 
 
 class NotificationServer(threading.Thread, SubjectsObserver):
