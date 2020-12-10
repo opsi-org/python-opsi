@@ -648,7 +648,10 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 			except Exception:
 				closeConnection(conn)
 				raise
-
+		
+		if self.serverVerified:
+			logger.info("Server verified (verifyServerCert=%s, verifyServerCertByCa=%s)", self.verifyServerCert, self.verifyServerCertByCa)
+		
 		return conn
 
 
