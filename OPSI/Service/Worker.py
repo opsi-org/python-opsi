@@ -187,43 +187,45 @@ INTERFACE_PAGE = '''<?xml version="1.0" encoding="UTF-8"?>
 		<img src="/opsi_logo.png" /><br /><br />
 		<span style="padding: 1px">%(title)s</span>
 	</p>
-	<table class="box">
-		<tbody id="tbody">
-			<tr id="tr_path">
-				<td style="width: 150px;">Path:</td>
-				<td style="width: 440px;">
-					<select id="path_select" onchange="selectPath(this)" name="path">
-						%(select_path)s
-					</select>
-				</td>
-			</tr>
-			<tr id="tr_method">
-				<td style="width: 150px;">Method:</td>
-				<td style="width: 440px;">
-					<select id="method_select" onchange="selectMethod(this)" name="method">
-						%(select_method)s
-					</select>
-				</td>
-			</tr>
-			<tr id="tr_json">
-				<td colspan="2">
-					<div class="json_label">
-						resulting json remote procedure call:
-					</div>
-					<div class="json" style="width: 480px;">
-						{&nbsp;"<font class="json_key">method</font>": <span id="json_method"></span>,<br />
-						&nbsp;&nbsp;&nbsp;"<font class="json_key">params</font>": <span id="json_params">[]</span>,<br />
-						&nbsp;&nbsp;&nbsp;"<font class="json_key">id</font>": 1 }
-					</div>
-				</td>
-			</tr>
-			<tr id="tr_submit">
-				<td align="center" colspan="2">
-					<input value="Execute" id="submit" class="button" onclick="onSubmit();" />
-				</td>
-			</tr>
-		</tbody>
-	</table>
+	<form method="post" onsubmit="return onSubmit()">
+		<table class="box">
+			<tbody id="tbody">
+				<tr id="tr_path">
+					<td style="width: 150px;">Path:</td>
+					<td style="width: 440px;">
+						<select id="path_select" onchange="selectPath(this)" name="path">
+							%(select_path)s
+						</select>
+					</td>
+				</tr>
+				<tr id="tr_method">
+					<td style="width: 150px;">Method:</td>
+					<td style="width: 440px;">
+						<select id="method_select" onchange="selectMethod(this)" name="method">
+							%(select_method)s
+						</select>
+					</td>
+				</tr>
+				<tr id="tr_json">
+					<td colspan="2">
+						<div class="json_label">
+							resulting json remote procedure call:
+						</div>
+						<div class="json" style="width: 480px;">
+							{&nbsp;"<font class="json_key">method</font>": <span id="json_method"></span>,<br />
+							&nbsp;&nbsp;&nbsp;"<font class="json_key">params</font>": <span id="json_params">[]</span>,<br />
+							&nbsp;&nbsp;&nbsp;"<font class="json_key">id</font>": 1 }
+						</div>
+					</td>
+				</tr>
+				<tr id="tr_submit">
+					<td align="center" colspan="2">
+						<input value="Execute" id="submit" class="button" type="submit" />
+					</td>
+				</tr>
+			</tbody>
+		</table>
+	</form>
 	<div class="json_label" style="padding-left: 30px">json-rpc result</div>
 	%(result)s
 </body>
