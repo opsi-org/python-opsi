@@ -66,16 +66,6 @@ logger = Logger()
 connectionPools = {}
 totalRequests = 0
 
-try:
-	# We are running a new version of Python that implements PEP 476:
-	# https://www.python.org/dev/peps/pep-0476/
-	# To not break our expected behaviour we patch the default context
-	# until we have a correct certificate check implementation.
-	# TODO: remove this workaround when support for TLS1.1+ is implemented
-	ssl_module._create_default_https_context = ssl_module._create_unverified_context
-except AttributeError:
-	pass
-
 
 def non_blocking_connect_http(self, connectTimeout=0):
 	''' Non blocking connect, needed for KillableThread '''
@@ -287,6 +277,10 @@ class HTTPConnectionPool(object):
 						if not self.serverCertFile:
 							raise ValueError(u"Server verfication enabled but no server cert file given")
 						logger.info(u"Server verfication by server certificate enabled for host '%s'", self.host)
+			
+			if self.host in ('localhost', '127.0.0.1') or (not self.verifyServerCert and not self.verifyServerCertByCa):
+				ssl_module._create_default_https_context = ssl_module._create_unverified_context
+		
 		self.adjustSize(maxsize)
 
 	def increaseUsageCount(self):
@@ -628,26 +622,6 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 				raise OpsiServiceVerificationError(forceUnicode(error))
 
 			self.peerCertificate = getPeerCertificate(conn, asPEM=True)
-		
-		if self.verifyServerCertByCa:
-			logger.debug("Attempting to verify server cert by CA...")
-			try:
-				if self.peerCertificate:
-					commonName = crypto.load_certificate(crypto.FILETYPE_PEM, self.peerCertificate).get_subject().commonName
-					host = self.host
-					if re.search(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$', host):
-						fqdn = socket.getfqdn(host)
-						if fqdn == host:
-							raise OpsiServiceVerificationError(u"Failed to get fqdn for ip %s" % host)
-						host = fqdn
-					if not host or not commonName or (host.lower() != commonName.lower()):
-						raise OpsiServiceVerificationError(u"Host '%s' does not match common name '%s'" % (host, commonName))
-					self.serverVerified = True
-				else:
-					raise OpsiServiceVerificationError(u"Failed to get peer certificate")
-			except Exception:
-				closeConnection(conn)
-				raise
 		
 		if self.serverVerified:
 			logger.info("Server verified (verifyServerCert=%s, verifyServerCertByCa=%s)", self.verifyServerCert, self.verifyServerCertByCa)
