@@ -623,7 +623,7 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 
 			self.peerCertificate = getPeerCertificate(conn, asPEM=True)
 		
-		if self.serverVerified:
+		if (self.verifyServerCert or self.verifyServerCertByCa) and self.serverVerified:
 			logger.info("Server verified (verifyServerCert=%s, verifyServerCertByCa=%s)", self.verifyServerCert, self.verifyServerCertByCa)
 		
 		return conn
