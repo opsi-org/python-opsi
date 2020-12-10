@@ -25,8 +25,6 @@
 Worker for the various interfaces.
 
 :copyright:	uib GmbH <info@uib.de>
-:author: Jan Schneider <j.schneider@uib.de>
-:author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
 """
 
@@ -70,161 +68,162 @@ INTERFACE_PAGE = '''<?xml version="1.0" encoding="UTF-8"?>
 	.box          { background-color: #fafafa; border: 1px #555555 solid; padding: 20px; margin-left: 30px; margin-top: 50px;}
 	</style>
 	<script type="text/javascript">
-	// <![CDATA[
-		var path = '%(path)s';
-		var parameters = new Array();
-		var method = '';
-		var params = '';
-		var id = '"id": 1';
-		%(javascript)s
+	var path = '%(path)s';
+	var parameters = new Array();
+	var method = '';
+	var params = '';
+	var id = '"id": 1';
+	%(javascript)s
 
-		function createElement(element) {
-			if (typeof document.createElementNS != 'undefined') {
-				return document.createElementNS('http://www.w3.org/1999/xhtml', element);
+	function createElement(element) {
+		if (typeof document.createElementNS != 'undefined') {
+			return document.createElementNS('http://www.w3.org/1999/xhtml', element);
+		}
+		if (typeof document.createElement != 'undefined') {
+			return document.createElement(element);
+		}
+		return false;
+	}
+
+	function selectPath(select) {
+		path = select.value;
+		document.getElementById('json_method').firstChild.data = '"backend_getInterface"';
+		document.getElementById('json_params').firstChild.data = '[]';
+		onSubmit();
+	}
+	function selectMethod(select) {
+		method = select.value;
+		tbody = document.getElementById('tbody');
+		var button;
+		var json;
+		for (i=tbody.childNodes.length-1; i>=0; i--) {
+			if (tbody.childNodes[i].id == 'tr_path') {
 			}
-			if (typeof document.createElement != 'undefined') {
-				return document.createElement(element);
+			else if (tbody.childNodes[i].id == 'tr_method') {
 			}
-			return false;
+			else if (tbody.childNodes[i].id == 'tr_submit') {
+				button = tbody.childNodes[i];
+				tbody.removeChild(button);
+			}
+			else if (tbody.childNodes[i].id == 'tr_json') {
+				json = tbody.childNodes[i];
+				tbody.removeChild(json);
+			}
+			else {
+				tbody.removeChild(tbody.childNodes[i]);
+			}
 		}
 
-		function selectPath(select) {
-			path = select.value;
-			document.getElementById('json_method').firstChild.data = '"backend_getInterface"';
-			document.getElementById('json_params').firstChild.data = '[]';
-			onSubmit();
+		for (i=0; i < parameters[select.value].length; i++) {
+			tr = createElement("tr");
+			td1 = createElement("td");
+			text = document.createTextNode(parameters[select.value][i] + ":");
+			td1.appendChild(text);
+			td2 = createElement("td");
+			input = createElement("input");
+			input.setAttribute('onchange', 'jsonString()');
+			input.setAttribute('type', 'text');
+			if ((method == currentMethod) && (currentParams[i] != null)) {
+				input.value = currentParams[i];
+			}
+			td2.appendChild(input);
+			tr.appendChild(td1);
+			tr.appendChild(td2);
+			tbody.appendChild(tr)
 		}
-		function selectMethod(select) {
-			method = select.value;
-			tbody = document.getElementById('tbody');
-			var button;
-			var json;
-			for (i=tbody.childNodes.length-1; i>=0; i--) {
-				if (tbody.childNodes[i].id == 'tr_path') {
-				}
-				else if (tbody.childNodes[i].id == 'tr_method') {
-				}
-				else if (tbody.childNodes[i].id == 'tr_submit') {
-					button = tbody.childNodes[i];
-					tbody.removeChild(button);
-				}
-				else if (tbody.childNodes[i].id == 'tr_json') {
-					json = tbody.childNodes[i];
-					tbody.removeChild(json);
+		tbody.appendChild(json)
+		tbody.appendChild(button)
+
+		jsonString();
+	}
+
+	function onSubmit() {
+		var json = '{ "id": 1, "method": ';
+		json += document.getElementById('json_method').firstChild.data;
+		json += ', "params": ';
+		json += document.getElementById('json_params').firstChild.data;
+		json += ' }';
+		window.location.href = '/' + path + '?' + json;
+		return false;
+	}
+
+	function jsonString() {
+		span = document.getElementById('json_method');
+		for (i=span.childNodes.length-1; i>=0; i--) {
+			span.removeChild(span.childNodes[i])
+		}
+		span.appendChild(document.createTextNode('"' + method + '"'));
+
+		span = document.getElementById('json_params');
+		for (i=span.childNodes.length-1; i>=0; i--) {
+			span.removeChild(span.childNodes[i])
+		}
+		params = '['
+		inputs = document.getElementsByTagName('input');
+		for (i=0; i<inputs.length; i++) {
+			if (inputs[i].id != 'submit') {
+				if (inputs[i].value == '') {
+					i = inputs.length;
 				}
 				else {
-					tbody.removeChild(tbody.childNodes[i]);
-				}
-			}
-
-			for (i=0; i < parameters[select.value].length; i++) {
-				tr = createElement("tr");
-				td1 = createElement("td");
-				text = document.createTextNode(parameters[select.value][i] + ":");
-				td1.appendChild(text);
-				td2 = createElement("td");
-				input = createElement("input");
-				input.setAttribute('onchange', 'jsonString()');
-				input.setAttribute('type', 'text');
-				if ((method == currentMethod) && (currentParams[i] != null)) {
-					input.value = currentParams[i];
-				}
-				td2.appendChild(input);
-				tr.appendChild(td1);
-				tr.appendChild(td2);
-				tbody.appendChild(tr)
-			}
-			tbody.appendChild(json)
-			tbody.appendChild(button)
-
-			jsonString();
-		}
-
-		function onSubmit() {
-			var json = '{ "id": 1, "method": ';
-			json += document.getElementById('json_method').firstChild.data;
-			json += ', "params": ';
-			json += document.getElementById('json_params').firstChild.data;
-			json += ' }';
-			window.location.href = '/' + path + '?' + json;
-			return false;
-		}
-
-		function jsonString() {
-			span = document.getElementById('json_method');
-			for (i=span.childNodes.length-1; i>=0; i--) {
-				span.removeChild(span.childNodes[i])
-			}
-			span.appendChild(document.createTextNode('"' + method + '"'));
-
-			span = document.getElementById('json_params');
-			for (i=span.childNodes.length-1; i>=0; i--) {
-				span.removeChild(span.childNodes[i])
-			}
-			params = '['
-			inputs = document.getElementsByTagName('input');
-			for (i=0; i<inputs.length; i++) {
-				if (inputs[i].id != 'submit') {
-					if (inputs[i].value == '') {
-						i = inputs.length;
+					if (i>0) {
+						params += ', ';
 					}
-					else {
-						if (i>0) {
-							params += ', ';
-						}
-						params += inputs[i].value.replace(/\\\\/g, '\\\\\\\\');
-					}
+					params += inputs[i].value.replace(/\\\\/g, '\\\\\\\\');
 				}
 			}
-			span.appendChild(document.createTextNode(params + ']'));
 		}
-	// ]]>
+		span.appendChild(document.createTextNode(params + ']'));
+	}
+
+	function onLoad() {
+		selectMethod(document.getElementById('method_select'));
+		window.history.replaceState(null, null, window.location.href.split('?')[0]);
+	}
 	</script>
 </head>
-<body onload="selectMethod(document.getElementById('method_select'))">
+<body onload="onLoad();">
 	<p id="title">
 		<img src="/opsi_logo.png" /><br /><br />
 		<span style="padding: 1px">%(title)s</span>
 	</p>
-	<form method="post" onsubmit="return onSubmit()">
-		<table class="box">
-			<tbody id="tbody">
-				<tr id="tr_path">
-					<td style="width: 150px;">Path:</td>
-					<td style="width: 440px;">
-						<select id="path_select" onchange="selectPath(this)" name="path">
-							%(select_path)s
-						</select>
-					</td>
-				</tr>
-				<tr id="tr_method">
-					<td style="width: 150px;">Method:</td>
-					<td style="width: 440px;">
-						<select id="method_select" onchange="selectMethod(this)" name="method">
-							%(select_method)s
-						</select>
-					</td>
-				</tr>
-				<tr id="tr_json">
-					<td colspan="2">
-						<div class="json_label">
-							resulting json remote procedure call:
-						</div>
-						<div class="json" style="width: 480px;">
-							{&nbsp;"<font class="json_key">method</font>": <span id="json_method"></span>,<br />
-							&nbsp;&nbsp;&nbsp;"<font class="json_key">params</font>": <span id="json_params">[]</span>,<br />
-							&nbsp;&nbsp;&nbsp;"<font class="json_key">id</font>": 1 }
-						</div>
-					</td>
-				</tr>
-				<tr id="tr_submit">
-					<td align="center" colspan="2">
-						<input value="Execute" id="submit" class="button" type="submit" />
-					</td>
-				</tr>
-			</tbody>
-		</table>
-	</form>
+	<table class="box">
+		<tbody id="tbody">
+			<tr id="tr_path">
+				<td style="width: 150px;">Path:</td>
+				<td style="width: 440px;">
+					<select id="path_select" onchange="selectPath(this)" name="path">
+						%(select_path)s
+					</select>
+				</td>
+			</tr>
+			<tr id="tr_method">
+				<td style="width: 150px;">Method:</td>
+				<td style="width: 440px;">
+					<select id="method_select" onchange="selectMethod(this)" name="method">
+						%(select_method)s
+					</select>
+				</td>
+			</tr>
+			<tr id="tr_json">
+				<td colspan="2">
+					<div class="json_label">
+						resulting json remote procedure call:
+					</div>
+					<div class="json" style="width: 480px;">
+						{&nbsp;"<font class="json_key">method</font>": <span id="json_method"></span>,<br />
+						&nbsp;&nbsp;&nbsp;"<font class="json_key">params</font>": <span id="json_params">[]</span>,<br />
+						&nbsp;&nbsp;&nbsp;"<font class="json_key">id</font>": 1 }
+					</div>
+				</td>
+			</tr>
+			<tr id="tr_submit">
+				<td align="center" colspan="2">
+					<input value="Execute" id="submit" class="button" onclick="onSubmit();" />
+				</td>
+			</tr>
+		</tbody>
+	</table>
 	<div class="json_label" style="padding-left: 30px">json-rpc result</div>
 	%(result)s
 </body>
