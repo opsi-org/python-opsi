@@ -841,12 +841,12 @@ def get_subprocess_environment(env: dict = None, add_lc_all_C=False, add_path_sb
 	if add_lc_all_C:
 		sp_env["LC_ALL"] = "C"
 	if add_path_sbin:
-		if not "/usr/local/sbin" in sp_env["PATH"]:
-			sp_env["PATH"] += ":/usr/local/sbin"
-		if not "/usr/sbin" in sp_env["PATH"]:
-			sp_env["PATH"] += ":/usr/sbin"
 		if not "/sbin" in sp_env["PATH"]:
 			sp_env["PATH"] += ":/sbin"
+		if not "/usr/sbin" in sp_env["PATH"]:
+			sp_env["PATH"] += ":/usr/sbin"
+		if not "/usr/local/sbin" in sp_env["PATH"]:
+			sp_env["PATH"] += ":/usr/local/sbin"
 
 	return sp_env
 
