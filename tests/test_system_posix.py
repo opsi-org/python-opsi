@@ -209,16 +209,6 @@ def testHardwareExtendedInventoryReturnsSafelyWithoutConfig(hardwareConfigAndHar
 	assert {} == Posix.hardwareExtendedInventory({}, hardwareInfo)
 
 
-@pytest.mark.parametrize("versionString, isUbuntuXenial", [
-	('sfdisk von util-linux 2.27.1', True),
-	('sfdisk von util-linux 2.20.1', False)
-])
-def testGettingSfdiskVersion(versionString, isUbuntuXenial):
-	with mock.patch('OPSI.System.Posix.execute', mock.Mock(return_value=[versionString])):
-		with mock.patch('OPSI.System.Posix.which', mock.Mock(return_value='/sbin/sfdisk')):
-			assert Posix.isXenialSfdiskVersion() == isUbuntuXenial
-
-
 @pytest.mark.skipif(True, reason="temporarily disabled")
 def testReadingPartitionTableOnHPProliantDisksTest():
 	"Testing the behaviour of Disk objects on HP Proliant Hardware."
@@ -244,9 +234,8 @@ def testReadingPartitionTableOnHPProliantDisksTest():
 		d = Posix.Harddisk('/fakedev/cciss/c0d0')
 
 	with mock.patch('OPSI.System.Posix.execute', mock.Mock(return_value=outputFromSfdiskGeometry)):
-		with mock.patch('OPSI.System.Posix.isXenialSfdiskVersion', mock.Mock(return_value=True)):
-			with mock.patch('os.path.exists', mock.Mock(return_value=True)):
-				d._parsePartitionTable(outputFromSfdiskListing)
+		with mock.patch('os.path.exists', mock.Mock(return_value=True)):
+			d._parsePartitionTable(outputFromSfdiskListing)
 
 		assert '/fakedev/cciss/c0d0' == d.device
 		assert 76602 == d.cylinders
@@ -273,8 +262,7 @@ def testReadingPartitionTableOnHPProliantDisksTest():
 	]
 
 	with mock.patch('OPSI.System.Posix.execute', mock.Mock(return_value=blkidOutput)):
-		with mock.patch('OPSI.System.Posix.isXenialSfdiskVersion', mock.Mock(return_value=True)):
-			d._parseSectorData(outputFromSecondSfdiskListing)
+		d._parseSectorData(outputFromSecondSfdiskListing)
 
 	assert len(d.partitions) > 0
 	assert 1 == len(d.partitions)
@@ -296,182 +284,6 @@ def testReadingPartitionTableOnHPProliantDisksTest():
 		'type': u'HPFS/NTFS'
 	}
 	assert first_partition_expected == d.partitions[0]
-
-
-def testReadingPartitionTableOnHPProliantDisksWithOldSfdiskVersion():
-	"Testing the behaviour of Disk objects on HP Proliant Hardware with an old version of sfdisk."
-	outputFromSfdiskListing = [
-		"",
-		"Disk /fakedev/cciss/c0d0: 17562 cylinders, 255 heads, 32 sectors/track",
-		"Units = cylinders of 4177920 bytes, blocks of 1024 bytes, counting from 0",
-		"",
-		"   Device             Boot  Start     End   #cyls    #blocks Id  System",
-		"/fakedev/cciss/c0d0p1          0+  16558-  16558- 67556352    7  HPFS/NTFS",
-		"/fakedev/cciss/c0d0p2   *  16558+  17561    1004- 4095584    c  W95 FAT32 (LBA)",
-		"/fakedev/cciss/c0d0p3          0       -       0 0    0  Empty",
-		"/fakedev/cciss/c0d0p4          0       -       0 0    0  Empty",
-	]
-
-	with mock.patch('OPSI.System.Posix.execute'):
-		d = Posix.Harddisk('/fakedev/cciss/c0d0')
-
-	d.partitions = []  # Make sure no parsing happened before
-
-	with mock.patch('OPSI.System.Posix.isXenialSfdiskVersion', mock.Mock(return_value=False)):
-		with mock.patch('os.path.exists', mock.Mock(return_value=True)):
-			d._parsePartitionTable(outputFromSfdiskListing)
-
-	assert '/fakedev/cciss/c0d0' == d.device
-	assert 17562 == d.cylinders
-	assert 255 == d.heads
-	assert 32 == d.sectors
-	assert 4177920 == d.bytesPerCylinder
-
-	assert len(d.partitions) > 0
-
-	outputFromSecondSfdiskListing = [
-		"",
-		"Disk /fakedev/cciss/c0d0: 17562 cylinders, 255 heads, 32 sectors/track",
-		"Units = sectors of 512 bytes, counting from 0",
-		"",
-		"              Device  Boot    Start       End #sectors  Id System",
-		"/fakedev/cciss/c0d0p1          2048 135114751 135112704  7  HPFS/NTFS",
-		"/fakedev/cciss/c0d0p2   * 135114752 143305919 8191168    c  W95 FAT32 (LBA)",
-		"/fakedev/cciss/c0d0p3             0         - 0          0  Empty",
-		"/fakedev/cciss/c0d0p4             0         - 0          0  Empty",
-	]
-
-	with mock.patch('OPSI.System.Posix.isXenialSfdiskVersion', mock.Mock(return_value=False)):
-		d._parseSectorData(outputFromSecondSfdiskListing)
-
-	assert len(d.partitions) > 0
-	assert 2 == len(d.partitions)
-
-	first_partition_expected = {
-		'fs': u'ntfs',
-		'cylSize': 16558,
-		'number': 1,
-		'secStart': 2048,
-		'secSize': 135112704,
-		'device': u'/fakedev/cciss/c0d0p1',
-		'size': long(69177999360),
-		'cylStart': 0,
-		'end': long(69182177280),
-		'secEnd': 135114751,
-		'boot': False,
-		'start': 0,
-		'cylEnd': 16558,
-		'type': u'7'
-	}
-	assert first_partition_expected == d.partitions[0]
-
-	last_partition_expected = {
-		'fs': u'fat32',
-		'cylSize': 1004,
-		'number': 2,
-		'secStart': 135114752,
-		'secSize': 8191168,
-		'device': u'/fakedev/cciss/c0d0p2',
-		'size': long(4194631680),
-		'cylStart': 16558,
-		'end': long(73372631040),
-		'secEnd': 143305919,
-		'boot': True,
-		'start': long(69177999360),
-		'cylEnd': 17561,
-		'type': u'c'
-	}
-	assert last_partition_expected == d.partitions[-1]
-
-
-def testReadingPartitionTableFromOldSfdiskVersion():
-	# TODO: proper name plz
-	# TODO: is this still relevant?
-	outputFromSfdiskListing = [
-		" ",
-		" Disk /fakedev/sdb: 4865 cylinders, 255 heads, 63 sectors/track",
-		" Units = cylinders of 8225280 bytes, blocks of 1024 bytes, counting from 0",
-		" ",
-		"    Device     Boot  Start     End   #cyls   #blocks   Id  System",
-		" /fakedev/sdb1   *      0+   4228-   4229-  33961984    7  HPFS/NTFS",
-		" /fakedev/sdb2       4355+   4865-    511-   4096696    c  W95 FAT32 (LBA)",
-		" /fakedev/sdb3          0       -       0          0    0  Empty",
-		" /fakedev/sdb4          0       -       0          0    0  Empty",
-	]
-
-	with mock.patch('OPSI.System.Posix.execute'):
-		d = Posix.Harddisk('/fakedev/sdb')
-
-	d.size = 39082680 * 1024  # Faking this
-	d.partitions = []  # Make sure no parsing happened before
-
-	with mock.patch('OPSI.System.Posix.isXenialSfdiskVersion', mock.Mock(return_value=False)):
-		with mock.patch('os.path.exists', mock.Mock(return_value=True)):
-			# Making sure that we do not run into a timeout.
-			d._parsePartitionTable(outputFromSfdiskListing)
-
-	assert '/fakedev/sdb' == d.device
-	assert 4865 == d.cylinders
-	assert 255 == d.heads
-	assert 63 == d.sectors
-	assert 8225280 == d.bytesPerCylinder
-
-	assert len(d.partitions) > 0
-
-	outputFromSecondSfdiskListing = [
-		"",
-		"Disk /fakedev/sdb: 4865 cylinders, 255 heads, 63 sectors/track",
-		"Units = sectors of 512 bytes, counting from 0",
-		"",
-		"   Device Boot    Start       End   #sectors  Id  System",
-		"/fakedev/sdb1   *      2048  67926015   67923968   7  HPFS/NTFS",
-		"/fakedev/sdb2      69971968  78165359    8193392   c  W95 FAT32 (LBA)",
-		"/fakedev/sdb3             0         -          0   0  Empty",
-		"/fakedev/sdb4             0         -          0   0  Empty",
-	]
-	with mock.patch('OPSI.System.Posix.isXenialSfdiskVersion', mock.Mock(return_value=False)):
-		d._parseSectorData(outputFromSecondSfdiskListing)
-
-	assert 512 == d.bytesPerSector
-	assert 78165360 == d.totalSectors
-	assert len(d.partitions) > 0
-	assert 2 == len(d.partitions)
-
-	expected = {
-		'fs': u'ntfs',
-		'cylSize': 4229,
-		'number': 1,
-		'secStart': 2048,
-		'secSize': 67923968,
-		'device': u'/fakedev/sdb1',
-		'size': long(34784709120),
-		'cylStart': 0,
-		'end': long(34784709120),
-		'secEnd': 67926015,
-		'boot': True,
-		'start': 0,
-		'cylEnd': 4228,
-		'type': u'7'
-	}
-	assert expected == d.partitions[0]
-
-	expected_last_partition = {
-		'fs': u'fat32',
-		'cylSize': 511,
-		'number': 2,
-		'secStart': 69971968,
-		'secSize': 8193392,
-		'device': u'/fakedev/sdb2',
-		'size': long(4203118080),
-		'cylStart': 4355,
-		'end': long(40024212480),
-		'secEnd': 78165359,
-		'boot': False,
-		'start': long(35821094400),
-		'cylEnd': 4865,
-		'type': u'c'
-	}
-	assert expected_last_partition == d.partitions[-1]
 
 
 def testGetSambaServiceNameGettingDefaultIfNothingElseParsed():
