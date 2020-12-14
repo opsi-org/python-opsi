@@ -165,17 +165,29 @@ class RpcThread(KillableThread):
 				logger.debug2("Sending data to client: %s", query)
 
 				response = connection.getresponse()
+				status = response.status
 				response = response.read()
 				logger.debug2("Got response from client: %s", response)
 				if isinstance(response, bytes):
 					response = response.decode('utf-8')
-				response = fromJson(response)
-
-				if response and isinstance(response, dict):
-					self.error = response.get('error')
-					self.result = response.get('result')
+				
+				try:
+					response = fromJson(response)
+				except Exception as jsonErr:
+					logger.debug(jsonErr)
+				
+				if status == 200:
+					if response and isinstance(response, dict):
+						self.error = response.get('error')
+						self.result = response.get('result')
+					else:
+						self.error = f"Bad response from client: {response}"
 				else:
-					self.error = u"Bad response from client: %s" % forceUnicode(response)
+					if response and isinstance(response, dict) and "error" in response:
+						self.error = response["error"]
+					else:
+						self.error = f"Client error: {status} - {response}"
+		
 		except Exception as e:
 			self.error = forceUnicode(e)
 		finally:
