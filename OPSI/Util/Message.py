@@ -510,7 +510,7 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 		)
 
 	def rpc(self, client, line):
-		logger.info("Received line '%s'", line)
+		logger.info("Received rpc '%s'", line)
 		id = None
 		try:
 			rpc = json.loads(line)
@@ -604,6 +604,7 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 		jsonBytes = json.dumps({"id": None, "method": name, "params": params}).encode("utf-8")
 		for client in clients:
 			try:
+				logger.debug("Sending line '%s' to client %s", jsonBytes, client)
 				client.sendLine(jsonBytes)
 			except Exception as e:
 				logger.warning("Failed to send line to client %s: %s", client, e)
@@ -743,21 +744,21 @@ class NotificationClientFactory(ClientFactory):
 		self._timeout = 5
 
 	def connectionLost(self, reason):
-		logger.info("server connection lost")
+		logger.info("Server connection lost")
 
 	def connectionMade(self, client):
-		logger.info("server connection made")
+		logger.info("Server connection made")
 		self._client = client
 
 	def isReady(self):
 		return self._client is not None
 
 	def sendLine(self, line):
-		logger.debug("sending line '%s'", line)
+		logger.debug("Sending line '%s'", line)
 		self._client.sendLine(line)
 
 	def receive(self, rpc):
-		logger.debug("received rpc '%s'", rpc)
+		logger.debug("Received rpc '%s'", rpc)
 		id = None
 		try:
 			rpc = json.loads(rpc)
@@ -780,7 +781,7 @@ class NotificationClientFactory(ClientFactory):
 			logger.error(error)
 
 	def execute(self, method, params):
-		logger.debug("executing method '%s', params %s", method, params)
+		logger.debug("Executing method '%s', params %s", method, params)
 		if not params:
 			params = []
 		if not isinstance(params, (list, tuple)):
@@ -791,7 +792,7 @@ class NotificationClientFactory(ClientFactory):
 			time.sleep(0.1)
 			timeout += 0.1
 		if timeout >= self._timeout:
-			raise RuntimeError("execute timed out after %d seconds" % self._timeout)
+			raise RuntimeError("Execute timed out after %d seconds" % self._timeout)
 
 		rpc = {'id': None, "method": method, "params": params}
 		self.sendLine(json.dumps(rpc))
