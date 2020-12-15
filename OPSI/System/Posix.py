@@ -2838,7 +2838,13 @@ def isSLES():
 	Returns `True` if this is running on Suse Linux Enterprise Server.
 	Returns `False` if otherwise.
 	"""
-	return _checkForDistribution('suse linux enterprise server')
+	if os.path.exists('/etc/os-release'):
+		with open('/etc/os-release', 'r') as release:
+			for line in release:
+				if 'suse linux enterprise server' in line.lower():
+					return True
+
+	return False
 
 
 def isUbuntu():
