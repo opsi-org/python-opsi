@@ -696,27 +696,25 @@ class NotificationServer(threading.Thread, SubjectsObserver):
 
 	def stop(self, stopReactor=True):
 		self.requestEndConnections()
-		reactor.deferLater(3.0, self._stopServer, stopReactor)
+		reactor.callLater(3.0, self._stopServer, stopReactor)
 	
 	def _stopServer(self, stopReactor=True):
 		if self._server:
 			result = self._server.stopListening()
 			if isinstance(result, defer.Deferred):
 				result.addCallback(self._stopListeningCompleted)
-				timeout = 3.0
-				while self._listening and timeout > 0:
-					time.sleep(0.1)
-					timeout -= 0.1
-
-				if timeout == 0:
-					logger.warning("Timed out while waiting for stop listening")
-			self._listening = False
-		if stopReactor and reactor and reactor.running:
+			else:
+				self._listening = False
+		if stopReactor:
+			reactor.callLater(3.0, self._stopReactor)
+		logger.info("Notification server stopped")
+	
+	def _stopReactor(self):
+		if reactor and reactor.running:
 			try:
 				reactor.stop()
 			except Exception as error:
 				logger.error("Failed to stop reactor: %s", error)
-		logger.info("Notification server stopped")
 
 
 class NotificationClientProtocol(LineReceiver):
