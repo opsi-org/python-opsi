@@ -186,7 +186,10 @@ class RpcThread(KillableThread):
 					if response and isinstance(response, dict) and "error" in response:
 						self.error = response["error"]
 					else:
-						self.error = f"Client error: {status} - {response}"
+						err = status
+						if response:
+							err = f"{err} - {response}"
+						self.error = f"Client error: {err}"
 		
 		except Exception as e:
 			self.error = forceUnicode(e)
