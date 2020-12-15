@@ -696,11 +696,9 @@ class NotificationServer(threading.Thread, SubjectsObserver):
 
 	def stop(self, stopReactor=True):
 		self.requestEndConnections()
-		timeout = 5.0
-		while (self._factory.connectionCount() > 0) and (timeout > 0):
-			time.sleep(0.1)
-			timeout -= 0.1
-
+		reactor.deferLater(5.0, self._stopServer, stopReactor)
+	
+	def _stopServer(self, stopReactor=True)
 		if self._server:
 			result = self._server.stopListening()
 			if isinstance(result, defer.Deferred):
