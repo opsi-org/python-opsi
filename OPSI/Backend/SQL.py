@@ -211,15 +211,24 @@ class SQLBackendObjectModificationTracker(BackendModificationListener):
 		self._sql.insert('OBJECT_MODIFICATION_TRACKER', data)
 		logger.debug(u"Took %0.2f seconds to track modification of objectClass %s, ident %s", (time.time() - start), data['objectClass'], data['ident'])
 
-	def getModifications(self, sinceDate=0):
-		return self._sql.getSet("SELECT * FROM `OBJECT_MODIFICATION_TRACKER` WHERE `date` > '%s'" % forceOpsiTimestamp(sinceDate))
+	def getModifications(self, sinceDate=None):
+		where = ""
+		if sinceDate:
+			where = f" WHERE `date` >= '{forceOpsiTimestamp(sinceDate)}'"
+		return self._sql.getSet(f"SELECT * FROM `OBJECT_MODIFICATION_TRACKER`{where}")
 
-	def clearModifications(self, objectClass=None, sinceDate=0):
-		where = "`date` > '%s'" % forceOpsiTimestamp(sinceDate)
+	def clearModifications(self, objectClass=None, sinceDate=None):
+		where = ""
 		if objectClass:
-			where = ''.join((where, 'AND `objectClass` = "{0}"'.format(objectClass)))
-		self._sql.execute("DELETE FROM `OBJECT_MODIFICATION_TRACKER` WHERE %s" % where)
-
+			where = f"`objectClass` = '{objectClass}'"
+		if sinceDate:
+			if where:
+				where += " AND "
+			where += f"`date` >= '{forceOpsiTimestamp(sinceDate)}'"
+		if where:
+			where = f" WHERE {where}"
+		self._sql.execute(f"DELETE FROM `OBJECT_MODIFICATION_TRACKER`{where}")
+	
 	def objectInserted(self, backend, obj):
 		self._trackModification('insert', obj)
 
