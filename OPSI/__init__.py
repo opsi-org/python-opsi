@@ -25,4 +25,4 @@ This module is part of the desktop management solution opsi
 :license: GNU Affero General Public License version 3
 """
 
-__version__ = '4.2.0.110'
+__version__ = '4.2.0.111'
