@@ -1369,46 +1369,61 @@ class DepotToLocalDirectorySychronizer:
 							continue
 
 				if progressSubject:
-					progressSubject.setMessage(_(u"Downloading file '%s'") % item['name'])
+					progressSubject.setMessage(_("Downloading file '%s'") % item['name'])
 
+				partialEndFile = f"{destinationPath}.opsi_sync_endpart"
+				partialStartFile = f"{destinationPath}.opsi_sync_startpart"
+				
+				composed = False
 				if exists and (localSize < size):
-					partialEndFile = destinationPath + u'.opsi_sync_endpart'
-					# First byte needed is byte number <localSize>
-					logger.info(u"Downloading file '%s' starting at byte number %d", item['name'], localSize)
-					if os.path.exists(partialEndFile):
-						os.remove(partialEndFile)
-					self._sourceDepot.download(sourcePath, partialEndFile, startByteNumber=localSize)
+					try:
+						# First byte needed is byte number <localSize>
+						logger.info("Downloading file '%s' starting at byte number %d", item['name'], localSize)
+						if os.path.exists(partialEndFile):
+							os.remove(partialEndFile)
+						self._sourceDepot.download(sourcePath, partialEndFile, startByteNumber=localSize)
 
-					with open(destinationPath, 'ab') as f1:
-						with open(partialEndFile, 'rb') as f2:
-							shutil.copyfileobj(f2, f1)
-
-					md5s = md5sum(destinationPath)
-					if md5s != self._fileInfo[relSource]['md5sum']:
-						logger.warning(u"MD5sum of composed file differs")
-						partialStartFile = destinationPath + u'.opsi_sync_startpart'
-						if os.path.exists(partialStartFile):
-							os.remove(partialStartFile)
-						# Last byte needed is byte number <localSize> - 1
-						logger.info(u"Downloading file '%s' ending at byte number %d", item['name'], localSize - 1)
-						self._sourceDepot.download(sourcePath, partialStartFile, endByteNumber=localSize - 1)
-
-						with open(partialStartFile, 'ab') as f1:
+						with open(destinationPath, 'ab') as f1:
 							with open(partialEndFile, 'rb') as f2:
 								shutil.copyfileobj(f2, f1)
 
-						if os.path.exists(destinationPath):
-							os.remove(destinationPath)
-						os.rename(partialStartFile, destinationPath)
-					os.remove(partialEndFile)
-				else:
-					if exists:
+						md5s = md5sum(destinationPath)
+						if md5s != self._fileInfo[relSource]['md5sum']:
+							logger.info("MD5sum of composed file differs after downloading end part")
+							if os.path.exists(partialStartFile):
+								os.remove(partialStartFile)
+							# Last byte needed is byte number <localSize> - 1
+							logger.info("Downloading file '%s' ending at byte number %d", item['name'], localSize - 1)
+							self._sourceDepot.download(sourcePath, partialStartFile, endByteNumber=localSize - 1)
+
+							with open(partialStartFile, 'ab') as f1:
+								with open(partialEndFile, 'rb') as f2:
+									shutil.copyfileobj(f2, f1)
+
+							if os.path.exists(destinationPath):
+								os.remove(destinationPath)
+							os.rename(partialStartFile, destinationPath)
+							md5s = md5sum(destinationPath)
+							if md5s != self._fileInfo[relSource]['md5sum']:
+								logger.info("MD5sum of composed file differs after downloading start part")
+								raise RuntimeError("MD5sum differs")
+						composed = True
+					except Exception as partError:
+						logger.warning("Error completing a partially downloaded file '%s': %s", item['name'], partError, exc_info=True)
+				
+				for fn in (partialEndFile, partialStartFile):
+					if os.path.exists(fn):
+						os.remove(fn)
+				
+				if not composed:
+					if os.path.exists(destinationPath):
 						os.remove(destinationPath)
-					logger.info(u"Downloading file '%s'", item['name'])
+					logger.info("Downloading file '%s'", item['name'])
 					self._sourceDepot.download(sourcePath, destinationPath, progressSubject=progressSubject)
+				
 				md5s = md5sum(destinationPath)
 				if md5s != self._fileInfo[relSource]['md5sum']:
-					error = u"Failed to download '%s': MD5sum mismatch (local:%s != remote:%s)" % (item['name'], md5s, self._fileInfo[relSource]['md5sum'])
+					error = "Failed to download '%s': MD5sum mismatch (local:%s != remote:%s)" % (item['name'], md5s, self._fileInfo[relSource]['md5sum'])
 					logger.error(error)
 					raise RuntimeError(error)
 
