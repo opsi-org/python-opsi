@@ -93,7 +93,7 @@ class SQLite(SQL):
 						os.remove(self._database)
 					if trynum > 1:
 						raise
-					logger.warnig("Recreating defective sqlite database '%s'", self._database)
+					logger.warning("Recreating defective sqlite database '%s'", self._database)
 				except Exception as otherError:
 					logger.warning("Problem connecting to SQLite database: %s", otherError)
 					if trynum > 1:
