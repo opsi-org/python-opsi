@@ -89,11 +89,12 @@ class SQLite(SQL):
 					return (self._connection, self._cursor)
 				except sqlite3.DatabaseError as dbError:
 					logger.error("SQLite database '%s' is defective: %s", self._database, dbError)
-					if not self._connection:
-						os.remove(self._database)
+					self._connection = None
+					self._cursor = None
 					if trynum > 1:
 						raise
 					logger.warning("Recreating defective sqlite database '%s'", self._database)
+					os.remove(self._database)
 				except Exception as otherError:
 					logger.warning("Problem connecting to SQLite database: %s", otherError)
 					if trynum > 1:
