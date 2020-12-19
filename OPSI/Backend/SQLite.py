@@ -24,6 +24,7 @@ SQLite backend.
 :license: GNU Affero GPL version 3
 """
 
+import os
 import sqlite3
 import threading
 
@@ -64,30 +65,39 @@ class SQLite(SQL):
 
 	def connect(self):
 		with self._WRITE_LOCK:
-			try:
-				logger.debug2(u"Connecting to sqlite db '%s'", self._database)
-				if not self._connection:
-					# When using multiple threads with the same connection writing operations
-					# should be serialized by the user to avoid data corruption
-					self._connection = sqlite3.connect(self._database, check_same_thread=False)
-				if not self._cursor:
-					def dict_factory(cursor, row):
-						d = {}
-						for idx, col in enumerate(cursor.description):
-							d[col[0]] = row[idx]
-						return d
-					self._connection.row_factory = dict_factory
-					self._cursor = self._connection.cursor()
-					if not self._synchronous:
-						self._cursor.execute('PRAGMA synchronous=OFF')
-						self._cursor.execute('PRAGMA temp_store=MEMORY')
-						self._cursor.execute('PRAGMA cache_size=5000')
-					if self._databaseCharset.lower() in ('utf8', 'utf-8'):
-						self._cursor.execute('PRAGMA encoding="UTF-8"')
-				return (self._connection, self._cursor)
-			except Exception as connectionError:
-				logger.warning("Problem connecting to SQLite database: %s", connectionError)
-				raise connectionError
+			for trynum in (1, 2):
+				try:
+					logger.debug("Connecting to sqlite database '%s'", self._database)
+					if not self._connection:
+						# When using multiple threads with the same connection writing operations
+						# should be serialized by the user to avoid data corruption
+						self._connection = sqlite3.connect(self._database, check_same_thread=False)
+					if not self._cursor:
+						def dict_factory(cursor, row):
+							d = {}
+							for idx, col in enumerate(cursor.description):
+								d[col[0]] = row[idx]
+							return d
+						self._connection.row_factory = dict_factory
+						self._cursor = self._connection.cursor()
+						if not self._synchronous:
+							self._cursor.execute('PRAGMA synchronous=OFF')
+							self._cursor.execute('PRAGMA temp_store=MEMORY')
+							self._cursor.execute('PRAGMA cache_size=5000')
+						if self._databaseCharset.lower() in ('utf8', 'utf-8'):
+							self._cursor.execute('PRAGMA encoding="UTF-8"')
+					return (self._connection, self._cursor)
+				except sqlite3.DatabaseError as dbError:
+					logger.error("SQLite database '%s' is defective: %s", self._database, dbError)
+					if not self._connection:
+						os.remove(self._database)
+					if trynum > 1:
+						raise
+					logger.warnig("Recreating defective sqlite database '%s'", self._database)
+				except Exception as otherError:
+					logger.warning("Problem connecting to SQLite database: %s", otherError)
+					if trynum > 1:
+						raise
 
 	def close(self, conn, cursor):
 		pass
