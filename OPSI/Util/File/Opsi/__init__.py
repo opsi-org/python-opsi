@@ -32,6 +32,7 @@ import datetime
 import gzip
 import os
 import re
+import time
 import tarfile
 import tempfile
 import shutil
@@ -43,7 +44,7 @@ from contextlib import closing
 from hashlib import sha1
 from io import BytesIO, StringIO
 from operator import itemgetter
-from subprocess import Popen, PIPE, STDOUT
+import subprocess
 
 import OPSI.System
 from OPSI import __version__ as LIBRARY_VERSION
@@ -1661,7 +1662,7 @@ element of the tuple is replace with the second element.
 
 				fd, name = tempfile.mkstemp(dir=self.tempdir)
 				try:
-					p = Popen(cmd, stdout=PIPE, stderr=PIPE, env=get_subprocess_environment())
+					p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=get_subprocess_environment())
 
 					flags = fcntl.fcntl(p.stderr, fcntl.F_GETFL)
 					fcntl.fcntl(p.stderr, fcntl.F_SETFL, flags | os.O_NONBLOCK)
@@ -1734,21 +1735,38 @@ element of the tuple is replace with the second element.
 						mysqlCmd,
 						# --defaults-file has to be the first argument
 						"--defaults-file=%s" % defaultsFile,
-						"--host=%s" % backend["config"]["address"],
-						backend["config"]["database"]
+						"--host=%s" % backend["config"]["address"]
 					]
-					logger.debug2("Restore command: '%s'", cmd)
-
-					p = Popen(cmd, stdin=fd, stdout=PIPE, stderr=STDOUT, env=get_subprocess_environment())
+					logger.trace("Running command: '%s'", cmd)
+					p = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=get_subprocess_environment())
+					p.stdin.write(f"DROP DATABASE IF EXISTS {backend['config']['database']}; CREATE DATABASE {backend['config']['database']};".endode())
+					p.stdin.close()
 
 					out = p.stdout.readline()
-					output = StringIO()
-					while not p.poll() and out:
-						output.write(out.decode())
-						out = p.stdout.readline()
+					while p.poll() is None:
+						line = p.stdout.readline()
+						if line:
+							out += line
+						else:
+							time.sleep(0.01)
+					
+					if p.returncode not in (0, None):
+						raise OpsiBackupFileError(f"Failed to restore MySQL Backend: {out.decode()}")
+					
+					cmd.append(backend["config"]["database"])
+					logger.trace("Running command: '%s'", cmd)
+					p = subprocess.Popen(cmd, stdin=fd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=get_subprocess_environment())
+
+					out = p.stdout.readline()
+					while p.poll() is None:
+						line = p.stdout.readline()
+						if line:
+							out += line
+						else:
+							time.sleep(0.01)
 
 					if p.returncode not in (0, None):
-						raise OpsiBackupFileError(f"Failed to restore MySQL Backend: {output.getvalue()}")
+						raise OpsiBackupFileError(f"Failed to restore MySQL Backend: {out.decode()}")
 				finally:
 					os.close(fd)
 					os.remove(name)
