@@ -1739,7 +1739,7 @@ element of the tuple is replace with the second element.
 					]
 					logger.trace("Running command: '%s'", cmd)
 					p = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=get_subprocess_environment())
-					p.stdin.write(f"DROP DATABASE IF EXISTS {backend['config']['database']}; CREATE DATABASE {backend['config']['database']};".endode())
+					p.stdin.write(f"DROP DATABASE IF EXISTS {backend['config']['database']}; CREATE DATABASE {backend['config']['database']};".encode())
 					p.stdin.close()
 
 					out = p.stdout.readline()
