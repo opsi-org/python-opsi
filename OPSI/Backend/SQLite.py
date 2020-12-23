@@ -61,9 +61,14 @@ class SQLite(SQL):
 
 		self._connection = None
 		self._cursor = None
-		logger.debug(u'SQLite created: %s', self)
+		logger.debug('SQLite created: %s', self)
 
 	def delete_db(self):
+		if self._connection:
+			try:
+				self._connection.close()
+			except Exception as e:
+				logger.warning(e)
 		self._connection = None
 		self._cursor = None
 		if os.path.exists(self._database):
