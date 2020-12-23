@@ -63,6 +63,12 @@ class SQLite(SQL):
 		self._cursor = None
 		logger.debug(u'SQLite created: %s', self)
 
+	def delete_db(self):
+		self._connection = None
+		self._cursor = None
+		if os.path.exists(self._database):
+			os.remove(self._database)
+	
 	def connect(self):
 		with self._WRITE_LOCK:
 			for trynum in (1, 2):
@@ -89,17 +95,15 @@ class SQLite(SQL):
 					return (self._connection, self._cursor)
 				except sqlite3.DatabaseError as dbError:
 					logger.error("SQLite database '%s' is defective: %s", self._database, dbError)
-					self._connection = None
-					self._cursor = None
 					if trynum > 1:
 						raise
 					logger.warning("Recreating defective sqlite database '%s'", self._database)
-					os.remove(self._database)
+					self.delete_db()
 				except Exception as otherError:
 					logger.warning("Problem connecting to SQLite database: %s", otherError)
 					if trynum > 1:
 						raise
-
+	
 	def close(self, conn, cursor):
 		pass
 
@@ -268,6 +272,15 @@ class SQLiteBackend(SQLBackend):
 		self._licenseManagementModule = True
 		self._sqlBackendModule = True
 		logger.debug(u'SQLiteBackend created: %s', self)
+
+	def backend_createBase(self):
+		try:
+			return SQLBackend.backend_createBase(self)
+		except sqlite3.DatabaseError as dbError:
+			logger.error("SQLite database %s is defective: %s, recreating", self._sql, dbError)
+			self._sql.delete_db()
+			self._sql.connect()
+			return SQLBackend.backend_createBase(self)
 
 	def _createAuditHardwareTables(self):
 		"""
