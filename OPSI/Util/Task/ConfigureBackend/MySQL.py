@@ -152,7 +152,11 @@ def initializeDatabase(
 			db.query(f"ALTER USER '{config['username']}'@'{host}' IDENTIFIED WITH mysql_native_password BY '{config['password']}'")
 		except Exception as e:
 			LOGGER.debug(e)
-			db.query(f"ALTER USER '{config['username']}'@'{host}' IDENTIFIED BY '{config['password']}'")
+			try:
+				db.query(f"ALTER USER '{config['username']}'@'{host}' IDENTIFIED BY '{config['password']}'")
+			except Exception as e:
+				LOGGER.debug(e)
+				db.query(f"SET PASSWORD FOR'{config['username']}'@'{host}' = PASSWORD('{config['password']}')")
 		db.query(f"GRANT ALL ON {config['database']}.* TO '{config['username']}'@'{host}'")
 		db.query("FLUSH PRIVILEGES")
 		notificationFunction(f"User '{config['username']}' created and privileges set")
