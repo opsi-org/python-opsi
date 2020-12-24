@@ -54,6 +54,8 @@ __all__ = ('DHCPDBackend', )
 
 logger = Logger()
 
+WAIT_AFTER_RELOAD = 4.0
+
 @contextmanager
 def dhcpd_lock(lock_type=""):
 	lock_file = '/var/lock/opsi-dhcpd-lock'
@@ -83,7 +85,7 @@ def dhcpd_lock(lock_type=""):
 		lock_fh.flush()
 		yield None
 		if lock_type == "config_reload":
-			time.sleep(5)
+			time.sleep(WAIT_AFTER_RELOAD)
 		fcntl.flock(lock_fh, fcntl.LOCK_UN)
 	#os.remove(lock_file)
 
@@ -150,7 +152,7 @@ class DHCPDBackend(ConfigDataBackend):
 			
 			def run(self):
 				while True:
-					if self._reloadEvent.wait(5):
+					if self._reloadEvent.wait(WAIT_AFTER_RELOAD):
 						with dhcpd_lock("config_reload"):
 							self._isReloading = True
 							self._reloadEvent.clear()
