@@ -30,6 +30,7 @@ the daemon afterwards.
 
 
 import os
+import sys
 import time
 import fcntl
 import socket
@@ -54,9 +55,9 @@ __all__ = ('DHCPDBackend', )
 logger = Logger()
 
 @contextmanager
-def dhcpd_lock():
+def dhcpd_lock(lock_type=""):
 	lock_file = '/var/lock/opsi-dhcpd-lock'
-	with open(lock_file, 'w+') as lock_fh:
+	with open(lock_file, 'a+') as lock_fh:
 		try:
 			os.chmod(lock_file, 0o666)
 		except PermissionError:
@@ -71,14 +72,18 @@ def dhcpd_lock():
 				if attempt > 200:
 					raise
 				time.sleep(0.1)
+		lock_fh.seek(0)
 		lines = lock_fh.readlines()
 		if len(lines) >= 100:
 			lines = lines[-100:]
-		lines.append(f"{time.time()}: {os.getpid()}\n")
+		lines.append(f"{time.time()};{os.path.basename(sys.argv[0])};{os.getpid()};{lock_type}\n")
 		lock_fh.seek(0)
 		lock_fh.truncate()
 		lock_fh.writelines(lines)
+		lock_fh.flush()
 		yield None
+		if lock_type == "config_reload":
+			time.sleep(5)
 		fcntl.flock(lock_fh, fcntl.LOCK_UN)
 	#os.remove(lock_file)
 
@@ -145,8 +150,8 @@ class DHCPDBackend(ConfigDataBackend):
 			
 			def run(self):
 				while True:
-					if self._reloadEvent.wait(2):
-						with dhcpd_lock():
+					if self._reloadEvent.wait(5):
+						with dhcpd_lock("config_reload"):
 							self._isReloading = True
 							self._reloadEvent.clear()
 							try:
@@ -155,7 +160,6 @@ class DHCPDBackend(ConfigDataBackend):
 								for line in result:
 									if 'error' in line:
 										raise RuntimeError(u'\n'.join(result))
-								time.sleep(2)
 							except Exception as error:
 								logger.critical("Failed to reload dhcpd config: %s", error)
 							self._isReloading = False
@@ -240,7 +244,7 @@ class DHCPDBackend(ConfigDataBackend):
 				logger.info(u"Client fqdn resolved to %s", ipAddress)
 			except Exception as error:
 				logger.debug(u"Failed to get IP by hostname: %s", error)
-				with dhcpd_lock():
+				with dhcpd_lock("config_read"):
 					self._dhcpdConfFile.parse()
 					currentHostParams = self._dhcpdConfFile.getHost(hostname)
 
@@ -270,7 +274,7 @@ class DHCPDBackend(ConfigDataBackend):
 			except Exception as error:
 				logger.error(u"Failed to get depot info: %s", error)
 
-		with dhcpd_lock():
+		with dhcpd_lock("config_update"):
 			try:
 				self._dhcpdConfFile.parse()
 				currentHostParams = self._dhcpdConfFile.getHost(hostname)
@@ -305,7 +309,7 @@ class DHCPDBackend(ConfigDataBackend):
 	def dhcpd_deleteHost(self, host):
 		host = forceObjectClass(host, Host)
 
-		with dhcpd_lock():
+		with dhcpd_lock("config_update"):
 			try:
 				self._dhcpdConfFile.parse()
 				hostname = _getHostname(host.id)
