@@ -56,7 +56,7 @@ logger = Logger()
 @contextmanager
 def dhcpd_lock():
 	lock_file = '/var/lock/opsi-dhcpd-lock'
-	with open(lock_file, 'w') as lock_fh:
+	with open(lock_file, 'w+') as lock_fh:
 		try:
 			os.chmod(lock_file, 0o666)
 		except PermissionError:
@@ -71,7 +71,13 @@ def dhcpd_lock():
 				if attempt > 200:
 					raise
 				time.sleep(0.1)
-		lock_fh.write(str(os.getpid()))
+		lines = lock_fh.readlines()
+		if len(lines) >= 100:
+			lines = lines[-100:]
+		lines.append(f"{time.time()}: {os.getpid()}\n")
+		lock_fh.seek(0)
+		lock_fh.truncate()
+		lock_fh.writelines(lines)
 		yield None
 		fcntl.flock(lock_fh, fcntl.LOCK_UN)
 	#os.remove(lock_file)
