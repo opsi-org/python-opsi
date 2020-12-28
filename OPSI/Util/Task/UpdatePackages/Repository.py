@@ -36,7 +36,25 @@ logger = Logger()
 
 
 class ProductRepositoryInfo:
-	def __init__(self, name, baseUrl, dirs=[], username=u"", password=u"", authcertfile=u"", authkeyfile="", opsiDepotId=None, autoInstall=False, autoUpdate=True, autoSetup=False, proxy=None, excludes=[], includes=[], active=False):
+	def __init__(
+		self,
+		name,
+		baseUrl,
+		dirs=[],
+		username="",
+		password="",
+		authcertfile="",
+		authkeyfile="",
+		opsiDepotId=None,
+		autoInstall=False,
+		autoUpdate=True,
+		autoSetup=False,
+		proxy=None,
+		excludes=[],
+		includes=[],
+		active=False,
+		autoSetupExcludes=[]
+	):
 		self.name = forceUnicode(name)
 		self.baseUrl = forceUnicode(baseUrl)
 		self.dirs = forceUnicodeList(dirs)
@@ -49,6 +67,7 @@ class ProductRepositoryInfo:
 		self.autoInstall = autoInstall
 		self.autoUpdate = autoUpdate
 		self.autoSetup = autoSetup
+		self.autoSetupExcludes = autoSetupExcludes
 		self.opsiDepotId = opsiDepotId
 		self.onlyDownload = None
 		self.inheritProductProperties = None
@@ -59,7 +78,7 @@ class ProductRepositoryInfo:
 		if proxy:
 			self.proxy = proxy
 		if self.baseUrl.startswith('webdav'):
-			self.baseUrl = u'http%s' % self.baseUrl[6:]
+			self.baseUrl = f'http{self.baseUrl[6:]}'
 
 	def getDownloadUrls(self):
 		urls = set()
