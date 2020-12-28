@@ -349,7 +349,7 @@ overriden based on values in configuration file.
 					for include in splitAndStrip(value, ',')
 				]
 			elif option.lower() == 'autosetupexcludes':
-				repository.autosetupexcludes = [
+				repository.autoSetupExcludes = [
 					re.compile(exclude)
 					for exclude in splitAndStrip(value, ',')
 				]
