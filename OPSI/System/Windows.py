@@ -875,190 +875,75 @@ def umount(mountpoint):
 # -                               SESSION / WINSTA / DESKTOP HANDLING                                 -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 def getActiveConsoleSessionId():
+	"""
+	Retrieves the session id of the console session.
+	The console session is the session that is currently attached to the physical console.
+	"""
 	try:
-		return forceInt(windll.kernel32.WTSGetActiveConsoleSessionId())
+		return int(win32ts.WTSGetActiveConsoleSessionId())
 	except Exception as error:
-		logger.warning(u"Failed to get WTSGetActiveConsoleSessionId: %s, returning 0", error)
-		return 0
-
+		logger.warning("Failed to get WTSGetActiveConsoleSessionId: %s, returning 1", error)
+		return 1
 
 def getActiveDesktopName():
 	desktop = win32service.OpenInputDesktop(0, True, win32con.MAXIMUM_ALLOWED)
 	return forceUnicode(win32service.GetUserObjectInformation(desktop, win32con.UOI_NAME))
 
-
-def getActiveSessionIds(winApiBugCommand=None):
+def getActiveSessionIds():
+	"""
+	Retrieves ids of all active user sessions (physical console or rdp).
+	"""
 	sessionIds = []
-	logger.debug(u"Getting active sessions")
-	invalidLogonDomains = ["Window Manager", "Font Driver Host"]
-	for s in win32security.LsaEnumerateLogonSessions():
-		sessionData = win32security.LsaGetLogonSessionData(s)
-		if forceInt(sessionData['LogonType']) not in (2, 10) or sessionData['LogonDomain'] in invalidLogonDomains:
-			continue
-
-		sessionId = forceInt(sessionData['Session'])
-		if sessionId == 0 and sys.getwindowsversion()[0] >= 6:
-			# Service session
-			continue
-
-		logger.debug(u"   Found session: %s", sessionData)
-		if sessionId not in sessionIds:
-			sessionIds.append(sessionId)
-
+	server = win32ts.WTS_CURRENT_SERVER_HANDLE
+	for session in win32ts.WTSEnumerateSessions(server):
+		# WTS_CONNECTSTATE_CLASS:
+		# WTSActive,WTSConnected,WTSConnectQuery,WTSShadow,WTSDisconnected,
+		# WTSIdle,WTSListen,WTSReset,WTSDown,WTSInit
+		if session["UserName"] and session["State"] in (win32ts.WTSActive, win32ts.WTSDisconnected):
+			sessionIds.append(int(session["SessionId"]))
 	return sessionIds
 
+def getActiveSessionId():
+	"""
+	Retrieves the active user session id.
+	"""
+	sessions = getActiveSessionIds()
+	if sessions:
+		return sessions[0]
+	return None
 
-def getActiveSessionId(verifyProcessRunning="winlogon.exe", winApiBugCommand=None):
-	logger.debug("Getting ActiveSessionId")
-	invalidLogonDomains = ["Window Manager", "Font Driver Host"]
-	defaultSessionId = getActiveConsoleSessionId()
-	if sys.getwindowsversion()[0] >= 6 and defaultSessionId == 0:
-		defaultSessionId = 1
+def getSessionInformation(sessionId):
+	protocols = {
+		win32ts.WTS_PROTOCOL_TYPE_CONSOLE: "console",
+		win32ts.WTS_PROTOCOL_TYPE_ICA: "citrix",
+		win32ts.WTS_PROTOCOL_TYPE_RDP: "rdp"
+	}
+	states = {
+		win32ts.WTSActive: "active",
+		win32ts.WTSConnected: "connected",
+		win32ts.WTSDisconnected: "disconnected"
+	}
 
-	sessionIds = []
-	newest = {}
+	server = win32ts.WTS_CURRENT_SERVER_HANDLE
+	for session in win32ts.WTSEnumerateSessions(server):
+		if int(session["SessionId"]) != int(sessionId):
+			continue
+
+		session["UserName"] = win32ts.WTSQuerySessionInformation(server, session["SessionId"], win32ts.WTSUserName)
+		session["Protocol"] = win32ts.WTSQuerySessionInformation(server, session["SessionId"], win32ts.WTSClientProtocolType)
+		#session["WorkingDirectory"] = win32ts.WTSQuerySessionInformation(server, session["SessionId"], win32ts.WTSWorkingDirectory)
+		session["DomainName"] = win32ts.WTSQuerySessionInformation(server, session["SessionId"], win32ts.WTSDomainName)
+		session["StateName"] = states.get(session["State"], "unknown")
+		session["ProtocolName"] = protocols.get(session["Protocol"], "unknown")
+		return session
 	
-	for s in win32security.LsaEnumerateLogonSessions():
-		sessionData = win32security.LsaGetLogonSessionData(s)
-		if forceInt(sessionData['LogonType']) not in (2, 10) or sessionData['LogonDomain'] in invalidLogonDomains:
-			continue
-
-		sessionId = forceInt(sessionData['Session'])
-		if sessionId == 0 and sys.getwindowsversion()[0] >= 6:
-			# Service session
-			continue
-
-		logger.debug(u"   Found session: %s", sessionData)
-
-		if verifyProcessRunning and not getPids(verifyProcessRunning, sessionId=sessionId):
-			continue
-
-		if sessionId not in sessionIds:
-			sessionIds.append(sessionId)
-
-		if newest:
-			try:
-				lt = newest['LogonTime']
-				lts = sessionData['LogonTime']
-				newestdt = datetime(lt.year, lt.month, lt.day, lt.hour, lt.minute, lt.second)
-				sessiondt = datetime(lts.year, lts.month, lts.day, lts.hour, lts.minute, lts.second)
-				if sessiondt > newestdt:
-					logger.notice("Token in SessionData is newer then the cached one.")
-					newest = sessionData
-			except Exception as error:
-				logger.warning(error)
-				if forceInt(sessionData['LogonId']) > forceInt(newest['LogonId']):
-					newest = sessionData
-		else:
-			newest = sessionData
-
-	if not sessionIds:
-		return defaultSessionId
-
-	if newest:
-		return forceInt(newest['Session'])
-
-	if defaultSessionId in sessionIds:
-		return defaultSessionId
-
-	if sys.getwindowsversion()[0] >= 6 and sessionIds[0] == 0:
-		if len(sessionIds) > 1:
-			return sessionIds[1]
-
-		return defaultSessionId
-
-	return sessionIds[0]
-
-
-def getSessionInformation(sessionId, winApiBugCommand=None):
-	try:
-		wtsUserName = win32ts.WTSQuerySessionInformation(None, sessionId, win32ts.WTSUserName)
-	except Exception:
-		wtsUserName = None
-
-	# 'UserName': u'Administrator',
-	# 'AuthenticationPackage': u'NTLM',
-	# 'LogonServer': u'COMPUTERNAME',
-	# 'LogonId': 1753269L,
-	# 'Upn': u'',
-	# 'Session': 1,
-	# 'DnsDomainName': u'',
-	# 'Sid': <PySID object at 0x00CD7BA8>,
-	# 'LogonType': 10,
-	# 'LogonDomain': u'COMPUTERNAME',
-	# 'LogonTime': <PyTime:19.04.2010 16:33:07>}
+	return {}
 	
-	newest = {}
-	for s in win32security.LsaEnumerateLogonSessions():
-		sessionData = win32security.LsaGetLogonSessionData(s)
-
-		if forceInt(sessionData['Session']) == forceInt(sessionId):
-			logger.debug("Session is found and checked. wtsUserName: '%s'", wtsUserName)
-			if wtsUserName and sessionData['UserName'].lower() != wtsUserName.lower():
-				continue
-
-			logger.debug(u"sessionData: '%s', wtsUserName: '%s'", sessionData['UserName'], wtsUserName)
-			try:
-				if not newest:
-					logger.debug("No newest object found, so newest is Session with ID: '%s'", sessionData['Session'])
-					newest = sessionData
-					continue
-
-				lt = newest['LogonTime']
-				lts = sessionData['LogonTime']
-				newestdt = datetime(lt.year, lt.month, lt.day, lt.hour, lt.minute, lt.second)
-				sessiondt = datetime(lts.year, lts.month, lts.day, lts.hour, lts.minute, lts.second)
-				logger.debug("newest datetime: '%s'", lt)
-				logger.debug("newest datetime in session: '%s'", lts)
-				if sessiondt > newestdt:
-					logger.notice("Token in SessionData is newer then the cached one.")
-					newest = sessionData
-			except Exception as error:
-				logger.warning("WARNING in getSessionInformation method: '%s'", error)
-				if forceInt(sessionData['LogonId']) > forceInt(newest['LogonId']):
-					newest = sessionData
-			else:
-				newest = sessionData
-
-	if newest:
-		logger.debug("Found newest SessionId: '%s' for User: '%s'", newest['Session'], newest['UserName'])
-		return newest
-	elif sessionData:
-		logger.debug("Found newest SessionId: '%s' for User: '%s'", sessionData['Session'], sessionData['UserName'])
-		return sessionData
-	else:
-		return {}
-
-
-def getActiveSessionInformation(winApiBugCommand=None):
+def getActiveSessionInformation():
 	info = []
 	for sessionId in getActiveSessionIds():
-		logger.debug("sessionid info: %s", sessionId)
-		sessionInfo = getSessionInformation(sessionId)
-		if info and sessionInfo:
-			for item in info:
-				if item['UserName'].lower() == sessionInfo['UserName'].lower():
-					logger.debug("Duplicate Session Found, trying to figure out, which one is the newest.")
-					lt = item['LogonTime']
-					lts = sessionInfo['LogonTime']
-					logger.debug2("lt '%s'", lt)
-					logger.debug2("lt: year: '%s', month: '%s', day: '%s', hour: '%s', minute: '%s', second: '%s'", lt.year, lt.month, lt.day, lt.hour, lt.minute, lt.second)
-					logger.debug2("lts '%s'", lts)
-					logger.debug2("lts: year: '%s', month: '%s', day: '%s', hour: '%s', minute: '%s', second: '%s'", lts.year, lts.month, lts.day, lts.hour, lts.minute, lts.second)
-					logger.debug2("lt-type '%s'", type(lt))
-					logger.debug2("lts-type '%s'", type(lts))
-					infodt = datetime(lt.year, lt.month, lt.day, lt.hour, lt.minute, lt.second)
-					sessiondt = datetime(lts.year, lts.month, lts.day, lts.hour, lts.minute, lts.second)
-					if sessiondt > infodt:
-						logger.notice("Token in SessionData is newer then the cached one.")
-						info.remove(item)
-						info.append(sessionInfo)
-		elif sessionInfo:
-			info.append(sessionInfo)
-
-	logger.debug(u"info: %s", info)
+		info.append(getSessionInformation(sessionId))
 	return info
-
 
 def getUserSessionIds(username, winApiBugCommand=None, onlyNewestId=None):
 	sessionIds = []
