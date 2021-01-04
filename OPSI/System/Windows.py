@@ -945,47 +945,20 @@ def getActiveSessionInformation():
 		info.append(getSessionInformation(sessionId))
 	return info
 
-def getUserSessionIds(username, winApiBugCommand=None, onlyNewestId=None):
+def getUserSessionIds(username):
 	sessionIds = []
 	if not username:
 		return sessionIds
-
+	
 	domain = None
-	newest = {}
-	logger.debug(u"Getting sessions of user '%s'", username)
 	if '\\' in username:
 		domain = username.split('\\')[0]
 		username = username.split('\\')[-1]
 
 	for session in getActiveSessionInformation():
-		if (session.get('UserName') and (session.get('UserName').lower() == username.lower()) and
-			(not domain or (session.get('LogonDomain') and (session.get('LogonDomain').lower() == domain.lower())))):
-			sessionIds.append(forceInt(session.get('Session')))
-			if onlyNewestId:
-				try:
-					if not newest:
-						newest = session
-						continue
-					lt = newest['LogonTime']
-					lts = session['LogonTime']
-
-					newestdt = datetime(lt.year, lt.month, lt.day, lt.hour, lt.minute, lt.second)
-					sessiondt = datetime(lts.year, lts.month, lts.day, lts.hour, lts.minute, lts.second)
-					if sessiondt > newestdt:
-						logger.notice("Token in session is newer then the cached one.")
-						newest = session
-				except Exception as error:
-					logger.warning(error)
-					if forceInt(session['LogonId']) > forceInt(newest['LogonId']):
-						newest = session
-				else:
-					newest = session
-			logger.debug(u"   onlyNewestId: '%s' newest = '%s'", onlyNewestId, newest)
-			logger.debug(u"   Found session id of user '%s': %s", username, session.get('Session'))
-	if onlyNewestId and newest:
-		return [newest.get('Session')]
-	else:
-		return sessionIds
+		if session.get('UserName') and session.get('UserName').lower() == username.lower():
+			sessionIds.append(int(session["SessionId"]))
+	return sessionIds
 
 
 def logoffCurrentUser():
