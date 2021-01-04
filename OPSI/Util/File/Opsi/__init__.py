@@ -1512,9 +1512,12 @@ element of the tuple is replace with the second element.
 				raise OpsiBackupFileError(f"Error restoring file {member}: checksum missmatch.")
 
 			shutil.copyfile(path, dest)
-			os.chown(dest, pwd.getpwnam(member.uname)[2], grp.getgrnam(member.gname)[2])
-			os.chmod(dest, member.mode)
 			os.utime(dest, (member.mtime, member.mtime))
+			try:
+				os.chmod(dest, member.mode)
+				os.chown(dest, pwd.getpwnam(member.uname)[2], grp.getgrnam(member.gname)[2])
+			except Exception as err:
+				logger.warning("Failed to restore file permissions on %s: %s", dest, err)
 		finally:
 			os.close(tf)
 			os.remove(path)
