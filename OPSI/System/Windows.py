@@ -176,12 +176,12 @@ def removeSystemHook(hook):
 def getArchitecture():
 	try:
 		if win32process.IsWow64Process():
-			return u'x64'
+			return 'x64'
 		else:
-			return u'x86'
+			return 'x86'
 	except Exception as e:
 		logger.error("Error determining OS-Architecture: '%s'; returning default: 'x86'", e)
-		return u'x86'
+		return 'x86'
 
 
 def getOpsiHotfixName(helper=None):
@@ -189,8 +189,8 @@ def getOpsiHotfixName(helper=None):
 	major = sys.getwindowsversion().major
 	minor = sys.getwindowsversion().minor
 	loc = locale.getdefaultlocale()[0].split('_')[0]
-	os = u'unknown'
-	lang = u'unknown'
+	os = 'unknown'
+	lang = 'unknown'
 	
 	if helper:
 		logger.notice("Using version helper: %s", helper)
@@ -1666,9 +1666,9 @@ def setLocalSystemTime(timestring):
 
 
 class Impersonate:
-	def __init__(self, username=u"", password=u"", userToken=None, desktop=u"default"):
+	def __init__(self, username="", password="", userToken=None, desktop="default"):
 		if not username and not userToken:
-			raise ValueError(u"Neither username nor user token given")
+			raise ValueError("Neither username nor user token given")
 
 		self.domain = getHostname()
 		self.username = forceUnicode(username)
@@ -1679,10 +1679,10 @@ class Impersonate:
 		self.domain = self.domain.upper()
 		self.password = forceUnicode(password)
 		if not desktop:
-			desktop = u"default"
+			desktop = "default"
 
-		if u'\\' not in desktop:
-			desktop = u'winsta0\\' + desktop
+		if '\\' not in desktop:
+			desktop = 'winsta0\\' + desktop
 
 		(self.winsta, self.desktop) = desktop.split('\\', 1)
 		self.winsta = forceUnicodeLower(self.winsta)
@@ -1695,21 +1695,21 @@ class Impersonate:
 		self.newWindowStation = None
 		self.newDesktop = None
 
-	def start(self, logonType=u'INTERACTIVE', newDesktop=False, createEnvironment=False):
+	def start(self, logonType='INTERACTIVE', newDesktop=False, createEnvironment=False):
 		try:
 			logonType = forceUnicode(logonType)
 			newDesktop = forceBool(newDesktop)
-			if logonType == u'NEW_CREDENTIALS':
+			if logonType == 'NEW_CREDENTIALS':
 				# Stay who you are but add credentials for network connections
 				logonType = win32security.LOGON32_LOGON_NEW_CREDENTIALS
-			elif logonType == u'INTERACTIVE':
+			elif logonType == 'INTERACTIVE':
 				logonType = win32con.LOGON32_LOGON_INTERACTIVE
 			else:
-				raise ValueError(u"Unhandled logon type '%s'" % logonType)
+				raise ValueError(f"Invalid logon type '{logonType}'")
 
 			if not self.userToken:
 				# TODO: Use (UPN) format for username <USER>@<DOMAIN> ?
-				logger.debug(u"Logon user: '%s\\%s'", self.domain, self.username)
+				logger.debug("Logon user: '%s\\%s'", self.domain, self.username)
 				self.userToken = win32security.LogonUser(
 					self.username,
 					self.domain,
@@ -1720,10 +1720,10 @@ class Impersonate:
 
 			if newDesktop:
 				self.saveWindowStation = win32service.GetProcessWindowStation()
-				logger.debug(u"Got current window station")
+				logger.debug("Got current window station")
 
 				self.saveDesktop = win32service.GetThreadDesktop(win32api.GetCurrentThreadId())
-				logger.debug(u"Got current desktop")
+				logger.debug("Got current desktop")
 
 				self.newWindowStation = win32service.OpenWindowStation(
 					self.winsta,
@@ -1732,11 +1732,11 @@ class Impersonate:
 				)
 
 				self.newWindowStation.SetProcessWindowStation()
-				logger.debug(u"Process window station set")
+				logger.debug("Process window station set")
 
 				self.newDesktop = None
 				if self.desktop not in ('default', 'winlogon'):
-					logger.info(u"Creating new desktop '%s'", self.desktop)
+					logger.info("Creating new desktop '%s'", self.desktop)
 					try:
 						self.newDesktop = createDesktop(self.desktop)
 					except Exception as error:
@@ -1761,30 +1761,43 @@ class Impersonate:
 					)
 
 				self.newDesktop.SetThreadDesktop()
-				logger.debug(u"Thread desktop set")
+				logger.debug("Thread desktop set")
 
 				userSid = getUserSidFromHandle(self.userToken)
 				if not userSid:
-					logger.warning(u"Failed to determine sid of user '%s'", self.username)
+					logger.warning("Failed to determine sid of user '%s'", self.username)
 				else:
-					logger.debug(u"Got sid of user '%s'", self.username)
+					logger.debug("Got sid of user '%s'", self.username)
 
 					winstaAceIndices = addUserToWindowStation(self.newWindowStation, userSid)
-					logger.debug(u"Added user to window station")
+					logger.debug("Added user to window station")
 
 					desktopAceIndices = addUserToDesktop(self.newDesktop, userSid)
-					logger.debug(u"Added user to desktop")
+					logger.debug("Added user to desktop")
+			
+			elif logonType == 'INTERACTIVE':
+				userSid = getUserSidFromHandle(self.userToken)
+				if not userSid:
+					logger.warning("Failed to determine sid of user '%s'", self.username)
+				else:
+					logger.debug("Got sid of user '%s'", self.username)
 
+					winstaAceIndices = addUserToWindowStation(win32service.GetProcessWindowStation(), userSid)
+					logger.debug("Added user to window station")
+
+					desktopAceIndices = addUserToDesktop(win32service.GetThreadDesktop(win32api.GetCurrentThreadId()), userSid)
+					logger.debug("Added user to desktop")
+				
 			if createEnvironment:
-				# http://www.java2s.com/Open-Source/Python/Windows/pyExcelerator/pywin32-214/win32/Demos/win32cred_demo.py.htm
-				self.userProfile = win32profile.LoadUserProfile(self.userToken, {'UserName': self.username, 'Flags': 0, 'ProfilePath': None})
-				logger.debug(u"User profile loaded")
+				self.userProfile = win32profile.LoadUserProfile(self.userToken, {'UserName': self.username})
+				logger.debug("User profile loaded")
 
 				self.userEnvironment = win32profile.CreateEnvironmentBlock(self.userToken, False)
-				logger.debug(u"Environment block created")
+				logger.debug("Environment block created")
 
-			win32security.ImpersonateLoggedOnUser(self.userToken)
-			logger.debug(u"User impersonated")
+			if logonType == 'NEW_CREDENTIALS':
+				win32security.ImpersonateLoggedOnUser(self.userToken)
+				logger.debug("User impersonated")
 		except Exception as error:
 			logger.logException(error)
 			self.end()
@@ -1800,9 +1813,9 @@ class Impersonate:
 		s = win32process.STARTUPINFO()
 		s.dwFlags = win32process.STARTF_USESHOWWINDOW ^ win32con.STARTF_USESTDHANDLES
 		s.wShowWindow = win32con.SW_NORMAL
-		s.lpDesktop = self.winsta + u'\\' + self.desktop
+		s.lpDesktop = self.winsta + '\\' + self.desktop
 
-		logger.notice(u"Running command '%s' as user '%s' on desktop '%s'", command, self.username, self.desktop)
+		logger.notice("Running command '%s' as user '%s' on desktop '%s'", command, self.username, self.desktop)
 		(hProcess, hThread, dwProcessId, dwThreadId) = win32process.CreateProcessAsUser(
 			self.userToken,
 			None,
@@ -1836,7 +1849,10 @@ class Impersonate:
 
 	def end(self):
 		try:
-			win32security.RevertToSelf()
+			try:
+				win32security.RevertToSelf()
+			except:
+				pass
 			if self.saveWindowStation:
 				try:
 					self.saveWindowStation.SetProcessWindowStation()
