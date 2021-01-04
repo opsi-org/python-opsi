@@ -39,7 +39,7 @@ from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Logger import LOG_DEBUG, Logger
 from OPSI.Object import NetbootProduct, ProductOnClient
 from OPSI.Types import forceHostId, forceProductId, forceUnicode
-from OPSI.Util import compareVersions, formatFileSize, getfqdn, md5sum
+from OPSI.Util import compareVersions, formatFileSize, getfqdn, md5sum, merge
 from OPSI.Util.File import ZsyncFile
 from OPSI.Util.File.Opsi import parseFilename
 from OPSI.Util.Path import cd
@@ -827,7 +827,7 @@ class OpsiPackageUpdater:
 				downloadablePackages.append(package)
 		return downloadablePackages
 
-	def getDownloadablePackagesFromRepository(self, repository):
+	def getDownloadablePackagesFromRepository(self, repository, use_repofile=False):
 		depotConnection = None
 		depotRepositoryPath = None
 		if repository.opsiDepotId:
@@ -847,6 +847,17 @@ class OpsiPackageUpdater:
 		for url in repository.getDownloadUrls():
 			try:
 				url = quote(url.encode('utf-8'), safe="/#%[]=:;$&()+,!?*@'~")
+
+				if use_repofile:
+					repofile = "packages.json"
+					logger.info("trying to retrieve repofile %s from %s", repofile, url)
+					urllib.urlretrieve ("/".join([url, repofile])), repofile)
+					repo_packages = []
+					with open(repofile, "rb") as repof:
+						repo_packages = json.loads(repof.read().decode("utf-8"))["packages"]
+					packages = merge(packages, repo_packages)
+					continue
+
 				req = urllib.request.Request(url, None, self.httpHeaders)
 				response = opener.open(req)
 				content = response.read()

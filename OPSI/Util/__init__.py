@@ -888,3 +888,57 @@ def getPublicKey(data):
 		count += 4 + length
 
 	return RSA.construct((mp[1], mp[0]))
+
+
+def merge(thing1 : Any, thing2 : Any) -> Any:
+	"""
+	Merges two things.
+
+	This method expects two objects and attempts to merge them into one.
+	To do this, depending on the types, these rules are applied:
+
+	- If they are the same, only one of them is returned.
+	- If any one of them is None, the other one is returned.
+	- If their type is different, None is returned.
+	- If they are both lists, a list containing all entries is returned.
+	- If they are both dicts, a new dict is returned containing all
+		keys involved with recursively merged values.
+	- If none of these conditions hold (e.g. thing1 = 2 and thing2 = 4)
+		None is returned (as for different types).
+
+	:param thing1: First thing to merge
+	:type Any:
+	:param thing2: Second thing to merge
+	:type Any:
+	:returns: Result of the merging.
+	:rtype: Any
+	"""
+	if thing1 == thing2:
+		return thing1
+	if thing1 is None:
+		return thing2
+	if thing2 is None:
+		return thing1
+
+	if isinstance(thing1, list) and isinstance(thing2, list):
+		result = thing1.copy()
+		for x in thing2:
+			if x not in result:
+				result.append(x)
+		return result
+	if isinstance(thing1, dict) and isinstance(thing2, dict):
+		result = {}
+		allkeys = set(thing1.keys()).union(set(thing2.keys()))
+		for key in allkeys:
+			result.update({key : merge(thing1.get(key), thing2.get(key))})
+		return result
+	if isinstance(thing1, set) and isinstance(thing2, set):
+		result = set([])
+		result = result.union(thing1)
+		result = result.union(thing2)
+		return result
+	
+	if str(thing1) == str(thing2):		# allow for things like "1.0" and 1.0 to be merged
+		return str(thing1)
+
+	return None
