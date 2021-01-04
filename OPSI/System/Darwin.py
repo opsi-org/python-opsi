@@ -421,8 +421,8 @@ def mount(dev, mountpoint, **options):
 			username = re.sub(r"\\+", r"\\", options.get("username", "guest")).replace("\\", ";")
 			password = options.get("password", "")
 			if password:
-				password = f":{urllib.parse.quote(password)}"
-
+				password = f":{urllib.parse.quote_plus(password)}"
+			
 			command = f"mount_smbfs -N '//{username}{password}@{server}/{share}' '{mountpoint}'"
 
 			try:

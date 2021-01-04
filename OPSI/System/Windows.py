@@ -1795,9 +1795,8 @@ class Impersonate:
 				self.userEnvironment = win32profile.CreateEnvironmentBlock(self.userToken, False)
 				logger.debug("Environment block created")
 
-			if logonType == 'NEW_CREDENTIALS':
-				win32security.ImpersonateLoggedOnUser(self.userToken)
-				logger.debug("User impersonated")
+			win32security.ImpersonateLoggedOnUser(self.userToken)
+			logger.debug("User impersonated")
 		except Exception as error:
 			logger.logException(error)
 			self.end()
