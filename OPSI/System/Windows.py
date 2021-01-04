@@ -899,8 +899,11 @@ def getActiveSessionIds():
 		# WTS_CONNECTSTATE_CLASS:
 		# WTSActive,WTSConnected,WTSConnectQuery,WTSShadow,WTSDisconnected,
 		# WTSIdle,WTSListen,WTSReset,WTSDown,WTSInit
-		if session.get("UserName") and session.get("State") in (win32ts.WTSActive, win32ts.WTSDisconnected):
-			sessionIds.append(int(session["SessionId"]))
+		if session.get("State") not in (win32ts.WTSActive, win32ts.WTSDisconnected):
+			continue
+		if not win32ts.WTSQuerySessionInformation(server, session["SessionId"], win32ts.WTSUserName):
+			continue
+		sessionIds.append(int(session["SessionId"]))
 	return sessionIds
 
 def getActiveSessionId():
