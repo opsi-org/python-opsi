@@ -3790,7 +3790,7 @@ Used for testing.
 	return services
 
 
-def getActiveSessionIds(winApiBugCommand=None, data=None):
+def getActiveSessionIds():
 	"""
 	Getting the IDs of the currently active sessions.
 
