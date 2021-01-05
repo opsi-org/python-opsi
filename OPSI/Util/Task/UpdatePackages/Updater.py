@@ -867,7 +867,7 @@ class OpsiPackageUpdater:
 							pdict["version"] = f"{pdict.pop('product_version')}-{pdict.pop('package_version')}"
 							pdict["packageFile"] = f"{url}/{link}"
 							pdict["filename"] = link
-							pdict["md5sum"] = pdict.pop("md5", None)
+							pdict["md5sum"] = pdict.pop("md5sum", None)
 							pdict["zsyncFile"] = pdict.pop("zsync_file", None)
 							packages.append(pdict)
 							logger.info("Found opsi package: %s/%s", url, link)
