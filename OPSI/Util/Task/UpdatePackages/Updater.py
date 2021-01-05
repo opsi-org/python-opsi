@@ -30,6 +30,7 @@ import os.path
 import re
 import ssl
 import time
+import json
 import urllib.request
 from urllib.parse import quote
 
@@ -39,7 +40,7 @@ from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Logger import LOG_DEBUG, Logger
 from OPSI.Object import NetbootProduct, ProductOnClient
 from OPSI.Types import forceHostId, forceProductId, forceUnicode
-from OPSI.Util import compareVersions, formatFileSize, getfqdn, md5sum, merge
+from OPSI.Util import compareVersions, formatFileSize, getfqdn, md5sum
 from OPSI.Util.File import ZsyncFile
 from OPSI.Util.File.Opsi import parseFilename
 from OPSI.Util.Path import cd
@@ -54,6 +55,7 @@ __all__ = ('OpsiPackageUpdater', )
 
 logger = Logger()
 
+use_repofile = (os.environ.get("USE_REPOFILE") == "True")
 
 class HashsumMissmatchError(ValueError):
 	pass
@@ -827,7 +829,7 @@ class OpsiPackageUpdater:
 				downloadablePackages.append(package)
 		return downloadablePackages
 
-	def getDownloadablePackagesFromRepository(self, repository, use_repofile=False):
+	def getDownloadablePackagesFromRepository(self, repository):
 		depotConnection = None
 		depotRepositoryPath = None
 		if repository.opsiDepotId:
@@ -847,16 +849,33 @@ class OpsiPackageUpdater:
 		for url in repository.getDownloadUrls():
 			try:
 				url = quote(url.encode('utf-8'), safe="/#%[]=:;$&()+,!?*@'~")
-
 				if use_repofile:
-					repofile = "packages.json"
-					logger.info("trying to retrieve repofile %s from %s", repofile, url)
-					urllib.urlretrieve ("/".join([url, repofile])), repofile)
-					repo_packages = []
-					with open(repofile, "rb") as repof:
-						repo_packages = json.loads(repof.read().decode("utf-8"))["packages"]
-					packages = merge(packages, repo_packages)
-					continue
+					logger.debug("Trying to retrieve packages.json from %s", url)
+					try:
+						repo_data = None
+						if url.startswith("http"):
+							repo_data = urllib.request.urlopen("/".join([url, "packages.json"])).read()
+						elif url.startswith("file://"):
+							with open("/".join([url[7:], "packages.json"]), "rb") as f:
+								repo_data = f.read()
+						else:
+							raise ValueError("invalid repository url: " + url)
+
+						repo_packages = json.loads(repo_data.decode("utf-8"))["packages"]
+						for key, pdict in repo_packages.items():
+							link = ".".join([key, "opsi"])
+							pdict["repository"] = repository
+							pdict["productId"] = pdict.pop("product_id")
+							pdict["version"] = "-".join([pdict.pop("product_version"), pdict.pop("package_version")])
+							pdict["packageFile"] = "/".join([url, link])
+							pdict["filename"] = link
+							pdict["md5sum"] = None
+							pdict["zsyncFile"] = None
+							packages.append(pdict)
+						continue
+					except Exception as e:
+						#logger.warning(e)
+						logger.warning("No repofile found, falling back to scanning the repository")
 
 				req = urllib.request.Request(url, None, self.httpHeaders)
 				response = opener.open(req)
