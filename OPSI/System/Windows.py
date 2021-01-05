@@ -78,8 +78,8 @@ __all__ = (
 	'createRegistryKey', 'getFreeDrive', 'getDiskSpaceUsage', 'mount', 'umount',
 	'getActiveConsoleSessionId', 'getActiveDesktopName', 'getActiveSessionIds',
 	'getActiveSessionId', 'getSessionInformation',
-	'getActiveSessionInformation', 'getUserSessionIds', 'logoffCurrentUser',
-	'lockWorkstation', 'reboot', 'shutdown', 'abortShutdown',
+	'getActiveSessionInformation', 'getUserSessionIds', 'logoffSession', 'logoffCurrentUser',
+	'lockSession', 'lockWorkstation', 'reboot', 'shutdown', 'abortShutdown',
 	'createWindowStation', 'createDesktop', 'getDesktops', 'switchDesktop',
 	'addUserToDesktop', 'addUserToWindowStation', 'which', 'execute', 'getPids',
 	'getPid', 'getProcessName', 'getProcessHandle', 'getProcessWindowHandles',
@@ -960,42 +960,32 @@ def getUserSessionIds(username):
 
 	for session in getActiveSessionInformation():
 		if session.get('UserName') and session.get('UserName').lower() == username.lower():
-			sessionIds.append(int(session["SessionId"]))
+			sessionIds.append(session["SessionId"])
 	return sessionIds
 
+def _getSessionIdByUsername(username):
+	for session in getActiveSessionInformation():
+		if session["UserName"] and session["UserName"].lower() == username.lower():
+			return session["SessionId"]
+	raise ValueError(f"Session of user {username} not found")
 
-def logoffCurrentUser():
-	logger.notice("Logging off current user")
-	command = ''
-	if sys.getwindowsversion()[0] == 5:
-		if sys.getwindowsversion()[1] == 0:
-			# NT5.0: win2k
-			raise NotImplementedError(u"Not available on win2k")
-		else:
-			# NT5.1: XP
-			command = u'logoff.exe'
-	elif sys.getwindowsversion()[0] == 6:
-		# NT6: Vista, Win7
-		command = u'shutdown.exe /l'
-	else:
-		raise RuntimeError(u"Operating system not supported")
+def logoffSession(session_id = None, username = None):
+	if not session_id and username:
+		session_id = _getSessionIdByUsername(username)
+	if not session_id:
+		session_id = getActiveConsoleSessionId()
+	if session_id:
+		win32ts.WTSLogoffSession(win32ts.WTS_CURRENT_SERVER_HANDLE, session_id, False)
+logoffCurrentUser = logoffSession
 
-	runCommandInSession(
-		command=command,
-		sessionId=getActiveSessionId(),
-		waitForProcessEnding=False
-	)
-
-
-def lockWorkstation():
-	# windll.winsta.WinStationConnectW(0, 0, sessionId, "", 0)
-	# windll.user32.LockWorkStation()
-	runCommandInSession(
-		command=u"rundll32.exe user32.dll,LockWorkStation",
-		sessionId=getActiveSessionId(),
-		waitForProcessEnding=False
-	)
-
+def lockSession(session_id = None, username = None):
+	if not session_id and username:
+		session_id = _getSessionIdByUsername(username)
+	if not session_id:
+		session_id = getActiveConsoleSessionId()
+	if session_id:
+		win32ts.WTSDisconnectSession(win32ts.WTS_CURRENT_SERVER_HANDLE, session_id, False)
+lockWorkstation = lockSession
 
 def reboot(wait=10):
 	logger.notice(u"Rebooting in %s seconds", wait)

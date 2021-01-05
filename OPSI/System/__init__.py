@@ -24,8 +24,6 @@ want to use directly from this module.
 Because most functions are implemented for Windows and POSIX systems you
 should end up with runnable commands.
 
-:author: Jan Schneider <j.schneider@uib.de>
-:author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
 """
 
