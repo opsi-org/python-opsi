@@ -852,25 +852,25 @@ class OpsiPackageUpdater:
 					try:
 						repo_data = None
 						if url.startswith("http"):
-							repo_data = urllib.request.urlopen("/".join([url, "packages.json"])).read()
+							repo_data = urllib.request.urlopen(f"{url}/packages.json").read()
 						elif url.startswith("file://"):
-							with open("/".join([url[7:], "packages.json"]), "rb") as f:
+							with open(f"{url[7:]}/packages.json", "rb") as f:
 								repo_data = f.read()
 						else:
-							raise ValueError("invalid repository url: " + url)
+							raise ValueError(f"invalid repository url: {url}")
 
 						repo_packages = json.loads(repo_data.decode("utf-8"))["packages"]
 						for key, pdict in repo_packages.items():
 							link = ".".join([key, "opsi"])
 							pdict["repository"] = repository
 							pdict["productId"] = pdict.pop("product_id")
-							pdict["version"] = "-".join([pdict.pop("product_version"), pdict.pop("package_version")])
-							pdict["packageFile"] = "/".join([url, link])
+							pdict["version"] = f"{pdict.pop('product_version')}-{pdict.pop('package_version')}"
+							pdict["packageFile"] = f"{url}/{link}"
 							pdict["filename"] = link
-							pdict["md5sum"] = None
-							pdict["zsyncFile"] = None
+							pdict["md5sum"] = pdict.pop("md5", None)
+							pdict["zsyncFile"] = pdict.pop("zsync_file", None)
 							packages.append(pdict)
-							logger.info("Found opsi package: %s", "/".join([url, link]))
+							logger.info("Found opsi package: %s/%s", url, link)
 						continue
 					except Exception as e:
 						#logger.warning(e)
