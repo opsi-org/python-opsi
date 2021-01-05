@@ -55,7 +55,7 @@ __all__ = ('OpsiPackageUpdater', )
 
 logger = Logger()
 
-use_repofile = (os.environ.get("USE_REPOFILE") == "True")
+use_repofile = (os.environ.get("USE_REPOFILE").lower() == "true")
 
 class HashsumMissmatchError(ValueError):
 	pass
@@ -872,6 +872,7 @@ class OpsiPackageUpdater:
 							pdict["md5sum"] = None
 							pdict["zsyncFile"] = None
 							packages.append(pdict)
+							logger.info("Found opsi package: %s", "/".join([url, link]))
 						continue
 					except Exception as e:
 						#logger.warning(e)
