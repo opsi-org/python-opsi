@@ -55,8 +55,6 @@ __all__ = ('OpsiPackageUpdater', )
 
 logger = Logger()
 
-use_repofile = (os.environ.get("USE_REPOFILE").lower() == "true")
-
 class HashsumMissmatchError(ValueError):
 	pass
 
@@ -849,7 +847,7 @@ class OpsiPackageUpdater:
 		for url in repository.getDownloadUrls():
 			try:
 				url = quote(url.encode('utf-8'), safe="/#%[]=:;$&()+,!?*@'~")
-				if use_repofile:
+				if str(os.environ.get("USE_REPOFILE")).lower() == "true":
 					logger.debug("Trying to retrieve packages.json from %s", url)
 					try:
 						repo_data = None
