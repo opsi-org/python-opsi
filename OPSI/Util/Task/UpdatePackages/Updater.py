@@ -30,6 +30,7 @@ import os.path
 import re
 import ssl
 import time
+import json
 import urllib.request
 from urllib.parse import quote
 
@@ -53,7 +54,6 @@ from .Repository import LinksExtractor
 __all__ = ('OpsiPackageUpdater', )
 
 logger = Logger()
-
 
 class HashsumMissmatchError(ValueError):
 	pass
@@ -847,6 +847,35 @@ class OpsiPackageUpdater:
 		for url in repository.getDownloadUrls():
 			try:
 				url = quote(url.encode('utf-8'), safe="/#%[]=:;$&()+,!?*@'~")
+				if str(os.environ.get("USE_REPOFILE")).lower() == "true":
+					logger.debug("Trying to retrieve packages.json from %s", url)
+					try:
+						repo_data = None
+						if url.startswith("http"):
+							repo_data = urllib.request.urlopen(f"{url}/packages.json").read()
+						elif url.startswith("file://"):
+							with open(f"{url[7:]}/packages.json", "rb") as f:
+								repo_data = f.read()
+						else:
+							raise ValueError(f"invalid repository url: {url}")
+
+						repo_packages = json.loads(repo_data.decode("utf-8"))["packages"]
+						for key, pdict in repo_packages.items():
+							link = ".".join([key, "opsi"])
+							pdict["repository"] = repository
+							pdict["productId"] = pdict.pop("product_id")
+							pdict["version"] = f"{pdict.pop('product_version')}-{pdict.pop('package_version')}"
+							pdict["packageFile"] = f"{url}/{link}"
+							pdict["filename"] = link
+							pdict["md5sum"] = pdict.pop("md5sum", None)
+							pdict["zsyncFile"] = pdict.pop("zsync_file", None)
+							packages.append(pdict)
+							logger.info("Found opsi package: %s/%s", url, link)
+						continue
+					except Exception as e:
+						#logger.warning(e)
+						logger.warning("No repofile found, falling back to scanning the repository")
+
 				req = urllib.request.Request(url, None, self.httpHeaders)
 				response = opener.open(req)
 				content = response.read()
