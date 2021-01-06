@@ -368,7 +368,7 @@ class OpsiPackageUpdater:
 
 				logger.debug("mark redis product cache as dirty for debot: %s", self.depotId)
 				config_id = f"opsiconfd.{self.depotId}.product.cache.outdated"
-				backend._executeMethod("config_createBool", id=config_id, description="", defaultValues=[True])
+				backend.config_createBool(id=config_id, description="", defaultValues=[True])
 			
 				shutdownProduct = None
 				if self.config['wolAction'] and self.config["wolShutdownWanted"]:
