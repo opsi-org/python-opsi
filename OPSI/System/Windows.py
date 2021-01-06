@@ -889,22 +889,65 @@ def getActiveDesktopName():
 	desktop = win32service.OpenInputDesktop(0, True, win32con.MAXIMUM_ALLOWED)
 	return forceUnicode(win32service.GetUserObjectInformation(desktop, win32con.UOI_NAME))
 
-def getActiveSessionIds():
+WTS_PROTOCOLS = {
+	win32ts.WTS_PROTOCOL_TYPE_CONSOLE: "console",
+	win32ts.WTS_PROTOCOL_TYPE_ICA: "citrix",
+	win32ts.WTS_PROTOCOL_TYPE_RDP: "rdp"
+}
+WTS_STATES = {
+	win32ts.WTSActive: "active",
+	win32ts.WTSConnected: "connected",
+	win32ts.WTSDisconnected: "disconnected"
+}
+
+def getActiveSessionIds(protocol = None, states=["active", "disconnected"]):
 	"""
-	Retrieves ids of all active user sessions (physical console or rdp).
+	Retrieves ids of all active user sessions.
+
+	:raises ValueError: In case an invalid protocol is provided.
+	
+	:param protocol: Return only sessions of this protocol type (console / rdp / citrix)
+	:type protocol: str
+
+	:param states: Return only sessions in one of this states (active / connected / disconnected)
+	:type protocol: list
+	
+	:returns: List of active sessions
+	:rtype: list
 	"""
-	sessionIds = []
+	if states:
+		for i in range(len(states)):
+			if states[i] not in WTS_STATES:
+				for state, name in WTS_STATES.items():
+					if name == states[i]:
+						states[i] = state
+						break
+				if states[i] not in WTS_STATES:
+					raise ValueError(f"Invalid session state {states[i]}")
+	
+	if protocol:
+		if not protocol in WTS_PROTOCOLS:
+			for proto, name in WTS_PROTOCOLS.items():
+				if name == protocol:
+					protocol = proto
+					break
+		if not protocol:
+			raise ValueError(f"Invalid session type {protocol}")
+	
+	session_ids = []
 	server = win32ts.WTS_CURRENT_SERVER_HANDLE
 	for session in win32ts.WTSEnumerateSessions(server):
 		# WTS_CONNECTSTATE_CLASS:
 		# WTSActive,WTSConnected,WTSConnectQuery,WTSShadow,WTSDisconnected,
 		# WTSIdle,WTSListen,WTSReset,WTSDown,WTSInit
-		if session.get("State") not in (win32ts.WTSActive, win32ts.WTSDisconnected):
+		if states and session.get("State") not in states:
 			continue
 		if not win32ts.WTSQuerySessionInformation(server, session["SessionId"], win32ts.WTSUserName):
 			continue
-		sessionIds.append(int(session["SessionId"]))
-	return sessionIds
+		if protocol and protocol != win32ts.WTSQuerySessionInformation(server, session["SessionId"], win32ts.WTSClientProtocolType):
+			continue
+		session_ids.append(int(session["SessionId"]))
+	return session_ids
 
 def getActiveSessionId():
 	"""
@@ -916,17 +959,6 @@ def getActiveSessionId():
 	return None
 
 def getSessionInformation(sessionId):
-	protocols = {
-		win32ts.WTS_PROTOCOL_TYPE_CONSOLE: "console",
-		win32ts.WTS_PROTOCOL_TYPE_ICA: "citrix",
-		win32ts.WTS_PROTOCOL_TYPE_RDP: "rdp"
-	}
-	states = {
-		win32ts.WTSActive: "active",
-		win32ts.WTSConnected: "connected",
-		win32ts.WTSDisconnected: "disconnected"
-	}
-
 	server = win32ts.WTS_CURRENT_SERVER_HANDLE
 	for session in win32ts.WTSEnumerateSessions(server):
 		if int(session["SessionId"]) != int(sessionId):
@@ -936,8 +968,8 @@ def getSessionInformation(sessionId):
 		session["Protocol"] = win32ts.WTSQuerySessionInformation(server, session["SessionId"], win32ts.WTSClientProtocolType)
 		#session["WorkingDirectory"] = win32ts.WTSQuerySessionInformation(server, session["SessionId"], win32ts.WTSWorkingDirectory)
 		session["DomainName"] = win32ts.WTSQuerySessionInformation(server, session["SessionId"], win32ts.WTSDomainName)
-		session["StateName"] = states.get(session["State"], "unknown")
-		session["ProtocolName"] = protocols.get(session["Protocol"], "unknown")
+		session["StateName"] = WTS_STATES.get(session["State"], "unknown")
+		session["ProtocolName"] = WTS_PROTOCOLS.get(session["Protocol"], "unknown")
 		return session
 	
 	return {}
