@@ -923,16 +923,16 @@ def getActiveSessionIds(protocol = None, states=["active", "disconnected"]):
 						states[i] = state
 						break
 				if states[i] not in WTS_STATES:
-					raise ValueError(f"Invalid session state {states[i]}")
+					raise ValueError(f"Invalid session state '{states[i]}'")
 	
-	if protocol:
+	if protocol is not None:
 		if not protocol in WTS_PROTOCOLS:
 			for proto, name in WTS_PROTOCOLS.items():
 				if name == protocol:
 					protocol = proto
 					break
-		if not protocol:
-			raise ValueError(f"Invalid session type {protocol}")
+		if protocol is None:
+			raise ValueError(f"Invalid session protocol '{protocol}'")
 	
 	session_ids = []
 	server = win32ts.WTS_CURRENT_SERVER_HANDLE
