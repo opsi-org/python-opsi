@@ -3789,6 +3789,17 @@ Used for testing.
 	logger.debug(u"Found the following services: %s", services)
 	return services
 
+def getActiveConsoleSessionId():
+	"""
+	Get the currently used console session id.
+
+	.. warning::
+
+		This is currently only faked to have the function available for
+		the opsi-linux-client-agent!
+
+	"""
+	return getActiveSessionId()
 
 def getActiveSessionIds():
 	"""
@@ -3816,17 +3827,16 @@ def getActiveSessionId():
 		return sessions[0]
 	return None
 
-def getActiveConsoleSessionId():
-	"""
-	Get the currently used console session id.
-
-	.. warning::
-
-		This is currently only faked to have the function available for
-		the opsi-linux-client-agent!
-
-	"""
-	return getActiveSessionId()
+def getSessionInformation(sessionId):
+	return {
+		"SessionId": sessionId
+	}
+	
+def getActiveSessionInformation():
+	info = []
+	for sessionId in getActiveSessionIds():
+		info.append(getSessionInformation(sessionId))
+	return info
 
 def grant_session_access(username: str, session_id: str):
 	return get_subprocess_environment()
