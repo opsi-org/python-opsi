@@ -90,6 +90,12 @@ def getActiveSessionIds(winApiBugCommand=None, data=None):
 	return sessions
 Posix.getActiveSessionIds = getActiveSessionIds
 
+def getSessionInformation(sessionId):
+	return {
+		"SessionId": sessionId
+	}
+Posix.getSessionInformation = getSessionInformation
+
 def grant_session_access(username: str, session_id: str):
 	session_username = None
 	session_env = {}
