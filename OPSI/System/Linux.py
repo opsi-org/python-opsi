@@ -67,7 +67,7 @@ __all__ = (
 	'runCommandInSession', 'setLocalSystemTime', 'shutdown', 'umount', 'which'
 )
 
-def getActiveSessionIds(winApiBugCommand=None, data=None):
+def getActiveSessionIds(protocol = None, states=["active", "disconnected"]):
 	"""
 	Getting the IDs of the currently active sessions.
 
@@ -112,7 +112,7 @@ def grant_session_access(username: str, session_id: str):
 		raise ValueError(f"Session {session_id} not found")
 	if not session_env.get("XAUTHORITY"):
 		session_env["XAUTHORITY"] = os.path.join(session_env.get("HOME"), ".Xauthority")
-	
+
 	sp_env = os.environ.copy()
 	sp_env.update(session_env)
 	sp_env = get_subprocess_environment(sp_env)
@@ -151,7 +151,7 @@ def mount(dev, mountpoint, **options):
 	if is_mounted(mountpoint):
 		logger.debug("Mountpoint '%s' already mounted, umounting before mount", mountpoint)
 		umount(mountpoint)
-	
+
 	for (key, value) in options.items():
 		options[key] = forceUnicode(value)
 
@@ -178,7 +178,7 @@ def mount(dev, mountpoint, **options):
 			tf.close()
 			tmpFiles.append(tf.name)
 			options['credentials'] = tf.name
-			
+
 			try:
 				if not options['domain']:
 					del options['domain']
@@ -198,7 +198,7 @@ def mount(dev, mountpoint, **options):
 			dev = f"http{match.group(2)}{match.group(3)}"
 		else:
 			raise ValueError(f"Bad webdav url '{dev}'")
-		
+
 		if 'username' not in options:
 			options['username'] = ""
 		if 'password' not in options:
@@ -209,10 +209,10 @@ def mount(dev, mountpoint, **options):
 		tf.close()
 		tmpFiles.append(tf.name)
 		options['conf'] = tf.name
-		
+
 		# Username, Password, Accept certificate for this session? [y,N]
 		stdin_data = f"{options['username']}\n{options['password']}\ny\n".encode("utf-8")
-		
+
 		del options['username']
 		del options['password']
 
@@ -224,7 +224,7 @@ def mount(dev, mountpoint, **options):
 
 	else:
 		raise ValueError(f"Cannot mount unknown fs type '{dev}'")
-	
+
 	mountOptions = []
 	for (key, value) in options.items():
 		key = forceUnicode(key)
