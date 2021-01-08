@@ -228,7 +228,7 @@ class LockableFile(File):
 						flags = win32con.LOCKFILE_FAIL_IMMEDIATELY
 					hfile = win32file._get_osfhandle(self._fileHandle.fileno())
 					win32file.LockFileEx(hfile, flags, 0, 0x7fff0000, pywintypes.OVERLAPPED())
-			except IOError:
+			except (IOError, pywintypes.error):
 				# increase timeout counter, sleep 100 millis
 				timeout += 100
 				time.sleep(0.1)
