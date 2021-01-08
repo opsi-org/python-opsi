@@ -191,7 +191,7 @@ def getOpsiHotfixName(helper=None):
 	loc = locale.getdefaultlocale()[0].split('_')[0]
 	os = 'unknown'
 	lang = 'unknown'
-	
+
 	if helper:
 		logger.notice("Using version helper: %s", helper)
 		try:
@@ -220,7 +220,7 @@ def getOpsiHotfixName(helper=None):
 				os = 'win2003'
 			else:
 				os = 'win2003-winxp'
-	
+
 	elif major == 6:
 		lang = 'glb'
 		if minor == 0:
@@ -247,7 +247,7 @@ def getOpsiHotfixName(helper=None):
 			os = 'win10'
 		else:
 			os = 'win10-win2016'
-	
+
 	return 'mshotfix-%s-%s-%s' % (os, arch, lang)
 
 
@@ -791,7 +791,7 @@ def mount(dev, mountpoint, **options):
 
 		if mountpoint.lower() in usedDriveletters:
 			logger.debug("Mountpoint '%s' is in use. Trying to find a free mountpoint.", mountpoint)
-			
+
 			for i in range(ord('c'), ord('z')):
 				mountpoint = forceUnicode(chr(i))
 				if mountpoint not in usedDriveletters:
@@ -905,13 +905,13 @@ def getActiveSessionIds(protocol = None, states=["active", "disconnected"]):
 	Retrieves ids of all active user sessions.
 
 	:raises ValueError: In case an invalid protocol is provided.
-	
+
 	:param protocol: Return only sessions of this protocol type (console / rdp / citrix)
 	:type protocol: str
 
 	:param states: Return only sessions in one of this states (active / connected / disconnected)
 	:type protocol: list
-	
+
 	:returns: List of active sessions
 	:rtype: list
 	"""
@@ -924,7 +924,7 @@ def getActiveSessionIds(protocol = None, states=["active", "disconnected"]):
 						break
 				if states[i] not in WTS_STATES:
 					raise ValueError(f"Invalid session state '{states[i]}'")
-	
+
 	if protocol is not None:
 		if not protocol in WTS_PROTOCOLS:
 			for proto, name in WTS_PROTOCOLS.items():
@@ -933,7 +933,7 @@ def getActiveSessionIds(protocol = None, states=["active", "disconnected"]):
 					break
 		if protocol is None:
 			raise ValueError(f"Invalid session protocol '{protocol}'")
-	
+
 	session_ids = []
 	server = win32ts.WTS_CURRENT_SERVER_HANDLE
 	for session in win32ts.WTSEnumerateSessions(server):
@@ -971,9 +971,9 @@ def getSessionInformation(sessionId):
 		session["StateName"] = WTS_STATES.get(session["State"], "unknown")
 		session["ProtocolName"] = WTS_PROTOCOLS.get(session["Protocol"], "unknown")
 		return session
-	
+
 	return {}
-	
+
 def getActiveSessionInformation():
 	info = []
 	for sessionId in getActiveSessionIds():
@@ -1247,11 +1247,11 @@ def execute(cmd, waitForEnding=True, getHandle=False, ignoreExitCode=[], exitOnS
 				stderr=stderr,
 				env=sp_env
 			)
-			
+
 			if stdin_data:
 				proc.stdin.write(stdin_data)
 				proc.stdin.flush()
-			
+
 			ret = None
 			while ret is None:
 				ret = proc.poll()
@@ -1796,7 +1796,7 @@ class Impersonate:
 
 					desktopAceIndices = addUserToDesktop(self.newDesktop, userSid)
 					logger.debug("Added user to desktop")
-			
+
 			elif logonType == 'INTERACTIVE':
 				userSid = getUserSidFromHandle(self.userToken)
 				if not userSid:
@@ -1809,7 +1809,7 @@ class Impersonate:
 
 					desktopAceIndices = addUserToDesktop(win32service.GetThreadDesktop(win32api.GetCurrentThreadId()), userSid)
 					logger.debug("Added user to desktop")
-				
+
 			if createEnvironment:
 				self.userProfile = win32profile.LoadUserProfile(self.userToken, {'UserName': self.username})
 				logger.debug("User profile loaded")

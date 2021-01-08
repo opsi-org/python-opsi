@@ -947,11 +947,11 @@ output will be returned.
 			if captureStderr:
 				flags = fcntl.fcntl(proc.stderr, fcntl.F_GETFL)
 				fcntl.fcntl(proc.stderr, fcntl.F_SETFL, flags | os.O_NONBLOCK)
-			
+
 			if stdin_data:
 				proc.stdin.write(stdin_data)
 				proc.stdin.flush()
-			
+
 			ret = None
 			while ret is None:
 				ret = proc.poll()
@@ -1454,7 +1454,7 @@ class Harddisk:
 				logger.notice(u"unrecognized partition table type, writing empty partitiontable")
 				execute('{echo} -e "0,0\n\n\n\n" | {sfdisk} --no-reread -D {device}'.format(echo=which('echo'), sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1], env=sp_env)
 				result = execute("{sfdisk} --no-reread -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1], env=sp_env)
-				
+
 			self._parsePartitionTable(result)
 
 			result = execute(u"{sfdisk} --no-reread -uS -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1], env=sp_env)
@@ -1491,7 +1491,7 @@ class Harddisk:
 						self.heads = forceInt(match.group(2))
 						self.sectors = forceInt(match.group(3))
 						self.totalCylinders = self.cylinders
-				
+
 			elif line.lower().startswith(u'units'):
 				match = re.search(r'sectors\s+of\s+\d\s+.\s+\d+\s+.\s+(\d+)\s+bytes', line)
 				if not match:
@@ -1612,7 +1612,7 @@ class Harddisk:
 
 			elif line.lower().startswith('units'):
 				match = re.search(r'sectors\s+of\s+\d\s+.\s+\d+\s+.\s+(\d+)\s+bytes', line)
-				
+
 				if not match:
 					raise RuntimeError(u"Unable to get bytes/sector for disk '%s'" % self.device)
 				self.bytesPerSector = forceInt(match.group(1))
@@ -1669,12 +1669,12 @@ class Harddisk:
 				cmd += u'" | %s -L --no-reread -uS -f %s' % (which('sfdisk'), self.device)
 			else:
 				cmd += u'" | %s -L --no-reread %s' % (which('sfdisk'), self.device)
-				
+
 			sp_env = {}
 			if self.ldPreload:
 				sp_env["LD_PRELOAD"] = self.ldPreload
 			execute(cmd, ignoreExitCode=[1], env=sp_env)
-			
+
 			self._forceReReadPartionTable()
 			time.sleep(2)
 		except Exception as e:
@@ -1700,7 +1700,7 @@ class Harddisk:
 			except Exception:
 				logger.error(u"Reread Partiontabel failed the second time, given up.")
 				raise
-	
+
 	def deletePartitionTable(self):
 		logger.info(u"Deleting partition table on '%s'", self.device)
 		for hook in hooks:
@@ -2635,11 +2635,11 @@ class Harddisk:
 
 			if imageType not in (u'ntfsclone', u'partclone'):
 				raise ValueError(u"Unknown image type.")
-			
+
 			sp_env = {}
 			if self.ldPreload:
 				sp_env["LD_PRELOAD"] = self.ldPreload
-				
+
 			if imageType == u'partclone':
 				logger.info(u"Restoring partclone image '%s' to '%s'",
 					imageFile, self.getPartition(partition)['device']
@@ -2785,7 +2785,7 @@ class Harddisk:
 				if progressSubject:
 					progressSubject.setMessage(u"Resizing filesystem to partition size")
 				self.resizeFilesystem(partition, fs=u'ntfs')
-		
+
 		except Exception as e:
 			for hook in hooks:
 				hook.error_Harddisk_restoreImage(self, partition, imageFile, progressSubject, e)
@@ -2878,7 +2878,7 @@ class Distribution:
 	def __init__(self, distribution_information=None):
 		if distribution_information is None:
 			distribution_information = distro_module.linux_distribution()
-		
+
 		logger.debug("distribution information: %s", distribution_information)
 		self.distribution, self._version, self.id = distribution_information
 		self.distribution = self.distribution.strip()
@@ -3801,7 +3801,7 @@ def getActiveConsoleSessionId():
 	"""
 	return getActiveSessionId()
 
-def getActiveSessionIds():
+def getActiveSessionIds(protocol = None, states=["active", "disconnected"]):
 	"""
 	Getting the IDs of the currently active sessions.
 
@@ -3831,7 +3831,7 @@ def getSessionInformation(sessionId):
 	return {
 		"SessionId": sessionId
 	}
-	
+
 def getActiveSessionInformation():
 	info = []
 	for sessionId in getActiveSessionIds():
@@ -3874,7 +3874,7 @@ until the execution of the process is terminated.
 			sp_env = grant_session_access(getpass.getuser(), sessionId)
 		except Exception as e:
 			logger.error("Failed to grant access to session %s to user %s: %s", sessionId, getpass.getuser(), exc_info=True)
-	
+
 	logger.info("Running command %s", command)
 	process = subprocess.Popen(
 		args=command,
@@ -3884,7 +3884,7 @@ until the execution of the process is terminated.
 		stderr=subprocess.STDOUT,
 		env=sp_env
 	)
-	
+
 	fd = process.stdout.fileno()
 	fl = fcntl.fcntl(fd, fcntl.F_GETFL)
 	fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
