@@ -1689,6 +1689,13 @@ def setLocalSystemTime(timestring):
 
 class Impersonate:
 	def __init__(self, username="", password="", userToken=None, desktop="default"):
+		self.userProfile = None
+		self.userEnvironment = None
+		self.saveWindowStation = None
+		self.saveDesktop = None
+		self.newWindowStation = None
+		self.newDesktop = None
+
 		if not username and not userToken:
 			raise ValueError("Neither username nor user token given")
 
@@ -1710,12 +1717,6 @@ class Impersonate:
 		self.winsta = forceUnicodeLower(self.winsta)
 		self.desktop = forceUnicodeLower(self.desktop)
 		self.userToken = userToken
-		self.userProfile = None
-		self.userEnvironment = None
-		self.saveWindowStation = None
-		self.saveDesktop = None
-		self.newWindowStation = None
-		self.newDesktop = None
 
 	def start(self, logonType='INTERACTIVE', newDesktop=False, createEnvironment=False):
 		try:
