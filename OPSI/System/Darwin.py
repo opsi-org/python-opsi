@@ -43,7 +43,7 @@ from OPSI.System.Posix import (
 	Distribution, Harddisk, NetworkPerformanceCounter, SysInfo,
 	SystemSpecificHook, addSystemHook, auditHardware,
 	configureInterface, daemonize, execute, get_subprocess_environment, getActiveConsoleSessionId,
-	getActiveSessionId, getBlockDeviceBusType,
+	getActiveSessionId, getActiveSessionInformation, getSessionInformation, getBlockDeviceBusType,
 	getBlockDeviceContollerInfo, getDHCPDRestartCommand, getDHCPResult,
 	getDHCPServiceName, getDefaultNetworkInterfaceName, getDiskSpaceUsage,
 	getEthernetDevices, getFQDN, getHarddisks, getHostname,
