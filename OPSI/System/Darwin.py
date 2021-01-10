@@ -65,7 +65,8 @@ __all__ = (
 	'Distribution', 'Harddisk', 'NetworkPerformanceCounter', 'SysInfo',
 	'SystemSpecificHook', 'addSystemHook', 'auditHardware',
 	'configureInterface', 'daemonize', 'execute', 'get_subprocess_environment', 'getActiveConsoleSessionId',
-	'getActiveSessionId', 'getActiveSessionIds', 'getBlockDeviceBusType',
+	'getActiveSessionId', 'getActiveSessionIds', 'getActiveSessionInformation', 'getSessionInformation',
+	'getBlockDeviceBusType',
 	'getBlockDeviceContollerInfo', 'getDHCPDRestartCommand', 'getDHCPResult',
 	'getDHCPServiceName', 'getDefaultNetworkInterfaceName', 'getDiskSpaceUsage',
 	'getEthernetDevices', 'getFQDN', 'getHarddisks', 'getHostname',
@@ -245,7 +246,7 @@ def hardwareInventory(config, progressSubject=None):
 	opsiValues = {}
 
 	hardwareList = []
-	# Read output from system_profiler	
+	# Read output from system_profiler
 	logger.debug("calling system_profiler command")
 	getHardwareCommand = "system_profiler SPParallelATADataType SPAudioDataType SPBluetoothDataType SPCameraDataType \
 			SPCardReaderDataType SPEthernetDataType SPDiscBurningDataType SPFibreChannelDataType SPFireWireDataType \
@@ -305,7 +306,7 @@ def hardwareInventory(config, progressSubject=None):
 
 		if osxClass is None or opsiClass is None:
 			continue
-		
+
 		logger.info(u"Processing class '%s' : '%s'", opsiClass, osxClass)
 		opsiValues[opsiClass] = []
 
@@ -408,7 +409,7 @@ def mount(dev, mountpoint, **options):
 	if is_mounted(mountpoint):
 		logger.debug("Mountpoint '%s' already mounted, umounting before mount", mountpoint)
 		umount(mountpoint)
-	
+
 	for (key, value) in options.items():
 		options[key] = forceUnicode(value)
 
@@ -422,7 +423,7 @@ def mount(dev, mountpoint, **options):
 			password = options.get("password", "")
 			if password:
 				password = f":{urllib.parse.quote_plus(password)}"
-			
+
 			command = f"mount_smbfs -N '//{username}{password}@{server}/{share}' '{mountpoint}'"
 
 			try:
