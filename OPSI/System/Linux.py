@@ -21,6 +21,7 @@
 
 import os
 import re
+import socket
 import subprocess
 import psutil
 import codecs
@@ -34,7 +35,7 @@ from OPSI.System.Posix import (
 	Distribution, Harddisk, NetworkPerformanceCounter, SysInfo,
 	SystemSpecificHook, addSystemHook, auditHardware,
 	configureInterface, daemonize, execute, get_subprocess_environment, getActiveConsoleSessionId,
-	getActiveSessionId, getBlockDeviceBusType,
+	getActiveSessionId, getActiveSessionInformation, getSessionInformation, getBlockDeviceBusType,
 	getBlockDeviceContollerInfo, getDHCPDRestartCommand, getDHCPResult,
 	getDHCPServiceName, getDefaultNetworkInterfaceName, getDiskSpaceUsage,
 	getEthernetDevices, getFQDN, getHarddisks, getHostname,
@@ -83,7 +84,13 @@ def getActiveSessionIds(protocol = None, states=["active", "disconnected"]):
 	for proc in psutil.process_iter():
 		try:
 			env = proc.environ()
-			if env.get("DISPLAY") and not env["DISPLAY"] in sessions:
+			# Filter out gdm/1024
+			if (
+				env.get("DISPLAY") and
+				env["DISPLAY"] != ':1024' and
+				env.get("USERNAME") and
+				env["DISPLAY"] not in sessions
+			):
 				sessions.append(env["DISPLAY"])
 		except psutil.AccessDenied as e:
 			logger.debug(e)
@@ -92,9 +99,24 @@ def getActiveSessionIds(protocol = None, states=["active", "disconnected"]):
 Posix.getActiveSessionIds = getActiveSessionIds
 
 def getSessionInformation(sessionId):
-	return {
-		"SessionId": sessionId
+	info = {
+		"SessionId": sessionId,
+		"DomainName": None,
+		"UserName": None,
 	}
+	for proc in psutil.process_iter():
+		try:
+			env = proc.environ()
+			if env.get("DISPLAY") == sessionId and env.get("USERNAME"):
+				info["DomainName"] = env.get("HOST", info["DomainName"])
+				info["UserName"] = env.get("USERNAME", info["UserName"])
+				break
+		except psutil.AccessDenied as e:
+			logger.debug(e)
+	if not info["DomainName"]:
+		info["DomainName"] = socket.gethostname().upper()
+	return info
+
 Posix.getSessionInformation = getSessionInformation
 
 def grant_session_access(username: str, session_id: str):
