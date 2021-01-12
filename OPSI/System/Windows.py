@@ -779,96 +779,95 @@ def mount(dev, mountpoint, **options):
 
 	match = re.search(r'^([a-z]:|dynamic)$', mountpoint, re.IGNORECASE)
 	if not match:
-		logger.error(u"Bad mountpoint '%s'", mountpoint)
-		raise ValueError(u"Bad mountpoint '%s'" % mountpoint)
+		logger.error("Invalid mountpoint '%s'", mountpoint)
+		raise ValueError(f"Invalid mountpoint '{mountpoint}'")
 
 	if mountpoint == 'dynamic':
-		usedDriveletters = {
+		drive_letters_in_use = [
 			x[0].lower()
 			for x in win32api.GetLogicalDriveStrings().split('\0')
 			if x
-		}
+		]
 
-		if mountpoint.lower() in usedDriveletters:
-			logger.debug("Mountpoint '%s' is in use. Trying to find a free mountpoint.", mountpoint)
+		for i in range(ord('c'), ord('z')):
+			mp = forceUnicode(chr(i))
+			if mp not in drive_letters_in_use:
+				mountpoint = mp
+				logger.info("Using free mountpoint '%s'", mountpoint)
+				break
 
-			for i in range(ord('c'), ord('z')):
-				mountpoint = forceUnicode(chr(i))
-				if mountpoint not in usedDriveletters:
-					logger.info(u"Using the free mountpoint '%s'", mountpoint)
-					break
-			else:
-				raise RuntimeError("Dynamic mountpoint detection could not find a a free mountpoint!")
+		if mountpoint == 'dynamic':
+			raise RuntimeError("Dynamic mountpoint detection and no free mountpoint available")
+
+	if not dev.lower().startswith(('smb://', 'cifs://', 'webdavs://', 'https://')):
+		raise NotImplementedError(f"Mounting fs type '{dev}' not implemented")
+
+	if 'username' not in options or not options['username']:
+		options['username'] = None
+	if 'password' not in options or not options['password']:
+		options['password'] = None
+	else:
+		logger.addConfidentialString(options['password'])
 
 	if dev.lower().startswith(('smb://', 'cifs://')):
 		match = re.search(r'^(smb|cifs)://([^/]+/.+)$', dev, re.IGNORECASE)
-		if match:
-			parts = match.group(2).split('/')
-			dev = '\\\\%s\\%s' % (parts[0], parts[1])
+		if not match:
+			raise ValueError(f"Bad smb/cifs uri '{dev}'")
+		parts = match.group(2).split('/')
+		dev = f'\\\\{parts[0]}\\{parts[1]}'
 
-			if 'username' not in options:
-				options['username'] = None
+		domain = options.get('domain') or getHostname()
+		if options['username'] and '\\' in options['username']:
+			domain = options['username'].split('\\')[0]
+			options['username'] = options['username'].split('\\')[-1]
 
-			elif options['username'] and (options['username'].find('\\') != -1):
-				options['domain'] = options['username'].split('\\')[0]
-				options['username'] = options['username'].split('\\')[-1]
+		if options['username']:
+			options['username'] = f"{domain}\\{options['username']}"
 
-			try:
-				logger.addConfidentialString(options['password'])
-			except KeyError:
-				options['password'] = None
+	elif dev.lower().startswith(('webdavs://', 'https://')):
+		dev = dev.replace('webdavs://', 'https://')
 
-			if 'domain' not in options:
-				options['domain'] = getHostname()
-			username = None
-			if options['username']:
-				username = options['domain'] + '\\' + options['username']
+	try:
+		try:
+			# Remove connection and update user profile (remove persistent connection)
+			win32wnet.WNetCancelConnection2(mountpoint, win32netcon.CONNECT_UPDATE_PROFILE, True)
+		except pywintypes.error as cc_err:
+			if cc_err.winerror == 2250:
+				# Not connected
+				logger.debug("Failed to umount '%s': %s", mountpoint, cc_err)
+			else:
+				raise
 
-			try:
-				try:
-					# Remove connection and update user profile (remove persistent connection)
-					win32wnet.WNetCancelConnection2(mountpoint, win32netcon.CONNECT_UPDATE_PROFILE, True)
-				except pywintypes.error as details:
-					if details.winerror == 2250:
-						# Not connected
-						logger.debug(u"Failed to umount '%s': %s", mountpoint, details)
-					else:
-						raise
+		logger.notice("Mounting '%s' to '%s'", dev, mountpoint)
+		# Mount (not persistent)
+		win32wnet.WNetAddConnection2(
+			win32netcon.RESOURCETYPE_DISK,
+			mountpoint,
+			dev,
+			None,
+			options['username'],
+			options['password'],
+			0
+		)
 
-				logger.notice(u"Mounting '%s' to '%s'", dev, mountpoint)
-				# Mount not persistent
-				win32wnet.WNetAddConnection2(
-					win32netcon.RESOURCETYPE_DISK,
-					mountpoint,
-					dev,
-					None,
-					username,
-					options['password'],
-					0
-				)
-
-			except Exception as error:
-				logger.error(u"Failed to mount '%s': %s", dev, forceUnicode(error))
-				raise RuntimeError(u"Failed to mount '%s': %s", dev, forceUnicode(error))
-		else:
-			raise ValueError(u"Bad smb/cifs uri '%s'" % dev)
-	else:
-		raise ValueError(u"Cannot mount unknown fs type '%s'" % dev)
+	except Exception as err:
+		logger.error("Failed to mount '%s': %s", dev, err)
+		raise RuntimeError(f"Failed to mount '{dev}': {err}") from err
 
 
 def umount(mountpoint):
 	try:
 		# Remove connection and update user profile (remove persistent connection)
 		win32wnet.WNetCancelConnection2(mountpoint, win32netcon.CONNECT_UPDATE_PROFILE, True)
-	except pywintypes.error as details:
-		if details.winerror == 2250:
+	except pywintypes.error as cc_err:
+		if cc_err.winerror == 2250:
 			# Not connected
-			logger.warning(u"Failed to umount '%s': %s", mountpoint, details)
+			logger.debug("Failed to umount '%s': %s", mountpoint, cc_err)
 		else:
 			raise
-	except Exception as error:
-		logger.error(u"Failed to umount '%s': %s", mountpoint, error)
-		raise RuntimeError(u"Failed to umount '%s': %s" % (mountpoint, forceUnicode(error)))
+	except Exception as err:
+		logger.error("Failed to umount '%s': %s", mountpoint, err)
+		raise RuntimeError("Failed to umount '{mountpoint}': {err}") from err
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
