@@ -13,6 +13,7 @@ if platform.system().lower() == 'linux':
 	from .linux import *
 elif platform.system().lower() == 'windows':
 	from .windows import *
-
+elif platform.system().lower() == 'darwin':
+	from .darwin import *
 else:
 	logger.error("Unable to import System library for system %s", platform.system().lower())
