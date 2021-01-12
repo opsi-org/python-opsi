@@ -6,8 +6,11 @@ This file is part of opsi - https://www.opsi.org
 :license: GNU Affero General Public License version 3
 """
 
-import win32crypt as wcrypt
+from contextlib import contextmanager
+# pyright: reportMissingImports=false
+import win32crypt as wcrypt # pylint: disable=import-error
 from OpenSSL import crypto
+
 from opsicommon.logging import logger
 
 __all__ = ["install_ca"]
@@ -17,6 +20,7 @@ CERT_STORE_PROV_SYSTEM = 0x0000000A
 
 # dwFlags
 CERT_SYSTEM_STORE_LOCAL_MACHINE = 0x00020000
+CERT_CLOSE_STORE_FORCE_FLAG = 0x00000001
 
 # cert encoding flags.
 CRYPT_ASN_ENCODING= 0x00000001
@@ -36,7 +40,6 @@ CERT_STORE_ADD_REPLACE_EXISTING_INHERIT_PROPERTIES = 5
 CERT_STORE_ADD_NEWER= 6
 CERT_STORE_ADD_NEWER_INHERIT_PROPERTIES= 7
 
-
 # Specifies the name of the X.509 certificate store to open. Valid values include the following:
 
 # - AddressBook: Certificate store for other users.
@@ -50,15 +53,33 @@ CERT_STORE_ADD_NEWER_INHERIT_PROPERTIES= 7
 
 # The default is My.
 
+@contextmanager
 def _open_win_cert_store(store_name):
-	store = wcrypt.CertOpenStore(CERT_STORE_PROV_SYSTEM, 0, None, CERT_SYSTEM_STORE_LOCAL_MACHINE, store_name)
-	return store
+	store = wcrypt.CertOpenStore(
+		CERT_STORE_PROV_SYSTEM,
+		0,
+		None,
+		CERT_SYSTEM_STORE_LOCAL_MACHINE,
+		store_name
+	)
+	try:
+		yield store
+	finally:
+		store.CertCloseStore(CERT_CLOSE_STORE_FORCE_FLAG)
 
 def install_ca(ca_file):
-
 	store_name = "Root"
 	with open(ca_file, "r") as file:
 		ca = crypto.load_certificate(crypto.FILETYPE_PEM, file.read())
 
-	store = _open_win_cert_store(store_name)
-	store.CertAddEncodedCertificateToStore(CERT_STORE_ADD_NEW, crypto.dump_certificate(crypto.FILETYPE_ASN1, ca), X509_ASN_ENCODING)
+	logger.info(
+		"Installing CA %s from %s into %s store",
+		ca.get_subject().commonName, ca_file, store_name
+	)
+
+	with _open_win_cert_store(store_name) as store:
+		store.CertAddEncodedCertificateToStore(
+			CERT_STORE_ADD_REPLACE_EXISTING,
+			crypto.dump_certificate(crypto.FILETYPE_ASN1, ca),
+			X509_ASN_ENCODING
+		)

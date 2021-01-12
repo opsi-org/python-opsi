@@ -30,12 +30,12 @@ def install_ca(ca_file):
 		system_cert_path = "/usr/share/pki/trust/anchors"
 		cmd = "update-ca-certificates"
 	else:
-		logger.error("Failed to set system cert path!")
-		raise 
+		logger.error("Failed to set system cert path")
+		raise RuntimeError("Failed to set system cert path")
 
 	with open(ca_file, "r") as file:
 		ca = crypto.load_certificate(crypto.FILETYPE_PEM,  file.read())
-	
+
 	cert_file = f"{ca.get_subject().commonName.replace(' ', '_')}.crt"
 	copyfile(ca_file, os.path.join(system_cert_path, cert_file))
 	output = execute(cmd)
