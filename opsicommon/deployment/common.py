@@ -67,6 +67,7 @@ class DeployThread(threading.Thread):
 			self.deploymentMethod = "fqdn"
 
 	def _getHostId(self, host):
+		ip = None
 		if self.deploymentMethod == 'ip':
 			ip = forceIPAddress(host)
 			try:

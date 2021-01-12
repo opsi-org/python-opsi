@@ -9,7 +9,7 @@ from OPSI.Util import randomString
 from OPSI.Types import forceHostId, forceIPAddress, forceUnicode, forceUnicodeLower
 from OPSI.System import copy, execute, getFQDN, umount, which
 
-from .common import logger, DeployThread, SkipClientException, SKIP_MARKER
+from .common import logger, LOG_DEBUG, DeployThread, SkipClientException, SKIP_MARKER
 
 def winexe(cmd, host, username, password):
 	cmd = forceUnicode(cmd)
@@ -35,6 +35,13 @@ def winexe(cmd, host, username, password):
 	except Exception as versionError:
 		logger.warning(u"Failed to get version: %s", versionError)
 
+	if logger.getEffectiveLevel() >= LOG_DEBUG:
+		return execute(u"{winexe} -d 10 -U '{credentials}' //{host} '{command}'".format(
+			winexe=executable,
+			credentials=username + '%' + password.replace("'", "'\"'\"'"),
+			host=host,
+			command=cmd)
+		)
 	return execute(u"{winexe} -U '{credentials}' //{host} '{command}'".format(
 		winexe=executable,
 		credentials=username + '%' + password.replace("'", "'\"'\"'"),
@@ -131,6 +138,7 @@ class WindowsDeployThread(DeployThread):
 				self._removeHostFromBackend(hostObj)
 
 	def _getHostId(self, host):
+		ip = None
 		if self.deploymentMethod == 'ip':
 			ip = forceIPAddress(host)
 			try:
@@ -204,7 +212,7 @@ class WindowsDeployThread(DeployThread):
 			if self.reboot:
 				logger.notice(u"Rebooting machine %s", self.networkAddress)
 				cmd = u'"%ProgramFiles%\\opsi.org\\opsi-client-agent\\utilities\\shutdown.exe" /L /R /T:20 "opsi-client-agent installed - reboot" /Y /C'
-			elif self.shutdown:
+			else:	# self.shutdown must be set
 				logger.notice(u"Shutting down machine %s", self.networkAddress)
 				cmd = u'"%ProgramFiles%\\opsi.org\\opsi-client-agent\\utilities\\shutdown.exe" /L /T:20 "opsi-client-agent installed - shutdown" /Y /C'
 
