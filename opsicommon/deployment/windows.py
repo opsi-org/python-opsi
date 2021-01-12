@@ -35,8 +35,8 @@ def winexe(cmd, host, username, password):
 	except Exception as versionError:
 		logger.warning(u"Failed to get version: %s", versionError)
 
-	if logger.getEffectiveLevel() >= LOG_DEBUG:
-		return execute(u"{winexe} -d 10 -U '{credentials}' //{host} '{command}'".format(
+	if logger.isEnabledFor(LOG_DEBUG):
+		return execute(u"{winexe} -d 9 -U '{credentials}' //{host} '{command}'".format(
 			winexe=executable,
 			credentials=username + '%' + password.replace("'", "'\"'\"'"),
 			host=host,
