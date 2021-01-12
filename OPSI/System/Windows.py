@@ -826,6 +826,8 @@ def mount(dev, mountpoint, **options):
 
 	elif dev.lower().startswith(('webdavs://', 'https://')):
 		dev = dev.replace('webdavs://', 'https://')
+		# HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\WebClient\Parameters FileSizeLimitInBytes = 0xffffffff
+		# HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\<fqdn>@SSL@4447 file = 1
 
 	try:
 		try:
