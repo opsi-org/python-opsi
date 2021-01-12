@@ -20,6 +20,7 @@ CERT_STORE_PROV_SYSTEM = 0x0000000A
 
 # dwFlags
 CERT_SYSTEM_STORE_LOCAL_MACHINE = 0x00020000
+CERT_STORE_OPEN_EXISTING_FLAG = 0x00004000
 CERT_CLOSE_STORE_FORCE_FLAG = 0x00000001
 
 # cert encoding flags.
@@ -54,12 +55,12 @@ CERT_STORE_ADD_NEWER_INHERIT_PROPERTIES= 7
 # The default is My.
 
 @contextmanager
-def _open_win_cert_store(store_name):
+def _open_cert_store(store_name):
 	store = wcrypt.CertOpenStore(
 		CERT_STORE_PROV_SYSTEM,
 		0,
 		None,
-		CERT_SYSTEM_STORE_LOCAL_MACHINE,
+		CERT_SYSTEM_STORE_LOCAL_MACHINE|CERT_STORE_OPEN_EXISTING_FLAG,
 		store_name
 	)
 	try:
@@ -73,13 +74,13 @@ def install_ca(ca_file):
 		ca = crypto.load_certificate(crypto.FILETYPE_PEM, file.read())
 
 	logger.info(
-		"Installing CA %s from %s into %s store",
+		"Installing CA '%s' from '%s' into '%s' store",
 		ca.get_subject().commonName, ca_file, store_name
 	)
 
-	with _open_win_cert_store(store_name) as store:
+	with _open_cert_store(store_name) as store:
 		store.CertAddEncodedCertificateToStore(
-			CERT_STORE_ADD_REPLACE_EXISTING,
+			X509_ASN_ENCODING,
 			crypto.dump_certificate(crypto.FILETYPE_ASN1, ca),
-			X509_ASN_ENCODING
+			CERT_STORE_ADD_REPLACE_EXISTING
 		)

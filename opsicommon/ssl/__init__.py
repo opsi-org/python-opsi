@@ -16,4 +16,4 @@ elif platform.system().lower() == 'windows':
 elif platform.system().lower() == 'darwin':
 	from .darwin import *
 else:
-	logger.error("Unable to import System library for system %s", platform.system().lower())
+	raise NotImplementedError(f"{platform.system().lower()} not supported")
