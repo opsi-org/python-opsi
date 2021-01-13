@@ -9,9 +9,10 @@ from OPSI.System import copy, execute
 from OPSI.Object import ProductOnClient
 
 from .common import logger, DeployThread, SkipClientException, SKIP_MARKER
+from .common import socket, re
 
 try:
-	import paramiko
+	import paramiko	# type: ignore
 	AUTO_ADD_POLICY = paramiko.AutoAddPolicy
 	WARNING_POLICY = paramiko.WarningPolicy
 	REJECT_POLICY = paramiko.RejectPolicy
@@ -47,6 +48,7 @@ class LinuxDeployThread(DeployThread):
 		host = forceUnicodeLower(self.host)
 		hostId = u''
 		hostObj = None
+		remoteFolder = os.path.join('/tmp', 'opsi-linux-client-agent')
 		try:
 			hostId = self._getHostId(host)
 			self._checkIfClientShouldBeSkipped(hostId)
@@ -73,7 +75,6 @@ class LinuxDeployThread(DeployThread):
 			config.set('general', 'dnsdomain', u'.'.join(hostObj.id.split('.')[1:]))
 			configFile.generate(config)
 			logger.debug("Generated config.")
-			remoteFolder = os.path.join('/tmp', 'opsi-linux-client-agent')
 
 			try:
 				logger.notice("Copying installation scripts...")
