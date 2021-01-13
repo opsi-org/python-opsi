@@ -1831,13 +1831,14 @@ class Impersonate:
 			self.end()
 			raise
 
-	def runCommand(self, command, waitForProcessEnding=True, timeoutSeconds=0):
+	def runCommand(self, command, waitForProcessEnding=True, timeoutSeconds=0, environment=None):
 		command = forceUnicode(command)
 		waitForProcessEnding = forceBool(waitForProcessEnding)
 		timeoutSeconds = forceInt(timeoutSeconds)
+		if not environment:
+			environment = self.userEnvironment
 
 		dwCreationFlags = win32process.CREATE_NEW_CONSOLE
-
 		s = win32process.STARTUPINFO()
 		s.dwFlags = win32process.STARTF_USESHOWWINDOW ^ win32con.STARTF_USESTDHANDLES
 		s.wShowWindow = win32con.SW_NORMAL
@@ -1861,7 +1862,7 @@ class Impersonate:
 			None,
 			0,
 			dwCreationFlags,
-			self.userEnvironment,
+			environment,
 			None,
 			s
 		)
