@@ -95,12 +95,20 @@ class WindowsDeployThread(DeployThread):
 
 			try:
 				logger.notice(u"Copying installation files")
-				cmd = u"{smbclient} -m SMB3 //{address}/c$ -U '{credentials}' -c 'prompt; recurse; md tmp; cd tmp; md opsi-client-agent_inst; cd opsi-client-agent_inst; mput files; mput utils; cd files\\opsi\\cfg; lcd /tmp; put {config} config.ini; exit;'".format(
-					smbclient=which('smbclient'),
-					address=self.networkAddress,
-					credentials=self.username + '%' + self.password.replace("'", "'\"'\"'"),
-					config=configIniName
-				)
+				if logger.isEnabledFor(LOG_DEBUG):
+					cmd = u"{smbclient} -m SMB3 -d 9 //{address}/c$ -U '{credentials}' -c 'prompt; recurse; md tmp; cd tmp; md opsi-client-agent_inst; cd opsi-client-agent_inst; mput files; mput utils; cd files\\opsi\\cfg; lcd /tmp; put {config} config.ini; exit;'".format(
+						smbclient=which('smbclient'),
+						address=self.networkAddress,
+						credentials=self.username + '%' + self.password.replace("'", "'\"'\"'"),
+						config=configIniName
+					)
+				else:
+					cmd = u"{smbclient} -m SMB3 //{address}/c$ -U '{credentials}' -c 'prompt; recurse; md tmp; cd tmp; md opsi-client-agent_inst; cd opsi-client-agent_inst; mput files; mput utils; cd files\\opsi\\cfg; lcd /tmp; put {config} config.ini; exit;'".format(
+						smbclient=which('smbclient'),
+						address=self.networkAddress,
+						credentials=self.username + '%' + self.password.replace("'", "'\"'\"'"),
+						config=configIniName
+					)
 				execute(cmd)
 
 				logger.notice(u"Installing opsi-client-agent")
