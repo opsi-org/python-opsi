@@ -1698,6 +1698,7 @@ class Impersonate:
 		self.saveDesktop = None
 		self.newWindowStation = None
 		self.newDesktop = None
+		self.logonType = None
 
 		if not username and not userToken:
 			raise ValueError("Neither username nor user token given")
@@ -1724,14 +1725,16 @@ class Impersonate:
 	def start(self, logonType='INTERACTIVE', newDesktop=False, createEnvironment=False):
 		try:
 			logonType = forceUnicode(logonType)
+			winLogonType = None
 			newDesktop = forceBool(newDesktop)
 			if logonType == 'NEW_CREDENTIALS':
 				# Stay who you are but add credentials for network connections
-				logonType = win32security.LOGON32_LOGON_NEW_CREDENTIALS
+				winLogonType = win32security.LOGON32_LOGON_NEW_CREDENTIALS
 			elif logonType == 'INTERACTIVE':
-				logonType = win32con.LOGON32_LOGON_INTERACTIVE
+				winLogonType = win32con.LOGON32_LOGON_INTERACTIVE
 			else:
 				raise ValueError(f"Invalid logon type '{logonType}'")
+			self.logonType = logonType
 
 			if not self.userToken:
 				# TODO: Use (UPN) format for username <USER>@<DOMAIN> ?
@@ -1740,7 +1743,7 @@ class Impersonate:
 					self.username,
 					self.domain,
 					self.password,
-					logonType,
+					winLogonType,
 					win32con.LOGON32_PROVIDER_DEFAULT
 				)
 
@@ -1840,7 +1843,16 @@ class Impersonate:
 		s.wShowWindow = win32con.SW_NORMAL
 		s.lpDesktop = self.winsta + '\\' + self.desktop
 
-		logger.notice("Running command '%s' as user '%s' on desktop '%s'", command, self.username, self.desktop)
+		if self.logonType == 'INTERACTIVE':
+			logger.notice(
+				"Running command '%s' as user '%s' on desktop '%s'",
+				command, self.username, self.desktop
+			)
+		else:
+			logger.notice(
+				"Running command '%s' on desktop '%s', using network credentials of user '%s'",
+				command, self.desktop, self.username
+			)
 		(hProcess, hThread, dwProcessId, dwThreadId) = win32process.CreateProcessAsUser(
 			self.userToken,
 			None,
