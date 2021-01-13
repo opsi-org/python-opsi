@@ -261,7 +261,7 @@ class WorkerOpsi:
 
 	def _finishRequest(self, result):
 		self.request.finish()
-	
+
 	def _getSessionHandler(self):
 		try:
 			return self.service._getSessionHandler()
@@ -290,17 +290,14 @@ class WorkerOpsi:
 		try:
 			failure.raiseException()
 		except OpsiAuthenticationError as error:
-			logger.logException(error)
+			logger.warning(error, exc_info=True)
 			self.request.setResponseCode(401)
 			self.request.setHeader("www-authenticate", f"basic realm={self.authRealm}")
-			self.request.finish()
-			return
 		except OpsiBadRpcError as error:
-			logger.logException(error)
+			logger.warning(error, exc_info=True)
 			self.request.setResponseCode(400)
 		except Exception as error:
-			logger.logException(error, LOG_ERROR)
-			#logger.error(error)
+			logger.error(error, exc_info=True)
 		self._renderError(failure)
 		self.request.finish()
 
@@ -312,7 +309,7 @@ class WorkerOpsi:
 		except Exception as err:
 			error = forceUnicode(err)
 		self.request.write(error.encode('utf-8'))
-	
+
 	def _freeSession(self, result):
 		if self.session:
 			logger.debug(u"Freeing session %s", self.session)
@@ -436,7 +433,7 @@ class WorkerOpsi:
 		# Add cookie to headers
 		logger.debug("Adding session cookie to headers")
 		self.request.addCookie(self.session.name, self.session.uid, path='/')
-	
+
 	def _authenticate(self, result):
 		'''
 		This function tries to authenticate a user.
@@ -486,9 +483,9 @@ class WorkerOpsi:
 					contentEncoding = self.request.getHeader('content-encoding').lower()
 				except Exception as e:
 					contentEncoding = None
-				
+
 				logger.debug(u"Content-Type: %s, Content-Encoding: %s", contentType, contentEncoding)
-					
+
 				if contentType and "gzip" in contentType:
 					# Invalid MIME type.
 					# Probably it is gzip-application/json-rpc and therefore
@@ -506,7 +503,7 @@ class WorkerOpsi:
 			logger.error("Error during decoding of query: %s", e, exc_info=True)
 			logger.trace(self.query)
 			raise error
-		
+
 		logger.debug2(u"query: %s", self.query)
 		return result
 
@@ -639,7 +636,7 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 		else:
 			logger.debug("Sending plain data")
 			response = toJson(response).encode("utf-8")
-		
+
 		logger.debug2("Sending response: %s", response)
 		self.request.write(response)
 
@@ -724,7 +721,7 @@ class WorkerOpsiJsonInterface(WorkerOpsiJsonRpc):
 				selectMethod.append(f"<option{selected}>{method['name']}</option>")
 		except Exception as e:
 			logger.error(e, exc_info=True)
-		
+
 		def wrapInDiv(obj):
 			return f'<div class="json">{obj}</div>'
 

@@ -21,6 +21,7 @@
 
 import os
 import re
+import socket
 import subprocess
 import psutil
 import codecs
@@ -34,7 +35,7 @@ from OPSI.System.Posix import (
 	Distribution, Harddisk, NetworkPerformanceCounter, SysInfo,
 	SystemSpecificHook, addSystemHook, auditHardware,
 	configureInterface, daemonize, execute, get_subprocess_environment, getActiveConsoleSessionId,
-	getActiveSessionId, getBlockDeviceBusType,
+	getActiveSessionId, getActiveSessionInformation, getSessionInformation, getBlockDeviceBusType,
 	getBlockDeviceContollerInfo, getDHCPDRestartCommand, getDHCPResult,
 	getDHCPServiceName, getDefaultNetworkInterfaceName, getDiskSpaceUsage,
 	getEthernetDevices, getFQDN, getHarddisks, getHostname,
@@ -54,7 +55,8 @@ __all__ = (
 	'Distribution', 'Harddisk', 'NetworkPerformanceCounter', 'SysInfo',
 	'SystemSpecificHook', 'addSystemHook', 'auditHardware',
 	'configureInterface', 'daemonize', 'execute', 'get_subprocess_environment', 'getActiveConsoleSessionId',
-	'getActiveSessionId', 'getActiveSessionIds', 'getBlockDeviceBusType',
+	'getActiveSessionId', 'getActiveSessionIds', 'getActiveSessionInformation', 'getSessionInformation',
+	'getBlockDeviceBusType',
 	'getBlockDeviceContollerInfo', 'getDHCPDRestartCommand', 'getDHCPResult',
 	'getDHCPServiceName', 'getDefaultNetworkInterfaceName', 'getDiskSpaceUsage',
 	'getEthernetDevices', 'getFQDN', 'getHarddisks', 'getHostname',
@@ -67,7 +69,7 @@ __all__ = (
 	'runCommandInSession', 'setLocalSystemTime', 'shutdown', 'umount', 'which'
 )
 
-def getActiveSessionIds(winApiBugCommand=None, data=None):
+def getActiveSessionIds(protocol = None, states=["active", "disconnected"]):
 	"""
 	Getting the IDs of the currently active sessions.
 
@@ -82,13 +84,40 @@ def getActiveSessionIds(winApiBugCommand=None, data=None):
 	for proc in psutil.process_iter():
 		try:
 			env = proc.environ()
-			if env.get("DISPLAY") and not env["DISPLAY"] in sessions:
+			# Filter out gdm/1024
+			if (
+				env.get("DISPLAY") and
+				env["DISPLAY"] != ':1024' and
+				env.get("USERNAME") and
+				env["DISPLAY"] not in sessions
+			):
 				sessions.append(env["DISPLAY"])
 		except psutil.AccessDenied as e:
 			logger.debug(e)
 	sessions = sorted(sessions, key=lambda s: int(re.sub(r"\D", "", s)))
 	return sessions
 Posix.getActiveSessionIds = getActiveSessionIds
+
+def getSessionInformation(sessionId):
+	info = {
+		"SessionId": sessionId,
+		"DomainName": None,
+		"UserName": None,
+	}
+	for proc in psutil.process_iter():
+		try:
+			env = proc.environ()
+			if env.get("DISPLAY") == sessionId and env.get("USERNAME"):
+				info["DomainName"] = env.get("HOST", info["DomainName"])
+				info["UserName"] = env.get("USERNAME", info["UserName"])
+				break
+		except psutil.AccessDenied as e:
+			logger.debug(e)
+	if not info["DomainName"]:
+		info["DomainName"] = socket.gethostname().upper()
+	return info
+
+Posix.getSessionInformation = getSessionInformation
 
 def grant_session_access(username: str, session_id: str):
 	session_username = None
@@ -106,7 +135,7 @@ def grant_session_access(username: str, session_id: str):
 		raise ValueError(f"Session {session_id} not found")
 	if not session_env.get("XAUTHORITY"):
 		session_env["XAUTHORITY"] = os.path.join(session_env.get("HOME"), ".Xauthority")
-	
+
 	sp_env = os.environ.copy()
 	sp_env.update(session_env)
 	sp_env = get_subprocess_environment(sp_env)
@@ -145,7 +174,7 @@ def mount(dev, mountpoint, **options):
 	if is_mounted(mountpoint):
 		logger.debug("Mountpoint '%s' already mounted, umounting before mount", mountpoint)
 		umount(mountpoint)
-	
+
 	for (key, value) in options.items():
 		options[key] = forceUnicode(value)
 
@@ -172,7 +201,7 @@ def mount(dev, mountpoint, **options):
 			tf.close()
 			tmpFiles.append(tf.name)
 			options['credentials'] = tf.name
-			
+
 			try:
 				if not options['domain']:
 					del options['domain']
@@ -192,7 +221,7 @@ def mount(dev, mountpoint, **options):
 			dev = f"http{match.group(2)}{match.group(3)}"
 		else:
 			raise ValueError(f"Bad webdav url '{dev}'")
-		
+
 		if 'username' not in options:
 			options['username'] = ""
 		if 'password' not in options:
@@ -203,10 +232,10 @@ def mount(dev, mountpoint, **options):
 		tf.close()
 		tmpFiles.append(tf.name)
 		options['conf'] = tf.name
-		
+
 		# Username, Password, Accept certificate for this session? [y,N]
 		stdin_data = f"{options['username']}\n{options['password']}\ny\n".encode("utf-8")
-		
+
 		del options['username']
 		del options['password']
 
@@ -218,7 +247,7 @@ def mount(dev, mountpoint, **options):
 
 	else:
 		raise ValueError(f"Cannot mount unknown fs type '{dev}'")
-	
+
 	mountOptions = []
 	for (key, value) in options.items():
 		key = forceUnicode(key)

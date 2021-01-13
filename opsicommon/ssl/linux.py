@@ -6,14 +6,13 @@ This file is part of opsi - https://www.opsi.org
 :license: GNU Affero General Public License version 3
 """
 
-
-from OPSI.System import execute, isCentOS, isDebian, isOpenSUSE, isRHEL, isSLES, isUbuntu
-from opsicommon.logging import logger
-
+import os
+from shutil import copyfile
 from OpenSSL import crypto
 
-from shutil import copyfile
-import os
+from OPSI.System import execute, isCentOS, isDebian, isOpenSUSE, isRHEL, isSLES, isUbuntu
+
+from opsicommon.logging import logger
 
 __all__ = ["install_ca"]
 
@@ -30,12 +29,18 @@ def install_ca(ca_file):
 		system_cert_path = "/usr/share/pki/trust/anchors"
 		cmd = "update-ca-certificates"
 	else:
-		logger.error("Failed to set system cert path!")
-		raise 
+		logger.error("Failed to set system cert path")
+		raise RuntimeError("Failed to set system cert path")
 
 	with open(ca_file, "r") as file:
 		ca = crypto.load_certificate(crypto.FILETYPE_PEM,  file.read())
-	
+
+	logger.info(
+		"Installing CA '%s' from '%s' into system store",
+		ca.get_subject().commonName, ca_file
+	)
+
 	cert_file = f"{ca.get_subject().commonName.replace(' ', '_')}.crt"
 	copyfile(ca_file, os.path.join(system_cert_path, cert_file))
 	output = execute(cmd)
+	logger.debug("Output of '%s': %s", cmd, output)
