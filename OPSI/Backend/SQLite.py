@@ -73,13 +73,13 @@ class SQLite(SQL):
 		self._cursor = None
 		if os.path.exists(self._database):
 			os.remove(self._database)
-	
+
 	def connect(self):
 		with self._WRITE_LOCK:
 			for trynum in (1, 2):
 				try:
-					logger.debug("Connecting to sqlite database '%s'", self._database)
 					if not self._connection:
+						logger.debug("Connecting to sqlite database '%s'", self._database)
 						# When using multiple threads with the same connection writing operations
 						# should be serialized by the user to avoid data corruption
 						self._connection = sqlite3.connect(self._database, check_same_thread=False)
@@ -108,7 +108,7 @@ class SQLite(SQL):
 					logger.warning("Problem connecting to SQLite database: %s", otherError)
 					if trynum > 1:
 						raise
-	
+
 	def close(self, conn, cursor):
 		pass
 
