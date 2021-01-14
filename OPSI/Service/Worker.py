@@ -499,10 +499,10 @@ class WorkerOpsi:
 					logger.debug(u"Expecting deflate compressed data from client")
 					self.query = deflateDecode(self.query)
 
-		except Exception as e:
-			logger.error("Error during decoding of query: %s", e, exc_info=True)
+		except Exception as err:
+			logger.error("Error during decoding of query: %s", err, exc_info=True)
 			logger.trace(self.query)
-			raise error
+			raise
 
 		logger.debug2(u"query: %s", self.query)
 		return result
