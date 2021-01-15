@@ -216,24 +216,46 @@ class OpsiBackup:
 
 			oldterm = termios.tcgetattr(fd)
 			newattr = termios.tcgetattr(fd)
+			# newattr[3] = newattr[3] & ~termios.ECHO
 			newattr[3] = newattr[3] & ~termios.ICANON & ~termios.ECHO
-			termios.tcsetattr(fd, termios.TCSANOW, newattr)
 
-			oldflags = fcntl.fcntl(fd, fcntl.F_GETFL)
-			fcntl.fcntl(fd, fcntl.F_SETFL, oldflags | os.O_NONBLOCK)
 
-			self.stdout.write(question)
-
+			# oldflags = fcntl.fcntl(fd, fcntl.F_GETFL)
+			# logger.devel(oldflags)
+			# logger.devel("os.O_NONBLOCK: %s", os.O_NONBLOCK)
+			# fcntl.fcntl(fd, fcntl.F_SETFL, oldflags | os.O_NONBLOCK)
+			# logger.devel(fcntl.fcntl(fd, fcntl.F_GETFL))
+			logger.devel("question?")
 			try:
-				while True:
-					try:
-						firstCharacter = sys.stdin.read(1)
-						return forceUnicode(firstCharacter) in (u"y", u"Y")
-					except IOError:
-						pass
+				termios.tcsetattr(fd, termios.TCSANOW, newattr)
+				# termios.tcsetattr(fd, termios.TCSADRAIN, newattr)
+				firstCharacter = input(question)
+				logger.devel(forceUnicode(firstCharacter) in (u"y", u"Y"))
+				return forceUnicode(firstCharacter) in (u"y", u"Y")
+			except IOError as err:
+				logger.devel("IOERROR: %s", err)
+			except Exception as err:
+				logger.devel("Error: %s", err)
+
 			finally:
+				logger.devel("finally")
 				termios.tcsetattr(fd, termios.TCSAFLUSH, oldterm)
-				fcntl.fcntl(fd, fcntl.F_SETFL, oldflags)
+				# fcntl.fcntl(fd, fcntl.F_SETFL, oldflags)
+
+			# self.stdout.write(question)
+
+			# try:
+			# 	while True:
+			# 		try:
+			# 			firstCharacter = sys.stdin.read(1)
+			# 			logger.devel(forceUnicode(firstCharacter) in (u"y", u"Y"))
+			# 			return forceUnicode(firstCharacter) in (u"y", u"Y")
+			# 		except IOError:
+			# 			pass
+			# finally:
+			# 	logger.devel("finally")
+			# 	termios.tcsetattr(fd, termios.TCSAFLUSH, oldterm)
+			# 	fcntl.fcntl(fd, fcntl.F_SETFL, oldflags)
 
 		try:
 			if self.getDifferencesInSysConfig(archive.sysinfo):
@@ -282,7 +304,7 @@ If this is `None` information will be read from the current system.
 	def restore(self, file, mode="raw", backends=[], configuration=True, force=False, new_server_id=None, **kwargs):
 		if new_server_id:
 			new_server_id = forceHostId(new_server_id)
-		
+
 		if not backends:
 			backends = []
 
@@ -359,7 +381,7 @@ If this is `None` information will be read from the current system.
 					raise error
 
 				logger.notice(u"Restoration complete")
-		
+
 		if new_server_id:
 			logger.info("Cleanup backend...")
 			cleanupBackend()
