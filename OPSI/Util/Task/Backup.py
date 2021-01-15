@@ -215,7 +215,6 @@ class OpsiBackup:
 
 			try:
 				firstCharacter = input(question)
-				logger.devel(forceUnicode(firstCharacter) in (u"y", u"Y"))
 				return forceUnicode(firstCharacter) in (u"y", u"Y")
 			except Exception as err:
 				logger.error("ERROR: %s", err)
