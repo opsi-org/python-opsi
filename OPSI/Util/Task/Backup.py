@@ -217,7 +217,7 @@ class OpsiBackup:
 				firstCharacter = input(question)
 				return forceUnicode(firstCharacter) in (u"y", u"Y")
 			except Exception as err:
-				logger.error("ERROR: %s", err)
+				logger.error("Error while reading user input: %s", err)
 
 		try:
 			if self.getDifferencesInSysConfig(archive.sysinfo):
