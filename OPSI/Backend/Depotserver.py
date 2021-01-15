@@ -23,6 +23,7 @@ Depotserver backend.
 """
 
 import os
+import grp
 from contextlib import contextmanager
 
 from OPSI.Backend.Base import ExtendedBackend
@@ -41,6 +42,8 @@ from OPSI.System import getDiskSpaceUsage
 from OPSI.Util.Product import ProductPackageFile
 from OPSI.Util import compareVersions, getfqdn, md5sum, removeDirectory
 from OPSI.Util.File import ZsyncFile
+from OPSI.Config import FILE_ADMIN_GROUP
+
 import opsicommon.logging
 
 __all__ = ('DepotserverBackend', 'DepotserverPackageManager')
@@ -133,18 +136,22 @@ class DepotserverBackend(ExtendedBackend):
 
 	def depot_createMd5SumFile(self, filename, md5sumFilename):
 		if not os.path.exists(filename):
-			raise BackendIOError(u"File not found: %s" % filename)
-		logger.info(u"Creating md5sum file '%s'", md5sumFilename)
+			raise BackendIOError(f"File not found: {filename}")
+		logger.info("Creating md5sum file '%s'", md5sumFilename)
 		md5 = md5sum(filename)
 		with open(md5sumFilename, 'w') as md5file:
 			md5file.write(md5)
+		os.chown(md5sumFilename, -1, grp.getgrnam(FILE_ADMIN_GROUP)[2])
+		os.chmod(md5file, 0o660)
 
 	def depot_createZsyncFile(self, filename, zsyncFilename):
 		if not os.path.exists(filename):
-			raise BackendIOError(u"File not found: %s" % filename)
-		logger.info(u"Creating zsync file '%s'", zsyncFilename)
+			raise BackendIOError(f"File not found: {filename}")
+		logger.info("Creating zsync file '%s'", zsyncFilename)
 		zsyncFile = ZsyncFile(zsyncFilename)
 		zsyncFile.generate(filename)
+		os.chown(zsyncFilename, -1, grp.getgrnam(FILE_ADMIN_GROUP)[2])
+		os.chmod(zsyncFilename, 0o660)
 
 
 class DepotserverPackageManager:
