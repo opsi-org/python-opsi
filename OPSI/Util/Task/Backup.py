@@ -63,11 +63,11 @@ except Exception as error:
 
 WARNING_DIFF = _(u"""WARNING: Your system config is different from the one recorded with this backup.
 This means the backup was probably taken for another machine and restoring it might leave this opsi installation unusable.
-Do you wish to continue? [y/n]""")
+Do you wish to continue? [y/N] """)
 
 WARNING_SYSCONFIG = _(u"""WARNING: A problem occurred while reading the sysconfig: %s
 This means the backup was probably taken for another machine and restoring it might leave this opsi installation unusable.
-Do you wish to continue? [y/n]""")
+Do you wish to continue? [y/N] """)
 
 
 class OpsiBackup:
@@ -212,28 +212,12 @@ class OpsiBackup:
 
 			Returns ``True`` if the answer is ``Yes``, false otherwise.
 			"""
-			fd = sys.stdin.fileno()
-
-			oldterm = termios.tcgetattr(fd)
-			newattr = termios.tcgetattr(fd)
-			newattr[3] = newattr[3] & ~termios.ICANON & ~termios.ECHO
-			termios.tcsetattr(fd, termios.TCSANOW, newattr)
-
-			oldflags = fcntl.fcntl(fd, fcntl.F_GETFL)
-			fcntl.fcntl(fd, fcntl.F_SETFL, oldflags | os.O_NONBLOCK)
-
-			self.stdout.write(question)
 
 			try:
-				while True:
-					try:
-						firstCharacter = sys.stdin.read(1)
-						return forceUnicode(firstCharacter) in (u"y", u"Y")
-					except IOError:
-						pass
-			finally:
-				termios.tcsetattr(fd, termios.TCSAFLUSH, oldterm)
-				fcntl.fcntl(fd, fcntl.F_SETFL, oldflags)
+				firstCharacter = input(question)
+				return forceUnicode(firstCharacter) in (u"y", u"Y")
+			except Exception as err:
+				logger.error("Error while reading user input: %s", err)
 
 		try:
 			if self.getDifferencesInSysConfig(archive.sysinfo):
@@ -282,7 +266,7 @@ If this is `None` information will be read from the current system.
 	def restore(self, file, mode="raw", backends=[], configuration=True, force=False, new_server_id=None, **kwargs):
 		if new_server_id:
 			new_server_id = forceHostId(new_server_id)
-		
+
 		if not backends:
 			backends = []
 
@@ -359,35 +343,35 @@ If this is `None` information will be read from the current system.
 					raise error
 
 				logger.notice(u"Restoration complete")
-		
-		if new_server_id:
-			logger.info("Cleanup backend...")
-			cleanupBackend()
-			logger.notice("Renaming config server to '%s'", new_server_id)
-			try:
-				from OPSI.Backend.BackendManager import BackendManager
-				managerConfig = {
-					"dispatchConfigFile": '/etc/opsi/backendManager/dispatch.conf',
-					"backendConfigDir": '/etc/opsi/backends',
-					"extensionConfigDir": '/etc/opsi/backendManager/extend.d',
-					"depotbackend": False,
-					"dispatchIgnoreModules": ["OpsiPXEConfd", "DHCPD", "HostControl"]
-				}
-				with BackendManager(**managerConfig) as backend:
-					hosts =  backend.host_getObjects()
-					configserver = backend.host_getObjects(type='OpsiConfigserver')
-					if len(configserver) == 0:
-						depotserver = backend.host_getObjects(type='OpsiDepotserver')
-						if len(depotserver) == 1:
-							configserver = depotserver
-					host = backend.host_getObjects(id=new_server_id)
-					if not configserver:
-						raise RuntimeError("No config server found in backend")
-					if host and host != configserver:
-						backend.host_deleteObjects(host)
-					backend.host_renameOpsiDepotserver(oldId=configserver[0].id, newId=new_server_id)
-			except Exception as rename_error:
-				raise RuntimeError(f"Failed to rename config server to '{new_server_id}': {rename_error}")
+
+				if new_server_id:
+					logger.info("Cleanup backend...")
+					cleanupBackend()
+					logger.notice("Renaming config server to '%s'", new_server_id)
+					try:
+						from OPSI.Backend.BackendManager import BackendManager
+						managerConfig = {
+							"dispatchConfigFile": '/etc/opsi/backendManager/dispatch.conf',
+							"backendConfigDir": '/etc/opsi/backends',
+							"extensionConfigDir": '/etc/opsi/backendManager/extend.d',
+							"depotbackend": False,
+							"dispatchIgnoreModules": ["OpsiPXEConfd", "DHCPD", "HostControl"]
+						}
+						with BackendManager(**managerConfig) as backend:
+							hosts =  backend.host_getObjects()
+							configserver = backend.host_getObjects(type='OpsiConfigserver')
+							if len(configserver) == 0:
+								depotserver = backend.host_getObjects(type='OpsiDepotserver')
+								if len(depotserver) == 1:
+									configserver = depotserver
+							host = backend.host_getObjects(id=new_server_id)
+							if not configserver:
+								raise RuntimeError("No config server found in backend")
+							if host and host != configserver:
+								backend.host_deleteObjects(host)
+							backend.host_renameOpsiDepotserver(oldId=configserver[0].id, newId=new_server_id)
+					except Exception as rename_error:
+						raise RuntimeError(f"Failed to rename config server to '{new_server_id}': {rename_error}")
 
 
 def getConfiguredBackends():
