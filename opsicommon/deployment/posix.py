@@ -8,8 +8,8 @@ from OPSI.Types import forceUnicode, forceUnicodeLower
 from OPSI.System import copy
 from OPSI.Object import ProductOnClient
 
-from .common import logger, DeployThread, SkipClientException, SKIP_MARKER
-from .common import socket, re
+from opsicommon.deployment.common import logger, DeployThread, SkipClientException, SKIP_MARKER
+from opsicommon.deployment.common import socket, re
 
 try:
 	import paramiko	# type: ignore
@@ -61,7 +61,7 @@ class LinuxDeployThread(DeployThread):
 			else:
 				localFolder = os.path.dirname(os.path.abspath(__file__))			# for running from python
 			logger.notice("Patching config.ini")
-			configIniName = f'{randomString(10)}_config.ini')
+			configIniName = f'{randomString(10)}_config.ini'
 			configIniPath = os.path.join('/tmp', configIniName)
 			copy(os.path.join(localFolder, 'files', 'opsi', 'cfg', 'config.ini'), configIniPath)
 			configFile = IniFile(configIniPath)

@@ -9,7 +9,7 @@ from OPSI.Util import randomString
 from OPSI.Types import forceHostId, forceIPAddress, forceUnicode, forceUnicodeLower
 from OPSI.System import copy, execute, getFQDN, umount, which
 
-from .common import logger, LOG_DEBUG, DeployThread, SkipClientException, SKIP_MARKER
+from opsicommon.deployment.common import logger, LOG_DEBUG, DeployThread, SkipClientException, SKIP_MARKER
 
 def winexe(cmd, host, username, password):
 	cmd = forceUnicode(cmd)
@@ -86,7 +86,7 @@ class WindowsDeployThread(DeployThread):
 
 			try:
 				logger.notice("Copying installation files")
-				credentials=self.username + '%' + self.password.replace("'", "'\"'\"'"),
+				credentials=self.username + '%' + self.password.replace("'", "'\"'\"'")
 				if logger.isEnabledFor(LOG_DEBUG):
 					cmd = f"{which('smbclient')} -m SMB3 -d 9 //{self.networkAddress}/c$ -U '{credentials}' -c 'prompt; recurse; md tmp; cd tmp; md opsi-client-agent_inst; cd opsi-client-agent_inst; mput files; mput utils; cd files\\opsi\\cfg; lcd /tmp; put {configIniName} config.ini; exit;'"
 				else:
