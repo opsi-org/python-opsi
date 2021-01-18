@@ -17,9 +17,9 @@ def winexe(cmd, host, username, password):
 	username = forceUnicode(username)
 	password = forceUnicode(password)
 
-	match = re.search('^([^\\\\]+)\\\\+([^\\\\]+)$', username)
+	match = re.search(r'^([^\\\\]+)\\\\+([^\\\\]+)$', username)
 	if match:
-		username = match.group(1) + u'\\' + match.group(2)
+		username = match.group(1) + r'\\' + match.group(2)
 
 	try:
 		executable = which('winexe')
@@ -31,23 +31,14 @@ def winexe(cmd, host, username, password):
 		raise RuntimeError("Missing 'winexe'")
 
 	try:
-		logger.info(u'Winexe Version: %s', ''.join(execute('{winexe} -V'.format(winexe=executable))))
+		logger.info('Winexe Version: %s', ''.join(execute(f'{executable} -V')))
 	except Exception as versionError:
-		logger.warning(u"Failed to get version: %s", versionError)
+		logger.warning("Failed to get version: %s", versionError)
 
+	credentials=username + '%' + password.replace("'", "'\"'\"'")
 	if logger.isEnabledFor(LOG_DEBUG):
-		return execute(u"{winexe} -d 9 -U '{credentials}' //{host} '{command}'".format(
-			winexe=executable,
-			credentials=username + '%' + password.replace("'", "'\"'\"'"),
-			host=host,
-			command=cmd)
-		)
-	return execute(u"{winexe} -U '{credentials}' //{host} '{command}'".format(
-		winexe=executable,
-		credentials=username + '%' + password.replace("'", "'\"'\"'"),
-		host=host,
-		command=cmd)
-	)
+		return execute(f"{executable} -d 9 -U '{credentials}' //{host} '{cmd}'")
+	return execute(f"{executable} -U '{credentials}' //{host} '{cmd}'")
 
 class WindowsDeployThread(DeployThread):
 	def __init__(self, host, backend, username, password, shutdown, reboot, startService,
@@ -70,77 +61,68 @@ class WindowsDeployThread(DeployThread):
 	def _installWithSmbclient(self):
 		logger.debug('Installing using client-side mount.')
 		host = forceUnicodeLower(self.host)
-		hostId = u''
+		hostId = ''
 		hostObj = None
 		try:
 			hostId = self._getHostId(host)
 			self._checkIfClientShouldBeSkipped(hostId)
 
-			logger.notice(u"Starting deployment to host %s", hostId)
+			logger.notice("Starting deployment to host %s", hostId)
 			hostObj = self._prepareDeploymentToHost(hostId)
 			self._testWinexeConnection()
 
-			logger.notice(u"Patching config.ini")
-			configIniName = u'{random}_config.ini'.format(random=randomString(10))
-			copy(os.path.join(u'files', u'opsi', u'cfg', u'config.ini'), '/tmp/{0}'.format(configIniName))
-			configFile = IniFile('/tmp/{0}'.format(configIniName))
+			logger.notice("Patching config.ini")
+			configIniName = f'{randomString(10)}_config.ini'
+			copy(os.path.join('files', 'opsi', 'cfg', 'config.ini'), f'/tmp/{configIniName}')
+			configFile = IniFile(f'/tmp/{configIniName}')
 			config = configFile.parse()
 			if not config.has_section('shareinfo'):
 				config.add_section('shareinfo')
 			config.set('shareinfo', 'pckey', hostObj.opsiHostKey)
 			if not config.has_section('general'):
 				config.add_section('general')
-			config.set('general', 'dnsdomain', u'.'.join(hostObj.id.split('.')[1:]))
+			config.set('general', 'dnsdomain', '.'.join(hostObj.id.split('.')[1:]))
 			configFile.generate(config)
 
 			try:
-				logger.notice(u"Copying installation files")
+				logger.notice("Copying installation files")
+				credentials=self.username + '%' + self.password.replace("'", "'\"'\"'"),
 				if logger.isEnabledFor(LOG_DEBUG):
-					cmd = u"{smbclient} -m SMB3 -d 9 //{address}/c$ -U '{credentials}' -c 'prompt; recurse; md tmp; cd tmp; md opsi-client-agent_inst; cd opsi-client-agent_inst; mput files; mput utils; cd files\\opsi\\cfg; lcd /tmp; put {config} config.ini; exit;'".format(
-						smbclient=which('smbclient'),
-						address=self.networkAddress,
-						credentials=self.username + '%' + self.password.replace("'", "'\"'\"'"),
-						config=configIniName
-					)
+					cmd = f"{which('smbclient')} -m SMB3 -d 9 //{self.networkAddress}/c$ -U '{credentials}' -c 'prompt; recurse; md tmp; cd tmp; md opsi-client-agent_inst; cd opsi-client-agent_inst; mput files; mput utils; cd files\\opsi\\cfg; lcd /tmp; put {configIniName} config.ini; exit;'"
 				else:
-					cmd = u"{smbclient} -m SMB3 //{address}/c$ -U '{credentials}' -c 'prompt; recurse; md tmp; cd tmp; md opsi-client-agent_inst; cd opsi-client-agent_inst; mput files; mput utils; cd files\\opsi\\cfg; lcd /tmp; put {config} config.ini; exit;'".format(
-						smbclient=which('smbclient'),
-						address=self.networkAddress,
-						credentials=self.username + '%' + self.password.replace("'", "'\"'\"'"),
-						config=configIniName
-					)
+					cmd = f"{which('smbclient')} -m SMB3 //{self.networkAddress}/c$ -U '{credentials}' -c 'prompt; recurse; md tmp; cd tmp; md opsi-client-agent_inst; cd opsi-client-agent_inst; mput files; mput utils; cd files\\opsi\\cfg; lcd /tmp; put {configIniName} config.ini; exit;'"
 				execute(cmd)
 
-				logger.notice(u"Installing opsi-client-agent")
-				cmd = u'c:\\tmp\\opsi-client-agent_inst\\files\\opsi\\opsi-winst\\winst32.exe /batch c:\\tmp\\opsi-client-agent_inst\\files\\opsi\\setup.opsiscript c:\\tmp\\opsi-client-agent.log /PARAMETER REMOTEDEPLOY'
+				logger.notice("Installing opsi-client-agent")
+				cmd = r'c:\\tmp\\opsi-client-agent_inst\\files\\opsi\\opsi-winst\\winst32.exe /batch c:\\tmp\\opsi-client-agent_inst\\files\\opsi\\setup.opsiscript c:\\tmp\\opsi-client-agent.log /PARAMETER REMOTEDEPLOY'
 				for trynum in (1, 2):
 					try:
 						winexe(cmd, self.networkAddress, self.username, self.password)
 						break
 					except Exception as error:
 						if trynum == 2:
-							raise Exception(u"Failed to install opsi-client-agent: {0}".format(error))
-						logger.info(u"Winexe failure %s, retrying", error)
+							raise Exception(f"Failed to install opsi-client-agent: {error}")
+						logger.info("Winexe failure %s, retrying", error)
 						time.sleep(2)
 			finally:
-				os.remove('/tmp/{0}'.format(configIniName))
+				os.remove(f'/tmp/{configIniName}')
 
 				try:
-					cmd = u'cmd.exe /C "del /s /q c:\\tmp\\opsi-client-agent_inst && rmdir /s /q c:\\tmp\\opsi-client-agent_inst"'
+					cmd = r'cmd.exe /C "del /s /q c:\\tmp\\opsi-client-agent_inst && rmdir /s /q c:\\tmp\\opsi-client-agent_inst"'
 					winexe(cmd, self.networkAddress, self.username, self.password)
 				except Exception as error:
 					logger.error(error)
 
-			logger.notice(u"opsi-client-agent successfully installed on %s", hostId)
+			logger.notice("opsi-client-agent successfully installed on %s", hostId)
 			self.success = True
 			self._setOpsiClientAgentToInstalled(hostId)
 			self._finaliseInstallation()
 		except SkipClientException:
-			logger.notice(u"Skipping host %s", hostId)
+			logger.notice("Skipping host %s", hostId)
 			self.success = SKIP_MARKER
 			return
 		except Exception as error:
-			logger.error(u"Deployment to %s failed: %s", self.host, error)
+			logger.error("Deployment to %s failed: %s", self.host, error)
 			self.success = False
 			if self._clientCreatedByScript and hostObj and not self.keepClientOnFailure:
 				self._removeHostFromBackend(hostObj)
@@ -156,23 +138,23 @@ class WindowsDeployThread(DeployThread):
 				logger.debug("Lookup for %s failed: %s", ip, error)
 
 				try:
-					output = winexe(u'cmd.exe /C "echo %COMPUTERNAME%"', ip, self.username, self.password)
+					output = winexe('cmd.exe /C "echo %COMPUTERNAME%"', ip, self.username, self.password)
 					for line in output:
 						if line.strip():
-							if 'ignoring unknown parameter' in line.lower() or 'unknown parameter encountered' in line.lower():
+							if 'unknown parameter' in line.lower():
 								continue
 
 							host = line.strip()
 							break
 				except Exception as error:
 					logger.debug("Name lookup via winexe failed: %s", error)
-					raise Exception("Can't find name for IP {0}: {1}".format(ip, error))
+					raise Exception("Can't find name for IP {ip}: {error}")
 
-			logger.debug(u"Lookup of IP returned hostname %s", host)
+			logger.debug("Lookup of IP returned hostname %s", host)
 
 		host = host.replace('_', '-')
 
-		if host.count(u'.') < 2:
+		if host.count('.') < 2:
 			hostBefore = host
 			try:
 				host = socket.getfqdn(socket.gethostbyname(host))
@@ -188,9 +170,9 @@ class WindowsDeployThread(DeployThread):
 			except socket.gaierror as error:
 				logger.debug("Lookup of %s failed.", host)
 
-		logger.debug(u"Host is now: %s", host)
-		if host.count(u'.') < 2:
-			hostId = forceHostId(u'{hostname}.{domain}'.format(hostname=host, domain=u'.'.join(getFQDN().split(u'.')[1:])))
+		logger.debug("Host is now: %s", host)
+		if host.count('.') < 2:
+			hostId = forceHostId(f'{host}.{".".join(getFQDN().split(".")[1:])}')
 		else:
 			hostId = forceHostId(host)
 
@@ -198,8 +180,8 @@ class WindowsDeployThread(DeployThread):
 		return hostId
 
 	def _testWinexeConnection(self):
-		logger.notice(u"Testing winexe")
-		cmd = u'cmd.exe /C "del /s /q c:\\tmp\\opsi-client-agent_inst && rmdir /s /q c:\\tmp\\opsi-client-agent_inst || echo not found"'
+		logger.notice("Testing winexe")
+		cmd = r'cmd.exe /C "del /s /q c:\\tmp\\opsi-client-agent_inst && rmdir /s /q c:\\tmp\\opsi-client-agent_inst || echo not found"'
 		for trynum in (1, 2):
 			try:
 				winexe(cmd, self.networkAddress, self.username, self.password)
@@ -211,24 +193,24 @@ class WindowsDeployThread(DeployThread):
 					logger.warning("Can't connect to %s: firewall on client seems active", self.networkAddress)
 
 				if trynum == 2:
-					raise Exception(u"Failed to execute command on host {0!r}: winexe error: {1}".format(self.networkAddress, error))
-				logger.info(u"Winexe failure %s, retrying", error)
+					raise Exception(f"Failed to execute command on host {self.networkAddress}: winexe error: {error}")
+				logger.info("Winexe failure %s, retrying", error)
 				time.sleep(2)
 
 	def _finaliseInstallation(self):
 		if self.reboot or self.shutdown:
 			if self.reboot:
-				logger.notice(u"Rebooting machine %s", self.networkAddress)
-				cmd = u'"%ProgramFiles%\\opsi.org\\opsi-client-agent\\utilities\\shutdown.exe" /L /R /T:20 "opsi-client-agent installed - reboot" /Y /C'
+				logger.notice("Rebooting machine %s", self.networkAddress)
+				cmd = r'"%ProgramFiles%\\opsi.org\\opsi-client-agent\\utilities\\shutdown.exe" /L /R /T:20 "opsi-client-agent installed - reboot" /Y /C'
 			else:	# self.shutdown must be set
-				logger.notice(u"Shutting down machine %s", self.networkAddress)
-				cmd = u'"%ProgramFiles%\\opsi.org\\opsi-client-agent\\utilities\\shutdown.exe" /L /T:20 "opsi-client-agent installed - shutdown" /Y /C'
+				logger.notice("Shutting down machine %s", self.networkAddress)
+				cmd = r'"%ProgramFiles%\\opsi.org\\opsi-client-agent\\utilities\\shutdown.exe" /L /T:20 "opsi-client-agent installed - shutdown" /Y /C'
 
 			try:
 				pf = None
 				for const in ('%ProgramFiles(x86)%', '%ProgramFiles%'):
 					try:
-						lines = winexe(u'cmd.exe /C "echo {0}"'.format(const), self.networkAddress, self.username, self.password)
+						lines = winexe(f'cmd.exe /C "echo {const}"', self.networkAddress, self.username, self.password)
 					except Exception as error:
 						logger.warning(error)
 						continue
@@ -245,114 +227,103 @@ class WindowsDeployThread(DeployThread):
 					pf = None
 
 				if not pf:
-					raise Exception(u"Failed to get program files path")
+					raise Exception("Failed to get program files path")
 
-				logger.info(u"Program files path is %s", pf)
-				winexe(cmd.replace(u'%ProgramFiles%', pf), self.networkAddress, self.username, self.password)
+				logger.info("Program files path is %s", pf)
+				winexe(cmd.replace('%ProgramFiles%', pf), self.networkAddress, self.username, self.password)
 			except Exception as error:
 				if self.reboot:
-					logger.error(u"Failed to reboot computer: %s", error)
+					logger.error("Failed to reboot computer: %s", error)
 				else:
-					logger.error(u"Failed to shutdown computer: %s", error)
+					logger.error("Failed to shutdown computer: %s", error)
 		elif self.startService:
 			try:
-				winexe(u'net start opsiclientd', self.networkAddress, self.username, self.password)
+				winexe('net start opsiclientd', self.networkAddress, self.username, self.password)
 			except Exception as error:
 				logger.error("Failed to start opsiclientd on %s: %s", self.networkAddress, error=error)
 
 	def _installWithServersideMount(self):
 		logger.debug('Installing using server-side mount.')
 		host = forceUnicodeLower(self.host)
-		hostId = u''
+		hostId = ''
 		hostObj = None
-		mountDir = u''
-		instDir = u''
+		mountDir = ''
+		instDir = ''
 		try:
 			hostId = self._getHostId(host)
 			self._checkIfClientShouldBeSkipped(hostId)
 
-			logger.notice(u"Starting deployment to host %s", hostId)
+			logger.notice("Starting deployment to host %s", hostId)
 			hostObj = self._prepareDeploymentToHost(hostId)
 			self._testWinexeConnection()
 
-			mountDir = os.path.join(u'/tmp', u'mnt_' + randomString(10))
+			mountDir = os.path.join('/tmp', 'mnt_' + randomString(10))
 			os.makedirs(mountDir)
 
-			logger.notice(u"Mounting c$ share")
+			logger.notice("Mounting c$ share")
 			try:
+				password = self.password.replace("'", "'\"'\"'"),
 				try:
-					execute(u"{mount} -t cifs -o'username={username},password={password}' //{address}/c$ {target}".format(
-							mount=which('mount'),
-							username=self.username,
-							password=self.password.replace("'", "'\"'\"'"),
-							address=self.networkAddress,
-							target=mountDir
-							),
+					execute(f"{which('mount')} -t cifs -o'username={self.username},password={password}' //{self.networkAddress}/c$ {mountDir}",
 						timeout=15
 					)
 				except Exception as error:
-					logger.info(u"Failed to mount clients c$ share: %s, retrying with port 139", error)
-					execute(u"{mount} -t cifs -o'port=139,username={username},password={password}' //{address}/c$ {target}".format(
-							mount=which('mount'),
-							username=self.username,
-							password=self.password.replace("'", "'\"'\"'"),
-							address=self.networkAddress,
-							target=mountDir
-						),
+					logger.info("Failed to mount clients c$ share: %s, retrying with port 139", error)
+					execute(f"{which('mount')} -t cifs -o'port=139,username={self.username},password={password}' //{self.networkAddress}/c$ {mountDir}",
 						timeout=15
 					)
 			except Exception as error:
-				raise Exception(u"Failed to mount c$ share: {0}\nPerhaps you have to disable the firewall or simple file sharing on the windows machine (folder options)?".format(error))
+				raise Exception(f"Failed to mount c$ share: {error}\nPerhaps you have to disable the firewall or simple file sharing on the windows machine (folder options)?")
 
-			logger.notice(u"Copying installation files")
-			instDirName = u'opsi_{random}'.format(random=randomString(10))
+			logger.notice("Copying installation files")
+			instDirName = f'opsi_{randomString(10)}'
 			instDir = os.path.join(mountDir, instDirName)
 			os.makedirs(instDir)
 
-			copy(u'files', instDir)
-			copy(u'utils', instDir)
+			copy('files', instDir)
+			copy('utils', instDir)
 
-			logger.notice(u"Patching config.ini")
-			configFile = IniFile(os.path.join(instDir, u'files', u'opsi', u'cfg', u'config.ini'))
+			logger.notice("Patching config.ini")
+			configFile = IniFile(os.path.join(instDir, 'files', 'opsi', 'cfg', 'config.ini'))
 			config = configFile.parse()
 			if not config.has_section('shareinfo'):
 				config.add_section('shareinfo')
 			config.set('shareinfo', 'pckey', hostObj.opsiHostKey)
 			if not config.has_section('general'):
 				config.add_section('general')
-			config.set('general', 'dnsdomain', u'.'.join(hostObj.id.split('.')[1:]))
+			config.set('general', 'dnsdomain', '.'.join(hostObj.id.split('.')[1:]))
 			configFile.generate(config)
 
-			logger.notice(u"Installing opsi-client-agent")
+			logger.notice("Installing opsi-client-agent")
 			if not os.path.exists(os.path.join(mountDir, 'tmp')):
 				os.makedirs(os.path.join(mountDir, 'tmp'))
-			cmd = u'c:\\{0}\\files\\opsi\\opsi-winst\\winst32.exe /batch c:\\{0}\\files\\opsi\\setup.opsiscript c:\\tmp\\opsi-client-agent.log /PARAMETER REMOTEDEPLOY'.format(instDirName)
+			cmd = f'c:\\{instDirName}\\files\\opsi\\opsi-winst\\winst32.exe /batch c:\\{instDirName}\\files\\opsi\\setup.opsiscript c:\\tmp\\opsi-client-agent.log /PARAMETER REMOTEDEPLOY'
 			for trynum in (1, 2):
 				try:
 					winexe(cmd, self.networkAddress, self.username, self.password)
 					break
 				except Exception as error:
 					if trynum == 2:
-						raise Exception(u"Failed to install opsi-client-agent: {0}".format(error))
-					logger.info(u"Winexe failure %s, retrying", error)
+						raise Exception(f"Failed to install opsi-client-agent: {error}")
+					logger.info("Winexe failure %s, retrying", error)
 					time.sleep(2)
 
-			logger.notice(u"opsi-client-agent successfully installed on %s", hostId)
+			logger.notice("opsi-client-agent successfully installed on %s", hostId)
 			self.success = True
 			self._setOpsiClientAgentToInstalled(hostId)
 			self._finaliseInstallation()
 		except SkipClientException:
-			logger.notice(u"Skipping host %s", hostId)
+			logger.notice("Skipping host %s", hostId)
 			self.success = SKIP_MARKER
 			return
 		except Exception as error:
 			self.success = False
-			logger.error(u"Deployment to %s failed: %s", self.host, error)
+			logger.error("Deployment to %s failed: %s", self.host, error)
 			if self._clientCreatedByScript and hostObj and not self.keepClientOnFailure:
 				self._removeHostFromBackend(hostObj)
 		finally:
 			if instDir or mountDir:
-				logger.notice(u"Cleaning up")
+				logger.notice("Cleaning up")
 
 			if instDir:
 				try:

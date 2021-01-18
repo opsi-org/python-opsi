@@ -8,4 +8,3 @@ echo "exitcode $?"
 
 py.test -o junit_family=xunit2 --junitxml=testreport-opsicommon.xml --cov-append --cov opsicommon --cov-report term --cov-report xml -v tests/testopsicommon
 echo "exitcode $?"
-
