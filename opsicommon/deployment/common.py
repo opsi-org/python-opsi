@@ -5,8 +5,8 @@ import re
 
 from OPSI.System import execute, getFQDN
 from OPSI.Object import OpsiClient, ProductOnClient
-from OPSI.Types import forceHostId, forceIPAddress, forceUnicode, forceUnicodeLower, forceInt
-from opsicommon.logging import logger, LOG_WARNING, LOG_DEBUG, logging_config
+from OPSI.Types import forceHostId, forceIPAddress, forceUnicodeLower, forceInt
+from opsicommon.logging import logger, logging_config
 
 SKIP_MARKER = 'clientskipped'
 
@@ -42,7 +42,7 @@ class DeployThread(threading.Thread):
 			self.deploymentMethod = deploymentMethod
 
 		if self.deploymentMethod not in ("hostname", "ip", "fqdn"):
-			raise ValueError("Invalid deployment method: {0}".format(deploymentMethod))
+			raise ValueError(f"Invalid deployment method: {deploymentMethod}")
 
 		self.keepClientOnFailure = keepClientOnFailure
 		self._clientCreatedByScript = None
@@ -74,16 +74,16 @@ class DeployThread(threading.Thread):
 				(hostname, _, _) = socket.gethostbyaddr(ip)
 				host = hostname
 			except socket.herror as error:
-				logger.debug(u"Lookup for %s failed: %s", ip, error)
-				logger.warning(u"Could not get a hostname for %s. This is needed to create a FQDN for the client in opsi.", ip)
-				logger.info(u"Without a working reverse DNS you can use the file '/etc/hosts' for working around this.")
+				logger.debug("Lookup for %s failed: %s", ip, error)
+				logger.warning("Could not get a hostname for %s. This is needed to create a FQDN for the client in opsi.", ip)
+				logger.info("Without a working reverse DNS you can use the file '/etc/hosts' for working around this.")
 				raise error
 
-			logger.debug(u"Lookup of IP returned hostname %s", host)
+			logger.debug("Lookup of IP returned hostname %s", host)
 
 		host = host.replace('_', '-')
 
-		if host.count(u'.') < 2:
+		if host.count('.') < 2:
 			hostBefore = host
 			try:
 				host = socket.getfqdn(socket.gethostbyname(host))
@@ -99,9 +99,9 @@ class DeployThread(threading.Thread):
 			except socket.gaierror as error:
 				logger.debug("Lookup of %s failed.", host)
 
-		logger.debug(u"Host is now: %s", host)
-		if host.count(u'.') < 2:
-			hostId = forceHostId(u'{hostname}.{domain}'.format(hostname=host, domain=u'.'.join(getFQDN().split(u'.')[1:])))
+		logger.debug("Host is now: %s", host)
+		if host.count('.') < 2:
+			hostId = forceHostId(f'{host}.{".".join(getFQDN().split(".")[1:])}')
 		else:
 			hostId = forceHostId(host)
 
@@ -110,11 +110,11 @@ class DeployThread(threading.Thread):
 
 	def _checkIfClientShouldBeSkipped(self, hostId):
 		if self.backend.host_getIdents(type='OpsiClient', id=hostId) and self.skipExistingClient:
-			raise SkipClientException("Client {0} exists.".format(hostId))
+			raise SkipClientException(f"Client {hostId} exists.")
 
 		if self.backend.host_getObjects(type=['OpsiConfigserver', 'OpsiDepotserver'], id=hostId):
 			logger.warning("Tried to deploy to existing opsi server %s. Skipping!", hostId)
-			raise SkipClientException("Not deploying to server {0}.".format(hostId))
+			raise SkipClientException(f"Not deploying to server {hostId}.")
 
 	def _prepareDeploymentToHost(self, hostId):
 		hostName = hostId.split('.')[0]
@@ -129,69 +129,67 @@ class DeployThread(threading.Thread):
 		if self.deploymentMethod == 'ip':
 			return forceIPAddress(self.host)
 
-		logger.notice(u"Querying for ip address of host %s", hostId)
-		ipAddress = u''
-		logger.info(u"Getting host %s by name", hostId)
+		logger.notice("Querying for ip address of host %s", hostId)
+		ipAddress = ''
+		logger.info("Getting host %s by name", hostId)
 		try:
 			ipAddress = socket.gethostbyname(hostId)
 		except Exception as error:
-			logger.warning(u"Failed to get ip address for host %s by syscall: %s", hostId, error)
+			logger.warning("Failed to get ip address for host %s by syscall: %s", hostId, error)
 
 		if ipAddress:
-			logger.notice(u"Got ip address %s from syscall", ipAddress)
+			logger.notice("Got ip address %s from syscall", ipAddress)
 		else:
-			logger.info(u"Executing 'nmblookup %s#20'", hostName)
-			for line in execute(u"nmblookup {0}#20".format(hostName)):
-				match = re.search("^(\d+\.\d+\.\d+\.\d+)\s+{0}<20>".format(hostName), line, re.IGNORECASE)
+			logger.info("Executing 'nmblookup %s#20'", hostName)
+			for line in execute(f"nmblookup {hostName}#20"):
+				match = re.search(r"^(\d+\.\d+\.\d+\.\d+)\s+" + f"{hostName}<20>", line, re.IGNORECASE)
 				if match:
 					ipAddress = match.group(1)
 					break
 			if ipAddress:
-				logger.notice(u"Got ip address %s from netbios lookup", ipAddress)
+				logger.notice("Got ip address %s from netbios lookup", ipAddress)
 			else:
-				raise Exception(u"Failed to get ip address for host {0!r}".format(hostName))
+				raise Exception(f"Failed to get ip address for host {hostName}")
 
 		return ipAddress
 
 	def _pingClient(self, ipAddress):
-		logger.notice(u"Pinging host %s ...", ipAddress)
+		logger.notice("Pinging host %s ...", ipAddress)
 		alive = False
 		try:
-			for line in execute(u"ping -q -c2 {address}".format(address=ipAddress)):
-				match = re.search("\s+(\d+)%\s+packet\s+loss", line)
+			for line in execute(f"ping -q -c2 {ipAddress}"):
+				match = re.search(r"\s+(\d+)%\s+packet\s+loss", line)
 				if match and (forceInt(match.group(1)) < 100):
 					alive = True
 		except Exception as error:
 			logger.error(error)
 
 		if alive:
-			logger.notice(u"Host %s is up", ipAddress)
+			logger.notice("Host %s is up", ipAddress)
 		elif self.stopOnPingFailure:
-			raise Exception(u"No ping response received from {0}".format(ipAddress))
+			raise Exception(f"No ping response received from {ipAddress}")
 		else:
-			logger.warning(u"No ping response received from %s", ipAddress)
+			logger.warning("No ping response received from %s", ipAddress)
 
 	def _createHostIfNotExisting(self, hostId, ipAddress):
 		if not self.backend.host_getIdents(type='OpsiClient', id=hostId):
-			logger.notice(u"Getting hardware ethernet address of host %s", hostId)
+			logger.notice("Getting hardware ethernet address of host %s", hostId)
 			mac = self._getMacAddress(ipAddress)
 			if not mac:
-				logger.warning(u"Failed to get hardware ethernet address for IP %s", ipAddress)
+				logger.warning("Failed to get hardware ethernet address for IP %s", ipAddress)
 
 			clientConfig = {
 				"id": hostId,
 				"hardwareAddress": mac,
 				"ipAddress": ipAddress,
-				"description": u"",
-				"notes": u"Created by opsi-deploy-client-agent at {0}".format(
-					time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime())
-				)
+				"description": "",
+				"notes": f"Created by opsi-deploy-client-agent at {time.strftime('%a, %d %b %Y %H:%M:%S', time.localtime())}"
 			}
 			if self.additionalClientSettings:
 				clientConfig.update(self.additionalClientSettings)
 				logger.debug("Updated config now is: %s", clientConfig)
 
-			logger.notice(u"Creating client %s", hostId)
+			logger.notice("Creating client %s", hostId)
 			self.backend.host_createObjects([OpsiClient(**clientConfig)])
 			self._clientCreatedByScript = True
 			self._putClientIntoGroup(hostId)
@@ -210,9 +208,9 @@ class DeployThread(threading.Thread):
 		}
 		try:
 			self.backend.objectToGroup_createObjects([mapping])
-			logger.notice(u"Added %s to group %s", clientId, groupId)
+			logger.notice("Added %s to group %s", clientId, groupId)
 		except Exception as creationError:
-			logger.warning(u"Adding %s to group %s failed: %s", clientId, groupId, creationError)
+			logger.warning("Adding %s to group %s failed: %s", clientId, groupId, creationError)
 
 	def _assignClientToDepot(self, clientId):
 		depot = self.depot
@@ -227,13 +225,13 @@ class DeployThread(threading.Thread):
 		}
 		try:
 			self.backend.configState_createObjects([depotAssignment])
-			logger.notice(u"Assigned %s to depot %s", clientId, depot)
+			logger.notice("Assigned %s to depot %s", clientId, depot)
 		except Exception as assignmentError:
-			logger.warning(u"Assgining %s to depot %s failed: %s", clientId, depot, assignmentError)
+			logger.warning("Assgining %s to depot %s failed: %s", clientId, depot, assignmentError)
 
 	@staticmethod
 	def _getMacAddress(ipAddress):
-		mac = u''
+		mac = ''
 		with open("/proc/net/arp") as arptable:
 			for line in arptable:
 				line = line.strip()
@@ -244,10 +242,10 @@ class DeployThread(threading.Thread):
 					mac = line.split()[3].lower().strip()
 					break
 
-		if not mac or (mac == u'00:00:00:00:00:00'):
-			mac = u''
+		if not mac or (mac == '00:00:00:00:00:00'):
+			mac = ''
 		else:
-			logger.notice(u"Found hardware ethernet address %s", mac)
+			logger.notice("Found hardware ethernet address %s", mac)
 
 		return mac
 
@@ -268,11 +266,11 @@ class DeployThread(threading.Thread):
 
 	def _setOpsiClientAgentToInstalled(self, hostId):
 		poc = ProductOnClient(
-			productType=u'LocalbootProduct',
+			productType='LocalbootProduct',
 			clientId=hostId,
-			productId=u'opsi-client-agent',
-			installationStatus=u'installed',
-			actionResult=u'successful'
+			productId='opsi-client-agent',
+			installationStatus='installed',
+			actionResult='successful'
 		)
 		self.backend.productOnClient_updateObjects([poc])
 
