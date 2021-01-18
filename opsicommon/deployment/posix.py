@@ -5,11 +5,11 @@ from contextlib import closing, contextmanager
 from OPSI.Util.File import IniFile
 from OPSI.Util import randomString
 from OPSI.Types import forceUnicode, forceUnicodeLower
-from OPSI.System import copy, execute
+from OPSI.System import copy
 from OPSI.Object import ProductOnClient
 
-from .common import logger, DeployThread, SkipClientException, SKIP_MARKER
-from .common import socket, re
+from opsicommon.deployment.common import logger, DeployThread, SkipClientException, SKIP_MARKER
+from opsicommon.deployment.common import socket, re
 
 try:
 	import paramiko	# type: ignore
@@ -46,25 +46,24 @@ class LinuxDeployThread(DeployThread):
 	def _installWithSSH(self):
 		logger.debug('Installing with files copied to client via scp.')
 		host = forceUnicodeLower(self.host)
-		hostId = u''
+		hostId = ''
 		hostObj = None
 		remoteFolder = os.path.join('/tmp', 'opsi-linux-client-agent')
 		try:
 			hostId = self._getHostId(host)
 			self._checkIfClientShouldBeSkipped(hostId)
 
-			logger.notice(u"Starting deployment to host %s", hostId)
+			logger.notice("Starting deployment to host %s", hostId)
 			hostObj = self._prepareDeploymentToHost(hostId)
-			self._executeViaSSH("echo 'it works'")
 
 			if getattr(sys, 'frozen', False):
 				localFolder = os.path.dirname(os.path.abspath(sys.executable))		# for running as executable
 			else:
 				localFolder = os.path.dirname(os.path.abspath(__file__))			# for running from python
-			logger.notice(u"Patching config.ini")
-			configIniName = u'{random}_config.ini'.format(random=randomString(10))
+			logger.notice("Patching config.ini")
+			configIniName = f'{randomString(10)}_config.ini'
 			configIniPath = os.path.join('/tmp', configIniName)
-			copy(os.path.join(localFolder, u'files', u'opsi', u'cfg', u'config.ini'), configIniPath)
+			copy(os.path.join(localFolder, 'files', 'opsi', 'cfg', 'config.ini'), configIniPath)
 			configFile = IniFile(configIniPath)
 			config = configFile.parse()
 			if not config.has_section('shareinfo'):
@@ -72,7 +71,7 @@ class LinuxDeployThread(DeployThread):
 			config.set('shareinfo', 'pckey', hostObj.opsiHostKey)
 			if not config.has_section('general'):
 				config.add_section('general')
-			config.set('general', 'dnsdomain', u'.'.join(hostObj.id.split('.')[1:]))
+			config.set('general', 'dnsdomain', '.'.join(hostObj.id.split('.')[1:]))
 			configFile.generate(config)
 			logger.debug("Generated config.")
 
@@ -91,19 +90,19 @@ class LinuxDeployThread(DeployThread):
 				if not remoteArch:
 					raise RuntimeError("Could not get architecture of client.")
 
-				opsiscript = "/tmp/opsi-linux-client-agent/files/opsi/opsi-script/{arch}/opsi-script-nogui".format(arch=remoteArch)
+				opsiscript = f"/tmp/opsi-linux-client-agent/files/opsi/opsi-script/{remoteArch}/opsi-script"
 				logger.debug("Will use: %s", opsiscript)
-				self._executeViaSSH("chmod +x {0}".format(opsiscript))
+				self._executeViaSSH(f"chmod +x {opsiscript}")
 
-				installCommand = "{0} -batch /tmp/opsi-linux-client-agent/files/opsi/setup.opsiscript /var/log/opsi-client-agent/opsi-script/opsi-client-agent.log -PARAMETER REMOTEDEPLOY".format(opsiscript)
+				installCommand = f"{opsiscript} -batch -silent /tmp/opsi-linux-client-agent/files/opsi/setup.opsiscript /var/log/opsi-client-agent/opsi-script/opsi-client-agent.log -PARAMETER REMOTEDEPLOY"
 				nonrootExecution = self.username != 'root'
 				credentialsfile=None
 				if nonrootExecution:
 					credentialsfile = os.path.join(remoteFolder, '.credentials')
-					self._executeViaSSH("touch {credfile}".format(credfile=credentialsfile))
-					self._executeViaSSH("chmod 600 {credfile}".format(credfile=credentialsfile))
-					self._executeViaSSH("echo '{password}' > {credfile}".format(password=self.password, credfile=credentialsfile))
-					self._executeViaSSH('echo "\n" >> {credfile}'.format(password=self.password, credfile=credentialsfile))
+					self._executeViaSSH(f"touch {credentialsfile}")
+					self._executeViaSSH(f"chmod 600 {credentialsfile}")
+					self._executeViaSSH(f"echo '{self.password}' > {credentialsfile}")
+					self._executeViaSSH(f'echo "\n" >> {credentialsfile}')
 					installCommand = f"sudo --stdin -- {installCommand} < {credentialsfile}"
 
 				try:
@@ -111,8 +110,7 @@ class LinuxDeployThread(DeployThread):
 					self._executeViaSSH(installCommand)
 				except Exception:
 					if nonrootExecution:
-						self._executeViaSSH("rm -f {credfile}".format(credfile=credentialsfile))
-
+						self._executeViaSSH(f"rm -f {credentialsfile}")
 					raise
 
 				logger.debug("Testing if folder was created...")
@@ -132,16 +130,16 @@ class LinuxDeployThread(DeployThread):
 				except OSError as error:
 					logger.debug("Removing %s failed: %s", configIniPath, error)
 
-			logger.notice(u"opsi-linux-client-agent successfully installed on %s", hostId)
+			logger.notice("opsi-linux-client-agent successfully installed on %s", hostId)
 			self.success = True
 			self._setOpsiClientAgentToInstalled(hostId)
 			self._finaliseInstallation(credentialsfile=credentialsfile)
 		except SkipClientException:
-			logger.notice(u"Skipping host %s", hostId)
+			logger.notice("Skipping host %s", hostId)
 			self.success = SKIP_MARKER
 			return
 		except (Exception, paramiko.SSHException) as error:
-			logger.error(u"Deployment to %s failed: %s", self.host, error)
+			logger.error("Deployment to %s failed: %s", self.host, error)
 			self.success = False
 			if 'Incompatible ssh peer (no acceptable kex algorithm)' in forceUnicode(error):
 				logger.error('Please install paramiko v1.15.1 or newer.')
@@ -156,7 +154,7 @@ class LinuxDeployThread(DeployThread):
 					logger.debug2("Closing SSH connection failed: %s", error)
 		finally:
 			try:
-				self._executeViaSSH("rm -rf {tempfolder}".format(tempfolder=remoteFolder))
+				self._executeViaSSH(f"rm -rf {remoteFolder}")
 			except (Exception, paramiko.SSHException) as error:
 				logger.error(error)
 
@@ -175,7 +173,7 @@ class LinuxDeployThread(DeployThread):
 				logger.info("resolved FQDN: %s (type %s)", hostId, type(hostId))
 		if hostId:
 			return hostId
-		raise ValueError("invalid host %s", host)
+		raise ValueError(f"invalid host {host}")
 
 	def _executeViaSSH(self, command):
 		"""
@@ -202,8 +200,7 @@ class LinuxDeployThread(DeployThread):
 				logger.debug("Command output: ")
 				logger.debug(out)
 				raise SSHRemoteExecutionException(
-					u"Executing {0!r} on remote client failed! "
-					u"Got exit code {1}".format(command, exitCode)
+					f"Executing {command} on remote client failed! Got exit code {exitCode}"
 				)
 
 			return out
@@ -257,7 +254,7 @@ class LinuxDeployThread(DeployThread):
 			createFolderIfMissing(remotePath)
 
 			if not os.path.exists(localPath):
-				raise ValueError("Can't find local path '{0}'".format(localPath))
+				raise ValueError(f"Can't find local path '{localPath}'")
 
 			# The following stunt is necessary to get results in 'dirpath'
 			# that can be easily used for folder creation on the remote.
@@ -275,19 +272,19 @@ class LinuxDeployThread(DeployThread):
 
 	def _finaliseInstallation(self, credentialsfile=None):
 		if self.reboot:
-			logger.notice(u"Rebooting machine %s", self.networkAddress)
+			logger.notice("Rebooting machine %s", self.networkAddress)
 			command = "shutdown -r 1 & disown"
 			try:
 				self._executeViaSSH(command)
 			except Exception as error:
-				logger.error(u"Failed to reboot computer: %s", error)
+				logger.error("Failed to reboot computer: %s", error)
 		elif self.shutdown:
-			logger.notice(u"Shutting down machine %s", self.networkAddress)
+			logger.notice("Shutting down machine %s", self.networkAddress)
 			command = "shutdown -h 1 & disown"
 			try:
 				self._executeViaSSH(command)
 			except Exception as error:
-				logger.error(u"Failed to shutdown computer: %s", error)
+				logger.error("Failed to shutdown computer: %s", error)
 		elif self.startService:
 			logger.notice("Restarting opsiclientd service on computer: %s", self.networkAddress)
 			command = "service opsiclientd restart"
@@ -300,10 +297,10 @@ class LinuxDeployThread(DeployThread):
 
 	def _setOpsiClientAgentToInstalled(self, hostId):
 		poc = ProductOnClient(
-			productType=u'LocalbootProduct',
+			productType='LocalbootProduct',
 			clientId=hostId,
-			productId=u'opsi-linux-client-agent',
-			installationStatus=u'installed',
-			actionResult=u'successful'
+			productId='opsi-linux-client-agent',
+			installationStatus='installed',
+			actionResult='successful'
 		)
 		self.backend.productOnClient_updateObjects([poc])
