@@ -68,7 +68,7 @@ __all__ = (
 	'SQLBackendObjectModificationTracker'
 )
 
-DATABASE_SCHEMA_VERSION = 6
+DATABASE_SCHEMA_VERSION = 7
 
 logger = Logger()
 
@@ -224,7 +224,7 @@ class SQLBackendObjectModificationTracker(BackendModificationListener):
 		if sinceDate:
 			where += f" AND `date` >= '{forceOpsiTimestamp(sinceDate)}'"
 		self._sql.delete("OBJECT_MODIFICATION_TRACKER", where=where)
-	
+
 	def objectInserted(self, backend, obj):
 		self._trackModification('insert', obj)
 
@@ -338,37 +338,37 @@ class SQLBackend(ConfigDataBackend):
 
 	def _adjustAttributes(self, objectClass, attributes, filter):
 		possibleAttributes = getPossibleClassAttributes(objectClass)
-		
+
 		newAttributes = []
 		if attributes:
 			newAttributes = forceUnicodeList(attributes)
 			for attr in newAttributes:
 				if attr not in possibleAttributes:
 					raise ValueError(f"Invalid attribute '{attr}'")
-		
+
 		newFilter = {}
 		if filter:
 			newFilter = forceDict(filter)
 			for attr in filter:
 				if attr not in possibleAttributes:
 					raise ValueError(f"Invalid attribute '{attr}' in filter")
-		
+
 		objectId = self._objectAttributeToDatabaseAttribute(objectClass, 'id')
 
 		if 'id' in newFilter:
 			newFilter[objectId] = newFilter['id']
 			del newFilter['id']
-		
+
 		if 'id' in newAttributes:
 			newAttributes.remove('id')
 			newAttributes.append(objectId)
-		
+
 		if 'type' in newFilter:
 			for oc in forceList(newFilter['type']):
 				if objectClass.__name__ == oc:
 					newFilter['type'] = forceList(newFilter['type']).append(list(objectClass.subClasses.values()))
 					break
-		
+
 		if newAttributes:
 			if issubclass(objectClass, Entity) and 'type' not in newAttributes:
 				newAttributes.append('type')
@@ -605,7 +605,7 @@ class SQLBackend(ConfigDataBackend):
 			logger.debug(table)
 			self._sql.execute(table)
 			self._sql.execute('CREATE INDEX `index_windows_software_id_to_product_productId` on `WINDOWS_SOFTWARE_ID_TO_PRODUCT` (`productId`);')
-		
+
 		if 'PRODUCT_ON_DEPOT' not in existingTables:
 			logger.debug(u'Creating table PRODUCT_ON_DEPOT')
 			table = u'''CREATE TABLE `PRODUCT_ON_DEPOT` (
@@ -1319,7 +1319,7 @@ class SQLBackend(ConfigDataBackend):
 				elif val == True:
 					val = "yes"
 			data += "%s = %s\r\n" % (module.lower().strip(), val)
-		
+
 		verified = False
 		if modules["signature"].startswith("{"):
 			s_bytes = int(modules['signature'].split("}", 1)[-1]).to_bytes(256, "big")
@@ -1333,7 +1333,7 @@ class SQLBackend(ConfigDataBackend):
 			h_int = int.from_bytes(md5(data.encode()).digest(), "big")
 			s_int = publicKey._encrypt(int(modules["signature"]))
 			verified = h_int == s_int
-		
+
 		if not verified:
 			logger.error("Failed to verify modules signature")
 			return
