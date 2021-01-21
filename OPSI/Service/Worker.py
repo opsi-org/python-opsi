@@ -708,19 +708,20 @@ class WorkerOpsiJsonInterface(WorkerOpsiJsonRpc):
 				javascript.append(f"currentParams[{index}] = '{toJson(param)}';")
 
 		selectMethod = []
-		try:
-			for method in self._callInterface:
-				methodName = method["name"]
-				javascript.append(f"parameters['{methodName}'] = new Array();")
-				for (index, param) in enumerate(method['params']):
-					javascript.append(f"parameters['{methodName}'][{index}]='{param}';")
+		if self._callInterface:
+			try:
+				for method in self._callInterface:
+					methodName = method["name"]
+					javascript.append(f"parameters['{methodName}'] = new Array();")
+					for (index, param) in enumerate(method['params']):
+						javascript.append(f"parameters['{methodName}'][{index}]='{param}';")
 
-				selected = ""
-				if method["name"] == currentMethod:
-					selected = ' selected="selected"'
-				selectMethod.append(f"<option{selected}>{method['name']}</option>")
-		except Exception as e:
-			logger.error(e, exc_info=True)
+					selected = ""
+					if method["name"] == currentMethod:
+						selected = ' selected="selected"'
+					selectMethod.append(f"<option{selected}>{method['name']}</option>")
+			except Exception as e:
+				logger.error(e, exc_info=True)
 
 		def wrapInDiv(obj):
 			return f'<div class="json">{obj}</div>'
@@ -748,7 +749,6 @@ class WorkerOpsiJsonInterface(WorkerOpsiJsonRpc):
 			"result": "".join(results),
 		}
 
-		self.request.setResponseCode(200)
 		self.request.setHeader("content-type", "text/html; charset=utf-8")
 		self.request.write(html.strip().encode("utf-8"))
 		return result
