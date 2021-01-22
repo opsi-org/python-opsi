@@ -34,11 +34,11 @@ import base64
 import urllib
 import tempfile
 
-from twisted.internet import defer, reactor, threads
-from twisted.python import failure
+from twisted.internet import defer, threads
+from twisted.python.failure import Failure
 
 from OPSI.Exceptions import OpsiAuthenticationError, OpsiBadRpcError
-from OPSI.Logger import Logger, LOG_ERROR, LOG_INFO
+from OPSI.Logger import Logger
 from OPSI.Types import forceUnicode, forceList
 from OPSI.Util import objectToHtml, toJson, fromJson, serialize
 from OPSI.Util.HTTP import deflateEncode, deflateDecode, gzipEncode, gzipDecode
@@ -233,19 +233,20 @@ INTERFACE_PAGE = '''<?xml version="1.0" encoding="UTF-8"?>
 '''
 
 
-class WorkerOpsi:
+class WorkerOpsi:  # pylint: disable=too-few-public-methods,too-many-instance-attributes
+	""" Base worker class """
 	def __init__(self, service, request, resource):
 		self.service = service
 		self.request = request
-		self.query = u''
-		self.path = u''
+		self.query = ''
+		self.path = ''
 		self.resource = resource
 		self.session = None
 		self.authRealm = 'OPSI Service'
 		self.debugDir = os.path.join(tempfile.gettempdir(), "opsiclientd-debug")
 
 	def process(self):
-		logger.info(u"Worker %s started processing", self)
+		logger.info("Worker %s started processing", self)
 		deferred = defer.Deferred()
 		deferred.addCallback(self._getSession)
 		deferred.addCallback(self._authenticate)
@@ -259,29 +260,17 @@ class WorkerOpsi:
 		deferred.callback(None)
 		return deferred
 
-	def _finishRequest(self, result):
+	def _finishRequest(self, result):  # pylint: disable=unused-argument
 		self.request.finish()
 
 	def _getSessionHandler(self):
 		try:
-			return self.service._getSessionHandler()
+			return self.service._getSessionHandler()  # pylint: disable=protected-access
 		except AttributeError:  # no attribtue _getSessionHandler
 			return None
 
-	def _delayResult(self, seconds, result):
-		class DelayResult:
-			def __init__(self, seconds, result):
-				self.result = result
-				self.deferred = defer.Deferred()
-				reactor.callLater(seconds, self.returnResult)
-
-			def returnResult(self):
-				self.deferred.callback(self.result)
-
-		return DelayResult(seconds, result).deferred
-
 	def _errback(self, failure):
-		logger.debug2("%s._errback", self.__class__.__name__)
+		logger.trace("%s._errback", self.__class__.__name__)
 
 		self._freeSession(failure)
 		self._setCookie(failure)
@@ -289,15 +278,15 @@ class WorkerOpsi:
 
 		try:
 			failure.raiseException()
-		except OpsiAuthenticationError as error:
-			logger.warning(error, exc_info=True)
+		except OpsiAuthenticationError as err:
+			logger.warning(err, exc_info=True)
 			self.request.setResponseCode(401)
 			self.request.setHeader("www-authenticate", f"basic realm={self.authRealm}")
-		except OpsiBadRpcError as error:
-			logger.warning(error, exc_info=True)
+		except OpsiBadRpcError as err:
+			logger.warning(err, exc_info=True)
 			self.request.setResponseCode(400)
-		except Exception as error:
-			logger.error(error, exc_info=True)
+		except Exception as err:  # pylint: disable=broad-except
+			logger.error(err, exc_info=True)
 		self._renderError(failure)
 		self.request.finish()
 
@@ -306,13 +295,13 @@ class WorkerOpsi:
 		error = "Unknown error"
 		try:
 			failure.raiseException()
-		except Exception as err:
-			error = forceUnicode(err)
+		except Exception as err:  # pylint: disable=broad-except
+			error = str(err)
 		self.request.write(error.encode('utf-8'))
 
 	def _freeSession(self, result):
 		if self.session:
-			logger.debug(u"Freeing session %s", self.session)
+			logger.debug("Freeing session %s", self.session)
 			self.session.decreaseUsageCount()
 		return result
 
@@ -328,15 +317,18 @@ class WorkerOpsi:
 				logger.confidential("Auth encoded: %s", encoded)
 				parts = str(base64.decodebytes(encoded), encoding='latin-1').split(':')
 				if len(parts) > 6:
-					user = u':'.join(parts[:6])
-					password = u':'.join(parts[6:])
+					user = ':'.join(parts[:6])
+					password = ':'.join(parts[6:])
 				else:
 					user = parts[0]
-					password = u':'.join(parts[1:])
+					password = ':'.join(parts[1:])
 				user = user.strip()
-				logger.confidential(u"Client supplied username '%s' and password '%s'", user, password)
-			except Exception as error:
-				logger.error(u"Bad Authorization header from '%s': %s", self.request.getClientIP(), error, exc_info=True)
+				logger.confidential("Client supplied username '%s' and password '%s'", user, password)
+			except Exception as err:  # pylint: disable=broad-except
+				logger.error(
+					"Bad Authorization header from '%s': %s",
+					self.request.getClientIP(), err, exc_info=True
+				)
 
 		return (user, password)
 
@@ -346,8 +338,8 @@ class WorkerOpsi:
 	def _getUserAgent(self):
 		try:
 			userAgent = self.request.getHeader('user-agent')
-		except Exception:
-			logger.info("Client '%s' did not supply user-agent" % self.request.getClientIP())
+		except Exception:  # pylint: disable=broad-except
+			logger.info("Client '%s' did not supply user-agent", self.request.getClientIP())
 			userAgent = None
 
 		if not userAgent:
@@ -359,18 +351,17 @@ class WorkerOpsi:
 		"Get session id from cookie request header"
 		sessionId = ""
 		try:
-			#cookie = self.request.getCookie(self._getSessionHandler().sessionName)
-			cookie = self.request.getHeader("cookie")
-			if cookie:
-				for c in cookie.split(';'):
-					if '=' not in c:
+			cookies = self.request.getHeader("cookie")
+			if cookies:
+				for cookie in cookies.split(';'):
+					if '=' not in cookie:
 						continue
-					(name, value) = c.split('=', 1)
+					(name, value) = cookie.split('=', 1)
 					if name.strip() == self._getSessionHandler().sessionName:
 						sessionId = forceUnicode(value.strip())
 						break
-		except Exception as error:
-			logger.error(u"Failed to get cookie from header: %s", error)
+		except Exception as err:  # pylint: disable=broad-except
+			logger.error("Failed to get cookie from header: %s", err)
 
 		logger.confidential("sessionId: %s", sessionId)
 		return sessionId
@@ -379,7 +370,7 @@ class WorkerOpsi:
 		''' This method restores a session or generates a new one. '''
 		self.session = None
 
-		logger.confidential(u"Request headers: %s", self.request.getAllHeaders())
+		logger.confidential("Request headers: %s", self.request.getAllHeaders())
 
 		userAgent = self._getUserAgent()
 		sessionHandler = self._getSessionHandler()
@@ -388,14 +379,14 @@ class WorkerOpsi:
 		# Get Session object
 		self.session = sessionHandler.getSession(sessionId, self.request.getClientIP())
 		if sessionId == self.session.uid:
-			logger.info(u"Reusing session for client '%s', application '%s'", self.request.getClientIP(), userAgent)
+			logger.info("Reusing session for client '%s', application '%s'", self.request.getClientIP(), userAgent)
 		elif sessionId:
-			logger.notice(u"Application '%s' on client '%s' supplied non existing session id: %s", userAgent, self.request.getClientIP(), sessionId)
+			logger.notice("Application '%s' on client '%s' supplied non existing session id: %s", userAgent, self.request.getClientIP(), sessionId)
 
 		if sessionHandler and self.session.ip and (self.session.ip != self.request.getClientIP()):
 			logger.critical(
-				u"Client ip '%s' does not match session ip '%s', "
-				u"deleting old session and creating a new one",
+				"Client ip '%s' does not match session ip '%s', "
+				"deleting old session and creating a new one",
 				self.request.getClientIP(),
 				self.session.ip
 			)
@@ -408,7 +399,7 @@ class WorkerOpsi:
 		# Set user-agent / application
 		if self.session.userAgent and (self.session.userAgent != userAgent):
 			logger.warning(
-				u"Application changed from '%s' to '%s' for existing session of client '%s'",
+				"Application changed from '%s' to '%s' for existing session of client '%s'",
 				self.session.userAgent,
 				userAgent,
 				self.request.getClientIP()
@@ -416,17 +407,17 @@ class WorkerOpsi:
 		self.session.userAgent = userAgent
 
 		logger.confidential(
-			u"Session id is %s for client %s, application %s",
+			"Session id is %s for client %s, application %s",
 			self.session.uid,
 			self.request.getClientIP(),
 			self.session.userAgent
 		)
 
-		logger.confidential(u"Session content: %s", self.session.__dict__)
+		logger.confidential("Session content: %s", self.session.__dict__)
 		return result
 
-	def _setCookie(self, result):
-		logger.debug(u"%s._setCookie", self)
+	def _setCookie(self, result):  # pylint: disable=unused-argument
+		logger.debug("%s._setCookie", self)
 		if not self.session:
 			return
 
@@ -446,11 +437,11 @@ class WorkerOpsi:
 			# Get authorization
 			(self.session.user, self.session.password) = self._getCredentials()
 			self.session.authenticated = True
-		except Exception as error:
-			logger.logException(error, LOG_INFO)
+		except Exception as err:
+			logger.info(err, exc_info=True)
 			self._freeSession(result)
 			self._getSessionHandler().deleteSession(self.session.uid)
-			raise OpsiAuthenticationError(u"Forbidden: %s" % error)
+			raise OpsiAuthenticationError(f"Forbidden: {err}") from err
 
 		return result
 
@@ -464,7 +455,7 @@ class WorkerOpsi:
 			#d = stream.readStream(self.request.stream, self._handlePostData)
 			#return d
 		else:
-			raise ValueError(u"Unhandled method '%s'" % self.request.method)
+			raise ValueError("Unhandled method '%s'" % self.request.method)
 		return result
 
 	#def _handlePostData(self, chunk):
@@ -474,29 +465,29 @@ class WorkerOpsi:
 		try:
 			logger.debug("Decoding query, request method %s", self.request.method)
 			if self.request.method == b'POST':
-				logger.debug2("Request headers: %s", self.request.getAllHeaders())
+				logger.trace("Request headers: %s", self.request.getAllHeaders())
 				try:
 					contentType = self.request.getHeader('content-type').lower()
-				except Exception as e:
+				except Exception:  # pylint: disable=broad-except
 					contentType = None
 				try:
 					contentEncoding = self.request.getHeader('content-encoding').lower()
-				except Exception as e:
+				except Exception:  # pylint: disable=broad-except
 					contentEncoding = None
 
-				logger.debug(u"Content-Type: %s, Content-Encoding: %s", contentType, contentEncoding)
+				logger.debug("Content-Type: %s, Content-Encoding: %s", contentType, contentEncoding)
 
 				if contentType and "gzip" in contentType:
 					# Invalid MIME type.
 					# Probably it is gzip-application/json-rpc and therefore
 					# we need to behave like we did before.
-					logger.debug(u"Expecting compressed data from client (backwards compatible)")
+					logger.debug("Expecting compressed data from client (backwards compatible)")
 					self.query = deflateDecode(self.query)
 				elif contentEncoding == 'gzip':
-					logger.debug(u"Expecting gzip compressed data from client")
+					logger.debug("Expecting gzip compressed data from client")
 					self.query = gzipDecode(self.query)
 				elif contentEncoding == 'deflate':
-					logger.debug(u"Expecting deflate compressed data from client")
+					logger.debug("Expecting deflate compressed data from client")
 					self.query = deflateDecode(self.query)
 
 		except Exception as err:
@@ -504,14 +495,14 @@ class WorkerOpsi:
 			logger.trace(self.query)
 			raise
 
-		logger.debug2(u"query: %s", self.query)
+		logger.trace("query: %s", self.query)
 		return result
 
 	def _processQuery(self, result):
-		logger.warning(u"Class %s should overwrite _processQuery", self.__class__.__name__)
+		logger.warning("Class %s should overwrite _processQuery", self.__class__.__name__)
 		return self._decodeQuery(result)
 
-	def _generateResponse(self, result):
+	def _generateResponse(self, result):  # pylint: disable=unused-argument
 		self.request.setResponseCode(200)
 		self.request.setHeader("content-type", "text/html; charset=utf-8")
 		self.request.write("")
@@ -520,44 +511,44 @@ class WorkerOpsi:
 		return self._generateResponse(result)
 
 
-class WorkerOpsiJsonRpc(WorkerOpsi):
+class WorkerOpsiJsonRpc(WorkerOpsi):  # pylint: disable=too-few-public-methods
 
 	def __init__(self, service, request, resource):
 		WorkerOpsi.__init__(self, service, request, resource)
 
 		self._callInstance = None
-		self._callInterface = None
+		self._callInterface = {}
 		self._rpcs = []
 
-	def _getCallInstance(self, result):
-		logger.warning(u"Class %s should overwrite _getCallInstance", self.__class__.__name__)
+	def _getCallInstance(self, result):  # pylint: disable=unused-argument
+		logger.warning("Class %s should overwrite _getCallInstance", self.__class__.__name__)
 		self._callInstance = None
-		self._callInterface = None
+		self._callInterface = {}
 
 	def _getRpcs(self, result):
 		if not self.query:
-			raise ValueError(u"Got no rpcs")
+			raise ValueError("Got no rpcs")
 		if not self._callInstance:
-			raise RuntimeError(u"Call instance not defined in %s" % self)
+			raise RuntimeError("Call instance not defined in %s" % self)
 		if not self._callInterface:
-			raise RuntimeError(u"Call interface not defined in %s" % self)
+			raise RuntimeError("Call interface not defined in %s" % self)
 
 		try:
 			rpcs = fromJson(self.query, preventObjectCreation=True)
 			if not rpcs:
-				raise ValueError(u"Got no rpcs")
-		except Exception as e:
-			if isinstance(e, UnicodeDecodeError) and self.debugDir:
+				raise ValueError("Got no rpcs")
+		except Exception as err:
+			if isinstance(err, UnicodeDecodeError) and self.debugDir:
 				try:
 					if not os.path.exists(self.debugDir):
 						os.makedirs(self.debugDir)
 					debug_file = os.path.join(self.debugDir, f"service-json-decode-error-{uuid.uuid1()}")
 					logger.notice("Writing debug file: %s" % debug_file)
-					with open(debug_file, "wb") as f:
-						f.write(self.query)
-				except Exception as e2:
-					logger.error(e2, exc_info=True)
-			raise OpsiBadRpcError(u"Failed to decode rpc: %s" % e)
+					with open(debug_file, "wb") as file:
+						file.write(self.query)
+				except Exception as err2:  # pylint: disable=broad-except
+					logger.error(err2, exc_info=True)
+			raise OpsiBadRpcError(f"Failed to decode rpc: {err}") from err
 
 		for rpc in forceList(rpcs):
 			rpc = JsonRpc(instance=self._callInstance, interface=self._callInterface, rpc=rpc)
@@ -565,11 +556,11 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 
 		return result
 
-	def _executeRpc(self, result, rpc):
+	def _executeRpc(self, result, rpc):  # pylint: disable=unused-argument,no-self-use
 		deferred = threads.deferToThread(rpc.execute)
 		return deferred
 
-	def _executeRpcs(self, result):
+	def _executeRpcs(self, result):  # pylint: disable=unused-argument
 		deferred = defer.Deferred()
 		for rpc in self._rpcs:
 			deferred.addCallback(self._executeRpc, rpc)
@@ -587,7 +578,7 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 		deferred.callback(None)
 		return deferred
 
-	def _generateResponse(self, result):
+	def _generateResponse(self, result):  # pylint: disable=too-many-branches
 		invalidMime = False  # For handling the invalid MIME type "gzip-application/json-rpc"
 		encoding = None
 		try:
@@ -595,8 +586,8 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 				encoding = 'gzip'
 			elif 'deflate' in self.request.getHeader('Accept-Encoding'):
 				encoding = 'deflate'
-		except Exception as error:
-			logger.debug2("Failed to get Accept-Encoding from request header: %s", error)
+		except Exception as err:  # pylint: disable=broad-except
+			logger.trace("Failed to get Accept-Encoding from request header: %s", err)
 
 		try:
 			if self.request.getHeader('Accept'):
@@ -605,8 +596,8 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 						invalidMime = True
 						encoding = 'gzip'
 						break
-		except Exception as error:
-			logger.error(u"Failed to get accepted mime types from header: %s", error)
+		except Exception as err:  # pylint: disable=broad-except
+			logger.error("Failed to get accepted mime types from header: %s", err)
 
 		response = [serialize(rpc.getResponse()) for rpc in self._rpcs]
 
@@ -637,7 +628,7 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 			logger.debug("Sending plain data")
 			response = toJson(response).encode("utf-8")
 
-		logger.debug2("Sending response: %s", response)
+		logger.trace("Sending response: %s", response)
 		self.request.write(response)
 
 	def _renderError(self, failure):
@@ -645,55 +636,17 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 		error = "Unknown error"
 		try:
 			failure.raiseException()
-		except Exception as err:
+		except Exception as err:  # pylint: disable=broad-except
 			error = {'class': err.__class__.__name__, 'message': str(err)}
 			error = toJson({"id": None, "result": None, "error": error})
 		self.request.write(error.encode('utf-8'))
 
-class MultiprocessWorkerOpsiJsonRpc(WorkerOpsiJsonRpc):
 
-	def _processQuery(self, result):
-		logger.debug(u"Using multiprocessing to handle rpc.")
-
-		def cleanup(rpc):
-			if rpc.getMethodName() == 'backend_exit':
-				logger.notice(u"User '%s' asked to close the session", self.session.user)
-				self._freeSession(result)
-				self.service._getSessionHandler().deleteSession(self.session.uid)
-
-		def processResult(rpcs):
-			self._rpcs = rpcs
-
-			for rpc in rpcs:
-				cleanup(rpc)
-				self._addRpcToStatistics(None, rpc)
-				self.session.setLastRpcMethod(rpc.getMethodName())
-
-			return rpcs
-
-		def makeInstanceCall():
-			contentType = self.request.headers.getHeader("content-type")
-			try:
-				contentEncoding = self.request.headers.getHeader("content-encoding").lower()
-			except Exception:
-				contentEncoding = None
-
-			gzipEnabled = ("gzip" in contentEncoding) or (contentType and "gzip" in contentType)
-			d = self._callInstance.processQuery(self.query, gzipEnabled)
-			d.addCallback(processResult)
-			return d
-
-		deferred = self._getCallInstance(None)
-		deferred.addCallback(lambda x: makeInstanceCall())
-
-		return deferred
-
-
-class WorkerOpsiJsonInterface(WorkerOpsiJsonRpc):
+class WorkerOpsiJsonInterface(WorkerOpsiJsonRpc):  # pylint: disable=too-few-public-methods
 	"""
 	Worker responsible for creating the human-usable interface page.
 	"""
-	def _generateResponse(self, result):
+	def _generateResponse(self, result):  # pylint: disable=too-many-locals
 		logger.info("Creating interface page")
 
 		javascript = [
@@ -720,18 +673,18 @@ class WorkerOpsiJsonInterface(WorkerOpsiJsonRpc):
 					if method["name"] == currentMethod:
 						selected = ' selected="selected"'
 					selectMethod.append(f"<option{selected}>{method['name']}</option>")
-			except Exception as e:
-				logger.error(e, exc_info=True)
+			except Exception as err:  # pylint: disable=broad-except
+				logger.error(err, exc_info=True)
 
 		def wrapInDiv(obj):
 			return f'<div class="json">{obj}</div>'
 
 		results = ['<div id="result">']
-		if isinstance(result, failure.Failure):
+		if isinstance(result, Failure):
 			error = "Unknown error"
 			try:
 				result.raiseException()
-			except Exception as err:
+			except Exception as err:  # pylint: disable=broad-except
 				error = {"class": err.__class__.__name__, "message": str(err)}
 				error = toJson({"id": None, "result": None, "error": error})
 			results.append(wrapInDiv(objectToHtml(error)))
