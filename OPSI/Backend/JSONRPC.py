@@ -23,9 +23,6 @@ JSONRPC backend.
 This backend executes the calls on a remote backend via JSONRPC.
 
 :copyright: uib GmbH <info@uib.de>
-:author: Jan Schneider <j.schneider@uib.de>
-:author: Niko Wenselowski <n.wenselowski@uib.de>
-:author: Erol Ueluekmen <e.ueluekmen@uib.de>
 :license: GNU Affero General Public License version 3
 """
 
@@ -36,10 +33,12 @@ import socket
 import time
 import threading
 import types
-import lz4.frame
 from hashlib import md5
 from queue import Queue, Empty
+
+import lz4.frame
 try:
+	# pyright: reportMissingImports=false
 	# python3-pycryptodome installs into Cryptodome
 	from Cryptodome.Hash import MD5
 	from Cryptodome.Signature import pkcs1_15
@@ -55,12 +54,14 @@ from OPSI.Backend.Backend import DeferredCall
 from OPSI.Exceptions import (
 	OpsiAuthenticationError, OpsiConnectionError, OpsiError,
 	OpsiServiceVerificationError, OpsiRpcError, OpsiTimeoutError)
-from OPSI.Logger import Logger, LOG_INFO
+from OPSI.Logger import Logger
 from OPSI.Types import (
-	forceBool, forceFilename, forceFloat, forceInt, forceList, forceUnicode)
+	forceBool, forceFilename, forceFloat, forceInt, forceList, forceUnicode
+)
 from OPSI.Util import serialize, deserialize
 from OPSI.Util.HTTP import (
-	createBasicAuthHeader, getSharedConnectionPool, urlsplit)
+	createBasicAuthHeader, getSharedConnectionPool, urlsplit
+)
 from OPSI.Util.HTTP import deflateDecode, gzipEncode, gzipDecode
 from OPSI.Util import getPublicKey
 
@@ -72,14 +73,14 @@ _LZ4_COMPRESSION = 'lz4'
 logger = Logger()
 
 
-class JSONRPC(DeferredCall):
-	def __init__(self, jsonrpcBackend, baseUrl, method, params=None, retry=True, callback=None):
+class JSONRPC(DeferredCall):  # pylint: disable=too-many-instance-attributes
+	def __init__(self, jsonrpcBackend, baseUrl, method, params=None, retry=True, callback=None):  # pylint: disable=too-many-arguments
 		if params is None:
 			params = []
 		DeferredCall.__init__(self, callback=callback)
 		self.jsonrpcBackend = jsonrpcBackend
 		self.baseUrl = baseUrl
-		self.id = self.jsonrpcBackend._getRpcId()
+		self.id = self.jsonrpcBackend._getRpcId()  # pylint: disable=invalid-name
 		self.method = method
 		self.params = params
 		self.retry = retry
@@ -104,49 +105,49 @@ class JSONRPC(DeferredCall):
 					message = error['message']
 
 					try:
-						exceptionClass = eval(error.get('class', 'Exception'))
+						exceptionClass = eval(error.get('class', 'Exception'))  # pylint: disable=eval-used
 						# This seems to cut of more than wanted
 						#index = message.find(':')
 						#if index != -1 and len(message) > index:
 						#	message = message[index + 1:].lstrip()
 						exception = exceptionClass(f"{message} (error on server)")
-					except Exception:
+					except Exception:  # pylint: disable=broad-except
 						exception = OpsiRpcError(message)
 
 					raise exception
 
-				raise OpsiRpcError(u'{0} (error on server)'.format(error))
+				raise OpsiRpcError(f'{error} (error on server)')
 
 			self.result = deserialize(
 				result.get('result'),
 				preventObjectCreation=self.method.endswith('_getHashes')
 			)
-		except Exception as error:
-			logger.logException(error)
-			self.error = error
+		except Exception as err:  # pylint: disable=broad-except
+			logger.error(err, exc_info=True)
+			self.error = err
 
 	def process(self):
-		logger.debug("Executing jsonrpc method %s on host %s", self.method, self.jsonrpcBackend._host)
+		logger.debug("Executing jsonrpc method %s on host %s", self.method, self.jsonrpcBackend._host)  # pylint: disable=protected-access
 
 		try:
 			rpc = json.dumps(self.getRpc())
-			logger.debug2("jsonrpc request: %s", rpc)
-			response = self.jsonrpcBackend._request(baseUrl=self.baseUrl, data=rpc, retry=self.retry)
+			logger.trace("jsonrpc request: %s", rpc)
+			response = self.jsonrpcBackend._request(baseUrl=self.baseUrl, data=rpc, retry=self.retry)  # pylint: disable=protected-access
 			if isinstance(response, bytes):
 				response = response.decode()
-			logger.debug2("jsonrpc response: %s", response)
+			logger.trace("jsonrpc response: %s", response)
 			self.processResult(json.loads(response))
-		except Exception as error:
+		except Exception as err:  # pylint: disable=broad-except
 			if self.method not in ('backend_exit', 'exit'):
-				logger.debug("Failed to process method '%s': %s", self.method, forceUnicode(error), exc_info=True)
-				logger.info("Failed to process method '%s': %s", self.method, forceUnicode(error))
-				self.error = error
+				logger.debug("Failed to process method '%s': %s", self.method, err, exc_info=True)
+				logger.info("Failed to process method '%s': %s", self.method, err)
+				self.error = err
 		finally:
 			self._gotResult()
 
 
 class JSONRPCThread(JSONRPC, threading.Thread):
-	def __init__(self, jsonrpcBackend, baseUrl, method, params=None, retry=True, callback=None):
+	def __init__(self, jsonrpcBackend, baseUrl, method, params=None, retry=True, callback=None):  # pylint: disable=too-many-arguments
 		if params is None:
 			params = []
 		threading.Thread.__init__(self)
@@ -180,15 +181,15 @@ class RpcQueue(threading.Thread):
 		self.idle = threading.Event()
 
 	def add(self, jsonrpc):
-		logger.debug(u'Adding jsonrpc %s to queue (current queue size: %s)', jsonrpc, self.queue.qsize())
+		logger.debug('Adding jsonrpc %s to queue (current queue size: %s)', jsonrpc, self.queue.qsize())
 		self.queue.put(jsonrpc, block=True)
-		logger.debug2(u'Added jsonrpc %s to queue', jsonrpc)
+		logger.trace('Added jsonrpc %s to queue', jsonrpc)
 
 	def stop(self):
 		self.stopped = True
 
 	def run(self):
-		logger.debug(u"RpcQueue started")
+		logger.debug("RpcQueue started")
 		self.idle.set()
 		while not self.stopped or not self.queue.empty():
 			self.idle.wait()
@@ -198,7 +199,7 @@ class RpcQueue(threading.Thread):
 				try:
 					jsonrpc = self.queue.get(block=False)
 					if jsonrpc:
-						logger.debug(u'Got jsonrpc %s from queue', jsonrpc)
+						logger.debug('Got jsonrpc %s from queue', jsonrpc)
 						jsonrpcs.append(jsonrpc)
 						if len(jsonrpcs) >= self.size:
 							break
@@ -207,9 +208,9 @@ class RpcQueue(threading.Thread):
 			if jsonrpcs:
 				self.process(jsonrpcs=jsonrpcs)
 			time.sleep(self.poll)
-		logger.debug(u"RpcQueue stopped (empty: %s, stopped: %s)", self.queue.empty(), self.stopped)
+		logger.debug("RpcQueue stopped (empty: %s, stopped: %s)", self.queue.empty(), self.stopped)
 
-	def process(self, jsonrpcs):
+	def process(self, jsonrpcs):  # pylint: disable=too-many-branches
 		self.jsonrpcs = {}
 		for jsonrpc in forceList(jsonrpcs):
 			self.jsonrpcs[jsonrpc.id] = jsonrpc
@@ -230,51 +231,59 @@ class RpcQueue(threading.Thread):
 				if not baseUrl:
 					baseUrl = jsonrpc.baseUrl
 				elif baseUrl != jsonrpc.baseUrl:
-					raise OpsiRpcError(u"Can't execute jsonrpcs with different base urls at once: (%s != %s)" % (baseUrl, jsonrpc.baseUrl))
+					raise OpsiRpcError(
+						f"Can't execute jsonrpcs with different base urls at once: ({baseUrl} != {jsonrpc.baseUrl})"
+					)
 				rpc.append(jsonrpc.getRpc())
 			rpc = json.dumps(rpc)
-			logger.debug2(u"jsonrpc: %s", rpc)
+			logger.trace("jsonrpc: %s", rpc)
 
-			response = self.jsonrpcBackend._request(baseUrl=baseUrl, data=rpc, retry=retry)
-			logger.debug(u"Got response from host %s", self.jsonrpcBackend._host)
+			response = self.jsonrpcBackend._request(baseUrl=baseUrl, data=rpc, retry=retry)  # pylint: disable=protected-access
+			logger.debug("Got response from host %s", self.jsonrpcBackend._host)  # pylint: disable=protected-access
 			try:
 				response = forceList(json.loads(response))
-			except Exception as error:
-				raise OpsiRpcError(u"Failed to json decode response %s: %s" % (response, error))
+			except Exception as err:  # pylint: disable=broad-except
+				raise OpsiRpcError("Failed to json decode response {response}: {err}") from err
 
 			for resp in response:
 				try:
 					responseId = resp['id']
-				except KeyError as error:
-					raise KeyError(u"Failed to get id from: %s (%s): %s" % (resp, response, error))
+				except KeyError as err:
+					raise KeyError(
+						f"Failed to get id from: {resp} ({response}): {err}"
+					) from err
 
 				try:
 					jsonrpc = self.jsonrpcs[responseId]
-				except KeyError as error:
-					raise KeyError(u"Failed to get jsonrpc with id %s: %s" % (responseId, error))
+				except KeyError as err:
+					raise KeyError(
+						f"Failed to get jsonrpc with id {responseId}: {err}"
+					) from err
 
 				try:
 					jsonrpc.processResult(resp)
-				except Exception as error:
-					raise RuntimeError(u"Failed to process response %s with jsonrpc %s: %s" % (resp, jsonrpc, error))
-		except Exception as error:
+				except Exception as err:  # pylint: disable=broad-except
+					raise RuntimeError(
+						f"Failed to process response {resp} with jsonrpc {jsonrpc}: {err}"
+					) from err
+		except Exception as err:  # pylint: disable=broad-except
 			if not isExit:
-				logger.logException(error)
+				logger.error(err)
 
 			for jsonrpc in self.jsonrpcs.values():
-				jsonrpc.error = error
-				jsonrpc._gotResult()
+				jsonrpc.error = err
+				jsonrpc._gotResult()  # pylint: disable=protected-access
 
 		self.jsonrpcs = {}
 		self.idle.set()
 
 
-class JSONRPCBackend(Backend):
+class JSONRPCBackend(Backend):  # pylint: disable=too-many-instance-attributes
 
 	_DEFAULT_HTTP_PORT = 4444
 	_DEFAULT_HTTPS_PORT = 4447
 
-	def __init__(self, address, **kwargs):
+	def __init__(self, address, **kwargs):  # pylint: disable=too-many-branches,too-many-statements
 		"""
 		Backend for JSON-RPC access to another opsi service.
 
@@ -294,7 +303,7 @@ class JSONRPCBackend(Backend):
 		self._retryTime = 5
 		self._host = None
 		self._port = None
-		self._baseUrl = u'/rpc'
+		self._baseUrl = '/rpc'
 		self._protocol = 'https'
 		self._socketTimeout = None
 		self._connectTimeout = 30
@@ -316,9 +325,9 @@ class JSONRPCBackend(Backend):
 		self.serverName = None
 
 		if not self._username:
-			self._username = u''
+			self._username = ''
 		if not self._password:
-			self._password = u''
+			self._password = ''
 
 		retry = True
 		for (option, value) in kwargs.items():
@@ -354,7 +363,7 @@ class JSONRPCBackend(Backend):
 			elif option == 'verifyservercertbyca':
 				self._verifyServerCertByCa = forceBool(value)
 			elif option == 'proxyurl' and value not in (None, ""):
-				logger.debug(u"ProxyURL detected: '%s'", value)
+				logger.debug("ProxyURL detected: '%s'", value)
 				self._proxyURL = forceUnicode(value)
 
 		if not retry:
@@ -390,10 +399,10 @@ class JSONRPCBackend(Backend):
 				match = re.search(r"^opsi\D+(\d+\.\d+\.\d+\.\d+)", self.serverName)
 				if match:
 					return [int(v) for v in match.group(1).split('.')]
-		except Exception as e:
-			logger.warning("Failed to parse server version '%s': %s", self.serverName, e)
+		except Exception as err:  # pylint: disable=broad-except
+			logger.warning("Failed to parse server version '%s': %s", self.serverName, err)
 		return None
-	
+
 	def _stopRpcQueue(self):
 		if self._rpcQueue:
 			self._rpcQueue.stop()
@@ -421,15 +430,15 @@ class JSONRPCBackend(Backend):
 		if self._connected:
 			try:
 				self._jsonRPC('backend_exit', retry=False)
-			except Exception:
+			except Exception:  # pylint: disable=broad-except
 				pass
 
 		self._stopRpcQueue()
-	
+
 	@no_export
 	def setAsync(self, enableAsync):
 		if not self._connected:
-			raise OpsiConnectionError(u'Not connected')
+			raise OpsiConnectionError('Not connected')
 
 		if enableAsync:
 			self._startRpcQueue()
@@ -452,17 +461,15 @@ class JSONRPCBackend(Backend):
 	def _parseCompressionValue(compression):
 		if isinstance(compression, bool):
 			return compression
-		else:
-			value = forceUnicode(compression).strip().lower()
 
-			if value in ('true', 'false'):
-				return forceBool(value)
-			elif value == _GZIP_COMPRESSION:
-				return _GZIP_COMPRESSION
-			elif value == _LZ4_COMPRESSION:
-				return _LZ4_COMPRESSION
-			else:
-				return False
+		value = forceUnicode(compression).strip().lower()
+		if value in ('true', 'false'):
+			return forceBool(value)
+		if value == _GZIP_COMPRESSION:
+			return _GZIP_COMPRESSION
+		if value == _LZ4_COMPRESSION:
+			return _LZ4_COMPRESSION
+		return False
 
 	@no_export
 	def isCompressionUsed(self):
@@ -486,36 +493,36 @@ class JSONRPCBackend(Backend):
 		asyncStatus = self._async
 		self._async = False
 
-		try:
+		try:  # pylint: disable=too-many-nested-blocks
 			try:
-				self._interface = self._jsonRPC(u'backend_getInterface')
+				self._interface = self._jsonRPC('backend_getInterface')
 				if 'opsiclientd' in self._application:
 					try:
-						backendInfo = self._jsonRPC(u'backend_info')
+						backendInfo = self._jsonRPC('backend_info')
 						modules = backendInfo.get('modules', None)
 						realmodules = backendInfo.get('realmodules', None)
 						if modules:
-							logger.confidential(u"Modules: %s", modules)
+							logger.confidential("Modules: %s", modules)
 						else:
 							modules = {'customer': None}
 
-						for m in self._interface:
-							if m.get('name') == 'dispatcher_getConfig':
-								for entry in self._jsonRPC(u'dispatcher_getConfig'):
+						for meth in self._interface:
+							if meth.get('name') == 'dispatcher_getConfig':
+								for entry in self._jsonRPC('dispatcher_getConfig'):
 									for bn in entry[1]:
 										if "sql" in bn.lower() and len(entry[0]) <= 4 and '*' in entry[0]:
 											mysqlBackend = True
 								break
-					except Exception as error:
-						logger.info(forceUnicode(error))
-			except (OpsiAuthenticationError, OpsiTimeoutError, OpsiServiceVerificationError, socket.error) as connectionError:
-				logger.debug(u"Failed to connect: %s", connectionError)
+					except Exception as err:  # pylint: disable=broad-except
+						logger.info(str(err))
+			except (OpsiAuthenticationError, OpsiTimeoutError, OpsiServiceVerificationError, socket.error) as err:
+				logger.debug("Failed to connect: %s", err)
 				raise
 
 			self._createInstanceMethods(modules, realmodules, mysqlBackend)
 
 			self._connected = True
-			logger.info(u"%s: Connected to service", self)
+			logger.info("%s: Connected to service", self)
 		finally:
 			self._async = asyncStatus
 
@@ -530,7 +537,7 @@ class JSONRPCBackend(Backend):
 		(scheme, host, port, baseurl, username, password) = urlsplit(address)
 		if scheme:
 			if scheme not in ('http', 'https'):
-				raise ValueError(u"Protocol %s not supported" % scheme)
+				raise ValueError("Protocol %s not supported" % scheme)
 			self._protocol = scheme
 
 		self._host = host
@@ -552,27 +559,37 @@ class JSONRPCBackend(Backend):
 	def jsonrpc_getSessionId(self):
 		return self._sessionId
 
-	def _createInstanceMethods(self, modules=None, realmodules={}, mysqlBackend=False):
+	def _createInstanceMethods(self, modules=None, realmodules={}, mysqlBackend=False):  # pylint: disable=dangerous-default-value,too-many-locals,too-many-branches,too-many-statements
 		licenseManagementModule = True
 		if modules:
 			licenseManagementModule = False
 			if not modules.get('customer'):
-				logger.notice(u"Disabling mysql backend and license management module: no customer in modules file")
+				logger.notice("Disabling mysql backend and license management module: no customer in modules file")
 				if mysqlBackend:
-					raise OpsiError(u"MySQL backend in use but not licensed")
+					raise OpsiError("MySQL backend in use but not licensed")
 
 			elif not modules.get('valid'):
-				logger.notice(u"Disabling mysql backend and license management module: modules file invalid")
+				logger.notice("Disabling mysql backend and license management module: modules file invalid")
 				if mysqlBackend:
-					raise OpsiError(u"MySQL backend in use but not licensed")
+					raise OpsiError("MySQL backend in use but not licensed")
 
-			elif (modules.get('expires', '') != 'never') and (time.mktime(time.strptime(modules.get('expires', '2000-01-01'), "%Y-%m-%d")) - time.time() <= 0):
-				logger.notice(u"Disabling mysql backend and license management module: modules file expired")
+			elif (
+				modules.get('expires', '') != 'never' and
+				time.mktime(time.strptime(modules.get('expires', '2000-01-01'), "%Y-%m-%d")) - time.time() <= 0
+			):
+				logger.notice("Disabling mysql backend and license management module: modules file expired")
 				if mysqlBackend:
-					raise OpsiError(u"MySQL backend in use but not licensed")
+					raise OpsiError("MySQL backend in use but not licensed")
 			else:
 				logger.info("Verifying modules file signature")
-				publicKey = getPublicKey(data=base64.decodebytes(b"AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP"))
+				publicKey = getPublicKey(
+					data=base64.decodebytes(
+						b"AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDo"
+						b"jY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8"
+						b"S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDU"
+						b"lk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP"
+					)
+				)
 				data = ""
 				mks = list(modules.keys())
 				mks.sort()
@@ -585,12 +602,10 @@ class JSONRPCBackend(Backend):
 							modules[module] = True
 					else:
 						val = modules[module]
-						if val is False:
-							val = "no"
-						if val is True:
-							val = "yes"
+						if isinstance(val, bool):
+							val = "yes" if val else "no"
 					data += "%s = %s\r\n" % (module.lower().strip(), val)
-				
+
 				verified = False
 				if modules["signature"].startswith("{"):
 					s_bytes = int(modules['signature'].split("}", 1)[-1]).to_bytes(256, "big")
@@ -602,7 +617,7 @@ class JSONRPCBackend(Backend):
 						pass
 				else:
 					h_int = int.from_bytes(md5(data.encode()).digest(), "big")
-					s_int = publicKey._encrypt(int(modules["signature"]))
+					s_int = publicKey._encrypt(int(modules["signature"]))  # pylint: disable=protected-access
 					verified = h_int == s_int
 
 				if not verified:
@@ -617,7 +632,7 @@ class JSONRPCBackend(Backend):
 
 					if mysqlBackend and not modules.get("mysql_backend"):
 						raise OpsiError("MySQL backend in use but not licensed")
-		
+
 		for method in self._interface:
 			try:
 				methodName = method['name']
@@ -639,65 +654,65 @@ class JSONRPCBackend(Backend):
 					if isinstance(defaults, (tuple, list)) and len(defaults) + i >= len(args):
 						default = defaults[len(defaults) - len(args) + i]
 						if isinstance(default, str):
-							default = u"{0!r}".format(default).replace('"', "'")
-						argString.append(u'{0}={1}'.format(argument, str(default)))
+							default = "{0!r}".format(default).replace('"', "'")
+						argString.append(f'{argument}={default}')
 					else:
 						argString.append(argument)
 					callString.append(argument)
 
 				if varargs:
 					for vararg in varargs:
-						argString.append(u'*{0}'.format(vararg))
+						argString.append(f'*{vararg}')
 						callString.append(vararg)
 
 				if keywords:
-					argString.append(u'**{0}'.format(keywords))
+					argString.append(f'**{keywords}')
 					callString.append(keywords)
 
-				argString = u', '.join(argString)
-				callString = u', '.join(callString)
+				argString = ', '.join(argString)
+				callString = ', '.join(callString)
 
-				logger.debug2(u"%s: arg string is: %s", argString, methodName)
-				logger.debug2(u"%s: call string is: %s", callString, methodName)
+				logger.trace("%s: arg string is: %s", argString, methodName)
+				logger.trace("%s: call string is: %s", callString, methodName)
 				# This would result in not overwriting Backend methods like log_read, log_write, ...
 				# if getattr(self, methodName, None) is None:
 				if not licenseManagementModule and "license" in methodName:
-					exec(u'def %s(self, %s): return' % (methodName, argString))
+					exec(f'def {methodName}(self, {argString}): return')  # pylint: disable=exec-used
 				else:
-					exec(u'def %s(self, %s): return self._jsonRPC("%s", [%s])' % (methodName, argString, methodName, callString))
-				setattr(self, methodName, types.MethodType(eval(methodName), self))
-			except Exception as error:
-				logger.critical(u"Failed to create instance method '%s': %s", method, error)
+					exec(f'def {methodName}(self, {argString}): return self._jsonRPC("{methodName}", [{callString}])')  # pylint: disable=exec-used
+				setattr(self, methodName, types.MethodType(eval(methodName), self))  # pylint: disable=eval-used
+			except Exception as err:  # pylint: disable=broad-except
+				logger.critical("Failed to create instance method '%s': %s", method, err)
 
-	def _jsonRPC(self, method, params=[], retry=True):
+	def _jsonRPC(self, method, params=[], retry=True):  # pylint: disable=dangerous-default-value
 		if self._async:
 			self._startRpcQueue()
 			jsonrpc = JSONRPC(jsonrpcBackend=self, baseUrl=self._baseUrl, method=method, params=params, retry=retry)
 			self._rpcQueue.add(jsonrpc)
 			return jsonrpc
-		else:
-			jsonrpc = JSONRPCThread(jsonrpcBackend=self, baseUrl=self._baseUrl, method=method, params=params, retry=retry)
-			return jsonrpc.execute()
-	
+
+		jsonrpc = JSONRPCThread(jsonrpcBackend=self, baseUrl=self._baseUrl, method=method, params=params, retry=retry)
+		return jsonrpc.execute()
+
 	@no_export
-	def httpRequest(self, method, url, data=None, headers={}, retry=True):
-		if not 'User-Agent' in headers:
+	def httpRequest(self, method, url, data=None, headers={}, retry=True):  # pylint: disable=dangerous-default-value,too-many-arguments,too-many-branches
+		if 'User-Agent' not in headers:
 			headers['User-Agent'] = self._application
-		if not 'Cookie' in headers and self._sessionId:
+		if 'Cookie' not in headers and self._sessionId:
 			headers['Cookie'] = self._sessionId
-		if not 'Authorization' in headers:
+		if 'Authorization' not in headers:
 			headers['Authorization'] = createBasicAuthHeader(
 				self._username,
 				self._password
 			)
-		
+
 		if method == "POST":
 			if data:
-				if not type(data) is bytes:
+				if not isinstance(data, bytes):
 					data = data.encode("utf-8")
 			else:
 				data = b""
-			
+
 			if data and self._compression:
 				compression = self._compression
 				if compression is True:
@@ -707,25 +722,25 @@ class JSONRPCBackend(Backend):
 					sv = self.serverVersion
 					if sv and (sv[0] > 4 or (sv[0] == 4 and sv[1] > 1)):
 						compression = _LZ4_COMPRESSION
-				
+
 				if compression == _LZ4_COMPRESSION:
-					logger.debug2("Compressing data with lz4")
+					logger.trace("Compressing data with lz4")
 					headers['Content-Encoding'] = 'lz4'
 					data = lz4.frame.compress(data, compression_level=0, block_linked=True)
-					logger.debug2("Data compressed.")
+					logger.trace("Data compressed.")
 				else:
-					logger.debug2("Compressing data with gzip")
+					logger.trace("Compressing data with gzip")
 					headers['Content-Encoding'] = 'gzip'
 					data = gzipEncode(data)
-					logger.debug2("Data compressed.")
-			
+					logger.trace("Data compressed.")
+
 			headers['Content-Length'] = str(len(data))
 
 		response = self._connectionPool.urlopen(method=method, url=url, body=data, headers=headers, retry=retry)
 		if 'server' in response.headers:
 			self.serverName = response.headers.get('server')
 		return response
-	
+
 	def _request(self, baseUrl, data, retry=True):
 		headers = {
 			'Accept': 'application/json, text/plain',
@@ -733,17 +748,17 @@ class JSONRPCBackend(Backend):
 			'Content-Type': 'application/json',
 		}
 
-		logger.debug2(u"Request to host %s, url: %s, query: %s", self._host, baseUrl, data)
+		logger.trace("Request to host %s, url: %s, query: %s", self._host, baseUrl, data)
 		logger.debug("Posting request...")
 		response = self.httpRequest(method='POST', url=baseUrl, data=data, headers=headers, retry=retry)
 		return self._processResponse(response)
 
 	def _processResponse(self, response):
-		logger.debug2("Processing response...")
+		logger.trace("Processing response...")
 		self._readSessionId(response)
 
 		response = self._decompressResponse(response)
-		logger.debug2(u"Response is: %s", response)
+		logger.trace("Response is: %s", response)
 		return response
 
 	def _readSessionId(self, response):
@@ -764,7 +779,7 @@ class JSONRPCBackend(Backend):
 		Decompress the body of the response based on it's encoding.
 		"""
 		contentEncoding = response.getheader('Content-Encoding', '').lower()
-		logger.debug2(u"Content-Encoding: %s", contentEncoding)
+		logger.trace("Content-Encoding: %s", contentEncoding)
 
 		response = response.data
 		if contentEncoding == 'gzip':
@@ -776,8 +791,8 @@ class JSONRPCBackend(Backend):
 		elif contentEncoding == "lz4":
 			logger.debug("Expecting lz4 compressed data from server")
 			response = lz4.frame.decompress(response)
-		
-		logger.trace(u"Response is: %s", response)
+
+		logger.trace("Response is: %s", response)
 		return response
 
 	def getInterface(self):
@@ -788,6 +803,5 @@ class JSONRPCBackend(Backend):
 
 	def __repr__(self):
 		if self._name:
-			return u'<{0}(address={1!r}, host={2!r}, compression={3!r})>'.format(self.__class__.__name__, self._name, self._host, self._compression)
-		else:
-			return u'<{0}(host={1!r}, compression={2!r})>'.format(self.__class__.__name__, self._host, self._compression)
+			return f'<{self.__class__.__name__}(address={self._name}, host={self._host}, compression={self._compression})>'
+		return f'<{self.__class__.__name__}(host={self._host}, compression={self._compression})>'

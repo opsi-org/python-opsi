@@ -19,11 +19,9 @@
 """
 Backends.
 
-:author: Jan Schneider <j.schneider@uib.de>
 :license: GNU Affero General Public License version 3
 """
 
 def no_export(func):
 	func.no_export = True
 	return func
-

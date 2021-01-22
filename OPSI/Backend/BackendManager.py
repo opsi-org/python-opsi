@@ -24,8 +24,6 @@ A BackendManager instance does the heavy lifting for you so you don't
 need to set up you backends, ACL, multiplexing etc. yourself.
 
 :copyright: uib GmbH <info@uib.de>
-:author: Jan Schneider <j.schneider@uib.de>
-:author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
 """
 
