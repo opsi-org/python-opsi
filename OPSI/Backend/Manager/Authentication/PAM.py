@@ -40,6 +40,7 @@ logger = Logger()
 
 class PAMAuthentication(AuthenticationModule):
 	def __init__(self, pam_service: str = None):
+		super().__init__()
 		self._pam_service = pam_service
 		if not self._pam_service:
 			if os.path.exists("/etc/pam.d/opsi-auth"):
@@ -51,10 +52,10 @@ class PAMAuthentication(AuthenticationModule):
 				self._pam_service = 'system-auth'
 			else:
 				self._pam_service = 'common-auth'
-	
+
 	def get_instance(self):
 		return PAMAuthentication(self._pam_service)
-	
+
 	def authenticate(self, username: str, password: str) -> None:
 		'''
 		Authenticate a user by PAM (Pluggable Authentication Modules).
@@ -66,17 +67,19 @@ class PAMAuthentication(AuthenticationModule):
 		:raises BackendAuthenticationError: If authentication fails.
 		'''
 		logger.confidential("Trying to authenticate user %s with password %s by PAM", username, password)
-		logger.debug2("Attempting PAM authentication as user %s (service=%s)...", username, self._pam_service)
+		logger.trace("Attempting PAM authentication as user %s (service=%s)...", username, self._pam_service)
 
 		try:
 			auth = pam.pam()
 			if not auth.authenticate(username, password, service=self._pam_service):
-				logger.debug2("PAM authentication failed: %s (code %s)", auth.reason, auth.code)
+				logger.trace("PAM authentication failed: %s (code %s)", auth.reason, auth.code)
 				raise RuntimeError(auth.reason)
 
-			logger.debug2("PAM authentication successful.")
-		except Exception as error:
-			raise BackendAuthenticationError("PAM authentication failed for user '%s': %s" % (username, error))
+			logger.trace("PAM authentication successful.")
+		except Exception as err:
+			raise BackendAuthenticationError(
+				f"PAM authentication failed for user '{username}': {err}"
+			) from err
 
 	def get_groupnames(self, username: str) -> Set[str]:
 		"""

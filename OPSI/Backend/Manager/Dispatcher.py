@@ -70,11 +70,11 @@ class BackendDispatcher(Backend):
 				self._context = value
 
 		if self._dispatchConfigFile:
-			logger.info(u"Loading dispatch config file '%s'", self._dispatchConfigFile)
+			logger.info("Loading dispatch config file '%s'", self._dispatchConfigFile)
 			self.__loadDispatchConfig()
 
 		if not self._dispatchConfig:
-			raise BackendConfigurationError(u"Dispatcher not configured")
+			raise BackendConfigurationError("Dispatcher not configured")
 
 		self.__loadBackends(dict(kwargs))
 		self._createInstanceMethods()
@@ -100,72 +100,80 @@ class BackendDispatcher(Backend):
 
 	def __loadDispatchConfig(self):
 		if not self._dispatchConfigFile:
-			raise BackendConfigurationError(u"No dispatch config file defined")
+			raise BackendConfigurationError("No dispatch config file defined")
 
 		try:
 			self._dispatchConfig = _loadDispatchConfig(self._dispatchConfigFile)
-			logger.debug(u"Read dispatch config from file %s: %s", self._dispatchConfigFile, self._dispatchConfig)
-		except Exception as e:
-			raise BackendConfigurationError(u"Failed to load dispatch config file '%s': %s" % (self._dispatchConfigFile, e))
+			logger.debug("Read dispatch config from file %s: %s", self._dispatchConfigFile, self._dispatchConfig)
+		except Exception as err:
+			raise BackendConfigurationError(
+				f"Failed to load dispatch config file '{self._dispatchConfigFile}': {err}"
+			) from err
 
-	def __loadBackends(self, kwargs={}):
+	def __loadBackends(self, kwargs=None):
 		if not self._backendConfigDir:
-			raise BackendConfigurationError(u"Backend config dir not given")
+			raise BackendConfigurationError("Backend config dir not given")
 
 		if not os.path.exists(self._backendConfigDir):
-			raise BackendConfigurationError(u"Backend config dir '%s' not found" % self._backendConfigDir)
+			raise BackendConfigurationError(f"Backend config dir '{self._backendConfigDir}' not found")
 
 		collectedBackends = set()
 		for pattern, backends in self._dispatchConfig:
 			for backend in backends:
 				if not backend:
-					raise BackendConfigurationError(u"Bad dispatcher config: {0!r} has empty target backend: {1!r}".format(pattern, backends))
+					raise BackendConfigurationError(
+						f"Bad dispatcher config: {pattern} has empty target backend: {backends}"
+					)
 
 				collectedBackends.add(backend)
 
 		for backend in collectedBackends:
 			self._backends[backend] = {}
 			backendConfigFile = os.path.join(self._backendConfigDir, '%s.conf' % backend)
-			logger.info(u"Loading backend config '%s'", backendConfigFile)
-			l = loadBackendConfig(backendConfigFile)
-			if not l['module']:
-				raise BackendConfigurationError(u"No module defined in backend config file '%s'" % backendConfigFile)
-			if l['module'] in self._dispatchIgnoreModules:
-				logger.notice(u"Ignoring module '%s', backend '%s'", l['module'], backend)
+			logger.info("Loading backend config '%s'", backendConfigFile)
+			backend_config = loadBackendConfig(backendConfigFile)
+			if not backend_config['module']:
+				raise BackendConfigurationError(
+					f"No module defined in backend config file '{backendConfigFile}'"
+				)
+			if backend_config['module'] in self._dispatchIgnoreModules:
+				logger.notice("Ignoring module '%s', backend '%s'", backend_config['module'], backend)
 				del self._backends[backend]
 				continue
-			if not isinstance(l['config'], dict):
-				raise BackendConfigurationError(u"Bad type for config var in backend config file '%s', has to be dict" % backendConfigFile)
-			l["config"]["context"] = self
-			moduleName = 'OPSI.Backend.%s' % l['module']
-			backendClassName = "%sBackend" % l['module']
-			b = importlib.import_module(moduleName)
-			cargs = dict(l['config'])
-			cargs.update(kwargs)
-			self._backends[backend]["instance"] = getattr(b, backendClassName)(**cargs)
+			if not isinstance(backend_config['config'], dict):
+				raise BackendConfigurationError(
+					"Bad type for config var in backend config file '{backendConfigFile}', has to be dict"
+				)
+			backend_config["config"]["context"] = self
+			moduleName = f"OPSI.Backend.{backend_config['module']}"
+			backendClassName = f"{backend_config['module']}Backend"
+			backend_module = importlib.import_module(moduleName)
+			cargs = dict(backend_config['config'])
+			cargs.update(kwargs or {})
+			self._backends[backend]["instance"] = getattr(backend_module, backendClassName)(**cargs)
 		logger.info("Dispatcher backends: %s", list(self._backends.keys()))
 
-	def _createInstanceMethods(self):
-		logger.debug(u"BackendDispatcher is creating instance methods")
+	def _createInstanceMethods(self):  # pylint: disable=too-many-branches
+		logger.debug("BackendDispatcher is creating instance methods")
 		classes = [ConfigDataBackend]
 		classes.extend([ backend["instance"].__class__ for backend in self._backends.values() ])
-		for Class in classes:  # Also apply to ExtendedConfigDataBackend?
+		for Class in classes:  # pylint: disable=too-many-nested-blocks
 			for methodName, functionRef in inspect.getmembers(Class, inspect.isfunction):
 				if getattr(functionRef, "no_export", False):
 					continue
 				if methodName.startswith('_'):
 					# Not a public method
 					continue
-				logger.debug2(u"Found public %s method '%s'", Class.__name__, methodName)
+				logger.trace("Found public %s method '%s'", Class.__name__, methodName)
 
 				if hasattr(self, methodName):
-					logger.debug2(u"%s: skipping already present method %s", self.__class__.__name__, methodName)
+					logger.trace("%s: skipping already present method %s", self.__class__.__name__, methodName)
 					continue
 
 				methodBackends = []
 				methodBackendName = methodName.split("_", 1)[0]
 				if methodBackendName in self._backends:
-					logger.debug(u"Method name %s starts with %s, dispatching to backend: %s", methodName, methodBackendName, methodBackendName)
+					logger.debug("Method name %s starts with %s, dispatching to backend: %s", methodName, methodBackendName, methodBackendName)
 					methodBackends.append(methodBackendName)
 				else:
 					for regex, backends in self._dispatchConfig:
@@ -174,32 +182,33 @@ class BackendDispatcher(Backend):
 
 						for backend in forceList(backends):
 							if backend not in self._backends:
-								logger.debug(u"Ignoring backend %s: backend not available", backend)
+								logger.debug("Ignoring backend %s: backend not available", backend)
 								continue
 							if not hasattr(self._backends[backend]["instance"], methodName):
-								logger.info(u"Ignoring backend %s: method %s not found", backend, methodName)
+								logger.info("Ignoring backend %s: method %s not found", backend, methodName)
 								continue
 							methodBackends.append(backend)
+
+						if methodBackends:
+							logger.debug("%s matches method %s, dispatching to backends: %s", regex, methodName, ', '.join(methodBackends))
 						break
-					logger.debug(u"%s matches method %s, dispatching to backends: %s", regex, methodName, u', '.join(methodBackends))
-				
+
 				if not methodBackends:
 					continue
 
 				argString, callString = getArgAndCallString(functionRef)
 
-				exec(u'def %s(self, %s): return self._dispatchMethod(%s, "%s", %s)' % (methodName, argString, methodBackends, methodName, callString))
-				setattr(self, methodName, types.MethodType(eval(methodName), self))
+				exec(f'def {methodName}(self, {argString}): return self._dispatchMethod({methodBackends}, "{methodName}", {callString})')  # pylint: disable=exec-used
+				setattr(self, methodName, types.MethodType(eval(methodName), self))  # pylint: disable=eval-used
 
 	def _dispatchMethod(self, methodBackends, methodName, **kwargs):
-		logger.debug(u"Dispatching method %s to backends: %s", methodName, methodBackends)
+		logger.debug("Dispatching method %s to backends: %s", methodName, methodBackends)
 		result = None
 
 		for methodBackend in methodBackends:
 			meth = getattr(self._backends[methodBackend]["instance"], methodName)
 			res = meth(**kwargs)
 
-			# TODO: handling of generators?
 			if isinstance(result, list) and isinstance(res, list):
 				result.extend(res)
 			elif isinstance(result, dict) and isinstance(res, dict):
@@ -211,7 +220,7 @@ class BackendDispatcher(Backend):
 			elif res is not None:
 				result = res
 
-		logger.debug2(u"Finished dispatching method %s", methodName)
+		logger.trace("Finished dispatching method %s", methodName)
 		return result
 
 	def backend_setOptions(self, options):
@@ -239,6 +248,6 @@ class BackendDispatcher(Backend):
 @lru_cache(maxsize=None)
 def _loadDispatchConfig(dispatchConfigFile):
 	if not os.path.exists(dispatchConfigFile):
-		raise BackendConfigurationError(u"Dispatch config file '%s' not found" % dispatchConfigFile)
+		raise BackendConfigurationError("Dispatch config file '%s' not found" % dispatchConfigFile)
 
 	return BackendDispatchConfigFile(dispatchConfigFile).parse()

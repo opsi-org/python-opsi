@@ -62,7 +62,7 @@ from OPSI.Types import forceBool, forceList, forceUnicodeList
 from OPSI.Util import getPublicKey
 from OPSI.Util.File.Opsi import BackendACLFile, OpsiConfFile
 
-__all__ = ('BackendAccessControl')
+__all__ = ('BackendAccessControl',)
 
 logger = Logger()
 

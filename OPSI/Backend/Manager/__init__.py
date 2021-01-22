@@ -19,6 +19,5 @@
 """
 Backend managing components.
 
-:author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
 """
