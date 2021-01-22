@@ -19,14 +19,11 @@
 Backend access control.
 
 :copyright: uib GmbH <info@uib.de>
-:author: Jan Schneider <j.schneider@uib.de>
-:author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
 """
 
 import base64
 import time
-import functools
 import inspect
 import os
 import re
@@ -35,6 +32,7 @@ from typing import List
 from functools import lru_cache
 from hashlib import md5
 try:
+	# pyright: reportMissingImports=false
 	# python3-pycryptodome installs into Cryptodome
 	from Cryptodome.Hash import MD5
 	from Cryptodome.Signature import pkcs1_15
@@ -44,29 +42,32 @@ except ImportError:
 	from Crypto.Signature import pkcs1_15
 
 from OPSI.Backend.Base import (
-	ConfigDataBackend, ExtendedConfigDataBackend,
-	getArgAndCallString)
+	ConfigDataBackend, ExtendedConfigDataBackend, getArgAndCallString
+)
 from OPSI.Backend.Depotserver import DepotserverBackend
 from OPSI.Backend.HostControl import HostControlBackend
 from OPSI.Backend.HostControlSafe import HostControlSafeBackend
 from OPSI.Exceptions import (
 	BackendAuthenticationError, BackendConfigurationError, BackendIOError,
 	BackendMissingDataError, BackendPermissionDeniedError,
-	BackendUnaccomplishableError)
-from OPSI.Logger import Logger, LOG_INFO
+	BackendUnaccomplishableError
+)
+from OPSI.Logger import Logger
 from OPSI.Config import OPSI_ADMIN_GROUP
 from OPSI.Object import (
 	mandatoryConstructorArgs,
-	BaseObject, Object, OpsiClient, OpsiDepotserver)
-from OPSI.Types import forceBool, forceList, forceUnicode, forceUnicodeList
+	BaseObject, Object, OpsiClient, OpsiDepotserver
+)
+from OPSI.Types import forceBool, forceList, forceUnicodeList
 from OPSI.Util import getPublicKey
 from OPSI.Util.File.Opsi import BackendACLFile, OpsiConfFile
 
-__all__ = ('BackendAccessControl', 'BackendAccessControlManager')
+__all__ = ('BackendAccessControl')
 
 logger = Logger()
 
-class UserStore:
+class UserStore:  # pylint: disable=too-few-public-methods
+	""" Stores user information """
 	def __init__(self):
 		self.username = None
 		self.password = None
@@ -78,8 +79,8 @@ class UserStore:
 
 
 class BackendAccessControl:
-
-	def __init__(self, backend, **kwargs):
+	""" Access control for a Backend """
+	def __init__(self, backend, **kwargs):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
 
 		self._backend = backend
 		self._context = backend
@@ -106,31 +107,44 @@ class BackendAccessControl:
 				self._auth_module = value
 
 		if not self._backend:
-			raise BackendAuthenticationError(u"No backend specified")
+			raise BackendAuthenticationError("No backend specified")
 		if isinstance(self._backend, BackendAccessControl):
-			raise BackendConfigurationError(u"Cannot use BackendAccessControl instance as backend")
-		
-		if not self._auth_module:
+			raise BackendConfigurationError("Cannot use BackendAccessControl instance as backend")
+
+		if not self._auth_module:  # pylint: disable=too-many-nested-blocks
 			try:
 				ldap_conf = OpsiConfFile().get_ldap_auth_config()
 				if ldap_conf:
 					logger.debug("Using ldap auth with config: %s", ldap_conf)
-					
+
 					backendinfo = self._context.backend_info()
 					modules = backendinfo['modules']
 					helpermodules = backendinfo['realmodules']
 
 					if not all(key in modules for key in ('expires', 'customer')):
-						logger.info("Missing important information about modules. Probably no modules file installed.")
+						logger.info(
+							"Missing important information about modules."
+							"Probably no modules file installed."
+						)
 					elif not modules.get('customer'):
 						logger.error("Disabling ldap authentication: no customer in modules file")
 					elif not modules.get('valid'):
 						logger.error("Disabling ldap authentication: modules file invalid")
-					elif (modules.get('expires', '') != 'never') and (time.mktime(time.strptime(modules.get('expires', '2000-01-01'), "%Y-%m-%d")) - time.time() <= 0):
+					elif (
+						modules.get('expires', '') != 'never' and
+						time.mktime(time.strptime(modules.get('expires', '2000-01-01'), "%Y-%m-%d")) - time.time() <= 0
+					):
 						logger.error("Disabling ldap authentication: modules file expired")
 					else:
 						logger.info("Verifying modules file signature")
-						publicKey = getPublicKey(data=base64.decodebytes(b"AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP"))
+						publicKey = getPublicKey(
+							data=base64.decodebytes(
+								b"AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDo"
+								b"jY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8"
+								b"S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDU"
+								b"lk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP"
+							)
+						)
 						data = ""
 						mks = list(modules.keys())
 						mks.sort()
@@ -143,10 +157,8 @@ class BackendAccessControl:
 									modules[module] = True
 							else:
 								val = modules[module]
-								if val is False:
-									val = "no"
-								if val is True:
-									val = "yes"
+								if isinstance(val, bool):
+									val = "yes" if val else "no"
 							data += "%s = %s\r\n" % (module.lower().strip(), val)
 
 						verified = False
@@ -162,37 +174,37 @@ class BackendAccessControl:
 							h_int = int.from_bytes(md5(data.encode()).digest(), "big")
 							s_int = publicKey._encrypt(int(modules["signature"]))
 							verified = h_int == s_int
-						
+
 						if not verified:
 							logger.error("Disabling ldap authentication: modules file invalid")
 						else:
 							logger.debug("Modules file signature verified (customer: %s)", modules.get('customer'))
 
 							if modules.get("directory-connector"):
-								import OPSI.Backend.Manager.Authentication.LDAP
+								import OPSI.Backend.Manager.Authentication.LDAP  # pylint: disable=import-outside-toplevel
 								self._auth_module = OPSI.Backend.Manager.Authentication.LDAP.LDAPAuthentication(**ldap_conf)
 							else:
 								logger.error("Disabling ldap authentication: directory-connector missing in modules file")
-			
-			except Exception as e:
-				logger.debug(e)
+
+			except Exception as err:  # pylint: disable=broad-except
+				logger.debug(err)
 			if not self._auth_module:
 				if os.name == 'posix':
-					import OPSI.Backend.Manager.Authentication.PAM
+					import OPSI.Backend.Manager.Authentication.PAM  # pylint: disable=import-outside-toplevel
 					self._auth_module = OPSI.Backend.Manager.Authentication.PAM.PAMAuthentication(pam_service)
 				elif os.name == 'nt':
-					import OPSI.Backend.Manager.Authentication.NT
+					import OPSI.Backend.Manager.Authentication.NT  # pylint: disable=import-outside-toplevel
 					self._auth_module = OPSI.Backend.Manager.Authentication.NT.NTAuthentication()
 
 		self._createInstanceMethods()
 		if self._aclFile:
 			self.__loadACLFile()
-		
+
 		if not self._acl:
 			admin_groupname = OPSI_ADMIN_GROUP
 			if self._auth_module:
 				admin_groupname = self._auth_module.get_admin_groupname()
-			self._acl = [[r'.*', [{'type': u'sys_group', 'ids': [admin_groupname], 'denyAttributes': [], 'allowAttributes': []}]]]
+			self._acl = [[r'.*', [{'type': 'sys_group', 'ids': [admin_groupname], 'denyAttributes': [], 'allowAttributes': []}]]]
 
 		# Pre-compiling regex patterns for speedup.
 		for i, (pattern, acl) in enumerate(self._acl):
@@ -210,8 +222,8 @@ class BackendAccessControl:
 	@user_store.setter
 	def user_store(self, user_store):
 		self._user_store = user_store
-	
-	def authenticate(self, username: str, password: str, forceGroups: List[str] = None, auth_type: str = None):
+
+	def authenticate(self, username: str, password: str, forceGroups: List[str] = None, auth_type: str = None):  # pylint: disable=too-many-branches,too-many-statements
 		if not auth_type:
 			if re.search(r'^[^.]+\.[^.]+\.\S+$', username):
 				auth_type = "opsi-hostkey"
@@ -230,36 +242,47 @@ class BackendAccessControl:
 			if auth_type == "opsi-hostkey":
 				# Username starts with something like hostname.domain.tld:
 				# Assuming it is a host passing his FQDN as username
-				logger.debug(u"Trying to authenticate by opsiHostKey...")
+				logger.debug("Trying to authenticate by opsiHostKey...")
 				self.user_store.username = self.user_store.username.lower()
 
 				try:
 					host = self._context.host_getObjects(id=self.user_store.username)
 				except AttributeError as aerr:
-					logger.debug(u"%s", aerr)
-					raise BackendUnaccomplishableError(u"Passed backend has no method 'host_getObjects', cannot authenticate host '%s'" % self.user_store.username)
+					logger.debug(str(aerr))
+					raise BackendUnaccomplishableError(
+						f"Passed backend has no method 'host_getObjects', cannot authenticate host '{self.user_store.username}'"
+					) from aerr
 
 				try:
 					self.user_store.host = host[0]
 				except IndexError as ierr:
-					logger.debug(u"%s", ierr)
-					raise BackendMissingDataError(u"Host '%s' not found in backend %s" % (self.user_store.username, self._context))
+					logger.debug(str(ierr))
+					raise BackendMissingDataError(
+						f"Host '{self.user_store.username}' not found in backend {self._context}"
+					) from ierr
 
 				if not self.user_store.host.opsiHostKey:
-					raise BackendMissingDataError(u"OpsiHostKey not found for host '%s'" % self.user_store.username)
+					raise BackendMissingDataError(
+						f"OpsiHostKey not found for host '{self.user_store.username}'"
+					)
 
-				logger.confidential(u"Client %s, key sent %s, key stored %s", self.user_store.username, self.user_store.password, self.user_store.host.opsiHostKey)
+				logger.confidential(
+					"Client %s, key sent %s, key stored %s",
+					self.user_store.username, self.user_store.password, self.user_store.host.opsiHostKey
+				)
 
 				if self.user_store.password != self.user_store.host.opsiHostKey:
-					raise BackendAuthenticationError(u"OpsiHostKey authentication failed for host '%s': wrong key" % self.user_store.host.id)
+					raise BackendAuthenticationError(
+						f"OpsiHostKey authentication failed for host '{self.user_store.host.id}': wrong key"
+					)
 
-				logger.info(u"OpsiHostKey authentication successful for host %s", self.user_store.host.id)
+				logger.info("OpsiHostKey authentication successful for host %s", self.user_store.host.id)
 
 				self.user_store.authenticated = True
 				self.user_store.isAdmin = self._isOpsiDepotserver()
 				self.user_store.isReadOnly = False
 			elif auth_type == "opsi-passwd":
-				credentials = self._context.user_getCredentials(self.user_store.username) 
+				credentials = self._context.user_getCredentials(self.user_store.username)
 				if self.user_store.password and self.user_store.password == credentials.get("password"):
 					self.user_store.authenticated = True
 					if self.user_store.username == "monitoring":
@@ -272,15 +295,17 @@ class BackendAccessControl:
 				auth_module = self._auth_module.get_instance()
 				# System user trying to log in with username and password
 				logger.debug("Trying to authenticate by user authentication module %s", auth_module)
-				
+
 				if not auth_module:
 					raise BackendAuthenticationError("Authentication module unavailable")
-				
+
 				try:
 					auth_module.authenticate(self.user_store.username, self.user_store.password)
-				except Exception as error:
-					raise BackendAuthenticationError("Authentication failed for user '%s': %s" % (self.user_store.username, error))
-				
+				except Exception as err:
+					raise BackendAuthenticationError(
+						f"Authentication failed for user '{self.user_store.username}': {err}"
+					) from err
+
 				# Authentication did not throw exception => authentication successful
 				self.user_store.authenticated = True
 				if forceGroups:
@@ -291,33 +316,38 @@ class BackendAccessControl:
 				self.user_store.isAdmin = auth_module.user_is_admin(self.user_store.username)
 				self.user_store.isReadOnly = auth_module.user_is_read_only(self.user_store.username, set(forceGroups) if forceGroups else None)
 
-				logger.info(u"Authentication successful for user '%s', groups '%s'", self.user_store.username, ','.join(self.user_store.userGroups))
+				logger.info(
+					"Authentication successful for user '%s', groups '%s'",
+					self.user_store.username, ','.join(self.user_store.userGroups)
+				)
 			else:
 				raise BackendAuthenticationError(f"Invalid auth type {auth_type}")
-		except Exception as e:
-			raise BackendAuthenticationError(forceUnicode(e))
-		
-		
-	
+		except Exception as err:
+			raise BackendAuthenticationError(str(err)) from err
+
+
 	def accessControl_authenticated(self):
 		return self.user_store.authenticated
 
 	def accessControl_userIsAdmin(self):
 		return self.user_store.isAdmin
-	
+
 	def accessControl_userIsReadOnlyUser(self):
 		return self.user_store.isReadOnly
+
+	def accessControl_getUserGroups(self):
+		return self.user_store.userGroups
 
 	def __loadACLFile(self):
 		try:
 			if not self._aclFile:
-				raise BackendConfigurationError(u"No acl file defined")
+				raise BackendConfigurationError("No acl file defined")
 
 			self._acl = _readACLFile(self._aclFile)
-			logger.debug(u"Read acl from file %s: %s", self._aclFile, self._acl)
-		except Exception as error:
-			logger.logException(error)
-			raise BackendConfigurationError(u"Failed to load acl file '%s': %s" % (self._aclFile, error))
+			logger.debug("Read acl from file %s: %s", self._aclFile, self._acl)
+		except Exception as err:
+			logger.error(err, exc_info=True)
+			raise BackendConfigurationError(f"Failed to load acl file '{self._aclFile}': {err}") from err
 
 	def _createInstanceMethods(self):
 		protectedMethods = set()
@@ -336,14 +366,14 @@ class BackendAccessControl:
 			argString, callString = getArgAndCallString(functionRef)
 
 			if methodName in protectedMethods:
-				logger.debug2(u"Protecting %s method '%s'", Class.__name__, methodName)
-				exec(u'def %s(self, %s): return self._executeMethodProtected("%s", %s)' % (methodName, argString, methodName, callString))
+				logger.trace("Protecting method '%s'", methodName)
+				exec(f'def {methodName}(self, {argString}): return self._executeMethodProtected("{methodName}", {callString})')  # pylint: disable=exec-used
 			else:
-				logger.debug2(u"Not protecting %s method '%s'", Class.__name__, methodName)
-				exec(u'def %s(self, %s): return self._executeMethod("%s", %s)' % (methodName, argString, methodName, callString))
+				logger.trace("Not protecting method '%s'", methodName)
+				exec(f'def {methodName}(self, {argString}): return self._executeMethod("{methodName}", {callString})')  # pylint: disable=exec-used
 
-			setattr(self, methodName, types.MethodType(eval(methodName), self))
-	
+			setattr(self, methodName, types.MethodType(eval(methodName), self))  # pylint: disable=eval-used
+
 	def _isMemberOfGroup(self, ids):
 		for groupId in forceUnicodeList(ids):
 			if groupId in self.user_store.userGroups:
@@ -353,33 +383,36 @@ class BackendAccessControl:
 	def _isUser(self, ids):
 		return forceBool(self.user_store.username in forceUnicodeList(ids))
 
-	def _isOpsiDepotserver(self, ids=[]):
+	def _isOpsiDepotserver(self, ids=None):
 		if not self.user_store.host or not isinstance(self.user_store.host, OpsiDepotserver):
 			return False
 		if not ids:
 			return True
 
-		for hostId in forceUnicodeList(ids):
+		for hostId in forceUnicodeList(ids or []):
 			if hostId == self.user_store.host.id:
 				return True
 		return False
 
-	def _isOpsiClient(self, ids=[]):
+	def _isOpsiClient(self, ids=None):
 		if not self.user_store.host or not isinstance(self.user_store.host, OpsiClient):
 			return False
 
 		if not ids:
 			return True
 
-		return forceBool(self.user_store.host.id in forceUnicodeList(ids))
+		return forceBool(self.user_store.host.id in forceUnicodeList(ids or []))
 
 	def _isSelf(self, **params):
 		if not params:
 			return False
 		for (param, value) in params.items():
-			if isinstance(value, types.ClassType) and issubclass(value, Object) and (value.id == self.user_store.username):
+			if issubclass(value, Object) and value.id == self.user_store.username:
 				return True
-			if param in ('id', 'objectId', 'hostId', 'clientId', 'serverId', 'depotId') and (value == self.user_store.username):
+			if (
+				param in ('id', 'objectId', 'hostId', 'clientId', 'serverId', 'depotId') and
+				(value == self.user_store.username)
+			):
 				return True
 		return False
 
@@ -387,18 +420,18 @@ class BackendAccessControl:
 		meth = getattr(self._backend, methodName)
 		return meth(**kwargs)
 
-	def _executeMethodProtected(self, methodName, **kwargs):
+	def _executeMethodProtected(self, methodName, **kwargs):  # pylint: disable=too-many-branches,too-many-statements
 		granted = False
 		newKwargs = {}
 		acls = []
-		logger.debug(u"Access control for method %s with params %s", methodName, kwargs)
+		logger.debug("Access control for method %s with params %s", methodName, kwargs)
 		for regex, acl in self._acl:
-			logger.debug2(u"Testing if ACL pattern %s matches method %s", regex.pattern, methodName)
-			if not regex.search(methodName):
-				logger.debug2(u"No match -> skipping.")
+			logger.trace("Testing if ACL pattern %s matches method %s", regex.pattern, methodName)  # pylint: disable=no-member
+			if not regex.search(methodName):  # pylint: disable=no-member
+				logger.trace("No match -> skipping.")
 				continue
 
-			logger.debug(u"Found matching acl for method %s: %s", acl, methodName)
+			logger.debug("Found matching acl for method %s: %s", acl, methodName)
 			for entry in acl:
 				aclType = entry.get('type')
 				ids = entry.get('ids', [])
@@ -416,7 +449,7 @@ class BackendAccessControl:
 				elif aclType == 'self':
 					newGranted = 'partial_object'
 				else:
-					logger.error(u"Unhandled acl entry type: %s", aclType)
+					logger.error("Unhandled acl entry type: %s", aclType)
 					continue
 
 				if newGranted is False:
@@ -435,21 +468,25 @@ class BackendAccessControl:
 
 		logger.debug("Method %s using acls: %s", methodName, acls)
 		if granted is True:
-			logger.debug(u"Full access to method %s granted to user %s by acl %s", methodName, self.user_store.username, acls[0])
+			logger.debug("Full access to method %s granted to user %s by acl %s", methodName, self.user_store.username, acls[0])
 			newKwargs = kwargs
 		elif granted is False:
-			raise BackendPermissionDeniedError(u"Access to method '%s' denied for user '%s'" % (methodName, self.user_store.username))
+			raise BackendPermissionDeniedError(
+				f"Access to method '{methodName}' denied for user '{self.user_store.username}'"
+			)
 		else:
-			logger.debug(u"Partial access to method %s granted to user %s by acls %s", methodName, self.user_store.username, acls)
+			logger.debug("Partial access to method %s granted to user %s by acls %s", methodName, self.user_store.username, acls)
 			try:
 				newKwargs = self._filterParams(kwargs, acls)
 				if not newKwargs:
-					raise BackendPermissionDeniedError(u"No allowed param supplied")
-			except Exception as error:
-				logger.logException(error, LOG_INFO)
-				raise BackendPermissionDeniedError(u"Access to method '%s' denied for user '%s': %s" % (methodName, self.user_store.username, error))
+					raise BackendPermissionDeniedError("No allowed param supplied")
+			except Exception as err:
+				logger.info(err, exc_info=True)
+				raise BackendPermissionDeniedError(
+					f"Access to method '{methodName}' denied for user '{self.user_store.username}': {err}"
+				) from err
 
-		logger.debug2("newKwargs: %s", newKwargs)
+		logger.trace("newKwargs: %s", newKwargs)
 
 		meth = getattr(self._backend, methodName)
 		result = meth(**newKwargs)
@@ -460,7 +497,7 @@ class BackendAccessControl:
 		return self._filterResult(result, acls)
 
 	def _filterParams(self, params, acls):
-		logger.debug(u"Filtering params: %s", params)
+		logger.debug("Filtering params: %s", params)
 		for (key, value) in tuple(params.items()):
 			valueList = forceList(value)
 			if not valueList:
@@ -484,8 +521,8 @@ class BackendAccessControl:
 				return self._filterObjects(result, acls, exceptionOnTruncate=False, exceptionIfAllRemoved=False)
 		return result
 
-	def _filterObjects(self, objects, acls, exceptionOnTruncate=True, exceptionIfAllRemoved=True):
-		logger.info(u"Filtering objects by acls")
+	def _filterObjects(self, objects, acls, exceptionOnTruncate=True, exceptionIfAllRemoved=True):  # pylint: disable=too-many-branches,too-many-locals
+		logger.info("Filtering objects by acls")
 		is_list = type(objects) in (tuple, list)
 		newObjects = []
 		for obj in forceList(objects):
@@ -535,7 +572,7 @@ class BackendAccessControl:
 			for key in objHash.keys():
 				if key not in allowedAttributes:
 					if exceptionOnTruncate:
-						raise BackendPermissionDeniedError(u"Access to attribute '%s' denied" % key)
+						raise BackendPermissionDeniedError(f"Access to attribute '{key}' denied")
 					keysToDelete.add(key)
 
 			for key in keysToDelete:
@@ -551,14 +588,14 @@ class BackendAccessControl:
 		if newlen < orilen:
 			logger.warning("%s objects removed by acl, %s objects left", (orilen - newlen), newlen)
 			if newlen == 0 and exceptionIfAllRemoved:
-				raise BackendPermissionDeniedError(u"Access denied")
-		
+				raise BackendPermissionDeniedError("Access denied")
+
 		return newObjects if is_list else newObjects[0]
 
 
 @lru_cache(maxsize=None)
 def _readACLFile(path):
 	if not os.path.exists(path):
-		raise BackendIOError(u"Acl file '%s' not found" % path)
+		raise BackendIOError("Acl file '%s' not found" % path)
 
 	return BackendACLFile(path).parse()
