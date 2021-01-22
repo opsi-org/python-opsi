@@ -22,8 +22,6 @@ Reads the backend extensions and allows for them to be used like normal
 methods in a backend context.
 
 :copyright: uib GmbH <info@uib.de>
-:author: Jan Schneider <j.schneider@uib.de>
-:author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
 """
 
@@ -36,13 +34,12 @@ from functools import lru_cache
 
 from OPSI.Backend.Base import ExtendedBackend
 from OPSI.Exceptions import BackendConfigurationError
-from OPSI.Exceptions import *  # this is needed for dynamic extension loading
+from OPSI.Exceptions import *  # this is needed for dynamic extension loading  # pylint: disable=wildcard-import,unused-wildcard-import
 from OPSI.Logger import Logger
-from OPSI.Object import *  # this is needed for dynamic extension loading
-from OPSI.Types import *  # this is needed for dynamic extension loading
-from OPSI.Util import objectToBeautifiedText, getfqdn  # used in extensions
+from OPSI.Object import *  # this is needed for dynamic extension loading  # pylint: disable=wildcard-import,unused-wildcard-import
+from OPSI.Types import *  # this is needed for dynamic extension loading  # pylint: disable=wildcard-import,unused-wildcard-import
+from OPSI.Util import objectToBeautifiedText, getfqdn  # used in extensions  # pylint: disable=unused-import
 
-from .AccessControl import BackendAccessControl
 from .Dispatcher import BackendDispatcher
 
 __all__ = ('BackendExtender', )
@@ -52,9 +49,13 @@ logger = Logger()
 
 class BackendExtender(ExtendedBackend):
 	def __init__(self, backend, **kwargs):
-		if not isinstance(backend, ExtendedBackend) and not isinstance(backend, BackendDispatcher):
-			if not isinstance(backend, BackendAccessControl) or (not isinstance(backend._backend, ExtendedBackend) and not isinstance(backend._backend, BackendDispatcher)):
-				raise TypeError("BackendExtender needs instance of ExtendedBackend or BackendDispatcher as backend, got %s" % backend.__class__.__name__)
+		if (
+			not isinstance(backend, ExtendedBackend) and
+			not isinstance(backend, BackendDispatcher)
+		):
+			raise TypeError(
+				f"BackendExtender needs instance of ExtendedBackend or BackendDispatcher as backend, got {backend.__class__.__name__}"
+			)
 
 		ExtendedBackend.__init__(self, backend, **kwargs)
 
@@ -77,7 +78,7 @@ class BackendExtender(ExtendedBackend):
 					continue
 				if methodName.startswith('_'):
 					continue
-				logger.debug2(u"Extending %s with instancemethod: %s", self._backend.__class__.__name__, methodName)
+				logger.trace("Extending %s with instancemethod: %s", self._backend.__class__.__name__, methodName)
 				new_function = types.FunctionType(functionRef.__code__, functionRef.__globals__, functionRef.__name__)
 				new_method = types.MethodType(new_function, self)
 				setattr(self, methodName, new_method)
@@ -86,24 +87,26 @@ class BackendExtender(ExtendedBackend):
 			try:
 				for confFile in _getExtensionFiles(self._extensionConfigDir):
 					try:
-						logger.info(u"Reading config file '%s'", confFile)
-						exec(_readExtension(confFile))
-					except Exception as execError:
-						logger.logException(execError)
-						raise RuntimeError(u"Error reading file {0!r}: {1}".format(confFile, execError))
+						logger.info("Reading config file '%s'", confFile)
+						exec(_readExtension(confFile))  # pylint: disable=exec-used
+					except Exception as err:
+						logger.error(err, exc_info=True)
+						raise RuntimeError("Error reading file {confFile}: {err}") from err
 
 					for key, val in locals().copy().items():
 						if isinstance(val, types.FunctionType):   # TODO: find a better way
-							logger.debug2(u"Extending %s with instancemethod: '%s'", self._backend.__class__.__name__, key)
+							logger.trace("Extending %s with instancemethod: '%s'", self._backend.__class__.__name__, key)
 							setattr(self, key, types.MethodType(val, self))
-			except Exception as error:
-				raise BackendConfigurationError(u"Failed to read extensions from '%s': %s" % (self._extensionConfigDir, error))
+			except Exception as err:
+				raise BackendConfigurationError(
+					f"Failed to read extensions from '{self._extensionConfigDir}': {err}"
+				) from err
 
 
 @lru_cache(maxsize=None)
 def _getExtensionFiles(directory) -> list:
 	if not os.path.exists(directory):
-		raise OSError(u"No extensions loaded: extension directory {0!r} does not exist".format(directory))
+		raise OSError(f"No extensions loaded: extension directory {directory} does not exist")
 
 	return [
 		os.path.join(directory, filename)
@@ -114,6 +117,6 @@ def _getExtensionFiles(directory) -> list:
 
 @lru_cache(maxsize=None)
 def _readExtension(filepath):
-	logger.debug(u"Reading extension file %s}", filepath)
+	logger.debug("Reading extension file %s}", filepath)
 	with open(filepath) as confFileHandle:
 		return confFileHandle.read()

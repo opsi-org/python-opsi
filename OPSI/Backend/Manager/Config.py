@@ -49,7 +49,7 @@ def loadBackendConfig(path):
 		'sys': sys,
 	}
 
-	exec(_readFile(path), moduleGlobals)
+	exec(_readFile(path), moduleGlobals)  # pylint: disable=exec-used
 
 	return moduleGlobals
 

@@ -51,6 +51,7 @@ class LDAPAuthentication(AuthenticationModule):
 			>>> active_directory_auth = LDAPAuthentication("ldaps://ad.company.de/dc=company,dc=de", "{username}@company.de")
 			>>> open_ldap_auth = LDAPAuthentication("ldap://ldap.company.de/dc=company,dc=de", "uid={username},dc=Users,{base}")
 		"""
+		super().__init__()
 		self._ldap_url = ldap_url
 		self._uri = ldap3.utils.uri.parse_uri(self._ldap_url)
 		self._bind_user = bind_user
@@ -65,7 +66,7 @@ class LDAPAuthentication(AuthenticationModule):
 		logger.info("LDAP auth configuration: server_url=%s, base=%s, bind_user=%s, group_filter=%s",
 			self.server_url, self._uri["base"], self._bind_user, self._group_filter
 		)
-	
+
 	@property
 	def server_url(self):
 		url = self._uri["host"]
@@ -76,10 +77,10 @@ class LDAPAuthentication(AuthenticationModule):
 		else:
 			url = "ldap://" + url
 		return url
-	
+
 	def get_instance(self):
 		return LDAPAuthentication(self._ldap_url, self._bind_user, self._group_filter)
-	
+
 	def authenticate(self, username: str, password: str) -> None:
 		"""
 		Authenticate a user by LDAP bind
@@ -95,15 +96,17 @@ class LDAPAuthentication(AuthenticationModule):
 			if not self._ldap.bind():
 				raise Exception(f"bind failed: {self._ldap.result}")
 			# self._ldap.extend.standard.who_am_i()
-		except Exception as error:
+		except Exception as err:
 			logger.info("LDAP authentication failed for user '%s'", username, exc_info=True)
-			raise BackendAuthenticationError("LDAP authentication failed for user '%s': %s" % (username, error))
-	
-	def get_groupnames(self, username: str) -> Set[str]:
+			raise BackendAuthenticationError(
+				f"LDAP authentication failed for user '{username}': {err}"
+			) from err
+
+	def get_groupnames(self, username: str) -> Set[str]:  # pylint: disable=too-many-branches,too-many-statements
 		groupnames = set()
 		if not self._ldap:
 			raise RuntimeError("Failed to get groupnames, not connected to ldap")
-		
+
 		ldap_type = "openldap"
 		user_dn = None
 		group_dns = []
@@ -122,16 +125,16 @@ class LDAPAuthentication(AuthenticationModule):
 						ldap_type = "ad"
 				if user_dn:
 					break
-			except ldap3.core.exceptions.LDAPObjectClassError as e:
-				logger.debug(e)
+			except ldap3.core.exceptions.LDAPObjectClassError as err:
+				logger.debug(err)
 			if user_dn and ldap_type == "ad":
 				break
-		
+
 		if not user_dn:
-			raise Exception("User %s not found in %s ldap", username, ldap_type)
-		
+			raise Exception(f"User {username} not found in {ldap_type} ldap")
+
 		logger.info("User %s found in %s ldap: %s", username, ldap_type, user_dn)
-		
+
 		group_filter = self._group_filter
 		attributes = []
 		if ldap_type == "ad":
@@ -142,20 +145,20 @@ class LDAPAuthentication(AuthenticationModule):
 			if self._group_filter is None:
 				group_filter = "(objectclass=posixGroup)"
 			attributes = ["cn", "member", "memberUid"]
-		
+
 		for base in group_dns or [self._uri["base"]]:
 			scope = ldap3.BASE if group_dns else ldap3.SUBTREE
-			
+
 			logger.debug("Searching groups in ldap base=%s, scope=%s, filter=%s", base, scope, group_filter)
 			self._ldap.search(base, group_filter, search_scope=scope, attributes=attributes)
-			
+
 			for entry in sorted(self._ldap.entries):
 				group_name = None
 				if "sAMAccountName" in entry.entry_attributes:
 					group_name = str(entry.sAMAccountName)
 				else:
 					group_name = str(entry.cn)
-				
+
 				if group_dns:
 					logger.debug("Entry %s by memberOf", entry.entry_dn)
 					groupnames.add(group_name)
