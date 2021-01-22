@@ -37,54 +37,54 @@ class HostControlSafeBackend(HostControlBackend):
 		self._name = 'hostcontrolsafe'
 		HostControlBackend.__init__(self, backend, **kwargs)
 
-	def hostControlSafe_start(self, hostIds=[]):
+	def hostControlSafe_start(self, hostIds=[]):  # pylint: disable=dangerous-default-value
 		''' Switches on remote computers using WOL. '''
 		if not hostIds:
-			raise BackendMissingDataError(u"No matching host ids found")
+			raise BackendMissingDataError("No matching host ids found")
 		return HostControlBackend.hostControl_start(self, hostIds)
 
-	def hostControlSafe_shutdown(self, hostIds=[]):
+	def hostControlSafe_shutdown(self, hostIds=[]):  # pylint: disable=dangerous-default-value
 		if not hostIds:
-			raise BackendMissingDataError(u"No matching host ids found")
+			raise BackendMissingDataError("No matching host ids found")
 		return HostControlBackend.hostControl_shutdown(self, hostIds)
 
-	def hostControlSafe_reboot(self, hostIds=[]):
+	def hostControlSafe_reboot(self, hostIds=[]):  # pylint: disable=dangerous-default-value
 		if not hostIds:
-			raise BackendMissingDataError(u"No matching host ids found")
+			raise BackendMissingDataError("No matching host ids found")
 		return HostControlBackend.hostControl_reboot(self, hostIds)
 
 
-	def hostControlSafe_fireEvent(self, event, hostIds=[]):
+	def hostControlSafe_fireEvent(self, event, hostIds=[]):  # pylint: disable=dangerous-default-value
 		if not hostIds:
-			raise BackendMissingDataError(u"No matching host ids found")
+			raise BackendMissingDataError("No matching host ids found")
 		return HostControlBackend.hostControl_fireEvent(self, event, hostIds)
 
-	def hostControlSafe_showPopup(self, message, hostIds=[]):
+	def hostControlSafe_showPopup(self, message, hostIds=[]):  # pylint: disable=dangerous-default-value
 		if not hostIds:
-			raise BackendMissingDataError(u"No matching host ids found")
+			raise BackendMissingDataError("No matching host ids found")
 		return HostControlBackend.hostControl_showPopup(self, message, hostIds)
 
-	def hostControlSafe_uptime(self, hostIds=[]):
+	def hostControlSafe_uptime(self, hostIds=[]):  # pylint: disable=dangerous-default-value
 		if not hostIds:
-			raise BackendMissingDataError(u"No matching host ids found")
+			raise BackendMissingDataError("No matching host ids found")
 		return HostControlBackend.hostControl_uptime(self, hostIds)
 
-	def hostControlSafe_getActiveSessions(self, hostIds=[]):
+	def hostControlSafe_getActiveSessions(self, hostIds=[]):  # pylint: disable=dangerous-default-value
 		if not hostIds:
-			raise BackendMissingDataError(u"No matching host ids found")
+			raise BackendMissingDataError("No matching host ids found")
 		return HostControlBackend.hostControl_getActiveSessions(self, hostIds)
 
-	def hostControlSafe_opsiclientdRpc(self, method, params=[], hostIds=[], timeout=None):
+	def hostControlSafe_opsiclientdRpc(self, method, params=[], hostIds=[], timeout=None):  # pylint: disable=dangerous-default-value
 		if not hostIds:
-			raise BackendMissingDataError(u"No matching host ids found")
+			raise BackendMissingDataError("No matching host ids found")
 		return HostControlBackend.hostControl_opsiclientdRpc(self, method, params, hostIds, timeout)
-	
-	def hostControlSafe_reachable(self, hostIds=[], timeout=None):
+
+	def hostControlSafe_reachable(self, hostIds=[], timeout=None):  # pylint: disable=dangerous-default-value
 		if not hostIds:
-			raise BackendMissingDataError(u"No matching host ids found")
+			raise BackendMissingDataError("No matching host ids found")
 		return HostControlBackend.hostControl_reachable(self, hostIds, timeout)
 
-	def hostControlSafe_execute(self, command, hostIds=[], waitForEnding=True, captureStderr=True, encoding=None, timeout=300):
+	def hostControlSafe_execute(self, command, hostIds=[], waitForEnding=True, captureStderr=True, encoding=None, timeout=300):  # pylint: disable=dangerous-default-value,too-many-arguments
 		if not hostIds:
-			raise BackendMissingDataError(u"No matching host ids found")
+			raise BackendMissingDataError("No matching host ids found")
 		return HostControlBackend.hostControl_execute(self, command, hostIds, waitForEnding, captureStderr, encoding, timeout)

@@ -94,7 +94,7 @@ class BackendExtender(ExtendedBackend):
 						raise RuntimeError("Error reading file {confFile}: {err}") from err
 
 					for key, val in locals().copy().items():
-						if isinstance(val, types.FunctionType):   # TODO: find a better way
+						if isinstance(val, types.FunctionType):  # TODO: find a better way
 							logger.trace("Extending %s with instancemethod: '%s'", self._backend.__class__.__name__, key)
 							setattr(self, key, types.MethodType(val, self))
 			except Exception as err:

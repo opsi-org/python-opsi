@@ -21,9 +21,6 @@ HostControl backend.
 This backend can be used to control hosts.
 
 :copyright: uib GmbH <info@uib.de>
-:author: Jan Schneider <j.schneider@uib.de>
-:author: Erol Ueluekmen <e.ueluekmen@uib.de>
-:author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
 """
 
@@ -32,25 +29,22 @@ import struct
 import time
 
 from contextlib import closing
-
-try:
-	from httplib import HTTPSConnection
-except ImportError:
-	# Python 3 compatibility
-	from http.client import HTTPSConnection
+from http.client import HTTPSConnection
 
 from OPSI import __version__
 from OPSI.Backend.Base import ExtendedBackend
 from OPSI.Exceptions import (
-	BackendMissingDataError, BackendUnaccomplishableError)
-from OPSI.Logger import Logger, LOG_DEBUG
+	BackendMissingDataError, BackendUnaccomplishableError
+)
+from OPSI.Logger import Logger
 from OPSI.Types import (
 	forceBool, forceDict, forceHostId, forceHostIdList,	forceInt,
 	forceIpAddress, forceList, forceUnicode, forceUnicodeList
 )
 from OPSI.Util import fromJson, toJson
 from OPSI.Util.HTTP import (
-	closingConnection, createBasicAuthHeader, non_blocking_connect_https)
+	closingConnection, createBasicAuthHeader, non_blocking_connect_https
+)
 from OPSI.Util.Thread import KillableThread
 
 __all__ = ('RpcThread', 'ConnectionThread', 'HostControlBackend')
@@ -73,43 +67,43 @@ def _configureHostcontrolBackend(backend, kwargs):
 	for option, value in kwargs.items():
 		option = option.lower()
 		if option == 'opsiclientdport':
-			backend._opsiclientdPort = forceInt(value)
+			backend._opsiclientdPort = forceInt(value)  # pylint: disable=protected-access
 		elif option == 'hostrpctimeout':
-			backend._hostRpcTimeout = forceInt(value)
+			backend._hostRpcTimeout = forceInt(value)  # pylint: disable=protected-access
 		elif option == 'resolvehostaddress':
-			backend._resolveHostAddress = forceBool(value)
+			backend._resolveHostAddress = forceBool(value)  # pylint: disable=protected-access
 		elif option == 'maxconnections':
-			backend._maxConnections = forceInt(value)
+			backend._maxConnections = forceInt(value)  # pylint: disable=protected-access
 		elif option == 'broadcastaddresses':
 			try:
-				backend._broadcastAddresses = forceDict(value)
+				backend._broadcastAddresses = forceDict(value)  # pylint: disable=protected-access
 			except ValueError:
 				# This is an old-style configuraton. Old default
 				# port was 12287 so we assume this as the default
 				# and convert everything to the new format.
-				backend._broadcastAddresses = {bcAddress: (12287, ) for bcAddress in forceUnicodeList(value)}
+				backend._broadcastAddresses = {bcAddress: (12287, ) for bcAddress in forceUnicodeList(value)}  # pylint: disable=protected-access
 				logger.warning(
 					"Your hostcontrol backend configuration uses the old "
 					"format for broadcast addresses. The new format "
 					"allows to also set a list of ports to send the "
 					"broadcast to.\nPlease use this new "
-					"value in the future: %s", backend._broadcastAddresses
+					"value in the future: %s", backend._broadcastAddresses  # pylint: disable=protected-access
 				)
 
 			newAddresses = {bcAddress: tuple(forceInt(port) for port in ports)
 							for bcAddress, ports
-							in backend._broadcastAddresses.items()}
-			backend._broadcastAddresses = newAddresses
+							in backend._broadcastAddresses.items()}  # pylint: disable=protected-access
+			backend._broadcastAddresses = newAddresses  # pylint: disable=protected-access
 
-	if backend._maxConnections < 1:
-		backend._maxConnections = 1
+	if backend._maxConnections < 1:  # pylint: disable=protected-access
+		backend._maxConnections = 1  # pylint: disable=protected-access
 
 
-class RpcThread(KillableThread):
+class RpcThread(KillableThread):  # pylint: disable=too-many-instance-attributes
 
 	_USER_AGENT = 'opsi-RpcThread/{}'.format(__version__)
 
-	def __init__(self, hostControlBackend, hostId, address, username, password, method, params=[], hostPort=0):
+	def __init__(self, hostControlBackend, hostId, address, username, password, method, params=[], hostPort=0):  # pylint: disable=dangerous-default-value,too-many-arguments
 		KillableThread.__init__(self)
 		self.hostControlBackend = hostControlBackend
 		self.hostId = forceHostId(hostId)
@@ -129,7 +123,7 @@ class RpcThread(KillableThread):
 
 	def run(self):
 		self.started = time.time()
-		timeout = self.hostControlBackend._hostRpcTimeout
+		timeout = self.hostControlBackend._hostRpcTimeout  # pylint: disable=protected-access
 		if timeout < 0:
 			timeout = 0
 
@@ -162,20 +156,20 @@ class RpcThread(KillableThread):
 				)
 				connection.endheaders()
 				connection.send(query)
-				logger.debug2("Sending data to client: %s", query)
+				logger.trace("Sending data to client: %s", query)
 
 				response = connection.getresponse()
 				status = response.status
 				response = response.read()
-				logger.debug2("Got response from client: %s", response)
+				logger.trace("Got response from client: %s", response)
 				if isinstance(response, bytes):
 					response = response.decode('utf-8')
-				
+
 				try:
 					response = fromJson(response)
-				except Exception as jsonErr:
-					logger.debug(jsonErr)
-				
+				except Exception as err:  # pylint: disable=broad-except
+					logger.debug(err)
+
 				if status == 200:
 					if response and isinstance(response, dict):
 						self.error = response.get('error')
@@ -190,9 +184,9 @@ class RpcThread(KillableThread):
 						if response:
 							err = f"{err} - {response}"
 						self.error = f"Client error: {err}"
-		
-		except Exception as e:
-			self.error = forceUnicode(e)
+
+		except Exception as err:  # pylint: disable=broad-except
+			self.error = str(err)
 		finally:
 			self.ended = time.time()
 
@@ -209,24 +203,23 @@ class ConnectionThread(KillableThread):
 
 	def run(self):
 		self.started = time.time()
-		timeout = self.hostControlBackend._hostReachableTimeout
+		timeout = self.hostControlBackend._hostReachableTimeout  # pylint: disable=protected-access
 		if timeout < 0:
 			timeout = 0
 
-		logger.info(u"Trying connection to '%s:%d'", self.address, self.hostControlBackend._opsiclientdPort)
+		logger.info("Trying connection to '%s:%d'", self.address, self.hostControlBackend._opsiclientdPort)  # pylint: disable=protected-access
 		try:
 			conn = HTTPSConnection(
 				host=self.address,
-				port=self.hostControlBackend._opsiclientdPort,
+				port=self.hostControlBackend._opsiclientdPort,  # pylint: disable=protected-access
 				timeout=timeout
 			)
 			with closingConnection(conn) as conn:
-				non_blocking_connect_https(conn, self.hostControlBackend._hostReachableTimeout)
+				non_blocking_connect_https(conn, self.hostControlBackend._hostReachableTimeout)  # pylint: disable=protected-access
 				if conn:
 					self.result = True
-		except Exception as e:
-			logger.logException(e, LOG_DEBUG)
-			logger.debug(e)
+		except Exception as err:  # pylint: disable=broad-except
+			logger.debug(err, exc_info=True)
 		self.ended = time.time()
 
 
@@ -248,12 +241,12 @@ class HostControlBackend(ExtendedBackend):
 
 	def __repr__(self):
 		try:
-			return u'<{0}(resolveHostAddress={1!r}, maxConnections={2!r})>'.format(
+			return '<{0}(resolveHostAddress={1!r}, maxConnections={2!r})>'.format(
 				self.__class__.__name__, self._resolveHostAddress, self._maxConnections
 			)
 		except AttributeError:
 			# Can happen during initialisation
-			return u'<{0}()>'.format(self.__class__.__name__)
+			return '<{0}()>'.format(self.__class__.__name__)
 
 	def _getHostAddress(self, host):
 		address = None
@@ -261,21 +254,23 @@ class HostControlBackend(ExtendedBackend):
 			try:
 				address = socket.gethostbyname(host.id)
 			except socket.error as lookupError:
-				logger.debug2("Failed to lookup ip address for %s: %s", host.id, lookupError)
+				logger.trace("Failed to lookup ip address for %s: %s", host.id, lookupError)
 		if not address:
 			address = host.ipAddress
 		if not address and not self._resolveHostAddress:
 			try:
 				address = socket.gethostbyname(host.id)
-			except socket.error:
-				raise BackendUnaccomplishableError(u"Failed to resolve ip address for host '%s'" % host.id)
+			except socket.error as err:
+				raise BackendUnaccomplishableError(
+					f"Failed to resolve ip address for host '{host.id}'"
+				) from err
 		if not address:
-			raise BackendUnaccomplishableError(u"Failed to get ip address for host '%s'" % host.id)
+			raise BackendUnaccomplishableError("Failed to get ip address for host '%s'" % host.id)
 		return address
 
-	def _opsiclientdRpc(self, hostIds, method, params=[], timeout=None):
+	def _opsiclientdRpc(self, hostIds, method, params=[], timeout=None):  # pylint: disable=dangerous-default-value,too-many-locals,too-many-branches,too-many-statements
 		if not hostIds:
-			raise BackendMissingDataError(u"No matching host ids found")
+			raise BackendMissingDataError("No matching host ids found")
 		hostIds = forceHostIdList(hostIds)
 		method = forceUnicode(method)
 		params = forceList(params)
@@ -294,8 +289,8 @@ class HostControlBackend(ExtendedBackend):
 					logger.info("Using port %s for opsiclientd at %s", port, host.id)
 				except IndexError:
 					pass  # No values found
-				except Exception as portError:
-					logger.warning("Failed to read custom opsiclientd port for %s: %s", host.id, portError)
+				except Exception as err:  # pylint: disable=broad-except
+					logger.warning("Failed to read custom opsiclientd port for %s: %s", host.id, err)
 
 				address = self._getHostAddress(host)
 				logger.debug("Using address '%s' for host '%s'", address, host)
@@ -305,45 +300,45 @@ class HostControlBackend(ExtendedBackend):
 						hostId=host.id,
 						hostPort=port,
 						address=address,
-						username=u'',
+						username='',
 						password=host.opsiHostKey,
 						method=method,
 						params=params
 					)
 				)
-			except Exception as e:
-				result[host.id] = {"result": None, "error": forceUnicode(e)}
+			except Exception as err:  # pylint: disable=broad-except
+				result[host.id] = {"result": None, "error": str(err)}
 
 		runningThreads = 0
-		while rpcts:
+		while rpcts:  # pylint: disable=too-many-nested-blocks
 			newRpcts = []
 			for rpct in rpcts:
 				if rpct.ended:
 					if rpct.error:
-						logger.error(u"Rpc to host %s failed, error: %s", rpct.hostId, rpct.error)
+						logger.error("Rpc to host %s failed, error: %s", rpct.hostId, rpct.error)
 						result[rpct.hostId] = {"result": None, "error": rpct.error}
 					else:
-						logger.info(u"Rpc to host %s successful, result: %s", rpct.hostId, rpct.result)
+						logger.info("Rpc to host %s successful, result: %s", rpct.hostId, rpct.result)
 						result[rpct.hostId] = {"result": rpct.result, "error": None}
 					runningThreads -= 1
 					continue
 
 				if not rpct.started:
 					if runningThreads < self._maxConnections:
-						logger.debug(u"Starting rpc to host %s", rpct.hostId)
+						logger.debug("Starting rpc to host %s", rpct.hostId)
 						rpct.start()
 						runningThreads += 1
 				else:
 					timeRunning = time.time() - rpct.started
 					if timeRunning >= timeout + 5:
 						# thread still alive 5 seconds after timeout => kill
-						logger.error(u"Rpc to host %s (address: %s) timed out after %0.2f seconds, terminating", rpct.hostId, rpct.address, timeRunning)
-						result[rpct.hostId] = {"result": None, "error": u"timed out after %0.2f seconds" % timeRunning}
+						logger.error("Rpc to host %s (address: %s) timed out after %0.2f seconds, terminating", rpct.hostId, rpct.address, timeRunning)
+						result[rpct.hostId] = {"result": None, "error": "timed out after %0.2f seconds" % timeRunning}
 						if not rpct.ended:
 							try:
 								rpct.terminate()
-							except Exception as e:
-								logger.error(u"Failed to terminate rpc thread: %s", e)
+							except Exception as err:  # pylint: disable=broad-except
+								logger.error("Failed to terminate rpc thread: %s", err)
 						runningThreads -= 1
 						continue
 				newRpcts.append(rpct)
@@ -352,14 +347,14 @@ class HostControlBackend(ExtendedBackend):
 
 		return result
 
-	def hostControl_start(self, hostIds=[]):
+	def hostControl_start(self, hostIds=[]):  # pylint: disable=dangerous-default-value
 		''' Switches on remote computers using WOL. '''
 		hosts = self._context.host_getObjects(attributes=['hardwareAddress'], id=hostIds)  # pylint: disable=maybe-no-member
 		result = {}
 		for host in hosts:
 			try:
 				if not host.hardwareAddress:
-					raise BackendMissingDataError(u"Failed to get hardware address for host '%s'" % host.id)
+					raise BackendMissingDataError("Failed to get hardware address for host '%s'" % host.id)
 
 				mac = host.hardwareAddress.replace(':', '')
 				data = b''.join([b'FFFFFFFFFFFF', mac.encode("ascii") * 16])  # Pad the synchronization stream.
@@ -373,7 +368,7 @@ class HostControlBackend(ExtendedBackend):
 					])
 
 				for broadcastAddress, targetPorts in self._broadcastAddresses.items():
-					logger.debug(u"Sending data to network broadcast %s [%s]", broadcastAddress, data)
+					logger.debug("Sending data to network broadcast %s [%s]", broadcastAddress, data)
 
 					for port in targetPorts:
 						logger.debug("Broadcasting to port %s", port)
@@ -382,49 +377,49 @@ class HostControlBackend(ExtendedBackend):
 							sock.sendto(payload, (broadcastAddress, port))
 
 				result[host.id] = {"result": "sent", "error": None}
-			except Exception as error:
-				logger.debug(error, exc_info=True)
-				result[host.id] = {"result": None, "error": forceUnicode(error)}
+			except Exception as err:  # pylint: disable=broad-except
+				logger.debug(err, exc_info=True)
+				result[host.id] = {"result": None, "error": str(err)}
 		return result
 
-	def hostControl_shutdown(self, hostIds=[]):
+	def hostControl_shutdown(self, hostIds=[]):  # pylint: disable=dangerous-default-value
 		if not hostIds:
-			raise BackendMissingDataError(u"No host ids given")
+			raise BackendMissingDataError("No host ids given")
 		hostIds = self._context.host_getIdents(id=hostIds, returnType='unicode')  # pylint: disable=maybe-no-member
 		return self._opsiclientdRpc(hostIds=hostIds, method='shutdown', params=[])
 
-	def hostControl_reboot(self, hostIds=[]):
+	def hostControl_reboot(self, hostIds=[]):  # pylint: disable=dangerous-default-value
 		if not hostIds:
-			raise BackendMissingDataError(u"No host ids given")
+			raise BackendMissingDataError("No host ids given")
 		hostIds = self._context.host_getIdents(id=hostIds, returnType='unicode')  # pylint: disable=maybe-no-member
 		return self._opsiclientdRpc(hostIds=hostIds, method='reboot', params=[])
 
-	def hostControl_fireEvent(self, event, hostIds=[]):
+	def hostControl_fireEvent(self, event, hostIds=[]):  # pylint: disable=dangerous-default-value
 		event = forceUnicode(event)
 		hostIds = self._context.host_getIdents(id=hostIds, returnType='unicode')  # pylint: disable=maybe-no-member
 		return self._opsiclientdRpc(hostIds=hostIds, method='fireEvent', params=[event])
 
-	def hostControl_showPopup(self, message, hostIds=[]):
+	def hostControl_showPopup(self, message, hostIds=[]):  # pylint: disable=dangerous-default-value
 		message = forceUnicode(message)
 		hostIds = self._context.host_getIdents(id=hostIds, returnType='unicode')  # pylint: disable=maybe-no-member
 		return self._opsiclientdRpc(hostIds=hostIds, method='showPopup', params=[message])
 
-	def hostControl_uptime(self, hostIds=[]):
+	def hostControl_uptime(self, hostIds=[]):  # pylint: disable=dangerous-default-value
 		hostIds = self._context.host_getIdents(id=hostIds, returnType='unicode')  # pylint: disable=maybe-no-member
 		return self._opsiclientdRpc(hostIds=hostIds, method='uptime', params=[])
 
-	def hostControl_getActiveSessions(self, hostIds=[]):
+	def hostControl_getActiveSessions(self, hostIds=[]):  # pylint: disable=dangerous-default-value
 		hostIds = self._context.host_getIdents(id=hostIds, returnType='unicode')  # pylint: disable=maybe-no-member
 		return self._opsiclientdRpc(hostIds=hostIds, method='getActiveSessions', params=[])
 
-	def hostControl_opsiclientdRpc(self, method, params=[], hostIds=[], timeout=None):
+	def hostControl_opsiclientdRpc(self, method, params=[], hostIds=[], timeout=None):  # pylint: disable=dangerous-default-value
 		hostIds = self._context.host_getIdents(id=hostIds, returnType='unicode')  # pylint: disable=maybe-no-member
 		return self._opsiclientdRpc(hostIds=hostIds, method=method, params=params, timeout=timeout)
 
-	def hostControl_reachable(self, hostIds=[], timeout=None):
+	def hostControl_reachable(self, hostIds=[], timeout=None):  # pylint: disable=dangerous-default-value,too-many-branches
 		hostIds = self._context.host_getIdents(id=hostIds, returnType='unicode')  # pylint: disable=maybe-no-member
 		if not hostIds:
-			raise BackendMissingDataError(u"No matching host ids found")
+			raise BackendMissingDataError("No matching host ids found")
 		hostIds = forceHostIdList(hostIds)
 
 		if not timeout:
@@ -443,12 +438,12 @@ class HostControlBackend(ExtendedBackend):
 						address=address
 					)
 				)
-			except Exception as e:
-				logger.debug("Problem found: '%s'" % e)
+			except Exception as err:  # pylint: disable=broad-except
+				logger.debug("Problem found: '%s'", err)
 				result[host.id] = False
 
 		runningThreads = 0
-		while threads:
+		while threads:  # pylint: disable=too-many-nested-blocks
 			newThreads = []
 			for thread in threads:
 				if thread.ended:
@@ -458,20 +453,23 @@ class HostControlBackend(ExtendedBackend):
 
 				if not thread.started:
 					if runningThreads < self._maxConnections:
-						logger.debug(u"Trying to check host reachable %s", thread.hostId)
+						logger.debug("Trying to check host reachable %s", thread.hostId)
 						thread.start()
 						runningThreads += 1
 				else:
 					timeRunning = time.time() - thread.started
 					if timeRunning >= timeout + 5:
 						# thread still alive 5 seconds after timeout => kill
-						logger.error(u"Reachable check to host %s address %s timed out after %0.2f  seconds, terminating", thread.hostId, thread.address, timeRunning)
+						logger.error(
+							"Reachable check to host %s address %s timed out after %0.2f seconds, terminating",
+							thread.hostId, thread.address, timeRunning
+						)
 						result[thread.hostId] = False
 						if not thread.ended:
 							try:
 								thread.terminate()
-							except Exception as e:
-								logger.error(u"Failed to terminate reachable thread: %s", e)
+							except Exception as err:  # pylint: disable=broad-except
+								logger.error("Failed to terminate reachable thread: %s", err)
 						runningThreads -= 1
 						continue
 				newThreads.append(thread)
@@ -479,7 +477,7 @@ class HostControlBackend(ExtendedBackend):
 			time.sleep(0.1)
 		return result
 
-	def hostControl_execute(self, command, hostIds=[], waitForEnding=True, captureStderr=True, encoding=None, timeout=300):
+	def hostControl_execute(self, command, hostIds=[], waitForEnding=True, captureStderr=True, encoding=None, timeout=300):  # pylint: disable=dangerous-default-value,too-many-arguments
 		command = forceUnicode(command)
 		hostIds = self._context.host_getIdents(id=hostIds, returnType='unicode')  # pylint: disable=maybe-no-member
 		return self._opsiclientdRpc(
