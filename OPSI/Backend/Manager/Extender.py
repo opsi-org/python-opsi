@@ -33,6 +33,7 @@ import types
 from functools import lru_cache
 
 from OPSI.Backend.Base import ExtendedBackend
+from OPSI.Backend.Manager.AccessControl import BackendAccessControl
 from OPSI.Exceptions import BackendConfigurationError
 from OPSI.Exceptions import *  # this is needed for dynamic extension loading  # pylint: disable=wildcard-import,unused-wildcard-import
 from OPSI.Logger import Logger
@@ -51,10 +52,12 @@ class BackendExtender(ExtendedBackend):
 	def __init__(self, backend, **kwargs):
 		if (
 			not isinstance(backend, ExtendedBackend) and
-			not isinstance(backend, BackendDispatcher)
+			not isinstance(backend, BackendDispatcher) and
+			not isinstance(backend, BackendAccessControl)
 		):
 			raise TypeError(
-				f"BackendExtender needs instance of ExtendedBackend or BackendDispatcher as backend, got {backend.__class__.__name__}"
+				"BackendExtender needs instance of ExtendedBackend , BackendDispatcher or BackendAccessControl"
+				f" as backend, got {backend.__class__.__name__}"
 			)
 
 		ExtendedBackend.__init__(self, backend, **kwargs)
